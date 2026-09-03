@@ -15,6 +15,7 @@ const BACKEND_KINDS = [
   'prediction_new', 'prediction_outcome',
   'experiment_proposed', 'experiment_closed',
   'challenge_event', 'memory_note', 'weekly_review_ready',
+  'life_goal_plan',
 ] as const
 
 describe('APP_NOTIFICATION_KIND_META', () => {
@@ -27,6 +28,10 @@ describe('APP_NOTIFICATION_KIND_META', () => {
 
   it('a heti értesítés a heti clay ikont viszi', () => {
     expect(APP_NOTIFICATION_KIND_META.weekly_review_ready.clay).toBe('i-heti')
+  })
+
+  it('az életcél-terv a cél clay ikonját viszi', () => {
+    expect(APP_NOTIFICATION_KIND_META.life_goal_plan.clay).toBe('i-cel')
   })
 })
 

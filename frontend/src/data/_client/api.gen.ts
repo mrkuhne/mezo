@@ -8593,6 +8593,8 @@ export interface components {
             source: "ai" | "template";
         };
         SignalCatalogEntry: {
+            /** @description stable catalog id (SignalCatalog#id) — the JelekPage row key */
+            id: string;
             source: components["schemas"]["PillarSource"];
             label: string;
             /** @description Hungarian group label (Alvás · Fuel · Edzés · Elme · Activity · Emberek · Életjel) */
@@ -8600,6 +8602,12 @@ export interface components {
             kinds: components["schemas"]["PillarKind"][];
             unit: string;
             defaultSkillKey?: string;
+            /** @description had at least one data day in the last 7 days (mezo-iizd.7) */
+            live: boolean;
+            /** @description data days out of the last 7 */
+            daysWithData: number;
+            /** @description labels of the caller's ACTIVE goals' active pillars fed by this signal */
+            fedPillars: string[];
         };
         SignalCatalogResponse: {
             entries: components["schemas"]["SignalCatalogEntry"][];

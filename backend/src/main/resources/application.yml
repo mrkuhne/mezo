@@ -1527,6 +1527,8 @@ mezo:
     # (source_type=LIFE_GOAL, kulcs: UUID.nameUUIDFromBytes("lifegoal:<pillarId>:<day>")).
     xp-per-hit: 5
     # 00:20 — a habit close (00:10) UTÁN, hogy a nap metrikái már véglegesek legyenek.
+    # A job ETTŐL a futástól kezdve a késleltetett ha–akkor terveket (és a hiány-alapú
+    # ritual_missed-et) is emittálja a tegnapi napra — külön ütemező nincs (mezo-iizd.7, spec D-3).
     eval-cron: "0 20 0 * * *"
   # Web Push (RFC 8030/8291/8292) — bd mezo-h4wp.6.1. The private key NEVER has a real default:
   # production supplies it from the mezo-app SealedSecret, local dev from an untracked .env.

@@ -1673,6 +1673,7 @@ export type AppNotificationKindKey =
   | 'prediction_new' | 'prediction_outcome'
   | 'experiment_proposed' | 'experiment_closed'
   | 'challenge_event' | 'memory_note' | 'weekly_review_ready'
+  | 'life_goal_plan'
 
 export interface AppNotificationView {
   id: string
@@ -1708,6 +1709,7 @@ export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, {
   challenge_event: { emoji: '🏆', tint: 'experiment', clay: 'i-kihivas' },
   memory_note: { emoji: '🗂', tint: 'memory', clay: 'i-rend' },
   weekly_review_ready: { emoji: '🗓', tint: 'memoir', clay: 'i-heti' },
+  life_goal_plan: { emoji: '🎯', tint: 'experiment', clay: 'i-cel' },
 }
 
 /** Semleges bejegyzés egy olyan fajtára, amit ez a build még nem ismer. */

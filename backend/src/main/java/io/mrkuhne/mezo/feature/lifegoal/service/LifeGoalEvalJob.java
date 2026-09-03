@@ -24,6 +24,12 @@ import org.springframework.stereotype.Component;
  * {@code measure}). The outer per-user catch, guarding the goal-list fetch itself, is
  * defense-in-depth only — no no-mock seam can make that plain JPA query throw, and the house rules
  * forbid mocks in integration tests.
+ *
+ * <p>Beyond the pillar days and XP, this run is also where the DELAYED ha–akkor plans (and the
+ * gap-based {@code ritual_missed}) fire for the SAME three closed days the pillar pass rewrites
+ * (yesterday, -2, -3) — there is no separate scheduler for them (mezo-iizd.7, spec D-3), and the
+ * rolling window is what lets late logging still earn its delayed nudge. Re-running is safe: the
+ * plan dedup key is per-day.
  */
 @Slf4j
 @Component
@@ -36,6 +42,7 @@ public class LifeGoalEvalJob {
     private final AppUserRepository appUserRepository;
     private final LifeGoalRepository goalRepository;
     private final LifeGoalProgressService progressService;
+    private final LifeGoalTriggerService triggerService;
 
     @Scheduled(cron = "${mezo.lifegoal.eval-cron}")
     public void runEval() {
@@ -50,7 +57,14 @@ public class LifeGoalEvalJob {
                     }
                     try {
                         progressService.evaluateDays(user.getId(), goal);
+                        // A záró log a SIKERESEN kiértékelt célokat számolja, ezért a számláló
+                        // közvetlenül az evaluateDays után nő: egy trigger-hiba nem teheti
+                        // alul-jelentetté azt a célt, aminek a pillér-napjai már megíródtak.
                         goals++;
+                        // A késleltetett („másnap reggel") ha–akkor tervek + a hiány-alapú
+                        // ritual_missed itt szólalnak meg, a három lezárt napra (spec D-3) —
+                        // külön ütemező nincs. A cél-szintű catch ezt is izolálja.
+                        triggerService.fireDelayed(user.getId(), goal, today);
                     } catch (Exception e) {
                         log.warn("Life-goal evaluation failed for goal {} (user {}) on {}",
                             goal.getId(), user.getId(), today, e);

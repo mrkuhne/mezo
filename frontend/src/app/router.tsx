@@ -76,6 +76,7 @@ import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { CelokPage } from '@/features/me/pages/CelokPage'
 import { CelPage } from '@/features/me/pages/CelPage'
 import { CelWizardPage } from '@/features/me/pages/CelWizardPage'
+import JelekPage from '@/features/me/pages/JelekPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
 import { SleepPage } from '@/features/me/pages/SleepPage'
 import { PeoplePage } from '@/features/me/pages/PeoplePage'
@@ -335,6 +336,9 @@ export const routes: RouteObject[] = [
       // Task 11's five-step wizard (mezo-iizd.1) — another static `me/goals/*` sibling,
       // registered ahead of the dynamic `me/goals/:id` below per the same precedent.
       { path: 'me/goals/new', element: <CelWizardPage /> },
+      // Jelek · transzparencia-oldal (mezo-iizd.7) — újabb STATIKUS `me/goals/*` testvér, a
+      // dinamikus `me/goals/:id` elé regisztrálva, ugyanazon precedens szerint.
+      { path: 'me/goals/signals', element: <JelekPage /> },
       // Goal detail (Task 10, mezo-iizd.1) — registered AFTER every static `me/goals/*`
       // sibling above (React Router ranks static over dynamic regardless of source order,
       // but the ordering stays explicit here per the `me/people/:id` precedent).

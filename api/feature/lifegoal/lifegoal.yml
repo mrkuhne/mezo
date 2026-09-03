@@ -272,14 +272,18 @@ components:
         source: { type: string, enum: [ai, template] }
     SignalCatalogEntry:
       type: object
-      required: [source, label, group, kinds, unit]
+      required: [id, source, label, group, kinds, unit, live, daysWithData, fedPillars]
       properties:
+        id: { type: string, description: stable catalog id (SignalCatalog#id) — the JelekPage row key }
         source: { $ref: '#/components/schemas/PillarSource' }
         label: { type: string }
         group: { type: string, description: Hungarian group label (Alvás · Fuel · Edzés · Elme · Activity · Emberek · Életjel) }
         kinds: { type: array, items: { $ref: '#/components/schemas/PillarKind' } }
         unit: { type: string }
         defaultSkillKey: { type: string }
+        live: { type: boolean, description: had at least one data day in the last 7 days (mezo-iizd.7) }
+        daysWithData: { type: integer, minimum: 0, maximum: 7, description: data days out of the last 7 }
+        fedPillars: { type: array, items: { type: string }, description: labels of the caller's ACTIVE goals' active pillars fed by this signal }
     SignalCatalogResponse:
       type: object
       required: [entries]
