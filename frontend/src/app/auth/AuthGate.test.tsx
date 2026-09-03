@@ -7,7 +7,7 @@ import { TOKEN_KEY } from '@/data/_client/tokenStore'
 import { AuthGate } from '@/app/auth/AuthGate'
 import { QueryWrapper, makeHookWrapperWithClient } from '@/test/queryWrapper'
 import { authEvents } from '@/data/_client/authEvents'
-import { currentUserId } from '@/shared/lib/userScope'
+import { currentUserId, setCurrentUserId } from '@/shared/lib/userScope'
 import { mockMe } from '@/data/auth/authMock'
 
 afterEach(() => { vi.unstubAllEnvs(); localStorage.clear(); setToken(null) })
@@ -167,6 +167,11 @@ test('a network blip on the post-login verification call does not strand the use
   await userEvent.type(screen.getByLabelText('Jelszó'), 'password123')
   await userEvent.click(screen.getByRole('button', { name: 'Belépés' }))
   expect(await screen.findByText('APP')).toBeInTheDocument()
+  // Task 9 review Finding 2: this test reaches APP via onAuthenticated's CACHED branch (the
+  // second me() call above is rigged to fail and must never be reached) — the actual path an
+  // ordinary login/register takes, since useAuthActions pre-seeds ME_QUERY_KEY. Nothing else in
+  // the suite asserts the scope gets set on this branch.
+  expect(currentUserId()).toBe(meFixture.id)
 })
 
 // Review finding 2 (Task 10): the boot loop's own `cancelled` flag knows nothing about a
@@ -213,6 +218,38 @@ test('mock mode scopes storage to the mock identity', () => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   renderGate()
   expect(currentUserId()).toBe(mockMe.id)
+})
+
+// Task 9 review Finding 1: in mock mode `phase` starts at 'ready', so `children` mount on the
+// FIRST render pass, while `renderGate()`'s own assertion above only proves the scope is set
+// AFTER render() returns — which is true even if the write happens in a useEffect, because
+// React flushes effects (parent's included) before render() hands control back. React runs
+// descendant effects bottom-up BEFORE the parent's own effect, so a child that reads the scope
+// during ITS render or mount — not after the whole tree has settled — is the only way to catch
+// a write that happens too late. Task 10 migrates six storage read/writes into exactly that
+// window (nightTrace, msgseen, sleep-escal-snooze, the nudge log, the morning snooze, the
+// sticky tab), so a late write there would silently corrupt mock-mode namespacing.
+function ScopeProbe({ onProbe }: { onProbe: (id: string | null) => void }) {
+  onProbe(currentUserId())
+  return <div>PROBED</div>
+}
+
+test('mock mode scope is set before children render (not only by the time render() returns)', () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  // Guard against a leaked scope from an earlier test making this pass vacuously — start from
+  // a value that is neither null nor mockMe.id, so the probe can only see mockMe.id if THIS
+  // render actually set it before the child rendered.
+  setCurrentUserId('some-other-stale-user')
+  let probedDuringChildRender: string | null | 'never-called' = 'never-called'
+  render(
+    <QueryWrapper>
+      <AuthGate>
+        <ScopeProbe onProbe={(id) => { probedDuringChildRender = id }} />
+      </AuthGate>
+    </QueryWrapper>,
+  )
+  expect(screen.getByText('PROBED')).toBeInTheDocument()
+  expect(probedDuringChildRender).toBe(mockMe.id)
 })
 
 test('valid token → me → the storage scope is the signed-in user; sign-out clears it', async () => {

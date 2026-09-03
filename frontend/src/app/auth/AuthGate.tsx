@@ -30,6 +30,14 @@ const SIGN_OUT_NOTICE: Record<SignOutReason, string | undefined> = {
  */
 export function AuthGate({ children }: { children: ReactNode }) {
   const mock = isMockMode()
+  // Mock mode's phase starts at 'ready' below, so `children` mount on THIS render pass —
+  // React runs descendant effects before the parent's own `useEffect`, so writing the scope
+  // there (as the real-mode path does, safely, because its phase starts 'pending') would let
+  // every child's first render/mount observe `currentUserId() === null` and read/write
+  // `mezo.anon.*` instead of `mezo.<mockId>.*`. Writing it here, during render, means it is
+  // already set before any descendant renders. Idempotent (same value every render) so a
+  // render-time side effect is safe here, same as `tokenStore`'s own render-time reads.
+  if (mock) setCurrentUserId(mockMe.id)
   const client = useQueryClient()
   const [phase, setPhase] = useState<AuthPhase>(mock ? 'ready' : 'pending')
   const [authView, setAuthView] = useState<'login' | 'register'>('login')
@@ -45,8 +53,14 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   // Boot: no token → login; token → me (with backoff on network failure).
   useEffect(() => {
-    if (mock) { setCurrentUserId(mockMe.id); return }
-    if (tokenStore.get() == null) { setPhase('signedOut'); return }
+    // Mock mode's scope write moved to render time above (Task 9 review Finding 1) — this
+    // branch just short-circuits the boot fetch, same as before.
+    if (mock) return
+    // Correct by construction today (a fresh page load starts the module at userId === null,
+    // and every path that could leave a stale id — onSignedOut, mock render — resets it), but
+    // this effect re-runs on `attemptNonce`, so make the invariant local rather than relying on
+    // that reasoning holding forever.
+    if (tokenStore.get() == null) { setCurrentUserId(null); setPhase('signedOut'); return }
     let cancelled = false
     const startGen = signOutGen.current
     const superseded = () => cancelled || signOutGen.current !== startGen
@@ -131,6 +145,12 @@ export function AuthGate({ children }: { children: ReactNode }) {
       // The credentials WERE just accepted (we only get here after a successful
       // login/register/change-password) — a network blip on this verification call must not
       // strand the user on the auth form as long as a token is still on hand.
+      // Not touching the scope here is safe, not an oversight: login/register always take the
+      // `cached` branch above (useAuthActions pre-seeds ME_QUERY_KEY), so this catch is only
+      // reachable from change-password — a flow that starts from an ALREADY correctly-scoped
+      // signed-in user (mustChangePassword phase), so the scope here is already the right id,
+      // not stale. Do not add a scope write to this branch without re-deriving the id from
+      // somewhere, since `me` is out of scope on this path.
       setPhase(tokenStore.get() != null ? 'ready' : 'signedOut')
     }
   }
