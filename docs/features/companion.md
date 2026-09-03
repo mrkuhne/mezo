@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-02
+updated: 2026-09-03
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -531,6 +531,28 @@ COMPLETE (all 14 slices):**
   audit — the approved count is 19/31 (deep-min dropped: permanently empty without a wearable
   import; V3.5 if that ever lands); the intention "reflection" is categorical (yes|partial|no),
   not free text — the digest renders it as a label, not a quote.
+
+**Proactive-coaching S1 (`mezo-d58h.1`) added 3 more `MetricKey`s (31 → 34)** — extractors in
+`MetricSeriesService`, no rule/pair/card consumes them yet (later slices S2–S6 do):
+
+- *Direct:* `shoulder-strain` (day **max** of `sport_session.shoulder_strain`, 1–10; a null strain
+  or no session is not a datapoint) — TRAIN domain.
+- *Derived (sport-science):* `weight-trend-pct-wk` (7-day rolling least-squares slope of weigh-ins,
+  expressed as %/week of the window's mean weight; honest gate — fewer than 4 weigh-ins in the
+  trailing 7 days ⇒ no datapoint) — BODY domain. `combined-load-min` (the existing `dailyLoad`
+  sport-min + gym-volume/`load-gym-kg-per-min` figure exposed as its OWN calendar series — every
+  day in `[from,to]` present, an un-logged day a real `0.0`) — TRAIN domain. `COMBINED_LOAD_MIN` is
+  the **second** documented exception to "missing days stay missing" (after `HABITS_DONE`,
+  above) — see the `MetricSeriesService` class Javadoc and `FlagEvaluator`'s own Javadoc, which
+  both now name it alongside `HABITS_DONE`.
+
+Because `HypothesisPipelineService.gather()`'s `HETI METRIKA-TÁBLA` block and
+`PatternMonitorService`'s per-metric coverage both iterate `MetricKey.values()` (§4/§5 above), all
+three new metrics already appear in the weekly hypothesis table and the `/pattern/monitor`
+coverage response, and widen what the proactive **Diagnózis** report can name as a suspect (§3
+"Second consumer since `mezo-hqfi`" above) — with zero code change in those three call sites. The
+34-total figure supersedes the "31 since V3.4" statements above, which remain accurate as a
+historical snapshot of the V3.4 slice itself.
 
 **Memória-obszervatórium (`mezo-al1i`, post-epic) — a 4 memória-réteg read-only pillanatképe.**
 `MemoryObservatoryService` (`service/MemoryObservatoryService.java`, companion-switch conditional)
@@ -1200,7 +1222,17 @@ order (`repository/AiConversationRepository.java:14`); `AiMessageRepository` is 
 `FlagEvaluator.evaluate(userId)` (`feature/companion/flags/service/FlagEvaluator.java`) is pure
 arithmetic over `MetricSeriesService` series the owning features already compose READ-ONLY — there
 is **no `LlmCallContextHolder` call anywhere in this slice**, because there is no LLM/embed call to
-tag. Two triggers feed the SAME code path: the on-write listener (`FlagEvaluationListener`, `@Async
+tag. **Rule spine (S1, bd `mezo-d58h.1`, spec 2026-09-03 §3.1) — one class per rule.** `FlagEvaluator`
+itself is now a thin orchestrator: it holds no rule logic, just five injected `FlagRule` beans
+(`SustainedStressRule`, `SleepDebtRule`, `MomentumAtRiskRule`, `RecoveryNeededRule`,
+`AllHealthyRule` — each `feature/companion/flags/service/rule/*.java`) called in that fixed order,
+`allHealthyRule` only when the other four raised nothing. The `FlagRule` interface
+(`flags/service/FlagRule.java`) is one method, `evaluate(userId, today) → Optional<FlagRaise>`,
+cooldowns NOT applied; each implementation carries its own reads and thresholds (still 100% from
+`FlagProperties` — no rule holds a number of its own) and stays reviewable in isolation. Pure
+refactor — behavior, thresholds and the fixed evaluation order are all unchanged from the single-class
+`FlagEvaluator` this replaces; `FlagEvaluatorStressSleepIT`/`FlagEvaluatorMomentumRecoveryIT` (§8)
+cover the same scenarios unmodified. Two triggers feed the SAME code path: the on-write listener (`FlagEvaluationListener`, `@Async
 @TransactionalEventListener(phase = AFTER_COMMIT)` on the NEW `CheckInSavedEvent` — published by
 `CheckInService.save` — and the existing `SleepLogSavedEvent`, published by `SleepLogService.log`)
 and the hourly sweep
@@ -5136,7 +5168,9 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/repository/CompanionFlagLogRepository.java` — `existsRaiseSince` (the cooldown gate) and `existsProblemRaiseSince` (the `all_healthy` quiet-window gate).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagKey.java` — the five flag-key constants + `SOURCE_WRITE`/`SOURCE_SWEEP`, string constants mirroring the DB CHECKs (the `MessageFeedbackEntity` verdict/reason precedent).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaise.java` — one flag the evaluator says is TRUE right now, with its payload, before the cooldown gate is applied.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluator.java` — the five rules, pure arithmetic over `MetricSeriesService`, LLM-free (§3).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluator.java` — since S1 (`mezo-d58h.1`) a thin orchestrator calling five `FlagRule` beans in a fixed order, LLM-free (§3).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRule.java` — S1 (`mezo-d58h.1`): the one-method rule contract, `evaluate(userId, today) → Optional<FlagRaise>`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/{SustainedStressRule,SleepDebtRule,MomentumAtRiskRule,RecoveryNeededRule,AllHealthyRule}.java` — S1 (`mezo-d58h.1`): the five rules, one class each, pure arithmetic over `MetricSeriesService`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagService.java` — the cooldown gate + append (`evaluateAndLog`), the ONLY write path into `companion_flag_log`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluationListener.java` — the on-write trigger, `@Async @TransactionalEventListener(AFTER_COMMIT)` on `CheckInSavedEvent`/`SleepLogSavedEvent`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagSweepJob.java` — the hourly sweep (`mezo.companion.flags.sweep-cron`), own job switch, per-user try/catch.
