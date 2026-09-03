@@ -26,6 +26,7 @@ public class GymScheduleService {
 
     private final GymScheduleSlotRepository slotRepository;
     private final TrainMapper mapper;
+    private final GoalRecomputePort goalRecomputePort;
 
     public List<GymScheduleSlotResponse> getSchedule(UUID createdBy) {
         return slotRepository.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(createdBy)
@@ -48,6 +49,9 @@ public class GymScheduleService {
         }
         fresh.sort(Comparator.comparing(GymScheduleSlotEntity::getDayOfWeek)
             .thenComparing(GymScheduleSlotEntity::getTime));
+        // The weekly EAT is schedule-derived → a schedule edit must recompute the prescription
+        // (G5 trigger, mezo-3g5w). Graceful when no goal is active.
+        goalRecomputePort.recomputeActiveGoal(createdBy);
         return fresh.stream().map(mapper::toGymSlotResponse).toList();
     }
 }

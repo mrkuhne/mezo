@@ -52,6 +52,7 @@ public class SportService {
     private final ProgressionService progressionService;
     private final LevelUpResultMapper levelUpResultMapper;
     private final ObjectProvider<ProgressionGate> progressionGate;
+    private final GoalRecomputePort goalRecomputePort;
 
     @Transactional
     public SportSessionResponse logSportSession(UUID createdBy, SportSessionCreateRequest req) {
@@ -103,6 +104,9 @@ public class SportService {
         }
         fresh.sort(Comparator.comparing(SportScheduleSlotEntity::getDayOfWeek)
             .thenComparing(SportScheduleSlotEntity::getTime));
+        // The weekly EAT is schedule-derived → a schedule edit must recompute the prescription
+        // (G5 trigger, mezo-3g5w). Graceful when no goal is active.
+        goalRecomputePort.recomputeActiveGoal(createdBy);
         return fresh.stream().map(mapper::toSlotResponse).toList();
     }
 
