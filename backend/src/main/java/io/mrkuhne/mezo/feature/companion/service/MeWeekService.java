@@ -148,6 +148,15 @@ public class MeWeekService {
                 .build();
     }
 
+    /**
+     * The {@code me-week} contract's four subscores are UNCHANGED by the 6-dimension day engine
+     * (mezo-jcpt.4): {@link DayScoreService.DaySubscores} is still the carrier, its fields are just
+     * sourced from the closest successor dimension now — {@code sleep←sleep, fuel←nutrition,
+     * checkin←logging, activity←training} (the mapping table lives in {@code DayScoreService}'s
+     * class javadoc). A degraded dimension projects to {@code null}, exactly the "tanulom" signal
+     * this surface already renders. The day page does NOT read these; it consumes the full
+     * evaluation through its own endpoint.
+     */
     private static MeWeekSubscores toSubscores(DayScoreService.DayScore score) {
         if (score == null) {
             return new MeWeekSubscores();

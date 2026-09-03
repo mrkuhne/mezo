@@ -1014,3 +1014,17 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609030200_mezo-ktg8_goal_suggestion.sql
+  - changeSet:
+      id: "1.0.0:202609031200_mezo-jcpt.4_weekly_score_cache_invalidation"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609031200_mezo-jcpt.4_weekly_score_cache_invalidation.sql
+  - changeSet:
+      id: "1.0.0:202609031300_mezo-jcpt.4_create_day_review"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609031300_mezo-jcpt.4_create_day_review.sql

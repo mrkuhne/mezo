@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.support.populator.FuelSettingsPopulator;
 import io.mrkuhne.mezo.support.populator.GamificationPopulator;
 import io.mrkuhne.mezo.support.populator.QuestPopulator;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
+import io.mrkuhne.mezo.support.populator.DayReviewPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPlanLinkPopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.GoalSuggestionPopulator;
@@ -89,7 +90,7 @@ import org.springframework.context.annotation.Import;
     DailySummaryPopulator.class, PeriodSummaryPopulator.class, PatternPopulator.class, PatternEventPopulator.class,
     CompanionMessagePopulator.class, FeedbackPopulator.class, FlagLogPopulator.class,
     WeeklySuggestionPopulator.class, MemoirPopulator.class, WeeklyReviewPopulator.class,
-    DiagnosisPopulator.class, WeeklyScorePopulator.class,
+    DiagnosisPopulator.class, WeeklyScorePopulator.class, DayReviewPopulator.class,
     PredictionPopulator.class, ExperimentPopulator.class, ChallengePopulator.class,
     QuestPopulator.class, ActivityPopulator.class, HabitPopulator.class,
     IntentionPopulator.class, RitualPopulator.class, NeedsPopulator.class, JournalPopulator.class,

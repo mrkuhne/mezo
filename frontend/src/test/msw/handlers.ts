@@ -1522,6 +1522,28 @@ export const handlers = [
     })
   }),
 
+  // Day evaluation (mezo-jcpt.4) — the day page's six-dimension read. Like the week handler
+  // above, DELIBERATELY distinct from the mock seed (`dayEvaluation.ts` scores 78 with a +3
+  // adjustment) so real-mode tests can tell "the fetch resolved" apart from "the seed leaked":
+  // 66, no adjustment. Tests that need another shape (an `empty` day, a NO_DATA dimension that
+  // still carries a fact) override with `server.use()`.
+  http.get(`${API_BASE}/api/me/day/:date/evaluation`, ({ params }) => HttpResponse.json({
+    date: params.date as string,
+    state: 'scored', score: 66, base: 66, adjustment: null,
+    narrative: ['A napot a szerver értékelte ki — ez a valós módú válasz.'],
+    highlights: [{ kind: 'key', label: 'A szerverről jött értékelés' }],
+    context: [{ label: 'nap típusa', value: 'pihenőnap' }],
+    dimensions: [
+      { id: 'nutrition', label: 'Táplálkozás', weight: 0.30, score: 64, status: 'DONE',
+        facts: [{ label: 'kalória', value: '2 800 kcal' }], note: null },
+      { id: 'quality', label: 'Minőség', weight: 0.15, score: 62, status: 'DONE', facts: [], note: null },
+      { id: 'training', label: 'Edzés', weight: 0.20, score: 70, status: 'DONE', facts: [], note: null },
+      { id: 'sleep', label: 'Alvás', weight: 0.15, score: 60, status: 'DONE', facts: [], note: null },
+      { id: 'logging', label: 'Naplózás', weight: 0.10, score: 72, status: 'DONE', facts: [], note: null },
+      { id: 'rhythm', label: 'Ritmus', weight: 0.10, score: 68, status: 'DONE', facts: [], note: null },
+    ],
+  })),
+
   // Weekly review (mezo-p2tr) — 404-default GET (the weekly-suggestion idiom above: no row
   // exists for most weeks until the WeeklyReviewJob writes one); tests that want a generated
   // review override with server.use(). Regenerate always succeeds with a fresh row. The digest

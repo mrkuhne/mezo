@@ -228,6 +228,12 @@ mezo:
     # endpoints answer 200 with an empty verdict list, the score itself is unaffected.
     meal-coach:
       enabled: true
+    # Day-review prose (mezo-jcpt.4) — the lazily-cached LLM narrative over a closed day's
+    # deterministic 6-dimension evaluation; needs the companion switch too (the DayReviewLlm
+    # adapter bean). Off: GET /api/me/day/{date}/evaluation still answers 200 with every
+    # dimension and an empty narrative — the score itself is unaffected.
+    day-review:
+      enabled: true
     # Phase-3 companion (LLM chat + AI memory, ADR 0008). Gates every CompanionLlm bean;
     # no user-facing surface until V0.4, so 'on' only exposes the port to future slices.
     companion:
@@ -1169,6 +1175,28 @@ mezo:
       sleep-target-h: 8.0
       kcal-band: 0.25
       xp-baseline: 150
+    # Daily evaluation (mezo-jcpt.4) — the 6-dimension day-score engine's tuning knobs.
+    day-evaluation:
+      weights:
+        nutrition: 0.30
+        quality: 0.15
+        training: 0.20
+        sleep: 0.15
+        logging: 0.10
+        rhythm: 0.10
+      nutrition:
+        kcal-under-band: 0.10
+        kcal-over-band: 0.05
+        kcal-slope: 3.0
+        protein-under-band: 0.05
+        protein-slope: 2.5
+        carb-fat-band: 0.15
+        carb-fat-slope: 1.5
+      workout-day-kcal-widen: 150
+      sleep-target-h: 7.5
+      rhythm-window-days: 7
+      rhythm-min-days: 3
+      log-timely-min: 120
   # Karakter S2 nightly expert observation pass (mezo-1gim.3, spec §5/§6) — the 7-expert team
   # writes observations onto the CORE dimensions; the job switch lives under mezo.techcore.cron.
   character:
