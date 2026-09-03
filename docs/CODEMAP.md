@@ -1216,7 +1216,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **hooks (via `@/data/hooks`):** `TUTORIAL_PROGRESS_GHOST`, `useTutorialProgress`, `useTutorialProgressActions`
   - **modules:** tutorialProgressApi.ts, tutorialProgressHooks.ts
 - **FE ui** `frontend/src/features/tutorial`
-  - **root:** TutorialProvider.tsx, fogalmak.ts, fuel.ts, index.ts, me.ts, mezo.ts, nap.ts, train.ts, types.ts
+  - **root:** TutorialProvider.tsx, fogalmak.ts, fuel.ts, index.ts, lint.ts, me.ts, mezo.ts, nap.ts, train.ts,
+    types.ts, welcome.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/tutorial` — 2 IT + 0 unit
   - **ITs:** `TutorialProgressApiIT`, `TutorialProgressSwitchOffApiIT`
 
@@ -1242,7 +1243,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   NumberInput.tsx, PageTitle.tsx, ProgressBar.tsx, RefTag.tsx, ScoreRing.tsx, ScreenSkeleton.tsx, Sheet.tsx,
   Skeleton.tsx, SortableList.tsx, Spinner.tsx, StatCell.tsx, StatStrip.tsx, Stepper.tsx, ToastProvider.tsx, Toggle.tsx,
   ToolChip.tsx, ToolChipRow.tsx, TrendChart.tsx, clay/clay-icons.svg, clay/clay-spots.svg, clay/index.tsx,
-  kalauz/KalauzSheet.tsx, mozaik/index.tsx, mozaik/motion.tsx, sectionLabel.ts
+  kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/index.tsx, mozaik/motion.tsx, sectionLabel.ts
 
 ### test infrastructure — `backend/src/test/java/io/mrkuhne/mezo/support`, `frontend/src/test`
 
