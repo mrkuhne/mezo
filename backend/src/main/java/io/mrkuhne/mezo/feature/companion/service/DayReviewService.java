@@ -136,9 +136,14 @@ public class DayReviewService {
 
     /** One day's full evaluation — deterministic always, prose when the day has earned one. */
     public DayEvaluationResponse assemble(UUID userId, LocalDate date) {
-        DayInputs inputs = dayScoreService.inputsFor(userId, date);
+        // ONE clock reading for the whole answer (review round 2, Minor): `inputsFor` derives
+        // `closed` from it and `state` classifies against it, so a request that crosses midnight
+        // between the two can no longer produce a not-closed (base null) day whose state already
+        // reads as yesterday — which fell through to thin/empty instead of in_progress.
+        LocalDate today = LocalDate.now();
+        DayInputs inputs = dayScoreService.inputsFor(userId, date, today);
         DayEvaluation evaluation = dayEvaluationEngine.evaluate(inputs);
-        String state = state(inputs, evaluation, LocalDate.now());
+        String state = state(inputs, evaluation, today);
 
         // A future day has no signals to report: its energy/sleep series are empty by definition
         // and the user-level weight trend would be the only thing shown, which would read as a
@@ -310,11 +315,15 @@ public class DayReviewService {
     }
 
     /**
-     * The cache key: {@code sha256} over each dimension's {@code id|score|status} (in the engine's
-     * fixed order) plus the day's {@code base}. Those ARE the numbers the prose explains — a
-     * retroactive log that moves any of them invalidates the narrative that justified them, and
-     * nothing else can. The unscored context signals are deliberately OUTSIDE the key: they are
-     * re-read fresh on every call and never fold into a cached sentence's correctness.
+     * The cache key: {@code sha256} over each dimension's {@code id|score|status} AND its facts
+     * (in the engine's fixed order, the facts in their own emission order) plus the day's
+     * {@code base}. Those are everything the prose was shown — {@link #userMessage} hands the
+     * model exactly these fields, and the narrative typically QUOTES the facts ("312 g szénhidrát").
+     * The facts must therefore be in the key: dimension scores are integers 0..100, so a
+     * retroactive log can move a fact (carbs 312 g → 280 g) without moving the rounded score, and
+     * a facts-free key would keep serving a narrative quoting the old number (review round 2,
+     * Minor). The unscored context signals stay OUTSIDE the key: they are re-read fresh on every
+     * call and never fold into a cached sentence's correctness.
      */
     static String inputsHash(DayEvaluation evaluation) throws NoSuchAlgorithmException {
         StringBuilder sb = new StringBuilder();
@@ -322,6 +331,11 @@ public class DayReviewService {
             sb.append(d.id()).append('|')
                 .append(d.score() == null ? "" : d.score()).append('|')
                 .append(d.status()).append('\n');
+            if (d.facts() != null) {
+                for (DimFact f : d.facts()) {
+                    sb.append("  fact|").append(f.label()).append('|').append(f.value()).append('\n');
+                }
+            }
         }
         sb.append("base|").append(evaluation.base() == null ? "" : evaluation.base());
         return sha256Hex(sb.toString());

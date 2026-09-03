@@ -65,7 +65,7 @@ function evaluationFixture(date: string, patch: Partial<DayEvaluationResponse> =
     context: [],
     dimensions: [
       dim('nutrition', 'Táplálkozás'), dim('quality', 'Minőség'), dim('training', 'Edzés'),
-      dim('sleep', 'Alvás'), dim('logging', 'Logolás'), dim('rhythm', 'Ritmus'),
+      dim('sleep', 'Alvás'), dim('logging', 'Naplózás'), dim('rhythm', 'Ritmus'),
     ],
     ...patch,
   }
@@ -99,12 +99,12 @@ describe('WeekDayPage (mock mode)', () => {
     const tiles = [...container.querySelectorAll('.dayev-dim')]
     expect(tiles).toHaveLength(6)
     expect(tiles.map((t) => t.querySelector('.dayev-dnm')?.textContent))
-      .toEqual(['Táplálkozás', 'Minőség', 'Edzés', 'Alvás', 'Logolás', 'Ritmus'])
+      .toEqual(['Táplálkozás', 'Minőség', 'Edzés', 'Alvás', 'Naplózás', 'Ritmus'])
     // the renormalised weight is the tile's eyebrow, the dimension score its sring
     expect(screen.getByText('súly 30%')).toBeInTheDocument()
     expect(tiles[0]?.querySelector('.dayev-sring i')?.textContent).toBe('82')
     // facts and the per-dimension sentence
-    expect(screen.getByText('fehérje · 205g / 220g cél')).toBeInTheDocument()
+    expect(screen.getByText('fehérje · 205 / 220 g')).toBeInTheDocument()
     expect(screen.getByText('A fehérjecélt majdnem hoztad, a kalória is célban volt.')).toBeInTheDocument()
     // no dimension is a ghost on a closed, fully-logged day
     expect(container.querySelectorAll('.dayev-dim.is-ghost')).toHaveLength(0)
@@ -192,7 +192,7 @@ describe('WeekDayPage (mock mode)', () => {
     const { container } = renderDay(mockDayEvaluationDates.inProgress, '2026-05-18')
     const tiles = [...container.querySelectorAll('.dayev-dim')]
     expect(tiles.map((t) => t.querySelector('.dayev-dnm')?.textContent))
-      .toEqual(['Edzés', 'Alvás', 'Táplálkozás', 'Minőség', 'Logolás', 'Ritmus'])
+      .toEqual(['Edzés', 'Alvás', 'Táplálkozás', 'Minőség', 'Naplózás', 'Ritmus'])
     expect(tiles.slice(0, 2).some((t) => t.classList.contains('is-ghost'))).toBe(false)
     expect(tiles.slice(2).every((t) => t.classList.contains('is-ghost'))).toBe(true)
     // while the day runs, a finalised dimension SAYS it is final rather than showing its weight
@@ -283,5 +283,32 @@ describe('WeekDayPage (real mode)', () => {
     renderDay('2026-05-11', '2026-05-11')
     expect(await screen.findByRole('alert')).toHaveTextContent('Nem sikerült betölteni a hét adatait.')
     await waitFor(() => expect(screen.getByRole('button', { name: 'Próbáld újra' })).toBeInTheDocument())
+  })
+
+  /**
+   * The degradation branch that runs on EVERY real-mode evaluation error (review round 2, Minor —
+   * previously only the WEEK-fetch failure was covered). A failed evaluation is NOT an error page:
+   * the week read still succeeded, so the day falls back to `dayState(day, today)` + `day.score`
+   * and the pre-jcpt surface — no dimension tiles, the standalone Fuel goal card back (it has no
+   * Tápanyag tile to live in), the chat handoff still offered.
+   */
+  test('a failed EVALUATION fetch degrades to the week-level day, not to an error', async () => {
+    server.use(http.get(`${API_BASE}/api/me/day/:date/evaluation`,
+      () => new HttpResponse(null, { status: 500 })))
+    const { container } = renderDay('2026-05-11', '2026-05-11')
+
+    // the week's own score carries the hero — never the evaluation's 66, never a fabricated 0
+    expect(await screen.findByRole('img', { name: 'Pontszám: 65 / 100' })).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: 'Pontszám: 66 / 100' })).not.toBeInTheDocument()
+    // nothing that only the evaluation can supply is rendered
+    expect(container.querySelectorAll('.dayev-dim')).toHaveLength(0)
+    expect(screen.queryByText('Mezo · a napodról')).not.toBeInTheDocument()
+    expect(screen.queryByText('Kontextus · nem pontozott')).not.toBeInTheDocument()
+    expect(screen.queryByText(/^alap /)).not.toBeInTheDocument()
+    // …and the week's kcal/protein targets survive in the standalone Fuel card
+    expect(screen.getByText('Fuel · a cél ellenében')).toBeInTheDocument()
+    // still an ordinary page, not the retryable error state
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Beszélgess a napról ›' })).toBeInTheDocument()
   })
 })

@@ -27,8 +27,10 @@ import org.springframework.stereotype.Service;
  * <p>Honesty rules (binding, constraints.md): a NO_DATA/IN_PROGRESS dimension drops out with
  * weight 0; the {@code weight} each surviving DONE dimension reports is RENORMALISED so the DONE
  * dimensions' weights sum to 1.0. {@code base} is the rounded weighted sum of the DONE dimensions,
- * and is {@code null} when fewer than 2 dimensions are DONE, or when the day is not yet
- * {@code closed} (open/future day → no overall score, only the per-dimension progress). No
+ * and is {@code null} when fewer than 2 dimensions that actually MEASURED THIS DAY are DONE
+ * ({@code rhythm} is excluded from that count — it is the mean of OTHER days' bases and knows
+ * nothing about this one; it still carries its weight in the sum once the gate is open), or when
+ * the day is not yet {@code closed} (open/future day → no overall score, only progress). No
  * component is ever awarded an invented neutral/full score for data that was never measured
  * (mezo-jcpt review round 1): a missing TARGET means we never set an expectation (full credit,
  * doesn't penalize); missing DATA against a real target means the component drops out and the
@@ -69,6 +71,8 @@ public class DayEvaluationEngine {
     private static final String IN_PROGRESS = "IN_PROGRESS";
     private static final String NO_DATA = "NO_DATA";
     private static final String NO_CARB_FAT_DATA = "nincs adat";
+    /** The one EXTRINSIC dimension — see the gate in {@link #evaluate}. */
+    private static final String DIM_RHYTHM = "rhythm";
     /** Canonical check-in slots per day (brief's literal {@code checkinCount/4}, not config-driven
      *  -- matches {@code DayScoreService.CANONICAL_CHECKIN_SLOTS}, the legacy path's same constant). */
     private static final double CHECKIN_SLOTS = 4.0;
@@ -85,7 +89,17 @@ public class DayEvaluationEngine {
 
         double doneWeightSum = raw.stream().filter(d -> DONE.equals(d.status()))
             .mapToDouble(RawDim::configWeight).sum();
-        long doneCount = raw.stream().filter(d -> DONE.equals(d.status())).count();
+        // The data-sufficiency gate counts only INTRINSIC dimensions -- the ones that actually
+        // measured THIS day. `rhythm` is extrinsic: it is the mean of OTHER days' base scores, so
+        // it can be DONE on a day about which nothing whatsoever is known (review round 2,
+        // Important). Left in, it paired with `logging` -- which is DONE on every closed day by
+        // design, scoring an honest 0 for an untouched one -- to open the gate for a day with no
+        // data at all, reporting base = round(0.5*0 + 0.5*rhythmMean), i.e. half the user's
+        // running average for a day they never touched. It keeps its weight in the weighted sum
+        // once the gate IS open (a real dimension of the score); it just may not open it alone.
+        long doneCount = raw.stream()
+            .filter(d -> DONE.equals(d.status()) && !DIM_RHYTHM.equals(d.id()))
+            .count();
 
         List<DayDimension> dimensions = raw.stream()
             .map(d -> renormalized(d, doneWeightSum))
@@ -408,7 +422,7 @@ public class DayEvaluationEngine {
     // would let it eat itself), gated at rhythmMinDays so a couple of stray days can't drive it.
 
     private RawDim rhythmDim(DayInputs in) {
-        String id = "rhythm";
+        String id = DIM_RHYTHM;
         String label = "Ritmus";
         double configWeight = props.weights().rhythm();
         List<Integer> prior = in.priorBaseScores() == null ? List.of() : in.priorBaseScores();

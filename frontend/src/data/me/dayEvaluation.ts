@@ -85,35 +85,57 @@ export const mockDayEvaluationDates = {
   future: '2026-05-25',
 } as const
 
+// The fact LABEL/VALUE shapes below are the ones `DayEvaluationEngine`'s fact builders really
+// emit (review round 2, Minor — the mock had drifted into vocabulary no dimension produces:
+// `zöldség · 4 adag`, `feldolgozott étel · alacsony`, `lépés · 9 400`, so mock-mode tests
+// asserted against a page the backend can never render). Mirrored per dimension:
+//   nutrition  kcal `2980 / 3100` · fehérje `205 / 220 g` · c · f `312 g · 95 g`
+//              (`nincs adat` when unlogged) · sáv `edzésnapi +150 kcal` (workout days only)
+//   quality    nova `72%` · mikro `84%`   (`–` when absent)
+//   training   edzés `1 / 1`              (rest day: terv `Pihenőnap · nem számít`)
+//   sleep      alvás `7 h` · minőség `Q7` (`–` when absent)
+//   logging    étkezés időben `80%` · víz `✓`/`–` · check-in `4 / 4`
+//   rhythm     napok `7 / 7`
+// The four days' states and scores are unchanged — this is a vocabulary fix, not a redesign, so
+// the scores are still hand-picked demo numbers rather than the engine's own arithmetic.
 const SCORED_DIMENSIONS: DayDimension[] = [
   {
     id: 'nutrition', label: 'Táplálkozás', weight: 0.30, score: 82, status: 'DONE',
-    facts: [{ label: 'fehérje', value: '205g / 220g cél' }, { label: 'kalória', value: '2 980 kcal' }],
+    facts: [
+      { label: 'kcal', value: '2980 / 3100' },
+      { label: 'fehérje', value: '205 / 220 g' },
+      { label: 'c · f', value: '312 g · 95 g' },
+      { label: 'sáv', value: 'edzésnapi +150 kcal' },
+    ],
     note: 'A fehérjecélt majdnem hoztad, a kalória is célban volt.',
   },
   {
     id: 'quality', label: 'Minőség', weight: 0.15, score: 75, status: 'DONE',
-    facts: [{ label: 'zöldség', value: '4 adag' }, { label: 'feldolgozott étel', value: 'alacsony' }],
+    facts: [{ label: 'nova', value: '72%' }, { label: 'mikro', value: '84%' }],
     note: 'A tányérod minősége stabil volt egész nap.',
   },
   {
     id: 'training', label: 'Edzés', weight: 0.20, score: 88, status: 'DONE',
-    facts: [{ label: 'edzés', value: '1× erő, 62 perc' }, { label: 'lépés', value: '9 400' }],
+    facts: [{ label: 'edzés', value: '1 / 1' }],
     note: 'Erős edzésnap, jó intenzitással.',
   },
   {
     id: 'sleep', label: 'Alvás', weight: 0.15, score: 80, status: 'DONE',
-    facts: [{ label: 'alvásidő', value: '7ó 25p' }, { label: 'minőség', value: '7/10' }],
+    facts: [{ label: 'alvás', value: '7 h' }, { label: 'minőség', value: 'Q7' }],
     note: 'Jó alvás, a szokásosnál kicsit hosszabb.',
   },
   {
-    id: 'logging', label: 'Logolás', weight: 0.10, score: 90, status: 'DONE',
-    facts: [{ label: 'bejegyzések', value: '4 check-in' }, { label: 'lefedettség', value: 'teljes nap' }],
+    id: 'logging', label: 'Naplózás', weight: 0.10, score: 90, status: 'DONE',
+    facts: [
+      { label: 'étkezés időben', value: '80%' },
+      { label: 'víz', value: '✓' },
+      { label: 'check-in', value: '4 / 4' },
+    ],
     note: 'Mindent logoltál, semmi nem maradt ki.',
   },
   {
     id: 'rhythm', label: 'Ritmus', weight: 0.10, score: 70, status: 'DONE',
-    facts: [{ label: 'étkezési ablak', value: '11 óra' }, { label: 'lefekvés', value: 'stabil' }],
+    facts: [{ label: 'napok', value: '7 / 7' }],
     note: 'A napi ritmusod a hét átlagához közeli volt.',
   },
 ]
@@ -152,13 +174,23 @@ const IN_PROGRESS_SEED: DayEvaluationResponse = {
     { id: 'quality', label: 'Minőség', weight: 0, score: null, status: 'NO_DATA', facts: [], note: null },
     {
       id: 'training', label: 'Edzés', weight: 0.20 / 0.35, score: 85, status: 'DONE',
-      facts: [{ label: 'edzés', value: '1× kardió, 40 perc' }], note: null,
+      facts: [{ label: 'edzés', value: '1 / 1' }], note: null,
     },
     {
       id: 'sleep', label: 'Alvás', weight: 0.15 / 0.35, score: 72, status: 'DONE',
-      facts: [{ label: 'alvásidő', value: '6ó 38p' }], note: null,
+      facts: [{ label: 'alvás', value: '7 h' }, { label: 'minőség', value: 'Q6' }], note: null,
     },
-    { id: 'logging', label: 'Logolás', weight: 0, score: null, status: 'IN_PROGRESS', facts: [], note: null },
+    // an open day's logging tile already shows what has landed so far — the engine computes its
+    // facts regardless of `closed`, only the status waits
+    {
+      id: 'logging', label: 'Naplózás', weight: 0, score: null, status: 'IN_PROGRESS',
+      facts: [
+        { label: 'étkezés időben', value: '100%' },
+        { label: 'víz', value: '✓' },
+        { label: 'check-in', value: '2 / 4' },
+      ],
+      note: null,
+    },
     { id: 'rhythm', label: 'Ritmus', weight: 0, score: null, status: 'NO_DATA', facts: [], note: null },
   ],
 }
@@ -178,8 +210,15 @@ const THIN_SEED: DayEvaluationResponse = {
     { id: 'training', label: 'Edzés', weight: 0, score: null, status: 'NO_DATA', facts: [], note: null },
     { id: 'sleep', label: 'Alvás', weight: 0, score: null, status: 'NO_DATA', facts: [], note: null },
     {
-      id: 'logging', label: 'Logolás', weight: 1, score: 60, status: 'DONE',
-      facts: [{ label: 'bejegyzések', value: '1 check-in' }], note: null,
+      // exactly the engine's arithmetic for these facts:
+      // 0.5*0.5 + 0.2*1 + 0.3*0.5 = 0.6 -> 60
+      id: 'logging', label: 'Naplózás', weight: 1, score: 60, status: 'DONE',
+      facts: [
+        { label: 'étkezés időben', value: '50%' },
+        { label: 'víz', value: '✓' },
+        { label: 'check-in', value: '2 / 4' },
+      ],
+      note: null,
     },
     { id: 'rhythm', label: 'Ritmus', weight: 0, score: null, status: 'NO_DATA', facts: [], note: null },
   ],
@@ -199,7 +238,7 @@ const FUTURE_SEED: DayEvaluationResponse = {
     { id: 'quality', label: 'Minőség', weight: 0, score: null, status: 'NO_DATA', facts: [], note: null },
     { id: 'training', label: 'Edzés', weight: 0, score: null, status: 'NO_DATA', facts: [], note: null },
     { id: 'sleep', label: 'Alvás', weight: 0, score: null, status: 'NO_DATA', facts: [], note: null },
-    { id: 'logging', label: 'Logolás', weight: 0, score: null, status: 'NO_DATA', facts: [], note: null },
+    { id: 'logging', label: 'Naplózás', weight: 0, score: null, status: 'NO_DATA', facts: [], note: null },
     { id: 'rhythm', label: 'Ritmus', weight: 0, score: null, status: 'NO_DATA', facts: [], note: null },
   ],
 }

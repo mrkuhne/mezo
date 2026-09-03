@@ -62,9 +62,10 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p><b>Input-loading map.</b> Each {@link DayInputs} field comes from the feature that owns it:
  * <ul>
- *   <li>{@code closed} — {@code date < today} (v1 day closure), {@code today} resolved once per
- *       call with plain {@link LocalDate#now()}, the convention every neighbour here already uses
- *       ({@code MeWeekService}, {@code WeeklyScoreService});</li>
+ *   <li>{@code closed} — {@code date < today} (v1 day closure), {@code today} resolved exactly
+ *       ONCE per call by the public entry point and threaded through, so a request that crosses
+ *       midnight can never see two different "today"s — see
+ *       {@link #inputsFor(UUID, LocalDate, LocalDate)};</li>
  *   <li>{@code kcal/proteinG/carbsG/fatG} + the four targets — the day's
  *       {@link FuelDayResponse} ({@code getConsumed()} / {@code getTargets()}), the SAME rollup
  *       {@code MeWeekService.buildDay} renders, pre-fetched by the caller where possible. A day
@@ -146,7 +147,8 @@ public class DayScoreService {
     public List<DayScore> scores(UUID userId, LocalDate from, LocalDate to,
                                  Map<LocalDate, FuelDayResponse> fuelDayByDate) {
         Map<LocalDate, DayInputs> window = rhythmFreeInputs(
-                userId, from.minusDays(properties.rhythmWindowDays()), to, fuelDayByDate);
+                userId, from.minusDays(properties.rhythmWindowDays()), to, fuelDayByDate,
+                LocalDate.now());
         Map<LocalDate, Integer> rhythmFreeBases = rhythmFreeBases(window);
 
         List<DayScore> result = new ArrayList<>();
@@ -165,8 +167,24 @@ public class DayScoreService {
      */
     @Transactional(readOnly = true)
     public DayInputs inputsFor(UUID userId, LocalDate date) {
+        return inputsFor(userId, date, LocalDate.now());
+    }
+
+    /**
+     * {@link #inputsFor(UUID, LocalDate)} with the caller's ALREADY-RESOLVED {@code today} — the
+     * only overload that is safe across midnight. {@code DayReviewService} resolves {@code today}
+     * once and uses it for BOTH halves of its answer: the {@code closed} flag computed here and
+     * its own {@code state} classification. With two independent {@link LocalDate#now()} calls a
+     * request that crossed midnight between them got {@code closed = false} (hence a null base)
+     * for a {@code date} that its state classification already read as yesterday, falling through
+     * to {@code thin}/{@code empty} instead of {@code in_progress} (review round 2, Minor). An
+     * overload rather than a changed return type: every existing caller keeps its signature and
+     * the "resolve the clock once" contract is stated where it matters.
+     */
+    @Transactional(readOnly = true)
+    public DayInputs inputsFor(UUID userId, LocalDate date, LocalDate today) {
         Map<LocalDate, DayInputs> window = rhythmFreeInputs(
-                userId, date.minusDays(properties.rhythmWindowDays()), date, Map.of());
+                userId, date.minusDays(properties.rhythmWindowDays()), date, Map.of(), today);
         return withPriors(window.get(date), rhythmFreeBases(window));
     }
 
@@ -177,15 +195,18 @@ public class DayScoreService {
      * — the rhythm dimension is filled in afterwards by {@link #withPriors}. Every windowed source
      * is queried ONCE for the whole range (the V3.1 series idiom this service has always used);
      * only the fuel rollup and the workout windows are inherently per-day queries.
+     *
+     * <p>{@code today} is the caller's, never re-read here: it decides {@code closed} for every
+     * day of the window, and the read path also classifies the day's state against it.
      */
     private Map<LocalDate, DayInputs> rhythmFreeInputs(UUID userId, LocalDate from, LocalDate to,
-                                                       Map<LocalDate, FuelDayResponse> fuelDayByDate) {
+                                                       Map<LocalDate, FuelDayResponse> fuelDayByDate,
+                                                       LocalDate today) {
         Map<LocalDate, Double> sleepH = metricSeriesService.series(userId, MetricKey.SLEEP_DURATION_H, from, to);
         Map<LocalDate, Double> sleepQuality = metricSeriesService.series(userId, MetricKey.SLEEP_QUALITY, from, to);
         Map<LocalDate, Long> checkinCounts = checkinCounts(userId, from, to);
         Set<LocalDate> wateredDays = wateredDays(userId, from, to);
         Map<UUID, Instant> mealWrittenAt = mealWrittenAt(userId, from, to);
-        LocalDate today = LocalDate.now();
 
         Map<LocalDate, DayInputs> inputs = new LinkedHashMap<>();
         for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {

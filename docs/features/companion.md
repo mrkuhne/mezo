@@ -1279,9 +1279,16 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
       1.0 — the per-dimension weight and the day's `base` are folded from the SAME renormalized
       list, so they can never drift apart.
     - `base` (the overall score) is the rounded weighted sum of the `DONE` dimensions, and is
-      `null` when fewer than 2 dimensions are `DONE`, or when the day is not yet `closed`
-      (`date < today`, v1 day closure) — an open/future day gets per-dimension progress only, never
-      an overall number.
+      `null` when fewer than 2 dimensions **that actually measured THIS day** are `DONE`, or when
+      the day is not yet `closed` (`date < today`, v1 day closure) — an open/future day gets
+      per-dimension progress only, never an overall number. `rhythm` is **excluded from that
+      count**: it is *extrinsic*, the mean of OTHER days' bases, and knows nothing about this one.
+      It still carries its weight in the weighted sum once the gate IS open. Without that
+      exclusion the gate could be opened by two dimensions that never looked at the day: `logging`
+      (always `DONE` on a closed day, an honest 0 for an untouched one) plus `rhythm` (`DONE` from
+      ≥3 prior days), which reported `round(0.5×0 + 0.5×rhythmMean)` — roughly *half the user's
+      running average* — for a day they never touched, and pushed the state from `empty` to
+      `scored` so the page rendered a full score ring and spent an LLM call narrating nothing.
     - A **rest day** (`plannedWorkouts` null/0) makes `training` `NO_DATA` ("Pihenőnap · nem
       számít") rather than a penalty — resting must never cost points.
     - `logging` is the one dimension with **no missing-target escape hatch**: water-logged and
@@ -1348,7 +1355,11 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
   - **Cache, not truth.** `day_review` (migration `202609031300_mezo-jcpt.4_create_day_review.sql`,
     the `weekly_score` shape — soft-delete-aware partial unique index on `(created_by, date)`) holds
     one live row per user+day, keyed by `inputsHash` — `sha256` over each dimension's
-    `id|score|status` (fixed engine order) plus `base`. A hash match serves the stored envelope with
+    `id|score|status` **and its `facts` (label/value pairs, in emission order)** (fixed engine
+    order) plus `base`. The facts are in the key because they are shown to the model and the
+    narrative typically quotes them: scores are integers 0..100, so a retroactive log can move a
+    fact (carbs 312 g → 280 g) without moving the rounded score, and a score-only key would keep
+    serving prose quoting the old number. A hash match serves the stored envelope with
     ZERO LLM calls; a mismatch or missing row costs exactly ONE call, parsed, clamped and upserted.
     The unscored context signals (below) are deliberately OUTSIDE the hash — they are re-read fresh
     on every call and never fold into a cached sentence's correctness. `DayReviewJson` is the typed
@@ -5353,7 +5364,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 **Backend — daily evaluation (`mezo-jcpt.4`, plan 2/2 — §3/§4/§8)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/DayEvaluationProperties.java` — the 6-dimension engine's config (`mezo.companion.day-evaluation.*`): weights, nutrition bands, `sleepTargetH`, rhythm window, `logTimelyMin`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayEvaluationEngine.java` — THE day math: `DayInputs -> DayEvaluation`, pure, no repository access, all six dimensions + the renormalization/honesty rules.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayScoreService.java` — resolves `DayInputs` per day from every owning feature; `rhythmFreeInputs`/`rhythmFreeBases`/`withPriors` (the rhythm-without-recursion mechanism); `toSubscores` (the legacy `DaySubscores` projection); `inputsFor(userId, date)` (the day-evaluation read path's single-day entry point).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayScoreService.java` — resolves `DayInputs` per day from every owning feature; `rhythmFreeInputs`/`rhythmFreeBases`/`withPriors` (the rhythm-without-recursion mechanism); `toSubscores` (the legacy `DaySubscores` projection); `inputsFor(userId, date[, today])` (the day-evaluation read path's single-day entry point; the 3-arg overload takes the caller's already-resolved `today` so a request crossing midnight cannot see two different clocks).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayReviewService.java` — assembles `GET /api/me/day/{date}/evaluation`: state, context signals, the lazy hash-cached prose, the clamped AI adjustment.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayReviewLlm.java` (port) + `llm/DayReviewLlmAdapter.java` (the two-switch-gated adapter, `DAY_REVIEW_SWITCH` + `COMPANION_SWITCH`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/{DayReviewEntity,DayReviewJson}.java` + `repository/DayReviewRepository.java` — the `day_review` cache row + its typed jsonb envelope.

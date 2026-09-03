@@ -538,6 +538,53 @@ class DayEvaluationEngineTest {
         assertThat(e.base()).isNull();
     }
 
+    /**
+     * The gate the review round-2 Important fix installed: {@code rhythm} is EXTRINSIC — the mean
+     * of OTHER days' bases — so it may not open the data-sufficiency gate on its own. This is the
+     * case {@code overall_fewerThanTwoDoneDims_isNull} could not reach: it passes an EMPTY prior
+     * list, the one situation where rhythm cannot be DONE at all. With three priors, rhythm IS
+     * DONE (79 = round(236/3)) and, before the fix, paired with logging's honest 0 to yield
+     * base = round(0.5*0 + 0.5*79) = 40 for a day on which the user logged absolutely nothing.
+     */
+    @Test
+    void overall_untouchedClosedDayWithPriors_stillHasNoBaseScore() {
+        DayEvaluation e = engine.evaluate(closedDay(b -> b.noKcalLogged()
+            .priorBaseScores(List.of(84, 72, 80))));
+
+        assertThat(dim(e, "rhythm").status()).isEqualTo("DONE");
+        assertThat(dim(e, "rhythm").score()).isEqualTo(79);
+        assertThat(dim(e, "logging").status()).isEqualTo("DONE");
+        assertThat(dim(e, "logging").score()).isZero();
+        // logging is the ONLY dimension that measured this day -> below the 2-dimension gate
+        assertThat(e.base()).isNull();
+    }
+
+    /** The other side of the same gate: a dimension that DID measure the day opens it, and rhythm
+     *  keeps its weight in the sum once it is open. A planned-but-skipped workout is real evidence
+     *  about the day (training DONE at 30), so it scores even though nothing else was logged. */
+    @Test
+    void overall_skippedPlannedWorkout_scoresAndRhythmStillCarriesWeight() {
+        DayEvaluation e = engine.evaluate(closedDay(b -> b.noKcalLogged()
+            .plannedWorkouts(1).doneWorkouts(0).priorBaseScores(List.of(84, 72, 80))));
+
+        assertThat(dim(e, "training").score()).isEqualTo(30);   // 0.3 + 0.7*0
+        assertThat(dim(e, "logging").score()).isZero();
+        assertThat(dim(e, "rhythm").score()).isEqualTo(79);
+        // weights .20 training + .10 logging + .10 rhythm = .40 -> 0.5 / 0.25 / 0.25
+        // base = round(0.5*30 + 0.25*0 + 0.25*79) = round(34.75) = 35
+        assertThat(e.base()).isEqualTo(35);
+    }
+
+    /** A lone sleep log is also a measurement of THIS day, so it opens the gate too. */
+    @Test
+    void overall_onlyASleepLog_stillScores() {
+        DayEvaluation e = engine.evaluate(closedDay(b -> b.noKcalLogged().sleepH(7.5)));
+
+        assertThat(dim(e, "sleep").score()).isEqualTo(100);
+        // .15 sleep + .10 logging = .25 -> 0.6 / 0.4; base = round(0.6*100 + 0.4*0) = 60
+        assertThat(e.base()).isEqualTo(60);
+    }
+
     @Test
     void overall_openDay_hasNoBaseScore() {
         // closed=false -> nincs összpontszám, de a dimenziók státusza él: sleep DONE marad (A+

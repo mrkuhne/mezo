@@ -1539,7 +1539,7 @@ export const handlers = [
       { id: 'quality', label: 'Minőség', weight: 0.15, score: 62, status: 'DONE', facts: [], note: null },
       { id: 'training', label: 'Edzés', weight: 0.20, score: 70, status: 'DONE', facts: [], note: null },
       { id: 'sleep', label: 'Alvás', weight: 0.15, score: 60, status: 'DONE', facts: [], note: null },
-      { id: 'logging', label: 'Logolás', weight: 0.10, score: 72, status: 'DONE', facts: [], note: null },
+      { id: 'logging', label: 'Naplózás', weight: 0.10, score: 72, status: 'DONE', facts: [], note: null },
       { id: 'rhythm', label: 'Ritmus', weight: 0.10, score: 68, status: 'DONE', facts: [], note: null },
     ],
   })),

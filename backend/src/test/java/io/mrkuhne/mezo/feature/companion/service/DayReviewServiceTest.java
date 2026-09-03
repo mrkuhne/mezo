@@ -94,7 +94,7 @@ class DayReviewServiceTest {
     @BeforeEach
     void setUp() {
         inputs = denseClosedDay();
-        when(dayScoreService.inputsFor(USER, DAY)).thenAnswer(i -> inputs);
+        when(dayScoreService.inputsFor(eq(USER), eq(DAY), any())).thenAnswer(i -> inputs);
         when(dayReviewRepository.findByCreatedByAndDate(USER, DAY))
             .thenAnswer(i -> Optional.ofNullable(stored.get()));
         when(dayReviewRepository.save(any(DayReviewEntity.class))).thenAnswer(i -> {
@@ -180,6 +180,45 @@ class DayReviewServiceTest {
         assertThat(fakeLlm.calls).isEqualTo(2);
         assertThat(regenerated.getNarrative()).containsExactly("Új.");
         assertThat(stored.get().getInputsHash()).isNotEqualTo(hashBefore);
+    }
+
+    /**
+     * The facts are IN the key (review round 2, Minor). Dimension scores are integers 0..100, so a
+     * retroactively corrected macro can move a fact the narrative quotes ("300 g · 80 g" ->
+     * "320 g · 80 g") while leaving every dimension score, status and the base untouched. A
+     * score-only key would keep serving prose quoting the old grams.
+     */
+    @Test
+    void testAssemble_shouldRegenerate_whenOnlyAFactMovedAndNoScoreDid() {
+        fakeLlm.answer = answer("""
+            {"narrative":["300 g szenhidrat."],"dimensionNotes":{},"highlights":[],
+             "adjustment":null}""");
+        DayEvaluationResponse before = service.assemble(USER, DAY);
+        assertThat(fakeLlm.calls).isEqualTo(1);
+        String hashBefore = stored.get().getInputsHash();
+
+        // carbs 300 -> 320 g against a 300 g target: still inside the .15 carb/fat band, so
+        // carbFatFit stays 1.0 and nutrition stays 100 -- only the "c · f" FACT moved.
+        inputs = new DayInputs(DAY, true, inputs.kcal(), inputs.proteinG(), 320.0,
+            inputs.fatG(), inputs.kcalTarget(), inputs.proteinTargetG(), inputs.carbsTargetG(),
+            inputs.fatTargetG(), inputs.workoutDay(), inputs.plannedWorkouts(),
+            inputs.doneWorkouts(), inputs.sleepH(), inputs.sleepQuality1to10(), inputs.meals(),
+            inputs.waterLogged(), inputs.checkinCount(), inputs.priorBaseScores());
+        fakeLlm.answer = answer("""
+            {"narrative":["320 g szenhidrat."],"dimensionNotes":{},"highlights":[],
+             "adjustment":null}""");
+
+        DayEvaluationResponse after = service.assemble(USER, DAY);
+
+        // no score, status or base moved -- the fact alone did
+        assertThat(after.getBase()).isEqualTo(before.getBase());
+        assertThat(after.getDimensions()).extracting("id", "score", "status")
+            .containsExactlyElementsOf(before.getDimensions().stream()
+                .map(d -> org.assertj.core.groups.Tuple.tuple(d.getId(), d.getScore(), d.getStatus()))
+                .toList());
+        assertThat(stored.get().getInputsHash()).isNotEqualTo(hashBefore);
+        assertThat(fakeLlm.calls).isEqualTo(2);
+        assertThat(after.getNarrative()).containsExactly("320 g szenhidrat.");
     }
 
     // --- (c) the clamp is real ----------------------------------------------------------------
@@ -289,7 +328,7 @@ class DayReviewServiceTest {
     void testAssemble_shouldReportFuture_andAskNothing_whenDateIsAhead() {
         LocalDate ahead = LocalDate.now().plusDays(3);
         DayInputs open = openDay(ahead);
-        when(dayScoreService.inputsFor(USER, ahead)).thenReturn(open);
+        when(dayScoreService.inputsFor(eq(USER), eq(ahead), any())).thenReturn(open);
 
         DayEvaluationResponse response = service.assemble(USER, ahead);
 
@@ -304,7 +343,7 @@ class DayReviewServiceTest {
     void testAssemble_shouldReportInProgress_andAskNothing_whenDateIsToday() {
         LocalDate today = LocalDate.now();
         DayInputs open = openDay(today);
-        when(dayScoreService.inputsFor(USER, today)).thenReturn(open);
+        when(dayScoreService.inputsFor(eq(USER), eq(today), any())).thenReturn(open);
 
         DayEvaluationResponse response = service.assemble(USER, today);
 
@@ -313,10 +352,18 @@ class DayReviewServiceTest {
         assertThat(fakeLlm.calls).isZero();
     }
 
+    /**
+     * The priors are deliberately NON-empty (review round 2, Important): with an empty prior list
+     * `rhythm` degrades and the day trivially has one DONE dimension, which proves the gate only
+     * for a brand-new user. A user with three scored days behind them has `rhythm` DONE on this
+     * untouched day too -- and `rhythm` describes those OTHER days, so it must not open the gate.
+     * Before the fix this exact input scored base = round(0.5*0 + 0.5*76) = 38 and rendered a full
+     * scored page (LLM call included) for a day with nothing in it.
+     */
     @Test
     void testAssemble_shouldReportEmpty_andAskNothing_whenNothingWasLogged() {
         inputs = new DayInputs(DAY, true, null, null, null, null, 2600.0, 160.0, 300.0, 80.0,
-            false, null, null, null, null, List.of(), false, 0, List.of());
+            false, null, null, null, null, List.of(), false, 0, List.of(70, 78, 80));
 
         DayEvaluationResponse response = service.assemble(USER, DAY);
 

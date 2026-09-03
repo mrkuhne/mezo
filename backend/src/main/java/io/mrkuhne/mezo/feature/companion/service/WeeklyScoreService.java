@@ -145,11 +145,17 @@ public class WeeklyScoreService {
      * <p>The cheap path first: when the week's window holds no score-relevant log at all, the
      * week provably has no score and nothing is computed. That shortcut stays exact under the
      * 6-dimension engine (mezo-jcpt.4): with no log in the window, nutrition and quality have no
-     * meal, training has no session, sleep has no {@code sleep_log} and rhythm has no prior base,
-     * so every dimension degrades except {@code logging} — which is DONE with an honest 0 (it
-     * measures effort, and no effort is a real measurement). That is ONE done dimension, one short
-     * of the engine's 2-dimension gate, so every day's base is null and the week's score is null by
-     * construction. See {@link WeeklyScoreRepository#latestScoreInputWrittenAt} for exactly which
+     * meal, training has no session and sleep has no {@code sleep_log}, so every dimension
+     * degrades except {@code logging} — which is DONE with an honest 0 (it measures effort, and no
+     * effort is a real measurement) — and {@code rhythm}, which may well be DONE here: it reads
+     * the days BEFORE this week, outside the probe's window, so an unlogged week following an
+     * active one does have prior bases. That does not matter, because the engine's gate counts
+     * only dimensions that measured the day itself and {@code rhythm} is excluded from it (review
+     * round 2): {@code logging} alone is ONE such dimension, one short of the 2-dimension gate, so
+     * every day's base is null and the week's score is null by construction. (Before that fix the
+     * shortcut was NOT exact in exactly this case — an unlogged week after an active one had real
+     * per-day bases in the engine's terms while this path returned null and deleted the cached
+     * row.) See {@link WeeklyScoreRepository#latestScoreInputWrittenAt} for exactly which
      * tables the probe covers — notably NOT the training schedule tables, so a schedule edit alone
      * does not invalidate a cached week.
      */
