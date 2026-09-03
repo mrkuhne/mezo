@@ -29,18 +29,24 @@ describe.skipIf(import.meta.env.VITE_USE_MOCK === 'false')('mock-seedhez kötöt
   })
 })
 
-test('a present sosem nagyobb a nevezőnél', () => {
-  const { result } = renderHook(() => useDayOrbFill(), { wrapper })
-  expect(result.current.present).toBeLessThanOrEqual(result.current.denominator)
-})
-
-test('az intenzitás a 0…1 tartományban van', () => {
-  const { result } = renderHook(() => useDayOrbFill(), { wrapper })
-  expect(result.current.intensity).toBeGreaterThanOrEqual(0)
-  expect(result.current.intensity).toBeLessThanOrEqual(1)
-})
-
 test('a label mindkét módban „A mai napod"-dal kezdődik', () => {
   const { result } = renderHook(() => useDayOrbFill(), { wrapper })
   expect(result.current.label).toMatch(/^A mai napod/)
+})
+
+// Real módban hálózat nélkül minden adat-hook szinkron, üres alapértékre old fel az
+// első renderben (nincs seed, nincs terv) — tehát a hidegindítási kimenet DETERMINISZTIKUS:
+// present=0, denominator=5 (nincs terv → gym/sport nem tartozik a naphoz), pct=0, és a
+// label a „még nincs adat" ágon. Ez pontosan az az érték-vezetékezés, amit a fenti,
+// mindkét módban futó tesztek NEM tudnak ellenőrizni (azok a dayOrbFill saját invariánsait
+// ismétlik meg) — ha a hook véletlenül present-et hardcode-olná, vagy elrontaná a
+// `present === 0` ági feltételt a labelben, ez a teszt buktatná.
+describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('real-módú hidegindítás — pontos érték', () => {
+  test('nincs adat: present=0, denominator=5, pct=0, label „még nincs adat"', () => {
+    const { result } = renderHook(() => useDayOrbFill(), { wrapper })
+    expect(result.current.present).toBe(0)
+    expect(result.current.denominator).toBe(5)
+    expect(result.current.pct).toBe(0)
+    expect(result.current.label).toBe('A mai napod · még nincs adat')
+  })
 })
