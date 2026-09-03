@@ -32,17 +32,22 @@ export function FuelSettingsSheet({ onClose }: { onClose: () => void }) {
   const [waterMl, setWaterMl] = useState(diet.waterMl)
   const [fiberG, setFiberG] = useState(diet.fiberG)
 
-  // Cold-open prefill race (mezo-53su): in real mode the read starts from the ghost (4/14:00)
-  // and flips to the server value once the fetch lands. Re-sync the prefill when it arrives —
-  // unless the user has already edited (touched), so an in-flight edit is never clobbered.
-  const [touched, setTouched] = useState(false)
+  // Cold-open prefill race (mezo-53su): in real mode each read starts from its own ghost
+  // (fuel: 4/14:00; diet: balanced/4000/30) and flips to the server value once its fetch lands.
+  // Re-sync each section's prefill when its value arrives — unless THAT section's fields have
+  // already been touched, so an in-flight edit is never clobbered. The two sections are guarded
+  // by INDEPENDENT flags (mezo-xwgb fix): a fuel-field edit while the diet GET is still in
+  // flight must not freeze the diet prefill (and vice versa) — Save is a Promise.all of both
+  // PUTs, so a frozen ghost there would silently overwrite the user's saved diet settings.
+  const [touchedFuel, setTouchedFuel] = useState(false)
+  const [touchedDiet, setTouchedDiet] = useState(false)
   useEffect(() => {
-    if (isPending || touched) return
+    if (isPending || touchedFuel) return
     setMealsPerDay(settings.mealsPerDay)
     setCaffeineCutoff(settings.caffeineCutoff)
-  }, [isPending, touched, settings.mealsPerDay, settings.caffeineCutoff])
+  }, [isPending, touchedFuel, settings.mealsPerDay, settings.caffeineCutoff])
   useEffect(() => {
-    if (dietPending || touched) return
+    if (dietPending || touchedDiet) return
     setSplitPreset(diet.splitPreset)
     setPPct(diet.proteinPctX10 != null ? diet.proteinPctX10 / 10 : 30)
     setCPct(diet.carbsPctX10 != null ? diet.carbsPctX10 / 10 : 40)
@@ -50,7 +55,7 @@ export function FuelSettingsSheet({ onClose }: { onClose: () => void }) {
     setProteinTier(diet.proteinTier)
     setWaterMl(diet.waterMl)
     setFiberG(diet.fiberG)
-  }, [dietPending, touched, diet.splitPreset, diet.proteinPctX10, diet.carbsPctX10, diet.fatPctX10, diet.proteinTier, diet.waterMl, diet.fiberG])
+  }, [dietPending, touchedDiet, diet.splitPreset, diet.proteinPctX10, diet.carbsPctX10, diet.fatPctX10, diet.proteinTier, diet.waterMl, diet.fiberG])
 
   // Custom split must sum to exactly 100.0% (rounded to 0.1) before Save is allowed.
   const customSumOk = splitPreset !== 'custom' || Math.round((pPct + cPct + fPct) * 10) === 1000
@@ -83,14 +88,14 @@ export function FuelSettingsSheet({ onClose }: { onClose: () => void }) {
             <span style={LABEL}>Étkezés/nap</span>
             <div className="row gap-sm" style={{ alignItems: 'center' }}>
               <button type="button" className="chip" aria-label="Étkezés csökkentése"
-                disabled={mealsPerDay <= 3} onClick={() => { setTouched(true); setMealsPerDay(v => Math.max(3, v - 1)) }}
+                disabled={mealsPerDay <= 3} onClick={() => { setTouchedFuel(true); setMealsPerDay(v => Math.max(3, v - 1)) }}
                 style={{ opacity: mealsPerDay <= 3 ? 0.4 : 1 }}><Icon name="minus" size={12} /></button>
               <span aria-label="Étkezés/nap"
                 style={{ minWidth: 18, textAlign: 'center', fontSize: 14, fontWeight: 700, color: 'var(--text-primary)', fontVariantNumeric: 'tabular-nums' }}>
                 {mealsPerDay}
               </span>
               <button type="button" className="chip" aria-label="Étkezés növelése"
-                disabled={mealsPerDay >= 6} onClick={() => { setTouched(true); setMealsPerDay(v => Math.min(6, v + 1)) }}
+                disabled={mealsPerDay >= 6} onClick={() => { setTouchedFuel(true); setMealsPerDay(v => Math.min(6, v + 1)) }}
                 style={{ opacity: mealsPerDay >= 6 ? 0.4 : 1 }}><Icon name="plus" size={12} /></button>
             </div>
           </div>
@@ -98,7 +103,7 @@ export function FuelSettingsSheet({ onClose }: { onClose: () => void }) {
           <div className="row" style={ROW}>
             <span style={LABEL}>Koffein-cutoff</span>
             <input type="time" aria-label="Koffein-cutoff" value={caffeineCutoff}
-              onChange={(e) => { if (e.target.value) { setTouched(true); setCaffeineCutoff(e.target.value) } }}
+              onChange={(e) => { if (e.target.value) { setTouchedFuel(true); setCaffeineCutoff(e.target.value) } }}
               style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13, fontVariantNumeric: 'tabular-nums', colorScheme: 'dark' }} />
           </div>
           <span style={{ fontSize: 9, color: 'var(--faint)' }}>A cutoff a Mai chipet, a nap-tervet és a koffein-habitot is állítja.</span>
@@ -109,7 +114,7 @@ export function FuelSettingsSheet({ onClose }: { onClose: () => void }) {
             {(Object.keys(PRESET_LABELS) as DietSettings['splitPreset'][]).map(k => (
               <button key={k} type="button" className="chip" aria-pressed={splitPreset === k}
                 style={{ fontWeight: splitPreset === k ? 800 : 500 }}
-                onClick={() => { setTouched(true); setSplitPreset(k) }}>
+                onClick={() => { setTouchedDiet(true); setSplitPreset(k) }}>
                 {PRESET_LABELS[k]}
               </button>
             ))}
@@ -121,7 +126,7 @@ export function FuelSettingsSheet({ onClose }: { onClose: () => void }) {
                   <label key={label} className="col" style={{ fontSize: 9, color: 'var(--faint)' }}>
                     {label}
                     <input type="number" min={0} max={100} step={0.5} aria-label={label} value={value}
-                      onChange={(e) => { setTouched(true); set(Number(e.target.value)) }}
+                      onChange={(e) => { setTouchedDiet(true); set(Number(e.target.value)) }}
                       style={{ width: 56, background: 'transparent', border: '1px solid var(--surface-3)', color: 'var(--text-primary)' }} />
                   </label>
                 ))}
@@ -137,21 +142,21 @@ export function FuelSettingsSheet({ onClose }: { onClose: () => void }) {
             <span style={LABEL}>Fehérje-szint</span>
             <div className="row gap-sm">
               <button type="button" className="chip" aria-pressed={proteinTier === 'moderate'}
-                onClick={() => { setTouched(true); setProteinTier('moderate') }}>Mérsékelt</button>
+                onClick={() => { setTouchedDiet(true); setProteinTier('moderate') }}>Mérsékelt</button>
               <button type="button" className="chip" aria-pressed={proteinTier === 'high'}
-                onClick={() => { setTouched(true); setProteinTier('high') }}>Magas</button>
+                onClick={() => { setTouchedDiet(true); setProteinTier('high') }}>Magas</button>
             </div>
           </div>
           <div className="row" style={ROW}>
             <span style={LABEL}>Víz-cél (ml)</span>
             <input type="number" min={500} max={8000} step={100} aria-label="Víz-cél" value={waterMl}
-              onChange={(e) => { setTouched(true); setWaterMl(Number(e.target.value)) }}
+              onChange={(e) => { setTouchedDiet(true); setWaterMl(Number(e.target.value)) }}
               style={{ width: 72, background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'right' }} />
           </div>
           <div className="row" style={ROW}>
             <span style={LABEL}>Rost-cél (g)</span>
             <input type="number" min={10} max={80} aria-label="Rost-cél" value={fiberG}
-              onChange={(e) => { setTouched(true); setFiberG(Number(e.target.value)) }}
+              onChange={(e) => { setTouchedDiet(true); setFiberG(Number(e.target.value)) }}
               style={{ width: 72, background: 'transparent', border: 'none', color: 'var(--text-primary)', textAlign: 'right' }} />
           </div>
 
