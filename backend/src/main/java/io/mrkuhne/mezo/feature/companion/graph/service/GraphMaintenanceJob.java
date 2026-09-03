@@ -1,7 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.graph.service;
 
-import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
-import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.auth.service.UserFanOut;
 import io.mrkuhne.mezo.feature.companion.service.PersonExtractionResult;
 import io.mrkuhne.mezo.feature.companion.service.PersonExtractionService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -41,7 +40,7 @@ import org.springframework.stereotype.Component;
         havingValue = "true")
 public class GraphMaintenanceJob {
 
-    private final AppUserRepository appUserRepository;
+    private final UserFanOut userFanOut;
     private final GraphMaintenanceService graphMaintenanceService;
     private final GraphPromotionService graphPromotionService;
     private final LifeEventExtractionService lifeEventExtractionService;
@@ -50,7 +49,7 @@ public class GraphMaintenanceJob {
     @Scheduled(cron = "${mezo.companion.graph.cron}")
     public void run() {
         LocalDate yesterday = LocalDate.now().minusDays(1);
-        for (AppUserEntity user : appUserRepository.findAll()) {
+        userFanOut.forEachActiveUser("Graph maintenance", user -> {
             try {
                 GraphMaintenanceResult result = graphMaintenanceService.runMaintenance(user.getId());
                 log.info("Graph maintenance for user {}: {} edges decayed, {} edges pruned, "
@@ -85,6 +84,6 @@ public class GraphMaintenanceJob {
                     log.warn("Person extraction failed for user {} on {}", user.getId(), yesterday, e);
                 }
             }
-        }
+        });
     }
 }

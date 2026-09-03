@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { lastSeenMessage, markMessagesSeen } from '@/shared/lib/seenMessages'
+import { setCurrentUserId } from '@/shared/lib/userScope'
 
 describe('seenMessages', () => {
   beforeEach(() => { localStorage.clear() })
@@ -33,5 +34,13 @@ describe('seenMessages', () => {
     })
     expect(() => markMessagesSeen('2026-08-11', 'note')).not.toThrow()
     spy.mockRestore()
+  })
+
+  test('két user olvasottsága nem keveredik', () => {
+    setCurrentUserId('u1')
+    markMessagesSeen('2026-08-11', 'note')
+    setCurrentUserId('u2')
+    expect(lastSeenMessage('2026-08-11')).toBeNull()
+    expect(localStorage.getItem('mezo.u1.msgseen.2026-08-11')).toBe('note')
   })
 })

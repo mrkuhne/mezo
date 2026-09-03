@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -58,7 +59,7 @@ public class ExperimentProposalGenerator {
             PredictionEntity.DIRECTION_STABLE);
 
     private static final String PROMPT = EXPERIMENT_MARKER + "\n"
-            + "Javasolj 1-3 N=1 kísérletet Danielnek, KIZÁRÓLAG a megadott megerősített mintákból "
+            + "Javasolj 1-3 N=1 kísérletet {{NÉV}} számára, KIZÁRÓLAG a megadott megerősített mintákból "
             + "és a jelen kontextusból. Minden kísérlet egy MINTA-JELÖLThöz kötődik (patternIndex), "
             + "egy METRIKA-KATALÓGUS elemhez (metricKey), egy IRÁNY-hoz (expectedDirection: mit "
             + "várunk a metrikától, ha a kísérlet beválik) és egy hossz-hoz (totalDays). Számot vagy "
@@ -77,6 +78,7 @@ public class ExperimentProposalGenerator {
     private final ObjectMapper objectMapper;
     private final ProactiveProperties properties;
     private final AppNotificationEmitter appNotificationEmitter;
+    private final PromptPersona promptPersona;
 
     public record Gather(String payload, List<PatternEntity> candidates) {
     }
@@ -103,7 +105,7 @@ public class ExperimentProposalGenerator {
         }
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_experiment", "generate", null, null),
-                () -> companionLlm.completeSmart(PROMPT, gather.payload()));
+                () -> companionLlm.completeSmart(promptPersona.render(userId, PROMPT), gather.payload()));
         ParsedExperiments parsed = parse(answer);
         if (parsed == null || parsed.experiments() == null) {
             log.warn("Unusable experiment proposal answer for {} — no rows", userId);

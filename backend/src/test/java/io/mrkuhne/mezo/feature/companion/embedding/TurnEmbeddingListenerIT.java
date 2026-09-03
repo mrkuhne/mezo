@@ -40,7 +40,7 @@ class TurnEmbeddingListenerIT extends ApiIntegrationTest {
                     .filter(e -> e.getRefId().equals(answer.getId()))
                     .findFirst();
             assertThat(row).isPresent();
-            assertThat(row.get().getContent()).startsWith("Daniel: ma leg-day volt");
+            assertThat(row.get().getContent()).startsWith("Felhasználó: ma leg-day volt");
         });
     }
 }

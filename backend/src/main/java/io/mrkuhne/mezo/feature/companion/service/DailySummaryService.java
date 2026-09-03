@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
@@ -64,7 +65,7 @@ public class DailySummaryService {
     public static final String SUMMARY_MARKER = "NAPI-ÖSSZEFOGLALÓ-FELADAT";
 
     private static final String NARRATIVE_PROMPT = SUMMARY_MARKER + "\n"
-            + "Írj rövid (3-5 mondatos), múlt idejű, magyar összefoglalót Daniel napjáról az alábbi "
+            + "Írj rövid (3-5 mondatos), múlt idejű, magyar összefoglalót {{NÉV}} napjáról az alábbi "
             + "tényadatokból. Csak a megadott adatokra támaszkodj, semmit ne találj ki; a számokat "
             + "őrizd meg pontosan. Egyes szám harmadik személy helyett közvetlen, társ-hangú "
             + "fogalmazás (\"kemény leg-day volt\", nem \"a felhasználó edzett\").";
@@ -87,6 +88,7 @@ public class DailySummaryService {
     private final DailyIntentionRepository dailyIntentionRepository;
     private final LlmCallContextHolder llmCallContextHolder;
     private final AppNotificationEmitter appNotificationEmitter;
+    private final PromptPersona promptPersona;
 
     /**
      * Generates (or returns the existing) summary for one finished day. Returns null for an
@@ -107,7 +109,7 @@ public class DailySummaryService {
         }
         String narrative = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_daily_summary", "narrative", null, null),
-                () -> companionLlm.complete(NARRATIVE_PROMPT, digest));
+                () -> companionLlm.complete(promptPersona.render(userId, NARRATIVE_PROMPT), digest));
         DailySummaryEntity summary = new DailySummaryEntity();
         summary.setCreatedBy(userId);
         summary.setSummaryDate(date);

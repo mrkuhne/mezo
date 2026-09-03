@@ -6,8 +6,9 @@ import {
   rescheduledSlots,
   snooze,
   snoozeHash,
-  SNOOZE_KEY,
+  snoozeKey,
 } from '@/features/train/logic/morningWindow'
+import { setCurrentUserId } from '@/shared/lib/userScope'
 
 const slots = [
   { dayOfWeek: 1, time: '18:30' },
@@ -34,11 +35,17 @@ test('rescheduledSlots moves offenders to the window start, passes the rest', ()
 })
 
 test('snooze is content-keyed: same state stays snoozed, changed state re-arms (spec D4)', () => {
-  localStorage.removeItem(SNOOZE_KEY)
+  localStorage.removeItem(snoozeKey())
   const hash = snoozeHash('06:45', [{ dayOfWeek: 1, time: '18:30' }])
   expect(isSnoozed(hash)).toBe(false)
   snooze(hash)
   expect(isSnoozed(hash)).toBe(true)
   expect(isSnoozed(snoozeHash('06:30', [{ dayOfWeek: 1, time: '18:30' }]))).toBe(false)
   expect(isSnoozed(snoozeHash('06:45', [{ dayOfWeek: 2, time: '19:00' }]))).toBe(false)
+})
+
+test('a snooze user-névterezett', () => {
+  const hash = snoozeHash('06:45', [{ dayOfWeek: 1, time: '18:30' }])
+  setCurrentUserId('u1'); snooze(hash)
+  setCurrentUserId('u2'); expect(isSnoozed(hash)).toBe(false)
 })

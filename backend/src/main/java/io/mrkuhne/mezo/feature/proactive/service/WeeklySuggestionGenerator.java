@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -42,7 +43,7 @@ public class WeeklySuggestionGenerator {
     public static final String WEEKLY_SUGGESTION_MARKER = "HETI-TERVJAVASLAT";
 
     private static final String PROMPT = WEEKLY_SUGGESTION_MARKER + "\n"
-            + "Írj rövid (3-5 mondatos), magyar heti tervjavaslatot Danielnek a most kezdődő "
+            + "Írj rövid (3-5 mondatos), magyar heti tervjavaslatot {{NÉV}} számára a most kezdődő "
             + "hétre, kizárólag a megadott adatokból. Építs az előző hét összefoglalóira, a "
             + "megerősített tényekre és a mintákra; adj 2-3 konkrét, végrehajtható javaslatot. "
             + "Számot vagy adatot kitalálni tilos; gyógyszer adagolására "
@@ -57,6 +58,7 @@ public class WeeklySuggestionGenerator {
     private final CompanionLlm companionLlm;
     private final LlmCallContextHolder llmCallContextHolder;
     private final GrowthDigestBlock growthDigestBlock;
+    private final PromptPersona promptPersona;
 
     /** Generates (or returns the existing) suggestion for one ISO-Monday week; null = honest absence. */
     @Transactional
@@ -73,7 +75,7 @@ public class WeeklySuggestionGenerator {
         }
         String prose = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_weekly", "generate", null, null),
-                () -> companionLlm.completeSmart(PROMPT, payload));
+                () -> companionLlm.completeSmart(promptPersona.render(userId, PROMPT), payload));
         if (prose == null || prose.isBlank()) {
             log.warn("Blank weekly-suggestion answer for {} week {} — no row", userId, weekStart);
             return null;

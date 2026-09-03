@@ -52,10 +52,17 @@ class CompanionMemoryLlmUsageApiIT extends ApiIntegrationTest {
                 100, 40, null, null);
         llmLogPopulator.logAt(at(today, 11), owner, CallKind.CHAT, "companion", "gemini-2.5-flash",
                 200, 60, null, new BigDecimal("0.010000"));
-        llmLogPopulator.logAt(at(today.minusDays(1), 9), null, CallKind.SMART, "companion",
+        llmLogPopulator.logAt(at(today.minusDays(1), 9), owner, CallKind.SMART, "companion",
                 "gemini-2.5-pro", 500, 100, null, new BigDecimal("0.020000"));
         llmLogPopulator.logAt(at(today.minusDays(40), 9), owner, CallKind.CHAT, "companion",
                 "gemini-2.5-flash", 999, 999, null, new BigDecimal("9.000000"));
+        // Cross-account leak regression (mezo-qw37.7): a null-owner row (pre-S6 cron traffic) and
+        // another account's row must NOT bleed into the owner's own rollup below.
+        llmLogPopulator.logAt(at(today.minusDays(1), 12), null, CallKind.SMART, "companion",
+                "gemini-2.5-pro", 5_000_000, 5_000_000, null, new BigDecimal("500.000000"));
+        UUID otherUser = registerUser("Other Account").id();
+        llmLogPopulator.logAt(at(today, 13), otherUser, CallKind.CHAT, "companion",
+                "gemini-2.5-flash", 7_000_000, 7_000_000, null, new BigDecimal("700.000000"));
 
         MemoryLlmUsageResponse response = usage("?days=30");
 

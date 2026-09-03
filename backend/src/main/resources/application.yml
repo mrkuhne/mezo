@@ -1445,6 +1445,7 @@ mezo:
     reroll-per-day: 1               # autonomy valve (ADR 0010) — a shop item may raise it later (E4)
     generate-cron: "0 35 6 * * *"   # morning backstop so quests exist even if Today is never opened
     finalize-cron: "0 5 0 * * *"    # 00:05 — evaluate + quietly expire yesterday's offered quests
+    cron-presence-days: 7           # the morning cron only backstops users seen (last_seen_at) in this window
     # Adaptive difficulty (E3, ADR 0010 — rule-based, no LLM in the economy): per-slot 28-day
     # completion ratio bands the allowed difficulty tiers; <min-sample closed quests = all tiers.
     adaptive:

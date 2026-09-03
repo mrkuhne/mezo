@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion;
 import io.mrkuhne.mezo.api.dto.MessageRef;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
@@ -87,13 +88,14 @@ class ChatServiceAmbientRecallIT extends AbstractIntegrationTest {
         int facts = systemBlock.indexOf("MEGERŐSÍTETT TÉNYEK");
         int ack = systemBlock.indexOf("ÚJ FELISMERÉSEK");
         int memories = systemBlock.indexOf(PromptMemoryAssembler.MEMORIES_HEADER);
-        int tone = systemBlock.indexOf(ChatService.TONE_REMINDER);
+        String toneReminder = ChatService.TONE_REMINDER.replace(PromptPersona.NAME_TOKEN, "chat-memories@test.local");
+        int tone = systemBlock.indexOf(toneReminder);
         assertThat(facts).isPositive();
         assertThat(ack).isGreaterThan(facts);
         assertThat(memories).isGreaterThan(ack);
         assertThat(tone).isGreaterThan(memories);
         assertThat(systemBlock).contains("(napló): futás után jobban aludtam");
-        assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER);
+        assertThat(systemBlock).endsWith(toneReminder);
         // every recalled item is a Memory/date ref — on the wire and on the persisted row
         assertThat(answer.getRefs()).extracting(MessageRef::getKind, MessageRef::getId)
                 .contains(Tuple.tuple("Memory", LocalDate.now().minusDays(3).toString()));
@@ -134,7 +136,8 @@ class ChatServiceAmbientRecallIT extends AbstractIntegrationTest {
         String systemBlock = echoed.substring(echoed.indexOf("system=["), echoed.indexOf("] history=["));
         // IDENT-3: the block is simply absent — the turn is NOT degraded and the prompt shape is intact
         assertThat(systemBlock).doesNotContain("[Emlékek]");
-        assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER);
+        assertThat(systemBlock).endsWith(
+                ChatService.TONE_REMINDER.replace(PromptPersona.NAME_TOKEN, "chat-memories-fail@test.local"));
         assertThat(answer.getDegraded()).isFalse();
         assertThat(answer.getRefs()).isEmpty();
         // W3.1b: a failed recall discloses nothing — [] on the wire, null on the row
@@ -165,7 +168,8 @@ class ChatServiceAmbientRecallIT extends AbstractIntegrationTest {
         String echoed = answer.getContent();
         String systemBlock = echoed.substring(echoed.indexOf("system=["), echoed.indexOf("] history=["));
         assertThat(systemBlock).doesNotContain("[Emlékek]");
-        assertThat(systemBlock).endsWith(ChatService.TONE_REMINDER);
+        assertThat(systemBlock).endsWith(
+                ChatService.TONE_REMINDER.replace(PromptPersona.NAME_TOKEN, "chat-memories-ann-fail@test.local"));
         assertThat(answer.getDegraded()).isFalse();
         assertThat(answer.getRefs()).isEmpty();
         assertThat(answer.getRecalled()).isEmpty();

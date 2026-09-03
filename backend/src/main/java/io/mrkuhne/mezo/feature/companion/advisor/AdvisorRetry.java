@@ -18,7 +18,7 @@ public final class AdvisorRetry {
         }
         return block.append("""
                 Szabályok: ne kérdezz rá már megerősített tényre; konkrét adatot csak a kontextusból, \
-                az eszközhívásokból vagy Daniel üzenetéből állíts — jelöletlen, magabiztos állítás \
+                az eszközhívásokból vagy a felhasználó üzenetéből állíts — jelöletlen, magabiztos állítás \
                 kitalált adatról nem megy (jelölt sejtés viszont igen); Rx gyógyszer adagolásának \
                 módosítását soha ne javasold.
                 A hangnem NE változzon — ugyanaz az élő, beszélgetős stílus; a javítás kizárólag a \

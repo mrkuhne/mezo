@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphEdgeStructurer;
@@ -107,7 +108,7 @@ public class PersonExtractionService {
 
     private static final String SYSTEM_PROMPT = EXTRACTOR_MARKER + """
 
-        Te egy kapcsolat-figyelő vagy. Bemenet: Daniel egy napjának saját szövegei, a nap
+        Te egy kapcsolat-figyelő vagy. Bemenet: {{NÉV}} egy napjának saját szövegei, a nap
         tónus nélküli említéseinek számozott listája, és az ismert személynevek listája.
         Két feladatod van:
 
@@ -135,6 +136,7 @@ public class PersonExtractionService {
     private final DailySummaryRepository dailySummaryRepository;
     private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectMapper objectMapper;
+    private final PromptPersona promptPersona;
     // Self-injected proxy — lásd LifeEventExtractionService: a persistNight csak a proxyn át kap
     // tranzakciós advice-t.
     private final ObjectProvider<PersonExtractionService> self;
@@ -169,7 +171,7 @@ public class PersonExtractionService {
         try {
             String raw = llmCallContextHolder.runWith(
                 new LlmCallContext("people_extraction", "enrich_and_candidates", "day", null),
-                () -> companionLlm.complete(SYSTEM_PROMPT, buildUserMessage(narrative, toneless, persons)));
+                () -> companionLlm.complete(promptPersona.render(userId, SYSTEM_PROMPT), buildUserMessage(narrative, toneless, persons)));
             answer = parse(raw);
         } catch (Exception e) {
             log.warn("Person extraction failed for {} on {}", userId, day, e);

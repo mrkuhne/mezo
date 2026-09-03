@@ -415,7 +415,9 @@ export const MOCK_CONFERENCES: CharacterConferenceSummary[] = [
 // exchange as it actually ran. `changes` synthesizes the Kimenet outcome (2 elfogadva · 1
 // nyugdíjazva · 3 portré átírva) into itemized entries the FE can list.
 //
-// The pszichologus turn's second line carries the real "DANIEL VÁLASZA — " prefix
+// The pszichologus turn's second line carries the legacy "DANIEL VÁLASZA — " literal (pre-S6
+// conferences keep this forever in their stored transcript envelope), and the taplalkozo turn's
+// second line carries the current "FELHASZNÁLÓ VÁLASZA — " prefix
 // (`KonziliumProposalRound.USER_FEEDBACK_PREFIX`, backend service/KonziliumProposalRound.java) —
 // this is how a user-feedback observation actually surfaces inside a persisted turn's free
 // text (no structured `userQuote` field exists on `ConferenceTurn`), mirroring what the
@@ -423,7 +425,11 @@ export const MOCK_CONFERENCES: CharacterConferenceSummary[] = [
 const TRANSCRIPT_TURNS: ConferenceTurn[] = [
   { persona: 'doki', text: 'Javaslat: a testzsír-trend és a stagnáló testsúly rekompozícióra utal — a bizonyíték három egymást követő heti mérés.' },
   { persona: 'drill', text: 'Javaslat: a heti fókuszok teljesítési aránya az elmúlt négy hétben végig 80% felett — ez stabil fegyelem-jel.' },
-  { persona: 'taplalkozo', text: 'Javaslat: a hétvégi fehérje-elmaradás három hete következetes mintázat — érdemes „figyeljük” szinten felvenni.' },
+  {
+    persona: 'taplalkozo',
+    text: 'Javaslat: a hétvégi fehérje-elmaradás három hete következetes mintázat — érdemes „figyeljük” szinten felvenni.\n'
+      + 'FELHASZNÁLÓ VÁLASZA — Hétvégén tényleg nehezebb betartani az adagokat, ez stimmel.',
+  },
   {
     persona: 'pszichologus',
     text: 'Megfigyelés: néha halasztod a nehezebb érzelmi témák leírását a naplóban.\n'

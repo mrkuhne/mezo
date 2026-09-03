@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CharacterPromptSource;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
@@ -61,7 +62,7 @@ public class PredictionGenerator {
             PredictionEntity.DIRECTION_STABLE);
 
     private static final String PROMPT = PREDICTION_MARKER + "\n"
-            + "Készíts a most kezdődő hétre 1-3 magyar előrejelzést Danielről, KIZÁRÓLAG a megadott "
+            + "Készíts a most kezdődő hétre 1-3 magyar előrejelzést {{NÉV}} számára, KIZÁRÓLAG a megadott "
             + "megerősített mintákból és a jelen kontextusból. Minden előrejelzés egy MINTA-JELÖLThöz "
             + "kötődik (patternIndex), egy METRIKA-KATALÓGUS elemhez (metricKey) és egy IRÁNY-hoz "
             + "(expectedDirection). Számot vagy adatot kitalálni tilos; gyógyszer adagolására "
@@ -81,6 +82,7 @@ public class PredictionGenerator {
     private final AppNotificationEmitter appNotificationEmitter;
     /** mezo-1gim.8 — the [Karakter] dossier block; absent (null) unless CHARACTER_SWITCH + COMPANION_SWITCH are both on. */
     private final ObjectProvider<CharacterPromptSource> characterPromptSource;
+    private final PromptPersona promptPersona;
 
     public record PredictionGather(String payload, List<PatternEntity> candidates) {
     }
@@ -104,7 +106,7 @@ public class PredictionGenerator {
         }
         String answer = llmCallContextHolder.runWith(
                 new LlmCallContext("proactive_prediction", "generate", null, null),
-                () -> companionLlm.completeSmart(PROMPT, gather.payload()));
+                () -> companionLlm.completeSmart(promptPersona.render(userId, PROMPT), gather.payload()));
         ParsedPredictions parsed = parse(answer);
         if (parsed == null || parsed.predictions() == null) {
             log.warn("Unusable prediction answer for {} week {} — no rows", userId, weekStart);
