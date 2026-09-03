@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.DayEvaluationResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.companion.service.DayReviewLlm;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
@@ -24,6 +25,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -43,6 +45,7 @@ class DayEvaluationApiIT extends ApiIntegrationTest {
     /** Far enough back that the day is closed and the rhythm window has room. */
     private static final LocalDate PAST_DAY = LocalDate.of(2026, 6, 15);
 
+    @Autowired private ApplicationContext applicationContext;
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private TrainPopulator trainPopulator;
@@ -105,6 +108,14 @@ class DayEvaluationApiIT extends ApiIntegrationTest {
         assertThat(response.getScore()).isNull();
         assertThat(response.getDimensions()).hasSize(6);
         assertThat(response.getContext()).isEmpty();
+    }
+
+    /** The switch-ON half of the pair {@code DayEvaluationSwitchOffApiIT} completes: with
+     *  {@code mezo.feature.day-review.enabled} at its default {@code true} the adapter bean EXISTS.
+     *  Together the two tests prove the switch actually gates something. */
+    @Test
+    void testDayReviewLlm_shouldHaveABean_whenDayReviewSwitchOn() {
+        assertThat(applicationContext.getBeanNamesForType(DayReviewLlm.class)).hasSize(1);
     }
 
     @Test

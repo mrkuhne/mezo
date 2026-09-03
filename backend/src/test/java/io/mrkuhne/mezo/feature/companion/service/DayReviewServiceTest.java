@@ -137,6 +137,25 @@ class DayReviewServiceTest {
         assertThat(fakeLlm.calls).isEqualTo(1);
     }
 
+    @Test
+    void testAssemble_shouldNormalizeHighlightKinds_whenTheModelInventsOne() {
+        fakeLlm.answer = answer("""
+            {"narrative":["Kiemelések."],"dimensionNotes":{},
+             "highlights":[{"kind":"WIN","label":"Edzés kész"},
+                           {"kind":"sparkle","label":"Kitalált fajta"},
+                           {"kind":"","label":"Üres fajta"},
+                           {"kind":"pattern","label":"Negyedik — el kell dobni"}],
+             "adjustment":null}""");
+
+        DayEvaluationResponse response = service.assemble(USER, DAY);
+
+        // capped at three, and every kind is one the day page knows how to colour
+        assertThat(response.getHighlights()).extracting("kind", "label").containsExactly(
+            org.assertj.core.groups.Tuple.tuple("win", "Edzés kész"),
+            org.assertj.core.groups.Tuple.tuple("key", "Kitalált fajta"),
+            org.assertj.core.groups.Tuple.tuple("key", "Üres fajta"));
+    }
+
     // --- (b) an inputs change regenerates -----------------------------------------------------
 
     @Test

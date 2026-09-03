@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -99,6 +100,8 @@ public class DayReviewService {
     /** Card-sized by construction, like the meal coach's note cap. */
     private static final int NOTE_MAX = 240;
     private static final int HIGHLIGHT_MAX = 3;
+    /** The only kinds the day page knows how to colour — see {@link #kind}. */
+    private static final Set<String> HIGHLIGHT_KINDS = Set.of("key", "pattern", "win");
     /** How far back the under-target sleep streak is allowed to look — a bounded, single query. */
     private static final int SLEEP_STREAK_WINDOW_DAYS = 14;
 
@@ -425,6 +428,13 @@ public class DayReviewService {
         return out;
     }
 
+    /**
+     * Up to three highlights, each with a {@code kind} the frontend can actually render. The
+     * contract types {@code kind} as a free string but documents it as {@code key|pattern|win},
+     * and the day page switches on it to pick a chip colour — so a model-invented kind is
+     * normalised to {@code key} rather than passed through to fall out of that mapping. The label
+     * is the load-bearing half; the kind is presentation.
+     */
     private static List<DayReviewJson.Highlight> highlights(ExtractedReview parsed) {
         if (parsed.highlights() == null) {
             return List.of();
@@ -432,9 +442,14 @@ public class DayReviewService {
         return parsed.highlights().stream()
             .filter(h -> h != null && h.label() != null && !h.label().isBlank())
             .limit(HIGHLIGHT_MAX)
-            .map(h -> new DayReviewJson.Highlight(
-                h.kind() == null || h.kind().isBlank() ? "key" : h.kind().trim(), h.label().trim()))
+            .map(h -> new DayReviewJson.Highlight(kind(h.kind()), h.label().trim()))
             .toList();
+    }
+
+    /** {@code key|pattern|win}, or {@code key} for anything blank, unknown or invented. */
+    private static String kind(String raw) {
+        String trimmed = raw == null ? "" : raw.trim().toLowerCase(Locale.ROOT);
+        return HIGHLIGHT_KINDS.contains(trimmed) ? trimmed : "key";
     }
 
     /**
