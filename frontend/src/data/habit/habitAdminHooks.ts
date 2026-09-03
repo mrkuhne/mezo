@@ -247,15 +247,20 @@ function mockReorderChain(qc: ReturnType<typeof useQueryClient>, id: string, def
   return undefined
 }
 
-// Returns the inserted definition (or undefined when the target chain does not exist, mirroring
-// the write's own no-op) so the mock arm resolves with the same shape as `habitAdminApi.createDef`
-// — the wizard's `?new=<habitKey>` hand-off must work offline too. The def is therefore built
-// OUTSIDE the setQueryData updater: an updater may run more than once, and re-generating the
-// habitKey per invocation would hand back a key that is not the one in the cache.
-function mockCreateDef(qc: ReturnType<typeof useQueryClient>, input: HabitDefCreateInput): HabitDefInfo | undefined {
+// Returns the inserted definition so the mock arm resolves with the same shape as
+// `habitAdminApi.createDef` — the wizard's `?new=<habitKey>` hand-off must work offline too.
+// The def is therefore built OUTSIDE the setQueryData updater: an updater may run more than
+// once, and re-generating the habitKey per invocation would hand back a key that is not the
+// one in the cache.
+function mockCreateDef(qc: ReturnType<typeof useQueryClient>, input: HabitDefCreateInput): HabitDefInfo {
   const base = qc.getQueryData<HabitCatalog>(HABIT_CATALOG_KEY) ?? mockHabitCatalog
   const chain = base.chains.find((c) => c.chainKey === input.chainKey)
-  if (!chain) return undefined
+  if (!chain) {
+    // Mirrors HabitAdminService.createDef's SystemMessage.error("HABIT_DEF_UNKNOWN_CHAIN") 400,
+    // the same way mockUpdateDef's chain-move arm does. A silent `undefined` here read as
+    // "created, but nowhere": the caller got a resolved promise and no def (mezo-3zue.9).
+    throw new Error('HABIT_DEF_UNKNOWN_CHAIN')
+  }
   const def: HabitDefInfo = {
     id: crypto.randomUUID(),
     habitKey: genKey('custom_'),

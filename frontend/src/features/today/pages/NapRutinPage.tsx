@@ -11,7 +11,7 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
-import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { EntranceGroup, useCountUpOnChange } from '@/shared/ui/mozaik/motion'
 import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
@@ -40,6 +40,15 @@ interface Group {
   face: Face
   items: HabitItem[]
   done: number
+}
+
+/** A sor lánc-erő százaléka. A `.nr-str` csík a pipa után 380 ms-ig CSÚSZIK az új
+ *  szélességre — a címke ugyanannyi idő alatt fut oda, hogy a kettő egy mozdulat legyen
+ *  (mezo-apwd). Mountoláskor a szám a helyén ül: ott a csík a belépő fill-koreográfiát
+ *  futja, nem a width-transitiont. */
+function NrPct({ pct }: { pct: number }) {
+  const shown = useCountUpOnChange(pct, 380)
+  return <span className="nr-pct">{shown}%</span>
 }
 
 export function NapRutinPage() {
@@ -188,7 +197,7 @@ export function NapRutinPage() {
                           </div>
                         )}
                       </div>
-                      {h.strengthPct != null && <span className="nr-pct">{h.strengthPct}%</span>}
+                      {h.strengthPct != null && <NrPct pct={h.strengthPct} />}
                     </div>
                   )
                 })}

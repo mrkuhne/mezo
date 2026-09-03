@@ -60,6 +60,44 @@ export function useCountUp(target: number, durationMs = 600): number {
   return value
 }
 
+/** Count-up that mirrors a CSS `transition` rather than an entrance: it SITS at its target on
+ *  mount and animates only the SUBSEQUENT changes, travelling from the value last shown.
+ *  `useCountUp` spins up from 0 on mount — right for a hero number, wrong for a label pinned to
+ *  a bar that is already in place. The `.nr-pct` % must travel WITH the `.nr-str` 380 ms width
+ *  transition instead of jumping ahead of it (mezo-apwd). Instant under prefers-reduced-motion,
+ *  like the `transition: none` the same media query applies to the bar. */
+export function useCountUpOnChange(target: number, durationMs = 380): number {
+  const [value, setValue] = useState(target)
+  // The value on screen — a mid-flight target change continues from HERE, so a second bump
+  // never snaps back to the previous target.
+  const shownRef = useRef(target)
+  const mountedRef = useRef(false)
+
+  useEffect(() => {
+    if (!mountedRef.current) {
+      mountedRef.current = true
+      return
+    }
+    if (prefersReducedMotion()) { setValue(target); shownRef.current = target; return }
+    const from = shownRef.current
+    const stepMs = 33
+    const steps = Math.max(1, Math.round(durationMs / stepMs))
+    let i = 0
+    const id = setInterval(() => {
+      i += 1
+      const t = i / steps
+      const eased = 1 - (1 - t) * (1 - t) // ease-out quad — the bar's easing curve, in numbers
+      const next = i >= steps ? target : Math.round(from + (target - from) * eased)
+      shownRef.current = next
+      setValue(next)
+      if (i >= steps) clearInterval(id)
+    }, stepMs)
+    return () => clearInterval(id)
+  }, [target, durationMs])
+
+  return value
+}
+
 function isJsdom(): boolean {
   return typeof navigator !== 'undefined' && typeof navigator.userAgent === 'string' && navigator.userAgent.includes('jsdom')
 }
