@@ -4,9 +4,9 @@ import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { useLifeGoal, useLifeGoalMutations } from '@/data/hooks'
+import { useLifeGoal, useLifeGoalMutations, useLifeGoalProgress } from '@/data/hooks'
 import type { LifeGoalPillarInput, SignalCatalogEntry } from '@/data/lifegoal/lifegoalApi'
-import { DIMENSIONS, STATUS_LABEL } from '@/features/me/logic/lifegoalLabels'
+import { ARROW_CLASS, ARROW_GLYPH, DIMENSIONS, STATUS_LABEL } from '@/features/me/logic/lifegoalLabels'
 import { PillarCard } from '@/features/me/components/PillarCard'
 import { PillarCatalogSheet } from '@/features/me/sheets/PillarCatalogSheet'
 import { pillarFromCatalog } from '@/features/me/logic/pillarFromCatalog'
@@ -24,7 +24,9 @@ export function CelPage() {
   const navigate = useNavigate()
   const { goal, isPending, isError, refetch, goalCount } = useLifeGoal(id)
   const { changeStatus, replacePillars, pending } = useLifeGoalMutations()
+  const { progress, isPending: progressPending } = useLifeGoalProgress(goal?.id)
   const [catalogOpen, setCatalogOpen] = useState(false)
+  const [period, setPeriod] = useState<'week' | 'month'>('week')
 
   if (isPending) return <ScreenSkeleton />
   // A failed list read leaves `goal` null exactly like a genuinely unknown id — printing
@@ -58,6 +60,17 @@ export function CelPage() {
     STATUS_LABEL[goal.status],
   ].filter(Boolean).join(' · ')
 
+  // Task 9 (mezo-iizd.5): while the progress query is still loading, the hero and every
+  // PillarCard read exactly like "no data yet" (arrow.none glyph, no %) rather than a fake
+  // 0% — `heroArrow` stays undefined until the fetch resolves; 'insufficient' itself is a
+  // real TrendArrow value that ARROW_CLASS/ARROW_GLYPH already map to the same none/— look.
+  const heroArrow = progressPending ? undefined : progress?.arrow
+  const heroArrowClass = heroArrow ? ARROW_CLASS[heroArrow] : 'none'
+  const heroGlyph = heroArrow ? ARROW_GLYPH[heroArrow] : '—'
+  const pillarProgressById = new Map(
+    progressPending ? [] : (progress?.pillars ?? []).map((p) => [p.pillarId, p]),
+  )
+
   const addPillar = (e: SignalCatalogEntry) => {
     // The existing pillars go back WITH their ids so the replace updates those rows in place
     // instead of minting fresh UUIDs and orphaning their evaluation history (mezo-iizd.2);
@@ -83,11 +96,31 @@ export function CelPage() {
           ＋ Pillér
         </button>
       </PageHead>
-      <PageHero icon={dim.icon} big={<span className="lg-arrow none"><span className="g" style={{ fontSize: 40 }}>—</span></span>} name={goal.title} sub={sub} />
+      <PageHero
+        icon={dim.icon}
+        big={(
+          <span className={`lg-arrow ${heroArrowClass}`}>
+            <span className="g" style={{ fontSize: 40 }}>{heroGlyph}</span>
+            {heroArrow && heroArrow !== 'insufficient' && progress?.weeklyPct !== undefined && (
+              <span className="v" style={{ fontSize: 22, fontWeight: 200 }}>{progress.weeklyPct}<span style={{ fontSize: 12 }}>%</span></span>
+            )}
+          </span>
+        )}
+        name={goal.title}
+        sub={sub}
+      />
       <PageBody principle="Az irány-nyíl 7 nap vs 21 nap · mindkettőben legalább 5 adat-nap kell.">
         <EntranceGroup replayKey={goal.pillars.length}>
+          {goal.pillars.length > 0 && (
+            <div className="lg-chiprow rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+              <button type="button" className={`lg-fchip ${period === 'week' ? 'on' : ''}`} onClick={() => setPeriod('week')}>Hét</button>
+              <button type="button" className={`lg-fchip ${period === 'month' ? 'on' : ''}`} onClick={() => setPeriod('month')}>Hónap</button>
+            </div>
+          )}
           <div className="mz-eyebrow rise" style={{ '--d': '0ms', padding: '4px 2px 8px' } as React.CSSProperties}>Pillérek · {goal.pillars.length}</div>
-          {goal.pillars.map((p, i) => <PillarCard key={p.id} pillar={p} delayMs={40 + i * 40} />)}
+          {goal.pillars.map((p, i) => (
+            <PillarCard key={p.id} pillar={p} progress={pillarProgressById.get(p.id)} period={period} delayMs={40 + i * 40} />
+          ))}
           {goal.pillars.length === 0 && <p className="mz-eyebrow rise" style={{ padding: '0 2px 10px' }}>Még nincs pillér — ＋ Pillér a katalógusból.</p>}
           {(goal.whyText || goal.ifThenPlans.length > 0) && (
             <>

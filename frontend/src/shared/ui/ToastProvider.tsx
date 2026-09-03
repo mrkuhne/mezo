@@ -123,6 +123,7 @@ function RewardBody({ toast }: { toast: RewardToast }) {
         {toast.title}
         {toast.meta && <span className="t-meta"> · {toast.meta}</span>}
       </div>
+      {toast.celebration && <div className="t-celebrate">{toast.celebration}</div>}
       {toast.meter && (
         <div className="t-meter">
           <span className="t-mdot" aria-hidden="true" />

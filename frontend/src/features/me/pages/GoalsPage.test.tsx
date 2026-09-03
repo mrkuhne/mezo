@@ -79,6 +79,22 @@ const PRESCRIPTION = {
 }
 const GOAL_WITH_RX = { ...GOAL, prescription: PRESCRIPTION }
 
+// An open diet-phase suggestion (slice 4, mezo-ktg8) — drives the suggestion-card
+// integration coverage below (real mode) + the mock-mode fixture assertion.
+const SUGGESTION = {
+  id: 'sug-1',
+  kind: 'phase_change',
+  status: 'proposed',
+  payload: {
+    reason: 'Deload hét — érdemes tartáson enni.',
+    balanceOverrideKcal: 0,
+    fromWeek: 3,
+    toWeek: 3,
+    snapshotTrajectory: 'cut',
+  },
+  createdAt: '2026-06-10T06:00:00Z',
+}
+
 function useGoalHandlers() {
   server.use(
     http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL])),
@@ -145,6 +161,14 @@ describe('mock mode (demo goal)', () => {
     expect(screen.getAllByText(/e1RM/).length).toBeGreaterThan(0)
     expect(screen.getByText(/Fuel-re vár/)).toBeInTheDocument()
     expect(screen.getByText(/8 szett/)).toBeInTheDocument()
+  })
+
+  // Diet-phase suggestions (slice 4, mezo-ktg8) — the mock fixture (goals.ts
+  // `goalSuggestions`) always carries one open deload-week proposal.
+  test('renders the fixture diet-phase suggestion card', () => {
+    render(<GoalsPage />, { wrapper: Wrapper })
+    expect(screen.getByText(/Javaslat: deload hét tartáson \(W3\)/)).toBeInTheDocument()
+    expect(screen.getByText(/a regeneráció többet ér/)).toBeInTheDocument()
   })
 })
 
@@ -251,6 +275,98 @@ describe('real mode (active goal + timeline)', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Biztosan törlöd?' }))
     // After delete + refetch, GoalsPage falls back to the empty "set up a goal" state.
     expect(await screen.findByText(/Még nincs aktív célod/)).toBeInTheDocument()
+  })
+})
+
+// Diet-phase suggestion cards (slice 4, mezo-ktg8) — real-mode integration coverage:
+// GoalsPage wires useGoalSuggestions/useSuggestionActions itself (no MSW handler was
+// exercising the endpoint before this block — the query silently resolved to []).
+describe('diet-phase suggestions (slice 4, mezo-ktg8)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('an open suggestion renders its card above the recept', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL_WITH_RX])),
+      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
+      http.get(`${API_BASE}/api/goals/g1/suggestions`, () => HttpResponse.json([SUGGESTION])),
+    )
+    render(<GoalsPage />, { wrapper: Wrapper })
+    const headline = await screen.findByText(/Javaslat: deload hét tartáson \(W3\)/)
+    const verdict = await screen.findByText('Reális') // GOAL_WITH_RX's feasible verdict, from the recept
+    expect(headline.compareDocumentPosition(verdict) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  test('Elvetem dismisses the suggestion — POSTs /dismiss, and the card clears after the refetch', async () => {
+    const calls: string[] = []
+    let dismissed = false
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL_WITH_RX])),
+      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
+      http.get(`${API_BASE}/api/goals/g1/suggestions`, () => HttpResponse.json(dismissed ? [] : [SUGGESTION])),
+      http.post(`${API_BASE}/api/goals/g1/suggestions/sug-1/dismiss`, () => {
+        calls.push('dismiss')
+        dismissed = true
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    render(<GoalsPage />, { wrapper: Wrapper })
+    await screen.findByText(/Javaslat: deload hét tartáson/)
+    await userEvent.click(screen.getByRole('button', { name: 'Elvetem' }))
+    await waitFor(() => expect(calls).toEqual(['dismiss']))
+    await waitFor(() => expect(screen.queryByText(/Javaslat: deload hét tartáson/)).not.toBeInTheDocument())
+  })
+
+  test('accept on a stale suggestion (409) surfaces the fallback notice', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL_WITH_RX])),
+      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
+      http.get(`${API_BASE}/api/goals/g1/suggestions`, () => HttpResponse.json([SUGGESTION])),
+      http.post(`${API_BASE}/api/goals/g1/suggestions/sug-1/accept`, () => new HttpResponse(null, { status: 409 })),
+    )
+    render(<GoalsPage />, { wrapper: Wrapper })
+    await screen.findByText(/Javaslat: deload hét tartáson/)
+    await userEvent.click(screen.getByRole('button', { name: /Elfogadom/ }))
+    expect(await screen.findByText('A javaslat elavult — frissítsd az oldalt.')).toBeInTheDocument()
+  })
+
+  // mezo-ktg8 final-review finding 4: a 409'd accept means the backend already superseded the
+  // suggestion server-side — the card must clear on its own via a refetch, not require a manual
+  // page reload.
+  test('a 409 accept refetches the suggestions list so a superseded card can clear on its own', async () => {
+    let getCalls = 0
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL_WITH_RX])),
+      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
+      http.get(`${API_BASE}/api/goals/g1/suggestions`, () => { getCalls += 1; return HttpResponse.json([SUGGESTION]) }),
+      http.post(`${API_BASE}/api/goals/g1/suggestions/sug-1/accept`, () => new HttpResponse(null, { status: 409 })),
+    )
+    render(<GoalsPage />, { wrapper: Wrapper })
+    await screen.findByText(/Javaslat: deload hét tartáson/)
+    const callsBeforeAccept = getCalls
+    await userEvent.click(screen.getByRole('button', { name: /Elfogadom/ }))
+    await screen.findByText('A javaslat elavult — frissítsd az oldalt.')
+    await waitFor(() => expect(getCalls).toBeGreaterThan(callsBeforeAccept))
+  })
+
+  // mezo-ktg8 final-review finding 4: dismiss has no staleness branch server-side — a failure is
+  // only ever a 404 (already decided) or a network error, so the copy must not claim staleness.
+  test('a failed dismiss shows a generic retry notice, not a staleness claim', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL_WITH_RX])),
+      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
+      http.get(`${API_BASE}/api/goals/g1/suggestions`, () => HttpResponse.json([SUGGESTION])),
+      http.post(`${API_BASE}/api/goals/g1/suggestions/sug-1/dismiss`, () => new HttpResponse(null, { status: 404 })),
+    )
+    render(<GoalsPage />, { wrapper: Wrapper })
+    await screen.findByText(/Javaslat: deload hét tartáson/)
+    await userEvent.click(screen.getByRole('button', { name: 'Elvetem' }))
+    expect(await screen.findByText('Nem sikerült — próbáld újra.')).toBeInTheDocument()
   })
 })
 

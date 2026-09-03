@@ -1,5 +1,5 @@
 import type { GoalTimelineResponse } from '@/data/me/goalLinkApi'
-import type { GoalResponse, FeasibilityPreviewResponse } from '@/data/me/goalApi'
+import type { GoalResponse, FeasibilityPreviewResponse, GoalSuggestionResponse } from '@/data/me/goalApi'
 import type { BiometricProfileResponse } from '@/data/me/biometricProfileApi'
 import type { Goal, WeightEntry, WeightTrends, LinkedMeso } from '@/data/types'
 import { localDateString } from '@/shared/lib/dates'
@@ -113,6 +113,28 @@ export const goalResponse: GoalResponse = {
     },
   },
 }
+
+// Open diet-phase suggestion (slice 4) — mock mode renders one proposed card so the
+// GoalsPage suggestion surface + Fuel banner are visible offline. Accept/dismiss no-op.
+export const goalSuggestions: GoalSuggestionResponse[] = [
+  {
+    id: 'sug-deload-w3',
+    kind: 'phase_change',
+    status: 'proposed',
+    payload: {
+      reason: 'Deload hét (W3) — a regeneráció többet ér, ha ezen a héten tartáson eszel.',
+      suggestedTrajectory: null,
+      balanceOverrideKcal: 0,
+      fromWeek: 3,
+      toWeek: 3,
+      mesoId: null,
+      mesoTitle: null,
+      snapshotTrajectory: 'cut',
+    },
+    createdAt: '2026-05-22T06:10:00Z',
+    decidedAt: null,
+  },
+]
 
 // Static biometric profile for mock mode (G6, mezo-06n) — a complete profile so
 // the Profile Biometria card + the goal-creation gate render offline without a

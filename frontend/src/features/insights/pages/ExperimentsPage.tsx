@@ -11,6 +11,7 @@
 // disabled while pending, the propose CTA inert in mock (byte-parity).
 // ============================================================
 import type { ReactNode } from 'react'
+import { Icon } from '@/shared/ui/Icon'
 import { useNavigate } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
 import { ClayIcon } from '@/shared/ui/clay'
@@ -32,14 +33,15 @@ function ExpFrame({ big, children }: { big?: ReactNode; children: ReactNode }) {
 }
 
 /** Hungarian status chips (prototype .stch classes). */
-function chipOf(e: Experiment): { label: string; chip: string; wash?: string } {
+function chipOf(e: Experiment): { label: ReactNode; chip: string; wash?: string } {
   switch (e.status) {
     case 'proposed':
       return { label: '◇ Javaslat', chip: 'prop' }
     case 'active':
       return { label: '◐ Aktív', chip: 'act', wash: 'amber' }
     case 'dismissed':
-      return { label: '✕ Elvetve', chip: 'mut' }
+      // mezo-hq44: az elvetés x-ikont kap; a ✓ Megerősítve marad glifa (házi pipa-idióma).
+      return { label: <><Icon name="x" size={11} /> Elvetve</>, chip: 'mut' }
     default:
       // completed: good / not-good / inconclusive (outcomeGood undefined) — never red
       return e.outcomeGood === true
@@ -83,7 +85,7 @@ export function ExperimentsPage() {
           >
             <div className="mzp-top">
               <span className="mzp-pic"><ClayIcon name={e.status === 'active' ? 'i-idozito' : 'i-lombik'} size={22} /></span>
-              <span className={cn('mzp-stch', meta.chip)}>{meta.label}</span>
+              <span className={cn('mzp-stch', 'mz-ebic', meta.chip)}>{meta.label}</span>
               {e.status !== 'proposed' && <span className="mzp-date">{e.day}/{e.total} nap</span>}
             </div>
 

@@ -15,7 +15,9 @@ test('preferredKind prefers average, then baseline, then habit over the catalog 
 
 test('defaultRule gives habit real numbers, so no rule-less habit pillar can be built', () => {
   expect(defaultRule('habit')).toEqual({ comparator: 'gte', threshold: 1, daysPerWeek: 5 })
-  expect(defaultRule('average')).toEqual({ windowDays: 7, comparator: 'gte' })
+  // `average` MUST carry a threshold too — the backend's requireRuleShape 400s an average rule
+  // missing one (and before that fix, the scorer's scoreAverage NPE'd on a null threshold).
+  expect(defaultRule('average')).toEqual({ windowDays: 7, comparator: 'gte', threshold: 1 })
   expect(defaultRule('baseline')).toEqual({ windowDays: 28, minDataDays: 14 })
 })
 

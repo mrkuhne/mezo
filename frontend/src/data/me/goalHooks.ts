@@ -6,6 +6,7 @@ import {
   type GoalUpsertRequest,
   type FeasibilityPreviewRequest,
   type FeasibilityPreviewResponse,
+  type GoalSuggestionResponse,
 } from '@/data/me/goalApi'
 import { goalLinkApi, type GoalTimelineResponse, type GoalPlanAttachRequest } from '@/data/me/goalLinkApi'
 import { weightApi } from '@/data/me/biometricsApi'
@@ -17,6 +18,7 @@ import {
   linkedMesocycles as mockLinkedMesocycles,
   goalTimeline as mockTimeline,
   feasibilityPreview as mockFeasibilityPreview,
+  goalSuggestions as mockGoalSuggestions,
 } from '@/data/me/goals'
 import type { Goal, GoalKind, LinkedMeso, WeightEntry } from '@/data/types'
 
@@ -268,4 +270,60 @@ export function useFeasibilityPreview(
     initialData: mock && enabled ? mockFeasibilityPreview : undefined,
   })
   return enabled ? data : undefined
+}
+
+// Diet-phase suggestions (slice 4) — the suggest+approve surface: the engine (meso
+// lifecycle events, preset/trajectory mismatch, deload weeks) proposes a change to the
+// goal's diet phase; the owner decides via useSuggestionActions. Mock mode seeds a
+// static open proposal (staleTime: Infinity — the mock-cache clobber guard, see the
+// "mezo mock-cache clobber" trap: without it a cache-first queryFn can silently revert
+// a prior setQueryData write on remount).
+export function useGoalSuggestions(goalId: string | null) {
+  const mock = isMockMode()
+  const { data, isPending } = useQuery<GoalSuggestionResponse[]>({
+    queryKey: ['goal', goalId, 'suggestions'],
+    queryFn: mock ? async () => mockGoalSuggestions : () => goalApi.suggestions(goalId as string),
+    enabled: !!goalId,
+    initialData: mock ? mockGoalSuggestions : undefined,
+    staleTime: mock ? Infinity : undefined,
+  })
+  return { suggestions: data ?? [], pending: !mock && isPending }
+}
+
+// accept/dismiss mutations for a goal suggestion. Real mode invalidates the goal's
+// suggestions AND ['goals'] on accept (the engine re-evaluates the prescription in the
+// same call); mock mode no-ops and resolves so the cards still feel interactive offline.
+export function useSuggestionActions() {
+  const qc = useQueryClient()
+  const mock = isMockMode()
+  const invalidate = (goalId: string) => {
+    if (mock) return
+    qc.invalidateQueries({ queryKey: ['goal', goalId, 'suggestions'] })
+    qc.invalidateQueries({ queryKey: ['goals'] }) // accept re-evaluates the prescription
+  }
+  // A REJECTED accept (409 stale snapshot) still supersedes the suggestion server-side — only the
+  // suggestions list needs a refetch (the goal/prescription never changed), so the caller's catch
+  // block can clear the now-superseded card without a manual page refresh (mezo-ktg8 final-review
+  // finding 4).
+  const invalidateSuggestions = (goalId: string) => {
+    if (mock) return
+    qc.invalidateQueries({ queryKey: ['goal', goalId, 'suggestions'] })
+  }
+  const acceptM = useMutation({
+    mutationFn: async ({ goalId, sid }: { goalId: string; sid: string }) => {
+      if (mock) return null
+      return goalApi.acceptSuggestion(goalId, sid)
+    },
+    onSuccess: (_d, { goalId }) => invalidate(goalId),
+  })
+  const dismissM = useMutation({
+    mutationFn: async ({ goalId, sid }: { goalId: string; sid: string }) => {
+      if (mock) return
+      await goalApi.dismissSuggestion(goalId, sid)
+    },
+    onSuccess: (_d, { goalId }) => invalidate(goalId),
+  })
+  const accept = useCallback((goalId: string, sid: string) => acceptM.mutateAsync({ goalId, sid }), [acceptM])
+  const dismiss = useCallback((goalId: string, sid: string) => dismissM.mutateAsync({ goalId, sid }), [dismissM])
+  return { accept, dismiss, pending: acceptM.isPending || dismissM.isPending, invalidateSuggestions }
 }

@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { Icon } from '@/shared/ui/Icon'
 import { patternCategoryColor } from '@/data/insights/insights'
 import { confidenceMeta, findingSentence, pairLine, type ConfidenceMeta } from '@/features/insights/logic/findings'
 import { DOMAIN_META } from '@/features/insights/logic/domains'
@@ -84,7 +85,7 @@ export function PatternDecisionCard({
       )}
 
       <div style={{ borderRadius: 14, padding: '10px 12px', marginTop: 10, background: 'var(--surface-recess)' }}>
-        <span className="eyebrow" style={{ color: 'var(--accent-deep)', letterSpacing: '.14em' }}>📈 Amit eddig látunk</span>
+        <span className="eyebrow mz-ebic" style={{ color: 'var(--accent-deep)', letterSpacing: '.14em' }}><Icon name="trend-up" size={12} /> Amit eddig látunk</span>
         {finding ? (
           <>
             <p style={{ fontSize: 13, lineHeight: 1.5, color: 'var(--text-primary)', marginTop: 4 }}>

@@ -320,13 +320,38 @@ class MealApiIT extends ApiIntegrationTest {
 
         MealBreakdown b = created.getScore().getBreakdown();
         // 8-dim meal surface (mezo-7797): every dimension lives EXCEPT plant_diversity — the food
-        // carries no category — which degrades to weight 0. Meal weights are RAW (not renormalized).
+        // carries no category — which degrades to weight 0. Since mezo-jcpt, scoreMeal renormalizes
+        // weights over the LIVE dimensions (Dim.renormalized, matching the recipe-template path):
+        // the invariant is that emitted weights sum to 1.0 across weight>0 dims, and
+        // Σ(weight·score) == the emitted score value. Degraded dims stay in the list at weight 0.
         assertThat(b.getDimensions()).extracting(MealScoreDimension::getId)
             .containsExactly("macro", "micro", "who", "fat_quality", "nova",
                 "plant_diversity", "energy_density", "context");
+        // Config weights (application.yml mezo.nutrition.scoring.weights, meal subset excludes
+        // "portion"): macro .22, micro .10, who .14, fat-quality .10, nova .18,
+        // plant-diversity .08 (DEGRADED here -> excluded), energy-density .06, context .12.
+        // Live weight sum = .22+.10+.14+.10+.18+.06+.12 = 0.92
+        // Renormalized (configWeight / 0.92, HALF_UP scale 2 per MealScoringService.round2):
+        //   macro  .22/.92 = .23913 -> .24      nova    .18/.92 = .19565 -> .20
+        //   micro  .10/.92 = .10870 -> .11      energy  .06/.92 = .06522 -> .07
+        //   who    .14/.92 = .15217 -> .15      context .12/.92 = .13043 -> .13
+        //   fat-q  .10/.92 = .10870 -> .11      plant   degraded -> .00
         assertThat(b.getDimensions()).extracting(MealScoreDimension::getWeight)
             .extracting(BigDecimal::doubleValue)
-            .containsExactly(0.22, 0.10, 0.14, 0.10, 0.18, 0.00, 0.06, 0.12);
+            .containsExactly(0.24, 0.11, 0.15, 0.11, 0.20, 0.00, 0.07, 0.13);
+        // Invariant check (mezo-jcpt): live weights sum to ~1.0 (each of the 8 dims is independently
+        // rounded to 2 decimals, so the sum can drift by a few hundredths — here it lands on 1.01),
+        // and the weighted sum of dimension scores reproduces the emitted meal score value. This
+        // guards the renormalization contract itself, not just this one fixture's rounded numbers.
+        double liveWeightSum = b.getDimensions().stream()
+            .mapToDouble(d -> d.getWeight().doubleValue())
+            .sum();
+        assertThat(liveWeightSum).isCloseTo(1.0, org.assertj.core.data.Offset.offset(0.02));
+        double weightedScoreSum = b.getDimensions().stream()
+            .mapToDouble(d -> d.getWeight().doubleValue() * d.getScore().doubleValue())
+            .sum();
+        assertThat(weightedScoreSum).isCloseTo(
+            created.getScore().getValue().doubleValue(), org.assertj.core.data.Offset.offset(0.01));
         // confidence stays 1.00: the degraded plant_diversity drops out of the renormalized sum,
         // and every live dimension has full coverage
         assertThat(b.getConfidence()).isEqualByComparingTo("1.00");

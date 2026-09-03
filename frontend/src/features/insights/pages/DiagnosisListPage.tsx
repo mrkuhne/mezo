@@ -11,6 +11,7 @@
 // ============================================================
 import { useNavigate } from 'react-router-dom'
 import { ClayIcon } from '@/shared/ui/clay'
+import { Icon } from '@/shared/ui/Icon'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { useDiagnoses, useDiagnosisActions } from '@/data/hooks'
@@ -46,14 +47,14 @@ export function DiagnosisListPage() {
         <EntranceGroup className="col gap-md">
           {LIVE_QUESTIONS.map((q, qi) => (
             <div key={q.phenomenon} className="mzp-pred propcard rise" style={{ '--d': `${qi * 60}ms` } as React.CSSProperties}>
-              <span className="mz-eyebrow" style={{ color: 'var(--mz-qxp-ink)' }}>✦ Kérdezd meg</span>
+              <span className="mz-eyebrow mz-ebic" style={{ color: 'var(--mz-qxp-ink)' }}><Icon name="sparkle" size={12} /> Kérdezd meg</span>
               <div style={{ fontSize: 15, fontWeight: 700, marginTop: 6 }}>{q.question}</div>
               <p style={{ fontSize: 11, fontWeight: 300, lineHeight: 1.5, marginTop: 5, color: 'var(--mz-ink-soft)' }}>
                 {q.blurb}
               </p>
               <div className="mzp-decrow">
-                <button type="button" className="mzp-cta" disabled={!live || generating} onClick={() => onAsk(q.phenomenon)}>
-                  {generating ? '… a két hét adatait olvasom' : '✦ Kérdezd meg most'}
+                <button type="button" className="mzp-cta mz-ebic" disabled={!live || generating} onClick={() => onAsk(q.phenomenon)}>
+                  {generating ? '… a két hét adatait olvasom' : <><Icon name="sparkle" size={13} /> Kérdezd meg most</>}
                 </button>
               </div>
             </div>

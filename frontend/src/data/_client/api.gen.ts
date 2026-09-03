@@ -1054,6 +1054,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/goals/{id}/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The goal's OPEN (proposed) suggestions — diet-phase / correction proposals awaiting a decision */
+        get: operations["listGoalSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/goals/{id}/suggestions/{suggestionId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept a suggestion — applies its payload to the goal (trajectory change or segment override), re-evaluates, returns the updated goal */
+        post: operations["acceptGoalSuggestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/goals/{id}/suggestions/{suggestionId}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dismiss a suggestion — records the decision so the same trigger input never re-proposes it */
+        post: operations["dismissGoalSuggestion"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/biometrics/profile": {
         parameters: {
             query?: never;
@@ -3879,6 +3930,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/life-goals/today": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Per-active-goal weekly arrow + 7-day dots + today's pillar tally (LifeGoal) */
+        get: operations["getLifeGoalsToday"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/life-goals/{id}/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** Daily rows + computed arrows + conflict note for one goal; stored rows win, missing days are computed on read (LifeGoal) */
+        get: operations["getLifeGoalProgress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/life-goals/{id}/evaluate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Manual evaluation — upserts the last 3 closed days' pillar rows, returns fresh 28-day progress (LifeGoal) */
+        post: operations["evaluateLifeGoal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -5269,6 +5375,35 @@ export interface components {
             links: components["schemas"]["GoalPlanLinkResponse"][];
             gaps: components["schemas"]["GoalGap"][];
         };
+        GoalSuggestionResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "phase_change" | "weekly_correction";
+            /** @enum {string} */
+            status: "proposed" | "accepted" | "dismissed" | "superseded";
+            payload: components["schemas"]["GoalSuggestionPayload"];
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            decidedAt?: string | null;
+        };
+        /** @description Typed suggestion body. phase_change carries either suggestedTrajectory (preset↔trajectory mismatch) or balanceOverrideKcal+fromWeek+toWeek (deload maintenance week). snapshotTrajectory is the accept-time race guard. */
+        GoalSuggestionPayload: {
+            /** @description Hungarian, user-facing rationale */
+            reason: string;
+            /** @enum {string|null} */
+            suggestedTrajectory?: "cut" | "bulk" | "maintain" | null;
+            /** @description Per-week energy-balance override (kcal/day); 0 = maintenance-leaning week */
+            balanceOverrideKcal?: number | null;
+            fromWeek?: number | null;
+            toWeek?: number | null;
+            /** Format: uuid */
+            mesoId?: string | null;
+            mesoTitle?: string | null;
+            /** @enum {string} */
+            snapshotTrajectory: "cut" | "bulk" | "maintain";
+        };
         /** @description Every field is optional AND nullable: an owner with no profile row yet gets a 200 with an empty profile — an object whose every field is null — not a 404 (mezo-5cmq). The UPSERT request keeps its required trio. */
         BiometricProfileResponse: {
             /** @enum {string|null} */
@@ -5666,6 +5801,8 @@ export interface components {
             micros?: components["schemas"]["MealMicroRow"][] | null;
             nova?: components["schemas"]["MealNovaDetail"] | null;
             context?: components["schemas"]["MealContextRow"][] | null;
+            /** @description 1-2 mondatos AI-jegyzet ehhez a dimenzióhoz (meal-coach tölti; determinisztikusan null) */
+            note?: string | null;
         };
         MealMacroDetail: {
             /** @description Protein kcal-share of the meal, % */
@@ -5722,6 +5859,10 @@ export interface components {
             tagline?: string | null;
             summary?: string | null;
             improve: components["schemas"]["MealImproveRow"][];
+            /** @description dim-id → 1-2 mondat; a breakdown dimension.note tükre a frissen generált verdictben */
+            dimensionNotes?: {
+                [key: string]: string;
+            } | null;
         };
         MealImproveRow: {
             text: string;
@@ -8398,6 +8539,65 @@ export interface components {
         };
         SignalCatalogResponse: {
             entries: components["schemas"]["SignalCatalogEntry"][];
+        };
+        /** @enum {string} */
+        PillarDayStatus: "hit" | "partial" | "miss" | "no_data";
+        /** @enum {string} */
+        TrendArrow: "up" | "flat" | "down" | "insufficient";
+        PillarDayEntry: {
+            /** Format: date */
+            day: string;
+            status: components["schemas"]["PillarDayStatus"];
+            value?: number;
+            target?: number;
+            baseline?: number;
+        };
+        PillarProgress: {
+            /** Format: uuid */
+            pillarId: string;
+            arrow: components["schemas"]["TrendArrow"];
+            /** @description mean of the last 7 days' values (absent when none) */
+            currentValue?: number;
+            /** @description the rule's comparison figure: threshold / expected(today) / baseline median */
+            referenceValue?: number;
+            /** @description habit kind, arrow=down only: max(0, daysPerWeek − hits in the last 7 days) */
+            missingHitDays?: number;
+            days: components["schemas"]["PillarDayEntry"][];
+        };
+        GoalDayEntry: {
+            /** Format: date */
+            day: string;
+            /** @description weighted daily point 0..1; absent = no pillar had data */
+            point?: number;
+        };
+        LifeGoalProgressResponse: {
+            /** Format: uuid */
+            goalId: string;
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            arrow: components["schemas"]["TrendArrow"];
+            /** @description round(mean of the last 7 days' points × 100); absent when no data-day in the window */
+            weeklyPct?: number;
+            days: components["schemas"]["GoalDayEntry"][];
+            pillars: components["schemas"]["PillarProgress"][];
+            /** @description Hungarian one-liners — same signal pulled in opposite directions by another active goal */
+            conflicts: string[];
+        };
+        LifeGoalTodaySummary: {
+            /** Format: uuid */
+            goalId: string;
+            title: string;
+            dimension: components["schemas"]["LifeGoalDimension"];
+            arrow: components["schemas"]["TrendArrow"];
+            /** @description oldest→today; goal-day dot statuses derived from the daily point (≥0.66 hit, ≥0.33 partial, <0.33 miss, null no_data) */
+            days7: components["schemas"]["PillarDayStatus"][];
+            pillarsTotal?: number;
+            pillarsHitToday?: number;
+        };
+        LifeGoalTodayResponse: {
+            goals: components["schemas"]["LifeGoalTodaySummary"][];
         };
     };
     responses: never;
@@ -11715,6 +11915,135 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Detached */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listGoalSuggestions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Open suggestions (may be empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalSuggestionResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    acceptGoalSuggestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                suggestionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Applied + re-evaluated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Stale — the goal changed since the proposal; the suggestion is now superseded */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    dismissGoalSuggestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                suggestionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Dismissed */
             204: {
                 headers: {
                     [name: string]: unknown;
@@ -19196,6 +19525,91 @@ export interface operations {
             };
             /** @description Validation error */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getLifeGoalsToday: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Summary for the hub tiles and the Nap tile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LifeGoalTodayResponse"];
+                };
+            };
+        };
+    };
+    getLifeGoalProgress: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Progress */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LifeGoalProgressResponse"];
+                };
+            };
+            /** @description Not found / not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    evaluateLifeGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Fresh progress after the upsert */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LifeGoalProgressResponse"];
+                };
+            };
+            /** @description Not found / not owned */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -137,8 +137,11 @@ public class MealScoringService {
         double confidence = weightSum == 0 ? 0
             : dims.stream().mapToDouble(d -> d.effectiveWeight * d.coverage).sum() / weightSum;
 
+        List<Dimension> jsonDims = weightSum == 0
+            ? dims.stream().map(Dim::toJson).toList()
+            : dims.stream().map(d -> d.renormalized(weightSum).toJson()).toList();
         return new MealBreakdownJson(round2(value), round2(confidence), null, null,
-            dims.stream().map(Dim::toJson).toList(), List.of(),
+            jsonDims, List.of(),
             tools(slot, lines, dims, localTime, base));
     }
 
@@ -280,8 +283,12 @@ public class MealScoringService {
         double proteinDeviation = sp > tp
             ? (sp - tp) * props.macroProteinSurplusPenalty() : tp - sp;
         double deviation = (proteinDeviation + Math.abs(sc - tc) + Math.abs(sf - tf)) / 2;
-        double score = Math.max(0, 1 - deviation * props.macroDeviationSlope());
         double kcalShare = kcal / base.kcal();
+        // A meal's kcal-share of the day gates how much its ratio deviation counts (mezo-jcpt.1):
+        // at/above the ref-share it's full weight, below it the penalty scales down linearly — a
+        // tiny snack's off-ratio can no longer tank the whole macro dimension.
+        double significance = Math.min(1.0, kcalShare / props.macroSignificanceRefShare());
+        double score = Math.max(0, 1 - deviation * props.macroDeviationSlope() * significance);
 
         MacroDetail detail = new MacroDetail(
             round0(sp * 100), round0(sc * 100), round0(sf * 100),
@@ -593,7 +600,7 @@ public class MealScoringService {
 
         Dimension toJson() {
             return new Dimension(id, label, round2(effectiveWeight), round2(score), detail,
-                macro, micros, nova, context);
+                macro, micros, nova, context, null);
         }
     }
 

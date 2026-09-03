@@ -44,14 +44,18 @@ export function buildHabitRewardToast(input: {
   chainTotal: number
   xp: number
   levelUp?: LevelUpResult | null
+  /** a szokás saját ünneplés-mondata a katalógusból; hiányában a toast a régi marad —
+   *  generikus fallback szándékosan nincs (mezo-3zue.5) */
+  celebration?: string | null
 }): RewardToast {
-  const { title, chainDone, chainTotal, xp, levelUp } = input
+  const { title, chainDone, chainTotal, xp, levelUp, celebration } = input
   const fromServer = fromLevelUp(levelUp)
   const meter = fromServer.meter ?? (xp > 0 ? { label: 'XP', delta: xp } : undefined)
   return {
     kind: 'reward',
     eyebrow: chainTotal > 0 ? `Szokás · ${chainDone + 1} / ${chainTotal}` : 'Szokás',
     title,
+    ...(celebration ? { celebration } : {}),
     ...(meter ? { meter } : {}),
     ...(fromServer.levelUp ? { levelUp: fromServer.levelUp } : {}),
   }

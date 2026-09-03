@@ -58,6 +58,27 @@ describe('Mozaik washes/cells/tones are theme-ready tokens (mezo-d20.1.5)', () =
       .filter(h => h !== '#FF6B4A') // the MOST ring + unread dot speak primary coral in both themes
     expect(offenders).toEqual([])
   })
+
+  // The regex above only matches SIX-digit hexes, so a THREE-digit one slipped past it:
+  // mezo-jcpt.1 shipped `background: var(--surface-card, #fff)` and the guard stayed green.
+  // This closes that gap in the same light-surface families (F**/E*/D*), in their 3-digit
+  // form, where they hide most easily — as a var() FALLBACK. A surface fallback is dead
+  // weight anyway: every token the section reads is declared in BOTH :root blocks (the test
+  // above proves exactly that), so it can never fire; it can only rot into a light-mode hex
+  // nobody notices when the dark theme is next touched.
+  //
+  // Scope, stated honestly: this does NOT ban every 3-digit hex in the section. `color: #fff`
+  // on a coral-gradient CTA is the established idiom (white ink in BOTH themes, ~40 uses), and
+  // the `.lg-*` lifegoal block still carries bare `background: #fff` surfaces that predate this
+  // guard. Widening to those is a real cleanup with its own blast radius — deferred, not done
+  // silently here.
+  test('no light-surface hex hides as a var() fallback in the Mozaik section (mezo-jcpt.1)', () => {
+    const section = mozaikSection(rawCss)
+    const SURFACE_FALLBACK =
+      /var\(\s*--[a-zA-Z0-9-]+\s*,\s*#(?:F{2}[0-9A-F]{4}|E[0-9A-F]{5}|D[0-9A-F]{5}|F{2}[0-9A-F]|E[0-9A-F]{2}|D[0-9A-F]{2})(?![0-9A-F])/gi
+    const offenders = [...section.matchAll(SURFACE_FALLBACK)].map(m => m[0])
+    expect(offenders).toEqual([])
+  })
 })
 
 // ── The panel rhythm has exactly ONE owner (mezo-d20.11.2) ──────────────────

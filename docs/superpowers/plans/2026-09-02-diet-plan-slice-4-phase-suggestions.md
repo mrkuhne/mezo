@@ -162,7 +162,7 @@ create unique index uq_goal_suggestion_open_per_kind
     on goal_suggestion (goal_id, kind) where status = 'proposed' and is_deleted = false;
 
 -- Trigger-side dedup lookup: "was this exact input already decided?"
-create index ix_goal_suggestion_goal_dedup on goal_suggestion (goal_id, dedup_key) where is_deleted = false;
+create index idx_goal_suggestion_goal_dedup on goal_suggestion (goal_id, dedup_key) where is_deleted = false;
 
 -- Accepted deload overrides the projection engine folds into its week walk.
 alter table goal add column segment_overrides jsonb;

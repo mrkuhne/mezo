@@ -74,3 +74,25 @@ test('quest builder: az eyebrow felülírható (activity-napló)', () => {
   expect(t.eyebrow).toBe('Naplózva')
   expect(t.meter).toBeUndefined()
 })
+
+test('az ünneplés saját mezőként utazik a toastban', () => {
+  const t = buildHabitRewardToast({
+    title: '50 fekvőtámasz', chainDone: 2, chainTotal: 8, xp: 10,
+    celebration: 'ökölbe szorított kéz + „ez az”',
+  })
+  expect(t.celebration).toBe('ökölbe szorított kéz + „ez az”')
+  // a meta a mennyiségi addendum helye marad — az ünneplés nem foglalja el
+  expect(t.meta).toBeUndefined()
+})
+
+test('ünneplés nélkül a mező ki sem kerül a payloadba', () => {
+  const withNull = buildHabitRewardToast({
+    title: 'Reggeli napfény', chainDone: 0, chainTotal: 8, xp: 5, celebration: null,
+  })
+  expect('celebration' in withNull).toBe(false)
+
+  const omitted = buildHabitRewardToast({
+    title: 'Reggeli napfény', chainDone: 0, chainTotal: 8, xp: 5,
+  })
+  expect('celebration' in omitted).toBe(false)
+})

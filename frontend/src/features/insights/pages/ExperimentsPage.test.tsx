@@ -113,3 +113,31 @@ describe('ExperimentsPage (real mode)', () => {
     await waitFor(() => expect(document.querySelector('.mz-bignum')).toBeNull())
   })
 })
+
+// mezo-hq44: az „Elvetve" státusz-chip x-ikont kap; a ✓ Megerősítve marad glifa
+// (házi pipa-idióma), ezért a fenti byte-parity elvárások érintetlenek.
+describe('ExperimentsPage — emoji→ikon (mezo-hq44)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('a dismissed chip ikonos, a szöveg marad „Elvetve"', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/proactive/experiment`, () =>
+        HttpResponse.json([
+          {
+            id: 'e9', title: 'Elvetett kísérlet', hypothesis: 'h', status: 'dismissed',
+            metricKey: 'sleep_avg', expectedDirection: 'up', startDate: null, totalDays: 7,
+            outcome: null, outcomeGood: null, generatedAt: '2026-07-07T06:45:00Z',
+          },
+        ]),
+      ),
+    )
+    const { container } = renderPage()
+    expect(await screen.findByText('Elvetett kísérlet')).toBeInTheDocument()
+    const chip = container.querySelector('.mzp-stch.mut') as HTMLElement
+    expect(chip).not.toBeNull()
+    expect(chip.querySelector('svg')).toBeTruthy()
+    expect(chip.textContent).not.toMatch(/✕/)
+    expect(chip.textContent).toMatch(/Elvetve/)
+  })
+})

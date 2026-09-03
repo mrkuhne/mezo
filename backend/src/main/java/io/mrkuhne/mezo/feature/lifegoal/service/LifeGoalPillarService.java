@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.lifegoal.service;
 
 import io.mrkuhne.mezo.api.dto.LifeGoalPillarInput;
+import io.mrkuhne.mezo.api.dto.PillarRule;
 import io.mrkuhne.mezo.feature.lifegoal.catalog.SignalCatalog;
 import io.mrkuhne.mezo.feature.lifegoal.catalog.SignalCatalogEntry;
 import io.mrkuhne.mezo.feature.lifegoal.config.LifeGoalProperties;
@@ -156,6 +157,28 @@ public class LifeGoalPillarService {
                 throw new SystemRuntimeErrorException(
                     SystemMessage.field("LIFE_GOAL_KIND_NOT_ALLOWED", "pillars").build(), HttpStatus.BAD_REQUEST);
             }
+            requireRuleShape(in);
+        }
+    }
+
+    /**
+     * Per-kind required rule fields (spec §5 + D-2 — the scorer's honest-absence contract only
+     * holds if a well-formed rule reaches it): habit/average need threshold+comparator, target
+     * needs its full pace line, baseline needs a direction; linked and habit-source pillars (see
+     * the habit branch above, which `continue`s before reaching here) carry no requirement.
+     */
+    private void requireRuleShape(LifeGoalPillarInput in) {
+        PillarRule rule = in.getRule();
+        boolean ok = switch (in.getKind().getValue()) {
+            case "habit", "average" -> rule != null && rule.getThreshold() != null && rule.getComparator() != null;
+            case "target" -> rule != null && rule.getStartValue() != null && rule.getTargetValue() != null
+                && rule.getStartDate() != null && rule.getTargetDate() != null && rule.getDirection() != null;
+            case "baseline" -> rule != null && rule.getDirection() != null;
+            default -> true;
+        };
+        if (!ok) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.field("LIFE_GOAL_INVALID_RULE", "pillars").build(), HttpStatus.BAD_REQUEST);
         }
     }
 }

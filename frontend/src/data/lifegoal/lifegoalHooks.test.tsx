@@ -2,10 +2,14 @@ import { renderHook, waitFor, act } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { API_BASE } from '@/data/_client/api'
-import { useLifeGoals, useLifeGoalMutations } from '@/data/lifegoal/lifegoalHooks'
+import { useLifeGoals, useLifeGoalMutations, useLifeGoalProgress, useLifeGoalToday } from '@/data/lifegoal/lifegoalHooks'
 import { MOCK_LIFE_GOALS } from '@/data/lifegoal/lifegoalMock'
 import { server } from '@/test/msw/server'
 import { makeHookWrapper } from '@/test/queryWrapper'
+
+function renderDataHook<T>(hook: () => T) {
+  return renderHook(hook, { wrapper: makeHookWrapper() })
+}
 
 describe('useLifeGoals (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
@@ -63,5 +67,42 @@ describe('useLifeGoals (real mode)', () => {
     const before = calls
     await act(async () => { await result.current.refetch() })
     expect(calls).toBeGreaterThan(before)
+  })
+})
+
+describe('useLifeGoalProgress / useLifeGoalToday (mock mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('useLifeGoalProgress returns 28 days per pillar', async () => {
+    const { result } = renderDataHook(() => useLifeGoalProgress(MOCK_LIFE_GOALS[0].id))
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+    expect(result.current.progress?.pillars[0]?.days).toHaveLength(28)
+  })
+
+  test('useLifeGoalToday lists only active goals', async () => {
+    const { result } = renderDataHook(() => useLifeGoalToday())
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+    expect(result.current.today.goals.length).toBeGreaterThan(0)
+    expect(result.current.today.goals.every((g) => g.days7.length === 7)).toBe(true)
+  })
+})
+
+describe('useLifeGoalProgress / useLifeGoalToday (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('useLifeGoalProgress fetches the 28-day window from the backend', async () => {
+    const { result } = renderDataHook(() => useLifeGoalProgress(MOCK_LIFE_GOALS[0].id))
+    expect(result.current.progress).toBeNull()
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+    expect(result.current.progress?.goalId).toBe(MOCK_LIFE_GOALS[0].id)
+    expect(result.current.progress?.pillars[0]?.days).toHaveLength(28)
+  })
+
+  test('useLifeGoalToday fetches today summary from the backend', async () => {
+    const { result } = renderDataHook(() => useLifeGoalToday())
+    await waitFor(() => expect(result.current.isPending).toBe(false))
+    expect(result.current.today.goals.length).toBeGreaterThan(0)
   })
 })

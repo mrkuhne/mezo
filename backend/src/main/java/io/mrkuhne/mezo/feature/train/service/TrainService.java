@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.api.dto.GymExercise;
 import io.mrkuhne.mezo.api.dto.VolumeBaseline;
 import io.mrkuhne.mezo.api.dto.VolumeProfile;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
+import io.mrkuhne.mezo.feature.train.MesocycleActivated;
 import io.mrkuhne.mezo.feature.train.MesocycleClosed;
 import io.mrkuhne.mezo.feature.train.service.CatalogMediaResolver.CatalogMedia;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
@@ -267,6 +268,12 @@ public class TrainService {
         return assembleResponse(createdBy, saved);
     }
 
+    /**
+     * Activates a mesocycle: archives every other active run (single-active invariant), then
+     * publishes {@link MesocycleActivated} on the REAL activation branch ONLY (never on an
+     * idempotent re-activate of an already-active run) — the goal's diet-phase suggestion probe
+     * (Diet Plan slice 4) is the AFTER_COMMIT consumer.
+     */
     @Transactional
     public MesocycleResponse activateMesocycle(UUID createdBy, UUID id) {
         MesocycleEntity target = ownedMesoOrThrow(createdBy, id);
@@ -280,6 +287,9 @@ public class TrainService {
             archiveActiveMesos(createdBy);
             target.setStatus("active");
             target.setCurrentWeek(MesoWeeks.clampWeek(target.getStartDate(), target.getWeeks()));
+            // Real activation only — AFTER_COMMIT consumers (Diet Plan slice 4) see it once this
+            // transaction lands.
+            eventPublisher.publishEvent(new MesocycleActivated(createdBy, id));
         }
         return assembleResponse(createdBy, target);
     }

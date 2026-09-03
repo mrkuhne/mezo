@@ -18,7 +18,9 @@ export const mockHabitDay: HabitItem[] = [
     anchorCopy: 'ébredés után', mode: 'MANUAL', status: 'done', doneAt: '2026-07-19T04:40:00Z', xp: 5, strengthPct: 64 },
   { key: 'morning_pushups', chain: 'MORNING', position: 3, title: '50 fekvőtámasz',
     why: 'Egy rövid, kemény pumpa reggel — beindítja a vért és bebizonyítja, hogy te irányítasz.',
-    anchorCopy: 'napfény után', mode: 'MANUAL', status: 'pending', xp: 10, strengthPct: 48 },
+    // Clause-form (nem „napfény után"): ez a mock első FOGG-sora, a „Miután …" sablon
+    // ragozott múlt idejű mellékmondatot vár, nem határozói alakot (mezo-3zue.5).
+    anchorCopy: 'megvolt a reggeli napfény', mode: 'MANUAL', status: 'pending', xp: 10, strengthPct: 48 },
   { key: 'morning_video', chain: 'MORNING', position: 4, title: 'Reggeli videó',
     why: 'A napi videó egy kattintással — nézd meg és indítsd vele fókuszáltan a reggelt.',
     anchorCopy: 'napfény után', mode: 'MANUAL', status: 'pending', xp: 5, strengthPct: 39,
@@ -40,7 +42,8 @@ export const mockHabitDay: HabitItem[] = [
     anchorCopy: 'a lánc kezdete', mode: 'MANUAL', status: 'pending', xp: 10, strengthPct: 86 },
   { key: 'kitchen_close', chain: 'EVENING', position: 2, title: 'Konyha zárva',
     why: 'Az utolsó falat és a lefekvés közti 90 perc a mély alvásod védőzónája.',
-    anchorCopy: 'vacsora után', mode: 'MANUAL', status: 'pending', xp: 10, strengthPct: 68 },
+    // Clause-form, ugyanaz az ok mint morning_pushups-nál (lásd ott).
+    anchorCopy: 'elpakoltam a vacsora után', mode: 'MANUAL', status: 'pending', xp: 10, strengthPct: 68 },
   { key: 'intention_reflect', chain: 'EVENING', position: 3, title: 'Szándékkal éltem?',
     why: 'A napzáró őszinte pillantás tanít a legtöbbet — tartás vagy sodródás volt?',
     anchorCopy: 'konyhazárás után', mode: 'DERIVED', status: 'pending', xp: 5, strengthPct: 55 },
@@ -85,6 +88,18 @@ const CATALOG_META: Record<string, { metric: string; skillKey: string }> = {
   wind_down: { metric: 'manual', skillKey: 'mindfulness' },
 }
 
+/**
+ * A két seed-sor, ami mock módban teljes FOGG receptet hordoz (mezo-3zue.5). Mindkettő
+ * MANUAL + pending a mock napban, tehát ténylegesen pipálható, és mindkettőnek van
+ * `anchorCopy`-ja — így a keret teljes a backend validátor szabálya szerint (horgony +
+ * ünneplés), a mock nem ír le elutasítandó állapotot. Nélkülük a jutalom-pillanat mock
+ * módban demózhatatlan és a VITE_USE_MOCK teszt-arm vak lenne.
+ */
+const MOCK_CELEBRATION: Record<string, string> = {
+  morning_pushups: 'ökölbe szorított kéz + „ez az”',
+  kitchen_close: 'lekapcsolom a lámpát és bólintok',
+}
+
 function toDefInfo(h: HabitItem): HabitDefInfo {
   const meta = CATALOG_META[h.key] ?? { metric: 'manual', skillKey: 'mindset' }
   return {
@@ -106,12 +121,12 @@ function toDefInfo(h: HabitItem): HabitDefInfo {
     xp: h.xp,
     linkUrl: h.linkUrl ?? null,
     isActive: true,
-    framework: null,
+    framework: MOCK_CELEBRATION[h.key] ? 'FOGG' : null,
     anchorHabitKey: null,
     cue: null,
     craving: null,
     reward: null,
-    celebration: null,
+    celebration: MOCK_CELEBRATION[h.key] ?? null,
     identity: null,
   }
 }
@@ -121,7 +136,12 @@ function toDefInfo(h: HabitItem): HabitDefInfo {
 const dailyIntention: HabitDefInfo = {
   id: 'def-daily_intention', habitKey: 'daily_intention', chainKey: 'MORNING', position: 9,
   title: 'Napi szándék', why: 'Egy szándékkal indított nap nem sodródik — te választod az irányt.',
-  anchorCopy: 'reggeli rutin után', mode: 'DERIVED', metric: 'intention_focus_set', skillKey: 'mindset',
+  // A valós seed defnek VAN „reggeli rutin után" horgonya, de keret NÉLKÜL (a
+  // habit-catalog.json egyetlen defje sem hordoz keret-mezőt). Ez a mock def CLEAR-re van
+  // állítva, hogy a négy törvény sora demózható legyen — a clearForeignFields viszont a
+  // CLEAR-ágon nullázza az anchorCopy-t, tehát CLEAR + anchorCopy olyan állapot, amit a
+  // backend soha nem tud előállítani (mezo-3zue.8).
+  anchorCopy: null, mode: 'DERIVED', metric: 'intention_focus_set', skillKey: 'mindset',
   xp: 10, linkUrl: null, isActive: true,
   framework: 'CLEAR',
   anchorHabitKey: null,
