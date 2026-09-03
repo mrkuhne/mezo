@@ -47,7 +47,10 @@ public class ExerciseCatalogService {
     private final TrainMapper mapper;
 
     /** Slug collisions under contention: re-probe and re-insert this many times before giving up. */
-    static final int MAX_SLUG_ATTEMPTS = 3;
+    private static final int MAX_SLUG_ATTEMPTS = 3;
+
+    /** The unique index whose violation this class knows how to recover from by re-probing. */
+    private static final String SLUG_UNIQUE_INDEX = "uq_exercise_catalog_slug";
 
     public List<ExerciseCatalogItem> list(AppUserEntity viewer) {
         List<ExerciseCatalogEntity> rows = repository.findAllByOrderByMuscleAscNameAsc();
@@ -73,6 +76,9 @@ public class ExerciseCatalogService {
             try {
                 return toItem(repository.saveAndFlush(e), author, Map.of(author.getId(), author.getName()));
             } catch (DataIntegrityViolationException ex) {
+                if (!String.valueOf(ex.getMostSpecificCause().getMessage()).contains(SLUG_UNIQUE_INDEX)) {
+                    throw ex; // some other constraint (stim/fatigue range, muscle/type CHECK) — not ours to retry
+                }
                 last = ex;
                 log.info("Catalog slug collision on '{}' (attempt {}/{}), re-probing", e.getSlug(), attempt, MAX_SLUG_ATTEMPTS);
             }
