@@ -330,28 +330,29 @@ public class DayEvaluationEngine {
     }
 
     // --- Logging (.10 default): 0.5 x timely-meal ratio + 0.2 x water logged + 0.3 x
-    // min(1, checkinCount/4). "Timely" = |loggedAt - eatenAt| <= logTimelyMin minutes. Water/
-    // check-in are always real measurements (false/0 is data, not a gap), so only the meal
-    // component can be genuinely missing: 0 meals drops that 0.5 share out and the remaining two
-    // renormalize over their combined 0.5 (0.2/0.5=0.4, 0.3/0.5=0.6).
+    // min(1, checkinCount/4). "Timely" = |loggedAt - eatenAt| <= logTimelyMin minutes. Water
+    // (boolean) and check-ins (a count) are never "unknown" on DayInputs -- false/0 IS the
+    // measurement (the user logged nothing that day), not a missing-data gap, so unlike
+    // nutrition's kcal/protein this dimension has no "no target was ever set" escape hatch: on a
+    // closed day it is always DONE and scores exactly what the formula says, including a real 0
+    // for a genuinely untouched day (review round 1: an invented NO_DATA free pass here would
+    // silently drop the weight of, and refuse to penalize, a day with no logging effort at all --
+    // the opposite of what this process dimension exists to measure). Only the meal-timeliness
+    // component can be genuinely missing (0 meals, or none carrying timing data): it then drops
+    // out and the remaining two renormalize over their combined 0.5 share (0.2/0.5=0.4,
+    // 0.3/0.5=0.6).
 
     private RawDim loggingDim(DayInputs in) {
         String id = "logging";
         String label = "Naplózás";
         double configWeight = props.weights().logging();
         List<MealLogFact> meals = in.meals() == null ? List.of() : in.meals();
+        // Computed regardless of `closed` (like sleepDim) so an open day's facts reflect timing
+        // data already logged mid-day, instead of always showing "–" until the day closes.
+        Double mealPart = timelyMealRatio(meals, props.logTimelyMin());
 
         if (!in.closed()) {
-            return new RawDim(id, label, configWeight, null, IN_PROGRESS, loggingFacts(in, null));
-        }
-
-        Double mealPart = timelyMealRatio(meals, props.logTimelyMin());
-        // No meal-timing data AND water not logged AND zero check-ins: nothing at all was
-        // captured that day -- degrade honestly rather than reporting a "0/100 logging" score for
-        // a day that simply carries no logging signal (e.g. a day the day-evaluation feature ran
-        // against before any logging happened).
-        if (mealPart == null && !in.waterLogged() && in.checkinCount() == 0) {
-            return new RawDim(id, label, configWeight, null, NO_DATA, loggingFacts(in, null));
+            return new RawDim(id, label, configWeight, null, IN_PROGRESS, loggingFacts(in, mealPart));
         }
 
         double waterComponent = in.waterLogged() ? 1.0 : 0.0;

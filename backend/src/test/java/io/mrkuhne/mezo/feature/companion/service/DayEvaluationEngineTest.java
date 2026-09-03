@@ -238,9 +238,11 @@ class DayEvaluationEngineTest {
         DayDimension nutrition = dim(e, "nutrition");
         assertThat(nutrition.status()).isEqualTo("NO_DATA");
         assertThat(nutrition.score()).isNull();
-        // renormalized weight: the only dimension is degraded -> 0 (no DONE dimension survives)
+        // renormalized weight: nutrition itself is degraded -> 0, regardless of what else survives
         assertThat(nutrition.weight()).isZero();
-        // <2 DONE dimensions -> no overall score
+        // logging is the only DONE dimension in this fixture (Task 4: it is never NO_DATA on a
+        // closed day -- false/0 water/check-ins are real measurements, not missing data) -- still
+        // <2 DONE dimensions overall -> no overall score
         assertThat(e.base()).isNull();
     }
 
@@ -254,13 +256,28 @@ class DayEvaluationEngineTest {
     }
 
     @Test
-    void nutrition_singleDoneDimension_weightRenormalizesToOne() {
-        // Only the nutrition dimension exists in this task; when it's DONE it is the sole
-        // surviving dimension, so its renormalized weight is 1.0 regardless of its config weight.
+    void nutrition_and_logging_bothDone_weightsRenormalizeToSumOne() {
+        // The plain default fixture (no customization) closes with exactly two DONE dimensions
+        // now that logging is one of the six: nutrition (full-fit kcal/protein/carb-fat -> 100)
+        // and logging (0 meals -> meal-part drops out; water=false, checkinCount=0 are real
+        // measurements, not missing data -> DONE with score 0). quality/training/sleep/rhythm all
+        // degrade to NO_DATA (no meals-with-nova, no planned workouts, no sleep log, no prior
+        // scores). Their configured weights (.30 nutrition, .10 logging) renormalize over their
+        // combined .40 share: 0.30/0.40=0.75, 0.10/0.40=0.25 -- summing back to 1.0, the same
+        // renormalization property this test verified back when nutrition was the only dimension.
         DayEvaluation e = engine.evaluate(closedDay(b -> { }));
-        assertThat(dim(e, "nutrition").weight()).isEqualTo(1.0);
-        // still <2 DONE dimensions overall -> no base yet (Tasks 3-4 add the rest)
-        assertThat(e.base()).isNull();
+        DayDimension nutrition = dim(e, "nutrition");
+        DayDimension logging = dim(e, "logging");
+        assertThat(nutrition.status()).isEqualTo("DONE");
+        assertThat(nutrition.score()).isEqualTo(100);
+        assertThat(logging.status()).isEqualTo("DONE");
+        assertThat(logging.score()).isEqualTo(0);
+        assertThat(nutrition.weight()).isCloseTo(0.75, org.assertj.core.data.Offset.offset(1e-9));
+        assertThat(logging.weight()).isCloseTo(0.25, org.assertj.core.data.Offset.offset(1e-9));
+        assertThat(nutrition.weight() + logging.weight())
+            .isCloseTo(1.0, org.assertj.core.data.Offset.offset(1e-9));
+        // >=2 DONE dimensions on a closed day -> base = round(0.75*100 + 0.25*0) = 75
+        assertThat(e.base()).isEqualTo(75);
     }
 
     // --- Review round 1 fixes: no invented score for unmeasured carb/fat data; no NaN/Infinity
@@ -472,14 +489,19 @@ class DayEvaluationEngineTest {
 
     @Test
     void overall_fewerThanTwoDoneDims_isNull() {
-        // nutrition/quality/training/logging/rhythm mind adat nélkül degradál (kcal hiányzik, nincs
-        // meal, nincs terv, nincs log-aktivitás, nincs elég korábbi nap); csak a sleep DONE (van
-        // alvás-log) -> egyetlen DONE dimenzió < 2 -> base null.
-        DayEvaluation e = engine.evaluate(closedDay(b -> b.noKcalLogged().sleepH(7.5)));
+        // nutrition/quality/training/sleep/rhythm mind adat nélkül degradálnak (nincs kcal, nincs
+        // meal, nincs terv, nincs alvás-log egy zárt napon, nincs elég korábbi nap). A logging
+        // viszont a Task 4 fix után SOHA nem NO_DATA egy zárt napon -- víz=false és checkinCount=0
+        // valós mért adat, nem "nincs adat" -- így DONE marad 0 ponttal, az egyetlen DONE
+        // dimenzióként. Ez pontosan a <2-DONE kaput teszteli: ha a kapu (doneCount >= 2) eltűnne,
+        // a base = round(1.0 * 0) = 0 lenne, nem null.
+        DayEvaluation e = engine.evaluate(closedDay(DayInputsBuilder::noKcalLogged));
         long doneCount = e.dimensions().stream().filter(d -> "DONE".equals(d.status())).count();
         assertThat(doneCount).isEqualTo(1);
-        assertThat(dim(e, "sleep").status()).isEqualTo("DONE");
-        assertThat(dim(e, "logging").status()).isEqualTo("NO_DATA");
+        DayDimension logging = dim(e, "logging");
+        assertThat(logging.status()).isEqualTo("DONE");
+        assertThat(logging.score()).isEqualTo(0);
+        assertThat(logging.weight()).isEqualTo(1.0);
         assertThat(e.base()).isNull();
     }
 
