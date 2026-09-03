@@ -54,6 +54,13 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  the turn succeeds technically and yields nothing. */
     public static final String EMPTY_ANSWER = "[fake-empty]";
 
+    /** mezo-qw37.6: proves a system-prompt render (e.g. {@code PromptPersona} substitution)
+     *  actually reached the LLM call. Checked BEFORE all marker-specific dispatch, so it works for
+     *  any generator regardless of which prompt it carries — when planted in the userMessage (e.g.
+     *  via a seeded daily-summary narrative that flows into a generator's payload), the RAW
+     *  systemPrompt is echoed back verbatim as the answer instead of a scripted/default reply. */
+    public static final String SYSTEM_ECHO_SENTINEL = "[fake-system-echo]";
+
     /** Scripted verdicts (V1.3): violate only until the retry header appears in the checked answer. */
     public static final String VIOLATE_ONCE = "[fake-violate]";
     /** Scripted verdicts (V1.3): violate every round — exercises the degraded path. */
@@ -501,6 +508,9 @@ public class FakeCompanionLlm implements CompanionLlm {
         // reach this same forced-failure path.
         if (userMessage.contains(FAIL_COMPLETE) || systemPrompt.contains(FAIL_COMPLETE)) {
             throw new IllegalStateException("FAKE-LLM forced complete failure");
+        }
+        if (userMessage.contains(SYSTEM_ECHO_SENTINEL)) {
+            return systemPrompt;
         }
         if (systemPrompt.startsWith(FactExtractionService.EXTRACTION_MARKER)) {
             return factsAnswer(userMessage);
