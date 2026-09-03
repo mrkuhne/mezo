@@ -47,11 +47,15 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       today: { workoutTime: '17:00', workoutType: 'Pull Day' },
       workoutDone: false,
     }),
+    // Newest-first, like both real data sources (backend: OrderByDateDesc; mock: log
+    // prepends) — s3 is today's LAST-logged session (array head), s2 an earlier same-day
+    // session, s1 a past day. The subline must read s3, never s2 or s1.
     useTrain: () => ({
       sport: {
         sessions: [
-          { id: 's1', sport: 'volleyball', isoDate: '2026-05-22', duration: 60 },
+          { id: 's3', sport: 'volleyball', isoDate: localDateString(), duration: 45 },
           { id: 's2', sport: 'volleyball', isoDate: localDateString(), duration: 90 },
+          { id: 's1', sport: 'volleyball', isoDate: '2026-05-22', duration: 60 },
         ],
       },
       logSportSession: vi.fn(),
@@ -246,7 +250,9 @@ test('the Sport tile swaps the menu for the sport log sheet, without closing', a
 
 test('the Sport tile’s subline reads today’s last session only', () => {
   renderSheet()
-  expect(screen.getByText('Röpi · 90p')).toBeInTheDocument()
+  // s3 (today, last-logged, array head) wins over s2 (today, but earlier) and s1 (past day).
+  expect(screen.getByText('Röpi · 45p')).toBeInTheDocument()
+  expect(screen.queryByText('Röpi · 90p')).not.toBeInTheDocument()
   expect(screen.queryByText('Röpi · 60p')).not.toBeInTheDocument()
 })
 

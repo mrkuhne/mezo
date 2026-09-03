@@ -71,8 +71,11 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
   const { sport, logSportSession } = useTrain()
   const { showLevelUp } = useLevelUp()
   // A mai UTOLSÓ sport-session az alszöveghez — múltbeli session sosem szólal meg itt.
-  const todaysSport = [...(sport.sessions ?? [])].reverse().find(s => s.isoDate === localDateString())
-  const sportSub = todaysSport ? `${SPORT_LABELS[sportOf(todaysSport)]} · ${todaysSport.duration}p` : undefined
+  // `sport.sessions` mindkét adatforrásban legújabb-elöl sorrendű (backend:
+  // OrderByDateDesc; mock: a log a lista elejére fűz), így egy sima `.find()`
+  // a mai nap UTOLSÓNAK logolt sessionjét adja — reverse NÉLKÜL.
+  const todaysSport = (sport.sessions ?? []).find(s => s.isoDate === localDateString())
+  const sportSub = todaysSport ? `${SPORT_LABELS[sportOf(todaysSport)]} · ${HU.format(todaysSport.duration)}p` : undefined
 
   const { checkins, saveCheckIn } = useCheckins()
   // Pinned at click time (see the tile below), NOT recomputed here — see mezo-967c finding 1.
