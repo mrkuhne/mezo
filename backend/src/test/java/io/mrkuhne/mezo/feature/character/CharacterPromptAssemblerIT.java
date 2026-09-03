@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.character;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.character.config.CharacterProperties;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
@@ -99,8 +100,9 @@ class CharacterPromptAssemblerIT extends ApiIntegrationTest {
 
         String block = promptSource.render(owner);
 
-        assertThat(block).contains("[Karakter — amit eddig megtudtam ").contains(" személyéről]");
-        assertThat(block).doesNotContain("Daniel");
+        assertThat(block).contains(
+                "[Karakter — amit eddig megtudtam " + ownerProperties.ownerName() + " személyéről]");
+        assertThat(block).doesNotContain("Daniel").doesNotContain(PromptPersona.NAME_TOKEN);
         // I4 (final review): the header carries the tone-rule parenthetical itself — the chat
         // prompt gets no other explanation of what ÉRZÉKENY means or that this is interpretation,
         // not fact.
