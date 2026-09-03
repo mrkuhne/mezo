@@ -71,7 +71,7 @@ This task ships no check — its deliverable is that the kind exists end to end 
 - [ ] **Step 1: Run the existing proactive ITs — green before anything**
 
 ```bash
-cd backend && ./mvnw test -Dtest='InterventionServiceIT,ProactiveFeed*IT,CompanionMessage*IT' -q -Dmezo.test.use-testcontainers=true
+cd backend && ./mvnw test -Dtest='InterventionServiceIT,ProactiveApiFeedIT,CompanionMessage*IT' -q -Dmezo.test.use-testcontainers=true
 ```
 
 Expected: all pass. If not, STOP — investigate before adding to a broken baseline.
@@ -178,7 +178,7 @@ Find the IT that round-trips `companion_message` rows (`CompanionMessage*IT` und
 - [ ] **Step 8: Run the tests**
 
 ```bash
-cd backend && ./mvnw test -Dtest='InterventionServiceIT,ProactiveFeed*IT,CompanionMessage*IT' -q -Dmezo.test.use-testcontainers=true
+cd backend && ./mvnw test -Dtest='InterventionServiceIT,ProactiveApiFeedIT,CompanionMessage*IT' -q -Dmezo.test.use-testcontainers=true
 cd ../frontend && pnpm test
 ```
 
@@ -546,7 +546,7 @@ Create `SetupCheckJobSwitchOffIT` modelled on `FlagSweepJobSwitchOffIT` — asse
 - [ ] **Step 6: Run to verify green**
 
 ```bash
-cd backend && ./mvnw test -Dtest='SetupCheckServiceIT,SetupCheckJobSwitchOffIT,SetupCheckPropertiesIT,InterventionServiceIT,ProactiveFeed*IT' -q -Dmezo.test.use-testcontainers=true
+cd backend && ./mvnw test -Dtest='SetupCheckServiceIT,SetupCheckJobSwitchOffIT,SetupCheckPropertiesIT,InterventionServiceIT,ProactiveApiFeedIT' -q -Dmezo.test.use-testcontainers=true
 ```
 
 Expected: PASS, including the pre-existing proactive ITs. **Watch for feed tests that assert an exact card set** — a `setup` card may now appear for fixtures whose users have no sleep goal. Widen only exact-set assertions, never weaken one that was checking something else, and report each.
@@ -816,7 +816,7 @@ plus `CHECK_PLAN_FEASIBILITY` and a private `feasibilityText(Verdict)` composing
 - [ ] **Step 5: Run to verify green**
 
 ```bash
-cd backend && ./mvnw test -Dtest='PlanFeasibilityIT,SetupCheckServiceIT,SetupCheckJobSwitchOffIT,InterventionServiceIT,ProactiveFeed*IT' -q -Dmezo.test.use-testcontainers=true
+cd backend && ./mvnw test -Dtest='PlanFeasibilityIT,SetupCheckServiceIT,SetupCheckJobSwitchOffIT,InterventionServiceIT,ProactiveApiFeedIT' -q -Dmezo.test.use-testcontainers=true
 ```
 
 Expected: PASS.
@@ -854,7 +854,7 @@ node scripts/lint-docs.mjs --errors-only
 - [ ] **Step 3: Focused verification sweep**
 
 ```bash
-cd backend && ./mvnw test -Dtest='SetupCheck*IT,PlanFeasibilityIT,InterventionServiceIT,ProactiveFeed*IT,CompanionMessage*IT,FlagEvaluator*IT' -q -Dmezo.test.use-testcontainers=true
+cd backend && ./mvnw test -Dtest='SetupCheck*IT,PlanFeasibilityIT,InterventionServiceIT,ProactiveApiFeedIT,CompanionMessage*IT,FlagEvaluator*IT' -q -Dmezo.test.use-testcontainers=true
 cd ../frontend && pnpm test && VITE_USE_MOCK=false pnpm test && pnpm build
 ```
 
