@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
@@ -52,7 +53,10 @@ public record GoalEngineProperties(
     @NotNull @Min(0) @Max(200) Integer thermogenesisHaircutKcalPerDay,
 
     /** ± uncertainty band (kcal/day) around a bootstrapped TDEE before real intake data lands. */
-    @NotNull @Positive Integer bootstrapUncertaintyKcal
+    @NotNull @Positive Integer bootstrapUncertaintyKcal,
+
+    /** Suggest+approve trigger tunables (slice 4). */
+    @NotNull @Valid Suggestion suggestion
 ) {
 
     /**
@@ -140,5 +144,16 @@ public record GoalEngineProperties(
                 default -> fatShareBalanced;
             };
         }
+    }
+
+    /**
+     * Meso goalPreset → suggested goal trajectory. The preset vocabulary is FE-OWNED strings
+     * (frontend/src/data/train/train.ts GOAL_PRESETS ids; backend only stores/echoes them —
+     * mezo-dq60), so the mapping is config, not an enum: an unknown/new preset simply has no
+     * opinion. Absent key = no suggestion (strength/sport are trajectory-neutral).
+     */
+    public record Suggestion(
+        @NotNull Map<String, String> presetTrajectory
+    ) {
     }
 }
