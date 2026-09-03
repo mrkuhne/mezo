@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
+import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.feature.nutrition.service.DietPreferencesResolver;
 import io.mrkuhne.mezo.feature.meal.mapper.MealMapper;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
@@ -152,19 +153,29 @@ public class FuelDayService {
     }
 
     /**
-     * kcal + protein + carbs + fat from the active goal's recept segment covering {@code date}'s
-     * goal-week (week derived from startDate — the ContextSnapshotAssembler#goalBlock idiom);
-     * config fallback per field when there is no goal, no evaluated prescription, no covering
-     * segment (e.g. a date before the goal started), or the segment predates the carbs/fat split
-     * (pre-slice-1 prescriptions carry null carbsG/fatG). {@code waterMl} is caller-resolved (once
-     * per request, via {@link DietPreferencesResolver}) since water is never goal-prescribed.
+     * The active goal's recept segment covering {@code date}'s goal-week (week derived from
+     * startDate — the ContextSnapshotAssembler#goalBlock idiom); {@code null} when there is no
+     * goal, no evaluated prescription, or no covering segment (e.g. a date before the goal
+     * started). SHARED by {@link #targetSet} (the FuelDay MacroHero) and {@link #dailyTargets}
+     * (the meal scorer, mezo-3g5w) — one resolution, two projections, so the two surfaces can
+     * never judge a day against different numbers.
+     */
+    private GoalPrescriptionJson.Segment segmentFor(GoalEntity goal, LocalDate date) {
+        if (goal == null || goal.getStartDate() == null) {
+            return null;
+        }
+        long week = ChronoUnit.DAYS.between(goal.getStartDate(), date) / 7 + 1;
+        return GoalPrescriptionJson.currentSegment(goal.getPrescription(), week);
+    }
+
+    /**
+     * kcal + protein + carbs + fat from {@link #segmentFor}; config fallback per field when there
+     * is no covering segment, or the segment predates the carbs/fat split (pre-slice-1
+     * prescriptions carry null carbsG/fatG). {@code waterMl} is caller-resolved (once per request,
+     * via {@link DietPreferencesResolver}) since water is never goal-prescribed.
      */
     private MacroSet targetSet(GoalEntity goal, LocalDate date, int waterMl) {
-        GoalPrescriptionJson.Segment seg = null;
-        if (goal != null && goal.getStartDate() != null) {
-            long week = ChronoUnit.DAYS.between(goal.getStartDate(), date) / 7 + 1;
-            seg = GoalPrescriptionJson.currentSegment(goal.getPrescription(), week);
-        }
+        GoalPrescriptionJson.Segment seg = segmentFor(goal, date);
         return MacroSet.builder()
             .kcal(BigDecimal.valueOf(seg != null && seg.kcal() != null ? seg.kcal() : targets.kcal()))
             .p(BigDecimal.valueOf(seg != null && seg.proteinG() != null ? seg.proteinG() : targets.p()))
@@ -172,6 +183,26 @@ public class FuelDayService {
             .f(BigDecimal.valueOf(seg != null && seg.fatG() != null ? seg.fatG() : targets.f()))
             .water(BigDecimal.valueOf(waterMl))
             .build();
+    }
+
+    /**
+     * The day's resolved macro targets for the meal scorer (mezo-3g5w): the active goal's covering
+     * segment via {@link #segmentFor}, per-field config fallback — the SAME resolution
+     * {@link #targetSet} serves the MacroHero, so the score and the hero can never judge against
+     * different numbers.
+     */
+    @Transactional(readOnly = true)
+    public DailyTargets dailyTargets(UUID userId, LocalDate date) {
+        GoalPrescriptionJson.Segment seg = segmentFor(activeGoal(userId), date);
+        if (seg == null) {
+            return DailyTargets.fromConfig(targets);
+        }
+        return new DailyTargets(
+            seg.kcal() != null ? seg.kcal() : targets.kcal(),
+            seg.proteinG() != null ? seg.proteinG() : targets.p(),
+            seg.carbsG() != null ? seg.carbsG() : targets.c(),
+            seg.fatG() != null ? seg.fatG() : targets.f(),
+            "goal");
     }
 
     /** consumed = Σ meal macros; water = Σ the day's water-log entries. */

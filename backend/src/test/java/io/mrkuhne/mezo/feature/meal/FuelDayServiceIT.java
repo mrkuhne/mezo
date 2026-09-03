@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.meal.service.MealService;
 import io.mrkuhne.mezo.feature.nutrition.entity.DietSettingsEntity;
+import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.feature.nutrition.repository.DietSettingsRepository;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -295,5 +296,41 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
         FuelDayResponse day = service.getDay(owner, LocalDate.of(2026, 6, 24));
 
         assertThat(day.getMeals()).hasSize(1);
+    }
+
+    // -- FuelDayService.dailyTargets (mezo-3g5w): the meal scorer's day-target resolver, sharing
+    // the SAME segmentFor resolution as targetSet above -- so the score and the MacroHero can
+    // never judge against different numbers.
+
+    @Test
+    void testDailyTargets_shouldReadGoalSegment_whenActiveGoalCoversDate() {
+        // active goal whose prescription segment for week 1 prescribes 2400/180/240/70
+        UUID goalOwner = databasePopulator.populateUser("daily-targets-goal-owner@test.local");
+        LocalDate today = LocalDate.now();
+        GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula",
+            List.of(new GoalPrescriptionJson.Segment(1, 6, "Alap", 2400, 180, 240, 70,
+                new BigDecimal("8.0"), List.of(), null, -300, "seed")),
+            null, null);
+        goalPopulator.createGoalFull(goalOwner, today.minusDays(3), today.plusWeeks(5),
+            prescription, 4, "06:30", "22:30");
+
+        DailyTargets t = fuelDayService.dailyTargets(goalOwner, today);
+
+        assertThat(t.kcal()).isEqualTo(2400);
+        assertThat(t.p()).isEqualTo(180);
+        assertThat(t.c()).isEqualTo(240);
+        assertThat(t.f()).isEqualTo(70);
+        assertThat(t.source()).isEqualTo("goal");
+    }
+
+    @Test
+    void testDailyTargets_shouldFallBackToConfig_whenNoActiveGoal() {
+        DailyTargets t = fuelDayService.dailyTargets(owner, LocalDate.now());
+
+        assertThat(t.kcal()).isEqualTo(3100);
+        assertThat(t.p()).isEqualTo(220);
+        assertThat(t.c()).isEqualTo(380);
+        assertThat(t.f()).isEqualTo(95);
+        assertThat(t.source()).isEqualTo("config");
     }
 }
