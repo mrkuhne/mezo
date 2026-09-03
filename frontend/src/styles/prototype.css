@@ -1391,6 +1391,13 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   font-size: 16px; font-weight: 500; line-height: 1.25; letter-spacing: -0.005em;
 }
 .t-meta { font-style: italic; font-weight: 400; color: rgba(255,255,255,0.72); }
+/* a felhasználó saját ünneplés-mondata (mezo-3zue.5) — a cím alatt, saját sorban: ez az
+   ő hangja, nem mennyiségi addendum, ezért nem a `.t-meta` helyét foglalja el */
+.t-celebrate {
+  margin-top: 5px;
+  font-size: 12.5px; font-style: italic; font-weight: 400; line-height: 1.35;
+  color: rgba(255,255,255,0.82);
+}
 .t-meter {
   display: flex; align-items: center; gap: 9px;
   margin-top: 10px; padding: 7px 11px;
