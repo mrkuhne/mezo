@@ -65,7 +65,11 @@ const SCREENS: Array<[string, string, string?]> = [
   // F7.4 Én deep (mezo-d20.8.4.1): the goal wizard, the routine editor, the Growth awards
   // tab (the progression's new home — streak card + titles section) and the AI-call detail.
   ['me-goal-wizard', '/me/goals/new'],
-  ['me-rutinok', '/me/routines/edit'],
+  ['me-rutinok', '/me/rutin'],
+  // The routine surface's other two pages (mezo-3zue.4): the four-step recipe wizard and one
+  // habit's own recipe page (`daily_intention` is a stable seeded mock habitKey).
+  ['me-rutin-uj', '/me/rutin/uj'],
+  ['me-rutin-szokas', '/me/rutin/szokas/daily_intention'],
   ['me-growth', '/me/growth'],
   ['me-growth-awards', '/me/growth/kituntetesek'],
   ['me-ai-call', '/me/ai-usage/22222222-2222-4222-8222-222222222222'],

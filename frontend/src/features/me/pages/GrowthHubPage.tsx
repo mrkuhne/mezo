@@ -10,7 +10,7 @@
 import type { CSSProperties } from 'react'
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  useAchievements, useActivityHistory, useGamification, useHabitSummary, useProgressionProfile, useQuestHistory,
+  useAchievements, useActivityHistory, useGamification, useProgressionProfile, useQuestHistory,
 } from '@/data/hooks'
 import { STREAK_MILESTONE_COINS } from '@/data/gamification/gamificationStore'
 import { GHOST_GAMIFICATION } from '@/data/gamification/gamificationMock'
@@ -23,7 +23,7 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { addDays, localDateString } from '@/shared/lib/dates'
 
 export const TAB_REDIRECT: Record<string, string> = {
-  skills: '/me/growth/skillek', routines: '/me/growth/rutin', journal: '/me/growth/naplo', awards: '/me/growth/kituntetesek',
+  skills: '/me/growth/skillek', routines: '/me/rutin', journal: '/me/growth/naplo', awards: '/me/growth/kituntetesek',
 }
 const MILESTONES = Object.keys(STREAK_MILESTONE_COINS).map(Number).sort((a, b) => a - b)
 const PULSE_WINDOW_DAYS = 10
@@ -34,7 +34,6 @@ export function GrowthHubPage() {
   const legacy = params.get('tab')
   const { data: profile } = useProgressionProfile()
   const { profile: gam } = useGamification()
-  const { data: habitSummary, isPending: habitPending } = useHabitSummary()
   const { data: achievements } = useAchievements()
   const today = localDateString()
   const from = addDays(today, -29)
@@ -48,9 +47,6 @@ export function GrowthHubPage() {
   const level = gam === GHOST_GAMIFICATION ? null : { level: gam.level, xpInLevel: gam.xpInLevel, xpForNext: gam.xpForNext }
 
   const skillLine = stats.skillCount > 0 ? <><b>{stats.skillCount} skill</b> · legjobb Lv {stats.bestLevel}</> : undefined
-  const rutinLine = habitPending ? undefined : (
-    <><b>{habitSummary.perfectMorningDays30}</b> reggel · <b>{habitSummary.perfectEveningDays30}</b> este <span className="mz-mut">/ 30</span></>
-  )
   const completed = quests.filter((q) => q.status === 'completed').length
   const naploLine = (questsPending || activitiesPending) ? undefined : (
     <><b>{completed} ✓</b> · {activities.length} ✎ <span className="mz-mut">· 30 nap</span></>
@@ -79,8 +75,6 @@ export function GrowthHubPage() {
               <div className="mz-spotwrap"><ClaySpot name="s-hajtas" size={50} /></div>
               {skillLine !== undefined && <div className="mz-tile-line gr-tile-line">{skillLine}</div>}
             </button>
-            <Tile wash="gold" icon="i-hajnal" iconSize={47} eyebrow="Rutin" delayMs={220} className="gr-tile-line"
-              line={rutinLine} onClick={() => navigate('/me/growth/rutin')} aria-label="Rutin" />
             <Tile wash="sky" icon="i-naplo" iconSize={47} eyebrow="Napló" delayMs={270} className="gr-tile-line"
               line={naploLine} onClick={() => navigate('/me/growth/naplo')} aria-label="Napló" />
             <button type="button" className="mz-tile mz-w-sage rise" style={{ '--d': '320ms' } as CSSProperties}

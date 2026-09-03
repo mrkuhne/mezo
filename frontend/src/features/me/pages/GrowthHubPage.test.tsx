@@ -41,32 +41,30 @@ beforeEach(() => {
 })
 afterEach(() => vi.clearAllMocks())
 
-test('hub anatomy: ‹ Én head, hero XP (FE sum 18 985), Ma strip, four tiles inside one EntranceGroup', () => {
+test('hub anatomy: ‹ Én head, hero XP (FE sum 18 985), Ma strip, three tiles inside one EntranceGroup', () => {
   const { container } = renderAt('/me/growth')
   expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Én')
   expect(screen.getByText('18 985')).toBeInTheDocument()
   expect(screen.getByText('Szint 12')).toBeInTheDocument()          // gamificationProfileMock.level
   expect(screen.getByText('78%')).toBeInTheDocument()               // traits.disciplinePct
   expect(screen.getByRole('button', { name: 'Küldetések · a Nap fülön' })).toBeInTheDocument()
-  for (const t of ['Skillek', 'Rutin', 'Napló', 'Kitüntetések']) expect(screen.getByRole('button', { name: t })).toBeInTheDocument()
+  for (const t of ['Skillek', 'Napló', 'Kitüntetések']) expect(screen.getByRole('button', { name: t })).toBeInTheDocument()
   for (const r of container.querySelectorAll('.rise')) expect(r.closest('.mz-play')).not.toBeNull()
 })
 
-test('tile lines come from the page hooks — band lengths, habit counters, journal counts, badges + streak', () => {
+test('tile lines come from the page hooks — band lengths, journal counts, badges + streak', () => {
   renderAt('/me/growth')
   expect(screen.getByRole('button', { name: 'Skillek' })).toHaveTextContent('33 skill · legjobb Lv 7')
-  expect(screen.getByRole('button', { name: 'Rutin' })).toHaveTextContent('6 reggel · 4 este / 30')
   const completed = mockQuestHistory.filter((q) => q.status === 'completed').length
   expect(screen.getByRole('button', { name: 'Napló' })).toHaveTextContent(`${completed} ✓ · ${mockActivityHistory.length} ✎ · 30 nap`)
   expect(screen.getByRole('button', { name: 'Kitüntetések' })).toHaveTextContent('4 / 9 jelvény · 6 napos sorozat')
 })
 
-test('cold load (real mode, unresolved): Rutin and Napló render no tile line — Skillek/Kitüntetések unaffected', () => {
+test('cold load (real mode, unresolved): Napló renders no tile line — Skillek/Kitüntetések unaffected', () => {
   hooks.useHabitSummary.mockReturnValue({ data: { perfectMorningDays30: 0, perfectEveningDays30: 0, habits: [] }, isPending: true })
   hooks.useQuestHistory.mockReturnValue({ data: [], isPending: true })
   hooks.useActivityHistory.mockReturnValue({ data: [], isPending: true })
   renderAt('/me/growth')
-  expect(screen.getByRole('button', { name: 'Rutin' }).querySelector('.mz-tile-line')).toBeNull()
   expect(screen.getByRole('button', { name: 'Napló' }).querySelector('.mz-tile-line')).toBeNull()
   expect(screen.getByRole('button', { name: 'Skillek' }).querySelector('.mz-tile-line')).not.toBeNull()
   expect(screen.getByRole('button', { name: 'Kitüntetések' }).querySelector('.mz-tile-line')).not.toBeNull()
