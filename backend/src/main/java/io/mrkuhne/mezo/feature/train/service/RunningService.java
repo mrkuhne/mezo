@@ -45,6 +45,7 @@ public class RunningService {
     private final ProgressionService progressionService;
     private final LevelUpResultMapper levelUpResultMapper;
     private final ObjectProvider<ProgressionGate> progressionGate;
+    private final GoalRecomputePort goalRecomputePort;
 
     public List<RunningBlockResponse> listBlocks(UUID userId) {
         return blockRepository.findByCreatedByAndDeletedFalseOrderByStartDateAsc(userId)
@@ -79,6 +80,9 @@ public class RunningService {
         if (!"active".equals(target.getStatus())) {
             target.setStatus("active");
         }
+        // The weekly EAT is schedule-derived → activating a block must recompute the prescription
+        // (G5 trigger, mezo-3g5w). Graceful when no goal is active.
+        goalRecomputePort.recomputeActiveGoal(userId);
         return toResponse(target);
     }
 
@@ -88,12 +92,18 @@ public class RunningService {
         if (!"archived".equals(e.getStatus())) {
             e.setStatus("archived");
         }
+        // The weekly EAT is schedule-derived → closing a block must recompute the prescription
+        // (G5 trigger, mezo-3g5w). Graceful when no goal is active.
+        goalRecomputePort.recomputeActiveGoal(userId);
         return toResponse(e);
     }
 
     @Transactional
     public void deleteBlock(UUID userId, UUID id) {
         blockRepository.delete(requireOwned(userId, id)); // @SQLDelete soft-deletes
+        // The weekly EAT is schedule-derived → deleting a block must recompute the prescription
+        // (G5 trigger, mezo-3g5w). Graceful when no goal is active.
+        goalRecomputePort.recomputeActiveGoal(userId);
     }
 
     public List<RunSessionLogResponse> listSessions(UUID userId) {

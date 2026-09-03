@@ -56,6 +56,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class GoalEngineService {
 
     private static final String PLAN_MESOCYCLE = "mesocycle";
+    private static final String STATUS_ACTIVE = "active";
 
     private final GoalRepository goalRepository;
     private final GoalPlanLinkRepository linkRepository;
@@ -109,6 +110,21 @@ public class GoalEngineService {
             dietPreferences.resolve(userId));
         goal.setPrescription(rx);
         return rx;
+    }
+
+    /**
+     * Recompute the owner's single ACTIVE goal (if any) — graceful no-op when none is active.
+     * The shared body of every "an engine input moved" trigger (weigh-in, profile, schedule edits);
+     * extracted from WeightLogService so the trigger set can grow without copy-paste (mezo-3g5w).
+     */
+    @Transactional
+    public void recomputeActiveGoal(UUID userId) {
+        List<GoalEntity> active =
+            goalRepository.findByCreatedByAndStatusAndDeletedFalse(userId, STATUS_ACTIVE);
+        if (active.isEmpty()) {
+            return;
+        }
+        evaluate(userId, active.get(0).getId());
     }
 
     /** The goal's linked mesocycle planIds — the muscle-volume guard scope (Task 7). */
