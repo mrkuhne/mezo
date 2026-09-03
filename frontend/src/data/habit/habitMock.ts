@@ -136,7 +136,12 @@ function toDefInfo(h: HabitItem): HabitDefInfo {
 const dailyIntention: HabitDefInfo = {
   id: 'def-daily_intention', habitKey: 'daily_intention', chainKey: 'MORNING', position: 9,
   title: 'Napi szándék', why: 'Egy szándékkal indított nap nem sodródik — te választod az irányt.',
-  anchorCopy: 'reggeli rutin után', mode: 'DERIVED', metric: 'intention_focus_set', skillKey: 'mindset',
+  // A valós seed defnek VAN „reggeli rutin után" horgonya, de keret NÉLKÜL (a
+  // habit-catalog.json egyetlen defje sem hordoz keret-mezőt). Ez a mock def CLEAR-re van
+  // állítva, hogy a négy törvény sora demózható legyen — a clearForeignFields viszont a
+  // CLEAR-ágon nullázza az anchorCopy-t, tehát CLEAR + anchorCopy olyan állapot, amit a
+  // backend soha nem tud előállítani (mezo-3zue.8).
+  anchorCopy: null, mode: 'DERIVED', metric: 'intention_focus_set', skillKey: 'mindset',
   xp: 10, linkUrl: null, isActive: true,
   framework: 'CLEAR',
   anchorHabitKey: null,
