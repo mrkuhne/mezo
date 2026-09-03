@@ -70,6 +70,26 @@ describe('real mode', () => {
     expect(screen.queryByRole('img', { name: /aktív cél/ })).not.toBeInTheDocument()
   })
 
+  /**
+   * mezo-iizd.5 final review, finding 2: `useLifeGoalToday` resolves independently of the goal
+   * list — the list can be ready while `/api/life-goals/today` is still loading or failing. Before
+   * this fix the hero sentence read the unresolved `{goals:[]}` fallback as "zero of everything
+   * this week" and printed a fabricated "0↗ · 0→ · 0↘" instead of the honest neutral sentence.
+   */
+  test('today counters stay honest — neutral sentence, not a fabricated 0↗·0→·0↘ — while /today is loading', () => {
+    server.use(http.get(`${API_BASE}/api/life-goals/today`, () => new Promise(() => {})))
+    renderHub()
+    expect(screen.queryByText(/0↗ · 0→ · 0↘/)).not.toBeInTheDocument()
+  })
+
+  test('today counters stay honest when /today fails, even though the goal list loaded fine', async () => {
+    server.use(http.get(`${API_BASE}/api/life-goals/today`, () => new HttpResponse(null, { status: 500 })))
+    renderHub()
+    await screen.findByText('Célok')
+    expect(screen.queryByText(/0↗ · 0→ · 0↘/)).not.toBeInTheDocument()
+    expect(await screen.findByText(/Az irány-nyíl a 2\. szelettel jön/)).toBeInTheDocument()
+  })
+
   test('a failed list read renders a terminal error + retry, not the empty state', async () => {
     let calls = 0
     server.use(http.get(`${API_BASE}/api/life-goals`, () => { calls += 1; return new HttpResponse(null, { status: 500 }) }))

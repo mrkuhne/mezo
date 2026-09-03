@@ -16,7 +16,7 @@ export function CelokPage() {
   const navigate = useNavigate()
   const { goals, isPending, isError, refetch } = useLifeGoals()
   const { changeStatus } = useLifeGoalMutations()
-  const { today } = useLifeGoalToday()
+  const { today, isPending: todayIsPending, isError: todayIsError } = useLifeGoalToday()
   const active = goals.filter((g) => g.status === 'active')
   const parked = goals.filter((g) => g.status === 'parked' || g.status === 'draft')
   const counts = Object.fromEntries(DIMENSION_ORDER.map((d) => [d, active.filter((g) => g.dimension === d).length])) as Record<LifeGoalDimension, number>
@@ -27,6 +27,12 @@ export function CelokPage() {
     (acc, s) => { if (s.arrow !== 'insufficient') acc[s.arrow] += 1; return acc },
     { up: 0, flat: 0, down: 0 } as Record<Exclude<TrendArrow, 'insufficient'>, number>,
   )
+  // `useLifeGoalToday`'s own loading/error resolve independently of the goal list above (the
+  // list can be ready while `today` is still in flight or has failed) — `realEmpty: {goals:[]}`
+  // means an unresolved/failed fetch silently reduces to the SAME shape as "no active goals had
+  // any data this week", so counting off it unconditionally prints a fabricated "0↗ · 0→ · 0↘"
+  // instead of the honest neutral sentence below (LifeGoalTile/PillarCard `honest` idiom).
+  const todayHonest = todayIsPending || todayIsError
 
   // Real mode's unresolved window yields an honest empty list (useDualQuery's `realEmpty`), so
   // rendering the page body then printed a fabricated "0 aktív · 0 parkol" + an empty PERMAH ring
@@ -63,7 +69,9 @@ export function CelokPage() {
             <div style={{ flex: 1, fontSize: 13.5, fontWeight: 300 }}>
               {active.length === 0
                 ? <>Még nincs aktív célod. <strong>Egy cél, két-három pillér</strong> — a többit a naplód hozza.</>
-                : <>A pillérek a meglévő naplódból számolnak. <strong>{arrowCounts.up}↗ · {arrowCounts.flat}→ · {arrowCounts.down}↘</strong> ezen a héten.</>}
+                : todayHonest
+                  ? <>A pillérek a meglévő naplódból számolnak. <strong>Az irány-nyíl a 2. szelettel jön</strong> — addig a célok és pilléreik itt élnek.</>
+                  : <>A pillérek a meglévő naplódból számolnak. <strong>{arrowCounts.up}↗ · {arrowCounts.flat}→ · {arrowCounts.down}↘</strong> ezen a héten.</>}
             </div>
           </div>
           <div className="lg-dimband rise" style={{ '--d': '90ms', marginBottom: 12 } as React.CSSProperties} aria-label="Életterületek">
