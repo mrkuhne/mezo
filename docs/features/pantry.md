@@ -59,6 +59,8 @@ Shared-provenance UI:
 
 **`PantryCatalogService.findOrCreate`** (the shared natural-key resolver every writer funnels through — `PantryService`, `PantryImportService`, `ProtocolSeedData`, the AI meal draft, the Receptműhely): a hit is revived if soft-deleted and fill-only merged (never overwrites a curated value) *only when the caller is the row's author* — a bystander OWNER's ordinary add/import never silently backfills someone else's or a master row's NULL fields. A miss inserts in its **own `REQUIRES_NEW` transaction**; on a unique-index race (two users typing the same food at once) the loser catches `DataIntegrityViolationException` and re-resolves via `findByNaturalKey`, binding to whichever row won — the same fill-only-if-author merge then applies.
 
+`findOrCreate` has a second overload, `findOrCreate(authorId, candidate, allowMerge)`, and the plain two-arg form is just `allowMerge = true`. **`PantryImportService` deliberately calls the three-arg form as `findOrCreate(userId, candidate, !manualReview)`** (`PantryImportService.java`): a low-confidence scrape/photo draft that still needs human review must not touch the shared definition's NULL fields before the user confirms it, even when the caller IS that row's author — `allowMerge = false` skips `mergeIfAuthor` entirely on a hit and returns the existing row untouched. See §9.
+
 Mock-mode mutators (`mockAddFromCatalog` in `pantryHooks.ts`) mirror the real endpoint's idempotency against the client-owned TanStack cache.
 
 ## 4. Data model & API
@@ -152,6 +154,7 @@ Commands: backend focused `./mvnw clean test -Dtest='Pantry*,...' -Dmezo.test.us
   ```
 
   Resolve by hand (merge or rename one of the duplicates) before re-running the migration — it must never be left to auto-pick a winner.
+- **A manual-review import draft never merges into the shared definition (`allowMerge = false`).** `PantryImportService` calls `findOrCreate(userId, candidate, !manualReview)` — a low-confidence scrape/photo draft the user hasn't confirmed yet must not backfill the shared row's NULL fields, even when the caller already authored that row, because a bad AI-extracted value would otherwise permanently block the correct curated value from ever filling that column later (fill-only merge never overwrites a non-null value). This is a deliberate fix for a real defect; a new `findOrCreate` caller for unreviewed/low-confidence data should default to `allowMerge = false` too, not copy the plain two-arg (`allowMerge = true`) call.
 - **A deleted author's definitions become master-like.** The catalog FK is `ON DELETE SET NULL`, so once an author's account is gone the row reads as loader-master (`isMaster() == true`) and is thereafter OWNER-editable only.
 - **`ResetDatabase` ordering** — `pantry_catalog` rows must TRUNCATE before `app_user` (the FK is `SET NULL`, not `CASCADE`, so order still matters for a clean re-seed).
 - **The 147-item seed's `stockQty`/`priceHuf` fields are ignored by `PantryCatalogLoader`** — the loader only ever writes definition columns; no `pantry_item` is created by the loader for anyone but populators/tests that explicitly ask for one.
