@@ -3,10 +3,10 @@
 // Behind the floating coral FAB on every tab. Anatomy (en-tab prototype):
 //   · MOST head — the current eating window with the plan meal + Logold
 //     (echoes the Fuel swimlane); renders NOTHING without a now-window.
-//   · Víz duo tile — ＋250/＋400/＋500 logs in place, live HU-grouped counter.
-//   · Clay tile grid with live sublines; Súly opens the weight sheet in
-//     place, Alvás/Napló/Check-in swap in place (mezo-967c), the rest
-//     navigate. A log stays two taps from anywhere.
+//   · Flat 8-tile clay grid with live sublines (mezo-7lst); Víz/Súly open their
+//     amount pickers in place (WaterLogSheet / WeightLogSheet), Alvás/Napló/
+//     Check-in swap in place (mezo-967c), the rest navigate. A log stays two
+//     taps from anywhere.
 //   · The Mezo row at the bottom keeps chat as a logging path.
 // ============================================================
 import { useState } from 'react'
@@ -19,15 +19,15 @@ import { JournalSheet } from '@/features/me/sheets/JournalSheet'
 import { QuickSleepSheet } from '@/features/quickinput/sheets/QuickSleepSheet'
 import { CheckInSheet } from '@/features/today/sheets/CheckInSheet'
 import { WeightLogSheet } from '@/features/me/sheets/WeightLogSheet'
+import { WaterLogSheet } from '@/features/fuel/sheets/WaterLogSheet'
 import { isFillableSlot } from '@/features/today/logic/todayItems'
 import { tileKey } from '@/features/fuel/logic/fuelSwimlane'
 import { useCheckins, useFuelPreview, useFuelDay, useWaterActions, useWeight, useToday } from '@/data/hooks'
 
 /** Which surface the sheet shows: the launcher grid, an in-place two-option picker, or a log
  * sheet opened in its place (mezo-b3pp.1 / mezo-d20.1.6 — Súly joined the in-place set). */
-type Phase = 'menu' | 'sleep' | 'naplo-pick' | 'aktivitas' | 'journal' | 'gratitude' | 'checkin' | 'weight'
+type Phase = 'menu' | 'sleep' | 'naplo-pick' | 'aktivitas' | 'journal' | 'gratitude' | 'checkin' | 'weight' | 'water'
 
-const WATER_CHIPS = [250, 400, 500] as const
 const HU = new Intl.NumberFormat('hu-HU')
 
 function Tile({ icon, label, sub, subDone, tone, onClick, disabled }: {
@@ -75,6 +75,16 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
   if (phase === 'sleep') return <QuickSleepSheet onClose={onClose} />
   if (phase === 'weight') {
     return <WeightLogSheet onClose={onClose} onSave={logWeight} currentWeight={latestWeight?.value ?? 0} />
+  }
+  if (phase === 'water') {
+    return (
+      <WaterLogSheet
+        currentMl={fuel.consumed.water}
+        targetMl={fuel.targets.water}
+        onLog={logWater}
+        onClose={onClose}
+      />
+    )
   }
   if (phase === 'aktivitas') return <ActivityLogSheet onClose={onClose} onBack={goBack} />
   if (phase === 'journal') return <JournalSheet onClose={onClose} onBack={goBack} />
@@ -133,28 +143,15 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
                 <Icon name="chevron-right" size={18} />
               </button>
 
-              <div className="quicklog-water">
-                <div className="quicklog-water-head">
-                  <ClayIcon name="i-viz" size={24} />
-                  <span className="quicklog-label">Víz</span>
-                  <span className="quicklog-water-count">{HU.format(fuel.consumed.water)} ml</span>
-                </div>
-                <div className="quicklog-water-chips">
-                  {WATER_CHIPS.map(ml => (
-                    <button key={ml} type="button" className="quicklog-chip np-press" onClick={() => logWater(ml)}>
-                      ＋{ml}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <div className="quicklog-grid">
                 <Tile icon="i-fuel" label="Étkezés" tone="coral" sub={foodSub}
                   onClick={() => { close(); navigate(foodTarget) }} />
-                <Tile icon="i-edzes" label="Edzés" tone="coral" sub={trainSub} subDone={workoutDone}
-                  onClick={() => { close(); navigate('/train') }} />
+                <Tile icon="i-viz" label="Víz" tone="sky" sub={`${HU.format(fuel.consumed.water)} ml`}
+                  onClick={() => setPhase('water')} />
                 <Tile icon="i-stack" label="Stack" tone="gold"
                   onClick={() => { close(); navigate('/fuel/stack') }} />
+                <Tile icon="i-edzes" label="Edzés" tone="coral" sub={trainSub} subDone={workoutDone}
+                  onClick={() => { close(); navigate('/train') }} />
                 <Tile icon="i-suly" label="Súly" tone="sky"
                   sub={latestWeight ? `${HU.format(latestWeight.value)} kg` : undefined}
                   onClick={() => setPhase('weight')} />
@@ -165,8 +162,8 @@ export function QuickInputSheet({ onClose }: { onClose: () => void }) {
                     if (nextCheckInIdx >= 0) { setCheckInIdx(nextCheckInIdx); setPhase('checkin') }
                     else { close(); navigate('/nap') }
                   }} />
-                <Tile icon="i-alvas" label="Alvás" tone="lav" onClick={() => setPhase('sleep')} />
                 <Tile icon="i-naplo" label="Napló" tone="sage" sub="3 mód" onClick={() => setPhase('naplo-pick')} />
+                <Tile icon="i-alvas" label="Alvás" tone="lav" onClick={() => setPhase('sleep')} />
               </div>
             </>
           )}

@@ -34,7 +34,7 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     useFuelDay: () => {
       const [water, setWater] = useState(1850)
       waterStore.set = setWater
-      return { fuel: { consumed: { water } } }
+      return { fuel: { consumed: { water }, targets: { water: 3000 } } }
     },
     useWaterActions: () => ({ logWater: (ml: number) => waterStore.set?.(n => n + ml) }),
     useWeight: () => ({
@@ -93,7 +93,7 @@ function renderSheet(onClose = () => {}) {
 
 test('renders all eight quick-log tiles', () => {
   renderSheet()
-  for (const label of ['Étkezés', 'Edzés', 'Víz', 'Súly', 'Stack', 'Check-in', 'Alvás', 'Napló'])
+  for (const label of ['Étkezés', 'Víz', 'Stack', 'Edzés', 'Súly', 'Check-in', 'Napló', 'Alvás'])
     expect(screen.getByText(label)).toBeInTheDocument()
 })
 test('a navigating tile closes the sheet and routes to its target', async () => {
@@ -109,7 +109,7 @@ test('a navigating tile closes the sheet and routes to its target', async () => 
 test('tiles carry clay icons via sprite use refs — no emojis', () => {
   renderSheet()
   // the Sheet renders through a portal — query the document, not the container
-  for (const sym of ['i-suly', 'i-alvas', 'i-naplo', 'i-fuel', 'i-edzes', 'i-stack']) {
+  for (const sym of ['i-suly', 'i-alvas', 'i-naplo', 'i-fuel', 'i-edzes', 'i-stack', 'i-viz']) {
     expect(document.querySelector(`use[href="#${sym}"]`)).not.toBeNull()
   }
 })
@@ -139,13 +139,17 @@ test('the Étkezés tile’s subline names the active window', () => {
   expect(screen.getByText('MOST · Ebéd-ablak')).toBeInTheDocument()
 })
 
-test('the Víz chips log in place — the counter updates and the sheet stays open', async () => {
+test('the Víz tile opens the amount picker in place and the log lands', async () => {
   const onClose = vi.fn()
   renderSheet(onClose)
   expect(screen.getByText('1850 ml')).toBeInTheDocument() // hu-HU leaves 4-digit numbers ungrouped
-  await userEvent.click(screen.getByRole('button', { name: '＋250' }))
-  expect(await screen.findByText('2100 ml')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /Víz/ }))
+  expect(await screen.findByText('Mennyit ittál?')).toBeInTheDocument()
+  expect(screen.queryByText('Gyors logolás')).not.toBeInTheDocument()
   expect(onClose).not.toHaveBeenCalled()
+  await userEvent.click(screen.getByRole('button', { name: '250 ml' }))
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  await vi.waitFor(() => expect(onClose).toHaveBeenCalled())
 })
 
 test('the Súly tile opens the weight log sheet in place', async () => {
