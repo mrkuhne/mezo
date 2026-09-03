@@ -83,6 +83,12 @@ public class FeaturesConfiguration {
      *  COMPANION_SWITCH (the MealCoachLlm adapter lives there). */
     public static final String MEAL_COACH_SWITCH = "mezo.feature.meal-coach.enabled";
 
+    /** Day-review prose (mezo-jcpt.4): gates ONLY the LLM narrative over a closed day's
+     *  deterministic 6-dimension evaluation — the evaluation itself stays on regardless. The prose
+     *  additionally needs COMPANION_SWITCH (the DayReviewLlm adapter lives there). Off ⇒ the day
+     *  evaluation endpoint still answers 200 with every dimension and an EMPTY narrative. */
+    public static final String DAY_REVIEW_SWITCH = "mezo.feature.day-review.enabled";
+
     /** Proactive layer (mezo-h4wp) — companion-feed + weekly prose + predictions.
      *  Every proactive bean conditions on BOTH this AND COMPANION_SWITCH (the generators call the
      *  CompanionLlm port, whose beans only exist when the companion is on). */
