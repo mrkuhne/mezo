@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.api.dto.LlmUsageGroup;
 import io.mrkuhne.mezo.api.dto.LlmUsagePeriod;
 import io.mrkuhne.mezo.api.dto.LlmUsageSummaryResponse;
 import io.mrkuhne.mezo.api.dto.LlmUsageTotals;
+import io.mrkuhne.mezo.api.dto.LlmUsageUserGroup;
 import io.mrkuhne.mezo.feature.llmlog.config.LlmLogProperties;
 import io.mrkuhne.mezo.feature.llmlog.config.LlmPricingProperties;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
@@ -19,6 +20,7 @@ import io.mrkuhne.mezo.feature.llmlog.repository.LlmGroupRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmLogRepository;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmStatusRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmUsageAggregate;
+import io.mrkuhne.mezo.feature.llmlog.repository.LlmUserRow;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
@@ -45,9 +47,10 @@ import org.springframework.transaction.annotation.Transactional;
  * today, start of this ISO week (Monday), start of this month — not rolling 24h/7d/30d windows.
  * They therefore nest: every call in "today" is also in "this week" and "this month".
  *
- * <p>Reads the whole table, not the current user's slice: cron- and async-written rows have a null
+ * <p>Reads the whole table, not the caller's slice: cron- and async-written rows have a null
  * {@code created_by}, so an ownership filter would hide exactly the volume that costs the most.
- * The endpoint is single-user and behind JWT auth, so "all rows" IS "my rows".
+ * Since mezo-qw37.3 the surface is OWNER-only (the controller gates it) and the per-account split
+ * is reported explicitly via {@code byUser}.
  */
 @Service
 @RequiredArgsConstructor
@@ -93,6 +96,7 @@ public class LlmUsageService {
             .totals(totals(llmLogRepository.aggregateByStatusSince(since)))
             .features(groups(llmLogRepository.aggregateByFeatureSince(since)))
             .models(groups(llmLogRepository.aggregateByModelSince(since)))
+            .byUser(userGroups(llmLogRepository.aggregateByUserSince(since)))
             .build();
     }
 
@@ -103,7 +107,7 @@ public class LlmUsageService {
      */
     @Transactional(readOnly = true)
     public LlmCallListResponse listCalls(String rawPeriod, String feature, String rawStatus,
-                                         String rawCallKind, Integer rawLimit) {
+                                         String rawCallKind, UUID userId, Integer rawLimit) {
         ZoneId zone = llmLogProperties.reportZone();
         Instant since = UsagePeriod.parse(rawPeriod).startDate(zone).atStartOfDay(zone).toInstant();
         int limit = Math.clamp(rawLimit == null ? DEFAULT_LIMIT : rawLimit, 1, MAX_LIMIT);
@@ -113,6 +117,7 @@ public class LlmUsageService {
             blankToNull(feature),
             parseEnum(rawStatus, CallStatus::valueOf, "status"),
             parseEnum(rawCallKind, CallKind::valueOf, "callKind"),
+            userId,
             PageRequest.of(0, limit + 1));
 
         boolean hasMore = rows.size() > limit;
@@ -138,6 +143,7 @@ public class LlmUsageService {
     private LlmCallListItem toListItem(LlmCallRow row) {
         return LlmCallListItem.builder()
             .id(row.id())
+            .createdBy(row.createdBy())
             .createdAt(row.createdAt().atOffset(ZoneOffset.UTC))
             .feature(row.feature())
             .operation(row.operation())
@@ -214,6 +220,22 @@ public class LlmUsageService {
             .map(r -> LlmUsageGroup.builder()
                 .key(r.key())
                 .callCount(r.callCount())
+                .costUsd(toDouble(r.costUsd()))
+                .build())
+            .toList();
+    }
+
+    /** Same ordering rule as {@link #groups}: cost-descending, unpriced last, then call count. */
+    private List<LlmUsageUserGroup> userGroups(List<LlmUserRow> rows) {
+        return rows.stream()
+            .sorted(Comparator
+                .comparing(LlmUserRow::costUsd, Comparator.nullsLast(Comparator.reverseOrder()))
+                .thenComparing(Comparator.comparingLong(LlmUserRow::callCount).reversed()))
+            .map(r -> LlmUsageUserGroup.builder()
+                .userId(r.userId())
+                .name(r.name())
+                .callCount(r.callCount())
+                .totalTokens(r.totalTokens())
                 .costUsd(toDouble(r.costUsd()))
                 .build())
             .toList();
