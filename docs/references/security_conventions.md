@@ -18,9 +18,12 @@ the multi-user epic mezo-qw37). Living detail: `docs/features/_platform-auth-sec
 - Every domain table carries `created_by uuid NOT NULL` (FK `app_user` cascade), set server-side.
   Reads filter `created_by = currentUser`; a foreign row is a **404** (`OwnershipGuard.ownedOrThrow`),
   never a 403 — existence must not leak.
-- Catalog tables are the one exception: `exercise_catalog`, `pantry_catalog` rows with
-  `created_by IS NULL` are master data visible to everyone; user-authored rows are visible to
-  everyone but editable only by author or OWNER.
+- Catalog tables are the one exception: `exercise_catalog` rows with `created_by IS NULL` are
+  master data visible to everyone; user-authored rows are visible to everyone but editable only by
+  author or OWNER. A shared `pantry_catalog` on the same shape is an ACCEPTED but NOT YET BUILT
+  decision (ADR 0035 decision K1, slice S4 / `mezo-qw37.4`) — at HEAD, pantry data is still fully
+  owned per-user (`pantry_item.created_by uuid NOT NULL`, no master rows); do not write code that
+  assumes shared pantry visibility until S4 lands.
 - Cron jobs iterate `UserFanOut.forEachActiveUser` (ACTIVE + onboarded) and run under
   `LlmActorContext.runAs(userId, …)`; never `appUserRepository.findAll()`.
 - Push endpoints belong to one account: subscribing re-binds the endpoint to the caller.
