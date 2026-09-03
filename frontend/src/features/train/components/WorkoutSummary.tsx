@@ -41,7 +41,7 @@ const CHALLENGE_COPY: Record<SummaryChallenge['state'], { glyph: string; label: 
 const hu = (n: number, digits = 1) => n.toLocaleString('hu-HU', { maximumFractionDigits: digits })
 
 export function WorkoutSummary({
-  title, eyebrow, mode, exercises, challenges, medals = [], durationMin = null,
+  title, eyebrow, mode, exercises, challenges, medals = [], durationMin = null, actualMin = null,
   comparison = null, prevTopByName = {}, footer = null,
   note = null, draftNote = '', onDraftNote, onEditNote, noteEditing = false, onNoteSave, onNoteCancel,
   onFinish, finishPending = false, onBack, onExit,
@@ -53,6 +53,10 @@ export function WorkoutSummary({
   challenges: SummaryChallenge[]
   medals?: Medal[]
   durationMin?: number | null
+  /** The MEASURED counterpart (mezo-1jm8) — actualMinutes(...) of the session's real timing.
+   *  Null in real mode until a session finishes with a usable measurement, and always null on
+   *  the closing phase (no measurement exists yet). See logic/actualDuration. */
+  actualMin?: number | null
   /** The "Mihez képest" tile's content. Null in closing mode and whenever there is no previous
    *  instance of this template day — the tile then does not render AT ALL, rather than showing
    *  an empty-state placeholder for something that legitimately does not exist. */
@@ -129,7 +133,17 @@ export function WorkoutSummary({
         </div>
         <div className="wsum-sub">
           <b>{hu(s.volumeT)} t</b> összvolumen · <b>{s.doneEx}/{s.totalEx}</b> gyakorlat
-          {durationMin ? <> · ~{durationMin} perc</> : null}
+          {durationMin && actualMin
+            // The combined string is materially longer than either half alone and can overflow
+            // a narrow phone width (measured wrap at 360px, mezo-1jm8 review fix). A hard <br/>
+            // used to force a fixed break between "terv" and "tény" on every width, including
+            // ones where the text fits on one line; a non-breaking space between the number and
+            // its unit (mezo-dzbm) prevents only the mid-word wrap that caused the overflow
+            // (which split "71" from "perc" — see fix report), letting the browser wrap normally.
+            ? <> · terv ~{durationMin} tény <b>{actualMin}&nbsp;perc</b></>
+            : actualMin
+              ? <> · <b>{actualMin} perc</b></>
+              : durationMin ? <> · ~{durationMin} perc</> : null}
         </div>
       </div>
 

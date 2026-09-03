@@ -23,14 +23,22 @@ import type { ExerciseLibraryItem, MesoDay, Mesocycle } from '@/data/types'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { MesoEditor } from '@/features/train/components/MesoEditor'
 import { addExerciseWithDefaults } from '@/features/train/logic/exerciseDefaults'
+import type { SessionTimingProfile } from '@/features/train/logic/sessionLength'
 import { seedDays } from '@/features/train/logic/mesoDays'
 import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet'
 
-export function MesoExercises({ meso, day }: {
+interface MesoExercisesProps {
   meso: Mesocycle
   /** Restricts the editor to ONE day (its `MesoDay.day` key) — the day page's shape. */
   day?: string
-}) {
+  /** Calibrated pacing (Task 12, mezo-dzbm), fetched by the calling page
+   *  (MesocycleBuilderPage) and threaded down to MesoEditor — this component stays
+   *  presentational, matching MesoEditor's own `timingProfile`/`timingProfilePending` props. */
+  timingProfile?: SessionTimingProfile | null
+  timingProfilePending?: boolean
+}
+
+export function MesoExercises({ meso, day, timingProfile, timingProfilePending }: MesoExercisesProps) {
   const { saveDayExercises } = useTrain()
   const [days, setDays] = useState<MesoDay[]>(() => seedDays(meso.days ?? []))
   // Read-only now: tiers are a planning-time decision (see the header note), so the
@@ -118,6 +126,8 @@ export function MesoExercises({ meso, day }: {
           onReorder={reorderExercises}
           priorities={priorities}
           volumePerMuscle={meso.volumePerMuscle ?? undefined}
+          timingProfile={timingProfile}
+          timingProfilePending={timingProfilePending}
         />
       </div>
 

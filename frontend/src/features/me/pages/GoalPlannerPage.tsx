@@ -37,14 +37,14 @@ const GUARDS: { id: Guard; label: string }[] = [
 // route itself didn't — this closes that bypass (spec D4). While the profile is
 // still loading we show the generic ScreenSkeleton (do NOT bounce a
 // complete-profile user mid fetch); once loaded, an incomplete profile redirects
-// to /me/goals (where the GoalGate + "Biometria beállítása" flow lives);
+// to /me/goals/weight (where the GoalGate + "Biometria beállítása" flow lives);
 // complete → the wizard. In mock mode `useBiometricProfile` seeds the profile
 // synchronously (initialData) so `isLoading` is false → no skeleton flash,
 // hence no explicit `!mock` gate is needed here (mezo-f2z).
 export function GoalPlannerPage() {
   const { isComplete, isLoading } = useBiometricProfile()
   if (isLoading) return <ScreenSkeleton />
-  if (!isComplete) return <Navigate to="/me/goals" replace />
+  if (!isComplete) return <Navigate to="/me/goals/weight" replace />
   return <GoalWizard />
 }
 
@@ -68,7 +68,7 @@ function GoalWizard() {
   const [targetWeight, setTargetWeight] = useState(latestWeight)
   const [identity, setIdentity] = useState('')
 
-  const backToGoals = () => navigate('/me/goals')
+  const backToGoals = () => navigate('/me/goals/weight')
   const toggleGuard = (g: Guard) =>
     setGuards(cur => (cur.includes(g) ? cur.filter(x => x !== g) : [...cur, g]))
 
@@ -115,7 +115,7 @@ function GoalWizard() {
 
   return (
     // F7.4 Mozaik re-face (mezo-d20.8.4.1, en-mely.html): MozaikPage(coral) shell —
-    // the back chip steps back through the wizard before leaving to /me/goals.
+    // the back chip steps back through the wizard before leaving to /me/goals/weight.
     <MozaikPage tone="coral">
       <PageHead
         onBack={() => (step > 0 ? setStep(step - 1) : backToGoals())}

@@ -951,6 +951,16 @@ function ActiveWorkoutSession({
         challenges={summaryChallenges}
         medals={sessionMedals}
         durationMin={W.durationEst}
+        // The measured counterpart (mezo-1jm8) is deliberately NOT wired here. `open`
+        // (todaySession.openWorkout) never carries it: the backend writes activeSeconds only
+        // inside WorkoutService.finishWorkout, nowhere on the start/active path, so a pre-finish
+        // instance has startedAt but never finishedAt/activeSeconds — and this page never
+        // refetches /today after finishAndCelebrate's POST resolves, so even post-finish `open`
+        // stays exactly as stale as it was pre-finish. There is no measurement this page can
+        // show without a new fetch/invalidation, which the brief rules out. The review page
+        // (WorkoutReviewPage, off the persisted WorkoutDetailResponse) is the surface that shows
+        // the measured duration — this screen keeps the estimate-only render it already had.
+        actualMin={null}
         // The draft lives on the page, not in the shell: the summary/complete phase flip
         // remounts nothing here, but the note must also survive a trip back to `active`.
         note={closing ? null : closingNote.trim() || null}

@@ -8,7 +8,7 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 
-// Render inside a small route tree with a probe element at /me/goals, so the
+// Render inside a small route tree with a probe element at /me/goals/weight, so the
 // tap-through test can assert real navigation (not a mocked useNavigate) —
 // mirrors the QueryWrapper+MemoryRouter harness the other Me component tests use.
 function renderMini() {
@@ -17,7 +17,7 @@ function renderMini() {
       <MemoryRouter initialEntries={['/me']}>
         <Routes>
           <Route path="/me" element={<GoalMiniCard />} />
-          <Route path="/me/goals" element={<div data-testid="goals-probe" />} />
+          <Route path="/me/goals/weight" element={<div data-testid="goals-probe" />} />
         </Routes>
       </MemoryRouter>
     </QueryWrapper>,
@@ -44,7 +44,7 @@ describe('mock mode (demo goal)', () => {
     expect(document.querySelector('.goalmini .track .fill')).not.toBeNull()
   })
 
-  test('taps through to /me/goals', async () => {
+  test('taps through to /me/goals/weight', async () => {
     renderMini()
     await waitFor(() => expect(screen.getByText(/🎯/)).toBeInTheDocument())
     await userEvent.click(screen.getByRole('button', { name: /Cél oldal megnyitása/ }))

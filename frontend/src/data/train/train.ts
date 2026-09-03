@@ -1129,6 +1129,12 @@ export const exerciseLibrary: ExerciseLibraryItem[] = [
 // Done-day review fixture (mock mode) — lets /train/review/:id render offline.
 // Each ExerciseSetResponse carries the required `skipped` flag (contract: default
 // false, but the generated type keeps it required).
+// mock timing (mezo-1jm8): minutesAgo(74)..minutesAgo(3) is a plain, honest overrun (71 measured
+// vs the 62 estimated) — the mock's main fixture exercises the combined "terv ~62 · tény 71 perc"
+// render branch (WorkoutSummary), which real mode almost never shows since `duration_est` has no
+// writer there.
+const minutesAgo = (n: number): string => new Date(Date.now() - n * 60_000).toISOString()
+
 export const workoutDetailMock = {
   id: 'wd-mock-1',
   templateSessionId: 'ts-mock-1',
@@ -1137,6 +1143,9 @@ export const workoutDetailMock = {
   title: 'Pull Day',
   dayLabel: 'Hét',
   durationEst: 62,
+  startedAt: minutesAgo(74),
+  finishedAt: minutesAgo(3),
+  activeSeconds: 3300,
   // The workout-level closing note (mezo-d20.8.2.2). Seeded HERE and deliberately NOT on
   // workoutDetailPrevMock: stepping back to the reference must reach a session with no note, so
   // the `＋ Jegyzet ehhez az edzéshez` path is reachable offline too.
@@ -1178,6 +1187,9 @@ export const workoutChainMock = [
 // heavier in volume, lighter in RIR terms and carries no TARGET medal, so the tile reads
 // "volumen down (neutral) · célszett up (sage) · Ø RIR down (neutral)" — the whole ADR 0010
 // point on one screen.
+// Auto-closed (abandoned) scenario (mezo-1jm8): startedAt present, finishedAt deliberately
+// ABSENT even though status is 'completed' — actualMinutes then falls back to activeSeconds
+// (50 measured vs the 58 estimated), exercising the fallback render branch offline.
 export const workoutDetailPrevMock = {
   id: 'wd-mock-prev',
   templateSessionId: 'ts-mock-1',
@@ -1186,6 +1198,8 @@ export const workoutDetailPrevMock = {
   title: 'Pull Day',
   dayLabel: 'Hét',
   durationEst: 58,
+  startedAt: minutesAgo(65),
+  activeSeconds: 3000,
   exercises: [
     {
       exerciseId: 'ex0', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound',
@@ -1209,11 +1223,17 @@ export const workoutDetailPrevMock = {
 // The chain-opening instance: nothing precedes it, so the review page renders NEITHER the
 // comparison tile NOR an "Előzőleg" cell for it. It exists in the seed precisely so that
 // honest-absence state is reachable offline (and in the tests) rather than only in theory.
+// Backfilled-history scenario (mezo-1jm8): no timing at all — startedAt/finishedAt/activeSeconds
+// are absent on rows created before this feature. actualMinutes returns null, so the review page
+// falls back to the pre-existing durationMin-only render branch, unchanged.
 export const workoutDetailFirstMock = {
   ...workoutDetailPrevMock,
   id: 'wd-mock-first',
   date: chainDate(2),
   durationEst: 54,
+  startedAt: undefined,
+  finishedAt: undefined,
+  activeSeconds: undefined,
 } satisfies import('@/data/train/trainApi').WorkoutDetailResponse
 
 /** Mock-mode detail lookup; anything not listed falls back to the one review fixture. */
@@ -1221,4 +1241,18 @@ export const workoutDetailsMock: Record<string, import('@/data/train/trainApi').
   [workoutDetailMock.id]: workoutDetailMock,
   [workoutDetailPrevMock.id]: workoutDetailPrevMock,
   [workoutDetailFirstMock.id]: workoutDetailFirstMock,
+}
+
+// Task 12 (mezo-dzbm): the calibrated timing profile mock (GET /api/train/timing-profile,
+// Task 11). Deliberately the same untuned config seeds the backend falls back to, with all
+// sample counts at 0 — mock mode has no session history to learn from, so this mirrors a
+// brand-new profile rather than fabricating a fake calibration. NOTE: these seeds are NOT
+// calibrated to reproduce the static formula's numbers (`estimateSessionMinutes` without a
+// profile) — the calibrated path reads noticeably higher; see docs/features/train.md.
+export const timingProfileMock: import('@/data/train/timingProfileApi').TimingProfileResponse = {
+  leadInSeconds: 480,
+  setCycleCompoundSeconds: 180,
+  setCycleIsolationSeconds: 125,
+  transitionSeconds: 240,
+  samples: { leadIn: 0, setCycleCompound: 0, setCycleIsolation: 0, transition: 0 },
 }

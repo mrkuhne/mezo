@@ -37,6 +37,9 @@ public class WorkoutAutoCloseService {
             boolean hasLoggedSet = exerciseSetRepository
                 .findByCreatedByAndWorkoutSessionIdOrderByCreatedAtAsc(createdBy, instance.getId())
                 .stream().anyMatch(s -> !s.isSkipped());
+            // Deliberately no finished_at: an auto-closed session was never really finished by
+            // the user, and `status='completed' AND finished_at IS NULL` is how the rest of the
+            // system recognises that its timing is not trustworthy (mezo-1jm8).
             instance.setStatus(hasLoggedSet ? "completed" : "skipped");
         }
         workoutSessionRepository.saveAll(stale);

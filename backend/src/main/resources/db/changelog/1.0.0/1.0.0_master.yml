@@ -959,6 +959,13 @@ databaseChangeLog:
             relativeToChangelogFile: true
             path: script/202609021200_mezo-qw37.1_multi_user_accounts.sql
   - changeSet:
+      id: "1.0.0:202609021400_mezo-1jm8_workout_session_timing"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609021400_mezo-1jm8_workout_session_timing.sql
+  - changeSet:
       id: "1.0.0:202609021400_mezo-gb1s.1_create_tutorial_progress"
       author: daniel.kuhne
       changes:
@@ -966,12 +973,33 @@ databaseChangeLog:
             relativeToChangelogFile: true
             path: script/202609021400_mezo-gb1s.1_create_tutorial_progress.sql
   - changeSet:
+      id: "1.0.0:202609021600_mezo-dzbm_create_workout_timing_profile"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609021600_mezo-dzbm_create_workout_timing_profile.sql
+  - changeSet:
       id: "1.0.0:202609030042_mezo-qw37.1_app_user_tokens_valid_from"
       author: daniel.kuhne
       changes:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609030042_mezo-qw37.1_app_user_tokens_valid_from.sql
+  - changeSet:
+      id: "1.0.0:202609021000_mezo-iizd.1_create_life_goal"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609021000_mezo-iizd.1_create_life_goal.sql
+  - changeSet:
+      id: "1.0.0:202609021010_mezo-iizd.1_life_goal_source_type"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609021010_mezo-iizd.1_life_goal_source_type.sql
   - changeSet:
       id: "1.0.0:202609030100_mezo-sxlj_diet_settings_day_type_shift"
       author: daniel.kuhne

@@ -220,6 +220,12 @@ public class FeaturesConfiguration {
     /** Életjel-ring day-close (mezo-dhzk) — off ⇒ the /api/needs surface 404s and no needs beans exist. */
     public static final String NEEDS_SWITCH = "mezo.feature.needs.enabled";
 
+    /** Életcél-rendszer (bd mezo-iizd) — off ⇒ /api/life-goals 404s, no lifegoal beans. */
+    public static final String LIFEGOAL_SWITCH = "mezo.feature.lifegoal.enabled";
+
+    /** AI pillar proposal for life goals (propose-only, ADR 0019) — off ⇒ the template proposer answers. */
+    public static final String LIFEGOAL_AI_PROPOSE_SWITCH = "mezo.feature.lifegoal-ai-propose.enabled";
+
     /** In-app notification feed + bell (bd mezo-gzhp) — off ⇒ no feed beans, /api/notification/feed 404s, producers' emits no-op through AppNotificationEmitter. */
     public static final String NOTIFICATION_FEED_SWITCH = "mezo.feature.notification-feed.enabled";
 
@@ -259,6 +265,14 @@ public class FeaturesConfiguration {
     /** Emberek szekció (mezo-06o0) — az automata mention-detektálás rétege. Off ⇒ egyetlen
      *  detektáló listener-bean sem létezik; a kézi /api/people felület ettől függetlenül él. */
     public static final String PEOPLE_SWITCH = "mezo.feature.people.enabled";
+
+    /** Learned workout-timing profile (mezo-dzbm) — off ⇒ no NEW profile learning ever happens.
+     *  GET /api/train/timing-profile is ungated: for a user who has never learned anything, off
+     *  reads as the config seeds (the cold-start response); for a user who already learned
+     *  values before the switch was flipped off, those learned values keep being served
+     *  (frozen, not reverted to seeds). Measurement (slice 1) is independent and keeps running
+     *  either way. */
+    public static final String TIMING_PROFILE_SWITCH = "mezo.feature.timing-profile.enabled";
 
     /** Mezo-kalauz seen-store (mezo-gb1s.1). */
     public static final String TUTORIAL_SWITCH = "mezo.feature.tutorial.enabled";

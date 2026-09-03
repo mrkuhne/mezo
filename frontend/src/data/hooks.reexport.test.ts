@@ -25,6 +25,7 @@ import {
   useCharacterRuns as useCharacterRunsFromCharacterHooks,
   useCharacterRun as useCharacterRunFromCharacterHooks,
 } from '@/data/character/characterHooks'
+import { useAdminInvites as useAdminInvitesFromAdminHooks, useAdminActions as useAdminActionsFromAdminHooks } from '@/data/admin/adminHooks'
 
 describe('hooks.ts re-exports the dual-mode fuel-day hooks', () => {
   it('useFuelDay is the fuelHooks implementation (not the retired one-liner)', () => {
@@ -90,5 +91,12 @@ describe('hooks.ts re-exports the character hooks (mezo-1gim.13)', () => {
     expect(hooks.useCharacterBootstrap).toBe(useCharacterBootstrapFromCharacterHooks)
     expect(hooks.useCharacterRuns).toBe(useCharacterRunsFromCharacterHooks)
     expect(hooks.useCharacterRun).toBe(useCharacterRunFromCharacterHooks)
+  })
+})
+
+describe('hooks.ts re-exports the admin hooks (mezo-qw37.3)', () => {
+  it('useAdminInvites / useAdminActions are the adminHooks implementations', () => {
+    expect(hooks.useAdminInvites).toBe(useAdminInvitesFromAdminHooks)
+    expect(hooks.useAdminActions).toBe(useAdminActionsFromAdminHooks)
   })
 })

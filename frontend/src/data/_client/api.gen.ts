@@ -884,6 +884,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/timing-profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The caller's learned workout-timing profile
+         * @description Per-component learned pacing in seconds, used to personalise the session-length estimate. Always complete: any component the user has not yet accumulated data for is returned at its static seed, so the client never has to implement a cold-start branch.
+         */
+        get: operations["getTimingProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/goals": {
         parameters: {
             query?: never;
@@ -3662,6 +3682,203 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every invite, open and used, newest first (Admin) */
+        get: operations["listInvites"];
+        put?: never;
+        /** Mint a one-shot invite code (Admin) */
+        post: operations["createInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/invites/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke an unused invite (Admin) */
+        delete: operations["deleteInvite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every account, oldest first (Admin) */
+        get: operations["listUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replace the account's password with a temporary one and force a change at next login (Admin) */
+        post: operations["resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enable or disable an account; a disabled account is rejected on its next request (Admin) */
+        post: operations["setStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/life-goals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every non-deleted life goal of the caller, newest first (LifeGoal) */
+        get: operations["listLifeGoals"];
+        put?: never;
+        /** Create a life goal in draft with its pillars (LifeGoal) */
+        post: operations["createLifeGoal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/life-goals/signals": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The closed signal catalog a pillar may point at (LifeGoal) */
+        get: operations["listLifeGoalSignals"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/life-goals/propose": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Propose-only AI draft — dimension, frame, pillars from the catalog, obstacles, ha–akkor (LifeGoal) */
+        post: operations["proposeLifeGoal"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/life-goals/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** One life goal with pillars (LifeGoal) */
+        get: operations["getLifeGoal"];
+        /** Replace the goal's editable fields (status and pillars untouched) (LifeGoal) */
+        put: operations["updateLifeGoal"];
+        post?: never;
+        /** Soft-delete the goal and its pillars (LifeGoal) */
+        delete: operations["deleteLifeGoal"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/life-goals/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Lifecycle transition — activate / park / done / archive; no active-count cap (LifeGoal) */
+        post: operations["changeLifeGoalStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/life-goals/{id}/pillars": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Replace the goal's pillar list (max 5, catalog-validated) (LifeGoal) */
+        put: operations["replaceLifeGoalPillars"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -4454,6 +4671,18 @@ export interface components {
             levelUp?: components["schemas"]["LevelUpResult"];
             /** @description Medals earned across the session, including SESSION_VOLUME */
             medals?: components["schemas"]["Medal"][];
+            /**
+             * Format: date-time
+             * @description Wall-clock start of the instance. Absent on rows created before mezo-1jm8.
+             */
+            startedAt?: string;
+            /**
+             * Format: date-time
+             * @description Wall-clock finish. ABSENT on an auto-closed (abandoned) session even though its status is 'completed' — that pair is exactly "the timing here is not trustworthy".
+             */
+            finishedAt?: string;
+            /** @description Derived work time: consecutive set-completion intervals, each clipped at the gap cap. Absent when nothing was logged. */
+            activeSeconds?: number;
         };
         WorkoutSummaryResponse: {
             /** Format: uuid */
@@ -4491,6 +4720,18 @@ export interface components {
             durationEst?: number;
             /** @description The workout-level closing note, absent when none was written (mezo-d20.8.2.2). */
             note?: string | null;
+            /**
+             * Format: date-time
+             * @description Wall-clock start of the instance. Absent on rows created before mezo-1jm8.
+             */
+            startedAt?: string;
+            /**
+             * Format: date-time
+             * @description Wall-clock finish. ABSENT on an auto-closed (abandoned) session even though its status is 'completed' — that pair is exactly "the timing here is not trustworthy".
+             */
+            finishedAt?: string;
+            /** @description Derived work time: consecutive set-completion intervals, each clipped at the gap cap. Absent when nothing was logged. */
+            activeSeconds?: number;
             exercises: components["schemas"]["WorkoutDetailExercise"][];
         };
         WorkoutDetailExercise: {
@@ -4569,6 +4810,11 @@ export interface components {
             kind?: "warmup" | "working";
             /** @description Medals this set earned (empty when none) */
             medals?: components["schemas"]["Medal"][];
+            /**
+             * Format: date-time
+             * @description When the set was completed. Already persisted since mezo-n5q; exposed by mezo-1jm8.
+             */
+            doneAt?: string;
         };
         WorkoutStartRequest: {
             /** Format: uuid */
@@ -4824,6 +5070,24 @@ export interface components {
             sprintLandmark?: string | null;
             durationMin?: number | null;
             notes?: string | null;
+        };
+        TimingProfileResponse: {
+            /** @description Session start to the first completed set. */
+            leadInSeconds: number;
+            /** @description Rest + execution for one compound set. */
+            setCycleCompoundSeconds: number;
+            /** @description Rest + execution for one non-compound set. */
+            setCycleIsolationSeconds: number;
+            /** @description Interval spanning an exercise change. */
+            transitionSeconds: number;
+            samples: components["schemas"]["TimingProfileSamples"];
+        };
+        /** @description Accepted observations per component. 0 means the value is still the static seed. */
+        TimingProfileSamples: {
+            leadIn: number;
+            setCycleCompound: number;
+            setCycleIsolation: number;
+            transition: number;
         };
         GoalResponse: {
             /** Format: uuid */
@@ -7329,6 +7593,8 @@ export interface components {
             features: components["schemas"]["LlmUsageGroup"][];
             /** @description one entry per SERVED model; key is null for calls that never reached one */
             models: components["schemas"]["LlmUsageGroup"][];
+            /** @description one entry per calling account, cost-descending (unpriced last); the null-user entry is the background (cron/stream) traffic */
+            byUser: components["schemas"]["LlmUsageUserGroup"][];
         };
         LlmUsageTotals: {
             /**
@@ -7363,6 +7629,24 @@ export interface components {
             /** Format: double */
             costUsd?: number | null;
         };
+        LlmUsageUserGroup: {
+            /**
+             * Format: uuid
+             * @description null = background traffic with no principal
+             */
+            userId?: string | null;
+            /** @description app_user.name; null for background traffic or a deleted account */
+            name?: string | null;
+            /** Format: int64 */
+            callCount: number;
+            /**
+             * Format: int64
+             * @description sum of total_tokens over the rows that reported it
+             */
+            totalTokens: number;
+            /** Format: double */
+            costUsd?: number | null;
+        };
         LlmCallListResponse: {
             items: components["schemas"]["LlmCallListItem"][];
             /** @description true when the period holds more rows than the window shows */
@@ -7373,6 +7657,11 @@ export interface components {
             id: string;
             /** Format: date-time */
             createdAt: string;
+            /**
+             * Format: uuid
+             * @description null for background (cron/stream) calls
+             */
+            createdBy?: string | null;
             feature: string;
             operation?: string | null;
             /** @enum {string} */
@@ -7916,6 +8205,197 @@ export interface components {
             generatedAt: string;
             /** @description a log landed in the window after generatedAt */
             stale: boolean;
+        };
+        CreateInviteRequest: {
+            /**
+             * @description who the code is meant for — free text, shown in the list
+             * @example Csaba
+             */
+            label?: string | null;
+            /**
+             * Format: int32
+             * @description omitted = never expires
+             */
+            expiresInDays?: number | null;
+        };
+        InviteResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @example MEZO-7KQ2-XN4P */
+            code: string;
+            label?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            /** Format: uuid */
+            usedBy?: string | null;
+            /** @description display name of the account that consumed the code */
+            usedByName?: string | null;
+            /** Format: date-time */
+            usedAt?: string | null;
+        };
+        AdminUserResponse: {
+            /** Format: uuid */
+            id: string;
+            email: string;
+            name: string;
+            /** @description OWNER or USER */
+            role: string;
+            /** @description ACTIVE or DISABLED */
+            status: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            onboardedAt?: string | null;
+            /**
+             * Format: date-time
+             * @description stamped at most every 5 minutes by CurrentUser
+             */
+            lastSeenAt?: string | null;
+        };
+        ResetPasswordResponse: {
+            /** @description 12 readable characters; must_change_password is set on the account */
+            temporaryPassword: string;
+        };
+        SetUserStatusRequest: {
+            status: string;
+        };
+        /** @enum {string} */
+        LifeGoalDimension: "positive_emotion" | "engagement" | "relationships" | "meaning" | "accomplishment" | "health";
+        /** @enum {string} */
+        LifeGoalStatus: "draft" | "active" | "parked" | "done" | "archived";
+        /** @enum {string} */
+        LifeGoalFrame: "intrinsic" | "extrinsic" | "unset";
+        /** @enum {string} */
+        PillarKind: "habit" | "average" | "target" | "baseline" | "linked";
+        PillarSource: {
+            /** @enum {string} */
+            type: "metric" | "activity" | "habit" | "weight_goal" | "needs_ring" | "social_mentions";
+            /** @description MetricKey name for type=metric */
+            key?: string;
+            /** @description activity skill filter for type=activity */
+            skillKey?: string;
+            /** @enum {string} */
+            measure?: "minutes" | "count" | "huf";
+            habitKey?: string;
+            /** @enum {string} */
+            ring?: "energia" | "hidratacio" | "pihenes" | "mozgas" | "lelek" | "rend";
+        };
+        PillarRule: {
+            threshold?: number;
+            /** @enum {string} */
+            comparator?: "gte" | "lte";
+            daysPerWeek?: number;
+            windowDays?: number;
+            startValue?: number;
+            targetValue?: number;
+            /** Format: date */
+            startDate?: string;
+            /** Format: date */
+            targetDate?: string;
+            /** @enum {string} */
+            direction?: "up" | "down";
+            minDataDays?: number;
+        };
+        PlanTrigger: {
+            source: string;
+            condition?: string;
+            delayHours?: number;
+        };
+        IfThenPlan: {
+            ha: string;
+            akkor: string;
+            trigger?: components["schemas"]["PlanTrigger"];
+        };
+        LifeGoalPillarInput: {
+            label: string;
+            skillKey: string;
+            kind: components["schemas"]["PillarKind"];
+            /** @default 1 */
+            weight: number;
+            /** @default true */
+            active: boolean;
+            source: components["schemas"]["PillarSource"];
+            rule?: components["schemas"]["PillarRule"];
+        };
+        LifeGoalPillarResponse: components["schemas"]["LifeGoalPillarInput"] & {
+            /** Format: uuid */
+            id: string;
+            position: number;
+        };
+        LifeGoalUpsertRequest: {
+            title: string;
+            whyText?: string;
+            frame?: components["schemas"]["LifeGoalFrame"];
+            dimension: components["schemas"]["LifeGoalDimension"];
+            secondaryDimension?: components["schemas"]["LifeGoalDimension"];
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            targetDate?: string;
+            obstacleText?: string;
+            ifThenPlans?: components["schemas"]["IfThenPlan"][];
+            pillars?: components["schemas"]["LifeGoalPillarInput"][];
+        };
+        LifeGoalResponse: {
+            /** Format: uuid */
+            id: string;
+            title: string;
+            whyText?: string;
+            frame: components["schemas"]["LifeGoalFrame"];
+            dimension: components["schemas"]["LifeGoalDimension"];
+            secondaryDimension?: components["schemas"]["LifeGoalDimension"];
+            status: components["schemas"]["LifeGoalStatus"];
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            targetDate?: string;
+            /** Format: date-time */
+            activatedAt?: string;
+            /** Format: date-time */
+            closedAt?: string;
+            obstacleText?: string;
+            ifThenPlans: components["schemas"]["IfThenPlan"][];
+            pillars: components["schemas"]["LifeGoalPillarResponse"][];
+        };
+        LifeGoalStatusRequest: {
+            status: components["schemas"]["LifeGoalStatus"];
+        };
+        LifeGoalPillarsRequest: {
+            pillars: components["schemas"]["LifeGoalPillarInput"][];
+        };
+        LifeGoalProposeRequest: {
+            title: string;
+            whyText?: string;
+            /** Format: date */
+            targetDate?: string;
+        };
+        LifeGoalProposeResponse: {
+            dimension: components["schemas"]["LifeGoalDimension"];
+            secondaryDimension?: components["schemas"]["LifeGoalDimension"];
+            frame: components["schemas"]["LifeGoalFrame"];
+            /** @description Mezo's one-sentence reading of the why (Hungarian) */
+            frameNote?: string;
+            /** @description the intrinsic reframing offered when frame=extrinsic */
+            reframedWhy?: string;
+            pillars: components["schemas"]["LifeGoalPillarInput"][];
+            obstacles: string[];
+            ifThenPlans: components["schemas"]["IfThenPlan"][];
+            /** @enum {string} */
+            source: "ai" | "template";
+        };
+        SignalCatalogEntry: {
+            source: components["schemas"]["PillarSource"];
+            label: string;
+            /** @description Hungarian group label (Alvás · Fuel · Edzés · Elme · Activity · Emberek · Életjel) */
+            group: string;
+            kinds: components["schemas"]["PillarKind"][];
+            unit: string;
+            defaultSkillKey?: string;
+        };
+        SignalCatalogResponse: {
+            entries: components["schemas"]["SignalCatalogEntry"][];
         };
     };
     responses: never;
@@ -10721,6 +11201,35 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getTimingProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TimingProfileResponse"];
                 };
             };
             /** @description Missing/invalid token */
@@ -16709,6 +17218,15 @@ export interface operations {
                     "application/json": components["schemas"]["LlmUsageSummaryResponse"];
                 };
             };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     getLlmUsageBreakdown: {
@@ -16741,6 +17259,15 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     listLlmCalls: {
@@ -16751,6 +17278,8 @@ export interface operations {
                 feature?: string;
                 status?: string;
                 callKind?: string;
+                /** @description only calls made by this account (created_by); background rows (null owner) never match */
+                userId?: string;
                 /** @description growing window — the client raises it to load more (never an offset) */
                 limit?: number;
             };
@@ -16778,6 +17307,15 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     getLlmCall: {
@@ -16798,6 +17336,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LlmCallDetailResponse"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description No such call */
@@ -18138,6 +18685,515 @@ export interface operations {
             };
             /** @description Diagnosis not found, not owned, or no suspect at that rank */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listInvites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invites newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteResponse"][];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInviteRequest"];
+            };
+        };
+        responses: {
+            /** @description The new code, shown once in full on the admin page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteResponse"];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revoked */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Unknown invite (ADMIN_INVITE_NOT_FOUND) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Already used — the registration it produced must stay traceable (ADMIN_INVITE_USED) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accounts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserResponse"][];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    resetPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The temporary password — returned exactly once, never stored in clear */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResetPasswordResponse"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Unknown account (ADMIN_USER_NOT_FOUND) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    setStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetUserStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description Status set */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Unknown account (ADMIN_USER_NOT_FOUND) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The owner cannot change their own status (ADMIN_SELF_STATUS) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listLifeGoals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Goals with their pillars */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LifeGoalResponse"][];
+                };
+            };
+        };
+    };
+    createLifeGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LifeGoalUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description Created (status draft) */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LifeGoalResponse"];
+                };
+            };
+            /** @description Validation error — unknown signal/skill, >5 pillars, target before start (LIFE_GOAL_*) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listLifeGoalSignals: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Catalog entries */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SignalCatalogResponse"];
+                };
+            };
+        };
+    };
+    proposeLifeGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LifeGoalProposeRequest"];
+            };
+        };
+        responses: {
+            /** @description Proposal (template fallback when the AI is off or fails — never empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LifeGoalProposeResponse"];
+                };
+            };
+        };
+    };
+    getLifeGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Goal */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LifeGoalResponse"];
+                };
+            };
+            /** @description Not found / not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updateLifeGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LifeGoalUpsertRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LifeGoalResponse"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteLifeGoal: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    changeLifeGoalStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LifeGoalStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description New state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LifeGoalResponse"];
+                };
+            };
+            /** @description Illegal transition (LIFE_GOAL_INVALID_STATUS_TRANSITION) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    replaceLifeGoalPillars: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LifeGoalPillarsRequest"];
+            };
+        };
+        responses: {
+            /** @description Goal with the new pillars */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LifeGoalResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
                 headers: {
                     [name: string]: unknown;
                 };

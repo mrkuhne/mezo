@@ -342,7 +342,7 @@ class GeminiCompanionLlmRecordingTest {
     private static CompanionProperties companionProperties() {
         return new CompanionProperties(
             new CompanionProperties.Llm(CHAT_MODEL, SMART_MODEL),
-            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
+            null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     private static ChatModel chatModel(ChatResponse canned) {

@@ -15,7 +15,7 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/GoalFeasibilityService.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/TdeeBootstrapService.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/DietPreferencesPort.java
-related: [me, fuel, _platform-api-backend, _platform-data-layer]
+related: [me, fuel, lifegoal, _platform-api-backend, _platform-data-layer]
 ---
 
 # Goal Engine (G5–G6) — Feature Documentation
@@ -35,7 +35,7 @@ Driving design: [`docs/superpowers/specs/2026-06-18-goal-system-design.md`](../s
 
 ## 2. User-facing behavior
 
-The engine has **no screen of its own**. Its output appears on `/me/goals` (`Cél`) as the **recept card** (`GoalRecept.tsx`): a feasibility-verdict banner ("Reális" / "Reális, figyelmeztetésekkel" / "Agresszív"), per-segment recept cards (week range, label, kcal / protein g / sleep h / signed kg-per-week, HU rationale), and guard-status pills (strength e1RM trend, muscle weekly-volume floor + rate-cap, and a muted "Fehérje: Fuel-re vár" pill). When a goal has not yet been evaluated (`prescription === null`), the card shows an **"⚡ Értékeld a célt" CTA** that fires the `evaluate` action. Full UX detail and the Hungarian labels live in [`me.md`](me.md) §2 (`Recept — the G5 engine finale`).
+The engine has **no screen of its own**. Its output appears on `/me/goals/weight` (`Cél`) — moved off `/me/goals` in `mezo-iizd.1` Task 8 so that route could become the general-purpose Célok (life-goals) hub, see [`lifegoal.md`](lifegoal.md) — as the **recept card** (`GoalRecept.tsx`): a feasibility-verdict banner ("Reális" / "Reális, figyelmeztetésekkel" / "Agresszív"), per-segment recept cards (week range, label, kcal / protein g / sleep h / signed kg-per-week, HU rationale), and guard-status pills (strength e1RM trend, muscle weekly-volume floor + rate-cap, and a muted "Fehérje: Fuel-re vár" pill). When a goal has not yet been evaluated (`prescription === null`), the card shows an **"⚡ Értékeld a célt" CTA** that fires the `evaluate` action. Full UX detail and the Hungarian labels live in [`me.md`](me.md) §2 (`Recept — the G5 engine finale`).
 
 The engine also runs **invisibly** on the recompute triggers (§3) — logging a weigh-in, activating a goal, or attaching/detaching a plan all silently refresh the active goal's prescription, so the recept the user next opens is current without an explicit re-evaluate.
 
@@ -253,4 +253,4 @@ Add a tunable, a guard leg, or a projection input — always config-first, contr
 
 **Tests:** `backend/.../feature/goal/engine/**` (per-service ITs + properties IT), `feature/goal/{GoalEngineRecomputeIT,GoalContractIT}.java`, `feature/nutrition/{DietPreferencesResolverIT,DietSettingsApiIT}.java` (Diet Plan slice 1).
 
-**Related docs (link, don't duplicate):** [`me.md`](me.md) (the `Cél` recept surface + the wizard activity picker), [`fuel.md`](fuel.md) (the FE `deriveDailyBudget`/`DIET_SPLIT_PRESETS`/`FuelDayService` consumers of the prescribed `carbsG`/`fatG`, §4/§5/§9/§10), [`_platform-api-backend.md`](_platform-api-backend.md) (the contract/HTTP surface + jsonb conventions), [`_platform-data-layer.md`](_platform-data-layer.md) (the `useGoalActions().evaluate` + `useWeight` trend wiring), [`train.md`](train.md) (the meso/running/volume aggregates the guards + projection read), spec [`2026-06-18-goal-system-design.md`](../superpowers/specs/2026-06-18-goal-system-design.md), research [`2026-06-18-goal-engine-numbers.md`](../research/queries/2026-06-18-goal-engine-numbers.md), and the house standards in [`docs/references/`](../references/).
+**Related docs (link, don't duplicate):** [`me.md`](me.md) (the `Cél` recept surface + the wizard activity picker), [`fuel.md`](fuel.md) (the FE `deriveDailyBudget`/`DIET_SPLIT_PRESETS`/`FuelDayService` consumers of the prescribed `carbsG`/`fatG`, §4/§5/§9/§10), [`lifegoal.md`](lifegoal.md) (the general-purpose life-goal system at `/me/goals`, whose closed signal catalog carries a `weight_goal` entry referencing this goal as a `linked` pillar — today a labeled placeholder, the actual on-pace read is a slice-2 seam), [`_platform-api-backend.md`](_platform-api-backend.md) (the contract/HTTP surface + jsonb conventions), [`_platform-data-layer.md`](_platform-data-layer.md) (the `useGoalActions().evaluate` + `useWeight` trend wiring), [`train.md`](train.md) (the meso/running/volume aggregates the guards + projection read), spec [`2026-06-18-goal-system-design.md`](../superpowers/specs/2026-06-18-goal-system-design.md), research [`2026-06-18-goal-engine-numbers.md`](../research/queries/2026-06-18-goal-engine-numbers.md), and the house standards in [`docs/references/`](../references/).

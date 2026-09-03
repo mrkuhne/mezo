@@ -7,6 +7,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.UUID;
 import lombok.Getter;
@@ -79,6 +80,26 @@ public class WorkoutSessionEntity extends OwnedEntity {
 
     @Column(name = "duration_est")
     private Integer durationEst;
+
+    /**
+     * Wall-clock start of an INSTANCE row, stamped once when the instance is created and never
+     * rewritten — POST /workouts resumes an open instance, and a resume must not restart the clock.
+     * NULL on template rows and on instances created before mezo-1jm8.
+     */
+    @Column(name = "started_at")
+    private Instant startedAt;
+
+    /**
+     * Wall-clock finish, stamped by finishWorkout. Deliberately NOT stamped by
+     * WorkoutAutoCloseService: `status='completed' AND finished_at IS NULL` is exactly
+     * "abandoned, its timing is not trustworthy" — excluded from display and from learning.
+     */
+    @Column(name = "finished_at")
+    private Instant finishedAt;
+
+    /** Derived work time: consecutive done_at deltas, each clipped at the gap cap. NULL = unknown. */
+    @Column(name = "active_seconds")
+    private Integer activeSeconds;
 
     @NotNull
     @Column(name = "order_index", nullable = false)

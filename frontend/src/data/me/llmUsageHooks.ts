@@ -48,6 +48,7 @@ export const LLM_BREAKDOWN_EMPTY: LlmUsageBreakdownResponse = {
   totals: { callCount: 0, successCount: 0, errorCount: 0, cancelledCount: 0, unpricedCount: 0, costUsd: null, currency: 'USD' },
   features: [],
   models: [],
+  byUser: [],
 }
 
 /**
@@ -84,20 +85,27 @@ export const LLM_BREAKDOWN_MOCK: LlmUsageBreakdownResponse = {
     { key: 'gemini-embedding-001', callCount: 148, costUsd: 0.09 },
     { key: null, callCount: 24, costUsd: null }, // the errorCount rows: no served model, no cost
   ],
+  // Per-account split (mezo-qw37.3) — sums to the totals like features[]/models[]; the null
+  // group is the cron/stream traffic that has no principal (ids match adminMock).
+  byUser: [
+    { userId: '00000000-0000-4000-8000-000000000001', name: 'Daniel', callCount: 300, totalTokens: 1_240_000, costUsd: 1.31 },
+    { userId: '00000000-0000-4000-8000-000000000002', name: 'Anna', callCount: 70, totalTokens: 310_000, costUsd: 0.34 },
+    { userId: null, name: null, callCount: 42, totalTokens: 380_000, costUsd: 0.21 },
+  ],
 }
 
 export const LLM_CALLS_EMPTY: LlmCallListResponse = { items: [], hasMore: false }
 
 export const LLM_CALLS_MOCK: LlmCallListResponse = {
   items: [
-    { id: '11111111-1111-4111-8111-111111111111', createdAt: '2026-08-14T12:32:00Z', feature: 'companion_chat', operation: 'stream', callKind: 'CHAT_STREAM', status: 'SUCCESS', requestedModel: 'gemini-2.5-flash', servedModel: 'gemini-2.5-flash', latencyMs: 3100, streamed: true, toolRounds: null, totalTokens: 4812, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: 0.021, errorClass: null, errorCode: null },
+    { id: '11111111-1111-4111-8111-111111111111', createdAt: '2026-08-14T12:32:00Z', createdBy: '00000000-0000-4000-8000-000000000001', feature: 'companion_chat', operation: 'stream', callKind: 'CHAT_STREAM', status: 'SUCCESS', requestedModel: 'gemini-2.5-flash', servedModel: 'gemini-2.5-flash', latencyMs: 3100, streamed: true, toolRounds: null, totalTokens: 4812, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: 0.021, errorClass: null, errorCode: null },
     // costUsd must match LLM_CALL_DETAIL_MOCK below (same call id) — see the comment there.
-    { id: '22222222-2222-4222-8222-222222222222', createdAt: '2026-08-14T12:31:00Z', feature: 'companion_chat', operation: 'send', callKind: 'TOOL', status: 'SUCCESS', requestedModel: 'gemini-2.5-flash', servedModel: 'gemini-2.5-flash', latencyMs: 7812, streamed: false, toolRounds: 2, totalTokens: 11204, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: 0.012751, errorClass: null, errorCode: null },
-    { id: '33333333-3333-4333-8333-333333333333', createdAt: '2026-08-14T12:28:00Z', feature: 'meal_draft', operation: 'photo', callKind: 'VISION', status: 'ERROR', requestedModel: 'gemini-2.5-flash', servedModel: null, latencyMs: 12000, streamed: false, toolRounds: null, totalTokens: null, imageCount: 1, embedInputCount: null, embedDimensions: null, costUsd: null, errorClass: 'ResourceExhaustedException', errorCode: null },
-    { id: '44444444-4444-4444-8444-444444444444', createdAt: '2026-08-14T12:19:00Z', feature: 'companion_chat', operation: 'stream', callKind: 'CHAT_STREAM', status: 'CANCELLED', requestedModel: 'gemini-2.5-flash', servedModel: 'gemini-2.5-flash', latencyMs: 1400, streamed: true, toolRounds: null, totalTokens: null, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: null, errorClass: null, errorCode: null },
-    { id: '55555555-5555-4555-8555-555555555555', createdAt: '2026-08-14T12:02:00Z', feature: 'embed_memory', operation: 'document', callKind: 'EMBED_DOC', status: 'SUCCESS', requestedModel: 'gemini-embedding-001', servedModel: 'gemini-embedding-001', latencyMs: 400, streamed: false, toolRounds: null, totalTokens: null, imageCount: null, embedInputCount: 12, embedDimensions: 768, costUsd: 0.0004, errorClass: null, errorCode: null },
-    { id: '66666666-6666-4666-8666-666666666666', createdAt: '2026-08-14T11:47:00Z', feature: 'companion_hypothesis', operation: 'critique', callKind: 'SMART', status: 'SUCCESS', requestedModel: 'gemini-2.5-pro', servedModel: 'gemini-2.5-pro', latencyMs: 22600, streamed: false, toolRounds: null, totalTokens: 18902, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: 0.184, errorClass: null, errorCode: null },
-    { id: '77777777-7777-4777-8777-777777777777', createdAt: '2026-08-14T03:45:00Z', feature: 'proactive_briefing', operation: 'generate', callKind: 'CHAT', status: 'SUCCESS', requestedModel: 'gemini-2.5-flash', servedModel: 'gemini-2.5-flash', latencyMs: 5200, streamed: false, toolRounds: null, totalTokens: 9341, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: 0.031, errorClass: null, errorCode: null },
+    { id: '22222222-2222-4222-8222-222222222222', createdAt: '2026-08-14T12:31:00Z', createdBy: '00000000-0000-4000-8000-000000000001', feature: 'companion_chat', operation: 'send', callKind: 'TOOL', status: 'SUCCESS', requestedModel: 'gemini-2.5-flash', servedModel: 'gemini-2.5-flash', latencyMs: 7812, streamed: false, toolRounds: 2, totalTokens: 11204, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: 0.012751, errorClass: null, errorCode: null },
+    { id: '33333333-3333-4333-8333-333333333333', createdAt: '2026-08-14T12:28:00Z', createdBy: '00000000-0000-4000-8000-000000000002', feature: 'meal_draft', operation: 'photo', callKind: 'VISION', status: 'ERROR', requestedModel: 'gemini-2.5-flash', servedModel: null, latencyMs: 12000, streamed: false, toolRounds: null, totalTokens: null, imageCount: 1, embedInputCount: null, embedDimensions: null, costUsd: null, errorClass: 'ResourceExhaustedException', errorCode: null },
+    { id: '44444444-4444-4444-8444-444444444444', createdAt: '2026-08-14T12:19:00Z', createdBy: '00000000-0000-4000-8000-000000000001', feature: 'companion_chat', operation: 'stream', callKind: 'CHAT_STREAM', status: 'CANCELLED', requestedModel: 'gemini-2.5-flash', servedModel: 'gemini-2.5-flash', latencyMs: 1400, streamed: true, toolRounds: null, totalTokens: null, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: null, errorClass: null, errorCode: null },
+    { id: '55555555-5555-4555-8555-555555555555', createdAt: '2026-08-14T12:02:00Z', createdBy: '00000000-0000-4000-8000-000000000002', feature: 'embed_memory', operation: 'document', callKind: 'EMBED_DOC', status: 'SUCCESS', requestedModel: 'gemini-embedding-001', servedModel: 'gemini-embedding-001', latencyMs: 400, streamed: false, toolRounds: null, totalTokens: null, imageCount: null, embedInputCount: 12, embedDimensions: 768, costUsd: 0.0004, errorClass: null, errorCode: null },
+    { id: '66666666-6666-4666-8666-666666666666', createdAt: '2026-08-14T11:47:00Z', createdBy: '00000000-0000-4000-8000-000000000001', feature: 'companion_hypothesis', operation: 'critique', callKind: 'SMART', status: 'SUCCESS', requestedModel: 'gemini-2.5-pro', servedModel: 'gemini-2.5-pro', latencyMs: 22600, streamed: false, toolRounds: null, totalTokens: 18902, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: 0.184, errorClass: null, errorCode: null },
+    { id: '77777777-7777-4777-8777-777777777777', createdAt: '2026-08-14T03:45:00Z', createdBy: null, feature: 'proactive_briefing', operation: 'generate', callKind: 'CHAT', status: 'SUCCESS', requestedModel: 'gemini-2.5-flash', servedModel: 'gemini-2.5-flash', latencyMs: 5200, streamed: false, toolRounds: null, totalTokens: 9341, imageCount: null, embedInputCount: null, embedDimensions: null, costUsd: 0.031, errorClass: null, errorCode: null },
   ],
   // The seed IS everything the mock log holds — `mockCalls` recomputes `hasMore` per window, so
   // this flag only describes the unfiltered, unbounded read.
@@ -118,7 +126,8 @@ function mockCalls(filters: LlmCallFilters, limit: number): LlmCallListResponse 
   const matched = LLM_CALLS_MOCK.items.filter((call) =>
     (filters.feature == null || call.feature === filters.feature)
     && (filters.status == null || call.status === filters.status)
-    && (filters.callKind == null || call.callKind === filters.callKind))
+    && (filters.callKind == null || call.callKind === filters.callKind)
+    && (filters.userId == null || call.createdBy === filters.userId))
   // `hasMore` comes from the window truncating, exactly like the backend's `limit + 1` probe.
   return { items: matched.slice(0, limit), hasMore: matched.length > limit }
 }
@@ -180,7 +189,7 @@ export function useLlmUsageBreakdown(period: LlmUsagePeriodKey) {
  */
 export function useLlmCalls(period: LlmUsagePeriodKey, filters: LlmCallFilters, limit: number) {
   return useDualQuery({
-    queryKey: ['llmCalls', period, filters.feature ?? null, filters.status ?? null, filters.callKind ?? null, limit],
+    queryKey: ['llmCalls', period, filters.feature ?? null, filters.status ?? null, filters.callKind ?? null, filters.userId ?? null, limit],
     mockData: mockCalls(filters, limit),
     realFetch: () => llmUsageApi.listCalls(period, filters, limit),
     realEmpty: LLM_CALLS_EMPTY,

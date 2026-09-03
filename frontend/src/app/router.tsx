@@ -73,6 +73,9 @@ import { WeekDayPage } from '@/features/me/pages/WeekDayPage'
 import { WeekLessonsPage } from '@/features/me/pages/WeekLessonsPage'
 import { WeekDiscoveriesPage } from '@/features/me/pages/WeekDiscoveriesPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
+import { CelokPage } from '@/features/me/pages/CelokPage'
+import { CelPage } from '@/features/me/pages/CelPage'
+import { CelWizardPage } from '@/features/me/pages/CelWizardPage'
 import { WeightPage } from '@/features/me/pages/WeightPage'
 import { SleepPage } from '@/features/me/pages/SleepPage'
 import { PeoplePage } from '@/features/me/pages/PeoplePage'
@@ -86,6 +89,7 @@ import { NotificationFeedPage } from '@/features/me/pages/NotificationFeedPage'
 import { AiUsagePage } from '@/features/me/pages/AiUsagePage'
 import { AiCallDetailPage } from '@/features/me/pages/AiCallDetailPage'
 import { BeallitasokPage } from '@/features/me/pages/BeallitasokPage'
+import { BetaAdminPage } from '@/features/me/pages/BetaAdminPage'
 import { RitualPage } from '@/features/ritual/pages/RitualPage'
 import { KarakterHubPage } from '@/features/character/pages/KarakterHubPage'
 import { DimensionsPage } from '@/features/character/pages/DimensionsPage'
@@ -320,7 +324,21 @@ export const routes: RouteObject[] = [
       { path: 'me/week/napok/:date', element: <WeekDayPage /> },
       { path: 'me/week/tanulsagok', element: <WeekLessonsPage /> },
       { path: 'me/week/felfedezesek', element: <WeekDiscoveriesPage /> },
-      { path: 'me/goals', element: <GoalsPage /> },
+      { path: 'me/goals', element: <CelokPage /> },
+      // Weight goal moved under /me/goals/weight (mezo-iizd.1, Task 8) — /me/goals itself is
+      // now the Célok (life-goals) hub (Task 9), and Task 10 adds `me/goals/:id`; these
+      // static children stay registered ahead of that future dynamic sibling per the
+      // `me/people/*` precedent above (React Router ranks static over dynamic regardless of
+      // source order, but the ordering stays explicit here too).
+      { path: 'me/goals/weight', element: <GoalsPage /> },
+      { path: 'me/goals/weight/new', element: <GoalPlannerPage /> },
+      // Task 11's five-step wizard (mezo-iizd.1) — another static `me/goals/*` sibling,
+      // registered ahead of the dynamic `me/goals/:id` below per the same precedent.
+      { path: 'me/goals/new', element: <CelWizardPage /> },
+      // Goal detail (Task 10, mezo-iizd.1) — registered AFTER every static `me/goals/*`
+      // sibling above (React Router ranks static over dynamic regardless of source order,
+      // but the ordering stays explicit here per the `me/people/:id` precedent).
+      { path: 'me/goals/:id', element: <CelPage /> },
       { path: 'me/weight', element: <WeightPage /> },
       { path: 'me/sleep', element: <SleepPage /> },
       // Emberek S3 hub (mezo-06o0.2): static children BEFORE `me/people/:id` (Task 3's "A
@@ -345,7 +363,8 @@ export const routes: RouteObject[] = [
       // Beállítások oldal (hub-tile-reorg): az Én hub Beállítások csempéjének célja —
       // Téma helyben + az Értesítések-kapcsolók és az AI-napló ajtajai.
       { path: 'me/beallitasok', element: <BeallitasokPage /> },
-      { path: 'me/goals/new', element: <GoalPlannerPage /> },
+      // Beta admin (mezo-qw37.3) — OWNER-only row on Beállítások; backend requireOwner() is the real gate.
+      { path: 'me/beallitasok/admin', element: <BetaAdminPage /> },
       // Full-screen night surface (train/session idiom) — no Me sub-nav chrome.
       { path: 'me/sleep/night', element: <NightPage /> },
       // Full-screen AI audit log browser (mezo-uakh) — no Me sub-nav chrome.
