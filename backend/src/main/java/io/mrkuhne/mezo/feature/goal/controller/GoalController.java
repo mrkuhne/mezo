@@ -6,12 +6,14 @@ import io.mrkuhne.mezo.api.dto.FeasibilityPreviewResponse;
 import io.mrkuhne.mezo.api.dto.GoalPlanAttachRequest;
 import io.mrkuhne.mezo.api.dto.GoalPlanLinkResponse;
 import io.mrkuhne.mezo.api.dto.GoalResponse;
+import io.mrkuhne.mezo.api.dto.GoalSuggestionResponse;
 import io.mrkuhne.mezo.api.dto.GoalTimelineResponse;
 import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalFeasibilityService;
 import io.mrkuhne.mezo.feature.goal.service.GoalPlanLinkService;
 import io.mrkuhne.mezo.feature.goal.service.GoalService;
+import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionService;
 import io.mrkuhne.mezo.feature.goal.service.GoalTimelineService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.util.List;
@@ -29,6 +31,7 @@ public class GoalController implements GoalApi {
     private final GoalTimelineService goalTimelineService;
     private final GoalEngineService goalEngineService;
     private final GoalFeasibilityService goalFeasibilityService;
+    private final GoalSuggestionService goalSuggestionService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -97,5 +100,20 @@ public class GoalController implements GoalApi {
     @Override
     public void detachGoalPlan(UUID id, UUID linkId) {
         goalPlanLinkService.detachPlan(currentUserId.get(), id, linkId);
+    }
+
+    @Override
+    public List<GoalSuggestionResponse> listGoalSuggestions(UUID id) {
+        return goalSuggestionService.listOpen(currentUserId.get(), id);
+    }
+
+    @Override
+    public GoalResponse acceptGoalSuggestion(UUID id, UUID suggestionId) {
+        return goalSuggestionService.accept(currentUserId.get(), id, suggestionId);
+    }
+
+    @Override
+    public void dismissGoalSuggestion(UUID id, UUID suggestionId) {
+        goalSuggestionService.dismiss(currentUserId.get(), id, suggestionId);
     }
 }

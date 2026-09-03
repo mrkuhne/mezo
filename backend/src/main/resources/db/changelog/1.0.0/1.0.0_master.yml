@@ -1007,3 +1007,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609030100_mezo-sxlj_diet_settings_day_type_shift.sql
+  - changeSet:
+      id: "1.0.0:202609030200_mezo-ktg8_goal_suggestion"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609030200_mezo-ktg8_goal_suggestion.sql
