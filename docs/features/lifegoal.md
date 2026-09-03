@@ -488,7 +488,8 @@ pure-mock branch that never touches `lifegoalApi.ts`.
 - **`mezo-iizd.6` (nightly job + XP):** `ProgressionLifeGoalIT` — `applyLifeGoal`'s idempotent
   award on the D-1 `sourceRefId`, the `LIFE_GOAL` `source_type`, and skill-kind derivation.
   `LifeGoalXpIT` — `LifeGoalXpService.awardIfHit` end to end: XP granted only on `hit`,
-  nothing on `miss`/`partial`/`no_data`, the `robustness`-keyed pillar granting nothing, and
+  nothing on `no_data` or a stored `miss` day, a `robustness`-keyed pillar's `hit` day granting
+  nothing (the shared progression tail recomputes that row to an absolute streak target), and
   `refIdFor` idempotency across a repeated call. `LifeGoalEvalJobIT` — the nightly job run twice
   leaves the same rows and the same XP (the Habitica double-cron lesson), a non-`active` goal is
   skipped, and per-goal error isolation (an unknown activity `measure` on one user's pillar does
