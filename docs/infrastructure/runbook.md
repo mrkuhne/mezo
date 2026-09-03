@@ -76,7 +76,7 @@ To use the tailnet URLs from a new device: install Tailscale, log in as `dkmusic
 
 | Service | Username | Password — fetch with |
 |---|---|---|
-| mezo app | `owner@mezo.local` | `owner` (auto-login; baked into the frontend build, not a real secret) |
+| mezo app | `owner@mezo.local` | the owner logs in through the app's own login screen (`MEZO_OWNER_PASSWORD` — not baked into the frontend build since `mezo-qw37` S1; other accounts self-register with an owner-minted invite code) |
 | pgAdmin UI | `dkmusicscore@gmail.com` | `kubectl get secret pgadmin-auth -n mezo -o jsonpath='{.data.PGADMIN_DEFAULT_PASSWORD}' \| base64 -d` |
 | pgAdmin → DB server "mezo (k8s)" | `mezo` | `kubectl get secret mezo-db -n mezo -o jsonpath='{.data.POSTGRES_PASSWORD}' \| base64 -d` |
 | ArgoCD UI | `admin` | `kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.password}' \| base64 -d` |
@@ -132,12 +132,14 @@ Do **not** `kubectl apply` for things under `k8s/` — ArgoCD owns them (selfHea
 cd backend && ./mvnw -B clean package -DskipTests
 docker buildx build --platform linux/amd64 -t ghcr.io/mrkuhne/mezo-backend:0.0.2 backend --push
 # frontend
-cd frontend && VITE_USE_MOCK=false VITE_API_URL= VITE_OWNER_EMAIL=owner@mezo.local VITE_OWNER_PASSWORD=owner pnpm build
+cd frontend && VITE_USE_MOCK=false VITE_API_URL= pnpm build
 docker buildx build --platform linux/amd64 -t ghcr.io/mrkuhne/mezo-frontend:0.0.2 frontend --push
 # then bump the image tag in k8s/backend/deployment.yaml (or frontend) and:
 git commit -am "deploy backend 0.0.2" && git push     # ArgoCD rolls it out
 ```
 GHCR login if needed: `gh auth token | docker login ghcr.io -u mrkuhne --password-stdin`.
+
+**Since `mezo-qw37` S1 (multi-user accounts):** the frontend build no longer bakes in owner credentials — `VITE_OWNER_EMAIL`/`VITE_OWNER_PASSWORD` are gone. The owner (and every other account) authenticates through the app's own login screen at runtime. What matters at deploy time instead: `MEZO_AUTH_STRICT=true` is set on the backend Deployment, which means the pod **refuses to start** unless `MEZO_OWNER_PASSWORD` and `MEZO_JWT_SECRET` are both set to real, non-default values in the `mezo-app` Secret — see [`_platform-auth-security.md`](../features/_platform-auth-security.md) §4/§9 and the Secrets table below. If you see the backend pod crash-looping right after a rebuild, check `kubectl logs -n mezo deploy/backend` for `AuthStartupGuard`'s `INTERNAL_ERROR` first — it names the offending key.
 Always build `--platform linux/amd64` (Mac is arm64, the server is amd64).
 
 ### Scale a service

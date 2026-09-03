@@ -1,0 +1,81 @@
+openapi: 3.0.3
+info: { title: mezo diet-settings fragment, version: 1.0.0 }
+tags:
+  - name: DietSettings
+    description: Nutrition-owned per-user diet preferences (macro split, protein tier, water/fiber targets)
+paths:
+  /api/diet/settings:
+    get:
+      tags: [DietSettings]
+      operationId: getDietSettings
+      summary: The diet settings; config-default ghost when unset — never 404 (DietSettings)
+      responses:
+        '200':
+          description: The settings (ghost balanced / moderate / 4000 / 30 before the first save)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DietSettingsResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    put:
+      tags: [DietSettings]
+      operationId: setDietSettings
+      summary: Upsert the diet settings (per-user singleton) (DietSettings)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SetDietSettingsRequest' }
+      responses:
+        '200':
+          description: Saved settings
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DietSettingsResponse' }
+        '400':
+          description: Validation failure (incl. custom split not summing to 100.0%)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+components:
+  schemas:
+    DietSettingsResponse:
+      type: object
+      required: [splitPreset, proteinTier, waterMl, fiberG]
+      properties:
+        splitPreset:
+          type: string
+          enum: [balanced, low_fat, low_carb, high_carb, custom]
+          description: Named fat/carb balance; custom uses the three pct fields
+        proteinPctX10:
+          type: integer
+          minimum: 0
+          maximum: 1000
+          description: Custom protein energy share, tenths of a percent (advisory — the g/kg floor wins)
+        carbsPctX10: { type: integer, minimum: 0, maximum: 1000 }
+        fatPctX10: { type: integer, minimum: 0, maximum: 1000 }
+        proteinTier:
+          type: string
+          enum: [moderate, high]
+          description: g/kg band endpoint — moderate=2.0 g/kg BW, high=2.2 g/kg BW (engine config)
+        waterMl: { type: integer, minimum: 500, maximum: 8000 }
+        fiberG: { type: integer, minimum: 10, maximum: 80 }
+    SetDietSettingsRequest:
+      type: object
+      required: [splitPreset, proteinTier, waterMl, fiberG]
+      properties:
+        splitPreset: { type: string, enum: [balanced, low_fat, low_carb, high_carb, custom] }
+        proteinPctX10: { type: integer, minimum: 0, maximum: 1000 }
+        carbsPctX10: { type: integer, minimum: 0, maximum: 1000 }
+        fatPctX10: { type: integer, minimum: 0, maximum: 1000 }
+        proteinTier: { type: string, enum: [moderate, high] }
+        waterMl: { type: integer, minimum: 500, maximum: 8000 }
+        fiberG: { type: integer, minimum: 10, maximum: 80 }

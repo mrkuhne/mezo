@@ -59,12 +59,11 @@
 
 | File | Responsibility |
 |---|---|
-| `frontend/src/features/me/pages/RutinHubPage.tsx` | Create (replaces `RoutineEditorPage.tsx`): the routine home. |
+| `frontend/src/features/me/pages/RutinHubPage.tsx` | Create (absorbs `GrowthRutinPage.tsx` and `RoutineEditorPage.tsx`, both deleted): the routine home. |
 | `frontend/src/features/me/pages/RoutineWizardPage.tsx` | Create: the 4-step recipe wizard. |
 | `frontend/src/features/me/pages/HabitPage.tsx` | Create: one habit's recipe page. |
 | `frontend/src/features/me/pages/EnHubPage.tsx` | Modify: the wide Rutin tile + its line. |
-| `frontend/src/features/me/pages/GrowthPage.tsx` | Modify: drop the Rutin segment. |
-| `frontend/src/features/me/components/RoutinesTab.tsx` | Delete. |
+| `frontend/src/features/me/pages/GrowthHubPage.tsx` | Modify: drop the Rutin tile, repoint `TAB_REDIRECT.routines`. |
 | `frontend/src/app/router.tsx` | Modify: three new routes + two redirects. |
 | `frontend/src/shared/ui/mozaik/index.tsx` | Modify: `wide` prop on `Tile`. |
 | `frontend/src/styles/prototype.css` | Modify: the wide-tile row layout + the routine hub/wizard classes. |
@@ -1324,99 +1323,62 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 ---
 
-### Task 7: `/me/rutin` hub page, routes, and the Growth removal
+### Task 7: `/me/rutin` — the routine home, absorbing the Growth Rutin page and the editor
+
+> **Revised 2026-09-02 after `mezo-rmi0.1` landed on main.** The Growth tab was itself
+> restructured while this slice was queued: `GrowthPage`'s segmented control is gone, replaced by
+> `GrowthHubPage` (`/me/growth`) with four full-page siblings, and the Rutin segment became
+> `GrowthRutinPage` at `/me/growth/rutin`. `RoutinesTab.tsx` was deleted. This task therefore
+> **moves and merges two existing pages** instead of removing a segment. Nothing about the goal
+> changed: the routine surface leaves Growth and lives under Én.
+
+**Starting point, verified on main:**
+- `frontend/src/features/me/pages/GrowthRutinPage.tsx` — a polished, date-navigable, read-only
+  overview: two 30-cell counter tiles (`CounterTile`/`Cells`), a `DayNavigator` capped at today,
+  and catalog-driven chain cards branching on today vs. a past day. Its head action
+  `✏️ Szerkesztés` links to `/me/routines/edit`.
+- `frontend/src/features/me/pages/RoutineEditorPage.tsx` — the catalog CRUD editor: chain cards
+  with an active `Toggle`, `✎` opening `ChainEditSheet`, a `SortableList` of defs, `＋ Új habit`
+  opening `HabitEditSheet`, and `＋ Új rutin` / `✨ AI javaslat`.
+- `frontend/src/features/me/pages/GrowthHubPage.tsx` — four tiles; the Rutin tile at line 82-83
+  points at `/me/growth/rutin`, and `TAB_REDIRECT.routines` (line 26) maps the legacy `?tab=`.
 
 **Files:**
-- Create: `frontend/src/features/me/pages/RutinHubPage.tsx`
+- Create: `frontend/src/features/me/pages/RutinHubPage.tsx` (built from both pages above)
 - Create: `frontend/src/features/me/pages/RutinHubPage.test.tsx`
-- Delete: `frontend/src/features/me/pages/RoutineEditorPage.tsx`, `RoutineEditorPage.test.tsx`, `frontend/src/features/me/components/RoutinesTab.tsx`, `RoutinesTab.test.tsx`
-- Modify: `frontend/src/features/me/pages/GrowthPage.tsx:40-45,66-68,154`, `GrowthPage.test.tsx`
-- Modify: `frontend/src/app/router.tsx:67,267,306`
+- Delete: `frontend/src/features/me/pages/GrowthRutinPage.tsx`, `GrowthRutinPage.test.tsx`,
+  `RoutineEditorPage.tsx`, `RoutineEditorPage.test.tsx`
+- Modify: `frontend/src/features/me/pages/GrowthHubPage.tsx` (drop the Rutin tile, repoint `TAB_REDIRECT`)
+- Modify: `frontend/src/features/me/pages/GrowthHubPage.test.tsx` (three tiles, not four)
+- Modify: `frontend/src/app/router.tsx`
 - Modify: `frontend/src/styles/prototype.css`
 
 **Interfaces:**
-- Consumes: `routineSentence` helpers (Task 6), `useHabitCatalog`, `useHabitCatalogActions`, `useHabitDay`, `useHabitSummary` from `@/data/hooks`.
-- Produces: `RutinHubPage` (default route element for `/me/rutin`); the CSS classes `rt-chain`, `rt-row`, `rt-fw`, `rt-strength`, `rt-row-new` used by Task 9 and 10.
+- Consumes: `routineSentence` helpers (Task 6), `habitAnchorOptions` (Task 6), `useHabitCatalog`,
+  `useHabitCatalogActions`, `useHabitDay`, `useHabitSummary`.
+- Produces: `RutinHubPage` at `/me/rutin`; the CSS classes `rt-fw`, `rt-strength`, `rt-row-new`
+  used by Tasks 9 and 10.
+
+**Preserve, do not regress:** the counter tiles, the day navigator, the past-day branch, the
+"kimaradt — a lánc másnap folytatódott" soft note, and the principle line all survive the move
+verbatim. `mezo-rmi0.1` shipped them days ago; this task adds editing and framework affordances
+around them, it does not replace them.
 
 - [ ] **Step 1: Write the failing page test**
 
-Create `frontend/src/features/me/pages/RutinHubPage.test.tsx`:
+Create `frontend/src/features/me/pages/RutinHubPage.test.tsx`. Mock at the `@/data/hooks`
+boundary exactly as `GrowthRutinPage.test.tsx` and `RoutineEditorPage.test.tsx` do (read both
+first and reuse their `vi.hoisted` + `vi.mock` shape and their fixture builders). Assert:
 
 ```tsx
-import { render, screen, within } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { RutinHubPage } from '@/features/me/pages/RutinHubPage'
-import type { HabitChainInfo, HabitDefInfo } from '@/data/types'
-
-const { useHabitCatalog, useHabitCatalogActions, useHabitDay, useHabitSummary, navigate } = vi.hoisted(() => ({
-  useHabitCatalog: vi.fn(), useHabitCatalogActions: vi.fn(),
-  useHabitDay: vi.fn(), useHabitSummary: vi.fn(), navigate: vi.fn(),
-}))
-vi.mock('@/data/hooks', () => ({
-  useHabitCatalog: () => useHabitCatalog(),
-  useHabitCatalogActions: () => useHabitCatalogActions(),
-  useHabitDay: () => useHabitDay(),
-  useHabitSummary: () => useHabitSummary(),
-  useProgressionProfile: () => ({ data: { life: [] } }),
-  useHabitAiSuggest: () => ({ suggest: vi.fn(), pending: false, unavailable: false }),
-}))
-vi.mock('react-router-dom', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('react-router-dom')>()),
-  useNavigate: () => navigate,
-}))
-
-function def(id: string, title: string, framework: HabitDefInfo['framework']): HabitDefInfo {
-  return {
-    id, habitKey: id, chainKey: 'MORNING', position: 1, title, why: null, anchorCopy: null,
-    mode: 'MANUAL', metric: 'manual', skillKey: 'mindset', xp: 5, linkUrl: null, isActive: true,
-    framework, anchorHabitKey: null, cue: null, craving: null, reward: null,
-    celebration: null, identity: null,
-  }
-}
-
-const MORNING: HabitChainInfo = {
-  id: 'chain-morning', chainKey: 'MORNING', title: 'Reggeli rutin', daypart: 'MORNING',
-  position: 1, isActive: true,
-  defs: [def('sun', 'Reggeli fény', 'FOGG'), def('intent', 'Napi szándék', 'CLEAR'), def('water', 'Hidratálás', null)],
-}
-
-beforeEach(() => {
-  useHabitCatalog.mockReturnValue({ catalog: { chains: [MORNING] }, isPending: false, isError: false, refetch: vi.fn() })
-  useHabitCatalogActions.mockReturnValue({
-    updateChain: vi.fn(), updateDef: vi.fn(), reorderChain: vi.fn(), pending: false,
-  })
-  useHabitDay.mockReturnValue({
-    habits: [
-      { key: 'sun', chain: 'MORNING', position: 1, title: 'Reggeli fény', why: '', anchorCopy: '', mode: 'MANUAL', status: 'done', xp: 5, strengthPct: 82 },
-      { key: 'intent', chain: 'MORNING', position: 2, title: 'Napi szándék', why: '', anchorCopy: '', mode: 'MANUAL', status: 'pending', xp: 5, strengthPct: 64 },
-      { key: 'water', chain: 'MORNING', position: 3, title: 'Hidratálás', why: '', anchorCopy: '', mode: 'MANUAL', status: 'pending', xp: 5, strengthPct: 91 },
-    ],
-  })
-  useHabitSummary.mockReturnValue({
-    data: {
-      perfectMorningDays30: 12, perfectEveningDays30: 7,
-      habits: [
-        { key: 'sun', strengthPct: 82, done28: 23, missed28: 5 },
-        { key: 'intent', strengthPct: 64, done28: 18, missed28: 10 },
-        { key: 'water', strengthPct: 91, done28: 25, missed28: 3 },
-      ],
-    },
-  })
-  navigate.mockReset()
-})
-
-const renderPage = () => render(<MemoryRouter><RutinHubPage /></MemoryRouter>)
-
-describe('RutinHubPage', () => {
-  it('shows today done/total in the hero and the 30-day counters in the stat strip', () => {
+  it('keeps the 30-day counter tiles and the day navigator from the Growth page', () => {
     renderPage()
-    expect(screen.getByText('1 / 3')).toBeInTheDocument()
-    expect(screen.getByText('12')).toBeInTheDocument()
-    expect(screen.getByText('7')).toBeInTheDocument()
+    expect(screen.getByText('Reggel')).toBeInTheDocument()
+    expect(screen.getByText('Este')).toBeInTheDocument()
+    expect(screen.getByLabelText(/előző nap/i)).toBeInTheDocument()
   })
 
-  it('badges each row with its framework, legacy rows included', () => {
+  it('badges each habit row with its framework, legacy rows included', () => {
     renderPage()
     expect(screen.getByLabelText('Reggeli fény · szokás-láncolás')).toBeInTheDocument()
     expect(screen.getByLabelText('Napi szándék · négy törvény')).toBeInTheDocument()
@@ -1428,7 +1390,6 @@ describe('RutinHubPage', () => {
     screen.getByLabelText('Reggeli fény · szokás-láncolás').click()
     expect(navigate).toHaveBeenCalledWith('/me/rutin/szokas/sun')
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
-    expect(screen.queryByLabelText(/pipa|kipipál/i)).not.toBeInTheDocument()
   })
 
   it('routes the new-recipe CTA to the wizard', () => {
@@ -1436,65 +1397,77 @@ describe('RutinHubPage', () => {
     screen.getByRole('button', { name: /Új szokás-recept/ }).click()
     expect(navigate).toHaveBeenCalledWith('/me/rutin/uj')
   })
-})
+
+  it('goes back to the Én hub, not to Growth', () => {
+    renderPage()
+    screen.getByRole('button', { name: 'Vissza' }).click()
+    expect(navigate).toHaveBeenCalledWith('/me')
+  })
+
+  it('keeps chain editing: the active toggle and the chain edit sheet', () => {
+    renderPage()
+    screen.getByLabelText('Reggeli rutin aktív').click()
+    expect(updateChain).toHaveBeenCalledWith('chain-morning', { isActive: false })
+  })
+
+  it('shows the past-day branch without strength percentages', () => {
+    renderPage()
+    fireEvent.click(screen.getByLabelText(/előző nap/i))
+    expect(screen.queryByText(/erő \d+%/)).not.toBeInTheDocument()
+  })
 ```
+
+Match the `DayNavigator`'s real accessible names by reading `frontend/src/shared/ui/DayNavigator.tsx`
+rather than trusting the `/előző nap/i` guess above; fix the test to the real name.
 
 - [ ] **Step 2: Run it to verify it fails**
 
 Run: `cd frontend && VITE_USE_MOCK=true pnpm test src/features/me/pages/RutinHubPage.test.tsx`
 Expected: FAIL — module not found.
 
-- [ ] **Step 3: Write the hub page**
+- [ ] **Step 3: Write the merged page**
 
-Create `frontend/src/features/me/pages/RutinHubPage.tsx`. Build it from `RoutineEditorPage.tsx` (chain cards, `SortableList`, `Toggle`, the three sheets, the `GhostState` branches, `EntranceGroup`) with these changes:
+Create `RutinHubPage.tsx` starting from `GrowthRutinPage.tsx` verbatim, then apply these changes
+and nothing else:
 
-- `PageHead onBack={() => navigate('/me')} label="‹ Én"`, and a right-hand `✨ AI javaslat` action opening `AiSuggestSheet`.
-- A `PageHero` block: `ClayIcon name="i-rend" size={54}`, `mz-bignum` = `${doneToday} / ${totalToday}` from `useHabitDay`, name `Rutin`, sub `ma · 28 napos átlagerő ${meanStrength}%` (omit the second clause when there is no strength data).
-- A `StatStrip` with three `StatCell`s: `summary.perfectMorningDays30` / `Tökéletes reggel · 30 n`, `summary.perfectEveningDays30` / `Tökéletes este · 30 n`, active def count / `aktív szokás`.
-- Each def row renders, in place of the editor's XP + mode chips: a framework badge and a strength bar. The badge is a `<span>` with class `rt-fw rt-fw-fogg|rt-fw-clear|rt-fw-none` and text `⚓ FOGG` / `◈ CLEAR` / `– RÉGI`; the row button's `aria-label` is `` `${def.title} · ${FRAMEWORK_LABEL[def.framework ?? 'NONE']}` `` with
+- `PageHead onBack={() => navigate('/me')} label="‹ Én"`. The head action becomes
+  `✨ AI javaslat`, opening `AiSuggestSheet` (state lifted from `RoutineEditorPage`). The
+  `✏️ Szerkesztés` action disappears — this page IS the editor now.
+- Keep `PageHero` but make it the spec's hero: big number `${doneToday} / ${totalToday}` from
+  `useHabitDay`, name `Rutin`, sub `ma · 28 napos átlagerő ${meanStrength}%` (drop the second
+  clause when there is no strength data). The perfect-morning count moves into the counter tiles,
+  which already show it.
+- Keep `CounterTile`/`Cells` and the `gr-covgrid` block unchanged (today branch only, as now).
+- Keep `DayNavigator` and the whole past-day branch unchanged.
+- In the **today** branch only, each chain card gains the editor's chrome: the active `Toggle`
+  and the `✎` button opening `ChainEditSheet`, and its rows become a `SortableList` (import both
+  from where `RoutineEditorPage` imported them).
+- Each habit row gains a framework badge and a strength bar, replacing the bare `gr-chain-pct`
+  span on the today branch. The badge is `<span className="rt-fw rt-fw-fogg|rt-fw-clear|rt-fw-none">`
+  reading `⚓ FOGG` / `◈ CLEAR` / `– RÉGI`, and the row button's `aria-label` is
+  `` `${def.title} · ${FRAMEWORK_LABEL[def.framework ?? 'NONE']}` `` with
 
 ```tsx
 const FRAMEWORK_LABEL = { FOGG: 'szokás-láncolás', CLEAR: 'négy törvény', NONE: 'keret nélkül' } as const
 ```
 
-- The row click navigates to `/me/rutin/szokas/${def.habitKey}`; no `Toggle` and no tick control on a def row. The chain-level active `Toggle` stays.
-- The strength bar reads `summary.habits.find((h) => h.key === def.habitKey)?.strengthPct ?? null`, renders `<div className="rt-strength"><i style={{ width: `${pct ?? 0}%` }} /></div>` and gets the extra class `is-done` when today's `useHabitDay` row for that key has `status === 'done'`.
-- The CTA row: `＋ Új szokás-recept` → `navigate('/me/rutin/uj')`, and `＋ Új lánc` → `setChainSheet({})`.
-- A closing principle line: `Egyszerre egy szokás. A logolás maga a jutalom — a pipa a Nap tabon él.`
-- Read `?new=` with `useSearchParams`; when it matches a def's `habitKey`, add `rt-row-new` to that row.
+  The framework comes from the **catalog** def (`useHabitCatalog`), matched to the day row by
+  `habitKey`; the day view's `HabitItem` does not carry it.
+- A today-branch row click navigates to `/me/rutin/szokas/${def.habitKey}`. The row stays
+  non-tickable: keep the existing `gr-ck` status glyph, add no checkbox.
+- Bottom CTA row: `＋ Új szokás-recept` → `navigate('/me/rutin/uj')`, and `＋ Új lánc` →
+  `ChainEditSheet` in create mode.
+- Read `?new=` with `useSearchParams`; when it equals a def's `habitKey`, add `rt-row-new` to that
+  row.
+- Keep the `PageBody principle` line as it is.
 
 - [ ] **Step 4: Add the CSS**
 
-Append to `frontend/src/styles/prototype.css`, after the existing Mozaik block, translating the prototype values ×1.18:
-
-```css
-/* -- Rutin hub (mezo-3zue) -- prototype rutin-epito-head.html .chaincard / .hrow / .fw /
-      .strength, x1.18 (330 to 390px frame). The row is a grid so the strength bar spans the
-      full width under the title while the badge stays on the title's line. -- */
-.rt-row { display: grid; grid-template-columns: 14px 1fr auto; grid-template-areas: "g n f" "g b b";
-  column-gap: 8px; row-gap: 4px; padding: 8px 2px; width: 100%; text-align: left;
-  align-items: center; border: none; background: none; font-family: inherit; color: var(--text-primary); }
-.rt-row + .rt-row { border-top: 0.5px solid var(--line); }
-.rt-row-new { background: linear-gradient(90deg, var(--mz-wash-gold), transparent); border-radius: 12px; }
-.rt-row-nm { grid-area: n; font-size: 13px; font-weight: 600; overflow: hidden;
-  text-overflow: ellipsis; white-space: nowrap; }
-.rt-fw { grid-area: f; font-size: 8px; font-weight: 800; letter-spacing: 0.08em;
-  border-radius: 6px; padding: 2px 7px; }
-.rt-fw-fogg { color: var(--sage-deep); background: color-mix(in srgb, var(--sage) 18%, transparent); }
-.rt-fw-clear { color: var(--mz-cell-lav-ink); background: color-mix(in srgb, var(--lav) 16%, transparent); }
-.rt-fw-none { color: var(--text-quaternary); background: color-mix(in srgb, var(--text-primary) 5%, transparent); }
-.rt-strength { grid-area: b; height: 5px; border-radius: 3px; overflow: hidden;
-  background: color-mix(in srgb, var(--text-primary) 7%, transparent); }
-.rt-strength i { display: block; height: 100%; border-radius: 3px;
-  background: linear-gradient(90deg, var(--gold), var(--gold-deep)); transition: width 0.6s cubic-bezier(0.22, 0.9, 0.32, 1); }
-.rt-strength.is-done i { background: linear-gradient(90deg, var(--sage), var(--sage-deep)); }
-
-@media (prefers-reduced-motion: reduce) {
-  .rt-strength i { transition: none; }
-}
-```
-
-If any token above (`--gold-deep`, `--sage-deep`, `--mz-wash-gold`, `--mz-cell-lav-ink`) is not defined in the stylesheet, substitute the closest existing token rather than introducing a new hex value; grep the file for the token before using it.
+Append to `frontend/src/styles/prototype.css` the `rt-fw*`, `rt-strength` and `rt-row-new` rules
+from the prototype (`docs/design_2.0/prototypes/src/rutin-epito-head.html`, `.fw`, `.strength`,
+`.hrow.new`) at ×1.18. Use only tokens that already exist in the stylesheet — grep before using
+one, and substitute the closest existing token rather than introducing a new hex value. Do not
+touch the `gr-*` classes; they keep serving the counter tiles and chain cards.
 
 - [ ] **Step 5: Run the page test to verify it passes**
 
@@ -1503,37 +1476,38 @@ Expected: PASS.
 
 - [ ] **Step 6: Wire the routes**
 
-In `frontend/src/app/router.tsx`: replace the `RoutineEditorPage` import with `import { RutinHubPage } from '@/features/me/pages/RutinHubPage'`, and replace the `me/routines/edit` entry with:
+In `frontend/src/app/router.tsx`: replace the `GrowthRutinPage` and `RoutineEditorPage` imports
+with `RutinHubPage`, and change the route block to:
 
 ```tsx
-      // Rutin home (mezo-3zue): the routine surface's own page, reached from the Én hub's
-      // full-width Rutin tile. Static children before any `:param` sibling, per the /me/* idiom.
+      // Rutin home (mezo-3zue): the routine surface's own page under Én, reached from the Én
+      // hub's full-width Rutin tile. It absorbed /me/growth/rutin (mezo-rmi0.1) and the
+      // /me/routines/edit editor — build and edit here, tick on /nap/rutin.
       { path: 'me/rutin', element: <RutinHubPage /> },
-      // Old editor deep links keep working — the editor merged into the hub.
+      // Both former homes keep working as redirects.
+      { path: 'me/growth/rutin', element: <Navigate to="/me/rutin" replace /> },
       { path: 'me/routines/edit', element: <Navigate to="/me/rutin" replace /> },
 ```
 
-- [ ] **Step 7: Redirect the Growth segment and delete the tab**
+Keep `me/rutin` registered before any `:param` sibling.
 
-In `GrowthPage.tsx`: remove `'routines'` from the `Tab` union, from `TABS`, and from the `initialTab` allow-list; delete the `{tab === 'routines' && <RoutinesTab />}` line and the `RoutinesTab` import. At the top of the component body add:
+- [ ] **Step 7: Take Rutin off the Growth hub**
 
-```tsx
-  // The Rutin segment moved out to its own page (mezo-3zue); the old deep link follows it.
-  if (searchParams.get('tab') === 'routines') return <Navigate to="/me/rutin" replace />
-```
+In `GrowthHubPage.tsx`: delete the Rutin `<Tile>` (lines 82-83) and the `rutinLine` derivation
+plus any now-unused habit-hook import; change `TAB_REDIRECT.routines` to `'/me/rutin'`. In
+`GrowthHubPage.test.tsx`, change the tile-count assertion to three and repoint the legacy
+`?tab=routines` redirect assertion.
 
-importing `Navigate` from `react-router-dom`. Then delete the four files:
+Then delete the four superseded files:
 
 ```bash
-git rm frontend/src/features/me/pages/RoutineEditorPage.tsx \
-       frontend/src/features/me/pages/RoutineEditorPage.test.tsx \
-       frontend/src/features/me/components/RoutinesTab.tsx \
-       frontend/src/features/me/components/RoutinesTab.test.tsx
+git rm frontend/src/features/me/pages/GrowthRutinPage.tsx \
+       frontend/src/features/me/pages/GrowthRutinPage.test.tsx \
+       frontend/src/features/me/pages/RoutineEditorPage.tsx \
+       frontend/src/features/me/pages/RoutineEditorPage.test.tsx
 ```
 
-In `GrowthPage.test.tsx`, remove the assertions about the Rutin tab and add one for the redirect: rendering `GrowthPage` at `/me/growth?tab=routines` must not render the segment list.
-
-- [ ] **Step 8: Run the whole frontend suite in both modes**
+- [ ] **Step 8: Run the full frontend suite in both modes**
 
 Run:
 
@@ -1541,13 +1515,14 @@ Run:
 cd frontend && VITE_USE_MOCK=false pnpm test && VITE_USE_MOCK=true pnpm test
 ```
 
-Expected: PASS.
+Expected: PASS. Any other test referencing the deleted pages or the Growth Rutin tile must be
+updated in this task, not left failing.
 
 - [ ] **Step 9: Commit**
 
 ```bash
 git add -A frontend/src
-git commit -m "feat(habit): /me/rutin hub replaces the Growth Rutin segment and the editor (mezo-3zue.3)
+git commit -m "feat(habit): /me/rutin absorbs the Growth Rutin page and the routine editor (mezo-3zue.3)
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 ```
@@ -1558,13 +1533,13 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 **Files:**
 - Modify: `frontend/src/shared/ui/mozaik/index.tsx` (`Tile`)
-- Modify: `frontend/src/features/me/pages/EnHubPage.tsx:142-233`
-- Modify: `frontend/src/features/me/pages/EnHubPage.test.tsx:177,213-231`
+- Modify: `frontend/src/features/me/pages/EnHubPage.tsx` (tile derivations near line 142, mosaic near line 224)
+- Modify: `frontend/src/features/me/pages/EnHubPage.test.tsx`
 - Modify: `frontend/src/styles/prototype.css`
 - Modify: `docs/features/me.md`, `docs/features/growth.md`, `docs/features/habit.md`, `docs/CODEMAP.md`
 
 **Interfaces:**
-- Consumes: `RutinHubPage` route from Task 7; `useHabitDay` and `useHabitSummary`.
+- Consumes: the `/me/rutin` route from Task 7; `useHabitDay` and `useHabitSummary`.
 - Produces: `Tile` gains an optional `wide?: boolean` prop rendering the row layout.
 
 - [ ] **Step 1: Write the failing hub test**
@@ -1601,7 +1576,10 @@ In `EnHubPage.test.tsx`, replace the "six tiles" test with:
   })
 ```
 
-Add `useHabitDay` and `useHabitSummary` to the file's `vi.hoisted` block and to its `vi.mock('@/data/hooks', ...)` factory, with `beforeEach` defaults matching the three-habit fixture used in Task 7's test (one done, morning strength 82, evening strength 64 — give the evening chain a def so the second clause has data).
+Add `useHabitDay` and `useHabitSummary` to the file's `vi.hoisted` block and its
+`vi.mock('@/data/hooks', …)` factory, with `beforeEach` defaults giving three habits — one done,
+morning strength 82, evening strength 64, with at least one evening habit so the second clause
+has data.
 
 - [ ] **Step 2: Run it to verify it fails**
 
@@ -1617,29 +1595,13 @@ In `frontend/src/shared/ui/mozaik/index.tsx`, add to `TileProps`:
   wide?: boolean
 ```
 
-destructure `wide` in the signature, and change the class composition to:
+destructure `wide`, and compose the class as:
 
 ```tsx
   const cls = cn('mz-tile', `mz-w-${wash}`, 'rise', wide && 'mz-tile-wide mz-tile-row', className)
 ```
 
-- [ ] **Step 4: Add the row-layout CSS**
-
-Append to `prototype.css` near the existing `.mz-tile-wide` rule:
-
-```css
-/* The wide tile's ROW form (mezo-3zue): spot left, eyebrow + datum centre, chevron right —
-   the Mezo hub's Diagnózis tile in tile-primitive form, so the Én mosaic keeps its 3x2 pairing. */
-.mz-tile-row { flex-direction: row; align-items: center; gap: 13px; min-height: 0; padding: 13px 15px; text-align: left; }
-.mz-tile-row .mz-spotwrap { flex: none; padding: 0; }
-.mz-tile-row .mz-tile-top { flex: none; }
-.mz-tile-row .mz-tile-line { text-align: left; margin-top: 3px; font-size: 15px; font-weight: 700; }
-.mz-tile-row .mz-tile-line small { font-size: 11px; font-weight: 300; color: var(--text-tertiary); margin-left: 6px; }
-.mz-tile-row .mz-tile-body { flex: 1; min-width: 0; }
-.mz-tile-row .mz-chev { flex: none; color: var(--gold-deep); font-size: 16px; }
-```
-
-The `Tile` primitive renders eyebrow and line as siblings, so wrap them for the row form: in `Tile`, when `wide` is true, render
+When `wide` is true, render this instead of the default `inner`, leaving non-wide tiles untouched:
 
 ```tsx
       {icon && <div className="mz-spotwrap"><ClayIcon name={icon} size={iconSize} /></div>}
@@ -1650,11 +1612,28 @@ The `Tile` primitive renders eyebrow and line as siblings, so wrap them for the 
       <span className="mz-chev" aria-hidden="true">›</span>
 ```
 
-instead of the default `inner`, keeping the existing markup for non-wide tiles unchanged.
+- [ ] **Step 4: Add the row-layout CSS**
+
+`.mz-tile-wide` already exists in `prototype.css` (grid-column `1 / -1`). Append the row form next
+to it:
+
+```css
+/* The wide tile's ROW form (mezo-3zue): spot left, eyebrow + datum centre, chevron right —
+   the Mezo hub's Diagnózis tile in tile-primitive form, so the Én mosaic keeps its 3x2 pairing. */
+.mz-tile-row { flex-direction: row; align-items: center; gap: 13px; min-height: 0; padding: 13px 15px; text-align: left; }
+.mz-tile-row .mz-spotwrap { flex: none; padding: 0; }
+.mz-tile-row .mz-tile-top { flex: none; }
+.mz-tile-row .mz-tile-body { flex: 1; min-width: 0; }
+.mz-tile-row .mz-tile-line { text-align: left; margin-top: 3px; font-size: 15px; font-weight: 700; }
+.mz-tile-row .mz-tile-line small { font-size: 11px; font-weight: 300; color: var(--text-tertiary); margin-left: 6px; }
+.mz-tile-row .mz-chev { flex: none; font-size: 16px; }
+```
+
+Grep each token before using it; substitute the closest existing one rather than adding a hex.
 
 - [ ] **Step 5: Add the tile to the Én hub**
 
-In `EnHubPage.tsx`, next to the other tile-line derivations, add:
+In `EnHubPage.tsx`, next to the other tile-line derivations:
 
 ```tsx
   const { habits: todayHabits } = useHabitDay(todayIso)
@@ -1698,9 +1677,12 @@ Expected: PASS.
 
 - [ ] **Step 7: Update the docs and CODEMAP**
 
-- `docs/features/me.md`: the Én hub now has six small tiles plus a wide Rutin tile; `RoutineEditorPage` and `RoutinesTab` are gone, `RutinHubPage` is the routine home; update `key_files`.
-- `docs/features/growth.md` §2: the segmented control has three segments; `?tab=routines` redirects.
-- `docs/features/habit.md` §2 and §10: the routine surfaces are `/me/rutin` (build/edit) and `/nap/rutin` (tick); drop the stale `RoutinesTab` emoji-daypart sentence flagged in the recon.
+- `docs/features/me.md`: the Én hub has six small tiles plus a wide Rutin tile; `RutinHubPage` is
+  the routine home; `GrowthRutinPage` and `RoutineEditorPage` are gone; update `key_files`.
+- `docs/features/growth.md`: the Growth hub has three tiles; `TAB_REDIRECT.routines` now leaves
+  the Growth family for `/me/rutin`.
+- `docs/features/habit.md` §2 and §10: the routine surfaces are `/me/rutin` (build and edit) and
+  `/nap/rutin` (tick); `/me/growth/rutin` and `/me/routines/edit` are redirects.
 
 Run: `node scripts/gen-codemap.mjs && node scripts/lint-docs.mjs --errors-only`
 Expected: PASS.
@@ -1715,30 +1697,21 @@ cd frontend && VITE_USE_MOCK=false pnpm test && VITE_USE_MOCK=true pnpm test && 
 
 Expected: PASS.
 
-- [ ] **Step 9: Commit and open the S3 pull request**
+- [ ] **Step 9: Commit**
 
 ```bash
 git add -A frontend/src docs
 git commit -m "feat(habit): full-width Rutin tile on the Én hub (mezo-3zue.3)
 
 Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
-git push -u origin feat/rutin-epito-hub
-gh pr create --title "feat(habit): Rutin-építő S3 — /me/rutin hub + Én tile, Growth segment retired (mezo-3zue.3)" --body "$(cat <<'EOF'
-Frontend hub slice. Spec: `docs/superpowers/specs/2026-09-02-routine-builder-design.md` §4–§5, §9.
-
-- `/me/rutin` is the routine home: hero, 30-day counters, chain cards with strength bars and framework badges, no tick control.
-- Én hub gains a full-width Rutin tile with one live datum; the six small tiles keep their pairing.
-- The Growth Rutin segment and `/me/routines/edit` retire behind redirects; `RoutinesTab` and `RoutineEditorPage` are deleted.
-- Visual baselines for `/me` and `/me/growth` change — regenerate via the update-visual-baselines workflow.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-EOF
-)"
 ```
 
-After CI goes green, regenerate the visual baselines with the `update-visual-baselines.yml` workflow before merging.
+The pull request for this slice is opened by the coordinator after a branch-level review.
+Visual baselines for `/me`, `/me/growth` and the retired `/me/growth/rutin` change — regenerate
+them with the `update-visual-baselines.yml` workflow before merging.
 
 ---
+
 
 ## Slice S4 — Wizard and habit page (`mezo-3zue.4`, branch `feat/rutin-epito-wizard`)
 

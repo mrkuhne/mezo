@@ -9,6 +9,8 @@ import io.mrkuhne.mezo.api.dto.MealRequest;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.meal.service.MealService;
+import io.mrkuhne.mezo.feature.nutrition.entity.DietSettingsEntity;
+import io.mrkuhne.mezo.feature.nutrition.repository.DietSettingsRepository;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
@@ -33,6 +35,7 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
     @Autowired private PantryItemPopulator pantryPopulator;
     @Autowired private GoalPopulator goalPopulator;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private DietSettingsRepository dietSettingsRepository;
 
     private UUID owner;
 
@@ -76,8 +79,8 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
     private GoalPrescriptionJson twoSegmentPrescription() {
         return new GoalPrescriptionJson(null, "formula",
             List.of(
-                new GoalPrescriptionJson.Segment(1, 2, "bevezető", 2300, 170, null, null, null, null, null),
-                new GoalPrescriptionJson.Segment(3, 6, "vágás", 2100, 180, null, null, null, null, null)),
+                new GoalPrescriptionJson.Segment(1, 2, "bevezető", 2300, 170, null, null, null, null, null, null, null),
+                new GoalPrescriptionJson.Segment(3, 6, "vágás", 2100, 180, null, null, null, null, null, null, null)),
             null, null);
     }
 
@@ -196,7 +199,7 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
         // week 1 segment: 2600 kcal / 190 g protein — deliberately != the 3100/220 config
         GoalPrescriptionJson prescription = new GoalPrescriptionJson(null, "formula",
             List.of(new GoalPrescriptionJson.Segment(1, 12, "week1-12", 2600, 190,
-                null, null, null, null, null)),
+                null, null, null, null, null, null, null)),
             null, null);
         goalPopulator.createGoalFull(goalOwner, today.minusDays(3), today.plusWeeks(11),
             prescription, 4, "06:00", "22:00");
@@ -205,8 +208,73 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
 
         assertThat(day.getTargets().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(2600));
         assertThat(day.getTargets().getP()).isEqualByComparingTo(BigDecimal.valueOf(190));
-        // c/f/water stay config-driven
+        // segment carries no carbsG/fatG (pre-slice-1 shape) -> c/f stay config-driven
         assertThat(day.getTargets().getC()).isEqualByComparingTo(BigDecimal.valueOf(380));
+    }
+
+    /** Single-segment recept carrying prescribed carbsG/fatG (slice-1 shape), covering "today". */
+    private GoalPrescriptionJson prescriptionWithMacros(int carbsG, int fatG) {
+        return new GoalPrescriptionJson(null, "formula",
+            List.of(new GoalPrescriptionJson.Segment(1, 12, "week1-12", 2600, 190, carbsG, fatG,
+                null, null, null, null, null)),
+            null, null);
+    }
+
+    @Test
+    void testFuelDayTargets_shouldServePrescribedCarbsFat_whenSegmentCovers() {
+        UUID goalOwner = databasePopulator.populateUser("carbs-fat-owner@test.local");
+        LocalDate today = LocalDate.now();
+        // 310/78 deliberately != the 380/95 config
+        goalPopulator.createGoalFull(goalOwner, today.minusDays(3), today.plusWeeks(11),
+            prescriptionWithMacros(310, 78), 4, "06:00", "22:00");
+
+        FuelDayResponse day = fuelDayService.getDay(goalOwner, today);
+
+        assertThat(day.getTargets().getC()).isEqualByComparingTo(BigDecimal.valueOf(310));
+        assertThat(day.getTargets().getF()).isEqualByComparingTo(BigDecimal.valueOf(78));
+        // water is still not prescribed by the goal -> config/preference ghost
+        assertThat(day.getTargets().getWater()).isEqualByComparingTo(BigDecimal.valueOf(4000));
+    }
+
+    @Test
+    void testFuelDayTargets_shouldServePreferenceWater_whenSettingsRowPresent() {
+        UUID prefOwner = databasePopulator.populateUser("water-pref-owner@test.local");
+        DietSettingsEntity row = new DietSettingsEntity();
+        row.setCreatedBy(prefOwner);
+        row.setSplitPreset("balanced");
+        row.setProteinTier("moderate");
+        row.setWaterMl(3200);
+        row.setFiberG(30);
+        dietSettingsRepository.save(row);
+
+        FuelDayResponse day = fuelDayService.getDay(prefOwner, LocalDate.now());
+
+        assertThat(day.getTargets().getWater()).isEqualByComparingTo(BigDecimal.valueOf(3200));
+        // no active goal for this owner -> kcal/p/c/f stay config-driven
+        assertThat(day.getTargets().getC()).isEqualByComparingTo(BigDecimal.valueOf(380));
+    }
+
+    @Test
+    void testFuelWeekTargets_shouldServePrescribedCarbsFatAndPreferenceWater_perDay() {
+        UUID goalOwner = databasePopulator.populateUser("week-macros-owner@test.local");
+        LocalDate start = LocalDate.now();
+        goalPopulator.createGoalFull(goalOwner, start.minusDays(3), start.plusWeeks(11),
+            prescriptionWithMacros(300, 70), 4, "06:00", "22:00");
+        DietSettingsEntity row = new DietSettingsEntity();
+        row.setCreatedBy(goalOwner);
+        row.setSplitPreset("balanced");
+        row.setProteinTier("moderate");
+        row.setWaterMl(2800);
+        row.setFiberG(30);
+        dietSettingsRepository.save(row);
+
+        FuelWeekResponse week = fuelDayService.getWeek(goalOwner, start);
+
+        assertThat(week.getDays()).allSatisfy(d -> {
+            assertThat(d.getTargets().getC()).isEqualByComparingTo(BigDecimal.valueOf(300));
+            assertThat(d.getTargets().getF()).isEqualByComparingTo(BigDecimal.valueOf(70));
+            assertThat(d.getTargets().getWater()).isEqualByComparingTo(BigDecimal.valueOf(2800));
+        });
     }
 
     @Test

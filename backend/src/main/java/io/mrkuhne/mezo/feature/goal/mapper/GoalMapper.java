@@ -85,6 +85,8 @@ public interface GoalMapper {
             .label(s.label())
             .kcal(s.kcal())
             .proteinG(s.proteinG())
+            .carbsG(s.carbsG())
+            .fatG(s.fatG())
             .sleepTargetH(s.sleepTargetH())
             .restDays(s.restDays() == null ? List.of() : s.restDays())
             .projectedRateKgPerWk(s.projectedRateKgPerWk())

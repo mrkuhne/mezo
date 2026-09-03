@@ -156,7 +156,7 @@ cd frontend && pnpm generate:api          # regenerate src/data/_client/api.gen.
 - **Base package:** `io.mrkuhne.mezo` (the references' `io.mrkuhne.{project}`).
 - **Primary keys: UUID** (`gen_random_uuid()`) across domain tables — matches the design handoff and the frontend (`crypto.randomUUID()`). Where a reference example shows `Long`/`BIGSERIAL`, use `UUID` here.
 - **Liquibase feature ID:** the reference uses spec-kit `F{NNN}`; mezo uses **beads**, so the feature segment of a changeset name is the **driving bd issue ID** (e.g. `202606092230_mezo-a1_create_weight_log.sql`). Keep the 12-digit UTC timestamp prefix and the immutability rules unchanged.
-- **Auth/ownership:** single-user. `created_by uuid` on every owned table, set server-side from the security principal (never from the client); app-level ownership filtering (`created_by = currentUser`). No login UI in Phase 2.
+- **Auth/ownership:** multi-user (`mezo-qw37`) — invite-gated registration, JWT bearer, `created_by` resolved server-side from `CurrentUser` (never from the client); app-level ownership filtering (`created_by = currentUser`). Login/register UI lives in `features/auth`.
 - **Soft delete:** `is_deleted` + Hibernate `@SQLRestriction` / `@SQLDelete`; never physically delete in normal paths.
 - **jsonb** (provenance envelope, meal score, sleep factors): `@JdbcTypeCode(SqlTypes.JSON)` onto a typed embedded object — first-class, not `String`.
 

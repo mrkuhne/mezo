@@ -273,4 +273,23 @@ class GoalEvaluationServiceIT extends AbstractIntegrationTest {
         assertThat(reloaded.getPrescription().guardStatus().muscle().active()).isTrue();
         assertThat(reloaded.getPrescription().guardStatus().muscle().proteinMonitored()).isFalse();
     }
+
+    // ── Diet split: the balanced ghost prescribes carbsG/fatG from the config split shares ────────
+
+    @Test
+    void testAssemble_shouldPrescribeCarbsAndFat_fromBalancedGhost() {
+        UUID user = databasePopulator.populateUser("eval-diet@test.local");
+        profilePopulator.create(user);
+        seedWeight(user, "84.00");
+        GoalEntity g = goal(user, "cut", "0.70", List.of());
+
+        GoalPrescriptionJson rx = engine.evaluate(user, g.getId());
+
+        GoalPrescriptionJson.Segment seg = rx.segments().get(0);
+        // balanced ghost: fat = max(0.275×kcal/9, 0.5 g/kg×weight); carbs = (kcal−4p−9f)/4, ≥0
+        int expectedFat = (int) Math.round(Math.max(seg.kcal() * 0.275 / 9.0, 0.5 * 84));
+        assertThat(seg.fatG()).isEqualTo(expectedFat);
+        assertThat(seg.carbsG())
+            .isEqualTo(Math.max(0, Math.round((seg.kcal() - 4 * seg.proteinG() - 9 * seg.fatG()) / 4.0f)));
+    }
 }

@@ -13,7 +13,8 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/GoalEvaluationService.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/GoalFeasibilityService.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/TdeeBootstrapService.java
-related: [me, lifegoal, _platform-api-backend, _platform-data-layer]
+  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/DietPreferencesPort.java
+related: [me, fuel, lifegoal, _platform-api-backend, _platform-data-layer]
 ---
 
 # Goal Engine (G5–G6) — Feature Documentation
@@ -79,6 +80,7 @@ Service responsibilities (all `@Service`, constructor-injected, stateless):
 | **Plan detached** | `GoalPlanLinkService.detachPlan` (`:74`) | same |
 | **Weigh-in logged** | `WeightLogService.log` → `recomputeActiveGoal` (`feature/biometrics/weight/service/WeightLogService.java:43,48`) | the owner's single **active** goal (no-op when none) |
 | **Biometric profile changed** (G6, `mezo-06n`) | `BiometricProfileService.upsertProfile` → `recomputeActiveGoal` (`feature/biometrics/profile/service/BiometricProfileService.java`) | the owner's single **active** goal (no-op when none) — the profile feeds BMR + the NEAT band, so a change must refresh the prescription |
+| **Diet settings saved** (Diet Plan slice 1, `mezo-xwgb`) | `DietSettingsService.setSettings` (`feature/nutrition/service/DietSettingsService.java`) | the owner's single **active** goal (no-op when none) — the split preset/custom %s/protein tier changed, so the segments' `carbsG`/`fatG` (§4 `diet.*`) need fresh values; this is the **7th** recompute trigger |
 | **Explicit** | `GoalController.evaluateGoal` → `POST /api/goals/{id}/evaluate` (`:75`) | the addressed goal |
 
 **Transaction note:** because each trigger's enclosing method is already `@Transactional`, `evaluate` joins the same transaction — the recompute is part of the triggering write's atomic unit (a failed evaluate would roll back the weigh-in/profile-save). The weigh-in and profile-change paths deliberately depend on **no** goal: if the owner has no active goal, `recomputeActiveGoal` returns without calling `evaluate` (a weigh-in/profile-save must never require a goal).
@@ -117,12 +119,14 @@ Both jsonb records are **plain records, no Jackson/Hibernate annotations** — t
 |---|---|---|
 | `neat.{desk,mixed,physical}` | 1.20 / **1.35** / 1.50 | `TdeeBootstrapService` (NEAT lifestyle-band lookup; mixed = default) |
 | `kcalPerKg` | 7700 (band 6000–7700) | `GoalProjectionService` (energy balance ↔ rate) |
-| `protein.gPerKgBwDefault/…/gPerKgBwCap` | 2.0 … 2.6 | `GoalEvaluationService.proteinTargetGrams` |
+| `protein.gPerKgBwDefault/…/gPerKgBwCap` | 2.0 … 2.6 | `GoalEvaluationService.proteinTargetGrams` — since Diet Plan slice 1 (`mezo-xwgb`) the BW base is tier-selected: the resolved `DietPreferences.proteinTier` picks `gPerKgBwDefault` (`moderate`, the pre-slice-1 default path) or `gPerKgBwCeil` (`high`) before the existing LBM-path max + `gPerKgBwCap` clamp |
 | `rate.{targetPctPerWeek,capPctPerWeek,bandLow,bandHigh}` | 0.7 / 1.0 / 0.5 / 1.0 | `GoalFeasibilityService` (`verdictForRate` band: ≤target → feasible, ≤cap → with-warnings, else aggressive; `withinSafeBand`/`suggestedTargetDate` key off cap) — reused by `GoalEvaluationService` (rate realism) + `GuardEvaluationService` (rate-cap) |
 | `volume.{maintenanceSets,warnBelow}` | 8 / 6 | `GuardEvaluationService` (muscle guard) |
 | `strength.e1rmBreachPct` | −5.0 | `GuardEvaluationService` (strength breach gate) |
 | `ewma.halfLifeDays` | 10 (band 10–14) | `WeightTrendService` (α) |
 | *(training EAT — moved out of `mezo.goal.*` in mezo-eujg)* | gym 6.0 / sport 4.5 / run 9.5 MET | now `mezo.train.met` (`TrainProperties`), summed MET×kg×óra by the train-port `WeeklyScheduledActivityService`; a drift-guard test binds this table to the FE `fuelConfig.MET_BY_KIND` |
+| `diet.fatShare{Balanced,LowFat,LowCarb,HighCarb}` (Diet Plan slice 1, `mezo-xwgb`) | 0.275 / 0.20 / 0.40 / 0.22 | `GoalEvaluationService.fatTargetGrams` via `GoalEngineProperties.Diet.fatShareFor` — the split preset's fat energy-share of the segment kcal (`balanced` reproduces the pre-slice-1 FE `FAT_KCAL_SHARE`); `custom` reads the request's own `fatPctX10` instead |
+| `diet.fatFloorGPerKg` | 0.5 | same — the ISSN fat-minimum floor (g/kg body weight); prescribed fat is `max(shareGrams, floorGrams)`, so a low-fat/aggressive-cut split can never drop below it |
 | `thermogenesisHaircutKcalPerDay` | 0 (off; band 100–200) | reserved (adaptive haircut) |
 | `bootstrapUncertaintyKcal` | 300 | uncertainty band |
 
@@ -138,9 +142,10 @@ The engine is a **consumer hub** — it reads three other domains and writes one
 - **← Biometrics/profile.** *Contract:* `BiometricProfileEntity` (sex, heightCm, birthDate, bodyFatPct, **activityLevel**) → the TDEE bootstrap. A missing profile is the graceful path (no throw).
 - **← Train (mesocycles + running blocks).** *Contract:* the goal's `GoalPlanLinkEntity` rows + the linked `MesocycleEntity.phaseCurve` (the per-week phase class) / `RunningBlockEntity.structure` (sessions-per-week) read via the Train repos (ownership-checked), and `MuscleGroupVolumeLogEntity` + `ExerciseSetEntity`/`ExerciseRepository` for the guards (the strength leg deliberately reuses the `ExerciseRecordService` Epley/identity idiom). See [`train.md`](train.md) for those aggregates.
 - **← Train weekly scheduled EAT (the training-energy port, mezo-eujg).** *Contract:* the train-owned **`WeeklyScheduledActivityService`** (`feature/train/service`) — `totalWeeklyEatKcalPerDay(userId, weightKg)` (the bootstrap's `weeklyEatKcalPerDay`) + `scheduledWeeklyEatKcalPerDay` / `runWeeklyEatKcalPerDay(sessions, weightKg)` (the projection's per-segment gym+sport vs running EAT). Train owns the recurring gym/sport slots + the MET model (`mezo.train.met`, MET×kg×óra ÷ 7); a drift-guard test binds that MET table to the FE `fuelConfig.MET_BY_KIND`. This replaced the retired goal-side `met.*` deltas (§4 config) so training energy is one source across Train, the engine, and Fuel.
+- **← Nutrition (diet preferences, the goal-owned port — Diet Plan slice 1 `mezo-xwgb`, ADR [0012](../decisions/0012-consumer-owned-llm-ports.md)).** *Contract:* `DietPreferencesPort`/`DietPreferences` (`feature/goal/engine/service` — a one-method `resolve(userId)` returning the resolved split preset, custom %s, protein tier, water and fiber targets: a saved row, or the config ghost when none exists). The engine needs this to prescribe each segment's `carbsG`/`fatG` + the tier-aware protein target (§4), but **nutrition already depends on goal** (`DietSettingsService` re-evaluates the active goal on save, above) — so a direct `goal → nutrition` import would close that cycle. Goal owns the narrow port instead; `DietPreferencesResolver` (`feature/nutrition/service`) is the sole implementation, injected into `GoalEngineService` and resolved once per `evaluate()` call. This is the **same consumer-owned-port shape ADR 0012 established for the feature→companion LLM seams**, reused here for a plain data seam — see [`fuel.md`](fuel.md) §5 for the sibling LLM ports. **No `archunit-store` change**: the only cross-feature edge this seam adds is nutrition → `goal.engine.service`, and nutrition already carried a goal edge, so `ArchitectureTest`'s feature-slice-cycle rule sees no new slice-level cycle (the same non-event as the ADR-0012 LLM ports landing).
 - **→ Goal (writes).** *Contract:* `tdeeBootstrap` + `prescription` jsonb persisted onto `GoalEntity`, surfaced via `GoalResponse` → the FE `GoalRecept` card ([`me.md`](me.md) §2).
 
-**Cross-domain bridges (spec §5.4):** `prescription.kcal/proteinG` → Fuel is **now wired twice** — Fuel P5 (`mezo-9ys`) reads the current-week segment as the Mai day-planner's daily budget (`deriveDailyBudget`; see [`fuel.md`](fuel.md) §5), and **since mezo-najo the backend `FuelDayService` day/week `targets` kcal + protein come from the date's goal-week segment too** (config `mezo.nutrition.*` as fallback — so the MacroHero, the chat snapshot and `get_fuel_log` all carry the recept number). Still emitted-but-unconsumed: `sleepTargetH` (seeded at 8.0) → Sleep; `restDays`/deload → Train/Today.
+**Cross-domain bridges (spec §5.4):** `prescription.kcal/proteinG` → Fuel is **now wired twice** — Fuel P5 (`mezo-9ys`) reads the current-week segment as the Mai day-planner's daily budget (`deriveDailyBudget`; see [`fuel.md`](fuel.md) §5), and **since mezo-najo the backend `FuelDayService` day/week `targets` kcal + protein come from the date's goal-week segment too** (config `mezo.nutrition.*` as fallback — so the MacroHero, the chat snapshot and `get_fuel_log` all carry the recept number). **Since Diet Plan slice 1 (`mezo-xwgb`) each segment also carries prescribed `carbsG`/`fatG`** (§4 `diet.*` — the split preset's fat energy-share of the segment kcal, floored at the ISSN g/kg minimum; carbs the energy remainder) **and both bridges now consume them too**: `FuelDayService.targetSet` prefers the segment's `carbsG`/`fatG` over the `mezo.nutrition.*` per-field fallback, and the FE `deriveDailyBudget` prefers them over the legacy `FAT_KCAL_SHARE` split (see [`fuel.md`](fuel.md) §4/§9) — so carbs/fat are no longer emitted-but-unconsumed. Still emitted-but-unconsumed: `sleepTargetH` (seeded at 8.0) → Sleep; `restDays`/deload → Train/Today.
 
 ## 6. How to use it (consume)
 
@@ -167,9 +172,10 @@ Add a tunable, a guard leg, or a projection input — always config-first, contr
 ## 8. Testing
 
 **Backend (integration-first, real Postgres — `cd backend && ./mvnw clean test`):**
-- Per-service ITs: `feature/goal/engine/service/TdeeBootstrapServiceIT` (MSJ vs Katch branch, NEAT-band lookup + weekly-EAT add), `GoalProjectionServiceIT` (segment collapse, running boundary delta, meso-phase zero-delta, `dailyEnergyBalanceKcal`, trend reconciliation), `GuardEvaluationServiceIT` (e1RM trend + breach, muscle floor, rate-cap, deferred protein), `GoalEvaluationServiceIT` (rate grading, conflict rule, protein target, missing-profile artifact), `GoalFeasibilityServiceIT` (G6 — shared rate derivation, `verdictForRate` band boundaries, over-cap suggested date). The HTTP preview round-trip is in `GoalContractIT`.
-- `feature/goal/engine/GoalEnginePropertiesIT` — the `mezo.goal.*` binding + validation.
+- Per-service ITs: `feature/goal/engine/service/TdeeBootstrapServiceIT` (MSJ vs Katch branch, NEAT-band lookup + weekly-EAT add), `GoalProjectionServiceIT` (segment collapse, running boundary delta, meso-phase zero-delta, `dailyEnergyBalanceKcal`, trend reconciliation), `GuardEvaluationServiceIT` (e1RM trend + breach, muscle floor, rate-cap, deferred protein), `GoalEvaluationServiceIT` (rate grading, conflict rule, protein target, missing-profile artifact — since Diet Plan slice 1 also `testAssemble_shouldPrescribeCarbsAndFat_fromBalancedGhost`, asserting the balanced-ghost split's prescribed `carbsG`/`fatG`), `GoalFeasibilityServiceIT` (G6 — shared rate derivation, `verdictForRate` band boundaries, over-cap suggested date). The HTTP preview round-trip is in `GoalContractIT`.
+- `feature/goal/engine/GoalEnginePropertiesIT` — the `mezo.goal.*` binding + validation, incl. the `diet.*` subrecord (Diet Plan slice 1).
 - `feature/goal/GoalEngineRecomputeIT` — the recompute triggers fire `evaluate` (activate / attach / detach / weigh-in) and the no-active-goal weigh-in is a no-op.
+- `feature/nutrition/DietPreferencesResolverIT` (nutrition-side) — the ghost-vs-saved-row resolution `DietPreferencesResolver` implements against the goal-owned `DietPreferencesPort` (§5); `feature/nutrition/DietSettingsApiIT` — the `GET/PUT /api/diet/settings` surface, incl. `testSetDietSettings_shouldReprescribeActiveGoal_withNewSplit` (the 7th recompute trigger, §3 — re-prescribing the active goal on a new split).
 - `feature/biometrics/profile/BiometricProfileServiceIT` / `BiometricProfileContractIT` (G6) — the GET carries a derived `tdeeBootstrap` (profile + weigh-in → non-null, matches `TdeeBootstrapService.compute`; no weigh-in → null) and the profile upsert recomputes the active goal (prescription was null → populated) yet succeeds with no active goal.
 - `feature/goal/GoalContractIT` — the HTTP `POST /api/goals/{id}/evaluate` surface (200 + prescription, 200 graceful no-profile, 404 foreign).
 
@@ -196,14 +202,15 @@ Add a tunable, a guard leg, or a projection input — always config-first, contr
 ## 10. Key files
 
 **Engine (backend, `feature/goal/engine/`):**
-- `GoalEngineProperties.java` — the `mezo.goal.*` config record (NEAT bands/kcalPerKg/protein/rate/volume/strength/ewma; the session-kcal `met` deltas were retired in mezo-eujg — training EAT is train-owned, `mezo.train.met`).
-- `service/GoalEngineService.java` — the `@Transactional` orchestrator (`evaluate`) — the only entry point (pulls the weekly EAT from `WeeklyScheduledActivityService`, then calls `TdeeBootstrapService.compute`).
+- `GoalEngineProperties.java` — the `mezo.goal.*` config record (NEAT bands/kcalPerKg/protein/rate/volume/strength/ewma/**diet**; the session-kcal `met` deltas were retired in mezo-eujg — training EAT is train-owned, `mezo.train.met`). Its `Diet` subrecord (`fatShareBalanced/LowFat/LowCarb/HighCarb`, `fatFloorGPerKg`, Diet Plan slice 1 `mezo-xwgb`) is §4's newest addition.
+- `service/DietPreferencesPort.java` + `service/DietPreferences.java` (Diet Plan slice 1, `mezo-xwgb`) — the goal-owned consumer port + its resolved-preferences record (split preset, custom %s, protein tier, water, fiber); implemented by nutrition's `DietPreferencesResolver` (§5).
+- `service/GoalEngineService.java` — the `@Transactional` orchestrator (`evaluate`) — the only entry point (pulls the weekly EAT from `WeeklyScheduledActivityService`, resolves diet preferences via `DietPreferencesPort`, then calls `TdeeBootstrapService.compute`).
 - `service/TdeeBootstrapService.java` — formula TDEE (MSJ / Katch-McArdle BMR × NEAT baseline + weekly scheduled EAT).
 - `../GoalReevaluateRunner.java` (`feature/goal/`) — the `@Profile("demodata")` startup runner that re-`evaluate`s every non-archived owner goal so stale prescriptions pick up the NEAT/weekly-EAT model (mezo-eujg, §3).
 - `../../train/service/WeeklyScheduledActivityService.java` — the train-owned weekly scheduled EAT (MET×kg×óra ÷ 7) the bootstrap + projection consume (mezo-eujg, §5).
 - `service/GoalProjectionService.java` — the segmented projection (block-boundary deltas, trend reconciliation, all 3 trajectories).
 - `service/GuardEvaluationService.java` — strength (e1RM) + muscle-volume + rate-cap soft guards.
-- `service/GoalEvaluationService.java` — heuristic feasibility gate + prescription assembly (pure); delegates the band → verdict to `GoalFeasibilityService`.
+- `service/GoalEvaluationService.java` — heuristic feasibility gate + prescription assembly (pure); delegates the band → verdict to `GoalFeasibilityService`; since Diet Plan slice 1 also `fatTargetGrams`/`carbsTargetGrams` (per-segment prescribed macros, §4) and the tier-aware `proteinTargetGrams`.
 - `service/GoalFeasibilityService.java` (G6) — the stateless realism core: shared `deriveRatePctPerWeek` + `verdictForRate` + `preview` (`POST /api/goals/feasibility-preview`).
 
 **Spine / inputs:**
@@ -211,19 +218,21 @@ Add a tunable, a guard leg, or a projection input — always config-first, contr
 - `backend/.../feature/biometrics/weight/service/WeightLogService.java` — the weigh-in recompute trigger.
 - `backend/.../feature/goal/service/{GoalService,GoalPlanLinkService}.java` — activate / attach / detach recompute triggers.
 - `backend/.../feature/goal/controller/GoalController.java` — `evaluateGoal` (`POST /api/goals/{id}/evaluate`) + `feasibilityPreview` (`POST /api/goals/feasibility-preview`, G6).
+- `backend/.../feature/nutrition/service/{DietSettingsService,DietPreferencesResolver}.java` (Diet Plan slice 1, `mezo-xwgb`) — `DietSettingsService.setSettings` is the 7th recompute trigger (§3); `DietPreferencesResolver` implements the goal-owned `DietPreferencesPort` (§5). `backend/.../feature/nutrition/controller/DietSettingsController.java` — `GET/PUT /api/diet/settings` (gated `mezo.feature.diet-settings.enabled`).
 
 **Persistence / contract:**
 - `backend/.../feature/goal/entity/{GoalEntity,GoalPrescriptionJson,TdeeBootstrapJson}.java` — the jsonb columns + records.
 - `backend/.../feature/goal/mapper/GoalMapper.java` — jsonb → contract DTO projection.
 - `backend/src/main/resources/db/changelog/1.0.0/script/202606191000_mezo-g1u_goal_prescription_and_activity_level.sql` — the G5 migration (jsonb columns + the original 5-band `activity_level`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202607261200_mezo-eujg_activity_level_desk_mixed_physical.sql` — the mezo-eujg reframe (5-band PAL → 3-band NEAT CHECK + in-place row remap).
-- `api/feature/goal/goal.yml`, `api/feature/weight/weight.yml`, `api/feature/biometrics-profile/biometrics-profile.yml` — the contract fragments.
-- `backend/src/main/resources/application.yml` — the `mezo.goal:` config block (`:28`).
+- `backend/.../feature/nutrition/entity/DietSettingsEntity.java` + `repository/DietSettingsRepository.java` + `config/DietSettingsProperties.java` (`mezo.diet-settings.default-*` ghost) — the per-owner diet-preference singleton `DietPreferencesResolver` resolves (Diet Plan slice 1); migration `backend/src/main/resources/db/changelog/1.0.0/script/202609021000_mezo-xwgb_create_diet_settings.sql`.
+- `api/feature/goal/goal.yml`, `api/feature/weight/weight.yml`, `api/feature/biometrics-profile/biometrics-profile.yml` — the contract fragments; `api/feature/diet-settings/diet-settings.yml` (Diet Plan slice 1).
+- `backend/src/main/resources/application.yml` — the `mezo.goal:` config block (`:28`, incl. `diet.*`) + the `mezo.diet-settings:` ghost defaults.
 
 **Frontend (the recept surface):**
 - `frontend/src/features/me/components/GoalRecept.tsx` (+ `.test.tsx`) — the recept card + evaluate CTA.
 - `frontend/src/data/me/goalHooks.ts` — `useGoalActions().evaluate`; `frontend/src/data/me/weightHooks.ts` — the real trend fold.
 
-**Tests:** `backend/.../feature/goal/engine/**` (per-service ITs + properties IT), `feature/goal/{GoalEngineRecomputeIT,GoalContractIT}.java`.
+**Tests:** `backend/.../feature/goal/engine/**` (per-service ITs + properties IT), `feature/goal/{GoalEngineRecomputeIT,GoalContractIT}.java`, `feature/nutrition/{DietPreferencesResolverIT,DietSettingsApiIT}.java` (Diet Plan slice 1).
 
-**Related docs (link, don't duplicate):** [`me.md`](me.md) (the `Cél` recept surface + the wizard activity picker), [`lifegoal.md`](lifegoal.md) (the general-purpose life-goal system at `/me/goals`, whose closed signal catalog carries a `weight_goal` entry referencing this goal as a `linked` pillar — today a labeled placeholder, the actual on-pace read is a slice-2 seam), [`_platform-api-backend.md`](_platform-api-backend.md) (the contract/HTTP surface + jsonb conventions), [`_platform-data-layer.md`](_platform-data-layer.md) (the `useGoalActions().evaluate` + `useWeight` trend wiring), [`train.md`](train.md) (the meso/running/volume aggregates the guards + projection read), spec [`2026-06-18-goal-system-design.md`](../superpowers/specs/2026-06-18-goal-system-design.md), research [`2026-06-18-goal-engine-numbers.md`](../research/queries/2026-06-18-goal-engine-numbers.md), and the house standards in [`docs/references/`](../references/).
+**Related docs (link, don't duplicate):** [`me.md`](me.md) (the `Cél` recept surface + the wizard activity picker), [`fuel.md`](fuel.md) (the FE `deriveDailyBudget`/`DIET_SPLIT_PRESETS`/`FuelDayService` consumers of the prescribed `carbsG`/`fatG`, §4/§5/§9/§10), [`lifegoal.md`](lifegoal.md) (the general-purpose life-goal system at `/me/goals`, whose closed signal catalog carries a `weight_goal` entry referencing this goal as a `linked` pillar — today a labeled placeholder, the actual on-pace read is a slice-2 seam), [`_platform-api-backend.md`](_platform-api-backend.md) (the contract/HTTP surface + jsonb conventions), [`_platform-data-layer.md`](_platform-data-layer.md) (the `useGoalActions().evaluate` + `useWeight` trend wiring), [`train.md`](train.md) (the meso/running/volume aggregates the guards + projection read), spec [`2026-06-18-goal-system-design.md`](../superpowers/specs/2026-06-18-goal-system-design.md), research [`2026-06-18-goal-engine-numbers.md`](../research/queries/2026-06-18-goal-engine-numbers.md), and the house standards in [`docs/references/`](../references/).

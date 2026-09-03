@@ -292,6 +292,26 @@ test('dynamic budget — big training day adds activity, carbs absorb the bonus'
   expect(b.c).toBeGreaterThan(500) // big carb day
 })
 
+test('deriveDailyBudget prefers the segment fatG over FAT_KCAL_SHARE', () => {
+  const segment = { kcal: 2150, proteinG: 163, carbsG: 226, fatG: 90, dailyEnergyBalanceKcal: -516 }
+  const fallback = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
+  // static path (no energy inputs): f from segment, c from segment
+  const staticBudget = deriveDailyBudget(segment, fallback)
+  expect(staticBudget.f).toBe(90)
+  expect(staticBudget.c).toBe(226)
+  // dynamic path: fat stays the segment's, carbs absorb the activity bonus
+  const dyn = deriveDailyBudget(segment, fallback, { bmr: 1720, neat: 1.2, weightKg: 84, blocks: [] })
+  expect(dyn.f).toBe(90)
+  expect(dyn.c).toBe(Math.max(0, Math.round((dyn.kcal - 163 * 4 - 90 * 9) / 4)))
+})
+
+test('deriveDailyBudget keeps the FAT_KCAL_SHARE fallback for pre-slice-1 segments', () => {
+  const segment = { kcal: 2150, proteinG: 163, dailyEnergyBalanceKcal: -516 } // no carbsG/fatG
+  const fallback = { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 }
+  const budget = deriveDailyBudget(segment, fallback)
+  expect(budget.f).toBe(Math.round((2150 * 0.275) / 9)) // 66 — unchanged legacy behavior
+})
+
 // ── recipe fit ───────────────────────────────────────────────────────────────
 const budget600: Macro4 = { kcal: 600, p: 45, c: 70, f: 15 }
 test('pickRecipe matches category + ±20% kcal and ranks by |Δkcal|', () => {

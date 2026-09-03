@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
+import { seedAllKalauzSeen } from '@/test/kalauz'
 
 // T0 clean slate: real mode + empty backend must render ghost states — never
 // crash and never show Phase-1 demo data. (server.resetHandlers runs globally
@@ -20,6 +21,7 @@ beforeEach(() => {
     http.get(`${API_BASE}/api/train/workouts/today`, () => HttpResponse.json({})),
     http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([])),
   )
+  seedAllKalauzSeen()
 })
 afterEach(() => vi.unstubAllEnvs())
 

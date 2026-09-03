@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test'
+import { buildAllSeenProgress } from '../../src/test/kalauz'
 
 /**
  * Self-baselined visual goldens: 37 goto screens + the /ritual Harvest + Release and the
@@ -76,7 +77,11 @@ const SCREENS: Array<[string, string, string?]> = [
   // wizard moved to `/me/goals/weight/new` and keeps its shot there.
   ['me-goal-wizard', '/me/goals/new'],
   ['me-goal-wizard-suly', '/me/goals/weight/new'],
-  ['me-rutinok', '/me/routines/edit'],
+  ['me-rutinok', '/me/rutin'],
+  // The routine surface's other two pages (mezo-3zue.4): the four-step recipe wizard and one
+  // habit's own recipe page (`daily_intention` is a stable seeded mock habitKey).
+  ['me-rutin-uj', '/me/rutin/uj'],
+  ['me-rutin-szokas', '/me/rutin/szokas/daily_intention'],
   ['me-growth', '/me/growth'],
   ['me-growth-awards', '/me/growth/kituntetesek'],
   ['me-ai-call', '/me/ai-usage/22222222-2222-4222-8222-222222222222'],
@@ -111,13 +116,14 @@ for (const theme of ['light', 'dark'] as const) {
     for (const [name, path, frozen] of SCREENS) {
       test(name, async ({ page }) => {
         await page.clock.setFixedTime(new Date(frozen ?? DEFAULT_FROZEN))
-        await page.addInitScript((t) => {
+        // Mezo-kalauz (mezo-gb1s.1/.3): egy first-visit sheet minden goldenbe beleugrana —
+        // MINDEN kalauzt látottnak seedelünk. A map a registryből generálódik (Node-oldal),
+        // és argumentumként utazik be a böngészőbe: az init-script nem importálhat.
+        const kalauzSeen = JSON.stringify(buildAllSeenProgress())
+        await page.addInitScript(([t, seen]) => {
           localStorage.setItem('mezo-theme', t)
-          // Mezo-kalauz (mezo-gb1s.1): a first-visit sheet minden goldenbe beleugrana — látottnak seedeljük.
-          localStorage.setItem('mezo.kalauz.v1', JSON.stringify({
-            fuel: { version: 1, seenAt: '2026-05-21T13:00:00.000Z', completedAt: null, dismissedAtStep: null },
-          }))
-        }, theme)
+          localStorage.setItem('mezo.kalauz.v1', seen)
+        }, [theme, kalauzSeen] as const)
         await page.goto(path)
         await page.waitForLoadState('networkidle')
         await page.evaluate(() => document.fonts.ready)

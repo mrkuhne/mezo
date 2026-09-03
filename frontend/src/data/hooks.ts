@@ -1,6 +1,7 @@
 // Aggregate FE↔data boundary. Every consumer imports its hooks from '@/data/hooks';
 // the implementations live in the per-domain hook modules — this file only re-exports,
 // so consumer import paths and the dual-mode contract stay stable.
+export { useMe, useAuthActions, ME_QUERY_KEY } from '@/data/auth/authHooks'
 export { useTodayScenario, resolveBriefing, useToday, useFuelPreview, useQuickStats } from '@/data/today/todayHooks'
 export { useCheckins } from '@/data/today/checkinHooks'
 export { useCompanionFeed } from '@/data/today/feedHooks'
@@ -47,6 +48,7 @@ export { useFuelDay, useMealActions, useRecipeLogs, useWaterActions } from '@/da
 export { useMealCoach, useMealCoachFor } from '@/data/fuel/coachHooks'
 export { useMedication, useMedicationActions } from '@/data/fuel/medicationHooks'
 export { useFuelSettings, useFuelSettingsActions } from '@/data/fuel/fuelSettingsHooks'
+export { useDietSettings, useDietSettingsActions, DIET_SETTINGS_GHOST } from '@/data/fuel/dietSettingsHooks'
 export { useTutorialProgress, useTutorialProgressActions, TUTORIAL_PROGRESS_GHOST } from '@/data/tutorial/tutorialProgressHooks'
 export { useSlotTemplates, useSlotTemplateActions, useSlotTemplateEvaluation } from '@/data/fuel/slotTemplateHooks'
 export { useGoal, useGoalCreation, useGoalActions, useFeasibilityPreview } from '@/data/me/goalHooks'

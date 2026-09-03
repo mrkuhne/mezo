@@ -106,7 +106,7 @@ export function EdzesHubPage() {
   if (!activeMeso && !workoutPending) {
     // T0/T2 — Mai's ghost copy verbatim: nothing is invented, the wizard is the door.
     hero = (
-      <div className="eh-hero eh-hero-ghost rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+      <div className="eh-hero eh-hero-ghost rise" data-kalauz-anchor="train-hero" style={{ '--d': '0ms' } as React.CSSProperties}>
         <div className="eh-hero-row">
           <ClaySpot name="s-piheno" size={59} />
           <div className="eh-hero-grow">
@@ -126,7 +126,7 @@ export function EdzesHubPage() {
   } else if (heroItem?.kind === 'gym' && workout) {
     const gym = heroItem.gym
     hero = (
-      <div className="eh-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+      <div className="eh-hero rise" data-kalauz-anchor="train-hero" style={{ '--d': '0ms' } as React.CSSProperties}>
         <div className="eh-hero-row">
           <ClayIcon name="i-edzes" size={59} />
           <div className="eh-hero-grow">
@@ -160,7 +160,7 @@ export function EdzesHubPage() {
     const k = sportOf(vb)
     const logged = loggedSportOn(todayIso, k)
     hero = (
-      <div className="eh-hero eh-hero-rose rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+      <div className="eh-hero eh-hero-rose rise" data-kalauz-anchor="train-hero" style={{ '--d': '0ms' } as React.CSSProperties}>
         <div className="eh-hero-row">
           <ClayIcon name="i-sport" size={59} />
           <div className="eh-hero-grow">
@@ -182,7 +182,7 @@ export function EdzesHubPage() {
     const s = heroItem.running
     const rl = runLoggedFor(s.key)
     hero = (
-      <div className="eh-hero eh-hero-sky rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+      <div className="eh-hero eh-hero-sky rise" data-kalauz-anchor="train-hero" style={{ '--d': '0ms' } as React.CSSProperties}>
         <div className="eh-hero-row">
           <ClayIcon name="i-futas" size={59} />
           <div className="eh-hero-grow">
@@ -212,7 +212,7 @@ export function EdzesHubPage() {
   } else if (heroItem?.kind === 'custom') {
     const c = heroItem.custom
     hero = (
-      <div className="eh-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+      <div className="eh-hero rise" data-kalauz-anchor="train-hero" style={{ '--d': '0ms' } as React.CSSProperties}>
         <div className="eh-hero-row">
           <ClayIcon name="i-edzes" size={59} />
           <div className="eh-hero-grow">
@@ -232,7 +232,7 @@ export function EdzesHubPage() {
     // (mezo-ws2x, Finding 4) — otherwise today is genuinely a rest day.
     const openOnRestDay = todaySession?.openWorkout && workout
     hero = (
-      <div className="eh-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+      <div className="eh-hero rise" data-kalauz-anchor="train-hero" style={{ '--d': '0ms' } as React.CSSProperties}>
         <div className="eh-hero-row">
           <ClaySpot name={openOnRestDay ? 's-edzes' : 's-piheno'} size={59} />
           <div className="eh-hero-grow">

@@ -43,12 +43,23 @@ interface TileProps {
   className?: string
   children?: ReactNode
   'aria-label'?: string
+  /** Full-bleed row tile spanning both mosaic columns (the Mezo hub's Diagnózis precedent). */
+  wide?: boolean
 }
 
-export function Tile({ wash, icon, iconSize = 47, eyebrow, line, dot, badge, delayMs, onClick, className, children, ...rest }: TileProps) {
-  const cls = cn('mz-tile', `mz-w-${wash}`, 'rise', className)
+export function Tile({ wash, icon, iconSize = 47, eyebrow, line, dot, badge, delayMs, onClick, className, children, wide, ...rest }: TileProps) {
+  const cls = cn('mz-tile', `mz-w-${wash}`, 'rise', wide && 'mz-tile-wide mz-tile-row', className)
   const style = delayMs !== undefined ? ({ '--d': `${delayMs}ms` } as React.CSSProperties) : undefined
-  const inner = (
+  const inner = wide ? (
+    <>
+      {icon && <div className="mz-spotwrap"><ClayIcon name={icon} size={iconSize} /></div>}
+      <div className="mz-tile-body">
+        <div className="mz-tile-top"><span className="mz-eyebrow">{eyebrow}</span></div>
+        {line !== undefined && <div className="mz-tile-line">{line}</div>}
+      </div>
+      <span className="mz-chev" aria-hidden="true">›</span>
+    </>
+  ) : (
     <>
       <div className="mz-tile-top">
         <span className="mz-eyebrow">{eyebrow}</span>

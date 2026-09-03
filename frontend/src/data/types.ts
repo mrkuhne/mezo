@@ -57,6 +57,16 @@ export interface FuelSettings {
   mealsPerDay: number
   caffeineCutoff: string
 }
+/** Diet preferences (Diet Plan slice 1) — macro split + protein tier + water/fiber, per-user singleton. */
+export interface DietSettings {
+  splitPreset: 'balanced' | 'low_fat' | 'low_carb' | 'high_carb' | 'custom'
+  proteinPctX10: number | null
+  carbsPctX10: number | null
+  fatPctX10: number | null
+  proteinTier: 'moderate' | 'high'
+  waterMl: number
+  fiberG: number
+}
 /** Mezo-kalauz seen-store (mezo-gb1s): one record per guide id, the whole map is the per-user singleton. */
 export interface TutorialProgressEntry {
   version: number
@@ -1357,6 +1367,8 @@ export interface HabitChainInfo {
   isActive: boolean
   defs: HabitDefInfo[]
 }
+/** Behaviour-change framework a habit recipe was built on (mezo-3zue). Null = pre-framework def. */
+export type HabitFramework = 'FOGG' | 'CLEAR'
 export interface HabitDefInfo {
   id: string
   habitKey: string
@@ -1371,6 +1383,14 @@ export interface HabitDefInfo {
   xp: number
   linkUrl: string | null
   isActive: boolean
+  framework: HabitFramework | null
+  /** FOGG: habitKey of the def this recipe is stacked onto (free-text anchors use anchorCopy). */
+  anchorHabitKey: string | null
+  cue: string | null
+  craving: string | null
+  reward: string | null
+  celebration: string | null
+  identity: string | null
 }
 export interface HabitCatalog {
   chains: HabitChainInfo[]
@@ -1385,6 +1405,11 @@ export interface HabitSuggestion {
   skillKey: string
   xp: number
   chainKey: string
+  framework: HabitFramework | null
+  cue: string | null
+  craving: string | null
+  reward: string | null
+  celebration: string | null
 }
 
 // ── Daily intention — standing creed + up to 3 daily foci + a holistic reflection (mezo-a686)

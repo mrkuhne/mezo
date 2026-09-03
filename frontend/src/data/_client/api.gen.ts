@@ -13,8 +13,76 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Login with the owner credentials, returns a JWT */
+        /** Login with email + password, returns a JWT */
         post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register with an invite code, returns a JWT */
+        post: operations["register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The authenticated user's account profile */
+        get: operations["me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/change-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change the authenticated user's password (also clears must-change-password) */
+        post: operations["changePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/onboarding-complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark the authenticated user's onboarding as done */
+        post: operations["completeOnboarding"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2724,6 +2792,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/diet/settings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The diet settings; config-default ghost when unset — never 404 (DietSettings) */
+        get: operations["getDietSettings"];
+        /** Upsert the diet settings (per-user singleton) (DietSettings) */
+        put: operations["setDietSettings"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tutorial/progress": {
         parameters: {
             query?: never;
@@ -3729,6 +3815,30 @@ export interface components {
         TokenResponse: {
             /** @description HS256-signed JWT bearer token */
             token: string;
+        };
+        RegisterRequest: {
+            /** @example MEZO-7KQ2-XN4P */
+            inviteCode: string;
+            /** Format: email */
+            email: string;
+            password: string;
+            name: string;
+        };
+        MeResponse: {
+            /** Format: uuid */
+            id: string;
+            email: string;
+            name: string;
+            /** @description OWNER or USER */
+            role: string;
+            onboarded: boolean;
+            mustChangePassword: boolean;
+            /** @example Europe/Budapest */
+            timezone: string;
+        };
+        ChangePasswordRequest: {
+            currentPassword: string;
+            newPassword: string;
         };
         LogWeightRequest: {
             /** Format: date */
@@ -4888,6 +4998,10 @@ export interface components {
             label: string;
             kcal: number;
             proteinG: number;
+            /** @description Prescribed carbohydrate grams — the split remainder after protein + fat (absent on pre-slice-1 prescriptions) */
+            carbsG?: number;
+            /** @description Prescribed fat grams — split fat-share of segment kcal, floored at fat-floor g/kg (absent on pre-slice-1 prescriptions) */
+            fatG?: number;
             sleepTargetH: number;
             restDays: number[];
             projectedRateKgPerWk: number;
@@ -7097,6 +7211,35 @@ export interface components {
             mealsPerDay: number;
             caffeineCutoff: string;
         };
+        DietSettingsResponse: {
+            /**
+             * @description Named fat/carb balance; custom uses the three pct fields
+             * @enum {string}
+             */
+            splitPreset: "balanced" | "low_fat" | "low_carb" | "high_carb" | "custom";
+            /** @description Custom protein energy share, tenths of a percent (advisory — the g/kg floor wins) */
+            proteinPctX10?: number;
+            carbsPctX10?: number;
+            fatPctX10?: number;
+            /**
+             * @description g/kg band endpoint — moderate=2.0 g/kg BW, high=2.2 g/kg BW (engine config)
+             * @enum {string}
+             */
+            proteinTier: "moderate" | "high";
+            waterMl: number;
+            fiberG: number;
+        };
+        SetDietSettingsRequest: {
+            /** @enum {string} */
+            splitPreset: "balanced" | "low_fat" | "low_carb" | "high_carb" | "custom";
+            proteinPctX10?: number;
+            carbsPctX10?: number;
+            fatPctX10?: number;
+            /** @enum {string} */
+            proteinTier: "moderate" | "high";
+            waterMl: number;
+            fiberG: number;
+        };
         TutorialProgressEntry: {
             /** @description The registry version of the guide that was seen — a bump re-arms the auto-show */
             version: number;
@@ -8054,6 +8197,162 @@ export interface operations {
                 };
             };
             /** @description Invalid credentials (AUTH_LOGIN_INVALID_CREDENTIALS) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Account disabled (AUTH_ACCOUNT_DISABLED) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    register: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Account created, JWT issued */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Invite invalid/used/expired (AUTH_INVITE_INVALID) or email taken (AUTH_EMAIL_TAKEN) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Account disabled (AUTH_ACCOUNT_DISABLED) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    changePassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Password changed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Current password wrong (AUTH_LOGIN_INVALID_CREDENTIALS) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    completeOnboarding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Marked */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -15930,6 +16229,77 @@ export interface operations {
                 };
             };
             /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getDietSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The settings (ghost balanced / moderate / 4000 / 30 before the first save) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DietSettingsResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    setDietSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetDietSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description Saved settings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DietSettingsResponse"];
+                };
+            };
+            /** @description Validation failure (incl. custom split not summing to 100.0%) */
             400: {
                 headers: {
                     [name: string]: unknown;

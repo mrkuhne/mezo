@@ -27,6 +27,8 @@ const bioStore = vi.hoisted(() => ({
   profile: { birthDate: '1991-03-04', heightCm: 180, bodyFatPct: 15, sex: 'male', activityLevel: 'mixed' } as Record<string, unknown> | null,
 }))
 const weightStore = vi.hoisted(() => ({ log: [{ date: '2026-05-22', value: 78.6 }], rate: -0.5 }))
+const useHabitDay = vi.hoisted(() => vi.fn())
+const useHabitSummary = vi.hoisted(() => vi.fn())
 
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
@@ -56,6 +58,8 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       lastNight: { date: '2026-05-22', bedtime: '00:42', wakeup: '09:03', duration: 7.5, quality: 9, awakenings: 1, mealToSleep: 125, notes: null },
       logSleep: vi.fn(),
     }),
+    useHabitDay,
+    useHabitSummary,
   }
 })
 
@@ -67,6 +71,24 @@ beforeEach(() => {
   weightStore.log = [{ date: '2026-05-22', value: 78.6 }]
   weightStore.rate = -0.5
   localStorage.setItem('mezo-theme', 'light')
+  useHabitDay.mockReturnValue({
+    habits: [
+      { key: 'morning-1', chain: 'MORNING', status: 'done' },
+      { key: 'morning-2', chain: 'MORNING', status: 'pending' },
+      { key: 'evening-1', chain: 'EVENING', status: 'pending' },
+    ],
+  })
+  useHabitSummary.mockReturnValue({
+    data: {
+      perfectMorningDays30: 0,
+      perfectEveningDays30: 0,
+      habits: [
+        { key: 'morning-1', strengthPct: 82, done28: 0, missed28: 0 },
+        { key: 'morning-2', strengthPct: 82, done28: 0, missed28: 0 },
+        { key: 'evening-1', strengthPct: 64, done28: 0, missed28: 0 },
+      ],
+    },
+  })
 })
 
 function LocationProbe() {
@@ -174,7 +196,7 @@ test('with no active goal the card becomes the honest ＋ Új cél door', async 
   expect(screen.getByTestId('loc')).toHaveTextContent('/me/goals/weight')
 })
 
-test('the mosaic carries the six tiles and each opens its own page', async () => {
+test('renders the six small tiles plus the wide Rutin tile, each opening its own page', async () => {
   renderHub()
   const TILES: [string, string][] = [
     ['Súly', '/me/weight'],
@@ -183,6 +205,7 @@ test('the mosaic carries the six tiles and each opens its own page', async () =>
     ['Napló', '/me/naplo'],
     ['Emberek', '/me/people'],
     ['Beállítások', '/me/beallitasok'],
+    ['Rutin', '/me/rutin'],
   ]
   for (const [label] of TILES) expect(await screen.findByRole('button', { name: label })).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: 'Súly' }))
@@ -193,7 +216,7 @@ test('the mosaic carries the six tiles and each opens its own page', async () =>
 // `[label]`-t bontotta ki, tehát a `Súly`-on kívül MINDEN útvonal holt adat volt a tuple-ökben — a
 // mezo-nol0 által átirányított `/me/ertesitesek/beallitasok` bejegyzés semmit nem állított, miközben
 // ez az ág épp rá támaszkodik. A hub navigálás után lecsatolódik, ezért csempénként friss render.
-test('a hat csempe mindegyike a saját oldalára navigál', async () => {
+test('a hét csempe mindegyike a saját oldalára navigál', async () => {
   const TILES: [string, string][] = [
     ['Súly', '/me/weight'],
     ['Alvás', '/me/sleep'],
@@ -201,6 +224,7 @@ test('a hat csempe mindegyike a saját oldalára navigál', async () => {
     ['Napló', '/me/naplo'],
     ['Emberek', '/me/people'],
     ['Beállítások', '/me/beallitasok'],
+    ['Rutin', '/me/rutin'],
   ]
   for (const [label, path] of TILES) {
     const { unmount } = renderHub()
@@ -208,6 +232,22 @@ test('a hat csempe mindegyike a saját oldalára navigál', async () => {
     expect(screen.getByTestId('loc')).toHaveTextContent(path)
     unmount()
   }
+})
+
+test('shows today done/total and both chain strengths on the Rutin tile', async () => {
+  renderHub()
+  const rutin = await screen.findByRole('button', { name: 'Rutin' })
+  expect(rutin).toHaveTextContent('1 / 3 ma')
+  expect(rutin).toHaveTextContent('reggel 82%')
+  expect(rutin).toHaveTextContent('este 64%')
+})
+
+test('shows no fabricated line on the Rutin tile when the user has no habits', async () => {
+  useHabitDay.mockReturnValue({ habits: [] })
+  useHabitSummary.mockReturnValue({ data: { perfectMorningDays30: 0, perfectEveningDays30: 0, habits: [] } })
+  renderHub()
+  const rutin = await screen.findByRole('button', { name: 'Rutin' })
+  expect(rutin.querySelector('.mz-tile-line')).toBeNull()
 })
 
 test('tile bottom lines come from the pages own hooks — the Súly and Alvás lines are live', async () => {

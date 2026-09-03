@@ -25,7 +25,7 @@ import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { FuelMeal } from '@/data/types'
 import type { EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
-import { useFuelDay, useFuelTimeline, useWaterActions } from '@/data/hooks'
+import { useDietSettings, useFuelDay, useFuelTimeline, useWaterActions } from '@/data/hooks'
 import { buildWindowLane, asPastDayLane } from '@/features/fuel/logic/fuelSwimlane'
 import { buildKeretHero, asPastDayHero } from '@/features/fuel/logic/keretHero'
 import { huInt } from '@/shared/lib/huNum'
@@ -65,6 +65,9 @@ export function FuelLogPage() {
   const { fuel } = useFuelDay(date)
   const { plan, budget, nowHHmm, energyBreakdown } = useFuelTimeline(date)
   const { logWater } = useWaterActions(date)
+  // Diet Plan slice 1 (mezo-xwgb): the fiber ring's target now comes from the user's own diet
+  // settings instead of the static FIBER_TARGET_G default — same source FuelMaiPage feeds.
+  const { settings: dietSettings } = useDietSettings()
 
   const laneRaw = buildWindowLane({ slots: plan.slots, budget, meals: fuel.meals })
   const lane = past ? asPastDayLane(laneRaw) : laneRaw
@@ -77,7 +80,7 @@ export function FuelLogPage() {
   const heroRaw = buildKeretHero({
     budget, staticEnergy, consumed: fuel.consumed, meals: fuel.meals,
     water: { currentMl: fuel.consumed.water, targetMl: fuel.targets.water },
-    slots: plan.slots, nowHHmm,
+    slots: plan.slots, nowHHmm, fiberTargetG: dietSettings.fiberG,
   })
   const heroVm = past ? asPastDayHero(heroRaw) : heroRaw
   const remaining = heroVm.remainingKcal
