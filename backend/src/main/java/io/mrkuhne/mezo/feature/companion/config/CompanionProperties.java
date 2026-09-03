@@ -220,7 +220,7 @@ public record CompanionProperties(
      */
     public record Intervention(
         @NotBlank @Pattern(regexp = "[a-z0-9_]{1,27}") String key,
-        @NotBlank @Pattern(regexp = "sustained_stress|sleep_debt|momentum_at_risk|recovery_needed|all_healthy") String flag,
+        @NotBlank @Pattern(regexp = "sustained_stress|sleep_debt|momentum_at_risk|recovery_needed|all_healthy|logging_gap|missed_workouts") String flag,
         @NotBlank @Pattern(regexp = "feed|push|both") String channel,
         @NotBlank @Size(max = 500) String textHu,
         @Min(1) @Max(8760) int cooldownHours,

@@ -46,6 +46,11 @@ export default defineConfig({
         // intact (switching to injectManifest would mean owning the whole worker for two
         // event listeners) — bd mezo-h4wp.6.1.
         importScripts: ['push-sw.js'],
+        // Entry chunk outgrew the 2 MiB default precache limit (bd mezo-xkz6; the header-aurora
+        // work, mezo-8az6, tipped it further). Raised to 3 MiB as an immediate unblock; proper
+        // follow-up is route-level code splitting (manualChunks / mezo-9fcm) to bring the entry
+        // chunk back under the default limit.
+        maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
       },
       manifest: {
         name: 'Mezo',

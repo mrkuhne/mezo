@@ -32,6 +32,8 @@ export type ClaySpotName =
   // Karakter persona orb variants (mezo-1gim.13) — one per Csapat expert + szkeptikus.
   | 's-orb-doki' | 's-orb-edzo' | 's-orb-taplalkozo' | 's-orb-szomnologus'
   | 's-orb-pszichologus' | 's-orb-drill' | 's-orb-antropologus' | 's-orb-szkeptikus'
+  // Szekció-spotok a shell-fejléchez (mezo-8az6): a Fuel és az Én darabja hiányzott.
+  | 's-fuel' | 's-en'
 
 /** Mounts the clay <symbol>/<gradient> defs once. Rendered by AppLayout. */
 export const ClaySprites = memo(function ClaySprites() {

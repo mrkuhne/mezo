@@ -24,6 +24,8 @@ import io.mrkuhne.mezo.feature.train.repository.SportEventRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -34,6 +36,7 @@ import java.util.UUID;
 import java.util.function.Consumer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Test data factory for the Train aggregate (mesocycle + per-muscle volume log) — see
@@ -55,6 +58,13 @@ public class TrainPopulator {
     private final SportSessionRepository sportSessionRepository;
     private final SportScheduleSlotRepository sportScheduleSlotRepository;
     private final SportEventRepository sportEventRepository;
+
+    /** JPA-managed shared EntityManager — {@code created_at} backdates need a native update since
+     *  {@code OwnedEntity.createdAt} is {@code @CreationTimestamp}-generated on insert
+     *  ({@code FlagLogPopulator.raiseAt} precedent); field-injected {@code @PersistenceContext} is
+     *  the house exception to constructor DI (see {@code ResetDatabase}). */
+    @PersistenceContext
+    private EntityManager em;
 
     /** A user-authored catalog exercise (created_by set) for catalog-write tests. */
     public ExerciseCatalogEntity createUserCatalogExercise(UUID createdBy, String name, String muscle, String type) {
@@ -561,6 +571,17 @@ public class TrainPopulator {
         s.setDayOfWeek(dayOfWeek);
         s.setTime(time);
         return gymScheduleSlotRepository.saveAndFlush(s);
+    }
+
+    /** A gym slot with a controlled {@code created_at} — the missed_workouts schedule-creation
+     *  clamp's test seam ({@code FlagLogPopulator.raiseAt} precedent). */
+    @Transactional
+    public GymScheduleSlotEntity createGymSlotAt(UUID createdBy, int dayOfWeek, String time, Instant createdAt) {
+        GymScheduleSlotEntity s = createGymSlot(createdBy, dayOfWeek, time);
+        em.createNativeQuery("update gym_schedule_slot set created_at = :at where id = :id")
+            .setParameter("at", createdAt).setParameter("id", s.getId()).executeUpdate();
+        em.clear();
+        return gymScheduleSlotRepository.findById(s.getId()).orElseThrow();
     }
 
     public SportScheduleSlotEntity createScheduleSlot(UUID createdBy, int dayOfWeek, String time,

@@ -125,7 +125,7 @@ export function SportPage() {
           {/* View switcher */}
           {/* The selected segment speaks PRIMARY, not the sport rose: ADR 0018 D5
               keeps the domain accents in the data-viz band, off buttons. */}
-          <div className="segtabs rise" style={{ '--d': '60ms', marginTop: 12 } as React.CSSProperties}>
+          <div className="segtabs rise" data-kalauz-anchor="sport-tabs" style={{ '--d': '60ms', marginTop: 12 } as React.CSSProperties}>
             {SUB_VIEWS.map((v) => (
               <button
                 key={v.id}

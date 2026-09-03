@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.flags;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,5 +36,24 @@ class FlagPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.cooldownHours().momentumAtRisk()).isEqualTo(48);
         assertThat(properties.cooldownHours().recoveryNeeded()).isEqualTo(24);
         assertThat(properties.cooldownHours().allHealthy()).isEqualTo(168);
+    }
+
+    /** S2 (mezo-d58h.2): the two new keys must answer through the same switch before either rule
+     *  exists — an unmapped key throws {@code SystemRuntimeErrorException} at raise time. */
+    @Test
+    void forFlag_answers_for_logging_gap_and_missed_workouts() {
+        assertThat(properties.cooldownHours().forFlag(FlagKey.LOGGING_GAP)).isEqualTo(48);
+        assertThat(properties.cooldownHours().forFlag(FlagKey.MISSED_WORKOUTS)).isEqualTo(48);
+    }
+
+    @Test
+    void binds_logging_gap_and_missed_workouts_thresholds_from_application_yml() {
+        assertThat(properties.loggingGap().mealStaleHours()).isEqualTo(36);
+        assertThat(properties.loggingGap().checkinStaleHours()).isEqualTo(48);
+        assertThat(properties.loggingGap().sleepStaleMornings()).isEqualTo(2);
+        assertThat(properties.loggingGap().minStaleDomains()).isEqualTo(1);
+        assertThat(properties.loggingGap().sleepSuspicionDeficitHours()).isEqualTo(1.0);
+        assertThat(properties.missedWorkouts().windowDays()).isEqualTo(14);
+        assertThat(properties.missedWorkouts().minConsecutiveMissed()).isEqualTo(2);
     }
 }

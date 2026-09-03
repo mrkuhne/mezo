@@ -9,6 +9,8 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { resetMockMedalHistory } from '@/data/train/medalEvaluator'
+import { TutorialProvider } from '@/features/tutorial/TutorialProvider'
+import { seedAllKalauzSeen } from '@/test/kalauz'
 
 // Asserts Phase-1 mock workout data, so pin mock mode explicitly (the swapped
 // useTrain hook reads useQuery, so a QueryClientProvider is required too).
@@ -20,14 +22,20 @@ afterEach(() => vi.unstubAllEnvs())
 // an earlier test logging a heavier Chest Supported Row set would suppress this
 // file's own WEIGHT-record test). Reset it per test, same as medalEvaluator.test.ts.
 beforeEach(() => resetMockMedalHistory())
+// Mezo-kalauz (mezo-gb1s.5): a /train/session kalauzos T2 route lett, és a prep mini ?-e
+// useTutorial()-t hív — a page a TutorialProvider alatt él, ahogy az AppLayoutban is.
+// Seed nélkül a 0 ms-os (reduced-motion) auto-open a tesztek fölé nyitná a sheetet.
+beforeEach(() => seedAllKalauzSeen())
 
 function setup() {
   return render(
     <QueryWrapper>
       <MemoryRouter initialEntries={['/train/session']}>
-        <LevelUpProvider>
-          <ActiveWorkoutPage />
-        </LevelUpProvider>
+        <TutorialProvider>
+          <LevelUpProvider>
+            <ActiveWorkoutPage />
+          </LevelUpProvider>
+        </TutorialProvider>
       </MemoryRouter>
     </QueryWrapper>,
   )
@@ -1567,12 +1575,14 @@ test('real mode: a completed today instance redirects the session route to the r
   render(
     <QueryWrapper>
       <MemoryRouter initialEntries={['/train/session']}>
-        <LevelUpProvider>
-          <Routes>
-            <Route path="/train/session" element={<ActiveWorkoutPage />} />
-            <Route path="/train/review/:workoutId" element={<div>REVIEW PROBE</div>} />
-          </Routes>
-        </LevelUpProvider>
+        <TutorialProvider>
+          <LevelUpProvider>
+            <Routes>
+              <Route path="/train/session" element={<ActiveWorkoutPage />} />
+              <Route path="/train/review/:workoutId" element={<div>REVIEW PROBE</div>} />
+            </Routes>
+          </LevelUpProvider>
+        </TutorialProvider>
       </MemoryRouter>
     </QueryWrapper>,
   )
@@ -1602,9 +1612,11 @@ test('real mode: a custom workout with NO active meso renders the prep screen in
   render(
     <QueryWrapper>
       <MemoryRouter initialEntries={['/train/session?day=cw-1']}>
-        <LevelUpProvider>
-          <ActiveWorkoutPage />
-        </LevelUpProvider>
+        <TutorialProvider>
+          <LevelUpProvider>
+            <ActiveWorkoutPage />
+          </LevelUpProvider>
+        </TutorialProvider>
       </MemoryRouter>
     </QueryWrapper>,
   )

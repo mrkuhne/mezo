@@ -267,6 +267,7 @@ export function TrainTodayPage() {
       {/* DayStrip — the Mon–Sun navigator; tapping a chip swaps the shown day below
           without any refetch (the agenda is already fully loaded). */}
       <DayStrip
+        kalauzAnchor="mai-napsav"
         items={dayStripItems(agenda, (d, item) => {
           if (item.kind === 'gym') return Boolean(d.date) && gymDoneDates.includes(d.date!)
           if (item.kind === 'sport') return sportDoneOn(d.date, sportOf(item.sport))

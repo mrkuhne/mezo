@@ -1230,16 +1230,67 @@ order (`repository/AiConversationRepository.java:14`); `AiMessageRepository` is 
 arithmetic over `MetricSeriesService` series the owning features already compose READ-ONLY — there
 is **no `LlmCallContextHolder` call anywhere in this slice**, because there is no LLM/embed call to
 tag. **Rule spine (S1, bd `mezo-d58h.1`, spec 2026-09-03 §3.1) — one class per rule.** `FlagEvaluator`
-itself is now a thin orchestrator: it holds no rule logic, just five injected `FlagRule` beans
+itself is now a thin orchestrator: it holds no rule logic, just seven injected `FlagRule` beans
 (`SustainedStressRule`, `SleepDebtRule`, `MomentumAtRiskRule`, `RecoveryNeededRule`,
-`AllHealthyRule` — each `feature/companion/flags/service/rule/*.java`) called in that fixed order,
-`allHealthyRule` only when the other four raised nothing. The `FlagRule` interface
+`LoggingGapRule`, `MissedWorkoutsRule`, `AllHealthyRule` — each
+`feature/companion/flags/service/rule/*.java`) called in that fixed order, `allHealthyRule` only
+when the other six raised nothing. The `FlagRule` interface
 (`flags/service/FlagRule.java`) is one method, `evaluate(userId, today) → Optional<FlagRaise>`,
 cooldowns NOT applied; each implementation carries its own reads and thresholds (still 100% from
-`FlagProperties` — no rule holds a number of its own) and stays reviewable in isolation. Pure
-refactor — behavior, thresholds and the fixed evaluation order are all unchanged from the single-class
-`FlagEvaluator` this replaces; `FlagEvaluatorStressSleepIT`/`FlagEvaluatorMomentumRecoveryIT` (§8)
-cover the same scenarios unmodified. Two triggers feed the SAME code path: the on-write listener (`FlagEvaluationListener`, `@Async
+`FlagProperties` — no rule holds a number of its own) and stays reviewable in isolation. S1 was a
+pure refactor of the original five; **S2 (bd `mezo-d58h.2`) adds two more rules**:
+
+- **`LoggingGapRule`** (spec §4 row 1) — the detector that must NOT go quiet when logging itself
+  stops: every value-based rule above reads a `MetricSeriesService` series, and a series with no
+  rows is honestly empty, which is exactly what happened on 2026-08-27 when a real logging
+  collapse muted every other rule at once. It checks three domains for staleness and raises ONE
+  flag carrying the list: meals stale at `logging-gap.meal-stale-hours` since `meal_.logged_at`,
+  check-ins stale at `logging-gap.checkin-stale-hours` since `check_in.saved_at`, and sleep stale
+  at `logging-gap.sleep-stale-mornings` consecutive missing wake mornings (`sleep_log.date`). A
+  domain with no row at all counts as stale (never-logged is the most stale a domain gets). It
+  raises once `≥ logging-gap.min-stale-domains` domains are stale. It also carries spec §4 row 5,
+  "gap + suspicion": when `sleep_debt` itself stayed silent for want of logged nights (fewer than
+  `sleep-debt.min-nights` inside its window) but the nights that ARE logged average at least
+  `logging-gap.sleep-suspicion-deficit-hours` of deficit, the payload attaches that observed
+  deficit instead of staying silent about it too.
+- **`MissedWorkoutsRule`** (spec §4 row 3) — raises when `≥ missed-workouts.min-consecutive-missed`
+  PLANNED gym days in a row (`gym_schedule_slot.day_of_week`, over the trailing
+  `missed-workouts.window-days`) have no completed workout instance. "Consecutive" counts through
+  the sequence of PLANNED days, not calendar days: a Mon/Wed/Fri schedule raises on a missed
+  Mon + Wed, two calendar days apart. Only `templateSessionId IS NOT NULL AND status = 'completed'`
+  instances count as training (`WorkoutSessionRepository.findDoneInstanceDates`).
+- **`SleepDeficitCalculator`** (`flags/service/rule/SleepDeficitCalculator.java`) — the cumulative
+  sleep-deficit-vs-goal arithmetic (goal lookup + the day-by-day `Σ max(0, goal − actual)` loop),
+  extracted out of `SleepDebtRule` in bd `c6c045082` so `LoggingGapRule`'s "gap + suspicion"
+  variant can reuse the exact same computation instead of a second copy. `SleepDebtRule` now calls
+  it and turns the result into a verdict; behavior is unchanged from the pre-extraction single-class
+  version (`FlagEvaluatorStressSleepIT` covers it unmodified).
+
+**The `logging_gap` recency-read exception.** Every other rule above reads
+`MetricSeriesService`'s day-bucketed series exclusively — but `LoggingGapRule`'s thresholds are in
+HOURS (`meal-stale-hours`/`checkin-stale-hours`), and a day bucket cannot express "36 hours since
+the last meal" once today is partially elapsed: a meal logged at 23:50 last night and none since
+would read as "logged today" in a day bucket while already being 12+ hours stale in real time. So
+`LoggingGapRule` reads `meal_.logged_at`/`check_in.saved_at` — real `Instant`s — directly off
+`MealRepository`/`CheckInRepository` instead of composing a `MetricSeriesService` series. Sleep
+stays day-bucketed (`sleepStaleMornings`, counted off `sleep_log.date`) because `sleep_log` carries
+only the wake-morning date, no clock, so there is no finer granularity to lose.
+
+**Adding a `FlagKey` needs FIVE mirrored changes** (S2 hit four of five; the fifth —
+`CompanionProperties.Intervention.flag` — was missed and caught only during the S2 fix-wave
+review, before it could fail at Spring context startup once S4 adds a `logging_gap`/
+`missed_workouts` intervention-library entry): the `FlagKey` string constant itself; a new
+`CooldownHours` field + `forFlag` switch arm in `FlagProperties`; a migration widening the
+`ck_companion_flag_log_flag_key` DB CHECK; the `@Pattern` regex on `CompanionFlagLogEntity.flagKey`
+(`entity/CompanionFlagLogEntity.java`) — a validation-layer mirror of the same DB CHECK that
+nothing else re-derives from the other four; and the `@Pattern` regex on
+`CompanionProperties.Intervention.flag` (`config/CompanionProperties.java`) — the same mirror again,
+one layer up, gating the W5.2 intervention-library binding instead of the flag-log row. Miss either
+`@Pattern` mirror and its own `@Valid`/binding validation rejects a legitimately-CHECK-permitted
+key before it ever does anything useful.
+Pure refactor beyond the two new rules — behavior, thresholds and the fixed evaluation order for
+the original five are all unchanged; `FlagEvaluatorStressSleepIT`/`FlagEvaluatorMomentumRecoveryIT`
+(§8) cover the same scenarios unmodified. Two triggers feed the SAME code path: the on-write listener (`FlagEvaluationListener`, `@Async
 @TransactionalEventListener(phase = AFTER_COMMIT)` on the NEW `CheckInSavedEvent` — published by
 `CheckInService.save` — and the existing `SleepLogSavedEvent`, published by `SleepLogService.log`)
 and the hourly sweep
@@ -1262,13 +1313,78 @@ committed raise into a `companion_message` feed card. See the W5.2 subsection be
 back the `/me/week` "Heti" tab ([me.md](me.md)) and its chat handoff — neither is the weekly-review
 NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md)):
 
-- **`DayScoreService`** (`service/DayScoreService.java`) — a deterministic, LLM-free per-day score:
-  four `[0,100]`-or-`null` subscores (sleep/fuel/checkin/activity, `null` = "tanulom" — no data that
-  day) folded into an overall day score = the rounded mean of the present subscores, itself `null`
-  below a `<2`-present honesty gate. Constants (`MeWeekProperties`, `mezo.companion.me-week.*`) —
-  `sleep-target-h` (8.0), `kcal-band` (0.25), `xp-baseline` (150). **Sleep quality and check-in
-  energy normalize as `(v-1)/9`** (1–10 dials on the FE sheets, verified against `SleepLogSheet`/
-  `CheckInSheet` — NOT the 1–5 span an early spec draft assumed).
+- **The 6-dimension day evaluation (`mezo-jcpt.4`, plan 2/2).** There is **exactly ONE day math in
+  the codebase** — it lives in `DayEvaluationEngine` — replacing the legacy 4-subscore formula
+  described in older revisions of this doc (the `sleepSubscore`/`fuelSubscore`/`checkinSubscore`/
+  `activitySubscore` methods are **deleted**; `MeWeekProperties`, the legacy formula's config
+  record, is retired with them — the day target it once held is `DayEvaluationProperties`'s own
+  `sleepTargetH` now).
+  - **`DayEvaluationEngine`** (`service/DayEvaluationEngine.java`) — a PURE function
+    (`DayInputs -> DayEvaluation`, no repository access, the `MealScoringService` house style) over
+    **six dimensions**: `nutrition` (.30) · `quality` (.15) · `training` (.20) · `sleep` (.15) ·
+    `logging` (.10) · `rhythm` (.10) (config, `DayEvaluationProperties`, sums 1.0, startup-validated
+    via `Weights.isNormalized`). Each dimension reports `status ∈ {DONE, IN_PROGRESS, NO_DATA}`.
+    **Honesty rules (binding):**
+    - A `NO_DATA`/`IN_PROGRESS` dimension drops out with weight 0; every surviving `DONE`
+      dimension's reported `weight` is the config weight **renormalized** so the `DONE` set sums to
+      1.0 — the per-dimension weight and the day's `base` are folded from the SAME renormalized
+      list, so they can never drift apart.
+    - `base` (the overall score) is the rounded weighted sum of the `DONE` dimensions, and is
+      `null` when fewer than 2 dimensions **that actually measured THIS day** are `DONE`, or when
+      the day is not yet `closed` (`date < today`, v1 day closure) — an open/future day gets
+      per-dimension progress only, never an overall number. `rhythm` is **excluded from that
+      count**: it is *extrinsic*, the mean of OTHER days' bases, and knows nothing about this one.
+      It still carries its weight in the weighted sum once the gate IS open. Without that
+      exclusion the gate could be opened by two dimensions that never looked at the day: `logging`
+      (always `DONE` on a closed day, an honest 0 for an untouched one) plus `rhythm` (`DONE` from
+      ≥3 prior days), which reported `round(0.5×0 + 0.5×rhythmMean)` — roughly *half the user's
+      running average* — for a day they never touched, and pushed the state from `empty` to
+      `scored` so the page rendered a full score ring and spent an LLM call narrating nothing.
+    - A **rest day** (`plannedWorkouts` null/0) makes `training` `NO_DATA` ("Pihenőnap · nem
+      számít") rather than a penalty — resting must never cost points.
+    - `logging` is the one dimension with **no missing-target escape hatch**: water-logged and
+      check-in count are never "unknown" (false/0 IS the measurement), so on a closed day it is
+      always `DONE` and a genuinely untouched day scores an honest **0** rather than degrading —
+      the opposite of nutrition/quality, whose components drop out and renormalize when the
+      underlying DATA (not the target) is missing.
+    - `sleep` is the one dimension that does **not** wait for `closed` — it finalizes as soon as
+      it's logged, even on an open day (the "A+ lifecycle": each dimension closes on its own
+      natural trigger). Formula: `0.7 × min(1, sleepH / sleepTargetH) + 0.3 × (quality-1)/9` when a
+      1–10 quality dial was logged, else the duration ratio alone — bit-for-bit the legacy
+      `sleepSubscore` formula, carried over verbatim.
+    - Meal timeliness (inside `logging`) uses a **circular clock distance**
+      (`min(|Δ|, 1440-|Δ|)` minutes) between `eatenAt` and `loggedAt`, both bare `LocalTime`s with
+      no date: a meal eaten 23:30 and logged 00:10 reads as **40 minutes** late, not 23 hours — the
+      near reading is overwhelmingly the real one, and the rare failure mode (forgiving a meal
+      genuinely a day late) is far less punishing than the linear one's (zeroing an
+      otherwise-perfect day over a midnight crossing).
+    - Nutrition's carb/fat component follows the SAME one-level-down policy: a missing **target**
+      is "we never set an expectation" → full credit; missing **data** against a real target drops
+      the component out and kcal/protein renormalize over their combined 0.8 share.
+  - **`DayScoreService`** (`service/DayScoreService.java`) — the day-score READ path: resolves a
+    `DayInputs` carrier from every owning feature (fuel rollup, `WorkoutWindowQueryService`,
+    `MetricSeriesService` sleep series, meal `created_at` for logging timeliness, water/check-in
+    repositories) and hands it to the engine. Holds **no formula** of its own any more.
+    - **Rhythm without recursion.** `rhythm` averages the mean of the PRIOR `rhythmWindowDays`
+      days' **base scores computed WITHOUT their own rhythm dimension** ("rhythm-free bases") —
+      never today's own base, which would let it eat itself, and never the FULL (rhythm-included)
+      base of a prior day either, which would compound. Every day of the extended window
+      `[from - rhythmWindowDays, to]` is loaded and evaluated ONCE with an empty prior list; those
+      rhythm-free bases are what the in-range days' `rhythm` dimension averages — linear cost, at
+      most two pure engine calls per day, never a fan-out. **This means a prior day's rhythm-free
+      base can legitimately differ from the `base` score displayed FOR that same day** (which
+      includes ITS OWN rhythm dimension) — the two numbers measure different things and are not a
+      bug if they disagree.
+    - `public DayInputs inputsFor(UUID userId, LocalDate date)` exposes one day's fully-resolved
+      inputs (priors included) for the day-evaluation read path, without loading a whole week.
+  - **Legacy wire mapping (binding, `DaySubscores`).** The weekly trend (`WeeklyScoreService`'s
+    persisted per-domain averages, `me-week`'s `MeWeekSubscores`) still reads the OLD four-field
+    shape — deliberately NOT changed by this slice — now populated as projections of the closest
+    successor dimension: `sleep ← sleep`, `fuel ← nutrition`, `checkin ← logging`,
+    `activity ← training`. A degraded (`NO_DATA`/`IN_PROGRESS`) dimension projects to `null`, the
+    same "tanulom" signal the legacy subscores carried. `DaySubscores.score` is `DayEvaluation
+    .base()`. The day page itself does not read this shape — it consumes the full `DayEvaluation`
+    through `GET /api/me/day/{date}/evaluation` (§4).
 - **`MeWeekService`** (`service/MeWeekService.java`) — assembles `GET /api/me/week/{start}`
   (`MeWeekController`, one ISO-Monday week, live for the current in-progress week): per-day
   fuel/sleep/weight/check-in/workout/XP values + `DayScoreService` scores + weekly aggregates
@@ -1277,6 +1393,49 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
   (proactive) and this doc's own `[Heti adatok]` block below render through this exact method, so
   the generated weekly narrative and the chat's live week context can never describe a day
   differently. Full formula/contract detail: [me.md §4](me.md).
+- **`DayReviewService`** (`service/DayReviewService.java`) — assembles
+  `GET /api/me/day/{date}/evaluation` (`MeWeekController`, §4): the deterministic evaluation ALWAYS,
+  plus — lazily, for a **closed and scored** day only — a cached LLM prose layer over it. **The
+  deterministic answer is the answer**: every LLM failure (switch off, provider throw/timeout,
+  unparseable answer) degrades to the full evaluation with an EMPTY narrative and NO persisted row
+  — never a 5xx, never a cached lie (the `MealCoachService` contract, one day-shaped level up).
+  - **Server-side day state** — a five-way mirror of the frontend's four `weekDay.ts` states plus
+    `in_progress`: `future` (date after today) → `in_progress` (today, still gathering) →
+    `scored` (closed, `base != null`) → `thin`/`empty` (closed, `base == null`: `thin` if anything
+    was logged that day, `empty` if nothing was). Prose is generated ONLY in the `scored` state.
+  - **Cache, not truth.** `day_review` (migration `202609031300_mezo-jcpt.4_create_day_review.sql`,
+    the `weekly_score` shape — soft-delete-aware partial unique index on `(created_by, date)`) holds
+    one live row per user+day, keyed by `inputsHash` — `sha256` over each dimension's
+    `id|score|status` **and its `facts` (label/value pairs, in emission order)** (fixed engine
+    order) plus `base`. The facts are in the key because they are shown to the model and the
+    narrative typically quotes them: scores are integers 0..100, so a retroactive log can move a
+    fact (carbs 312 g → 280 g) without moving the rounded score, and a score-only key would keep
+    serving prose quoting the old number. A hash match serves the stored envelope with
+    ZERO LLM calls; a mismatch or missing row costs exactly ONE call, parsed, clamped and upserted.
+    The unscored context signals (below) are deliberately OUTSIDE the hash — they are re-read fresh
+    on every call and never fold into a cached sentence's correctness. `DayReviewJson` is the typed
+    `jsonb` envelope (`entity/DayReviewJson.java`, the `MealBreakdownJson` precedent):
+    `narrative[]`, `dimensionNotes{dim-id: note}`, `highlights[]` (`kind: key|pattern|win`, capped
+    at 3), `adjustment {delta, reason}` and a point-in-time snapshot of `context` (read-back only —
+    the API response always re-derives context fresh, never from this snapshot).
+  - **Context signals** — UNSCORED facts computed DETERMINISTICALLY from their real sources and
+    handed to the model so it never invents them: the day's `CHECKIN_ENERGY` mean, the weight
+    trend's EWMA weekly rate (`WeightTrendService`), and the consecutive under-target-sleep streak
+    ending at that date (breaks on any day with no sleep log — unknown is not "under"). A signal
+    with no measurement is simply absent, never a fabricated neutral value; a failure reading them
+    costs the signals, not the page (`signalsOrNone`).
+  - **AI correction, clamped and discardable.** The model may propose `adjustment {delta, reason}`;
+    `delta` is clamped to **[−5, +5]** and an adjustment with no reason is **discarded entirely**
+    (never defaulted) — an unexplained nudge is exactly what the honesty rules forbid.
+    `score = base == null ? null : clamp(base + delta, 0, 100)`, with `base` always reported
+    separately — the correction is a visible chip on the day page, never silently folded into the
+    headline number.
+  - **`DAY_REVIEW_SWITCH`** (`mezo.feature.day-review.enabled`, default **true**) gates ONLY the
+    prose: `DayReviewLlmAdapter` (`llm/DayReviewLlmAdapter.java`, bridging the cheap
+    `CompanionLlm` tier, ADR 0008) additionally needs `COMPANION_SWITCH` (the two-switch array
+    `@ConditionalOnProperty` idiom). With either off, `DayReviewLlm`'s `ObjectProvider` is empty and
+    the endpoint still answers 200 with every dimension and an empty narrative — the score itself
+    is never gated by either switch.
 - **Anchored conversations.** `ai_conversation` carries two nullable columns, `context_kind`
   (`week`|`day`) and `context_date` — a plain conversation leaves both null.
   `CreateConversationRequest.context {kind, date}` (contract-optional) sets them at creation
@@ -2482,29 +2641,32 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   the anchor, and only when `PROFILE_ASSEMBLER_JOB_SWITCH` is on (§4, "The anchor quarter" and
   "Phase 2 also honours `PROFILE_ASSEMBLER_JOB_SWITCH`").
 
-### Backend tables (W5.1 flag log, ✅ `mezo-b3pp.18`)
+### Backend tables (W5.1 flag log, ✅ `mezo-b3pp.18`; widened S2 `mezo-d58h.2`)
 
 Migration `202608241200_mezo-b3pp.18_create_companion_flag_log.sql` (in `1.0.0_master.yml`) — the
-append-only audit trail behind the composite-flag evaluator (spec §4.5/§9.1).
+append-only audit trail behind the composite-flag evaluator (spec §4.5/§9.1). S2 migration
+`202609031200_mezo-d58h.2_flag_key_logging_gap_missed_workouts.sql` widens
+`ck_companion_flag_log_flag_key` to the two new keys.
 
 - **`companion_flag_log`** — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id) ON
   DELETE CASCADE`, `is_deleted`, `created_at timestamptz`, `flag_key varchar(24)`, `source
   varchar(6)`, `payload jsonb` (nullable). Constraints: `pk_companion_flag_log_id`,
   `fk_companion_flag_log_created_by_app_user_id`, `ck_companion_flag_log_flag_key`
-  (`sustained_stress | sleep_debt | momentum_at_risk | recovery_needed | all_healthy`),
-  `ck_companion_flag_log_source` (`write | sweep`). Index `idx_companion_flag_log_user_key_at
-  (created_by, flag_key, created_at desc)` — the cooldown gate's key.
+  (`sustained_stress | sleep_debt | momentum_at_risk | recovery_needed | all_healthy |
+  logging_gap | missed_workouts` — since S2), `ck_companion_flag_log_source` (`write | sweep`).
+  Index `idx_companion_flag_log_user_key_at (created_by, flag_key, created_at desc)` — the
+  cooldown gate's key.
 - **One row per RAISE, never per evaluation.** The evaluator is deterministic, so `FlagService`
   appends only when a flag is both TRUE and past its own cooldown; a quiet evaluation (nothing
   true, or everything still cooling down) writes nothing. Nothing ever updates a row — no history
   to amend, only new raises to append.
 - **`payload` is the typed jsonb `FlagPayloadEnvelope`** (`flags/entity/FlagPayloadEnvelope.java`
-  — the `FeedbackRollupStatsEnvelope` precedent: one record, five all-nullable nested-record
+  — the `FeedbackRollupStatsEnvelope` precedent: one record, seven all-nullable nested-record
   fields, a static factory per shape). Exactly one of `sustainedStress`/`sleepDebt`
-  /`momentumAtRisk`/`recoveryNeeded`/`allHealthy` is non-null per row, carrying BOTH the rule's
-  config thresholds and the observed values at raise time (day-keyed maps, `LocalDate.toString()`
-  keys — jsonb object keys are text), so the raise is reproducible from the log alone without
-  re-running the evaluator.
+  /`momentumAtRisk`/`recoveryNeeded`/`allHealthy`/`loggingGap`/`missedWorkouts` is non-null per
+  row, carrying BOTH the rule's config thresholds and the observed values at raise time (day-keyed
+  maps, `LocalDate.toString()` keys — jsonb object keys are text), so the raise is reproducible
+  from the log alone without re-running the evaluator.
 - **No FK from `payload` to anything** — it freezes values read from other features' tables at
   raise time; those source rows can later change or be deleted without touching this row (the
   `message_feedback`/`feedback_rollup` dangling-reference precedent, spec §8.1).
@@ -3244,20 +3406,30 @@ and cooldown below is config, never code — `FlagEvaluator` holds no numbers of
 | `recovery.rpe-threshold` | `7.0` | a training RPE at/above this counts as "high effort" |
 | `recovery.stress-threshold` | `6.0` | a check-in stress at/above this counts as "high stress" |
 | `all-healthy.quiet-days` | `7` | no other flag raised for this many days ⇒ the quiet state itself is logged |
+| `logging-gap.meal-stale-hours` | `36` | hours since the last `meal_.logged_at` at/above which meals count as stale |
+| `logging-gap.checkin-stale-hours` | `48` | hours since the last `check_in.saved_at` at/above which check-ins count as stale |
+| `logging-gap.sleep-stale-mornings` | `2` | consecutive missing wake mornings (`sleep_log.date`) at/above which sleep counts as stale |
+| `logging-gap.min-stale-domains` | `1` | how many of the three domains must be stale at once for the flag to raise |
+| `logging-gap.sleep-suspicion-deficit-hours` | `1.0` | when `sleep_debt` stayed silent for want of nights, the logged nights' average deficit at/above which the payload attaches the suspicion (spec §4 row 5) |
+| `missed-workouts.window-days` | `14` | how far back planned gym days are scanned, ending TODAY |
+| `missed-workouts.min-consecutive-missed` | `2` | consecutive PLANNED gym days with nothing completed needed to raise (consecutive in the sequence of planned days, not calendar days) |
 | `cooldown-hours.sustained-stress` | `24` | re-raise floor, per flag |
 | `cooldown-hours.sleep-debt` | `24` | ″ |
 | `cooldown-hours.momentum-at-risk` | `48` | ″ |
 | `cooldown-hours.recovery-needed` | `24` | ″ |
 | `cooldown-hours.all-healthy` | `168` | ″ (one week) |
+| `cooldown-hours.logging-gap` | `48` | ″ — long enough that a gap card does not repeat daily |
+| `cooldown-hours.missed-workouts` | `48` | ″ |
 
 Job switch `mezo.techcore.cron.flag-sweep-job.enabled`
 (`FeaturesConfiguration.FLAG_SWEEP_JOB_SWITCH`) — off ⇒ the `FlagSweepJob` bean does not exist;
 the on-write listener keeps running unaffected (it answers to `COMPANION_SWITCH` only).
 
-**The five rules** (source of truth: the W5.1 plan's "The rules" table — all windows are whole
-days computed from `LocalDate.now()`; missing days stay absent, never invented — the
-`MetricSeriesService` rule — except `HABITS_DONE`, where no `habit_day` row genuinely means zero
-completions):
+**The seven flags** (source of truth: the W5.1 plan's "The rules" table plus the S2 spec's §4 rows
+1/3 — all windows are whole days computed from `LocalDate.now()`; missing days stay absent, never
+invented — the `MetricSeriesService` rule — except `HABITS_DONE`, where no `habit_day` row
+genuinely means zero completions, and `logging_gap`'s meal/check-in reads, which bypass
+`MetricSeriesService` entirely — see §3 above for why):
 
 | flag | fires when | inputs |
 |---|---|---|
@@ -3265,7 +3437,18 @@ completions):
 | `sleep_debt` | over the last `nights` nights ending TODAY (`sleep_log.date` is the wake morning, so today's row is last night): Σ max(0, goalHours − durationH) ≥ `deficit-hours`, and at least `min-nights` of them are logged | `MetricKey.SLEEP_DURATION_H`, `sleep_goal.target_minutes` (fallback `default-goal-hours`) |
 | `momentum_at_risk` | recentAvg(`HABITS_DONE`) ≤ baselineAvg × (1 − `drop-ratio`) **and** ≥1 missed planned gym day in the recent window; guarded by baselineAvg ≥ `min-baseline` | `MetricKey.HABITS_DONE`, `gym_schedule_slot.day_of_week`, `WorkoutSessionRepository.findDoneInstanceDates` |
 | `recovery_needed` | inside the last `window-days` days (today included): a day with `SLEEP_DURATION_H` ≤ `sleep-floor-hours` **and** a day with `TRAINING_RPE` ≥ `rpe-threshold` **and** a day with avg `CHECKIN_STRESS` ≥ `stress-threshold` | those three series |
-| `all_healthy` | none of the four fire now, **and** no non-`all_healthy` row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
+| `logging_gap` | `≥ min-stale-domains` of {meals, check-ins, sleep} stale (thresholds above); a domain with no row at all counts as stale | `meal_.logged_at`, `check_in.saved_at`, `sleep_log.date` (direct repository reads, not `MetricSeriesService`) |
+| `missed_workouts` | `≥ min-consecutive-missed` consecutive PLANNED gym days (in the sequence of planned days) with no completed workout instance, inside the `window-days`-day window ending YESTERDAY (today is still in progress), itself clamped to never start before the oldest surviving `gym_schedule_slot.created_at` — a day before the current schedule existed cannot be a violation of it (review fix, bd `mezo-d58h.2`) | `gym_schedule_slot.day_of_week`, `gym_schedule_slot.created_at`, `WorkoutSessionRepository.findDoneInstanceDates` |
+| `all_healthy` | none of the other six fire now, **and** no problem row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
+
+`all_healthy`'s "no problem row" check (`existsProblemRaiseSince`) excludes both `all_healthy`
+itself and `logging_gap`: `logging_gap` names a data-availability gap (a domain has gone stale),
+not a health/behavior problem, so a user who tracks sleep and check-ins tightly but logs meals
+loosely must not have `all_healthy` blocked for a full `quiet-days` window every time
+`logging_gap` fires (review fix, bd `mezo-d58h.2`). `missed_workouts` stays counted as a problem —
+it IS a behavior signal, unlike a data gap. The other suppression is unchanged: `FlagEvaluator`
+only runs `AllHealthyRule` when nothing else raised in that same evaluation, so `all_healthy` and
+`logging_gap` still never appear together on the same day.
 
 A flag is written only when `companion_flag_log` holds no row with that `flag_key` newer than
 `cooldown-hours.<flag>` — identical for both sources.
@@ -3293,6 +3476,32 @@ season candidates, phase 2 does not rebuild the profile — the quarterly job re
 never silently undone four times a year, and an archived *Rólad tanultam* node stays archived.
 `QuarterlyPropertiesIT` pins all four shipped defaults; `QuarterlyReviewJobProfileSwitchOffIT`
 pins the asymmetry.
+
+### Config keys (`mezo.companion.day-evaluation.*` — `DayEvaluationProperties`, `@Validated`)
+
+`mezo-jcpt.4` — a feature-scoped `@ConfigurationProperties(prefix =
+"mezo.companion.day-evaluation")` record (the `QuarterlyProperties`/`FlagProperties` precedent,
+NOT another `CompanionProperties` nested component), picked up by `@ConfigurationPropertiesScan`.
+`DayEvaluationEngine`/`DayScoreService`/`DayReviewService` are the only readers.
+
+| key | default | meaning |
+|---|---|---|
+| `weights.{nutrition,quality,training,sleep,logging,rhythm}` | `.30/.15/.20/.15/.10/.10` | dimension weights — `@AssertTrue` startup-validates the six sum to `1.0` (±1e-6) |
+| `nutrition.kcal-under-band` / `kcal-over-band` | `0.10` / `0.05` | asymmetric kcal tolerance around the target (wider under, narrower over — cut-asymmetry) |
+| `nutrition.kcal-slope` | `3.0` | linear falloff rate outside the kcal band |
+| `nutrition.protein-under-band` / `protein-slope` | `0.05` / `2.5` | protein deficit band + falloff; a protein SURPLUS is forgiven (fitness policy) |
+| `nutrition.carb-fat-band` / `carb-fat-slope` | `0.15` / `1.5` | symmetric carb+fat tolerance + falloff |
+| `workout-day-kcal-widen` | `150` (kcal) | widens the kcal-fit upper target on a workout day |
+| `sleep-target-h` | `7.5` | the day evaluation's ONLY sleep target (the legacy `MeWeekProperties.sleepTargetH` — `8.0` — is retired with that record) |
+| `rhythm-window-days` | `7` | how many prior days the `rhythm` dimension (and its rhythm-free-base recompute, above) looks back |
+| `rhythm-min-days` | `3` | minimum prior days with a base score before `rhythm` reports `DONE` rather than `NO_DATA` |
+| `log-timely-min` | `120` (minutes) | a meal counts "logged in time" within this many minutes of `eatenAt` (circular clock distance) |
+
+`DayEvaluationPropertiesTest` pins the startup validation (weights summing, band ranges);
+`DayEvaluationEngineTest` pins the formula per dimension.
+
+Prose gate: `mezo.feature.day-review.enabled` (`DAY_REVIEW_SWITCH`) = **true** by default — see the
+`DayReviewService`/`DayReviewLlmAdapter` writeup above for what it gates and does not.
 
 ### Config keys (`mezo.llm-log.*` — the audit log, `LlmLogProperties`/`LlmPricingProperties`)
 
@@ -3891,11 +4100,27 @@ Backend integration-first (compose Postgres up: `cd backend && docker compose up
 `./mvnw clean test` (ALWAYS `clean` — Lombok+MapStruct incremental compile is flaky). The LLM in
 tests is **always** `FakeCompanionLlm` — network never touched.
 
+**Daily evaluation (`mezo-jcpt.4`, plan 2/2).**
+`feature/companion/service/DayEvaluationEngineTest.java` is the formula's unit-level pin — one test
+per honesty rule, per dimension (asymmetric kcal bands, protein surplus forgiven/deficit counted,
+workout-day kcal widen, missing-data-vs-missing-target degrade paths, weight renormalization
+summing to 1.0, the rest-day-is-neutral rule, the circular meal-timeliness clock distance, the
+rhythm mean-of-priors gate). `feature/companion/config/DayEvaluationPropertiesTest.java` pins the
+startup weight-sum validation. `feature/companion/service/DayScoreServiceIT.java`
+(`fullDayEvaluatesEveryDimensionAndProjectsTheLegacySubscores`) pins the input-loading map AND the
+legacy `DaySubscores` projection end to end against real repositories; `emptyDayYieldsNullEverything`
+pins the honest-null floor. `feature/companion/service/DayReviewServiceTest.java` pins the prose
+cache (`inputsHash` hit serves with zero LLM calls, a hash mismatch regenerates, delta clamping
+both directions, a reason-less adjustment discarded, highlight-kind normalization, and every
+degrade path — a throwing port, an unparseable answer — still serving the deterministic evaluation
+with an empty narrative). `feature/companion/controller/DayEvaluationApiIT.java` covers the full
+`GET /api/me/day/{date}/evaluation` response per state (scored/in_progress/future), the
+`DAY_REVIEW_SWITCH` bean presence, and 401; `DayEvaluationSwitchOffApiIT` pins the switch-off
+degrade at the HTTP layer. `feature/companion/DayReviewRepositoryIT.java` pins the partial unique
+index (soft-delete-aware) on `day_review (created_by, date)`.
+
 **Weekly review data layer + anchored conversations (`mezo-p2tr`).**
-`feature/companion/service/DayScoreServiceIT.java` pins the day-score formula per subscore
-(fully-logged day → 100/100/100/100 → overall 100; sleep-only day → the other three null and the
-overall score null under the `<2` gate; zero-kcal day → `fuel()==0`, not null) and the verified
-1–10 (not 1–5) normalization. `feature/companion/controller/MeWeekControllerIT.java` covers the
+`feature/companion/controller/MeWeekControllerIT.java` covers the
 7-day response shape, the `ME_WEEK_START_NOT_MONDAY` 400, and the weekly-aggregate math.
 `AnchoredConversationIT` covers `CreateConversationRequest.context` persisting `context_kind`/
 `context_date`, the server-generated opening turn landing as an assistant-only row (never a user
@@ -4250,7 +4475,7 @@ IT):**
 **W5.1 composite-flag test additions (`mezo-b3pp.18`, spec §9.1) — no LLM anywhere in this path:**
 
 - **`flags/CompanionFlagLogPersistenceIT`** — entity round-trip with the typed jsonb payload for
-  all five `FlagPayloadEnvelope` shapes (including `MomentumAtRisk`'s `List<String>` and
+  all seven `FlagPayloadEnvelope` shapes (including `MomentumAtRisk`'s `List<String>` and
   `RecoveryNeeded`'s nullable boxed `Double`s); an unknown `flag_key`/`source` is rejected by the
   entity's `@Pattern` in-JVM AND, via a native insert that bypasses bean validation, by the DB
   CHECK too; `existsRaiseSince` sees only rows inside its window.
@@ -4263,19 +4488,38 @@ IT):**
   `min-nights` gate, falls back to the default goal without a `sleep_goal` row, **counts last
   night's sleep, which is logged this morning** (`sleep_log.date` is the wake morning), and raises
   exactly AT the threshold (boundary); the payload freezes the stress inputs
-  (`the_payload_freezes_the_stress_inputs`).
+  (`the_payload_freezes_the_stress_inputs`). Since S2 the `sleep_debt` cases exercise
+  `SleepDeficitCalculator` through `SleepDebtRule`, not inline arithmetic — behavior pinned
+  unchanged across the extraction.
 - **`flags/FlagEvaluatorMomentumRecoveryIT`** — `momentum_at_risk`: raises on a habit collapse plus
   a missed planned gym day, stays quiet when every planned day was trained, with no planned gym day
   at all, below the baseline floor, or when the habits held up; `recovery_needed`: raises on poor
   sleep + high RPE + high stress inside the 48h window, stays quiet when one leg is missing or
   falls outside the window (including exactly one day past the true edge — the boundary case);
-  `all_healthy`: raises after a quiet week WITH actual data, stays quiet on an EMPTY log (no
-  fabricated "all healthy" over nothing), stays quiet while a problem flag is still inside the
-  quiet window, and returns once that problem flag ages out of it.
+  `all_healthy`: raises after a quiet week WITH actual data, stays quiet while a problem flag is
+  still inside the quiet window, and returns once that problem flag ages out of it. **Since S2,
+  `an_empty_log_raises_logging_gap_not_all_healthy`** (renamed from
+  `all_healthy_stays_quiet_on_an_empty_log`, `mezo-d58h.2` — the fixture was updated when
+  `logging_gap` began raising for it, but the name still claimed the opposite): an EMPTY log is no
+  longer the "no fabricated all_healthy over nothing" case it once was — `logging_gap` now raises
+  first on a never-logged user (never-logged counts as stale, §3), so `all_healthy`'s own honesty
+  gate is untestable via a bare empty log and is instead pinned by the "quiet window" cases above.
+- **`flags/FlagEvaluatorLoggingGapIT`** and **`flags/FlagEvaluatorMissedWorkoutsIT`** (S2, bd
+  `mezo-d58h.2`) — `logging_gap`: raises when ≥`min-stale-domains` of meals/check-ins/sleep are
+  stale (including never-logged), stays quiet with fresh data in all domains, and the "gap +
+  suspicion" payload attaches the observed deficit only when `sleep_debt` itself stayed silent for
+  want of nights; `missed_workouts`: raises on `minConsecutiveMissed` consecutive PLANNED days with
+  nothing completed, stays quiet with no gym schedule at all or when the run breaks, and treats a
+  Mon/Wed/Fri schedule's consecutive PLANNED days correctly (not consecutive calendar days).
 - **`flags/FlagServiceIT`** — writes one audit row per raised flag with the right `source`; the
-  cooldown blocks an immediate re-raise and lifts once it expires; a quiet evaluation writes
-  nothing; the on-write and sweep sources raise IDENTICALLY apart from `source`
-  (`write_and_sweep_raise_identically_apart_from_the_source`).
+  cooldown blocks an immediate re-raise and lifts once it expires; the on-write and sweep sources
+  raise IDENTICALLY apart from `source`
+  (`write_and_sweep_raise_identically_apart_from_the_source`). **Since S2,
+  `a_quiet_evaluation_writes_only_logging_gap`** (renamed from
+  `a_quiet_evaluation_writes_nothing`, `mezo-d58h.2`): the fixture that once left every rule
+  silent now trips `logging_gap` (never-logged domains count as stale, §3), so the test asserts
+  exactly one row — `logging_gap` — is written, not zero; a genuinely quiet evaluation (every
+  domain fresh, nothing else true) is no longer reachable with this rule in the spine.
 - **`flags/FlagEvaluationListenerIT`** — a check-in save raises the flag with `source=write`
   (deliberately NOT `@Transactional` — the `FlagServiceIT` precedent: the save must genuinely
   COMMIT for `AFTER_COMMIT` to fire, Awaitility rides out the `@Async` hop, the
@@ -5169,23 +5413,28 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/profile/{ProfileAssemblerJobIT,ProfileAssemblerJobSwitchOffIT,ProfilePromptAssemblerIT,ProfilePropertiesIT,ProfileSourceFindersIT,service/ProfileAssemblerIT,service/ProfileAssemblerCapTest}.java` — §8.
 - **FE side** — at ship time, `frontend/src/features/me/pages/KnowledgePage.tsx` + `frontend/src/features/me/components/ProfileNodeCard.tsx`; **since `mezo-ms9a` (2026-09-01)** the card is `frontend/src/features/insights/components/ProfileNodeCard.tsx`, rendered by `KnowledgeListPage`'s `?view=profil` ("Így beszélj velem") view — plus `frontend/src/data/insights/graph.ts` (`PROFILE_SOURCE_KIND`), documented in [`insights.md` §2.4](insights.md).
 
-**Backend — composite flags (W5.1, `mezo-b3pp.18` — §3/§4, spec §4.5/§9.1)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/config/FlagProperties.java` — the `mezo.companion.flags.*` knobs (`sweepCron` + five per-flag threshold records + `cooldownHours`), a feature-scoped `@Validated` record — the `FeedbackLearningProperties`/`ProfileProperties` precedent (§9).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/FlagPayloadEnvelope.java` — the typed jsonb payload, one nested record per rule + a static factory each (the `FeedbackRollupStatsEnvelope` precedent).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/CompanionFlagLogEntity.java` — `extends OwnedEntity`, append-only, soft-deletable, `flagKey`/`source` `@Pattern`-mirrored CHECKs.
+**Backend — composite flags (W5.1, `mezo-b3pp.18` — §3/§4, spec §4.5/§9.1; `logging_gap`/
+`missed_workouts` added S2, bd `mezo-d58h.2`, spec 2026-09-03 §4)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/config/FlagProperties.java` — the `mezo.companion.flags.*` knobs (`sweepCron` + seven per-flag threshold records + `cooldownHours`), a feature-scoped `@Validated` record — the `FeedbackLearningProperties`/`ProfileProperties` precedent (§9).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/FlagPayloadEnvelope.java` — the typed jsonb payload, one nested record per rule + a static factory each (the `FeedbackRollupStatsEnvelope` precedent); seven variants since S2.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/CompanionFlagLogEntity.java` — `extends OwnedEntity`, append-only, soft-deletable, `flagKey`/`source` `@Pattern`-mirrored CHECKs — `flagKey`'s regex is the FOURTH mirror of the flag-key list (§3 above; `CompanionProperties.Intervention.flag` is the FIFTH), widened by S2.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/repository/CompanionFlagLogRepository.java` — `existsRaiseSince` (the cooldown gate) and `existsProblemRaiseSince` (the `all_healthy` quiet-window gate).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagKey.java` — the five flag-key constants + `SOURCE_WRITE`/`SOURCE_SWEEP`, string constants mirroring the DB CHECKs (the `MessageFeedbackEntity` verdict/reason precedent).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagKey.java` — the seven flag-key constants + `SOURCE_WRITE`/`SOURCE_SWEEP`, string constants mirroring the DB CHECKs (the `MessageFeedbackEntity` verdict/reason precedent).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaise.java` — one flag the evaluator says is TRUE right now, with its payload, before the cooldown gate is applied.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluator.java` — since S1 (`mezo-d58h.1`) a thin orchestrator calling five `FlagRule` beans in a fixed order, LLM-free (§3).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluator.java` — since S1 (`mezo-d58h.1`) a thin orchestrator calling seven `FlagRule` beans in a fixed order, LLM-free (§3).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRule.java` — S1 (`mezo-d58h.1`): the one-method rule contract, `evaluate(userId, today) → Optional<FlagRaise>`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/{SustainedStressRule,SleepDebtRule,MomentumAtRiskRule,RecoveryNeededRule,AllHealthyRule}.java` — S1 (`mezo-d58h.1`): the five rules, one class each, pure arithmetic over `MetricSeriesService`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/{SustainedStressRule,SleepDebtRule,MomentumAtRiskRule,RecoveryNeededRule,AllHealthyRule}.java` — S1 (`mezo-d58h.1`): the original five rules, one class each, pure arithmetic over `MetricSeriesService`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/SleepDeficitCalculator.java` — S2 (bd `c6c045082`): the shared sleep-deficit-vs-goal computation, extracted out of `SleepDebtRule` so `LoggingGapRule`'s suspicion variant can reuse it (§3).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/LoggingGapRule.java` — S2 (bd `mezo-d58h.2`): the `logging_gap` rule; reads `MealRepository`/`CheckInRepository`/`SleepLogRepository` directly, not `MetricSeriesService` (§3 recency-read exception).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/MissedWorkoutsRule.java` — S2 (bd `mezo-d58h.2`): the `missed_workouts` rule; consecutive-in-planned-days-not-calendar-days logic (§3).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagService.java` — the cooldown gate + append (`evaluateAndLog`), the ONLY write path into `companion_flag_log`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluationListener.java` — the on-write trigger, `@Async @TransactionalEventListener(AFTER_COMMIT)` on `CheckInSavedEvent`/`SleepLogSavedEvent`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagSweepJob.java` — the hourly sweep (`mezo.companion.flags.sweep-cron`), own job switch, per-user try/catch.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/checkin/service/CheckInSavedEvent.java` — the NEW `CheckInService.save` AFTER_COMMIT event this slice consumes; the check-in feature itself knows nothing about flags.
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `FLAG_SWEEP_JOB_SWITCH` (`mezo.techcore.cron.flag-sweep-job.enabled`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608241200_mezo-b3pp.18_create_companion_flag_log.sql` — the table (in `1.0.0_master.yml`).
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. **Since W5.2 (`mezo-b3pp.19`), `FlagRaisedEvent` (below) is the consumer** — see the next block.
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609031200_mezo-d58h.2_flag_key_logging_gap_missed_workouts.sql` — S2: widens `ck_companion_flag_log_flag_key` to seven keys.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT,FlagEvaluatorLoggingGapIT,FlagEvaluatorMissedWorkoutsIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. **Since W5.2 (`mezo-b3pp.19`), `FlagRaisedEvent` (below) is the consumer** — see the next block.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaisedEvent.java` — W5.2 (bd `mezo-b3pp.19`): the `{userId, flagKey, source}` event `FlagService.evaluateAndLog` publishes for every WRITTEN raise, inside the logging transaction (§3/§4 above).
 
 **Backend — intervention delivery (W5.2, `mezo-b3pp.19` — §4/§5.8/§9, spec §9.2; consumer side, lives in `feature.proactive` not `feature.companion`)**
@@ -5212,8 +5461,21 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/quarterly/{QuarterlyPropertiesIT,QuarterlyReviewServiceIT,QuarterlyReviewJobIT,QuarterlyReviewJobSwitchOffIT,service/QuartersTest}.java` + extended `profile/service/ProfileAssemblerIT` + extended `tools/MemoryToolsRenderIT` — §8.
 - **FE side** (documented in [`insights.md` §2.4/§10](insights.md)): `frontend/src/data/insights/graph.ts` (`CANDIDATE_COPY`, `formatCandidateDate`, the `lifeEventCandidateSeed` SEASON entry) + `frontend/src/features/insights/components/LifeEventCandidateCard.tsx` (kind-aware date/provenance) + `frontend/src/features/insights/pages/KnowledgeListPage.tsx` (per-kind grouping) — no new endpoint, no new FE data hook.
 
+**Backend — daily evaluation (`mezo-jcpt.4`, plan 2/2 — §3/§4/§8)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/DayEvaluationProperties.java` — the 6-dimension engine's config (`mezo.companion.day-evaluation.*`): weights, nutrition bands, `sleepTargetH`, rhythm window, `logTimelyMin`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayEvaluationEngine.java` — THE day math: `DayInputs -> DayEvaluation`, pure, no repository access, all six dimensions + the renormalization/honesty rules.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayScoreService.java` — resolves `DayInputs` per day from every owning feature; `rhythmFreeInputs`/`rhythmFreeBases`/`withPriors` (the rhythm-without-recursion mechanism); `toSubscores` (the legacy `DaySubscores` projection); `inputsFor(userId, date[, today])` (the day-evaluation read path's single-day entry point; the 3-arg overload takes the caller's already-resolved `today` so a request crossing midnight cannot see two different clocks).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayReviewService.java` — assembles `GET /api/me/day/{date}/evaluation`: state, context signals, the lazy hash-cached prose, the clamped AI adjustment.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayReviewLlm.java` (port) + `llm/DayReviewLlmAdapter.java` (the two-switch-gated adapter, `DAY_REVIEW_SWITCH` + `COMPANION_SWITCH`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/{DayReviewEntity,DayReviewJson}.java` + `repository/DayReviewRepository.java` — the `day_review` cache row + its typed jsonb envelope.
+- `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `DAY_REVIEW_SWITCH` (`mezo.feature.day-review.enabled`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609031300_mezo-jcpt.4_create_day_review.sql` (the table) + `202609031200_mezo-jcpt.4_weekly_score_cache_invalidation.sql` (the one-off `weekly_score` purge).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/WeeklyScoreRepository.java` — `latestScoreInputWrittenAt` widened to probe `water_log` (§4 accepted-limitation note on the training schedule tables' exclusion).
+- **`config/MeWeekProperties.java` is now DEAD** — the legacy formula it configured is deleted (§3); no code reads it any more (`DayScoreService`'s javadoc flags this explicitly). Left in place, not deleted, by this documentation-only slice.
+- Tests: `feature/companion/service/{DayEvaluationEngineTest,DayScoreServiceIT,DayReviewServiceTest}.java`, `feature/companion/config/DayEvaluationPropertiesTest.java`, `feature/companion/controller/{DayEvaluationApiIT,DayEvaluationSwitchOffApiIT}.java`, `feature/companion/DayReviewRepositoryIT.java`, `support/populator/DayReviewPopulator.java` — §8.
+- **FE side** — `frontend/src/data/me/{dayEvaluation.ts,dayEvaluationApi.ts,dayEvaluationHooks.ts}` (dual-mode read + 4 named mock fixtures) + `frontend/src/features/me/pages/WeekDayPage.tsx` + `frontend/src/features/me/components/week/{DayDimensionTile,DayReviewCard}.tsx` + `frontend/src/features/me/logic/weekDay.ts` (`DAY_DIMENSIONS`/`doneDimensionCount`) — documented in [me.md](me.md) (the day page section).
+
 **Backend — weekly review data layer + anchored conversations (`mezo-p2tr` — §3/§4/§8)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/DayScoreService.java` + `config/MeWeekProperties.java` (`mezo.companion.me-week.*`) — the deterministic per-day score formula.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/MeWeekService.java` + `controller/MeWeekController.java` — `GET /api/me/week/{start}` and the shared `renderDayLine` formatter.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/WeekContextRenderer.java` — the `[Heti adatok]` anchored-conversation prompt block.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/WeekReviewSource.java` — the port `feature/proactive`'s `WeekReviewSourceAdapter` implements (keeps the dependency proactive → companion, never the reverse).

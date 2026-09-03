@@ -96,6 +96,13 @@ class CompanionFlagLogPersistenceIT extends AbstractIntegrationTest {
                 2, 6.0, 7.0, 6.0, null, null, 8.0, "2026-08-23", 7.0, "2026-08-24")));
         shapes.put(FlagKey.ALL_HEALTHY, FlagPayloadEnvelope.allHealthy(
             new FlagPayloadEnvelope.AllHealthy(7, 5)));
+        shapes.put(FlagKey.LOGGING_GAP, FlagPayloadEnvelope.loggingGap(
+            new FlagPayloadEnvelope.LoggingGap(
+                List.of("meal", "sleep"), 36, 40, 24, null, 2, 3, 3.0, 2.5, 1)));
+        shapes.put(FlagKey.MISSED_WORKOUTS, FlagPayloadEnvelope.missedWorkouts(
+            new FlagPayloadEnvelope.MissedWorkouts(
+                14, 2, 3, List.of("2026-08-23", "2026-08-24", "2026-08-25"),
+                List.of("2026-08-21", "2026-08-23", "2026-08-24", "2026-08-25"))));
 
         shapes.forEach((flagKey, payload) -> {
             CompanionFlagLogEntity saved = flagLogPopulator.raise(owner, flagKey, FlagKey.SOURCE_WRITE, payload);
@@ -114,5 +121,19 @@ class CompanionFlagLogPersistenceIT extends AbstractIntegrationTest {
             .isFalse();
         assertThat(repository.existsRaiseSince(owner, FlagKey.SLEEP_DEBT, Instant.now().minus(48, ChronoUnit.HOURS)))
             .isTrue();
+    }
+
+    /** S2 (mezo-d58h.2): {@code logging_gap} and {@code missed_workouts} widened the CHECK
+     *  constraint before either rule exists to raise them — this proves the DB accepts both keys. */
+    @Test
+    void accepts_the_new_logging_gap_and_missed_workouts_keys() {
+        UUID owner = ownerId();
+
+        flagLogPopulator.rawInsert(owner, FlagKey.LOGGING_GAP, FlagKey.SOURCE_SWEEP);
+        flagLogPopulator.rawInsert(owner, FlagKey.MISSED_WORKOUTS, FlagKey.SOURCE_WRITE);
+
+        assertThat(repository.findAll())
+            .extracting(CompanionFlagLogEntity::getFlagKey)
+            .contains(FlagKey.LOGGING_GAP, FlagKey.MISSED_WORKOUTS);
     }
 }

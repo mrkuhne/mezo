@@ -68,9 +68,11 @@ test('a fejléc a kalauzos /fuel oldalon öt kontrollt visel, elöl a Kalauzzal'
   expect(labels[4]).toBe('Profil')
 })
 
-// mezo-gb1s.3: a /mezo már kalauzos, az ellenpélda egy T2 aloldal, aminek még nincs bejegyzése.
+// mezo-gb1s.5 óta minden Nap/Edzés T2 aloldal kalauzos — az ellenpélda az éjszakai mód,
+// ami D11 szerint sosem kap kalauzt (az appban chrome-mentes, de a findKalauz-ára ez a
+// fejléc-teszt így is őszintén rákérdezhet).
 test('kalauz nélküli oldalon nincs „?" gomb — a négy kontroll a régi sorrendben', async () => {
-  const { container } = renderAt('/nap/rutin')
+  const { container } = renderAt('/me/sleep/night')
   await screen.findByRole('button', { name: 'Napszak váltása' })
   expect(screen.queryByRole('button', { name: 'Kalauz ehhez az oldalhoz' })).toBeNull()
   const labels = [...container.querySelectorAll('.nap-head button')].map((b) => b.getAttribute('aria-label'))
@@ -195,14 +197,25 @@ test('a profil orb a /me oldalra visz', async () => {
   expect(screen.getByTestId('loc')).toHaveTextContent('/me')
 })
 
-// ── item 7: a dátum-eyebrow ─────────────────────────────────────────────────
-test('a fejléc a dátum-eyebrow-val kezdődik', async () => {
+// ── item 7: a bal oldal a SZEKCIÓT mutatja (mezo-8az6, korábban dátum-eyebrow) ──
+test('a fejléc a szekció nevével és spotjával kezdődik', async () => {
   const { container } = renderAt('/fuel')
   await screen.findByRole('button', { name: 'Profil' })
-  const eyebrow = container.querySelector('.nap-head .nap-head-grow .mz-eyebrow')
-  expect(eyebrow).not.toBeNull()
-  // `useToday` napcímke · dátumcímke — a pontos szöveg a data-rétegé, a szerkezet a fejlécé.
-  expect(eyebrow!.textContent).toMatch(/\S+ · \S+/)
+  expect(container.querySelector('.app-head-title')!.textContent).toBe('Fuel')
+  expect(container.querySelector('.app-head-sec use')!.getAttribute('href')).toBe('#s-fuel')
+})
+
+test('mélyoldalon a szekció címkéje marad', async () => {
+  const { container } = renderAt('/train/mesocycles')
+  await screen.findByRole('button', { name: 'Profil' })
+  expect(container.querySelector('.app-head-title')!.textContent).toBe('Edzés')
+})
+
+// A dátum a telefon státuszsávján látszik — a fejlécből tudatosan kikerült.
+test('nincs többé dátum-eyebrow a fejlécben', async () => {
+  const { container } = renderAt('/fuel')
+  await screen.findByRole('button', { name: 'Profil' })
+  expect(container.querySelector('.nap-head .mz-eyebrow')).toBeNull()
 })
 
 // ── item 5: popover-elvárások ───────────────────────────────────────────────
