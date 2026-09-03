@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepGoalRepository;
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.repository.CompanionFlagLogRepository;
+import io.mrkuhne.mezo.feature.companion.flags.service.rule.SustainedStressRule;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
@@ -50,13 +51,14 @@ public class FlagEvaluator {
     private final GymScheduleSlotRepository gymScheduleSlotRepository;
     private final WorkoutSessionRepository workoutSessionRepository;
     private final CompanionFlagLogRepository flagLogRepository;
+    private final SustainedStressRule sustainedStressRule;
 
     /** Every flag that is TRUE for {@code userId} right now, cooldowns NOT yet applied. */
     @Transactional(readOnly = true)
     public List<FlagRaise> evaluate(UUID userId) {
         LocalDate today = LocalDate.now();
         List<FlagRaise> raises = new ArrayList<>();
-        sustainedStress(userId, today).ifPresent(raises::add);
+        sustainedStressRule.evaluate(userId, today).ifPresent(raises::add);
         sleepDebt(userId, today).ifPresent(raises::add);
         momentumAtRisk(userId, today).ifPresent(raises::add);
         recoveryNeeded(userId, today).ifPresent(raises::add);
@@ -64,32 +66,6 @@ public class FlagEvaluator {
             allHealthy(userId, today).ifPresent(raises::add);
         }
         return raises;
-    }
-
-    private Optional<FlagRaise> sustainedStress(UUID userId, LocalDate today) {
-        FlagProperties.SustainedStress cfg = properties.sustainedStress();
-        LocalDate from = today.minusDays(cfg.windowDays() - 1L);
-        Map<LocalDate, Double> stress =
-            metricSeriesService.series(userId, MetricKey.CHECKIN_STRESS, from, today);
-
-        Map<String, Double> byDay = new LinkedHashMap<>();
-        int over = 0;
-        for (LocalDate day = from; !day.isAfter(today); day = day.plusDays(1)) {
-            Double value = stress.get(day);
-            if (value == null) {
-                continue;
-            }
-            byDay.put(day.toString(), value);
-            if (value >= cfg.threshold()) {
-                over++;
-            }
-        }
-        if (over < cfg.minDays()) {
-            return Optional.empty();
-        }
-        return Optional.of(new FlagRaise(FlagKey.SUSTAINED_STRESS,
-            FlagPayloadEnvelope.sustainedStress(new FlagPayloadEnvelope.SustainedStress(
-                cfg.threshold(), cfg.windowDays(), cfg.minDays(), over, byDay))));
     }
 
     private Optional<FlagRaise> sleepDebt(UUID userId, LocalDate today) {
