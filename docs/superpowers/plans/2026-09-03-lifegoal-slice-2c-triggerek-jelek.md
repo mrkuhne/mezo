@@ -335,7 +335,7 @@ Elvárt: PASS.
 - [ ] **Step 6: Futtasd — bukjon (mindkét mód)**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=true pnpm test --run src/data/notificationKindMeta.test.ts
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=true pnpm test -- --run src/data/notificationKindMeta.test.ts
 ```
 
 Elvárt: FAIL — típushiba / `undefined`.
@@ -349,11 +349,11 @@ Elvárt: FAIL — típushiba / `undefined`.
 - [ ] **Step 8: Futtasd mindkét módban — passzoljon**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=true pnpm test --run src/data/notificationKindMeta.test.ts
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=true pnpm test -- --run src/data/notificationKindMeta.test.ts
 ```
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=false pnpm test --run src/data/notificationKindMeta.test.ts
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=false pnpm test -- --run src/data/notificationKindMeta.test.ts
 ```
 
 Elvárt: PASS mindkettőben.
@@ -1015,7 +1015,7 @@ describe('JelekPage', () => {
 - [ ] **Step 3: Futtasd mindkét módban — bukjon**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=true pnpm test --run src/features/me/pages/JelekPage.test.tsx
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=true pnpm test -- --run src/features/me/pages/JelekPage.test.tsx
 ```
 
 Elvárt: FAIL — nincs `JelekPage` modul.
@@ -1139,11 +1139,11 @@ Az importot a fájl tetején a szomszéd oldal-importok (lazy vagy sima — igaz
 - [ ] **Step 7: Futtasd mindkét módban — passzoljon**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=true pnpm test --run src/features/me/pages/JelekPage.test.tsx src/features/me/pages/CelPage.test.tsx src/features/me/pages/CelokPage.test.tsx
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=true pnpm test -- --run src/features/me/pages/JelekPage.test.tsx src/features/me/pages/CelPage.test.tsx src/features/me/pages/CelokPage.test.tsx
 ```
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=false pnpm test --run src/features/me/pages/JelekPage.test.tsx src/features/me/pages/CelPage.test.tsx src/features/me/pages/CelokPage.test.tsx
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=false pnpm test -- --run src/features/me/pages/JelekPage.test.tsx src/features/me/pages/CelPage.test.tsx src/features/me/pages/CelokPage.test.tsx
 ```
 
 Elvárt: PASS mindkettőben.
@@ -1186,7 +1186,7 @@ A `navigateSpy` a fájlban már használt `useNavigate` mock-mintát kövesse (n
 - [ ] **Step 2: Futtasd — bukjon**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=true pnpm test --run src/features/me/pages/CelokPage.test.tsx
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=true pnpm test -- --run src/features/me/pages/CelokPage.test.tsx
 ```
 
 Elvárt: FAIL — nincs „Jelek" gomb.
@@ -1220,11 +1220,11 @@ Elvárt: FAIL — nincs „Jelek" gomb.
 - [ ] **Step 4: Futtasd mindkét módban — passzoljon**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=true pnpm test --run src/features/me/pages/CelokPage.test.tsx
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=true pnpm test -- --run src/features/me/pages/CelokPage.test.tsx
 ```
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=false pnpm test --run src/features/me/pages/CelokPage.test.tsx
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=false pnpm test -- --run src/features/me/pages/CelokPage.test.tsx
 ```
 
 Elvárt: PASS mindkettőben.
@@ -1302,11 +1302,11 @@ Elvárt: a lint 0 errort ad (a 13–17 stale doc figyelmeztetés előzetes, nem 
 - [ ] **Step 3: Teljes helyi FE kapu (mindkét mód + build)**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=true pnpm test --run
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=true pnpm test -- --run
 ```
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=false pnpm test --run
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=false pnpm test -- --run
 ```
 
 ```bash
