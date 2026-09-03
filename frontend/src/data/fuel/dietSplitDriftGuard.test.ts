@@ -7,7 +7,7 @@ import { DIET_SETTINGS_GHOST } from '@/data/fuel/dietSettingsHooks'
 const BACKEND_FAT_SHARES = { balanced: 0.275, low_fat: 0.2, low_carb: 0.4, high_carb: 0.22 }
 const BACKEND_GHOST = {
   splitPreset: 'balanced', proteinPctX10: null, carbsPctX10: null, fatPctX10: null,
-  proteinTier: 'moderate', waterMl: 4000, fiberG: 30,
+  proteinTier: 'moderate', waterMl: 4000, fiberG: 30, dayTypeShiftKcal: 0,
 }
 
 describe('diet split FE↔backend drift-guard', () => {

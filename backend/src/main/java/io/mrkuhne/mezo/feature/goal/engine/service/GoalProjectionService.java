@@ -21,7 +21,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -107,6 +110,8 @@ public class GoalProjectionService {
         BigDecimal targetKcal,
         BigDecimal projectedRateKgPerWk,
         int dailyEnergyBalanceKcal,
+        Integer trainingDayKcal,
+        Integer restDayKcal,
         List<String> activeSystems,
         String rationale) {
     }
@@ -117,16 +122,21 @@ public class GoalProjectionService {
      *
      * @param goal      the goal (trajectory, window, rateTargetPctPerWeek, startWeightKg)
      * @param userId    the owner — every plan read is ownership-checked
-     * @param bootstrap the formula-TDEE bootstrap (Task 5)
-     * @param trend     the EWMA weight trend (Task 4) — the reconciliation spine
+     * @param bootstrap        the formula-TDEE bootstrap (Task 5)
+     * @param trend            the EWMA weight trend (Task 4) — the reconciliation spine
+     * @param dayTypeShiftKcal the user's day-type shift setting (kcal off each rest day, Task 2/4) —
+     *                         0 disables the split (every segment's day-type fields stay null)
      */
     public List<ProjectionSegment> project(
-        GoalEntity goal, UUID userId, TdeeBootstrapJson bootstrap, WeightTrendResponse trend) {
+        GoalEntity goal, UUID userId, TdeeBootstrapJson bootstrap, WeightTrendResponse trend,
+        int dayTypeShiftKcal) {
 
         int weeks = (int) ChronoUnit.WEEKS.between(goal.getStartDate(), goal.getTargetDate());
         if (weeks <= 0) {
             return List.of();
         }
+
+        Set<Integer> scheduledDays = weeklyActivity.scheduledTrainingDayOfWeeks(userId);
 
         List<GoalPlanLinkEntity> links =
             linkRepository.findByGoalIdAndCreatedByAndDeletedFalseOrderByStartWeekAsc(goal.getId(), userId);
@@ -161,7 +171,8 @@ public class GoalProjectionService {
             boolean last = w == weeks;
             if (last || !load[w].sameLoadAs(load[w + 1])) {
                 segments.add(
-                    buildSegment(start, w, load[start], userId, weightKg, bootstrap, balance, goal, trend));
+                    buildSegment(start, w, load[start], userId, weightKg, bootstrap, balance, goal, trend,
+                        links, runs, scheduledDays, dayTypeShiftKcal));
                 start = w + 1;
             }
         }
@@ -236,7 +247,9 @@ public class GoalProjectionService {
     // ── per-segment numbers ─────────────────────────────────────────────────────────────────────
 
     private ProjectionSegment buildSegment(int from, int to, WeekLoad ld, UUID userId, BigDecimal weightKg,
-        TdeeBootstrapJson bootstrap, BigDecimal balance, GoalEntity goal, WeightTrendResponse trend) {
+        TdeeBootstrapJson bootstrap, BigDecimal balance, GoalEntity goal, WeightTrendResponse trend,
+        List<GoalPlanLinkEntity> links, Map<UUID, RunningBlockEntity> runs, Set<Integer> scheduledDays,
+        int dayTypeShiftKcal) {
 
         // Segment maintenance = neat baseline + scheduled gym+sport EAT + this segment's running EAT.
         // (Gym+sport are weekly-recurring, segment-independent; running is goal-linked, per-segment.)
@@ -254,14 +267,54 @@ public class GoalProjectionService {
             systems.add(SYSTEM_RUN);
         }
 
+        // Slice 3: training days for THIS segment = recurring gym/sport weekdays ∪ the active run
+        // block's session weekdays in the segment's first week (the sessionsPerWeek fallback idiom).
+        Set<Integer> trainingDays = new TreeSet<>(scheduledDays);
+        if (ld.runActive()) {
+            trainingDays.addAll(runDayOfWeeks(links, runs, from));
+        }
+        int kcalInt = target.setScale(0, RoundingMode.HALF_UP).intValueExact();
+        DayTypeShiftCalculator.DayTypeKcal dayType =
+            DayTypeShiftCalculator.split(kcalInt, dayTypeShiftKcal, trainingDays.size(), bootstrap.bmr());
+
         return new ProjectionSegment(
             from, to,
             label(from, to, ld),
             scaled(tdee), scaled(target),
             projectedRate.setScale(RATE_SCALE, RoundingMode.HALF_UP),
             balance.setScale(0, RoundingMode.HALF_UP).intValueExact(),
+            dayType.trainingDayKcal(), dayType.restDayKcal(),
             systems,
             rationale(ld, runEat));
+    }
+
+    /** The run-session weekdays (0=Mon..6=Sun) prescribed in goal-week {@code w}'s block week —
+     *  first structure week as fallback, mirroring {@link #sessionsPerWeek}. */
+    private Set<Integer> runDayOfWeeks(
+        List<GoalPlanLinkEntity> links, Map<UUID, RunningBlockEntity> runs, int w) {
+        for (GoalPlanLinkEntity l : links) {
+            if (!PLAN_RUNNING_BLOCK.equals(l.getPlanType()) || !covers(l, w)) {
+                continue;
+            }
+            RunningBlockEntity b = runs.get(l.getPlanId());
+            if (b == null || b.getStructure() == null || b.getStructure().weeks() == null
+                || b.getStructure().weeks().isEmpty()) {
+                return Set.of();
+            }
+            int weekInBlock = w - l.getStartWeek() + 1;
+            List<RunWeek> weeks = b.getStructure().weeks();
+            RunWeek match = weeks.stream()
+                .filter(rw -> rw.weekNumber() != null && rw.weekNumber() == weekInBlock)
+                .findFirst().orElse(weeks.get(0));
+            if (match.sessions() == null) {
+                return Set.of();
+            }
+            return match.sessions().stream()
+                .map(s -> s.dayOfWeek())
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        }
+        return Set.of();
     }
 
     /**

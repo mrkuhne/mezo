@@ -105,12 +105,14 @@ public class GoalEngineService {
         goal.setTdeeBootstrap(bootstrap);
 
         WeightTrendResponse trend = weightTrendService.computeTrend(userId);
-        List<ProjectionSegment> segments = projectionService.project(goal, userId, bootstrap, trend);
+        DietPreferences prefs = dietPreferences.resolve(userId);
+        List<ProjectionSegment> segments =
+            projectionService.project(goal, userId, bootstrap, trend, prefs.dayTypeShiftKcal());
         BigDecimal sleepTargetH = sleepTargetPort.targetHours(userId);
 
         GoalPrescriptionJson rx = evaluationService.assemble(
             goal, currentWeightKg, profile.getBodyFatPct(), segments, guards,
-            dietPreferences.resolve(userId), sleepTargetH);
+            prefs, sleepTargetH);
         goal.setPrescription(rx);
         return rx;
     }

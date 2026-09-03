@@ -94,7 +94,9 @@ export function useLifeGoalMutations() {
   const replacePillars = useMutation({
     mutationFn: async (v: { id: string; pillars: LifeGoalPillarInput[] }) => {
       if (mock) {
-        patch((l) => l.map((g) => (g.id === v.id ? { ...g, pillars: v.pillars.map((p, i) => ({ ...p, id: mockId(), position: i, weight: p.weight ?? 1, active: p.active ?? true })) } : g)))
+        // Mirrors LifeGoalPillarService.replace (mezo-iizd.2): an echoed id keeps the pillar's
+        // identity (and, in real mode, its evaluation history); only a new pillar gets a new id.
+        patch((l) => l.map((g) => (g.id === v.id ? { ...g, pillars: v.pillars.map((p, i) => ({ ...p, id: p.id ?? mockId(), position: i, weight: p.weight ?? 1, active: p.active ?? true })) } : g)))
         return
       }
       await lifegoalApi.replacePillars(v.id, v.pillars)

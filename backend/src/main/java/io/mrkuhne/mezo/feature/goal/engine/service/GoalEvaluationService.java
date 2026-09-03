@@ -111,6 +111,8 @@ public class GoalEvaluationService {
                 List.of(), // rest-day placement is a future Train bridge (no deload weeks derivable here).
                 seg.projectedRateKgPerWk(),
                 seg.dailyEnergyBalanceKcal(),
+                seg.trainingDayKcal(),
+                seg.restDayKcal(),
                 seg.rationale()));
         }
 

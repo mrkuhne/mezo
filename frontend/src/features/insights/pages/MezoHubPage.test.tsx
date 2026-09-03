@@ -178,3 +178,51 @@ describe('MezoHubPage (real mode)', () => {
     expect(screen.queryByText(/demo beszélgetés/)).not.toBeInTheDocument()
   })
 })
+
+// mezo-hq44: az emoji→ikon egységesítés folytatása (mezo-z4h4 nyelvén) — a hubon a
+// 🔔 / 📈 / ➤ / ✦ glifák helyén az Icon rajzolt stroke-ikonjai állnak, a látható
+// szöveg és a gombok akadálymentes nevei változatlanok.
+describe('MezoHubPage — emoji→ikon (mezo-hq44)', () => {
+  beforeEach(() => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    characterStore.overview = MOCK_OVERVIEW_EMPTY
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    characterStore.overview = MOCK_OVERVIEW_EMPTY
+  })
+
+  test('a döntés-kártya szemöldöke harang-ikont kap, a megfigyelés-sor trend-ikont', () => {
+    const { container } = renderHub()
+    const eyebrow = screen.getByText(/Döntésre vár · 2/)
+    expect(eyebrow.querySelector('svg')).toBeTruthy()
+    expect(eyebrow.textContent).not.toMatch(/🔔/)
+    const obs = container.querySelector('.mzh-decobs') as HTMLElement
+    expect(obs.querySelector('svg')).toBeTruthy()
+    expect(obs.textContent).toMatch(/Amit eddig látunk:/)
+    expect(obs.textContent).not.toMatch(/📈/)
+  })
+
+  test('a composer küldés-buborékja és a Diagnózis csempe ikonos', () => {
+    const { container } = renderHub()
+    const send = container.querySelector('.mzh-snd') as HTMLElement
+    expect(send.querySelector('svg')).toBeTruthy()
+    expect(send.textContent).not.toMatch(/➤/)
+    const diag = container.querySelector('.mzh-t-diag') as HTMLElement
+    expect(diag.textContent).not.toMatch(/✦/)
+    expect(diag.textContent).toMatch(/Miért vagyok fáradt\?/)
+  })
+
+  test('a „Figyeljük" nyugtázása szem-ikont kap, az „Elvetem" x-ikont — a mondat marad', async () => {
+    const { container } = renderHub()
+    await userEvent.click(screen.getByRole('button', { name: 'Figyeljük' }))
+    const done = await waitFor(() => {
+      const el = container.querySelector('.mzh-decdone') as HTMLElement
+      expect(el).not.toBeNull()
+      return el
+    })
+    expect(done.querySelector('svg')).toBeTruthy()
+    expect(done.textContent).not.toMatch(/👁/)
+    expect(done.textContent).toMatch(/Rendben, figyeljük tovább — szólok, ha erősödik\./)
+  })
+})

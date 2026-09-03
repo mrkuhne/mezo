@@ -92,3 +92,13 @@ describe('FactCandidateCard — konfliktus-jelzés (mezo-ms9a Task 12)', () => {
     expect(onToggleConflict).toHaveBeenCalledWith('f4', false)
   })
 })
+
+// mezo-hq44: a konfliktus-sor ⚠-ja a közös warning-ikon lett; a mondat változatlan.
+test('mezo-hq44: az „Ellentmond ennek" sor warning-ikont rajzol, nem ⚠ glifát', () => {
+  render(
+    <FactCandidateCard candidate={baseCandidate} conflictFact={conflictFact} onDecide={() => {}} onToggleConflict={() => {}} />,
+  )
+  const row = screen.getByText(/Ellentmond ennek/)
+  expect(row.querySelector('svg')).toBeTruthy()
+  expect(row.textContent).not.toMatch(/⚠/)
+})

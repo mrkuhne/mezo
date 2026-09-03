@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -84,6 +85,34 @@ public class WorkoutWindowQueryService {
             .ifPresent(block -> addRunWindows(block, date, windows));
 
         return windows;
+    }
+
+    /**
+     * True when {@code date} carries a SCHEDULE-derived training source (mezo-sxlj Finding 1): a
+     * gym schedule slot whose weekday matches, a sport schedule slot likewise, a dated sport EVENT
+     * on that date, or a prescribed run session in the active running block's week containing that
+     * date — the exact set the FE's {@code deriveBlocks} (buildProtocol.ts) reads to build today's
+     * training blocks. Deliberately EXCLUDES logged sessions ({@code WorkoutSessionRepository} done
+     * instances, ad-hoc {@link SportSessionRepository} rows with no matching plan) — an ad-hoc
+     * logged sport session on an otherwise schedule-free day must NOT flip
+     * {@link io.mrkuhne.mezo.feature.meal.service.FuelDayService}'s day-type kcal pick, only a
+     * planned/dated training source may. {@link #windowsFor} is untouched and keeps counting logged
+     * sessions — that is a different concern (pre/post-workout meal-role scoring).
+     */
+    @Transactional(readOnly = true)
+    public boolean hasScheduledTrainingOn(UUID userId, LocalDate date) {
+        int dow = date.getDayOfWeek().getValue() - 1;   // slot tables use 0=Mon..6=Sun
+        boolean gymScheduled = gymRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
+            .anyMatch(s -> s.getDayOfWeek() == dow);
+        boolean sportScheduled = sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
+            .anyMatch(s -> s.getDayOfWeek() == dow);
+        boolean sportEvent = !sportEventRepo
+            .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscTimeAsc(userId, date, date).isEmpty();
+        boolean prescribedRun = runningBlockRepository.findByCreatedByAndStatusAndDeletedFalse(userId, "active")
+            .stream().findFirst()
+            .map(block -> prescribedRunSessionsOn(block, date).findAny().isPresent())
+            .orElse(false);
+        return gymScheduled || sportScheduled || sportEvent || prescribedRun;
     }
 
     /** One planned sport occurrence on the date — a weekday-matched recurring slot OR a dated one-off event. */
@@ -163,20 +192,31 @@ public class WorkoutWindowQueryService {
      * {@code RunningService}/{@code GoalProjectionService} idiom (mezo-tm76).
      */
     private void addRunWindows(RunningBlockEntity block, LocalDate date, List<Window> windows) {
+        prescribedRunSessionsOn(block, date).forEach(s -> {
+            LocalTime start = LocalTime.parse(s.timeOfDay());
+            windows.add(new Window(start, start.plusMinutes(props.runDefaultMinutes()),
+                "run", false, s.label()));
+        });
+    }
+
+    /**
+     * The block's prescribed run session(s) matching {@code date}'s weekday, in the block-week
+     * CONTAINING that date (see {@link #addRunWindows}'s javadoc for the week-derivation rationale).
+     * Shared by {@link #addRunWindows} (builds windows) and {@link #hasScheduledTrainingOn}
+     * (existence check only) — one filter, two callers, so they can never disagree on what counts
+     * as "today's prescribed run".
+     */
+    private Stream<RunningBlockStructure.RunPrescribedSession> prescribedRunSessionsOn(
+            RunningBlockEntity block, LocalDate date) {
         RunningBlockStructure structure = block.getStructure();
         if (structure == null || structure.weeks() == null) {
-            return;
+            return Stream.empty();
         }
         int dow = date.getDayOfWeek().getValue() - 1;
         int week = MesoWeeks.weekOf(block.getStartDate(), date, block.getWeeks());
-        structure.weeks().stream()
+        return structure.weeks().stream()
             .filter(w -> w.weekNumber() != null && w.weekNumber() == week && w.sessions() != null)
             .flatMap(w -> w.sessions().stream())
-            .filter(s -> s.dayOfWeek() != null && s.dayOfWeek() == dow && s.timeOfDay() != null)
-            .forEach(s -> {
-                LocalTime start = LocalTime.parse(s.timeOfDay());
-                windows.add(new Window(start, start.plusMinutes(props.runDefaultMinutes()),
-                    "run", false, s.label()));
-            });
+            .filter(s -> s.dayOfWeek() != null && s.dayOfWeek() == dow && s.timeOfDay() != null);
     }
 }

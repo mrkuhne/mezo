@@ -192,6 +192,8 @@ components:
         projectedRateKgPerWk: { type: number }
         dailyEnergyBalanceKcal: { type: integer, description: 'Goal deficit(−)/surplus(+) per day (kcal); sign×rate%/100×kg×kcalPerKg÷7' }
         rationale: { type: string }
+        trainingDayKcal: { type: integer, nullable: true, description: 'Day-type kcal target on a training day (kcal + shift×restDays/trainingDays); null → uniform kcal (mezo-sxlj)' }
+        restDayKcal: { type: integer, nullable: true, description: 'Day-type kcal target on a rest day (kcal − shift, floored at BMR); null → uniform kcal (mezo-sxlj)' }
     GoalGuardStatus:
       type: object
       required: [strength, muscle]
