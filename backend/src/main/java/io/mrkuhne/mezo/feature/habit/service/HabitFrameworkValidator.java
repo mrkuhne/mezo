@@ -61,6 +61,10 @@ public class HabitFrameworkValidator {
         }
         if (HabitDefEntity.FRAMEWORK_CLEAR.equals(draft.getFramework())) {
             draft.setAnchorHabitKey(null);
+            // anchorCopy goes too: it IS rendered on the Nap tab (NapRutinPage's `.nr-anchor`
+            // line and todayItems' subtitle), so a FOGG → CLEAR conversion that kept it left a
+            // stale „miután …" cue standing under a Clear recipe.
+            draft.setAnchorCopy(null);
             draft.setCelebration(null);
         }
     }

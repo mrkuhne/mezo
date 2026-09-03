@@ -1221,6 +1221,11 @@ test('real mode: an open instance resumes mid-workout with seeded sets', async (
   await waitFor(() => expect(calls.some((c) => c.startsWith('set:w-9:e-1:1'))).toBe(true))
 })
 
+// 20s, not the 5s default: this is the one test that mounts the WHOLE route tree
+// (`createMemoryRouter(routes)`), so its cost grows with every page the app gains and it has
+// been timing out on CI's parallel load — on main too, not just on the branch that tripped it
+// (mezo-3zue.4). Raising the ceiling for this test is the honest fix; the alternative is a
+// route-tree mock that would stop testing the thing the test exists to test.
 test('real mode: a hard reload on /train/session resumes instead of redirecting while queries load', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const calls: string[] = []
@@ -1252,7 +1257,7 @@ test('real mode: a hard reload on /train/session resumes instead of redirecting 
   expect(dots).toHaveLength(2) // resumed at the 2nd set
   expect(dots[0]).toHaveClass('don')
   expect(dots[1]).toHaveClass('cur')
-})
+}, 20_000)
 
 test('real mode: the last set debrief persists feedback and finish fires', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')

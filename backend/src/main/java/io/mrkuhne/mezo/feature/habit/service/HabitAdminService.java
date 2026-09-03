@@ -162,7 +162,7 @@ public class HabitAdminService {
         def.setXp(request.getXp());
         def.setLinkUrl(request.getLinkUrl());
         def.setFramework(request.getFramework() != null ? request.getFramework().getValue() : null);
-        def.setAnchorHabitKey(request.getAnchorHabitKey());
+        def.setAnchorHabitKey(blankToNull(request.getAnchorHabitKey()));
         def.setCue(request.getCue());
         def.setCraving(request.getCraving());
         def.setReward(request.getReward());
@@ -218,7 +218,13 @@ public class HabitAdminService {
             def.setFramework(request.getFramework().getValue());
         }
         if (request.getAnchorHabitKey() != null) {
-            def.setAnchorHabitKey(request.getAnchorHabitKey());
+            // A BLANK anchorHabitKey is the wire signal for "unlink this anchor" — the only one the
+            // PATCH can carry, since a null means "leave unchanged" here. It must not survive as
+            // STORED state, though: the mapper would hand "" straight back to the client, and the
+            // frontend's contract is "null means unlinked", so a def that was just unlinked would
+            // come back looking linked and re-lock its own read-only anchor field. Normalize on the
+            // way in, so the persisted state says exactly what is true.
+            def.setAnchorHabitKey(blankToNull(request.getAnchorHabitKey()));
         }
         if (request.getCue() != null) {
             def.setCue(request.getCue());
@@ -306,6 +312,12 @@ public class HabitAdminService {
 
     private static String generateKey(String prefix) {
         return prefix + UUID.randomUUID().toString().replace("-", "").substring(0, 8);
+    }
+
+    /** Blank in, null stored — see the unlink note in updateDef. Mirrors HabitFrameworkValidator's
+     *  own isSet(), which already reads a blank anchor key as "no link" for validation purposes. */
+    private static String blankToNull(String value) {
+        return value == null || value.isBlank() ? null : value;
     }
 
     private SystemRuntimeErrorException conflict(String code) {
