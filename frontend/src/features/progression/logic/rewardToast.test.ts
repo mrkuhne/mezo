@@ -78,9 +78,9 @@ test('quest builder: az eyebrow felülírható (activity-napló)', () => {
 test('az ünneplés saját mezőként utazik a toastban', () => {
   const t = buildHabitRewardToast({
     title: '50 fekvőtámasz', chainDone: 2, chainTotal: 8, xp: 10,
-    celebration: 'ökölbe szorított kéz + „ez az"',
+    celebration: 'ökölbe szorított kéz + „ez az”',
   })
-  expect(t.celebration).toBe('ökölbe szorított kéz + „ez az"')
+  expect(t.celebration).toBe('ökölbe szorított kéz + „ez az”')
   // a meta a mennyiségi addendum helye marad — az ünneplés nem foglalja el
   expect(t.meta).toBeUndefined()
 })

@@ -93,7 +93,7 @@ const CATALOG_META: Record<string, { metric: string; skillKey: string }> = {
  * módban demózhatatlan és a VITE_USE_MOCK teszt-arm vak lenne.
  */
 const MOCK_CELEBRATION: Record<string, string> = {
-  morning_pushups: 'ökölbe szorított kéz + „ez az"',
+  morning_pushups: 'ökölbe szorított kéz + „ez az”',
   kitchen_close: 'lekapcsolom a lámpát és bólintok',
 }
 
