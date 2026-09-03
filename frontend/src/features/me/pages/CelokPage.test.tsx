@@ -26,6 +26,13 @@ test('renders the three active goals as tiles, Spanyol B2 parked, three live dim
   expect(document.querySelectorAll('.lg-dimchip:not(.empty)')).toHaveLength(3)
 })
 
+test('hub shows arrow counters and live tile dots', async () => {
+  renderHub()
+  await screen.findByText('Célok')
+  expect(screen.queryByText(/Az irány-nyíl a 2\. szelettel jön/)).toBeNull()
+  expect(document.querySelectorAll('.lg-tile .lg-wk7 i.h').length).toBeGreaterThan(0)
+})
+
 test('tile tap opens the goal page; ＋ Új cél opens the wizard', () => {
   renderHub()
   fireEvent.click(screen.getByRole('button', { name: 'Kockahas' }))
