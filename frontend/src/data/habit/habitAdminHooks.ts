@@ -12,6 +12,7 @@ import {
   type HabitSuggestInput,
 } from '@/data/habit/habitAdminApi'
 import { mockHabitCatalog, mockHabitSuggestions } from '@/data/habit/habitMock'
+import { clearForeignFields, validateFramework } from '@/data/habit/habitFrameworkRules'
 import type { HabitCatalog, HabitChainInfo, HabitDefInfo, HabitSuggestion } from '@/data/types'
 
 export const HABIT_CATALOG_KEY = ['habitCatalog'] as const
@@ -277,10 +278,15 @@ function mockCreateDef(qc: ReturnType<typeof useQueryClient>, input: HabitDefCre
     celebration: input.celebration ?? null,
     identity: input.identity ?? null,
   }
+  // A HabitAdminService.createDef sorrendje: mezők → clearForeignFields → validate → mentés.
+  // A validáció a beszúrás ELŐTT fut, hogy egy elutasított írás ne hagyjon nyomot a cache-ben;
+  // a friss `habitKey` miatt az önhorgony itt szerkezetileg lehetetlen, a backendnél is.
+  const settled = clearForeignFields(def)
+  validateFramework(settled, base)
   qc.setQueryData<HabitCatalog>(HABIT_CATALOG_KEY, {
-    chains: base.chains.map((c) => (c.chainKey === input.chainKey ? { ...c, defs: [...c.defs, def] } : c)),
+    chains: base.chains.map((c) => (c.chainKey === input.chainKey ? { ...c, defs: [...c.defs, settled] } : c)),
   })
-  return def
+  return settled
 }
 
 function mockUpdateDef(qc: ReturnType<typeof useQueryClient>, id: string, patch: HabitDefUpdateInput) {
@@ -303,12 +309,17 @@ function mockUpdateDef(qc: ReturnType<typeof useQueryClient>, id: string, patch:
   if (updated.anchorHabitKey != null && updated.anchorHabitKey.trim() === '') {
     updated.anchorHabitKey = null
   }
+  // A HabitAdminService.updateDef sorrendje: összefésülés → clearForeignFields → validate.
+  // Enélkül egy FOGG→CLEAR átkeretezés mock módban bennhagyta a cue/celebration/anchorCopy-t,
+  // valós módban nem — a két mód nem mondhat mást ugyanarról az írásról (mezo-3zue.8).
+  const settled = clearForeignFields(updated)
+  validateFramework(settled, base)
   const targetChainKey = patch.chainKey ?? fromChain.chainKey
   if (targetChainKey === fromChain.chainKey) {
     qc.setQueryData<HabitCatalog>(HABIT_CATALOG_KEY, {
       chains: base.chains.map((c) =>
         c.chainKey === fromChain.chainKey
-          ? { ...c, defs: c.defs.map((d) => (d.id === id ? updated : d)) }
+          ? { ...c, defs: c.defs.map((d) => (d.id === id ? settled : d)) }
           : c),
     })
     return undefined
@@ -327,7 +338,7 @@ function mockUpdateDef(qc: ReturnType<typeof useQueryClient>, id: string, patch:
       if (c.chainKey === targetChainKey) {
         return {
           ...c,
-          defs: [...c.defs, { ...updated, chainKey: targetChainKey, position: patch.position ?? c.defs.length + 1 }],
+          defs: [...c.defs, { ...settled, chainKey: targetChainKey, position: patch.position ?? c.defs.length + 1 }],
         }
       }
       return c
