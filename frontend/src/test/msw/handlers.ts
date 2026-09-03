@@ -949,35 +949,40 @@ export const handlers = [
       { id: 'e2f3a0e2-0000-4000-8000-000000000060', dayOfWeek: 3, time: '18:30' },
     ]),
   ),
-  // Exercise catalog fixture — small slice across muscles incl. one plyo item.
-  // Hip Thrust must stay: the real-mode MesoExercises test picks it from the sheet.
+  // Exercise catalog fixture — small slice across muscles incl. one plyo item, seen by the OWNER
+  // (multi-user S5, mezo-qw37.5): Chest Supported Row is the viewer's own row; Lateral Raise is
+  // SHARED — authored by "Anna", not editable and not media-editable, i.e. a USER's view of a
+  // foreign row (drives the `Közös` badge + hidden-roundel tests); the rest are master rows the
+  // OWNER may re-mediate but never edit. Hip Thrust must stay: the real-mode MesoExercises test
+  // picks it from the sheet.
   http.get(`${API_BASE}/api/train/exercises`, () =>
     HttpResponse.json([
-      { id: 'f1e3a0e2-0000-4000-8000-000000000070', slug: 'chest-supported-row', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound', stim: 0.92, fatigue: 0.55, editable: true, videoUrl: 'https://youtu.be/GZTvxN5fPBc' },
+      { id: 'f1e3a0e2-0000-4000-8000-000000000070', slug: 'chest-supported-row', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound', stim: 0.92, fatigue: 0.55, editable: true, mediaEditable: true, authoredByMe: true, authorName: 'Daniel', videoUrl: 'https://youtu.be/GZTvxN5fPBc' },
       // Hip Thrust also carries the demo stills (mezo-8xdl) — 124 of the 161 master rows do.
-      { id: 'f1e3a0e2-0000-4000-8000-000000000071', slug: 'hip-thrust', name: 'Hip Thrust', muscle: 'glute', type: 'compound', stim: 0.86, fatigue: 0.55, videoUrl: 'https://youtu.be/xDmFkJxPzeM', imageStartUrl: '/exercises/hip-thrust-a.jpg', imageEndUrl: '/exercises/hip-thrust-b.jpg' },
-      { id: 'f1e3a0e2-0000-4000-8000-000000000072', slug: 'box-jump', name: 'Box Jump', muscle: 'quad', type: 'plyo', stim: 0.6, fatigue: 0.35 },
-      { id: 'f1e3a0e2-0000-4000-8000-000000000073', slug: 'lateral-raise', name: 'Lateral Raise', muscle: 'shoulder-side', type: 'isolation', stim: 0.72, fatigue: 0.2 },
-      { id: 'f1e3a0e2-0000-4000-8000-000000000074', slug: 'standing-calf-raise', name: 'Standing Calf Raise', muscle: 'calf', type: 'isolation', stim: 0.72, fatigue: 0.2 },
-      { id: 'f1e3a0e2-0000-4000-8000-000000000075', slug: 'cable-crunch', name: 'Cable Crunch', muscle: 'core', type: 'isolation', stim: 0.72, fatigue: 0.2 },
+      { id: 'f1e3a0e2-0000-4000-8000-000000000071', slug: 'hip-thrust', name: 'Hip Thrust', muscle: 'glute', type: 'compound', stim: 0.86, fatigue: 0.55, editable: false, mediaEditable: true, authoredByMe: false, authorName: null, videoUrl: 'https://youtu.be/xDmFkJxPzeM', imageStartUrl: '/exercises/hip-thrust-a.jpg', imageEndUrl: '/exercises/hip-thrust-b.jpg' },
+      { id: 'f1e3a0e2-0000-4000-8000-000000000072', slug: 'box-jump', name: 'Box Jump', muscle: 'quad', type: 'plyo', stim: 0.6, fatigue: 0.35, editable: false, mediaEditable: true, authoredByMe: false, authorName: null },
+      { id: 'f1e3a0e2-0000-4000-8000-000000000073', slug: 'lateral-raise', name: 'Lateral Raise', muscle: 'shoulder-side', type: 'isolation', stim: 0.72, fatigue: 0.2, editable: false, mediaEditable: false, authoredByMe: false, authorName: 'Anna' },
+      { id: 'f1e3a0e2-0000-4000-8000-000000000074', slug: 'standing-calf-raise', name: 'Standing Calf Raise', muscle: 'calf', type: 'isolation', stim: 0.72, fatigue: 0.2, editable: false, mediaEditable: true, authoredByMe: false, authorName: null },
+      { id: 'f1e3a0e2-0000-4000-8000-000000000075', slug: 'cable-crunch', name: 'Cable Crunch', muscle: 'core', type: 'isolation', stim: 0.72, fatigue: 0.2, editable: false, mediaEditable: true, authoredByMe: false, authorName: null },
     ]),
   ),
-  // Writable catalog mutations — author (POST), edit (PUT), delete, set video.
+  // Writable catalog mutations — author (POST), edit (PUT), delete, set video. A row the
+  // viewer just wrote is theirs: editable + media-editable + authoredByMe.
   http.post(`${API_BASE}/api/train/exercises`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>
     return HttpResponse.json(
-      { id: 'f1e3a0e2-0000-4000-8000-0000000000ff', slug: 'authored', editable: true, ...body },
+      { id: 'f1e3a0e2-0000-4000-8000-0000000000ff', slug: 'authored', editable: true, mediaEditable: true, authoredByMe: true, authorName: 'Daniel', ...body },
       { status: 201 },
     )
   }),
   http.put(`${API_BASE}/api/train/exercises/:id`, async ({ params, request }) => {
     const body = (await request.json()) as Record<string, unknown>
-    return HttpResponse.json({ id: params.id, slug: 'authored', editable: true, ...body })
+    return HttpResponse.json({ id: params.id, slug: 'authored', editable: true, mediaEditable: true, authoredByMe: true, authorName: 'Daniel', ...body })
   }),
   http.delete(`${API_BASE}/api/train/exercises/:id`, () => new HttpResponse(null, { status: 204 })),
   http.put(`${API_BASE}/api/train/exercises/:id/video`, async ({ params, request }) => {
     const body = (await request.json()) as Record<string, unknown>
-    return HttpResponse.json({ id: params.id, slug: 'authored', editable: true, ...body })
+    return HttpResponse.json({ id: params.id, slug: 'authored', editable: true, mediaEditable: true, authoredByMe: true, authorName: 'Daniel', ...body })
   }),
   // Exercise records fixture — one full weighted record + one bodyweight (plyo) record.
   http.get(`${API_BASE}/api/train/exercise-records`, () =>

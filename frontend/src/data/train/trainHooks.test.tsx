@@ -432,27 +432,35 @@ test('useTrain (real mode) saveSportSchedule PUTs the full slot list', async () 
 
 // ---- catalog authoring block: toLibraryItem mapping + write mutations (mezo-52zg) ----
 
-test('toLibraryItem maps videoUrl and editable from the catalog row', () => {
+test('toLibraryItem maps videoUrl, the permission flags and the authorship from the catalog row', () => {
   const item = toLibraryItem({
     id: 'f1e3a0e2-0000-4000-8000-000000000099', slug: 'db-row', name: 'DB Row',
     muscle: 'back-mid', type: 'compound', stim: 0.8, fatigue: 0.5,
-    videoUrl: 'https://youtu.be/dQw4w9WgXcQ', editable: true,
+    videoUrl: 'https://youtu.be/dQw4w9WgXcQ', editable: true, mediaEditable: true,
+    authoredByMe: true, authorName: 'Daniel',
   } satisfies ExerciseCatalogItem)
   expect(item).toMatchObject({
     id: 'f1e3a0e2-0000-4000-8000-000000000099',
     catalogId: 'f1e3a0e2-0000-4000-8000-000000000099',
     videoUrl: 'https://youtu.be/dQw4w9WgXcQ',
     editable: true,
+    mediaEditable: true,
+    authoredByMe: true,
+    authorName: 'Daniel',
   })
 })
 
-test('toLibraryItem null-coalesces an absent videoUrl to null', () => {
+test('toLibraryItem null-coalesces an absent videoUrl and authorName to null', () => {
   const item = toLibraryItem({
     id: 'f1e3a0e2-0000-4000-8000-0000000000aa', slug: 'lat-raise', name: 'Lateral Raise',
-    muscle: 'shoulder', type: 'isolation', stim: 0.7, fatigue: 0.2, editable: false,
+    muscle: 'shoulder', type: 'isolation', stim: 0.7, fatigue: 0.2,
+    editable: false, mediaEditable: false, authoredByMe: false,
   } satisfies ExerciseCatalogItem)
   expect(item.videoUrl).toBeNull()
+  expect(item.authorName).toBeNull()
   expect(item.editable).toBe(false)
+  expect(item.mediaEditable).toBe(false)
+  expect(item.authoredByMe).toBe(false)
 })
 
 test('useTrain (real mode) catalog write mutations hit create/update/delete/video endpoints', async () => {

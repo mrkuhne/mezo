@@ -231,11 +231,14 @@ export function mergeEventsIntoSchedule(
 
 // Catalog row -> the Phase-1 library shape; `id` doubles as the catalog uuid and
 // `catalogId` flags "came from the backend catalog" (mock statics never set it).
-// `videoUrl`/`editable` carry the authoring metadata (video demo + user-authored flag).
+// `videoUrl` + the four multi-user flags (editable / mediaEditable / authoredByMe /
+// authorName, mezo-qw37.5) carry the authoring metadata the page renders.
 export function toLibraryItem(r: ExerciseCatalogItem): ExerciseLibraryItem {
   return {
     id: r.id, catalogId: r.id, name: r.name, muscle: r.muscle, type: r.type, stim: r.stim, fatigue: r.fatigue,
-    videoUrl: r.videoUrl ?? null, editable: r.editable,
+    videoUrl: r.videoUrl ?? null,
+    editable: r.editable, mediaEditable: r.mediaEditable,
+    authoredByMe: r.authoredByMe, authorName: r.authorName ?? null,
     imageStartUrl: r.imageStartUrl ?? null, imageEndUrl: r.imageEndUrl ?? null,
   }
 }
