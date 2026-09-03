@@ -5405,6 +5405,23 @@ export interface components {
             mesoTitle?: string | null;
             /** @enum {string} */
             snapshotTrajectory: "cut" | "bulk" | "maintain";
+            /**
+             * Format: date
+             * @description weekly_correction: reviewed week Monday (mirrors the dedup key)
+             */
+            weekStart?: string | null;
+            deltaKcal?: number | null;
+            observedRateKgPerWk?: number | null;
+            targetRateKgPerWk?: number | null;
+            dampedBySleep?: boolean | null;
+            adherenceLoggedDays?: number | null;
+            adherenceAvgIntakeKcal?: number | null;
+            adherenceAvgTargetKcal?: number | null;
+            /**
+             * Format: date-time
+             * @description weekly_correction accept race guard
+             */
+            prescriptionGeneratedAt?: string | null;
         };
         /** @description Every field is optional AND nullable: an owner with no profile row yet gets a 200 with an empty profile — an object whose every field is null — not a 404 (mezo-5cmq). The UPSERT request keeps its required trio. */
         BiometricProfileResponse: {

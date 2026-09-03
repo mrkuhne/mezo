@@ -243,7 +243,8 @@ class GoalContractIT extends ApiIntegrationTest {
         GoalResponse goal = postForBody("/api/goals", req().build(), owner.headers(), HttpStatus.CREATED, GoalResponse.class);
         suggestionPopulator.createOpen(owner.id(), goal.getId(), "phase_change", "preset:cut-prep:m1",
             new GoalSuggestionPayloadJson(
-                "A cut-prep mezo deficitet javasol.", "cut", null, null, null, null, "Pre-cut prep", "cut"));
+                "A cut-prep mezo deficitet javasol.", "cut", null, null, null, null, "Pre-cut prep", "cut",
+                null, null, null, null, null, null, null, null, null));
 
         List<GoalSuggestionResponse> suggestions = getForList(
             "/api/goals/" + goal.getId() + "/suggestions", owner.headers(), HttpStatus.OK, GoalSuggestionResponse.class);
@@ -260,7 +261,8 @@ class GoalContractIT extends ApiIntegrationTest {
         UUID suggestionId = suggestionPopulator.createOpen(
             owner.id(), goal.getId(), "phase_change", "preset:cut-prep:m1",
             new GoalSuggestionPayloadJson(
-                "A cut-prep mezo deficitet javasol.", "cut", null, null, null, null, "Pre-cut prep", "bulk")
+                "A cut-prep mezo deficitet javasol.", "cut", null, null, null, null, "Pre-cut prep", "bulk",
+                null, null, null, null, null, null, null, null, null)
         ).getId();
 
         GoalResponse accepted = postForBody(
@@ -285,7 +287,8 @@ class GoalContractIT extends ApiIntegrationTest {
         UUID suggestionId = suggestionPopulator.createOpen(
             owner.id(), goal.getId(), "phase_change", "preset:cut-prep:m1",
             new GoalSuggestionPayloadJson(
-                "A cut-prep mezo deficitet javasol.", "cut", null, null, null, null, "Pre-cut prep", "bulk")
+                "A cut-prep mezo deficitet javasol.", "cut", null, null, null, null, "Pre-cut prep", "bulk",
+                null, null, null, null, null, null, null, null, null)
         ).getId();
 
         // snapshotTrajectory ("bulk") no longer matches the goal's current trajectory ("cut") → 409.
@@ -307,7 +310,8 @@ class GoalContractIT extends ApiIntegrationTest {
         UUID suggestionId = suggestionPopulator.createOpen(
             owner.id(), goal.getId(), "phase_change", "preset:cut-prep:m1",
             new GoalSuggestionPayloadJson(
-                "A cut-prep mezo deficitet javasol.", "cut", null, null, null, null, "Pre-cut prep", "cut")
+                "A cut-prep mezo deficitet javasol.", "cut", null, null, null, null, "Pre-cut prep", "cut",
+                null, null, null, null, null, null, null, null, null)
         ).getId();
 
         postForBody("/api/goals/" + goal.getId() + "/suggestions/" + suggestionId + "/dismiss",

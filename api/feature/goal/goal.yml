@@ -361,3 +361,12 @@ components:
         mesoId: { type: string, format: uuid, nullable: true }
         mesoTitle: { type: string, nullable: true }
         snapshotTrajectory: { type: string, enum: [cut, bulk, maintain] }
+        weekStart: { type: string, format: date, nullable: true, description: 'weekly_correction: reviewed week Monday (mirrors the dedup key)' }
+        deltaKcal: { type: integer, nullable: true }
+        observedRateKgPerWk: { type: number, nullable: true }
+        targetRateKgPerWk: { type: number, nullable: true }
+        dampedBySleep: { type: boolean, nullable: true }
+        adherenceLoggedDays: { type: integer, nullable: true }
+        adherenceAvgIntakeKcal: { type: integer, nullable: true }
+        adherenceAvgTargetKcal: { type: integer, nullable: true }
+        prescriptionGeneratedAt: { type: string, format: date-time, nullable: true, description: 'weekly_correction accept race guard' }

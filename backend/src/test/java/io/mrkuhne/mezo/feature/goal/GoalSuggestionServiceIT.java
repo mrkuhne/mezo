@@ -34,7 +34,8 @@ class GoalSuggestionServiceIT extends AbstractIntegrationTest {
 
     private GoalSuggestionPayloadJson payload(String suggested, String snapshot) {
         return new GoalSuggestionPayloadJson(
-            "A cut-prep mezo deficitet javasol.", suggested, null, null, null, null, "Pre-cut prep", snapshot);
+            "A cut-prep mezo deficitet javasol.", suggested, null, null, null, null, "Pre-cut prep", snapshot,
+            null, null, null, null, null, null, null, null, null);
     }
 
     @Test
@@ -123,7 +124,8 @@ class GoalSuggestionServiceIT extends AbstractIntegrationTest {
         GoalEntity goal = goalPopulator.createGoal(user, "cut", "active");
         GoalSuggestionEntity s = suggestionService.propose(
             user, goal.getId(), GoalSuggestionService.KIND_PHASE_CHANGE, "deload:m1:w3",
-            new GoalSuggestionPayloadJson("Deload hét — tartás.", null, 0, 3, 3, null, "Hyp blokk", "cut"));
+            new GoalSuggestionPayloadJson("Deload hét — tartás.", null, 0, 3, 3, null, "Hyp blokk", "cut",
+                null, null, null, null, null, null, null, null, null));
 
         suggestionService.accept(user, goal.getId(), s.getId());
 
