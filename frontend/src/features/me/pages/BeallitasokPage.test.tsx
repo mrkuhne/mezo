@@ -63,3 +63,27 @@ test('a vissza-chip az Én hubra visz', async () => {
   await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
   expect(screen.getByTestId('loc')).toHaveTextContent(/^\/me$/)
 })
+
+test('mock mode (owner): a Beta admin sor látszik és az admin oldalra visz', async () => {
+  renderPage()
+  await userEvent.click(screen.getByRole('button', { name: 'Beta admin' }))
+  expect(screen.getByTestId('loc')).toHaveTextContent('/me/beallitasok/admin')
+})
+
+test('real mode (USER): sem a Beta admin, sem az AI-napló sor nem jelenik meg', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const { setToken } = await import('@/data/_client/api')
+  const { http, HttpResponse } = await import('msw')
+  const { server } = await import('@/test/msw/server')
+  const { API_BASE } = await import('@/test/msw/handlers')
+  setToken('t')
+  server.use(http.get(`${API_BASE}/api/auth/me`, () => HttpResponse.json({
+    id: '00000000-0000-0000-0000-000000000002', email: 'anna@test.local', name: 'Anna',
+    role: 'USER', onboarded: true, mustChangePassword: false, timezone: 'Europe/Budapest',
+  })))
+  renderPage()
+  await screen.findByRole('button', { name: 'Értesítések' })
+  expect(screen.queryByRole('button', { name: 'Beta admin' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'AI-napló' })).toBeNull()
+  setToken(null)
+})

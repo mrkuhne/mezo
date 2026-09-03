@@ -6,6 +6,7 @@ import { AiCallRow } from '@/features/me/components/AiCallRow'
 import { AiFeatureBreakdown } from '@/features/me/components/AiFeatureBreakdown'
 import { AiModelBreakdown } from '@/features/me/components/AiModelBreakdown'
 import { AiUsageHero } from '@/features/me/components/AiUsageHero'
+import { AiUserFilter } from '@/features/me/components/AiUserFilter'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -20,6 +21,9 @@ import type { LlmCallFilters as Filters, LlmUsagePeriodKey } from '@/data/me/llm
 // period's cost under the coin icon — but AiUsageHero already owns that exact number (its own
 // component test pins call count + cost + status split), so the page hero stays icon+title
 // only: showing the cost twice on one screen would violate "the same fact once" (handoff §10).
+//
+// Per-user chips (mezo-qw37.3): `byUser` from the same breakdown read; the chosen `userId` is a
+// server-side list filter like the others — the whole page is OWNER-only since S3.
 
 const PERIODS = [
   { key: 'DAY', label: 'Ma' },
@@ -87,6 +91,11 @@ export function AiUsagePage() {
                 onSelect={(feature) => changeFilters(feature ? { ...filters, feature } : omitFeature(filters))}
               />
               <AiModelBreakdown groups={breakdown.data.models} />
+              <AiUserFilter
+                groups={breakdown.data.byUser}
+                selected={filters.userId ?? null}
+                onSelect={(userId) => changeFilters(userId ? { ...filters, userId } : omitUserId(filters))}
+              />
             </>
           )}
 
@@ -139,5 +148,10 @@ export function AiUsagePage() {
 
 function omitFeature(filters: Filters): Filters {
   const { feature, ...rest } = filters
+  return rest
+}
+
+function omitUserId(filters: Filters): Filters {
+  const { userId, ...rest } = filters
   return rest
 }

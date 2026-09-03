@@ -3682,6 +3682,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every invite, open and used, newest first (Admin) */
+        get: operations["listInvites"];
+        put?: never;
+        /** Mint a one-shot invite code (Admin) */
+        post: operations["createInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/invites/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke an unused invite (Admin) */
+        delete: operations["deleteInvite"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every account, oldest first (Admin) */
+        get: operations["listUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/reset-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Replace the account's password with a temporary one and force a change at next login (Admin) */
+        post: operations["resetPassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Enable or disable an account; a disabled account is rejected on its next request (Admin) */
+        post: operations["setStatus"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/life-goals": {
         parameters: {
             query?: never;
@@ -7499,6 +7585,8 @@ export interface components {
             features: components["schemas"]["LlmUsageGroup"][];
             /** @description one entry per SERVED model; key is null for calls that never reached one */
             models: components["schemas"]["LlmUsageGroup"][];
+            /** @description one entry per calling account, cost-descending (unpriced last); the null-user entry is the background (cron/stream) traffic */
+            byUser: components["schemas"]["LlmUsageUserGroup"][];
         };
         LlmUsageTotals: {
             /**
@@ -7533,6 +7621,24 @@ export interface components {
             /** Format: double */
             costUsd?: number | null;
         };
+        LlmUsageUserGroup: {
+            /**
+             * Format: uuid
+             * @description null = background traffic with no principal
+             */
+            userId?: string | null;
+            /** @description app_user.name; null for background traffic or a deleted account */
+            name?: string | null;
+            /** Format: int64 */
+            callCount: number;
+            /**
+             * Format: int64
+             * @description sum of total_tokens over the rows that reported it
+             */
+            totalTokens: number;
+            /** Format: double */
+            costUsd?: number | null;
+        };
         LlmCallListResponse: {
             items: components["schemas"]["LlmCallListItem"][];
             /** @description true when the period holds more rows than the window shows */
@@ -7543,6 +7649,11 @@ export interface components {
             id: string;
             /** Format: date-time */
             createdAt: string;
+            /**
+             * Format: uuid
+             * @description null for background (cron/stream) calls
+             */
+            createdBy?: string | null;
             feature: string;
             operation?: string | null;
             /** @enum {string} */
@@ -8086,6 +8197,61 @@ export interface components {
             generatedAt: string;
             /** @description a log landed in the window after generatedAt */
             stale: boolean;
+        };
+        CreateInviteRequest: {
+            /**
+             * @description who the code is meant for — free text, shown in the list
+             * @example Csaba
+             */
+            label?: string | null;
+            /**
+             * Format: int32
+             * @description omitted = never expires
+             */
+            expiresInDays?: number | null;
+        };
+        InviteResponse: {
+            /** Format: uuid */
+            id: string;
+            /** @example MEZO-7KQ2-XN4P */
+            code: string;
+            label?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            expiresAt?: string | null;
+            /** Format: uuid */
+            usedBy?: string | null;
+            /** @description display name of the account that consumed the code */
+            usedByName?: string | null;
+            /** Format: date-time */
+            usedAt?: string | null;
+        };
+        AdminUserResponse: {
+            /** Format: uuid */
+            id: string;
+            email: string;
+            name: string;
+            /** @description OWNER or USER */
+            role: string;
+            /** @description ACTIVE or DISABLED */
+            status: string;
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            onboardedAt?: string | null;
+            /**
+             * Format: date-time
+             * @description stamped at most every 5 minutes by CurrentUser
+             */
+            lastSeenAt?: string | null;
+        };
+        ResetPasswordResponse: {
+            /** @description 12 readable characters; must_change_password is set on the account */
+            temporaryPassword: string;
+        };
+        SetUserStatusRequest: {
+            status: string;
         };
         /** @enum {string} */
         LifeGoalDimension: "positive_emotion" | "engagement" | "relationships" | "meaning" | "accomplishment" | "health";
@@ -17044,6 +17210,15 @@ export interface operations {
                     "application/json": components["schemas"]["LlmUsageSummaryResponse"];
                 };
             };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     getLlmUsageBreakdown: {
@@ -17076,6 +17251,15 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     listLlmCalls: {
@@ -17086,6 +17270,8 @@ export interface operations {
                 feature?: string;
                 status?: string;
                 callKind?: string;
+                /** @description only calls made by this account (created_by); background rows (null owner) never match */
+                userId?: string;
                 /** @description growing window — the client raises it to load more (never an offset) */
                 limit?: number;
             };
@@ -17113,6 +17299,15 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     getLlmCall: {
@@ -17133,6 +17328,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LlmCallDetailResponse"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description No such call */
@@ -18473,6 +18677,253 @@ export interface operations {
             };
             /** @description Diagnosis not found, not owned, or no suspect at that rank */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listInvites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Invites newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteResponse"][];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInviteRequest"];
+            };
+        };
+        responses: {
+            /** @description The new code, shown once in full on the admin page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteResponse"];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Revoked */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Unknown invite (ADMIN_INVITE_NOT_FOUND) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Already used — the registration it produced must stay traceable (ADMIN_INVITE_USED) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listUsers: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accounts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserResponse"][];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    resetPassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The temporary password — returned exactly once, never stored in clear */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResetPasswordResponse"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Unknown account (ADMIN_USER_NOT_FOUND) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    setStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetUserStatusRequest"];
+            };
+        };
+        responses: {
+            /** @description Status set */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Unknown account (ADMIN_USER_NOT_FOUND) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The owner cannot change their own status (ADMIN_SELF_STATUS) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

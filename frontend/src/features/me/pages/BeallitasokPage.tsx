@@ -13,7 +13,7 @@ import { Icon } from '@/shared/ui/Icon'
 import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { useLlmUsageSummary, useNotificationPrefs } from '@/data/hooks'
+import { useLlmUsageSummary, useMe, useNotificationPrefs } from '@/data/hooks'
 import { formatRollupCost } from '@/features/me/logic/llmCallFormat'
 import { useTheme } from '@/app/ThemeProvider'
 import type { ThemeMode } from '@/shared/lib/theme'
@@ -40,7 +40,9 @@ export function BeallitasokPage() {
     ? undefined
     : `${llm.week.callCount} hívás · ${formatRollupCost(llm.week.costUsd)} / hét`
 
-  const row = (icon: 'i-ertesites' | 'i-erme', label: string, line: string | undefined, to: string) => (
+  const isOwner = useMe().data?.role === 'OWNER'
+
+  const row = (icon: 'i-ertesites' | 'i-erme' | 'i-emberek', label: string, line: string | undefined, to: string) => (
     <button type="button" className="card row" aria-label={label} onClick={() => navigate(to)}
       style={{ justifyContent: 'space-between', padding: 14, gap: 12, textAlign: 'left' }}>
       <div className="row gap-md" style={{ alignItems: 'center' }}>
@@ -57,7 +59,7 @@ export function BeallitasokPage() {
   return (
     <MozaikPage tone="lav">
       <PageHead onBack={() => navigate('/me')} label="‹ Én" />
-      <PageHero icon="i-beallitas" name="Beállítások" sub="téma · értesítések · AI-napló" />
+      <PageHero icon="i-beallitas" name="Beállítások" sub="téma · értesítések · AI-napló · admin" />
       <PageBody>
         <EntranceGroup className="col gap-lg">
           <div className="col gap-sm rise" style={{ '--d': '0ms' } as React.CSSProperties}>
@@ -88,7 +90,8 @@ export function BeallitasokPage() {
           <div className="col gap-sm rise" style={{ '--d': '80ms' } as React.CSSProperties}>
             <span style={SECTION_LABEL}>Felületek</span>
             {row('i-ertesites', 'Értesítések', ertesitesLine, '/me/ertesitesek/beallitasok')}
-            {row('i-erme', 'AI-napló', aiLine, '/me/ai-usage')}
+            {isOwner && row('i-erme', 'AI-napló', aiLine, '/me/ai-usage')}
+            {isOwner && row('i-emberek', 'Beta admin', 'meghívók · felhasználók', '/me/beallitasok/admin')}
           </div>
         </EntranceGroup>
       </PageBody>
