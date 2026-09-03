@@ -106,8 +106,9 @@ mezo:
   nutrition:
     # Owner-wide daily macro targets feeding the Fuel-day MacroHero (targets vs consumed).
     # Binds onto NutritionTargetsProperties. Since mezo-najo kcal+p are only the FALLBACK —
-    # the active goal's prescribed recept segment wins when one covers the date; c/f/water
-    # are never prescribed, so those always come from here.
+    # the active goal's prescribed recept segment wins when one covers the date; since
+    # mezo-xwgb c/f fall back here too (only when the segment predates the diet split).
+    # water is never goal-prescribed — it always comes from mezo.diet-settings (below).
     kcal: 3100
     p: 220
     c: 380

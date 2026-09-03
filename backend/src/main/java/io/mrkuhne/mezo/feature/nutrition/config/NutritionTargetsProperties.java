@@ -11,9 +11,11 @@ import org.springframework.validation.annotation.Validated;
  * config-driven domain value feeding a UI hero; replaces the hardcoded mock {@code 2500}/{@code 3100}.
  *
  * <p>Since mezo-najo these are the FALLBACK: {@code FuelDayService} prefers the active goal's
- * prescribed recept (kcal + protein from the date's goal-week segment) and only falls back here
- * when no active/evaluated goal covers the date. Carbs/fat/water are never prescribed, so those
- * three always come from this config.
+ * prescribed recept (kcal + protein from the date's goal-week segment, and — since mezo-xwgb —
+ * carbs/fat too when the segment carries them) and only falls back here per field when there is
+ * no active/evaluated goal, no covering segment, or the segment predates the carbs/fat split.
+ * Water is never goal-prescribed — it always comes from {@code mezo.diet-settings} via
+ * {@code DietPreferencesResolver}, never this config.
  */
 @Validated
 @ConfigurationProperties(prefix = "mezo.nutrition")
