@@ -24,6 +24,10 @@ import org.springframework.stereotype.Component;
  * {@code measure}). The outer per-user catch, guarding the goal-list fetch itself, is
  * defense-in-depth only — no no-mock seam can make that plain JPA query throw, and the house rules
  * forbid mocks in integration tests.
+ *
+ * <p>Beyond the pillar days and XP, this run is also where the DELAYED ha–akkor plans (and the
+ * gap-based {@code ritual_missed}) fire for yesterday — there is no separate scheduler for them
+ * (mezo-iizd.7, spec D-3).
  */
 @Slf4j
 @Component
@@ -36,6 +40,7 @@ public class LifeGoalEvalJob {
     private final AppUserRepository appUserRepository;
     private final LifeGoalRepository goalRepository;
     private final LifeGoalProgressService progressService;
+    private final LifeGoalTriggerService triggerService;
 
     @Scheduled(cron = "${mezo.lifegoal.eval-cron}")
     public void runEval() {
@@ -50,6 +55,10 @@ public class LifeGoalEvalJob {
                     }
                     try {
                         progressService.evaluateDays(user.getId(), goal);
+                        // A késleltetett („másnap reggel") ha–akkor tervek + a hiány-alapú
+                        // ritual_missed itt szólalnak meg, a tegnapi napra (spec D-3) — külön
+                        // ütemező nincs. A cél-szintű catch ezt is izolálja.
+                        triggerService.fireDelayed(user.getId(), goal, today);
                         goals++;
                     } catch (Exception e) {
                         log.warn("Life-goal evaluation failed for goal {} (user {}) on {}",
