@@ -136,7 +136,17 @@ public class PlanFeasibilityCalculator {
         return LocalTime.ofSecondOfDay(Math.floorMod(shiftedMinutes, DAY_MINUTES) * 60L);
     }
 
-    /** {@code constraintSource} names which half bound the verdict, so the card can say it. */
+    /**
+     * @param feasible whether {@code latestConstraint} is within tolerance of {@code requiredLightsOut}
+     * @param requiredLightsOut the lights-out time the morning obligation demands
+     * @param latestConstraint the later of the evening sport end and the observed median bedtime —
+     *                         whichever one {@code constraintSource} names
+     * @param constraintSource {@link #SOURCE_SPORT} or {@link #SOURCE_BEDTIME} — which half bound
+     *                         the verdict, so the card can say it
+     * @param misfitMin {@code latestConstraint − requiredLightsOut} in minutes; negative when
+     *                  comfortably feasible (a margin, not a shortfall), positive when the plan
+     *                  runs late — a card is emitted only once this exceeds the tolerance
+     */
     public record Verdict(boolean feasible, LocalTime requiredLightsOut, LocalTime latestConstraint,
                           String constraintSource, int misfitMin) {
     }

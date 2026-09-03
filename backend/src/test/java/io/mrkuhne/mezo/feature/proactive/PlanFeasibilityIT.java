@@ -73,6 +73,33 @@ class PlanFeasibilityIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testRunFor_shouldStaySilent_whenTheObligationExistsButNeitherHalfHasAnythingToSay() {
+        // A morning obligation resolves (WAKE goal + gym slot), so requiredLightsOut is real — but
+        // there is ZERO sport schedule and ZERO logged bedtimes to compare it against. This is a
+        // different silence than "we compared and it fit": there is nothing to compare AT ALL. A
+        // regression that treated an empty sport list as "ends at midnight" (0) instead of
+        // OptionalInt.empty() would turn this into a spurious card — this test guards that.
+        UUID owner = userPopulator.createUser().getId();
+        sleepGoalPopulator.goal(owner, 480, "WAKE", "06:00", 15);
+        trainPopulator.createGymSlot(owner, 0, "07:00");
+
+        assertThat(setupCheckService.runFor(owner)).isEmpty();
+    }
+
+    @Test
+    void testRunFor_shouldStaySilent_whenTheMisfitExactlyEqualsTheTolerance() {
+        // required lights-out = 07:00 − 45' − 8h = 22:15. Slot 20:30 +120' +30' commute = 23:00 —
+        // misfit is EXACTLY 45', the configured tolerance's own boundary ("infeasible only when it
+        // misses by MORE than this" ⇒ a misfit equal to the tolerance is still feasible).
+        UUID owner = userPopulator.createUser().getId();
+        sleepGoalPopulator.goal(owner, 480, "WAKE", "06:00", 15);
+        trainPopulator.createGymSlot(owner, 0, "07:00");
+        trainPopulator.createScheduleSlot(owner, 2, "20:30", 120, "training"); // ends 22:30, +30' = 23:00
+
+        assertThat(setupCheckService.runFor(owner)).isEmpty();
+    }
+
+    @Test
     void testRunFor_shouldPreferTheMissingGoalCard_whenThereIsNoGoalAtAll() {
         // Check ordering: no goal ⇒ the goal card, never a feasibility verdict computed against
         // a goal that does not exist.
