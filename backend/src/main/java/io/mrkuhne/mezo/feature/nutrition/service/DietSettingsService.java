@@ -55,6 +55,7 @@ public class DietSettingsService {
         row.setProteinTier(req.getProteinTier().getValue());
         row.setWaterMl(req.getWaterMl());
         row.setFiberG(req.getFiberG());
+        row.setDayTypeShiftKcal(req.getDayTypeShiftKcal());
         repository.save(row);
         // The split moved (Diet Plan slice 1 — the 7th recompute trigger): re-prescribe the owner's
         // ACTIVE goal so segments carry the new carbsG/fatG. No active goal → skip gracefully.
@@ -85,6 +86,7 @@ public class DietSettingsService {
             .proteinTier(DietSettingsResponse.ProteinTierEnum.fromValue(p.proteinTier()))
             .waterMl(p.waterMl())
             .fiberG(p.fiberG())
+            .dayTypeShiftKcal(p.dayTypeShiftKcal())
             .build();
     }
 }

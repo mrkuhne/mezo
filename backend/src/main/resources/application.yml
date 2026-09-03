@@ -1501,6 +1501,7 @@ mezo:
     default-protein-tier: moderate
     default-water-ml: 4000
     default-fiber-g: 30
+    default-day-type-shift-kcal: 0
   hypertrophy:
     plate-step: 2.5           # kg rounding granularity for computed weights
     default-increment: 2.5    # fallback load step when a type has no explicit increment

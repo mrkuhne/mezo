@@ -246,6 +246,7 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
         row.setProteinTier("moderate");
         row.setWaterMl(3200);
         row.setFiberG(30);
+        row.setDayTypeShiftKcal(0);
         dietSettingsRepository.save(row);
 
         FuelDayResponse day = fuelDayService.getDay(prefOwner, LocalDate.now());
@@ -267,6 +268,7 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
         row.setProteinTier("moderate");
         row.setWaterMl(2800);
         row.setFiberG(30);
+        row.setDayTypeShiftKcal(0);
         dietSettingsRepository.save(row);
 
         FuelWeekResponse week = fuelDayService.getWeek(goalOwner, start);
