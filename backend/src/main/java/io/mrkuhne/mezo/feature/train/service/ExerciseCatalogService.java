@@ -18,6 +18,8 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,11 +39,15 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ExerciseCatalogService {
 
     private final ExerciseCatalogRepository repository;
     private final AppUserRepository appUserRepository;
     private final TrainMapper mapper;
+
+    /** Slug collisions under contention: re-probe and re-insert this many times before giving up. */
+    static final int MAX_SLUG_ATTEMPTS = 3;
 
     public List<ExerciseCatalogItem> list(AppUserEntity viewer) {
         List<ExerciseCatalogEntity> rows = repository.findAllByOrderByMuscleAscNameAsc();
@@ -49,13 +55,29 @@ public class ExerciseCatalogService {
         return rows.stream().map(e -> toItem(e, viewer, names)).toList();
     }
 
-    @Transactional
+    /**
+     * Check-then-insert-then-retry. The pre-probe ({@link #uniqueSlug}) makes the common case
+     * deterministic ("Box Jump" → box-jump-2 past the master slug); the retry covers the race where
+     * two requests probe the same free slug and the second INSERT trips uq_exercise_catalog_slug.
+     * Deliberately NOT @Transactional: a unique-violation on flush marks the surrounding transaction
+     * rollback-only, so the retry has to happen outside one — saveAndFlush commits per attempt.
+     */
     public ExerciseCatalogItem create(AppUserEntity author, CatalogExerciseCreateRequest req) {
-        ExerciseCatalogEntity e = new ExerciseCatalogEntity();
-        e.setCreatedBy(author.getId());
-        e.setSlug(uniqueSlug(req.getName()));
-        apply(e, req);
-        return toItem(repository.save(e), author, Map.of(author.getId(), author.getName()));
+        String base = slugBase(req.getName());
+        DataIntegrityViolationException last = null;
+        for (int attempt = 1; attempt <= MAX_SLUG_ATTEMPTS; attempt++) {
+            ExerciseCatalogEntity e = new ExerciseCatalogEntity(); // a fresh instance per attempt
+            e.setCreatedBy(author.getId());
+            e.setSlug(uniqueSlug(base));
+            apply(e, req);
+            try {
+                return toItem(repository.saveAndFlush(e), author, Map.of(author.getId(), author.getName()));
+            } catch (DataIntegrityViolationException ex) {
+                last = ex;
+                log.info("Catalog slug collision on '{}' (attempt {}/{}), re-probing", e.getSlug(), attempt, MAX_SLUG_ATTEMPTS);
+            }
+        }
+        throw last;
     }
 
     @Transactional
@@ -169,11 +191,13 @@ public class ExerciseCatalogService {
         return dto;
     }
 
-    private String uniqueSlug(String name) {
+    private static String slugBase(String name) {
         String base = name.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
-        if (base.isBlank()) {
-            base = "exercise";
-        }
+        return base.isBlank() ? "exercise" : base;
+    }
+
+    /** First free candidate: base, base-2, base-3 … against the physical table (soft-deleted rows included). */
+    private String uniqueSlug(String base) {
         String candidate = base;
         int n = 1;
         while (repository.countAllBySlugIncludingDeleted(candidate) > 0) {
