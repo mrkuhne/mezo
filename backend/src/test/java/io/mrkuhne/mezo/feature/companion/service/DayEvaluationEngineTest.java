@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.companion.config.DayEvaluationProperties;
 import io.mrkuhne.mezo.feature.companion.service.DayEvaluationEngine.DayDimension;
 import io.mrkuhne.mezo.feature.companion.service.DayEvaluationEngine.DayEvaluation;
 import io.mrkuhne.mezo.feature.companion.service.DayEvaluationEngine.DayInputs;
+import io.mrkuhne.mezo.feature.companion.service.DayEvaluationEngine.MealLogFact;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.function.Consumer;
@@ -15,8 +16,8 @@ import org.junit.jupiter.api.Test;
  * Pure-math unit test (no Spring): the engine's inputs are a directly-constructed
  * {@link DayInputs} carrier + a directly-constructed {@link DayEvaluationProperties} config
  * record (testing_standards.md "pure utility" rule), same house style as
- * {@code MealScoringServiceTest}. Only the {@code nutrition} dimension exists yet (Task 2);
- * Tasks 3-4 add the rest to this same file/fixture.
+ * {@code MealScoringServiceTest}. Task 2 added {@code nutrition}; this file (Task 3) adds {@code
+ * quality} and {@code training} to the same fixture; Task 4 adds the rest.
  */
 class DayEvaluationEngineTest {
 
@@ -47,6 +48,9 @@ class DayEvaluationEngineTest {
         private Double carbsTargetG = 310.0;
         private Double fatTargetG = 80.0;
         private boolean workoutDay = false;
+        private List<MealLogFact> meals = List.of();
+        private Integer plannedWorkouts = null;
+        private Integer doneWorkouts = null;
 
         DayInputsBuilder kcal(double v) {
             this.kcal = v;
@@ -102,10 +106,25 @@ class DayEvaluationEngineTest {
             return this;
         }
 
+        DayInputsBuilder meals(List<MealLogFact> v) {
+            this.meals = v;
+            return this;
+        }
+
+        DayInputsBuilder plannedWorkouts(Integer v) {
+            this.plannedWorkouts = v;
+            return this;
+        }
+
+        DayInputsBuilder doneWorkouts(Integer v) {
+            this.doneWorkouts = v;
+            return this;
+        }
+
         DayInputs build() {
             return new DayInputs(date, closed, kcal, proteinG, carbsG, fatG,
                 kcalTarget, proteinTargetG, carbsTargetG, fatTargetG, workoutDay,
-                null, null, null, null, List.of(), false, 0, List.of());
+                plannedWorkouts, doneWorkouts, null, null, meals, false, 0, List.of());
         }
     }
 
@@ -261,5 +280,76 @@ class DayEvaluationEngineTest {
         DayDimension nutrition = dim(e, "nutrition");
         assertThat(nutrition.status()).isEqualTo("NO_DATA");
         assertThat(nutrition.score()).isNull();
+    }
+
+    // --- Task 3: quality + training -----------------------------------------------------------
+
+    @Test
+    void quality_kcalWeightedMeanOfMealNovaScores_blendedWithMicro() {
+        // két meal: nova 0.9 (600 kcal), nova 0.5 (200 kcal) -> nova-rész
+        //   (0.9*600 + 0.5*200) / 800 = (540 + 100) / 800 = 0.8
+        // micro-átlag (0.6 + 0.6) / 2 = 0.6
+        // quality = 0.75*0.8 + 0.25*0.6 = 0.6 + 0.15 = 0.75 -> 75
+        List<MealLogFact> meals = List.of(
+            new MealLogFact(null, null, null, 0.9, 0.6, 600),
+            new MealLogFact(null, null, null, 0.5, 0.6, 200));
+        DayEvaluation e = engine.evaluate(closedDay(b -> b.meals(meals)));
+        DayDimension quality = dim(e, "quality");
+        assertThat(quality.status()).isEqualTo("DONE");
+        assertThat(quality.score()).isEqualTo(75);
+    }
+
+    @Test
+    void quality_mealsWithoutNovaScores_degrade() {
+        // novaDimScore=null mindenhol -- nincs alap a pontozásra, a micro adat léte sem menti meg
+        // (honesty rule: nem találunk ki neutrális/hiányzó-helyettesítő értéket).
+        List<MealLogFact> meals = List.of(
+            new MealLogFact(null, null, null, null, 0.6, 600),
+            new MealLogFact(null, null, null, null, 0.5, 200));
+        DayEvaluation e = engine.evaluate(closedDay(b -> b.meals(meals)));
+        DayDimension quality = dim(e, "quality");
+        assertThat(quality.status()).isEqualTo("NO_DATA");
+        assertThat(quality.score()).isNull();
+        assertThat(quality.weight()).isZero();
+    }
+
+    @Test
+    void training_restDayIsNeutral() {
+        // plannedWorkouts=0 -> a training dim NO_DATA "Pihenőnap" ténnyel, súlya kiesik -- a nap
+        // NEM kap edzés-levonást a pihenésért.
+        DayEvaluation e = engine.evaluate(closedDay(b -> b.plannedWorkouts(0)));
+        DayDimension training = dim(e, "training");
+        assertThat(training.status()).isEqualTo("NO_DATA");
+        assertThat(training.score()).isNull();
+        assertThat(training.weight()).isZero();
+        assertThat(training.facts()).anyMatch(f -> f.value().contains("Pihenőnap"));
+    }
+
+    @Test
+    void training_plannedAndDone_scoresFull() {
+        // planned=1, done=1 -> done/planned=1 -> 0.3 + 0.7*1 = 1.0 -> 100
+        DayEvaluation e = engine.evaluate(closedDay(b -> b.plannedWorkouts(1).doneWorkouts(1)));
+        DayDimension training = dim(e, "training");
+        assertThat(training.status()).isEqualTo("DONE");
+        assertThat(training.score()).isEqualTo(100);
+    }
+
+    @Test
+    void training_plannedButSkipped_scoresLow() {
+        // planned=1, done=0, zárt nap -> DONE (a nap zárult) -> 0.3 + 0.7*0 = 0.3 -> 30
+        DayEvaluation e = engine.evaluate(closedDay(b -> b.plannedWorkouts(1).doneWorkouts(0)));
+        DayDimension training = dim(e, "training");
+        assertThat(training.status()).isEqualTo("DONE");
+        assertThat(training.score()).isEqualTo(30);
+    }
+
+    @Test
+    void training_openDayNotYetDone_isInProgress() {
+        // planned=1, done=0, nyitott nap -> done < planned és a nap nem zárult -> IN_PROGRESS
+        DayEvaluation e = engine.evaluate(
+            closedDay(b -> b.closed(false).plannedWorkouts(1).doneWorkouts(0)));
+        DayDimension training = dim(e, "training");
+        assertThat(training.status()).isEqualTo("IN_PROGRESS");
+        assertThat(training.score()).isNull();
     }
 }

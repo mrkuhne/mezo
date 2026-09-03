@@ -15,10 +15,10 @@ import org.springframework.stereotype.Service;
  * {@code DayScoreService} (Task 5) resolves and fills {@link DayInputs}; this engine never reads
  * anything else.
  *
- * <p>This task builds the engine skeleton ({@link #evaluate}, the weight-renormalisation
- * mechanism) plus ONLY the {@code nutrition} dimension. Tasks 3-4 add {@code quality, training,
- * sleep, logging, rhythm} to the same private-method + one-list-entry seam in {@link #evaluate} —
- * deliberately not a plugin framework (YAGNI).
+ * <p>Task 2 built the engine skeleton ({@link #evaluate}, the weight-renormalisation mechanism)
+ * plus the {@code nutrition} dimension. This task (3) adds {@code quality} and {@code training}
+ * to the same private-method + one-list-entry seam in {@link #evaluate}; Task 4 adds {@code
+ * sleep, logging, rhythm} the same way — deliberately not a plugin framework (YAGNI).
  *
  * <p>Honesty rules (binding, constraints.md): a NO_DATA/IN_PROGRESS dimension drops out with
  * weight 0; the {@code weight} each surviving DONE dimension reports is RENORMALISED so the DONE
@@ -71,7 +71,7 @@ public class DayEvaluationEngine {
                           String status, List<DimFact> facts) { }
 
     public DayEvaluation evaluate(DayInputs in) {
-        List<RawDim> raw = List.of(nutritionDim(in));
+        List<RawDim> raw = List.of(nutritionDim(in), qualityDim(in), trainingDim(in));
 
         double doneWeightSum = raw.stream().filter(d -> DONE.equals(d.status()))
             .mapToDouble(RawDim::configWeight).sum();
@@ -192,5 +192,94 @@ public class DayEvaluationEngine {
 
     private static String fmtInt(Double v) {
         return v == null ? "–" : String.valueOf(Math.round(v));
+    }
+
+    // --- Quality (.15 default): kcal-weighted mean of the day's meal NOVA scores, blended with
+    // the mean meal MICRO score (0.75 nova / 0.25 micro). Both fields come from the meal envelope
+    // (already-scored, 1/2 plan) — this dimension only aggregates across the day's meals.
+
+    private RawDim qualityDim(DayInputs in) {
+        String id = "quality";
+        String label = "Minőség";
+        double configWeight = props.weights().quality();
+        List<MealLogFact> meals = in.meals() == null ? List.of() : in.meals();
+        Double novaPart = novaKcalWeightedAvg(meals);
+        Double microAvg = microAvg(meals);
+        List<DimFact> facts = qualityFacts(novaPart, microAvg);
+
+        if (!in.closed()) {
+            return new RawDim(id, label, configWeight, null, IN_PROGRESS, facts);
+        }
+        // No meal carries a usable nova score (or their combined kcal is non-positive, same
+        // no-divide-by-nothing guard as nutrition) -> nothing to aggregate, degrade honestly
+        // rather than inventing a neutral quality score.
+        if (novaPart == null) {
+            return new RawDim(id, label, configWeight, null, NO_DATA, List.of());
+        }
+        // Without any micro data the nova part stands alone at weight 1.0 (brief, explicit) --
+        // not renormalized against an invented micro value.
+        double value = microAvg == null ? novaPart : 0.75 * novaPart + 0.25 * microAvg;
+        int score = (int) Math.round(value * 100);
+        return new RawDim(id, label, configWeight, score, DONE, facts);
+    }
+
+    /** {@code null} when no meal carries a nova score, or their combined kcal is non-positive
+     *  (nothing to weight by) -- the caller degrades the whole dimension to NO_DATA rather than
+     *  dividing by zero or inventing a value. */
+    private static Double novaKcalWeightedAvg(List<MealLogFact> meals) {
+        List<MealLogFact> withNova = meals.stream().filter(m -> m.novaDimScore() != null).toList();
+        double kcalSum = withNova.stream().mapToDouble(MealLogFact::kcal).sum();
+        if (withNova.isEmpty() || kcalSum <= 0) {
+            return null;
+        }
+        return withNova.stream().mapToDouble(m -> m.novaDimScore() * m.kcal()).sum() / kcalSum;
+    }
+
+    /** Simple (non kcal-weighted) mean of the meals carrying a micro score; {@code null} when
+     *  none do. */
+    private static Double microAvg(List<MealLogFact> meals) {
+        List<MealLogFact> withMicro = meals.stream().filter(m -> m.microDimScore() != null).toList();
+        if (withMicro.isEmpty()) {
+            return null;
+        }
+        return withMicro.stream().mapToDouble(MealLogFact::microDimScore).average().orElseThrow();
+    }
+
+    private static List<DimFact> qualityFacts(Double novaPart, Double microAvg) {
+        List<DimFact> facts = new ArrayList<>();
+        facts.add(new DimFact("nova", novaPart == null ? "–" : Math.round(novaPart * 100) + "%"));
+        facts.add(new DimFact("mikro", microAvg == null ? "–" : Math.round(microAvg * 100) + "%"));
+        return facts;
+    }
+
+    // --- Training (.20 default): done/planned workouts, linear between 0.3 (0 done) and 1.0
+    // (all done). plannedWorkouts of 0 (or null) is a rest day -- NO_DATA, never a penalty.
+
+    private RawDim trainingDim(DayInputs in) {
+        String id = "training";
+        String label = "Edzés";
+        double configWeight = props.weights().training();
+        Integer planned = in.plannedWorkouts();
+
+        // Rest day: no plan means nothing to measure against, not a missed workout -- the day
+        // must not take a training penalty for resting (product decision, binding).
+        if (planned == null || planned <= 0) {
+            return new RawDim(id, label, configWeight, null, NO_DATA,
+                List.of(new DimFact("terv", "Pihenőnap · nem számít")));
+        }
+
+        int done = in.doneWorkouts() == null ? 0 : in.doneWorkouts();
+        List<DimFact> facts = List.of(new DimFact("edzés", done + " / " + planned));
+
+        // Open day, not yet all done -> still gathering, IN_PROGRESS; a closed day is always
+        // DONE regardless of the done/planned ratio (the day is over, the ratio is final).
+        if (!in.closed() && done < planned) {
+            return new RawDim(id, label, configWeight, null, IN_PROGRESS, facts);
+        }
+
+        double ratio = Math.min(1.0, (double) done / planned);
+        double value = 0.3 + 0.7 * ratio;
+        int score = (int) Math.round(value * 100);
+        return new RawDim(id, label, configWeight, score, DONE, facts);
     }
 }
