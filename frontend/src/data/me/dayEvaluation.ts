@@ -45,7 +45,12 @@ export interface NormalizedDayEvaluation {
 
 /** Fills in the generated type's optional arrays/fields (`narrative`, `highlights`, `context`,
  *  per-dimension `facts`/`note`) so a consumer never has to `?? []`/`?? null` itself, and
- *  narrows the `string`-typed enum fields to their literal unions. */
+ *  narrows the `string`-typed enum fields to their literal unions.
+ *
+ *  No production caller yet — `useDayEvaluation` returns the raw `DayEvaluationResponse` per
+ *  its own brief-specified signature; this is here for Task 10 (the day page) to call when it
+ *  wants the fully-populated/narrowed shape instead of handling the generated type's optional
+ *  fields itself. Covered by `dayEvaluation.test.ts` in the meantime. */
 export function normalizeDayEvaluation(raw: DayEvaluationResponse): NormalizedDayEvaluation {
   return {
     date: raw.date,
