@@ -422,8 +422,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, LogDoseSheet.tsx, MealScoreSheet.tsx,
     MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, ReplanSheet.tsx, StackItemSheet.tsx,
     StackPickerSheet.tsx, WaterLogSheet.tsx
-  - **components:** ContextPanel.tsx, DimensionCard.tsx, FuelLogHeroTile.tsx, KamraCard.tsx, KeretHero.tsx,
-    MacroCells.tsx, MacroPanel.tsx, MealComposer.tsx, MealScoreChip.tsx, MedicationCycleBar.tsx,
+  - **components:** ContextPanel.tsx, DietSuggestionBanner.tsx, DimensionCard.tsx, FuelLogHeroTile.tsx, KamraCard.tsx,
+    KeretHero.tsx, MacroCells.tsx, MacroPanel.tsx, MealComposer.tsx, MealScoreChip.tsx, MedicationCycleBar.tsx,
     MedicationWeekStrip.tsx, MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx, PatternRow.tsx,
     RecipeCard.tsx, RecipeFitBadge.tsx, RecipeIngredientList.tsx, RecipeIngredientRow.tsx, RecipeLogsList.tsx,
     RecipeOverrideRow.tsx, ScoreBreakdownBody.tsx, ScoreHero.tsx, ScoreLedger.tsx, ServingToggle.tsx, SourceBadge.tsx,
@@ -473,27 +473,31 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
   - **sub-features:** `engine`
-  - **entities→tables:** `GoalEntity`→`goal`, `GoalPlanLinkEntity`→`goal_plan_link`
-  - **repositories:** `GoalPlanLinkRepository`, `GoalRepository`
+  - **entities→tables:** `GoalEntity`→`goal`, `GoalPlanLinkEntity`→`goal_plan_link`,
+    `GoalSuggestionEntity`→`goal_suggestion`
+  - **repositories:** `GoalPlanLinkRepository`, `GoalRepository`, `GoalSuggestionRepository`
   - **services:** `DayTypeShiftCalculator`, `DietPreferences`, `DietPreferencesPort`, `GoalDeletedEvent`,
     `GoalEngineService`, `GoalEvaluationService`, `GoalFeasibilityService`, `GoalPlanLinkService`,
-    `GoalProjectionService`, `GoalSavedEvent`, `GoalService`, `GoalTimelineService`, `GuardEvaluationService`,
-    `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`
+    `GoalProjectionService`, `GoalSavedEvent`, `GoalService`, `GoalSuggestionService`, `GoalSuggestionTriggerService`,
+    `GoalTimelineService`, `GuardEvaluationService`, `MesoLifecycleSuggestionListener`, `TdeeBootstrapService`,
+    `TrainGoalRecomputeAdapter`
   - **controllers→contract:** `GoalController`→`GoalApi`
-  - **mappers:** `GoalMapper`, `GoalPlanLinkMapper`
+  - **mappers:** `GoalMapper`, `GoalPlanLinkMapper`, `GoalSuggestionMapper`
   - **other:** `GoalEngineProperties`, `GoalPrescriptionJson`, `GoalReevaluateRunner`, `GoalSeedData`,
-    `TdeeBootstrapJson`
-- **Contract** `api/feature/goal/goal.yml` — 12 operations
+    `GoalSegmentOverrideJson`, `GoalSuggestionPayloadJson`, `TdeeBootstrapJson`
+- **Contract** `api/feature/goal/goal.yml` — 15 operations
   - **endpoints:** GET /api/goals · POST /api/goals · POST /api/goals/feasibility-preview · GET /api/goals/{id} ·
     PUT /api/goals/{id} · DELETE /api/goals/{id} · POST /api/goals/{id}/activate · POST /api/goals/{id}/archive ·
     GET /api/goals/{id}/timeline · POST /api/goals/{id}/evaluate · POST /api/goals/{id}/plans ·
-    DELETE /api/goals/{id}/plans/{linkId}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 12 IT + 2 unit
+    DELETE /api/goals/{id}/plans/{linkId} · GET /api/goals/{id}/suggestions ·
+    POST /api/goals/{id}/suggestions/{suggestionId}/accept · POST /api/goals/{id}/suggestions/{suggestionId}/dismiss
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 14 IT + 2 unit
   - **ITs:** `GoalContractIT`, `GoalEnginePropertiesIT`, `GoalEngineRecomputeIT`, `GoalEvaluationServiceIT`,
     `GoalFeasibilityServiceIT`, `GoalPlanLinkServiceIT`, `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`,
-    `GoalServiceIT`, `GoalTimelineContractIT`, `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`
+    `GoalServiceIT`, `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`, `GoalTimelineContractIT`,
+    `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
-    `RunningPopulator`, `TrainPopulator`, `WeightLogPopulator`
+    `GoalSuggestionPopulator`, `RunningPopulator`, `TrainPopulator`, `WeightLogPopulator`
 
 ### habit
 
@@ -679,9 +683,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 - **FE data** `frontend/src/data/me`
   - **hooks (via `@/data/hooks`):** `useBiometricActions`, `useBiometricProfile`, `useFeasibilityPreview`, `useGoal`,
-    `useGoalActions`, `useGoalCreation`, `useLlmCall`, `useLlmCalls`, `useLlmUsageBreakdown`, `useLlmUsageSummary`,
-    `useMeWeek`, `usePeople`, `useProfile`, `useSleep`, `useSleepGoal`, `useSleepGoalActions`, `useSleepShot`,
-    `useWeekLessons`, `useWeeklyReview`, `useWeight`
+    `useGoalActions`, `useGoalCreation`, `useGoalSuggestions`, `useLlmCall`, `useLlmCalls`, `useLlmUsageBreakdown`,
+    `useLlmUsageSummary`, `useMeWeek`, `usePeople`, `useProfile`, `useSleep`, `useSleepGoal`, `useSleepGoalActions`,
+    `useSleepShot`, `useSuggestionActions`, `useWeekLessons`, `useWeeklyReview`, `useWeight`
   - **modules:** biometricHooks.ts, biometricProfileApi.ts, biometricsApi.ts, goalApi.ts, goalHooks.ts, goalLinkApi.ts,
     goals.ts, llmUsageApi.ts, llmUsageHooks.ts, meHooks.ts, meWeek.ts, meWeekApi.ts, meWeekHooks.ts, people.ts,
     peopleApi.ts, peopleHooks.ts, sleep.ts, sleepGoal.ts, sleepHooks.ts, sleepShot.ts, weekLessons.ts,
@@ -701,11 +705,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **components:** AdminInviteRow.tsx, AdminUserRow.tsx, AiCallFilters.tsx, AiCallRow.tsx, AiCallUsage.tsx,
     AiFeatureBreakdown.tsx, AiModelBreakdown.tsx, AiPayloadBlock.tsx, AiPriceSnapshot.tsx, AiTokenBar.tsx,
     AiUsageHero.tsx, AiUserFilter.tsx, BadgesCard.tsx, DayNavTiles.tsx, DetailStat.tsx, FieldRow.tsx, GoalGate.tsx,
-    GoalMiniCard.tsx, GoalPlanSlots.tsx, GoalRecept.tsx, GoalTimeline.tsx, GratitudeRows.tsx, GratitudeStreakCard.tsx,
-    GrowthHero.tsx, GrowthJournalCard.tsx, LifeGoalTile.tsx, MaStrip.tsx, MentionRow.tsx, NightArcCard.tsx,
-    NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx, NotificationCategoryRow.tsx, NotificationPreviewHeader.tsx,
-    PerksCard.tsx, PermahRing.tsx, PersonCard.tsx, PhaseAverageCard.tsx, PhaseRail.tsx, PhaseReferenceRow.tsx,
-    PillarCard.tsx, PushInstallGate.tsx, RemDurationCard.tsx, SkillBandCard.tsx, SleepChart.tsx,
+    GoalMiniCard.tsx, GoalPlanSlots.tsx, GoalRecept.tsx, GoalSuggestionCard.tsx, GoalTimeline.tsx, GratitudeRows.tsx,
+    GratitudeStreakCard.tsx, GrowthHero.tsx, GrowthJournalCard.tsx, LifeGoalTile.tsx, MaStrip.tsx, MentionRow.tsx,
+    NightArcCard.tsx, NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx, NotificationCategoryRow.tsx,
+    NotificationPreviewHeader.tsx, PerksCard.tsx, PermahRing.tsx, PersonCard.tsx, PhaseAverageCard.tsx, PhaseRail.tsx,
+    PhaseReferenceRow.tsx, PillarCard.tsx, PushInstallGate.tsx, RemDurationCard.tsx, SkillBandCard.tsx, SleepChart.tsx,
     SleepEscalationCard.tsx, SleepLogRow.tsx, SleepStat.tsx, SleepStatCard.tsx, TimePicker.tsx, WeekDayCard.tsx,
     WeekDayTile.tsx, WeekDiscoveries.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx,
     WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx,
@@ -1112,10 +1116,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `TrainProperties`, `VolumeProperties`
   - **events/listeners:** `MesocycleClosed`
   - **other:** `ClosingBlockGate`, `ExerciseCatalogLoader`, `GymExerciseJson`, `GymSignalCalculator`,
-    `HypertrophyDriveGate`, `MesoContextJson`, `MesoDayJson`, `MesoReportJson`, `MesoReviewGate`, `ProvenanceEnvelope`,
-    `RunSignalCalculator`, `RunningBlockStructure`, `RunningSeedData`, `SportSignalCalculator`, `TrainSeedData`,
-    `TrainingCommitmentCalculator`, `TrainingStreakCalculator`, `VolumeBaselineJson`, `VolumeProgressionGate`,
-    `VolumeRecomputeJson`
+    `HypertrophyDriveGate`, `MesoContextJson`, `MesoDayJson`, `MesoReportJson`, `MesoReviewGate`, `MesocycleActivated`,
+    `ProvenanceEnvelope`, `RunSignalCalculator`, `RunningBlockStructure`, `RunningSeedData`, `SportSignalCalculator`,
+    `TrainSeedData`, `TrainingCommitmentCalculator`, `TrainingStreakCalculator`, `VolumeBaselineJson`,
+    `VolumeProgressionGate`, `VolumeRecomputeJson`
 - **Contract** `api/feature/train/train.yml` — 57 operations
   - **endpoints:** GET /api/train/mesocycles · POST /api/train/mesocycles/{id}/activate ·
     POST /api/train/mesocycles/{id}/close · PUT /api/train/mesocycles/{id}/muscle-priorities ·
@@ -1252,32 +1256,33 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   `AppNotificationPopulator`, `BiometricProfilePopulator`, `ChallengePopulator`, `CheckInPopulator`,
   `CompanionMessagePopulator`, `DailySummaryPopulator`, `DiagnosisPopulator`, `ExperimentPopulator`,
   `FeedbackPopulator`, `FlagLogPopulator`, `FuelSettingsPopulator`, `GamificationPopulator`, `GoalPlanLinkPopulator`,
-  `GoalPopulator`, `GraphPopulator`, `HabitPopulator`, `IntentionPopulator`, `JournalPopulator`,
-  `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LevelUpEventPopulator`, `LifeGoalPopulator`, `LlmLogPopulator`,
-  `MealPopulator`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`,
-  `MemoryEmbeddingPopulator`, `MentionPopulator`, `MesoTemplatePopulator`, `NeedsPopulator`, `NotificationPopulator`,
-  `PantryImportPopulator`, `PantryItemPopulator`, `PatternEventPopulator`, `PatternPopulator`,
+  `GoalPopulator`, `GoalSuggestionPopulator`, `GraphPopulator`, `HabitPopulator`, `IntentionPopulator`,
+  `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LevelUpEventPopulator`, `LifeGoalPopulator`,
+  `LlmLogPopulator`, `MealPopulator`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`, `MedicationPopulator`,
+  `MemoirPopulator`, `MemoryEmbeddingPopulator`, `MentionPopulator`, `MesoTemplatePopulator`, `NeedsPopulator`,
+  `NotificationPopulator`, `PantryImportPopulator`, `PantryItemPopulator`, `PatternEventPopulator`, `PatternPopulator`,
   `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`, `ProtocolPopulator`, `QuestPopulator`,
   `RecipePopulator`, `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`, `SleepGoalPopulator`,
   `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
   `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`
-- **`ResetDatabase` TRUNCATE list** — 97 tables; a new owned domain table MUST be added here in the same change:
+- **`ResetDatabase` TRUNCATE list** — 98 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `activity_log`, `ai_conversation`, `ai_message`, `app_notification`, `biometric_profile`, `challenge`,
     `character_claim`, `character_conference`, `character_dimension`, `character_observation`,
     `character_portrait_revision`, `character_run`, `check_in`, `coin_event`, `companion_flag_log`,
     `companion_message`, `daily_intention`, `daily_quest`, `daily_summary`, `decision_entry`, `diagnosis`,
     `diet_settings`, `exercise`, `exercise_feedback`, `exercise_set`, `experiment`, `feedback_rollup`, `fuel_settings`,
-    `gamification_profile`, `goal`, `goal_plan_link`, `gratitude_entry`, `gym_schedule_slot`, `habit_chain`,
-    `habit_day`, `habit_def`, `intention_creed`, `intention_focus`, `invite`, `journal_entry`, `knowledge_edge`,
-    `knowledge_fact`, `knowledge_node`, `learned_fact`, `level_up_event`, `life_goal`, `life_goal_pillar`,
-    `life_goal_pillar_day`, `llm_log_history`, `meal`, `meal_item`, `meal_slot_template`, `medication`,
-    `medication_dose`, `memoir`, `memory_embedding`, `mention`, `meso_template`, `mesocycle`, `mesocycle_report`,
-    `message_feedback`, `muscle_group_volume_log`, `needs_day`, `notification_pref`, `notification_schedule`,
-    `owned_title`, `pantry_import`, `pantry_item`, `pattern`, `pattern_event`, `period_summary`, `perk_unlock`,
-    `person`, `prediction`, `protocol`, `protocol_item`, `push_log`, `push_subscription`, `recipe`,
-    `recipe_ingredient`, `ritual_day`, `run_session_log`, `running_block`, `skill_progress`, `sleep_goal`, `sleep_log`,
-    `sport_event`, `sport_schedule_slot`, `sport_session`, `supplement_intake`, `tutorial_progress`, `water_log`,
-    `weekly_review`, `weekly_score`, `weekly_suggestion`, `weight_log`, `workout_session`
+    `gamification_profile`, `goal`, `goal_plan_link`, `goal_suggestion`, `gratitude_entry`, `gym_schedule_slot`,
+    `habit_chain`, `habit_day`, `habit_def`, `intention_creed`, `intention_focus`, `invite`, `journal_entry`,
+    `knowledge_edge`, `knowledge_fact`, `knowledge_node`, `learned_fact`, `level_up_event`, `life_goal`,
+    `life_goal_pillar`, `life_goal_pillar_day`, `llm_log_history`, `meal`, `meal_item`, `meal_slot_template`,
+    `medication`, `medication_dose`, `memoir`, `memory_embedding`, `mention`, `meso_template`, `mesocycle`,
+    `mesocycle_report`, `message_feedback`, `muscle_group_volume_log`, `needs_day`, `notification_pref`,
+    `notification_schedule`, `owned_title`, `pantry_import`, `pantry_item`, `pattern`, `pattern_event`,
+    `period_summary`, `perk_unlock`, `person`, `prediction`, `protocol`, `protocol_item`, `push_log`,
+    `push_subscription`, `recipe`, `recipe_ingredient`, `ritual_day`, `run_session_log`, `running_block`,
+    `skill_progress`, `sleep_goal`, `sleep_log`, `sport_event`, `sport_schedule_slot`, `sport_session`,
+    `supplement_intake`, `tutorial_progress`, `water_log`, `weekly_review`, `weekly_score`, `weekly_suggestion`,
+    `weight_log`, `workout_session`
 - **Frontend:** `frontend/src/test/msw/handlers.ts` (mock-mode HTTP fixtures) · `msw/server.ts` · `queryWrapper.tsx` (TanStack Query test wrapper) · `setup.ts`
 
 ### scripts
