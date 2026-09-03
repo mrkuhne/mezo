@@ -34,6 +34,12 @@ export function useTutorialProgressActions() {
   const reset = useMutation({
     mutationFn: async () => {
       if (mock) { qc.setQueryData<TutorialProgress>(KEY, {}); return }
+      // A DELETE hibája SZÁNDÉKOSAN kiszáll (mezo-gb1s.2): elnyelve a lokális kiürül, majd a
+      // TutorialProvider szerver-merge effektje a szerver régi állapotát visszahozza — a reset
+      // látszólag sikerül, aztán némán visszafordul.
+      // A cancelQueries a repülő GET ellen véd: egy a DELETE ELŐTT indult válasz különben a
+      // törlés UTÁN írná be a régi mapet a cache-be.
+      await qc.cancelQueries({ queryKey: KEY })
       await tutorialProgressApi.reset()
       qc.setQueryData<TutorialProgress>(KEY, {})
     },

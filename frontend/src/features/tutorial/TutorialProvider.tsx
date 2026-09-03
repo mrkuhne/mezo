@@ -193,10 +193,24 @@ export function TutorialProvider({ children }: { children: ReactNode }) {
   }, [navigate])
 
   const resetAll = useCallback(async () => {
+    // Minden session-állapot vissza a nullára: a guard, a futó timer és a NYITOTT kalauz is —
+    // enélkül a reset után az épp látszó sheet a törölt bejegyzésre írna vissza záráskor.
     autoShown.current.clear()
+    if (timer.current) { clearTimeout(timer.current); timer.current = null }
+    openIdRef.current = null
+    setOpenId(null)
+    setWelcomeOpen(false)
+    // Eager ref-írás is kell, ugyanúgy, mint a nyitó effektnél (lásd `welcomeStatusRef` fent):
+    // a state-írás csak a következő render-flush-kor jelenik meg a refben, de a megnyitó effekt
+    // a refet olvassa ELŐBB, mint a `setWelcomeStatus('pending')` leképeződne — enélkül a welcome
+    // a reset UTÁNI /nap-belépéskor is némán elnyomva maradna.
+    welcomeStatusRef.current = 'pending'
+    setWelcomeStatus('pending')
     setLocal({})
     writeLocalProgress({})
-    await resetProgress().catch(() => undefined)
+    // A hiba KISZÁLL (mezo-gb1s.2): a hívó dönt, mit mutat — a néma nyelés miatt fordult
+    // vissza korábban a reset a következő szerver-merge-nél.
+    await resetProgress()
   }, [resetProgress])
 
   const current = useMemo(() => findKalauz(pathname), [pathname])

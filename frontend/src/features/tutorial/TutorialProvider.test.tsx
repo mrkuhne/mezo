@@ -27,8 +27,11 @@ function stubReducedMotion() {
   }))
 }
 
+const resetHandle: { current: (() => Promise<void>) | null } = { current: null }
+
 function Probe() {
   const t = useTutorial()
+  resetHandle.current = t.resetAll
   const navigate = useNavigate()
   return (
     <div>
@@ -37,6 +40,7 @@ function Probe() {
       <button onClick={() => t.open('fuel')}>nyisd</button>
       <button onClick={() => navigate('/train')}>train</button>
       <button onClick={() => navigate('/fuel')}>fuel</button>
+      <button onClick={() => navigate('/nap')}>nap</button>
       {/* /nap/rutin: T2 subpage, ebben a szeletben nincs saját kalauz-bejegyzése — a
           „kalauz nélküli route" fixture-je (Task 2 ugyanezt a route-ot választotta
           az AppHeader.test.tsx-ben, ugyanezért). */}
@@ -357,4 +361,34 @@ test('új eszköz: a szerver szerint látott welcome nem villan fel, és a merge
   expect(p.fuel).toBeDefined() // a merge-elt map többi bejegyzése megmaradt
   expect(p.nap).toBeDefined()
   expect(p.welcome?.seenAt).toBe(SEEN) // az eredeti seenAt él, nem írtuk felül frissel
+})
+
+// ── resetAll (mezo-gb1s.2) ──────────────────────────────────────────────────
+test('resetAll: kiüríti az állapotot, zárja a nyitottat, és a welcome újra esedékes lesz', async () => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  writeLocalProgress(welcomeSeen())
+  renderAt('/fuel')
+  await user.click(screen.getByText('nyisd'))
+  expect(await screen.findByLabelText('Kártyák')).toBeInTheDocument()
+  await act(async () => { await resetHandle.current!() })
+  expect(screen.queryByLabelText('Kártyák')).not.toBeInTheDocument()
+  expect(readLocalProgress()).toEqual({})
+  // A reset a `welcomeStatusRef`-et is visszaállítja `'pending'`-re (nem csak a state-et) —
+  // enélkül a /nap-ra visszatérve a megnyitó effekt eager latchje ('done'-t olvasva a refből)
+  // örökre elnyomná a welcome-ot. A rákövetkező /nap-belépés a bizonyíték.
+  await user.click(screen.getByRole('button', { name: 'nap' }))
+  expect(await screen.findByRole('dialog')).toHaveAccessibleName('Szia, Mezo vagyok.')
+})
+
+test('resetAll: a DELETE hibája FELSZÍNRE kerül, nem nyeli el némán', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  if (isMockMode()) return
+  let hits = 0
+  server.use(http.delete(`${API_BASE}/api/tutorial/progress`, () => {
+    hits += 1
+    return new HttpResponse(null, { status: 500 })
+  }))
+  renderAt('/fuel')
+  await expect(act(async () => { await resetHandle.current!() })).rejects.toThrow(/HTTP 500/)
+  expect(hits).toBe(1)
 })
