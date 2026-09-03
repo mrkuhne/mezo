@@ -1,68 +1,30 @@
-import { act, render, screen } from '@testing-library/react'
-import { http, HttpResponse } from 'msw'
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { server } from '@/test/msw/server'
-import { API_BASE } from '@/test/msw/handlers'
+import { render, screen } from '@testing-library/react'
+import { afterEach, expect, test, vi } from 'vitest'
+import { setToken } from '@/data/_client/api'
 import { QueryProvider } from './QueryProvider'
 
 /**
- * mezo-l0k0: a failed owner-token bootstrap must NEVER silently render the app
- * unauthenticated — it retries with backoff, and a persistent failure shows the explicit
- * degraded screen with a manual retry instead of the children.
+ * mezo-qw37.1: the boot state machine (pending/login/register/mustChangePassword/failed/ready)
+ * moved to AuthGate — see src/app/auth/AuthGate.test.tsx for that behaviour in full.
+ * QueryProvider itself only has to wire the QueryClientProvider around AuthGate.
  */
-describe('QueryProvider bootstrap recovery (real mode)', () => {
-  beforeEach(() => {
-    vi.stubEnv('VITE_USE_MOCK', 'false')
-  })
-  afterEach(() => vi.unstubAllEnvs())
+afterEach(() => { vi.unstubAllEnvs(); localStorage.clear(); setToken(null) })
 
-  const renderApp = () =>
-    render(
-      <QueryProvider>
-        <div data-testid="app">APP</div>
-      </QueryProvider>,
-    )
+test('mock mode renders the app immediately (AuthGate short-circuits)', () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  render(<QueryProvider><div>APP</div></QueryProvider>)
+  expect(screen.getByText('APP')).toBeInTheDocument()
+})
 
-  test('renders the app when the bootstrap succeeds', async () => {
-    renderApp()
-    expect(await screen.findByTestId('app')).toBeInTheDocument()
-  })
+test('real mode with a valid token renders the app once /api/auth/me resolves', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  setToken('t')
+  render(<QueryProvider><div>APP</div></QueryProvider>)
+  expect(await screen.findByText('APP')).toBeInTheDocument()
+})
 
-  test('a transient failure is retried and the app still comes up', async () => {
-    let calls = 0
-    server.use(
-      http.post(`${API_BASE}/api/auth/login`, () => {
-        calls += 1
-        if (calls === 1) return HttpResponse.error()
-        return HttpResponse.json({ token: 'tok-1' })
-      }),
-    )
-    renderApp()
-    expect(await screen.findByTestId('app', undefined, { timeout: 5000 })).toBeInTheDocument()
-    expect(calls).toBeGreaterThanOrEqual(2)
-  })
-
-  test('a persistent failure renders the degraded screen — NEVER the unauthenticated app', async () => {
-    server.use(http.post(`${API_BASE}/api/auth/login`, () => HttpResponse.error()))
-    renderApp()
-    expect(
-      await screen.findByText(/Nem érem el a szervert/, undefined, { timeout: 15000 }),
-    ).toBeInTheDocument()
-    expect(screen.queryByTestId('app')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Újra' })).toBeInTheDocument()
-  }, 20000)
-
-  test('the manual retry recovers once the backend is back', async () => {
-    let up = false
-    server.use(
-      http.post(`${API_BASE}/api/auth/login`, () =>
-        up ? HttpResponse.json({ token: 'tok-2' }) : HttpResponse.error(),
-      ),
-    )
-    renderApp()
-    const retry = await screen.findByRole('button', { name: 'Újra' }, { timeout: 15000 })
-    up = true
-    await act(async () => { retry.click() })
-    expect(await screen.findByTestId('app', undefined, { timeout: 5000 })).toBeInTheDocument()
-  }, 25000)
+test('real mode with no token renders the login page, not the app', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  render(<QueryProvider><div>APP</div></QueryProvider>)
+  expect(await screen.findByRole('heading', { name: 'Bejelentkezés' })).toBeInTheDocument()
 })
