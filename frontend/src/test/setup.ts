@@ -1,5 +1,5 @@
 import '@testing-library/jest-dom/vitest'
-import { afterAll, afterEach, beforeAll } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 import { server } from '@/test/msw/server'
 import { resetTutorialProgressState } from '@/test/msw/handlers'
 import { setCurrentUserId } from '@/shared/lib/userScope'
@@ -69,6 +69,18 @@ afterEach(() => {
 // module-level user scope between tests, so a scope or key set by one test
 // never leaks into the next (which defaults to the `anon` scope).
 afterEach(() => {
+  try {
+    localStorage.clear()
+  } catch {
+    /* ignore */
+  }
+  setCurrentUserId(null)
+})
+// Review Finding (Task 10 fix round 1): the afterEach above only resets AFTER a test runs — a
+// file that sets the scope at module scope or in its own beforeAll (rather than inside a test)
+// would run its FIRST case unreset. Mirror the reset before each test too, so both edges are
+// covered.
+beforeEach(() => {
   try {
     localStorage.clear()
   } catch {

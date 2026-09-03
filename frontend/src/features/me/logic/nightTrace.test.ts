@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import {
   clearAllNightWake, clearNightWake, readNightWake, recordNightWake, traceDateFor,
 } from '@/features/me/logic/nightTrace'
+import { setCurrentUserId } from '@/shared/lib/userScope'
 
 describe('nightTrace', () => {
   beforeEach(() => {
@@ -57,9 +58,37 @@ describe('nightTrace', () => {
     expect(localStorage.getItem('mezo-theme')).toBe('dark')
   })
 
+  // Review Finding 2 (Task 10 fix round 1): clearAllNightWake is an unconditional prefix-scan
+  // delete with NO date guard, run on every sign-out. The test above only proves an unrelated
+  // key (mezo-theme) survives — it says nothing about an over-broad prefix, which is the actual
+  // risk on a shared device: account B's night-wake trace must never be swept by account A's
+  // sign-out. Seed a FOREIGN user's key and assert it survives.
+  test('clearAllNightWake leaves other users\' night-wake keys alone', () => {
+    setCurrentUserId('u1')
+    recordNightWake(new Date('2026-07-24T03:00:00'))
+    localStorage.setItem('mezo.other.night-wake:2026-07-24', JSON.stringify({ count: 1, lastAt: 'x' }))
+    clearAllNightWake()
+    expect(readNightWake('2026-07-24')).toBeNull()
+    expect(localStorage.getItem('mezo.other.night-wake:2026-07-24')).not.toBeNull()
+  })
+
+  // Review Finding 1 (Task 10 fix round 1): the original version of this test seeded only a
+  // foreign key and asserted it survives a same-scope recordNightWake — but that assertion
+  // can't fail either against the OLD un-namespaced code (its bare `mezo-night-wake:` prefix
+  // never matches `mezo.other.…` in the first place) or against an OVER-BROAD prefix like
+  // `'mezo.'` (`'mezo.other.night-wake:2026-07-19'.slice(5)` is `'other.…'`, and `'o' > '2'`, so
+  // the `< cutoffIso` date comparison rejects it regardless of the prefix's width). Seeding the
+  // foreign AND the own key under the SAME stale date, then asserting the own one is pruned
+  // while the foreign one survives, discriminates all three implementations: a bare prefix
+  // wouldn't match the own key either (leaving it un-pruned, test fails), an over-broad prefix
+  // would prune BOTH (foreign key gone, test fails), and only the correctly-scoped prefix prunes
+  // the own key and spares the foreign one.
   test('a prune csak a saját user kulcsait takarítja', () => {
+    setCurrentUserId('u1')
     localStorage.setItem('mezo.other.night-wake:2026-07-19', JSON.stringify({ count: 1, lastAt: 'x' }))
+    localStorage.setItem('mezo.u1.night-wake:2026-07-19', JSON.stringify({ count: 1, lastAt: 'x' }))
     recordNightWake()
     expect(localStorage.getItem('mezo.other.night-wake:2026-07-19')).not.toBeNull()
+    expect(localStorage.getItem('mezo.u1.night-wake:2026-07-19')).toBeNull()
   })
 })

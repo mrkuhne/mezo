@@ -35,6 +35,12 @@ function read(key: string): string | null {
  * @param fallback the default segment when nothing has been remembered yet
  */
 export function useStickyTab<T extends string>(key: string, fallback: T): [T, (next: T) => void] {
+  // Review note (Task 10 fix round 1): storage is read only here, in the lazy useState
+  // initializer — a user switch that did NOT unmount this component would keep showing the
+  // PREVIOUS user's remembered segment. Not reachable today: every sign-out path (AuthGate)
+  // drops to the login view, which unmounts the whole authenticated tree, so a fresh mount
+  // (and a fresh read under the new scope) is guaranteed before any sticky-tab consumer could
+  // render again. Revisit if a future flow ever swaps the scoped user without unmounting.
   const [value, setValue] = useState<T>(() => (read(key) as T | null) ?? fallback)
   const set = useCallback(
     (next: T) => {
