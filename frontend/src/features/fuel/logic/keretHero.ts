@@ -9,7 +9,7 @@
 // Design: docs/superpowers/specs/2026-08-09-fuel-keret-hero-design.md §1.2-1.4.
 
 import { pct } from '@/shared/lib/pct'
-import { FIBER_TARGET_G, toMin } from '@/data/fuel/fuelConfig'
+import { toMin } from '@/data/fuel/fuelConfig'
 import { isMealSlot } from '@/features/fuel/logic/dayZones'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
@@ -48,8 +48,11 @@ export function buildKeretHero(input: {
   water: { currentMl: number; targetMl: number }
   slots: FuelSlot[]
   nowHHmm: string
+  /** The fiber ring's target (g) — Diet Plan slice 1 (mezo-xwgb): sourced from `useDietSettings().fiberG`
+   *  instead of the static `FIBER_TARGET_G` default. */
+  fiberTargetG: number
 }): KeretHeroVM {
-  const { budget, staticEnergy, consumed, meals, water, slots, nowHHmm } = input
+  const { budget, staticEnergy, consumed, meals, water, slots, nowHHmm, fiberTargetG } = input
 
   // Meal windows only (mirrors the retired DayBudgetCard's `windows`/`doneWindows` — a workout or
   // a stack/protocol slot is never an eating window, so it never enters the day-bar or the n/m count).
@@ -79,14 +82,15 @@ export function buildKeretHero(input: {
 
   // Rost-összegzés (mezo-c9t5, frontend-only): Σ the day's logged meals' `fiberG`; a meal with no
   // fiberG (undefined or explicit null — the wire doesn't carry it for every meal yet) contributes 0,
-  // never fabricated. Cél = the static FIBER_TARGET_G default (no settings-field yet).
+  // never fabricated. Cél = the caller's `fiberTargetG` (mezo-xwgb — Diet Plan slice 1's
+  // `useDietSettings().fiberG`, no more static default here).
   const fiberG = meals.reduce((sum, m) => sum + (m.fiberG ?? 0), 0)
 
   const rings: RingVM[] = [
     ring('p', 'Fehérje', consumed.p, budget.p, 'var(--macro-protein)', ' g'),
     ring('c', 'Szénhidrát', consumed.c, budget.c, 'var(--macro-carbs)', ' g'),
     ring('f', 'Zsír', consumed.f, budget.f, 'var(--macro-fat)', ' g'),
-    ring('fiber', 'Rost', fiberG, FIBER_TARGET_G, 'var(--macro-fiber)', ' g'),
+    ring('fiber', 'Rost', fiberG, fiberTargetG, 'var(--macro-fiber)', ' g'),
     ring('water', 'Víz', water.currentMl, water.targetMl, 'var(--sky)', ' ml'),
   ]
 

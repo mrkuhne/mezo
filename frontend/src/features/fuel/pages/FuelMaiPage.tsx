@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import type { EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import type { FuelMeal, FuelSlot, MealSlot } from '@/data/types'
 import {
-  useFuelDay, useFuelTimeline, useMedication, useRecipes, useStackDay, useWaterActions,
+  useDietSettings, useFuelDay, useFuelTimeline, useMedication, useRecipes, useStackDay, useWaterActions,
 } from '@/data/hooks'
 import { toMin } from '@/data/fuel/fuelConfig'
 import { addDays, localDateString } from '@/shared/lib/dates'
@@ -77,6 +77,9 @@ export function FuelMaiPage() {
   const { fuel } = useFuelDay()
   const { plan, budget, blocks, nowHHmm, energyBreakdown } = useFuelTimeline()
   const { cycle: medicationCycle } = useMedication()
+  // Diet Plan slice 1 (mezo-xwgb): the fiber ring's target now comes from the user's own diet
+  // settings instead of the static FIBER_TARGET_G default.
+  const { settings: dietSettings } = useDietSettings()
   const { logWater } = useWaterActions()
   // The same stack/day composition FuelStackPage.tsx already uses, feeding matchMealsToStack —
   // buildWindowRiver takes EVERY today ('ma') verdict (one per zone) and each window picks the
@@ -131,7 +134,7 @@ export function FuelMaiPage() {
   const keretHeroVm = buildKeretHero({
     budget, staticEnergy, consumed: fuel.consumed, meals: fuel.meals,
     water: { currentMl: fuel.consumed.water, targetMl: fuel.targets.water },
-    slots: plan.slots, nowHHmm,
+    slots: plan.slots, nowHHmm, fiberTargetG: dietSettings.fiberG,
   })
 
   // Done-capsule rows: `doneMealRows` joins each done slot's own meal (role always null there — no

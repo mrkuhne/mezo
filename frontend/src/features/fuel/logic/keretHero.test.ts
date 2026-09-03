@@ -26,6 +26,7 @@ const build = (over: Partial<Parameters<typeof buildKeretHero>[0]> = {}) =>
     water: { currentMl: 1200, targetMl: 2400 },
     slots: [],
     nowHHmm: '12:00',
+    fiberTargetG: 30,
     ...over,
   })
 
