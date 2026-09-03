@@ -3511,7 +3511,8 @@ the same owning-feature reads the snapshot/tools use, but date-scoped to ONE pas
 finders filtered to the day, `FuelDayService.getDay(date)`, sleep/check-in by-date finders,
 `MedicationCycleService.derive(userId, med, date)` (it already took an explicit date), and ONE new
 plain finder in the owning feature (`WeightLogRepository.findFirstBy…AndDate…` — the V0.3/V0.5
-precedent). The nightly job iterates `AppUserRepository.findAll()` (companion → auth read).
+precedent). The nightly job fans out over the ACTIVE + onboarded accounts via `UserFanOut.forEachActiveUser`
+(S6, `mezo-qw37.6` — companion → auth read), each user's body under `LlmActorContext.runAs`.
 
 **V2.3 recall seam (✅ wired).** `find_similar_past_days` is companion-internal (tools →
 `MemoryRecallService` → the V2.1 repository + V2.1 `EmbeddingPort`) — no new cross-feature reads.

@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-09-01
+updated: 2026-09-02
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -823,12 +823,23 @@ flag raise, §5.8 below), consumed by `feature.proactive.service.InterventionEve
 SEPARATE listener from this section's `CompanionMessageEventListener`, not a third method on it,
 since the trigger event lives in a different feature package.
 
+**The per-user fan-out (S6, `mezo-qw37.6`) — every cron in this doc.** No job walks
+`appUserRepository.findAll()` any more: each one takes `feature/auth/service/UserFanOut` and calls
+`userFanOut.forEachActiveUser("<job name>", user -> …)`, which (a) visits only **ACTIVE + onboarded**
+accounts (`AppUserRepository.findByStatusAndOnboardedAtIsNotNull` — a disabled or half-onboarded
+account gets no generated content and burns no tokens), (b) runs each user's body inside
+`LlmActorContext.runAs(user.getId(), …)` so `llm_log_history.created_by` names the user the job ran
+for instead of the `Háttér` bucket ([`beta-admin.md`](beta-admin.md) §5), and (c) catches a
+`Throwable` per user so one bad account never aborts the run — the jobs keep their own finer-grained
+try/catch INSIDE the body on top of it. The pseudocode blocks below write the loop as
+`userFanOut.forEachActiveUser(…)`.
+
 **The crons (`mezo-gst9` — `service/CompanionMessageJob.java`):**
 
 ```
 @Scheduled(cron = "${mezo.proactive.feed.morning-cron}")   05:45 server zone; three-switch bean
   today = LocalDate.now()
-  for each appUserRepository.findAll():
+  userFanOut.forEachActiveUser("Companion-feed morning", user):   (ACTIVE + onboarded only; body under LlmActorContext.runAs)
      try  companionMessageGenerator.generateMorning(user.id, today)   (TODAY only — no backfill)
      catch → log.warn + continue                                      (per-user isolation)
      try  companionMessageGenerator.generatePeopleObservation(user.id, today)   (Emberek S6,
@@ -840,7 +851,7 @@ since the trigger event lives in a different feature package.
 
 @Scheduled(cron = "${mezo.proactive.feed.midday-cron}")   runWindow(MIDDAY)
 @Scheduled(cron = "${mezo.proactive.feed.evening-cron}")  runWindow(EVENING)
-  (same per-user try/catch loop, TODAY only, idempotent)
+  (same forEachActiveUser fan-out + per-user try/catch, TODAY only, idempotent)
 ```
 
 Idempotent (an existing row is returned untouched, no LLM call), so a cron run overlapping the lazy
@@ -946,7 +957,7 @@ GET /api/proactive/weekly-suggestion?date=YYYY-MM-DD    (date optional)
 ```
 @Scheduled(cron = "${mezo.proactive.weekly.cron}")   0 0 6 * * MON (Monday 06:00 server zone); three-switch bean
   weekStart = previousOrSame(MONDAY) of LocalDate.now()   (the CURRENT week — its Monday IS today)
-  for each appUserRepository.findAll():
+  userFanOut.forEachActiveUser("Weekly suggestion", user):        (ACTIVE + onboarded only; body under LlmActorContext.runAs)
      try  generator.generate(user.id, weekStart)          (current week only — no backfill)
      catch → log.warn + continue                          (per-user isolation)
 ```
@@ -996,7 +1007,7 @@ GET /api/proactive/memoir                               (NO parameters)
 ```
 @Scheduled(cron = "${mezo.proactive.memoir.cron}")   0 0 19 * * SUN (Sunday 19:00 server zone); three-switch bean
   weekStart = previousOrSame(MONDAY) of LocalDate.now()   (the week ENDING this Sunday — its Monday)
-  for each appUserRepository.findAll():
+  userFanOut.forEachActiveUser("Memoir", user):                  (ACTIVE + onboarded only; body under LlmActorContext.runAs)
      try  generator.generate(user.id, weekStart)          (that week only — no backfill)
      catch → log.warn + continue                          (per-user isolation)
   log.info "Memoir run for {weekStart}: {n} memoir(s) present"
@@ -1055,8 +1066,10 @@ GET /api/proactive/prediction                          (NO parameters)
 
 **The two crons (P1 — `service/PredictionJob.java`):** `runWeekly` on `mezo.proactive.prediction.cron`
 (Mon 06:30) generates the current week per user; `runValidation` on `validation-cron` (daily 06:15)
-calls `validateClosedWindows(user, today)` per user. Both loop `appUserRepository.findAll()` with
-per-user try/catch; three-switch bean.
+calls `validateClosedWindows(user, today)` per user. Both fan out via
+`userFanOut.forEachActiveUser("Prediction weekly" / "Prediction validation", …)` — ACTIVE + onboarded
+accounts only, each body under `LlmActorContext.runAs` (the fan-out note above §3) — and keep their
+own per-user try/catch on top; three-switch bean.
 
 **The generator (`service/PredictionGenerator.java`):** `generate(userId, weekStart)` — existing week
 ⇒ empty (idempotent); `gather` (PURE CODE: snapshot + facts + numbered CONFIRMED-pattern candidates +
