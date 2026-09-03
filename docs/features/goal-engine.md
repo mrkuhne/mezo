@@ -127,7 +127,7 @@ neededKcal = (targetRateKgPerWk − observedRateKgPerWk) × kcalPerKg ÷ 7
 
 with **signed** kg/week rates (cut negative, bulk positive, maintain 0 — `targetRateKgPerWk` derives from `goal.rateTargetPctPerWeek` the same way the projection does, just re-signed by trajectory). Gates, in order: no trend / `dataSufficiency == NONE` / a null observed rate → empty (not trustworthy yet); `|neededKcal| <` `adaptive.deadBandKcal` (50) → empty (on track — silence, not micro-nudges); otherwise clamp to `±adaptive.maxStepKcal` (120, deliberately small steps — the RP unsmoothed 200g→50g jump is the anti-pattern this clamps against); **sleep-debt damping** then halves the delta **only when it is negative** (deficit-deepening) — a correction that *adds* food is never damped, because the guard exists to protect recovery, not to slow progress; if the (possibly halved) delta rounds to 0, empty.
 
-**Spec deviation, deliberate:** the design spec (§6.6) wrote `delta = (observedRate − targetRate) × 7700/7` — the worked examples below show that sign is inverted for the intended behavior (a cut running too slow must produce a *negative* kcal delta, i.e. deepen the deficit). This implementation uses `(target − observed)`; the worked examples are the source of truth, not the prose formula.
+**Spec deviation, deliberate:** the Diet Plan spec (`docs/superpowers/specs/2026-09-02-diet-plan-design.md` §6.6) wrote `deltaKcal = clamp((observedRate − targetRate) × 7700 / 7, ±maxStep)` — the worked examples below show that sign is inverted for the intended behavior (a cut running too slow must produce a *negative* kcal delta, i.e. deepen the deficit). This implementation uses `(target − observed)`; the worked examples are the source of truth, not the prose formula.
 
 Worked examples (`kcalPerKg = 7700` ⇒ ×1100 per kg/week of gap; from `AdaptiveCorrectionServiceTest`):
 
@@ -135,7 +135,7 @@ Worked examples (`kcalPerKg = 7700` ⇒ ×1100 per kg/week of gap; from `Adaptiv
 |---|---|---|---|
 | Cut too slow | target −0.48 kg/wk, observed −0.20 kg/wk | −308 kcal | **−120** (clamped) |
 | Cut too fast | target −0.48 kg/wk, observed −0.90 kg/wk | +462 kcal | **+120** (clamped, eases up) |
-| Bulk too slow | target +0.25 kg/wk (0.25% BW), observed +0.05 kg/wk | +165 kcal | **+120** (clamped) |
+| Bulk too slow | target +0.20 kg/wk (0.25% BW), observed +0.05 kg/wk | +165 kcal | **+120** (clamped) |
 | Small gap | target −0.48 kg/wk, observed −0.45 kg/wk | −33 kcal | **empty** (inside the 50-kcal dead-band) |
 | Cut too slow **+ sleep debt** | same as row 1 | −308 → clamp −120 | **−60** (halved; the fast-easing +120 case above stays undamped since it's positive) |
 
@@ -271,7 +271,7 @@ Add a tunable, a guard leg, or a projection input — always config-first, contr
 - Age/`computedAt` use `LocalDate.now()`/`OffsetDateTime.now()` directly (no `Clock` bean — codebase convention); the services are otherwise pure.
 - `neat` is stored unrounded (a multiplier, not kcal); `bmr`/`neatBaselineKcal`/`weeklyEatKcalPerDay`/`tdee` are rounded (2 dp).
 - `proteinMonitored` is **always false** — the protein TARGET is prescribed and, since Diet Plan slice 2 (`mezo-3g5w`), Fuel's meal scorer already judges every logged meal's macros against that same goal-aware target (`FuelDayService.dailyTargets` → the 5-arg `MealScoringService.scoreMeal`, see [`fuel.md`](fuel.md) §5). The guard's **own** closed loop — comparing the day's/week's actually-logged protein total against the prescribed target to flag a shortfall on the recept card — is **still not built**; Diet Plan slice 5 closed the analogous *energy* loop (adaptive kcal correction) but deliberately left protein monitoring alone (a separate, still-open gap; a note records the deferral and it must **not** downgrade the verdict).
-- **Adaptive-correction sign convention is a deliberate spec deviation** (§3) — the design spec (§6.6) wrote `delta = (observedRate − targetRate) × kcalPerKg/7`; `AdaptiveCorrectionService` uses `(target − observed)` instead, because the worked examples (a too-slow cut must deepen the deficit, i.e. a *negative* delta) only hold with that sign. If a future change to this math looks like it's "fixing" the sign back to match the spec prose, check the worked examples first — they are the source of truth, not §6.6.
+- **Adaptive-correction sign convention is a deliberate spec deviation** (§3) — the Diet Plan spec (`docs/superpowers/specs/2026-09-02-diet-plan-design.md` §6.6) wrote `deltaKcal = clamp((observedRate − targetRate) × 7700 / 7, ±maxStep)`; `AdaptiveCorrectionService` uses `(target − observed)` instead, because the worked examples (a too-slow cut must deepen the deficit, i.e. a *negative* delta) only hold with that sign. If a future change to this math looks like it's "fixing" the sign back to match the spec prose, check the worked examples first — they are the source of truth, not the Diet Plan spec's §6.6.
 - **The sleep-debt guard is a second, independent implementation**, not a reuse of companion's `FlagEvaluator.sleepDebt` — same math, but its own window (7 nights vs the flag's 3) and its own config (`mezo.goal.adaptive.*`), so the adaptive review works even with the companion switch off. Don't conflate the two when changing sleep-debt math — a fix to one does not touch the other.
 
 **Deferred to Phase 3** (post-G5):
