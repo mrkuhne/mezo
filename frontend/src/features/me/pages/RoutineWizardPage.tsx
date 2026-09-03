@@ -188,9 +188,10 @@ export function RoutineWizardPage() {
     )
   }
 
-  // Sorted by position and ACTIVE-only, exactly as `HabitPage`'s own chain picker does — an
-  // unsorted list contradicted the hub's order, and a paused chain is not a place to file a
-  // brand-new recipe.
+  // Sorted by position, like every other chain list; ACTIVE-only is this page's own rule, NOT
+  // shared with `HabitPage`/`RutinHubPage`, which sort but keep paused chains visible. The
+  // asymmetry is deliberate: an existing habit may sit in a paused chain and must stay editable
+  // there, but a brand-new recipe should not be filed into one.
   const chains = [...(catalog?.chains ?? [])].filter((c) => c.isActive).sort((a, b) => a.position - b.position)
   // Excluding the prefilled definition keeps a re-framed habit out of its OWN anchor chips:
   // picking itself sends a self-anchor, which the backend rejects with 400 HABIT_ANCHOR_INVALID
