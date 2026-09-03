@@ -5403,8 +5403,11 @@ export interface components {
             /** Format: uuid */
             mesoId?: string | null;
             mesoTitle?: string | null;
-            /** @enum {string} */
-            snapshotTrajectory: "cut" | "bulk" | "maintain";
+            /**
+             * @description phase_change race guard; null on weekly_correction
+             * @enum {string|null}
+             */
+            snapshotTrajectory?: "cut" | "bulk" | "maintain" | null;
             /**
              * Format: date
              * @description weekly_correction: reviewed week Monday (mirrors the dedup key)

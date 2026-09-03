@@ -351,7 +351,7 @@ components:
     GoalSuggestionPayload:
       type: object
       description: 'Typed suggestion body. phase_change carries either suggestedTrajectory (preset↔trajectory mismatch) or balanceOverrideKcal+fromWeek+toWeek (deload maintenance week). snapshotTrajectory is the accept-time race guard.'
-      required: [reason, snapshotTrajectory]
+      required: [reason]
       properties:
         reason: { type: string, description: 'Hungarian, user-facing rationale' }
         suggestedTrajectory: { type: string, enum: [cut, bulk, maintain], nullable: true }
@@ -360,7 +360,7 @@ components:
         toWeek: { type: integer, nullable: true }
         mesoId: { type: string, format: uuid, nullable: true }
         mesoTitle: { type: string, nullable: true }
-        snapshotTrajectory: { type: string, enum: [cut, bulk, maintain] }
+        snapshotTrajectory: { type: string, enum: [cut, bulk, maintain], nullable: true, description: 'phase_change race guard; null on weekly_correction' }
         weekStart: { type: string, format: date, nullable: true, description: 'weekly_correction: reviewed week Monday (mirrors the dedup key)' }
         deltaKcal: { type: integer, nullable: true }
         observedRateKgPerWk: { type: number, nullable: true }

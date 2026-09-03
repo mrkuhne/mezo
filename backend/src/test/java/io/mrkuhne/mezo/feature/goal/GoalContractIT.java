@@ -16,6 +16,7 @@ import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.GoalSuggestionPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -251,6 +252,43 @@ class GoalContractIT extends ApiIntegrationTest {
 
         assertThat(suggestions).hasSize(1);
         assertThat(suggestions.get(0).getPayload().getReason()).isEqualTo("A cut-prep mezo deficitet javasol.");
+    }
+
+    /**
+     * Fix round 1 (review finding 2): the null-guard in {@code GoalSuggestionMapper.toPayload}
+     * for {@code snapshotTrajectory} (null on every weekly_correction payload) is only exercised
+     * via a real HTTP round-trip — the ITs elsewhere read suggestions straight off the
+     * repository, never through this endpoint, so a regression to the old unconditional
+     * {@code SnapshotTrajectoryEnum.fromValue(...)} call (which throws on null) would 500 here
+     * and only here.
+     */
+    @Test
+    void testListGoalSuggestions_shouldRoundTripWeeklyCorrectionPayload_whenProposed() {
+        RegisteredUser owner = registerUser("Weekly Correction Lister");
+        GoalResponse goal = postForBody("/api/goals", req().trajectory("cut").build(), owner.headers(),
+            HttpStatus.CREATED, GoalResponse.class);
+        OffsetDateTime rxAt = OffsetDateTime.parse("2026-08-24T06:40:00Z");
+        suggestionPopulator.createOpen(owner.id(), goal.getId(), "weekly_correction", "weekly:2026-08-24",
+            new GoalSuggestionPayloadJson(
+                "A mért trend lassabb a célnál — heti korrekció.", null, null, null, null, null, null, null,
+                "2026-08-24", -120, new BigDecimal("-0.20"), new BigDecimal("-0.50"), false,
+                5, 1800, 2000, rxAt));
+
+        List<GoalSuggestionResponse> suggestions = getForList(
+            "/api/goals/" + goal.getId() + "/suggestions", owner.headers(), HttpStatus.OK, GoalSuggestionResponse.class);
+
+        assertThat(suggestions).hasSize(1);
+        var payload = suggestions.get(0).getPayload();
+        assertThat(payload.getSnapshotTrajectory()).as("null on weekly_correction — no NPE/500 mapping it").isNull();
+        assertThat(payload.getDeltaKcal()).isEqualTo(-120);
+        assertThat(payload.getObservedRateKgPerWk()).isEqualByComparingTo("-0.20");
+        assertThat(payload.getTargetRateKgPerWk()).isEqualByComparingTo("-0.50");
+        assertThat(payload.getDampedBySleep()).isFalse();
+        assertThat(payload.getAdherenceLoggedDays()).isEqualTo(5);
+        assertThat(payload.getAdherenceAvgIntakeKcal()).isEqualTo(1800);
+        assertThat(payload.getAdherenceAvgTargetKcal()).isEqualTo(2000);
+        assertThat(payload.getWeekStart()).isEqualTo(LocalDate.of(2026, 8, 24));
+        assertThat(payload.getPrescriptionGeneratedAt().isEqual(rxAt)).as("same instant, offset representation may differ across the JSON round-trip").isTrue();
     }
 
     @Test

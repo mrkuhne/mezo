@@ -12832,7 +12832,6 @@ components:
         guard.
       required:
         - reason
-        - snapshotTrajectory
       properties:
         reason:
           type: string
@@ -12869,6 +12868,8 @@ components:
             - cut
             - bulk
             - maintain
+          nullable: true
+          description: phase_change race guard; null on weekly_correction
         weekStart:
           type: string
           format: date
