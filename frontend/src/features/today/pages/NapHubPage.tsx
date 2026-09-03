@@ -1,7 +1,8 @@
 // ============================================================
 // Mezo · NapHubPage — the Nap spine's Mozaik face (mezo-d20.2.1)
 // Source of truth: docs/design_2.0/prototypes/src/nap-body.html. The header
-// (date eyebrow · daypart switch · bell · avatar) now lives in the shell
+// (section spot + name · [tutorial "?"] · daypart switch · Mezo messages ·
+// notifications · profile orb) now lives in the shell
 // (`app/AppHeader.tsx`, mezo-atry) — this page only picks the panel from
 // `?dp=`, then renders ONE hero per daypart panel + the 2-column tile mosaic;
 // every tile navigates to its own page (Huawei pattern).

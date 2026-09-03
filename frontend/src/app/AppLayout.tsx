@@ -53,7 +53,9 @@ export function AppLayout() {
               <MezoThreadProvider>
                 <ScreenContent>
                   {/* A fejléc a shellé, nem az oldalaké (mezo-atry): egy példány, minden
-                      oldalon ugyanaz. A scrollerben ÜL, tehát a tartalommal együtt görög. */}
+                      oldalon ugyanaz. A scrollerben ÜL, de mostantól kitapad (mezo-8az6,
+                      position: sticky) — a tartalom görög alatta, ő maga a görgetőport
+                      tetején marad. */}
                   {!hideChrome && <AppHeader />}
                   {/* Tab-level boundary: a crashed page degrades to a fallback card; the chrome
                       (TabBar) stays usable and navigating away (resetKey) recovers. */}

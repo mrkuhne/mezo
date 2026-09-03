@@ -932,11 +932,14 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   /* NEM 0 és NEM 54px: a .screen-content padding-topja (54px) továbbra is a fake
      státuszsáv alá offsetel, de a shell-fejléc (mezo-8az6) mostantól maga is kitapad
      ugyanoda — a lap chrome-ja ezért a KOMPAKT fejléc magasságával (--mzh-head-cond-h)
-     lejjebb tapad ki, hogy ne csússzon a shell-fejléc alá. */
-  top: var(--mzh-head-cond-h);
+     lejjebb tapad ki, hogy ne csússzon a shell-fejléc alá. Ez CSAK akkor igaz, ha van
+     shell-fejléc: a chrome nélküli oldalakon (AppLayout.tsx hideChrome) nincs mi alá
+     tapadni, ott a 0 a helyes — innen a :has() scope. */
+  top: 0;
   z-index: 40;
   background: var(--canvas);
 }
+.screen-content:has(.app-head) .sticky-top { top: var(--mzh-head-cond-h); }
 
 /* Lock background scroll when a sheet/modal (or the SubNavDropdown popover, whose
    backdrop is portaled into .phone-screen the same way) is open */
@@ -1103,8 +1106,9 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
     padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
   /* A shell-fejléc valódi eszközön is kitapad (mezo-8az6), ezért a lap chrome-ja itt sem
-     tapadhat ki 0-nál — ugyanaz a kompakt fejléc-magasság, mint az alapszabályban. */
-  .sticky-top { top: var(--mzh-head-cond-h); }
+     tapadhat ki 0-nál — ugyanaz a kompakt fejléc-magasság, mint az alapszabályban.
+     Ugyanúgy csak fejléces oldalon: lásd az alapszabály :has() scope-ját. */
+  .screen-content:has(.app-head) .sticky-top { top: var(--mzh-head-cond-h); }
   .tab-bar {
     height: auto;
     padding-top: 8px;
@@ -4575,7 +4579,8 @@ button.mz-tile:active { transform: scale(0.96); }
   z-index: 46;
   padding-top: 6px;
   margin-bottom: 7px;
-  transition: padding var(--duration-normal) var(--ease-in-out);
+  transition: padding var(--duration-normal) var(--ease-in-out),
+    margin var(--duration-normal) var(--ease-in-out);
 }
 /* Az aurora full-bleed: a .screen-content --screen-gutter paddingját negatív margóval
    lépi át, hogy a telefon széléig érjen. A fejléc TARTALMA a gutteren belül marad. */
@@ -4620,7 +4625,10 @@ button.mz-tile:active { transform: scale(0.96); }
 /* Kompakt üvegmód: az aurora kifakul, a helyét áttetsző, elmosott sáv veszi át.
    A blur SZÁNDÉKOSAN csak erre az alacsony sávra kerül, nem a teljes aurorára —
    nagy felületen a backdrop-filter gyenge telefonon képkockát ejt. */
-.app-head.is-cond { padding-top: 4px; margin-bottom: 3px; }
+/* A padding-top a --mzh-head-cond-h tokenből SZÁRMAZIK, nem külön szám: 40px a
+   .nap-roundbtn kontrollsor magassága, a token a mérvadó (44px mindkét témában) — így
+   nem szakadhat el csendben a kettő egymástól. */
+.app-head.is-cond { padding-top: calc(var(--mzh-head-cond-h) - 40px); margin-bottom: 3px; }
 .app-head.is-cond .app-head-bg { opacity: 0; }
 .app-head.is-cond::before {
   content: "";
@@ -4633,7 +4641,11 @@ button.mz-tile:active { transform: scale(0.96); }
   -webkit-backdrop-filter: blur(18px);
   border-bottom: 0.5px solid var(--mzh-glass-line);
 }
-/* A fejléc tartalma az aurora és az üvegsáv FÖLÖTT ül. */
+/* A fejléc tartalma az aurora és az üvegsáv FÖLÖTT ül. Figyelem: ez minden fejléc-
+   gyerekből saját stacking contextet csinál, tehát a bennük lévő .nap-dpmenu/
+   .nap-ntfmenu 30-as z-indexe is EBBE a helyi kontextusba zárul, nem a globálisba.
+   Jelenleg ez nem okoz ütközést (a menük geometriailag nem lógnak ki később jövő
+   testvérek alá), de új fejléc-gyerek hozzáadásakor erre figyelni kell. */
 .app-head > *:not(.app-head-bg) { position: relative; z-index: 1; }
 .nap-head-grow { flex: 1; min-width: 0; }
 .nap-dpwrap { position: relative; }
