@@ -91,3 +91,21 @@ test('/train/session — a prep-fázisban van mini ? gomb', async () => {
     expect(document.querySelector('[aria-label="Kalauz ehhez az oldalhoz"]')).not.toBeNull(),
   )
 })
+
+// ── S3b (mezo-gb1s.6): a Fuel T2 aloldalak horgonyai ─────────────────────────
+// A `/fuel/plan` és a `/fuel/gyogyszer` szándékosan horgony nélkül él: a Terv beszélő
+// felületei (heti jegyzet, gyógyszer-csík, supplement-térkép) adat-feltételesek, a
+// Gyógyszer oldalnak pedig KÉT teljesen külön arca van (üres vs. követett ciklus) —
+// egyikre sem lehet őszintén rámutatni. A `log-forrasok` a MealComposeren ül, tehát a
+// `/fuel/log/uj` teljes oldalán és a LogFlow-overlayben ugyanaz az elem.
+test.each([
+  ['/fuel/log', 'log-napvalto'],
+  ['/fuel/log/uj', 'log-forrasok'],
+  ['/fuel/stack', 'stack-hero'],
+  ['/fuel/recipes', 'receptek-tabs'],
+  ['/fuel/kamra', 'kamra-hero'],
+  ['/fuel/naplo', 'naplo-hero'],
+])('%s — a(z) %s anchor jelen van', async (path, name) => {
+  renderAt(path)
+  await waitFor(() => expect(hasAnchor(name)).not.toBeNull())
+})
