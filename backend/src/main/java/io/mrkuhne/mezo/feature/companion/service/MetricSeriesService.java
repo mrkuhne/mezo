@@ -130,6 +130,7 @@ public class MetricSeriesService {
             case TRAINING_MONOTONY -> trainingMonotony(userId, from, to);
             case BEDTIME_VARIABILITY -> bedtimeVariability(userId, from, to);
             case SHOULDER_STRAIN -> shoulderStrain(userId, from, to);
+            case WEIGHT_TREND_PCT_WK -> weightTrendPctWk(userId, from, to);
         };
     }
 
@@ -345,6 +346,48 @@ public class MetricSeriesService {
                 series.put(day, weight - previous);
             }
         });
+        return series;
+    }
+
+    /**
+     * 7 napos gördülő legkisebb-négyzetes súly-lejtő %/hét-ben (a lejtő kg/nap × 7 / ablakátlag
+     * × 100). Honest gate: <4 mérés a gördülő ablakban ⇒ nincs adatpont. Belső ablak-kiterjesztés
+     * (az ACWR mintája): a hívó [from,to]-ja változatlan.
+     */
+    private Map<LocalDate, Double> weightTrendPctWk(UUID userId, LocalDate from, LocalDate to) {
+        TreeMap<LocalDate, Double> weights = new TreeMap<>();
+        weightLogRepository.findAllOwned(userId).stream()
+                .filter(log -> !log.getDate().isBefore(from.minusDays(6)) && !log.getDate().isAfter(to))
+                .sorted(java.util.Comparator.comparing(WeightLogEntity::getDate)
+                        .thenComparing(WeightLogEntity::getCreatedAt))
+                .forEach(log -> weights.put(log.getDate(), log.getWeightKg().doubleValue()));
+
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            List<double[]> points = new ArrayList<>(); // {dayIndex 0..6, weightKg}
+            for (int i = 6; i >= 0; i--) {
+                Double kg = weights.get(day.minusDays(i));
+                if (kg != null) {
+                    points.add(new double[] {6 - i, kg});
+                }
+            }
+            if (points.size() < 4) {
+                continue;
+            }
+            double meanX = points.stream().mapToDouble(p -> p[0]).average().orElseThrow();
+            double meanY = points.stream().mapToDouble(p -> p[1]).average().orElseThrow();
+            double num = 0;
+            double den = 0;
+            for (double[] p : points) {
+                num += (p[0] - meanX) * (p[1] - meanY);
+                den += (p[0] - meanX) * (p[0] - meanX);
+            }
+            if (den == 0) {
+                continue;
+            }
+            double slopeKgPerDay = num / den;
+            series.put(day, slopeKgPerDay * 7 / meanY * 100);
+        }
         return series;
     }
 

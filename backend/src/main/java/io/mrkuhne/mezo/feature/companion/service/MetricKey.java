@@ -40,7 +40,8 @@ public enum MetricKey {
     ACWR("akut:krónikus terhelés", "származtatott: sport + gym terhelésből", MetricDomain.TRAIN),
     TRAINING_MONOTONY("edzés-monotónia", "származtatott: a napi terhelés szórásából", MetricDomain.TRAIN),
     BEDTIME_VARIABILITY("lefekvés-szórás", "származtatott: a lefekvési időkből", MetricDomain.SLEEP),
-    SHOULDER_STRAIN("váll-terhelés", "Sport-napló (shoulder strain csúcs)", MetricDomain.TRAIN);
+    SHOULDER_STRAIN("váll-terhelés", "Sport-napló (shoulder strain csúcs)", MetricDomain.TRAIN),
+    WEIGHT_TREND_PCT_WK("súlytrend %/hét", "származtatott: 7 napos súly-regresszió", MetricDomain.BODY);
 
     private final String labelHu;
     private final String sourceHu;
