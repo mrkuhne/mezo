@@ -159,7 +159,7 @@ public class RecipeBreakdownProseService {
             String text = details.get(d.id()); // keyed by dimension id — narrates all 8
             return text == null || text.isBlank() ? d
                 : new Dimension(d.id(), d.label(), d.weight(), d.score(), text,
-                    d.macro(), d.micros(), d.nova(), d.context());
+                    d.macro(), d.micros(), d.nova(), d.context(), d.note());
         }).toList();
         List<ImproveRow> improve = prose.improve() == null ? List.<ImproveRow>of() : prose.improve().stream()
             .filter(i -> i.text() != null && !i.text().isBlank())

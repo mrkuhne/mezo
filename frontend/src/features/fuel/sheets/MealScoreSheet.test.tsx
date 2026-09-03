@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, vi } from 'vitest'
@@ -39,6 +39,35 @@ test('Lehetne jobb renders the gain as pont', () => {
   renderSheet() // mock improve impacts are "+0.04 score" / "+0.01 score"
   expect(screen.getByText('+4')).toBeInTheDocument()
 })
+test('improve-javaslatok pont-chipként a Mezo-kártyán jelennek meg (mezo-jcpt.1)', () => {
+  // Mozaik 2.0: the improve list is no longer a separate „Lehetne jobb" stack under the
+  // dimensions on the MEAL surface — it rides as action chips inside the Mezo verdict card
+  // (the prototype's `.improw` / `.impch`). The recipe surface keeps the stacked cards.
+  renderSheet() // mock m1 improve impacts: "+0.04 score" / "+0.01 score"
+  const card = screen.getByText('Mezo · olvasat').closest<HTMLElement>('.card')
+  expect(card).not.toBeNull()
+  // the gain rides ON the suggestion chip (not in a separate list further down the sheet)
+  const chip = within(card!).getByText('+4').closest('.sb-impch')
+  expect(chip).not.toBeNull()
+  expect(chip).toHaveTextContent(/tökmag/)
+  // …and the „Lehetne jobb" stack is gone from the meal surface — one suggestion, one place
+  expect(screen.queryByText('Lehetne jobb')).not.toBeInTheDocument()
+})
+test('a coach-less meal (summary null) still shows its improve suggestions (mezo-jcpt.1)', () => {
+  // The chips live INSIDE the Mezo card, which renders only when there is a summary.
+  // `MealBreakdown.summary` is null until the coach fills it — and stays null when the coach
+  // is off/unavailable — so the sheet must fall back to the „Lehetne jobb" stack rather than
+  // dropping the deterministic suggestions entirely.
+  const seed = seedScoredMeal()
+  const coachless = { ...seed, breakdown: { ...seed.breakdown!, summary: null } }
+  render(<MealScoreSheet meal={coachless} onClose={() => {}} />, { wrapper: QueryWrapper })
+  expect(screen.queryByText('Mezo · olvasat')).not.toBeInTheDocument()
+  expect(document.querySelectorAll('.sb-impch')).toHaveLength(0) // no card → no chips
+  expect(screen.getByText('Lehetne jobb')).toBeInTheDocument()
+  const gain = screen.getByText('+4').closest<HTMLElement>('.sb-imp')
+  expect(gain).not.toBeNull()
+  expect(gain).toHaveTextContent(/tökmag/)
+})
 test('renders the derived name (not a blank header) for a scored meal with an empty title (mezo-u68c)', () => {
   const seed = seedScoredMeal()
   const titleless = { ...seed, title: '' } // pre-fix meal: null title coerced to '' (mealApi.ts)
@@ -50,6 +79,14 @@ test('renders the derived name (not a blank header) for a scored meal with an em
 test('summary section renders (SafeMarkdown, no innerHTML)', () => {
   renderSheet()
   expect(screen.getByText('Mezo · olvasat')).toBeInTheDocument()
+})
+test('dimension note renders (as text, no innerHTML) once its card is expanded (mezo-jcpt.1)', async () => {
+  const meal = renderSheet()
+  const noted = meal.breakdown!.dimensions.find(d => d.note)!
+  expect(noted).toBeDefined()
+  // collapsed by default (mezo-zeeq) — the note is inside the expandable body
+  await userEvent.click(screen.getByRole('button', { name: new RegExp(noted.label) }))
+  expect(screen.getByText(new RegExp(noted.note!.slice(0, 20)))).toBeInTheDocument()
 })
 test('close button dismisses', async () => {
   const onClose = vi.fn()

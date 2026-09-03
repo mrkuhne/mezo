@@ -1,15 +1,19 @@
 // ============================================================
 // Mezo · ScoreBreakdownBody (shared score-breakdown sections)
-// „Miből áll össze" head + ScoreLedger + collapsible DimensionCards + „Lehetne jobb"
-// gain cards — used by MealScoreSheet (meal score) and RecipeScoreSheet (template
-// breakdown, mezo-bw3y / F7.3). One body, two callers, so the two surfaces stay
-// pixel-identical. Logolás 2.1 (mezo-zeeq) retired the „Hogyan számoltam" tool
-// list from here — it was noise in a details view (ToolChipRow lives on elsewhere).
+// „Miből áll össze" head + the Σ ledger tile + the Mozaik 2.0 dimension MOSAIC
+// (one wash tile per dimension, staggered entrance) + the „Lehetne jobb" gain cards.
+// Used by MealScoreSheet (meal score) and RecipeScoreSheet (template breakdown,
+// mezo-bw3y / F7.3). One body, two callers, so the two surfaces stay pixel-identical.
+//
+// mezo-jcpt.1: the MEAL surface hands the improve list to its Mezo card as action chips
+// and passes an empty `improve` here, so the same suggestion is never shown twice; the
+// recipe surface (which has no coach card) keeps the stacked gain cards below.
 // ============================================================
 import type { MealBreakdown } from '@/data/types'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { formatImpact } from '@/features/fuel/logic/formatImpact'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { DimensionCard } from '@/features/fuel/components/DimensionCard'
 import { ScoreLedger } from '@/features/fuel/components/ScoreLedger'
 
@@ -21,7 +25,12 @@ export function ScoreBreakdownBody({ breakdown, scorePct }: {
   scorePct?: number
 }) {
   const b = breakdown
-  const total = scorePct ?? Math.round(b.dimensions.reduce((s, d) => s + d.weight * d.score * 100, 0))
+  // Fallback total mirrors ScoreLedger's honest Σ: only live (weight > 0) dimensions count
+  // (a degraded dim's weight is already 0, so including it is a no-op mathematically — this
+  // filter documents the intent and matches the ledger's rendering, not just its arithmetic).
+  const total = scorePct ?? Math.round(
+    b.dimensions.filter(d => d.weight > 0).reduce((s, d) => s + d.weight * d.score * 100, 0),
+  )
   return (
     <>
       <div className="sb-sec">
@@ -29,9 +38,17 @@ export function ScoreBreakdownBody({ breakdown, scorePct }: {
         <span className="sb-sec-r">{b.dimensions.length} dimenzió · súlyozva</span>
       </div>
       <ScoreLedger dimensions={b.dimensions} />
-      <div className="col gap-sm" style={{ marginTop: 8 }}>
-        {b.dimensions.map(d => <DimensionCard key={d.id} dim={d} />)}
-      </div>
+      {/* The mosaic: live dimensions first (rich, washed), the ghosts last — a degraded
+          dimension is named, not hidden, but it never outranks a scoring one. The 40ms
+          stagger is the prototype's entrance choreography, and it only RUNS inside an
+          EntranceGroup: the `.rise` keyframe is scoped to `.mz-play .rise`, and a sheet
+          portals to `.phone-screen`, which is an ancestor of the pages that arm it — so
+          without this wrapper the class would be dead markup (mezo-jcpt.1). */}
+      <EntranceGroup className="sb-mosaic">
+        {[...b.dimensions]
+          .sort((x, y) => (y.weight > 0 ? 1 : 0) - (x.weight > 0 ? 1 : 0))
+          .map((d, i) => <DimensionCard key={`${d.id}-${i}`} dim={d} delayMs={60 + i * 40} />)}
+      </EntranceGroup>
 
       {b.improve && b.improve.length > 0 && (
         <>

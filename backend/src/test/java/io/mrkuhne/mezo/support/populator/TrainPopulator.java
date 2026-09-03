@@ -526,6 +526,21 @@ public class TrainPopulator {
     }
 
     /**
+     * A sport session on {@code date} carrying an explicit duration and shoulder-strain score
+     * (nullable, 1..10) — the SHOULDER_STRAIN metric extractor's IT fixture (mezo-d58h.1).
+     */
+    public SportSessionEntity createSportSessionWithShoulderStrain(UUID createdBy, LocalDate date,
+        int durationMin, Integer shoulderStrain) {
+        SportSessionEntity s = new SportSessionEntity();
+        s.setCreatedBy(createdBy);
+        s.setDate(date);
+        s.setTime("18:00");
+        s.setDurationMin(durationMin);
+        s.setShoulderStrain(shoulderStrain);
+        return sportSessionRepository.saveAndFlush(s);
+    }
+
+    /**
      * A sport session on {@code date} carrying only an RPE — the recovery-needed flag's minimal
      * training-load seam ({@code MetricSeriesService.trainingRpe} reads {@code sport_session.rpe},
      * mezo-b3pp.18).

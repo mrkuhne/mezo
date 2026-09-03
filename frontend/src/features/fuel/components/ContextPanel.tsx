@@ -1,20 +1,19 @@
 // ============================================================
-// Mezo · ContextPanel (időzítés & kontextus dimension)
-// Label/value rows for the meal's contextual factors
+// Mezo · ContextPanel (időzítés & kontextus + a generikus sor-dimenziók grafikája)
+// Mozaik 2.0 (mezo-jcpt.1): the label/value rows became the prototype's `.hlch`
+// tény-chipek — the same chip row the Heti elemzés card wears, so a dimension's facts
+// read as objects on the tile instead of a table inside it.
 // ============================================================
 import type { ContextDimension, RowsDimension } from '@/data/types'
 
 export function ContextPanel({ dim }: { dim: ContextDimension | RowsDimension }) {
   return (
-    <div className="col gap-xs mt-md" style={{
-      paddingTop: 10,
-      borderTop: '1px solid var(--border-subtle)',
-    }}>
+    <div className="sb-fchips">
       {dim.context.map((c, i) => (
-        <div key={i} className="row" style={{ justifyContent: 'space-between', padding: '4px 0' }}>
-          <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>{c.label}</span>
-          <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 10, color: 'var(--text-primary)' }}>{c.value}</span>
-        </div>
+        <span key={i} className="sb-fchip">
+          <em>{c.label}</em>
+          <span>{c.value}</span>
+        </span>
       ))}
     </div>
   )
