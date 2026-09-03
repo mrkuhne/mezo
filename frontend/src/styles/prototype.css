@@ -1102,7 +1102,9 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
     padding-top: env(safe-area-inset-top);
     padding-bottom: calc(96px + env(safe-area-inset-bottom));
   }
-  .sticky-top { top: 0; }
+  /* A shell-fejléc valódi eszközön is kitapad (mezo-8az6), ezért a lap chrome-ja itt sem
+     tapadhat ki 0-nál — ugyanaz a kompakt fejléc-magasság, mint az alapszabályban. */
+  .sticky-top { top: var(--mzh-head-cond-h); }
   .tab-bar {
     height: auto;
     padding-top: 8px;
