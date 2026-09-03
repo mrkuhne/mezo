@@ -1,10 +1,13 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
+import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
+import { routes } from '@/app/router'
+import { ThemeProvider } from '@/app/ThemeProvider'
+import { QueryWrapper } from '@/test/queryWrapper'
 
 const REAL_MESO_ID = 'b6f3a0e2-0000-4000-8000-0000000000cc'
 const realMeso = (status: 'active' | 'planned' | 'archived') => ({
@@ -12,52 +15,75 @@ const realMeso = (status: 'active' | 'planned' | 'archived') => ({
   startDate: '2026-06-01', endDate: '2026-07-13', weeks: 6, currentWeek: 1,
   split: 'PPL', style: 'RP', phaseCurve: ['MEV'],
 })
-import { MesocycleBuilderPage } from '@/features/train/pages/MesocycleBuilderPage'
-import { QueryWrapper } from '@/test/queryWrapper'
 
 // Asserts Phase-1 mock meso data, so pin mock mode explicitly (the swapped
 // useTrain hook reads useQuery, so a QueryClientProvider is required too).
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
-function LocationProbe() {
-  return <div data-testid="loc">{useLocation().pathname}</div>
-}
-
+// The real router (createMemoryRouter + app routes) rather than a hand-built Routes tree:
+// the day mosaic navigates to a sibling route, and the encoded day token in the resulting
+// URL is exactly what this page promises the day page (mezo-d20.15).
 function setup(id = 'meso-hyp-04') {
-  return render(
+  const router = createMemoryRouter(routes, { initialEntries: [`/train/mesocycles/${id}`] })
+  render(
     <QueryWrapper>
-      <MemoryRouter initialEntries={[`/train/mesocycles/${id}`]}>
-        <Routes>
-          <Route path="/train/mesocycles/:id" element={<MesocycleBuilderPage />} />
-          <Route path="/train/mesocycles/:id/report" element={<div>riport</div>} />
-        </Routes>
-        <LocationProbe />
-      </MemoryRouter>
+      <ThemeProvider>
+        <RouterProvider router={router} />
+      </ThemeProvider>
     </QueryWrapper>,
   )
+  return router
 }
 
-test('renders the meso title as the level-1 heading', () => {
+test('the hero says where the run stands: week, phase and the end date', () => {
   setup()
-  expect(
-    screen.getByRole('heading', { level: 1, name: 'Hypertrophy 04 · Tavasz' }),
-  ).toBeInTheDocument()
+  expect(screen.getByText('Hypertrophy 04 · Tavasz')).toBeInTheDocument()
+  expect(screen.getByText('Aktív · 3/6 hét · Rámpa · vége Jún 12')).toBeInTheDocument()
 })
 
-test('renders the three view-switcher buttons', () => {
+test('the arc card carries one week dot per week', () => {
   setup()
-  expect(screen.getByRole('button', { name: 'Áttekintés' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Volumen' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: 'Gyakorlatok' })).toBeInTheDocument()
+  // meso-hyp-04 runs 6 weeks — one dot per week, the last one striped (deload).
+  expect(document.querySelectorAll('.mz-wdots i')).toHaveLength(6)
+  expect(screen.getByText('A blokk íve')).toBeInTheDocument()
 })
 
-test('tapping a training day row opens DayDetailSheet with the planned-exercise copy', async () => {
-  const user = userEvent.setup()
+test("Mezo's decider sentence explains the volume change", () => {
   setup()
-  // The current Csü Pull day — an unambiguous training day.
-  await user.click(screen.getByRole('button', { name: 'Pull · Csü' }))
-  expect(screen.getByText(/gyakorlat tervezve/)).toBeInTheDocument()
+  // activeMeso.volumeRecompute.changes[0] is the 'back' (Hát) row.
+  expect(screen.getByText(/^Hát:/)).toBeInTheDocument()
+})
+
+test('the two status tiles are there — the week one navigates, the rollover forecast does not', () => {
+  setup()
+  const week = screen.getByRole('button', { name: 'Heti vizsgálat' })
+  expect(week).toBeInTheDocument()
+  expect(screen.getByText(/szett · \d+ rámpázik · \d+ tart/)).toBeInTheDocument()
+  expect(screen.getByText('Hétfőn jön')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Hétfőn jön' })).not.toBeInTheDocument()
+  expect(screen.getByText('a heti görgetés hajnalban fut')).toBeInTheDocument()
+})
+
+test('the day mosaic shows the training days only — no Rest, no sport day', () => {
+  setup()
+  expect(screen.getByRole('button', { name: 'Hét · Push nap' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Csü · Pull nap' })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Vas ·/ })).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Szo ·/ })).not.toBeInTheDocument()
+})
+
+test('tapping a day tile opens that day on its own route, with the token URL-encoded', async () => {
+  const router = setup()
+  await userEvent.click(screen.getByRole('button', { name: 'Hét · Push nap' }))
+  await waitFor(() =>
+    expect(router.state.location.pathname).toBe('/train/mesocycles/meso-hyp-04/days/H%C3%A9t'),
+  )
+})
+
+test('the in-cycle Fókusz picker is gone — tiers are a planning-time decision', () => {
+  setup()
+  expect(screen.queryByText('Fókusz')).not.toBeInTheDocument()
 })
 
 test('Meso lezárása opens the close sheet instead of closing straight away', async () => {
@@ -94,12 +120,12 @@ describe('MesocycleBuilderPage (real mode)', () => {
         return HttpResponse.json({ id: params.id, status: 'archived' })
       }),
     )
-    setup(REAL_MESO_ID)
+    const router = setup(REAL_MESO_ID)
     await userEvent.click(await screen.findByRole('button', { name: 'Meso lezárása' }))
     await userEvent.click(await screen.findByRole('button', { name: /Lezárás/ }))
     await waitFor(() => expect(calls).toEqual([`close:${REAL_MESO_ID}`]))
     await waitFor(() =>
-      expect(screen.getByTestId('loc')).toHaveTextContent(`/train/mesocycles/${REAL_MESO_ID}/report`),
+      expect(router.state.location.pathname).toBe(`/train/mesocycles/${REAL_MESO_ID}/report`),
     )
   })
 
@@ -107,9 +133,9 @@ describe('MesocycleBuilderPage (real mode)', () => {
     server.use(
       http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([realMeso('archived')])),
     )
-    setup(REAL_MESO_ID)
+    const router = setup(REAL_MESO_ID)
     await waitFor(() =>
-      expect(screen.getByTestId('loc')).toHaveTextContent(`/train/mesocycles/${REAL_MESO_ID}/report`),
+      expect(router.state.location.pathname).toBe(`/train/mesocycles/${REAL_MESO_ID}/report`),
     )
   })
 

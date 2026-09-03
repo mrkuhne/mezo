@@ -137,7 +137,10 @@ export function MesoEditor({
 
   return (
     <div className="col gap-md">
-      {/* Day tabs */}
+      {/* Day tabs — only when there IS a choice. A single-day editor (the day page,
+          ProgramDayView) has its own hero saying which day this is; a lone tab there
+          is chrome that switches nothing (mezo-d20.15). */}
+      {days.length > 1 && (
       <div className="row gap-xs" style={{ overflowX: 'auto', scrollbarWidth: 'none', paddingBottom: 4 }}>
         {days.map((d) => {
           const active = d.day === day.day
@@ -190,6 +193,7 @@ export function MesoEditor({
           )
         })}
       </div>
+      )}
 
       {showRename && (
         <input
