@@ -859,27 +859,29 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-03, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/pantry`
-  - **entities→tables:** `PantryImportEntity`→`pantry_import`, `PantryItemEntity`→`pantry_item`
-  - **repositories:** `PantryImportRepository`, `PantryItemRepository`
-  - **services:** `HtmlNutritionStripper`, `OffClient`, `PantryImportService`, `PantryPhotoService`,
-    `PantryScrapeService`, `PantryService`, `PantrySuggestionService`, `PhotoExtractLlm`, `ScrapeDraftValidator`,
-    `ScrapeExtractionService`, `ScrapeLlm`, `WebPageClient`
+  - **entities→tables:** `PantryCatalogEntity`→`pantry_catalog`, `PantryImportEntity`→`pantry_import`,
+    `PantryItemEntity`→`pantry_item`
+  - **repositories:** `PantryCatalogRepository`, `PantryImportRepository`, `PantryItemRepository`
+  - **services:** `HtmlNutritionStripper`, `OffClient`, `PantryCatalogService`, `PantryImportService`,
+    `PantryPhotoService`, `PantryScrapeService`, `PantryService`, `PantrySuggestionService`, `PhotoExtractLlm`,
+    `ScrapeDraftValidator`, `ScrapeExtractionService`, `ScrapeLlm`, `WebPageClient`
   - **controllers→contract:** `PantryController`→`PantryApi`, `PantryImportController`→`PantryImportApi`,
     `PantryPhotoController`→`PantryPhotoApi`, `PantryScrapeController`→`PantryScrapeApi`
   - **mappers:** `PantryMapper`
   - **config:** `PantryImportProperties`, `PantryPhotoProperties`, `PantryScrapeProperties`,
     `PantrySuggestionProperties`
   - **other:** `MicroFact`, `PantryCatalogLoader`
-- **Contract** `api/feature/pantry/pantry.yml` — 8 operations
+- **Contract** `api/feature/pantry/pantry.yml` — 10 operations
   - **endpoints:** GET /api/pantry · POST /api/pantry · PUT /api/pantry/{id} · DELETE /api/pantry/{id} ·
-    GET /api/pantry-import/lookup · POST /api/pantry-import · POST /api/pantry-import/scrape ·
-    POST /api/pantry-import/photo
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/pantry` — 14 IT + 4 unit
-  - **ITs:** `PantryApiIT`, `PantryCatalogLoaderIT`, `PantryImportApiIT`, `PantryImportDisabledApiIT`,
-    `PantryItemRepositoryIT`, `PantryPhotoApiIT`, `PantryPhotoDisabledApiIT`, `PantryPhotoLlmUnavailableApiIT`,
-    `PantryPhotoScrapeOffApiIT`, `PantryScrapeApiIT`, `PantryScrapeDisabledApiIT`, `PantryScrapeLlmUnavailableApiIT`,
-    `PantryServiceIT`, `WebPageClientIT`
-  - **populators:** `DatabasePopulator`, `PantryImportPopulator`, `PantryItemPopulator`
+    GET /api/pantry/catalog · POST /api/pantry/items/from-catalog · GET /api/pantry-import/lookup ·
+    POST /api/pantry-import · POST /api/pantry-import/scrape · POST /api/pantry-import/photo
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/pantry` — 16 IT + 4 unit
+  - **ITs:** `PantryApiIT`, `PantryCatalogApiIT`, `PantryCatalogLoaderIT`, `PantryCatalogServiceIT`,
+    `PantryImportApiIT`, `PantryImportDisabledApiIT`, `PantryItemRepositoryIT`, `PantryPhotoApiIT`,
+    `PantryPhotoDisabledApiIT`, `PantryPhotoLlmUnavailableApiIT`, `PantryPhotoScrapeOffApiIT`, `PantryScrapeApiIT`,
+    `PantryScrapeDisabledApiIT`, `PantryScrapeLlmUnavailableApiIT`, `PantryServiceIT`, `WebPageClientIT`
+  - **populators:** `DatabasePopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
+    `UserPopulator`
 
 ### people
 
@@ -1279,11 +1281,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   `IntentionPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LevelUpEventPopulator`,
   `LifeGoalPopulator`, `LlmLogPopulator`, `MealPopulator`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`,
   `MedicationPopulator`, `MemoirPopulator`, `MemoryEmbeddingPopulator`, `MentionPopulator`, `MesoTemplatePopulator`,
-  `NeedsPopulator`, `NotificationPopulator`, `PantryImportPopulator`, `PantryItemPopulator`, `PatternEventPopulator`,
-  `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`, `ProtocolPopulator`,
-  `QuestPopulator`, `RecipePopulator`, `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`,
-  `SleepGoalPopulator`, `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`,
-  `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`,
+  `NeedsPopulator`, `NotificationPopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
+  `PatternEventPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`,
+  `ProtocolPopulator`, `QuestPopulator`, `RecipePopulator`, `RitualPopulator`, `RunningPopulator`,
+  `SkillProgressPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`,
+  `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`,
   `WeightLogPopulator`
 - **`ResetDatabase` TRUNCATE list** — 99 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `activity_log`, `ai_conversation`, `ai_message`, `app_notification`, `biometric_profile`, `challenge`,

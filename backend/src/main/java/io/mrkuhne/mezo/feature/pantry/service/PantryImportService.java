@@ -85,6 +85,9 @@ public class PantryImportService {
 
         // Inline find-or-create by natural key — Task 7 swaps this for PantryCatalogService.
         PantryCatalogEntity catalogCandidate = new PantryCatalogEntity();
+        // created_by MUST be set: a null author means "loader master content" (S4, mezo-qw37.4),
+        // so an imported definition without it would silently join the seeded master catalog.
+        catalogCandidate.setCreatedBy(userId);
         catalogCandidate.setKind("food");
         catalogCandidate.setSource(source);
         catalogCandidate.setName(req.getName());

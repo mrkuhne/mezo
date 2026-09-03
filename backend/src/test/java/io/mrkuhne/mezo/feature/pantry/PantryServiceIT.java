@@ -4,6 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.api.dto.PantryItemRequest;
+import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
+import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.pantry.service.PantryService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
@@ -14,17 +16,23 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
-@Transactional
+/**
+ * NOT {@code @Transactional} since S4 (mezo-qw37.4): {@code PantryCatalogService.findOrCreate}
+ * inserts the shared definition in a REQUIRES_NEW transaction, and {@code pantry_catalog.created_by}
+ * has an FK to {@code app_user} — an owner row still uncommitted in a surrounding test transaction
+ * would be invisible to that inner transaction and the insert would fail. {@code ResetDatabase}
+ * (@BeforeEach in the base class) does the cleanup instead.
+ */
 class PantryServiceIT extends AbstractIntegrationTest {
 
     @Autowired private PantryService service;
     @Autowired private PantryItemPopulator populator;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private AppUserRepository appUserRepository;
 
     // created_by has an FK to app_user(id) — owners MUST be real users (populateUser),
-    // never UUID.randomUUID(). Spring starts the test tx before @BeforeEach, so these roll back.
+    // never UUID.randomUUID().
     private UUID owner;
     private UUID other;
 
@@ -32,6 +40,11 @@ class PantryServiceIT extends AbstractIntegrationTest {
     void setUpOwners() {
         owner = databasePopulator.populateUser("a@test.local");
         other = databasePopulator.populateUser("b@test.local");
+    }
+
+    /** The edit gate needs the ROLE, so the service takes the account, not just its id. */
+    private AppUserEntity user(UUID id) {
+        return appUserRepository.findById(id).orElseThrow();
     }
 
     private PantryItemRequest foodReq() {
@@ -48,7 +61,7 @@ class PantryServiceIT extends AbstractIntegrationTest {
         populator.createFood(owner, "Csirkemell", LocalDate.of(2026, 5, 25));
         populator.createSupplement(owner, "Kreatin");
 
-        var resp = service.getPantry(owner);
+        var resp = service.getPantry(user(owner));
 
         assertThat(resp.getIngredients()).extracting("name").containsExactly("Csirkemell");
         assertThat(resp.getStash()).extracting("name").containsExactly("Kreatin");
@@ -60,7 +73,7 @@ class PantryServiceIT extends AbstractIntegrationTest {
         var created = service.createItem(owner, foodReq());
 
         assertThat(created.getId()).isNotNull();
-        assertThat(service.getPantry(owner).getIngredients()).hasSize(1);
+        assertThat(service.getPantry(user(owner)).getIngredients()).hasSize(1);
     }
 
     @Test
@@ -76,7 +89,7 @@ class PantryServiceIT extends AbstractIntegrationTest {
     void testUpdateItem_shouldReturn404_whenForeignRow() {
         var mine = service.createItem(owner, foodReq());
 
-        assertThatThrownBy(() -> service.updateItem(other, mine.getId(), foodReq()))
+        assertThatThrownBy(() -> service.updateItem(user(other), mine.getId(), foodReq()))
             .isInstanceOf(SystemRuntimeErrorException.class);
     }
 
@@ -86,14 +99,14 @@ class PantryServiceIT extends AbstractIntegrationTest {
 
         service.deleteItem(owner, mine.getId());
 
-        assertThat(service.getPantry(owner).getIngredients()).isEmpty();
+        assertThat(service.getPantry(user(owner)).getIngredients()).isEmpty();
     }
 
     @Test
     void testGetPantry_shouldIsolateOwners_whenTwoUsers() {
         populator.createFood(owner, "Csirkemell", LocalDate.of(2026, 5, 25));
 
-        assertThat(service.getPantry(other).getIngredients()).isEmpty();
+        assertThat(service.getPantry(user(other)).getIngredients()).isEmpty();
     }
 
     @Test
@@ -105,7 +118,7 @@ class PantryServiceIT extends AbstractIntegrationTest {
 
         service.createItem(owner, req);
 
-        var stash = service.getPantry(owner).getStash();
+        var stash = service.getPantry(user(owner)).getStash();
         assertThat(stash).hasSize(1);
         assertThat(stash.get(0).getType().getValue()).isEqualTo("stimulant");
     }
@@ -119,7 +132,7 @@ class PantryServiceIT extends AbstractIntegrationTest {
 
         service.createItem(owner, req);
 
-        var stash = service.getPantry(owner).getStash();
+        var stash = service.getPantry(user(owner)).getStash();
         assertThat(stash).hasSize(1);
         assertThat(stash.get(0).getType().getValue()).isEqualTo("medication");
     }
@@ -141,7 +154,7 @@ class PantryServiceIT extends AbstractIntegrationTest {
         var created = service.createItem(owner, gramSupplementReq());
 
         assertThat(created.getId()).isNotNull();
-        var stash = service.getPantry(owner).getStash();
+        var stash = service.getPantry(user(owner)).getStash();
         assertThat(stash).hasSize(1);
         assertThat(stash.get(0).getPer()).isEqualByComparingTo(java.math.BigDecimal.valueOf(25));
     }
@@ -154,20 +167,20 @@ class PantryServiceIT extends AbstractIntegrationTest {
 
         PantryItemRequest rebase = new PantryItemRequest();
         rebase.setKind(PantryItemRequest.KindEnum.SUPPLEMENT);
-        rebase.setName("Collagen Protein");
+        rebase.setName("Kollagén Teszt Protein");
         rebase.setPer(java.math.BigDecimal.valueOf(100));
         rebase.setUnit("g");
 
-        service.updateItem(owner, id, rebase);
+        service.updateItem(user(owner), id, rebase);
 
-        var supp = service.getPantry(owner).getStash().get(0);
+        var supp = service.getPantry(user(owner)).getStash().get(0);
         assertThat(supp.getPer()).isEqualByComparingTo(java.math.BigDecimal.valueOf(100));
     }
 
     private PantryItemRequest gramSupplementReq() {
         PantryItemRequest r = new PantryItemRequest();
         r.setKind(PantryItemRequest.KindEnum.SUPPLEMENT);
-        r.setName("Collagen Protein");
+        r.setName("Kollagén Teszt Protein");
         r.setPer(java.math.BigDecimal.valueOf(25));
         r.setUnit("g");
         return r; // no dose — gram-based supplement
@@ -187,9 +200,9 @@ class PantryServiceIT extends AbstractIntegrationTest {
         sparse.setUnit("g");
         sparse.setKcal(java.math.BigDecimal.valueOf(165));
 
-        service.updateItem(owner, id, sparse);
+        service.updateItem(user(owner), id, sparse);
 
-        var ing = service.getPantry(owner).getIngredients().get(0);
+        var ing = service.getPantry(user(owner)).getIngredients().get(0);
         // preserved — a full-replace PUT would null these:
         assertThat(ing.getBrand()).isEqualTo("Bonafarm");
         assertThat(ing.getMicros()).extracting("name").containsExactly("B6");

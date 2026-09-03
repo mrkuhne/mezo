@@ -17,8 +17,16 @@ public interface PantryCatalogRepository extends JpaRepository<PantryCatalogEnti
         + "and lower(coalesce(c.brand, '')) = :brandKey")
     Optional<PantryCatalogEntity> findByNaturalKeyRaw(@Param("name") String name, @Param("brandKey") String brandKey);
 
+    /**
+     * The natural key is {@code (lower(name), lower(coalesce(brand, '')))} — the expression unique
+     * index {@code uq_pantry_catalog_natural}. Both halves are trimmed (a trailing space must not
+     * mint a second definition) and the brand is lowercased with {@link java.util.Locale#ROOT} so
+     * Java matches Postgres {@code lower()} on a Turkish/Hungarian default locale too.
+     */
     default Optional<PantryCatalogEntity> findByNaturalKey(String name, String brand) {
-        return findByNaturalKeyRaw(name, brand == null ? "" : brand.strip().toLowerCase());
+        return findByNaturalKeyRaw(
+            name == null ? null : name.strip(),
+            brand == null ? "" : brand.strip().toLowerCase(java.util.Locale.ROOT));
     }
 
     /** {@code like} is already lowercased + %-wrapped by the service. Two methods (no `:kind is null`) keep the bind types explicit. */

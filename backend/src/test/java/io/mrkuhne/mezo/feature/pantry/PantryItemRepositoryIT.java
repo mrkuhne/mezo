@@ -73,8 +73,11 @@ class PantryItemRepositoryIT extends AbstractIntegrationTest {
 
         assertThat(catalogRepository.searchAll("%zab%", Limit.of(50))).extracting(PantryCatalogEntity::getName)
             .containsExactly("Zabpehely");
+        // Brand-side match: "Kreatin" carries brand MyProtein and no "myprot" in its NAME. Not
+        // containsExactly — the search is global, and the loader's master catalog holds rows whose
+        // own NAME contains "MyProtein" (e.g. "Impact Whey Blueberry MyProtein").
         assertThat(catalogRepository.searchAll("%myprot%", Limit.of(50))).extracting(PantryCatalogEntity::getName)
-            .containsExactly("Kreatin");
+            .contains("Kreatin");
         assertThat(catalogRepository.searchByKind("%%", "supplement", Limit.of(50)))
             .extracting(PantryCatalogEntity::getName).contains("Kreatin").doesNotContain("Zabpehely");
     }

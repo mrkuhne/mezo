@@ -8,7 +8,7 @@ import io.mrkuhne.mezo.feature.fuel.repository.ProtocolRepository;
 import io.mrkuhne.mezo.feature.fuel.service.ProtocolService;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
-import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
+import io.mrkuhne.mezo.feature.pantry.service.PantryCatalogService;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -44,7 +44,7 @@ public class ProtocolSeedData implements CommandLineRunner {
     private final AppUserRepository appUserRepository;
     private final OwnerProperties ownerProperties;
     private final PantryItemRepository pantryItemRepository;
-    private final PantryCatalogRepository pantryCatalogRepository;
+    private final PantryCatalogService pantryCatalogService;
     private final ProtocolRepository protocolRepository;
     private final ProtocolService protocolService;
 
@@ -73,21 +73,25 @@ public class ProtocolSeedData implements CommandLineRunner {
 
     /** By-name idempotency: an item whose catalog NAME the owner still has (however its
      *  stock/notes are edited) is never re-seeded — a renamed item would be seeded again as a new
-     *  row. The catalog row itself is found-or-created by natural key (name+brand) so re-running
-     *  the seed never duplicates the shared definition. Task 6 swaps this inline find-or-create for
-     *  {@code PantryCatalogService}. */
+     *  row. The definition goes through {@link PantryCatalogService#findOrCreate} (natural key,
+     *  authored by the OWNER — never {@code created_by == null}, which would silently promote these
+     *  two products into the loader's master catalog) and the shelf row through
+     *  {@link PantryCatalogService#ensureItem} (one live row per owner+definition). */
     private UUID ensureItem(UUID ownerId, PantryCatalogEntity catalogCandidate, PantryItemEntity stateTemplate) {
         return pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(ownerId).stream()
             .filter(p -> catalogCandidate.getName().equals(p.getCatalog().getName()))
             .findFirst()
             .map(PantryItemEntity::getId)
             .orElseGet(() -> {
-                PantryCatalogEntity catalog = pantryCatalogRepository
-                    .findByNaturalKey(catalogCandidate.getName(), catalogCandidate.getBrand())
-                    .orElseGet(() -> pantryCatalogRepository.save(catalogCandidate));
-                stateTemplate.setCreatedBy(ownerId);
-                stateTemplate.setCatalog(catalog);
-                return pantryItemRepository.save(stateTemplate).getId();
+                PantryCatalogEntity catalog = pantryCatalogService.findOrCreate(ownerId, catalogCandidate);
+                PantryItemEntity item = pantryCatalogService.ensureItem(ownerId, catalog.getId());
+                item.setDose(stateTemplate.getDose());
+                item.setStockQty(stateTemplate.getStockQty());
+                item.setStockUnit(stateTemplate.getStockUnit());
+                item.setProtocol(stateTemplate.getProtocol());
+                item.setTiming(stateTemplate.getTiming());
+                item.setNotes(stateTemplate.getNotes());
+                return pantryItemRepository.save(item).getId();
             });
     }
 
