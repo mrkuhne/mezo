@@ -24,11 +24,14 @@ export function DayStrip({
   items,
   selected,
   onSelect,
+  kalauzAnchor,
 }: {
   items: DayStripItem[]
   /** Day key of the currently shown day. */
   selected: string
   onSelect: (day: string) => void
+  /** Mezo-kalauz spotlight-horgony (mezo-gb1s.5) — csak a Mai adja át. */
+  kalauzAnchor?: string
 }) {
   const selectedRef = useRef<HTMLButtonElement | null>(null)
   const reduced = useReducedMotion()
@@ -41,7 +44,7 @@ export function DayStrip({
   }, [])
 
   return (
-    <div className="daystrip" role="tablist" aria-label="Hét napjai">
+    <div className="daystrip" role="tablist" aria-label="Hét napjai" data-kalauz-anchor={kalauzAnchor}>
       {items.map((it) => {
         const empty = it.sessionCount === 0
         const isSelected = it.day === selected

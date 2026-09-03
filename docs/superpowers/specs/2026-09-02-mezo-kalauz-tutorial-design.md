@@ -265,10 +265,13 @@ Forrás: investigator recon, szűrve. Útvonalak a worktree gyökerétől.
 
 ## 13. Nyitott kérdések
 
-1. **Napszak-váltó láthatósága.** A kód minden oldalon rendereli (`AppHeader.tsx:83-103`,
-   csak az off-now pötty `onNap`-scoped); a handoff és Daniel szerint Nap-only. A kalauz a
-   design-szándékot mondja. Ha a kód a helyes, a welcome 5. lépésének egy mondata módosul,
-   és a `?` melletti hely szűkül (5 gomb + dátum 390 px-en: 232 + ~110 px, elfér).
+1. **Napszak-váltó láthatósága.** ~~A kód minden oldalon rendereli; a handoff és Daniel
+   szerint Nap-only.~~ **ELDŐLT (S3a, `mezo-gb1s.5`): a kód a helyes — a váltó minden
+   route-on marad.** A `mezo-atry` egy-fejléc óta a váltó nem Nap-állapot-kijelző, hanem
+   navigációs affordance (bárhonnan a `/nap`-ra visz a választott napszakkal), a félrevezető
+   állapot már ki van védve (off-now pötty `onNap`-scoped), és D10 pont ezért tette a `?`-t
+   a sor bal szélére. A welcome fejléc-lépése S2b-ben kiesett, tehát copy-módosulás nincs.
+   Indoklás bővebben: `docs/features/tutorial.md` §9.
 2. **T0 trigger a multi-user flow-ban.** A regisztráció utáni első `/nap` betöltés — ha a
    multi-user session saját onboarding-lépést (profil, cél) tesz elé, a welcome az után jöjjön;
    a Provider `!seen('welcome')` feltétele ettől független.

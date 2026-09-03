@@ -100,7 +100,7 @@ export function EletjelPage() {
     <MozaikPage tone="rose">
       <PageHead onBack={() => navigate(-1)} label="‹ Ma" />
       <EntranceGroup>
-        <div className="mz-page-hero">
+        <div className="mz-page-hero" data-kalauz-anchor="eletjel-gyuru">
           {!needs.isPending && (
             <div className="ej-hero-row">
               <div className="ej-bigring" style={{ background: needRingGradient(needs.states) }}>

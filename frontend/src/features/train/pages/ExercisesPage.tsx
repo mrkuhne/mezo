@@ -313,7 +313,7 @@ export function ExercisesPage() {
 
       <div style={{ padding: '0 24px 8px' }}>
         {/* Search — the DS SearchInput: leading glyph + a borderless 16px field. */}
-        <div className="searchfield rise" style={{ marginBottom: 10, '--d': '60ms' } as CSSProperties}>
+        <div className="searchfield rise" data-kalauz-anchor="exercises-kereso" style={{ marginBottom: 10, '--d': '60ms' } as CSSProperties}>
           <Icon name="search" size={16} color="var(--text-tertiary)" />
           <input
             aria-label="Keresés a gyakorlatok között"

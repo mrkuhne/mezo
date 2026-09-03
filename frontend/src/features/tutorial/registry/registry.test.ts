@@ -148,3 +148,21 @@ test('a sorrend-lint elkapja a holtversenyes párt', () => {
 test('a KALAUZ_REGISTRY feloldása sorrend-független', () => {
   expect(orderDependent(KALAUZ_REGISTRY)).toEqual([])
 })
+
+// ── S3a lefedettség (mezo-gb1s.5) ─────────────────────────────────────────────
+// Az epic-spec §10 T2-listájának Nap + Edzés szelete: minden fő aloldal kalauzt
+// kap, T2 szinten (auto-open). A lista a spec-ből másolva — ha egy route kiesik a
+// routerből, a route-létezés lint amúgy is szól; ez a teszt a MEGLÉTET őrzi.
+const S3A_T2_ROUTES = [
+  '/nap/uzenetek', '/nap/rutin', '/nap/kuldetesek', '/nap/checkin', '/nap/eletjel',
+  '/train/mai', '/train/week', '/train/sport', '/train/futas', '/train/exercises',
+  '/train/medals', '/train/mesocycles', '/train/session', '/train/review/:workoutId',
+]
+
+test('S3a: minden Nap + Edzés fő aloldalnak van T2 kalauza', () => {
+  for (const route of S3A_T2_ROUTES) {
+    const e = KALAUZ_REGISTRY.find((k) => k.route === route)
+    expect(e, route).toBeDefined()
+    expect(e!.tier, route).toBe('T2')
+  }
+})

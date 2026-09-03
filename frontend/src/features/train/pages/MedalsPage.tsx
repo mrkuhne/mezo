@@ -124,7 +124,7 @@ export function MedalsPage() {
             wants the bigger clay SPOT the prototype uses (`s-medal`, 58px), so the
             anatomy is hand-rolled with the same mz-page-hero/-hero-row/-bignum/-sb
             classes rather than stretching the shared primitive's icon prop. */}
-        <div className="mz-page-hero">
+        <div className="mz-page-hero" data-kalauz-anchor="medals-hero">
           <div className="mz-hero-nm">Medálok</div>
           <div className="mz-hero-row">
             <ClaySpot name="s-medal" size={58} />
