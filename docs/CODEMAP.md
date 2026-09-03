@@ -17,8 +17,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | Feature | BE | API | FE data | FE ui | Docs |
 |---|---|---|---|---|---|
 | [activity](#activity) | ✓ | 1 | ✓ | · | [growth](features/growth.md) |
+| [admin](#admin) | · | · | ✓ | · | [beta-admin](features/beta-admin.md) |
 | [appnotification](#appnotification) | ✓ | 1 | · | · | [_platform-notifications](features/_platform-notifications.md) |
-| [auth](#auth) | ✓ | 1 | ✓ | ✓ | [_platform-auth-security](features/_platform-auth-security.md) |
+| [auth](#auth) | ✓ | 2 | ✓ | ✓ | [beta-admin](features/beta-admin.md), [_platform-auth-security](features/_platform-auth-security.md) |
 | [biometrics](#biometrics) | ✓ | 6 | · | · | [me](features/me.md), [today](features/today.md) |
 | [character](#character) | ✓ | 1 | ✓ | ✓ | [character](features/character.md) |
 | [companion](#companion) | ✓ | 4 | · | · | [character](features/character.md), [companion](features/companion.md), [journal](features/journal.md), [me](features/me.md) |
@@ -31,7 +32,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [intention](#intention) | ✓ | 1 | ✓ | · | [intention](features/intention.md) |
 | [journal](#journal) | ✓ | 1 | ✓ | · | [journal](features/journal.md) |
 | [llmlog](#llmlog) | ✓ | 1 | · | · | [companion](features/companion.md) |
-| [me](#me) | · | · | ✓ | ✓ | [growth](features/growth.md), [habit](features/habit.md), [journal](features/journal.md), [me](features/me.md), [_platform-data-layer](features/_platform-data-layer.md), [_platform-notifications](features/_platform-notifications.md) |
+| [me](#me) | · | · | ✓ | ✓ | [beta-admin](features/beta-admin.md), [growth](features/growth.md), [habit](features/habit.md), [journal](features/journal.md), [me](features/me.md), [_platform-data-layer](features/_platform-data-layer.md), [_platform-notifications](features/_platform-notifications.md) |
 | [meal](#meal) | ✓ | 1 | · | · | [fuel](features/fuel.md) |
 | [medication](#medication) | ✓ | 1 | · | · | · |
 | [needs](#needs) | ✓ | 1 | ✓ | · | [needs](features/needs.md) |
@@ -74,6 +75,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **ITs:** `ActivityApiIT`, `ActivityClassifierIT`, `ActivityHistoryApiIT`, `ActivityLogEntityIT`
   - **populators:** `ActivityPopulator`, `QuestPopulator`, `UserPopulator`
 
+### admin
+
+*FE-data* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-02, done)
+
+- **FE data** `frontend/src/data/admin`
+  - **hooks (via `@/data/hooks`):** `useAdminActions`, `useAdminInvites`, `useAdminUsers`
+  - **modules:** adminApi.ts, adminHooks.ts, adminMock.ts
+
 ### appnotification
 
 *BE + API* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-08-31, mixed)
@@ -96,14 +105,18 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### auth
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-09-02, mixed)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-02, done) ·
+  [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-09-02, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
   - **entities→tables:** `AppUserEntity`→`app_user`, `InviteEntity`→`invite`
   - **repositories:** `AppUserRepository`, `InviteRepository`
-  - **services:** `AuthService`, `CurrentUser`, `InviteService`
-  - **controllers→contract:** `AuthController`→`AuthApi`
+  - **services:** `AdminService`, `AuthService`, `CurrentUser`, `InviteService`
+  - **controllers→contract:** `AdminController`→`AdminApi`, `AuthController`→`AuthApi`
   - **other:** `AuthProperties`, `AuthStartupGuard`, `OwnerProperties`, `OwnerSeedData`
+- **Contract** `api/feature/admin/admin.yml` — 6 operations
+  - **endpoints:** POST /api/admin/invites · GET /api/admin/invites · DELETE /api/admin/invites/{id} ·
+    GET /api/admin/users · POST /api/admin/users/{id}/reset-password · POST /api/admin/users/{id}/status
 - **Contract** `api/feature/auth/auth.yml` — 5 operations
   - **endpoints:** POST /api/auth/login · POST /api/auth/register · GET /api/auth/me · POST /api/auth/change-password ·
     POST /api/auth/onboarding-complete
@@ -114,8 +127,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **pages:** ChangePasswordPage.tsx, LoginPage.tsx, RegisterPage.tsx
   - **components:** AuthShell.tsx
   - **logic:** authErrorText.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/auth` — 6 IT + 3 unit
-  - **ITs:** `AuthControllerIT`, `AuthIsolationIT`, `AuthMeIT`, `AuthRegisterIT`, `CurrentUserIT`, `OwnerSeedDataIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/auth` — 8 IT + 3 unit
+  - **ITs:** `AdminInviteIT`, `AdminUserIT`, `AuthControllerIT`, `AuthIsolationIT`, `AuthMeIT`, `AuthRegisterIT`,
+    `CurrentUserIT`, `OwnerSeedDataIT`
 
 ### biometrics
 
@@ -360,7 +374,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### fuel
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-03, done) ·
-  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-02, done) ·
+  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-03, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-02, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/fuel`
@@ -599,7 +613,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **sub-features:** `context`
   - **entities→tables:** `LlmLogEntity`→`llm_log_history`
   - **repositories:** `LlmCallRow`, `LlmDailyAggregate`, `LlmGroupRow`, `LlmLogRepository`, `LlmStatusRow`,
-    `LlmUsageAggregate`
+    `LlmUsageAggregate`, `LlmUserRow`
   - **services:** `EmbedUsage`, `EventPublishingLlmCallRecorder`, `LlmActorResolver`, `LlmCallRecord`,
     `LlmCallRecorder`, `LlmLogRetentionJob`, `LlmLogWriter`, `LlmPricingService`, `LlmUsageService`,
     `NoOpLlmCallRecorder`, `TokenUsage`, `UsagePeriod`
@@ -611,17 +625,18 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/llm-usage/llm-usage.yml` — 4 operations
   - **endpoints:** GET /api/llm-usage/summary · GET /api/llm-usage/breakdown · GET /api/llm-usage/calls ·
     GET /api/llm-usage/calls/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog` — 12 IT + 4 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog` — 13 IT + 5 unit
   - **ITs:** `LlmCallContextTaggingIT`, `LlmCallDetailIT`, `LlmCallListIT`, `LlmLogRecorderWiringIT`,
     `LlmLogRepositoryIT`, `LlmLogRetentionJobIT`, `LlmLogRetentionJobSwitchOffIT`,
     `LlmLogRetentionJobWriteSwitchOffIT`, `LlmLogRetentionScrubIT`, `LlmLogWriterIT`, `LlmUsageBreakdownIT`,
-    `LlmUsageIT`
+    `LlmUsageControllerIT`, `LlmUsageIT`
   - **populators:** `DailySummaryPopulator`, `DatabasePopulator`, `LlmLogPopulator`, `MealPopulator`,
     `PantryItemPopulator`, `UserPopulator`
 
 ### me
 
-*FE-data + FE-ui* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-09-02, done) ·
+*FE-data + FE-ui* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-02, done) ·
+  [docs/features/growth.md](features/growth.md) (updated 2026-09-02, done) ·
   [docs/features/habit.md](features/habit.md) (updated 2026-09-03, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-03, mixed) ·
@@ -638,26 +653,27 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     peopleApi.ts, peopleHooks.ts, sleep.ts, sleepGoal.ts, sleepHooks.ts, sleepShot.ts, weekLessons.ts,
     weekLessonsHooks.ts, weeklyReviewApi.ts, weeklyReviewHooks.ts, weeklyReviewMock.ts, weightHooks.ts
 - **FE ui** `frontend/src/features/me`
-  - **pages:** AiCallDetailPage.tsx, AiUsagePage.tsx, BeallitasokPage.tsx, EnHubPage.tsx, GoalPlannerPage.tsx,
-    GoalsPage.tsx, GoalsSkeleton.tsx, GrowthAwardsPage.tsx, GrowthHubPage.tsx, GrowthNaploPage.tsx,
-    GrowthSkillsPage.tsx, HabitPage.tsx, JournalPage.tsx, NightPage.tsx, NotificationFeedPage.tsx,
+  - **pages:** AiCallDetailPage.tsx, AiUsagePage.tsx, BeallitasokPage.tsx, BetaAdminPage.tsx, EnHubPage.tsx,
+    GoalPlannerPage.tsx, GoalsPage.tsx, GoalsSkeleton.tsx, GrowthAwardsPage.tsx, GrowthHubPage.tsx,
+    GrowthNaploPage.tsx, GrowthSkillsPage.tsx, HabitPage.tsx, JournalPage.tsx, NightPage.tsx, NotificationFeedPage.tsx,
     NotificationsPage.tsx, PeopleEmlitesekPage.tsx, PeopleHetiPage.tsx, PeopleJeloltekPage.tsx, PeopleKorPage.tsx,
     PeoplePage.tsx, PersonDetailPage.tsx, RoutineWizardPage.tsx, RutinHubPage.tsx, SleepPage.tsx, WeekAnalysisPage.tsx,
     WeekDayPage.tsx, WeekDaysPage.tsx, WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
   - **sheets:** AiSuggestSheet.tsx, AttachPlanSheet.tsx, BiometricSheet.tsx, ChainEditSheet.tsx,
     DecisionReviewSheet.tsx, EditGoalSheet.tsx, HabitEditSheet.tsx, JournalSheet.tsx, PersonEditSheet.tsx,
-    PersonLogSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx, SleepStatsSheet.tsx, WeightLogSheet.tsx
-  - **components:** AiCallFilters.tsx, AiCallRow.tsx, AiCallUsage.tsx, AiFeatureBreakdown.tsx, AiModelBreakdown.tsx,
-    AiPayloadBlock.tsx, AiPriceSnapshot.tsx, AiTokenBar.tsx, AiUsageHero.tsx, BadgesCard.tsx, DayNavTiles.tsx,
-    DetailStat.tsx, FieldRow.tsx, GoalGate.tsx, GoalMiniCard.tsx, GoalPlanSlots.tsx, GoalRecept.tsx, GoalTimeline.tsx,
-    GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthHero.tsx, GrowthJournalCard.tsx, MaStrip.tsx, MentionRow.tsx,
-    NightArcCard.tsx, NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx, NotificationCategoryRow.tsx,
-    NotificationPreviewHeader.tsx, PerksCard.tsx, PersonCard.tsx, PhaseAverageCard.tsx, PhaseRail.tsx,
-    PhaseReferenceRow.tsx, PushInstallGate.tsx, RemDurationCard.tsx, SkillBandCard.tsx, SleepChart.tsx,
-    SleepEscalationCard.tsx, SleepLogRow.tsx, SleepStat.tsx, SleepStatCard.tsx, TimePicker.tsx, WeekDayCard.tsx,
-    WeekDayTile.tsx, WeekDiscoveries.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx,
-    WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx,
-    WeightTrendChart.tsx
+    PersonLogSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx, SleepStatsSheet.tsx, TempPasswordSheet.tsx,
+    WeightLogSheet.tsx
+  - **components:** AdminInviteRow.tsx, AdminUserRow.tsx, AiCallFilters.tsx, AiCallRow.tsx, AiCallUsage.tsx,
+    AiFeatureBreakdown.tsx, AiModelBreakdown.tsx, AiPayloadBlock.tsx, AiPriceSnapshot.tsx, AiTokenBar.tsx,
+    AiUsageHero.tsx, AiUserFilter.tsx, BadgesCard.tsx, DayNavTiles.tsx, DetailStat.tsx, FieldRow.tsx, GoalGate.tsx,
+    GoalMiniCard.tsx, GoalPlanSlots.tsx, GoalRecept.tsx, GoalTimeline.tsx, GratitudeRows.tsx, GratitudeStreakCard.tsx,
+    GrowthHero.tsx, GrowthJournalCard.tsx, MaStrip.tsx, MentionRow.tsx, NightArcCard.tsx, NightBodyScan.tsx,
+    NightBreathing.tsx, NightWalk.tsx, NotificationCategoryRow.tsx, NotificationPreviewHeader.tsx, PerksCard.tsx,
+    PersonCard.tsx, PhaseAverageCard.tsx, PhaseRail.tsx, PhaseReferenceRow.tsx, PushInstallGate.tsx,
+    RemDurationCard.tsx, SkillBandCard.tsx, SleepChart.tsx, SleepEscalationCard.tsx, SleepLogRow.tsx, SleepStat.tsx,
+    SleepStatCard.tsx, TimePicker.tsx, WeekDayCard.tsx, WeekDayTile.tsx, WeekDiscoveries.tsx, WeekLessonCard.tsx,
+    WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx,
+    WeeklyWeightCard.tsx, WeightHero.tsx, WeightTrendChart.tsx
   - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, dayScoreState.ts, goalLabels.ts, gratitudeStreak.ts,
     growthJournal.ts, growthStats.ts, habitAnchors.ts, habitMetricPalette.ts, humanGeneratedAt.ts,
     knowledgeNodeVisuals.ts, llmCallFormat.ts, nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts,
@@ -1171,7 +1187,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **configuration:** `AsyncConfiguration`, `FeaturesConfiguration`, `JacksonConfiguration`, `SchedulingConfiguration`
 - **exception:** `GlobalExceptionHandler`, `Level`, `SystemMessage`, `SystemRuntimeErrorException`, `Type`
 - **persistence:** `OwnedEntity`, `OwnedRepository`, `OwnershipGuard`
-- **security:** `CorsProperties`, `CurrentUserId`, `SecurityConfig`
+- **security:** `CorsProperties`, `CurrentUserId`, `LlmActorContext`, `SecurityConfig`
 - **text:** `SafeTruncate`, `TextFold`
 - **webpush:** `Aes128GcmEncryptor`, `VapidSigner`, `WebPushClient`, `WebPushProperties`, `WebPushResult`,
   `WebPushSubscriptionKeys`
