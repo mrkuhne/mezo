@@ -271,6 +271,36 @@ class GoalContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testAcceptGoalSuggestion_shouldPersistSupersede_whenSnapshotStale() {
+        // Non-@Transactional HTTP-level test (mezo-ktg8 final-review finding 1): accept's stale-race
+        // branch used to set the suggestion SUPERSEDED and then throw the 409 from inside the SAME
+        // @Transactional method — the RuntimeException rolled the supersede back with it, so the row
+        // stayed 'proposed' forever (dismiss was the only escape). The fix persists the supersede via
+        // a REQUIRES_NEW helper BEFORE the 409 is thrown. Since ApiIntegrationTest is NOT
+        // @Transactional, this test's own request boundaries are the real HTTP transaction — a
+        // regression here would show up as the suggestion still being open after the 409.
+        RegisteredUser owner = registerUser("Suggestion Stale Persist");
+        GoalResponse goal = postForBody("/api/goals", req().trajectory("cut").build(), owner.headers(),
+            HttpStatus.CREATED, GoalResponse.class);
+        UUID suggestionId = suggestionPopulator.createOpen(
+            owner.id(), goal.getId(), "phase_change", "preset:cut-prep:m1",
+            new GoalSuggestionPayloadJson(
+                "A cut-prep mezo deficitet javasol.", "cut", null, null, null, null, "Pre-cut prep", "bulk")
+        ).getId();
+
+        // snapshotTrajectory ("bulk") no longer matches the goal's current trajectory ("cut") → 409.
+        postForBody("/api/goals/" + goal.getId() + "/suggestions/" + suggestionId + "/accept",
+            null, owner.headers(), HttpStatus.CONFLICT, String.class);
+
+        // The supersede must have survived the 409 request's own rollback: a follow-up list call
+        // must NOT show the suggestion as open — if the supersede had rolled back too, it would
+        // still read 'proposed' here.
+        List<GoalSuggestionResponse> suggestions = getForList(
+            "/api/goals/" + goal.getId() + "/suggestions", owner.headers(), HttpStatus.OK, GoalSuggestionResponse.class);
+        assertThat(suggestions).isEmpty();
+    }
+
+    @Test
     void testDismissGoalSuggestion_shouldReturn204AndLeaveList_whenValid() {
         RegisteredUser owner = registerUser("Suggestion Dismisser");
         GoalResponse goal = postForBody("/api/goals", req().build(), owner.headers(), HttpStatus.CREATED, GoalResponse.class);

@@ -109,12 +109,35 @@ public class GoalSuggestionTriggerService {
         if (covered) {
             return;
         }
-        String dedupKey = "deload:goal:" + goal.getId() + ":w:" + week;
+        // The dedup key MUST carry the covering meso's id (mezo-ktg8 final-review finding 3):
+        // without it, "deload:goal:{id}:w:{week}" is shared by every mesocycle that ever occupies
+        // this goal-week, so dismissing meso A's deload silences meso B's same-week deload too, even
+        // though they are unrelated decisions. coveringMesoId resolves the SAME link
+        // activeMesoPhase(...) above just walked (phaseForWeek doesn't expose it, so it is
+        // re-resolved here rather than threading a return-type change through a shared read path).
+        UUID mesoId = coveringMesoId(userId, goal, week);
+        String dedupKey = "deload:goal:" + goal.getId() + ":meso:" + mesoId + ":w:" + week;
         suggestionService.propose(
             userId, goal.getId(), GoalSuggestionService.KIND_PHASE_CHANGE, dedupKey,
             new GoalSuggestionPayloadJson(
                 "Deload hét (W" + week + ") — a regeneráció többet ér, ha ezen a héten tartáson eszel.",
                 null, 0, (int) week, (int) week, null, null, goal.getTrajectory()));
+    }
+
+    /**
+     * The mesocycle whose phaseCurve is active in goal-week {@code week} — the id half of
+     * {@link GoalProjectionService#phaseForWeek}'s resolution (spec §6.5, mezo-ktg8 final-review
+     * finding 3). Same first-covering-link-wins rule as {@code activeMesoPhase}; {@code null} only
+     * when no meso link covers the week (should not happen here — the caller only reaches this
+     * after confirming the week's phase class is DELOAD).
+     */
+    private UUID coveringMesoId(UUID userId, GoalEntity goal, long week) {
+        return linkRepository.findByGoalIdAndCreatedByAndDeletedFalseOrderByStartWeekAsc(goal.getId(), userId)
+            .stream()
+            .filter(l -> PLAN_MESOCYCLE.equals(l.getPlanType()) && week >= l.getStartWeek() && week <= l.getEndWeek())
+            .map(GoalPlanLinkEntity::getPlanId)
+            .findFirst()
+            .orElse(null);
     }
 
     private static String huTrajectory(String t) {

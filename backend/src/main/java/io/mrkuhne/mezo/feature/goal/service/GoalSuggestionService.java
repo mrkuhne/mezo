@@ -54,6 +54,7 @@ public class GoalSuggestionService {
     private final GoalFeasibilityService feasibilityService;
     private final GoalEngineService goalEngineService;
     private final GoalMapper goalMapper;
+    private final GoalSuggestionSupersedeWriter supersedeWriter;
 
     public GoalSuggestionService(
         GoalSuggestionRepository suggestionRepository,
@@ -61,13 +62,15 @@ public class GoalSuggestionService {
         GoalSuggestionMapper mapper,
         GoalFeasibilityService feasibilityService,
         @Lazy GoalEngineService goalEngineService,
-        GoalMapper goalMapper) {
+        GoalMapper goalMapper,
+        GoalSuggestionSupersedeWriter supersedeWriter) {
         this.suggestionRepository = suggestionRepository;
         this.goalRepository = goalRepository;
         this.mapper = mapper;
         this.feasibilityService = feasibilityService;
         this.goalEngineService = goalEngineService;
         this.goalMapper = goalMapper;
+        this.supersedeWriter = supersedeWriter;
     }
 
     /**
@@ -144,8 +147,11 @@ public class GoalSuggestionService {
 
         GoalSuggestionPayloadJson p = s.getPayload();
         if (!goal.getTrajectory().equals(p.snapshotTrajectory())) {
-            s.setStatus(STATUS_SUPERSEDED);
-            s.setDecidedAt(Instant.now());
+            // Deliberately do NOT touch `s` in THIS (outer) transaction — see
+            // GoalSuggestionSupersedeWriter's javadoc: the 409 below rolls this transaction back,
+            // so the supersede must persist through a REQUIRES_NEW write on a row this transaction
+            // never dirtied (mezo-ktg8 final-review finding 1).
+            supersedeWriter.markSuperseded(suggestionId);
             throw new SystemRuntimeErrorException(
                 SystemMessage.error("GOAL_SUGGESTION_STALE").build(), HttpStatus.CONFLICT);
         }

@@ -332,6 +332,42 @@ describe('diet-phase suggestions (slice 4, mezo-ktg8)', () => {
     await userEvent.click(screen.getByRole('button', { name: /Elfogadom/ }))
     expect(await screen.findByText('A javaslat elavult — frissítsd az oldalt.')).toBeInTheDocument()
   })
+
+  // mezo-ktg8 final-review finding 4: a 409'd accept means the backend already superseded the
+  // suggestion server-side — the card must clear on its own via a refetch, not require a manual
+  // page reload.
+  test('a 409 accept refetches the suggestions list so a superseded card can clear on its own', async () => {
+    let getCalls = 0
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL_WITH_RX])),
+      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
+      http.get(`${API_BASE}/api/goals/g1/suggestions`, () => { getCalls += 1; return HttpResponse.json([SUGGESTION]) }),
+      http.post(`${API_BASE}/api/goals/g1/suggestions/sug-1/accept`, () => new HttpResponse(null, { status: 409 })),
+    )
+    render(<GoalsPage />, { wrapper: Wrapper })
+    await screen.findByText(/Javaslat: deload hét tartáson/)
+    const callsBeforeAccept = getCalls
+    await userEvent.click(screen.getByRole('button', { name: /Elfogadom/ }))
+    await screen.findByText('A javaslat elavult — frissítsd az oldalt.')
+    await waitFor(() => expect(getCalls).toBeGreaterThan(callsBeforeAccept))
+  })
+
+  // mezo-ktg8 final-review finding 4: dismiss has no staleness branch server-side — a failure is
+  // only ever a 404 (already decided) or a network error, so the copy must not claim staleness.
+  test('a failed dismiss shows a generic retry notice, not a staleness claim', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL_WITH_RX])),
+      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
+      http.get(`${API_BASE}/api/goals/g1/suggestions`, () => HttpResponse.json([SUGGESTION])),
+      http.post(`${API_BASE}/api/goals/g1/suggestions/sug-1/dismiss`, () => new HttpResponse(null, { status: 404 })),
+    )
+    render(<GoalsPage />, { wrapper: Wrapper })
+    await screen.findByText(/Javaslat: deload hét tartáson/)
+    await userEvent.click(screen.getByRole('button', { name: 'Elvetem' }))
+    expect(await screen.findByText('Nem sikerült — próbáld újra.')).toBeInTheDocument()
+  })
 })
 
 // Loading skeleton (mezo-f2z) — real mode shows the GoalsSkeleton (role="status")

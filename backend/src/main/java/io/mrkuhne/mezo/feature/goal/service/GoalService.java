@@ -127,6 +127,13 @@ public class GoalService {
             throw new SystemRuntimeErrorException(
                 SystemMessage.field("VALIDATION_INVALID_VALUE", "targetDate").build(), HttpStatus.BAD_REQUEST);
         }
+        // segmentOverrides (deload accepts, slice 4) are keyed by 1-based GOAL week, derived from
+        // startDate. A startDate change renumbers every week, so an override left in place would
+        // silently retarget the wrong week — clear it here rather than carry stale weeks forward
+        // (spec §6.8, mezo-ktg8 final-review finding 2). Compared BEFORE the new value is applied.
+        if (e.getStartDate() != null && !e.getStartDate().equals(req.getStartDate())) {
+            e.setSegmentOverrides(null);
+        }
         e.setTitle(req.getTitle());
         e.setTrajectory(req.getTrajectory());
         e.setGuards(req.getGuards() == null ? List.of() : req.getGuards());

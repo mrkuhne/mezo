@@ -18,6 +18,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /** Slice-4 suggestion lifecycle: one open per kind, supersede on re-propose, dedup after a decision. */
@@ -132,7 +133,24 @@ class GoalSuggestionServiceIT extends AbstractIntegrationTest {
         assertThat(reloaded.getTrajectory()).as("no trajectory change on a deload accept").isEqualTo("cut");
     }
 
+    /**
+     * NOT_SUPPORTED (mezo-ktg8 final-review finding 1 fix-up): the class-level {@code @Transactional}
+     * would wrap this test's {@code @BeforeEach} {@code ResetDatabase} TRUNCATE in the SAME ambient
+     * transaction as the test body — TRUNCATE takes an {@code AccessExclusiveLock} on every table
+     * (including {@code goal_suggestion}) that stays held until the test's transaction ends. Since
+     * {@code accept}'s stale branch now calls {@code GoalSuggestionSupersedeWriter} on a REQUIRES_NEW
+     * transaction, that helper's SELECT on {@code goal_suggestion} would block forever on the ambient
+     * transaction's own TRUNCATE lock — the still-open-transaction-holds-a-lock-the-REQUIRES_NEW-needs
+     * deadlock the memory notes warn about, just table-wide via TRUNCATE rather than row-specific
+     * (reproduced and confirmed via pg_locks while wiring this fix). Suspending the ambient
+     * transaction for just this test method (matching the established {@code AppNotificationServiceIT}
+     * / {@code CharacterRunLogIT} idiom for anything exercising a REQUIRES_NEW writer) lets
+     * {@code ResetDatabase}'s TRUNCATE commit and release its locks before the test body runs, so every
+     * call below is a genuinely separate, immediately-committed transaction — no shared persistence
+     * context, so no first-level-cache tricks are needed to observe the supersede either.
+     */
     @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void testAccept_shouldSupersedeAnd409_whenGoalTrajectoryChangedSinceProposal() {
         UUID user = databasePopulator.populateUser("sug7@test.local");
         profilePopulator.create(user);
@@ -140,6 +158,7 @@ class GoalSuggestionServiceIT extends AbstractIntegrationTest {
         GoalSuggestionEntity s = suggestionService.propose(
             user, goal.getId(), GoalSuggestionService.KIND_PHASE_CHANGE, "preset:cut-prep:m1", payload("cut", "bulk"));
         goal.setTrajectory("maintain"); // the owner edited the goal underneath
+        goalRepository.saveAndFlush(goal); // no ambient tx here — must be persisted explicitly
 
         assertThatThrownBy(() -> suggestionService.accept(user, goal.getId(), s.getId()))
             .isInstanceOf(SystemRuntimeErrorException.class)

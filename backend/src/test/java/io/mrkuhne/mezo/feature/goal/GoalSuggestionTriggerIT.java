@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.goal;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
+import io.mrkuhne.mezo.feature.goal.repository.GoalPlanLinkRepository;
 import io.mrkuhne.mezo.feature.goal.repository.GoalSuggestionRepository;
 import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionService;
 import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionTriggerService;
@@ -22,7 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
 class GoalSuggestionTriggerIT extends AbstractIntegrationTest {
 
     @Autowired private GoalSuggestionTriggerService triggerService;
+    @Autowired private GoalSuggestionService suggestionService;
     @Autowired private GoalSuggestionRepository suggestionRepository;
+    @Autowired private GoalPlanLinkRepository linkRepository;
     @Autowired private GoalPopulator goalPopulator;
     @Autowired private GoalPlanLinkPopulator linkPopulator;
     @Autowired private TrainPopulator trainPopulator;
@@ -82,6 +85,37 @@ class GoalSuggestionTriggerIT extends AbstractIntegrationTest {
         assertThat(open.get().getPayload().balanceOverrideKcal()).isZero();
         assertThat(open.get().getPayload().fromWeek()).isEqualTo(3);
         assertThat(open.get().getPayload().toWeek()).isEqualTo(3);
+    }
+
+    @Test
+    void testCheck_shouldProposeDeloadForDifferentMeso_whenPriorMesoDeloadWasDismissedSameWeek() {
+        // mezo-ktg8 final-review finding 3: the deload dedup key used to be
+        // "deload:goal:{id}:w:{week}" — shared by every mesocycle that ever occupies the goal-week,
+        // so dismissing meso A's deload silenced meso B's unrelated same-week deload too. The fix
+        // threads the covering meso id into the key.
+        UUID user = databasePopulator.populateUser("trig5@test.local");
+        GoalEntity goal = goalPopulator.createGoal(user, "cut", "active");
+        goal.setStartDate(java.time.LocalDate.now().minusWeeks(2));
+        goal.setTargetDate(java.time.LocalDate.now().plusWeeks(6));
+        MesocycleEntity mesoA = trainPopulator.createMesocycle(user, "Hyp blokk A", "active");
+        // phaseCurve [MEV, MAV, Deload] → weekInMeso 2 (goal-week 3) = Deload, same as the sibling test.
+        var linkA = linkPopulator.createLink(user, goal.getId(), "mesocycle", mesoA.getId(), 1, mesoA.getWeeks());
+
+        triggerService.checkPhaseSuggestions(user, goal.getId());
+        var openA = suggestionRepository.findByGoalIdAndKindAndStatusAndDeletedFalse(
+            goal.getId(), GoalSuggestionService.KIND_PHASE_CHANGE, "proposed").orElseThrow();
+        suggestionService.dismiss(user, goal.getId(), openA.getId());
+
+        // meso A no longer covers the goal; meso B takes its place, also Deload at goal-week 3.
+        linkRepository.delete(linkA);
+        MesocycleEntity mesoB = trainPopulator.createMesocycle(user, "Hyp blokk B", "active");
+        linkPopulator.createLink(user, goal.getId(), "mesocycle", mesoB.getId(), 1, mesoB.getWeeks());
+
+        triggerService.checkPhaseSuggestions(user, goal.getId());
+
+        // Meso B's deload must still propose — the old shared dedup key would have silenced it.
+        assertThat(suggestionRepository.findByGoalIdAndKindAndStatusAndDeletedFalse(
+            goal.getId(), GoalSuggestionService.KIND_PHASE_CHANGE, "proposed")).isPresent();
     }
 
     @Test

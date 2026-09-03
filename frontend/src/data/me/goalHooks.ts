@@ -301,6 +301,14 @@ export function useSuggestionActions() {
     qc.invalidateQueries({ queryKey: ['goal', goalId, 'suggestions'] })
     qc.invalidateQueries({ queryKey: ['goals'] }) // accept re-evaluates the prescription
   }
+  // A REJECTED accept (409 stale snapshot) still supersedes the suggestion server-side — only the
+  // suggestions list needs a refetch (the goal/prescription never changed), so the caller's catch
+  // block can clear the now-superseded card without a manual page refresh (mezo-ktg8 final-review
+  // finding 4).
+  const invalidateSuggestions = (goalId: string) => {
+    if (mock) return
+    qc.invalidateQueries({ queryKey: ['goal', goalId, 'suggestions'] })
+  }
   const acceptM = useMutation({
     mutationFn: async ({ goalId, sid }: { goalId: string; sid: string }) => {
       if (mock) return null
@@ -317,5 +325,5 @@ export function useSuggestionActions() {
   })
   const accept = useCallback((goalId: string, sid: string) => acceptM.mutateAsync({ goalId, sid }), [acceptM])
   const dismiss = useCallback((goalId: string, sid: string) => dismissM.mutateAsync({ goalId, sid }), [dismissM])
-  return { accept, dismiss, pending: acceptM.isPending || dismissM.isPending }
+  return { accept, dismiss, pending: acceptM.isPending || dismissM.isPending, invalidateSuggestions }
 }

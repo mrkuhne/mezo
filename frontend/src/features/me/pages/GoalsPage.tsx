@@ -30,7 +30,7 @@ export function GoalsPage() {
   const { detachPlan, evaluate, evaluating } = useGoalActions()
   // Diet-phase suggestions (slice 4) — the suggest+approve surface above the recept.
   const { suggestions } = useGoalSuggestions(goalId)
-  const { accept, dismiss, pending: suggestionPending } = useSuggestionActions()
+  const { accept, dismiss, pending: suggestionPending, invalidateSuggestions } = useSuggestionActions()
   const { weightTrends } = useWeight()
   const { isComplete: biometricComplete } = useBiometricProfile()
   const [sheet, setSheet] = useState<'goal' | null>(null)
@@ -47,6 +47,10 @@ export function GoalsPage() {
       await accept(goalId, sid)
     } catch {
       setSuggestionError('A javaslat elavult — frissítsd az oldalt.')
+      // A 409 here means the backend already superseded the suggestion server-side (mezo-ktg8
+      // final-review finding 1) — refetch so the now-superseded card clears without a manual
+      // page refresh, rather than lingering until the next unrelated invalidation.
+      invalidateSuggestions(goalId)
     }
   }
   const dismissSuggestion = async (sid: string) => {
@@ -55,7 +59,10 @@ export function GoalsPage() {
     try {
       await dismiss(goalId, sid)
     } catch {
-      setSuggestionError('A javaslat elavult — frissítsd az oldalt.')
+      // Unlike accept, dismiss has no staleness branch server-side — a failure here is only ever
+      // a 404 (already decided) or a network error, so the message must not claim staleness
+      // (mezo-ktg8 final-review finding 4).
+      setSuggestionError('Nem sikerült — próbáld újra.')
     }
   }
 
