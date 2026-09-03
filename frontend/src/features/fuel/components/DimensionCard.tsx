@@ -52,12 +52,17 @@ export function DimensionCard({ dim, defaultOpen = false }: { dim: MealDimension
               <Icon name="sparkle" size={10} color="var(--lav-deep)" /> <SafeMarkdown text={dim.note} />
             </p>
           )}
-          {dim.id === 'macro' && <MacroPanel dim={dim} />}
-          {dim.id === 'micro' && <MicroPanel dim={dim} />}
-          {dim.id === 'nova' && <NovaPanel dim={dim} />}
+          {/* A degraded dim (weight 0, mezo-jcpt.1) shares its `id` with its live sibling but
+              carries none of the per-kind payload, so the panel choice below is guarded by the
+              payload field itself (`in`), not just `id` — a degraded dim renders no panel at
+              all (just the two paragraphs above), which is deliberately unstyled: Task 6 owns
+              the "ghost tile" treatment for it. */}
+          {dim.id === 'macro' && 'macroRatio' in dim && <MacroPanel dim={dim} />}
+          {dim.id === 'micro' && 'micros' in dim && <MicroPanel dim={dim} />}
+          {dim.id === 'nova' && 'nova' in dim && <NovaPanel dim={dim} />}
           {(dim.id === 'context' || dim.id === 'who' || dim.id === 'fat_quality'
             || dim.id === 'plant_diversity' || dim.id === 'energy_density' || dim.id === 'portion')
-            && <ContextPanel dim={dim} />}
+            && 'context' in dim && <ContextPanel dim={dim} />}
         </div>
       )}
     </div>

@@ -250,6 +250,19 @@ const m2Dimensions: MealDimension[] = [
       { label: 'Glikémia', value: 'Mixed-release' },
     ],
   },
+  // Degraded (weight 0 — zero input coverage, mezo-jcpt.1): no adag-adat for this meal, so the
+  // backend can't score portion-arány at all. Weight 0 contributes nothing to weightedScore()
+  // below, so this is a no-op on m2's Σ; it exists purely to give MOCK mode a real "Nincs adat"
+  // case for ScoreLedger (frontend/src/features/fuel/components/ScoreLedger.tsx) end-to-end,
+  // not just the ScoreLedger/DimensionCard unit tests' hand-built props.
+  {
+    id: 'portion',
+    label: 'Adag-arány',
+    weight: 0,
+    score: 0,
+    color: 'var(--coral-deep)',
+    detail: 'Nincs elég adag-adat ehhez az ételhez — a dimenzió nem számít bele a pontba.',
+  },
 ]
 
 export const fuelDay: FuelDay = {

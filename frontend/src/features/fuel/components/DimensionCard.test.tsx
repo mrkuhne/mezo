@@ -42,3 +42,18 @@ test('renders dim.note below the detail sentence once expanded, and nothing when
   render(<DimensionCard dim={noted} defaultOpen />)
   expect(screen.getByText('Só szinte nincs — feldolgozatlan alapanyagok.')).toBeInTheDocument()
 })
+
+test('a degraded (weight 0, no per-kind payload) dimension renders without crashing and shows no panel (mezo-jcpt.1)', async () => {
+  // Shape a real fromDimension/fromBreakdown now produces for a degraded dim: base fields only,
+  // no macroRatio/micros/nova/context — DimensionCard must not assume any of those exist.
+  const degraded = {
+    id: 'who', label: 'Ajánlások · WHO', weight: 0, score: 0, color: 'var(--sky)',
+    detail: 'Nincs elég adat ehhez a dimenzióhoz.',
+  } as RowsDimension
+  render(<DimensionCard dim={degraded} defaultOpen />)
+  expect(screen.getByText('Ajánlások · WHO')).toBeInTheDocument()
+  expect(screen.getByText('Nincs elég adat ehhez a dimenzióhoz.')).toBeInTheDocument()
+  expect(screen.getByText(/súly/)).toHaveTextContent('súly 0% → 0 pont')
+  // no ContextPanel rows (it has no `context` payload to render)
+  expect(screen.queryByText('Cukor')).not.toBeInTheDocument()
+})

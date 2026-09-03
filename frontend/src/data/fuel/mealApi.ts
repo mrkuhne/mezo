@@ -33,11 +33,17 @@ const DIMENSION_COLOR: Record<MealDimension['id'], string> = {
   portion: 'var(--coral-deep)',
 }
 
-/** Contract dimension → the FE discriminated union. A DEGRADED dimension (weight 0, no per-kind
- *  payload — zero input coverage on the backend) returns null and is dropped: the sheet shows
- *  only the dimensions that were actually computable (honest absence, never an empty fake panel).
- *  Since mezo-7797 the recipe template carries a real `portion` dimension (not a degraded context),
- *  so both surfaces drop degraded dims uniformly — no keep-degraded escape hatch. */
+/** Contract dimension → the FE discriminated union. A DEGRADED dimension (weight 0 — zero input
+ *  coverage on the backend) has no per-kind payload, so it falls through every specific branch
+ *  below — but since mezo-jcpt.1 it is KEPT as a base-fields-only dimension (no panel data)
+ *  rather than dropped: ScoreLedger needs it in the list to render its "Nincs adat: <label>"
+ *  line, and DimensionCard needs it to render a (panel-less) card. Only a genuinely malformed
+ *  row now still drops: a `weight > 0` dimension whose declared payload came back missing/empty
+ *  (a live dim should always carry its payload — this signals a backend bug, not degradation),
+ *  or an `id` outside the known set (backend/FE version skew). Weight is the sole signal used to
+ *  tell "degraded" from "malformed" — the contract does not carry a separate flag, so if a live
+ *  dimension's payload were ever legitimately absent for a reason other than a bug, it would be
+ *  silently dropped exactly as before this change. */
 function fromDimension(d: MealScoreDimensionResponse): MealDimension | null {
   const base = {
     label: d.label,
@@ -79,11 +85,17 @@ function fromDimension(d: MealScoreDimensionResponse): MealDimension | null {
   if (d.id === 'context' && d.context && d.context.length > 0) {
     return { id: 'context', ...base, context: d.context.map(c => ({ label: c.label, value: c.value })) }
   }
+  // No per-kind payload matched — keep it iff it's a genuine degraded dim (weight 0, known id);
+  // drop it iff it's malformed (weight > 0 with a missing payload, or an unrecognized id).
+  if (d.weight === 0 && d.id in DIMENSION_COLOR) {
+    return { id: d.id as MealDimension['id'], ...base }
+  }
   return null
 }
 
-/** Contract envelope → FE MealBreakdown (colors injected; degraded dimensions dropped on both the
- *  meal and the recipe-template surface). */
+/** Contract envelope → FE MealBreakdown (colors injected; degraded dimensions now KEPT — base
+ *  fields only, mezo-jcpt.1 — on both the meal and the recipe-template surface; only malformed
+ *  rows are dropped, see fromDimension). */
 export function fromBreakdown(b: MealBreakdownResponse): MealBreakdown {
   return {
     confidence: b.confidence,

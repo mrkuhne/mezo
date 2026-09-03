@@ -101,7 +101,14 @@ export interface NovaDimension extends MealDimensionBase { id: 'nova'; nova: { d
 export interface ContextDimension extends MealDimensionBase { id: 'context'; context: { label: string; value: string }[] }
 /** Generic label/value-row dimensions (mezo-7797): WHO, zsírminőség, növényi diverzitás, energia-sűrűség, adag-arány. Same payload shape as ContextDimension. */
 export interface RowsDimension extends MealDimensionBase { id: 'who' | 'fat_quality' | 'plant_diversity' | 'energy_density' | 'portion'; context: { label: string; value: string }[] }
-export type MealDimension = MacroDimension | MicroDimension | NovaDimension | ContextDimension | RowsDimension
+/** A degraded dimension (weight 0 — zero input coverage on the backend, mezo-jcpt.1): base
+ *  fields only, no per-kind payload to render a panel from. Kept (not dropped) so ScoreLedger
+ *  can name it in its "Nincs adat" line; DimensionCard renders it with no panel (Task 6 owns
+ *  the eventual "ghost tile" treatment). Distinguished from its live siblings structurally
+ *  (the `'macroRatio' in dim` / `'micros' in dim` / `'nova' in dim` / `'context' in dim` guards
+ *  in DimensionCard), not by `id`, since a degraded dim shares its `id` with its live sibling. */
+export interface DegradedDimension extends MealDimensionBase {}
+export type MealDimension = MacroDimension | MicroDimension | NovaDimension | ContextDimension | RowsDimension | DegradedDimension
 export interface MealBreakdown {
   confidence: number
   summary: string | null // deterministic v0 ships null — filled by the coach (mezo-mr4n)
