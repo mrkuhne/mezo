@@ -142,6 +142,67 @@ describe('usePantry (mock mode)', () => {
       vi.useRealTimers()
     }
   })
+
+  it('searchCatalog filters the mock catalog fixture by name/brand and kind', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => usePantryActions(), { wrapper: Wrapper })
+    const hits = await result.current.searchCatalog('skyr')
+    expect(hits.map(h => h.name)).toEqual(['Skyr natúr'])
+    expect(hits[0].authorName).toBe('Anna')
+    const supp = await result.current.searchCatalog('', 'supplement')
+    expect(supp.every(h => h.kind === 'supplement')).toBe(true)
+    expect(supp.length).toBeGreaterThan(0)
+  })
+
+  it('addFromCatalog appends the catalog entry to the shared cache with sharedFrom + catalogEditable=false', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ pantry: usePantry(), actions: usePantryActions() }),
+      { wrapper: Wrapper },
+    )
+    const before = result.current.pantry.ingredients.length
+    await act(async () => { await result.current.actions.addFromCatalog('cat-skyr') })
+    await waitFor(() => expect(result.current.pantry.ingredients.length).toBe(before + 1))
+    const added = result.current.pantry.ingredients.find(i => i.catalogId === 'cat-skyr')
+    expect(added?.name).toBe('Skyr natúr')
+    expect(added?.sharedFrom).toEqual({ authorName: 'Anna' })
+    expect(added?.catalogEditable).toBe(false)
+    // idempotent: a second add does not duplicate the row
+    await act(async () => { await result.current.actions.addFromCatalog('cat-skyr') })
+    expect(result.current.pantry.ingredients.filter(i => i.catalogId === 'cat-skyr')).toHaveLength(1)
+  })
+})
+
+describe('usePantryActions (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+
+  it('searchCatalog GETs /api/pantry/catalog with q + kind and maps the entries', async () => {
+    let seenUrl = ''
+    server.use(http.get(`${API_BASE}/api/pantry/catalog`, ({ request }) => {
+      seenUrl = request.url
+      return HttpResponse.json([{ id: 'c1', kind: 'food', name: 'Kefir', source: 'manual', authorName: null }])
+    }))
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => usePantryActions(), { wrapper: Wrapper })
+    const hits = await result.current.searchCatalog('kef', 'food')
+    expect(seenUrl).toContain('q=kef')
+    expect(seenUrl).toContain('kind=food')
+    expect(hits).toEqual([{ id: 'c1', kind: 'food', name: 'Kefir', source: 'manual', authorName: null }])
+  })
+
+  it('addFromCatalog POSTs /api/pantry/items/from-catalog and invalidates the pantry', async () => {
+    let body: unknown = null
+    server.use(http.post(`${API_BASE}/api/pantry/items/from-catalog`, async ({ request }) => {
+      body = await request.json()
+      return HttpResponse.json({ id: 'i1', catalogId: 'c1', kind: 'food', name: 'Kefir' })
+    }))
+    const { qc, Wrapper } = sharedWrapper()
+    const spy = vi.spyOn(qc, 'invalidateQueries')
+    const { result } = renderHook(() => usePantryActions(), { wrapper: Wrapper })
+    await act(async () => { await result.current.addFromCatalog('c1') })
+    expect(body).toEqual({ catalogId: 'c1' })
+    expect(spy).toHaveBeenCalledWith({ queryKey: ['pantry'] })
+  })
 })
 
 describe('usePantry (real mode)', () => {

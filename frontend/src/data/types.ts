@@ -238,6 +238,8 @@ export interface SupplementStashItem {
   price?: number; priceUnit?: string; pkg?: string
   micros?: { name: string; pct: number }[]; nova?: NovaGroup
   fiberG?: number | null; sugarG?: number | null; saltG?: number | null; saturatedFatG?: number | null
+  // S4 (mezo-qw37.4): shared-catalog provenance — absent means own/editable.
+  catalogId?: string; sharedFrom?: PantrySharedFrom | null; catalogEditable?: boolean
 }
 export interface Protocol {
   version: number; builtAt: string; source: string; status: string
@@ -314,6 +316,17 @@ export interface TodayScenario {
 // --- Pantry (Kamra) + Recipes (Receptek) ---
 export interface PantryCategoryMeta { label: string; color: string }
 export interface IngredientStock { qty: number; unit: string; expires: string | null; lowExpiry?: boolean }
+// S4 (mezo-qw37.4): the shared definition behind a shelf row.
+export interface PantrySharedFrom { authorName: string }
+/** One row of the global pantry catalog (GET /api/pantry/catalog) — master (authorName null) or user-authored. */
+export interface PantryCatalogEntry {
+  id: string; kind: PantryItemKind; name: string; brand?: string | null; source: PantrySourceKey
+  category?: string | null; per?: number | null; unit?: string | null
+  kcal?: number | null; proteinG?: number | null; carbsG?: number | null; fatG?: number | null
+  fiberG?: number | null; sugarG?: number | null; saltG?: number | null; saturatedFatG?: number | null
+  nova?: NovaGroup | null; form?: string | null; caffeine?: boolean | null
+  authorName?: string | null
+}
 export interface Ingredient {
   id: string; name: string; brand: string; source: PantrySourceKey; category: string
   per: number; unit: string
@@ -325,6 +338,8 @@ export interface Ingredient {
   stock: IngredientStock | null
   lastUsed: string; usedInRecipes: number; scrapedAt?: string
   stashRefId?: string; warning?: string
+  // S4 (mezo-qw37.4): shared-catalog provenance — absent means own/editable.
+  catalogId?: string; sharedFrom?: PantrySharedFrom | null; catalogEditable?: boolean
 }
 export type RecipeCategory = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 export interface RecipeLog { mealId: string; slot: string; score: number; delta: number; loggedAt: string; kcal: number; p: number; c: number; f: number }
@@ -464,6 +479,8 @@ export interface PantryItem {
   lastUsed?: string; usedInRecipes?: number; scrapedAt?: string
   isStashOnly?: boolean; dose?: string; protocol?: string; caffeine?: boolean; form?: string
   stashRefId?: string
+  // S4 (mezo-qw37.4): shared-catalog provenance — absent means own/editable.
+  catalogId?: string; sharedFrom?: PantrySharedFrom | null; catalogEditable?: boolean
 }
 
 /** Form payload for creating/editing a pantry item (maps to the PantryItemRequest contract). */

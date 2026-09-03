@@ -1185,6 +1185,13 @@ export const handlers = [
   // override with server.use() when they need a populated stash or feed.
   http.get(`${API_BASE}/api/pantry`, () => HttpResponse.json({ ingredients: [], stash: [], imports: [], suggestions: [] })),
 
+  // S4 (mezo-qw37.4) shared catalog — honest-empty search; from-catalog echoes a shelf row.
+  http.get(`${API_BASE}/api/pantry/catalog`, () => HttpResponse.json([])),
+  http.post(`${API_BASE}/api/pantry/items/from-catalog`, async ({ request }) => {
+    const body = (await request.json()) as { catalogId: string }
+    return HttpResponse.json({ id: 'from-catalog-1', catalogId: body.catalogId, kind: 'food', name: 'Skyr natúr' })
+  }),
+
   // Pantry import (P6, mezo-bka) — confirmed-draft import.
   // URL scrape (P8, mezo-8vum) — honest-empty default; tests override with server.use().
   http.post(`${API_BASE}/api/pantry-import/scrape`, () => HttpResponse.json({ result: null })),

@@ -3,6 +3,7 @@ import type { components } from '@/data/_client/api.gen'
 import type {
   Ingredient, SupplementStashItem, PantryItemInput,
   PantryImport, PantrySuggestion, PantryImportInput, PantryScrapeDraft,
+  PantryCatalogEntry,
 } from '@/data/types'
 import type { PantrySourceKey } from '@/data/pantrySources'
 import { localDateString, huMonthDay } from '@/shared/lib/dates'
@@ -15,6 +16,9 @@ type PantrySuggestionResponse = components['schemas']['PantrySuggestionResponse'
 type PantryScrapeRequest = components['schemas']['PantryScrapeRequest']
 type PantryScrapeResponse = components['schemas']['PantryScrapeResponse']
 type PantryScrapeResult = components['schemas']['PantryScrapeResult']
+// S4 (mezo-qw37.4): the shared catalog contract types.
+type PantryCatalogEntryResponse = components['schemas']['PantryCatalogEntry']
+type PantryFromCatalogRequest = components['schemas']['PantryFromCatalogRequest']
 
 export interface PantryData {
   ingredients: Ingredient[]
@@ -119,4 +123,21 @@ export const pantryApi = {
     return apiFetch<PantryScrapeResponse>('/api/pantry-import/photo', { method: 'POST', body: form })
       .then(r => (r.result ? fromScrapeResult(r.result) : null))
   },
+  // S4 (mezo-qw37.4): the shared catalog. Search is an ephemeral read (no cache), like lookup.
+  // URLSearchParams percent-encodes q (Hungarian accents, spaces) the same way the browser's
+  // fetch/URL machinery does server-side, so the MSW handler's request.url sees the same shape.
+  searchCatalog: (q: string, kind?: string): Promise<PantryCatalogEntry[]> => {
+    const params = new URLSearchParams()
+    if (q) params.set('q', q)
+    if (kind) params.set('kind', kind)
+    const qs = params.toString()
+    return apiFetch<PantryCatalogEntryResponse[]>(`/api/pantry/catalog${qs ? `?${qs}` : ''}`)
+      // nova 1..4 + source enum are structurally the domain type — same cast fromLookupResult uses.
+      .then(rows => rows as unknown as PantryCatalogEntry[])
+  },
+  addFromCatalog: (catalogId: string): Promise<void> =>
+    apiFetch('/api/pantry/items/from-catalog', {
+      method: 'POST',
+      body: JSON.stringify({ catalogId } satisfies PantryFromCatalogRequest),
+    }).then(() => undefined),
 }
