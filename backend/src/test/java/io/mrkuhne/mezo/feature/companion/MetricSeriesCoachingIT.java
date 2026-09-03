@@ -76,4 +76,17 @@ class MetricSeriesCoachingIT extends AbstractIntegrationTest {
 
         assertThat(series).isEmpty(); // 3 weigh-ins < 4 ⇒ unknown, not zero
     }
+
+    @Test
+    void testSeries_shouldReturnCalendarSeriesWithZeros_whenCombinedLoadRequested() {
+        UUID owner = userPopulator.createUser().getId();
+        trainPopulator.createSportSession(owner, MONDAY, 120);
+
+        Map<LocalDate, Double> series = metricSeriesService.series(
+                owner, MetricKey.COMBINED_LOAD_MIN, MONDAY, MONDAY.plusDays(2));
+
+        assertThat(series).hasSize(3); // calendar series — every day exists
+        assertThat(series.get(MONDAY)).isEqualTo(120.0);
+        assertThat(series.get(MONDAY.plusDays(1))).isEqualTo(0.0); // no training IS information
+    }
 }

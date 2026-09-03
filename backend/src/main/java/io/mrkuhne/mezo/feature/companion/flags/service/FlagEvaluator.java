@@ -24,8 +24,9 @@ import org.springframework.transaction.annotation.Transactional;
  * class holds no numbers of its own. It never writes: {@code FlagService} owns the cooldown gate
  * and the audit row.
  *
- * <p>Missing days stay missing (the MetricSeriesService rule) — the one exception is
- * {@code HABITS_DONE}, where "no habit_day row" genuinely means zero completions.
+ * <p>Missing days stay missing (the MetricSeriesService rule) — the exceptions are
+ * {@code HABITS_DONE}, where "no habit_day row" genuinely means zero completions, and
+ * {@code COMBINED_LOAD_MIN}, where a day with no training genuinely means zero load.
  *
  * <p>Each rule lives in its own class under {@code service/rule/}; this class is just the
  * orchestrator that calls them in a fixed order.

@@ -58,7 +58,8 @@ import java.util.stream.Collectors;
  * from the owning features (the snapshot/digest precedent — companion → others, never back).
  * Multi-row days aggregate deterministically (avg scores, sum loads/volumes, max sleep row,
  * latest weigh-in); missing days are simply absent — the correlation aligns on presence, it
- * never invents values.
+ * never invents values. The two documented exceptions are {@code HABITS_DONE} and
+ * {@code COMBINED_LOAD_MIN}, where absence of a row genuinely means zero.
  */
 @Service
 @RequiredArgsConstructor
@@ -131,6 +132,7 @@ public class MetricSeriesService {
             case BEDTIME_VARIABILITY -> bedtimeVariability(userId, from, to);
             case SHOULDER_STRAIN -> shoulderStrain(userId, from, to);
             case WEIGHT_TREND_PCT_WK -> weightTrendPctWk(userId, from, to);
+            case COMBINED_LOAD_MIN -> combinedLoad(userId, from, to);
         };
     }
 
@@ -463,6 +465,20 @@ public class MetricSeriesService {
             load[i] = sport.getOrDefault(day, 0.0) + gym.getOrDefault(day, 0.0) / kgPerMin;
         }
         return load;
+    }
+
+    /**
+     * A dailyLoad naptári sor sorozatként: minden nap létezik, a nem-logolt nap valódi 0 — a
+     * HABITS_DONE utáni második dokumentált kivétel a "missing stays missing" szabály alól
+     * (edzés-nemlét itt információ, a gördülő terhelés-ablakok ezt igénylik).
+     */
+    private Map<LocalDate, Double> combinedLoad(UUID userId, LocalDate from, LocalDate to) {
+        double[] load = dailyLoad(userId, from, to);
+        Map<LocalDate, Double> series = new HashMap<>();
+        for (int i = 0; i < load.length; i++) {
+            series.put(from.plusDays(i), load[i]);
+        }
+        return series;
     }
 
     /**
