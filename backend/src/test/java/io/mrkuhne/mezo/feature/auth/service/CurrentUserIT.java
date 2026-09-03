@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -47,7 +48,7 @@ class CurrentUserIT extends ApiIntegrationTest {
     @Test
     void testProtectedCall_shouldNotRestampLastSeen_whenSeenRecently() {
         AppUserEntity o = owner();
-        Instant recent = Instant.now().minusSeconds(60);
+        Instant recent = Instant.now().minusSeconds(60).truncatedTo(ChronoUnit.MICROS);
         o.setLastSeenAt(recent);
         appUserRepository.saveAndFlush(o);
         getForBody("/api/biometrics/weight", ownerAuthHeaders(), HttpStatus.OK, String.class);
