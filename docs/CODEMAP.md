@@ -112,7 +112,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
   - **entities→tables:** `AppUserEntity`→`app_user`, `InviteEntity`→`invite`
   - **repositories:** `AppUserRepository`, `InviteRepository`
-  - **services:** `AdminService`, `AuthService`, `CurrentUser`, `InviteService`, `PersonaContext`, `PromptPersona`
+  - **services:** `AdminService`, `AuthService`, `CurrentUser`, `InviteService`, `PersonaContext`, `PromptPersona`,
+    `UserFanOut`
   - **controllers→contract:** `AdminController`→`AdminApi`, `AuthController`→`AuthApi`
   - **other:** `AuthProperties`, `AuthStartupGuard`, `OwnerProperties`, `OwnerSeedData`
 - **Contract** `api/feature/admin/admin.yml` — 6 operations
@@ -128,9 +129,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **pages:** ChangePasswordPage.tsx, LoginPage.tsx, RegisterPage.tsx
   - **components:** AuthShell.tsx
   - **logic:** authErrorText.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/auth` — 9 IT + 4 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/auth` — 10 IT + 4 unit
   - **ITs:** `AdminInviteIT`, `AdminUserIT`, `AuthControllerIT`, `AuthIsolationIT`, `AuthMeIT`, `AuthRegisterIT`,
-    `CurrentUserIT`, `OwnerSeedDataIT`, `PromptPersonaIT`
+    `CurrentUserIT`, `OwnerSeedDataIT`, `PromptPersonaIT`, `UserFanOutIT`
   - **populators:** `UserPopulator`
 
 ### biometrics
@@ -221,13 +222,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **components:** ClaimTile.tsx, MaturityRing.tsx, PersonaOrb.tsx, RunFlowStrip.tsx, SignalChainCard.tsx,
     TranscriptTurn.tsx
   - **root:** character.css, dossierState.ts, expertColors.ts, feedDayLabel.ts, inventory.ts, runLabels.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 22 IT + 5 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 23 IT + 5 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterConferenceJobIT`, `CharacterConferenceServiceIT`, `CharacterFeedbackIT`, `CharacterHistoryReadsIT`,
     `CharacterMetaReadsIT`, `CharacterMonthlyServiceIT`, `CharacterObservationJobIT`, `CharacterObservationServiceIT`,
     `CharacterPersistenceIT`, `CharacterPromptAssemblerIT`, `CharacterPromptAssemblerOversizedDimensionIT`,
     `CharacterPromptWiringIT`, `CharacterRunLogIT`, `CharacterSignalReadsIT`, `ClaimLifecycleIT`,
-    `KonziliumProposalRoundIT`, `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`
+    `KonziliumProposalRoundIT`, `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`, `PortraitWriterNameIT`
   - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`, `CheckInPopulator`,
     `DailySummaryPopulator`, `DatabasePopulator`, `ExperimentPopulator`, `GraphPopulator`, `JournalPopulator`,
     `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LlmLogPopulator`, `MealPopulator`, `MedicationDosePopulator`,

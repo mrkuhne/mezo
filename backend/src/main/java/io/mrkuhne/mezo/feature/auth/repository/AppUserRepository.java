@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.auth.repository;
 
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 public interface AppUserRepository extends JpaRepository<AppUserEntity, UUID> {
     Optional<AppUserEntity> findByEmail(String email);
     boolean existsByEmail(String email);
+
+    /** The cron fan-out set (spec L1): ACTIVE and onboarded. Disabled or half-registered accounts get no jobs. */
+    List<AppUserEntity> findByStatusAndOnboardedAtIsNotNull(AppUserEntity.UserStatus status);
 
     /** Cheap presence stamp — called by CurrentUser at most every 5 minutes per user. */
     @Modifying
