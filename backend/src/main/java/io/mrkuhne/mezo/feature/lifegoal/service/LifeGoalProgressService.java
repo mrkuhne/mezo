@@ -253,7 +253,7 @@ public class LifeGoalProgressService {
         PillarDayScore todayScore = perDay.get(to);
         return switch (pillar.getKind()) {
             case "habit", "average" -> pillar.getRule().threshold();
-            case "target" -> todayScore == null ? null : todayScore.target();
+            case "target", "linked" -> todayScore == null ? null : todayScore.target();
             case "baseline" -> todayScore == null ? null : todayScore.baseline();
             default -> null;
         };
