@@ -137,8 +137,11 @@ public class MealScoringService {
         double confidence = weightSum == 0 ? 0
             : dims.stream().mapToDouble(d -> d.effectiveWeight * d.coverage).sum() / weightSum;
 
+        List<Dimension> jsonDims = weightSum == 0
+            ? dims.stream().map(Dim::toJson).toList()
+            : dims.stream().map(d -> d.renormalized(weightSum).toJson()).toList();
         return new MealBreakdownJson(round2(value), round2(confidence), null, null,
-            dims.stream().map(Dim::toJson).toList(), List.of(),
+            jsonDims, List.of(),
             tools(slot, lines, dims, localTime, base));
     }
 

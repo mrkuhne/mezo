@@ -80,8 +80,10 @@ class MealScoringServiceTest {
         assertThat(b.dimensions()).extracting(MealBreakdownJson.Dimension::id)
             .containsExactly("macro", "micro", "who", "fat_quality", "nova",
                 "plant_diversity", "energy_density", "context");
+        // weights renormalized over the live dims (mezo-jcpt.1): configured 0.22/0.10/0.14/0.10/
+        // 0.18/0.12 ÷ live sum 0.86 (plant_diversity 0.08 + energy_density 0.06 degraded out)
         assertThat(b.dimensions()).extracting(d -> d.weight().doubleValue())
-            .containsExactly(0.22, 0.10, 0.14, 0.10, 0.18, 0.0, 0.0, 0.12);
+            .containsExactly(0.26, 0.12, 0.16, 0.12, 0.21, 0.0, 0.0, 0.14);
         // total = Σ w·s / Σ w recomputed from the emitted dimensions (self-consistency)
         double weightSum = b.dimensions().stream().mapToDouble(d -> d.weight().doubleValue()).sum();
         double expected = b.dimensions().stream()
@@ -378,6 +380,23 @@ class MealScoringServiceTest {
         assertThat(b.confidence().doubleValue()).isStrictlyBetween(0.0, 1.01);
         assertThat(b.tools()).extracting(MealBreakdownJson.ToolRow::name)
             .contains("templateFit(weights_renormalized)");
+    }
+
+    @Test
+    void scoreMeal_weightsRenormalizeWhenADimensionDegrades() {
+        // no micro-facts, no nova, no category, no amountG → micro/who/fat_quality/
+        // nova/plant_diversity/energy_density degrade; only macro+context stay live.
+        List<ScoredLine> lines = List.of(new ScoredLine("Rizs", "100 g",
+            bd(350), bd(7), bd(77), BigDecimal.ONE, null, null, null, null, null,
+            false, null, null));
+        MealBreakdownJson b = service.scoreMeal("lunch", lines, LocalTime.of(12, 30));
+        double liveWeightSum = b.dimensions().stream()
+            .mapToDouble(d -> d.weight().doubleValue()).sum();
+        assertThat(liveWeightSum).isCloseTo(1.0, within(0.02)); // round2 tolerance
+        // ledger invariant: Σ(weight·score) == value
+        double ledger = b.dimensions().stream()
+            .mapToDouble(d -> d.weight().doubleValue() * d.score().doubleValue()).sum();
+        assertThat(ledger).isCloseTo(b.value().doubleValue(), within(0.03));
     }
 
     @Test
