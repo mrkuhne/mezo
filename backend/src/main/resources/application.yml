@@ -397,6 +397,11 @@ mezo:
       # off = the CompanionMessageJob bean does not exist (the lazy GET still serves)
       feed-job:
         enabled: true
+      # S3 (mezo-d58h.3) daily setup-check pass (schedule: mezo.proactive.setup-checks.cron);
+      # off = the SetupCheckJob bean does not exist (SetupCheckService itself is unaffected —
+      # a direct call still works, same as FlagSweepJob vs FlagService)
+      setup-check-job:
+        enabled: true
       # W1 Monday weekly-suggestion pre-generation (schedule: mezo.proactive.weekly.cron);
       # off = the WeeklySuggestionJob bean does not exist
       weekly-suggestion-job:

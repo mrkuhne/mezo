@@ -920,9 +920,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `OverloadChallengeGenerator`, `PatternImpactService`, `PeopleMezoNoteAdapter`, `PredictionGenerator`,
     `PredictionJob`, `PredictionValidationService`, `ProactiveChallengeService`, `ProactiveExperimentService`,
     `ProactiveFeedService`, `ProactiveMemoirService`, `ProactivePredictionService`, `ProactiveWeeklySuggestionService`,
-    `WeekReviewSourceAdapter`, `WeeklyLessonService`, `WeeklyReviewContextSources`, `WeeklyReviewDigestService`,
-    `WeeklyReviewGenerator`, `WeeklyReviewJob`, `WeeklyReviewService`, `WeeklyReviewWeekWindow`,
-    `WeeklySuggestionGenerator`, `WeeklySuggestionJob`
+    `SetupCheckJob`, `SetupCheckService`, `WeekReviewSourceAdapter`, `WeeklyLessonService`,
+    `WeeklyReviewContextSources`, `WeeklyReviewDigestService`, `WeeklyReviewGenerator`, `WeeklyReviewJob`,
+    `WeeklyReviewService`, `WeeklyReviewWeekWindow`, `WeeklySuggestionGenerator`, `WeeklySuggestionJob`
   - **controllers→contract:** `DiagnosisController`→`DiagnosisApi`, `ProactiveController`→`ProactiveApi`
   - **mappers:** `ChallengeDisplay`, `ProactiveMapper`
   - **config:** `DiagnosisProperties`, `ProactiveProperties`, `SetupCheckProperties`
@@ -939,7 +939,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     GET /api/proactive/challenge · POST /api/proactive/challenge/{id}/decision ·
     GET /api/proactive/weekly-review/{start} · POST /api/proactive/weekly-review/{start}/regenerate ·
     GET /api/proactive/weekly-review/{start}/lessons · GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 54 IT + 1 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 56 IT + 1 unit
   - **ITs:** `ChallengeGeneratorIT`, `ChallengeJobIT`, `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`,
     `ChallengePersistenceIT`, `CompanionMessageEventIT`, `CompanionMessageGeneratorIT`,
     `CompanionMessageInterventionPersistenceIT`, `CompanionMessageJobIT`, `CompanionMessageJobSwitchOffIT`,
@@ -952,15 +952,16 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `PredictionJobSwitchOffIT`, `PredictionPersistenceIT`, `PredictionValidationIT`, `ProactiveApiChallengeIT`,
     `ProactiveApiCompanionOffIT`, `ProactiveApiExperimentIT`, `ProactiveApiFeedIT`, `ProactiveApiIT`,
     `ProactiveApiSwitchOffIT`, `ProactiveMemoirArchiveIT`, `ProactiveMemoirArchiveSwitchOffIT`,
-    `SetupCheckPropertiesIT`, `SleepDiagnosisIT`, `WeeklyLessonServiceIT`, `WeeklyReviewControllerIT`,
-    `WeeklyReviewGeneratorIT`, `WeeklySuggestionGeneratorIT`, `WeeklySuggestionJobIT`,
-    `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionPersistenceIT`
+    `SetupCheckJobSwitchOffIT`, `SetupCheckPropertiesIT`, `SetupCheckServiceIT`, `SleepDiagnosisIT`,
+    `WeeklyLessonServiceIT`, `WeeklyReviewControllerIT`, `WeeklyReviewGeneratorIT`, `WeeklySuggestionGeneratorIT`,
+    `WeeklySuggestionJobIT`, `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionPersistenceIT`
   - **populators:** `ActivityPopulator`, `ChallengePopulator`, `CheckInPopulator`, `CompanionMessagePopulator`,
     `DailySummaryPopulator`, `DiagnosisPopulator`, `ExperimentPopulator`, `GoalPopulator`, `GraphPopulator`,
     `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `MedicationDosePopulator`,
     `MedicationPopulator`, `MemoirPopulator`, `MentionPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`,
-    `PersonPopulator`, `PredictionPopulator`, `QuestPopulator`, `SleepLogPopulator`, `TrainPopulator`, `UserPopulator`,
-    `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`
+    `PersonPopulator`, `PredictionPopulator`, `QuestPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`,
+    `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`,
+    `WeightLogPopulator`
 
 ### progression
 
