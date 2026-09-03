@@ -18,7 +18,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 |---|---|---|---|---|---|
 | [activity](#activity) | ✓ | 1 | ✓ | · | [growth](features/growth.md) |
 | [appnotification](#appnotification) | ✓ | 1 | · | · | [_platform-notifications](features/_platform-notifications.md) |
-| [auth](#auth) | ✓ | 1 | · | · | [_platform-auth-security](features/_platform-auth-security.md) |
+| [auth](#auth) | ✓ | 1 | ✓ | ✓ | [_platform-auth-security](features/_platform-auth-security.md) |
 | [biometrics](#biometrics) | ✓ | 6 | · | · | [me](features/me.md), [today](features/today.md) |
 | [character](#character) | ✓ | 1 | ✓ | ✓ | [character](features/character.md) |
 | [companion](#companion) | ✓ | 4 | · | · | [character](features/character.md), [companion](features/companion.md), [journal](features/journal.md), [me](features/me.md) |
@@ -95,19 +95,26 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### auth
 
-*BE + API* · read next: [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-08-18, mixed)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-09-02, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
   - **entities→tables:** `AppUserEntity`→`app_user`, `InviteEntity`→`invite`
   - **repositories:** `AppUserRepository`, `InviteRepository`
-  - **services:** `AuthService`
+  - **services:** `AuthService`, `CurrentUser`, `InviteService`
   - **controllers→contract:** `AuthController`→`AuthApi`
-  - **other:** `OwnerProperties`, `OwnerSeedData`
+  - **other:** `AuthProperties`, `AuthStartupGuard`, `OwnerProperties`, `OwnerSeedData`
 - **Contract** `api/feature/auth/auth.yml` — 5 operations
   - **endpoints:** POST /api/auth/login · POST /api/auth/register · GET /api/auth/me · POST /api/auth/change-password ·
     POST /api/auth/onboarding-complete
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/auth` — 2 IT + 0 unit
-  - **ITs:** `AuthControllerIT`, `OwnerSeedDataIT`
+- **FE data** `frontend/src/data/auth`
+  - **hooks (via `@/data/hooks`):** `ME_QUERY_KEY`, `useAuthActions`, `useMe`
+  - **modules:** authApi.ts, authHooks.ts, authMock.ts
+- **FE ui** `frontend/src/features/auth`
+  - **pages:** ChangePasswordPage.tsx, LoginPage.tsx, RegisterPage.tsx
+  - **components:** AuthShell.tsx
+  - **logic:** authErrorText.ts
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/auth` — 6 IT + 3 unit
+  - **ITs:** `AuthControllerIT`, `AuthIsolationIT`, `AuthMeIT`, `AuthRegisterIT`, `CurrentUserIT`, `OwnerSeedDataIT`
 
 ### biometrics
 
@@ -346,8 +353,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### fuel
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-01, done) ·
-  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-08-29, done) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-08-27, done)
+  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-02, done) ·
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-02, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/fuel`
   - **entities→tables:** `FuelSettingsEntity`→`fuel_settings`, `MealSlotTemplateEntity`→`meal_slot_template`,
@@ -411,7 +418,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### gamification
 
 *BE + API + FE-data* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-08-29, done) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-08-27, done)
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-02, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/gamification`
   - **entities→tables:** `CoinEventEntity`→`coin_event`, `GamificationProfileEntity`→`gamification_profile`,
@@ -611,7 +618,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/habit.md](features/habit.md) (updated 2026-08-29, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-01, mixed) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-08-27, done) ·
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-02, done) ·
   [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-08-31, mixed)
 
 - **FE data** `frontend/src/data/me`
@@ -1004,7 +1011,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-08-15, done) ·
   [docs/features/train.md](features/train.md) (updated 2026-08-31, done) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-08-27, done)
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-02, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
   - **sub-features:** `signal`
