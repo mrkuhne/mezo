@@ -42,6 +42,7 @@ describe('BetaAdminPage (mock mode)', () => {
     await waitFor(() => expect(screen.queryByText('MEZO-7KQ2-XN4P')).toBeNull())
   })
 
+
   it('lists the accounts on Felhasználók, resets a password into a sheet, and toggles a status', async () => {
     renderPage()
     fireEvent.click(screen.getByRole('button', { name: 'Felhasználók' }))
@@ -80,5 +81,39 @@ describe('BetaAdminPage (real mode)', () => {
     server.use(http.get(`${API_BASE}/api/admin/invites`, () => HttpResponse.json([])))
     renderPage()
     await waitFor(() => expect(screen.getByText('Nincs nyitott meghívó.')).toBeInTheDocument())
+  })
+
+  it('keeps Törlés disabled for the in-flight DELETE and re-enables it once the network resolves', async () => {
+    const deferred: { resolve: (() => void) | null } = { resolve: null }
+    server.use(http.delete(`${API_BASE}/api/admin/invites/:id`, () => new Promise((resolve) => {
+      deferred.resolve = () => resolve(new HttpResponse(null, { status: 204 }))
+    })))
+    renderPage()
+    await waitFor(() => expect(screen.getByText('MEZO-7KQ2-XN4P')).toBeInTheDocument())
+    const del = screen.getByRole('button', { name: /Törlés/ })
+    fireEvent.click(del)
+    await waitFor(() => expect(del).toBeDisabled())
+    deferred.resolve?.()
+    // the GET handler stays the static seed, so re-enablement (not row removal) is the
+    // observable proof that the mutation settled and released the guard.
+    await waitFor(() => expect(del).not.toBeDisabled())
+  })
+
+  it('keeps Jelszó-reset and the status toggle disabled for the in-flight reset-password call', async () => {
+    const deferred: { resolve: (() => void) | null } = { resolve: null }
+    server.use(http.post(`${API_BASE}/api/admin/users/:id/reset-password`, () => new Promise((resolve) => {
+      deferred.resolve = () => resolve(HttpResponse.json({ temporaryPassword: 'RealTempPw2026' }))
+    })))
+    renderPage()
+    fireEvent.click(screen.getByRole('button', { name: 'Felhasználók' }))
+    await waitFor(() => expect(screen.getByText('Anna')).toBeInTheDocument())
+    const reset = screen.getAllByRole('button', { name: /Jelszó-reset/ })[0]
+    const toggle = screen.getByRole('switch', { name: 'Letiltás: Béla' })
+    fireEvent.click(reset)
+    await waitFor(() => expect(reset).toBeDisabled())
+    expect(toggle).toBeDisabled()
+    deferred.resolve?.()
+    await waitFor(() => expect(screen.getByText('Ideiglenes jelszó')).toBeInTheDocument())
+    expect(screen.getByText('RealTempPw2026')).toBeInTheDocument()
   })
 })

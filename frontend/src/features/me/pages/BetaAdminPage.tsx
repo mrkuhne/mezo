@@ -69,7 +69,7 @@ export function BetaAdminPage() {
                 <GhostState message="Nincs nyitott meghívó." />
               ) : (
                 invites.data.map((invite) => (
-                  <AdminInviteRow key={invite.id} invite={invite} onDelete={(id) => { void actions.deleteInvite(id) }} />
+                  <AdminInviteRow key={invite.id} invite={invite} pending={actions.pending} onDelete={(id) => { void actions.deleteInvite(id) }} />
                 ))
               )}
             </div>
@@ -83,7 +83,7 @@ export function BetaAdminPage() {
                 <GhostState message="Még nincs regisztrált felhasználó." />
               ) : (
                 users.data.map((user) => (
-                  <AdminUserRow key={user.id} user={user} self={user.id === me.data?.id}
+                  <AdminUserRow key={user.id} user={user} self={user.id === me.data?.id} pending={actions.pending}
                     onReset={(id) => { void resetFor(id) }}
                     onToggleStatus={(id, next) => { void actions.setStatus(id, next) }} />
                 ))

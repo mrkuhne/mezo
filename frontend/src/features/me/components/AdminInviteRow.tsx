@@ -10,7 +10,7 @@ const ROW: React.CSSProperties = { justifyContent: 'space-between', alignItems: 
 const CODE: React.CSSProperties = { fontFamily: 'var(--ff-mono, monospace)', fontSize: 13, fontWeight: 700, letterSpacing: '.04em' }
 const BTN: React.CSSProperties = { minHeight: 36, borderRadius: 999, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer', border: '1px solid var(--border-subtle)', background: 'var(--surface-1)' }
 
-export function AdminInviteRow({ invite, onDelete }: { invite: InviteResponse; onDelete: (id: string) => void }) {
+export function AdminInviteRow({ invite, onDelete, pending = false }: { invite: InviteResponse; onDelete: (id: string) => void; pending?: boolean }) {
   const { show } = useToast()
   const expired = invite.expiresAt != null && new Date(invite.expiresAt).getTime() < Date.now()
   const state = invite.usedAt
@@ -38,7 +38,7 @@ export function AdminInviteRow({ invite, onDelete }: { invite: InviteResponse; o
           <button type="button" style={BTN} onClick={copy}>Másolás</button>
         )}
         {!invite.usedAt && (
-          <button type="button" style={{ ...BTN, color: 'var(--error-deep)' }} aria-label={`Törlés: ${invite.code}`} onClick={() => onDelete(invite.id)}>
+          <button type="button" style={{ ...BTN, color: 'var(--error-deep)' }} aria-label={`Törlés: ${invite.code}`} disabled={pending} onClick={() => onDelete(invite.id)}>
             Törlés
           </button>
         )}
