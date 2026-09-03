@@ -5,10 +5,11 @@
 // Tisztán dekoratív: aria-hidden, és a CSS pointer-events: none-t ad rá.
 // A látvány forrása: docs/design_2.0/prototypes/header-aurora.html
 // ============================================================
+import type { ReactElement } from 'react'
 import type { DayFace } from '@/features/today/logic/dayFace'
 
 /** A napszakok dekorációja. A viewBox mindenütt 240×92 — a sáv magassága. */
-const DECO: Record<DayFace, JSX.Element> = {
+const DECO: Record<DayFace, ReactElement> = {
   reggel: (
     <>
       <path className="app-head-arc" d="M10 84 A 180 180 0 0 1 230 84" />

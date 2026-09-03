@@ -24,5 +24,5 @@ const SECTIONS: Record<string, HeaderSection> = {
 
 export function sectionFor(pathname: string): HeaderSection | null {
   const first = pathname.split('/').filter(Boolean)[0]
-  return (first && SECTIONS[first]) ?? null
+  return SECTIONS[first] ?? null
 }
