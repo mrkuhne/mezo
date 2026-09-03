@@ -55,6 +55,28 @@ export function useHabitDay(date: string): HabitDayView {
   return { ...data, mode: mock ? 'mock' : 'live' }
 }
 
+/**
+ * A backend erő-képletének mock tükre (HabitService.strengthByKey: done / (done + missed) a
+ * 28 napos ablakon). A ma-kész nap hozzáadása a sor SAJÁT arányához: a megjelenített
+ * százalékot arányként véve `round((p * C / 100 + 1) * 100 / (C + 1))`, ahol C a lezárt napok
+ * száma. Kicsi, monoton, 100 felé konvergál — nem talál ki új számformát (mezo-3zue.5).
+ *
+ * `null` marad `null`: a szerver is null-t ad `minSample` alatt.
+ */
+function bumpStrength(habitKey: string, pct: number | null | undefined): number | null {
+  if (pct == null) return null
+  const s = mockHabitSummary.habits.find((h) => h.key === habitKey)
+  const closed = s ? s.done28 + s.missed28 : 0
+  if (closed <= 0) return pct
+  return Math.round(((pct * closed) / 100 + 1) * (100 / (closed + 1)))
+}
+
+/** A visszavonás a seed-értékre állít vissza, nem az inverz képlettel — így a
+ *  pipa → visszavonás → pipa kör determinisztikus és nem sodródik kerekítési hibával. */
+function seedStrength(habitKey: string): number | null {
+  return mockHabitDay.find((h) => h.key === habitKey)?.strengthPct ?? null
+}
+
 export function useHabitActions(date: string) {
   const qc = useQueryClient()
   const mock = isMockMode()
@@ -65,7 +87,15 @@ export function useHabitActions(date: string) {
         ...d,
         habits: d.habits.map((h) =>
           h.key === habitKey
-            ? { ...h, status, doneAt: status === 'done' ? new Date().toISOString() : null }
+            ? {
+                ...h,
+                status,
+                doneAt: status === 'done' ? new Date().toISOString() : null,
+                // a csík valódi értéket animál, mock módban is (mezo-3zue.5)
+                strengthPct: status === 'done'
+                  ? bumpStrength(habitKey, h.strengthPct)
+                  : seedStrength(habitKey),
+              }
             : h),
       })
   }

@@ -4890,7 +4890,11 @@ button.nr-tickbtn:active .nr-tick { transform: scale(0.88); }
 .nr-anchor { font-size: 10.5px; font-weight: 300; color: var(--mz-ink-mut); }
 .nr-str { height: 6px; border-radius: 4px; background: rgba(43, 33, 24, 0.08); overflow: hidden; margin-top: 5px; }
 .nr-str div { height: 100%; border-radius: 4px; background: var(--mz-strength);
-  transform: scaleX(1); transform-origin: left; }
+  transform: scaleX(1); transform-origin: left;
+  /* a pipa után a friss strengthPct-re CSUSSZAN, nem ugrik — a jutalom-pillanat
+     vizuális magja (mezo-3zue.5). A belépő scaleX animációval nem ütközik: mountoláskor
+     a szélesség már a helyén van, tehát nincs mit átmenetezni. */
+  transition: width 380ms cubic-bezier(0.25, 0.8, 0.35, 1); }
 /* the lánc-erő bars FILL on the page's entrance (mezo-d20.11) — the `.mnt-gbar` recipe */
 .mz-play .nr-str div { transform: scaleX(0);
   animation: nap-segfill 0.7s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 350ms); }
@@ -4974,7 +4978,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 @media (prefers-reduced-motion: reduce) {
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
   .mz-tile, .mz-chev, .nr-tick { transition: none; }
-  .nr-str div, .mz-play .nr-str div { animation: none; transform: scaleX(1); }
+  .nr-str div, .mz-play .nr-str div { animation: none; transform: scaleX(1); transition: none; }
   .nck-fill { transition: none; }
   .mzh-orbhero svg:first-child { animation: none; }
   .mzh-chatopen, .mzh-membnd { transition: none; }

@@ -33,6 +33,33 @@ describe('useHabitDay (mock mode)', () => {
     await waitFor(() =>
       expect(day.result.current.habits.find((h) => h.key === 'morning_sunlight')?.status).toBe('done'))
   })
+
+  test('a pipa a sor erő-értékét is emeli — a csík valódi változást animál', async () => {
+    const wrapper = makeHookWrapper()
+    const day = renderHook(() => useHabitDay(DATE), { wrapper })
+    const actions = renderHook(() => useHabitActions(DATE), { wrapper })
+    const pct = (k: string) => day.result.current.habits.find((h) => h.key === k)?.strengthPct
+
+    // morning_pushups: seed 48%, a summary 18 done + 6 missed = 24 lezárt nap
+    // round((48 * 24 / 100 + 1) * 100 / 25) = 50
+    expect(pct('morning_pushups')).toBe(48)
+    await act(() => actions.result.current.check('morning_pushups'))
+    await waitFor(() => expect(pct('morning_pushups')).toBe(50))
+
+    // a visszavonás a seed-értékre állít vissza — a pipa/visszavonás kör nem inflálja az erőt
+    await act(() => actions.result.current.uncheck('morning_pushups'))
+    await waitFor(() => expect(pct('morning_pushups')).toBe(48))
+  })
+
+  test('erő nélküli sor erő nélkül marad (minSample alatt a szerver is null-t ad)', async () => {
+    const wrapper = makeHookWrapper()
+    const day = renderHook(() => useHabitDay(DATE), { wrapper })
+    const actions = renderHook(() => useHabitActions(DATE), { wrapper })
+    await act(() => actions.result.current.check('evening_ritual'))
+    await waitFor(() =>
+      expect(day.result.current.habits.find((h) => h.key === 'evening_ritual')?.status).toBe('done'))
+    expect(day.result.current.habits.find((h) => h.key === 'evening_ritual')?.strengthPct).toBeNull()
+  })
 })
 
 describe('useHabitDay (real mode)', () => {
