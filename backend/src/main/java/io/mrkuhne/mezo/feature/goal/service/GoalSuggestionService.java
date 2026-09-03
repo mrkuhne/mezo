@@ -74,6 +74,11 @@ public class GoalSuggestionService {
      * Propose a suggestion. Returns the open row (created, or the existing one when the same
      * dedupKey is already open — idempotent re-trigger), or {@code null} when the owner already
      * decided this exact input (dedup: never nag twice about the same thing).
+     *
+     * <p><b>Concurrency assumption:</b> single-owner app; this runs on the engine-evaluate/trigger
+     * path inside one user's own transaction. A genuine concurrent double-propose for the same
+     * (goal, kind) is not a supported path — {@code uq_goal_suggestion_open_per_kind} is the
+     * last-resort DB guard, not something this method catches and recovers from.
      */
     @Transactional
     public GoalSuggestionEntity propose(
@@ -89,9 +94,15 @@ public class GoalSuggestionService {
                 return open.get(); // same input, already on the table — idempotent
             }
             // Newer input wins: the stale open proposal is superseded, never silently replaced.
+            // Flushed BEFORE the new row is even constructed: Hibernate orders a flush's writes by
+            // action type (inserts before updates) regardless of code order, so without this explicit
+            // flush the new 'proposed' INSERT would hit the wire before this row's UPDATE to
+            // 'superseded' — two 'proposed' rows for the same (goal, kind) would momentarily exist,
+            // violating uq_goal_suggestion_open_per_kind.
             GoalSuggestionEntity stale = open.get();
             stale.setStatus(STATUS_SUPERSEDED);
             stale.setDecidedAt(Instant.now());
+            suggestionRepository.saveAndFlush(stale);
         }
         GoalSuggestionEntity e = new GoalSuggestionEntity();
         e.setCreatedBy(userId); // server-side ownership — never from the client

@@ -58,6 +58,12 @@ class GoalSuggestionServiceIT extends AbstractIntegrationTest {
 
         GoalSuggestionEntity second = suggestionService.propose(
             user, goal.getId(), GoalSuggestionService.KIND_PHASE_CHANGE, "preset:cut-prep:m2", payload("cut", "bulk"));
+        // Force the pending writes to the wire NOW: without the fix (flushing the superseded UPDATE
+        // before the new proposed INSERT), Hibernate's insert-before-update ordering would momentarily
+        // put two 'proposed' rows for the same (goal, kind) in the DB, violating
+        // uq_goal_suggestion_open_per_kind — the rolled-back @Transactional test would otherwise never
+        // catch this (findById is served by the identity map, never touching the DB).
+        suggestionRepository.flush();
 
         assertThat(second).isNotNull();
         assertThat(suggestionRepository.findById(first.getId()).orElseThrow().getStatus()).isEqualTo("superseded");
