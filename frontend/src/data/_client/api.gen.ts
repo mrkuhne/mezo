@@ -426,7 +426,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Curated exercise catalog (master data), muscle then name ascending */
+        /** Shared exercise catalog (master + every user's rows), muscle then name ascending; each item carries the viewer's permissions */
         get: operations["getExerciseCatalog"];
         put?: never;
         /** Create a user-authored catalog exercise */
@@ -445,10 +445,10 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Update a user-authored exercise (master rows → 409) */
+        /** Update a user-authored exercise (author or OWNER; master rows → 409) */
         put: operations["updateExercise"];
         post?: never;
-        /** Soft-delete a user-authored exercise (master rows → 409) */
+        /** Soft-delete a user-authored exercise (author or OWNER; master rows → 409) */
         delete: operations["deleteExercise"];
         options?: never;
         head?: never;
@@ -463,7 +463,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Set/clear the demo video on any catalog exercise (master or user) */
+        /** Set/clear the demo video (author or OWNER on a user row; OWNER only on a master row) */
         put: operations["setExerciseVideo"];
         post?: never;
         delete?: never;
@@ -480,7 +480,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Set/clear the demo stills on any catalog exercise (master or user) */
+        /** Set/clear the demo stills (author or OWNER on a user row; OWNER only on a master row) */
         put: operations["setExerciseImages"];
         post?: never;
         delete?: never;
@@ -4603,8 +4603,14 @@ export interface components {
             imageStartUrl?: string | null;
             /** @description Demo still (end position); alternated with imageStartUrl to convey the movement */
             imageEndUrl?: string | null;
-            /** @description true when created_by == the current user (user-authored row) */
+            /** @description true when the viewer may PUT/DELETE this row — its author or the OWNER on a user-authored row. Never true on a master (built-in) row: those are loader-owned content (409 CATALOG_MASTER_READONLY for everyone). */
             editable: boolean;
+            /** @description true when the viewer may set/clear the demo video and stills — the author or the OWNER on a user-authored row, the OWNER only on a master row. */
+            mediaEditable: boolean;
+            /** @description true when created_by == the viewer (multi-user S5, mezo-qw37.5) */
+            authoredByMe: boolean;
+            /** @description The author's display name for user-authored rows; null on master rows */
+            authorName?: string | null;
         };
         CatalogExerciseCreateRequest: {
             name: string;
@@ -10027,6 +10033,15 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description Not the author nor the OWNER (EXERCISE_CATALOG_NOT_EDITABLE) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description Not found */
             404: {
                 headers: {
@@ -10067,6 +10082,15 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the author nor the OWNER (EXERCISE_CATALOG_NOT_EDITABLE) */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10136,6 +10160,15 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description Not the author nor the OWNER (EXERCISE_CATALOG_NOT_EDITABLE) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description Not found */
             404: {
                 headers: {
@@ -10182,6 +10215,15 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the author nor the OWNER (EXERCISE_CATALOG_NOT_EDITABLE) */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };
