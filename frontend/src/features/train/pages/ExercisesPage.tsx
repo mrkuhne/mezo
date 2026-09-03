@@ -13,8 +13,10 @@
 // the DS SearchInput (16px input in field chrome with a coral focus ring).
 //
 // Tapping a record row opens ExerciseRecordSheet; ⋯ opens CatalogExerciseSheet
-// (edit + delete live there); ▶ opens VideoUrlSheet. Mock mode has no set
-// history -> records are empty, the catalog search still works.
+// (edit + delete live there); ▶ opens VideoUrlSheet (only when the server says
+// `mediaEditable` — master rows for the OWNER, own rows for anyone; mezo-qw37.5).
+// `Saját`/`Közös · {név}` stamps come from `authoredByMe`/`authorName`. Mock mode
+// has no set history -> records are empty, the catalog search still works.
 // ============================================================
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import { useTrain } from '@/data/hooks'
@@ -54,6 +56,18 @@ const maxRep = (r: ExerciseRecordResponse): number | null => {
 // spec — a descriptive stamp, not a selectable chip, so it stays non-tappable.
 function Tag({ bg, color, children }: { bg: string; color: string; children: ReactNode }) {
   return <span className="excat-tag" style={{ background: bg, color }}>{children}</span>
+}
+
+// Authorship stamps (mezo-qw37.5): `Saját` on rows the viewer authored, `Közös · {név}` on rows
+// another user shared into the catalog. Master (built-in) rows carry neither. Both read
+// server-derived flags — the page never reasons about roles.
+function AuthorTags({ lib }: { lib?: ExerciseLibraryItem }) {
+  if (!lib) return null
+  if (lib.authoredByMe) return <Tag bg="var(--primary-bg)" color="var(--primary-deep)">Saját</Tag>
+  // The lav family (`--wash-lav` / `--lav-deep`, the same pair `muscleColors.ts:20` uses for Váll)
+  // is neutral among the muscle washes here — the stamp must not read as a muscle tag.
+  if (lib.authorName) return <Tag bg="var(--wash-lav)" color="var(--lav-deep)">Közös · {lib.authorName}</Tag>
+  return null
 }
 
 // One cell of the hairline-topped stat strip: eyebrow label over an h3-weight
@@ -128,7 +142,7 @@ function RecordRow({ record, rank, lib, delayMs, onOpen, onVideo, onEdit }: {
             <Tag bg="var(--surface-2)" color="var(--text-secondary)">{r.type}</Tag>
           )}
           <Tag bg="var(--surface-2)" color="var(--text-secondary)">{r.sessionCount} alkalom</Tag>
-          {lib?.editable && <Tag bg="var(--primary-bg)" color="var(--primary-deep)">Saját</Tag>}
+          <AuthorTags lib={lib} />
         </div>
         <div className="excat-stats">
           {weighted ? (
@@ -206,6 +220,7 @@ function GhostRow({ item, delayMs, onVideo, onEdit }: {
         <div className="row" style={{ gap: 6, marginTop: 10, flexWrap: 'wrap' }}>
           <Tag bg={mc.wash} color={mc.deep}>{MUSCLE_LABELS[item.muscle] ?? item.muscle}</Tag>
           <Tag bg="var(--surface-2)" color="var(--text-tertiary)">Még nincs rekord</Tag>
+          <AuthorTags lib={item} />
         </div>
       </div>
       {(onEdit || onVideo) && (
@@ -306,7 +321,7 @@ export function ExercisesPage() {
         </div>
         <div className="mz-statstrip rise" style={{ '--d': '30ms' } as CSSProperties} aria-label="Katalógus áttekintés">
           <div className="mz-statcell"><b>{exerciseRecords.length}</b><small>rekord</small></div>
-          <div className="mz-statcell"><b>{exerciseLibrary.filter((e) => e.editable).length}</b><small>saját</small></div>
+          <div className="mz-statcell"><b>{exerciseLibrary.filter((e) => e.authoredByMe).length}</b><small>saját</small></div>
           <div className="mz-statcell"><b>{exerciseLibrary.filter((e) => e.videoUrl).length}</b><small>videóval</small></div>
         </div>
       </div>
@@ -376,7 +391,7 @@ export function ExercisesPage() {
                   lib={lib}
                   delayMs={Math.min(i, 8) * 50}
                   onOpen={() => setOpenRecord(r)}
-                  onVideo={lib?.catalogId ? () => setVideoFor({ id: lib.catalogId!, name: lib.name, videoUrl: lib.videoUrl ?? null }) : undefined}
+                  onVideo={lib?.catalogId && lib.mediaEditable ? () => setVideoFor({ id: lib.catalogId!, name: lib.name, videoUrl: lib.videoUrl ?? null }) : undefined}
                   onEdit={lib?.editable ? () => setCatalog({ edit: lib }) : undefined}
                 />
               )
@@ -386,7 +401,7 @@ export function ExercisesPage() {
                 key={g.id}
                 item={g}
                 delayMs={Math.min(records.length + i, 8) * 50}
-                onVideo={g.catalogId ? () => setVideoFor({ id: g.catalogId ?? g.id, name: g.name, videoUrl: g.videoUrl ?? null }) : undefined}
+                onVideo={g.catalogId && g.mediaEditable ? () => setVideoFor({ id: g.catalogId ?? g.id, name: g.name, videoUrl: g.videoUrl ?? null }) : undefined}
                 onEdit={g.editable ? () => setCatalog({ edit: g }) : undefined}
               />
             ))}

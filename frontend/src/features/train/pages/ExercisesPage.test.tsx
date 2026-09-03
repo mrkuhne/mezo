@@ -249,6 +249,61 @@ test('setting a video on a seed row issues the PUT /video request', async () => 
   expect(videoBody).toEqual({ videoUrl: 'https://youtu.be/dQw4w9WgXcQ' })
 })
 
+// Multi-user catalog (mezo-qw37.5): a row another user authored is SHARED — it renders with a
+// `Közös · {név}` stamp and, because the viewer may neither edit nor re-mediate it, with NO
+// roundel at all. The MSW fixture's Lateral Raise is Anna's (catalog-only, so a ghost row).
+test('a shared row from another user carries the Közös badge and no edit/video roundel', async () => {
+  renderView()
+  await screen.findByRole('button', { name: /Chest Supported Row/ })
+  await userEvent.type(screen.getByPlaceholderText('Keresés · pl. bench, squat, row'), 'lateral')
+  const name = screen.getByText('Lateral Raise')
+  const card = name.closest('.excat') as HTMLElement
+  expect(within(card).getByText('Közös · Anna')).toBeInTheDocument()
+  expect(within(card).queryByText('Saját')).not.toBeInTheDocument()
+  expect(within(card).queryByRole('button', { name: 'Gyakorlat szerkesztése' })).not.toBeInTheDocument()
+  expect(within(card).queryByRole('button', { name: /^Videó/ })).not.toBeInTheDocument()
+})
+
+test('a master row shows neither Saját nor Közös, and the video roundel follows mediaEditable', async () => {
+  renderView()
+  const boxRow = await screen.findByRole('button', { name: /Box Jump/ })
+  const card = boxRow.closest('.excat') as HTMLElement
+  expect(within(card).queryByText('Saját')).not.toBeInTheDocument()
+  expect(within(card).queryByText(/Közös/)).not.toBeInTheDocument()
+  // the fixture viewer is the OWNER → master media stays editable for them
+  expect(within(card).getByRole('button', { name: 'Videó hozzáadása' })).toBeInTheDocument()
+})
+
+test('a master row hides the video roundel when the viewer may not re-mediate it', async () => {
+  server.use(
+    http.get(`${API_BASE}/api/train/exercises`, () =>
+      HttpResponse.json([
+        { id: 'f1e3a0e2-0000-4000-8000-000000000072', slug: 'box-jump', name: 'Box Jump', muscle: 'quad', type: 'plyo', stim: 0.6, fatigue: 0.35, editable: false, mediaEditable: false, authoredByMe: false, authorName: null },
+      ]),
+    ),
+  )
+  renderView()
+  const boxRow = await screen.findByRole('button', { name: /Box Jump/ })
+  const card = boxRow.closest('.excat') as HTMLElement
+  expect(within(card).queryByRole('button', { name: /^Videó/ })).not.toBeInTheDocument()
+})
+
+test('the saját stat counts authored rows, not editable ones', async () => {
+  server.use(
+    http.get(`${API_BASE}/api/train/exercises`, () =>
+      HttpResponse.json([
+        // the OWNER may edit Anna's row (editable) but did not author it — must not count as saját
+        { id: 'f1e3a0e2-0000-4000-8000-000000000073', slug: 'lateral-raise', name: 'Lateral Raise', muscle: 'shoulder-side', type: 'isolation', stim: 0.72, fatigue: 0.2, editable: true, mediaEditable: true, authoredByMe: false, authorName: 'Anna' },
+        { id: 'f1e3a0e2-0000-4000-8000-000000000070', slug: 'chest-supported-row', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound', stim: 0.92, fatigue: 0.55, editable: true, mediaEditable: true, authoredByMe: true, authorName: 'Daniel' },
+      ]),
+    ),
+  )
+  renderView()
+  await screen.findByText('Top gyakorlatok · rekordjaid')
+  const strip = screen.getByLabelText('Katalógus áttekintés')
+  expect(within(strip).getByText('saját').previousElementSibling).toHaveTextContent('1')
+})
+
 describe('ExercisesPage (real mode, pending)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
@@ -277,6 +332,13 @@ describe('ExercisesPage (mock mode)', () => {
     await userEvent.type(screen.getByPlaceholderText('Keresés · pl. bench, squat, row'), 'bench')
     expect(screen.getByText('Barbell Bench Press')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /^Videó/ })).toBeNull()
+  })
+  // The Phase-1 static seed carries no authorship → no Közös stamp anywhere in mock mode.
+  it('shows no Közös badge on static catalog rows', async () => {
+    renderView()
+    await userEvent.type(screen.getByPlaceholderText('Keresés · pl. bench, squat, row'), 'row')
+    expect(screen.getByText('Chest Supported Row')).toBeInTheDocument()
+    expect(screen.queryByText(/Közös/)).toBeNull()
   })
 })
 
