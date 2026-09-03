@@ -20,10 +20,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Cross-account leak regression (mezo-qw37.7): the Memória/Audit panel's LLM-usage rollup must see
- * only the CALLER's own rows. Before the fix, {@code MemoryObservatoryService.llmUsage(days)} called
- * the installation-wide {@code LlmUsageService.perDay(int)}, so every account saw every account's
- * calls, tokens and cost. Rows with {@code created_by = null} (pre-S6 cron traffic, stream writes)
- * belong to nobody and must stay excluded from either user's rollup.
+ * only the CALLER's own rows. Before the fix, {@code MemoryObservatoryService.llmUsage(days)} rolled
+ * up the whole {@code llm_log_history} table with no {@code created_by} predicate at all, so every
+ * account saw every account's calls, tokens and cost. Rows with {@code created_by = null} (pre-S6
+ * cron traffic, stream writes) belong to nobody and must stay excluded from either user's rollup.
  */
 @Transactional
 @TestPropertySource(properties = "mezo.feature.llm-log.enabled=true")

@@ -263,17 +263,10 @@ public class LlmUsageService {
         return auditRecorder.getIfAvailable() != null;
     }
 
-    /** Az utolsó {@code days} naptári nap (a maival bezárólag) napi rollupja, date-asc. */
-    @Transactional(readOnly = true)
-    public List<LlmDailyAggregate> perDay(int days) {
-        ZoneId zone = llmLogProperties.reportZone();
-        Instant since = LocalDate.now(zone).minusDays(days - 1L).atStartOfDay(zone).toInstant();
-        return llmLogRepository.aggregatePerDaySince(since, zone.getId());
-    }
-
     /**
-     * Ugyanaz, egy accountra szűkítve (mezo-qw37.7) — a Memória/Audit panel csak a saját hívásait
-     * látja; a {@code created_by IS NULL} sorok (cron/stream) senkihez sem tartoznak, ezért kimaradnak.
+     * Az utolsó {@code days} naptári nap (a maival bezárólag) napi rollupja, date-asc, egy accountra
+     * szűkítve (mezo-qw37.7) — a Memória/Audit panel csak a saját hívásait látja; a
+     * {@code created_by IS NULL} sorok (cron/stream) senkihez sem tartoznak, ezért kimaradnak.
      */
     @Transactional(readOnly = true)
     public List<LlmDailyAggregate> perDay(UUID userId, int days) {

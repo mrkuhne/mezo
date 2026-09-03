@@ -37,20 +37,6 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
         """)
     LlmUsageAggregate aggregateSince(@Param("since") Instant since);
 
-    /** Napi rollup (mezo-al1i) — naptári napok a report-zónában; a SUM a null költséget kihagyja. */
-    @Query(value = """
-        select (l.created_at at time zone :zone)::date as "day",
-               count(*) as "calls",
-               coalesce(sum(l.prompt_tokens), 0) as "inputTokens",
-               coalesce(sum(coalesce(l.candidates_tokens, 0) + coalesce(l.thoughts_tokens, 0)), 0) as "outputTokens",
-               sum(l.cost_usd) as "costUsd"
-        from llm_log_history l
-        where l.created_at >= :since
-        group by 1
-        order by 1
-        """, nativeQuery = true)
-    List<LlmDailyAggregate> aggregatePerDaySince(@Param("since") Instant since, @Param("zone") String zone);
-
     /** Per-user napi rollup (mezo-qw37.7) — a Memória/Audit panel csak a saját hívásait látja;
      *  a created_by IS NULL sorok (S6 előtti cron-forgalom) senkihez sem tartoznak. */
     @Query(value = """
