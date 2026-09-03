@@ -689,6 +689,26 @@ mezo:
       all-healthy:
         # Nothing else raised for a week ⇒ record the quiet state (W5.2 may celebrate it).
         quiet-days: 7
+      logging-gap:
+        # Spec 2026-09-03 §4 row 1. The detector that must NOT go quiet when logging stops: the
+        # 2026-08-27 collapse muted every value-based rule precisely because unlogged days are
+        # skipped. Hours, not days: meal_.logged_at and check_in.saved_at are real instants, so
+        # "36 hours without a meal row" is expressible exactly. Sleep is mornings — sleep_log
+        # carries only the wake date, no clock.
+        meal-stale-hours: 36
+        checkin-stale-hours: 48
+        sleep-stale-mornings: 2
+        # One stale domain is already worth saying out loud; the payload lists which.
+        min-stale-domains: 1
+        # Spec §4 row 5: the logged nights average at least a 1h deficit ⇒ the card says
+        # "gap + suspicion" instead of nothing.
+        sleep-suspicion-deficit-hours: 1.0
+      missed-workouts:
+        # Spec 2026-09-03 §4 row 3. Two planned gym days in a row with nothing completed — the
+        # morning prompt stops cheering blindly. Consecutive PLANNED days, so a Mon/Wed/Fri
+        # schedule raises on Mon+Wed, not only on two adjacent calendar days.
+        window-days: 14
+        min-consecutive-missed: 2
       cooldown-hours:
         # A raised flag stays raised for its cooldown: the evaluator re-runs constantly (every
         # write + hourly), and without this the log would fill with the same day's state.
@@ -697,6 +717,9 @@ mezo:
         momentum-at-risk: 48
         recovery-needed: 24
         all-healthy: 168
+        # 48h per spec §4 row 1 — long enough that a gap card does not repeat daily.
+        logging-gap: 48
+        missed-workouts: 48
     # W5.2 (bd mezo-b3pp.19, spec §9.2): the intervention library — config, not DB. Selection per
     # raised flag: highest W4.2 effectiveness (feedback_rollup intervention:<key>), unseen keys
     # optimistic; per-key cooldown-hours below; ONE card per day (first raise wins). channel:

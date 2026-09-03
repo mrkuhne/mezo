@@ -115,4 +115,18 @@ class CompanionFlagLogPersistenceIT extends AbstractIntegrationTest {
         assertThat(repository.existsRaiseSince(owner, FlagKey.SLEEP_DEBT, Instant.now().minus(48, ChronoUnit.HOURS)))
             .isTrue();
     }
+
+    /** S2 (mezo-d58h.2): {@code logging_gap} and {@code missed_workouts} widened the CHECK
+     *  constraint before either rule exists to raise them — this proves the DB accepts both keys. */
+    @Test
+    void accepts_the_new_logging_gap_and_missed_workouts_keys() {
+        UUID owner = ownerId();
+
+        flagLogPopulator.rawInsert(owner, FlagKey.LOGGING_GAP, FlagKey.SOURCE_SWEEP);
+        flagLogPopulator.rawInsert(owner, FlagKey.MISSED_WORKOUTS, FlagKey.SOURCE_WRITE);
+
+        assertThat(repository.findAll())
+            .extracting(CompanionFlagLogEntity::getFlagKey)
+            .contains(FlagKey.LOGGING_GAP, FlagKey.MISSED_WORKOUTS);
+    }
 }

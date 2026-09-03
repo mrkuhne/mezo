@@ -31,6 +31,8 @@ public record FlagProperties(
     @NotNull @Valid Momentum momentum,
     @NotNull @Valid Recovery recovery,
     @NotNull @Valid AllHealthy allHealthy,
+    @NotNull @Valid LoggingGap loggingGap,
+    @NotNull @Valid MissedWorkouts missedWorkouts,
     @NotNull @Valid CooldownHours cooldownHours
 ) {
 
@@ -82,13 +84,43 @@ public record FlagProperties(
     ) {
     }
 
+    public record LoggingGap(
+        /** Hours since the last meal row (its {@code logged_at}) at or above which meals count
+         *  as stale. */
+        @Min(6) @Max(336) int mealStaleHours,
+        /** Hours since the last check-in row (its {@code saved_at}) at or above which check-ins
+         *  count as stale. */
+        @Min(6) @Max(336) int checkinStaleHours,
+        /** Consecutive missing wake-mornings (sleep_log.date) at or above which sleep counts as
+         *  stale. Mornings, not hours: sleep_log has no clock field, only the wake date. */
+        @Min(1) @Max(14) int sleepStaleMornings,
+        /** How many domains must be stale at once for the flag to raise. */
+        @Min(1) @Max(3) int minStaleDomains,
+        /** Sleep-debt suspicion (spec §4 row 5): when the window has too few logged nights for
+         *  sleep_debt to speak, but the nights that ARE logged average at least this deficit,
+         *  the payload carries the suspicion instead of staying silent. */
+        @DecimalMin("0.25") @DecimalMax("6.0") double sleepSuspicionDeficitHours
+    ) {
+    }
+
+    public record MissedWorkouts(
+        /** How far back (days, ending TODAY) planned gym days are scanned. */
+        @Min(2) @Max(60) int windowDays,
+        /** Consecutive PLANNED gym days with no completed instance needed to raise. Consecutive
+         *  in the sequence of planned days, not in calendar days. */
+        @Min(2) @Max(14) int minConsecutiveMissed
+    ) {
+    }
+
     /** Per-flag re-raise cooldown; a flag re-raises only once its own window has passed. */
     public record CooldownHours(
         @Min(1) @Max(8760) int sustainedStress,
         @Min(1) @Max(8760) int sleepDebt,
         @Min(1) @Max(8760) int momentumAtRisk,
         @Min(1) @Max(8760) int recoveryNeeded,
-        @Min(1) @Max(8760) int allHealthy
+        @Min(1) @Max(8760) int allHealthy,
+        @Min(1) @Max(8760) int loggingGap,
+        @Min(1) @Max(8760) int missedWorkouts
     ) {
 
         /** The cooldown for {@code flagKey} — keeps the switch out of the service. */
@@ -99,6 +131,8 @@ public record FlagProperties(
                 case "momentum_at_risk" -> momentumAtRisk;
                 case "recovery_needed" -> recoveryNeeded;
                 case "all_healthy" -> allHealthy;
+                case "logging_gap" -> loggingGap;
+                case "missed_workouts" -> missedWorkouts;
                 default -> throw new SystemRuntimeErrorException(
                     SystemMessage.error("COMPANION_FLAG_UNKNOWN_KEY").params(List.of(flagKey)).build());
             };
