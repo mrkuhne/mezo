@@ -40,7 +40,8 @@ class TdeeBootstrapServiceTest {
             new GoalEngineProperties.Diet(0.275, 0.20, 0.40, 0.22, 0.5),
             0,
             300,
-            new GoalEngineProperties.Suggestion(java.util.Map.of())));
+            new GoalEngineProperties.Suggestion(java.util.Map.of()),
+            new GoalEngineProperties.Adaptive(120, 50, 7, 4, 5.0)));
 
     /** A 35-year-old today: birthDate = today − 35 years (mid-year to dodge birthday edges). */
     private static LocalDate birthDateForAge(int years) {

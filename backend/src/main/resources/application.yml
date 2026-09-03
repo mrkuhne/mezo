@@ -112,6 +112,20 @@ mezo:
         hypertrophy: bulk
         erohipertrofia: bulk
         recovery: maintain
+    # Weekly adaptive review (diet-plan slice 5): smoothed kcal-correction suggestions.
+    adaptive:
+      # Max suggested kcal/day change per weekly review — small steps, never RP-style jumps.
+      max-step-kcal: 120
+      # Needed-change magnitudes below this produce NO suggestion (the plan is on track).
+      dead-band-kcal: 50
+      # Sleep-debt guard window (nights, ending today — sleep_log.date is the wake morning).
+      sleep-debt-nights: 7
+      # Honest small-n gate: fewer logged nights than this ⇒ the guard cannot fire.
+      sleep-debt-min-nights: 4
+      # Cumulative deficit (hours) vs the sleep goal at/above which deficit-increasing corrections are halved.
+      sleep-debt-deficit-hours: 5.0
+      # Monday morning, before the proactive weekly-review job (6:50), after typical wake weigh-ins.
+      cron: "0 40 6 * * MON"
   nutrition:
     # Owner-wide daily macro targets feeding the Fuel-day MacroHero (targets vs consumed).
     # Binds onto NutritionTargetsProperties. Since mezo-najo kcal+p are only the FALLBACK —
@@ -398,6 +412,10 @@ mezo:
       # Monday weekly-review generation (mezo-p2tr, schedule: mezo.proactive.weekly-review.cron)
       # for the JUST-FINISHED week; off = the WeeklyReviewJob bean does not exist
       weekly-review-job:
+        enabled: true
+      # Monday adaptive-review suggestion generation (diet-plan slice 5,
+      # schedule: mezo.goal.adaptive.cron); off = the AdaptiveReviewJob bean does not exist
+      adaptive-review-job:
         enabled: true
       # W2 Sunday memoir generation (schedule: mezo.proactive.memoir.cron);
       # off = the MemoirJob bean does not exist

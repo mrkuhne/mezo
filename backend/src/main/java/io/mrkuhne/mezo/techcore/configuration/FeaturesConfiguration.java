@@ -276,4 +276,7 @@ public class FeaturesConfiguration {
 
     /** Mezo-kalauz seen-store (mezo-gb1s.1). */
     public static final String TUTORIAL_SWITCH = "mezo.feature.tutorial.enabled";
+
+    /** Monday adaptive-review job (diet-plan slice 5) — weekly_correction goal suggestions. */
+    public static final String ADAPTIVE_REVIEW_JOB_SWITCH = "mezo.techcore.cron.adaptive-review-job.enabled";
 }
