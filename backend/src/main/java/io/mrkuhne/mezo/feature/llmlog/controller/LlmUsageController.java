@@ -37,7 +37,10 @@ public class LlmUsageController implements LlmUsageApi {
 
     @Override
     public LlmCallListResponse listLlmCalls(String period, String feature, String status,
-                                            String callKind, Integer limit) {
+                                            String callKind, UUID userId, Integer limit) {
+        // userId filtering lands with the S3 admin drill-down (mezo-qw37.3, Task 4); the
+        // parameter is accepted here now purely so this controller keeps compiling against
+        // the contract Task 1 already generated.
         return service.listCalls(period, feature, status, callKind, limit);
     }
 
