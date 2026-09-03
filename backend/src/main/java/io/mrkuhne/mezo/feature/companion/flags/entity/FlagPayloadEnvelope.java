@@ -16,7 +16,8 @@ public record FlagPayloadEnvelope(
     SleepDebt sleepDebt,
     MomentumAtRisk momentumAtRisk,
     RecoveryNeeded recoveryNeeded,
-    AllHealthy allHealthy
+    AllHealthy allHealthy,
+    LoggingGap loggingGap
 ) {
 
     public record SustainedStress(
@@ -42,23 +43,35 @@ public record FlagPayloadEnvelope(
     public record AllHealthy(int quietDays, int observedDays) {
     }
 
+    public record LoggingGap(
+        List<String> staleDomains, Integer mealStaleHours, Integer mealHoursSince,
+        Integer checkinStaleHours, Integer checkinHoursSince,
+        Integer sleepStaleMornings, Integer sleepMorningsSince,
+        Double sleepSuspicionDeficitHours, Double observedDeficitPerLoggedNight,
+        Integer loggedNights) {
+    }
+
     public static FlagPayloadEnvelope sustainedStress(SustainedStress p) {
-        return new FlagPayloadEnvelope(p, null, null, null, null);
+        return new FlagPayloadEnvelope(p, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope sleepDebt(SleepDebt p) {
-        return new FlagPayloadEnvelope(null, p, null, null, null);
+        return new FlagPayloadEnvelope(null, p, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope momentumAtRisk(MomentumAtRisk p) {
-        return new FlagPayloadEnvelope(null, null, p, null, null);
+        return new FlagPayloadEnvelope(null, null, p, null, null, null);
     }
 
     public static FlagPayloadEnvelope recoveryNeeded(RecoveryNeeded p) {
-        return new FlagPayloadEnvelope(null, null, null, p, null);
+        return new FlagPayloadEnvelope(null, null, null, p, null, null);
     }
 
     public static FlagPayloadEnvelope allHealthy(AllHealthy p) {
-        return new FlagPayloadEnvelope(null, null, null, null, p);
+        return new FlagPayloadEnvelope(null, null, null, null, p, null);
+    }
+
+    public static FlagPayloadEnvelope loggingGap(LoggingGap p) {
+        return new FlagPayloadEnvelope(null, null, null, null, null, p);
     }
 }

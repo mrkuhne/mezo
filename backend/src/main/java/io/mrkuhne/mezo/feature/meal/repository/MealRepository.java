@@ -38,6 +38,9 @@ public interface MealRepository extends OwnedRepository<MealEntity> {
     Optional<MealEntity> findFirstByCreatedByAndDeletedFalseAndMealDateBetweenOrderByCreatedAtDesc(
             UUID createdBy, LocalDate from, LocalDate to);
 
+    /** The user's most recent meal row by when it was LOGGED (not by the day it belongs to). */
+    Optional<MealEntity> findFirstByCreatedByAndDeletedFalseOrderByLoggedAtDesc(UUID createdBy);
+
     /** The deterministic scores (mezo-yta) of the SCORED meals in a closed day window — the Fuel
      *  week's "AI-atlag" (mezo-d20.7.2). Projects the scalar instead of the aggregate: no item
      *  walk, and pre-scoring / unscored rows are filtered out in SQL so an empty list genuinely

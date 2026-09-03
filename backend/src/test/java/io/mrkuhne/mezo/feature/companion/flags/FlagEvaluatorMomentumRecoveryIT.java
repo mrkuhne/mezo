@@ -5,12 +5,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagEvaluator;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.FlagLogPopulator;
 import io.mrkuhne.mezo.support.populator.HabitPopulator;
+import io.mrkuhne.mezo.support.populator.MealPopulator;
+import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -32,6 +35,8 @@ class FlagEvaluatorMomentumRecoveryIT extends AbstractIntegrationTest {
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private FlagLogPopulator flagLogPopulator;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private MealPopulator mealPopulator;
+    @Autowired private PantryItemPopulator pantryItemPopulator;
 
     private UUID ownerId() {
         return userPopulator.createUser().getId();
@@ -39,6 +44,17 @@ class FlagEvaluatorMomentumRecoveryIT extends AbstractIntegrationTest {
 
     private List<String> keys(UUID owner) {
         return evaluator.evaluate(owner).stream().map(FlagRaise::flagKey).toList();
+    }
+
+    /**
+     * A meal row logged just now, so the meal domain is not stale for S2's {@code logging_gap}
+     * rule. Needed only by the all_healthy fixtures below, which otherwise never log a meal and
+     * would spuriously raise {@code logging_gap} alongside (or instead of) {@code all_healthy} —
+     * see {@code MealPopulator.newMeal}'s hardcoded ancient default {@code loggedAt}.
+     */
+    private void freshMeal(UUID owner, LocalDate date) {
+        PantryItemEntity item = pantryItemPopulator.createFoodWithNutrients(owner, "csirke");
+        mealPopulator.createPantryMeal(owner, item, date, Instant.now());
     }
 
     /** Two done habits/day across the baseline window (days -17..-4), nothing in the last 3 days. */
@@ -172,15 +188,19 @@ class FlagEvaluatorMomentumRecoveryIT extends AbstractIntegrationTest {
         LocalDate today = LocalDate.now();
         checkInPopulator.createCheckIn(owner, today, "08:00", 4, 2, null);
         sleepLogPopulator.createSleepLog(owner, today.minusDays(1), new BigDecimal("8.0"), 4);
+        freshMeal(owner, today); // else meal reads as stale (S2 logging_gap) and preempts all_healthy
 
         assertThat(keys(owner)).containsExactly(FlagKey.ALL_HEALTHY);
     }
 
     @Test
     void all_healthy_stays_quiet_on_an_empty_log() {
+        // A genuinely empty account is exactly what S2's logging_gap now exists to name — every
+        // domain (meal/checkin/sleep) is stale by never having a row at all, so it legitimately
+        // raises instead of all_healthy, which only evaluates once every other rule is silent.
         UUID owner = ownerId();
 
-        assertThat(keys(owner)).isEmpty();
+        assertThat(keys(owner)).containsExactly(FlagKey.LOGGING_GAP);
     }
 
     @Test
@@ -201,6 +221,7 @@ class FlagEvaluatorMomentumRecoveryIT extends AbstractIntegrationTest {
         LocalDate today = LocalDate.now();
         checkInPopulator.createCheckIn(owner, today, "08:00", 4, 2, null);
         sleepLogPopulator.createSleepLog(owner, today.minusDays(1), new BigDecimal("8.0"), 4);
+        freshMeal(owner, today); // else meal reads as stale (S2 logging_gap) and preempts all_healthy
         flagLogPopulator.raiseAt(owner, FlagKey.SLEEP_DEBT, FlagKey.SOURCE_SWEEP, null,
             Instant.now().minus(8 * 24, ChronoUnit.HOURS));
 
