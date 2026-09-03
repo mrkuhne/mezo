@@ -124,6 +124,24 @@ class FlagEvaluatorLoggingGapIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void logging_gap_omits_the_sleep_suspicion_when_sleep_debt_itself_already_raised() {
+        // The suspicion clause is guarded by d.loggedNights() < sleepCfg.minNights() — it must
+        // fire ONLY when sleep_debt stayed silent for want of nights, never merely because the
+        // logged nights were short. Three logged nights (>= min-nights=2) of 5.5h each give a
+        // 7.5h deficit over the nights=3 window, well past deficit-hours=3.0, so sleep_debt DOES
+        // raise here — the gap payload must NOT also carry a suspicion for the same short nights.
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        sleepLogPopulator.createSleepLog(owner, today, BigDecimal.valueOf(5.5), 3);
+        sleepLogPopulator.createSleepLog(owner, today.minusDays(1), BigDecimal.valueOf(5.5), 3);
+        sleepLogPopulator.createSleepLog(owner, today.minusDays(2), BigDecimal.valueOf(5.5), 3);
+
+        assertThat(keys(owner)).contains(FlagKey.SLEEP_DEBT);
+        FlagPayloadEnvelope.LoggingGap payload = gapPayload(owner).orElseThrow();
+        assertThat(payload.observedDeficitPerLoggedNight()).isNull();
+    }
+
+    @Test
     void logging_gap_omits_the_sleep_suspicion_when_the_logged_nights_are_fine() {
         UUID owner = ownerId();
         LocalDate today = LocalDate.now();

@@ -39,6 +39,14 @@ import org.springframework.stereotype.Component;
  * <p>Spec §4 row 5 rides along: when {@code sleep_debt} cannot speak because too few nights are
  * logged, but the logged ones average at least the configured deficit, the payload carries that
  * suspicion — "gap + suspicion" instead of silence.
+ *
+ * <p>Deliberately does NOT reuse {@code feature.proactive.service.LogFreshnessProbe}, even though
+ * the design spec seeds this rule from it: {@code LogFreshnessProbe} lives in {@code
+ * feature.proactive}, which already depends on {@code feature.companion} — reusing it here would
+ * create exactly the cycle {@code feature.appnotification} exists to prevent. It also answers a
+ * different question (a single best-effort boolean "any log in window", {@code createdAt}-based,
+ * no per-domain breakdown), not the per-domain, {@code loggedAt}/{@code savedAt}-based staleness
+ * this rule needs.
  */
 @Component
 @RequiredArgsConstructor

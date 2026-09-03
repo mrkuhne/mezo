@@ -96,6 +96,13 @@ class CompanionFlagLogPersistenceIT extends AbstractIntegrationTest {
                 2, 6.0, 7.0, 6.0, null, null, 8.0, "2026-08-23", 7.0, "2026-08-24")));
         shapes.put(FlagKey.ALL_HEALTHY, FlagPayloadEnvelope.allHealthy(
             new FlagPayloadEnvelope.AllHealthy(7, 5)));
+        shapes.put(FlagKey.LOGGING_GAP, FlagPayloadEnvelope.loggingGap(
+            new FlagPayloadEnvelope.LoggingGap(
+                List.of("meal", "sleep"), 36, 40, 24, null, 2, 3, 3.0, 2.5, 1)));
+        shapes.put(FlagKey.MISSED_WORKOUTS, FlagPayloadEnvelope.missedWorkouts(
+            new FlagPayloadEnvelope.MissedWorkouts(
+                14, 2, 3, List.of("2026-08-23", "2026-08-24", "2026-08-25"),
+                List.of("2026-08-21", "2026-08-23", "2026-08-24", "2026-08-25"))));
 
         shapes.forEach((flagKey, payload) -> {
             CompanionFlagLogEntity saved = flagLogPopulator.raise(owner, flagKey, FlagKey.SOURCE_WRITE, payload);

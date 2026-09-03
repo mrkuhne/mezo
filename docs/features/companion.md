@@ -1276,13 +1276,18 @@ would read as "logged today" in a day bucket while already being 12+ hours stale
 stays day-bucketed (`sleepStaleMornings`, counted off `sleep_log.date`) because `sleep_log` carries
 only the wake-morning date, no clock, so there is no finer granularity to lose.
 
-**Adding a `FlagKey` needs FOUR mirrored changes** (S2 hit all four; the fourth was missed by the
-original plan and caught only when `LoggingGapRule`'s tests hit the DB): the `FlagKey` string
-constant itself; a new `CooldownHours` field + `forFlag` switch arm in `FlagProperties`; a
-migration widening the `ck_companion_flag_log_flag_key` DB CHECK; and the `@Pattern` regex on
-`CompanionFlagLogEntity.flagKey` (`entity/CompanionFlagLogEntity.java`) — a validation-layer mirror
-of the same DB CHECK that nothing else re-derives from the other three. Miss it and the entity's
-own `@Valid` rejects a legitimately-CHECK-permitted key before the row ever reaches the DB.
+**Adding a `FlagKey` needs FIVE mirrored changes** (S2 hit four of five; the fifth —
+`CompanionProperties.Intervention.flag` — was missed and caught only during the S2 fix-wave
+review, before it could fail at Spring context startup once S4 adds a `logging_gap`/
+`missed_workouts` intervention-library entry): the `FlagKey` string constant itself; a new
+`CooldownHours` field + `forFlag` switch arm in `FlagProperties`; a migration widening the
+`ck_companion_flag_log_flag_key` DB CHECK; the `@Pattern` regex on `CompanionFlagLogEntity.flagKey`
+(`entity/CompanionFlagLogEntity.java`) — a validation-layer mirror of the same DB CHECK that
+nothing else re-derives from the other four; and the `@Pattern` regex on
+`CompanionProperties.Intervention.flag` (`config/CompanionProperties.java`) — the same mirror again,
+one layer up, gating the W5.2 intervention-library binding instead of the flag-log row. Miss either
+`@Pattern` mirror and its own `@Valid`/binding validation rejects a legitimately-CHECK-permitted
+key before it ever does anything useful.
 Pure refactor beyond the two new rules — behavior, thresholds and the fixed evaluation order for
 the original five are all unchanged; `FlagEvaluatorStressSleepIT`/`FlagEvaluatorMomentumRecoveryIT`
 (§8) cover the same scenarios unmodified. Two triggers feed the SAME code path: the on-write listener (`FlagEvaluationListener`, `@Async
@@ -4334,7 +4339,7 @@ IT):**
   `all_healthy`: raises after a quiet week WITH actual data, stays quiet while a problem flag is
   still inside the quiet window, and returns once that problem flag ages out of it. **Since S2,
   `an_empty_log_raises_logging_gap_not_all_healthy`** (renamed from
-  `all_healthy_stays_quiet_on_an_empty_log`, Task 5 review fix — the fixture was updated when
+  `all_healthy_stays_quiet_on_an_empty_log`, `mezo-d58h.2` — the fixture was updated when
   `logging_gap` began raising for it, but the name still claimed the opposite): an EMPTY log is no
   longer the "no fabricated all_healthy over nothing" case it once was — `logging_gap` now raises
   first on a never-logged user (never-logged counts as stale, §3), so `all_healthy`'s own honesty
@@ -4351,7 +4356,7 @@ IT):**
   raise IDENTICALLY apart from `source`
   (`write_and_sweep_raise_identically_apart_from_the_source`). **Since S2,
   `a_quiet_evaluation_writes_only_logging_gap`** (renamed from
-  `a_quiet_evaluation_writes_nothing`, Task 5 review fix): the fixture that once left every rule
+  `a_quiet_evaluation_writes_nothing`, `mezo-d58h.2`): the fixture that once left every rule
   silent now trips `logging_gap` (never-logged domains count as stale, §3), so the test asserts
   exactly one row — `logging_gap` — is written, not zero; a genuinely quiet evaluation (every
   domain fresh, nothing else true) is no longer reachable with this rule in the spine.
@@ -5252,7 +5257,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 `missed_workouts` added S2, bd `mezo-d58h.2`, spec 2026-09-03 §4)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/config/FlagProperties.java` — the `mezo.companion.flags.*` knobs (`sweepCron` + seven per-flag threshold records + `cooldownHours`), a feature-scoped `@Validated` record — the `FeedbackLearningProperties`/`ProfileProperties` precedent (§9).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/FlagPayloadEnvelope.java` — the typed jsonb payload, one nested record per rule + a static factory each (the `FeedbackRollupStatsEnvelope` precedent); seven variants since S2.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/CompanionFlagLogEntity.java` — `extends OwnedEntity`, append-only, soft-deletable, `flagKey`/`source` `@Pattern`-mirrored CHECKs — `flagKey`'s regex is the FOURTH mirror of the flag-key list (§3 above), widened by S2.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/CompanionFlagLogEntity.java` — `extends OwnedEntity`, append-only, soft-deletable, `flagKey`/`source` `@Pattern`-mirrored CHECKs — `flagKey`'s regex is the FOURTH mirror of the flag-key list (§3 above; `CompanionProperties.Intervention.flag` is the FIFTH), widened by S2.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/repository/CompanionFlagLogRepository.java` — `existsRaiseSince` (the cooldown gate) and `existsProblemRaiseSince` (the `all_healthy` quiet-window gate).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagKey.java` — the seven flag-key constants + `SOURCE_WRITE`/`SOURCE_SWEEP`, string constants mirroring the DB CHECKs (the `MessageFeedbackEntity` verdict/reason precedent).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaise.java` — one flag the evaluator says is TRUE right now, with its payload, before the cooldown gate is applied.
