@@ -1030,6 +1030,26 @@ export const customWorkoutsMock: CustomWorkout[] = [
   },
 ]
 
+const sportSessionsFixed: Sport['sessions'] = [
+  { id: 'vb-2026-05-20', sport: 'volleyball', date: 'Máj 20 · Kedd', isoDate: '2026-05-20', time: '18:00', duration: 90, setsPlayed: 5, rounds: null, intensity: 7, rpe: 6.8, shoulderStrain: 6, jumpCount: 38, notes: 'Smashek tisztábbak, jobb váll után érzem délután' },
+  { id: 'vb-2026-05-18', sport: 'volleyball', date: 'Máj 18 · Szo', isoDate: '2026-05-18', time: '10:00', duration: 120, setsPlayed: 6, rounds: null, intensity: 8, rpe: 7.2, shoulderStrain: 7, jumpCount: 52, notes: 'Hosszú meccs · maradt erő utána' },
+  { id: 'vb-2026-05-15', sport: 'volleyball', date: 'Máj 15 · Csü', isoDate: '2026-05-15', time: '19:30', duration: 90, setsPlayed: 4, rounds: null, intensity: 7, rpe: 6.5, shoulderStrain: 5, jumpCount: 31, notes: null },
+  { id: 'vb-2026-05-13', sport: 'volleyball', date: 'Máj 13 · Kedd', isoDate: '2026-05-13', time: '18:00', duration: 90, setsPlayed: 5, rounds: null, intensity: 7, rpe: 6.9, shoulderStrain: 6, jumpCount: 35, notes: null },
+  { id: 'vb-2026-05-11', sport: 'volleyball', date: 'Máj 11 · Szo', isoDate: '2026-05-11', time: '10:00', duration: 120, setsPlayed: 6, rounds: null, intensity: 8, rpe: 7.5, shoulderStrain: 8, jumpCount: 48, notes: 'Sok smash · vasárnap pihentem' },
+]
+
+// mezo-idz2: dátum-relatív mai session — a DayOrb sport-jele mock módban is jelen van.
+// Egy befagyasztott órájú vizuális futásban a „ma" egybeeshet egy meglévő fix sorral,
+// ezért a beszúrás idempotens: csak akkor adjuk hozzá, ha erre a napra még nincs sor,
+// majd a csökkenő („newest first") dátumsorrendet a beszúrás helyétől függetlenül
+// explicit rendezéssel biztosítjuk.
+const todayIsoSport = localDateString()
+const sportSessions: Sport['sessions'] = (
+  sportSessionsFixed.some((s) => s.isoDate === todayIsoSport)
+    ? sportSessionsFixed
+    : [...sportSessionsFixed, { id: 'vb-today', sport: 'volleyball', date: huMonthDayDow(todayIsoSport), isoDate: todayIsoSport, time: '18:00', duration: 90, setsPlayed: 4, rounds: null, intensity: 7, rpe: 6.6, shoulderStrain: 5, jumpCount: 33, notes: null }]
+).sort((a, b) => b.isoDate.localeCompare(a.isoDate))
+
 // --- sport (data.js:250-322) — ADD jumpCount to each session (port fix) ---
 export const sport: Sport = {
   schedule: {
@@ -1046,15 +1066,7 @@ export const sport: Sport = {
       weeklyHours: 7.5,
     },
   },
-  sessions: [
-    // mezo-idz2: dátum-relatív mai session — a DayOrb sport-jele mock módban is jelen van.
-    { id: 'vb-today', sport: 'volleyball', date: huMonthDayDow(localDateString()), isoDate: localDateString(), time: '18:00', duration: 90, setsPlayed: 4, rounds: null, intensity: 7, rpe: 6.6, shoulderStrain: 5, jumpCount: 33, notes: null },
-    { id: 'vb-2026-05-20', sport: 'volleyball', date: 'Máj 20 · Kedd', isoDate: '2026-05-20', time: '18:00', duration: 90, setsPlayed: 5, rounds: null, intensity: 7, rpe: 6.8, shoulderStrain: 6, jumpCount: 38, notes: 'Smashek tisztábbak, jobb váll után érzem délután' },
-    { id: 'vb-2026-05-18', sport: 'volleyball', date: 'Máj 18 · Szo', isoDate: '2026-05-18', time: '10:00', duration: 120, setsPlayed: 6, rounds: null, intensity: 8, rpe: 7.2, shoulderStrain: 7, jumpCount: 52, notes: 'Hosszú meccs · maradt erő utána' },
-    { id: 'vb-2026-05-15', sport: 'volleyball', date: 'Máj 15 · Csü', isoDate: '2026-05-15', time: '19:30', duration: 90, setsPlayed: 4, rounds: null, intensity: 7, rpe: 6.5, shoulderStrain: 5, jumpCount: 31, notes: null },
-    { id: 'vb-2026-05-13', sport: 'volleyball', date: 'Máj 13 · Kedd', isoDate: '2026-05-13', time: '18:00', duration: 90, setsPlayed: 5, rounds: null, intensity: 7, rpe: 6.9, shoulderStrain: 6, jumpCount: 35, notes: null },
-    { id: 'vb-2026-05-11', sport: 'volleyball', date: 'Máj 11 · Szo', isoDate: '2026-05-11', time: '10:00', duration: 120, setsPlayed: 6, rounds: null, intensity: 8, rpe: 7.5, shoulderStrain: 8, jumpCount: 48, notes: 'Sok smash · vasárnap pihentem' },
-  ],
+  sessions: sportSessions,
   week: {
     label: 'Hét 21 · Máj 18-24',
     sessions: 4,
