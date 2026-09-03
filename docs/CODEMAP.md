@@ -624,8 +624,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **controllers→contract:** `LifeGoalController`→`LifeGoalApi`
   - **mappers:** `LifeGoalMapper`
   - **config:** `LifeGoalProperties`
-  - **other:** `IfThenPlanJson`, `LifeGoalScorer`, `LifeGoalSeedData`, `PillarDayScore`, `PillarRuleJson`,
-    `PillarSourceJson`, `PlanTriggerJson`, `SignalCatalog`, `SignalCatalogEntry`, `SignalWindow`
+  - **other:** `ActivitySignalSource`, `IfThenPlanJson`, `LifeGoalScorer`, `LifeGoalSeedData`, `MetricSignalSource`,
+    `NeedsRingSignalSource`, `PillarDayScore`, `PillarRuleJson`, `PillarSourceJson`, `PlanTriggerJson`,
+    `SignalCatalog`, `SignalCatalogEntry`, `SignalSource`, `SignalWindow`, `SocialMentionsSignalSource`
 - **Contract** `api/feature/lifegoal/lifegoal.yml` — 12 operations
   - **endpoints:** GET /api/life-goals · POST /api/life-goals · GET /api/life-goals/signals ·
     POST /api/life-goals/propose · GET /api/life-goals/{id} · PUT /api/life-goals/{id} · DELETE /api/life-goals/{id} ·
@@ -635,8 +636,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **hooks (via `@/data/hooks`):** `useLifeGoal`, `useLifeGoalMutations`, `useLifeGoalPropose`, `useLifeGoals`,
     `useSignalCatalog`
   - **modules:** lifegoalApi.ts, lifegoalHooks.ts, lifegoalMock.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal` — 5 IT + 1 unit
-  - **ITs:** `LifeGoalApiIT`, `LifeGoalEntityIT`, `LifeGoalPillarApiIT`, `LifeGoalProposeIT`, `LifeGoalSeedDataIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal` — 6 IT + 1 unit
+  - **ITs:** `LifeGoalApiIT`, `LifeGoalEntityIT`, `LifeGoalPillarApiIT`, `LifeGoalProposeIT`, `LifeGoalSeedDataIT`,
+    `SignalSourceIT`
   - **populators:** `DatabasePopulator`, `HabitPopulator`, `LifeGoalPopulator`
 
 ### llmlog
