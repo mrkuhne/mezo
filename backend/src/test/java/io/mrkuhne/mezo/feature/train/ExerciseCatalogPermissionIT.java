@@ -87,19 +87,23 @@ class ExerciseCatalogPermissionIT extends ApiIntegrationTest {
     void testSetVideo_shouldReturn200_whenOwnerTouchesMasterRow() {
         HttpHeaders owner = ownerAuthHeaders();
         ExerciseCatalogItem boxJump = master(owner, "box-jump");
-        ExerciseCatalogItem out = putForBody("/api/train/exercises/" + boxJump.getId() + "/video", video(VIDEO),
-            owner, HttpStatus.OK, ExerciseCatalogItem.class);
-        assertThat(out.getVideoUrl()).isEqualTo(VIDEO);
-        assertThat(out.getEditable()).isFalse();
-        assertThat(out.getMediaEditable()).isTrue();
-        // box-jump is a master row ResetDatabase never cleans — clear the residue.
-        putForBody("/api/train/exercises/" + boxJump.getId() + "/video", video(null), owner, HttpStatus.OK, ExerciseCatalogItem.class);
+        try {
+            ExerciseCatalogItem out = putForBody("/api/train/exercises/" + boxJump.getId() + "/video", video(VIDEO),
+                owner, HttpStatus.OK, ExerciseCatalogItem.class);
+            assertThat(out.getVideoUrl()).isEqualTo(VIDEO);
+            assertThat(out.getEditable()).isFalse();
+            assertThat(out.getMediaEditable()).isTrue();
+        } finally {
+            // box-jump is a master row ResetDatabase never cleans — clear the residue on every
+            // path, so a failed assertion above cannot leak the video into later tests.
+            putForBody("/api/train/exercises/" + boxJump.getId() + "/video", video(null), owner, HttpStatus.OK, ExerciseCatalogItem.class);
+        }
     }
 
     // ---- user-authored rows ----
 
     @Test
-    void testUpdateAndSetVideo_shouldReturn200_whenUserTouchesOwnRow() {
+    void testUpdateAndSetVideoAndImages_shouldReturn200_whenUserTouchesOwnRow() {
         RegisteredUser anna = registerUser("Anna");
         ExerciseCatalogItem mine = createAs(anna.headers(), "Anna Move");
         ExerciseCatalogItem updated = putForBody("/api/train/exercises/" + mine.getId(), request("Anna Move v2"),
@@ -108,6 +112,12 @@ class ExerciseCatalogPermissionIT extends ApiIntegrationTest {
         ExerciseCatalogItem withVideo = putForBody("/api/train/exercises/" + mine.getId() + "/video", video(VIDEO),
             anna.headers(), HttpStatus.OK, ExerciseCatalogItem.class);
         assertThat(withVideo.getVideoUrl()).isEqualTo(VIDEO);
+        CatalogImagesRequest imagesReq = CatalogImagesRequest.builder()
+            .imageStartUrl("/exercises/anna-move-a.jpg").imageEndUrl("/exercises/anna-move-b.jpg").build();
+        ExerciseCatalogItem withImages = putForBody("/api/train/exercises/" + mine.getId() + "/images", imagesReq,
+            anna.headers(), HttpStatus.OK, ExerciseCatalogItem.class);
+        assertThat(withImages.getImageStartUrl()).isEqualTo("/exercises/anna-move-a.jpg");
+        assertThat(withImages.getImageEndUrl()).isEqualTo("/exercises/anna-move-b.jpg");
         deleteAndExpect("/api/train/exercises/" + mine.getId(), anna.headers(), HttpStatus.NO_CONTENT);
     }
 
