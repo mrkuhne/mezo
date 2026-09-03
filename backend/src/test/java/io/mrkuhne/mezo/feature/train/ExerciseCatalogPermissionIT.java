@@ -35,6 +35,17 @@ class ExerciseCatalogPermissionIT extends ApiIntegrationTest {
         return CatalogVideoRequest.builder().videoUrl(url).build();
     }
 
+    // Carries the media fields through, mirroring what a well-behaved edit client (FE
+    // mezo-qw37.5 fix-wave) must send on every update() call, since the service writes
+    // imageStartUrl/imageEndUrl UNCONDITIONALLY — omitting them wipes the row's stills.
+    private static CatalogExerciseCreateRequest requestWithMedia(String name, String imageStartUrl, String imageEndUrl) {
+        return CatalogExerciseCreateRequest.builder()
+            .name(name).muscle(CatalogExerciseCreateRequest.MuscleEnum.QUAD)
+            .type(CatalogExerciseCreateRequest.TypeEnum.COMPOUND)
+            .stim(BigDecimal.valueOf(0.6)).fatigue(BigDecimal.valueOf(0.4))
+            .imageStartUrl(imageStartUrl).imageEndUrl(imageEndUrl).build();
+    }
+
     private ExerciseCatalogItem find(HttpHeaders viewer, UUID id) {
         return getForList("/api/train/exercises", viewer, HttpStatus.OK, ExerciseCatalogItem.class)
             .stream().filter(e -> id.equals(e.getId())).findFirst().orElseThrow();
@@ -158,6 +169,33 @@ class ExerciseCatalogPermissionIT extends ApiIntegrationTest {
         assertThat(updated.getAuthorName()).isEqualTo("Anna");
         putForBody("/api/train/exercises/" + annas.getId() + "/video", video(VIDEO), owner, HttpStatus.OK, ExerciseCatalogItem.class);
         deleteAndExpect("/api/train/exercises/" + annas.getId(), owner, HttpStatus.NO_CONTENT);
+    }
+
+    // Regression (mezo-qw37.5 fix-wave): update() writes imageStartUrl/imageEndUrl
+    // UNCONDITIONALLY (intentional — it's how a client clears a still by sending null),
+    // so any edit body that omits them wipes the row's demo stills. This slice newly lets
+    // the OWNER edit another user's row, so an owner-driven update must carry the row's
+    // existing media through — pin that contract here, not just the FE code that relies on it.
+    @Test
+    void testOwner_shouldPreserveMedia_whenUpdatingAnotherUsersRowWithMediaCarriedThrough() {
+        RegisteredUser anna = registerUser("Anna");
+        HttpHeaders owner = ownerAuthHeaders();
+        ExerciseCatalogItem annas = createAs(anna.headers(), "Anna Move");
+        putForBody("/api/train/exercises/" + annas.getId() + "/images",
+            CatalogImagesRequest.builder().imageStartUrl("/exercises/anna-move-a.jpg").imageEndUrl("/exercises/anna-move-b.jpg").build(),
+            anna.headers(), HttpStatus.OK, ExerciseCatalogItem.class);
+
+        ExerciseCatalogItem updated = putForBody("/api/train/exercises/" + annas.getId(),
+            requestWithMedia("Curated by owner", "/exercises/anna-move-a.jpg", "/exercises/anna-move-b.jpg"),
+            owner, HttpStatus.OK, ExerciseCatalogItem.class);
+
+        assertThat(updated.getName()).isEqualTo("Curated by owner");
+        assertThat(updated.getImageStartUrl()).isEqualTo("/exercises/anna-move-a.jpg");
+        assertThat(updated.getImageEndUrl()).isEqualTo("/exercises/anna-move-b.jpg");
+        // Also confirmed on a fresh read, not just the mutation's own response.
+        ExerciseCatalogItem reread = find(anna.headers(), annas.getId());
+        assertThat(reread.getImageStartUrl()).isEqualTo("/exercises/anna-move-a.jpg");
+        assertThat(reread.getImageEndUrl()).isEqualTo("/exercises/anna-move-b.jpg");
     }
 
     @Test

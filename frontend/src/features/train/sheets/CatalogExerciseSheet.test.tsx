@@ -34,7 +34,10 @@ test('create mode builds the request and calls createCatalogExercise', async () 
   await userEvent.click(screen.getByRole('button', { name: 'Stim növelése' })) // 0.7 -> 0.75
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   expect(createCatalogExercise).toHaveBeenCalledWith(
-    { name: 'DB Row', muscle: 'back-wide', type: 'isolation', stim: 0.75, fatigue: 0.3, videoUrl: null },
+    {
+      name: 'DB Row', muscle: 'back-wide', type: 'isolation', stim: 0.75, fatigue: 0.3,
+      videoUrl: null, imageStartUrl: null, imageEndUrl: null,
+    },
     { onSuccess: expect.any(Function), onError: expect.any(Function) },
   )
   expect(updateCatalogExercise).not.toHaveBeenCalled()
@@ -66,8 +69,30 @@ test('edit mode seeds the fields and calls updateCatalogExercise with the id', a
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   expect(updateCatalogExercise).toHaveBeenCalledWith(
     'cat-1',
-    { name: 'Cable Fly', muscle: 'chest', type: 'isolation', stim: 0.74, fatigue: 0.25, videoUrl: 'https://youtu.be/dQw4w9WgXcQ' },
+    {
+      name: 'Cable Fly', muscle: 'chest', type: 'isolation', stim: 0.74, fatigue: 0.25,
+      videoUrl: 'https://youtu.be/dQw4w9WgXcQ', imageStartUrl: null, imageEndUrl: null,
+    },
     { onSuccess: expect.any(Function), onError: expect.any(Function) },
   )
   expect(createCatalogExercise).not.toHaveBeenCalled()
+})
+
+// Regression (mezo-qw37.5 fix-wave): the backend's update() writes imageStartUrl/imageEndUrl
+// UNCONDITIONALLY, so an edit body that omits them silently wipes the row's demo stills —
+// including, since this slice, stills on rows an OWNER edits that belong to someone else.
+// The sheet must carry the edited row's existing stills through on every submit.
+test('edit mode carries the row\'s existing demo stills through unchanged', async () => {
+  const edit: ExerciseLibraryItem = {
+    id: 'cat-2', catalogId: 'cat-2', name: 'Box Jump', muscle: 'quad', type: 'plyo',
+    stim: 0.6, fatigue: 0.4, videoUrl: null,
+    imageStartUrl: '/exercises/box-jump-a.jpg', imageEndUrl: '/exercises/box-jump-b.jpg',
+    editable: true,
+  }
+  render(<CatalogExerciseSheet onClose={vi.fn()} edit={edit} />)
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  expect(updateCatalogExercise.mock.calls[0][1]).toMatchObject({
+    imageStartUrl: '/exercises/box-jump-a.jpg',
+    imageEndUrl: '/exercises/box-jump-b.jpg',
+  })
 })
