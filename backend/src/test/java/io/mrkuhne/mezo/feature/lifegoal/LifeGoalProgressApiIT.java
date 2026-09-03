@@ -141,6 +141,48 @@ class LifeGoalProgressApiIT extends ApiIntegrationTest {
         assertThat(referenceValue.doubleValue()).isCloseTo(90.0, within(0.05));
     }
 
+    /**
+     * Conflict derivation (LifeGoalProgressService.findConflicts/isOppositeDirection, ~:312-372)
+     * had zero test coverage. Two active goals for the same user, each with an `average` pillar
+     * on the SAME catalog signal (sleep duration) but opposite comparators (≥ vs ≤), must surface
+     * exactly one Hungarian conflict one-liner on the queried goal's progress response.
+     */
+    @Test
+    void progress_reports_one_conflict_when_sibling_goal_pillar_has_opposite_comparator() {
+        UUID owner = ownerId();
+        LifeGoalEntity goal = lifeGoalPopulator.goal(owner, "active");
+        lifeGoalPopulator.sleepPillar(goal); // "average" · SLEEP_DURATION_H · gte 7.0
+        LifeGoalEntity other = lifeGoalPopulator.goal(owner, "active");
+        lifeGoalPopulator.pillar(other, "Kevesebb alvás", "average",
+            new PillarSourceJson("metric", "SLEEP_DURATION_H", null, null, null, null),
+            new PillarRuleJson(new BigDecimal("6.0"), "lte", null, 7, null, null, null, null, null, null));
+
+        LifeGoalProgressResponse res = getForBody(
+            "/api/life-goals/" + goal.getId() + "/progress?from=" + today.minusDays(6) + "&to=" + today,
+            ownerAuthHeaders(), HttpStatus.OK, LifeGoalProgressResponse.class);
+
+        assertThat(res.getConflicts()).hasSize(1);
+        assertThat(res.getConflicts().get(0)).contains("Alváshossz").contains("ellentétes irányba");
+    }
+
+    /** Same catalog signal, same comparator on both goals → no conflict. */
+    @Test
+    void progress_reports_no_conflict_when_sibling_goal_pillar_has_same_comparator() {
+        UUID owner = ownerId();
+        LifeGoalEntity goal = lifeGoalPopulator.goal(owner, "active");
+        lifeGoalPopulator.sleepPillar(goal); // "average" · SLEEP_DURATION_H · gte 7.0
+        LifeGoalEntity other = lifeGoalPopulator.goal(owner, "active");
+        lifeGoalPopulator.pillar(other, "Több alvás is", "average",
+            new PillarSourceJson("metric", "SLEEP_DURATION_H", null, null, null, null),
+            new PillarRuleJson(new BigDecimal("8.0"), "gte", null, 7, null, null, null, null, null, null));
+
+        LifeGoalProgressResponse res = getForBody(
+            "/api/life-goals/" + goal.getId() + "/progress?from=" + today.minusDays(6) + "&to=" + today,
+            ownerAuthHeaders(), HttpStatus.OK, LifeGoalProgressResponse.class);
+
+        assertThat(res.getConflicts()).isEmpty();
+    }
+
     @Test
     void foreign_goal_is_404() {
         RegisteredUser other = registerUser("Idegen");
