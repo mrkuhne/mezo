@@ -10,11 +10,13 @@ rögzíti; minden más (napi státusz-szabályok, nyíl-küszöbök, katalógus)
 Daniel döntése: függőleges szeletek, 3 nagyobb darabban (A verzió).
 
 ### mezo-iizd.5 — Motor-mag + élő haladás
-- `SignalSource` port + 6 megvalósítás (`engine` alcsomag): `MetricSignalSource` és
-  `SocialSignalSource` → `MetricSeriesService.series` · `ActivitySignalSource` →
+- `SignalSource` port + **5 megvalósítás** (`engine` alcsomag): `MetricSignalSource` és
+  `SocialMentionsSignalSource` → `MetricSeriesService.series` · `ActivitySignalSource` →
   `ActivityLogRepository.findByCreatedByAndOccurredOnBetween` (measure: minutes|count|huf) ·
-  `HabitSignalSource` → `HabitDayRepository` · `NeedsRingSignalSource` → `NeedsDayRepository`
-  (csak zárt napok, különben `no_data`) · `WeightGoalSignalSource` (lásd D-2).
+  `NeedsRingSignalSource` → `NeedsDayRepository` (csak zárt napok, különben `no_data`) ·
+  `WeightGoalSignalSource` (lásd D-2). Az alap-spec 6. forrása (`HabitSignalSource`) NEM készül:
+  a zárt katalógusban nincs `habit` típusú bejegyzés (a szokásokat a `HABITS_DONE` metrika fedi),
+  a katalógus-validáció miatt ilyen pillér nem is jöhet létre — ismeretlen forrás-típus → `no_data`.
 - `LifeGoalScorer` — tiszta, determinisztikus (napi státusz fajtánként, súlyozott napi pont,
   irány-nyíl 7 vs 21 nap + 5 adat-napos kapu, hét/hónap aggregálás olvasáskor — alap-spec §5).
 - Endpointok: `GET /api/life-goals/{id}/progress?from&to` (napi sorok + nyilak +
