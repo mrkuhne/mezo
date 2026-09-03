@@ -51,6 +51,13 @@ class LifeGoalScorerTest {
             .status()).isEqualTo("no_data");
     }
 
+    @Test
+    void habit_no_data_target_is_rounded_to_scale_three() {
+        PillarDayScore s = LifeGoalScorer.scoreDay("habit", habitRule("gte", "160"), DAY, SignalWindow.of(Map.of()));
+        assertThat(s.target()).isEqualByComparingTo("160");
+        assertThat(s.target().scale()).isEqualTo(3);
+    }
+
     // ---- average ----
 
     @Test
@@ -83,6 +90,14 @@ class LifeGoalScorerTest {
     void average_no_values_in_window_is_no_data() {
         PillarRuleJson rule = new PillarRuleJson(new BigDecimal("160"), "gte", null, 7, null, null, null, null, null, null);
         assertThat(LifeGoalScorer.scoreDay("average", rule, DAY, SignalWindow.of(Map.of())).status()).isEqualTo("no_data");
+    }
+
+    @Test
+    void average_no_data_target_is_rounded_to_scale_three() {
+        PillarRuleJson rule = new PillarRuleJson(new BigDecimal("160"), "gte", null, 7, null, null, null, null, null, null);
+        PillarDayScore s = LifeGoalScorer.scoreDay("average", rule, DAY, SignalWindow.of(Map.of()));
+        assertThat(s.target()).isEqualByComparingTo("160");
+        assertThat(s.target().scale()).isEqualTo(3);
     }
 
     @Test

@@ -44,7 +44,7 @@ public final class LifeGoalScorer {
     private static PillarDayScore scoreHabit(PillarRuleJson rule, LocalDate day, SignalWindow window) {
         BigDecimal value = window.values().get(day);
         if (value == null) {
-            return noData(null, rule.threshold(), null);
+            return noData(null, round(rule.threshold()), null);
         }
         boolean good = isGoodSide(value, rule.threshold(), rule.comparator());
         return new PillarDayScore(good ? "hit" : "miss", round(value), round(rule.threshold()), null);
@@ -60,7 +60,7 @@ public final class LifeGoalScorer {
             }
         }
         if (collected.isEmpty()) {
-            return noData(null, rule.threshold(), null);
+            return noData(null, round(rule.threshold()), null);
         }
         double avg = collected.stream().mapToDouble(BigDecimal::doubleValue).average().orElseThrow();
         boolean good = isGoodSide(avg, rule.threshold().doubleValue(), rule.comparator());
