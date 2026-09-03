@@ -20,4 +20,11 @@ public record LifeGoalProperties(
      * {@code @Max(5)} below keeps the two caps from drifting apart; if the contract's
      * {@code maxItems} ever changes, raise both together.
      */
-    @Min(1) @Max(5) int maxPillars) {}
+    @Min(1) @Max(5) int maxPillars,
+
+    /**
+     * XP granted per `hit` pillar-day (mezo-iizd.6, spec §.6) on the pillar's own skill. Feedback,
+     * never a penalty: a miss subtracts nothing (ADR 0034). A `robustness`-keyed pillar grants
+     * nothing at all — the progression tail recomputes that row to an absolute streak target.
+     */
+    @Min(1) @Max(100) int xpPerHit) {}

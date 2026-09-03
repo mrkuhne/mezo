@@ -67,6 +67,7 @@ public class LifeGoalProgressService {
     private final LifeGoalPillarDayRepository pillarDayRepository;
     private final List<SignalSource> sources;
     private final SignalCatalog signalCatalog;
+    private final LifeGoalXpService xpService;
 
     /** Tárolt sorok győznek; hiányzó nap olvasáskor számolódik (NEM íródik). from > to → 400. */
     @Transactional(readOnly = true)
@@ -84,19 +85,31 @@ public class LifeGoalProgressService {
     @Transactional
     public LifeGoalProgressResponse evaluate(UUID userId, UUID goalId) {
         LifeGoalEntity goal = lifeGoalService.requireOwned(userId, goalId);
+        evaluateDays(userId, goal);
         LocalDate today = LocalDate.now();
-        List<LifeGoalPillarEntity> activePillars = activePillars(goalId);
+        return buildProgress(userId, goal, activePillars(goal.getId()),
+            today.minusDays(PROGRESS_WINDOW_DAYS - 1), today);
+    }
+
+    /**
+     * The writer half, response-free (mezo-iizd.6): upserts the last 3 closed days of every active
+     * pillar and grants pillar-hit XP. Ownership is the caller's business — the nightly job iterates
+     * its own users' goals, the HTTP path goes through {@link #evaluate}.
+     */
+    @Transactional
+    public void evaluateDays(UUID userId, LifeGoalEntity goal) {
+        LocalDate today = LocalDate.now();
         List<LocalDate> closedDays = List.of(today.minusDays(1), today.minusDays(2), today.minusDays(3));
         LocalDate latestClosed = today.minusDays(1);
         LocalDate wideFrom = latestClosed.minusDays(PROGRESS_WINDOW_DAYS);
-        for (LifeGoalPillarEntity pillar : activePillars) {
+        for (LifeGoalPillarEntity pillar : activePillars(goal.getId())) {
             SignalWindow window = windowFor(userId, pillar, wideFrom, latestClosed);
             for (LocalDate day : closedDays) {
                 PillarDayScore score = LifeGoalScorer.scoreDay(pillar.getKind(), pillar.getRule(), day, window);
                 upsertPillarDay(pillar, day, score);
+                xpService.awardIfHit(pillar, day, score.status());
             }
         }
-        return buildProgress(userId, goal, activePillars, today.minusDays(PROGRESS_WINDOW_DAYS - 1), today);
     }
 
     /** Aktív célonként: nyíl + 7 napi cél-pont-pötty + mai pillér-számláló. */
