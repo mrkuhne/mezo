@@ -1,0 +1,211 @@
+openapi: 3.0.3
+info: { title: mezo admin fragment, version: 1.0.0 }
+tags:
+  - name: Admin
+    description: Beta admin (mezo-qw37.3) — invite codes and account management, every operation OWNER-only (403 AUTH_FORBIDDEN otherwise)
+paths:
+  /api/admin/invites:
+    post:
+      tags: [Admin]
+      operationId: createInvite
+      summary: Mint a one-shot invite code (Admin)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateInviteRequest' }
+      responses:
+        '200':
+          description: The new code, shown once in full on the admin page
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/InviteResponse' }
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    get:
+      tags: [Admin]
+      operationId: listInvites
+      summary: Every invite, open and used, newest first (Admin)
+      responses:
+        '200':
+          description: Invites newest first
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/InviteResponse' }
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/admin/invites/{id}:
+    delete:
+      tags: [Admin]
+      operationId: deleteInvite
+      summary: Revoke an unused invite (Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Revoked
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Unknown invite (ADMIN_INVITE_NOT_FOUND)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '409':
+          description: Already used — the registration it produced must stay traceable (ADMIN_INVITE_USED)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/admin/users:
+    get:
+      tags: [Admin]
+      operationId: listUsers
+      summary: Every account, oldest first (Admin)
+      responses:
+        '200':
+          description: Accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AdminUserResponse' }
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/admin/users/{id}/reset-password:
+    post:
+      tags: [Admin]
+      operationId: resetPassword
+      summary: Replace the account's password with a temporary one and force a change at next login (Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The temporary password — returned exactly once, never stored in clear
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ResetPasswordResponse' }
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Unknown account (ADMIN_USER_NOT_FOUND)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/admin/users/{id}/status:
+    post:
+      tags: [Admin]
+      operationId: setStatus
+      summary: Enable or disable an account; a disabled account is rejected on its next request (Admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SetUserStatusRequest' }
+      responses:
+        '204':
+          description: Status set
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Unknown account (ADMIN_USER_NOT_FOUND)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '409':
+          description: The owner cannot change their own status (ADMIN_SELF_STATUS)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+components:
+  schemas:
+    CreateInviteRequest:
+      type: object
+      properties:
+        label:
+          type: string
+          maxLength: 120
+          nullable: true
+          description: who the code is meant for — free text, shown in the list
+          example: Csaba
+        expiresInDays:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 365
+          nullable: true
+          description: omitted = never expires
+    InviteResponse:
+      type: object
+      required: [id, code, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        code: { type: string, example: MEZO-7KQ2-XN4P }
+        label: { type: string, nullable: true }
+        createdAt: { type: string, format: date-time }
+        expiresAt: { type: string, format: date-time, nullable: true }
+        usedBy: { type: string, format: uuid, nullable: true }
+        usedByName: { type: string, nullable: true, description: "display name of the account that consumed the code" }
+        usedAt: { type: string, format: date-time, nullable: true }
+    AdminUserResponse:
+      type: object
+      required: [id, email, name, role, status, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string }
+        name: { type: string }
+        role: { type: string, description: OWNER or USER }
+        status: { type: string, description: ACTIVE or DISABLED }
+        createdAt: { type: string, format: date-time }
+        onboardedAt: { type: string, format: date-time, nullable: true }
+        lastSeenAt: { type: string, format: date-time, nullable: true, description: "stamped at most every 5 minutes by CurrentUser" }
+    ResetPasswordResponse:
+      type: object
+      required: [temporaryPassword]
+      properties:
+        temporaryPassword: { type: string, description: "12 readable characters; must_change_password is set on the account" }
+    SetUserStatusRequest:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, pattern: '^(ACTIVE|DISABLED)$' }
