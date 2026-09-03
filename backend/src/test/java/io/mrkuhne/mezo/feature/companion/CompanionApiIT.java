@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion;
 
+import io.mrkuhne.mezo.api.dto.ConversationRenameRequest;
 import io.mrkuhne.mezo.api.dto.ConversationResponse;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.RecalledMemory;
@@ -139,6 +140,78 @@ class CompanionApiIT extends ApiIntegrationTest {
     void testListMessages_shouldReturn404_whenUnknownConversation() {
         String body = getForBody(
                 CONVERSATION_URI + "/" + UUID.randomUUID() + "/messages",
+                ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    // ==== F7.5 (mezo-d20.8.5): rename + delete ====
+
+    @Test
+    void testRenameConversation_shouldUpdateListLabel_whenValid() {
+        ConversationResponse conversation = postForBody(
+                CONVERSATION_URI, null, ownerAuthHeaders(), HttpStatus.CREATED, ConversationResponse.class);
+
+        ConversationResponse renamed = patchForBody(
+                CONVERSATION_URI + "/" + conversation.getId(),
+                ConversationRenameRequest.builder().title("Súly-plató nyomozás").build(),
+                ownerAuthHeaders(), HttpStatus.OK, ConversationResponse.class);
+
+        assertThat(renamed.getTitle()).isEqualTo("Súly-plató nyomozás");
+        List<ConversationResponse> conversations = getForList(
+                CONVERSATION_URI, ownerAuthHeaders(), HttpStatus.OK, ConversationResponse.class);
+        assertThat(conversations)
+                .filteredOn(c -> c.getId().equals(conversation.getId()))
+                .singleElement()
+                .satisfies(c -> assertThat(c.getTitle()).isEqualTo("Súly-plató nyomozás"));
+    }
+
+    @Test
+    void testRenameConversation_shouldReturn400FieldError_whenTitleBlank() {
+        ConversationResponse conversation = postForBody(
+                CONVERSATION_URI, null, ownerAuthHeaders(), HttpStatus.CREATED, ConversationResponse.class);
+
+        String body = patchForBody(
+                CONVERSATION_URI + "/" + conversation.getId(),
+                ConversationRenameRequest.builder().title("").build(),
+                ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasFieldError(body, "title", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testRenameConversation_shouldReturn404_whenUnknownConversation() {
+        // The unknown-id and the not-owned case share getOwned's createdBy-filtered lookup.
+        String body = patchForBody(
+                CONVERSATION_URI + "/" + UUID.randomUUID(),
+                ConversationRenameRequest.builder().title("x").build(),
+                ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    @Test
+    void testDeleteConversation_shouldSoftDeleteWithMessages_whenOwned() {
+        ConversationResponse conversation = postForBody(
+                CONVERSATION_URI, null, ownerAuthHeaders(), HttpStatus.CREATED, ConversationResponse.class);
+        postForBody(CONVERSATION_URI + "/" + conversation.getId() + "/message",
+                SendMessageRequest.builder().content("törlés előtt").build(),
+                ownerAuthHeaders(), HttpStatus.OK, MessageResponse.class);
+
+        deleteAndExpect(CONVERSATION_URI + "/" + conversation.getId(), ownerAuthHeaders(), HttpStatus.NO_CONTENT);
+
+        List<ConversationResponse> conversations = getForList(
+                CONVERSATION_URI, ownerAuthHeaders(), HttpStatus.OK, ConversationResponse.class);
+        assertThat(conversations).noneMatch(c -> c.getId().equals(conversation.getId()));
+        // the thread is unreachable through the soft-delete-filtered finders
+        getForBody(CONVERSATION_URI + "/" + conversation.getId() + "/messages",
+                ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+    }
+
+    @Test
+    void testDeleteConversation_shouldReturn404_whenUnknownConversation() {
+        String body = exchangeForBody(org.springframework.http.HttpMethod.DELETE,
+                CONVERSATION_URI + "/" + UUID.randomUUID(), null,
                 ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
 
         assertHasRequestError(body, "RESOURCE_NOT_FOUND");

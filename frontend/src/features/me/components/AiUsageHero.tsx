@@ -13,9 +13,12 @@ type Totals = components['schemas']['LlmUsageTotals']
 // `AiUsageCard` (Profil) already uses for cost figures, so the hero's money callout stays in
 // the same visual family as every other cost number on the Me surface.
 
+// Re-faced mezo-d20.6.8 into the washed Mozaik card family (still `var(--wash-sage)` — the
+// prototype's #page-ai has no matching card of its own to lift 1:1; this stays the closest
+// domain wash on the surface, unchanged from before the re-face).
 export function AiUsageHero({ totals, periodLabel }: { totals: Totals; periodLabel: string }) {
   return (
-    <div className="card" style={{ padding: '14px 16px 15px', background: 'var(--wash-sage)' }}>
+    <div className="card rise" style={{ padding: '14px 16px 15px', background: 'var(--wash-sage)', borderRadius: 21 }}>
       <div className="eyebrow">{periodLabel}</div>
 
       <div className="row" style={{ gap: 26, marginTop: 7 }}>

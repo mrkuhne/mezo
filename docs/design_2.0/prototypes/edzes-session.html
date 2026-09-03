@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Edzés-session</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500;600;700&family=Fraunces:ital,opsz,wght@1,9..144,500&display=swap">
 <style>
@@ -446,6 +447,9 @@
     <radialGradient id="ig-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
     <linearGradient id="ig-shelf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#AE9F8E"/></linearGradient>
     <radialGradient id="ig-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
+    <radialGradient id="ig-moonfull" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#F2EDFD"/><stop offset="0.45" stop-color="#B7A9E8"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-crater" cx="40%" cy="35%" r="80%"><stop offset="0" stop-color="#8F81C6"/><stop offset="1" stop-color="#6D5FB0"/></radialGradient>
+    <radialGradient id="ig-harvest" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFF3C9"/><stop offset="0.5" stop-color="#E8B93A"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
     <radialGradient id="ig-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
     <radialGradient id="ig-heart" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#F0B9D2"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
     <radialGradient id="ig-spark" cx="38%" cy="32%" r="90%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
@@ -771,6 +775,15 @@
       <path d="M42 40q-3-6 0-12M58 40q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
       <ellipse cx="33" cy="64" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 33 64)"/>
     </symbol>
+    <symbol id="i-muhely" viewBox="0 0 100 100">
+      <path d="M20 56h60v4a25 25 0 0 1-25 25H45a25 25 0 0 1-25-25Z" fill="url(#ig-plate)"/>
+      <ellipse cx="50" cy="56" rx="30" ry="7" fill="#FFB597"/>
+      <path d="M17 60q-7 2-4 9M83 60q7 2 4 9" stroke="#B03E1E" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M40 46q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <path d="M67 14l4.5 11 11 4.5-11 4.5-4.5 11-4.5-11-11-4.5 11-4.5Z" fill="url(#ig-spark)"/>
+      <path d="M50 8l2.5 6 6 2.5-6 2.5-2.5 6-2.5-6-6-2.5 6-2.5Z" fill="url(#ig-spark)"/>
+      <ellipse cx="35" cy="67" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 35 67)"/>
+    </symbol>
     <symbol id="i-memoar" viewBox="0 0 100 100">
       <path d="M50 26 Q34 16 16 22 L16 74 Q34 68 50 78 Z" fill="url(#ig-book)"/>
       <path d="M50 26 Q66 16 84 22 L84 74 Q66 68 50 78 Z" fill="#F0E7D4"/>
@@ -809,6 +822,81 @@
       <rect x="42" y="50" width="10" height="24" rx="4" fill="rgba(255,255,255,0.8)"/>
       <rect x="58" y="44" width="10" height="30" rx="4" fill="#FFE9A8"/>
       <ellipse cx="36" cy="46" rx="10" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 36 46)"/>
+    </symbol>
+    <symbol id="i-hold" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="40" fill="url(#ig-moonfull)"/>
+      <ellipse cx="36" cy="30" rx="10" ry="6.5" fill="rgba(255,255,255,0.55)" transform="rotate(-26 36 30)"/>
+      <circle cx="63" cy="42" r="7" fill="url(#ig-crater)" opacity="0.85"/>
+      <circle cx="44" cy="62" r="5" fill="url(#ig-crater)" opacity="0.7"/>
+      <circle cx="62" cy="66" r="3.5" fill="url(#ig-crater)" opacity="0.6"/>
+    </symbol>
+
+    <symbol id="i-termes" viewBox="0 0 100 100">
+      <path d="M50 6c5 20 12 27 32 32-20 5-27 12-32 32-5-20-12-27-32-32 20-5 27-12 32-32Z" fill="url(#ig-harvest)"/>
+      <ellipse cx="41" cy="30" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-30 41 30)"/>
+      <circle cx="81" cy="74" r="6" fill="url(#ig-harvest)"/>
+      <circle cx="18" cy="80" r="4" fill="url(#ig-harvest)" opacity="0.8"/>
+    </symbol>
+
+    <!-- ============ F7.4 · Életterület-ikonográfia (mezo-d20.8.4) ============
+         A 8 LIFE skill clay szimbóluma — a Growth-sorok, a hála-bejegyzések és a
+         Napzárás act-3 emoji-maradékának váltása. Nyelv: 100×100, közös ig-*
+         gradiensek, fehér spekuláris folt. -->
+    <radialGradient id="ig-life-eye" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.55" stop-color="#4E8FB8"/><stop offset="1" stop-color="#25577A"/></radialGradient>
+    <linearGradient id="ig-life-pan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8C7F72"/><stop offset="1" stop-color="#5E544A"/></linearGradient>
+    <radialGradient id="ig-life-pillow" cx="36%" cy="30%" r="90%"><stop offset="0" stop-color="#F2EDFD"/><stop offset="0.5" stop-color="#B7A9E8"/><stop offset="1" stop-color="#7A6BbD"/></radialGradient>
+
+    <symbol id="i-life-tudatossag" viewBox="0 0 100 100">
+      <path d="M28 92a55 40 0 0 1 44 0c2-16-4-26-10-32H38c-6 6-12 16-10 32Z" fill="url(#ig-nlav)"/>
+      <circle cx="50" cy="38" r="17" fill="url(#ig-moonfull)"/>
+      <path d="M24 22a30 30 0 0 1 52 0" fill="none" stroke="#C9962E" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="44" cy="31" rx="6" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-22 44 31)"/>
+    </symbol>
+    <symbol id="i-life-szemlelet" viewBox="0 0 100 100">
+      <path d="M8 50C20 30 36 20 50 20s30 10 42 30C80 70 64 80 50 80S20 70 8 50Z" fill="url(#ig-stone2)"/>
+      <circle cx="50" cy="50" r="19" fill="url(#ig-life-eye)"/>
+      <circle cx="50" cy="50" r="8" fill="#1D3B52"/>
+      <ellipse cx="43" cy="42" rx="6" ry="4.5" fill="rgba(255,255,255,0.7)" transform="rotate(-24 43 42)"/>
+    </symbol>
+    <symbol id="i-life-konyha" viewBox="0 0 100 100">
+      <path d="M74 42 92 24" stroke="url(#ig-wood)" stroke-width="11" stroke-linecap="round"/>
+      <circle cx="44" cy="56" r="32" fill="url(#ig-life-pan)"/>
+      <circle cx="44" cy="56" r="24" fill="#F4E7D6"/>
+      <circle cx="40" cy="53" r="11" fill="url(#ig-sun)"/>
+      <ellipse cx="30" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 30 38)"/>
+    </symbol>
+    <symbol id="i-life-penzugyek" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="74" rx="30" ry="13" fill="url(#ig-coin)"/>
+      <ellipse cx="50" cy="58" rx="30" ry="13" fill="url(#ig-coin)" stroke="#A9770F" stroke-width="2"/>
+      <ellipse cx="50" cy="42" rx="30" ry="13" fill="url(#ig-coin)" stroke="#A9770F" stroke-width="2"/>
+      <ellipse cx="50" cy="40" rx="20" ry="7.5" fill="none" stroke="rgba(255,240,200,0.6)" stroke-width="3"/>
+      <ellipse cx="38" cy="36" rx="8" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-12 38 36)"/>
+    </symbol>
+    <symbol id="i-life-produktivitas" viewBox="0 0 100 100">
+      <rect x="16" y="16" width="68" height="68" rx="16" fill="url(#ig-stone1)"/>
+      <path d="M32 52l14 14 24-30" fill="none" stroke="url(#ig-leaf)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="72" cy="26" r="6" fill="#C9962E"/>
+      <ellipse cx="32" cy="26" rx="9" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-18 32 26)"/>
+    </symbol>
+    <symbol id="i-life-tanulas" viewBox="0 0 100 100">
+      <path d="M50 26C40 18 28 16 14 18v56c14-2 26 0 36 8V26Z" fill="url(#ig-book)"/>
+      <path d="M50 26c10-8 22-10 36-8v56c-14-2-26 0-36 8V26Z" fill="url(#ig-shelf)"/>
+      <path d="M50 26v56" stroke="#7E4A24" stroke-width="4" stroke-linecap="round"/>
+      <path d="M60 34c8-3 14-4 20-4M60 46c8-3 14-4 20-4" stroke="rgba(120,90,50,0.4)" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="28" cy="28" rx="8" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-16 28 28)"/>
+    </symbol>
+    <symbol id="i-life-kapcsolatok" viewBox="0 0 100 100">
+      <circle cx="36" cy="50" r="22" fill="none" stroke="url(#ig-heart)" stroke-width="11"/>
+      <circle cx="64" cy="50" r="22" fill="none" stroke="url(#ig-drop)" stroke-width="11"/>
+      <path d="M50 33a22 22 0 0 1 0 34 22 22 0 0 1 0-34Z" fill="rgba(142,63,111,0.35)"/>
+      <ellipse cx="28" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.6)" transform="rotate(-30 28 36)"/>
+    </symbol>
+    <symbol id="i-life-regeneracio" viewBox="0 0 100 100">
+      <path d="M14 46c-4 14-2 24 4 30 8 8 56 8 64 0 6-6 8-16 4-30-10-8-62-8-72 0Z" fill="url(#ig-life-pillow)"/>
+      <path d="M30 60c12 6 28 6 40 0" fill="none" stroke="rgba(93,79,160,0.45)" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="74" cy="26" r="5" fill="#C9962E"/>
+      <path d="M28 22h12l-12 12h12" fill="none" stroke="#9C8FD0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="30" cy="50" rx="10" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-10 30 50)"/>
     </symbol>
   </defs>
 </svg>
@@ -952,7 +1040,63 @@
       <path d="M51.5 5h15l-4.5 5 4.5 5h-15Z" fill="#E0AC2F"/>
       <ellipse cx="36" cy="42" rx="7" ry="10" fill="rgba(255,255,255,0.25)" transform="rotate(18 36 42)"/>
     </symbol>
-  </defs>
+  <radialGradient id="sg-orb-doki" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#A8C0D0"/><stop offset="0.45" stop-color="#3E7396"/><stop offset="1" stop-color="#284B62"/></radialGradient><radialGradient id="sg-orb-edzo" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#D8AE9D"/><stop offset="0.45" stop-color="#A84A26"/><stop offset="1" stop-color="#6D3019"/></radialGradient><radialGradient id="sg-orb-taplalkozo" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#AFBCAA"/><stop offset="0.45" stop-color="#4E6B42"/><stop offset="1" stop-color="#33462B"/></radialGradient><radialGradient id="sg-orb-szomnologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#B6B0D4"/><stop offset="0.45" stop-color="#5D4FA0"/><stop offset="1" stop-color="#3C3368"/></radialGradient><radialGradient id="sg-orb-pszichologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#CCA9BE"/><stop offset="0.45" stop-color="#8E3F6F"/><stop offset="1" stop-color="#5C2948"/></radialGradient><radialGradient id="sg-orb-drill" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#D8C69A"/><stop offset="0.45" stop-color="#A8801F"/><stop offset="1" stop-color="#6D5314"/></radialGradient><radialGradient id="sg-orb-antropologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#A1C5BC"/><stop offset="0.45" stop-color="#2E7D6B"/><stop offset="1" stop-color="#1E5146"/></radialGradient><radialGradient id="sg-orb-szkeptikus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#AEA9A5"/><stop offset="0.45" stop-color="#4A4038"/><stop offset="1" stop-color="#302A24"/></radialGradient></defs>
+    <symbol id="s-orb-doki" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#3E739647"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-doki)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(12 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-edzo" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#A84A2647"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-edzo)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(39 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-taplalkozo" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#4E6B4247"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-taplalkozo)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(66 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-szomnologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#5D4FA047"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-szomnologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(93 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-pszichologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#8E3F6F47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-pszichologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(120 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-drill" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#A8801F47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-drill)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(147 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-antropologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#2E7D6B47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-antropologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(174 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-szkeptikus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#4A403847"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-szkeptikus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(201 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
 </svg>
 <style>
   /* ===== prep ===== */

@@ -21,4 +21,8 @@ public interface ChallengeRepository extends JpaRepository<ChallengeEntity, UUID
 
     /** S2 (mezo-tk88.2): the pattern-detail page's impact list — challenges grounded on one pattern. */
     List<ChallengeEntity> findByCreatedByAndSourcePatternIdAndDeletedFalse(UUID createdBy, UUID sourcePatternId);
+
+    /** Karakter round-4 read layer (CharacterMetaReads): window read, bounded above for catch-up honesty. */
+    List<ChallengeEntity> findByCreatedByAndWorkoutDateBetweenAndDeletedFalse(
+            UUID createdBy, LocalDate from, LocalDate to);
 }

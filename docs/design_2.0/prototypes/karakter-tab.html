@@ -1,0 +1,2812 @@
+<meta charset="utf-8">
+<title>Karakter oldal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500;600;700&family=Fraunces:ital,opsz,wght@1,9..144,500&display=swap">
+<style>
+  :root {
+    --ground: #EFE8DD; --ground-2: #E7DFD2; --card: #FFFFFF;
+    --ink: #2B2118; --ink-2: #6E6257; --accent: #A84A26;
+    --line: rgba(43, 33, 24, 0.12);
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --ground: #191614; --ground-2: #211D19; --card: #262119;
+      --ink: #F0E9E1; --ink-2: #BCAFA1; --accent: #FF8A66;
+      --line: rgba(240, 233, 225, 0.12);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #191614; --ground-2: #211D19; --card: #262119;
+    --ink: #F0E9E1; --ink-2: #BCAFA1; --accent: #FF8A66;
+    --line: rgba(240, 233, 225, 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--ground); color: var(--ink);
+    font-family: "Geist", system-ui, -apple-system, sans-serif;
+    line-height: 1.5; padding: 48px 24px 64px;
+  }
+  .wrap { max-width: 1160px; margin: 0 auto; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: clamp(30px, 4vw, 42px); font-weight: 700; letter-spacing: -0.02em; margin: 8px 0 10px; }
+  .lede { max-width: 64ch; color: var(--ink-2); font-size: 16px; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+  .stage { margin-top: 40px; display: flex; gap: 56px; flex-wrap: wrap; align-items: flex-start; }
+  aside { max-width: 420px; display: grid; gap: 24px; }
+  aside h2 { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; }
+  aside ul, aside ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14.5px; color: var(--ink-2); }
+  aside li strong { color: var(--ink); font-weight: 600; }
+  .note { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 14.5px; color: var(--ink-2); border-left: 2px solid var(--accent); padding-left: 14px; }
+  .democtl { display: flex; align-items: center; gap: 8px; border: 1px dashed var(--line); border-radius: 12px; padding: 10px 12px; background: var(--card); }
+  .democtl button { border: none; background: rgba(168, 74, 38, 0.1); color: var(--accent); font-family: inherit; font-weight: 700; font-size: 12.5px; border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+  .democtl span { font-size: 12.5px; color: var(--ink-2); }
+
+  /* ============ PHONE ============ */
+  .phone {
+    width: 330px; height: 694px; flex: none;
+    background: #1D1712; border-radius: 52px; padding: 11px;
+    box-shadow: 0 30px 60px -22px rgba(29, 23, 18, 0.5);
+  }
+  .screen {
+    position: relative; width: 100%; height: 100%; border-radius: 42px; overflow: hidden;
+    display: flex; flex-direction: column; font-size: 11.5px; line-height: 1.4;
+    color: #2B2118; background: linear-gradient(180deg, #FDFAF4 0%, #F8F1E6 100%);
+  }
+  .isl { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 82px; height: 22px; border-radius: 999px; background: #1D1712; z-index: 14; }
+  .p-status { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px 2px; font-size: 11px; font-weight: 600; position: relative; z-index: 14; }
+  .p-body { flex: 1; min-height: 0; overflow: hidden; padding: 6px 14px; display: flex; flex-direction: column; gap: 9px; }
+  .p-eyebrow { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #A2958A; }
+  .grow { flex: 1; min-width: 0; }
+  .mrow { display: flex; align-items: center; gap: 8px; }
+  .mut { color: #6E6257; }
+  .big { font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+
+  .float3d {
+    background: #FFFFFF; border-radius: 18px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 18px 32px -16px rgba(43, 33, 24, 0.32), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .cta {
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff;
+    border-radius: 999px; padding: 8px 16px; font-size: 10.5px; font-weight: 600; flex: none;
+    box-shadow: 0 8px 16px -6px rgba(255, 91, 54, 0.55); border: none; font-family: inherit; cursor: pointer;
+  }
+  .cta.lav { background: linear-gradient(135deg, #8A76CC, #6C5FA3); box-shadow: 0 8px 16px -6px rgba(108, 95, 163, 0.55); }
+  .ghost { background: rgba(43, 33, 24, 0.06); color: #6E6257; border: none; font-family: inherit; border-radius: 999px; padding: 7px 13px; font-size: 10.5px; font-weight: 600; flex: none; cursor: pointer; }
+
+  .avatar-ring {
+    width: 34px; height: 34px; border-radius: 50%; flex: none;
+    background: conic-gradient(#FF6B4A 68%, rgba(43, 33, 24, 0.1) 0);
+    display: grid; place-items: center;
+  }
+  .avatar-ring .in { width: 27px; height: 27px; border-radius: 50%; background: #FDFAF4; display: grid; place-items: center; }
+
+  .ntfwrap { position: relative; flex: none; display: flex; align-items: center; }
+  .dpswitch {
+    width: 34px; height: 34px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12);
+    background: rgba(255, 255, 255, 0.85); font-family: inherit; cursor: pointer;
+    display: grid; place-items: center; position: relative;
+    box-shadow: 0 8px 16px -10px rgba(43, 33, 24, 0.3);
+  }
+  .dpswitch:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+  .badge.mini { min-width: 15px; height: 15px; font-size: 8.5px; top: -3px; right: -4px; }
+  .badge {
+    position: absolute; top: -5px; right: -9px; min-width: 17px; height: 17px;
+    border-radius: 999px; background: linear-gradient(135deg, #FF7A55, #FF5B36);
+    color: #fff; font-size: 9.5px; font-weight: 700;
+    display: grid; place-items: center; padding: 0 4px;
+    box-shadow: 0 3px 8px -2px rgba(255, 91, 54, 0.6);
+  }
+  .ntfmenu {
+    position: absolute; right: -46px; top: 40px; z-index: 8; width: 238px;
+    background: #FDFAF4; border: 0.5px solid rgba(43, 33, 24, 0.1); border-radius: 18px;
+    box-shadow: 0 20px 40px -14px rgba(29, 23, 18, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    padding: 12px 12px 6px;
+    opacity: 0; transform: translateY(-6px) scale(0.94); transform-origin: top right;
+    pointer-events: none; transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.3, 0.9, 0.4, 1.2);
+  }
+  .ntfwrap.open .ntfmenu { opacity: 1; transform: none; pointer-events: auto; }
+  .ntfrow { display: flex; gap: 9px; padding: 8px 2px; align-items: flex-start; }
+  .ntfrow + .ntfrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .ntfrow .t { font-size: 8px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; }
+  .ntfrow .x { font-size: 10px; font-weight: 300; margin-top: 1px; }
+  .ntffoot { text-align: center; font-size: 9.5px; font-weight: 600; color: #A84A26; padding: 8px 0 4px; cursor: pointer; }
+
+  .rise { opacity: 0; transform: translateY(16px) scale(0.98); }
+  .play .rise { animation: rise 0.5s cubic-bezier(0.22, 0.9, 0.32, 1.15) forwards; animation-delay: var(--d); }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  .panel { display: flex; flex-direction: column; gap: 9px; flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding-bottom: 8px; }
+  .panel::-webkit-scrollbar { display: none; }
+  .panel > * { flex: none; }
+
+  /* ===== érettség-gyűrű hero ===== */
+  .maturhero { display: grid; justify-items: center; text-align: center; gap: 2px; padding: 4px 10px 6px; }
+  .mrtitle { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
+  .mrwrap { position: relative; width: 148px; height: 148px; margin: 6px 0 2px; }
+  .mrwrap svg { width: 100%; height: 100%; }
+  .mrwrap .seg { fill: none; stroke-linecap: round; opacity: 0; transition: stroke-dashoffset 1s cubic-bezier(0.22,0.85,0.3,1) var(--sd,0ms), opacity 0.4s ease var(--sd,0ms); }
+  .play .mrwrap .seg { opacity: 1; }
+  .mrwrap .segbg { fill: none; stroke: rgba(43,33,24,0.07); }
+  .mrhole { position: absolute; inset: 0; display: grid; justify-items: center; align-content: center; gap: 0; }
+  .mrhole .num { font-size: 34px; font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .mrhole .lbl { font-size: 8px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; margin-top: -2px; }
+  .selfportrait { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 11.5px; line-height: 1.5; color: #4A4038; text-align: center; padding: 0 6px; max-width: 260px; }
+
+  /* ===== dimenzió-csempék ===== */
+  .mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .dimtile {
+    border-radius: 17px; padding: 10px 11px; min-height: 96px;
+    display: flex; flex-direction: column; gap: 5px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px var(--sh, rgba(43, 33, 24, 0.28)), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    background: var(--wash, #fff);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); cursor: pointer;
+  }
+  .dimtile:active { transform: scale(0.96); }
+  .dimtile:hover { transform: translateY(-2px); }
+  .dimtile.chapter { background: repeating-linear-gradient(135deg, var(--wash), var(--wash) 10px, rgba(255,255,255,0.5) 10px, rgba(255,255,255,0.5) 20px); border: 1.2px dashed var(--dc); }
+  .dimtile .dhd { display: flex; align-items: center; gap: 6px; }
+  .dimtile .disc { width: 24px; height: 24px; border-radius: 50%; flex: none; display: grid; place-items: center; overflow: hidden; box-shadow: 0 3px 8px -3px var(--dc); }
+  .dimtile .miniring { width: 24px; height: 24px; border-radius: 50%; flex: none; display: grid; place-items: center; background: conic-gradient(var(--dc) calc(var(--mv) * 1%), rgba(43,33,24,0.08) 0); transform: scale(0.4); opacity: 0; }
+  .play .dimtile .miniring { animation: ringpop 0.55s cubic-bezier(0.3, 1.3, 0.4, 1) forwards; animation-delay: var(--d); }
+  @keyframes ringpop { to { transform: scale(1); opacity: 1; } }
+  .dimtile .miniring::after { content: ''; width: 16px; height: 16px; border-radius: 50%; background: #FFFFFF; }
+  .dimtile .dnm { font-size: 9.5px; font-weight: 800; letter-spacing: 0.02em; color: var(--dc); }
+  .dimtile .dline { font-size: 9.5px; font-weight: 300; color: #2B2118; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin-top: 1px; }
+  .dimtile .tile-badge { margin-left: auto; font-size: 8.5px; font-weight: 700; color: #A2958A; }
+
+  /* ===== feed csempe ===== */
+  .feedtile { border-radius: 18px; padding: 11px 12px; background: #fff; border: 0.5px solid rgba(43,33,24,0.06);
+    box-shadow: 0 14px 26px -14px rgba(43,33,24,0.28), 0 2px 5px rgba(43,33,24,0.04), inset 0 1px 0 rgba(255,255,255,0.7); }
+  .feedrow { display: flex; gap: 8px; padding: 7px 0; align-items: flex-start; }
+  .feedrow + .feedrow { border-top: 0.5px solid rgba(43,33,24,0.08); }
+  .feeddisc { width: 22px; height: 22px; border-radius: 50%; flex: none; display: grid; place-items: center; overflow: hidden; margin-top: 1px; box-shadow: 0 3px 8px -3px var(--dc); }
+  .feedrow .fnm { font-size: 8.5px; font-weight: 800; color: var(--dc); }
+  .feedrow .ftxt { font-size: 10px; font-weight: 300; margin-top: 1px; }
+  .feeddiff { border-radius: 12px; margin: 2px -3px 0; padding: 8px 9px; background: linear-gradient(150deg, #FFEDE4, #FFF8F4); display: flex; align-items: center; gap: 8px; cursor: pointer;
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .feeddiff:active { transform: scale(0.97); }
+  .feeddiff .ic { width: 22px; height: 22px; border-radius: 50%; flex: none; display: grid; place-items: center; background: linear-gradient(135deg, #FF7A55, #FF5B36); }
+  .feeddiff .tx { font-size: 9.5px; font-weight: 600; }
+  .feeddiff .chev { margin-left: auto; color: #A2958A; font-size: 12px; }
+  .feedday { font-size: 8px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; padding: 8px 2px 2px; }
+
+  /* ===== csapat / konzílium csempék ===== */
+  .t-csapat { background: linear-gradient(150deg, #F0EDF8, #FBFAFE); box-shadow: 0 14px 26px -14px rgba(93,79,160,0.4), 0 2px 5px rgba(43,33,24,0.04), inset 0 1px 0 rgba(255,255,255,0.7); }
+  .t-konz { background: linear-gradient(150deg, #FFF1D6, #FFFAF0); box-shadow: 0 14px 26px -14px rgba(181,126,20,0.4), 0 2px 5px rgba(43,33,24,0.04), inset 0 1px 0 rgba(255,255,255,0.7); }
+  .t-dims { background: linear-gradient(150deg, #E4EEDD, #F7FBF3); box-shadow: 0 14px 26px -14px rgba(78,143,184,0.4), 0 2px 5px rgba(43,33,24,0.04), inset 0 1px 0 rgba(255,255,255,0.7); }
+  .t-feedhub { background: linear-gradient(150deg, #FFEDE4, #FFF8F4); box-shadow: 0 14px 26px -14px rgba(216,72,31,0.35), 0 2px 5px rgba(43,33,24,0.04), inset 0 1px 0 rgba(255,255,255,0.7); }
+  .clustrow { display: flex; margin-left: 2px; }
+  .clustrow .cd { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; overflow: hidden;
+    border: 1.5px solid #fff; margin-left: -7px; box-shadow: 0 2px 5px -2px rgba(43,33,24,0.4); }
+  .clustrow .cd:first-child { margin-left: 0; }
+  .pulsedot { width: 8px; height: 8px; border-radius: 50%; background: #C9962E; box-shadow: 0 0 0 2px rgba(201,150,46,0.25); margin-left: auto; flex: none; animation: kpulse 2.2s ease-in-out infinite; }
+  .pulsedot.sm { width: 6px; height: 6px; margin-left: 0; }
+  @keyframes kpulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  /* ============ DETAIL PAGES ============ */
+  .page {
+    position: absolute; inset: 0; z-index: 10;
+    display: flex; flex-direction: column;
+    padding-top: 34px;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.35, 1);
+    background: #FDFAF4;
+  }
+  .page.open { transform: none; }
+  /* Minden oldal-gradiens opak #FDFAF4 alapra rétegződik — a dimenzió-wash (--pwash)
+     alfás szín, és e nélkül az előző oldal átütne a lap tetején. */
+  .page.p-dim { background: linear-gradient(180deg, var(--pwash, #FFE3D4) 0%, #FDFAF4 36%), #FDFAF4; }
+  .page.p-csapat { background: linear-gradient(180deg, #E9E3F7 0%, #FDFAF4 36%), #FDFAF4; }
+  .page.p-konz { background: linear-gradient(180deg, #FBEBCB 0%, #FDFAF4 36%), #FDFAF4; }
+  .page.p-boot { background: linear-gradient(180deg, #FFE3D4 0%, #FDFAF4 40%), #FDFAF4; }
+  .page-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; }
+  .backbtn {
+    border: none; background: rgba(255, 255, 255, 0.7); font-family: inherit; cursor: pointer;
+    border-radius: 999px; padding: 6px 13px 6px 9px; font-size: 11px; font-weight: 600; color: #2B2118;
+    display: flex; align-items: center; gap: 4px;
+    box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.3);
+  }
+  .backbtn:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+  .page-hero { display: grid; justify-items: center; text-align: center; gap: 1px; padding: 8px 14px 12px; }
+  .page-hero .bignum { font-weight: 200; font-size: 40px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .page-hero .nm { font-size: 15px; font-weight: 700; }
+  .page-hero .sb { font-size: 10px; color: #6E6257; }
+  .page-hero.orb svg { animation: orbbreathe 4.5s ease-in-out infinite; }
+  @keyframes orbbreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.045); } }
+  .page-body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 2px 14px 16px; }
+  .page-body::-webkit-scrollbar { display: none; }
+
+  /* ===== dimenzió-oldal ===== */
+  .dimavatar { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; box-shadow: 0 10px 22px -8px var(--pc, #A84A26); }
+  .dimavatar svg { width: 100%; height: 100%; }
+  .dimavatar.chaptermark { display: grid; place-items: center; font-size: 22px; color: #fff; background: var(--pc, #A84A26); }
+  .portraitcard { background: #fff; border-radius: 16px; padding: 12px 13px; margin-bottom: 12px; border: 0.5px solid rgba(43,33,24,0.06);
+    box-shadow: 0 14px 26px -16px rgba(43,33,24,0.3), inset 0 1px 0 rgba(255,255,255,0.85); font-size: 11px; font-weight: 300; line-height: 1.6; }
+  .claimtile { background: #fff; border-radius: 16px; padding: 11px 12px; margin-bottom: 10px; border: 0.5px solid rgba(43,33,24,0.06);
+    box-shadow: 0 14px 26px -16px rgba(43,33,24,0.3), inset 0 1px 0 rgba(255,255,255,0.85); transition: opacity 0.4s ease, background 0.4s ease; }
+  .claimtile.sensitive { background: #F5F2FC; border: 1px solid rgba(138,118,204,0.35); }
+  .claimtile.retired { opacity: 0.5; background: repeating-linear-gradient(135deg, #fff, #fff 8px, #F2EEE6 8px, #F2EEE6 16px); border-style: dashed; }
+  .confchip { font-size: 7.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 999px; padding: 2.5px 9px; flex: none; }
+  .confchip.biztos { background: rgba(143, 175, 126, 0.2); color: #4E6B42; }
+  .confchip.valoszinu { background: rgba(201, 150, 46, 0.18); color: #A8801F; }
+  .confchip.figyeljuk { background: rgba(138, 118, 204, 0.16); color: #5D4FA0; }
+  .claimtile .ctxt { font-size: 10.5px; font-weight: 400; line-height: 1.55; margin-top: 7px; }
+  .claimtile .cmirror { font-size: 8.5px; color: #5D4FA0; font-style: italic; margin-top: 4px; }
+  .retiredlbl { font-size: 9px; font-weight: 700; color: #A2958A; }
+  .fbpills { display: flex; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
+  .fbp { border: 1px solid rgba(43,33,24,0.14); background: none; font-family: inherit; border-radius: 999px; padding: 5px 11px; font-size: 9px; font-weight: 700; color: #6E6257; cursor: pointer; }
+  .fbp.talal { color: #4E6B42; border-color: rgba(143,175,126,0.5); }
+  .fbp.nemigaz { color: #8E5A3F; border-color: rgba(168,74,38,0.4); }
+  .fbp.pont { color: #5D4FA0; border-color: rgba(138,118,204,0.4); }
+  .fbp.flash { background: rgba(143,175,126,0.22); }
+  .fbthanks { font-size: 9px; font-weight: 700; color: #4E6B42; margin-top: 6px; }
+  .fbtext { display: none; margin-top: 8px; }
+  .fbtext.open { display: block; }
+  .fbtext textarea { width: 100%; border: 1px solid rgba(43,33,24,0.14); border-radius: 12px; padding: 8px 10px; font-family: inherit; font-size: 10px; resize: none; height: 52px; background: #FBF9F4; }
+  .fbtext .send { margin-top: 6px; }
+  .chathand { display: flex; align-items: center; gap: 9px; cursor: pointer; border-radius: 999px; padding: 9px 9px 9px 14px; background: #fff;
+    border: 0.5px solid rgba(43,33,24,0.08); box-shadow: 0 16px 30px -14px rgba(93,79,160,0.4), inset 0 1px 0 rgba(255,255,255,0.85); margin: 4px 0 10px; }
+  .chathand .tx { flex: 1; font-size: 10.5px; font-weight: 600; }
+  .principle { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 10px; color: #A2958A; text-align: center; padding: 4px 8px 8px; line-height: 1.5; }
+
+  /* ===== csapat-oldal ===== */
+  .persocard { display: flex; gap: 10px; align-items: flex-start; background: #fff; border-radius: 16px; padding: 11px 12px; margin-bottom: 9px;
+    border: 0.5px solid rgba(43,33,24,0.06); box-shadow: 0 12px 24px -16px rgba(43,33,24,0.3), inset 0 1px 0 rgba(255,255,255,0.85); }
+  .persocard.szkeptikus { background: linear-gradient(150deg, #4A4038, #3A312B); color: #EDE7DF; }
+  .persocard.szkeptikus .prole { color: #C9B8A0; }
+  .persocard.mezo { background: linear-gradient(150deg, #FF9A78, #FF5B36); color: #fff; }
+  .persocard.mezo .pdisc { background: rgba(255,255,255,0.25); }
+  .persocard.mezo .prole { color: rgba(255,255,255,0.85); }
+  .pdisc { width: 36px; height: 36px; border-radius: 50%; flex: none; display: grid; place-items: center; overflow: hidden; box-shadow: 0 6px 14px -6px var(--pc, rgba(43,33,24,0.3)); }
+  .pdisc.orb { box-shadow: none; }
+  .pinfo .pnm { font-size: 11.5px; font-weight: 700; }
+  .pinfo .prole { font-size: 9px; color: #6E6257; margin-top: 1px; }
+  .pinfo .pwatch { font-size: 8.5px; margin-top: 6px; line-height: 1.5; opacity: 0.85; }
+  .pchip { display: inline-block; font-size: 7px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; border-radius: 999px; padding: 2px 8px; margin-top: 6px; background: rgba(255,255,255,0.5); }
+  .persocard:not(.szkeptikus):not(.mezo) .pchip { background: var(--pcw); color: var(--pc); }
+
+  /* ===== konzílium lista + transzkript ===== */
+  .konzrow { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 15px; padding: 10px 12px; margin-bottom: 9px; cursor: pointer;
+    border: 0.5px solid rgba(43,33,24,0.06); box-shadow: 0 10px 20px -13px rgba(43,33,24,0.3), inset 0 1px 0 rgba(255,255,255,0.85);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .konzrow:active { transform: scale(0.97); }
+  .konzrow:hover { transform: translateY(-2px); }
+  .konzrow .kd { font-size: 10.5px; font-weight: 700; display: flex; align-items: center; gap: 5px; }
+  .konzrow .ks { font-size: 8.5px; color: #6E6257; margin-top: 2px; }
+  .kbadge { font-size: 6.5px; font-weight: 800; letter-spacing: 0.08em; border-radius: 6px; padding: 2px 6px; flex: none; }
+  .kbadge.weekly { background: rgba(93,79,160,0.14); color: #5D4FA0; }
+  .kbadge.havi { background: rgba(201,150,46,0.16); color: #A8801F; }
+  .kbadge.boot { background: rgba(78,143,184,0.16); color: #3E7396; }
+  .konz-transcript { display: none; }
+  .konz-transcript.on { display: block; }
+  .konz-list.hidden { display: none; }
+  .tminiback { border: none; background: none; font-family: inherit; color: #A8801F; font-weight: 700; font-size: 9.5px; cursor: pointer; padding: 0 0 8px; }
+  .outcomehd { background: #fff; border-radius: 15px; padding: 11px 12px 12px; margin-bottom: 14px; border: 0.5px solid rgba(43,33,24,0.06);
+    box-shadow: 0 10px 20px -13px rgba(43,33,24,0.3), inset 0 1px 0 rgba(255,255,255,0.85); }
+  .outcomehd .oh-title { font-size: 9.5px; font-weight: 700; color: #6E6257; margin-bottom: 8px; }
+  .outcells { display: flex; gap: 7px; }
+  .outcell { flex: 1; text-align: center; border-radius: 12px; padding: 7px 3px 6px; background: var(--ow); }
+  .outcell b { display: block; font-size: 15px; font-weight: 700; color: var(--oc); font-variant-numeric: tabular-nums; }
+  .outcell small { font-size: 6.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--oc); opacity: 0.8; }
+  .phaselbl { display: flex; align-items: center; gap: 7px; font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; padding: 4px 2px 8px; }
+  .phaselbl::after { content: ''; flex: 1; height: 1px; background: rgba(43,33,24,0.1); }
+  .turnsgroup { position: relative; }
+  .turnsgroup::before { content: ''; position: absolute; left: 11px; top: 2px; bottom: 14px; width: 0; border-left: 1.5px dashed rgba(43,33,24,0.14); }
+  .turn { display: flex; gap: 8px; margin-bottom: 11px; max-width: 92%; position: relative; }
+  .turn.ruling { max-width: 100%; }
+  .tavatar { width: 24px; height: 24px; border-radius: 50%; flex: none; display: grid; place-items: center; overflow: hidden; margin-top: 2px; box-shadow: 0 3px 8px -3px var(--tc); }
+  .tbub { border-radius: 4px 15px 15px 15px; padding: 9px 11px; border-left: 3px solid var(--tc); background: #fff;
+    box-shadow: 0 10px 20px -14px rgba(43,33,24,0.3), inset 0 1px 0 rgba(255,255,255,0.85); }
+  .turn.szkeptikus .tbub { background: #EDE9E2; border-left-color: #4A4038; }
+  .turn.ruling .tbub { background: linear-gradient(150deg, #FFEDE4, #FFF8F4); border-left-color: #FF5B36; border-radius: 15px; }
+  .tname { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: var(--tc); margin-bottom: 3px; }
+  .turn.szkeptikus .tname { color: #4A4038; }
+  .turn.ruling .tname { color: #A84A26; }
+  .ttxt { font-size: 10px; font-weight: 300; line-height: 1.55; }
+  .userquote { margin-top: 8px; border-left: 3px solid #C9962E; background: #FBF3DF; border-radius: 4px 10px 10px 4px; padding: 6px 9px; }
+  .userquote .ul { font-size: 7px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #A8801F; }
+  .userquote .ut { font-size: 9.5px; font-weight: 400; margin-top: 2px; }
+  .honestynote { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 9.5px; color: #A2958A; text-align: center; padding: 6px 10px 10px; line-height: 1.5; }
+
+  /* ===== gépterem ===== */
+  .t-gepterem { background: linear-gradient(150deg, #E7ECEE, #F5F8F9); box-shadow: 0 14px 26px -14px rgba(61,82,92,0.35), 0 2px 5px rgba(43,33,24,0.04), inset 0 1px 0 rgba(255,255,255,0.7); }
+  .dimtile.wide { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 11px; min-height: auto; padding: 11px 13px; }
+  .dimtile.wide .dhd { flex: none; gap: 9px; }
+  .dimtile.wide .dline { flex: 1; margin-top: 0; -webkit-line-clamp: 1; }
+  .gpic { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; background: rgba(61,82,92,0.12); flex: none; }
+
+  .page.p-gep { background: linear-gradient(180deg, #DCE4E7 0%, #FDFAF4 36%), #FDFAF4; }
+  .secttl { font-size: 8px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #3D525C; padding: 12px 2px 7px; display: flex; align-items: center; gap: 6px; }
+  .secttl:first-child { padding-top: 2px; }
+  .secttl::after { content: ''; flex: 1; height: 1px; background: rgba(61,82,92,0.16); }
+  .sectnote { font-size: 9px; color: #6E6257; font-weight: 300; line-height: 1.55; padding: 0 2px 8px; }
+
+  /* ===== hét-navigáció ===== */
+  .weeknav { display: flex; align-items: center; gap: 8px; padding: 2px 2px 10px; position: relative; }
+  .weeknav .wstep { border: none; background: rgba(61,82,92,0.1); color: #3D525C; width: 26px; height: 26px;
+    border-radius: 50%; display: grid; place-items: center; font-size: 13px; cursor: pointer; flex: none; font-family: inherit; }
+  .weeknav .wstep:disabled { opacity: 0.3; cursor: default; }
+  .weeknav .wstep:active:not(:disabled) { transform: scale(0.88); }
+  .weeklbl { flex: 1; text-align: center; font-size: 10.5px; font-weight: 700; cursor: pointer; border-radius: 12px; padding: 5px 10px; position: relative; }
+  .weeklbl small { display: block; font-size: 7.5px; font-weight: 700; color: #A2958A; margin-top: 1px; text-transform: none; letter-spacing: normal; }
+  .weekmenu { position: absolute; left: 8px; right: 8px; top: 100%; margin-top: 4px; z-index: 6; display: flex; gap: 6px;
+    background: #fff; border: 0.5px solid rgba(43,33,24,0.1); border-radius: 14px; padding: 8px;
+    box-shadow: 0 16px 30px -14px rgba(43,33,24,0.35);
+    opacity: 0; transform: translateY(-6px) scale(0.96); pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.3,0.9,0.4,1.2); }
+  .weeknav.open .weekmenu { opacity: 1; transform: none; pointer-events: auto; }
+  .weekchip { flex: 1; border: 1px solid rgba(43,33,24,0.12); background: #FBF9F4; border-radius: 10px; padding: 7px 4px;
+    font-size: 8.5px; font-weight: 700; color: #6E6257; cursor: pointer; text-align: center; font-family: inherit; }
+  .weekchip.on { background: #3D525C; border-color: #3D525C; color: #fff; }
+
+  .daygrouphd { display: flex; align-items: baseline; gap: 6px; padding: 9px 2px 4px; }
+  .daygrouphd .dg-dow { font-size: 8px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #A2958A; }
+  .daygrouphd .dg-date { font-size: 8px; color: #C2B7A9; }
+  .daygrouphd.today .dg-dow { color: #3D525C; }
+
+  .runrow { background: #fff; border-radius: 15px; margin-bottom: 9px; border: 0.5px solid rgba(43,33,24,0.06);
+    box-shadow: 0 10px 20px -13px rgba(43,33,24,0.28), inset 0 1px 0 rgba(255,255,255,0.85); overflow: hidden; cursor: pointer;
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .runrow:active { transform: scale(0.97); }
+  .runrow:hover { transform: translateY(-2px); }
+  .runrow.quiet { background: linear-gradient(150deg, #F3F6F2, #FAFCF9); }
+  .runrow.future { opacity: 0.45; cursor: default; }
+  .runrow.future:active, .runrow.future:hover { transform: none; }
+  .run-head { display: flex; align-items: center; gap: 9px; padding: 10px 12px; }
+  .run-head .rk { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; flex: none; background: var(--rw, rgba(61,82,92,0.12)); color: var(--rc, #3D525C); }
+  .run-head .rt { font-size: 10.5px; font-weight: 700; display: flex; align-items: center; gap: 6px; }
+  .run-head .rs { font-size: 8.5px; color: #6E6257; margin-top: 1px; }
+  .run-head .rchev { margin-left: auto; color: #A2958A; font-size: 12px; flex: none; }
+  .run-badge { font-size: 6.5px; font-weight: 800; letter-spacing: 0.08em; border-radius: 6px; padding: 2px 6px; flex: none; }
+  .run-badge.ejszaka { background: rgba(61,82,92,0.14); color: #3D525C; }
+  .run-badge.konzilium { background: rgba(201,150,46,0.16); color: #A8801F; }
+  .run-badge.havi { background: rgba(93,79,160,0.14); color: #5D4FA0; }
+  .run-badge.bootstrap { background: rgba(78,143,184,0.16); color: #3E7396; }
+
+  .quietnote { font-size: 9.5px; font-weight: 300; color: #4E6B42; background: rgba(143,175,126,0.12); border-radius: 10px; padding: 8px 10px; line-height: 1.55; }
+  .quietnote b { color: #3E5A34; }
+  .chain { border-radius: 12px; padding: 11px 12px; margin-top: 8px; background: #F7F5F0; border: 0.5px solid rgba(43,33,24,0.06); }
+  .chain:first-child { margin-top: 0; }
+  .chainstep { display: flex; gap: 10px; align-items: flex-start; }
+  .chainstepnum { width: 20px; height: 20px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    font-size: 9px; font-weight: 800; background: #3D525C; color: #E7ECEE; margin-top: 1px; }
+  .chainstepnum.llm { background: var(--dc, #A84A26); }
+  .chainsteplbl { font-size: 7.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #6E6257; margin-bottom: 5px; }
+  .chain.big .chainsteplbl { font-size: 8px; }
+  .detchip { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 8px; font-weight: 700; background: #3D525C;
+    color: #E7ECEE; border-radius: 6px; padding: 3px 7px; display: inline-block; letter-spacing: 0.01em; margin-bottom: 6px; }
+  .codetxt { font-size: 10px; color: #2B2118; line-height: 1.55; font-weight: 400; }
+  .llmrow { display: flex; gap: 8px; align-items: flex-start; }
+  .llmrow .lldisc { width: 22px; height: 22px; border-radius: 50%; flex: none; overflow: hidden; box-shadow: 0 3px 8px -3px var(--dc); }
+  .lltxt { font-size: 10px; color: #2B2118; line-height: 1.55; font-weight: 400; }
+  .chainconn { display: flex; align-items: center; gap: 7px; margin: 8px 0 8px 1px; font-size: 8.5px; font-weight: 700; color: #A2958A; }
+  .chainconn .arrow { width: 20px; text-align: center; flex: none; color: #3D525C; font-size: 12px; }
+  .refcount { font-size: 8px; color: #A2958A; margin-top: 10px; padding-top: 8px; border-top: 0.5px dashed rgba(43,33,24,0.12); }
+
+  /* ===== leltár v4.3 — olvasható kártyák, sáv-szegmens ===== */
+  .leltarsegs { display: flex; gap: 4px; background: rgba(61,82,92,0.08); border-radius: 999px; padding: 3px; margin-bottom: 12px; }
+  .leltarsegs button { flex: 1; border: none; background: none; border-radius: 999px; padding: 7px 0; font-size: 9.5px;
+    font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
+  .leltarsegs button.on { background: #3D525C; color: #fff; box-shadow: 0 4px 10px -3px rgba(61,82,92,0.5); }
+  .leltarpanel { display: none; }
+  .leltarpanel.on { display: block; }
+
+  .leltarcard { border-radius: 17px; padding: 12px 13px; margin-bottom: 11px; background: #fff;
+    border: 0.5px solid rgba(43,33,24,0.06); box-shadow: 0 12px 24px -16px rgba(43,33,24,0.28), inset 0 1px 0 rgba(255,255,255,0.85); }
+  .leltarcard.sage { background: linear-gradient(150deg, #E9F1E2, #F9FCF6); box-shadow: 0 12px 24px -16px rgba(110,139,94,0.35), inset 0 1px 0 rgba(255,255,255,0.7); }
+  .leltarcard.dashed { border: 1.4px dashed rgba(61,82,92,0.35); box-shadow: none; background: #FBFAF7; }
+  .leltarcard .lchd { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .leltarcard .lchd .rnum { font-size: 7.5px; font-weight: 800; letter-spacing: 0.06em; color: #5D4FA0;
+    background: rgba(93,79,160,0.14); border-radius: 999px; padding: 3px 9px; flex: none; }
+  .leltarcard .lchd .lctitle { font-size: 10px; font-weight: 800; letter-spacing: 0.02em; color: #2B2118; }
+  .leltarcard .lchd .lccount { margin-left: auto; font-size: 8px; font-weight: 700; color: #A2958A; }
+
+  .lrow { display: flex; align-items: center; gap: 9px; padding: 9px 0; border-top: 0.5px solid rgba(43,33,24,0.07); }
+  .lrow:first-of-type { border-top: none; padding-top: 4px; }
+  .lrow .check { width: 15px; height: 15px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    background: rgba(110,139,94,0.18); color: #4E6B42; font-size: 8px; }
+  .lrow .lw { font-size: 10px; font-weight: 500; color: #2B2118; flex: 1; min-width: 0; }
+  .lrow .valchips { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+  .valchip { font-size: 7px; font-weight: 700; color: #4E6B42; background: rgba(110,139,94,0.14); border-radius: 6px; padding: 2px 6px; }
+  .lrow .rmeta { flex: none; display: flex; align-items: center; gap: 5px; }
+  .lrow .detchip.ghost { background: none; border: 1px dashed rgba(61,82,92,0.4); color: #3D525C; margin: 0; }
+  .lrow .detcount { font-size: 7.5px; font-weight: 700; color: #A2958A; }
+  .sensdot { width: 6px; height: 6px; border-radius: 50%; background: #8A76CC; flex: none; }
+
+  .korindex { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 15px; padding: 11px 12px; margin-bottom: 9px; cursor: pointer;
+    border: 0.5px solid rgba(43,33,24,0.06); box-shadow: 0 10px 20px -13px rgba(43,33,24,0.28), inset 0 1px 0 rgba(255,255,255,0.85);
+    transition: transform 0.15s cubic-bezier(0.3,0.8,0.4,1.4); }
+  .korindex:active { transform: scale(0.98); }
+  .korindex:hover { transform: translateY(-2px); }
+  .korindex .rnum { font-size: 8px; font-weight: 800; letter-spacing: 0.06em; color: #5D4FA0;
+    background: rgba(93,79,160,0.14); border-radius: 999px; padding: 4px 9px; flex: none; }
+  .korindex .grow .kt { font-size: 10.5px; font-weight: 700; }
+  .korindex .grow .kc { font-size: 8.5px; color: #6E6257; margin-top: 1px; }
+  .korindex .chev { color: #A2958A; font-size: 12px; flex: none; }
+
+  .laterline { font-size: 9px; color: #A2958A; text-align: center; padding: 8px 2px 2px; font-weight: 600; }
+
+  .ainaplolink { display: flex; align-items: center; gap: 9px; cursor: pointer; border-radius: 999px; padding: 9px 9px 9px 14px; background: #fff; margin: 6px 0 4px;
+    border: 0.5px solid rgba(43,33,24,0.08); box-shadow: 0 12px 22px -13px rgba(61,82,92,0.35), inset 0 1px 0 rgba(255,255,255,0.85);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .ainaplolink:active { transform: scale(0.97); }
+  .ainaplolink .tx { flex: 1; font-size: 10.5px; font-weight: 600; }
+
+  .gepq { width: 20px; height: 20px; border: none; background: rgba(61,82,92,0.1); border-radius: 7px; display: grid; place-items: center; cursor: pointer; flex: none; color: #3D525C; font-size: 10px; margin-left: auto; align-self: flex-start; }
+  .gepq:active { transform: scale(0.88); }
+  .feedunit + .feedunit { border-top: 0.5px solid rgba(43,33,24,0.08); padding-top: 7px; }
+  .feedunit { padding: 7px 0; }
+  .feedunit .feedrow { padding: 0; border: none; }
+
+  /* ===== futás-részlet oldal ===== */
+  .page.p-run { background: linear-gradient(180deg, #DCE4E7 0%, #FDFAF4 36%), #FDFAF4; }
+  .runhero-ic { width: 54px; height: 54px; display: grid; place-items: center; margin-bottom: 2px; }
+  .runhero-ic svg.breathe { animation: orbbreathe 4.5s ease-in-out infinite; }
+  .runhero-ic.disc { border-radius: 50%; }
+  .runhero-ic.disc.amber { background: linear-gradient(150deg, #FBEBCB, #FFFAF0); box-shadow: 0 10px 22px -10px rgba(201,150,46,0.55); }
+  .runhero-ic.disc.lav { background: linear-gradient(150deg, #EBE6F8, #F9F6FE); box-shadow: 0 10px 22px -10px rgba(93,79,160,0.5); }
+  .runlede { font-size: 10.5px; color: #4A4038; font-weight: 400; line-height: 1.55; max-width: 250px; margin: 5px auto 0; }
+  .runflow { display: flex; align-items: center; gap: 3px; margin: 2px 0 16px; }
+  .runflow .step { flex: 1; text-align: center; border-radius: 13px; padding: 9px 3px 8px;
+    background: rgba(61,82,92,0.08); box-shadow: inset 0 1px 0 rgba(255,255,255,0.7); }
+  .runflow .step b { display: block; font-size: 18px; font-weight: 700; color: #3D525C; font-variant-numeric: tabular-nums; }
+  .runflow .step small { display: block; font-size: 6.5px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: #6E6257; margin-top: 1px; }
+  .runflow .arrow { flex: none; width: 14px; text-align: center; color: #A2958A; font-size: 13px; }
+  .runstats { display: flex; gap: 8px; margin: 2px 0 16px; }
+  .runstats .rc { flex: 1; text-align: center; border-radius: 13px; padding: 9px 4px 8px;
+    background: rgba(61,82,92,0.08); box-shadow: inset 0 1px 0 rgba(255,255,255,0.7); }
+  .runstats .rc b { display: block; font-size: 17px; font-weight: 700; color: #3D525C; font-variant-numeric: tabular-nums; }
+  .runstats .rc small { font-size: 6.5px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: #6E6257; }
+  .runstats .rc.sage { background: rgba(143,175,126,0.18); } .runstats .rc.sage b { color: #4E6B42; }
+  .runstats .rc.amber { background: rgba(201,150,46,0.16); } .runstats .rc.amber b { color: #A8801F; }
+  .runstats .rc.lav { background: rgba(138,118,204,0.14); } .runstats .rc.lav b { color: #5D4FA0; }
+  .chain.big { padding: 13px 14px; margin-bottom: 12px; border-radius: 15px; }
+  .chain.big .detchip { font-size: 8.5px; padding: 4px 9px; }
+  .chain.big .codetxt { font-size: 10.5px; margin-top: 1px; }
+  .chain.big .lltxt { font-size: 10.5px; }
+  .runsubttl { font-size: 8px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #6E6257; padding: 10px 2px 8px; }
+  .opchips { display: flex; gap: 6px; flex-wrap: wrap; margin: 2px 0 6px; }
+  .opchip { display: flex; align-items: center; gap: 6px; background: #fff; border: 0.5px solid rgba(43,33,24,0.08);
+    border-radius: 999px; padding: 4px 11px 4px 4px; box-shadow: 0 8px 16px -10px rgba(43,33,24,0.25); }
+  .opchip .od { width: 20px; height: 20px; border-radius: 50%; overflow: hidden; flex: none; }
+  .opchip .ot b { font-size: 9px; font-weight: 700; display: block; }
+  .opchip .ot small { font-size: 6.5px; color: #A2958A; text-transform: uppercase; letter-spacing: 0.06em; font-weight: 800; }
+  .runlink { width: 100%; margin-top: 6px; text-align: center; padding: 10px 0; }
+
+  .raretile { display: flex; align-items: center; gap: 10px; background: #fff; border-radius: 15px; padding: 10px 12px; margin-bottom: 9px; cursor: pointer;
+    border: 0.5px solid rgba(43,33,24,0.06); box-shadow: 0 10px 20px -13px rgba(43,33,24,0.28), inset 0 1px 0 rgba(255,255,255,0.85);
+    transition: transform 0.15s cubic-bezier(0.3,0.8,0.4,1.4); }
+  .raretile:active { transform: scale(0.98); }
+  .raretile:hover { transform: translateY(-2px); }
+  .raretile .rk { width: 30px; height: 30px; border-radius: 10px; display: grid; place-items: center; flex: none; background: var(--rw); color: var(--rc); }
+
+  /* ===== bootstrap flow ===== */
+  .bootstep { display: none; flex: 1; flex-direction: column; padding: 6px 20px 24px; }
+  .bootstep.on { display: flex; }
+  .bootintro { flex: 1; display: grid; align-content: center; justify-items: center; text-align: center; gap: 10px; }
+  .bootintro svg { animation: orbbreathe 4.5s ease-in-out infinite; }
+  .bootintro h3 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+  .bootintro p { font-size: 10.5px; color: #6E6257; font-weight: 300; max-width: 230px; line-height: 1.6; }
+  .bootcluster { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; max-width: 220px; margin-top: 4px; }
+  .bootcluster .cd { width: 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; opacity: 0; transform: scale(0.5); }
+  .bootcluster.play .cd { animation: ringpop 0.4s cubic-bezier(0.3, 1.3, 0.4, 1) forwards; }
+  .bootprog { flex: 1; display: grid; align-content: center; justify-items: center; gap: 16px; text-align: center; }
+  .progarc { position: relative; width: 96px; height: 96px; display: grid; place-items: center; }
+  .progarc svg { width: 100%; height: 100%; position: absolute; inset: 0; animation: spin 2.6s linear infinite; }
+  .progarc .bootpct { position: relative; font-size: 19px; font-weight: 200; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .rise-x { opacity: 0; transform: translateX(-14px); }
+  .play .rise-x { animation: risex 0.45s cubic-bezier(0.22, 0.9, 0.32, 1.15) forwards; animation-delay: var(--d); }
+  @keyframes risex { to { opacity: 1; transform: none; } }
+  .bootlines { display: grid; gap: 8px; text-align: left; width: 100%; max-width: 240px; }
+  .bootline { display: flex; align-items: center; gap: 8px; font-size: 9.5px; font-weight: 500; color: #A2958A; opacity: 0; transform: translateY(6px); transition: opacity 0.4s ease, color 0.4s ease, transform 0.4s ease; }
+  .bootline.show { opacity: 1; transform: none; color: #2B2118; }
+  .bootline .dot { width: 6px; height: 6px; border-radius: 50%; background: #C9962E; flex: none; }
+  .bootreveal { flex: 1; display: grid; align-content: center; justify-items: center; text-align: center; gap: 10px; }
+  .bootreveal h3 { font-size: 18px; font-weight: 700; }
+  .bootreveal p { font-size: 10.5px; color: #6E6257; font-weight: 300; max-width: 230px; line-height: 1.6; }
+
+  /* ===== üres állapot (204) ===== */
+  .emptywrap { display: none; flex: 1; flex-direction: column; align-content: center; justify-items: center; text-align: center; gap: 10px; padding: 30px 20px; }
+  .emptywrap.on { display: flex; }
+  .panel.hasempty { display: none; }
+  .emptywrap svg { opacity: 0.7; }
+  .emptywrap h3 { font-size: 16px; font-weight: 700; }
+  .emptywrap p { font-size: 10.5px; color: #6E6257; font-weight: 300; max-width: 230px; line-height: 1.6; margin: 0 auto; }
+
+  .toast { position: absolute; left: 50%; bottom: 90px; transform: translateX(-50%) translateY(12px); z-index: 20;
+    background: #2B2118; color: #FDFAF4; font-size: 10.5px; font-weight: 600; padding: 9px 16px; border-radius: 999px;
+    box-shadow: 0 14px 28px -10px rgba(29,23,18,0.5); opacity: 0; pointer-events: none; transition: opacity 0.25s ease, transform 0.25s ease; }
+  .toast.on { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .tabbar {
+    margin: 4px 12px 12px; padding: 8px 16px; border-radius: 999px;
+    background: rgba(255, 255, 255, 0.82); border: 0.5px solid rgba(43, 33, 24, 0.1);
+    backdrop-filter: blur(10px);
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 12px 24px -12px rgba(43, 33, 24, 0.3);
+  }
+  .mtab { text-align: center; font-size: 9.5px; font-weight: 600; color: #A2958A; display: grid; gap: 2px; justify-items: center; }
+  .mtab.on { color: #A84A26; }
+  .mtab.off svg { filter: grayscale(1) brightness(1.04) opacity(0.48); }
+  .fab {
+    width: 46px; height: 46px; border-radius: 50%; flex: none;
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff;
+    display: grid; place-items: center;
+    box-shadow: 0 8px 18px -5px rgba(255, 91, 54, 0.6);
+  }
+  .homebar { width: 118px; height: 4px; border-radius: 999px; background: #2B2118; margin: 2px auto 9px; flex: none; opacity: 0.85; position: relative; z-index: 14; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise, .play .rise { opacity: 1; transform: none; animation: none; }
+    .rise-x, .play .rise-x { opacity: 1; transform: none; animation: none; }
+    .mrwrap .seg, .play .mrwrap .seg { opacity: 1; transition: none; }
+    .dimtile .miniring, .play .dimtile .miniring { opacity: 1; transform: none; animation: none; }
+    .bootcluster .cd, .bootcluster.play .cd { opacity: 1; transform: none; animation: none; }
+    .page { transition: none; }
+    .ntfmenu { transition: none; }
+    .pulsedot, .progarc svg { animation: none; }
+    .bootintro svg, .page-hero.orb svg { animation: none; }
+    .claimtile { transition: none; }
+    .bootline { transition: none; }
+    .dimtile:hover, .konzrow:hover { transform: none; }
+    .runrow, .ainaplolink, .gepq, .raretile { transition: none; }
+    .runrow:hover, .raretile:hover { transform: none; }
+    .runhero-ic svg { animation: none; }
+    .weekmenu { transition: none; }
+  }
+  @media (max-width: 720px) { body { padding: 32px 14px 48px; } .stage { gap: 36px; } }
+</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="ig-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="ig-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <linearGradient id="ig-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.5" stop-color="#E05535"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
+    <radialGradient id="ig-bowl" cx="38%" cy="35%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="ig-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
+    <linearGradient id="ig-shelf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#AE9F8E"/></linearGradient>
+    <radialGradient id="ig-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
+    <radialGradient id="ig-moonfull" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#F2EDFD"/><stop offset="0.45" stop-color="#B7A9E8"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-crater" cx="40%" cy="35%" r="80%"><stop offset="0" stop-color="#8F81C6"/><stop offset="1" stop-color="#6D5FB0"/></radialGradient>
+    <radialGradient id="ig-harvest" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFF3C9"/><stop offset="0.5" stop-color="#E8B93A"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-heart" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#F0B9D2"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
+    <radialGradient id="ig-spark" cx="38%" cy="32%" r="90%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-book" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
+    <radialGradient id="ig-targ" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.6" stop-color="#E05535"/><stop offset="1" stop-color="#A83A1B"/></radialGradient>
+    <linearGradient id="ig-caps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9FBF8E"/><stop offset="1" stop-color="#5B7A4C"/></linearGradient>
+    <linearGradient id="ig-scale" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#A79885"/></linearGradient>
+    <radialGradient id="ig-ball" cx="36%" cy="30%" r="82%"><stop offset="0" stop-color="#F5CBDE"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
+    <linearGradient id="ig-shoe" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CC4E0"/><stop offset="1" stop-color="#33749C"/></linearGradient>
+    <linearGradient id="ig-arcbar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
+    <radialGradient id="ig-p1" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFB597"/><stop offset="1" stop-color="#C44B26"/></radialGradient>
+    <radialGradient id="ig-p2" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#5B7A4C"/></radialGradient>
+    <radialGradient id="ig-ngold" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-nlav" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#D4CBF0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-nsage" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C4DBB4"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="ig-bell" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#4E6B42"/></linearGradient>
+    <radialGradient id="ig-coin" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.5" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-flame" cx="40%" cy="35%" r="85%"><stop offset="0" stop-color="#FFC69E"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C43D14"/></radialGradient>
+    <radialGradient id="ig-flin" cx="45%" cy="40%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="1" stop-color="#F0B429"/></radialGradient>
+    <linearGradient id="ig-gear" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
+    <linearGradient id="ig-mic" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B7A9E6"/><stop offset="1" stop-color="#5D4FA0"/></linearGradient>
+    <linearGradient id="ig-jar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EDCF96"/><stop offset="1" stop-color="#B08A3E"/></linearGradient>
+    <linearGradient id="ig-wood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
+    <radialGradient id="ig-face" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9C2"/><stop offset="0.6" stop-color="#F2C063"/><stop offset="1" stop-color="#C08A22"/></radialGradient>
+    <linearGradient id="ig-env" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#D8481F"/></linearGradient>
+    <linearGradient id="ig-stone1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
+    <linearGradient id="ig-stone2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D8CBBA"/><stop offset="1" stop-color="#A79885"/></linearGradient>
+    <radialGradient id="ig-stone3" cx="38%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.6" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+
+    <symbol id="i-nap" viewBox="0 0 100 100">
+      <g>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(45 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(90 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(135 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(180 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(225 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(270 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="24" fill="url(#ig-sun)"/>
+      <ellipse cx="42" cy="41" rx="8.5" ry="6" fill="rgba(255,255,255,0.6)" transform="rotate(-22 42 41)"/>
+    </symbol>
+
+    <symbol id="i-edzes" viewBox="0 0 100 100">
+      <rect x="12" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
+      <rect x="73" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
+      <rect x="25" y="45" width="50" height="10" rx="5" fill="#8C7F72"/>
+      <ellipse cx="18" cy="33" rx="3.5" ry="5" fill="rgba(255,255,255,0.45)"/>
+    </symbol>
+
+    <symbol id="i-fuel" viewBox="0 0 100 100">
+      <path d="M12 46a38 34 0 0 0 76 0Z" fill="url(#ig-bowl)"/>
+      <rect x="9" y="41" width="82" height="9" rx="4.5" fill="#A8C494"/>
+      <ellipse cx="30" cy="56" rx="8" ry="5" fill="rgba(255,255,255,0.35)" transform="rotate(-18 30 56)"/>
+      <path d="M38 30c0-6 5-6 5-12M57 30c0-6 5-6 5-12" fill="none" stroke="#A8C494" stroke-width="6" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-mezo" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="34" fill="url(#ig-orb)"/>
+      <ellipse cx="38" cy="35" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 38 35)"/>
+      <path d="M28 63a28 28 0 0 0 12 10" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-polc" viewBox="0 0 100 100">
+      <rect x="14" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="54" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="14" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="54" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <ellipse cx="24" cy="22" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-20 24 22)"/>
+    </symbol>
+
+    <symbol id="i-viz" viewBox="0 0 100 100">
+      <path d="M50 8c13 18 24 29 24 43a24 24 0 0 1-48 0C26 37 37 26 50 8Z" fill="url(#ig-drop)"/>
+      <ellipse cx="41" cy="44" rx="7" ry="10" fill="rgba(255,255,255,0.5)" transform="rotate(18 41 44)"/>
+    </symbol>
+
+    <symbol id="i-alvas" viewBox="0 0 100 100">
+      <path d="M68 72A32 32 0 1 1 56 14a26 26 0 0 0 12 58Z" fill="url(#ig-moon)"/>
+      <ellipse cx="34" cy="32" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-28 34 32)"/>
+      <circle cx="76" cy="24" r="4" fill="#C9962E"/>
+    </symbol>
+
+    <symbol id="i-eletjel" viewBox="0 0 100 100">
+      <path d="M50 86C22 65 13 49 13 35a19 19 0 0 1 37-6 19 19 0 0 1 37 6c0 14-9 30-37 51Z" fill="url(#ig-heart)"/>
+      <ellipse cx="34" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 34 34)"/>
+    </symbol>
+
+    <symbol id="i-minta" viewBox="0 0 100 100">
+      <path d="M50 8 L59 41 L92 50 L59 59 L50 92 L41 59 L8 50 L41 41 Z" fill="url(#ig-spark)" stroke="url(#ig-spark)" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse cx="42" cy="38" rx="7" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 42 38)"/>
+      <circle cx="80" cy="20" r="5" fill="#9C8FD0"/>
+    </symbol>
+
+    <symbol id="i-naplo" viewBox="0 0 100 100">
+      <rect x="22" y="12" width="56" height="76" rx="9" fill="url(#ig-book)"/>
+      <rect x="22" y="12" width="12" height="76" rx="6" fill="#7E4A24"/>
+      <rect x="70" y="18" width="5" height="64" rx="2.5" fill="#F4E7D6"/>
+      <ellipse cx="46" cy="24" rx="10" ry="5.5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 46 24)"/>
+      <path d="M44 44h22M44 56h16" stroke="rgba(255,240,220,0.65)" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-cel" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="36" fill="url(#ig-targ)"/>
+      <circle cx="50" cy="50" r="24" fill="#FDF6EC"/>
+      <circle cx="50" cy="50" r="14" fill="url(#ig-targ)"/>
+      <circle cx="50" cy="50" r="5.5" fill="#C9962E"/>
+      <ellipse cx="37" cy="34" rx="10" ry="6.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 34)"/>
+    </symbol>
+
+    <symbol id="i-stack" viewBox="0 0 100 100">
+      <g transform="rotate(-32 50 50)">
+        <rect x="16" y="36" width="68" height="28" rx="14" fill="url(#ig-caps)"/>
+        <path d="M50 36h20a14 14 0 0 1 0 28H50Z" fill="#F0E7D4"/>
+        <ellipse cx="30" cy="43" rx="8" ry="4" fill="rgba(255,255,255,0.5)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-suly" viewBox="0 0 100 100">
+      <rect x="18" y="18" width="64" height="64" rx="16" fill="url(#ig-scale)"/>
+      <rect x="36" y="30" width="28" height="15" rx="5" fill="#4E4437"/>
+      <rect x="48.5" y="33" width="3" height="9" rx="1.5" fill="#FFD979"/>
+      <ellipse cx="30" cy="27" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-20 30 27)"/>
+    </symbol>
+
+    <symbol id="i-sport" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="36" fill="url(#ig-ball)"/>
+      <path d="M18 34q32 14 66-2M26 76q26-24 56-8M48 14q-6 38 8 72" fill="none" stroke="#F5DCE9" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="36" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 36 33)"/>
+    </symbol>
+
+    <symbol id="i-futas" viewBox="0 0 100 100">
+      <path d="M12 64c2-20 14-30 32-30 8 0 12 6 18 12s16 8 26 10v10a8 8 0 0 1-8 8H20a8 8 0 0 1-8-8Z" fill="url(#ig-shoe)"/>
+      <rect x="10" y="70" width="80" height="12" rx="6" fill="#DDEBF4"/>
+      <path d="M40 46l8 6M50 41l8 6" stroke="#E6F2FA" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="30" cy="44" rx="8" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 30 44)"/>
+    </symbol>
+
+    <symbol id="i-meso" viewBox="0 0 100 100">
+      <rect x="14" y="54" width="11" height="24" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="29" y="38" width="11" height="40" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="44" y="26" width="11" height="52" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="59" y="36" width="11" height="42" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="74" y="52" width="11" height="26" rx="5" fill="url(#ig-arcbar)"/>
+      <ellipse cx="48" cy="31" rx="4" ry="3" fill="rgba(255,255,255,0.5)"/>
+    </symbol>
+
+    <symbol id="i-emberek" viewBox="0 0 100 100">
+      <circle cx="64" cy="34" r="14" fill="url(#ig-p2)"/>
+      <path d="M42 84a22 21 0 0 1 44 0Z" fill="url(#ig-p2)"/>
+      <circle cx="36" cy="40" r="16" fill="url(#ig-p1)"/>
+      <path d="M12 88a24 22 0 0 1 48 0Z" fill="url(#ig-p1)"/>
+      <ellipse cx="30" cy="33" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-22 30 33)"/>
+    </symbol>
+
+    <symbol id="i-tudas" viewBox="0 0 100 100">
+      <path d="M32 32 L70 42 M36 36 L50 70 M68 44 L52 70" stroke="#C9BCAD" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="30" cy="30" r="13" fill="url(#ig-ngold)"/>
+      <circle cx="72" cy="42" r="11" fill="url(#ig-nlav)"/>
+      <circle cx="50" cy="73" r="12" fill="url(#ig-nsage)"/>
+      <ellipse cx="26" cy="25" rx="4.5" ry="3" fill="rgba(255,255,255,0.55)" transform="rotate(-22 26 25)"/>
+    </symbol>
+
+    <symbol id="i-ertesites" viewBox="0 0 100 100">
+      <rect x="45" y="8" width="10" height="10" rx="5" fill="#B57E14"/>
+      <path d="M50 14a27 27 0 0 1 27 27v17l9 13H14l9-13V41a27 27 0 0 1 27-27Z" fill="url(#ig-bell)"/>
+      <circle cx="50" cy="80" r="8" fill="#B57E14"/>
+      <ellipse cx="37" cy="32" rx="8" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 32)"/>
+    </symbol>
+
+    <symbol id="i-growth" viewBox="0 0 100 100">
+      <path d="M50 90V50" stroke="#5B7A4C" stroke-width="7" stroke-linecap="round"/>
+      <path d="M50 56C34 52 26 40 28 24c16 2 24 14 22 32Z" fill="url(#ig-leaf)"/>
+      <path d="M50 66c14-4 22-14 20-28-14 2-22 14-20 28Z" fill="url(#ig-leaf)"/>
+      <ellipse cx="36" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-40 36 36)"/>
+    </symbol>
+
+    <symbol id="i-erme" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" fill="url(#ig-coin)"/>
+      <circle cx="50" cy="50" r="25" fill="none" stroke="rgba(255,240,200,0.55)" stroke-width="3.5"/>
+      <path d="M40 60V44l10 9 10-9v16" fill="none" stroke="#8A5E07" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="38" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 38 34)"/>
+    </symbol>
+
+    <symbol id="i-lang" viewBox="0 0 100 100">
+      <path d="M50 8c4 14 22 20 22 40a22 22 0 0 1-44 0c0-11 6-16 9-24 5 6 9 7 13-16Z" fill="url(#ig-flame)"/>
+      <path d="M50 42c2 8 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-12 2 3 4 3 5-7Z" fill="url(#ig-flin)"/>
+    </symbol>
+
+    <symbol id="i-beallitas" viewBox="0 0 100 100">
+      <g>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(45 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(90 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(135 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(180 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(225 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(270 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="26" fill="url(#ig-gear)"/>
+      <circle cx="50" cy="50" r="11" fill="#FDF6EC"/>
+      <ellipse cx="38" cy="36" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 38 36)"/>
+    </symbol>
+
+    <symbol id="i-mikrofon" viewBox="0 0 100 100">
+      <rect x="36" y="10" width="28" height="46" rx="14" fill="url(#ig-mic)"/>
+      <path d="M26 44a24 24 0 0 0 48 0" fill="none" stroke="#8C7F72" stroke-width="7" stroke-linecap="round"/>
+      <rect x="46.5" y="70" width="7" height="12" rx="3.5" fill="#8C7F72"/>
+      <rect x="36" y="84" width="28" height="7" rx="3.5" fill="#8C7F72"/>
+      <ellipse cx="43" cy="20" rx="5" ry="7" fill="rgba(255,255,255,0.45)" transform="rotate(-14 43 20)"/>
+    </symbol>
+
+    <symbol id="i-kamra" viewBox="0 0 100 100">
+      <rect x="30" y="10" width="40" height="13" rx="6" fill="#8C7F72"/>
+      <rect x="26" y="24" width="48" height="64" rx="13" fill="url(#ig-jar)"/>
+      <rect x="26" y="42" width="48" height="7" fill="rgba(255,255,255,0.28)"/>
+      <ellipse cx="37" cy="34" rx="6" ry="8" fill="rgba(255,255,255,0.4)" transform="rotate(12 37 34)"/>
+    </symbol>
+
+    <symbol id="i-recept" viewBox="0 0 100 100">
+      <g transform="rotate(-30 50 50)">
+        <ellipse cx="50" cy="30" rx="17" ry="21" fill="url(#ig-wood)"/>
+        <ellipse cx="50" cy="28" rx="9.5" ry="12.5" fill="#8A5227"/>
+        <rect x="45" y="48" width="10" height="44" rx="5" fill="url(#ig-wood)"/>
+        <ellipse cx="41" cy="17" rx="6" ry="4" fill="rgba(255,255,255,0.4)" transform="rotate(-20 41 17)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-rend" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="76" rx="34" ry="16" fill="url(#ig-stone1)"/>
+      <ellipse cx="50" cy="52" rx="26" ry="13" fill="url(#ig-stone2)"/>
+      <ellipse cx="50" cy="31" rx="17" ry="10.5" fill="url(#ig-stone3)"/>
+      <ellipse cx="42" cy="26" rx="6" ry="3.5" fill="rgba(255,255,255,0.55)" transform="rotate(-14 42 26)"/>
+      <ellipse cx="38" cy="47" rx="8" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 38 47)"/>
+      <ellipse cx="34" cy="70" rx="10" ry="4.5" fill="rgba(255,255,255,0.28)" transform="rotate(-8 34 70)"/>
+    </symbol>
+
+    <symbol id="i-level" viewBox="0 0 100 100">
+      <rect x="12" y="25" width="76" height="53" rx="12" fill="url(#ig-env)"/>
+      <path d="M17 32 L50 58 L83 32" fill="none" stroke="#A83A1B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="26" cy="34" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-18 26 34)"/>
+    </symbol>
+
+    <symbol id="i-hajnal" viewBox="0 0 100 100">
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(-44 50 64)"/>
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(44 50 64)"/>
+      <path d="M27 64a23 23 0 0 1 46 0Z" fill="url(#ig-sun)"/>
+      <ellipse cx="41" cy="52" rx="8" ry="5" fill="rgba(255,255,255,0.6)" transform="rotate(-20 41 52)"/>
+      <rect x="14" y="64" width="72" height="8" rx="4" fill="#C4B6A5"/>
+    </symbol>
+
+    <symbol id="i-video" viewBox="0 0 100 100">
+      <rect x="12" y="22" width="76" height="56" rx="16" fill="url(#ig-drop)"/>
+      <path d="M44 38 L64 50 L44 62 Z" fill="#F4FAFD" stroke="#F4FAFD" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse cx="27" cy="32" rx="9" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-18 27 32)"/>
+    </symbol>
+
+    <symbol id="i-idozito" viewBox="0 0 100 100">
+      <rect x="43" y="8" width="14" height="10" rx="5" fill="#5B7A4C"/>
+      <rect x="47" y="16" width="6" height="8" fill="#5B7A4C"/>
+      <rect x="68" y="16" width="12" height="7" rx="3.5" fill="#5B7A4C" transform="rotate(42 74 20)"/>
+      <circle cx="50" cy="56" r="32" fill="url(#ig-nsage)"/>
+      <circle cx="50" cy="56" r="21" fill="#F2F7EC"/>
+      <path d="M50 56 L50 42" stroke="#4E6B42" stroke-width="6" stroke-linecap="round"/>
+      <path d="M50 56 L60 62" stroke="#4E6B42" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="37" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 38)"/>
+    </symbol>
+
+    <symbol id="i-kihivas" viewBox="0 0 100 100">
+      <rect x="28" y="10" width="9" height="82" rx="4.5" fill="#8C7F72"/>
+      <path d="M37 14 L84 22 L66 34 L84 46 L37 54 Z" fill="url(#ig-plate)"/>
+      <ellipse cx="48" cy="23" rx="8" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-10 48 23)"/>
+      <circle cx="32.5" cy="13" r="5.5" fill="#C9962E"/>
+    </symbol>
+
+    <symbol id="i-checkin" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" fill="url(#ig-face)"/>
+      <circle cx="38" cy="44" r="4.5" fill="#6E4B12"/>
+      <circle cx="62" cy="44" r="4.5" fill="#6E4B12"/>
+      <path d="M36 59q14 12 28 0" fill="none" stroke="#6E4B12" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="37" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 33)"/>
+    </symbol>
+
+    <symbol id="i-injekcio" viewBox="0 0 100 100">
+      <g transform="rotate(-38 50 50)">
+        <rect x="20" y="40" width="44" height="20" rx="7" fill="#F0E7D4"/>
+        <rect x="24" y="44" width="26" height="12" rx="5" fill="url(#ig-nlav)"/>
+        <rect x="10" y="44" width="10" height="12" rx="4" fill="url(#ig-scale)"/>
+        <rect x="2" y="47" width="9" height="6" rx="3" fill="url(#ig-scale)"/>
+        <rect x="64" y="45" width="6" height="10" rx="2" fill="url(#ig-scale)"/>
+        <path d="M70 50h20" stroke="#8C7F72" stroke-width="4" stroke-linecap="round"/>
+        <ellipse cx="32" cy="46.5" rx="8" ry="3" fill="rgba(255,255,255,0.5)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-reggeli" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="56" rx="35" ry="26" fill="#F7F0E1"/>
+      <ellipse cx="44" cy="49" rx="10" ry="6" fill="rgba(255,255,255,0.7)" transform="rotate(-18 44 49)"/>
+      <circle cx="52" cy="56" r="13" fill="url(#ig-sun)"/>
+      <ellipse cx="48" cy="51" rx="4.5" ry="3" fill="rgba(255,255,255,0.6)"/>
+    </symbol>
+
+    <symbol id="i-ebed" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="66" rx="38" ry="13" fill="url(#ig-scale)"/>
+      <ellipse cx="50" cy="60" rx="25" ry="11" fill="url(#ig-bowl)"/>
+      <ellipse cx="42" cy="56" rx="8" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-16 42 56)"/>
+      <path d="M40 44q-3-6 0-12M52 46q-3-6 0-12M64 44q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-snack" viewBox="0 0 100 100">
+      <circle cx="50" cy="58" r="26" fill="url(#ig-p2)"/>
+      <path d="M50 33q-2-8 5-13" stroke="#9C5F33" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="63" cy="27" rx="10" ry="6" fill="url(#ig-leaf)" transform="rotate(-22 63 27)"/>
+      <ellipse cx="41" cy="49" rx="8" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 41 49)"/>
+    </symbol>
+
+    <symbol id="i-vacsora" viewBox="0 0 100 100">
+      <path d="M17 52h66v5a27 27 0 0 1-27 27H44a27 27 0 0 1-27-27Z" fill="url(#ig-moon)"/>
+      <ellipse cx="50" cy="52" rx="33" ry="7.5" fill="#E6DFF9"/>
+      <path d="M42 40q-3-6 0-12M58 40q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="33" cy="64" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 33 64)"/>
+    </symbol>
+    <symbol id="i-muhely" viewBox="0 0 100 100">
+      <path d="M20 56h60v4a25 25 0 0 1-25 25H45a25 25 0 0 1-25-25Z" fill="url(#ig-plate)"/>
+      <ellipse cx="50" cy="56" rx="30" ry="7" fill="#FFB597"/>
+      <path d="M17 60q-7 2-4 9M83 60q7 2 4 9" stroke="#B03E1E" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M40 46q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <path d="M67 14l4.5 11 11 4.5-11 4.5-4.5 11-4.5-11-11-4.5 11-4.5Z" fill="url(#ig-spark)"/>
+      <path d="M50 8l2.5 6 6 2.5-6 2.5-2.5 6-2.5-6-6-2.5 6-2.5Z" fill="url(#ig-spark)"/>
+      <ellipse cx="35" cy="67" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 35 67)"/>
+    </symbol>
+    <symbol id="i-memoar" viewBox="0 0 100 100">
+      <path d="M50 26 Q34 16 16 22 L16 74 Q34 68 50 78 Z" fill="url(#ig-book)"/>
+      <path d="M50 26 Q66 16 84 22 L84 74 Q66 68 50 78 Z" fill="#F0E7D4"/>
+      <path d="M60 24 v22 l6 -5 6 5 V22" fill="url(#ig-flame)"/>
+      <path d="M58 38h18M58 48h18M58 58h16" stroke="#D8CCBB" stroke-width="3.5" stroke-linecap="round" opacity="0"/>
+      <ellipse cx="30" cy="32" rx="9" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-12 30 32)"/>
+    </symbol>
+    <symbol id="i-lombik" viewBox="0 0 100 100">
+      <path d="M42 14h16v22l20 34a12 12 0 0 1-10 18H32a12 12 0 0 1-10-18l20-34Z" fill="#F0E7D4"/>
+      <path d="M35 58h30l13 12a12 12 0 0 1-10 18H32a12 12 0 0 1-10-18Z" fill="url(#ig-nsage)"/>
+      <rect x="38" y="10" width="24" height="9" rx="4.5" fill="url(#ig-leaf)"/>
+      <circle cx="46" cy="72" r="4.5" fill="rgba(255,255,255,0.5)"/>
+      <circle cx="58" cy="79" r="3" fill="rgba(255,255,255,0.4)"/>
+      <circle cx="72" cy="30" r="5" fill="#9C8FD0"/>
+      <ellipse cx="42" cy="30" rx="4" ry="9" fill="rgba(255,255,255,0.5)" transform="rotate(8 42 30)"/>
+    </symbol>
+    <symbol id="i-kristaly" viewBox="0 0 100 100">
+      <path d="M28 82h44l-6 10H34Z" fill="url(#ig-wood)"/>
+      <circle cx="50" cy="48" r="33" fill="url(#ig-nlav)"/>
+      <path d="M36 56q14 10 28 0" stroke="rgba(255,255,255,0.45)" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="38" cy="36" rx="10" ry="6.5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 38 36)"/>
+      <path d="M80 12 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 Z" fill="url(#ig-spark)"/>
+    </symbol>
+    <symbol id="i-retegek" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="72" rx="34" ry="13" fill="url(#ig-nsage)"/>
+      <ellipse cx="50" cy="54" rx="34" ry="13" fill="url(#ig-ngold)"/>
+      <ellipse cx="50" cy="36" rx="34" ry="13" fill="url(#ig-nlav)"/>
+      <ellipse cx="50" cy="33" rx="34" ry="13" fill="url(#ig-nlav)"/>
+      <ellipse cx="38" cy="28" rx="11" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-8 38 28)"/>
+    </symbol>
+    <symbol id="i-heti" viewBox="0 0 100 100">
+      <rect x="14" y="20" width="72" height="66" rx="12" fill="url(#ig-nlav)"/>
+      <rect x="14" y="20" width="72" height="16" rx="8" fill="#4A3E86"/>
+      <circle cx="32" cy="18" r="5" fill="#7E4A24"/><circle cx="68" cy="18" r="5" fill="#7E4A24"/>
+      <rect x="26" y="60" width="10" height="14" rx="4" fill="rgba(255,255,255,0.55)"/>
+      <rect x="42" y="50" width="10" height="24" rx="4" fill="rgba(255,255,255,0.8)"/>
+      <rect x="58" y="44" width="10" height="30" rx="4" fill="#FFE9A8"/>
+      <ellipse cx="36" cy="46" rx="10" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 36 46)"/>
+    </symbol>
+    <symbol id="i-hold" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="40" fill="url(#ig-moonfull)"/>
+      <ellipse cx="36" cy="30" rx="10" ry="6.5" fill="rgba(255,255,255,0.55)" transform="rotate(-26 36 30)"/>
+      <circle cx="63" cy="42" r="7" fill="url(#ig-crater)" opacity="0.85"/>
+      <circle cx="44" cy="62" r="5" fill="url(#ig-crater)" opacity="0.7"/>
+      <circle cx="62" cy="66" r="3.5" fill="url(#ig-crater)" opacity="0.6"/>
+    </symbol>
+
+    <symbol id="i-termes" viewBox="0 0 100 100">
+      <path d="M50 6c5 20 12 27 32 32-20 5-27 12-32 32-5-20-12-27-32-32 20-5 27-12 32-32Z" fill="url(#ig-harvest)"/>
+      <ellipse cx="41" cy="30" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-30 41 30)"/>
+      <circle cx="81" cy="74" r="6" fill="url(#ig-harvest)"/>
+      <circle cx="18" cy="80" r="4" fill="url(#ig-harvest)" opacity="0.8"/>
+    </symbol>
+
+    <!-- ============ F7.4 · Életterület-ikonográfia (mezo-d20.8.4) ============
+         A 8 LIFE skill clay szimbóluma — a Growth-sorok, a hála-bejegyzések és a
+         Napzárás act-3 emoji-maradékának váltása. Nyelv: 100×100, közös ig-*
+         gradiensek, fehér spekuláris folt. -->
+    <radialGradient id="ig-life-eye" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.55" stop-color="#4E8FB8"/><stop offset="1" stop-color="#25577A"/></radialGradient>
+    <linearGradient id="ig-life-pan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8C7F72"/><stop offset="1" stop-color="#5E544A"/></linearGradient>
+    <radialGradient id="ig-life-pillow" cx="36%" cy="30%" r="90%"><stop offset="0" stop-color="#F2EDFD"/><stop offset="0.5" stop-color="#B7A9E8"/><stop offset="1" stop-color="#7A6BbD"/></radialGradient>
+
+    <symbol id="i-life-tudatossag" viewBox="0 0 100 100">
+      <path d="M28 92a55 40 0 0 1 44 0c2-16-4-26-10-32H38c-6 6-12 16-10 32Z" fill="url(#ig-nlav)"/>
+      <circle cx="50" cy="38" r="17" fill="url(#ig-moonfull)"/>
+      <path d="M24 22a30 30 0 0 1 52 0" fill="none" stroke="#C9962E" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="44" cy="31" rx="6" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-22 44 31)"/>
+    </symbol>
+    <symbol id="i-life-szemlelet" viewBox="0 0 100 100">
+      <path d="M8 50C20 30 36 20 50 20s30 10 42 30C80 70 64 80 50 80S20 70 8 50Z" fill="url(#ig-stone2)"/>
+      <circle cx="50" cy="50" r="19" fill="url(#ig-life-eye)"/>
+      <circle cx="50" cy="50" r="8" fill="#1D3B52"/>
+      <ellipse cx="43" cy="42" rx="6" ry="4.5" fill="rgba(255,255,255,0.7)" transform="rotate(-24 43 42)"/>
+    </symbol>
+    <symbol id="i-life-konyha" viewBox="0 0 100 100">
+      <path d="M74 42 92 24" stroke="url(#ig-wood)" stroke-width="11" stroke-linecap="round"/>
+      <circle cx="44" cy="56" r="32" fill="url(#ig-life-pan)"/>
+      <circle cx="44" cy="56" r="24" fill="#F4E7D6"/>
+      <circle cx="40" cy="53" r="11" fill="url(#ig-sun)"/>
+      <ellipse cx="30" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 30 38)"/>
+    </symbol>
+    <symbol id="i-life-penzugyek" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="74" rx="30" ry="13" fill="url(#ig-coin)"/>
+      <ellipse cx="50" cy="58" rx="30" ry="13" fill="url(#ig-coin)" stroke="#A9770F" stroke-width="2"/>
+      <ellipse cx="50" cy="42" rx="30" ry="13" fill="url(#ig-coin)" stroke="#A9770F" stroke-width="2"/>
+      <ellipse cx="50" cy="40" rx="20" ry="7.5" fill="none" stroke="rgba(255,240,200,0.6)" stroke-width="3"/>
+      <ellipse cx="38" cy="36" rx="8" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-12 38 36)"/>
+    </symbol>
+    <symbol id="i-life-produktivitas" viewBox="0 0 100 100">
+      <rect x="16" y="16" width="68" height="68" rx="16" fill="url(#ig-stone1)"/>
+      <path d="M32 52l14 14 24-30" fill="none" stroke="url(#ig-leaf)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="72" cy="26" r="6" fill="#C9962E"/>
+      <ellipse cx="32" cy="26" rx="9" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-18 32 26)"/>
+    </symbol>
+    <symbol id="i-life-tanulas" viewBox="0 0 100 100">
+      <path d="M50 26C40 18 28 16 14 18v56c14-2 26 0 36 8V26Z" fill="url(#ig-book)"/>
+      <path d="M50 26c10-8 22-10 36-8v56c-14-2-26 0-36 8V26Z" fill="url(#ig-shelf)"/>
+      <path d="M50 26v56" stroke="#7E4A24" stroke-width="4" stroke-linecap="round"/>
+      <path d="M60 34c8-3 14-4 20-4M60 46c8-3 14-4 20-4" stroke="rgba(120,90,50,0.4)" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="28" cy="28" rx="8" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-16 28 28)"/>
+    </symbol>
+    <symbol id="i-life-kapcsolatok" viewBox="0 0 100 100">
+      <circle cx="36" cy="50" r="22" fill="none" stroke="url(#ig-heart)" stroke-width="11"/>
+      <circle cx="64" cy="50" r="22" fill="none" stroke="url(#ig-drop)" stroke-width="11"/>
+      <path d="M50 33a22 22 0 0 1 0 34 22 22 0 0 1 0-34Z" fill="rgba(142,63,111,0.35)"/>
+      <ellipse cx="28" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.6)" transform="rotate(-30 28 36)"/>
+    </symbol>
+    <symbol id="i-life-regeneracio" viewBox="0 0 100 100">
+      <path d="M14 46c-4 14-2 24 4 30 8 8 56 8 64 0 6-6 8-16 4-30-10-8-62-8-72 0Z" fill="url(#ig-life-pillow)"/>
+      <path d="M30 60c12 6 28 6 40 0" fill="none" stroke="rgba(93,79,160,0.45)" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="74" cy="26" r="5" fill="#C9962E"/>
+      <path d="M28 22h12l-12 12h12" fill="none" stroke="#9C8FD0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="30" cy="50" rx="10" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-10 30 50)"/>
+    </symbol>
+  </defs>
+</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="sg-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="sg-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <radialGradient id="sg-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="sg-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
+    <radialGradient id="sg-flame" cx="40%" cy="35%" r="85%"><stop offset="0" stop-color="#FFC69E"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C43D14"/></radialGradient>
+    <radialGradient id="sg-flin" cx="45%" cy="40%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="1" stop-color="#F0B429"/></radialGradient>
+    <linearGradient id="sg-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A6BC9"/><stop offset="0.5" stop-color="#5D4FA0"/><stop offset="1" stop-color="#463583"/></linearGradient>
+    <linearGradient id="sg-bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B3A79A"/><stop offset="1" stop-color="#7C7065"/></linearGradient>
+    <radialGradient id="sg-medal" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.5" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="sg-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
+    <radialGradient id="sg-orbn" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#8A7FC0"/><stop offset="0.5" stop-color="#5D4FA0"/><stop offset="1" stop-color="#3A2E72"/></radialGradient>
+    <linearGradient id="sg-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#4E6B42"/></linearGradient>
+    <linearGradient id="sg-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#5D4FA0"/></linearGradient>
+    <radialGradient id="sg-mount" cx="40%" cy="25%" r="90%"><stop offset="0" stop-color="#C9BFE8"/><stop offset="1" stop-color="#4A3D85"/></radialGradient>
+
+    <symbol id="s-reggel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(181,126,20,0.25)"/>
+      <g>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(45 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(90 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(135 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(180 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(225 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(270 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="22" fill="url(#sg-sun)"/>
+      <ellipse cx="42" cy="41" rx="8" ry="5.5" fill="rgba(255,255,255,0.65)" transform="rotate(-22 42 41)"/>
+    </symbol>
+
+    <symbol id="s-este" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(93,79,160,0.25)"/>
+      <path d="M66 71A30 30 0 1 1 55 17a25 25 0 0 0 11 54Z" fill="url(#sg-moon)"/>
+      <ellipse cx="35" cy="33" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-28 35 33)"/>
+      <circle cx="74" cy="24" r="3.5" fill="#C9962E"/>
+      <circle cx="83" cy="38" r="2" fill="rgba(201,150,46,0.6)"/>
+    </symbol>
+
+    <symbol id="s-viz" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="20" ry="5" fill="rgba(46,110,150,0.25)"/>
+      <path d="M50 8c13 18 24 29 24 43a24 24 0 0 1-48 0C26 37 37 26 50 8Z" fill="url(#sg-drop)"/>
+      <ellipse cx="41" cy="42" rx="7" ry="10" fill="rgba(255,255,255,0.55)" transform="rotate(18 41 42)"/>
+    </symbol>
+
+    <symbol id="s-energia" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="20" ry="5" fill="rgba(196,61,20,0.25)"/>
+      <path d="M50 8c4 14 22 20 22 40a22 22 0 0 1-44 0c0-11 6-16 9-24 5 6 9 7 13-16Z" fill="url(#sg-flame)"/>
+      <path d="M50 42c2 8 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-12 2 3 4 3 5-7Z" fill="url(#sg-flin)"/>
+    </symbol>
+
+    <symbol id="s-edzes" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="88" rx="30" ry="5.5" fill="rgba(70,53,131,0.22)"/>
+      <rect x="12" y="30" width="14" height="44" rx="7" fill="url(#sg-plate)"/>
+      <rect x="74" y="30" width="14" height="44" rx="7" fill="url(#sg-plate)"/>
+      <rect x="24" y="47" width="52" height="10" rx="5" fill="url(#sg-bar)"/>
+      <ellipse cx="17.5" cy="37" rx="3.5" ry="5" fill="rgba(255,255,255,0.4)"/>
+      <ellipse cx="79.5" cy="37" rx="3.5" ry="5" fill="rgba(255,255,255,0.4)"/>
+    </symbol>
+
+    <symbol id="s-medal" viewBox="0 0 100 100">
+      <path d="M36 8h12l-8 26h-14Z" fill="#D8481F"/>
+      <path d="M64 8H52l8 26h14Z" fill="#FF7A55"/>
+      <ellipse cx="50" cy="90" rx="22" ry="5" fill="rgba(169,119,15,0.28)"/>
+      <circle cx="50" cy="56" r="26" fill="url(#sg-medal)"/>
+      <circle cx="50" cy="56" r="19" fill="none" stroke="rgba(255,240,200,0.5)" stroke-width="2.5"/>
+      <path d="M50 45l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L50 61.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#8A5E07"/>
+      <path d="M49 44l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L49 60.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#FFEDB8"/>
+      <ellipse cx="41" cy="46" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 41 46)"/>
+    </symbol>
+
+    <symbol id="s-orb" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-ejszaka" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(58,46,114,0.3)"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orbn)"/>
+      <ellipse cx="37" cy="32" rx="11" ry="7" fill="rgba(255,255,255,0.28)" transform="rotate(-24 37 32)"/>
+      <path d="M38 46q4 6 12 6t12-6" fill="none" stroke="rgba(230,223,249,0.7)" stroke-width="3.5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-figyel" viewBox="0 0 100 100">
+      <ellipse cx="46" cy="90" rx="26" ry="6" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="46" cy="48" r="32" fill="url(#sg-orb)"/>
+      <ellipse cx="34" cy="33" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 34 33)"/>
+      <path d="M84 36a20 20 0 0 1 0 24" fill="none" stroke="rgba(201,150,46,0.75)" stroke-width="5" stroke-linecap="round"/>
+      <path d="M92 28a32 32 0 0 1 0 40" fill="none" stroke="rgba(201,150,46,0.4)" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-unnepel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="26" ry="5.5" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="50" cy="52" r="31" fill="url(#sg-orb)"/>
+      <ellipse cx="38" cy="38" rx="11" ry="7" fill="rgba(255,255,255,0.6)" transform="rotate(-24 38 38)"/>
+      <path d="M39 58q5 7 11 7t11-7" fill="none" stroke="rgba(255,230,210,0.8)" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="20" cy="18" r="4.5" fill="#E0AC2F"/>
+      <rect x="72" y="8" width="6" height="11" rx="3" fill="#9C8FD0" transform="rotate(22 75 13)"/>
+      <circle cx="88" cy="30" r="3.5" fill="#7FA06C"/>
+      <rect x="8" y="38" width="5" height="10" rx="2.5" fill="#C46FA0" transform="rotate(-24 10 43)"/>
+      <circle cx="66" cy="6" r="3" fill="#FF7A55"/>
+    </symbol>
+
+    <symbol id="s-piheno" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(78,107,66,0.25)"/>
+      <path d="M50 88C24 72 14 46 24 16c30 8 42 36 32 66q-3 4-6 6Z" fill="url(#sg-leaf)"/>
+      <path d="M44 78C38 58 40 40 48 26" fill="none" stroke="#E2EFD9" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="34" cy="34" rx="7" ry="10" fill="rgba(255,255,255,0.35)" transform="rotate(20 34 34)"/>
+    </symbol>
+
+    <symbol id="s-napzaras" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="93" rx="30" ry="5" fill="rgba(93,79,160,0.28)"/>
+      <circle cx="50" cy="48" r="38" fill="url(#sg-sky)"/>
+      <circle cx="50" cy="58" r="15" fill="url(#sg-sun)"/>
+      <path d="M14 62a38 38 0 0 0 72 0q-18-10-36-10t-36 10Z" fill="#584673"/>
+      <circle cx="70" cy="24" r="2.5" fill="rgba(255,240,220,0.8)"/>
+      <ellipse cx="34" cy="24" rx="10" ry="6" fill="rgba(255,255,255,0.35)" transform="rotate(-24 34 24)"/>
+    </symbol>
+
+    <symbol id="s-hajtas" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(78,107,66,0.22)"/>
+      <ellipse cx="50" cy="82" rx="24" ry="9" fill="#8A6B4A"/>
+      <path d="M50 80V46" stroke="#5B7A4C" stroke-width="7" stroke-linecap="round"/>
+      <path d="M50 52C32 48 22 34 24 16c18 2 28 16 26 36Z" fill="url(#sg-leaf)"/>
+      <path d="M50 64c16-4 26-16 24-32-16 2-26 16-24 32Z" fill="url(#sg-leaf)"/>
+      <ellipse cx="34" cy="28" rx="6" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-40 34 28)"/>
+    </symbol>
+
+    <symbol id="s-hegycel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="32" ry="5.5" fill="rgba(74,61,133,0.25)"/>
+      <path d="M50 18q4 0 7 6l27 52q4 8-6 8H22q-10 0-6-8l27-52q3-6 7-6Z" fill="url(#sg-mount)"/>
+      <path d="M50 18q4 0 7 6l7 14c-6 5-10-2-14 3s-9-2-13 2l6-19q3-6 7-6Z" fill="#F1EDFB"/>
+      <rect x="48.5" y="4" width="3" height="16" rx="1.5" fill="#8C7F72"/>
+      <path d="M51.5 5h15l-4.5 5 4.5 5h-15Z" fill="#E0AC2F"/>
+      <ellipse cx="36" cy="42" rx="7" ry="10" fill="rgba(255,255,255,0.25)" transform="rotate(18 36 42)"/>
+    </symbol>
+  <radialGradient id="sg-orb-doki" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#A8C0D0"/><stop offset="0.45" stop-color="#3E7396"/><stop offset="1" stop-color="#284B62"/></radialGradient><radialGradient id="sg-orb-edzo" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#D8AE9D"/><stop offset="0.45" stop-color="#A84A26"/><stop offset="1" stop-color="#6D3019"/></radialGradient><radialGradient id="sg-orb-taplalkozo" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#AFBCAA"/><stop offset="0.45" stop-color="#4E6B42"/><stop offset="1" stop-color="#33462B"/></radialGradient><radialGradient id="sg-orb-szomnologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#B6B0D4"/><stop offset="0.45" stop-color="#5D4FA0"/><stop offset="1" stop-color="#3C3368"/></radialGradient><radialGradient id="sg-orb-pszichologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#CCA9BE"/><stop offset="0.45" stop-color="#8E3F6F"/><stop offset="1" stop-color="#5C2948"/></radialGradient><radialGradient id="sg-orb-drill" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#D8C69A"/><stop offset="0.45" stop-color="#A8801F"/><stop offset="1" stop-color="#6D5314"/></radialGradient><radialGradient id="sg-orb-antropologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#A1C5BC"/><stop offset="0.45" stop-color="#2E7D6B"/><stop offset="1" stop-color="#1E5146"/></radialGradient><radialGradient id="sg-orb-szkeptikus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#AEA9A5"/><stop offset="0.45" stop-color="#4A4038"/><stop offset="1" stop-color="#302A24"/></radialGradient></defs>
+    <symbol id="s-orb-doki" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#3E739647"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-doki)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(12 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-edzo" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#A84A2647"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-edzo)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(39 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-taplalkozo" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#4E6B4247"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-taplalkozo)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(66 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-szomnologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#5D4FA047"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-szomnologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(93 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-pszichologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#8E3F6F47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-pszichologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(120 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-drill" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#A8801F47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-drill)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(147 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-antropologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#2E7D6B47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-antropologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(174 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-szkeptikus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#4A403847"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-szkeptikus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(201 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+</svg>
+<div class="wrap">
+  <p class="eyebrow">Mezo · oldalépítés · Karakter (Én tab, dosszié) · v4.3</p>
+  <h1>Karakter oldal</h1>
+  <p class="lede">A Karakter-dosszié felhasználói felülete — a backend már megvan (7 CORE dimenzió,
+  7 szakértő + Szkeptikus + Mezo elnök, heti konzílium, bootstrap, claim-visszajelzés — lásd
+  <code>docs/features/character.md</code>). A csempe majd az Én hub mozaikjába kerül; itt önmagában
+  mutatjuk a Karakter oldalt, hogy a vizuális nyelv tisztán látszódjon. <strong>Bizalmi elvek:</strong>
+  a bizalom-szó sosem szám (biztos / valószínű / figyeljük), a szakértők sosem üzennek közvetlenül
+  — a felhasználó csak <em>olvassa</em> a csapat munkáját. A <strong>Gépterem</strong> egy geek
+  átláthatósági felület, ami konkrétan megmutatja, milyen adat táplálja a dossziét, hogyan válik
+  kód-szintű jelből szakértői megfigyelés, és mi az, amit a rendszer <em>még nem</em> olvas be.
+  <strong>Ez a 4. iteráció</strong>: nincs több dropdown — minden futás saját, gazdag oldalra nyit
+  — és a lapos futás-lista helyett hét-navigáció, hogy egy évnyi múlt is pár koppintás legyen.</p>
+
+  <div class="stage">
+    <div class="phone"><div class="screen" id="scr">
+      <div class="isl"></div>
+      <div class="p-status"><span>19:42</span><span>ᯤ ▮▮▮</span></div>
+      <div class="p-body">
+
+        <div class="mrow">
+          <div class="grow"><div class="p-eyebrow">Vasárnap · aug 30</div></div>
+          <div class="ntfwrap" id="ntfwrap">
+            <button class="dpswitch" id="ntfbtn" aria-label="Értesítések" aria-expanded="false">
+              <svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-ertesites"/></svg>
+              <span class="badge mini" id="ntfbadge">1</span>
+            </button>
+            <div class="ntfmenu" role="menu">
+              <div class="p-eyebrow" style="padding:0 2px 6px;">Értesítések · ma</div>
+              <div class="ntfrow">
+                <svg width="24" height="24" viewBox="0 0 100 100" style="flex:none;"><use href="#i-mezo"/></svg>
+                <div class="grow"><div class="t">19:30 · Konzílium</div><div class="x">Lezajlott a vasárnapi konzílium — 2 új állítás, 1 portré átírva.</div></div>
+              </div>
+              <div class="ntffoot">Összes értesítés ›</div>
+            </div>
+          </div>
+          <div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div>
+        </div>
+
+        <!-- ============ HUB (kompakt — kb. egy képernyő) ============ -->
+        <div class="panel play" id="panel">
+
+          <div class="maturhero rise" style="--d:0ms;">
+            <div class="mrtitle">Karakter</div>
+            <div class="mrwrap" id="ring"></div>
+            <p class="selfportrait" id="selfline">„Inkább az a típus vagyok, aki a rendszerben bízik, nem a lendületben —
+            amikor a tervem tiszta, alig kell akaraterő; amikor nincs, ott bizony megbicsaklok.”</p>
+          </div>
+
+          <div class="mosaic" id="hubtiles"></div>
+
+        </div>
+
+        <!-- ============ ÜRES ÁLLAPOT (204) ============ -->
+        <div class="emptywrap" id="emptywrap">
+          <svg width="72" height="72" viewBox="0 0 100 100"><use href="#s-hajtas"/></svg>
+          <h3>Még nincs elég történet</h3>
+          <p>A csapat pár nap logolás után kezd — addig nincs mit összegezni. Ez nem hiba, csak
+          még korai.</p>
+          <button class="ghost" id="emptyBack">‹ vissza</button>
+        </div>
+
+        <!-- ============ DIMENZIÓK (lista) ============ -->
+        <div class="page p-csapat" id="page-dims" style="--pwash:#E4EEDD;">
+          <div class="page-head"><button class="backbtn" data-back="page-dims">‹ Karakter</button></div>
+          <div class="page-hero"><div class="nm">Dimenziók</div><div class="sb">mind a nyolc, egy helyen</div></div>
+          <div class="page-body">
+            <div class="mosaic" id="dimsListTiles"></div>
+          </div>
+        </div>
+
+        <!-- ============ FEED (napokra bontva) ============ -->
+        <div class="page p-dim" id="page-feed" style="--pwash:#FFE3D4;">
+          <div class="page-head"><button class="backbtn" data-back="page-feed">‹ Karakter</button></div>
+          <div class="page-hero"><div class="nm">Amit mostanában megtudtam rólad</div><div class="sb">a csapat friss megfigyelései, naponta</div></div>
+          <div class="page-body" id="feedBody"></div>
+        </div>
+
+        <!-- ============ DIMENZIÓ-OLDAL (generikus) ============ -->
+        <div class="page p-dim" id="page-dim" style="--pwash:#FFE3D4;">
+          <div class="page-head"><button class="backbtn" data-back="page-dim">‹ Karakter</button></div>
+          <div class="page-hero" id="dimHero">
+            <div class="dimavatar" id="dimAvatar" style="--pc:#A84A26;"></div>
+            <div class="bignum" id="dimNum" style="color:#A84A26;">—</div>
+            <div class="nm" id="dimName">—</div>
+            <div class="sb" id="dimSub">érettség</div>
+          </div>
+          <div class="page-body">
+            <div class="portraitcard" id="dimPortrait"></div>
+            <div class="p-eyebrow" style="padding:2px 2px 6px;color:#6E6257;">Állítások</div>
+            <div id="dimClaims"></div>
+            <div class="chathand" id="dimChat"><svg width="22" height="22" viewBox="0 0 100 100" style="flex:none;"><use href="#i-mezo"/></svg>
+              <div class="tx">Beszélgess erről Mezóval</div><span class="chev">›</span></div>
+            <p class="principle">Az állítások bizonyítékból születnek, sosem fordítva —
+            és amit tévesnek mondasz, azt a csapat nem vitatja tovább.</p>
+          </div>
+        </div>
+
+        <!-- ============ CSAPAT ============ -->
+        <div class="page p-csapat" id="page-csapat">
+          <div class="page-head"><button class="backbtn" data-back="page-csapat">‹ Karakter</button></div>
+          <div class="page-hero"><div class="nm">Csapat</div><div class="sb">Mezo belső tanácsa — ők dolgoznak a karakteren</div></div>
+          <div class="page-body" id="csapatBody"></div>
+        </div>
+
+        <!-- ============ KONZÍLIUM ============ -->
+        <div class="page p-konz" id="page-konz">
+          <div class="page-head"><button class="backbtn" data-back="page-konz">‹ Karakter</button></div>
+          <div class="page-hero"><div class="nm">Konzílium</div><div class="sb">a csapat heti tanácskozásai</div></div>
+          <div class="page-body">
+            <div class="konz-list" id="konzList"></div>
+            <div class="konz-transcript" id="konzTranscript">
+              <button class="tminiback" id="konzBack">‹ vissza a listához</button>
+              <div class="outcomehd" id="konzOutcome"></div>
+              <div id="konzTurns"></div>
+              <p class="honestynote">A fenti a valódi beszélgetés, ami lezajlott — a felület sosem
+              dramatizálja utólag; amit itt olvasol, azt a csapat pontosan így mondta.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ GÉPTEREM (kompakt hub) ============ -->
+        <div class="page p-gep" id="page-gepterem">
+          <div class="page-head"><button class="backbtn" data-back="page-gepterem">‹ Karakter</button></div>
+          <div class="page-hero"><svg width="34" height="34" viewBox="0 0 100 100" style="margin-bottom:4px;"><use href="#i-retegek"/></svg>
+            <div class="nm">Gépterem</div><div class="sb">mi táplálja a dossziét — nyíltan</div>
+            <p class="runlede" id="gepLede"></p></div>
+          <div class="page-body">
+            <div class="mosaic" id="gepTiles"></div>
+            <p class="principle">Minden Karakter-hívás mentve — <code>feature=character</code>,
+            lépésenként (observe / propose / skeptic / integrate / portrait). Semmi nem tűnik el.</p>
+          </div>
+        </div>
+
+        <!-- ============ FUTÁSOK (hét-navigáció + idővonal) ============ -->
+        <div class="page p-gep" id="page-futasok">
+          <div class="page-head"><button class="backbtn" data-back="page-futasok">‹ Gépterem</button></div>
+          <div class="page-hero"><div class="nm">Futások</div><div class="sb">a pipeline futásai, hetekre bontva</div></div>
+          <div class="page-body">
+            <div class="weeknav" id="weeknav">
+              <button class="wstep" id="wPrev" aria-label="Előző hét">‹</button>
+              <div class="weeklbl" id="weekLbl" role="button" tabindex="0" aria-label="Hét választása">
+                <span id="weekLblTxt">aug 24–30</span><small id="weekLblSub">legutóbbi futások</small>
+                <div class="weekmenu" id="weekMenu"></div>
+              </div>
+              <button class="wstep" id="wNext" aria-label="Következő hét">›</button>
+            </div>
+            <div id="runList"></div>
+            <div class="secttl rise" style="--d:20ms;">Ritkább futások</div>
+            <div class="raresec" id="rareList"></div>
+          </div>
+        </div>
+
+        <!-- ============ ADATFORRÁSOK (leltár) ============ -->
+        <div class="page p-gep" id="page-leltar">
+          <div class="page-head"><button class="backbtn" data-back="page-leltar">‹ Gépterem</button></div>
+          <div class="page-hero"><div class="nm">Adatforrások</div><div class="sb">mit olvas a rendszer ma, és mit tervez</div></div>
+          <div class="page-body">
+            <div class="leltarsegs" id="leltarSegs">
+              <button class="on" data-lseg="bekotve">Bekötve</button>
+              <button data-lseg="tervezett">Tervezett</button>
+            </div>
+            <div class="leltarpanel on" id="lpBekotve"></div>
+            <div class="leltarpanel" id="lpTervezett"></div>
+          </div>
+        </div>
+
+        <!-- ============ KÖR-RÉSZLET (generikus) ============ -->
+        <div class="page p-gep" id="page-kor">
+          <div class="page-head"><button class="backbtn" data-back="page-kor">‹ Adatforrások</button></div>
+          <div class="page-hero"><div class="nm" id="korName">—</div><div class="sb" id="korSub">—</div></div>
+          <div class="page-body">
+            <div class="leltarcard dashed" id="korItems"></div>
+          </div>
+        </div>
+
+        <!-- ============ DETEKTOROK ============ -->
+        <div class="page p-gep" id="page-detektorok">
+          <div class="page-head"><button class="backbtn" data-back="page-detektorok">‹ Gépterem</button></div>
+          <div class="page-hero"><div class="nm">Detektorok</div><div class="sb">a ma aktív katalógus, egy mondatban</div></div>
+          <div class="page-body">
+            <div class="leltarcard sage" id="detList"></div>
+            <p class="principle">A kód csak észlel — az értelmezés mindig az adott szakértő
+            LLM-hívása. Egy detektor sosem ítél, csak jelez.</p>
+          </div>
+        </div>
+
+        <!-- ============ FUTÁS-RÉSZLET (generikus) ============ -->
+        <div class="page p-run" id="page-run">
+          <div class="page-head"><button class="backbtn" id="runBack" data-back="page-run">‹ Futások</button></div>
+          <div class="page-hero" id="runHero">
+            <div class="runhero-ic" id="runIc"></div>
+            <div class="nm" id="runName">—</div>
+            <div class="sb" id="runSub">—</div>
+            <p class="runlede" id="runLede"></p>
+          </div>
+          <div class="page-body">
+            <div class="runstats" id="runStats"></div>
+            <div id="runSections"></div>
+            <div class="ainaplolink" id="runAinaplo">
+              <svg width="22" height="22" viewBox="0 0 100 100" style="flex:none;"><use href="#i-tudas"/></svg>
+              <div class="tx">Ehhez a futáshoz tartozó nyers hívások az AI-naplóban</div><span class="chev">›</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============ BOOTSTRAP ============ -->
+        <div class="page p-boot" id="page-boot">
+          <div class="page-head"><button class="backbtn" data-back="page-boot">‹ Karakter</button></div>
+          <div class="bootstep on" id="boot1">
+            <div class="bootintro">
+              <svg width="64" height="64" viewBox="0 0 100 100"><use href="#s-orb"/></svg>
+              <h3>Kezdjük el a dossziét</h3>
+              <p>A csapat elolvassa a teljes eddigi történetedet — napi összegzőket, mintákat,
+              tényeket, heti áttekintéseket, naplóbejegyzéseket — és felépíti az első portrékat.</p>
+              <div class="bootcluster" id="bootCluster"></div>
+              <button class="cta" id="bootStart" style="margin-top:8px;">Kezdjétek el</button>
+            </div>
+          </div>
+          <div class="bootstep" id="boot2">
+            <div class="bootprog">
+              <div class="progarc"><svg viewBox="0 0 100 100"><defs><linearGradient id="bootgrad" x1="0" y1="0" x2="1" y2="1">
+                  <stop offset="0%" stop-color="#FF7A55"/><stop offset="100%" stop-color="#C9962E"/></linearGradient></defs>
+                <circle cx="50" cy="50" r="42" fill="none" stroke="rgba(43,33,24,0.08)" stroke-width="7"/>
+                <circle cx="50" cy="50" r="42" fill="none" stroke="url(#bootgrad)" stroke-width="7" stroke-linecap="round" stroke-dasharray="90 174"/></svg>
+                <div class="bootpct" id="bootPct">0%</div></div>
+              <div class="bootlines" id="bootLines">
+                <div class="bootline"><span class="dot"></span>Doki a súlytrendet olvassa…</div>
+                <div class="bootline"><span class="dot"></span>Drill a logolási mintákat nézi…</div>
+                <div class="bootline"><span class="dot"></span>Antropológus az életeseményeket rendezi…</div>
+                <div class="bootline"><span class="dot"></span>A Szkeptikus ellenőriz…</div>
+                <div class="bootline"><span class="dot"></span>Mezo összegzi a portrékat…</div>
+              </div>
+            </div>
+          </div>
+          <div class="bootstep" id="boot3">
+            <div class="bootreveal">
+              <div class="mrwrap" id="ringBoot" style="width:132px;height:132px;"></div>
+              <h3>A dossziéd elkészült</h3>
+              <p>7 dimenzió, 16 kezdő állítás — mindegyik forrással. Ez csak a kezdet: minden héten
+              tovább finomodik.</p>
+              <button class="cta" id="bootDone">Nézd meg az első konzíliumot</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="toast" id="toast" role="status"></div>
+      </div>
+
+      <div class="fab" id="fab" role="button" tabindex="0" aria-label="Gyors logolás"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+      <div class="tabbar">
+        <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
+        <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
+        <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
+        <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
+        <div class="mtab on"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-emberek"/></svg>Én</div>
+      </div>
+      <div class="homebar"></div>
+    </div></div>
+
+    <aside>
+      <div>
+        <h2>A Karakter hub felépítése — 2. iteráció</h2>
+        <ul>
+          <li><strong>Daniel:</strong> „túl sok a scroll a hubon.” A hub most a hero-ra + egy
+          <strong>kompakt, 4 csempés mozaikra</strong> szűkül — kb. egy képernyő. A 8 dimenzió-csempe
+          és a feed <strong>egy tile mögé</strong> költözött saját oldalra; a Csapat és a Konzílium
+          csempe helyben maradt.</li>
+          <li><strong>Érettség-gyűrű hero</strong> — változatlan: 7 szegmens, szakértő domain-szín,
+          szegmenshossz/opacitás = érettség, középen összesített % + „érettség” címke, alatta a
+          Fraunces dőlt meta-hang önarckép-mondat.</li>
+          <li><strong>Dimenziók csempe</strong> — a nyolc dimenzió mögé nyit; a hub-csempén egy élő
+          adat: az átlagos érettség % + a dimenziószám (7 + 1 fejezet).</li>
+          <li><strong>Feed csempe</strong> — „Amit mostanában megtudtam rólad” mögé nyit; a hub-csempén
+          a legfrissebb megfigyelés egysoros előnézete + „N új e héten” + pulzáló pötty.</li>
+          <li><strong>Csapat és Konzílium csempe</strong> — mint eddig: 9 mini-avatár klaszter ·
+          „9 profilozó”, illetve a legutóbbi konzílium dátuma + arany pulzáló pötty olvasatlanra.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Orb-variáns karakterikonok</h2>
+        <ul>
+          <li><strong>Daniel:</strong> „minden karakter kapjon saját ikont, ami a Mezo orb egy
+          variánsa.” Minden szakértő + a Szkeptikus most egy <strong>saját tónusú orb</strong> —
+          ugyanaz az agyag-recept (radiális gradiens, fény balról-fentről, spekuláris fény), csak
+          domain-színben, egy halvány szaggatott belső gyűrűvel mint megkülönböztető motívum
+          (perzsonánként eltérő elforgatással — „ugyanaz a faj, más egyed” érzés). Mezo megtartja
+          az eredeti korall orb-ot (<code>s-orb</code>).</li>
+          <li>Az orbok a <strong><code>docs/design_2.0/assets/clay-spots.svg</code> sprite-ban</strong>
+          élnek (<code>s-orb-doki</code> … <code>s-orb-szkeptikus</code>) — az eredeti
+          <code>s-orb</code> pontos agyag-receptjével (talaj-árnyék, radiális test, spekuláris
+          fény, visszavert derengés) + a szaggatott belső gyűrű-motívummal, personánként más
+          elforgatással. A diszkek helyén mindenhol ez jelenik meg: hub-csempék, feed,
+          transzkript-avatárok, csapat-kártyák, bootstrap-klaszter.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Konzílium — gazdagabb</h2>
+        <ul>
+          <li><strong>Kimenet-fejléc</strong> most három tintázott mini-cellával számol:
+          <em>Elfogadva</em> (zsálya), <em>Nyugdíjazva</em> (borostyán — sosem piros), <em>Portré
+          átírva</em> (levendula).</li>
+          <li><strong>Fázis-címkék</strong> tagolják a transzkriptet: „Javaslatok” → „A Szkeptikus”
+          → „Döntés” — így a vita szerkezete olvasható anélkül, hogy külön magyarázni kéne.</li>
+          <li>Egy halvány <strong>szaggatott összekötő vonal</strong> fut a javaslat-buborékok
+          avatárjai mögött, jelezve, hogy egy körben vannak.</li>
+          <li><strong>Egy plusz szakértői kör</strong> a ritmusért: a Táplálkozó is javasol most
+          (a hétvégi fehérje-elmaradásról) — négy javaslat, nem kettő.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Élőbb mozgás — minden oldalon</h2>
+        <ul>
+          <li>Minden oldal-nyitás <strong>staggerelt belépő animációval</strong> jár (a
+          Dimenziók-lista, a Feed napkártyái, a Csapat-kártyák, a Konzílium-lista és -transzkript
+          mind <code>rise</code>/<code>rise-x</code> késleltetéssel érkeznek — a transzkript
+          megnyitásakor is újrajátssza magát, nem csak első betöltéskor).</li>
+          <li><strong>Ambiens élet:</strong> a hub Feed és Konzílium csempéjén (és az új
+          Konzílium-lista legfrissebb során) pulzáló pötty jelzi a friss tartalmat; a Dimenziók
+          oldal mini-gyűrűi felugorva jelennek meg (nem csak fakulva); a bootstrap-klaszter korongjai
+          egyenként pattannak be.</li>
+          <li><strong>Bootstrap-ív gazdagabb:</strong> gradiens csík (korall→arany) + középen
+          élő <strong>%-számláló</strong>, ami a stádiumsorokkal szinkronban fut 0-tól 100-ig.</li>
+          <li><strong>Hover/press:</strong> minden csempe és sor enyhén megemelkedik hover alatt,
+          és összehúzódik érintésre — mind reduced-motion-guardolt, mint eddig.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Gépterem — 4. iteráció (mezo-1gim.14)</h2>
+        <ul>
+          <li><strong>Miért:</strong> Daniel jóváhagyott egy geek átláthatósági irányt — konkrétan
+          megmutatni, milyen adat táplálja a dossziét, hogyan válik kód-szintű jelből szakértői
+          megfigyelés, és mit <em>nem</em> olvas be a rendszer még. Ez nem a laikus felhasználói
+          felület — a claim-szintű becsületesség (biztos/valószínű/figyeljük) már megvan a
+          dimenzió-oldalon; a Gépterem egy szinttel mélyebbre megy, a mérnöki/kíváncsi olvasónak.</li>
+          <li><strong>Hub-elhelyezés:</strong> a 2×2 mozaik alá egy ötödik, <strong>vékony,
+          teljes szélességű csempe</strong> került (nem egy ötödik négyzet a rácsban) — így a hub
+          négy „meleg”, tartalmi csempéje vizuálisan egyben marad, a Gépterem technikai tónusa
+          (grafit/szürkészöld verlauf, <code>i-retegek</code> ikon) pedig alattuk, egy sávban áll,
+          jelezve hogy ez más rétegű infó. Élő adat: az utolsó futás sora („ma 02:50 · 3
+          megfigyelés”).</li>
+          <li><strong>Futás-idővonal</strong> — naponta csoportosított sor-lista (H–V), mindegyik
+          nap egy vagy két csempe: az éjszakai kör mindig, a vasárnapoké mellé a konzílium is. A
+          <strong>csendes éjszaka</strong> ugyanolyan súllyal szerepel, mint a zajos — ez szándékos:
+          a 0-költségű, 0-hívású futás nem hiba, hanem a becsületes-állapot elv bizonyítéka, és
+          büszkén, nem elrejtve jelenik meg. A ritka futások (havi mélyolvasás, bootstrap) külön
+          „Ritkább futások” listában, nem a heti nézetben.</li>
+          <li><strong>Jel-lánc</strong> — minden lenyitott megfigyelés két sávra bomlik: egy
+          <strong>KÓD</strong> sor (monospace, grafit chip a detektor-kulccsal, pl.
+          <code>logging-gap</code>, + a determinisztikus szöveg + a <code>refIds</code> pill-ek),
+          majd egy nyíl, majd egy <strong>LLM</strong> sor (a szakértő orb-ja + a saját hangján írt
+          megfigyelés). Ez a „kód detektál, LLM értelmez” elválasztás vizuálisan is olvasható, nem
+          csak dokumentálva.</li>
+          <li><strong>Adatforrás-leltár — a tervezett teljes korpusz, nem csak a mai állapot</strong>
+          (Daniel kérésére finomítva). Három vizuális állapot: <strong>bekötve</strong> (tömör sor —
+          a valós olvasási ablakok: éjszakai 14 nap, konzílium a hét megfigyelései + aktív claimek +
+          Daniel válaszai, havi a teljes claim-bázis, bootstrap a hat forrás); <strong>„N. KÖR”</strong>
+          (szaggatott, számozott kör-fejléc alá rendezve — négy tervezett kör: 1. Edzés & test,
+          2. Fuel & ciklus, 3. Psziché & viselkedés-meta, 4. Kapcsolatok & AI-meta; minden sor a célzott
+          detektor-kulcsot geek monospace chipként mutatja, ahol van ilyen — pl. <code>rir-calibration</code>,
+          <code>sleep-performance-chain</code>, <code>med-cycle-covariance</code> —, az ÉRZÉKENY témák
+          (gyógyszerciklus, check-in-dimenziók, tudástár-triázs) levendula jelöléssel); és egy
+          <strong>halványabb „később”</strong> záró sáv a még be sem sorolt maradékra (pl. a
+          súly-verziójú <code>logging-gap</code> variáns, amire ma nincs <code>WeightGapDetector</code>).
+          Ez a leltár <em>maga</em> a <code>mezo-1gim.15</code> („MINDENT be”) munkalistája — ahogy egy
+          kör landol, a benne lévő sorok átkerülnek a „bekötve” szekcióba.</li>
+          <li><strong>Nincs dropdown</strong> (Daniel: „NE DROPDOWN LEGYEN, és szép és gazdag page
+          legyen ahova átvisz”). Egy futás-sor koppintása most a Huawei-mintát követi: egy önálló
+          <strong>futás-részlet oldalra</strong> csúszik át — hero (kör-típusú clay/orb vizuál +
+          dátum + jelvény), StatStrip a fejléc-számokkal, aztán a jel-lánc kártyák <em>teljes
+          szélességben</em>, „lélegző” méretben (nem összenyomott accordion-belső), a hívott
+          szakértők op-chipjei (avatar + „megfigyelés” / „javaslat” / „ellenőrzés” / „döntés + portré”
+          címke), konzílium-futásnál a kimenet-cellák + egy „Teljes transzkript megnyitása” gomb a
+          valódi Konzílium-oldalra, és egy futásra szűkített AI-napló mélylink. A csendes éjszakák
+          saját, büszke „0 hívás, 0 forint” mini-oldalt kapnak, nem egy szürke placeholdert.</li>
+          <li><strong>Feed „⚙”</strong> — a Feed-oldal minden megfigyelés-során megmaradt a
+          fogaskerék, de már <strong>navigál</strong>, nem nyit dropdownt: ugyanarra a futás-részlet
+          oldalra visz, ahonnan a megfigyelés származik — így a Feed és a Gépterem ugyanazt az
+          adatot, ugyanazt a felületet mutatja, csak más belépési pontról.</li>
+          <li><strong>Hét-navigáció</strong> (Daniel: „Mi van ha 1 évet nézek vissza? 1 évet kell
+          görgetni?”). A lapos, végtelenül görgethető lista helyett egy <strong>hét-stepper</strong>
+          fejléc (‹ aug 24–30 › — a WeekHub/DayNavigator idióma), alatta a kiválasztott hét napokra
+          bontva (H–V címkék, „MA” a mai napon). A hét-címkére koppintva egy kompakt
+          <strong>hónap-ugró popover</strong> nyílik (heti chip-sor — a jelenlegi nyelvben ez a
+          konzisztens forma egy dropdown/popover-mintára, nem egy teli hónap-rács) — így egy évnyi
+          visszalépés néhány koppintás, sosem görgetés. A demó 3 hetet mutat (aug 10–30) valódi ‹ ›
+          lépegetéssel; éles verzióban ez lapozottan töltődne be, nem egyszerre.</li>
+          <li><strong>Honesty megjegyzés</strong> — a mock adat tudatosan tükrözi, hogy ma csak
+          <strong>Drill, Pszichológus és Táplálkozó</strong> kap éjszakai detektor-jelet (a valós
+          katalógus 5 detektora ezt a hármat fedi); Doki, Edző, Szomnológus és Antropológus
+          megfigyelései a heti/havi konzílium-kör saját olvasásából és Daniel visszajelzéseiből
+          születnek — ez a futás-részlet oldal „Hívott szakértők” szakaszában és a Feed-en keresztül
+          elért ugyanazon oldalon is kimondva látszik, nem elhallgatva.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>4.1 — a futás-oldal most mesél (mezo-1gim.14)</h2>
+        <ul>
+          <li><strong>Daniel a screenshot alapján:</strong> „én itt most nem értem mit látok” — a
+          korábbi verzió adatot mutatott, de nem történetet. Négy konkrét javítás:</li>
+          <li><strong>Narratíva elöl</strong> — a hero most egy sima magyar mondattal kezd a dátum
+          alatt („Átnéztük a hétfői napodat — 1 jel tüzelt, ebből 1 megfigyelés készült…” / csendes
+          éjjel: „Csendes éjszaka — egyetlen jel sem tüzelt, ezért senkit sem hívtunk.”) — a hero
+          önmagában is érthető, a lejjebb görgetés csak a részletekért kell.</li>
+          <li><strong>Folyam-sáv a 3×„1” helyett</strong> — a három azonos szám most összekötött
+          lépésekként jelenik meg: <code>N jel → N hívás → N megfigyelés</code>, nyilakkal. Az
+          egyenlőség (1:1:1) a valós pipeline determinisztikus jellegét mutatja — minden tüzelt
+          jelhez pontosan egy LLM-hívás, minden híváshoz pontosan egy megfigyelés tartozik —, nem
+          hibás duplikáció.</li>
+          <li><strong>Jel-lánc mint két számozott lépés</strong> — „1 · A KÓD ÉSZLELTE” (a
+          detektor-kulcs marad monospace chip, de az összefoglaló mondat már sima szövegtípus —
+          a monospace próza olvashatatlan volt) → egy vizuális kötő-elem („↓ LLM értelmezi”, most
+          a kártya része, nem lebegő szöveg) → „2 · &lt;SZAKÉRTŐ&gt; ÉRTELMEZTE” (orb + a
+          megfigyelés sima szövegben).</li>
+          <li><strong>Forrás-hivatkozások</strong> — a kriptikus <code>focus:204</code>-szerű
+          chipek eltűntek. A becsületes-és-olvasható választás: egyetlen csendes sor
+          („3 forrás-hivatkozás (étkezés-napló)”) — <strong>szám + kategória, azonosítók nélkül</strong>,
+          nem egy kibontható lista (az maga is dropdown lenne). Ha ez a részletesség kevés,
+          a következő kör adhat emberi címkéket (pl. „heti fókusz · aug 22.”) az azonosítók helyett.</li>
+          <li><strong>„Kit nem hívtunk” tömörítve</strong> — a futás-oldalon most egy csendes sor áll
+          („A többi szakértő ma nem kapott hívást — az ő jeleik a heti konzíliumon érkeznek.”); a
+          teljes geek részlet (melyik 3 detektor melyik 3 szakértőt fedi ma: <code>logging-gap</code>
+          és <code>under-logging</code> → Táplálkozó, <code>checkin-gap</code> → Drill,
+          <code>journal-silence</code>/<code>journal-note</code> → Pszichológus; Doki, Edző,
+          Szomnológus, Antropológus a heti/havi kör saját olvasásából és Daniel
+          visszajelzéseiből gyűjt) ide, a design-jegyzetekbe költözött — a termékben ez már csak
+          a fenti egy sor.</li>
+          <li><strong>Mock-szemantika audit</strong> — a screenshot egy valódi hibát fogott: az
+          <code>under-logging</code> chip pozitív szöveggel párosult, holott ez egy <em>negatív</em>
+          jel (a logolt bevitel elmarad a súlytrend mögött — lásd
+          <code>docs/features/character.md</code> §9). Minden futás-mock át lett nézve és
+          javítva a valós detektor-jelentések szerint: <code>logging-gap</code> = hiányzó
+          étkezés-napló (Táplálkozó), <code>under-logging</code> = alul-logolt bevitel a
+          súlytrendhez képest, negatív jel (Táplálkozó), <code>checkin-gap</code> = kihagyott
+          check-in (Drill), <code>journal-silence</code>/<code>journal-note</code> = napló-csend
+          / friss bejegyzés (Pszichológus). A korábbi „heti fókuszok naplózása” szöveg egy nem
+          létező detektor-tartomány volt — törölve.</li>
+          <li><strong>Kör-típus vizuál most jelent valamit</strong> — éjszakai kör = a
+          <code>s-orb-ejszaka</code> (a Mezo orb éjszakai, sötétebb állapota — lélegzik, mint a
+          hero mindenhol máshol); konzílium = arany korong + <code>i-minta</code> ikon (a
+          konzílium HETI jelvényének arany tónusa); havi mélyolvasás = levendula korong +
+          <code>i-retegek</code> ikon (rétegzett újraolvasás — a HAVI jelvény levendula tónusa);
+          bootstrap = az eredeti korall <code>s-orb</code> (az alapítás pillanata kapja a
+          „fő” orb-identitást). A színek a futás-idővonal jelvényeivel (ÉJSZAKAI szürkészöld,
+          HETI arany, HAVI levendula) egyeznek, nem önkényesek.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>4.2 — csempézett Gépterem-hub, nincs több hosszú scroll (mezo-1gim.14)</h2>
+        <ul>
+          <li><strong>Daniel:</strong> „nagyon sok a scrolling, csempézzünk, rendezzünk” — a
+          Gépterem oldal korábban egyben görgette végig a hét-idővonalat, a teljes 4-körös
+          leltárt és az AI-napló sort. Most a <strong>Karakter hub ugyanazon mintáját</strong>
+          követi: kompakt hero (egy élő, sima-magyar mondat — a legutóbbi éjszakai kör
+          narratívája, a futás-oldalak elbeszélő stílusát újrahasznosítva) + egy 4 csempés
+          mozaik, ~egy képernyő (a demóban a page-body scroll-magassága pontosan egyenlő a
+          látható magassággal — nincs maradék görgetés).</li>
+          <li><strong>Futások csempe</strong> → a <strong>Futások</strong> oldalra nyit, ami
+          változatlanul tartalmazza a hét-stepper + napokra bontott futás-listát + a „Ritkább
+          futások” szekciót (a 3. körben épült tartalom, csak új otthonba költözött). Élő adat:
+          a jelen hét futás- és megfigyelésszáma, számolva, nem beégetve.</li>
+          <li><strong>Adatforrások csempe</strong> → a <strong>Leltár</strong> oldalra nyit, ami
+          változatlanul tartalmazza a bekötve-szekciót + a négy MINDENT-be kört + a később-farkot.
+          Élő adat: bekötve-darabszám (4 olvasási ablak + 5 aktív detektor = 9) és tervezett-
+          darabszám (a négy kör összesen 26 tétele) — mindkettő a valós adatból számolva.</li>
+          <li><strong>AI-napló csempe</strong> — a korábbi sor most csempe, ugyanazzal a
+          toast-demóval; nem kapott önálló oldalt, mert a tartalma (egy mélylink + egy elv-mondat)
+          nem ér ki egy teljes oldalra.</li>
+          <li><strong>Új: Detektorok csempe</strong> (opcionális, most bekerült, mert volt hozzá
+          valódi élő adat: „5 aktív detektor”) → egy kis oldal, ami a ma élő 5 detektort listázza
+          egy-egy mondatos jelentéssel + a felelős szakértővel — ez korábban csak a design-
+          jegyzetekben élt (4.1 kör), most a terméken belül is olvasható, a leltár „bekötve”
+          számához kapcsolódva.</li>
+          <li><strong>Vissza-lánc</strong> mostantól: Karakter → Gépterem → Futások → futás-részlet
+          (a futás-oldal „‹ Futások”-ra ír, nem „‹ Gépterem”-re); a Feed felől nyitott futás-
+          részlet változatlanul „‹ Feed”-re tér vissza — a két belépési út külön-külön helyes
+          célra mutat.</li>
+          <li><strong>Vizuális egység</strong> — mind a négy új csempe és mind a három új oldal
+          (Futások, Leltár, Detektorok) ugyanazt a grafit/szürkészöld technikai wash-családot
+          viseli, amit a Gépterem már bevezetett — a Karakter hub „meleg” csempéitől
+          megkülönböztethető, egymás közt viszont egy család.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>4.3 — olvasható Adatforrások (mezo-1gim.14)</h2>
+        <ul>
+          <li><strong>Daniel:</strong> „adatforrások így teljesen olvashatatlan” — a leltár egy
+          sűrű, egybefüggő sor-fal volt (4 bekötve sor + 26 tervezett sor egyetlen listában,
+          detektor-kulcsok mondat közepén). Öt olvashatósági javítás:</li>
+          <li><strong>Sima nyelv elöl, geek másodlagos</strong> — minden sor egy rövid, sima
+          szövegű címkével kezd („Gym szettek”, nem „a niggle-jelentések és a testrész, amire
+          vonatkoznak…”); a monospace detektor-chip jobbra került, sosem mondat közepén.</li>
+          <li><strong>Kártyák, nem lista-fal</strong> — egyetlen zsálya „Bekötve” kártya (négy sor,
+          mindegyik csendes ✓-szal + mcell-stílusú érték-chipekkel: <code>14 nap</code>,
+          <code>60 összegző</code> stb. — sosem prózában); a négy „N. KÖR” most saját, szaggatott
+          <em>keretű</em> kártya — a szaggatás a kereten van, a tartalom belül sima, olvasható.</li>
+          <li><strong>Szegmens: Bekötve | Tervezett</strong> — telefonszélességben egy folytonos
+          5-kártyás scroll (Bekötve + 4 kör) még mindig sok lett volna; a választás egy kétszegmenses
+          váltó lett a Karakter hub más szegmens-váltóival (pl. Éjszakai mód) rokon nyelven. A
+          „Tervezett” szegmens most egy <strong>kompakt 4-soros index</strong> (kör-szám + cím +
+          tételszám), és csak érintésre nyílik meg egy-egy kör saját mini-oldala (
+          <code>page-kor</code>, generikus sablon) — ez volt a task által is jelzett vészkijárat,
+          ha a tartalom nem fér el egy oldalon.</li>
+          <li><strong>Tartalom lefaragva</strong> — minden tétel-szöveg pár szavas töredék lett
+          (pl. „Niggle-jelentések”, nem teljes mondat); ahol egy tétel több detektorra mutat
+          (streak-törés → 3 detektor), egy csendes „3 detektor” szám áll chip-fal helyett; az
+          ÉRZÉKENY jelölés egy apró levendula pötty lett a korábbi kiabáló badge helyett.</li>
+          <li><strong>Eredmény</strong> — az Adatforrások oldal a demóban <em>pontosan kitölti</em>
+          a képernyőt maradék görgetés nélkül (a page-body scroll-magassága = látható magasság);
+          egy kör saját oldala is egy képernyőn belül marad 8 tételnél is.</li>
+        </ul>
+      </div>
+      <div class="democtl">
+        <span>Demó-vezérlők:</span>
+        <button id="demoBoot">Bootstrap-folyamat</button>
+        <button id="demoEmpty">Üres állapot (204)</button>
+      </div>
+      <div>
+        <h2>Döntési kérdések Danielnek</h2>
+        <ol>
+          <li><strong>Csempe vs sáv</strong> — a Gépterem maradjon vékony, teljes szélességű sáv a
+          2×2 mozaik alatt (mint most), vagy legyen inkább egy ötödik, egyenrangú négyzet a
+          rácsban (2×2 + 1, aszimmetrikus utolsó sor)?</li>
+          <li><strong>„⚙ navigál a futáshoz” — jó?</strong> — a Feed most a futás-részlet oldalra
+          visz, nem nyit semmit inline. Ez a helyes irány, vagy a Feed-en maradjon egy rövidebb,
+          önálló összegzés is (pl. csak a detektor-chip, link nélkül), hogy ne kelljen mindig
+          átugrani a Gépterembe?</li>
+          <li><strong>Bekötve | Tervezett szegmens — jó forma?</strong> — a leltár most egy
+          kétszegmenses váltó mögé rejti a bekötve-kártyát és a tervezett-indexet; a „bekötve”
+          szekció job-kör szerint csoportosít (éjszakai/konzílium/havi/bootstrap), a „tervezett”
+          pedig témakör szerint (edzés, fuel, psziché, kapcsolatok) — jó ez a kettősség, vagy
+          legyen mindkettő ugyanazt a logikát követő? És jó-e a szegmens, vagy inkább egy
+          folytonos, de rövidebb scroll (5 kártya, mind összecsukva/lenyitható) olvasna jobban?</li>
+          <li><strong>Jó-e az 1→4 sorrend?</strong> — a körök jelenlegi sorrendje (edzés & test →
+          fuel & ciklus → psziché & viselkedés-meta → kapcsolatok & AI-meta) tükrözi Daniel eredeti
+          felsorolását, de nem feltétlenül a megvalósítás nehézségét vagy fontosságát. Ez a jó
+          sorrend, vagy van olyan tétel, ami inkább egy másik körbe tartozna (pl. a
+          „logolási latencia” inkább fegyelem-jel, mint pszichés jel — kerülhetne az 1. vagy egy
+          önálló körbe)?</li>
+          <li><strong>Detektorok — önálló csempe vagy a Leltárba olvasztva?</strong> — most külön
+          csempe, mert volt hozzá saját élő szám; de tartalmilag közel áll az Adatforrások
+          oldalhoz. Maradjon negyedik csempe, vagy legyen a Leltár oldal egy szakasza (kevesebb
+          csempe a hubon, de egy koppintással távolabb)?</li>
+          <li><strong>AI-napló — csempe elég, vagy kell mögé oldal?</strong> — most egy
+          toast-demó; ha a valós AI-napló felület gazdagabb infót kap (pl. futásra szűrt hívás-
+          lista), érdemes-e itt is egy mini-oldalt építeni, vagy elég a mélylink az Én tab
+          AI-napló prototípusára?</li>
+        </ol>
+      </div>
+      <div class="note">A dosszié nem ad hozzá nyers jelet — a meglévő emlékezetet (napi összegzők,
+      minták, tények, heti áttekintés, napló) fordítja strukturált, fejlődő véleménnyé, dimenziónként,
+      állításonként. A felhasználó sosem kap közvetlen üzenetet a szakértőktől — csak olvassa a
+      munkájukat, és bármikor helyesbítheti.</div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  var EXPERTS = {
+    doki:         { name: 'Doki',         color: '#3E7396', wash: '#DCEBF4' },
+    edzo:         { name: 'Edző',         color: '#A84A26', wash: '#FFE3D4' },
+    taplalkozo:   { name: 'Táplálkozó',   color: '#4E6B42', wash: '#E4EEDD' },
+    szomnologus:  { name: 'Szomnológus',  color: '#5D4FA0', wash: '#EBE6F8' },
+    pszichologus: { name: 'Pszichológus', color: '#8E3F6F', wash: '#FAE3ED' },
+    drill:        { name: 'Drill',        color: '#A8801F', wash: '#FBEBCB' },
+    antropologus: { name: 'Antropológus', color: '#2E7D6B', wash: '#DCEFE9' }
+  };
+  var PERSONAS = {};
+  Object.keys(EXPERTS).forEach(function (k) { PERSONAS[k] = EXPERTS[k]; });
+  PERSONAS.szkeptikus = { name: 'Szkeptikus', color: '#4A4038', wash: '#E4DED4' };
+
+  function initials(name) {
+    return name.length > 2 ? name.slice(0, 2) : name;
+  }
+  var CONF = {
+    biztos:     { cls: 'biztos',     lbl: 'biztos' },
+    valoszinu:  { cls: 'valoszinu',  lbl: 'valószínű' },
+    figyeljuk:  { cls: 'figyeljuk',  lbl: 'figyeljük' }
+  };
+
+  // ===== orb-variáns személyikonok: futásidőben generált inline SVG sprite =====
+  function orbHTML(key, size) {
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 100 100"><use href="#s-orb-' + key + '"/></svg>';
+  }
+  function mezoOrbHTML(size) {
+    return '<svg width="' + size + '" height="' + size + '" viewBox="0 0 100 100"><use href="#s-orb"/></svg>';
+  }
+
+  var DIMS = [
+    { key: 'physical', title: 'Fizikai', expert: 'doki', maturity: 58,
+      portrait: 'A testösszetételed lassan, de biztosan javul — a testzsír-trend nagyjából ' +
+        'három hónap alatt csökken, miközben a testsúlyod közben gyakorlatilag helyben áll. Ez ' +
+        'arra utal, hogy a hipertrófia-blokkok tényleg izmot építenek, nem csak számokat mozgatnak.',
+      claims: [
+        { text: 'A testzsírszázalék lassan csökken, miközben a testsúly stagnál — ez rekompozícióra utal.', conf: 'biztos' },
+        { text: 'A gyógyszerciklus hetei egyelőre nem mutatnak kimutatható hatást a súlytrenden.', conf: 'figyeljuk', sensitive: true,
+          mirror: 'Ez inkább kérdés, mint állítás — még nincs elég ciklus az összevetéshez.' },
+        { text: 'A reggeli mérések szórása alacsony — a mérési fegyelmed stabil alapot ad a trendnek.', conf: 'valoszinu' }
+      ] },
+    { key: 'athletic', title: 'Sportolói', expert: 'edzo', maturity: 71,
+      portrait: 'Az edzésprofilod tiszta: heti öt teremedzés és öt röplabda-alkalom, a ' +
+        'hipertrófia-blokkok szisztematikusan haladnak MEV-től MRV felé. A legjobb heteid mindig ' +
+        'azok, ahol a RIR-célok tartása szoros.',
+      claims: [
+        { text: 'A RIR-kalibrációd megbízható — a becsléseid ritkán térnek el 1-nél többel a tényleges teljesítménytől.', conf: 'biztos' },
+        { text: 'A vállízület időnként jelez röplabda után — eddig mindig magától rendeződött néhány napon belül.', conf: 'valoszinu', sensitive: true,
+          mirror: 'Nem diagnózis, csak megfigyelés — érdemes figyelni, ha a jel gyakoribbá válik.' },
+        { text: 'Hétvégi röplabda-meccsek utáni napokon rendszeresen elmarad a tervezett teremedzés.', conf: 'valoszinu' }
+      ] },
+    { key: 'nutrition', title: 'Táplálkozási', expert: 'taplalkozo', maturity: 45,
+      portrait: 'A táplálkozási mintád gyakorlatias: a hétköznapok stabilak, a hétvégék lazábbak. ' +
+        'A fehérjecél hétköznap szinte mindig teljesül, hétvégén viszont gyakran alulmarad.',
+      claims: [
+        { text: 'Hétköznap a fehérjecélod szinte mindig teljesül.', conf: 'valoszinu' },
+        { text: 'Hétvégén a logolási fegyelmed lazább — inkább kényelem, mint tudatos döntés.', conf: 'figyeljuk' },
+        { text: 'A késői vacsorák és a másnapi alváshossz között összefüggést sejtünk — még korai kijelenteni.', conf: 'figyeljuk' }
+      ] },
+    { key: 'recovery', title: 'Alvás & regeneráció', expert: 'szomnologus', maturity: 66,
+      portrait: 'Az alvásod ritmusa hétköznap stabil, a hétvégi eltolódás viszont rendszeres — ' +
+        'átlagosan 40 perccel később fekszel le. A jó mélyalvású éjszakák és az edzésteljesítmény ' +
+        'közötti kapcsolat egyre világosabb.',
+      claims: [
+        { text: 'Hétvégén átlag 40 perccel később fekszel le, mint hétköznap.', conf: 'biztos' },
+        { text: 'Jó mélyalvású éjszakák után a másnapi edzésen jellemzően magasabb a teljesített volumen.', conf: 'valoszinu' },
+        { text: 'A késő esti képernyőidő és az elalvási idő között gyenge, de következetes összefüggést látunk.', conf: 'figyeljuk' }
+      ] },
+    { key: 'mental', title: 'Mentális & érzelmi', expert: 'pszichologus', maturity: 39,
+      portrait: 'A naplóbejegyzéseid hangneme többnyire kiegyensúlyozott, a stresszcsúcsok ' +
+        'jellemzően munkahetek végén jelennek meg. Még csak néhány hete figyelünk, ez inkább ' +
+        'körvonal, mint kész kép.',
+      claims: [
+        { text: 'A hét vége felé gyakrabban írsz feszültségről a naplóban.', conf: 'valoszinu' },
+        { text: 'Az edzés utáni bejegyzések hangneme következetesen pozitívabb.', conf: 'valoszinu' },
+        { text: 'Néha halasztod a nehezebb érzelmi témák leírását.', conf: 'figyeljuk', sensitive: true,
+          mirror: 'Ezt inkább megfigyeljük, mint értékeljük — lehet, hogy egyszerűen nincs rá azonnal szó.' }
+      ] },
+    { key: 'discipline', title: 'Motiváció & fegyelem', expert: 'drill', maturity: 74,
+      portrait: 'A logolási fegyelmed erős — ritkán maradsz ki, és amikor mégis, gyorsan ' +
+        'visszaállsz. Az ígéret és a teljesítés között kicsi a rés: amit kitűzöl egy hétre, azt ' +
+        'többnyire be is tartod.',
+      claims: [
+        { text: 'A logolási kihagyások ritkák, és 1–2 napon belül mindig helyreállnak.', conf: 'biztos' },
+        { text: 'A kitűzött heti fókuszaid teljesítési aránya magas.', conf: 'biztos' },
+        { text: 'Hosszabb kihagyás után egy kicsit óvatosabban indulsz vissza — ez természetes, nem gyengeség.', conf: 'valoszinu' }
+      ] },
+    { key: 'life', title: 'Élet & kapcsolatok', expert: 'antropologus', maturity: 33,
+      portrait: 'Az életeseményeid és a kapcsolataid térképe még csak most rajzolódik ki. Petra ' +
+        'a leggyakrabban említett személy, a hétvégéid jellemzően köré és a röplabda köré szerveződnek.',
+      claims: [
+        { text: 'Petra a leggyakrabban említett személy a naplóban és a chatben.', conf: 'valoszinu' },
+        { text: 'A hétvégéid struktúrája a röplabda köré épül.', conf: 'valoszinu' },
+        { text: 'Munkahetek és utazások mintázatát még csak gyűjtjük.', conf: 'figyeljuk' }
+      ] },
+    { key: 'chapter-work', title: 'Munka-stressz ciklus', chapter: true, maturity: 21,
+      color: '#5D4FA0', wash: '#EDE9F8', ownerLabel: 'közös felismerés · Pszichológus + Drill',
+      portrait: 'Egy ismétlődő minta rajzolódik ki: amikor a munkahetek különösen sűrűek, három ' +
+        'dolog együtt csúszik — a logolás, az esti lefekvés és a hangulat. A csapat ezt külön ' +
+        'fejezetként nyitotta meg a vasárnapi konzíliumon — még korai szakasz.',
+      claims: [
+        { text: 'Sűrű munkahetek után jellemzően egyszerre csúszik a logolás és a lefekvés.', conf: 'figyeljuk' },
+        { text: 'A ciklus egyelőre 3 megfigyelt esetből áll — korai szakasz, még nem elég egy szilárd szabályhoz.', conf: 'figyeljuk' }
+      ] }
+  ];
+  var CORE_AVG = Math.round(DIMS.slice(0, 7).reduce(function (s, d) { return s + d.maturity; }, 0) / 7);
+
+  var CSAPAT = [
+    { key: 'doki', role: 'orvos', voice: 'Tárgyilagos, orvosi hangon, röviden fogalmaz.',
+      watch: ['testkompozíció, egészségjelek', 'súlytrend', 'gyógyszerciklus jelei'] },
+    { key: 'edzo', role: 'edzés', voice: 'Direkt, számokban beszél.',
+      watch: ['edzésprofil, erősségek-gyengeségek', 'RIR-kalibráció', 'niggle-mintázatok'] },
+    { key: 'taplalkozo', role: 'táplálkozás', voice: 'Gyakorlatias, ítélkezésmentes.',
+      watch: ['étkezési minták', 'kajához való viszony', 'logolt vs valós bevitel eltérése'] },
+    { key: 'szomnologus', role: 'alvás & regeneráció', voice: 'Halk, precíz hangon ír.',
+      watch: ['alvásminőség és -ritmus', 'regenerációs jelek'] },
+    { key: 'pszichologus', role: 'mentális', voice: 'Meleg, kérdező hangon ír.',
+      watch: ['hangulati mintázatok', 'stresszorok', 'a napló érzelmi jelei'] },
+    { key: 'drill', role: 'fegyelem', voice: 'Szigorú, de fair — sosem szégyenít.',
+      watch: ['logolási fegyelem, kihagyások', 'streak-viselkedés', 'ígéret–teljesítés rés'] },
+    { key: 'antropologus', role: 'élet & kapcsolatok', voice: 'Megfigyelő, narratív hangon ír.',
+      watch: ['életesemények, emberek', 'hétköznap–hétvége minták', 'kontextus'] }
+  ];
+
+  var FEED = [
+    { day: 'Ma · aug 30', items: [
+      { who: 'doki', text: 'A reggeli mérések három hete makulátlanul pontosak — ez ritka fegyelem.',
+        source: 'Doki ma éjjel nem kapott detektor-jelet — a mai katalógus nem fed feléje tartományt; ez a megfigyelés a heti konzílium saját olvasásából született.',
+        runId: 'konz-30' },
+      { who: 'drill', text: 'A hétvégén kétszer maradt el a reggeli check-in — hétköznap ritkán fordul elő nálad.',
+        chain: { detector: 'checkin-gap', code: '2 napja elmaradt a reggeli check-in', refs: ['checkin:918', 'checkin:919'] },
+        runId: 'ejsz-30' },
+      { diff: true, text: 'Vasárnapi konzílium: 2 új állítás · 1 portré átírva', page: 'page-konz' }
+    ] },
+    { day: 'Tegnap · aug 29', items: [
+      { who: 'edzo', text: 'A tegnapi teremedzésen minden RIR-cél 1-en belül teljesült.',
+        source: 'Edző ma sem kapott nightly-jelet — az edzésprofilt egyelőre csak a heti/havi konzílium-kör dolgozza fel, saját olvasásból.',
+        runId: 'konz-30' },
+      { who: 'szomnologus', text: 'Az elalvási idő 23:10-re csúszott — 35 perccel a szokásos után.',
+        source: 'Szomnológus is a konzílium-kör saját olvasásából dolgozik ma — nightly detektor még nem fedi az alvás-tartományt.',
+        runId: 'konz-30' }
+    ] },
+    { day: 'aug 27', items: [
+      { who: 'pszichologus', text: 'A szerdai bejegyzés hangneme feszültebb volt a hét eddigi napjainál.',
+        chain: { detector: 'journal-note', code: 'friss naplóbejegyzés érzékelve (aug 27., 210 karakter)', refs: ['journal:5521'] },
+        runId: 'ejsz-27' },
+      { who: 'taplalkozo', text: 'Három napja nem logoltál étkezést — ritkán fordul elő nálad ekkora szünet.',
+        chain: { detector: 'logging-gap', code: '3. napja nincs étkezés logolva (utolsó: aug 24.)', refs: ['meal:1421', 'meal:1422', 'meal:1423'] },
+        runId: 'ejsz-27' },
+      { diff: true, text: 'Portré frissült: Alvás & regeneráció — a hétvégi eltolódás mostantól „biztos” szintű állítás.', dim: 'recovery' }
+    ] },
+    { day: 'aug 24', items: [
+      { who: 'antropologus', text: 'Petra harmadik alkalommal jelenik meg a hét naplóiban.',
+        source: 'Antropológus ma sem kapott nightly-jelet — az élet- és kapcsolat-tartományt egyelőre csak a heti/havi kör olvassa.',
+        runId: 'konz-23' },
+      { who: 'taplalkozo', text: 'Két hete rendszeresen kevesebbet mutat a napló, mint amit a súlyad enged sejtetni — érdemes átnézni, mi marad ki.',
+        chain: { detector: 'under-logging', code: 'a logolt bevitel két hete elmarad a súlytrendtől', refs: ['meal:1355', 'weight:889'] },
+        runId: 'ejsz-24' }
+    ] }
+  ];
+
+  var ring = document.getElementById('ring');
+  var ringBoot = document.getElementById('ringBoot');
+  function buildRing(target, size) {
+    var r = size ? size * 0.34 : 66, cx = size ? size / 2 : 74, cy = cx;
+    var C = 2 * Math.PI * r;
+    var n = 7, gap = C * 0.018, seg = C / n;
+    var svg = '<svg viewBox="0 0 ' + (cx * 2) + ' ' + (cy * 2) + '"><g transform="rotate(-90 ' + cx + ' ' + cy + ')">';
+    svg += '<circle class="segbg" cx="' + cx + '" cy="' + cy + '" r="' + r + '" stroke-width="10"/>';
+    DIMS.slice(0, 7).forEach(function (d, i) {
+      var ex = EXPERTS[d.expert];
+      var slot = seg - gap;
+      var filled = slot * (d.maturity / 100);
+      var dash = filled + ' ' + (C - filled);
+      var offset = -(i * seg);
+      svg += '<circle class="seg" style="--sd:' + (i * 90) + 'ms;" cx="' + cx + '" cy="' + cy + '" r="' + r +
+        '" stroke="' + ex.color + '" stroke-width="10" stroke-dasharray="' + dash +
+        '" stroke-dashoffset="' + offset + '"/>';
+    });
+    svg += '</g></svg>';
+    target.innerHTML = svg + '<div class="mrhole"><div class="num">' + CORE_AVG +
+      '%</div><div class="lbl">érettség</div></div>';
+  }
+  buildRing(ring);
+  buildRing(ringBoot, 132);
+
+  // ===== hub: kompakt 4-csempés mozaik =====
+  var hubtiles = document.getElementById('hubtiles');
+  var feedPreview = FEED[0].items.filter(function (it) { return !it.diff; })[0];
+  hubtiles.innerHTML =
+    '<div class="dimtile t-dims rise" style="--d:80ms;--sh:rgba(78,143,184,0.4);" data-page="page-dims" role="button" tabindex="0" aria-label="Dimenziók">' +
+      '<div class="dhd"><div class="p-eyebrow" style="color:#3E7396;">Dimenziók</div></div>' +
+      '<div class="spotwrap" style="flex:1;display:grid;place-items:center;padding:4px 0;"><svg width="34" height="34" viewBox="0 0 100 100"><use href="#i-kristaly"/></svg></div>' +
+      '<div class="dline">' + CORE_AVG + '% átlag érettség · 7 + 1 dimenzió</div>' +
+    '</div>' +
+    '<div class="dimtile t-feedhub rise" style="--d:130ms;--sh:rgba(216,72,31,0.35);" data-page="page-feed" role="button" tabindex="0" aria-label="Feed">' +
+      '<div class="dhd"><div class="p-eyebrow" style="color:#A84A26;">Feed</div><div class="pulsedot"></div></div>' +
+      '<div class="dline">„' + feedPreview.text + '”</div>' +
+      '<div class="tile-badge">3 új e héten</div>' +
+    '</div>' +
+    '<div class="dimtile t-csapat rise" style="--d:180ms;--sh:rgba(93,79,160,0.4);" data-page="page-csapat" role="button" tabindex="0" aria-label="Csapat">' +
+      '<div class="dhd"><div class="p-eyebrow" style="color:#5D4FA0;">Csapat</div></div>' +
+      '<div class="clustrow" id="clust"></div>' +
+      '<div class="dline">9 profilozó — a csapat, ami épp most figyel rád</div>' +
+    '</div>' +
+    '<div class="dimtile t-konz rise" style="--d:230ms;--sh:rgba(181,126,20,0.4);" data-page="page-konz" role="button" tabindex="0" aria-label="Konzílium">' +
+      '<div class="dhd"><div class="p-eyebrow" style="color:#A8801F;">Konzílium</div><div class="pulsedot"></div></div>' +
+      '<div class="dline">aug 30. · 4 változás</div>' +
+    '</div>' +
+    '<div class="dimtile wide t-gepterem rise" style="--d:280ms;--sh:rgba(61,82,92,0.35);" data-page="page-gepterem" role="button" tabindex="0" aria-label="Gépterem">' +
+      '<div class="dhd"><div class="gpic"><svg width="17" height="17" viewBox="0 0 100 100"><use href="#i-retegek"/></svg></div>' +
+      '<div class="p-eyebrow" style="color:#3D525C;">Gépterem</div></div>' +
+      '<div class="dline">ma 02:50 · 3 megfigyelés</div>' +
+    '</div>';
+
+  // ===== Dimenziók-lista oldal =====
+  var dimsListTiles = document.getElementById('dimsListTiles');
+  dimsListTiles.innerHTML = DIMS.map(function (d, i) {
+    var ex = d.chapter ? { name: d.title, color: d.color, wash: d.wash } : EXPERTS[d.expert];
+    var top = d.claims[0].text;
+    return '<div class="dimtile' + (d.chapter ? ' chapter' : '') + ' rise" style="--d:' + (40 + i * 45) +
+      'ms;--wash:' + ex.wash + ';--dc:' + ex.color + ';--sh:' + ex.color + '4d;--mv:' + d.maturity +
+      ';" data-dim="' + d.key + '" role="button" tabindex="0" aria-label="' + d.title + '">' +
+      '<div class="dhd">' + (d.chapter
+        ? '<div class="miniring"></div>'
+        : '<div class="disc">' + orbHTML(d.expert, 24) + '</div>') +
+      '<div class="dnm">' + d.title + '</div></div>' +
+      '<div class="dline">' + top + '</div></div>';
+  }).join('');
+
+  // ===== "miből?" jel-lánc kártya — két számozott lépés, sima olvasható szöveggel (nincs dropdown) =====
+  var REF_CATEGORY = {
+    'logging-gap': 'étkezés-napló', 'under-logging': 'étkezés- és súly-napló',
+    'checkin-gap': 'check-in napló', 'journal-silence': 'napló-bejegyzések', 'journal-note': 'napló-bejegyzések'
+  };
+  function chainPanelHTML(who, text, chain, big) {
+    var ex = EXPERTS[who];
+    var refCat = REF_CATEGORY[chain.detector] || 'napló';
+    return '<div class="chain' + (big ? ' big' : '') + '">' +
+      '<div class="chainstep">' +
+        '<div class="chainstepnum">1</div>' +
+        '<div class="grow"><div class="chainsteplbl">A kód észlelte</div>' +
+        '<span class="detchip">' + chain.detector + '</span>' +
+        '<div class="codetxt">' + chain.code + '</div></div>' +
+      '</div>' +
+      '<div class="chainconn"><span class="arrow">↓</span>LLM értelmezi</div>' +
+      '<div class="chainstep" style="--dc:' + ex.color + ';">' +
+        '<div class="chainstepnum llm" style="background:' + ex.color + ';">2</div>' +
+        '<div class="grow"><div class="chainsteplbl">' + ex.name + ' értelmezte</div>' +
+        '<div class="llmrow"><div class="lldisc">' + orbHTML(who, 22) + '</div>' +
+        '<div class="lltxt">' + text + '</div></div></div>' +
+      '</div>' +
+      '<div class="refcount">' + chain.refs.length + ' forrás-hivatkozás (' + refCat + ')</div>' +
+      '</div>';
+  }
+
+  // ===== Feed oldal — napokra bontva, „⚙” a futás-részlet oldalra navigál (nem nyit dropdownt) =====
+  var feedBody = document.getElementById('feedBody');
+  feedBody.innerHTML = FEED.map(function (grp, gi) {
+    var rows = grp.items.map(function (it, ii) {
+      if (it.diff) {
+        return '<div class="feedunit"><div class="feeddiff rise-x" style="--d:' + (gi * 60 + ii * 50) + 'ms;" data-' +
+          (it.dim ? 'dim="' + it.dim + '"' : 'page="' + it.page + '"') + '>' +
+          '<div class="ic"><svg width="13" height="13" viewBox="0 0 100 100"><use href="#i-minta"/></svg></div>' +
+          '<div class="tx">' + it.text + '</div><span class="chev">›</span></div></div>';
+      }
+      var ex = EXPERTS[it.who];
+      return '<div class="feedunit"><div class="feedrow rise-x" style="--d:' + (gi * 60 + ii * 50) + 'ms;">' +
+        '<div class="feeddisc" style="--dc:' + ex.color + ';">' + orbHTML(it.who, 22) + '</div>' +
+        '<div class="grow"><div class="fnm">' + ex.name + '</div><div class="ftxt">' + it.text + '</div></div>' +
+        '<button class="gepq" data-feedrun="' + it.runId + '" aria-label="A futáshoz" title="A futáshoz →">⚙</button></div></div>';
+    }).join('');
+    return '<div class="feedday rise" style="--d:' + (gi * 60) + 'ms;">' + grp.day + '</div>' +
+      '<div class="feedtile rise" style="--d:' + (gi * 60 + 20) + 'ms;">' + rows + '</div>';
+  }).join('');
+  feedBody.addEventListener('click', function (e) {
+    var g = e.target.closest('[data-feedrun]');
+    if (!g) return;
+    goToRun(g.getAttribute('data-feedrun'), 'Feed');
+  });
+
+  // ===== Gépterem — futás-idővonal (hét-navigáció) + ritkább futások + adatforrás-leltár =====
+  var QUIET_MSG = 'Nulla LLM-hívás, nulla token, nulla költség. Ez nem hiányos futás — ez a rendszer ' +
+    '<b>pontosan azt csinálta, amit kell</b>: nem talált ki jelet, ahol nem volt.';
+  var QUIET_LEDE = 'Csendes éjszaka — egyetlen jel sem tüzelt, ezért senkit sem hívtunk.';
+  var NOT_CALLED_LINE = 'A többi szakértő ma nem kapott hívást — az ő jeleik a heti konzíliumon érkeznek.';
+  var DOW_FULL = { H: 'hétfői', K: 'keddi', Sze: 'szerdai', Cs: 'csütörtöki', P: 'pénteki', Szo: 'szombati', V: 'vasárnapi' };
+
+  var DETECTOR_CATALOG = [
+    { key: 'logging-gap', who: 'taplalkozo', line: 'N napja nincs étkezés logolva — hiányzó kaja-napló jelzés.' },
+    { key: 'under-logging', who: 'taplalkozo', line: 'A logolt bevitel elmarad a súlytrend mögött — negatív, tükröző jel.' },
+    { key: 'checkin-gap', who: 'drill', line: 'Kihagyott check-in(ek) — hiányzó bejegyzés a napi ritmusban.' },
+    { key: 'journal-silence', who: 'pszichologus', line: 'N napja nincs naplóbejegyzés — csend a naplóban.' },
+    { key: 'journal-note', who: 'pszichologus', line: 'Friss naplóbejegyzés — a hangnem/tartalom felszínre kerül.' }
+  ];
+
+  var CHAIN_POOL = {
+    13: [
+      { detector: 'checkin-gap', code: '2 egymást követő napon elmaradt a délutáni check-in',
+        refs: ['checkin:881', 'checkin:882'], who: 'drill',
+        obs: 'A kihagyások ritkák nálad — ezen a héten kétszer maradt el a délutáni check-in, érdemes visszaállni a ritmusba.' },
+      { detector: 'journal-note', code: 'friss naplóbejegyzés érzékelve (aug 13., 140 karakter)',
+        refs: ['journal:5310'], who: 'pszichologus',
+        obs: 'A keddi bejegyzés hangneme fáradtabb volt a megszokottnál.' }
+    ],
+    20: [
+      { detector: 'logging-gap', code: '2. napja nincs étkezés logolva (utolsó: aug 18.)',
+        refs: ['meal:1290', 'meal:1291'], who: 'taplalkozo',
+        obs: 'Hétfőn és kedden elmaradt az étkezés-logolás — ritka nálad ez a rés.' }
+    ],
+    24: [
+      { detector: 'under-logging', code: 'a logolt bevitel két hete elmarad a súlytrendtől',
+        refs: ['meal:1355', 'weight:889'], who: 'taplalkozo',
+        obs: 'Két hete rendszeresen kevesebbet mutat a napló, mint amit a súlyad enged sejtetni — érdemes átnézni, mi marad ki.' }
+    ],
+    27: [
+      { detector: 'journal-note', code: 'friss naplóbejegyzés érzékelve (aug 27., 210 karakter)',
+        refs: ['journal:5521'], who: 'pszichologus',
+        obs: 'A szerdai bejegyzés hangneme feszültebb volt a hét eddigi napjainál.' },
+      { detector: 'logging-gap', code: '3. napja nincs étkezés logolva (utolsó: aug 24.)',
+        refs: ['meal:1421', 'meal:1422', 'meal:1423'], who: 'taplalkozo',
+        obs: 'Három napja nem logoltál étkezést — ritkán fordul elő nálad ekkora szünet.' }
+    ],
+    30: [
+      { detector: 'logging-gap', code: '3. napja nincs étkezés logolva (utolsó: aug 24.)',
+        refs: ['meal:1424', 'meal:1425', 'meal:1426'], who: 'taplalkozo',
+        obs: 'Hétvégén a logolási fegyelmed lazább — inkább kényelem, mint tudatos döntés.' },
+      { detector: 'checkin-gap', code: '2 napja elmaradt a reggeli check-in',
+        refs: ['checkin:918', 'checkin:919'], who: 'drill',
+        obs: 'A hétvégén kétszer maradt el a reggeli check-in — hétköznap ritkán fordul elő nálad.' },
+      { detector: 'journal-note', code: 'friss naplóbejegyzés érzékelve (aug 30., 180 karakter)',
+        refs: ['journal:5544'], who: 'pszichologus',
+        obs: 'A vasárnap esti bejegyzés hangneme nyugodtabb volt, mint a hét közepén.' }
+    ]
+  };
+  var KONZ_POOL = {
+    16: { id: 'w0', consumed: 2, counts: { accepted: 1, retired: 0, rewritten: 0 } },
+    23: { id: 'w1', consumed: 4, counts: { accepted: 1, retired: 0, rewritten: 1 } },
+    30: { id: 'w2', consumed: 7, counts: { accepted: 2, retired: 1, rewritten: 3 }, hasTranscript: true,
+      note: 'A hét összes fel nem dolgozott <code>character_observation</code> sora (7 db, a fenti ' +
+        'éjszakai körökből + korábbiak) + az összes ACTIVE claim a Szkeptikus ellenőrzéséhez + Daniel ' +
+        'két claim-visszajelzése ebből a hétből. Egy tranzakció — vagy minden lépés lefut, vagy semmi ' +
+        '(javaslat → Szkeptikus → Mezo döntés → claim-frissítés → portré-újraírás → transzkript mentése).' }
+  };
+  var DOW = ['H', 'K', 'Sze', 'Cs', 'P', 'Szo', 'V'];
+  var WEEK_LABELS = ['aug 10–16', 'aug 17–23', 'aug 24–30'];
+  var WEEK_STARTDAYS = [10, 17, 24];
+  var TODAY_DAY = 30;
+  var CUR_WEEK = WEEK_LABELS.length - 1;
+
+  function buildDay(dayNum, idxInWeek) {
+    var dateLbl = 'aug ' + dayNum;
+    var dow = DOW[idxInWeek];
+    var chains = CHAIN_POOL[dayNum];
+    var ejszaka = chains
+      ? { id: 'ejsz-' + dayNum, kind: 'ejszaka', date: dateLbl, dow: dow, chains: chains }
+      : { id: 'ejsz-' + dayNum, kind: 'ejszaka', date: dateLbl, dow: dow, quiet: true };
+    var k = KONZ_POOL[dayNum];
+    var konzilium = k ? { id: k.id, kind: 'konzilium', date: dateLbl, dow: dow, consumed: k.consumed,
+      counts: k.counts, hasTranscript: !!k.hasTranscript, note: k.note } : null;
+    return { dayNum: dayNum, dow: dow, date: dateLbl, ejszaka: ejszaka, konzilium: konzilium, today: dayNum === TODAY_DAY };
+  }
+  var WEEKS = WEEK_STARTDAYS.map(function (start, wi) {
+    var days = [];
+    for (var i = 0; i < 7; i++) days.push(buildDay(start + i, i));
+    return { label: WEEK_LABELS[wi], days: days };
+  });
+
+  var RARE_RUNS = [
+    { id: 'm1', kind: 'havi', date: 'aug 1. · 20:00', sub: '4 állítás frissült · 1 fejezet nyugdíjazva',
+      note: 'Nem friss megfigyeléseket olvas, hanem a <b>teljes meglévő claim-bázist</b> — minden ACTIVE ' +
+        'állítást újra mérlegre tesz, kortól függetlenül, UP/DOWN/RETIRE irányban. Ezután egy külön ' +
+        'lépésben megnézi, van-e 90 napnál régebbi, aktív állítás nélküli CHAPTER dimenzió — ha van, ' +
+        'nyugdíjazza.' },
+    { id: 'b0', kind: 'bootstrap', date: 'júl 15.', sub: '9 kezdő állítás · a teljes eddigi történet beolvasva',
+      note: '60 napi összegző narratíva + 60 megerősített minta + a 40 legrelevánsabb tudás-tény + ' +
+        '60 heti review (minden szakértőhöz szétosztva) + 60 naplóbejegyzés (csak a Pszichológusnak) + ' +
+        '40 aktív életesemény (csak az Antropológusnak) — egyetlen egyszeri olvasás, ami a dosszié ' +
+        'első portréit építette fel.' }
+  ];
+
+  var RUN_INDEX = {};
+  WEEKS.forEach(function (w) {
+    w.days.forEach(function (d) {
+      RUN_INDEX[d.ejszaka.id] = d.ejszaka;
+      if (d.konzilium) RUN_INDEX[d.konzilium.id] = d.konzilium;
+    });
+  });
+  RARE_RUNS.forEach(function (r) { RUN_INDEX[r.id] = r; });
+
+  function uniqueWho(chains) {
+    var seen = {}, out = [];
+    chains.forEach(function (c) { if (!seen[c.who]) { seen[c.who] = 1; out.push(c.who); } });
+    return out;
+  }
+  function statCell(n, label, tone) {
+    return '<div class="rc' + (tone ? ' ' + tone : '') + '"><b>' + n + '</b><small>' + label + '</small></div>';
+  }
+  function opchipHTML(who, opLabel) {
+    var isMezo = who === 'mezo';
+    var ex = isMezo ? { name: 'Mezo' } : (who === 'szkeptikus' ? PERSONAS.szkeptikus : EXPERTS[who]);
+    var avatarHtml = isMezo ? mezoOrbHTML(20) : orbHTML(who, 20);
+    return '<div class="opchip"><div class="od">' + avatarHtml + '</div><div class="ot"><b>' + ex.name + '</b><small>' + opLabel + '</small></div></div>';
+  }
+
+  function flowStripHTML(n) {
+    return '<div class="runflow">' +
+      '<div class="step"><b>' + n + '</b><small>jel</small></div><div class="arrow">→</div>' +
+      '<div class="step"><b>' + n + '</b><small>hívás</small></div><div class="arrow">→</div>' +
+      '<div class="step"><b>' + n + '</b><small>megfigyelés</small></div>' +
+      '</div>';
+  }
+  function ejszakaLede(run) {
+    if (run.quiet) return QUIET_LEDE;
+    var uniq = uniqueWho(run.chains);
+    var names = uniq.map(function (w) { return EXPERTS[w].name; }).join(', ');
+    return 'Átnéztük a ' + DOW_FULL[run.dow] + ' napodat — ' + run.chains.length + ' jel tüzelt, ' +
+      'ebből ' + run.chains.length + ' megfigyelés készült (' + names + ').';
+  }
+  function renderRun(run, origin) {
+    var name, sub, lede, icHtml, statsHtml, sectionsHtml;
+    if (run.kind === 'ejszaka') {
+      name = 'Éjszakai kör';
+      sub = run.date + ' · 02:50' + (run.quiet ? ' · <span style="color:#4E6B42;font-weight:700;">csendes nap</span>' : '');
+      icHtml = '<svg width="54" height="54" viewBox="0 0 100 100" class="breathe"><use href="#s-orb-ejszaka"/></svg>';
+      lede = ejszakaLede(run);
+      if (run.quiet) {
+        statsHtml = flowStripHTML(0);
+        sectionsHtml = '<div class="chain big"><div class="quietnote">' + QUIET_MSG + '</div></div>' +
+          '<div class="runsubttl">Hívott szakértők</div>' +
+          '<p class="sectnote" style="padding:0 2px 8px;">' + NOT_CALLED_LINE + '</p>';
+      } else {
+        var uniq = uniqueWho(run.chains);
+        statsHtml = flowStripHTML(run.chains.length);
+        sectionsHtml = run.chains.map(function (c) {
+          return chainPanelHTML(c.who, c.obs, { detector: c.detector, code: c.code, refs: c.refs }, true);
+        }).join('') +
+          '<div class="runsubttl">Hívott szakértők</div><div class="opchips">' +
+          uniq.map(function (w) { return opchipHTML(w, 'megfigyelés'); }).join('') + '</div>' +
+          '<p class="sectnote" style="padding:2px 2px 8px;">' + NOT_CALLED_LINE + '</p>';
+      }
+    } else if (run.kind === 'konzilium') {
+      name = 'Konzílium';
+      sub = run.date + ' · 19:30';
+      icHtml = '<svg width="30" height="30" viewBox="0 0 100 100"><use href="#i-minta"/></svg>';
+      lede = 'A hét ' + run.consumed + ' megfigyelését dolgoztuk fel a konzíliumon — ' + run.counts.accepted +
+        ' elfogadva, ' + run.counts.retired + ' nyugdíjazva, ' + run.counts.rewritten + ' portré átírva.';
+      statsHtml = statCell(run.consumed, 'feldolgozva') + statCell(run.counts.accepted, 'elfogadva', 'sage') +
+        statCell(run.counts.retired, 'nyugdíjazva', 'amber') + statCell(run.counts.rewritten, 'portré átírva', 'lav');
+      var opsHtml;
+      if (run.hasTranscript) {
+        var uniqOps = [];
+        var seenOp = {};
+        TRANSCRIPT.turns.forEach(function (t) {
+          if (seenOp[t.who]) return;
+          seenOp[t.who] = 1;
+          var op = t.who === 'szkeptikus' ? 'ellenőrzés' : (t.who === 'mezo' ? 'döntés + portré' : 'javaslat');
+          uniqOps.push(opchipHTML(t.who, op));
+        });
+        opsHtml = '<div class="opchips">' + uniqOps.join('') + '</div>';
+      } else {
+        opsHtml = '<p class="sectnote" style="padding:0 2px 8px;">Ehhez a korábbi konzíliumhoz nincs ' +
+          'személyenkénti bontás betöltve ebben a demóban — csak a kimenet.</p>';
+      }
+      sectionsHtml = (run.note ? '<div class="runsubttl">Mit dolgozott fel</div><p class="sectnote" style="padding:0 2px 8px;">' + run.note + '</p>' : '') +
+        '<div class="runsubttl">Hívott szakértők</div>' + opsHtml +
+        (run.hasTranscript
+          ? '<button class="cta runlink" id="runToTranscript">Teljes transzkript megnyitása ›</button>'
+          : '<p class="sectnote" style="padding:6px 2px 4px;">A teljes transzkript ehhez a régebbi ' +
+            'konzíliumhoz nincs betöltve ebben a demóban.</p>');
+    } else if (run.kind === 'havi') {
+      name = 'Havi mélyolvasás';
+      sub = run.date;
+      icHtml = '<svg width="30" height="30" viewBox="0 0 100 100"><use href="#i-retegek"/></svg>';
+      lede = 'Havonta egyszer az egész eddigi képet újranézzük — ezúttal ' + run.sub + '.';
+      statsHtml = '';
+      sectionsHtml = '<div class="runsubttl">Mit olvasott</div><p class="sectnote" style="padding:0 2px 8px;">' + run.note + '</p>';
+    } else {
+      name = 'Bootstrap';
+      sub = run.date;
+      icHtml = mezoOrbHTML(54);
+      lede = 'Ez volt az első nap — a csapat elolvasta a teljes addigi történetedet, és felépítette az első portrékat.';
+      statsHtml = '';
+      sectionsHtml = '<p class="sectnote" style="padding:0 2px 8px;font-size:9.5px;">' + run.sub + '</p>' +
+        '<div class="runsubttl">Mit olvasott</div><p class="sectnote" style="padding:0 2px 8px;">' + run.note + '</p>';
+    }
+    var icWrap = (run.kind === 'konzilium') ? 'disc amber' : (run.kind === 'havi') ? 'disc lav' : '';
+    document.getElementById('runIc').className = 'runhero-ic' + (icWrap ? ' ' + icWrap : '');
+    document.getElementById('runIc').innerHTML = icHtml;
+    document.getElementById('runName').textContent = name;
+    document.getElementById('runSub').innerHTML = sub;
+    document.getElementById('runLede').textContent = lede;
+    document.getElementById('runStats').innerHTML = statsHtml;
+    document.getElementById('runSections').innerHTML = sectionsHtml;
+    document.getElementById('runBack').textContent = '‹ ' + (origin || 'Gépterem');
+    var toTranscriptBtn = document.getElementById('runToTranscript');
+    if (toTranscriptBtn) {
+      toTranscriptBtn.addEventListener('click', function () {
+        closePage('page-run');
+        openKonzTranscript(run.id);
+      });
+    }
+    document.getElementById('runAinaplo').onclick = function () {
+      toast('AI-napló → ' + name + ' (' + run.date + ') — feature=character szűrve');
+    };
+    openPage('page-run');
+  }
+  function goToRun(id, origin) {
+    var r = RUN_INDEX[id];
+    if (!r) { toast('Ehhez a demóhoz nincs betöltve futás-adat'); return; }
+    renderRun(r, origin);
+  }
+
+  var weeknav = document.getElementById('weeknav');
+  var curWeek = CUR_WEEK;
+  function runRowHTML(run, delay) {
+    var label = run.kind === 'ejszaka' ? 'Éjszakai kör' : 'Konzílium';
+    var badge = run.kind === 'ejszaka' ? 'ÉJSZAKAI' : 'HETI';
+    var rw = run.kind === 'ejszaka' ? 'rgba(61,82,92,0.14)' : 'rgba(201,150,46,0.16)';
+    var rc = run.kind === 'ejszaka' ? '#3D525C' : '#A8801F';
+    var sub;
+    if (run.kind === 'ejszaka') {
+      sub = run.quiet ? 'csendes nap · 0 hívás' : (run.chains.length + ' megfigyelés · ' + uniqueWho(run.chains).length + ' szakértő hívva');
+    } else {
+      sub = run.consumed + ' feldolgozva · ' + run.counts.accepted + ' elfogadva · ' + run.counts.retired + ' nyugdíjazva · ' + run.counts.rewritten + ' portré átírva';
+    }
+    return '<div class="runrow rise' + (run.quiet ? ' quiet' : '') + '" style="--d:' + delay + 'ms;" data-run="' + run.id + '">' +
+      '<div class="run-head"><div class="rk" style="--rw:' + rw + ';--rc:' + rc + ';">' +
+      '<svg width="15" height="15" viewBox="0 0 100 100"><use href="#i-idozito"/></svg></div>' +
+      '<div class="grow"><div class="rt">' + label + ' <span class="run-badge ' + run.kind + '">' + badge + '</span></div>' +
+      '<div class="rs">' + sub + '</div></div><span class="rchev">›</span></div></div>';
+  }
+  function renderWeek(idx) {
+    curWeek = idx;
+    var week = WEEKS[idx];
+    document.getElementById('weekLblTxt').textContent = week.label;
+    document.getElementById('weekLblSub').textContent = idx === WEEKS.length - 1 ? 'legutóbbi futások' : 'korábbi hét';
+    document.getElementById('wPrev').disabled = idx === 0;
+    document.getElementById('wNext').disabled = idx === WEEKS.length - 1;
+    document.querySelectorAll('#weekMenu .weekchip').forEach(function (c, i) { c.classList.toggle('on', i === idx); });
+    var html = '', delay = 0;
+    week.days.forEach(function (d) {
+      html += '<div class="daygrouphd rise' + (d.today ? ' today' : '') + '" style="--d:' + delay + 'ms;"><span class="dg-dow">' +
+        (d.today ? 'MA' : d.dow) + '</span><span class="dg-date">' + d.date + '</span></div>';
+      html += runRowHTML(d.ejszaka, delay + 15);
+      delay += 40;
+      if (d.konzilium) { html += runRowHTML(d.konzilium, delay + 15); delay += 40; }
+    });
+    var runList = document.getElementById('runList');
+    runList.innerHTML = html;
+    runList.classList.remove('play');
+    void runList.offsetWidth;
+    runList.classList.add('play');
+  }
+  document.getElementById('weekMenu').innerHTML = WEEK_LABELS.map(function (lbl, i) {
+    return '<button class="weekchip' + (i === CUR_WEEK ? ' on' : '') + '" data-wk="' + i + '">' + lbl + '</button>';
+  }).join('');
+  document.getElementById('runList').addEventListener('click', function (e) {
+    var row = e.target.closest('[data-run]');
+    if (!row) return;
+    goToRun(row.getAttribute('data-run'), 'Futások');
+  });
+  document.getElementById('wPrev').addEventListener('click', function () { if (curWeek > 0) renderWeek(curWeek - 1); });
+  document.getElementById('wNext').addEventListener('click', function () { if (curWeek < WEEKS.length - 1) renderWeek(curWeek + 1); });
+  document.getElementById('weekLbl').addEventListener('click', function (e) {
+    e.stopPropagation();
+    weeknav.classList.toggle('open');
+  });
+  document.getElementById('weekMenu').addEventListener('click', function (e) {
+    var c = e.target.closest('[data-wk]');
+    if (!c) return;
+    renderWeek(parseInt(c.getAttribute('data-wk'), 10));
+    weeknav.classList.remove('open');
+  });
+  document.addEventListener('click', function () { weeknav.classList.remove('open'); });
+  renderWeek(CUR_WEEK);
+
+  var rareList = document.getElementById('rareList');
+  rareList.innerHTML = RARE_RUNS.map(function (r, i) {
+    var rw = r.kind === 'havi' ? 'rgba(93,79,160,0.14)' : 'rgba(78,143,184,0.16)';
+    var rc = r.kind === 'havi' ? '#5D4FA0' : '#3E7396';
+    var ic = r.kind === 'havi' ? 'i-retegek' : 'i-kristaly';
+    var label = r.kind === 'havi' ? 'Havi mélyolvasás' : 'Bootstrap';
+    return '<div class="raretile rise" style="--d:' + (i * 45) + 'ms;" data-run="' + r.id + '">' +
+      '<div class="rk" style="--rw:' + rw + ';--rc:' + rc + ';"><svg width="15" height="15" viewBox="0 0 100 100"><use href="#' + ic + '"/></svg></div>' +
+      '<div class="grow"><div class="rt">' + label + '</div><div class="rs">' + r.date + ' · ' + r.sub + '</div></div>' +
+      '<span class="rchev">›</span></div>';
+  }).join('');
+  rareList.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-run]');
+    if (!t) return;
+    goToRun(t.getAttribute('data-run'), 'Futások');
+  });
+
+  var INVENTORY = {
+    reads: [
+      { w: 'Éjszakai kör', chips: ['14 nap'] },
+      { w: 'Vasárnapi konzílium', chips: ['heti'] },
+      { w: 'Havi mélyolvasás', chips: ['havi'] },
+      { w: 'Bootstrap (egyszeri)', chips: ['60 összegző', '60 minta', '40 tény', '60 review', '60 napló', '40 esemény'] }
+    ],
+    rounds: [
+      { n: 1, title: 'Edzés & test', items: [
+        { t: 'Gym szettek', det: ['rir-calibration'] },
+        { t: 'Mezociklus-ív' },
+        { t: 'Niggle-jelentések', det: ['niggle-map'] },
+        { t: 'Röplabda váll-skála', det: ['sport-interference'] },
+        { t: 'Futás HR-recovery', det: ['hr-recovery-trend'] },
+        { t: 'Alvás × edzés-RPE', det: ['sleep-performance-chain'] }
+      ] },
+      { n: 2, title: 'Fuel & ciklus', items: [
+        { t: 'Makró-teljesítés, NOVA', det: ['comfort-eating'] },
+        { t: 'Víz' },
+        { t: 'Stack-kihagyások' },
+        { t: 'Gyógyszerciklus × check-in', det: ['med-cycle-covariance'], sensitive: true }
+      ] },
+      { n: 3, title: 'Psziché & viselkedés-meta', items: [
+        { t: 'Check-in jegyzetek', det: ['self-calibration'], sensitive: true },
+        { t: 'Kreed/fókusz × Napzárás', det: ['promise-vs-delivery'] },
+        { t: 'Döntésnapló kimenetek', det: ['decision-profile'] },
+        { t: 'Hála-témák' },
+        { t: 'Streak-törés/visszatérés', det: ['resilience', 'all-or-nothing', 'restart-pattern'] },
+        { t: 'Logolási latencia', det: ['retro-logging-ratio'] },
+        { t: 'Éjszakai app-aktivitás', det: ['night-activity'] },
+        { t: 'Check-in reakcióidő', det: ['checkin-latency'] }
+      ] },
+      { n: 4, title: 'Kapcsolatok & AI-meta', items: [
+        { t: 'Emberek-említések', det: ['people-mood-link'] },
+        { t: 'Hétvége-szakadék', det: ['weekend-gap'] },
+        { t: 'Szezonalitás' },
+        { t: 'Chat-témák eltolódása', det: ['chat-topic-shift'] },
+        { t: 'Tudástár-triázs döntések', det: ['knowledge-rejection-pattern'], sensitive: true },
+        { t: 'Életjel-gyűrűk' },
+        { t: 'Quest-szövegek' },
+        { t: 'Memoár + predikció' }
+      ] }
+    ],
+    later: [
+      'Súly-naplózási rés (WeightGapDetector — még nem létezik).',
+      'Ami a négy kör lezárása után még felmerül.'
+    ]
+  };
+
+  function leltarRow(item) {
+    var meta = '';
+    if (item.det && item.det.length === 1) meta = '<span class="detchip ghost">' + item.det[0] + '</span>';
+    else if (item.det && item.det.length > 1) meta = '<span class="detcount">' + item.det.length + ' detektor</span>';
+    var sens = item.sensitive ? '<span class="sensdot" title="érzékeny"></span>' : '';
+    return '<div class="lrow"><div class="lw">' + item.t + '</div>' +
+      (meta || sens ? '<div class="rmeta">' + sens + meta + '</div>' : '') + '</div>';
+  }
+
+  function renderBekotve() {
+    document.getElementById('lpBekotve').innerHTML = '<div class="leltarcard sage">' +
+      INVENTORY.reads.map(function (r) {
+        var chips = r.chips.length ? '<div class="valchips">' +
+          r.chips.map(function (c) { return '<span class="valchip">' + c + '</span>'; }).join('') + '</div>' : '';
+        return '<div class="lrow"><div class="check">✓</div><div class="grow"><div class="lw">' + r.w + '</div>' + chips + '</div></div>';
+      }).join('') + '</div>';
+  }
+  function renderTervezett() {
+    var idx = INVENTORY.rounds.map(function (rnd) {
+      return '<div class="korindex" data-kor="' + rnd.n + '"><span class="rnum">' + rnd.n + '. KÖR</span>' +
+        '<div class="grow"><div class="kt">' + rnd.title + '</div><div class="kc">' + rnd.items.length + ' tétel</div></div>' +
+        '<span class="chev">›</span></div>';
+    }).join('');
+    document.getElementById('lpTervezett').innerHTML = idx +
+      '<div class="laterline">+ még ' + INVENTORY.later.length + ' terület később</div>';
+  }
+  renderBekotve();
+  renderTervezett();
+
+  var leltarSegs = document.getElementById('leltarSegs');
+  leltarSegs.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-lseg]');
+    if (!b) return;
+    var seg = b.getAttribute('data-lseg');
+    leltarSegs.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+    document.getElementById('lpBekotve').classList.toggle('on', seg === 'bekotve');
+    document.getElementById('lpTervezett').classList.toggle('on', seg === 'tervezett');
+  });
+
+  function openKor(n) {
+    var rnd = INVENTORY.rounds.filter(function (r) { return r.n === n; })[0];
+    if (!rnd) return;
+    document.getElementById('korName').textContent = rnd.n + '. KÖR';
+    document.getElementById('korSub').textContent = rnd.title + ' · ' + rnd.items.length + ' tétel';
+    document.getElementById('korItems').innerHTML = rnd.items.map(leltarRow).join('');
+    openPage('page-kor');
+  }
+  document.getElementById('lpTervezett').addEventListener('click', function (e) {
+    var t = e.target.closest('[data-kor]');
+    if (!t) return;
+    openKor(parseInt(t.getAttribute('data-kor'), 10));
+  });
+
+  // ===== detektor-katalógus oldal =====
+  document.getElementById('detList').innerHTML = DETECTOR_CATALOG.map(function (d) {
+    var ex = EXPERTS[d.who];
+    return '<div class="lrow"><div class="grow"><div class="lw">' + d.line + '</div></div>' +
+      '<div class="rmeta" style="flex-direction:column;align-items:flex-end;gap:3px;">' +
+      '<span class="detchip ghost">' + d.key + '</span>' +
+      '<small style="font-size:6.5px;font-weight:700;color:' + ex.color + ';">' + ex.name + '</small></div></div>';
+  }).join('');
+
+  // ===== Gépterem hub — kompakt csempe-mozaik =====
+  var weekRunsThis = WEEKS[WEEKS.length - 1].days.reduce(function (acc, d) {
+    acc.runs += 1 + (d.konzilium ? 1 : 0);
+    acc.obs += d.ejszaka.quiet ? 0 : d.ejszaka.chains.length;
+    return acc;
+  }, { runs: 0, obs: 0 });
+  var bekotveCount = INVENTORY.reads.length + DETECTOR_CATALOG.length;
+  var tervezettCount = INVENTORY.rounds.reduce(function (s, r) { return s + r.items.length; }, 0);
+  document.getElementById('gepLede').textContent = ejszakaLede(RUN_INDEX['ejsz-30']);
+  document.getElementById('gepTiles').innerHTML =
+    '<div class="dimtile t-gepterem rise" style="--d:60ms;--sh:rgba(61,82,92,0.35);" data-page="page-futasok" role="button" tabindex="0" aria-label="Futások">' +
+      '<div class="dhd"><div class="gpic"><svg width="17" height="17" viewBox="0 0 100 100"><use href="#i-idozito"/></svg></div>' +
+      '<div class="p-eyebrow" style="color:#3D525C;">Futások</div></div>' +
+      '<div class="dline">e héten ' + weekRunsThis.runs + ' futás · ' + weekRunsThis.obs + ' megfigyelés</div>' +
+    '</div>' +
+    '<div class="dimtile t-gepterem rise" style="--d:100ms;--sh:rgba(61,82,92,0.35);" data-page="page-leltar" role="button" tabindex="0" aria-label="Adatforrások">' +
+      '<div class="dhd"><div class="gpic"><svg width="17" height="17" viewBox="0 0 100 100"><use href="#i-retegek"/></svg></div>' +
+      '<div class="p-eyebrow" style="color:#3D525C;">Adatforrások</div></div>' +
+      '<div class="dline">' + bekotveCount + ' bekötve · ' + tervezettCount + ' tervezett</div>' +
+    '</div>' +
+    '<div class="dimtile t-gepterem rise" style="--d:140ms;--sh:rgba(61,82,92,0.35);" id="ainaploTile" role="button" tabindex="0" aria-label="AI-napló">' +
+      '<div class="dhd"><div class="gpic"><svg width="17" height="17" viewBox="0 0 100 100"><use href="#i-tudas"/></svg></div>' +
+      '<div class="p-eyebrow" style="color:#3D525C;">AI-napló</div></div>' +
+      '<div class="dline">minden hívás tárolva</div>' +
+    '</div>' +
+    '<div class="dimtile t-gepterem rise" style="--d:180ms;--sh:rgba(61,82,92,0.35);" data-page="page-detektorok" role="button" tabindex="0" aria-label="Detektorok">' +
+      '<div class="dhd"><div class="gpic"><svg width="17" height="17" viewBox="0 0 100 100"><use href="#i-minta"/></svg></div>' +
+      '<div class="p-eyebrow" style="color:#3D525C;">Detektorok</div></div>' +
+      '<div class="dline">' + DETECTOR_CATALOG.length + ' aktív detektor</div>' +
+    '</div>';
+  document.getElementById('ainaploTile').addEventListener('click', function () {
+    toast('AI-napló → lásd az Én tab AI-napló prototípusát (feature=character szűrő)');
+  });
+  document.getElementById('ainaploTile').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') toast('AI-napló → lásd az Én tab AI-napló prototípusát (feature=character szűrő)');
+  });
+
+  // ===== csapat klaszter (hub + bootstrap) =====
+  var clustOrder = ['doki', 'edzo', 'taplalkozo', 'szomnologus', 'pszichologus', 'drill', 'antropologus'];
+  var clustHTML = clustOrder.map(function (k) {
+    return '<div class="cd">' + orbHTML(k, 20) + '</div>';
+  }).join('') + '<div class="cd">' + orbHTML('szkeptikus', 20) + '</div>' +
+    '<div class="cd">' + mezoOrbHTML(20) + '</div>';
+  document.getElementById('clust').innerHTML = clustHTML;
+  var bootCluster = document.getElementById('bootCluster');
+  bootCluster.innerHTML = clustOrder.map(function (k) {
+    return '<div class="cd">' + orbHTML(k, 26) + '</div>';
+  }).join('') + '<div class="cd">' + orbHTML('szkeptikus', 26) + '</div>' +
+    '<div class="cd">' + mezoOrbHTML(26) + '</div>';
+
+  function toast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('on');
+    clearTimeout(t._h);
+    t._h = setTimeout(function () { t.classList.remove('on'); }, 2200);
+  }
+
+  function openPage(id) {
+    var pg = document.getElementById(id);
+    pg.classList.add('open');
+    pg.classList.remove('play');
+    var body = pg.querySelector('.page-body');
+    if (body) body.scrollTop = 0;
+    void pg.offsetWidth;
+    pg.classList.add('play');
+  }
+  function closePage(id) { document.getElementById(id).classList.remove('open'); }
+  document.querySelectorAll('[data-back]').forEach(function (b) {
+    b.addEventListener('click', function () { closePage(b.getAttribute('data-back')); });
+  });
+  document.querySelectorAll('[data-page]').forEach(function (el) {
+    function go() { openPage(el.getAttribute('data-page')); }
+    el.addEventListener('click', go);
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+  });
+
+  function renderDim(key) {
+    var d = DIMS.filter(function (x) { return x.key === key; })[0];
+    if (!d) return;
+    var ex = d.chapter ? { name: 'AI', color: d.color } : EXPERTS[d.expert];
+    var page = document.getElementById('page-dim');
+    page.style.setProperty('--pwash', ex.color + '2e');
+    var avatarEl = document.getElementById('dimAvatar');
+    avatarEl.style.setProperty('--pc', ex.color);
+    if (d.chapter) {
+      avatarEl.className = 'dimavatar chaptermark';
+      avatarEl.innerHTML = '✦';
+    } else {
+      avatarEl.className = 'dimavatar';
+      avatarEl.innerHTML = orbHTML(d.expert, 58);
+    }
+    document.getElementById('dimNum').textContent = d.maturity + '%';
+    document.getElementById('dimNum').style.color = ex.color;
+    document.getElementById('dimName').textContent = d.title;
+    document.getElementById('dimSub').textContent = d.chapter ? d.ownerLabel : (ex.name + ' · érettség');
+    document.getElementById('dimPortrait').textContent = d.portrait;
+    document.getElementById('dimClaims').innerHTML = d.claims.map(function (c, i) {
+      var conf = CONF[c.conf];
+      return '<div class="claimtile rise" style="--d:' + (i * 70) + 'ms;" data-claim="' + key + '-' + i + '">' +
+        '<span class="confchip ' + conf.cls + '">' + conf.lbl + '</span>' +
+        (c.sensitive ? '' : '') +
+        '<div class="ctxt">' + c.text + '</div>' +
+        (c.mirror ? '<div class="cmirror">' + c.mirror + '</div>' : '') +
+        '<div class="fbpills">' +
+        '<button class="fbp talal" data-fb="talal">Talál</button>' +
+        '<button class="fbp nemigaz" data-fb="nemigaz">Nem igaz</button>' +
+        '<button class="fbp pont" data-fb="pont">Pontosítom</button>' +
+        '</div>' +
+        '<div class="fbtext"><textarea placeholder="Mit pontosítanál?"></textarea><button class="cta send" style="padding:6px 14px;font-size:9.5px;">Küldés</button></div>' +
+        '</div>';
+    }).join('');
+    // sensitive class must be applied after innerHTML replace (rise class already set above)
+    d.claims.forEach(function (c, i) {
+      if (c.sensitive) document.querySelector('[data-claim="' + key + '-' + i + '"]').classList.add('sensitive');
+    });
+    openPage('page-dim');
+  }
+  document.querySelectorAll('[data-dim]').forEach(function (el) {
+    function go() { renderDim(el.getAttribute('data-dim')); }
+    el.addEventListener('click', go);
+    el.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+  });
+
+  document.getElementById('dimClaims').addEventListener('click', function (e) {
+    var pill = e.target.closest('[data-fb]');
+    if (!pill) return;
+    var tile = pill.closest('.claimtile');
+    var kind = pill.getAttribute('data-fb');
+    if (kind === 'talal') {
+      pill.classList.add('flash');
+      var thanks = document.createElement('div');
+      thanks.className = 'fbthanks';
+      thanks.textContent = '✓ Köszönöm — jegyzem.';
+      tile.querySelector('.fbpills').after(thanks);
+      pill.parentNode.querySelectorAll('button').forEach(function (b) { b.disabled = true; });
+    } else if (kind === 'nemigaz') {
+      tile.classList.add('retired');
+      var lbl = document.createElement('div');
+      lbl.className = 'retiredlbl';
+      lbl.textContent = 'nyugdíjazva — a csapat nem viszi tovább';
+      tile.querySelector('.fbpills').replaceWith(lbl);
+      toast('Rendben — a csapat nem viszi tovább');
+    } else if (kind === 'pont') {
+      var box = tile.querySelector('.fbtext');
+      box.classList.toggle('open');
+    }
+  });
+  document.getElementById('dimClaims').addEventListener('click', function (e) {
+    if (!e.target.classList.contains('send')) return;
+    var tile = e.target.closest('.claimtile');
+    tile.querySelector('.fbtext').classList.remove('open');
+    toast('Elküldve — a következő konzíliumon foglalkozik vele a csapat');
+  });
+
+  document.getElementById('dimChat').addEventListener('click', function () {
+    toast('Chat átadás → Mezo tab (lásd a mezo-tab prototípust)');
+  });
+
+  var csapatBody = document.getElementById('csapatBody');
+  csapatBody.innerHTML = '<p class="p-eyebrow" style="color:#5D4FA0;padding:0 2px 8px;">' +
+    'Mezo belső tanácsa — ők dolgoznak a karakteren</p>' +
+    CSAPAT.map(function (p, i) {
+      var ex = EXPERTS[p.key];
+      return '<div class="persocard rise" style="--d:' + (i * 55) + 'ms;"><div class="pdisc" style="--pc:' + ex.color + ';">' + orbHTML(p.key, 36) + '</div>' +
+        '<div class="pinfo"><div class="pnm">' + ex.name + '</div><div class="prole">' + p.voice + '</div>' +
+        '<div class="pwatch">mit figyel: ' + p.watch.join(' · ') + '</div>' +
+        '<span class="pchip" style="--pcw:' + ex.wash + ';--pc:' + ex.color + ';">' + p.role + '</span></div></div>';
+    }).join('') +
+    '<div class="persocard szkeptikus rise" style="--d:' + (CSAPAT.length * 55) + 'ms;"><div class="pdisc">' + orbHTML('szkeptikus', 36) + '</div>' +
+    '<div class="pinfo"><div class="pnm">Szkeptikus</div><div class="prole">Száraz kontrás hang.</div>' +
+    '<div class="pwatch">minden javaslatot megtámad, mielőtt a dossziéba kerül — gyenge bizonyíték, ' +
+    'túlzott általánosítás, egy adatpontból levont következtetés.</div></div></div>' +
+    '<div class="persocard mezo rise" style="--d:' + ((CSAPAT.length + 1) * 55) + 'ms;"><div class="pdisc orb">' + mezoOrbHTML(34) + '</div>' +
+    '<div class="pinfo"><div class="pnm">Mezo</div><div class="prole">Elnök · Integrátor</div>' +
+    '<div class="pwatch">ő összegez feléd — a csapat az ő fejében dolgozik.</div></div></div>';
+
+  var KONZ = [
+    { id: 'w2', date: 'aug 30. · vasárnap', kind: 'weekly', out: '2 elfogadva · 1 nyugdíjazva · 3 portré átírva', unread: true },
+    { id: 'w1', date: 'aug 23. · vasárnap', kind: 'weekly', out: '1 elfogadva · 0 nyugdíjazva · 1 portré átírva' },
+    { id: 'w0', date: 'aug 16. · vasárnap', kind: 'weekly', out: '1 elfogadva · 0 nyugdíjazva · 0 portré átírva' },
+    { id: 'm1', date: 'aug 1. · havi mélyolvasás', kind: 'havi', out: '4 állítás frissült · 1 fejezet nyugdíjazva' },
+    { id: 'b0', date: 'júl 15. · bootstrap', kind: 'boot', out: 'a teljes eddigi történet beolvasva · 9 kezdő állítás' }
+  ];
+  var KBADGE = { weekly: 'HETI', havi: 'HAVI', boot: 'BOOTSTRAP' };
+  document.getElementById('konzList').innerHTML = KONZ.map(function (k, i) {
+    return '<div class="konzrow rise" style="--d:' + (i * 50) + 'ms;" data-konz="' + k.id + '"><div class="grow"><div class="kd">' + k.date +
+      (k.unread ? '<span class="pulsedot sm"></span>' : '') + '</div>' +
+      '<div class="ks">' + k.out + '</div></div><span class="kbadge ' + k.kind + '">' + KBADGE[k.kind] + '</span></div>';
+  }).join('');
+
+  var TRANSCRIPT = {
+    counts: { accepted: 2, retired: 1, rewritten: 3 },
+    turns: [
+      { who: 'doki', phase: 'Javaslatok', text: 'Javaslat: a testzsír-trend és a stagnáló testsúly rekompozícióra utal — ' +
+        'a bizonyíték három egymást követő heti mérés.' },
+      { who: 'drill', phase: 'Javaslatok', text: 'Javaslat: a heti fókuszok teljesítési aránya az elmúlt négy hétben ' +
+        'végig 80% felett — ez stabil fegyelem-jel.' },
+      { who: 'taplalkozo', phase: 'Javaslatok', text: 'Javaslat: a hétvégi fehérje-elmaradás három hete következetes ' +
+        'mintázat — érdemes „figyeljük” szinten felvenni.' },
+      { who: 'pszichologus', phase: 'Javaslatok', text: 'Megfigyelés: néha halasztod a nehezebb érzelmi témák leírását a ' +
+        'naplóban.', userQuote: 'Nem szándékosan halasztom — inkább nem mindig találok rá szavakat gyorsan.' },
+      { who: 'szkeptikus', phase: 'A Szkeptikus', text: 'Doki állítása három adatpontra épül — ez kevés egy "biztos" ' +
+        'minősítéshez, javaslom "valószínű"-re fokozni, amíg nem látunk egy negyedik hetet is. Drill ' +
+        'állítása erősebb, de a mintaidőszak rövid a heti fókuszok bevezetése óta. A Táplálkozó javaslata ' +
+        'elfogadható, de csak "figyeljük" szinten — három hét kevés egy erősebb szóhoz.' },
+      { who: 'mezo', phase: 'Döntés', text: 'Elfogadom Doki állítását "valószínű" szinttel — a Szkeptikus érve helytálló. ' +
+        'Drill állítását elfogadom "biztos" szinttel — négy egymást követő hét konzisztens jel. A ' +
+        'Táplálkozó javaslatát "figyeljük" szinten veszem fel. A Pszichológus megfigyelését tükröző ' +
+        'fogalmazással veszem fel, "figyeljük" szinten — nem ítélet, csak jelzés, amit Daniel is pontosított.', ruling: true }
+    ]
+  };
+  var konzList = document.getElementById('konzList');
+  var konzTranscript = document.getElementById('konzTranscript');
+  document.getElementById('konzOutcome').innerHTML =
+    '<div class="oh-title">Kimenet</div><div class="outcells">' +
+    '<div class="outcell" style="--ow:rgba(143,175,126,0.2);--oc:#4E6B42;"><b>' + TRANSCRIPT.counts.accepted + '</b><small>elfogadva</small></div>' +
+    '<div class="outcell" style="--ow:rgba(201,150,46,0.18);--oc:#A8801F;"><b>' + TRANSCRIPT.counts.retired + '</b><small>nyugdíjazva</small></div>' +
+    '<div class="outcell" style="--ow:rgba(138,118,204,0.16);--oc:#5D4FA0;"><b>' + TRANSCRIPT.counts.rewritten + '</b><small>portré átírva</small></div>' +
+    '</div>';
+  (function () {
+    var html = '', openGroup = false, lastPhase = null, di = 0;
+    TRANSCRIPT.turns.forEach(function (t, i) {
+      var isSp = t.who === 'szkeptikus', isRul = t.who === 'mezo';
+      var ex = isSp ? PERSONAS.szkeptikus : isRul ? { name: 'Mezo', color: '#FF5B36' } : EXPERTS[t.who];
+      if (t.phase !== lastPhase) {
+        if (openGroup) { html += '</div>'; openGroup = false; }
+        html += '<div class="phaselbl">' + t.phase + '</div>';
+        lastPhase = t.phase;
+      }
+      if (!isRul && !openGroup) { html += '<div class="turnsgroup">'; openGroup = true; }
+      if (isRul && openGroup) { html += '</div>'; openGroup = false; }
+      html += '<div class="turn' + (isSp ? ' szkeptikus' : '') + (isRul ? ' ruling' : '') + ' rise" style="--d:' + (di * 90) + 'ms;--tc:' + ex.color + ';">' +
+        (isRul ? '' : '<div class="tavatar" style="--tc:' + ex.color + ';">' + (isSp ? orbHTML('szkeptikus', 24) : orbHTML(t.who, 24)) + '</div>') +
+        '<div class="tbub"><div class="tname">' + ex.name + '</div><div class="ttxt">' + t.text + '</div>' +
+        (t.userQuote ? '<div class="userquote"><div class="ul">Daniel válasza</div><div class="ut">' + t.userQuote + '</div></div>' : '') +
+        '</div></div>';
+      di++;
+    });
+    if (openGroup) html += '</div>';
+    document.getElementById('konzTurns').innerHTML = html;
+  })();
+
+  function openKonzTranscript(id) {
+    openPage('page-konz');
+    if (id !== 'w2') { toast('Ez a korábbi konzílium csak a listában elérhető ebben a demóban'); return; }
+    konzList.classList.add('hidden');
+    konzTranscript.classList.add('on');
+    konzTranscript.classList.remove('play');
+    void konzTranscript.offsetWidth;
+    konzTranscript.classList.add('play');
+    document.getElementById('page-konz').querySelector('.page-body').scrollTop = 0;
+  }
+  konzList.addEventListener('click', function (e) {
+    var row = e.target.closest('[data-konz]');
+    if (!row) return;
+    openKonzTranscript(row.getAttribute('data-konz'));
+  });
+  document.getElementById('konzBack').addEventListener('click', function () {
+    konzTranscript.classList.remove('on');
+    konzList.classList.remove('hidden');
+  });
+
+  var ntfwrap = document.getElementById('ntfwrap');
+  document.getElementById('ntfbtn').addEventListener('click', function (e) {
+    e.stopPropagation();
+    ntfwrap.classList.toggle('open');
+  });
+  document.addEventListener('click', function () { ntfwrap.classList.remove('open'); });
+
+  document.getElementById('fab').addEventListener('click', function () { toast('Gyors logolás — lásd az Én tab prototípust'); });
+
+  // ===== bootstrap demo =====
+  var bootLinesShown = false;
+  var bootPctTimer = null;
+  function bootStep(n) {
+    ['boot1', 'boot2', 'boot3'].forEach(function (id, i) {
+      document.getElementById(id).classList.toggle('on', i === n - 1);
+    });
+    if (n === 2 && !bootLinesShown) {
+      bootLinesShown = true;
+      var lines = document.querySelectorAll('#bootLines .bootline');
+      var totalMs = 500 + lines.length * 650 + 700;
+      lines.forEach(function (l, i) {
+        setTimeout(function () { l.classList.add('show'); }, 500 + i * 650);
+      });
+      var pctEl = document.getElementById('bootPct');
+      var start = Date.now();
+      clearInterval(bootPctTimer);
+      bootPctTimer = setInterval(function () {
+        var pct = Math.min(100, Math.round((Date.now() - start) / totalMs * 100));
+        pctEl.textContent = pct + '%';
+        if (pct >= 100) clearInterval(bootPctTimer);
+      }, 80);
+      setTimeout(function () { bootStep(3); }, totalMs);
+    }
+  }
+  document.getElementById('bootStart').addEventListener('click', function () { bootStep(2); });
+  document.getElementById('bootDone').addEventListener('click', function () {
+    closePage('page-boot');
+    openPage('page-konz');
+    toast('Az első konzílium elkészült');
+  });
+  document.getElementById('demoBoot').addEventListener('click', function () {
+    bootLinesShown = false;
+    document.getElementById('bootPct').textContent = '0%';
+    document.querySelectorAll('#bootLines .bootline').forEach(function (l) { l.classList.remove('show'); });
+    var bc = document.getElementById('bootCluster');
+    bc.classList.remove('play');
+    void bc.offsetWidth;
+    bc.classList.add('play');
+    bootStep(1);
+    openPage('page-boot');
+  });
+
+  // ===== üres állapot (204) demo =====
+  var panel = document.getElementById('panel');
+  var emptywrap = document.getElementById('emptywrap');
+  document.getElementById('demoEmpty').addEventListener('click', function () {
+    panel.classList.add('hasempty');
+    emptywrap.classList.add('on');
+  });
+  document.getElementById('emptyBack').addEventListener('click', function () {
+    panel.classList.remove('hasempty');
+    emptywrap.classList.remove('on');
+  });
+})();
+</script>

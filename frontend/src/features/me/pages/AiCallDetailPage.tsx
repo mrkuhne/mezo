@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useLlmCall } from '@/data/hooks'
 import { AiCallUsage } from '@/features/me/components/AiCallUsage'
 import { AiPayloadBlock } from '@/features/me/components/AiPayloadBlock'
@@ -7,6 +7,8 @@ import {
   callKindLabel, formatDateTime, formatLatency, statusLabel, statusTone,
 } from '@/features/me/logic/llmCallFormat'
 import { GhostState } from '@/shared/ui/GhostState'
+import { MozaikPage, PageHead, PageBody, StatStrip, StatCell } from '@/shared/ui/mozaik'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
 // One audited call in full (mezo-uakh) — the debug view. A separate page rather than a sheet:
 // each payload column can hold 64 000 characters, and a call is worth deep-linking to.
@@ -30,6 +32,7 @@ function Cell({ label, value, wide }: { label: string; value: string; wide?: boo
 
 export function AiCallDetailPage() {
   const { id = '' } = useParams()
+  const navigate = useNavigate()
   const { data, isPending, isError, refetch } = useLlmCall(id)
 
   if (isError) {
@@ -44,14 +47,30 @@ export function AiCallDetailPage() {
   const snapshot = data.pricingSnapshot
   const tone = statusTone(data.status)
 
+  const totalTokens = (data.promptTokens ?? 0) + (data.candidatesTokens ?? 0) + (data.thoughtsTokens ?? 0)
   return (
-    <div className="col gap-md" style={{ padding: '14px 12px 24px' }}>
-      <div className="row" style={{ alignItems: 'center', gap: 10 }}>
-        <Link to="/me/ai-usage" aria-label="Vissza" style={{ fontSize: 19, color: 'var(--text-tertiary)' }}>‹</Link>
-        <h1 style={{ fontSize: 16.5, fontWeight: 800, flex: 1, margin: 0 }}>Hívás részletei</h1>
+    // F7.4 Mozaik re-face (mezo-d20.8.4.1, en-mely.html): sky shell, hero = feature·operation,
+    // stat strip with the three headline numbers, then the existing cards on mz-qcard.
+    <MozaikPage tone="sky">
+      <PageHead onBack={() => navigate('/me/ai-usage')} label="‹ AI-használat" />
+      <EntranceGroup>
+      <PageBody className="col gap-md">
+      <div className="rise" style={{ padding: '2px 2px 0' }}>
+        <span className="mz-eyebrow">AI-használat · hívás</span>
+        <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: 22, fontWeight: 600, lineHeight: 1.15, margin: '4px 0 0', color: 'var(--text-primary)' }}>
+          {data.feature}{data.operation ? ` · ${data.operation}` : ''}
+        </h1>
       </div>
-
-      <div className="card" style={{ padding: '13px 14px' }}>
+      {totalTokens > 0 && (
+        <div className="rise" style={{ '--d': '30ms' } as React.CSSProperties}>
+          <StatStrip>
+            <StatCell value={totalTokens.toLocaleString('hu-HU')} label="token" />
+            <StatCell value={data.costUsd != null ? `$${data.costUsd.toFixed(4)}` : '—'} label="költség" />
+            <StatCell value={formatLatency(data.latencyMs)} label="válaszidő" />
+          </StatStrip>
+        </div>
+      )}
+      <div className="mz-qcard rise" style={{ padding: '13px 14px', marginBottom: 0, '--d': '0ms' } as React.CSSProperties}>
         <div className="row" style={{ gap: 6, alignItems: 'center' }}>
           <span style={{ fontSize: 9, fontWeight: 800, borderRadius: 5, padding: '2px 6px', background: 'var(--surface-2)' }}>
             {/* Nullish, not truthy: toolRounds: 0 is a KNOWN value (tools were available, the model
@@ -61,10 +80,7 @@ export function AiCallDetailPage() {
           </span>
           <span style={{ fontSize: 9, fontWeight: 800, color: TONE_COLOR[tone] }}>{statusLabel(data.status)}</span>
         </div>
-        <h2 style={{ fontSize: 16, fontWeight: 800, margin: '7px 0 2px' }}>
-          {data.feature}{data.operation ? ` · ${data.operation}` : ''}
-        </h2>
-        <div className="text-tertiary" style={{ fontSize: 11 }}>
+        <div className="text-tertiary" style={{ fontSize: 11, marginTop: 6 }}>
           {/* The raw ISO instant is wire data, not UI text — the same Europe/Budapest zone the
               list row's clock uses, but with the date, since a detail page is deep-linkable. */}
           {formatDateTime(data.createdAt)}{data.entityKind ? ` · ${data.entityKind}` : ''}
@@ -98,11 +114,17 @@ export function AiCallDetailPage() {
         )}
       </div>
 
-      <AiCallUsage detail={data} />
+      <div className="rise" style={{ '--d': '50ms' } as React.CSSProperties}>
+        <AiCallUsage detail={data} />
+      </div>
 
-      {snapshot && <AiPriceSnapshot snapshot={snapshot} />}
+      {snapshot && (
+        <div className="rise" style={{ '--d': '90ms' } as React.CSSProperties}>
+          <AiPriceSnapshot snapshot={snapshot} />
+        </div>
+      )}
 
-      <div className="card" style={{ padding: '4px 13px 14px' }}>
+      <div className="mz-qcard rise" style={{ padding: '4px 13px 14px', marginBottom: 0, '--d': '130ms' } as React.CSSProperties}>
         <AiPayloadBlock label="Rendszerprompt" text={data.systemPrompt} />
         <AiPayloadBlock label="User üzenet" text={data.userMessage} />
         <AiPayloadBlock label="Válasz" text={data.responseText} />
@@ -118,6 +140,8 @@ export function AiCallDetailPage() {
           </p>
         )}
       </div>
-    </div>
+      </PageBody>
+      </EntranceGroup>
+    </MozaikPage>
   )
 }

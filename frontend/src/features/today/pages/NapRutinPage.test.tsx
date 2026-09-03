@@ -212,3 +212,44 @@ test("the hub's Rutin tile navigates to /nap/rutin?dp=<face> instead of quick-ti
   expect(screen.getByTestId('loc')).toHaveTextContent('/nap/rutin?dp=reggel')
   expect(habitStore.checked).toEqual([])
 })
+
+// ── 1:1 fidelity audit (mezo-d20.11) ────────────────────────────────────────────
+
+test('every habrow carries the habit OWN clay icon (prototype #page-hab items[].i)', async () => {
+  renderPage()
+  await screen.findByText('50 fekvőtámasz')
+  const rows = document.querySelectorAll('.nr-row')
+  expect(rows.length).toBeGreaterThan(0)
+  const hrefs = [...rows].map((r) => r.querySelector('use')?.getAttribute('href'))
+  expect(hrefs).toContain('#i-suly')   // morning_weigh_in
+  expect(hrefs).toContain('#i-hajnal') // wake_on_time
+  expect(hrefs).toContain('#i-edzes')  // morning_pushups
+  expect(new Set(hrefs).size).toBeGreaterThan(1) // NOT one fixed icon for every row
+})
+
+test('a habit carrying a linkUrl renders its title as that external link (the affordance the redesign lost)', async () => {
+  habitStore.seed([
+    { key: 'morning_video', chain: 'MORNING', position: 1, title: 'Reggeli videó', why: '', anchorCopy: 'kávé mellé', mode: 'MANUAL', status: 'pending', xp: 5, strengthPct: 54, linkUrl: 'https://example.com/reggeli' },
+  ])
+  renderPage()
+  const link = await screen.findByRole('link', { name: /Reggeli videó/ })
+  expect(link).toHaveAttribute('href', 'https://example.com/reggeli')
+  expect(link).toHaveAttribute('target', '_blank')
+  expect(link.getAttribute('rel')).toContain('noopener')
+  // the tick stays its own control — the anchor never sits inside a button
+  expect(link.closest('button')).toBeNull()
+})
+
+test('a habit with no linkUrl renders a plain title — no fabricated link', async () => {
+  renderPage()
+  await screen.findByText('50 fekvőtámasz')
+  expect(screen.queryByRole('link')).toBeNull()
+})
+
+test('the lánc-erő bars carry a staggered --d so the .mz-play fill animates', async () => {
+  renderPage()
+  await screen.findByText('50 fekvőtámasz')
+  const bar = document.querySelector('.nr-str div') as HTMLElement
+  expect(bar.style.getPropertyValue('--d')).toMatch(/ms$/)
+  expect(bar.style.width).toMatch(/%$/)
+})

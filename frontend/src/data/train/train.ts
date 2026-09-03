@@ -1,6 +1,6 @@
 import type {
   Mesocycle, WorkoutPlan, GymSchedule, GymScheduleSlot, Sport, ExerciseLibraryItem,
-  GoalPreset, SplitOption, MesoPhase, CustomWorkout, MesoVolumeArc, MuscleVolumeArc, VolumeArcWeek,
+  MesoPhase, CustomWorkout, MesoVolumeArc, MuscleVolumeArc, VolumeArcWeek,
   MesoTemplate, MuscleTier, MusclePriorities,
 } from '@/data/types'
 import type { IconName } from '@/shared/ui/Icon'
@@ -39,11 +39,15 @@ export const SYSTEM_LABELS: Record<string, { label: string; color: string; icon:
   Insights: { label: 'Patterns', color: 'var(--cat-physiology)', icon: 'insights' },
 }
 
+// Prototype fidelity (meso-body.html PSTYLE): the tappable phase curve must read at a
+// glance, so each phase carries a visually distinct hue — sage (ramp-up) → coral
+// (progression) → deep coral (peak) → amber (deload) — instead of three near-identical
+// coral tones that would defeat the point of a scannable curve (mezo-d20.3.7).
 export const MESOCYCLE_PHASE_COLORS: Record<MesoPhase, string> = {
-  MEV: 'var(--coral-deep, var(--coral))',
+  MEV: 'var(--sage)',
   MAV: 'var(--coral)',
-  MRV: 'var(--coral)',
-  Deload: 'var(--text-tertiary)',
+  MRV: 'var(--coral-deep, var(--coral))',
+  Deload: 'var(--amber)',
 }
 // Bar heights per phase, used by the phase-curve mini bars (small variant).
 export function phaseBarHeight(p: MesoPhase): number {
@@ -1042,11 +1046,11 @@ export const sport: Sport = {
     },
   },
   sessions: [
-    { id: 'vb-2026-05-20', sport: 'volleyball', date: 'Máj 20 · Kedd', isoDate: '2026-05-20', time: '18:00', duration: 90, setsPlayed: 5, intensity: 7, rpe: 6.8, shoulderStrain: 6, jumpCount: 38, notes: 'Smashek tisztábbak, jobb váll után érzem délután' },
-    { id: 'vb-2026-05-18', sport: 'volleyball', date: 'Máj 18 · Szo', isoDate: '2026-05-18', time: '10:00', duration: 120, setsPlayed: 6, intensity: 8, rpe: 7.2, shoulderStrain: 7, jumpCount: 52, notes: 'Hosszú meccs · maradt erő utána' },
-    { id: 'vb-2026-05-15', sport: 'volleyball', date: 'Máj 15 · Csü', isoDate: '2026-05-15', time: '19:30', duration: 90, setsPlayed: 4, intensity: 7, rpe: 6.5, shoulderStrain: 5, jumpCount: 31, notes: null },
-    { id: 'vb-2026-05-13', sport: 'volleyball', date: 'Máj 13 · Kedd', isoDate: '2026-05-13', time: '18:00', duration: 90, setsPlayed: 5, intensity: 7, rpe: 6.9, shoulderStrain: 6, jumpCount: 35, notes: null },
-    { id: 'vb-2026-05-11', sport: 'volleyball', date: 'Máj 11 · Szo', isoDate: '2026-05-11', time: '10:00', duration: 120, setsPlayed: 6, intensity: 8, rpe: 7.5, shoulderStrain: 8, jumpCount: 48, notes: 'Sok smash · vasárnap pihentem' },
+    { id: 'vb-2026-05-20', sport: 'volleyball', date: 'Máj 20 · Kedd', isoDate: '2026-05-20', time: '18:00', duration: 90, setsPlayed: 5, rounds: null, intensity: 7, rpe: 6.8, shoulderStrain: 6, jumpCount: 38, notes: 'Smashek tisztábbak, jobb váll után érzem délután' },
+    { id: 'vb-2026-05-18', sport: 'volleyball', date: 'Máj 18 · Szo', isoDate: '2026-05-18', time: '10:00', duration: 120, setsPlayed: 6, rounds: null, intensity: 8, rpe: 7.2, shoulderStrain: 7, jumpCount: 52, notes: 'Hosszú meccs · maradt erő utána' },
+    { id: 'vb-2026-05-15', sport: 'volleyball', date: 'Máj 15 · Csü', isoDate: '2026-05-15', time: '19:30', duration: 90, setsPlayed: 4, rounds: null, intensity: 7, rpe: 6.5, shoulderStrain: 5, jumpCount: 31, notes: null },
+    { id: 'vb-2026-05-13', sport: 'volleyball', date: 'Máj 13 · Kedd', isoDate: '2026-05-13', time: '18:00', duration: 90, setsPlayed: 5, rounds: null, intensity: 7, rpe: 6.9, shoulderStrain: 6, jumpCount: 35, notes: null },
+    { id: 'vb-2026-05-11', sport: 'volleyball', date: 'Máj 11 · Szo', isoDate: '2026-05-11', time: '10:00', duration: 120, setsPlayed: 6, rounds: null, intensity: 8, rpe: 7.5, shoulderStrain: 8, jumpCount: 48, notes: 'Sok smash · vasárnap pihentem' },
   ],
   week: {
     label: 'Hét 21 · Máj 18-24',
@@ -1122,24 +1126,6 @@ export const exerciseLibrary: ExerciseLibraryItem[] = [
   { id: 'exl-21', name: 'Hip Thrust', muscle: 'glute', type: 'compound', stim: 0.86, fatigue: 0.55 },
 ]
 
-// --- planner presets (meso-planner.jsx GOAL_PRESETS + SPLITS) ---
-export const GOAL_PRESETS: GoalPreset[] = [
-  { id: 'hypertrophy', label: 'Hypertrophy', sub: 'Izomtömeg építés', defaultWeeks: 6, split: 'Pull / Push / Legs', days: 5, style: 'RP', phaseTemplate: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'], color: 'var(--coral)', icon: 'train', description: 'Volumen-driven · MAV/MRV progresszió · klasszikus RP hypertrophy blokk' },
-  { id: 'strength', label: 'Strength', sub: '1RM növelés', defaultWeeks: 7, split: 'Upper / Lower', days: 4, style: 'Linear', phaseTemplate: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload'], color: 'var(--info, var(--coral))', icon: 'train', description: 'Intenzitás-driven · 3-6 reps · alacsonyabb volumen · hosszabb pihenő' },
-  { id: 'cut-prep', label: 'Pre-cut prep', sub: 'Karbantartás · zsírvesztés előtt', defaultWeeks: 3, split: 'Full body', days: 4, style: 'Maintenance', phaseTemplate: ['MAV', 'MAV', 'MAV'], color: 'var(--warning)', icon: 'fuel', description: 'Volumen-tartás · izom-megőrzés · deficit nélkül' },
-  { id: 'recovery', label: 'Recovery', sub: 'Niggle után · újraépítés', defaultWeeks: 4, split: 'Custom', days: 3, style: 'Rehab', phaseTemplate: ['MEV', 'MEV', 'MAV', 'MAV'], color: 'var(--anchor-accent, var(--cat-preference))', icon: 'anchor', description: 'Isoláció-fokú · alacsony fatigue · niggle-aware substitúció' },
-  { id: 'sport', label: 'Sport-specific', sub: 'Volleyball-driven blokk', defaultWeeks: 5, split: 'Upper / Lower / Sport', days: 5, style: 'Conjugate', phaseTemplate: ['MEV', 'MAV', 'MAV', 'MRV', 'Deload'], color: 'var(--cat-tendency)', icon: 'today', description: 'Vertikális teljesítmény · vállstabilitás · plyo-integráció' },
-  { id: 'erohipertrofia', label: 'Erő-Hipertrófia', sub: '6-8 rep · failure', defaultWeeks: 6, split: 'Láb+Plyo / Felső', days: 4, style: 'RP', phaseTemplate: ['MEV', 'MAV', 'MAV', 'MRV', 'MRV', 'Deload'], color: 'var(--coral)', icon: 'train', description: 'Kevés gyakorlat · 6-8 rep RIR 0 · plyo-vezérelt láb + felső' },
-]
-export const SPLITS: SplitOption[] = [
-  { label: 'Pull / Push / Legs', days: [4, 5, 6], best: 'hypertrophy' },
-  { label: 'Upper / Lower', days: [3, 4], best: 'strength' },
-  { label: 'Full body', days: [3, 4, 5], best: 'cut-prep' },
-  { label: 'Upper / Lower / Sport', days: [4, 5], best: 'sport' },
-  { label: 'Láb+Plyo / Felső', days: [4], best: 'erohipertrofia' },
-  { label: 'Custom split', days: [3, 4, 5, 6], best: null },
-]
-
 // Done-day review fixture (mock mode) — lets /train/review/:id render offline.
 // Each ExerciseSetResponse carries the required `skipped` flag (contract: default
 // false, but the generated type keeps it required).
@@ -1151,6 +1137,10 @@ export const workoutDetailMock = {
   title: 'Pull Day',
   dayLabel: 'Hét',
   durationEst: 62,
+  // The workout-level closing note (mezo-d20.8.2.2). Seeded HERE and deliberately NOT on
+  // workoutDetailPrevMock: stepping back to the reference must reach a session with no note, so
+  // the `＋ Jegyzet ehhez az edzéshez` path is reachable offline too.
+  note: 'Öt órát aludtam, mégis vitt a lendület. A húzódzkodás az utolsó szettnél fogyott el.',
   exercises: [
     {
       exerciseId: 'ex0', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound',
@@ -1167,3 +1157,68 @@ export const workoutDetailMock = {
     },
   ],
 } satisfies import('@/data/train/trainApi').WorkoutDetailResponse
+
+// The template-day chain behind the review page's comparison and stepping (mezo-d20.8.2.1).
+// Mock mode has no persisted instances, so the chain is seeded: three completed instances of
+// the SAME template day (ts-mock-1), two weeks apart, date-ascending.
+const chainDate = (weeksBack: number): string => {
+  const d = new Date()
+  d.setDate(d.getDate() - weeksBack * 14)
+  return d.toISOString().slice(0, 10)
+}
+
+export const workoutChainMock = [
+  { id: 'wd-mock-first', templateSessionId: 'ts-mock-1', date: chainDate(2), status: 'completed', origin: 'meso', title: 'Pull Day' },
+  { id: 'wd-mock-prev', templateSessionId: 'ts-mock-1', date: chainDate(1), status: 'completed', origin: 'meso', title: 'Pull Day' },
+  { id: workoutDetailMock.id, templateSessionId: 'ts-mock-1', date: workoutDetailMock.date, status: 'completed', origin: 'meso', title: 'Pull Day' },
+] satisfies import('@/data/train/trainApi').WorkoutSummaryResponse[]
+
+// The reference instance's detail. Deliberately NOT a copy of workoutDetailMock: a comparison
+// against itself would show ±0 everywhere and prove nothing about the tone rule. This one is
+// heavier in volume, lighter in RIR terms and carries no TARGET medal, so the tile reads
+// "volumen down (neutral) · célszett up (sage) · Ø RIR down (neutral)" — the whole ADR 0010
+// point on one screen.
+export const workoutDetailPrevMock = {
+  id: 'wd-mock-prev',
+  templateSessionId: 'ts-mock-1',
+  date: chainDate(1),
+  status: 'completed',
+  title: 'Pull Day',
+  dayLabel: 'Hét',
+  durationEst: 58,
+  exercises: [
+    {
+      exerciseId: 'ex0', name: 'Chest Supported Row', muscle: 'back-mid', type: 'compound',
+      warmupSets: 2, workingSets: 3, repMin: 6, repMax: 9, targetRIR: 1, skipped: false,
+      sets: [
+        { id: 'p1', exerciseId: 'ex0', setIndex: 0, weightKg: 60, reps: 10, kind: 'warmup', skipped: false },
+        { id: 'p2', exerciseId: 'ex0', setIndex: 1, weightKg: 80, reps: 9, rir: 3, kind: 'working', skipped: false },
+        { id: 'p3', exerciseId: 'ex0', setIndex: 2, weightKg: 80, reps: 9, rir: 2, kind: 'working', skipped: false },
+      ],
+    },
+    {
+      exerciseId: 'ex1', name: 'Lat Pulldown', muscle: 'back-wide', type: 'compound',
+      warmupSets: 1, workingSets: 3, repMin: 8, repMax: 12, targetRIR: 1, skipped: false,
+      sets: [
+        { id: 'p4', exerciseId: 'ex1', setIndex: 0, weightKg: 55, reps: 11, rir: 3, kind: 'working', skipped: false },
+      ],
+    },
+  ],
+} satisfies import('@/data/train/trainApi').WorkoutDetailResponse
+
+// The chain-opening instance: nothing precedes it, so the review page renders NEITHER the
+// comparison tile NOR an "Előzőleg" cell for it. It exists in the seed precisely so that
+// honest-absence state is reachable offline (and in the tests) rather than only in theory.
+export const workoutDetailFirstMock = {
+  ...workoutDetailPrevMock,
+  id: 'wd-mock-first',
+  date: chainDate(2),
+  durationEst: 54,
+} satisfies import('@/data/train/trainApi').WorkoutDetailResponse
+
+/** Mock-mode detail lookup; anything not listed falls back to the one review fixture. */
+export const workoutDetailsMock: Record<string, import('@/data/train/trainApi').WorkoutDetailResponse> = {
+  [workoutDetailMock.id]: workoutDetailMock,
+  [workoutDetailPrevMock.id]: workoutDetailPrevMock,
+  [workoutDetailFirstMock.id]: workoutDetailFirstMock,
+}

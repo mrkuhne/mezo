@@ -6,6 +6,8 @@
  * The key sets below mirror the backend extractors — a new hour/binary MetricKey needs an entry
  * here too, otherwise it falls back to the plain-number path.
  */
+import { addDays, huMonthDay, localDateString } from '@/shared/lib/dates'
+
 const HOUR_KEYS = new Set(['late-meal-hour', 'bedtime-hour', 'wakeup-hour'])
 const BINARY_KEYS = new Set(['weekend', 'ritual-closed'])
 
@@ -42,4 +44,16 @@ export function formatP(p: number | null | undefined): string {
   if (p == null) return '—'
   if (p < 0.0005) return '<0.001'
   return String(Number(p.toFixed(3)))
+}
+
+/** „ma" / „tegnap" / „Máj 20" — a lefedettség-csempe emberi dátuma (mezo-fj1g).
+ *  A `MetricCoverageRing` komponensből költözött ide (mezo-d20.11): a komponensnek a
+ *  Mozaik-re-face óta nem volt hívója (gazdátlan), ez a formázó viszont a Minták
+ *  Adat-egészség csempéin él tovább. */
+export function lastSeenLabel(iso: string | null): string | null {
+  if (!iso) return null
+  const today = localDateString()
+  if (iso === today) return 'ma'
+  if (iso === addDays(today, -1)) return 'tegnap'
+  return huMonthDay(iso)
 }

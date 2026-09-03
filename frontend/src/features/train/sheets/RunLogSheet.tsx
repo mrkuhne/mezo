@@ -41,7 +41,14 @@ export function RunLogSheet({ ctx, onClose, onSave, date }: {
             </button>
           </div>
           <div className="col gap-md">
-            {ctx.isSprint && <NumberStep label="Teljesített körök" val={rounds} step={1} min={0} max={30} onChange={setRounds} color="var(--sky)" />}
+            {/* Shown for pyramid sessions TOO (not just sprint) — the designed fix for the
+                real completedRounds scoring bug: capture the value honestly on every kind
+                and send it, even though the pyramid-aware scoring itself is F6.3 (backend). */}
+            <NumberStep
+              label="Teljesített körök"
+              hint={ctx.isSprint ? undefined : 'piramis-szakaszok · a haladás ebből számol'}
+              val={rounds} step={1} min={0} max={30} onChange={setRounds} color="var(--sky)"
+            />
             <ScaleRow label="RPE · érzékelt nehézség" val={rpe} onChange={setRpe} color="var(--sky)" />
             <NumberStep label="Pulzus-megnyugvás · mp" val={hr} step={5} min={0} max={300} onChange={setHr} />
             <div className="col gap-sm">
@@ -56,7 +63,7 @@ export function RunLogSheet({ ctx, onClose, onSave, date }: {
             <CtaPrimary className="flex-1" disabled={saving} onClick={() => {
               const body: RunSessionLogRequest = {
                 blockId: ctx.blockId, weekNumber: ctx.weekNumber, sessionKey: ctx.sessionKey, date: logDate,
-                completedRounds: ctx.isSprint ? rounds : null, rpeActual: rpe, hrRecoverySec: hr,
+                completedRounds: rounds, rpeActual: rpe, hrRecoverySec: hr,
                 sprintLandmark: null, durationMin: null, notes: notes || null,
               }
               // Defer close to the parent (runs after the log succeeds); close

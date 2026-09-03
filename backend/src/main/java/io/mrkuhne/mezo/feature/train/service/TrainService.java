@@ -17,7 +17,9 @@ import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleReportEntity;
 import io.mrkuhne.mezo.feature.train.entity.MuscleGroupVolumeLogEntity;
 import io.mrkuhne.mezo.feature.train.entity.ProvenanceEnvelope;
+import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.config.TrainProperties;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseCatalogRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
@@ -73,6 +75,7 @@ public class TrainService {
     private final MesocycleReportService reportService;
     private final CatalogMediaResolver catalogMediaResolver;
     private final TrainMapper mapper;
+    private final TrainProperties trainProperties;
     // Baseline seeding (mezo-xlmp): volume-log rows born on the create-as-active/activate path,
     // behind the volume-progression switch (gate bean absent ⇔ switch off — mirrors WorkoutService).
     private final VolumeProgressionService volumeProgressionService;
@@ -131,9 +134,42 @@ public class TrainService {
         }).toList();
     }
 
-    public List<SportSessionResponse> listSportSessions(UUID createdBy) {
-        return sportSessionRepository.findByCreatedByAndDeletedFalseOrderByDateDesc(createdBy)
-            .stream().map(mapper::toResponse).toList();
+    /**
+     * The owned sport log, newest date first, optionally narrowed to an inclusive {@code from..to}
+     * window (mezo-d20.7.1 — the Sport Napló 4-week idő+RPE trend). Both bounds are optional: with
+     * neither given this is the historical whole-log read, and a single given bound leaves the
+     * other side unbounded exactly as before. When both are present the range must be forward and
+     * no wider than {@code mezo.train.sport-session-max-span-days} — a guard against a client
+     * asking for a decade in one call; the open-ended forms are deliberately left unguarded
+     * because they are the pre-existing behaviour. Pure read: no {@code @Transactional}.
+     */
+    public List<SportSessionResponse> listSportSessions(UUID createdBy, LocalDate from, LocalDate to) {
+        if (from != null && to != null) {
+            if (from.isAfter(to)) {
+                throw new SystemRuntimeErrorException(
+                    SystemMessage.error("TRAIN_INVALID_DATE_RANGE").build(), HttpStatus.BAD_REQUEST);
+            }
+            long spanDays = ChronoUnit.DAYS.between(from, to) + 1; // inclusive
+            if (spanDays > trainProperties.sportSessionMaxSpanDays()) {
+                throw new SystemRuntimeErrorException(
+                    SystemMessage.error("TRAIN_DATE_RANGE_TOO_WIDE").build(), HttpStatus.BAD_REQUEST);
+            }
+            return map(sportSessionRepository
+                .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(createdBy, from, to));
+        }
+        if (from != null) {
+            return map(sportSessionRepository
+                .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(createdBy, from));
+        }
+        if (to != null) {
+            return map(sportSessionRepository
+                .findByCreatedByAndDeletedFalseAndDateLessThanEqualOrderByDateDesc(createdBy, to));
+        }
+        return map(sportSessionRepository.findByCreatedByAndDeletedFalseOrderByDateDesc(createdBy));
+    }
+
+    private List<SportSessionResponse> map(List<SportSessionEntity> sessions) {
+        return sessions.stream().map(mapper::toResponse).toList();
     }
 
     /**
@@ -225,8 +261,8 @@ public class TrainService {
         // a planned run stays profile-less until activation (MesoVolume's "csak aktív" guard). The
         // plan's own landmarks win; seedBaselines then fills every trained group it left out.
         if (active && volumeGate.getIfAvailable() != null) {
-            seedPlanBaselines(createdBy, saved.getId(), src.volumePerMuscle());
-            volumeProgressionService.seedBaselines(createdBy, saved.getId());
+            seedPlanBaselines(createdBy, saved.getId(), src.volumePerMuscle(), src.musclePriorities());
+            volumeProgressionService.seedBaselines(createdBy, saved.getId(), src.musclePriorities());
         }
         return assembleResponse(createdBy, saved);
     }
@@ -237,7 +273,7 @@ public class TrainService {
         // Unconditional (even when already active): idempotent seeding doubles as the backfill
         // path for pre-mezo-xlmp mesos that were created without volume-log rows.
         if (volumeGate.getIfAvailable() != null) {
-            volumeProgressionService.seedBaselines(createdBy, id);
+            volumeProgressionService.seedBaselines(createdBy, id, target.getMusclePriorities());
         }
         if (!"active".equals(target.getStatus())) {
             // Single-active invariant (spec rule): activating archives every other active meso.
@@ -403,10 +439,12 @@ public class TrainService {
     /**
      * The plan document's per-muscle landmarks become the run's volume-log rows, wrapped in the
      * same baseline {@link ProvenanceEnvelope} shape {@link VolumeProgressionService#seedBaselines}
-     * writes ({@code currentSets = MEV}, the W1 start). Runs BEFORE that RP-table seeding, whose
-     * idempotency then leaves these rows untouched and only fills the groups the plan left out.
+     * writes ({@code currentSets = } the tier's week-1 start (EMPHASIZE MEV+2, else MEV)). Runs
+     * BEFORE that RP-table seeding, whose idempotency then leaves these rows untouched and only
+     * fills the groups the plan left out.
      */
-    private void seedPlanBaselines(UUID createdBy, UUID mesoId, Map<String, VolumeBaseline> baselines) {
+    private void seedPlanBaselines(
+            UUID createdBy, UUID mesoId, Map<String, VolumeBaseline> baselines, Map<String, String> priorities) {
         if (baselines == null || baselines.isEmpty()) {
             return;
         }
@@ -419,7 +457,7 @@ public class TrainService {
             row.setMev(b.getMev());
             row.setMav(b.getMav());
             row.setMrv(b.getMrv());
-            row.setCurrentSets(b.getMev());
+            row.setCurrentSets(PriorityTier.of(priorities, muscle).weekOneStart(b.getMev(), b.getMav(), b.getMrv()));
             // confidence is contract-required on VolumeSource; 0.5 = plan-level numbers, not
             // personalized from logged performance.
             row.setSource(new ProvenanceEnvelope(

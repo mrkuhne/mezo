@@ -6,8 +6,10 @@ import io.mrkuhne.mezo.api.dto.ChallengeResponse;
 import io.mrkuhne.mezo.api.dto.ExperimentDecisionRequest;
 import io.mrkuhne.mezo.api.dto.ExperimentResponse;
 import io.mrkuhne.mezo.api.dto.FeedMessageResponse;
+import io.mrkuhne.mezo.api.dto.MemoirArchiveResponse;
 import io.mrkuhne.mezo.api.dto.MemoirResponse;
 import io.mrkuhne.mezo.api.dto.PredictionResponse;
+import io.mrkuhne.mezo.api.dto.WeeklyLessonResponse;
 import io.mrkuhne.mezo.api.dto.WeeklyReviewDigestResponse;
 import io.mrkuhne.mezo.api.dto.WeeklyReviewResponse;
 import io.mrkuhne.mezo.api.dto.WeeklySuggestionResponse;
@@ -17,6 +19,7 @@ import io.mrkuhne.mezo.feature.proactive.service.ProactiveFeedService;
 import io.mrkuhne.mezo.feature.proactive.service.ProactiveMemoirService;
 import io.mrkuhne.mezo.feature.proactive.service.ProactivePredictionService;
 import io.mrkuhne.mezo.feature.proactive.service.ProactiveWeeklySuggestionService;
+import io.mrkuhne.mezo.feature.proactive.service.WeeklyLessonService;
 import io.mrkuhne.mezo.feature.proactive.service.WeeklyReviewDigestService;
 import io.mrkuhne.mezo.feature.proactive.service.WeeklyReviewService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -47,6 +50,7 @@ public class ProactiveController implements ProactiveApi {
     private final ProactiveFeedService feedService;
     private final WeeklyReviewService weeklyReviewService;
     private final WeeklyReviewDigestService weeklyReviewDigestService;
+    private final WeeklyLessonService weeklyLessonService;
     private final CurrentUserId currentUserId;
 
     private static void requireMonday(LocalDate start) {
@@ -69,6 +73,11 @@ public class ProactiveController implements ProactiveApi {
     @Override
     public MemoirResponse getMemoir() {
         return memoirService.getMemoir(currentUserId.get());
+    }
+
+    @Override
+    public MemoirArchiveResponse getMemoirArchive() {
+        return memoirService.archive(currentUserId.get());
     }
 
     @Override
@@ -111,6 +120,12 @@ public class ProactiveController implements ProactiveApi {
     public WeeklyReviewResponse regenerateWeeklyReview(LocalDate start) {
         requireMonday(start);
         return weeklyReviewService.regenerate(currentUserId.get(), start);
+    }
+
+    @Override
+    public List<WeeklyLessonResponse> getWeeklyReviewLessons(LocalDate start) {
+        requireMonday(start);
+        return weeklyLessonService.list(currentUserId.get(), start);
     }
 
     @Override

@@ -470,6 +470,20 @@ components:
       properties:
         start: { type: string, format: date }
         days: { type: array, items: { $ref: '#/components/schemas/FuelDayRollup' } }
+        mealScoreAvg:
+          type: number
+          nullable: true
+          description: >-
+            Weekly "AI-atlag": the mean of the deterministic meal scores (0..1, mezo-yta) of the
+            week's scored meals, rounded to 3 decimals. NULL when no meal in start..start+6 carries
+            a score (honest-state: never 0-as-a-fake). Derived at read from meal.score, not stored.
+        weightAvgKg:
+          type: number
+          nullable: true
+          description: >-
+            Weekly weight average in kg, rounded to 2 decimals: one value per day that has a
+            weigh-in (that day's LATEST entry, so a multi-weigh-in day is not over-weighted),
+            averaged over those days. NULL when the week has no weigh-in at all.
     RecipeLogResponse:
       type: object
       required: [mealId, slot, loggedAt, kcal, p, c, f]

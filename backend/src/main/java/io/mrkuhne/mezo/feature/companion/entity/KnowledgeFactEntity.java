@@ -29,6 +29,8 @@ public class KnowledgeFactEntity extends OwnedEntity {
     public static final String SOURCE_CHAT = "chat";
     public static final String SOURCE_PATTERN = "pattern";
     public static final String SOURCE_MANUAL = "manual";
+    /** A weekly-review candidate the user accepted (mezo-d20.7.6) — promoted via FactCandidateService. */
+    public static final String SOURCE_WEEKLY_REVIEW = "weekly_review";
 
     @Id
     @GeneratedValue
@@ -46,10 +48,11 @@ public class KnowledgeFactEntity extends OwnedEntity {
     @Column(nullable = false, length = 16)
     private String category;
 
-    /** Mirrors ck_knowledge_fact_source — V1.1 creates only 'manual'; 'chat' = V1.2 extraction, 'pattern' = V3.3 promotion. */
+    /** Mirrors ck_knowledge_fact_source — V1.1 creates only 'manual'; 'chat' = V1.2 extraction,
+     *  'pattern' = V3.3 promotion, 'weekly_review' = an accepted weekly lesson (mezo-d20.7.6). */
     @NotNull
     @Size(max = 16)
-    @Pattern(regexp = "chat|pattern|manual")
+    @Pattern(regexp = "chat|pattern|manual|weekly_review")
     @Column(nullable = false, length = 16)
     private String source;
 

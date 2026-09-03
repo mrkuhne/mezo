@@ -57,7 +57,21 @@ public record CompanionProperties(
         /** How many days back the train digest (gym/sport/run counts) looks, including today. */
         @Min(1) @Max(30) int digestDays,
         /** The latest check-in note is included verbatim, truncated to this many characters. */
-        @Min(0) @Max(1000) int checkinNoteMaxChars
+        @Min(0) @Max(1000) int checkinNoteMaxChars,
+        /**
+         * The workout-level closing note (mezo-d20.13) is included VERBATIM, truncated to this
+         * many characters — never summarized. The note is the user's own sentence about how the
+         * session went, and summarizing it is what destroys the numbers, hedges and specifics
+         * that make it worth carrying at all; truncation is honestly lossy, rewriting fabricates.
+         * 0 turns the injection off. Applies per note, and the snapshot rides EVERY chat turn.
+         */
+        @Min(0) @Max(1000) int workoutNoteMaxChars,
+        /**
+         * mezo-x6oa: how many ACTIVE people (newest mention first) the [Emberek] block of the chat
+         * snapshot lists — name, relationship, this week's mention count and mood direction, one
+         * line each, never quotes. 0 turns the block off entirely (it is omitted, not "nincs adat").
+         */
+        @Min(0) @Max(30) int peopleMaxPersons
     ) {}
 
     /** V1.1 knowledge-fact injection — how much confirmed memory rides in every system prompt. */
@@ -168,6 +182,12 @@ public record CompanionProperties(
         @DecimalMin("0.0") @DecimalMax("1.0") double pruneFloor,
         /** Hard cap on the rendered [Összefüggések] block (estimated tokens, W2.4). */
         @Min(1) int renderMaxTokens,
+        /** Cap on GraphNode refs emitted per turn (mezo-b3pp.33) — topK edges yield up to 2×topK
+         *  node refs (each edge has two endpoints) against the shared
+         *  {@code tools.max-refs-per-turn} budget, and graph refs are added LAST, so an uncapped
+         *  graph turn would fill the whole footer with graph chips and truncate tool/Memory refs
+         *  mid-list. */
+        @Min(1) @Max(20) int maxRefs,
         /** W2.2 edge structurer: suggestions below this confidence are dropped (edges start humble). */
         @DecimalMin("0.0") @DecimalMax("1.0") double edgeConfidenceFloor,
         /** W2.5 (mezo-b3pp.10): cron for the nightly GraphMaintenanceJob (server zone). */
@@ -178,7 +198,15 @@ public record CompanionProperties(
         /** W2.5: fresh pattern evidence (a same-night pattern_event snapshot for a promoted
          *  pattern) bumps that node's edges by this much, capped at 1.0 — decay's counterweight
          *  for evidence still arriving. */
-        @DecimalMin("0.0") @DecimalMax("1.0") double reinforcementBump
+        @DecimalMin("0.0") @DecimalMax("1.0") double reinforcementBump,
+        /** mezo-b3pp.34: cap on {@code GraphTraversalService#seedsFor}'s ranked seed list — a
+         *  chatty turn can folded-word-start-match many nodes, and once the seed set is most of
+         *  the graph the neighborhood walk degenerates into "the globally strongest edges"
+         *  regardless of what was asked. Ranked (title hit, then distinct token hits — ties left to
+         *  the stable sort's own {@code created_at desc, id} row order, a TOTAL order so recency
+         *  decides but the same turn still always produces the same seed set) before this cap
+         *  truncates. */
+        @Min(1) @Max(50) int maxSeeds
     ) {}
 
     /**

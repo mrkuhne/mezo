@@ -58,6 +58,8 @@ mezo:
     owner-email: ${MEZO_OWNER_EMAIL:owner@mezo.local}
     owner-password: ${MEZO_OWNER_PASSWORD:owner}
     owner-name: ${MEZO_OWNER_NAME:Owner}
+    # mezo-5h9: refuse to boot with dev-default owner password / JWT secret. true in k8s.
+    strict: ${MEZO_AUTH_STRICT:false}
   cors:
     # Browser origins allowed to call the API. The Vite dev server (:5180) is the default;
     # add the deployed frontend origin per environment. Server-to-server callers send no Origin
@@ -150,6 +152,12 @@ mezo:
       - image/webp
     confidence-threshold: 0.6
     max-items: 12
+  recipe-workshop:
+    # Receptműhely AI turn (mezo-92pb) — off: the workshop endpoint is gone; the rest of the
+    # recipe surface (CRUD + breakdown) is unaffected. LLM needs the companion switch too.
+    max-lines: 30
+    max-steps: 20
+    max-history-turns: 20
   pantry-suggestion:
     # Deterministic Kamra swap heuristics (Fuel P6) — binds onto PantrySuggestionProperties
     # Max suggestions surfaced on the Kamra
@@ -176,6 +184,10 @@ mezo:
     # additionally needs the companion switch (CompanionLlm port).
     meso-review:
       enabled: true
+    # Meso plan generator AI half (mesocycle wizard redesign) — Gemini exercise pick inside the
+    # deterministic frames; needs the companion switch too. Off -> deterministic filler, llmUsed=false.
+    meso-plan-ai:
+      enabled: true
     # Fuel P6 pantry import — gates the OpenFoodFacts lookup/import endpoints (off -> 404);
     # the import feed + suggestions in GET /api/pantry stay on regardless.
     pantry-import:
@@ -194,6 +206,10 @@ mezo:
     # Recipe AI template breakdown prose (mezo-bw3y) — off: GET /api/recipe/{id}/breakdown still
     # serves the deterministic envelope, only summary/detail-prose/improve/fitsFor stay empty.
     recipe-ai-score:
+      enabled: true
+    # Receptműhely AI turn (mezo-92pb) — off: the workshop endpoint is gone; the rest of the
+    # recipe surface (CRUD + breakdown) is unaffected. LLM needs the companion switch too.
+    recipe-workshop:
       enabled: true
     # Meal coach verdicts (mezo-mr4n) — LLM prose (tagline/summary/improve) over the deterministic
     # meal score; needs the companion switch too (the MealCoachLlm adapter bean). Off: the coach
@@ -256,6 +272,9 @@ mezo:
     # Diet preferences (Diet Plan slice 1): macro split + protein tier + water/fiber singleton.
     diet-settings:
       enabled: true
+    # Mezo-kalauz seen-store (mezo-gb1s.1): per-user guide-progress singleton.
+    tutorial:
+      enabled: true
     # Stack placement LLM fallback (mezo-vx9v) — zone suggestion for supplements the rule
     # table does not know; needs the companion switch too (CompanionLlm bean), otherwise
     # placement degrades to the deterministic 'fallback' zone.
@@ -289,11 +308,27 @@ mezo:
     # (+ optional push). Off ⇒ no delivery beans; W5.1 flag logging is unaffected.
     intervention:
       enabled: true
+    # Emberek (mezo-06o0) — automata mention-detektálás a narratív forrásokból (név+alias match).
+    # Off ⇒ nincs detektáló listener; a kézi people CRUD + chip-log felület változatlanul él.
+    people:
+      enabled: true
   techcore:
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
       # off = the DailySummaryJob bean does not exist
       daily-summary-job:
+        enabled: true
+      # Karakter nightly observation pass (mezo-1gim.3, schedule: mezo.character.observation.cron);
+      # off = the CharacterObservationJob bean does not exist
+      character-observation-job:
+        enabled: true
+      # Karakter weekly konzílium pass (mezo-1gim.5, schedule: mezo.character.conference.cron);
+      # off = the CharacterConferenceJob bean does not exist
+      character-conference-job:
+        enabled: true
+      # Karakter monthly deep-read konzílium pass (Karakter S4, mezo-1gim.6, schedule:
+      # mezo.character.monthly.cron); off = the CharacterMonthlyJob bean does not exist
+      character-monthly-job:
         enabled: true
       # V3.1 nightly statistical pattern detection (schedule: mezo.companion.patterns.cron);
       # off = the PatternDetectionJob bean does not exist
@@ -424,6 +459,16 @@ mezo:
       digest-days: 7
       # The latest check-in note is included verbatim, truncated to this many characters
       checkin-note-max-chars: 200
+      # The workout closing note is included verbatim, truncated to this many characters
+      # (mezo-d20.13). Never summarized — truncation is honestly lossy, rewriting fabricates.
+      workout-note-max-chars: 180
+      # mezo-x6oa: how many active people the [Emberek] chat-snapshot block lists (newest mention
+      # first; name · relationship · this week's count · mood direction). 0 = the block is omitted
+      # entirely — note that ChatService.SYSTEM_PROMPT's "[Mit szabad állítani]" grounding
+      # paragraph still refers to [Emberek] unconditionally in that case, i.e. the prompt then
+      # names a block that is not actually rendered (deliberate: the prompt is not made
+      # conditional on this value).
+      people-max-persons: 12
     tools:
       # V0.5 tool calling — per-turn call budget + result-window clamps (spec §5 discipline)
       max-calls-per-turn: 15
@@ -526,6 +571,13 @@ mezo:
       decay-factor: 0.99
       prune-floor: 0.05
       render-max-tokens: 800
+      # W2.4 review fix (mezo-b3pp.33): cap on GraphNode refs per turn. top-k=8 edges yield up to
+      # 2×top-k=16 node refs against the shared tools.max-refs-per-turn=10 budget, and graph refs
+      # are added LAST (after tool + Memory refs), so an uncapped graph turn fills the whole
+      # footer with graph chips and truncates mid-list. 6 leaves room for at least a few tool/
+      # Memory refs to survive alongside a graph-heavy turn while still showing a useful slice of
+      # the neighborhood (most turns render well under top-k distinct nodes anyway).
+      max-refs: 6
       # W2.2 (mezo-b3pp.7): the edge structurer drops suggestions below this confidence; the ones
       # that pass are created at weight = confidence × 0.5 and grow only through W2.5 reinforcement.
       edge-confidence-floor: 0.4
@@ -538,6 +590,11 @@ mezo:
       # Fresh pattern evidence (a same-night pattern_event snapshot for an already-promoted
       # pattern) bumps that node's edges by this much, capped at 1.0.
       reinforcement-bump: 0.05
+      # mezo-b3pp.34: cap on GraphTraversalService#seedsFor's ranked seed list — same order as
+      # top-k=8, so a turn that matches many nodes still walks a real neighbourhood (ranked
+      # title/summary-hit results) rather than degenerating into "the globally strongest edges"
+      # across the whole graph regardless of what was asked.
+      max-seeds: 8
     summary:
       # V2.2 nightly daily-summary job (the app's first @Scheduled) — cron in server zone,
       # 02:20 so "yesterday" is truly finished; the job switch lives under mezo.techcore.cron
@@ -1087,6 +1144,43 @@ mezo:
       sleep-target-h: 8.0
       kcal-band: 0.25
       xp-baseline: 150
+  # Karakter S2 nightly expert observation pass (mezo-1gim.3, spec §5/§6) — the 7-expert team
+  # writes observations onto the CORE dimensions; the job switch lives under mezo.techcore.cron.
+  character:
+    observation:
+      # 02:50 — the brief's suggested 02:40 collides with mezo.companion.patterns.cron (line
+      # above); free dawn slots taken so far: 02:20 summary, 02:40 patterns, 03:00 SUN hypotheses,
+      # 03:10 feedback-learning, 03:20 graph, 03:30 MON weekly rung, 03:40 llm-log retention,
+      # 03:45 MON profile, 03:50 monthly rung, 04:00 quarterly.
+      cron: "0 50 2 * * *"
+      # Finished days back the job checks and self-heals (the summary catch-up idiom)
+      catch-up-days: 3
+    conference:
+      # Sunday 19:30 — the week that is ending; 19:30 slot free (checked against every other
+      # cron in this file before landing here, mezo-1gim.5).
+      cron: "0 30 19 * * SUN"
+      # Finished weeks back the job checks and self-heals (the observation catch-up idiom)
+      catch-up-weeks: 2
+    monthly:
+      # Sunday 20:00 — a plain Sunday cron; CharacterMonthlyJob#isDeepReadDay narrows it in code to
+      # the month's FIRST Sunday only (Spring cron cannot AND day-of-month with day-of-week).
+      # 20:00 slot free (checked against every other cron in this file, mezo-1gim.6): 19:30 SUN
+      # conference, 19:00 SUN memoir, 20:30 daily feed evening-cron all miss it.
+      cron: "0 0 20 * * SUN"
+      # A CHAPTER dimension with no ACTIVE claim left is retired once its updatedAt is this stale.
+      stale-chapter-days: 90
+    # [Karakter] prompt block tuning (spec §8, mezo-1gim.8) — CharacterPromptAssembler.
+    prompt:
+      # Below this, a claim never makes the block (Karakter S5 plan, Global Constraints).
+      min-confidence: 0.45
+      # Per-dimension line cap; confidence x recency decay picks the winners.
+      max-claims-per-dimension: 3
+      # Whole-block char budget; a dimension that would blow it is dropped WHOLE, never mid-line.
+      max-total-chars: 1800
+      # A dimension's portrait digest only renders once its maturity roll-up clears this.
+      portrait-min-maturity: 30
+    # Per-detector kill switches (spec §5) — empty = every detector enabled; keyed by detector key.
+    detector: {}
   proactive:
     weekly:
       # W1 Monday-dawn plan-suggestion schedule (server zone); gathered from the finished previous week
@@ -1095,6 +1189,20 @@ mezo:
       # Monday weekly-review schedule (server zone, mezo-p2tr) — for the week that JUST finished
       # (weekStart = previous Monday), unlike weekly's forward-looking suggestion
       cron: "0 50 6 * * MON"
+      # mezo-d20.7.7: the trailing window the highlight-citation signal ("cited in N of the last
+      # weeks") is derived over — a quarter of weeks, so the signal decays instead of accumulating
+      citation-window-weeks: 12
+    diagnosis:
+      # On-demand fatigue diagnosis (mezo-hqfi) — no cron; the user triggers it.
+      # window/baseline: the diagnosed 14 days vs the 28 that precede them.
+      window-days: 14
+      baseline-days: 28
+      # A metric needs this many measured days in the window to become evidence at all.
+      min-coverage-days: 7
+      # Distinct MetricDomains that must clear coverage before a diagnosis is attempted.
+      min-domains: 2
+      # Generations per user per calendar day; reads are always free.
+      max-per-day: 3
     memoir:
       # W2 Sunday-evening memoir schedule (old journey 5.8) — the week ending that Sunday
       cron: "0 0 19 * * SUN"
@@ -1407,6 +1515,16 @@ mezo:
       1: [ { pct: 0.70, reps: 4 } ]
       2: [ { pct: 0.50, reps: 8 }, { pct: 0.75, reps: 3 } ]
       3: [ { pct: 0.50, reps: 8 }, { pct: 0.70, reps: 4 }, { pct: 0.90, reps: 2 } ]
+  # Hypertrophy plan generator frames (POST /api/train/meso-plans/generate).
+  meso-plan:
+    max-exercises-per-group-per-day: 2
+    compound-rep-min: 8
+    compound-rep-max: 10
+    isolation-rep-min: 12
+    isolation-rep-max: 15
+    target-rir: 1
+    compound-warmup: 2
+    isolation-warmup: 1
   # Volume progression (Plan 2 Phase A) — weekly per-muscle set-volume tuning. Binds VolumeProperties.
   volume:
     step: 2                 # sets added per productive week
@@ -1429,6 +1547,7 @@ mezo:
   train:
     gym-default-minutes: 60        # gym schedule slots carry no duration
     run-default-minutes: 45        # interval runs have no single continuous duration
+    sport-session-max-span-days: 400   # widest inclusive from..to window the sport-session log accepts
     met:                           # MET by kind — MIRROR of FE fuelConfig.MET_BY_KIND (drift-guard test)
       gym: 6.0
       sport: 4.5

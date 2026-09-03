@@ -31,8 +31,8 @@ test('renders header + the three sections', () => {
 
 test('muscle row shows sets, weekly reps, exercise count and stimulus chips', () => {
   renderSheet()
-  // "Mell" also appears in the Set-büdzsé mirror below (mezo-7rdg) — scope to the
-  // muscle-row card (identified by its unique rep-range text) to disambiguate.
+  // "Mell" also appears in the weekly-bands mirror below (wizard v2, mezo-d20.14) —
+  // scope to the muscle-row card (identified by its unique rep-range text) to disambiguate.
   const muscleRow = screen.getByText('24–36 rep · 1 gyakorlat').closest('.col')
   expect(within(muscleRow as HTMLElement).getByText('Mell')).toBeInTheDocument()
   expect(screen.getByText('24–36 rep · 1 gyakorlat')).toBeInTheDocument()
@@ -48,16 +48,16 @@ test('sport event card renders with region loads; forecast lists volleyball skil
   expect(screen.getByText('Maximális erő')).toBeInTheDocument()
 })
 
-test('renders the Set-büdzsé section (mezo-7rdg)', () => {
+test('renders the weekly bands section (wizard v2, mezo-d20.14)', () => {
   renderSheet()
-  expect(screen.getByText('Set-büdzsé')).toBeInTheDocument()
+  expect(screen.getByText('Heti szetek · izmonként')).toBeInTheDocument()
 })
 
-test('an over-budget muscle shows the tier-plafon warning (mezo-7rdg; copy reframed mezo-3m5m)', () => {
-  const overBudgetMeso: Mesocycle = {
+test('bands show current → ceiling per group, and "szett · tart" for Maintain (wizard v2, mezo-d20.14)', () => {
+  const bandsMeso: Mesocycle = {
     ...meso,
     // mirrors the mock active run's own musclePriorities ({shoulder: 'maintain'}, train.ts:69) —
-    // MuscleWeekSheet now threads meso.musclePriorities into muscleBudgets (mezo-3m5m final review).
+    // MuscleWeekSheet threads meso.musclePriorities into weeklyBands.
     musclePriorities: { shoulder: 'maintain' },
     days: [{
       day: 'Hét', type: 'Push', muscle: 'chest', exerciseCount: 3,
@@ -68,13 +68,12 @@ test('an over-budget muscle shows the tier-plafon warning (mezo-7rdg; copy refra
       ],
     }],
   }
-  render(<QueryWrapper><MuscleWeekSheet meso={overBudgetMeso} sportSlots={slots} onClose={() => {}} /></QueryWrapper>)
-  // chest carries no key in musclePriorities -> tierOf defaults to 'grow' -> target =
-  // GROUP_LANDMARKS.chest.mav (14), unaffected by the shoulder entry. 8+8 = 16 counted sets
-  // (both non-plyo, non-exempt) > 14 -> 'over'.
-  expect(screen.getByText('Mell: 16 szett — Grow plafon 14 (MAV).')).toBeInTheDocument()
-  // shoulder is 'maintain' -> target = GROUP_LANDMARKS.shoulder.mev (8) (tierTargetOf maps
-  // maintain -> mev). 9 counted sets (targetRIR 2 -> 'volume' style, isolation counts toward
-  // volume) > 8 -> 'over' too, and the maintain-tier warning names its own tier word.
-  expect(screen.getByText('Váll: 9 szett — Maintain plafon 8 (MEV).')).toBeInTheDocument()
+  render(<QueryWrapper><MuscleWeekSheet meso={bandsMeso} sportSlots={slots} onClose={() => {}} /></QueryWrapper>)
+  // chest carries no key in musclePriorities -> tierOf defaults to 'grow' -> ceiling =
+  // GROUP_LANDMARKS.chest.mav (14). 8+8 = 16 counted sets (both non-plyo, non-exempt) — planned
+  // reads "16 → 14" (past ceiling renders as "plafonon", not a percentage).
+  expect(screen.getByText('16 → 14')).toBeInTheDocument()
+  // shoulder is 'maintain' -> ceiling = GROUP_LANDMARKS.shoulder.mev (8); Maintain rows always
+  // render "planned szett · tart" instead of an arrow, regardless of the ceiling.
+  expect(screen.getByText('9 szett · tart')).toBeInTheDocument()
 })

@@ -88,6 +88,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/proactive/memoir/archive:
+    get:
+      tags: [Proactive]
+      operationId: getMemoirArchive
+      summary: Every persisted memoir, newest week first — the archive shelf (F7.5, mezo-d20.8.5)
+      description: >-
+        The full list in one round — weekly cadence keeps this small (~52 rows/year). Never
+        generates: the archive lists what the Sunday cron / lazy-latest already wrote. An empty
+        list is the honest empty state (never a 404 — list-endpoint precedent).
+      responses:
+        '200':
+          description: The persisted memoirs, weekStart descending (possibly empty)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MemoirArchiveResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/proactive/prediction:
     get:
       tags: [Proactive]
@@ -344,6 +364,43 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/proactive/weekly-review/{start}/lessons:
+    get:
+      tags: [Proactive]
+      operationId: getWeeklyReviewLessons
+      summary: The week's knowledge candidates — "A hét tanulságai" (mezo-d20.7.6) — WITH their decisions
+      description: >-
+        The weekly generator proposes candidates onto the SAME learned_fact path chat extraction
+        uses; this read returns the ones proposed for `{start}`, newest first, including the
+        already-decided ones (`GET /api/companion/fact/candidate` only returns the undecided
+        inbox, but a closed week must be reviewable in its settled state). `evidence` names what
+        the candidate rests on. Always 200 — an empty array is the honest empty state (no review,
+        no usable candidate, or every candidate rejected), never a 404. Deciding stays the shipped
+        write path: `POST /api/companion/fact/candidate/{candidateId}/decision`.
+      parameters:
+        - name: start
+          in: path
+          required: true
+          description: The ISO Monday of the wanted week
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: The week's candidates with their decisions (possibly empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/WeeklyLessonResponse' }
+        '400':
+          description: '{start} is not a Monday'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/proactive/weekly-review/{start}/digest:
     get:
       tags: [Proactive]
@@ -382,7 +439,7 @@ components:
       properties:
         kind:
           type: string
-          description: FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory)
+          description: FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory/Person)
         label:
           type: string
     FeedMessageResponse:
@@ -393,8 +450,8 @@ components:
         date: { type: string, format: date }
         kind:
           type: string
-          description: Feed message kind — morning, sleep, weight, midday, or evening LLM-generated messages; intervention is config text (mezo.companion.interventions), never LLM output.
-          enum: [morning, sleep, weight, midday, evening, intervention]
+          description: Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; intervention is config text (mezo.companion.interventions), never LLM output.
+          enum: [morning, sleep, weight, midday, evening, intervention, people]
         eyebrow: { type: string }
         body:
           type: array
@@ -433,11 +490,19 @@ components:
           description: Display title of the week's narrative
         body:
           type: string
-          description: The memoir prose (single narrative paragraph block)
+          description: The memoir prose — narrative paragraphs separated by "\n\n" (prompt v2, mezo-uajy)
         anchors:
           type: array
           items: { $ref: '#/components/schemas/MemoirAnchor' }
         generatedAt: { type: string, format: date-time }
+    MemoirArchiveResponse:
+      type: object
+      required: [entries]
+      properties:
+        entries:
+          type: array
+          description: Every persisted memoir, weekStart descending.
+          items: { $ref: '#/components/schemas/MemoirResponse' }
     PredictionResponse:
       type: object
       required: [id, title, basis, metricKey, expectedDirection, validFrom, validTo, status, generatedAt]
@@ -649,3 +714,20 @@ components:
         predictions:
           type: array
           items: { $ref: '#/components/schemas/WeeklyReviewPredictionRef' }
+    WeeklyLessonResponse:
+      type: object
+      description: >-
+        One weekly knowledge candidate (mezo-d20.7.6). The same learned_fact row the Tudástár
+        inbox serves as a FactCandidateResponse — repeated here as the weekly read's own shape so
+        the fragment stays self-contained; the two MUST stay field-compatible (one entity, one
+        mapper). Decisions are made on the companion candidate endpoint, never here.
+      required: [id, candidateText, category, createdAt]
+      properties:
+        id: { type: string, format: uuid }
+        candidateText: { type: string }
+        category: { type: string, description: "'train' | 'fuel' | 'health' | 'life'" }
+        evidence: { type: string, nullable: true, description: 'What the candidate rests on, in the proposer''s own words — null when the model named nothing usable.' }
+        userDecision: { type: string, nullable: true, description: "'accept' | 'reject' | 'refine' — null while still open" }
+        refinedText: { type: string, nullable: true, description: 'The user-edited wording when the decision was refine.' }
+        promotedFactId: { type: string, format: uuid, nullable: true, description: 'The knowledge fact this candidate was promoted into (accept/refine).' }
+        createdAt: { type: string, format: date-time }

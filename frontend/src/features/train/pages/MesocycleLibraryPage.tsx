@@ -1,16 +1,19 @@
 // ============================================================
-// Mezo · MesocycleLibraryPage (Mesociklusok) — the RUN library.
-// Template/run split (mezo-meyc.1) with the template half moved out to its own
-// `Sablonok` tab (mezo-tlwa): a `Sablonok →` nav row (the DS `.mesorow`) → Aktív
-// hero → Tervezett → Történet (closed runs, each rerunnable AND saveable back
-// into a template). Thin TrainSection shell ⇒ this view owns its own
-// .page-header, whose `+ Új` chip navigates to the planner; live run cards
-// navigate to their builder, a CLOSED run card to its frozen report
-// (mezo-meyc.2). „Újrafuttatás" (closed run) still funnels into the shared
-// MesoStartSheet, which is why the sheet wiring stays on this page.
+// Mezo · MesocycleLibraryPage (Mezociklus hub, mezo-d20.3.6) — Mozaik re-face.
+// Source of truth: the mezociklus prototype's base panel (meso-body.html,
+// px ×1.18) — the active-run hero (unchanged ActiveMesoCard) sits above a
+// 4-tile mosaic that is the hub's real navigation: `Volumen` → the active
+// run's MesoOverviewPage, `Sablonok` → MesoTemplatesPage, `Új blokk` → the
+// planner. The prototype's `Történet` tile has no route of its own to jump
+// to (the wizard + a dedicated history route are out of this slice's scope,
+// F2.7) — it scrolls the ALREADY-RENDERED history section into view, which
+// is where the mezo-meyc.4 Összevetés selection mode still lives, unchanged.
+// Template/run split (mezo-meyc.1): a blueprint list is a different job from
+// "how are my blocks going", so templates live on their own `Sablonok` tab
+// (mezo-tlwa) reached via the mosaic tile now, not a `.mesorow` nav row.
 // Ported from prototype mesocycles.jsx MesocycleLibrary.
 // ============================================================
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTrain, useMesoTemplates } from '@/data/hooks'
 import type { Mesocycle } from '@/data/types'
@@ -24,6 +27,9 @@ import { PlannedMesoCard } from '@/features/train/components/PlannedMesoCard'
 import { ArchivedMesoCard } from '@/features/train/components/ArchivedMesoCard'
 import { MesoStartSheet } from '@/features/train/sheets/MesoStartSheet'
 import { runToTemplate } from '@/features/train/logic/runToTemplate'
+import { runBands } from '@/features/train/logic/mesoBands'
+import { Mosaic, Tile } from '@/shared/ui/mozaik'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import MesocycleSkeleton from '@/features/train/pages/MesocycleSkeleton'
 
 export function MesocycleLibraryPage() {
@@ -38,6 +44,9 @@ export function MesocycleLibraryPage() {
   // strictly pairwise — kept in TAP ORDER, which is what makes the tap the `a`/`b` choice.
   const [compareMode, setCompareMode] = useState(false)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
+  // The `Történet` tile has nowhere else to jump (F2.7 owns a dedicated history route) —
+  // the section is already rendered below the mosaic, so the tile scrolls it into view.
+  const historyRef = useRef<HTMLDivElement>(null)
 
   // Real-mode loading: show the layout-aware skeleton until the meso + template lists
   // resolve. `mesocycles` comes from the meso query that drives workoutPending, so branch
@@ -55,6 +64,10 @@ export function MesocycleLibraryPage() {
   const openPlanner = () => navigate('/train/mesocycles/new')
   const openTemplateEditor = (id: string) => navigate(`/train/mesocycles/templates/${id}`)
   const openTemplates = () => navigate('/train/templates')
+  // The hub's first tile (mesocycle pages v2 Task 2, mezo-d20.15). Its route lands in
+  // Task 4 — navigating there now hits the router's no-match, same as any other
+  // not-yet-built destination mid-slice.
+  const openWeek = (id: string) => navigate(`/train/mesocycles/${id}/week`)
   // Leaving the mode clears the pick: a selection surviving an invisible mode would fire the
   // next time the user turns it on, out of nowhere.
   const toggleCompareMode = () => {
@@ -82,6 +95,7 @@ export function MesocycleLibraryPage() {
       .then((created) => openTemplateEditor(created.id))
       .catch(() => {})
   }
+  const scrollToHistory = () => historyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
   return (
     <>
@@ -104,23 +118,53 @@ export function MesocycleLibraryPage() {
         </div>
       )}
 
-      {/* Templates live on their own tab (mezo-tlwa) — this page only points at them,
-          via the DS canonical 56px nav row (the TrainTodayPage `.mesorow` idiom). */}
-      <div style={{ padding: '8px 24px 4px' }}>
-        <button
-          type="button"
-          className="card mesorow"
-          onClick={openTemplates}
-          aria-label={`Sablonok · ${templates.length}`}
-        >
-          <span aria-hidden="true">🧩</span>
-          <span className="mesorow-tx">Sablonok · {templates.length}</span>
-          <Icon name="chevron-right" size={16} color="var(--text-tertiary)" />
-        </button>
-      </div>
+      <EntranceGroup>
+        {/* The hub's real navigation — Volumen/Történet/Sablonok/Új blokk tiles
+            (mezociklus prototype's base panel). */}
+        <div style={{ padding: '8px 24px 16px' }}>
+          <Mosaic>
+            {active[0] && (
+              <Tile
+                wash="coral"
+                icon="i-heti"
+                eyebrow="Heti vizsgálat"
+                line={`W${active[0].currentWeek} · ${runBands(active[0]).reduce((s, r) => s + r.current, 0)} szett`}
+                delayMs={40}
+                onClick={() => openWeek(active[0].id)}
+              />
+            )}
+            <Tile
+              wash="white"
+              icon="i-naplo"
+              eyebrow="Történet"
+              line={`${archived.length} futam`}
+              delayMs={80}
+              onClick={scrollToHistory}
+              aria-label={`Történet · ${archived.length}`}
+            />
+            <Tile
+              wash="gold"
+              icon="i-polc"
+              eyebrow="Sablonok"
+              line={String(templates.length)}
+              delayMs={120}
+              onClick={openTemplates}
+              aria-label={`Sablonok · ${templates.length}`}
+            />
+            <Tile
+              wash="coral"
+              icon="i-edzes"
+              eyebrow="Új blokk"
+              line="3 lépés · AI ›"
+              delayMs={160}
+              onClick={openPlanner}
+              aria-label="Új blokk tervezése"
+            />
+          </Mosaic>
+        </div>
 
-      {/* Active */}
-      <div style={{ padding: '8px 24px 16px' }}>
+        {/* Active */}
+        <div style={{ padding: '8px 24px 16px' }}>
         <div className="row" style={{ justifyContent: 'space-between', marginBottom: 12 }}>
           <Eyebrow>Aktív · {active.length}</Eyebrow>
           {active[0] ? (
@@ -147,7 +191,7 @@ export function MesocycleLibraryPage() {
       </div>
 
       {/* History — the closed runs */}
-      <div style={{ padding: '8px 24px 24px' }}>
+      <div ref={historyRef} style={{ padding: '8px 24px 24px' }}>
         <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <Eyebrow>Történet · {archived.length}</Eyebrow>
           {/* Nothing to compare with fewer than two closed runs — the toggle stays away. */}
@@ -188,6 +232,7 @@ export function MesocycleLibraryPage() {
           )}
         </div>
       </div>
+      </EntranceGroup>
 
       {startTemplate && (
         <MesoStartSheet

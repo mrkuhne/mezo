@@ -24,6 +24,7 @@ import { useMesoReport, useMesoTemplates, useTrain } from '@/data/hooks'
 import { useBackNav } from '@/shared/hooks/useBackNav'
 import { huMonthDay } from '@/shared/lib/dates'
 import { MUSCLE_LABELS } from '@/data/train/train'
+import { BUDGET_GROUP_LABELS } from '@/features/train/logic/setBudget'
 import type {
   MesoContext,
   MesoContextWeek,
@@ -43,6 +44,8 @@ import { Icon } from '@/shared/ui/Icon'
 import { CtaGhost } from '@/shared/ui/Cta'
 import { Chip } from '@/shared/ui/Chip'
 import { Spinner } from '@/shared/ui/Spinner'
+import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
 const fmt = (n: number): string => n.toLocaleString('hu-HU')
 const signed = (n: number): string => `${n > 0 ? '+' : ''}${fmt(n)}`
@@ -68,6 +71,28 @@ function toMuscleArcs(volume: MesocycleReportResponse['volume']): MuscleVolumeAr
     mrv: m.mrv,
     weeks: m.weeks.map((w) => ({ ...w, actual: w.actual ?? null })),
   }))
+}
+
+interface PeakBandRow { muscle: string; label: string; start: number | null; peak: number; ceiling: number }
+
+/**
+ * The band language's frozen close-time read, per muscle: where W1 started, the loudest
+ * planned week the run actually reached, and the arc's ceiling (MRV). Sorted by ceiling desc
+ * — the same convention `runBands` uses on the live page — so Emphasize's MRV-bound muscles
+ * lead. A muscle with no logged weeks at all cannot happen (a frozen arc always carries at
+ * least W1), but the empty-array guard keeps `Math.max` from returning `-Infinity`. `start`
+ * stays `null` (never a fabricated 0) when the arc genuinely has no W1 row to read.
+ */
+function peakBands(arcs: MuscleVolumeArc[]): PeakBandRow[] {
+  return arcs
+    .map((m) => ({
+      muscle: m.muscle,
+      label: BUDGET_GROUP_LABELS[m.muscle] ?? m.muscle,
+      start: m.weeks[0]?.planned ?? null,
+      peak: m.weeks.length > 0 ? Math.max(...m.weeks.map((w) => w.planned)) : 0,
+      ceiling: m.mrv,
+    }))
+    .sort((a, b) => b.ceiling - a.ceiling)
 }
 
 // --- context block (mezo-meyc.3) — every numeric field is nullable and null NEVER renders
@@ -185,40 +210,30 @@ export function MesoReportPage() {
   }
 
   const arcs = toMuscleArcs(report?.volume)
+  const heroSub = report
+    ? `${report.closedAt ? `Lezárva · ${day(report.closedAt)}` : 'Futam · riport'} · ${report.weeks} hét`
+    : undefined
 
   return (
-    // Inside AppLayout's .screen-content scroller — no nested wrapper (mirrors MesoOverviewPage).
-    <div>
-      {/* Breadcrumb — pinned below the status bar like native nav chrome */}
-      <div className="sticky-top" style={{ padding: '8px 24px' }}>
-        <button type="button" onClick={goBack} className="row gap-sm">
-          <span style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>←</span>
-          <span className="eyebrow">Vissza</span>
-        </button>
-      </div>
-
-      {/* Header */}
-      <div style={{ padding: '6px 24px 0' }}>
-        <Eyebrow>{report?.closedAt ? `Lezárva · ${day(report.closedAt)}` : 'Futam · riport'}</Eyebrow>
-      </div>
-      <div className="pghead-np">
-        <div>
-          <div className="over">Edzés · Futam-riport</div>
-          <h1>{title}</h1>
-        </div>
-      </div>
+    <MozaikPage tone="gold">
+      <PageHead onBack={goBack} label="‹ Mezociklus" />
+      <EntranceGroup>
+        <PageHero
+          icon="i-meso"
+          big={report ? `${report.adherence.completionPct}%` : undefined}
+          name={`${title} · riport`}
+          sub={heroSub}
+        />
+        <PageBody>
       {report && (
-        <div className="row gap-md" style={{ padding: '6px 24px 4px' }}>
+        <div className="row gap-md" style={{ padding: '0 0 4px' }}>
           <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
             {`${day(report.startDate)}${report.endDate ? ` → ${day(report.endDate)}` : ''}`}
-          </span>
-          <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-            {`${report.weeks} hét`}
           </span>
         </div>
       )}
       {report?.templateId && (
-        <div style={{ padding: '8px 24px 0' }}>
+        <div style={{ padding: '0 0 8px' }}>
           <button
             type="button"
             className="chip tapchip"
@@ -234,13 +249,13 @@ export function MesoReportPage() {
           needs the run itself (to tell "closed but ungenerated" from "still running"), so
           that is the only branch gated on `workoutPending`. */}
       {pending ? (
-        <div style={{ padding: '16px 24px' }}>
+        <div style={{ padding: '16px 0' }}>
           <GhostState lines={3} message="Riport betöltése…" />
         </div>
       ) : error ? (
         // A genuine read failure (the contract's 404 is `notFound` below, not this) —
         // a terminal state with a retry, never a blank page (§7a).
-        <div style={{ padding: '16px 24px' }}>
+        <div style={{ padding: '16px 0' }}>
           <GhostState
             lines={2}
             message="Nem sikerült betölteni a riportot."
@@ -249,7 +264,7 @@ export function MesoReportPage() {
           />
         </div>
       ) : notFound ? (
-        <div style={{ padding: '16px 24px' }}>
+        <div style={{ padding: '16px 0' }}>
           {workoutPending ? (
             <GhostState lines={3} message="Riport betöltése…" />
           ) : !meso ? (
@@ -275,7 +290,7 @@ export function MesoReportPage() {
       ) : report ? (
         <>
           {/* Adherence — the "did the plan actually happen" glance */}
-          <div style={{ padding: '16px 24px 8px' }}>
+          <div style={{ padding: '16px 0 8px' }}>
             <StatStrip
               cells={[
                 {
@@ -291,19 +306,67 @@ export function MesoReportPage() {
             />
           </div>
 
-          {/* Frozen volume arc — same switch as the live overview (MuscleArcSwitch) */}
+          {/* „Ezt akartad" — the wizard's freeform goal text, read back once the block is
+              done, next to the one honest line the close captured (report.summary). Notes
+              are the wizard step-0 goal text; a run without one (nothing typed, or a legacy
+              run predating the field) simply has no quote to show. */}
+          {meso?.notes && (
+            <div className="card col gap-xs" style={{ padding: 'var(--sp-4)' }} data-testid="meso-report-quote">
+              <Eyebrow>Ezt akartad</Eyebrow>
+              <p style={{ fontSize: 14, lineHeight: 1.5, fontStyle: 'italic', color: 'var(--text-primary)' }}>
+                {`„${meso.notes}"`}
+              </p>
+              {meso.summary && (
+                <span className="text-secondary" style={{ fontSize: 12 }}>{`— és ez lett: ${meso.summary}`}</span>
+              )}
+            </div>
+          )}
+
+          {/* Frozen volume arc — MuscleArcSwitch, which since v2 lives ONLY here: the live
+              overview page it was shared with was retired (the running block's arc now reads
+              per muscle on MesoMusclePage). */}
           {arcs.length > 0 && (
             <>
-              <div style={{ padding: '12px 24px 0' }}>
-                <Eyebrow>Volumen-ív · zárás</Eyebrow>
+              <div style={{ padding: '12px 0 0' }}>
+                <Eyebrow>Heti szettek · a blokk íve</Eyebrow>
               </div>
               <MuscleArcSwitch muscles={arcs} />
+              <div style={{ padding: '12px 0 0' }}>
+                <Eyebrow>Izmonként · indulás → elért csúcs / plafon</Eyebrow>
+              </div>
+              <div className="card col" style={{ padding: '8px 12px' }} data-testid="meso-report-bands">
+                {peakBands(arcs).map((r) => (
+                  <div
+                    key={r.muscle}
+                    className="col"
+                    style={{ padding: '7px 0', borderTop: '0.5px solid var(--border-subtle)' }}
+                    data-testid="report-band-row"
+                  >
+                    <div className="row" style={{ alignItems: 'center', gap: 8 }}>
+                      <span className="chip">{r.label}</span>
+                      <span style={{ flex: 1 }} />
+                      <span className="label-mono" style={{ fontSize: 12, fontWeight: 700 }}>
+                        {`${dash(r.start)} → ${fmt(r.peak)} / ${fmt(r.ceiling)}`}
+                      </span>
+                    </div>
+                    <div style={{ height: 9, borderRadius: 5, background: 'var(--surface-1)', overflow: 'hidden', marginTop: 5 }}>
+                      <div
+                        style={{
+                          width: `${r.ceiling > 0 ? Math.min(100, (r.peak / r.ceiling) * 100) : 0}%`,
+                          height: '100%',
+                          background: 'var(--sage-deep)',
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </>
           )}
 
           {/* Strength — LOAD move and e1RM percentage labelled apart */}
           {report.strength.length > 0 && (
-            <div className="col gap-sm" style={{ padding: '12px 24px' }} data-testid="meso-report-strength">
+            <div className="col gap-sm" style={{ padding: '12px 0' }} data-testid="meso-report-strength">
               <Eyebrow>Erő · {report.strength.length} gyakorlat</Eyebrow>
               {report.strength.map((s) => (
                 <div
@@ -344,7 +407,7 @@ export function MesoReportPage() {
           )}
 
           {/* Records earned inside the run's window */}
-          <div className="col gap-sm" style={{ padding: '12px 24px' }} data-testid="meso-report-records">
+          <div className="col gap-sm" style={{ padding: '12px 0' }} data-testid="meso-report-records">
             <Eyebrow>Rekordok · {report.records.medalCount} medál</Eyebrow>
             {report.records.top.length === 0 ? (
               <span className="text-secondary" style={{ fontSize: 13 }}>
@@ -377,7 +440,7 @@ export function MesoReportPage() {
           {/* Lifestyle context — S3 territory (mezo-meyc.3). Absent until the backend's async
               aggregation runs, so the whole block is gone (not empty) while `context` is null. */}
           {report.context && (
-            <div className="col gap-sm" style={{ padding: '12px 24px' }} data-testid="meso-report-context">
+            <div className="col gap-sm" style={{ padding: '12px 0' }} data-testid="meso-report-context">
               <Eyebrow>Életmód-kontextus</Eyebrow>
               <div className="row gap-xs" style={{ flexWrap: 'wrap' }}>
                 {contextPills(report.context).map((p) => (
@@ -431,7 +494,7 @@ export function MesoReportPage() {
 
           {/* The owner's own verdict, captured by MesoCloseSheet — read-only here */}
           {report.selfEval && (
-            <div className="col gap-sm" style={{ padding: '12px 24px' }}>
+            <div className="col gap-sm" style={{ padding: '12px 0' }}>
               <Eyebrow>Saját értékelés</Eyebrow>
               <div className="card" style={{ padding: 'var(--sp-4)' }}>
                 <p className="text-secondary" style={{ fontSize: 14, lineHeight: 1.5 }}>{report.selfEval}</p>
@@ -443,7 +506,7 @@ export function MesoReportPage() {
               `ready` with a null `aiEval` (should not happen server-side) deliberately falls
               through to the `failed` branch below — a defensive guard, not a fourth state. */}
           {report.aiEvalEnabled && (
-            <div className="col gap-sm" style={{ padding: '12px 24px' }} data-testid="meso-report-ai">
+            <div className="col gap-sm" style={{ padding: '12px 0' }} data-testid="meso-report-ai">
               <Eyebrow brand>AI értékelés</Eyebrow>
               <div className="card col gap-sm" style={{ padding: 'var(--sp-4)' }}>
                 {report.aiEvalStatus === 'ready' && report.aiEval ? (
@@ -486,7 +549,7 @@ export function MesoReportPage() {
           )}
 
           {/* Actions — a closed run's only live affordances */}
-          <div className="col gap-sm" style={{ padding: '16px 24px 32px' }}>
+          <div className="col gap-sm" style={{ padding: '16px 0 32px' }}>
             <CtaGhost style={{ padding: 12 }} onClick={rerunMeso}>
               <Icon name="sparkle" size={14} /> Újrafuttatás
             </CtaGhost>
@@ -509,6 +572,8 @@ export function MesoReportPage() {
           </div>
         </>
       ) : null}
+        </PageBody>
+      </EntranceGroup>
 
       {startTemplate && (
         <MesoStartSheet
@@ -517,6 +582,6 @@ export function MesoReportPage() {
           onClose={() => setStartTemplate(null)}
         />
       )}
-    </div>
+    </MozaikPage>
   )
 }

@@ -1,6 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { buildMezoMessages, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
-import { toNudgeMessage } from '@/features/today/logic/needsNudges'
+import { buildMezoMessages, partitionMezoThread, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
 import type { Briefing, FeedMessage } from '@/data/types'
 
 const demoBriefing: Briefing = {
@@ -126,8 +125,12 @@ describe('buildMezoMessages', () => {
     expect(msgs.map((m) => m.id)).toEqual(['briefing-demo', 'midday', 'nudge-hidratacio-2026-07-06T15:00:00.000Z'])
   })
 
+  // A nudge-fixture korábban a `needsNudges.toNudgeMessage()` gyárból jött; az a modul a
+  // TodayPage-dzsel együtt kikerült (mezo-d20.9.1), a `nudges` PARAMÉTER viszont él
+  // (NapHubPage/FuelMaiPage is átadhat sort), ezért a szerződés itt marad — a fixture most
+  // a fenti literál, ami pontosan azt a shape-et adja, amit a gyár adott (artifactId nélkül).
   test('a nudge artifactId nélkül fut végig a szálon — nem perzisztált artifact (mezo-kr9v)', () => {
-    const msgs = buildMezoMessages({ feed: [midday], demoBriefing, nudges: [toNudgeMessage({ key: 'hidratacio', at: '2026-07-06T15:00:00.000Z' })] })
+    const msgs = buildMezoMessages({ feed: [midday], demoBriefing, nudges: [nudge] })
     expect(msgs[msgs.length - 1].artifactId).toBeUndefined()
     // A szálban PONTOSAN egy elem votolható: a feed sora.
     expect(msgs.filter((m) => m.artifactId != null).map((m) => m.id)).toEqual(['midday'])
@@ -141,5 +144,30 @@ describe('buildMezoMessages', () => {
   test('üres nudges tömb → nem told be semmit', () => {
     const msgs = buildMezoMessages({ feed: [midday], demoBriefing: null, nudges: [] })
     expect(msgs.map((m) => m.id)).toEqual(['midday'])
+  })
+})
+
+describe('partitionMezoThread (mezo-ho9k)', () => {
+  const feedItem: MezoMessageItem = {
+    id: 'morning', artifactId: 'fm-1', kind: 'morning', eyebrow: 'Reggeli briefing',
+    time: '07:05', paragraphs: ['szöveg'], refs: [], meta: null,
+  }
+  const nudgeItem: MezoMessageItem = {
+    id: 'nudge-hidratacio-2026-05-22T12:00:00.000Z', eyebrow: 'Életjel', time: '12:00',
+    paragraphs: ['💧'], refs: [], meta: 'Életjel-figyelő', source: 'eletjel',
+  }
+
+  test('a source: eletjel elemek az eletjelek partícióba kerülnek, a többi az uzenetek-be', () => {
+    const { uzenetek, eletjelek } = partitionMezoThread([feedItem, nudgeItem])
+    expect(uzenetek).toEqual([feedItem])
+    expect(eletjelek).toEqual([nudgeItem])
+  })
+
+  test('sorrendtartó mindkét partíción belül', () => {
+    const n2 = { ...nudgeItem, id: 'nudge-mozgas-x' }
+    const f2 = { ...feedItem, id: 'sleep' }
+    const { uzenetek, eletjelek } = partitionMezoThread([feedItem, nudgeItem, f2, n2])
+    expect(uzenetek.map((m) => m.id)).toEqual(['morning', 'sleep'])
+    expect(eletjelek.map((m) => m.id)).toEqual([nudgeItem.id, 'nudge-mozgas-x'])
   })
 })

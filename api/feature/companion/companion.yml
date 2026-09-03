@@ -54,6 +54,64 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/companion/conversation/{conversationId}:
+    patch:
+      tags: [Companion]
+      operationId: renameConversation
+      summary: Rename one conversation (the list label; reversible, no history impact) — F7.5 (mezo-d20.8.5)
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ConversationRenameRequest' }
+      responses:
+        '200':
+          description: The renamed conversation
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ConversationResponse' }
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Conversation not found (or owned by someone else)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    delete:
+      tags: [Companion]
+      operationId: deleteConversation
+      summary: Delete one conversation (soft; its messages become unreachable) — F7.5 (mezo-d20.8.5)
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Conversation not found (or owned by someone else)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/companion/conversation/{conversationId}/messages:
     get:
       tags: [Companion]
@@ -220,8 +278,12 @@ paths:
       tags: [Companion]
       operationId: decideFactCandidate
       summary: >-
-        Decide a candidate (V1.2) — accept/refine promote it into a knowledge fact (source=chat),
-        reject archives it. One decision per candidate; confirm is an explicit L2 action, never silent.
+        Decide a candidate (V1.2) — accept/refine promote it into a knowledge fact, reject archives
+        it. One decision per candidate; confirm is an explicit L2 action, never silent.
+      description: >-
+        The promoted fact inherits the candidate's `source`: a chat-extracted candidate becomes a
+        `chat` fact, a weekly-review candidate a `weekly_review` one (mezo-d20.7.6) — promotion
+        never re-labels where the insight came from.
       parameters:
         - name: candidateId
           in: path
@@ -608,6 +670,15 @@ components:
           properties:
             kind: { type: string, pattern: '^(week|day)$', description: "'week' anchors an ISO-Monday week; 'day' anchors one day inside its week" }
             date: { type: string, format: date, description: 'ISO week-Monday for kind=week; any date inside the week for kind=day' }
+    ConversationRenameRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: The new list label — same cap as the auto-title column.
     ConversationResponse:
       type: object
       required: [id, startedAt]
@@ -671,6 +742,14 @@ components:
       properties:
         kind: { type: string }
         id: { type: string }
+        label:
+          type: string
+          nullable: true
+          description: >-
+            Human name for the referenced entity when the producer knows one (mezo-b3pp.33) —
+            today only GraphNode refs carry it (the graph node's title). Absent/null for every
+            other kind, and for rows persisted before this field existed; the FE falls back to
+            its own id-derived label then.
     SendMessageRequest:
       type: object
       required: [content]
@@ -689,6 +768,7 @@ components:
         lastReinforcedAt: { type: string, format: date-time, nullable: true }
         createdAt: { type: string, format: date-time }
         patternTitle: { type: string, nullable: true, description: 'The promoting pattern''s title (source=pattern facts only) — the V3.3 evidence link.' }
+        citedWeeks: { type: integer, nullable: true, description: 'In how many of the recent weekly reviews the companion cited this fact as something the week was built on (mezo-d20.7.7). A SEPARATE, weaker signal than reinforcementCount — the model citing its own knowledge is not the user re-confirming it — derived live from the non-deleted weekly_review rows. Null = not measurable (the proactive/weekly feature is off), never a stand-in zero.' }
     CreateFactRequest:
       type: object
       required: [factText, category]
@@ -704,11 +784,14 @@ components:
         includeInPrompt: { type: boolean, nullable: true }
     FactCandidateResponse:
       type: object
-      required: [id, candidateText, category, createdAt]
+      required: [id, candidateText, category, source, createdAt]
       properties:
         id: { type: string, format: uuid }
         candidateText: { type: string }
         category: { type: string, description: "'train' | 'fuel' | 'health' | 'life' — classified by the extractor at capture time" }
+        source: { type: string, description: "'chat' (post-turn extraction, V1.2) | 'weekly_review' (the Monday weekly round's proposal, mezo-d20.7.6) — the promoted knowledge fact inherits it" }
+        evidence: { type: string, nullable: true, description: 'What the candidate rests on, in the proposer''s own words (weekly candidates only — chat extraction does not produce one).' }
+        weekStart: { type: string, format: date, nullable: true, description: 'The ISO Monday of the weekly review that proposed this candidate (null for chat-extracted ones).' }
         userDecision: { type: string, nullable: true, description: "'accept' | 'reject' | 'refine' — null while pending" }
         refinedText: { type: string, nullable: true, description: 'The user-edited wording when the decision was refine.' }
         promotedFactId: { type: string, format: uuid, nullable: true, description: 'The knowledge fact this candidate was promoted into (accept/refine).' }
@@ -760,6 +843,7 @@ components:
         status: { type: string, pattern: '^(proposed|monitoring|confirmed|rejected)$' }
         lastDetectedAt: { type: string, format: date-time, description: 'When the nightly job last computed/refreshed the stats.' }
         thinking: { type: string, nullable: true, description: "The V3.2 critic's prose reasoning — the card's 'AI gondolatmenete'; null on statistical rows." }
+        citedWeeks: { type: integer, nullable: true, description: 'In how many of the recent weekly reviews the companion cited this pattern as something the week was built on (mezo-d20.7.7). Deliberately NOT folded into confidence — confidence is a statistic (r/n/p, or the V3.2 critique score), a citation is the model selecting its own material; it is shown beside the statistic, never inside it, and never moves status. Derived live from the non-deleted weekly_review rows. Null = not measurable (the proactive/weekly feature is off), never a stand-in zero.' }
     PatternCritique:
       type: object
       nullable: true

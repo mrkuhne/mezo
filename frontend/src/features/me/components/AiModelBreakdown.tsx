@@ -11,9 +11,9 @@ import type { LlmUsageGroup } from '@/data/me/llmUsageApi'
 export function AiModelBreakdown({ groups }: { groups: LlmUsageGroup[] }) {
   if (groups.length === 0) return null
   return (
-    <div className="card" style={{ padding: '11px 0 12px' }}>
-      <div className="eyebrow" style={{ padding: '0 13px 8px' }}>Modell szerint</div>
-      <div className="row" style={{ gap: 7, padding: '0 13px', overflowX: 'auto' }}>
+    <div className="aiu-fcard rise" style={{ paddingBottom: 13 }}>
+      <div className="eyebrow" style={{ padding: '0 15px 9px' }}>Modell szerint</div>
+      <div className="row" style={{ gap: 7, padding: '0 15px', overflowX: 'auto' }}>
         {groups.map((g) => (
           <div key={g.key ?? 'unknown'} style={{ flexShrink: 0, background: 'var(--surface-2)', borderRadius: 12, padding: '7px 11px', minWidth: 96 }}>
             <div style={{ fontSize: 10, fontWeight: 700 }}>{g.key ?? 'ismeretlen'}</div>

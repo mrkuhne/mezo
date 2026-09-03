@@ -30,13 +30,15 @@ function whenLabel(iso: string | null | undefined): string {
  * selection (the `?c=` URL param) and the data.
  */
 export function ConversationPickerSheet({
-  conversations, activeId, onSelect, onNew, onClose,
+  conversations, activeId, onSelect, onNew, onClose, onActions,
 }: {
   conversations: ConversationResponse[]
   activeId: string | null
   onSelect: (id: string) => void
   onNew: () => void
   onClose: () => void
+  /** F7.5 (mezo-d20.8.5): the row kebab — opens the actions sheet for that conversation. */
+  onActions?: (conversation: ConversationResponse) => void
 }) {
   return (
     <Sheet onClose={onClose} labelledBy={TITLE_ID}>
@@ -87,6 +89,28 @@ export function ConversationPickerSheet({
                   </span>
                 </div>
                 {active && <Icon name="check" size={14} />}
+                {onActions && (
+                  // F7.5: a span with button semantics — a real <button> may not nest in the row button.
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Műveletek: ${c.title ?? 'Névtelen beszélgetés'}`}
+                    onClick={(e) => { e.stopPropagation(); onActions(c) }}
+                    onKeyDown={(e) => {
+                      if (e.key !== 'Enter' && e.key !== ' ') return
+                      e.preventDefault()
+                      e.stopPropagation()
+                      onActions(c)
+                    }}
+                    style={{
+                      width: 28, height: 28, borderRadius: '50%', flex: 'none',
+                      display: 'grid', placeItems: 'center', fontWeight: 800,
+                      color: 'var(--text-tertiary)', background: 'var(--surface-3, transparent)',
+                    }}
+                  >
+                    ⋯
+                  </span>
+                )}
               </button>
             )
           })}

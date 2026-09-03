@@ -16,10 +16,31 @@ import org.springframework.http.HttpStatus;
 /** HTTP round-trips through the GENERATED {@code BiometricProfileApi} contract (api/openapi.yml). */
 class BiometricProfileContractIT extends ApiIntegrationTest {
 
+    /**
+     * mezo-5cmq: "no profile yet" is a normal state, not an error — the read answers 200 with an
+     * EMPTY profile (an object whose every field is null) instead of the old 404, so the client
+     * never lands on its error branch merely because the owner has not configured a profile.
+     */
     @Test
-    void testGetProfile_shouldReturn404_whenNoneYet() {
-        // Service 404s when the owner has no profile row yet.
-        getForBody("/api/biometrics/profile", ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+    void testGetProfile_shouldReturn200AndEmptyProfile_whenNoneYet() {
+        HttpHeaders auth = ownerAuthHeaders();
+
+        // The RAW wire shape is the contract the FE normalizer keys off: the keys are PRESENT and
+        // null (Jackson's Include.ALWAYS), NOT omitted — the body is not `{}`. A DTO round-trip
+        // alone could not tell those two apart.
+        String raw = getForBody("/api/biometrics/profile", auth, HttpStatus.OK, String.class);
+        assertThat(raw)
+            .contains("\"sex\":null")
+            .contains("\"heightCm\":null")
+            .contains("\"birthDate\":null")
+            .contains("\"tdeeBootstrap\":null");
+
+        BiometricProfileResponse got = getForBody(
+            "/api/biometrics/profile", auth, HttpStatus.OK, BiometricProfileResponse.class);
+        assertThat(got.getSex()).isNull();
+        assertThat(got.getHeightCm()).isNull();
+        assertThat(got.getBirthDate()).isNull();
+        assertThat(got.getTdeeBootstrap()).isNull();
     }
 
     @Test

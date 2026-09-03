@@ -198,8 +198,42 @@
     box-shadow: 0 20px 36px -16px rgba(93, 79, 160, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
   .memoir::before { content: ''; position: absolute; top: -40px; right: -30px; width: 150px; height: 150px; border-radius: 50%;
     background: radial-gradient(circle, rgba(138, 118, 204, 0.16), transparent 70%); }
-  .memoir .ttl { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 15.5px; font-weight: 500; margin-top: 5px; line-height: 1.35; }
-  .memoir .bd { font-size: 10px; font-weight: 300; line-height: 1.6; margin-top: 7px; color: #2B2118; }
+  .memoir .ttl { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 17px; font-weight: 500; margin-top: 5px; line-height: 1.3; }
+  .memoir .stamp { font-size: 7px; color: #A2958A; font-variant-numeric: tabular-nums; flex: none; }
+  .memoir .bd { font-size: 10px; font-weight: 300; line-height: 1.65; margin-top: 8px; color: #2B2118; }
+  .memoir .bd p { margin: 0; }
+  .memoir .bd p + p { margin-top: 7px; }
+  .memoir .bd p:first-child::first-letter { font-family: "Fraunces", Georgia, serif; font-style: italic; font-weight: 500;
+    font-size: 27px; line-height: 0.8; float: left; padding: 3px 5px 0 0; color: #5D4FA0; }
+  /* horgony-chipek — humanizált, tappolható (Emlék › nap-oldal, Minta › Minták) */
+  .anchrow { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+  .anch { display: inline-flex; align-items: center; gap: 5px; border: none; font-family: inherit; cursor: pointer;
+    border-radius: 10px; padding: 4px 8px; font-size: 7.5px; font-weight: 600; color: #6E6257; text-align: left;
+    background: rgba(255, 255, 255, 0.9); border: 0.5px solid rgba(43, 33, 24, 0.08);
+    box-shadow: 0 4px 10px -6px rgba(43, 33, 24, 0.35); transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .anch:active { transform: scale(0.95); }
+  .anch i { width: 6px; height: 6px; border-radius: 50%; flex: none; background: #8A76CC; }
+  .anch.gold i { background: #C9962E; }
+  .anch.sage i { background: #8FAF7E; }
+  .anch b { font-weight: 800; color: #2B2118; }
+  .anch .go { color: #B4A8D8; font-size: 8.5px; margin-left: 1px; }
+  .anch.stat { background: rgba(255, 255, 255, 0.55); box-shadow: none; cursor: default; }
+  /* korábbi fejezetek — 2 oszlopos fejezet-mozaik */
+  .chgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+  .chtile { display: flex; flex-direction: column; gap: 3px; cursor: pointer; border-radius: 17px; padding: 10px 11px 9px;
+    background: #FFFFFF; border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(93, 79, 160, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .chtile:active { transform: scale(0.97); }
+  .chtile .wk { font-size: 6.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #5D4FA0; }
+  .chtile .ct { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 10.5px; font-weight: 500; line-height: 1.3; }
+  .chtile .ex { font-size: 7.5px; font-weight: 300; color: #6E6257; line-height: 1.45;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .chtile .an { font-size: 6.5px; color: #A2958A; margin-top: auto; padding-top: 3px; font-variant-numeric: tabular-nums; }
+  /* fejezet-lapozó */
+  .chpager { display: flex; gap: 9px; margin-top: 10px; }
+  .chpager .chtile { flex: 1; }
+  .chpager .dir { font-size: 8px; color: #B4A8D8; font-weight: 700; }
   /* ===== tudástár ===== */
   .facttile { display: flex; gap: 9px; align-items: flex-start; border-radius: 16px; padding: 10px 11px; margin-bottom: 8px;
     background: var(--fw, #FFFFFF); border: 0.5px solid rgba(43, 33, 24, 0.06);
@@ -281,6 +315,36 @@
   .convrow.on { border-color: #8A76CC; background: #F4F1FB; }
   .convrow .nm { font-size: 10.5px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .convrow .sb { font-size: 8px; color: #A2958A; margin-top: 1px; }
+  /* ===== diagnózis (mezo-hqfi) ===== */
+  .stch.mut { background: rgba(43, 33, 24, 0.08); color: #6E6257; }
+  .tile.wide { grid-column: 1 / -1; align-items: flex-start; text-align: left; padding: 12px 14px; }
+  .tile.wide .dgq { font-size: 13px; font-weight: 700; margin-top: 4px; }
+  .tile.wide .dgs { font-size: 9px; font-weight: 300; color: #6E6257; margin-top: 3px; }
+  .evrow { display: flex; align-items: baseline; gap: 7px; font-size: 9px; padding: 4px 0;
+    border-bottom: 0.5px dashed rgba(43, 33, 24, 0.08); }
+  .evrow:last-of-type { border-bottom: none; }
+  .evrow .lb { font-weight: 700; flex: none; }
+  .evrow .vl { font-variant-numeric: tabular-nums; color: #2B2118; }
+  .evrow .dl { font-variant-numeric: tabular-nums; font-weight: 800; }
+  .evrow .dl.bad { color: #A84A26; }
+  .evrow .src { margin-left: auto; font-size: 7px; color: #A2958A; letter-spacing: 0.04em; flex: none; }
+  .rankb { width: 20px; height: 20px; border-radius: 8px; display: grid; place-items: center; flex: none;
+    font-size: 10px; font-weight: 800; color: #fff; background: linear-gradient(135deg, #C9962E, #A8801F); }
+  .rankb.two { background: linear-gradient(135deg, #B4A8D8, #8A76CC); }
+  .qqrow { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 2px; }
+  .qqchip { border: 0.5px solid rgba(43, 33, 24, 0.08); border-radius: 999px; padding: 8px 13px;
+    background: rgba(255, 255, 255, 0.7); font-size: 10px; font-weight: 600; color: #6E6257;
+    cursor: pointer; text-align: left; }
+  .qqchip:active { transform: scale(0.97); }
+  .dgqgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .dgqtile { border-radius: 14px; padding: 9px 11px; background: rgba(255, 255, 255, 0.6);
+    border: 1.2px dashed rgba(43, 33, 24, 0.16); }
+  .dgqtile .qq { font-size: 10px; font-weight: 700; line-height: 1.35; color: #6E6257; }
+  .dgqtile .qs { font-size: 7px; font-weight: 800; letter-spacing: 0.08em; color: #A2958A; margin-top: 4px; }
+  .probe { border-radius: 12px; background: rgba(255, 255, 255, 0.72); padding: 8px 10px; margin-top: 9px;
+    border: 0.5px solid rgba(43, 33, 24, 0.07); }
+  .probe .pt { font-size: 7px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #A8801F; }
+  .probe .px { font-size: 10px; font-weight: 600; margin-top: 3px; line-height: 1.45; }
   .convnew { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; margin-top: 9px;
     border: 1.2px dashed rgba(43, 33, 24, 0.22); background: none; border-radius: 14px; padding: 10px 0;
     font-size: 10px; font-weight: 700; color: #6E6257; cursor: pointer; font-family: inherit; }
@@ -397,6 +461,11 @@
               <div class="p-eyebrow" style="color:#A8801F;">Kísérletek</div>
               <div class="spotwrap"><svg width="40" height="40" viewBox="0 0 100 100"><use href="#i-lombik"/></svg></div>
               <div class="mut" style="font-size:9.5px;font-weight:600;text-align:center;" id="kisTileLine">1 aktív · 4/7 nap</div>
+            </div>
+            <div class="tile wide rise" style="--d:400ms;" data-page="page-diagnozis" role="button" tabindex="0" aria-label="Diagnózis">
+              <div class="p-eyebrow" style="color:#A8801F;">Diagnózis</div>
+              <div class="dgq">Miért vagyok fáradt? <span style="float:right;color:#C9962E;">✦</span></div>
+              <div class="dgs" id="dgTileLine">„Miért vagyok fáradt?" él · 4 kérdés készül · 1 korábbi riport</div>
             </div>
           </div>
 
@@ -571,28 +640,112 @@
           <div class="nm">Memoár</div>
           <div class="mrow" style="justify-content:center;"><svg width="64" height="64" viewBox="0 0 100 100"><use href="#i-memoar"/></svg></div>
           <div class="sb">a közös történetünk, hétről hétre</div>
+          <div class="sb" style="font-size:8px;color:#A2958A;">5 fejezet · hét 17 óta</div>
         </div>
         <div class="page-body">
           <div class="memoir rise" style="--d:0ms;">
-            <span class="p-eyebrow" style="color:#5D4FA0;">Heti memoár · Hét 21</span>
+            <div class="mrow">
+              <span class="p-eyebrow grow" style="color:#5D4FA0;">Heti memoár · Hét 21</span>
+              <span class="stamp">Máj 18–24</span>
+            </div>
             <div class="ttl">A hét, amikor a láb-napok elkezdtek visszafizetni</div>
-            <div class="bd">Ez volt az a hét, amikor a türelem formát öltött: a Lat Pulldown új csúcsa nem a semmiből
-            jött, hanem három hét csendes, pontos munkájából. Kedden fáradtan érkeztél és mégis végigcsináltad —
-            szerdán az alvásod ezt vissza is adta. A D3-fázis étvágyhulláma megérkezett, ahogy vártuk, és ezúttal
-            nem billentett ki: a kamra kész volt rá.</div>
+            <div class="bd">
+              <p>Ez volt az a hét, amikor a türelem formát öltött: a Lat Pulldown új csúcsa nem a semmiből
+              jött, hanem három hét csendes, pontos munkájából. A számok mögött egy döntés áll — az, hogy
+              februárban nem emeltél, amikor mindenki más emelt volna.</p>
+              <p>Kedden fáradtan érkeztél és mégis végigcsináltad — szerdán az alvásod ezt vissza is adta,
+              hét-negyvenöttel. A D3-fázis étvágyhulláma megérkezett, ahogy vártuk, és ezúttal nem billentett
+              ki: a kamra kész volt rá, a keret tartott.</p>
+              <p>Gyengéden azt gondolom, ez a hét arról szólt, hogy a rendszered már nélkülem is működik.
+              Az én dolgom most annyi volt, hogy leírjam.</p>
+            </div>
             <div class="reffoot">
-              <span class="eb">Horgonyok</span>
-              <div class="refrow">
-                <span class="refch"><b>PR</b>Lat Pulldown 105 kg</span>
-                <span class="refch"><b>Gyógyszer</b>D3-fázis</span>
-                <span class="refch"><b>Identitás</b>türelmes építkező</span>
+              <div class="mrow"><span class="eb grow">Miből íródott</span><span class="stamp">vasárnap este íródott</span></div>
+              <div class="anchrow">
+                <button class="anch"><i></i><span>Emlék · <b>máj 22., csütörtök</b> — Lat Pulldown 105 kg</span><span class="go">›</span></button>
+                <button class="anch"><i></i><span>Emlék · <b>máj 19., kedd</b> — fáradtan is bementél</span><span class="go">›</span></button>
+                <button class="anch gold"><i></i><span>Minta · <b>D3-fázis étvágyhullám</b></span><span class="go">›</span></button>
+                <span class="anch sage stat"><i></i><span>Identitás · <b>türelmes építkező</b></span></span>
               </div>
             </div>
             <div class="fbwrap" data-fb="memoar"><button class="fbc">👍 Segített</button><button class="fbc">👎 Nem talált</button></div>
           </div>
           <div class="float3d rise" style="--d:90ms;border-radius:16px;padding:10px 12px;margin-top:10px;background:linear-gradient(150deg,#EBE6F8,#F9F6FE);">
-            <span class="p-eyebrow" style="color:#5D4FA0;">Évforduló · 1 hónap</span>
+            <span class="p-eyebrow" style="color:#5D4FA0;">Mérföldkő · 1 hónap</span>
             <div style="font-size:9.5px;font-weight:300;line-height:1.5;margin-top:4px;">Egy hónapja kezdtük a közös munkát — az első héten még 2 250 kcal volt a keret, és a guggolás 80 kg-nál járt.</div>
+          </div>
+          <div class="lsec rise" style="--d:160ms;"><span class="p-eyebrow">Korábbi fejezetek</span><span class="cnt">4</span></div>
+          <div class="chgrid rise" style="--d:200ms;">
+            <div class="chtile" data-page="page-memoar-fej" role="button" tabindex="0" aria-label="Hét 20 fejezet">
+              <span class="wk">Hét 20 · Máj 11–17</span>
+              <span class="ct">A csendes ismétlések hete</span>
+              <span class="ex">Nem történt semmi látványos — és pont ez volt a lényeg. Négy edzés, négy…</span>
+              <span class="an">3 horgony</span>
+            </div>
+            <div class="chtile" data-page="page-memoar-fej" role="button" tabindex="0" aria-label="Hét 19 fejezet">
+              <span class="wk">Hét 19 · Máj 4–10</span>
+              <span class="ct">Amikor az alvás előre szólt</span>
+              <span class="ex">Kedd éjjel öt óra negyven — és a szerdai edzésed pontosan ezt mesélte el…</span>
+              <span class="an">4 horgony</span>
+            </div>
+            <div class="chtile" data-page="page-memoar-fej" role="button" tabindex="0" aria-label="Hét 18 fejezet">
+              <span class="wk">Hét 18 · Ápr 27–Máj 3</span>
+              <span class="ct">Az első közös korrekció</span>
+              <span class="ex">A vállad jelzett, és először hallgattunk rá együtt: a keddi tolás Cable…</span>
+              <span class="an">3 horgony</span>
+            </div>
+            <div class="chtile" data-page="page-memoar-fej" role="button" tabindex="0" aria-label="Hét 17 fejezet">
+              <span class="wk">Hét 17 · Ápr 20–26</span>
+              <span class="ct">Ahol elkezdődött</span>
+              <span class="ex">Az első teljes hetünk: még ismerkedtünk — te a keretekkel, én veled…</span>
+              <span class="an">2 horgony</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ MEMOÁR · FEJEZET-OLDAL ============ -->
+      <div class="page p-lav" id="page-memoar-fej">
+        <div class="page-head"><button class="backbtn" data-back="page-memoar-fej">‹ Memoár</button></div>
+        <div class="page-hero">
+          <div class="nm">Hét 20</div>
+          <div class="sb">Máj 11–17 · huszadik fejezet</div>
+        </div>
+        <div class="page-body">
+          <div class="memoir rise" style="--d:0ms;">
+            <div class="mrow">
+              <span class="p-eyebrow grow" style="color:#5D4FA0;">Heti memoár · Hét 20</span>
+              <span class="stamp">Máj 11–17</span>
+            </div>
+            <div class="ttl">A csendes ismétlések hete</div>
+            <div class="bd">
+              <p>Nem történt semmi látványos — és pont ez volt a lényeg. Négy edzés, négy pontosan
+              teljesített nap, egyetlen kihagyott szett nélkül. Az ilyen hetek nem kerülnek posztba,
+              de ezekből épül minden, ami később csúcsnak látszik.</p>
+              <p>A fehérje hat napból hatszor bejött, és a súlyod először mozdult el lefelé úgy, hogy
+              közben az erőd nem. Ezt jegyezd meg: ez az az állapot, amiért márciusban elindultunk.</p>
+            </div>
+            <div class="reffoot">
+              <div class="mrow"><span class="eb grow">Miből íródott</span><span class="stamp">máj 17-én íródott</span></div>
+              <div class="anchrow">
+                <button class="anch"><i></i><span>Emlék · <b>máj 14., csütörtök</b> — a négyből négy</span><span class="go">›</span></button>
+                <button class="anch"><i></i><span>Emlék · <b>máj 16., szombat</b> — fehérje-széria</span><span class="go">›</span></button>
+                <button class="anch gold"><i></i><span>Minta · <b>súly le, erő tart</b></span><span class="go">›</span></button>
+              </div>
+            </div>
+            <div class="fbwrap" data-fb="memoar20"><button class="fbc">👍 Segített</button><button class="fbc">👎 Nem talált</button></div>
+          </div>
+          <div class="chpager rise" style="--d:90ms;">
+            <div class="chtile" data-page="page-memoar-fej" role="button" tabindex="0" aria-label="Előző fejezet">
+              <span class="dir">‹ előző</span>
+              <span class="wk">Hét 19</span>
+              <span class="ct">Amikor az alvás előre szólt</span>
+            </div>
+            <div class="chtile" data-back="page-memoar-fej" role="button" tabindex="0" aria-label="Következő fejezet" style="text-align:right;align-items:flex-end;">
+              <span class="dir">következő ›</span>
+              <span class="wk">Hét 21</span>
+              <span class="ct">A láb-napok visszafizetnek</span>
+            </div>
           </div>
         </div>
       </div>
@@ -760,6 +913,115 @@
         </div>
       </div>
 
+      <!-- ============ DIAGNÓZIS (mezo-hqfi) ============ -->
+      <div class="page p-lav" id="page-diagnozis">
+        <div class="page-head"><button class="backbtn" data-back="page-diagnozis">‹ Mezo</button></div>
+        <div class="page-hero">
+          <div class="nm">Diagnózis</div>
+          <div class="mrow" style="justify-content:center;gap:12px;">
+            <svg width="54" height="54" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg>
+            <div class="bignum" id="dgBig">1</div>
+          </div>
+          <div class="sb">kérdések a Mezónak → gyanúsítottak evidenciával → próba</div>
+        </div>
+        <div class="page-body">
+          <div class="candc rise" style="--d:0ms;">
+            <div class="p-eyebrow" style="color:#A8801F;">✦ Kérdezd meg</div>
+            <div style="font-size:13px;font-weight:700;margin-top:5px;">Miért vagyok fáradt?</div>
+            <div style="font-size:9px;color:#6E6257;font-weight:300;margin-top:4px;line-height:1.5;">
+              A Mezo az utolsó 14 nap adatait veti össze az előző négy héttel — alvás, energia,
+              terhelés, fuel —, és rangsorolt gyanúsítottakat ad, mindet mért evidenciával.</div>
+            <button class="cta" id="dgAsk" style="width:100%;margin-top:9px;padding:9px 0;font-size:10px;">✦ Kérdezd meg most</button>
+            <div style="font-size:7.5px;color:#A2958A;margin-top:6px;text-align:center;" id="dgQuota">ma még 3 kérdésed van · a megnyitás mindig ingyen</div>
+          </div>
+          <div class="p-eyebrow rise" style="--d:40ms;color:#6E6257;margin:2px 2px 7px;">További kérdések · a recept kész, sorban jönnek</div>
+          <div class="dgqgrid rise" style="--d:50ms;">
+            <div class="dgqtile"><div class="qq">Miért nem mozdul a súlyom?</div><div class="qs">HAMAROSAN</div></div>
+            <div class="dgqtile"><div class="qq">Miért alszom rosszul?</div><div class="qs">HAMAROSAN</div></div>
+            <div class="dgqtile"><div class="qq">Kell most deload?</div><div class="qs">HAMAROSAN</div></div>
+            <div class="dgqtile"><div class="qq">Havi Mezo Riport</div><div class="qs">HAMAROSAN · HAVI 1</div></div>
+          </div>
+          <div class="p-eyebrow rise" style="--d:60ms;color:#6E6257;margin:2px 2px 7px;">Korábbi riportok</div>
+          <div id="dgList">
+            <div class="predtile sage rise" style="--d:70ms;" data-page="page-diagnozis-reszlet" role="button" tabindex="0" aria-label="Korábbi diagnózis">
+              <div class="mrow" style="gap:8px;">
+                <span class="pic"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg></span>
+                <span class="stch ok">✓ próba bevált</span>
+                <span style="margin-left:auto;font-size:8px;color:#A2958A;font-variant-numeric:tabular-nums;">aug 12</span>
+              </div>
+              <div style="font-size:11.5px;font-weight:700;margin-top:7px;">Akkor is az alvást mondta — a 7 napos próba bejött.</div>
+              <div class="actual">✓ Kísérlet lett belőle: „23:00 előtt ágyban" · bevált — bekerült a tudásba.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="page p-lav" id="page-diagnozis-reszlet">
+        <div class="page-head"><button class="backbtn" data-back="page-diagnozis-reszlet">‹ Diagnózis</button></div>
+        <div class="page-hero">
+          <div class="nm">Miért vagyok fáradt?</div>
+          <div class="sb" style="margin-top:6px;">aug 17 – 30 · az utolsó 14 nap adatából</div>
+        </div>
+        <div class="page-body">
+          <div class="predtile lav rise" style="--d:0ms;">
+            <div class="mrow" style="gap:8px;">
+              <span class="stch pend">◆ mérsékelt bizonyosság</span>
+              <span style="margin-left:auto;font-size:8px;color:#A2958A;font-variant-numeric:tabular-nums;">ma 06:12</span>
+            </div>
+            <div style="font-size:11.5px;font-weight:600;line-height:1.55;margin-top:8px;">
+              A fáradtságod legvalószínűbb oka az alvás megrövidülése — két hete napi bő egy
+              órával kevesebbet alszol, és a terhelésed közben nem csökkent.</div>
+          </div>
+
+          <div class="predtile rise" id="dgSus1" style="--d:70ms;border:1px solid #C9962E;box-shadow:0 20px 34px -14px rgba(201,150,46,0.45),0 2px 6px rgba(43,33,24,0.05),inset 0 1px 0 rgba(255,255,255,0.85);">
+            <div class="mrow" style="gap:8px;">
+              <span class="rankb">1</span>
+              <span style="font-size:11.5px;font-weight:700;">Alváshiány</span>
+              <span class="stch ok" style="margin-left:auto;">erős</span>
+            </div>
+            <div style="font-size:9.5px;color:#2B2118;font-weight:300;line-height:1.55;margin-top:6px;">
+              Napi bő egy órával rövidebb alvás mellett a mélyalvás-idő esik ki — ez közvetlenül
+              a nappali energiádban jelentkezik.</div>
+            <div style="margin-top:7px;">
+              <div class="evrow"><span class="lb">alváshossz</span><span class="vl">6,1 ó</span><span class="dl bad">↓ 1,2</span><span class="src">ALVÁS-NAPLÓ · 13 NAP</span></div>
+              <div class="evrow"><span class="lb">energia-szint</span><span class="vl">4,2</span><span class="dl bad">↓ 2,6</span><span class="src">CHECK-IN · 12 NAP</span></div>
+              <div class="evrow"><span class="lb">minta</span><span class="vl" style="font-weight:300;">késői lefekvés ↔ másnapi energia</span><span class="src">MINTÁK</span></div>
+            </div>
+            <div class="probe">
+              <div class="pt">Próba · 7 nap</div>
+              <div class="px">Feküdj le hét estén át 23:00 előtt, és nézzük meg újra.</div>
+            </div>
+            <div class="decrow" id="dgProbeRow1"><button class="cta" id="dgProbe1">✓ Próbáljuk ki</button></div>
+            <div class="actual" id="dgProbeDone1" style="display:none;">◐ Aktív kísérlet lett — a Kísérletek oldalon követed, 7 nap múlva ítélünk.</div>
+          </div>
+
+          <div class="predtile lav rise" style="--d:140ms;">
+            <div class="mrow" style="gap:8px;">
+              <span class="rankb two">2</span>
+              <span style="font-size:11.5px;font-weight:700;">Megugrott terhelés</span>
+              <span class="stch pend" style="margin-left:auto;">mérsékelt</span>
+            </div>
+            <div style="font-size:9.5px;color:#2B2118;font-weight:300;line-height:1.55;margin-top:6px;">
+              Az akut terhelésed a krónikus átlagod fölé ment, miközben az alvásod nem nőtt vele
+              — a kettő együtt halmozódó fáradtság.</div>
+            <div style="margin-top:7px;">
+              <div class="evrow"><span class="lb">akut:krónikus</span><span class="vl">1,34</span><span class="dl bad">↑ 0,32</span><span class="src">SPORT + GYM TERHELÉS</span></div>
+              <div class="evrow"><span class="lb">alváshossz</span><span class="vl">6,1 ó</span><span class="dl bad">↓ 1,2</span><span class="src">ALVÁS-NAPLÓ · 13 NAP</span></div>
+            </div>
+            <div class="probe">
+              <div class="pt">Próba · 7 nap</div>
+              <div class="px">Vegyél vissza egy hétre a heti volumenből nagyjából negyedét.</div>
+            </div>
+            <div class="decrow"><button class="ghost" id="dgProbe2">Próbáljuk ki</button></div>
+          </div>
+
+          <div class="mrow rise" style="--d:200ms;gap:8px;justify-content:center;padding:2px 0 6px;">
+            <span style="font-size:8.5px;color:#A2958A;">azóta új alvás-logod érkezett</span>
+            <button class="ghost" style="font-size:9px;padding:4px 10px;">↻ Frissítsd</button>
+          </div>
+        </div>
+      </div>
+
       <!-- ============ MEMÓRIA ============ -->
       <div class="page p-lav" id="page-memoria">
         <div class="page-head"><button class="backbtn" data-back="page-memoria">‹ Mezo</button></div>
@@ -820,7 +1082,10 @@
           <li><strong>Chat</strong> — az audit szerinti teljes anatómia: Mezo-eyebrow + időbélyeg,
           tool-chipek a válasz felett, <strong>Hivatkozott · L3</strong> lábléc (emberi címkékkel, nem nyers
           id-kkal — a valós app 7-es gapjének javítása), lenyitható <strong>Emlékek · N</strong> sor,
-          👍/👎 + ok-chipek. A küldés élő: gépelő pöttyök → tool-chip → válasz, a mikrofon leiratoz.</li>
+          👍/👎 + ok-chipek. A küldés élő: gépelő pöttyök → tool-chip → válasz, a mikrofon leiratoz.
+          <strong>Gyorsgomb-chipek (mezo-dz3y):</strong> a „＋ Új" üres állapotában négy előre
+          összeállított kérdés — egy koppintás küld, a chipek a válasszal eltűnnek; futó
+          beszélgetés nem fizet érte képernyőt. Mindegyikhez a saját tool-hívásai látszanak.</li>
           <li><strong>Minták</strong> — motor-próza three-bold-numbers, <strong>színes 3×2 életciklus-rács</strong>
           (a döntésre váró cella arany kerettel lüktet), döntés-kártya (a hubbal szinkronban), majd
           <strong>minta-csempék 2 oszlopban</strong>: megerősítve = zsálya wash + clay ikon + bizonyosság-chip,
@@ -829,8 +1094,13 @@
           <li><strong>Heti</strong> — 82/100 hero + delta, a trend-sorok helyett <strong>színes metrika-csempék</strong>
           (wash + clay ikon + nyíl + animált sáv, a fehérje-napok pöttysorral, a súly-trend széles
           csempén), Mezo-tervjavaslat feedbackkel, Growth-heti tintázott mini-cellákkal.</li>
-          <li><strong>Memoár</strong> — Fraunces-címes fejezetkártya lila derengéssel, horgony-chipek,
-          évforduló-kártya.</li>
+          <li><strong>Memoár</strong> — könyv-hub: a legutóbbi fejezet Fraunces-címmel, lila iniciáléval,
+          bekezdésekre tagolt prózával és íródás-bélyeggel; a nyers [Memory]-dátumok helyett
+          <strong>humanizált, tappolható horgony-chipek</strong> („Miből íródott" — Emlék › nap-oldal,
+          Minta › Minták); alatta kód-számított mérföldkő-kártya és a <strong>Korábbi fejezetek
+          2 oszlopos fejezet-mozaik</strong> (hétszám + Fraunces-cím + idézet-kezdet + horgonyszám),
+          amely saját fejezet-oldalra visz ‹ előző / következő › lapozókkal — a hét fejezetenként
+          végigolvasható, mint egy könyv.</li>
           <li><strong>Tudástár</strong> — jóváhagyás-inbox (Elfogad/Pontosít/Elvet), keresés + kategória-chipek,
           a tény-sorok helyett <strong>kategória-wash-es tény-csempék</strong> (edzés korall · egészség borostyán ·
           élet égkék, clay ikon-koronggal, kapcsolóval; a kikapcsoltak szaggatottra halkulnak).</li>
@@ -838,6 +1108,15 @@
           ◇ Javaslat — a valós app angol chipjeinek honosítása) és <strong>státusz-wash-es csempék</strong>:
           folyamatban = levendula + animált konfidencia-sáv, bevált/megerősítve = zsálya, aktív kísérlet =
           borostyán + napi pöttysor; a javaslat-kártya elfogadva ◐ Aktív 0/7-re vált.</li>
+          <li><strong>Diagnózis</strong> — mezo on-demand riport-katalógusa. V1-ben egy kérdés él
+          („Miért vagyok fáradt?"), de a séma jelenség-független: minden új kérdés egy recept
+          (metrika-lista + prompt), nem új feature — a „További kérdések" rács a bővülés helye,
+          és ide csatlakozik majd a Havi Mezo Riport is. Az élő kérdés: a „Miért vagyok fáradt?"
+          kérdésre rangsorolt gyanúsítottak, mindegyik <strong>mért evidenciával</strong> (érték + eltérés
+          a bázistól + forrás-címke — a modell indexszel választ, kitalálni nem tud), és mindegyiknél
+          egy <strong>próba</strong>, ami egy koppintással aktív N=1 kísérlet lesz. Napi 3 kérdés;
+          kevés adat esetén őszinte „nem tippelek" — sosem placeholder. A lista a hosszú táv:
+          „aug 12-én is az alvást mondta — a próba bevált".</li>
           <li><strong>Memória</strong> — négy szegmens: Rétegek (<strong>rétegenként színezett L0→L3 kártyák</strong>
           clay ikonokkal, lüktető kötőelemek emberi cron-idővel), Napló (éjjel írt nap-kártyák), Kereső
           (egyezés-gyűrű + pontszám-matek chipek), Audit (tokenoszlopok + tintázott tény-eredet cellák).</li>
@@ -983,9 +1262,27 @@
   function scrollDown() { thread.scrollTop = thread.scrollHeight; }
 
   var busy = false;
-  function sendChat() {
+
+  /* mezo-dz3y: a gyorsgomb-kérdések testreszabott demo-válaszai — a chip értékét a
+     valós appban a 15 hub-tool adja, itt a demó témában marad. */
+  var QUICK_ANSWERS = {
+    'Foglald össze a mai napom röviden': {
+      text: 'Eddig: 6ó50p alvás (rövidebb a szokottnál), 2/4 check-in, 1420 kcal / 96 g fehérje bent. Ma <b>Pull Day</b> vár este — a kulcs most a délutáni snack és egy nyugodt óra alvás-pótlásnak.',
+      tools: ['get_daily_practice(ma)', 'get_fuel_log(ma)', 'get_training_plan(today)'] },
+    'Alvás és súly alapján mire figyeljek ma?': {
+      text: 'Az alvásod harmadik napja 7 óra alatt van, a reggeli súlyod közben stabil — a fáradtságod tehát nem energiahiány, hanem alvás-adósság. Ma <b>koffein-stop 14:00-kor</b>, és este 23:00 előtt ágyban.',
+      tools: ['get_recovery(scope=sleep, days=7)', 'get_weight_trend(days=14)'] },
+    'Hogy készüljek az esti edzésre?': {
+      text: 'Este <b>Pull Day</b>: Lat Pulldown a fő tétel — a múltkori 105 kg után ma reális a 107,5. A mai bevitel alapján még ~40 g szénhidrát elkél 17:00 körül; a válladra figyelj, a múlt heti niggle miatt hosszabb bemelegítést kérj.',
+      tools: ['get_training_plan(today)', 'get_exercise_records(Lat Pulldown)', 'get_fuel_log(ma)'] },
+    'Mit egyek ma este a maradék makróimba?': {
+      text: 'Maradt ~680 kcal és 52 g fehérje. A kamrádból kijön a <b>Collagen Smoothie</b> (32 g fehérje) + egy túrós tál — együtt pont a keretben, és edzés utánra időzítve a legjobb.',
+      tools: ['get_fuel_log(ma)', 'get_pantry(food)', 'get_recipes(fehérje)'] }
+  };
+
+  function sendChat(forced) {
     if (busy) return;
-    var txt = cinput.value.trim() || 'Ma reggel fáradtan keltem, mit gondolsz, menjek edzeni?';
+    var txt = forced || cinput.value.trim() || 'Ma reggel fáradtan keltem, mit gondolsz, menjek edzeni?';
     cinput.value = '';
     busy = true;
     thread.appendChild(renderMsg({ r: 'u', t: 'most', text: txt }));
@@ -1003,7 +1300,8 @@
     }, 650);
     setTimeout(function () {
       ty.remove();
-      thread.appendChild(renderMsg({ r: 'a', t: 'most',
+      var qa = QUICK_ANSWERS[txt];
+      thread.appendChild(renderMsg(qa ? { r: 'a', t: 'most', text: qa.text, tools: qa.tools } : { r: 'a', t: 'most',
         text: 'Értem — és köszönöm, hogy megosztottad. A fáradtság a D3-hullámmal együtt jár, de a check-injeid szerint a <b>könnyített edzés</b> ilyenkor kifejezetten jót tesz: menj, de vedd le a volument ~20%-kal, és hagyd el az utolsó szetteket.',
         tools: ['get_recent_checkins(days=3)', 'recallSharedMemory(fáradt reggelek)'],
         refs: [['Check-in', 'máj 21 · reggel']],
@@ -1054,7 +1352,18 @@
     shconv.classList.add('open');
   });
   document.getElementById('newChatBtn').addEventListener('click', function () {
-    thread.innerHTML = '<div class="msg-a"><div class="bub-a" style="color:#6E6257;">Új beszélgetés — kérdezz bármit, vagy mondd fel a mikrofonnal.</div></div>';
+    thread.innerHTML = '<div class="msg-a"><div class="bub-a" style="color:#6E6257;">Új beszélgetés — kérdezz bármit, vagy koppints egy kérdésre.</div></div>';
+    /* mezo-dz3y: a gyorsgomb-chipek — CSAK az üres állapotban élnek, egy koppintás küld. */
+    var row = document.createElement('div');
+    row.className = 'qqrow';
+    Object.keys(QUICK_ANSWERS).forEach(function (q) {
+      var b = document.createElement('button');
+      b.className = 'qqchip';
+      b.textContent = q;
+      b.addEventListener('click', function () { row.remove(); sendChat(q); });
+      row.appendChild(b);
+    });
+    thread.appendChild(row);
     document.getElementById('chatSub').textContent = 'új beszélgetés';
   });
 
@@ -1229,5 +1538,65 @@
     });
   });
   showMem('att');
+})();
+</script>
+<script>
+/* ===== Diagnózis (mezo-hqfi): kérdezés-demo + próba→kísérlet flip ===== */
+(function () {
+  function openPg(id) {
+    var pg = document.getElementById(id);
+    pg.classList.add('open'); pg.classList.remove('play');
+    var b = pg.querySelector('.page-body'); if (b) b.scrollTop = 0;
+    void pg.offsetWidth; pg.classList.add('play');
+  }
+
+  var ask = document.getElementById('dgAsk');
+  var quota = document.getElementById('dgQuota');
+  var asked = false;
+  if (ask) ask.addEventListener('click', function () {
+    if (asked) { openPg('page-diagnozis-reszlet'); return; }
+    ask.disabled = true;
+    ask.textContent = '… a két hét adatait olvasom';
+    setTimeout(function () {
+      asked = true;
+      ask.disabled = false;
+      ask.textContent = '✦ Kérdezd meg újra';
+      quota.textContent = 'ma még 2 kérdésed van · a megnyitás mindig ingyen';
+      var big = document.getElementById('dgBig'); if (big) big.textContent = '2';
+      var line = document.getElementById('dgTileLine');
+      if (line) line.textContent = 'ma: Alváshiány (erős) · 2 gyanúsított · 1 korábbi riport';
+      var list = document.getElementById('dgList');
+      if (list && !document.getElementById('dgToday')) {
+        var t = document.createElement('div');
+        t.className = 'predtile lav';
+        t.id = 'dgToday';
+        t.setAttribute('role', 'button'); t.setAttribute('tabindex', '0');
+        t.innerHTML = '<div class="mrow" style="gap:8px;">'
+          + '<span class="pic"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg></span>'
+          + '<span class="stch pend">◆ mérsékelt</span>'
+          + '<span style="margin-left:auto;font-size:8px;color:#A2958A;font-variant-numeric:tabular-nums;">ma 06:12</span></div>'
+          + '<div style="font-size:11.5px;font-weight:700;margin-top:7px;">A fáradtságod fő oka az alvás megrövidülése.</div>'
+          + '<div style="font-size:8.5px;color:#6E6257;font-weight:300;margin-top:4px;">2 gyanúsított · 5 evidencia · próba felajánlva</div>';
+        function go() { openPg('page-diagnozis-reszlet'); }
+        t.addEventListener('click', go);
+        t.addEventListener('keydown', function (e) { if (e.key === 'Enter') go(); });
+        list.insertBefore(t, list.firstChild);
+      }
+      openPg('page-diagnozis-reszlet');
+    }, 1300);
+  });
+
+  var p1 = document.getElementById('dgProbe1');
+  if (p1) p1.addEventListener('click', function () {
+    document.getElementById('dgProbeRow1').style.display = 'none';
+    document.getElementById('dgProbeDone1').style.display = '';
+    var kis = document.getElementById('kisTileLine');
+    if (kis) kis.textContent = '2 aktív · új: 23:00 előtt ágyban';
+  });
+  var p2 = document.getElementById('dgProbe2');
+  if (p2) p2.addEventListener('click', function () {
+    p2.textContent = '◐ Aktív kísérlet lett';
+    p2.disabled = true;
+  });
 })();
 </script>

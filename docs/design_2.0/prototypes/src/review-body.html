@@ -1,0 +1,539 @@
+<div class="wrap">
+  <p class="eyebrow">Design 2.0 · F7.2 · mezo-d20.8.2 + mezo-d20.8.2.2</p>
+  <h1>Edzés-review — a visszanézés kontextus-riportja</h1>
+  <p class="lede">
+    A lezáráskori riport a <strong>„mit csináltál"</strong> leltára. A visszanézés más helyzet:
+    ott a kérdés az, hogy <strong>mihez képest</strong>. Ugyanaz a héj, ugyanaz a leltár —
+    de a <code>closed</code> mód megkapja a kontextus-csempét, a szett-jegyzeteket és a
+    léptetést a template-nap láncán. Kattints a lenti gombokra és a lap alján a nyilakra.
+  </p>
+
+  <div class="stage">
+    <div>
+      <div class="phone"><div class="screen play" id="screen">
+        <div class="isl"></div>
+        <div class="p-status"><span>9:41</span><span>▮▮▮ 82%</span></div>
+        <div class="page p-sage" id="page">
+          <div class="page-head">
+            <button class="backbtn" id="back">← Vissza</button>
+            <span class="grow"></span>
+            <span class="p-eyebrow" id="modelbl">Visszanézés</span>
+          </div>
+          <div class="page-body" id="body"></div>
+        </div>
+        <div class="page subpage" id="expage">
+          <div class="page-head">
+            <button class="backbtn" id="exback">← Pull A</button>
+            <span class="grow"></span>
+            <span class="p-eyebrow" id="exdate"></span>
+          </div>
+          <div class="page-body" id="exbody"></div>
+        </div>
+        <div class="homebar"></div>
+      </div></div>
+
+      <div class="demobar">
+        <button data-mode="closed" aria-pressed="true">Visszanézés (closed)</button>
+        <button data-mode="closing" aria-pressed="false">Lezárás (closing)</button>
+      </div>
+    </div>
+
+    <aside>
+      <div>
+        <h2>Mit nézz meg</h2>
+        <ul>
+          <li><strong>A kontextus-csempe</strong> — „Mihez képest": megnevezett referencia-session
+            és három delta a statisztika-sáv tükrében.</li>
+          <li><strong>A delta nem büntet</strong> (ADR 0010). Az aug. 26-i napon a volumen
+            <em>lement</em> (−0,9 t), a célszettek viszont <em>felmentek</em> (+2). A szám előjeles
+            és őszinte, de a szín csak <em>felfelé</em> színez zsáldára — lefelé semleges grafit.
+            Korall és piros ezen a csempén nem létezik.</li>
+          <li><strong>A Ø RIR mindig semleges</strong>, mert ott a kevesebb a keményebb —
+            egy automatikus tónus itt hazudna.</li>
+          <li><strong>A gyakorlatok swimlane-je</strong> — a leltár nem lefelé nő, hanem oldalra fut.
+            Egy csempe egy horgony-számot mutat (a top szett), alatta a szett-sávok: tömör = megvan,
+            arany = medál, halvány = bemelegítő, szaggatott = kimaradt.</li>
+          <li><strong>Koppints egy csempére</strong> — ott van a mélység. A gyakorlat saját oldalán
+            minden szett külön csempe: <em>90 kg × 8 · RIR 2 · célsávban · 720 kg</em>. A medál-szett
+            aranyban, a kimaradt szett szellem-csempeként, a jegyzet a szett alatt.</li>
+          <li><strong>A szett-jegyzetek</strong> ott, a szettjük alatt. Ez már ma is megérkezik a
+            payloadban (<code>ExerciseSetResponse.note</code>), csak sehol nem látszik.</li>
+          <li><strong>Léptess vissza</strong> a júl. 29-i napra: az volt a mezociklus első Pull A-ja,
+            <strong>nincs mihez hasonlítani → a csempe nem renderel.</strong> Nincs „nincs adat"
+            helykitöltő.</li>
+          <li><strong>Váltsd „Lezárás"-ra</strong>: a kontextus-csempe és a léptetés eltűnik
+            (lezáráskor nincs hova lépni), és megjelenik a lezáró CTA — fölötte az
+            <strong>edzés-jegyzet mezője</strong>.</li>
+          <li><strong>A záró jegyzet</strong> (<code>mezo-d20.8.2.2</code>) — lezáráskor nem csupasz
+            doboz, hanem egy kérdés: <em>„Hogy ment?"</em>. Opcionális és átugorható; a CTA a mező
+            ALATT áll a lap folyamában, így a billentyűzet tolja, nem takarja.</li>
+          <li><strong>Visszanézésben</strong> a mentett mondat Fraunces-kurzívban tér vissza
+            („Amit aznap írtál"), a ✎ helyben szerkeszthetővé teszi, üresre mentve pedig törli.
+            Az <strong>aug. 12-i napnak nincs jegyzete</strong> — ott nem üres helyőrző áll, hanem
+            egy csendes <em>＋ Jegyzet ehhez az edzéshez</em>: a pótlás a visszanézésen értelmes
+            szándék, a hiány mutogatása nem lenne az.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Ami szándékosan nem változik</h2>
+        <ul>
+          <li>A kihívás-jelek <strong>✓ ◯ ⊘ ◌</strong> maradnak — ezek nem elmaradt emojik,
+            hanem a tervezett geometrikus nyelv.</li>
+          <li>Az izomcsalád-színezés (sín · wash · deep), a szellem-chip a kimaradt szettre,
+            a tompított kihagyott kihívás, a záró elv-mondat.</li>
+          <li>A medál-korong clay <code>#s-medal</code>, ahogy a session-prototípusban is.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Döntendő ezen az oldalon</h2>
+        <ol>
+          <li>A kontextus-csempe <strong>a hero alatt</strong> vagy a statisztika-sáv alatt üljön?</li>
+          <li>A referencia <strong>megnevezése</strong> — „Előző Pull A · aug. 12. · 2 héttel korábban" —
+            elég beszédes, vagy sok?</li>
+          <li>A gyakorlat-oldal „előzőleg" cellája (az előző session top szettje) maradjon,
+            vagy az összevetés maradjon meg a kontextus-csempének?</li>
+          <li>A léptetés maradjon a lap <strong>alján</strong>, vagy kerüljön a fejlécbe?</li>
+        </ol>
+      </div>
+      <p class="note">
+        Az edzés-szintű jegyzet valódi: kérdés-címkés mező a lezáró CTA fölött, a mentett
+        mondat pedig Fraunces-kurzívban tér vissza a visszanézésen — ott utólag szerkeszthető
+        és pótolható is. Jegyzet híján a blokk nem renderel.
+      </p>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var FAM = {
+    sky:  { rail: '#4E8FB8', wash: '#DFEDF5', deep: '#2E6E96', sh: 'rgba(78, 143, 184, 0.5)' },
+    lav:  { rail: '#8A76CC', wash: '#EBE6F8', deep: '#5D4FA0', sh: 'rgba(138, 118, 204, 0.5)' },
+    rose: { rail: '#C4739E', wash: '#FAE3ED', deep: '#8E3F6F', sh: 'rgba(196, 115, 158, 0.45)' }
+  };
+
+  /* A három Pull A ugyanazon a template-napon — ez a lánc, amin a léptetés fut. */
+  var SESSIONS = [
+    {
+      id: 'w1', date: 'júl. 29.', dow: 'Ke', iso: '2026-07-29', dur: 68,
+      note: 'Öt órát aludtam, a húzódzkodás az első szett után elfogyott. Nem a program hibája.',
+      medals: [],
+      challenges: [
+        { t: 'Volumen', ex: 'Húzódzkodás', target: '≥ 1 800 kg', k: 'hit', o: 'megcsináltad' },
+        { t: 'Célsáv', ex: 'Lehúzás gépen', target: '3 szett 8–12 között', k: 'miss', o: 'nem jött össze' },
+        { t: 'Ismétlés-rekord', ex: 'Arc-húzás', target: '> 15 ismétlés', k: 'skipped', o: 'skippelted' }
+      ],
+      ex: [
+        { n: 'Húzódzkodás', m: 'Hát', f: 'sky', lo: 6, hi: 10, plan: 4, sets: [
+          { w: 0, r: 8, warm: true }, { w: 84, r: 9, rir: 3 }, { w: 84, r: 8, rir: 3 }, { w: 84, r: 6, rir: 2 } ] },
+        { n: 'Lehúzás gépen', m: 'Hát', f: 'sky', lo: 8, hi: 12, plan: 3, sets: [
+          { w: 65, r: 13, rir: 3 }, { w: 65, r: 13, rir: 3 }, { w: 62, r: 14, rir: 2 } ] },
+        { n: 'Egykezes evezés', m: 'Hát', f: 'sky', lo: 8, hi: 12, plan: 3, sets: [
+          { w: 32, r: 12, rir: 3 }, { w: 32, r: 11, rir: 3 }, { w: 32, r: 10, rir: 2 } ] },
+        { n: 'Arc-húzás', m: 'Váll', f: 'lav', lo: 12, hi: 18, plan: 3, sets: [
+          { w: 25, r: 16, rir: 3 }, { w: 25, r: 15, rir: 3 }, { w: 25, r: 14, rir: 3 } ] },
+        { n: 'Bicepsz-hajlítás', m: 'Kar', f: 'rose', lo: 10, hi: 14, plan: 3, skipped: true, sets: [],
+          skipNote: 'elfogyott az idő' }
+      ]
+    },
+    {
+      id: 'w2', date: 'aug. 12.', dow: 'Ke', iso: '2026-08-12', dur: 74,
+      medals: [ { type: 'Volumen-rekord', exn: 'Lehúzás gépen', value: '2 185 kg', prev: '1 940 kg' } ],
+      challenges: [
+        { t: 'Volumen', ex: 'Húzódzkodás', target: '≥ 1 800 kg', k: 'hit', o: 'megcsináltad' },
+        { t: 'Célsáv', ex: 'Lehúzás gépen', target: '3 szett 8–12 között', k: 'hit', o: 'megcsináltad' },
+        { t: 'Ismétlés-rekord', ex: 'Arc-húzás', target: '> 15 ismétlés', k: 'inc', o: 'nem értékelhető' }
+      ],
+      ex: [
+        { n: 'Húzódzkodás', m: 'Hát', f: 'sky', lo: 6, hi: 10, plan: 4, sets: [
+          { w: 0, r: 8, warm: true }, { w: 88, r: 9, rir: 3 }, { w: 88, r: 8, rir: 3 }, { w: 88, r: 7, rir: 2 } ] },
+        { n: 'Lehúzás gépen', m: 'Hát', f: 'sky', lo: 8, hi: 12, plan: 3, sets: [
+          { w: 70, r: 11, rir: 3 }, { w: 70, r: 10, rir: 2, medal: true }, { w: 65, r: 11, rir: 2 } ] },
+        { n: 'Egykezes evezés', m: 'Hát', f: 'sky', lo: 8, hi: 12, plan: 3, sets: [
+          { w: 34, r: 12, rir: 3 }, { w: 34, r: 11, rir: 3 }, { w: 34, r: 10, rir: 2 } ] },
+        /* szándékosan könnyű, ismétlés-hajszolós nap — mind a három szett kiesik a célsávból */
+        { n: 'Arc-húzás', m: 'Váll', f: 'lav', lo: 12, hi: 18, plan: 3, sets: [
+          { w: 27, r: 19, rir: 4 }, { w: 27, r: 20, rir: 3 }, { w: 25, r: 19, rir: 3 } ] },
+        { n: 'Bicepsz-hajlítás', m: 'Kar', f: 'rose', lo: 10, hi: 14, plan: 3, sets: [
+          { w: 16, r: 12, rir: 3 }, { w: 16, r: 11, rir: 2 }, { w: 14, r: 12, rir: 2 } ] }
+      ]
+    },
+    {
+      id: 'w3', date: 'aug. 26.', dow: 'Ke', iso: '2026-08-26', dur: 71,
+      note: 'Ez volt az első nap, amikor a lehúzás könnyűnek érződött. Reggeli edzés,\nés végig volt levegőm.',
+      medals: [
+        { type: 'e1RM-rekord', exn: 'Húzódzkodás', value: '112,4 kg', prev: '109,8 kg', est: '90 × 8-ból becsülve' },
+        { type: 'Volumen-rekord', exn: 'Lehúzás gépen', value: '2 068 kg', prev: '2 185 kg', skipPrev: true }
+      ],
+      challenges: [
+        { t: 'Volumen', ex: 'Húzódzkodás', target: '≥ 1 800 kg', k: 'hit', o: 'megcsináltad' },
+        { t: 'Célsáv', ex: 'Arc-húzás', target: '3 szett 12–18 között', k: 'hit', o: 'megcsináltad' },
+        { t: 'Ismétlés-rekord', ex: 'Bicepsz-hajlítás', target: '> 12 ismétlés', k: 'miss', o: 'nem jött össze' }
+      ],
+      ex: [
+        { n: 'Húzódzkodás', m: 'Hát', f: 'sky', lo: 6, hi: 10, plan: 4, sets: [
+          { w: 0, r: 8, warm: true },
+          { w: 90, r: 8, rir: 2, medal: true },
+          { w: 90, r: 7, rir: 1 },
+          { w: 90, r: 6, rir: 1, note: 'utolsó ismétlés csalt egy kicsit' } ] },
+        { n: 'Lehúzás gépen', m: 'Hát', f: 'sky', lo: 8, hi: 12, plan: 3, sets: [
+          { w: 72, r: 10, rir: 2 }, { w: 72, r: 9, rir: 2, medal: true }, { w: 70, r: 10, rir: 1 } ] },
+        { n: 'Egykezes evezés', m: 'Hát', f: 'sky', lo: 8, hi: 12, plan: 3, sets: [
+          { w: 36, r: 11, rir: 2 }, { w: 36, r: 10, rir: 1 }, { w: 34, r: 10, rir: 1 } ] },
+        { n: 'Arc-húzás', m: 'Váll', f: 'lav', lo: 12, hi: 18, plan: 3, sets: [
+          { w: 28, r: 14, rir: 3, note: 'bal váll csípett a kihúzásnál' },
+          { w: 28, r: 13, rir: 2 },
+          { w: 27, r: 13, rir: 2 } ] },
+        { n: 'Bicepsz-hajlítás', m: 'Kar', f: 'rose', lo: 10, hi: 14, plan: 3, sets: [
+          { w: 18, r: 11, rir: 2 }, { w: 18, r: 10, rir: 1, note: 'görcsölt, leálltam' } ] }
+      ]
+    }
+  ];
+
+  var CHAL_GLYPH = { hit: '✓', miss: '◯', skipped: '⊘', inc: '◌' };
+
+  /* ---------- derivált statisztika (a summaryStats.ts tükre) ---------- */
+  function stats(s) {
+    var vol = 0, done = 0, planned = 0, target = 0, rsum = 0, rn = 0, doneEx = 0;
+    var perMuscle = {};
+    s.ex.forEach(function (e) {
+      planned += e.plan;
+      var work = 0;
+      e.sets.forEach(function (st) {
+        done += 1;
+        vol += (st.w || 0) * st.r;
+        if (!st.warm) {
+          work += 1;
+          if (st.r >= e.lo && st.r <= e.hi) target += 1;
+          if (st.rir != null) { rsum += st.rir; rn += 1; }
+        }
+      });
+      perMuscle[e.m] = (perMuscle[e.m] || 0) + work;
+      if (!e.skipped && e.sets.length >= e.plan) doneEx += 1;
+    });
+    return {
+      volT: vol / 1000, doneSets: done, plannedSets: planned, target: target,
+      rir: rn ? rsum / rn : null, doneEx: doneEx, totalEx: s.ex.length, perMuscle: perMuscle
+    };
+  }
+
+  /* A referencia kora a KÉT session távolsága, nem a mához mért kor: 'aug. 12.' a júl. 29-i
+     naptól nézve is 2 héttel későbbi, a mától nézve viszont 2 hetes — a kettő összekeverhető. */
+  function gapLabel(a, b) {
+    var d = Math.round((Date.parse(a.iso) - Date.parse(b.iso)) / 86400000);
+    if (d < 7) return d + ' nappal korábban';
+    var w = Math.round(d / 7);
+    return w + ' héttel korábban';
+  }
+  var hu = function (n, d) { return n.toLocaleString('hu-HU', { maximumFractionDigits: d == null ? 1 : d }); };
+  /* A jegyzet felhasználói szöveg — innerHTML-be csak escape-elve mehet. */
+  function esc(t) {
+    return String(t).replace(/[&<>"]/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+    });
+  }
+  /* Egy tizedes FIXEN a törtszámú deltákon: a '−1' a '2,7 volt' mellett elgépelésnek olvas. */
+  var hu1 = function (n) { return n.toLocaleString('hu-HU', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); };
+  var signed = function (n, d) { return (n > 0 ? '+' : n < 0 ? '−' : '±') + hu(Math.abs(n), d); };
+  var signed1 = function (n) { return (n > 0 ? '+' : n < 0 ? '−' : '±') + hu1(Math.abs(n)); };
+
+  /* ---------- állapot ---------- */
+  var idx = SESSIONS.length - 1;   /* a legfrissebb Pull A */
+  var mode = 'closed';
+  var draft = '';        /* closing: a még el nem küldött jegyzet */
+  var editing = false;   /* closed: a review oldal szerkesztő állapota */
+
+  function render() {
+    var s = SESSIONS[idx];
+    var st = stats(s);
+    var prev = idx > 0 ? SESSIONS[idx - 1] : null;
+    var closing = mode === 'closing';
+
+    var page = document.getElementById('page');
+    page.className = 'page ' + (closing ? 'p-coral' : 'p-sage');
+    document.getElementById('back').textContent = closing ? '✕ Bezárás' : '← Vissza';
+    document.getElementById('modelbl').textContent = closing ? 'Lezárás' : 'Visszanézés';
+
+    var h = '';
+
+    /* ---- hero ---- */
+    var pills = Object.keys(st.perMuscle).map(function (m) {
+      var f = FAM[m === 'Hát' ? 'sky' : m === 'Váll' ? 'lav' : 'rose'];
+      return st.perMuscle[m] > 0
+        ? '<span style="background:' + f.wash + ';color:' + f.deep + ';">' + m + ' · ' + st.perMuscle[m] + ' szett</span>'
+        : '<span class="off">' + m + '</span>';
+    }).join('');
+
+    h += '<div class="halo' + (closing ? '' : ' calm') + ' rise" style="--d:0ms;"><div class="ring"></div>' +
+      '<div class="p-eyebrow" style="color:' + (closing ? '#A84A26' : '#4E6B42') + ';">' +
+        (closing ? 'Edzés vége' : 'Lezárva · ' + s.date + ' ' + s.dow) + '</div>' +
+      '<div style="font-size:16px;font-weight:700;">Pull A</div>' +
+      '<div class="big" style="font-size:38px;">' + st.doneSets + '<span style="font-size:17px;color:#A2958A;">/' + st.plannedSets + '</span></div>' +
+      '<div class="mut" style="font-size:9.5px;"><b>' + hu(st.volT) + ' t</b> összvolumen · <b>' +
+        st.doneEx + '/' + st.totalEx + '</b> gyakorlat · ~' + s.dur + ' perc</div>' +
+      '<div class="musclepills">' + pills + '</div></div>';
+
+    /* ---- ÚJ: kontextus-csempe. Csak visszanézésben, és csak ha VAN referencia. ---- */
+    if (!closing && prev) {
+      var ps = stats(prev);
+      var dVol = st.volT - ps.volT;
+      var dTgt = st.target - ps.target;
+      var dRir = (st.rir != null && ps.rir != null) ? st.rir - ps.rir : null;
+      h += '<div class="cmp rise" style="--d:70ms;">' +
+        '<div class="p-eyebrow">Mihez képest</div>' +
+        '<div class="cmp-ref"><b>Előző Pull A · ' + prev.date + '</b><span class="ago">' + gapLabel(s, prev) + '</span></div>' +
+        '<div class="cmp-cells">' +
+          cell(signed1(dVol) + ' t', 'volumen', hu(ps.volT) + ' t volt', dVol > 0) +
+          cell(signed(dTgt, 0), 'célszett', ps.target + ' volt', dTgt > 0) +
+          /* A Ø RIR SOHA nem kap tónust: ott a kevesebb a keményebb. */
+          cell(dRir == null ? '–' : signed1(dRir), 'Ø RIR', ps.rir == null ? '' : hu(ps.rir) + ' volt', false) +
+        '</div></div>';
+    }
+
+    /* ---- statisztika-sáv ---- */
+    h += '<div class="statstrip rise" style="--d:120ms;margin-bottom:11px;">' +
+      '<div class="statcell"><b>' + hu(st.volT) + ' t</b><small>volumen</small></div>' +
+      '<div class="statcell"><b style="' + (s.medals.length ? 'color:#A8801F;' : '') + '">' + s.medals.length + '</b><small>rekord</small></div>' +
+      '<div class="statcell"><b style="' + (st.target ? 'color:#4E6B42;' : '') + '">' + st.target + ' ✓</b><small>célszett</small></div>' +
+      '<div class="statcell"><b>' + (st.rir == null ? '–' : hu(st.rir)) + '</b><small>Ø RIR</small></div></div>';
+
+    /* ---- medálok ---- */
+    if (s.medals.length || st.target) {
+      h += '<div class="p-eyebrow rise" style="--d:170ms;padding:0 2px 6px;">Medálok · ' + s.medals.length + ' rekord · ' + st.target + ' cél</div>';
+      s.medals.forEach(function (m, i) {
+        h += '<div class="medcard rise" style="--d:' + (190 + i * 30) + 'ms;">' +
+          '<svg width="28" height="28" viewBox="0 0 100 100" style="flex:none;"><use href="#s-medal"/></svg>' +
+          '<div class="grow"><div style="font-size:10.5px;font-weight:700;">' + m.type + ' · ' + m.exn + '</div>' +
+          '<div class="mut" style="font-size:8.5px;">' + m.value + (m.est ? ' · ' + m.est : '') +
+            ' · előző: ' + m.prev + '</div></div><span class="qxp">REKORD</span></div>';
+      });
+      if (st.target) h += '<div class="tgrow rise" style="--d:280ms;">✓ ' + st.target + ' célszett teljesítve</div>';
+    }
+
+    /* ---- kihívások ---- */
+    h += '<div class="p-eyebrow rise" style="--d:310ms;padding:6px 2px 6px;">Kihívások</div>' +
+      '<div class="vcard rise" style="--d:330ms;padding:6px 12px;">' +
+      s.challenges.map(function (c) {
+        return '<div class="chres"><span class="ro' + (c.k === 'hit' ? ' hit' : '') + '">' + CHAL_GLYPH[c.k] + '</span>' +
+          '<span class="grow"><b style="font-size:10px;">' + c.t + ' · ' + c.ex + '</b><br>' +
+          '<span class="mut" style="font-size:8.5px;">' + c.target + '</span></span>' +
+          '<span class="mut" style="font-size:8.5px;font-weight:600;">' + c.o + '</span></div>';
+      }).join('') + '</div>';
+
+    /* ---- ÚJ: gyakorlat-swimlane. A leltár nem lefelé nő, hanem oldalra fut; a mélység
+            a gyakorlat saját oldalán van, nem a görgetésben. Egy csempe = egy horgony-szám. ---- */
+    h += '<div class="mrow rise" style="--d:370ms;padding:6px 2px 6px;">' +
+      '<span class="p-eyebrow grow">Gyakorlatonként</span>' +
+      '<span class="mut" style="font-size:8.5px;">koppints egy csempére ›</span></div>';
+    h += '<div class="lane rise" style="--d:390ms;">' + s.ex.map(function (e, i) {
+      var f = FAM[e.f];
+      var dead = e.skipped && !e.sets.length;
+      var top = topSet(e);
+      var notes = e.sets.filter(function (x) { return x.note; }).length + (e.skipNote ? 1 : 0);
+      var dots = e.sets.map(function (x) {
+        return '<i class="' + (x.medal ? 'med' : x.warm ? 'warm' : '') + '"></i>';
+      }).join('');
+      for (var k = e.sets.length; k < e.plan; k++) dots += '<i class="miss"></i>';
+      var hasMedal = e.sets.some(function (x) { return x.medal; });
+      return '<button class="extile' + (dead ? ' skp' : '') + '" data-ex="' + i + '" ' +
+        'style="--fw:' + f.wash + ';--fd:' + f.deep + ';--fsh:' + f.sh + ';">' +
+        '<span class="mrow"><span class="mono">' + e.n.charAt(0) + '</span>' +
+          (hasMedal ? '<span class="grow"></span><span class="stamp">REKORD</span>' : '') + '</span>' +
+        '<span class="nm">' + e.n + '</span>' +
+        '<span class="lbl">' + (dead ? 'kihagyva' : 'top szett') + '</span>' +
+        '<span class="topset">' + (top ? hu(top.w) + ' <s>×</s> ' + top.r : '—') + '</span>' +
+        '<span class="setdots">' + dots + '</span>' +
+        '<span class="foot">' + (dead ? 'nincs szett' : e.sets.length + '/' + e.plan + ' szett') +
+          (notes ? '<span class="ncnt">· ' + notes + ' jegyzet</span>' : '') + '</span></button>';
+    }).join('') + '</div>';
+
+    if (closing) {
+      /* A jegyzet-mező a CTA FÖLÖTT: opcionális, átugorható, és a billentyűzet
+         a lezáró gombot tolja maga előtt, nem takarja el. */
+      h += '<div class="wn"><span class="wn-q">Hogy ment?</span>' +
+        '<textarea class="wn-ta" maxlength="1000" placeholder="Pl. rosszul aludtam, de a húzódzkodás jól ment…">' +
+          esc(draft) + '</textarea>' +
+        '<p class="wn-hint">Nem kötelező — később is hozzáírhatod.</p></div>';
+      h += '<button class="cta" style="width:100%;margin-top:12px;padding:11px 0;font-size:12px;">Edzés lezárása ✓</button>' +
+        '<button class="ghost" style="width:100%;margin-top:7px;padding:9px 0;">← Vissza az edzéshez</button>';
+    } else {
+      /* Visszanézés: a mentett mondat, vagy — mert a pótlás itt értelmes szándék —
+         egy csendes hozzáadó akció. Üres helyőrző semmiért nincs. */
+      if (editing) {
+        h += '<div class="wn"><span class="wn-q">Hogy ment?</span>' +
+          '<textarea class="wn-ta" maxlength="1000" placeholder="Pl. rosszul aludtam, de a húzódzkodás jól ment…">' +
+            esc(s.note || '') + '</textarea>' +
+          '<div class="wn-ed"><button class="save">Mentés</button>' +
+          '<button class="cancel">Mégse</button></div></div>';
+      } else if (s.note) {
+        h += '<div class="wn-r"><span class="lbl">Amit aznap írtál</span><p>' + esc(s.note) + '</p>' +
+          '<button class="wn-edit" aria-label="Jegyzet szerkesztése">✎</button></div>';
+      } else {
+        h += '<button class="wn-add">＋ Jegyzet ehhez az edzéshez</button>';
+      }
+
+      /* ---- ÚJ: léptetés a template-nap láncán ---- */
+      var nx = idx < SESSIONS.length - 1 ? SESSIONS[idx + 1] : null;
+      h += '<div class="stepnav">' +
+        '<button class="pv"' + (prev ? '' : ' disabled') + '><small>← Előző Pull A</small><b>' +
+          (prev ? prev.date : 'nincs korábbi') + '</b></button>' +
+        '<button class="nx"' + (nx ? '' : ' disabled') + '><small>Következő Pull A →</small><b>' +
+          (nx ? nx.date : 'ez a legutóbbi') + '</b></button></div>';
+    }
+
+    h += '<p class="habnote">A riport sosem büntet: a kimaradt szett szellem-chip, a kihagyott kihívás tompított — piros nincs.</p>';
+
+    var body = document.getElementById('body');
+    body.innerHTML = h;
+    body.scrollTop = 0;
+
+    Array.prototype.forEach.call(body.querySelectorAll('.extile'), function (t) {
+      t.addEventListener('click', function () { openEx(Number(t.getAttribute('data-ex'))); });
+    });
+
+    var ta = body.querySelector('.wn-ta');
+    if (ta && closing) ta.addEventListener('input', function () { draft = ta.value; });
+
+    var edb = body.querySelector('.wn-edit');
+    if (edb) edb.addEventListener('click', function () { editing = true; render(); });
+    var addb = body.querySelector('.wn-add');
+    if (addb) addb.addEventListener('click', function () { editing = true; render(); });
+    var sv = body.querySelector('.wn-ed .save');
+    if (sv) sv.addEventListener('click', function () {
+      s.note = body.querySelector('.wn-ta').value.trim();   /* üres = törlés */
+      editing = false; render();
+    });
+    var cn = body.querySelector('.wn-ed .cancel');
+    if (cn) cn.addEventListener('click', function () { editing = false; render(); });
+
+    var pv = body.querySelector('.stepnav .pv');
+    var nb = body.querySelector('.stepnav .nx');
+    if (pv) pv.addEventListener('click', function () { if (idx > 0) { idx -= 1; replay(); } });
+    if (nb) nb.addEventListener('click', function () { if (idx < SESSIONS.length - 1) { idx += 1; replay(); } });
+  }
+
+  /* A gyakorlat horgony-szettje: a legnehezebb munkaszett, azonos súlynál a több ismétlés. */
+  function topSet(e) {
+    return e.sets.filter(function (x) { return !x.warm; })
+      .slice().sort(function (a, b) { return b.w - a.w || b.r - a.r; })[0] || null;
+  }
+
+  function cell(val, label, was, up) {
+    return '<div class="cmp-cell"><b' + (up ? ' class="up"' : '') + '>' + val + '</b>' +
+      '<small>' + label + '</small>' + (was ? '<span class="was">' + was + '</span>' : '') + '</div>';
+  }
+
+
+  /* ---------- ÚJ: gyakorlat-oldal (csempe → saját oldal) ---------- */
+  function openEx(i) {
+    renderEx(i);
+    document.getElementById('expage').classList.add('open');
+  }
+  function closeEx() {
+    document.getElementById('expage').classList.remove('open');
+  }
+
+  function renderEx(i) {
+    var s = SESSIONS[idx], e = s.ex[i], f = FAM[e.f];
+    var closing = mode === 'closing';
+    var prev = idx > 0 ? SESSIONS[idx - 1] : null;
+    var pe = prev ? prev.ex.filter(function (x) { return x.n === e.n; })[0] : null;
+    var top = topSet(e), ptop = pe ? topSet(pe) : null;
+    var dead = e.skipped && !e.sets.length;
+
+    var vol = 0, rs = 0, rn = 0;
+    e.sets.forEach(function (x) {
+      vol += (x.w || 0) * x.r;
+      if (!x.warm && x.rir != null) { rs += x.rir; rn += 1; }
+    });
+
+    document.getElementById('exdate').textContent = s.date + ' ' + s.dow;
+
+    var fv = '--fw:' + f.wash + ';--fd:' + f.deep + ';--fsh:' + f.sh + ';';
+    var h = '<div class="exhero rise" style="--d:0ms;' + fv + '">' +
+      '<span class="mono">' + e.n.charAt(0) + '</span><span class="grow">' +
+      '<div class="nm">' + e.n + '</div><div class="sb">' +
+      '<span class="mpill" style="background:' + f.wash + ';color:' + f.deep + ';">' + e.m + '</span>' +
+      '<span>' + (dead ? 'kihagyva' : e.sets.length + '/' + e.plan + ' szett') + '</span>' +
+      '<span>cél ' + e.lo + '–' + e.hi + ' ism.</span></div></span></div>';
+
+    /* Az „előzőleg" cella ugyanazt a kaput követi, mint a kontextus-csempe: csak visszanézésben,
+       és csak ha van referencia. Lezáráskor az összevetés nem szivároghat be a hátsó ajtón. */
+    var showPrev = !closing && ptop;
+    h += '<div class="statstrip rise" style="--d:60ms;margin-bottom:11px;">' +
+      '<div class="statcell"><b>' + (top ? hu(top.w) + ' × ' + top.r : '–') + '</b><small>top szett</small></div>' +
+      '<div class="statcell"><b>' + hu(vol, 0) + '</b><small>kg volumen</small></div>' +
+      '<div class="statcell"><b>' + (rn ? hu(rs / rn) : '–') + '</b><small>Ø RIR</small></div>' +
+      (showPrev ? '<div class="statcell"><b style="color:#6E6257;">' + hu(ptop.w) + ' × ' + ptop.r + '</b><small>előzőleg</small></div>' : '') +
+      '</div>';
+
+    var med = s.medals.filter(function (m) { return m.exn === e.n; });
+    if (med.length) {
+      h += '<div class="p-eyebrow rise" style="--d:90ms;padding:0 2px 6px;">Medál</div>';
+      med.forEach(function (m, k) {
+        h += '<div class="medcard rise" style="--d:' + (105 + k * 30) + 'ms;">' +
+          '<svg width="28" height="28" viewBox="0 0 100 100" style="flex:none;"><use href="#s-medal"/></svg>' +
+          '<div class="grow"><div style="font-size:10.5px;font-weight:700;">' + m.type + '</div>' +
+          '<div class="mut" style="font-size:8.5px;">' + m.value + (m.est ? ' · ' + m.est : '') +
+          ' · előző: ' + m.prev + '</div></div><span class="qxp">REKORD</span></div>';
+      });
+    }
+
+    h += '<div class="p-eyebrow rise" style="--d:150ms;padding:6px 2px 6px;">Szettek</div>';
+    var wi = 0;
+    e.sets.forEach(function (x, k) {
+      if (!x.warm) wi += 1;
+      var inBand = !x.warm && x.r >= e.lo && x.r <= e.hi;
+      var tag = x.warm ? '<span class="tag">bemelegítő</span>'
+        : inBand ? '<span class="tag" style="color:#4E6B42;">célsávban</span>'
+        : '<span class="tag">sávon kívül</span>';
+      h += '<div class="setcard rise' + (x.medal ? ' med' : '') + (x.warm ? ' warm' : '') +
+        '" style="--d:' + (170 + k * 34) + 'ms;' + fv + '">' +
+        '<span class="ix">' + (x.warm ? 'B' : wi) + '</span>' +
+        '<span class="grow"><span class="load"><b>' + hu(x.w) + '</b> kg × <b>' + x.r + '</b></span> ' +
+        (x.rir != null ? '<span class="rir">RIR ' + x.rir + '</span> ' : '') + tag +
+        (x.note ? '<div class="note">' + x.note + '</div>' : '') + '</span>' +
+        '<span class="vol">' + hu(x.w * x.r, 0) + ' kg</span></div>';
+    });
+    /* A kimaradt szett szellem-csempe marad szellem — se piros, se hiányjelzés. */
+    for (var k2 = e.sets.length; k2 < e.plan; k2++) {
+      h += '<div class="setcard ghost rise" style="--d:' + (170 + k2 * 34) + 'ms;">' +
+        '<span class="ix" style="background:none;border:1px dashed rgba(43,33,24,0.2);color:#A2958A;">' + (k2 + 1) + '</span>' +
+        '<span class="grow"><span class="load" style="font-size:11px;">— kimaradt</span></span></div>';
+    }
+    if (e.skipNote) h += '<p class="habnote" style="margin-top:8px;">„' + e.skipNote + '"</p>';
+
+    var body = document.getElementById('exbody');
+    body.innerHTML = h;
+    body.scrollTop = 0;
+  }
+
+  function replay() {
+    closeEx();
+    editing = false;
+    var sc = document.getElementById('screen');
+    if (reduced) { render(); return; }
+    sc.classList.remove('play');
+    void sc.offsetHeight;      /* reflow: a .rise kezdőállapot rögzítése */
+    render();
+    sc.classList.add('play');
+  }
+
+  document.getElementById('exback').addEventListener('click', closeEx);
+
+  Array.prototype.forEach.call(document.querySelectorAll('.demobar button'), function (b) {
+    b.addEventListener('click', function () {
+      mode = b.getAttribute('data-mode');
+      Array.prototype.forEach.call(document.querySelectorAll('.demobar button'), function (o) {
+        o.setAttribute('aria-pressed', String(o === b));
+      });
+      replay();
+    });
+  });
+
+  render();
+})();
+</script>

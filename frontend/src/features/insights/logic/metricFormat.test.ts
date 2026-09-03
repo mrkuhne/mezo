@@ -1,4 +1,5 @@
-import { axisEndLabels, formatMetricValue, formatP, formatR } from '@/features/insights/logic/metricFormat'
+import { axisEndLabels, formatMetricValue, formatP, formatR, lastSeenLabel } from '@/features/insights/logic/metricFormat'
+import { addDays, huMonthDay, localDateString } from '@/shared/lib/dates'
 
 describe('formatMetricValue', () => {
   test('hour-kind metrics render as wall-clock HH:mm', () => {
@@ -59,5 +60,18 @@ describe('formatR / formatP', () => {
   test('missing stats render as an em dash', () => {
     expect(formatR(null)).toBe('—')
     expect(formatP(null)).toBe('—')
+  })
+})
+
+// mezo-d20.11: a `lastSeenLabel` a gazdátlan `MetricCoverageRing` komponensből költözött ide
+// (a komponensnek a Mozaik-re-face óta egyetlen hívója sem volt; a formázónak van — a Minták
+// Adat-egészség csempéi). A viselkedése bitre ugyanaz.
+describe('lastSeenLabel', () => {
+  test('ma / tegnap / rövid magyar dátum — hiányzó nap esetén semmi', () => {
+    const today = localDateString()
+    expect(lastSeenLabel(null)).toBeNull()
+    expect(lastSeenLabel(today)).toBe('ma')
+    expect(lastSeenLabel(addDays(today, -1))).toBe('tegnap')
+    expect(lastSeenLabel('2026-05-20')).toBe(huMonthDay('2026-05-20'))
   })
 })

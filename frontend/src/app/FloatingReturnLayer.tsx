@@ -17,7 +17,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
 import { useOpenWorkout } from '@/data/hooks'
 
-/** Same exact-match list idea as AppLayout's hideTabBar — these two screens are
+/** Same exact-match list idea as AppLayout's `hideChrome` — these two screens are
  *  intentionally free of every piece of chrome (light discipline / ritual focus). */
 const HIDDEN_ROUTES = ['/me/sleep/night', '/ritual']
 

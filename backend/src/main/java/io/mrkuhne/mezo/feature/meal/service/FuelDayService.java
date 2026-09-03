@@ -5,6 +5,8 @@ import io.mrkuhne.mezo.api.dto.FuelDayRollup;
 import io.mrkuhne.mezo.api.dto.FuelWeekResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.api.dto.MealResponse;
+import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
+import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
@@ -13,9 +15,12 @@ import io.mrkuhne.mezo.feature.nutrition.service.DietPreferencesResolver;
 import io.mrkuhne.mezo.feature.meal.mapper.MealMapper;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -43,6 +48,7 @@ public class FuelDayService {
     private final WaterLogService waterLogService;
     private final GoalRepository goalRepository;
     private final DietPreferencesResolver dietPreferences;
+    private final WeightLogRepository weightLogRepository;
 
     // Annotated by exception: the meal mapper walks LAZY items with open-in-view false (spring_patterns.md).
     @Transactional(readOnly = true)
@@ -64,14 +70,23 @@ public class FuelDayService {
     /**
      * Seven-day rollup {@code start..start+6} — per-day targets (the goal recept is week-segmented,
      * so a segment boundary can fall inside the rendered week) + consumed Σ, no meal bodies. Feeds
-     * the Terv weekly stats (kcal avg / protein-hit days) and is the designated server aggregate
-     * for the Insights Weekly review (Phase-2 roadmap D′).
+     * the Terv weekly stats (kcal avg / protein-hit days), the week-centric Fuel Napló page and the
+     * Insights Weekly review (Phase-2 roadmap D′).
+     *
+     * <p>The two week-level scalars (mezo-d20.7.2) are DERIVED AT READ, not stored: Fuel has no
+     * per-week row to hang them on, and both are pure functions of already-persisted data
+     * ({@code meal.score} — itself the denormalized scalar of the score envelope, ADR 0006 §4 — and
+     * {@code weight_log}). A new week table would be a cache with an invalidation duty (every meal
+     * edit / delete / re-score and every weigh-in would have to write through) and no new
+     * information, so it is deliberately NOT introduced. Both are NULLABLE: an unscored week and a
+     * weigh-in-less week return {@code null}, never a 0-as-a-fake.
      */
     @Transactional(readOnly = true)
     public FuelWeekResponse getWeek(UUID userId, LocalDate start) {
         GoalEntity goal = activeGoal(userId);
         // Resolve preferences ONCE for the whole week, not per day (7 identical queries otherwise).
         int waterMl = dietPreferences.resolve(userId).waterMl();
+        LocalDate end = start.plusDays(6);
         List<FuelDayRollup> days = start.datesUntil(start.plusDays(7))
             .map(d -> FuelDayRollup.builder()
                 .date(d)
@@ -79,7 +94,48 @@ public class FuelDayService {
                 .consumed(consumedFor(userId, d))
                 .build())
             .toList();
-        return FuelWeekResponse.builder().start(start).days(days).build();
+        return FuelWeekResponse.builder()
+            .start(start)
+            .days(days)
+            .mealScoreAvg(mealScoreAvg(userId, start, end))
+            .weightAvgKg(weightAvgKg(userId, start, end))
+            .build();
+    }
+
+    /**
+     * Weekly "AI-atlag": the mean of the week's SCORED meals' deterministic scores (0..1), 3
+     * decimals. Unscored (pre-mezo-yta) rows are excluded by the query — a week whose meals are all
+     * unscored averages nothing and returns {@code null}.
+     */
+    private BigDecimal mealScoreAvg(UUID userId, LocalDate start, LocalDate end) {
+        return mean(mealRepository.findScoresBetween(userId, start, end), 3);
+    }
+
+    /**
+     * Weekly weight average (kg, 2 decimals). Folded to ONE value per day first — the day's latest
+     * weigh-in, matching the day-level {@code findFirstBy...OrderByCreatedAtDesc} semantics — so a
+     * day weighed three times does not out-vote the other six. {@code null} when the week holds no
+     * weigh-in.
+     */
+    private BigDecimal weightAvgKg(UUID userId, LocalDate start, LocalDate end) {
+        Map<LocalDate, BigDecimal> latestPerDay = new LinkedHashMap<>();
+        for (WeightLogEntity w : weightLogRepository
+                .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscCreatedAtAsc(userId, start, end)) {
+            latestPerDay.put(w.getDate(), w.getWeightKg()); // ordered asc ⇒ last write per date wins
+        }
+        return mean(List.copyOf(latestPerDay.values()), 2);
+    }
+
+    /** Arithmetic mean, HALF_UP to {@code scale}; {@code null} for an empty sample (honest state). */
+    private BigDecimal mean(List<BigDecimal> values, int scale) {
+        if (values.isEmpty()) {
+            return null;
+        }
+        BigDecimal sum = BigDecimal.ZERO;
+        for (BigDecimal v : values) {
+            sum = sum.add(v);
+        }
+        return sum.divide(BigDecimal.valueOf(values.size()), scale, RoundingMode.HALF_UP);
     }
 
     private MacroSet consumedFor(UUID userId, LocalDate date) {

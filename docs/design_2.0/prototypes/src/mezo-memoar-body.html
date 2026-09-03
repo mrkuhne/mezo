@@ -1,0 +1,339 @@
+<style>
+  /* ===== page-váltás: archívum ⇄ fejezet-oldal ===== */
+  .pg { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 0 14px 16px; }
+  .pg::-webkit-scrollbar { display: none; }
+  .pg[hidden] { display: none; }
+  .page-head { display: flex; align-items: center; padding: 6px 0 2px; }
+  .backbtn { border: none; background: rgba(255, 255, 255, 0.8); cursor: pointer; font-family: inherit;
+    font-size: 10px; font-weight: 700; color: #6E6257; border-radius: 999px; padding: 5px 12px;
+    box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.9); }
+  .backbtn:focus-visible { outline: 2px solid #6C5FA3; outline-offset: 2px; }
+  .page-hero { text-align: center; padding: 8px 0 14px; }
+  .page-hero .nm { font-size: 9px; font-weight: 800; letter-spacing: 0.2em; text-transform: uppercase; color: #5D4FA0; }
+  .page-hero .sb { font-size: 9.5px; color: #6E6257; margin-top: 5px; }
+  .page-hero .big { font-size: 24px; font-weight: 700; letter-spacing: -0.02em; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .page-hero .wknm { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 20px; font-weight: 500; margin-top: 4px; }
+  .p-eyebrow { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #A2958A; }
+  .eb { font-size: 6.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; }
+
+  /* ===== archívum: havi csoportok + kártyák ===== */
+  .mhead { display: flex; align-items: center; gap: 8px; margin: 14px 2px 8px; }
+  .mhead:first-of-type { margin-top: 4px; }
+  .mhead .meb { font-size: 8.5px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: #5D4FA0; flex: none; }
+  .mhead .n { font-size: 8px; color: #A2958A; font-variant-numeric: tabular-nums; flex: none; }
+  .mhead::after { content: ''; height: 0.5px; flex: 1; background: rgba(93, 79, 160, 0.18); }
+  .mcard { display: block; width: 100%; text-align: left; font-family: inherit; cursor: pointer; border: none;
+    border-radius: 16px; padding: 10px 12px 11px; margin-bottom: 9px;
+    background: linear-gradient(150deg, #FDFCFE, #FFFFFF 65%);
+    border: 0.5px solid rgba(93, 79, 160, 0.12);
+    box-shadow: 0 14px 26px -16px rgba(93, 79, 160, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .mcard:focus-visible { outline: 2px solid #6C5FA3; outline-offset: 2px; }
+  .mcard:active { transform: scale(0.985); }
+  .mcard .top { display: flex; align-items: center; gap: 6px; }
+  .mcard .wk { font-size: 7px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #5D4FA0;
+    background: linear-gradient(150deg, #EBE6F8, #F9F6FE); border-radius: 999px; padding: 2.5px 8px; flex: none;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .mcard .d { font-size: 7.5px; color: #A2958A; font-variant-numeric: tabular-nums; }
+  .mcard .anc { margin-left: auto; font-size: 7.5px; color: #A2958A; display: flex; align-items: center; gap: 3px; flex: none; }
+  .mcard .ttl { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 12.5px; font-weight: 500;
+    line-height: 1.3; margin-top: 6px; color: #2B2118; }
+  .mcard .ex { font-size: 9px; font-weight: 300; line-height: 1.5; color: #6E6257; margin-top: 4px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+  /* ===== fejezet-oldal: a mainre mergelt mezo-uajy nyelv (memoir + anch + chpager) ===== */
+  .memoir { position: relative; overflow: hidden; border-radius: 18px; padding: 14px 14px 13px; background: #FFFFFF;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 20px 36px -16px rgba(93, 79, 160, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .memoir::before { content: ''; position: absolute; top: -40px; right: -30px; width: 150px; height: 150px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(138, 118, 204, 0.16), transparent 70%); }
+  .memoir .mrow2 { display: flex; align-items: center; gap: 8px; }
+  .memoir .grow { flex: 1; min-width: 0; }
+  .memoir .ttl { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 17px; font-weight: 500; margin-top: 5px; line-height: 1.3; }
+  .memoir .stamp { font-size: 7px; color: #A2958A; font-variant-numeric: tabular-nums; flex: none; }
+  .memoir .bd { font-size: 10px; font-weight: 300; line-height: 1.65; margin-top: 8px; color: #2B2118; }
+  .memoir .bd p { margin: 0; }
+  .memoir .bd p + p { margin-top: 7px; }
+  .memoir .bd p:first-child::first-letter { font-family: "Fraunces", Georgia, serif; font-style: italic; font-weight: 500;
+    font-size: 27px; line-height: 0.8; float: left; padding: 3px 5px 0 0; color: #5D4FA0; }
+  .memoir .bd b { font-weight: 700; }
+  .reffoot { border-top: 0.5px solid rgba(43, 33, 24, 0.08); margin-top: 8px; padding-top: 7px; position: relative; }
+  .anchrow { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+  .anch { display: inline-flex; align-items: center; gap: 5px; border: none; font-family: inherit; cursor: pointer;
+    border-radius: 10px; padding: 4px 8px; font-size: 7.5px; font-weight: 600; color: #6E6257; text-align: left;
+    background: rgba(255, 255, 255, 0.9); border: 0.5px solid rgba(43, 33, 24, 0.08);
+    box-shadow: 0 4px 10px -6px rgba(43, 33, 24, 0.35); transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .anch:active { transform: scale(0.95); }
+  .anch i { width: 6px; height: 6px; border-radius: 50%; flex: none; background: #8A76CC; }
+  .anch.gold i { background: #C9962E; }
+  .anch.sage i { background: #8FAF7E; }
+  .anch b { font-weight: 800; color: #2B2118; }
+  .anch .go { color: #B4A8D8; font-size: 8.5px; margin-left: 1px; }
+  .anch.stat { background: rgba(255, 255, 255, 0.55); box-shadow: none; cursor: default; }
+  .fbwrap { display: flex; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+  .fbc { border: 0.5px solid rgba(43, 33, 24, 0.1); background: rgba(255, 255, 255, 0.55); font-family: inherit;
+    border-radius: 999px; padding: 2.5px 9px; font-size: 7.5px; font-weight: 600; color: #A2958A; cursor: pointer; }
+  .fbc.sel { background: #EDE9F8; border-color: #6C5FA3; color: #5D4FA0; }
+  .fbc.rs { font-size: 7px; padding: 2px 8px; }
+  .chpager { display: flex; gap: 9px; margin-top: 10px; }
+  .chtile { display: flex; flex-direction: column; gap: 3px; cursor: pointer; border-radius: 17px; padding: 10px 11px 9px;
+    background: #FFFFFF; border: 0.5px solid rgba(43, 33, 24, 0.06); font-family: inherit; text-align: left; flex: 1;
+    box-shadow: 0 14px 26px -14px rgba(93, 79, 160, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .chtile:active { transform: scale(0.97); }
+  .chtile.nx { text-align: right; align-items: flex-end; }
+  .chtile .dir { font-size: 8px; color: #B4A8D8; font-weight: 700; }
+  .chtile .wk { font-size: 6.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #5D4FA0; }
+  .chtile .ct { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 10.5px; font-weight: 500; line-height: 1.3; }
+  .chtile.ghost { visibility: hidden; pointer-events: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mcard:active, .anch:active, .chtile:active { transform: none; }
+  }
+</style>
+
+<div class="wrap">
+  <span class="eyebrow">Mezo tab · Design 2.0</span>
+  <h1>Memoár — az archívum</h1>
+  <p class="lede">
+    A heti memoárból eddig csak a legfrissebb látszott — a többi bejegyzés a semmibe hullt.
+    Az archívum a <strong>közös történet polca</strong>: havi csoportokba rendezett idővonal,
+    minden hét egy kártya, és koppintásra <strong>nem modal nyílik</strong>, hanem a mainre
+    már bekerült <strong>fejezet-oldalra</strong> lépsz — iniciálés memoir-kártya, „Miből
+    íródott" horgony-chipek, előző/következő lapozó. A lapozó az idővonal sorrendjét követi.
+  </p>
+
+  <div class="stage">
+    <div class="phone">
+      <div class="screen play" id="screen">
+        <div class="isl"></div>
+        <div class="p-status"><span>13:42</span><span>🔋 ●●●</span></div>
+
+        <!-- ===== 1 · archívum-idővonal ===== -->
+        <div class="pg" id="pgArch">
+          <div class="page-head"><button class="backbtn">‹ Memoár</button></div>
+          <div class="page-hero rise" style="--d:0ms;">
+            <div class="nm">Memoár · archívum</div>
+            <div class="mrow" style="justify-content:center;gap:10px;margin-top:6px;">
+              <svg width="44" height="44" viewBox="0 0 100 100"><use href="#i-memoar"/></svg>
+              <div class="big">9</div>
+            </div>
+            <div class="sb">fejezet · 3 hónap közös történet</div>
+          </div>
+          <div id="list"></div>
+        </div>
+
+        <!-- ===== 2 · fejezet-oldal (a mezo-uajy nyelv) ===== -->
+        <div class="pg" id="pgFej" hidden>
+          <div class="page-head"><button class="backbtn" id="fejBack">‹ Archívum</button></div>
+          <div id="fejBody"></div>
+        </div>
+
+        <div class="homebar"></div>
+      </div>
+    </div>
+
+    <aside>
+      <div>
+        <h2>Mi változott</h2>
+        <ul>
+          <li><strong>Archívum-oldal</strong> — a mezo-d20.5.5-ben kivezetett halott
+            „Memoir archive" láblécet valódi oldal váltja: <code>‹ Memoár</code> vissza-chip,
+            lav héj, hero a fejezet-számmal.</li>
+          <li><strong>Havi idővonal</strong> — Day One-minta: hónap-fejlécek (darabszámmal),
+            alatta hetenként egy kártya. A <strong>teljes kártya egy tap-target</strong> —
+            az Apple Journal kétértelmű koppintás-zónáinak hibáját elkerülve.</li>
+          <li><strong>Fejezet-oldal, nem modal</strong> — koppintásra a mainre már mergelt
+            mezo-uajy fejezet-oldal nyílik: hero (hét + dátum), iniciálés memoir-kártya
+            többbekezdéses szöveggel, <strong>„Miből íródott"</strong> humanizált horgony-chipek
+            (Emlék › nap-oldal, Minta › Minták; Identitás statikus), feedback-chipek, és
+            <strong>előző/következő lapozó</strong>, ami az idővonal sorrendjét követi.</li>
+          <li><strong>Kontraktus</strong> — <code>GET /api/proactive/memoir/archive</code>:
+            a teljes lista egy körben (heti kadencia — egy év is csak ~52 kis rekord).
+            A latest-végpont és a 404-szemantika érintetlen.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Próbáld ki</h2>
+        <ol>
+          <li>Görgess az idővonalon — három hónap, kilenc fejezet.</li>
+          <li>Koppints egy kártyára — a fejezet-oldalra lépsz.</li>
+          <li>Lapozz az előző/következő csempékkel — a szélein elfogy a lapozó.</li>
+          <li>👎 a fejezeten — jönnek az ok-chipek.</li>
+          <li>„‹ Archívum" — vissza az idővonalra, ott, ahol hagytad.</li>
+        </ol>
+      </div>
+      <p class="note">A memoár hangja változatlan: múlt időben, rólad szól, sosem büntet.
+        Az archívum csak polcra teszi, amit a társ hétről hétre megír.</p>
+    </aside>
+  </div>
+</div>
+
+<script>
+  (function () {
+    function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+
+    /* ---------- demo-adat: 9 fejezet, 3 hónap (legfrissebb elöl) ---------- */
+    var CHAPTERS = [
+      { mo: 'Augusztus', wk: 'Hét 35', d: 'aug 25 – 31.', ttl: 'A hét, amikor a mérleg állt, de te nem',
+        ex: 'A súlyod 83,3–83,5 kg között mozgott — ez nem stagnálás volt, hanem tartás magas terhelés mellett.',
+        bd: ['Ez volt a hét, amikor a mérleg megtanított türelemre: a súlyod <b>83,3–83,5 kg</b> között mozgott, miközben <b>28 szett</b> súlyzós munka és <b>360 perc</b> röplabda ment le. A rövid éjszakák vizet tartottak, a volumen izmot épített — a szám ugyanaz maradt, az összetétel mozgott.',
+             'Kedden a késői vacsora még kibillentett, de csütörtökön már 20:30 előtt ettél, és a péntek reggeli check-ined ezt vissza is adta. Gyengéden azt gondolom: a mérleg most nem rólad szólt, hanem a vízről.'],
+        anc: [['', 'Emlék', 'aug 29., péntek', 'a korai vacsora visszaigazolt'], ['', 'Emlék', 'aug 26., kedd', '28 szett fáradtan is'], ['gold', 'Minta', 'rövid alvás × vízvisszatartás', '']] },
+      { mo: 'Augusztus', wk: 'Hét 34', d: 'aug 18 – 24.', ttl: 'A betegség hete, ami mégis épített',
+        ex: 'Lázasan indult, magas stresszel — és mégis a hét végére állt össze az új esti rutin.',
+        bd: ['Lázasan, <b>5/5-ös stresszel</b> indult a hét, egy kemény lábnap maradványaival a lábadban. Két nap pihenőt engedtél magadnak — és ez volt a hét legjobb döntése: szerdára az alvásod <b>7,1 órára</b> kúszott vissza, péntekre az energiád 4/5-re.',
+             'A hét végén született meg az új esti rutin: korai vacsora, képernyő-stop, olvasás. A betegség nem visszalépés volt, hanem kényszerű lecke a regenerációról.'],
+        anc: [['', 'Emlék', 'aug 19., szerda', 'a fordulat éjszakája'], ['gold', 'Minta', 'pihenő → energia-visszatérés', ''], ['sage', 'Identitás', 'regeneráció-tanuló', '']] },
+      { mo: 'Augusztus', wk: 'Hét 33', d: 'aug 11 – 17.', ttl: 'Amikor a konyha utolérte az edzőtermet',
+        ex: 'Hat FuelDay a hétből — a skyr-bowl bevált, a kalóriakeret hat napon tartott.',
+        bd: ['Ezen a héten a konyha lett a csendes főszereplő: <b>hat napon</b> tartottad a kalóriakeretet, és a skyr-bowl — amit két hete még kísérletnek hívtál — bevett reggelivé vált. A fehérje-átlagod <b>168 g</b>-ra állt be.',
+             'A bevásárlás vasárnap egyetlen körrel megvolt. Az edzőterem eddig előrébb járt, mint a tányér; ezen a héten beérte.'],
+        anc: [['', 'Emlék', 'aug 17., vasárnap', 'egykörös bevásárlás'], ['gold', 'Minta', 'reggeli-horgony stabilizál', '']] },
+      { mo: 'Augusztus', wk: 'Hét 32', d: 'aug 4 – 10.', ttl: 'Az első 100 kg-os guggolás hete',
+        ex: 'Három hét csendes ráépülés után a rúdra felkerült a századik kiló — és megvolt.',
+        bd: ['A számok néha ünnepelnek: hétfőn a rúdra felkerült a <b>századik kiló</b>, és a guggolás megvolt — tisztán, mélyen, remegés nélkül.',
+             'Nem a semmiből jött: három hét csendes ráépülés előzte meg, 85-től 95-ig, mindig egy-egy okos lépéssel. A türelmes építkező identitása ezen a héten kapott számszerű bizonyítékot.'],
+        anc: [['', 'Emlék', 'aug 4., hétfő', 'Guggolás 100 kg'], ['sage', 'Identitás', 'türelmes építkező', '']] },
+      { mo: 'Július', wk: 'Hét 30', d: 'júl 21 – 27.', ttl: 'A pihenő, ami nem visszalépés volt',
+        ex: 'Deload-hét: felezett volumen, és az alvásod azonnal meghálálta.',
+        bd: ['A deload-hét mindig gyanús — mintha lustaság lenne. Pedig ezen a héten a <b>felezett volumen</b> mellett aludtál a hónap legjobbjait: <b>7,6 óra</b> átlag, két nyolc órás éjszakával.',
+             'A niggle a vállban elcsendesedett, és vasárnap már viszketett a tenyered a rúdért. A pihenő nem a haladás szünete volt, hanem a formája.'],
+        anc: [['', 'Emlék', 'júl 26., szombat', 'nyolc óra alvás'], ['gold', 'Minta', 'deload → niggle csendesül', '']] },
+      { mo: 'Július', wk: 'Hét 29', d: 'júl 14 – 20.', ttl: 'Négy este a pályán',
+        ex: 'Röplabda-hét: 420 perc játék, és a csapat először hívott a nyári bajnokságra.',
+        bd: ['Négy estét adtál a pályának — <b>420 percet</b> —, és a hét végére a csapat megkérdezte, jössz-e a nyári bajnokságra.',
+             'A kalóriáid követték a terhelést: a keret +200-zal nőtt a játéknapokon, és nem is csúsztál túl rajta. Az aerob kapacitásod csendben, hétről hétre épül a játék alatt.'],
+        anc: [['', 'Emlék', 'júl 19., szombat', 'a bajnokság-meghívás'], ['gold', 'Minta', 'játéknap × keret-emelés', '']] },
+      { mo: 'Július', wk: 'Hét 28', d: 'júl 7 – 13.', ttl: 'A D2-fázis első hulláma',
+        ex: 'Megjött az étvágyhullám, ahogy vártuk — és ezúttal volt terv.',
+        bd: ['A D2-fázis első étvágyhulláma pontosan akkor jött, amikorra a gyógyszer-életút jelezte. A különbség az előző körhöz képest: most volt terv.',
+             'A kamra kész volt, a magas-fehérje snackek kéznél, és a hullám két nap alatt átvonult anélkül, hogy a hétvégi keretet elvitte volna. A test jelzett, te válaszoltál — nem fordítva.'],
+        anc: [['gold', 'Minta', 'D2-fázis étvágyhullám', ''], ['', 'Emlék', 'júl 9., szerda', 'a kamra készen állt']] },
+      { mo: 'Június', wk: 'Hét 26', d: 'jún 23 – 29.', ttl: 'Amikor az alvás lett az edzés',
+        ex: 'A hét témája az éjszaka volt: három 8 órás alvás egymás után — először.',
+        bd: ['Ezen a héten a legfontosabb szetteket nem az edzőteremben nyomtad, hanem az ágyban: <b>három nyolc órás éjszaka</b> egymás után — a közös munkánk kezdete óta először.',
+             'A reggeli energiád mindhárom nap 4/5 fölött volt, és a csütörtöki mellnap a hónap legjobbja lett. Az összefüggés nem véletlen; mostantól adat.'],
+        anc: [['', 'Emlék', 'jún 26., csütörtök', 'a hónap legjobb mellnapja'], ['gold', 'Minta', 'alvás-széria × edzésminőség', '']] },
+      { mo: 'Június', wk: 'Hét 25', d: 'jún 16 – 22.', ttl: 'Az első közös hónap zárása',
+        ex: 'Egy hónap közös munka: −1,8 kg, két PR, és egy rutin, ami már magától megy.',
+        bd: ['Egy hónapja kezdtük a közös munkát, és a zárás számai magukért beszélnek: <b>−1,8 kg</b>, két erő-PR, és egy reggeli rutin, amit már nem kell erőltetni — magától megy.',
+             'Az első héten még 2 250 kcal volt a keret és 80 kg a guggolás; ma mindkettő máshol jár. A történet innen már nem a kezdésről szól, hanem a ritmusról.'],
+        anc: [['', 'Emlék', 'jún 22., vasárnap', 'a havi zárás'], ['sage', 'Identitás', 'ritmusban', '']] }
+    ];
+
+    var screenEl = document.getElementById('screen');
+    var pgArch = document.getElementById('pgArch');
+    var pgFej = document.getElementById('pgFej');
+    var fejBody = document.getElementById('fejBody');
+    function replay(el) {
+      el.querySelectorAll('.rise').forEach(function (r) {
+        r.style.animation = 'none'; void r.offsetHeight; r.style.animation = '';
+      });
+    }
+
+    /* ---------- archívum-idővonal ---------- */
+    var list = document.getElementById('list');
+    (function render() {
+      var h = '', delay = 60, lastMo = null;
+      CHAPTERS.forEach(function (c, i) {
+        if (c.mo !== lastMo) {
+          var cnt = CHAPTERS.filter(function (x) { return x.mo === c.mo; }).length;
+          h += '<div class="mhead rise" style="--d:' + delay + 'ms;"><span class="meb">' + c.mo + '</span><span class="n">' + cnt + ' fejezet</span></div>';
+          delay += 40; lastMo = c.mo;
+        }
+        h += '<button class="mcard rise" style="--d:' + delay + 'ms;" data-ix="' + i + '">' +
+          '<span class="top"><span class="wk">' + c.wk + '</span><span class="d">' + c.d + '</span>' +
+          '<span class="anc"><svg width="10" height="10" viewBox="0 0 100 100"><use href="#i-retegek"/></svg>' + c.anc.length + '</span></span>' +
+          '<span class="ttl">' + esc(c.ttl) + '</span>' +
+          '<span class="ex">' + esc(c.ex) + '</span></button>';
+        delay += 40;
+      });
+      list.innerHTML = h;
+    })();
+
+    /* ---------- fejezet-oldal (a mezo-uajy nyelv) ---------- */
+    function anchHtml(a) {
+      var tone = a[0] ? ' ' + a[0] : '';
+      var stat = a[1] === 'Identitás';
+      var inner = '<i></i><span>' + a[1] + ' · <b>' + esc(a[2]) + '</b>' + (a[3] ? ' — ' + esc(a[3]) : '') + '</span>';
+      return stat
+        ? '<span class="anch' + tone + ' stat">' + inner + '</span>'
+        : '<button class="anch' + tone + '">' + inner + '<span class="go">›</span></button>';
+    }
+    function openChapter(ix) {
+      var c = CHAPTERS[ix];
+      var prev = CHAPTERS[ix + 1]; /* idővonal: lefelé öregszik */
+      var next = CHAPTERS[ix - 1];
+      var h =
+        '<div class="page-hero rise" style="--d:0ms;">' +
+        '<div class="nm">' + c.wk + '</div>' +
+        '<div class="sb">' + c.d + ' 2026 · ' + c.mo.toLowerCase() + '</div></div>' +
+        '<div class="memoir rise" style="--d:60ms;">' +
+        '<div class="mrow2"><span class="p-eyebrow grow" style="color:#5D4FA0;">Heti memoár · ' + c.wk + '</span>' +
+        '<span class="stamp">' + c.d + '</span></div>' +
+        '<div class="ttl">' + esc(c.ttl) + '</div>' +
+        '<div class="bd">' + c.bd.map(function (p) { return '<p>' + p + '</p>'; }).join('') + '</div>' +
+        '<div class="reffoot">' +
+        '<div class="mrow2"><span class="eb grow">Miből íródott</span><span class="stamp">vasárnap este íródott</span></div>' +
+        '<div class="anchrow">' + c.anc.map(anchHtml).join('') + '</div></div>' +
+        '<div class="fbwrap"><button class="fbc">👍 Segített</button><button class="fbc">👎 Nem talált</button></div>' +
+        '</div>' +
+        '<div class="chpager rise" style="--d:120ms;">' +
+        (prev
+          ? '<button class="chtile" data-nav="' + (ix + 1) + '"><span class="dir">‹ előző</span><span class="wk">' + prev.wk + '</span><span class="ct">' + esc(prev.ttl) + '</span></button>'
+          : '<span class="chtile ghost"></span>') +
+        (next
+          ? '<button class="chtile nx" data-nav="' + (ix - 1) + '"><span class="dir">következő ›</span><span class="wk">' + next.wk + '</span><span class="ct">' + esc(next.ttl) + '</span></button>'
+          : '<span class="chtile ghost"></span>') +
+        '</div>';
+      fejBody.innerHTML = h;
+      pgArch.hidden = true;
+      pgFej.hidden = false;
+      pgFej.scrollTop = 0;
+      replay(pgFej);
+    }
+
+    list.addEventListener('click', function (ev) {
+      var card = ev.target.closest ? ev.target.closest('.mcard') : null;
+      if (!card) return;
+      openChapter(+card.getAttribute('data-ix'));
+    });
+    fejBody.addEventListener('click', function (ev) {
+      var nav = ev.target.closest ? ev.target.closest('[data-nav]') : null;
+      if (nav) { openChapter(+nav.getAttribute('data-nav')); return; }
+    });
+    document.getElementById('fejBack').addEventListener('click', function () {
+      pgFej.hidden = true;
+      pgArch.hidden = false;
+    });
+
+    /* ---------- feedback (delegált a fejezet-oldalon) ---------- */
+    var REASONS = ['pontatlan', 'nem ide tartozik', 'kevés', 'más okból'];
+    fejBody.addEventListener('click', function (e) {
+      var btn = e.target.closest ? e.target.closest('.fbc') : null;
+      if (!btn) return;
+      var wrap = btn.parentElement;
+      if (btn.classList.contains('rs')) {
+        wrap.querySelectorAll('.fbc.rs').forEach(function (c) { c.classList.remove('sel'); });
+        btn.classList.add('sel');
+        return;
+      }
+      var isDown = btn.textContent.indexOf('👎') === 0;
+      var wasSel = btn.classList.contains('sel');
+      wrap.querySelectorAll('.fbc:not(.rs)').forEach(function (c) { c.classList.remove('sel'); });
+      wrap.querySelectorAll('.fbc.rs').forEach(function (c) { c.remove(); });
+      if (wasSel) return;
+      btn.classList.add('sel');
+      if (isDown) REASONS.forEach(function (r) {
+        var c = document.createElement('button');
+        c.className = 'fbc rs'; c.textContent = r;
+        wrap.appendChild(c);
+      });
+    });
+
+    document.querySelector('#pgArch .backbtn').addEventListener('click', function () {
+      this.animate([{ transform: 'scale(1)' }, { transform: 'scale(0.9)' }, { transform: 'scale(1)' }], { duration: 200 });
+    });
+  })();
+</script>

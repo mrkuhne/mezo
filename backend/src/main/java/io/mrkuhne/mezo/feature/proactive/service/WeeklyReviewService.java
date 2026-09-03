@@ -1,10 +1,6 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.api.dto.WeeklyReviewResponse;
-import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
-import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
-import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
-import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.proactive.entity.WeeklyReviewEntity;
 import io.mrkuhne.mezo.feature.proactive.mapper.ProactiveMapper;
 import io.mrkuhne.mezo.feature.proactive.repository.WeeklyReviewRepository;
@@ -16,7 +12,6 @@ import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -24,12 +19,13 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * The weekly review read/regenerate surface (Én/Heti, spec 2026-08-27 §5, bd mezo-p2tr): find
- * returns the row AS-IS (no lazy generation — the WeeklyReviewJob owns that); {@code stale} is a
- * best-effort probe over the OTHER aggregates a review draws from; regenerate soft-deletes the
- * live row (if any) and re-runs {@link WeeklyReviewGenerator}, which then sees no existing row
- * and does its normal gather-and-call.
+ * returns the row AS-IS (no lazy generation — the WeeklyReviewJob owns that); {@code stale}
+ * delegates to the shared {@link LogFreshnessProbe} over the OTHER aggregates a review draws
+ * from (mezo-hqfi.1); regenerate soft-deletes the live row (if any) and re-runs
+ * {@link WeeklyReviewGenerator}, which then sees no existing row and does its normal
+ * gather-and-call — archiving the week's still-open knowledge candidates alongside it, while
+ * decided ones survive untouched (mezo-d20.7.6).
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 @ConditionalOnProperty(
@@ -40,10 +36,10 @@ public class WeeklyReviewService {
     private final WeeklyReviewRepository weeklyReviewRepository;
     private final WeeklyReviewGenerator generator;
     private final ProactiveMapper mapper;
-    private final WeightLogRepository weightLogRepository;
-    private final SleepLogRepository sleepLogRepository;
-    private final CheckInRepository checkInRepository;
-    private final MealRepository mealRepository;
+    // The four log repositories main injected here are gone: staleSince now delegates to the
+    // shared LogFreshnessProbe (mezo-hqfi.1), which owns them.
+    private final LogFreshnessProbe logFreshnessProbe;
+    private final WeeklyLessonService weeklyLessonService;
 
     public Optional<WeeklyReviewEntity> find(UUID userId, LocalDate weekStart) {
         return weeklyReviewRepository.findByCreatedByAndWeekStart(userId, weekStart);
@@ -53,7 +49,7 @@ public class WeeklyReviewService {
     public WeeklyReviewResponse getResponse(UUID userId, LocalDate weekStart) {
         WeeklyReviewEntity review = find(userId, weekStart).orElseThrow(WeeklyReviewService::notFound);
         WeeklyReviewResponse response = mapper.toWeeklyReviewResponse(review);
-        response.setStale(isStale(userId, weekStart, review.getGeneratedAt()));
+        response.setStale(staleSince(userId, weekStart, review.getGeneratedAt()));
         return response;
     }
 
@@ -64,46 +60,23 @@ public class WeeklyReviewService {
                     SystemMessage.error("WEEKLY_REVIEW_WEEK_NOT_COMPLETE").build(), HttpStatus.CONFLICT);
         }
         find(userId, weekStart).ifPresent(weeklyReviewRepository::delete);
+        // mezo-d20.7.6: the STILL-OPEN weekly candidates are archived with the review they came
+        // with; the DECIDED ones stay — a regeneration must never silently undo a user decision
+        // (nor orphan the knowledge fact an accept already minted).
+        weeklyLessonService.archiveOpen(userId, weekStart);
         WeeklyReviewEntity fresh = generator.generate(userId, weekStart);
         if (fresh == null) {
             throw notFound();
         }
         WeeklyReviewResponse response = mapper.toWeeklyReviewResponse(fresh);
-        response.setStale(isStale(userId, weekStart, fresh.getGeneratedAt()));
+        response.setStale(staleSince(userId, weekStart, fresh.getGeneratedAt()));
         return response;
     }
 
-    /** Best-effort: false on ANY probe failure — staleness is a nice-to-have hint, never a
-     *  reason to fail the read. Probes weight/sleep/check-in/meal logs (workout logs skipped —
-     *  {@code WorkoutSessionEntity.date} is nullable on template rows, so a clean date-window
-     *  read isn't as direct as the other four). */
-    private boolean isStale(UUID userId, LocalDate weekStart, Instant generatedAt) {
-        try {
-            LocalDate weekEnd = weekStart.plusDays(6);
-            return newerThan(weightLogRepository
-                            .findFirstByCreatedByAndDeletedFalseAndDateBetweenOrderByCreatedAtDesc(
-                                    userId, weekStart, weekEnd)
-                            .map(e -> e.getCreatedAt()), generatedAt)
-                    || newerThan(sleepLogRepository
-                            .findFirstByCreatedByAndDeletedFalseAndDateBetweenOrderByCreatedAtDesc(
-                                    userId, weekStart, weekEnd)
-                            .map(e -> e.getCreatedAt()), generatedAt)
-                    || newerThan(checkInRepository
-                            .findFirstByCreatedByAndDeletedFalseAndDateBetweenOrderByCreatedAtDesc(
-                                    userId, weekStart, weekEnd)
-                            .map(e -> e.getCreatedAt()), generatedAt)
-                    || newerThan(mealRepository
-                            .findFirstByCreatedByAndDeletedFalseAndMealDateBetweenOrderByCreatedAtDesc(
-                                    userId, weekStart, weekEnd)
-                            .map(e -> e.getCreatedAt()), generatedAt);
-        } catch (Exception e) {
-            log.warn("Weekly review stale probe failed for {} week {}: {}", userId, weekStart, e.getMessage());
-            return false;
-        }
-    }
-
-    private static boolean newerThan(Optional<Instant> candidate, Instant generatedAt) {
-        return candidate.map(createdAt -> createdAt.isAfter(generatedAt)).orElse(false);
+    /** Delegates to the shared {@link LogFreshnessProbe} (mezo-hqfi.1) with this review's ISO
+     *  week as the window — same four log sources, same best-effort contract as before. */
+    private boolean staleSince(UUID userId, LocalDate weekStart, Instant generatedAt) {
+        return logFreshnessProbe.anyLoggedAfter(userId, weekStart, weekStart.plusDays(6), generatedAt);
     }
 
     private static SystemRuntimeErrorException notFound() {

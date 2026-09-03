@@ -1,9 +1,9 @@
 package io.mrkuhne.mezo.feature.auth;
 
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
-import io.mrkuhne.mezo.feature.auth.entity.UserProfileEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
-import io.mrkuhne.mezo.feature.auth.repository.UserProfileRepository;
+import java.time.Instant;
+import java.util.Locale;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
@@ -11,6 +11,7 @@ import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+/** Seeds the founder account (role OWNER, already onboarded). Idempotent by email. */
 @Component
 @Profile("demodata")
 @Order(0) // seeds the owner that later runners (e.g. TrainSeedData) depend on
@@ -18,21 +19,26 @@ import org.springframework.stereotype.Component;
 public class OwnerSeedData implements CommandLineRunner {
 
     private final AppUserRepository appUserRepository;
-    private final UserProfileRepository userProfileRepository;
     private final PasswordEncoder passwordEncoder;
     private final OwnerProperties ownerProperties;
 
     @Override
     public void run(String... args) {
-        if (appUserRepository.existsByEmail(ownerProperties.ownerEmail())) return;
+        // AuthService.login/register normalise email to trimmed-lowercase before lookup; seed the
+        // owner the same way so an uppercase MEZO_OWNER_EMAIL never locks the owner out (mezo-qw37.1
+        // review finding 4).
+        String email = normalizeEmail(ownerProperties.ownerEmail());
+        if (appUserRepository.existsByEmail(email)) return;
         AppUserEntity owner = new AppUserEntity();
-        owner.setEmail(ownerProperties.ownerEmail());
+        owner.setEmail(email);
         owner.setName(ownerProperties.ownerName());
         owner.setPasswordHash(passwordEncoder.encode(ownerProperties.ownerPassword()));
-        owner = appUserRepository.save(owner);
+        owner.setRole(AppUserEntity.UserRole.OWNER);
+        owner.setOnboardedAt(Instant.now());
+        appUserRepository.save(owner);
+    }
 
-        UserProfileEntity profile = new UserProfileEntity();
-        profile.setCreatedBy(owner.getId());
-        userProfileRepository.save(profile);
+    private static String normalizeEmail(String email) {
+        return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
     }
 }

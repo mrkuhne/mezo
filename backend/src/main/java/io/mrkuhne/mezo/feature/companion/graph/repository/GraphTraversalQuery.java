@@ -99,12 +99,16 @@ public class GraphTraversalQuery {
         """;
 
     /** Newest-first so a truncated graph still seeds from the most recent knowledge (the same order
-     *  {@code GraphNodeRepository.findByCreatedByAndStatusAndDeletedFalseOrderByCreatedAtDesc} gives). */
+     *  {@code GraphNodeRepository.findByCreatedByAndStatusAndDeletedFalseOrderByCreatedAtDesc} gives).
+     *  {@code id} is a secondary sort key so the order is TOTAL — Postgres does not guarantee any
+     *  particular order among exact {@code created_at} ties, and {@code GraphTraversalService
+     *  .seedsFor}'s stable sort now relies on THIS query producing the same row order every time to
+     *  keep equally-ranked nodes in a deterministic order across repeated calls (mezo-b3pp.34). */
     private static final String ACTIVE_NODES_SQL = """
         select id, title, summary
         from knowledge_node
         where created_by = :userId and status = 'active' and is_deleted = false
-        order by created_at desc
+        order by created_at desc, id
         """;
 
     private static final RowMapper<NeighborEdge> ROW_MAPPER = (rs, rowNum) -> new NeighborEdge(

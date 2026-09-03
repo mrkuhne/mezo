@@ -1,4 +1,4 @@
-import { aiAverage, buildKeretHero, deriveMealRole, doneMealRows } from '@/features/fuel/logic/keretHero'
+import { aiAverage, asPastDayHero, buildKeretHero, deriveMealRole, doneMealRows } from '@/features/fuel/logic/keretHero'
 import { FIBER_TARGET_G } from '@/data/fuel/fuelConfig'
 import type { DayBudget } from '@/features/fuel/logic/buildDayPlan'
 import type { FuelMeal, FuelSlot } from '@/data/types'
@@ -235,4 +235,20 @@ test('a meal 0-120min after the workout start is post', () => {
 
 test('a meal more than 120min after the workout is standard, not post', () => {
   expect(deriveMealRole('15:01', '13:00')).toBe('standard') // 121 min after
+})
+
+// ── múlt nap (mezo-zeeq) ──────────────────────────────────────────────────────
+
+test('asPastDayHero: chips + now-marker go, everything else stays (energy/clock are TODAY\'s)', () => {
+  const vm = build({
+    slots: [slot({ time: '08:00', state: 'done' }), slot({ time: '13:00', label: 'Ebéd', slotKey: 'lunch', state: 'now' }),
+      slot({ time: '19:00', label: 'Vacsora', slotKey: 'dinner', state: 'pending' })],
+    nowHHmm: '13:30',
+  })
+  expect(vm.chips).not.toBeNull()
+  expect(vm.nowFrac).not.toBeNull()
+  const past = asPastDayHero(vm)
+  expect(past.chips).toBeNull()
+  expect(past.nowFrac).toBeNull()
+  expect({ ...past, chips: vm.chips, nowFrac: vm.nowFrac }).toEqual(vm)
 })

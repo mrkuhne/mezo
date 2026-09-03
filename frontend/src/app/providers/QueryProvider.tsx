@@ -1,8 +1,8 @@
 import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { useEffect, useState, type ReactNode } from 'react'
+import type { ReactNode } from 'react'
 import { ApiError } from '@/data/_client/api'
-import { bootstrapOwnerToken } from '@/data/_client/auth'
-import { isMockMode } from '@/data/_client/mode'
+import { AuthGate } from '@/app/auth/AuthGate'
+import { DEFAULT_QUERY_STALE_TIME_MS } from '@/data/useDualQuery'
 import { emitToast } from '@/shared/lib/toastBus'
 
 const client = new QueryClient({
@@ -18,21 +18,13 @@ const client = new QueryClient({
       })
     },
   }),
-  defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
+  defaultOptions: { queries: { staleTime: DEFAULT_QUERY_STALE_TIME_MS, retry: 1 } },
 })
 
 export function QueryProvider({ children }: { children: ReactNode }) {
-  const mock = isMockMode()
-  const [ready, setReady] = useState(mock)
-  useEffect(() => {
-    if (mock) return
-    bootstrapOwnerToken()
-      .then(() => setReady(true))
-      .catch((err) => {
-        console.error('Owner token bootstrap failed', err)
-        setReady(true)
-      })
-  }, [mock])
-  if (!ready) return null
-  return <QueryClientProvider client={client}>{children}</QueryClientProvider>
+  return (
+    <QueryClientProvider client={client}>
+      <AuthGate>{children}</AuthGate>
+    </QueryClientProvider>
+  )
 }

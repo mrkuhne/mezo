@@ -5,6 +5,7 @@ import { facts as knowledgeSeed, candidateSeed } from '@/data/insights/knowledge
 import { patterns as patternSeed } from '@/data/insights/insights'
 import { notificationPrefSeed } from '@/data/notification/notificationMock'
 import { addDays } from '@/shared/lib/dates'
+import { MOCK_DIMENSIONS, MOCK_EXPERTS, MOCK_OVERVIEW_EMPTY, MOCK_RUNS, MOCK_RUN_DETAIL } from '@/data/character/characterMock'
 
 // Re-exported so hook tests keep importing it from here.
 export { API_BASE }
@@ -172,8 +173,25 @@ const mesoReportFixture = {
   },
 }
 
+// Mezo-kalauz seen-store (mezo-gb1s.1) in-memory state — module-level so the GET/PUT/DELETE
+// handlers below share it across a whole test file; `resetTutorialProgressState` is called from
+// `src/test/setup.ts`'s afterEach so one test's PUT can't leak into the next.
+let tutorialProgressState: Record<string, unknown> = {}
+export function resetTutorialProgressState(): void {
+  tutorialProgressState = {}
+}
+
 export const handlers = [
   http.post(`${API_BASE}/api/auth/login`, () => HttpResponse.json({ token: 'test-token' })),
+  http.post(`${API_BASE}/api/auth/register`, () => HttpResponse.json({ token: 'test-token' })),
+  http.get(`${API_BASE}/api/auth/me`, () =>
+    HttpResponse.json({
+      id: '00000000-0000-0000-0000-000000000001', email: 'owner@mezo.local', name: 'Owner',
+      role: 'OWNER', onboarded: true, mustChangePassword: false, timezone: 'Europe/Budapest',
+    }),
+  ),
+  http.post(`${API_BASE}/api/auth/change-password`, () => new HttpResponse(null, { status: 204 })),
+  http.post(`${API_BASE}/api/auth/onboarding-complete`, () => new HttpResponse(null, { status: 204 })),
 
   http.get(`${API_BASE}/api/biometrics/weight`, () =>
     HttpResponse.json([{ id: 'w1', date: '2026-06-01', value: 82.5, note: null }]),
@@ -366,6 +384,8 @@ export const handlers = [
 
   // Proactive memoir (W2) — default: honest 404, MemoirPage renders its "készül" state.
   http.get(`${API_BASE}/api/proactive/memoir`, () => new HttpResponse(null, { status: 404 })),
+  // F7.5: the archive shelf — default honest empty list (list-endpoint precedent).
+  http.get(`${API_BASE}/api/proactive/memoir/archive`, () => HttpResponse.json({ entries: [] })),
 
   // Proactive prediction (P1) — default: honest empty ARRAY (list endpoint, never 404); the
   // PredictionsPage renders its "still learning" null-state.
@@ -373,6 +393,20 @@ export const handlers = [
 
   // Proactive experiment (P2) — default: honest empty ARRAY (list endpoint, never 404); the
   // ExperimentsPage renders its "still learning" null-state. Tests override with server.use(...).
+  // Diagnosis (mezo-hqfi.4): honest-empty list; generate answers 409 by default (a fresh test
+  // user has thin data) — per-test overrides script the happy/quota paths.
+  http.get(`${API_BASE}/api/proactive/diagnosis`, () => HttpResponse.json([])),
+  http.post(`${API_BASE}/api/proactive/diagnosis`, () =>
+    HttpResponse.json([{ code: 'DIAGNOSIS_INSUFFICIENT_DATA', message: 'nincs elég adat' }], { status: 409 })),
+  http.get(`${API_BASE}/api/proactive/diagnosis/:id`, () =>
+    HttpResponse.json([{ code: 'RESOURCE_NOT_FOUND', message: 'nincs ilyen' }], { status: 404 })),
+  http.post(`${API_BASE}/api/proactive/diagnosis/:id/suspect/:rank/experiment`, ({ params }) =>
+    HttpResponse.json({
+      id: 'exp-from-diag', title: 'Próba', hypothesis: 'Próba-hipotézis.', status: 'active',
+      metricKey: 'SLEEP_DURATION_H', expectedDirection: 'up', startDate: '2026-08-31',
+      totalDays: 7, outcome: null, outcomeGood: null, generatedAt: '2026-08-31T07:00:00Z',
+      rank: Number(params.rank),
+    }, { status: 201 })),
   http.get(`${API_BASE}/api/proactive/experiment`, () => HttpResponse.json([])),
   http.post(`${API_BASE}/api/proactive/experiment/propose`, () => HttpResponse.json([])),
   http.post(`${API_BASE}/api/proactive/experiment/:id/decision`, async ({ params, request }) => {
@@ -487,6 +521,10 @@ export const handlers = [
       ],
       perks: [],
     })),
+  // Growth week rollup (mezo-rmi0.1) — honest zeros are a valid contract answer.
+  http.get(`${API_BASE}/api/progression/growth-week/:date`, ({ params }) =>
+    HttpResponse.json({ weekStart: params.date, questCompleted: 0, questClosed: 0, lifeXp: 0, activities: 0, savingsHuf: 0 }),
+  ),
 
   // ── Activity log (E2, mezo-jzca). Defaults: empty day; create echoes a confident AI verdict.
   http.get(`${API_BASE}/api/activity/day/:date`, () => HttpResponse.json([])),
@@ -530,7 +568,62 @@ export const handlers = [
   }),
 
   // People (Slice E) — empty bootstrap default; tests override with server.use for data cases.
-  http.get(`${API_BASE}/api/people`, () => HttpResponse.json({ persons: [], mentions: [] })),
+  http.get(`${API_BASE}/api/people`, () => HttpResponse.json({ persons: [], mentions: [], mezoNote: '' })),
+  http.post(`${API_BASE}/api/people`, async ({ request }) => {
+    const req = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({
+      id: crypto.randomUUID(),
+      name: req.name,
+      initial: (req.name as string)[0],
+      relationship: req.relationship,
+      relationshipHu: req.relationshipHu,
+      aliases: req.aliases ?? [],
+      status: 'active',
+      sourceKind: 'manual',
+      affectBaseline: req.affectBaseline,
+      contactCadenceLabel: req.contactCadenceLabel,
+      notes: req.notes,
+      mentionCount: 0,
+      mentionsThisWeek: 0,
+      knownFacts: [],
+      ties: [],
+      affectTrend: [],
+      direction: 'flat',
+    }, { status: 201 })
+  }),
+  http.put(`${API_BASE}/api/people/:id`, async ({ params, request }) => {
+    const req = (await request.json()) as Record<string, unknown>
+    return HttpResponse.json({
+      id: params.id,
+      name: req.name,
+      initial: (req.name as string)[0],
+      relationship: req.relationship,
+      relationshipHu: req.relationshipHu,
+      aliases: req.aliases ?? [],
+      status: 'active',
+      sourceKind: 'manual',
+      affectBaseline: req.affectBaseline,
+      contactCadenceLabel: req.contactCadenceLabel,
+      notes: req.notes,
+      mentionCount: 0,
+      mentionsThisWeek: 0,
+      knownFacts: [],
+      ties: [],
+      affectTrend: [],
+      direction: 'flat',
+    })
+  }),
+  http.delete(`${API_BASE}/api/people/:id`, () => new HttpResponse(null, { status: 204 })),
+  http.delete(`${API_BASE}/api/people/:personId/mentions/:mentionId`, () => new HttpResponse(null, { status: 204 })),
+  http.post(`${API_BASE}/api/people/:personId/decision`, async ({ params, request }) => {
+    const body = await request.json() as { decision: string }
+    return HttpResponse.json({
+      id: params.personId, name: 'Marci', initial: 'M', relationship: 'friend',
+      relationshipHu: 'Ismerős', aliases: [], status: body.decision === 'accept' ? 'active' : 'candidate',
+      sourceKind: 'extractor', affectBaseline: 'neutral', knownFacts: [], ties: [], affectTrend: [],
+      direction: 'flat', mentionCount: 0, mentionsThisWeek: 0,
+    })
+  }),
 
   http.post(`${API_BASE}/api/biometrics/checkin`, async ({ request }) => {
     const body = (await request.json()) as Record<string, unknown>
@@ -689,6 +782,22 @@ export const handlers = [
       split: 'Pull / Push / Legs · 5×/hét',
       style: 'RP · 6 hét',
       phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'],
+    })
+  }),
+  // Meso plan generator (wizard redesign): deterministic default so real-mode wizard tests
+  // can render a 7-day proposal without scripting; tests override per case with server.use.
+  http.post(`${API_BASE}/api/train/meso-plans/generate`, async ({ request }) => {
+    const body = (await request.json()) as { daysOfWeek: string[]; weeks: number; priorities?: Record<string, string> | null; goalText?: string | null }
+    const training = new Set(body.daysOfWeek)
+    const days = ['Hét', 'Kedd', 'Sze', 'Csü', 'Pén', 'Szo', 'Vas'].map((day, i) => training.has(day)
+      ? { day, type: i % 2 === 0 ? 'Upper' : 'Lower', muscle: i % 2 === 0 ? 'back' : 'quad', exercises: [
+          { name: i % 2 === 0 ? 'Row' : 'Squat', muscle: i % 2 === 0 ? 'back-mid' : 'quad', warmupSets: 2, workingSets: 4, repMin: 8, repMax: 10, targetRIR: 1, type: 'compound', catalogId: 'c1f3a0e2-0000-4000-8000-000000000002' } ] }
+      : { day, type: 'Rest', muscle: '', note: 'Pihenőnap', exercises: [] })
+    return HttpResponse.json({
+      template: { title: 'Hypertrophy · Ősz', shortTitle: 'Hypertrophy', goal: 'Izomtömeg építés', goalPreset: 'hypertrophy',
+        musclePriorities: body.priorities ?? null, weeks: body.weeks, split: `Upper / Lower · ${body.daysOfWeek.length}×/hét`, style: `RP · ${body.weeks} hét`,
+        phaseCurve: ['MEV', 'MEV', 'MAV', 'MAV', 'MRV', 'Deload'], notes: body.goalText ?? null, volumePerMuscle: null, days },
+      rationale: 'MSW alap kiosztás', llmUsed: false,
     })
   }),
   http.post(`${API_BASE}/api/train/mesocycles/:id/activate`, ({ params }) =>
@@ -1026,8 +1135,7 @@ export const handlers = [
   // override with server.use() when they need a populated stash or feed.
   http.get(`${API_BASE}/api/pantry`, () => HttpResponse.json({ ingredients: [], stash: [], imports: [], suggestions: [] })),
 
-  // Pantry import (P6, mezo-bka) — OFF lookup proxy + confirmed-draft import.
-  http.get(`${API_BASE}/api/pantry-import/lookup`, () => HttpResponse.json({ results: [] })),
+  // Pantry import (P6, mezo-bka) — confirmed-draft import.
   // URL scrape (P8, mezo-8vum) — honest-empty default; tests override with server.use().
   http.post(`${API_BASE}/api/pantry-import/scrape`, () => HttpResponse.json({ result: null })),
   // Photo import (mezo-d8tr) — honest-empty default; tests override with server.use().
@@ -1061,6 +1169,17 @@ export const handlers = [
     HttpResponse.json({ mealsPerDay: 4, caffeineCutoff: '14:00' })),
   http.put(`${API_BASE}/api/fuel/settings`, async ({ request }) =>
     HttpResponse.json(await request.json())),
+
+  // Mezo-kalauz seen-store (mezo-gb1s.1) — empty ghost; PUT replaces, DELETE clears. In-memory (module-
+  // level, not closure-local) so a test's PUT is visible to its next GET; `server.resetHandlers()` does
+  // NOT reset this state (it only re-registers handlers), so `src/test/setup.ts` also calls
+  // `resetTutorialProgressState()` in its own `afterEach` to stop one test's PUT leaking into the next.
+  http.get(`${API_BASE}/api/tutorial/progress`, () => HttpResponse.json({ progress: tutorialProgressState })),
+  http.put(`${API_BASE}/api/tutorial/progress`, async ({ request }) => {
+    tutorialProgressState = ((await request.json()) as { progress: Record<string, unknown> }).progress
+    return HttpResponse.json({ progress: tutorialProgressState })
+  }),
+  http.delete(`${API_BASE}/api/tutorial/progress`, () => { tutorialProgressState = {}; return new HttpResponse(null, { status: 204 }) }),
 
   // Fuel meal-slot templates (mezo-7102) — honest-empty default list; PUT echoes the
   // saved body under the path dayType, DELETE is a plain 204. Tests override with server.use().
@@ -1214,15 +1333,15 @@ export const handlers = [
     const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
     const stream = new ReadableStream<Uint8Array>({
       start(controller) {
-        controller.enqueue(encoder.encode(frame('tool', { type: 'read', name: 'get_sleep(days=3)' })))
+        controller.enqueue(encoder.encode(frame('tool', { type: 'read', name: 'get_recovery(days=3)' })))
         controller.enqueue(encoder.encode(frame('delta', { text: reply.slice(0, mid) })))
         controller.enqueue(encoder.encode(frame('delta', { text: reply.slice(mid) })))
         // V0.5: the done event carries the persisted assistant row's REAL chips — name bakes
-        // the args in ("get_sleep(days=3)"), refs are the tool-contributed data references
+        // the args in ("get_recovery(days=3)"), refs are the tool-contributed data references
         controller.enqueue(encoder.encode(frame('done', {
           id: 'msg-done', role: 'assistant', content: reply,
           createdAt: '2026-07-03T07:00:05Z',
-          tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
+          tools: [{ type: 'read', name: 'get_recovery(days=3)' }],
           refs: [{ kind: 'Sleep', id: '2026-07-02' }],
           // W3.1b: the persisted row also carries what ambient recall fed the prompt
           recalled: [{
@@ -1372,6 +1491,11 @@ export const handlers = [
       stale: false,
     })
   }),
+  // A hét tanulságai (mezo-d20.6.10) — the weekly knowledge-candidate read handoff §6.2
+  // specifies. F6.5 has NOT shipped it, so the default is a 404: exactly what a real client
+  // gets today, and exactly what the page must render as "nincs javaslat ehhez a héthez".
+  // Tests that want the lit-up page override with server.use().
+  http.get(`${API_BASE}/api/proactive/weekly-review/:start/lessons`, () => new HttpResponse(null, { status: 404 })),
   http.get(`${API_BASE}/api/proactive/weekly-review/:start/digest`, ({ params }) => {
     const start = params.start as string
     return HttpResponse.json({
@@ -1381,5 +1505,35 @@ export const handlers = [
       memoir: true,
       predictions: [{ id: '12345678-90ab-4cde-8f01-234567890abc', title: 'Real-mode prediction', status: 'pending' }],
     })
+  }),
+  // Karakter dossier (mezo-1gim.13, fix round 1) — real-mode default handlers so navigation.test.tsx
+  // (and any other test that renders these pages WITHOUT stubbing @/data/hooks) gets an honest
+  // PRE-BOOTSTRAP dossier instead of an unhandled request resolving to a false 404/degraded row.
+  // Seeded to the same "untouched dossier" shape as the mock's own MOCK_OVERVIEW_EMPTY (CORE dims
+  // at maturity 0, portrait '', topClaims []) so `isDossierEmpty()` holds and the bootstrap-intro
+  // face renders — the one shared predicate the hub/Én-tile both key off. Per-test server.use()
+  // overrides still take priority (msw resolves the LAST matching handler first).
+  http.get(`${API_BASE}/api/character`, () => HttpResponse.json(MOCK_OVERVIEW_EMPTY)),
+  http.get(`${API_BASE}/api/character/dimension/:key`, ({ params }) => {
+    const dim = MOCK_DIMENSIONS[params.key as string]
+    return dim != null ? HttpResponse.json(dim) : new HttpResponse(null, { status: 404 })
+  }),
+  http.get(`${API_BASE}/api/character/experts`, () => HttpResponse.json({ experts: MOCK_EXPERTS })),
+  http.get(`${API_BASE}/api/character/feed`, () => HttpResponse.json([])),
+  http.get(`${API_BASE}/api/character/conference`, () => HttpResponse.json([])),
+  // Gépterem (mezo-1gim.14): the run-log timeline writer runs on CHARACTER_SWITCH alone, not on
+  // the dossier's bootstrap state (Task 1's writer wiring runs from the nightly/weekly/monthly/
+  // bootstrap pipelines regardless of whether the user has bootstrapped their dossier yet) — so,
+  // unlike the empty-overview default above, these two are served FULLY from the seeded run log,
+  // consistent with "the pipelines' own switch combinations [are] unchanged" (Global Constraints).
+  http.get(`${API_BASE}/api/character/runs`, ({ request }) => {
+    const url = new URL(request.url)
+    const from = url.searchParams.get('from') ?? ''
+    const to = url.searchParams.get('to') ?? ''
+    return HttpResponse.json(MOCK_RUNS.filter((r) => r.day >= from && r.day <= to))
+  }),
+  http.get(`${API_BASE}/api/character/run/:id`, ({ params }) => {
+    const detail = MOCK_RUN_DETAIL[params.id as string]
+    return detail != null ? HttpResponse.json(detail) : new HttpResponse(null, { status: 404 })
   }),
 ]

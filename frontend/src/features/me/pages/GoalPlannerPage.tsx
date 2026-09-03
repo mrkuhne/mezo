@@ -3,6 +3,8 @@ import { Navigate, useNavigate } from 'react-router-dom'
 import { useGoalCreation, useWeight, useFeasibilityPreview, useBiometricProfile } from '@/data/hooks'
 import { Icon, type IconName } from '@/shared/ui/Icon'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
+import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { huMonthDay } from '@/shared/lib/dates'
 import { hu1 } from '@/shared/lib/huNum'
 import type { GoalUpsertRequest, FeasibilityPreviewResponse } from '@/data/me/goalApi'
@@ -112,23 +114,21 @@ function GoalWizard() {
   }
 
   return (
-    // The route already sits inside AppLayout's .screen-content scroller — a nested
-    // .screen-content would double the status-bar padding (mezo-wdk).
-    <div>
-      {/* Breadcrumb — pinned below the status bar like native nav chrome */}
-      <div className="sticky-top" style={{ padding: '8px 24px' }}>
-        <button
-          type="button"
-          className="row gap-sm"
-          onClick={() => (step > 0 ? setStep(step - 1) : backToGoals())}
-        >
-          <span style={{ color: 'var(--text-tertiary)', fontSize: 14 }}>←</span>
-          <span className="eyebrow">{step === 0 ? 'Cél' : STEP_TITLES[step - 1]}</span>
-        </button>
-      </div>
+    // F7.4 Mozaik re-face (mezo-d20.8.4.1, en-mely.html): MozaikPage(coral) shell —
+    // the back chip steps back through the wizard before leaving to /me/goals.
+    <MozaikPage tone="coral">
+      <PageHead
+        onBack={() => (step > 0 ? setStep(step - 1) : backToGoals())}
+        label={step === 0 ? '‹ Cél' : `‹ ${STEP_TITLES[step - 1]}`}
+      />
+      <PageBody>
 
+      {/* Entrance choreography (mezo-d20.11): the wizard was the one Én sibling
+          with no `.rise` at all. `replayKey={step}` re-arms the stagger on each
+          step, the way the prototype's `showGr` replays a swapped panel. */}
+      <EntranceGroup replayKey={step}>
       {/* Step progress — earlier segments tappable to jump back */}
-      <div style={{ padding: '6px 24px 0' }}>
+      <div className="rise" style={{ '--d': '0ms', padding: '6px 24px 0' } as React.CSSProperties}>
         <div className="row gap-xs" style={{ marginBottom: 14 }}>
           {Array.from({ length: STEP_COUNT }, (_, i) => (
             <button
@@ -140,8 +140,9 @@ function GoalWizard() {
               }}
               style={{
                 flex: 1,
-                height: 3,
-                background: i <= step ? 'var(--lav)' : 'var(--surface-2)',
+                height: 4,
+                borderRadius: 2,
+                background: i <= step ? 'var(--gradient-cta, var(--coral))' : 'var(--surface-2)',
                 transition: 'all 0.3s ease',
                 padding: 0,
                 cursor: i < step ? 'pointer' : 'default',
@@ -150,21 +151,21 @@ function GoalWizard() {
           ))}
         </div>
 
-        <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>
+        <span className="eyebrow" style={{ color: 'var(--coral-deep)' }}>
           {String(step + 1).padStart(2, '0')} / {String(STEP_COUNT).padStart(2, '0')}
         </span>
       </div>
 
-      {/* Own header (outside MeSection chrome, spec §4.6 / Task 5) */}
-      <div className="pghead-np lav">
-        <div>
-          <div className="over">Me · Új cél</div>
-          <h1>{STEP_TITLES[step]}</h1>
-        </div>
+      {/* F7.4: Mozaik title block replaces the pghead-np header */}
+      <div className="rise" style={{ '--d': '40ms', padding: '6px 24px 4px' } as React.CSSProperties}>
+        <span className="mz-eyebrow">Én · Új cél</span>
+        <h1 style={{ fontFamily: 'var(--ff-display)', fontSize: 24, fontWeight: 600, lineHeight: 1.15, margin: '4px 0 0', color: 'var(--text-primary)' }}>
+          {STEP_TITLES[step]}
+        </h1>
       </div>
 
       {step === 0 && (
-        <div style={{ padding: '8px 24px' }}>
+        <div className="rise" style={{ '--d': '80ms', padding: '8px 24px' } as React.CSSProperties}>
           <div style={{ marginTop: 8 }}>
             <span className="eyebrow">Súly-trajektória</span>
           </div>
@@ -176,26 +177,25 @@ function GoalWizard() {
                   key={t.id}
                   type="button"
                   onClick={() => setTrajectory(t.id)}
-                  className="card"
+                  className="mz-qcard"
                   style={{
                     padding: 14,
                     textAlign: 'left',
                     width: '100%',
-                    background: sel
-                      ? 'color-mix(in srgb, var(--lav-deep) 8%, transparent)'
-                      : 'var(--surface-1)',
-                    borderColor: sel ? 'var(--lav-deep)' : 'var(--border-subtle)',
+                    marginBottom: 0,
+                    background: sel ? 'var(--mz-wash-coral)' : undefined,
+                    border: sel ? '1.5px solid var(--coral)' : undefined,
                   }}
                 >
                   <div className="row gap-md" style={{ alignItems: 'center' }}>
-                    <Icon name={t.icon} size={18} color={sel ? 'var(--lav-deep)' : 'var(--text-secondary)'} />
+                    <Icon name={t.icon} size={18} color={sel ? 'var(--coral-deep)' : 'var(--text-secondary)'} />
                     <div className="col">
                       <span
                         style={{
                           fontFamily: 'var(--ff-display)',
                           fontSize: 15,
                           fontWeight: 600,
-                          color: sel ? 'var(--lav-deep)' : 'var(--text-primary)',
+                          color: sel ? 'var(--coral-deep)' : 'var(--text-primary)',
                         }}
                       >
                         {t.label}
@@ -226,11 +226,9 @@ function GoalWizard() {
                   className="chip"
                   style={{
                     padding: '8px 11px',
-                    background: on
-                      ? 'color-mix(in srgb, var(--lav-deep) 8%, transparent)'
-                      : 'var(--surface-1)',
-                    borderColor: on ? 'var(--lav-deep)' : 'var(--border-subtle)',
-                    color: on ? 'var(--lav-deep)' : 'var(--text-secondary)',
+                    background: on ? 'var(--wash-sage)' : 'var(--surface-1)',
+                    borderColor: on ? 'var(--sage-deep)' : 'var(--border-subtle)',
+                    color: on ? 'var(--sage-deep)' : 'var(--text-secondary)',
                   }}
                 >
                   {on ? '✓ ' : ''}
@@ -243,6 +241,7 @@ function GoalWizard() {
       )}
 
       {step === 1 && (
+        <div className="rise" style={{ '--d': '80ms' } as React.CSSProperties}>
         <Step1
           {...{
             title,
@@ -261,10 +260,11 @@ function GoalWizard() {
             preview: previewable ? preview : undefined,
           }}
         />
+        </div>
       )}
 
       {/* Nav */}
-      <div style={{ padding: '16px 24px 32px' }}>
+      <div className="rise" style={{ '--d': '130ms', padding: '16px 24px 32px' } as React.CSSProperties}>
         {step < 1 ? (
           <div className="row gap-sm">
             {step > 0 && (
@@ -279,7 +279,7 @@ function GoalWizard() {
             )}
             <button
               type="button"
-              className="np-cta np-press"
+              className="cta-primary"
               disabled={!canNext}
               style={{
                 flex: step > 0 ? 2 : 1,
@@ -296,7 +296,7 @@ function GoalWizard() {
           <div className="col gap-sm">
             <button
               type="button"
-              className="np-cta np-press"
+              className="cta-primary"
               disabled={pending}
               style={{ padding: 14, opacity: pending ? 0.5 : 1 }}
               onClick={() => save(true)}
@@ -315,7 +315,9 @@ function GoalWizard() {
           </div>
         )}
       </div>
-    </div>
+      </EntranceGroup>
+      </PageBody>
+    </MozaikPage>
   )
 }
 
@@ -355,7 +357,7 @@ function Step1({
   const field = (label: string, input: ReactNode) => (
     <div className="col gap-sm">
       <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)' }}>{label}</span>
-      <div className="card" style={{ padding: 10 }}>
+      <div className="mz-qcard" style={{ padding: 10, marginBottom: 0 }}>
         {input}
       </div>
     </div>
@@ -445,7 +447,7 @@ function Step1({
         {/* Live feasibility preview (G6, mezo-06n). maintain has no target weight
             → a simple tartás note; otherwise the backend-derived pace + verdict. */}
         {trajectory === 'maintain' ? (
-          <div className="card" style={{ padding: 13 }}>
+          <div className="mz-qcard" style={{ padding: 13, marginBottom: 0 }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-tertiary)' }}>
               ≈ Tartás — nincs súlyváltozási tempó.
             </span>
@@ -497,13 +499,12 @@ function FeasibilityPanel({
   const label = ok ? (withWarnings ? '✓ Reális · figyelővel' : '✓ Reális') : '⚠ Agresszív'
   return (
     <div
-      className="card"
+      className="mz-qcard"
       style={{
         padding: '13px 14px',
-        background: ok
-          ? 'color-mix(in srgb, var(--sage-deep) 8%, transparent)'
-          : 'rgba(245,158,11,.06)',
-        borderColor: ok ? 'var(--sage-deep)' : 'color-mix(in srgb, var(--warning) 42%, transparent)',
+        marginBottom: 0,
+        background: ok ? 'var(--mz-wash-sage)' : 'var(--mz-wash-gold)',
+        boxShadow: ok ? 'var(--mz-shadow-sage)' : 'var(--mz-shadow-gold)',
       }}
     >
       <div className="row" style={{ alignItems: 'baseline', gap: 7 }}>

@@ -51,26 +51,34 @@ const VM = (over: Partial<KeretHeroVM> = {}): KeretHeroVM => ({
   ...over,
 })
 
-describe('KeretHero — count-up', () => {
-  it('renders the final remaining-kcal value synchronously under reduced motion, HU space-grouped', () => {
+// Hub v3 (mezo-d20.4.1, fuel iterations §2): the hero's ONE number is the kcal CONSUMED
+// today and the "eddig X / Y · n/m ablak" of-line is retired — Daniel's declutter round.
+// The count-up mechanics (reduced-motion/jsdom instant value, HU grouping, animate-from-
+// last-displayed) are unchanged; they just drive `consumedKcal` now.
+describe('KeretHero — count-up (the number is today\'s CONSUMED kcal)', () => {
+  it('renders the final consumed-kcal value synchronously under reduced motion, HU space-grouped', () => {
     stubReduced()
     render(<KeretHero vm={VM()} onChip={vi.fn()} onWaterRing={vi.fn()} />)
-    expect(screen.getByText('1 160')).toBeInTheDocument()
+    expect(screen.getByText('1 240')).toBeInTheDocument()
   })
 
   it('the accessible name of the count-up is the final value, and it carries no aria-live', () => {
     stubReduced()
     render(<KeretHero vm={VM()} onChip={vi.fn()} onWaterRing={vi.fn()} />)
-    const el = screen.getByLabelText('1 160 kcal hátra')
+    const el = screen.getByLabelText('1 240 kcal ma')
     expect(el).toBeInTheDocument()
     expect(el).not.toHaveAttribute('aria-live')
   })
 
-  it('an overshoot day (negative remainingKcal) renders the honest negative with the Unicode minus, in both the numeral and the aria-label', () => {
+  it('an overshoot day is shown honestly, not clamped: the consumed number keeps climbing past the target', () => {
+    // The retired remaining-kcal number carried the honest-negative rule (Unicode minus,
+    // never clamped). Hub v3 shows CONSUMED kcal instead, which cannot go negative — the
+    // same honesty now reads as "the number is never capped at the target". The Unicode
+    // minus itself still ships on the signed Cél chip (see the chips block below).
     stubReduced()
-    render(<KeretHero vm={VM({ remainingKcal: -240 })} onChip={vi.fn()} onWaterRing={vi.fn()} />)
-    expect(screen.getByText('−240')).toBeInTheDocument()
-    expect(screen.getByLabelText('−240 kcal hátra')).toBeInTheDocument()
+    render(<KeretHero vm={VM({ consumedKcal: 2640, targetKcal: 2400 })} onChip={vi.fn()} onWaterRing={vi.fn()} />)
+    expect(screen.getByText('2 640')).toBeInTheDocument()
+    expect(screen.getByLabelText('2 640 kcal ma')).toBeInTheDocument()
   })
 
   it('moving-path smoke: shows 0 at mount, then the final HU-grouped value once the rAF loop completes', async () => {
@@ -79,12 +87,12 @@ describe('KeretHero — count-up', () => {
     // durationMs (CountUp.test.tsx precedent) keeps this fast/non-flaky under real rAF
     // timing while the waitFor timeout stays generous.
     vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Test Browser)')
-    render(<KeretHero vm={VM({ remainingKcal: 30 })} onChip={vi.fn()} onWaterRing={vi.fn()} durationMs={40} />)
+    render(<KeretHero vm={VM({ consumedKcal: 30 })} onChip={vi.fn()} onWaterRing={vi.fn()} durationMs={40} />)
     expect(screen.getByText('0')).toBeInTheDocument()
     await waitFor(() => expect(screen.getByText('30')).toBeInTheDocument(), { timeout: 2000 })
   })
 
-  it('a later vm.remainingKcal change animates from the previously displayed value, not a restart from 0', () => {
+  it('a later vm.consumedKcal change animates from the previously displayed value, not a restart from 0', () => {
     // A manually-flushed rAF queue (rather than real timers) makes the very first animation
     // frame after the `to` change deterministically observable — real rAF timing can't prove
     // "never touches 0 on frame 1" without either a flaky race or a full-duration wait that
@@ -102,12 +110,12 @@ describe('KeretHero — count-up', () => {
       act(() => cbs.forEach((cb) => cb(now)))
     }
 
-    const { rerender } = render(<KeretHero vm={VM({ remainingKcal: 800 })} onChip={vi.fn()} onWaterRing={vi.fn()} durationMs={40} />)
+    const { rerender } = render(<KeretHero vm={VM({ consumedKcal: 800 })} onChip={vi.fn()} onWaterRing={vi.fn()} durationMs={40} />)
     flush(1000) // first frame: p=0, eased=0 — 0→800 sweep starts at 0, same as always
     flush(1040) // p=1 — sweep lands on the mount target
     expect(screen.getByText('800')).toBeInTheDocument()
 
-    rerender(<KeretHero vm={VM({ remainingKcal: 300 })} onChip={vi.fn()} onWaterRing={vi.fn()} durationMs={40} />)
+    rerender(<KeretHero vm={VM({ consumedKcal: 300 })} onChip={vi.fn()} onWaterRing={vi.fn()} durationMs={40} />)
     flush(2000) // first frame of the NEW sweep: p=0, eased=0 — must render `from` (800), not 0
     expect(screen.queryByText('0')).not.toBeInTheDocument()
     expect(screen.getByText('800')).toBeInTheDocument()
@@ -117,15 +125,15 @@ describe('KeretHero — count-up', () => {
   })
 })
 
-describe('KeretHero — of-line', () => {
-  it('renders eddig/target/window-count with no percent', () => {
+describe('KeretHero — hub v3 declutter', () => {
+  it('renders NO of-line: no eyebrow, no "eddig X / Y", no n/m ablak count, no percent', () => {
     stubReduced()
     const { container } = render(<KeretHero vm={VM()} onChip={vi.fn()} onWaterRing={vi.fn()} />)
-    const ofLine = container.querySelector('.khero-of')
-    expect(ofLine?.textContent).toContain('eddig 1 240')
-    expect(ofLine?.textContent).toContain('2 400')
-    expect(ofLine?.textContent).toContain('2/4 ablak')
-    expect(ofLine?.textContent).not.toContain('%')
+    expect(container.querySelector('.khero-of')).toBeNull()
+    const hero = container.querySelector('.khero') as HTMLElement
+    expect(hero.textContent).not.toContain('eddig')
+    expect(hero.textContent).not.toContain('ablak')
+    expect(hero.textContent).not.toContain('2 400') // the target is told by the chips, not a ratio
   })
 })
 
@@ -215,5 +223,17 @@ describe('KeretHero — rings', () => {
     expect(waterBtn).toHaveTextContent('1,2')
     expect(waterBtn).toHaveTextContent('/ 2,5 l')
     expect(waterBtn).not.toHaveTextContent('ml')
+  })
+})
+
+describe('KeretHero — ofLine (the /fuel/log page, mezo-zeeq)', () => {
+  it('renders the of-line only when given', () => {
+    stubReduced()
+    const { container, rerender } = render(
+      <KeretHero vm={VM()} onChip={vi.fn()} onWaterRing={vi.fn()} ofLine="4/6 ablak kész · 1 081 kcal még belefér" />,
+    )
+    expect(container.querySelector('.khero-of')).toHaveTextContent('4/6 ablak kész · 1 081 kcal még belefér')
+    rerender(<KeretHero vm={VM()} onChip={vi.fn()} onWaterRing={vi.fn()} />)
+    expect(container.querySelector('.khero-of')).toBeNull()
   })
 })

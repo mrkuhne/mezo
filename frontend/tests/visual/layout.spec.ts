@@ -21,37 +21,66 @@ const PHONE_VIEWPORTS = [
 ]
 
 for (const vp of PHONE_VIEWPORTS) {
-  test(`fuel mai · no clipped island content @ ${vp.name}`, async ({ page }) => {
+  test(`fuel · the Logolás hero tile and the /fuel/log blocks are reachable, never clipped @ ${vp.name}`, async ({ page }) => {
+    // mezo-byo1: the horizontal window swimlane dissolved — the hub carries ONE Logolás
+    // hero tile and the whole day's logging lives on /fuel/log as VERTICALLY stacked
+    // blocks. The invariant this file exists for is unchanged: content must be REACHABLE —
+    // either it fits, or the page scrolls to it, never eaten by a clipping ancestor.
     await page.setViewportSize({ width: vp.width, height: vp.height })
     await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
     await page.goto('/fuel')
     await page.waitForLoadState('networkidle')
     await page.evaluate(() => document.fonts.ready)
 
-    const m = await page.evaluate(() => {
-      const big = document.querySelector('.isl.isl-big') as HTMLElement | null
-      const view = big?.querySelector('.isl-bigview') as HTMLElement | null
-      const cta = big?.querySelector('.cta-sage') as HTMLElement | null
+    const hub = await page.evaluate(() => {
+      const tile = document.querySelector('.fh-logtile') as HTMLElement | null
       const sc = document.querySelector('.screen-content') as HTMLElement
+      const scRect = sc.getBoundingClientRect()
+      const tileBottom = tile
+        ? Math.round(tile.getBoundingClientRect().bottom - scRect.top + sc.scrollTop)
+        : 0
       return {
-        hasBig: !!big,
-        clipped: big && view ? Math.round(view.scrollHeight - big.getBoundingClientRect().height) : 0,
-        // How far the primary CTA's bottom sits BELOW the island's own bottom edge.
-        // Positive ⇒ the button is outside the clipping box ⇒ unreachable.
-        ctaOverhang: big && cta
-          ? Math.round(cta.getBoundingClientRect().bottom - big.getBoundingClientRect().bottom)
-          : 0,
+        hasTile: !!tile,
+        tileBottom,
+        scrollHeight: sc.scrollHeight,
         pageScrollable: sc.scrollHeight > sc.clientHeight,
         contentOverflow: Math.round(sc.scrollHeight - sc.clientHeight),
       }
     })
+    expect(hub.hasTile, 'the Fuel hub renders its Logolás hero tile').toBe(true)
+    expect(
+      hub.tileBottom,
+      `the hero tile's bottom (${hub.tileBottom}px) sits past the scroller's reachable extent (${hub.scrollHeight}px)`
+    ).toBeLessThanOrEqual(hub.scrollHeight)
+    if (hub.contentOverflow > 0) expect(hub.pageScrollable).toBe(true)
 
-    expect(m.hasBig, 'the mock demo day has a NOW window, so one island is big').toBe(true)
-    expect(m.clipped, `island content clipped by ${m.clipped}px`).toBeLessThanOrEqual(0)
-    expect(m.ctaOverhang, 'the Logold CTA must sit inside its island').toBeLessThanOrEqual(0)
-    // If the sky genuinely needs more room than the viewport gives it, the page must scroll
-    // to reach it — the one thing the flex-fill sky could not do.
-    if (m.contentOverflow > 0) expect(m.pageScrollable).toBe(true)
+    await page.goto('/fuel/log')
+    await page.waitForLoadState('networkidle')
+    await page.evaluate(() => document.fonts.ready)
+
+    const log = await page.evaluate(() => {
+      const blocks = Array.from(document.querySelectorAll('.flog-blk')) as HTMLElement[]
+      const body = document.querySelector('.mz-page-body') as HTMLElement | null
+      const bodyCs = body ? getComputedStyle(body) : null
+      const lastBottom = blocks.length && body
+        ? Math.round(blocks[blocks.length - 1].getBoundingClientRect().bottom
+            - body.getBoundingClientRect().top + body.scrollTop)
+        : 0
+      return {
+        blockCount: blocks.length,
+        // The page body is the vertical scroller the blocks live in.
+        bodyScrollsY: bodyCs ? ['auto', 'scroll'].includes(bodyCs.overflowY) : false,
+        lastBottom,
+        bodyScrollHeight: body ? body.scrollHeight : 0,
+      }
+    })
+    // The mock demo day schedules windows + the trailing Ablakon kívül block.
+    expect(log.blockCount, 'the /fuel/log page stacks its window blocks').toBeGreaterThan(1)
+    expect(log.bodyScrollsY, 'the log page body scrolls vertically rather than cropping blocks').toBe(true)
+    expect(
+      log.lastBottom,
+      `the last block's bottom (${log.lastBottom}px) sits past the body's reachable extent (${log.bodyScrollHeight}px)`
+    ).toBeLessThanOrEqual(log.bodyScrollHeight)
   })
 }
 
@@ -121,4 +150,22 @@ test("today's day view is fully reachable @ iphone-15-pro", async ({ page }) => 
   // If the day view genuinely needs more room than the viewport gives it, the page must
   // scroll to reach it — the one thing a clipped fixed-height box could not do.
   if (m.contentOverflow > 0) expect(m.pageScrollable).toBe(true)
+})
+
+test('fuel · a Kamra-picker sorai sok találatnál sem lapulnak össze', async ({ page }) => {
+  // mezo-bq2t: `.fkp-item` carried `overflow: hidden`, which zeroes the flex-item auto
+  // min-height — so the picker list's `max-height: 400px` flex column squashed every row
+  // down to ~20px once there were more hits than fit. `flex: none` is the fix; this test
+  // pins the row height so it cannot regress silently.
+  await page.setViewportSize({ width: 393, height: 852 })
+  await page.goto('/fuel/log')
+  // The first openable window CTA → navigates to /fuel/log/uj → Kamra source tile → picker.
+  await page.getByRole('button', { name: /^(Logold|Pótold) · / }).first().click()
+  await page.getByRole('button', { name: 'Kamra · hozzáadás' }).click()
+  const rows = page.locator('.fkp-item')
+  await expect(rows.first()).toBeVisible()
+  const heights = await rows.evaluateAll(els => els.map(e => e.getBoundingClientRect().height))
+  expect(heights.length).toBeGreaterThan(4)
+  // A healthy row is ~114px; the squash bug collapsed every row to ~20px.
+  expect(Math.min(...heights)).toBeGreaterThan(60)
 })

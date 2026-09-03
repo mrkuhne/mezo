@@ -47,6 +47,19 @@ class ToolCallAuditTest {
                 new RefsEnvelope.Ref("Sleep", "2026-07-02"));
     }
 
+    /** mezo-b3pp.33 — the trap: {@code Ref} gained a {@code label} component, so a naive
+     *  {@code LinkedHashSet<Ref>} would stop deduping once the same (kind,id) arrives with and
+     *  without a label. Dedup must stay on (kind, id) only, and the FIRST ref wins. */
+    @Test
+    void testAddRef_shouldStillDedupe_whenTheSameKindAndIdArriveWithDifferentLabels() {
+        ToolCallAudit audit = new ToolCallAudit(6, 10);
+        audit.addRef("Memory", "2026-05-21", null);
+        audit.addRef("Memory", "2026-05-21", "valami");
+
+        RefsEnvelope refs = audit.toRefsEnvelope();
+        assertThat(refs.refs()).containsExactly(new RefsEnvelope.Ref("Memory", "2026-05-21", null));
+    }
+
     @Test
     void testRecordCall_shouldNotifyListenerWithTheRecordedCall_whenListenerRegistered() {
         ToolCallAudit audit = new ToolCallAudit(5, 5);

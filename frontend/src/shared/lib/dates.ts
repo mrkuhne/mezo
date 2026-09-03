@@ -42,6 +42,19 @@ const HU_DOW_FULL = ['Vasárnap', 'Hétfő', 'Kedd', 'Szerda', 'Csütörtök', '
 /** Full Hungarian weekday name for a Date — the Today header's real-mode dayLabel. */
 export const huWeekdayFull = (d: Date = new Date()) => HU_DOW_FULL[d.getDay()]
 
+/** '2026-05-20' -> 'Sze' (SHORT Hungarian day-of-week, derived from the real date — never
+ *  from a hardcoded Monday-first axis, where Szerda and Szombat collide as 'Sz'). */
+export function huDow(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  return HU_DOW[new Date(y, m - 1, d).getDay()]
+}
+
+/** '2026-05-20' -> 'Szerda' (FULL Hungarian weekday for an ISO date — accessible names). */
+export function huWeekdayFullIso(iso: string): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  return HU_DOW_FULL[new Date(y, m - 1, d).getDay()]
+}
+
 /** '2026-05-01' -> 'Máj 1' (Hungarian month abbrev, no leading zero). */
 export function huMonthDay(iso: string): string {
   const [, m, d] = iso.split('-').map(Number)
@@ -52,6 +65,14 @@ export function huMonthDay(iso: string): string {
 export function huMonthDayDow(iso: string): string {
   const [y, m, d] = iso.split('-').map(Number)
   return `${huMonthDay(iso)} · ${HU_DOW[new Date(y, m - 1, d).getDay()]}`
+}
+
+/** ISO Monday (YYYY-MM-DD) of the week containing `iso` — Sunday belongs to the PREVIOUS week. */
+export function mondayOf(iso: string): string {
+  const d = new Date(iso + 'T00:00:00')
+  const dow = d.getDay() // 0 = Sunday
+  const back = dow === 0 ? 6 : dow - 1
+  return addDays(iso, -back)
 }
 
 /**

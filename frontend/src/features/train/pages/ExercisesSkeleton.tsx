@@ -12,6 +12,18 @@ export default function ExercisesSkeleton() {
         <div className="col gap-xs"><Skeleton width={120} height={12} /><Skeleton width={190} height={36} /></div>
         <Skeleton width={124} height={44} radius={999} />
       </div>
+      {/* Compact hero (icon + count) + stat strip placeholder */}
+      <div style={{ padding: '0 24px 4px' }}>
+        <div className="row" style={{ justifyContent: 'center', alignItems: 'center', gap: 14, margin: '2px 0 12px' }}>
+          <Skeleton variant="circle" width={57} height={57} />
+          <Skeleton width={56} height={34} />
+        </div>
+        <div className="row gap-sm">
+          <Skeleton width="33%" height={54} radius={16} />
+          <Skeleton width="33%" height={54} radius={16} />
+          <Skeleton width="33%" height={54} radius={16} />
+        </div>
+      </div>
       <div style={{ padding: '0 24px 8px' }}>
         {/* Search field */}
         <Skeleton width="100%" height={48} radius={14} />

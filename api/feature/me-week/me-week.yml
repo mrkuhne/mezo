@@ -34,6 +34,44 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/me/week/{start}/trend:
+    get:
+      tags: [MeWeek]
+      operationId: getMeWeekTrend
+      summary: The persisted weekly-score trend for the N ISO weeks ending at start (inclusive)
+      description: >-
+        The Heti hero's 8-week trend (mezo-d20.7.5). Points are the PERSISTED weekly scores
+        (weekly_score) — a deterministic cache, refreshed whenever the week's own inputs changed
+        after computedAt (and always for a week that has not finished yet). A week whose score is
+        null (fewer than 2 scored days — the "tanulom" gate) yields NO point: the series is short,
+        never padded with a zero. Oldest first.
+      parameters:
+        - name: start
+          in: path
+          required: true
+          description: The last week of the window — its ISO Monday (400 when the date is not a Monday)
+          schema: { type: string, format: date }
+        - name: weeks
+          in: query
+          required: false
+          description: How many ISO weeks the window spans, counting back from start (inclusive)
+          schema: { type: integer, minimum: 1, maximum: 26, default: 8 }
+      responses:
+        '200':
+          description: The window's points (0..weeks entries, oldest first)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MeWeekTrendResponse' }
+        '400':
+          description: start is not an ISO Monday, or weeks is out of range
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     MeWeekSubscores:
@@ -76,6 +114,32 @@ components:
         latestWeightKg: { type: number, nullable: true }
         weightWeeklyRateKg: { type: number, nullable: true, description: EWMA weekly rate from the weight trend }
         totalXp: { type: integer, nullable: true }
+    MeWeekTrendPoint:
+      type: object
+      required: [weekStart, score, computedAt]
+      properties:
+        weekStart: { type: string, format: date, description: The week's ISO Monday }
+        score: { type: integer, description: 0–100 — round(mean of the week's non-null day scores) }
+        sleepAvg: { type: number, nullable: true, description: mean of the week's non-null sleep subscores; null when none }
+        fuelAvg: { type: number, nullable: true }
+        checkinAvg: { type: number, nullable: true }
+        activityAvg: { type: number, nullable: true }
+        computedAt:
+          type: string
+          format: date-time
+          description: >-
+            When this score was last computed from the week's data. The score is a cache, not a
+            truth — a retroactive log can change it; this stamp is what makes the value honest.
+    MeWeekTrendResponse:
+      type: object
+      required: [start, weeks, points]
+      properties:
+        start: { type: string, format: date, description: "The window's last week (ISO Monday), echoed back" }
+        weeks: { type: integer, description: The requested window width — points may be shorter }
+        points:
+          type: array
+          description: Oldest first; only weeks that actually have a score. Never padded.
+          items: { $ref: '#/components/schemas/MeWeekTrendPoint' }
     MeWeekResponse:
       type: object
       required: [start, days, weekly]

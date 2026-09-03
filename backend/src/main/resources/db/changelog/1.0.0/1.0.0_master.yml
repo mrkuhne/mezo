@@ -853,3 +853,122 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609021000_mezo-xwgb_create_diet_settings.sql
+  - changeSet:
+      id: "1.0.0:202608291100_mezo-d20.7.6_learned_fact_weekly_source"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608291100_mezo-d20.7.6_learned_fact_weekly_source.sql
+  - changeSet:
+      id: "1.0.0:202608291200_mezo-d20.7.5_create_weekly_score"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608291200_mezo-d20.7.5_create_weekly_score.sql
+  - changeSet:
+      id: "1.0.0:202608311000_mezo-1gim.6_character_conference_monthly_unique"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608311000_mezo-1gim.6_character_conference_monthly_unique.sql
+  - changeSet:
+      id: "1.0.0:202608311100_mezo-1gim.6_character_conference_bootstrap_unique"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608311100_mezo-1gim.6_character_conference_bootstrap_unique.sql
+  - changeSet:
+      id: "1.0.0:202608311200_mezo-hqfi_create_diagnosis"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608311200_mezo-hqfi_create_diagnosis.sql
+  - changeSet:
+      id: "1.0.0:202608311210_mezo-hqfi_experiment_source_diagnosis"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608311210_mezo-hqfi_experiment_source_diagnosis.sql
+  - changeSet:
+      id: "1.0.0:202608311500_mezo-po3y_diagnosis_sleep_phenomenon"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608311500_mezo-po3y_diagnosis_sleep_phenomenon.sql
+  - changeSet:
+      id: "1.0.0:202608311300_mezo-jyfy_person_mention_enrichment"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608311300_mezo-jyfy_person_mention_enrichment.sql
+  - changeSet:
+      id: "1.0.0:202608311600_mezo-1gim.14_create_character_run"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202608311600_mezo-1gim.14_create_character_run.sql
+  - changeSet:
+      id: "1.0.0:202609011000_mezo-06o0.4_knowledge_node_person_kind"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609011000_mezo-06o0.4_knowledge_node_person_kind.sql
+  - changeSet:
+      id: "1.0.0:202609011200_mezo-d20.8.2.2_workout_session_closing_note"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609011200_mezo-d20.8.2.2_workout_session_closing_note.sql
+  - changeSet:
+      id: "1.0.0:202609011600_mezo-1gim.15_character_dimension_meta_kind"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609011600_mezo-1gim.15_character_dimension_meta_kind.sql
+  - changeSet:
+      id: "1.0.0:202609021000_mezo-06o0.8_companion_message_people_kind"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609021000_mezo-06o0.8_companion_message_people_kind.sql
+  - changeSet:
+      id: "1.0.0:202609021100_mezo-3zue.2_habit_def_framework"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609021100_mezo-3zue.2_habit_def_framework.sql
+  - changeSet:
+      id: "1.0.0:202609021200_mezo-qw37.1_multi_user_accounts"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609021200_mezo-qw37.1_multi_user_accounts.sql
+  - changeSet:
+      id: "1.0.0:202609021400_mezo-gb1s.1_create_tutorial_progress"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609021400_mezo-gb1s.1_create_tutorial_progress.sql
+  - changeSet:
+      id: "1.0.0:202609030042_mezo-qw37.1_app_user_tokens_valid_from"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609030042_mezo-qw37.1_app_user_tokens_valid_from.sql

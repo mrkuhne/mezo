@@ -1,120 +1,206 @@
-import { useState } from 'react'
-import { Icon } from '@/shared/ui/Icon'
+// ============================================================
+// Mezo · PeoplePage — Emberek S3 hub (mezo-06o0.2)
+// Source of truth: docs/design_2.0/prototypes/src/emberek-body.html renderHub() +
+// emberek-head.html `.tile/.t-*/.spotwrap/.badge/.facepile/.hwide/.snip` (×1.18).
+//
+// This is the WeekHub-pattern rewrite: the old single-page grid + filter chips + mention
+// feed is GONE from here — those live in the sibling "A köröm" / "Említések" pages Task
+// 3–5 own. This page is only a hero + 3-cell stat strip + 4 navigation tiles (each its
+// own route, `navigate()`, never a local show/hide) + the Mezo-band chat handoff. ADR 0032
+// still applies: this page owns its own header (‹ Én back chip + Log/Új személy actions),
+// unchanged from the pre-hub PeoplePage (same PersonLogSheet/PersonEditSheet wiring).
+//
+// Honest states (per handoff and Task 1's `hubLines`): a null down/up person renders
+// '—', never a fabricated name. S4 (mezo-06o0.3): the Jelöltek tile now carries the real
+// `usePeople().candidates` count as its `.ppl-hub-badge` and names the first candidate on
+// the tile-line — the honest quiet copy only when there is truly no candidate.
+//
+// S6 (mezo-06o0.8): the Mezo-band no longer derives its own sentence from `hubLines` —
+// it renders `usePeople().mezoNote` verbatim (today's real `people` companion message,
+// or the server's own deterministic fallback). An empty `mezoNote` (real mode before any
+// data) omits the whole band instead of rendering an empty snippet — the rest of the hub
+// is unchanged. The chat handoff (ADR 0032) stays wired to the band regardless.
+// ============================================================
+import { useState, type CSSProperties } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip } from '@/shared/ui/mozaik'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { ClayIcon } from '@/shared/ui/clay'
 import { usePeople } from '@/data/hooks'
-import { PersonCard } from '@/features/me/components/PersonCard'
-import { MentionRow } from '@/features/me/components/MentionRow'
+import { localDateString } from '@/shared/lib/dates'
+import { hubLines } from '@/features/me/logic/peopleDerive'
+import { useChatHandoff } from '@/features/me/logic/useChatHandoff'
 import { PersonLogSheet } from '@/features/me/sheets/PersonLogSheet'
-import { PersonDetailSheet } from '@/features/me/sheets/PersonDetailSheet'
-import type { PersonEntry } from '@/data/types'
+import { PersonEditSheet } from '@/features/me/sheets/PersonEditSheet'
 
-type Filter = 'all' | 'week' | 'flagged'
-const FILTERS: { id: Filter; label: string }[] = [
-  { id: 'all', label: 'Mind' },
-  { id: 'week', label: 'Hét' },
-  { id: 'flagged', label: 'Jelölt' },
-]
+const d = (ms: number) => ({ '--d': `${ms}ms` } as CSSProperties)
 
 export function PeoplePage() {
-  const { people, mentions, logMention } = usePeople()
-  const [filter, setFilter] = useState<Filter>('all')
+  const navigate = useNavigate()
+  const { people, mentions, candidates, mezoNote, logMention } = usePeople()
+  const chat = useChatHandoff()
   const [logOpen, setLogOpen] = useState(false)
-  const [prechosen, setPrechosen] = useState<string | undefined>(undefined)
-  const [detailPerson, setDetailPerson] = useState<PersonEntry | null>(null)
+  const [editOpen, setEditOpen] = useState(false)
 
-  // "Hét" = rolling 7 days anchored to the newest mention (works for live data AND the mock seed;
-  // the old hardcoded '2026-05-18' threshold only made sense for the seed's May dates).
-  const newestMs = mentions.reduce((a, m) => Math.max(a, new Date(m.ts).getTime()), 0)
-  const weekFloorMs = newestMs - 7 * 86_400_000
-  const visible =
-    filter === 'all'
-      ? mentions
-      : filter === 'week'
-        ? mentions.filter(m => new Date(m.ts).getTime() >= weekFloorMs)
-        : mentions.filter(m => m.flagged)
+  const lines = hubLines(people, mentions, new Date())
+  const faces = people.slice(0, 4)
 
   return (
-    <>
-      {/* Header */}
-      <div className="pghead-np lav">
-        <div>
-          <div className="over">Me · Emberek</div>
-          <h1>Kapcsolatok</h1>
-        </div>
+    <MozaikPage tone="rose">
+      <PageHead onBack={() => navigate('/me')} label="‹ Én">
         <button
           type="button"
-          className="pgact-np np-press"
-          onClick={() => { setPrechosen(undefined); setLogOpen(true) }}
-          style={{ background: 'var(--wash-lav)', color: 'var(--lav-deep)' }}
+          className="pgact"
+          onClick={() => setEditOpen(true)}
+          style={{ background: 'var(--mz-cell-rose-bg)', color: 'var(--mz-cell-rose-ink)' }}
         >
-          <Icon name="mic" size={12} /> Log
+          ＋ Új személy
         </button>
-      </div>
+        <button
+          type="button"
+          className="pgact"
+          onClick={() => setLogOpen(true)}
+          style={{ background: 'var(--mz-cell-rose-bg)', color: 'var(--mz-cell-rose-ink)' }}
+        >
+          <ClayIcon name="i-mikrofon" size={12} /> Log
+        </button>
+      </PageHead>
 
-      {/* People grid */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div className="secthead-np">
-          <h3>Aktív kör · {people.length}</h3>
-          <span>tap → részletek</span>
-        </div>
-        <div className="col gap-sm">
-          {people.map(p => (
-            <PersonCard key={p.id} person={p} onTap={() => setDetailPerson(p)} />
-          ))}
-        </div>
-      </div>
+      <PageHero
+        icon="i-emberek"
+        name="Kapcsolatok"
+        big={people.length}
+        sub={`aktív kör · ${lines.mentionsThisWeek} említés e héten`}
+      />
 
-      {/* Mentions feed */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <div className="secthead-np">
-          <h3>Mit naplóztam · friss</h3>
-          <div className="row gap-xs">
-            {FILTERS.map(f => (
-              <button
-                key={f.id}
-                onClick={() => setFilter(f.id)}
-                className="chip"
-                style={filter === f.id
-                  ? { fontSize: 9, padding: '3px 8px', background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' }
-                  : { fontSize: 9, padding: '3px 8px' }}
-              >
-                {f.label}
-              </button>
-            ))}
+      <PageBody>
+        <EntranceGroup>
+          <StatStrip className="rise">
+            <StatCell value={lines.mentionsThisWeek} label="említés · hét" />
+            <StatCell value={lines.topName ?? '—'} label="legtöbbet említett" />
+            <StatCell
+              value={lines.downName ? `${lines.downName} ↘` : '—'}
+              label="hangulat-lejtő"
+            />
+          </StatStrip>
+
+          <div className="mz-mosaic">
+            <button
+              type="button"
+              className="ppl-hub-tile ppl-hub-gold rise"
+              style={d(60)}
+              onClick={() => navigate('/me/people/jeloltek')}
+              aria-label="Jelöltek"
+            >
+              <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-gold-ink)' }}>Jelöltek</span>
+              <div className="ppl-hub-spot">
+                <span className="ppl-hub-anchor">
+                  <ClayIcon name="i-kristaly" size={40} />
+                  {candidates.length > 0 && <span className="ppl-hub-badge">{candidates.length}</span>}
+                </span>
+              </div>
+              <div className="ppl-hub-line">
+                {candidates.length > 0
+                  ? `${candidates[0].name} · visszatérő név`
+                  : 'nincs új arc — az éjszakai kör figyel'}
+              </div>
+            </button>
+
+            <button
+              type="button"
+              className="ppl-hub-tile ppl-hub-rose rise"
+              style={d(90)}
+              onClick={() => navigate('/me/people/kor')}
+              aria-label="A köröm"
+            >
+              <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-rose-ink)' }}>A köröm</span>
+              <div className="ppl-hub-spot">
+                <div className="ppl-facepile">
+                  {faces.map((p) => (
+                    <span key={p.id} className="ppl-fp-avat">{p.initial}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="ppl-hub-line">
+                {people.length} személy · {lines.topName ?? '—'} a legaktívabb
+              </div>
+            </button>
+
+            <button
+              type="button"
+              className="ppl-hub-tile ppl-hub-sky rise"
+              style={d(120)}
+              onClick={() => navigate('/me/people/emlitesek')}
+              aria-label="Említések"
+            >
+              <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-sky-ink)' }}>Említések</span>
+              <div className="ppl-hub-spot">
+                <ClayIcon name="i-naplo" size={40} />
+                {lines.flagCount > 0 && (
+                  <span className="ppl-hub-badge ppl-hub-badge-alert">{lines.flagCount}</span>
+                )}
+              </div>
+              <div className="ppl-hub-line">
+                {lines.mentionsThisWeek} e héten · {lines.flagCount > 0 ? `${lines.flagCount} figyelem-jelzés` : 'minden nyugodt'}
+              </div>
+            </button>
+
+            <button
+              type="button"
+              className="ppl-hub-tile ppl-hub-lav rise"
+              style={d(150)}
+              onClick={() => navigate('/me/people/heti')}
+              aria-label="Heti kép"
+            >
+              <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-lav-ink)' }}>Heti kép</span>
+              <div className="ppl-hub-spot">
+                <ClayIcon name="i-heti" size={40} />
+              </div>
+              <div className="ppl-hub-line">
+                {lines.downName || lines.upName
+                  ? [lines.downName && `${lines.downName} ↘`, lines.upName && `${lines.upName} ↗`]
+                      .filter(Boolean)
+                      .join(' · ')
+                  : 'nincs kiugró irány e héten'}
+              </div>
+            </button>
           </div>
-        </div>
-        <div className="col gap-sm">
-          {visible.slice(0, 8).map(m => (
-            <MentionRow key={m.id} mention={m} person={people.find(p => p.id === m.person_id)} />
-          ))}
-          {visible.length === 0 && (
-            <div className="card" style={{ padding: 18, textAlign: 'center' }}>
-              <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs ebben a szűrésben.</span>
-            </div>
+
+          {mezoNote && (
+            <button
+              type="button"
+              className="ppl-hub-wide rise"
+              style={d(190)}
+              onClick={() => chat.open({ kind: 'day', date: localDateString() })}
+              disabled={chat.pending}
+            >
+              <div className="mz-tile-top">
+                <ClayIcon name="i-mezo" size={24} />
+                <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-coral-ink)', marginLeft: 8 }}>
+                  Mezo · észrevétel
+                </span>
+                <span style={{ marginLeft: 'auto', color: 'var(--mz-ink-mut)' }} aria-hidden="true">›</span>
+              </div>
+              <div className="ppl-hub-snip">{mezoNote}</div>
+            </button>
           )}
-        </div>
-      </div>
+        </EntranceGroup>
+      </PageBody>
 
       {logOpen && (
         <PersonLogSheet
           onClose={() => setLogOpen(false)}
           onSave={logMention}
           people={people}
-          initialPersonId={prechosen}
         />
       )}
 
-      {detailPerson && (
-        <PersonDetailSheet
-          person={detailPerson}
-          mentions={mentions.filter(m => m.person_id === detailPerson.id)}
-          onClose={() => setDetailPerson(null)}
-          onLog={() => {
-            setPrechosen(detailPerson.id)
-            setDetailPerson(null)
-            setLogOpen(true)
-          }}
+      {editOpen && (
+        <PersonEditSheet
+          person={null}
+          onClose={() => setEditOpen(false)}
         />
       )}
-    </>
+    </MozaikPage>
   )
 }

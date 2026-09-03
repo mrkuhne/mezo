@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { WorkoutSummary } from '@/features/train/components/WorkoutSummary'
@@ -52,19 +52,16 @@ describe('WorkoutSummary', () => {
     expect(onFinish).toHaveBeenCalledOnce()
   })
 
-  it('closed mode: no finish CTA, set chips render in full', () => {
+  it('closed mode: no finish CTA, and the swimlane anchors each exercise on its top set', () => {
     render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
       exercises={exercises} challenges={challenges} onExit={() => {}} />)
     expect(screen.queryByRole('button', { name: /Edzés lezárása/ })).toBeNull()
-    expect(screen.getByText(/80\s*×\s*8/)).toBeInTheDocument()
-    expect(screen.getByText('@1')).toBeInTheDocument()
-    expect(screen.queryByLabelText(/Edzés-jegyzet/)).toBeNull() // note is closing-only
-    // ghost chip for the partial Bench Press (plannedSets 4, only 1 logged)
-    expect(screen.getByText('— kimaradt')).toBeInTheDocument()
-    // the "1/4" set counter carries the .part class on that same partial exercise
-    const partCounter = document.querySelector('.wsum-exc .setn.part') as HTMLElement
-    expect(partCounter).not.toBeNull()
-    expect(partCounter.textContent).toBe('1/4')
+    const tile = screen.getByRole('button', { name: /Bench Press/ })
+    expect(tile.querySelector('.top')!.textContent).toMatch(/80\s*×\s*8/)
+    // The partial exercise's foot counts what was logged against what was planned.
+    expect(within(tile).getByText('1/4 szett')).toBeInTheDocument()
+    // …and the unlogged slots show as dashed bars, never as a warning.
+    expect(tile.querySelectorAll('.wr-setbars i.miss')).toHaveLength(3)
   })
 
   it('omits the "Kihívások" section entirely when challenges is empty', () => {
@@ -82,25 +79,29 @@ describe('WorkoutSummary', () => {
     expect(num.textContent).toBe('1/6szett') // visual layout unchanged
   })
 
-  it('a chip with a null rir (warmup) renders no "@" fragment', () => {
+  it('a set with a null rir (warmup) shows no RIR fragment on the exercise view', async () => {
+    const user = userEvent.setup()
     const withWarmup = [
       { id: 'a', name: 'Bench Press', muscle: 'chest-mid', plannedSets: 2, sets: [{ weight: 40, reps: 10, rir: null }], skipped: false },
     ]
     render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
       exercises={withWarmup} challenges={[]} onExit={() => {}} />)
-    const chip = screen.getByText(/40\s*×\s*10/).closest('.wsum-chip') as HTMLElement
-    expect(chip.textContent).not.toContain('@')
-    expect(chip.querySelector('.rir')).toBeNull()
+    await user.click(screen.getByRole('button', { name: /Bench Press/ }))
+    const set = document.querySelector('.wr-set') as HTMLElement
+    expect(set.textContent).not.toContain('RIR')
+    expect(set.querySelector('.rir')).toBeNull()
   })
 
-  it('a partially-logged exercise the user explicitly skipped keeps the "· kihagyva" marker', () => {
-    const partiallySkipped = [
-      { id: 'a', name: 'Bench Press', muscle: 'chest-mid', plannedSets: 4, sets: [{ weight: 80, reps: 8, rir: 1 }], skipped: true },
+  it('an exercise with nothing logged reads "nincs szett" and dims, never strikes a number', () => {
+    const abandoned = [
+      { id: 'a', name: 'Bench Press', muscle: 'chest-mid', plannedSets: 4, sets: [], skipped: true },
     ]
     render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
-      exercises={partiallySkipped} challenges={[]} onExit={() => {}} />)
-    const counter = document.querySelector('.wsum-exc .setn') as HTMLElement
-    expect(counter.textContent).toBe('1/4 · kihagyva')
+      exercises={abandoned} challenges={[]} onExit={() => {}} />)
+    const tile = screen.getByRole('button', { name: /Bench Press/ })
+    expect(tile.className).toContain('dead')
+    expect(within(tile).getByText('nincs szett')).toBeInTheDocument()
+    expect(tile.querySelector('.top')!.textContent).toBe('—')
   })
 
   it('omits the "~N perc" fragment when durationMin is not provided', () => {
@@ -113,14 +114,68 @@ describe('WorkoutSummary', () => {
     const noSets = exercises.map((e) => ({ ...e, sets: [] }))
     render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
       exercises={noSets} challenges={challenges} onExit={() => {}} />)
-    const cells = document.querySelectorAll('.wsum-strip .cell')
+    const cells = document.querySelectorAll('.mz-statstrip .mz-statcell')
     expect(cells[3].textContent).toContain('–')
   })
 
-  it('closing mode still renders the note textarea', () => {
+  // mezo-d20.8.2.1 removed the workout-note textarea because it accepted what you typed and
+  // dropped it. mezo-d20.8.2.2 brings it back WIRED — so the guard flips from "the field must
+  // not exist" to "the field must be connected to something that keeps it".
+  it('offers a wired note field in closing mode, and none when the page owns no draft', () => {
+    const typed: string[] = []
+    const { unmount } = render(<WorkoutSummary title="Pull Day A" eyebrow="Edzés vége" mode="closing"
+      exercises={exercises} challenges={challenges} draftNote="" onDraftNote={(v) => typed.push(v)}
+      onFinish={() => {}} onBack={() => {}} onExit={() => {}} />)
+    expect(screen.getByText('Hogy ment?')).toBeInTheDocument()
+    fireEvent.change(screen.getByLabelText('Hogy ment?'), { target: { value: 'Nehéz nap volt.' } })
+    expect(typed).toEqual(['Nehéz nap volt.'])
+    unmount()
+
+    // No handler → no field. A caller that cannot keep the text must not offer the box.
     render(<WorkoutSummary title="Pull Day A" eyebrow="Edzés vége" mode="closing"
       exercises={exercises} challenges={challenges} onFinish={() => {}} onBack={() => {}} onExit={() => {}} />)
-    expect(screen.getByLabelText('Edzés-jegyzet · opcionális')).toBeInTheDocument()
+    expect(document.querySelector('textarea')).toBeNull()
+  })
+
+  it('renders the saved note read-only in closed mode, and nothing when there is none', () => {
+    const { unmount } = render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
+      exercises={exercises} challenges={challenges} note="Öt órát aludtam." onExit={() => {}} />)
+    expect(screen.getByText('Öt órát aludtam.')).toBeInTheDocument()
+    expect(screen.getByText('Amit aznap írtál')).toBeInTheDocument()
+    expect(document.querySelector('textarea')).toBeNull()
+    unmount()
+
+    // ADR 0010: an absent note is not an empty placeholder — and without an editor (the
+    // just-finished summary) there is no `＋ Jegyzet` either.
+    render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
+      exercises={exercises} challenges={challenges} note={null} onExit={() => {}} />)
+    expect(document.querySelector('.wsum-note-r')).toBeNull()
+    expect(document.querySelector('.wsum-note-add')).toBeNull()
+  })
+
+  it('offers ＋ Jegyzet only where editing is possible, and swaps in the editor', () => {
+    let editing = false
+    const { rerender } = render(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
+      exercises={exercises} challenges={challenges} note={null}
+      onEditNote={() => { editing = true }} onExit={() => {}} />)
+    fireEvent.click(screen.getByRole('button', { name: /Jegyzet ehhez az edzéshez/ }))
+    expect(editing).toBe(true)
+
+    rerender(<WorkoutSummary title="Pull Day A" eyebrow="Lezárva · ma" mode="closed"
+      exercises={exercises} challenges={challenges} note={null} noteEditing
+      draftNote="pótolva" onDraftNote={() => {}} onNoteSave={() => {}} onNoteCancel={() => {}}
+      onEditNote={() => {}} onExit={() => {}} />)
+    expect((screen.getByLabelText('Hogy ment?') as HTMLTextAreaElement).value).toBe('pótolva')
+    expect(screen.getByRole('button', { name: 'Mentés' })).toBeInTheDocument()
+    expect(document.querySelector('.wsum-note-add')).toBeNull()
+  })
+
+  // The comparison tile and the stepping are the REVISIT's own; the closing report gets neither.
+  it('keeps the comparison out of the closing report', () => {
+    render(<WorkoutSummary title="Pull Day A" eyebrow="Edzés vége" mode="closing"
+      exercises={exercises} challenges={challenges} comparison={null} onFinish={() => {}} onBack={() => {}} onExit={() => {}} />)
+    expect(document.querySelector('.wr-cmp')).toBeNull()
+    expect(document.querySelector('.wr-stepnav')).toBeNull()
   })
 
   describe('medals (mezo-wp6n / mezo-w943 split)', () => {
@@ -151,15 +206,20 @@ describe('WorkoutSummary', () => {
       expect(screen.queryByText('Medálok')).not.toBeInTheDocument()
     })
 
-    it('marks the record set chip on the exercise card', () => {
+    it('stamps the swimlane tile and golds the set itself on the exercise view', async () => {
+      const user = userEvent.setup()
       const recordOnSet: Medal[] = [{
         type: 'WEIGHT', tier: 'RECORD', exerciseName: 'Bench Press',
         date: '2026-07-20', setIndex: 0, value: 80, unit: 'KG', weightKg: 80, reps: 8, previousValue: 77.5,
       }]
       render(<WorkoutSummary title="Pull Day A" eyebrow="Edzés vége" mode="closing"
         exercises={exercises} challenges={challenges} medals={recordOnSet} onFinish={() => {}} onBack={() => {}} onExit={() => {}} />)
-      const chip = screen.getByText(/80\s*×\s*8/).closest('.wsum-chip') as HTMLElement
-      expect(chip.className).toContain('rec')
+      const tile = screen.getByRole('button', { name: /Bench Press/ })
+      expect(within(tile).getByText('REKORD')).toBeInTheDocument()
+      expect(tile.querySelectorAll('.wr-setbars i.med')).toHaveLength(1)
+
+      await user.click(tile)
+      expect((document.querySelector('.wr-set') as HTMLElement).className).toContain('rec')
     })
   })
 })

@@ -56,4 +56,34 @@ class RunSignalCalculatorIT extends AbstractIntegrationTest {
         assertThat(signal.kind()).isEqualTo("steady"); // unknown sessionKey → default steady
         assertThat(signal.durationMin()).isEqualTo(45);
     }
+
+    @Test
+    void testCompute_shouldCarryThePrescribedRungs_whenLoggedAgainstAPyramidSession() {
+        UUID user = databasePopulator.populateUser("pyramid@test.local");
+        // Pyramid rungs are enumerated one segment each — the scorer weights partial runs on them.
+        RunningBlockEntity block = runningPopulator.createPyramidBlock(user, 15, 30, 45, 60, 45, 30, 15);
+        RunSessionLogEntity log = runningPopulator.createRunLog(
+            user, block.getId(), 1, "w1-pyramid", LocalDate.parse("2026-06-19"),
+            4, 8, null, null, 20);
+
+        RunSignal signal = calculator.compute(user, log.getId());
+
+        assertThat(signal.kind()).isEqualTo("pyramid");
+        assertThat(signal.completedRounds()).isEqualTo(4);
+        assertThat(signal.prescribedWorkSecs()).containsExactly(15, 30, 45, 60, 45, 30, 15);
+    }
+
+    @Test
+    void testCompute_shouldCarryNoRungs_whenSprintSession() {
+        UUID user = databasePopulator.populateUser("sprintrungs@test.local");
+        RunningBlockEntity block = runningPopulator.createSprintBlock(user);
+        RunSessionLogEntity log = runningPopulator.createRunLog(
+            user, block.getId(), 1, "w1-sprint", LocalDate.parse("2026-06-22"),
+            6, 8, null, null, 32);
+
+        RunSignal signal = calculator.compute(user, log.getId());
+
+        // a sprint's single work segment is a template repeated `rounds` times, not an enumeration
+        assertThat(signal.prescribedWorkSecs()).isNull();
+    }
 }

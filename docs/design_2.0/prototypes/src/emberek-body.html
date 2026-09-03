@@ -1,0 +1,806 @@
+<div class="wrap">
+  <p class="eyebrow">Mezo · oldalépítés · Emberek</p>
+  <h1>Emberek</h1>
+  <p class="lede">A kapcsolataid oldala — <strong>csempés hub</strong>, a Heti-recept szerint: a hub egy
+  képernyő, minden tartalom saját aloldalon él. Az adatokat három út tölti: a kézi log-chip, a mentéskor
+  futó <strong>azonnali név-match</strong> (napló, reflexió, chat), és az <strong>éjszakai LLM-kör</strong>,
+  ami tónust, kontextust és esemény-kapcsolatokat fűz az említésekhez, új arcokra pedig
+  <strong>jelöltet</strong> javasol. Minden személy a tudásgráfban is él (<code>PERSON</code> node).</p>
+
+  <div class="stage">
+    <div class="phone">
+      <div class="screen play" id="scr">
+        <div class="isl"></div>
+        <div class="p-status"><span>9:41</span><span>87%</span></div>
+
+        <!-- ============ HUB ============ -->
+        <div class="page-head">
+          <button class="backbtn" id="backEn">‹ Én</button>
+          <button class="pgact" id="micBtn"><svg width="11" height="11" viewBox="0 0 100 100" style="vertical-align:-1px;"><use href="#i-mikrofon"/></svg> Log</button>
+          <button class="pgact hot" id="newBtn" style="margin-left:6px;">＋ Új személy</button>
+        </div>
+        <div class="page-hero">
+          <div class="nm">Kapcsolatok</div>
+          <div class="mrow" style="justify-content:center;gap:12px;">
+            <svg width="52" height="52" viewBox="0 0 100 100"><use href="#i-emberek"/></svg>
+            <div class="bignum" id="heroBig">5</div>
+          </div>
+          <div class="sb" id="heroSub">aktív kör</div>
+        </div>
+        <div class="page-body" id="hubBody" style="overflow-y:hidden;"></div>
+        <div class="homebar"></div>
+
+        <!-- ============ JELÖLTEK ============ -->
+        <div class="page" id="page-jel">
+          <div class="page-head"><button class="backbtn" data-back="page-jel">‹ Emberek</button></div>
+          <div class="page-hero">
+            <div class="nm">Jelöltek</div>
+            <div class="mrow" style="justify-content:center;gap:12px;">
+              <svg width="44" height="44" viewBox="0 0 100 100"><use href="#i-kristaly"/></svg>
+              <div class="bignum" id="jelBig">2</div>
+            </div>
+            <div class="sb">új arc a szövegeidből · te döntesz</div>
+          </div>
+          <div class="page-body" id="jelBody"></div>
+          <div class="homebar" style="visibility:hidden;"></div>
+        </div>
+
+        <!-- ============ A KÖRÖM ============ -->
+        <div class="page" id="page-kor">
+          <div class="page-head">
+            <button class="backbtn" data-back="page-kor">‹ Emberek</button>
+            <button class="pgact hot" id="newBtn2">＋ Új személy</button>
+          </div>
+          <div class="page-hero">
+            <div class="nm">A köröm</div>
+            <div class="mrow" style="justify-content:center;gap:12px;">
+              <svg width="44" height="44" viewBox="0 0 100 100"><use href="#i-emberek"/></svg>
+              <div class="bignum" id="korBig">5</div>
+            </div>
+            <div class="sb">tap → részletek</div>
+          </div>
+          <div class="page-body" id="korBody"></div>
+          <div class="homebar" style="visibility:hidden;"></div>
+        </div>
+
+        <!-- ============ EMLÍTÉSEK ============ -->
+        <div class="page" id="page-eml">
+          <div class="page-head">
+            <button class="backbtn" data-back="page-eml">‹ Emberek</button>
+            <button class="pgact" id="micBtn2"><svg width="11" height="11" viewBox="0 0 100 100" style="vertical-align:-1px;"><use href="#i-mikrofon"/></svg> Log</button>
+          </div>
+          <div class="page-hero">
+            <div class="nm">Említések</div>
+            <div class="mrow" style="justify-content:center;gap:12px;">
+              <svg width="44" height="44" viewBox="0 0 100 100"><use href="#i-naplo"/></svg>
+              <div class="bignum" id="emlBig">5</div>
+            </div>
+            <div class="sb">e héten · minden forrásból</div>
+          </div>
+          <div class="page-body" id="emlBody"></div>
+          <div class="homebar" style="visibility:hidden;"></div>
+        </div>
+
+        <!-- ============ HETI KÉP ============ -->
+        <div class="page" id="page-heti">
+          <div class="page-head"><button class="backbtn" data-back="page-heti">‹ Emberek</button></div>
+          <div class="page-hero">
+            <div class="nm">Heti kép</div>
+            <div class="mrow" style="justify-content:center;gap:12px;">
+              <svg width="44" height="44" viewBox="0 0 100 100"><use href="#i-heti"/></svg>
+              <div class="bignum">7<span style="font-size:13px;font-weight:600;color:#6E6257;"> nap</span></div>
+            </div>
+            <div class="sb">kiben mi változott</div>
+          </div>
+          <div class="page-body" id="hetiBody"></div>
+          <div class="homebar" style="visibility:hidden;"></div>
+        </div>
+
+        <!-- ============ SZEMÉLY-RÉSZLETEK ============ -->
+        <div class="page" id="page-det" style="z-index:11;">
+          <div class="page-head">
+            <button class="backbtn" data-back="page-det">‹ A köröm</button>
+            <button class="pgact" id="editBtn">✎ Szerkesztés</button>
+          </div>
+          <div class="page-body" id="detBody"></div>
+          <div class="homebar" style="visibility:hidden;"></div>
+        </div>
+
+        <!-- ============ SHEETEK ============ -->
+        <div class="sheetback" id="sback"></div>
+
+        <div class="bsheet" id="sh-log" role="dialog" aria-label="Említés logolása">
+          <div class="grab"></div>
+          <b style="font-size:13px;"><svg width="13" height="13" viewBox="0 0 100 100" style="vertical-align:-1px;"><use href="#i-mikrofon"/></svg> Említés logolása</b>
+          <div class="shlbl">Ki?</div>
+          <div class="selrow" id="logWho"></div>
+          <div class="shlbl">Hogy érintett?</div>
+          <div class="selrow" id="logTone"></div>
+          <div class="shlbl">Kontextus</div>
+          <div class="selrow" id="logCtx"></div>
+          <div class="shlbl">Jegyzet</div>
+          <textarea class="shin" id="logNote" placeholder="pár szó, hogy mi történt… (max 500)"></textarea>
+          <button class="cta shcta" id="logSave" disabled>✓ Mentés</button>
+          <div class="micnote">hangból is jöhet — a beszéd a jegyzetbe íródik, sosem küld magától</div>
+        </div>
+
+        <div class="bsheet" id="sh-new" role="dialog" aria-label="Új személy">
+          <div class="grab"></div>
+          <b style="font-size:13px;">Új személy</b>
+          <div class="shlbl">Név</div>
+          <input class="shin" id="npName" placeholder="pl. Marci">
+          <div class="shlbl">Becenevek · a névfigyeléshez</div>
+          <div class="aliasrow" id="npAliases">
+            <input class="shin" id="npAliasIn" placeholder="pl. Marcika" style="width:120px;flex:none;">
+            <button class="ghost" id="npAliasAdd" style="padding:5px 11px;">＋</button>
+          </div>
+          <div class="shlbl">Kapcsolat</div>
+          <div class="selrow" id="npRel"></div>
+          <div class="shlbl">Jegyzet</div>
+          <textarea class="shin" id="npNote" placeholder="honnan ismered, mi fontos…"></textarea>
+          <button class="cta shcta" id="npSave" disabled>✓ Felveszem</button>
+          <div class="micnote">mentés után a napló · reflexió · chat szövegében minden név- és becenév-találat magától említés lesz</div>
+        </div>
+
+        <div class="toast" id="toast"></div>
+      </div>
+    </div>
+
+    <aside>
+      <div>
+        <h2>Hub-recept · kevés scroll</h2>
+        <ul>
+          <li><strong>Egy képernyő</strong>: hero + három mini-cella + négy csempe + a Mezo-észrevétel
+          sáv. Minden lista a saját aloldalán él.</li>
+          <li><strong>Jelöltek</strong> (arany, badge) — az éjszakai kör új arcai, elfogad / elvet.</li>
+          <li><strong>A köröm</strong> (rózsa, facepile) — személy-rács hangulat-sparkkal → részletek.</li>
+          <li><strong>Említések</strong> (ég) — szűrhető feed forrás-ikonokkal, ✕ visszavonás.</li>
+          <li><strong>Heti kép</strong> (levendula) — kiben mi változott: irányok és okok.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Honnan jönnek az adatok</h2>
+        <ol>
+          <li><strong>Kézi chip</strong> — a Log sheet: ki · tónus · kontextus · jegyzet.</li>
+          <li><strong>Azonnali név-match</strong> — mentés után a napló / reflexió / hála / chat
+          szövegében a nevek és becenevek találatai rögtön említéssé válnak, a mondat idézetként
+          megőrződik.</li>
+          <li><strong>Éjszakai LLM-kör</strong> — tónus + intenzitás, kontextus-címke,
+          esemény-kapcsolat; ismeretlen visszatérő nevekre jelölt. Bizonytalan utalás
+          („a főnököm") sosem ír adatot.</li>
+        </ol>
+      </div>
+      <p class="note">A feed minden automata sora a forrás clay-ikonját viseli (napló · Mezo-chat ·
+      kézi chip), és ✕-szel visszavonható — az automatika sosem ír olyat, amit ne lehetne egy
+      mozdulattal törölni.</p>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  var TONES = {
+    jo:    { lb: 'Jó',    c: '#7FA06C' },
+    ok:    { lb: 'OK',    c: '#B5AA9C' },
+    vegyes:{ lb: 'Vegyes',c: '#C9962E' },
+    nehez: { lb: 'Nehéz', c: '#C4694F' }
+  };
+  var CTX = {
+    kozos:      { lb: 'közös program', c: '#C46FA0' },
+    edzes:      { lb: 'edzés',         c: '#FF7A55' },
+    munka:      { lb: 'munka',         c: '#4E8FB8' },
+    csalad:     { lb: 'család',        c: '#8FAF7E' },
+    konfliktus: { lb: 'konfliktus',    c: '#C9962E' },
+    segitseg:   { lb: 'segítség',      c: '#6C5FA3' }
+  };
+  var RELS = ['Társ', 'Barát', 'Család', 'Kolléga', 'Edzőtárs'];
+  var SRC = {
+    naplo: { ic: 'i-naplo',    lb: 'napló' },
+    chat:  { ic: 'i-mezo',     lb: 'Mezo-chat' },
+    chip:  { ic: 'i-checkin',  lb: 'kézi chip' }
+  };
+
+  var PEOPLE = [
+    { id: 'petra', nm: 'Petra', in: 'P', rl: 'Társ', ac: '#8FAF7E', av: 80, week: 4, total: 84,
+      cad: 'napi ritmus', mood: 'pozitív', arrow: '↗', why: 'több közös este, mint bármelyik héten',
+      trend: [55, 60, 58, 70, 66, 74, 78, 82],
+      ctx: [['kozos', 46], ['csalad', 24], ['edzes', 16], ['munka', 14]],
+      facts: ['esti hosszú séták', 'közös vacsora-rítus', 'nyugtató jelenlét'],
+      events: [
+        { t: 'Nyári szabadság · júl 14–21', mt: 'életesemény · 9 közös említés', kind: 'amber', ic: 'i-nap' },
+        { t: 'Esti rutin · cél', mt: 'cél · támogatja', kind: 'sage', ic: 'i-cel' }
+      ] },
+    { id: 'bence', nm: 'Bence', in: 'B', rl: 'Barát', ac: '#C9962E', av: 55, week: 2, total: 31,
+      cad: 'heti ritmus', mood: 'vegyes · lejtő', arrow: '↘', why: 'harmadik lemondott program egymás után',
+      trend: [72, 70, 66, 60, 58, 50, 44, 40],
+      ctx: [['kozos', 38], ['edzes', 34], ['konfliktus', 28]],
+      facts: ['közös futások', 'harmadszor halasztott'],
+      events: [
+        { t: 'Lemondott programok × hangulat', mt: 'minta · figyelem alatt', kind: 'lav', ic: 'i-minta' }
+      ] },
+    { id: 'adam', nm: 'Ádám', in: 'Á', rl: 'Edzőtárs', ac: '#8FAF7E', av: 65, week: 1, total: 14,
+      cad: 'heti ritmus', mood: 'pozitív', arrow: '→', why: 'stabil edzés-ritmus',
+      trend: [40, 44, 50, 48, 56, 60, 62, 64],
+      ctx: [['edzes', 78], ['kozos', 22]],
+      facts: ['jó tempót diktál', 'Push Day-társ'],
+      events: [
+        { t: 'Futóblokk · 8 hét', mt: 'cél · együtt csináljátok', kind: 'sage', ic: 'i-futas' }
+      ] },
+    { id: 'reka', nm: 'Réka', in: 'R', rl: 'Kolléga', ac: '#C46FA0', av: 40, week: 1, total: 11,
+      cad: 'ritkuló', mood: 'semleges', arrow: '→', why: 'a riport lezárult, oldódik a feszültség',
+      trend: [50, 46, 44, 48, 42, 40, 38, 40],
+      ctx: [['munka', 70], ['konfliktus', 18], ['segitseg', 12]],
+      facts: ['projekt-társ a Q3-ban'],
+      events: [] },
+    { id: 'mama', nm: 'Mama', in: 'M', rl: 'Család', ac: '#8FAF7E', av: 70, week: 1, total: 26,
+      cad: 'heti hívás', mood: 'pozitív', arrow: '→', why: 'tartja a vasárnapi rítust',
+      trend: [60, 62, 60, 64, 66, 64, 68, 70],
+      ctx: [['csalad', 82], ['segitseg', 18]],
+      facts: ['vasárnapi hívás-rítus'],
+      events: [] },
+    { id: 'dani', nm: 'Dani', in: 'D', rl: 'Barát', ac: '#B5AA9C', av: 25, week: 0, total: 6,
+      cad: 'ritkuló', mood: 'semleges', arrow: '→', why: 'három hete csend',
+      trend: [40, 35, 30, 20, 10, 5, 0, 0],
+      ctx: [['kozos', 55], ['segitseg', 45]],
+      facts: ['régi gimis barát'],
+      events: [] }
+  ];
+
+  var MENTIONS = [
+    { t: 'MA 12:40', src: 'naplo', pid: 'petra', tone: 'jo', ctx: 'kozos', week: true, auto: true,
+      q: '„Hosszú vacsi Petrával, csendben — jó este volt."',
+      edge: '↔ Esti rutin · cél' },
+    { t: 'MA 08:10', src: 'chat', pid: 'bence', tone: 'nehez', ctx: 'konfliktus', week: true, auto: true, flag: true,
+      q: '„Megint elmaradt a közös futás — Bence harmadszor tolta el."',
+      edge: '↔ minta: lemondott programok × hangulat' },
+    { t: 'TEGNAP', src: 'chip', pid: 'adam', tone: 'jo', ctx: 'edzes', week: true,
+      q: '„Push Day együtt — jó tempót diktált."' },
+    { t: 'TEGNAP', src: 'naplo', pid: 'mama', tone: 'jo', ctx: 'csalad', week: true, auto: true,
+      q: '„Mama hívott, sokat nevettünk a balatoni terven."' },
+    { t: 'AUG 27', src: 'naplo', pid: 'reka', tone: 'vegyes', ctx: 'munka', week: true, auto: true,
+      q: '„Rékával végre lezártuk a riportot, de feszült volt a nap."' },
+    { t: 'AUG 24', src: 'chip', pid: 'petra', tone: 'jo', ctx: 'csalad', week: false,
+      q: '„Vasárnapi piac, ráérős reggel."' },
+    { t: 'AUG 22', src: 'chat', pid: 'bence', tone: 'ok', ctx: 'kozos', week: false, auto: true,
+      q: '„Bence átjött meccset nézni — régen volt ilyen."' }
+  ];
+
+  var CANDS = [
+    { nm: 'Marci', ev: '3 említés · e heti naplók', q: '„…délben futottam Marcival a gáton, jó volt kimozdulni…"' },
+    { nm: 'Dóri', ev: '2 említés · chat + reflexió', q: '„…Dóri ajánlotta a gerinctornát, kipróbálom…"' }
+  ];
+
+  var F = { scope: 'mind', tone: null, ctx: null };
+  var curPid = null;
+  var logSel = { pid: null, tone: null, ctx: null };
+  var npState = { aliases: [] , rel: null };
+
+  var $ = function (id) { return document.getElementById(id); };
+  var scr = $('scr');
+
+  var toastTm;
+  function toast(m) {
+    var t = $('toast');
+    t.textContent = m; t.classList.add('on');
+    clearTimeout(toastTm);
+    toastTm = setTimeout(function () { t.classList.remove('on'); }, 2200);
+  }
+
+  function replay(el) { el.classList.remove('play'); void el.offsetWidth; el.classList.add('play'); }
+  function ic(name, s) { return '<svg width="' + s + '" height="' + s + '" viewBox="0 0 100 100"><use href="#' + name + '"/></svg>'; }
+
+  function personById(pid) {
+    for (var i = 0; i < PEOPLE.length; i++) if (PEOPLE[i].id === pid) return PEOPLE[i];
+    return null;
+  }
+  function weekCount() {
+    var n = 0;
+    for (var i = 0; i < MENTIONS.length; i++) if (MENTIONS[i].week) n++;
+    return n;
+  }
+  function flagCount() {
+    var n = 0;
+    for (var i = 0; i < MENTIONS.length; i++) if (MENTIONS[i].week && MENTIONS[i].flag) n++;
+    return n;
+  }
+
+  /* ---------- HUB ---------- */
+  function renderHub() {
+    $('heroBig').textContent = PEOPLE.length;
+    $('heroSub').textContent = 'aktív kör · ' + weekCount() + ' említés e héten';
+    var top = PEOPLE.slice().sort(function (a, b) { return b.week - a.week; })[0];
+    var down = null, up = null;
+    PEOPLE.forEach(function (p) { if (p.arrow === '↘') down = down || p; if (p.arrow === '↗') up = up || p; });
+
+    var h = '<div class="statstrip rise" style="--d:20ms;">' +
+      '<div class="statcell"><b>' + weekCount() + '</b><small>említés · hét</small></div>' +
+      '<div class="statcell"><b>' + top.nm + '</b><small>legtöbbet említett</small></div>' +
+      '<div class="statcell"><b style="color:#A8801F;">' + (down ? down.nm + ' ↘' : '—') + '</b><small>hangulat-lejtő</small></div></div>';
+
+    h += '<div class="mosaic">';
+    h += '<div class="tile t-gold rise" style="--d:60ms;" data-go="page-jel" role="button" tabindex="0" aria-label="Jelöltek">' +
+      '<span class="p-eyebrow" style="color:#A8801F;">Jelöltek</span>' +
+      '<div class="spotwrap"><span class="anchor">' + ic('i-kristaly', 34) +
+      (CANDS.length ? '<span class="badge">' + CANDS.length + '</span>' : '') + '</span></div>' +
+      '<div class="tile-line">' + (CANDS.length ? CANDS[0].nm + ' · ' + CANDS[0].ev : 'nincs új arc — az éjszakai kör figyel') + '</div></div>';
+
+    var faces = '<div class="facepile">';
+    PEOPLE.slice(0, 4).forEach(function (p) {
+      faces += '<span class="pavat" style="--ac:' + p.ac + ';--av:' + p.av + '%;"><span class="in">' + p.in + '</span></span>';
+    });
+    faces += '</div>';
+    h += '<div class="tile t-rose rise" style="--d:90ms;" data-go="page-kor" role="button" tabindex="0" aria-label="A köröm">' +
+      '<span class="p-eyebrow" style="color:#8E3F6F;">A köröm</span>' +
+      '<div class="spotwrap">' + faces + '</div>' +
+      '<div class="tile-line">' + PEOPLE.length + ' személy · ' + top.nm + ' a legaktívabb</div></div>';
+
+    h += '<div class="tile t-sky rise" style="--d:120ms;" data-go="page-eml" role="button" tabindex="0" aria-label="Említések">' +
+      '<span class="p-eyebrow" style="color:#33749C;">Említések</span>' +
+      '<div class="spotwrap"><span class="anchor">' + ic('i-naplo', 34) +
+      (flagCount() ? '<span class="badge" style="background:linear-gradient(135deg,#FF7A55,#FF5B36);box-shadow:0 3px 8px -2px rgba(255,91,54,0.6);animation:none;">' + flagCount() + '</span>' : '') +
+      '</span></div>' +
+      '<div class="tile-line">' + weekCount() + ' e héten · ' + (flagCount() ? flagCount() + ' figyelem-jelzés' : 'minden nyugodt') + '</div></div>';
+
+    h += '<div class="tile t-lav rise" style="--d:150ms;" data-go="page-heti" role="button" tabindex="0" aria-label="Heti kép">' +
+      '<span class="p-eyebrow" style="color:#5D4FA0;">Heti kép</span>' +
+      '<div class="spotwrap">' + ic('i-heti', 34) + '</div>' +
+      '<div class="tile-line">' + (down ? down.nm + ' ↘' : '') + (down && up ? ' · ' : '') + (up ? up.nm + ' ↗' : '') + '</div></div>';
+    h += '</div>';
+
+    h += '<div class="hwide rise" style="--d:190ms;" id="mezoBand" role="button" tabindex="0">' +
+      '<div class="mrow">' + ic('i-mezo', 20) + '<span class="p-eyebrow" style="color:#A84A26;">Mezo · észrevétel</span><span style="margin-left:auto;color:#A2958A;">›</span></div>' +
+      '<div class="snip">Bencével három terv maradt el egymás után, és a tónus is nehezült. Rákérdezzek nála hétvégén egy közös futásra?</div></div>';
+
+    $('hubBody').innerHTML = h;
+  }
+
+  /* ---------- JELÖLTEK ---------- */
+  function renderJel() {
+    $('jelBig').textContent = CANDS.length;
+    var h = '';
+    if (!CANDS.length) {
+      h = '<div class="empty9 rise" style="--d:0ms;">Nincs több jelölt — az éjszakai kör hajnalban néz újra.</div>';
+    }
+    CANDS.forEach(function (c, i) {
+      h += '<div class="candt rise" style="--d:' + (i * 40) + 'ms;' + (i ? 'animation:none;' : '') + '">' +
+        '<div class="mrow">' + ic('i-kristaly', 14) +
+        '<b style="font-size:11px;">Új arc · ' + c.nm + '</b>' +
+        '<span class="figy" style="margin-left:auto;">JELÖLT</span></div>' +
+        '<div class="q">' + c.q + '</div>' +
+        '<div class="ev">' + c.ev + '</div>' +
+        '<div class="candbtns"><button class="cta gold" data-cacc="' + i + '">Felveszem</button>' +
+        '<button class="ghost" data-crej="' + i + '">Nem ő az / nem kell</button></div></div>';
+    });
+    h += '<div class="foot9 rise" style="--d:120ms;">Jelöltet csak visszatérő, ismeretlen név kap. Az elvetett nevet nem javasolja újra.</div>';
+    $('jelBody').innerHTML = h;
+  }
+
+  /* ---------- A KÖRÖM ---------- */
+  function sparkHtml(p) {
+    var h = '<div class="pspark">';
+    for (var i = 0; i < p.trend.length; i++) {
+      h += '<i style="height:' + Math.round(p.trend[i] * 0.16) + 'px;background:' + p.ac +
+        ';opacity:' + (0.45 + i * 0.07) + ';--d:' + (250 + i * 40) + 'ms;"></i>';
+    }
+    return h + '</div>';
+  }
+  function ctxDots(p) {
+    var h = '<div class="ctxdots">';
+    for (var i = 0; i < Math.min(3, p.ctx.length); i++) h += '<i style="background:' + CTX[p.ctx[i][0]].c + ';"></i>';
+    return h + '</div>';
+  }
+  function renderKor() {
+    $('korBig').textContent = PEOPLE.length;
+    var h = '<div class="pgrid rise" style="--d:0ms;">';
+    PEOPLE.forEach(function (p) {
+      h += '<div class="persont' + (p.fresh ? ' fresh' : '') + '" data-det="' + p.id + '" role="button" tabindex="0">' +
+        '<div class="pavat" style="--ac:' + p.ac + ';--av:' + p.av + '%;"><div class="in">' + p.in + '</div></div>' +
+        '<div class="nm">' + p.nm + '</div><div class="rl">' + p.rl + '</div>' +
+        sparkHtml(p) + ctxDots(p) +
+        '<div class="mt">' + p.week + '× e héten · ' + p.total + ' említés</div></div>';
+      p.fresh = false;
+    });
+    h += '</div>';
+    h += '<div class="foot9 rise" style="--d:80ms;">A gyűrű a kapcsolat hangulat-szintje, a pöttyök a jellemző kontextusok.</div>';
+    $('korBody').innerHTML = h;
+  }
+
+  /* ---------- EMLÍTÉSEK ---------- */
+  function dayIdx(t) {
+    if (t.indexOf('MOST') === 0 || t.indexOf('MA') === 0) return 6;
+    if (t.indexOf('TEGNAP') === 0) return 5;
+    if (t.indexOf('AUG 27') === 0) return 2;
+    return -1;
+  }
+  function rhythmHtml() {
+    var days = [[], [], [], [], [], [], []];
+    MENTIONS.forEach(function (m) {
+      if (!m.week) return;
+      var di = dayIdx(m.t);
+      if (di >= 0) days[di].push(m.tone);
+    });
+    var lbs = ['H', 'K', 'SZE', 'CS', 'P', 'SZO', 'MA'];
+    var h = '<div class="rhythm rise" style="--d:0ms;"><div class="mrow">' +
+      '<span class="p-eyebrow" style="color:#33749C;">A hét ritmusa</span>' +
+      '<span class="gut" style="margin-left:auto;">' + weekCount() + ' említés</span></div><div class="rcols">';
+    for (var i = 0; i < 7; i++) {
+      var tones = days[i];
+      var col = '#D8E2E9';
+      if (tones.indexOf('nehez') >= 0) col = TONES.nehez.c;
+      else if (tones.indexOf('vegyes') >= 0) col = TONES.vegyes.c;
+      else if (tones.length) col = TONES.jo.c;
+      h += '<div class="rcol' + (i === 6 ? ' today' : '') + '"><span class="bar" style="height:' +
+        (tones.length ? 8 + tones.length * 13 : 3) + 'px;background:' + col + ';--d:' + (120 + i * 55) + 'ms;"></span></div>';
+    }
+    h += '</div><div class="rax">';
+    for (i = 0; i < 7; i++) h += '<span' + (i === 6 ? ' class="today"' : '') + '>' + lbs[i] + '</span>';
+    return h + '</div></div>';
+  }
+  function chipRow() {
+    function ch(on, attr, val, lb, tint) {
+      return '<button class="fchip' + (on ? ' on' : '') + '"' +
+        (on && tint ? ' style="background:' + tint + '1f;border-color:' + tint + ';color:#2B2118;"' : '') +
+        ' data-' + attr + '="' + val + '">' + lb + '</button>';
+    }
+    var h = '<div class="chiprow rise" style="--d:40ms;">';
+    h += ch(F.scope === 'mind', 'fsc', 'mind', 'Mind') + ch(F.scope === 'het', 'fsc', 'het', 'Hét');
+    h += ch(F.tone === 'jo', 'fto', 'jo', '<span class="cdot" style="background:#7FA06C;"></span>Jó', '#7FA06C') +
+         ch(F.tone === 'nehez', 'fto', 'nehez', '<span class="cdot" style="background:#C4694F;"></span>Nehéz', '#C4694F');
+    ['munka', 'edzes', 'kozos', 'konfliktus'].forEach(function (k) {
+      h += ch(F.ctx === k, 'fcx', k, '<span class="cdot" style="background:' + CTX[k].c + ';"></span>' + CTX[k].lb, CTX[k].c);
+    });
+    return h + '</div>';
+  }
+  function feedHtml() {
+    var h = '', d = 80, shown = 0;
+    for (var i = 0; i < MENTIONS.length; i++) {
+      var m = MENTIONS[i], p = personById(m.pid);
+      if (!p) continue;
+      if (F.scope === 'het' && !m.week) continue;
+      if (F.tone && m.tone !== F.tone) continue;
+      if (F.ctx && m.ctx !== F.ctx) continue;
+      shown++;
+      var wash = (m.tone === 'ok') ? '' : ' tw-' + m.tone;
+      h += '<div class="mrowt' + wash + ' rise" style="--d:' + d + 'ms;">' +
+        '<div class="mrow"><span class="srcdisc" title="' + SRC[m.src].lb + '">' + ic(SRC[m.src].ic, 13) + '</span>' +
+        '<div class="pavat" style="--ac:' + p.ac + ';--av:' + p.av + '%;width:22px;height:22px;flex:none;"><div class="in" style="width:17px;height:17px;font-size:7.5px;">' + p.in + '</div></div>' +
+        '<div class="grow"><b style="font-size:9.8px;">' + p.nm + '</b>' +
+        '<div class="gut" style="margin-top:0;">' + m.t + ' · ' + SRC[m.src].lb + '</div></div>' +
+        '<span class="ctxch" style="background:' + CTX[m.ctx].c + '1a;color:' + CTX[m.ctx].c + ';">' + CTX[m.ctx].lb + '</span>' +
+        (m.flag ? '<span class="figy pulse">FIGYELEM</span>' : '') +
+        (m.auto ? '<button class="mdel" data-mdel="' + i + '" aria-label="Említés törlése">✕</button>' : '') +
+        '</div><div class="q">' + m.q + '</div>' +
+        (m.edge ? '<div class="edge">kapcsolódik · ' + m.edge + '</div>' : '') + '</div>';
+      d += 35;
+    }
+    if (!shown) h += '<div class="empty9 rise" style="--d:80ms;">Erre a szűrésre nincs említés — próbáld tágabban.</div>';
+    return h;
+  }
+  function renderEml() {
+    $('emlBig').textContent = weekCount();
+    $('emlBody').innerHTML = rhythmHtml() + chipRow() + feedHtml() +
+      '<div class="foot9 rise" style="--d:260ms;">Az automata sorok (✕) visszavonhatók. Az éjszakai kör hajnalban fűz tónust és kontextust a friss sorokhoz.</div>';
+  }
+
+  /* ---------- HETI KÉP ---------- */
+  function renderHeti() {
+    var i, counts = { jo: 0, ok: 0, vegyes: 0, nehez: 0 }, tot = 0;
+    MENTIONS.forEach(function (m) { if (m.week) { counts[m.tone]++; tot++; } });
+    var h = '<div class="tonemixc rise" style="--d:0ms;"><div class="mrow">' +
+      '<span class="p-eyebrow" style="color:#5D4FA0;">A hét tónusa</span>' +
+      '<span class="gut" style="margin-left:auto;">' + tot + ' említés</span></div><div class="tonemix">';
+    var di = 0;
+    ['jo', 'ok', 'vegyes', 'nehez'].forEach(function (k) {
+      if (!counts[k]) return;
+      h += '<i style="width:' + Math.round(counts[k] / tot * 100) + '%;background:' + TONES[k].c + ';--d:' + (150 + di * 120) + 'ms;"></i>';
+      di++;
+    });
+    h += '</div><div class="mixleg">';
+    ['jo', 'ok', 'vegyes', 'nehez'].forEach(function (k) {
+      if (!counts[k]) return;
+      h += '<span><i style="background:' + TONES[k].c + ';"></i>' + counts[k] + ' ' + TONES[k].lb.toLowerCase() + '</span>';
+    });
+    h += '</div></div>';
+
+    h += '<div class="lsec rise" style="--d:40ms;"><span class="p-eyebrow" style="color:#5D4FA0;">Irányok · 7 nap</span></div>';
+    var order = PEOPLE.filter(function (p) { return p.week > 0; }).sort(function (a, b) {
+      var w = { '↘': 0, '↗': 1, '→': 2 };
+      return w[a.arrow] - w[b.arrow];
+    });
+    h += '<div class="dirgrid rise" style="--d:60ms;">';
+    order.forEach(function (p) {
+      var cls = p.arrow === '↗' ? ' up' : (p.arrow === '↘' ? ' down' : '');
+      var col = p.arrow === '↘' ? '#A8801F' : (p.arrow === '↗' ? '#4E6B42' : '#A2958A');
+      h += '<div class="dirt' + cls + '" data-det="' + p.id + '" role="button" tabindex="0">' +
+        '<div class="mrow" style="gap:6px;">' +
+        '<div class="pavat" style="--ac:' + p.ac + ';--av:' + p.av + '%;width:26px;height:26px;"><div class="in" style="width:20px;height:20px;font-size:8.5px;">' + p.in + '</div></div>' +
+        '<b style="font-size:10.5px;">' + p.nm + '</b>' +
+        '<span class="arr2" style="color:' + col + ';margin-left:auto;">' + p.arrow + '</span></div>' +
+        sparkHtml(p) +
+        '<div class="why2">' + p.why + '</div>' +
+        '<span class="wk">' + p.week + '× E HÉTEN</span></div>';
+    });
+    h += '</div>';
+
+    h += '<div class="lsec rise" style="--d:120ms;"><span class="p-eyebrow" style="color:#8E3F6F;">A hét pillanata</span></div>';
+    h += '<div class="momentt rise" style="--d:140ms;">' +
+      '<div class="mrow"><div class="pavat" style="--ac:#8FAF7E;--av:80%;width:26px;height:26px;"><div class="in" style="width:20px;height:20px;font-size:8.5px;">P</div></div>' +
+      '<div class="grow"><b style="font-size:10px;">Petra</b><div class="gut">MA 12:40 · napló</div></div>' +
+      '<span class="tonedot" style="background:#7FA06C;"></span></div>' +
+      '<div class="bigq">„Hosszú vacsi Petrával, csendben — jó este volt."</div></div>';
+
+    var quiet = PEOPLE.filter(function (p) { return p.week === 0; });
+    if (quiet.length) {
+      h += '<div class="lsec rise" style="--d:170ms;"><span class="p-eyebrow" style="color:#A2958A;">Csendben maradt</span><span class="cnt">' + quiet.length + '</span></div>';
+      quiet.forEach(function (p, qi) {
+        h += '<div class="quiett rise" style="--d:' + (190 + qi * 30) + 'ms;">' +
+          '<div class="pavat" style="--ac:' + p.ac + ';--av:' + p.av + '%;width:26px;height:26px;flex:none;"><div class="in" style="width:20px;height:20px;font-size:8.5px;">' + p.in + '</div></div>' +
+          '<div class="grow"><div class="nm3">' + p.nm + '</div><div class="q3">' + p.why + ' — jólesne neki egy jel?</div></div>' +
+          '<button class="ghost" data-quiet="' + p.nm + '" style="padding:4px 10px;font-size:9px;">Írok neki</button></div>';
+      });
+    }
+    h += '<div class="foot9 rise" style="--d:240ms;">Az irányok és a tónus-sáv az e heti említésekből jönnek — a hétfői heti áttekintés erre is kitér.</div>';
+    $('hetiBody').innerHTML = h;
+  }
+
+  /* ---------- RÉSZLETEK ---------- */
+  function renderDet(pid) {
+    curPid = pid;
+    var p = personById(pid), i;
+    var tl = MENTIONS.filter(function (m) { return m.pid === pid; });
+    var h = '<div class="page-hero" style="padding-top:0;">' +
+      '<div class="pavat lg" style="--ac:' + p.ac + ';--av:' + p.av + '%;"><div class="in">' + p.in + '</div></div>' +
+      '<div class="nm" style="margin-top:4px;">' + p.nm + '</div>' +
+      '<div class="sb">' + p.rl + ' · ' + p.cad + '</div></div>';
+    h += '<div class="statstrip rise" style="--d:0ms;">' +
+      '<div class="statcell"><b>' + p.total + '</b><small>említés</small></div>' +
+      '<div class="statcell"><b>' + p.week + '×</b><small>e héten</small></div>' +
+      '<div class="statcell"><b>' + p.mood + '</b><small>hangulat</small></div></div>';
+    h += '<div class="trendcard rise" style="--d:40ms;"><span class="p-eyebrow" style="color:#8E3F6F;">Hangulat-ív · 8 hét</span><div class="affbars">';
+    for (i = 0; i < p.trend.length; i++) {
+      h += '<i style="height:' + Math.round(p.trend[i] * 0.42) + 'px;background:' + p.ac + ';opacity:' + (0.4 + i * 0.08) + ';--d:' + (200 + i * 50) + 'ms;"></i>';
+    }
+    h += '</div><div class="affax"><span>JÚL</span><span>AUG</span></div></div>';
+    h += '<div class="ctxcard rise" style="--d:80ms;"><span class="p-eyebrow" style="color:#8E3F6F;">Milyen helyzetekben</span>';
+    for (i = 0; i < p.ctx.length; i++) {
+      var c = CTX[p.ctx[i][0]];
+      h += '<div class="ctxbar"><span class="lb">' + c.lb + '</span><span class="tr"><div style="--w:' + p.ctx[i][1] + '%;background:' + c.c + ';"></div></span><span class="pc">' + p.ctx[i][1] + '%</span></div>';
+    }
+    h += '</div>';
+    if (p.events.length) {
+      h += '<div class="lsec rise" style="--d:110ms;"><span class="p-eyebrow" style="color:#5D4FA0;">Kapcsolt események · gráf</span><span class="cnt">' + p.events.length + '</span></div>';
+      for (i = 0; i < p.events.length; i++) {
+        var e = p.events[i];
+        h += '<div class="evt ' + e.kind + ' rise" style="--d:' + (130 + i * 30) + 'ms;" data-ev="' + e.t + '">' +
+          '<span class="pic">' + ic(e.ic, 18) + '</span>' +
+          '<div class="grow"><b>' + e.t + '</b><div class="mt2">' + e.mt + '</div></div><span style="color:#A2958A;">›</span></div>';
+      }
+    }
+    h += '<div class="factcard rise" style="--d:170ms;"><span class="p-eyebrow" style="color:#8E3F6F;">Amit Mezo tud</span><div style="margin-top:6px;">';
+    for (i = 0; i < p.facts.length; i++) h += '<span class="fact">' + p.facts[i] + '</span>';
+    h += '</div></div>';
+    h += '<div class="lsec rise" style="--d:200ms;"><span class="p-eyebrow" style="color:#8E3F6F;">Idővonal</span><span class="cnt">' + tl.length + ' friss</span></div>';
+    for (i = 0; i < tl.length; i++) {
+      var m = tl[i];
+      h += '<div class="mrowt rise" style="--d:' + (220 + i * 30) + 'ms;">' +
+        '<div class="mrow"><span class="srcb">' + ic(SRC[m.src].ic, 12) + '</span><span class="gut">' + m.t + '</span>' +
+        '<span class="tonedot" style="background:' + TONES[m.tone].c + ';"></span>' +
+        '<span class="ctxch">' + CTX[m.ctx].lb + '</span></div>' +
+        '<div class="q">' + m.q + '</div>' +
+        (m.edge ? '<div class="edge">kapcsolódik · ' + m.edge + '</div>' : '') + '</div>';
+    }
+    h += '<button class="cta shcta rise" style="--d:260ms;" data-logfor="' + p.id + '">' + ic('i-mikrofon', 12) + ' Log most</button>';
+    $('detBody').innerHTML = h;
+    openPg('page-det');
+  }
+
+  /* ---------- lapozás ---------- */
+  function openPg(id) {
+    var pg = $(id);
+    pg.classList.add('open');
+    var b = pg.querySelector('.page-body'); if (b) b.scrollTop = 0;
+    replay(pg);
+  }
+  document.querySelectorAll('[data-back]').forEach(function (b) {
+    b.addEventListener('click', function () { $(b.getAttribute('data-back')).classList.remove('open'); });
+  });
+
+  /* ---------- sheetek ---------- */
+  function closeSheets() {
+    $('sback').classList.remove('open');
+    $('sh-log').classList.remove('open');
+    $('sh-new').classList.remove('open');
+  }
+  $('sback').addEventListener('click', closeSheets);
+
+  function paintLogSheet() {
+    var h = '', k;
+    PEOPLE.forEach(function (p) {
+      h += '<button class="selch' + (logSel.pid === p.id ? ' on' : '') + '" data-lwho="' + p.id + '">' + p.nm + '</button>';
+    });
+    $('logWho').innerHTML = h;
+    h = '';
+    for (k in TONES) h += '<button class="selch' + (logSel.tone === k ? ' on' : '') + '" data-ltone="' + k + '">' + TONES[k].lb + '</button>';
+    $('logTone').innerHTML = h;
+    h = '';
+    for (k in CTX) h += '<button class="selch' + (logSel.ctx === k ? ' on' : '') + '" data-lctx="' + k + '">' + CTX[k].lb + '</button>';
+    $('logCtx').innerHTML = h;
+    $('logSave').disabled = !(logSel.pid && logSel.tone);
+  }
+  function openLog(pid) {
+    logSel = { pid: pid || null, tone: null, ctx: null };
+    $('logNote').value = '';
+    paintLogSheet();
+    $('sback').classList.add('open');
+    $('sh-log').classList.add('open');
+  }
+
+  function paintNpRel() {
+    var h = '';
+    RELS.forEach(function (r) { h += '<button class="selch' + (npState.rel === r ? ' on' : '') + '" data-nprel="' + r + '">' + r + '</button>'; });
+    $('npRel').innerHTML = h;
+  }
+  function paintNpAliases() {
+    var row = $('npAliases');
+    row.querySelectorAll('.aliasch').forEach(function (x) { row.removeChild(x); });
+    var inEl = $('npAliasIn');
+    npState.aliases.forEach(function (a, i) {
+      var s = document.createElement('span');
+      s.className = 'aliasch';
+      s.innerHTML = a + '<button data-adel="' + i + '" aria-label="Becenév törlése">✕</button>';
+      row.insertBefore(s, inEl);
+    });
+  }
+  function openNew() {
+    npState = { aliases: [], rel: null };
+    $('npName').value = ''; $('npAliasIn').value = ''; $('npNote').value = '';
+    $('npSave').disabled = true;
+    paintNpRel(); paintNpAliases();
+    $('sback').classList.add('open');
+    $('sh-new').classList.add('open');
+  }
+
+  /* ---------- események ---------- */
+  $('backEn').addEventListener('click', function () { toast('‹ Én hub — a prototípus itt ér véget'); });
+  $('micBtn').addEventListener('click', function () { openLog(null); });
+  $('micBtn2').addEventListener('click', function () { openLog(null); });
+  $('newBtn').addEventListener('click', openNew);
+  $('newBtn2').addEventListener('click', openNew);
+  $('editBtn').addEventListener('click', function () {
+    var p = personById(curPid);
+    toast('Szerkesztés · ' + (p ? p.nm : '') + ' — név, becenevek, kapcsolat');
+  });
+
+  $('hubBody').addEventListener('click', function (e) {
+    var t = e.target.closest('[data-go]');
+    if (t) {
+      var id = t.getAttribute('data-go');
+      if (id === 'page-jel') renderJel();
+      if (id === 'page-kor') renderKor();
+      if (id === 'page-eml') renderEml();
+      if (id === 'page-heti') renderHeti();
+      openPg(id);
+      return;
+    }
+    if (e.target.closest('#mezoBand')) toast('Mezo chat · a javaslattal nyit');
+  });
+  $('hubBody').addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    var t = e.target.closest('[data-go]');
+    if (t) { t.click(); }
+  });
+
+  $('jelBody').addEventListener('click', function (e) {
+    var t = e.target.closest('[data-cacc]');
+    if (t) {
+      var c = CANDS.splice(+t.getAttribute('data-cacc'), 1)[0];
+      var nid = 'p' + Date.now();
+      PEOPLE.push({ id: nid, nm: c.nm, in: c.nm.charAt(0), rl: 'Barát', ac: '#B5AA9C', av: 30,
+        week: 1, total: 3, cad: 'új kapcsolat', mood: 'még tanulom', arrow: '→', why: 'most került a körbe',
+        trend: [0, 0, 0, 0, 10, 20, 30, 40], ctx: [['edzes', 60], ['kozos', 40]],
+        facts: ['a naplóból ismert · ' + c.ev], events: [], fresh: true });
+      MENTIONS.unshift({ t: 'MA', src: 'naplo', pid: nid, tone: 'jo', ctx: 'edzes', week: true, auto: true, q: c.q });
+      renderJel(); renderHub();
+      toast(c.nm + ' felvéve · a névfigyelés mostantól él');
+      return;
+    }
+    t = e.target.closest('[data-crej]');
+    if (t) {
+      var r = CANDS.splice(+t.getAttribute('data-crej'), 1)[0];
+      renderJel(); renderHub();
+      toast(r.nm + ' elvetve — nem javasolja újra');
+    }
+  });
+
+  $('korBody').addEventListener('click', function (e) {
+    var t = e.target.closest('[data-det]');
+    if (t) renderDet(t.getAttribute('data-det'));
+  });
+  $('korBody').addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    var t = e.target.closest('[data-det]');
+    if (t) renderDet(t.getAttribute('data-det'));
+  });
+
+  $('hetiBody').addEventListener('click', function (e) {
+    var t = e.target.closest('[data-quiet]');
+    if (t) { toast('Mezo emlékeztet · üzenj ' + t.getAttribute('data-quiet') + ' felé'); return; }
+    t = e.target.closest('[data-det]');
+    if (t) renderDet(t.getAttribute('data-det'));
+  });
+  $('hetiBody').addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    var t = e.target.closest('[data-det]');
+    if (t) renderDet(t.getAttribute('data-det'));
+  });
+
+  $('emlBody').addEventListener('click', function (e) {
+    var t;
+    t = e.target.closest('[data-mdel]');
+    if (t) { MENTIONS.splice(+t.getAttribute('data-mdel'), 1); renderEml(); renderHub(); replay($('page-eml')); toast('Említés törölve'); return; }
+    t = e.target.closest('[data-fsc]');
+    if (t) { F.scope = t.getAttribute('data-fsc'); renderEml(); replay($('page-eml')); return; }
+    t = e.target.closest('[data-fto]');
+    if (t) { var v = t.getAttribute('data-fto'); F.tone = (F.tone === v ? null : v); renderEml(); replay($('page-eml')); return; }
+    t = e.target.closest('[data-fcx]');
+    if (t) { var x = t.getAttribute('data-fcx'); F.ctx = (F.ctx === x ? null : x); renderEml(); replay($('page-eml')); }
+  });
+
+  $('detBody').addEventListener('click', function (e) {
+    var t = e.target.closest('[data-logfor]');
+    if (t) { openLog(t.getAttribute('data-logfor')); return; }
+    t = e.target.closest('[data-ev]');
+    if (t) { toast(t.getAttribute('data-ev') + ' → Tudás oldal'); }
+  });
+
+  $('sh-log').addEventListener('click', function (e) {
+    var t;
+    t = e.target.closest('[data-lwho]'); if (t) { logSel.pid = t.getAttribute('data-lwho'); paintLogSheet(); return; }
+    t = e.target.closest('[data-ltone]'); if (t) { logSel.tone = t.getAttribute('data-ltone'); paintLogSheet(); return; }
+    t = e.target.closest('[data-lctx]');
+    if (t) { var k = t.getAttribute('data-lctx'); logSel.ctx = (logSel.ctx === k ? null : k); paintLogSheet(); }
+  });
+  $('logSave').addEventListener('click', function () {
+    var p = personById(logSel.pid);
+    var note = $('logNote').value.trim();
+    MENTIONS.unshift({ t: 'MOST', src: 'chip', pid: p.id, tone: logSel.tone, ctx: logSel.ctx || 'kozos', week: true,
+      q: note ? '„' + note + '"' : '„gyors chip-log"' });
+    p.week++; p.total++;
+    closeSheets();
+    if ($('page-det').classList.contains('open')) renderDet(p.id);
+    if ($('page-eml').classList.contains('open')) { renderEml(); replay($('page-eml')); }
+    renderHub();
+    toast('＋ említés · ' + p.nm);
+  });
+
+  $('npName').addEventListener('input', function () { $('npSave').disabled = !$('npName').value.trim(); });
+  $('npAliasAdd').addEventListener('click', function () {
+    var v = $('npAliasIn').value.trim();
+    if (!v) return;
+    npState.aliases.push(v); $('npAliasIn').value = '';
+    paintNpAliases();
+  });
+  $('npAliases').addEventListener('click', function (e) {
+    var t = e.target.closest('[data-adel]');
+    if (t) { npState.aliases.splice(+t.getAttribute('data-adel'), 1); paintNpAliases(); }
+  });
+  $('npRel').addEventListener('click', function (e) {
+    var t = e.target.closest('[data-nprel]');
+    if (t) { npState.rel = t.getAttribute('data-nprel'); paintNpRel(); }
+  });
+  $('npSave').addEventListener('click', function () {
+    var nm = $('npName').value.trim();
+    PEOPLE.push({ id: 'p' + Date.now(), nm: nm, in: nm.charAt(0).toUpperCase(), rl: npState.rel || 'Barát',
+      ac: '#B5AA9C', av: 20, week: 0, total: 0, cad: 'új kapcsolat', mood: 'még tanulom', arrow: '→', why: 'most került a körbe',
+      trend: [0, 0, 0, 0, 0, 0, 0, 0], ctx: [], facts: npState.aliases.length ? ['becenevek: ' + npState.aliases.join(', ')] : [],
+      events: [], fresh: true });
+    closeSheets();
+    if ($('page-kor').classList.contains('open')) { renderKor(); replay($('page-kor')); }
+    renderHub();
+    toast(nm + ' felvéve · a névfigyelés mostantól él');
+  });
+
+  renderHub();
+  replay(scr);
+})();
+</script>

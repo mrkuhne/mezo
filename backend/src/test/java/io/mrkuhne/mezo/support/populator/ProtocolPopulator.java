@@ -43,4 +43,24 @@ public class ProtocolPopulator {
         }
         return saved;
     }
+
+    /** A bare active protocol (version 1) with no items yet — items are added separately via
+     *  {@link #createProtocolItem}. */
+    public ProtocolEntity createActiveProtocol(UUID owner) {
+        return createProtocol(owner, 1, "active", List.of());
+    }
+
+    /** One normalized selection row on an existing protocol, at the next free {@code itemOrder}. */
+    public ProtocolItemEntity createProtocolItem(
+        UUID owner, UUID protocolId, UUID pantryItemId, String slotKey, String restDayFallback) {
+        int itemOrder = protocolItemRepository.findByProtocolIdAndDeletedFalseOrderByItemOrderAsc(protocolId).size();
+        ProtocolItemEntity item = new ProtocolItemEntity();
+        item.setCreatedBy(owner);
+        item.setProtocolId(protocolId);
+        item.setPantryItemId(pantryItemId);
+        item.setItemOrder(itemOrder);
+        item.setSlotKey(slotKey);
+        item.setRestDayFallback(restDayFallback);
+        return protocolItemRepository.saveAndFlush(item);
+    }
 }

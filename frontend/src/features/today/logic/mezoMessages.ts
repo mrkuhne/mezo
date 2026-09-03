@@ -10,6 +10,7 @@
 // jönnek. Pure: no React, no hooks, no side effects.
 // ============================================================
 import type { Briefing, BriefingRef, FeedMessage, FeedMessageKind } from '@/data/types'
+import type { ClayIconName } from '@/shared/ui/clay'
 
 export interface MezoMessageItem {
   /** Stabil a napon belül: a feed KINDJE (`morning`/`sleep`/…) vagy a nudge/demo kulcsa —
@@ -29,6 +30,13 @@ export interface MezoMessageItem {
   paragraphs: string[]
   refs: BriefingRef[]
   meta: string | null
+  /** Tab-partíció kulcs (mezo-ho9k): 'eletjel' = Életjel-figyelő nudge — a NapMezoPage
+   *  Életjelek tabjára tartozik. Hiánya = companion-üzenet (Üzenetek tab). */
+  source?: 'eletjel'
+  /** mezo-z4h4: a küszöb-nudge kártya domain clay ikonja (a nudge-ot kiváltó `NeedKey`
+   *  ikonja, `VITAL_TILE`-ból, `EletjelPage.tsx`) — csak nudge-elemeken van, felváltja a
+   *  kártya fején az emojit/daypart-spotot. Feed-soroknak nincs. */
+  icon?: ClayIconName
 }
 
 /** A briefing eyebrow-ja hordozhat egy `HH:mm`-et (pl. „Mezo · reggeli briefing · 06:30"). */
@@ -40,12 +48,12 @@ const hhmm = (iso: string): string => {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
-export function buildMezoMessages({ feed, demoBriefing, nudges }: {
-  feed: FeedMessage[]
-  demoBriefing: Briefing | null
-  nudges?: MezoMessageItem[]
-}): MezoMessageItem[] {
-  const out: MezoMessageItem[] = feed.map((m) => ({
+/** One feed row → one thread card. Exported so a deep-linked card from another day
+ *  (mezo-b3pp.36 — `NapMezoPage`) gets the SAME rendering (time/paragraphs/refs/artifactId)
+ *  as any row `buildMezoMessages` pulls from today's own feed; the caller overrides `id` since
+ *  `m.kind` alone is not unique once a card from a second day joins the thread. */
+export function feedToMessageItem(m: FeedMessage): MezoMessageItem {
+  return {
     id: m.kind,
     artifactId: m.id,
     kind: m.kind,
@@ -54,7 +62,15 @@ export function buildMezoMessages({ feed, demoBriefing, nudges }: {
     paragraphs: m.body.map((p) => p.text),
     refs: m.refs,
     meta: null,
-  }))
+  }
+}
+
+export function buildMezoMessages({ feed, demoBriefing, nudges }: {
+  feed: FeedMessage[]
+  demoBriefing: Briefing | null
+  nudges?: MezoMessageItem[]
+}): MezoMessageItem[] {
+  const out: MezoMessageItem[] = feed.map(feedToMessageItem)
   // Honest fallback: no generated morning briefing has landed in the feed yet — show the
   // labelled demo card instead of leaving the thread empty (mock mode: always this branch).
   if (!feed.some((m) => m.kind === 'morning') && demoBriefing != null) {
@@ -69,4 +85,16 @@ export function buildMezoMessages({ feed, demoBriefing, nudges }: {
   }
   if (nudges && nudges.length > 0) out.push(...nudges)
   return out
+}
+
+/** A NapMezoPage két tabjának partíciója (mezo-ho9k). Pure, sorrendtartó — a szál
+ *  maga (sorrend, tartalom) érintetlen: ez CSAK megjelenítési bontás. */
+export function partitionMezoThread(messages: MezoMessageItem[]): {
+  uzenetek: MezoMessageItem[]
+  eletjelek: MezoMessageItem[]
+} {
+  return {
+    uzenetek: messages.filter((m) => m.source !== 'eletjel'),
+    eletjelek: messages.filter((m) => m.source === 'eletjel'),
+  }
 }

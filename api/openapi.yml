@@ -5,7 +5,7 @@ info:
     Contract-first API definition for the mezo backend — the single source of
     truth for generated backend DTOs / controller interfaces and frontend types.
     See docs/references/api_contract_conventions.md.
-  version: 0.5.0
+  version: 0.6.0
 servers:
   - url: 'http://localhost:8090'
     description: Local dev backend (MEZO_PORT)
@@ -13,7 +13,7 @@ security:
   - bearerAuth: []
 tags:
   - name: Auth
-    description: Single-user thin auth (owner login)
+    description: 'Multi-user auth — invite-code registration, login, current-user profile'
   - name: Weight
     description: Weight log (biometrics)
   - name: Sleep
@@ -102,6 +102,8 @@ tags:
     description: >-
       Nutrition-owned per-user diet preferences (macro split, protein tier,
       water/fiber targets)
+  - name: TutorialProgress
+    description: 'Per-user "seen" store of the in-app page guides (Mezo-kalauz, mezo-gb1s)'
   - name: Gamification
     description: 'User progression system — XP, levels, coins, titles, and daily streaks'
   - name: LlmUsage
@@ -119,16 +121,22 @@ tags:
   - name: Character
     description: >-
       Karakter dossier (mezo-1gim) — the synthesized user profile: 7 CORE
-      dimensions + AI-opened chapters, confidence-carrying claims, expert
-      observations, and persisted konzílium transcripts. Slice 1 ships reads
-      over an honestly empty dossier.
+      dimensions + 1 META (the companion's self-audit) + AI-opened chapters,
+      confidence-carrying claims, expert observations, and persisted konzílium
+      transcripts. Slice 1 ships reads over an honestly empty dossier.
+  - name: Diagnosis
+    description: >-
+      On-demand diagnostic reports (mezo-hqfi) — a phenomenon question answered
+      with ranked, evidence-bound suspects. Evidence is code-collected and
+      frozen at generation time; the model selects it by index and can never
+      invent a reference.
 paths:
   /api/auth/login:
     post:
       tags:
         - Auth
       operationId: login
-      summary: 'Login with the owner credentials, returns a JWT'
+      summary: 'Login with email + password, returns a JWT'
       security: []
       requestBody:
         required: true
@@ -151,6 +159,115 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Invalid credentials (AUTH_LOGIN_INVALID_CREDENTIALS)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '403':
+          description: Account disabled (AUTH_ACCOUNT_DISABLED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/auth/register:
+    post:
+      tags:
+        - Auth
+      operationId: register
+      summary: 'Register with an invite code, returns a JWT'
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '200':
+          description: 'Account created, JWT issued'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            Invite invalid/used/expired (AUTH_INVITE_INVALID) or email taken
+            (AUTH_EMAIL_TAKEN)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/auth/me:
+    get:
+      tags:
+        - Auth
+      operationId: me
+      summary: The authenticated user's account profile
+      responses:
+        '200':
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '403':
+          description: Account disabled (AUTH_ACCOUNT_DISABLED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/auth/change-password:
+    post:
+      tags:
+        - Auth
+      operationId: changePassword
+      summary: >-
+        Change the authenticated user's password (also clears
+        must-change-password)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '204':
+          description: Password changed
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Current password wrong (AUTH_LOGIN_INVALID_CREDENTIALS)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/auth/onboarding-complete:
+    post:
+      tags:
+        - Auth
+      operationId: completeOnboarding
+      summary: Mark the authenticated user's onboarding as done
+      responses:
+        '204':
+          description: Marked
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema:
@@ -659,6 +776,42 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Mesocycle not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/train/meso-plans/generate:
+    post:
+      tags:
+        - Train
+      operationId: generateMesoPlan
+      summary: >-
+        Generate a hypertrophy mesocycle proposal (deterministic skeleton +
+        optional LLM exercise pick); returns a
+        MesoTemplateUpsertRequest-compatible template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MesoPlanGenerateRequest'
+      responses:
+        '200':
+          description: >-
+            Generated proposal — not persisted; save it via POST
+            /api/train/meso-templates
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MesoPlanGenerateResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema:
@@ -1222,7 +1375,28 @@ paths:
       tags:
         - Train
       operationId: listSportSessions
-      summary: 'Sport (volleyball) sessions of the current user, date descending'
+      summary: >-
+        Sport sessions of the current user, date descending — optionally
+        narrowed to an inclusive date range (Sport Napló trend)
+      description: >-
+        Both bounds are optional and inclusive. Omitting both keeps the
+        historical behaviour (the whole owned log, date descending); an omitted
+        single bound stays unbounded on that side. With both bounds present the
+        range must be forward (`from` <= `to`) and no wider than
+        `mezo.train.sport-session-max-span-days`.
+      parameters:
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
       responses:
         '200':
           description: Sport sessions
@@ -1232,6 +1406,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SportSessionResponse'
+        '400':
+          description: 'Invalid date range (from after to, or span too wide)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing/invalid token
           content:
@@ -1918,12 +2098,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
-  '/api/train/workouts/{id}/finish':
-    post:
+  '/api/train/workouts/{id}/note':
+    put:
       tags:
         - Train
-      operationId: finishWorkout
-      summary: Complete a workout instance (idempotent)
+      operationId: saveWorkoutNote
+      summary: Set (or clear) the workout's closing note
+      description: >
+        Last-write-wins. A null/blank note clears it. Used by the review page,
+        so a note can be written or corrected long after the workout was
+        finished (mezo-d20.8.2.2).
       parameters:
         - name: id
           in: path
@@ -1931,6 +2115,57 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutNoteRequest'
+      responses:
+        '204':
+          description: Note saved
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Workout instance not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/train/workouts/{id}/finish':
+    post:
+      tags:
+        - Train
+      operationId: finishWorkout
+      summary: Complete a workout instance (idempotent)
+      description: >
+        The optional body carries the closing note. Because finishing is
+        idempotent, the note is FILL-IF-EMPTY here: a re-finish (or a bodyless
+        retry) never wipes an existing note. Use PUT
+        /api/train/workouts/{id}/note to overwrite or clear it (mezo-d20.8.2.2).
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkoutNoteRequest'
       responses:
         '200':
           description: The completed instance with its logged sets
@@ -1938,6 +2173,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkoutInstanceResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing/invalid token
           content:
@@ -2553,21 +2794,18 @@ paths:
         - BiometricProfile
       operationId: getBiometricProfile
       summary: The owner's biometric profile
+      description: >-
+        Never 404s: having no profile yet is a normal state, answered with 200
+        and an empty profile — an object whose every field is null (mezo-5cmq).
       responses:
         '200':
-          description: Profile
+          description: 'Profile, or an all-null empty profile when the owner has none yet'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/BiometricProfileResponse'
         '401':
           description: Missing/invalid token
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SystemMessageList'
-        '404':
-          description: No profile yet
           content:
             application/json:
               schema:
@@ -3078,6 +3316,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/recipe/workshop/turn:
+    post:
+      tags:
+        - RecipeWorkshop
+      operationId: workshopTurn
+      summary: >-
+        One stateless Receptműhely AI turn — history + current draft in, prose
+        reply + full updated draft out (mezo-92pb); nothing persisted
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkshopTurnRequest'
+      responses:
+        '200':
+          description: Updated draft
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkshopTurnResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '502':
+          description: LLM answer unparseable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '503':
+          description: LLM port unavailable (companion off)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/fuel/day/{date}':
     get:
       tags:
@@ -3452,6 +3735,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
   /api/medication:
+    post:
+      tags:
+        - Medication
+      operationId: createMedication
+      summary: Create the owner's medication (the single-active slice's create path)
+      description: >-
+        The owner can have ONE active medication at a time — creating while an
+        active one exists answers 400 with MEDICATION_ACTIVE_EXISTS. Re-creating
+        after a stop (PUT active:false) is the normal path; the old row's dose
+        history stays.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MedicationRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MedicationResponse'
+        '400':
+          description: 'Validation error, or an active medication already exists'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
     get:
       tags:
         - Medication
@@ -3459,9 +3777,15 @@ paths:
       summary: >-
         The owner's active medication — definition + cycle config, the derived
         cycle, and the recent doses
+      description: >-
+        Never 404s: having no active medication is a normal state, answered with
+        200 and an empty payload (`medication` and `cycle` null, `recentDoses`
+        empty) (mezo-5cmq).
       responses:
         '200':
-          description: Medication day
+          description: >-
+            Medication day, or an empty payload when the owner has no active
+            medication
           content:
             application/json:
               schema:
@@ -4075,6 +4399,81 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/conversation/{conversationId}':
+    patch:
+      tags:
+        - Companion
+      operationId: renameConversation
+      summary: >-
+        Rename one conversation (the list label; reversible, no history impact)
+        — F7.5 (mezo-d20.8.5)
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationRenameRequest'
+      responses:
+        '200':
+          description: The renamed conversation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Conversation not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - Companion
+      operationId: deleteConversation
+      summary: >-
+        Delete one conversation (soft; its messages become unreachable) — F7.5
+        (mezo-d20.8.5)
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Conversation not found (or owned by someone else)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/companion/conversation/{conversationId}/messages':
     get:
       tags:
@@ -4282,8 +4681,13 @@ paths:
       operationId: decideFactCandidate
       summary: >-
         Decide a candidate (V1.2) — accept/refine promote it into a knowledge
-        fact (source=chat), reject archives it. One decision per candidate;
-        confirm is an explicit L2 action, never silent.
+        fact, reject archives it. One decision per candidate; confirm is an
+        explicit L2 action, never silent.
+      description: >-
+        The promoted fact inherits the candidate's `source`: a chat-extracted
+        candidate becomes a `chat` fact, a weekly-review candidate a
+        `weekly_review` one (mezo-d20.7.6) — promotion never re-labels where the
+        insight came from.
       parameters:
         - name: candidateId
           in: path
@@ -4755,6 +5159,111 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - People
+      operationId: createPerson
+      summary: >-
+        Create an owned person (initial derived server-side; status=active,
+        sourceKind=manual)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePersonRequest'
+      responses:
+        '201':
+          description: Person created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/people/{personId}':
+    put:
+      tags:
+        - People
+      operationId: updatePerson
+      summary: >-
+        Full update of the editable person fields (knownFacts/ties/affectTrend
+        are AI-curated, untouched)
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatePersonRequest'
+      responses:
+        '200':
+          description: Person updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Person missing or foreign (indistinguishable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - People
+      operationId: deletePerson
+      summary: 'Soft-delete an owned person (mentions stay stored, leave the feed)'
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Person missing or foreign (indistinguishable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/people/{personId}/mentions':
     post:
       tags:
@@ -4795,6 +5304,92 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Person missing or foreign (indistinguishable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/people/{personId}/mentions/{mentionId}':
+    delete:
+      tags:
+        - People
+      operationId: deleteMention
+      summary: Revoke a mention (soft delete)
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: mentionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: >-
+            Mention missing, foreign, or belongs to a different person
+            (indistinguishable)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/people/{personId}/decision':
+    post:
+      tags:
+        - People
+      operationId: decidePerson
+      summary: >-
+        Decide a candidate person (S4 nightly extractor inbox) — accept
+        activates the person, reject soft-deletes it (the soft-deleted row is
+        the extractor's reject list: the name is never re-proposed). One
+        decision per candidate.
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PersonDecisionRequest'
+      responses:
+        '200':
+          description: >-
+            The decided person (status active on accept; the soft-deleted row
+            snapshot on reject)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PersonResponse'
+        '400':
+          description: PEOPLE_CANDIDATE_ALREADY_DECIDED / validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: RESOURCE_NOT_FOUND
           content:
             application/json:
               schema:
@@ -4908,6 +5503,32 @@ paths:
           description: >-
             No memoir possible — no narrative memory in the last completed week.
             The FE renders its honest "készül" state.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/proactive/memoir/archive:
+    get:
+      tags:
+        - Proactive
+      operationId: getMemoirArchive
+      summary: >-
+        Every persisted memoir, newest week first — the archive shelf (F7.5,
+        mezo-d20.8.5)
+      description: >-
+        The full list in one round — weekly cadence keeps this small (~52
+        rows/year). Never generates: the archive lists what the Sunday cron /
+        lazy-latest already wrote. An empty list is the honest empty state
+        (never a 404 — list-endpoint precedent).
+      responses:
+        '200':
+          description: 'The persisted memoirs, weekStart descending (possibly empty)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoirArchiveResponse'
+        '401':
+          description: Missing or invalid token
           content:
             application/json:
               schema:
@@ -5224,6 +5845,53 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
           description: The week is not completed yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/proactive/weekly-review/{start}/lessons':
+    get:
+      tags:
+        - Proactive
+      operationId: getWeeklyReviewLessons
+      summary: >-
+        The week's knowledge candidates — "A hét tanulságai" (mezo-d20.7.6) —
+        WITH their decisions
+      description: >-
+        The weekly generator proposes candidates onto the SAME learned_fact path
+        chat extraction uses; this read returns the ones proposed for `{start}`,
+        newest first, including the already-decided ones (`GET
+        /api/companion/fact/candidate` only returns the undecided inbox, but a
+        closed week must be reviewable in its settled state). `evidence` names
+        what the candidate rests on. Always 200 — an empty array is the honest
+        empty state (no review, no usable candidate, or every candidate
+        rejected), never a 404. Deciding stays the shipped write path: `POST
+        /api/companion/fact/candidate/{candidateId}/decision`.
+      parameters:
+        - name: start
+          in: path
+          required: true
+          description: The ISO Monday of the wanted week
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: The week's candidates with their decisions (possibly empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WeeklyLessonResponse'
+        '400':
+          description: '{start} is not a Monday'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
           content:
             application/json:
               schema:
@@ -6179,6 +6847,75 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/tutorial/progress:
+    get:
+      tags:
+        - TutorialProgress
+      operationId: getTutorialProgress
+      summary: >-
+        The user's guide progress; empty map ghost when nothing seen — never 404
+        (TutorialProgress)
+      responses:
+        '200':
+          description: The progress map (empty before the first guide is shown)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TutorialProgressResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    put:
+      tags:
+        - TutorialProgress
+      operationId: setTutorialProgress
+      summary: >-
+        Replace the whole progress map (per-user singleton upsert)
+        (TutorialProgress)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetTutorialProgressRequest'
+      responses:
+        '200':
+          description: Saved progress
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TutorialProgressResponse'
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    delete:
+      tags:
+        - TutorialProgress
+      operationId: resetTutorialProgress
+      summary: >-
+        Forget every seen guide (Beállítások · Kalauzok újranézése)
+        (TutorialProgress)
+      responses:
+        '204':
+          description: Progress cleared; the next GET returns the empty ghost
         '401':
           description: Missing/invalid token
           content:
@@ -7283,6 +8020,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/graph/edge/count:
+    get:
+      tags:
+        - KnowledgeGraph
+      operationId: countGraphEdges
+      summary: >-
+        Count of active knowledge-graph edges for the current user
+        (KnowledgeGraph)
+      responses:
+        '200':
+          description: Active edge count
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphEdgeCountResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/me/week/{start}':
     get:
       tags:
@@ -7308,6 +8066,61 @@ paths:
                 $ref: '#/components/schemas/MeWeekResponse'
         '400':
           description: start is not an ISO Monday
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/me/week/{start}/trend':
+    get:
+      tags:
+        - MeWeek
+      operationId: getMeWeekTrend
+      summary: >-
+        The persisted weekly-score trend for the N ISO weeks ending at start
+        (inclusive)
+      description: >-
+        The Heti hero's 8-week trend (mezo-d20.7.5). Points are the PERSISTED
+        weekly scores (weekly_score) — a deterministic cache, refreshed whenever
+        the week's own inputs changed after computedAt (and always for a week
+        that has not finished yet). A week whose score is null (fewer than 2
+        scored days — the "tanulom" gate) yields NO point: the series is short,
+        never padded with a zero. Oldest first.
+      parameters:
+        - name: start
+          in: path
+          required: true
+          description: >-
+            The last week of the window — its ISO Monday (400 when the date is
+            not a Monday)
+          schema:
+            type: string
+            format: date
+        - name: weeks
+          in: query
+          required: false
+          description: >-
+            How many ISO weeks the window spans, counting back from start
+            (inclusive)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 26
+            default: 8
+      responses:
+        '200':
+          description: 'The window''s points (0..weeks entries, oldest first)'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeWeekTrendResponse'
+        '400':
+          description: 'start is not an ISO Monday, or weeks is out of range'
           content:
             application/json:
               schema:
@@ -7374,6 +8187,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/character/experts:
+    get:
+      tags:
+        - Character
+      operationId: getCharacterExperts
+      summary: >-
+        The profiling team catalog — 7 domain experts + Szkeptikus + Mezo, in
+        fixed display order (Csapat page; never 404 while the switch is on)
+      responses:
+        '200':
+          description: 'The 9 personas, catalog order'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterExpertsResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/character/feed:
     get:
       tags:
@@ -7408,6 +8242,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/character/bootstrap:
+    post:
+      tags:
+        - Character
+      operationId: bootstrapCharacter
+      summary: >-
+        One-time deep read over the whole existing history that stands up the
+        dossier
+      responses:
+        '200':
+          description: The bootstrap konzílium that just ran
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterConferenceResponse'
+        '204':
+          description: No history to read — nothing was generated (the honest empty state)
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: A bootstrap konzílium already exists for this user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/character/conference:
     get:
       tags:
@@ -7425,6 +8288,135 @@ paths:
                   $ref: '#/components/schemas/CharacterConferenceSummary'
         '401':
           description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/character/claim/{claimId}/feedback':
+    post:
+      tags:
+        - Character
+      operationId: submitCharacterClaimFeedback
+      summary: Daniel's answer to one claim — talál / nem igaz / pontosítom (spec §7)
+      parameters:
+        - name: claimId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CharacterClaimFeedbackRequest'
+      responses:
+        '200':
+          description: The claim after the feedback was applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterClaimDto'
+        '400':
+          description: 'PONTOSITOM without text, or text sent with a kind that takes none'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such claim for this user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: The claim is already retired — nothing to answer
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/character/runs:
+    get:
+      tags:
+        - Character
+      operationId: getCharacterRuns
+      summary: >-
+        The run timeline over an inclusive day window (Gépterem — Karakter S9,
+        mezo-1gim.14): one row per pipeline execution that actually ran, quiet
+        nights included; a day with no row means the pipeline never ran for it
+        (honest "nincs adat" — never fabricated)
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 'Run summaries, newest day first (possibly empty — never a 404)'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CharacterRunSummary'
+        '400':
+          description: 'to before from, or the span exceeds 62 days'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/character/run/{runId}':
+    get:
+      tags:
+        - Character
+      operationId: getCharacterRun
+      summary: >-
+        One run's full detail: its summary plus the observations it resolved
+        from — by (owner, day) for a NIGHTLY row, by the conference it fed for a
+        WEEKLY/MONTHLY/BOOTSTRAP row
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The run
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CharacterRunResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such run for this user
           content:
             application/json:
               schema:
@@ -7459,6 +8451,146 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: No such conference for this user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/proactive/diagnosis:
+    get:
+      tags:
+        - Diagnosis
+      operationId: listDiagnoses
+      summary: 'Past diagnoses, newest first ([] = honest empty, never 404)'
+      parameters:
+        - name: phenomenon
+          in: query
+          required: false
+          schema:
+            type: string
+            pattern: ^(fatigue|sleep)$
+            default: fatigue
+      responses:
+        '200':
+          description: The user's diagnoses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DiagnosisResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags:
+        - Diagnosis
+      operationId: generateDiagnosis
+      summary: Generate a fresh diagnosis (consumes the daily quota)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DiagnosisGenerateRequest'
+      responses:
+        '201':
+          description: The generated diagnosis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiagnosisResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: 'Not enough data in the window, or no suspect survived validation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '429':
+          description: Daily generation quota exceeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/proactive/diagnosis/{id}':
+    get:
+      tags:
+        - Diagnosis
+      operationId: getDiagnosis
+      summary: 'One diagnosis, including its stale flag'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The diagnosis
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiagnosisResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found or not owned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/proactive/diagnosis/{id}/suspect/{rank}/experiment':
+    post:
+      tags:
+        - Diagnosis
+      operationId: startDiagnosisExperiment
+      summary: >-
+        Turn a suspect's probe into a tracked experiment (the tap IS the
+        acceptance)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: rank
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 4
+      responses:
+        '201':
+          description: >-
+            The created experiment, or the open one that already covers this
+            metric
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperimentResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: 'Diagnosis not found, not owned, or no suspect at that rank'
           content:
             application/json:
               schema:
@@ -7556,6 +8688,72 @@ components:
         token:
           type: string
           description: HS256-signed JWT bearer token
+    RegisterRequest:
+      type: object
+      required:
+        - inviteCode
+        - email
+        - password
+        - name
+      properties:
+        inviteCode:
+          type: string
+          minLength: 1
+          maxLength: 32
+          example: MEZO-7KQ2-XN4P
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        password:
+          type: string
+          minLength: 8
+          maxLength: 72
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+    MeResponse:
+      type: object
+      required:
+        - id
+        - email
+        - name
+        - role
+        - onboarded
+        - mustChangePassword
+        - timezone
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+          description: OWNER or USER
+        onboarded:
+          type: boolean
+        mustChangePassword:
+          type: boolean
+        timezone:
+          type: string
+          example: Europe/Budapest
+    ChangePasswordRequest:
+      type: object
+      required:
+        - currentPassword
+        - newPassword
+      properties:
+        currentPassword:
+          type: string
+          minLength: 1
+        newPassword:
+          type: string
+          minLength: 8
+          maxLength: 72
     LogWeightRequest:
       type: object
       required:
@@ -8320,6 +9518,62 @@ components:
           description: >-
             Demo still (end position); alternated with imageStartUrl to convey
             the movement
+    MesoPlanGenerateRequest:
+      type: object
+      required:
+        - daysOfWeek
+        - weeks
+      properties:
+        daysOfWeek:
+          type: array
+          minItems: 2
+          maxItems: 6
+          uniqueItems: true
+          description: 'Training days, FE day tokens; any weekday incl. weekend'
+          items:
+            type: string
+            pattern: ^(Hét|Kedd|Sze|Csü|Pén|Szo|Vas)$
+        weeks:
+          type: integer
+          minimum: 4
+          maximum: 8
+          description: Total length incl. the terminal deload week
+        priorities:
+          type: object
+          nullable: true
+          description: >-
+            Sparse per-muscle tier map over the 9 coarse groups (chest, back,
+            shoulder, biceps, triceps, quad, ham, glute, calf); absent = grow
+          additionalProperties:
+            type: string
+            pattern: ^(emphasize|grow|maintain)$
+        goalText:
+          type: string
+          nullable: true
+          maxLength: 400
+          description: >-
+            Free-text goal steering exercise choice (e.g. "röplabda mellett,
+            vállra figyelve")
+    MesoPlanGenerateResponse:
+      type: object
+      required:
+        - template
+        - rationale
+        - llmUsed
+      properties:
+        template:
+          $ref: '#/components/schemas/MesoTemplateUpsertRequest'
+        rationale:
+          type: string
+          description: >-
+            One Hungarian sentence on what was chosen and why (LLM or
+            deterministic)
+        llmUsed:
+          type: boolean
+          description: >-
+            false when the LLM port was absent, failed, or its answer changed
+            nothing (no accepted pick) — the deterministic filler produced the
+            plan
     MesoTemplateUpsertRequest:
       type: object
       required:
@@ -9444,6 +10698,12 @@ components:
           description: '''Hét''..''Vas'''
         durationEst:
           type: integer
+        note:
+          type: string
+          nullable: true
+          description: >
+            The workout-level closing note, absent when none was written
+            (mezo-d20.8.2.2).
         exercises:
           type: array
           items:
@@ -9754,6 +11014,17 @@ components:
         note:
           type: string
           maxLength: 500
+          nullable: true
+    WorkoutNoteRequest:
+      type: object
+      description: >
+        The workout-level closing note — one sentence about the whole session
+        ("Hogy ment?"), distinct from the per-exercise and per-set notes. Shared
+        by the finish body and the note endpoint (mezo-d20.8.2.2).
+      properties:
+        note:
+          type: string
+          maxLength: 1000
           nullable: true
     WorkoutFeedbackInput:
       type: object
@@ -10750,21 +12021,24 @@ components:
             $ref: '#/components/schemas/GoalGap'
     BiometricProfileResponse:
       type: object
-      required:
-        - sex
-        - heightCm
-        - birthDate
+      description: >-
+        Every field is optional AND nullable: an owner with no profile row yet
+        gets a 200 with an empty profile — an object whose every field is null —
+        not a 404 (mezo-5cmq). The UPSERT request keeps its required trio.
       properties:
         sex:
           type: string
           enum:
             - M
             - F
+          nullable: true
         heightCm:
           type: number
+          nullable: true
         birthDate:
           type: string
           format: date
+          nullable: true
         bodyFatPct:
           type: number
           nullable: true
@@ -11731,6 +13005,117 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RecipeResponse'
+    WorkshopChatMessage:
+      type: object
+      required:
+        - role
+        - text
+      properties:
+        role:
+          type: string
+          pattern: ^(user|assistant)$
+        text:
+          type: string
+          minLength: 1
+          maxLength: 4000
+    WorkshopDraftLine:
+      type: object
+      required:
+        - source
+        - name
+        - amount
+        - unit
+      properties:
+        source:
+          type: string
+          pattern: ^(pantry|estimate)$
+        pantryItemId:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+          minLength: 1
+        amount:
+          type: number
+          exclusiveMinimum: 0
+        unit:
+          type: string
+          minLength: 1
+        kcal:
+          type: number
+          nullable: true
+        proteinG:
+          type: number
+          nullable: true
+        carbsG:
+          type: number
+          nullable: true
+        fatG:
+          type: number
+          nullable: true
+    WorkshopDraft:
+      type: object
+      required:
+        - name
+        - category
+        - servings
+        - steps
+        - lines
+      properties:
+        name:
+          type: string
+          minLength: 1
+        category:
+          type: string
+          pattern: ^(breakfast|lunch|dinner|snack)$
+        servings:
+          type: integer
+          minimum: 1
+          maximum: 12
+        steps:
+          type: array
+          items:
+            type: string
+          maxItems: 20
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkshopDraftLine'
+          maxItems: 30
+    WorkshopTurnRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        goal:
+          type: string
+          nullable: true
+          pattern: ^(high_protein|pre_workout|post_workout|before_bed|breakfast)$
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkshopChatMessage'
+          maxItems: 20
+          default: []
+        draft:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/WorkshopDraft'
+    WorkshopTurnResponse:
+      type: object
+      required:
+        - reply
+        - draft
+      properties:
+        reply:
+          type: string
+        draft:
+          $ref: '#/components/schemas/WorkshopDraft'
     Macros:
       type: object
       required:
@@ -12388,6 +13773,22 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FuelDayRollup'
+        mealScoreAvg:
+          type: number
+          nullable: true
+          description: >-
+            Weekly "AI-atlag": the mean of the deterministic meal scores (0..1,
+            mezo-yta) of the week's scored meals, rounded to 3 decimals. NULL
+            when no meal in start..start+6 carries a score (honest-state: never
+            0-as-a-fake). Derived at read from meal.score, not stored.
+        weightAvgKg:
+          type: number
+          nullable: true
+          description: >-
+            Weekly weight average in kg, rounded to 2 decimals: one value per
+            day that has a weigh-in (that day's LATEST entry, so a
+            multi-weigh-in day is not over-weighted), averaged over those days.
+            NULL when the week has no weigh-in at all.
     RecipeLogResponse:
       type: object
       required:
@@ -12580,14 +13981,20 @@ components:
     MedicationDayResponse:
       type: object
       required:
-        - medication
-        - cycle
         - recentDoses
       properties:
         medication:
-          $ref: '#/components/schemas/MedicationResponse'
+          description: >-
+            Null when the owner has no active medication — a normal state, not
+            an error (mezo-5cmq).
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MedicationResponse'
         cycle:
-          $ref: '#/components/schemas/MedicationCycleResponse'
+          description: Null whenever `medication` is null — there is no cycle to derive.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/MedicationCycleResponse'
         recentDoses:
           type: array
           items:
@@ -13232,6 +14639,16 @@ components:
               description: >-
                 ISO week-Monday for kind=week; any date inside the week for
                 kind=day
+    ConversationRenameRequest:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: The new list label — same cap as the auto-title column.
     ConversationResponse:
       type: object
       required:
@@ -13364,6 +14781,15 @@ components:
           type: string
         id:
           type: string
+        label:
+          type: string
+          nullable: true
+          description: >-
+            Human name for the referenced entity when the producer knows one
+            (mezo-b3pp.33) — today only GraphNode refs carry it (the graph
+            node's title). Absent/null for every other kind, and for rows
+            persisted before this field existed; the FE falls back to its own
+            id-derived label then.
     SendMessageRequest:
       type: object
       required:
@@ -13420,6 +14846,16 @@ components:
           description: >-
             The promoting pattern's title (source=pattern facts only) — the V3.3
             evidence link.
+        citedWeeks:
+          type: integer
+          nullable: true
+          description: >-
+            In how many of the recent weekly reviews the companion cited this
+            fact as something the week was built on (mezo-d20.7.7). A SEPARATE,
+            weaker signal than reinforcementCount — the model citing its own
+            knowledge is not the user re-confirming it — derived live from the
+            non-deleted weekly_review rows. Null = not measurable (the
+            proactive/weekly feature is off), never a stand-in zero.
     CreateFactRequest:
       type: object
       required:
@@ -13455,6 +14891,7 @@ components:
         - id
         - candidateText
         - category
+        - source
         - createdAt
       properties:
         id:
@@ -13467,6 +14904,25 @@ components:
           description: >-
             'train' | 'fuel' | 'health' | 'life' — classified by the extractor
             at capture time
+        source:
+          type: string
+          description: >-
+            'chat' (post-turn extraction, V1.2) | 'weekly_review' (the Monday
+            weekly round's proposal, mezo-d20.7.6) — the promoted knowledge fact
+            inherits it
+        evidence:
+          type: string
+          nullable: true
+          description: >-
+            What the candidate rests on, in the proposer's own words (weekly
+            candidates only — chat extraction does not produce one).
+        weekStart:
+          type: string
+          format: date
+          nullable: true
+          description: >-
+            The ISO Monday of the weekly review that proposed this candidate
+            (null for chat-extracted ones).
         userDecision:
           type: string
           nullable: true
@@ -13602,6 +15058,18 @@ components:
           description: >-
             The V3.2 critic's prose reasoning — the card's 'AI gondolatmenete';
             null on statistical rows.
+        citedWeeks:
+          type: integer
+          nullable: true
+          description: >-
+            In how many of the recent weekly reviews the companion cited this
+            pattern as something the week was built on (mezo-d20.7.7).
+            Deliberately NOT folded into confidence — confidence is a statistic
+            (r/n/p, or the V3.2 critique score), a citation is the model
+            selecting its own material; it is shown beside the statistic, never
+            inside it, and never moves status. Derived live from the non-deleted
+            weekly_review rows. Null = not measurable (the proactive/weekly
+            feature is off), never a stand-in zero.
     PatternCritique:
       type: object
       nullable: true
@@ -14227,11 +15695,23 @@ components:
         text:
           type: string
           maxLength: 500
+        contextLabel:
+          type: string
+          enum:
+            - munka
+            - csalad
+            - baratok
+            - edzes
+            - konfliktus
+            - kozos_program
+            - segitseg
+            - egyeb
     PeopleResponse:
       type: object
       required:
         - persons
         - mentions
+        - mezoNote
       properties:
         persons:
           type: array
@@ -14241,6 +15721,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MentionResponse'
+        mezoNote:
+          type: string
+          description: >-
+            Az Emberek hub Mezo-észrevétel sávjának mondata. A mai 'people'
+            companion-üzenet, ha van; egyébként a heti aggregátumokból
+            számított, determinisztikus tartalék. Sosem üres — a sáv mindig igaz
+            mondatot mutat.
     PersonResponse:
       type: object
       required:
@@ -14255,6 +15742,11 @@ components:
         - knownFacts
         - ties
         - affectTrend
+        - direction
+        - aliases
+        - status
+        - sourceKind
+        - graphEdges
       properties:
         id:
           type: string
@@ -14267,10 +15759,30 @@ components:
           type: string
           enum:
             - partner
+            - friend
+            - family
+            - colleague
             - teammate
             - mentee
         relationshipHu:
           type: string
+        aliases:
+          type: array
+          items:
+            type: string
+            maxLength: 60
+        status:
+          type: string
+          enum:
+            - candidate
+            - active
+            - archived
+        sourceKind:
+          type: string
+          enum:
+            - manual
+            - extractor
+            - seed
         affectBaseline:
           type: string
           enum:
@@ -14292,8 +15804,36 @@ components:
             type: string
         affectTrend:
           type: array
+          description: >-
+            Heti hangulat-olvasatok 1..5 skálán, időrendben (legfeljebb 8, a
+            legfrissebbek). Az említések tónusából és intenzitásából SZÁMÍTOTT
+            érték — a person.affect_trend oszlopot ez a válasz nem olvassa.
           items:
             type: integer
+        affectTrendStart:
+          type: string
+          format: date
+          nullable: true
+          description: >-
+            A hangulat-ív első olvasatának hete (hétfő). Az ív csak azokat a
+            heteket tartalmazza, ahol volt tónusozott említés, ezért az
+            időablakot ebből kell címkézni, nem az olvasatok számából. null, ha
+            nincs olvasat.
+        direction:
+          type: string
+          enum:
+            - up
+            - down
+            - flat
+          description: >-
+            A hangulat-ív iránya az utolsó két olvasat és a korábbiak átlaga
+            alapján.
+        directionReason:
+          type: string
+          nullable: true
+          description: >-
+            Magyar, determinisztikus indoklás az irány alatt. null, ha nincs
+            olvasat.
         mentionCount:
           type: integer
           description: 'Count of live mention rows — computed, never seeded'
@@ -14303,6 +15843,40 @@ components:
         lastMentionedAt:
           type: string
           format: date-time
+        graphEdges:
+          type: array
+          description: >-
+            A személy PERSON node-jának legerősebb gráf-élei (legfeljebb 3, súly
+            szerint csökkenő). Üres, ha a gráf ki van kapcsolva, vagy a
+            személynek nincs node-ja/éle.
+          items:
+            $ref: '#/components/schemas/PersonGraphEdge'
+    PersonGraphEdge:
+      type: object
+      description: >-
+        Egy gráf-él a személy felől nézve — a másik végpont, és hogy hogyan
+        kapcsolódik.
+      required:
+        - nodeKind
+        - title
+        - relationHu
+        - strength
+      properties:
+        nodeKind:
+          type: string
+          description: >-
+            A másik végpont node-fajtája (PATTERN | PREFERENCE | GOAL |
+            LIFE_EVENT | SEASON | INSIGHT | PERSON).
+        title:
+          type: string
+        relationHu:
+          type: string
+          description: >-
+            Magyar kapcsolat-ige (kiváltja | megelőzte | támogatja | ütközik
+            vele | kapcsolódik).
+        strength:
+          type: string
+          description: erős | közepes | gyenge
     MentionResponse:
       type: object
       required:
@@ -14312,7 +15886,6 @@ components:
         - personName
         - source
         - excerpt
-        - tone
         - flagged
       properties:
         id:
@@ -14333,6 +15906,7 @@ components:
             - camera
             - chip
             - text
+            - chat
         durationS:
           type: integer
         excerpt:
@@ -14350,6 +15924,119 @@ components:
           type: string
         flagged:
           type: boolean
+        intensity:
+          type: integer
+          minimum: 1
+          maximum: 3
+        contextLabel:
+          type: string
+          enum:
+            - munka
+            - csalad
+            - baratok
+            - edzes
+            - konfliktus
+            - kozos_program
+            - segitseg
+            - egyeb
+        sourceRefKind:
+          type: string
+    CreatePersonRequest:
+      type: object
+      required:
+        - name
+        - relationship
+        - relationshipHu
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        aliases:
+          type: array
+          maxItems: 8
+          items:
+            type: string
+            minLength: 1
+            maxLength: 60
+        relationship:
+          type: string
+          enum:
+            - partner
+            - friend
+            - family
+            - colleague
+            - teammate
+            - mentee
+        relationshipHu:
+          type: string
+          minLength: 1
+          maxLength: 120
+        affectBaseline:
+          type: string
+          enum:
+            - positive
+            - neutral
+            - mixed
+            - negative
+        contactCadenceLabel:
+          type: string
+          maxLength: 120
+        notes:
+          type: string
+          maxLength: 500
+    UpdatePersonRequest:
+      type: object
+      required:
+        - name
+        - relationship
+        - relationshipHu
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 120
+        aliases:
+          type: array
+          maxItems: 8
+          items:
+            type: string
+            minLength: 1
+            maxLength: 60
+        relationship:
+          type: string
+          enum:
+            - partner
+            - friend
+            - family
+            - colleague
+            - teammate
+            - mentee
+        relationshipHu:
+          type: string
+          minLength: 1
+          maxLength: 120
+        affectBaseline:
+          type: string
+          enum:
+            - positive
+            - neutral
+            - mixed
+            - negative
+        contactCadenceLabel:
+          type: string
+          maxLength: 120
+        notes:
+          type: string
+          maxLength: 500
+    PersonDecisionRequest:
+      type: object
+      required:
+        - decision
+      properties:
+        decision:
+          type: string
+          pattern: ^(accept|reject)$
     FeedRef:
       type: object
       required:
@@ -14360,7 +16047,7 @@ components:
           type: string
           description: >-
             FE RefTag kind
-            (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory)
+            (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory/Person)
         label:
           type: string
     FeedMessageResponse:
@@ -14386,8 +16073,8 @@ components:
         kind:
           type: string
           description: >-
-            Feed message kind — morning, sleep, weight, midday, or evening
-            LLM-generated messages; intervention is config text
+            Feed message kind — morning, sleep, weight, midday, evening, or
+            people LLM-generated messages; intervention is config text
             (mezo.companion.interventions), never LLM output.
           enum:
             - morning
@@ -14396,6 +16083,7 @@ components:
             - midday
             - evening
             - intervention
+            - people
         eyebrow:
           type: string
         body:
@@ -14469,7 +16157,9 @@ components:
           description: Display title of the week's narrative
         body:
           type: string
-          description: The memoir prose (single narrative paragraph block)
+          description: >-
+            The memoir prose — narrative paragraphs separated by "\n\n" (prompt
+            v2, mezo-uajy)
         anchors:
           type: array
           items:
@@ -14477,6 +16167,16 @@ components:
         generatedAt:
           type: string
           format: date-time
+    MemoirArchiveResponse:
+      type: object
+      required:
+        - entries
+      properties:
+        entries:
+          type: array
+          description: 'Every persisted memoir, weekStart descending.'
+          items:
+            $ref: '#/components/schemas/MemoirResponse'
     PredictionResponse:
       type: object
       required:
@@ -14838,6 +16538,50 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/WeeklyReviewPredictionRef'
+    WeeklyLessonResponse:
+      type: object
+      description: >-
+        One weekly knowledge candidate (mezo-d20.7.6). The same learned_fact row
+        the Tudástár inbox serves as a FactCandidateResponse — repeated here as
+        the weekly read's own shape so the fragment stays self-contained; the
+        two MUST stay field-compatible (one entity, one mapper). Decisions are
+        made on the companion candidate endpoint, never here.
+      required:
+        - id
+        - candidateText
+        - category
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        candidateText:
+          type: string
+        category:
+          type: string
+          description: '''train'' | ''fuel'' | ''health'' | ''life'''
+        evidence:
+          type: string
+          nullable: true
+          description: >-
+            What the candidate rests on, in the proposer's own words — null when
+            the model named nothing usable.
+        userDecision:
+          type: string
+          nullable: true
+          description: '''accept'' | ''reject'' | ''refine'' — null while still open'
+        refinedText:
+          type: string
+          nullable: true
+          description: The user-edited wording when the decision was refine.
+        promotedFactId:
+          type: string
+          format: uuid
+          nullable: true
+          description: The knowledge fact this candidate was promoted into (accept/refine).
+        createdAt:
+          type: string
+          format: date-time
     QuestResponse:
       type: object
       required:
@@ -15212,6 +16956,36 @@ components:
         linkUrl:
           type: string
           nullable: true
+        framework:
+          type: string
+          enum:
+            - FOGG
+            - CLEAR
+          nullable: true
+        anchorHabitKey:
+          type: string
+          nullable: true
+          maxLength: 40
+        cue:
+          type: string
+          nullable: true
+          maxLength: 160
+        craving:
+          type: string
+          nullable: true
+          maxLength: 200
+        reward:
+          type: string
+          nullable: true
+          maxLength: 160
+        celebration:
+          type: string
+          nullable: true
+          maxLength: 120
+        identity:
+          type: string
+          nullable: true
+          maxLength: 120
         isActive:
           type: boolean
     HabitCatalogResponse:
@@ -15296,6 +17070,36 @@ components:
         linkUrl:
           type: string
           nullable: true
+        framework:
+          type: string
+          enum:
+            - FOGG
+            - CLEAR
+          nullable: true
+        anchorHabitKey:
+          type: string
+          nullable: true
+          maxLength: 40
+        cue:
+          type: string
+          nullable: true
+          maxLength: 160
+        craving:
+          type: string
+          nullable: true
+          maxLength: 200
+        reward:
+          type: string
+          nullable: true
+          maxLength: 160
+        celebration:
+          type: string
+          nullable: true
+          maxLength: 120
+        identity:
+          type: string
+          nullable: true
+          maxLength: 120
         position:
           type: integer
           minimum: 1
@@ -15326,6 +17130,36 @@ components:
         linkUrl:
           type: string
           nullable: true
+        framework:
+          type: string
+          enum:
+            - FOGG
+            - CLEAR
+          nullable: true
+        anchorHabitKey:
+          type: string
+          nullable: true
+          maxLength: 40
+        cue:
+          type: string
+          nullable: true
+          maxLength: 160
+        craving:
+          type: string
+          nullable: true
+          maxLength: 200
+        reward:
+          type: string
+          nullable: true
+          maxLength: 160
+        celebration:
+          type: string
+          nullable: true
+          maxLength: 120
+        identity:
+          type: string
+          nullable: true
+          maxLength: 120
         isActive:
           type: boolean
     HabitReorderRequest:
@@ -15375,6 +17209,28 @@ components:
           maximum: 15
         chainKey:
           type: string
+        framework:
+          type: string
+          enum:
+            - FOGG
+            - CLEAR
+          nullable: true
+        cue:
+          type: string
+          nullable: true
+          maxLength: 160
+        craving:
+          type: string
+          nullable: true
+          maxLength: 200
+        reward:
+          type: string
+          nullable: true
+          maxLength: 160
+        celebration:
+          type: string
+          nullable: true
+          maxLength: 120
     HabitSuggestResponse:
       type: object
       required:
@@ -15701,6 +17557,53 @@ components:
           type: integer
           minimum: 10
           maximum: 80
+    TutorialProgressEntry:
+      type: object
+      required:
+        - version
+        - seenAt
+      properties:
+        version:
+          type: integer
+          minimum: 1
+          description: >-
+            The registry version of the guide that was seen — a bump re-arms the
+            auto-show
+        seenAt:
+          type: string
+          format: date-time
+          description: 'First time the guide appeared (seen = appeared, Appcues modal rule)'
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 'Set on "Értem, kezdjük" (last card confirmed)'
+        dismissedAtStep:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: Zero-based card index when Kihagyom / ✕ / Escape closed it
+    TutorialProgressResponse:
+      type: object
+      required:
+        - progress
+      properties:
+        progress:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TutorialProgressEntry'
+          description: >-
+            Keyed by guide id from the frontend registry (e.g. `fuel`,
+            `welcome`)
+    SetTutorialProgressRequest:
+      type: object
+      required:
+        - progress
+      properties:
+        progress:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/TutorialProgressEntry'
     RitualWindow:
       type: object
       required:
@@ -16745,6 +18648,7 @@ components:
             - LIFE_EVENT
             - SEASON
             - INSIGHT
+            - PERSON
         title:
           type: string
         summary:
@@ -16796,6 +18700,25 @@ components:
         decision:
           type: string
           pattern: ^(accept|reject)$
+        refinedTitle:
+          type: string
+          minLength: 1
+          maxLength: 160
+          nullable: true
+          description: User-edited title applied on accept (edit-then-approve).
+        refinedSummary:
+          type: string
+          minLength: 1
+          maxLength: 500
+          nullable: true
+          description: User-edited summary applied on accept.
+    GraphEdgeCountResponse:
+      type: object
+      required:
+        - count
+      properties:
+        count:
+          type: integer
     MeWeekSubscores:
       type: object
       properties:
@@ -16905,6 +18828,59 @@ components:
         totalXp:
           type: integer
           nullable: true
+    MeWeekTrendPoint:
+      type: object
+      required:
+        - weekStart
+        - score
+        - computedAt
+      properties:
+        weekStart:
+          type: string
+          format: date
+          description: The week's ISO Monday
+        score:
+          type: integer
+          description: 0–100 — round(mean of the week's non-null day scores)
+        sleepAvg:
+          type: number
+          nullable: true
+          description: mean of the week's non-null sleep subscores; null when none
+        fuelAvg:
+          type: number
+          nullable: true
+        checkinAvg:
+          type: number
+          nullable: true
+        activityAvg:
+          type: number
+          nullable: true
+        computedAt:
+          type: string
+          format: date-time
+          description: >-
+            When this score was last computed from the week's data. The score is
+            a cache, not a truth — a retroactive log can change it; this stamp
+            is what makes the value honest.
+    MeWeekTrendResponse:
+      type: object
+      required:
+        - start
+        - weeks
+        - points
+      properties:
+        start:
+          type: string
+          format: date
+          description: 'The window''s last week (ISO Monday), echoed back'
+        weeks:
+          type: integer
+          description: The requested window width — points may be shorter
+        points:
+          type: array
+          description: Oldest first; only weeks that actually have a score. Never padded.
+          items:
+            $ref: '#/components/schemas/MeWeekTrendPoint'
     MeWeekResponse:
       type: object
       required:
@@ -16960,6 +18936,21 @@ components:
                 nullable: true
               label:
                 type: string
+    CharacterClaimFeedbackRequest:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          enum:
+            - TALAL
+            - NEM_IGAZ
+            - PONTOSITOM
+        text:
+          type: string
+          maxLength: 500
+          description: 'Required for PONTOSITOM (the correction), forbidden otherwise'
     CharacterDimensionSummary:
       type: object
       required:
@@ -16979,6 +18970,7 @@ components:
           enum:
             - CORE
             - CHAPTER
+            - META
         expertKey:
           type: string
           nullable: true
@@ -17001,6 +18993,50 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CharacterDimensionSummary'
+    CharacterExpertDto:
+      type: object
+      required:
+        - key
+        - displayName
+        - role
+        - voiceLine
+        - watch
+        - kind
+      properties:
+        key:
+          type: string
+        displayName:
+          type: string
+        role:
+          type: string
+        voiceLine:
+          type: string
+          description: the persona's short voice/manner line (Csapat card)
+        watch:
+          type: array
+          items:
+            type: string
+        dimensionKey:
+          type: string
+          nullable: true
+          description: >-
+            null for mezo; for szkeptikus the META dimension key (self-audit);
+            the owned CORE key for experts
+        kind:
+          type: string
+          enum:
+            - EXPERT
+            - SKEPTIC
+            - CHAIR
+    CharacterExpertsResponse:
+      type: object
+      required:
+        - experts
+      properties:
+        experts:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterExpertDto'
     CharacterPortraitRevisionDto:
       type: object
       required:
@@ -17035,6 +19071,7 @@ components:
           enum:
             - CORE
             - CHAPTER
+            - META
         expertKey:
           type: string
           nullable: true
@@ -17156,3 +19193,224 @@ components:
                 nullable: true
               summary:
                 type: string
+    CharacterRunSummary:
+      type: object
+      required:
+        - id
+        - kind
+        - day
+        - observationCount
+        - callCount
+        - detectorKeys
+        - expertKeys
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+            - NIGHTLY
+            - WEEKLY
+            - MONTHLY
+            - BOOTSTRAP
+        day:
+          type: string
+          format: date
+          description: >-
+            The anchor day — the observed day for NIGHTLY, week_start for
+            WEEKLY, the month's first day for MONTHLY, the run date for
+            BOOTSTRAP
+        observationCount:
+          type: integer
+        callCount:
+          type: integer
+          description: >-
+            Honest only for NIGHTLY (one call per fired expert); always 0 for
+            WEEKLY/MONTHLY/ BOOTSTRAP rows — no reliable call count is derivable
+            there, so the FE should omit or relabel this cell for non-NIGHTLY
+            kinds. The AI-napló is the call-level truth.
+        detectorKeys:
+          type: array
+          items:
+            type: string
+        expertKeys:
+          type: array
+          items:
+            type: string
+        conferenceId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Soft ref to the conference this run produced — null for NIGHTLY
+    CharacterRunObservationSignal:
+      type: object
+      required:
+        - detectorKey
+        - summary
+        - refCount
+      properties:
+        detectorKey:
+          type: string
+        summary:
+          type: string
+        refCount:
+          type: integer
+          description: >-
+            Count of raw evidence refs the signal is grounded in ("N
+            forrás-hivatkozás", v4.1) — the raw ref ids stay backend-side, never
+            served to the client
+    CharacterRunObservation:
+      type: object
+      required:
+        - id
+        - expertKey
+        - dimensionKeys
+        - text
+        - salience
+        - signals
+      properties:
+        id:
+          type: string
+          format: uuid
+        expertKey:
+          type: string
+        dimensionKeys:
+          type: array
+          items:
+            type: string
+        text:
+          type: string
+        salience:
+          type: integer
+        signals:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterRunObservationSignal'
+    CharacterRunResponse:
+      type: object
+      required:
+        - summary
+        - observations
+      properties:
+        summary:
+          $ref: '#/components/schemas/CharacterRunSummary'
+        observations:
+          type: array
+          items:
+            $ref: '#/components/schemas/CharacterRunObservation'
+    DiagnosisGenerateRequest:
+      type: object
+      required:
+        - phenomenon
+      properties:
+        phenomenon:
+          type: string
+          pattern: ^(fatigue|sleep)$
+    DiagnosisEvidenceItem:
+      type: object
+      required:
+        - kind
+        - label
+      properties:
+        kind:
+          type: string
+          pattern: ^(metric|pattern|fact)$
+        label:
+          type: string
+        detail:
+          type: string
+          nullable: true
+        sourceHu:
+          type: string
+          nullable: true
+          description: 'Hungarian provenance, e.g. Alvás-napló'
+        metricKey:
+          type: string
+          nullable: true
+        value:
+          type: number
+          nullable: true
+        baselineValue:
+          type: number
+          nullable: true
+        delta:
+          type: number
+          nullable: true
+        coverageDays:
+          type: integer
+          nullable: true
+    DiagnosisSuspect:
+      type: object
+      required:
+        - rank
+        - title
+        - claim
+        - evidenceIndexes
+        - strength
+        - probeText
+        - metricKey
+        - expectedDirection
+        - totalDays
+      properties:
+        rank:
+          type: integer
+        title:
+          type: string
+        claim:
+          type: string
+        evidenceIndexes:
+          type: array
+          items:
+            type: integer
+        strength:
+          type: string
+          pattern: ^(strong|moderate|weak)$
+        probeText:
+          type: string
+        metricKey:
+          type: string
+        expectedDirection:
+          type: string
+          pattern: ^(up|down|stable)$
+        totalDays:
+          type: integer
+    DiagnosisResponse:
+      type: object
+      required:
+        - id
+        - phenomenon
+        - windowDays
+        - verdict
+        - confidence
+        - evidence
+        - suspects
+        - generatedAt
+        - stale
+      properties:
+        id:
+          type: string
+          format: uuid
+        phenomenon:
+          type: string
+        windowDays:
+          type: integer
+        verdict:
+          type: string
+        confidence:
+          type: string
+          pattern: ^(strong|moderate|weak)$
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiagnosisEvidenceItem'
+        suspects:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiagnosisSuspect'
+        generatedAt:
+          type: string
+          format: date-time
+        stale:
+          type: boolean
+          description: a log landed in the window after generatedAt

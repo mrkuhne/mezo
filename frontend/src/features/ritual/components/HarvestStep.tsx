@@ -1,9 +1,11 @@
 import { useMemo } from 'react'
 import { useGamificationDay, useNeedsSummary, useProgressionProfile } from '@/data/hooks'
-import { CHIP_ICON_BY_SOURCE, skillDisplay } from '@/features/progression/logic/levelUpMeta'
+import { skillDisplay } from '@/features/progression/logic/levelUpMeta'
 import { harvestStages } from '@/features/ritual/logic/harvestStages'
 import { CountUp } from '@/shared/ui/CountUp'
 import { localDateString } from '@/shared/lib/dates'
+import { ClayIcon } from '@/shared/ui/clay'
+import type { ClayIconName } from '@/shared/ui/clay'
 
 type KnownSource = 'GYM' | 'RUN' | 'SPORT' | 'QUEST' | 'ACTIVITY' | 'HABIT'
 
@@ -18,6 +20,18 @@ const SOURCE_LABEL_HU: Record<KnownSource, string> = {
   GYM: 'Edzés',
   RUN: 'Futás',
   SPORT: 'Sport',
+}
+
+// Clay symbol per source, scoped to the ritual (mezo-d20.8.1.1). Deliberately NOT a rewrite of
+// levelUpMeta's CHIP_ICON_BY_SOURCE: that map also feeds the LevelUpScreen overlay, which has had
+// no design round and still speaks the emoji language. One surface moves at a time.
+const SOURCE_CLAY: Record<KnownSource, ClayIconName> = {
+  QUEST: 'i-kihivas',
+  HABIT: 'i-rend',
+  ACTIVITY: 'i-naplo',
+  GYM: 'i-edzes',
+  RUN: 'i-futas',
+  SPORT: 'i-sport',
 }
 
 function isKnownSource(source: string): source is KnownSource {
@@ -80,6 +94,9 @@ export function HarvestStep({ onNext }: { onNext: () => void }) {
 
   return (
     <div className="rz-act rz-harvest">
+      {/* The gold break — the peak told with light. It renders on every harvest, thin day or not:
+          the sky lifting is the act arriving, whereas confetti below is EARNED (xpTotal > 0). */}
+      <div className="rz-glow" aria-hidden="true" />
       {day.xpTotal > 0 && (
         <div className="rz-conf" aria-hidden="true">
           {CONFETTI_LEFT.map((left, i) => (
@@ -100,6 +117,7 @@ export function HarvestStep({ onNext }: { onNext: () => void }) {
       {/* mezo-tr5v: the reward block centers vertically; the CTA below stays pinned to the bottom. */}
       <div className="rz-harvest-body">
       <div className="rz-xp-wrap np-anim" style={{ animationDelay: `${xpStage.delayMs}ms` }}>
+        <div className="rz-harvest-spot" aria-hidden="true"><ClayIcon name="i-termes" size={72} /></div>
         <div className="rz-story-eyebrow">A MAI TERMÉS</div>
         <CountUp to={day.xpTotal} className="rz-xp-num" />
         <div className="rz-xp-unit">XP ma</div>
@@ -110,10 +128,12 @@ export function HarvestStep({ onNext }: { onNext: () => void }) {
           {visibleSources.map((s, i) => (
             <span
               key={s.source}
-              className="rz-chip rz-pop"
+              className="rz-chip rz-nw rz-pop"
               style={{ animationDelay: `${sourceStages[i].delayMs}ms` }}
             >
-              {CHIP_ICON_BY_SOURCE[s.source]} {SOURCE_LABEL_HU[s.source]} +{s.xp}
+              <span className="rz-nw-spot" aria-hidden="true"><ClayIcon name={SOURCE_CLAY[s.source]} size={15} /></span>
+              <span className="rz-chip-label">{SOURCE_LABEL_HU[s.source]}</span>
+              <span className="rz-chip-xp">+{s.xp}</span>
             </span>
           ))}
         </div>
@@ -127,7 +147,7 @@ export function HarvestStep({ onNext }: { onNext: () => void }) {
               className="rz-coin-chip rz-pop"
               style={{ animationDelay: `${coinStages[i].delayMs}ms` }}
             >
-              🪙 +{c.amount}
+              <ClayIcon name="i-erme" size={15} /> +{c.amount}
             </span>
           ))}
         </div>
@@ -136,8 +156,8 @@ export function HarvestStep({ onNext }: { onNext: () => void }) {
       {skill && skillStage && (() => {
         const meta = skillDisplay(skill.skillKey, 'LIFE')
         return (
-          <div className="rz-skill-row np-anim" style={{ animationDelay: `${skillStage.delayMs}ms` }}>
-            <span aria-hidden="true">{meta.icon}</span> {meta.name} — <span className="rz-skill-lv">Lv {skill.level}</span>
+          <div className="rz-skill-row rz-nw np-anim" style={{ animationDelay: `${skillStage.delayMs}ms` }}>
+            {meta.name} — <span className="rz-skill-lv">Lv {skill.level}</span>
             <div className="rz-skill-bar">
               <i style={{ width: `${clampPct(skill.progressPct)}%` }} />
             </div>
@@ -149,12 +169,12 @@ export function HarvestStep({ onNext }: { onNext: () => void }) {
         className={day.streakAlive ? 'rz-streak np-anim' : 'rz-streak np-anim dim'}
         style={{ animationDelay: `${streakStage.delayMs}ms` }}
       >
-        🔥 {day.streakDays} napos sorozat{day.streakAlive ? ' él' : ' — megszakadt'}
+        <ClayIcon name="i-lang" size={17} /> {day.streakDays} napos sorozat{day.streakAlive ? ' él' : ' — megszakadt'}
       </div>
 
       {needsSummary.streakDays > 0 && (
         <div className="rz-streak np-anim" style={{ animationDelay: `${streakStage.delayMs + 200}ms` }}>
-          🛟 {needsSummary.streakDays} napja életben
+          <ClayIcon name="i-eletjel" size={15} /> {needsSummary.streakDays} napja életben
         </div>
       )}
       </div>

@@ -33,9 +33,25 @@ public class PersonPopulator {
         p.setAffectBaseline(affectBaseline);
         p.setContactCadenceLabel("Havi 1:1");
         p.setNotes("Teszt személy.");
+        p.setAliases(List.of("Marcika"));
         p.setKnownFacts(List.of("Teszt fact"));
         p.setTies(List.of());
         p.setAffectTrend(List.of(3, 4, 5));
+        return personRepository.saveAndFlush(p);
+    }
+
+    /** S4 extractor-candidate row — status/sourceKind exercise the DB CHECKs. */
+    public PersonEntity createCandidate(UUID owner, String name, String notes) {
+        PersonEntity p = new PersonEntity();
+        p.setCreatedBy(owner);
+        p.setName(name);
+        p.setInitial(name.substring(0, 1).toUpperCase());
+        p.setRelationship("friend");
+        p.setRelationshipHu("Ismerős");
+        p.setAffectBaseline("neutral");
+        p.setNotes(notes);
+        p.setStatus("candidate");
+        p.setSourceKind("extractor");
         return personRepository.saveAndFlush(p);
     }
 }

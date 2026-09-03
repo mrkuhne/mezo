@@ -1,26 +1,28 @@
 // ============================================================
 // Mezo · needsNudges — küszöb-nudge-ok az "Életjel-ringekből" a mezo-szálba (mezo-dhzk,
 // Task 5). Pure, no I/O: a ring-állapotokból (`NeedState[]`) és a nap eddig megjelent
-// nudge-jaiból (`shared/lib/nudgeSeen.ts`) vezeti le a nap TELJES nudge-listáját — a már
+// nudge-jaiból (`logic/nudgeSeen.ts`) vezeti le a nap TELJES nudge-listáját — a már
 // megjelentek `fresh: false`-szal áthaladnak, az újonnan piros/kritikusba fordult ringek
-// `fresh: true`-val csatlakoznak. A hívó (`TodayPage`) a friss elemeket egyszer elmenti
-// (`markNudgeShown`) és a szál VÉGÉRE fűzi (`mezoMessages.ts`'s `nudges` paramétere).
+// `fresh: true`-val csatlakoznak. A hívó a shell `MezoThreadProvider`-je (mezo-atry) — a
+// friss elemeket egyszer elmenti (`markNudgeShown`) és a szál VÉGÉRE fűzi (`mezoMessages.ts`'s
+// `nudges` paramétere); `NapMezoPage` a szál `source: 'eletjel'` elemeit az Életjelek tabra
+// bontja (mezo-ho9k).
 // Egy ring naponta legfeljebb egyszer nudge-ol — ez a "shown" halmazból esik ki, nem
 // külön szabályból. Éjszaka (alvás-ablak) és ébredés utáni első órában nincs új nudge
 // (`isQuiet`), hogy a companion sose zavarjon alvás közben vagy közvetlenül ébredéskor.
 // Spec: .superpowers/sdd/2026-08-17-needs-rings/task-5-brief.md
 // ============================================================
-import type { NeedKey, NeedState } from '@/features/today/logic/needs'
+import { NEED_ICON, type NeedKey, type NeedState } from '@/features/today/logic/needs'
 import type { MezoMessageItem } from '@/features/today/logic/mezoMessages'
-import type { NudgeSeenEntry } from '@/shared/lib/nudgeSeen'
+import type { NudgeSeenEntry } from '@/features/today/logic/nudgeSeen'
 
 export const NUDGE_COPY: Record<NeedKey, string> = {
-  energia: '🍽️ Ideje enni valamit — az utolsó étkezésed régen volt, az Energia-ringed leapadt.',
-  hidratacio: '💧 Ma még alig ittál — egy pohár víz máris feltölti a Hidratáció-ringet.',
-  pihenes: '😴 A tegnapi éjszaka kevés volt — ma este érdemes korábban zárni.',
-  mozgas: '💪 Két napja nem mozdultál nagyot — egy edzés vagy séta újra feltölt.',
-  lelek: '💗 Rég néztél magadra — egy gyors check-in feltölti a Lélek-ringet.',
-  rend: '⚡ A láncaid ma még üresek — egy-két pipa visszahozza a Rendet.',
+  energia: 'Ideje enni valamit — az utolsó étkezésed régen volt, az Energia-ringed leapadt.',
+  hidratacio: 'Ma még alig ittál — egy pohár víz máris feltölti a Hidratáció-ringet.',
+  pihenes: 'A tegnapi éjszaka kevés volt — ma este érdemes korábban zárni.',
+  mozgas: 'Két napja nem mozdultál nagyot — egy edzés vagy séta újra feltölt.',
+  lelek: 'Rég néztél magadra — egy gyors check-in feltölti a Lélek-ringet.',
+  rend: 'A láncaid ma még üresek — egy-két pipa visszahozza a Rendet.',
 }
 
 export interface NudgeEntry {
@@ -99,5 +101,9 @@ export function toNudgeMessage(n: { key: NeedKey; at: string }): MezoMessageItem
     paragraphs: [NUDGE_COPY[n.key]],
     refs: [],
     meta: 'Életjel-figyelő',
+    source: 'eletjel',
+    // mezo-z4h4: ugyanaz a NeedKey → clay ikon szótár, mint az Életjel oldal tile-jain
+    // (VITAL_TILE, EletjelPage.tsx is `NEED_ICON`-t olvassa) — EGY forrás az igazságnak.
+    icon: NEED_ICON[n.key],
   }
 }

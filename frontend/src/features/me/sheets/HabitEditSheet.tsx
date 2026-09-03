@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { Sheet } from '@/shared/ui/Sheet'
 import { Icon } from '@/shared/ui/Icon'
-import { Chip } from '@/shared/ui/Chip'
 import { useHabitCatalogActions, useProgressionProfile } from '@/data/hooks'
-import type { HabitDefUpdateInput } from '@/data/habit/habitAdminApi'
 import { HABIT_METRIC_PALETTE } from '@/features/me/logic/habitMetricPalette'
 import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
-import type { HabitDefInfo, HabitMode } from '@/data/types'
+import { ClayIcon } from '@/shared/ui/clay'
+import type { HabitMode } from '@/data/types'
 
 const XP_MIN = 5
 const XP_MAX = 15
@@ -17,9 +16,15 @@ const LABEL: React.CSSProperties = { fontSize: 9, fontWeight: 800, letterSpacing
 const TEXT_INPUT: React.CSSProperties = { width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)', fontSize: 13 }
 
 /**
- * Habit-def create/edit sheet (routine editor, mezo-n5e9.2). The skill picker's options come
- * from `useProgressionProfile().life` (the Growth Skillek tab's own source — GrowthPage.tsx)
- * rather than the static `LIFE_SKILLS` list directly, falling back to it only when the profile
+ * Habit-def CREATE sheet (routine editor, mezo-n5e9.2; narrowed to create-only in the
+ * mezo-3zue.4 fix wave). `RutinHubPage` only ever opens it as `{chainKey}` — a habit row
+ * navigates to `/me/rutin/szokas/{habitKey}` instead — so the old edit and delete branches
+ * were unreachable dead code, and dead code carrying a DELETE path is a hazard. Editing a
+ * definition (title, XP, „miért", the legacy horgony-szöveg, the link) and deleting one both
+ * live on `HabitPage` now. The skill picker's options come
+ * from `useProgressionProfile().life` (the Growth Skillek tab's own source — GrowthSkillsPage.tsx,
+ * one of the Growth hub's sibling pages) rather than the static `LIFE_SKILLS` list directly,
+ * falling back to it only when the profile
  * hasn't resolved yet (ghost profile, `life: []`) so the picker is never stranded empty.
  *
  * CREATE offers the mode toggle + (when DERIVED) the metric select; EDIT shows mode/metric AND
@@ -28,39 +33,28 @@ const TEXT_INPUT: React.CSSProperties = { width: '100%', background: 'transparen
  * not just the two the brief calls out.
  */
 export function HabitEditSheet({
-  chainKey, def, onClose,
-}: { chainKey: string; def?: HabitDefInfo; onClose: () => void }) {
-  const { createDef, updateDef, deleteDef, pending } = useHabitCatalogActions()
+  chainKey, onClose,
+}: { chainKey: string; onClose: () => void }) {
+  const { createDef, pending } = useHabitCatalogActions()
   const { data: profile } = useProgressionProfile()
 
   const skillOptions = (profile.life ?? []).length > 0
-    ? profile.life.map((s) => ({ key: s.skillKey, name: LIFE_SKILLS.find((l) => l.key === s.skillKey)?.name ?? s.skillKey }))
-    : LIFE_SKILLS.map((s) => ({ key: s.key, name: s.name }))
+    ? profile.life.map((s) => {
+        const meta = LIFE_SKILLS.find((l) => l.key === s.skillKey)
+        return { key: s.skillKey, name: meta?.name ?? s.skillKey, clayIcon: meta?.clayIcon }
+      })
+    : LIFE_SKILLS.map((s) => ({ key: s.key, name: s.name, clayIcon: s.clayIcon }))
 
-  const [title, setTitle] = useState(def?.title ?? '')
-  const [why, setWhy] = useState(def?.why ?? '')
-  const [anchorCopy, setAnchorCopy] = useState(def?.anchorCopy ?? '')
-  const [skillKey, setSkillKey] = useState(def?.skillKey ?? skillOptions[0]?.key ?? 'mindset')
-  const [xp, setXp] = useState(def?.xp ?? XP_MIN)
-  const [linkUrl, setLinkUrl] = useState(def?.linkUrl ?? '')
-  const [mode, setMode] = useState<HabitMode>(def?.mode ?? 'MANUAL')
+  const [title, setTitle] = useState('')
+  const [why, setWhy] = useState('')
+  const [anchorCopy, setAnchorCopy] = useState('')
+  const [skillKey, setSkillKey] = useState(skillOptions[0]?.key ?? 'mindset')
+  const [xp, setXp] = useState(XP_MIN)
+  const [linkUrl, setLinkUrl] = useState('')
+  const [mode, setMode] = useState<HabitMode>('MANUAL')
   const [metric, setMetric] = useState(HABIT_METRIC_PALETTE[0]?.metric ?? '')
 
   const save = (close: () => void) => {
-    if (def) {
-      // Contract-honest "can't clear an optional field in v1" (mezo-n5e9.2 fix wave): the real
-      // PATCH ignores a JSON `null` value (`if (request.getWhy() != null)`), so sending
-      // `why: null` after the user emptied the field silently no-ops in real mode while
-      // `mockUpdateDef` used to actually clear it — a divergence the refetch would then expose
-      // (the old value reappears). Omitting an emptied optional key entirely makes both modes
-      // agree: neither touches a field the user cleared, in v1.
-      const patch: HabitDefUpdateInput = { title, xp }
-      if (why.trim()) patch.why = why
-      if (anchorCopy.trim()) patch.anchorCopy = anchorCopy
-      if (linkUrl.trim()) patch.linkUrl = linkUrl
-      updateDef(def.id, patch).then(close)
-      return
-    }
     createDef({
       chainKey, title, why: why || null, anchorCopy: anchorCopy || null,
       mode, skillKey, xp, linkUrl: linkUrl || null,
@@ -68,16 +62,12 @@ export function HabitEditSheet({
     }).then(close)
   }
 
-  const remove = (close: () => void) => {
-    if (def) deleteDef(def.id).then(close)
-  }
-
   return (
     <Sheet onClose={onClose} labelledBy="habit-edit-title">
       {(close) => (
         <div className="col gap-sm" style={{ padding: '4px 4px 8px' }}>
           <h2 id="habit-edit-title" style={{ fontSize: 14, fontWeight: 800, color: 'var(--text-primary)' }}>
-            {def ? 'Habit szerkesztése' : 'Új habit'}
+            Új habit
           </h2>
 
           <div className="row" style={ROW}>
@@ -102,30 +92,26 @@ export function HabitEditSheet({
             </div>
           </div>
 
-          {/* The picker is CREATE-only: `HabitDefUpdateRequest` has no `skillKey` field (like
-              mode/metric), so an editable picker in EDIT mode would silently drop a change on
-              save — the read-only chip block below carries it once a def exists. */}
-          {!def && (
-            <>
-              <span style={LABEL}>Skill</span>
-              <div className="row gap-sm" style={{ flexWrap: 'wrap' }}>
-                {skillOptions.map((s) => (
-                  <button
-                    key={s.key}
-                    type="button"
-                    className="chip"
-                    aria-pressed={skillKey === s.key}
-                    onClick={() => setSkillKey(s.key)}
-                    style={skillKey === s.key
-                      ? { background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' }
-                      : undefined}
-                  >
-                    {s.name}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
+          {/* `HabitDefUpdateRequest` carries no `skillKey` (like mode/metric), so all three are
+              contract-immutable once a def exists — which is exactly why this sheet is
+              create-only and `HabitPage` never offers them. */}
+          <span style={LABEL}>Skill</span>
+          <div className="row gap-sm" style={{ flexWrap: 'wrap' }}>
+            {skillOptions.map((s) => (
+              <button
+                key={s.key}
+                type="button"
+                className="chip"
+                aria-pressed={skillKey === s.key}
+                onClick={() => setSkillKey(s.key)}
+                style={skillKey === s.key
+                  ? { background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' }
+                  : undefined}
+              >
+                {s.clayIcon && <ClayIcon name={s.clayIcon} size={12} />} {s.name}
+              </button>
+            ))}
+          </div>
 
           <div className="row" style={{ ...ROW, justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={LABEL}>XP</span>
@@ -151,53 +137,27 @@ export function HabitEditSheet({
             </div>
           </div>
 
-          {def ? (
-            <div className="row gap-sm" style={{ alignItems: 'center' }}>
-              <Chip>{def.mode}</Chip>
-              {def.mode === 'DERIVED' && <Chip>{def.metric}</Chip>}
-              <Chip>{skillOptions.find((s) => s.key === def.skillKey)?.name ?? def.skillKey}</Chip>
-            </div>
-          ) : (
-            <>
-              <span style={LABEL}>Típus</span>
-              <div className="row gap-sm">
-                <button type="button" className="chip" aria-pressed={mode === 'MANUAL'} onClick={() => setMode('MANUAL')}
-                  style={mode === 'MANUAL' ? { background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' } : undefined}>
-                  <span aria-hidden="true">✓</span> Pipa (MANUAL)
-                </button>
-                <button type="button" className="chip" aria-pressed={mode === 'DERIVED'} onClick={() => setMode('DERIVED')}
-                  style={mode === 'DERIVED' ? { background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' } : undefined}>
-                  DERIVED
-                </button>
-              </div>
-              {mode === 'DERIVED' && (
-                <div className="row" style={ROW}>
-                  <div className="col" style={{ width: '100%' }}>
-                    <span style={LABEL}>Metrika</span>
-                    <select aria-label="Metrika" value={metric} onChange={(e) => setMetric(e.target.value)}
-                      style={{ ...TEXT_INPUT, background: 'var(--surface-2)' }}>
-                      {HABIT_METRIC_PALETTE.map((m) => <option key={m.metric} value={m.metric}>{m.label}</option>)}
-                    </select>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-
-          {def && (
-            // Confirm-free (single-user app, soft-deleted server-side) — the backend has no
-            // seed-def guard, so a built-in def is deletable too, matching the editor's
-            // edit-anything intent. Danger-styled (`var(--error)`) so it reads as destructive
-            // without needing a two-step confirm like the goal-delete precedent.
-            <button
-              type="button"
-              className="cta-ghost"
-              disabled={pending}
-              style={{ opacity: pending ? 0.5 : 1, color: 'var(--error)', borderColor: 'var(--error)' }}
-              onClick={() => remove(close)}
-            >
-              <Icon name="trash" size={13} /> Habit törlése
+          <span style={LABEL}>Típus</span>
+          <div className="row gap-sm">
+            <button type="button" className="chip" aria-pressed={mode === 'MANUAL'} onClick={() => setMode('MANUAL')}
+              style={mode === 'MANUAL' ? { background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' } : undefined}>
+              <span aria-hidden="true">✓</span> Pipa (MANUAL)
             </button>
+            <button type="button" className="chip" aria-pressed={mode === 'DERIVED'} onClick={() => setMode('DERIVED')}
+              style={mode === 'DERIVED' ? { background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' } : undefined}>
+              DERIVED
+            </button>
+          </div>
+          {mode === 'DERIVED' && (
+            <div className="row" style={ROW}>
+              <div className="col" style={{ width: '100%' }}>
+                <span style={LABEL}>Metrika</span>
+                <select aria-label="Metrika" value={metric} onChange={(e) => setMetric(e.target.value)}
+                  style={{ ...TEXT_INPUT, background: 'var(--surface-2)' }}>
+                  {HABIT_METRIC_PALETTE.map((m) => <option key={m.metric} value={m.metric}>{m.label}</option>)}
+                </select>
+              </div>
+            </div>
           )}
 
           <button type="button" className="cta-primary" disabled={pending || title.trim().length === 0}

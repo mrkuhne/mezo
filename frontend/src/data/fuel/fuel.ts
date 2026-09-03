@@ -241,6 +241,7 @@ const m2Dimensions: MealDimension[] = [
     detail:
       '13:30 · pre-workout T-3.5h — ablakon belül van, de a határán. Sweet spot 2–3h, és a Pull Day PR-attempt-en egy gyorsabb-emésztésű C-snack 16:00 körül így kötelező (whey+banán már be van időzítve).',
     context: [
+      { label: 'Szerep', value: 'Pre-workout üzemanyag-ablak' },
       { label: 'Időzítés', value: 'Pre-workout · T-3.5h' },
       { label: 'Étvágy', value: 'Nappal magas' },
       { label: 'PR-attempt', value: 'Chest Row · 107.5kg' },
@@ -260,7 +261,7 @@ export const fuelDay: FuelDay = {
   meals: [
     {
       id: 'm1',
-      slot: 'Reggeli · 09:15 · post-workout',
+      slot: 'Reggeli · 09:15',
       title: 'Túrós zabkása · áfonyával',
       score: weightedScore(m1Dimensions),
       kcal: 580,

@@ -33,13 +33,17 @@ describe('FuelMedicationPage (mock mode)', () => {
     return client
   }
 
+  it('Mozaik scaffold: lav tone page, ‹ Fuel back chip, D{cycleDay} hero, no eyebrow line', () => {
+    const { container } = renderView(clientWithFixture())
+    expect(container.querySelector('.mz-page.mz-p-lav')).toBeInTheDocument()
+    expect(screen.getByText('‹ Fuel')).toBeInTheDocument()
+    // De-branded page title (mezo-lwmq): guards against a regression back to "Reta".
+    expect(screen.getByText('Gyógyszer')).toBeInTheDocument()
+    expect(screen.getByText('D3')).toBeInTheDocument()
+  })
+
   it('renders the medication name + route/cadence/dose card', () => {
     renderView(clientWithFixture())
-    // Sage Napiv header (Task 7): the .over eyebrow copy is unchanged, only the pghead-np/
-    // sage vocabulary + the "＋ Beadás" action chip's accent moved off brand-teal.
-    expect(screen.getByText('Fuel · Gyógyszer')).toBeInTheDocument()
-    // De-branded page title (mezo-lwmq): guards against a regression back to "Reta".
-    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Gyógyszer')
     expect(screen.getByText('Teszt gyógyszer')).toBeInTheDocument()
     // route + cadence subtitle on the card (mockup: "subQ injekció · heti · hétfő")
     expect(screen.getByText(/subQ injekció · heti · hétfő/)).toBeInTheDocument()
@@ -47,16 +51,20 @@ describe('FuelMedicationPage (mock mode)', () => {
     expect(screen.getAllByText('6 mg').length).toBeGreaterThan(0)
   })
 
-  it('shows the cycle bar with the current day (cycleDay 3) outlined in the Stabil phase', () => {
+  it('shows the cycle bar with the current day (cycleDay 3) outlined in the Stabil phase — peak never red', () => {
     renderView(clientWithFixture())
     const bar = screen.getByRole('list', { name: /ciklus/i })
     // 7 cells, one per cycle day
     const cells = within(bar).getAllByRole('listitem')
     expect(cells).toHaveLength(7)
     // the current cell is day 3 (aria-current) and labelled as the stable phase
-    const current = cells.find(c => c.getAttribute('aria-current') === 'true')!
+    const current = cells.find((c) => c.getAttribute('aria-current') === 'true')!
     expect(current).toBeTruthy()
     expect(within(current).getByText('3')).toBeInTheDocument()
+    // peak-phase cells (days 1–2) carry the terracotta `peak` class, never `error`/red
+    const peakCells = cells.filter((c) => c.className.includes('peak'))
+    expect(peakCells).toHaveLength(2)
+    expect(cells.some((c) => /error/i.test(c.className))).toBe(false)
   })
 
   it('shows the phase note naming the day + Stabil phase', () => {
@@ -66,14 +74,15 @@ describe('FuelMedicationPage (mock mode)', () => {
     expect(note.textContent).toMatch(/Stabil/)
   })
 
-  it('lists the 3 fixture doses in the Beadások log, newest first', () => {
+  it('lists the 3 fixture doses in the Beadások log, newest first, with notes surfaced', () => {
     renderView(clientWithFixture())
     const log = screen.getByRole('list', { name: /beadások/i })
     const rows = within(log).getAllByRole('listitem')
     expect(rows).toHaveLength(3)
-    // newest dose (2026-06-22) is the first row
+    // newest dose (2026-06-22) is the first row, and its note is now shown (audit gap #10)
     expect(rows[0].textContent).toMatch(/Jún 22/)
-    // oldest dose (2026-06-08) is the last row
+    expect(rows[0].textContent).toMatch(/Hétfő reggel · subQ has/)
+    // oldest dose (2026-06-08) is the last row, no note
     expect(rows[2].textContent).toMatch(/Jún 8/)
   })
 
@@ -110,7 +119,7 @@ describe('FuelMedicationPage (nincs aktív gyógyszer)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
 
-  it('üres állapotot mutat, és nincs "＋ Beadás" akció', async () => {
+  it('üres állapotot mutat (nincs hero, nincs bignum), és nincs "＋ Beadás" akció', async () => {
     server.use(http.get(`${API_BASE}/api/medication`, () =>
       HttpResponse.json({
         medication: {
@@ -121,10 +130,55 @@ describe('FuelMedicationPage (nincs aktív gyógyszer)', () => {
         cycle: { cycleDay: 0, phaseKey: '', phaseLabel: '', lastDoseAt: null, week: [] },
         recentDoses: [],
       })))
-    renderView(new QueryClient({ defaultOptions: { queries: { retry: false } } }))
+    const { container } = renderView(new QueryClient({ defaultOptions: { queries: { retry: false } } }))
     expect(await screen.findByTestId('medication-empty')).toBeInTheDocument()
-    expect(screen.getByText('Nincs aktív gyógyszer')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Beadás/ })).not.toBeInTheDocument()
+    expect(screen.getByText('Nincs követett gyógyszer')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Beadás$/ })).not.toBeInTheDocument()
     expect(screen.queryByTestId('medication-phase-note')).not.toBeInTheDocument()
+    expect(container.querySelector('.mz-page-hero')).not.toBeInTheDocument()
+    // Fidelity audit (mezo-d20.11): /fuel/gyogyszer measured as "no entrance choreography"
+    // because the empty branch — the only one the seeded day ever reaches — rendered outside
+    // any EntranceGroup. The honest empty card rises too now.
+    expect(container.querySelector('.mz-play [data-testid="medication-empty"].rise')).not.toBeNull()
+  })
+
+  it('F7.3: az üres állapot már nem zsákutca — a "＋ Gyógyszer felvétele" CTA a create sheetet nyitja', async () => {
+    server.use(http.get(`${API_BASE}/api/medication`, () =>
+      HttpResponse.json({ medication: null, cycle: null, recentDoses: [] })))
+    renderView(new QueryClient({ defaultOptions: { queries: { retry: false } } }))
+    const cta = await screen.findByRole('button', { name: /Gyógyszer felvétele/ })
+    fireEvent.click(cta)
+    expect(await screen.findByText('Gyógyszer felvétele', { selector: '#medication-form-title *' })).toBeInTheDocument()
+  })
+})
+
+describe('FuelMedicationPage (F7.3 · szerkesztés + leállítás)', () => {
+  const clientWithFixture = () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    client.setQueryData(['medication'], medicationFixture)
+    return client
+  }
+
+  it('a Szerkesztés az edit sheetet nyitja, a mezők a gyógyszerrel előtöltve', () => {
+    renderView(clientWithFixture())
+    fireEvent.click(screen.getByRole('button', { name: 'Szerkesztés' }))
+    expect(screen.getByText('Gyógyszer szerkesztése')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('Teszt gyógyszer')).toBeInTheDocument()
+  })
+
+  it('a Leállítás kétlépcsős: megerősítő kártya, Mégse visszalép, Leállítom az üres állapotra vált', async () => {
+    renderView(clientWithFixture())
+    fireEvent.click(screen.getByRole('button', { name: 'Leállítás' }))
+    const confirm = screen.getByTestId('medication-stop-confirm')
+    expect(confirm.textContent).toMatch(/beadás-történet megmarad/)
+
+    fireEvent.click(within(confirm).getByRole('button', { name: 'Mégse' }))
+    expect(screen.queryByTestId('medication-stop-confirm')).not.toBeInTheDocument()
+    expect(screen.getByText('Teszt gyógyszer')).toBeInTheDocument()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Leállítás' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Leállítom' }))
+    // mock stop = the ghost day in the cache -> the honest empty state (mutation is async)
+    expect(await screen.findByTestId('medication-empty')).toBeInTheDocument()
   })
 })

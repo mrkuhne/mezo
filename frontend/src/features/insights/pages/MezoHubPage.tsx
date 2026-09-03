@@ -3,12 +3,12 @@
 // Source of truth: docs/design_2.0/prototypes/src/mezo-body.html hub section
 // (values ×1.18). The Insights shell (AppHero + SubNavDropdown) dissolves:
 // this page IS the /mezo index, the former sub-tabs are full-page siblings.
-// Anatomy: header recipe (date · bell · avatar) → breathing orb hero (NO
+// Anatomy: the shell fejléc (app/AppHeader.tsx, mezo-atry) → breathing orb hero (NO
 // number — one companion sentence + the quiet status line) → composer-shaped
 // chat opener → the motor's SINGLE decision card in a gold ring (the same
 // decide mutation PatternsPage uses; deciding flips it to the sage
-// acknowledgement) → 6-tile mosaic with live bottom lines from the pages'
-// own hooks → the full-width L0→L3 memory band.
+// acknowledgement) → 6+2-tile mosaic (a széles Diagnózis + Karakter csempékkel) with live
+// bottom lines from the pages' own hooks → the full-width L0→L3 memory band.
 // Honest states: no fabricated numbers — tile lines vanish (or say
 // „tanulom", the pages' own vocabulary) while their source is unresolved.
 // ============================================================
@@ -19,11 +19,12 @@ import { Mosaic, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import {
-  useToday, useTodayScenario, resolveBriefing, useCompanionFeed, useConversations,
+  useTodayScenario, resolveBriefing, useCompanionFeed, useConversations,
   usePatterns, usePatternMonitor, usePatternActions, useMemoryOverview,
-  useMeWeek, useMemoir, useKnowledge, usePredictions, useExperiments,
+  useMeWeek, useMemoir, useKnowledge, usePredictions, useExperiments, useDiagnoses,
+  useCharacterOverview,
 } from '@/data/hooks'
-import { useNotificationFeed } from '@/data/notification/feedHooks'
+import { isDossierEmpty } from '@/features/character/dossierState'
 import { mondayIso } from '@/data/fuel/fuelWeekHooks'
 import { buildMezoMessages } from '@/features/today/logic/mezoMessages'
 import { bucketize } from '@/features/insights/logic/lifecycle'
@@ -41,10 +42,7 @@ const DECIDED_MSG: Record<PatternStatus, string> = {
 
 export function MezoHubPage() {
   const navigate = useNavigate()
-  const { today } = useToday()
   const scenario = useTodayScenario()
-  const { items: notifications } = useNotificationFeed()
-  const [ntfOpen, setNtfOpen] = useState(false)
 
   // ── orb hero: companion voice + status line ─────────────────────────
   const feed = useCompanionFeed()
@@ -91,6 +89,11 @@ export function MezoHubPage() {
     ? undefined
     : `${confirmedCount} él a tudásban${decideBucket.length > 0 ? ` · ${decideBucket.length} döntés` : ''}`
 
+  const { diagnoses, isPending: diagPending } = useDiagnoses()
+  const diagLine = diagPending ? undefined
+    : diagnoses.length === 0 ? 'kérdés → gyanúsítottak evidenciával → próba'
+    : `${diagnoses.length} korábbi riport · a legutóbbi: ${diagnoses[0].suspects[0]?.title ?? '—'}`
+
   const { week } = useMeWeek(mondayIso())
   const score = week?.weekly.score ?? null
   const prevScore = week?.weekly.prevWeekScore ?? null
@@ -125,47 +128,23 @@ export function MezoHubPage() {
       ? `${experiments.filter((e) => e.status === 'active').length} aktív · ${activeExp.day}/${activeExp.total} nap`
       : `${experiments.length} kísérlet`
 
+  // Karakter dossier tile (hub-tile-reorg — moved from the Én hub): honest states — the
+  // switch-off 404 (overview null) drops the line, and so does the pre-bootstrap
+  // "untouched dossier" state. `isDossierEmpty` is the ONE shared predicate (mezo-1gim.13
+  // fix round 1) both this tile and KarakterHubPage's bootstrap face read.
+  const { overview: character } = useCharacterOverview()
+  const coreDims = character?.dimensions.filter((d) => d.kind === 'CORE') ?? []
+  const karakterLine = character == null || coreDims.length === 0 || isDossierEmpty(character)
+    ? undefined
+    : `${Math.round(coreDims.reduce((sum, d) => sum + d.maturity, 0) / coreDims.length)}% átlag érettség`
+
   // ── memory band counts — the real L0→L3 overview, no numbers without it ──
   const l2Count = overview?.l2.patterns.reduce((s, p) => s + p.count, 0) ?? null
   const l3Count = overview?.l3.facts.reduce((s, f) => s + f.count, 0) ?? null
-  const unreadNtf = notifications.filter((n) => n.readAt === null).length
 
   return (
     <div className="mzh-hub">
-      <div className="nap-head">
-        <div className="nap-head-grow">
-          <span className="mz-eyebrow">{today.dayLabel} · {today.dateLabel}</span>
-        </div>
-        <div className="nap-dpwrap">
-          <button type="button" className="nap-roundbtn" aria-expanded={ntfOpen}
-            aria-label={unreadNtf > 0 ? `Értesítések, ${unreadNtf} olvasatlan` : 'Értesítések'}
-            onClick={() => setNtfOpen((o) => !o)}>
-            <ClayIcon name="i-ertesites" size={21} />
-            {unreadNtf > 0 && <span className="nap-badge">{unreadNtf}</span>}
-          </button>
-          {ntfOpen && (
-            <div className="nap-ntfmenu" role="menu">
-              <span className="mz-eyebrow">Értesítések · ma</span>
-              {notifications.slice(0, 3).map((n) => (
-                <button key={n.id} type="button" role="menuitem" className="nap-ntfrow"
-                  onClick={() => { setNtfOpen(false); if (n.deeplink) navigate(n.deeplink) }}>
-                  <span className="nap-ntf-t">{n.title}</span>
-                  <span className="nap-ntf-x">{n.body}</span>
-                </button>
-              ))}
-              <button type="button" role="menuitem" className="nap-ntffoot"
-                onClick={() => { setNtfOpen(false); navigate('/me/ertesitesek') }}>
-                Összes értesítés ›
-              </button>
-            </div>
-          )}
-        </div>
-        <button type="button" className="nap-avatar" aria-label="Profil" onClick={() => navigate('/me')}>
-          <ClayIcon name="i-mezo" size={19} />
-        </button>
-      </div>
-
-      <EntranceGroup className="mzh-panel">
+      <EntranceGroup className="mz-panel-stack">
         {/* ===== orb hero — no number, one sentence, quiet status ===== */}
         <div className="mzh-orbhero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
           <ClaySpot name="s-orb" size={109} />
@@ -234,6 +213,16 @@ export function MezoHubPage() {
             line={predLine} onClick={() => navigate('/mezo/predictions')} aria-label="Előrejelzések" />
           <Tile wash="gold" icon="i-lombik" eyebrow="Kísérletek" delayMs={360} className="mzh-eb-gold"
             line={kisLine} onClick={() => navigate('/mezo/experiments')} aria-label="Kísérletek" />
+          {/* Diagnózis (mezo-hqfi.4, design round 2): the wide question tile — a full-width
+              catalog entry, not a 7th cell that would break the 2-col pairing. */}
+          <Tile wash="gold" eyebrow="Diagnózis" delayMs={400} aria-label="Diagnózis"
+            className="mzh-eb-gold mzh-t-diag" line={diagLine} onClick={() => navigate('/mezo/diagnozis')}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginTop: 4 }}>Miért vagyok fáradt? <span style={{ color: 'var(--mz-decring)' }}>✦</span></div>
+          </Tile>
+          {/* Karakter (hub-tile-reorg): AI-domain dossier — wide like Diagnózis, so the
+              6-cell 2-col pairing stays intact. */}
+          <Tile wash="lav" icon="i-kristaly" eyebrow="Karakter" delayMs={440} aria-label="Karakter"
+            className="mzh-eb-sage mzh-t-karakter" line={karakterLine} onClick={() => navigate('/me/karakter')} />
         </Mosaic>
 
         {/* ===== L0→L3 memory band ===== */}

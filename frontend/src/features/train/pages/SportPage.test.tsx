@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, describe, it, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import type { ReactNode } from 'react'
+import { MemoryRouter } from 'react-router-dom'
 import { SportPage } from '@/features/train/pages/SportPage'
 import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -15,25 +16,75 @@ beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
 const Wrapper = ({ children }: { children: ReactNode }) => (
-  <QueryWrapper><LevelUpProvider>{children}</LevelUpProvider></QueryWrapper>
+  <QueryWrapper><LevelUpProvider><MemoryRouter>{children}</MemoryRouter></LevelUpProvider></QueryWrapper>
 )
 const renderView = () => render(<SportPage />, { wrapper: Wrapper })
 
-test('own page-header: pghead-np over + h1', () => {
+// Mozaik 2.0 re-face (mezo-d20.11): the prototype's #page-sport head is a
+// `‹ Edzés` back chip + the `＋ Log` pgact; the venue/team/season hero CARD and
+// the RPE explainer are gone (the court lives on each slot row's meta line).
+test('page head: ‹ Edzés back chip + the ＋ Log pgact', () => {
   renderView()
-  expect(screen.getByText('Edzés · Sport')).toBeInTheDocument()
-  expect(screen.getByRole('heading', { name: 'Röplabda' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Edzés')
+  expect(screen.getByRole('button', { name: '＋ Log' })).toHaveClass('mz-pgact')
+  expect(screen.queryByRole('heading', { name: 'Röplabda' })).not.toBeInTheDocument()
 })
 
-test('hero shows the venue Display and the RPE explainer', () => {
+test('hero is the page name + a logged/scheduled big number, no venue card', () => {
+  const { container } = renderView()
+  expect(container.querySelector('.mz-hero-nm')).toHaveTextContent('Sport')
+  // logged-this-week / scheduled-slots — both derived, never fabricated
+  expect(container.querySelector('.mz-bignum')?.textContent).toMatch(/^\d+\/\d+$/)
+  expect(screen.queryByText(/RPE = Rate of Perceived Exertion/)).not.toBeInTheDocument()
+})
+
+test('stat strip carries the prototype labels', () => {
   renderView()
-  expect(screen.getByText('BVSC csarnok')).toBeInTheDocument()
-  expect(screen.getByText(/RPE = Rate of Perceived Exertion/)).toBeInTheDocument()
+  expect(screen.getByText('pályán e héten')).toBeInTheDocument()
+  expect(screen.getByText('RPE átlag · 1–10')).toBeInTheDocument()
+  expect(screen.getByText('váll-terhelés')).toBeInTheDocument()
 })
 
 test('default view is the weekly plan', () => {
   renderView()
-  expect(screen.getByText(/Heti ritmus · 7\.5h/)).toBeInTheDocument()
+  expect(screen.getByText(/Heti ritmus · 7\.5 ó/)).toBeInTheDocument()
+})
+
+// The prototype renders EVERY day of the week: a day with no slot is a dashed
+// „nincs session" row, never omitted (edzes-body `.sday.empty`).
+test('every weekday renders — days without a slot show the dashed „nincs session" row', () => {
+  const { container } = renderView()
+  const days = container.querySelectorAll('.spw-day')
+  expect(days.length).toBe(7)
+  const empties = container.querySelectorAll('.spw-day.empty')
+  expect(empties.length).toBeGreaterThan(0)
+  expect(screen.getAllByText('nincs session').length).toBe(empties.length)
+})
+
+// Regression (mezo-d20.11): the type tag used to be suppressed for volleyball,
+// so a röpi row said nothing about which sport it was. The prototype's `.stag`
+// rides every slot.
+test('every weekly slot row carries its type tag, RÖPI included', () => {
+  const { container } = renderView()
+  const rows = container.querySelectorAll('.spw-day.has .spw-slot')
+  expect(rows.length).toBeGreaterThan(0)
+  rows.forEach((row) => {
+    expect(row.querySelector('.stag')).not.toBeNull()
+  })
+  expect(container.querySelectorAll('.spw-day.has .spw-slot .stag-sport').length).toBeGreaterThan(0)
+})
+
+// Motion (mezo-d20.11): the page had NO entrance choreography — an armed
+// .mz-play wrapper with staggered .rise children is the prototype's behaviour.
+test('the page arms the entrance choreography and staggers its children', () => {
+  const { container } = renderView()
+  const play = container.querySelector('.mz-play')
+  expect(play).not.toBeNull()
+  expect(play!.querySelector('.mz-statstrip.rise')).not.toBeNull()
+  expect(play!.querySelector('.segtabs.rise')).not.toBeNull()
+  const staggered = play!.querySelectorAll('.spw-day.rise')
+  expect(staggered.length).toBe(7)
+  expect((staggered[1] as HTMLElement).style.getPropertyValue('--d')).toBe('90ms')
 })
 
 test('switching to Napló shows the session log header with avg jump count', async () => {
@@ -48,6 +99,43 @@ test('switching to Napló shows the stag-sport tag on each session row', async (
   const tags = screen.getAllByText('RÖPI')
   expect(tags.length).toBeGreaterThan(0)
   expect(tags[0]).toHaveClass('stag', 'stag-sport')
+})
+
+// Load-bearing fix (mezo-d20.3.4): the session card previously hardcoded a
+// stag-sport RÖPI tag on every row, mislabeling cross/TRX sessions.
+test('real mode Napló renders a kind-correct tag for a cross session', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/train/sport-sessions`, () =>
+      HttpResponse.json([
+        { id: 'd1f3a0e2-0000-4000-8000-000000000077', sport: 'cross', date: '2026-06-01', time: '07:30', duration: 30, rounds: 5, rpe: 6 },
+      ]),
+    ),
+  )
+  renderView()
+  await userEvent.click(await screen.findByRole('button', { name: 'Napló' }))
+  const tag = await screen.findByText('CROSS')
+  expect(tag).toHaveClass('stag', 'stag-cross')
+  expect(screen.queryByText('RÖPI')).not.toBeInTheDocument()
+  // cross sessions show Körök, not Setek.
+  expect(screen.getByText('körök')).toBeInTheDocument()
+  expect(screen.getByText('5')).toBeInTheDocument()
+})
+
+// Inline "Logold ›" on today's slot (README checklist) preselects that
+// slot's sport when opening the log sheet.
+test('real mode: today\'s slot shows an inline Logold chip that preselects the sport', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const todayIdx = (new Date().getDay() + 6) % 7
+  server.use(
+    http.get(`${API_BASE}/api/train/sport-schedule`, () => HttpResponse.json([
+      { id: 'sl-today', dayOfWeek: todayIdx, time: '18:00', durationMin: 60, kind: 'training', sport: 'trx', location: 'Life1 Corvin' },
+    ])),
+    http.get(`${API_BASE}/api/train/sport-sessions`, () => HttpResponse.json([])),
+  )
+  renderView()
+  await userEvent.click(await screen.findByRole('button', { name: 'Logold ›' }))
+  expect(await screen.findByText('Sport log · TRX')).toBeInTheDocument()
 })
 
 test('switching to Cross-load shows the read tool chip', async () => {
@@ -76,7 +164,7 @@ test('real mode renders the weekly plan from the schedule endpoint', async () =>
   vi.stubEnv('VITE_USE_MOCK', 'false')
   renderView()
   // 5 BVSC fixture slots (msw default) -> derived weekly hours 8 and the Mon row time
-  expect(await screen.findByText(/Heti ritmus · 8h/)).toBeInTheDocument()
+  expect(await screen.findByText(/Heti ritmus · 8 ó/)).toBeInTheDocument()
   expect(screen.getAllByText(/18:15/).length).toBeGreaterThan(0)
   expect(screen.getByRole('button', { name: 'Szerkesztés' })).toBeInTheDocument()
 })
@@ -124,7 +212,7 @@ test('real mode: a day with TRX + volleyball slots renders both rows with sport 
   expect(screen.getByText('TRX')).toBeInTheDocument()
   // weeklyHours is a plain JS number rendered raw (no hu-HU locale formatting anywhere
   // in the mapper/view) — 2.5 renders with a dot, not a comma.
-  expect(screen.getByText(/Heti ritmus · 2\.5h/)).toBeInTheDocument()
+  expect(screen.getByText(/Heti ritmus · 2.5 ó/)).toBeInTheDocument()
 })
 
 test('real mode hero shows week stats once a session lands in the current week', async () => {
@@ -139,9 +227,11 @@ test('real mode hero shows week stats once a session lands in the current week',
     ),
   )
   renderView()
-  // schedule-derived venue replaces the hardcoded string; /5 heti = 5 fixture slots
-  expect(await screen.findByText('/5 heti')).toBeInTheDocument()
-  expect(screen.getByText('BVSC csarnok')).toBeInTheDocument()
+  // The hero big number is logged/scheduled — 5 fixture slots is the denominator,
+  // and the court now reads off the slot row's meta line (no venue Display).
+  await screen.findByText(/Heti ritmus · \d/)
+  expect(document.body.querySelector('.mz-bignum')?.textContent).toMatch(/^\d+\/5$/)
+  expect(screen.getAllByText(/BVSC csarnok/).length).toBeGreaterThan(0)
 })
 
 test('real mode Napló hides the jump average when sessions carry no jumpCount', async () => {
@@ -164,7 +254,7 @@ test('real mode Napló hides the jump average when sessions carry no jumpCount',
 
 test('mock: the dashed chip opens the SportEventSheet and a save lands in the upcoming list', async () => {
   renderView()
-  await userEvent.click(screen.getByRole('button', { name: '+ Egyszeri esemény' }))
+  await userEvent.click(screen.getByRole('button', { name: '＋ Egyszeri esemény' }))
   expect(await screen.findByRole('heading', { name: 'Új esemény' })).toBeInTheDocument()
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   // default date = today → the cache-emulated write shows up in the upcoming list

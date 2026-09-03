@@ -2,6 +2,13 @@ import { keepPreviousData, useQuery, type QueryKey } from '@tanstack/react-query
 import { isMockMode } from '@/data/_client/mode'
 
 /**
+ * The app-wide real-mode query staleTime — the value `QueryProvider` puts on the QueryClient —
+ * exported so a hook that wants exactly that value can ASK for it (see `realStaleTime` below for
+ * why asking is necessary; mezo-5cmq).
+ */
+export const DEFAULT_QUERY_STALE_TIME_MS = 30_000
+
+/**
  * The dual-mode read recipe with the **"no static fallback in real mode"** invariant
  * baked in (see docs/features/_platform-data-layer.md §"The 'no static fallback in real
  * mode → ghost-guard' rule").
@@ -24,7 +31,17 @@ export function useDualQuery<T>(opts: {
   mockData: T
   realFetch: () => Promise<T>
   realEmpty: T
-  /** real-mode staleTime (mock mode is always Infinity). Omit → TanStack app default. */
+  /**
+   * Real-mode staleTime (mock mode is always Infinity).
+   *
+   * Omitting does NOT fall back to the QueryClient default, despite appearances: this helper
+   * always passes the `staleTime` key, so an omitted value sends `staleTime: undefined`, and
+   * TanStack's `defaultQueryOptions` merges by plain spread — the `undefined` OVERWRITES the
+   * client's default and the query ends up ALWAYS-STALE (staleTime 0), refetching once per
+   * mounted observer. To get the app default, pass `DEFAULT_QUERY_STALE_TIME_MS` explicitly
+   * (mezo-5cmq). Most existing callers omit it and are therefore always-stale — auditing them
+   * is its own issue, not something to assume away when reading them.
+   */
   realStaleTime?: number
   /**
    * Real mode only, opt-in (mezo-b3pp.15): when the queryKey CHANGES, keep the previous key's

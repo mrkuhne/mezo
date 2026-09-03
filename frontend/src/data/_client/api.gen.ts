@@ -13,8 +13,76 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Login with the owner credentials, returns a JWT */
+        /** Login with email + password, returns a JWT */
         post: operations["login"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/register": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Register with an invite code, returns a JWT */
+        post: operations["register"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The authenticated user's account profile */
+        get: operations["me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/change-password": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change the authenticated user's password (also clears must-change-password) */
+        post: operations["changePassword"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/auth/onboarding-complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark the authenticated user's onboarding as done */
+        post: operations["completeOnboarding"];
         delete?: never;
         options?: never;
         head?: never;
@@ -245,6 +313,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/meso-plans/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate a hypertrophy mesocycle proposal (deterministic skeleton + optional LLM exercise pick); returns a MesoTemplateUpsertRequest-compatible template */
+        post: operations["generateMesoPlan"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/meso-templates": {
         parameters: {
             query?: never;
@@ -445,7 +530,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Sport (volleyball) sessions of the current user, date descending */
+        /**
+         * Sport sessions of the current user, date descending — optionally narrowed to an inclusive date range (Sport Napló trend)
+         * @description Both bounds are optional and inclusive. Omitting both keeps the historical behaviour (the whole owned log, date descending); an omitted single bound stays unbounded on that side. With both bounds present the range must be forward (`from` <= `to`) and no wider than `mezo.train.sport-session-max-span-days`.
+         */
         get: operations["listSportSessions"];
         put?: never;
         /** Log a sport session (SportLogSheet) — date/time default to now server-side */
@@ -668,6 +756,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/workouts/{id}/note": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set (or clear) the workout's closing note
+         * @description Last-write-wins. A null/blank note clears it. Used by the review page, so a note can be written or corrected long after the workout was finished (mezo-d20.8.2.2).
+         */
+        put: operations["saveWorkoutNote"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/workouts/{id}/finish": {
         parameters: {
             query?: never;
@@ -677,7 +785,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Complete a workout instance (idempotent) */
+        /**
+         * Complete a workout instance (idempotent)
+         * @description The optional body carries the closing note. Because finishing is idempotent, the note is FILL-IF-EMPTY here: a re-finish (or a bodyless retry) never wipes an existing note. Use PUT /api/train/workouts/{id}/note to overwrite or clear it (mezo-d20.8.2.2).
+         */
         post: operations["finishWorkout"];
         delete?: never;
         options?: never;
@@ -930,7 +1041,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The owner's biometric profile */
+        /**
+         * The owner's biometric profile
+         * @description Never 404s: having no profile yet is a normal state, answered with 200 and an empty profile — an object whose every field is null (mezo-5cmq).
+         */
         get: operations["getBiometricProfile"];
         /** Create or replace the owner's biometric profile */
         put: operations["upsertBiometricProfile"];
@@ -1091,6 +1205,23 @@ export interface paths {
         get: operations["getRecipeBreakdown"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/recipe/workshop/turn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** One stateless Receptműhely AI turn — history + current draft in, prose reply + full updated draft out (mezo-92pb); nothing persisted */
+        post: operations["workshopTurn"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1275,10 +1406,17 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** The owner's active medication — definition + cycle config, the derived cycle, and the recent doses */
+        /**
+         * The owner's active medication — definition + cycle config, the derived cycle, and the recent doses
+         * @description Never 404s: having no active medication is a normal state, answered with 200 and an empty payload (`medication` and `cycle` null, `recentDoses` empty) (mezo-5cmq).
+         */
         get: operations["getMedicationDay"];
         put?: never;
-        post?: never;
+        /**
+         * Create the owner's medication (the single-active slice's create path)
+         * @description The owner can have ONE active medication at a time — creating while an active one exists answers 400 with MEDICATION_ACTIVE_EXISTS. Re-creating after a stop (PUT active:false) is the normal path; the old row's dose history stays.
+         */
+        post: operations["createMedication"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1566,6 +1704,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/conversation/{conversationId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete one conversation (soft; its messages become unreachable) — F7.5 (mezo-d20.8.5) */
+        delete: operations["deleteConversation"];
+        options?: never;
+        head?: never;
+        /** Rename one conversation (the list label; reversible, no history impact) — F7.5 (mezo-d20.8.5) */
+        patch: operations["renameConversation"];
+        trace?: never;
+    };
     "/api/companion/conversation/{conversationId}/messages": {
         parameters: {
             query?: never;
@@ -1661,7 +1817,10 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Decide a candidate (V1.2) — accept/refine promote it into a knowledge fact (source=chat), reject archives it. One decision per candidate; confirm is an explicit L2 action, never silent. */
+        /**
+         * Decide a candidate (V1.2) — accept/refine promote it into a knowledge fact, reject archives it. One decision per candidate; confirm is an explicit L2 action, never silent.
+         * @description The promoted fact inherits the candidate's `source`: a chat-extracted candidate becomes a `chat` fact, a weekly-review candidate a `weekly_review` one (mezo-d20.7.6) — promotion never re-labels where the insight came from.
+         */
         post: operations["decideFactCandidate"];
         delete?: never;
         options?: never;
@@ -1849,8 +2008,27 @@ export interface paths {
         /** Persons (mention-count desc) + recent mentions (ts desc, max 50) of the current user */
         get: operations["getPeopleBootstrap"];
         put?: never;
-        post?: never;
+        /** Create an owned person (initial derived server-side; status=active, sourceKind=manual) */
+        post: operations["createPerson"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/people/{personId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Full update of the editable person fields (knownFacts/ties/affectTrend are AI-curated, untouched) */
+        put: operations["updatePerson"];
+        post?: never;
+        /** Soft-delete an owned person (mentions stay stored, leave the feed) */
+        delete: operations["deletePerson"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1867,6 +2045,40 @@ export interface paths {
         put?: never;
         /** Log a mention for an owned person (source/ts/flagged are server-stamped) */
         post: operations["logMention"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/people/{personId}/mentions/{mentionId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke a mention (soft delete) */
+        delete: operations["deleteMention"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/people/{personId}/decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decide a candidate person (S4 nightly extractor inbox) — accept activates the person, reject soft-deletes it (the soft-deleted row is the extractor's reject list: the name is never re-proposed). One decision per candidate. */
+        post: operations["decidePerson"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1919,6 +2131,26 @@ export interface paths {
         };
         /** The latest weekly memoir (lazily generated for the last completed week when none exists yet) */
         get: operations["getMemoir"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/memoir/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every persisted memoir, newest week first — the archive shelf (F7.5, mezo-d20.8.5)
+         * @description The full list in one round — weekly cadence keeps this small (~52 rows/year). Never generates: the archive lists what the Sunday cron / lazy-latest already wrote. An empty list is the honest empty state (never a 404 — list-endpoint precedent).
+         */
+        get: operations["getMemoirArchive"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2075,6 +2307,26 @@ export interface paths {
          * @description 409 while the week is still in progress (`{start} + 7 days` must be on/before today — the same completed-week gate the generator idiom uses elsewhere). 404 when the regenerated week still has no logged data (empty-week ⇒ no row, the generator's own rule).
          */
         post: operations["regenerateWeeklyReview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/weekly-review/{start}/lessons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The week's knowledge candidates — "A hét tanulságai" (mezo-d20.7.6) — WITH their decisions
+         * @description The weekly generator proposes candidates onto the SAME learned_fact path chat extraction uses; this read returns the ones proposed for `{start}`, newest first, including the already-decided ones (`GET /api/companion/fact/candidate` only returns the undecided inbox, but a closed week must be reviewable in its settled state). `evidence` names what the candidate rests on. Always 200 — an empty array is the honest empty state (no review, no usable candidate, or every candidate rejected), never a 404. Deciding stays the shipped write path: `POST /api/companion/fact/candidate/{candidateId}/decision`.
+         */
+        get: operations["getWeeklyReviewLessons"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2553,6 +2805,25 @@ export interface paths {
         put: operations["setDietSettings"];
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/tutorial/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The user's guide progress; empty map ghost when nothing seen — never 404 (TutorialProgress) */
+        get: operations["getTutorialProgress"];
+        /** Replace the whole progress map (per-user singleton upsert) (TutorialProgress) */
+        put: operations["setTutorialProgress"];
+        post?: never;
+        /** Forget every seen guide (Beállítások · Kalauzok újranézése) (TutorialProgress) */
+        delete: operations["resetTutorialProgress"];
         options?: never;
         head?: never;
         patch?: never;
@@ -3115,6 +3386,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/graph/edge/count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Count of active knowledge-graph edges for the current user (KnowledgeGraph) */
+        get: operations["countGraphEdges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me/week/{start}": {
         parameters: {
             query?: never;
@@ -3124,6 +3412,26 @@ export interface paths {
         };
         /** The week's per-day data + deterministic day scores + weekly aggregates (live for the current week) */
         get: operations["getMeWeek"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/week/{start}/trend": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The persisted weekly-score trend for the N ISO weeks ending at start (inclusive)
+         * @description The Heti hero's 8-week trend (mezo-d20.7.5). Points are the PERSISTED weekly scores (weekly_score) — a deterministic cache, refreshed whenever the week's own inputs changed after computedAt (and always for a week that has not finished yet). A week whose score is null (fewer than 2 scored days — the "tanulom" gate) yields NO point: the series is short, never padded with a zero. Oldest first.
+         */
+        get: operations["getMeWeekTrend"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3166,6 +3474,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/character/experts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The profiling team catalog — 7 domain experts + Szkeptikus + Mezo, in fixed display order (Csapat page; never 404 while the switch is on) */
+        get: operations["getCharacterExperts"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/character/feed": {
         parameters: {
             query?: never;
@@ -3177,6 +3502,23 @@ export interface paths {
         get: operations["getCharacterFeed"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/bootstrap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** One-time deep read over the whole existing history that stands up the dossier */
+        post: operations["bootstrapCharacter"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3200,6 +3542,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/character/claim/{claimId}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Daniel's answer to one claim — talál / nem igaz / pontosítom (spec §7) */
+        post: operations["submitCharacterClaimFeedback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The run timeline over an inclusive day window (Gépterem — Karakter S9, mezo-1gim.14): one row per pipeline execution that actually ran, quiet nights included; a day with no row means the pipeline never ran for it (honest "nincs adat" — never fabricated) */
+        get: operations["getCharacterRuns"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/character/run/{runId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One run's full detail: its summary plus the observations it resolved from — by (owner, day) for a NIGHTLY row, by the conference it fed for a WEEKLY/MONTHLY/BOOTSTRAP row */
+        get: operations["getCharacterRun"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/character/conference/{conferenceId}": {
         parameters: {
             query?: never;
@@ -3211,6 +3604,58 @@ export interface paths {
         get: operations["getCharacterConference"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/diagnosis": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Past diagnoses, newest first ([] = honest empty, never 404) */
+        get: operations["listDiagnoses"];
+        put?: never;
+        /** Generate a fresh diagnosis (consumes the daily quota) */
+        post: operations["generateDiagnosis"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/diagnosis/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One diagnosis, including its stale flag */
+        get: operations["getDiagnosis"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/diagnosis/{id}/suspect/{rank}/experiment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Turn a suspect's probe into a tracked experiment (the tap IS the acceptance) */
+        post: operations["startDiagnosisExperiment"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3259,6 +3704,30 @@ export interface components {
         TokenResponse: {
             /** @description HS256-signed JWT bearer token */
             token: string;
+        };
+        RegisterRequest: {
+            /** @example MEZO-7KQ2-XN4P */
+            inviteCode: string;
+            /** Format: email */
+            email: string;
+            password: string;
+            name: string;
+        };
+        MeResponse: {
+            /** Format: uuid */
+            id: string;
+            email: string;
+            name: string;
+            /** @description OWNER or USER */
+            role: string;
+            onboarded: boolean;
+            mustChangePassword: boolean;
+            /** @example Europe/Budapest */
+            timezone: string;
+        };
+        ChangePasswordRequest: {
+            currentPassword: string;
+            newPassword: string;
         };
         LogWeightRequest: {
             /** Format: date */
@@ -3582,6 +4051,25 @@ export interface components {
             imageStartUrl?: string | null;
             /** @description Demo still (end position); alternated with imageStartUrl to convey the movement */
             imageEndUrl?: string | null;
+        };
+        MesoPlanGenerateRequest: {
+            /** @description Training days, FE day tokens; any weekday incl. weekend */
+            daysOfWeek: string[];
+            /** @description Total length incl. the terminal deload week */
+            weeks: number;
+            /** @description Sparse per-muscle tier map over the 9 coarse groups (chest, back, shoulder, biceps, triceps, quad, ham, glute, calf); absent = grow */
+            priorities?: {
+                [key: string]: string;
+            } | null;
+            /** @description Free-text goal steering exercise choice (e.g. "röplabda mellett, vállra figyelve") */
+            goalText?: string | null;
+        };
+        MesoPlanGenerateResponse: {
+            template: components["schemas"]["MesoTemplateUpsertRequest"];
+            /** @description One Hungarian sentence on what was chosen and why (LLM or deterministic) */
+            rationale: string;
+            /** @description false when the LLM port was absent, failed, or its answer changed nothing (no accepted pick) — the deterministic filler produced the plan */
+            llmUsed: boolean;
         };
         MesoTemplateUpsertRequest: {
             title: string;
@@ -4001,6 +4489,8 @@ export interface components {
             /** @description 'Hét'..'Vas' */
             dayLabel: string;
             durationEst?: number;
+            /** @description The workout-level closing note, absent when none was written (mezo-d20.8.2.2). */
+            note?: string | null;
             exercises: components["schemas"]["WorkoutDetailExercise"][];
         };
         WorkoutDetailExercise: {
@@ -4116,6 +4606,10 @@ export interface components {
         };
         /** @description Set (or clear) the durable per-exercise note */
         ExerciseNoteRequest: {
+            note?: string | null;
+        };
+        /** @description The workout-level closing note — one sentence about the whole session ("Hogy ment?"), distinct from the per-exercise and per-set notes. Shared by the finish body and the note endpoint (mezo-d20.8.2.2). */
+        WorkoutNoteRequest: {
             note?: string | null;
         };
         WorkoutFeedbackInput: {
@@ -4507,12 +5001,13 @@ export interface components {
             links: components["schemas"]["GoalPlanLinkResponse"][];
             gaps: components["schemas"]["GoalGap"][];
         };
+        /** @description Every field is optional AND nullable: an owner with no profile row yet gets a 200 with an empty profile — an object whose every field is null — not a 404 (mezo-5cmq). The UPSERT request keeps its required trio. */
         BiometricProfileResponse: {
-            /** @enum {string} */
-            sex: "M" | "F";
-            heightCm: number;
+            /** @enum {string|null} */
+            sex?: "M" | "F" | null;
+            heightCm?: number | null;
             /** Format: date */
-            birthDate: string;
+            birthDate?: string | null;
             bodyFatPct?: number | null;
             /** @enum {string|null} */
             activityLevel?: "DESK" | "MIXED" | "PHYSICAL" | null;
@@ -4820,6 +5315,40 @@ export interface components {
         RecipeListResponse: {
             recipes: components["schemas"]["RecipeResponse"][];
         };
+        WorkshopChatMessage: {
+            role: string;
+            text: string;
+        };
+        WorkshopDraftLine: {
+            source: string;
+            /** Format: uuid */
+            pantryItemId?: string | null;
+            name: string;
+            amount: number;
+            unit: string;
+            kcal?: number | null;
+            proteinG?: number | null;
+            carbsG?: number | null;
+            fatG?: number | null;
+        };
+        WorkshopDraft: {
+            name: string;
+            category: string;
+            servings: number;
+            steps: string[];
+            lines: components["schemas"]["WorkshopDraftLine"][];
+        };
+        WorkshopTurnRequest: {
+            message: string;
+            goal?: string | null;
+            /** @default [] */
+            history: components["schemas"]["WorkshopChatMessage"][];
+            draft?: components["schemas"]["WorkshopDraft"] | null;
+        };
+        WorkshopTurnResponse: {
+            reply: string;
+            draft: components["schemas"]["WorkshopDraft"];
+        };
         Macros: {
             kcal: number;
             p: number;
@@ -5053,6 +5582,10 @@ export interface components {
             /** Format: date */
             start: string;
             days: components["schemas"]["FuelDayRollup"][];
+            /** @description Weekly "AI-atlag": the mean of the deterministic meal scores (0..1, mezo-yta) of the week's scored meals, rounded to 3 decimals. NULL when no meal in start..start+6 carries a score (honest-state: never 0-as-a-fake). Derived at read from meal.score, not stored. */
+            mealScoreAvg?: number | null;
+            /** @description Weekly weight average in kg, rounded to 2 decimals: one value per day that has a weigh-in (that day's LATEST entry, so a multi-weigh-in day is not over-weighted), averaged over those days. NULL when the week has no weigh-in at all. */
+            weightAvgKg?: number | null;
         };
         RecipeLogResponse: {
             /** Format: uuid */
@@ -5131,8 +5664,10 @@ export interface components {
             active: boolean;
         };
         MedicationDayResponse: {
-            medication: components["schemas"]["MedicationResponse"];
-            cycle: components["schemas"]["MedicationCycleResponse"];
+            /** @description Null when the owner has no active medication — a normal state, not an error (mezo-5cmq). */
+            medication?: components["schemas"]["MedicationResponse"] | null;
+            /** @description Null whenever `medication` is null — there is no cycle to derive. */
+            cycle?: components["schemas"]["MedicationCycleResponse"] | null;
             recentDoses: components["schemas"]["MedicationDoseResponse"][];
         };
         MedicationRequest: {
@@ -5409,6 +5944,10 @@ export interface components {
                 date: string;
             } | null;
         };
+        ConversationRenameRequest: {
+            /** @description The new list label — same cap as the auto-title column. */
+            title: string;
+        };
         ConversationResponse: {
             /** Format: uuid */
             id: string;
@@ -5462,6 +6001,8 @@ export interface components {
         MessageRef: {
             kind: string;
             id: string;
+            /** @description Human name for the referenced entity when the producer knows one (mezo-b3pp.33) — today only GraphNode refs carry it (the graph node's title). Absent/null for every other kind, and for rows persisted before this field existed; the FE falls back to its own id-derived label then. */
+            label?: string | null;
         };
         SendMessageRequest: {
             content: string;
@@ -5484,6 +6025,8 @@ export interface components {
             createdAt: string;
             /** @description The promoting pattern's title (source=pattern facts only) — the V3.3 evidence link. */
             patternTitle?: string | null;
+            /** @description In how many of the recent weekly reviews the companion cited this fact as something the week was built on (mezo-d20.7.7). A SEPARATE, weaker signal than reinforcementCount — the model citing its own knowledge is not the user re-confirming it — derived live from the non-deleted weekly_review rows. Null = not measurable (the proactive/weekly feature is off), never a stand-in zero. */
+            citedWeeks?: number | null;
         };
         CreateFactRequest: {
             factText: string;
@@ -5501,6 +6044,15 @@ export interface components {
             candidateText: string;
             /** @description 'train' | 'fuel' | 'health' | 'life' — classified by the extractor at capture time */
             category: string;
+            /** @description 'chat' (post-turn extraction, V1.2) | 'weekly_review' (the Monday weekly round's proposal, mezo-d20.7.6) — the promoted knowledge fact inherits it */
+            source: string;
+            /** @description What the candidate rests on, in the proposer's own words (weekly candidates only — chat extraction does not produce one). */
+            evidence?: string | null;
+            /**
+             * Format: date
+             * @description The ISO Monday of the weekly review that proposed this candidate (null for chat-extracted ones).
+             */
+            weekStart?: string | null;
             /** @description 'accept' | 'reject' | 'refine' — null while pending */
             userDecision?: string | null;
             /** @description The user-edited wording when the decision was refine. */
@@ -5563,6 +6115,8 @@ export interface components {
             lastDetectedAt: string;
             /** @description The V3.2 critic's prose reasoning — the card's 'AI gondolatmenete'; null on statistical rows. */
             thinking?: string | null;
+            /** @description In how many of the recent weekly reviews the companion cited this pattern as something the week was built on (mezo-d20.7.7). Deliberately NOT folded into confidence — confidence is a statistic (r/n/p, or the V3.2 critique score), a citation is the model selecting its own material; it is shown beside the statistic, never inside it, and never moves status. Derived live from the non-deleted weekly_review rows. Null = not measurable (the proactive/weekly feature is off), never a stand-in zero. */
+            citedWeeks?: number | null;
         };
         /** @description The V3.2 4-factor critique (0..1 each) — null until the hypothesis loop lands. */
         PatternCritique: {
@@ -5853,10 +6407,14 @@ export interface components {
         LogMentionRequest: {
             tone: string;
             text?: string;
+            /** @enum {string} */
+            contextLabel?: "munka" | "csalad" | "baratok" | "edzes" | "konfliktus" | "kozos_program" | "segitseg" | "egyeb";
         };
         PeopleResponse: {
             persons: components["schemas"]["PersonResponse"][];
             mentions: components["schemas"]["MentionResponse"][];
+            /** @description Az Emberek hub Mezo-észrevétel sávjának mondata. A mai 'people' companion-üzenet, ha van; egyébként a heti aggregátumokból számított, determinisztikus tartalék. Sosem üres — a sáv mindig igaz mondatot mutat. */
+            mezoNote: string;
         };
         PersonResponse: {
             /** Format: uuid */
@@ -5864,21 +6422,51 @@ export interface components {
             name: string;
             initial: string;
             /** @enum {string} */
-            relationship: "partner" | "teammate" | "mentee";
+            relationship: "partner" | "friend" | "family" | "colleague" | "teammate" | "mentee";
             relationshipHu: string;
+            aliases: string[];
+            /** @enum {string} */
+            status: "candidate" | "active" | "archived";
+            /** @enum {string} */
+            sourceKind: "manual" | "extractor" | "seed";
             /** @enum {string} */
             affectBaseline: "positive" | "neutral" | "mixed" | "negative";
             contactCadenceLabel?: string;
             notes?: string;
             knownFacts: string[];
             ties: string[];
+            /** @description Heti hangulat-olvasatok 1..5 skálán, időrendben (legfeljebb 8, a legfrissebbek). Az említések tónusából és intenzitásából SZÁMÍTOTT érték — a person.affect_trend oszlopot ez a válasz nem olvassa. */
             affectTrend: number[];
+            /**
+             * Format: date
+             * @description A hangulat-ív első olvasatának hete (hétfő). Az ív csak azokat a heteket tartalmazza, ahol volt tónusozott említés, ezért az időablakot ebből kell címkézni, nem az olvasatok számából. null, ha nincs olvasat.
+             */
+            affectTrendStart?: string | null;
+            /**
+             * @description A hangulat-ív iránya az utolsó két olvasat és a korábbiak átlaga alapján.
+             * @enum {string}
+             */
+            direction: "up" | "down" | "flat";
+            /** @description Magyar, determinisztikus indoklás az irány alatt. null, ha nincs olvasat. */
+            directionReason?: string | null;
             /** @description Count of live mention rows — computed, never seeded */
             mentionCount: number;
             /** @description Mentions in the rolling last 7 days */
             mentionsThisWeek: number;
             /** Format: date-time */
             lastMentionedAt?: string;
+            /** @description A személy PERSON node-jának legerősebb gráf-élei (legfeljebb 3, súly szerint csökkenő). Üres, ha a gráf ki van kapcsolva, vagy a személynek nincs node-ja/éle. */
+            graphEdges: components["schemas"]["PersonGraphEdge"][];
+        };
+        /** @description Egy gráf-él a személy felől nézve — a másik végpont, és hogy hogyan kapcsolódik. */
+        PersonGraphEdge: {
+            /** @description A másik végpont node-fajtája (PATTERN | PREFERENCE | GOAL | LIFE_EVENT | SEASON | INSIGHT | PERSON). */
+            nodeKind: string;
+            title: string;
+            /** @description Magyar kapcsolat-ige (kiváltja | megelőzte | támogatja | ütközik vele | kapcsolódik). */
+            relationHu: string;
+            /** @description erős | közepes | gyenge */
+            strength: string;
         };
         MentionResponse: {
             /** Format: uuid */
@@ -5889,17 +6477,46 @@ export interface components {
             personId: string;
             personName: string;
             /** @enum {string} */
-            source: "voice" | "camera" | "chip" | "text";
+            source: "voice" | "camera" | "chip" | "text" | "chat";
             durationS?: number;
             excerpt: string;
             /** @enum {string} */
-            tone: "positive" | "neutral" | "mixed" | "negative";
+            tone?: "positive" | "neutral" | "mixed" | "negative";
             tiedToKind?: string;
             tiedToLabel?: string;
             flagged: boolean;
+            intensity?: number;
+            /** @enum {string} */
+            contextLabel?: "munka" | "csalad" | "baratok" | "edzes" | "konfliktus" | "kozos_program" | "segitseg" | "egyeb";
+            sourceRefKind?: string;
+        };
+        CreatePersonRequest: {
+            name: string;
+            aliases?: string[];
+            /** @enum {string} */
+            relationship: "partner" | "friend" | "family" | "colleague" | "teammate" | "mentee";
+            relationshipHu: string;
+            /** @enum {string} */
+            affectBaseline?: "positive" | "neutral" | "mixed" | "negative";
+            contactCadenceLabel?: string;
+            notes?: string;
+        };
+        UpdatePersonRequest: {
+            name: string;
+            aliases?: string[];
+            /** @enum {string} */
+            relationship: "partner" | "friend" | "family" | "colleague" | "teammate" | "mentee";
+            relationshipHu: string;
+            /** @enum {string} */
+            affectBaseline?: "positive" | "neutral" | "mixed" | "negative";
+            contactCadenceLabel?: string;
+            notes?: string;
+        };
+        PersonDecisionRequest: {
+            decision: string;
         };
         FeedRef: {
-            /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory) */
+            /** @description FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory/Person) */
             kind: string;
             label: string;
         };
@@ -5912,10 +6529,10 @@ export interface components {
             /** Format: date */
             date: string;
             /**
-             * @description Feed message kind — morning, sleep, weight, midday, or evening LLM-generated messages; intervention is config text (mezo.companion.interventions), never LLM output.
+             * @description Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; intervention is config text (mezo.companion.interventions), never LLM output.
              * @enum {string}
              */
-            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention";
+            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention" | "people";
             eyebrow: string;
             body: string[];
             refs: components["schemas"]["FeedRef"][];
@@ -5950,11 +6567,15 @@ export interface components {
             weekStart: string;
             /** @description Display title of the week's narrative */
             title: string;
-            /** @description The memoir prose (single narrative paragraph block) */
+            /** @description The memoir prose — narrative paragraphs separated by "\n\n" (prompt v2, mezo-uajy) */
             body: string;
             anchors: components["schemas"]["MemoirAnchor"][];
             /** Format: date-time */
             generatedAt: string;
+        };
+        MemoirArchiveResponse: {
+            /** @description Every persisted memoir, weekStart descending. */
+            entries: components["schemas"]["MemoirResponse"][];
         };
         PredictionResponse: {
             /** Format: uuid */
@@ -6113,6 +6734,27 @@ export interface components {
             /** @description Whether a memoir row exists for this week */
             memoir: boolean;
             predictions: components["schemas"]["WeeklyReviewPredictionRef"][];
+        };
+        /** @description One weekly knowledge candidate (mezo-d20.7.6). The same learned_fact row the Tudástár inbox serves as a FactCandidateResponse — repeated here as the weekly read's own shape so the fragment stays self-contained; the two MUST stay field-compatible (one entity, one mapper). Decisions are made on the companion candidate endpoint, never here. */
+        WeeklyLessonResponse: {
+            /** Format: uuid */
+            id: string;
+            candidateText: string;
+            /** @description 'train' | 'fuel' | 'health' | 'life' */
+            category: string;
+            /** @description What the candidate rests on, in the proposer's own words — null when the model named nothing usable. */
+            evidence?: string | null;
+            /** @description 'accept' | 'reject' | 'refine' — null while still open */
+            userDecision?: string | null;
+            /** @description The user-edited wording when the decision was refine. */
+            refinedText?: string | null;
+            /**
+             * Format: uuid
+             * @description The knowledge fact this candidate was promoted into (accept/refine).
+             */
+            promotedFactId?: string | null;
+            /** Format: date-time */
+            createdAt: string;
         };
         QuestResponse: {
             /** Format: uuid */
@@ -6274,6 +6916,14 @@ export interface components {
             skillKey: string;
             xp: number;
             linkUrl?: string | null;
+            /** @enum {string|null} */
+            framework?: "FOGG" | "CLEAR" | null;
+            anchorHabitKey?: string | null;
+            cue?: string | null;
+            craving?: string | null;
+            reward?: string | null;
+            celebration?: string | null;
+            identity?: string | null;
             isActive: boolean;
         };
         HabitCatalogResponse: {
@@ -6303,6 +6953,14 @@ export interface components {
             skillKey: string;
             xp: number;
             linkUrl?: string | null;
+            /** @enum {string|null} */
+            framework?: "FOGG" | "CLEAR" | null;
+            anchorHabitKey?: string | null;
+            cue?: string | null;
+            craving?: string | null;
+            reward?: string | null;
+            celebration?: string | null;
+            identity?: string | null;
             /** @description Defaults to end of chain */
             position?: number;
         };
@@ -6314,6 +6972,14 @@ export interface components {
             position?: number;
             xp?: number;
             linkUrl?: string | null;
+            /** @enum {string|null} */
+            framework?: "FOGG" | "CLEAR" | null;
+            anchorHabitKey?: string | null;
+            cue?: string | null;
+            craving?: string | null;
+            reward?: string | null;
+            celebration?: string | null;
+            identity?: string | null;
             isActive?: boolean;
         };
         HabitReorderRequest: {
@@ -6332,6 +6998,12 @@ export interface components {
             skillKey: string;
             xp: number;
             chainKey: string;
+            /** @enum {string|null} */
+            framework?: "FOGG" | "CLEAR" | null;
+            cue?: string | null;
+            craving?: string | null;
+            reward?: string | null;
+            celebration?: string | null;
         };
         HabitSuggestResponse: {
             suggestions: components["schemas"]["HabitSuggestion"][];
@@ -6456,6 +7128,33 @@ export interface components {
             proteinTier: "moderate" | "high";
             waterMl: number;
             fiberG: number;
+        };
+        TutorialProgressEntry: {
+            /** @description The registry version of the guide that was seen — a bump re-arms the auto-show */
+            version: number;
+            /**
+             * Format: date-time
+             * @description First time the guide appeared (seen = appeared, Appcues modal rule)
+             */
+            seenAt: string;
+            /**
+             * Format: date-time
+             * @description Set on "Értem, kezdjük" (last card confirmed)
+             */
+            completedAt?: string | null;
+            /** @description Zero-based card index when Kihagyom / ✕ / Escape closed it */
+            dismissedAtStep?: number | null;
+        };
+        TutorialProgressResponse: {
+            /** @description Keyed by guide id from the frontend registry (e.g. `fuel`, `welcome`) */
+            progress: {
+                [key: string]: components["schemas"]["TutorialProgressEntry"];
+            };
+        };
+        SetTutorialProgressRequest: {
+            progress: {
+                [key: string]: components["schemas"]["TutorialProgressEntry"];
+            };
         };
         RitualWindow: {
             /**
@@ -6911,7 +7610,7 @@ export interface components {
             /** Format: uuid */
             id: string;
             /** @enum {string} */
-            kind: "PATTERN" | "PREFERENCE" | "GOAL" | "LIFE_EVENT" | "SEASON" | "INSIGHT";
+            kind: "PATTERN" | "PREFERENCE" | "GOAL" | "LIFE_EVENT" | "SEASON" | "INSIGHT" | "PERSON";
             title: string;
             summary?: string | null;
             /** @enum {string} */
@@ -6932,6 +7631,13 @@ export interface components {
         };
         GraphCandidateDecisionRequest: {
             decision: string;
+            /** @description User-edited title applied on accept (edit-then-approve). */
+            refinedTitle?: string | null;
+            /** @description User-edited summary applied on accept. */
+            refinedSummary?: string | null;
+        };
+        GraphEdgeCountResponse: {
+            count: number;
         };
         MeWeekSubscores: {
             /** @description 0–100; null = no sleep data */
@@ -6978,6 +7684,36 @@ export interface components {
             weightWeeklyRateKg?: number | null;
             totalXp?: number | null;
         };
+        MeWeekTrendPoint: {
+            /**
+             * Format: date
+             * @description The week's ISO Monday
+             */
+            weekStart: string;
+            /** @description 0–100 — round(mean of the week's non-null day scores) */
+            score: number;
+            /** @description mean of the week's non-null sleep subscores; null when none */
+            sleepAvg?: number | null;
+            fuelAvg?: number | null;
+            checkinAvg?: number | null;
+            activityAvg?: number | null;
+            /**
+             * Format: date-time
+             * @description When this score was last computed from the week's data. The score is a cache, not a truth — a retroactive log can change it; this stamp is what makes the value honest.
+             */
+            computedAt: string;
+        };
+        MeWeekTrendResponse: {
+            /**
+             * Format: date
+             * @description The window's last week (ISO Monday), echoed back
+             */
+            start: string;
+            /** @description The requested window width — points may be shorter */
+            weeks: number;
+            /** @description Oldest first; only weeks that actually have a score. Never padded. */
+            points: components["schemas"]["MeWeekTrendPoint"][];
+        };
         MeWeekResponse: {
             /** Format: date */
             start: string;
@@ -6999,11 +7735,17 @@ export interface components {
                 label: string;
             }[];
         };
+        CharacterClaimFeedbackRequest: {
+            /** @enum {string} */
+            kind: "TALAL" | "NEM_IGAZ" | "PONTOSITOM";
+            /** @description Required for PONTOSITOM (the correction), forbidden otherwise */
+            text?: string;
+        };
         CharacterDimensionSummary: {
             key: string;
             title: string;
             /** @enum {string} */
-            kind: "CORE" | "CHAPTER";
+            kind: "CORE" | "CHAPTER" | "META";
             expertKey?: string | null;
             /** @description 0–100; 0 = "tanulom" */
             maturity: number;
@@ -7013,6 +7755,21 @@ export interface components {
         };
         CharacterOverviewResponse: {
             dimensions: components["schemas"]["CharacterDimensionSummary"][];
+        };
+        CharacterExpertDto: {
+            key: string;
+            displayName: string;
+            role: string;
+            /** @description the persona's short voice/manner line (Csapat card) */
+            voiceLine: string;
+            watch: string[];
+            /** @description null for mezo; for szkeptikus the META dimension key (self-audit); the owned CORE key for experts */
+            dimensionKey?: string | null;
+            /** @enum {string} */
+            kind: "EXPERT" | "SKEPTIC" | "CHAIR";
+        };
+        CharacterExpertsResponse: {
+            experts: components["schemas"]["CharacterExpertDto"][];
         };
         CharacterPortraitRevisionDto: {
             version: number;
@@ -7024,7 +7781,7 @@ export interface components {
             key: string;
             title: string;
             /** @enum {string} */
-            kind: "CORE" | "CHAPTER";
+            kind: "CORE" | "CHAPTER" | "META";
             expertKey?: string | null;
             maturity: number;
             portrait: string;
@@ -7072,6 +7829,86 @@ export interface components {
                 summary: string;
             }[];
         };
+        CharacterRunSummary: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            kind: "NIGHTLY" | "WEEKLY" | "MONTHLY" | "BOOTSTRAP";
+            /**
+             * Format: date
+             * @description The anchor day — the observed day for NIGHTLY, week_start for WEEKLY, the month's first day for MONTHLY, the run date for BOOTSTRAP
+             */
+            day: string;
+            observationCount: number;
+            /** @description Honest only for NIGHTLY (one call per fired expert); always 0 for WEEKLY/MONTHLY/ BOOTSTRAP rows — no reliable call count is derivable there, so the FE should omit or relabel this cell for non-NIGHTLY kinds. The AI-napló is the call-level truth. */
+            callCount: number;
+            detectorKeys: string[];
+            expertKeys: string[];
+            /**
+             * Format: uuid
+             * @description Soft ref to the conference this run produced — null for NIGHTLY
+             */
+            conferenceId?: string | null;
+        };
+        CharacterRunObservationSignal: {
+            detectorKey: string;
+            summary: string;
+            /** @description Count of raw evidence refs the signal is grounded in ("N forrás-hivatkozás", v4.1) — the raw ref ids stay backend-side, never served to the client */
+            refCount: number;
+        };
+        CharacterRunObservation: {
+            /** Format: uuid */
+            id: string;
+            expertKey: string;
+            dimensionKeys: string[];
+            text: string;
+            salience: number;
+            signals: components["schemas"]["CharacterRunObservationSignal"][];
+        };
+        CharacterRunResponse: {
+            summary: components["schemas"]["CharacterRunSummary"];
+            observations: components["schemas"]["CharacterRunObservation"][];
+        };
+        DiagnosisGenerateRequest: {
+            phenomenon: string;
+        };
+        DiagnosisEvidenceItem: {
+            kind: string;
+            label: string;
+            detail?: string | null;
+            /** @description Hungarian provenance, e.g. Alvás-napló */
+            sourceHu?: string | null;
+            metricKey?: string | null;
+            value?: number | null;
+            baselineValue?: number | null;
+            delta?: number | null;
+            coverageDays?: number | null;
+        };
+        DiagnosisSuspect: {
+            rank: number;
+            title: string;
+            claim: string;
+            evidenceIndexes: number[];
+            strength: string;
+            probeText: string;
+            metricKey: string;
+            expectedDirection: string;
+            totalDays: number;
+        };
+        DiagnosisResponse: {
+            /** Format: uuid */
+            id: string;
+            phenomenon: string;
+            windowDays: number;
+            verdict: string;
+            confidence: string;
+            evidence: components["schemas"]["DiagnosisEvidenceItem"][];
+            suspects: components["schemas"]["DiagnosisSuspect"][];
+            /** Format: date-time */
+            generatedAt: string;
+            /** @description a log landed in the window after generatedAt */
+            stale: boolean;
+        };
     };
     responses: never;
     parameters: never;
@@ -7113,6 +7950,162 @@ export interface operations {
                 };
             };
             /** @description Invalid credentials (AUTH_LOGIN_INVALID_CREDENTIALS) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Account disabled (AUTH_ACCOUNT_DISABLED) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    register: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegisterRequest"];
+            };
+        };
+        responses: {
+            /** @description Account created, JWT issued */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TokenResponse"];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Invite invalid/used/expired (AUTH_INVITE_INVALID) or email taken (AUTH_EMAIL_TAKEN) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Current user */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Account disabled (AUTH_ACCOUNT_DISABLED) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    changePassword: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            /** @description Password changed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Current password wrong (AUTH_LOGIN_INVALID_CREDENTIALS) */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    completeOnboarding: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Marked */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
             401: {
                 headers: {
                     [name: string]: unknown;
@@ -7745,6 +8738,48 @@ export interface operations {
             };
             /** @description Mesocycle not found or not owned */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    generateMesoPlan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MesoPlanGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Generated proposal — not persisted; save it via POST /api/train/meso-templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MesoPlanGenerateResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -8477,7 +9512,10 @@ export interface operations {
     };
     listSportSessions: {
         parameters: {
-            query?: never;
+            query?: {
+                from?: string;
+                to?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -8491,6 +9529,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SportSessionResponse"][];
+                };
+            };
+            /** @description Invalid date range (from after to, or span too wide) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Missing/invalid token */
@@ -9307,6 +10354,57 @@ export interface operations {
             };
         };
     };
+    saveWorkoutNote: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkoutNoteRequest"];
+            };
+        };
+        responses: {
+            /** @description Note saved */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Workout instance not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     finishWorkout: {
         parameters: {
             query?: never;
@@ -9316,7 +10414,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["WorkoutNoteRequest"];
+            };
+        };
         responses: {
             /** @description The completed instance with its logged sets */
             200: {
@@ -9325,6 +10427,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkoutInstanceResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Missing/invalid token */
@@ -10120,7 +11231,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Profile */
+            /** @description Profile, or an all-null empty profile when the owner has none yet */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -10131,15 +11242,6 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["SystemMessageList"];
-                };
-            };
-            /** @description No profile yet */
-            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -10809,6 +11911,66 @@ export interface operations {
             };
         };
     };
+    workshopTurn: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkshopTurnRequest"];
+            };
+        };
+        responses: {
+            /** @description Updated draft */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WorkshopTurnResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description LLM answer unparseable */
+            502: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description LLM port unavailable (companion off) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     getFuelDay: {
         parameters: {
             query?: never;
@@ -11268,13 +12430,55 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Medication day */
+            /** @description Medication day, or an empty payload when the owner has no active medication */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
                     "application/json": components["schemas"]["MedicationDayResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    createMedication: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MedicationRequest"];
+            };
+        };
+        responses: {
+            /** @description Created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MedicationResponse"];
+                };
+            };
+            /** @description Validation error, or an active medication already exists */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Missing/invalid token */
@@ -12046,6 +13250,97 @@ export interface operations {
             };
             /** @description Missing or invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteConversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Conversation not found (or owned by someone else) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    renameConversation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                conversationId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConversationRenameRequest"];
+            };
+        };
+        responses: {
+            /** @description The renamed conversation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConversationResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Conversation not found (or owned by someone else) */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -12827,6 +14122,139 @@ export interface operations {
             };
         };
     };
+    createPerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePersonRequest"];
+            };
+        };
+        responses: {
+            /** @description Person created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    updatePerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePersonRequest"];
+            };
+        };
+        responses: {
+            /** @description Person updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Person missing or foreign (indistinguishable) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deletePerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Person missing or foreign (indistinguishable) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     logMention: {
         parameters: {
             query?: never;
@@ -12870,6 +14298,98 @@ export interface operations {
                 };
             };
             /** @description Person missing or foreign (indistinguishable) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    deleteMention: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+                mentionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Mention missing, foreign, or belongs to a different person (indistinguishable) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    decidePerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                personId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PersonDecisionRequest"];
+            };
+        };
+        responses: {
+            /** @description The decided person (status active on accept; the soft-deleted row snapshot on reject) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PersonResponse"];
+                };
+            };
+            /** @description PEOPLE_CANDIDATE_ALREADY_DECIDED / validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description RESOURCE_NOT_FOUND */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -12982,6 +14502,35 @@ export interface operations {
             };
             /** @description No memoir possible — no narrative memory in the last completed week. The FE renders its honest "készül" state. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMemoirArchive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The persisted memoirs, weekStart descending (possibly empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoirArchiveResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -13334,6 +14883,47 @@ export interface operations {
             };
             /** @description The week is not completed yet */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getWeeklyReviewLessons: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The ISO Monday of the wanted week */
+                start: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The week's candidates with their decisions (possibly empty) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeeklyLessonResponse"][];
+                };
+            };
+            /** @description {start} is not a Monday */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -14470,6 +16060,104 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getTutorialProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The progress map (empty before the first guide is shown) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TutorialProgressResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    setTutorialProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetTutorialProgressRequest"];
+            };
+        };
+        responses: {
+            /** @description Saved progress */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TutorialProgressResponse"];
+                };
+            };
+            /** @description Validation failure */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    resetTutorialProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Progress cleared; the next GET returns the empty ghost */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Missing/invalid token */
             401: {
@@ -15788,6 +17476,35 @@ export interface operations {
             };
         };
     };
+    countGraphEdges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Active edge count */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphEdgeCountResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     getMeWeek: {
         parameters: {
             query?: never;
@@ -15810,6 +17527,50 @@ export interface operations {
                 };
             };
             /** @description start is not an ISO Monday */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getMeWeekTrend: {
+        parameters: {
+            query?: {
+                /** @description How many ISO weeks the window spans, counting back from start (inclusive) */
+                weeks?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The last week of the window — its ISO Monday (400 when the date is not a Monday) */
+                start: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The window's points (0..weeks entries, oldest first) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MeWeekTrendResponse"];
+                };
+            };
+            /** @description start is not an ISO Monday, or weeks is out of range */
             400: {
                 headers: {
                     [name: string]: unknown;
@@ -15898,6 +17659,35 @@ export interface operations {
             };
         };
     };
+    getCharacterExperts: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The 9 personas, catalog order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterExpertsResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     getCharacterFeed: {
         parameters: {
             query?: {
@@ -15929,6 +17719,51 @@ export interface operations {
             };
         };
     };
+    bootstrapCharacter: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The bootstrap konzílium that just ran */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterConferenceResponse"];
+                };
+            };
+            /** @description No history to read — nothing was generated (the honest empty state) */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description A bootstrap konzílium already exists for this user */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     listCharacterConferences: {
         parameters: {
             query?: never;
@@ -15949,6 +17784,149 @@ export interface operations {
             };
             /** @description Missing or invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    submitCharacterClaimFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                claimId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CharacterClaimFeedbackRequest"];
+            };
+        };
+        responses: {
+            /** @description The claim after the feedback was applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterClaimDto"];
+                };
+            };
+            /** @description PONTOSITOM without text, or text sent with a kind that takes none */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such claim for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The claim is already retired — nothing to answer */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getCharacterRuns: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Run summaries, newest day first (possibly empty — never a 404) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterRunSummary"][];
+                };
+            };
+            /** @description to before from, or the span exceeds 62 days */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getCharacterRun: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                runId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The run */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CharacterRunResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such run for this user */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -15988,6 +17966,169 @@ export interface operations {
                 };
             };
             /** @description No such conference for this user */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listDiagnoses: {
+        parameters: {
+            query?: {
+                phenomenon?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The user's diagnoses */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    generateDiagnosis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DiagnosisGenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description The generated diagnosis */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not enough data in the window, or no suspect survived validation */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Daily generation quota exceeded */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getDiagnosis: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The diagnosis */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DiagnosisResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found or not owned */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    startDiagnosisExperiment: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                rank: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The created experiment, or the open one that already covers this metric */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExperimentResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Diagnosis not found, not owned, or no suspect at that rank */
             404: {
                 headers: {
                     [name: string]: unknown;

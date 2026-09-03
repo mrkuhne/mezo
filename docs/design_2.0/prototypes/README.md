@@ -12,17 +12,34 @@ they inline come from `../assets/`.
 | `clay-csomag.html` | https://claude.ai/code/artifact/79f7676e-7998-4a61-b098-44c2e0f8b905 |
 | `nap-gerinc.html` | https://claude.ai/code/artifact/e1eae7d4-05bc-41c9-8e7e-55bdbee70249 |
 | `edzes-tab.html` | https://claude.ai/code/artifact/d9fd807c-71ca-4c27-b8c9-7d32aca48d15 |
-| `mezociklus.html` | https://claude.ai/code/artifact/a4f4ecdd-decc-4524-9fab-931af7a9c8b3 |
+| `mezociklus.html` | https://claude.ai/code/artifact/46daab1d-d30f-4f44-a435-65f225cf6e38 |
 | `edzes-session.html` | https://claude.ai/code/artifact/0a747fcc-0359-462a-8b8b-1de02a611f77 |
 | `fuel-tab.html` | https://claude.ai/code/artifact/e0da58f6-f4ef-4874-b60e-b83a1998ba0e |
-| `mezo-tab.html` | https://claude.ai/code/artifact/797270dd-f1dc-4196-b492-aa4ffb22d2de |
+| `mezo-tab.html` | https://claude.ai/code/artifact/dc2800aa-7c1f-41f0-b33d-b3d127b544fa |
 | `en-ia-valasztas.html` | https://claude.ai/code/artifact/418b2a2d-25ba-4441-8cb5-6b15c6ab88b2 |
 | `en-tab.html` | https://claude.ai/code/artifact/dee0dd7e-f321-4f88-94ff-c7face496d70 |
+| `napzaras.html` | https://claude.ai/code/artifact/0e4e02ba-d5c8-49ce-a738-b924f1583cf6 |
+| `fuel-logolas.html` | — (not yet published; mezo-byo1 design source) |
+| `fuel-log-multinap.html` | — (not yet published; A /fuel/log nap-léptetője + Pótlás-hangulat + hub-csali — mezo-1j3z) |
+| `fuel-log-oldal.html` | — (not yet published; A logolás saját oldala a helyben nyíló composer helyett — /fuel/log/uj) |
+| `fuel-logolas-2.1.html` | https://claude.ai/code/artifact/f4af0e21-8293-4732-a9e2-2a2c48a3427e (Logolás 2.1 — Keret-hero a /fuel/log-on, AI score pill + kcal, rost gyűrű, kontextus chip, breakdown sheet — mezo-zeeq) |
+| `mezo-chat.html` | https://claude.ai/code/artifact/ae02e856-1e3d-4c60-aad5-842e75190538 |
+| `edzes-review.html` | https://claude.ai/code/artifact/66f5a4de-8afe-48ff-b04f-e861b3ba22ee |
+| `fuel-mely.html` | https://claude.ai/code/artifact/d5c6d770-a067-4642-baa3-9dee63613718 |
+| `en-mely.html` | https://claude.ai/code/artifact/d7744124-37bb-4e7d-ac57-45cf66f1fc24 |
+| `karakter-tab.html` | https://claude.ai/code/artifact/e723d44d-b0d7-484f-8b5f-9b5b41359bde |
+| `emberek.html` | https://claude.ai/code/artifact/9c94ecde-f426-471a-a988-b0a60ca7fbcf |
+| `mezo-memoar.html` | https://claude.ai/code/artifact/95759be5-7de6-4d04-af7b-60d7862dbe50 |
+| `receptmuhely.html` | https://claude.ai/code/artifact/dc39e817-e89e-43df-b93f-53b568efed9f |
+| `tudastar-egyben.html` | https://claude.ai/code/artifact/1ddf2a14-f5ce-4d4c-b125-c843e073797e |
+| `kalauz.html` | https://claude.ai/code/artifact/aff4eff9-775c-4222-82cf-487d143479bf |
+| `growth-tab.html` | https://claude.ai/code/artifact/393bca87-9095-42dd-ac55-127162ad0412 |
+| `rutin-epito.html` | https://claude.ai/code/artifact/78c8f0f9-925f-44a9-93b4-3e9cc077e162 (Rutin-építő — széles Rutin csempe az Én hubon, /me/rutin hub erő-csíkokkal, 4 lépéses szokás-recept wizard Fogg / Clear keretre, szokás-szerkesztő — mezo-3zue) |
 
 ## Workflow
 
 1. Edit the parts in `src/` (`*-head.html` = title + CSS; `*-body.html` = markup + JS).
-2. Run `./build.sh` — it inlines the sprites from `../assets/` into the 6 assembled files.
+2. Run `./build.sh` — it inlines the sprites from `../assets/` into the assembled files.
 3. Republish the assembled file as an artifact, passing the matching `url` above so the link
    stays stable.
 
@@ -180,6 +197,36 @@ are usable without a build step).
   rows edit/delete with one-slot floor. RP debrief per exercise, closing summary (halo hero,
   muscle pills, medals + target sets, challenge outcomes, per-exercise chip map, note),
   finish → level-up screen → closed mode.
+- **edzes-review** — the *visszanézés* of a finished workout (`/train/review/:id`), the F7.2
+  design round. The shell is the session prototype's summary; what the `closed` mode gains is
+  **context**. (1) A **„Mihez képest" tile** under the hero names the reference session
+  (`Előző Pull A · aug. 12. · 2 héttel korábban` — the gap between the two sessions, not the age
+  from today) and gives three deltas mirroring the stat strip: volumen · célszett · Ø RIR. Under
+  ADR 0010 the number is signed and honest while the **colour never punishes** — sage only
+  upward, neutral graphite downward, coral and red absent; **Ø RIR is always neutral**, because
+  there less is harder. (2) The per-exercise inventory stops being a stack of near-identical white
+  cards and becomes a **horizontal swimlane** (the Fuel hub's window-lane precedent): one tile per
+  exercise in its muscle family's wash, carrying a monogram disc, a REKORD stamp, **one anchor
+  number** — the top working set — and a set-bar row (solid = logged · gold = medal · faint =
+  warmup · dashed = missed). Depth is not in the scroll: each tile opens the exercise's **own
+  page**, where every set is its own tile — `90 kg × 8 · RIR 2 · célsávban · 720 kg` — with the
+  medal set in gold, the missed set as a ghost tile, **the set note under its own set**
+  (`ExerciseSetResponse.note`, on the wire today and shown nowhere), and a stat strip whose fourth
+  cell is the previous session's top set, gated exactly like the context tile. (3) **Stepping runs on the template-day
+  chain** (`← Előző Pull A` / `Következő Pull A →`), the same axis the comparison uses, so there
+  is one mental model rather than two. Three live Pull A sessions demonstrate all of it,
+  including the honesty gate: the oldest is the mesocycle's first Pull A, so **the tile does not
+  render at all** — no "nincs adat" placeholder. The `Lezárás` toggle shows the other mode: no
+  tile, no stepping (there is nowhere to step while closing), and the closing CTA — where today's
+  **dead `<textarea>` used to be**. (4) **That slice has now landed in the prototype**
+  (`mezo-d20.8.2.2`): the closing screen's note field is back, but *real* — not a bare box but a
+  question, **„Hogy ment?"**, optional and skippable, sitting ABOVE the finish CTA so the mobile
+  keyboard pushes the button rather than covering it (the CTA is in flow, never `position: fixed`).
+  In `closed` mode the saved sentence returns as a **Fraunces-italic block** ("Amit aznap írtál")
+  with a ✎ that opens it for in-place editing — saving it empty clears it. The **aug. 12. session
+  deliberately has no note**, so the honesty gate is visible here too: no empty placeholder, but a
+  quiet **`＋ Jegyzet ehhez az edzéshez`** — on the revisit page, filling a gap is a meaningful
+  intent, while displaying its absence would not be.
 - **mezo-tab** — the Mezo tab (the companion's home), audited against the real `/insights`
   section (in the live app the companion is the Chat sub-tab of Insights; the redesign
   promotes it to a first-class tab). **Hub**: a breathing clay **orb hero** — no number hero,
@@ -324,3 +371,262 @@ are usable without a build step).
   fills in a real summary, day notes and lessons and refreshes every hub tile; week stepping shows a
   **skeleton** (today's page has neither a loading nor an error state). Week navigation walks three live
   weeks: finished-with-review → finished-without → running.
+- **mezo-chat** — the Mezo chat's provenance layers restructured per the §1 tile recipe
+  (2026-08-31 round): orb-led single-row live header (back disc · breathing orb · name +
+  status dot élő/demo/off · icon discs for conversations/new; the orb pulses faster and the
+  status reads `dolgozom rajta…` while streaming), the raw tool-call pills collapsed into one
+  human **work strip** (overlapping domain clay icons + `Utánanézett · n forrás`, tap → source
+  list with human labels, params and ✓; builds live source-by-source during streaming), refs
+  grouped into **domain chips** (`Súly ×7 · Alvás ×5 · …`, tap → the group's date chips; ≤3
+  refs render expanded), recalled memories as a **horizontal lavender card strip** (type icon +
+  date + similarity ring + 4-line clamped gist, tap → card widens and unclamps), subtler
+  feedback chips, lav-sheen composer, and no floating FAB on the chat page. The F7.5 deep
+  round added the **conversation actions**: a ⋯ disc in the header AND a kebab on every picker
+  row open the same action sheet — Átnevezés (inline input, no confirm; reversible) and Törlés
+  (two-step warm — never punishing — confirm; ChatGPT pattern minus swipe, which fights PWA
+  scroll/back gestures) — plus the **error bubble**: a failed send keeps the user bubble in
+  place and renders an amber bubble with **Újra** (re-sends the same turn — replace, don't
+  append, no duplicated message) and **Szerkesztés** (returns the text to the composer).
+- **mezo-memoar** — the Memoir archive (F7.5): the dead `Memoir archive` footer retired at
+  mezo-d20.5.5 becomes a real page. Day One-pattern month-grouped timeline (month header +
+  count, one card per week: week chip + date range + anchor count + Fraunces title + 2-line
+  excerpt; the whole card is one tap target — avoiding Apple Journal's ambiguous tap zones).
+  Tapping a card navigates — no modal — to the **chapter page** merged at mezo-uajy: hero
+  (week + title + date), the drop-cap memoir card with multi-paragraph body, the humanized
+  `Miből íródott` anchor chips (Emlék › day page, Minta › Patterns; Identitás static),
+  feedback chips, and the előző/következő pager which walks the timeline order. Contract
+  note baked into the aside: `GET /api/proactive/memoir/archive` returns the full list in
+  one round (weekly cadence — a year is ~52 small records); the latest endpoint and its
+  404 semantics stay untouched.
+- **fuel-mely** — the F7.3 Fuel deep round: the four blocks that close the tab's last
+  mixed-generation surfaces. (1) **Gyógyszer full lifecycle** — the page finally carries its own
+  write paths: a ＋ Beadás dose sheet, an edit sheet, and a two-step inline **Leállítás** that is
+  deliberately *not* error-red (a decision, not a mistake; history survives as `active:false`).
+  The empty state stops being a dead end: **＋ Gyógyszer felvétele** opens the create sheet
+  (name, active ingredient, route chips, dose, cadence, and a P/S/T phase-template preview) —
+  the round's single new contract element is `POST /api/medication`. (2) **Recipe detail +
+  editor** — the detail page trades its two tabs for a **mosaic**: image-band Mozaik hero with
+  slot chip and fit badge, stat-strip macros with the /adag↔egész toggle, then four tiles
+  (Pontszám ring · Mezo-olvasat · Hozzávalók · Logok). Depth is one tap away: the full score
+  breakdown opens in the same sheet the meal score uses (one component, two callers), the
+  ingredients open their own sliding page, and Szerkesztés slides in the editor as a sub-page. (3) The **étkezési ablakok**
+  editor renders its existing two-tier validation honestly: Tier-1 errors in coral (a forbidden
+  state — the one place the colour is legitimate), warnings in amber that never block, and the
+  ✨ Mezo értékelése verdict card that never gates saving. A demo button flips the error state to
+  clean so the gating is visible. (4) A **sheet-launcher** page shows the family pattern —
+  grabber → eyebrow header + ✕ → tinted hero band → content → button row — on the six key sheets
+  (MealScore with the score ring, StackPicker with koffein/a-stackben marks, StackItem zones,
+  Import with all three modes, Energia's equation bar, Beadás); the remaining seven follow the
+  pattern without their own drawing.
+- **en-mely** — the F7.4 Én deep round. (1) The **life-area iconography tabló**: 8 new clay
+  symbols (`i-life-*` in `assets/clay-icons.svg`) replacing the LIFE-skill emojis — meditating
+  figure, clay eye, pan with yolk, coin stack, check tile, open book, interlocked rings, pillow —
+  each shown beside its old emoji, plus two in-use rows (Growth skill row, Napzárás gratitude
+  chips: the tab's last emoji-language family). (2) The **goal-planner wizard** in Mozaik dress:
+  trajectory cards + guard chips (step 1), field cards + the live feasibility panel (step 2) —
+  an aggressive pace warns in amber and offers the realistic date as a one-tap fix. (3) The
+  **routine editor**: chain cards with clay daypart icons, habit rows with XP/mode chips,
+  edit + AI-suggest sheets. (4) **Growth becomes the progression's home**: the Kitüntetések tab
+  opens with a streak card (milestone bar + 🧊 saver) and a Címek section (Létra/Bolt tabs,
+  coin balance, the Viselve/Felvesz/Megveszem/🔒 state machine) — the hub's 🔥/🪙 chips navigate
+  here and the two standalone sheets retire. (5) The **People/Sleep sheet family** on the shared
+  pattern with tinted heroes (Petra's full picture, mic-hero quick log, SleepLog with the
+  night-trace prefill note + phase rail). (6) The **AI-call detail** as a Mozaik page: hero +
+  three headline numbers in a stat strip, a four-segment token bar, meta chips, and payload
+  cards with a fading cut.
+- **karakter-tab** — the Karakter dossier page (Én tab family), audited against the shipped
+  backend (`docs/features/character.md` — 7 CORE dimensions, `CharacterExpertCatalog`'s 7 named
+  experts, Szkeptikus + Mezo, weekly konzílium, bootstrap, claim feedback). Shown standalone (not
+  nested under the Én hub, per the round's brief — the aside notes the eventual tile placement).
+  **Round 1 iteration** (Daniel's feedback on the published artifact, logged in
+  [`2026-08-31-karakter-design-iterations.md`](../2026-08-31-karakter-design-iterations.md)):
+  compacted the hub, gave every persona an orb-variant avatar, enriched the Konzílium page, and
+  added an entrance/ambient motion pass across every page. **Round 2 / v3 (mezo-1gim.14, same
+  iteration log)**: Daniel approved a new "Gépterem" transparency direction — a geek surface
+  showing concretely what data feeds the dossier.
+  **Hub** (hero + a compact 4-tile mosaic + a 5th thin full-width tile, still ~one screen): the
+  7-segment maturity ring (one arc per CORE dimension, color = the owning expert's domain tint,
+  arc length/opacity = maturity, animated sweep-in; center = overall % + "érettség") + a
+  Fraunces-italic AI self-portrait line (a deliberate visual placeholder — the spec marks the
+  identity-hero bio line out of scope for v1); four tiles — **Dimenziók** (live datum:
+  CORE-average maturity % + dimension count), **Feed** (live datum: newest observation preview +
+  "N új" + pulsing dot), **Csapat** (9-avatar orb cluster), **Konzílium** (latest-session date +
+  pulsing dot) — plus the new **Gépterem** wide tile (graphite/slate technical wash, distinct
+  from the four warm tiles; live datum: the last pipeline run's line, "ma 02:50 · 3
+  megfigyelés"). **Dimenziók page**: the 8 dimension tiles (7 CORE + 1 CHAPTER example
+  "Munka-stressz ciklus" in a dashed/distinct wash, AI-opened per the real konzílium mechanic)
+  that used to live directly on the hub — tapping one still opens the dimension detail page.
+  **Feed page**: day-grouped observations (persona-voiced, orb avatars) + konzílium-diff rows
+  that can point at a specific dimension or the Konzílium page; each observation row now also
+  carries a small **⚙ "miből?" gear** that expands the same signal-chain face used on the
+  Gépterem page, inline, in context. **Dimension page** (generic template driven by a `DIMS`
+  data array, one page for all 8): colored hero (orb avatar + title + big maturity number), a
+  portrait prose card, claim tiles with confidence-word chips only (biztos sage / valószínű
+  amber / figyeljük lavender — never a raw number, per the API's honest-words contract), an
+  ÉRZÉKENY (sensitive) variant with a lavender frame + mirror-toned line, and three live
+  feedback pills — Talál (sage flash + "köszönöm"), Nem igaz (the tile fades to a dashed
+  "nyugdíjazva" state), Pontosítom (inline textarea + Küldés) — plus a "Beszélgess erről
+  Mezóval" chat-handoff chip. **Csapat page**: 9 persona cards — the 7 experts (each an
+  orb-variant avatar in its domain color, from the `docs/design_2.0/assets/clay-spots.svg`
+  sprite — `s-orb-doki` … `s-orb-szkeptikus`, the same clay recipe as the Mezo logo orb, tinted
+  + a dashed inner-ring motif) + the Szkeptikus (graphite orb, dry contrarian) + Mezo (the
+  original coral `s-orb`, elnök). **Konzílium page**: a session list (date + WEEKLY/HAVI/
+  BOOTSTRAP badge + outcome summary, pulsing dot on the unread newest row) — tapping the newest
+  opens a transcript view in place: a tinted 3-cell outcome header (elfogadva/nyugdíjazva/
+  portré átírva counts), phase labels (`Javaslatok` → `A Szkeptikus` → `Döntés`) with a dashed
+  connector line behind the proposal turns, four persona-orb proposal bubbles (Doki/Drill/
+  Táplálkozó/Pszichológus), a graphite Szkeptikus attack bubble, a full-width coral Mezo ruling
+  bubble, and one gold-railed "DANIEL VÁLASZA" quote embedded inside an expert's bubble showing
+  how claim feedback re-enters the konzílium — with an explicit honesty note that the
+  transcript is the real exchange, never re-dramatized.
+  **Gépterem page** (new, mezo-1gim.14): **Futás-idővonal** — five expandable pipeline-run rows
+  (two nightly runs, the Sunday konzílium, the monthly deep read, the one-time bootstrap); a
+  quiet night ("csendes nap · 0 hívás") is given equal visual weight to a noisy one, framed as
+  the system correctly finding nothing rather than as an empty/error state. **Jel-lánc**
+  drill-down inside the noisy run: each fired detector renders as a two-tone block — a
+  monospace **KÓD** row (the real detector key — `logging-gap` / `checkin-gap` /
+  `journal-silence` / `under-logging` / `journal-note` — + the deterministic summary + `refIds`
+  pills) → `↓ LLM értelmezi` → an **LLM** row (the expert's orb + their voiced observation),
+  making the "kód detektál, LLM értelmez" split from `character.md` §3/§7 visually true. The
+  run also honestly names which four experts (Doki/Edző/Szomnológus/Antropológus) got no
+  nightly signal today, per §9's documented detector-ownership gap. **Adatforrás-leltár**: the
+  real per-job read windows (nightly 14 days, konzílium's unconsumed-observations +
+  ACTIVE-claims + user-feedback, the monthly full-claim-base re-read, bootstrap's six-source
+  corpus) followed by ten dashed **"még nincs bekötve"** rows for domains the dossier doesn't
+  read yet (edzés-szettek/RIR, futás, sport, fuel-részletek, chat-témák, hála, döntés-napló,
+  Életjel, streakek, emberek-említések) — doubling as the `mezo-1gim.15` ("MINDENT be") working
+  checklist. **AI-napló link row**: notes every Karakter LLM call is stored in full
+  (`feature=character`, one row per pipeline step), demo-linking to the AI-napló surface.
+  **Bootstrap flow** (aside demo button): intro (orb + 9-avatar orb cluster, popping in one by
+  one + "Kezdjétek el") → staged progress lines ("Doki a súlytrendet olvassa…" etc.) over a
+  coral→gold gradient arc with a live count-up percentage → reveal (the hero ring animates in)
+  → CTA into the first konzílium. **Honest 204 empty state** (aside demo button): "Még nincs
+  elég történet" — no fabricated numbers, no empty-state theater. **Motion**: every page
+  replays a staggered rise-in choreography on open (including the konzílium transcript and the
+  Gépterem run rows, which re-trigger their own `.play`/expand state rather than relying on the
+  page-open flow alone), plus ambient pulsing dots, popping mini-rings/avatars, and hover/press
+  micro-interactions — all reduced-motion-guarded. New-content note: dimension/expert keys,
+  detector keys, and the konzílium's read windows are pulled directly from
+  `CharacterCoreCatalog`/`CharacterExpertCatalog`/`docs/features/character.md`, not invented.
+  **Round 2b — leltár in four rounds**: the Adatforrás-leltár's "még nincs bekötve" list became
+  four numbered, dashed **"N. KÖR"** groups (edzés & test / fuel & ciklus / psziché &
+  viselkedés-meta / kapcsolatok & AI-meta) each showing its target detector key as a monospace
+  ghost chip and a lavender "érzékeny" tag where relevant, plus a fainter "később" tail —
+  doubling as the literal `mezo-1gim.15` working checklist. **Round 3 — no dropdowns, week
+  navigation** (see [`2026-08-31-karakter-design-iterations.md`](../2026-08-31-karakter-design-iterations.md)
+  for the full rationale): the Futás-idővonal's accordion rows are gone — every run (including
+  quiet nights) now taps through to its own **run detail page** (kind-specific orb/clay hero +
+  StatStrip + full-width `.chain.big` signal cards + "Hívott szakértők" op-chips + a konzílium
+  outcome/transcript link + a run-scoped AI-napló row); the Feed's "⚙" now navigates to that same
+  page (dynamic "‹ Feed" vs "‹ Gépterem" back label) instead of expanding inline. The flat list
+  is replaced by a **week-stepper** (‹ aug 24–30 ›, day-grouped H–V rows, "MA" marker) with a
+  compact month-jump popover for fast multi-week travel; rare runs (havi/bootstrap) live in a
+  separate "Ritkább futások" list. Demo ships 3 mocked weeks with a fully working stepper.
+  added an entrance/ambient motion pass across every page.
+  **Hub** (hero + a compact 4-tile mosaic, ~one screen): the 7-segment maturity ring (one arc
+  per CORE dimension, color = the owning expert's domain tint, arc length/opacity = maturity,
+  animated sweep-in; center = overall % + "érettség") + a Fraunces-italic AI self-portrait line
+  (a deliberate visual placeholder — the spec marks the identity-hero bio line out of scope for
+  v1); then four tiles — **Dimenziók** (live datum: CORE-average maturity % + dimension count),
+  **Feed** (live datum: newest observation preview + "N új" + pulsing dot), **Csapat** (9-avatar
+  orb cluster), **Konzílium** (latest-session date + pulsing dot). **Dimenziók page**: the 8
+  dimension tiles (7 CORE + 1 CHAPTER example "Munka-stressz ciklus" in a dashed/distinct wash,
+  AI-opened per the real konzílium mechanic) that used to live directly on the hub — tapping one
+  still opens the dimension detail page. **Feed page**: day-grouped observations (persona-voiced,
+  orb avatars) + konzílium-diff rows that can point at a specific dimension or the Konzílium page
+  — richer than the hub's single-line teaser now that it has its own screen. **Dimension page**
+  (generic template driven by a `DIMS` data array, one page for all 8): colored hero (orb avatar +
+  title + big maturity number), a portrait prose card, claim tiles with confidence-word chips only
+  (biztos sage / valószínű amber / figyeljük lavender — never a raw number, per the API's
+  honest-words contract), an ÉRZÉKENY (sensitive) variant with a lavender frame + mirror-toned
+  line, and three live feedback pills — Talál (sage flash + "köszönöm"), Nem igaz (the tile fades
+  to a dashed "nyugdíjazva" state), Pontosítom (inline textarea + Küldés) — plus a "Beszélgess
+  erről Mezóval" chat-handoff chip. **Csapat page**: 9 persona cards — the 7 experts (each now an
+  orb-variant avatar in its domain color: same clay-orb recipe as the Mezo logo, tinted + a
+  dashed inner-ring motif — see the iteration log for the sprite-graduation plan) + the Szkeptikus
+  (graphite orb, dry contrarian) + Mezo (the original coral `s-orb`, elnök). **Konzílium page**: a
+  session list (date + WEEKLY/HAVI/BOOTSTRAP badge + outcome summary, pulsing dot on the unread
+  newest row) — tapping the newest opens a transcript view in place: a tinted 3-cell outcome
+  header (elfogadva/nyugdíjazva/portré átírva counts), phase labels (`Javaslatok` → `A Szkeptikus`
+  → `Döntés`) with a dashed connector line behind the proposal turns, four persona-orb proposal
+  bubbles (Doki/Drill/Táplálkozó/Pszichológus), a graphite Szkeptikus attack bubble, a full-width
+  coral Mezo ruling bubble, and one gold-railed "DANIEL VÁLASZA" quote embedded inside an expert's
+  bubble showing how claim feedback re-enters the konzílium — with an explicit honesty note that
+  the transcript is the real exchange, never re-dramatized. **Bootstrap flow** (aside demo
+  button): intro (orb + 9-avatar orb cluster, popping in one by one + "Kezdjétek el") → staged
+  progress lines ("Doki a súlytrendet olvassa…" etc.) over a coral→gold gradient arc with a live
+  count-up percentage → reveal (the hero ring animates in) → CTA into the first konzílium.
+  **Honest 204 empty state** (aside demo button): "Még nincs elég történet" — no fabricated
+  numbers, no empty-state theater. **Motion**: every page now replays a staggered rise-in
+  choreography on open (including the konzílium transcript, which re-triggers its own `.play`
+  class since it opens in place rather than through the page-open flow), plus ambient pulsing
+  dots, popping mini-rings/avatars, and hover/press micro-interactions — all reduced-motion-guarded.
+  New-content note: dimension/expert keys and voices are pulled directly from
+  `CharacterCoreCatalog`/`CharacterExpertCatalog` in the backend, not invented; the persona orb
+  icons are a runtime-generated placeholder (`buildOrbDefs()` in `karakter-body.html`), pending
+  graduation into hand-tuned `docs/design_2.0/assets/` sprites on approval.
+- **receptmuhely** — the Receptműhely (mezo-92pb): AI-driven recipe builder under Fuel,
+  vászon-first hybrid per the 2026-09-01 spec (`docs/superpowers/specs/2026-09-01-receptmuhely-design.md`).
+  The screen IS the live recipe canvas — editable Fraunces name + goal chip, macro overview card
+  (kcal + P/C/F cells, /adag↔egész toggle, kcal-source breakdown bar), serving stepper that scales
+  amounts proportionally, ingredient rows (Kamra tag + inline amount input with ± steppers and live
+  per-row kcal; unmatched AI line = ✨ BECSLÉS tag — either gram-based with estimated per-100g macros and an
+  editable amount, or "ízlés szerint" with a fixed estimate; no-data = honest `—`),
+  collapsible Elkészítés, portaled save bar — with a docked chat strip below (preset chips
+  High protein · Pre/Post workout · Lefekvés előtt · Reggeli, last-AI-message preview, composer +
+  🏺 kamra picker sheet feeding context chips). Every AI turn is prose + a structured **patch**
+  (never a full regen): only the touched rows flash a gold diff highlight and manual edits survive.
+  All five presets have scripted patch rounds (pre/post note the MealRole write-through on save);
+  two generic free-text rounds + honest demo-end fallback; F7.5 error bubble (Újra/Szerkesztés)
+  via the aside's demo button; macros always computed from kamra facts (lineContribution math),
+  never spoken by the LLM. Save → Receptkönyv with role toast; aside carries the demo script.
+  New sprite icon `i-muhely` (assets/clay-icons.svg): coral pot + steam + gold AI sparks — the
+  feature's entry-point icon, used in the header and the empty-canvas ghost card.
+- **emberek** — the Emberek page rebuilt as a tile hub (Heti recipe: one-screen hub, zero
+  scroll): hero + 3 mini-cells + 4 menu tiles (**Jelöltek** gold with pulsing badge — the
+  nightly extractor's person candidates, accept/reject live-updates every counter; **A köröm**
+  rose with a facepile — person grid with 8-week affect sparks + context dots → full detail
+  page: HU stat cells, animated affect arc, context breakdown bars, linked graph-edge tiles,
+  Mezo facts, quote timeline; **Említések** sky — "A hét ritmusa" day columns colored by
+  dominant tone + tinted filter chips + tone-washed mention cards with clay source icons and
+  ✕ undo on auto rows; **Heti kép** lavender — animated tone-mix bar, direction mosaic
+  (↗ sage / ↘ amber tiles), Fraunces "A hét pillanata" quote, dashed "Csendben maradt" cards)
+  + a Mezo observation band. Sheets: Log (ki · tónus · kontextus · jegyzet) and Új személy
+  (name + alias chips for the name-matcher + relationship). All-clay iconography, no emoji.
+  Backend vision it mocks: spec `docs/superpowers/specs/2026-08-31-emberek-section-design.md`.
+- **growth-tab** — the Growth page (`/me/growth`) rebuilt from a hero + 4-way segment switch
+  into the Fuel/Edzés **hub idiom** (brainstorm decisions IA=A · hero=A · Ma-strip=A): a
+  **live hero** (XP count-up that continues from the last shown value after every chip tap /
+  saved activity, three labelled bars — Szint `340 / 500`, Fegyelem `84%` that honestly
+  *disappears* when null, Ritmus as the last-8-weeks dot row), a **Ma strip** (quest chips:
+  done sage ✓ · open neutral · `csendben lejárt` dashed and faded, tap = the real DailyQuestList
+  "Kész"; `＋ Tevékenység` opens the activity sheet in place → `+15 XP · Tanulás` toast; head
+  → `/nap/kuldetesek`), and a **2×2 mosaic** whose lines come from each page's own hook
+  (`33 skill · legjobb Lv 9` derived from band lengths, not the hardcoded 8/12/13; `12 reggel ·
+  18 este / 30`; `18 ✓ · 4 ✎`; `5 / 9 jelvény · 12 napos sorozat` + pulsing dot while a
+  milestone is near) — one screen, no scroll. Sub-pages: **Skillek** (lav; stat strip + three
+  parallel band cards — clay LIFE icons, `Lv` plaques, animated meters, top-4 + `Mind a 8 ▸`
+  expand, `→ perk Lv n` hint one level before a perk milestone), **Rutin** (gold; two 30-cell
+  chain tiles, milestone pill only at 7/30, day navigator max today, ◦/✓ chain rows with 30-day
+  strength %, past days summarise and a miss reads "holnap folytatódik", never terracotta),
+  **Napló** (sky; an "Ez a hét" tile fed by the still-unconsumed `GET /api/progression/growth-week`
+  — 4 mini-cells + savings —, then 30-day day tiles with `csendben lejárt` honesty),
+  **Kitüntetések** (sage; streak card with milestone bar + saver, Címek Létra/Bolt with working
+  Felvesz/Megveszem — the coin's only sink —, badge grid where unearned badges keep a conic
+  progress ring instead of vanishing, perks). Demo controls: milestone flash, empty Ma strip,
+  Fegyelem unknown, reset.
+- **rutin-epito** — Rutin-építő (mezo-3zue): the routine surface leaves the Growth segments.
+  **Én hub** with the six small tiles + a **full-width Rutin tile** (Mezo-hub Diagnózis/Karakter
+  precedent; one live datum: today done / total + morning/evening chain strength, vanishes when
+  there are no habits). **Rutin hub** (`/me/rutin`): hero (done / total + 28-day mean strength),
+  statstrip (perfect mornings / evenings / active habits), chain cards with per-habit **strength
+  bar + framework badge** (⚓ FOGG · ◈ CLEAR · – legacy), chain toggles, `＋ Új szokás-recept` +
+  `✨ AI javaslat`; rows open the habit page, no tick control (ticking stays on `/nap/rutin`).
+  **Wizard** (`/me/rutin/uj`, 4 steps, dot Stepper): framework cards (Fogg Habit Stacking /
+  Clear Four Laws) → anchor chips from existing habits + mezo events / cue chips → tiny behavior
+  (soft "too big" warning on the Fogg branch) + chain + LIFE area + XP (+ craving/identity on the
+  Clear branch) → celebration / reward chips + **Vállalom** commitment tick that gates save; a
+  **live sentence card** assembles the recipe as the blanks fill; save returns to the hub with
+  the new row highlighted. **Habit page** (`/me/rutin/szokas/:id`): framework band, the recipe
+  sentence large, 28-day history strip, framework fields, pause-without-losing-progress.
+  Backend vision it mocks: spec `docs/superpowers/specs/2026-09-02-routine-builder-design.md`.

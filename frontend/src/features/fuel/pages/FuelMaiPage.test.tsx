@@ -1,3 +1,14 @@
+// ============================================================
+// Mezo · Fuel hub tests (Design 2.0 F3.1, mezo-d20.4.1) — the /fuel index's Mozaik
+// face: keret-hero (ONE number) → Logolás hero tile (mezo-byo1) → Mezo counter banner → 6-tile
+// mosaic → Fuel-beállítások band.
+//
+// Since mezo-byo1 the per-window logging surface lives on /fuel/log (FuelLogPage) —
+// the hub's contracts here are: the keret-hero stays ONE number, the Logolás hero
+// tile honestly mirrors the day's window states and opens /fuel/log, the víz ring
+// opens the water sheet, the energy chips reopen their own EnergyBreakdownSheet
+// section, and the Fuel-beállítások band still opens FuelSettingsSheet.
+// ============================================================
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, useLocation } from 'react-router-dom'
@@ -5,14 +16,13 @@ import { afterEach, beforeEach, vi } from 'vitest'
 import type { FuelSlot } from '@/data/types'
 import { FuelMaiPage } from '@/features/fuel/pages/FuelMaiPage'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { addDays, localDateString, huMonthDay } from '@/shared/lib/dates'
 
-// The mock demo day (fixed now 13:30) is a PARTIAL day (mezo-1oy5): breakfast + lunch logged, the
-// midday/evening windows open (now/pending). To page-test the window-level AI chip, the
-// missed→Pótold CTA, the all-done/no-selection seed, and the trailing-missed default deterministically,
-// we can inject known slots into the composed timeline (either ADDED to the real seed, or a full
-// REPLACEMENT for scenarios that need a specific state shape end to end); both off by default, so
-// every other test sees the unmodified real timeline. Idiom mirrors AiLogSheet.test's hoisted
-// single-hook override.
+// The mock demo day (fixed now 13:30) is a PARTIAL day (mezo-1oy5): breakfast + lunch
+// logged, the midday/evening windows open. To page-test the missed→Pótold CTA, the
+// all-done seed and the empty day deterministically, known slots can be injected into
+// the composed timeline (ADDED to the real seed, or a full REPLACEMENT); both off by
+// default, so every other test sees the unmodified real timeline.
 const hoisted = vi.hoisted(() => ({
   injectOpenSlot: false,
   injectMissedSlot: false,
@@ -44,8 +54,8 @@ vi.mock('@/data/hooks', async (importOriginal) => {
   }
 })
 
-// FuelMaiPage reads the composed dual-mode useFuelDay/useFuelTimeline; pin mock mode for the static
-// Phase-1 seed and provide a QueryClientProvider.
+// The hub reads the composed dual-mode useFuelDay/useFuelTimeline; pin mock mode for the
+// static Phase-1 seed and provide a QueryClientProvider.
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => {
   vi.unstubAllEnvs()
@@ -54,7 +64,7 @@ afterEach(() => {
   hoisted.overrideSlots = null
 })
 
-/** Reports the live URL so the `?w=` writes are observable. */
+/** Reports the live URL so navigations are observable. */
 function LocationProbe() {
   const loc = useLocation()
   return <div data-testid="loc">{loc.pathname}{loc.search}</div>
@@ -70,308 +80,50 @@ const renderView = (path = '/fuel') =>
     </QueryWrapper>,
   )
 
-/** Which island is big right now — the selection's single observable. */
-const bigTone = (container: HTMLElement) =>
-  (container.querySelector('.isl.isl-big') as HTMLElement | null)?.dataset.tone ?? null
+// ── shell dissolution + page anatomy ─────────────────────────────────────────
 
-// ── KeretHero (top of page) ─────────────────────────────────────────────────────────────────────
-
-test('KeretHero renders at the top of the page, above .sky-islands, fed by the composed day\'s real numbers', () => {
+test('the hub is the Mozaik face: hero → Logolás hero tile → mosaic → band, no sub-nav shell', () => {
   const { container } = renderView()
-  const hero = container.querySelector('.khero')
-  const sky = container.querySelector('.sky-islands')
+  expect(container.querySelector('.fh-hub')).toBeInTheDocument()
+  expect(screen.queryByLabelText('Fuel alnavigáció')).toBeNull()
+  const hero = container.querySelector('.fh-hero')
+  const lane = container.querySelector('.fh-logtile')
+  const mosaic = container.querySelector('.mz-mosaic')
   expect(hero).toBeInTheDocument()
-  expect(sky).toBeInTheDocument()
-  // DOM order: the hero comes BEFORE the sky (below the section AppHero chrome, above the sky).
-  expect(hero!.compareDocumentPosition(sky!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  // The mock demo day's real consumed kcal (breakfast 580 + lunch 720 = 1300) — never a fabricated
-  // placeholder — reaches the hero's "eddig X / Y" line.
-  expect(container.querySelector('.khero-of')?.textContent).toContain('eddig 1 300')
+  expect(lane).toBeInTheDocument()
+  expect(mosaic).toBeInTheDocument()
+  // The Mezo Fuel-üzenetek band is retired (mezo-04lo) — unused, tile removed with its page.
+  expect(container.querySelector('.fh-mezotile')).toBeNull()
+  expect(hero!.compareDocumentPosition(lane!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(lane!.compareDocumentPosition(mosaic!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  // The retired sky/island shell is gone.
+  expect(container.querySelector('.sky-islands')).toBeNull()
+  expect(container.querySelector('.kdone')).toBeNull()
 })
 
-test('the retired header row and medication cycle strip are gone — no fabricated page chrome', () => {
+// ── keret-hero (hub v3: ONE number) ──────────────────────────────────────────
+
+test('the hero is ONE number — the kcal CONSUMED today; no eyebrow, no "eddig x / y" of-line', () => {
   const { container } = renderView()
-  expect(screen.queryByRole('heading', { name: 'A mai nap' })).toBeNull()
-  expect(container.querySelector('.pghead-np')).toBeNull()
-  expect(container.querySelector('.medcycle-micro')).toBeNull()
+  // The mock demo day's real consumed kcal (breakfast 580 + lunch 720 = 1300).
+  expect(container.querySelector('.khero-n')?.getAttribute('aria-label')).toBe('1 300 kcal ma')
+  expect(container.querySelector('.khero-of')).toBeNull()
+  const hero = container.querySelector('.fh-hero') as HTMLElement
+  expect(hero.textContent).not.toContain('eddig')
+  expect(hero.textContent).not.toMatch(/\d+\/\d+ ablak/)
 })
 
-// ── Sky composition — done capsule + window islands, no more belt ──────────────────────────────
-
-test('renders the sky: the merged done capsule + the still-open window-islands, one big', () => {
-  // A szigetképzés a valós órát is olvassa — fagyasztva 13:30-ra, hogy a teszt ne legyen
-  // napszakfüggő (este/reggel futtatva a Vacsora-ablak állapota átbillent: 3 sziget lett).
+test('the day-bar draws one segment per done window and carries the gold now-marker', () => {
   vi.useFakeTimers({ toFake: ['Date'] })
   vi.setSystemTime(new Date('2026-07-02T13:30:00'))
   try {
     const { container } = renderView()
-    expect(container.querySelector('.sky-islands')).toBeInTheDocument()
-    // The mock demo day (fixed now 13:30): breakfast + lunch done (merged into ONE done capsule,
-    // no longer their own islands), Uzsonna promoted to 'now' (earliest unlogged window), Vacsora
-    // still future — 2 window-islands + the done capsule, no `.isl-belt` anywhere (mezo-c9t5: the
-    // belt retired in favor of the top-of-page KeretHero).
-    expect(container.querySelector('.kdone')).toBeInTheDocument()
-    expect(container.querySelector('.isl-belt')).toBeNull()
-    expect(container.querySelectorAll('.sky-islands > .isl[data-tone="fuel"]').length).toBe(2)
-    // Exactly one island is big by default — the NOW window (no ?w=).
-    expect(bigTone(container)).toBe('fuel')
-    expect(container.querySelectorAll('.isl.isl-big')).toHaveLength(1)
-    expect(container.querySelector('.now-clock')).toBeInTheDocument()
+    expect(container.querySelectorAll('.khero-seg')).toHaveLength(2) // breakfast + lunch done
+    expect(container.querySelector('.khero-mark')).toBeInTheDocument()
   } finally {
     vi.useRealTimers()
   }
 })
-
-test('an empty day (no meal slots) shows the üres nap island with a ＋ tervezz CTA that navigates to /fuel/plan', async () => {
-  hoisted.overrideSlots = []
-  const { container } = renderView()
-  expect(container.querySelector('.isl-hero-v')?.textContent).toBe('Üres nap')
-  expect(screen.getByText('Nincs mai terv — tervezz egyet.')).toBeInTheDocument()
-  const cta = screen.getByRole('button', { name: '＋ tervezz' })
-  expect(cta).toBeInTheDocument()
-  await userEvent.click(cta)
-  expect(screen.getByTestId('loc').textContent).toBe('/fuel/plan')
-})
-
-test('all windows done (no now, nothing left to select) → no island is big; the done capsule carries every meal', () => {
-  hoisted.overrideSlots = [
-    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
-    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'done', kcal: 700, p: 40, c: 70, f: 20 },
-  ]
-  const { container } = renderView()
-  expect(bigTone(container)).toBeNull()
-  expect(container.querySelectorAll('.sky-islands > .isl[data-tone="fuel"]')).toHaveLength(0)
-  expect(screen.getByText('2 kész ablak · 1 200 kcal')).toBeInTheDocument()
-})
-
-// ── logging from a window lands in THAT window's slot (mezo-bnsf) ─────────────────────────────
-// `buildDayPlan` files logged meals by `slotKey` ONLY (`loggedByKey[w.slotKey]`), never by
-// timestamp — so a meal logged from the Ebéd window under the wall-clock's slot fills the
-// *dinner* window instead, and Ebéd stays `missed`, still offering the same Pótold. The window
-// IS the slot; every log opened from one must carry its slotKey.
-
-test('Pótold on a suggestion-carrying window logs into THAT window\'s slot, not the wall-clock one', async () => {
-  hoisted.overrideSlots = [
-    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'missed',
-      kcal: 660, p: 48, c: 62, f: 14, suggestedRecipeId: 'rec-1' },
-  ]
-  // 16:35 wall clock → LogMealSheet's `defaultSlot()` returns 'dinner'. The tapped window is lunch.
-  // Fake ONLY Date so userEvent/findBy keep their real timers (the `edzés 18:30` test's precedent).
-  vi.useFakeTimers({ toFake: ['Date'] })
-  vi.setSystemTime(new Date('2026-07-02T16:35:00'))
-  try {
-    renderView()
-    await userEvent.click(screen.getByRole('button', { name: 'Pótold' }))
-    const ebed = await screen.findByRole('button', { name: 'Ebéd' })
-    expect(ebed).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getByRole('button', { name: 'Vacsora' })).toHaveAttribute('aria-pressed', 'false')
-  } finally {
-    vi.useRealTimers()
-  }
-})
-
-test('a window with no suggestion also seeds its own slot (the branch that already did)', async () => {
-  hoisted.overrideSlots = [
-    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'missed',
-      kcal: 660, p: 48, c: 62, f: 14 },
-  ]
-  vi.useFakeTimers({ toFake: ['Date'] })
-  vi.setSystemTime(new Date('2026-07-02T16:35:00'))
-  try {
-    renderView()
-    await userEvent.click(screen.getByRole('button', { name: 'Pótold' }))
-    expect(await screen.findByRole('button', { name: 'Ebéd' })).toHaveAttribute('aria-pressed', 'true')
-  } finally {
-    vi.useRealTimers()
-  }
-})
-
-// ── the standing log row (mezo-66te) ─────────────────────────────────────────────────────────
-// The Logold/AI CTAs live on the big window-island, which does not exist once every window is
-// done — and the + FAB's Étkezés tile only navigates here (QuickInputSheet is navigation-only).
-// So the page itself must always carry a meal-log entry point, whatever the day state.
-
-test('an all-done day still offers meal logging: the standing ＋ Logolás row opens LogMealSheet', async () => {
-  hoisted.overrideSlots = [
-    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
-    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'done', kcal: 700, p: 40, c: 70, f: 20 },
-  ]
-  renderView()
-  const log = screen.getByRole('button', { name: '＋ Logolás' })
-  await userEvent.click(log)
-  expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
-})
-
-test('an all-done day still offers AI logging: the standing ✨ AI naplózás row opens AiLogSheet', async () => {
-  hoisted.overrideSlots = [
-    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
-  ]
-  renderView()
-  const ai = screen.getByRole('button', { name: '✨ AI naplózás' })
-  await userEvent.click(ai)
-  expect(await screen.findByText('AI naplózás · mai nap')).toBeInTheDocument()
-})
-
-test('the standing log row is present on a normal day too (below the islands)', () => {
-  const { container } = renderView()
-  expect(screen.getByRole('button', { name: '＋ Logolás' })).toBeInTheDocument()
-  expect(screen.getByRole('button', { name: '✨ AI naplózás' })).toBeInTheDocument()
-  expect(container.querySelector('.sky-islands + .mai-logrow, .mai-logrow')).toBeInTheDocument()
-})
-
-test('a trailing missed window (no now) becomes the default big island — the chronologically first remaining one', () => {
-  hoisted.overrideSlots = [
-    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
-    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'done', kcal: 700, p: 40, c: 70, f: 20 },
-    { time: '20:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'missed', kcal: 600, p: 35, c: 60, f: 18 },
-  ]
-  const { container } = renderView()
-  expect(bigTone(container)).toBe('fuel')
-  expect(container.querySelector('.isl-big')?.querySelector('.isl-cap')?.getAttribute('aria-label')).toMatch(/^Vacsora ·/)
-})
-
-// ── `?w=` URL derivation (the Today `?dp=` pattern) ──────────────────────────────────────────
-
-test('no ?w= → the NOW window is big (river.defaultKey)', () => {
-  const { container } = renderView('/fuel')
-  expect(bigTone(container)).toBe('fuel')
-  expect(container.querySelector('.now-clock')?.classList.contains('isl-big')).toBe(true)
-})
-
-test.each(['', 'holnap-uzsonna', 'ismeretlen', 'keret'])(
-  'a blank, unknown, or the retired ?w=%s falls back to the default (NOW window) — no belt to select anymore',
-  (v) => {
-    const { container } = renderView(`/fuel?w=${v}`)
-    expect(bigTone(container)).toBe('fuel')
-  },
-)
-
-test('tapping a capsule grows that island', async () => {
-  const { container } = renderView()
-  await userEvent.click(screen.getByRole('button', { name: /^Vacsora ·/ }))
-  expect(bigTone(container)).toBe('fuel')
-  expect(container.querySelector('.isl-big')?.querySelector('.isl-cap')?.getAttribute('aria-label'))
-    .toMatch(/^Vacsora ·/)
-})
-
-test('selecting a non-default window writes ?w= with that window key; re-selecting the NOW window drops it', () => {
-  // The window keys and which one wears `· most ·` are both derived from the wall clock, so this
-  // case only holds at a pinned time — unfrozen, `Vacsora` drifts (21:45 → 19:45) and the NOW
-  // window moves off Uzsonna, which made the test red for whole stretches of the real day
-  // (mezo-pxwc). Same 16:35 anchor and Date-only fake the Pótold cases above use.
-  vi.useFakeTimers({ toFake: ['Date'] })
-  vi.setSystemTime(new Date('2026-07-02T16:35:00'))
-  try {
-    renderView('/fuel')
-    fireEvent.click(screen.getByRole('button', { name: /^Vacsora ·/ }))
-    expect(screen.getByTestId('loc').textContent).toBe('/fuel?w=21%3A45-Vacsora')
-    fireEvent.click(screen.getByRole('button', { name: /^Uzsonna · most ·/ }))
-    expect(screen.getByTestId('loc').textContent).toBe('/fuel')
-  } finally {
-    vi.useRealTimers()
-  }
-})
-
-// ── Logging / AI ──────────────────────────────────────────────────────────────────────────────
-
-test('the selected window\'s CTA opens LogMealSheet on that window\'s slot', async () => {
-  renderView()
-  // The NOW window (Uzsonna) is big by default — its action row is live without an extra click.
-  await userEvent.click(screen.getByRole('button', { name: 'Logold' }))
-  expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
-})
-
-test('clicking a window\'s ✨ AI chip opens the AI log sheet on that window\'s slot (mezo-53su)', async () => {
-  hoisted.injectOpenSlot = true // inject a KNOWN open meal/snack slot (deterministic across weekdays)
-  renderView()
-  // Select the injected slot's OWN island first (act-anywhere: select, then act) — its capsule
-  // essence carries the slot label, so the aria-label is unambiguous.
-  await userEvent.click(screen.getByRole('button', { name: /^Esti snack · 20:00 ·/ }))
-  await userEvent.click(screen.getByRole('button', { name: '✨ AI' }))
-  expect(await screen.findByRole('dialog', { name: 'AI ételnapló' })).toBeInTheDocument()
-})
-
-test('a missed window\'s CTA reads Pótold and still opens LogMealSheet on that slot', async () => {
-  hoisted.injectMissedSlot = true
-  renderView()
-  // Select the injected missed island (its capsule essence carries "kimaradt — pótold").
-  await userEvent.click(screen.getByRole('button', { name: /^Tízórai · 11:00 · kimaradt/ }))
-  const cta = await screen.findByRole('button', { name: 'Pótold' })
-  await userEvent.click(cta)
-  expect(await screen.findByText('Mit ettél?')).toBeInTheDocument()
-})
-
-// ── Stack doses (matchMealsToStack wiring, review fix #1) ───────────────────────────────────
-// The real mock demo day carries a fat-bound protocol item matched against the Ebéd (lunch)
-// zone — but Ebéd is DONE today, so it merged into the done capsule (mezo-c9t5) and is no longer
-// a selectable window island. Its zone-scoped verdict has no L1 to land on anymore; the still-open
-// windows never leak it either (zone-scoping survives the merge, it just has nowhere done-side to
-// render — flagged in the task report for a product call).
-
-test('an already-done zone\'s stack verdict has no L1 surface anymore; no still-open window leaks it either', async () => {
-  renderView()
-  expect(screen.queryByRole('button', { name: /^Ebéd ·/ })).toBeNull()
-
-  // Uzsonna (now) is already big by default — its L1 opens directly, no capsule-select needed.
-  await userEvent.click(screen.getByRole('button', { name: /^még \d+ ›$/ }))
-  expect(screen.queryByText('Ehhez az ablakhoz kötve')).toBeNull()
-
-  // Vacsora, selected explicitly.
-  await userEvent.click(screen.getByRole('button', { name: /^Vacsora ·/ }))
-  await userEvent.click(screen.getByRole('button', { name: /^még \d+ ›$/ }))
-  expect(screen.queryByText('Ehhez az ablakhoz kötve')).toBeNull()
-})
-
-// ── Done capsule + AI-score visszakötés (mezo-cs8b) ──────────────────────────────────────────
-
-test('the merged done capsule shows count/kcal/AI-average and expands into per-meal rows', async () => {
-  renderView()
-  expect(screen.getByText('2 kész ablak · 1 300 kcal · AI-átlag 92 p')).toBeInTheDocument()
-  expect(screen.queryByText('Túrós zabkása · áfonyával')).toBeNull()
-  await userEvent.click(screen.getByRole('button', { name: /kész ablak/ }))
-  expect(screen.getByText('Túrós zabkása · áfonyával')).toBeInTheDocument()
-  expect(screen.getByText('Csirke + édesburgonya + spenót')).toBeInTheDocument()
-  // Both mock meals are scored (m1 high, m2 mid) — each row carries its own ✨ chip.
-  expect(screen.getAllByText(/^✨ \d+$/).length).toBe(2)
-  // The frozen mock demo day's gym block sits at 07:30 — breakfast (09:15) lands 105min after it
-  // (0-120min window) → EDZÉS UTÁNI; lunch (13:00) is 330min out → STANDARD.
-  expect(screen.getByText('EDZÉS UTÁNI')).toBeInTheDocument()
-  expect(screen.getByText('STANDARD')).toBeInTheDocument()
-})
-
-test('tapping a scored done row opens MealScoreSheet with that meal', async () => {
-  renderView()
-  await userEvent.click(screen.getByRole('button', { name: /kész ablak/ }))
-  await userEvent.click(screen.getByRole('button', { name: /Túrós zabkása/ }))
-  expect(await screen.findByText('AI score · részletek')).toBeInTheDocument()
-})
-
-test('no done windows today → no done capsule renders at all', () => {
-  hoisted.overrideSlots = [
-    { time: '20:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'now', kcal: 600, p: 35, c: 60, f: 18 },
-  ]
-  const { container } = renderView()
-  expect(container.querySelector('.kdone')).toBeNull()
-})
-
-// ── Water ─────────────────────────────────────────────────────────────────────────────────────
-
-test('the víz ring opens WaterLogSheet; logging a chip amount updates the consumed water', async () => {
-  renderView()
-  // The víz ring's own aria-label carries the current/target liters ("Víz logolása · 1,2 a 2,5
-  // literből") — the visible, accessible signal that a log actually landed, not just that the
-  // sheet closed. Capture it before, log +250ml, and assert it CHANGED after (not merely truthy).
-  const before = screen.getByRole('button', { name: /^Víz logolása/ }).getAttribute('aria-label')
-  await userEvent.click(screen.getByRole('button', { name: /^Víz logolása/ }))
-  expect(await screen.findByText('Mennyit ittál?')).toBeInTheDocument()
-  await userEvent.click(screen.getByRole('button', { name: '250 ml' }))
-  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
-  await waitFor(() => expect(screen.queryByText('Mennyit ittál?')).toBeNull())
-  const after = screen.getByRole('button', { name: /^Víz logolása/ }).getAttribute('aria-label')
-  expect(after).not.toBe(before)
-})
-
-// ── Chips → EnergyBreakdownSheet (restored wiring) ───────────────────────────────────────────
 
 test('the three energy chips each reopen EnergyBreakdownSheet at their own section', async () => {
   renderView()
@@ -389,33 +141,164 @@ test('the three energy chips each reopen EnergyBreakdownSheet at their own secti
   expect(await screen.findByText(/Honnan jön a/)).toBeInTheDocument()
 })
 
-test('real mode: today\'s gym block surfaces as workoutTime in the NOW window\'s subtitle', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'false')
-  // Pin a Thursday (Csü) — the default fixtures' only gym day, with a gym-schedule time of
-  // 18:30 (src/test/msw/handlers.ts) — so `blocks` composes a real 'gym' PlannerBlock and
-  // `workoutTime` is non-null without hand-rolling a mesocycle fixture. Fake ONLY Date so
-  // findBy's real timers keep polling.
-  vi.useFakeTimers({ toFake: ['Date'] })
-  vi.setSystemTime(new Date('2026-07-02T07:00:00'))
-  try {
-    const { container } = renderView()
-    await waitFor(() => expect(container.querySelector('.isl-hero-sub')?.textContent).toMatch(/edzés 18:30/))
-  } finally {
-    vi.useRealTimers()
-  }
-})
-
-test('the macro rings / water ring read via aria-labels and visible labels, not fabricated text', () => {
+test('the macro rings read via aria-labels; the víz ring opens WaterLogSheet and the log lands', async () => {
   const { container } = renderView()
   expect(container.querySelector('[aria-label^="Fehérje "]')).toBeInTheDocument()
   expect(container.querySelector('[aria-label^="Szénhidrát "]')).toBeInTheDocument()
   expect(container.querySelector('[aria-label^="Zsír "]')).toBeInTheDocument()
   expect(screen.getByText('Víz')).toBeInTheDocument()
+
+  const before = screen.getByRole('button', { name: /^Víz logolása/ }).getAttribute('aria-label')
+  await userEvent.click(screen.getByRole('button', { name: /^Víz logolása/ }))
+  expect(await screen.findByText('Mennyit ittál?')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: '250 ml' }))
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  await waitFor(() => expect(screen.queryByText('Mennyit ittál?')).toBeNull())
+  expect(screen.getByRole('button', { name: /^Víz logolása/ }).getAttribute('aria-label')).not.toBe(before)
 })
 
-test('the big window carries aria-current on its bigview', () => {
+// ── the Logolás hero tile (mezo-byo1 — the swimlane's successor) ─────────────
+// The per-window logging behaviors (slot seeding, Pótold, AI arm, out-of-window,
+// score chips) moved to /fuel/log and are covered by FuelLogPage.test.tsx; the hub
+// carries ONE live door whose face follows the same WindowLaneVM.
+
+test('a MOST window leads the hero tile: label · time, the plan meal, and the pulsing eyebrow', () => {
+  hoisted.overrideSlots = [
+    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
+    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'now', kcal: 700, p: 40, c: 70, f: 20, mealName: 'Csirkés bowl', suggestedRecipeId: 'r-1' },
+    { time: '19:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'pending', kcal: 600, p: 35, c: 60, f: 18 },
+  ]
   const { container } = renderView()
-  const big = container.querySelector('.isl-big .isl-bigview')
-  expect(big).toHaveAttribute('aria-current', 'true')
-  expect(within(big as HTMLElement).getByText('Logold')).toBeInTheDocument()
+  const tile = container.querySelector('.fh-logtile') as HTMLElement
+  expect(within(tile).getByText('Logolás · MOST')).toBeInTheDocument()
+  expect(within(tile).getByText('Ebéd · 13:00')).toBeInTheDocument()
+  expect(within(tile).getByText('a tervből: Csirkés bowl')).toBeInTheDocument()
+  // One dot per window, state-classed.
+  expect(tile.querySelectorAll('.fh-lt-dots i')).toHaveLength(3)
+  expect(tile.querySelectorAll('.fh-lt-dots i.is-f')).toHaveLength(1)
+  expect(tile.querySelectorAll('.fh-lt-dots i.is-nw')).toHaveLength(1)
+  expect(within(tile).getByText('1/3 ablak kész')).toBeInTheDocument()
+})
+
+test('the hero tile opens /fuel/log', async () => {
+  renderView()
+  await userEvent.click(screen.getByRole('button', { name: 'Logolás' }))
+  expect(screen.getByTestId('loc').textContent).toBe('/fuel/log')
+})
+
+test('a missed window surfaces as an honest pótolható count — never a punitive word', () => {
+  hoisted.injectMissedSlot = true
+  const { container } = renderView()
+  const tile = container.querySelector('.fh-logtile') as HTMLElement
+  expect(tile.textContent).toContain('1 pótolható')
+  expect(tile.querySelectorAll('.fh-lt-dots i.is-ms')).toHaveLength(1)
+  expect(container.textContent).not.toMatch(/bukt|elrontot|kudarc/i)
+})
+
+test('an all-done day flips the tile to the quiet sage celebration', () => {
+  hoisted.overrideSlots = [
+    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
+    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'done', kcal: 700, p: 40, c: 70, f: 20 },
+  ]
+  const { container } = renderView()
+  const tile = container.querySelector('.fh-logtile') as HTMLElement
+  expect(tile.classList.contains('is-alldone')).toBe(true)
+  expect(within(tile).getByText('Minden ablak kész ✓')).toBeInTheDocument()
+  expect(within(tile).getByText('2/2 ablak kész')).toBeInTheDocument()
+})
+
+test('with no MOST window the tile points at the next upcoming one', () => {
+  hoisted.overrideSlots = [
+    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
+    { time: '19:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'pending', kcal: 600, p: 35, c: 60, f: 18 },
+  ]
+  const { container } = renderView()
+  const tile = container.querySelector('.fh-logtile') as HTMLElement
+  expect(within(tile).getByText('köv. Vacsora · 19:00')).toBeInTheDocument()
+})
+
+test('an empty day names the gap on the tile instead of fabricating windows', () => {
+  hoisted.overrideSlots = []
+  const { container } = renderView()
+  const tile = container.querySelector('.fh-logtile') as HTMLElement
+  expect(within(tile).getByText('nincs mai terv — tervezz és logolj')).toBeInTheDocument()
+  expect(tile.querySelector('.fh-lt-dots')).toBeNull()
+})
+
+test('hub-csali: tegnapi pótolható ablakok chipje dátummal + darabszámmal, ?d=-re navigál', async () => {
+  // The mocked useFuelTimeline returns the SAME crafted plan for every date, so
+  // yesterday's past-normalized lane also carries 1 done + 1 now + 1 pending
+  // → 2 missed once the now/future tiles flip to 'missed'.
+  hoisted.overrideSlots = [
+    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
+    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'now', kcal: 700, p: 40, c: 70, f: 20 },
+    { time: '19:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'pending', kcal: 600, p: 35, c: 60, f: 18 },
+  ]
+  const yesterday = addDays(localDateString(), -1)
+  const dateLabel = `${huMonthDay(yesterday).toLowerCase()}.`
+  const { container } = renderView()
+  const chip = screen.getByRole('button', { name: /pótolható/ })
+  expect(chip.textContent).toContain(dateLabel)
+  expect(chip.textContent).toContain('2 ablak pótolható')
+  // The chip is a sibling of `.fh-logtile`, never nested inside it (no nested buttons).
+  expect(container.querySelector('.fh-logtile')?.contains(chip)).toBe(false)
+  await userEvent.click(chip)
+  expect(screen.getByTestId('loc').textContent).toBe(`/fuel/log?d=${yesterday}`)
+})
+
+test('hub-csali: ha tegnap minden ablak done, nincs chip', () => {
+  hoisted.overrideSlots = [
+    { time: '08:00', kind: 'meal', label: 'Reggeli', slotKey: 'breakfast', state: 'done', kcal: 500, p: 30, c: 50, f: 15 },
+    { time: '13:00', kind: 'meal', label: 'Ebéd', slotKey: 'lunch', state: 'done', kcal: 700, p: 40, c: 70, f: 20 },
+  ]
+  renderView()
+  expect(screen.queryByRole('button', { name: /pótolható/ })).toBeNull()
+})
+
+// ── the 6-tile mosaic ────────────────────────────────────────────────────────
+
+test('the mosaic carries exactly the six Fuel tiles, each navigating to its own page', async () => {
+  renderView()
+  for (const [label, path] of [
+    ['Terv', '/fuel/plan'],
+    ['Stack', '/fuel/stack'],
+    ['Receptek', '/fuel/recipes'],
+    ['Kamra', '/fuel/kamra'],
+    ['Gyógyszer', '/fuel/gyogyszer'],
+    ['Napló', '/fuel/naplo'],
+  ] as const) {
+    const tile = screen.getByRole('button', { name: label })
+    fireEvent.click(tile)
+    expect(screen.getByTestId('loc').textContent).toBe(path)
+  }
+})
+
+test('tile lines come from the pages\' own data — a Terv line, a Kamra count, no fabricated numbers', () => {
+  renderView()
+  expect(screen.getByRole('button', { name: 'Terv' })).toHaveTextContent(/^Terv.*Protein \d\/7 nap$/)
+  expect(screen.getByRole('button', { name: 'Kamra' })).toHaveTextContent(/\d+ tétel/)
+})
+
+test('a Napló line only appears once something is scored today — never a fake AI average', () => {
+  hoisted.overrideSlots = [
+    { time: '19:00', kind: 'meal', label: 'Vacsora', slotKey: 'dinner', state: 'now', kcal: 600, p: 35, c: 60, f: 18 },
+  ]
+  renderView()
+  // The mock day's own logged meals ARE scored, so the line is present and honest.
+  expect(screen.getByRole('button', { name: 'Napló' })).toHaveTextContent(/AI-átlag \d+/)
+})
+
+// ── the Fuel-beállítások band (the retired dropdown's extra action) ──────────
+
+test('the Fuel-beállítások band opens FuelSettingsSheet — the dropdown\'s ⚙️ action, re-homed', async () => {
+  renderView()
+  await userEvent.click(screen.getByRole('button', { name: 'Fuel-beállítások' }))
+  const dialog = await screen.findByRole('dialog', { name: 'Fuel beállítások' })
+  // Something real from the sheet, not just the title — the meals-per-day segmented control.
+  expect(within(dialog).getByText(/étkezés\/nap/i)).toBeInTheDocument()
+})
+
+test('the hero carries no settings entry of its own — Fuel-beállítások lives only on the band', () => {
+  renderView()
+  expect(screen.queryByRole('button', { name: /szerkeszt/i })).toBeNull()
 })

@@ -11,12 +11,17 @@ import type { DecisionEntry } from '@/data/journal/decisionTypes'
 // mock and real test modes (GrowthPage.test.tsx idiom). `useDecisions`/`useDecisionActions` join
 // the same mock for the same reason — left unmocked, real-mode test runs hit a dead backend
 // (`/api/journal/decision` has no MSW handler), so the decisions block silently stayed empty and
-// `DecisionReviewSheet`'s save rejected with no `.catch` (mezo-b3pp.4 Task 7 review finding).
+// the inline review's `reviewDecision` call rejected with no `.catch` (mezo-b3pp.4 Task 7 review
+// finding — the page still guards this with a `.catch(() => {})`, see JournalPage.tsx). The
+// Mozaik re-face (mezo-d20.6.6) adds `useGratitudeEntries` to the same mock: the page now reads
+// it directly for the hero's streak number, alongside GratitudeStreakCard's own call to the same
+// hook for the tile below (one shared react-query cache key, not a second network mode to fake).
 const hooks = vi.hoisted(() => ({
   useJournalNotes: vi.fn(),
   useJournalActions: vi.fn(),
   useDecisions: vi.fn(),
   useDecisionActions: vi.fn(),
+  useGratitudeEntries: vi.fn(),
 }))
 vi.mock('@/data/hooks', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/data/hooks')>()),
@@ -24,6 +29,7 @@ vi.mock('@/data/hooks', async (importOriginal) => ({
   useJournalActions: hooks.useJournalActions,
   useDecisions: hooks.useDecisions,
   useDecisionActions: hooks.useDecisionActions,
+  useGratitudeEntries: hooks.useGratitudeEntries,
 }))
 
 // Pin "today" to 2026-08-15 so the widening window + Ma/Tegnap labels are deterministic.
@@ -68,22 +74,49 @@ function renderPage() {
 }
 
 const actions = { addNote: vi.fn(), updateNote: vi.fn(), removeNote: vi.fn(), pending: false }
-const decisionActions = { addDecision: vi.fn(), reviewDecision: vi.fn(), pending: false }
 
 beforeEach(() => {
   hooks.useJournalActions.mockReturnValue(actions)
   // Default: no open decisions, so the "Döntések" block stays out of the way for tests that
   // aren't exercising it — individual tests below override this.
   hooks.useDecisions.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
-  hooks.useDecisionActions.mockReturnValue(decisionActions)
+  hooks.useDecisionActions.mockReturnValue({ addDecision: vi.fn(), reviewDecision: vi.fn().mockResolvedValue(undefined), pending: false })
+  // Default: an empty gratitude window — the hero shows "0 napos hála-sorozat · 0 bejegyzés" and
+  // the tile below shows its own honest empty copy. Individual tests override for the streak
+  // fixtures.
+  hooks.useGratitudeEntries.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
 })
 afterEach(() => vi.clearAllMocks())
 
-test('renders the Napló header', () => {
+test('renders the Napló hero and the back chip', () => {
   hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
   renderPage()
-  expect(screen.getByRole('heading', { level: 1, name: 'Napló' })).toBeInTheDocument()
-  expect(screen.getByText('Me · Napló')).toBeInTheDocument()
+  expect(screen.getByText('Napló')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
+  expect(screen.getByText('‹ Én')).toBeInTheDocument()
+})
+
+test('the hero shows the honest streak derived from the gratitude fixture', () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  hooks.useGratitudeEntries.mockReturnValue({
+    data: [
+      { id: 'g1', occurredOn: '2026-08-15', text: 'a', lifeArea: null, createdAt: '' },
+      { id: 'g2', occurredOn: '2026-08-14', text: 'b', lifeArea: null, createdAt: '' },
+    ],
+    isPending: false,
+    isError: false,
+    refetch: vi.fn(),
+  })
+  renderPage()
+  expect(screen.getByText('2')).toBeInTheDocument()
+  expect(screen.getByText('napos hála-sorozat · 2 bejegyzés')).toBeInTheDocument()
+})
+
+test('while the gratitude fetch is pending the hero omits the streak number rather than showing 0', () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  hooks.useGratitudeEntries.mockReturnValue({ data: [], isPending: true, isError: false, refetch: vi.fn() })
+  renderPage()
+  expect(screen.queryByText(/napos hála-sorozat/)).not.toBeInTheDocument()
 })
 
 test('groups a two-month fixture under separate month separators, newest first', () => {
@@ -93,11 +126,10 @@ test('groups a two-month fixture under separate month separators, newest first',
   ]
   hooks.useJournalNotes.mockReturnValue({ data: notes, isPending: false, isError: false, refetch: vi.fn() })
   const { container } = renderPage()
-  // Scope to the month-separator elements inside the notes list (not the entry prose, which itself
-  // mentions the month name for these fixtures, and not the "Döntések" block's own eyebrow label,
-  // which shares the same `.eyebrow.text-tertiary` classes but lives outside the `.col.gap-md`
-  // notes-list container) — proves two distinct separators render, newest month first.
-  const separators = container.querySelectorAll('.col.gap-md .eyebrow.text-tertiary')
+  // `.mem-month` is the month-separator's own class (distinct from the "Döntések" eyebrow, which
+  // shares `.mz-eyebrow` but never `.mem-month`) — proves two distinct separators render, newest
+  // month first.
+  const separators = container.querySelectorAll('.mem-month')
   expect(separators).toHaveLength(2)
   expect(separators[0].textContent).toMatch(/augusztus/i)
   expect(separators[1].textContent).toMatch(/július/i)
@@ -186,7 +218,7 @@ test('an error with stale-but-present notes falls through to the normal list (no
 // The decisions block reads `useDecisions` off the barrel mock (fixtures below), not a real or
 // MSW-backed fetch — dec2's reviewDue (2026-08-15) is pinned to this file's frozen "today" so the
 // due state is deterministic (isDecisionDue itself stays real/unmocked, a pure function).
-test('lists open decisions with a due chip and opens the review sheet', async () => {
+test('lists open decisions with a due chip', () => {
   hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
   hooks.useDecisions.mockReturnValue({
     data: [decision()],
@@ -194,18 +226,46 @@ test('lists open decisions with a due chip and opens the review sheet', async ()
     isError: false,
     refetch: vi.fn(),
   })
+  renderPage()
+
+  expect(screen.getByText('Döntések')).toBeInTheDocument()
+  expect(screen.getByText('Nézd vissza')).toBeInTheDocument()
+  expect(screen.getByText(/Esti edzésre váltok/)).toBeInTheDocument()
+})
+
+// mezo-d20.6.6: the gold decision card reviews INLINE (prototype #page-naplo .decrow) — no sheet.
+// Tapping a rating both calls the same `reviewDecision` mutation the old sheet used AND settles
+// the card to the sage acknowledgement without waiting for a refetch.
+test('tapping a rating settles the card to the sage acknowledgement and calls reviewDecision', async () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  hooks.useDecisions.mockReturnValue({ data: [decision()], isPending: false, isError: false, refetch: vi.fn() })
+  const reviewDecision = vi.fn().mockResolvedValue(undefined)
+  hooks.useDecisionActions.mockReturnValue({ addDecision: vi.fn(), reviewDecision, pending: false })
   const user = userEvent.setup()
   renderPage()
 
-  await screen.findByText('Döntések')
-  expect(screen.getByText('Nézd vissza')).toBeInTheDocument()
-  const due = await screen.findByText(/Esti edzésre váltok/)
-  await user.click(due)
+  await user.click(screen.getByRole('button', { name: '5 · bevált' }))
 
-  expect(await screen.findByText('Hogyan sült el?')).toBeInTheDocument()
+  expect(reviewDecision).toHaveBeenCalledWith('dec2', 5)
+  expect(await screen.findByText('✓ Visszanézve · 5/5')).toBeInTheDocument()
+  expect(screen.queryByText(/Esti edzésre váltok/)).not.toBeInTheDocument()
 })
 
-test('does not list already-reviewed decisions among the open ones', async () => {
+test('a lower rating (1–4) also settles the card, with that rating in the acknowledgement', async () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  hooks.useDecisions.mockReturnValue({ data: [decision()], isPending: false, isError: false, refetch: vi.fn() })
+  const reviewDecision = vi.fn().mockResolvedValue(undefined)
+  hooks.useDecisionActions.mockReturnValue({ addDecision: vi.fn(), reviewDecision, pending: false })
+  const user = userEvent.setup()
+  renderPage()
+
+  await user.click(screen.getByRole('button', { name: '2' }))
+
+  expect(reviewDecision).toHaveBeenCalledWith('dec2', 2)
+  expect(await screen.findByText('✓ Visszanézve · 2/5')).toBeInTheDocument()
+})
+
+test('does not list already-reviewed decisions among the open ones', () => {
   hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
   hooks.useDecisions.mockReturnValue({
     data: [
@@ -225,7 +285,7 @@ test('does not list already-reviewed decisions among the open ones', async () =>
     refetch: vi.fn(),
   })
   renderPage()
-  await screen.findByText('Döntések')
+  expect(screen.getByText('Döntések')).toBeInTheDocument()
 
   expect(screen.queryByText(/Kihagyom a nyári versenyt/)).not.toBeInTheDocument()
 })
@@ -245,7 +305,7 @@ test('a failed decisions fetch shows a retry state instead of silently vanishing
   expect(refetchDecisions).toHaveBeenCalledTimes(1)
 })
 
-test('a decisions error with stale-but-present open decisions falls through to the normal list', async () => {
+test('a decisions error with stale-but-present open decisions falls through to the normal list', () => {
   hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
   hooks.useDecisions.mockReturnValue({
     data: [decision()],
@@ -255,6 +315,42 @@ test('a decisions error with stale-but-present open decisions falls through to t
   })
   renderPage()
 
-  await screen.findByText('Döntések')
+  expect(screen.getByText('Döntések')).toBeInTheDocument()
   expect(screen.queryByText('Nem sikerült betölteni a döntéseket.')).not.toBeInTheDocument()
+})
+
+// ── mezo-d20.11 (1:1 fidelity audit) ────────────────────────────────────────────────────────
+
+// The prototype prints the question under the 1–5 row (#page-naplo .decrow + .foot9). It was
+// only an aria-label here, so a sighted user saw five bare digits with no prompt.
+test('the decision card prints the 1–5 question visibly, not just as an aria-label', () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  hooks.useDecisions.mockReturnValue({ data: [decision()], isPending: false, isError: false, refetch: vi.fn() })
+  renderPage()
+
+  expect(screen.getByText('Mennyire vált be? (1–5)')).toBeInTheDocument()
+})
+
+// LOST-FUNCTION REPAIR: between mezo-d20.6.6 and mezo-d20.11 nothing mounted DecisionReviewSheet,
+// so `reviewDecision` was permanently called WITHOUT its third argument and a review could no
+// longer record outcome prose — even though DecisionReviewRequest.outcome, its column and the
+// embedding path that reads it are all live. The sage acknowledgement now carries the door to it.
+test('the sage acknowledgement re-opens the review sheet so outcome prose can still be recorded', async () => {
+  hooks.useJournalNotes.mockReturnValue({ data: [], isPending: false, isError: false, refetch: vi.fn() })
+  hooks.useDecisions.mockReturnValue({ data: [decision()], isPending: false, isError: false, refetch: vi.fn() })
+  const reviewDecision = vi.fn().mockResolvedValue(undefined)
+  hooks.useDecisionActions.mockReturnValue({ addDecision: vi.fn(), reviewDecision, pending: false })
+  const user = userEvent.setup()
+  renderPage()
+
+  await user.click(screen.getByRole('button', { name: '4' }))
+  expect(reviewDecision).toHaveBeenLastCalledWith('dec2', 4)
+
+  await user.click(screen.getByRole('button', { name: 'Mi lett belőle?' }))
+  // The sheet opens PREFILLED with the rating the inline row just committed — so the second
+  // save is the same review, now carrying the prose, not a fresh unrated one.
+  await user.type(screen.getByRole('textbox', { name: /Hogyan sült el/i }), 'Végül tartotta magát.')
+  await user.click(screen.getByRole('button', { name: 'Mentem' }))
+
+  expect(reviewDecision).toHaveBeenLastCalledWith('dec2', 4, 'Végül tartotta magát.')
 })

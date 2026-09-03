@@ -1,7 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.tools;
 
+import io.mrkuhne.mezo.techcore.text.TextFold;
 import java.math.BigDecimal;
-import java.text.Normalizer;
 import java.util.Arrays;
 import java.util.List;
 
@@ -86,10 +86,11 @@ public final class ToolText {
     /**
      * Lowercase + NFD accent-strip — "Túrós" → "turos", so a Hungarian name is findable without
      * diacritics (the {@code ClinicalOutputCheck.fold} idiom, promoted here for tool matching).
+     * The body promoted to {@code techcore.text.TextFold} (bd mezo-06o0.1) so {@code feature.people}
+     * can share it without importing {@code feature.companion}; this method now delegates.
      */
     public static String fold(String text) {
-        return text == null ? ""
-                : Normalizer.normalize(text.toLowerCase(), Normalizer.Form.NFD).replaceAll("\\p{M}", "");
+        return TextFold.fold(text);
     }
 
     /**

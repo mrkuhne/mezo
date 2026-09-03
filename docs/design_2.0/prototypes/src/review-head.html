@@ -1,0 +1,291 @@
+<meta charset="utf-8">
+<title>Edzés-review</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500;600;700&family=Fraunces:ital,opsz,wght@1,9..144,500&display=swap">
+<style>
+  :root {
+    --ground: #EFE8DD; --ground-2: #E7DFD2; --card: #FFFFFF;
+    --ink: #2B2118; --ink-2: #6E6257; --accent: #A84A26;
+    --line: rgba(43, 33, 24, 0.12);
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --ground: #191614; --ground-2: #211D19; --card: #262119;
+      --ink: #F0E9E1; --ink-2: #BCAFA1; --accent: #FF8A66;
+      --line: rgba(240, 233, 225, 0.12);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #191614; --ground-2: #211D19; --card: #262119;
+    --ink: #F0E9E1; --ink-2: #BCAFA1; --accent: #FF8A66;
+    --line: rgba(240, 233, 225, 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--ground); color: var(--ink);
+    font-family: "Geist", system-ui, -apple-system, sans-serif;
+    line-height: 1.5; padding: 48px 24px 64px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: clamp(30px, 4vw, 42px); font-weight: 700; letter-spacing: -0.02em; margin: 8px 0 10px; }
+  .lede { max-width: 62ch; color: var(--ink-2); font-size: 16px; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+  .stage { margin-top: 40px; display: flex; gap: 56px; flex-wrap: wrap; align-items: flex-start; }
+  aside { max-width: 400px; display: grid; gap: 24px; }
+  aside h2 { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; }
+  aside ul, aside ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14.5px; color: var(--ink-2); }
+  aside li strong { color: var(--ink); font-weight: 600; }
+  .note { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 14.5px; color: var(--ink-2); border-left: 2px solid var(--accent); padding-left: 14px; }
+
+  /* ============ PHONE ============ */
+  .phone {
+    width: 330px; height: 694px; flex: none;
+    background: #1D1712; border-radius: 52px; padding: 11px;
+    box-shadow: 0 30px 60px -22px rgba(29, 23, 18, 0.5);
+  }
+  .screen {
+    position: relative; width: 100%; height: 100%; border-radius: 42px; overflow: hidden;
+    display: flex; flex-direction: column; font-size: 11.5px; line-height: 1.4;
+    color: #2B2118; background: #FDFAF4;
+  }
+  .isl { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 82px; height: 22px; border-radius: 999px; background: #1D1712; z-index: 14; }
+  .p-status { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px 2px; font-size: 11px; font-weight: 600; position: relative; z-index: 14; }
+  .p-eyebrow { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #A2958A; }
+  .grow { flex: 1; min-width: 0; }
+  .mrow { display: flex; align-items: center; gap: 8px; }
+  .mut { color: #6E6257; }
+  .big { font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .homebar { width: 118px; height: 4px; border-radius: 999px; background: #2B2118; margin: 2px auto 9px; flex: none; opacity: 0.85; position: relative; z-index: 14; }
+
+  .rise { opacity: 0; transform: translateY(16px) scale(0.98); }
+  .play .rise { animation: rise 0.5s cubic-bezier(0.22, 0.9, 0.32, 1.15) forwards; animation-delay: var(--d); }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  .cta {
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff;
+    border-radius: 999px; padding: 6px 14px; font-size: 10.5px; font-weight: 600; flex: none;
+    box-shadow: 0 8px 16px -6px rgba(255, 91, 54, 0.55); border: none; font-family: inherit; cursor: pointer;
+  }
+  .ghost { background: rgba(43, 33, 24, 0.06); color: #6E6257; border: none; font-family: inherit; border-radius: 999px; padding: 6px 12px; font-size: 10.5px; font-weight: 600; flex: none; cursor: pointer; }
+
+  /* ============ OLDAL-HÉJ (edzes-session.html-lel közös) ============ */
+  .page {
+    position: absolute; inset: 0; z-index: 10;
+    display: flex; flex-direction: column;
+    padding-top: 34px;
+    background: #FDFAF4; transition: background 0.5s ease;
+  }
+  .page.p-coral { background: linear-gradient(180deg, #FFE3D4 0%, #FDFAF4 36%); }
+  .page.p-sage  { background: linear-gradient(180deg, #E4EDDC 0%, #FDFAF4 36%); }
+  .page-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; }
+  .backbtn {
+    border: none; background: rgba(255, 255, 255, 0.7); font-family: inherit; cursor: pointer;
+    border-radius: 999px; padding: 6px 13px 6px 9px; font-size: 11px; font-weight: 600; color: #2B2118;
+    display: flex; align-items: center; gap: 4px;
+    box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.3);
+  }
+  .backbtn:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+  .page-body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 2px 14px 16px; }
+  .page-body::-webkit-scrollbar { display: none; }
+
+  /* hero + halo (a lezáráskori riporttal azonos) */
+  .halo { position: relative; display: grid; justify-items: center; text-align: center; padding: 6px 14px 10px; }
+  .halo .ring { position: absolute; top: -8px; width: 150px; height: 150px; border-radius: 50%; filter: blur(22px); opacity: 0.5; z-index: 0;
+    background: radial-gradient(circle, #FF9A78 0%, #E5C46B 60%, transparent 72%); animation: halopulse 4s ease-in-out infinite; }
+  .halo.calm .ring { background: radial-gradient(circle, #B9D3A8 0%, #E5C46B 60%, transparent 72%); }
+  @keyframes halopulse { 0%, 100% { transform: scale(1); opacity: 0.45; } 50% { transform: scale(1.08); opacity: 0.6; } }
+  .halo > * { position: relative; z-index: 1; }
+  .musclepills { display: flex; gap: 5px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
+  .musclepills span { font-size: 8.5px; font-weight: 700; border-radius: 999px; padding: 3px 9px; }
+  .musclepills span.off { text-decoration: line-through; opacity: 0.45; background: rgba(43, 33, 24, 0.06); color: #6E6257; }
+
+  .statstrip { display: flex; gap: 9px; }
+  .statcell {
+    flex: 1; text-align: center; padding: 9px 4px; border-radius: 15px;
+    background: rgba(255, 255, 255, 0.72); border: 0.5px solid rgba(43, 33, 24, 0.07);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 8px 16px -10px rgba(43, 33, 24, 0.25);
+  }
+  .statcell b { font-size: 13px; font-weight: 600; display: block; font-variant-numeric: tabular-nums; }
+  .statcell small { font-size: 8.5px; color: #6E6257; }
+
+  .vcard {
+    background: #FFFFFF; border-radius: 16px; padding: 4px 12px; margin-bottom: 10px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .qxp { font-size: 9px; font-weight: 700; color: #A8801F; background: rgba(201, 150, 46, 0.12); border-radius: 999px; padding: 3px 9px; flex: none; }
+  .medcard { display: flex; gap: 9px; align-items: center; background: linear-gradient(140deg, #FBEBCB, #FFFDF6); border-radius: 14px; padding: 9px 11px; margin-bottom: 7px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 12px 22px -15px rgba(181, 126, 20, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .tgrow { display: flex; align-items: center; gap: 8px; background: rgba(143, 175, 126, 0.14); border-radius: 12px; padding: 8px 11px; margin-bottom: 7px; font-size: 10px; font-weight: 600; color: #4E6B42; flex-wrap: wrap; }
+  .tgrow .xc { font-size: 8.5px; background: #fff; border-radius: 999px; padding: 2px 8px; color: #6E6257; font-weight: 600; }
+  .chres { display: flex; align-items: center; gap: 8px; padding: 7px 2px; font-size: 10px; }
+  .chres + .chres { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .chres .ro { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 10px; flex: none; background: rgba(43, 33, 24, 0.07); color: #6E6257; }
+  .chres .ro.hit { background: linear-gradient(135deg, #8FAF7E, #6E8B5E); color: #fff; }
+  .mpill { font-size: 8px; font-weight: 700; border-radius: 999px; padding: 2px 8px; flex: none; }
+  .excmap { border-radius: 14px; background: #fff; border: 0.5px solid rgba(43, 33, 24, 0.07); border-left: 4px solid var(--fr, #A2958A); padding: 8px 11px; margin-bottom: 7px; box-shadow: 0 10px 20px -14px rgba(43, 33, 24, 0.3); }
+  .excmap.skp { opacity: 0.55; }
+  .setchips { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
+  .setchips span { font-size: 8px; font-weight: 600; color: #6E6257; background: rgba(43, 33, 24, 0.05); border-radius: 999px; padding: 2.5px 8px; font-variant-numeric: tabular-nums; }
+  .setchips span.top { color: var(--fd); background: var(--fw); }
+  .setchips span.med { color: #A8801F; background: rgba(201, 150, 46, 0.16); }
+  .setchips span.gho { border: 1px dashed rgba(43, 33, 24, 0.2); background: none; color: #A2958A; }
+  .habnote { font-size: 9.5px; color: #A2958A; margin-top: 12px; font-weight: 300; }
+
+  /* ============ ÚJ · KONTEXTUS-CSEMPE (F7.2) ============ */
+  .cmp {
+    border-radius: 16px; padding: 10px 12px 11px; margin-bottom: 10px;
+    background: linear-gradient(150deg, #DFEDF5, #F5FAFD);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -16px rgba(78, 143, 184, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+  .cmp-ref { display: flex; align-items: baseline; gap: 6px; margin-top: 3px; }
+  .cmp-ref b { font-size: 11px; font-weight: 700; }
+  .cmp-ref .ago { font-size: 9px; font-weight: 600; color: #6E6257; }
+  .cmp-cells { display: flex; gap: 7px; margin-top: 9px; }
+  .cmp-cell {
+    flex: 1; text-align: center; border-radius: 12px; padding: 7px 3px 6px;
+    background: rgba(255, 255, 255, 0.74); border: 0.5px solid rgba(43, 33, 24, 0.05);
+  }
+  /* ADR 0010: a szám előjeles és őszinte, a SZÍN nem büntet. Felfelé zsálya,
+     lefelé semleges grafit — korall/piros itt nem létezik. */
+  .cmp-cell b { display: block; font-size: 12.5px; font-weight: 600; font-variant-numeric: tabular-nums; color: #6E6257; }
+  .cmp-cell b.up { color: #4E6B42; }
+  .cmp-cell small { display: block; font-size: 8px; color: #6E6257; margin-top: 1px; }
+  .cmp-cell .was { display: block; font-size: 7.5px; color: #A2958A; font-variant-numeric: tabular-nums; }
+
+  /* ============ ÚJ · SZETT-JEGYZETEK (F7.2) ============ */
+  .snotes { margin-top: 6px; padding-top: 5px; border-top: 0.5px dashed rgba(43, 33, 24, 0.11); display: grid; gap: 3px; }
+  .snote { display: flex; gap: 6px; align-items: baseline; font-size: 8.5px; color: #6E6257; }
+  .snote i { font-style: normal; font-weight: 700; color: #A2958A; flex: none; font-variant-numeric: tabular-nums; }
+
+  /* ============ ÚJ · LÉPTETÉS A TEMPLATE-NAP LÁNCÁN (F7.2) ============ */
+
+  /* ============ EDZÉS-JEGYZET (mezo-d20.8.2.2) ============
+     closing: kérdés-címkés, bekötött mező a lezáró CTA FÖLÖTT (a billentyűzet így
+     tolja a CTA-t, nem takarja). closed: a mentett mondat Fraunces-kurzívban,
+     jegyzet híján a blokk nem renderel — a review oldalon helyette egy csendes
+     "＋ Jegyzet" akció áll, mert ott a pótlás értelmes szándék. */
+  .wn { margin-top: 13px; }
+  .wn-q { display: block; font-size: 8px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 700; color: #A84A26; margin-bottom: 6px; }
+  .wn-ta {
+    width: 100%; box-sizing: border-box; min-height: 60px; resize: none; display: block;
+    font-family: inherit; font-size: 11px; line-height: 1.5; color: #2B2118;
+    background: rgba(255, 255, 255, 0.72); border: 1px solid rgba(43, 33, 24, 0.1);
+    border-radius: 14px; padding: 10px 12px;
+    box-shadow: 0 6px 16px -12px rgba(43, 33, 24, 0.4);
+  }
+  .wn-ta::placeholder { color: #B6A99C; font-style: italic; }
+  .wn-ta:focus { outline: none; border-color: #FF8A66; box-shadow: 0 0 0 3px rgba(255, 138, 102, 0.18); }
+  .wn-hint { font-size: 8px; color: #A2958A; margin-top: 5px; font-weight: 300; }
+
+  .wn-r { margin-top: 13px; position: relative; border-left: 2px solid #7E9B6A; padding: 1px 30px 1px 12px; }
+  .wn-r .lbl { display: block; font-size: 7.5px; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; font-weight: 700; margin-bottom: 4px; }
+  .wn-r p { margin: 0; font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 12.5px; line-height: 1.55; color: #2B2118; white-space: pre-line; }
+  .wn-edit {
+    position: absolute; top: 0; right: 0; width: 24px; height: 24px; border: none; cursor: pointer;
+    background: rgba(43, 33, 24, 0.06); color: #6E6257; border-radius: 999px; font-size: 10px; font-family: inherit;
+  }
+  .wn-add {
+    width: 100%; margin-top: 13px; padding: 10px 0; cursor: pointer; font-family: inherit;
+    background: none; border: 1px dashed rgba(43, 33, 24, 0.22); border-radius: 14px;
+    font-size: 10px; font-weight: 600; color: #A2958A;
+  }
+  .wn-ed { display: flex; gap: 7px; margin-top: 7px; }
+  .wn-ed button { flex: 1; border: none; cursor: pointer; font-family: inherit; border-radius: 999px; padding: 7px 0; font-size: 10px; font-weight: 600; }
+  .wn-ed .save { background: linear-gradient(135deg, #7E9B6A, #5F7F4C); color: #fff; }
+  .wn-ed .cancel { background: rgba(43, 33, 24, 0.06); color: #6E6257; }
+
+  .stepnav { display: flex; gap: 7px; margin-top: 13px; }
+  .stepnav button {
+    flex: 1; font-family: inherit; cursor: pointer; border-radius: 13px; padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.74); border: 0.5px solid rgba(43, 33, 24, 0.07);
+    box-shadow: 0 8px 16px -10px rgba(43, 33, 24, 0.25); text-align: left; color: #2B2118;
+  }
+  .stepnav button.nx { text-align: right; }
+  .stepnav button:disabled { opacity: 0.38; cursor: default; box-shadow: none; }
+  .stepnav button:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+  .stepnav small { display: block; font-size: 7.5px; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; font-weight: 700; }
+  .stepnav b { font-size: 10.5px; font-weight: 600; }
+
+
+  /* ============ ÚJ · GYAKORLAT-SWIMLANE (F7.2) ============ */
+  /* A Fuel hub ablak-sávjának mintája: a leltár nem lefelé nő, hanem oldalra fut,
+     és a mélység a saját oldalán van — nem a görgetésben. */
+  .lane { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; scroll-snap-type: x mandatory;
+    margin: 0 -14px; padding: 2px 14px 4px; }
+  .lane::-webkit-scrollbar { display: none; }
+  .extile {
+    flex: none; width: 128px; scroll-snap-align: start; cursor: pointer; text-align: left;
+    font-family: inherit; color: #2B2118; border: 0.5px solid rgba(43, 33, 24, 0.06);
+    border-radius: 16px; padding: 9px 10px 10px; background: var(--fw, #fff);
+    box-shadow: 0 13px 24px -16px var(--fsh, rgba(43, 33, 24, 0.35)), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    display: flex; flex-direction: column; gap: 5px;
+  }
+  .extile:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+  .extile.skp { opacity: 0.5; }
+  .extile .mono {
+    width: 24px; height: 24px; border-radius: 9px; display: grid; place-items: center; flex: none;
+    background: rgba(255, 255, 255, 0.78); color: var(--fd); font-size: 11px; font-weight: 700;
+  }
+  .extile .nm { font-size: 9.5px; font-weight: 700; line-height: 1.25; min-height: 24px; }
+  /* A horgony: EGY nagy szám gyakorlatonként — ez az, amit vissza akarsz olvasni. */
+  .extile .topset { font-size: 17px; font-weight: 300; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; color: var(--fd); }
+  .extile .topset s { text-decoration: none; font-size: 11px; color: #6E6257; }
+  .extile .lbl { font-size: 7.5px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; }
+  .setdots { display: flex; gap: 3px; align-items: center; }
+  .setdots i { width: 100%; height: 4px; border-radius: 2px; background: var(--fd); opacity: 0.4; }
+  .setdots i.med { background: #C9962E; opacity: 1; }
+  .setdots i.warm { opacity: 0.18; }
+  .setdots i.miss { background: none; border: 1px dashed rgba(43, 33, 24, 0.28); height: 4px; }
+  .extile .foot { display: flex; align-items: center; gap: 5px; font-size: 8px; font-weight: 600; color: #6E6257; }
+  .extile .stamp { font-size: 7.5px; font-weight: 700; color: #A8801F; background: rgba(201, 150, 46, 0.16); border-radius: 999px; padding: 1.5px 6px; }
+  .extile .ncnt { font-size: 7.5px; font-weight: 600; color: #A2958A; }
+
+  /* ============ ÚJ · GYAKORLAT-OLDAL (F7.2) ============ */
+  .subpage { transform: translateX(100%); transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.35, 1); z-index: 12; }
+  .subpage.open { transform: none; }
+  .exhero { display: flex; align-items: center; gap: 10px; padding: 6px 2px 12px; }
+  .exhero .mono {
+    width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; flex: none;
+    background: var(--fw); color: var(--fd); font-size: 18px; font-weight: 700;
+    box-shadow: 0 10px 20px -12px var(--fsh), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+  .exhero .nm { font-size: 15px; font-weight: 700; line-height: 1.2; }
+  .exhero .sb { font-size: 9.5px; color: #6E6257; margin-top: 2px; display: flex; align-items: center; gap: 6px; }
+
+  /* Egy csempe EGY szett — ez az olvashatóság javítása: a szám kap helyet, nem chipbe préselődik. */
+  .setcard {
+    display: flex; align-items: center; gap: 10px; border-radius: 14px; padding: 9px 12px; margin-bottom: 6px;
+    background: #fff; border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 11px 21px -15px rgba(43, 33, 24, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .setcard .ix {
+    width: 22px; height: 22px; border-radius: 8px; flex: none; display: grid; place-items: center;
+    font-size: 9.5px; font-weight: 700; background: var(--fw); color: var(--fd); font-variant-numeric: tabular-nums;
+  }
+  .setcard.warm .ix { background: rgba(43, 33, 24, 0.06); color: #A2958A; }
+  .setcard .load { font-size: 15px; font-weight: 300; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+  .setcard .load b { font-weight: 600; }
+  .setcard .rir { font-size: 9px; font-weight: 600; color: #6E6257; }
+  .setcard .vol { font-size: 9.5px; font-weight: 600; color: #A2958A; font-variant-numeric: tabular-nums; text-align: right; flex: none; }
+  .setcard.med { background: linear-gradient(140deg, #FBEBCB, #FFFDF6); box-shadow: 0 12px 22px -15px rgba(181, 126, 20, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .setcard.med .vol { color: #A8801F; }
+  .setcard.ghost { background: none; border: 1px dashed rgba(43, 33, 24, 0.2); box-shadow: none; color: #A2958A; }
+  .setcard .note { font-size: 8.5px; color: #6E6257; margin-top: 2px; }
+  .setcard .tag { font-size: 7.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; }
+
+  /* demó-kapcsoló a telefon alatt */
+  .demobar { display: flex; gap: 7px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+  .demobar button {
+    font-family: inherit; cursor: pointer; border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  }
+  .demobar button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise, .play .rise { opacity: 1; transform: none; animation: none; }
+    .halo .ring { animation: none; }
+    .page, .subpage { transition: none; }
+  }
+</style>

@@ -39,4 +39,16 @@ public interface DecisionEntryRepository extends JpaRepository<DecisionEntryEnti
      *  midnight must belong to the next period, not both). */
     List<DecisionEntryEntity> findByCreatedByAndReviewedAtGreaterThanEqualAndReviewedAtLessThanAndOutcomeRatingIsNotNullAndDeletedFalse(
         UUID createdBy, Instant from, Instant to);
+
+    /** mezo-d20.7.8: decisions RECORDED inside a week — the weekly review's gather input
+     *  ({@code WeeklyReviewContextSources}), chronological because the review narrates forwards. */
+    List<DecisionEntryEntity> findByCreatedByAndDecidedOnBetweenAndDeletedFalseOrderByDecidedOnAsc(
+        UUID createdBy, LocalDate startInclusive, LocalDate endInclusive);
+
+    /** mezo-d20.7.8: decisions REVIEWED inside a week's half-open {@code [from, to)} instant window
+     *  — the weekly review's gather input. Unlike the W5.3 finder above this does NOT require an
+     *  {@code outcomeRating}: an ungraded review still happened, and the gather renders the missing
+     *  rating as the honest {@code –} rather than dropping the row. */
+    List<DecisionEntryEntity> findByCreatedByAndReviewedAtGreaterThanEqualAndReviewedAtLessThanAndDeletedFalseOrderByReviewedAtAsc(
+        UUID createdBy, Instant from, Instant to);
 }

@@ -1,17 +1,32 @@
+// ============================================================
+// Mezo · WeightPage — the Én tab's Súly tile opened into its own page
+// (mezo-d20.6.3). Source of truth: en-body.html #page-suly (p-sky tone):
+// page-head with the "＋ Súly naplózása" CTA, hero (goal delta + start→
+// latest, WeightHero), stat strip (jelenleg · 7-nap/hét · ETA), period
+// chips, trend chart (actual+MA line, dashed plan line, ±1 kg tolerance
+// band — WeightTrendChart, unchanged behavior), weekly history tiles
+// (WeeklyWeightCard: delta pill + direction, sage/amber — NEVER red)
+// with the "Régebbi hetek" pager. WeightLogSheet stays exactly as-is;
+// saving flows back through useWeight()'s cache, updating hero + tiles.
+// ============================================================
 import { useMemo, useState } from 'react'
-import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { useNavigate } from 'react-router-dom'
+import { cn } from '@/shared/lib/cn'
 import { Icon } from '@/shared/ui/Icon'
+import { MozaikPage, PageHead, PageBody, StatStrip, StatCell } from '@/shared/ui/mozaik'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useGoal, useWeight } from '@/data/hooks'
-import { WeightHero } from '@/features/me/components/WeightHero'
+import { WeightHero, statRateColor } from '@/features/me/components/WeightHero'
 import { WeightTrendChart } from '@/features/me/components/WeightTrendChart'
 import { WeeklyWeightCard } from '@/features/me/components/WeeklyWeightCard'
-import { groupByWeek, dayRows, type Period } from '@/features/me/logic/weightStats'
+import { groupByWeek, dayRows, latestValue, etaWeeks, fmtSigned, type Period } from '@/features/me/logic/weightStats'
 import { WeightLogSheet } from '@/features/me/sheets/WeightLogSheet'
 
 const PERIODS: Period[] = ['7d', '30d', '90d', '1y']
 const WEEK_STEP = 6
 
 export function WeightPage() {
+  const navigate = useNavigate()
   const { weightLog, weightTrends, logWeight } = useWeight()
   const { goal, goalResponse } = useGoal()
   const [period, setPeriod] = useState<Period>('30d')
@@ -22,67 +37,71 @@ export function WeightPage() {
 
   const weeks = useMemo(() => groupByWeek(weightLog), [weightLog])
   const effectiveExpanded = expandedIso === undefined ? (weeks[0]?.startIso ?? null) : expandedIso
-  const latest = weightLog.length ? weightLog[weightLog.length - 1].value : (goal?.currentWeight ?? 0)
+  const latest = latestValue(weightLog)
+  const rate = weightTrends.last7d.weeklyRate
+  const eta = latest !== null ? etaWeeks(latest, goal?.targetWeight ?? null, rate) : null
 
   return (
-    <>
-      <div className="pghead-np lav">
-        <div>
-          <div className="over">Me · Súly</div>
-          <h1>Napi súly</h1>
-        </div>
-      </div>
+    <MozaikPage tone="sky">
+      <PageHead onBack={() => navigate(-1)} label="‹ Én">
+        <button type="button" className="mz-pgact" onClick={() => setLogOpen(true)}>
+          ＋ Súly naplózása
+        </button>
+      </PageHead>
+      <EntranceGroup>
+        <WeightHero log={weightLog} weightTrends={weightTrends} goal={goal} />
 
-      <WeightHero log={weightLog} weightTrends={weightTrends} goal={goal} onLog={() => setLogOpen(true)} />
+        <PageBody>
+          <StatStrip className="rise">
+            <StatCell value={latest === null ? '—' : latest.toFixed(1)} label="Jelenleg" />
+            <StatCell value={<span style={{ color: statRateColor(rate, goal?.kind) }}>{fmtSigned(rate)}</span>} label="7-nap/hét" />
+            <StatCell value={eta === null ? '—' : `${eta}h`} label="ETA" />
+          </StatStrip>
 
-      <div style={{ padding: '0 24px 16px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
-          <Eyebrow>Súly · trend</Eyebrow>
-          <div className="row gap-xs">
+          <div className="row gap-xs rise" style={{ '--d': '40ms', marginTop: 12, marginBottom: 10 } as React.CSSProperties}>
             {PERIODS.map(p => (
               <button
                 key={p}
+                type="button"
                 onClick={() => setPeriod(p)}
-                className="chip"
-                style={period === p
-                  ? { fontSize: 9, padding: '3px 8px', background: 'var(--wash-lav)', color: 'var(--lav-deep)', borderColor: 'transparent' }
-                  : { fontSize: 9, padding: '3px 8px' }}
+                className={cn('chip tapchip', period === p && 'brand')}
               >
                 {p}
               </button>
             ))}
           </div>
-        </div>
-        <WeightTrendChart log={weightLog} goalResponse={goalResponse} period={period} />
-      </div>
 
-      <div style={{ padding: '0 24px 24px' }}>
-        <div className="row" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
-          <Eyebrow>Heti előzmény</Eyebrow>
-          {weeks.length > 0 && (
-            <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--faint)' }}>
-              {Math.min(visibleWeeks, weeks.length)} / {weeks.length} hét
-            </span>
+          <div className="rise" style={{ '--d': '80ms' } as React.CSSProperties}>
+            <WeightTrendChart log={weightLog} goalResponse={goalResponse} period={period} />
+          </div>
+
+          <div className="wt-lsec rise" style={{ '--d': '120ms' } as React.CSSProperties}>
+            <span className="mz-eyebrow">Heti előzmény</span>
+            {weeks.length > 0 && (
+              <span className="wt-cnt">{Math.min(visibleWeeks, weeks.length)} / {weeks.length} hét</span>
+            )}
+          </div>
+          {weeks.slice(0, visibleWeeks).map((week, i) => (
+            <WeeklyWeightCard
+              key={week.startIso}
+              week={week}
+              dayRows={effectiveExpanded === week.startIso ? dayRows(weightLog, week) : []}
+              expanded={effectiveExpanded === week.startIso}
+              onToggle={() => setExpandedIso(effectiveExpanded === week.startIso ? null : week.startIso)}
+              goalKind={goal?.kind}
+              delayMs={150 + i * 40}
+            />
+          ))}
+          {weeks.length > visibleWeeks && (
+            <button type="button" className="mzp-new rise" style={{ '--d': '260ms' } as React.CSSProperties}
+              onClick={() => setVisibleWeeks(v => v + WEEK_STEP)}>
+              Régebbi hetek <Icon name="chevron-down" size={12} />
+            </button>
           )}
-        </div>
-        {weeks.slice(0, visibleWeeks).map(week => (
-          <WeeklyWeightCard
-            key={week.startIso}
-            week={week}
-            dayRows={effectiveExpanded === week.startIso ? dayRows(weightLog, week) : []}
-            expanded={effectiveExpanded === week.startIso}
-            onToggle={() => setExpandedIso(effectiveExpanded === week.startIso ? null : week.startIso)}
-            goalKind={goal?.kind}
-          />
-        ))}
-        {weeks.length > visibleWeeks && (
-          <button className="chip" onClick={() => setVisibleWeeks(v => v + WEEK_STEP)} style={{ width: '100%', justifyContent: 'center', padding: 11, marginTop: 2 }}>
-            Régebbi hetek <Icon name="chevron-down" size={12} />
-          </button>
-        )}
-      </div>
+        </PageBody>
+      </EntranceGroup>
 
-      {logOpen && <WeightLogSheet onClose={() => setLogOpen(false)} onSave={logWeight} currentWeight={latest} />}
-    </>
+      {logOpen && <WeightLogSheet onClose={() => setLogOpen(false)} onSave={logWeight} currentWeight={latest ?? 0} />}
+    </MozaikPage>
   )
 }

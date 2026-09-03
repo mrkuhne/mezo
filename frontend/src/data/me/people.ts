@@ -7,6 +7,9 @@ export const people: PersonEntry[] = [
     initial: 'P',
     relationship: 'partner',
     relationshipHu: 'Élettárs',
+    aliases: ['Peti', 'Petus'],
+    status: 'active',
+    sourceKind: 'seed',
     affect_baseline: 'positive',
     mentionCount: 84,
     mentionsThisWeek: 9,
@@ -14,13 +17,20 @@ export const people: PersonEntry[] = [
     lastMentionLabel: 'Tegnap este · 20:14',
     contactCadenceLabel: 'Napi',
     notes: 'Közös háztartás · vasárnapi közös vacsorák a fix horgony.',
-    affectTrend: [4, 4, 3, 4, 4, 3, 4, 5, 4, 4, 4, 5],
+    affectTrend: [4, 3, 4, 5, 4, 4, 4, 5],
+    affectTrendStart: '2026-03-30',
+    direction: 'up',
+    directionReason: 'jobb hetek, mint korábban',
     knownFacts: [
       'Munkahely: ELTE doktorátus, jellemzően csüt-pénteken késő',
       'Allergén: kagyló · konyhakerülő',
       'Közös mozgás: vasárnap reggeli séta a Duna-parton',
     ],
     ties: ['Csütörtökönként későn jön → vacsora csúszik 21:00 utánra', 'Vasárnapi séta után stabilan jobb hét'],
+    graphEdges: [
+      { nodeKind: 'LIFE_EVENT', title: 'Nyári szabadság · júl 14–21', relationHu: 'kapcsolódik', strength: 'erős' },
+      { nodeKind: 'GOAL', title: 'Esti rutin', relationHu: 'támogatja', strength: 'közepes' },
+    ],
   },
   {
     id: 'pp-bence',
@@ -28,6 +38,9 @@ export const people: PersonEntry[] = [
     initial: 'B',
     relationship: 'teammate',
     relationshipHu: 'Csapattárs · röpi',
+    aliases: [],
+    status: 'active',
+    sourceKind: 'seed',
     affect_baseline: 'positive',
     mentionCount: 31,
     mentionsThisWeek: 4,
@@ -35,12 +48,18 @@ export const people: PersonEntry[] = [
     lastMentionLabel: 'Péntek · röpi után',
     contactCadenceLabel: 'Heti 3×',
     notes: 'Röplabda csapat · setter · 6 éve együtt játszunk.',
-    affectTrend: [4, 4, 4, 5, 4, 4, 5, 4, 5, 4],
+    affectTrend: [4, 4, 4, 4, 3, 3, 2, 2],
+    affectTrendStart: '2026-03-30',
+    direction: 'down',
+    directionReason: 'többször nehéz tónus, mint korábban',
     knownFacts: [
       'Csütörtök 18:00 + Vasárnap 10:00 közös edzés',
       'Cipője utoljára májusban cserélve · figyel a térdére',
     ],
     ties: ['Bence játéknapja után stabilan magasabb HRV'],
+    graphEdges: [
+      { nodeKind: 'PATTERN', title: 'Lemondott programok × hangulat', relationHu: 'kapcsolódik', strength: 'közepes' },
+    ],
   },
   {
     id: 'pp-adam',
@@ -48,6 +67,9 @@ export const people: PersonEntry[] = [
     initial: 'Á',
     relationship: 'mentee',
     relationshipHu: 'Mentee · Mizu Velünk',
+    aliases: [],
+    status: 'active',
+    sourceKind: 'seed',
     affect_baseline: 'positive',
     mentionCount: 14,
     mentionsThisWeek: 2,
@@ -56,11 +78,17 @@ export const people: PersonEntry[] = [
     contactCadenceLabel: 'Havi 1:1',
     notes: 'Product manager · új rolet vesz fel · rendszer-szerelem közös téma.',
     affectTrend: [3, 4, 4, 4, 5, 4],
+    affectTrendStart: '2026-04-13',
+    direction: 'up',
+    directionReason: 'jobb hetek, mint korábban',
     knownFacts: [
       'Tanulja a glikogén ablakot · saját N=1-be belekezdett',
       "Áprilisi 1:1: 'új ötlet-pörgés' 14 napos micro-experiment",
     ],
     ties: ['Mizu-péntek utáni szombat reggel: +0.8 SD energia'],
+    graphEdges: [
+      { nodeKind: 'GOAL', title: 'Futóblokk · 8 hét', relationHu: 'támogatja', strength: 'erős' },
+    ],
   },
   {
     id: 'pp-reka',
@@ -68,6 +96,9 @@ export const people: PersonEntry[] = [
     initial: 'R',
     relationship: 'mentee',
     relationshipHu: 'Mentee · Mizu Velünk',
+    aliases: [],
+    status: 'active',
+    sourceKind: 'seed',
     affect_baseline: 'mixed',
     mentionCount: 11,
     mentionsThisWeek: 3,
@@ -75,12 +106,16 @@ export const people: PersonEntry[] = [
     lastMentionLabel: 'Péntek éjjel · hosszabb hangjegy',
     contactCadenceLabel: 'Havi 1:1 · spike most',
     notes: 'Karrier-átmenet · márciusi szakítás · sűrűsödő mentions.',
-    affectTrend: [4, 3, 3, 3, 2, 3, 3, 2, 3],
+    affectTrend: [3, 3, 3, 2, 3, 3, 2, 3],
+    affectTrendStart: '2026-03-30',
+    direction: 'flat',
+    directionReason: 'kiegyensúlyozott hetek',
     knownFacts: [
       "Március óta nehezebb hónapok · 'lebegés' szót sokszor használja",
       'Vasárnapi sétára meghívás többször visszamondva',
     ],
     ties: ['Réka-említés után 2× 22:00 utáni snack a múlt héten'],
+    graphEdges: [],
   },
   {
     id: 'pp-mark',
@@ -88,6 +123,9 @@ export const people: PersonEntry[] = [
     initial: 'M',
     relationship: 'mentee',
     relationshipHu: 'Mentee · Mizu Velünk',
+    aliases: [],
+    status: 'active',
+    sourceKind: 'seed',
     affect_baseline: 'positive',
     mentionCount: 9,
     mentionsThisWeek: 1,
@@ -96,15 +134,54 @@ export const people: PersonEntry[] = [
     contactCadenceLabel: 'Havi 1:1',
     notes: 'Önálló dev · system-thinker · Daniel-fit profil.',
     affectTrend: [4, 5, 4, 5, 4, 4, 5],
+    affectTrendStart: '2026-04-06',
+    direction: 'flat',
+    directionReason: 'kiegyensúlyozott hetek',
     knownFacts: [
       'Saját kis Mezo-szerű naplót épít magának',
       'Áprilisi 1:1: gain & loss framing együtt felfedezve',
     ],
     ties: [],
+    graphEdges: [],
+  },
+  {
+    id: 'pp-marci',
+    name: 'Marci',
+    initial: 'M',
+    relationship: 'friend',
+    relationshipHu: 'Ismerős',
+    aliases: [],
+    status: 'candidate',
+    sourceKind: 'extractor',
+    affect_baseline: 'neutral',
+    mentionCount: 0,
+    mentionsThisWeek: 0,
+    last_mentioned_at: '',
+    lastMentionLabel: 'Még nincs említés',
+    contactCadenceLabel: '',
+    notes: '„…délben futottam Marcival a gáton, jó volt kimozdulni…"',
+    affectTrend: [],
+    affectTrendStart: null,
+    direction: 'flat',
+    directionReason: null,
+    knownFacts: [],
+    ties: [],
+    graphEdges: [],
   },
 ]
 
 export const mentions: Mention[] = [
+  {
+    id: 'mn-auto1',
+    ts: '2026-05-24T09:00',
+    dayLabel: 'Ma',
+    timeLabel: '09:00',
+    person_id: 'pp-adam',
+    personName: 'Ádám',
+    source: 'text',
+    excerpt: 'Ádámmal átbeszéltük a hétvégi túrát.',
+    sourceRefKind: 'journal_entry',
+  },
   {
     id: 'mn1',
     ts: '2026-05-23T20:14',
@@ -143,6 +220,7 @@ export const mentions: Mention[] = [
     excerpt: 'Bence-vel röpi után gyors sör · 1 doboz · hazafelé séta.',
     tone: 'positive',
     tiedTo: { kind: 'sport', label: 'Volleyball · 17:30-19:00' },
+    contextLabel: 'edzes',
   },
   {
     id: 'mn4',
@@ -230,8 +308,17 @@ export const mentions: Mention[] = [
     excerpt: 'Áprilisi 1:1 — Márk megérzései a gain & loss framingről. Erre érdemes később visszatérni.',
     tone: 'positive',
     tiedTo: { kind: 'event', label: 'Mizu Velünk · havi' },
+    contextLabel: 'kozos_program',
   },
 ]
+
+/** The Emberek hub's Mezo-band sentence (PeopleResponse.mezoNote) — the mock mirrors the
+ *  backend's own deterministic fallback (PeopleService.derivedMezoNote): the alphabetically
+ *  first down-trending active person's name + directionReason. Bence is the seed's only
+ *  'down' person (his affectTrend, trimmed to the server's 8-reading cap, genuinely trends
+ *  down under the server rule — last-2 avg 2.0 vs earlier avg 3.67), so this MUST stay in
+ *  lockstep with his `direction`/`directionReason` above. */
+export const mezoNote = 'Bence hangulata lefelé fordult — többször nehéz tónus, mint korábban.'
 
 export function affectColor(a: Affect): string {
   switch (a) {

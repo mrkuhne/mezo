@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.multipart.support.MissingServletRequestPartException;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @Slf4j
@@ -172,6 +174,33 @@ public class GlobalExceptionHandler {
         m.setExceptionTraceId(traceId);
         m.setMessage(resolve(m));
         return ResponseEntity.badRequest().body(List.of(m));
+    }
+
+    /**
+     * A generated *Api interface fixes its success response to ONE status via {@code @ResponseStatus}
+     * (spring-generator {@code useResponseEntity=false} — house-wide, see pom.xml), so a controller
+     * that legitimately needs a DIFFERENT status on one path (mezo-1gim.6: {@code POST
+     * /api/character/bootstrap} answers {@code 200} with a body OR a bodyless {@code 204} — the
+     * generated interface can only fix one) throws this standard Spring type instead. No
+     * SystemMessage body: unlike the other handlers above, this is not a SystemMessage error
+     * contract — the thrown status IS the whole answer (e.g. 204 carries no body by definition).
+     *
+     * <p>Final-review Finding M7: this escape hatch is legitimate ONLY for a bodyless
+     * "alternate success status" like the 204 above — never for an error a client needs to
+     * diagnose (those get a SystemMessage handler of their own, with a traceId and a log line, see
+     * {@link #handle(SystemRuntimeErrorException)}). A 2xx status passes through silently, exactly
+     * like today's 204; anything else is unexpected enough here to warrant the SAME traceId + log
+     * line every other handler in this file writes, so it is never a silent, undiagnosable gap in
+     * the logs (see {@code docs/references/api_contract_conventions.md}).
+     */
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Void> handleResponseStatus(ResponseStatusException ex) {
+        HttpStatusCode status = ex.getStatusCode();
+        if (!status.is2xxSuccessful()) {
+            String traceId = UUID.randomUUID().toString();
+            log.warn("ResponseStatusException [traceId={}]: {} {}", traceId, status, ex.getReason());
+        }
+        return ResponseEntity.status(status).build();
     }
 
     @ExceptionHandler(Exception.class)

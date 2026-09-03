@@ -98,3 +98,12 @@ straight `pnpm install → pnpm build`, and `build-backend` runs `./mvnw -B clea
 
 Trade-off accepted: CI no longer catches a broken push if the local gate was skipped — acceptable
 for a solo project optimizing deploy latency; revisit if the repo gains contributors or PR flow.
+
+## Update — 2026-09-03 (mezo-qw37.1): owner-credential repo Variables superseded
+
+The "One-time manual bootstrap" list above still names repo **Variables** `VITE_OWNER_EMAIL` /
+`VITE_OWNER_PASSWORD` (the demo-owner creds baked into the frontend build). Since the multi-user
+accounts slice (`mezo-qw37.1`) the frontend no longer bakes in owner credentials at build time —
+login is a real `POST /api/auth/login` call against a seeded/registered account, not a compiled-in
+demo pair. Those two repo Variables are dead and can be deleted; this ADR is a historical record
+of the original decision, so the "One-time manual bootstrap" bullet above is left as written.

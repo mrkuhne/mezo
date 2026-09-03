@@ -62,6 +62,43 @@ describe('mezo nav (real mode default)', () => {
     expect(await screen.findByText('L0 · Nyers adat')).toBeInTheDocument()
   })
 
+  // mezo-d20.11 (1:1 fidelity audit, insights.md §9 / ADR 0032): the /mezo siblings shipped
+  // WITHOUT a PageHead, so a user who tapped a tile could only leave via the tab bar. Every
+  // sibling now owns the prototype's `‹ Mezo` chip.
+  test.each([
+    ['/mezo/patterns', '‹ Mezo'],
+    ['/mezo/memoir', '‹ Mezo'],
+    ['/mezo/knowledge', '‹ Mezo'],
+    ['/mezo/predictions', '‹ Mezo'],
+    ['/mezo/experiments', '‹ Mezo'],
+    ['/mezo/memoria', '‹ Mezo'],
+  ])('%s owns a back chip that returns to the hub', async (path, label) => {
+    const router = renderApp(path)
+    const back = await screen.findByRole('button', { name: 'Vissza' })
+    expect(back).toHaveTextContent(label)
+    await userEvent.click(back)
+    await waitFor(() => expect(router.state.location.pathname).toBe('/mezo'))
+  })
+
+  // /mezo/chat dropped the shared PageHead for its own orb-led header (mezo-vdf4) — the back
+  // disc is bare `‹`, and the `Mezo` name now sits next to the orb, not inside the back button.
+  test('/mezo/chat owns a back disc that returns to the hub', async () => {
+    const router = renderApp('/mezo/chat')
+    const back = await screen.findByRole('button', { name: 'Vissza' })
+    expect(back).toHaveTextContent('‹')
+    expect(screen.getByText('Mezo', { selector: '.mzc-hnm' })).toBeInTheDocument()
+    await userEvent.click(back)
+    await waitFor(() => expect(router.state.location.pathname).toBe('/mezo'))
+  })
+
+  test('the pattern-pair detail goes back to the LIST it was opened from, not the hub', async () => {
+    const router = renderApp('/mezo/patterns/late-meal~next-sleep-quality')
+    const back = await screen.findByRole('button', { name: 'Vissza' })
+    expect(back).toHaveTextContent('‹ Minták')
+    await userEvent.click(back)
+    await waitFor(() => expect(router.state.location.pathname).toBe('/mezo/patterns'))
+  })
+
   test('the Heti tile crosses to /me/week', async () => {
     const router = renderApp('/mezo')
     await userEvent.click(await screen.findByRole('button', { name: 'Heti' }))
@@ -82,6 +119,22 @@ describe('mezo nav (mock mode)', () => {
     renderApp('/mezo')
     await userEvent.click(await screen.findByRole('button', { name: 'Memoár' }))
     expect(screen.getByText('Egy hét amikor a tested megtanult várni')).toBeInTheDocument()
+  })
+
+  // mezo-d20.11: the cross-link used to be one-way (Memória → Minták only) and went through
+  // the `/mezo/motor` redirect. Both directions are now direct.
+  test('the Memória ↔ Minták cross-link is two-way and skips the /mezo/motor redirect', async () => {
+    const router = renderApp('/mezo/patterns')
+    await userEvent.click(await screen.findByRole('link', { name: /memória-rétegek/i }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/mezo/memoria'))
+  })
+
+  test('a pattern tile links straight at the sibling leaf, not through /insights', async () => {
+    renderApp('/mezo/patterns')
+    const links = await screen.findAllByRole('link')
+    const detail = links.filter((l) => l.getAttribute('href')?.includes('/patterns/'))
+    expect(detail.length).toBeGreaterThan(0)
+    detail.forEach((l) => expect(l.getAttribute('href')).toMatch(/^\/mezo\/patterns\//))
   })
 
   test('the legacy /insights paths land on the Mezo pages with the subpath preserved', async () => {

@@ -58,8 +58,10 @@ describe('AiUsagePage (mock mode)', () => {
     // …and the list below actually shrinks — mock mode answers the FILTERS, like the server does
     // (LLM_CALLS_MOCK holds exactly one meal_draft call). A chip over an unchanged list was the
     // demo surface lying about what the filter does.
-    // the back arrow is a link too, so: 1 nav link + exactly 1 remaining call row
-    await waitFor(() => expect(screen.getAllByRole('link')).toHaveLength(2))
+    // Mozaik re-face (mezo-d20.6.8): the back chip is now a PageHead <button> (navigate(-1)),
+    // like every other re-faced subpage, not a <Link> — so `link` role only ever matches call
+    // rows: exactly 1 remaining after the filter.
+    await waitFor(() => expect(screen.getAllByRole('link')).toHaveLength(1))
     expect(rowsBefore).toBeGreaterThan(2)
   })
 
@@ -68,6 +70,15 @@ describe('AiUsagePage (mock mode)', () => {
     // The seed is 7 rows and the opening window is 50 — there is nothing more to fetch, so the
     // control must be absent (it used to be offered forever off a hardcoded hasMore: true).
     expect(screen.queryByRole('button', { name: /További hívások/ })).toBeNull()
+  })
+
+  // ── Mozaik re-face (mezo-d20.6.8): own subpage scaffold + the "~ becslés" disclosure ───────
+  it('renders its own back chip (not the removed sub-nav Link) and the estimate footnote', () => {
+    renderPage()
+    expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
+    expect(
+      screen.getByText('~ becslés — a modellárak tájékoztató jellegűek · Befagyasztott ártábla hívásonként.'),
+    ).toBeInTheDocument()
   })
 })
 

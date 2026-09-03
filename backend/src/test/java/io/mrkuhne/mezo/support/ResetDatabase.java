@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Wipes every test-created row between tests while preserving master data
- * (the demodata-seeded owner and their profile) — see
+ * (the demodata-seeded owner) — see
  * docs/references/integration_test_framework.md.
  *
  * <p>Runs from {@link AbstractIntegrationTest}'s {@code @BeforeEach}, so every test
@@ -37,22 +37,19 @@ public class ResetDatabase {
     public void resetExceptMasterData() {
         // TRUNCATE CASCADE handles FK dependencies between owned domain tables.
         entityManager.createNativeQuery(
-            "TRUNCATE TABLE llm_log_history, gamification_profile, push_subscription, notification_pref, push_log, notification_schedule, app_notification, coin_event, owned_title, needs_day, ritual_day, intention_creed, intention_focus, daily_intention, habit_day, habit_def, habit_chain, activity_log, daily_quest, challenge, experiment, prediction, weekly_review, memoir, weekly_suggestion, companion_message, pattern_event, pattern, daily_summary, period_summary, memory_embedding, message_feedback, feedback_rollup, companion_flag_log, knowledge_node, knowledge_edge, learned_fact, knowledge_fact, ai_message, ai_conversation, supplement_intake, protocol_item, protocol, water_log, medication_dose, medication, meal_item, meal, recipe_ingredient, recipe, pantry_import, pantry_item, weight_log, sleep_log, sleep_goal, fuel_settings, diet_settings, "
+            "TRUNCATE TABLE invite, llm_log_history, gamification_profile, push_subscription, notification_pref, push_log, notification_schedule, app_notification, coin_event, owned_title, needs_day, ritual_day, intention_creed, intention_focus, daily_intention, habit_day, habit_def, habit_chain, activity_log, daily_quest, challenge, diagnosis, experiment, prediction, weekly_review, weekly_score, memoir, weekly_suggestion, companion_message, pattern_event, pattern, daily_summary, period_summary, memory_embedding, message_feedback, feedback_rollup, companion_flag_log, knowledge_node, knowledge_edge, learned_fact, knowledge_fact, ai_message, ai_conversation, supplement_intake, protocol_item, protocol, water_log, medication_dose, medication, meal_item, meal, recipe_ingredient, recipe, pantry_import, pantry_item, weight_log, sleep_log, sleep_goal, fuel_settings, diet_settings, tutorial_progress, "
                 + "meal_slot_template, check_in, journal_entry, decision_entry, gratitude_entry, "
                 + "exercise_feedback, exercise_set, exercise, workout_session, muscle_group_volume_log, mesocycle, "
                 + "meso_template, mesocycle_report, "
                 + "gym_schedule_slot, sport_schedule_slot, sport_event, sport_session, run_session_log, running_block, "
                 + "skill_progress, level_up_event, perk_unlock, "
                 + "goal_plan_link, goal, biometric_profile, "
-                + "character_portrait_revision, character_conference, character_observation, character_claim, character_dimension, "
+                + "character_run, character_portrait_revision, character_conference, character_observation, character_claim, character_dimension, "
                 + "mention, person CASCADE").executeUpdate();
-        // Master data (demodata owner + their profile) survives; everything else goes.
-        entityManager.createNativeQuery(
-                "DELETE FROM user_profiles WHERE created_by NOT IN "
-                    + "(SELECT id FROM app_user WHERE email = :ownerEmail)")
-            .setParameter("ownerEmail", ownerProperties.ownerEmail())
-            .executeUpdate();
-        entityManager.createNativeQuery("DELETE FROM app_user WHERE email <> :ownerEmail")
+        // Master data (demodata owner) survives; everything else goes. Case-insensitive: AuthService
+        // normalises every login/register email to lowercase, so this must match the same way (see
+        // mezo-qw37.1 review finding 4 — a mixed-case configured owner email must still be preserved).
+        entityManager.createNativeQuery("DELETE FROM app_user WHERE lower(email) <> lower(:ownerEmail)")
             .setParameter("ownerEmail", ownerProperties.ownerEmail())
             .executeUpdate();
         // User-authored catalog rows go; master content (created_by null) survives for the loader.

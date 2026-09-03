@@ -46,6 +46,22 @@ describe('MesoTemplatesPage (mock mode · the two fixture templates)', () => {
     expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/new')
   })
 
+  test('the fixture templates carry the band-vocabulary chips (mezo-d20.15 Task 5)', () => {
+    setup()
+    // b20f0000 (Upper/Lower Power) carries a PRESENT, wrong goalPreset ('strength') — legacy.
+    // a10e0000 (Hypertrophy 04) has no goalPreset at all (ABSENT) but its curve closes on
+    // Deload — an absent preset alone is not legacy, so it must NOT get the chip/note.
+    expect(screen.getAllByText('régi modell')).toHaveLength(1)
+    expect(screen.getAllByText('indításkor az új modellre konvertálódik')).toHaveLength(1)
+    // Upper/Lower Power (b20f0000): 4 training days, Emphasize on back
+    expect(screen.getByText('4 nap · Upper / Lower')).toBeInTheDocument()
+    expect(screen.getByText('★ Hát')).toBeInTheDocument()
+    expect(screen.getByText('4 + 1 deload')).toBeInTheDocument()
+    // Hypertrophy 04 · Tavasz (a10e0000): 5 training days, no priorities set, current model
+    expect(screen.getByText('5 nap · Upper / Lower / Push / Pull / Legs')).toBeInTheDocument()
+    expect(screen.getByText('5 + 1 deload')).toBeInTheDocument()
+  })
+
   test('every card carries the four template actions', () => {
     setup()
     expect(screen.getAllByRole('button', { name: /Szerkesztés/ })).toHaveLength(2)
@@ -120,4 +136,18 @@ describe('MesoTemplatesPage (real mode)', () => {
     await user.click(screen.getByRole('button', { name: /Új sablon tervezése/ }))
     expect(screen.getByTestId('loc')).toHaveTextContent('/train/mesocycles/new')
   })
+})
+
+// Motion (mezo-d20.11): the page had NO entrance choreography at all — no
+// EntranceGroup, no `.rise`. The face stays as-is (the prototype draws no
+// standalone Sablonok page), but the list now staggers like every other one.
+test('the template list staggers inside an armed entrance group', async () => {
+  setup()
+  await screen.findByText(/Sablonok · /)
+  const play = document.body.querySelector('.mz-play')
+  expect(play).not.toBeNull()
+  const risen = [...play!.querySelectorAll('.rise')] as HTMLElement[]
+  expect(risen.length).toBeGreaterThan(1)
+  expect(risen[0].style.getPropertyValue('--d')).toBe('30ms')
+  expect(risen[1].style.getPropertyValue('--d')).toBe('60ms')
 })

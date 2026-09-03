@@ -8,6 +8,8 @@
  * `TodoCard` rows on `FaceEvening` rather than in the retired `RoutineCard`
  * (integration, not duplication — this component never renders prep-step UI itself).
  */
+import { ClayIcon } from '@/shared/ui/clay'
+
 export function ReleaseStep({ prepStartsAt, bedTime, closingNote, onFinish }: {
   prepStartsAt: string
   bedTime: string
@@ -18,21 +20,30 @@ export function ReleaseStep({ prepStartsAt, bedTime, closingNote, onFinish }: {
     <div className="rz-act rz-release">
       <svg className="rz-circle" viewBox="0 0 100 100" width="110" aria-hidden="true">
         <circle className="rz-ring" cx="50" cy="50" r="42" />
-        {/* pale-lavender moon — token-mixed (Rule 1), matches the arrival moon's mid-stop */}
-        <circle className="rz-circle-moon" cx="50" cy="50" r="17" fill="color-mix(in srgb, var(--dv-lav) 45%, var(--text-primary))" />
+        {/* The same clay moon act 1 opened on, now at the centre of the closed circle: the
+            arc the day drew in act 2 comes back round it, which is the whole gesture of the act. */}
+        <g className="rz-circle-moon" transform="translate(28 28)">
+          <ClayIcon name="i-hold" size={44} />
+        </g>
       </svg>
-      <p className="rz-end">A nap le van zárva. Elengedheted. 🌙</p>
+      <p className="rz-end">A nap le van zárva. Elengedheted.</p>
       {closingNote != null && (
-        <p className="rz-note">
+        <p className="rz-note rz-nw">
           <span className="rz-note-eyebrow">Mezo · napzárás</span>
           „{closingNote}"
         </p>
       )}
-      <div className="rz-handoff">
+      <div className="rz-handoff rz-nw">
         <div className="rz-handoff-eyebrow">MOST JÖN · ALVÁS-ELŐKÉSZÍTÉS</div>
         <div className="rz-handoff-steps">
-          <span>🌌 Lecsendesítés — képernyők le · {prepStartsAt}</span>
-          <span>🛏 Villanyoltás · {bedTime}</span>
+          <span className="rz-handoff-step">
+            <ClayIcon name="i-alvas" size={15} /> Lecsendesítés — képernyők le
+            <span className="rz-handoff-time">{prepStartsAt}</span>
+          </span>
+          <span className="rz-handoff-step">
+            <ClayIcon name="i-alvas" size={15} /> Villanyoltás
+            <span className="rz-handoff-time">{bedTime}</span>
+          </span>
         </div>
         <button className="rz-handoff-cta" onClick={onFinish}>Esti rutin indítása →</button>
       </div>

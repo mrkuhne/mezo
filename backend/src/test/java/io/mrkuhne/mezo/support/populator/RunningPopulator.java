@@ -113,6 +113,38 @@ public class RunningPopulator {
     }
 
     /**
+     * Block whose structure holds one week with a single {@code w1-pyramid} prescribed session of
+     * kind {@code pyramid} — its work rungs are enumerated as individual segments
+     * ({@code workSecs}, interleaved with rests), which is what makes a pyramid's completed-round
+     * credit weightable (mezo-d20.7.3). {@code rounds} stays null, as it does in the real plans.
+     */
+    public RunningBlockEntity createPyramidBlock(UUID createdBy, int... workSecs) {
+        java.util.List<RunSegment> segments = new java.util.ArrayList<>();
+        segments.add(new RunSegment("warmup", 300, null));
+        for (int work : workSecs) {
+            segments.add(new RunSegment("work", work, null));
+            segments.add(new RunSegment("rest", work * 2, null));
+        }
+        segments.add(new RunSegment("cooldown", 300, null));
+        RunningBlockEntity b = new RunningBlockEntity();
+        b.setCreatedBy(createdBy);
+        b.setTitle("Piramis blokk");
+        b.setGoal("sprint");
+        b.setKind("interval");
+        b.setStatus("active");
+        b.setStartDate(LocalDate.parse("2026-06-16"));
+        b.setEndDate(LocalDate.parse("2026-07-13"));
+        b.setWeeks(4);
+        b.setCurrentWeek(1);
+        b.setStructure(new RunningBlockStructure(List.of(
+            new RunWeek(1, "MEV", List.of(
+                new RunPrescribedSession(
+                    "w1-pyramid", 4, null, "Piramis-intervallum", "pyramid",
+                    new RpeTarget(8, 9), null, segments))))));
+        return blockRepository.saveAndFlush(b);
+    }
+
+    /**
      * Active block anchored on {@code startDate} whose structure holds exactly one prescribed
      * session, in 1-based {@code weekNumber} on {@code dayOfWeek} at {@code timeOfDay}.
      * {@code currentWeek} is seeded verbatim so a test can plant a STALE value — the column is a

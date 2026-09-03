@@ -3,6 +3,7 @@ import { useCheckins, useIntentionActions, useIntentionDay } from '@/data/hooks'
 import type { Reflection } from '@/data/types'
 import { openLoops } from '@/features/ritual/logic/openLoops'
 import { localDateString } from '@/shared/lib/dates'
+import { ClayIcon } from '@/shared/ui/clay'
 
 const REFLECT_LABEL: Record<Reflection, string> = { yes: 'Igen', partial: 'Részben', no: 'Nem' }
 
@@ -50,18 +51,18 @@ export function LoopsStep({ onNext, onOpenCheckIn, onOpenJournal }: {
       <p className="rz-loops-sub">Zárd le, ami még nyitva — aztán elengedheted.</p>
 
       {nothingOpen ? (
-        <div className="rz-loop rz-loop-beat np-anim" style={{ '--i': 0 } as CSSProperties}>
+        <div className="rz-loop rz-nw rz-loop-beat np-anim" style={{ '--i': 0 } as CSSProperties}>
           Minden hurok zárva ✓
         </div>
       ) : (
         <>
           <div
-            className={`rz-loop np-anim${checkinOpen ? (firstOpen === 'checkin' ? ' glow' : '') : ' rz-loop-done'}`}
+            className={`rz-loop rz-nw np-anim${checkinOpen ? (firstOpen === 'checkin' ? ' glow' : '') : ' rz-loop-done'}`}
             style={{ '--i': 0 } as CSSProperties}
           >
             {checkinOpen ? (
               <>
-                <span aria-hidden="true">💓</span>
+                <span className="rz-nw-spot" aria-hidden="true"><ClayIcon name="i-checkin" size={19} /></span>
                 <span className="rz-loop-text">{nextSlot?.time} check-in kimaradt</span>
                 <button className="rz-loop-act" onClick={onOpenCheckIn}>Koppints</button>
               </>
@@ -75,12 +76,12 @@ export function LoopsStep({ onNext, onOpenCheckIn, onOpenJournal }: {
 
           {hasFoci && (
             <div
-              className={`rz-loop np-anim${reflectOpen ? (firstOpen === 'reflect' ? ' glow' : '') : ' rz-loop-done'}`}
+              className={`rz-loop rz-nw np-anim${reflectOpen ? (firstOpen === 'reflect' ? ' glow' : '') : ' rz-loop-done'}`}
               style={{ '--i': 1 } as CSSProperties}
             >
               {reflectOpen ? (
                 <>
-                  <span aria-hidden="true">✦</span>
+                  <span className="rz-nw-spot" aria-hidden="true"><ClayIcon name="i-cel" size={19} /></span>
                   <span className="rz-loop-text">Szándékkal élted a napot?</span>
                   <span className="rz-loop-chips">
                     {(['yes', 'partial', 'no'] as Reflection[]).map((v) => (
@@ -99,8 +100,8 @@ export function LoopsStep({ onNext, onOpenCheckIn, onOpenJournal }: {
         </>
       )}
 
-      <div className="rz-loop np-anim" style={{ '--i': 2 } as CSSProperties}>
-        <span aria-hidden="true">✍️</span>
+      <div className="rz-loop rz-nw np-anim" style={{ '--i': 2 } as CSSProperties}>
+        <span className="rz-nw-spot" aria-hidden="true"><ClayIcon name="i-naplo" size={19} /></span>
         <span className="rz-loop-text">Történt még valami ma?</span>
         <button className="rz-loop-act" onClick={onOpenJournal}>Napló</button>
       </div>

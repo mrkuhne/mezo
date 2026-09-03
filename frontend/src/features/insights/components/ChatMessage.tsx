@@ -1,9 +1,9 @@
 import { Markdown } from '@/shared/lib/markdown'
-import { ToolChipRow } from '@/shared/ui/ToolChipRow'
 import { ClaySpot } from '@/shared/ui/clay'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { RecalledMemoriesRow } from '@/features/insights/components/RecalledMemoriesRow'
-import { chatRefDisplay } from '@/features/insights/logic/chatRefs'
+import { ToolWorkStrip } from '@/features/insights/components/ToolWorkStrip'
+import { RefChips } from '@/features/insights/components/RefChips'
 import type { ChatMessage as ChatMessageT } from '@/data/types'
 import type { ArtifactFeedback, FeedbackReason, FeedbackVerdict } from '@/data/feedback/feedbackTypes'
 
@@ -16,7 +16,7 @@ export interface ChatMessageFeedback {
 
 // Design 2.0 face (mezo-d20.5.2) — prototype mezo-body.html #page-chat anatomy:
 // assistant = orb + Mezo eyebrow + timestamp meta row, tool chips ABOVE the answer,
-// white 4/16-radius bubble with the "Hivatkozott · L3" human-label refs footer;
+// white 4/16-radius bubble with the "Amire épült · L3" human-label refs footer;
 // user = warm-washed 16/4-radius bubble, timestamp below right. The behavioral
 // contracts (blank-answer naming, degraded badge, votable-only-persisted,
 // hidden-when-empty sections) are unchanged — this is a re-face, not a rewrite.
@@ -31,6 +31,14 @@ export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatM
       </div>
     )
   }
+  // mezo-b3pp.29: drop a Memory chip ONLY when the Emlékek row below actually carries that same
+  // day. Two backend paths emit kind="Memory" and only one feeds `recalled`: ambient recall
+  // (PromptMemoryAssembler) builds its refs and the disclosure envelope from the SAME items, so
+  // they always agree — but the find_similar_past_days tool (MemoryTools) adds refs that are never
+  // in `recalled`. Filtering by kind alone would hide the very day a tool-driven answer was built
+  // from, which is information loss rather than dedupe.
+  const recalledDays = new Set((m.recalled ?? []).map((x) => x.occurredOn))
+  const visibleRefs = (m.refs ?? []).filter((r) => r.kind !== 'Memory' || !recalledDays.has(r.id))
   return (
     <div className="mzc-msg-a col gap-sm">
       <div className="mzc-meta">
@@ -46,7 +54,7 @@ export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatM
           </span>
         )}
       </div>
-      {m.tools && <ToolChipRow tools={m.tools} className="mzc-tools" />}
+      {m.tools && <ToolWorkStrip tools={m.tools} />}
       <div className="mzc-bub-a">
         {/* mezo-8z79: a blank answer can no longer be persisted, but rows written BEFORE the guard
             are still in history — and an empty card reads as a rendering bug. Name what happened
@@ -58,23 +66,9 @@ export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatM
         ) : (
           <p className="mzc-noanswer">Erre a körre nem érkezett válasz.</p>
         )}
-        {m.refs && (
-          <div className="mzc-reffoot">
-            <span className="mzc-refeb">Hivatkozott · L3</span>
-            <div className="mzc-refrow">
-              {m.refs.map((r, i) => {
-                // Gap-7 fix: human labels where the data provides them, raw id otherwise.
-                const d = chatRefDisplay(r)
-                return (
-                  <span key={i} className="mzc-refch">
-                    <b className="mzc-refk">{d.kind}</b>
-                    {d.label}
-                  </span>
-                )
-              })}
-            </div>
-          </div>
-        )}
+        {/* length, not truthiness: an empty array is truthy, and the filter above can now turn a
+            non-empty refs list into an empty one — without this the eyebrow would render alone. */}
+        {visibleRefs.length > 0 && <RefChips refs={visibleRefs} eyebrow="Amire épült · L3" />}
       </div>
       {/* W3.1b: the answer's ambient-recall provenance, collapsed (mezo-b3pp.28). */}
       {m.recalled && <RecalledMemoriesRow items={m.recalled} />}

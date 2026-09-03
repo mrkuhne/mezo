@@ -116,6 +116,7 @@ public class FactExtractionService {
             candidate.setCreatedBy(userId);
             candidate.setCandidateText(fact.fact().trim());
             candidate.setCategory(fact.category());
+            candidate.setSource(LearnedFactEntity.SOURCE_CHAT);
             candidate.setDerivedFromMessageId(userMessageId);
             learnedFactRepository.saveAndFlush(candidate);
             persisted++;

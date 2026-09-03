@@ -2,19 +2,20 @@
 title: Intention — Daily Creed, Foci & Evening Reflection
 type: feature-domain
 status: done
-updated: 2026-08-11
+updated: 2026-08-30
 tags: [today, habit, growth, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/intention
   - frontend/src/data/intention
-  - frontend/src/features/today/components/IntentionBanner.tsx
+  - frontend/src/features/today/pages/NapHubPage.tsx
+  - frontend/src/features/today/sheets/IntentionSheet.tsx
   - api/feature/intention/intention.yml
 related: [today, habit, growth, _platform-data-layer, _platform-api-backend]
 ---
 
 # Intention — Daily Creed, Foci & Evening Reflection
 
-> A two-layer intentionality practice — a standing **creed** (one editable north-star sentence) + up to **3 daily foci** + a holistic **evening reflection** (`igen`/`részben`/`nem`) — surfaced on Today (`/today`) as a one-line **creed chip** on the morning/day faces and an **evening reflection block** on the Este face (both `IntentionBanner`, since `mezo-j7u4` split into two explicit variants), plus two **DERIVED** habits in the morning/evening chains and one **DERIVED** `growth_intention` daily quest. **Status: ✅ done** (backend + FE real + FE mock). It has **no route/tab of its own** — it rides Today, [habit.md](habit.md), and [growth.md](growth.md). Driving spec: [`2026-07-20-daily-intention-design.md`](../superpowers/specs/2026-07-20-daily-intention-design.md); tone ADR [0010](../decisions/0010-gamified-growth-xp-feedback-not-payment.md) (XP is feedback, not payment). bd `mezo-a686`.
+> A two-layer intentionality practice — a standing **creed** (one editable north-star sentence) + up to **3 daily foci** + a holistic **evening reflection** (`igen`/`részben`/`nem`) — surfaced on the Nap spine (`/nap`) as the hub's **Kreed tile** opening `IntentionSheet` (the Design 2.0 re-face, mezo-d20.2.1, replaced the `IntentionBanner` creed chip + evening reflection block), plus two **DERIVED** habits in the morning/evening chains and one **DERIVED** `growth_intention` daily quest. **Status: ✅ done** (backend + FE real + FE mock). It has **no route/tab of its own** — it rides Today, [habit.md](habit.md), and [growth.md](growth.md). Driving spec: [`2026-07-20-daily-intention-design.md`](../superpowers/specs/2026-07-20-daily-intention-design.md); tone ADR [0010](../decisions/0010-gamified-growth-xp-feedback-not-payment.md) (XP is feedback, not payment). bd `mezo-a686`.
 
 ## 1. Summary
 
@@ -120,7 +121,7 @@ Errors go through `SystemRuntimeErrorException` + `SystemMessage` (codes in `bac
 
 All inbound edges are **pure reads** — habit/quest depend on intention; intention depends on neither (`feature_slices_are_cycle_free` holds).
 
-- **← Habit** (`HabitEvaluator`, `mezo-a686`): injects `IntentionFocusRepository` + `DailyIntentionRepository` directly (plain JPA beans, always present — the `MealItemRepository` cross-feature-read precedent) and gains two metrics, both in `INTRADAY_METRICS`: **`intention_focus_set`** (today's live focus count ≥ 1) and **`intention_reflected`** (today's `daily_intention.reflection` non-null). The `daily_intention` / `intention_reflect` catalog habits complete derived off these. `TodayPage`'s `act()` opens `IntentionSheet` / `ReflectSheet` from the habit's row. Contract: the two metric signals + the `mindset` LIFE skill. See [habit.md §3/§5](habit.md).
+- **← Habit** (`HabitEvaluator`, `mezo-a686`): injects `IntentionFocusRepository` + `DailyIntentionRepository` directly (plain JPA beans, always present — the `MealItemRepository` cross-feature-read precedent) and gains two metrics, both in `INTRADAY_METRICS`: **`intention_focus_set`** (today's live focus count ≥ 1) and **`intention_reflected`** (today's `daily_intention.reflection` non-null). The `daily_intention` / `intention_reflect` catalog habits complete derived off these. `NapRutinPage`'s row action opens `IntentionSheet` / `ReflectSheet` from the habit's row (`TodayPage`'s `act()` until the Design 2.0 cleanup). Contract: the two metric signals + the `mindset` LIFE skill. See [habit.md §3/§5](habit.md).
 - **← Quest** (`QuestEvaluator`, `mezo-a686`): injects `IntentionFocusRepository` and gains the **`intention_focus_set`** case for the DERIVED `growth_intention` GROWTH quest. Contract: the focus signal + the `mindset` skill. See [growth.md §4](growth.md).
 - **→ Progression:** **none directly** — intention writes no `level_up_event`; XP lands only through the **HABIT** + **QUEST** award tails already in place (`ProgressionService.applyHabit` / `applyQuest`).
 - **→ Today:** both `IntentionBanner` variants read `useIntentionDay(localDateString())` themselves (the component owns its data; the faces pass only `variant`). The chip rides the Reggel + Nap faces, the reflection the Este face. `DayArc` no longer exists to sit above/below. See [today.md §2](today.md).
@@ -177,6 +178,6 @@ await reflect('partial')                                        // yes | partial
 - **Catalog:** `content/habit-catalog.json` (`daily_intention` MORNING/pos7/xp10 + `intention_reflect` EVENING/pos3/xp5) · `content/quest-catalog.json` (`growth_intention` GROWTH/xp20).
 - **Contract:** `api/feature/intention/intention.yml` (tag `Intention`, 5 endpoints, `IntentionDayResponse`/`IntentionCreedResponse`/`IntentionFocusResponse`/`SetCreedRequest`/`AddFocusRequest`/`ReflectRequest`).
 - **FE data:** `frontend/src/data/intention/{intentionApi,intentionMock,intentionHooks}.ts` (+ barrel line in `data/hooks.ts:37`; types `Reflection`/`IntentionFocus`/`IntentionDay` in `data/types.ts`).
-- **FE UI:** `frontend/src/features/today/components/IntentionBanner.tsx` (`variant="chip"` mounted by `DaypartMorning.tsx:43` + `DaypartDay.tsx:79`; `variant="reflect"` by `DaypartEvening.tsx:139` — each into `DayGroups`' `focus` slot as its own `TodayList`, since the iOS listanyelv rewrite `mezo-e26w`, §2) · `features/today/sheets/{IntentionSheet,CreedSheet,ReflectSheet}.tsx` · `features/today/logic/habitAction.ts` (`intention-sheet`/`intention-reflect` kinds, dispatched by `TodayPage`'s `act()`) · CSS: `.td-creed`/`.td-creed-q` (the creed block) + `TodayRow`/`TodayList` (`prototype.css`'s `.td-*` family, see [today.md](today.md)) + the surviving `.reflect*` block — the `mezo-j7u4`-era `.creedchip*` family is unused since `mezo-e26w` (dead CSS, not yet swept), see [`_platform-design-system.md` §3](_platform-design-system.md).
+- **FE UI:** `features/today/pages/NapHubPage.tsx` — the **Kreed tile** (the hub's one remaining sheet owner, `focusOpen` → `IntentionSheet`) · `features/today/sheets/{IntentionSheet,ReflectSheet}.tsx` (`IntentionBanner.tsx` and `CreedSheet.tsx` were deleted with the `TodayPage`/`Daypart*` composition in the Design 2.0 cleanup `mezo-d20.9.1`) · `features/today/logic/habitAction.ts` (`intention-sheet`/`intention-reflect` kinds, now dispatched by `NapRutinPage`'s row action) · CSS: `.td-creed`/`.td-creed-q` (the creed block) + `TodayRow`/`TodayList` (`prototype.css`'s `.td-*` family, see [today.md](today.md)) + the surviving `.reflect*` block — the `mezo-j7u4`-era `.creedchip*` family is unused since `mezo-e26w` (dead CSS, not yet swept), see [`_platform-design-system.md` §3](_platform-design-system.md).
 - **Tests:** `backend/src/test/java/io/mrkuhne/mezo/feature/intention/{IntentionApiIT,IntentionServiceIT,IntentionDerivedIT,IntentionEntityIT}.java` + `support/populator/IntentionPopulator.java` · `frontend/src/data/intention/intentionHooks.test.tsx` + `frontend/src/features/today/components/IntentionBanner.test.tsx`.
 - **Docs:** spec [`docs/superpowers/specs/2026-07-20-daily-intention-design.md`](../superpowers/specs/2026-07-20-daily-intention-design.md) · ADR [0010](../decisions/0010-gamified-growth-xp-feedback-not-payment.md).

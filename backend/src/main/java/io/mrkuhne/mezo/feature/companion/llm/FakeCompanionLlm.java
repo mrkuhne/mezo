@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
 import io.mrkuhne.mezo.feature.companion.service.PeriodSummaryService;
 import io.mrkuhne.mezo.feature.companion.service.HypothesisPipelineService;
 import io.mrkuhne.mezo.feature.companion.service.MesoReviewGenerator;
+import io.mrkuhne.mezo.feature.companion.service.PersonExtractionService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -92,6 +93,90 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern FACTS_SENTINEL =
             Pattern.compile("\\[fake-facts:(\\[.*?]|[^\\]]*)]", Pattern.DOTALL);
 
+    /** Mirror of CharacterObservationService.OBSERVATION_MARKER (feature/character) — a LITERAL,
+     *  not an import: character already depends on companion via the CompanionLlm port, so a
+     *  companion -> character import here would be a NEW package cycle
+     *  (feature_slices_are_cycle_free). Drift is caught by CharacterObservationServiceIT's
+     *  equality assertion against the real constant. */
+    public static final String OBSERVATION_MARKER_MIRROR = "KARAKTER-MEGFIGYELÉS-FELADAT";
+
+    /** Scripted observation pass (mezo-1gim.3): {@code [fake-char-obs:<json-array>]} planted in
+     *  the gathered signal text (e.g. a journal entry) is returned verbatim; otherwise a canned
+     *  single-observation array keeps the pipeline deterministic. */
+    public static final Pattern CHAR_OBS_SENTINEL =
+            Pattern.compile("\\[fake-char-obs:(\\[.*?])]", Pattern.DOTALL);
+
+    /** Mirror of KonziliumProposalRound.PROPOSAL_MARKER (feature/character) — LITERAL, cycle rule
+     *  (see {@link #OBSERVATION_MARKER_MIRROR} for the full rationale). Drift is caught by an IT's
+     *  equality assertion against the real constant. */
+    public static final String PROPOSAL_MARKER_MIRROR = "KARAKTER-JAVASLAT-FELADAT";
+
+    /** Mirror of CharacterBootstrapService.BOOTSTRAP_MARKER (feature/character) — LITERAL, cycle
+     *  rule (see {@link #OBSERVATION_MARKER_MIRROR}). The bootstrap konzílium's proposal round
+     *  asks for the SAME proposal JSON shape as the weekly round, so it shares the proposal
+     *  branch's answer logic below — same canned fallback, same sentinel. Drift is caught by an
+     *  IT's equality assertion against the real constant. */
+    public static final String BOOTSTRAP_MARKER_MIRROR = "KARAKTER-BOOTSTRAP-FELADAT";
+
+    /** Mirror of CharacterMonthlyService.MONTHLY_MARKER (feature/character) — LITERAL, cycle rule
+     *  (see {@link #OBSERVATION_MARKER_MIRROR}). The monthly deep-read konzílium's proposal round
+     *  asks for the SAME proposal JSON shape as the weekly/bootstrap rounds, so it shares that
+     *  branch's answer logic below — same canned fallback, same sentinel. The marker is a
+     *  MULTI-LINE block (the monthly drift/staleness contract rides along after the routing
+     *  line) — {@code startsWith} still matches it as a literal prefix. Drift is caught by an
+     *  IT's equality assertion against the real constant. */
+    public static final String MONTHLY_MARKER_MIRROR = "KARAKTER-HAVI-FELADAT\n"
+            + "Ez egy HAVI mélyolvasás: ne friss mintát keress, hanem a hónapok óta lassan alakuló "
+            + "ELMOZDULÁST és az adatok által már nem alátámasztott, elavult állításokat figyeld. "
+            + "UP/DOWN/RETIRE javaslatot részesíts előnyben NEW helyett, és javasolj RETIRE-t "
+            + "mindenre, amit a jelenlegi adatok már nem támasztanak alá.";
+
+    /** Scripted konzílium proposals (mezo-1gim.5): {@code [fake-char-proposals:[…]]} planted in an
+     *  observation's TEXT (the user message renders it) is returned verbatim; otherwise a canned
+     *  single-proposal array keeps the pipeline deterministic, keyed on the expert's own
+     *  "Alapértelmezett dimenzió: <key>" line KonziliumProposalRound always appends. */
+    public static final Pattern CHAR_PROPOSALS_SENTINEL =
+            Pattern.compile("\\[fake-char-proposals:(\\[.*])]", Pattern.DOTALL);
+
+    /** Resolves KonziliumProposalRound's trailing "Alapértelmezett dimenzió: <key>" line so the
+     *  canned proposal always names a dimension the round's own validation will accept.
+     *  {@code [a-z-]+} — hyphenated keys (self-audit, round 4). */
+    private static final Pattern PROPOSAL_DEFAULT_DIMENSION =
+            Pattern.compile("Alapértelmezett dimenzió: ([a-z-]+)");
+
+    /** Scripted proposal ECHO (mezo-1gim.10): {@code [fake-char-proposals-echo]} planted in an
+     *  observation's TEXT returns the FULL assembled user message (JSON-escaped) as a single NEW
+     *  proposal's {@code rationale} — the "prompt assembly is assertable" idiom (see
+     *  {@link #MESO_REVIEW_ECHO}), applied here so an IT can prove a server-side prompt-assembly
+     *  detail (e.g. the routed user-feedback observation's "DANIEL VÁLASZA —" prefix) actually
+     *  reached the expert's prompt, without the fake needing to keep a prompt recorder. */
+    public static final String CHAR_PROPOSALS_ECHO = "[fake-char-proposals-echo]";
+
+    /** Mirror of KonziliumVerdictRound.SKEPTIC_MARKER (feature/character) — LITERAL, cycle rule. */
+    public static final String SKEPTIC_MARKER_MIRROR = "KARAKTER-SZKEPTIKUS-FELADAT";
+    /** Mirror of KonziliumVerdictRound.INTEGRATOR_MARKER (feature/character) — LITERAL, cycle rule. */
+    public static final String INTEGRATOR_MARKER_MIRROR = "KARAKTER-INTEGRATOR-FELADAT";
+
+    public static final Pattern CHAR_SKEPTIC_SENTINEL =
+            Pattern.compile("\\[fake-char-skeptic:(\\[.*])]", Pattern.DOTALL);
+    public static final Pattern CHAR_INTEGRATOR_SENTINEL =
+            Pattern.compile("\\[fake-char-integrator:(\\{.*})]", Pattern.DOTALL);
+    /** The proposal numbering the konzílium user messages carry — the canned answers count these. */
+    private static final Pattern CHAR_PROPOSAL_INDEX = Pattern.compile("(?m)^P(\\d+)\\. ");
+
+    /** Mirror of PortraitWriter.PORTRAIT_MARKER (feature/character) — LITERAL, cycle rule. */
+    public static final String PORTRAIT_MARKER_MIRROR = "KARAKTER-PORTRE-FELADAT";
+
+    /** Scripted portrait rewrite (mezo-1gim.5): {@code [fake-char-portrait:<text>]} planted in a
+     *  claim's TEXT (the user message renders every active claim's text) is returned verbatim —
+     *  including an EMPTY payload ({@code [fake-char-portrait:]}), which surfaces as a blank
+     *  answer so tests can drill the portrait-failure-isolation path; otherwise a canned portrait
+     *  sentence keeps the pipeline deterministic. */
+    public static final Pattern CHAR_PORTRAIT_SENTINEL =
+            Pattern.compile("\\[fake-char-portrait:([^\\]]*)]", Pattern.DOTALL);
+    private static final String CHAR_PORTRAIT_CANNED_ANSWER =
+            "Ezen a héten a fegyelem képe formálódik. Figyeljük tovább.";
+
     /** Scripted scrape (mezo-8vum): {@code [fake-scrape:{json}]} payload is returned verbatim. */
     public static final Pattern SCRAPE_SENTINEL =
             Pattern.compile("\\[fake-scrape:(\\{.*?})]", Pattern.DOTALL);
@@ -108,6 +193,10 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  inside {@code items}, so the match must run to the LAST brace, not the first {@code }]}. */
     public static final Pattern MEAL_SENTINEL =
             Pattern.compile("\\[fake-meal:(\\{.*})]", Pattern.DOTALL);
+
+    /** Scripted workshop turn (mezo-92pb): {@code [fake-workshop:{json}]} payload returned verbatim. */
+    private static final Pattern WORKSHOP_SENTINEL =
+            Pattern.compile("\\[fake-workshop:(\\{.*})]", Pattern.DOTALL);
 
     /** Scripted recipe breakdown prose (mezo-bw3y): {@code [fake-recipe-fit:{json}]} planted in the
      *  RECIPE NAME (it appears in the prompt's user message). GREEDY — the payload nests objects.
@@ -175,6 +264,14 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern WEIGHT_SENTINEL =
             Pattern.compile("\\[fake-feed-weight:(\\{.*?\\})]", Pattern.DOTALL);
 
+    /** Mirror of CompanionMessageGenerator.PEOPLE_MARKER (feature/proactive) — a LITERAL, not an
+     *  import: same cycle rationale as {@link #SLEEP_MARKER_MIRROR}. */
+    public static final String PEOPLE_MARKER_MIRROR = "EMBEREK-ESZREVETEL-FELADAT";
+
+    /** Emberek S6: {@code [fake-people-obs:…]} planted in the heti összesítésbe. */
+    public static final Pattern PEOPLE_OBS_SENTINEL =
+            Pattern.compile("\\[fake-people-obs:(.*?)]", Pattern.DOTALL);
+
     /** Mirror of WeeklySuggestionGenerator.WEEKLY_SUGGESTION_MARKER (feature/proactive) — a
      *  LITERAL, not an import (package-cycle rule; drift fails WeeklySuggestionGeneratorIT loudly). */
     public static final String WEEKLY_MARKER_MIRROR = "HETI-TERVJAVASLAT";
@@ -186,9 +283,11 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** Mirror of MemoirGenerator.MEMOIR_MARKER (feature/proactive) — LITERAL, cycle rule. */
     public static final String MEMOIR_MARKER_MIRROR = "HETI-MEMOIR-FELADAT";
 
-    /** Scripted memoir (W2): {@code [fake-memoir:{…}]} planted via a daily-summary narrative. */
+    /** Scripted memoir (W2): {@code [fake-memoir:{…}]} planted via a daily-summary narrative.
+     *  GREEDY since the v2 {@code anchors:[{index,note}]} shape nests objects (mezo-uajy) —
+     *  the WEEKLY_REVIEW_SENTINEL precedent. */
     public static final Pattern MEMOIR_SENTINEL =
-            Pattern.compile("\\[fake-memoir:(\\{.*?\\})]", Pattern.DOTALL);
+            Pattern.compile("\\[fake-memoir:(\\{.*})]", Pattern.DOTALL);
 
     /** Mirror of WeeklyReviewGenerator.WEEKLY_REVIEW_MARKER (feature/proactive) — LITERAL, cycle rule. */
     public static final String WEEKLY_REVIEW_MARKER_MIRROR = "HETI-ELEMZES-FELADAT";
@@ -200,6 +299,16 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  LAST brace. */
     public static final Pattern WEEKLY_REVIEW_SENTINEL =
             Pattern.compile("\\[fake-review:(\\{.*})]", Pattern.DOTALL);
+
+    /** Mirror of DiagnosisGenerator.DIAGNOSIS_MARKER (feature/proactive) — LITERAL, cycle rule. */
+    public static final String DIAGNOSIS_MARKER_MIRROR = "FARADTSAG-DIAGNOZIS-FELADAT";
+
+    /** Scripted diagnosis (mezo-hqfi): {@code [fake-diagnosis:{…}]} planted in ANY candidate
+     *  label — unlike the weekly gather, the diagnosis payload renders every candidate EXACTLY
+     *  ONCE, so there is no duplicate-occurrence hazard wherever it is planted. GREEDY for the
+     *  same nested-object reason as WEEKLY_REVIEW_SENTINEL. */
+    public static final Pattern DIAGNOSIS_SENTINEL =
+            Pattern.compile("\\[fake-diagnosis:(\\{.*})]", Pattern.DOTALL);
 
     /** Mirror of CompanionMessageGenerator.WINDOW_MARKER (feature/proactive) — LITERAL, cycle rule. */
     public static final String HEARTBEAT_MARKER_MIRROR = "NAPKOZBENI-JEGYZET-FELADAT";
@@ -269,6 +378,11 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern SLOT_PLAN_SENTINEL =
             Pattern.compile("\\[fake-slot-plan:(\\{.*}|[^\\]]*)]", Pattern.DOTALL);
 
+    /** Meso plan generator (wizard redesign): greedy `[fake-meso-plan:{json}]` planted in goalText;
+     *  default = a valid empty-days answer so the frames stay deterministic and llmUsed is true. */
+    public static final Pattern MESO_PLAN_SENTINEL =
+            Pattern.compile("\\[fake-meso-plan:(\\{.*}|[^\\]]*)]", Pattern.DOTALL);
+
     /** Scripted habit suggestions (mezo-n5e9.3): {@code [fake-habit-suggest:[…]]} planted via the
      *  request's {@code hint} (the ONLY unvalidated-echo channel left into the adapter's context —
      *  {@code chainKey} is now checked against the user's real chain keys before being echoed at
@@ -337,6 +451,12 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  exercise the catch-and-log degrade instead of the "empty answer" path. */
     public static final String LIFE_EVENTS_BROKEN = "[fake-life-events-broken]";
 
+    /** Scripted people-extraction (S4, mezo-06o0.3): a [fake-people:{json}] planted in the
+     *  narrative is returned verbatim; no sentinel → "{}" (üres éjszaka). */
+    public static final Pattern PEOPLE_SENTINEL =
+            Pattern.compile("\\[fake-people:(\\{.*})]", Pattern.DOTALL);
+    public static final String PEOPLE_BROKEN = "[fake-people-broken]";
+
     /** Scripted season proposal (W5.3): [fake-season:[…]] planted in a month rung's text (the
      *  gather renders every rung verbatim, so that is this pipeline's sentinel-planting channel). */
     public static final Pattern SEASON_SENTINEL =
@@ -371,6 +491,40 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(FactExtractionService.EXTRACTION_MARKER)) {
             return factsAnswer(userMessage);
         }
+        if (systemPrompt.startsWith(OBSERVATION_MARKER_MIRROR)) {
+            Matcher obs = CHAR_OBS_SENTINEL.matcher(userMessage);
+            if (obs.find()) {
+                return obs.group(1);
+            }
+            return "[{\"text\":\"Fake megfigyelés.\",\"salience\":3,\"dimensionKeys\":[\"discipline\"]}]";
+        }
+        if (systemPrompt.startsWith(PROPOSAL_MARKER_MIRROR) || systemPrompt.startsWith(BOOTSTRAP_MARKER_MIRROR)
+                || systemPrompt.startsWith(MONTHLY_MARKER_MIRROR)) {
+            Matcher dim = PROPOSAL_DEFAULT_DIMENSION.matcher(userMessage);
+            String dimensionKey = dim.find() ? dim.group(1) : "discipline";
+            if (userMessage.contains(CHAR_PROPOSALS_ECHO)) {
+                return "[{\"kind\":\"NEW\",\"dimensionKey\":\"" + dimensionKey + "\",\"text\":\"Fake javaslat.\","
+                        + "\"confidence\":0.55,\"sensitive\":false,\"rationale\":\"" + jsonEscape(userMessage) + "\"}]";
+            }
+            Matcher proposals = CHAR_PROPOSALS_SENTINEL.matcher(userMessage);
+            if (proposals.find()) {
+                return proposals.group(1);
+            }
+            return "[{\"kind\":\"NEW\",\"dimensionKey\":\"" + dimensionKey + "\",\"text\":\"Fake javaslat.\","
+                    + "\"confidence\":0.55,\"sensitive\":false,\"rationale\":\"Fake indoklás.\"}]";
+        }
+        if (systemPrompt.startsWith(SKEPTIC_MARKER_MIRROR)) {
+            Matcher m = CHAR_SKEPTIC_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : skepticCannedAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(INTEGRATOR_MARKER_MIRROR)) {
+            Matcher m = CHAR_INTEGRATOR_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : integratorCannedAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(PORTRAIT_MARKER_MIRROR)) {
+            Matcher m = CHAR_PORTRAIT_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : CHAR_PORTRAIT_CANNED_ANSWER;
+        }
         if (systemPrompt.startsWith(TurnVerdictCheck.VERDICT_MARKER)) {
             return verdictAnswer(userMessage);
         }
@@ -403,6 +557,12 @@ public class FakeCompanionLlm implements CompanionLlm {
             return m.find() ? m.group(1)
                     : "{\"eyebrow\":\"Fake súly\",\"body\":[\"FAKE-SULY-NARRATÍVA\"],\"refIndexes\":[]}";
         }
+        if (systemPrompt.startsWith(PEOPLE_MARKER_MIRROR)) {
+            Matcher m = PEOPLE_OBS_SENTINEL.matcher(userMessage);
+            // default = valid minimal JSON so the un-scripted happy path still persists a row
+            return m.find() ? m.group(1)
+                    : "{\"eyebrow\":\"Emberek\",\"body\":[\"FAKE-EMBEREK-NARRATÍVA\"],\"refIndexes\":[]}";
+        }
         if (systemPrompt.startsWith(WEEKLY_MARKER_MIRROR)) {
             Matcher m = WEEKLY_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1) : "FAKE-HETI-TERVJAVASLAT";
@@ -410,12 +570,17 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(MEMOIR_MARKER_MIRROR)) {
             Matcher m = MEMOIR_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1)
-                    : "{\"title\":\"Fake memoir\",\"body\":\"FAKE-MEMOIR-NARRATÍVA\",\"anchorIndexes\":[]}";
+                    : "{\"title\":\"Fake memoir\",\"body\":\"FAKE-MEMOIR-NARRATÍVA\",\"anchors\":[]}";
         }
         if (systemPrompt.startsWith(WEEKLY_REVIEW_MARKER_MIRROR)) {
             Matcher m = WEEKLY_REVIEW_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1)
                     : "{\"summary\":\"FAKE-HETI-ELEMZES\",\"dayNotes\":[],\"anchorIndexes\":[]}";
+        }
+        if (systemPrompt.startsWith(DIAGNOSIS_MARKER_MIRROR)) {
+            Matcher m = DIAGNOSIS_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1)
+                    : "{\"verdict\":\"FAKE-DIAGNOZIS\",\"confidence\":\"weak\",\"suspects\":[]}";
         }
         if (systemPrompt.startsWith(HEARTBEAT_MARKER_MIRROR)) {
             // mezo-106s: run the scripted [fake-tool:…] sentinels for their audit side
@@ -483,6 +648,10 @@ public class FakeCompanionLlm implements CompanionLlm {
                     : "[{\"title\":\"Fake szokás\",\"why\":\"FAKE-INDOK\",\"anchorCopy\":\"teszt után\","
                             + "\"skillKey\":\"mindset\",\"xp\":10,\"chainKey\":\"MORNING\"}]";
         }
+        if (systemPrompt.startsWith(MesoPlanLlmAdapter.MARKER)) {
+            Matcher m = MESO_PLAN_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : "{\"rationale\":\"FAKE-INDOK\",\"days\":[]}";
+        }
         if (systemPrompt.startsWith(MesoReviewGenerator.MESO_REVIEW_MARKER)) {
             if (userMessage.contains(MESO_REVIEW_ECHO)) {
                 return userMessage;
@@ -530,6 +699,15 @@ public class FakeCompanionLlm implements CompanionLlm {
             // default = no life events: an un-scripted narrative proposes nothing
             return m.find() ? m.group(1) : "[]";
         }
+        if (systemPrompt.startsWith(PersonExtractionService.EXTRACTOR_MARKER)) {
+            if (userMessage.contains(PEOPLE_BROKEN)) {
+                // matching braces, invalid JSON inside — a catch-and-log ág, nem az üres-válasz ág
+                return "{\"mentions\":[{\"index\":0,\"tone\":}],\"candidates\":[]}";
+            }
+            Matcher m = PEOPLE_SENTINEL.matcher(userMessage);
+            // default = üres éjszaka: script nélkül se gazdagítás, se jelölt
+            return m.find() ? m.group(1) : "{}";
+        }
         if (systemPrompt.startsWith(QuarterlyReviewService.SEASON_MARKER)) {
             if (userMessage.contains(SEASON_BROKEN)) {
                 // matching brackets, invalid JSON inside — the catch-and-log path, not "empty"
@@ -569,6 +747,12 @@ public class FakeCompanionLlm implements CompanionLlm {
         Matcher mealCoach = MEAL_COACH_SENTINEL.matcher(userMessage);
         if (mealCoach.find()) {
             return mealCoach.group(1);
+        }
+        // Receptműhely turn (mezo-92pb): sentinel planted in the user message is returned verbatim;
+        // no sentinel -> prompt echo -> unparseable -> 502, as the ITs assert.
+        Matcher workshop = WORKSHOP_SENTINEL.matcher(userMessage);
+        if (workshop.find()) {
+            return workshop.group(1);
         }
         return PREFIX + " system=[" + systemPrompt + "]"
                 + " history=[" + ChatHistory.render(history) + "]"
@@ -673,6 +857,42 @@ public class FakeCompanionLlm implements CompanionLlm {
         return m.find() ? m.group(1) : "[]";
     }
 
+    /** Scripted konzílium verdict round (mezo-1gim.5): for every {@code P<n>} the user message
+     *  numbers, a deterministic KEEP verdict — index-complete, so the round's per-proposal default
+     *  logic is exercised only through {@link #CHAR_SKEPTIC_SENTINEL}. */
+    private static String skepticCannedAnswer(String userMessage) {
+        Matcher idx = CHAR_PROPOSAL_INDEX.matcher(userMessage);
+        StringBuilder sb = new StringBuilder("[");
+        boolean first = true;
+        while (idx.find()) {
+            if (!first) {
+                sb.append(',');
+            }
+            first = false;
+            sb.append("{\"index\":").append(idx.group(1))
+                    .append(",\"verdict\":\"KEEP\",\"argument\":\"Fake ellenérv: elfogadható.\"}");
+        }
+        return sb.append(']').toString();
+    }
+
+    /** Scripted konzílium verdict round (mezo-1gim.5): for every {@code P<n>} the user message
+     *  numbers, a deterministic accepted ruling at confidence 0.60 — index-complete, so the
+     *  default-reject path is exercised only through {@link #CHAR_INTEGRATOR_SENTINEL}. */
+    private static String integratorCannedAnswer(String userMessage) {
+        Matcher idx = CHAR_PROPOSAL_INDEX.matcher(userMessage);
+        StringBuilder rulings = new StringBuilder();
+        boolean first = true;
+        while (idx.find()) {
+            if (!first) {
+                rulings.append(',');
+            }
+            first = false;
+            rulings.append("{\"index\":").append(idx.group(1))
+                    .append(",\"accept\":true,\"confidence\":0.6,\"reason\":\"Fake döntés.\"}");
+        }
+        return "{\"rulings\":[" + rulings + "],\"chapters\":[]}";
+    }
+
     /**
      * Summary calls (V2.2) answer deterministically: a {@code [fake-summary:…]} sentinel in the
      * digest (plant it via a check-in note) becomes the narrative verbatim; otherwise the digest
@@ -703,6 +923,13 @@ public class FakeCompanionLlm implements CompanionLlm {
             " user=[" + userMessage + "]"));
         chunks.addAll(toolEchoes(userMessage, tools, toolContext));
         return Flux.fromIterable(chunks);
+    }
+
+    /** Minimal JSON string escaping (backslash, quote, control chars) for {@link #CHAR_PROPOSALS_ECHO}
+     *  — the echo embeds the WHOLE assembled user message as one JSON string value. */
+    private static String jsonEscape(String raw) {
+        return raw.replace("\\", "\\\\").replace("\"", "\\\"")
+                .replace("\n", "\\n").replace("\r", "\\r").replace("\t", "\\t");
     }
 
     /** Every sentinel executes the matching REAL callback; unknown names echo UNKNOWN. */

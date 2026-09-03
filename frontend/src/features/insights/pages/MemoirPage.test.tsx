@@ -1,12 +1,19 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
+import { MemoryRouter } from 'react-router-dom'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { MemoirPage } from '@/features/insights/pages/MemoirPage'
 
-const renderPage = () => render(<MemoirPage />, { wrapper: QueryWrapper })
+const renderPage = () =>
+  render(
+    <MemoryRouter>
+      <MemoirPage />
+    </MemoryRouter>,
+    { wrapper: QueryWrapper },
+  )
 
 const FEEDBACK_GROUP = 'Visszajelzés a heti memoárról'
 
@@ -99,5 +106,16 @@ describe('MemoirPage (real mode)', () => {
     expect(screen.queryByRole('button', { name: /Like/ })).not.toBeInTheDocument()
     // No memoir → no artifact to vote on → no chips.
     expect(screen.queryByRole('group', { name: FEEDBACK_GROUP })).not.toBeInTheDocument()
+  })
+})
+
+// F7.5 (mezo-d20.8.5): the un-retired archive footer navigates to the shelf.
+describe('MemoirPage archive CTA', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('the Archívum card is a real navigation affordance, not a dead label', () => {
+    renderPage()
+    expect(screen.getByRole('button', { name: /Archívum — a korábbi fejezetek/ })).toBeInTheDocument()
   })
 })

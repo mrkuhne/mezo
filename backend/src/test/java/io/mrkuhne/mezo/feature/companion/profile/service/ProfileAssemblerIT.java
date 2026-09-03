@@ -2,7 +2,9 @@ package io.mrkuhne.mezo.feature.companion.profile.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.companion.feedback.config.FeedbackLearningProperties;
 import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupEntity;
+import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupStatsEnvelope;
 import io.mrkuhne.mezo.feature.companion.feedback.repository.FeedbackRollupRepository;
 import io.mrkuhne.mezo.feature.companion.feedback.service.FeedbackLearningService;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
@@ -60,6 +62,8 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
     private FeedbackLearningService feedbackLearningService;
     @Autowired
     private FakeCompanionLlm fakeCompanionLlm;
+    @Autowired
+    private FeedbackLearningProperties feedbackLearningProperties;
 
     private UUID seedOwner() {
         return userPopulator.createUser("profile-assembler@test.local").getId();
@@ -353,5 +357,68 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
 
         assertThat(payload).contains("ez a negyedév: 4,0/5 (1 értékelt döntés)")
                 .contains("előző negyedév: 2,0/5 (1 értékelt döntés)");
+    }
+
+    /** A rollup row saved directly (bypassing the real job) so a "retired window" can coexist
+     *  with the live one for the same scope — {@link FeedbackLearningService} always writes the
+     *  CURRENT config's {@code windowDays}, so this is the only way to get two in one test. */
+    private FeedbackRollupEntity rollupRow(UUID owner, String scope, int windowDays, int up, int down) {
+        FeedbackRollupEntity e = new FeedbackRollupEntity();
+        e.setCreatedBy(owner);
+        e.setScope(scope);
+        e.setWindowDays(windowDays);
+        e.setStats(FeedbackRollupStatsEnvelope.effectiveness(up, down));
+        e.setComputedAt(Instant.now());
+        return rollupRepository.saveAndFlush(e);
+    }
+
+    /**
+     * mezo-b3pp.35 (item 3, the real latent bug): {@code feedback_rollup}'s unique key is
+     * {@code (created_by, scope, window_days)} and NOTHING deletes a retired window's rows — after
+     * a {@code feedback-learning.window-days} config change, the OLD window's row for a scope
+     * genuinely coexists with the new one. Reading unfiltered (the pre-fix behaviour) would emit
+     * TWO contradictory "surface:chat_message" lines here; filtered to the configured window it
+     * must emit exactly one, and it must be the LIVE window's numbers, not the retired one's.
+     */
+    @Test
+    void renderPayload_readsOnlyTheConfiguredWindow_whenRetiredWindowRowsExist() {
+        UUID owner = seedOwner();
+        seedSignal(owner);   // real job run — writes surface:chat_message at the CONFIGURED windowDays
+        // a retired window's row for the SAME scope, left behind by a past config change
+        rollupRow(owner, FeedbackRollupEntity.SCOPE_SURFACE_PREFIX + "chat_message", 14, 9, 9);
+
+        List<FeedbackRollupEntity> rollups = rollupRepository
+                .findByCreatedByAndWindowDaysAndDeletedFalseOrderByScopeAsc(owner, feedbackLearningProperties.windowDays());
+        List<DecisionEntryEntity> decisions = decisionRepository
+                .findByCreatedByAndReviewedAtIsNotNullAndDeletedFalseOrderByReviewedAtDesc(owner, Limit.of(10));
+
+        String payload = assembler.renderPayload(owner, currentQuarter(), rollups, decisions, List.of());
+
+        assertThat(payload).containsOnlyOnce("surface:chat_message:");
+        assertThat(payload).contains("surface:chat_message: 1 tetszik / 1 nem tetszik");
+        assertThat(payload).doesNotContain("9 tetszik");
+    }
+
+    /**
+     * mezo-b3pp.35 (item 4, double counting): {@code surface:*} is the complete, non-overlapping
+     * partition of every verdict, while {@code feed:*} is a REFINEMENT of a subset of it — a
+     * {@code feed_message} verdict lands in both {@code surface:feed_message} AND its
+     * {@code feed:<kind>} row. {@code feedbackSignals} must equal the {@code surface:*} total
+     * alone, never the sum across every scope (which would double-count this exact case).
+     */
+    @Test
+    void feedbackSignals_countsEachVerdictOnce_whenAFeedMessageIsRolledUpTwice() {
+        UUID owner = seedOwner();
+        int windowDays = feedbackLearningProperties.windowDays();
+        rollupRow(owner, FeedbackRollupEntity.SCOPE_SURFACE_PREFIX + "feed_message", windowDays, 3, 2);
+        rollupRow(owner, FeedbackRollupEntity.SCOPE_FEED_PREFIX + "morning", windowDays, 3, 2);
+
+        UUID nodeId = assembler.rebuild(owner, currentQuarter()).orElseThrow();
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> meta = (Map<String, Object>) nodeRepository.findById(nodeId).orElseThrow()
+                .getMeta().get(ProfileMetaEnvelope.META_KEY);
+        // surface:feed_message alone (3 + 2 = 5) — NOT surface + feed (5 + 5 = 10)
+        assertThat(meta.get("feedbackSignals")).isEqualTo(5);
     }
 }

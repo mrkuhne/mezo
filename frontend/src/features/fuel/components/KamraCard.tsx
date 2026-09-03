@@ -1,93 +1,64 @@
 import type { PantryItem } from '@/data/types'
 import { SourceBadge } from '@/features/fuel/components/SourceBadge'
 import { NovaDot } from '@/features/fuel/components/NovaDot'
-import { SHOW_PANTRY_STOCK } from '@/data/_client/flags'
 
-// Direction A (kamra-mockup-v3-A): the design-system .meal-card anatomy applied to a pantry item —
-// a 44px stock slot, Antonio name + source/brand meta, a macro line (food) or protocol (supp), and a
-// right-aligned kcal/dose. Rounded (rad-20) card; supplement/stim get a left inset tint.
-const KIND_TINT: Record<string, string> = {
-  food: 'var(--sage)',
-  supplement: 'var(--info)',
-  stim: 'var(--cat-tendency)',
-  med: 'var(--error)',
-}
-
+// Kamra v2 (mezo-d20.4.5) — the kind-washed rail card: prototype fuel-body
+// #page-kamra .kitem, ported onto the SAME --mz-wash-*/--mz-cell-* tokens
+// every other Mozaik tile draws from. `.km-k-{kind}` (styles/prototype.css)
+// picks food=sage / supplement=sky / stim=gold(amber) / med=lav — never a
+// fifth color, never red. A monogram disc (first letter) stands in for a
+// product photo; food rows carry brand + NOVA dot with a tinted kcal/100g
+// cell, supp/stim/med rows carry an italic protocol line with a tinted
+// dose cell. Stock (SHOW_PANTRY_STOCK) stays deferred — mezo-6nu — this
+// card never had a slot for it even in Direction A.
 export function KamraCard({ item, onOpen }: { item: PantryItem; onOpen: (i: PantryItem) => void }) {
-  const tint = KIND_TINT[item.kind] ?? 'var(--sage)'
-  const isSupp = item.kind !== 'food'
-
-  const stock = item.stock
-  const stockQty = stock && typeof stock.qty === 'number' ? stock.qty : null
-  const stockUnit = stock?.unit
-  const stockExpires = stock && 'expires' in stock ? stock.expires : undefined
-  const stockLowExpiry = stock && 'lowExpiry' in stock ? stock.lowExpiry : undefined
-  const lowStock = !!stock && ((stockQty !== null && stockQty < 15) || !!stockLowExpiry)
+  const isFood = item.kind === 'food'
 
   return (
     <button
+      type="button"
       onClick={() => onOpen(item)}
-      className="rad-20 row"
-      style={{
-        padding: 16,
-        textAlign: 'left',
-        width: '100%',
-        gap: 14,
-        alignItems: 'center',
-        background: 'var(--surface-1)',
-        boxShadow: isSupp ? `inset 2px 0 0 0 color-mix(in srgb, ${tint} 60%, transparent)` : undefined,
-      }}
+      className={`km-item km-k-${item.kind}`}
+      aria-label={item.name}
     >
-      {/* 44px stock slot (hidden — stock tracking deferred, mezo-6nu) */}
-      {SHOW_PANTRY_STOCK && (
-        <div style={{ width: 44, flexShrink: 0, textAlign: 'center' }}>
-          {stockQty !== null ? (
+      <span className="km-thumb" aria-hidden="true">{item.name.charAt(0).toUpperCase()}</span>
+
+      <div className="col flex-1" style={{ minWidth: 0 }}>
+        <span className="nm" style={{ display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          {item.name}
+        </span>
+        <div className="sb">
+          <SourceBadge source={item.source} />
+          {isFood ? (
             <>
-              <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 14, fontWeight: 600, lineHeight: 1.1, color: lowStock ? 'var(--warning)' : tint }}>{stockQty}</span>
-              <span style={{ display: 'block', fontSize: 8, color: 'var(--text-tertiary)', marginTop: 2 }}>{stockUnit}</span>
+              {item.brand && <span>{item.brand}</span>}
+              {item.nova != null && <NovaDot nova={item.nova} />}
             </>
           ) : (
-            <span style={{ fontSize: 12, color: 'var(--text-quaternary)' }}>—</span>
+            <>
+              {item.brand && <span>{item.brand}</span>}
+              {item.protocol && <span className="proto">{item.protocol}</span>}
+            </>
+          )}
+          {item.caffeine && (
+            <span className="chip" style={{ fontSize: 8, padding: '1px 5px', color: 'var(--warning)', borderColor: 'color-mix(in srgb, var(--warning) 40%, transparent)' }}>
+              koffein
+            </span>
           )}
         </div>
-      )}
+      </div>
 
-      {/* Info */}
-      <div className="col flex-1" style={{ minWidth: 0 }}>
-        <span style={{ fontFamily: 'var(--ff-display)', fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', lineHeight: 1.05, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
-        <div className="row gap-xs" style={{ alignItems: 'center', marginTop: 7 }}>
-          <SourceBadge source={item.source} />
-          {item.brand && <span className="text-tertiary" style={{ fontSize: 10 }}>{item.brand}</span>}
-          {item.caffeine && <span className="chip" style={{ fontSize: 8, padding: '1px 5px', color: 'var(--warning)', borderColor: 'color-mix(in srgb, var(--warning) 40%, transparent)' }}>koffein</span>}
+      {isFood ? (
+        <div className="km-cell">
+          <b>{item.macros?.kcal}</b>
+          <small>kcal · 100 g</small>
         </div>
-
-        {item.macros ? (
-          <div className="row" style={{ alignItems: 'center', flexWrap: 'wrap', gap: 10, marginTop: 9, fontVariantNumeric: 'tabular-nums', fontSize: 9 }}>
-            <span style={{ color: 'var(--success)', fontWeight: 600 }}>P {item.macros.p}</span>
-            <span className="text-tertiary">C {item.macros.c}</span>
-            <span className="text-tertiary">F {item.macros.f}</span>
-            {item.nova && <NovaDot nova={item.nova} />}
-            {SHOW_PANTRY_STOCK && stockExpires && <span style={{ color: stockLowExpiry ? 'var(--error)' : 'var(--text-quaternary)' }}>· {stockLowExpiry ? '⚠ ' : ''}lejár {stockExpires}</span>}
-          </div>
-        ) : (
-          item.protocol && <p className="text-tertiary" style={{ marginTop: 9, fontSize: 10, lineHeight: 1.4, fontStyle: 'italic', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.protocol}</p>
-        )}
-      </div>
-
-      {/* Right metric: kcal (food) / dose (supp) */}
-      <div className="col" style={{ alignItems: 'flex-end', flexShrink: 0 }}>
-        {item.macros ? (
-          <>
-            <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 16, fontWeight: 600, color: 'var(--text-primary)' }}>{item.macros.kcal}</span>
-            <span style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>kcal</span>
-          </>
-        ) : (
-          <>
-            <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 15, fontWeight: 600, color: tint }}>{item.dose}</span>
-            {SHOW_PANTRY_STOCK && lowStock && <span style={{ fontSize: 8, color: 'var(--warning)' }}>⚠ fogy</span>}
-          </>
-        )}
-      </div>
+      ) : (
+        <div className="km-cell">
+          <b>{item.dose ?? '—'}</b>
+          <small>dózis</small>
+        </div>
+      )}
     </button>
   )
 }

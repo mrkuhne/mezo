@@ -24,6 +24,88 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+    post:
+      tags: [People]
+      operationId: createPerson
+      summary: Create an owned person (initial derived server-side; status=active, sourceKind=manual)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreatePersonRequest' }
+      responses:
+        '201':
+          description: Person created
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PersonResponse' }
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/people/{personId}:
+    put:
+      tags: [People]
+      operationId: updatePerson
+      summary: Full update of the editable person fields (knownFacts/ties/affectTrend are AI-curated, untouched)
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdatePersonRequest' }
+      responses:
+        '200':
+          description: Person updated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PersonResponse' }
+        '400':
+          description: Validation failure
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Person missing or foreign (indistinguishable)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    delete:
+      tags: [People]
+      operationId: deletePerson
+      summary: Soft-delete an owned person (mentions stay stored, leave the feed)
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Person missing or foreign (indistinguishable)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/people/{personId}/mentions:
     post:
       tags: [People]
@@ -67,6 +149,68 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/people/{personId}/mentions/{mentionId}:
+    delete:
+      tags: [People]
+      operationId: deleteMention
+      summary: Revoke a mention (soft delete)
+      parameters:
+        - name: personId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: mentionId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '204': { description: Deleted }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Mention missing, foreign, or belongs to a different person (indistinguishable)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/people/{personId}/decision:
+    post:
+      tags: [People]
+      operationId: decidePerson
+      summary: >-
+        Decide a candidate person (S4 nightly extractor inbox) — accept activates the person,
+        reject soft-deletes it (the soft-deleted row is the extractor's reject list: the name
+        is never re-proposed). One decision per candidate.
+      parameters:
+        - { name: personId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/PersonDecisionRequest' }
+      responses:
+        '200':
+          description: The decided person (status active on accept; the soft-deleted row snapshot on reject)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PersonResponse' }
+        '400':
+          description: PEOPLE_CANDIDATE_ALREADY_DECIDED / validation error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: RESOURCE_NOT_FOUND
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     LogMentionRequest:
@@ -80,11 +224,15 @@ components:
         text:
           type: string
           maxLength: 500
+        contextLabel:
+          type: string
+          enum: [munka, csalad, baratok, edzes, konfliktus, kozos_program, segitseg, egyeb]
     PeopleResponse:
       type: object
       required:
         - persons
         - mentions
+        - mezoNote
       properties:
         persons:
           type: array
@@ -94,6 +242,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MentionResponse'
+        mezoNote:
+          type: string
+          description: >-
+            Az Emberek hub Mezo-észrevétel sávjának mondata. A mai 'people' companion-üzenet,
+            ha van; egyébként a heti aggregátumokból számított, determinisztikus tartalék.
+            Sosem üres — a sáv mindig igaz mondatot mutat.
     PersonResponse:
       type: object
       required:
@@ -108,6 +262,11 @@ components:
         - knownFacts
         - ties
         - affectTrend
+        - direction
+        - aliases
+        - status
+        - sourceKind
+        - graphEdges
       properties:
         id:
           type: string
@@ -118,9 +277,18 @@ components:
           type: string
         relationship:
           type: string
-          enum: [partner, teammate, mentee]
+          enum: [partner, friend, family, colleague, teammate, mentee]
         relationshipHu:
           type: string
+        aliases:
+          type: array
+          items: { type: string, maxLength: 60 }
+        status:
+          type: string
+          enum: [candidate, active, archived]
+        sourceKind:
+          type: string
+          enum: [manual, extractor, seed]
         affectBaseline:
           type: string
           enum: [positive, neutral, mixed, negative]
@@ -138,8 +306,28 @@ components:
             type: string
         affectTrend:
           type: array
+          description: >-
+            Heti hangulat-olvasatok 1..5 skálán, időrendben (legfeljebb 8, a legfrissebbek).
+            Az említések tónusából és intenzitásából SZÁMÍTOTT érték — a person.affect_trend
+            oszlopot ez a válasz nem olvassa.
           items:
             type: integer
+        affectTrendStart:
+          type: string
+          format: date
+          nullable: true
+          description: >-
+            A hangulat-ív első olvasatának hete (hétfő). Az ív csak azokat a heteket
+            tartalmazza, ahol volt tónusozott említés, ezért az időablakot ebből kell
+            címkézni, nem az olvasatok számából. null, ha nincs olvasat.
+        direction:
+          type: string
+          enum: [up, down, flat]
+          description: A hangulat-ív iránya az utolsó két olvasat és a korábbiak átlaga alapján.
+        directionReason:
+          type: string
+          nullable: true
+          description: Magyar, determinisztikus indoklás az irány alatt. null, ha nincs olvasat.
         mentionCount:
           type: integer
           description: Count of live mention rows — computed, never seeded
@@ -149,6 +337,28 @@ components:
         lastMentionedAt:
           type: string
           format: date-time
+        graphEdges:
+          type: array
+          description: >-
+            A személy PERSON node-jának legerősebb gráf-élei (legfeljebb 3, súly szerint
+            csökkenő). Üres, ha a gráf ki van kapcsolva, vagy a személynek nincs node-ja/éle.
+          items: { $ref: '#/components/schemas/PersonGraphEdge' }
+    PersonGraphEdge:
+      type: object
+      description: Egy gráf-él a személy felől nézve — a másik végpont, és hogy hogyan kapcsolódik.
+      required: [nodeKind, title, relationHu, strength]
+      properties:
+        nodeKind:
+          type: string
+          description: A másik végpont node-fajtája (PATTERN | PREFERENCE | GOAL | LIFE_EVENT | SEASON | INSIGHT | PERSON).
+        title:
+          type: string
+        relationHu:
+          type: string
+          description: Magyar kapcsolat-ige (kiváltja | megelőzte | támogatja | ütközik vele | kapcsolódik).
+        strength:
+          type: string
+          description: erős | közepes | gyenge
     MentionResponse:
       type: object
       required:
@@ -158,7 +368,6 @@ components:
         - personName
         - source
         - excerpt
-        - tone
         - flagged
       properties:
         id:
@@ -174,7 +383,7 @@ components:
           type: string
         source:
           type: string
-          enum: [voice, camera, chip, text]
+          enum: [voice, camera, chip, text, chat]
         durationS:
           type: integer
         excerpt:
@@ -188,3 +397,49 @@ components:
           type: string
         flagged:
           type: boolean
+        intensity: { type: integer, minimum: 1, maximum: 3 }
+        contextLabel:
+          type: string
+          enum: [munka, csalad, baratok, edzes, konfliktus, kozos_program, segitseg, egyeb]
+        sourceRefKind: { type: string }
+    CreatePersonRequest:
+      type: object
+      required: [name, relationship, relationshipHu]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        aliases:
+          type: array
+          maxItems: 8
+          items: { type: string, minLength: 1, maxLength: 60 }
+        relationship:
+          type: string
+          enum: [partner, friend, family, colleague, teammate, mentee]
+        relationshipHu: { type: string, minLength: 1, maxLength: 120 }
+        affectBaseline:
+          type: string
+          enum: [positive, neutral, mixed, negative]
+        contactCadenceLabel: { type: string, maxLength: 120 }
+        notes: { type: string, maxLength: 500 }
+    UpdatePersonRequest:
+      type: object
+      required: [name, relationship, relationshipHu]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        aliases:
+          type: array
+          maxItems: 8
+          items: { type: string, minLength: 1, maxLength: 60 }
+        relationship:
+          type: string
+          enum: [partner, friend, family, colleague, teammate, mentee]
+        relationshipHu: { type: string, minLength: 1, maxLength: 120 }
+        affectBaseline:
+          type: string
+          enum: [positive, neutral, mixed, negative]
+        contactCadenceLabel: { type: string, maxLength: 120 }
+        notes: { type: string, maxLength: 500 }
+    PersonDecisionRequest:
+      type: object
+      required: [decision]
+      properties:
+        decision: { type: string, pattern: '^(accept|reject)$' }

@@ -6,14 +6,15 @@
 //    VOLUME_WEEKLY_CAP/GROUP_MEV) — source: Built With Science video (yt
 //    ehQ_5TThkRI, Zourdos/Remmert): failure style (RIR≤1) is productive up
 //    to ~12 sets/muscle/week, volume style (RIR≥2) up to ~20. Still used
-//    directly by programFit.ts and weekZone.ts — kept verbatim here.
+//    directly by weekZone.ts — kept verbatim here.
 //  - The per-tier LANDMARK model (GROUP_LANDMARKS + muscleBudgets below):
 //    each muscle group's weekly budget is now measured against its OWN
 //    tier target (Maintain→MEV, Grow→MAV, Emphasize→MRV — see
 //    logic/musclePriorities.ts) instead of the shared failure/volume caps.
-//    This is what the SetBudgetCard pill/rows display.
-// Beyond ~11 sets/muscle in ONE session extra sets don't add growth
-// (SESSION_MUSCLE_CAP, tier-independent, unchanged).
+//    This is what WeeklyBandsCard's rows display (wizard v2, mezo-d20.14 —
+//    formerly SetBudgetCard's %-driven pill/rows).
+// Beyond ~8 sets/muscle in ONE session extra sets don't add growth
+// (SESSION_MUSCLE_CAP, tier-independent — tightened 11→8, mezo-d20.14).
 // Pure client-side derivation from the meso days template — nothing persisted.
 // Granularity is the coarse muscle group (chest/back/…): finer than the 6
 // color regions (Kar/Láb would over-merge), coarser than the 21 heads.
@@ -34,7 +35,7 @@ export function countsForVolume(ex: { countsTowardVolume?: boolean; type: Exerci
 export type SetStyle = 'failure' | 'volume'
 export const FAILURE_WEEKLY_CAP = 12
 export const VOLUME_WEEKLY_CAP = 20
-export const SESSION_MUSCLE_CAP = 11
+export const SESSION_MUSCLE_CAP = 8
 export const NEAR_THRESHOLD = 0.85
 
 // Weekly minimum-effective set counts per budget group — lower edges of the

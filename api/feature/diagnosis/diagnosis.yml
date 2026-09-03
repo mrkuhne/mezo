@@ -1,0 +1,162 @@
+openapi: 3.0.3
+info: { title: '', version: '' }
+tags:
+  - name: Diagnosis
+    description: >-
+      On-demand diagnostic reports (mezo-hqfi) — a phenomenon question answered with ranked,
+      evidence-bound suspects. Evidence is code-collected and frozen at generation time; the
+      model selects it by index and can never invent a reference.
+paths:
+  /api/proactive/diagnosis:
+    get:
+      tags: [Diagnosis]
+      operationId: listDiagnoses
+      summary: Past diagnoses, newest first ([] = honest empty, never 404)
+      parameters:
+        - name: phenomenon
+          in: query
+          required: false
+          schema: { type: string, pattern: '^(fatigue|sleep)$', default: fatigue }
+      responses:
+        '200':
+          description: The user's diagnoses
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/DiagnosisResponse' } }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+    post:
+      tags: [Diagnosis]
+      operationId: generateDiagnosis
+      summary: Generate a fresh diagnosis (consumes the daily quota)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DiagnosisGenerateRequest' }
+      responses:
+        '201':
+          description: The generated diagnosis
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DiagnosisResponse' }
+        '409':
+          description: Not enough data in the window, or no suspect survived validation
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '429':
+          description: Daily generation quota exceeded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/proactive/diagnosis/{id}:
+    get:
+      tags: [Diagnosis]
+      operationId: getDiagnosis
+      summary: One diagnosis, including its stale flag
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The diagnosis
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DiagnosisResponse' }
+        '404':
+          description: Not found or not owned
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/proactive/diagnosis/{id}/suspect/{rank}/experiment:
+    post:
+      tags: [Diagnosis]
+      operationId: startDiagnosisExperiment
+      summary: Turn a suspect's probe into a tracked experiment (the tap IS the acceptance)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - name: rank
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1, maximum: 4 }
+      responses:
+        '201':
+          description: The created experiment, or the open one that already covers this metric
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ExperimentResponse' }
+        '404':
+          description: Diagnosis not found, not owned, or no suspect at that rank
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+components:
+  schemas:
+    DiagnosisGenerateRequest:
+      type: object
+      required: [phenomenon]
+      properties:
+        phenomenon: { type: string, pattern: '^(fatigue|sleep)$' }
+    DiagnosisEvidenceItem:
+      type: object
+      required: [kind, label]
+      properties:
+        kind: { type: string, pattern: '^(metric|pattern|fact)$' }
+        label: { type: string }
+        detail: { type: string, nullable: true }
+        sourceHu: { type: string, nullable: true, description: 'Hungarian provenance, e.g. Alvás-napló' }
+        metricKey: { type: string, nullable: true }
+        value: { type: number, nullable: true }
+        baselineValue: { type: number, nullable: true }
+        delta: { type: number, nullable: true }
+        coverageDays: { type: integer, nullable: true }
+    DiagnosisSuspect:
+      type: object
+      required: [rank, title, claim, evidenceIndexes, strength, probeText, metricKey, expectedDirection, totalDays]
+      properties:
+        rank: { type: integer }
+        title: { type: string }
+        claim: { type: string }
+        evidenceIndexes: { type: array, items: { type: integer } }
+        strength: { type: string, pattern: '^(strong|moderate|weak)$' }
+        probeText: { type: string }
+        metricKey: { type: string }
+        expectedDirection: { type: string, pattern: '^(up|down|stable)$' }
+        totalDays: { type: integer }
+    DiagnosisResponse:
+      type: object
+      required: [id, phenomenon, windowDays, verdict, confidence, evidence, suspects, generatedAt, stale]
+      properties:
+        id: { type: string, format: uuid }
+        phenomenon: { type: string }
+        windowDays: { type: integer }
+        verdict: { type: string }
+        confidence: { type: string, pattern: '^(strong|moderate|weak)$' }
+        evidence: { type: array, items: { $ref: '#/components/schemas/DiagnosisEvidenceItem' } }
+        suspects: { type: array, items: { $ref: '#/components/schemas/DiagnosisSuspect' } }
+        generatedAt: { type: string, format: date-time }
+        stale: { type: boolean, description: a log landed in the window after generatedAt }

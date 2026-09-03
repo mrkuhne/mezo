@@ -1,0 +1,135 @@
+// RunPage — narrative hero, RunFlowStrip, signal chain / quiet-night / conference faces, the
+// honest-callCount ruling, and the AI-napló deep-link (mezo-1gim.14, Task 4). Mode-agnostic via
+// the KarakterHubPage.test.tsx hook-override idiom.
+import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { beforeEach, describe, expect, test, vi } from 'vitest'
+import { RunPage } from './RunPage'
+import { MOCK_EXPERTS, MOCK_RUN_DETAIL } from '@/data/character/characterMock'
+import type { CharacterRunResponse, CharacterRunSummary } from '@/data/character/characterApi'
+
+const mockNavigate = vi.fn()
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+  return { ...actual, useNavigate: () => mockNavigate, useParams: () => ({ id: hoisted.id }) }
+})
+
+const hoisted = vi.hoisted(() => ({
+  id: 'ejsz-27',
+  run: null as unknown as CharacterRunResponse | null,
+}))
+
+vi.mock('@/data/hooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/data/hooks')>()
+  return {
+    ...actual,
+    useCharacterRun: () => ({ run: hoisted.run, isLoading: false }),
+    useCharacterExperts: () => ({ experts: MOCK_EXPERTS, isLoading: false }),
+  }
+})
+
+beforeEach(() => {
+  hoisted.id = 'ejsz-27'
+  hoisted.run = MOCK_RUN_DETAIL['ejsz-27'] // a signal nightly run (journal-note + logging-gap)
+  mockNavigate.mockReset()
+})
+
+const renderRun = () => render(<RunPage />)
+
+describe('RunPage', () => {
+  test('a signal NIGHTLY run renders the flow strip with detektor/hívás/megfigyelés and the signal chain', () => {
+    renderRun()
+    const flow = screen.getByRole('group', { name: 'Futás-lánc' })
+    expect(flow).toBeInTheDocument()
+    // I3 (final review): the first cell used to be labeled "jel" and reused observationCount —
+    // relabeled to what it actually counts, distinct fired detectors.
+    expect(within(flow).getByText('detektor tüzelt')).toBeInTheDocument()
+    expect(within(flow).getByText('hívás')).toBeInTheDocument()
+    expect(within(flow).getByText('megfigyelés')).toBeInTheDocument()
+    expect(screen.getByText('logging-gap')).toBeInTheDocument()
+  })
+
+  test('M4 (final review): production refCount is always 0 — the ref line never renders a hollow zero', () => {
+    renderRun()
+    expect(screen.queryByText(/forrás-hivatkozás/)).not.toBeInTheDocument()
+  })
+
+  test('I3: a catch-up NIGHTLY run (detectors fired, 0 observations) gets CATCHUP_MSG, never QUIET_MSG', () => {
+    hoisted.id = 'catchup'
+    hoisted.run = {
+      summary: {
+        id: 'catchup', kind: 'NIGHTLY', day: '2026-08-27', observationCount: 0, callCount: 0,
+        detectorKeys: ['logging-gap'], expertKeys: [], conferenceId: null,
+      } satisfies CharacterRunSummary,
+      observations: [],
+    }
+    renderRun()
+    expect(screen.queryByText(/Nulla LLM-hívás, nulla token, nulla költség/)).not.toBeInTheDocument()
+    expect(screen.getAllByText(/jelek korábban már feldolgozásra kerültek/).length).toBeGreaterThan(0)
+  })
+
+  test('a quiet NIGHTLY run shows the proud QUIET_MSG face, no chain cards, 0/0/0 flow', () => {
+    hoisted.id = 'ejsz-11'
+    hoisted.run = MOCK_RUN_DETAIL['ejsz-11']
+    renderRun()
+    expect(screen.getByText(/Nulla LLM-hívás, nulla token, nulla költség/)).toBeInTheDocument()
+    expect(screen.queryByText('logging-gap')).not.toBeInTheDocument()
+    const stepValues = screen.getAllByRole('group', { name: 'Futás-lánc' })[0].querySelectorAll('b')
+    stepValues.forEach((v) => expect(v.textContent).toBe('0'))
+  })
+
+  test('a WEEKLY run never renders a "0 hívás" cell — only a megfigyelés step (binding ruling)', () => {
+    hoisted.id = 'run-w2'
+    hoisted.run = MOCK_RUN_DETAIL['run-w2']
+    renderRun()
+    expect(screen.queryByText('hívás')).not.toBeInTheDocument()
+    expect(screen.getByText('megfigyelés')).toBeInTheDocument()
+  })
+
+  test('a WEEKLY run with a conferenceId links to the real konzílium transcript', async () => {
+    hoisted.id = 'run-w2'
+    hoisted.run = MOCK_RUN_DETAIL['run-w2']
+    renderRun()
+    await userEvent.click(screen.getByRole('button', { name: 'Teljes transzkript megnyitása ›' }))
+    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/konzilium?id=w2')
+  })
+
+  test('an unknown/foreign run id (404 -> null) renders the honest not-found face, not a crash', () => {
+    hoisted.run = null
+    const { container } = renderRun()
+    // Fix round 1: the feature's ONE established 404/switch-off idiom (DimensionPage,
+    // DimensionsPage, KarakterHubPage, CharacterFeedPage) is `.kr-degraded`, not the
+    // KonziliumPage-borrowed `.kr-konz-empty` this page used to render.
+    expect(screen.getByText('Ez a futás nem található.')).toBeInTheDocument()
+    expect(container.querySelector('.kr-degraded')).toBeInTheDocument()
+    expect(container.querySelector('.kr-konz-empty')).not.toBeInTheDocument()
+  })
+
+  test('a MONTHLY run renders NO flow strip — the hero already carries the re-evaluated-claim count', () => {
+    hoisted.id = 'run-m1'
+    hoisted.run = MOCK_RUN_DETAIL['run-m1']
+    renderRun()
+    expect(screen.queryByRole('group', { name: 'Futás-lánc' })).not.toBeInTheDocument()
+    expect(screen.getByText(/állítást mérlegeltünk újra/)).toBeInTheDocument()
+  })
+
+  test('a BOOTSTRAP run renders NO flow strip — the hero already carries the seeded-claim count', () => {
+    hoisted.id = 'run-b0'
+    hoisted.run = MOCK_RUN_DETAIL['run-b0']
+    renderRun()
+    expect(screen.queryByRole('group', { name: 'Futás-lánc' })).not.toBeInTheDocument()
+    expect(screen.getByText(/kezdő állítás/)).toBeInTheDocument()
+  })
+
+  test('the AI-napló row navigates to /me/ai-usage unfiltered (AiCallFilters is not URL-driven)', async () => {
+    renderRun()
+    await userEvent.click(screen.getByText('Ehhez a futáshoz tartozó nyers hívások az AI-naplóban'))
+    expect(mockNavigate).toHaveBeenCalledWith('/me/ai-usage')
+  })
+
+  test('‹ Futások back button navigates to the Futások list', async () => {
+    renderRun()
+    await userEvent.click(screen.getByRole('button', { name: 'Vissza' }))
+    expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem/futasok')
+  })
+})

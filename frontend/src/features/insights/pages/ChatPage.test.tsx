@@ -6,6 +6,7 @@ import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { ChatPage } from '@/features/insights/pages/ChatPage'
+import { ChatMessage } from '@/features/insights/components/ChatMessage'
 import { cannedReply } from '@/data/insights/chat'
 
 // The page reads its selected conversation from `?c=` (mezo-at8x.3), so it needs a router.
@@ -27,16 +28,17 @@ describe('ChatPage (mock mode)', () => {
   test('seeds the conversation and the composer', () => {
     renderPage()
     expect(screen.getByText(/Jó reggelt\. Tegnap a Push Day/)).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Mondj valamit...')).toBeInTheDocument()
-    // assistant tool-transparency chip
-    expect(screen.getByText('get_recent_workouts(days=3)')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText('Mondj valamit…')).toBeInTheDocument()
+    // assistant tool-transparency chip — collapsed into the work strip (mezo-vdf4);
+    // both seed answers carry tools, hence two strips.
+    expect(screen.getAllByRole('button', { name: /Utánanézett/ })).toHaveLength(2)
     // V1.3: the mock seed never carries a degraded answer — no badge
     expect(screen.queryByText('nem ellenőrzött')).not.toBeInTheDocument()
   })
 
   test('the composer wraps instead of scrolling sideways (mezo-a837)', () => {
     renderPage()
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     // A textarea az, ami tördel — egy <input> vízszintesen csúsztatná el a hosszú üzenetet.
     expect(input.tagName).toBe('TEXTAREA')
     expect(input).toHaveAttribute('rows', '1')
@@ -44,7 +46,7 @@ describe('ChatPage (mock mode)', () => {
 
   test('Shift+Enter breaks a line instead of sending (mezo-a837)', () => {
     renderPage()
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Első sor' } })
     fireEvent.keyDown(input, { key: 'Enter', shiftKey: true })
     // nem ment el: a piszkozat a mezőben marad, a szálban nem jelenik meg buborékként
@@ -66,7 +68,7 @@ describe('ChatPage (mock mode)', () => {
     // ImportItemSheet.test.tsx for the documented environment issue.
     vi.useFakeTimers()
     renderPage()
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     expect(screen.getByText('Fáradt vagyok')).toBeInTheDocument()
@@ -95,7 +97,7 @@ describe('ChatPage (mock mode)', () => {
     renderPage()
     // seed ref [Workout w-2026-05-21] → kind label Edzés + derived date
     // both seed answers carry a refs footer
-    expect(screen.getAllByText('Hivatkozott · L3')).toHaveLength(2)
+    expect(screen.getAllByText('Amire épült · L3')).toHaveLength(2)
     const workoutRef = screen.getAllByText('Edzés').find((el) => el.classList.contains('mzc-refk'))
     expect(workoutRef).toBeTruthy()
     expect(workoutRef!.parentElement).toHaveTextContent('máj. 21.')
@@ -103,6 +105,102 @@ describe('ChatPage (mock mode)', () => {
     const patternRef = screen.getAllByText('Minta').find((el) => el.classList.contains('mzc-refk'))
     expect(patternRef).toBeTruthy()
     expect(patternRef!.parentElement).toHaveTextContent('p-medication-appetite')
+  })
+
+  // mezo-b3pp.29: the Emlékek row below the footer already carries every recalled memory's
+  // date, source and gist, so a bare [Memory] refs chip beside it is pure duplication — but
+  // ONLY once that row actually exists. These render ChatMessage directly (not the full seeded
+  // page) so the refs/recalled combination under test is exact and not incidental to the seed.
+  test('hides the Memory chips when the answer carries a recalled list, but keeps the Emlékek row and the other chips', () => {
+    render(
+      <ChatMessage
+        m={{
+          id: 'm-dedupe-1',
+          role: 'assistant',
+          ts: '10:00',
+          text: 'Válasz.',
+          refs: [
+            { kind: 'Memory', id: '2026-05-21' },
+            { kind: 'Workout', id: 'w-2026-05-20' },
+          ],
+          recalled: [
+            { occurredOn: '2026-05-21', kind: 'Journal', label: 'Napló', gist: 'jól aludtam', similarity: 0.9 },
+          ],
+        }}
+      />,
+    )
+    // the non-Memory chip survives the filter
+    expect(screen.getByText('Edzés')).toBeInTheDocument()
+    // no chip shows the Memory kind label ('Emlék') — it was filtered out by the dedupe
+    expect(
+      screen.queryAllByText('Emlék').find((el) => el.classList.contains('mzc-refk')),
+    ).toBeUndefined()
+    // dedupe, not deletion: the recalled content is still reachable via the Emlékek row
+    expect(screen.getByText(/Emlékek · 1/)).toBeInTheDocument()
+  })
+
+  test('keeps the Memory chips when the answer has no recalled list — the chip is the only provenance', () => {
+    render(
+      <ChatMessage
+        m={{
+          id: 'm-dedupe-2',
+          role: 'assistant',
+          ts: '10:00',
+          text: 'Válasz.',
+          refs: [
+            { kind: 'Memory', id: '2026-05-21' },
+            { kind: 'Workout', id: 'w-2026-05-20' },
+          ],
+          // no `recalled` — nothing else in this render carries the memory's provenance
+        }}
+      />,
+    )
+    const memoryRef = screen.getAllByText('Emlék').find((el) => el.classList.contains('mzc-refk'))
+    expect(memoryRef).toBeTruthy()
+    expect(screen.getByText('Edzés')).toBeInTheDocument()
+  })
+
+  // mezo-b3pp.29 fix wave: find_similar_past_days (MemoryTools) emits a Memory ref for a day that
+  // ambient recall never touched, so it is never in `recalled` — even though `recalled` is
+  // non-empty (ambient recall is always-on, so most turns have some recalled item). A kind-only
+  // filter would hide this chip and the day it points to would appear nowhere in the UI.
+  test('keeps a Memory chip whose day the Emlékek row does not carry', () => {
+    render(
+      <ChatMessage
+        m={{
+          id: 'm-dedupe-4',
+          role: 'assistant',
+          ts: '10:00',
+          text: 'Válasz.',
+          refs: [{ kind: 'Memory', id: '2026-02-11' }],
+          recalled: [
+            { occurredOn: '2026-05-21', kind: 'Journal', label: 'Napló', gist: 'jól aludtam', similarity: 0.9 },
+          ],
+        }}
+      />,
+    )
+    const memoryRef = screen.getAllByText('Emlék').find((el) => el.classList.contains('mzc-refk'))
+    expect(memoryRef).toBeTruthy()
+    expect(memoryRef!.parentElement).toHaveTextContent('febr. 11.')
+  })
+
+  test('hides the whole refs footer when filtering leaves nothing (latent empty-array-is-truthy bug)', () => {
+    render(
+      <ChatMessage
+        m={{
+          id: 'm-dedupe-3',
+          role: 'assistant',
+          ts: '10:00',
+          text: 'Válasz.',
+          refs: [{ kind: 'Memory', id: '2026-05-21' }],
+          recalled: [
+            { occurredOn: '2026-05-21', kind: 'Journal', label: 'Napló', gist: 'jól aludtam', similarity: 0.9 },
+          ],
+        }}
+      />,
+    )
+    // without the length guard, the eyebrow would render alone over an empty chip row
+    expect(screen.queryByText('Hivatkozott · L3')).not.toBeInTheDocument()
   })
 
   test('every assistant answer carries the Mezo eyebrow + timestamp meta row with the orb', () => {
@@ -147,7 +245,17 @@ describe('ChatPage (mock mode)', () => {
     expect(screen.queryByText('futás után jobban aludtam')).not.toBeInTheDocument()
     fireEvent.click(toggle)
     expect(screen.getByText('futás után jobban aludtam')).toBeInTheDocument()
-    expect(screen.getByText(/napló · 92%/)).toBeInTheDocument()
+    expect(screen.getByText('napló')).toBeInTheDocument()
+    expect(screen.getByText('92')).toBeInTheDocument()
+  })
+
+  test('renders the orb-led header with the live status', async () => {
+    renderPage()
+    expect(await screen.findByLabelText('Vissza')).toBeInTheDocument()
+    expect(screen.getByText('Mezo', { selector: '.mzc-hnm' })).toBeInTheDocument()
+    // mock mode → demo status text (subtitle precedence unchanged)
+    expect(screen.getByText('demo beszélgetés')).toBeInTheDocument()
+    expect(document.querySelector('.mzc-hstat')).toHaveAttribute('data-st', 'demo')
   })
 })
 
@@ -158,23 +266,25 @@ describe('ChatPage (real mode)', () => {
   test('loads the history from the backend', async () => {
     renderPage()
     expect(await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)).toBeInTheDocument()
-    expect(screen.getByText('get_recent_workouts(days=3)')).toBeInTheDocument()
-    expect(screen.getByText('Gemini · élő')).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /Utánanézett/ })).toHaveLength(2)
+    expect(screen.getByText('élő · Gemini')).toBeInTheDocument()
   })
 
   test('sending a message streams the reply into the thread', async () => {
     renderPage()
     await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     // waitFor + getByText (not findByText): the optimistic turn bubble is replaced by the
     // appended cache pair when the stream completes, so a captured node can go stale.
     await waitFor(() => expect(screen.getByText('Fáradt vagyok')).toBeInTheDocument())
     await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())
-    // V0.5: the persisted reply renders its REAL tool chip + ref chip (from the done event) —
-    // the ref speaks the human label (Alvás + derived date), not the raw wire kind/id (d20.5.2).
-    expect(screen.getByText('get_sleep(days=3)')).toBeInTheDocument()
+    // V0.5: the persisted reply renders its REAL tool work strip + ref chip (from the done
+    // event) — the ref speaks the human label (Alvás + derived date), not the raw wire
+    // kind/id (d20.5.2); the tool call itself is collapsed into the strip (mezo-vdf4).
+    // three strips: the two seed answers plus this new one.
+    expect(screen.getAllByRole('button', { name: /Utánanézett/ })).toHaveLength(3)
     const sleepRef = screen
       .getAllByText('Alvás')
       .find((el) => el.classList.contains('mzc-refk') && el.parentElement?.textContent?.includes('júl. 2.'))
@@ -187,7 +297,7 @@ describe('ChatPage (real mode)', () => {
     // the persisted history's first answer already discloses what it recalled
     expect(screen.getByText(/Emlékek · 2/)).toBeInTheDocument()
 
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())
@@ -211,13 +321,13 @@ describe('ChatPage (real mode)', () => {
       const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
       const stream = new ReadableStream<Uint8Array>({
         async start(controller) {
-          controller.enqueue(encoder.encode(frame('tool', { type: 'read', name: 'get_sleep(days=3)' })))
+          controller.enqueue(encoder.encode(frame('tool', { type: 'read', name: 'get_recovery(days=3)' })))
           await rest
           controller.enqueue(encoder.encode(frame('delta', { text: reply })))
           controller.enqueue(encoder.encode(frame('done', {
             id: 'msg-done', role: 'assistant', content: reply,
             createdAt: '2026-07-03T07:00:05Z',
-            tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
+            tools: [{ type: 'read', name: 'get_recovery(days=3)' }],
             refs: [{ kind: 'Sleep', id: '2026-07-02' }],
             recalled: [],
             degraded: false,
@@ -230,15 +340,53 @@ describe('ChatPage (real mode)', () => {
 
     renderPage()
     await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })
 
-    // the chip renders from the in-flight draft bubble, before 'done' replaces it
-    await screen.findByText('get_sleep(days=3)')
-    // 'most' is the placeholder ts only the in-flight turn's two bubbles use (user + draft) —
-    // seeing both confirms the chip came from the draft, not the appended, authoritative row.
-    expect(screen.getAllByText('most')).toHaveLength(2)
+    // the strip renders from the live work-strip block (mezo-vdf4), before 'done' replaces it —
+    // three strips: the two seed answers plus this in-flight one.
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /Utánanéz/ })).toHaveLength(3))
+    // the live strip carries the "…" label (only ever true while `live`) — seeing it confirms
+    // the chip came from the in-flight turn, not one of the persisted, authoritative rows.
+    expect(screen.getByRole('button', { name: /Utánanéz…/ })).toBeInTheDocument()
+
+    releaseRest()
+    await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())
+  })
+
+  test('busy turn flips the status to dolgozom rajta…', async () => {
+    // same gated-stream idiom as the live-tool-chip test above: hold 'delta'/'done' back so
+    // the in-flight turn (still truthy, no draft yet) is actually observable on screen.
+    let releaseRest: () => void = () => {}
+    const rest = new Promise<void>((resolve) => { releaseRest = resolve })
+    server.use(http.post(`${API_BASE}/api/companion/conversation/:id/message/stream`, async ({ request }) => {
+      const { content } = (await request.json()) as { content: string }
+      const reply = cannedReply(content)
+      const encoder = new TextEncoder()
+      const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
+      const stream = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          await rest
+          controller.enqueue(encoder.encode(frame('delta', { text: reply })))
+          controller.enqueue(encoder.encode(frame('done', {
+            id: 'msg-done', role: 'assistant', content: reply,
+            createdAt: '2026-07-03T07:00:05Z', tools: [], refs: [], recalled: [], degraded: false,
+          })))
+          controller.close()
+        },
+      })
+      return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } })
+    }))
+
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    const input = screen.getByPlaceholderText('Mondj valamit…')
+    fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    await waitFor(() => expect(screen.getByText('dolgozom rajta…')).toBeInTheDocument())
+    expect(document.querySelector('.mzc-hstat')).toHaveAttribute('data-st', 'busy')
 
     releaseRest()
     await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())
@@ -256,13 +404,13 @@ describe('ChatPage (real mode)', () => {
       const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
       const stream = new ReadableStream<Uint8Array>({
         async start(controller) {
-          controller.enqueue(encoder.encode(frame('tool', { type: 'read', name: 'get_sleep(days=3)' })))
+          controller.enqueue(encoder.encode(frame('tool', { type: 'read', name: 'get_recovery(days=3)' })))
           await rest
           controller.enqueue(encoder.encode(frame('delta', { text: reply })))
           controller.enqueue(encoder.encode(frame('done', {
             id: 'msg-done', role: 'assistant', content: reply,
             createdAt: '2026-07-03T07:00:05Z',
-            tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
+            tools: [{ type: 'read', name: 'get_recovery(days=3)' }],
             refs: [{ kind: 'Sleep', id: '2026-07-02' }],
             recalled: [],
             degraded: false,
@@ -275,13 +423,14 @@ describe('ChatPage (real mode)', () => {
 
     const { container } = renderPage()
     await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })
 
-    // the tool chip is up, but no delta has landed yet — this is exactly the gap that used to
+    // the tool strip is up, but no delta has landed yet — this is exactly the gap that used to
     // render an empty grey answer card with no visible sign that anything is still happening.
-    await screen.findByText('get_sleep(days=3)')
+    // three strips: the two seed answers plus this in-flight one.
+    await waitFor(() => expect(screen.getAllByRole('button', { name: /Utánanéz/ })).toHaveLength(3))
     expect(container.querySelectorAll('.np-pulse')).toHaveLength(3)
 
     releaseRest()
@@ -309,7 +458,7 @@ describe('ChatPage (real mode)', () => {
     renderPage()
     await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
     expect(screen.queryByText('nem ellenőrzött')).not.toBeInTheDocument()
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Mennyit emeljek?' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     await waitFor(() => expect(screen.getByText('bizonytalan válasz')).toBeInTheDocument())
@@ -335,7 +484,7 @@ describe('ChatPage (real mode)', () => {
     }))
     const { container } = renderPage()
     await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Hogy állok?' } })
     fireEvent.keyDown(input, { key: 'Enter' })
 
@@ -352,6 +501,23 @@ describe('ChatPage (real mode)', () => {
     expect(screen.queryByText(/Jó reggelt\. Tegnap a Push Day/)).not.toBeInTheDocument()
   })
 
+  test('the empty draft thread offers the quick-question chips, and a tap SENDS (mezo-dz3y)', async () => {
+    renderPage('/mezo/chat?c=new')
+    await screen.findByText(/Új beszélgetés — kérdezz bármit/)
+    // the three seeded quick questions render as tappable chips
+    const chip = screen.getByRole('button', { name: 'Foglald össze a mai napom röviden' })
+    expect(screen.getByRole('button', { name: 'Alvás és súly alapján mire figyeljek ma?' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Hogy készüljek az esti edzésre?' })).toBeInTheDocument()
+
+    fireEvent.click(chip)
+    // one tap = the question is SENT, not prefilled
+    await waitFor(() =>
+      expect(screen.getByText(cannedReply('Foglald össze a mai napom röviden'))).toBeInTheDocument(),
+    )
+    // and the chips leave with the empty state
+    expect(screen.queryByRole('button', { name: 'Hogy készüljek az esti edzésre?' })).not.toBeInTheDocument()
+  })
+
   test('a draft thread creates its conversation on the first send (mezo-at8x.3)', async () => {
     const created: string[] = []
     server.use(http.post(`${API_BASE}/api/companion/conversation`, () => {
@@ -362,7 +528,7 @@ describe('ChatPage (real mode)', () => {
       )
     }))
     renderPage('/mezo/chat?c=new')
-    const input = await screen.findByPlaceholderText('Mondj valamit...')
+    const input = await screen.findByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })
     await waitFor(() => expect(created).toHaveLength(1))
@@ -405,7 +571,7 @@ describe('ChatPage (real mode)', () => {
     // The MSW history is assistant / user / assistant — two votable answers.
     await waitFor(() => expect(screen.getAllByRole('group', { name: FEEDBACK_GROUP })).toHaveLength(2))
 
-    const input = screen.getByPlaceholderText('Mondj valamit...')
+    const input = screen.getByPlaceholderText('Mondj valamit…')
     fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
     fireEvent.keyDown(input, { key: 'Enter' })
 
@@ -445,6 +611,103 @@ describe('ChatPage (real mode)', () => {
       HttpResponse.json([{ code: 'RESOURCE_NOT_FOUND', message: 'off' }], { status: 404 })))
     renderPage()
     expect(await screen.findByText(/A társ jelenleg nincs bekapcsolva/)).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('Mondj valamit...')).toBeDisabled()
+    expect(screen.getByPlaceholderText('Mondj valamit…')).toBeDisabled()
+  })
+})
+
+// ==== F7.5 (mezo-d20.8.5): beszélgetés-műveletek + hiba-buborék retry ====
+
+describe('ChatPage conversation actions (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('the ⋯ disc opens the actions sheet for the current conversation', async () => {
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+
+    fireEvent.click(screen.getByRole('button', { name: 'A beszélgetés műveletei' }))
+    expect(await screen.findByRole('button', { name: /Átnevezés/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Törlés/ })).toBeInTheDocument()
+  })
+
+  test('the picker rows carry a kebab that opens the actions sheet', async () => {
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Beszélgetések' }))
+    const kebabs = await screen.findAllByRole('button', { name: /^Műveletek:/ })
+    expect(kebabs.length).toBeGreaterThan(0)
+    fireEvent.click(kebabs[0])
+    expect(await screen.findByRole('button', { name: /Átnevezés/ })).toBeInTheDocument()
+  })
+
+  test('a draft thread disables the ⋯ disc — no persisted row to act on', async () => {
+    renderPage('/mezo/chat?c=new')
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'A beszélgetés műveletei' })).toBeDisabled())
+  })
+})
+
+describe('ChatPage error bubble retry (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  const failStream = () =>
+    server.use(http.post(`${API_BASE}/api/companion/conversation/:id/message/stream`, () => {
+      const encoder = new TextEncoder()
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(encoder.encode(
+            `event:error\ndata:${JSON.stringify({ code: 'COMPANION_UPSTREAM' })}\n\n`))
+          controller.close()
+        },
+      })
+      return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } })
+    }))
+
+  test('a failed send renders the amber bubble with Újra + Szerkesztés', async () => {
+    failStream()
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    const input = screen.getByPlaceholderText('Mondj valamit…')
+    fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+
+    await screen.findByText('Nem sikerült válaszolni — próbáld újra.')
+    expect(screen.getByText('Az üzeneted nem veszett el.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Újra' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Szerkesztés' })).toBeInTheDocument()
+  })
+
+  test('Szerkesztés hands the failed text back to the composer and clears the bubble', async () => {
+    failStream()
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    const input = screen.getByPlaceholderText('Mondj valamit…')
+    fireEvent.change(input, { target: { value: 'Elgépeelt üzenet' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await screen.findByRole('button', { name: 'Szerkesztés' })
+
+    fireEvent.click(screen.getByRole('button', { name: 'Szerkesztés' }))
+    expect(screen.getByPlaceholderText('Mondj valamit…')).toHaveValue('Elgépeelt üzenet')
+    expect(screen.queryByRole('button', { name: 'Újra' })).not.toBeInTheDocument()
+  })
+
+  test('Újra re-sends the same turn and a now-healthy stream completes it', async () => {
+    failStream()
+    renderPage()
+    await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)
+    const input = screen.getByPlaceholderText('Mondj valamit…')
+    fireEvent.change(input, { target: { value: 'Fáradt vagyok' } })
+    fireEvent.keyDown(input, { key: 'Enter' })
+    await screen.findByRole('button', { name: 'Újra' })
+
+    server.resetHandlers() // back to the healthy module handlers
+    fireEvent.click(screen.getByRole('button', { name: 'Újra' }))
+
+    await waitFor(() => expect(screen.getByText(cannedReply('Fáradt vagyok'))).toBeInTheDocument())
+    expect(screen.queryByRole('button', { name: 'Újra' })).not.toBeInTheDocument()
+    // replace, don't append: exactly one user bubble with the retried text
+    expect(screen.getAllByText('Fáradt vagyok')).toHaveLength(1)
   })
 })

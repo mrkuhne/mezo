@@ -264,4 +264,59 @@ describe('NotificationsPage', () => {
       screen.getByText('Eseményvezérelt — nem szerepel a napi terhelés előnézetben.'),
     ).toBeInTheDocument()
   })
+
+  // ── Mozaik re-face (mezo-d20.6.8): washed tiles, clay icons, rise stagger ──────────────────
+  it('renders category rows as washed tiles carrying the category clay icon (gym lead-chip row)', async () => {
+    hooks.usePushSubscription.mockReturnValue(push({ enabled: true, permission: 'granted' }))
+    renderPage()
+    const gymRow = (await screen.findByRole('switch', { name: 'Edzés előtt' })).closest('.ntf-catrow')
+    expect(gymRow).not.toBeNull()
+    expect(gymRow).toHaveClass('rise')
+    // the gym-only lead chip sits inside the same washed row, not a plain list row.
+    expect(gymRow?.querySelector('.ntf-leadch')).toHaveTextContent(/−\d+ perc/)
+    expect(gymRow?.querySelector('svg')).not.toBeNull()
+  })
+
+  it('a disabled category row wears the .off dimming class', async () => {
+    hooks.usePushSubscription.mockReturnValue(push({ enabled: true, permission: 'granted' }))
+    renderPage()
+    // "Déli jegyzet" (midday) defaults OFF (see the toggle test above).
+    const row = (await screen.findByRole('switch', { name: 'Déli jegyzet' })).closest('.ntf-catrow')
+    expect(row).toHaveClass('off')
+  })
+
+  it('the master push row is a washed tile with a clay icon, not a plain card', () => {
+    hooks.usePushSubscription.mockReturnValue(push({ enabled: false, permission: 'default' }))
+    renderPage()
+    const master = screen.getByRole('switch', { name: 'Push értesítések' }).closest('.ntf-masterrow')
+    expect(master).not.toBeNull()
+    expect(master?.querySelector('svg')).not.toBeNull()
+  })
+
+  // ── mezo-d20.11 (1:1 fidelity audit) ──────────────────────────────────────────────────────
+  // ADR 0032: the page had NO header at all — no title, no way back. The prototype
+  // (#page-ertesites) gives it the `‹ Értesítések` chip and a hero stating today's planned
+  // volume. mezo-nol0: the noun moved to the feed page, so this settings page's own hero/back
+  // chip now read `Értesítés-beállítások` / `‹ Értesítések` instead of the shared `Értesítések`.
+  it('wears the prototype header and hero, with a way back', async () => {
+    hooks.usePushSubscription.mockReturnValue(push({ enabled: true, permission: 'granted' }))
+    const { container } = renderPage()
+    expect(await screen.findByText('Értesítés-beállítások')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
+    expect(screen.getByText('‹ Értesítések')).toBeInTheDocument()
+    expect(container.querySelector('.mz-bignum')).not.toBeNull()
+  })
+
+  // The install gate REPLACES the page — before mezo-d20.11 that left the user on a screen with
+  // no title and no way back at all. The gate keeps the scaffold, but no hero bignum: on a
+  // platform where nothing can fire, a planned-volume number would be a number about nothing.
+  it('the install gate keeps the header and the way back, without a volume number', () => {
+    hooks.usePushSubscription.mockReturnValue(push({ supported: false, standalone: false }))
+    const { container } = renderPage()
+    expect(screen.getByText('Értesítés-beállítások')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Vissza' })).toBeInTheDocument()
+    expect(container.querySelector('.mz-bignum')).toBeNull()
+    // …and it is no longer the only Én page with zero entrance choreography (audit group A).
+    expect(container.querySelector('.mz-play .rise')).not.toBeNull()
+  })
 })

@@ -6,7 +6,7 @@ import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphTraversalQuery.NeighborEdge;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.util.ArrayList;
-import java.util.LinkedHashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -20,9 +20,10 @@ import org.springframework.stereotype.Service;
  * strength" lines under {@code mezo.companion.graph.render-max-tokens}. Seeds come from
  * {@link GraphTraversalService#seedsFor} (deterministic), the neighborhood from the recursive
  * CTE with {@code graph.maxHops}/{@code graph.topK}. Every node that appears in a rendered line
- * becomes a {@code GraphNode} ref (id = node id) so the answer's provenance shows what the graph
- * contributed. Present only when this bean exists, i.e. the graph switch is on — {@code
- * ChatService} holds it through an {@code ObjectProvider}.
+ * becomes a {@code GraphNode} ref (id = node id, label = the node's title, mezo-b3pp.33) so the
+ * answer's provenance shows what the graph contributed — capped at {@code graph.maxRefs} in
+ * first-appearance order. Present only when this bean exists, i.e. the graph switch is on —
+ * {@code ChatService} holds it through an {@code ObjectProvider}.
  *
  * <p>Failure honesty (IDENT-3): never throws — any failure logs a warn and yields
  * {@link GraphContext#EMPTY}; the caller's {@code degraded} flag is NOT touched.
@@ -39,7 +40,7 @@ public class GraphPromptAssembler {
     public static final String CONNECTIONS_HEADER = "\n\n[Összefüggések] (a tudásgráfból, a mostani témához"
             + " kapcsolódó szálak — nyersanyag, nem felolvasandó lista; ok → viszony → okozat · erősség):\n";
 
-    /** Ref kind on the wire — the FE chip is generic ({@code [GraphNode] <id>}). */
+    /** Ref kind on the wire — the FE chip shows the label when present, else falls back to the id. */
     public static final String REF_KIND = "GraphNode";
 
     /** What one turn's graph lookup produced: the rendered block ("" when nothing) + GraphNode refs. */
@@ -71,13 +72,21 @@ public class GraphPromptAssembler {
             if (rendered.rendered().isEmpty()) {
                 return GraphContext.EMPTY;
             }
-            // one ref per node, first-appearance order — the same node may sit on several lines
-            LinkedHashSet<RefsEnvelope.Ref> refs = new LinkedHashSet<>();
+            // one ref per node, first-appearance order — the same node may sit on several lines.
+            // Capped (mezo-b3pp.33): topK edges yield up to 2×topK node refs against the shared
+            // tools.max-refs-per-turn budget, and graph refs are added LAST, so an uncapped graph
+            // turn fills the whole footer with graph chips and truncates mid-list.
+            LinkedHashMap<UUID, RefsEnvelope.Ref> byNode = new LinkedHashMap<>();
             for (NeighborEdge edge : rendered.rendered()) {
-                refs.add(new RefsEnvelope.Ref(REF_KIND, edge.fromNodeId().toString()));
-                refs.add(new RefsEnvelope.Ref(REF_KIND, edge.toNodeId().toString()));
+                byNode.putIfAbsent(edge.fromNodeId(),
+                        new RefsEnvelope.Ref(REF_KIND, edge.fromNodeId().toString(), edge.fromTitle()));
+                byNode.putIfAbsent(edge.toNodeId(),
+                        new RefsEnvelope.Ref(REF_KIND, edge.toNodeId().toString(), edge.toTitle()));
             }
-            return new GraphContext(rendered.block(), List.copyOf(refs));
+            List<RefsEnvelope.Ref> refs = byNode.values().stream()
+                    .limit(graph.maxRefs())
+                    .toList();
+            return new GraphContext(rendered.block(), refs);
         } catch (RuntimeException e) {
             log.warn("Graph context skipped for user {} — the turn continues without [Összefüggések]", userId, e);
             return GraphContext.EMPTY;

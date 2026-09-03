@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.api.dto.MessageResponse;
 import io.mrkuhne.mezo.api.dto.SendMessageRequest;
+import io.mrkuhne.mezo.feature.companion.CharacterPromptSource;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm.Role;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm.Turn;
@@ -84,6 +85,10 @@ public class ChatService {
             Konkrét számot, dátumot vagy múltbeli adatot viszont CSAK akkor mondj, ha a kontextusból, \
             egy eszközhívásból vagy Daniel üzenetéből származik. Adatot kitalálni akkor is tilos, ha megjelölöd.
             Ha valamit nem tudsz, mondd ki őszintén, hogy nem tudod.
+            Az [Emberek] sorai Daniel emberi köre: ha egy nevet említ, onnan tudod, ki ő (kapcsolat) \
+            és hogyan áll most (e heti említés, hangulat-irány). Ennyit mondhatsz róluk, mást nem: \
+            harmadik félről eseményt, tulajdonságot, véleményt nem találsz ki. Magadtól ne hozd szóba \
+            őket — csak ha Daniel említi, vagy a téma egyértelműen róluk szól.
 
             [Példa a hangnemre]
             Kérdés: „hogy állok a súllyal?"
@@ -167,6 +172,8 @@ public class ChatService {
     private final ObjectProvider<GraphPromptAssembler> graphPromptAssembler;
     /** W4.3 — the [Rólad tanultam] block (mezo-b3pp.17); absent (null) when the graph switch is off. */
     private final ObjectProvider<ProfilePromptAssembler> profilePromptAssembler;
+    /** mezo-1gim.8 — the [Karakter] dossier block; absent (null) unless CHARACTER_SWITCH + COMPANION_SWITCH are both on. */
+    private final ObjectProvider<CharacterPromptSource> characterPromptSource;
     /** mezo-p2tr — anchored conversations' [Heti adatok] block; "" for a plain conversation. */
     private final WeekContextRenderer weekContextRenderer;
     private final CompanionLlm companionLlm;
@@ -277,7 +284,7 @@ public class ChatService {
         }
         // W3.1/W2.4: ambient refs (Memory, then GraphNode) join the audit AFTER the LLM round — tool
         // refs are the answer's own provenance and win the per-turn ref cap.
-        ambientRefs(recalled, graph).forEach(ref -> audit.addRef(ref.kind(), ref.id()));
+        ambientRefs(recalled, graph).forEach(ref -> audit.addRef(ref.kind(), ref.id(), ref.label()));
         // W3.1b: the answer also DISCLOSES what it was given — the same items, on the row
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
                 answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded,
@@ -323,10 +330,11 @@ public class ChatService {
     /**
      * The canonical system prompt: voice → snapshot (V0.3) → [Heti adatok] anchored-conversation
      * block (mezo-p2tr, "" for a plain conversation) → top-N facts (V1.1) → fresh pattern-facts
-     * acknowledgment (V3.3) → [Rólad tanultam] pragmatic profile (W4.3, "" when the profile is
-     * archived/absent) → [Emlékek] ambient recall (W3.1) → [Összefüggések] graph context (W2.4, ""
-     * when the graph switch is off or nothing matched) → TONE_REMINDER (mezo-q71s, always last).
-     * The history travels as real prior messages, not a transcript in here.
+     * acknowledgment (V3.3) → [Karakter] dossier block (mezo-1gim.8, "" unless both the character
+     * and companion switches are on) → [Rólad tanultam] pragmatic profile (W4.3, "" when the
+     * profile is archived/absent) → [Emlékek] ambient recall (W3.1) → [Összefüggések] graph
+     * context (W2.4, "" when the graph switch is off or nothing matched) → TONE_REMINDER
+     * (mezo-q71s, always last). The history travels as real prior messages, not a transcript here.
      */
     private String assembleSystemPrompt(UUID userId, LocalDate today, String memoriesBlock, String graphBlock,
             String contextKind, LocalDate contextDate) {
@@ -335,6 +343,7 @@ public class ChatService {
                 + anchoredBlock(userId, contextKind, contextDate)
                 + knowledgeFactService.renderPromptBlock(userId)
                 + knowledgeFactService.renderNewPatternFactsBlock(userId)
+                + characterBlock(userId)
                 + profileBlock(userId)
                 + memoriesBlock
                 + graphBlock
@@ -356,6 +365,13 @@ public class ChatService {
     private String profileBlock(UUID userId) {
         ProfilePromptAssembler assembler = profilePromptAssembler.getIfAvailable();
         return assembler == null ? "" : assembler.render(userId);
+    }
+
+    /** mezo-1gim.8: the [Karakter] dossier's contribution — "" when the bean is absent (either
+     *  switch off) or the dossier has nothing worth injecting. */
+    private String characterBlock(UUID userId) {
+        CharacterPromptSource source = characterPromptSource.getIfAvailable();
+        return source == null ? "" : source.render(userId);
     }
 
     /** Memory refs first (W3.1), GraphNode refs after (W2.4) — one list so the stream path stays unchanged. */

@@ -65,8 +65,71 @@ class AnchorResolverInterventionIT extends AbstractIntegrationTest {
         String idFragment = card.getId().toString().substring(0, 8);
         assertThat(event.minuteOfDay()).isEqualTo(14 * 60 + 37);
         assertThat(event.dedupSuffix()).isEqualTo("14:37:" + idFragment);
-        assertThat(event.url()).isEqualTo("/today?n=" + idFragment);
+        assertThat(event.url()).isEqualTo("/nap/uzenetek?n=" + card.getId() + "&d=" + WEDNESDAY);
         assertThat(event.body()).isEqualTo(text);
+    }
+
+    @Test
+    void testInterventionEvent_shouldDeepLinkToTheThreadPage_whenACardPushes() {
+        UUID owner = ownerId();
+        companionMessagePopulator.createIntervention(owner, WEDNESDAY, "stress_reset",
+                "Több napja magas a stressz-szinted.", generatedAt(WEDNESDAY, 14, 37));
+
+        AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
+
+        assertThat(interventionEvent(anchors).url())
+                .as("the card lives on the thread page, not the legacy /today path that "
+                        + "router.tsx redirects to the Nap hub")
+                .startsWith("/nap/uzenetek")
+                .doesNotStartWith("/today");
+    }
+
+    @Test
+    void testInterventionEvent_shouldCarryTheFullCardId_whenACardPushes() {
+        UUID owner = ownerId();
+        var card = companionMessagePopulator.createIntervention(owner, WEDNESDAY, "stress_reset",
+                "Több napja magas a stressz-szinted.", generatedAt(WEDNESDAY, 14, 37));
+
+        AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
+
+        String fullId = card.getId().toString();
+        assertThat(interventionEvent(anchors).url())
+                .as("the thread page must be able to match the card exactly, so the full uuid "
+                        + "goes in the url — not the 8-char dedup fragment")
+                .contains("n=" + fullId)
+                .doesNotContain("n=" + fullId.substring(0, 8) + "&")
+                .doesNotEndWith("n=" + fullId.substring(0, 8));
+    }
+
+    @Test
+    void testInterventionEvent_shouldCarryTheCardsOwnDate_whenTheCardIsDeferredAcrossMidnight() {
+        UUID owner = ownerId();
+        companionMessagePopulator.createIntervention(owner, TUESDAY, "stress_reset",
+                "Több napja magas a stressz-szinted.", generatedAt(TUESDAY, 23, 10));
+
+        AnchorSet todayAnchors = anchorResolver.resolve(owner, WEDNESDAY);
+
+        assertThat(interventionEvent(todayAnchors).url())
+                .as("the card's own message_date (TUESDAY, the generation day whose feed holds "
+                        + "the card) must name the url's d= param, not WEDNESDAY (the push day)")
+                .contains("&d=" + TUESDAY)
+                .doesNotContain("&d=" + WEDNESDAY);
+    }
+
+    @Test
+    void testInterventionEvent_shouldKeepTheDedupKeyUnchanged_whenTheUrlGainsTheFullId() {
+        UUID owner = ownerId();
+        var card = companionMessagePopulator.createIntervention(owner, WEDNESDAY, "stress_reset",
+                "Több napja magas a stressz-szinted.", generatedAt(WEDNESDAY, 14, 37));
+
+        AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
+
+        String idFragment = card.getId().toString().substring(0, 8);
+        assertThat(interventionEvent(anchors).dedupSuffix())
+                .as("push_log's day-scoped dedup key must stay hhmm + the 8-char fragment even "
+                        + "though the url now carries the full id, or already-delivered pushes "
+                        + "could be re-sent")
+                .isEqualTo("14:37:" + idFragment);
     }
 
     @Test

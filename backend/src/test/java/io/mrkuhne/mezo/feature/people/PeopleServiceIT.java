@@ -3,14 +3,19 @@ package io.mrkuhne.mezo.feature.people;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.mrkuhne.mezo.api.dto.CreatePersonRequest;
 import io.mrkuhne.mezo.api.dto.LogMentionRequest;
 import io.mrkuhne.mezo.api.dto.MentionResponse;
 import io.mrkuhne.mezo.api.dto.PeopleResponse;
+import io.mrkuhne.mezo.api.dto.PersonDecisionRequest;
 import io.mrkuhne.mezo.api.dto.PersonResponse;
+import io.mrkuhne.mezo.api.dto.UpdatePersonRequest;
 import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
 import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
 import io.mrkuhne.mezo.feature.people.service.PeopleService;
+import io.mrkuhne.mezo.feature.people.service.PersonDeletedEvent;
+import io.mrkuhne.mezo.feature.people.service.PersonSavedEvent;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.MentionPopulator;
 import io.mrkuhne.mezo.support.populator.PersonPopulator;
@@ -22,9 +27,19 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.annotation.Transactional;
 
+/**
+ * The event-publication tests below pin the mezo-06o0.4 contract — that every people write
+ * path publishes {@link PersonSavedEvent}/{@link PersonDeletedEvent} exactly once. Service-level
+ * on purpose, the {@code RitualReflectionEventIT} idiom: {@code ApplicationEvents} only records
+ * what is published on the TEST's own thread, and {@code PeopleContractIT} drives Tomcat worker
+ * threads via {@code TestRestTemplate}, so the publication would go unseen there.
+ */
 @Transactional
+@RecordApplicationEvents
 class PeopleServiceIT extends AbstractIntegrationTest {
 
     @Autowired private PeopleService peopleService;
@@ -33,6 +48,7 @@ class PeopleServiceIT extends AbstractIntegrationTest {
     @Autowired private UserPopulator userPopulator;
     @Autowired private MentionRepository mentionRepository;
     @Autowired private JdbcTemplate jdbcTemplate;
+    @Autowired private ApplicationEvents events;
 
     @Test
     void testGetBootstrap_shouldComputeMentionStatsAndOrderByCountDesc_whenMentionsExist() {
@@ -80,7 +96,7 @@ class PeopleServiceIT extends AbstractIntegrationTest {
         PersonEntity petra = personPopulator.createPerson(owner, "Petra");
 
         MentionResponse res = peopleService.logMention(owner, petra.getId(),
-            new LogMentionRequest("mixed", "Hosszú beszélgetés."));
+            new LogMentionRequest("mixed", "Hosszú beszélgetés.", null));
 
         assertThat(res.getPersonId()).isEqualTo(petra.getId());
         assertThat(res.getPersonName()).isEqualTo("Petra");
@@ -98,10 +114,10 @@ class PeopleServiceIT extends AbstractIntegrationTest {
         PersonEntity theirs = personPopulator.createPerson(ownerB, "Másé");
 
         assertThatThrownBy(() -> peopleService.logMention(ownerA, theirs.getId(),
-            new LogMentionRequest("positive", null)))
+            new LogMentionRequest("positive", null, null)))
             .isInstanceOf(SystemRuntimeErrorException.class);
         assertThatThrownBy(() -> peopleService.logMention(ownerA, UUID.randomUUID(),
-            new LogMentionRequest("positive", null)))
+            new LogMentionRequest("positive", null, null)))
             .isInstanceOf(SystemRuntimeErrorException.class);
     }
 
@@ -121,5 +137,87 @@ class PeopleServiceIT extends AbstractIntegrationTest {
         Integer physical = jdbcTemplate.queryForObject(
             "select count(*) from mention where id = ?", Integer.class, m.getId());
         assertThat(physical).isEqualTo(1);
+    }
+
+    @Test
+    void testCreatePerson_shouldPublishPersonSavedEvent() {
+        UUID owner = userPopulator.createUser("owner-evt-create@test.hu").getId();
+        CreatePersonRequest req = new CreatePersonRequest();
+        req.setName("Ádám");
+        req.setRelationship(CreatePersonRequest.RelationshipEnum.FRIEND);
+        req.setRelationshipHu("Barát");
+
+        PersonResponse created = peopleService.createPerson(owner, req);
+
+        assertThat(events.stream(PersonSavedEvent.class)).singleElement()
+            .satisfies(e -> {
+                assertThat(e.userId()).isEqualTo(owner);
+                assertThat(e.personId()).isEqualTo(created.getId());
+            });
+        assertThat(events.stream(PersonDeletedEvent.class)).isEmpty();
+    }
+
+    @Test
+    void testUpdatePerson_shouldPublishPersonSavedEvent() {
+        UUID owner = userPopulator.createUser("owner-evt-update@test.hu").getId();
+        PersonEntity p = personPopulator.createPerson(owner, "Réka", "colleague", "neutral");
+
+        UpdatePersonRequest req = UpdatePersonRequest.builder()
+            .name("Réka B.")
+            .relationship(UpdatePersonRequest.RelationshipEnum.COLLEAGUE)
+            .relationshipHu("Kolléga · Q3")
+            .build();
+        peopleService.updatePerson(owner, p.getId(), req);
+
+        assertThat(events.stream(PersonSavedEvent.class)).singleElement()
+            .satisfies(e -> {
+                assertThat(e.userId()).isEqualTo(owner);
+                assertThat(e.personId()).isEqualTo(p.getId());
+            });
+    }
+
+    @Test
+    void testDeletePerson_shouldPublishPersonDeletedEvent() {
+        UUID owner = userPopulator.createUser("owner-evt-delete@test.hu").getId();
+        PersonEntity p = personPopulator.createPerson(owner, "Törölt");
+
+        peopleService.deletePerson(owner, p.getId());
+
+        assertThat(events.stream(PersonDeletedEvent.class)).singleElement()
+            .satisfies(e -> {
+                assertThat(e.userId()).isEqualTo(owner);
+                assertThat(e.personId()).isEqualTo(p.getId());
+            });
+        assertThat(events.stream(PersonSavedEvent.class)).isEmpty();
+    }
+
+    @Test
+    void testDecidePerson_shouldPublishPersonSavedEvent_whenAccepted() {
+        UUID owner = userPopulator.createUser("owner-evt-accept@test.hu").getId();
+        PersonEntity candidate = personPopulator.createCandidate(owner, "Jelölt", "Kivonatolva egy naplóból.");
+
+        peopleService.decidePerson(owner, candidate.getId(), new PersonDecisionRequest("accept"));
+
+        assertThat(events.stream(PersonSavedEvent.class)).singleElement()
+            .satisfies(e -> {
+                assertThat(e.userId()).isEqualTo(owner);
+                assertThat(e.personId()).isEqualTo(candidate.getId());
+            });
+        assertThat(events.stream(PersonDeletedEvent.class)).isEmpty();
+    }
+
+    @Test
+    void testDecidePerson_shouldPublishPersonDeletedEvent_whenRejected() {
+        UUID owner = userPopulator.createUser("owner-evt-reject@test.hu").getId();
+        PersonEntity candidate = personPopulator.createCandidate(owner, "Elvetett", "Kivonatolva egy naplóból.");
+
+        peopleService.decidePerson(owner, candidate.getId(), new PersonDecisionRequest("reject"));
+
+        assertThat(events.stream(PersonDeletedEvent.class)).singleElement()
+            .satisfies(e -> {
+                assertThat(e.userId()).isEqualTo(owner);
+                assertThat(e.personId()).isEqualTo(candidate.getId());
+            });
+        assertThat(events.stream(PersonSavedEvent.class)).isEmpty();
     }
 }

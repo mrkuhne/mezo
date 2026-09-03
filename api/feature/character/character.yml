@@ -3,8 +3,8 @@ info: { title: '', version: '' }
 tags:
   - name: Character
     description: >-
-      Karakter dossier (mezo-1gim) — the synthesized user profile: 7 CORE dimensions +
-      AI-opened chapters, confidence-carrying claims, expert observations, and persisted
+      Karakter dossier (mezo-1gim) — the synthesized user profile: 7 CORE dimensions + 1 META
+      (the companion's self-audit) + AI-opened chapters, confidence-carrying claims, expert observations, and persisted
       konzílium transcripts. Slice 1 ships reads over an honestly empty dossier.
 paths:
   /api/character:
@@ -49,6 +49,22 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/character/experts:
+    get:
+      tags: [Character]
+      operationId: getCharacterExperts
+      summary: The profiling team catalog — 7 domain experts + Szkeptikus + Mezo, in fixed display order (Csapat page; never 404 while the switch is on)
+      responses:
+        '200':
+          description: The 9 personas, catalog order
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CharacterExpertsResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/character/feed:
     get:
       tags: [Character]
@@ -72,6 +88,29 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/character/bootstrap:
+    post:
+      tags: [Character]
+      operationId: bootstrapCharacter
+      summary: One-time deep read over the whole existing history that stands up the dossier
+      responses:
+        '200':
+          description: The bootstrap konzílium that just ran
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CharacterConferenceResponse' }
+        '204':
+          description: No history to read — nothing was generated (the honest empty state)
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '409':
+          description: A bootstrap konzílium already exists for this user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/character/conference:
     get:
       tags: [Character]
@@ -87,6 +126,110 @@ paths:
                 items: { $ref: '#/components/schemas/CharacterConferenceSummary' }
         '401':
           description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  '/api/character/claim/{claimId}/feedback':
+    post:
+      tags: [Character]
+      operationId: submitCharacterClaimFeedback
+      summary: Daniel's answer to one claim — talál / nem igaz / pontosítom (spec §7)
+      parameters:
+        - name: claimId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CharacterClaimFeedbackRequest' }
+      responses:
+        '200':
+          description: The claim after the feedback was applied
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CharacterClaimDto' }
+        '400':
+          description: PONTOSITOM without text, or text sent with a kind that takes none
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: No such claim for this user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '409':
+          description: The claim is already retired — nothing to answer
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/character/runs:
+    get:
+      tags: [Character]
+      operationId: getCharacterRuns
+      summary: >-
+        The run timeline over an inclusive day window (Gépterem — Karakter S9, mezo-1gim.14):
+        one row per pipeline execution that actually ran, quiet nights included; a day with no
+        row means the pipeline never ran for it (honest "nincs adat" — never fabricated)
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema: { type: string, format: date }
+        - name: to
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Run summaries, newest day first (possibly empty — never a 404)
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/CharacterRunSummary' }
+        '400':
+          description: to before from, or the span exceeds 62 days
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/character/run/{runId}:
+    get:
+      tags: [Character]
+      operationId: getCharacterRun
+      summary: >-
+        One run's full detail: its summary plus the observations it resolved from — by
+        (owner, day) for a NIGHTLY row, by the conference it fed for a WEEKLY/MONTHLY/BOOTSTRAP row
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: The run
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CharacterRunResponse' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: No such run for this user
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
@@ -136,13 +279,22 @@ components:
               kind: { type: string }
               id: { type: string, nullable: true }
               label: { type: string }
+    CharacterClaimFeedbackRequest:
+      type: object
+      required: [kind]
+      properties:
+        kind: { type: string, enum: [TALAL, NEM_IGAZ, PONTOSITOM] }
+        text:
+          type: string
+          maxLength: 500
+          description: Required for PONTOSITOM (the correction), forbidden otherwise
     CharacterDimensionSummary:
       type: object
       required: [key, title, kind, maturity, portrait, topClaims]
       properties:
         key: { type: string }
         title: { type: string }
-        kind: { type: string, enum: [CORE, CHAPTER] }
+        kind: { type: string, enum: [CORE, CHAPTER, META] }
         expertKey: { type: string, nullable: true }
         maturity: { type: integer, description: 0–100; 0 = "tanulom" }
         portrait: { type: string, description: empty string until the first conference writes it }
@@ -156,6 +308,26 @@ components:
         dimensions:
           type: array
           items: { $ref: '#/components/schemas/CharacterDimensionSummary' }
+    CharacterExpertDto:
+      type: object
+      required: [key, displayName, role, voiceLine, watch, kind]
+      properties:
+        key: { type: string }
+        displayName: { type: string }
+        role: { type: string }
+        voiceLine: { type: string, description: "the persona's short voice/manner line (Csapat card)" }
+        watch:
+          type: array
+          items: { type: string }
+        dimensionKey: { type: string, nullable: true, description: "null for mezo; for szkeptikus the META dimension key (self-audit); the owned CORE key for experts" }
+        kind: { type: string, enum: [EXPERT, SKEPTIC, CHAIR] }
+    CharacterExpertsResponse:
+      type: object
+      required: [experts]
+      properties:
+        experts:
+          type: array
+          items: { $ref: '#/components/schemas/CharacterExpertDto' }
     CharacterPortraitRevisionDto:
       type: object
       required: [version, portrait, createdAt]
@@ -169,7 +341,7 @@ components:
       properties:
         key: { type: string }
         title: { type: string }
-        kind: { type: string, enum: [CORE, CHAPTER] }
+        kind: { type: string, enum: [CORE, CHAPTER, META] }
         expertKey: { type: string, nullable: true }
         maturity: { type: integer }
         portrait: { type: string }
@@ -227,3 +399,66 @@ components:
               kind: { type: string }
               dimensionKey: { type: string, nullable: true }
               summary: { type: string }
+    CharacterRunSummary:
+      type: object
+      required: [id, kind, day, observationCount, callCount, detectorKeys, expertKeys]
+      properties:
+        id: { type: string, format: uuid }
+        kind: { type: string, enum: [NIGHTLY, WEEKLY, MONTHLY, BOOTSTRAP] }
+        day:
+          type: string
+          format: date
+          description: >-
+            The anchor day — the observed day for NIGHTLY, week_start for WEEKLY, the month's
+            first day for MONTHLY, the run date for BOOTSTRAP
+        observationCount: { type: integer }
+        callCount:
+          type: integer
+          description: >-
+            Honest only for NIGHTLY (one call per fired expert); always 0 for WEEKLY/MONTHLY/
+            BOOTSTRAP rows — no reliable call count is derivable there, so the FE should omit or
+            relabel this cell for non-NIGHTLY kinds. The AI-napló is the call-level truth.
+        detectorKeys:
+          type: array
+          items: { type: string }
+        expertKeys:
+          type: array
+          items: { type: string }
+        conferenceId:
+          type: string
+          format: uuid
+          nullable: true
+          description: Soft ref to the conference this run produced — null for NIGHTLY
+    CharacterRunObservationSignal:
+      type: object
+      required: [detectorKey, summary, refCount]
+      properties:
+        detectorKey: { type: string }
+        summary: { type: string }
+        refCount:
+          type: integer
+          description: >-
+            Count of raw evidence refs the signal is grounded in ("N forrás-hivatkozás", v4.1) —
+            the raw ref ids stay backend-side, never served to the client
+    CharacterRunObservation:
+      type: object
+      required: [id, expertKey, dimensionKeys, text, salience, signals]
+      properties:
+        id: { type: string, format: uuid }
+        expertKey: { type: string }
+        dimensionKeys:
+          type: array
+          items: { type: string }
+        text: { type: string }
+        salience: { type: integer }
+        signals:
+          type: array
+          items: { $ref: '#/components/schemas/CharacterRunObservationSignal' }
+    CharacterRunResponse:
+      type: object
+      required: [summary, observations]
+      properties:
+        summary: { $ref: '#/components/schemas/CharacterRunSummary' }
+        observations:
+          type: array
+          items: { $ref: '#/components/schemas/CharacterRunObservation' }

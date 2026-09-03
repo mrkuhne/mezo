@@ -28,4 +28,10 @@ public interface WeightLogRepository extends OwnedRepository<WeightLogEntity> {
      *  the week — compared against the review's {@code generatedAt}, not its own {@code date}. */
     Optional<WeightLogEntity> findFirstByCreatedByAndDeletedFalseAndDateBetweenOrderByCreatedAtDesc(
             UUID createdBy, LocalDate from, LocalDate to);
+
+    /** Every weigh-in inside a closed day window — the Fuel-week weight average (mezo-d20.7.2)
+     *  folds these to one value per day (the day's latest) before averaging. Ordered so the
+     *  LAST row of a given date is that date's latest entry. */
+    List<WeightLogEntity> findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscCreatedAtAsc(
+            UUID createdBy, LocalDate from, LocalDate to);
 }

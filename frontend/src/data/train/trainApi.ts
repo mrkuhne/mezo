@@ -11,6 +11,8 @@ export type MesoDayInput = components['schemas']['MesoDayInput']
 export type MesoTemplateResponse = components['schemas']['MesoTemplateResponse']
 export type MesoTemplateUpsertRequest = components['schemas']['MesoTemplateUpsertRequest']
 export type MesoTemplateStartRequest = components['schemas']['MesoTemplateStartRequest']
+export type MesoPlanGenerateRequest = components['schemas']['MesoPlanGenerateRequest']
+export type MesoPlanGenerateResponse = components['schemas']['MesoPlanGenerateResponse']
 export type MesoRerunResponse = components['schemas']['MesoRerunResponse']
 export type MusclePrioritiesUpdateRequest = components['schemas']['MusclePrioritiesUpdateRequest']
 export type WorkoutTodayResponse = components['schemas']['WorkoutTodayResponse']
@@ -19,6 +21,7 @@ export type WorkoutStartRequest = components['schemas']['WorkoutStartRequest']
 export type SetLogRequest = components['schemas']['SetLogRequest']
 export type SetUpdateRequest = components['schemas']['SetUpdateRequest']
 export type WorkoutSkipRequest = components['schemas']['WorkoutSkipRequest']
+export type WorkoutNoteRequest = components['schemas']['WorkoutNoteRequest']
 export type ExerciseSetResponse = components['schemas']['ExerciseSetResponse']
 export type PrescribedSet = components['schemas']['PrescribedSet']
 export type WorkoutFeedbackInput = components['schemas']['WorkoutFeedbackInput']
@@ -61,6 +64,10 @@ export const trainApi = {
     apiFetch<MesoTemplateResponse[]>('/api/train/meso-templates'),
   createMesoTemplate: (body: MesoTemplateUpsertRequest): Promise<MesoTemplateResponse> =>
     apiFetch<MesoTemplateResponse>('/api/train/meso-templates', { method: 'POST', body: JSON.stringify(body) }),
+  // Wizard redesign (mezo-d20.14): a generated proposal, not persisted — the wizard saves it
+  // via createMesoTemplate once the user accepts/edits it.
+  generateMesoPlan: (body: MesoPlanGenerateRequest): Promise<MesoPlanGenerateResponse> =>
+    apiFetch<MesoPlanGenerateResponse>('/api/train/meso-plans/generate', { method: 'POST', body: JSON.stringify(body) }),
   updateMesoTemplate: (id: string, body: MesoTemplateUpsertRequest): Promise<MesoTemplateResponse> =>
     apiFetch<MesoTemplateResponse>(`/api/train/meso-templates/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   deleteMesoTemplate: (id: string): Promise<void> =>
@@ -137,8 +144,18 @@ export const trainApi = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
-  finishWorkout: (workoutId: string): Promise<WorkoutInstanceResponse> =>
-    apiFetch<WorkoutInstanceResponse>(`/api/train/workouts/${workoutId}/finish`, { method: 'POST' }),
+  /** The optional body carries the closing note (mezo-d20.8.2.2); fill-if-empty server-side. */
+  finishWorkout: (workoutId: string, note?: string | null): Promise<WorkoutInstanceResponse> =>
+    apiFetch<WorkoutInstanceResponse>(`/api/train/workouts/${workoutId}/finish`, {
+      method: 'POST',
+      ...(note ? { body: JSON.stringify({ note } satisfies WorkoutNoteRequest) } : null),
+    }),
+  /** Overwrite or clear the workout's closing note — the review page's write path. */
+  saveWorkoutNote: (workoutId: string, note: string | null): Promise<void> =>
+    apiFetch<void>(`/api/train/workouts/${workoutId}/note`, {
+      method: 'PUT',
+      body: JSON.stringify({ note } satisfies WorkoutNoteRequest),
+    }),
   logSportSession: (body: SportSessionCreateRequest): Promise<SportSessionResponse> =>
     apiFetch<SportSessionResponse>('/api/train/sport-sessions', { method: 'POST', body: JSON.stringify(body) }),
   sportSchedule: (): Promise<SportScheduleSlotResponse[]> =>

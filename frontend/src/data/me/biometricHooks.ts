@@ -11,9 +11,10 @@ import { biometricProfile as mockBiometricProfile } from '@/data/me/goals'
 
 // Biometric profile read (G6, mezo-06n). The profile is a first-class Profile
 // card + the precondition for goal creation (the Task-7 hard gate). Real mode
-// queries ['biometricProfile'] → biometricProfileApi.get(); the endpoint 404s
-// when no profile exists yet, which is a normal "not set up" state (NOT an
-// error), so we catch the 404 and resolve to null. Any other status rethrows.
+// queries ['biometricProfile'] → biometricProfileApi.get(). "No profile yet" is
+// a normal "not set up" state, NOT an error, and reaches us in two shapes while
+// the backend/frontend images roll out separately (mezo-5cmq): 200 with all-null
+// fields (new) and 404 (old). Both resolve to null; any other status rethrows.
 // Mock mode returns a static complete profile so the card renders offline.
 // `isComplete` is the gate predicate: the three required fields are present.
 export function useBiometricProfile(): {
@@ -28,9 +29,14 @@ export function useBiometricProfile(): {
       ? async () => mockBiometricProfile
       : async (): Promise<BiometricProfileResponse | null> => {
           try {
-            return await biometricProfileApi.get()
+            const p = await biometricProfileApi.get()
+            // mezo-5cmq: "no profile yet" is now 200 with every field null (Jackson writes the
+            // nulls — the body is NOT `{}`). `birthDate` is mandatory on every real profile, so
+            // its absence is the honest emptiness probe. Same `null` as the 404 branch below.
+            return p.birthDate ? p : null
           } catch (err) {
-            // 404 = no profile yet → treat as "not set up", not an error.
+            // The pre-5cmq backend answered 404 here; still tolerated, because the two images do
+            // not switch at the same moment. Not an error either — just "not set up".
             if (err instanceof ApiError && err.status === 404) return null
             throw err
           }

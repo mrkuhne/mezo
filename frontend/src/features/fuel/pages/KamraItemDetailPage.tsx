@@ -1,25 +1,37 @@
 // ============================================================
-// Mezo · KamraItemDetailPage (Kamra — item detail PAGE)
-// The pantry-item detail is now a full route (/fuel/kamra/:id) instead of a
-// bottom-sheet drawer — this kills the old "drawer-in-drawer" problem: the
-// Szerkesztés editor (AddPantryItemSheet) opens cleanly OVER this page.
+// Mezo · KamraItemDetailPage (Kamra — item detail PAGE) — Mozaik 2.0 re-face
+// (mezo-d20.4.5, Kamra v2). Source of truth: docs/design_2.0/prototypes/
+// src/fuel-body.html #page-kitem + 2026-08-27-fuel-design-iterations.md §5.
 //
-// Layout (docs/design/kamra-detail-edit-v1.html · phone 2), chamfer chrome:
-//   back (‹) + eyebrow → source pill → big Antonio name → category · NOVA →
-//   Makrók (4 card cells) → Tápanyag (4 card cells) → Készlet · ár →
-//   actions (Logolás → opens LogMealSheet pre-filled, Szerkesztés, Törlés).
+// Anatomy: MozaikPage(tone="gold")/PageHead("‹ Kamra") → monogram km-head
+// (source badge + brand + category + NOVA) → food: tinted macro mcells +
+// honest Tápanyag ncells (null → "—", never a fabricated 0) → supp/stim/med:
+// tinted dose cell + italic protocol + a "💊 a stackben · {zóna} {idő}"
+// cross-link chip (reads today's live stack projection, useStackDay — the
+// same composition FuelStackPage draws from) → Ár row → "Receptekben" chips
+// cross-referencing Recipe.ingredients by pantryItemId (audit gap #5:
+// usedInRecipes was read from the contract but never surfaced anywhere) →
+// ＋ Logolás (food only) → two-tap Törlés ("biztos?" re-arm on the second
+// press) that live-updates the shared usePantry() cache — the list's hero/
+// stats/rows all read the same query, so deletion here reflects there with
+// no extra plumbing.
+//
+// The FACE changed; mutations/contracts (usePantryActions, the 'stash-'
+// backend-id strip, AddPantryItemSheet prefill, LogFlowPage prefill) are
+// untouched.
 // ============================================================
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { IngredientStock, PantryItem, PantryItemInput } from '@/data/types'
-import { usePantry, usePantryActions } from '@/data/hooks'
+import { usePantry, usePantryActions, useStackDay, useRecipes } from '@/data/hooks'
 import { buildKamraItems } from '@/features/fuel/logic/kamraItems'
 import { SHOW_PANTRY_STOCK } from '@/data/_client/flags'
 import { Icon } from '@/shared/ui/Icon'
+import { MozaikPage, PageHead, PageBody, MCells, type MCell } from '@/shared/ui/mozaik'
 import { SourceBadge } from '@/features/fuel/components/SourceBadge'
 import { NovaDot } from '@/features/fuel/components/NovaDot'
 import { AddPantryItemSheet } from '@/features/fuel/sheets/AddPantryItemSheet'
-import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
+import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
 
 // The full IngredientStock carries expires/lowExpiry; the bare { qty, unit }
 // stock shape does not. Narrow once instead of fighting `in`-narrowing in JSX.
@@ -61,51 +73,48 @@ export function inputFromItem(item: PantryItem): PantryItemInput {
   return base
 }
 
-// A single card nutrition/stock cell: label on top, value below.
-function Cell({ label, value, color }: { label: string; value: string; color?: string }) {
-  return (
-    <div className="card col" style={{ padding: 8, gap: 2, alignItems: 'flex-start' }}>
-      <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>{label}</span>
-      <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 15, fontWeight: 600, color: color ?? 'var(--text-primary)' }}>{value}</span>
-    </div>
-  )
-}
-
 function SectionHead({ children }: { children: React.ReactNode }) {
   return (
-    <div className="row" style={{ alignItems: 'center', gap: 8, margin: '18px 2px 9px' }}>
-      <span className="label-mono" style={{ fontSize: 9, letterSpacing: '0.14em', color: 'var(--text-tertiary)' }}>{children}</span>
+    <div className="row" style={{ alignItems: 'center', gap: 8, margin: '16px 2px 8px' }}>
+      <span className="mz-eyebrow" style={{ fontSize: 9 }}>{children}</span>
       <span style={{ flex: 1, height: 1, background: 'var(--border-subtle)' }} />
     </div>
   )
 }
 
-const grid4 = { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 6 } as const
-const grid2 = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 } as const
+// Honest nutrient cell — a missing value renders the DASH class, never a fabricated 0.
+function NCell({ label, value }: { label: string; value: number | null | undefined }) {
+  return (
+    <span>
+      {value == null ? <b className="dash">—</b> : <b>{value} g</b>}
+      <small>{label}</small>
+    </span>
+  )
+}
 
 export function KamraItemDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { ingredients, stash, categoryMeta } = usePantry()
   const { deleteItem } = usePantryActions()
+  const { recipes } = useRecipes()
+  const { slots } = useStackDay()
   const [editOpen, setEditOpen] = useState(false)
   const [logOpen, setLogOpen] = useState(false)
+  const [delArmed, setDelArmed] = useState(false)
 
   const item = buildKamraItems(ingredients, stash).find(it => it.id === id)
 
   if (!item) {
     return (
-      <div style={{ padding: '0 24px' }}>
-        <button
-          onClick={() => navigate('/fuel/kamra')}
-          className="rad-16"
-          style={{ width: 32, height: 32, background: 'var(--surface-1)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 18, lineHeight: 1, marginBottom: 14 }}
-          aria-label="Vissza"
-        >‹</button>
-        <div className="card" style={{ padding: 20, textAlign: 'center' }}>
-          <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs ilyen tétel.</span>
-        </div>
-      </div>
+      <MozaikPage tone="gold">
+        <PageHead onBack={() => navigate('/fuel/kamra')} label="‹ Kamra" />
+        <PageBody>
+          <div className="card" style={{ padding: 20, textAlign: 'center' }}>
+            <span className="text-tertiary" style={{ fontSize: 12 }}>Nincs ilyen tétel.</span>
+          </div>
+        </PageBody>
+      </MozaikPage>
     )
   }
 
@@ -114,6 +123,10 @@ export function KamraItemDetailPage() {
   // BACKEND id (the raw mock id / real UUID) — strip the prefix once here. Food
   // cards carry the raw ingredient id, so this is a no-op for them.
   const backendId = item.id.startsWith('stash-') ? item.id.slice('stash-'.length) : item.id
+  // The stack's occurrences key by the STASH id even for items that also have a food-shaped
+  // Ingredient row (kreatin/whey carry BOTH — buildKamraItems represents them by their
+  // ingredient id, not 'stash-<id>'): prefer stashRefId when present, else the backend id.
+  const stackKey = item.stashRefId ?? backendId
   const catColor = categoryMeta[item.category]?.color ?? 'var(--text-secondary)'
   const catLabel = categoryMeta[item.category]?.label ?? item.category
 
@@ -123,112 +136,129 @@ export function KamraItemDetailPage() {
   const hasStock = stock != null && typeof stockQty === 'number'
   const stockExpires = stock && isFullStock(stock) ? stock.expires : undefined
 
+  // "💊 a stackben · {zóna} {idő}" cross-link — today's live stack projection, the
+  // same composition FuelStackPage reads. Hidden when this item has no occurrence today.
+  const stackSlot = slots.find(s => s.entries.some(e => e.pantryItemId === stackKey))
+
+  // "Receptekben" chips (audit gap #5 — usedInRecipes was read from the contract but never
+  // displayed anywhere): the real recipe names that reference this pantry item, not the bare
+  // count, computed from the live Recipe.ingredients rather than trusting a stale counter.
+  const usedInRecipes = recipes.filter(r => r.ingredients.some(l => l.refId === backendId))
+
   const remove = () => {
+    if (!delArmed) { setDelArmed(true); return }
     deleteItem(backendId)
     navigate('/fuel/kamra')
   }
 
-  const fmt = (v: number | null | undefined) => (v != null ? v + 'g' : '—')
+  const macroCells: MCell[] | null = item.macros
+    ? [
+        { label: 'kcal', value: item.macros.kcal, tone: 'sage' },
+        { label: 'fehérje', value: `${item.macros.p} g`, tone: 'coral' },
+        { label: 'szénh.', value: `${item.macros.c} g`, tone: 'gold' },
+        { label: 'zsír', value: `${item.macros.f} g`, tone: 'lav' },
+      ]
+    : null
 
   return (
-    <>
-      <div style={{ padding: '0 24px 32px' }}>
-        {/* Back button — own row (header-only sage re-skin, mezo-8141, per the RecipeEditorPage
-            precedent); the title hero below keeps its bespoke styling/position, just retagged h1. */}
-        <div className="row" style={{ marginBottom: 2 }}>
-          <button
-            onClick={() => navigate('/fuel/kamra')}
-            className="rad-16"
-            style={{ width: 32, height: 32, flexShrink: 0, background: 'var(--surface-1)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)', fontSize: 18, lineHeight: 1 }}
-            aria-label="Vissza"
-          >‹</button>
-        </div>
-        <div className="pghead-np sage" style={{ padding: '6px 0 8px' }}>
-          <div>
-            <div className="over">Fuel · Kamra</div>
+    <MozaikPage tone="gold">
+      <PageHead onBack={() => navigate('/fuel/kamra')} label="‹ Kamra">
+        <button type="button" className="pgact" style={{ marginLeft: 'auto' }} onClick={() => setEditOpen(true)}>
+          <Icon name="settings" size={12} /> Szerkesztés
+        </button>
+      </PageHead>
+
+      <PageBody>
+        <div className="km-head">
+          <span className={`km-thumb km-k-${item.kind}`} aria-hidden="true">{item.name.charAt(0).toUpperCase()}</span>
+          <h1 className="nm" id="kamra-item-title">{item.name}</h1>
+          <div className="sb">
+            <SourceBadge source={item.source} size="lg" />
+            {item.brand && <span>{item.brand}</span>}
+            <span>·</span>
+            <span style={{ color: catColor }}>{catLabel}</span>
+            {item.nova != null && (
+              <>
+                <span>·</span>
+                <NovaDot nova={item.nova} />
+              </>
+            )}
           </div>
         </div>
 
-        {/* Source pill */}
-        <div style={{ marginBottom: 8 }}>
-          <SourceBadge source={item.source} size="lg" />
-        </div>
-
-        {/* Name */}
-        <h1 id="kamra-item-title" style={{ fontFamily: 'var(--ff-display)', fontSize: 26, fontWeight: 600, textTransform: 'uppercase', lineHeight: 1, margin: '6px 0 6px' }}>
-          {item.name}
-        </h1>
-
-        {/* Category · NOVA */}
-        <div className="row" style={{ alignItems: 'center', gap: 8 }}>
-          <span className="label-mono" style={{ fontSize: 9, letterSpacing: '0.1em', textTransform: 'uppercase', color: catColor }}>{catLabel}</span>
-          {item.nova != null && (
-            <>
-              <span className="text-tertiary" style={{ fontSize: 9 }}>·</span>
-              <NovaDot nova={item.nova} />
-            </>
-          )}
-        </div>
-
-        {/* Makrók */}
-        {item.macros && (
+        {macroCells && (
           <>
             <SectionHead>Makrók{item.per ? ` · /${item.per}${item.unit ?? ''}` : ''}</SectionHead>
-            <div style={grid4}>
-              <Cell label="kcal" value={String(item.macros.kcal)} color="var(--cat-tendency)" />
-              <Cell label="P" value={String(item.macros.p)} color="var(--info)" />
-              <Cell label="C" value={String(item.macros.c)} color="var(--warning)" />
-              <Cell label="F" value={String(item.macros.f)} color="var(--cat-preference)" />
-            </div>
-          </>
-        )}
+            <MCells cells={macroCells} />
 
-        {/* Tápanyag — only for items that carry macros */}
-        {item.macros && (
-          <>
             <SectionHead>Tápanyag</SectionHead>
-            <div style={grid4}>
-              <Cell label="Rost" value={fmt(item.fiberG)} color="var(--success)" />
-              <Cell label="Cukor" value={fmt(item.sugarG)} color="var(--warning)" />
-              <Cell label="Tel.zsír" value={fmt(item.saturatedFatG)} color="var(--cat-preference)" />
-              <Cell label="Só" value={fmt(item.saltG)} color="var(--text-secondary)" />
+            <div className="km-ncells">
+              <NCell label="rost" value={item.fiberG} />
+              <NCell label="cukor" value={item.sugarG} />
+              <NCell label="tel. zsír" value={item.saturatedFatG} />
+              <NCell label="só" value={item.saltG} />
             </div>
           </>
         )}
 
-        {/* Készlet · ár — stock hidden (deferred, mezo-6nu); dose kept, price kept */}
-        <SectionHead>{SHOW_PANTRY_STOCK ? 'Készlet · ár' : item.dose ? 'Dózis · ár' : 'Ár'}</SectionHead>
-        <div style={grid2}>
-          {SHOW_PANTRY_STOCK ? (
-            <Cell
-              label="Készlet"
-              value={hasStock ? `${stockQty} ${stockUnit}${stockExpires ? ` · ${stockExpires}` : ''}` : item.dose ? item.dose : '—'}
-            />
-          ) : (
-            item.dose && <Cell label="Dózis" value={item.dose} />
+        {/* Dose/protocol/stack-chip is a KIND fact (any supp/stim/med row), independent of
+            whether this particular item also carries a macros object — mezo-1za9 lets
+            supplements carry real nutrition data too (kreatin/whey), so both sections can
+            legitimately coexist for the same item. */}
+        {item.kind !== 'food' && (
+          <>
+            <SectionHead>Dózis · protokoll</SectionHead>
+            <div className="row gap-sm" style={{ alignItems: 'center' }}>
+              <div className={`km-cell km-k-${item.kind}`} style={{ marginLeft: 0 }}>
+                <b>{item.dose ?? '—'}</b>
+                <small>dózis</small>
+              </div>
+              {item.protocol && (
+                <span className="text-tertiary" style={{ fontSize: 11, fontStyle: 'italic' }}>{item.protocol}</span>
+              )}
+            </div>
+            {stackSlot && (
+              <span className="km-stkchip">💊 a stackben · {stackSlot.label} {stackSlot.time}</span>
+            )}
+          </>
+        )}
+
+        <SectionHead>{SHOW_PANTRY_STOCK ? 'Készlet · ár' : 'Ár'}</SectionHead>
+        <div className="row gap-sm">
+          {SHOW_PANTRY_STOCK && (
+            <div className="card col" style={{ padding: 8, gap: 2, alignItems: 'flex-start', flex: 1 }}>
+              <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>Készlet</span>
+              <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 15, fontWeight: 600 }}>
+                {hasStock ? `${stockQty} ${stockUnit}${stockExpires ? ` · ${stockExpires}` : ''}` : '—'}
+              </span>
+            </div>
           )}
-          <Cell label="Ár" value={item.price ? `${item.price} Ft` : '—'} />
+          <div className="card col" style={{ padding: 8, gap: 2, alignItems: 'flex-start', flex: 1 }}>
+            <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>Ár</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 15, fontWeight: 600 }}>{item.price ? `${item.price} Ft` : '—'}</span>
+          </div>
         </div>
 
-        {/* Actions */}
-        <div style={{ marginTop: 16 }}>
-          <button className="cta-primary" onClick={() => setLogOpen(true)}>
-            <Icon name="plus" size={14} /> Logolás · mai étkezésbe
+        {usedInRecipes.length > 0 && (
+          <>
+            <SectionHead>Receptekben · {usedInRecipes.length}</SectionHead>
+            <div className="km-rchips">
+              {usedInRecipes.map(r => <span key={r.id}>{r.name}</span>)}
+            </div>
+          </>
+        )}
+
+        <div style={{ marginTop: 18 }}>
+          {item.macros && (
+            <button className="cta-primary" onClick={() => setLogOpen(true)}>
+              <Icon name="plus" size={14} /> Logolás · mai étkezésbe
+            </button>
+          )}
+          <button className="km-delbtn" onClick={remove}>
+            {delArmed ? 'Biztos? Még egy érintés a törléshez' : 'Törlés'}
           </button>
         </div>
-        <div className="row gap-sm" style={{ marginTop: 8 }}>
-          <button className="cta-ghost flex-1" onClick={() => setEditOpen(true)}>
-            <Icon name="settings" size={12} /> Szerkesztés
-          </button>
-          <button
-            className="cta-ghost flex-1"
-            onClick={remove}
-            style={{ color: 'var(--warning)', borderColor: 'rgba(245,158,11,0.3)' }}
-          >
-            <Icon name="x" size={12} /> Törlés
-          </button>
-        </div>
-      </div>
+      </PageBody>
 
       <AddPantryItemSheet
         open={editOpen}
@@ -236,7 +266,7 @@ export function KamraItemDetailPage() {
         editId={backendId}
         initial={inputFromItem(item)}
       />
-      {logOpen && <LogMealSheet prefill={{ source: 'pantry', pantryItemId: backendId }} onClose={() => setLogOpen(false)} />}
-    </>
+      {logOpen && <LogFlowPage prefill={{ source: 'pantry', pantryItemId: backendId }} onClose={() => setLogOpen(false)} />}
+    </MozaikPage>
   )
 }

@@ -118,8 +118,14 @@ public class ContextSnapshotAssembler {
     private final ObjectProvider<HabitService> habitService;
     private final ObjectProvider<IntentionService> intentionService;
     private final ObjectProvider<RitualService> ritualService;
+    private final PeopleSnapshotBlock peopleSnapshotBlock;
     private final CompanionProperties properties;
 
+    /**
+     * The chat-turn variant — nine blocks, {@code [Emberek]} ({@link PeopleSnapshotBlock}) sitting
+     * between {@code [Napi gyakorlat]} and {@code [Mai üzemanyag]}. Chat-only: see
+     * {@link #renderWithoutBiometrics} for why the morning message never sees the circle.
+     */
     public String render(UUID userId, LocalDate today) {
         return HEADER + today + "):\n"
                 + profileBlock(userId, today, true) + '\n'
@@ -127,16 +133,30 @@ public class ContextSnapshotAssembler {
                 + trainBlock(userId, today) + '\n'
                 + growthBlock(userId, today) + '\n'
                 + practiceBlock(userId, today) + '\n'
+                + peopleLine(userId, today)
                 + fuelBlock(userId, today) + '\n'
                 + medicationBlock(userId, today) + '\n'
-                + recoveryBlock(userId, true);
+                + recoveryBlock(userId, today, true);
     }
 
     /**
-     * The morning-message variant (companion-feed, spec §3): same block composition as
-     * {@link #render}, but strips weight/sleep entirely at the source — the morning message is
-     * generated BEFORE those get logged for the day, and a prompt prohibition alone is not
-     * enough (the model would still see and could still leak the numbers).
+     * mezo-x6oa: the [Emberek] block ({@link PeopleSnapshotBlock}) — CHAT variant only. The
+     * morning message ({@link #renderWithoutBiometrics}) deliberately never sees the circle:
+     * that would be the companion bringing people up unprompted. "" when configured off, so no
+     * stray blank line is left behind.
+     */
+    private String peopleLine(UUID userId, LocalDate today) {
+        String block = peopleSnapshotBlock.render(userId, today);
+        return block.isEmpty() ? "" : block + '\n';
+    }
+
+    /**
+     * The morning-message variant (companion-feed, spec §3): eight blocks — the same composition
+     * as {@link #render}'s nine minus the [Emberek] circle (mezo-x6oa: that would be the
+     * companion bringing people up unprompted) — and it strips weight/sleep entirely at the
+     * source. The morning message is generated BEFORE those get logged for the day, and a prompt
+     * prohibition alone is not enough (the model would still see and could still leak the
+     * numbers).
      */
     public String renderWithoutBiometrics(UUID userId, LocalDate today) {
         return HEADER + today + "):\n"
@@ -147,7 +167,7 @@ public class ContextSnapshotAssembler {
                 + practiceBlock(userId, today) + '\n'
                 + fuelBlock(userId, today) + '\n'
                 + medicationBlock(userId, today) + '\n'
-                + recoveryBlock(userId, false);
+                + recoveryBlock(userId, today, false);
     }
 
     private String profileBlock(UUID userId, LocalDate today, boolean withWeight) {
@@ -248,8 +268,9 @@ public class ContextSnapshotAssembler {
         // Dated resolution (mezo-xixu, the flagship fix): what's ACTUALLY on today/tomorrow,
         // not just the recurring weekly pattern below — the chat's #1 hallucination source.
         List<SportScheduleSlotResponse> sport = sportService.getSchedule(userId);
-        b.append("; Ma: ").append(dayLine(userId, today, today, sport));
-        b.append("; Holnap: ").append(dayLine(userId, today, today.plusDays(1), sport));
+        b.append("; Ma (terv): ").append(dayLine(userId, today, today, sport));
+        b.append("; ").append(todayLoggedLine(userId, today));
+        b.append("; Holnap (terv): ").append(dayLine(userId, today, today.plusDays(1), sport));
         // Recurring weekly pattern + backward digest — kept as TRAILING background context.
         List<GymScheduleSlotResponse> gym = gymScheduleService.getSchedule(userId);
         b.append("; gym-rend: ").append(gym.isEmpty() ? NO_DATA : gym.stream()
@@ -262,19 +283,48 @@ public class ContextSnapshotAssembler {
                 .collect(Collectors.joining(", ")));
         int digestDays = properties.snapshot().digestDays();
         LocalDate from = today.minusDays(digestDays - 1L);
-        List<LocalDate> gymDates = workoutSessionRepository.findDoneInstanceDates(userId, from, today)
-                .stream().sorted().toList();
+        // Entities, not dates (mezo-d20.13): the digest now carries each session's closing note —
+        // the user's own sentence about how it went, which no number in this block can convey.
+        List<WorkoutSessionEntity> gymDone = workoutSessionRepository
+                .findDoneInstancesBetween(userId, from, today);
         int sportCount = sportSessionRepository
                 .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, from).size();
         int runCount = runSessionLogRepository
                 .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, from).size();
-        b.append("; elmúlt ").append(digestDays).append(" nap: ").append(gymDates.size()).append(" gym-edzés");
-        if (!gymDates.isEmpty()) {
-            b.append(" (").append(gymDates.stream().map(LocalDate::toString)
+        b.append("; elmúlt ").append(digestDays).append(" nap: ").append(gymDone.size()).append(" gym-edzés");
+        if (!gymDone.isEmpty()) {
+            b.append(" (").append(gymDone.stream()
+                    .map(w -> w.getDate() + workoutNoteSuffix(w))
                     .collect(Collectors.joining(", "))).append(')');
         }
         b.append(", ").append(sportCount).append(" sportalkalom, ").append(runCount).append(" futás");
         return b.toString();
+    }
+
+    /**
+     * What is ACTUALLY logged for today (mezo-xrhd) — the antidote to reading the plan as history.
+     * The dated "Ma (terv):" line above is a PLAN and nothing else; without this line beside it the
+     * only completion signal was the trailing "elmúlt N nap" digest, which the companion-feed
+     * midday note ignored, telling Daniel he was done with a workout he had not started. Gym uses
+     * the same completed-instance signal as the habit metric "training_done_today"; sport and run
+     * count today's own logs.
+     */
+    private String todayLoggedLine(UUID userId, LocalDate today) {
+        List<WorkoutSessionEntity> gymToday =
+                workoutSessionRepository.findDoneInstancesBetween(userId, today, today);
+        boolean gymDone = !gymToday.isEmpty();
+        long sportToday = sportSessionRepository
+                .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, today)
+                .stream().filter(s -> today.equals(s.getDate())).count();
+        long runToday = runSessionLogRepository
+                .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, today)
+                .stream().filter(r -> today.equals(r.getDate())).count();
+        String gym = gymDone
+                ? "elvégezve" + gymToday.stream().map(this::workoutNoteSuffix)
+                        .collect(Collectors.joining())
+                : "nincs elvégzett edzés";
+        return "Ma eddig naplózva: gym: " + gym
+                + "; sport: " + sportToday + " alkalom; futás: " + runToday + " alkalom";
     }
 
     /**
@@ -482,7 +532,7 @@ public class ContextSnapshotAssembler {
                 + cycle.phaseLabel() + ")";
     }
 
-    private String recoveryBlock(UUID userId, boolean withSleep) {
+    private String recoveryBlock(UUID userId, LocalDate today, boolean withSleep) {
         StringBuilder b = new StringBuilder("[Regeneráció]");
         if (withSleep) {
             b.append(" alvás");
@@ -503,16 +553,51 @@ public class ContextSnapshotAssembler {
                 .findFirstByCreatedByAndDeletedFalseOrderByDateDescSlotTimeDesc(userId).orElse(null);
         if (checkIn == null) {
             b.append(": ").append(NO_DATA);
+        } else if (!today.equals(checkIn.getDate())) {
+            // mezo-xrhd: the latest check-in EVER used to render with its date and nothing else, so
+            // "no check-in today" was something the model had to derive — and silently didn't. The
+            // last check-in's values and note stay in the payload: they are still real context.
+            b.append(": MA MÉG NINCS (utolsó: ").append(checkIn.getDate()).append(' ')
+                    .append(checkIn.getSlotTime()).append(" — ").append(checkInValues(checkIn))
+                    .append(')');
         } else {
             b.append(" (").append(checkIn.getDate()).append(' ').append(checkIn.getSlotTime()).append("): ")
-                    .append("energia ").append(checkIn.getEnergy()).append("/10, stressz ")
-                    .append(checkIn.getStress()).append("/10");
-            if (checkIn.getNote() != null && !checkIn.getNote().isBlank()) {
-                int max = properties.snapshot().checkinNoteMaxChars();
-                String note = checkIn.getNote();
-                b.append(", megjegyzés: \"")
-                        .append(note.length() <= max ? note : note.substring(0, max) + "…").append('"');
-            }
+                    .append(checkInValues(checkIn));
+        }
+        return b.toString();
+    }
+
+    /**
+     * The workout's closing note as a quoted suffix, or "" when there is none (mezo-d20.13).
+     *
+     * <p>Reads {@code closingNote}, NOT {@code note}: the same table holds template rows whose
+     * {@code note} is the mesocycle PLAN's day note, and rendering that here would pass plan text
+     * off as something that happened.
+     *
+     * <p>Verbatim and merely TRUNCATED, never summarized — an LLM-shortened version of the user's
+     * own sentence loses exactly the numbers, hedges and specifics that make it worth carrying.
+     * An absent or blank note renders nothing at all: ADR 0010, the snapshot never remarks on
+     * what the user chose not to write.
+     */
+    private String workoutNoteSuffix(WorkoutSessionEntity workout) {
+        int max = properties.snapshot().workoutNoteMaxChars();
+        String note = workout.getClosingNote();
+        if (max == 0 || note == null || note.isBlank()) {
+            return "";
+        }
+        String trimmed = note.strip();
+        return " — \"" + (trimmed.length() <= max ? trimmed : trimmed.substring(0, max) + "…") + '"';
+    }
+
+    /** One check-in's rendered values — shared by the today and the MA MÉG NINCS branch above. */
+    private String checkInValues(CheckInEntity checkIn) {
+        StringBuilder b = new StringBuilder("energia ").append(checkIn.getEnergy())
+                .append("/10, stressz ").append(checkIn.getStress()).append("/10");
+        if (checkIn.getNote() != null && !checkIn.getNote().isBlank()) {
+            int max = properties.snapshot().checkinNoteMaxChars();
+            String note = checkIn.getNote();
+            b.append(", megjegyzés: \"")
+                    .append(note.length() <= max ? note : note.substring(0, max) + "…").append('"');
         }
         return b.toString();
     }

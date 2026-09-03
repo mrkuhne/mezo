@@ -5,12 +5,30 @@ tags:
     description: Medication (Gyógyszer) — owned medication definition + a dose event-log; the 7-day cycle (cycleDay + phase) is derived from the logged doses. GET /api/medication feeds the whole Fuel "Gyógyszer" tab in one round-trip.
 paths:
   /api/medication:
+    post:
+      tags: [Medication]
+      operationId: createMedication
+      summary: Create the owner's medication (the single-active slice's create path)
+      description: >-
+        The owner can have ONE active medication at a time — creating while an active one exists
+        answers 400 with MEDICATION_ACTIVE_EXISTS. Re-creating after a stop (PUT active:false)
+        is the normal path; the old row's dose history stays.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/MedicationRequest' } } }
+      responses:
+        '201': { description: Created, content: { application/json: { schema: { $ref: '#/components/schemas/MedicationResponse' } } } }
+        '400': { description: 'Validation error, or an active medication already exists', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
     get:
       tags: [Medication]
       operationId: getMedicationDay
       summary: The owner's active medication — definition + cycle config, the derived cycle, and the recent doses
+      description: >-
+        Never 404s: having no active medication is a normal state, answered with 200 and an empty
+        payload (`medication` and `cycle` null, `recentDoses` empty) (mezo-5cmq).
       responses:
-        '200': { description: Medication day, content: { application/json: { schema: { $ref: '#/components/schemas/MedicationDayResponse' } } } }
+        '200': { description: 'Medication day, or an empty payload when the owner has no active medication', content: { application/json: { schema: { $ref: '#/components/schemas/MedicationDayResponse' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/medication/{id}:
     put:
@@ -112,10 +130,19 @@ components:
         active: { type: boolean }
     MedicationDayResponse:
       type: object
-      required: [medication, cycle, recentDoses]
+      # `medication`/`cycle` are NOT required: no active medication is a normal state answered with
+      # 200 + an empty payload, never a 404 (mezo-5cmq). The nullable-next-to-allOf form is what the
+      # generators honour (a bare `nullable` beside a `$ref` is dropped) — cf. `tdeeBootstrap`.
+      required: [recentDoses]
       properties:
-        medication: { $ref: '#/components/schemas/MedicationResponse' }
-        cycle: { $ref: '#/components/schemas/MedicationCycleResponse' }
+        medication:
+          description: Null when the owner has no active medication — a normal state, not an error (mezo-5cmq).
+          nullable: true
+          allOf: [ { $ref: '#/components/schemas/MedicationResponse' } ]
+        cycle:
+          description: Null whenever `medication` is null — there is no cycle to derive.
+          nullable: true
+          allOf: [ { $ref: '#/components/schemas/MedicationCycleResponse' } ]
         recentDoses:
           type: array
           items: { $ref: '#/components/schemas/MedicationDoseResponse' }

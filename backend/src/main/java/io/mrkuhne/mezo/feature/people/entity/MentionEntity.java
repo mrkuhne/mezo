@@ -39,8 +39,13 @@ public class MentionEntity extends OwnedEntity {
     @NotNull @Column(nullable = false) private String source; // voice|camera|chip|text (DB CHECK)
     @Column(name = "duration_s") private Integer durationS;
     @NotNull @Column(nullable = false) private String excerpt;
-    @NotNull @Column(nullable = false) private String tone; // affect (DB CHECK)
+    @Column private String tone; // affect (DB CHECK), NULL amíg az éjszakai kör nem tölti (S4)
     @Column(name = "tied_to_kind") private String tiedToKind;
     @Column(name = "tied_to_label") private String tiedToLabel;
     @NotNull @Column(nullable = false) private boolean flagged = false;
+
+    @Column private Short intensity; // 1..3 (DB CHECK) — az éjszakai kör tölti (S4)
+    @Column(name = "context_label") private String contextLabel; // zárt készlet (DB CHECK)
+    @Column(name = "source_ref_kind") private String sourceRefKind; // memory_embedding.kind nevezéktan
+    @Column(name = "source_ref_id", columnDefinition = "uuid") private UUID sourceRefId;
 }

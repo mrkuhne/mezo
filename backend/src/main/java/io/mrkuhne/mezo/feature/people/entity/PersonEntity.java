@@ -59,4 +59,12 @@ public class PersonEntity extends OwnedEntity {
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(name = "affect_trend", nullable = false, columnDefinition = "integer[]")
     private List<Integer> affectTrend = new ArrayList<>();
+
+    @NotNull
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(nullable = false, columnDefinition = "text[]")
+    private List<String> aliases = new ArrayList<>();
+
+    @NotNull @Column(nullable = false) private String status = "active"; // candidate|active|archived (DB CHECK)
+    @NotNull @Column(name = "source_kind", nullable = false) private String sourceKind = "manual"; // manual|extractor|seed (DB CHECK)
 }

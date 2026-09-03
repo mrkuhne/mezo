@@ -65,7 +65,7 @@ describe('useChatActions (real mode)', () => {
 
     // V0.5: the persisted done event carries the turn's REAL tool chips + refs
     const assistant = chat.result.current.data.messages.at(-1)!
-    expect(assistant.tools).toEqual([{ type: 'read', name: 'get_sleep(days=3)' }])
+    expect(assistant.tools).toEqual([{ type: 'read', name: 'get_recovery(days=3)' }])
     expect(assistant.refs).toEqual([{ kind: 'Sleep', id: '2026-07-02' }])
   })
 
@@ -112,13 +112,13 @@ describe('useChatActions (real mode)', () => {
       const frame = (event: string, data: unknown) => `event:${event}\ndata:${JSON.stringify(data)}\n\n`
       const stream = new ReadableStream<Uint8Array>({
         async start(controller) {
-          controller.enqueue(encoder.encode(frame('tool', { type: 'read', name: 'get_sleep(days=3)' })))
+          controller.enqueue(encoder.encode(frame('tool', { type: 'read', name: 'get_recovery(days=3)' })))
           await rest
           controller.enqueue(encoder.encode(frame('delta', { text: reply })))
           controller.enqueue(encoder.encode(frame('done', {
             id: 'msg-done', role: 'assistant', content: reply,
             createdAt: '2026-07-03T07:00:05Z',
-            tools: [{ type: 'read', name: 'get_sleep(days=3)' }],
+            tools: [{ type: 'read', name: 'get_recovery(days=3)' }],
             refs: [{ kind: 'Sleep', id: '2026-07-02' }],
             recalled: [],
             degraded: false,
@@ -137,7 +137,7 @@ describe('useChatActions (real mode)', () => {
     act(() => actions.result.current.send('Fáradt vagyok'))
 
     await waitFor(() =>
-      expect(actions.result.current.turn?.tools).toContainEqual({ type: 'read', name: 'get_sleep(days=3)' }))
+      expect(actions.result.current.turn?.tools).toContainEqual({ type: 'read', name: 'get_recovery(days=3)' }))
     expect(actions.result.current.turn?.thinking).toBe(false)
 
     releaseRest()

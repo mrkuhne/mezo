@@ -139,7 +139,7 @@ export interface NutrientFactSource {
 
 /**
  * One optional-facts source → `Nutrients`, the ONE place this literal is built (mezo-m6uv review:
- * `enrichLine`/`computeRecipeNutrientsWithOverrides` here, LogMealSheet's pantry-arm line, and
+ * `enrichLine`/`computeRecipeNutrientsWithOverrides` here, LogFlowPage's pantry-arm line, and
  * ImportItemSheet's preview all built the identical `?? null` literal independently). `?? null`
  * on every field — a missing fact never becomes a fabricated 0, and a missing SOURCE (`undefined`)
  * never becomes a fabricated value either.

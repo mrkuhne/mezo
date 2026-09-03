@@ -84,13 +84,13 @@ export function useHabitCatalogActions() {
     },
     onSuccess: mock ? undefined : invalidateAll,
   })
+  // Resolves with the CREATED definition (both arms) — the wizard needs the server-assigned
+  // habitKey to send the user back to `/me/rutin?new=<habitKey>` and have the hub highlight the
+  // row it just made. Every other caller ignores the value, so this is additive.
   const createDefM = useMutation({
-    mutationFn: async (input: HabitDefCreateInput) => {
-      if (mock) {
-        mockCreateDef(qc, input)
-        return
-      }
-      await habitAdminApi.createDef(input)
+    mutationFn: async (input: HabitDefCreateInput): Promise<HabitDefInfo | undefined> => {
+      if (mock) return mockCreateDef(qc, input)
+      return await habitAdminApi.createDef(input)
     },
     onSuccess: mock ? undefined : invalidateAll,
   })
@@ -122,7 +122,7 @@ export function useHabitCatalogActions() {
     deleteChain: (id: string) => deleteChainM.mutateAsync(id).then(() => undefined),
     reorderChain: (id: string, defIds: string[]) =>
       reorderChainM.mutateAsync({ id, defIds }).then(() => undefined),
-    createDef: (input: HabitDefCreateInput) => createDefM.mutateAsync(input).then(() => undefined),
+    createDef: (input: HabitDefCreateInput) => createDefM.mutateAsync(input),
     updateDef: (id: string, input: HabitDefUpdateInput) =>
       updateDefM.mutateAsync({ id, input }).then(() => undefined),
     deleteDef: (id: string) => deleteDefM.mutateAsync(id).then(() => undefined),
@@ -246,31 +246,41 @@ function mockReorderChain(qc: ReturnType<typeof useQueryClient>, id: string, def
   return undefined
 }
 
-function mockCreateDef(qc: ReturnType<typeof useQueryClient>, input: HabitDefCreateInput) {
-  qc.setQueryData<HabitCatalog>(HABIT_CATALOG_KEY, (prev) => {
-    const base = prev ?? mockHabitCatalog
-    const chain = base.chains.find((c) => c.chainKey === input.chainKey)
-    if (!chain) return base
-    const def: HabitDefInfo = {
-      id: crypto.randomUUID(),
-      habitKey: genKey('custom_'),
-      chainKey: input.chainKey,
-      position: input.position ?? chain.defs.length + 1,
-      title: input.title,
-      why: input.why ?? null,
-      anchorCopy: input.anchorCopy ?? null,
-      mode: input.mode,
-      metric: input.mode === 'MANUAL' ? 'manual' : (input.metric ?? 'manual'),
-      skillKey: input.skillKey,
-      xp: input.xp,
-      linkUrl: input.linkUrl ?? null,
-      isActive: true,
-    }
-    return {
-      chains: base.chains.map((c) => (c.chainKey === input.chainKey ? { ...c, defs: [...c.defs, def] } : c)),
-    }
+// Returns the inserted definition (or undefined when the target chain does not exist, mirroring
+// the write's own no-op) so the mock arm resolves with the same shape as `habitAdminApi.createDef`
+// — the wizard's `?new=<habitKey>` hand-off must work offline too. The def is therefore built
+// OUTSIDE the setQueryData updater: an updater may run more than once, and re-generating the
+// habitKey per invocation would hand back a key that is not the one in the cache.
+function mockCreateDef(qc: ReturnType<typeof useQueryClient>, input: HabitDefCreateInput): HabitDefInfo | undefined {
+  const base = qc.getQueryData<HabitCatalog>(HABIT_CATALOG_KEY) ?? mockHabitCatalog
+  const chain = base.chains.find((c) => c.chainKey === input.chainKey)
+  if (!chain) return undefined
+  const def: HabitDefInfo = {
+    id: crypto.randomUUID(),
+    habitKey: genKey('custom_'),
+    chainKey: input.chainKey,
+    position: input.position ?? chain.defs.length + 1,
+    title: input.title,
+    why: input.why ?? null,
+    anchorCopy: input.anchorCopy ?? null,
+    mode: input.mode,
+    metric: input.mode === 'MANUAL' ? 'manual' : (input.metric ?? 'manual'),
+    skillKey: input.skillKey,
+    xp: input.xp,
+    linkUrl: input.linkUrl ?? null,
+    isActive: true,
+    framework: input.framework ?? null,
+    anchorHabitKey: input.anchorHabitKey?.trim() ? input.anchorHabitKey : null,
+    cue: input.cue ?? null,
+    craving: input.craving ?? null,
+    reward: input.reward ?? null,
+    celebration: input.celebration ?? null,
+    identity: input.identity ?? null,
+  }
+  qc.setQueryData<HabitCatalog>(HABIT_CATALOG_KEY, {
+    chains: base.chains.map((c) => (c.chainKey === input.chainKey ? { ...c, defs: [...c.defs, def] } : c)),
   })
-  return undefined
+  return def
 }
 
 function mockUpdateDef(qc: ReturnType<typeof useQueryClient>, id: string, patch: HabitDefUpdateInput) {
@@ -287,6 +297,12 @@ function mockUpdateDef(qc: ReturnType<typeof useQueryClient>, id: string, patch:
     Object.entries(patch).filter(([, v]) => v !== null),
   ) as HabitDefUpdateInput
   const updated: HabitDefInfo = { ...def, ...patchNoNulls }
+  // Mirrors the real arm twice over: the backend normalizes the blank unlink sentinel to null on
+  // write, and `toDefInfo` maps any blank that is already stored to null on read. Without this the
+  // mock would keep `anchorHabitKey: ''`, which `HabitPage` reads as "still linked" and locks.
+  if (updated.anchorHabitKey != null && updated.anchorHabitKey.trim() === '') {
+    updated.anchorHabitKey = null
+  }
   const targetChainKey = patch.chainKey ?? fromChain.chainKey
   if (targetChainKey === fromChain.chainKey) {
     qc.setQueryData<HabitCatalog>(HABIT_CATALOG_KEY, {

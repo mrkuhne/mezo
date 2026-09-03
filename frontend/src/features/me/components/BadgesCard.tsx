@@ -1,36 +1,29 @@
 import type { GrowthBadge } from '@/data/types'
+import { huInt } from '@/shared/lib/huNum'
+import { pct } from '@/shared/lib/pct'
 
-/** 9 computed growth badges — achieved = sage tint + ✓; else lav progress bar (Growth page). */
+/** Badge grid (mezo-rmi0.1): earned = sage wash + full sage ring + "✓ megvan"; unearned keeps a conic
+ *  progress ring (--v = current/target %) and a muted icon — reachable badges stay visible. */
 export function BadgesCard({ badges }: { badges: GrowthBadge[] }) {
   const done = badges.filter((b) => b.achieved).length
   return (
-    <div className="card" style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden' }}>
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Badge-ek</span>
-        <span className="chip">{done} / {badges.length} megszerezve</span>
+    <>
+      <div className="gr-band-top rise" style={{ '--d': '110ms', padding: '4px 2px 7px' } as React.CSSProperties}>
+        <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-sage-ink)' }}>Jelvények</span>
+        <span className="gr-band-chip ok">{done} / {badges.length} megszerezve</span>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginTop: 10 }}>
-        {badges.map((b) => (
-          <div key={b.key} style={{
-            background: b.achieved ? 'var(--wash-sage)' : 'var(--surface-2)',
-            borderRadius: 4, padding: '10px 6px 8px', textAlign: 'center' }}>
-            <div style={{ fontSize: 19 }}>{b.icon}</div>
-            <div style={{ fontSize: 9.5, fontWeight: 600, marginTop: 4, lineHeight: 1.25 }}>{b.name}</div>
-            {b.achieved ? (
-              <div style={{ fontSize: 8, fontWeight: 800, color: 'var(--sage-deep)', marginTop: 3 }}>✓</div>
-            ) : (
-              <>
-                <div style={{ height: 3, background: 'var(--surface-3)', borderRadius: 2, marginTop: 5, overflow: 'hidden' }}>
-                  <div style={{ height: '100%', width: `${Math.min(100, (b.current / b.target) * 100)}%`, background: 'var(--lav-deep)' }} />
-                </div>
-                <div style={{ fontSize: 8, fontWeight: 800, color: 'var(--text-tertiary)', marginTop: 3 }}>
-                  {b.current.toLocaleString('hu-HU').replace(/[  ]/g, ' ')} / {b.target.toLocaleString('hu-HU').replace(/[  ]/g, ' ')}
-                </div>
-              </>
-            )}
-          </div>
-        ))}
+      <div className="gr-bdggrid rise" style={{ '--d': '140ms' } as React.CSSProperties}>
+        {badges.map((b) => {
+          const v = b.achieved ? 100 : Math.round(pct(b.current, b.target))
+          return (
+            <div key={b.key} className={b.achieved ? 'gr-bdg done' : 'gr-bdg'}>
+              <div className="gr-ring" style={{ '--v': v } as React.CSSProperties}><span aria-hidden="true">{b.icon}</span></div>
+              <b>{b.name}</b>
+              <small>{b.achieved ? '✓ megvan' : `${huInt(b.current)} / ${huInt(b.target)}`}</small>
+            </div>
+          )
+        })}
       </div>
-    </div>
+    </>
   )
 }

@@ -17,12 +17,21 @@ export type ClayIconName =
   | 'i-erme' | 'i-lang' | 'i-beallitas' | 'i-mikrofon' | 'i-kamra' | 'i-recept'
   | 'i-rend' | 'i-level' | 'i-hajnal' | 'i-video' | 'i-idozito' | 'i-kihivas'
   | 'i-checkin' | 'i-injekcio' | 'i-reggeli' | 'i-ebed' | 'i-snack' | 'i-vacsora'
-  | 'i-memoar' | 'i-lombik' | 'i-kristaly' | 'i-retegek'
+  | 'i-memoar' | 'i-lombik' | 'i-kristaly' | 'i-retegek' | 'i-heti'
+  | 'i-hold' | 'i-termes'
+  // F7.4 (mezo-d20.8.4.1): the 8 LIFE-skill life-area symbols — the emoji set's clay successor.
+  | 'i-life-tudatossag' | 'i-life-szemlelet' | 'i-life-konyha' | 'i-life-penzugyek'
+  | 'i-life-produktivitas' | 'i-life-tanulas' | 'i-life-kapcsolatok' | 'i-life-regeneracio'
+  // Receptműhely (mezo-92pb): the AI recipe workshop's own symbol — tányér + szikrák.
+  | 'i-muhely'
 
 export type ClaySpotName =
   | 's-reggel' | 's-este' | 's-viz' | 's-energia' | 's-edzes' | 's-medal'
   | 's-orb' | 's-orb-ejszaka' | 's-orb-figyel' | 's-orb-unnepel'
   | 's-piheno' | 's-napzaras' | 's-hajtas' | 's-hegycel'
+  // Karakter persona orb variants (mezo-1gim.13) — one per Csapat expert + szkeptikus.
+  | 's-orb-doki' | 's-orb-edzo' | 's-orb-taplalkozo' | 's-orb-szomnologus'
+  | 's-orb-pszichologus' | 's-orb-drill' | 's-orb-antropologus' | 's-orb-szkeptikus'
 
 /** Mounts the clay <symbol>/<gradient> defs once. Rendered by AppLayout. */
 export const ClaySprites = memo(function ClaySprites() {

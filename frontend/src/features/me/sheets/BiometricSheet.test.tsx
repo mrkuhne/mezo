@@ -76,3 +76,29 @@ test('renders the empty-profile prefill defaults when no profile exists', () => 
   expect(screen.getByLabelText('Magasság')).toHaveValue(180)
   expect(screen.getByRole('button', { name: 'Férfi' })).toHaveAttribute('aria-pressed', 'true')
 })
+
+// ── the split-TDEE door (mezo-d20.11) ──
+// BiometricCard was the only Én-side entry into the shared EnergyBreakdownSheet and
+// it lost its host with AppHero/ProfilePage. The row lives here now; the host decides
+// whether it can swap sheets (`onExplainEnergy`).
+
+test('the split-TDEE row renders the persisted bootstrap and opens the breakdown', async () => {
+  const onExplain = vi.fn()
+  render(
+    <QueryWrapper>
+      <BiometricSheet onClose={() => {}} profile={mockProfile} onExplainEnergy={onExplain} />
+    </QueryWrapper>,
+  )
+  const row = screen.getByRole('button', { name: 'Energia-bontás magyarázata' })
+  expect(row).toHaveTextContent('2579')
+  expect(row).toHaveTextContent('+421')
+  expect(row).toHaveTextContent('≈3000')
+  await userEvent.click(row)
+  expect(onExplain).toHaveBeenCalledTimes(1)
+})
+
+test('no tdeeBootstrap (engine not run) renders no row — never a fabricated number', () => {
+  renderSheet({ ...mockProfile, tdeeBootstrap: null })
+  expect(screen.queryByText('Fenntartó energia')).not.toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Energia-bontás magyarázata' })).not.toBeInTheDocument()
+})

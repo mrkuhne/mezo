@@ -10,7 +10,7 @@
 // ============================================================
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { ClaySpot } from '@/shared/ui/clay'
+import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { cn } from '@/shared/lib/cn'
@@ -22,9 +22,10 @@ import {
 } from '@/data/hooks'
 import { buildHabitRewardToast } from '@/features/progression/logic/rewardToast'
 import { habitAction, habitHint } from '@/features/today/logic/habitAction'
+import { habitClayIcon, DAYPART_CLAY } from '@/features/today/logic/habitClayIcon'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
 import { ReflectSheet } from '@/features/today/sheets/ReflectSheet'
-import { LogMealSheet } from '@/features/fuel/sheets/LogMealSheet'
+import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
 import type { HabitDaypart, HabitItem } from '@/data/types'
 
@@ -119,7 +120,7 @@ export function NapRutinPage() {
 
   return (
     <MozaikPage tone="gold" className="nr-page">
-      <PageHead onBack={() => navigate(-1)} />
+      <PageHead onBack={() => navigate(-1)} label="‹ Ma" />
       <EntranceGroup>
         {hero && (
           <PageHero name={FACE_TITLE[hero.face]} big={`${hero.done}/${hero.items.length}`}
@@ -144,10 +145,14 @@ export function NapRutinPage() {
                 </div>
               )}
               <div className="nr-vcard">
-                {g.items.map((h) => {
+                {g.items.map((h, ri) => {
                   const act = tickAction(h)
                   const done = h.status === 'done'
                   const hint = habitHint(h)
+                  const chain = catalog.chains.find((c) => c.chainKey === h.chain)
+                  const icon = chain
+                    ? habitClayIcon(h.key, chain)
+                    : DAYPART_CLAY[FACE_DAYPART[g.face]]
                   return (
                     <div key={h.key} className="nr-row">
                       {act ? (
@@ -160,11 +165,23 @@ export function NapRutinPage() {
                           <span className={cn('nr-tick', done && 'f')}>{done ? '✓' : ''}</span>
                         </span>
                       )}
+                      {/* prototype #page-hab habrow: tick · the habit's OWN clay icon · name+bar · % */}
+                      <ClayIcon name={icon} size={28} />
                       <div className="nr-grow">
-                        <div className={cn('nr-nm', done && 'done')}>{h.title}</div>
+                        {/* a row carrying its own external content (linkUrl — e.g. `morning_video`)
+                            renders the title as that link; the tick stays the separate control, so
+                            the anchor never sits inside a button (mezo-d20.11 restore). */}
+                        {h.linkUrl ? (
+                          <a className={cn('nr-nm', done && 'done')} href={h.linkUrl}
+                            target="_blank" rel="noopener noreferrer">{h.title} ↗</a>
+                        ) : (
+                          <div className={cn('nr-nm', done && 'done')}>{h.title}</div>
+                        )}
                         <div className="nr-anchor">{hint ?? h.anchorCopy}</div>
                         {h.strengthPct != null && (
-                          <div className="nr-str"><div style={{ width: `${h.strengthPct}%` }} /></div>
+                          <div className="nr-str">
+                            <div style={{ width: `${h.strengthPct}%`, '--d': `${350 + ri * 60}ms` } as React.CSSProperties} />
+                          </div>
                         )}
                       </div>
                       {h.strengthPct != null && <span className="nr-pct">{h.strengthPct}%</span>}
@@ -177,7 +194,7 @@ export function NapRutinPage() {
         </PageBody>
       </EntranceGroup>
 
-      {mealOpen && <LogMealSheet initialSlot="breakfast" onClose={() => setMealOpen(false)} />}
+      {mealOpen && <LogFlowPage initialSlot="breakfast" onClose={() => setMealOpen(false)} />}
       {sleepOpen && <SleepLogSheet onClose={() => setSleepOpen(false)} onSave={logSleep} />}
       {focusOpen && <IntentionSheet creed={intention.creed} onSave={addFocus} onClose={() => setFocusOpen(false)} />}
       {reflectOpen && <ReflectSheet onReflect={reflect} onClose={() => setReflectOpen(false)} />}

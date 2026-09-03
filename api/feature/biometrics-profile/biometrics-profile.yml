@@ -11,10 +11,12 @@ paths:
       tags: [BiometricProfile]
       operationId: getBiometricProfile
       summary: The owner's biometric profile
+      description: >-
+        Never 404s: having no profile yet is a normal state, answered with 200 and an empty profile
+        — an object whose every field is null (mezo-5cmq).
       responses:
-        '200': { description: Profile, content: { application/json: { schema: { $ref: '#/components/schemas/BiometricProfileResponse' } } } }
+        '200': { description: 'Profile, or an all-null empty profile when the owner has none yet', content: { application/json: { schema: { $ref: '#/components/schemas/BiometricProfileResponse' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
-        '404': { description: No profile yet, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
     put:
       tags: [BiometricProfile]
       operationId: upsertBiometricProfile
@@ -30,11 +32,18 @@ components:
   schemas:
     BiometricProfileResponse:
       type: object
-      required: [sex, heightCm, birthDate]
+      # Nothing configures Jackson's property inclusion, so Include.ALWAYS applies and an empty
+      # profile goes over the wire as an object with every field NULL — not as `{}`. Hence: no
+      # `required` block AND `nullable: true` on the erstwhile-required trio, so the schema, the
+      # generated types and the actual bytes agree (mezo-5cmq).
+      description: >-
+        Every field is optional AND nullable: an owner with no profile row yet gets a 200 with an
+        empty profile — an object whose every field is null — not a 404 (mezo-5cmq). The UPSERT
+        request keeps its required trio.
       properties:
-        sex: { type: string, enum: [M, F] }
-        heightCm: { type: number }
-        birthDate: { type: string, format: date }
+        sex: { type: string, enum: [M, F], nullable: true }
+        heightCm: { type: number, nullable: true }
+        birthDate: { type: string, format: date, nullable: true }
         bodyFatPct: { type: number, nullable: true }
         # Physical-activity level (PAL bucket) — a TDEE-bootstrap input. Nullable until set;
         # defaulted to MIXED server-side when absent.

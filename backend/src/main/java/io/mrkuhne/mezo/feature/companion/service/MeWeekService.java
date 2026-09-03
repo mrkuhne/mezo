@@ -55,6 +55,7 @@ public class MeWeekService {
     private static final int CANONICAL_CHECKIN_SLOTS = 4;
 
     private final DayScoreService dayScoreService;
+    private final WeeklyScoreService weeklyScoreService;
     private final FuelDayService fuelDayService;
     private final MetricSeriesService metricSeriesService;
     private final SleepLogRepository sleepLogRepository;
@@ -65,7 +66,12 @@ public class MeWeekService {
     private final SportSessionRepository sportSessionRepository;
     private final RunSessionLogRepository runSessionLogRepository;
 
-    @Transactional(readOnly = true)
+    /** Read-WRITE on purpose (mezo-d20.7.5): every full computation of a week writes the
+     *  week's score THROUGH into {@code weekly_score} ({@link WeeklyScoreService#record}), which is what
+     *  keeps the trend's cache warm from all three paths that already run this method — the
+     *  {@code /api/me/week/{start}} read, {@code WeeklyReviewGenerator.gather} and
+     *  {@code WeekContextRenderer}'s per-chat-turn render. */
+    @Transactional
     public MeWeekResponse week(UUID userId, LocalDate start) {
         LocalDate end = start.plusDays(6);
 
@@ -77,7 +83,8 @@ public class MeWeekService {
             fuelByDate.put(day, fuelDayService.getDay(userId, day));
         }
 
-        Map<LocalDate, DayScoreService.DayScore> scores = dayScoreService.scores(userId, start, end, fuelByDate).stream()
+        List<DayScoreService.DayScore> dayScores = dayScoreService.scores(userId, start, end, fuelByDate);
+        Map<LocalDate, DayScoreService.DayScore> scores = dayScores.stream()
                 .collect(Collectors.toMap(DayScoreService.DayScore::date, s -> s));
         Map<LocalDate, SleepLogEntity> sleepByDate = latestSleepByDate(userId, start, end);
         Map<LocalDate, List<CheckInEntity>> checkinsByDate = checkinsByDate(userId, start, end);
@@ -97,15 +104,18 @@ public class MeWeekService {
                     xpSeries.get(day)));
         }
 
-        List<DayScoreService.DayScore> prevWeekScores =
-                dayScoreService.scores(userId, start.minusWeeks(1), start.minusDays(1));
-        Integer prevWeekScore = roundedMeanOrNull(prevWeekScores.stream()
-                .map(DayScoreService.DayScore::score).filter(java.util.Objects::nonNull).toList());
+        // Write-through: the week's own score is persisted here (mezo-d20.7.5) and the SAME
+        // roll-up is used for the response, so there is exactly one definition of "the weekly
+        // score" in the codebase.
+        Integer weeklyScore = weeklyScoreService.record(userId, start, dayScores).score();
+        // The previous week now comes from that cache (recomputed only when its own data moved),
+        // replacing what used to be a SECOND complete score run on every single week read.
+        Integer prevWeekScore = weeklyScoreService.scoreFor(userId, start.minusWeeks(1));
 
         return MeWeekResponse.builder()
                 .start(start)
                 .days(days)
-                .weekly(aggregates(userId, start, end, days, prevWeekScore))
+                .weekly(aggregates(userId, start, end, days, weeklyScore, prevWeekScore))
                 .build();
     }
 
@@ -147,10 +157,8 @@ public class MeWeekService {
     }
 
     private MeWeekAggregates aggregates(
-            UUID userId, LocalDate start, LocalDate end, List<MeWeekDay> days, Integer prevWeekScore) {
-        Integer weeklyScore = roundedMeanOrNull(days.stream()
-                .map(MeWeekDay::getScore).filter(java.util.Objects::nonNull).toList());
-
+            UUID userId, LocalDate start, LocalDate end, List<MeWeekDay> days,
+            Integer weeklyScore, Integer prevWeekScore) {
         List<MeWeekDay> fuelDays = days.stream().filter(d -> d.getKcal() != null).toList();
         List<MeWeekDay> sleepDays = days.stream().filter(d -> d.getSleepMin() != null).toList();
         List<MeWeekDay> checkinEnergyDays = days.stream().filter(d -> d.getCheckinEnergyAvg() != null).toList();
@@ -249,14 +257,6 @@ public class MeWeekService {
         }
         long elapsed = java.time.temporal.ChronoUnit.DAYS.between(start, today) + 1;
         return (int) Math.max(1, Math.min(7, elapsed));
-    }
-
-    /** Rounded mean of the present values; {@code null} ("tanulom") below the 2-score honesty gate. */
-    private static Integer roundedMeanOrNull(List<Integer> present) {
-        if (present.size() < 2) {
-            return null;
-        }
-        return (int) Math.round(present.stream().mapToInt(Integer::intValue).average().orElseThrow());
     }
 
     private static BigDecimal average(List<Integer> values) {

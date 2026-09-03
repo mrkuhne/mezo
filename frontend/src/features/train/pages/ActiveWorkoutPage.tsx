@@ -25,12 +25,11 @@ import { identityKeyOf, oneRmByIdentity, prepForecast, prepStats, pseudoDayFromP
 import { REGION_LABELS, muscleColor, muscleRegion, regionColor } from '@/features/train/logic/muscleColors'
 import { setStyle } from '@/features/train/logic/setBudget'
 import { selectPrepRows, weekZoneRows } from '@/features/train/logic/weekZone'
-import { WeekZoneCard } from '@/features/train/components/WeekZoneCard'
 import { avgWorkingRir, exerciseTonnage, sessionProgressSegments, setStatus, topSetDeltaPct, warmupPctLabel } from '@/features/train/logic/workoutCardMeta'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { useRestTimer } from '@/features/train/logic/useRestTimer'
 import { RestTimerBar } from '@/features/train/components/RestTimerBar'
-import { ProgressionBanner } from '@/features/train/components/ProgressionBanner'
+import { ProgressionBanner, progressionDeltaLabel } from '@/features/train/components/ProgressionBanner'
 import { ExerciseImage } from '@/features/train/components/ExerciseImage'
 import type { LastWeekSet, LoggedWorkoutExercise, Mesocycle, WorkoutPlan } from '@/data/types'
 import type { ExerciseSetResponse, GymExerciseInput, SetLogRequest, SetUpdateRequest, WorkoutFeedbackInput, WorkoutInstanceResponse } from '@/data/train/trainApi'
@@ -55,33 +54,37 @@ import {
   updateLoggedSet,
 } from '@/features/train/logic/workoutState'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
-import { Icon } from '@/shared/ui/Icon'
 import { Sheet } from '@/shared/ui/Sheet'
 import { SetStepper } from '@/features/train/components/SetStepper'
-import { VideoDemo, videoEmbed } from '@/features/train/components/VideoDemo'
+import { videoEmbed } from '@/features/train/components/VideoDemo'
 import { MedalChip } from '@/features/train/components/MedalChip'
 import { MedalToast } from '@/features/train/components/MedalToast'
 import { FeedbackModal, type ExerciseFeedbackValues } from '@/features/train/sheets/FeedbackModal'
 import { WorkoutSummary, type SummaryChallenge, type SummaryExercise } from '@/features/train/components/WorkoutSummary'
 import { evaluateChallenge } from '@/features/train/logic/challengeOutcome'
-import { ChallengesCarousel } from '@/features/train/components/ChallengesCarousel'
 import { ExerciseActionSheet } from '@/features/train/sheets/ExerciseActionSheet'
 import { ExerciseOverviewSheet, type OverviewExercise } from '@/features/train/sheets/ExerciseOverviewSheet'
-import { PrepHero } from '@/features/train/components/PrepHero'
-import { PrepExerciseCard } from '@/features/train/components/PrepExerciseCard'
 import { SetEditSheet, type SetEditValues } from '@/features/train/sheets/SetEditSheet'
+import { ClayIcon } from '@/shared/ui/clay'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { CollapsibleStrip, Mosaic, StatCell, StatStrip, Tile } from '@/shared/ui/mozaik'
+import { PrepGyakorlatokPage } from '@/features/train/pages/prep/PrepGyakorlatokPage'
+import { PrepFejlodesPage } from '@/features/train/pages/prep/PrepFejlodesPage'
+import { PrepHetiZonaPage } from '@/features/train/pages/prep/PrepHetiZonaPage'
+import { PrepKuldetesekPage } from '@/features/train/pages/prep/PrepKuldetesekPage'
+import { PrepBemelegitesPage, type WarmupRow } from '@/features/train/pages/prep/PrepBemelegitesPage'
+import { PrepNigglePage } from '@/features/train/pages/prep/PrepNigglePage'
 
 type Phase = 'prep' | 'active' | 'summary' | 'complete'
 type Side = 'L' | 'B' | 'R'
+/** Which prep-mosaic tile page is open (mezo-d20.3.8); null = the hub itself. */
+type PrepTile = 'gyakorlatok' | 'fejlodes' | 'zona' | 'kuldetesek' | 'bemelegites' | 'niggle'
 
-const WARMUP_ROWS = [
-  { label: 'Dinamikus stretching', time: '3 perc' },
-  { label: 'Cardio-lite · evezőpad', time: '3 perc' },
-  { label: 'Aktiváció · band pull-apart × 20', time: '2 perc' },
+const WARMUP_ROWS: readonly WarmupRow[] = [
+  { label: 'Dinamikus stretching', time: '3 perc', minutes: 3 },
+  { label: 'Cardio-lite · evezőpad', time: '3 perc', minutes: 3 },
+  { label: 'Aktiváció · band pull-apart × 20', time: '2 perc', minutes: 2 },
 ] as const
-
-const AMBER_TINT_6 = 'color-mix(in srgb, var(--warning) 6%, transparent)'
-const AMBER_BORDER = 'color-mix(in srgb, var(--warning) 30%, transparent)'
 
 // The RECORD-tier medal toast auto-hides after this long (mezo-wp6n; was PR_TOAST_MS).
 const MEDAL_TOAST_MS = 4500
@@ -202,7 +205,7 @@ interface SessionProps {
   skipExercise: (workoutId: string, exerciseId: string) => void
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
-  finishWorkout: (workoutId: string, opts?: { onSuccess?: (r?: WorkoutInstanceResponse) => void; onSettled?: () => void }) => void
+  finishWorkout: (workoutId: string, opts?: { note?: string | null; onSuccess?: (r?: WorkoutInstanceResponse) => void; onSettled?: () => void }) => void
   saveDayExercises: (mesoId: string, dayId: string, exercises: GymExerciseInput[]) => void
 }
 
@@ -271,12 +274,17 @@ function ActiveWorkoutSession({
   const [toastMedal, setToastMedal] = useState<{ medal: Medal; extra: number } | null>(null)
   // The explicit-finish POST is in flight — disables the "Edzés lezárása ✓" CTA.
   const [finishPending, setFinishPending] = useState(false)
+  /** The workout-level closing note (mezo-d20.8.2.2) — a page-owned draft, so stepping back to
+   *  `active` and returning to the summary does not throw away what was already typed. */
+  const [closingNote, setClosingNote] = useState('')
   const { showLevelUp } = useLevelUp()
   // The just-finished exercise pinned for the debrief modal (and the active card
   // it overlays): once resolved, the view advances to the next exercise, so we keep
   // an explicit feedback target that overrides `viewedId` until the debrief closes.
   const [feedbackEx, setFeedbackEx] = useState<LoggedWorkoutExercise | null>(null)
   const [niggleConfirmed, setNiggleConfirmed] = useState(false)
+  // Prep mosaic (mezo-d20.3.8): which tile's own page is open, null = the hub.
+  const [prepTile, setPrepTile] = useState<PrepTile | null>(null)
   const [acceptedChallenges, setAcceptedChallenges] = useState<string[]>([])
   const [actionSheetOpen, setActionSheetOpen] = useState(false)
   // Free navigation (spec 2026-07-15): the header counter opens a jump-to overview.
@@ -301,8 +309,13 @@ function ActiveWorkoutSession({
   // tells the user the save failed; this just keeps the row from being a dead end.
   const [failedSetLocalIds, setFailedSetLocalIds] = useState<Set<string>>(() => new Set())
   // Tap-to-reveal demo still (mezo-8xdl.4) — mirrors the video's hidden-until-asked
-  // stance, so it never steals the logging surface mid-set.
+  // stance, so it never steals the logging surface mid-set. The demo VIDEO is gated
+  // the same way from the head's icon button (mezo-d20.3.9).
   const [imageOpen, setImageOpen] = useState(false)
+  const [videoOpen, setVideoOpen] = useState(false)
+  // The per-set note is COLLAPSED in the calm default (mezo-d20.3.9) — the "＋ megjegyzés
+  // a szetthez" toggle opens it; it re-collapses on every slot/exercise change.
+  const [noteOpen, setNoteOpen] = useState(false)
 
   // Auto-hide the medal toast (leak-safe: cleared on unmount / re-trigger).
   useEffect(() => {
@@ -398,8 +411,10 @@ function ActiveWorkoutSession({
   useEffect(() => {
     setEditingSetIdx(null)
   }, [current.id])
-  // The demo still must not stay open across an advance to the next exercise.
-  useEffect(() => { setImageOpen(false) }, [current.id])
+  // The demo media must not stay open across an advance to the next exercise, and the
+  // per-set note toggle re-collapses on every slot change (prototype UI.inpKey reset).
+  useEffect(() => { setImageOpen(false); setVideoOpen(false) }, [current.id])
+  useEffect(() => { setNoteOpen(false) }, [current.id, cursor])
   // Challenges: unified across modes — the hook returns the Phase-1 seed in mock
   // and the live session/day list (or honest []) in real. Accept/dismiss is a
   // local toggle in mock (byte-parity with Phase-1) and a persisted L2 decision
@@ -436,14 +451,23 @@ function ActiveWorkoutSession({
   }
 
   // Summary rows (used by both the closing 'summary' and read-only 'complete' phases).
-  const summaryExercises: SummaryExercise[] = W.exercises.map((e) => ({
-    id: e.id,
-    name: e.name,
-    muscle: e.muscle,
-    plannedSets: effectiveSetCount(session, e.id),
-    sets: session.logged[e.id] ?? [],
-    skipped: session.skipped.includes(e.id),
-  }))
+  // `warmup` and the rep band feed the F7.2 exercise view (mezo-d20.8.2.1): the closing report
+  // opens the SAME view as the review, so it has to hand over the same facts. Warmup-ness is
+  // positional here — the session's prescription lists warmups first — where the review reads
+  // it off `ExerciseSetResponse.kind`.
+  const summaryExercises: SummaryExercise[] = W.exercises.map((e) => {
+    const warmups = (session.prescribed[e.id] ?? []).filter((p) => p.kind === 'warmup').length
+    return {
+      id: e.id,
+      name: e.name,
+      muscle: e.muscle,
+      plannedSets: effectiveSetCount(session, e.id),
+      sets: (session.logged[e.id] ?? []).map((set, i) => ({ ...set, warmup: i < warmups })),
+      skipped: session.skipped.includes(e.id),
+      repMin: e.repMin,
+      repMax: e.repMax,
+    }
+  })
   // Challenge rows: dismissed/undecided -> skippelted; accepted -> live server outcome when
   // resolved, else the FE preview over the session's logged sets (pre-finish).
   const summaryChallenges: SummaryChallenge[] = challenges.map((c) => {
@@ -655,6 +679,9 @@ function ActiveWorkoutSession({
   const finishAndCelebrate = () => {
     setFinishPending(true)
     finishWorkout(workoutId ?? 'mock', {
+      // The closing note rides the finish body (mezo-d20.8.2.2). Server-side it is
+      // fill-if-empty, so the retry path above cannot erase a note a first attempt landed.
+      note: closingNote.trim() || null,
       onSuccess: (r) => {
         if (r?.levelUp) showLevelUp(r.levelUp)
         // SESSION_VOLUME (and any medal not already seen from a set-log onSuccess)
@@ -754,6 +781,72 @@ function ActiveWorkoutSession({
     const zonePlanWorkouts = (activeMeso?.days ?? []).filter((d) => d.exerciseCount > 0).length
     const zoneDoneWorkouts = weekLog.completedSummaries.filter((s) => s.origin === 'meso').length
 
+    // Tile-page dispatch (mezo-d20.3.8, Huawei pattern): a tile opens its OWN
+    // page with a compact hero + stat strip; '‹ Indítás' returns to the hub.
+    const backToHub = () => setPrepTile(null)
+    if (prepTile === 'gyakorlatok') {
+      const progressionCount = W.exercises.filter((e) => (e.progression?.deltaKg ?? 0) !== 0 || (e.progression?.deltaReps ?? 0) !== 0).length
+      return (
+        <PrepGyakorlatokPage
+          groups={exerciseGroups}
+          stats={stats}
+          progressionCount={progressionCount}
+          oneRmOf={(e) => oneRmMap.get(identityKeyOf(e)) ?? null}
+          challengeOf={(e) => {
+            const c = challenges.find((x) => x.exerciseId === e.id && acceptedMap[x.id])
+            return c ? { typeLabel: c.typeLabel, target: c.target } : null
+          }}
+          onBack={backToHub}
+        />
+      )
+    }
+    if (prepTile === 'fejlodes' && forecast) {
+      return <PrepFejlodesPage forecast={forecast} workSets={stats.workSets} overload={W.overloadSummary} onBack={backToHub} />
+    }
+    if (prepTile === 'zona') {
+      return <PrepHetiZonaPage rows={zoneRows} doneWorkouts={zoneDoneWorkouts} planWorkouts={zonePlanWorkouts} onBack={backToHub} />
+    }
+    if (prepTile === 'kuldetesek') {
+      return (
+        <PrepKuldetesekPage
+          challenges={challenges}
+          accepted={acceptedMap}
+          onToggle={toggleChallenge}
+          pending={challengesPending}
+          onBack={backToHub}
+        />
+      )
+    }
+    if (prepTile === 'bemelegites') {
+      return (
+        <PrepBemelegitesPage
+          rows={WARMUP_ROWS}
+          niggleNote={niggleActive && !niggleConfirmed && W.niggleWarning
+            ? `${W.niggleWarning.muscleLabel} — a bemelegítés blokkjai erre készítenek fel.`
+            : null}
+          onBack={backToHub}
+        />
+      )
+    }
+    if (prepTile === 'niggle' && W.niggleWarning) {
+      return (
+        <PrepNigglePage
+          muscleLabel={W.niggleWarning.muscleLabel}
+          detail={W.niggleWarning.detail}
+          confirmed={niggleConfirmed}
+          onConfirm={() => setNiggleConfirmed(true)}
+          onBack={backToHub}
+        />
+      )
+    }
+
+    // ---- hub: hero (eyebrow + name + 4 mini stat cells + CTA above the fold) + the 6-tile mosaic ----
+    const warmupTotalMin = WARMUP_ROWS.reduce((s, w) => s + w.minutes, 0)
+    const acceptedCount = challenges.filter((c) => acceptedMap[c.id]).length
+    const niggleLine = W.niggleWarning
+      ? `${W.niggleWarning.muscleLabel} · ${niggleConfirmed ? 'kezelve ✓' : 'aktív'}`
+      : null
+
     return (
       <div>
         {/* Breadcrumb — pinned below the status bar like native nav chrome (mezo-wdk) */}
@@ -764,140 +857,80 @@ function ActiveWorkoutSession({
           </button>
         </div>
 
-        {/* Hero — over-line ({day} · week/phase label) + title + XP ring/skill bars
-            (forecast null-hides the ring, honest-empty-safe) + the szett/rep/perc pill. */}
-        <div style={{ padding: '6px 24px' }}>
-          <PrepHero overline={`${huWeekdayFull()} · ${weekLabel}`} title={W.title} forecast={forecast} stats={stats} overload={W.overloadSummary ?? null} />
-        </div>
-
-        {zoneRows.length > 0 && (
-          <div style={{ padding: '10px 24px 0' }}>
-            <WeekZoneCard rows={zoneRows} doneWorkouts={zoneDoneWorkouts} planWorkouts={zonePlanWorkouts} />
-          </div>
-        )}
-
-        {/* Niggle pre-flag — dismissed once acknowledged ("Értem · jó így") */}
-        {niggleActive && W.niggleWarning && !niggleConfirmed && (
-          <div style={{ padding: '16px 24px' }}>
-            <div
-              className="card"
-              style={{
-                padding: 16,
-                background: AMBER_TINT_6,
-                borderColor: AMBER_BORDER,
-                position: 'relative',
-                overflow: 'hidden',
-              }}
-            >
-              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: 2, background: 'var(--warning)' }} />
-              <div className="row gap-sm" style={{ alignItems: 'center' }}>
-                <Icon name="warning" size={16} color="var(--warning)" />
-                <span className="eyebrow" style={{ color: 'var(--warning)' }}>
-                  {W.niggleWarning.muscleLabel} · aktív niggle
-                </span>
-              </div>
-              <p style={{ fontSize: 13, marginTop: 10, color: 'var(--text-primary)', lineHeight: 1.5 }}>
-                {W.niggleWarning.detail}
-              </p>
-              <div className="row gap-sm mt-md">
-                <button
-                  type="button"
-                  className="cta-ghost"
-                  style={{ fontSize: 10 }}
-                  onClick={() => setNiggleConfirmed(true)}
-                >
-                  Értem · jó így
-                </button>
-                <button type="button" className="chip" style={{ fontSize: 9 }}>
-                  Tudatosítsuk később
-                </button>
-              </div>
+        <EntranceGroup>
+          <div style={{ padding: '6px 24px 0' }}>
+            <div className="mz-tile mz-w-coral tp-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+              <span className="mz-eyebrow" style={{ color: 'var(--coral-deep)' }}>{huWeekdayFull()} · {weekLabel}</span>
+              <span className="tp-title">{W.title}</span>
+              <StatStrip className="mt-sm">
+                <StatCell value={forecast ? `+${forecast.totalXp}` : '—'} label="várható XP" />
+                <StatCell value={stats.workSets} label="szett" />
+                <StatCell value={stats.durationEst > 0 ? `~${stats.durationEst}′` : '—'} label="idő" />
+                <StatCell value={stats.muscleCount} label="izomcsoport" />
+              </StatStrip>
+              <button type="button" className="np-cta np-press tp-cta" onClick={beginWorkout}>
+                ⚡ Kezdjük el →
+              </button>
             </div>
           </div>
-        )}
 
-        {/* ⚔️ A mai küldetések — companion proposes, user approves */}
-        <ChallengesCarousel
-          challenges={challenges}
-          accepted={acceptedMap}
-          onToggle={toggleChallenge}
-          pending={challengesPending}
-        />
-
-        {/* Warmup block */}
-        <div style={{ padding: '8px 24px' }}>
-          <div className="eyebrow" style={{ marginBottom: 10 }}>
-            Bemelegítés · 8 perc
-          </div>
-          <div className="col gap-sm">
-            {WARMUP_ROWS.map((w, i) => (
-              <div
-                key={i}
-                className="row"
-                style={{
-                  padding: '10px 14px',
-                  alignItems: 'center',
-                  background: 'var(--surface)',
-                  borderRadius: 20,
-                  boxShadow: 'var(--np-shadow-row)',
-                }}
+          <div style={{ padding: '11px 24px 24px' }}>
+            <Mosaic>
+              <Tile
+                wash="coral" icon="i-edzes" eyebrow="Gyakorlatok" delayMs={70}
+                line={`${W.exercises.length} gyakorlat · ${stats.workSets + stats.warmupSets} szett`}
+                onClick={() => setPrepTile('gyakorlatok')} aria-label="Gyakorlatok"
+              />
+              {forecast && (
+                <Tile
+                  wash="coral" icon="i-growth" eyebrow="Fejlődés" delayMs={100}
+                  line={`+${forecast.totalXp} XP`}
+                  onClick={() => setPrepTile('fejlodes')} aria-label="Várható fejlődés"
+                />
+              )}
+              {zoneRows.length > 0 && (
+                <Tile
+                  wash="white" icon="i-edzes" eyebrow="Heti zóna" delayMs={130}
+                  line={`kész ${zoneDoneWorkouts}/${zonePlanWorkouts} edzés`}
+                  onClick={() => setPrepTile('zona')} aria-label="Heti zóna"
+                />
+              )}
+              <button
+                type="button" className="mz-tile mz-w-gold rise" style={{ '--d': '160ms' } as React.CSSProperties}
+                onClick={() => setPrepTile('kuldetesek')} aria-label="A mai küldetések"
               >
-                <span
-                  className="label-mono"
-                  style={{ fontSize: 9, color: 'var(--coral-deep)', marginRight: 12 }}
+                <div className="mz-tile-top"><span className="mz-eyebrow">Küldetések</span></div>
+                <div className="mz-spotwrap">
+                  <span className="tp-anchor">
+                    <ClayIcon name="i-kihivas" size={38} />
+                    {acceptedCount > 0 && <span className="tp-badge">{acceptedCount}</span>}
+                  </span>
+                </div>
+                <div className="mz-tile-line">{challengesPending ? 'készül…' : `${acceptedCount}/${challenges.length} elfogadva`}</div>
+              </button>
+              <Tile
+                wash="sky" icon="i-lang" eyebrow="Bemelegítés" delayMs={190}
+                line={`${warmupTotalMin} perc · ${WARMUP_ROWS.length} blokk`}
+                onClick={() => setPrepTile('bemelegites')} aria-label="Bemelegítés"
+              />
+              {niggleActive && W.niggleWarning && (
+                <button
+                  type="button" className="mz-tile mz-w-gold tp-niggle rise" style={{ '--d': '220ms' } as React.CSSProperties}
+                  onClick={() => setPrepTile('niggle')} aria-label="Aktív niggle"
                 >
-                  0{i + 1}
-                </span>
-                <span style={{ fontSize: 13, color: 'var(--text-primary)', flex: 1 }}>{w.label}</span>
-                <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 11, color: 'var(--text-tertiary)' }}>
-                  {w.time}
-                </span>
-              </div>
-            ))}
+                  <div className="mz-tile-top"><span className="mz-eyebrow">Niggle</span></div>
+                  <div className="mz-spotwrap">
+                    <span className="tp-anchor">
+                      <ClayIcon name="i-eletjel" size={38} />
+                      {!niggleConfirmed && <span className="tp-badge">!</span>}
+                    </span>
+                  </div>
+                  <div className="mz-tile-line">{niggleLine}</div>
+                </button>
+              )}
+            </Mosaic>
           </div>
-        </div>
-
-        {/* Gyakorlatok, izomcsoport-szekciókban — muscle-color family sections (plan
-            order preserved), each exercise a bigger PrepExerciseCard (1RM badge +
-            accepted-challenge accent, ported from the old flat list's sparkle idiom). */}
-        <div style={{ padding: '16px 24px' }}>
-          <div className="col gap-md">
-            {exerciseGroups.map((group) => (
-              <div key={group.key} className="col gap-sm">
-                <div className="eyebrow" style={{ color: group.deep }}>
-                  {group.label} · {group.exercises.length} gyakorlat
-                </div>
-                <div className="col gap-sm">
-                  {group.exercises.map((e) => {
-                    const exChallenge = challenges.find((c) => c.exerciseId === e.id && acceptedMap[c.id]) ?? null
-                    return (
-                      <PrepExerciseCard
-                        key={e.id}
-                        exercise={e}
-                        oneRmKg={oneRmMap.get(identityKeyOf(e)) ?? null}
-                        accentChallenge={exChallenge ? { typeLabel: exChallenge.typeLabel, target: exChallenge.target } : null}
-                      />
-                    )
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* In-flow CTA at the END of the list (mezo-87d2): `position: sticky; bottom`
-            proved platform-fragile on the device scroller (it pinned mid-content on
-            iOS PWA), and the approved B mockup had the CTA after the content anyway.
-            np-ctarow: .np-cta is flex:1 — full-width only inside this flex row. */}
-        <div className="np-ctarow" style={{ marginTop: 0, padding: '16px 24px 32px' }}>
-          <button
-            type="button"
-            className="np-cta np-press"
-            onClick={beginWorkout}
-          >
-            ⚡ Kezdjük el →
-          </button>
-        </div>
+        </EntranceGroup>
       </div>
     )
   }
@@ -918,6 +951,11 @@ function ActiveWorkoutSession({
         challenges={summaryChallenges}
         medals={sessionMedals}
         durationMin={W.durationEst}
+        // The draft lives on the page, not in the shell: the summary/complete phase flip
+        // remounts nothing here, but the note must also survive a trip back to `active`.
+        note={closing ? null : closingNote.trim() || null}
+        draftNote={closingNote}
+        onDraftNote={closing ? setClosingNote : undefined}
         onFinish={finishAndCelebrate}
         finishPending={finishPending}
         onBack={() => setPhase('active')}
@@ -948,10 +986,20 @@ function ActiveWorkoutSession({
   // `current.workingSets` — otherwise a ＋Szett extra set shows `4/3` and a removed working
   // slot sticks at `/3`.
   const liveWorkingSetCount = Math.max(0, currentSetCount - warmupCount)
-  const firstWorkingTargetKg = (session.prescribed[current.id] ?? [])
-    .find((p) => p.kind === 'working' && p.targetWeightKg != null)?.targetWeightKg ?? null
   const lastWarmupIdx = lastLoggedWarmupIdx(session, current.id, cursor)
   const warmupNote = lastWarmupIdx != null ? warmupPctLabel(current, lastWarmupIdx) : null
+  // Logging-panel slot label (mezo-d20.3.9, prototype `slotLbl`): the panel names the
+  // slot it is about to fill AND its target, so the target never needs a cell of its
+  // own. `cél` parts are omitted when the engine prescribed nothing (honest state).
+  const repUnit = current.type === 'plyo' ? ' mp' : ''
+  const slotLabel = cursor >= currentSetCount
+    ? 'Kész'
+    : isWarmupSet
+      ? `Logolás · B${cursor + 1}${currentTarget?.targetWeightKg != null ? ` · cél ${currentTarget.targetWeightKg.toLocaleString('hu-HU')} × ${currentTarget.targetReps}` : ''}`
+      : `Logolás · ${cursor + 1 - warmupCount}. working · cél ${currentTarget?.targetWeightKg != null ? `${currentTarget.targetWeightKg.toLocaleString('hu-HU')} × ` : ''}${currentTarget?.targetReps ?? `${current.repMin}–${current.repMax}`}${repUnit}`
+  // The demo video's resolved embed (null when there is no recognizable URL) — the
+  // head's icon button only renders when this exists.
+  const videoEmbedTarget = videoEmbed(current.videoUrl)
   // Session progress bar (under the header): one flex segment per exercise,
   // weighted by its own planned set count, coloured by ITS OWN muscle family.
   const progressSegments = sessionProgressSegments(
@@ -1147,33 +1195,18 @@ function ActiveWorkoutSession({
       )}
 
       <div>
-        {/* Header — Napív wk-top (spec §4.5): back pill, title + counter, exercise
-            dots, and the ⋯ actions chip, all in one sticky row (mezo-8141). */}
+        {/* Header — Napív wk-top (spec §4.5), re-faced (mezo-d20.3.9, prototype
+            #page-active head): back pill, the centered title + counter button, and the
+            ⋯ actions chip. The exercise dots dropped OUT of the header into their own
+            centered row below it, so the title can breathe on a phone. */}
         <div className="wk-top np-anim" style={{ '--i': 0 } as React.CSSProperties}>
           <button type="button" className="back np-press" aria-label="Vissza" onClick={onExit}>‹</button>
           {/* Counter is now a button — tapping it opens the jump-to overview sheet
               (spec 2026-07-15 free navigation). ▾ signals the drop-down affordance. */}
-          <button type="button" className="tt" aria-label="Gyakorlatlista" disabled={!!feedbackEx} onClick={() => setOverviewOpen(true)} style={{ textAlign: 'left' }}>
+          <button type="button" className="tt wkx-tt" aria-label="Gyakorlatlista" disabled={!!feedbackEx} onClick={() => setOverviewOpen(true)}>
             <div className="t1">{W.title}</div>
             <div className="t2">▾ {currentIdx + 1}/{W.exercises.length} gyakorlat · {doneSets}/{totalSets} szett</div>
           </button>
-          <div className="exdots">
-            {W.exercises.map((e) => {
-              // Resolved-state classing (free navigation): a fully-logged or skipped
-              // exercise is done/skipped regardless of order; the viewed one is current.
-              const resolved = session.skipped.includes(e.id)
-                ? 'skp'
-                : (session.logged[e.id]?.length ?? 0) >= effectiveSetCount(session, e.id)
-                  ? 'don'
-                  : undefined
-              // Dots are tappable (free navigation) — each jumps to its exercise.
-              return (
-                <button key={e.id} type="button" aria-label={`Ugrás: ${e.name}`} onClick={() => jumpTo(e.id)} style={{ padding: 2, lineHeight: 0 }}>
-                  <i className={e.id === current.id ? 'cur' : resolved} />
-                </button>
-              )
-            })}
-          </div>
           <button
             type="button"
             aria-label="Gyakorlat műveletek"
@@ -1184,6 +1217,24 @@ function ActiveWorkoutSession({
           >
             ⋯
           </button>
+        </div>
+
+        <div className="exdots">
+          {W.exercises.map((e) => {
+            // Resolved-state classing (free navigation): a fully-logged or skipped
+            // exercise is done/skipped regardless of order; the viewed one is current.
+            const resolved = session.skipped.includes(e.id)
+              ? 'skp'
+              : (session.logged[e.id]?.length ?? 0) >= effectiveSetCount(session, e.id)
+                ? 'don'
+                : undefined
+            // Dots are tappable (free navigation) — each jumps to its exercise.
+            return (
+              <button key={e.id} type="button" aria-label={`Ugrás: ${e.name}`} onClick={() => jumpTo(e.id)}>
+                <i className={e.id === current.id ? 'cur' : resolved} />
+              </button>
+            )
+          })}
         </div>
 
         {/* Session progress bar (v2, mezo-8xmf): one segment per exercise, flex-weighted
@@ -1232,207 +1283,205 @@ function ActiveWorkoutSession({
             else if (dx >= 60) jumpTo(prevEx?.id)
           }}
         >
-          {activeChallenge && (
-            <div className="warmstrip">
-              <Icon name="sparkle" size={14} color="var(--coral)" />
-              <div className="col flex-1">
-                <span className="label-mono" style={{ fontSize: 9, color: 'var(--coral-deep)' }}>
-                  Aktív kihívás · {activeChallenge.typeLabel}
-                </span>
-                <span style={{ fontSize: 12, color: 'var(--text-primary)', marginTop: 2 }}>
-                  Cél: <strong style={{ color: 'var(--coral-deep)', fontWeight: 500 }}>{activeChallenge.target}</strong>
-                </span>
+          {/* ① head — the eyebrow (idx/n · muscleLabel · type) + a SINGLE-LINE name,
+              with the media as small round icon buttons on the right (mezo-d20.3.9,
+              prototype .mrow + .mbtn). The old labelled "⛶ Kép" / "▶ Demo" chips
+              are gone: mid-set the card must read as one calm block. */}
+          <div className="wkx-exhead">
+            <div className="wkx-exhead-grow">
+              <div className="exo" style={{ color: family.deep }}>
+                {currentIdx + 1}/{W.exercises.length} · {muscleLabel} · {current.type}
               </div>
+              <h2>{current.name}</h2>
             </div>
-          )}
-          {/* ① eyebrow — idx/n · muscleLabel · type (family-deep) + name only. */}
-          <div className="exo" style={{ color: family.deep }}>
-            {currentIdx + 1}/{W.exercises.length} · {muscleLabel} · {current.type}
-          </div>
-          <h2>{current.name}</h2>
-
-          {/* ② stat-strip — three labeled cells: Stílus (failure/volume + RIR),
-              Rep-cél (mono range), Szett (mono done/working). */}
-          <div className="wkx-statstrip">
-            <div className="wkx-statcell">
-              <div className="wkx-statlabel">Stílus</div>
-              <div className="wkx-statvalue" style={{ color: cardStyle === 'failure' ? 'var(--coral-deep)' : 'var(--sage-deep)' }}>
-                {cardStyle === 'failure' ? '🔥 Failure' : `🌿 Volume · RIR ${current.targetRIR}`}
-              </div>
-            </div>
-            <div className="wkx-statcell">
-              <div className="wkx-statlabel">Rep-cél</div>
-              <div className="wkx-statvalue mono">{current.repMin}–{current.repMax}</div>
-            </div>
-            <div className="wkx-statcell">
-              <div className="wkx-statlabel">Szett</div>
-              <div className="wkx-statvalue mono">{doneWorkingSets}/{liveWorkingSetCount}</div>
-            </div>
-          </div>
-
-          {/* ③ múlt + javaslat subrow — top-bordered, own row; left the last-week top
-              set (hidden with no lastWeek), right the first working target (hidden
-              when the engine hasn't prescribed one). */}
-          {(current.lastWeek || firstWorkingTargetKg != null) && (
-            <div className="wkx-subrow">
-              {current.lastWeek && (
-                <span className="mono wkx-subrow-prev">
-                  múlt héten: {current.lastWeek.weight.toLocaleString('hu-HU')} kg × {current.lastWeek.reps} @{current.lastWeek.rir}
-                </span>
-              )}
-              <span style={{ flex: 1 }} />
-              {firstWorkingTargetKg != null && (
-                <span className="wkx-subrow-next">↗ ma: {firstWorkingTargetKg.toLocaleString('hu-HU')} kg</span>
-              )}
-            </div>
-          )}
-
-          {/* Inline demo media (catalog-resolved). The video wrapper renders only when a real
-              YouTube id is extractable; the still is tap-to-reveal so it never steals the
-              logging surface mid-set (mezo-8xdl.4). The image chip and Demo chip stay stacked
-              (not side by side) — merging them onto one row would mean restructuring
-              VideoDemo's chip+player unit, which mezo-setx.6.14/.6.17 own. */}
-          {current.imageStartUrl && (
-            <div className="mt-sm">
+            {current.imageStartUrl && (
               <button
                 type="button"
-                className="chip"
-                style={{ fontSize: 9, alignSelf: 'flex-start' }}
+                className={'wkx-mbtn' + (imageOpen ? ' on' : '')}
+                aria-label="Kép"
                 aria-expanded={imageOpen}
                 onClick={() => setImageOpen((v) => !v)}
               >
-                <span aria-hidden="true">⛶</span> Kép
+                <span aria-hidden="true">⛶</span>
               </button>
-              {imageOpen && (
-                <div className="mt-sm">
-                  <ExerciseImage
-                    start={current.imageStartUrl}
-                    end={current.imageEndUrl}
-                    name={current.name}
-                    muscle={current.muscle}
-                  />
-                </div>
-              )}
-            </div>
-          )}
-          {videoEmbed(current.videoUrl) && (
-            <div className="mt-sm">
-              <VideoDemo url={current.videoUrl} />
-            </div>
-          )}
-
-          {/* Durable per-exercise note pill (F4) — always visible while a note exists */}
-          {effectiveNote && (
-            <div
-              aria-label="Gyakorlat-jegyzet"
-              className="exercise-note-pill row gap-sm mt-sm"
-              style={{
-                alignItems: 'center',
-                padding: '6px 10px',
-                background: 'var(--surface-2)',
-                borderLeft: '2px solid var(--coral)',
-                fontSize: 12,
-                color: 'var(--text-secondary)',
-                lineHeight: 1.4,
-              }}
-            >
-              <Icon name="tool" size={11} color="var(--coral)" />
-              <span style={{ flex: 1 }}>{effectiveNote}</span>
-            </div>
-          )}
-
-          {/* Set-dots — one per planned+extra set; ✓ done, coral current, amber
-              "B{n}" pending warmups, plain ordinal pending working sets. */}
-          <div className="setdots">
-            {Array.from({ length: currentSetCount }, (_, i) => {
-              const warm = prescribedAt(session, current.id, i)?.kind === 'warmup'
-              const cls = i < cursor ? 'sd don' : i === cursor ? 'sd cur' : 'sd'
-              // An F2-added set (index at/past the exercise's planned baseline)
-              // gets a distinct dashed marker while still pending — restored in
-              // the final-review fix (mezo-8141 — Finding 2), gone since S5.
-              const extra = i >= (session.planned[current.id] ?? 0)
-              return (
-                <div key={i} className={cls + (warm ? ' wu' : '') + (extra && cls === 'sd' ? ' extra' : '')}>
-                  {i < cursor ? '✓' : warm ? `B${i + 1}` : i + 1 - warmupCount}
-                </div>
-              )
-            })}
-            {/* ④ last-logged-warmup note (spec §Execution card v2): the % of the
-                first working target this warmup was loaded at. */}
-            {warmupNote && <span className="mono wkx-setdots-note">{warmupNote} ✓</span>}
-          </div>
-
-          {/* Giant steppers — the single logging surface (spec §4.5). Only
-              genuinely load-less exercises (plyo) hide the kg stepper. */}
-          <div className="steprow">
-            {current.type !== 'plyo' && (
-              <SetStepper label="Súly" value={weight} step={2.5} unit="kg" min={0} max={999} onChange={setWeight} />
             )}
-            <SetStepper label="Ismétlés" value={reps} step={1} integer min={1} max={100} onChange={setReps} />
+            {videoEmbed(current.videoUrl) && (
+              <button
+                type="button"
+                className={'wkx-mbtn' + (videoOpen ? ' on' : '')}
+                aria-label="Demo videó"
+                aria-expanded={videoOpen}
+                onClick={() => setVideoOpen((v) => !v)}
+              >
+                <ClayIcon name="i-video" size={15} />
+              </button>
+            )}
           </div>
 
-          {/* No RIR on a warmup set — effort tracking is working-set-only (mezo-eerq). */}
-          {!isWarmupSet && (
-            <div className="rirrow">
-              <span className="rk">RIR</span>
-              {[0, 1, 2, 3].map((n) => (
-                <button key={n} type="button" aria-pressed={rir === n} aria-label={`RIR ${n}`} onClick={() => setRir(n)}>
-                  {n}
-                </button>
-              ))}
-              <span style={{ flex: 1 }} />
-              {/* ⑥ inline style hint — failure pushes to bukásig, volume keeps reserve. */}
-              <span className="wkx-rirhint" style={{ color: cardStyle === 'failure' ? 'var(--amber-deep)' : 'var(--sage-deep)' }}>
-                {cardStyle === 'failure' ? '🔥 bukásig!' : '🌿 hagyj 2 rep tartalékot'}
+          {/* ② metaline — the muted one-liner that replaced the 3-cell stat strip:
+              style · rep range · RIR, plus the accepted challenge as a dashed chip
+              (the old full-width "Aktív kihívás" banner). */}
+          <div className="wkx-metaline">
+            <span className={cardStyle === 'failure' ? 'hot' : 'cool'}>
+              {cardStyle === 'failure' ? '🔥 Failure' : '🌿 Volume'}
+            </span>
+            <span>· {current.repMin}–{current.repMax} {current.type === 'plyo' ? 'mp' : 'rep'}</span>
+            <span>· RIR {current.targetRIR}</span>
+            {activeChallenge && (
+              <span className="wkx-chmini" title={activeChallenge.typeLabel}>
+                <ClayIcon name="i-kihivas" size={11} />
+                {activeChallenge.target}
               </span>
+            )}
+          </div>
+
+          {/* Durable per-exercise note pill (F4) — one line, clamped; the full text
+              stays reachable through ⋯ → Jegyzet. */}
+          {effectiveNote && (
+            <div aria-label="Gyakorlat-jegyzet" className="exercise-note-pill wkx-notepill">
+              <span aria-hidden="true">✎</span>
+              <span className="ntext">{effectiveNote}</span>
             </div>
           )}
-          {current.type === 'isolation' && (
-            <div className="rirrow">
-              <span className="rk">Side</span>
-              {(['L', 'B', 'R'] as const).map((s) => (
-                <button key={s} type="button" aria-pressed={side === s} onClick={() => setSide(side === s ? null : s)}>
-                  {s}
+
+          {/* Tap-to-reveal demo media (mezo-8xdl.4) — neither still nor video ever
+              steals the logging surface unasked. */}
+          {imageOpen && current.imageStartUrl && (
+            <div className="wkx-media">
+              <ExerciseImage
+                start={current.imageStartUrl}
+                end={current.imageEndUrl}
+                name={current.name}
+                muscle={current.muscle}
+              />
+            </div>
+          )}
+          {videoOpen && videoEmbedTarget && (
+            <div className="wkx-media exvideo" style={{ aspectRatio: videoEmbedTarget.aspectRatio }}>
+              <iframe title="Demo videó" loading="lazy" allowFullScreen src={videoEmbedTarget.src} />
+            </div>
+          )}
+
+          {/* ③ THE logging panel — the one clearly bounded input zone of the screen
+              ("a kártyán logolsz, a sávokban utánanézel"): slot label with its
+              target, set dots + warmup-% note, steppers, RIR (working sets only),
+              L/B/R for isolation, the collapsed per-set note, and the CTA / rest bar. */}
+          <div className="wkx-logbox">
+            <div className="wkx-logtop">
+              <span className="eyebrow" style={{ color: family.deep }}>{slotLabel}</span>
+              <span style={{ flex: 1 }} />
+              <span className="wkx-lgoal">{doneWorkingSets}/{liveWorkingSetCount} szett</span>
+            </div>
+
+            {/* Set-dots — one per planned+extra set; ✓ done, coral current, amber
+                "B{n}" pending warmups, plain ordinal pending working sets. */}
+            <div className="setdots">
+              {Array.from({ length: currentSetCount }, (_, i) => {
+                const warm = prescribedAt(session, current.id, i)?.kind === 'warmup'
+                const cls = i < cursor ? 'sd don' : i === cursor ? 'sd cur' : 'sd'
+                // An F2-added set (index at/past the exercise's planned baseline)
+                // gets a distinct dashed marker while still pending — restored in
+                // the final-review fix (mezo-8141 — Finding 2), gone since S5.
+                const extra = i >= (session.planned[current.id] ?? 0)
+                return (
+                  <div key={i} className={cls + (warm ? ' wu' : '') + (extra && cls === 'sd' ? ' extra' : '')}>
+                    {i < cursor ? '✓' : warm ? `B${i + 1}` : i + 1 - warmupCount}
+                  </div>
+                )
+              })}
+              {/* ④ last-logged-warmup note (spec §Execution card v2): the % of the
+                  first working target this warmup was loaded at. */}
+              {warmupNote && <span className="mono wkx-setdots-note">{warmupNote} ✓</span>}
+            </div>
+
+            {/* The inputs only exist while there IS a slot to log — a finished
+                exercise shows its dots and the done line, nothing to fill in. */}
+            {cursor < currentSetCount && (
+              <>
+                {/* Flexible steppers (tap ± or type the exact value). Only genuinely
+                    load-less exercises (plyo) hide the kg stepper. */}
+                <div className="steprow">
+                  {current.type !== 'plyo' && (
+                    <SetStepper label="Súly" value={weight} step={2.5} unit="kg" min={0} max={999} onChange={setWeight} />
+                  )}
+                  <SetStepper label="Ismétlés" value={reps} step={1} integer min={1} max={100} onChange={setReps} />
+                </div>
+
+                {/* No RIR on a warmup set — effort tracking is working-set-only (mezo-eerq). */}
+                {!isWarmupSet && (
+                  <div className="rirrow">
+                    <span className="rk">RIR</span>
+                    {[0, 1, 2, 3].map((n) => (
+                      <button key={n} type="button" aria-pressed={rir === n} aria-label={`RIR ${n}`} onClick={() => setRir(n)}>
+                        {n}
+                      </button>
+                    ))}
+                    <span style={{ flex: 1 }} />
+                    {/* ⑥ inline style hint — failure pushes to bukásig, volume keeps reserve. */}
+                    <span className="wkx-rirhint" style={{ color: cardStyle === 'failure' ? 'var(--amber-deep)' : 'var(--sage-deep)' }}>
+                      {cardStyle === 'failure' ? '🔥 bukásig!' : '🌿 hagyj 2 rep tartalékot'}
+                    </span>
+                  </div>
+                )}
+                {current.type === 'isolation' && (
+                  <div className="rirrow">
+                    <span className="rk">Oldal</span>
+                    {(['L', 'B', 'R'] as const).map((s) => (
+                      <button key={s} type="button" aria-pressed={side === s} onClick={() => setSide(side === s ? null : s)}>
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Transient per-set note (SetLogRequest.note) — COLLAPSED behind a
+                    toggle in the calm default; cleared (and re-collapsed) after each
+                    log. Distinct from the durable per-exercise note pill/editor. */}
+                {noteOpen || note ? (
+                  <input
+                    className="setnote"
+                    aria-label="Szett megjegyzés"
+                    placeholder="Megjegyzés ehhez a szetthez (opcionális)"
+                    maxLength={500}
+                    autoFocus={noteOpen}
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                  />
+                ) : (
+                  <button type="button" className="wkx-notetoggle" onClick={() => setNoteOpen(true)}>
+                    ＋ megjegyzés a szetthez
+                  </button>
+                )}
+              </>
+            )}
+
+            {/* I2 (fix round 1): a delete can complete the exercise WITHOUT going through
+                completeSet's own last-set branch (which is what normally pins `feedbackEx`
+                and never re-renders this CTA afterwards) — so the CTA is gated on the
+                cursor directly: once there is no next slot to log, it must not linger.
+                N3 (fix round 2): the REST BAR is a different story — a rest can still be
+                genuinely running (free-navigated away from mid-rest, or navigated back to
+                a since-completed exercise) and must stay visible/pausable regardless of
+                whether this exercise still has a next slot; only the CTA is cursor-gated. */}
+            {rest.status === 'idle' ? (
+              cursor < currentSetCount ? (
+                <button type="button" className="donebtn np-press" onClick={completeSet}>
+                  Szett kész ✓
                 </button>
-              ))}
-            </div>
-          )}
-
-          {/* Transient per-set note (SetLogRequest.note) — cleared after each log;
-              distinct from the durable per-exercise note pill/editor above. */}
-          <input
-            className="setnote"
-            aria-label="Szett megjegyzés"
-            placeholder="Megjegyzés ehhez a szetthez (opcionális)"
-            maxLength={500}
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
-
-          {/* I2 (fix round 1): a delete can complete the exercise WITHOUT going through
-              completeSet's own last-set branch (which is what normally pins `feedbackEx`
-              and never re-renders this CTA afterwards) — so the CTA is gated on the
-              cursor directly: once there is no next slot to log, it must not linger.
-              N3 (fix round 2): the REST BAR is a different story — a rest can still be
-              genuinely running (free-navigated away from mid-rest, or navigated back to
-              a since-completed exercise) and must stay visible/pausable regardless of
-              whether this exercise still has a next slot; only the CTA is cursor-gated. */}
-          {rest.status === 'idle' ? (
-            cursor < currentSetCount && (
-              <button type="button" className="donebtn np-press" onClick={completeSet}>
-                Szett kész ✓
-              </button>
-            )
-          ) : (
-            <RestTimerBar
-              remaining={rest.remaining}
-              total={rest.total}
-              paused={rest.status === 'paused'}
-              onPause={rest.pause}
-              onResume={rest.resume}
-              onSkip={rest.skip}
-            />
-          )}
+              ) : (
+                <div className="wkx-alldone">✓ Minden szett megvan ennél a gyakorlatnál</div>
+              )
+            ) : (
+              <RestTimerBar
+                remaining={rest.remaining}
+                total={rest.total}
+                paused={rest.status === 'paused'}
+                onPause={rest.pause}
+                onResume={rest.resume}
+                onSkip={rest.skip}
+              />
+            )}
+          </div>
         </div>
 
         {/* Two-way pager bar (mockup B) — big tap targets, neighbour name + live n/m. */}
@@ -1454,9 +1503,19 @@ function ActiveWorkoutSession({
         </div>
 
         {/* Progressive-overload signal (mezo-5pfe): the structured banner when the engine
-            emits a progression, else the plain rationale strip (first session / anchor). */}
+            emits a progression, else the plain rationale strip (first session / anchor).
+            Re-face (mezo-d20.3.9): the banner is REFERENCE content, so it lives in a thin
+            collapsible strip whose closed header already carries the delta chip
+            ("⚡ Progresszió · +2,5 kg ▾"). The rationale strip stays as-is — one muted
+            sentence is already calm. */}
         {current.progression ? (
-          <ProgressionBanner progression={current.progression} lastWeek={current.lastWeek} />
+          <CollapsibleStrip
+            className="wkx-strip"
+            eyebrow="⚡ Progresszió"
+            chip={<span className="wkx-pochip" data-lever={current.progression.lever}>{progressionDeltaLabel(current.progression)}</span>}
+          >
+            <ProgressionBanner progression={current.progression} lastWeek={current.lastWeek} bare />
+          </CollapsibleStrip>
         ) : current.rationale ? (
           <div className="aistrip">
             <span aria-hidden="true">✨</span>
@@ -1483,17 +1542,22 @@ function ActiveWorkoutSession({
           const deltaPct = topSetDeltaPct(loggedForMeta, current.lastWeek?.weight ?? null)
           const avgRir = avgWorkingRir(loggedForMeta)
           return (
+            <CollapsibleStrip
+              className="wkx-strip"
+              eyebrow="Szettek"
+              summary={`${cursor}/${currentSetCount} ✓${tonnage ? ` · ${tonnage.toLocaleString('hu-HU')} kg` : ''}`}
+            >
             <div
               className="wkx-slist"
               style={{ '--fam-rail': family.rail, '--fam-wash': family.wash, '--fam-deep': family.deep } as React.CSSProperties}
             >
               {/* Exercise-level target — the ONLY place the rep-range/RIR/style shows. */}
               <div className="wkx-shead">
-                <span className="eyebrow">Szettek</span>
-                <span style={{ flex: 1 }} />
                 <span className="wkx-tgt" style={{ background: family.wash, color: family.deep }}>
                   cél: {current.repMin}–{current.repMax} rep · RIR {current.targetRIR} {cardStyle === 'failure' ? '🔥' : '🌿'}
                 </span>
+                <span style={{ flex: 1 }} />
+                <span className="wkx-shint">sorra koppintva szerkeszthető</span>
               </div>
 
               <div className="wkx-srow wkx-srow-head">
@@ -1601,6 +1665,7 @@ function ActiveWorkoutSession({
                 </div>
               </div>
             </div>
+            </CollapsibleStrip>
           )
         })()}
       </div>

@@ -1,6 +1,7 @@
 // Aggregate FE↔data boundary. Every consumer imports its hooks from '@/data/hooks';
 // the implementations live in the per-domain hook modules — this file only re-exports,
 // so consumer import paths and the dual-mode contract stay stable.
+export { useMe, useAuthActions, ME_QUERY_KEY } from '@/data/auth/authHooks'
 export { useTodayScenario, resolveBriefing, useToday, useFuelPreview, useQuickStats } from '@/data/today/todayHooks'
 export { useCheckins } from '@/data/today/checkinHooks'
 export { useCompanionFeed } from '@/data/today/feedHooks'
@@ -8,17 +9,18 @@ export { useSleep, useSleepGoal, useSleepGoalActions, useSleepShot } from '@/dat
 export { useProfile } from '@/data/me/meHooks'
 export { useMeWeek } from '@/data/me/meWeekHooks'
 export { useWeeklyReview } from '@/data/me/weeklyReviewHooks'
+export { useWeekLessons } from '@/data/me/weekLessonsHooks'
 export { usePeople } from '@/data/me/peopleHooks'
-export { useInsights } from '@/data/insights/insightsHooks'
-export { useMemoir } from '@/data/insights/memoirHooks'
+export { useMemoir, useMemoirArchive } from '@/data/insights/memoirHooks'
 export { usePredictions } from '@/data/insights/predictionsHooks'
 export { useExperiments, useExperimentActions } from '@/data/insights/experimentsHooks'
+export { useDiagnoses, useDiagnosis, useDiagnosisActions } from '@/data/insights/diagnosisHooks'
 export { useKnowledge, useKnowledgeActions } from '@/data/insights/knowledgeHooks'
-export { useLifeEventCandidates, useLifeEventActions, useKnowledgeGraphNodes, useKnowledgeGraphActions } from '@/data/insights/graphHooks'
+export { useLifeEventCandidates, useLifeEventActions, useKnowledgeGraphNodes, useKnowledgeGraphActions, useGraphEdgeCount } from '@/data/insights/graphHooks'
 export { usePatterns, usePatternActions } from '@/data/insights/patternsHooks'
 export { usePatternMonitor } from '@/data/insights/monitorHooks'
 export { usePatternPairDetail } from '@/data/insights/patternDetailHooks'
-export { useChat, useChatActions, useConversations, useTranscribe, NEW_CHAT } from '@/data/insights/chatHooks'
+export { useChat, useChatActions, useConversations, useConversationActions, useTranscribe, NEW_CHAT } from '@/data/insights/chatHooks'
 export { useLlmUsage, useMemoryOverview, useMemorySummaries, useSimilarDays } from '@/data/insights/memoryHooks'
 export { useFuelTimeline } from '@/data/fuel/timelineHooks'
 export { useFuelWeek } from '@/data/fuel/fuelWeekHooks'
@@ -28,26 +30,31 @@ export { useStackDay } from '@/data/fuel/stackDayHooks'
 export { useTrain, useOpenWorkout } from '@/data/train/trainHooks'
 export { useChallenges, useChallengeActions } from '@/data/train/challengeHooks'
 export { useRunning } from '@/data/train/runningHooks'
-export { useWorkoutDetail, useWeekWorkouts } from '@/data/train/workoutDetailHooks'
+export { useWorkoutDetail, useWeekWorkouts, useTemplateDayChain } from '@/data/train/workoutDetailHooks'
+export { useWorkoutNote } from '@/data/train/workoutNoteHooks'
 export { useWeekMuscleLog } from '@/data/train/weekMuscleLogHooks'
 export { useMesocycleVolumeArc } from '@/data/train/mesoArcHooks'
 export { useMesoReport } from '@/data/train/mesoReportHooks'
 export { useMesoTemplates } from '@/data/train/mesoTemplateHooks'
+export { useMesoPlanGenerate } from '@/data/train/mesoPlanHooks'
+export type { MesoPlanProposal } from '@/data/train/mesoPlanHooks'
 export { useCustomWorkouts, useCustomWorkoutActions } from '@/data/train/customWorkoutHooks'
 export { useMedals } from '@/data/train/medalHooks'
 export { useWeight } from '@/data/me/weightHooks'
 export { usePantry, usePantryActions } from '@/data/fuel/pantryHooks'
 export { useRecipes, useRecipeActions, useRecipeBreakdown } from '@/data/fuel/recipeHooks'
+export { useWorkshop } from '@/data/fuel/workshopHooks'
 export { useFuelDay, useMealActions, useRecipeLogs, useWaterActions } from '@/data/fuel/fuelHooks'
 export { useMealCoach, useMealCoachFor } from '@/data/fuel/coachHooks'
 export { useMedication, useMedicationActions } from '@/data/fuel/medicationHooks'
 export { useFuelSettings, useFuelSettingsActions } from '@/data/fuel/fuelSettingsHooks'
 export { useDietSettings, useDietSettingsActions, DIET_SETTINGS_GHOST } from '@/data/fuel/dietSettingsHooks'
+export { useTutorialProgress, useTutorialProgressActions, TUTORIAL_PROGRESS_GHOST } from '@/data/tutorial/tutorialProgressHooks'
 export { useSlotTemplates, useSlotTemplateActions, useSlotTemplateEvaluation } from '@/data/fuel/slotTemplateHooks'
 export { useGoal, useGoalCreation, useGoalActions, useFeasibilityPreview } from '@/data/me/goalHooks'
 export { useBiometricProfile, useBiometricActions } from '@/data/me/biometricHooks'
 export { useLlmUsageSummary, useLlmUsageBreakdown, useLlmCalls, useLlmCall } from '@/data/me/llmUsageHooks'
-export { useProgressionProfile, useAchievements } from '@/data/progression/progressionHooks'
+export { useProgressionProfile, useAchievements, useGrowthWeek } from '@/data/progression/progressionHooks'
 export { useDailyQuests, useQuestActions, useQuestHistory } from '@/data/quest/questHooks'
 export { useHabitDay, useHabitActions, useHabitSummary } from '@/data/habit/habitHooks'
 export { useHabitCatalog, useHabitCatalogActions, useHabitAiSuggest } from '@/data/habit/habitAdminHooks'
@@ -65,3 +72,15 @@ export { useJournalNotes, useJournalActions } from '@/data/journal/journalHooks'
 export { useDecisions, useDecisionActions, isDecisionDue } from '@/data/journal/decisionHooks'
 export { useFeedback } from '@/data/feedback/feedbackHooks'
 export { useGratitudeEntries, useGratitudeActions } from '@/data/journal/gratitudeHooks'
+export {
+  useCharacterOverview,
+  useCharacterDimension,
+  useCharacterFeed,
+  useCharacterExperts,
+  useCharacterConferences,
+  useCharacterConference,
+  useClaimFeedback,
+  useCharacterBootstrap,
+  useCharacterRuns,
+  useCharacterRun,
+} from '@/data/character/characterHooks'

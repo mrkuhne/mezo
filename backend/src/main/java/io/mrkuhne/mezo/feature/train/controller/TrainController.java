@@ -15,6 +15,8 @@ import io.mrkuhne.mezo.api.dto.GymScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.GymScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.MedalListResponse;
 import io.mrkuhne.mezo.api.dto.MesoDay;
+import io.mrkuhne.mezo.api.dto.MesoPlanGenerateRequest;
+import io.mrkuhne.mezo.api.dto.MesoPlanGenerateResponse;
 import io.mrkuhne.mezo.api.dto.MesoRerunResponse;
 import io.mrkuhne.mezo.api.dto.MesoTemplateResponse;
 import io.mrkuhne.mezo.api.dto.MesoTemplateStartRequest;
@@ -39,6 +41,7 @@ import io.mrkuhne.mezo.api.dto.SportSessionResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutDetailResponse;
 import io.mrkuhne.mezo.api.dto.WorkoutFeedbackInput;
 import io.mrkuhne.mezo.api.dto.WorkoutInstanceResponse;
+import io.mrkuhne.mezo.api.dto.WorkoutNoteRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutSkipRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutStartRequest;
 import io.mrkuhne.mezo.api.dto.WorkoutSummaryResponse;
@@ -47,6 +50,7 @@ import io.mrkuhne.mezo.feature.train.service.ExerciseCatalogService;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
 import io.mrkuhne.mezo.feature.train.service.MedalService;
+import io.mrkuhne.mezo.feature.train.service.MesoPlanGeneratorService;
 import io.mrkuhne.mezo.feature.train.service.MesoTemplateService;
 import io.mrkuhne.mezo.feature.train.service.MesocycleReportService;
 import io.mrkuhne.mezo.feature.train.service.RunningService;
@@ -78,6 +82,7 @@ public class TrainController implements TrainApi {
     private final RunningService runningService;
     private final VolumeArcService volumeArcService;
     private final CurrentUserId currentUserId;
+    private final MesoPlanGeneratorService mesoPlanGeneratorService;
 
     @Override
     public List<MesocycleResponse> listMesocycles() {
@@ -126,13 +131,18 @@ public class TrainController implements TrainApi {
     }
 
     @Override
-    public List<SportSessionResponse> listSportSessions() {
-        return service.listSportSessions(currentUserId.get());
+    public List<SportSessionResponse> listSportSessions(LocalDate from, LocalDate to) {
+        return service.listSportSessions(currentUserId.get(), from, to);
     }
 
     @Override
     public List<MesoTemplateResponse> listMesoTemplates() {
         return mesoTemplateService.list(currentUserId.get());
+    }
+
+    @Override
+    public MesoPlanGenerateResponse generateMesoPlan(MesoPlanGenerateRequest mesoPlanGenerateRequest) {
+        return mesoPlanGeneratorService.generate(currentUserId.get(), mesoPlanGenerateRequest);
     }
 
     @Override
@@ -310,8 +320,15 @@ public class TrainController implements TrainApi {
     }
 
     @Override
-    public WorkoutInstanceResponse finishWorkout(UUID id) {
-        return workoutService.finishWorkout(currentUserId.get(), id);
+    public void saveWorkoutNote(UUID id, WorkoutNoteRequest workoutNoteRequest) {
+        workoutService.saveClosingNote(currentUserId.get(), id, workoutNoteRequest.getNote());
+    }
+
+    @Override
+    public WorkoutInstanceResponse finishWorkout(UUID id, WorkoutNoteRequest workoutNoteRequest) {
+        // The body is optional, so the generated signature hands us null when none was sent.
+        return workoutService.finishWorkout(currentUserId.get(), id,
+            workoutNoteRequest != null ? workoutNoteRequest.getNote() : null);
     }
 
     @Override

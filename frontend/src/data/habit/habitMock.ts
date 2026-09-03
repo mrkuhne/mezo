@@ -106,6 +106,13 @@ function toDefInfo(h: HabitItem): HabitDefInfo {
     xp: h.xp,
     linkUrl: h.linkUrl ?? null,
     isActive: true,
+    framework: null,
+    anchorHabitKey: null,
+    cue: null,
+    craving: null,
+    reward: null,
+    celebration: null,
+    identity: null,
   }
 }
 
@@ -116,12 +123,26 @@ const dailyIntention: HabitDefInfo = {
   title: 'Napi szándék', why: 'Egy szándékkal indított nap nem sodródik — te választod az irányt.',
   anchorCopy: 'reggeli rutin után', mode: 'DERIVED', metric: 'intention_focus_set', skillKey: 'mindset',
   xp: 10, linkUrl: null, isActive: true,
+  framework: 'CLEAR',
+  anchorHabitKey: null,
+  cue: '7:10-kor a konyhaasztalnál, füzet a bögre mellett',
+  craving: 'tisztább fejjel indul a nap',
+  reward: 'a pipa maga',
+  celebration: null,
+  identity: 'figyel a saját gondolataira',
 }
 const bedOnTime: HabitDefInfo = {
   id: 'def-bed_on_time', habitKey: 'bed_on_time', chainKey: 'EVENING', position: 6,
   title: 'Lefekvés időben', why: 'A fix lefekvés a teljes lánc záróköve — ettől lesz holnap is reggeled.',
-  anchorCopy: 'wind-down után', mode: 'DERIVED', metric: 'bedtime_next_day', skillKey: 'recovery',
+  anchorCopy: 'letettem a fogkefét', mode: 'DERIVED', metric: 'bedtime_next_day', skillKey: 'recovery',
   xp: 15, linkUrl: null, isActive: true,
+  framework: 'FOGG',
+  anchorHabitKey: null,
+  cue: null,
+  craving: null,
+  reward: null,
+  celebration: 'mély levegő + „ez az”',
+  identity: null,
 }
 
 /** Canned "AI javaslat" fixture (mock mode, mezo-n5e9.3) — palette-consistent with the seed
@@ -130,10 +151,12 @@ export const mockHabitSuggestions: HabitSuggestion[] = [
   {
     title: 'Esti telefon-lezárás', why: 'A képernyő 30 perccel lefekvés előtt lekapcsolva gyorsabb elalvást hoz.',
     anchorCopy: 'wind-down előtt', skillKey: 'recovery', xp: 10, chainKey: 'EVENING',
+    framework: 'FOGG', cue: null, craving: null, reward: null, celebration: 'egy elégedett bólintás',
   },
   {
     title: 'Reggeli 5 perc nyújtás', why: 'Pár perc mobilizáció ébredés után élénkebbé teszi a testet a nap elejére.',
     anchorCopy: 'ébredés után', skillKey: 'mindset', xp: 5, chainKey: 'MORNING',
+    framework: 'CLEAR', cue: 'ébredés után az ágy szélén ülve', craving: 'frissebben indul a test', reward: 'a nyújtás jó érzése', celebration: null,
   },
 ]
 

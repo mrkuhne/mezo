@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.meal.repository;
 
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.techcore.persistence.OwnedRepository;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -35,5 +36,31 @@ public interface MealRepository extends OwnedRepository<MealEntity> {
     /** Weekly review {@code stale} probe (mezo-p2tr): the most recently CREATED meal inside the
      *  week — compared against the review's {@code generatedAt}, not its own {@code mealDate}. */
     Optional<MealEntity> findFirstByCreatedByAndDeletedFalseAndMealDateBetweenOrderByCreatedAtDesc(
+            UUID createdBy, LocalDate from, LocalDate to);
+
+    /** The deterministic scores (mezo-yta) of the SCORED meals in a closed day window — the Fuel
+     *  week's "AI-atlag" (mezo-d20.7.2). Projects the scalar instead of the aggregate: no item
+     *  walk, and pre-scoring / unscored rows are filtered out in SQL so an empty list genuinely
+     *  means "nothing to average" (the endpoint then returns null, not 0). */
+    @Query("select e.score from MealEntity e where e.createdBy = :createdBy and e.deleted = false "
+        + "and e.mealDate between :from and :to and e.score is not null")
+    List<BigDecimal> findScoresBetween(@Param("createdBy") UUID createdBy,
+        @Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    /**
+     * Meals with their item lines in {@code [from, to]}, one query, no N+1 (Karakter round 2 —
+     * the character read layer needs every day's macro/NOVA aggregate over an 8-week window).
+     * {@code distinct} is required because the fetch join multiplies the meal row per item.
+     */
+    @Query("select distinct m from MealEntity m left join fetch m.items "
+        + "where m.createdBy = :createdBy and m.deleted = false "
+        + "and m.mealDate between :from and :to order by m.mealDate asc, m.loggedAt asc")
+    List<MealEntity> findWithItemsBetween(@Param("createdBy") UUID createdBy,
+                                          @Param("from") LocalDate from,
+                                          @Param("to") LocalDate to);
+
+    /** Karakter round-3 logging-latency read: only the two timestamps are needed, so no item
+     *  join fetch (unlike {@link #findWithItemsBetween}). */
+    List<MealEntity> findByCreatedByAndDeletedFalseAndMealDateBetweenOrderByMealDateAsc(
             UUID createdBy, LocalDate from, LocalDate to);
 }

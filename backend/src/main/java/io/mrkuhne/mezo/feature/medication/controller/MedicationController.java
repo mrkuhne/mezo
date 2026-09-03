@@ -40,6 +40,11 @@ public class MedicationController implements MedicationApi {
     }
 
     @Override
+    public MedicationResponse createMedication(MedicationRequest medicationRequest) {
+        return medicationService.createMedication(currentUserId.get(), medicationRequest);
+    }
+
+    @Override
     public MedicationResponse updateMedication(UUID id, MedicationRequest medicationRequest) {
         return medicationService.updateMedication(currentUserId.get(), id, medicationRequest);
     }

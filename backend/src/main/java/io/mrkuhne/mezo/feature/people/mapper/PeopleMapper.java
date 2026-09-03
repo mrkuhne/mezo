@@ -20,6 +20,13 @@ public interface PeopleMapper {
     @Mapping(target = "mentionCount", source = "mentionCount")
     @Mapping(target = "mentionsThisWeek", source = "mentionsThisWeek")
     @Mapping(target = "lastMentionedAt", source = "lastMentionedAt")
+    @Mapping(target = "graphEdges", ignore = true)   // a service tölti a gráf-portból
+    // A kontraktus szerint affectTrend sosem olvassa a person.affect_trend oszlopot — a service
+    // számítja élő mention-sorokból (getBootstrap) vagy üres listát állít explicit (a többi út).
+    @Mapping(target = "affectTrend", ignore = true)
+    @Mapping(target = "affectTrendStart", ignore = true)
+    @Mapping(target = "direction", ignore = true)
+    @Mapping(target = "directionReason", ignore = true)
     PersonResponse toPersonResponse(PersonEntity entity, int mentionCount, int mentionsThisWeek,
         Instant lastMentionedAt);
 
@@ -43,11 +50,23 @@ public interface PeopleMapper {
         return value == null ? null : PersonResponse.AffectBaselineEnum.fromValue(value);
     }
 
+    default PersonResponse.StatusEnum mapStatus(String value) {
+        return value == null ? null : PersonResponse.StatusEnum.fromValue(value);
+    }
+
+    default PersonResponse.SourceKindEnum mapSourceKind(String value) {
+        return value == null ? null : PersonResponse.SourceKindEnum.fromValue(value);
+    }
+
     default MentionResponse.SourceEnum mapSource(String value) {
         return value == null ? null : MentionResponse.SourceEnum.fromValue(value);
     }
 
     default MentionResponse.ToneEnum mapTone(String value) {
         return value == null ? null : MentionResponse.ToneEnum.fromValue(value);
+    }
+
+    default MentionResponse.ContextLabelEnum mapContextLabel(String value) {
+        return value == null ? null : MentionResponse.ContextLabelEnum.fromValue(value);
     }
 }

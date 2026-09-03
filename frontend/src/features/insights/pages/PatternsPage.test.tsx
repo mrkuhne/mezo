@@ -124,10 +124,10 @@ describe('PatternsPage (mock mode)', () => {
 
   test('?pair= redirects to the detail page', () => {
     render(
-      <MemoryRouter initialEntries={['/insights?pair=late-meal~next-sleep-quality']}>
+      <MemoryRouter initialEntries={['/mezo/patterns?pair=late-meal~next-sleep-quality']}>
         <Routes>
-          <Route path="/insights" element={<PatternsPage />} />
-          <Route path="/insights/patterns/:pairKey" element={<div>DETAIL STUB</div>} />
+          <Route path="/mezo/patterns" element={<PatternsPage />} />
+          <Route path="/mezo/patterns/:pairKey" element={<div>DETAIL STUB</div>} />
         </Routes>
       </MemoryRouter>,
       { wrapper: QueryWrapper },

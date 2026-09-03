@@ -1029,3 +1029,18 @@ test('a past unlogged run slot offers Pótold and logs it on that day', async ()
     vi.useRealTimers()
   }
 })
+
+// Motion (mezo-d20.11): `/train/mai` had NO entrance choreography at all. The
+// day body now rides the app's one-shot `.rise` cadence, re-armed on a DayStrip
+// tap so a swapped day stages in instead of snapping.
+test("the day body staggers inside an armed entrance group", async () => {
+  const { container } = renderView()
+  await screen.findByRole("heading", { name: "Mai nap" })
+  const play = container.querySelector(".mz-play")
+  expect(play).not.toBeNull()
+  const risen = [...play!.querySelectorAll(".rise")] as HTMLElement[]
+  expect(risen.length).toBeGreaterThan(1)
+  // the Mezociklus nav row at 70ms, then the day s hero cards from 120ms
+  expect(risen.some((el) => el.style.getPropertyValue("--d") === "70ms")).toBe(true)
+  expect(risen.some((el) => el.style.getPropertyValue("--d") === "120ms")).toBe(true)
+})

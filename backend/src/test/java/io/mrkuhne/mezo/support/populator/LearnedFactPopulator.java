@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.companion.repository.LearnedFactRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 @TestComponent
@@ -24,6 +25,21 @@ public class LearnedFactPopulator {
         candidate.setCandidateText(candidateText);
         candidate.setCategory(category);
         candidate.setDerivedFromMessageId(derivedFromMessageId);
+        return repository.saveAndFlush(candidate);
+    }
+
+    /** A weekly-review candidate (mezo-d20.7.6) — no message behind it, a week and an evidence
+     *  line instead; {@code decision} null leaves it OPEN. */
+    public LearnedFactEntity weeklyCandidate(UUID createdBy, LocalDate weekStart, String candidateText,
+            String category, String evidence, String decision) {
+        LearnedFactEntity candidate = new LearnedFactEntity();
+        candidate.setCreatedBy(createdBy);
+        candidate.setCandidateText(candidateText);
+        candidate.setCategory(category);
+        candidate.setSource(LearnedFactEntity.SOURCE_WEEKLY_REVIEW);
+        candidate.setWeekStart(weekStart);
+        candidate.setEvidence(evidence);
+        candidate.setUserDecision(decision);
         return repository.saveAndFlush(candidate);
     }
 }

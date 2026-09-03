@@ -51,8 +51,8 @@ export function StackItemSheet({ entry, onClose }: { entry: StackDayEntry; onClo
             </button>
           </div>
 
-          {/* Placement */}
-          <div className="card" style={{ padding: 12, marginBottom: 14 }}>
+          {/* Placement — F7.3: the tinted hero band (mz-sheet-hero), the sheet's headline */}
+          <div className="mz-sheet-hero" style={{ padding: 12, marginBottom: 14, display: 'block' }}>
             {entry.pinned ? (
               <>
                 <p style={{ fontSize: 12, lineHeight: 1.5, color: 'var(--text-secondary)' }}>

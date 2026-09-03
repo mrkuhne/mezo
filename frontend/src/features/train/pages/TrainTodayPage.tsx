@@ -6,10 +6,11 @@
 // a reload, a back/forward step and the `Mai` sub-nav entry all agree with what
 // the page renders. The weekly list + load tiles + provenance note now
 // live on TrainWeekPage (/train/week, "Heti").
-// Thin TrainSection shell ⇒ this view owns its own .page-header.
+// A full-page sibling of the Edzés hub — it owns its own .page-header.
 // ============================================================
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTrain, useRunning, useWeekWorkouts, useSleepGoal } from '@/data/hooks'
 import { isMockMode } from '@/data/_client/mode'
@@ -253,6 +254,13 @@ export function TrainTodayPage() {
         )}
       </div>
 
+      {/* One-shot entrance choreography (mezo-d20.11 — `/train/mai` shipped with
+          NONE). The replayKey is the shown day, so a DayStrip tap re-stages the
+          swapped day's cards instead of snapping them in. The prototype does not
+          draw a standalone Mai PAGE (its main panel is the hub), so the FACE is
+          left alone here — only the missing motion is restored. */}
+      <EntranceGroup replayKey={shownDay?.day ?? 'ma'}>
+
       {/* DayStrip — the Mon–Sun navigator; tapping a chip swaps the shown day below
           without any refetch (the agenda is already fully loaded). */}
       <DayStrip
@@ -273,7 +281,7 @@ export function TrainTodayPage() {
       />
 
       {/* Mezociklus overview entry card (active meso only) */}
-      <div style={{ padding: '0 24px 12px' }}>
+      <div className="rise" style={{ padding: '0 24px 12px', '--d': '70ms' } as CSSProperties}>
         {/* The DS canonical row: a 56px nav row at body size with a trailing chevron. */}
         <button
           type="button"
@@ -292,7 +300,12 @@ export function TrainTodayPage() {
       {/* The shown day's hero cards, ordered by time-of-day (gym / volleyball / running).
           A morning run hero appears above an evening gym hero. Each hero keeps
           its bespoke markup; the today gym hero additionally requires the /today workout. */}
-      {orderedToday.map((item, i) => {
+      {orderedToday.map((item, i) => (
+        // Entrance stagger (mezo-d20.11): the day's heroes ride the app's one-shot
+        // `.rise` cadence inside the EntranceGroup above. Each branch keeps its own
+        // bespoke markup — the wrapper only carries the delay.
+        <div key={`hero-${i}`} className="rise" style={{ '--d': `${120 + i * 45}ms` } as CSSProperties}>
+        {(() => {
         if (item.kind === 'gym') {
           const gym = item.gym
           if (isTodayShown) {
@@ -457,7 +470,9 @@ export function TrainTodayPage() {
             onLog={runState === 'planned' ? undefined : openRunLog}
           />
         )
-      })}
+        })()}
+        </div>
+      ))}
 
       {/* Open custom (saját) instance on a rest day (real mode, today only): the gym hero
           above only renders when today has a gym schedule slot, so an open instance
@@ -512,7 +527,7 @@ export function TrainTodayPage() {
           renders exactly when that card does not. Non-today selections are
           read-only — no entry there. */}
       {isTodayShown && !restDayCard && (
-        <div style={{ padding: '0 24px 16px' }}>
+        <div className="rise" style={{ padding: '0 24px 16px', '--d': '340ms' } as CSSProperties}>
           <button type="button" onClick={() => setCustomOpen(true)} className="card" style={{
             width: '100%', minHeight: 48, padding: '12px 16px', background: 'transparent',
             borderStyle: 'dashed', borderColor: 'var(--divider)', color: 'var(--tag-gym)',
@@ -533,6 +548,7 @@ export function TrainTodayPage() {
           onSnooze={snoozeMtr}
         />
       )}
+      </EntranceGroup>
 
       {customOpen && <CustomWorkoutSheet onClose={() => setCustomOpen(false)} />}
       {sportLogSport && (

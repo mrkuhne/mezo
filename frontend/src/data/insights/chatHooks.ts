@@ -129,6 +129,53 @@ export function useChat(selection?: ChatSelection) {
   })
 }
 
+/**
+ * F7.5 (mezo-d20.8.5): rename + delete on one conversation. Mock mode mutates the shared
+ * CONVERSATIONS_KEY cache in place; real mode calls the API then invalidates. Delete also
+ * invalidates BOTH the newest-thread and the id-keyed thread cache — deleting the newest
+ * conversation must move every reader off the dead id.
+ */
+export function useConversationActions() {
+  const queryClient = useQueryClient()
+
+  const refresh = (id?: string) => {
+    void queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY })
+    void queryClient.invalidateQueries({ queryKey: chatKey(null) })
+    if (id) void queryClient.invalidateQueries({ queryKey: chatKey(id) })
+  }
+
+  const rename = async (id: string, title: string) => {
+    const trimmed = title.trim().slice(0, 120)
+    if (!trimmed) return
+    if (isMockMode()) {
+      queryClient.setQueryData<ChatConversations>(CONVERSATIONS_KEY, (old) => ({
+        ...(old ?? MOCK_CONVERSATIONS),
+        conversations: (old ?? MOCK_CONVERSATIONS).conversations.map((c) =>
+          c.id === id ? { ...c, title: trimmed } : c),
+      }))
+      return
+    }
+    await chatApi.renameConversation(id, trimmed)
+    void queryClient.invalidateQueries({ queryKey: CONVERSATIONS_KEY })
+  }
+
+  const remove = async (id: string) => {
+    if (isMockMode()) {
+      queryClient.setQueryData<ChatConversations>(CONVERSATIONS_KEY, (old) => ({
+        ...(old ?? MOCK_CONVERSATIONS),
+        conversations: (old ?? MOCK_CONVERSATIONS).conversations.filter((c) => c.id !== id),
+      }))
+      queryClient.removeQueries({ queryKey: chatKey(id) })
+      void queryClient.invalidateQueries({ queryKey: chatKey(null) })
+      return
+    }
+    await chatApi.deleteConversation(id)
+    refresh(id)
+  }
+
+  return { rename, remove }
+}
+
 /** The mock-mode transcript — the demo surface never touches the network (mezo-at8x.4). */
 const MOCK_TRANSCRIPT = 'Ma reggel fáradtan keltem, mit gondolsz, menjek edzeni?'
 
@@ -160,6 +207,9 @@ export function useChatActions(selection?: ChatSelection, onConversationCreated?
   const queryClient = useQueryClient()
   const [turn, setTurn] = useState<ChatTurn | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // F7.5 (mezo-d20.8.5): the failed turn's text survives the error — retry re-sends it
+  // unchanged (replace, don't append), editFailed hands it back to the composer.
+  const [failedText, setFailedText] = useState<string | null>(null)
 
   const append = (conversationId: string, appended: ChatMessage[]) => {
     const mode = isMockMode() ? 'mock' : 'live'
@@ -209,8 +259,8 @@ export function useChatActions(selection?: ChatSelection, onConversationCreated?
           id: crypto.randomUUID(),
           role: 'assistant', ts: 'now', text: cannedReply(text),
           tools: [
-            { type: 'read', name: 'get_recent_checkins(d=3)' },
-            { type: 'compute', name: `recallSharedMemory(theme='${text.slice(0, 20)}')` },
+            { type: 'read', name: 'get_recovery(days=3, scope=checkin)' },
+            { type: 'compute', name: `find_similar_past_days(theme='${text.slice(0, 20)}')` },
           ],
           refs: [{ kind: 'CheckIn', id: 'ci-2026-05-21' }],
           recalled: [
@@ -246,6 +296,7 @@ export function useChatActions(selection?: ChatSelection, onConversationCreated?
         setError(isEmptyAnswer(err)
           ? 'A társ nem adott választ erre a körre — próbáld újra.'
           : 'Nem sikerült válaszolni — próbáld újra.')
+        setFailedText(text)
         // the user message may have persisted server-side; refetch keeps history honest
         void queryClient.invalidateQueries({ queryKey: chatKey(selection) })
         if (conversationId) void queryClient.invalidateQueries({ queryKey: chatKey(conversationId) })
@@ -260,9 +311,24 @@ export function useChatActions(selection?: ChatSelection, onConversationCreated?
     const trimmed = text.trim()
     if (!trimmed || turn) return
     setError(null)
+    setFailedText(null)
     if (isMockMode()) sendMock(trimmed)
     else sendReal(trimmed)
   }
 
-  return { send, turn, error }
+  /** Re-send the failed turn's exact text — the error bubble's Újra. */
+  const retry = () => {
+    if (!failedText || turn) return
+    send(failedText)
+  }
+
+  /** Hand the failed text back for the composer (the error bubble's Szerkesztés) and clear. */
+  const editFailed = (): string | null => {
+    const text = failedText
+    setFailedText(null)
+    setError(null)
+    return text
+  }
+
+  return { send, turn, error, failedText, retry, editFailed }
 }

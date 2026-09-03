@@ -6,7 +6,7 @@ import { chatApi, toChatMessage } from '@/data/insights/chatApi'
 test('maps a wire MessageResponse to the FE ChatMessage shape', () => {
   const mapped = toChatMessage({
     id: 'm1', role: 'assistant', content: 'Szia!', createdAt: '2026-07-03T06:32:00Z',
-    tools: [{ type: 'read', name: 'get_sleep(days=7)' }],
+    tools: [{ type: 'read', name: 'get_recovery(days=7)' }],
     refs: [{ kind: 'SleepLog', id: 'sl-1' }],
     recalled: [],
     degraded: false,
@@ -14,7 +14,7 @@ test('maps a wire MessageResponse to the FE ChatMessage shape', () => {
   expect(mapped.role).toBe('assistant')
   expect(mapped.text).toBe('Szia!')
   expect(mapped.ts).toMatch(/^\d{2}:\d{2}$/)
-  expect(mapped.tools).toEqual([{ type: 'read', name: 'get_sleep(days=7)' }])
+  expect(mapped.tools).toEqual([{ type: 'read', name: 'get_recovery(days=7)' }])
   expect(mapped.refs).toEqual([{ kind: 'SleepLog', id: 'sl-1' }])
 })
 

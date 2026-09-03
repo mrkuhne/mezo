@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { medicationApi } from '@/data/fuel/medicationApi'
 import { isMockMode } from '@/data/_client/mode'
 import { localDateString } from '@/shared/lib/dates'
-import { useDualQuery } from '@/data/useDualQuery'
+import { useDualQuery, DEFAULT_QUERY_STALE_TIME_MS } from '@/data/useDualQuery'
 import { medicationSeed } from '@/data/fuel/medication'
 import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import type {
@@ -42,9 +42,19 @@ export function useMedication(): { medication: Medication; cycle: MedicationCycl
   const { data } = useDualQuery<MedicationDay>({
     queryKey: MEDICATION_KEY,
     mockData: medicationSeed,
-    realFetch: () => medicationApi.getDay(),
+    // Both "no medication configured" contract shapes land on the SAME ghost (mezo-5cmq): the
+    // new backend answers 200 with `medication: null` (mapped to `null` here), the pre-5cmq one
+    // answered 404, which rejects and is absorbed by `realEmpty` below. The two images do not
+    // switch at the same moment, so the frontend has to read both.
+    realFetch: async () => (await medicationApi.getDay()) ?? MEDICATION_EMPTY,
     realEmpty: MEDICATION_EMPTY,
-    realStaleTime: 0,
+    // The app default instead of the old always-stale `0` (mezo-5cmq): useTodayScenario mounts
+    // this from the shell AND from several pages, so staleTime 0 bought a round-trip on every
+    // navigation. Writes stay instant regardless — useMedicationActions invalidates
+    // ['medication'] on every dose/definition change. Passed EXPLICITLY rather than omitted:
+    // omitting sends `staleTime: undefined`, which clobbers the client default (see the
+    // `realStaleTime` doc) and would leave the query always-stale after all.
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
   return { medication: data.medication, cycle: data.cycle, doses: data.recentDoses }
 }
@@ -85,10 +95,27 @@ export function useMedicationActions() {
     onSuccess: mock ? undefined : invalidate,
   })
 
+  const createM = useMutation({
+    mutationFn: mock
+      ? async (input: MedicationInput) => mockCreateMedication(qc, input)
+      : (input: MedicationInput) => medicationApi.createMedication(input).then(() => undefined),
+    onSuccess: mock ? undefined : invalidate,
+  })
+  const stopM = useMutation({
+    // Stop = PUT active:false (soft-archive, the dose history stays server-side); the day read
+    // then answers "no active medication" and the page falls onto its honest empty state.
+    mutationFn: mock
+      ? async (_input: MedicationInput) => mockStopMedication(qc)
+      : (input: MedicationInput) => medicationApi.updateMedication(medId(qc), { ...input, active: false }).then(() => undefined),
+    onSuccess: mock ? undefined : invalidate,
+  })
+
   const logDose = useCallback((input: MedicationDoseInput) => logM.mutate(input), [logM])
   const removeDose = useCallback((doseId: string) => removeM.mutate(doseId), [removeM])
   const updateMedication = useCallback((input: MedicationInput) => updateM.mutate(input), [updateM])
-  return { logDose, removeDose, updateMedication }
+  const createMedication = useCallback((input: MedicationInput) => createM.mutate(input), [createM])
+  const stopMedication = useCallback((input: MedicationInput) => stopM.mutate(input), [stopM])
+  return { logDose, removeDose, updateMedication, createMedication, stopMedication }
 }
 
 /** The active medication's id from the cached day (real mode) — for the api path params. */
@@ -157,6 +184,20 @@ function mockLogDose(qc: ReturnType<typeof useQueryClient>, input: MedicationDos
 }
 function mockRemoveDose(qc: ReturnType<typeof useQueryClient>, doseId: string) {
   return patchDay(qc, d => d.recentDoses.filter(x => x.id !== doseId))
+}
+function mockCreateMedication(qc: ReturnType<typeof useQueryClient>, input: MedicationInput) {
+  const medication: Medication = { ...input, id: crypto.randomUUID() }
+  qc.setQueryData<MedicationDay>(MEDICATION_KEY, {
+    medication,
+    cycle: deriveCycle(medication, []), // no dose yet — the honest-zero ghost cycle
+    recentDoses: [],
+  })
+  return undefined
+}
+function mockStopMedication(qc: ReturnType<typeof useQueryClient>) {
+  // The mock mirror of the real day read after a stop: no active medication -> the ghost.
+  qc.setQueryData<MedicationDay>(MEDICATION_KEY, MEDICATION_EMPTY)
+  return undefined
 }
 function mockUpdateMedication(qc: ReturnType<typeof useQueryClient>, input: MedicationInput) {
   qc.setQueryData<MedicationDay>(MEDICATION_KEY, prev => {

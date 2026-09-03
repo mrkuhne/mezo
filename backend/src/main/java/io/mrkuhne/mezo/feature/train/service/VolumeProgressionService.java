@@ -70,13 +70,13 @@ public class VolumeProgressionService {
     /**
      * Baseline seeding on the create/activate path (mezo-xlmp): one volume-log row per coarse
      * {@link MuscleGroup} the meso's TEMPLATE days actually train, from the fixed
-     * {@code mezo.volume.baselines} RP table, {@code currentSets = MEV} (the W1 start —
-     * {@link #rolloverIfDue}'s first run stamps the START audit on top). Idempotent: an existing
-     * row's group is skipped untouched, so activate doubles as a backfill for pre-seed mesos; a
-     * group with no baselines entry is never fabricated (DA5).
+     * {@code mezo.volume.baselines} RP table, {@code currentSets = } the tier's week-1 start
+     * (EMPHASIZE MEV+2, else MEV) — {@link #rolloverIfDue}'s first run stamps the START audit on
+     * top. Idempotent: an existing row's group is skipped untouched, so activate doubles as a
+     * backfill for pre-seed mesos; a group with no baselines entry is never fabricated (DA5).
      */
     @Transactional
-    public void seedBaselines(UUID createdBy, UUID mesoId) {
+    public void seedBaselines(UUID createdBy, UUID mesoId, Map<String, String> priorities) {
         List<UUID> templateIds = MesoTemplateDays.ids(workoutSessionRepository
             .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(mesoId)));
         if (templateIds.isEmpty()) {
@@ -105,7 +105,7 @@ public class VolumeProgressionService {
             row.setMev(b.mev());
             row.setMav(b.mav());
             row.setMrv(b.mrv());
-            row.setCurrentSets(b.mev());
+            row.setCurrentSets(PriorityTier.of(priorities, group).weekOneStart(b.mev(), b.mav(), b.mrv()));
             // confidence is contract-required on VolumeSource; 0.5 = generic table, not personalized.
             row.setSource(new ProvenanceEnvelope(
                 new ProvenanceEnvelope.Baseline("RP guidelines · intermediate", b.mev(), b.mav(), b.mrv()),

@@ -139,3 +139,20 @@ test('no date prop omits date from the body (today logs server-side default)', a
   await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
   expect(onSave.mock.calls[0][0]).not.toHaveProperty('date')
 })
+
+// Designed addition (mezo-d20.3.4): the contract's `notes` field had no sheet
+// surfacing it before — a blank field omits `notes` entirely (never sends '').
+test('empty notes are omitted from the saved body', async () => {
+  const onSave = vi.fn()
+  render(<SportLogSheet onClose={vi.fn()} onSave={onSave} />)
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  expect(onSave.mock.calls[0][0]).not.toHaveProperty('notes')
+})
+
+test('typed notes are trimmed and included in the saved body', async () => {
+  const onSave = vi.fn()
+  render(<SportLogSheet onClose={vi.fn()} onSave={onSave} />)
+  await userEvent.type(screen.getByLabelText('Session jegyzet'), '  Jó session volt  ')
+  await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+  expect(onSave.mock.calls[0][0].notes).toBe('Jó session volt')
+})

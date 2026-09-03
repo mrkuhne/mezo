@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useLlmCalls, useLlmUsageBreakdown } from '@/data/hooks'
 import { AiCallFilters } from '@/features/me/components/AiCallFilters'
 import { AiCallRow } from '@/features/me/components/AiCallRow'
@@ -7,11 +7,19 @@ import { AiFeatureBreakdown } from '@/features/me/components/AiFeatureBreakdown'
 import { AiModelBreakdown } from '@/features/me/components/AiModelBreakdown'
 import { AiUsageHero } from '@/features/me/components/AiUsageHero'
 import { GhostState } from '@/shared/ui/GhostState'
+import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import type { LlmCallFilters as Filters, LlmUsagePeriodKey } from '@/data/me/llmUsageApi'
 
 // The AI-napló (mezo-uakh): the browsable face of llm_log_history. ONE period selection drives
 // both the header rollup and the list, so the two can never disagree — every filter is applied
 // server-side for the same reason (the header covers the whole period, the list only a window).
+//
+// Mozaik re-face (mezo-d20.6.8): full-screen sibling, own MozaikPage scaffold (source of truth
+// en-body.html #page-ai, tone "gold" = .p-gold). The prototype's page-hero bignum shows the
+// period's cost under the coin icon — but AiUsageHero already owns that exact number (its own
+// component test pins call count + cost + status split), so the page hero stays icon+title
+// only: showing the cost twice on one screen would violate "the same fact once" (handoff §10).
 
 const PERIODS = [
   { key: 'DAY', label: 'Ma' },
@@ -23,6 +31,7 @@ const PAGE = 50
 const MAX_WINDOW = 500
 
 export function AiUsagePage() {
+  const navigate = useNavigate()
   const [period, setPeriod] = useState<LlmUsagePeriodKey>('WEEK')
   const [filters, setFilters] = useState<Filters>({})
   const [limit, setLimit] = useState(PAGE)
@@ -44,81 +53,87 @@ export function AiUsagePage() {
   const periodLabel = PERIODS.find((p) => p.key === period)?.label ?? ''
 
   return (
-    <div className="col gap-md" style={{ padding: '14px 12px 24px' }}>
-      <div className="row" style={{ alignItems: 'center', gap: 10 }}>
-        <Link to="/me" aria-label="Vissza" style={{ fontSize: 19, color: 'var(--text-tertiary)' }}>‹</Link>
-        <h1 style={{ fontSize: 16.5, fontWeight: 800, flex: 1, margin: 0 }}>AI-napló</h1>
-      </div>
+    <MozaikPage tone="gold">
+      <PageHead onBack={() => navigate(-1)} label="‹ Én" />
+      <EntranceGroup>
+        {/* Minimal hero — just the icon + title. Count, cost and the status split live
+            ONE place, in AiUsageHero below (guardrail: the same fact shown once per
+            screen); the prototype's page-hero bignum would otherwise repeat it. */}
+        <PageHero icon="i-erme" name="AI-napló" />
 
-      <div className="row" style={{ background: 'var(--surface-2)', borderRadius: 12, padding: 3 }}>
-        {PERIODS.map((p) => (
-          <button
-            key={p.key}
-            type="button"
-            aria-pressed={period === p.key}
-            onClick={() => changePeriod(p.key)}
-            style={{
-              flex: 1, textAlign: 'center', fontSize: 12, fontWeight: 700, padding: '7px 0',
-              borderRadius: 9, border: 0, cursor: 'pointer',
-              background: period === p.key ? 'var(--surface-1)' : 'transparent',
-              color: period === p.key ? 'var(--text-primary)' : 'var(--text-tertiary)',
-            }}
-          >
-            {p.label}
-          </button>
-        ))}
-      </div>
-
-      {breakdown.isError ? (
-        <GhostState message="Nem sikerült betölteni az AI-használatot." ctaLabel="Újra" onCta={breakdown.refetch} />
-      ) : (
-        <>
-          <AiUsageHero totals={breakdown.data.totals} periodLabel={periodLabel} />
-          <AiFeatureBreakdown
-            groups={breakdown.data.features}
-            selected={filters.feature ?? null}
-            onSelect={(feature) => changeFilters(feature ? { ...filters, feature } : omitFeature(filters))}
-          />
-          <AiModelBreakdown groups={breakdown.data.models} />
-        </>
-      )}
-
-      {/* The chips stay usable when only the breakdown failed (the filters run on the LIST
-          endpoint), but their counts come from the rollup — so a failed rollup omits them rather
-          than reading "Siker 0 · Hiba 0" over a list full of real rows. */}
-      <AiCallFilters
-        totals={breakdown.isError ? null : breakdown.data.totals}
-        filters={filters}
-        onChange={changeFilters}
-      />
-
-      {calls.isError ? (
-        <GhostState message="Nem sikerült betölteni a hívásokat." ctaLabel="Újra" onCta={calls.refetch} />
-      ) : calls.data.items.length === 0 ? (
-        <GhostState message="Ebben az időszakban nincs naplózott hívás." />
-      ) : (
-        <div>
-          {calls.data.items.map((call) => <AiCallRow key={call.id} call={call} />)}
-
-          {calls.data.hasMore && limit < MAX_WINDOW && (
-            <div style={{ textAlign: 'center', marginTop: 11 }}>
+        <PageBody>
+          <div className="aiu-segtabs rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+            {PERIODS.map((p) => (
               <button
+                key={p.key}
                 type="button"
-                onClick={() => setLimit((n) => Math.min(n + PAGE, MAX_WINDOW))}
-                style={{ borderRadius: 999, padding: '9px 20px', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: '1px solid var(--border-subtle)', background: 'var(--surface-1)' }}
+                aria-pressed={period === p.key}
+                onClick={() => changePeriod(p.key)}
+                className={period === p.key ? 'on' : undefined}
               >
-                További hívások ({PAGE})
+                {p.label}
               </button>
+            ))}
+          </div>
+
+          {breakdown.isError ? (
+            <GhostState message="Nem sikerült betölteni az AI-használatot." ctaLabel="Újra" onCta={breakdown.refetch} />
+          ) : (
+            <>
+              <AiUsageHero totals={breakdown.data.totals} periodLabel={periodLabel} />
+              <AiFeatureBreakdown
+                groups={breakdown.data.features}
+                selected={filters.feature ?? null}
+                onSelect={(feature) => changeFilters(feature ? { ...filters, feature } : omitFeature(filters))}
+              />
+              <AiModelBreakdown groups={breakdown.data.models} />
+            </>
+          )}
+
+          {/* The chips stay usable when only the breakdown failed (the filters run on the LIST
+              endpoint), but their counts come from the rollup — so a failed rollup omits them
+              rather than reading "Siker 0 · Hiba 0" over a list full of real rows. */}
+          <AiCallFilters
+            totals={breakdown.isError ? null : breakdown.data.totals}
+            filters={filters}
+            onChange={changeFilters}
+          />
+
+          {calls.isError ? (
+            <GhostState message="Nem sikerült betölteni a hívásokat." ctaLabel="Újra" onCta={calls.refetch} />
+          ) : calls.data.items.length === 0 ? (
+            <GhostState message="Ebben az időszakban nincs naplózott hívás." />
+          ) : (
+            <div>
+              {calls.data.items.map((call, i) => (
+                <div key={call.id} className="rise" style={{ '--d': `${60 + i * 40}ms` } as React.CSSProperties}>
+                  <AiCallRow call={call} />
+                </div>
+              ))}
+
+              {calls.data.hasMore && limit < MAX_WINDOW && (
+                <div style={{ textAlign: 'center', marginTop: 11 }}>
+                  <button
+                    type="button"
+                    onClick={() => setLimit((n) => Math.min(n + PAGE, MAX_WINDOW))}
+                    style={{ minHeight: 44, borderRadius: 999, padding: '9px 20px', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: '1px solid var(--border-subtle)', background: 'var(--surface-1)' }}
+                  >
+                    További hívások ({PAGE})
+                  </button>
+                </div>
+              )}
+              {calls.data.hasMore && limit >= MAX_WINDOW && (
+                <p className="text-tertiary" style={{ textAlign: 'center', fontSize: 10.5, marginTop: 11 }}>
+                  Az ablak betelt ({MAX_WINDOW} hívás) — szűkíts szűrővel a régebbiekhez.
+                </p>
+              )}
             </div>
           )}
-          {calls.data.hasMore && limit >= MAX_WINDOW && (
-            <p className="text-tertiary" style={{ textAlign: 'center', fontSize: 10.5, marginTop: 11 }}>
-              Az ablak betelt ({MAX_WINDOW} hívás) — szűkíts szűrővel a régebbiekhez.
-            </p>
-          )}
-        </div>
-      )}
-    </div>
+
+          <p className="aiu-foot">~ becslés — a modellárak tájékoztató jellegűek · Befagyasztott ártábla hívásonként.</p>
+        </PageBody>
+      </EntranceGroup>
+    </MozaikPage>
   )
 }
 

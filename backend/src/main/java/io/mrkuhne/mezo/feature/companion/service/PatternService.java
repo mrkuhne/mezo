@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.api.dto.PatternDecisionRequest;
 import io.mrkuhne.mezo.api.dto.PatternResponse;
+import io.mrkuhne.mezo.feature.companion.HighlightCitationSource;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
@@ -14,6 +15,7 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
@@ -46,12 +48,37 @@ public class PatternService {
     private final PatternEventRepository patternEventRepository;
     private final CompanionMapper mapper;
     private final ApplicationEventPublisher eventPublisher;
+    /** mezo-d20.7.7 — absent when the proactive switch is off; then the signal is null, not 0. */
+    private final ObjectProvider<HighlightCitationSource> citationSource;
 
     public List<PatternResponse> list(UUID userId) {
+        Map<UUID, Integer> cited = citedWeeks(userId);
         return patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(userId)
                 .stream()
-                .map(mapper::toPatternResponse)
+                .map(pattern -> mapper.toPatternResponse(pattern, citedWeeksOf(cited, pattern.getId())))
                 .toList();
+    }
+
+    /**
+     * mezo-d20.7.7 — the weekly review's highlight feedback, read as a SEPARATE signal.
+     *
+     * <p>A highlight is the companion selecting its own material, not a measurement, so it is
+     * deliberately kept out of {@code confidence}: that number is a statistic (Pearson r/n/p, or
+     * the V3.2 four-factor critique) and stays NULL for statistical rows on purpose — honest
+     * small-n, the FE renders "tanulom". Letting a citation tally fill or raise it would let
+     * prose overwrite a statistic, and would make one number mean two incomparable things. A
+     * citation likewise never touches {@code status}: promotion is Daniel's judgement (and the
+     * one thing the loop must never do on its own).
+     *
+     * <p>{@code null} when the port is absent (weekly reviews off) — not measurable is not zero.
+     */
+    private Map<UUID, Integer> citedWeeks(UUID userId) {
+        HighlightCitationSource source = citationSource.getIfAvailable();
+        return source == null ? null : source.citedWeeks(userId, HighlightCitationSource.KIND_PATTERN);
+    }
+
+    private static Integer citedWeeksOf(Map<UUID, Integer> cited, UUID patternId) {
+        return cited == null ? null : cited.getOrDefault(patternId, 0);
     }
 
     @Transactional
@@ -88,7 +115,8 @@ public class PatternService {
             // (including a reject that was never confirmed) is safe and keeps the rule simple.
             eventPublisher.publishEvent(new PatternRetractedEvent(userId, pattern.getId()));
         }
-        return mapper.toPatternResponse(patternRepository.saveAndFlush(pattern));
+        PatternEntity saved = patternRepository.saveAndFlush(pattern);
+        return mapper.toPatternResponse(saved, citedWeeksOf(citedWeeks(userId), saved.getId()));
     }
 
     /** v1 category heuristic: physiology/trigger → health, response → train (documented). */

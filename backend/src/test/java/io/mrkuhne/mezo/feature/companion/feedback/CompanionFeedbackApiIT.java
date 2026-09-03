@@ -11,6 +11,8 @@ import io.mrkuhne.mezo.support.populator.FeedbackPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -111,6 +113,35 @@ class CompanionFeedbackApiIT extends ApiIntegrationTest {
             ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
 
         assertHasFieldError(body, "artifactKind", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testPutFeedback_shouldReturn400_whenVerdictUnknown() {
+        String body = putForBody("/api/companion/feedback",
+            PutFeedbackRequest.builder()
+                .artifactKind(MessageFeedbackEntity.KIND_CHAT_MESSAGE)
+                .artifactId(UUID.randomUUID())
+                .verdict("sideways")
+                .build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasFieldError(body, "verdict", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testPutFeedback_shouldReturn400_whenReasonUnknown() {
+        // paired with DOWN (the legal verdict for a reason) so this fails on the @Pattern check,
+        // not the service-level reason/verdict guard covered by testPutFeedback_shouldReturn400_whenReasonSentWithUp
+        String body = putForBody("/api/companion/feedback",
+            PutFeedbackRequest.builder()
+                .artifactKind(MessageFeedbackEntity.KIND_CHAT_MESSAGE)
+                .artifactId(UUID.randomUUID())
+                .verdict(MessageFeedbackEntity.VERDICT_DOWN)
+                .reason("because_i_said_so")
+                .build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasFieldError(body, "reason", "VALIDATION_INVALID_VALUE");
     }
 
     @Test
@@ -226,5 +257,43 @@ class CompanionFeedbackApiIT extends ApiIntegrationTest {
             ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
 
         assertHasFieldError(body, "kind", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testListFeedback_shouldReturn400_whenMoreThanTheContractMaximumIdsRequested() {
+        // Probed first: 201 uuids (~7.4 KB of query string) is close to Tomcat's default 8 KB
+        // server.max-http-request-header-size, which could reject the request before bean
+        // validation ever runs (bare 400, no SystemMessageList body). In practice — with this
+        // harness's thin TestRestTemplate header set, not a real browser's; see companion.md §8 —
+        // the request clears Tomcat fine and reaches @Size(max = 200) on the generated API interface, landing
+        // on the same ConstraintViolationException -> "ids"/VALIDATION_INVALID_VALUE path as any
+        // other @Size violation (confirmed via the GlobalExceptionHandler "Validation failed" log
+        // line, as opposed to the "Unconvertible request parameter" line the type-mismatch handler
+        // would emit).
+        String ids = Stream.generate(() -> UUID.randomUUID().toString())
+            .limit(201)
+            .collect(Collectors.joining(","));
+
+        String body = getForBody("/api/companion/feedback?kind=" + MessageFeedbackEntity.KIND_CHAT_MESSAGE
+            + "&ids=" + ids, ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasFieldError(body, "ids", "VALIDATION_INVALID_VALUE");
+    }
+
+    @Test
+    void testListFeedback_shouldReturn400_whenIdsEmpty() {
+        // Point-in-time observation, not a guarantee: when this was written, Spring bound
+        // `ids=` (present but empty) to an empty List<UUID>, and the request reached
+        // @Size(min = 1) on the generated API interface (confirmed via the GlobalExceptionHandler
+        // "Validation failed" log line -- the ConstraintViolationException handler -- rather than
+        // the "Unconvertible request parameter" line a UUID-conversion failure would emit). The
+        // assertion below cannot by itself tell that path from a conversion failure: both
+        // handleConstraintViolation and handleTypeMismatch emit an identical SystemMessage for
+        // `ids` (same fieldName, same VALIDATION_INVALID_VALUE code), so a refactor that moved
+        // this rejection to the type-mismatch route would still pass this test unchanged.
+        String body = getForBody("/api/companion/feedback?kind=" + MessageFeedbackEntity.KIND_CHAT_MESSAGE + "&ids=",
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasFieldError(body, "ids", "VALIDATION_INVALID_VALUE");
     }
 }

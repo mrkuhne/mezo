@@ -79,7 +79,12 @@ function fromDoseResponse(d: MedicationDoseResponse): MedicationDose {
   }
 }
 
-function fromDayResponse(d: MedicationDayResponse): MedicationDay {
+/** Contract day → domain day, or `null` when the owner has no active medication: the backend
+ *  answers that with 200 and `medication`/`cycle` null (mezo-5cmq), a normal state and not an
+ *  error. Mapping it would read `.id` off null — the exact crash this fix exists to stop — so the
+ *  emptiness is carried out as `null` and the hook turns it into the no-medication ghost. */
+function fromDayResponse(d: MedicationDayResponse): MedicationDay | null {
+  if (!d.medication || !d.cycle) return null
   return {
     medication: fromResponse(d.medication),
     cycle: fromCycleResponse(d.cycle),
@@ -88,7 +93,8 @@ function fromDayResponse(d: MedicationDayResponse): MedicationDay {
 }
 
 export const medicationApi = {
-  getDay: (): Promise<MedicationDay> =>
+  /** `null` = the owner has no active medication (see fromDayResponse). */
+  getDay: (): Promise<MedicationDay | null> =>
     apiFetch<MedicationDayResponse>('/api/medication').then(fromDayResponse),
   logDose: (medId: string, input: MedicationDoseInput): Promise<MedicationDose> =>
     apiFetch<MedicationDoseResponse>(`/api/medication/${medId}/dose`, {
@@ -97,6 +103,11 @@ export const medicationApi = {
     }).then(fromDoseResponse),
   deleteDose: (medId: string, doseId: string): Promise<void> =>
     apiFetch(`/api/medication/${medId}/dose/${doseId}`, { method: 'DELETE' }).then(() => undefined),
+  createMedication: (input: MedicationInput): Promise<Medication> =>
+    apiFetch<MedicationResponse>('/api/medication', {
+      method: 'POST',
+      body: JSON.stringify(toRequest(input)),
+    }).then(fromResponse),
   updateMedication: (medId: string, input: MedicationInput): Promise<Medication> =>
     apiFetch<MedicationResponse>(`/api/medication/${medId}`, {
       method: 'PUT',

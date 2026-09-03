@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
+import io.mrkuhne.mezo.api.dto.ConversationRenameRequest;
 import io.mrkuhne.mezo.api.dto.ConversationResponse;
 import io.mrkuhne.mezo.api.dto.CreateConversationRequest;
 import io.mrkuhne.mezo.api.dto.MessageResponse;
@@ -63,6 +64,26 @@ public class ConversationService {
             chatService.getObject().openingTurn(userId, saved.getId());
         }
         return mapper.toConversationResponse(saved);
+    }
+
+    /**
+     * F7.5 (mezo-d20.8.5): the list label is user-editable — reversible, no history impact.
+     * The 120 cap is the contract's (and the column's); validation runs at the boundary.
+     */
+    @Transactional
+    public ConversationResponse rename(UUID userId, UUID conversationId, ConversationRenameRequest request) {
+        AiConversationEntity conversation = getOwned(userId, conversationId);
+        conversation.setTitle(request.getTitle());
+        return mapper.toConversationResponse(conversationRepository.saveAndFlush(conversation));
+    }
+
+    /**
+     * F7.5: soft delete via the entity's {@code @SQLDelete} — the thread (and through
+     * {@link #getOwned}'s filter, its messages) becomes unreachable; nothing is purged.
+     */
+    @Transactional
+    public void delete(UUID userId, UUID conversationId) {
+        conversationRepository.delete(getOwned(userId, conversationId));
     }
 
     public List<MessageResponse> listMessages(UUID userId, UUID conversationId) {

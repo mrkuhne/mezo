@@ -32,10 +32,11 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code VALIDATION_INVALID_VALUE} field-error idiom.
  *
  * <p>The single-user slice tracks ONE active medication at a time. {@link #getDay} resolves that
- * active row (404 if the owner has none), {@link MedicationCycleService#derive derives} where they
- * sit in the cycle TODAY, and assembles the day payload with the recent intake ledger. Each
- * logged dose is server-stamped: {@code createdBy} from the principal, {@code administeredAt}
- * defaulting to now (UTC) when omitted, and {@code administeredDate} always derived from it.
+ * active row (an EMPTY payload when the owner has none — see there),
+ * {@link MedicationCycleService#derive derives} where they sit in the cycle TODAY, and assembles
+ * the day payload with the recent intake ledger. Each logged dose is server-stamped:
+ * {@code createdBy} from the principal, {@code administeredAt} defaulting to now (UTC) when
+ * omitted, and {@code administeredDate} always derived from it.
  */
 @Service
 @RequiredArgsConstructor
@@ -48,18 +49,28 @@ public class MedicationService {
 
     /**
      * The full "Gyógyszer" day payload for the owner's active medication: the catalog row, the
-     * cycle derived for TODAY, and the recent (top-10, newest-first) intake ledger. 404 when the
-     * owner has no active medication.
+     * cycle derived for TODAY, and the recent (top-10, newest-first) intake ledger.
+     *
+     * <p>Having NO active medication is a NORMAL state, not an error (mezo-5cmq): this used to 404,
+     * which put the client on its error branch on every page mount merely because the owner had not
+     * configured a medication. The absence is expressed by the payload instead — {@code medication}
+     * and {@code cycle} null, {@code recentDoses} empty.
      */
     public MedicationDayResponse getDay(UUID userId) {
-        MedicationEntity med = repository.findFirstByCreatedByAndActiveTrueAndDeletedFalse(userId)
-            .orElseThrow(() -> new SystemRuntimeErrorException(
-                SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
-        MedicationCycle cycle = cycleService.derive(userId, med, LocalDate.now(ZoneOffset.UTC));
-        List<MedicationDoseEntity> recent = doseRepository
-            .findTop10ByCreatedByAndMedicationIdAndDeletedFalseOrderByAdministeredAtDesc(
-                userId, med.getId());
-        return mapper.toDay(med, cycle, recent);
+        return repository.findFirstByCreatedByAndActiveTrueAndDeletedFalse(userId)
+            .map(med -> {
+                MedicationCycle cycle = cycleService.derive(userId, med, LocalDate.now(ZoneOffset.UTC));
+                List<MedicationDoseEntity> recent = doseRepository
+                    .findTop10ByCreatedByAndMedicationIdAndDeletedFalseOrderByAdministeredAtDesc(
+                        userId, med.getId());
+                return mapper.toDay(med, cycle, recent);
+            })
+            .orElseGet(MedicationService::emptyDay);
+    }
+
+    /** The "nothing configured" day payload: no medication, no cycle, an empty intake ledger. */
+    private static MedicationDayResponse emptyDay() {
+        return MedicationDayResponse.builder().recentDoses(List.of()).build();
     }
 
     /**
@@ -92,6 +103,25 @@ public class MedicationService {
         requireOwnedMedication(userId, medId);
         MedicationDoseEntity dose = requireOwnedDose(userId, doseId);
         doseRepository.delete(dose); // @SQLDelete -> is_deleted = true
+    }
+
+    /**
+     * Create the owner's medication (mezo-d20.8.3 — the single-active slice's create path).
+     * One active medication at a time: creating while an active row exists is a 400
+     * ({@code MEDICATION_ACTIVE_EXISTS}); re-creating after a stop ({@code active:false}) is the
+     * normal path and the old row's dose history stays. {@code createdBy} is server-stamped.
+     */
+    @Transactional
+    public MedicationResponse createMedication(UUID userId, MedicationRequest req) {
+        if (Boolean.TRUE.equals(req.getActive())
+            && repository.findFirstByCreatedByAndActiveTrueAndDeletedFalse(userId).isPresent()) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("MEDICATION_ACTIVE_EXISTS").build(), HttpStatus.BAD_REQUEST);
+        }
+        MedicationEntity med = new MedicationEntity();
+        med.setCreatedBy(userId); // server-side ownership — never from the client
+        mapper.applyRequest(med, req);
+        return mapper.toResponse(repository.save(med));
     }
 
     /** Apply a PUT body's definition + cycle config onto the owner's medication (mapper write seam). */

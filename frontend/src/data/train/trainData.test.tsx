@@ -1,6 +1,6 @@
 import {
   mesocycles, activeMeso, workout, gymSchedule, sport, exerciseLibrary,
-  GOAL_PRESETS, SPLITS, MUSCLE_LABELS, DAY_LABELS, DAY_ORDER,
+  MUSCLE_LABELS, DAY_LABELS, DAY_ORDER,
   MESOCYCLE_PHASE_COLORS, phaseBarHeight,
 } from '@/data/train/train'
 
@@ -46,12 +46,8 @@ test('sport: volleyball schedule, recent sessions with jumpCount, crossLoad', ()
   expect(sport.crossLoad.length).toBeGreaterThanOrEqual(5)
 })
 
-test('exercise library + planner presets + label maps', () => {
+test('exercise library + label maps', () => {
   expect(exerciseLibrary.length).toBeGreaterThanOrEqual(15)
-  expect(GOAL_PRESETS.length).toBeGreaterThanOrEqual(6)
-  expect(GOAL_PRESETS[0].id).toBe('hypertrophy')
-  expect(GOAL_PRESETS.some((g) => g.id === 'erohipertrofia')).toBe(true)
-  expect(SPLITS.length).toBeGreaterThanOrEqual(5)
   expect(MUSCLE_LABELS.chest).toBe('Mell')
   expect(DAY_LABELS.Csü).toBe('Csütörtök')
   expect(DAY_ORDER).toEqual(['Hét', 'Kedd', 'Sze', 'Csü', 'Pén', 'Szo', 'Vas'])

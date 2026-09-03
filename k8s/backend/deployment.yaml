@@ -20,7 +20,7 @@ spec:
         - name: ghcr-pull
       containers:
         - name: backend
-          image: ghcr.io/mrkuhne/mezo-backend:2.58.0
+          image: ghcr.io/mrkuhne/mezo-backend:2.128.0
           ports:
             - containerPort: 8090
           env:
@@ -33,6 +33,9 @@ spec:
             # their intended Budapest wall-clock. Matches k8s/postgres/backup-cronjob's zone.
             - name: TZ
               value: Europe/Budapest
+            # mezo-5h9: refuse to boot with dev-default owner password / JWT secret in production.
+            - name: MEZO_AUTH_STRICT
+              value: "true"
             # demodata = seed the single owner user on first boot.
             - name: SPRING_PROFILES_ACTIVE
               value: demodata

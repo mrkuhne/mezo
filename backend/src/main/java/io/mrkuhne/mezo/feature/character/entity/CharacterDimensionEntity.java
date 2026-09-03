@@ -40,7 +40,7 @@ public class CharacterDimensionEntity extends OwnedEntity {
     @Column(nullable = false, length = 80)
     private String title;
 
-    /** CORE | CHAPTER. */
+    /** CORE | CHAPTER | META. */
     @NotNull
     @Column(nullable = false, length = 10)
     private String kind;

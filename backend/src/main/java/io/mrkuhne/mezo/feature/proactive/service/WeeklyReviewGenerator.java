@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.MeWeekDay;
 import io.mrkuhne.mezo.api.dto.MeWeekResponse;
 import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
 import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
+import io.mrkuhne.mezo.feature.companion.CharacterPromptSource;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,11 +45,29 @@ import tools.jackson.databind.ObjectMapper;
  * Weekly review generator (Én/Heti, spec 2026-08-27 §5, bd mezo-p2tr) — the {@code
  * MemoirGenerator} idiom applied to the week's data instead of a single narrative: PURE-CODE
  * gather ({@link MeWeekService#week(UUID, LocalDate)}'s day rows + the week's confirmed pattern
- * events + newly-created facts + active life events + the week's memoir/predictions, plus a
+ * events + newly-created facts + active life events + the week's memoir/predictions + the wider
+ * context {@link WeeklyReviewContextSources} renders, plus a
  * numbered anchor-candidate list) → ONE SMART-tier call with a strict-JSON contract
- * {@code {summary, dayNotes, anchorIndexes}} — highlights are model-SELECTED from code-collected
- * candidates, never invented. Empty week (no day carries any logged data) or an unusable answer
- * ⇒ NO row. Existing row ⇒ returned untouched, no second LLM call.
+ * {@code {summary, dayNotes, anchorIndexes, candidateFacts}} — highlights are model-SELECTED from
+ * code-collected candidates, never invented. Empty week (no day carries any logged data) or an
+ * unusable answer ⇒ NO row. Existing row ⇒ returned untouched, no second LLM call.
+ *
+ * <p>{@code candidateFacts} is the round's one WRITE beyond the review row + its notification
+ * (mezo-d20.7.6): the week's lessons, handed to {@link WeeklyLessonService} which bounds-checks,
+ * dedupes and caps them onto the same {@code learned_fact} candidate flow chat extraction feeds.
+ * No usable lesson ⇒ no candidate row, same no-placeholder rule as the review itself.
+ *
+ * <p>mezo-d20.7.7: every collected candidate now carries the id of the entity it came from, so a
+ * persisted highlight is a REF and not just a chip label. That is the whole write side of the
+ * highlight-feedback loop — the reading side ({@code HighlightCitationSourceAdapter}) derives
+ * "cited in N of the last weeks" from the live review rows, so this generator gains no counter to
+ * keep, nothing to decrement on regenerate, and no new failure mode.
+ *
+ * <p>The wider gather input (mezo-d20.7.8) is data ONLY: it adds no anchor candidates and no prompt
+ * text. Anchor kinds stay {@code Pattern|Fact|LifeEvent|Memory} — the vocabulary
+ * {@code WeeklyReviewHighlight.kind} documents in {@code api/openapi.yml} and the FE RefTag chips
+ * render — so this slice is backend-only, and every candidate keeps costing DOUBLE tokens (its own
+ * section plus the numbered list), which is exactly the budget argument for not minting more.
  */
 @Slf4j
 @Service
@@ -64,9 +84,16 @@ public class WeeklyReviewGenerator {
             + "Elemezd Daniel hetét KIZÁRÓLAG a megadott adatokból: mi ment jól, mi tört meg, milyen "
             + "összefüggés látszik a napok között. Társ-hangnem, nem jelentés; számot kitalálni tilos; "
             + "gyógyszer-adagolást érintő javaslat tilos. Minden adatot tartalmazó naphoz írj 1-2 mondatos "
-            + "megjegyzést. Válaszolj KIZÁRÓLAG szigorú JSON-nal: {\"summary\": \"a heti elemzés szövege\", "
+            + "megjegyzést. A candidateFacts a hét TANULSÁGAI: tartós, Danielre vonatkozó megállapítás, "
+            + "amit a napokon átnyúló összefüggésből olvasol ki. Jelöltet KIZÁRÓLAG a fent megadott napi "
+            + "adatokból vagy minta-eseményekből következtethetsz — külső tudásból, feltételezésből vagy "
+            + "egyetlen napból nem —, és az evidence mezőben nevezd meg, MIRE épül (mely napok, hány nap, "
+            + "melyik minta). Ha nincs ilyen összefüggés, a candidateFacts üres tömb; kitalált jelölt tilos. "
+            + "Válaszolj KIZÁRÓLAG szigorú JSON-nal: {\"summary\": \"a heti elemzés szövege\", "
             + "\"dayNotes\": [{\"date\": \"YYYY-MM-DD\", \"note\": \"...\"}], "
-            + "\"anchorIndexes\": [a felhasznált HORGONY-JELÖLTEK sorszámai]}";
+            + "\"anchorIndexes\": [a felhasznált HORGONY-JELÖLTEK sorszámai], "
+            + "\"candidateFacts\": [{\"text\": \"...\", \"category\": \"train|fuel|health|life\", "
+            + "\"evidence\": \"mire épül\"}]}";
 
     private final WeeklyReviewRepository weeklyReviewRepository;
     private final MeWeekService meWeekService;
@@ -80,6 +107,10 @@ public class WeeklyReviewGenerator {
     private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectMapper objectMapper;
     private final AppNotificationEmitter appNotificationEmitter;
+    private final WeeklyLessonService weeklyLessonService;
+    private final WeeklyReviewContextSources contextSources;
+    /** mezo-1gim.11 — the [Karakter] dossier block; absent (null) unless CHARACTER_SWITCH + COMPANION_SWITCH are both on. */
+    private final ObjectProvider<CharacterPromptSource> characterPromptSource;
 
     public record WeeklyReviewGather(String payload, List<Highlight> candidates) {
     }
@@ -87,7 +118,11 @@ public class WeeklyReviewGenerator {
     record ParsedDayNote(String date, String note) {
     }
 
-    record ParsedReview(String summary, List<ParsedDayNote> dayNotes, List<Integer> anchorIndexes) {
+    record ParsedCandidate(String text, String category, String evidence) {
+    }
+
+    record ParsedReview(String summary, List<ParsedDayNote> dayNotes, List<Integer> anchorIndexes,
+            List<ParsedCandidate> candidateFacts) {
     }
 
     @Transactional
@@ -119,6 +154,13 @@ public class WeeklyReviewGenerator {
                 resolveHighlights(parsed.anchorIndexes(), gather.candidates())));
         review.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         WeeklyReviewEntity saved = weeklyReviewRepository.saveAndFlush(review);
+        // "A hét tanulságai" (mezo-d20.7.6): the round PROPOSES onto the existing candidate flow —
+        // bounds-checked, deduped and capped inside the service, and deliberately WITHOUT a
+        // per-candidate FACT_CANDIDATE notification (the WEEKLY_REVIEW_READY below already speaks).
+        int lessons = weeklyLessonService.propose(userId, weekStart, toProposals(parsed.candidateFacts()));
+        if (lessons > 0) {
+            log.debug("Weekly review {} for {} proposed {} knowledge candidate(s)", weekStart, userId, lessons);
+        }
         appNotificationEmitter.emit(userId, AppNotificationKind.WEEKLY_REVIEW_READY,
                 "Elkészült a heti elemzés",
                 firstSentence(saved.getSummary()),
@@ -154,7 +196,9 @@ public class WeeklyReviewGenerator {
                 String title = patternRepository.findByIdAndCreatedByAndDeletedFalse(event.getPatternId(), userId)
                         .map(PatternEntity::getTitle).orElse("Ismeretlen minta");
                 payload.append("- ").append(title).append(" (").append(event.getKind()).append(")\n");
-                candidates.add(new Highlight("Pattern", title));
+                // mezo-d20.7.7: the candidate carries the PATTERN's id, not the event's — a
+                // citation is about the pattern, and two events in one week are one pattern.
+                candidates.add(new Highlight(Highlight.KIND_PATTERN, title, event.getPatternId()));
             }
         }
 
@@ -165,9 +209,10 @@ public class WeeklyReviewGenerator {
             for (KnowledgeFactEntity fact : facts) {
                 String label = truncate(fact.getFactText(), 80);
                 payload.append("- ").append(label).append('\n');
-                candidates.add(new Highlight("Fact", label));
+                candidates.add(new Highlight(Highlight.KIND_FACT, label, fact.getId()));
             }
         }
+        payload.append(characterBlock(userId));
 
         List<GraphNodeEntity> lifeEvents =
                 WeeklyReviewWeekWindow.lifeEvents(graphNodeRepository, userId, weekStart, weekEnd);
@@ -175,13 +220,13 @@ public class WeeklyReviewGenerator {
             payload.append("\nÉLETESEMÉNYEK:\n");
             for (GraphNodeEntity node : lifeEvents) {
                 payload.append("- ").append(node.getTitle()).append('\n');
-                candidates.add(new Highlight("LifeEvent", node.getTitle()));
+                candidates.add(new Highlight(Highlight.KIND_LIFE_EVENT, node.getTitle(), node.getId()));
             }
         }
 
         memoirRepository.findByCreatedByAndWeekStart(userId, weekStart).ifPresent(memoir -> {
             payload.append("\nHETI MEMOÁR: ").append(memoir.getTitle()).append('\n');
-            candidates.add(new Highlight("Memory", weekStart.toString()));
+            candidates.add(new Highlight(Highlight.KIND_MEMORY, weekStart.toString(), memoir.getId()));
         });
 
         List<PredictionEntity> predictions = predictionRepository.findByCreatedByAndWeekStart(userId, weekStart);
@@ -193,12 +238,24 @@ public class WeeklyReviewGenerator {
             }
         }
 
+        // The WIDER context (mezo-d20.7.8): journal, decisions, running experiments, mentions, the
+        // medication cycle and the week's consolidated narrative. Deliberately contributes NO
+        // anchor candidates — see the section below and WeeklyReviewContextSources' javadoc.
+        payload.append(contextSources.render(userId, weekStart, weekEnd, since, until));
+
         payload.append("\nHORGONY-JELÖLTEK (az anchorIndexes ezekre mutat):\n");
         for (int i = 0; i < candidates.size(); i++) {
             payload.append(i).append(": [").append(candidates.get(i).kind()).append("] ")
                     .append(candidates.get(i).label()).append('\n');
         }
         return new WeeklyReviewGather(payload.toString(), candidates);
+    }
+
+    /** mezo-1gim.11: the [Karakter] dossier's contribution — "" when the bean is absent (either
+     *  switch off) or the dossier has nothing worth injecting. */
+    private String characterBlock(UUID userId) {
+        CharacterPromptSource source = characterPromptSource.getIfAvailable();
+        return source == null ? "" : source.render(userId);
     }
 
     private static boolean hasLoggedData(MeWeekDay day) {
@@ -258,6 +315,16 @@ public class WeeklyReviewGenerator {
             resolved.add(new DayNote(date, note.note()));
         }
         return resolved;
+    }
+
+    private static List<WeeklyLessonService.LessonProposal> toProposals(List<ParsedCandidate> candidates) {
+        if (candidates == null) {
+            return List.of();
+        }
+        return candidates.stream()
+                .filter(c -> c != null)
+                .map(c -> new WeeklyLessonService.LessonProposal(c.text(), c.category(), c.evidence()))
+                .toList();
     }
 
     private List<Highlight> resolveHighlights(List<Integer> indexes, List<Highlight> candidates) {

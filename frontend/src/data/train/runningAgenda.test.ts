@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { currentWeekOf, runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
+import { currentWeekOf, dateForDayOfWeek, runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
 import { runningBlocksMock } from '@/data/train/running'
 
 const active = runningBlocksMock.find((b) => b.status === 'active')!
@@ -35,4 +35,17 @@ test('runSessionsForDay returns [] for a null block', () => {
 test('todayIdx maps a Tuesday to Monday-based index 1', () => {
   // 2026-06-16 is a Tuesday (getDay() === 2) -> (2 + 6) % 7 === 1.
   expect(todayIdx(new Date('2026-06-16T12:00:00'))).toBe(1)
+})
+
+test('dateForDayOfWeek returns the same date when asked for today\'s own weekday', () => {
+  // 2026-07-15 is a Wednesday (dayOfWeek 2).
+  expect(dateForDayOfWeek(2, new Date('2026-07-15T12:00:00'))).toBe('2026-07-15')
+})
+
+test('dateForDayOfWeek returns this week\'s Tuesday when today is Wednesday', () => {
+  expect(dateForDayOfWeek(1, new Date('2026-07-15T12:00:00'))).toBe('2026-07-14')
+})
+
+test('dateForDayOfWeek returns this week\'s Friday (a future day) when today is Wednesday', () => {
+  expect(dateForDayOfWeek(4, new Date('2026-07-15T12:00:00'))).toBe('2026-07-17')
 })

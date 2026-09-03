@@ -20,9 +20,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
  * {@code DayScoreService.fuelSubscore} — for every day of the rendered week. After the fix,
  * {@code MeWeekService} fetches the rollup once per day and hands it into {@code DayScoreService}'s
  * pre-fetched {@code scores(userId, from, to, fuelDayByDate)} overload, so {@code getDay} is called
- * EXACTLY once per date in the rendered week (the previous-week score pass is a separate,
- * legitimate single fetch per previous-week day via the standalone 3-arg {@code scores} overload —
- * out of scope for this count).
+ * EXACTLY once per date in the rendered week. (The previous-week score no longer runs a second
+ * score pass at all since mezo-d20.7.5 — it comes from the persisted {@code weekly_score} cache,
+ * and a previous week with no logs at all is answered by one freshness probe with zero fuel
+ * fetches. Either way that window is out of scope for this count.)
  *
  * <p>Own IT class — the {@code @MockitoSpyBean} forks the application context (the
  * {@code ChatServiceGraphBlockFailureIT} precedent), so it must not leak into

@@ -166,3 +166,11 @@ export function aiAverage(scorePcts: (number | null | undefined)[]): number | nu
   if (scored.length === 0) return null
   return Math.round(scored.reduce((sum, v) => sum + v, 0) / scored.length)
 }
+
+/** Past-day normalisation (mezo-zeeq, the asPastDayLane shape): useFuelTimeline's energy chips
+ *  and the wall-clock now-marker describe TODAY even when `date` is in the past — a past-day
+ *  hero drops both instead of showing today's Alap/Mozgás/Cél under yesterday's meals. Consumed
+ *  kcal, segments, rings and water read the date's own data and stay. */
+export function asPastDayHero(vm: KeretHeroVM): KeretHeroVM {
+  return { ...vm, chips: null, nowFrac: null }
+}

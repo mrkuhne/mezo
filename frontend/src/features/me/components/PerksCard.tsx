@@ -1,29 +1,26 @@
 import type { PerkUnlock } from '@/data/types'
+import { ATHLETIC_META, LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
+import { MUSCLE_LABELS } from '@/data/train/train'
 
-/** Unlocked perk milestones, newest first (Growth page Kitüntetések tab). */
-export function PerksCard({ perks }: { perks: PerkUnlock[] }) {
+const skillName = (key: string) => ATHLETIC_META[key]?.name ?? LIFE_SKILLS.find((s) => s.key === key)?.name ?? MUSCLE_LABELS[key] ?? key
+
+/** Unlocked perk milestones (mezo-rmi0.1): amber card, Lv plaque · name · effect · skill; the footer
+ *  names the skill nearest its next milestone (FE-derived), or just the rule when none. */
+export function PerksCard({ perks, next }: { perks: PerkUnlock[]; next: { name: string; level: number } | null }) {
   return (
-    <div className="card" style={{ padding: '14px 15px 15px', position: 'relative', overflow: 'hidden' }}>
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <span className="eyebrow" style={{ color: 'var(--lav-deep)' }}>Perkek — mérföldkövek</span>
-        <span className="chip">{perks.length} feloldva</span>
-      </div>
-      {perks.length === 0 && (
-        <p className="text-tertiary" style={{ fontSize: 12, marginTop: 10 }}>
-          Még nincs feloldott perk — a skill-mérföldkövek (Lv 5, 10, 15…) hozzák őket.
-        </p>
-      )}
-      {perks.map((p, i) => (
-        <div key={p.perkKey + p.unlockedAt} className="row" style={{ gap: 10, padding: '8px 0', borderTop: i === 0 ? 'none' : '1px solid var(--border-subtle)', marginTop: i === 0 ? 8 : 0 }}>
-          <span style={{ flex: 1, fontSize: 12 }}>
-            {p.name}
-            <span className="text-tertiary" style={{ display: 'block', fontSize: 10, marginTop: 1 }}>{p.effectCopy}</span>
-          </span>
-          <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase' }}>
-            {p.skillKey} · LV{p.milestoneLevel}
-          </span>
+    <div className="gr-band amber rise" style={{ '--d': '200ms', marginTop: 11 } as React.CSSProperties}>
+      <div className="gr-band-top"><span className="mz-eyebrow" style={{ color: 'var(--mz-cell-amber-ink)' }}>Perkek</span><span className="gr-band-chip warn">{perks.length} feloldva</span></div>
+      {perks.length === 0 && <p className="gr-band-foot">Még nincs feloldott perk — a skill-mérföldkövek (Lv 5, 10, 15…) hozzák őket.</p>}
+      {perks.map((p) => (
+        <div key={p.perkKey + p.unlockedAt} className="gr-perkrow">
+          <span className="gr-perk-pi">Lv{p.milestoneLevel}</span>
+          <div style={{ flex: 1, minWidth: 0 }}><div className="pn">{p.name}</div><div className="pe">{p.effectCopy}</div></div>
+          <span className="pl">{skillName(p.skillKey)}</span>
         </div>
       ))}
+      {perks.length > 0 && (
+        <div className="gr-band-foot">A skill-mérföldkövek (Lv 5, 10, 15…) hozzák őket{next ? ` — a következő: ${next.name} Lv ${next.level}.` : '.'}</div>
+      )}
     </div>
   )
 }

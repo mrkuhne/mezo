@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   usePushSubscription,
   useNotificationPrefs,
@@ -19,6 +20,9 @@ import { NotificationCategoryRow } from '@/features/me/components/NotificationCa
 import { Toggle } from '@/shared/ui/Toggle'
 import { CtaPrimary } from '@/shared/ui/Cta'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { ClayIcon } from '@/shared/ui/clay'
+import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { deriveBlocks } from '@/features/fuel/logic/buildProtocol'
 import { projectStackDay } from '@/features/fuel/logic/projectStackDay'
 import { buildScheduleEntries } from '@/data/notification/notificationScheduleWriter'
@@ -105,6 +109,7 @@ function deriveSubLine(category: NotificationCategoryKey, fallback: string, ctx:
  *  wrong gate for it. Instead the *button's visibility* is gated on `push.enabled` (nothing
  *  to test before a subscription exists), and it's disabled while `push.busy`. */
 export function NotificationsPage() {
+  const navigate = useNavigate()
   const push = usePushSubscription()
   const { prefs, setPref } = useNotificationPrefs()
   const [testResult, setTestResult] = useState<string | null>(null)
@@ -174,11 +179,22 @@ export function NotificationsPage() {
   // be offering controls for something the platform has already ruled out.
   if (!push.supported || !push.standalone) {
     return (
-      <div style={{ padding: '8px 24px 24px' }}>
-        <div className="col gap-md">
-          <PushInstallGate />
-        </div>
-      </div>
+      // The gate keeps the page's own Mozaik scaffold — ADR 0032: without the `‹ Értesítések`
+      // chip the gate was a dead end with no way back (the page had no header at all before
+      // mezo-d20.11; mezo-nol0 renamed the chip once the feed took the shared noun).
+      // No hero bignum here: on a platform where nothing can fire, a "5 tervezett ma" would be
+      // a number about notifications that cannot happen.
+      <MozaikPage tone="sky">
+        <PageHead onBack={() => navigate('/me/ertesitesek')} label="‹ Értesítések" />
+        <PageHero icon="i-ertesites" name="Értesítés-beállítások" />
+        <PageBody>
+          <EntranceGroup className="col gap-md">
+            <div className="rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+              <PushInstallGate />
+            </div>
+          </EntranceGroup>
+        </PageBody>
+      </MozaikPage>
     )
   }
 
@@ -210,43 +226,54 @@ export function NotificationsPage() {
   const brainCategories = prefs.filter((p) => NOTIFICATION_CATEGORY_META[p.category].section === 'brain')
 
   return (
-    <div style={{ padding: '8px 24px 24px' }}>
-      <div className="col gap-md">
+    <MozaikPage tone="sky">
+      <PageHead onBack={() => navigate('/me/ertesitesek')} label="‹ Értesítések" />
+      {/* Prototype #page-ertesites: the hero states today's planned volume, and the sub-line
+          qualifies the rhythm. „nyugodt ritmus" is DERIVED (no dense window in the same
+          forecast the card below draws), never asserted — a crowded day says so instead. */}
+      <PageHero
+        icon="i-ertesites"
+        name="Értesítés-beállítások"
+        big={forecast.total}
+        sub={forecast.denseWindows.length === 0 ? 'tervezett ma · nyugodt ritmus' : 'tervezett ma · sűrű ablak'}
+      />
+      <PageBody>
+      <EntranceGroup className="col gap-md">
         <NotificationPreviewHeader forecast={forecast} />
 
-        <div className="card" style={{ padding: 14 }}>
-          <div className="row gap-sm" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <div className="col">
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
-                Push értesítések
-              </span>
-              <span className="text-tertiary" style={{ fontSize: 11, marginTop: 2 }}>
-                {statusLine}
-              </span>
-            </div>
-            {/* Visible-but-inert when denied — the status line already tells the user it's
-                recoverable in iOS settings, so the switch stays present and honestly marked
-                dead rather than hidden (unlike an unrecoverable dead control, which would be
-                hidden instead). Also disabled mid-flight to prevent re-entrant taps. */}
-            <Toggle
-              on={push.enabled}
-              onToggle={onToggle}
-              ariaLabel="Push értesítések"
-              disabled={push.busy || push.permission === 'denied'}
-            />
+        <div className="ntf-masterrow rise" style={{ '--d': '40ms' } as React.CSSProperties}>
+          <span className="ntf-mic" aria-hidden="true"><ClayIcon name="i-ertesites" size={24} /></span>
+          <div className="col" style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary)' }}>
+              Push értesítések
+            </span>
+            <span className="text-tertiary" style={{ fontSize: 11, marginTop: 2 }}>
+              {statusLine}
+            </span>
           </div>
-          {/* The whole point of the hook's `error`: without this line a failed subscribe is a
-              toggle that flips back to off with the status line still reading „Nincs
-              engedélyezve" — indistinguishable from a tap that never registered. */}
-          {push.error && (
-            <p className="text-error" style={{ fontSize: 11, marginTop: 10 }} role="alert">
-              {PUSH_ERROR_COPY[push.error]}
-            </p>
-          )}
+          {/* Visible-but-inert when denied — the status line already tells the user it's
+              recoverable in iOS settings, so the switch stays present and honestly marked
+              dead rather than hidden (unlike an unrecoverable dead control, which would be
+              hidden instead). Also disabled mid-flight to prevent re-entrant taps. */}
+          <Toggle
+            on={push.enabled}
+            onToggle={onToggle}
+            ariaLabel="Push értesítések"
+            disabled={push.busy || push.permission === 'denied'}
+          />
         </div>
+        {/* The whole point of the hook's `error`: without this line a failed subscribe is a
+            toggle that flips back to off with the status line still reading „Nincs
+            engedélyezve" — indistinguishable from a tap that never registered. Lives outside
+            the washed row (an alert reads oddly nested in a colored tile). */}
+        {push.error && (
+          <p className="text-error" style={{ fontSize: 11, margin: '-6px 2px 0' }} role="alert">
+            {PUSH_ERROR_COPY[push.error]}
+          </p>
+        )}
 
         {push.enabled && (
-          <div className="card" style={{ padding: 14 }}>
+          <div className="ntf-testrow rise" style={{ '--d': '70ms' } as React.CSSProperties}>
             <CtaPrimary onClick={onTest} disabled={push.busy}>
               Teszt értesítés küldése
             </CtaPrimary>
@@ -258,9 +285,9 @@ export function NotificationsPage() {
           </div>
         )}
 
-        <div>
+        <div className="rise" style={{ '--d': '100ms' } as React.CSSProperties}>
           <Eyebrow>Mezo megszólal</Eyebrow>
-          <div className="card" style={{ padding: '0 14px', marginTop: 8 }}>
+          <div className="mt-sm">
             {proseCategories.map((pref) => (
               <NotificationCategoryRow
                 key={pref.category}
@@ -272,26 +299,9 @@ export function NotificationsPage() {
           </div>
         </div>
 
-        <div>
-          <Eyebrow>Az agy eseményei</Eyebrow>
-          <p className="text-tertiary" style={{ fontSize: 11, marginTop: 2 }}>
-            Eseményvezérelt — nem szerepel a napi terhelés előnézetben.
-          </p>
-          <div className="card" style={{ padding: '0 14px', marginTop: 8 }}>
-            {brainCategories.map((pref) => (
-              <NotificationCategoryRow
-                key={pref.category}
-                pref={pref}
-                subLine={deriveSubLine(pref.category, NOTIFICATION_CATEGORY_META[pref.category].description, subLineCtx)}
-                onToggle={() => setPref(pref.category, { enabled: !pref.enabled })}
-              />
-            ))}
-          </div>
-        </div>
-
-        <div>
+        <div className="rise" style={{ '--d': '140ms' } as React.CSSProperties}>
           <Eyebrow>Emlékeztetők</Eyebrow>
-          <div className="card" style={{ padding: '0 14px', marginTop: 8 }}>
+          <div className="mt-sm">
             {reminderCategories.map((pref) => (
               <NotificationCategoryRow
                 key={pref.category}
@@ -302,7 +312,23 @@ export function NotificationsPage() {
             ))}
           </div>
         </div>
-      </div>
-    </div>
+
+        <div className="rise" style={{ '--d': '180ms' } as React.CSSProperties}>
+          <Eyebrow>Az agy eseményei</Eyebrow>
+          <div className="mt-sm">
+            {brainCategories.map((pref) => (
+              <NotificationCategoryRow
+                key={pref.category}
+                pref={pref}
+                subLine={deriveSubLine(pref.category, NOTIFICATION_CATEGORY_META[pref.category].description, subLineCtx)}
+                onToggle={() => setPref(pref.category, { enabled: !pref.enabled })}
+              />
+            ))}
+          </div>
+          <p className="ntf-foot">Eseményvezérelt — nem szerepel a napi terhelés előnézetben.</p>
+        </div>
+      </EntranceGroup>
+      </PageBody>
+    </MozaikPage>
   )
 }

@@ -92,7 +92,7 @@ class GeminiCompanionLlmPromptOrderTest {
         return new CompanionProperties(
                 new Llm("gemini-2.5-flash", "gemini-2.5-pro"),
                 new Chat(20, 80),
-                new Snapshot(7, 200),
+                new Snapshot(7, 200, 180, 12),
                 new Tools(15, 30, 26, 10),
                 new Facts(10, 3),
                 new Extraction(true, 3),
@@ -111,7 +111,7 @@ class GeminiCompanionLlmPromptOrderTest {
                         new AmbientRecall.Group(2, 0.60, 90),
                         new AmbientRecall.Group(1, 0.55, 90),
                         new AmbientRecall.Group(1, 0.55, 90)),
-                new Graph(2, 8, 0.99, 0.05, 800, 0.4, "0 20 3 * * *", 30, 0.05),
+                new Graph(2, 8, 0.99, 0.05, 800, 6, 0.4, "0 20 3 * * *", 30, 0.05, 8),
                 List.of());
     }
 

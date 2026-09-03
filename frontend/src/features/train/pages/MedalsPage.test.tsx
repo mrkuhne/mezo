@@ -16,10 +16,11 @@ afterEach(() => vi.unstubAllEnvs())
 const renderView = () =>
   render(<QueryWrapper><MemoryRouter><MedalsPage /></MemoryRouter></QueryWrapper>)
 
-test('own header: pghead-np over + h1', async () => {
+test('own hero: name + count + this-month sub (mezo-d20.3.2)', async () => {
   renderView()
-  await screen.findByText('Edzés · Medálok')
-  expect(screen.getByRole('heading', { level: 1, name: 'Medálok' })).toBeInTheDocument()
+  await screen.findByText('Medálok')
+  // 3 in the default fixture — the hero big number, not the "N medál" body chip.
+  expect(screen.getByText('3')).toBeInTheDocument()
 })
 
 test('the counter chip + honest backfill line render alongside the cabinet', async () => {
@@ -70,7 +71,7 @@ test('RECORD gets the amber medal glyph, TARGET_HIT the quiet sage tick — diff
 // a "previous" that is itself a volume, and read as an indistinguishable WEIGHT row.
 test('a SESSION_VOLUME medal with weightKg/reps still headlines the volume, not the set', async () => {
   renderView()
-  const row = (await screen.findByText('Leg Press')).closest('.card') as HTMLElement
+  const row = (await screen.findByText('Leg Press')).closest('.mz-facttile') as HTMLElement
   expect(within(row).getByText('820 kg')).toBeInTheDocument()
   expect(within(row).queryByText(/102,5 kg × 8/)).not.toBeInTheDocument()
   expect(within(row).getByText(/Előző: 800 kg/)).toBeInTheDocument()
@@ -78,7 +79,7 @@ test('a SESSION_VOLUME medal with weightKg/reps still headlines the volume, not 
 
 test('a TARGET_HIT medal never renders a previous-value slot (nothing was beaten)', async () => {
   renderView()
-  const row = (await screen.findByText('Hip Thrust')).closest('.card') as HTMLElement
+  const row = (await screen.findByText('Hip Thrust')).closest('.mz-facttile') as HTMLElement
   expect(within(row).queryByText(/Előző/)).not.toBeInTheDocument()
 })
 
@@ -116,7 +117,7 @@ describe('grouping + null previousDate (mezo-wp6n Task 10)', () => {
   test('newest date group renders first, older date group after', async () => {
     const { container } = renderView()
     await screen.findByText('Bench Press')
-    const cards = Array.from(container.querySelectorAll('.card'))
+    const cards = Array.from(container.querySelectorAll('.mz-facttile'))
     const names = cards.map((c) => c.textContent)
     const benchIdx = names.findIndex((t) => t?.includes('Bench Press'))
     const rowIdx = names.findIndex((t) => t?.includes('Row Machine'))
@@ -132,7 +133,7 @@ describe('grouping + null previousDate (mezo-wp6n Task 10)', () => {
 
   test('a RECORD medal with previousValue but null previousDate drops the date cleanly', async () => {
     renderView()
-    const row = (await screen.findByText('Squat')).closest('.card') as HTMLElement
+    const row = (await screen.findByText('Squat')).closest('.mz-facttile') as HTMLElement
     expect(within(row).getByText(/Előző: 135 kg/)).toBeInTheDocument()
     // never a dangling "null"/"undefined" or trailing separator
     expect(row.textContent).not.toMatch(/null|undefined/i)
@@ -141,7 +142,7 @@ describe('grouping + null previousDate (mezo-wp6n Task 10)', () => {
 
   test('a RECORD medal WITH a previousDate renders the "…óta állt" phrasing', async () => {
     renderView()
-    const row = (await screen.findByText('Bench Press')).closest('.card') as HTMLElement
+    const row = (await screen.findByText('Bench Press')).closest('.mz-facttile') as HTMLElement
     expect(within(row).getByText(new RegExp(`Előző: 145 kg · ${huMonthDay('2026-06-20')} óta állt`))).toBeInTheDocument()
   })
 })
@@ -154,8 +155,8 @@ test('empty cabinet: an honest single line, no ghost rows, no counter chip, no b
   expect(
     await screen.findByText('Még nincs medálod — az első megdöntött rekord ide kerül.'),
   ).toBeInTheDocument()
-  expect(screen.getByRole('heading', { level: 1, name: 'Medálok' })).toBeInTheDocument()
-  expect(container.querySelectorAll('.card').length).toBe(0)
+  expect(screen.getByText('Medálok')).toBeInTheDocument()
+  expect(container.querySelectorAll('.mz-facttile').length).toBe(0)
   expect(screen.queryByText(/medál$/)).not.toBeInTheDocument()
   expect(screen.queryByText(/visszamenőleg/)).not.toBeInTheDocument()
 })
@@ -183,7 +184,7 @@ describe('MedalsPage (mock mode)', () => {
 
   it('groups the seeded cabinet by date, newest first', () => {
     const { container } = renderView()
-    const cards = Array.from(container.querySelectorAll('.card'))
+    const cards = Array.from(container.querySelectorAll('.mz-facttile'))
     const names = cards.map((c) => c.textContent ?? '')
     // 2026-07-27 (Hammer Curl E1RM + TARGET_HIT) is the newest date in the seed —
     // it must render before 2026-06-15 (the oldest Hammer Curl WEIGHT medal).
@@ -193,4 +194,18 @@ describe('MedalsPage (mock mode)', () => {
     expect(oldestIdx).toBeGreaterThanOrEqual(0)
     expect(newestIdx).toBeLessThan(oldestIdx)
   })
+})
+
+// Motion (mezo-d20.11): the page shipped an ARMED EntranceGroup with nothing
+// marked `.rise` — the wrapper animated an empty stage. Both halves must exist.
+test('the cabinet staggers inside the armed entrance group', async () => {
+  const { container } = renderView()
+  await screen.findByText('3 medál')
+  const play = container.querySelector('.mz-play')
+  expect(play).not.toBeNull()
+  const risen = play!.querySelectorAll('.rise')
+  expect(risen.length).toBeGreaterThan(1)
+  // a running 60ms cadence across the date-group eyebrows and their cards
+  expect((risen[0] as HTMLElement).style.getPropertyValue('--d')).toBe('40ms')
+  expect((risen[1] as HTMLElement).style.getPropertyValue('--d')).toBe('100ms')
 })

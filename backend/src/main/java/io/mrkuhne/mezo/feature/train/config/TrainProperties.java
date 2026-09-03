@@ -15,7 +15,8 @@ import org.springframework.validation.annotation.Validated;
 public record TrainProperties(
     @NotNull @Valid Met met,
     @NotNull @Positive Integer gymDefaultMinutes,   // gym slots carry no duration → default 60 (FE DEFAULT_BLOCK_MIN)
-    @NotNull @Positive Integer runDefaultMinutes     // interval runs have no single duration → default 45 (FE DEFAULT_RUN_MIN)
+    @NotNull @Positive Integer runDefaultMinutes,    // interval runs have no single duration → default 45 (FE DEFAULT_RUN_MIN)
+    @NotNull @Positive Integer sportSessionMaxSpanDays // widest from..to window GET /api/train/sport-sessions accepts
 ) {
     /** MET by training-block kind — mirror of FE fuelConfig.MET_BY_KIND. */
     public record Met(

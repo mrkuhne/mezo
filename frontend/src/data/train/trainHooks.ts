@@ -145,7 +145,7 @@ export function toMesocycle(r: MesocycleResponse): Mesocycle {
 function toSportSession(r: SportSessionResponse): SportSession {
   return {
     id: r.id, sport: r.sport, date: huMonthDayDow(r.date), isoDate: r.date, time: r.time,
-    duration: r.duration, setsPlayed: r.setsPlayed ?? null, intensity: r.intensity ?? null,
+    duration: r.duration, setsPlayed: r.setsPlayed ?? null, rounds: r.rounds ?? null, intensity: r.intensity ?? null,
     rpe: r.rpe, shoulderStrain: r.shoulderStrain ?? null, jumpCount: r.jumpCount ?? null,
     notes: r.notes ?? null,
   }
@@ -355,6 +355,14 @@ function mockUpdateMusclePriorities(
 
 type MutateOpts = { onSuccess?: () => void; onError?: () => void }
 
+/** Finish options — `note` is the workout's closing note (mezo-d20.8.2.2), optional and
+ *  fill-if-empty server-side, so a retry after a failed finish cannot erase it. */
+type FinishOpts = {
+  note?: string | null
+  onSuccess?: (r?: WorkoutInstanceResponse) => void
+  onSettled?: () => void
+}
+
 // Real mode has no static fallback (T0 "tiszta lap"): an empty backend must
 // surface as null, not silently render Phase-1 demo data. `sport.sessions`
 // loads from the API, `sport.schedule` from the weekly slots (T3), `sport.week`
@@ -412,7 +420,7 @@ type TrainData = {
   skipExercise: (workoutId: string, exerciseId: string) => void
   saveExerciseNote: (exerciseId: string, note: string) => void
   saveWorkoutFeedback: (workoutId: string, items: WorkoutFeedbackInput[]) => void
-  finishWorkout: (workoutId: string, opts?: { onSuccess?: (r?: WorkoutInstanceResponse) => void; onSettled?: () => void }) => void
+  finishWorkout: (workoutId: string, opts?: FinishOpts) => void
   logSportSession: (req: SportSessionCreateRequest, opts?: { onSuccess?: (r?: SportSessionResponse) => void; onSettled?: () => void }) => void
   saveSportSchedule: (slots: SportScheduleSlotInput[], opts?: MutateOpts) => void
   /** All one-off (non-recurring) sport events, date+time ascending (mezo-e1sp) — the Sport tab's upcoming list. */
@@ -654,11 +662,11 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     // Mock returns a seeded LevelUpResult-carrying response (the no-op finish
     // can't compute one) so the gym complete flow shows the level-up overlay.
     mutationFn: mock
-      ? async (_id: string) => {
+      ? async (_v: { id: string; note?: string | null }) => {
           awardGamificationEvent(qc, { type: 'GYM' })
           return { levelUp: gymLevelUpMock } as WorkoutInstanceResponse
         }
-      : (id: string) => trainApi.finishWorkout(id),
+      : (v: { id: string; note?: string | null }) => trainApi.finishWorkout(v.id, v.note),
     onSuccess: () => { invalidateToday(); invalidateProgression(); invalidateHabitAndQuests() },
   })
 
@@ -684,8 +692,8 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
               const logged: SportSession = {
                 id: `ss-${performance.now()}`, sport: req.sport ?? 'volleyball',
                 date: huMonthDayDow(iso), isoDate: iso, time: hhmm,
-                duration: req.duration, setsPlayed: req.setsPlayed ?? null, intensity: null,
-                rpe: req.rpe, shoulderStrain: req.shoulderStrain ?? null, jumpCount: null, notes: null,
+                duration: req.duration, setsPlayed: req.setsPlayed ?? null, rounds: req.rounds ?? null, intensity: null,
+                rpe: req.rpe, shoulderStrain: req.shoulderStrain ?? null, jumpCount: null, notes: req.notes ?? null,
               }
               return { sessions: [logged, ...(prev?.sessions ?? [])], week: prev?.week ?? null }
             },
@@ -837,8 +845,9 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     [feedbackMutation],
   )
   const finishWorkout = useCallback(
-    (workoutId: string, opts?: { onSuccess?: (r?: WorkoutInstanceResponse) => void; onSettled?: () => void }) =>
-      finishMutation.mutate(workoutId, { onSuccess: (r) => opts?.onSuccess?.(r), onSettled: () => opts?.onSettled?.() }),
+    (workoutId: string, opts?: FinishOpts) =>
+      finishMutation.mutate({ id: workoutId, note: opts?.note },
+        { onSuccess: (r) => opts?.onSuccess?.(r), onSettled: () => opts?.onSettled?.() }),
     [finishMutation],
   )
   const logSportSession = useCallback(

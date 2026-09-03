@@ -108,6 +108,11 @@ public class AnchorResolver {
     private static final String URL_LIGHTS_OUT = "/me/sleep";
     private static final String URL_INSIGHTS_MEMOIR = "/insights/memoir";
     private static final String URL_JOURNAL = "/me/naplo";
+    /** The companion thread page — where the feed cards and their „Segített?" chips actually
+     *  render (`NapMezoPage`). NOT `/today`: that is a legacy path the router redirects to the
+     *  Nap HUB, which does not render the thread, so the push landed a page away from its card
+     *  (mezo-b3pp.36). */
+    private static final String URL_THREAD = "/nap/uzenetek";
 
     /** The intended (pre-grace) in-day slots for the two constant-anchored prose categories. Both
      *  go through {@link #anchorAfterGeneration}, so the minute actually used is derived from the
@@ -283,10 +288,14 @@ public class AnchorResolver {
      * non-exempt card generated in quiet hours is DEFERRED to quiet-hours end — possibly onto the
      * next day, which is why yesterday's card is consulted too. Channel gate: a library entry
      * with {@code channel=feed} (or a key no longer in the library — honest absence) yields no
-     * push anchor at all. Dedup carries the row id fragment and the url a {@code ?n=}
-     * discriminator (the feed-anchor shape): /today is also briefing/midday/evening's deeplink,
-     * and push-sw.js uses the url as the notification tag — a bare /today intervention push would
-     * REPLACE the day's briefing on the phone.
+     * push anchor at all. Dedup carries the row id fragment (the feed-anchor shape, unaffected by
+     * the url below) so two different intervention cards firing in the same clock minute keep
+     * distinct {@code push_log} dedup keys — a bare {@code HH:mm} would collapse them. (Not a
+     * push-sw.js tag concern: since mezo-b3pp.36 each card's url is per-card unique, so two
+     * intervention pushes no longer share a notification tag anyway.) The url itself points at the companion thread
+     * page ({@code URL_THREAD}, not the legacy /today path) with the card's FULL id (so the page
+     * can match it exactly) and its own {@code messageDate} (so a card deferred across midnight
+     * still names the day whose feed actually holds it — mezo-b3pp.36).
      */
     private List<AnchoredEvent> interventionAnchors(UUID owner, LocalDate date) {
         LocalTime quietStart = LocalTime.parse(notificationProperties.quietHours().start());
@@ -308,13 +317,21 @@ public class AnchorResolver {
                             quietStart, quietEnd)
                         .ifPresent(minute -> {
                             String idFragment = msg.getId().toString().substring(0, 8);
+                            // The FULL id goes in the URL so the thread page can match a card
+                            // exactly; the 8-char fragment stays the dedup key, because that key
+                            // backs push_log's day-scoped dedup and changing its shape could
+                            // re-send a push already delivered (mezo-b3pp.36).
+                            // `d` is the CARD's own day (messageDate — "the day this message is
+                            // FOR", not when it was generated), never the loop's `date`/target
+                            // day: a card generated inside quiet hours pushes the next morning,
+                            // and only its generation day's feed holds it (mezo-b3pp.36).
                             // Deliberately mirrors InterventionService.EYEBROW as a literal — kept
                             // literal to avoid a service-layer import into this notification-layer
                             // resolver for a display string alone.
                             events.add(new AnchoredEvent(NotificationCategory.INTERVENTION, minute,
                                 hhmm(minute) + ":" + idFragment, "Mezo · észrevétel",
                                 excerptProse(String.join(" ", msg.getContent().body())),
-                                URL_TODAY + "?n=" + idFragment));
+                                URL_THREAD + "?n=" + msg.getId() + "&d=" + msg.getMessageDate()));
                         });
                 });
         }

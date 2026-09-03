@@ -5,7 +5,6 @@ import type {
   PantryCategoryMeta,
   PantryImport,
   PantrySuggestion,
-  PantryLookupItem,
   PantryScrapeDraft,
   MealAiDraft,
   MealBreakdown,
@@ -349,12 +348,6 @@ export const pantrySuggestions: PantrySuggestion[] = [
   { name: 'Creapure Kreatin · 500g', source: 'myprotein.hu', price: '7990 Ft', reason: 'Stash → 25 nap múlva fogy ki' },
 ]
 
-// === Mock OFF-lookup fixture (P6, mezo-bka) — what the demo ImportItemSheet "finds" ===
-export const pantryLookupFixture: PantryLookupItem[] = [
-  { name: 'Görög joghurt 10%', brand: 'Mizo', barcode: '5998200711113', per: 100, unit: 'g', kcal: 119, proteinG: 6, carbsG: 4, fatG: 9, sugarG: 3.8, saltG: 0.1, saturatedFatG: 6.2, nova: 3 },
-  { name: 'Skyr natúr', brand: 'Ehrmann', barcode: '4002971243307', per: 100, unit: 'g', kcal: 63, proteinG: 10.6, carbsG: 4, fatG: 0.2, sugarG: 3.9, saltG: 0.09, saturatedFatG: 0.1, nova: 1 },
-]
-
 // === Mock URL-scrape draft (P8, mezo-8vum) — what the demo Link-mode scrape "extracts" ===
 export const MOCK_SCRAPE_DRAFT: PantryScrapeDraft = {
   name: 'Impact Whey Protein · vanília', brand: 'Myprotein', per: 100, unit: 'g',
@@ -373,7 +366,8 @@ export const MOCK_PHOTO_DRAFT: PantryScrapeDraft = {
 }
 
 // === Mock AI meal draft (Fuel P8, mezo-78rn) — what the demo AiLogSheet "parses" from text/photo ===
-// One pantry-matched line (references a REAL Kamra seed so the badge + tap-through resolve) + one
+// One name-matched pantry line (references a REAL Kamra seed so the badge + tap-through resolve;
+// needsReview=true is the realistic shape of a deterministic name match, mezo-qrks) + one
 // low-confidence estimate line (needsReview → the review-chip path). `_aiSeed` is the first food seed.
 const _aiSeed = ingredients[0]
 export const MOCK_AI_MEAL_DRAFT: MealAiDraft = {
@@ -385,7 +379,7 @@ export const MOCK_AI_MEAL_DRAFT: MealAiDraft = {
       source: 'pantry', pantryItemId: _aiSeed.id, recipeId: null, name: _aiSeed.name,
       amount: 60, unit: _aiSeed.unit, per: _aiSeed.per, basisUnit: _aiSeed.unit,
       kcal: _aiSeed.macros.kcal, proteinG: _aiSeed.macros.p, carbsG: _aiSeed.macros.c, fatG: _aiSeed.macros.f,
-      nova: _aiSeed.nova, confidence: 1, needsReview: false,
+      nova: _aiSeed.nova, confidence: 1, needsReview: true,
     },
     {
       source: 'estimate', pantryItemId: null, recipeId: null, name: 'Csirkés wrap',

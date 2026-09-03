@@ -15,20 +15,17 @@ import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
 import io.mrkuhne.mezo.feature.goal.mapper.GoalMapper;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.train.service.WeeklyScheduledActivityService;
-import io.mrkuhne.mezo.techcore.exception.SystemMessage;
-import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Single-row-per-owner biometric profile. {@link #getProfile} 404s when the owner has no profile;
- * {@link #upsertProfile} find-or-creates by {@code createdBy} and overwrites the fields, so it is
- * one row per owner (insert once, update thereafter) — backed by
+ * Single-row-per-owner biometric profile. {@link #getProfile} answers an EMPTY response when the
+ * owner has no profile yet (see there); {@link #upsertProfile} find-or-creates by {@code createdBy}
+ * and overwrites the fields, so it is one row per owner (insert once, update thereafter) — backed by
  * {@code uq_biometric_profile_created_by}.
  *
  * <p>G6 surface:
@@ -57,13 +54,25 @@ public class BiometricProfileService {
     private final GoalEngineService goalEngineService;
     private final WeeklyScheduledActivityService weeklyActivity;
 
+    /**
+     * The owner's profile, carrying the derived {@code tdeeBootstrap}.
+     *
+     * <p>Having NO profile row is a NORMAL state, not an error (mezo-5cmq): this used to 404, which
+     * put the client on its error branch on every page mount merely because the owner had not
+     * configured a profile. The absence is expressed by the payload instead — an EMPTY
+     * {@code BiometricProfileResponse}, which on the wire is NOT {@code {}} but every field
+     * serialized as {@code null} (Jackson's default {@code Include.ALWAYS} applies here). With no
+     * profile row there is also no BMR basis, so {@link #deriveTdeeBootstrap} runs ONLY for an
+     * existing row.
+     */
     public BiometricProfileResponse getProfile(UUID userId) {
-        BiometricProfileEntity entity = repository.findByCreatedByAndDeletedFalse(userId)
-            .orElseThrow(() -> new SystemRuntimeErrorException(
-                SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
-        BiometricProfileResponse response = mapper.toResponse(entity);
-        response.setTdeeBootstrap(deriveTdeeBootstrap(userId, entity));
-        return response;
+        return repository.findByCreatedByAndDeletedFalse(userId)
+            .map(entity -> {
+                BiometricProfileResponse response = mapper.toResponse(entity);
+                response.setTdeeBootstrap(deriveTdeeBootstrap(userId, entity));
+                return response;
+            })
+            .orElseGet(BiometricProfileResponse::new);
     }
 
     @Transactional

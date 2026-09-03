@@ -60,6 +60,15 @@ export function muscleRegion(muscle: string): RegionKey | null {
   return MUSCLE_FAMILY[muscle] ?? null
 }
 
+/** Region (== color family) → Mozaik tone, the one mapping the week mosaic's tile wash
+ *  (`mz-w-*`) and the muscle page's whole-page tone both read. `amber` (Core) has no tone
+ *  of its own, so it lands on `gold` — the closest neutral-warm family. Typed structurally
+ *  (not as `PageTone`) so this pure logic module keeps its zero UI imports; it is assignable
+ *  to `PageTone` because the union is identical. */
+export const REGION_TONE: Record<RegionKey, 'coral' | 'gold' | 'lav' | 'rose' | 'sage' | 'sky'> = {
+  coral: 'coral', sky: 'sky', lav: 'lav', rose: 'rose', sage: 'sage', amber: 'gold',
+}
+
 /** Color tokens of a region — the family itself (region == family). */
 export function regionColor(region: RegionKey): MuscleColorFamily {
   return FAMILIES[region]

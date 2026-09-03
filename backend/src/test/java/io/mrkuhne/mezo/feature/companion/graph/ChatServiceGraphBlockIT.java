@@ -81,7 +81,9 @@ class ChatServiceGraphBlockIT extends AbstractIntegrationTest {
         AiMessageEntity row = messageRepository
                 .findByConversationIdAndCreatedByAndDeletedFalseOrderByCreatedAtAsc(conversation.getId(), userId)
                 .getLast();
-        assertThat(row.getRefs().refs()).contains(new RefsEnvelope.Ref("GraphNode", a.getId().toString()));
+        // mezo-b3pp.33: the persisted ref also carries the node's title as the label
+        assertThat(row.getRefs().refs())
+                .contains(new RefsEnvelope.Ref("GraphNode", a.getId().toString(), "Késői evés"));
     }
 
     @Test
@@ -97,9 +99,10 @@ class ChatServiceGraphBlockIT extends AbstractIntegrationTest {
 
         assertThat(turn.systemPrompt()).contains(GraphPromptAssembler.CONNECTIONS_HEADER);
         assertThat(turn.systemPrompt()).endsWith(ChatService.TONE_REMINDER);
+        // mezo-b3pp.33: each ref carries its node's title as the label
         assertThat(turn.recalledRefs()).containsExactly(
-                new RefsEnvelope.Ref("GraphNode", a.getId().toString()),
-                new RefsEnvelope.Ref("GraphNode", b.getId().toString()));
+                new RefsEnvelope.Ref("GraphNode", a.getId().toString(), "Stressz"),
+                new RefsEnvelope.Ref("GraphNode", b.getId().toString(), "Rossz alvás"));
     }
 
     @Test

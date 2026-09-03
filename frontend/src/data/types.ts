@@ -1,5 +1,6 @@
 import type { IconName } from '@/shared/ui/Icon'
 import type { Tool } from '@/shared/ui/ToolChip'
+import type { ClayIconName } from '@/shared/ui/clay'
 import type { NovaGroup } from '@/data/nova'
 import type { PantrySourceKey } from '@/data/pantrySources'
 
@@ -13,7 +14,7 @@ export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: Briefin
 /** The unified companion-feed message kinds (companion-feed, mezo-gst9) — one persisted row per
  *  generation. `intervention` (W5.2, mezo-b3pp.19) is the odd one out: config-text, never LLM
  *  output — the card's body comes straight from `mezo.companion.interventions[].textHu`. */
-export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening' | 'intervention'
+export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening' | 'intervention' | 'people'
 /** One companion-feed message — the MezoChip thread's real-mode source (`useCompanionFeed`), mirrors FeedMessageResponse. */
 export interface FeedMessage {
   /** The companion_message row id (uuid) — the W4.1 feedback artifactId (`feed_message`). */
@@ -66,6 +67,14 @@ export interface DietSettings {
   waterMl: number
   fiberG: number
 }
+/** Mezo-kalauz seen-store (mezo-gb1s): one record per guide id, the whole map is the per-user singleton. */
+export interface TutorialProgressEntry {
+  version: number
+  seenAt: string
+  completedAt: string | null
+  dismissedAtStep: number | null
+}
+export type TutorialProgress = Record<string, TutorialProgressEntry>
 /** Meal-slot templates (mezo-7102) — per-day-type anchor plan the planner replays onto a real day. */
 export type SlotTemplateDayType = 'rest' | 'training_am' | 'training_pm'
 export type SlotAnchor =
@@ -357,10 +366,41 @@ export interface RecipeInput {
   role: RecipeRole
   ingredients: { pantryItemId: string; amount: number; unit: string; note?: string | null }[]
 }
+
+// --- Recept-műhely (AI recipe workshop, mezo-92pb) — mirrors WorkshopTurnRequest/Response ---
+/** The chat-picked nutrition goal steering the workshop's suggestions; also selects the save role. */
+export type WorkshopGoal = 'high_protein' | 'pre_workout' | 'post_workout' | 'before_bed' | 'breakfast'
+/** One draft ingredient line — a resolved pantry ref (macros come from the live pantry row, never
+ *  carried on the wire) or a free-form AI/user estimate (`est` = totals for THIS line's current
+ *  amount, not a per-basis rate). Mirrors WorkshopDraftLine. */
+export interface WorkshopLine {
+  source: 'pantry' | 'estimate'
+  refId: string | null
+  name: string
+  amount: number
+  unit: string
+  est?: { kcal: number; p: number; c: number; f: number }
+}
+/** The AI-authored recipe-in-progress the workshop chat edits turn by turn. Mirrors WorkshopDraft. */
+export interface WorkshopDraft {
+  name: string
+  category: RecipeCategory
+  servings: number
+  steps: string[]
+  lines: WorkshopLine[]
+}
+/** One workshop turn's result — the assistant's reply text + the updated draft. Mirrors WorkshopTurnResponse. */
+export interface WorkshopTurn {
+  reply: string
+  draft: WorkshopDraft
+}
+
 export interface PantryImport { id: string; source: PantrySourceKey; when: string; items: number; status: 'synced' | 'manual-review'; ofWhat: string }
 export interface PantrySuggestion { name: string; source: PantrySourceKey; price: string; reason: string }
 
-// One OpenFoodFacts lookup hit (Fuel P6, mezo-bka) — per-100 basis draft the user confirms.
+// Originated as one OpenFoodFacts lookup hit (Fuel P6, mezo-bka); the OFF lookup mode itself
+// was retired from the FE (`mezo-ymt4`, 2026-09-02), but this type is KEPT as the shared base
+// shape both PantryScrapeDraft and PantryImportInput extend — not dead code.
 export interface PantryLookupItem {
   name: string
   brand?: string | null
@@ -554,14 +594,28 @@ export interface SleepGoal {
 export type SleepGoalInput = Omit<SleepGoal, 'wakeTime' | 'bedTime'>
 // --- Emberek (people) ---
 export type Affect = 'positive' | 'neutral' | 'mixed' | 'negative'
-export type Relationship = 'partner' | 'teammate' | 'mentee'
-export type MentionSource = 'voice' | 'camera' | 'chip' | 'text'
+export type Relationship = 'partner' | 'friend' | 'family' | 'colleague' | 'teammate' | 'mentee'
+export type PersonStatus = 'candidate' | 'active' | 'archived'
+export type PersonSourceKind = 'manual' | 'extractor' | 'seed'
+export type MentionSource = 'voice' | 'camera' | 'chip' | 'text' | 'chat'
+export type MentionContext =
+  | 'munka' | 'csalad' | 'baratok' | 'edzes'
+  | 'konfliktus' | 'kozos_program' | 'segitseg' | 'egyeb'
+export interface PersonGraphEdge {
+  nodeKind: string
+  title: string
+  relationHu: string
+  strength: string
+}
 export interface PersonEntry {
   id: string
   name: string
   initial: string
   relationship: Relationship
   relationshipHu: string
+  aliases: string[]
+  status: PersonStatus
+  sourceKind: PersonSourceKind
   affect_baseline: Affect
   mentionCount: number
   mentionsThisWeek: number
@@ -570,8 +624,13 @@ export interface PersonEntry {
   contactCadenceLabel: string
   notes: string
   affectTrend: number[]
+  /** A hangulat-ív első olvasatának hete (ISO dátum), vagy null, ha nincs olvasat. */
+  affectTrendStart: string | null
+  direction: 'up' | 'down' | 'flat'
+  directionReason: string | null
   knownFacts: string[]
   ties: string[]
+  graphEdges: PersonGraphEdge[]
 }
 export interface Mention {
   id: string
@@ -583,15 +642,31 @@ export interface Mention {
   source: MentionSource
   duration_s?: number
   excerpt: string
-  tone: Affect
+  tone?: Affect
   tiedTo?: { kind: string; label: string }
   flagged?: boolean
+  intensity?: number
+  contextLabel?: MentionContext
+  sourceRefKind?: string
 }
 /** Phase 2 REST DTO — POST /mentions. Hook enriches id/ts/labels/personName/source server-side in Phase 2. */
 export interface MentionLogInput {
   personId: string
   tone: Affect
   text?: string
+  contextLabel?: MentionContext
+}
+/** Create/edit save payload — no `id` = create, `id` present = update. Maps to
+ *  CreatePersonRequest/UpdatePersonRequest (both share this shape on the wire). */
+export interface PersonSaveInput {
+  id?: string
+  name: string
+  aliases: string[]
+  relationship: Relationship
+  relationshipHu: string
+  affectBaseline?: Affect
+  contactCadenceLabel?: string
+  notes?: string
 }
 
 // --- Fuel · weekly (Terv) + replan + gym schedule ---
@@ -696,7 +771,15 @@ export interface KnowledgeFact {
   createdAt: string
 }
 /** A pending extraction candidate awaiting the explicit L2 decision (accept/refine/reject). */
-export interface FactCandidate { id: string; text: string; category: FactCategory }
+export interface FactCandidate {
+  id: string
+  text: string
+  category: FactCategory
+  /** FE-only in this slice (mezo-ms9a): the existing fact id this candidate contradicts, or
+   *  `null` when it doesn't conflict with anything. Real mode always maps to `null` — the wire
+   *  doesn't carry this yet. */
+  conflictsWithFactId: string | null
+}
 export type FactDecision = 'accept' | 'reject' | 'refine'
 export interface KnowledgeEdge { from: string; to: string; type: 'reinforces' | 'context' | 'causes' }
 
@@ -718,7 +801,7 @@ export interface LifeEventCandidate {
 
 export type LifeEventDecision = 'accept' | 'reject'
 
-export type GraphNodeKind = 'PATTERN' | 'PREFERENCE' | 'GOAL' | 'LIFE_EVENT' | 'SEASON' | 'INSIGHT'
+export type GraphNodeKind = 'PATTERN' | 'PREFERENCE' | 'GOAL' | 'LIFE_EVENT' | 'SEASON' | 'INSIGHT' | 'PERSON'
 
 /** W2.6 (mezo-b3pp.11): one active knowledge-graph node for the Tudástár "Kapcsolatok" section —
  *  `topEdges` are pre-rendered Hungarian lines from the backend `GraphEdgeLineRenderer`, the same
@@ -733,6 +816,8 @@ export interface KnowledgeGraphNode {
   /** W4.3 (mezo-b3pp.17): `'profile'` marks the singleton pragmatic-profile node, which the
    *  Tudástár renders in its own section instead of the kind groups. */
   sourceKind: string | null
+  /** ISO date-time (mezo-ms9a): `useKnowledgeGraphNodes()` sorts DESC by this. */
+  updatedAt: string
 }
 
 // --- Insights (AI-memory surface) ---
@@ -863,6 +948,10 @@ export interface Memoir {
   body: string
   anchors: MemoirAnchor[]
 }
+/** F7.5 (mezo-d20.8.5): one archive-shelf entry — weekStart drives grouping + the chapter route. */
+export interface MemoirEntry extends Memoir {
+  weekStart: string
+}
 
 export type PredictionStatus = 'pending' | 'validated' | 'missed'
 export interface Prediction {
@@ -889,8 +978,55 @@ export interface Experiment {
   outcomeGood?: boolean
 }
 
+export type DiagnosisConfidence = 'strong' | 'moderate' | 'weak'
+
+/** One code-collected evidence candidate, FROZEN at generation time (mezo-hqfi).
+ *  `kind` decides which fields carry: metric rows have the numbers, pattern/fact rows do not. */
+export interface DiagnosisEvidence {
+  kind: 'metric' | 'pattern' | 'fact'
+  label: string
+  detail?: string
+  /** Hungarian provenance — „Alvás-napló", „Minták", „Tudástár". Shown to the user. */
+  sourceHu?: string
+  metricKey?: string
+  value?: number
+  baselineValue?: number
+  delta?: number
+  coverageDays?: number
+}
+
+/** One ranked suspect. `evidenceIndexes` point INTO the parent's `evidence` — the model
+ *  selected them, it could not invent them. The probe fields map 1:1 onto an Experiment. */
+export interface DiagnosisSuspect {
+  rank: number
+  title: string
+  claim: string
+  evidenceIndexes: number[]
+  strength: DiagnosisConfidence
+  probeText: string
+  metricKey: string
+  expectedDirection: 'up' | 'down' | 'stable'
+  totalDays: number
+}
+
+export interface Diagnosis {
+  id: string
+  phenomenon: string
+  windowDays: number
+  verdict: string
+  confidence: DiagnosisConfidence
+  evidence: DiagnosisEvidence[]
+  suspects: DiagnosisSuspect[]
+  generatedAt: string
+  /** A log landed inside the window after generatedAt — the „↻ Frissítsd" hint. */
+  stale: boolean
+}
+
 export type ChatRole = 'user' | 'assistant'
-export interface ChatRef { kind: string; id: string }
+/** `label` (mezo-b3pp.33): the wire's optional carried label — null on rows that omit it,
+ *  undefined for producers that never set it. `chatRefDisplay` prefers it and falls back to
+ *  the id-derived label (see chatRefs.ts). */
+export interface ChatRef { kind: string; id: string; label?: string | null }
 /** W3.1b (mezo-b3pp.28): one memory ambient recall injected into the answer's prompt —
  *  `similarity` is the raw cosine 0..1 (the row renders `Math.round(s * 100)%`). */
 export interface ChatRecalledMemory {
@@ -1143,7 +1279,7 @@ export interface SportSession {
   id: string; sport: string; date: string
   isoDate: string // ISO day — the raw wire date; `date` is the HU display string
   time: string; duration: number
-  setsPlayed: number | null; intensity: number | null; rpe: number; shoulderStrain: number | null
+  setsPlayed: number | null; rounds: number | null; intensity: number | null; rpe: number; shoulderStrain: number | null
   jumpCount: number | null; notes: string | null
 }
 export interface SportWeek {
@@ -1170,13 +1306,6 @@ export interface ExerciseLibraryItem {
   imageEndUrl?: string | null
   editable?: boolean  // true for user-authored catalog rows (created_by == current user)
 }
-
-export interface GoalPreset {
-  id: string; label: string; sub: string; description: string
-  defaultWeeks: number; split: string; days: number; style: string
-  phaseTemplate: MesoPhase[]; color: string; icon: IconName
-}
-export interface SplitOption { label: string; days: number[]; best: string | null }
 
 // ── Daily quests (gamified growth E1, mezo-df7q) ─────────────────────────────
 export type QuestSlot = 'BODY' | 'FUELBIO' | 'GROWTH'
@@ -1238,6 +1367,8 @@ export interface HabitChainInfo {
   isActive: boolean
   defs: HabitDefInfo[]
 }
+/** Behaviour-change framework a habit recipe was built on (mezo-3zue). Null = pre-framework def. */
+export type HabitFramework = 'FOGG' | 'CLEAR'
 export interface HabitDefInfo {
   id: string
   habitKey: string
@@ -1252,6 +1383,14 @@ export interface HabitDefInfo {
   xp: number
   linkUrl: string | null
   isActive: boolean
+  framework: HabitFramework | null
+  /** FOGG: habitKey of the def this recipe is stacked onto (free-text anchors use anchorCopy). */
+  anchorHabitKey: string | null
+  cue: string | null
+  craving: string | null
+  reward: string | null
+  celebration: string | null
+  identity: string | null
 }
 export interface HabitCatalog {
   chains: HabitChainInfo[]
@@ -1266,6 +1405,11 @@ export interface HabitSuggestion {
   skillKey: string
   xp: number
   chainKey: string
+  framework: HabitFramework | null
+  cue: string | null
+  craving: string | null
+  reward: string | null
+  celebration: string | null
 }
 
 // ── Daily intention — standing creed + up to 3 daily foci + a holistic reflection (mezo-a686)
@@ -1503,13 +1647,17 @@ export const NOTIFICATION_CATEGORY_META: Record<NotificationCategoryKey, Notific
 }
 
 // --- In-app notification feed (bd mezo-gzhp.1, spec 2026-08-18) ---
-/** Mirrors backend AppNotificationKind — keep in sync (AppNotificationKindTest pins that side). */
+/** Mirrors backend AppNotificationKind — keep in sync (AppNotificationKindTest pins that side).
+ *  A szinkron NEM garantált: a két oldal külön nyelven él, és `weekly_review_ready` egyszer már
+ *  kimaradt innen (mezo-ntf8). A leképezést ezért `notificationKindMeta()`-n keresztül olvasd,
+ *  ami ismeretlen kulcsra semleges bejegyzést ad — egy új backend-fajta sosem döntheti el az
+ *  értesítés-feedet. */
 export type AppNotificationKindKey =
   | 'pattern_inbox' | 'pattern_signal' | 'hypothesis_new'
   | 'fact_candidate' | 'fact_reinforced' | 'memoir_ready'
   | 'prediction_new' | 'prediction_outcome'
   | 'experiment_proposed' | 'experiment_closed'
-  | 'challenge_event' | 'memory_note'
+  | 'challenge_event' | 'memory_note' | 'weekly_review_ready'
 
 export interface AppNotificationView {
   id: string
@@ -1522,18 +1670,40 @@ export interface AppNotificationView {
   readAt: string | null
 }
 
-/** Per-kind panel icon + tint class suffix (the mockup's family colors). */
-export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, { emoji: string; tint: string }> = {
-  pattern_inbox: { emoji: '🧩', tint: 'pattern' },
-  pattern_signal: { emoji: '🧩', tint: 'pattern' },
-  hypothesis_new: { emoji: '🧩', tint: 'pattern' },
-  fact_candidate: { emoji: '📚', tint: 'knowledge' },
-  fact_reinforced: { emoji: '📚', tint: 'knowledge' },
-  memoir_ready: { emoji: '✍️', tint: 'memoir' },
-  prediction_new: { emoji: '🔮', tint: 'prediction' },
-  prediction_outcome: { emoji: '🔮', tint: 'prediction' },
-  experiment_proposed: { emoji: '🧪', tint: 'experiment' },
-  experiment_closed: { emoji: '🧪', tint: 'experiment' },
-  challenge_event: { emoji: '🏆', tint: 'experiment' },
-  memory_note: { emoji: '🗂', tint: 'memory' },
+/** Per-kind ikon + tint osztály-utótag (a mockup családi színei). A `tint` a sor ikon-tokjának
+ *  washát adja, a `clay` a Mozaik-nyelv ikonját — a feed-oldal (`NotificationFeedPage`) ezt a
+ *  kettőt rendereli. Az `emoji` a törölt dropdown-panel öröksége, olvasója már nincs. */
+export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, {
+  /** @deprecated Nincs olvasója a repóban a NotificationPanel törlése óta (mezo-nol0) — a feed
+   *  a `clay` ikont rajzolja. Nem törlöm: a 12 soros literál nyesése ezt az ágat túllépő változás. */
+  emoji: string
+  tint: string
+  clay: ClayIconName
+}> = {
+  pattern_inbox: { emoji: '🧩', tint: 'pattern', clay: 'i-minta' },
+  pattern_signal: { emoji: '🧩', tint: 'pattern', clay: 'i-minta' },
+  hypothesis_new: { emoji: '🧩', tint: 'pattern', clay: 'i-minta' },
+  fact_candidate: { emoji: '📚', tint: 'knowledge', clay: 'i-tudas' },
+  fact_reinforced: { emoji: '📚', tint: 'knowledge', clay: 'i-tudas' },
+  memoir_ready: { emoji: '✍️', tint: 'memoir', clay: 'i-memoar' },
+  prediction_new: { emoji: '🔮', tint: 'prediction', clay: 'i-kristaly' },
+  prediction_outcome: { emoji: '🔮', tint: 'prediction', clay: 'i-kristaly' },
+  experiment_proposed: { emoji: '🧪', tint: 'experiment', clay: 'i-lombik' },
+  experiment_closed: { emoji: '🧪', tint: 'experiment', clay: 'i-lombik' },
+  challenge_event: { emoji: '🏆', tint: 'experiment', clay: 'i-kihivas' },
+  memory_note: { emoji: '🗂', tint: 'memory', clay: 'i-rend' },
+  weekly_review_ready: { emoji: '🗓', tint: 'memoir', clay: 'i-heti' },
+}
+
+/** Semleges bejegyzés egy olyan fajtára, amit ez a build még nem ismer. */
+const FALLBACK_KIND_META = { emoji: '🔔', tint: 'memory', clay: 'i-ertesites' } as const
+
+/** A leképezés TOTÁLIS olvasója. A wire-kind sima string: a backend enum bővülhet anélkül, hogy
+ *  ez a build tudna róla, és egy hiányzó kulcson a nyers indexelés `undefined`-et ad, amitől a
+ *  feed-oldal sor-map-je elszáll és az egész oldal az ErrorBoundary-ra esik (mezo-ntf8, élesben).
+ *  Egy ismeretlen értesítés inkább nézzen ki semlegesen, mint hogy elvigye a többit is. */
+export function notificationKindMeta(
+  kind: string,
+): typeof FALLBACK_KIND_META | (typeof APP_NOTIFICATION_KIND_META)[AppNotificationKindKey] {
+  return APP_NOTIFICATION_KIND_META[kind as AppNotificationKindKey] ?? FALLBACK_KIND_META
 }

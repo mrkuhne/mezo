@@ -121,9 +121,11 @@ first needs them — never inline in a test class.
   never hardcoded in the helper) and returns ready-to-use Bearer headers.
 - Unauthenticated calls pass `null` headers — every protected endpoint gets at least one
   `401`-without-token test.
-- Single-user model: no role matrix needed; if multi-user ownership must be proven at HTTP
-  level, create the second user via `UserPopulator` and mint its token through the login
-  endpoint (no token forging in tests).
+- Multi-user model (S1, `mezo-qw37.1`): `registerUser("Anna")` runs the real invite → register
+  flow and returns `RegisteredUser(id, email, headers)` — the sanctioned second principal for
+  ownership-isolation tests. Roles: the seeded owner is `OWNER`; registered users are `USER`;
+  owner-only endpoints get one `USER → 403 AUTH_FORBIDDEN` test each. `UserPopulator` stays for
+  service-level tests that only need an FK-valid `created_by`.
 
 ## Error-Contract Assertions
 

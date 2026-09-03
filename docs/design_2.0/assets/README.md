@@ -9,7 +9,7 @@ language decided in the mockup rounds — see `docs/design_2.0/2026-08-26-ui-ia-
 |---|---|
 | `logo-orb.svg` | The Orb — standalone logo mark (app icon, chat avatar, coach marker) |
 | `clay-icons.svg` | Sprite: 33 `<symbol>` icons, ids `i-*`, all `viewBox="0 0 100 100"` |
-| `clay-spots.svg` | Sprite: 14 `<symbol>` spot illustrations, ids `s-*` |
+| `clay-spots.svg` | Sprite: 22 `<symbol>` spot illustrations, ids `s-*` (incl. the 8 persona orb variants `s-orb-doki` … `s-orb-szkeptikus` — the Karakter profiling team, mezo-1gim.13: the `s-orb` clay recipe recolored per domain + a dashed inner-ring motif at per-persona rotation) |
 
 Browsable catalog artifact: https://claude.ai/code/artifact/ *(see bd issue notes for current link)*.
 

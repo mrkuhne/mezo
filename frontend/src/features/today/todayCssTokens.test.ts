@@ -58,14 +58,14 @@ function rootDeclaredCustomProperties(css: string): Set<string> {
   return declared
 }
 
-/** Slices from the Today section's own header comment to end of file — verified (2026-08-12,
- *  mezo-e26w fix) to be the LAST top-level section in `prototype.css`: no `/* =====` or
+/** Slices from the Today section's own header comment to end of file — still (re-verified
+ *  2026-08-29, mezo-d20.9.1) the LAST top-level section in `prototype.css`: no `/* =====` or
  *  `/* ═══` section header appears after it, only the `── ── ──` sub-headers of its own
  *  sub-blocks. If a future edit appends a new section after this one, this slice would start
  *  silently swallowing it too — the sanity assertion below (selector count) is the tripwire
  *  for that: an unrelated section's `var()` usages could still all resolve fine, but it is
  *  cheap insurance either way. */
-const TODAY_SECTION_MARKER = 'Today · iOS list language (mezo-e26w)'
+const TODAY_SECTION_MARKER = 'Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)'
 
 function todayBlock(css: string): string {
   const start = css.indexOf(TODAY_SECTION_MARKER)
@@ -93,6 +93,9 @@ describe('every custom property the Today .td-* block reads is declared in a :ro
   test('sanity: the Today block slice actually contains the .td-* rules (the marker/slice did not silently miss them)', () => {
     const block = todayBlock(rawCss)
     const tdSelectorCount = (block.match(/\.td-[a-z-]+/g) ?? []).length
+    // The Design 2.0 cleanup (mezo-d20.9.1) cut the block down to the two surviving sheets
+    // (MezoMessagesSheet + DailyQuestsSheet/Card) — ~40 selectors instead of the old ~110, so
+    // this floor is lowered to stay a real tripwire rather than a comfortable no-op.
     expect(tdSelectorCount).toBeGreaterThan(20)
   })
 

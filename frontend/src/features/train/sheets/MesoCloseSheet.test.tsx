@@ -156,7 +156,7 @@ describe('MesoCloseSheet (mock mode)', () => {
     )
     // ...titled from the run itself, not from mockClose's last-resort literal...
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Hypertrophy 04 · Tavasz' }, { timeout: 3000 }),
+      await screen.findByText('Hypertrophy 04 · Tavasz · riport', {}, { timeout: 3000 }),
     ).toBeInTheDocument()
     // ...and nothing claims the run is still going.
     expect(screen.queryByText(/a riport a lezárás pillanatában készül el/)).toBeNull()

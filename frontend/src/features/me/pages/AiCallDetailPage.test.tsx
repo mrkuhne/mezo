@@ -28,7 +28,8 @@ describe('AiCallDetailPage (mock mode)', () => {
     renderDetail()
     expect(screen.getByText(/companion_chat/)).toBeInTheDocument()
     expect(screen.getAllByText('gemini-2.5-flash').length).toBeGreaterThan(0)
-    expect(screen.getByText('7.8 s')).toBeInTheDocument()
+    // F7.4: the latency shows twice now — the hero stat strip AND the meta grid cell
+    expect(screen.getAllByText('7.8 s').length).toBeGreaterThan(0)
     expect(screen.getByText('SIKER')).toBeInTheDocument()
   })
 
@@ -66,6 +67,19 @@ describe('AiCallDetailPage (mock mode)', () => {
     expect(screen.getByText('User üzenet')).toBeInTheDocument()
     expect(screen.getByText('Válasz')).toBeInTheDocument()
     expect(screen.getByText(/rizses csirkét/)).toBeInTheDocument()
+  })
+
+  // mezo-d20.11 (1:1 fidelity audit): the detail page had no EntranceGroup, so its cards popped
+  // in while every sibling Én page staggered. The `‹` row stays OUTSIDE the group — the way back
+  // must be on the first painted frame — and no `.rise` may sit outside `.mz-play`.
+  it('staggers its cards inside an armed EntranceGroup, with the back link outside it', () => {
+    const { container } = renderDetail()
+    const play = container.querySelector('.mz-play')
+    expect(play).not.toBeNull()
+    const rises = container.querySelectorAll('.rise')
+    expect(rises.length).toBeGreaterThan(0)
+    for (const el of rises) expect(play!.contains(el)).toBe(true)
+    expect(play!.contains(screen.getByRole('button', { name: 'Vissza' }))).toBe(false)
   })
 })
 

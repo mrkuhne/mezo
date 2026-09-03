@@ -9,8 +9,9 @@ import { API_BASE } from '@/test/msw/handlers'
 import { medicationFixture } from '@/test/fixtures/medication'
 
 // FuelPlanPage reads the composed dual-mode useFuelWeek() (Train + medication + week rollup
-// queries) and useTodayScenario() (a ['medication'] query), so the view needs a QueryClient
-// as well as a router.
+// queries), useTodayScenario() (a ['medication'] query), useFuelSettings() and useSleepGoal()
+// (audit gap #16 fix — the rhythm-grid markers are settings-derived), so the view needs a
+// QueryClient as well as a router.
 const renderView = () =>
   render(
     <QueryWrapper>
@@ -22,7 +23,7 @@ describe('FuelPlanPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  it('renders the demo title, weekly stats and rhythm grid; hides the medication cycle card (nincs gyógyszer)', () => {
+  it('renders the demo week label (in the rhythm-grid corner), weekly stats; hides the medication cycle card (nincs gyógyszer)', () => {
     renderView()
     expect(screen.getByText('Máj 18 – 24')).toBeInTheDocument()
     // mezo-lwmq: the owner tracks no medication — the mock seed's cycle week is empty, so the
@@ -34,10 +35,21 @@ describe('FuelPlanPage (mock mode)', () => {
     expect(screen.getByText('92%')).toBeInTheDocument()
   })
 
-  it('own header: pghead-np sage over + h1 (read-only, no gym-time editor)', () => {
+  it('the settings-derived rhythm-grid legend shows the mock caffeine cutoff + a bedtime-derived kitchen close', () => {
+    renderView()
+    // FUEL_SETTINGS_GHOST / the mock seed's caffeineCutoff is '14:00' — but it is now a settings
+    // READ, not a hardcoded literal inside the grid (audit gap #16).
+    expect(screen.getByText(/koffein-cutoff 14:00 — a beállításaidból/)).toBeInTheDocument()
+    expect(screen.getByText(/konyhazárás \d{2}:\d{2}/)).toBeInTheDocument()
+  })
+
+  it('Mozaik scaffold: sage tone page, ‹ Fuel back chip, "Terv" hero with no bignum (every number already lives in the stat strip)', () => {
     const { container } = renderView()
-    expect(container.querySelector('.pghead-np.sage')).toBeInTheDocument()
-    expect(screen.getByText('Fuel · Heti terv')).toBeInTheDocument()
+    expect(container.querySelector('.mz-page.mz-p-sage')).toBeInTheDocument()
+    expect(screen.getByText('‹ Fuel')).toBeInTheDocument()
+    expect(screen.getByText('Terv')).toBeInTheDocument()
+    expect(container.querySelector('.mz-bignum')).not.toBeInTheDocument()
+    // read-only: no gym-time editor
     expect(screen.queryByRole('button', { name: 'Idők' })).toBeNull()
     expect(screen.queryByText('Heti gym idők')).toBeNull()
   })
@@ -53,11 +65,11 @@ describe('FuelPlanPage (real mode)', () => {
   })
   afterEach(() => vi.unstubAllEnvs())
 
-  it('renders honest states: derived title, deferred sections hidden, adherence —', async () => {
+  it('renders honest states: derived week label, deferred sections hidden, adherence —', async () => {
     renderView()
     // weekly stats resolve from the MSW week-rollup fixture (1 protein-hit day)
     await waitFor(() => expect(screen.getByText('1/7')).toBeInTheDocument())
-    // date-derived title, not the demo week
+    // date-derived week label, not the demo week
     expect(screen.queryByText('Máj 18 – 24')).not.toBeInTheDocument()
     // supplement adherence has no real source yet -> em-dash, never the seed's 92%
     expect(screen.queryByText('92%')).not.toBeInTheDocument()

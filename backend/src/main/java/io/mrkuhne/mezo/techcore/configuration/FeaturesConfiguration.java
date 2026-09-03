@@ -25,6 +25,19 @@ public class FeaturesConfiguration {
     /** V2.2 nightly daily-summary job (the app's first cron) — techcore cron zone. */
     public static final String DAILY_SUMMARY_JOB_SWITCH = "mezo.techcore.cron.daily-summary-job.enabled";
 
+    /** Karakter nightly observation pass (mezo-1gim.3) — the expert-team cron (spec §6). */
+    public static final String CHARACTER_OBSERVATION_JOB_SWITCH =
+            "mezo.techcore.cron.character-observation-job.enabled";
+
+    /** Karakter weekly konzílium pass (mezo-1gim.5) — the Sunday-evening cron (spec §6). */
+    public static final String CHARACTER_CONFERENCE_JOB_SWITCH =
+            "mezo.techcore.cron.character-conference-job.enabled";
+
+    /** Karakter monthly deep-read konzílium pass (Karakter S4, mezo-1gim.6) — the month's first
+     *  Sunday-evening cron (guarded in code by {@code CharacterMonthlyJob#isDeepReadDay}). */
+    public static final String CHARACTER_MONTHLY_JOB_SWITCH =
+            "mezo.techcore.cron.character-monthly-job.enabled";
+
     /** V3.1 nightly statistical pattern-detection job — techcore cron zone. */
     public static final String PATTERN_DETECTION_JOB_SWITCH = "mezo.techcore.cron.pattern-detection-job.enabled";
 
@@ -59,6 +72,11 @@ public class FeaturesConfiguration {
      *  deterministic GET /api/recipe/{id}/breakdown envelope stays on regardless. Prose additionally
      *  needs COMPANION_SWITCH (the port adapter lives there). */
     public static final String RECIPE_AI_SCORE_SWITCH = "mezo.feature.recipe-ai-score.enabled";
+
+    /** Receptműhely AI turn endpoint (mezo-92pb) — off: POST /api/recipe/workshop/turn is gone
+     *  (controller bean absent); LLM availability additionally needs COMPANION_SWITCH
+     *  (the RecipeWorkshopLlm adapter lives there). */
+    public static final String RECIPE_WORKSHOP_SWITCH = "mezo.feature.recipe-workshop.enabled";
 
     /** Meal coach verdicts (mezo-mr4n): gates ONLY the LLM prose over a logged meal's score — the
      *  deterministic score and its breakdown stay on regardless. Verdicts additionally need
@@ -196,6 +214,9 @@ public class FeaturesConfiguration {
      *  (companion, task 15) additionally needs COMPANION_SWITCH (it calls the CompanionLlm port). */
     public static final String MESO_REVIEW_SWITCH = "mezo.feature.meso-review.enabled";
 
+    /** Meso plan generator — Gemini exercise pick on POST /api/train/meso-plans/generate. Off → deterministic filler only. */
+    public static final String MESO_PLAN_AI_SWITCH = "mezo.feature.meso-plan-ai.enabled";
+
     /** Életjel-ring day-close (mezo-dhzk) — off ⇒ the /api/needs surface 404s and no needs beans exist. */
     public static final String NEEDS_SWITCH = "mezo.feature.needs.enabled";
 
@@ -234,4 +255,11 @@ public class FeaturesConfiguration {
      *  (W5.1 is independent), but nothing is ever delivered. Needs COMPANION_SWITCH and
      *  PROACTIVE_SWITCH too (the card is a companion_message row). */
     public static final String INTERVENTION_SWITCH = "mezo.feature.intervention.enabled";
+
+    /** Emberek szekció (mezo-06o0) — az automata mention-detektálás rétege. Off ⇒ egyetlen
+     *  detektáló listener-bean sem létezik; a kézi /api/people felület ettől függetlenül él. */
+    public static final String PEOPLE_SWITCH = "mezo.feature.people.enabled";
+
+    /** Mezo-kalauz seen-store (mezo-gb1s.1). */
+    public static final String TUTORIAL_SWITCH = "mezo.feature.tutorial.enabled";
 }

@@ -1,96 +1,82 @@
+import type { CSSProperties } from 'react'
 import { Icon } from '@/shared/ui/Icon'
-import type { IconName } from '@/shared/ui/Icon'
-import { affectColor } from '@/data/me/people'
-import type { Mention, MentionSource, PersonEntry } from '@/data/types'
+import { ClayIcon } from '@/shared/ui/clay'
+import type { Mention, PersonEntry } from '@/data/types'
+import { CTX_META, SRC_META } from '@/features/me/logic/peopleVisuals'
 
-function sourceIconFor(source: MentionSource): IconName {
-  switch (source) {
-    case 'voice':
-      return 'mic'
-    case 'camera':
-      return 'camera'
-    case 'chip':
-      return 'check'
-    case 'text':
-      return 'send'
-    default:
-      return 'anchor'
-  }
+/** Prototype `.mrowt.tw-*` wash keys, keyed by `Mention.tone` — mixed/neutral never carry
+ *  the same wash: 'neutral'/undefined rows are intentionally left unwashed (the honest
+ *  "no tone yet" state), never defaulted to a color that would imply a night-run verdict
+ *  that hasn't happened. */
+const TONE_WASH: Partial<Record<NonNullable<Mention['tone']>, string>> = {
+  positive: 'ppl-tw-jo',
+  mixed: 'ppl-tw-vegyes',
+  negative: 'ppl-tw-nehez',
 }
 
-/** Napiv row card (mezo-8141 Task 7) — no left accent bar; the affect tone color
- * still rings the mini-avatar and tints the time label. */
-export function MentionRow({ mention, person }: { mention: Mention; person?: PersonEntry }) {
-  const tone = affectColor(mention.tone)
-  const sourceIcon = sourceIconFor(mention.source)
+/**
+ * Emberek S3 Említések (mezo-06o0.2 Task 5) — port of emberek-body.html feedHtml()'s
+ * `.mrowt` row: a tone-washed tile carrying the source disc, a mini person avatar, the
+ * context chip, FIGYELEM pulse, and the automata-only undo (✕). Rewritten interface vs.
+ * the S2 shape — `person` is now optional (the row falls back to the mention's own
+ * `personName` initial when the caller has no PersonEntry at hand, e.g. an archived
+ * person), and the source disc/context chip now come straight from Task 1's SRC_META/
+ * CTX_META rather than a locally re-derived icon map.
+ */
+export function MentionRow({
+  mention,
+  person,
+  delayMs,
+  onUndo,
+}: {
+  mention: Mention
+  person?: PersonEntry
+  delayMs?: number
+  onUndo?: (mention: Mention) => void
+}) {
+  const src = SRC_META[mention.source]
+  const ctx = mention.contextLabel ? CTX_META[mention.contextLabel] : null
+  const wash = mention.tone ? TONE_WASH[mention.tone] : undefined
+  const initial = person?.initial ?? mention.personName.charAt(0)
+  const style = delayMs !== undefined ? ({ '--d': `${delayMs}ms` } as CSSProperties) : undefined
+  const undoable = onUndo && (mention.source === 'text' || mention.source === 'chat')
 
   return (
-    <div style={{ background: 'var(--surface)', borderRadius: 16, boxShadow: 'var(--np-shadow-row)', padding: 12 }}>
-      <div className="row gap-sm" style={{ alignItems: 'flex-start' }}>
-        {/* Time gutter */}
-        <div className="col" style={{ alignItems: 'flex-start', width: 60, flexShrink: 0, paddingTop: 1 }}>
-          <span style={{ fontSize: 9, fontWeight: 800, color: tone, lineHeight: 1.1 }}>{mention.timeLabel}</span>
-          <span className="text-tertiary" style={{ fontSize: 9, marginTop: 2 }}>{mention.dayLabel}</span>
-        </div>
-
-        {/* Body */}
-        <div className="col flex-1" style={{ minWidth: 0 }}>
-          <div className="row gap-xs" style={{ alignItems: 'center' }}>
-            <div
-              style={{
-                width: 18,
-                height: 18,
-                borderRadius: '50%',
-                background: 'var(--surface-2)',
-                border: '1px solid ' + tone,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontFamily: 'var(--ff-display)',
-                fontSize: 9,
-                fontWeight: 600,
-                color: tone,
-              }}
-            >
-              {person?.initial || '?'}
-            </div>
-            <span style={{ fontSize: 12, color: 'var(--text-primary)', fontWeight: 500 }}>{mention.personName}</span>
-            <div className="row gap-xs" style={{ alignItems: 'center', marginLeft: 6 }}>
-              <Icon name={sourceIcon} size={10} color="var(--text-tertiary)" />
-              <span
-                className="text-tertiary"
-                style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '0.08em' }}
-              >
-                {mention.source}{mention.duration_s ? ` · ${mention.duration_s}s` : ''}
-              </span>
-            </div>
-            {mention.flagged && (
-              <span
-                style={{
-                  fontSize: 8,
-                  fontWeight: 800,
-                  color: 'var(--warning)',
-                  marginLeft: 'auto',
-                  background: 'var(--wash-amber)',
-                  padding: '2px 5px',
-                  borderRadius: 4,
-                }}
-              >
-                FIGYELEM
-              </span>
-            )}
-          </div>
-          <p style={{ fontSize: 12, color: 'var(--text-primary)', lineHeight: 1.5, marginTop: 6, fontStyle: 'italic' }}>
-            "{mention.excerpt}"
-          </p>
-          {mention.tiedTo && (
-            <div className="row gap-xs mt-sm" style={{ alignItems: 'center' }}>
-              <span style={{ fontSize: 8, fontWeight: 800, color: 'var(--text-tertiary)' }}>kapcsolódik</span>
-              <span className="chip" style={{ fontSize: 9, padding: '2px 6px' }}>{mention.tiedTo.label}</span>
-            </div>
-          )}
-        </div>
+    <div className={`ppl-mrowt${wash ? ` ${wash}` : ''} rise`} style={style}>
+      <div className="ppl-mtop">
+        <span className="ppl-srcdisc" title={src.label}>
+          {src.clay ? <ClayIcon name={src.clay} size={13} /> : <Icon name={src.icon ?? 'anchor'} size={12} />}
+        </span>
+        <span className="ppl-mavat">{initial}</span>
+        <span className="ppl-mname">{mention.personName}</span>
+        <span className="ppl-msrc">{mention.timeLabel} · {src.label}</span>
+        {ctx && (
+          <span
+            className="ppl-ctxch"
+            style={{ background: `color-mix(in srgb, var(${ctx.cssVar}) 16%, transparent)`, color: `var(${ctx.cssVar})` } as CSSProperties}
+          >
+            {ctx.label}
+          </span>
+        )}
+        {mention.flagged && <span className="ppl-figy">FIGYELEM</span>}
+        {undoable && (
+          <button
+            type="button"
+            className="ppl-mundo"
+            aria-label="Említés visszavonása"
+            onClick={() => onUndo(mention)}
+          >
+            <Icon name="x" size={10} />
+          </button>
+        )}
       </div>
+      <p className="ppl-mx">„{mention.excerpt}”</p>
+      {mention.tiedTo && (
+        <div className="ppl-mtie">
+          <span className="ppl-mtielbl">kapcsolódik</span>
+          <span className="ppl-mtiechip">{mention.tiedTo.label}</span>
+        </div>
+      )}
     </div>
   )
 }

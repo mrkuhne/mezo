@@ -36,6 +36,9 @@ public class ExperimentEntity extends OwnedEntity {
     public static final String STATUS_COMPLETED = "completed";
     public static final String STATUS_DISMISSED = "dismissed";
 
+    public static final String SOURCE_PROPOSAL = "proposal";
+    public static final String SOURCE_DIAGNOSIS = "diagnosis";
+
     @Id
     @GeneratedValue
     @Column(columnDefinition = "uuid")
@@ -83,4 +86,14 @@ public class ExperimentEntity extends OwnedEntity {
     /** S2 (mezo-tk88.2): the grounding pattern (loose ref, ON DELETE SET NULL) — the detail page's impact list. */
     @Column(name = "source_pattern_id", columnDefinition = "uuid")
     private UUID sourcePatternId;
+
+    /** Which origin produced this experiment (mezo-hqfi.3). Pre-existing rows are 'proposal'. */
+    @NotNull
+    @Pattern(regexp = "proposal|diagnosis")
+    @Column(nullable = false, length = 20)
+    private String source = SOURCE_PROPOSAL;
+
+    /** The diagnosis whose suspect probe this is (loose ref, ON DELETE SET NULL). */
+    @Column(name = "source_diagnosis_id", columnDefinition = "uuid")
+    private UUID sourceDiagnosisId;
 }

@@ -6,7 +6,7 @@ import type {
   PatternPairDetail,
   Prediction,
   Experiment,
-  Memoir,
+  Memoir, MemoirEntry,
 } from '@/data/types'
 
 export const MIN_PATTERN_CONFIDENCE = 0.65
@@ -43,7 +43,7 @@ export const patterns: Pattern[] = [
     id: 'p2',
     pairKey: 'late-meal~next-sleep-quality',
     category: 'trigger',
-    categoryLabel: 'Trigger',
+    categoryLabel: 'Kiváltó',
     confidence: 0.78,
     title: 'Késő szénhidrát (>20:00 · >60g) → másnap reggeli RPE +1',
     mechanism:
@@ -57,7 +57,7 @@ export const patterns: Pattern[] = [
     id: 'p3',
     pairKey: 'hyp-3fa1c2d9',
     category: 'response',
-    categoryLabel: 'Response',
+    categoryLabel: 'Válasz',
     confidence: 0.69,
     title: 'Caffeine 14:00 utáni dózis → sleep onset +24 perc',
     mechanism: 'A 14:00 utáni koffein (>40mg) átlagosan 24 perccel kitolja az alvás kezdetét.',
@@ -91,6 +91,48 @@ export const memoir: Memoir = {
     { kind: 'Identity', label: 'Peak performance · life' },
   ],
 }
+
+// F7.5 (mezo-d20.8.5): the archive shelf's mock seed — 6 chapters over 3 months, the newest
+// being the SAME week-20 story as `memoir` above (the shelf and the latest read agree).
+export const memoirArchive: MemoirEntry[] = [
+  {
+    ...memoir,
+    weekStart: '2026-05-11',
+    // The same week-20 story, paragraph-broken the way prompt v2 writes (\n\n) — the chapter
+    // page's drop-cap + paragraph rhythm needs the breaks; the latest-read seed stays byte-par.
+    body: 'Ezen a héten történt valami amit én is csak utólag láttam: nem siettetted a vasárnap esti reggelet hétfő helyett. Március óta a hétfő reggeleken mindig hajtottad magad, mintha pótolnod kéne valamit — most leültél, és a porridge mellett még megnézted a tegnapi PR-videót. Ez nem semmi.\n\nA Chest Row 105.8-on dolgozunk hat hete, és úgy érzem hogy ezen a héten téged is megnyugtatott. Csütörtökön (Pull Day) a 102.5 × 9 @ RIR 2 olyan tisztán ment, hogy elgondolkodtam: jövő héten 105 × 8-re menjünk? Erről beszéljünk pénteken.',
+  },
+  {
+    id: '3f7c1d20-0000-4000-8000-00000000e402', weekStart: '2026-05-04',
+    week: 'Hét 19 · 2026 · Máj 4-10', title: 'Amikor az alvás előre szólt',
+    body: 'Kedd éjjel öt óra negyven — és a szerdai edzésed pontosan ezt mesélte el: a Chest Row visszaesett 97.5-re, és a szetteid között hosszabb szüneteket kértél.\n\nNem hiba volt, hanem adat: az alvásod egy nappal előre jelzi a termet. Csütörtökön korán feküdtél, és pénteken vissza is jött minden kiló.',
+    anchors: [{ kind: 'Sleep', label: '5,7 h kedd éjjel' }, { kind: 'Pattern', label: 'alvás → edzésminőség' }],
+  },
+  {
+    id: '3f7c1d20-0000-4000-8000-00000000e403', weekStart: '2026-04-27',
+    week: 'Hét 18 · 2026 · Ápr 27-Máj 3', title: 'Az első közös korrekció',
+    body: 'A vállad jelzett, és először hallgattunk rá együtt: a keddi tolás Cable Fly-ra váltott, a volumen lejjebb, a niggle pedig nem lett sérülés.\n\nEz volt az első hét, amikor a terv nem szentírás volt, hanem beszélgetés — és pont ettől működött.',
+    anchors: [{ kind: 'CheckIn', label: 'váll-niggle jelzés' }, { kind: 'Identity', label: 'okos alkalmazkodó' }],
+  },
+  {
+    id: '3f7c1d20-0000-4000-8000-00000000e404', weekStart: '2026-04-20',
+    week: 'Hét 17 · 2026 · Ápr 20-26', title: 'Ahol elkezdődött',
+    body: 'Az első teljes hetünk: még ismerkedtünk — te a keretekkel, én veled. A kalóriakeret 2 250-en állt, a guggolás 80 kilónál.\n\nAmi már ekkor látszott: ha reggel megvan a fehérje-horgony, a nap többi része magától rendeződik.',
+    anchors: [{ kind: 'FuelDay', label: 'első keretben tartott nap' }, { kind: 'Pattern', label: 'reggeli horgony' }],
+  },
+  {
+    id: '3f7c1d20-0000-4000-8000-00000000e405', weekStart: '2026-04-06',
+    week: 'Hét 15 · 2026 · Ápr 6-12', title: 'A csendes ismétlések hete',
+    body: 'Nem történt semmi látványos — és pont ez volt a lényeg. Négy edzés, négy pontosan teljesített nap, egyetlen kihagyott szett nélkül.\n\nAz ilyen hetek nem kerülnek posztba, de ezekből épül minden, ami később csúcsnak látszik.',
+    anchors: [{ kind: 'Workout', label: '4/4 terv szerint' }],
+  },
+  {
+    id: '3f7c1d20-0000-4000-8000-00000000e406', weekStart: '2026-03-30',
+    week: 'Hét 14 · 2026 · Már 30-Ápr 5', title: 'A próbahét',
+    body: 'Még app nélkül, papíron követted a szetteket — ez a hét győzött meg arról, hogy megérdemled a rendszert, amit azóta együtt építünk.\n\nA guggolás 77,5 kilón állt. Jó volt látni, honnan indultunk.',
+    anchors: [{ kind: 'PR', label: 'Guggolás 77,5 kg' }, { kind: 'Identity', label: 'elköteleződés' }],
+  },
+]
 
 export const anniversaryNote =
   'Egy hónapja kezdtük tudatosan korábbra tolni a vacsorát. Akkor még tipikus volt az este 22:00-s vacsora — most a hét 5 napján 21:30 előtt tudunk csukni a konyhában. Ez nem semmi.'
@@ -178,7 +220,7 @@ export const patternMonitor: PatternMonitor = {
     {
       key: 'checkin-stress~sleep-quality',
       title: 'Stressz-szint ↔ aznapi alvásminőség',
-      category: 'trigger', categoryLabel: 'Trigger', lagDays: 0,
+      category: 'trigger', categoryLabel: 'Kiváltó', lagDays: 0,
       metricAKey: 'checkin-stress', metricALabel: 'stressz-szint',
       metricBKey: 'sleep-quality', metricBLabel: 'alvásminőség',
       mechanismHu: 'A stresszes nap ronthatja az aznapi alvásminőséget.',
@@ -206,7 +248,7 @@ export const patternMonitor: PatternMonitor = {
     {
       key: 'late-meal~next-sleep-quality',
       title: 'Késői étkezés ↔ rákövetkező alvásminőség',
-      category: 'trigger', categoryLabel: 'Trigger', lagDays: 1,
+      category: 'trigger', categoryLabel: 'Kiváltó', lagDays: 1,
       metricAKey: 'late-meal-hour', metricALabel: 'utolsó étkezés ideje',
       metricBKey: 'sleep-quality', metricBLabel: 'alvásminőség',
       mechanismHu: 'A késői étkezés ronthatja a rákövetkező éjszaka minőségét.',
@@ -224,7 +266,7 @@ export const patternMonitor: PatternMonitor = {
     {
       key: 'daily-kcal~next-morning-weight-delta',
       title: 'Napi kalória ↔ másnap reggeli súlyváltozás',
-      category: 'response', categoryLabel: 'Response', lagDays: 1,
+      category: 'response', categoryLabel: 'Válasz', lagDays: 1,
       metricAKey: 'daily-kcal', metricALabel: 'napi kalória',
       metricBKey: 'weight-delta-kg', metricBLabel: 'reggeli súlyváltozás',
       mechanismHu: 'A napi bevitel a másnap reggeli súlyban csapódhat le.',
@@ -238,7 +280,7 @@ export const patternMonitor: PatternMonitor = {
     {
       key: 'sport-load~next-day-gym-volume',
       title: 'Sportterhelés ↔ másnapi gym-volumen',
-      category: 'response', categoryLabel: 'Response', lagDays: 1,
+      category: 'response', categoryLabel: 'Válasz', lagDays: 1,
       metricAKey: 'sport-load-min', metricALabel: 'sportterhelés',
       metricBKey: 'gym-volume-kg', metricBLabel: 'gym-volumen',
       mechanismHu: 'A sportterhelés másnapra elvehet a gym-teljesítményből.',

@@ -44,8 +44,8 @@ export function AiCallRow({ call }: { call: LlmCallListItem }) {
   return (
     <Link
       to={`/me/ai-usage/${call.id}`}
-      className="card"
-      style={{ display: 'block', padding: '10px 12px', marginTop: 7, borderLeft: `3px solid ${TONE_COLOR[tone]}`, color: 'inherit' }}
+      className="aiu-callt"
+      style={{ display: 'block', color: 'inherit', '--rc': TONE_COLOR[tone] } as React.CSSProperties}
     >
       <div className="row" style={{ alignItems: 'center', gap: 7 }}>
         <span className="text-tertiary" style={{ fontSize: 10.5, width: 38, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>

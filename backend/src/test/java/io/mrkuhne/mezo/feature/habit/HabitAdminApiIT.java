@@ -163,4 +163,247 @@ class HabitAdminApiIT extends ApiIntegrationTest {
             ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
         assertHasRequestError(err, "HABIT_CHAIN_UNKNOWN");
     }
+
+    @Test
+    void testCreateDef_shouldRejectFogg_whenCelebrationMissing() {
+        catalog();
+        String err = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
+                .anchorCopy("kitöltöttem a reggeli kávét").build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(err, "HABIT_FRAMEWORK_FOGG_INCOMPLETE");
+    }
+
+    @Test
+    void testCreateDef_shouldRejectClear_whenCravingMissing() {
+        catalog();
+        String err = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.CLEAR)
+                .cue("7:10-kor a konyhában").reward("a pipa maga").build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(err, "HABIT_FRAMEWORK_CLEAR_INCOMPLETE");
+    }
+
+    @Test
+    void testCreateDef_shouldRejectFrameworkFields_whenNoFramework() {
+        catalog();
+        String err = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(err, "HABIT_FRAMEWORK_FIELDS_ORPHAN");
+    }
+
+    @Test
+    void testCreateDef_shouldRejectUnknownAnchorKey() {
+        catalog();
+        String err = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
+                .anchorHabitKey("custom_nemletezik").celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(err, "HABIT_ANCHOR_INVALID");
+    }
+
+    @Test
+    void testCreateDef_shouldStoreFoggRecipe_withAnchorHabitKey() {
+        catalog();
+        HabitDefAdmin created = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
+                .anchorHabitKey("morning_sunlight").celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+        assertThat(created.getFramework()).isEqualTo(HabitDefAdmin.FrameworkEnum.FOGG);
+        assertThat(created.getAnchorHabitKey()).isEqualTo("morning_sunlight");
+        assertThat(created.getCelebration()).isEqualTo("ökölrázás");
+        assertThat(created.getCue()).isNull();
+    }
+
+    @Test
+    void testUpdateDef_shouldRejectSelfAnchor() {
+        catalog();
+        HabitDefAdmin created = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
+                .anchorHabitKey("morning_sunlight").celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        String err = patchForBody("/api/habit/def/" + created.getId(),
+            HabitDefUpdateRequest.builder().anchorHabitKey(created.getHabitKey()).build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(err, "HABIT_ANCHOR_INVALID");
+    }
+
+    @Test
+    void testDeleteDef_shouldReleaseDependentAnchors_intoFreeTextCopy() {
+        catalog();
+        HabitDefAdmin anchor = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Reggeli fény")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("recovery").xp(10).build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+        HabitDefAdmin stacked = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
+                .anchorHabitKey(anchor.getHabitKey()).celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        deleteAndExpect("/api/habit/def/" + anchor.getId(), ownerAuthHeaders(), HttpStatus.NO_CONTENT);
+
+        HabitDefAdmin after = findDef(catalog(), stacked.getId());
+        assertThat(after.getAnchorHabitKey()).isNull();
+        assertThat(after.getAnchorCopy()).isEqualTo("kész a Reggeli fény");
+        assertThat(after.getFramework()).isEqualTo(HabitDefAdmin.FrameworkEnum.FOGG);
+    }
+
+    @Test
+    void testDeactivateDef_shouldReleaseDependentAnchors() {
+        catalog();
+        HabitDefAdmin anchor = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Reggeli fény")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("recovery").xp(10).build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+        HabitDefAdmin stacked = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
+                .anchorHabitKey(anchor.getHabitKey()).celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        patchForBody("/api/habit/def/" + anchor.getId(),
+            HabitDefUpdateRequest.builder().isActive(false).build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        HabitDefAdmin after = findDef(catalog(), stacked.getId());
+        assertThat(after.getAnchorHabitKey()).isNull();
+        assertThat(after.getAnchorCopy()).isEqualTo("kész a Reggeli fény");
+    }
+
+    @Test
+    void testUpdateDef_shouldReframeClearToFogg_clearingClearFields() {
+        catalog();
+        HabitDefAdmin created = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.CLEAR)
+                .cue("7:10-kor a konyhában").craving("tisztább fejjel indul a nap")
+                .reward("a pipa maga").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        HabitDefAdmin updated = patchForBody("/api/habit/def/" + created.getId(),
+            HabitDefUpdateRequest.builder().framework(HabitDefUpdateRequest.FrameworkEnum.FOGG)
+                .anchorCopy("kitöltöttem a reggeli kávét").celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        assertThat(updated.getFramework()).isEqualTo(HabitDefAdmin.FrameworkEnum.FOGG);
+        assertThat(updated.getCelebration()).isEqualTo("ökölrázás");
+        assertThat(updated.getCue()).isNull();
+        assertThat(updated.getCraving()).isNull();
+        assertThat(updated.getReward()).isNull();
+        assertThat(updated.getIdentity()).isNull();
+    }
+
+    @Test
+    void testUpdateDef_shouldReframeFoggToClear_clearingFoggFields() {
+        catalog();
+        HabitDefAdmin created = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
+                .anchorHabitKey("morning_sunlight").anchorCopy("kitöltöttem a reggeli kávét")
+                .celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+        assertThat(created.getAnchorCopy()).isEqualTo("kitöltöttem a reggeli kávét");
+
+        HabitDefAdmin updated = patchForBody("/api/habit/def/" + created.getId(),
+            HabitDefUpdateRequest.builder().framework(HabitDefUpdateRequest.FrameworkEnum.CLEAR)
+                .cue("7:10-kor a konyhában").craving("tisztább fejjel indul a nap")
+                .reward("a pipa maga").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        assertThat(updated.getFramework()).isEqualTo(HabitDefAdmin.FrameworkEnum.CLEAR);
+        assertThat(updated.getAnchorHabitKey()).isNull();
+        // anchorCopy goes with the anchor: it is RENDERED on the Nap tab (NapRutinPage's
+        // `.nr-anchor` line), so keeping it left a stale „miután …" cue under a Clear recipe.
+        assertThat(updated.getAnchorCopy()).isNull();
+        assertThat(updated.getCelebration()).isNull();
+        assertThat(updated.getCue()).isEqualTo("7:10-kor a konyhában");
+        assertThat(updated.getCraving()).isEqualTo("tisztább fejjel indul a nap");
+        assertThat(updated.getReward()).isEqualTo("a pipa maga");
+
+        // Persisted, not merely mapped on the response.
+        HabitDefAdmin after = findDef(catalog(), created.getId());
+        assertThat(after.getAnchorCopy()).isNull();
+        assertThat(after.getAnchorHabitKey()).isNull();
+        assertThat(after.getCelebration()).isNull();
+    }
+
+    @Test
+    void testUpdateDef_shouldRejectReframeToFogg_whenIncomplete() {
+        catalog();
+        HabitDefAdmin created = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.CLEAR)
+                .cue("7:10-kor a konyhában").craving("tisztább fejjel indul a nap")
+                .reward("a pipa maga").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        String err = patchForBody("/api/habit/def/" + created.getId(),
+            HabitDefUpdateRequest.builder().framework(HabitDefUpdateRequest.FrameworkEnum.FOGG).build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(err, "HABIT_FRAMEWORK_FOGG_INCOMPLETE");
+    }
+
+    @Test
+    void testUpdateDef_shouldUnlinkAnchor_whenBlankAnchorHabitKeySentWithCopy() {
+        // A blank anchorHabitKey is the wire signal for "unlink" — the only one a PATCH can carry,
+        // since null means "leave unchanged". It must NOT survive as stored state: the frontend's
+        // contract is "null means unlinked", so a def that comes back carrying "" would look linked
+        // and re-lock its own read-only anchor field (mezo-3zue.4 review round 2).
+        catalog();
+        HabitDefAdmin anchor = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Reggeli fény")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("recovery").xp(10).build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+        HabitDefAdmin stacked = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.FOGG)
+                .anchorHabitKey(anchor.getHabitKey()).celebration("ökölrázás").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+        assertThat(stacked.getAnchorHabitKey()).isEqualTo(anchor.getHabitKey());
+
+        HabitDefAdmin updated = patchForBody("/api/habit/def/" + stacked.getId(),
+            HabitDefUpdateRequest.builder().anchorHabitKey("")
+                .anchorCopy("letettem a fogkefét").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        // Unlinked, and still a valid FOGG recipe standing on the free-text anchor alone.
+        assertThat(updated.getAnchorHabitKey()).isNull();
+        assertThat(updated.getAnchorCopy()).isEqualTo("letettem a fogkefét");
+        assertThat(updated.getFramework()).isEqualTo(HabitDefAdmin.FrameworkEnum.FOGG);
+        assertThat(updated.getCelebration()).isEqualTo("ökölrázás");
+
+        // Persisted, not merely mapped on the response: re-reading the catalog says the same.
+        HabitDefAdmin after = findDef(catalog(), stacked.getId());
+        assertThat(after.getAnchorHabitKey()).isNull();
+        assertThat(after.getAnchorCopy()).isEqualTo("letettem a fogkefét");
+        assertThat(after.getFramework()).isEqualTo(HabitDefAdmin.FrameworkEnum.FOGG);
+    }
+
+    private static HabitDefAdmin findDef(HabitCatalogResponse cat, UUID defId) {
+        return cat.getChains().stream()
+            .flatMap(chain -> chain.getDefs().stream())
+            .filter(d -> d.getId().equals(defId))
+            .findFirst().orElseThrow();
+    }
 }

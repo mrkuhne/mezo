@@ -18,7 +18,9 @@ import io.mrkuhne.mezo.support.populator.IntentionPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationPopulator;
+import io.mrkuhne.mezo.support.populator.MentionPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
+import io.mrkuhne.mezo.support.populator.PersonPopulator;
 import io.mrkuhne.mezo.support.populator.ProtocolPopulator;
 import io.mrkuhne.mezo.support.populator.QuestPopulator;
 import io.mrkuhne.mezo.support.populator.RitualPopulator;
@@ -32,6 +34,7 @@ import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -72,6 +75,8 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     @Autowired private IntentionPopulator intentionPopulator;
     @Autowired private RitualPopulator ritualPopulator;
     @Autowired private HabitPopulator habitPopulator;
+    @Autowired private PersonPopulator personPopulator;
+    @Autowired private MentionPopulator mentionPopulator;
 
     @Test
     void testRender_shouldRenderAllBlocksWithNincsAdat_whenUserHasNoData() {
@@ -81,12 +86,13 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         String block = assembler.render(owner, today);
 
         assertThat(block).startsWith("\n\nAKTUÁLIS ÁLLAPOT (pillanatkép — " + today + "):");
-        // all eight blocks present, in render() order
+        // all nine blocks present, in render() order
         int profil = block.indexOf("[Profil]");
         int cel = block.indexOf("[Cél]");
         int edzes = block.indexOf("[Edzés]");
         int novekedes = block.indexOf("[Növekedés]");
         int gyakorlat = block.indexOf("[Napi gyakorlat]");
+        int emberek = block.indexOf("[Emberek]");
         int fuel = block.indexOf("[Mai üzemanyag]");
         int med = block.indexOf("[Gyógyszer]");
         int rege = block.indexOf("[Regeneráció]");
@@ -95,7 +101,8 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         assertThat(edzes).isGreaterThan(cel);
         assertThat(novekedes).isGreaterThan(edzes);
         assertThat(gyakorlat).isGreaterThan(novekedes);
-        assertThat(fuel).isGreaterThan(gyakorlat);
+        assertThat(emberek).isGreaterThan(gyakorlat);
+        assertThat(fuel).isGreaterThan(emberek);
         assertThat(med).isGreaterThan(fuel);
         assertThat(rege).isGreaterThan(med);
         // absences are explicit, never invented (spec §4) — a zero weight-trend would be a fabricated number
@@ -112,6 +119,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
             .contains("hitvallás: nincs adat")
             .contains("mai fókusz: nincs adat")
             .contains("napzárás: nyitva")
+            .contains("[Emberek] nincs adat")
             .contains("protokoll: nincs adat, mai bevitel: 0")
             .contains("[Gyógyszer] nincs adat")
             .contains("alvás: nincs adat")
@@ -254,6 +262,66 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         assertThat(snapshot).contains("1 sportalkalom").contains("1 futás");
     }
 
+    /**
+     * The workout closing note (mezo-d20.13) — the user's own sentence about how the session went,
+     * carried VERBATIM into both the digest and today's logged line. It is the one thing in the
+     * train block that no number can convey, so summarizing it is what would destroy it.
+     */
+    @Test
+    void testRender_shouldCarryClosingNotesVerbatim_whenWorkoutsHaveThem() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        var meso = trainPopulator.createMesocycle(owner, "Hipertrófia blokk", "active");
+        var template = trainPopulator.createWorkoutSession(owner, meso.getId(), "Hétfő", "upper", 0, "planned");
+        trainPopulator.createWorkoutInstance(owner, template, today.minusDays(2), "completed",
+            "Öt órát aludtam, mégis vitt a lendület.");
+        trainPopulator.createWorkoutInstance(owner, template, today, "completed",
+            "Ma könnyűnek érződött a lehúzás.");
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains(today.minusDays(2) + " — \"Öt órát aludtam, mégis vitt a lendület.\"");
+        assertThat(snapshot).contains("gym: elvégezve — \"Ma könnyűnek érződött a lehúzás.\"");
+        // The morning message strips data generated later in the day but NOT the train block —
+        // the two assembly points must not silently diverge on a new field.
+        assertThat(assembler.renderWithoutBiometrics(owner, today))
+            .contains("Ma könnyűnek érződött a lehúzás.");
+    }
+
+    /** ADR 0010: an absent note is not remarked on. Nothing is rendered where nothing was written. */
+    @Test
+    void testRender_shouldRenderNoNoteMarker_whenWorkoutHasNone() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        var meso = trainPopulator.createMesocycle(owner, "Hipertrófia blokk", "active");
+        var template = trainPopulator.createWorkoutSession(owner, meso.getId(), "Hétfő", "upper", 0, "planned");
+        trainPopulator.createWorkoutInstance(owner, template, today, "completed", "   ");
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("gym: elvégezve;");
+        assertThat(snapshot).doesNotContain("—  \"").doesNotContain("nincs jegyzet");
+    }
+
+    /**
+     * The snapshot rides EVERY chat turn and the contract lets a note be 1000 chars, so the clip
+     * is load-bearing, not cosmetic. Truncation is honestly lossy; an LLM rewrite would fabricate.
+     */
+    @Test
+    void testRender_shouldTruncateClosingNote_whenLongerThanTheConfiguredCap() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        var meso = trainPopulator.createMesocycle(owner, "Hipertrófia blokk", "active");
+        var template = trainPopulator.createWorkoutSession(owner, meso.getId(), "Hétfő", "upper", 0, "planned");
+        String longNote = "x".repeat(600);
+        trainPopulator.createWorkoutInstance(owner, template, today, "completed", longNote);
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).doesNotContain(longNote);
+        assertThat(snapshot).contains("…\"");
+    }
+
     @Test
     void testTrainBlock_shouldResolveTomorrowGymAndSport_whenScheduledForTomorrowWeekday() {
         UUID owner = userPopulator.createUser().getId();
@@ -269,8 +337,8 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         String snapshot = assembler.render(owner, today);
 
-        assertThat(snapshot).contains("[Edzés]").contains("Holnap:");
-        String tail = snapshot.substring(snapshot.indexOf("Holnap:"));
+        assertThat(snapshot).contains("[Edzés]").contains("Holnap (terv):");
+        String tail = snapshot.substring(snapshot.indexOf("Holnap (terv):"));
         // exact rendered exercise line (name + working-sets × rep-range), not just a name
         // substring — pins exerciseLine's null-guarded formatting (TrainPopulator default
         // exercise: workingSets=3, repMin=6, repMax=8).
@@ -294,8 +362,8 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         String snapshot = assembler.render(owner, today);
 
-        assertThat(snapshot).contains("Ma: pihenőnap");
-        assertThat(snapshot).contains("Holnap: pihenőnap (gym)");
+        assertThat(snapshot).contains("Ma (terv): pihenőnap");
+        assertThat(snapshot).contains("Holnap (terv): pihenőnap (gym)");
     }
 
     @Test
@@ -311,8 +379,44 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         String snapshot = assembler.render(owner, today);
 
-        String maSegment = snapshot.substring(snapshot.indexOf("Ma:"), snapshot.indexOf("Holnap:"));
+        String maSegment = snapshot.substring(snapshot.indexOf("Ma (terv):"), snapshot.indexOf("Holnap (terv):"));
         assertThat(maSegment).contains("pihenőnap (gym)").doesNotContain("gym (");
+    }
+
+    @Test
+    void testTrainBlock_shouldRenderTodayGymAsNotDone_whenNoCompletedInstanceExistsForToday() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(today.getDayOfWeek().getValue() - 1);
+        var meso = trainPopulator.createMesocycle(owner, "Hipertrófia blokk", "active");
+        var template = trainPopulator.createWorkoutSession(owner, meso.getId(), todayLabel, "upper", 0, "planned");
+        trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+
+        String snapshot = assembler.render(owner, today);
+
+        // mezo-xrhd: "Ma" used to render the PLAN alone — the midday companion note read the
+        // planned exercise list as history ("a reggeli edzéseden már túl vagy") on a day with no
+        // logged workout at all. The plan is now labelled a plan and carries today's REAL state.
+        assertThat(snapshot).contains("Ma (terv): gym (" + todayLabel + ")");
+        assertThat(snapshot).contains(
+            "Ma eddig naplózva: gym: nincs elvégzett edzés; sport: 0 alkalom; futás: 0 alkalom");
+    }
+
+    @Test
+    void testTrainBlock_shouldRenderTodayGymAsDone_whenCompletedInstanceExistsForToday() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(today.getDayOfWeek().getValue() - 1);
+        var meso = trainPopulator.createMesocycle(owner, "Hipertrófia blokk", "active");
+        var template = trainPopulator.createWorkoutSession(owner, meso.getId(), todayLabel, "upper", 0, "planned");
+        trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+        trainPopulator.createWorkoutInstance(owner, template, today, "completed");
+        trainPopulator.createSportSession(owner, today);
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains(
+            "Ma eddig naplózva: gym: elvégezve; sport: 1 alkalom; futás: 0 alkalom");
     }
 
     @Test
@@ -331,7 +435,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         // "Ma:" must carry the same dated resolution as "Holnap:" (mezo-ajp) — the asymmetry was
         // why today's sport was only inferable from the trailing raw weekly "sport-rend" pattern.
-        String maSegment = snapshot.substring(snapshot.indexOf("Ma:"), snapshot.indexOf("Holnap:"));
+        String maSegment = snapshot.substring(snapshot.indexOf("Ma (terv):"), snapshot.indexOf("Holnap (terv):"));
         assertThat(maSegment).contains(todayLabel).contains("Fekvenyomás 3×6-8")
             .contains("sport: volleyball 18:00 training (120 perc)");
     }
@@ -344,7 +448,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         String snapshot = assembler.render(owner, today);
 
-        String maSegment = snapshot.substring(snapshot.indexOf("Ma:"), snapshot.indexOf("Holnap:"));
+        String maSegment = snapshot.substring(snapshot.indexOf("Ma (terv):"), snapshot.indexOf("Holnap (terv):"));
         assertThat(maSegment).contains("futás: Sprint-intervallum");
     }
 
@@ -359,7 +463,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
 
         String snapshot = assembler.render(owner, today);
 
-        String tail = snapshot.substring(snapshot.indexOf("Holnap:"));
+        String tail = snapshot.substring(snapshot.indexOf("Holnap (terv):"));
         assertThat(tail).contains("futás: Sprint-intervallum");
     }
 
@@ -472,6 +576,20 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testRender_shouldMarkCheckInMissingForToday_whenLatestCheckInIsFromAnEarlierDay() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today.minusDays(1), "08:00", 4, 2, "tegnapi");
+
+        String snapshot = assembler.render(owner, today);
+
+        // mezo-xrhd: the block rendered the latest check-in EVER, dated but with no today-status,
+        // so a day without one read as "nothing to say" and the midday note silently skipped it.
+        assertThat(snapshot).contains("check-in: MA MÉG NINCS (utolsó: " + today.minusDays(1)
+            + " 08:00 — energia 4/10, stressz 2/10, megjegyzés: \"tegnapi\")");
+    }
+
+    @Test
     void testRender_shouldTruncateCheckInNote_whenLongerThanConfiguredMax() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate today = LocalDate.now();
@@ -507,5 +625,45 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
             .doesNotContain("mérés:")
             .doesNotContain("alvás (");
         assertThat(snapshot).contains("[Cél]").contains("[Edzés]").contains("check-in");
+    }
+
+    /** mezo-x6oa: the chat variant carries the active circle, one line per person, newest mention first. */
+    @Test
+    void testRender_shouldRenderEmberekBlock_whenActivePersonsExist() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        var anna = personPopulator.createPerson(owner, "Anna");
+        var zita = personPopulator.createPerson(owner, "Zita");
+        personPopulator.createCandidate(owner, "Jelölt Jenő", "extractor");
+        Instant now = Instant.now();
+        mentionPopulator.createMention(owner, anna.getId(), now.minus(Duration.ofDays(2)), "positive");
+        mentionPopulator.createMention(owner, zita.getId(), now.minus(Duration.ofHours(1)), "positive");
+        mentionPopulator.createMention(owner, zita.getId(), now.minus(Duration.ofDays(1)), "positive");
+
+        String snapshot = assembler.render(owner, today);
+
+        assertThat(snapshot).contains("[Emberek] (aktív kör, utolsó említés szerint, max 12)\n"
+            + "Zita — Mentee · teszt · 2× e héten · még kevés hét az irányhoz\n"
+            + "Anna — Mentee · teszt · 1× e héten · még kevés hét az irányhoz");
+        // mezo-x6oa final-review (finding E): locks the privacy boundary the spec names — none of
+        // PersonPopulator's other seeded free-text fields (notes, knownFacts, contactCadenceLabel,
+        // aliases) may ever ride along in the chat snapshot, only the flat spec-format line.
+        assertThat(snapshot).doesNotContain("Jelölt Jenő").doesNotContain("Teszt említés.")
+            .doesNotContain("Teszt személy.").doesNotContain("Teszt fact")
+            .doesNotContain("Havi 1:1").doesNotContain("Marcika");
+        assertThat(snapshot.indexOf("[Emberek]")).isGreaterThan(snapshot.indexOf("[Napi gyakorlat]"))
+            .isLessThan(snapshot.indexOf("[Mai üzemanyag]"));
+    }
+
+    /** The morning message must NOT know the circle — that would be the companion bringing people up unprompted. */
+    @Test
+    void testRenderWithoutBiometrics_shouldOmitEmberekBlock_evenWhenActivePersonsExist() {
+        UUID owner = userPopulator.createUser().getId();
+        var anna = personPopulator.createPerson(owner, "Anna");
+        mentionPopulator.createMention(owner, anna.getId(), Instant.now(), "positive");
+
+        String morning = assembler.renderWithoutBiometrics(owner, LocalDate.now());
+
+        assertThat(morning).doesNotContain("[Emberek]").doesNotContain("Anna");
     }
 }

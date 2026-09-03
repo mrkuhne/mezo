@@ -21,7 +21,7 @@ SET client_min_messages = notice;
 DO $$
 DECLARE
     whitelist constant text[] := ARRAY[
-        'app_user', 'user_profiles',                    -- identity
+        'app_user',                                      -- identity
         'pantry_item',                                  -- kamra
         'recipe', 'recipe_ingredient',                  -- receptek
         'exercise_catalog',                             -- gyakorlattar

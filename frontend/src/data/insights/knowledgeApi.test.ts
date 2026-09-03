@@ -27,17 +27,24 @@ describe('knowledgeApi wire mapping', () => {
       id: 'c-9',
       candidateText: 'Reggel edz szívesen',
       category: 'train',
+      // required since mezo-d20.7.6 — a candidate now says whether chat or the weekly
+      // review proposed it (the promoted knowledge fact inherits it)
+      source: 'chat',
       userDecision: null,
       refinedText: null,
       promotedFactId: null,
       createdAt: '2026-07-03T06:00:00Z',
     })
-    expect(candidate).toEqual({ id: 'c-9', text: 'Reggel edz szívesen', category: 'train' })
+    expect(candidate).toEqual({ id: 'c-9', text: 'Reggel edz szívesen', category: 'train', conflictsWithFactId: null })
   })
 
   it('lists facts and candidates from the default MSW fixtures (seed mirror)', async () => {
     expect(await knowledgeApi.listFacts()).toEqual(knowledgeSeed)
-    expect(await knowledgeApi.listCandidates()).toEqual(candidateSeed)
+    // real mode always maps conflictsWithFactId to null — the wire doesn't carry it yet, so the
+    // mirror check drops the mock-only field instead of asserting it away entirely (mezo-ms9a).
+    expect(await knowledgeApi.listCandidates()).toEqual(
+      candidateSeed.map((c) => ({ ...c, conflictsWithFactId: null })),
+    )
   })
 
   it('toggleFact PATCHes includeInPrompt and returns the updated fact', async () => {

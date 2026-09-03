@@ -2,7 +2,7 @@
 title: Push Notifications Platform
 type: feature-platform
 status: mixed
-updated: 2026-08-25
+updated: 2026-08-31
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
@@ -13,6 +13,7 @@ key_files:
   - frontend/src/data/notification
   - frontend/src/features/notification
   - frontend/src/data/notification/feedHooks.ts
+  - frontend/src/features/me/pages/NotificationFeedPage.tsx
   - frontend/src/features/me/pages/NotificationsPage.tsx
   - backend/src/main/resources/db/changelog/1.0.0/script/202607291000_mezo-h4wp.6.1_create_push_subscription.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607291400_mezo-h4wp.6.2_create_notification_pref_and_push_log.sql
@@ -42,8 +43,9 @@ related: [proactive, today, ritual, me, fuel, insights, journal, companion, _pla
 > [`proactive.md`](proactive.md) and [`roadmap.md`](../milestones/roadmap.md).
 >
 > **In-app feed (F1/F2/F3, bd `mezo-gzhp`): F1 + F2 + F3 all DONE.** A second, sibling
-> delivery layer sits alongside push: an `app_notification` outbox table + a bell/panel FE surface
-> in `AppHero`, fed by the AI-brain "pattern engine"/companion/proactive/insights domains rather
+> delivery layer sits alongside push: an `app_notification` outbox table + an FE feed surface —
+> today the shell header's 3-row peek plus the full `/me/ertesitesek` feed page, §2a — fed by the
+> AI-brain "pattern engine"/companion/proactive/insights domains rather
 > than by `AnchorResolver`'s anchors — the whole in-app-feed backend now lives in its own
 > **`feature/appnotification`** package (moved out of `feature/notification` during F2 to break a
 > `companion`↔`notification`↔`proactive` package cycle, bd `mezo-gzhp.1`/`mezo-gzhp.2`). F1
@@ -128,14 +130,16 @@ shipped; the epic is complete.
   `companion`↔`notification`↔`proactive` dependency cycle the new producers would otherwise have
   created. The push-category mapping (F3, bd `mezo-gzhp.3`) is now also built (§3b/§4).
 - **Frontend in-app feed (F1):** done — `useNotificationFeed()`/`useNotificationFeedActions()`
-  (`useDualQuery`, §6) feed a new `features/notification/` bell + dropdown panel, wired as the 4th
-  `AppHero` counter chip (§2).
+  (`useDualQuery`, §6) feed the header bell's peek popover **and** the full-page feed at
+  `/me/ertesitesek` (`NotificationFeedPage.tsx`, mezo-nol0, §2a).
 
 ## 2. User-facing behavior
 
-**Route:** `/me/ertesitesek` (`NotificationsPage.tsx`, `ME_TABS` entry `notifications`). Full
-page-level description (layout, states, copy) is in [`me.md`](me.md) §2 "`Értesítés`" — this doc
-covers the platform mechanics the page sits on top of.
+**Route:** `/me/ertesitesek` is now the in-app notification **feed** (`NotificationFeedPage.tsx`,
+§2a) — the settings surface described below moved one level down, to
+`/me/ertesitesek/beallitasok` (`NotificationsPage.tsx`, mezo-nol0). Full page-level description
+(layout, states, copy) is in [`me.md`](me.md) §2 "`Értesítés`" — this doc covers the platform
+mechanics both pages sit on top of.
 
 **iOS install-gate first, unchanged from N1.** When the PWA is not running standalone or the browser
 lacks Push support, the page renders **only** `PushInstallGate.tsx` — never a toggle, preview, or
@@ -191,19 +195,43 @@ re-hardcoded on the FE); the honest fix is to serve the resolved anchor rather t
 supplying them would mean inventing a number the spec's §6 copy rules forbid — e.g. the napzárás
 notification's XP total is tracked as a separate follow-up bd issue, not fabricated here.
 
-### 2a. In-app feed: bell + panel (F1, bd `mezo-gzhp.1`)
+### 2a. In-app feed: header peek + full feed page (F1, bd `mezo-gzhp.1`; feed page mezo-nol0)
 
-**No route of its own — lives in the `AppHero` header, on every one of the 5 sections.**
-`NotificationBell.tsx` is the **4th `.counters` chip** (after 🔥 streak, ⚡ quest, 🪙 coins), so it
-renders once per app session, not per tab. Tap → snapshot which ids are currently unread (for the
-open panel's dots), fire `markAllRead()`, then open `NotificationPanel.tsx` — **classic bell
-semantics**: the badge clears the moment the panel opens, but the dots on the just-read rows persist
-until the panel closes (the snapshot, not the live cache, drives the dot). The panel is the A-variant
-mockup direction (approved 2026-08-18): an `SubNavDropdown`-style dropdown with a lazy backdrop
-portalled into `.phone-screen`, grouped **Ma / Tegnap / Korábban** (`groupByDay.ts`, pure, day-bucketed
-off `occurredAt`), each row showing the kind's emoji/tint (`APP_NOTIFICATION_KIND_META`), title, body,
-and a relative time; tapping a row closes the panel and `navigate(deeplink)`s. **There is no per-item
-read endpoint** — opening the panel is the only "read" action, by design (§9).
+**Two surfaces share one `useNotificationFeed()` cache.** The shell header's bell
+(`app/AppHeader.tsx`, `.nap-ntfmenu`, [today.md](today.md#the-header-is-the-shells-not-the-hubs))
+gives a lightweight **3-row peek** — the newest three notifications, each row navigating to its
+`deeplink`, with an `Összes értesítés ›` foot. That foot is the only route the peek needs: it takes
+the noun and goes to `/me/ertesitesek`, the full-page feed (`NotificationFeedPage.tsx`, mezo-nol0).
+Settings live one level below, at `/me/ertesitesek/beallitasok` (`NotificationsPage.tsx`).
+
+**Opening the feed page is the app's only reachable `markAllRead()` call site.** Before mezo-nol0,
+no code path in the tree ever called it, so the header badge could light up but never clear
+(bd `mezo-61w0`, a real P2). `NotificationFeedPage` fires `markAllRead()` exactly once, in a `useEffect`
+gated by a `marked` ref, the moment it has a non-empty snapshot to act on — so the badge (shared
+cache, same unread count the header reads) goes dark as soon as the page mounts.
+
+**The rows stay highlighted anyway, because the page reads an OPEN-TIME snapshot, not the live
+cache.** On first render with data, it captures `new Set(items.filter(readAt === null).map(id))`
+into a `useRef` and keeps rendering `.unread`/`.nf-dot` off that frozen set for the rest of the
+page's lifetime — never off the live `readAt`, which `markAllRead`'s optimistic cache flip has
+already stamped. This is deliberate, classic-bell-style behavior carried over from the retired
+`NotificationBell`/`NotificationPanel` dropdown (mezo-gzhp.1, now deleted — mezo-h682): the badge
+clears immediately, but *while you're looking at the page* you can still see what was new. While the
+real-mode feed is still on its cold fetch (`useDualQuery`'s `realEmpty: []` is indistinguishable
+from a genuinely empty list), the page shows a 3-row skeleton instead of either the ghost "nincs
+értesítésed" state or a mistaken 0-count hero — both would flash a lie the resolved fetch
+immediately contradicts.
+
+**Day grouping is `groupByDay.ts`** (pure, day-bucketed off `occurredAt`, sorted newest-first inside
+and across groups) — **Ma** and **Tegnap** as before, but every older day now gets **its own dated
+label** (`aug. 15.`, `aug. 14.`, …) instead of being swept into one `Korábban` bucket: a dropdown's
+three rows tolerated a single catch-all, a full page of two weeks did not (mezo-nol0). Each group's
+identity is its `day` field (a stable `YYYY-MM-DD`), not its label — used as the React key, so a
+label format change can never silently merge or split groups. Each row shows the kind's clay icon +
+tint (`APP_NOTIFICATION_KIND_META`, which carries `clay` alongside `emoji`/`tint` — the feed renders
+the clay icon, `emoji` stays for other call sites), title, body, and a time-of-day label; tapping a
+row navigates to `deeplink`. **There is still no per-item read endpoint** — opening the feed page is
+the only "read" action, by design (§9).
 
 ## 3. Architecture & data flow
 
@@ -316,7 +344,7 @@ emit site:
 [FE — GET /api/notification/feed on demand]
     useNotificationFeed()   — useDualQuery, real pre-resolve = empty list, refetches on window
                               focus / app open (TanStack default, no polling)
-    NotificationBell open   → POST /api/notification/feed/read-all  (markAllRead, optimistic)
+    NotificationFeedPage open → POST /api/notification/feed/read-all  (markAllRead, optimistic)
 ```
 
 **`CHALLENGE_EVENT` is the one kind with two independent producers for two different lifecycle
@@ -435,7 +463,8 @@ interventionAnchors(owner, date):
                                          entry.quietHoursExempt, quietStart, quietEnd)
         if minute present:
             emit AnchoredEvent(INTERVENTION, minute, "HH:mm:" + card.id[0:8],
-                                "Mezo · észrevétel", excerptProse(card.body), "/today?n=" + card.id[0:8])
+                                "Mezo · észrevétel", excerptProse(card.body),
+                                "/nap/uzenetek?n=" + card.id + "&d=" + card.messageDate)
 ```
 
 **`interventionFireMinute` (`AnchorResolver`, pure, no Spring — `InterventionFireMinuteTest`) — defer,
@@ -473,18 +502,54 @@ LATE nudge that arrives at 07:00 is still worth more than one that never arrives
 this with `decision_review`'s "arrived at its day or didn't, no urgency window" (§3c) and `gym`'s
 lead-minute EARLY nudge; `intervention` is the one category that reschedules LATE.
 
-**Known limitation — a cross-midnight-deferred card's deeplink can outlive the feed date it points
-into.** A card generated between `quietStart` and midnight (e.g. 22:30, inside the default
-22:00→07:00 window) defers its push to next-day `quietEnd` (07:00), but the card's own
-`message_date` stays the GENERATION day, not the day the push actually lands on. `GET
-/api/proactive/feed?date=` ([`proactive.md`](proactive.md) §5) only returns the caller's LOCAL
-`date` — so when the 07:00 push arrives and the user taps `/today?n=<id8>`, `/today` is showing
-TODAY's feed, and the card sits on YESTERDAY's, unreachable from it. The push's own title/body still
-read fine (they carry the text directly), but the „Segített?" feedback chips for that specific card
-are not reachable from `/today` that morning — no card in the visible feed carries a matching `?n=`
-id to scroll to. This is a known, undocumented-until-now gap, not a silent data loss (the card and
-its `interventionKey` are intact in `companion_message`, just not surfaced): mezo-b3pp.36 tracks a
-date-aware deeplink/feed-lookup fix.
+**Fixed (mezo-b3pp.36) — the deeplink never worked, and not only for the reason the bd named.**
+The bd that opened this work described a single defect: a cross-midnight-deferred card's
+`message_date` stays the GENERATION day while the push announcing it arrives the next morning, so
+the feed the deeplink implicitly targeted (the caller's local-today) never held the card. That is
+real, but chasing it in isolation would have "fixed" a link that still went nowhere — the deeplink
+had **three other, independent defects**, none named by the bd:
+
+1. **Wrong route.** The url pointed at `/today?n=…`. `/today` is a LEGACY path — `router.tsx`'s
+   `LegacyPathRedirect` sends it to `/nap`, the Nap **hub** (`NapHubPage`), which renders the
+   mosaic of daypart tiles, not the companion thread. The thread — and the „Segített?"
+   `FeedbackChips` the push exists to surface — lives on `NapMezoPage` at `/nap/uzenetek`
+   ([today.md §3](today.md)). Even a same-day, full-id, unbroken `?n=` would have landed a page
+   away from its target.
+2. **No consumer.** Before this slice, nothing in the frontend read `?n=` at all — zero
+   occurrences of the param anywhere under `frontend/src/`. The url carried a discriminator that
+   no component looked for.
+3. **Truncated id.** The url's `?n=` carried `card.id[0:8]`, the SAME 8-character prefix used for
+   the push dedup key (below) — not because the page needed a short id, but because no page-side
+   consumer had ever been written to require the full one. A consumer could only prefix-match,
+   never exact-match, a `FeedMessage.id`.
+4. **The date boundary the bd named.** Covered above: a quiet-hours-deferred card's `message_date`
+   names the generation day, not the push-arrival day, and the feed reads local-today.
+
+**The fix, and what it deliberately left alone:**
+- The url now targets `URL_THREAD = "/nap/uzenetek"` with the card's **full** `id` and its own
+  `messageDate`: `` `/nap/uzenetek?n=${msg.getId()}&d=${msg.getMessageDate()}` ``
+  (`AnchorResolver.interventionAnchors`, backend). `NapMezoPage` reads `n`/`d`
+  (`useSearchParams`); when `d` names a day other than local-today it calls `useCompanionFeed(d)` —
+  a second, per-date cache entry, not a duplicate of today's own poll — finds the one row matching
+  `n`, and renders it alongside (never in place of) today's own thread, `scrollIntoView`'d into
+  view, with the same `useFeedback` chip wiring as any other persisted row ([today.md §3](today.md)
+  for the page-side detail). A stale or unknown id degrades silently — no card renders, nothing
+  throws.
+- **No API contract change was needed.** `GET /api/proactive/feed` already accepted a `date` query
+  parameter ([`proactive.md`](proactive.md) §5) — the fix is a caller finally passing it, not a new
+  endpoint or field.
+- **The push_log dedup key is deliberately UNCHANGED — still the 8-char fragment, not the full
+  id.** `AnchoredEvent.dedupSuffix` stays `hhmm(minute) + ":" + card.id[0:8]`; only the url's `n=`
+  grew to the full uuid. `push_log`'s day-scoped dedup keys off `dedupSuffix`
+  (`"{category}:{HH:mm}:{id8}"`, §4 below) — widening its shape to the full id would change what
+  counts as "already sent" and risks re-delivering a push already on the device. The full id and
+  the dedup fragment are now two independently-sourced substrings of the same `card.id`, pinned
+  apart by its own IT case (`AnchorResolverInterventionIT
+  #testInterventionEvent_shouldKeepTheDedupKeyUnchanged_whenTheUrlGainsTheFullId`).
+- **Still open, its own issue:** the OTHER `?n=` producer — §3b's `feedAnchors(...)`, which appends
+  `n=` to each `app_notification` row's own arbitrary deeplink — remains just as unconsumed on the
+  frontend as `intervention`'s was before this slice. This slice only wired a consumer for the
+  `intervention` case; it did not audit or fix the feed-anchored one.
 
 **Gotcha — `interventionAnchors` is gated on `NOTIFICATION_SWITCH` alone, not `INTERVENTION_SWITCH`
 (the `decision_review`/`JOURNAL_SWITCH` gap of §3c, re-derived here).** `AnchorResolver` is a single
@@ -653,7 +718,7 @@ Migration: [`202608181400_..._create_app_notification.sql`](../../backend/src/ma
 | `deeplink varchar(200) not null` | one tap target, same §6 copy rule as push |
 | `ref_id uuid` | nullable — the domain row the notification is about (a pattern id, a fact id, …) |
 | `dedup_key varchar(80) not null` | the occurrence identity, e.g. `pattern_inbox:{pairKey}`, `pattern_signal:{pairKey}:{date}`, `fact_reinforced:{factId}:{count}` |
-| `occurred_at timestamptz not null default now()` | drives feed order and Ma/Tegnap/Korábban grouping |
+| `occurred_at timestamptz not null default now()` | drives feed order and the Ma/Tegnap/dated-day grouping (`groupByDay.ts`, §2a) |
 | `read_at timestamptz` | null = unread; stamped in bulk by `markAllRead` (classic bell — no per-item read) |
 
 `uq_app_notification_created_by_dedup_key` (partial, live rows only) — makes `emit` **idempotent**
@@ -807,11 +872,11 @@ via `onMutate`/`onError` rollback.
 ```ts
 import { useNotificationFeed, useNotificationFeedActions } from '@/data/hooks'
 
-function NotificationBell() {
+function NotificationFeedPage() {
   const { items, isPending } = useNotificationFeed()
   const { markAllRead } = useNotificationFeedActions()
-  const unread = items.filter((n) => !n.readAt).length
-  // open panel → void markAllRead() (classic bell: badge clears, panel keeps its own read-snapshot)
+  // open-time snapshot of unread ids drives the highlight; effect fires markAllRead() once
+  // (classic bell: badge clears immediately, page keeps its own read-snapshot for the highlight)
 }
 ```
 
@@ -972,16 +1037,21 @@ one of the 12 current producer IT classes had to have this annotation dropped).
   `ResetDatabase` TRUNCATE list alongside the N-slice tables.
 - Commands: `cd backend && ./mvnw clean test -Dtest='AppNotification*,NotificationFeedApiIT,PatternEmitIT,FactExtractionServiceIT,HypothesisPipelineServiceIT,MemoirGeneratorIT,PredictionGeneratorIT,PredictionValidationIT,ExperimentProposalGeneratorIT,ExperimentOutcomeIT,ChallengeGeneratorIT,ChallengeOutcomeIT,DailySummaryServiceIT'`.
 
-**In-app feed (F1) — frontend:**
-- `data/notification/feedHooks.test.tsx` (4, both mock/real modes) — the honest-empty real
+**In-app feed (F1/mezo-nol0) — frontend:**
+- `data/notification/feedHooks.test.tsx` (both mock/real modes) — the honest-empty real
   pre-resolve, the mapped view shape, `markAllRead`'s optimistic flip + rollback.
-- `features/notification/logic/groupByDay.test.ts` (2) — the Ma/Tegnap/Korábban bucketing, pure and
-  deterministic (`today` injected, no `new Date()` inside).
-- `features/notification/components/NotificationBell.test.tsx` (3) — the seed unread badge count,
-  opening shows the Ma/Tegnap groups and clears the badge, tapping an item deeplinks and closes the
-  panel.
-- `AppHero.test.tsx` — extended to assert the bell renders as the 4th counter chip.
-- Commands: `cd frontend && pnpm test` and `VITE_USE_MOCK=true pnpm test` (both modes).
+- `features/notification/logic/groupByDay.test.ts` — Ma/Tegnap plus every older day getting its own
+  dated label (no `Korábban` bucket any more), newest-first sorting, pure and deterministic (`today`
+  injected, no `new Date()` inside).
+- `features/me/pages/NotificationFeedPage.test.tsx` — the hero shows the open-time unread count (not
+  a live 0), items land in Ma vs. dated older groups, a row tap navigates to its `deeplink`,
+  open-time-unread rows stay highlighted for the rest of the page's life, the Beállítások button
+  goes to `/me/ertesitesek/beallitasok`.
+- `features/me/pages/NotificationFeedPage.empty.test.tsx` — genuinely empty feed shows the ghost
+  state with no day-label header; a real-mode cold fetch (`isPending: true`, `items: []`) shows
+  neither the ghost text nor a false empty state.
+- Commands: `cd frontend && VITE_USE_MOCK=true pnpm test` and `VITE_USE_MOCK=false pnpm test` (both
+  modes explicitly — an unset `VITE_USE_MOCK` silently means mock mode).
 
 ## 9. Decisions, gotchas & deferred
 
@@ -1206,11 +1276,13 @@ one of the 12 current producer IT classes had to have this annotation dropped).
   category (N-slice catalog, §4) already delivers that event as a push; giving `memoir_ready` a
   familyKey too would double-notify the same moment through two different categories now that F3 has
   wired the mapping. `AppNotificationKindTest` pins this null.
-- **Classic bell semantics, deliberately simple: opening the panel marks EVERYTHING read.** There is
-  no per-item read endpoint (§4) — the panel's own open-time snapshot (`NotificationBell`'s
-  `snapshotRef`) is what keeps the just-read rows' dots visible while the panel stays open, so the
-  UI doesn't need a "half-read" server state to look right. A finer-grained per-item read model was
-  considered and rejected as unneeded complexity for a single-user app.
+- **Classic bell semantics, deliberately simple: opening the feed page marks EVERYTHING read.** There
+  is no per-item read endpoint (§4) — the page's own open-time snapshot (`NotificationFeedPage`'s
+  `snapshot` ref) is what keeps the just-read rows' highlight/dot visible while you're on the page,
+  so the UI doesn't need a "half-read" server state to look right. A finer-grained per-item read
+  model was considered and rejected as unneeded complexity for a single-user app. Before mezo-nol0
+  this contract lived on the header's dropdown panel (`NotificationBell`/`NotificationPanel`, now
+  deleted, mezo-h682); moving it onto a full page changed the surface, not the semantics.
 - **`NotificationFeedProperties`' inbox/band thresholds are a cross-stack pinned mirror, same shape
   as the N-slice `bandPromising`/`bandStrong` mirroring `strengthWord` (§5).** They must never drift
   from Insights' own `STRONG_SIGNAL`/`strengthWord` constants without updating both sides' tests.
@@ -1365,15 +1437,20 @@ cycle, §9)**
 - `frontend/src/app/AppLayout.tsx` — calls `useScheduleSnapshotWriter()` once per app-session mount
 
 **Frontend — Me surface (documented from Me's side in [`me.md`](me.md) §2/§10)**
-- `frontend/src/features/me/pages/NotificationsPage.tsx` (route `/me/ertesitesek`)
+- `frontend/src/features/me/pages/NotificationsPage.tsx` (route `/me/ertesitesek/beallitasok`)
 - `frontend/src/features/me/components/{PushInstallGate,NotificationPreviewHeader,NotificationCategoryRow}.tsx`
 - `frontend/src/features/me/logic/notificationForecast.ts` — the pure `forecastToday(...)` preview computation
 
-**Frontend — in-app feed surface (F1, bd `mezo-gzhp.1`, new feature dir — no route, lives in `AppHero`)**
-- `frontend/src/features/notification/components/{NotificationBell,NotificationPanel}.tsx`
-- `frontend/src/features/notification/logic/groupByDay.ts` — the pure Ma/Tegnap/Korábban day-bucketer
-- `frontend/src/features/progression/components/AppHero.tsx` — mounts `<NotificationBell/>` as the 4th `.counters` chip (§2a)
-- `frontend/src/styles/prototype.css` — the `.nf-bell`/`.nf-panel` CSS block
+**Frontend — in-app feed surface (F1 bd `mezo-gzhp.1`, feed page mezo-nol0, §2a)**
+- `frontend/src/features/me/pages/NotificationFeedPage.tsx` (route `/me/ertesitesek`) — the full feed
+  page; the only `markAllRead()` call site
+- `frontend/src/features/notification/logic/groupByDay.ts` — the pure day-bucketer (Ma/Tegnap, then
+  one dated label per older day)
+- `frontend/src/app/AppHeader.tsx` — `.nap-ntfmenu`, the shell header's 3-row peek popover into the
+  same feed cache
+- `frontend/src/styles/prototype.css` — the `.nf-*` feed-page CSS rules (the retired
+  `NotificationBell`/`NotificationPanel` dropdown's `.nf-bell`/`.nf-panel` rules were removed with
+  those components, mezo-h682)
 
 **Cross-feature — the shared Fuel anchor derivation + zone projection (§5/§9)**
 - `frontend/src/features/fuel/logic/buildProtocol.ts` — `deriveBlocks`/`PRE_WORKOUT_STACK_LEAD_MIN`/`deriveProtocolAnchors` (moved here from `data/fuel/timelineHooks.ts`, which re-exports `deriveBlocks` for backward compatibility; `buildProtocol()` itself retired mezo-vx9v Task 9)

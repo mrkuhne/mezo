@@ -1,22 +1,29 @@
 // ============================================================
-// Mezo · FuelMedicationPage (Fuel — "Gyógyszer" tab)
-// The owner's single active medication, restyled to the agreed mockup
-// (gyogyszer-a-szellos.html · "A modell — szellősebben"): a medication card
-// (name · route · cadence · current dose) → the MedicationCycleBar (7-cell kinetic
-// strip, current day outlined) → a phase note ("N. nap · {phase} fázis · utolsó
-// beadás …") → the "Beadások" dose log (newest first) → a "＋ Beadás" button.
+// Mezo · FuelMedicationPage (Fuel — "Gyógyszer" tab) — Mozaik re-face (mezo-d20.4.7)
+// Source of truth: docs/design_2.0/prototypes/src/fuel-body.html #page-gyogyszer (p-lav, ×1.18).
+// Anatomy: MozaikPage(lav) → PageHead(‹ Fuel, + Beadás) → PageHero(i-injekcio, D{cycleDay},
+// "Gyógyszer", no subtitle) → medcard (name · current dose, route · cadence, MedicationCycleBar,
+// phase note) → "Beadások" dose log (newest first, now surfacing dose.note — audit gap #10) →
+// LogDoseSheet. The honest empty state (no active medication, no add-path in the UI) keeps its
+// own minimal scaffold — no hero, nothing to headline.
 //
-// You log only the actual injections; the cycle day + phase are DERIVED from the
-// newest dose by the backend / the mock hook (useMedication, Task 11). Tapping
-// "＋ Beadás" flips `logOpen` and opens the LogDoseSheet (Task 13), which captures a
-// dose via useMedicationActions().logDose (a today-dated dose re-anchors cycleDay to 1).
+// Deliberate deviation from the raw hex `--error` red the Phase-1 card used: the whole card is
+// now lavender (prototype's own medcard tint) and the cycle bar's peak rides `--mz-no-ink`
+// (terracotta) via MedicationCycleBar — the "never red" guardrail (handoff §2).
+//
+// Behavior (useMedication, useMedicationActions, the `!med.id` honesty gate, LogDoseSheet) is
+// the untouched data layer — only the chrome changed.
 // ============================================================
 import { useState } from 'react'
-import { useMedication } from '@/data/hooks'
+import { useNavigate } from 'react-router-dom'
+import { useMedication, useMedicationActions } from '@/data/hooks'
 import { huMonthDayDow } from '@/shared/lib/dates'
 import { Icon } from '@/shared/ui/Icon'
+import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MedicationCycleBar } from '@/features/fuel/components/MedicationCycleBar'
 import { LogDoseSheet } from '@/features/fuel/sheets/LogDoseSheet'
+import { MedicationFormSheet } from '@/features/fuel/sheets/MedicationFormSheet'
 
 // route code → HU label (mockup: "subQ injekció"). Falls back to the raw code.
 const ROUTE_LABEL: Record<string, string> = {
@@ -49,31 +56,44 @@ function lastDoseAgo(lastDoseAt: string | null | undefined): string | null {
 }
 
 export function FuelMedicationPage() {
+  const navigate = useNavigate()
   const { medication: med, cycle, doses } = useMedication()
+  const { stopMedication } = useMedicationActions()
   const [logOpen, setLogOpen] = useState(false)
+  const [formOpen, setFormOpen] = useState(false)
+  const [confirmStop, setConfirmStop] = useState(false)
 
   // Honest empty state (mezo-lwmq): there is no active medication and no way to add one from
-  // the UI — the slice keeps its generic machinery, but the owner tracks no medication.
+  // the UI — the slice keeps its generic machinery, but the owner tracks no medication. No hero
+  // here — there is no headline number to show for "nothing tracked".
   if (!med.id) {
     return (
-      <>
-        <div className="pghead-np sage">
-          <div>
-            <div className="over">Fuel · Gyógyszer</div>
-            <h1>Gyógyszer</h1>
-          </div>
-        </div>
-        <div style={{ padding: '0 24px 32px' }}>
-          <div data-testid="medication-empty" className="card" style={{ padding: 24, textAlign: 'center' }}>
+      <MozaikPage tone="lav">
+        <PageHead onBack={() => navigate(-1)} label="‹ Fuel" />
+        <PageBody>
+          {/* The empty branch is choreographed too — it was the ONLY branch the mock day ever
+              reaches, which is why /fuel/gyogyszer measured as "no entrance choreography". */}
+          <EntranceGroup>
+          <div data-testid="medication-empty" className="mz-qcard rise" style={{ textAlign: 'center', padding: 24 }}>
             <span style={{ fontFamily: 'var(--ff-display)', fontSize: 17, fontWeight: 600, color: 'var(--text-primary)' }}>
-              Nincs aktív gyógyszer
+              Nincs követett gyógyszer
             </span>
             <span className="text-tertiary" style={{ fontSize: 12, marginTop: 8, display: 'block' }}>
-              Nem követsz gyógyszert. Jelenleg nincs felvételi út a felületen — ha kellene, az külön fejlesztés.
+              Ha szedsz valamit ciklusban — ide kerül a fázis-térkép és a beadás-napló.
             </span>
+            <button
+              type="button"
+              className="cta-primary"
+              onClick={() => setFormOpen(true)}
+              style={{ marginTop: 14 }}
+            >
+              <Icon name="plus" size={12} /> Gyógyszer felvétele
+            </button>
           </div>
-        </div>
-      </>
+          </EntranceGroup>
+        </PageBody>
+        {formOpen && <MedicationFormSheet onClose={() => setFormOpen(false)} />}
+      </MozaikPage>
     )
   }
 
@@ -84,85 +104,110 @@ export function FuelMedicationPage() {
   const ago = lastDoseAgo(cycle.lastDoseAt)
 
   return (
-    <>
-      <div className="pghead-np sage">
-        <div>
-          <div className="over">Fuel · Gyógyszer</div>
-          <h1>Gyógyszer</h1>
-        </div>
-        <button
-          type="button"
-          onClick={() => setLogOpen(true)}
-          className="pgact-np np-press"
-          style={{ background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}
-        >
+    <MozaikPage tone="lav">
+      <PageHead onBack={() => navigate(-1)} label="‹ Fuel">
+        <button type="button" onClick={() => setLogOpen(true)} className="pgact" style={{ marginLeft: 'auto' }}>
           <Icon name="plus" size={12} /> Beadás
         </button>
-      </div>
+      </PageHead>
 
-      {/* Medication card — name · current dose, route · cadence, the cycle strip, the phase note. */}
-      <div style={{ padding: '0 24px 8px' }}>
-        <div
-          className="card"
-          style={{ padding: '18px 18px 16px', borderLeft: '2px solid var(--error)' }}
-        >
-          <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontFamily: 'var(--ff-display)', fontSize: 19, fontWeight: 600, color: 'var(--text-primary)' }}>
-              {med.name}
-            </span>
-            <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 19, fontWeight: 600, color: 'var(--error)' }}>
-              {med.defaultDose} {med.doseUnit}
-            </span>
+      <EntranceGroup>
+        {/* D{cycleDay} — distinct from the phase note's "{cycleDay}. nap" prose below (same
+            fact, different register: D-prefixed vs ordinal-day sentence — the prototype's own
+            hero/phase-note duality, not a literal repeated string). */}
+        <PageHero icon="i-injekcio" big={`D${cycle.cycleDay}`} name="Gyógyszer" />
+
+        <PageBody>
+          <div className="fmd-medcard rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontFamily: 'var(--ff-display)', fontSize: 17, fontWeight: 700, color: 'var(--text-primary)' }}>
+                {med.name}
+              </span>
+              <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 17, fontWeight: 700, color: 'var(--mz-cell-lav-ink)' }}>
+                {med.defaultDose} {med.doseUnit}
+              </span>
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--mz-ink-soft)', marginTop: 6 }}>
+              {routeLabel} · {cadenceLabel}
+            </div>
+
+            <MedicationCycleBar week={cycle.week} />
+
+            <div
+              data-testid="medication-phase-note"
+              style={{ fontSize: 11, color: 'var(--mz-ink-soft)', marginTop: 12, textAlign: 'center' }}
+            >
+              {cycle.cycleDay}. nap · <b style={{ color: 'var(--mz-cell-lav-ink)' }}>{phaseName} fázis</b>
+              {ago && <> · {ago}</>}
+            </div>
           </div>
-          <div className="text-secondary" style={{ fontSize: 11, marginTop: 7 }}>
-            {routeLabel} · {cadenceLabel}
+
+          {/* Beadások — the dose log, newest first (the hook already returns recentDoses newest-first),
+              now surfacing dose.note (audit gap #10: captured by LogDoseSheet, never shown before). */}
+          <div className="row rise" style={{ '--d': '70ms', alignItems: 'center', margin: '18px 2px 10px' } as React.CSSProperties}>
+            <span className="mz-eyebrow">Beadások</span>
           </div>
 
-          <MedicationCycleBar week={cycle.week} />
+          {doses.length === 0 ? (
+            <div className="mz-qcard rise" style={{ '--d': '100ms', textAlign: 'center' } as React.CSSProperties}>
+              <span className="text-tertiary" style={{ fontSize: 12 }}>Még nincs rögzített beadás.</span>
+            </div>
+          ) : (
+            <ul role="list" aria-label="Beadások" className="mz-qcard rise" style={{ '--d': '100ms', padding: '4px 14px', listStyle: 'none', margin: 0 } as React.CSSProperties}>
+              {doses.map((dose) => (
+                <li key={dose.id} className="fmd-doserow">
+                  <span style={{ color: 'var(--text-primary)' }}>
+                    {huMonthDayDow(dose.administeredAt.slice(0, 10))}
+                    {dose.note && <span className="nt"> „{dose.note}"</span>}
+                  </span>
+                  <span className="dd">
+                    {dose.dose} {med.doseUnit}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
 
-          <div
-            data-testid="medication-phase-note"
-            style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 12, textAlign: 'center' }}
-          >
-            {cycle.cycleDay}. nap · <b style={{ color: 'var(--sage-deep)' }}>{phaseName} fázis</b>
-            {ago && <> · {ago}</>}
+          {/* Szerkesztés + kétlépcsős Leállítás (fuel-mely.html). The stop is NEVER error-toned —
+              a decision, not a mistake: neutral ghosts, a dashed confirm card, and the lav CTA.
+              Stopping soft-archives (PUT active:false); the dose history stays server-side. */}
+          <div className="row gap-sm rise" style={{ '--d': '160ms', marginTop: 14 } as React.CSSProperties}>
+            <button type="button" className="cta-ghost flex-1" onClick={() => setFormOpen(true)}>
+              Szerkesztés
+            </button>
+            <button type="button" className="cta-ghost flex-1" onClick={() => setConfirmStop(true)}>
+              Leállítás
+            </button>
           </div>
-        </div>
-      </div>
-
-      {/* Beadások — the dose log, newest first (the hook already returns recentDoses newest-first). */}
-      <div style={{ padding: '0 24px 32px' }}>
-        <div className="row" style={{ alignItems: 'center', gap: 9, margin: '22px 2px 12px' }}>
-          <span className="eyebrow">Beadások</span>
-          <span style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, var(--border-subtle), transparent)' }} />
-        </div>
-
-        {doses.length === 0 ? (
-          <div className="card" style={{ padding: 20, textAlign: 'center' }}>
-            <span className="text-tertiary" style={{ fontSize: 12 }}>Még nincs rögzített beadás.</span>
-          </div>
-        ) : (
-          <ul role="list" aria-label="Beadások" className="col gap-sm" style={{ padding: 0, listStyle: 'none' }}>
-            {doses.map(dose => (
-              <li
-                key={dose.id}
-                className="card row"
-                style={{ padding: '14px 16px', justifyContent: 'space-between', alignItems: 'center' }}
-              >
-                <span style={{ fontSize: 13, color: 'var(--text-primary)' }}>
-                  {huMonthDayDow(dose.administeredAt.slice(0, 10))}
-                </span>
-                <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 15, fontWeight: 600, color: 'var(--error)' }}>
-                  {dose.dose} {med.doseUnit}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
+          {confirmStop && (
+            <div
+              data-testid="medication-stop-confirm"
+              style={{
+                border: '1px dashed var(--border-strong)', borderRadius: 13,
+                padding: '10px 12px', marginTop: 8, fontSize: 12, color: 'var(--mz-ink-soft)',
+              }}
+            >
+              A {med.name} leáll — a beadás-történet megmarad, a Fuel-oldalak nem számolnak vele tovább.
+              <div className="row gap-sm" style={{ marginTop: 10 }}>
+                <button type="button" className="cta-ghost flex-1" onClick={() => setConfirmStop(false)}>
+                  Mégse
+                </button>
+                <button
+                  type="button"
+                  className="cta-primary flex-1"
+                  onClick={() => { stopMedication(med); setConfirmStop(false) }}
+                >
+                  Leállítom
+                </button>
+              </div>
+            </div>
+          )}
+        </PageBody>
+      </EntranceGroup>
 
       {/* LogDoseSheet — the dose-capture sheet (Task 13). "＋ Beadás" flips logOpen. */}
       {logOpen && <LogDoseSheet onClose={() => setLogOpen(false)} />}
-    </>
+      {formOpen && <MedicationFormSheet medication={med} onClose={() => setFormOpen(false)} />}
+    </MozaikPage>
   )
 }

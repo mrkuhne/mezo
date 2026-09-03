@@ -1,4 +1,4 @@
-// Heti retired (mezo-p2tr): /insights/weekly is now an honest redirect to /me/week (WeekPage) —
+// Heti retired (mezo-p2tr): /insights/weekly is now an honest redirect to /me/week (WeekHubPage) —
 // the motor redirect precedent (router.tsx `motor` -> `/mezo`) is untested at this layer per
 // insights.nav.test.tsx's own comment, but /me/week fully replaces WeeklyPage's content (score
 // hero, growth card, weekly tervjavaslat prose) so this one earns a router-level assertion.
@@ -23,8 +23,9 @@ describe('/mezo/weekly redirect (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('lands on the /me/week WeekPage, not the retired Insights Heti tab', async () => {
+  test('lands on the /me/week Heti hub, not the retired Insights Heti tab', async () => {
     renderApp('/mezo/weekly')
-    expect(await screen.findByText('Én · heti áttekintés')).toBeInTheDocument()
+    // The hub's own furniture (mezo-d20.6.10) — the four-view section label.
+    expect(await screen.findByText('A hét négy nézete')).toBeInTheDocument()
   })
 })

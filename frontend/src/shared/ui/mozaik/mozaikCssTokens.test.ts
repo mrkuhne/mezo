@@ -59,3 +59,25 @@ describe('Mozaik washes/cells/tones are theme-ready tokens (mezo-d20.1.5)', () =
     expect(offenders).toEqual([])
   })
 })
+
+// ── The panel rhythm has exactly ONE owner (mezo-d20.11.2) ──────────────────
+// Four tabs had each declared their own identical `display:flex; column; gap:11px`
+// panel class, and the two pages that forgot to (the Nap daypart panels and the Heti
+// hub) shipped with their children touching at 0px. Daniel spotted it on the Nap tab.
+// The guard is not "the gap is 11px" — it is "there is one place where that is said".
+describe('the Mozaik panel rhythm is declared once (mezo-d20.11.2)', () => {
+  test('.mz-panel-stack exists and carries the prototype\'s 11px column rhythm', () => {
+    const rule = rawCss.match(/\.mz-panel-stack\s*\{([^}]*)\}/)?.[1] ?? ''
+    expect(rule).toMatch(/display:\s*flex/)
+    expect(rule).toMatch(/flex-direction:\s*column/)
+    expect(rule).toMatch(/gap:\s*11px/)
+  })
+
+  test('no per-tab copy of it came back', () => {
+    const copies = [...rawCss.matchAll(/\.([a-z]+)-panel\s*\{([^}]*)\}/g)]
+      .filter(([, , body]) => /display:\s*flex/.test(body) && /gap:\s*11px/.test(body)
+        && /flex-direction:\s*column/.test(body))
+      .map(([, name]) => `.${name}-panel`)
+    expect(copies).toEqual([])
+  })
+})
