@@ -4,7 +4,7 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { MozaikPage, PageHead, PageBody, Mosaic } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { useLifeGoals, useLifeGoalMutations, useLifeGoalToday } from '@/data/hooks'
+import { useLifeGoals, useLifeGoalMutations, useLifeGoalToday, useSignalCatalog } from '@/data/hooks'
 import type { LifeGoalDimension, TrendArrow } from '@/data/lifegoal/lifegoalApi'
 import { DIMENSIONS, DIMENSION_ORDER } from '@/features/me/logic/lifegoalLabels'
 import { PermahRing } from '@/features/me/components/PermahRing'
@@ -17,6 +17,8 @@ export function CelokPage() {
   const { goals, isPending, isError, refetch } = useLifeGoals()
   const { changeStatus } = useLifeGoalMutations()
   const { today, isPending: todayIsPending, isError: todayIsError } = useLifeGoalToday()
+  const { entries: signals = [] } = useSignalCatalog()
+  const liveSignals = signals.filter((s) => s.live).length
   const active = goals.filter((g) => g.status === 'active')
   const parked = goals.filter((g) => g.status === 'parked' || g.status === 'draft')
   const counts = Object.fromEntries(DIMENSION_ORDER.map((d) => [d, active.filter((g) => g.dimension === d).length])) as Record<LifeGoalDimension, number>
@@ -101,6 +103,18 @@ export function CelokPage() {
               <button type="button" className="act" onClick={() => changeStatus(g.id, 'active')} aria-label={`${g.title} · vissza aktívra`}>Vissza</button>
             </div>
           ))}
+          {/* Jelek (mezo-iizd.7, prototípus celok.html:106): a hub alján egy sor nyitja a
+              transzparencia-oldalt. A parkrow-nyelvet viszi, de teljes egészében gomb. */}
+          <button type="button" className="lg-parkrow lg-parkrow-nav rise"
+            style={{ '--d': `${300 + parked.length * 40}ms`, marginTop: 10 } as React.CSSProperties}
+            onClick={() => navigate('/me/goals/signals')} aria-label="Jelek · mit figyel a rendszer">
+            <ClayIcon name="i-retegek" size={22} />
+            <div style={{ flex: 1 }}>
+              <div className="nm" style={{ color: 'var(--text-primary)' }}>Jelek · mit figyel a rendszer</div>
+              <div className="sb">{signals.length} forrás · {liveSignals} él · {signals.length - liveSignals} alszik</div>
+            </div>
+            <span style={{ marginLeft: 'auto', color: 'var(--text-secondary)', fontSize: 12 }}>›</span>
+          </button>
         </EntranceGroup>
       </PageBody>
     </MozaikPage>

@@ -70,6 +70,8 @@ const SCREENS: Array<[string, string, string?]> = [
   ['me-cel', '/me/goals'],
   ['me-cel-suly', '/me/goals/weight'],
   ['me-cel-reszlet', '/me/goals/lg-kockahas'],
+  // mezo-iizd.7: a Jelek transzparencia-oldal saját felület, saját anatómiával (Él/Alszik szekciók).
+  ['me-cel-jelek', '/me/goals/signals'],
   ['me-heti', '/me/week'],
   // F7.4 Én deep (mezo-d20.8.4.1): the goal wizard, the routine editor, the Growth awards
   // tab (the progression's new home — streak card + titles section) and the AI-call detail.
