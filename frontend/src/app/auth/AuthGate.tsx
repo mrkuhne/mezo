@@ -4,8 +4,10 @@ import { isMockMode } from '@/data/_client/mode'
 import { tokenStore, TOKEN_KEY } from '@/data/_client/tokenStore'
 import { authEvents, type SignOutReason } from '@/data/_client/authEvents'
 import { authApi, type MeResponse } from '@/data/auth/authApi'
+import { mockMe } from '@/data/auth/authMock'
 import { ME_QUERY_KEY } from '@/data/hooks'
 import { clearAllNightWake } from '@/features/me/logic/nightTrace'
+import { setCurrentUserId } from '@/shared/lib/userScope'
 import { deriveFromError, deriveFromMe, type AuthPhase } from '@/app/auth/authState'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { RegisterPage } from '@/features/auth/pages/RegisterPage'
@@ -43,7 +45,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   // Boot: no token → login; token → me (with backoff on network failure).
   useEffect(() => {
-    if (mock) return
+    if (mock) { setCurrentUserId(mockMe.id); return }
     if (tokenStore.get() == null) { setPhase('signedOut'); return }
     let cancelled = false
     const startGen = signOutGen.current
@@ -55,6 +57,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
           const me = await authApi.me()
           if (superseded()) return
           client.setQueryData(ME_QUERY_KEY, me)
+          setCurrentUserId(me.id)
           setPhase(deriveFromMe(me))
           return
         } catch (err) {
@@ -78,6 +81,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
   // something happened to refetch them. login/register/logout already clear via
   // useAuthActions; this covers the two paths that don't go through it.
   useEffect(() => authEvents.onSignedOut((reason) => {
+    setCurrentUserId(null)
     signOutGen.current += 1
     client.clear()
     clearAllNightWake()
@@ -116,10 +120,11 @@ export function AuthGate({ children }: { children: ReactNode }) {
     setNotice(undefined)
     const state = client.getQueryState<MeResponse>(ME_QUERY_KEY)
     const cached = state && !state.isInvalidated ? state.data : undefined
-    if (cached) { setPhase(deriveFromMe(cached)); return }
+    if (cached) { setCurrentUserId(cached.id); setPhase(deriveFromMe(cached)); return }
     try {
       const me = await authApi.me()
       client.setQueryData(ME_QUERY_KEY, me)
+      setCurrentUserId(me.id)
       setPhase(deriveFromMe(me))
     } catch (err) {
       if (deriveFromError(err) === 'signedOut') { setPhase('signedOut'); return }

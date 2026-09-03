@@ -7,6 +7,8 @@ import { TOKEN_KEY } from '@/data/_client/tokenStore'
 import { AuthGate } from '@/app/auth/AuthGate'
 import { QueryWrapper, makeHookWrapperWithClient } from '@/test/queryWrapper'
 import { authEvents } from '@/data/_client/authEvents'
+import { currentUserId } from '@/shared/lib/userScope'
+import { mockMe } from '@/data/auth/authMock'
 
 afterEach(() => { vi.unstubAllEnvs(); localStorage.clear(); setToken(null) })
 
@@ -203,3 +205,24 @@ test('the degraded screen recovers via Újra once the backend answers again', as
   await userEvent.click(retry)
   expect(await screen.findByText('APP')).toBeInTheDocument()
 }, 15000)
+
+// Task 9 (mezo-qw37.6): AuthGate is the single writer of the userScope namespace — mock mode
+// scopes to the mock identity, a real sign-in scopes to the /api/auth/me id, and sign-out
+// clears the scope back to anon so the NEXT account on a shared device never inherits it.
+test('mock mode scopes storage to the mock identity', () => {
+  vi.stubEnv('VITE_USE_MOCK', 'true')
+  renderGate()
+  expect(currentUserId()).toBe(mockMe.id)
+})
+
+test('valid token → me → the storage scope is the signed-in user; sign-out clears it', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  setToken('t')
+  renderGate()
+  await screen.findByText('APP')
+  expect(currentUserId()).toBe('00000000-0000-0000-0000-000000000001') // the MSW /api/auth/me id
+  setToken(null)
+  authEvents.emitSignedOut('manual')
+  await screen.findByRole('heading', { name: 'Bejelentkezés' })
+  expect(currentUserId()).toBeNull()
+})
