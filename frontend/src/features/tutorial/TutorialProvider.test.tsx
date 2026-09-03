@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { StrictMode } from 'react'
 import { http, HttpResponse } from 'msw'
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom'
-import { TutorialProvider, useTutorial } from '@/features/tutorial/TutorialProvider'
+import { AUTO_DELAY_MS, TutorialProvider, useTutorial } from '@/features/tutorial/TutorialProvider'
+import { WELCOME_VERSION } from '@/features/tutorial/registry/welcome'
 import { readLocalProgress, writeLocalProgress } from '@/shared/lib/tutorialSeen'
 import { API_BASE } from '@/data/_client/api'
 import { isMockMode } from '@/data/_client/mode'
@@ -236,4 +237,124 @@ test('PUT-hiba esetén a lokális írás (seenAt) marad az igazság, a sheet nem
   await waitFor(() => expect(readLocalProgress().fuel).toBeDefined())
   expect(readLocalProgress().fuel?.version).toBe(1)
   expect(screen.getByRole('dialog', { name: 'Kalauz · Fuel' })).toBeInTheDocument()
+})
+
+// ── T0 welcome (mezo-gb1s.4, S2b spec §4.2) ─────────────────────────────────────
+// A sheet jelenlétét NEM a `Kalauz · <label>` szövegre kérdezzük: a KalauzSheet két elembe is
+// kiírja (.mz-eyebrow és az .sr-only cím), tehát egy getByText(/^Kalauz · /) „multiple elements"
+// hibát dobna. Az egyedi horgony a pötty-sáv aria-labelje: `Kártyák`.
+const SEEN = '2026-08-30T10:00:00.000Z'
+const welcomeSeen = () => ({ welcome: { version: WELCOME_VERSION, seenAt: SEEN, completedAt: SEEN, dismissedAtStep: null } })
+
+test('a legelső /nap betöltéskor a welcome felugrik, és a /nap kalauza NEM', async () => {
+  renderAt('/nap')
+  expect(await screen.findByRole('dialog')).toHaveAccessibleName('Szia, Mezo vagyok.')
+  // A /nap auto-open timere el sem indult (a route-effekt guardja), tehát 600 ms után sincs sheet.
+  await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 50) })
+  expect(screen.queryByLabelText('Kártyák')).not.toBeInTheDocument()
+})
+
+test('„látva = megjelent": a welcome bejegyzés a megnyitás pillanatában íródik', async () => {
+  renderAt('/nap')
+  await screen.findByRole('dialog')
+  await waitFor(() => expect(readLocalProgress().welcome?.seenAt).toEqual(expect.any(String)))
+  expect(readLocalProgress().welcome?.version).toBe(WELCOME_VERSION)
+  expect(readLocalProgress().welcome?.completedAt).toBeNull()
+})
+
+test('az Induljunk completedAt-ot ír, és utána NEM láncol a /nap kalauzába', async () => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  renderAt('/nap')
+  await screen.findByRole('dialog')
+  await user.click(screen.getByRole('button', { name: 'Tovább' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább' }))
+  await user.click(screen.getByRole('button', { name: 'Tovább' }))
+  await user.click(screen.getByRole('button', { name: 'Induljunk' }))
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+  await waitFor(() => expect(readLocalProgress().welcome?.completedAt).toEqual(expect.any(String)))
+  // S2b-6: a route-effekt ugyanarra a pathname-re nem fut újra — a /nap kalauza most nem jön.
+  await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 50) })
+  expect(screen.queryByLabelText('Kártyák')).not.toBeInTheDocument()
+})
+
+test('a Kihagyom dismissedAtStep-et ír, és a welcome nem jön vissza', async () => {
+  const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  renderAt('/nap')
+  await screen.findByRole('dialog')
+  await user.click(screen.getByRole('button', { name: 'Tovább' }))
+  await user.click(screen.getByRole('button', { name: 'Kihagyom' }))
+  await waitFor(() => expect(readLocalProgress().welcome?.dismissedAtStep).toBe(1))
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+})
+
+test('látott welcome mellett a /nap kalauza normálisan felugrik', async () => {
+  writeLocalProgress(welcomeSeen())
+  renderAt('/nap')
+  await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 50) })
+  expect(await screen.findByLabelText('Kártyák')).toBeInTheDocument()
+  expect(screen.queryByText('Szia, Mezo vagyok.')).not.toBeInTheDocument()
+})
+
+test('a függő welcome MÁS route kalauzát nem nyomja el', async () => {
+  renderAt('/train')
+  await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 50) })
+  expect(await screen.findByLabelText('Kártyák')).toBeInTheDocument()
+})
+
+test('reduced-motion alatt is a welcome nyer a 0 ms-os /nap auto-open ellen', async () => {
+  stubReducedMotion()
+  renderAt('/nap')
+  await act(async () => { vi.advanceTimersByTime(50) })
+  expect(screen.getByRole('dialog')).toHaveAccessibleName('Szia, Mezo vagyok.')
+  expect(screen.queryByLabelText('Kártyák')).not.toBeInTheDocument()
+})
+
+// A megnyitó effekt `persist`-et hív, a StrictMode pedig mount → cleanup → re-run sorrendben
+// futtatja — a két futás KÖZÖTT nincs render, tehát sem a `welcomeStatus` state, sem a
+// `progressRef` nem frissült. A state-re támaszkodó kapu így kétszer engedne át egy-egy külön
+// `new Date()`-tel; a Provider eager ref-latche zárja ezt (a `close`/`openIdRef` mintája).
+test('StrictMode alatt a welcome megnyitása pontosan EGY seenAt-írást ad', async () => {
+  const written: string[] = []
+  const orig = Storage.prototype.setItem
+  Storage.prototype.setItem = function (key: string, value: string) {
+    if (key.includes('kalauz') && value.includes('welcome')) written.push(JSON.parse(value).welcome.seenAt)
+    return orig.call(this, key, value)
+  }
+  try {
+    renderAtStrict('/nap')
+    await screen.findByRole('dialog')
+    await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 50) })
+    expect(written).toHaveLength(1)
+  } finally {
+    Storage.prototype.setItem = orig
+  }
+})
+
+// Új eszköz: üres localStorage, a szerver viszont MÁR tud a welcome-ról. Ez az egyetlen ok,
+// amiért a megnyitó effekt megvárja a `!isPending`-et — de a `progressRef` csak RENDERKOR
+// frissül, a merge-effekt és a welcome-effekt pedig UGYANABBAN a passzív-effekt flush-ban fut
+// (react-query egy renderben billenti az isPending-et és adja a datát). A welcome-effekt tehát
+// nem támaszkodhat a refre: a szerver-mapet magának kell összefésülnie, különben (1) felvillan,
+// és (2) a `persist` bázisa a merge ELŐTTI map, ami visszaírja a csonkolt állapotot.
+test('új eszköz: a szerver szerint látott welcome nem villan fel, és a merge-elt mapet nem csorbítja (real mode)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  if (isMockMode()) return
+  const entry = (v: number) => ({ version: v, seenAt: SEEN, completedAt: SEEN, dismissedAtStep: null })
+  server.use(
+    http.get(`${API_BASE}/api/tutorial/progress`, () =>
+      HttpResponse.json({ progress: { welcome: entry(WELCOME_VERSION), fuel: entry(1), nap: entry(1) } }),
+    ),
+    http.put(`${API_BASE}/api/tutorial/progress`, async ({ request }) => {
+      const body = (await request.json()) as { progress: unknown }
+      return HttpResponse.json({ progress: body.progress })
+    }),
+  )
+  renderAt('/nap') // a localStorage üres — a globális beforeEach törli
+  await waitFor(() => expect(Object.keys(readLocalProgress()).length).toBeGreaterThan(0))
+  await act(async () => { vi.advanceTimersByTime(AUTO_DELAY_MS + 50) })
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument() // nincs felvillanás
+  const p = readLocalProgress()
+  expect(p.fuel).toBeDefined() // a merge-elt map többi bejegyzése megmaradt
+  expect(p.nap).toBeDefined()
+  expect(p.welcome?.seenAt).toBe(SEEN) // az eredeti seenAt él, nem írtuk felül frissel
 })
