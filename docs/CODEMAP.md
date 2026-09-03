@@ -905,7 +905,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### proactive
 
-*BE + API* · read next: [docs/features/proactive.md](features/proactive.md) (updated 2026-09-02, complete)
+*BE + API* · read next: [docs/features/proactive.md](features/proactive.md) (updated 2026-09-03, complete)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/proactive`
   - **entities→tables:** `ChallengeEntity`→`challenge`, `CompanionMessageEntity`→`companion_message`,
@@ -920,15 +920,16 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ExperimentJob`, `ExperimentOutcomeService`, `ExperimentProposalGenerator`, `FatigueEvidenceCollector`,
     `FeedMessageKindService`, `GrowthDigestBlock`, `HighlightCitationSourceAdapter`, `InterventionEventListener`,
     `InterventionService`, `LogFreshnessProbe`, `MemoirGenerator`, `MemoirJob`, `MetricWindowEvaluator`,
-    `OverloadChallengeGenerator`, `PatternImpactService`, `PeopleMezoNoteAdapter`, `PredictionGenerator`,
-    `PredictionJob`, `PredictionValidationService`, `ProactiveChallengeService`, `ProactiveExperimentService`,
-    `ProactiveFeedService`, `ProactiveMemoirService`, `ProactivePredictionService`, `ProactiveWeeklySuggestionService`,
-    `WeekReviewSourceAdapter`, `WeeklyLessonService`, `WeeklyReviewContextSources`, `WeeklyReviewDigestService`,
-    `WeeklyReviewGenerator`, `WeeklyReviewJob`, `WeeklyReviewService`, `WeeklyReviewWeekWindow`,
-    `WeeklySuggestionGenerator`, `WeeklySuggestionJob`
+    `OverloadChallengeGenerator`, `PatternImpactService`, `PeopleMezoNoteAdapter`, `PlanFeasibilityCalculator`,
+    `PredictionGenerator`, `PredictionJob`, `PredictionValidationService`, `ProactiveChallengeService`,
+    `ProactiveExperimentService`, `ProactiveFeedService`, `ProactiveMemoirService`, `ProactivePredictionService`,
+    `ProactiveWeeklySuggestionService`, `SetupCheckJob`, `SetupCheckService`, `WeekReviewSourceAdapter`,
+    `WeeklyLessonService`, `WeeklyReviewContextSources`, `WeeklyReviewDigestService`, `WeeklyReviewGenerator`,
+    `WeeklyReviewJob`, `WeeklyReviewService`, `WeeklyReviewWeekWindow`, `WeeklySuggestionGenerator`,
+    `WeeklySuggestionJob`
   - **controllers→contract:** `DiagnosisController`→`DiagnosisApi`, `ProactiveController`→`ProactiveApi`
   - **mappers:** `ChallengeDisplay`, `ProactiveMapper`
-  - **config:** `DiagnosisProperties`, `ProactiveProperties`
+  - **config:** `DiagnosisProperties`, `ProactiveProperties`, `SetupCheckProperties`
   - **other:** `ChallengeRefsEnvelope`, `CompanionMessageEnvelope`, `DiagnosisEvidenceEnvelope`,
     `DiagnosisSuspectsEnvelope`, `MemoirAnchorsEnvelope`, `WeeklyReviewDayNotesEnvelope`,
     `WeeklyReviewHighlightsEnvelope`
@@ -942,27 +943,30 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     GET /api/proactive/challenge · POST /api/proactive/challenge/{id}/decision ·
     GET /api/proactive/weekly-review/{start} · POST /api/proactive/weekly-review/{start}/regenerate ·
     GET /api/proactive/weekly-review/{start}/lessons · GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 53 IT + 1 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 58 IT + 1 unit
   - **ITs:** `ChallengeGeneratorIT`, `ChallengeJobIT`, `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`,
     `ChallengePersistenceIT`, `CompanionMessageEventIT`, `CompanionMessageGeneratorIT`,
     `CompanionMessageInterventionPersistenceIT`, `CompanionMessageJobIT`, `CompanionMessageJobSwitchOffIT`,
-    `CompanionMessagePersistenceIT`, `DiagnosisControllerIT`, `DiagnosisExperimentIT`, `DiagnosisGeneratorIT`,
-    `ExperimentJobIT`, `ExperimentJobSwitchOffIT`, `ExperimentOutcomeIT`, `ExperimentPersistenceIT`,
-    `ExperimentProposalGeneratorIT`, `FatigueEvidenceCollectorIT`, `GrowthDigestBlockIT`, `HighlightCitationIT`,
-    `InterventionConfigIT`, `InterventionServiceIT`, `InterventionSwitchOffIT`, `LogFreshnessProbeIT`,
-    `MemoirGeneratorIT`, `MemoirJobIT`, `MemoirJobSwitchOffIT`, `MemoirPersistenceIT`, `OverloadChallengeGeneratorIT`,
-    `PredictionGeneratorIT`, `PredictionJobIT`, `PredictionJobSwitchOffIT`, `PredictionPersistenceIT`,
-    `PredictionValidationIT`, `ProactiveApiChallengeIT`, `ProactiveApiCompanionOffIT`, `ProactiveApiExperimentIT`,
-    `ProactiveApiFeedIT`, `ProactiveApiIT`, `ProactiveApiSwitchOffIT`, `ProactiveMemoirArchiveIT`,
-    `ProactiveMemoirArchiveSwitchOffIT`, `SleepDiagnosisIT`, `WeeklyLessonServiceIT`, `WeeklyReviewControllerIT`,
-    `WeeklyReviewGeneratorIT`, `WeeklySuggestionGeneratorIT`, `WeeklySuggestionJobIT`,
-    `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionNameIT`, `WeeklySuggestionPersistenceIT`
+    `CompanionMessagePersistenceIT`, `CompanionMessageSetupPersistenceIT`, `DiagnosisControllerIT`,
+    `DiagnosisExperimentIT`, `DiagnosisGeneratorIT`, `ExperimentJobIT`, `ExperimentJobSwitchOffIT`,
+    `ExperimentOutcomeIT`, `ExperimentPersistenceIT`, `ExperimentProposalGeneratorIT`, `FatigueEvidenceCollectorIT`,
+    `GrowthDigestBlockIT`, `HighlightCitationIT`, `InterventionConfigIT`, `InterventionServiceIT`,
+    `InterventionSwitchOffIT`, `LogFreshnessProbeIT`, `MemoirGeneratorIT`, `MemoirJobIT`, `MemoirJobSwitchOffIT`,
+    `MemoirPersistenceIT`, `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`, `PredictionGeneratorIT`,
+    `PredictionJobIT`, `PredictionJobSwitchOffIT`, `PredictionPersistenceIT`, `PredictionValidationIT`,
+    `ProactiveApiChallengeIT`, `ProactiveApiCompanionOffIT`, `ProactiveApiExperimentIT`, `ProactiveApiFeedIT`,
+    `ProactiveApiIT`, `ProactiveApiSwitchOffIT`, `ProactiveMemoirArchiveIT`, `ProactiveMemoirArchiveSwitchOffIT`,
+    `SetupCheckJobSwitchOffIT`, `SetupCheckPropertiesIT`, `SetupCheckServiceIT`, `SleepDiagnosisIT`,
+    `WeeklyLessonServiceIT`, `WeeklyReviewControllerIT`, `WeeklyReviewGeneratorIT`, `WeeklySuggestionGeneratorIT`,
+    `WeeklySuggestionJobIT`, `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionNameIT`,
+    `WeeklySuggestionPersistenceIT`
   - **populators:** `ActivityPopulator`, `ChallengePopulator`, `CheckInPopulator`, `CompanionMessagePopulator`,
     `DailySummaryPopulator`, `DiagnosisPopulator`, `ExperimentPopulator`, `GoalPopulator`, `GraphPopulator`,
     `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `MedicationDosePopulator`,
     `MedicationPopulator`, `MemoirPopulator`, `MentionPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`,
-    `PersonPopulator`, `PredictionPopulator`, `QuestPopulator`, `SleepLogPopulator`, `TrainPopulator`, `UserPopulator`,
-    `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`
+    `PersonPopulator`, `PredictionPopulator`, `QuestPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`,
+    `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`,
+    `WeightLogPopulator`
 
 ### progression
 
