@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
-import { tokenStore } from '@/data/_client/tokenStore'
+import { tokenStore, TOKEN_KEY } from '@/data/_client/tokenStore'
 import { authEvents, type SignOutReason } from '@/data/_client/authEvents'
 import { authApi, type MeResponse } from '@/data/auth/authApi'
 import { ME_QUERY_KEY } from '@/data/hooks'
+import { clearAllNightWake } from '@/features/me/logic/nightTrace'
 import { deriveFromError, deriveFromMe, type AuthPhase } from '@/app/auth/authState'
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { RegisterPage } from '@/features/auth/pages/RegisterPage'
@@ -79,10 +80,29 @@ export function AuthGate({ children }: { children: ReactNode }) {
   useEffect(() => authEvents.onSignedOut((reason) => {
     signOutGen.current += 1
     client.clear()
+    clearAllNightWake()
     setNotice(SIGN_OUT_NOTICE[reason])
     setAuthView('login')
     setPhase('signedOut')
   }), [client])
+
+  // Cross-tab account switch (mezo-qw37.1 review, Finding 1): the `storage` event fires only in
+  // OTHER tabs than the one that changed localStorage, which is exactly what is wanted here — a
+  // tab sitting on `ready` learns that ITS OWN token key changed underneath it (another tab
+  // signed out, or signed out and back in as a different account) and drops to the login screen.
+  // Without this, tab 2 keeps rendering the first account's cached data while `authHeader()`
+  // silently starts attaching the SECOND account's token to any request tab 2 makes.
+  useEffect(() => {
+    if (mock) return
+    let lastToken = tokenStore.get()
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== TOKEN_KEY || e.newValue === lastToken) return
+      lastToken = e.newValue
+      authEvents.emitSignedOut('expired')
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [mock])
 
   // Called after login/register (whose useAuthActions call already client.clear()s then seeds
   // ME_QUERY_KEY via setQueryData — see authHooks.ts) and after a forced password change (whose

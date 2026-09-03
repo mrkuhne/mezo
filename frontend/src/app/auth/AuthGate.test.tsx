@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE, setToken } from '@/data/_client/api'
+import { TOKEN_KEY } from '@/data/_client/tokenStore'
 import { AuthGate } from '@/app/auth/AuthGate'
 import { QueryWrapper, makeHookWrapperWithClient } from '@/test/queryWrapper'
 import { authEvents } from '@/data/_client/authEvents'
@@ -63,6 +64,37 @@ test('a signedOut event while ready drops back to the login page', async () => {
   expect(screen.getByText('A munkameneted lejárt, jelentkezz be újra.')).toBeInTheDocument()
 })
 
+// mezo-qw37.1 review Finding 1: a `storage` event fires only in OTHER tabs than the one that
+// changed localStorage — exactly what is wanted here. Without this listener, a tab that stayed
+// on `ready` while another tab signed out (and possibly a different account signed back in)
+// would keep rendering stale cached data while silently attaching the new account's token to
+// any request it makes.
+test('a StorageEvent on the token key from another tab drops the gate to the login screen', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  const { wrapper, client } = makeHookWrapperWithClient()
+  setToken('t')
+  render(<AuthGate><App /></AuthGate>, { wrapper })
+  await screen.findByText('APP')
+
+  client.setQueryData(['someone', 'elses', 'meals'], { secret: true })
+
+  window.dispatchEvent(new StorageEvent('storage', { key: TOKEN_KEY, newValue: 'other-accounts-token', oldValue: 't' }))
+
+  expect(await screen.findByRole('heading', { name: 'Bejelentkezés' })).toBeInTheDocument()
+  expect(client.getQueryData(['someone', 'elses', 'meals'])).toBeUndefined()
+})
+
+test('a StorageEvent for an unrelated key is ignored', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  setToken('t')
+  renderGate()
+  await screen.findByText('APP')
+
+  window.dispatchEvent(new StorageEvent('storage', { key: 'mezo-theme', newValue: 'dark' }))
+
+  expect(screen.getByText('APP')).toBeInTheDocument()
+})
+
 test('login page → register link → register page and back', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   renderGate()
@@ -91,6 +123,25 @@ test('a signedOut event clears the query cache for every reason, not just manual
   await screen.findByRole('heading', { name: 'Bejelentkezés' })
 
   expect(client.getQueryData(['someone', 'elses', 'meals'])).toBeUndefined()
+})
+
+// mezo-qw37.1 review Finding 2: mezo-night-wake:* is real personal data (how many times, and
+// when, the account woke overnight) and SleepLogSheet prefills the SUBMITTING account's sleep
+// log from whatever sits under today's key — so on a shared device it must not survive past the
+// account that recorded it, for every sign-out reason (expired/disabled/manual), not just logout.
+test('a signedOut event for any reason clears the night-wake trace', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  setToken('t')
+  renderGate()
+  await screen.findByText('APP')
+
+  localStorage.setItem('mezo-night-wake:2026-07-24', JSON.stringify({ count: 2, lastAt: 'x' }))
+
+  setToken(null)
+  authEvents.emitSignedOut('disabled')
+  await screen.findByRole('heading', { name: 'Bejelentkezés' })
+
+  expect(localStorage.getItem('mezo-night-wake:2026-07-24')).toBeNull()
 })
 
 const meFixture = { id: '1', email: 'a@b.c', name: 'A', role: 'USER', onboarded: true, mustChangePassword: false, timezone: 'Europe/Budapest' }

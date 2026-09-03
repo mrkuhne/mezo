@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import {
-  clearNightWake, readNightWake, recordNightWake, traceDateFor,
+  clearAllNightWake, clearNightWake, readNightWake, recordNightWake, traceDateFor,
 } from '@/features/me/logic/nightTrace'
 
 describe('nightTrace', () => {
@@ -42,5 +42,18 @@ describe('nightTrace', () => {
   test('corrupt stored JSON reads as null', () => {
     localStorage.setItem('mezo-night-wake:2026-07-24', 'not-json')
     expect(readNightWake('2026-07-24')).toBeNull()
+  })
+
+  // mezo-qw37.1 review Finding 2: night-wake trace is real personal data (count + timestamp of
+  // overnight wakes), so it must not survive a sign-out on a shared device — the next account to
+  // log in must neither see it nor have it silently prefilled into THEIR sleep log.
+  test('clearAllNightWake removes every night-wake key and leaves other keys alone', () => {
+    recordNightWake(new Date('2026-07-24T03:00:00'))
+    recordNightWake(new Date('2026-07-23T03:00:00'))
+    localStorage.setItem('mezo-theme', 'dark')
+    clearAllNightWake()
+    expect(readNightWake('2026-07-24')).toBeNull()
+    expect(readNightWake('2026-07-23')).toBeNull()
+    expect(localStorage.getItem('mezo-theme')).toBe('dark')
   })
 })
