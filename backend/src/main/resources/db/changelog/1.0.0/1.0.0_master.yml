@@ -847,6 +847,13 @@ databaseChangeLog:
             relativeToChangelogFile: true
             path: script/202608272000_mezo-1gim.1_create_character_tables.sql
   - changeSet:
+      id: "1.0.0:202609021000_mezo-xwgb_create_diet_settings"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609021000_mezo-xwgb_create_diet_settings.sql
+  - changeSet:
       id: "1.0.0:202608291100_mezo-d20.7.6_learned_fact_weekly_source"
       author: daniel.kuhne
       changes:

@@ -14,6 +14,12 @@ export const SLOT_WEIGHT = { main: 2, snack: 1, postWorkoutMain: 2.5 } as const
 export const RECIPE_FIT_TOLERANCE = 0.2
 export const FAT_KCAL_SHARE = 0.275
 
+// Diet split presets (Diet Plan slice 1) — fat energy-shares mirroring backend `mezo.goal.diet`
+// (dietSplitDriftGuard.test.ts is the tripwire). FAT_KCAL_SHARE above stays as the no-segment fallback.
+export const DIET_SPLIT_PRESETS: Record<'balanced' | 'low_fat' | 'low_carb' | 'high_carb', number> = {
+  balanced: 0.275, low_fat: 0.2, low_carb: 0.4, high_carb: 0.22,
+}
+
 // Keret-hero rost-gyűrű (mezo-c9t5, frontend-only rost-bővítés). Static default target — no
 // settings-field yet (scope-on-kívül a designban); consumed rost = the day's logged meals' summed
 // `fiberG` (missing per-meal field counts as 0, keretHero.ts).

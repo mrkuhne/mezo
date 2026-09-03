@@ -57,6 +57,16 @@ export interface FuelSettings {
   mealsPerDay: number
   caffeineCutoff: string
 }
+/** Diet preferences (Diet Plan slice 1) — macro split + protein tier + water/fiber, per-user singleton. */
+export interface DietSettings {
+  splitPreset: 'balanced' | 'low_fat' | 'low_carb' | 'high_carb' | 'custom'
+  proteinPctX10: number | null
+  carbsPctX10: number | null
+  fatPctX10: number | null
+  proteinTier: 'moderate' | 'high'
+  waterMl: number
+  fiberG: number
+}
 /** Mezo-kalauz seen-store (mezo-gb1s): one record per guide id, the whole map is the per-user singleton. */
 export interface TutorialProgressEntry {
   version: number

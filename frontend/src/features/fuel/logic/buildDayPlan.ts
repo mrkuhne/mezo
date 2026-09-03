@@ -126,27 +126,32 @@ export interface DayBudget extends Macro4 { energy: { base: number; activity: nu
 /**
  * Daily budget. Static path (no BMR/NEAT → no biometric profile) keeps today's behavior. Dynamic path
  * (mezo-1oy5 / mezo-eujg): target = BMR×neat + Σ MET activity + goal balance, floored at BMR. Protein is
- * fixed (bodyweight-based), fat is tied to the BASE segment kcal (stable), carbs absorb the activity bonus.
+ * fixed (bodyweight-based); fat prefers the segment's prescribed `fatG` (Diet Plan slice 1 — mezo-xwgb),
+ * falling back to the BASE-segment-kcal FAT_KCAL_SHARE share for pre-slice-1 segments (no jump for
+ * data that predates the split). Carbs absorb the activity bonus in the dynamic path; in the static
+ * path they prefer the segment's prescribed `carbsG`, falling back to the same remainder formula.
  * balance = segment.dailyEnergyBalanceKcal (explicit goal deficit/surplus from the wire).
  * maintenance = BMR×neat (NEAT lifestyle multiplier from the bootstrap).
  */
 export function deriveDailyBudget(
-  segment: { kcal: number; proteinG: number; dailyEnergyBalanceKcal?: number } | null,
+  segment: { kcal: number; proteinG: number; carbsG?: number | null; fatG?: number | null; dailyEnergyBalanceKcal?: number } | null,
   fallback: MacroSet,
   energy?: EnergyInputs,
 ): DayBudget {
   const baseKcal = segment?.kcal ?? fallback.kcal
   const proteinG = segment?.proteinG ?? fallback.p
-  const fat = Math.round((baseKcal * FAT_KCAL_SHARE) / 9)
+  // Prescribed fat wins (Diet Plan slice 1); FAT_KCAL_SHARE remains the pre-slice-1 fallback.
+  const fat = segment?.fatG ?? Math.round((baseKcal * FAT_KCAL_SHARE) / 9)
   const carbs = (kcal: number) => Math.max(0, Math.round((kcal - proteinG * 4 - fat * 9) / 4))
 
   if (!energy || energy.bmr == null || energy.neat == null) {
     // Static path (no biometric profile) keeps today's behavior: no segment → the fallback MacroSet
-    // passes through verbatim (only water dropped); a segment carries kcal+proteinG, so derive c/f.
+    // passes through verbatim (only water dropped); a segment carries kcal+proteinG, so derive c/f
+    // (preferring the segment's own prescribed carbsG when present).
     if (!segment) {
       return { kcal: fallback.kcal, p: fallback.p, c: fallback.c, f: fallback.f, energy: { base: fallback.kcal, activity: 0, balance: 0, target: fallback.kcal } }
     }
-    return { kcal: baseKcal, p: proteinG, c: carbs(baseKcal), f: fat, energy: { base: baseKcal, activity: 0, balance: 0, target: baseKcal } }
+    return { kcal: baseKcal, p: proteinG, c: segment.carbsG ?? carbs(baseKcal), f: fat, energy: { base: baseKcal, activity: 0, balance: 0, target: baseKcal } }
   }
   const balance = segment?.dailyEnergyBalanceKcal ?? 0
   const maintenance = energy.bmr * energy.neat
@@ -155,7 +160,7 @@ export function deriveDailyBudget(
   return {
     kcal: Math.round(target),
     p: proteinG,
-    c: carbs(target),
+    c: carbs(target), // carbs stay the absorber of the day's activity bonus, off the prescribed fat
     f: fat,
     energy: { base: Math.round(maintenance), activity: Math.round(eat), balance: Math.round(balance), target: Math.round(target) },
   }

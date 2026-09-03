@@ -67,6 +67,7 @@ public class GoalEngineService {
     private final GuardEvaluationService guardService;
     private final GoalEvaluationService evaluationService;
     private final WeeklyScheduledActivityService weeklyActivity;
+    private final DietPreferencesPort dietPreferences;
 
     /**
      * Evaluate a goal: assemble + persist its segmented prescription (and TDEE bootstrap).
@@ -104,7 +105,8 @@ public class GoalEngineService {
         List<ProjectionSegment> segments = projectionService.project(goal, userId, bootstrap, trend);
 
         GoalPrescriptionJson rx = evaluationService.assemble(
-            goal, currentWeightKg, profile.getBodyFatPct(), segments, guards);
+            goal, currentWeightKg, profile.getBodyFatPct(), segments, guards,
+            dietPreferences.resolve(userId));
         goal.setPrescription(rx);
         return rx;
     }

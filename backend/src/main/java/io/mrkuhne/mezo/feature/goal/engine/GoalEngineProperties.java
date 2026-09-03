@@ -42,6 +42,9 @@ public record GoalEngineProperties(
     /** EWMA smoothing tunables for the weight-trend engine. */
     @NotNull @Valid Ewma ewma,
 
+    /** Diet-split tunables (slice 1): preset fat energy-shares + the fat g/kg floor. */
+    @NotNull @Valid Diet diet,
+
     /**
      * Adaptive-thermogenesis haircut applied to the daily target (kcal/day). Default 0 (off);
      * optional research band 100–200 once metabolic adaptation is observed.
@@ -114,5 +117,28 @@ public record GoalEngineProperties(
     public record Ewma(
         @NotNull @Min(10) @Max(14) Integer halfLifeDays // 10 — research band 10–14
     ) {
+    }
+
+    /** Diet-split tunables. Fat share = fraction of segment kcal; floor per ISSN (~0.5 g/kg). */
+    public record Diet(
+        @NotNull @Positive Double fatShareBalanced, // 0.275 — reproduces the pre-slice-1 FE constant
+        @NotNull @Positive Double fatShareLowFat,   // 0.20
+        @NotNull @Positive Double fatShareLowCarb,  // 0.40
+        @NotNull @Positive Double fatShareHighCarb, // 0.22
+        @NotNull @Positive Double fatFloorGPerKg    // 0.5 — hormonal-health fat minimum
+    ) {
+        /** Fat energy-share for a preset; custom reads the request's tenths-of-percent; unknown → balanced. */
+        public double fatShareFor(String preset, Integer fatPctX10) {
+            if (preset == null) {
+                return fatShareBalanced;
+            }
+            return switch (preset) {
+                case "low_fat" -> fatShareLowFat;
+                case "low_carb" -> fatShareLowCarb;
+                case "high_carb" -> fatShareHighCarb;
+                case "custom" -> fatPctX10 == null ? fatShareBalanced : fatPctX10 / 1000.0;
+                default -> fatShareBalanced;
+            };
+        }
     }
 }

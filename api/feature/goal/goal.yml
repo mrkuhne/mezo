@@ -185,6 +185,8 @@ components:
         label: { type: string }
         kcal: { type: integer }
         proteinG: { type: integer }
+        carbsG: { type: integer, description: 'Prescribed carbohydrate grams — the split remainder after protein + fat (absent on pre-slice-1 prescriptions)' }
+        fatG: { type: integer, description: 'Prescribed fat grams — split fat-share of segment kcal, floored at fat-floor g/kg (absent on pre-slice-1 prescriptions)' }
         sleepTargetH: { type: number }
         restDays: { type: array, items: { type: integer } }
         projectedRateKgPerWk: { type: number }

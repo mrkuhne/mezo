@@ -61,6 +61,29 @@ describe('FuelSettingsSheet', () => {
     // close() is called immediately, navigate() happens immediately; location changes before animation completes
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent('/fuel/slots'))
   })
+
+  // Diéta section (Diet Plan slice 1, mezo-xwgb) — split preset, custom %, protein tier, water/fiber.
+  test('custom split blocks save until the three percents sum to 100.0', async () => {
+    const user = userEvent.setup()
+    renderSheet()
+    await user.click(screen.getByRole('button', { name: /Egyéni/ }))
+    const protein = screen.getByLabelText('Fehérje %')
+    await user.clear(protein); await user.type(protein, '30')
+    const carbs = screen.getByLabelText('Szénhidrát %')
+    await user.clear(carbs); await user.type(carbs, '30')
+    const fat = screen.getByLabelText('Zsír %')
+    await user.clear(fat); await user.type(fat, '30')
+    expect(screen.getByRole('button', { name: /Mentés/ })).toBeDisabled() // 90 ≠ 100
+    await user.clear(carbs); await user.type(carbs, '40')
+    expect(screen.getByRole('button', { name: /Mentés/ })).toBeEnabled()
+  })
+
+  test('preset selection hides the custom percent inputs', async () => {
+    const user = userEvent.setup()
+    renderSheet()
+    await user.click(screen.getByRole('button', { name: /Kiegyensúlyozott/ }))
+    expect(screen.queryByLabelText('Fehérje %')).not.toBeInTheDocument()
+  })
 })
 
 // Real mode: the cold-open prefill race (mezo-53su). The read starts from the ghost
@@ -99,5 +122,37 @@ describe('FuelSettingsSheet — real-mode cold-open prefill', () => {
     // Let the server value (6) arrive; the touched edit must NOT be overwritten.
     await waitFor(() => expect(screen.getByRole('button', { name: /Mentés/ })).toBeEnabled())
     expect(screen.getByLabelText('Étkezés/nap')).toHaveTextContent('5')
+  })
+
+  // Per-section touched-flag regression (final-review finding, mezo-xwgb): fuel and diet are
+  // TWO independent queries with their own prefill re-sync effect. Before the fix a single
+  // shared `touched` flag guarded both — editing a fuel field while the diet GET was still in
+  // flight set that shared flag, which then permanently froze the diet prefill at its ghost
+  // (balanced/4000/30) even after the real diet settings arrived. Save is a Promise.all of BOTH
+  // PUTs, so that frozen ghost would silently overwrite the user's saved diet settings.
+  const delayDietSettings = () =>
+    server.use(
+      http.get(`${API_BASE}/api/diet/settings`, async () => {
+        await new Promise((r) => setTimeout(r, 50))
+        return HttpResponse.json({
+          splitPreset: 'low_carb', proteinTier: 'high', waterMl: 3200, fiberG: 35,
+        })
+      }),
+    )
+
+  test('editing a fuel field while the diet GET is in flight does not freeze the diet prefill', async () => {
+    delayDietSettings()
+    renderSheet()
+    // Diet section starts at its ghost (balanced/moderate/4000/30).
+    expect(screen.getByRole('button', { name: 'Kiegyensúlyozott' })).toHaveAttribute('aria-pressed', 'true')
+    // Edit a FUEL field — under the old shared flag this alone would freeze the diet re-sync.
+    fireEvent.click(screen.getByRole('button', { name: 'Étkezés növelése' }))
+    expect(screen.getByLabelText('Étkezés/nap')).toHaveTextContent('5')
+    // Once the delayed diet GET resolves, the diet section still re-syncs to the FETCHED
+    // (non-ghost) values — it is not frozen by the fuel section's own touched flag.
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Alacsony szénhidrát' })).toHaveAttribute('aria-pressed', 'true'))
+    expect(screen.getByRole('button', { name: 'Magas' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByLabelText('Víz-cél')).toHaveValue(3200)
+    expect(screen.getByLabelText('Rost-cél')).toHaveValue(35)
   })
 })

@@ -94,13 +94,23 @@ mezo:
       e1rm-breach-pct: -5.0
     ewma:
       half-life-days: 10           # band 10–14
+    diet:
+      # Preset fat energy-shares (fraction of segment kcal). balanced = the pre-slice-1 FE
+      # FAT_KCAL_SHARE (0.275) so an unset diet_settings row changes nothing on deploy.
+      fat-share-balanced: 0.275
+      fat-share-low-fat: 0.20
+      fat-share-low-carb: 0.40
+      fat-share-high-carb: 0.22
+      # ISSN fat minimum (g per kg body weight) — the engine floors prescribed fat here.
+      fat-floor-g-per-kg: 0.5
     thermogenesis-haircut-kcal-per-day: 0   # default off; optional band 100–200
     bootstrap-uncertainty-kcal: 300
   nutrition:
     # Owner-wide daily macro targets feeding the Fuel-day MacroHero (targets vs consumed).
     # Binds onto NutritionTargetsProperties. Since mezo-najo kcal+p are only the FALLBACK —
-    # the active goal's prescribed recept segment wins when one covers the date; c/f/water
-    # are never prescribed, so those always come from here.
+    # the active goal's prescribed recept segment wins when one covers the date; since
+    # mezo-xwgb c/f fall back here too (only when the segment predates the diet split).
+    # water is never goal-prescribed — it always comes from mezo.diet-settings (below).
     kcal: 3100
     p: 220
     c: 380
@@ -258,6 +268,9 @@ mezo:
       enabled: true
     # Fuel planner settings (mezo-53su): eating cadence + caffeine cutoff singleton.
     fuel-settings:
+      enabled: true
+    # Diet preferences (Diet Plan slice 1): macro split + protein tier + water/fiber singleton.
+    diet-settings:
       enabled: true
     # Mezo-kalauz seen-store (mezo-gb1s.1): per-user guide-progress singleton.
     tutorial:
@@ -1482,6 +1495,12 @@ mezo:
   fuel-settings:
     default-meals-per-day: 4
     default-caffeine-cutoff: "14:00"
+  # Diet-settings ghost defaults (Diet Plan slice 1). Binds onto DietSettingsProperties.
+  diet-settings:
+    default-split-preset: balanced
+    default-protein-tier: moderate
+    default-water-ml: 4000
+    default-fiber-g: 30
   hypertrophy:
     plate-step: 2.5           # kg rounding granularity for computed weights
     default-increment: 2.5    # fallback load step when a type has no explicit increment
