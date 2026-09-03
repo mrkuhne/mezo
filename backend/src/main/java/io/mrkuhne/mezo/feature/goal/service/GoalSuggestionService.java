@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.feature.goal.repository.GoalSuggestionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -133,19 +134,36 @@ public class GoalSuggestionService {
     }
 
     /**
-     * Accept: apply the payload through the normal goal paths — a trajectory change re-derives the
-     * weekly rate exactly like {@code GoalService.applyUpsert}; a deload override appends to
-     * {@code goal.segmentOverrides} — then re-evaluate. Race guard (spec §6.8): the payload's
-     * {@code snapshotTrajectory} must still match the goal; a mismatch supersedes the suggestion
-     * and returns 409 so the UI can offer a regenerate.
+     * Accept: apply the payload through the normal goal paths, per kind — a {@code phase_change}
+     * trajectory change re-derives the weekly rate exactly like {@code GoalService.applyUpsert} (or
+     * a deload override appends to {@code goal.segmentOverrides}); a {@code weekly_correction}
+     * (slice 5) accumulates {@code deltaKcal} onto {@code goal.balanceAdjustmentKcal} — then
+     * re-evaluate either way. Each kind carries its own accept-time race guard (spec §6.8):
+     * {@code phase_change} on {@code snapshotTrajectory}, {@code weekly_correction} on
+     * {@code prescriptionGeneratedAt}; a mismatch supersedes the suggestion and returns 409 so the
+     * UI can offer a regenerate.
      */
     @Transactional
     public GoalResponse accept(UUID userId, UUID goalId, UUID suggestionId) {
         GoalSuggestionEntity s = requireOwnedProposed(userId, goalId, suggestionId);
         GoalEntity goal = goalRepository.findByIdAndCreatedByAndDeletedFalse(goalId, userId)
             .orElseThrow(this::notFound);
-
         GoalSuggestionPayloadJson p = s.getPayload();
+
+        if (KIND_WEEKLY_CORRECTION.equals(s.getKind())) {
+            applyWeeklyCorrection(goal, p, suggestionId);
+        } else {
+            applyPhaseChange(goal, p, suggestionId);
+        }
+
+        s.setStatus(STATUS_ACCEPTED);
+        s.setDecidedAt(Instant.now());
+        goalEngineService.evaluate(userId, goalId);
+        return goalMapper.toResponse(goal);
+    }
+
+    /** {@code phase_change}: race guard on {@code snapshotTrajectory}, then trajectory/override apply. */
+    private void applyPhaseChange(GoalEntity goal, GoalSuggestionPayloadJson p, UUID suggestionId) {
         if (!goal.getTrajectory().equals(p.snapshotTrajectory())) {
             // Deliberately do NOT touch `s` in THIS (outer) transaction — see
             // GoalSuggestionSupersedeWriter's javadoc: the 409 below rolls this transaction back,
@@ -169,11 +187,24 @@ public class GoalSuggestionService {
             overrides.add(new GoalSegmentOverrideJson(p.fromWeek(), p.toWeek(), p.balanceOverrideKcal()));
             goal.setSegmentOverrides(overrides);
         }
+    }
 
-        s.setStatus(STATUS_ACCEPTED);
-        s.setDecidedAt(Instant.now());
-        goalEngineService.evaluate(userId, goalId);
-        return goalMapper.toResponse(goal);
+    /**
+     * {@code weekly_correction} (slice 5): race guard on {@code prescriptionGeneratedAt} — every
+     * material goal change re-evaluates, so a differing prescription timestamp means the numbers
+     * this suggestion was computed from are gone — then accumulate {@code deltaKcal} onto the
+     * goal's running {@code balanceAdjustmentKcal} (the fresh evaluate below then carries
+     * {@code basis="adaptive"}, Task 3).
+     */
+    private void applyWeeklyCorrection(GoalEntity goal, GoalSuggestionPayloadJson p, UUID suggestionId) {
+        OffsetDateTime rxAt = goal.getPrescription() == null ? null : goal.getPrescription().generatedAt();
+        if (p.prescriptionGeneratedAt() == null || rxAt == null || !p.prescriptionGeneratedAt().isEqual(rxAt)) {
+            supersedeWriter.markSuperseded(suggestionId); // same REQUIRES_NEW guard as applyPhaseChange
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("GOAL_SUGGESTION_STALE").build(), HttpStatus.CONFLICT);
+        }
+        int current = goal.getBalanceAdjustmentKcal() == null ? 0 : goal.getBalanceAdjustmentKcal();
+        goal.setBalanceAdjustmentKcal(current + p.deltaKcal());
     }
 
     GoalSuggestionEntity requireOwnedProposed(UUID userId, UUID goalId, UUID suggestionId) {

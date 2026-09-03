@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.goal;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalSuggestionEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalSuggestionPayloadJson;
@@ -14,6 +15,8 @@ import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,14 +31,39 @@ class GoalSuggestionServiceIT extends AbstractIntegrationTest {
     @Autowired private GoalSuggestionService suggestionService;
     @Autowired private GoalSuggestionRepository suggestionRepository;
     @Autowired private GoalRepository goalRepository;
+    @Autowired private GoalEngineService goalEngineService;
     @Autowired private GoalPopulator goalPopulator;
     @Autowired private BiometricProfilePopulator profilePopulator;
     @Autowired private DatabasePopulator databasePopulator;
+
+    /** Owner of the weekly_correction fixtures below — set by {@link #seedEvaluatedActiveCutGoal}. */
+    private UUID userId;
+    private int weekOffset = 0;
 
     private GoalSuggestionPayloadJson payload(String suggested, String snapshot) {
         return new GoalSuggestionPayloadJson(
             "A cut-prep mezo deficitet javasol.", suggested, null, null, null, null, "Pre-cut prep", snapshot,
             null, null, null, null, null, null, null, null, null);
+    }
+
+    /** Active cut goal, evaluated (prescription != null) — the weekly_correction accept fixtures. */
+    private GoalEntity seedEvaluatedActiveCutGoal() {
+        userId = databasePopulator.populateUser("wc-" + UUID.randomUUID() + "@test.local");
+        profilePopulator.create(userId);
+        GoalEntity goal = goalPopulator.createGoal(userId, "cut", "active");
+        goalEngineService.evaluate(userId, goal.getId());
+        return goalRepository.findById(goal.getId()).orElseThrow();
+    }
+
+    /** A weekly_correction proposal snapshotting {@code goal}'s CURRENT prescription.generatedAt. */
+    private UUID proposeWeeklyCorrection(GoalEntity goal, int deltaKcal) {
+        LocalDate week = LocalDate.of(2026, 8, 24).plusWeeks(weekOffset++);
+        GoalSuggestionPayloadJson payload = new GoalSuggestionPayloadJson(
+            "Heti korrekció: a mért trend lassabb a célnál.", null, null, null, null, null, null, null,
+            week.toString(), deltaKcal, new BigDecimal("-0.20"), new BigDecimal("-0.50"), false,
+            5, 1800, 2000, goal.getPrescription().generatedAt());
+        return suggestionService.propose(userId, goal.getId(),
+            GoalSuggestionService.KIND_WEEKLY_CORRECTION, "weekly:" + week, payload).getId();
     }
 
     @Test
@@ -166,5 +194,43 @@ class GoalSuggestionServiceIT extends AbstractIntegrationTest {
             .isInstanceOf(SystemRuntimeErrorException.class)
             .hasFieldOrPropertyWithValue("status", HttpStatus.CONFLICT);
         assertThat(suggestionRepository.findById(s.getId()).orElseThrow().getStatus()).isEqualTo("superseded");
+    }
+
+    // ── Task 9 (diet-plan slice 5): weekly_correction accept branch ─────────────────────────────
+
+    @Test
+    void testAccept_shouldApplyWeeklyCorrectionAndFlipBasis_whenPrescriptionMatches() {
+        GoalEntity goal = seedEvaluatedActiveCutGoal();
+        UUID sid = proposeWeeklyCorrection(goal, -120);
+
+        suggestionService.accept(userId, goal.getId(), sid);
+
+        GoalEntity reloaded = goalRepository.findById(goal.getId()).orElseThrow();
+        assertThat(reloaded.getBalanceAdjustmentKcal()).isEqualTo(-120);
+        assertThat(reloaded.getPrescription().basis()).isEqualTo("adaptive");
+
+        // A second accepted correction accumulates onto the first.
+        UUID sid2 = proposeWeeklyCorrection(reloaded, -60);
+        suggestionService.accept(userId, goal.getId(), sid2);
+        assertThat(goalRepository.findById(goal.getId()).orElseThrow().getBalanceAdjustmentKcal())
+            .isEqualTo(-180);
+    }
+
+    /**
+     * NOT_SUPPORTED — same TRUNCATE-lock trap as {@code testAccept_shouldSupersedeAnd409_...}
+     * above: the stale branch's REQUIRES_NEW supersede write would deadlock against the ambient
+     * transaction's own {@code ResetDatabase} TRUNCATE lock on {@code goal_suggestion}.
+     */
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    void testAccept_shouldSupersedeAnd409_whenPrescriptionGeneratedAtChangedSinceProposal() {
+        GoalEntity goal = seedEvaluatedActiveCutGoal();
+        UUID sid = proposeWeeklyCorrection(goal, -120);
+        goalEngineService.evaluate(userId, goal.getId()); // goal re-evaluated → rx.generatedAt changed
+
+        assertThatThrownBy(() -> suggestionService.accept(userId, goal.getId(), sid))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .hasFieldOrPropertyWithValue("status", HttpStatus.CONFLICT);
+        assertThat(suggestionRepository.findById(sid).orElseThrow().getStatus()).isEqualTo("superseded");
     }
 }
