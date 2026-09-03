@@ -92,7 +92,7 @@ class FlagServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void a_quiet_evaluation_writes_nothing() {
+    void a_quiet_evaluation_writes_only_logging_gap() {
         // A brand-new account has never logged a meal, check-in or sleep row at all — which S2's
         // logging_gap now correctly names instead of staying silent (it is not "nothing", it is
         // the most stale a domain can be). "Quiet" here means none of the value-based rules

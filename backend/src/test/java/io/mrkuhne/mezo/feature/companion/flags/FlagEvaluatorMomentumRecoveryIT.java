@@ -194,7 +194,7 @@ class FlagEvaluatorMomentumRecoveryIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void all_healthy_stays_quiet_on_an_empty_log() {
+    void an_empty_log_raises_logging_gap_not_all_healthy() {
         // A genuinely empty account is exactly what S2's logging_gap now exists to name — every
         // domain (meal/checkin/sleep) is stale by never having a row at all, so it legitimately
         // raises instead of all_healthy, which only evaluates once every other rule is silent.
