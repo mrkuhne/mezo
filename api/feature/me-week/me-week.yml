@@ -72,6 +72,33 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/me/day/{date}/evaluation:
+    get:
+      tags: [MeWeek]
+      operationId: getDayEvaluation
+      summary: The day's 6-dimension evaluation + (for a closed day, lazily) the Mezo prose
+      parameters:
+        - name: date
+          in: path
+          required: true
+          description: The day to evaluate (400 when not a valid calendar date)
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: The day's dimensions + (when closed and scoreable) the overall score
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DayEvaluationResponse' }
+        '400':
+          description: date is not a valid calendar date
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
 components:
   schemas:
     MeWeekSubscores:
@@ -149,3 +176,40 @@ components:
           type: array
           items: { $ref: '#/components/schemas/MeWeekDay' }
         weekly: { $ref: '#/components/schemas/MeWeekAggregates' }
+    DayDimension:
+      type: object
+      required: [id, label, weight, status]
+      properties:
+        id: { type: string, description: nutrition|quality|training|sleep|logging|rhythm }
+        label: { type: string }
+        weight: { type: number, description: renormalized weight; 0 when NO_DATA }
+        score: { type: integer, nullable: true }
+        status: { type: string, description: DONE|IN_PROGRESS|NO_DATA }
+        facts:
+          type: array
+          items: { type: object, required: [label, value],
+                   properties: { label: {type: string}, value: {type: string} } }
+        note: { type: string, nullable: true, description: 1-2 sentences from Mezo (closed day only) }
+    DayEvaluationResponse:
+      type: object
+      required: [date, state, dimensions]
+      properties:
+        date: { type: string, format: date }
+        state: { type: string, description: scored|in_progress|thin|empty|future }
+        score: { type: integer, nullable: true, description: 'base + adjustment.delta, clamped 0..100' }
+        base: { type: integer, nullable: true }
+        adjustment:
+          type: object
+          nullable: true
+          required: [delta, reason]
+          properties: { delta: { type: integer, minimum: -5, maximum: 5 }, reason: { type: string } }
+        narrative: { type: array, items: { type: string }, description: empty when there is no prose }
+        highlights:
+          type: array
+          items: { type: object, required: [kind, label],
+                   properties: { kind: { type: string, description: key|pattern|win }, label: { type: string } } }
+        context:
+          type: array
+          items: { type: object, required: [label, value],
+                   properties: { label: {type: string}, value: {type: string} } }
+        dimensions: { type: array, items: { $ref: '#/components/schemas/DayDimension' } }
