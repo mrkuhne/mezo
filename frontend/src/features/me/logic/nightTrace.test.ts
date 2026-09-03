@@ -32,15 +32,15 @@ describe('nightTrace', () => {
   })
 
   test('recording prunes entries older than 3 days', () => {
-    localStorage.setItem('mezo-night-wake:2026-07-19', JSON.stringify({ count: 1, lastAt: 'x' }))
-    localStorage.setItem('mezo-night-wake:2026-07-23', JSON.stringify({ count: 1, lastAt: 'x' }))
+    localStorage.setItem('mezo.anon.night-wake:2026-07-19', JSON.stringify({ count: 1, lastAt: 'x' }))
+    localStorage.setItem('mezo.anon.night-wake:2026-07-23', JSON.stringify({ count: 1, lastAt: 'x' }))
     recordNightWake()
-    expect(localStorage.getItem('mezo-night-wake:2026-07-19')).toBeNull()
+    expect(localStorage.getItem('mezo.anon.night-wake:2026-07-19')).toBeNull()
     expect(readNightWake('2026-07-23')).not.toBeNull()
   })
 
   test('corrupt stored JSON reads as null', () => {
-    localStorage.setItem('mezo-night-wake:2026-07-24', 'not-json')
+    localStorage.setItem('mezo.anon.night-wake:2026-07-24', 'not-json')
     expect(readNightWake('2026-07-24')).toBeNull()
   })
 
@@ -55,5 +55,11 @@ describe('nightTrace', () => {
     expect(readNightWake('2026-07-24')).toBeNull()
     expect(readNightWake('2026-07-23')).toBeNull()
     expect(localStorage.getItem('mezo-theme')).toBe('dark')
+  })
+
+  test('a prune csak a saját user kulcsait takarítja', () => {
+    localStorage.setItem('mezo.other.night-wake:2026-07-19', JSON.stringify({ count: 1, lastAt: 'x' }))
+    recordNightWake()
+    expect(localStorage.getItem('mezo.other.night-wake:2026-07-19')).not.toBeNull()
   })
 })

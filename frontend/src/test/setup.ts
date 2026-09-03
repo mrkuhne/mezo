@@ -2,6 +2,7 @@ import '@testing-library/jest-dom/vitest'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 import { server } from '@/test/msw/server'
 import { resetTutorialProgressState } from '@/test/msw/handlers'
+import { setCurrentUserId } from '@/shared/lib/userScope'
 
 // Node 25 ships an experimental native `localStorage` global that lacks the
 // Web Storage methods (getItem/setItem/clear). It shadows jsdom's Storage, so
@@ -64,4 +65,16 @@ afterEach(() => {
     /* ignore */
   }
 })
+// Per-user localStorage keys (mezo-qw37.6): clear all storage and reset the
+// module-level user scope between tests, so a scope or key set by one test
+// never leaks into the next (which defaults to the `anon` scope).
+afterEach(() => {
+  try {
+    localStorage.clear()
+  } catch {
+    /* ignore */
+  }
+  setCurrentUserId(null)
+})
+
 afterAll(() => server.close())

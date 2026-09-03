@@ -1,4 +1,5 @@
 import { useCallback, useState } from 'react'
+import { userScopedKey } from '@/shared/lib/userScope'
 
 // "Breadcrumb-back returns to the last tab I was on, not the default."
 //
@@ -15,11 +16,11 @@ import { useCallback, useState } from 'react'
 // last-chosen segment is restored on return (and survives a reload within the
 // session). Use it for ANY in-view tab/segment switcher instead of raw
 // useState. See mezo-0h9.
-const PREFIX = 'mezo-tab:'
+const keyFor = (key: string) => userScopedKey(`tab:${key}`)
 
 function read(key: string): string | null {
   try {
-    return sessionStorage.getItem(PREFIX + key)
+    return sessionStorage.getItem(keyFor(key))
   } catch {
     return null
   }
@@ -38,7 +39,7 @@ export function useStickyTab<T extends string>(key: string, fallback: T): [T, (n
   const set = useCallback(
     (next: T) => {
       try {
-        sessionStorage.setItem(PREFIX + key, next)
+        sessionStorage.setItem(keyFor(key), next)
       } catch {
         // sessionStorage unavailable (private mode / SSR) — fall back to
         // in-memory state only; the rule degrades gracefully.

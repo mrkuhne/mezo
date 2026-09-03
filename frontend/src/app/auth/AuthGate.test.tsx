@@ -137,13 +137,14 @@ test('a signedOut event for any reason clears the night-wake trace', async () =>
   renderGate()
   await screen.findByText('APP')
 
-  localStorage.setItem('mezo-night-wake:2026-07-24', JSON.stringify({ count: 2, lastAt: 'x' }))
+  const key = `mezo.${currentUserId()}.night-wake:2026-07-24`
+  localStorage.setItem(key, JSON.stringify({ count: 2, lastAt: 'x' }))
 
   setToken(null)
   authEvents.emitSignedOut('disabled')
   await screen.findByRole('heading', { name: 'Bejelentkezés' })
 
-  expect(localStorage.getItem('mezo-night-wake:2026-07-24')).toBeNull()
+  expect(localStorage.getItem(key)).toBeNull()
 })
 
 const meFixture = { id: '1', email: 'a@b.c', name: 'A', role: 'USER', onboarded: true, mustChangePassword: false, timezone: 'Europe/Budapest' }

@@ -95,10 +95,13 @@ export function AuthGate({ children }: { children: ReactNode }) {
   // something happened to refetch them. login/register/logout already clear via
   // useAuthActions; this covers the two paths that don't go through it.
   useEffect(() => authEvents.onSignedOut((reason) => {
+    // clearAllNightWake (mezo-qw37.6) targets the CURRENT scope's keys, so it must run before
+    // setCurrentUserId(null) rebases the scope to `anon` — otherwise it would clear nothing of
+    // the signing-out account's trace and leave it for the next account on a shared device.
+    clearAllNightWake()
     setCurrentUserId(null)
     signOutGen.current += 1
     client.clear()
-    clearAllNightWake()
     setNotice(SIGN_OUT_NOTICE[reason])
     setAuthView('login')
     setPhase('signedOut')

@@ -136,7 +136,7 @@ describe('night-trace prefill (mezo-d71m)', () => {
   }
 
   const today = new Intl.DateTimeFormat('en-CA').format(new Date())
-  const KEY = `mezo-night-wake:${today}`
+  const KEY = `mezo.anon.night-wake:${today}`
 
   beforeEach(() => localStorage.clear())
 
