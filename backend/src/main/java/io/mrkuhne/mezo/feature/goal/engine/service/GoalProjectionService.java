@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.api.dto.WeightTrendResponse.DataSufficiencyEnum;
 import io.mrkuhne.mezo.feature.goal.engine.GoalEngineProperties;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPlanLinkEntity;
+import io.mrkuhne.mezo.feature.goal.entity.GoalSegmentOverrideJson;
 import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalPlanLinkRepository;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
@@ -159,7 +160,8 @@ public class GoalProjectionService {
         for (int w = 1; w <= weeks; w++) {
             String phaseClass = activeMesoPhase(links, mesos, w);
             RunActive run = activeRun(links, runs, w);
-            load[w] = new WeekLoad(phaseClass, run.active(), run.sessionsPerWeek());
+            Integer override = overrideFor(goal, w); // null = no override
+            load[w] = new WeekLoad(phaseClass, run.active(), run.sessionsPerWeek(), override);
         }
 
         // 3. Collapse contiguous identical loads into segments, then 4. compute the per-segment numbers.
@@ -180,6 +182,34 @@ public class GoalProjectionService {
     }
 
     // ── per-week active-load resolution ─────────────────────────────────────────────────────────
+
+    /**
+     * The meso phase class active in goal-week {@code goalWeek} (trigger service's deload probe) —
+     * same resolution the projection walk uses; null when no gym block covers the week.
+     */
+    public String phaseForWeek(GoalEntity goal, UUID userId, int goalWeek) {
+        List<GoalPlanLinkEntity> links =
+            linkRepository.findByGoalIdAndCreatedByAndDeletedFalseOrderByStartWeekAsc(goal.getId(), userId);
+        Map<UUID, MesocycleEntity> mesos = new LinkedHashMap<>();
+        for (GoalPlanLinkEntity l : links) {
+            if (PLAN_MESOCYCLE.equals(l.getPlanType())) {
+                mesos.computeIfAbsent(l.getPlanId(), id ->
+                    mesocycleRepository.findByIdAndCreatedByAndDeletedFalse(id, userId).orElse(null));
+            }
+        }
+        return activeMesoPhase(links, mesos, goalWeek);
+    }
+
+    /** The accepted balance override covering goal-week {@code w}, or null (spec §6.5 deload accept). */
+    private static Integer overrideFor(GoalEntity goal, int w) {
+        if (goal.getSegmentOverrides() == null) {
+            return null;
+        }
+        return goal.getSegmentOverrides().stream()
+            .filter(o -> o.fromWeek() != null && o.toWeek() != null && w >= o.fromWeek() && w <= o.toWeek())
+            .map(GoalSegmentOverrideJson::balanceKcal)
+            .findFirst().orElse(null);
+    }
 
     /** The mesocycle phase class active in goal-week {@code w}, or {@code null} when no gym block runs. */
     private String activeMesoPhase(
@@ -258,9 +288,15 @@ public class GoalProjectionService {
             ? weeklyActivity.runWeeklyEatKcalPerDay(ld.runSessionsPerWeek(), weightKg)
             : BigDecimal.ZERO;
         BigDecimal tdee = bootstrap.neatBaselineKcal().add(scheduled).add(runEat);
-        BigDecimal target = tdee.add(balance);
+        // An accepted deload/segment override substitutes the formula balance for THIS segment's
+        // window — target (and therefore the day-type split below, which reads the overridden
+        // kcalInt) reflects the override, not the goal's formula deficit/surplus (spec §6.5).
+        BigDecimal effectiveBalance = ld.overrideBalanceKcal() != null
+            ? BigDecimal.valueOf(ld.overrideBalanceKcal())
+            : balance;
+        BigDecimal target = tdee.add(effectiveBalance);
 
-        BigDecimal projectedRate = projectedRate(goal, balance, trend);
+        BigDecimal projectedRate = projectedRate(goal, effectiveBalance, trend);
 
         List<String> systems = new ArrayList<>();
         if (ld.runActive()) {
@@ -277,15 +313,22 @@ public class GoalProjectionService {
         DayTypeShiftCalculator.DayTypeKcal dayType =
             DayTypeShiftCalculator.split(kcalInt, dayTypeShiftKcal, trainingDays.size(), bootstrap.bmr());
 
+        boolean deloadOverride = ld.overrideBalanceKcal() != null && ld.overrideBalanceKcal() == 0;
+        String segmentLabel = deloadOverride ? label(from, to, ld) + " · deload — tartás" : label(from, to, ld);
+        String segmentRationale = deloadOverride
+            ? "Elfogadott deload-javaslat: ezen a héten tartás (0 kcal egyenleg), a deficit a "
+                + "következő héten folytatódik."
+            : rationale(ld, runEat);
+
         return new ProjectionSegment(
             from, to,
-            label(from, to, ld),
+            segmentLabel,
             scaled(tdee), scaled(target),
             projectedRate.setScale(RATE_SCALE, RoundingMode.HALF_UP),
-            balance.setScale(0, RoundingMode.HALF_UP).intValueExact(),
+            effectiveBalance.setScale(0, RoundingMode.HALF_UP).intValueExact(),
             dayType.trainingDayKcal(), dayType.restDayKcal(),
             systems,
-            rationale(ld, runEat));
+            segmentRationale);
     }
 
     /** The run-session weekdays (0=Mon..6=Sun) prescribed in goal-week {@code w}'s block week —
@@ -395,13 +438,18 @@ public class GoalProjectionService {
 
     // ── tiny value carriers for the per-week walk ────────────────────────────────────────────────
 
-    /** The active load in one goal-week: meso phase class (null = no gym) + running on/off + sessions. */
-    private record WeekLoad(String phaseClass, boolean runActive, int runSessionsPerWeek) {
+    /**
+     * The active load in one goal-week: meso phase class (null = no gym) + running on/off +
+     * sessions + the accepted balance override (null = no override, slice 4).
+     */
+    private record WeekLoad(
+        String phaseClass, boolean runActive, int runSessionsPerWeek, Integer overrideBalanceKcal) {
         boolean sameLoadAs(WeekLoad other) {
             return other != null
                 && Objects.equals(phaseClass, other.phaseClass)
                 && runActive == other.runActive
-                && runSessionsPerWeek == other.runSessionsPerWeek;
+                && runSessionsPerWeek == other.runSessionsPerWeek
+                && Objects.equals(overrideBalanceKcal, other.overrideBalanceKcal);
         }
     }
 

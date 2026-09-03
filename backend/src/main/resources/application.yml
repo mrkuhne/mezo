@@ -105,6 +105,13 @@ mezo:
       fat-floor-g-per-kg: 0.5
     thermogenesis-haircut-kcal-per-day: 0   # default off; optional band 100–200
     bootstrap-uncertainty-kcal: 300
+    suggestion:
+      # goalPreset (FE-owned id) -> trajectory the diet should lean toward. Absent = neutral.
+      preset-trajectory:
+        cut-prep: cut
+        hypertrophy: bulk
+        erohipertrofia: bulk
+        recovery: maintain
   nutrition:
     # Owner-wide daily macro targets feeding the Fuel-day MacroHero (targets vs consumed).
     # Binds onto NutritionTargetsProperties. Since mezo-najo kcal+p are only the FALLBACK —

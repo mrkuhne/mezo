@@ -70,4 +70,9 @@ public class GoalEntity extends OwnedEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "prescription", columnDefinition = "jsonb")
     private GoalPrescriptionJson prescription;
+
+    /** Accepted per-week energy-balance overrides (deload → maintenance weeks); null = none (slice 4). */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "segment_overrides", columnDefinition = "jsonb")
+    private List<GoalSegmentOverrideJson> segmentOverrides;
 }

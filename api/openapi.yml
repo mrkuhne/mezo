@@ -2821,6 +2821,126 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/goals/{id}/suggestions':
+    get:
+      tags:
+        - Goal
+      operationId: listGoalSuggestions
+      summary: >-
+        The goal's OPEN (proposed) suggestions — diet-phase / correction
+        proposals awaiting a decision
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Open suggestions (may be empty)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GoalSuggestionResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/goals/{id}/suggestions/{suggestionId}/accept':
+    post:
+      tags:
+        - Goal
+      operationId: acceptGoalSuggestion
+      summary: >-
+        Accept a suggestion — applies its payload to the goal (trajectory change
+        or segment override), re-evaluates, returns the updated goal
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: suggestionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Applied + re-evaluated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            Stale — the goal changed since the proposal; the suggestion is now
+            superseded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/goals/{id}/suggestions/{suggestionId}/dismiss':
+    post:
+      tags:
+        - Goal
+      operationId: dismissGoalSuggestion
+      summary: >-
+        Dismiss a suggestion — records the decision so the same trigger input
+        never re-proposes it
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: suggestionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Dismissed
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/biometrics/profile:
     get:
       tags:
@@ -12666,6 +12786,85 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/GoalGap'
+    GoalSuggestionResponse:
+      type: object
+      required:
+        - id
+        - kind
+        - status
+        - payload
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          enum:
+            - phase_change
+            - weekly_correction
+        status:
+          type: string
+          enum:
+            - proposed
+            - accepted
+            - dismissed
+            - superseded
+        payload:
+          $ref: '#/components/schemas/GoalSuggestionPayload'
+        createdAt:
+          type: string
+          format: date-time
+        decidedAt:
+          type: string
+          format: date-time
+          nullable: true
+    GoalSuggestionPayload:
+      type: object
+      description: >-
+        Typed suggestion body. phase_change carries either suggestedTrajectory
+        (preset↔trajectory mismatch) or balanceOverrideKcal+fromWeek+toWeek
+        (deload maintenance week). snapshotTrajectory is the accept-time race
+        guard.
+      required:
+        - reason
+        - snapshotTrajectory
+      properties:
+        reason:
+          type: string
+          description: 'Hungarian, user-facing rationale'
+        suggestedTrajectory:
+          type: string
+          enum:
+            - cut
+            - bulk
+            - maintain
+          nullable: true
+        balanceOverrideKcal:
+          type: integer
+          nullable: true
+          description: >-
+            Per-week energy-balance override (kcal/day); 0 = maintenance-leaning
+            week
+        fromWeek:
+          type: integer
+          nullable: true
+        toWeek:
+          type: integer
+          nullable: true
+        mesoId:
+          type: string
+          format: uuid
+          nullable: true
+        mesoTitle:
+          type: string
+          nullable: true
+        snapshotTrajectory:
+          type: string
+          enum:
+            - cut
+            - bulk
+            - maintain
     BiometricProfileResponse:
       type: object
       description: >-

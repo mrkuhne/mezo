@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson.GuardStatus;
 import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalPlanLinkRepository;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
+import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionTriggerService;
 import io.mrkuhne.mezo.feature.train.service.WeeklyScheduledActivityService;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -71,6 +72,7 @@ public class GoalEngineService {
     private final WeeklyScheduledActivityService weeklyActivity;
     private final DietPreferencesPort dietPreferences;
     private final SleepTargetPort sleepTargetPort;
+    private final GoalSuggestionTriggerService triggerService;
 
     /**
      * Evaluate a goal: assemble + persist its segmented prescription (and TDEE bootstrap).
@@ -114,6 +116,7 @@ public class GoalEngineService {
             goal, currentWeightKg, profile.getBodyFatPct(), segments, guards,
             prefs, sleepTargetH);
         goal.setPrescription(rx);
+        triggerService.checkPhaseSuggestions(userId, goalId); // slice-4 probe — idempotent, deduped
         return rx;
     }
 

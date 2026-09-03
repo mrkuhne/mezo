@@ -6,6 +6,7 @@ export type GoalResponse = components['schemas']['GoalResponse']
 export type GoalUpsertRequest = components['schemas']['GoalUpsertRequest']
 export type FeasibilityPreviewRequest = components['schemas']['FeasibilityPreviewRequest']
 export type FeasibilityPreviewResponse = components['schemas']['FeasibilityPreviewResponse']
+export type GoalSuggestionResponse = components['schemas']['GoalSuggestionResponse']
 
 // toRequest mapper — rebuild a full GoalUpsertRequest from a persisted
 // GoalResponse so a partial edit (the meal cadence) can PUT the whole contract
@@ -58,4 +59,12 @@ export const goalApi = {
       method: 'POST',
       body: JSON.stringify(body satisfies FeasibilityPreviewRequest),
     }),
+  // Diet-phase suggestions (Diet Plan slice 4) — suggest + approve: the engine proposes,
+  // the owner decides. accept returns the updated goal (trajectory/override applied + re-evaluated).
+  suggestions: (id: string): Promise<GoalSuggestionResponse[]> =>
+    apiFetch<GoalSuggestionResponse[]>(`/api/goals/${id}/suggestions`),
+  acceptSuggestion: (id: string, suggestionId: string): Promise<GoalResponse> =>
+    apiFetch<GoalResponse>(`/api/goals/${id}/suggestions/${suggestionId}/accept`, { method: 'POST' }),
+  dismissSuggestion: (id: string, suggestionId: string): Promise<void> =>
+    apiFetch<void>(`/api/goals/${id}/suggestions/${suggestionId}/dismiss`, { method: 'POST' }),
 }
