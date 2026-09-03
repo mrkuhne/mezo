@@ -66,4 +66,23 @@ public interface MealRepository extends OwnedRepository<MealEntity> {
      *  join fetch (unlike {@link #findWithItemsBetween}). */
     List<MealEntity> findByCreatedByAndDeletedFalseAndMealDateBetweenOrderByMealDateAsc(
             UUID createdBy, LocalDate from, LocalDate to);
+
+    /**
+     * A mezo-jcpt.2 backfill munkalistája: azok az étkezések, amelyek tárolt envelope-ja a
+     * {@code version}-nél KORÁBBI formula-generációból való. Natív, mert a predikátum a jsonb
+     * oszlopon BELÜLRE néz: a pre-jcpt.1 envelope-okban a {@code formulaVersion} kulcs egyáltalán
+     * nincs jelen, tehát a „hiányzó kulcs" és az „alacsonyabb szám" ugyanaz az eset
+     * ({@code coalesce(…, 0)}).
+     *
+     * <p>Szándékosan CROSS-USER — ebben a repositoryban minden más finder {@code …AndCreatedBy…},
+     * de egy adatjavítás nem user-scope-os (multi-user óta, mezo-qw37.1, több tulajdonos is lehet).
+     */
+    @Query(value = """
+            select * from meal
+             where is_deleted = false
+               and breakdown is not null
+               and coalesce((breakdown ->> 'formulaVersion')::int, 0) < :version
+             order by created_by, meal_date, logged_at
+            """, nativeQuery = true)
+    List<MealEntity> findStaleEnvelopes(@Param("version") int version);
 }

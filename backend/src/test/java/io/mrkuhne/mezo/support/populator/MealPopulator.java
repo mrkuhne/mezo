@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
+import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
@@ -101,6 +102,37 @@ public class MealPopulator {
                 new BigDecimal("0.50"), "P/C/F 17/71/11 vs 27/47/26", null, null, null, null, null)),
             List.of(), List.of(new MealBreakdownJson.ToolRow("compute", "score(deterministic)")),
             null));
+        return repository.saveAndFlush(meal);
+    }
+
+    /**
+     * Pre-mezo-jcpt.1 alakú envelope: a súlyok NEM renormalizáltak (egyetlen élő dimenzió 0.22
+     * súllyal, miközben a {@code value} már el volt osztva a súlyösszeggel), a verzióbélyeg
+     * hiányzik, és a próza-fészkek KI VANNAK töltve — pontosan az az állapot, amit a mezo-jcpt.2
+     * backfillnek gyógyítania kell (a Σ(w·score)=0.11 széttart a 0.62-es fejléctől, és a próza
+     * olyan számokról beszél, amiket az újrapontozás elmozdít).
+     */
+    public MealEntity createStaleScoredMeal(UUID owner, PantryItemEntity pantryItem,
+        LocalDate mealDate, String title, Instant loggedAt) {
+        MealEntity meal = createScoredMeal(owner, pantryItem, mealDate, title, loggedAt);
+        MealBreakdownJson stale = meal.getBreakdown();
+        meal.setBreakdown(new MealBreakdownJson(stale.value(), stale.confidence(),
+            "Kiegyensúlyozott reggeli.", "Jó start",
+            List.of(new MealBreakdownJson.Dimension("macro", "Kcal & makró", new BigDecimal("0.22"),
+                new BigDecimal("0.50"), "P/C/F 17/71/11 vs 27/47/26", null, null, null, null,
+                "A fehérje aránya elmarad a céltól.")),
+            List.of(new MealBreakdownJson.ImproveRow("Tegyél mellé egy tojást.", "+8")),
+            stale.tools(), null));
+        return repository.saveAndFlush(meal);
+    }
+
+    /** Ugyanaz az étkezés, de MÁR a jelenlegi formula-generáció bélyegével — a backfill nem nyúlhat hozzá. */
+    public MealEntity createCurrentScoredMeal(UUID owner, PantryItemEntity pantryItem,
+        LocalDate mealDate, String title, Instant loggedAt) {
+        MealEntity meal = createScoredMeal(owner, pantryItem, mealDate, title, loggedAt);
+        MealBreakdownJson b = meal.getBreakdown();
+        meal.setBreakdown(new MealBreakdownJson(b.value(), b.confidence(), b.summary(), b.tagline(),
+            b.dimensions(), b.improve(), b.tools(), MealScoringService.FORMULA_VERSION));
         return repository.saveAndFlush(meal);
     }
 
