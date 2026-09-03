@@ -63,6 +63,7 @@ import io.mrkuhne.mezo.feature.train.service.TimingProfileService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.feature.train.service.VolumeArcService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
+import io.mrkuhne.mezo.feature.auth.service.CurrentUser;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -89,6 +90,7 @@ public class TrainController implements TrainApi {
     private final RunningService runningService;
     private final VolumeArcService volumeArcService;
     private final CurrentUserId currentUserId;
+    private final CurrentUser currentUser;
     private final MesoPlanGeneratorService mesoPlanGeneratorService;
     private final TimingProfileService timingProfileService;
 
@@ -99,32 +101,32 @@ public class TrainController implements TrainApi {
 
     @Override
     public List<ExerciseCatalogItem> getExerciseCatalog() {
-        return exerciseCatalogService.list(currentUserId.get());
+        return exerciseCatalogService.list(currentUser.get());
     }
 
     @Override
     public ExerciseCatalogItem createExercise(CatalogExerciseCreateRequest catalogExerciseCreateRequest) {
-        return exerciseCatalogService.create(currentUserId.get(), catalogExerciseCreateRequest);
+        return exerciseCatalogService.create(currentUser.get(), catalogExerciseCreateRequest);
     }
 
     @Override
     public ExerciseCatalogItem updateExercise(UUID id, CatalogExerciseCreateRequest catalogExerciseCreateRequest) {
-        return exerciseCatalogService.update(currentUserId.get(), id, catalogExerciseCreateRequest);
+        return exerciseCatalogService.update(currentUser.get(), id, catalogExerciseCreateRequest);
     }
 
     @Override
     public void deleteExercise(UUID id) {
-        exerciseCatalogService.delete(currentUserId.get(), id);
+        exerciseCatalogService.delete(currentUser.get(), id);
     }
 
     @Override
     public ExerciseCatalogItem setExerciseVideo(UUID id, CatalogVideoRequest catalogVideoRequest) {
-        return exerciseCatalogService.setVideo(currentUserId.get(), id, catalogVideoRequest.getVideoUrl());
+        return exerciseCatalogService.setVideo(currentUser.get(), id, catalogVideoRequest.getVideoUrl());
     }
 
     @Override
     public ExerciseCatalogItem setExerciseImages(UUID id, CatalogImagesRequest catalogImagesRequest) {
-        return exerciseCatalogService.setImages(currentUserId.get(), id,
+        return exerciseCatalogService.setImages(currentUser.get(), id,
             catalogImagesRequest.getImageStartUrl(), catalogImagesRequest.getImageEndUrl());
     }
 

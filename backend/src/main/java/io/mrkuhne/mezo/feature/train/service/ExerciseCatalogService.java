@@ -2,95 +2,133 @@ package io.mrkuhne.mezo.feature.train.service;
 
 import io.mrkuhne.mezo.api.dto.CatalogExerciseCreateRequest;
 import io.mrkuhne.mezo.api.dto.ExerciseCatalogItem;
+import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
+import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseCatalogEntity;
 import io.mrkuhne.mezo.feature.train.mapper.TrainMapper;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseCatalogRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import io.mrkuhne.mezo.techcore.persistence.OwnershipGuard;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Read + write side of the exercise catalog. Master rows (created_by null) are content shared by
- * every user (read-only — edits/deletes 409); user-authored rows (created_by set) are per-user
- * writable and soft-deletable. {@code editable} on each item reflects "created by the current user";
- * the demo {@code videoUrl} can be attached to ANY row (master or user). Sorted muscle-then-name so
- * the picker renders grouped.
+ * Read + write side of the shared exercise catalog (multi-user since S5, mezo-qw37.5).
+ *
+ * <p>Everyone lists everything. Writes follow one matrix: a MASTER row (created_by null) is
+ * loader-owned content — its name/muscle/type/stim/fatigue are read-only for everyone
+ * (409 CATALOG_MASTER_READONLY, because {@code ExerciseCatalogLoader} re-upserts them at every
+ * startup) while its media (video, stills) is OWNER-only; a USER-authored row may be edited,
+ * deleted and re-mediated by its author or the OWNER. Anything else is 403
+ * EXERCISE_CATALOG_NOT_EDITABLE (the catalog is public, so a foreign row is not a 404 here).
+ * Each returned item carries the viewer's permissions ({@code editable}, {@code mediaEditable})
+ * and the authorship ({@code authoredByMe}, {@code authorName}); the FE derives nothing about
+ * roles itself. Sorted muscle-then-name so the picker renders grouped.
  */
 @Service
 @RequiredArgsConstructor
 public class ExerciseCatalogService {
 
     private final ExerciseCatalogRepository repository;
+    private final AppUserRepository appUserRepository;
     private final TrainMapper mapper;
 
-    public List<ExerciseCatalogItem> list(UUID currentUser) {
-        return repository.findAllByOrderByMuscleAscNameAsc().stream()
-            .map(e -> withEditable(e, currentUser)).toList();
+    public List<ExerciseCatalogItem> list(AppUserEntity viewer) {
+        List<ExerciseCatalogEntity> rows = repository.findAllByOrderByMuscleAscNameAsc();
+        Map<UUID, String> names = authorNames(rows);
+        return rows.stream().map(e -> toItem(e, viewer, names)).toList();
     }
 
     @Transactional
-    public ExerciseCatalogItem create(UUID createdBy, CatalogExerciseCreateRequest req) {
+    public ExerciseCatalogItem create(AppUserEntity author, CatalogExerciseCreateRequest req) {
         ExerciseCatalogEntity e = new ExerciseCatalogEntity();
-        e.setCreatedBy(createdBy);
+        e.setCreatedBy(author.getId());
         e.setSlug(uniqueSlug(req.getName()));
         apply(e, req);
-        return withEditable(repository.save(e), createdBy);
+        return toItem(repository.save(e), author, Map.of(author.getId(), author.getName()));
     }
 
     @Transactional
-    public ExerciseCatalogItem update(UUID currentUser, UUID id, CatalogExerciseCreateRequest req) {
-        ExerciseCatalogEntity e = ownedOrThrow(currentUser, id);
+    public ExerciseCatalogItem update(AppUserEntity actor, UUID id, CatalogExerciseCreateRequest req) {
+        ExerciseCatalogEntity e = contentEditableOrThrow(actor, id);
         apply(e, req);
         // UPDATE sets the media fields unconditionally so clearing one (null) actually removes it.
         // CREATE keeps apply()'s set-only-when-present semantics (a fresh row defaults to null).
         e.setVideoUrl(req.getVideoUrl());
         e.setImageStartUrl(req.getImageStartUrl());
         e.setImageEndUrl(req.getImageEndUrl());
-        return withEditable(repository.save(e), currentUser);
+        return toItem(repository.save(e), actor, authorNames(List.of(e)));
     }
 
     @Transactional
-    public void delete(UUID currentUser, UUID id) {
-        repository.delete(ownedOrThrow(currentUser, id)); // @SQLDelete soft-deletes
+    public void delete(AppUserEntity actor, UUID id) {
+        repository.delete(contentEditableOrThrow(actor, id)); // @SQLDelete soft-deletes
     }
 
     @Transactional
-    public ExerciseCatalogItem setVideo(UUID currentUser, UUID id, String videoUrl) {
-        ExerciseCatalogEntity e = repository.findById(id).orElseThrow(OwnershipGuard::notFound);
+    public ExerciseCatalogItem setVideo(AppUserEntity actor, UUID id, String videoUrl) {
+        ExerciseCatalogEntity e = mediaEditableOrThrow(actor, id);
         e.setVideoUrl(videoUrl);
-        return withEditable(repository.save(e), currentUser);
+        return toItem(repository.save(e), actor, authorNames(List.of(e)));
     }
 
-    /**
-     * Attach/clear the demo stills on ANY row (master or user) — same ownership-free rule as
-     * {@link #setVideo}: attaching media is not authoring content. Both frames are written
-     * unconditionally, so a null clears that frame.
-     */
+    /** Both frames are written unconditionally, so a null clears that frame. */
     @Transactional
-    public ExerciseCatalogItem setImages(UUID currentUser, UUID id, String startUrl, String endUrl) {
-        ExerciseCatalogEntity e = repository.findById(id).orElseThrow(OwnershipGuard::notFound);
+    public ExerciseCatalogItem setImages(AppUserEntity actor, UUID id, String startUrl, String endUrl) {
+        ExerciseCatalogEntity e = mediaEditableOrThrow(actor, id);
         e.setImageStartUrl(startUrl);
         e.setImageEndUrl(endUrl);
-        return withEditable(repository.save(e), currentUser);
+        return toItem(repository.save(e), actor, authorNames(List.of(e)));
     }
 
-    private ExerciseCatalogEntity ownedOrThrow(UUID currentUser, UUID id) {
+    // ---- the permission matrix ----
+
+    /** PUT/DELETE: never on a master row (409); author or OWNER on a user row (else 403). */
+    private ExerciseCatalogEntity contentEditableOrThrow(AppUserEntity actor, UUID id) {
         ExerciseCatalogEntity e = repository.findById(id).orElseThrow(OwnershipGuard::notFound);
         if (e.getCreatedBy() == null) {
             throw new SystemRuntimeErrorException(
                 SystemMessage.error("CATALOG_MASTER_READONLY").build(), HttpStatus.CONFLICT);
         }
-        if (!currentUser.equals(e.getCreatedBy())) {
-            throw OwnershipGuard.notFound();
-        }
+        requireAuthorOrOwner(actor, e);
         return e;
     }
+
+    /** video/images: OWNER only on a master row; author or OWNER on a user row (else 403). */
+    private ExerciseCatalogEntity mediaEditableOrThrow(AppUserEntity actor, UUID id) {
+        ExerciseCatalogEntity e = repository.findById(id).orElseThrow(OwnershipGuard::notFound);
+        if (e.getCreatedBy() == null) {
+            if (!actor.isOwner()) {
+                throw notEditable();
+            }
+            return e;
+        }
+        requireAuthorOrOwner(actor, e);
+        return e;
+    }
+
+    private static void requireAuthorOrOwner(AppUserEntity actor, ExerciseCatalogEntity e) {
+        if (!actor.isOwner() && !actor.getId().equals(e.getCreatedBy())) {
+            throw notEditable();
+        }
+    }
+
+    private static SystemRuntimeErrorException notEditable() {
+        return new SystemRuntimeErrorException(
+            SystemMessage.error("EXERCISE_CATALOG_NOT_EDITABLE").build(), HttpStatus.FORBIDDEN);
+    }
+
+    // ---- mapping ----
 
     private void apply(ExerciseCatalogEntity e, CatalogExerciseCreateRequest req) {
         e.setName(req.getName());
@@ -109,9 +147,25 @@ public class ExerciseCatalogService {
         }
     }
 
-    private ExerciseCatalogItem withEditable(ExerciseCatalogEntity e, UUID currentUser) {
+    /** One batched app_user read per list call — never a lookup per row. */
+    private Map<UUID, String> authorNames(Collection<ExerciseCatalogEntity> rows) {
+        Set<UUID> ids = rows.stream().map(ExerciseCatalogEntity::getCreatedBy)
+            .filter(Objects::nonNull).collect(Collectors.toSet());
+        if (ids.isEmpty()) {
+            return Map.of();
+        }
+        return appUserRepository.findAllById(ids).stream()
+            .collect(Collectors.toMap(AppUserEntity::getId, AppUserEntity::getName));
+    }
+
+    private ExerciseCatalogItem toItem(ExerciseCatalogEntity e, AppUserEntity viewer, Map<UUID, String> names) {
+        boolean master = e.getCreatedBy() == null;
+        boolean mine = !master && e.getCreatedBy().equals(viewer.getId());
         ExerciseCatalogItem dto = mapper.toCatalogItem(e);
-        dto.setEditable(e.getCreatedBy() != null && e.getCreatedBy().equals(currentUser));
+        dto.setAuthoredByMe(mine);
+        dto.setAuthorName(master ? null : names.get(e.getCreatedBy()));
+        dto.setEditable(!master && (mine || viewer.isOwner()));
+        dto.setMediaEditable(master ? viewer.isOwner() : (mine || viewer.isOwner()));
         return dto;
     }
 
