@@ -2227,6 +2227,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/proactive/advice/{id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply one of the advice card's offered actions (S5, mezo-d58h.5)
+         * @description Applies the named action and stamps `applied` onto the card. Idempotent: re-applying the SAME action returns the card unchanged with its original `applied` timestamp and runs no second mutation. A card that has been superseded by a higher-severity card is gone (404), and an action the card does not offer is refused (409) — a client can never invoke a mutation the rule did not put there.
+         */
+        post: operations["applyAdviceAction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/proactive/weekly-suggestion": {
         parameters: {
             query?: never;
@@ -7264,6 +7284,10 @@ export interface components {
         };
         ExperimentDecisionRequest: {
             decision: string;
+        };
+        AdviceApplyRequest: {
+            /** @enum {string} */
+            actionKey: "lighten_tomorrow" | "skip_sport_slot" | "shift_sleep_anchor";
         };
         ExperimentResponse: {
             /** Format: uuid */
@@ -15755,6 +15779,68 @@ export interface operations {
             };
             /** @description Missing or invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    applyAdviceAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdviceApplyRequest"];
+            };
+        };
+        responses: {
+            /** @description The card with its applied state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedMessageResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such live advice card for this user (it may have been superseded) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The card does not offer this action, or a different action was already applied */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

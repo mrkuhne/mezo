@@ -5752,6 +5752,65 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/proactive/advice/{id}/apply':
+    post:
+      tags:
+        - Proactive
+      operationId: applyAdviceAction
+      summary: 'Apply one of the advice card''s offered actions (S5, mezo-d58h.5)'
+      description: >-
+        Applies the named action and stamps `applied` onto the card. Idempotent:
+        re-applying the SAME action returns the card unchanged with its original
+        `applied` timestamp and runs no second mutation. A card that has been
+        superseded by a higher-severity card is gone (404), and an action the
+        card does not offer is refused (409) — a client can never invoke a
+        mutation the rule did not put there.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdviceApplyRequest'
+      responses:
+        '200':
+          description: The card with its applied state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedMessageResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such live advice card for this user (it may have been superseded)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            The card does not offer this action, or a different action was
+            already applied
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/proactive/weekly-suggestion:
     get:
       tags:
@@ -17795,6 +17854,17 @@ components:
         decision:
           type: string
           pattern: ^(accept|dismiss)$
+    AdviceApplyRequest:
+      type: object
+      required:
+        - actionKey
+      properties:
+        actionKey:
+          type: string
+          enum:
+            - lighten_tomorrow
+            - skip_sport_slot
+            - shift_sleep_anchor
     ExperimentResponse:
       type: object
       required:
