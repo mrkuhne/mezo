@@ -8873,6 +8873,17 @@ button.mz-wtile:active { transform: scale(0.96); }
 .lg-sighead .cnt { margin-left: auto; font-size: 9.5px; color: #A2958A; }
 .lg-sighint { font-size: 11px; color: #6E6257; margin: 0 2px 4px; }
 
+/* Nap-mozaik „Célok · ma" csempe (mezo-iizd.9, prototípus celok-body.html #page-nap .gtile).
+   A dimenzió-mosást a `.lg-d-*` osztály adja (ugyanaz a --dw/--dw2/--ds hármas, amit a
+   `.lg-tile` is olvas), így a csempe a Célok hub tile-jaival egy nyelvet beszél. */
+.lg-gtile { background: linear-gradient(150deg, var(--dw), var(--dw2)) !important;
+  box-shadow: 0 14px 26px -14px var(--ds), 0 2px 5px rgba(43,33,24,0.04), inset 0 1px 0 rgba(255,255,255,0.7) !important; }
+.lg-gtile .mz-eyebrow { color: var(--dc); display: inline-flex; align-items: center; gap: 5px; }
+.lg-gtile .mz-eyebrow i { width: 6px; height: 6px; border-radius: 50%; background: var(--dc); flex: none; }
+.lg-gtile-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.lg-gtile .lg-arrow .v { font-size: 22px; font-weight: 200; letter-spacing: -0.02em; }
+.lg-gtile .lg-arrow .v small { font-size: 11px; font-weight: 500; color: #6E6257; }
+
 /* ============================================================
    Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)
    Ez a szekció EGYKOR a Mai oldal teljes „inset grouped list" lapnyelvét vitte
