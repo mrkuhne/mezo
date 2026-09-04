@@ -182,29 +182,55 @@ class HybridMemoryRetrieverIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testChatCandidates_shouldCarryConversationDiversityGroupAcrossDenseAndLexicalRetrieval() {
+        UUID owner = databasePopulator.populateUser("hybrid-chat-diversity@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(owner);
+        AiMessageEntity first = messagePopulator.message(
+                conversation, AiMessageEntity.ROLE_USER, "Boglárka segített a futásban.");
+        AiMessageEntity second = messagePopulator.message(
+                conversation, AiMessageEntity.ROLE_ASSISTANT, "Boglárka és a futás összefügg.");
+        MemoryItemEntity firstItem = memoryPopulator.item(owner, "chat_turn", first.getId(),
+                "Boglárka segített a futásban. [fake-embed:1]", AS_OF);
+        MemoryItemEntity secondItem = memoryPopulator.item(owner, "chat_turn", second.getId(),
+                "Boglárka és a futás összefügg. [fake-embed:1]", AS_OF);
+        memoryPopulator.vector(firstItem, VERSION, axisVector(0));
+        memoryPopulator.vector(secondItem, VERSION, axisVector(0));
+
+        assertThat(dense.retrieve(input(owner, null)).stream()
+                .filter(candidate -> "chat_turn".equals(candidate.sourceKind())).toList())
+                .hasSize(2)
+                .allMatch(candidate -> conversation.getId().equals(candidate.diversityGroupId()));
+        assertThat(lexical.retrieve(input(owner, null, "Boglárka futás")).stream()
+                .filter(candidate -> "chat_turn".equals(candidate.sourceKind())).toList())
+                .hasSize(2)
+                .allMatch(candidate -> conversation.getId().equals(candidate.diversityGroupId()));
+    }
+
+    @Test
     void testFactRetrieve_shouldUnionPinnedAndMatchingActiveFacts() {
         UUID owner = databasePopulator.populateUser("hybrid-fact-owner@test.local");
         UUID other = databasePopulator.populateUser("hybrid-fact-other@test.local");
-        KnowledgeFactEntity pinned = factPopulator.fact(owner, "A reggeli séta fontos szokásom.", "life", 1);
+        KnowledgeFactEntity pinned = factForAsOf(owner, "A reggeli séta fontos szokásom.", 1);
         pinned.setPinned(true);
         factRepository.saveAndFlush(pinned);
-        KnowledgeFactEntity matching = factPopulator.fact(owner, "Boglárka a testvérem.", "life", 2);
-        KnowledgeFactEntity conflicting = factPopulator.fact(
-                owner, "A rokoni kapcsolatot korábban másként rögzítettem.", "life", 2);
+        KnowledgeFactEntity matching = factForAsOf(owner, "Boglárka a testvérem.", 2);
+        KnowledgeFactEntity conflicting = factForAsOf(
+                owner, "A rokoni kapcsolatot korábban másként rögzítettem.", 2);
         matching.setConflictsWith(conflicting.getId());
         factRepository.saveAndFlush(matching);
-        KnowledgeFactEntity superseded = factPopulator.fact(owner, "Boglárka a kollégám.", "life", 5);
+        KnowledgeFactEntity superseded = factForAsOf(owner, "Boglárka a kollégám.", 5);
         superseded.setSupersededBy(matching.getId());
         factRepository.saveAndFlush(superseded);
-        KnowledgeFactEntity expired = factPopulator.fact(owner, "Boglárka régi edzőm.", "life", 4);
+        KnowledgeFactEntity expired = factForAsOf(owner, "Boglárka régi edzőm.", 4);
+        expired.setValidFrom(AS_OF.minusDays(2));
         expired.setValidTo(AS_OF.minusDays(1));
         factRepository.saveAndFlush(expired);
-        KnowledgeFactEntity optedOut = factPopulator.fact(owner, "Boglárka a szomszédom.", "life", 9);
+        KnowledgeFactEntity optedOut = factForAsOf(owner, "Boglárka a szomszédom.", 9);
         optedOut.setIncludeInPrompt(false);
         factRepository.saveAndFlush(optedOut);
         KnowledgeFactEntity future = factPopulator.factAt(owner, "Boglárka a jövőbeli ismerősöm.", "life",
                 AS_OF.plusDays(1).atStartOfDay().toInstant(ZoneOffset.UTC));
-        factPopulator.fact(other, "Boglárka az idegen felhasználó testvére.", "life", 9);
+        factForAsOf(other, "Boglárka az idegen felhasználó testvére.", 9);
 
         List<MemoryCandidate> result = facts.retrieve(input(owner, null));
 
@@ -215,7 +241,12 @@ class HybridMemoryRetrieverIT extends AbstractIntegrationTest {
         assertThat(result).allMatch(candidate -> candidate.retriever().equals("facts"));
         assertThat(result).filteredOn(candidate -> candidate.sourceId().equals(matching.getId())
                         || candidate.sourceId().equals(conflicting.getId()))
-                .allMatch(MemoryCandidate::conflicting);
+                .allMatch(MemoryCandidate::conflicting)
+                .allSatisfy(candidate -> {
+                    UUID expectedPeer = candidate.sourceId().equals(matching.getId())
+                            ? conflicting.getId() : matching.getId();
+                    assertThat(candidate.conflictingWithId()).isEqualTo(expectedPeer);
+                });
 
         assertThat(facts.retrieve(input(owner, null, "Boglárka", 2)))
                 .extracting(MemoryCandidate::sourceId)
@@ -255,7 +286,7 @@ class HybridMemoryRetrieverIT extends AbstractIntegrationTest {
     void testJdbcRetrieverFailure_shouldPropagateAndLeaveOuterTransactionUsable() {
         UUID owner = databasePopulator.populateUser("hybrid-failure-owner@test.local");
         UUID itemId = item(owner, "journal_entry", "Boglárka segített.", AS_OF, 0);
-        KnowledgeFactEntity fact = factPopulator.fact(owner, "Boglárka a testvérem.", "life", 1);
+        KnowledgeFactEntity fact = factForAsOf(owner, "Boglárka a testvérem.", 1);
 
         assertThatThrownBy(() -> dense.retrieve(input(owner, null, FakeEmbeddingAdapter.FAIL_ANN)))
                 .isInstanceOf(RuntimeException.class);
@@ -272,6 +303,12 @@ class HybridMemoryRetrieverIT extends AbstractIntegrationTest {
 
     private UUID item(UUID owner, String sourceKind, String content, LocalDate occurredOn, int axis) {
         return item(owner, sourceKind, content, occurredOn, axis, VERSION);
+    }
+
+    private KnowledgeFactEntity factForAsOf(UUID owner, String text, int reinforcementCount) {
+        KnowledgeFactEntity fact = factPopulator.fact(owner, text, "life", reinforcementCount);
+        fact.setValidFrom(AS_OF);
+        return factRepository.saveAndFlush(fact);
     }
 
     private UUID item(UUID owner, String sourceKind, String content, LocalDate occurredOn, int axis,
