@@ -1,6 +1,6 @@
 # Shared RAG Memory Platform and Chat Pilot — Design
 
-**Date:** 2026-09-04 · **Status:** approved in brainstorm, pending written-spec review
+**Date:** 2026-09-04 · **Status:** approved
 
 **Driver:** `mezo-6dii`
 
