@@ -99,8 +99,10 @@ describe('Heti hub (mock mode)', () => {
   test('missing data renders „—", never a 0', () => {
     hoisted.forceEmptyWeekly = true
     renderPage()
-    // eight cells + the „A hét tanulságai" tile's own „—" (no week-scoped candidates yet)
-    expect(screen.getAllByText('—').length).toBe(9)
+    // eight cells + the „A hét tanulságai" tile's own „—" (no week-scoped candidates yet) +
+    // one WeekGoalsCard arrow glyph (mezo-iizd.9: the third mock goal's arrow is `insufficient`,
+    // which honestly renders the same „—" glyph as the no-data placeholder, never a direction)
+    expect(screen.getAllByText('—').length).toBe(10)
     expect(screen.queryByText('0')).not.toBeInTheDocument()
   })
 
@@ -193,6 +195,11 @@ describe('Heti hub (mock mode)', () => {
   test('the honesty footnote is on the page', () => {
     renderPage()
     expect(screen.getByText(/A Mezo sosem talál ki számot/)).toBeInTheDocument()
+  })
+
+  test('a heti hub viszi a cél-kártyát (mezo-iizd.9)', async () => {
+    renderPage()
+    expect(await screen.findByText('Célok · a hét iránya')).toBeInTheDocument()
   })
 })
 

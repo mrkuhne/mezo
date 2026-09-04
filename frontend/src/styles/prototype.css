@@ -8892,6 +8892,23 @@ button.mz-wtile:active { transform: scale(0.96); }
   box-shadow: 0 12px 22px -14px rgba(181,126,20,0.45); }
 .lg-conflict svg { flex: none; margin-top: 1px; }
 
+/* Heti hub cél-kártya + goalchip (mezo-iizd.9, prototípus celok-body.html #page-heti .qcard/
+   .wgrow/.goalchip). A `.lg-goalchip` a Growth skill-sorban is ezt a nyelvet viseli (mezo-iizd.12). */
+.lg-wcard { border-radius: 18px; padding: 4px 12px 10px; margin-bottom: 10px; background: #fff;
+  border: 0.5px solid rgba(43,33,24,0.06); box-shadow: 0 14px 26px -16px rgba(43,33,24,0.3); }
+.lg-wcard-top { display: flex; align-items: baseline; gap: 8px; padding: 10px 2px 4px; }
+.lg-wcard-cnt { margin-left: auto; font-size: 9.5px; color: #A2958A; }
+.lg-wgrow { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; }
+.lg-wgrow + .lg-wgrow { border-top: 0.5px solid rgba(43,33,24,0.08); }
+.lg-wgrow .grow { flex: 1; min-width: 0; }
+.lg-wgrow .nm { font-size: 12.5px; font-weight: 700; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.lg-wgrow .x { font-size: 11px; color: #6E6257; margin-top: 2px; line-height: 1.4; }
+.lg-goalchip { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 2px 8px 2px 6px;
+  font-size: 8.5px; font-weight: 700; color: var(--dc, #6E6257); background: var(--dw, rgba(43,33,24,0.06)); flex: none; }
+.lg-goalchip i { width: 6px; height: 6px; border-radius: 50%; background: var(--dc, #A2958A); flex: none; }
+.lg-wcard-cta { width: 100%; margin-top: 6px; border: 1px solid rgba(43,33,24,0.14); background: #fff;
+  border-radius: 999px; padding: 8px 0; font-size: 11px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
+
 /* ============================================================
    Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)
    Ez a szekció EGYKOR a Mai oldal teljes „inset grouped list" lapnyelvét vitte

@@ -38,6 +38,7 @@ import {
 import { WeekScoreRing } from '@/features/me/components/week/WeekScoreRing'
 import { WeekTrendSpark, type WeekTrendPoint } from '@/features/me/components/week/WeekTrendSpark'
 import { WeekNextCard } from '@/features/me/components/WeekNextCard'
+import { WeekGoalsCard } from '@/features/me/components/WeekGoalsCard'
 import type { MeWeekDay } from '@/data/me/meWeek'
 
 /** The next-week card's source — the same W1 proactive suggestion the retired WeekPage read
@@ -297,6 +298,11 @@ export function WeekHubPage() {
               <div className="wkh-discempty">nem született új minta vagy tudás</div>
             )}
           </button>
+
+          {/* Célok · a hét iránya (mezo-iizd.9) — a motor számolt nyilai. A magyarázó
+              narratíva a fenti „Mezo · heti elemzés" csempén él (a prompt a nyilakat a
+              WeeklyReviewContextSources cél-blokkjából kapja), ez a kártya a tényeké. */}
+          <WeekGoalsCard />
 
           {/* „Mezo · a következő heted" — running week only, gating unchanged. */}
           {running && <WeekNextCard suggestion={nextSuggestion} />}
