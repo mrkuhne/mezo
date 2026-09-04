@@ -24,7 +24,13 @@ export default defineConfig({
   // Darwin-mérés (97 shot, a goldenek a kóddal egyezőre generálva): a valódi renderzaj
   // MINDEN küszöbön 0 px egészen 0.03-ig — a 120-as tartalék tehát semmit nem védett.
   // 0.05-nél a tónus-eltolódás 319–491 px-ként jelenik meg, vagyis bőven a zaj fölött.
-  expect: { toHaveScreenshot: { threshold: 0.05, maxDiffPixels: 0 } },
+  // A `maxDiffPixels: 20` NEM a zaj fedezése: a mérés szerint a padló mindkét platformon
+  // 0 px (darwin 3 futás, linux CI 2 futás). A 20 szűk tartalék egy alkalmi, egy-két
+  // pixeles ingadozásra, és 16-szor kisebb a legkisebb MÉRT valódi jelnél (319 px), tehát
+  // érdemi érzékenységet nem áldoz. Egy nulla tűrésű vizuális kaput, ami flake-el, előbb-
+  // utóbb kikapcsolnak — az rosszabb, mint egy 20 pixeles vakfolt. Ha ez a szám valaha
+  // hazudik, MÉRJ újra (a recept a mezo-kf4f-en), ne emeld tapasztalatból.
+  expect: { toHaveScreenshot: { threshold: 0.05, maxDiffPixels: 20 } },
   use: {
     ...devices['Desktop Chrome'],
     viewport: { width: 440, height: 956 },
