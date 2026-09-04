@@ -922,6 +922,16 @@ mezo:
         text-hu: "Az utóbbi hetekben a szokásosnál gyorsabban csökken a súlyod. Ha ez nem tudatos cél, érdemes átnézni, hogy az étkezésed és a pihenésed tartja-e a lépést — ha viszont ez a szándékod, akkor csak jelzés, nem intés."
         cooldown-hours: 72
         quiet-hours-exempt: false
+      # S6 batch B (bd mezo-d58h.6, spec 2026-09-03 §4 row 16, rank 4, offers lighten_tomorrow —
+      # the button itself is wired by a later task, not here): sport-napi váll-terhelés az utóbbi
+      # napokban magas, és holnap váll-fókuszú edzésnap jön — egy edzésre vonatkozó tanács, nem
+      # sérülés-riasztás.
+      - key: joint_overuse_go_lighter
+        flag: joint_overuse
+        channel: both
+        text-hu: "A vállad az utóbbi napok sportjai miatt eléggé igénybe van véve, és holnap váll-fókuszú edzésnap jön. Vidd le kicsit könnyebbre a holnapi súlyokat vagy ismétlésszámot — a váll így is kap elég ingert, csak nem tetézed rá a friss terhelést."
+        cooldown-hours: 72
+        quiet-hours-exempt: false
     # W4.3 (mezo-b3pp.17): the pragmatic profile — "hogyan érdemes Daniellel beszélni"
     profile:
       # Monday 03:45 — after the 03:10 feedback rollups and the 03:30 weekly consolidation rung,

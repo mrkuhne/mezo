@@ -142,6 +142,8 @@ class AdviceFactRendererTest {
                     4, "kcal", -0.8));
             case FlagKey.RAPID_WEIGHT_LOSS -> FlagPayloadEnvelope.rapidWeightLoss(
                 new FlagPayloadEnvelope.RapidWeightLoss(-1.2, -0.7, 5, 4, "bulk"));
+            case FlagKey.JOINT_OVERUSE -> FlagPayloadEnvelope.jointOveruse(
+                new FlagPayloadEnvelope.JointOveruse(8.0, 5.0, 7, 7, "2026-09-05", "shoulder"));
             default -> throw new AssertionError(
                 "no AdviceFactRendererTest fixture for live flag key '" + flagKey + "' — "
                     + "add both a fixture here and a render() branch in AdviceFactRenderer");

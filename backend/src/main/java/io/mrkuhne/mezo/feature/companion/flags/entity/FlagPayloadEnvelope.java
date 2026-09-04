@@ -21,7 +21,8 @@ public record FlagPayloadEnvelope(
     MissedWorkouts missedWorkouts,
     AcuteBadDay acuteBadDay,
     LoadFuelMismatch loadFuelMismatch,
-    RapidWeightLoss rapidWeightLoss
+    RapidWeightLoss rapidWeightLoss,
+    JointOveruse jointOveruse
 ) {
 
     public record SustainedStress(
@@ -103,43 +104,60 @@ public record FlagPayloadEnvelope(
         String goalTrajectory) {
     }
 
+    /** Spec 2026-09-03 §4 row 16 (rank 4, offers {@code lighten_tomorrow} — wired by a later
+     *  task): sport {@code SHOULDER_STRAIN} {@code windowDays}-average at or above
+     *  {@code strainAvgAtLeast}, AND tomorrow's planned gym session is shoulder-focused.
+     *  {@code dataPoints} is the count of days the average was actually taken over (a session
+     *  with a null strain is not a data point). {@code tomorrowMuscle} is tomorrow's session
+     *  muscle AFTER {@code MuscleGroup.of} normalisation, e.g. {@code "shoulder-lateral"}
+     *  collapses to {@code "shoulder"} — this shape only ever exists once that already equals
+     *  the configured {@code muscleNeedle}. */
+    public record JointOveruse(
+        double strainAvg, double strainAvgAtLeast, int dataPoints, int windowDays,
+        String tomorrowDate, String tomorrowMuscle) {
+    }
+
     public static FlagPayloadEnvelope sustainedStress(SustainedStress p) {
-        return new FlagPayloadEnvelope(p, null, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(p, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope sleepDebt(SleepDebt p) {
-        return new FlagPayloadEnvelope(null, p, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, p, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope momentumAtRisk(MomentumAtRisk p) {
-        return new FlagPayloadEnvelope(null, null, p, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, p, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope recoveryNeeded(RecoveryNeeded p) {
-        return new FlagPayloadEnvelope(null, null, null, p, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, p, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope allHealthy(AllHealthy p) {
-        return new FlagPayloadEnvelope(null, null, null, null, p, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, p, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope loggingGap(LoggingGap p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, p, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, p, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope missedWorkouts(MissedWorkouts p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, p, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, p, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope acuteBadDay(AcuteBadDay p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, p, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, p, null, null, null);
     }
 
     public static FlagPayloadEnvelope loadFuelMismatch(LoadFuelMismatch p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, p, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, p, null, null);
     }
 
     public static FlagPayloadEnvelope rapidWeightLoss(RapidWeightLoss p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, p);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, p, null);
+    }
+
+    public static FlagPayloadEnvelope jointOveruse(JointOveruse p) {
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, p);
     }
 }

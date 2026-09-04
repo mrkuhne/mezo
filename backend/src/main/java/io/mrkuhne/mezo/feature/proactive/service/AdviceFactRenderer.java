@@ -43,6 +43,7 @@ public final class AdviceFactRenderer {
             case FlagKey.ACUTE_BAD_DAY -> acuteBadDay(payload.acuteBadDay());
             case FlagKey.LOAD_FUEL_MISMATCH -> loadFuelMismatch(payload.loadFuelMismatch());
             case FlagKey.RAPID_WEIGHT_LOSS -> rapidWeightLoss(payload.rapidWeightLoss());
+            case FlagKey.JOINT_OVERUSE -> jointOveruse(payload.jointOveruse());
             default -> List.of();
         };
     }
@@ -176,6 +177,16 @@ public final class AdviceFactRenderer {
         return List.of("Súlytrend: %s%%/hét (küszöb %s%%/hét, %d rögzített napból, cél: %s)"
             .formatted(num(p.weightTrendPctWk()), num(p.pctPerWeekAtMost()), p.weighInCount(),
                 p.goalTrajectory()));
+    }
+
+    private static List<String> jointOveruse(FlagPayloadEnvelope.JointOveruse p) {
+        if (p == null) {
+            return List.of();
+        }
+        return List.of(
+            "Váll-terhelés %d nap átlagban: %s (küszöb %s), holnap (%s) váll-fókuszú edzés"
+                .formatted(p.windowDays(), num(p.strainAvg()), num(p.strainAvgAtLeast()),
+                    p.tomorrowDate()));
     }
 
     private static String scoreOrDash(Integer score) {
