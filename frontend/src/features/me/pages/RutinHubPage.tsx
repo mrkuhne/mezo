@@ -82,7 +82,9 @@ export function RutinHubPage() {
   const totalToday = habits.length
   const strengthPcts = summary.habits.map((h) => h.strengthPct).filter((p): p is number => p != null)
   const meanStrength = strengthPcts.length ? Math.round(strengthPcts.reduce((s, p) => s + p, 0) / strengthPcts.length) : null
-  const activeDefs = catalog.chains.flatMap((c) => c.defs).filter((d) => d.isActive).length
+  // A paused CHAIN does not run, so its still-active defs are not active habits either — the
+  // cell's label ("aktív szokás") would otherwise overstate the number (mezo-4kbl).
+  const activeDefs = catalog.chains.filter((c) => c.isActive).flatMap((c) => c.defs).filter((d) => d.isActive).length
 
   // Past-day row: status-only, exactly as GrowthRutinPage rendered it.
   const pastRow = (h: HabitItem) => (

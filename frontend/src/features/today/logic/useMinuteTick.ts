@@ -13,28 +13,44 @@ import { useSyncExternalStore } from 'react'
 
 const TICK_MS = 60_000
 
+const minuteOf = (ms: number) => Math.floor(ms / TICK_MS)
+
 let now = new Date()
 let timer: ReturnType<typeof setInterval> | null = null
 const subscribers = new Set<() => void>()
 
+function notify(): void {
+  now = new Date()
+  for (const s of subscribers) s()
+}
+
+/** Felfüggesztett/throttle-olt fülben a böngésző az intervallumot is lelassítja vagy leállítja,
+ *  tehát ébredéskor a gyorsítótárazott `now` ELAVULT — és mivel ilyenkor VAN feliratkozó, a
+ *  `getSnapshot` önjavító ága sem lép. A `MezoThreadProvider` ebből képzi a nap kulcsát, így a
+ *  legrosszabb esetben az előző nap kulcsa alatt írna (mezo-1d46). Láthatóságváltáskor ezért
+ *  utánahúzzuk az órát — de csak ha tényleg másik percben járunk, hogy egy fül-váltogatás ne
+ *  rendereltessen feleslegesen. */
+function onVisible(): void {
+  if (document.visibilityState === 'hidden') return
+  if (minuteOf(Date.now()) === minuteOf(now.getTime())) return
+  notify()
+}
+
 function subscribe(onChange: () => void): () => void {
   subscribers.add(onChange)
   if (timer === null) {
-    timer = setInterval(() => {
-      now = new Date()
-      for (const s of subscribers) s()
-    }, TICK_MS)
+    timer = setInterval(notify, TICK_MS)
+    document.addEventListener('visibilitychange', onVisible)
   }
   return () => {
     subscribers.delete(onChange)
     if (subscribers.size === 0 && timer !== null) {
       clearInterval(timer)
       timer = null
+      document.removeEventListener('visibilitychange', onVisible)
     }
   }
 }
-
-const minuteOf = (ms: number) => Math.floor(ms / TICK_MS)
 
 /** `getSnapshot` MUSZÁJ ugyanazt a példányt adja egy renderen belül (különben React ciklusba
  *  esik), ezért a gyorsítótárazott `now` csak akkor frissül, ha épp NINCS feliratkozó (tehát
