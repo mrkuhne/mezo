@@ -44,4 +44,17 @@ class ProseNumberGuardTest {
         assertThat(ProseNumberGuard.grounded(null, GROUNDING)).isFalse();
         assertThat(ProseNumberGuard.grounded("   ", GROUNDING)).isFalse();
     }
+
+    /** Regression: substring matching would incorrectly accept "6" because it appears within "1.6"
+     *  after normalisation. The guard must use token-equality, not substring search. */
+    @Test
+    void testGrounded_shouldRejectSubstringMatches() {
+        assertThat(ProseNumberGuard.grounded("Aludj 6 órát.", GROUNDING)).isFalse();
+    }
+
+    @Test
+    void testGrounded_shouldAcceptValidNumbersRegression() {
+        assertThat(ProseNumberGuard.grounded(
+            "Az adósság 1,6 óra.", GROUNDING)).isTrue();
+    }
 }
