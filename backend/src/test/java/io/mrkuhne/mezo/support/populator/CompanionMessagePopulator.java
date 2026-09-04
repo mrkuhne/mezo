@@ -70,12 +70,28 @@ public class CompanionMessagePopulator {
         return companionMessageRepository.saveAndFlush(entity);
     }
 
-    /** S4 advice card (bd mezo-d58h.4) — kind + both keys + the structured payload in one shot.
-     *  Delegates to {@link #createAdviceWithActions} with null actions and no applied stamp — a
-     *  null (not empty) actions list is what actually round-trips to null, so this doubles as the
-     *  pre-S5 legacy-row shape the S5 deserialization test needs, and there is one construction
-     *  site. */
+    /** The CURRENT advice-card shape — the same one {@link
+     *  io.mrkuhne.mezo.feature.proactive.service.AdviceCardService} actually writes via the 7-arg
+     *  {@code CompanionMessageEnvelope.advice(...)} overload: an empty (non-null) {@code actions}
+     *  list and a null {@code applied} stamp. Delegates to {@link #createAdviceWithActions} with
+     *  {@code List.of(), null} so there is one construction site. Use this for "a normal advice
+     *  card" in any test that isn't specifically about the pre-S5 legacy shape — see {@link
+     *  #createLegacyAdvice} for that one. */
     public CompanionMessageEntity createAdvice(
+            UUID owner, LocalDate date, String adviceKey, String interventionKey, String eyebrow,
+            String prose, List<String> facts, List<String> suggestions, Instant generatedAt) {
+        return createAdviceWithActions(owner, date, adviceKey, interventionKey, eyebrow, prose,
+            facts, suggestions, List.of(), null, generatedAt);
+    }
+
+    /** The PRE-S5 legacy advice-card shape — simulates a row written before this slice existed,
+     *  whose jsonb literally has no {@code actions}/{@code applied} keys, by passing null for
+     *  both (a null actions list round-trips through jsonb as null, not the {@code []} an empty
+     *  list would produce). This is the fixture that proves the two trailing components are
+     *  jsonb-safe to ADD: old rows deserialize them to null rather than failing. Use only for
+     *  legacy-row tests — every other caller wanting "an advice card" should use {@link
+     *  #createAdvice}, which matches what production writes today. */
+    public CompanionMessageEntity createLegacyAdvice(
             UUID owner, LocalDate date, String adviceKey, String interventionKey, String eyebrow,
             String prose, List<String> facts, List<String> suggestions, Instant generatedAt) {
         return createAdviceWithActions(owner, date, adviceKey, interventionKey, eyebrow, prose,

@@ -67,6 +67,10 @@ class CompanionMessageAdvicePersistenceIT extends AbstractIntegrationTest {
         assertThat(content.setupKey()).isNull();
         assertThat(content.facts()).containsExactly("Alvásadósság: 1,4 óra/éjszaka");
         assertThat(content.suggestions()).containsExactly("Told előre a villanyoltást.");
+        // The shape production actually writes: an empty (non-null) actions list, never null —
+        // this is the assertion that stops createAdvice's shape drifting from AdviceCardService's.
+        assertThat(content.actions()).isEmpty();
+        assertThat(content.applied()).isNull();
     }
 
     /** Old rows have no advice components at all — jsonb deserializes the new trailing fields to
@@ -110,7 +114,7 @@ class CompanionMessageAdvicePersistenceIT extends AbstractIntegrationTest {
     @Test
     void testEnvelope_shouldDeserializeAPreS5AdviceRowWithNullActionFields() {
         UUID owner = userPopulator.createUser().getId();
-        CompanionMessageEntity legacy = companionMessagePopulator.createAdvice(
+        CompanionMessageEntity legacy = companionMessagePopulator.createLegacyAdvice(
             owner, LocalDate.now(), "sleep_debt", "sleep_recover_tonight", "Mezo · észrevétel",
             "régi kártya", List.of("tény"), List.of("javaslat"), Instant.now());
 

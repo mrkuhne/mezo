@@ -82,6 +82,11 @@ public record CompanionMessageEnvelope(String eyebrow, List<String> body, List<R
      * loose ({@code Map<String, Object>}) because each action key has its own parameter shape and
      * the apply layer validates its own; a typed union here would need a new envelope component per
      * action, which is exactly the churn trailing-component safety exists to avoid.
+     *
+     * <p>{@code params} can be null or absent — a key with no parameters (or an old row written
+     * before a key gained one) has nothing to carry. Downstream readers must not assume
+     * non-null; the apply layer (a later task) is what validates a given key's params, not this
+     * record.
      */
     public record Action(String key, String label, Map<String, Object> params) {
     }
