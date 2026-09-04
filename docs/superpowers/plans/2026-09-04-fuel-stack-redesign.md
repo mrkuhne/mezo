@@ -408,7 +408,7 @@ export function StackRhythmPreview(props: {
 }): React.JSX.Element
 ```
 
-- [ ] **Step 1: Cseréld le a régi hub-teszteket bukó, jóváhagyott IA-tesztekre**
+- [x] **Step 1: Cseréld le a régi hub-teszteket bukó, jóváhagyott IA-tesztekre**
 
 A `FuelStackPage.test.tsx` render helperébe kerüljön `ToastProvider`. A tesztek
 ellenőrizzék:
@@ -428,7 +428,7 @@ ellenőrizzék:
 A lokális tesztrouter minden célroute-hoz `LocationProbe` elemet adjon, hogy a
 navigáció valódi URL-en legyen ellenőrizve, ne mockolt `useNavigate`-tal.
 
-- [ ] **Step 2: Futtasd a hub tesztet és rögzítsd a bukást**
+- [x] **Step 2: Futtasd a hub tesztet és rögzítsd a bukást**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo/frontend
@@ -437,7 +437,7 @@ pnpm vitest run src/features/fuel/pages/FuelStackPage.test.tsx
 
 Várt: FAIL a régi PageHead/PageHero/stat-strip/zone-mosaic DOM miatt.
 
-- [ ] **Step 3: Írd meg a közös pipa-orchestration hookot**
+- [x] **Step 3: Írd meg a közös pipa-orchestration hookot**
 
 Az `useStackIntakeToggle` a `useStackActions()` és `useToast()` hookokat komponálja.
 Pontos működés:
@@ -462,7 +462,7 @@ A teljes handler legyen `try/catch`; a catch nem mutat második hibát, mert a g
 MutationCache már kiírta azt, csak a rejected event Promise-t nyeli el. Manual undo
 nem mutat success-toastot.
 
-- [ ] **Step 4: Építsd meg a herót és a háromsoros preview-t**
+- [x] **Step 4: Építsd meg a herót és a háromsoros preview-t**
 
 - `StackNextHero` a `view.nextRow`, `view.allDone` és `view.totalCount === 0` három
   kizárólagos állapotát renderelje.
@@ -473,7 +473,7 @@ nem mutat success-toastot.
 - `StackRhythmPreview` a kapott `previewRows` sorrendjét őrzi, és minden sorban idő,
   név/dózis, valamint szöveges `bevéve`/`következik`/`később` állapotot mutat.
 
-- [ ] **Step 5: Írd át a FuelStackPage kompozícióját**
+- [x] **Step 5: Írd át a FuelStackPage kompozícióját**
 
 Használd: `useStackDay`, `useProtocol`, `useStack`, `useFuelDay`, `useRecipes`,
 `buildStackDayView`, `matchMealsToStack`, `useStackIntakeToggle`, `Mosaic`, `Tile`,
@@ -491,7 +491,7 @@ Ne renderelj `PageHead`, `PageHero`, `StatStrip`, `StackDayArc`, `StackMealMatch
 `StackNextCard`, `StackZoneCard`, `Miért így` blokkot vagy autosave recapet a hubon.
 Ezek információja részletoldalra kerül, nem vész el.
 
-- [ ] **Step 6: Add hozzá a success-toast + exact undo regressziót**
+- [x] **Step 6: Add hozzá a success-toast + exact undo regressziót**
 
 Mock módban kattints az induláskor nem teljesített `Origin PWO bevétel jelölése`
 gombra. Várd meg:
@@ -506,7 +506,7 @@ await waitFor(() => expect(
 
 Realer MSW rejectionnél a success szöveg nem jelenhet meg.
 
-- [ ] **Step 7: Futtasd a focused teszteket**
+- [x] **Step 7: Futtasd a focused teszteket**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo/frontend
@@ -515,7 +515,7 @@ pnpm vitest run src/features/fuel/pages/FuelStackPage.test.tsx src/features/fuel
 
 Várt: PASS.
 
-- [ ] **Step 8: Töröld a már fogyasztó nélküli régi next komponenst és commitolj**
+- [x] **Step 8: Töröld a már fogyasztó nélküli régi next komponenst és commitolj**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo
