@@ -64,8 +64,9 @@ test('the Fuel tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20
 
 test('/fuel/stack stays a stable full-page sibling of the Fuel hub', async () => {
   const { container } = renderApp('/fuel/stack')
-  // The redesigned hub starts directly with the next action under the real app header.
-  expect(await screen.findByText('MOST KÖVETKEZIK')).toBeInTheDocument()
+  // The hub's protocol tile is stable across loading, empty, next-action and all-done states.
+  // Real-mode CI intentionally starts with an empty protocol, while mock mode has a next item.
+  expect(await screen.findByRole('button', { name: 'Teljes protokoll' })).toBeInTheDocument()
   expect(container.querySelector('.mz-page.mz-p-sage')).toBeInTheDocument()
   expect(container.querySelector('.mz-page-head')).not.toBeInTheDocument()
 })
