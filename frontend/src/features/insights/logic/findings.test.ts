@@ -9,8 +9,10 @@ const base: PatternMonitorPair = {
   lagDays: 1,
   metricAKey: 'ritual-closed',
   metricALabel: 'esti lezárás',
+  metricAValueKind: 'binary',
   metricBKey: 'sleep-quality',
   metricBLabel: 'alvásminőség',
+  metricBValueKind: 'number',
   mechanismHu: 'Az esti lezárás lecsendesítheti az elalvást — jobb alvásminőség.',
   questionHu: 'Jobban alszol, ha este lezárod a napot?',
   expectedDirection: 'positive',
@@ -22,6 +24,9 @@ const base: PatternMonitorPair = {
   alignedDays: 13,
   missingDays: null,
   bottleneckMetricKey: null,
+  groupZeroDays: 6,
+  groupOneDays: 7,
+  requiredPerGroup: 3,
   r: -0.31,
   n: 13,
   p: 0.302,
@@ -34,17 +39,17 @@ test('strengthWord bands |r| into kicsit / érezhetően / határozottan', () => 
   expect(strengthWord(-0.61)).toBe('határozottan')
 })
 
-test('a found direction against the expectation reads „Meglepő:" with the negative reading', () => {
+test('a found direction against the expectation states that the opposite is currently visible', () => {
   const s = findingSentence(base)!
-  expect(s.prefix).toBe('Meglepő:')
+  expect(s.prefix).toBe('Eddig az ellenkezője látszik:')
   expect(s.before).toBe('a lezárt esték után ')
   expect(s.strength).toBe('érezhetően')
   expect(s.after).toBe(' rosszabbul aludtál')
 })
 
-test('a matching direction reads „Igen:" with the positive reading', () => {
+test('a matching direction says that the days point toward the hypothesis', () => {
   const s = findingSentence({ ...base, r: 0.62 })!
-  expect(s.prefix).toBe('Igen:')
+  expect(s.prefix).toBe('Eddig ebbe az irányba mutatnak a napjaid:')
   expect(s.after).toBe(' jobban aludtál')
   expect(s.strength).toBe('határozottan')
 })
@@ -57,12 +62,12 @@ test('confidenceMeta translates p honestly into Hungarian', () => {
   expect(confidenceMeta(34, 0.001)).toEqual({
     chip: 'megbízható jel',
     tone: 'success',
-    sentence: '34 közös nap — ez már aligha véletlen',
+    sentence: '34 közös nap — erősebb bizonyíték; ez már kevésbé magyarázható véletlennel',
   })
   expect(confidenceMeta(20, 0.12).chip).toBe('ígéretes jel')
   const weak = confidenceMeta(13, 0.302)
   expect(weak.chip).toBe('még bizonytalan')
-  expect(weak.sentence).toBe('13 közös nap — kb. minden 3. ilyen minta véletlenül is összejönne')
+  expect(weak.sentence).toBe('13 közös nap — bizonytalan jel; ebből még nem érdemes következtetést levonni')
 })
 
 test('pairLine marks the next-day side only on lagged pairs', () => {

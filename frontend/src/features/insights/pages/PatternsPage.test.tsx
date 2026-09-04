@@ -51,8 +51,8 @@ describe('PatternsPage (mock mode)', () => {
     const confirmedTile = container.querySelector('.mnt-ptile.sage') as HTMLElement
     expect(confirmedTile).not.toBeNull()
     expect(within(confirmedTile).getByText('tanulom')).toBeInTheDocument()
-    // the 7 pattern-less monitor pairs are gathering → dashed tiles carrying the gate verdicts
-    expect(container.querySelectorAll('.mnt-ptile.dashed')).toHaveLength(7)
+    // the 8 pattern-less monitor pairs are gathering → dashed tiles carrying the gate verdicts
+    expect(container.querySelectorAll('.mnt-ptile.dashed')).toHaveLength(8)
     // raw statistics never reach a tile face
     expect(screen.queryByText(/r=/)).not.toBeInTheDocument()
   })
@@ -82,7 +82,7 @@ describe('PatternsPage (mock mode)', () => {
     const labels = screen.getAllByTestId('coverage-label').map((el) => el.textContent)
     // thinnest first, tied at 0/60: Gyógyszer-ciklusnap (comes first in the seed array) then sportterhelés
     expect(labels[0]).toBe('Gyógyszer-ciklusnap')
-    expect(labels).toHaveLength(12)
+    expect(labels).toHaveLength(13)
   })
 
   test('domain filter chips: multi-select and the "Mind" chip batch-clears all of them at once', () => {

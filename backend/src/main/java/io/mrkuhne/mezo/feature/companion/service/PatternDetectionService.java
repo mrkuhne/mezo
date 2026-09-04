@@ -30,8 +30,8 @@ import java.util.UUID;
 
 /**
  * V3.1 detection: for every catalog pair, lag-align the two per-day series over the lookback
- * window, gate on {@code min-n}, run the pure Pearson math, and UPSERT the statistical pattern
- * row by {@code (user, kind, pair_key)}. Stats refresh while a row is {@code proposed} or
+ * window, gate on total sample size and binary-group balance, run the pure Pearson math, and
+ * UPSERT the statistical pattern row by {@code (user, kind, pair_key)}. Stats refresh while a row is {@code proposed} or
  * {@code monitoring}; a user-judged {@code confirmed}/{@code rejected} row is never auto-touched
  * (V3.3 hooks confirmed-recurrence into fact reinforcement). {@code confidence} stays null —
  * honest small-n (spec §6/§8); everything rendered here is deterministic code, no LLM anywhere.
@@ -69,7 +69,7 @@ public class PatternDetectionService {
         int upserted = 0;
         for (CompanionProperties.PatternPair pair : config.pairs()) {
             try {
-                if (detectPair(userId, pair, from, to, config.minN(), cache, maxLag)) {
+                if (detectPair(userId, pair, from, to, config.minN(), config.minGroupN(), cache, maxLag)) {
                     upserted++;
                 }
             } catch (Exception e) {
@@ -80,7 +80,7 @@ public class PatternDetectionService {
     }
 
     private boolean detectPair(UUID userId, CompanionProperties.PatternPair pair,
-                               LocalDate from, LocalDate to, int minN,
+                               LocalDate from, LocalDate to, int minN, int minGroupN,
                                Map<MetricKey, Map<LocalDate, Double>> cache, int maxLag) {
         Map<LocalDate, Double> seriesA = PatternGate.window(
                 cached(cache, userId, pair.metricA(), from, to, maxLag), from, to);
@@ -88,9 +88,10 @@ public class PatternDetectionService {
                 cached(cache, userId, pair.metricB(), from, to, maxLag),
                 from.plusDays(pair.lagDays()), to.plusDays(pair.lagDays()));
         // A kapu KÖZÖS a monitorral (PatternMonitorService) — a diagnosztika ettől hiteles.
-        PatternGate.Outcome outcome = PatternGate.evaluate(seriesA, seriesB, pair.lagDays(), minN);
+        PatternGate.Outcome outcome = PatternGate.evaluate(seriesA, seriesB, pair.lagDays(),
+                minN, minGroupN, pair.metricA().valueKind());
         if (outcome.verdict() != PatternGate.Verdict.LIVE) {
-            return false; // a kapun kívül semmit nem perzisztálunk (kevés nap / nincs adat / degenerált)
+            return false; // no persistence outside the gate (missing, imbalanced or degenerate)
         }
         upsert(userId, pair, outcome.result(), from, to);
         return true;

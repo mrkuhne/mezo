@@ -266,6 +266,8 @@ public record CompanionProperties(
         @Min(14) @Max(365) int lookbackDays,
         /** Minimum aligned sample size before a pair may surface at all (honest small-n gate). */
         @Min(3) @Max(60) int minN,
+        /** Minimum observations on each side of a binary A metric before it may surface. */
+        @Min(3) @Max(30) int minGroupN,
         /** V3.3: a confirmed pattern's promoted fact reinforces at most once per this many days —
          *  the nightly window slides by one day, so nightly increments would be the SAME evidence
          *  re-counted (and would crowd the top-N injection). */

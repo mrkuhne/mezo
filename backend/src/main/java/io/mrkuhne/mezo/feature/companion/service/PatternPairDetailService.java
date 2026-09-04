@@ -66,7 +66,8 @@ public class PatternPairDetailService {
         PatternEntity row = patternRepository
                 .findByCreatedByAndKindAndPairKeyAndDeletedFalse(userId, PatternEntity.KIND_STATISTICAL, pairKey)
                 .orElse(null);
-        PatternMonitorPair monitorPair = patternMonitorService.toPair(pair, cache, row, config.minN(), from, to);
+        PatternMonitorPair monitorPair = patternMonitorService.toPair(pair, cache, row,
+                config.minN(), config.minGroupN(), from, to);
 
         return PatternPairDetailResponse.builder()
                 .pair(monitorPair)
