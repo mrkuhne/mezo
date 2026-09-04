@@ -16,10 +16,14 @@ import java.math.BigDecimal;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ActiveProfiles;
 
-/** The demodata protocol seeder: two real stim products by-name-idempotently + two engine-placed
- *  living-protocol occurrences, only when the owner has no active protocol yet — an existing
- *  active protocol is never touched (spec D6). */
+/** The demofixtures protocol seeder (S2: opt-in, no longer a prod seed): two real stim products
+ *  by-name-idempotently + two engine-placed living-protocol occurrences, only when the owner has
+ *  no active protocol yet — an existing active protocol is never touched (spec D6).
+ *  {@code ApiIntegrationTest} carries {@code @ActiveProfiles("demodata")}; this subclass annotation
+ *  replaces it, hence both names. */
+@ActiveProfiles({"demodata", "demofixtures"})
 class ProtocolSeedDataIT extends ApiIntegrationTest {
 
     @Autowired private ProtocolSeedData seed;

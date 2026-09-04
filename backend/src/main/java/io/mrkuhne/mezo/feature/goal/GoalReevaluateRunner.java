@@ -23,14 +23,15 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>Idempotent — {@link GoalEngineService#evaluate} overwrites the {@code prescription} +
  * {@code tdeeBootstrap} jsonb columns each run, so repeated startups (or the graceful no-profile path)
- * are safe. {@code @Profile("demodata")} — the prod-active profile — so the bean only exists in a
- * demodata context; integration tests annotate {@code @ActiveProfiles("demodata")} and call the no-arg
- * {@link #run()} overload. {@code @Order(200)} runs after the seed runners (owner 0, train 100/110,
+ * are safe. {@code @Profile("demofixtures")} (S2, mezo-qw37.2) — the reconciliation only ever
+ * concerned the owner's pre-NEAT-migration goal and is done on the live DB; it stays available as an
+ * opt-in fixture runner. Integration tests annotate {@code @ActiveProfiles({"demodata", "demofixtures"})}
+ * and call the no-arg {@link #run()} overload. {@code @Order(200)} runs after the seed runners (owner 0, train 100/110,
  * goal fixtures 120) so the owner + any seeded goals exist by the time this reconciles them.
  */
 @Slf4j
 @Component
-@Profile("demodata")
+@Profile("demofixtures")
 @Order(200)
 @RequiredArgsConstructor
 public class GoalReevaluateRunner implements CommandLineRunner {

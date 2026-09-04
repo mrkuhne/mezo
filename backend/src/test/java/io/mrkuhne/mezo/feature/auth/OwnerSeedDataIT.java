@@ -4,6 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.fuel.ProtocolSeedData;
+import io.mrkuhne.mezo.feature.gamification.GamificationDemoData;
+import io.mrkuhne.mezo.feature.goal.GoalReevaluateRunner;
+import io.mrkuhne.mezo.feature.people.PeopleSeedData;
 import io.mrkuhne.mezo.feature.train.TrainSeedData;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import org.junit.jupiter.api.Test;
@@ -34,6 +38,19 @@ class OwnerSeedDataIT extends AbstractIntegrationTest {
     @Test
     void testDemodataProfile_shouldNotRegisterTrainSeed_whenFixturesProfileAbsent() {
         assertThat(applicationContext.getBeanProvider(TrainSeedData.class).getIfAvailable()).isNull();
+    }
+
+    /**
+     * S2 (mezo-qw37.2): the owner-specific seeders are opt-in demo content now. A prod
+     * ({@code demodata}) boot must create the owner and nothing else — a registered user's
+     * first touch bootstraps their own gamification profile / habit catalog lazily.
+     */
+    @Test
+    void testDemodataProfile_shouldNotRegisterOwnerFixtureSeeds_whenFixturesProfileAbsent() {
+        assertThat(applicationContext.getBeanProvider(ProtocolSeedData.class).getIfAvailable()).isNull();
+        assertThat(applicationContext.getBeanProvider(PeopleSeedData.class).getIfAvailable()).isNull();
+        assertThat(applicationContext.getBeanProvider(GamificationDemoData.class).getIfAvailable()).isNull();
+        assertThat(applicationContext.getBeanProvider(GoalReevaluateRunner.class).getIfAvailable()).isNull();
     }
 
     @Test
