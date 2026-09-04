@@ -45,6 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 class GoalEvaluationServiceIT extends AbstractIntegrationTest {
 
     @Autowired private GoalEngineService engine;
+    @Autowired private GoalPrescriptionCalculator calculator;
     @Autowired private GoalEvaluationService evaluationService;
     @Autowired private GoalRepository goalRepository;
     @Autowired private GoalSuggestionRepository suggestionRepository;
@@ -83,6 +84,24 @@ class GoalEvaluationServiceIT extends AbstractIntegrationTest {
         assertThat(result).isNull();
         assertThat(reloaded.getPrescription()).isNull();
         assertThat(reloaded.getTdeeBootstrap()).isNull();
+        assertThat(suggestionRepository.findAll())
+            .noneMatch(suggestion -> suggestion.getGoalId().equals(goal.getId()));
+    }
+
+    @Test
+    void testCalculate_shouldReturnArtifactWithoutPersistingOrSuggesting_whenDraftIsTransient() {
+        UUID user = databasePopulator.populateUser("calc-draft@test.local");
+        profilePopulator.create(user);
+        seedWeight(user, "84.00");
+        GoalEntity goal = goal(user, "cut", "0.70", List.of("muscle"));
+
+        GoalPrescriptionCalculator.Calculation calculation = calculator.calculate(user, goal);
+
+        assertThat(calculation.bootstrap()).isNotNull();
+        assertThat(calculation.prescription()).isNotNull();
+        GoalEntity reloaded = goalRepository.findById(goal.getId()).orElseThrow();
+        assertThat(reloaded.getTdeeBootstrap()).isNull();
+        assertThat(reloaded.getPrescription()).isNull();
         assertThat(suggestionRepository.findAll())
             .noneMatch(suggestion -> suggestion.getGoalId().equals(goal.getId()));
     }

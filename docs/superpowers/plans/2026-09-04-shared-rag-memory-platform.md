@@ -554,7 +554,7 @@ git commit -m "feat(memory): dual-write versioned memory projections (mezo-6dii.
 - Create: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/MemoryQueryRewriter.java`
 - Create: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/LlmMemoryQueryRewriter.java`
 - Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java`
-- Create: `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/MemoryQueryAnalyzerTest.java`
+- Create: `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/service/MemoryQueryAnalyzerTest.java`
 - Create: `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/MemoryQueryPreparerIT.java`
 - Modify: `docs/features/companion.md`
 
@@ -570,7 +570,7 @@ public interface MemoryQueryRewriter {
 public PreparedMemoryQuery prepare(MemoryRequest request);
 ```
 
-- [ ] **Step 1: Write the deterministic routing table test**
+- [x] **Step 1: Write the deterministic routing table test**
 
 Use a parameterized pure unit test with Hungarian cases:
 
@@ -589,7 +589,7 @@ static Stream<Arguments> modes() {
 Also assert blank history downgrades a context-dependent form to `SELF_CONTAINED`, and explicit ISO
 dates populate `from/to` without an LLM call.
 
-- [ ] **Step 2: Run the unit test and confirm the analyzer is absent**
+- [x] **Step 2: Run the unit test and confirm the analyzer is absent**
 
 ```bash
 cd backend
@@ -598,7 +598,7 @@ cd backend
 
 Expected: FAIL at compilation because the query-preparation types do not exist.
 
-- [ ] **Step 3: Implement conservative deterministic analysis**
+- [x] **Step 3: Implement conservative deterministic analysis**
 
 `NO_MEMORY_NEEDED` is limited to a closed, accent-folded set of greetings, thanks and explicit
 general/meta phrases. `CONTEXT_DEPENDENT` requires non-empty history plus an accent-folded
@@ -606,7 +606,7 @@ referential marker (`előtte`, `utána`, `akkor`, `arról`, `azzal`, `ehhez`, `v
 leading continuation (`és`, `de`, `viszont`) in a query under 160 characters. Everything else is
 `SELF_CONTAINED`. Keep constants package-private so the table test pins changes.
 
-- [ ] **Step 4: Write and run the failing rewrite/fallback integration tests**
+- [x] **Step 4: Write and run the failing rewrite/fallback integration tests**
 
 Add a fake marker `[fake-memory-rewrite:<text>]` to `FakeCompanionLlm`. Assert the preparer passes at
 most the latest six nonblank turns, caps every history item at 500 characters, returns the scripted
@@ -619,14 +619,14 @@ output over 500 characters.
 
 Expected before implementation: FAIL because `LlmMemoryQueryRewriter` is absent.
 
-- [ ] **Step 5: Implement the bounded rewrite adapter**
+- [x] **Step 5: Implement the bounded rewrite adapter**
 
 Use the existing cheap `CompanionLlm.complete(system, history, currentQuery, List.of(), Map.of())`
 port. The system prompt demands one standalone Hungarian search query and no explanation. Do not
 add a new provider SDK or Spring AI dependency. `MemoryQueryPreparer` catches runtime failures and
 returns `denseQuery=rawQuery`.
 
-- [ ] **Step 6: Verify, document and commit**
+- [x] **Step 6: Verify, document and commit**
 
 Run both tests, update Companion §§3, §8 and §10, regenerate CODEMAP/lint, then commit:
 
@@ -640,7 +640,8 @@ git commit -m "feat(memory): prepare contextual retrieval queries (mezo-6dii.3)"
 ### Task 4: Four hybrid retrievers (`mezo-6dii.4`)
 
 **Files:**
-- Create: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/dto/ConsumerPolicy.java`
+- Existing from Task 3 (the `MemoryRequest` core contract requires it):
+  `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/dto/ConsumerPolicy.java`
 - Create: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/dto/RetrievalInput.java`
 - Create: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/dto/MemoryCandidate.java`
 - Create: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/MemoryRetriever.java`

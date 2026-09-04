@@ -149,20 +149,20 @@ public class MeWeekService {
     }
 
     /**
-     * The {@code me-week} contract's four subscores are UNCHANGED by the 6-dimension day engine
-     * (mezo-jcpt.4): {@link DayScoreService.DaySubscores} is still the carrier, its fields are just
-     * sourced from the closest successor dimension now — {@code sleep←sleep, fuel←nutrition,
-     * checkin←logging, activity←training} (the mapping table lives in {@code DayScoreService}'s
-     * class javadoc). A degraded dimension projects to {@code null}, exactly the "tanulom" signal
-     * this surface already renders. The day page does NOT read these; it consumes the full
-     * evaluation through its own endpoint.
+     * The {@code me-week} contract's six sub-jele (mezo-jcpt.5) is the napi motor hat dimenziója, a
+     * dimenzió-idjeik alatt — EGY szókincs a heti mozaik és a nap-oldal között. A hordozó
+     * továbbra is {@link DayScoreService.DaySubscores}, ami a {@link DayScoreService.DayScore}
+     * részeként MÁR kézben van, tehát ez tiszta projekció: nulla plusz számítás. Degradált
+     * dimenzió {@code null}-ra megy — pontosan a „tanulom" jel, amit ez a felület renderel.
      */
     private static MeWeekSubscores toSubscores(DayScoreService.DayScore score) {
         if (score == null) {
             return new MeWeekSubscores();
         }
         DayScoreService.DaySubscores s = score.subscores();
-        return new MeWeekSubscores().sleep(s.sleep()).fuel(s.fuel()).checkin(s.checkin()).activity(s.activity());
+        return new MeWeekSubscores()
+                .nutrition(s.nutrition()).quality(s.quality()).training(s.training())
+                .sleep(s.sleep()).logging(s.logging()).rhythm(s.rhythm());
     }
 
     private MeWeekAggregates aggregates(
@@ -213,6 +213,10 @@ public class MeWeekService {
      * payload (mezo-p2tr, spec §5) and {@code WeekContextRenderer}'s {@code [Heti adatok]} block
      * (Task 9): both render the exact same day line, so the review's own prompt and the chat's
      * anchored context can never drift apart on what "the day" looked like.
+     *
+     * <p>The sor SZÁNDÉKOSAN a régi négy jelet írja, az új {@code quality}/{@code rhythm} nélkül
+     * (spec D4, mezo-jcpt.5): ez LLM-prompt payload, minden chat-fordulóban fut, a bővítése külön
+     * döntés.
      */
     public static String renderDayLine(MeWeekDay day) {
         MeWeekSubscores subscores = day.getSubscores();
@@ -220,9 +224,9 @@ public class MeWeekService {
                 .append(" (").append(HU_DOW[day.getDate().getDayOfWeek().getValue() - 1]).append("): ")
                 .append("score ").append(orDash(day.getScore()))
                 .append(" [alvás ").append(orDash(subscores != null ? subscores.getSleep() : null))
-                .append(" · fuel ").append(orDash(subscores != null ? subscores.getFuel() : null))
-                .append(" · checkin ").append(orDash(subscores != null ? subscores.getCheckin() : null))
-                .append(" · aktivitás ").append(orDash(subscores != null ? subscores.getActivity() : null))
+                .append(" · fuel ").append(orDash(subscores != null ? subscores.getNutrition() : null))
+                .append(" · checkin ").append(orDash(subscores != null ? subscores.getLogging() : null))
+                .append(" · aktivitás ").append(orDash(subscores != null ? subscores.getTraining() : null))
                 .append(']')
                 .append(", ").append(orDashDecimal(day.getKcal())).append(" kcal / cél ")
                 .append(orDashDecimal(day.getKcalTarget()))

@@ -273,3 +273,61 @@ test('fuel · a Kamra-picker sorai sok találatnál sem lapulnak össze', async 
   // A healthy row is ~114px; the squash bug collapsed every row to ~20px.
   expect(Math.min(...heights)).toBeGreaterThan(60)
 })
+
+for (const width of [320, 390, 430]) {
+  test(`Stack hub stays contained and reachable @ ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 820 })
+    await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+    await page.goto('/fuel/stack')
+    await page.waitForLoadState('networkidle')
+    await page.evaluate(() => document.fonts.ready)
+
+    const scroller = page.locator('.screen-content')
+    const size = await scroller.evaluate(element => ({
+      scrollWidth: element.scrollWidth, clientWidth: element.clientWidth,
+    }))
+    expect(size.scrollWidth).toBeLessThanOrEqual(size.clientWidth + 1)
+
+    for (const name of ['Teljes protokoll', 'Mai ritmus', 'Étkezéshez', 'Kezelés']) {
+      await expect(page.getByRole('button', { name })).toBeVisible()
+    }
+    const lastTile = page.locator('.stk-hub-mosaic .mz-tile').last()
+    await lastTile.scrollIntoViewIfNeeded()
+    await expect(lastTile).toBeVisible()
+
+    const check = page.locator('.stk-hub-check')
+    const box = await check.boundingBox()
+    expect(box?.width ?? 0).toBeGreaterThanOrEqual(44)
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44)
+  })
+}
+
+const STACK_DEPTH: Array<[string, string]> = [
+  ['/fuel/stack/protocol', '.stk-protocol-zone:last-child'],
+  ['/fuel/stack/today', '.stk-timeline-slot:last-child'],
+  ['/fuel/stack/meals', '.stk-detail-body .card:last-child'],
+  ['/fuel/stack/manage', '.stk-manage-card:last-child'],
+]
+
+for (const [path, lastSelector] of STACK_DEPTH) {
+  test(`Stack page last card stays above shell chrome · ${path}`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 820 })
+    await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+    await page.goto(path)
+    await page.waitForLoadState('networkidle')
+    await page.evaluate(() => document.fonts.ready)
+
+    const last = page.locator(lastSelector).last()
+    await last.scrollIntoViewIfNeeded()
+    await expect(last).toBeVisible()
+    const reachable = await last.evaluate(element => {
+      const scroller = document.querySelector('.screen-content')!.getBoundingClientRect()
+      const tabbar = document.querySelector('.tab-bar')?.getBoundingClientRect()
+      const card = element.getBoundingClientRect()
+      const visibleBottom = Math.min(scroller.bottom, tabbar?.top ?? scroller.bottom)
+      return { top: card.top, bottom: card.bottom, viewportTop: scroller.top, visibleBottom }
+    })
+    expect(reachable.top).toBeGreaterThanOrEqual(reachable.viewportTop - 1)
+    expect(reachable.bottom).toBeLessThanOrEqual(reachable.visibleBottom + 1)
+  })
+}

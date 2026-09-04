@@ -12,6 +12,7 @@
 // `/me/week/napok/:date`, which is what finally makes a single day
 // addressable (audit gap §8.3/6 — a push notification can point at one).
 // ============================================================
+import { Fragment } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { MozaikPage, PageBody, PageHead, MCells } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -20,16 +21,11 @@ import { localDateString } from '@/shared/lib/dates'
 import { deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { useMeWeek, useWeeklyReview } from '@/data/hooks'
 import { resolveWeekStart } from '@/features/me/logic/weekNav'
-import { DAY_COPY, dayNoteFor, huDowShort, summariseDays } from '@/features/me/logic/weekDay'
+import { DAY_COPY, DAY_DIMENSIONS, dayNoteFor, huDowShort, summariseDays } from '@/features/me/logic/weekDay'
 import { WeekDayTile } from '@/features/me/components/week/WeekDayTile'
 import { WeekPageSkeleton, WeekPageError } from '@/features/me/components/week/WeekLoadStates'
 
-const LEGEND = [
-  { label: 'alvás', cls: 'is-sleep' },
-  { label: 'fuel', cls: 'is-fuel' },
-  { label: 'check-in', cls: 'is-checkin' },
-  { label: 'aktivitás', cls: 'is-activity' },
-]
+const LEGEND = DAY_DIMENSIONS
 
 export function WeekDaysPage() {
   const navigate = useNavigate()
@@ -88,8 +84,11 @@ export function WeekDaysPage() {
               ))}
             </div>
             <div className="wkd-legend rise" style={{ '--d': `${60 + days.length * 35}ms` } as React.CSSProperties}>
-              {LEGEND.map((l) => (
-                <span key={l.label}><i className={l.cls} />{l.label}</span>
+              {LEGEND.map((l, i) => (
+                <Fragment key={l.key}>
+                  {i > 0 && LEGEND[i - 1].group !== l.group && <i className="wkd-legsep" aria-hidden="true" />}
+                  <span><i className={l.barClass} />{l.label}</span>
+                </Fragment>
               ))}
             </div>
             <p className="wkd-foot rise" style={{ '--d': `${90 + days.length * 35}ms` } as React.CSSProperties}>

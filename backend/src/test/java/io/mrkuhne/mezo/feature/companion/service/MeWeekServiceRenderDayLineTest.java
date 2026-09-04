@@ -23,7 +23,7 @@ class MeWeekServiceRenderDayLineTest {
         MeWeekDay day = MeWeekDay.builder()
                 .date(LocalDate.of(2026, 6, 15)) // Monday -> "H"
                 .score(87)
-                .subscores(new MeWeekSubscores().sleep(90).fuel(80).checkin(70).activity(95))
+                .subscores(new MeWeekSubscores().sleep(90).nutrition(80).logging(70).training(95))
                 .kcal(BigDecimal.valueOf(2500))
                 .kcalTarget(BigDecimal.valueOf(2600))
                 .proteinG(BigDecimal.valueOf(180))

@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.api.dto.LogWeightRequest;
+import io.mrkuhne.mezo.api.dto.GoalSuggestionAcceptRequest;
 import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightLogService;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
@@ -13,6 +14,7 @@ import io.mrkuhne.mezo.feature.goal.entity.GoalSuggestionPayloadJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.goal.repository.GoalSuggestionRepository;
 import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionService;
+import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionPreviewService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
@@ -33,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 class GoalSuggestionServiceIT extends AbstractIntegrationTest {
 
     @Autowired private GoalSuggestionService suggestionService;
+    @Autowired private GoalSuggestionPreviewService previewService;
     @Autowired private GoalSuggestionRepository suggestionRepository;
     @Autowired private GoalRepository goalRepository;
     @Autowired private GoalEngineService goalEngineService;
@@ -150,7 +153,7 @@ class GoalSuggestionServiceIT extends AbstractIntegrationTest {
         GoalSuggestionEntity s = suggestionService.propose(
             user, goal.getId(), GoalSuggestionService.KIND_PHASE_CHANGE, "preset:bulk:m1", payload("bulk", "bulk"));
 
-        var response = suggestionService.accept(user, goal.getId(), s.getId());
+        var response = acceptFresh(user, goal.getId(), s.getId());
 
         assertThat(response.getTrajectory().getValue()).isEqualTo("bulk");
         GoalEntity reloaded = goalRepository.findById(goal.getId()).orElseThrow();
@@ -166,7 +169,10 @@ class GoalSuggestionServiceIT extends AbstractIntegrationTest {
             user, goal.getId(), GoalSuggestionService.KIND_PHASE_CHANGE, "preset:bulk:m1",
             payload("bulk", "cut"));
 
-        assertThatThrownBy(() -> suggestionService.accept(user, goal.getId(), suggestion.getId()))
+        var request = GoalSuggestionAcceptRequest.builder()
+            .previewFingerprint("0".repeat(64)).build();
+        assertThatThrownBy(() -> suggestionService.accept(
+                user, goal.getId(), suggestion.getId(), request))
             .isInstanceOf(SystemRuntimeErrorException.class)
             .satisfies(error -> assertThat(((SystemRuntimeErrorException) error).getMessages())
                 .extracting("code")
@@ -187,7 +193,7 @@ class GoalSuggestionServiceIT extends AbstractIntegrationTest {
             new GoalSuggestionPayloadJson("Deload hét — tartás.", null, 0, 3, 3, null, "Hyp blokk", "cut",
                 null, null, null, null, null, null, null, null, null, null, null));
 
-        suggestionService.accept(user, goal.getId(), s.getId());
+        acceptFresh(user, goal.getId(), s.getId());
 
         GoalEntity reloaded = goalRepository.findById(goal.getId()).orElseThrow();
         assertThat(reloaded.getSegmentOverrides()).hasSize(1);
@@ -218,11 +224,12 @@ class GoalSuggestionServiceIT extends AbstractIntegrationTest {
         profilePopulator.create(user);
         GoalEntity goal = goalPopulator.createGoal(user, "bulk", "active");
         GoalSuggestionEntity s = suggestionService.propose(
-            user, goal.getId(), GoalSuggestionService.KIND_PHASE_CHANGE, "preset:cut-prep:m1", payload("cut", "bulk"));
-        goal.setTrajectory("maintain"); // the owner edited the goal underneath
+            user, goal.getId(), GoalSuggestionService.KIND_PHASE_CHANGE, "preset:bulk:m1", payload("bulk", "bulk"));
+        GoalSuggestionAcceptRequest request = requestFor(user, goal.getId(), s.getId());
+        goal.setTargetDate(goal.getTargetDate().plusWeeks(1)); // the owner edited the goal underneath
         goalRepository.saveAndFlush(goal); // no ambient tx here — must be persisted explicitly
 
-        assertThatThrownBy(() -> suggestionService.accept(user, goal.getId(), s.getId()))
+        assertThatThrownBy(() -> suggestionService.accept(user, goal.getId(), s.getId(), request))
             .isInstanceOf(SystemRuntimeErrorException.class)
             .hasFieldOrPropertyWithValue("status", HttpStatus.CONFLICT);
         assertThat(suggestionRepository.findById(s.getId()).orElseThrow().getStatus()).isEqualTo("superseded");
@@ -235,7 +242,7 @@ class GoalSuggestionServiceIT extends AbstractIntegrationTest {
         GoalEntity goal = seedEvaluatedActiveCutGoal();
         UUID sid = proposeWeeklyCorrection(goal, -120);
 
-        suggestionService.accept(userId, goal.getId(), sid);
+        acceptFresh(userId, goal.getId(), sid);
 
         GoalEntity reloaded = goalRepository.findById(goal.getId()).orElseThrow();
         assertThat(reloaded.getBalanceAdjustmentKcal()).isEqualTo(-120);
@@ -243,7 +250,7 @@ class GoalSuggestionServiceIT extends AbstractIntegrationTest {
 
         // A second accepted correction accumulates onto the first.
         UUID sid2 = proposeWeeklyCorrection(reloaded, -60);
-        suggestionService.accept(userId, goal.getId(), sid2);
+        acceptFresh(userId, goal.getId(), sid2);
         assertThat(goalRepository.findById(goal.getId()).orElseThrow().getBalanceAdjustmentKcal())
             .isEqualTo(-180);
     }
@@ -261,12 +268,13 @@ class GoalSuggestionServiceIT extends AbstractIntegrationTest {
     void testAccept_shouldSucceed_whenWeighInRecomputesPrescriptionBetweenProposeAndAccept() {
         GoalEntity goal = seedEvaluatedActiveCutGoal();
         UUID sid = proposeWeeklyCorrection(goal, -120);
+        GoalSuggestionAcceptRequest request = requestFor(userId, goal.getId(), sid);
 
         // The production trigger: WeightLogService.log, not a direct goalEngineService.evaluate call.
         weightLogService.log(userId, new LogWeightRequest()
             .date(LocalDate.of(2026, 6, 18)).weightKg(new BigDecimal("82.10")));
 
-        assertThatCode(() -> suggestionService.accept(userId, goal.getId(), sid)).doesNotThrowAnyException();
+        assertThatCode(() -> suggestionService.accept(userId, goal.getId(), sid, request)).doesNotThrowAnyException();
         assertThat(goalRepository.findById(goal.getId()).orElseThrow().getBalanceAdjustmentKcal())
             .isEqualTo(-120);
         assertThat(suggestionRepository.findById(sid).orElseThrow().getStatus()).isEqualTo("accepted");
@@ -282,10 +290,11 @@ class GoalSuggestionServiceIT extends AbstractIntegrationTest {
     void testAccept_shouldSupersedeAnd409_whenTrajectoryChangedSinceProposal() {
         GoalEntity goal = seedEvaluatedActiveCutGoal();
         UUID sid = proposeWeeklyCorrection(goal, -120);
-        goal.setTrajectory("maintain"); // the owner edited the goal underneath
+        GoalSuggestionAcceptRequest request = requestFor(userId, goal.getId(), sid);
+        goal.setBalanceAdjustmentKcal(-40); // a semantic input changed underneath
         goalRepository.saveAndFlush(goal); // no ambient tx here — must be persisted explicitly
 
-        assertThatThrownBy(() -> suggestionService.accept(userId, goal.getId(), sid))
+        assertThatThrownBy(() -> suggestionService.accept(userId, goal.getId(), sid, request))
             .isInstanceOf(SystemRuntimeErrorException.class)
             .hasFieldOrPropertyWithValue("status", HttpStatus.CONFLICT);
         assertThat(suggestionRepository.findById(sid).orElseThrow().getStatus()).isEqualTo("superseded");
@@ -301,24 +310,25 @@ class GoalSuggestionServiceIT extends AbstractIntegrationTest {
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
     void testAccept_shouldSupersedeAnd409_whenAnotherCorrectionAcceptedSinceProposal() {
         GoalEntity goal = seedEvaluatedActiveCutGoal();
+        UUID sid = proposeWeeklyCorrection(goal, -120);
+        GoalSuggestionAcceptRequest request = requestFor(userId, goal.getId(), sid);
+        goal.setBalanceAdjustmentKcal(-60);
+        goalRepository.saveAndFlush(goal);
 
-        // Another correction proposed + accepted FIRST bumps balanceAdjustmentKcal underneath.
-        UUID firstSid = proposeWeeklyCorrection(goal, -60);
-        suggestionService.accept(userId, goal.getId(), firstSid);
-        GoalEntity afterFirst = goalRepository.findById(goal.getId()).orElseThrow();
-        assertThat(afterFirst.getBalanceAdjustmentKcal()).isEqualTo(-60);
-
-        GoalSuggestionEntity stale = suggestionPopulator.createOpen(userId, goal.getId(),
-            GoalSuggestionService.KIND_WEEKLY_CORRECTION, "weekly:2026-08-17",
-            new GoalSuggestionPayloadJson(
-                "Heti korrekció: a mért trend lassabb a célnál.", null, null, null, null, null, null,
-                afterFirst.getTrajectory(), "2026-08-17", -120, new BigDecimal("-0.20"), new BigDecimal("-0.50"),
-                false, 5, 1800, 2000, afterFirst.getPrescription().generatedAt(),
-                afterFirst.getRateTargetPctPerWeek(), 0)); // snapshot adjustment 0 — predates firstSid's accept
-
-        assertThatThrownBy(() -> suggestionService.accept(userId, goal.getId(), stale.getId()))
+        assertThatThrownBy(() -> suggestionService.accept(userId, goal.getId(), sid, request))
             .isInstanceOf(SystemRuntimeErrorException.class)
             .hasFieldOrPropertyWithValue("status", HttpStatus.CONFLICT);
-        assertThat(suggestionRepository.findById(stale.getId()).orElseThrow().getStatus()).isEqualTo("superseded");
+        assertThat(suggestionRepository.findById(sid).orElseThrow().getStatus()).isEqualTo("superseded");
+    }
+
+    private GoalSuggestionAcceptRequest requestFor(UUID owner, UUID goalId, UUID suggestionId) {
+        String fingerprint = previewService.preview(owner, goalId, suggestionId).getPreviewFingerprint();
+        return GoalSuggestionAcceptRequest.builder().previewFingerprint(fingerprint).build();
+    }
+
+    private io.mrkuhne.mezo.api.dto.GoalResponse acceptFresh(
+            UUID owner, UUID goalId, UUID suggestionId) {
+        return suggestionService.accept(owner, goalId, suggestionId,
+            requestFor(owner, goalId, suggestionId));
     }
 }

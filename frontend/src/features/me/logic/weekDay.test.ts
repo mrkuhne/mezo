@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import {
   DAY_DIMENSIONS, dayNoteFor, dayState, dayVerdict, doneDimensionCount, fmtSleep, hu1, huDowFull,
   huDowShort, huInt, isEmptyDay, isInWeek, isValidIsoDate, mondayOf, ringLearningLabels,
-  SUBSCORES, subscoreCount, summariseDays, tileScoreLabel,
+  subscoreCount, summariseDays, tileScoreLabel,
 } from '@/features/me/logic/weekDay'
 import type { MeWeekDay } from '@/data/me/meWeek'
 
@@ -13,7 +13,7 @@ import type { MeWeekDay } from '@/data/me/meWeek'
 function day(over: Partial<MeWeekDay> = {}): MeWeekDay {
   return {
     date: '2026-05-20', score: null,
-    subscores: { sleep: null, fuel: null, checkin: null, activity: null },
+    subscores: { nutrition: null, quality: null, training: null, sleep: null, logging: null, rhythm: null },
     kcal: null, proteinG: null, carbsG: null, fatG: null, kcalTarget: 3000, proteinTargetG: 200,
     weightKg: null, sleepMin: null, sleepQuality: null,
     checkinCount: 0, checkinEnergyAvg: null, workoutCount: 0, xp: null,
@@ -25,12 +25,12 @@ const TODAY = '2026-05-22'
 
 describe('dayState — the four honest states (handoff §4)', () => {
   test('a scored day is `scored`', () => {
-    expect(dayState(day({ score: 78, subscores: { sleep: 80, fuel: 70, checkin: null, activity: null } }), TODAY))
+    expect(dayState(day({ score: 78, subscores: { nutrition: 70, quality: null, training: null, sleep: 80, logging: null, rhythm: null } }), TODAY))
       .toBe('scored')
   })
 
   test('a day with ONE sub-score and no score is `thin`, not `empty`', () => {
-    const d = day({ subscores: { sleep: null, fuel: null, checkin: 65, activity: null }, checkinCount: 2, xp: 20 })
+    const d = day({ subscores: { nutrition: null, quality: null, training: null, sleep: null, logging: 65, rhythm: null }, checkinCount: 2, xp: 20 })
     expect(subscoreCount(d)).toBe(1)
     expect(dayState(d, TODAY)).toBe('thin')
     expect(isEmptyDay(d)).toBe(false)
@@ -61,9 +61,9 @@ describe('dayState — the four honest states (handoff §4)', () => {
 
 describe('summariseDays', () => {
   const days = [
-    day({ date: '2026-05-18', score: 78, subscores: { sleep: 82, fuel: 75, checkin: 74, activity: 88 } }),
-    day({ date: '2026-05-19', score: 85, subscores: { sleep: 90, fuel: 82, checkin: 80, activity: 90 } }),
-    day({ date: '2026-05-20', subscores: { sleep: null, fuel: null, checkin: 65, activity: null }, checkinCount: 2 }),
+    day({ date: '2026-05-18', score: 78, subscores: { nutrition: 75, quality: 79, training: 88, sleep: 82, logging: 74, rhythm: 80 } }),
+    day({ date: '2026-05-19', score: 85, subscores: { nutrition: 82, quality: 85, training: 90, sleep: 90, logging: 80, rhythm: 88 } }),
+    day({ date: '2026-05-20', subscores: { nutrition: null, quality: null, training: null, sleep: null, logging: 65, rhythm: null }, checkinCount: 2 }),
     day({ date: '2026-05-21' }),
     day({ date: '2026-05-24' }), // future
   ]
@@ -86,8 +86,8 @@ describe('summariseDays', () => {
 
 describe('dayVerdict', () => {
   const days = [
-    day({ date: '2026-05-18', score: 78, subscores: { sleep: 82, fuel: 75, checkin: 74, activity: 88 } }),
-    day({ date: '2026-05-19', score: 85, subscores: { sleep: 90, fuel: 82, checkin: 80, activity: 90 } }),
+    day({ date: '2026-05-18', score: 78, subscores: { nutrition: 75, quality: 79, training: 88, sleep: 82, logging: 74, rhythm: 80 } }),
+    day({ date: '2026-05-19', score: 85, subscores: { nutrition: 82, quality: 85, training: 90, sleep: 90, logging: 80, rhythm: 88 } }),
   ]
   test('names the best day, and hedges for the rest', () => {
     expect(dayVerdict(days[1], days, '2026-05-22')).toBe('a hét legjobb napja')
@@ -136,19 +136,22 @@ describe(':date route param', () => {
   })
 })
 
-describe('weekly SUBSCORES — the mosaic stays on FOUR bars (out of scope this task)', () => {
-  test('the four sleep/fuel/checkin/activity keys are untouched', () => {
-    expect(SUBSCORES.map((s) => s.key)).toEqual(['sleep', 'fuel', 'checkin', 'activity'])
-  })
-})
-
-describe('DAY_DIMENSIONS — the six day-page dimensions (mezo-jcpt.4)', () => {
-  test('lists all six dimension keys in the config-weight order, each with a HU label + bar class', () => {
-    expect(DAY_DIMENSIONS.map((d) => d.key))
+describe('a heti mozaik hat sub-jelet rajzol (mezo-jcpt.5)', () => {
+  test('a hat dimenzió a config-súly sorrendjében, csoportokkal', () => {
+    expect(DAY_DIMENSIONS.map((s) => s.key))
       .toEqual(['nutrition', 'quality', 'training', 'sleep', 'logging', 'rhythm'])
-    expect(DAY_DIMENSIONS.map((d) => d.label))
+    expect(DAY_DIMENSIONS.map((s) => s.group))
+      .toEqual(['do', 'do', 'do', 'be', 'be', 'be'])
+  })
+
+  test('a barClass az is-<key> minta, hogy a nap-oldal és a heti csempe EGY szemantikát osszon', () => {
+    expect(DAY_DIMENSIONS.map((s) => s.barClass))
+      .toEqual(['is-nutrition', 'is-quality', 'is-training', 'is-sleep', 'is-logging', 'is-rhythm'])
+  })
+
+  test('a hat magyar címke, bar-sorrendben', () => {
+    expect(DAY_DIMENSIONS.map((s) => s.label))
       .toEqual(['tápanyag', 'minőség', 'edzés', 'alvás', 'logolás', 'ritmus'])
-    for (const d of DAY_DIMENSIONS) expect(d.barClass).toBe(`is-${d.key}`)
   })
 
   test('doneDimensionCount counts only DONE dimensions, never NO_DATA/IN_PROGRESS', () => {

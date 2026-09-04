@@ -344,6 +344,21 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 - `memory_embedding` is still the sole serving source. The new canonical rows are population and
   migration infrastructure only; retrieval cutover remains behind later shadow/evaluation gates.
 
+**Adaptive memory query preparation (`mezo-6dii.3`) — consumer-neutral input, still no serving cutover:**
+
+- `MemoryRequest` is the shared boundary for chat, morning briefing, weekly memoir and prediction
+  evidence. It carries owner, consumer policy, raw question, short history, as-of date, token budget,
+  optional conversation identity and deep-search intent; this slice only prepares the query and does
+  not retrieve or persist anything.
+- `MemoryQueryAnalyzer` routes conservatively in pure code: closed Hungarian greetings/thanks/meta
+  phrases need no memory; short referential follow-ups with usable history are context-dependent;
+  everything else is self-contained. Explicit ISO dates become deterministic `from`/`to` bounds.
+- Only context-dependent requests reach the existing cheap `CompanionLlm` port. The rewrite sees at
+  most the latest six nonblank turns, with each turn capped at 500 characters, and must return one
+  standalone Hungarian query of at most 500 characters. Provider failure, blank output or oversized
+  output falls back to the untouched raw query. `PreparedMemoryQuery` retains raw and dense forms
+  separately so later retrieval and audit can compare them.
+
 **V2.2 (`mezo-fnnq.10`) shipped daily summaries + the embed pipeline — the memory fills itself:**
 
 - **`daily_summary` table + generator** — `DailySummaryService.generate(userId, date)`: a
@@ -930,6 +945,49 @@ a separate transaction. It can therefore reuse the vector already paid for by OL
 only leaves a repairable projection gap. Re-offering an unchanged OLD row also republishes the event,
 which heals a previously missed canonical row without another provider call. The re-embedding path
 selects a named target version and never mutates `servingEmbeddingVersion`.
+
+**Adaptive memory-query preparation (`mezo-6dii.3`; no retrieval yet):**
+
+```text
+MemoryRequest
+  → MemoryQueryAnalyzer (deterministic)
+      ├─ NO_MEMORY_NEEDED → raw query retained; no LLM
+      ├─ SELF_CONTAINED   → raw query retained; optional ISO date bounds
+      └─ CONTEXT_DEPENDENT
+           → latest 6 nonblank turns × max 500 chars
+           → LlmMemoryQueryRewriter (cheap CompanionLlm)
+           → standalone dense query | raw-query fallback
+  → PreparedMemoryQuery(mode, rawQuery, denseQuery, from, to)
+```
+
+The analyzer, not the model, decides whether rewriting is warranted. This keeps greetings and
+self-contained questions free of rewrite latency/cost, bounds conversational prompt exposure, and
+makes failure behavior deterministic. The four-value `ConsumerPolicy` is already part of the core
+request contract; later tasks apply its retrieval/ranking differences.
+
+**Shared hybrid candidate retrieval (`mezo-6dii.4`; implemented, not serving chat yet):**
+
+```text
+RetrievalInput(request, prepared query, serving embedding version, per-retriever limit)
+  ├─ dense   → query embedding → memory_vector ⟕ active memory_item
+  ├─ lexical → folded raw query → memory_item FTS + trigram score
+  ├─ facts   → pinned ∪ query-matching knowledge_fact (+ valid conflict counterpart)
+  └─ graph   → deterministic seed nodes → bounded GraphTraversalService neighborhood
+       ↓
+  provenance-rich MemoryCandidate lists (no fusion/selection/rendering in this slice)
+```
+
+Dense and lexical retrieval enforce owner, soft-delete, active state, validity and `asOf` in their
+SQL, exclude the current conversation's own `chat_turn` rows, and apply their limit before mapping.
+Dense additionally requires a ready, live, content-hash-current vector in the requested serving
+generation. Fact retrieval respects `include_in_prompt` as the user's global injection opt-out,
+excludes future/expired/superseded rows, and applies its limit to ranked seeds before expanding
+each selected conflict to both still-valid owned sides; both sides carry the conflict flag. Graph
+retrieval adds `asOf`-aware seed/neighborhood overloads to the existing traversal, excludes
+future-dated nodes, keeps the configured hop/top-K bounds, and maps each edge under its stable ID.
+All three new JDBC queries use the existing same-connection savepoint pattern and deliberately
+rethrow failures; per-retriever catch/timeout/audit belongs to the Task-5 coordinator, so a genuine
+empty result cannot be mistaken for an outage. The old chat recall path still serves unchanged.
 
 **The streamed turn (V0.4 + V0.5 tools — what the FE uses):**
 
@@ -1533,14 +1591,28 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
       bug if they disagree.
     - `public DayInputs inputsFor(UUID userId, LocalDate date)` exposes one day's fully-resolved
       inputs (priors included) for the day-evaluation read path, without loading a whole week.
-  - **Legacy wire mapping (binding, `DaySubscores`).** The weekly trend (`WeeklyScoreService`'s
-    persisted per-domain averages, `me-week`'s `MeWeekSubscores`) still reads the OLD four-field
-    shape — deliberately NOT changed by this slice — now populated as projections of the closest
-    successor dimension: `sleep ← sleep`, `fuel ← nutrition`, `checkin ← logging`,
-    `activity ← training`. A degraded (`NO_DATA`/`IN_PROGRESS`) dimension projects to `null`, the
-    same "tanulom" signal the legacy subscores carried. `DaySubscores.score` is `DayEvaluation
-    .base()`. The day page itself does not read this shape — it consumes the full `DayEvaluation`
-    through `GET /api/me/day/{date}/evaluation` (§4).
+  - **Wire mapping (binding, `DaySubscores`).** **Since `mezo-jcpt.5` this projection is a
+    straight 1:1**, not a remap: `DaySubscores`' six fields carry the engine's six dimensions
+    under their OWN ids (`nutrition`/`quality`/`training`/`sleep`/`logging`/`rhythm`), and
+    `me-week`'s wire shape `MeWeekSubscores` gained the same two fields (`quality`/`rhythm`) so
+    the heti mozaik and the day page now share ONE six-key vocabulary — the historical
+    "legacy four-field wire shape" this paragraph used to describe is gone from the *live* wire.
+    **The one place a four-field shape survives is the persisted `weekly_score` cache**
+    (`WeeklyScoreEntity`'s `sleep_avg`/`fuel_avg`/`checkin_avg`/`activity_avg` columns,
+    `MeWeekTrendPoint`'s matching fields) — deliberately UNCHANGED (spec D3, no migration): the
+    cache only needed the same four dimensions the legacy formula tracked, so widening it to six
+    columns for two fields nothing yet reads would have been speculative. `WeeklyScoreService`
+    narrows the now-six-field `DaySubscores` back down to those four columns via the SAME
+    closest-successor mapping the wire used to carry: `sleepAvg ← sleep`, `fuelAvg ← nutrition`,
+    `checkinAvg ← logging`, `activityAvg ← training`; `quality` and `rhythm` get no cache column.
+    A degraded (`NO_DATA`/`IN_PROGRESS`) dimension projects to `null` throughout, the same
+    "tanulom" signal the legacy subscores carried. `DaySubscores.score` is `DayEvaluation
+    .base()`. The day page itself does not read either shape — it consumes the full
+    `DayEvaluation` through `GET /api/me/day/{date}/evaluation` (§4). **`MeWeekService
+    .renderDayLine`** (below) is a separate, deliberately-unwidened consumer: it is an LLM-prompt
+    payload rendered on every chat turn, so it still renders only the four legacy-named signals
+    (alvás/fuel/checkin/aktivitás) off the six-field `DaySubscores` — widening it to `quality`/
+    `rhythm` too is a separate decision (spec D4), not a byproduct of the wire change.
 - **`MeWeekService`** (`service/MeWeekService.java`) — assembles `GET /api/me/week/{start}`
   (`MeWeekController`, one ISO-Monday week, live for the current in-progress week): per-day
   fuel/sleep/weight/check-in/workout/XP values + `DayScoreService` scores + weekly aggregates
@@ -3926,6 +3998,15 @@ spends writing vectors — nothing else. An untagged site records `feature = 'un
 `mezo.feature.llm-log.enabled` off ⇒ the injected recorder is the no-op ⇒ nothing happens; the
 adapters never branch on the switch.
 
+**Shared RAG retriever seam (`mezo-6dii.4`, staged).** The new `MemoryRetriever` contract has four
+named implementations (`dense`, `lexical`, `facts`, `graph`). Dense is the only adapter that crosses
+the `EmbeddingPort` provider seam and embeds `PreparedMemoryQuery.denseQuery`; lexical and facts are
+local PostgreSQL reads, while graph delegates to the existing deterministic
+`GraphTraversalService`. Every adapter receives the same owner/as-of/policy envelope and returns
+`MemoryCandidate` source identity, label/content, local score and selection signals. Nothing calls
+these beans from a user turn yet: fusion, timeout/failure isolation, selection and OLD/SHADOW/NEW
+wiring arrive in the following slices.
+
 ### 5.4 Companion ↔ API contract & backend platform (wired)
 Companion is now a backed feature on the contract-first pipeline
 ([`_platform-api-backend.md`](_platform-api-backend.md) §3–§4): `companion.yml` → merged
@@ -4352,6 +4433,23 @@ covers pending-batch resume, matching-hash skip, stale-hash refresh, stable prov
 coexisting v1/v2 generations, and active/onboarded-user fan-out. The frozen OLD retrieval suite
 (`AmbientRecallEvalIT`, `NoteVectorLifecycleIT`, `TurnEmbeddingListenerIT`) remains the regression
 gate while serving has not cut over.
+
+**Adaptive query preparation (`mezo-6dii.3`).**
+`memory/service/MemoryQueryAnalyzerTest` pins the closed Hungarian routing table, history requirement and ISO-date
+bounds as a pure unit test. `MemoryQueryPreparerIT` uses the profile-gated `FakeCompanionLlm` to
+prove scripted standalone rewriting, raw-query retention, latest-six/nonblank/500-character history
+bounds, raw fallback on provider failure/blank/oversized output, and zero LLM calls for no-memory or
+self-contained requests. No test reaches a network model.
+
+**Hybrid candidate retrievers (`mezo-6dii.4`).**
+`HybridMemoryRetrieverIT` runs all four real retriever beans against PostgreSQL/pgvector with the
+profile-gated fake embedder. Its matrix covers semantic and exact-term hits, old salient memory,
+suppressed/superseded/expired/future rows, serving-vector version and content-hash eligibility,
+current-conversation exclusion, cross-user isolation, fact pinning/opt-out/conflict expansion, and
+stable graph-edge mapping. A forced wrong-dimension ANN call plus invalid limits prove dense,
+lexical and fact JDBC failures propagate while their savepoints leave the enclosing transaction
+usable. The dense case also executes `EXPLAIN (ANALYZE, BUFFERS)` over seeded data as a diagnostic;
+no planner cost or node choice is asserted.
 
 **Daily evaluation (`mezo-jcpt.4`, plan 2/2).**
 `feature/companion/service/DayEvaluationEngineTest.java` is the formula's unit-level pin — one test
@@ -5671,6 +5769,19 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryReembeddingService,MemoryReembeddingJob}.java` — bounded resumable target-generation backfill and active-user fan-out without serving-version mutation.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/{MemoryProjectionWriterIT,MemoryProjectionFailureIsolationIT,MemoryReembeddingIT}.java` + `backend/src/test/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriterIT.java` — lifecycle, failure-isolation, generation coexistence/retry and all-source dual-write coverage.
 
+**Backend — adaptive memory query preparation (`mezo-6dii.3` — §3/§8)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/dto/{ConsumerPolicy,QueryMode,MemoryRequest,PreparedMemoryQuery}.java` — shared consumer/request boundary and the deterministic prepared-query result.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryQueryAnalyzer,MemoryQueryPreparer,MemoryQueryRewriter,LlmMemoryQueryRewriter}.java` — conservative routing, bounded contextual rewrite and raw-query fallback over the existing cheap LLM port.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — deterministic `[fake-memory-rewrite:…]` scripting plus captured bounded history for integration assertions.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/service/MemoryQueryAnalyzerTest.java` + `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/MemoryQueryPreparerIT.java` — routing/date unit coverage and real-context rewrite/fallback coverage.
+
+**Backend — hybrid candidate retrievers (`mezo-6dii.4` — §3/§5/§8)**
+
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/dto/{RetrievalInput,MemoryCandidate}.java` + `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/MemoryRetriever.java` — the common invocation and provenance-rich candidate contracts; fact/graph candidates honestly have no `memoryItemId`, and graph edges may have no event date.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/repository/{DenseMemoryQuery,LexicalMemoryQuery,KnowledgeFactRetrievalQuery}.java` — owner/state/validity/as-of filtering in SQL, serving-generation ANN, folded FTS+trigram ranking, pinned/matching/conflict fact union and same-connection savepoint isolation.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{DenseMemoryRetriever,LexicalMemoryRetriever,FactMemoryRetriever,GraphMemoryRetriever}.java` — the named `dense`/`lexical`/`facts`/`graph` adapters; graph reuses the configured `GraphTraversalService` bounds.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/HybridMemoryRetrieverIT.java` — deterministic pgvector/FTS/fact/graph result, ownership and failure-boundary matrix.
+
 **Backend — feedback (W4.1, `mezo-b3pp.15` — §4/§5.7)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/controller/CompanionFeedbackController.java` — `implements CompanionFeedbackApi`, `COMPANION_SWITCH`-gated, ownership from `CurrentUserId`, thin delegation.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/service/MessageFeedbackService.java` — `put` (the honest `FEEDBACK_REASON_REQUIRES_DOWN` 400 before the upsert, then a re-read so the response is server truth — the can't-happen empty re-read raises `FEEDBACK_UPSERT_READBACK_FAILED` **500**: our fault, not the caller's) / `retract` (idempotent soft delete) / `list` (batch read).
@@ -5769,7 +5880,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `api/feature/me-week/me-week.yml` (new fragment) + `api/feature/companion/companion.yml` (`CreateConversationRequest.context`).
 - Tests: `feature/companion/service/DayScoreServiceIT.java`, `feature/companion/controller/MeWeekControllerIT.java`, `AnchoredConversationIT`.
 - **Owned by `feature/proactive`, not restated here** (the generated weekly-review NARRATIVE + its Monday cron/push/feedback): `feature/proactive/{entity/WeeklyReviewEntity,service/WeeklyReviewGenerator,service/WeeklyReviewJob,service/WeeklyReviewService,service/WeeklyReviewDigestService,service/WeekReviewSourceAdapter}.java` — see [`proactive.md` §10](proactive.md).
-- **FE side** — `frontend/src/features/me/pages/WeekPage.tsx` + `frontend/src/features/me/components/{WeekDayCard,WeekScoreBars,WeekReviewCard,WeekDiscoveries,WeekNextCard}.tsx` + `frontend/src/features/me/logic/useChatHandoff.ts` + `frontend/src/data/me/{meWeek*,weeklyReview*}.ts`, documented in [`me.md`](me.md) `Heti` §2/§4/§10.
+- **FE side** — `frontend/src/features/me/pages/{WeekHubPage,WeekAnalysisPage,WeekDaysPage,WeekLessonsPage,WeekDiscoveriesPage}.tsx` (the hub + 4 view-pages, `mezo-d20.6.10` split — `WeekPage.tsx` no longer exists) + `frontend/src/features/me/components/week/WeekDayTile.tsx` (per-day tile — `WeekDayCard` is deleted) + `frontend/src/features/me/components/{WeekDiscoveries,WeekNextCard,WeekReviewCard}.tsx` + `frontend/src/features/me/logic/useChatHandoff.ts` + `frontend/src/data/me/{meWeek*,weeklyReview*}.ts`, documented in [`me.md`](me.md) `Heti` §2/§4/§10.
 
 **Backend — knowledge graph (W2.1, `mezo-b3pp.6` — §4.2/§6.1)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/graph/entity/{GraphNodeEntity,GraphEdgeEntity}.java` — `extends OwnedEntity`; `meta`/`evidence` typed jsonb columns (§4 above).

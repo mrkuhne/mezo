@@ -1,5 +1,5 @@
 import type { GoalTimelineResponse } from '@/data/me/goalLinkApi'
-import type { GoalOverviewResponse, GoalResponse, FeasibilityPreviewResponse, GoalSuggestionResponse } from '@/data/me/goalApi'
+import type { GoalOverviewResponse, GoalResponse, FeasibilityPreviewResponse, GoalSuggestionPreviewResponse, GoalSuggestionResponse } from '@/data/me/goalApi'
 import type { BiometricProfileResponse } from '@/data/me/biometricProfileApi'
 import type { Goal, WeightEntry, WeightTrends, LinkedMeso } from '@/data/types'
 import { addDays, localDateString } from '@/shared/lib/dates'
@@ -277,6 +277,51 @@ export const goalSuggestions: GoalSuggestionResponse[] = [
     decidedAt: null,
   },
 ]
+
+// Contract-shaped review seed for the Huawei-style change page. It deliberately mixes changed
+// and unchanged fields so the fixed-baseline grid stays useful in mock mode as well.
+export const goalSuggestionPreviewSeed: GoalSuggestionPreviewResponse = {
+  status: 'proposed',
+  reasonCode: 'weekly_correction',
+  affectedFromWeek: 17,
+  affectedToWeek: 20,
+  current: {
+    trajectory: 'cut', targetWeightKg: 73, targetDate: '2026-08-15', targetRateKgPerWeek: -0.48,
+    weekAverageKcal: 2150, trainingDayKcal: 2300, restDayKcal: 1950,
+    proteinG: 163, carbsG: 226, fatG: 66,
+    segmentFromWeek: 3, segmentToWeek: 5, segmentLabel: 'MAV',
+    guardStatus: null,
+  },
+  proposed: {
+    trajectory: 'cut', targetWeightKg: 73, targetDate: '2026-08-15', targetRateKgPerWeek: -0.54,
+    weekAverageKcal: 2030, trainingDayKcal: 2180, restDayKcal: 1830,
+    proteinG: 163, carbsG: 196, fatG: 66,
+    segmentFromWeek: 3, segmentToWeek: 5, segmentLabel: 'MAV',
+    guardStatus: null,
+  },
+  changedFields: ['targetRateKgPerWeek', 'weekAverageKcal', 'trainingDayKcal', 'restDayKcal', 'carbsG'],
+  unchangedFields: ['trajectory', 'targetWeightKg', 'targetDate', 'proteinG', 'fatG', 'segment', 'guards'],
+  warnings: ['Az alváshiány miatt a kalóriakorrekció tompítva lett.'],
+  blockers: [],
+  canApply: true,
+  previewFingerprint: '0123456789abcdef'.repeat(4),
+}
+
+export const goalSuggestionPreviewSeeds: Record<string, GoalSuggestionPreviewResponse> = {
+  'sug-weekly-w17': goalSuggestionPreviewSeed,
+  'sug-deload-w3': {
+    ...goalSuggestionPreviewSeed,
+    reasonCode: 'phase_change', affectedFromWeek: 3, affectedToWeek: 3,
+    proposed: {
+      ...goalSuggestionPreviewSeed.current,
+      targetRateKgPerWeek: -0.35, weekAverageKcal: 2390, trainingDayKcal: 2540,
+      restDayKcal: 2190, carbsG: 286, segmentFromWeek: 3, segmentToWeek: 3,
+      segmentLabel: 'Deload · tartás',
+    },
+    changedFields: ['targetRateKgPerWeek', 'weekAverageKcal', 'trainingDayKcal', 'restDayKcal', 'carbsG', 'segment'],
+    unchangedFields: ['trajectory', 'targetWeightKg', 'targetDate', 'proteinG', 'fatG', 'guards'],
+  },
+}
 
 /** Full contract-shaped Goal Overview seed. Mock and real surfaces deliberately consume the
  * same server vocabulary; only the transport differs. The split-day values mirror the current

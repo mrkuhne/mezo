@@ -1,8 +1,8 @@
 import { Link } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
 import { patternCategoryColor } from '@/data/insights/insights'
+import { PatternDomainMark } from '@/features/insights/components/PatternDomainMark'
 import { confidenceMeta, findingSentence, pairLine, type ConfidenceMeta } from '@/features/insights/logic/findings'
-import { DOMAIN_META } from '@/features/insights/logic/domains'
 import { verdictSentence } from '@/features/insights/logic/verdicts'
 import type { Pattern, PatternMonitorPair, PatternStatus } from '@/data/types'
 
@@ -49,7 +49,7 @@ export function PatternDecisionCard({
       <div className="row" style={{ justifyContent: 'space-between' }}>
         {pair ? (
           <span className="chip" style={{ fontSize: 10, padding: '4px 10px' }}>
-            {DOMAIN_META[pair.metricBDomain].icon} {DOMAIN_META[pair.metricBDomain].label}
+            <PatternDomainMark domain={pair.metricBDomain} size={16} />
           </span>
         ) : (
           <span className="chip" style={{ fontSize: 10, padding: '4px 10px' }}>{pattern.categoryLabel}</span>

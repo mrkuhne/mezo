@@ -173,6 +173,42 @@ describe('usePantry (mock mode)', () => {
     await act(async () => { await result.current.actions.addFromCatalog('cat-skyr') })
     expect(result.current.pantry.ingredients.filter(i => i.catalogId === 'cat-skyr')).toHaveLength(1)
   })
+
+  // mezo-6omv, fix-round 1: applyStashUpdate's "preserve untouched macro" merge had a trailing
+  // `?? 0` that only used to fire when `s.macros` was absent entirely. Once each macro field is
+  // itself honestly nullable, that same `?? 0` silently turned a genuinely unknown macro (null)
+  // into a fabricated 0 on every update that did not touch it — reproducing the exact bug this
+  // task fixes, just on the mock update path instead of the read model.
+  it('updateItem preserves a null macro as null, not a fabricated 0, when the edit does not touch it (mezo-6omv)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ pantry: usePantry(), actions: usePantryActions() }),
+      { wrapper: Wrapper },
+    )
+    // Only kcal is carried — mockAdd's supplement branch fills p/c/f with null (mezo-6omv), giving
+    // a stash row whose fat macro is honestly "no data" from the start.
+    act(() => {
+      result.current.actions.addItem({ kind: 'supplement', name: 'Részleges makró teszt', kcal: 100 })
+    })
+    await waitFor(() => {
+      expect(result.current.pantry.stash.some(s => s.name === 'Részleges makró teszt')).toBe(true)
+    })
+    const created = result.current.pantry.stash.find(s => s.name === 'Részleges makró teszt')!
+    expect(created.macros?.f).toBeNull()
+
+    // Edit something else entirely — the request never carries fatG (mirrors the real PUT, which
+    // omits untouched fields), so the merge must preserve the existing null, not zero it.
+    act(() => {
+      result.current.actions.updateItem(created.id, { kind: 'supplement', name: 'Részleges makró teszt', price: 4990 })
+    })
+    await waitFor(() => {
+      const edited = result.current.pantry.stash.find(s => s.id === created.id)
+      expect(edited?.price).toBe(4990)
+    })
+    const edited = result.current.pantry.stash.find(s => s.id === created.id)
+    expect(edited?.macros?.kcal).toBe(100) // untouched-but-known field still carries its value
+    expect(edited?.macros?.f).toBeNull() // untouched-and-unknown field stays null, NOT 0
+  })
 })
 
 describe('usePantryActions (real mode)', () => {

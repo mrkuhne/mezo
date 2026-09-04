@@ -52,6 +52,42 @@ describe('ToastProvider — simple toasts (a mai viselkedés megőrzése)', () =
   it('provider nélküli emitToast csendes no-op', () => {
     expect(() => emitToast({ kind: 'info', text: 'senki sem hallja' })).not.toThrow()
   })
+
+  it('az opcionális action valódi gombként lefut, majd csak a saját toastját zárja', async () => {
+    const action = vi.fn()
+    render(<ToastProvider>content</ToastProvider>)
+    act(() => emitToast({ kind: 'success', text: 'marad' }))
+    act(() => { vi.advanceTimersByTime(50) })
+    act(() => emitToast({
+      kind: 'success',
+      text: 'Kreatin bevéve',
+      action: { label: 'Visszavonás', onClick: action },
+    }))
+
+    const button = screen.getByRole('button', { name: 'Visszavonás' })
+    expect(button.tagName).toBe('BUTTON')
+    await act(async () => { fireEvent.click(button) })
+    expect(action).toHaveBeenCalledOnce()
+    expect(items()[0]).toHaveClass('is-leaving')
+
+    act(() => { vi.advanceTimersByTime(500) })
+    expect(items()).toHaveLength(1)
+    expect(items()[0]).toHaveTextContent('marad')
+  })
+
+  it('megvárja a Promise actiont, és annak hibája után is bezárja a toastot', async () => {
+    const action = vi.fn(async () => { throw new Error('mutation cache owns this error') })
+    render(<ToastProvider>content</ToastProvider>)
+    act(() => emitToast({
+      kind: 'success',
+      text: 'Kreatin bevéve',
+      action: { label: 'Visszavonás', onClick: action },
+    }))
+
+    await act(async () => { fireEvent.click(screen.getByRole('button', { name: 'Visszavonás' })) })
+    expect(action).toHaveBeenCalledOnce()
+    expect(items()[0]).toHaveClass('is-leaving')
+  })
 })
 
 describe('ToastProvider — stack', () => {

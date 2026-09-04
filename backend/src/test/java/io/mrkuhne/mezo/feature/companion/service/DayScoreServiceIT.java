@@ -148,9 +148,9 @@ class DayScoreServiceIT extends AbstractIntegrationTest {
         assertThat(dimension(day, "rhythm").status()).isEqualTo("NO_DATA");
 
         assertThat(day.subscores().sleep()).isEqualTo(100);
-        assertThat(day.subscores().fuel()).isEqualTo(100);
-        assertThat(day.subscores().checkin()).isEqualTo(100);
-        assertThat(day.subscores().activity()).isEqualTo(30);
+        assertThat(day.subscores().nutrition()).isEqualTo(100);
+        assertThat(day.subscores().logging()).isEqualTo(100);
+        assertThat(day.subscores().training()).isEqualTo(30);
         assertThat(day.score()).isEqualTo(81).isEqualTo(day.evaluation().base());
     }
 
@@ -164,9 +164,9 @@ class DayScoreServiceIT extends AbstractIntegrationTest {
         DayScoreService.DayScore day = dayFor(owner, DAY);
 
         assertThat(day.subscores().sleep()).isNull();
-        assertThat(day.subscores().fuel()).isNull();
-        assertThat(day.subscores().activity()).isNull();
-        assertThat(day.subscores().checkin()).isZero();
+        assertThat(day.subscores().nutrition()).isNull();
+        assertThat(day.subscores().training()).isNull();
+        assertThat(day.subscores().logging()).isZero();
         assertThat(day.score()).isNull();
     }
 
@@ -185,7 +185,7 @@ class DayScoreServiceIT extends AbstractIntegrationTest {
                 dayScoreService.scores(owner, DAY, DAY, Map.<LocalDate, FuelDayResponse>of());
 
         assertThat(scores).hasSize(1);
-        assertThat(scores.get(0).subscores().fuel()).isEqualTo(100);
+        assertThat(scores.get(0).subscores().nutrition()).isEqualTo(100);
         assertThat(scores.get(0).subscores().sleep()).isEqualTo(100);
     }
 

@@ -1,11 +1,11 @@
 package io.mrkuhne.mezo.feature.goal.service;
 
 import io.mrkuhne.mezo.api.dto.GoalResponse;
+import io.mrkuhne.mezo.api.dto.GoalSuggestionAcceptRequest;
+import io.mrkuhne.mezo.api.dto.GoalSuggestionPreviewResponse;
 import io.mrkuhne.mezo.api.dto.GoalSuggestionResponse;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
-import io.mrkuhne.mezo.feature.goal.engine.service.GoalFeasibilityService;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
-import io.mrkuhne.mezo.feature.goal.entity.GoalSegmentOverrideJson;
 import io.mrkuhne.mezo.feature.goal.entity.GoalSuggestionEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalSuggestionPayloadJson;
 import io.mrkuhne.mezo.feature.goal.mapper.GoalSuggestionMapper;
@@ -14,12 +14,10 @@ import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.goal.repository.GoalSuggestionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
-import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -62,29 +60,35 @@ public class GoalSuggestionService {
     private final GoalSuggestionRepository suggestionRepository;
     private final GoalRepository goalRepository;
     private final GoalSuggestionMapper mapper;
-    private final GoalFeasibilityService feasibilityService;
-    private final GoalInvariantValidator goalInvariantValidator;
     private final GoalEngineService goalEngineService;
     private final GoalMapper goalMapper;
     private final GoalSuggestionSupersedeWriter supersedeWriter;
+    private final GoalSuggestionPreviewService previewService;
+    private final GoalSuggestionFingerprintService fingerprintService;
+    private final GoalSuggestionDraftApplier draftApplier;
+    private final ApplicationEventPublisher eventPublisher;
 
     public GoalSuggestionService(
         GoalSuggestionRepository suggestionRepository,
         GoalRepository goalRepository,
         GoalSuggestionMapper mapper,
-        GoalFeasibilityService feasibilityService,
-        GoalInvariantValidator goalInvariantValidator,
         @Lazy GoalEngineService goalEngineService,
         GoalMapper goalMapper,
-        GoalSuggestionSupersedeWriter supersedeWriter) {
+        GoalSuggestionSupersedeWriter supersedeWriter,
+        GoalSuggestionPreviewService previewService,
+        GoalSuggestionFingerprintService fingerprintService,
+        GoalSuggestionDraftApplier draftApplier,
+        ApplicationEventPublisher eventPublisher) {
         this.suggestionRepository = suggestionRepository;
         this.goalRepository = goalRepository;
         this.mapper = mapper;
-        this.feasibilityService = feasibilityService;
-        this.goalInvariantValidator = goalInvariantValidator;
         this.goalEngineService = goalEngineService;
         this.goalMapper = goalMapper;
         this.supersedeWriter = supersedeWriter;
+        this.previewService = previewService;
+        this.fingerprintService = fingerprintService;
+        this.draftApplier = draftApplier;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -128,7 +132,10 @@ public class GoalSuggestionService {
         e.setStatus(STATUS_PROPOSED);
         e.setDedupKey(dedupKey);
         e.setPayload(payload);
-        return suggestionRepository.save(e);
+        GoalSuggestionEntity saved = suggestionRepository.save(e);
+        eventPublisher.publishEvent(new GoalSuggestionProposedEvent(
+            userId, goalId, saved.getId(), kind));
+        return saved;
     }
 
     /** The goal's open proposals (newest first), ownership-gated through the goal. */
@@ -159,91 +166,32 @@ public class GoalSuggestionService {
      * mismatch supersedes the suggestion and returns 409 so the UI can offer a regenerate.
      */
     @Transactional
-    public GoalResponse accept(UUID userId, UUID goalId, UUID suggestionId) {
+    public GoalResponse accept(
+            UUID userId, UUID goalId, UUID suggestionId, GoalSuggestionAcceptRequest request) {
         GoalSuggestionEntity s = requireOwnedProposed(userId, goalId, suggestionId);
         GoalEntity goal = goalRepository.findByIdAndCreatedByAndDeletedFalse(goalId, userId)
             .orElseThrow(this::notFound);
-        GoalSuggestionPayloadJson p = s.getPayload();
-
-        if (KIND_WEEKLY_CORRECTION.equals(s.getKind())) {
-            applyWeeklyCorrection(goal, p, suggestionId);
-        } else {
-            applyPhaseChange(goal, p, suggestionId);
+        GoalSuggestionPreviewResponse preview = previewService.preview(userId, goalId, suggestionId);
+        if (!preview.getBlockers().isEmpty()) {
+            String blockerCode = preview.getBlockers().get(0);
+            SystemMessage blockerMessage = "GOAL_DIRECTION_TARGET_CONFLICT".equals(blockerCode)
+                ? SystemMessage.field(blockerCode, "targetWeightKg").build()
+                : SystemMessage.error(blockerCode).build();
+            throw new SystemRuntimeErrorException(
+                blockerMessage, HttpStatus.BAD_REQUEST);
         }
-
-        s.setStatus(STATUS_ACCEPTED);
-        s.setDecidedAt(Instant.now());
-        goalEngineService.evaluate(userId, goalId);
-        return goalMapper.toResponse(goal);
-    }
-
-    /** {@code phase_change}: race guard on {@code snapshotTrajectory}, then trajectory/override apply. */
-    private void applyPhaseChange(GoalEntity goal, GoalSuggestionPayloadJson p, UUID suggestionId) {
-        if (!goal.getTrajectory().equals(p.snapshotTrajectory())) {
-            // Deliberately do NOT touch `s` in THIS (outer) transaction — see
-            // GoalSuggestionSupersedeWriter's javadoc: the 409 below rolls this transaction back,
-            // so the supersede must persist through a REQUIRES_NEW write on a row this transaction
-            // never dirtied (mezo-ktg8 final-review finding 1).
+        if (!fingerprintService.matches(
+                preview.getPreviewFingerprint(), request.getPreviewFingerprint())) {
             supersedeWriter.markSuperseded(suggestionId);
             throw new SystemRuntimeErrorException(
                 SystemMessage.error("GOAL_SUGGESTION_STALE").build(), HttpStatus.CONFLICT);
         }
 
-        String proposedTrajectory = p.suggestedTrajectory() == null
-            ? goal.getTrajectory()
-            : p.suggestedTrajectory();
-        goalInvariantValidator.validate(
-            proposedTrajectory, goal.getStartWeightKg(), goal.getTargetWeightKg(),
-            goal.getStartDate(), goal.getTargetDate());
-
-        if (p.suggestedTrajectory() != null) {
-            goal.setTrajectory(p.suggestedTrajectory());
-            // Same derivation applyUpsert runs — the rate magnitude follows the new trajectory.
-            goal.setRateTargetPctPerWeek(feasibilityService.deriveRatePctPerWeek(
-                p.suggestedTrajectory(), goal.getStartWeightKg(), goal.getTargetWeightKg(),
-                goal.getStartDate(), goal.getTargetDate()));
-        }
-        if (p.balanceOverrideKcal() != null && p.fromWeek() != null && p.toWeek() != null) {
-            List<GoalSegmentOverrideJson> overrides = new ArrayList<>(
-                goal.getSegmentOverrides() == null ? List.of() : goal.getSegmentOverrides());
-            overrides.add(new GoalSegmentOverrideJson(p.fromWeek(), p.toWeek(), p.balanceOverrideKcal()));
-            goal.setSegmentOverrides(overrides);
-        }
-    }
-
-    /**
-     * {@code weekly_correction} (slice 5): SEMANTIC race guard (final-review fix, mezo-r4n7) — a
-     * mismatch on any of {@code snapshotTrajectory}, {@code snapshotRateTargetPctPerWeek}, or the
-     * goal's running {@code balanceAdjustmentKcal} (vs. the snapshot taken at propose time) means
-     * the numbers this correction was computed from have actually changed underneath; a missing
-     * {@code deltaKcal} is treated the same way (Minor 5 — nothing to accumulate). Deliberately NOT
-     * guarded on {@code prescriptionGeneratedAt} — see {@link GoalSuggestionPayloadJson}'s javadoc
-     * for why that field rotates on unrelated recomputes (a weigh-in, a profile edit, …) and would
-     * false-positive-409 the very next one. On a match, accumulate {@code deltaKcal} onto the
-     * goal's running {@code balanceAdjustmentKcal} (the fresh evaluate below then carries
-     * {@code basis="adaptive"}, Task 3).
-     */
-    private void applyWeeklyCorrection(GoalEntity goal, GoalSuggestionPayloadJson p, UUID suggestionId) {
-        int currentAdjustment = goal.getBalanceAdjustmentKcal() == null ? 0 : goal.getBalanceAdjustmentKcal();
-        int snapshotAdjustment = p.snapshotBalanceAdjustmentKcal() == null ? 0 : p.snapshotBalanceAdjustmentKcal();
-        boolean stale = p.deltaKcal() == null
-            || !Objects.equals(goal.getTrajectory(), p.snapshotTrajectory())
-            || ratesDiffer(goal.getRateTargetPctPerWeek(), p.snapshotRateTargetPctPerWeek())
-            || currentAdjustment != snapshotAdjustment;
-        if (stale) {
-            supersedeWriter.markSuperseded(suggestionId); // same REQUIRES_NEW guard as applyPhaseChange
-            throw new SystemRuntimeErrorException(
-                SystemMessage.error("GOAL_SUGGESTION_STALE").build(), HttpStatus.CONFLICT);
-        }
-        goal.setBalanceAdjustmentKcal(currentAdjustment + p.deltaKcal());
-    }
-
-    /** Null-safe, scale-independent BigDecimal comparison ({@code 1.0} and {@code 1.00} are equal). */
-    private static boolean ratesDiffer(BigDecimal a, BigDecimal b) {
-        if (a == null || b == null) {
-            return !Objects.equals(a, b);
-        }
-        return a.compareTo(b) != 0;
+        draftApplier.apply(goal, s);
+        s.setStatus(STATUS_ACCEPTED);
+        s.setDecidedAt(Instant.now());
+        goalEngineService.evaluate(userId, goalId);
+        return goalMapper.toResponse(goal);
     }
 
     GoalSuggestionEntity requireOwnedProposed(UUID userId, UUID goalId, UUID suggestionId) {

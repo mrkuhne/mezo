@@ -74,6 +74,17 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 
   const show = useCallback((t: ToastMessage) => emitToast(t), [])
 
+  const runAction = useCallback(async (entry: Entry) => {
+    if (isRewardToast(entry.toast) || !entry.toast.action) return
+    try {
+      await entry.toast.action.onClick()
+    } catch {
+      // Mutation actions already report through the global MutationCache.
+    } finally {
+      dismiss(entry.id)
+    }
+  }, [dismiss])
+
   return (
     <ToastContext.Provider value={{ show }}>
       {children}
@@ -102,6 +113,15 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               {isRewardToast(e.toast) ? <RewardBody toast={e.toast} /> : (
                 <div className="t-pad">
                   <span className="t-simple-text">{e.toast.text}</span>
+                  {e.toast.action && (
+                    <button
+                      type="button"
+                      className="t-action"
+                      onClick={() => { void runAction(e) }}
+                    >
+                      {e.toast.action.label}
+                    </button>
+                  )}
                 </div>
               )}
             </div>

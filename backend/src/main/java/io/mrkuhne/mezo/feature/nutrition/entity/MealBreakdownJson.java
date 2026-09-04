@@ -41,9 +41,12 @@ public record MealBreakdownJson(
      * One weighted dimension; exactly one of {@code macro}/{@code micros}/{@code nova}/
      * {@code context} is populated, matching {@code id}. A dimension with zero input coverage
      * degrades honestly: {@code weight 0, score 0} + a "nincs adat" detail (the total
-     * renormalizes over the remaining weights). {@code note} is a 1-2 sentence AI prose socket
-     * (mezo-jcpt) — the deterministic scorer always writes it {@code null}; the meal-coach layer
-     * fills it lazily, mirroring {@code MealCoachVerdict.dimensionNotes}.
+     * renormalizes over the remaining weights). {@code timing} rides alongside {@code context}
+     * (mezo-jcpt.3): the eating-window facts for the {@code context} dimension of a LOGGED meal —
+     * null for every other dimension and for the recipe-template surface (no {@code context}
+     * dimension there at all). {@code note} is a 1-2 sentence AI prose socket (mezo-jcpt) — the
+     * deterministic scorer always writes it {@code null}; the meal-coach layer fills it lazily,
+     * mirroring {@code MealCoachVerdict.dimensionNotes}.
      */
     public record Dimension(
         String id,
@@ -55,6 +58,7 @@ public record MealBreakdownJson(
         List<MicroRow> micros,
         NovaDetail nova,
         List<ContextRow> context,
+        TimingDetail timing,
         String note
     ) {
     }
@@ -91,6 +95,11 @@ public record MealBreakdownJson(
 
     /** One deterministic context fact (timing / slot-share / protein fit). */
     public record ContextRow(String label, String value) {
+    }
+
+    /** A `context` dimenzió időzítés-tényei rajzolható alakban (mezo-jcpt.3). Új, opcionális mező:
+     *  a már cache-elt envelope-okban null, és a FE ilyenkor egyszerűen nem rajzol sávot. */
+    public record TimingDetail(String eatenAt, String windowFrom, String windowTo, String slotLabel) {
     }
 
     /** P8 prose — always empty in v0. */

@@ -3,7 +3,7 @@ import { http, HttpResponse } from 'msw'
 import { mealApi, toRequest, fromResponse, fromBreakdown } from '@/data/fuel/mealApi'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
-import type { MealInput } from '@/data/types'
+import type { MealInput, ContextDimension } from '@/data/types'
 
 const input: MealInput = {
   slot: 'breakfast', loggedAt: '2026-06-24T09:15:00', title: 'Reggeli',
@@ -238,6 +238,46 @@ describe('fromBreakdown — 8-dimension envelope rows dimensions (mezo-7797)', (
       energy_density: 'var(--lav)',
       portion: 'var(--coral-deep)',
     })
+  })
+
+  it('átviszi a context dimenzió timing payloadját (mezo-jcpt.3)', () => {
+    const envelope = {
+      value: 0.84, confidence: 0.9, summary: null,
+      dimensions: [
+        {
+          id: 'context', label: 'Időzítés & kontextus', weight: 0.2, score: 0.84, detail: '…',
+          macro: null, micros: null, nova: null,
+          context: [{ label: 'Időzítés', value: '19:00 · vacsora ablakban' }],
+          timing: { eatenAt: '19:00', windowFrom: '17:00', windowTo: '22:00', slotLabel: 'vacsora' },
+        },
+      ],
+      improve: [], tools: [],
+    }
+
+    const dim = fromBreakdown(envelope).dimensions[0]
+
+    expect(dim).toMatchObject({
+      id: 'context',
+      timing: { eatenAt: '19:00', windowFrom: '17:00', windowTo: '22:00', slotLabel: 'vacsora' },
+    })
+  })
+
+  it('timing nélküli context dimenziót változatlanul enged át (régi cache-elt envelope)', () => {
+    const envelope = {
+      value: 0.84, confidence: 0.9, summary: null,
+      dimensions: [
+        {
+          id: 'context', label: 'Időzítés & kontextus', weight: 0.2, score: 0.84, detail: '…',
+          macro: null, micros: null, nova: null,
+          context: [{ label: 'Időzítés', value: '19:00 · vacsora ablakban' }],
+        },
+      ],
+      improve: [], tools: [],
+    }
+
+    const dim = fromBreakdown(envelope).dimensions[0]
+
+    expect((dim as ContextDimension).timing).toBeUndefined()
   })
 })
 

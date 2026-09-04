@@ -500,9 +500,9 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
                             // source is gone - from the line's own frozen contribution.
                             kcal={l.overrides?.[i] === undefined
                               ? (ing.contribution?.kcal
-                                  ?? (src ? round(src.macros.kcal * (ing.amount / (src.per || 1))) : 0))
+                                  ?? (src ? round((src.macros.kcal ?? 0) * (ing.amount / (src.per || 1))) : 0))
                               : (src
-                                  ? round(src.macros.kcal * (amount / (src.per || 1)))
+                                  ? round((src.macros.kcal ?? 0) * (amount / (src.per || 1)))
                                   : rescaleFrozen(ing.contribution, amount, ing.amount).kcal)}
                             onChange={(v) => setOverride(l.key, i, v)}
                             onReset={() => clearOverride(l.key, i)}

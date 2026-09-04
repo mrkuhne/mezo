@@ -48,10 +48,14 @@ export const pantryCategoryMeta: Record<string, PantryCategoryMeta> = {
 }
 
 // === Ingredients · scraped from grocery / supplement sites (pantry-data.js:20–157) ===
+// A `kind` a szerver mezője (mezo-4orh) — a fixture-ben explicit, nem a category-ból számolt.
+// A whey/kreatin/AAKG sorok szándékosan supplement/stim kinddal állnak: a mock „ingredients”
+// tömbje a fixture TELJES kamrája, nem a valós szerver food-only projekciója, és a
+// buildKamraItems kártya-kindjai így maradnak változatlanok.
 export const ingredients: Ingredient[] = [
   // -- Proteins --
   {
-    id: 'ing-csirkemell', name: 'Csirkemell · friss', brand: 'Bonafarm', source: 'kifli.hu', category: 'protein', per: 100, unit: 'g',
+    id: 'ing-csirkemell', kind: 'food', name: 'Csirkemell · friss', brand: 'Bonafarm', source: 'kifli.hu', category: 'protein', per: 100, unit: 'g',
     macros: { kcal: 110, p: 23.0, c: 0, f: 1.5 },
     fiberG: 0, sugarG: 0, saltG: 0.1, saturatedFatG: 0.4,
     price: 3290, priceUnit: 'Ft/kg', pkg: '500g tálca',
@@ -60,7 +64,7 @@ export const ingredients: Ingredient[] = [
     lastUsed: 'tegnap', usedInRecipes: 7, scrapedAt: 'Máj 20 · 09:14',
   },
   {
-    id: 'ing-turo', name: 'Túró · félzsíros', brand: 'Mizo', source: 'kifli.hu', category: 'dairy', per: 100, unit: 'g',
+    id: 'ing-turo', kind: 'food', name: 'Túró · félzsíros', brand: 'Mizo', source: 'kifli.hu', category: 'dairy', per: 100, unit: 'g',
     macros: { kcal: 130, p: 18.0, c: 3.5, f: 5.0 },
     fiberG: 0, sugarG: 3.5, saltG: 0.1, saturatedFatG: 3.2,
     price: 2190, priceUnit: 'Ft/kg', pkg: '250g pohár',
@@ -69,7 +73,7 @@ export const ingredients: Ingredient[] = [
     lastUsed: 'ma reggel', usedInRecipes: 5, scrapedAt: 'Máj 21 · 14:02',
   },
   {
-    id: 'ing-lazac', name: 'Lazacfilé · norvég', brand: 'Kifli Premium', source: 'kifli.hu', category: 'protein', per: 100, unit: 'g',
+    id: 'ing-lazac', kind: 'food', name: 'Lazacfilé · norvég', brand: 'Kifli Premium', source: 'kifli.hu', category: 'protein', per: 100, unit: 'g',
     macros: { kcal: 208, p: 20.4, c: 0, f: 13.4 },
     fiberG: 0, sugarG: 0, saltG: 0.12, saturatedFatG: 2.7,
     price: 14990, priceUnit: 'Ft/kg', pkg: '300g vákuum',
@@ -78,7 +82,7 @@ export const ingredients: Ingredient[] = [
     lastUsed: '3 napja', usedInRecipes: 4, scrapedAt: 'Máj 21 · 14:02',
   },
   {
-    id: 'ing-tojas', name: 'Tojás · M-es szabadon tartott', brand: 'Erdőker', source: 'kifli.hu', category: 'protein', per: 100, unit: 'g',
+    id: 'ing-tojas', kind: 'food', name: 'Tojás · M-es szabadon tartott', brand: 'Erdőker', source: 'kifli.hu', category: 'protein', per: 100, unit: 'g',
     macros: { kcal: 155, p: 13.0, c: 1.1, f: 11.0 },
     price: 1890, priceUnit: 'Ft/10db', pkg: '10db doboz',
     micros: [{ name: 'B12', pct: 92 }, { name: 'Kolin', pct: 88 }, { name: 'Se', pct: 64 }],
@@ -88,7 +92,7 @@ export const ingredients: Ingredient[] = [
 
   // -- Carbs --
   {
-    id: 'ing-zab', name: 'Zabpehely · gluténmentes', brand: 'Naturmind', source: 'kifli.hu', category: 'carb', per: 100, unit: 'g',
+    id: 'ing-zab', kind: 'food', name: 'Zabpehely · gluténmentes', brand: 'Naturmind', source: 'kifli.hu', category: 'carb', per: 100, unit: 'g',
     macros: { kcal: 372, p: 13.5, c: 60.0, f: 7.0 },
     fiberG: 10.6, sugarG: 1.0, saltG: 0.02, saturatedFatG: 1.2,
     price: 1490, priceUnit: 'Ft/500g', pkg: '500g',
@@ -97,7 +101,7 @@ export const ingredients: Ingredient[] = [
     lastUsed: 'ma reggel', usedInRecipes: 6, scrapedAt: 'Máj 15 · 08:42',
   },
   {
-    id: 'ing-edesburg', name: 'Édesburgonya', brand: 'Bio piac', source: 'kifli.hu', category: 'carb', per: 100, unit: 'g',
+    id: 'ing-edesburg', kind: 'food', name: 'Édesburgonya', brand: 'Bio piac', source: 'kifli.hu', category: 'carb', per: 100, unit: 'g',
     macros: { kcal: 86, p: 1.6, c: 20.1, f: 0.1 },
     fiberG: 3.0, sugarG: 4.2, saltG: 0.03, saturatedFatG: 0.02,
     price: 1490, priceUnit: 'Ft/kg', pkg: '1kg',
@@ -106,7 +110,7 @@ export const ingredients: Ingredient[] = [
     lastUsed: 'tegnap', usedInRecipes: 3, scrapedAt: 'Máj 20 · 09:14',
   },
   {
-    id: 'ing-rizs', name: 'Barna rizs · hosszú szemű', brand: 'Lassi Bio', source: 'tesco.hu', category: 'carb', per: 100, unit: 'g',
+    id: 'ing-rizs', kind: 'food', name: 'Barna rizs · hosszú szemű', brand: 'Lassi Bio', source: 'tesco.hu', category: 'carb', per: 100, unit: 'g',
     macros: { kcal: 360, p: 7.4, c: 76.0, f: 2.8 },
     fiberG: 3.5, sugarG: 0.7, saltG: 0.01, saturatedFatG: 0.6,
     price: 990, priceUnit: 'Ft/500g', pkg: '500g',
@@ -115,7 +119,7 @@ export const ingredients: Ingredient[] = [
     lastUsed: '5 napja', usedInRecipes: 5, scrapedAt: 'Máj 12 · 18:22',
   },
   {
-    id: 'ing-banan', name: 'Banán · érett', brand: 'Eco', source: 'kifli.hu', category: 'fruit', per: 100, unit: 'g',
+    id: 'ing-banan', kind: 'food', name: 'Banán · érett', brand: 'Eco', source: 'kifli.hu', category: 'fruit', per: 100, unit: 'g',
     macros: { kcal: 89, p: 1.1, c: 22.8, f: 0.3 },
     price: 549, priceUnit: 'Ft/kg', pkg: '5db',
     micros: [{ name: 'K', pct: 88 }, { name: 'B6', pct: 56 }, { name: 'Mg', pct: 28 }],
@@ -125,7 +129,7 @@ export const ingredients: Ingredient[] = [
 
   // -- Veggies / fats --
   {
-    id: 'ing-spenot', name: 'Spenót · friss', brand: 'Bio Magyarország', source: 'kifli.hu', category: 'veggie', per: 100, unit: 'g',
+    id: 'ing-spenot', kind: 'food', name: 'Spenót · friss', brand: 'Bio Magyarország', source: 'kifli.hu', category: 'veggie', per: 100, unit: 'g',
     macros: { kcal: 23, p: 2.9, c: 3.6, f: 0.4 },
     price: 1990, priceUnit: 'Ft/250g', pkg: '250g zacskó',
     micros: [{ name: 'Fe', pct: 78 }, { name: 'Folát', pct: 92 }, { name: 'K1', pct: 100 }],
@@ -133,7 +137,7 @@ export const ingredients: Ingredient[] = [
     lastUsed: 'tegnap', usedInRecipes: 4, scrapedAt: 'Máj 20 · 09:14',
   },
   {
-    id: 'ing-brokkoli', name: 'Brokkoli', brand: 'Eco', source: 'kifli.hu', category: 'veggie', per: 100, unit: 'g',
+    id: 'ing-brokkoli', kind: 'food', name: 'Brokkoli', brand: 'Eco', source: 'kifli.hu', category: 'veggie', per: 100, unit: 'g',
     macros: { kcal: 34, p: 2.8, c: 6.6, f: 0.4 },
     fiberG: 2.6, sugarG: 1.7, saltG: 0.08, saturatedFatG: 0.05,
     price: 1290, priceUnit: 'Ft/db', pkg: '1db ~400g',
@@ -142,7 +146,7 @@ export const ingredients: Ingredient[] = [
     lastUsed: '4 napja', usedInRecipes: 3, scrapedAt: 'Máj 16 · 12:10',
   },
   {
-    id: 'ing-afonya', name: 'Áfonya · fagyasztott', brand: 'Frozen', source: 'kifli.hu', category: 'fruit', per: 100, unit: 'g',
+    id: 'ing-afonya', kind: 'food', name: 'Áfonya · fagyasztott', brand: 'Frozen', source: 'kifli.hu', category: 'fruit', per: 100, unit: 'g',
     macros: { kcal: 57, p: 0.7, c: 14.5, f: 0.3 },
     fiberG: 2.4, sugarG: 9.7, saltG: 0.003, saturatedFatG: 0.03,
     price: 2490, priceUnit: 'Ft/300g', pkg: '300g zacskó',
@@ -151,7 +155,7 @@ export const ingredients: Ingredient[] = [
     lastUsed: 'ma reggel', usedInRecipes: 4, scrapedAt: 'Máj 15 · 08:42',
   },
   {
-    id: 'ing-mandulav', name: 'Mandulavaj · 100%', brand: 'Nutsi', source: 'kifli.hu', category: 'fat', per: 100, unit: 'g',
+    id: 'ing-mandulav', kind: 'food', name: 'Mandulavaj · 100%', brand: 'Nutsi', source: 'kifli.hu', category: 'fat', per: 100, unit: 'g',
     macros: { kcal: 614, p: 21.0, c: 18.8, f: 55.5 },
     price: 4990, priceUnit: 'Ft/250g', pkg: '250g üveg',
     micros: [{ name: 'Vit E', pct: 88 }, { name: 'Mg', pct: 62 }, { name: 'Fiber', pct: 42 }],
@@ -159,7 +163,7 @@ export const ingredients: Ingredient[] = [
     lastUsed: 'ma délután', usedInRecipes: 6, scrapedAt: 'Máj 12 · 18:22',
   },
   {
-    id: 'ing-olivao', name: 'Olívaolaj · extra szűz', brand: 'Casa Olearia', source: 'kifli.hu', category: 'fat', per: 100, unit: 'g',
+    id: 'ing-olivao', kind: 'food', name: 'Olívaolaj · extra szűz', brand: 'Casa Olearia', source: 'kifli.hu', category: 'fat', per: 100, unit: 'g',
     macros: { kcal: 884, p: 0, c: 0, f: 100 },
     fiberG: 0, sugarG: 0, saltG: 0, saturatedFatG: 14.0,
     price: 5490, priceUnit: 'Ft/500ml', pkg: '500ml',
@@ -168,7 +172,7 @@ export const ingredients: Ingredient[] = [
     lastUsed: 'tegnap', usedInRecipes: 11, scrapedAt: 'Ápr 28 · 16:00',
   },
   {
-    id: 'ing-mez', name: 'Akácméz · hazai', brand: 'Hungaria Méz', source: 'kifli.hu', category: 'carb', per: 100, unit: 'g',
+    id: 'ing-mez', kind: 'food', name: 'Akácméz · hazai', brand: 'Hungaria Méz', source: 'kifli.hu', category: 'carb', per: 100, unit: 'g',
     macros: { kcal: 304, p: 0.3, c: 82.4, f: 0 },
     fiberG: 0, sugarG: 82.1, saltG: 0.01, saturatedFatG: 0,
     price: 3490, priceUnit: 'Ft/500g', pkg: '500g üveg',
@@ -177,7 +181,7 @@ export const ingredients: Ingredient[] = [
     lastUsed: 'ma reggel', usedInRecipes: 4, scrapedAt: 'Ápr 28 · 16:00',
   },
   {
-    id: 'ing-mandula', name: 'Mandula · pörkölt', brand: 'Naturmind', source: 'kifli.hu', category: 'fat', per: 100, unit: 'g',
+    id: 'ing-mandula', kind: 'food', name: 'Mandula · pörkölt', brand: 'Naturmind', source: 'kifli.hu', category: 'fat', per: 100, unit: 'g',
     macros: { kcal: 579, p: 21.2, c: 21.6, f: 49.9 },
     fiberG: 12.5, sugarG: 4.4, saltG: 0.01, saturatedFatG: 4.0,
     price: 2890, priceUnit: 'Ft/200g', pkg: '200g',
@@ -188,7 +192,7 @@ export const ingredients: Ingredient[] = [
 
   // -- Supplements (linked from supplementsStash) --
   {
-    id: 'ing-whey', name: 'Impact Whey · csoki', brand: 'MyProtein', source: 'myprotein.hu', category: 'supplement-protein', per: 100, unit: 'g',
+    id: 'ing-whey', kind: 'supplement', name: 'Impact Whey · csoki', brand: 'MyProtein', source: 'myprotein.hu', category: 'supplement-protein', per: 100, unit: 'g',
     macros: { kcal: 374, p: 82, c: 4.0, f: 7.5 },
     price: 18990, priceUnit: 'Ft/2.5kg', pkg: '2.5kg',
     micros: [{ name: 'BCAA', pct: 95 }, { name: 'Leucin', pct: 92 }],
@@ -197,7 +201,7 @@ export const ingredients: Ingredient[] = [
     stashRefId: 'whey', scrapedAt: 'Máj 02 · 21:15',
   },
   {
-    id: 'ing-kreatin', name: 'Kreatin Monohidrát', brand: 'MyProtein', source: 'myprotein.hu', category: 'supplement', per: 100, unit: 'g',
+    id: 'ing-kreatin', kind: 'supplement', name: 'Kreatin Monohidrát', brand: 'MyProtein', source: 'myprotein.hu', category: 'supplement', per: 100, unit: 'g',
     macros: { kcal: 0, p: 0, c: 0, f: 0 },
     price: 5990, priceUnit: 'Ft/500g', pkg: '500g',
     micros: [{ name: 'Creatine', pct: 100 }],
@@ -206,7 +210,7 @@ export const ingredients: Ingredient[] = [
     stashRefId: 'kreatin', scrapedAt: 'Máj 02 · 21:15',
   },
   {
-    id: 'ing-aakg', name: 'AAKG · L-Arginine', brand: 'MyProtein', source: 'myprotein.hu', category: 'supplement-stim', per: 100, unit: 'g',
+    id: 'ing-aakg', kind: 'stim', name: 'AAKG · L-Arginine', brand: 'MyProtein', source: 'myprotein.hu', category: 'supplement-stim', per: 100, unit: 'g',
     macros: { kcal: 0, p: 0, c: 0, f: 0 },
     price: 8990, priceUnit: 'Ft/250g', pkg: '250g',
     micros: [{ name: 'L-Arginine AKG', pct: 100 }],
@@ -379,7 +383,7 @@ export const MOCK_AI_MEAL_DRAFT: MealAiDraft = {
     {
       source: 'pantry', pantryItemId: _aiSeed.id, recipeId: null, name: _aiSeed.name,
       amount: 60, unit: _aiSeed.unit, per: _aiSeed.per, basisUnit: _aiSeed.unit,
-      kcal: _aiSeed.macros.kcal, proteinG: _aiSeed.macros.p, carbsG: _aiSeed.macros.c, fatG: _aiSeed.macros.f,
+      kcal: _aiSeed.macros.kcal ?? 0, proteinG: _aiSeed.macros.p ?? 0, carbsG: _aiSeed.macros.c ?? 0, fatG: _aiSeed.macros.f ?? 0,
       nova: _aiSeed.nova, confidence: 1, needsReview: true,
     },
     {
@@ -569,6 +573,21 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
   },
 }
 
+// Task 4 fix (mezo-jcpt.3/4): a mirrored templateBreakdown below is the LINKED MEAL's own
+// `breakdown` object (same `context` dimension reference) — it carries that meal's `timing`
+// (Task 3), so without this the new MealTimingStrip (mezo-jcpt.3) would leak onto the RECIPE
+// page too, contradicting the "strip is logged-meal-only" invariant the backend upholds for a
+// real recipe-template breakdown (RecipeBreakdownService never attaches `context`/`timing`,
+// pinned by a backend test). The pre-existing `context` fact-chips stay as-is — only the new
+// timing strip's gate (`dim.timing != null`) needs this dimension's `timing` to read `undefined`.
+function stripMealOnlyTiming(breakdown: MealBreakdown): MealBreakdown {
+  return {
+    ...breakdown,
+    dimensions: breakdown.dimensions.map(d =>
+      d.id === 'context' && 'timing' in d ? { ...d, timing: undefined } : d),
+  }
+}
+
 // ============================================================
 // Runtime links — replicate pantry-data.js:301–332 + 532–536.
 // Recipe ↔ meal mapping: m1↔rec-1, m2↔rec-2. (The m3↔rec-4 snack link was dropped with the
@@ -624,7 +643,8 @@ export const recipes: Recipe[] = recipesBase.map(r => {
   const sourceMeal = linkedMeals.find(lm => lm.recipeId === r.id && lm.meal.breakdown)
   // pantry-data.js:532–536 — orphan recipes (rec-3/5/6) get standalone breakdowns.
   const templateBreakdown: MealBreakdown | undefined =
-    sourceMeal?.meal.breakdown ?? recipeTemplateBreakdowns[r.id]
+    (sourceMeal?.meal.breakdown && stripMealOnlyTiming(sourceMeal.meal.breakdown))
+    ?? recipeTemplateBreakdowns[r.id]
 
   // Enrich each line with snapshot name + contribution, then roll the whole-recipe macros up
   // from those contributions — IDENTICAL to what the backend RecipeMapper produces, so the

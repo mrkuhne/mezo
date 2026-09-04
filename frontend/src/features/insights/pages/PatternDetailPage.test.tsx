@@ -97,6 +97,19 @@ describe('PatternDetailPage (mock mode)', () => {
     expect(screen.queryByRole('button', { name: /Megerősítem/ })).not.toBeInTheDocument()
   })
 
+  test('a persisted hypothesis without a monitor pair opens an honest actionable detail', async () => {
+    renderAt('/mezo/patterns/hyp-3fa1c2d9')
+
+    expect(screen.getByText('Caffeine 14:00 utáni dózis → sleep onset +24 perc')).toBeInTheDocument()
+    expect(screen.getByText('Válasz')).toBeInTheDocument()
+    expect(screen.getByText(/átlagosan 24 perccel kitolja/)).toBeInTheDocument()
+    expect(screen.getByText('7 nap mérve')).toBeInTheDocument()
+    expect(screen.getByText('Stabil pattern, alacsony variancia')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Figyeljük' }))
+    expect(await screen.findByText(/Ezt a mintát tovább figyeljük/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Figyeljük' })).not.toBeInTheDocument()
+  })
+
   test('unknown key renders the honest not-found state with a back chip', () => {
     renderAt('/mezo/patterns/nonsense~key')
     // mezo-d20.11: the ad-hoc chevron became the house PageHead chip, and it goes back to the
@@ -254,6 +267,37 @@ describe('PatternDetailPage (real mode)', () => {
     expect(screen.queryByRole('button', { name: 'Megerősítem' })).not.toBeInTheDocument()
     expect(screen.queryByText(/r=-0\.27/)).not.toBeInTheDocument()
     expect(screen.getByText('Hogyan számoltuk?')).toBeInTheDocument()
+  })
+
+  test('a pairless confirmed hypothesis uses the persisted artifact without invented charts or diagnostics', async () => {
+    const pairless = {
+      id: 'artifact-1',
+      kind: 'ai_hypothesis',
+      category: 'response',
+      categoryLabel: 'Válasz',
+      title: 'A késői koffein kitolja az elalvást',
+      mechanism: 'A naplóid alapján a délutáni koffein mellett később indult az alvás.',
+      evidence: ['7 nap megfigyelés', 'További adatot gyűjtünk'],
+      confidence: 0.74,
+      critique: null,
+      status: 'confirmed',
+      pairKey: 'hyp-pairless-confirmed',
+      lastDetectedAt: '2026-09-03T02:40:00Z',
+    }
+    server.use(
+      http.get(`${API_BASE}/api/companion/pattern/pair/${pairless.pairKey}`, () =>
+        HttpResponse.json({ code: 'NOT_FOUND' }, { status: 404 }),
+      ),
+      http.get(`${API_BASE}/api/companion/pattern`, () => HttpResponse.json([pairless])),
+    )
+
+    renderAt(`/mezo/patterns/${pairless.pairKey}`)
+    expect(await screen.findByText(pairless.title)).toBeInTheDocument()
+    expect(screen.getByText('Megerősítve')).toBeInTheDocument()
+    expect(screen.getByText(/a társ figyelembe veszi/i)).toBeInTheDocument()
+    expect(screen.getByText('7 nap megfigyelés')).toBeInTheDocument()
+    expect(screen.queryByText('Az eddigi napok')).not.toBeInTheDocument()
+    expect(screen.queryByText('Hogyan számoltuk?')).not.toBeInTheDocument()
   })
 
   test('a 404 renders the honest not-found state', async () => {

@@ -4,9 +4,10 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
-import { KamraItemDetailPage } from '@/features/fuel/pages/KamraItemDetailPage'
+import { KamraItemDetailPage, inputFromItem } from '@/features/fuel/pages/KamraItemDetailPage'
 import { usePantry } from '@/data/hooks'
 import { ingredients } from '@/data/fuel/pantry'
+import type { PantryItem } from '@/data/types'
 
 // KamraItemDetailPage reads usePantry (a dual-mode TanStack query). Pin mock mode.
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
@@ -153,6 +154,44 @@ test('"Receptekben" chips surface the real recipes that use this ingredient (aud
 test('a pantry item with no recipe references hides the "Receptekben" section entirely', () => {
   renderDetail('ing-kreatin', newQc())
   expect(screen.queryByText(/Receptekben/)).not.toBeInTheDocument()
+})
+
+test('a dose/protocol supplement with an always-present but all-null macros object hides "+ Logolás" (mezo-qooi)', () => {
+  // Real-mode shape: PantryMapper.toSupplementResponse always builds a macros object now, so a
+  // pure dose item (kreatin/D3/gyógyszer) arrives as { kcal: null, p: null, c: null, f: null } —
+  // truthy, not absent. `{item.macros && ...}` would show the CTA on every such row; the gate
+  // must check hasAnyMacro (all-null => no macro data => nothing to log).
+  const qc = newQc()
+  qc.setQueryData(['pantry'], {
+    ingredients: [],
+    stash: [{
+      id: 'dose-only', name: 'D3-vitamin', brand: 'Now Foods', type: 'supplement', category: 'supplement',
+      dose: '2000 NE', form: 'kapszula', stock: null, stockUnit: null,
+      protocol: 'napi 1x', timing: 'reggel', taken: false,
+      macros: { kcal: null, p: null, c: null, f: null },
+    }],
+    imports: [], suggestions: [],
+  })
+  renderDetail('stash-dose-only', qc)
+  expect(screen.getByText(/D3-vitamin/)).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /logolás/i })).not.toBeInTheDocument()
+})
+
+test('inputFromItem omits null macros instead of sending an explicit null (mezo-6omv)', () => {
+  // The DTO cannot distinguish an omitted field from an explicit null — applyDefinitionPartial
+  // reads "absent" as "leave unchanged", so a null macro sent back as `kcal: null` would blank a
+  // shared definition every other user reads. Only the field-by-field `!= null` guard in
+  // inputFromItem prevents that; a version that unconditionally spreads the macros object would
+  // ship `proteinG: null` / `carbsG: null` and regress mezo-6omv silently.
+  const item: PantryItem = {
+    id: 'x', name: 'Partial Macros Item', brand: 'Acme', source: 'manual', category: 'food', kind: 'food',
+    macros: { kcal: 120, p: null, c: null, f: 0 },
+  }
+  const input = inputFromItem(item)
+  expect(input.kcal).toBe(120)
+  expect(input.fatG).toBe(0) // a real recorded zero must survive, not be treated as "absent"
+  expect(input).not.toHaveProperty('proteinG')
+  expect(input).not.toHaveProperty('carbsG')
 })
 
 test('a shared-catalog item shows "közös · <author>" and locks the edit sheet\'s definition fields', async () => {

@@ -210,12 +210,12 @@ class DayScoreServiceTest {
 
     /**
      * The wire-compat regression the brief asks for: {@code scores()} still yields one element per
-     * calendar day, and the legacy four-field {@link DayScoreService.DaySubscores} is populated
-     * from the documented successor dimensions — {@code sleep←sleep, fuel←nutrition,
-     * checkin←logging, activity←training} — with {@code score == evaluation.base()}.
+     * calendar day, and {@link DayScoreService.DaySubscores}'s six fields are populated from the
+     * evaluation's six dimensions under their own dimension-ids — a straight 1:1 projection — with
+     * {@code score == evaluation.base()}.
      */
     @Test
-    void scoresReturnsSevenDaysWithLegacySubscoresMappedFromTheNewDimensions() {
+    void scoresReturnsSevenDaysWithSubscoresProjectedFromTheSixDimensions() {
         seedOnTargetFuelDay(MONDAY);
         sleepH.put(MONDAY, 7.5);
         sleepQuality.put(MONDAY, 10.0);
@@ -230,12 +230,43 @@ class DayScoreServiceTest {
             .containsExactlyElementsOf(MONDAY.datesUntil(SUNDAY.plusDays(1)).toList());
 
         DayScoreService.DayScore monday = days.get(0);
+        assertThat(monday.subscores().nutrition()).isEqualTo(dim(monday, "nutrition"));
+        assertThat(monday.subscores().quality()).isEqualTo(dim(monday, "quality"));
+        assertThat(monday.subscores().training()).isEqualTo(dim(monday, "training"));
         assertThat(monday.subscores().sleep()).isEqualTo(dim(monday, "sleep"));
-        assertThat(monday.subscores().fuel()).isEqualTo(dim(monday, "nutrition"));
-        assertThat(monday.subscores().checkin()).isEqualTo(dim(monday, "logging"));
-        assertThat(monday.subscores().activity()).isEqualTo(dim(monday, "training"));
+        assertThat(monday.subscores().logging()).isEqualTo(dim(monday, "logging"));
+        // rhythm is degraded (no priors seeded) — NULL, not 0 (the "tanulom" signal).
+        assertThat(monday.subscores().rhythm()).isNull();
         assertThat(monday.score()).isEqualTo(monday.evaluation().base());
         assertThat(monday.evaluation().date()).isEqualTo(MONDAY);
+    }
+
+    /**
+     * The Step-1 pin (mezo-jcpt.5): {@code toSubscores} projects all six dimensions, and a
+     * degraded one (weight 0, status != DONE) projects to {@code null}, never a fabricated 0 —
+     * exercised through the public {@link DayScoreService#scores(UUID, LocalDate, LocalDate)}
+     * entry point since no {@code DayScoreServiceTestAccess} helper exists to reach the private
+     * {@code toSubscores} directly.
+     */
+    @Test
+    void toSubscores_projects_all_six_dimensions_and_nulls_a_degraded_one() {
+        seedOnTargetFuelDay(MONDAY);
+        sleepH.put(MONDAY, 7.5);
+        sleepQuality.put(MONDAY, 10.0);
+        windows.put(MONDAY, List.of(new Window(LocalTime.of(18, 0), LocalTime.of(19, 0), "gym", true, "Pull")));
+        waterMl.put(MONDAY, 2000);
+        checkins.put(MONDAY, 4);
+        // rhythm stays degraded: no prior days seeded, so its weight is 0 and status != DONE.
+
+        DayScoreService.DaySubscores s = service.scores(USER, MONDAY, MONDAY).get(0).subscores();
+
+        assertThat(s.nutrition()).isEqualTo(100);
+        assertThat(s.quality()).isEqualTo(83);
+        assertThat(s.training()).isEqualTo(100);
+        assertThat(s.sleep()).isEqualTo(100);
+        assertThat(s.logging()).isEqualTo(100);
+        // A degradált dimenzió NULL, nem 0 — ez a "tanulom" jel, amit a csempe már ma is renderel.
+        assertThat(s.rhythm()).isNull();
     }
 
     /**
@@ -297,7 +328,7 @@ class DayScoreServiceTest {
 
         assertThat(dimension(monday, "nutrition").status()).isEqualTo("NO_DATA");
         assertThat(dimension(monday, "quality").status()).isEqualTo("NO_DATA");
-        assertThat(monday.subscores().fuel()).isNull();
+        assertThat(monday.subscores().nutrition()).isNull();
     }
 
     /** Rest day: no planned window means training drops out rather than scoring a penalty. */
@@ -309,7 +340,7 @@ class DayScoreServiceTest {
 
         assertThat(dimension(monday, "training").status()).isEqualTo("NO_DATA");
         assertThat(dimension(monday, "training").weight()).isZero();
-        assertThat(monday.subscores().activity()).isNull();
+        assertThat(monday.subscores().training()).isNull();
     }
 
     /**

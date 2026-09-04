@@ -139,36 +139,36 @@ A pair that goes live again returns to `decide` on its own, with no state to unw
    (`monitor.lastRunAt`/`lookbackDays` — **`lastRunAt` is NOT "the job last ran"**, it is
    `max(lastDetectedAt)` over the user's own statistical pattern rows, so it reads "—" for a user
    whose inbox is empty even though the nightly job ran and gated everything out; carried from the
-   retired Motor tab, `mezo-viqs`). The **domain-chip row** (`DOMAIN_META`/`DOMAIN_ORDER`,
-   `logic/domains.ts`) still **filters every section below** by the pair's metric-B (outcome)
-   domain — empty selection = no filter; the „Mind" chip clears all active domains in **one click**,
-   so `PatternsPage`'s `activeDomains` `useState` MUST keep the functional-updater form
-   (`setActiveDomains(prev ⇒ …)`) or a stale-closure batch would drop all but the last toggle.
+   retired Motor tab, `mezo-viqs`). The six cells are semantic **buttons** (`aria-pressed`): only
+   the selected lifecycle bucket is rendered below, so the page is a compact catalogue rather than
+   six full lists stacked vertically. Initial selection is `decide` when non-empty, otherwise the
+   first non-empty `BUCKET_ORDER` bucket. Counts always describe the complete motor state and do not
+   change when the catalogue is filtered. A visible **Szűrés** button opens the house `Sheet` with
+   one optional outcome-domain filter (`DOMAIN_META`/`DOMAIN_ORDER`) and progress/domain sorting.
+   Domain choices and status cells use `ClayIcon`/`Icon`, never emoji. Pairless persisted patterns
+   belong to the honest `other` domain.
    **`components/MotorStateHero.tsx` still exists but has no importer** — §9.
-2. **Decision inbox** (`🔔 Döntésre vár · N` eyebrow + `csak erős jel` meta, not collapsible) — one
+2. **Selected lifecycle catalogue** — `decide` renders one
    `PatternDecisionCard` (`components/PatternDecisionCard.tsx`) per `decide`-bucket entry: category
    chip + a `confidenceMeta` chip (`megbízható jel`/`ígéretes jel`/`még bizonytalan`, only when the
    pair carries `n`/`p`), the display title (pair's `questionHu` when a pair is matched, else the
    pattern's own `title`), the `📈 Amit eddig látunk` finding block (`findingSentence` — the same
    human-composition Motor used, **raw `r`/`p`/`n` NEVER rendered here**), an explainer block
    („Mi történik a döntéseddel" — **only on the FIRST card**, `showExplainer`), the
-   Confirm/Monitor/Reject three-button row, and a „Részletek és előzmények →" link to the
-   pattern-pair detail page (§2.1b, `/mezo/patterns/{pairKey}`).
-3. **Five lifecycle sections, now unboxed `Lsec` headers over tile mosaics** (page-local since
-   `mezo-d20.5.3`; `LifecycleSection` is still imported by `PatternDetailPage` and
-   `KnowledgeListPage`, just no longer here). Each state gets its own tile language — confirmed =
+   Confirm/Monitor/Reject three-button row, and a „Részletek és előzmények →" link (§2.1b,
+   `/mezo/patterns/{pairKey}`). The other five buckets render the existing unboxed `Lsec` header
+   over their tile mosaic. Each state keeps its own tile language — confirmed =
    sage tiles with a domain clay icon and a **human-word confidence chip** (never raw `r`/`p`),
    watching = lavender tiles with an animated evidence bar, gathering = dashed amber tiles — and a
-   section renders nothing when its (domain-filtered) count is 0: `✓
-   Megerősítve — él a tudásban` (defaultOpen, footnote „Ez a N összefüggés benne van a társ
-   fejében…"), `👁 Megfigyelés alatt`, `⏳ Még gyűlik az adat` (row sub = `verdictSentence` — the
+   selected empty result renders an explicit empty card: `Megerősítve — él a tudásban` (footnote
+   „Ez a N összefüggés benne van a társ fejében…"), `Megfigyelés alatt`, `Még gyűlik az adat`
+   (row sub = `verdictSentence` — the
    same honest per-verdict sentence Motor's `PairRow` used, including the few_days 🎯 nudge),
-   `○ Megnéztük — nincs összefüggés` (footnote „Ez is eredmény…"), `✕ Elvetve`. Each row is a
-   `LifecycleMiniRow` (title + a one-line sub + a `→` link to the pattern-detail route): confirmed
-   rows' sub is a plain „megerősítve" (the promoted-fact reinforcement count isn't part of this
-   page's reads — it belongs on the pattern-pair detail page, §2.1b); monitoring/noRelationship rows' sub is a
-   `findingSentence`-composed one-liner when the pair has a live `r`.
-4. **„Adat-egészség"** — a coverage-ring **tile strip** (was a collapsed card), still the same
+   `Megnéztük — nincs összefüggés` (footnote „Ez is eredmény…"), `Elvetve`. `patternCatalog.ts`
+   applies filter/sort and **five-item pagination**; status or filter changes reset to page one.
+   Every `PatternTile` links to the detail route, including a persisted pattern with no matching
+   monitor pair; monitoring/noRelationship rows use a `findingSentence` one-liner when available.
+3. **„Adat-egészség"** — a coverage-ring **tile strip** (was a collapsed card), still the same
    data Motor's coverage table showed: metrics sorted thinnest-covered-first, each ring's `waiting`
    flag true when NONE of its referencing pairs is `live`, the „utoljára látva" copy still from
    `MetricCoverageRing`'s exported **`lastSeenLabel`** — which is now the only thing `PatternsPage`
@@ -190,8 +190,8 @@ once none of the above apply does a genuinely empty state (`patterns.length===0 
 monitor.pairs.length===0`) render the pre-existing „Még nincs felismert minta…" copy, link removed
 for the same reason.
 
-### 2.1b Pattern-pair detail (`pages/PatternDetailPage.tsx`) — **`mezo-tk88.5`**
-The per-pair drill-down the retired Motor tab's `PairRow` used to expand into — now a full leaf
+### 2.1b Pattern detail (`pages/PatternDetailPage.tsx`) — **pair-backed + persisted-artifact fallback**
+The per-pattern drill-down is a full leaf
 route, **`/mezo/patterns/:pairKey`** (`router.tsx`, registered above the rest of the `/mezo` routes,
 same idiom as `fuel/recipes/:id`). It was the first `/insights` page with no section chrome; since
 `mezo-d20.5.1` every page in the tab is like it. Since **`mezo-fy97`** every
@@ -208,11 +208,16 @@ every `LifecycleMiniRow`'s `→` link (§2.1 step 3), plus the legacy `?pair=` q
 isError, refetch}`; real mode maps `GET /api/companion/pattern/pair/{pairKey}` via
 `patternDetailApi.ts` — reuses `patternsApi.ts`'s `toPattern`; **any 404 is one honest `notFound`
 state**, unknown `pairKey` and the companion switch off are deliberately indistinguishable, same
-discipline as the monitor's `degraded`) + `usePatternMonitor()` (§2.1, re-read here purely for the
+discipline as the monitor's `degraded`) + `usePatterns()` to resolve persisted rows that have no
+catalogued monitor pair + `usePatternMonitor()` (§2.1, re-read here purely for the
 diagnostics section's window/lag/`sourceHu` meta — "cached" in practice since the dashboard already
 warmed the query on the way in). **States:** `isPending` → `GhostState`; a genuine fetch failure
-(`isError`) → `GhostState` + retry (`refetch`); `notFound` → the honest „Nincs ilyen minta." card +
-back link — never a blank page.
+(`isError`) → `GhostState` + retry (`refetch`); successful pair detail → the rich story flow below;
+pair 404 + a persisted pattern with the same `pairKey` → `PatternArtifactDetail`; only a key absent
+from both reads becomes the honest „Nincs ilyen minta." card. The fallback reuses
+`PatternDecisionCard` while proposed; judged rows receive a read-only status hero plus only their
+saved mechanism/evidence and an explicit explanation that no chart is available. It never invents
+paired days, history or statistics.
 
 **Top to bottom (`mezo-0469`; normative visual spec:
 `docs/superpowers/specs/2026-09-04-pattern-detail-redesign-design.md`):**
@@ -714,14 +719,13 @@ All tests are **frontend Vitest** (no backend tests exist). They assert **verbat
 - **No ghost pages remain (since P2):** every page test now has a `(mock mode)` + `(real mode)` describe asserting real data / the honest null-state — no test asserts a `hamarosan` teaser any more. `ExperimentsPage.test.tsx` real-mode: an MSW proposed row renders `◇ Javaslat` + Elfogadom/Elvetem and clicking Elfogadom POSTs the decision; the default empty array shows the still-learning null-state. `experimentsHooks.test.tsx` mirrors the P1 `predictionsHooks.test.tsx` idiom (maps a wire row, `[]` default, mock no-fetch). Mode is set per-describe with `vi.stubEnv('VITE_USE_MOCK', …)`.
 - **`MotorPage.test.tsx` is DELETED with the page (`mezo-tk88.4`)** — its scenarios live on now as
   `PatternsPage.test.tsx` cases instead: `(mock mode)` — the hero sentence/tiles/lifecycle-section
-  headers render off the seeds, decide-bucket cards show the pair-backed question (falling back to
+  buttons render off the seeds, only the selected bucket is visible, decide cards show the pair-backed question (falling back to
   the pattern's own title when unmatched), confirming a decide card moves it into „Megerősítve" (an
   end-to-end `usePatternActions().decide()` exercise), „Adat-egészség" expands to the coverage rings
   **thinnest-first** (proving the page's own `metrics.sort`, not an already-sorted fixture — the
-  Motor-era assertion, ported), the domain chips multi-select and the „Mind" chip **batch-clears all
-  active domains in one click** (a regression test for the `mezo-tk88.4` functional-setState
-  correction — `PatternsPage`'s `activeDomains` update must use `setActiveDomains(prev ⇒ …)` or a
-  same-batch stale closure drops all but the last toggle), and the `?pair=` param **redirects** to
+  Motor-era assertion, ported), the filter sheet applies one icon-based domain without changing
+  motor counts, the gathering bucket paginates five-at-a-time and resets to page one on filter/state
+  changes, pairless persisted rows still link to detail, and the `?pair=` param **redirects** to
   `/mezo/patterns/:pairKey` (stubbed locally in this test file — the real page now lives at
   §2.1b, `PatternDetailPage.tsx`) instead of highlighting a row in
   place; `(real mode)` — MSW stubs BOTH `/api/companion/pattern` and `/api/companion/pattern/monitor`
@@ -748,7 +752,8 @@ All tests are **frontend Vitest** (no backend tests exist). They assert **verbat
   honest not-found card. `(real mode)`: an MSW confirmed payload renders the five blocks; a
   weekend×late-meal payload proves the `mezo-fy97` formatting end-to-end (named scatter columns,
   `HH:mm`/`igen`/`nem` table cells, rounded `r/p` in the diagnostics — full-precision doubles never
-  reach the DOM); a 404 renders the not-found state. Both header assertions target the `DetailFrame`
+  reach the DOM); pair 404 + persisted hypothesis renders the honest artifact fallback without
+  charts/diagnostics, while a key missing from both reads renders not-found. Both header assertions target the `DetailFrame`
   back row (`link name="Vissza"` + `heading "Minta részletei"`). `logic/metricFormat.test.ts` —
   pure: clock folding (incl. the bedtime `+24` shift and the `:60` minute carry), binary mapping,
   decimal trimming, axis-end labels, and the `formatR`/`formatP` precision rules.
@@ -785,7 +790,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 
 - **The section became a tab, and the tab got the section's data model unchanged — [ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md).** `Insights` → **`Mezo`**, `/insights/*` → `/mezo/*`, the ✨ icon in another tab's header → a first-class `TabBar` entry, `InsightsSection` + `tabs.ts` + `AppHero` + `SubNavDropdown` → deleted, sub-tabs → full-page siblings. Every hook, endpoint, bucketing rule and honesty gate came through untouched. **Do not read the rename as a re-architecture** — the feature directory is still `features/insights/`, the data directory still `data/insights/`, and this doc is still the one that owns them; only the user-facing name and the URL prefix moved.
 - **The header seam rule inverted.** Stated in full in §2's boxed note, and repeated here because it is the single most likely thing for a future session to get backwards: a page under `/mezo/*` **must bring its own head**. The old rule — leaf views render no header, the shell's dropdown chip says where you are — is dead with the shell.
-- **The visual language is the tile mosaic — [ADR 0033](../decisions/0033-mozaik-2-tile-language.md), superseding ADR 0026.** Clay SVG replaced emoji as the icon vocabulary; the lifecycle states, prediction statuses and experiment statuses became **washed tiles** whose colour carries the state. The status *glyphs* in the Hungarian copy (`🔔`, `✓`, `👁`, `⏳`, `○`, `✕`, `◐`, `◇`) are text and stayed — they are part of the sentence, not the iconography.
+- **The visual language is the tile mosaic — [ADR 0033](../decisions/0033-mozaik-2-tile-language.md), superseding ADR 0026.** Clay SVG replaced emoji as the icon vocabulary; the lifecycle states, prediction statuses and experiment statuses became **washed tiles** whose colour carries the state. On the Minták catalogue the lifecycle controls and headings use `Icon`/`ClayIcon` consistently; emoji no longer carries domain or status meaning there.
 - **Two localizations rode in with the re-face and are DESIGNED fixes, not data changes.** `PredictionsPage`'s status chips shipped English off the wire (`✓ Validated` / `✗ Missed` / `◐ Pending`) and its accuracy header with them — the view now localizes both. `ExperimentsPage`'s dismissed branch gained the label it was missing (audit §6). The wire is unchanged in both cases; if a future slice makes the backend emit Hungarian, delete the view-side mapping rather than doubling it.
 - **The hub shows ONE decision, not the inbox.** `MezoHubPage` renders `decide[0]` only, over the shared `usePatternActions().decide` mutation, and states the bucket size in its eyebrow (`Döntésre vár · N`). The full inbox stays on `/mezo/patterns`. A hub that carried the whole inbox would have made the Minták tile a duplicate of the page above it.
 - **The orb hero carries no number, deliberately.** One companion sentence and a quiet status line — and the sentence prefers a feed row with a real `artifactId`, falling back to the labelled demo briefing **only in mock mode**. A live user never sees demo prose presented as the companion's live voice; that rule is inherited verbatim from `MezoChip` and is the reason the hero looks emptier in live mode than in the prototype.
@@ -808,8 +813,11 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `pages/MezoHubPage.tsx` — **`mezo-d20.5.1`, the `/mezo` index and the tab's face:** the shell's `AppHeader` (own header since `mezo-atry`) → the numberless breathing orb hero (`ClaySpot s-orb` + one companion sentence + the honest status line) → the composer-shaped chat opener → the motor's **single** gold-ringed decision card over the shared `usePatternActions().decide` → the 6-tile `Mosaic` with per-page live lines → **the wide `Karakter` tile** (hub-tile-reorg, `mezo-o486` — moved from `EnHubPage.tsx`, `useCharacterOverview()` + line derivation moved with it) → the full-width L0→L3 memory band. Reads the pages' own hooks; owns no data (§2.0)
 - **`InsightsSection.tsx` and `pages/tabs.ts` are DELETED (`mezo-d20.5.1`)** — the shell, `INSIGHTS_TABS`, `visibleInsightsTabs()` and the (already-empty) `PHASE3_TAB_IDS` are gone, along with the app-wide `features/progression/components/AppHero.tsx` and `shared/ui/SubNavDropdown.tsx` they depended on. `InsightsSubNav.tsx` had already been superseded by the dropdown in `mezo-ugqb`; `components/PhaseTeaserCard.tsx` by the empty gate set in `mezo-mifi`
 - `frontend/src/shared/ui/mozaik/{index.tsx,motion.tsx}` + `frontend/src/shared/ui/clay/index.tsx` — the primitives the re-faced pages compose (`Tile`/`Mosaic`/`PageHero`; `EntranceGroup`/`useCountUp`; `ClayIcon`/`ClaySpot`). **Not Insights-owned** — [`_platform-design-system.md`](_platform-design-system.md)
-- `pages/PatternsPage.tsx` — **rewritten `mezo-tk88.4`**: the lifecycle dashboard (§2.1) — hero + decision inbox + 5 collapsible `LifecycleSection`s + the collapsed „Adat-egészség" coverage panel; owns the `activeDomains`/`dataHealthOpen` `useState`, the `bucketize()` call + per-bucket domain filtering, and the ported `metrics.sort`/referencing/waiting coverage-ring wiring (the retired `MotorPage`'s, verbatim)
-- `pages/PatternDetailPage.tsx` — **`mezo-tk88.5`**, the pattern-pair detail leaf page (§2.1b, `/insights/patterns/:pairKey`, sibling route registered before the `insights` group in `router.tsx`): header (`PatternDecisionCard` reuse or the local `GatheringHeaderCard`) → strength chart → scatter + aligned-days table → `PatternJournal` → `PatternImpactCard` → collapsed `LifecycleSection`-reused diagnostics; own `isPending`/`isError`/`notFound` `GhostState` triad, no Insights sub-nav
+- `pages/PatternsPage.tsx` — lifecycle catalogue (§2.1): hero + clickable 3×2 status selector + one active bucket + `PatternFilterSheet` + five-item pager + „Adat-egészség" coverage strip; owns selection/filter/sort/page state, while `patternCatalog.ts` owns pure derivations
+- `pages/PatternDetailPage.tsx` — dual-source detail leaf (§2.1b, `/mezo/patterns/:pairKey`): rich pair-backed evidence/history flow when `usePatternPairDetail` succeeds; `PatternArtifactDetail` when only `usePatterns` resolves the key; honest retry/not-found states otherwise
+- `components/PatternArtifactDetail.tsx` — pairless persisted-pattern fallback: proposed rows reuse `PatternDecisionCard`; judged rows show a read-only status hero, saved mechanism/evidence and no fabricated graph/statistics
+- `components/PatternFilterSheet.tsx` + `PatternDomainMark.tsx` — house `Sheet` filter/sort controls and the shared Clay domain mark; no emoji domain controls
+- `logic/patternCatalog.ts` — initial bucket, pairless `other` domain, filter/sort and five-item clamped pagination; pure and unit-tested
 - `pages/MemoirPage.tsx · KnowledgeListPage.tsx · ChatPage.tsx · PredictionsPage.tsx · ExperimentsPage.tsx` — the other 5 content sub-tabs, **all real dual-mode** (Memoir W2, Predictions P1, Experiments P2 — each with an honest null-state; ExperimentsPage adds the L2 accept/dismiss + propose write actions)
 - **`KnowledgeListPage.tsx`'s `mezo-ms9a` view components (`components/{FactsView,KnowledgeBaseView,KategoriakView,ProfileView,HowItWorksView}.tsx`, §2.4):** `KnowledgeBaseView` = the base-view approval inbox + 3-tile section mosaic; `FactsView` = the `?view=tenyek` search/chip/bucket body (the old page's fact half, unchanged); `KategoriakView` = the `?view=kategoriak` grid⇄drill switch, thin over the moved `KindTileGrid`/`KindNodeList` below; `ProfileView` = the `?view=profil` "Így beszélj velem" card + explainer, thin over the moved `ProfileNodeCard`; `HowItWorksView` = the `?view=hogyan` six Q&A cards (the deleted `KnowledgeExplainer`'s content, copied verbatim + one new block)
 - **Moved from `features/me/` (`mezo-ms9a`, was the `KnowledgePage.tsx` overview-first Tudásgráf chain, `mezo-2243` originally — full behavioral history in the pre-merge [`me.md`](me.md) git blame):** `components/{KindTileGrid,KindNodeList,CategoryHeader,ProfileNodeCard}.tsx` + `sheets/NodeDetailSheet.tsx`. Unchanged by the move except their consumer: `KnowledgeListPage`'s `selectedId` state now owns the sheet (was `KnowledgePage`'s), and `KategoriakView`/`ProfileView` above call them instead of the deleted page rendering them directly.

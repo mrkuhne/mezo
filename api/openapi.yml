@@ -5,7 +5,7 @@ info:
     Contract-first API definition for the mezo backend — the single source of
     truth for generated backend DTOs / controller interfaces and frontend types.
     See docs/references/api_contract_conventions.md.
-  version: 0.7.0
+  version: 0.8.0
 servers:
   - url: 'http://localhost:8090'
     description: Local dev backend (MEZO_PORT)
@@ -2957,6 +2957,46 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/goals/{id}/suggestions/{suggestionId}/preview':
+    get:
+      tags:
+        - Goal
+      operationId: previewGoalSuggestion
+      summary: >-
+        Preview every semantic goal and prescription change before applying a
+        suggestion
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: suggestionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Current/proposed comparison
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalSuggestionPreviewResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Goal or suggestion not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/goals/{id}/suggestions/{suggestionId}/accept':
     post:
       tags:
@@ -2978,6 +3018,12 @@ paths:
           schema:
             type: string
             format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoalSuggestionAcceptRequest'
       responses:
         '200':
           description: Applied + re-evaluated
@@ -2985,6 +3031,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GoalResponse'
+        '400':
+          description: Validation error or blocked preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing/invalid token
           content:
@@ -13373,6 +13425,136 @@ components:
           type: string
           format: date-time
           nullable: true
+    GoalSuggestionAcceptRequest:
+      type: object
+      required:
+        - previewFingerprint
+      properties:
+        previewFingerprint:
+          type: string
+          minLength: 64
+          maxLength: 64
+          pattern: '^[0-9a-f]{64}$'
+    GoalSuggestionPreviewResponse:
+      type: object
+      required:
+        - status
+        - reasonCode
+        - affectedFromWeek
+        - affectedToWeek
+        - current
+        - proposed
+        - changedFields
+        - unchangedFields
+        - warnings
+        - blockers
+        - canApply
+        - previewFingerprint
+      properties:
+        status:
+          type: string
+          enum:
+            - proposed
+            - accepted
+            - dismissed
+            - superseded
+        reasonCode:
+          type: string
+        affectedFromWeek:
+          type: integer
+          nullable: true
+        affectedToWeek:
+          type: integer
+          nullable: true
+        current:
+          $ref: '#/components/schemas/GoalSuggestionProjection'
+        proposed:
+          $ref: '#/components/schemas/GoalSuggestionProjection'
+        changedFields:
+          type: array
+          items:
+            type: string
+        unchangedFields:
+          type: array
+          items:
+            type: string
+        warnings:
+          type: array
+          items:
+            type: string
+        blockers:
+          type: array
+          items:
+            type: string
+        canApply:
+          type: boolean
+        previewFingerprint:
+          type: string
+          nullable: true
+    GoalSuggestionProjection:
+      type: object
+      required:
+        - trajectory
+        - targetWeightKg
+        - targetDate
+        - targetRateKgPerWeek
+        - weekAverageKcal
+        - trainingDayKcal
+        - restDayKcal
+        - proteinG
+        - carbsG
+        - fatG
+        - segmentFromWeek
+        - segmentToWeek
+        - segmentLabel
+        - guardStatus
+      properties:
+        trajectory:
+          type: string
+          enum:
+            - cut
+            - bulk
+            - maintain
+        targetWeightKg:
+          type: number
+          nullable: true
+        targetDate:
+          type: string
+          format: date
+        targetRateKgPerWeek:
+          type: number
+          nullable: true
+        weekAverageKcal:
+          type: integer
+          nullable: true
+        trainingDayKcal:
+          type: integer
+          nullable: true
+        restDayKcal:
+          type: integer
+          nullable: true
+        proteinG:
+          type: integer
+          nullable: true
+        carbsG:
+          type: integer
+          nullable: true
+        fatG:
+          type: integer
+          nullable: true
+        segmentFromWeek:
+          type: integer
+          nullable: true
+        segmentToWeek:
+          type: integer
+          nullable: true
+        segmentLabel:
+          type: string
+          nullable: true
+        guardStatus:
+          allOf:
+            - $ref: '#/components/schemas/GoalGuardStatus'
+          nullable: true
     GoalSuggestionPayload:
       type: object
       description: >-
@@ -13563,12 +13745,16 @@ components:
       properties:
         kcal:
           type: number
+          nullable: true
         p:
           type: number
+          nullable: true
         c:
           type: number
+          nullable: true
         f:
           type: number
+          nullable: true
     PantryMicro:
       type: object
       required:
@@ -13599,6 +13785,7 @@ components:
       type: object
       required:
         - id
+        - kind
         - name
         - brand
         - source
@@ -13618,6 +13805,13 @@ components:
         id:
           type: string
           format: uuid
+        kind:
+          type: string
+          enum:
+            - food
+            - supplement
+            - stim
+            - med
         name:
           type: string
         brand:
@@ -14794,7 +14988,8 @@ components:
         One weighted dimension; exactly one payload field is populated, matching
         id — macro/micros/nova for their ids, `context` carries the generic
         label/value rows for context, who, fat_quality, plant_diversity,
-        energy_density and portion.
+        energy_density and portion. Dimension `context` additionally carries
+        `timing` when it comes from a logged meal.
       required:
         - id
         - label
@@ -14835,6 +15030,10 @@ components:
           nullable: true
           items:
             $ref: '#/components/schemas/MealContextRow'
+        timing:
+          allOf:
+            - $ref: '#/components/schemas/MealTimingDetail'
+          nullable: true
         note:
           type: string
           nullable: true
@@ -14950,6 +15149,32 @@ components:
           type: string
         value:
           type: string
+    MealTimingDetail:
+      type: object
+      description: >-
+        A `context` dimenzió időzítés-tényei rajzolható alakban (mezo-jcpt.3).
+        UGYANABBÓL a szerver-oldali slot-ablak configból származik, ami a
+        timing-részpontszámot adta, ezért a rajzolt sáv és a pontszám nem tud
+        eltérni. Csak logolt étkezésen van jelen; a recept-sablon breakdownjában
+        nincs `context` dimenzió, tehát ott soha.
+      required:
+        - eatenAt
+        - slotLabel
+      properties:
+        eatenAt:
+          type: string
+          description: 'Helyi idő "HH:mm" alakban'
+        windowFrom:
+          type: string
+          nullable: true
+          description: 'Az ablak kezdete "HH:mm"; null = nasi, bármikor jó'
+        windowTo:
+          type: string
+          nullable: true
+          description: 'Az ablak vége "HH:mm"; null = nasi, bármikor jó'
+        slotLabel:
+          type: string
+          description: 'Magyar slot-név, pl. "vacsora"'
     MealCoachResponse:
       type: object
       description: >-
@@ -20453,19 +20678,30 @@ components:
         count:
           type: integer
     MeWeekSubscores:
+      description: >-
+        A napi motor hat dimenziójának pontszáma ezen a napon (mezo-jcpt.5). A
+        mezőnevek a DayEvaluation dimenzió-idjei, hogy a heti mozaik és a
+        nap-oldal EGY szókincset használjon. null = a dimenzió degradált vagy
+        nem mérhető ezen a napon — soha nem 0.
       type: object
       properties:
+        nutrition:
+          type: integer
+          nullable: true
+          description: 0–100; null = no data
+        quality:
+          type: integer
+          nullable: true
+        training:
+          type: integer
+          nullable: true
         sleep:
           type: integer
           nullable: true
-          description: 0–100; null = no sleep data
-        fuel:
+        logging:
           type: integer
           nullable: true
-        checkin:
-          type: integer
-          nullable: true
-        activity:
+        rhythm:
           type: integer
           nullable: true
     MeWeekDay:

@@ -114,7 +114,10 @@ export interface MacroDimension extends MealDimensionBase { id: 'macro'; macroRa
 export type MicroStatus = 'good' | 'ok' | 'low'
 export interface MicroDimension extends MealDimensionBase { id: 'micro'; micros: { name: string; value: string; pct: number; status: MicroStatus }[] }
 export interface NovaDimension extends MealDimensionBase { id: 'nova'; nova: { dominant: NovaGroup; stack: { nova: NovaGroup; pct: number; label: string }[]; items: { name: string; nova: NovaGroup; warning?: boolean }[] } }
-export interface ContextDimension extends MealDimensionBase { id: 'context'; context: { label: string; value: string }[] }
+/** A `context` dimenzió időzítés-tényei rajzolható alakban (mezo-jcpt.3). Opcionális: a
+ *  cache-elt régi envelope-okban nincs, és a sáv ilyenkor egyszerűen nem rajzolódik. */
+export interface MealTiming { eatenAt: string; windowFrom: string | null; windowTo: string | null; slotLabel: string }
+export interface ContextDimension extends MealDimensionBase { id: 'context'; context: { label: string; value: string }[]; timing?: MealTiming | null }
 /** Generic label/value-row dimensions (mezo-7797): WHO, zsírminőség, növényi diverzitás, energia-sűrűség, adag-arány. Same payload shape as ContextDimension. */
 export interface RowsDimension extends MealDimensionBase { id: 'who' | 'fat_quality' | 'plant_diversity' | 'energy_density' | 'portion'; context: { label: string; value: string }[] }
 /** A degraded dimension (weight 0 — zero input coverage on the backend, mezo-jcpt.1): base
@@ -249,7 +252,7 @@ export interface SupplementStashItem {
   // Nutrition + commerce facts (mezo-1za9) — supplements carry macros/nutrients/price too;
   // optional because pure dose/protocol items (many stim/med) have none. Mirrors Ingredient.
   source?: PantrySourceKey; per?: number; unit?: string
-  macros?: { kcal: number; p: number; c: number; f: number }
+  macros?: PantryMacrosVM
   price?: number; priceUnit?: string; pkg?: string
   micros?: { name: string; pct: number }[]; nova?: NovaGroup
   fiberG?: number | null; sugarG?: number | null; saltG?: number | null; saturatedFatG?: number | null
@@ -343,9 +346,16 @@ export interface PantryCatalogEntry {
   authorName?: string | null
 }
 export interface Ingredient {
-  id: string; name: string; brand: string; source: PantrySourceKey; category: string
+  id: string
+  /**
+   * The SHARED definition's kind, straight from the server (mezo-4orh). NEVER re-derive it
+   * from `category`: 'supplement' is a legal category on a FOOD row, and the derived value
+   * echoed back on save rewrote the shared definition's kind for every other user.
+   */
+  kind: PantryItemKind
+  name: string; brand: string; source: PantrySourceKey; category: string
   per: number; unit: string
-  macros: { kcal: number; p: number; c: number; f: number }
+  macros: PantryMacrosVM
   fiberG?: number | null; sugarG?: number | null; saltG?: number | null; saturatedFatG?: number | null
   price: number; priceUnit: string; pkg: string
   micros: { name: string; pct: number }[]
@@ -478,6 +488,14 @@ export interface PantryImportInput extends PantryLookupItem {
   priceUnit?: string | null
 }
 
+/**
+ * Pantry definition macros (mezo-6omv). `null` = the shared definition has no value for this
+ * nutrient; `0` = somebody entered a real zero. Do NOT collapse them: the read model used to
+ * zero-fill, and echoing that back wrote fabricated 0s onto a definition every user reads.
+ * Computing consumers fall back with `?? 0` at their own boundary; displaying consumers print '—'.
+ */
+export interface PantryMacrosVM { kcal: number | null; p: number | null; c: number | null; f: number | null }
+
 // Unified pantry item shape — built by buildKamraItems (Task 28), consumed by KamraCard.
 // Merges scraped Ingredient (food) + SupplementStashItem (supplement/stim/med) into one card model.
 export type PantryItemKind = 'food' | 'supplement' | 'stim' | 'med'
@@ -485,7 +503,7 @@ export interface PantryItem {
   id: string; name: string; brand: string; source: PantrySourceKey; category: string
   kind: PantryItemKind
   per?: number; unit?: string
-  macros?: { kcal: number; p: number; c: number; f: number }
+  macros?: PantryMacrosVM
   fiberG?: number | null; sugarG?: number | null; saltG?: number | null; saturatedFatG?: number | null
   price?: number; priceUnit?: string; pkg?: string
   micros?: { name: string; pct: number }[]
@@ -1715,7 +1733,7 @@ export type AppNotificationKindKey =
   | 'prediction_new' | 'prediction_outcome'
   | 'experiment_proposed' | 'experiment_closed'
   | 'challenge_event' | 'memory_note' | 'weekly_review_ready'
-  | 'life_goal_plan'
+  | 'life_goal_plan' | 'goal_suggestion'
 
 export interface AppNotificationView {
   id: string
@@ -1752,6 +1770,7 @@ export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, {
   memory_note: { emoji: '🗂', tint: 'memory', clay: 'i-rend' },
   weekly_review_ready: { emoji: '🗓', tint: 'memoir', clay: 'i-heti' },
   life_goal_plan: { emoji: '🎯', tint: 'experiment', clay: 'i-cel' },
+  goal_suggestion: { emoji: '🎯', tint: 'goal', clay: 'i-cel' },
 }
 
 /** Semleges bejegyzés egy olyan fajtára, amit ez a build még nem ismer. */

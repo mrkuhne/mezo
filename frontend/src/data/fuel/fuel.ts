@@ -130,6 +130,7 @@ const m1Dimensions: MealDimension[] = [
       { label: 'Sport', value: 'Csü volleyball T-12h' },
       { label: 'Glikémia', value: 'Slow-release' },
     ],
+    timing: { eatenAt: '07:15', windowFrom: '05:00', windowTo: '10:00', slotLabel: 'reggeli' },
   },
 ]
 
@@ -249,6 +250,15 @@ const m2Dimensions: MealDimension[] = [
       { label: 'PR-attempt', value: 'Chest Row · 107.5kg' },
       { label: 'Glikémia', value: 'Mixed-release' },
     ],
+    // Review fix (mezo-jcpt.3/4, fix round 1): a korábbi { windowTo: '13:00' } hamisan szűkítette
+    // az ablakot — a valós SlotWindows-config (backend/.../application.yml `slot-windows`)
+    // szerint az ebéd 11:00–15:00, amiben a 13:30 VALÓJÁBAN benne van. Az első javítási kör a
+    // sávot egy vacsora-narratívára cserélte, DE ugyanezen a kártyán hagyta a próza + chipek
+    // 13:30-as pre-workout szövegét — látható önellentmondás egyetlen csempén belül (mezo-jcpt.3
+    // fix-round-1 F1). `timing` most újra az m2 SAJÁT állítását tükrözi: 13:30-as ebéd a valós
+    // 11:00–15:00 ablakban — becsületes „ablakban" eset. A késő esti „miss" mintát az `m4`
+    // (Lazac vacsora, 23:35) fixture hordozza, saját koherens prózával.
+    timing: { eatenAt: '13:30', windowFrom: '11:00', windowTo: '15:00', slotLabel: 'ebéd' },
   },
   // Degraded (weight 0 — zero input coverage, mezo-jcpt.1): no adag-adat for this meal, so the
   // backend can't score portion-arány at all. Weight 0 contributes nothing to weightedScore()
@@ -265,14 +275,143 @@ const m2Dimensions: MealDimension[] = [
   },
 ]
 
+// m4 (Lazac · barna rizs · brokkoli, vacsora) dimensions — same weight rubric as m1/m2.
+// Fix-round-1 F1 (mezo-jcpt.3): the coherent late-miss fixture — 23:35, jóval a valós
+// 17:00–22:00 vacsora-ablakon túl (`application.yml` `slot-windows` dinner-from/-to). Egy SAJÁT
+// étkezés, nem az m2 timing mezőjének újrafelhasználása — a próza, a chipek és a `timing` itt
+// egymást erősítik, nem mondanak ellent egymásnak (a fix-round-1 talált önellentmondás oka pont
+// az volt, hogy a késői mintát m2-re ragasztottuk rá).
+// Σ weight×score = .8498 → round(2) = 0.85.
+const m4Dimensions: MealDimension[] = [
+  {
+    id: 'macro',
+    label: 'Kcal & makró arány',
+    weight: 0.22,
+    score: 0.9,
+    color: 'var(--coral)',
+    detail: 'P/C/F 25/38/33% — omega-3-forrás lazac, jó protein-hozam, a zsírarány kicsit magas de minőségi.',
+    macroRatio: { p: 25, c: 38, f: 33 },
+    macroTargets: { p: '25–30%', c: '50–60%', f: '15–25%' },
+    kcalShareOfDay: 24.5,
+    notes: 'F arány a tartomány felett — az olívaolaj + lazac zsírja adja, nem aggályos forrás.',
+  },
+  {
+    id: 'micro',
+    label: 'Rost & mikro',
+    weight: 0.1,
+    score: 0.86,
+    color: 'var(--cat-physiology)',
+    detail: 'Rost 8.4g — brokkoli + barna rizs, a napi rostcél 70%-a. Szelén és B12 a lazacból erős.',
+    micros: [
+      { name: 'Rost', value: '8.4g', pct: 70, status: 'good' },
+    ],
+  },
+  {
+    id: 'who',
+    label: 'Ajánlások · WHO',
+    weight: 0.14,
+    score: 0.92,
+    color: 'var(--sky)',
+    detail: 'Cukor az energia 1%-a (WHO ≤10%) · só a keret ötödén — tiszta whole-foods profil.',
+    context: [
+      { label: 'Cukor', value: '1 E% / 10 E% limit' },
+      { label: 'Só', value: '0.3 g / 1.5 g keret' },
+    ],
+  },
+  {
+    id: 'fat_quality',
+    label: 'Zsírminőség',
+    weight: 0.1,
+    score: 0.9,
+    color: 'var(--amber-deep)',
+    detail: 'Telített zsír az energia 5%-a · az összzsír 16%-a — lazac omega-3 + olívaolaj dominálja.',
+    context: [
+      { label: 'Telített E%', value: '5% / 10% limit' },
+      { label: 'Telített/összzsír', value: '16% (ref. 33%)' },
+    ],
+  },
+  {
+    id: 'nova',
+    label: 'Feldolgozottság · NOVA',
+    weight: 0.18,
+    score: 0.95,
+    color: 'var(--cat-tendency)',
+    detail: '100% whole foods. Olívaolaj az egyetlen NOVA 2 (kulináris feldolgozott alapanyag).',
+    nova: {
+      dominant: 1,
+      stack: [
+        { nova: 1, pct: 93, label: 'Lazac · barna rizs · brokkoli' },
+        { nova: 2, pct: 7, label: 'Olívaolaj' },
+        { nova: 3, pct: 0, label: '—' },
+        { nova: 4, pct: 0, label: '—' },
+      ],
+      items: [
+        { name: 'Lazac 180g', nova: 1 },
+        { name: 'Barna rizs 80g (főtt ~220g)', nova: 1 },
+        { name: 'Brokkoli 200g', nova: 1 },
+        { name: 'Olívaolaj 10g', nova: 2 },
+      ],
+    },
+  },
+  {
+    id: 'plant_diversity',
+    label: 'Növényi diverzitás',
+    weight: 0.08,
+    score: 0.67,
+    color: 'var(--sage-deep)',
+    detail: '2 különböző növényi kategória a 3-s célhoz — gabona, zöldség. Egy harmadik (pl. hüvelyes) hozná a teljes pontot.',
+    context: [
+      { label: 'Növényi kategóriák', value: 'grains · vegetables' },
+      { label: 'Összesen', value: '2 / 3 cél' },
+    ],
+  },
+  {
+    id: 'energy_density',
+    label: 'Energia-sűrűség',
+    weight: 0.06,
+    score: 1.0,
+    color: 'var(--lav)',
+    detail: '127 kcal/100g (150 alatt teljes pont) — magas víztartalmú, tápanyag-sűrű whole-foods tál.',
+    context: [
+      { label: 'Sűrűség', value: '127 kcal/100g' },
+      { label: 'Lefedettség', value: '100% gramm-alapú' },
+    ],
+  },
+  {
+    id: 'context',
+    label: 'Időzítés & kontextus',
+    weight: 0.12,
+    score: 0.52,
+    color: 'var(--cat-preference)',
+    detail:
+      '23:35 · vacsora — jóval a 17:00–22:00 vacsora-ablakon túl. A késői időpont az emésztést és az alvásminőséget is terheli, még ha a tányér összetétele kifogástalan is.',
+    note: 'A vacsora rendszeresen 22:00 után csúszik — érdemes lenne a 21:00-s Mg-adaggal együtt egy fix „kitchen close" emlékeztetőt beállítani.',
+    context: [
+      { label: 'Időzítés', value: '23:35 · vacsora ablakon kívül' },
+      { label: 'Csúszás', value: '+1h35 a 22:00-s záráshoz képest' },
+      { label: 'Étvágy', value: 'Este visszaeső' },
+      { label: 'Glikémia', value: 'Slow-release' },
+    ],
+    // Fix-round-1 F1 (mezo-jcpt.3): a valós SlotWindows dinner-ablak (17:00–22:00,
+    // `application.yml` `slot-windows`) ellen egy VALÓDI kései étkezés — a próza, a chipek és a
+    // `timing` mind ugyanazt az órát mondják, úgy, ahogy m1/m2 is teszi a saját idejére.
+    timing: { eatenAt: '23:35', windowFrom: '17:00', windowTo: '22:00', slotLabel: 'vacsora' },
+  },
+]
+
 export const fuelDay: FuelDay = {
   targets: { kcal: 3100, p: 220, c: 380, f: 95, water: 4000 },
-  // Partial day at MOCK_NOW_HHMM 13:30 (mezo-1oy5): only the two morning meals are logged
-  // (breakfast 09:15 + lunch 13:00), so consumed = their sum. The midday/evening windows are
-  // still open → the fixed-plan state pass marks the next one `now`, the later ones `pending`.
-  // (The pacing.msg "59%" narrative below is now stale vs this 42% — that consumed↔narrative
+  // MOCK_NOW_HHMM is 13:30 (mezo-1oy5), so "partial day" describes the CLOCK, not the meal list:
+  // breakfast 09:15 + lunch 13:00 are logged before `now`, and — since fix-round-1 F1
+  // (mezo-jcpt.3) added the coherent late-miss dinner fixture `m4` (logged 23:35, after `now`) —
+  // a third meal is ALSO already logged. `consumed` is still the honest sum of all three; the
+  // fixed-plan state pass (buildDayPlan.ts step 3) fills a window off a meal's presence, never
+  // off the clock, so a same-day meal logged past `now` is not a contradiction (see m4's own
+  // comment). The midday window (a mid-afternoon snack, if templated) stays open → the fixed-plan
+  // pass still marks it `now`/`pending` as before.
+  // (The pacing.msg "59%" narrative below is now stale vs this total — that consumed↔narrative
   //  drift is the pre-existing mezo-bgk8; deliberately not chased here.)
-  consumed: { kcal: 1300, p: 100, c: 152, f: 30, water: 1850 },
+  consumed: { kcal: 2060, p: 148, c: 224, f: 58, water: 1850 },
   meals: [
     {
       id: 'm1',
@@ -345,6 +484,48 @@ export const fuelDay: FuelDay = {
           { type: 'compute', name: 'evaluatePreWorkoutFit(meal, workout=17:00)' },
           { type: 'read', name: 'get_workout_plan(today)' },
           { type: 'compute', name: 'predictGlycemicCurve()' },
+        ],
+      },
+    },
+    {
+      // Fix-round-1 F1 (mezo-jcpt.3): the coherent late-miss meal fixture, a sibling of m1/m2 —
+      // its own name/kcal/macros/rows, not m2's timing repurposed. `loggedAt` carries a real
+      // instant past MOCK_NOW_HHMM (13:30): the fixed-plan state pass (step 3, buildDayPlan.ts)
+      // fills a window purely off a logged meal's PRESENCE, never off the clock (mezo-1oy5 — "the
+      // plan no longer re-flows around now"), so a same-day meal logged for a not-yet-reached
+      // window is not a contradiction in this model.
+      id: 'm4',
+      slot: 'Vacsora · 23:35',
+      title: 'Lazac · barna rizs · brokkoli',
+      score: weightedScore(m4Dimensions),
+      kcal: 760,
+      p: 48,
+      c: 72,
+      f: 28,
+      fiberG: 8,
+      loggedAt: `${TODAY}T23:35:00`,
+      mealDate: TODAY,
+      mealItems: [
+        { source: 'estimate', refId: '', amount: 1, unit: 'adag', name: 'Lazac · barna rizs · brokkoli',
+          contribution: { kcal: 760, p: 48, c: 72, f: 28 }, nova: 1 } satisfies MealItemLine,
+      ],
+      items: ['Lazac 180g', 'Barna rizs 80g (főtt ~220g)', 'Brokkoli 200g', 'Olívaolaj 10g'],
+      tags: ['post-training', 'omega-3'],
+      breakdown: {
+        confidence: 0.79,
+        tagline: null,
+        summary:
+          'Erős tál összetételében — omega-3, whole-foods, jó protein-hozam —, de 23:35 jóval a 17:00–22:00 vacsora-ablakon túl. A késői időzítés az egyetlen valódi levonás.',
+        dimensions: m4Dimensions,
+        improve: [
+          { text: 'Vacsora 21:30 előtt zárva → +0.15 kontextus-pont, alvásminőség is jobb.', impact: '+0.02 score' },
+          { text: '+1 hüvelyes kör (pl. csicseriborsó) → 3/3 növényi kategória.', impact: '+0.01 score' },
+        ],
+        tools: [
+          { type: 'read', name: 'lookupNutrients(items=4)' },
+          { type: 'compute', name: 'classifyNOVA(items=4)' },
+          { type: 'compute', name: 'checkMezoContext(time=23:35, slot=dinner)' },
+          { type: 'compute', name: 'evaluateMacroFit(meal, day_targets)' },
         ],
       },
     },

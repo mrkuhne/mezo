@@ -37,18 +37,37 @@ public interface PantryCatalogRepository extends JpaRepository<PantryCatalogEnti
         return findByNaturalKeyRaw(name == null ? "" : name, brand == null ? "" : brand);
     }
 
-    /** {@code like} is already lowercased + %-wrapped by the service. Two methods (no `:kind is null`) keep the bind types explicit. */
-    @Query("select c from PantryCatalogEntity c where c.deleted = false "
-        + "and (lower(c.name) like :like or lower(coalesce(c.brand, '')) like :like) order by c.name asc")
+    /**
+     * {@code like} is already lowercased, TRIMMED and %-wrapped by the service. Two methods
+     * (no `:kind is null`) keep the bind types explicit. {@code lower(trim(...))} mirrors the
+     * natural key's fold so the search path cannot drift from the key path (mezo-imet) — a
+     * legacy row stored as {@code "Túró "} is matched by the same expression that keys it.
+     */
+    @Query("select c from PantryCatalogEntity c where c.deleted = false and c.status = 'verified' "
+        + "and (lower(trim(c.name)) like :like or lower(trim(coalesce(c.brand, ''))) like :like) "
+        + "order by c.name asc")
     List<PantryCatalogEntity> searchAll(@Param("like") String like, Limit limit);
 
-    @Query("select c from PantryCatalogEntity c where c.deleted = false and c.kind = :kind "
-        + "and (lower(c.name) like :like or lower(coalesce(c.brand, '')) like :like) order by c.name asc")
+    @Query("select c from PantryCatalogEntity c where c.deleted = false and c.status = 'verified' "
+        + "and c.kind = :kind "
+        + "and (lower(trim(c.name)) like :like or lower(trim(coalesce(c.brand, ''))) like :like) "
+        + "order by c.name asc")
     List<PantryCatalogEntity> searchByKind(@Param("like") String like, @Param("kind") String kind, Limit limit);
 
-    /** The live global index the AI name matcher is built from. */
-    List<PantryCatalogEntity> findByDeletedFalseOrderByNameAsc();
+    /**
+     * The live global index the AI name matcher and the Receptműhely are built from. Status-scoped
+     * on purpose (mezo-qooi): an unreviewed draft must not be auto-matched into somebody's meal.
+     * Callers pass {@link PantryCatalogEntity#STATUS_VERIFIED}.
+     */
+    List<PantryCatalogEntity> findByDeletedFalseAndStatusOrderByNameAsc(String status);
 
-    /** Master rows (loader-owned). */
+    /**
+     * Master rows (loader-owned), soft-deleted ones INCLUDED — deliberately unfiltered, like
+     * {@link #findByNaturalKey}: the entity carries no {@code @SQLRestriction} precisely so a
+     * dead master row stays visible to whoever needs to revive or count it, and every caller
+     * that wants only live rows filters {@code deleted} itself. Today the only caller is
+     * {@code PantryCatalogLoaderIT}, which counts the seeded master set across a re-run
+     * (mezo-gmy0).
+     */
     List<PantryCatalogEntity> findByCreatedByIsNull();
 }

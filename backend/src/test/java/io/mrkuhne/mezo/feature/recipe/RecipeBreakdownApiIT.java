@@ -322,7 +322,7 @@ class RecipeBreakdownApiIT extends ApiIntegrationTest {
     /** A minimal old-shape dimension for seeding a stale 4-dim cache. */
     private static MealBreakdownJson.Dimension staleDim(String id) {
         return new MealBreakdownJson.Dimension(id, id, new BigDecimal("0.25"),
-            new BigDecimal("0.50"), "régi", null, null, null, null, null);
+            new BigDecimal("0.50"), "régi", null, null, null, null, null, null);
     }
 
     @Test

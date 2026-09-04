@@ -9,12 +9,16 @@ import { QueryWrapper } from '@/test/queryWrapper'
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
 
-test('useFuelDay returns macros, 2 logged meals, micronutrients', () => {
-  // The mock is a PARTIAL day at 13:30 (mezo-1oy5): only breakfast + lunch are logged; the
-  // midday/evening windows are still open (they become now/pending in the computed plan).
+test('useFuelDay returns macros, 3 logged meals, micronutrients', () => {
+  // The mock's CLOCK is 13:30 (MOCK_NOW_HHMM, mezo-1oy5): breakfast + lunch are logged before
+  // `now`, and since fix-round-1 F1 (mezo-jcpt.3) a third meal — a coherent late-miss dinner
+  // (`m4`, logged 23:35, after `now`) — is ALSO already logged, exercising the timing strip's
+  // out-of-window rendering in the live mock app. The midday/evening WINDOWS still open before
+  // `now` remain now/pending in the computed plan; a logged meal fills its own window purely off
+  // its presence (buildDayPlan.ts step 3), never off the clock.
   const { result } = renderHook(() => useFuelDay(), { wrapper: QueryWrapper })
   expect(result.current.fuel.targets.kcal).toBe(3100)
-  expect(result.current.fuel.meals).toHaveLength(2)
+  expect(result.current.fuel.meals).toHaveLength(3)
   expect(result.current.fuel.meals[0].breakdown?.dimensions).toHaveLength(8)
   // Both seed meals now carry a real score — Σ(weight × dimension.score) off their OWN breakdown
   // (fix wave item 10), never a null placeholder or a fabricated flat number.

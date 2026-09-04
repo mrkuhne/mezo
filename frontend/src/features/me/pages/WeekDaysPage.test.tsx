@@ -55,8 +55,10 @@ describe('WeekDaysPage (mock mode)', () => {
     expect(screen.getAllByText('tanulom').length).toBeGreaterThan(0) // the mini-cell label
 
     expect(screen.getAllByTestId('week-day-tile')).toHaveLength(7)
-    expect(screen.getByText('aktivitás')).toBeInTheDocument() // legend
-    expect(screen.getByText(/A négy pálcika a nap részpontszáma/)).toBeInTheDocument()
+    // legend — mezo-jcpt.5: hat sub-jel (nutrition/quality/training/sleep/logging/rhythm)
+    expect(screen.getByText('edzés')).toBeInTheDocument()
+    expect(screen.getByText('ritmus')).toBeInTheDocument()
+    expect(screen.getByText(/A hat pálcika a nap részpontszáma/)).toBeInTheDocument()
   })
 
   test('CONTRACT — a day with fewer than two sub-scores says `tanulom`, not a zero', () => {
@@ -98,6 +100,12 @@ describe('WeekDaysPage (mock mode)', () => {
       .toBeInTheDocument()
     expect(within(container.querySelector('[data-date="2026-05-14"]') as HTMLElement).queryByText('jegyzet'))
       .not.toBeInTheDocument()
+  })
+
+  test('hat legend-elem, csoport-elválasztóval a harmadik után', () => {
+    const { container } = renderPage(PAST_WEEK)
+    expect(container.querySelectorAll('.wkd-legend span')).toHaveLength(6)
+    expect(container.querySelector('.wkd-legend .wkd-legsep')).toBeInTheDocument()
   })
 
   test('a tile does NOT expand in place — it deep-links to the day page, week in tow', async () => {

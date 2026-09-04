@@ -34,3 +34,15 @@ test('skips stash items already linked via an ingredient stashRefId, yielding 25
   expect(stashOnlyIds).toContain('stash-tastydose')
   expect(stashOnlyIds).toContain('stash-origin-pwo')
 })
+
+test('trusts the server kind and never re-derives it from the category (mezo-4orh)', () => {
+  // 'supplement' is a legal category on a FOOD row — the add sheet offers it. The old code
+  // derived kind from the category prefix, so this row came back as kind:'supplement' and the
+  // edit sheet echoed that back onto the SHARED definition on every save.
+  const ing = {
+    ...ingredients[0],
+    id: 'ing-kollagen', name: 'Kollagén por', category: 'supplement', kind: 'food' as const,
+  }
+  const [item] = buildKamraItems([ing], [])
+  expect(item.kind).toBe('food')
+})

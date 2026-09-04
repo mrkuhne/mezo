@@ -11,7 +11,8 @@ import type { MeWeekAggregates, MeWeekDay } from '@/data/me/meWeek'
 import type { WeeklyReview } from '@/data/me/weeklyReviewHooks'
 
 const BLANK: MeWeekDay = {
-  date: '2026-05-18', score: null, subscores: { sleep: null, fuel: null, checkin: null, activity: null },
+  date: '2026-05-18', score: null,
+  subscores: { nutrition: null, quality: null, training: null, sleep: null, logging: null, rhythm: null },
   kcal: null, proteinG: null, carbsG: null, fatG: null, kcalTarget: null, proteinTargetG: null,
   weightKg: null, sleepMin: null, sleepQuality: null, checkinCount: 0, checkinEnergyAvg: null,
   workoutCount: 0, xp: null,
@@ -39,7 +40,7 @@ describe('a day with fewer than 2 sub-scores is „tanulom", a day with nothing 
   })
 
   test('something logged but only one measured area → learning („tanulom")', () => {
-    const d = day({ date: '2026-05-21', subscores: { sleep: null, fuel: null, checkin: 65, activity: null }, checkinCount: 2, xp: 20 })
+    const d = day({ date: '2026-05-21', subscores: { nutrition: null, quality: null, training: null, sleep: null, logging: 65, rhythm: null }, checkinCount: 2, xp: 20 })
     expect(measuredSubscores(d)).toBe(1)
     expect(dayHasAnyLog(d)).toBe(true)
     expect(dayScoreState(d, today)).toBe('learning')
@@ -48,7 +49,7 @@ describe('a day with fewer than 2 sub-scores is „tanulom", a day with nothing 
   })
 
   test('a scored day is scored, and a day after today is future', () => {
-    expect(dayScoreState(day({ date: '2026-05-20', score: 85, subscores: { sleep: 90, fuel: 82, checkin: 80, activity: 90 } }), today)).toBe('scored')
+    expect(dayScoreState(day({ date: '2026-05-20', score: 85, subscores: { nutrition: 82, quality: 85, training: 90, sleep: 90, logging: 80, rhythm: 88 } }), today)).toBe('scored')
     expect(dayScoreState(day({ date: '2026-05-25' }), today)).toBe('future')
     expect(DAY_STATE_COPY.future).toBe('még előtted — ide majd a nap adatai jönnek')
   })

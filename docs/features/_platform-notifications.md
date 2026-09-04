@@ -2,7 +2,7 @@
 title: Push Notifications Platform
 type: feature-platform
 status: mixed
-updated: 2026-09-02
+updated: 2026-09-04
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
@@ -15,6 +15,8 @@ key_files:
   - frontend/src/data/notification/feedHooks.ts
   - frontend/src/features/me/pages/NotificationFeedPage.tsx
   - frontend/src/features/me/pages/NotificationsPage.tsx
+  - frontend/src/shared/lib/toastBus.ts
+  - frontend/src/shared/ui/ToastProvider.tsx
   - backend/src/main/resources/db/changelog/1.0.0/script/202607291000_mezo-h4wp.6.1_create_push_subscription.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607291400_mezo-h4wp.6.2_create_notification_pref_and_push_log.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607291500_mezo-h4wp.6.3_create_notification_schedule.sql
@@ -54,8 +56,10 @@ related: [proactive, today, ritual, me, fuel, insights, journal, companion, _pla
 > §5). **F2** (2026-08-18, bd `mezo-gzhp.2`) wired the remaining **9 emit sites** across
 > `FactExtractionService`, `HypothesisPipelineService`, `MemoirGenerator`, `PredictionGenerator`,
 > `PredictionValidationService`, `ExperimentProposalGenerator`, `ExperimentOutcomeService`,
-> `ChallengeGenerator`, `ChallengeOutcomeEvaluator` and `DailySummaryService` — **all 12
-> `AppNotificationKind`s now emit** (§3a/§4/§5). **F3** (2026-08-18, bd `mezo-gzhp.3`) wired the
+> `ChallengeGenerator`, `ChallengeOutcomeEvaluator` and `DailySummaryService` — the original **12
+> `AppNotificationKind`s all emit** (§3a/§4/§5). Later slices added `weekly_review_ready`,
+> `life_goal_plan`, and the feed-only `goal_suggestion`, bringing the live catalog to 15 kinds.
+> **F3** (2026-08-18, bd `mezo-gzhp.3`) wired the
 > remaining piece: the `NotificationCategory` catalog grew **14→20** (6 new feed-anchored, family-level
 > categories — `pattern`/`knowledge`/`prediction`/`experiment`/`challenge`/`memory`, all default ON,
 > lead 0, not `feWritten`) and `AnchorResolver.feedAnchors(...)` now maps every one of today's
@@ -119,11 +123,12 @@ shipped; the epic is complete.
   by Daniel"). N2/N3 build the dispatcher and the last two categories' feed on top of that proven
   path.
 - **In-app feed `feature/appnotification` (F1 bd `mezo-gzhp.1` + F2 bd `mezo-gzhp.2`, new package,
-  new table, new switch):** **done** — `app_notification` outbox (§4), the 12-kind
+  new table, new switch):** **done** — `app_notification` outbox (§4), the 15-kind
   `AppNotificationKind` catalog (§4), `AppNotificationService` (emit/feed/markAllRead, gated on
   `NOTIFICATION_FEED_SWITCH`), and the always-on `AppNotificationEmitter` facade every producer
-  injects (§9). **All 12 kinds now emit** — F1 wired the 3 pattern-family sites (§3a/§5), F2 wired
-  the remaining 9 across the proactive/companion generators (§3a/§5). **F3 (bd `mezo-gzhp.3`) is also
+  injects (§9). **All 15 kinds emit** — F1 wired the 3 pattern-family sites (§3a/§5), F2 wired
+  the original remaining 9 across the proactive/companion generators (§3a/§5), and later slices
+  added weekly-review, life-goal-plan, and committed goal-suggestion producers (§4/§5). **F3 (bd `mezo-gzhp.3`) is also
   done** — every `familyKey` now maps onto one of the 6 new push categories and
   `AnchorResolver.feedAnchors(...)` pushes each of today's rows (§3a/§4/§9). The package was moved out of
   `feature/notification` into its own `feature/appnotification` during F2, to break a
@@ -134,6 +139,8 @@ shipped; the epic is complete.
   `/me/ertesitesek` (`NotificationFeedPage.tsx`, mezo-nol0, §2a).
 
 ## 2. User-facing behavior
+
+**In-app toast action contract (`mezo-ubxd`).** The global host also supports an optional action on a simple toast: `SimpleToast.action?: { label: string; onClick: () => void | Promise<void> }`. Stack uses this for the intake confirmation's **Visszavonás** button. It remains a simple success toast — the `RewardToast` shape and progression presentation are unchanged. Invoking the action dismisses that toast immediately; if its Promise rejects, the global TanStack `MutationCache.onError` emits the normal error toast. Queue capacity, kind-specific timers, newest-first order, per-item `role="status"`, close control and live-region behavior are unchanged.
 
 **Route:** `/me/ertesitesek` is now the in-app notification **feed** (`NotificationFeedPage.tsx`,
 §2a) — the settings surface described below moved one level down, to
@@ -291,7 +298,7 @@ for why `PushDispatchExecutor` must be a separate `@Component`, not a private me
 
 No cron, no scheduler-pool concern — a producer emits **synchronously, inline**, at the moment the
 event happens. F1 wired one producer (`PatternDetectionService`); F2 wired the other nine
-`feature/companion`/`feature/proactive` generators, so all 12 `AppNotificationKind`s now have a live
+`feature/companion`/`feature/proactive` generators, so the original 12 `AppNotificationKind`s all have a live
 emit site:
 
 ```
@@ -704,7 +711,7 @@ cycle once both domains needed to inject the emitter (§9).
 
 | Class | Responsibility |
 |---|---|
-| `AppNotificationKind` | the 12-kind in-app catalog (§4) — all 12 wired to a producer as of F2 |
+| `AppNotificationKind` | the 15-kind in-app catalog (§4) — all 15 wired to producers |
 | `AppNotificationService` | `emit` (`REQUIRES_NEW`, dedup-idempotent), `feed(limit)`, `markAllRead` — gated on `NOTIFICATION_FEED_SWITCH` |
 | `AppNotificationEmitter` | the always-on facade every producer injects — absorbs every exception (§9) |
 | `NotificationFeedController` | implements `NotificationFeedApi` — the two feed operations, thin delegation |
@@ -729,11 +736,11 @@ across the cron-vs-lazy-GET double-generation race a future producer may have (F
 today — the index is there because a later F2 producer will). `idx_app_notification_created_by_occurred_at`
 serves the feed read (`created_by, occurred_at desc`).
 
-### `AppNotificationKind` — the 12-kind catalog (`feature/appnotification/domain/AppNotificationKind.java`)
+### `AppNotificationKind` — the 15-kind catalog (`feature/appnotification/domain/AppNotificationKind.java`)
 
 The single source of truth for the in-app feed's kind key, its push `familyKey`, and its
-deeplink base — pinned by `AppNotificationKindTest`. **All 12 rows are wired to a producer as of F2**
-(bd `mezo-gzhp.2`), and **every non-null `familyKey` now maps onto a live push category as of F3**
+deeplink base — pinned by `AppNotificationKindTest`. **All 15 rows are wired to producers**
+(the original 12 by F2, plus three later domain slices), and **every non-null `familyKey` now maps onto a live push category as of F3**
 (bd `mezo-gzhp.3`, §3b/§4) — the catalog is complete end to end.
 
 | Key | familyKey (→ push category, F3) | Deeplink base | Producer |
@@ -750,6 +757,9 @@ deeplink base — pinned by `AppNotificationKindTest`. **All 12 rows are wired t
 | `experiment_closed` | `experiment` | `/insights/experiments` | F2 — `ExperimentOutcomeService` |
 | `challenge_event` | `challenge` | `/train` | F2 — `ChallengeGenerator` (proposed) **and** `ChallengeOutcomeEvaluator` (closed) — one kind, two lifecycle moments, distinguished only by dedup-key prefix (§3a) |
 | `memory_note` | `memory` | `/insights/memoria` | F2 — `DailySummaryService` |
+| `weekly_review_ready` | **null** | `/me/week` | `mezo-p2tr` — `WeeklyReviewGenerator` |
+| `life_goal_plan` | **null** | `/me/goals/{goalId}` | `mezo-iizd.7` — `LifeGoalTriggerService` |
+| `goal_suggestion` | **null** | `/me/goals/weight/suggestions/{suggestionId}` | `mezo-ricj.4` — `GoalSuggestionNotificationListener`, after a committed `GoalSuggestionProposedEvent` |
 
 ### API contract (`api/feature/notification/notification.yml`)
 
@@ -839,7 +849,7 @@ the OpenAPI schema itself (1..100).
   (`prediction_new`/`prediction_outcome`), `ExperimentProposalGenerator`/`ExperimentOutcomeService`
   (`experiment_proposed`/`experiment_closed`), `ChallengeGenerator`/`ChallengeOutcomeEvaluator`
   (`challenge_event`, both lifecycle moments), `DailySummaryService` (`memory_note`) — see §3a for the
-  full per-producer dedup-key shapes. **All 12 `AppNotificationKind`s now emit, and F3 (bd
+  full per-producer dedup-key shapes. **All original 12 `AppNotificationKind`s emit, and F3 (bd
   `mezo-gzhp.3`) wired the push-category mapping on top — see §3b/§4.**
 
 ## 6. How to use it (consume)
@@ -986,6 +996,7 @@ one of the 12 current producer IT classes had to have this annotation dropped).
 - Commands: `cd backend && ./mvnw clean test -Dtest='*Notification*,DueEvaluator*,AnchorResolver*,InterventionFireMinuteTest'` (the last is added by name — its `service/` package doesn't match the other three globs).
 
 **Frontend (Vitest + RTL + MSW, both modes) — N2/N3 add:**
+- `shared/ui/ToastProvider.test.tsx` + `shared/lib/toastBus.test.ts` — optional simple-toast action rendering, Promise invocation, immediate dismissal and unchanged reward/queue behavior (`mezo-ubxd`).
 - `data/notification/notificationPrefHooks.test.tsx` — the optimistic per-category upsert + rollback,
   the code-default seed as the pre-resolve ghost.
 - `data/notification/notificationScheduleWriter.test.ts` — `buildScheduleEntries` (checkin + fuel_slot
@@ -1018,7 +1029,8 @@ one of the 12 current producer IT classes had to have this annotation dropped).
   persist inside the service never surfaces to the caller.
 - `NotificationFeedApiIT` (3) — own-rows-only newest-first, `read-all` stamps every row, `401` when
   unauthenticated.
-- `AppNotificationKindTest` — pins the 12-key catalog (keys, familyKey, deeplink) against the spec.
+- `AppNotificationKindTest` — pins the 15-key catalog (keys, familyKey, deeplink) against the spec.
+- `GoalSuggestionNotificationIT` (`feature/goal`, `mezo-ricj.4`) — pins the AFTER_COMMIT `goal_suggestion` producer, suggestion-id dedup, rollback safety and owner isolation.
 - `PatternEmitIT` (2, F1) — `PatternDetectionService.upsert` emits exactly one `pattern_inbox` row for
   a new strong pattern, and running detection twice emits only one row (dedup holds across a
   re-detection).
@@ -1412,7 +1424,7 @@ These rules are enforced by convention + this doc, not by a runtime check — a 
 **Backend — `feature/appnotification` in-app feed (F1 bd `mezo-gzhp.1` + F2 bd `mezo-gzhp.2`; moved
 out of `feature/notification` in F2 to break a `companion`↔`notification`↔`proactive` package
 cycle, §9)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/appnotification/domain/AppNotificationKind.java` — the 12-kind catalog (§4)
+- `backend/src/main/java/io/mrkuhne/mezo/feature/appnotification/domain/AppNotificationKind.java` — the 15-kind catalog (§4)
 - `backend/src/main/java/io/mrkuhne/mezo/feature/appnotification/entity/AppNotificationEntity.java`
 - `backend/src/main/java/io/mrkuhne/mezo/feature/appnotification/repository/AppNotificationRepository.java`
 - `backend/src/main/java/io/mrkuhne/mezo/feature/appnotification/service/{AppNotificationService,AppNotificationEmitter}.java`
@@ -1420,11 +1432,12 @@ cycle, §9)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/appnotification/config/NotificationFeedProperties.java` — `mezo.notification.feed.{limit,inbox-min-abs-r,inbox-max-p,band-promising,band-strong}` (the last four MUST mirror the FE Insights constants, §5/§9)
 - Migration: `202608181400_mezo-gzhp.1_create_app_notification.sql` (`db/changelog/1.0.0/script/`, registered in `1.0.0/1.0.0_master.yml`)
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `NOTIFICATION_FEED_SWITCH` (`mezo.feature.notification-feed.enabled`)
-- The 11 producers (all live outside `feature/appnotification`, injecting `AppNotificationEmitter`, §3a/§5):
+- Producers (all live outside `feature/appnotification`, injecting `AppNotificationEmitter`, §3a/§5):
   - F1: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PatternDetectionService.java` — `upsert`/`recordSnapshot`/`reinforcePromotedFact`
   - F2, `feature/companion/service/`: `FactExtractionService.java` (`fact_candidate` + a second `fact_reinforced` source), `HypothesisPipelineService.java` (`hypothesis_new`), `DailySummaryService.java` (`memory_note`)
   - F2, `feature/proactive/service/`: `MemoirGenerator.java` (`memoir_ready`), `PredictionGenerator.java` (`prediction_new`), `PredictionValidationService.java` (`prediction_outcome`), `ExperimentProposalGenerator.java` (`experiment_proposed`), `ExperimentOutcomeService.java` (`experiment_closed`), `ChallengeGenerator.java` (`challenge_event`, proposed), `ChallengeOutcomeEvaluator.java` (`challenge_event`, closed)
-- Tests: `backend/src/test/java/io/mrkuhne/mezo/feature/appnotification/{AppNotificationRepositoryIT,AppNotificationServiceIT,NotificationFeedApiIT,AppNotificationKindTest,PatternEmitIT}.java`; per-producer emit assertions added directly to `feature/companion/{FactExtractionServiceIT,HypothesisPipelineServiceIT,DailySummaryServiceIT}.java` and `feature/proactive/{MemoirGeneratorIT,PredictionGeneratorIT,PredictionValidationIT,ExperimentProposalGeneratorIT,ExperimentOutcomeIT,ChallengeGeneratorIT,ChallengeOutcomeIT}.java` (all ten dropped class-level `@Transactional`, §9); `support/populator/AppNotificationPopulator.java`; `support/ResetDatabase.java` (`app_notification` in the TRUNCATE list)
+  - Later slices: `feature/proactive/service/WeeklyReviewGenerator.java` (`weekly_review_ready`), `feature/lifegoal/service/LifeGoalTriggerService.java` (`life_goal_plan`), and `feature/goal/service/{GoalSuggestionService,GoalSuggestionProposedEvent,GoalSuggestionNotificationListener}.java` (`goal_suggestion`, AFTER_COMMIT and feed-only).
+- Tests: `backend/src/test/java/io/mrkuhne/mezo/feature/appnotification/{AppNotificationRepositoryIT,AppNotificationServiceIT,NotificationFeedApiIT,AppNotificationKindTest,PatternEmitIT}.java`; per-producer emit assertions added directly to `feature/companion/{FactExtractionServiceIT,HypothesisPipelineServiceIT,DailySummaryServiceIT}.java` and `feature/proactive/{MemoirGeneratorIT,PredictionGeneratorIT,PredictionValidationIT,ExperimentProposalGeneratorIT,ExperimentOutcomeIT,ChallengeGeneratorIT,ChallengeOutcomeIT}.java` (all ten dropped class-level `@Transactional`, §9); `feature/goal/GoalSuggestionNotificationIT.java`; `support/populator/AppNotificationPopulator.java`; `support/ResetDatabase.java` (`app_notification` in the TRUNCATE list)
 
 **API contract**
 - `api/feature/notification/notification.yml` → merged `api/openapi.yml` → `frontend/src/data/_client/api.gen.ts` + generated `io.mrkuhne.mezo.api.controller.{NotificationApi,NotificationFeedApi}` / `io.mrkuhne.mezo.api.dto.{PushSubscriptionRequest,PushTestResponse,NotificationPref,NotificationPrefListRequest,NotificationPrefListResponse,NotificationScheduleEntry,NotificationScheduleRequest,NotificationFeedItem,NotificationFeedResponse}` (the last two DTOs are F1's `NotificationFeed` tag, §4)
@@ -1433,9 +1446,10 @@ cycle, §9)**
 - `frontend/public/push-sw.js`, `frontend/vite.config.ts` (`workbox.importScripts`), `frontend/.env.example` (`VITE_VAPID_PUBLIC`), `.github/workflows/deploy.yml` (same variable in `build-frontend`'s `env:`)
 
 **Frontend — data layer**
+- `frontend/src/shared/lib/toastBus.ts` + `frontend/src/shared/ui/ToastProvider.tsx` — the global simple/reward toast bus and host; simple toasts alone may carry the optional Promise-capable action (§2).
 - `frontend/src/data/notification/{notificationApi,notificationMock,notificationHooks,notificationPrefHooks,notificationScheduleWriter}.ts` — `usePushSubscription()` (N1) + `useNotificationPrefs()` (N2) + `useScheduleSnapshotWriter()`/`buildScheduleEntries()` (N3), all re-exported from `frontend/src/data/hooks.ts`
 - `frontend/src/data/notification/{feedApi,feedMock,feedHooks}.ts` (F1) — `useNotificationFeed()` + `useNotificationFeedActions()`, re-exported from `frontend/src/data/hooks.ts` (§6)
-- `frontend/src/data/types.ts` — `PushSubscriptionState`/`PushErrorCode` (N1); `NotificationCategoryKey`/`NOTIFICATION_CATEGORIES`/`NotificationPrefView`/`NotificationCategoryMeta`/`NOTIFICATION_CATEGORY_META` (N2, the 22-key HU copy catalog — `decision_review` appended, mezo-b3pp.4, then `intervention` last, mezo-b3pp.19); `AppNotificationKindKey`/`AppNotificationView`/`APP_NOTIFICATION_KIND_META` (F1, the 12-key catalog)
+- `frontend/src/data/types.ts` — `PushSubscriptionState`/`PushErrorCode` (N1); `NotificationCategoryKey`/`NOTIFICATION_CATEGORIES`/`NotificationPrefView`/`NotificationCategoryMeta`/`NOTIFICATION_CATEGORY_META` (N2, the 22-key HU copy catalog — `decision_review` appended, mezo-b3pp.4, then `intervention` last, mezo-b3pp.19); `AppNotificationKindKey`/`AppNotificationView`/`APP_NOTIFICATION_KIND_META` (the 15-key catalog)
 - `frontend/src/app/AppLayout.tsx` — calls `useScheduleSnapshotWriter()` once per app-session mount
 
 **Frontend — Me surface (documented from Me's side in [`me.md`](me.md) §2/§10)**

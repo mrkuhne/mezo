@@ -25,7 +25,7 @@ const statistical: Pattern = {
 }
 
 test('renders question title, decision verbs and the detail link', () => {
-  render(
+  const { container } = render(
     <MemoryRouter>
       <PatternDecisionCard pattern={statistical} pair={pair} onDecide={() => {}} showExplainer />
     </MemoryRouter>,
@@ -37,6 +37,8 @@ test('renders question title, decision verbs and the detail link', () => {
   expect(screen.getByText('Mi történik a döntéseddel')).toBeInTheDocument()
   expect(screen.getByRole('link', { name: /Részletek és előzmények/ }))
     .toHaveAttribute('href', `/mezo/patterns/${pair.key}`)
+  expect(container.querySelector('[data-pattern-domain="train"] svg')).not.toBeNull()
+  expect(container.textContent).not.toMatch(/🏋️/)
   // nyers statisztika SOSEM a kártyán:
   expect(screen.queryByText(/r=/)).not.toBeInTheDocument()
 })

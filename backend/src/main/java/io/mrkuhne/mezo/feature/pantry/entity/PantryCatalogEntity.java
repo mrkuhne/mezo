@@ -70,6 +70,16 @@ public class PantryCatalogEntity {
     @Column(nullable = false)
     private String source = "manual"; // ck_pantry_catalog_source
 
+    /** Unreviewed import candidate (mezo-qooi) — excluded from catalog search and the name index. */
+    public static final String STATUS_DRAFT = "draft";
+
+    /** Confirmed content: loader master, a deliberate user action, or a promoted draft. */
+    public static final String STATUS_VERIFIED = "verified";
+
+    @NotNull
+    @Column(nullable = false)
+    private String status = STATUS_VERIFIED; // ck_pantry_catalog_status
+
     private String category; // ck_pantry_catalog_category (nullable)
 
     @Column(name = "serving_amount")
