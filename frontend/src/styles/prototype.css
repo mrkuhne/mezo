@@ -9059,7 +9059,7 @@ button.mz-wtile:active { transform: scale(0.96); }
   display: grid; grid-template-columns: 1fr auto; grid-template-areas: "n f" "b b";
   column-gap: 8.3px; row-gap: 3.5px; align-items: center;
   width: 100%; padding: 8px 2px; cursor: pointer; text-align: left;
-  border: none; background: none; font-family: inherit; color: var(--mz-ink);
+  border: none; background: none; font-family: inherit; color: var(--text-primary);
 }
 /* SortableList wraps each row in `[data-sortable-row]` (grip + `.col` > our `.row` > `.rt-hrow`
    + the ▲▼ `.row`) — the `.rt-hrow` buttons are never siblings, so the separator has to anchor
