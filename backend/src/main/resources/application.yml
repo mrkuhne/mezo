@@ -560,6 +560,36 @@ mezo:
       note-min-chars: 80
       # Per-user, per-run cap on note embeddings — the one-time history backfill spreads over nights
       note-batch-size: 200
+    memory-platform:
+      # Vector generation served by the new retrieval path; re-embedding never flips this value.
+      serving-embedding-version: gemini-embedding-001-768-v1
+      # Provider metadata persisted with every canonical vector generation.
+      embedding-provider: google
+      # Provider model persisted with every canonical vector generation.
+      embedding-model: gemini-embedding-001
+      # Version of the canonical memory_item projection shape.
+      schema-version: 1
+      serving:
+        # Candidates requested from each retriever before fusion.
+        candidate-limit: 30
+        # Maximum chat memory-context budget in estimated tokens.
+        chat-max-tokens: 1200
+        # Maximum characters retained from one projected item.
+        item-max-chars: 600
+      reembedding:
+        # Off by default: no scheduled generation backfill bean exists.
+        enabled: false
+        # Generation created or repaired without changing serving-embedding-version.
+        target-version: gemini-embedding-001-768-v1
+        # Maximum items processed for one user in one scheduled run.
+        batch-size: 100
+        # Daily backfill slot, after the existing dawn memory jobs.
+        cron: "0 10 4 * * *"
+      audit:
+        # Retrieval audit rows older than this many days become retention candidates.
+        retention-days: 30
+        # Daily retrieval-audit retention slot; the retention job lands in a later task.
+        retention-cron: "0 50 3 * * *"
     recall:
       # V2.3 find_similar_past_days — episodic recall ranking: similarity × exp(-age/decay-days)
       # τ: how fast an old day's relevance fades (days)

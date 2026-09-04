@@ -8,6 +8,9 @@ import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PeriodSummaryEntity;
+import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryProjectionEvent;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryProjectionWriter.ProjectionCommand;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
@@ -20,6 +23,7 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +54,7 @@ public class MemoryEmbeddingWriter {
     private final AiMessageRepository aiMessageRepository;
     private final CompanionProperties properties;
     private final LlmCallContextHolder llmCallContextHolder;
+    private final ApplicationEventPublisher eventPublisher;
 
     /**
      * Embeds a generated daily summary (kind={@code daily_summary}, ref = the summary row).
@@ -59,8 +64,10 @@ public class MemoryEmbeddingWriter {
      */
     @Transactional
     public void writeSummary(DailySummaryEntity summary) {
-        if (memoryEmbeddingRepository.existsByKindAndRefId(
-                MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, summary.getId())) {
+        Optional<MemoryEmbeddingEntity> existing = memoryEmbeddingRepository.findByKindAndRefId(
+                MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, summary.getId());
+        if (existing.isPresent()) {
+            publishProjection(existing.get());
             return;
         }
         memoryEmbeddingRepository
@@ -70,6 +77,7 @@ public class MemoryEmbeddingWriter {
                     log.info("Replacing stale daily_summary embedding {} for {}", stale.getId(),
                             summary.getSummaryDate());
                     memoryEmbeddingRepository.delete(stale); // @SQLDelete → soft delete
+                    publishSuppression(stale);
                 });
         write(summary.getCreatedBy(), MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, summary.getId(),
                 summary.getNarrative(), summary.getSummaryDate());
@@ -87,8 +95,10 @@ public class MemoryEmbeddingWriter {
         if (assistant == null || !AiMessageEntity.ROLE_ASSISTANT.equals(assistant.getRole())) {
             return;
         }
-        if (memoryEmbeddingRepository.existsByKindAndRefId(
-                MemoryEmbeddingEntity.KIND_CHAT_TURN, assistant.getId())) {
+        Optional<MemoryEmbeddingEntity> existing = memoryEmbeddingRepository.findByKindAndRefId(
+                MemoryEmbeddingEntity.KIND_CHAT_TURN, assistant.getId());
+        if (existing.isPresent()) {
+            publishProjection(existing.get());
             return;
         }
         String userContent = aiMessageRepository
@@ -130,7 +140,7 @@ public class MemoryEmbeddingWriter {
     public void deleteJournalEmbedding(UUID entryId) {
         memoryEmbeddingRepository
                 .findByKindAndRefId(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, entryId)
-                .ifPresent(memoryEmbeddingRepository::delete); // @SQLDelete → soft delete
+                .ifPresent(row -> deleteAndSuppress(row));
     }
 
     /** W1.3 gratitude unit (spec §4.1 / §5.3): short lines, same upsert-in-place seam as journal. */
@@ -145,7 +155,7 @@ public class MemoryEmbeddingWriter {
     public void deleteGratitudeEmbedding(UUID entryId) {
         memoryEmbeddingRepository
                 .findByKindAndRefId(MemoryEmbeddingEntity.KIND_GRATITUDE, entryId)
-                .ifPresent(memoryEmbeddingRepository::delete); // @SQLDelete → soft delete
+                .ifPresent(row -> deleteAndSuppress(row));
     }
 
     /**
@@ -173,7 +183,7 @@ public class MemoryEmbeddingWriter {
         if (text == null || text.isBlank()) {
             memoryEmbeddingRepository
                     .findByKindAndRefId(MemoryEmbeddingEntity.KIND_REFLECTION, day.getId())
-                    .ifPresent(memoryEmbeddingRepository::delete); // @SQLDelete → soft delete
+                    .ifPresent(row -> deleteAndSuppress(row));
             return;
         }
         upsert(day.getCreatedBy(), MemoryEmbeddingEntity.KIND_REFLECTION, day.getId(), text,
@@ -196,12 +206,12 @@ public class MemoryEmbeddingWriter {
                 ? MemoryEmbeddingEntity.KIND_MONTHLY_SUMMARY
                 : MemoryEmbeddingEntity.KIND_WEEKLY_SUMMARY;
         String capped = cap(summary.getSummaryText());
-        boolean unchanged = memoryEmbeddingRepository.findByKindAndRefId(kind, summary.getId())
-                .filter(existing -> capped.equals(existing.getContent()))
-                .isPresent();
-        if (unchanged) {
+        Optional<MemoryEmbeddingEntity> existing = memoryEmbeddingRepository.findByKindAndRefId(
+                kind, summary.getId());
+        if (existing.filter(row -> capped.equals(row.getContent())).isPresent()) {
             // the nightly job re-offers every period in its backfill window; re-embedding an
             // unchanged text would burn a provider call per period per night for nothing
+            publishProjection(existing.get());
             return;
         }
         upsert(summary.getCreatedBy(), kind, summary.getId(), capped, summary.getPeriodStart());
@@ -232,6 +242,7 @@ public class MemoryEmbeddingWriter {
         String capped = cap(note.text());
         Optional<MemoryEmbeddingEntity> live = memoryEmbeddingRepository.findByKindAndRefId(kind, note.id());
         if (live.isPresent() && capped.equals(live.get().getContent())) {
+            publishProjection(live.get());
             return false;
         }
         upsert(note.createdBy(), kind, note.id(), note.text(), note.occurredOn());
@@ -244,7 +255,7 @@ public class MemoryEmbeddingWriter {
     @Transactional
     public void deleteNoteEmbedding(String kind, UUID refId) {
         memoryEmbeddingRepository.findByKindAndRefId(kind, refId)
-                .ifPresent(memoryEmbeddingRepository::delete); // @SQLDelete → soft delete
+                .ifPresent(row -> deleteAndSuppress(row));
     }
 
     /**
@@ -276,6 +287,7 @@ public class MemoryEmbeddingWriter {
                     existing.setOccurredOn(occurredOn);
                     existing.setDeleted(false); // revive: the key is still ours, take it back
                     memoryEmbeddingRepository.saveAndFlush(existing);
+                    publishProjection(existing);
                 }, () -> write(createdBy, kind, refId, content, occurredOn));
     }
 
@@ -306,6 +318,27 @@ public class MemoryEmbeddingWriter {
         // A lost race raises the uq violation and rolls back this unit's tx — deliberate:
         // catching it here cannot recover an aborted PG transaction. Callers log-and-continue.
         memoryEmbeddingRepository.saveAndFlush(entity);
+        publishProjection(entity);
+    }
+
+    private void deleteAndSuppress(MemoryEmbeddingEntity row) {
+        memoryEmbeddingRepository.delete(row); // @SQLDelete → soft delete
+        memoryEmbeddingRepository.flush();
+        publishSuppression(row);
+    }
+
+    private void publishProjection(MemoryEmbeddingEntity row) {
+        eventPublisher.publishEvent(new MemoryProjectionEvent.Upsert(
+                new ProjectionCommand(
+                    row.getCreatedBy(), row.getKind(), row.getRefId(), null, row.getContent(),
+                    row.getOccurredOn(), List.of(), List.of(), 0.5,
+                    MemoryProvenanceEnvelope.empty()),
+                row.getEmbedding()));
+    }
+
+    private void publishSuppression(MemoryEmbeddingEntity row) {
+        eventPublisher.publishEvent(new MemoryProjectionEvent.Suppress(
+                row.getCreatedBy(), row.getKind(), row.getRefId()));
     }
 
     /**

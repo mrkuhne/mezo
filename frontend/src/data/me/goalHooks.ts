@@ -89,7 +89,7 @@ export function useGoal() {
     queryFn: mock ? async () => null : goalApi.list,
     initialData: mock ? null : undefined,
   })
-  const activeGoal = mock ? null : (goals ?? []).find(g => g.status === 'active') ?? (goals ?? [])[0] ?? null
+  const activeGoal = mock ? null : (goals ?? []).find(g => g.status === 'active') ?? null
   const goalId = activeGoal?.id
 
   // Real mode: fetch the active goal's plan timeline and build the linked plans
@@ -144,7 +144,10 @@ export function useGoalActions() {
 
   const invalidateGoals = () => { if (!mock) qc.invalidateQueries({ queryKey: ['goals'] }) }
   const invalidateTimeline = (goalId: string) => {
-    if (!mock) qc.invalidateQueries({ queryKey: ['goal', goalId, 'timeline'] })
+    if (!mock) {
+      qc.invalidateQueries({ queryKey: ['goal-overview', goalId] })
+      qc.invalidateQueries({ queryKey: ['goal', goalId, 'timeline'] })
+    }
   }
 
   const archiveM = useMutation({

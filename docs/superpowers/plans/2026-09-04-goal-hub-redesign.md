@@ -372,7 +372,7 @@ Pusholj `feat/goal-overview`, nyiss self-PR-t, várd meg a zöld CI-t és merge-
 - Change: `useGoal()` csak `status === 'active'` goalt választ; planned fallback nincs.
 - Consume: `Tile`, `Mosaic`, `PageHero`, `MCells`, `EntranceGroup` meglévő Mozaik API-ja.
 
-- [ ] **Step 1: Írd meg a data-layer RED teszteket mindkét módban**
+- [x] **Step 1: Írd meg a data-layer RED teszteket mindkét módban**
 
 Real teszt mockolja `GET /api/goals/{id}/overview`-t és ellenőrzi a query keyt
 `['goal-overview', id]`, a typed response-t és `goalId=null` disabled állapotot. Mock teszt a
@@ -388,7 +388,7 @@ VITE_USE_MOCK=true pnpm vitest run src/data/me/goalOverviewHooks.test.tsx \
 
 Várt: hiányzó hook/API és a planned fallback miatt FAIL.
 
-- [ ] **Step 2: Implementáld a stabil dual-mode határt**
+- [x] **Step 2: Implementáld a stabil dual-mode határt**
 
 ```ts
 export function useGoalOverview(goalId: string | null) {
@@ -407,7 +407,7 @@ Ha `useDualQuery` jelenlegi propsa nem tartalmaz `enabled`-et, előbb egészíts
 colocated tesztjét; ne indíts `null` id-val hálózati kérést. Re-export kizárólag
 `frontend/src/data/hooks.ts`-ban. A mock seed legyen az overview contract teljes, koherens példája.
 
-- [ ] **Step 3: Írd meg a hub RED render/navigation tesztjeit**
+- [x] **Step 3: Írd meg a hub RED render/navigation tesztjeit**
 
 Fedés: loading skeleton; no active goal CTA; invalid coral fail-safe kcal nélkül; learning copy;
 on-track hero; open suggestion esetén hat, nélküle öt tile; a tile-ok pontos útvonalai. Mockold az
@@ -419,7 +419,7 @@ expect(screen.getByRole('button', { name: /Mai étrendi keret/ })).toBeEnabled()
 expect(screen.queryByText('3878 kcal')).not.toBeInTheDocument() // invalid fixture
 ```
 
-- [ ] **Step 4: Építsd meg a herót és a csempés főoldalt**
+- [x] **Step 4: Építsd meg a herót és a csempés főoldalt**
 
 `GoalsPage` a hosszú `GoalRecept`, `GoalTimeline`, `GoalPlanSlots`, inline accept/dismiss és
 `remaining=current-target` blokkokat törli. A `GoalCourseHero` a course state-et, signed observed/
@@ -427,7 +427,7 @@ target rate-et, súlyutat és projected date-et mutatja; completion ring csak m�
 diet(sage), segment(gold), plans(sky), guards(lav), suggestion(coral, conditional), settings(white).
 Mindegyik `navigate(...)`; suggestion mindig review route-ra visz, soha `accept`-re.
 
-- [ ] **Step 5: Regisztráld az öt route-ot ship-safe shell oldallal**
+- [x] **Step 5: Regisztráld az öt route-ot ship-safe shell oldallal**
 
 Az öt `*Page.tsx` már ebben a commitban létezzen és rendereljen `MozaikPage + PageHead + PageHero +
 PageBody` scaffoldot, `‹ Cél` fix visszaúttal. Task 4 tölti fel a body-kat, de route ne legyen 404.
@@ -440,7 +440,7 @@ PageBody` scaffoldot, `‹ Cél` fix visszaúttal. Task 4 tölti fel a body-kat,
 { path: 'me/goals/weight/settings', element: <GoalSettingsPage /> },
 ```
 
-- [ ] **Step 6: GREEN mindkét módban és commit**
+- [x] **Step 6: GREEN mindkét módban és commit**
 
 ```bash
 cd frontend && pnpm vitest run src/data/me/goalOverviewHooks.test.tsx \
@@ -488,7 +488,7 @@ Maradj a `feat/goal-hub-ui` branchen; Task 4 ugyanennek a beadnek és PR-nek a m
 - Consume: `useGoalActions`, `AttachPlanSheet`, `EditGoalSheet` write műveletekhez.
 - Produce: négy tisztán presentational goal component; data hookot egyik sem importál.
 
-- [ ] **Step 1: Írd meg oldalanként a RED viselkedési teszteket**
+- [x] **Step 1: Írd meg oldalanként a RED viselkedési teszteket**
 
 - Diet: training/rest/uniform/unavailable hero, P/C/F, heti átlag és magyarázat.
 - Segment: aktuális label + hétintervallum, következő szakasz/dátum, nincs következő állapot.
@@ -505,7 +505,7 @@ cd frontend && pnpm vitest run src/features/me/pages/GoalDietPage.test.tsx \
 
 Várt: az üres scaffoldok miatt FAIL.
 
-- [ ] **Step 2: Töltsd fel a Diet és Segment oldalakat**
+- [x] **Step 2: Töltsd fel a Diet és Segment oldalakat**
 
 Diet tone `sage`: `PageHero` big=`todayKcal`, sub=`Edzésnap|Pihenőnap|Egységes keret`; MCells P/C/F;
 `GoalDietWeekCard` egymás mellett mutat training/rest kcal-t és heti átlagot; külön provenance
@@ -516,7 +516,7 @@ Segment tone `gold`: hero current label, `W{from}–{to}`; `GoalSegmentRail` a c
 és váltási dátumot mutatja. A magyarázat explicit: a fázis a guardot/szakaszolást változtathatja,
 de önmagában nem becsül új kcal-égetést.
 
-- [ ] **Step 3: Töltsd fel a Plans oldalt**
+- [x] **Step 3: Töltsd fel a Plans oldalt**
 
 Plans tone `sky`; a `GoalConnectionTimeline` a szervertől kapott `timeline.links`, `gaps` és
 `sportSchedule` adatokból rajzol. Ne maradjon `BVSC`, `végig` vagy más statikus sport copy. A plan
@@ -524,20 +524,20 @@ row mutassa `plan.status`, start/end week, illetve később a `clippedAtGoalEnd`
 ugyanazt az `AttachPlanSheet`-et nyitja előválasztott `mesocycle|running_block` típussal; detach után
 overview és timeline invalidálódjon.
 
-- [ ] **Step 4: Töltsd fel a Guards és Settings oldalakat**
+- [x] **Step 4: Töltsd fel a Guards és Settings oldalakat**
 
 Guards tone `lav`: összesített pajzs hero (`healthyCount/totalCount`), külön
 `GoalGuardCard` strength/muscle statusra. Notes csak részletező szöveg; a státusz a typed mezőkből
 jön. Settings tone `rose`: irány, célsúly, dátum, signed rate és guard chipek; az edit CTA a
 meglévő sheetet nyitja, archive/delete másodlagos marad.
 
-- [ ] **Step 5: Alkalmazd a mockup színeit és nyugodt motiont**
+- [x] **Step 5: Alkalmazd a mockup színeit és nyugodt motiont**
 
 Új CSS kizárólag `--mz-*`/theme tokenből és `color-mix`-ből épül. Kártyánként egy `rise`, az
 oldal `EntranceGroup`-ja indítja; hover/tap csak `np-press`. A komponensek 320 px-en is egy oszlopba
 engedik a stat sort, értéket nem vágnak.
 
-- [ ] **Step 6: GREEN mindkét módban, build és commit**
+- [x] **Step 6: GREEN mindkét módban, build és commit**
 
 ```bash
 cd frontend && pnpm vitest run src/features/me/pages/Goal*Page.test.tsx \

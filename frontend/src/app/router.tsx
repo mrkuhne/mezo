@@ -82,6 +82,11 @@ import { WeekDayPage } from '@/features/me/pages/WeekDayPage'
 import { WeekLessonsPage } from '@/features/me/pages/WeekLessonsPage'
 import { WeekDiscoveriesPage } from '@/features/me/pages/WeekDiscoveriesPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
+import { GoalDietPage } from '@/features/me/pages/GoalDietPage'
+import { GoalSegmentPage } from '@/features/me/pages/GoalSegmentPage'
+import { GoalPlansPage } from '@/features/me/pages/GoalPlansPage'
+import { GoalGuardsPage } from '@/features/me/pages/GoalGuardsPage'
+import { GoalSettingsPage } from '@/features/me/pages/GoalSettingsPage'
 import { CelokPage } from '@/features/me/pages/CelokPage'
 import { CelPage } from '@/features/me/pages/CelPage'
 import { CelWizardPage } from '@/features/me/pages/CelWizardPage'
@@ -350,6 +355,11 @@ export const routes: RouteObject[] = [
       // `me/people/*` precedent above (React Router ranks static over dynamic regardless of
       // source order, but the ordering stays explicit here too).
       { path: 'me/goals/weight', element: <GoalsPage /> },
+      { path: 'me/goals/weight/diet', element: <GoalDietPage /> },
+      { path: 'me/goals/weight/segment', element: <GoalSegmentPage /> },
+      { path: 'me/goals/weight/plans', element: <GoalPlansPage /> },
+      { path: 'me/goals/weight/guards', element: <GoalGuardsPage /> },
+      { path: 'me/goals/weight/settings', element: <GoalSettingsPage /> },
       { path: 'me/goals/weight/new', element: <GoalPlannerPage /> },
       // Task 11's five-step wizard (mezo-iizd.1) — another static `me/goals/*` sibling,
       // registered ahead of the dynamic `me/goals/:id` below per the same precedent.
