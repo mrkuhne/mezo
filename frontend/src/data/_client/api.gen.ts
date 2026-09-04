@@ -8203,12 +8203,15 @@ export interface components {
         GraphEdgeCountResponse: {
             count: number;
         };
+        /** @description A napi motor hat dimenziójának pontszáma ezen a napon (mezo-jcpt.5). A mezőnevek a DayEvaluation dimenzió-idjei, hogy a heti mozaik és a nap-oldal EGY szókincset használjon. null = a dimenzió degradált vagy nem mérhető ezen a napon — soha nem 0. */
         MeWeekSubscores: {
-            /** @description 0–100; null = no sleep data */
+            /** @description 0–100; null = no data */
+            nutrition?: number | null;
+            quality?: number | null;
+            training?: number | null;
             sleep?: number | null;
-            fuel?: number | null;
-            checkin?: number | null;
-            activity?: number | null;
+            logging?: number | null;
+            rhythm?: number | null;
         };
         MeWeekDay: {
             /** Format: date */

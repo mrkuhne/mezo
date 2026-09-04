@@ -140,19 +140,21 @@ class MeWeekControllerIT extends ApiIntegrationTest {
         assertThat(response.getDays().get(6).getDate()).isEqualTo(MONDAY.plusDays(6));
 
         var monday = response.getDays().get(0);
-        // The 6-dimension engine (mezo-jcpt.4) behind the unchanged four-field wire projection:
-        // sleep←sleep 100 (8h over the 7.5h target, quality 10/10) · fuel←nutrition 80 (kcal and
-        // protein exactly on target, but 10 g carbs / 1 g fat are far outside the C+F band) ·
-        // checkin←logging 80 (timely meal + 4/4 check-ins, no water logged) · activity←training
-        // 100 (the seeded sport session yields one window, done). quality and rhythm degrade (the
-        // fixture writes meal rows straight to the repository, so they carry no score envelope;
-        // no earlier day has a base), so the four DONE dimensions renormalize over 0.75:
+        // The 6-dimension engine (mezo-jcpt.5, the wire now carries all six directly): sleep 100
+        // (8h over the 7.5h target, quality 10/10) · nutrition 80 (kcal and protein exactly on
+        // target, but 10 g carbs / 1 g fat are far outside the C+F band) · logging 80 (timely meal
+        // + 4/4 check-ins, no water logged) · training 100 (the seeded sport session yields one
+        // window, done). quality and rhythm degrade (the fixture writes meal rows straight to the
+        // repository, so they carry no score envelope; no earlier day has a base) — NULL on the
+        // wire, not a fabricated 0 — so the four DONE dimensions renormalize over 0.75:
         // (0.30*80 + 0.20*100 + 0.15*100 + 0.10*80) / 0.75 = 89.33 -> 89.
         assertThat(monday.getScore()).isEqualTo(89);
         assertThat(monday.getSubscores().getSleep()).isEqualTo(100);
-        assertThat(monday.getSubscores().getFuel()).isEqualTo(80);
-        assertThat(monday.getSubscores().getCheckin()).isEqualTo(80);
-        assertThat(monday.getSubscores().getActivity()).isEqualTo(100);
+        assertThat(monday.getSubscores().getNutrition()).isEqualTo(80);
+        assertThat(monday.getSubscores().getLogging()).isEqualTo(80);
+        assertThat(monday.getSubscores().getTraining()).isEqualTo(100);
+        assertThat(monday.getSubscores().getQuality()).isNull();
+        assertThat(monday.getSubscores().getRhythm()).isNull();
         assertThat(monday.getKcal().doubleValue()).isEqualTo(targets.getKcal().doubleValue());
         assertThat(monday.getProteinG().doubleValue()).isEqualTo(targets.getP().doubleValue());
         assertThat(monday.getCarbsG().doubleValue()).isEqualTo(10.0);

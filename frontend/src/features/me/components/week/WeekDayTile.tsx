@@ -9,6 +9,9 @@
 //
 // Its four honest states come from `weekDay.ts`, not from ad-hoc null
 // checks: a `tanulom` day and a `nincs adat` day say different things.
+//
+// mezo-jcpt.5: négy sub-jelről hatra — a wire-alak és a nap-oldal ugyanazt a hat
+// dimenzió-idet használja.
 // ============================================================
 import type { CSSProperties } from 'react'
 import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
@@ -16,7 +19,7 @@ import { cn } from '@/shared/lib/cn'
 import { huMonthDay } from '@/shared/lib/dates'
 import { scoreBand, scoreBandInk } from '@/features/me/logic/scoreBand'
 import {
-  DAY_COPY, SUBSCORES, dayState, fmtSleep, huDowShort, huInt, tileScoreLabel,
+  DAY_COPY, DAY_DIMENSIONS, dayState, fmtSleep, huDowShort, huInt, tileScoreLabel,
 } from '@/features/me/logic/weekDay'
 import type { MeWeekDay } from '@/data/me/meWeek'
 
@@ -81,7 +84,7 @@ export function WeekDayTile({ day, todayIso, hasNote, delayMs, onOpen }: WeekDay
           </span>
         )}
         <div className="wkd-sparks" aria-hidden="true">
-          {SUBSCORES.map((s, k) => {
+          {DAY_DIMENSIONS.map((s, k) => {
             const v = day.subscores[s.key]
             return (
               <i

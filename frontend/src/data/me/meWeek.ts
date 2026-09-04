@@ -6,9 +6,12 @@ export type MeWeekDay = components['schemas']['MeWeekDay']
 export type MeWeekAggregates = components['schemas']['MeWeekAggregates']
 
 // One deterministic demo week (Monday 2026-05-18, mezo-p2tr) for the weekly review page —
-// 5 dense days (full sleep/fuel/checkin/activity coverage) + 2 sparse days, one of which is
-// a genuine "tanulom" day (score: null, no data logged at all). Sleep quality and checkin
-// energy are 1–10 scales (see MeWeekDay.sleepQuality / checkinEnergyAvg).
+// 5 dense days (full nutrition/quality/training/sleep/logging coverage) + 2 sparse days, one of
+// which is a genuine "tanulom" day (score: null, no data logged at all). Sleep quality and
+// checkin energy are 1–10 scales (see MeWeekDay.sleepQuality / checkinEnergyAvg).
+// mezo-jcpt.5: `subscores` carries the napi motor hat dimenzióját (nutrition/quality/training/
+// sleep/logging/rhythm); at least one day below leaves BOTH quality and rhythm null so the
+// `is-none` stub still renders somewhere in the mock.
 export const mockMeWeekStart = '2026-05-18'
 
 const KCAL_TARGET = 3100
@@ -19,7 +22,7 @@ const SEED_DAYS: readonly MeWeekDay[] = [
   {
     date: '2026-05-18',
     score: 78,
-    subscores: { sleep: 82, fuel: 75, checkin: 74, activity: 88 },
+    subscores: { nutrition: 75, quality: 79, training: 88, sleep: 82, logging: 74, rhythm: 80 },
     kcal: 2980, proteinG: 212, carbsG: 335, fatG: 92,
     kcalTarget: KCAL_TARGET, proteinTargetG: PROTEIN_TARGET_G,
     weightKg: 84.3,
@@ -31,7 +34,7 @@ const SEED_DAYS: readonly MeWeekDay[] = [
   {
     date: '2026-05-19',
     score: 72,
-    subscores: { sleep: 68, fuel: 80, checkin: 70, activity: 78 },
+    subscores: { nutrition: 80, quality: 72, training: 78, sleep: 68, logging: 70, rhythm: 74 },
     kcal: 3050, proteinG: 218, carbsG: 360, fatG: 88,
     kcalTarget: KCAL_TARGET, proteinTargetG: PROTEIN_TARGET_G,
     weightKg: 84.2,
@@ -43,7 +46,7 @@ const SEED_DAYS: readonly MeWeekDay[] = [
   {
     date: '2026-05-20',
     score: 85,
-    subscores: { sleep: 90, fuel: 82, checkin: 80, activity: 90 },
+    subscores: { nutrition: 82, quality: 85, training: 90, sleep: 90, logging: 80, rhythm: 88 },
     kcal: 3120, proteinG: 225, carbsG: 355, fatG: 95,
     kcalTarget: KCAL_TARGET, proteinTargetG: PROTEIN_TARGET_G,
     weightKg: 84.1,
@@ -55,7 +58,7 @@ const SEED_DAYS: readonly MeWeekDay[] = [
   {
     date: '2026-05-21',
     score: null,
-    subscores: { sleep: null, fuel: null, checkin: 65, activity: null },
+    subscores: { nutrition: null, quality: null, training: null, sleep: null, logging: 65, rhythm: null },
     kcal: null, proteinG: null, carbsG: null, fatG: null,
     kcalTarget: KCAL_TARGET, proteinTargetG: PROTEIN_TARGET_G,
     weightKg: null,
@@ -67,7 +70,7 @@ const SEED_DAYS: readonly MeWeekDay[] = [
   {
     date: '2026-05-22',
     score: 74,
-    subscores: { sleep: 76, fuel: 70, checkin: 72, activity: 80 },
+    subscores: { nutrition: 70, quality: 74, training: 80, sleep: 76, logging: 72, rhythm: 77 },
     kcal: 2870, proteinG: 198, carbsG: 320, fatG: 84,
     kcalTarget: KCAL_TARGET, proteinTargetG: PROTEIN_TARGET_G,
     weightKg: 84.0,
@@ -79,7 +82,7 @@ const SEED_DAYS: readonly MeWeekDay[] = [
   {
     date: '2026-05-23',
     score: null,
-    subscores: { sleep: null, fuel: null, checkin: null, activity: null },
+    subscores: { nutrition: null, quality: null, training: null, sleep: null, logging: null, rhythm: null },
     kcal: null, proteinG: null, carbsG: null, fatG: null,
     kcalTarget: KCAL_TARGET, proteinTargetG: PROTEIN_TARGET_G,
     weightKg: null,
@@ -91,7 +94,7 @@ const SEED_DAYS: readonly MeWeekDay[] = [
   {
     date: '2026-05-24',
     score: 80,
-    subscores: { sleep: 85, fuel: 78, checkin: 76, activity: 82 },
+    subscores: { nutrition: 78, quality: 81, training: 82, sleep: 85, logging: 76, rhythm: 83 },
     kcal: 3000, proteinG: 205, carbsG: 340, fatG: 90,
     kcalTarget: KCAL_TARGET, proteinTargetG: PROTEIN_TARGET_G,
     weightKg: 83.9,

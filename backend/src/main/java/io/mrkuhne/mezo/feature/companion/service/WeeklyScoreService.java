@@ -212,9 +212,10 @@ public class WeeklyScoreService {
     /** The single definition of "the week's score": the {@code <2}-present honesty gate applied a
      *  second time, at week level — the same rule {@code DayEvaluationEngine} applies to a day's
      *  dimensions, here over the days' base scores — and a plain mean for each of the four legacy
-     *  per-domain averages (null when the week has none). Those four are the engine's dimensions
-     *  under their wire names: sleep←sleep, fuel←nutrition, checkin←logging, activity←training
-     *  (mezo-jcpt.4; the mapping table lives in {@code DayScoreService}'s class javadoc). */
+     *  per-domain averages (null when the week has none). A négy cache-oszlop a hat dimenzióból
+     *  négyet vesz — {@code sleepAvg←sleep, fuelAvg←nutrition, checkinAvg←logging,
+     *  activityAvg←training}; a {@code quality} és a {@code rhythm} szándékosan nem kap oszlopot
+     *  (mezo-jcpt.5, spec D3: a FE egyiket sem fogyasztja, így nincs migráció). */
     static WeekAverages aggregate(List<DayScoreService.DayScore> dayScores) {
         if (dayScores == null || dayScores.isEmpty()) {
             return WeekAverages.EMPTY;
@@ -227,9 +228,9 @@ public class WeeklyScoreService {
         return new WeekAverages(
                 (int) Math.round(present.stream().mapToInt(Integer::intValue).average().orElseThrow()),
                 subscoreAverage(dayScores, DayScoreService.DaySubscores::sleep),
-                subscoreAverage(dayScores, DayScoreService.DaySubscores::fuel),
-                subscoreAverage(dayScores, DayScoreService.DaySubscores::checkin),
-                subscoreAverage(dayScores, DayScoreService.DaySubscores::activity));
+                subscoreAverage(dayScores, DayScoreService.DaySubscores::nutrition),
+                subscoreAverage(dayScores, DayScoreService.DaySubscores::logging),
+                subscoreAverage(dayScores, DayScoreService.DaySubscores::training));
     }
 
     private static BigDecimal subscoreAverage(

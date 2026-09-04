@@ -10,6 +10,7 @@
 //   future   — still ahead of today
 // ============================================================
 import type { MeWeekDay } from '@/data/me/meWeek'
+import { INTRINSIC_SUBSCORE_KEYS } from '@/features/me/logic/weekDay'
 
 export type DayScoreState = 'scored' | 'learning' | 'nodata' | 'future'
 
@@ -18,18 +19,21 @@ export type DayScoreState = 'scored' | 'learning' | 'nodata' | 'future'
  *  a datum; a `0` XP day that HAS logs is still a logged day (the counts catch it). */
 export function isDayUnlogged(day: MeWeekDay): boolean {
   const s = day.subscores
-  const anySubscore = s.sleep != null || s.fuel != null || s.checkin != null || s.activity != null
+  // A ritmus szándékosan kimarad — lásd INTRINSIC_SUBSCORE_KEYS: extrinsic jel, egy érintetlen
+  // napon is kaphat értéket a szomszédos napokból, és „logolt nappá" hazudná ezt a napot.
+  const anySubscore = INTRINSIC_SUBSCORE_KEYS.some((k) => s?.[k] != null)
   return !anySubscore
     && day.kcal == null && day.proteinG == null
     && day.sleepMin == null && day.weightKg == null
     && !day.checkinCount && !day.workoutCount && !day.xp
 }
 
-/** How many of the four sub-scores the Mezo could actually measure. Two is the
- *  threshold below which it refuses to score the day at all (handoff §4). */
+/** Hány INTRINSIC dimenziót tudott ténylegesen mérni a Mezo ezen a napon. Kettő az a küszöb,
+ *  ami alatt egyáltalán nem ad pontszámot (handoff §4) — a motor ugyanezt a kaput alkalmazza,
+ *  és ugyanígy hagyja ki belőle a ritmust. */
 export function measuredSubscores(day: MeWeekDay): number {
   const s = day.subscores
-  return [s?.sleep, s?.fuel, s?.checkin, s?.activity].filter((v) => v != null).length
+  return INTRINSIC_SUBSCORE_KEYS.filter((k) => s?.[k] != null).length
 }
 
 /** The positive reading of `isDayUnlogged` — true when the day carries ANY logged

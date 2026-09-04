@@ -19991,19 +19991,30 @@ components:
         count:
           type: integer
     MeWeekSubscores:
+      description: >-
+        A napi motor hat dimenziójának pontszáma ezen a napon (mezo-jcpt.5). A
+        mezőnevek a DayEvaluation dimenzió-idjei, hogy a heti mozaik és a
+        nap-oldal EGY szókincset használjon. null = a dimenzió degradált vagy
+        nem mérhető ezen a napon — soha nem 0.
       type: object
       properties:
+        nutrition:
+          type: integer
+          nullable: true
+          description: 0–100; null = no data
+        quality:
+          type: integer
+          nullable: true
+        training:
+          type: integer
+          nullable: true
         sleep:
           type: integer
           nullable: true
-          description: 0–100; null = no sleep data
-        fuel:
+        logging:
           type: integer
           nullable: true
-        checkin:
-          type: integer
-          nullable: true
-        activity:
+        rhythm:
           type: integer
           nullable: true
     MeWeekDay:

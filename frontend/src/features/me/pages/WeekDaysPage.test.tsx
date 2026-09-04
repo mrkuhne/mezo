@@ -55,7 +55,9 @@ describe('WeekDaysPage (mock mode)', () => {
     expect(screen.getAllByText('tanulom').length).toBeGreaterThan(0) // the mini-cell label
 
     expect(screen.getAllByTestId('week-day-tile')).toHaveLength(7)
-    expect(screen.getByText('aktivitás')).toBeInTheDocument() // legend
+    // legend — mezo-jcpt.5: hat sub-jel (nutrition/quality/training/sleep/logging/rhythm)
+    expect(screen.getByText('edzés')).toBeInTheDocument()
+    expect(screen.getByText('ritmus')).toBeInTheDocument()
     expect(screen.getByText(/A négy pálcika a nap részpontszáma/)).toBeInTheDocument()
   })
 

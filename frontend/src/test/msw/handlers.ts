@@ -1510,7 +1510,8 @@ export const handlers = [
   http.get(`${API_BASE}/api/me/week/:start`, ({ params }) => {
     const start = params.start as string
     const empty = (offset: number) => ({
-      date: addDays(start, offset), score: null, subscores: { sleep: null, fuel: null, checkin: null, activity: null },
+      date: addDays(start, offset), score: null,
+      subscores: { nutrition: null, quality: null, training: null, sleep: null, logging: null, rhythm: null },
       kcal: null, proteinG: null, carbsG: null, fatG: null, kcalTarget: 3000, proteinTargetG: 200,
       weightKg: null, sleepMin: null, sleepQuality: null, checkinCount: 0, checkinEnergyAvg: null,
       workoutCount: 0, xp: null,
@@ -1520,7 +1521,8 @@ export const handlers = [
       // contract: always exactly 7 days (start..start+6) — one distinct-from-seed logged day,
       // the rest honest-empty (the /api/fuel/week/:start handler above is the house precedent).
       days: [
-        { date: start, score: 65, subscores: { sleep: 60, fuel: 70, checkin: 62, activity: 68 },
+        { date: start, score: 65,
+          subscores: { nutrition: 70, quality: 66, training: 68, sleep: 60, logging: 62, rhythm: 64 },
           kcal: 2800, proteinG: 190, carbsG: 300, fatG: 80, kcalTarget: 3000, proteinTargetG: 200,
           weightKg: 82.5, sleepMin: 410, sleepQuality: 6, checkinCount: 3, checkinEnergyAvg: 6,
           workoutCount: 1, xp: 90 },

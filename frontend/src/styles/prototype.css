@@ -329,12 +329,15 @@
   --mz-wka-revshadow: 0 24px 40px -17px rgba(93, 79, 160, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.85);
   --mz-wka-cardshadow: 0 21px 38px -19px rgba(43, 33, 24, 0.32), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
   --mz-wka-hlshadow: 0 5px 12px -7px rgba(43, 33, 24, 0.3);
-  /* Heti nap-mozaik + nap-oldal (mezo-d20.6.10) — the four sub-score hues
-     (en-body.html `SUBC`) and the day tile's dashed/thin surfaces. */
-  --mz-wk-sub-sleep: #4E8FB8;
-  --mz-wk-sub-fuel: #8FAF7E;
-  --mz-wk-sub-checkin: #C46FA0;
-  --mz-wk-sub-activity: #FF6B4A;
+  /* Heti nap-mozaik — a hat sub-jel hue-ja (mezo-jcpt.5). SZÁNDÉKOSAN azonos szemantika a
+     nap-oldal domain-színeivel (.dayev-dim), hogy egy átkattintás után ne kelljen újratanulni:
+     tápanyag=sage · minőség=gold · edzés=coral · alvás=lavender · logolás=rose · ritmus=sky. */
+  --mz-wk-sub-nutrition: #8FAF7E;
+  --mz-wk-sub-quality: #A8801F;
+  --mz-wk-sub-training: #FF6B4A;
+  --mz-wk-sub-sleep: #8A78D0;
+  --mz-wk-sub-logging: #C46FA0;
+  --mz-wk-sub-rhythm: #4E8FB8;
   --mz-wk-bar-sage: linear-gradient(90deg, #A9C69A, #8FAF7E);
   --mz-wk-thin-bg: rgba(255, 255, 255, 0.5);
   --mz-wk-navt-bg: rgba(255, 255, 255, 0.7);
@@ -665,10 +668,12 @@
   --mz-wka-revshadow: var(--mz-shadow);
   --mz-wka-cardshadow: var(--mz-shadow);
   --mz-wka-hlshadow: none;
-  --mz-wk-sub-sleep: var(--dv-sky);
-  --mz-wk-sub-fuel: var(--dv-sage);
-  --mz-wk-sub-checkin: var(--dv-rose);
-  --mz-wk-sub-activity: var(--primary-base);
+  --mz-wk-sub-nutrition: var(--dv-sage);
+  --mz-wk-sub-quality: var(--dv-amber);
+  --mz-wk-sub-training: var(--primary-base);
+  --mz-wk-sub-sleep: var(--dv-lav);
+  --mz-wk-sub-logging: var(--dv-rose);
+  --mz-wk-sub-rhythm: var(--dv-sky);
   --mz-wk-bar-sage: linear-gradient(90deg, color-mix(in srgb, var(--dv-sage) 55%, var(--surface-card)), var(--dv-sage));
   --mz-wk-thin-bg: color-mix(in srgb, var(--surface-card) 50%, transparent);
   --mz-wk-navt-bg: color-mix(in srgb, var(--surface-card) 70%, transparent);
@@ -7954,10 +7959,12 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 
 .wkd-sparks { display: flex; gap: 3.5px; align-items: flex-end; height: 28px; margin-left: auto; }
 .wkd-sparks i { width: 6px; border-radius: 2px; min-height: 3.5px; transform: scaleY(0); transform-origin: bottom; }
+.wkd-sparks i.is-nutrition { background: var(--mz-wk-sub-nutrition); }
+.wkd-sparks i.is-quality { background: var(--mz-wk-sub-quality); }
+.wkd-sparks i.is-training { background: var(--mz-wk-sub-training); }
 .wkd-sparks i.is-sleep { background: var(--mz-wk-sub-sleep); }
-.wkd-sparks i.is-fuel { background: var(--mz-wk-sub-fuel); }
-.wkd-sparks i.is-checkin { background: var(--mz-wk-sub-checkin); }
-.wkd-sparks i.is-activity { background: var(--mz-wk-sub-activity); }
+.wkd-sparks i.is-logging { background: var(--mz-wk-sub-logging); }
+.wkd-sparks i.is-rhythm { background: var(--mz-wk-sub-rhythm); }
 .wkd-sparks i.is-none { background: var(--mz-sc-track); }
 .mz-play .wkd-sparks i {
   animation: wk-trendup 0.5s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 300ms);
@@ -7981,10 +7988,12 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   display: inline-block; width: 9.5px; height: 9.5px; border-radius: 3.5px; margin-right: 3.5px;
   vertical-align: -1px;
 }
+.wkd-legend i.is-nutrition { background: var(--mz-wk-sub-nutrition); }
+.wkd-legend i.is-quality { background: var(--mz-wk-sub-quality); }
+.wkd-legend i.is-training { background: var(--mz-wk-sub-training); }
 .wkd-legend i.is-sleep { background: var(--mz-wk-sub-sleep); }
-.wkd-legend i.is-fuel { background: var(--mz-wk-sub-fuel); }
-.wkd-legend i.is-checkin { background: var(--mz-wk-sub-checkin); }
-.wkd-legend i.is-activity { background: var(--mz-wk-sub-activity); }
+.wkd-legend i.is-logging { background: var(--mz-wk-sub-logging); }
+.wkd-legend i.is-rhythm { background: var(--mz-wk-sub-rhythm); }
 .wkd-foot { font-size: 10px; font-weight: 300; color: var(--mz-ink-mut); padding: 7px 2px 0; }
 .wkd-empty { font-size: 11px; color: var(--mz-ink-soft); padding: 14px 2px; text-align: center; }
 

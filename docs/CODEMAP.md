@@ -734,10 +734,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     NightBreathing.tsx, NightWalk.tsx, NotificationCategoryRow.tsx, NotificationPreviewHeader.tsx, PerksCard.tsx,
     PermahRing.tsx, PersonCard.tsx, PhaseAverageCard.tsx, PhaseRail.tsx, PhaseReferenceRow.tsx, PillarCard.tsx,
     PushInstallGate.tsx, RemDurationCard.tsx, SkillBandCard.tsx, SleepChart.tsx, SleepEscalationCard.tsx,
-    SleepLogRow.tsx, SleepStat.tsx, SleepStatCard.tsx, TimePicker.tsx, WeekDayCard.tsx, WeekDayTile.tsx,
-    WeekDiscoveries.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx,
-    WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx,
-    WeightTrendChart.tsx
+    SleepLogRow.tsx, SleepStat.tsx, SleepStatCard.tsx, TimePicker.tsx, WeekDayTile.tsx, WeekDiscoveries.tsx,
+    WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx,
+    WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx, WeightTrendChart.tsx
   - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, dayScoreState.ts, goalLabels.ts, gratitudeStreak.ts,
     growthJournal.ts, growthStats.ts, habitAnchors.ts, habitMetricPalette.ts, humanGeneratedAt.ts,
     knowledgeNodeVisuals.ts, lifegoalLabels.ts, llmCallFormat.ts, nightContent.ts, nightFlow.ts, nightTrace.ts,

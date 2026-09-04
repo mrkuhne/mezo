@@ -20,16 +20,11 @@ import { localDateString } from '@/shared/lib/dates'
 import { deriveWeekTitle } from '@/data/fuel/fuelWeekHooks'
 import { useMeWeek, useWeeklyReview } from '@/data/hooks'
 import { resolveWeekStart } from '@/features/me/logic/weekNav'
-import { DAY_COPY, dayNoteFor, huDowShort, summariseDays } from '@/features/me/logic/weekDay'
+import { DAY_COPY, DAY_DIMENSIONS, dayNoteFor, huDowShort, summariseDays } from '@/features/me/logic/weekDay'
 import { WeekDayTile } from '@/features/me/components/week/WeekDayTile'
 import { WeekPageSkeleton, WeekPageError } from '@/features/me/components/week/WeekLoadStates'
 
-const LEGEND = [
-  { label: 'alvás', cls: 'is-sleep' },
-  { label: 'fuel', cls: 'is-fuel' },
-  { label: 'check-in', cls: 'is-checkin' },
-  { label: 'aktivitás', cls: 'is-activity' },
-]
+const LEGEND = DAY_DIMENSIONS
 
 export function WeekDaysPage() {
   const navigate = useNavigate()
@@ -89,7 +84,7 @@ export function WeekDaysPage() {
             </div>
             <div className="wkd-legend rise" style={{ '--d': `${60 + days.length * 35}ms` } as React.CSSProperties}>
               {LEGEND.map((l) => (
-                <span key={l.label}><i className={l.cls} />{l.label}</span>
+                <span key={l.key}><i className={l.barClass} />{l.label}</span>
               ))}
             </div>
             <p className="wkd-foot rise" style={{ '--d': `${90 + days.length * 35}ms` } as React.CSSProperties}>
