@@ -158,11 +158,11 @@ public class WeeklyScoreService {
      * {@code WorkoutWindowQueryService.windowsFor}, and the probe deliberately does not cover the
      * training schedule tables. So a week that has planned workouts and closes with zero logs has
      * {@code training} DONE and {@code logging} DONE — two intrinsic DONE dimensions, the gate
-     * opens, and each day carries a real base (~20-35) in the engine's terms while this path
-     * returns null and deletes the cached row. That is the same trade-off spelled out on
-     * {@link WeeklyScoreRepository#latestScoreInputWrittenAt}, which lists exactly which tables
-     * the probe covers — notably NOT the training schedule tables, so a schedule edit alone does
-     * not invalidate a cached week.
+     * opens, and each day carries a real base (~15-40, typically 25-35) in the engine's terms
+     * while this path returns null and deletes the cached row. That is the same trade-off spelled
+     * out on {@link WeeklyScoreRepository#latestScoreInputWrittenAt}, which lists exactly which
+     * tables the probe covers — notably NOT the training schedule tables, so a schedule edit
+     * alone does not invalidate a cached week.
      */
     private WeeklyScoreEntity resolve(UUID userId, LocalDate weekStart, WeeklyScoreEntity cached) {
         LocalDate weekEnd = weekStart.plusDays(6);

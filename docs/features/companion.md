@@ -1317,8 +1317,8 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
   the codebase** — it lives in `DayEvaluationEngine` — replacing the legacy 4-subscore formula
   described in older revisions of this doc (the `sleepSubscore`/`fuelSubscore`/`checkinSubscore`/
   `activitySubscore` methods are **deleted**; `MeWeekProperties`, the legacy formula's config
-  record, was DELETED with them (`mezo-jcpt.7`) — the day target it once held is `DayEvaluationProperties`'s own
-  `sleepTargetH` now).
+  record, was DELETED with them (`mezo-jcpt.7`) — the day target it once held is
+  `DayEvaluationProperties`'s own `sleepTargetH` now).
   - **`DayEvaluationEngine`** (`service/DayEvaluationEngine.java`) — a PURE function
     (`DayInputs -> DayEvaluation`, no repository access, the `MealScoringService` house style) over
     **six dimensions**: `nutrition` (.30) · `quality` (.15) · `training` (.20) · `sleep` (.15) ·
@@ -1413,7 +1413,10 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
     serving prose quoting the old number. A hash match serves the stored envelope with
     ZERO LLM calls; a mismatch or missing row costs exactly ONE call, parsed, clamped and upserted.
     The unscored context signals (below) are deliberately OUTSIDE the hash — they are re-read fresh
-    on every call and never fold into a cached sentence's correctness. `DayReviewJson` is the typed
+    on every call and never fold into a cached sentence's correctness — as is the raw
+    `priorBaseScores` list the prompt also carries; every prior-day change that matters moves the
+    key through the `rhythm` dimension's own score and facts (accepted narrow gap, `mezo-jcpt.11`).
+    `DayReviewJson` is the typed
     `jsonb` envelope (`entity/DayReviewJson.java`, the `MealBreakdownJson` precedent):
     `narrative[]`, `dimensionNotes{dim-id: note}`, `highlights[]` (`kind: key|pattern|win`, capped
     at 3), `adjustment {delta, reason}` and a point-in-time snapshot of `context` (read-back only —
