@@ -59,3 +59,15 @@ test('a svg dekoratív — a gomb adja az akadálymentes nevet', () => {
   const { container } = render(<DayOrb pct={30} intensity={0.5} />)
   expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true')
 })
+
+// mezo-tzid: a komponens korábban `useId().replace(/:/g, '')`-vel sanitizálta az id-t — ez a
+// React-18-as `:r0:` formátum maradványa, React 19-en (`_r_0_`) állandó no-op, ezért kikerült.
+// Ez az assert őrzi a feltevést: ha a React újra olyan id-t adna, ami `url(#…)`-ben vagy egy
+// selectorban törik (kettőspont, guillemet, szóköz), a defs-hivatkozások CSENDBEN, futásidőben
+// bukhatnának — itt hangosan bukik helyette.
+test('a generált id url(#…)-ben biztonságos marad', () => {
+  const { container } = render(<DayOrb pct={50} intensity={0.5} />)
+  const ids = [...container.querySelectorAll('clipPath, radialGradient')].map((n) => n.id)
+  expect(ids.length).toBeGreaterThan(0)
+  for (const id of ids) expect(id).toMatch(/^[A-Za-z0-9_-]+$/)
+})

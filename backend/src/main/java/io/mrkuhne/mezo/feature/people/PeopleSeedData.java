@@ -15,15 +15,15 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Seeds the owner's IDENT-5 PERMA-R inner circle (5 persons) under plain {@code demodata} —
- * a deliberate exception to the "demo content → demofixtures" rule: these are the owner's real
- * people (roadmap §E, plan 2026-07-04-people-slice-e-plan.md decision 1), akin to
- * {@link io.mrkuhne.mezo.feature.auth.OwnerSeedData}, and v1 has no person-create UI, so an
- * unseeded deploy would leave the Emberek tab unusable. Mention-derived stats are NOT seeded —
- * they are computed from live mention rows. Idempotent: no-op if any person exists.
+ * Seeds the owner's IDENT-5 PERMA-R inner circle (5 persons). Until S2 (mezo-qw37.2) this ran
+ * under plain {@code demodata} as a deliberate exception (v1 had no person-create UI); with
+ * multi-user accounts the owner's real people must not appear in every new account, so it is
+ * opt-in {@code demofixtures} content now — {@code POST /api/people} is the live write path.
+ * Mention-derived stats are NOT seeded — they are computed from live mention rows. Idempotent:
+ * no-op if any person exists. Needs the demodata owner ({@code demodata,demofixtures}).
  */
 @Component
-@Profile("demodata")
+@Profile("demofixtures")
 @Order(130) // after OwnerSeedData (0) — needs the seeded owner
 @RequiredArgsConstructor
 public class PeopleSeedData implements CommandLineRunner {

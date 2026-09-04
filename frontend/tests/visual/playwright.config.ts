@@ -17,7 +17,20 @@ import { defineConfig, devices } from '@playwright/test'
 export default defineConfig({
   testDir: '.',
   timeout: 30_000,
-  expect: { toHaveScreenshot: { maxDiffPixels: 120 } },
+  // mezo-kf4f — MÉRT értékek, nem tippeltek. A korábbi `maxDiffPixels: 120` (default
+  // threshold 0.2 mellett) egy egész új fejléc-gombot átengedett (~38 px, PR #401), és a
+  // DayOrb tónus-átkötését (mezo-x5va) is: annak YIQ-deltája ~101, a pixelmatch határa
+  // viszont `35215 * threshold^2` = 352 a 0.1-es küszöbön, 1409 a 0.2-esen.
+  // Darwin-mérés (97 shot, a goldenek a kóddal egyezőre generálva): a valódi renderzaj
+  // MINDEN küszöbön 0 px egészen 0.03-ig — a 120-as tartalék tehát semmit nem védett.
+  // 0.05-nél a tónus-eltolódás 319–491 px-ként jelenik meg, vagyis bőven a zaj fölött.
+  // A `maxDiffPixels: 20` NEM a zaj fedezése: a mérés szerint a padló mindkét platformon
+  // 0 px (darwin 3 futás, linux CI 2 futás). A 20 szűk tartalék egy alkalmi, egy-két
+  // pixeles ingadozásra, és 16-szor kisebb a legkisebb MÉRT valódi jelnél (319 px), tehát
+  // érdemi érzékenységet nem áldoz. Egy nulla tűrésű vizuális kaput, ami flake-el, előbb-
+  // utóbb kikapcsolnak — az rosszabb, mint egy 20 pixeles vakfolt. Ha ez a szám valaha
+  // hazudik, MÉRJ újra (a recept a mezo-kf4f-en), ne emeld tapasztalatból.
+  expect: { toHaveScreenshot: { threshold: 0.05, maxDiffPixels: 20 } },
   use: {
     ...devices['Desktop Chrome'],
     viewport: { width: 440, height: 956 },

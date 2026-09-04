@@ -210,10 +210,12 @@ const weightLogFixed: WeightEntry[] = [
 // befagyasztott órájú vizuális futásban a „ma" egybeeshet egy meglévő fix sorral, ezért
 // a beszúrás idempotens: csak akkor adjuk hozzá, ha erre a napra még nincs sor, majd a
 // növekvő dátumsorrendet a beszúrás helyétől függetlenül explicit rendezéssel biztosítjuk.
+// A skip-ág is MÁSOLATOT ad vissza: a `.sort()` helyben rendez, tehát a nyers ternary
+// magát a modul-szintű `*Fixed` konstanst mutálná (mezo-tzid).
 const todayIsoWeight = localDateString()
 export const weightLog: WeightEntry[] = (
   weightLogFixed.some((w) => w.date === todayIsoWeight)
-    ? weightLogFixed
+    ? [...weightLogFixed]
     : [...weightLogFixed, { date: todayIsoWeight, value: 78.4 }]
 ).sort((a, b) => a.date.localeCompare(b.date))
 

@@ -1,11 +1,12 @@
 import { ApiError } from '@/data/_client/api'
 import type { MeResponse } from '@/data/auth/authApi'
 
-export type AuthPhase = 'pending' | 'signedOut' | 'mustChangePassword' | 'ready' | 'failed'
+export type AuthPhase = 'pending' | 'signedOut' | 'mustChangePassword' | 'onboarding' | 'ready' | 'failed'
 
-/** Boot decision from a successful /api/auth/me. */
+/** Boot decision from a successful /api/auth/me. Password reset outranks onboarding (S2). */
 export function deriveFromMe(me: MeResponse): AuthPhase {
   if (me.mustChangePassword) return 'mustChangePassword'
+  if (!me.onboarded) return 'onboarding'
   return 'ready'
 }
 

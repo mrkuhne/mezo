@@ -32,7 +32,11 @@ public class GoalPopulator {
         g.setStartDate(LocalDate.of(2026, 6, 1));
         g.setTargetDate(LocalDate.of(2026, 7, 27));
         g.setStartWeightKg(new BigDecimal("84.20"));
-        g.setTargetWeightKg(new BigDecimal("80.00"));
+        g.setTargetWeightKg(switch (trajectory) {
+            case "bulk" -> new BigDecimal("90.00");
+            case "maintain" -> null;
+            default -> new BigDecimal("80.00");
+        });
         g.setRateTargetPctPerWeek(new BigDecimal("0.70"));
         g.setIdentityFrame("Erő megtartva a cut alatt.");
         return goalRepository.saveAndFlush(g);
@@ -41,6 +45,27 @@ public class GoalPopulator {
     /** Cut-trajectory goal with a caller-chosen status only (W2.2 graph-sync tests). */
     public GoalEntity createGoal(UUID owner, String status) {
         return createGoal(owner, "cut", status);
+    }
+
+    /**
+     * Persists the released-data shape that predates the direction invariant: a bulk trajectory
+     * whose target is below its start. Production write paths must reject this shape; engine tests
+     * use this explicit escape hatch to prove legacy rows fail safe.
+     */
+    public GoalEntity createLegacyIncoherentGoal(UUID owner, GoalPrescriptionJson prescription) {
+        GoalEntity g = new GoalEntity();
+        g.setCreatedBy(owner);
+        g.setTitle("Legacy hibás bulk");
+        g.setTrajectory("bulk");
+        g.setGuards(List.of("muscle"));
+        g.setStatus("active");
+        g.setStartDate(LocalDate.of(2026, 6, 1));
+        g.setTargetDate(LocalDate.of(2026, 7, 27));
+        g.setStartWeightKg(new BigDecimal("84.20"));
+        g.setTargetWeightKg(new BigDecimal("78.00"));
+        g.setRateTargetPctPerWeek(new BigDecimal("0.92"));
+        g.setPrescription(prescription);
+        return goalRepository.saveAndFlush(g);
     }
 
     /** Active cut goal with explicit dates, prescription and day-planner fields — snapshot tests. */

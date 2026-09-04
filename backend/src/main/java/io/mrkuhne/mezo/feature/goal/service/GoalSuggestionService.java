@@ -63,6 +63,7 @@ public class GoalSuggestionService {
     private final GoalRepository goalRepository;
     private final GoalSuggestionMapper mapper;
     private final GoalFeasibilityService feasibilityService;
+    private final GoalInvariantValidator goalInvariantValidator;
     private final GoalEngineService goalEngineService;
     private final GoalMapper goalMapper;
     private final GoalSuggestionSupersedeWriter supersedeWriter;
@@ -72,6 +73,7 @@ public class GoalSuggestionService {
         GoalRepository goalRepository,
         GoalSuggestionMapper mapper,
         GoalFeasibilityService feasibilityService,
+        GoalInvariantValidator goalInvariantValidator,
         @Lazy GoalEngineService goalEngineService,
         GoalMapper goalMapper,
         GoalSuggestionSupersedeWriter supersedeWriter) {
@@ -79,6 +81,7 @@ public class GoalSuggestionService {
         this.goalRepository = goalRepository;
         this.mapper = mapper;
         this.feasibilityService = feasibilityService;
+        this.goalInvariantValidator = goalInvariantValidator;
         this.goalEngineService = goalEngineService;
         this.goalMapper = goalMapper;
         this.supersedeWriter = supersedeWriter;
@@ -185,6 +188,13 @@ public class GoalSuggestionService {
             throw new SystemRuntimeErrorException(
                 SystemMessage.error("GOAL_SUGGESTION_STALE").build(), HttpStatus.CONFLICT);
         }
+
+        String proposedTrajectory = p.suggestedTrajectory() == null
+            ? goal.getTrajectory()
+            : p.suggestedTrajectory();
+        goalInvariantValidator.validate(
+            proposedTrajectory, goal.getStartWeightKg(), goal.getTargetWeightKg(),
+            goal.getStartDate(), goal.getTargetDate());
 
         if (p.suggestedTrajectory() != null) {
             goal.setTrajectory(p.suggestedTrajectory());
