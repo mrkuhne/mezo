@@ -284,7 +284,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MeWeekController`→`MeWeekApi`
   - **mappers:** `CompanionMapper`, `GraphMapper`, `MessageFeedbackMapper`
   - **config:** `CompanionProperties`, `DayEvaluationProperties`, `FeedbackLearningProperties`, `FlagProperties`,
-    `MeWeekProperties`, `ProfileProperties`, `QuarterlyProperties`
+    `ProfileProperties`, `QuarterlyProperties`
   - **events/listeners:** `DecisionEmbeddingListener`, `GratitudeEmbeddingListener`, `JournalEmbeddingListener`,
     `ReflectionEmbeddingListener`, `TurnEmbeddingListener`
   - **other:** `AdvisedAnswer`, `AdvisorRetry`, `AdvisorViolation`, `AllHealthyRule`, `BiometricsTools`,
@@ -703,10 +703,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-02, mixed)
 
 - **FE data** `frontend/src/data/me`
-  - **hooks (via `@/data/hooks`):** `useBiometricActions`, `useBiometricProfile`, `useFeasibilityPreview`, `useGoal`,
-    `useGoalActions`, `useGoalCreation`, `useGoalSuggestions`, `useLlmCall`, `useLlmCalls`, `useLlmUsageBreakdown`,
-    `useLlmUsageSummary`, `useMeWeek`, `usePeople`, `useProfile`, `useSleep`, `useSleepGoal`, `useSleepGoalActions`,
-    `useSleepShot`, `useSuggestionActions`, `useWeekLessons`, `useWeeklyReview`, `useWeight`
+  - **hooks (via `@/data/hooks`):** `DayEvaluationResponse`, `NormalizedDayDimension`, `NormalizedDayEvaluation`,
+    `normalizeDayEvaluation`, `useBiometricActions`, `useBiometricProfile`, `useDayEvaluation`,
+    `useFeasibilityPreview`, `useGoal`, `useGoalActions`, `useGoalCreation`, `useGoalSuggestions`, `useLlmCall`,
+    `useLlmCalls`, `useLlmUsageBreakdown`, `useLlmUsageSummary`, `useMeWeek`, `usePeople`, `useProfile`, `useSleep`,
+    `useSleepGoal`, `useSleepGoalActions`, `useSleepShot`, `useSuggestionActions`, `useWeekLessons`, `useWeeklyReview`,
+    `useWeight`
   - **modules:** biometricHooks.ts, biometricProfileApi.ts, biometricsApi.ts, dayEvaluation.ts, dayEvaluationApi.ts,
     dayEvaluationHooks.ts, goalApi.ts, goalHooks.ts, goalLinkApi.ts, goals.ts, llmUsageApi.ts, llmUsageHooks.ts,
     meHooks.ts, meWeek.ts, meWeekApi.ts, meWeekHooks.ts, people.ts, peopleApi.ts, peopleHooks.ts, sleep.ts,
@@ -1110,9 +1112,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **sheets:** ActivityLogSheet.tsx, CheckInSheet.tsx, IntentionSheet.tsx, ReflectSheet.tsx
   - **components:** ActivityLogCard.tsx, DailyQuestList.tsx, DailyQuestsCard.tsx, DailyQuestsSheet.tsx,
     EletjelStrip.tsx, MezoMessagesSheet.tsx
-  - **logic:** dayArc.ts, dayFace.ts, dayOrbFill.ts, habitAction.ts, habitCelebration.ts, habitClayIcon.ts,
-    itemIcon.ts, mezoMessages.ts, needs.ts, needsInputs.ts, needsNudges.ts, nudgeSeen.ts, questAction.ts,
-    todayItems.ts, useDayFace.ts, useDayOrbFill.ts, useMinuteTick.ts, useNeeds.ts, windDown.ts
+  - **logic:** dayArc.ts, dayFace.ts, dayOrbFill.ts, dayOrbTone.ts, habitAction.ts, habitCelebration.ts,
+    habitClayIcon.ts, itemIcon.ts, mezoMessages.ts, needs.ts, needsInputs.ts, needsNudges.ts, nudgeSeen.ts,
+    questAction.ts, todayItems.ts, useDayFace.ts, useDayOrbFill.ts, useMinuteTick.ts, useNeeds.ts, windDown.ts
   - **root:** MezoThreadProvider.tsx
 
 ### train
