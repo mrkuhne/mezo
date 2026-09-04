@@ -944,6 +944,17 @@ mezo:
         text-hu: "Napok óta ugyanazt az esti emlékeztetőt küldöm, hogy feküdj le időben — és a lefekvésed ezalatt egyszer sem igazodott hozzá. Ez azt jelzi, hogy a mostani cél vagy időpont nem passzol az életedhez. Vagy állítsunk be egy reálisabb célt, vagy toljuk arrébb magát a horgonyt — bármelyik jobb, mint hogy tovább ismételjem ugyanazt."
         cooldown-hours: 72
         quiet-hours-exempt: false
+      # S6 batch B (bd mezo-d58h.6, spec 2026-09-03 §4 row 8, rank 9, the epic's last new
+      # detection): az utolsó napok jó részén az utolsó étkezés vagy nagyon közel volt a
+      # lefekvéshez, vagy egyszerűen nagyon későn esett. Nem intés — a késői étkezés szokás, nem
+      # hiba —, és nem ír elő konkrét időpontot sem: a szabály ismeri a horgonyt, de nem az esti
+      # programot.
+      - key: late_eating_ease_up
+        flag: late_eating
+        channel: both
+        text-hu: "Az utóbbi napok jó részén az utolsó étkezésed vagy nagyon közel esett a lefekvéshez, vagy egyszerűen nagyon későn volt. Ez nem hiba, csak egy szokás — viszont hosszabb távon rontja az alvásminőséget. Nem kell egy fix időpontot betartanod, csak érdemes hagyni egy kis levegőt a nap utolsó étkezése és a lefekvés között."
+        cooldown-hours: 48
+        quiet-hours-exempt: false
     # W4.3 (mezo-b3pp.17): the pragmatic profile — "hogyan érdemes Daniellel beszélni"
     profile:
       # Monday 03:45 — after the 03:10 feedback rollups and the 03:30 weekly consolidation rung,

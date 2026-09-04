@@ -95,6 +95,38 @@ class AdviceFactRendererTest {
         assertThat(facts.get(1)).contains("2026-09-01").contains("00:30");
     }
 
+    /** The card names the window/threshold, the anchor as a CLOCK string plus the absolute
+     *  threshold, and one line per frozen day naming which arm qualified it. */
+    @Test
+    void testRender_shouldDescribeALateEatingRaise() {
+        FlagPayloadEnvelope payload = FlagPayloadEnvelope.lateEating(
+            new FlagPayloadEnvelope.LateEating(90, 22.5, 2, 3, 23.25, 2,
+                Map.of("2026-09-01", 22.5, "2026-09-02", 24.5),
+                Map.of("2026-09-01", "both", "2026-09-02", "absolute")));
+
+        List<String> facts = AdviceFactRenderer.render(FlagKey.LATE_EATING, payload);
+
+        assertThat(facts).hasSize(4);
+        assertThat(facts.get(0)).contains("3").contains("2").contains("2");
+        assertThat(facts.get(1)).contains("23:15").contains("90").contains("22:30");
+        assertThat(String.join(" ", facts)).contains("2026-09-01").contains("22:30")
+            .contains("2026-09-02").contains("00:30");
+    }
+
+    /** Trap 1's honest split: with NO goal row (a null anchor), the card must say so rather than
+     *  fabricate a bedtime — only the absolute-hour threshold is meaningful in that case. */
+    @Test
+    void testRender_shouldDescribeALateEatingRaise_withNoAnchor() {
+        FlagPayloadEnvelope payload = FlagPayloadEnvelope.lateEating(
+            new FlagPayloadEnvelope.LateEating(90, 22.5, 2, 3, null, 2,
+                Map.of("2026-09-01", 22.5, "2026-09-02", 23.0),
+                Map.of("2026-09-01", "absolute", "2026-09-02", "absolute")));
+
+        List<String> facts = AdviceFactRenderer.render(FlagKey.LATE_EATING, payload);
+
+        assertThat(facts.get(1)).contains("Nincs").contains("22:30");
+    }
+
     /** Honest absence: no payload (a raise written before the payload existed, or a key with no
      *  renderer) yields NO facts rather than a fabricated one. The card still ships — its prose
      *  falls back to the template, which needs no facts. */
@@ -176,6 +208,10 @@ class AdviceFactRendererTest {
             case FlagKey.IGNORED_NUDGE -> FlagPayloadEnvelope.ignoredNudge(
                 new FlagPayloadEnvelope.IgnoredNudge("lights_out", 5, 5, 23.25, 60,
                     Map.of("2026-09-01", 24.5)));
+            case FlagKey.LATE_EATING -> FlagPayloadEnvelope.lateEating(
+                new FlagPayloadEnvelope.LateEating(90, 22.5, 2, 3, 23.25, 2,
+                    Map.of("2026-09-01", 22.5, "2026-09-02", 24.5),
+                    Map.of("2026-09-01", "both", "2026-09-02", "absolute")));
             default -> throw new AssertionError(
                 "no AdviceFactRendererTest fixture for live flag key '" + flagKey + "' — "
                     + "add both a fixture here and a render() branch in AdviceFactRenderer");

@@ -46,6 +46,7 @@ public final class AdviceFactRenderer {
             case FlagKey.RAPID_WEIGHT_LOSS -> rapidWeightLoss(payload.rapidWeightLoss());
             case FlagKey.JOINT_OVERUSE -> jointOveruse(payload.jointOveruse());
             case FlagKey.IGNORED_NUDGE -> ignoredNudge(payload.ignoredNudge());
+            case FlagKey.LATE_EATING -> lateEating(payload.lateEating());
             default -> List.of();
         };
     }
@@ -205,6 +206,42 @@ public final class AdviceFactRenderer {
             }
         }
         return List.copyOf(facts);
+    }
+
+    private static List<String> lateEating(FlagPayloadEnvelope.LateEating p) {
+        if (p == null) {
+            return List.of();
+        }
+        List<String> facts = new ArrayList<>();
+        facts.add("Késői étkezés: az utolsó %d nap közül %d napon volt későn az utolsó étkezés (küszöb: legalább %d nap)"
+            .formatted(p.windowDays(), p.qualifyingDays(), p.minDaysOfLastThree()));
+        facts.add(p.anchorBedTimeHour() != null
+            ? "Lefekvés-horgony: %s (közelség-küszöb %d perc), abszolút küszöb: %s"
+                .formatted(clockFromShiftedHour(p.anchorBedTimeHour()), p.minutesBeforeBed(),
+                    clockFromShiftedHour(p.absoluteHour()))
+            : "Nincs beállított alvási cél, ezért csak az abszolút óra (%s) számít"
+                .formatted(clockFromShiftedHour(p.absoluteHour())));
+        if (p.lastMealHourByDay() != null) {
+            for (Map.Entry<String, Double> e : p.lastMealHourByDay().entrySet()) {
+                String arm = p.qualifyingArmByDay() == null ? null : p.qualifyingArmByDay().get(e.getKey());
+                facts.add("%s: utolsó étkezés %s (%s)"
+                    .formatted(e.getKey(), clockFromShiftedHour(e.getValue()), lateEatingArmHu(arm)));
+            }
+        }
+        return List.copyOf(facts);
+    }
+
+    /** {@code LateEatingRule}'s frozen arm token, in the Hungarian noun the per-day fact uses. */
+    private static String lateEatingArmHu(String arm) {
+        if (arm == null) {
+            return "";
+        }
+        return switch (arm) {
+            case "bed" -> "közel a lefekvéshez";
+            case "absolute" -> "túl későn";
+            case "both" -> "közel a lefekvéshez és túl későn";
+            default -> arm;
+        };
     }
 
     /** Inverts {@code MetricSeriesService.clockHour}'s +24-below-noon shift back to a clock

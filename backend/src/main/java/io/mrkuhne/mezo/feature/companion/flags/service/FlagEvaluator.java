@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.companion.flags.service.rule.AcuteBadDayRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.AllHealthyRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.IgnoredNudgeRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.JointOveruseRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.rule.LateEatingRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.LoadFuelMismatchRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.LoggingGapRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.MissedWorkoutsRule;
@@ -48,6 +49,7 @@ public class FlagEvaluator {
     private final RapidWeightLossRule rapidWeightLossRule;
     private final JointOveruseRule jointOveruseRule;
     private final IgnoredNudgeRule ignoredNudgeRule;
+    private final LateEatingRule lateEatingRule;
     private final SustainedStressRule sustainedStressRule;
     private final SleepDebtRule sleepDebtRule;
     private final MomentumAtRiskRule momentumAtRiskRule;
@@ -66,6 +68,7 @@ public class FlagEvaluator {
         rapidWeightLossRule.evaluate(userId, today).ifPresent(raises::add);
         jointOveruseRule.evaluate(userId, today).ifPresent(raises::add);
         ignoredNudgeRule.evaluate(userId, today).ifPresent(raises::add);
+        lateEatingRule.evaluate(userId, today).ifPresent(raises::add);
         sustainedStressRule.evaluate(userId, today).ifPresent(raises::add);
         sleepDebtRule.evaluate(userId, today).ifPresent(raises::add);
         momentumAtRiskRule.evaluate(userId, today).ifPresent(raises::add);
