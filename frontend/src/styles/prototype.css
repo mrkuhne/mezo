@@ -9194,7 +9194,9 @@ button.mz-wtile:active { transform: scale(0.96); }
        `.daily-quests-card .td-quest-list` felülírás).
    Minden vízszintes él továbbra is a globális `--sp-4` DS-tokenből jön,
    elemenként — nincs feature-scope-olt custom property (a `--td-gut` csapdája
-   miatt, lásd `todayCssTokens.test.ts`, ami pontosan ezt az invariánst őrzi).
+   miatt). A `todayCssTokens.test.ts`, ami ezt az invariánst őrizte, a Today
+   view-réteggel együtt megszűnt; a `--mz-*` tokenekre a `mozaikCssTokens.test.ts`
+   stíluslap-szintű ellenőrzése maradt (mezo-sm21).
    ============================================================ */
 
 .td-av { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; position: relative;
