@@ -4906,6 +4906,16 @@ button.nap-htickbtn:active .nap-htick { transform: scale(0.88); }
 .nap-mzmsg-sug li { margin-top: 4px; }
 .nap-mzmsg-facts { margin: 2px 0 0; padding-left: 18px; font-size: 11px; color: var(--mz-ink-mut); }
 .nap-mzmsg-facts li { margin-top: 2px; }
+/* Advice-card action buttons (S5, mezo-d58h.5) — `.chip.brand` (FeedbackChips' own recipe,
+   right below in this same card) styled at the button level; only the row wrapper and the
+   applied/error states are new here. */
+.nap-mzmsg-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin-top: 8px; }
+.nap-mzmsg-actionerr { font-size: 11px; color: var(--error-deep); }
+.nap-mzmsg-applied {
+  display: flex; align-items: center; gap: 6px; margin-top: 8px;
+  font-size: 12px; font-weight: 600; color: var(--text-primary);
+}
+.nap-mzmsg-applied svg { color: var(--success-hover); flex: none; }
 /* Régebbi, felhasználó által kinyitott kártya visszacsukás-gombja (mezo-z4h4) — jobbra
    igazítva a kártya fejsorában, 44pt érintési célterülettel. A legújabb és a deeplink-cél
    kártyák sosem kapják meg (mindig teljes kártyák maradnak). */

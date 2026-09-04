@@ -26,7 +26,7 @@ import { cn } from '@/shared/lib/cn'
 import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { RefChips } from '@/features/insights/components/RefChips'
 import { EletjelStrip } from '@/features/today/components/EletjelStrip'
-import { useCompanionFeed, useFeedback } from '@/data/hooks'
+import { useAdviceActions, useCompanionFeed, useFeedback } from '@/data/hooks'
 import { feedToMessageItem, partitionMezoThread, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
 import { useMezoThread } from '@/features/today/MezoThreadProvider'
 import { useNeeds } from '@/features/today/logic/useNeeds'
@@ -88,6 +88,7 @@ export function NapMezoPage() {
   // Session-lokális, nem perzisztens.
   const { messages, unread, markSeen } = useMezoThread()
   const feed = useCompanionFeed()
+  const advice = useAdviceActions()
   const tick = useMinuteTick()
   const needs = useNeeds(tick)
 
@@ -238,6 +239,37 @@ export function NapMezoPage() {
         </>
       )}
       {m.meta && <div className="nap-mzmsg-meta">{m.meta}</div>}
+      {/* Advice-card action buttons (S5, mezo-d58h.5) — directly above „Segített?", gated on
+          the card actually OFFERING an action. Once applied, the buttons are replaced by the
+          applied state (never a disabled button — a tapped action is a completed thing, not
+          a greyed-out one). Driven by the SERVER's `m.applied`, not local-only state: a reload
+          re-reads the same feed row and shows the same applied state. Reuses the `.chip.brand`
+          recipe (`FeedbackChips`, right below in this same card) for the button itself. */}
+      {m.kind === 'advice' && m.artifactId != null && m.actions && m.actions.length > 0 && (
+        m.applied ? (
+          <div className="nap-mzmsg-applied">
+            <Icon name="check" size={12} />
+            {m.actions.find((a) => a.key === m.applied!.actionKey)?.label ?? m.applied.actionKey}
+          </div>
+        ) : (
+          <div className="nap-mzmsg-actions" role="group" aria-label="Javasolt lépés">
+            {m.actions.map((a) => (
+              <button
+                key={a.key}
+                type="button"
+                className="chip brand"
+                disabled={advice.pending}
+                onClick={() => advice.apply(m.artifactId!, a.key)}
+              >
+                {a.label}
+              </button>
+            ))}
+            {advice.failedId === m.artifactId && (
+              <span className="nap-mzmsg-actionerr" role="alert">Nem sikerült — próbáld újra.</span>
+            )}
+          </div>
+        )
+      )}
       {/* Chips CSAK perzisztált AI-artifactre (mezo-kr9v); a „Segített?" felirat a
           W5.2 intervention-változat (mezo-b3pp.19) ÉS az S4 advice-kártya (mezo-d58h.4) —
           a sheet szerződése változatlanul. */}
