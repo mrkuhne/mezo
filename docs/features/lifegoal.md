@@ -702,9 +702,18 @@ resolving the goal by id (`test/msw/handlers.ts`) — `setup.ts` runs MSW with
 `onUnhandledRequest: 'bypass'`, so a missing handler would let a real-mode write escape to the
 network and pass silently. Run both `pnpm test` (real, MSW-backed) and `VITE_USE_MOCK=true pnpm
 test` (mock) — see [`_platform-data-layer.md`](_platform-data-layer.md) §8 for the dual-mode test
-convention. The two structural CSS guards in `shared/ui/mozaik/prototypeCssStructure.test.ts` /
-`mozaikCssTokens.test.ts` also cover the `lg-*` rules this slice added to `styles/prototype.css`
-(§9).
+convention. **CSS guards.** `shared/ui/mozaik/prototypeCssStructure.test.ts` covers the `lg-*` rules'
+placement. `mozaikCssTokens.test.ts` does **not** cover them — it pins `--mz-*` only, and this
+doc previously claimed otherwise; that false claim is precisely how two bugs shipped
+(`mezo-hhdo`: the family hardcoded light hexes and read white-on-white in dark mode;
+`mezo-7eq0`: the entrance choreography was armed on a `.play` class that does not exist, so the
+7-dot rows AND the PERMAH ring arcs were invisible in a real browser). The family now has its
+own guard, `features/me/lifegoalCssTokens.test.ts`, pinning four invariants: every `--lg-*`
+token is declared in BOTH `:root` blocks, the block contains no raw hex, no `.play` selector
+survives anywhere, and the choreography's HIDDEN start state is scoped under `.mz-play` rather
+than applied unconditionally. **The visual suite cannot substitute for that last one**: it runs
+with `reducedMotion: 'reduce'`, which settles the choreography, so a broken entrance renders
+correctly in every golden while being invisible in the app (§9).
 
 ## 9. Decisions, gotchas & deferred
 
