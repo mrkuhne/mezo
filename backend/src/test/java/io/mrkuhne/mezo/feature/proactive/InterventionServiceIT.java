@@ -181,9 +181,13 @@ class InterventionServiceIT extends AbstractIntegrationTest {
             .hasSize(1);
     }
 
-    /** Publish path e2e: FlagService.evaluateAndLog raises SUSTAINED_STRESS -> FlagRaisedEvent ->
-     *  async InterventionEventListener -> card. Awaitility rides out the @Async hop (the
-     *  CompanionMessageEventIT precedent). */
+    /** Publish path e2e: flag evaluation raises flags -> FlagRaisedEvent -> async
+     *  InterventionEventListener -> card (per S4 severity gate, one card survives per day).
+     *  Awaitility rides out the @Async hop (the CompanionMessageEventIT precedent). This
+     *  fixture logs check-ins but no meals and no sleep—the same evaluation raises both
+     *  SUSTAINED_STRESS (rank 12) and LOGGING_GAP (rank 6), so the S4 severity gate hands the
+     *  day's single card to the higher-ranked LOGGING_GAP. The point the test pins is that the
+     *  AFTER_COMMIT listener delivers a card at all, which it still does. */
     @Test
     void listenerDeliversAfterCommit() {
         UUID owner = ownerId();
@@ -196,8 +200,11 @@ class InterventionServiceIT extends AbstractIntegrationTest {
 
         await().atMost(5, SECONDS).untilAsserted(() -> assertThat(companionMessageRepository
             .findByCreatedByAndMessageDateAndKind(owner, today, CompanionMessageEntity.KIND_ADVICE))
-            .hasValueSatisfying(m -> assertThat(m.getContent().interventionKey())
-                .isIn("stress_reset", "stress_talk")));
+            .hasValueSatisfying(m -> {
+                assertThat(m.getContent().adviceKey()).isEqualTo(FlagKey.LOGGING_GAP);
+                assertThat(m.getContent().interventionKey())
+                    .isIn("logging_gap_restart", "logging_gap_sleep_suspicion");
+            }));
     }
 
     @Test
