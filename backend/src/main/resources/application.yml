@@ -809,7 +809,7 @@ mezo:
       - key: logging_gap_sleep_suspicion
         flag: logging_gap
         channel: feed
-        text-hu: "A rögzítetlen éjszakák mellett a bejegyzett alvásaid is rövidebbek a célodnál. Ma este kezdd a lefekvéssel, és reggel rögzítsd — így kiderül, tényleg adósság-e."
+        text-hu: "Több éjszakád is rögzítetlen maradt, úgyhogy nem látom, mennyit alszol valójában. Ma este kezdd a lefekvéssel, és reggel rögzítsd — így kiderül, van-e adósság."
         cooldown-hours: 72
         quiet-hours-exempt: false
       - key: missed_workouts_restart

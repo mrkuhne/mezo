@@ -57,9 +57,11 @@ public final class AdviceFactRenderer {
             return List.of();
         }
         List<String> facts = new ArrayList<>();
+        int plannedCount = p.plannedDays() == null ? 0 : p.plannedDays().size();
+        int missedCount = p.missedDays() == null ? 0 : p.missedDays().size();
         facts.add("Kimaradt edzések: %d egymást követő tervezett nap (%d tervezett napból %d napon)"
-            .formatted(p.longestMissedRun(), p.plannedDays().size(), p.missedDays().size()));
-        if (!p.missedDays().isEmpty()) {
+            .formatted(p.longestMissedRun(), plannedCount, missedCount));
+        if (p.missedDays() != null && !p.missedDays().isEmpty()) {
             facts.add("Kimaradt napok: " + String.join(", ", p.missedDays()));
         }
         return List.copyOf(facts);

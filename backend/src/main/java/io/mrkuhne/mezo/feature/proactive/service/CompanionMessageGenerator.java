@@ -277,7 +277,9 @@ public class CompanionMessageGenerator {
                 .map(mw -> "\nKIMARADT EDZÉSEK (tény — ne dicsérj vakon, de ne is szidj):\n"
                         + "- leghosszabb kihagyott sorozat: " + mw.longestMissedRun()
                         + " egymást követő tervezett nap\n"
-                        + "- kimaradt napok: " + String.join(", ", mw.missedDays()) + "\n")
+                        + (mw.missedDays() == null || mw.missedDays().isEmpty()
+                                ? ""
+                                : "- kimaradt napok: " + String.join(", ", mw.missedDays()) + "\n"))
                 .orElse("");
     }
 

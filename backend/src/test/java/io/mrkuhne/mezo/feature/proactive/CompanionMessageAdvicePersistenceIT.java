@@ -30,10 +30,13 @@ class CompanionMessageAdvicePersistenceIT extends AbstractIntegrationTest {
     @Test
     void testKindCheck_shouldAcceptAdvice() {
         UUID owner = userPopulator.createUser().getId();
+        LocalDate date = LocalDate.now();
 
-        companionMessagePopulator.rawInsertKind(owner, LocalDate.now(), CompanionMessageEntity.KIND_ADVICE);
+        companionMessagePopulator.rawInsertKind(owner, date, CompanionMessageEntity.KIND_ADVICE);
 
-        assertThat(CompanionMessageEntity.KIND_ADVICE).isEqualTo("advice");
+        assertThat(companionMessageRepository
+            .findByCreatedByAndMessageDateAndKind(owner, date, CompanionMessageEntity.KIND_ADVICE))
+            .isPresent();
     }
 
     @Test
@@ -42,7 +45,7 @@ class CompanionMessageAdvicePersistenceIT extends AbstractIntegrationTest {
 
         assertThatThrownBy(() ->
             companionMessagePopulator.rawInsertKind(owner, LocalDate.now(), "nonsense"))
-            .isInstanceOf(Exception.class);
+            .hasStackTraceContaining("ck_companion_message_kind");
     }
 
     @Test
