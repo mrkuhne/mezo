@@ -42,6 +42,7 @@ public final class AdviceFactRenderer {
             case FlagKey.ALL_HEALTHY -> allHealthy(payload.allHealthy());
             case FlagKey.ACUTE_BAD_DAY -> acuteBadDay(payload.acuteBadDay());
             case FlagKey.LOAD_FUEL_MISMATCH -> loadFuelMismatch(payload.loadFuelMismatch());
+            case FlagKey.RAPID_WEIGHT_LOSS -> rapidWeightLoss(payload.rapidWeightLoss());
             default -> List.of();
         };
     }
@@ -166,6 +167,15 @@ public final class AdviceFactRenderer {
             facts.add("Súlytrend: %s%%/hét".formatted(num(p.weightTrendPctWk())));
         }
         return List.copyOf(facts);
+    }
+
+    private static List<String> rapidWeightLoss(FlagPayloadEnvelope.RapidWeightLoss p) {
+        if (p == null) {
+            return List.of();
+        }
+        return List.of("Súlytrend: %s%%/hét (küszöb %s%%/hét, %d rögzített napból, cél: %s)"
+            .formatted(num(p.weightTrendPctWk()), num(p.pctPerWeekAtMost()), p.weighInCount(),
+                p.goalTrajectory()));
     }
 
     private static String scoreOrDash(Integer score) {

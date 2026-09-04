@@ -914,6 +914,14 @@ mezo:
         text-hu: "Az utóbbi napokban sokat edzettél, de kevesebbet ettél vagy aludtál a kelleténél. Ez a kombináció hosszabb távon sérülést vagy kimerülést okozhat. Ma egyél közelebb a céladhoz, és feküdj le időben — a terhelést csak megfelelő üzemanyaggal és pihenéssel lehet kibírni."
         cooldown-hours: 72
         quiet-hours-exempt: false
+      # S6 batch B (bd mezo-d58h.6, spec 2026-09-03 §4 row 10, rank 3): a súly gyorsabban csökken,
+      # mint amit a heti trend-küszöb enged, és ez nem szándékos cut — érdemes ránézni a tempóra.
+      - key: rapid_weight_loss_pace
+        flag: rapid_weight_loss
+        channel: both
+        text-hu: "Az utóbbi hetekben a szokásosnál gyorsabban csökken a súlyod. Ha ez nem tudatos cél, érdemes átnézni, hogy az étkezésed és a pihenésed tartja-e a lépést — ha viszont ez a szándékod, akkor csak jelzés, nem intés."
+        cooldown-hours: 72
+        quiet-hours-exempt: false
     # W4.3 (mezo-b3pp.17): the pragmatic profile — "hogyan érdemes Daniellel beszélni"
     profile:
       # Monday 03:45 — after the 03:10 feedback rollups and the 03:30 weekly consolidation rung,

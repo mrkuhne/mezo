@@ -20,7 +20,8 @@ public record FlagPayloadEnvelope(
     LoggingGap loggingGap,
     MissedWorkouts missedWorkouts,
     AcuteBadDay acuteBadDay,
-    LoadFuelMismatch loadFuelMismatch
+    LoadFuelMismatch loadFuelMismatch,
+    RapidWeightLoss rapidWeightLoss
 ) {
 
     public record SustainedStress(
@@ -87,39 +88,58 @@ public record FlagPayloadEnvelope(
         Double weightTrendPctWk) {
     }
 
+    /** Spec 2026-09-03 §4 row 10 (rank 3): 7-day {@code WEIGHT_TREND_PCT_WK} slope below
+     *  {@code pctPerWeekAtMost} (negative — %/week, so "below" means more negative, faster
+     *  loss) AND the owner is not deliberately cutting. {@code weighInCount} is the distinct
+     *  logged days inside the trend's own 7-day window, frozen for display only — the honesty
+     *  gate itself is the metric extractor's own (no data point under 4 weigh-ins), not this
+     *  count. {@code goalTrajectory} is the active goal's {@code cut|bulk|maintain} as read;
+     *  this shape only ever exists when it was NOT {@code "cut"} (a cut goal stays silent, so
+     *  no raise ever carries it) — {@code null} here would mean "no active goal", which also
+     *  never reaches a raise (see the rule's honesty gate). */
+    public record RapidWeightLoss(
+        double weightTrendPctWk, double pctPerWeekAtMost,
+        int weighInCount, int minWeighIns,
+        String goalTrajectory) {
+    }
+
     public static FlagPayloadEnvelope sustainedStress(SustainedStress p) {
-        return new FlagPayloadEnvelope(p, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(p, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope sleepDebt(SleepDebt p) {
-        return new FlagPayloadEnvelope(null, p, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, p, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope momentumAtRisk(MomentumAtRisk p) {
-        return new FlagPayloadEnvelope(null, null, p, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, p, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope recoveryNeeded(RecoveryNeeded p) {
-        return new FlagPayloadEnvelope(null, null, null, p, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, p, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope allHealthy(AllHealthy p) {
-        return new FlagPayloadEnvelope(null, null, null, null, p, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, p, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope loggingGap(LoggingGap p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, p, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, p, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope missedWorkouts(MissedWorkouts p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, p, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, p, null, null, null);
     }
 
     public static FlagPayloadEnvelope acuteBadDay(AcuteBadDay p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, p, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, p, null, null);
     }
 
     public static FlagPayloadEnvelope loadFuelMismatch(LoadFuelMismatch p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, p);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, p, null);
+    }
+
+    public static FlagPayloadEnvelope rapidWeightLoss(RapidWeightLoss p) {
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, p);
     }
 }

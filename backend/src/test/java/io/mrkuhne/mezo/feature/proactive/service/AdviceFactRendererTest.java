@@ -140,6 +140,8 @@ class AdviceFactRendererTest {
                     2100.0, 3100.0, 0.677, 0.8, 7,
                     null, 7.0, 0,
                     4, "kcal", -0.8));
+            case FlagKey.RAPID_WEIGHT_LOSS -> FlagPayloadEnvelope.rapidWeightLoss(
+                new FlagPayloadEnvelope.RapidWeightLoss(-1.2, -0.7, 5, 4, "bulk"));
             default -> throw new AssertionError(
                 "no AdviceFactRendererTest fixture for live flag key '" + flagKey + "' — "
                     + "add both a fixture here and a render() branch in AdviceFactRenderer");
