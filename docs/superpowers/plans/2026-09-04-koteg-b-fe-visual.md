@@ -426,7 +426,7 @@ helyen a négy `is-sleep|is-fuel|is-checkin|is-activity` sor helyére hat sor:
             return (
               <i
                 key={s.key}
-                className={cn(v == null ? 'is-none' : s.barClass, s.key === 'training' && 'is-gsep')}
+                className={v == null ? 'is-none' : s.barClass}
                 style={{
                   height: v == null ? 4 : Math.max(5, Math.round((v / 100) * 26)),
                   '--d': `${300 + delayMs + k * 53}ms`,
@@ -437,8 +437,8 @@ helyen a négy `is-sleep|is-fuel|is-checkin|is-activity` sor helyére hat sor:
         </div>
 ```
 
-Az `is-gsep` osztály CSS-e a Task 2-ben kerül be; itt még nincs vizuális hatása, de a markup-szerződés
-egy helyen születik meg. A fájl fejléc-kommentjébe vedd fel: *„mezo-jcpt.5: négy sub-jelről hatra —
+A csoportrés (markup + CSS + teszt) **teljes egészében a Task 2-é** — ez a task hat egyenletes
+pálcikát ad. A fájl fejléc-kommentjébe vedd fel: *„mezo-jcpt.5: négy sub-jelről hatra —
 a wire-alak és a nap-oldal ugyanazt a hat dimenzió-idet használja."*
 
 - [ ] **Step 16: Bővítsd a legendet hat elemre**
@@ -519,12 +519,24 @@ EOF
 
 **Files:**
 - Modify: `frontend/src/styles/prototype.css` (a `.wkd-sparks` / `.wkd-legend` blokk)
+- Modify: `frontend/src/features/me/components/week/WeekDayTile.tsx` (az `is-gsep` osztály a csoporthatáron)
 - Modify: `frontend/src/features/me/pages/WeekDaysPage.tsx` (legend csoport-elválasztó)
 - Test: `frontend/src/features/me/components/week/WeekDayTile.test.tsx`, `.../pages/WeekDaysPage.test.tsx`
 
 **Interfaces:**
-- Consumes: `DAY_DIMENSIONS` (`key`, `barClass`, `group`), az `is-gsep` osztály a `training` pálcikán (Task 1, Step 15).
-- Produces: semmi új export — a szerződés a `.wkd-sparks i.is-gsep` CSS-szabály és a legend `.wkd-legend hr.is-gsep` elválasztója.
+- Consumes: `DAY_DIMENSIONS` (`key`, `barClass`, `group`) a Task 1-ből.
+- Produces: semmi új export — a szerződés a `.wkd-sparks i.is-gsep` CSS-szabály és a legend `.wkd-legsep` elválasztója.
+
+A csoportrés markupja is ITT születik, hogy az osztály és a szabálya egy commitban landoljon.
+A `WeekDayTile.tsx` pálcika-blokkjában a `className` így alakul:
+
+```tsx
+                className={cn(v == null ? 'is-none' : s.barClass,
+                  DAY_DIMENSIONS[k + 1]?.group !== undefined && DAY_DIMENSIONS[k + 1].group !== s.group && 'is-gsep')}
+```
+
+(azaz a csoporthatár ELŐTTI pálcika viszi a szélesebb jobb margót — a listából származtatva, nem
+bedrótozott `'training'` kulccsal.)
 
 - [ ] **Step 1: Írd meg a bukó teszteket**
 
