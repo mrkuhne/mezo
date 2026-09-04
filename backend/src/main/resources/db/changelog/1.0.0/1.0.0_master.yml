@@ -1078,3 +1078,10 @@ databaseChangeLog:
             relativeToChangelogFile: true
             splitStatements: false
             path: script/202609041020_mezo-6dii.1_memory_platform.sql
+  - changeSet:
+      id: "1.0.0:202609041030_mezo-d58h.5_sport_slot_skip"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609041030_mezo-d58h.5_sport_slot_skip.sql

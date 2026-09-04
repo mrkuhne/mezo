@@ -41,7 +41,7 @@ public class ResetDatabase {
                 + "meal_slot_template, check_in, journal_entry, decision_entry, gratitude_entry, "
                 + "exercise_feedback, exercise_set, exercise, workout_session, muscle_group_volume_log, mesocycle, "
                 + "meso_template, mesocycle_report, "
-                + "gym_schedule_slot, sport_schedule_slot, sport_event, sport_session, run_session_log, running_block, "
+                + "gym_schedule_slot, sport_schedule_slot, sport_slot_skip, sport_event, sport_session, run_session_log, running_block, "
                 + "skill_progress, level_up_event, perk_unlock, "
                 + "life_goal_pillar_day, life_goal_pillar, life_goal, "
                 + "goal_suggestion, goal_plan_link, goal, biometric_profile, "
