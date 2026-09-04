@@ -7957,8 +7957,16 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .wkd-scnum small { font-size: 9.5px; font-weight: 700; color: var(--mz-ink-mut); }
 .wkd-scnum.is-dash { font-size: 20px; color: var(--mz-ink-mut); }
 
-.wkd-sparks { display: flex; gap: 3.5px; align-items: flex-end; height: 28px; margin-left: auto; }
+/* mezo-jcpt.5 runtime check: a 100/100 nap (3 jegyű szám + a szélesebb 3+3 csoportos sáv)
+   0.4px-cel túlfolyt a .wkd-scnum oszlopból és két sorra tört. A brief 1. lépésű
+   javaslatát alkalmaztam — a belső rés 3 → 2.5px —, ami visszaadja a hiányzó helyet;
+   a pálcikák szélessége (6px, remedy #2) és a csoportrés (5px) érintetlen marad, így
+   a WCAG nem-szöveges 3 CSS px-es padlója (a pálcikaszélességre vonatkozik) nem sérül. */
+.wkd-sparks { display: flex; gap: 2.5px; align-items: flex-end; height: 28px; margin-left: auto; flex: none; }
 .wkd-sparks i { width: 6px; border-radius: 2px; min-height: 3.5px; transform: scaleY(0); transform-origin: bottom; }
+/* A hat sub-jel két hármas csoportra bomlik — „amit tettél" | „ahogy állsz" (mezo-jcpt.5).
+   A szélesebb rés adja az olvasási fogódzót legend nélkül is: a szín SOHA nem az egyetlen jel. */
+.wkd-sparks i.is-gsep { margin-right: 5px; }
 .wkd-sparks i.is-nutrition { background: var(--mz-wk-sub-nutrition); }
 .wkd-sparks i.is-quality { background: var(--mz-wk-sub-quality); }
 .wkd-sparks i.is-training { background: var(--mz-wk-sub-training); }
@@ -7994,6 +8002,8 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .wkd-legend i.is-sleep { background: var(--mz-wk-sub-sleep); }
 .wkd-legend i.is-logging { background: var(--mz-wk-sub-logging); }
 .wkd-legend i.is-rhythm { background: var(--mz-wk-sub-rhythm); }
+.wkd-legsep { display: inline-block; width: 1px; height: 9px; background: var(--mz-ink-mut);
+  opacity: 0.3; vertical-align: -1px; }
 .wkd-foot { font-size: 10px; font-weight: 300; color: var(--mz-ink-mut); padding: 7px 2px 0; }
 .wkd-empty { font-size: 11px; color: var(--mz-ink-soft); padding: 14px 2px; text-align: center; }
 

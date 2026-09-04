@@ -102,6 +102,12 @@ describe('WeekDaysPage (mock mode)', () => {
       .not.toBeInTheDocument()
   })
 
+  test('hat legend-elem, csoport-elválasztóval a harmadik után', () => {
+    const { container } = renderPage(PAST_WEEK)
+    expect(container.querySelectorAll('.wkd-legend span')).toHaveLength(6)
+    expect(container.querySelector('.wkd-legend .wkd-legsep')).toBeInTheDocument()
+  })
+
   test('a tile does NOT expand in place — it deep-links to the day page, week in tow', async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     const { container } = renderPage(PAST_WEEK)

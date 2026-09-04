@@ -89,7 +89,8 @@ export function WeekDayTile({ day, todayIso, hasNote, delayMs, onOpen }: WeekDay
             return (
               <i
                 key={s.key}
-                className={v == null ? 'is-none' : s.barClass}
+                className={cn(v == null ? 'is-none' : s.barClass,
+                  DAY_DIMENSIONS[k + 1]?.group !== undefined && DAY_DIMENSIONS[k + 1].group !== s.group && 'is-gsep')}
                 style={{
                   height: v == null ? 4 : Math.max(5, Math.round((v / 100) * 26)),
                   '--d': `${300 + delayMs + k * 53}ms`,
