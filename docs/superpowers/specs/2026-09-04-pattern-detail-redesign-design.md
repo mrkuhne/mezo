@@ -218,9 +218,10 @@ A „Motor-diagnosztika” felirat „Hogyan számoltuk?” lesz, színes, közn
 - közös napok és bináris esetben csoportegyensúly;
 - a motor aktuális döntése.
 
-Ezen belül egy második disclosure, „Technikai számok” mutatja az `r`, `n`, `p` értéket és a
-befagyasztás technikai állapotát. Nem élő verdiktnél az elavult perzisztált `pattern.r/p` nem
-jelenhet meg aktuális számként.
+Ezen belül egy második disclosure, „Technikai számok” mutatja az aktuális `pair.r/n/p` értéket és
+a befagyasztás technikai állapotát. Ha a verdikt nem élő, de van korábbi perzisztált számítás, az
+csak **„Korábbi nyers számítás — még a csoportkapu előtt”** címkével jelenhet meg itt; az elavult
+`pattern.r/p` soha nem tűnhet aktuális következtetésnek.
 
 ## Adatfolyam
 
