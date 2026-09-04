@@ -312,10 +312,29 @@ public class WeeklyReviewContextSources {
     }
 
     /**
-     * {@code ÉLETCÉLOK · A HÉT IRÁNYA} — the life-goal engine's ALREADY-COMPUTED weekly arrows
-     * (mezo-iizd.9). Code collects, model explains: the arrow, the hit-day tally and today's pillar
-     * ratio are all stored/derived facts, and the prompt explicitly FORBIDS recomputing them
+     * {@code ÉLETCÉLOK · AZ ELMÚLT 7 NAP} — the life-goal engine's ALREADY-COMPUTED trend
+     * (mezo-iizd.9). Code collects, model explains: the arrow and the hit-day tally are both
+     * derived facts, and the prompt explicitly FORBIDS recomputing them
      * ({@link WeeklyReviewGenerator}'s {@code PROMPT}).
+     *
+     * <p><b>The window is the TRAILING 7 DAYS as of render time — deliberately NOT the reviewed
+     * week, and the header says so.</b> {@code LifeGoalProgressService#today(UUID)} builds its
+     * {@code days7} over {@code [now-6, now]}, while the weekly cron fires Monday 06:50 for
+     * {@code weekStart = previousOrSame(MONDAY).minusWeeks(1)}, i.e. {@code [D-7, D-1]}. The two
+     * windows are one day apart: the reviewed Monday falls out and today (~7 hours old, so
+     * essentially never a hit) falls in. Rather than let a "hét iránya" header quietly deflate the
+     * tally by that one day, the section is LABELLED for the window it actually measures. The
+     * arrow survives the shift intact — it is a 7-day vs 21-day mean comparison, to which one
+     * boundary day is immaterial.
+     *
+     * <p><b>Why not a windowed source.</b> Rendering the reviewed week exactly would need a
+     * {@code today(userId, from, to)} variant on the lifegoal service; that is a separate,
+     * later issue, NOT a silent widening of this one. Until it exists, the honest label is the
+     * fix — so the next reader does not rediscover the shift as a bug.
+     *
+     * <p>The same reasoning drops today's {@code pillarsHitToday / pillarsTotal} ratio: a
+     * snapshot of THIS morning has no place in a retrospective about last week, and at 06:50 it
+     * would read {@code 0 / N} in nearly every real run.
      *
      * <p>Only ACTIVE goals arrive — {@code today()} yields exactly those, under the same "evaluable"
      * definition the nightly engine uses, so a parked or closed goal can never leak into the prompt.
@@ -323,9 +342,7 @@ public class WeeklyReviewContextSources {
      * talk about the absence (the same rule every other source above follows).
      *
      * <p>The arrow is rendered as a WORD, not the glyph: {@code →} and {@code ↑} are easy for a
-     * model to misread inside prose, "tartja" is not. {@code pillarsTotal}/{@code pillarsHitToday}
-     * are optional in the contract, so the ratio is appended only when BOTH are present — a
-     * half-known ratio is not a fact.
+     * model to misread inside prose, "tartja" is not.
      */
     private void appendLifeGoals(StringBuilder out, UUID userId) {
         LifeGoalProgressService progress = lifeGoalProgressService.getIfAvailable();
@@ -336,7 +353,7 @@ public class WeeklyReviewContextSources {
         if (goals == null || goals.isEmpty()) {
             return;
         }
-        out.append("\nÉLETCÉLOK · A HÉT IRÁNYA (a motor számolta — magyarázd, ne számold újra):\n");
+        out.append("\nÉLETCÉLOK · AZ ELMÚLT 7 NAP (a motor számolta — magyarázd, ne számold újra):\n");
         for (LifeGoalTodaySummary goal : goals.subList(0, Math.min(goals.size(), MAX_LIFE_GOALS))) {
             long hits = goal.getDays7() == null ? 0
                     : goal.getDays7().stream().filter(status -> status == PillarDayStatus.HIT).count();
@@ -345,12 +362,8 @@ public class WeeklyReviewContextSources {
                 out.append(" [").append(goal.getDimension()).append(']');
             }
             out.append(' ').append(arrowWord(goal.getArrow()))
-                    .append(" · ").append(hits).append(" találat-nap a 7-ből");
-            if (goal.getPillarsTotal() != null && goal.getPillarsHitToday() != null) {
-                out.append(" · ma ").append(goal.getPillarsHitToday())
-                        .append(" / ").append(goal.getPillarsTotal()).append(" pillér");
-            }
-            out.append('\n');
+                    .append(" · ").append(hits).append(" találat-nap a 7-ből")
+                    .append('\n');
         }
     }
 
