@@ -79,20 +79,26 @@ public class LoadFuelMismatchRule implements FlagRule {
         Map<LocalDate, Double> sleepSeries =
             metricSeriesService.series(userId, MetricKey.SLEEP_DURATION_H, from, today);
 
-        int kcalLoggedDays = countInWindow(kcalSeries, from, today);
+        int kcalLoggedDaysRaw = countInWindow(kcalSeries, from, today);
         int sleepLoggedDays = countInWindow(sleepSeries, from, today);
 
-        boolean kcalGateOk = kcalLoggedDays >= cfg.minLoggedDaysPerSide();
+        boolean kcalRawGateOk = kcalLoggedDaysRaw >= cfg.minLoggedDaysPerSide();
         boolean sleepGateOk = sleepLoggedDays >= cfg.minLoggedDaysPerSide();
-        if (!kcalGateOk && !sleepGateOk) {
+        if (!kcalRawGateOk && !sleepGateOk) {
             return Optional.empty();
         }
 
+        // Frozen and gated on the SAME count. kcalLoggedDaysRaw only screens whether pairing is
+        // worth attempting; the number that actually backs the average — and that the honesty
+        // gate is really about — is `paired`: a day counts only once it has BOTH a logged kcal
+        // value AND a resolvable target. A day whose target fails to resolve must not inflate
+        // the logged-day count the card (and the gate) rely on.
         Double kcalAvg = null;
         Double kcalTargetAvg = null;
         Double kcalFraction = null;
+        int kcalLoggedDays = kcalLoggedDaysRaw;
         boolean kcalArmFires = false;
-        if (kcalGateOk) {
+        if (kcalRawGateOk) {
             double kcalConsumedSum = 0.0;
             double kcalTargetSum = 0.0;
             int paired = 0;
@@ -109,7 +115,8 @@ public class LoadFuelMismatchRule implements FlagRule {
                 kcalTargetSum += target.doubleValue();
                 paired++;
             }
-            if (paired > 0) {
+            kcalLoggedDays = paired;
+            if (paired >= cfg.minLoggedDaysPerSide()) {
                 kcalAvg = kcalConsumedSum / paired;
                 kcalTargetAvg = kcalTargetSum / paired;
                 kcalFraction = kcalAvg / kcalTargetAvg;
