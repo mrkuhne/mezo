@@ -278,7 +278,7 @@ export function PatternArtifactDetail(props: {
   git commit -m "docs(insights): document pattern catalog flow (mezo-szqy)"
   ```
 
-- [ ] Zárd a beadet, szinkronizáld, pushold a branchet, majd nyiss self-PR-t a commitok, kapuk
+- [x] Zárd a beadet, szinkronizáld, pushold a branchet, majd nyiss self-PR-t a commitok, kapuk
   és eltérések felsorolásával:
 
   ```bash
