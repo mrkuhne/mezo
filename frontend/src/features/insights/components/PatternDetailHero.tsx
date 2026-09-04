@@ -1,4 +1,5 @@
 import { confidenceMeta, findingSentence } from '@/features/insights/logic/findings'
+import { PatternDomainMark } from '@/features/insights/components/PatternDomainMark'
 import { DOMAIN_META } from '@/features/insights/logic/domains'
 import { isStrongSignal } from '@/features/insights/logic/lifecycle'
 import { groupBalanceSentence, verdictSentence } from '@/features/insights/logic/verdicts'
@@ -67,7 +68,7 @@ export function PatternDetailHero({ pair, pattern, onDecide }: {
   return (
     <section className={`pdt-hero pdt-hero-${state.tone}`} aria-labelledby="pdt-answer">
       <div className="pdt-hero-top">
-        <span className="pdt-hero-icon" aria-hidden="true">{domain.icon}</span>
+        <span className="pdt-hero-icon"><PatternDomainMark domain={pair.metricBDomain} size={28} showLabel={false} /></span>
         <span><small>{domain.label}</small><b>{pair.title}</b></span>
         <span className="pdt-state-pill">{state.pill}</span>
       </div>
