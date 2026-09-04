@@ -66,6 +66,9 @@ public interface TrainMapper {
 
     @Mapping(target = "type", expression = "java(ExerciseCatalogItem.TypeEnum.fromValue(entity.getType()))")
     @Mapping(target = "editable", ignore = true)
+    @Mapping(target = "mediaEditable", ignore = true)
+    @Mapping(target = "authoredByMe", ignore = true)
+    @Mapping(target = "authorName", ignore = true)
     ExerciseCatalogItem toCatalogItem(ExerciseCatalogEntity entity);
 
     @Mapping(target = "duration", source = "durationMin")
