@@ -42,13 +42,22 @@ import org.springframework.stereotype.Component;
  *
  * <p><b>Trap 2 — the clock-hour space.</b> {@code MetricKey.LATE_MEAL_HOUR} is a PLAIN fractional
  * hour (0.0-23.99), unlike {@code BEDTIME_HOUR} (and the anchor), which live in the +24-below-noon
- * SHIFTED space {@code MetricSeriesService.clockHour} uses. This rule shifts BOTH the raw meal
- * hour and the anchor's {@link LocalTime} into that same shifted space before comparing (see
- * {@link #shiftedHour(double)} / {@link #shiftedHour(LocalTime)}) — a meal logged at 00:30 shifts
- * to 24.5, correctly sorting as very LATE rather than as an early breakfast. {@code absoluteHour}
- * (22.5) is already {@literal >}= 12 so the shift never touches it; comparing a shifted meal hour
- * against it directly still works, since any post-midnight meal shifts to 24+ and so always
- * clears 22.5 too.
+ * SHIFTED space {@code MetricSeriesService.clockHour} uses. Only the BED arm's comparison needs a
+ * common space — it measures a DISTANCE against the (possibly shifted) anchor, so both sides must
+ * live on the same number line, via {@link #shiftedHour(double)} / {@link #shiftedHour(LocalTime)}.
+ * The ABSOLUTE arm compares the RAW meal hour directly against {@code absoluteHour} (22.5) — that
+ * threshold is already unambiguous in {@code LATE_MEAL_HOUR}'s own plain space and needs no
+ * normalisation. (An earlier version of this rule shifted the meal hour for BOTH arms, which made
+ * every pre-noon last meal — e.g. an 08:00 breakfast, shifted to 32.0 — unconditionally clear the
+ * absolute threshold: a false positive on every intermittent-fasting or simply-early eater. Fixed
+ * by keeping the absolute arm in the metric's own plain space.)
+ *
+ * <p>A genuinely post-midnight last meal (say 00:30) therefore does NOT fire the absolute arm —
+ * deliberately: {@code LATE_MEAL_HOUR} is the day's MAX meal hour, so 00:30 can only BE that max
+ * if it was the user's ONLY meal that day, which reads far more like a night-shift pattern or a
+ * logging gap than a genuine late-night snack, and this rule never estimates past what it knows.
+ * It CAN still fire the bed arm, if it lands within {@code minutesBeforeBed} of a (shifted, hence
+ * comparable) late anchor — the shift there exists precisely to keep that case honest.
  *
  * <p><b>Honesty gate.</b> A day with no logged meal ({@code LATE_MEAL_HOUR} has no entry for it)
  * is neither late nor compliant — it is simply skipped, so it never inflates or deflates the
@@ -88,12 +97,15 @@ public class LateEatingRule implements FlagRule {
             if (rawHour == null) {
                 continue; // honesty gate: an unlogged day is neither late nor compliant
             }
-            // Trap 2: put the meal hour in the SAME shifted space the anchor/BEDTIME_HOUR use.
+            // Trap 2, bed arm only: put the meal hour in the SAME shifted space the anchor
+            // uses — this arm measures a DISTANCE, so both sides must share one number line.
             double shiftedMealHour = shiftedHour(rawHour);
-
             boolean bedArm = anchorShiftedHour != null
                 && Math.abs(shiftedMealHour - anchorShiftedHour) * 60.0 <= cfg.minutesBeforeBed();
-            boolean absoluteArm = shiftedMealHour >= cfg.absoluteHour();
+            // Trap 2, absolute arm: compare the RAW hour — absoluteHour already lives in
+            // LATE_MEAL_HOUR's own plain space, so shifting here would falsely clear it for
+            // every ordinary pre-noon meal (an 08:00 breakfast is not "22:30 or later").
+            boolean absoluteArm = rawHour >= cfg.absoluteHour();
             if (!bedArm && !absoluteArm) {
                 continue;
             }

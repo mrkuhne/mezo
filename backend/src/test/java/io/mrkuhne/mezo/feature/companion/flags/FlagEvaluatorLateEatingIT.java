@@ -69,7 +69,7 @@ class FlagEvaluatorLateEatingIT extends AbstractIntegrationTest {
         UUID owner = ownerId();
         LocalDate today = LocalDate.now();
         meal(owner, today.minusDays(2), 22, 45);
-        meal(owner, today.minusDays(1), 12, 0);
+        meal(owner, today.minusDays(1), 18, 0);
         meal(owner, today, 23, 0);
 
         assertThat(keys(owner)).contains(FlagKey.LATE_EATING);
@@ -81,8 +81,8 @@ class FlagEvaluatorLateEatingIT extends AbstractIntegrationTest {
         UUID owner = ownerId();
         LocalDate today = LocalDate.now();
         meal(owner, today.minusDays(2), 22, 45);
-        meal(owner, today.minusDays(1), 12, 0);
-        meal(owner, today, 12, 0);
+        meal(owner, today.minusDays(1), 18, 0);
+        meal(owner, today, 18, 0);
 
         assertThat(keys(owner)).doesNotContain(FlagKey.LATE_EATING);
     }
@@ -94,7 +94,7 @@ class FlagEvaluatorLateEatingIT extends AbstractIntegrationTest {
         LocalDate today = LocalDate.now();
         meal(owner, today.minusDays(2), 22, 30);
         meal(owner, today.minusDays(1), 22, 30);
-        meal(owner, today, 12, 0);
+        meal(owner, today, 18, 0);
 
         assertThat(keys(owner)).contains(FlagKey.LATE_EATING);
     }
@@ -105,7 +105,7 @@ class FlagEvaluatorLateEatingIT extends AbstractIntegrationTest {
         LocalDate today = LocalDate.now();
         meal(owner, today.minusDays(2), 22, 29);
         meal(owner, today.minusDays(1), 22, 29);
-        meal(owner, today, 12, 0);
+        meal(owner, today, 18, 0);
 
         assertThat(keys(owner)).doesNotContain(FlagKey.LATE_EATING);
     }
@@ -121,7 +121,7 @@ class FlagEvaluatorLateEatingIT extends AbstractIntegrationTest {
         sleepGoalPopulator.goal(owner);
         meal(owner, today.minusDays(2), 22, 0);
         meal(owner, today.minusDays(1), 22, 0);
-        meal(owner, today, 12, 0);
+        meal(owner, today, 18, 0);
 
         assertThat(keys(owner)).contains(FlagKey.LATE_EATING);
         FlagPayloadEnvelope.LateEating p = payload(owner).orElseThrow();
@@ -139,7 +139,7 @@ class FlagEvaluatorLateEatingIT extends AbstractIntegrationTest {
         // No sleepGoalPopulator.goal(owner) call at all.
         meal(owner, today.minusDays(2), 22, 0);
         meal(owner, today.minusDays(1), 22, 0);
-        meal(owner, today, 12, 0);
+        meal(owner, today, 18, 0);
 
         assertThat(keys(owner)).doesNotContain(FlagKey.LATE_EATING);
     }
@@ -151,7 +151,7 @@ class FlagEvaluatorLateEatingIT extends AbstractIntegrationTest {
         sleepGoalPopulator.goal(owner);
         meal(owner, today.minusDays(2), 21, 45);
         meal(owner, today.minusDays(1), 21, 45);
-        meal(owner, today, 12, 0);
+        meal(owner, today, 18, 0);
 
         assertThat(keys(owner)).contains(FlagKey.LATE_EATING);
     }
@@ -163,7 +163,7 @@ class FlagEvaluatorLateEatingIT extends AbstractIntegrationTest {
         sleepGoalPopulator.goal(owner);
         meal(owner, today.minusDays(2), 21, 44);
         meal(owner, today.minusDays(1), 21, 44);
-        meal(owner, today, 12, 0);
+        meal(owner, today, 18, 0);
 
         assertThat(keys(owner)).doesNotContain(FlagKey.LATE_EATING);
     }
@@ -192,24 +192,65 @@ class FlagEvaluatorLateEatingIT extends AbstractIntegrationTest {
         LocalDate today = LocalDate.now();
         // today.minusDays(2): no meal logged at all.
         meal(owner, today.minusDays(1), 22, 45);
-        meal(owner, today, 12, 0);
+        meal(owner, today, 18, 0);
 
         assertThat(keys(owner)).doesNotContain(FlagKey.LATE_EATING);
     }
 
-    // ── trap 2: a post-midnight meal reads as LATE, never as an early breakfast ──────────────
+    // ── trap 2 (fixed): the absolute arm compares the RAW hour, never a shifted one ──────────
 
+    /** REGRESSION for the false-positive this rule originally shipped with: shifting the meal
+     *  hour for the absolute-arm comparison made every PRE-NOON last meal (any hour below 12)
+     *  unconditionally clear {@code absoluteHour} — an 08:00-only breakfast on two of three days
+     *  would have raised {@code late_eating} and told an intermittent-fasting or simply-early
+     *  eater their breakfast was "very late". The absolute arm must stay in
+     *  {@code LATE_MEAL_HOUR}'s own plain space: 8.0 is nowhere near 22.5. */
     @Test
-    void a_post_midnight_meal_is_correctly_treated_as_late_not_early() {
+    void stays_silent_when_the_only_logged_meal_is_an_early_breakfast_on_two_of_three_days() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        meal(owner, today.minusDays(2), 8, 0);
+        meal(owner, today.minusDays(1), 8, 0);
+        meal(owner, today, 18, 0);
+
+        assertThat(keys(owner)).doesNotContain(FlagKey.LATE_EATING);
+    }
+
+    // ── trap 2: post-midnight meals ───────────────────────────────────────────────────────────
+
+    /** A post-midnight-only last meal (00:30, no goal row, nothing else qualifying) does NOT fire
+     *  the absolute arm — deliberately: {@code LATE_MEAL_HOUR} is the day's MAX meal hour, so
+     *  00:30 being that max means it was the user's ONLY meal that day, which reads as a
+     *  night-shift/logging-gap pattern rather than a late-night snack, and the rule never
+     *  estimates past what it actually knows (see the rule's own javadoc). */
+    @Test
+    void stays_silent_for_a_post_midnight_only_meal_with_no_goal_row() {
         UUID owner = ownerId();
         LocalDate today = LocalDate.now();
         meal(owner, today.minusDays(2), 0, 30);
         meal(owner, today.minusDays(1), 0, 30);
-        meal(owner, today, 12, 0);
+        meal(owner, today, 18, 0);
+
+        assertThat(keys(owner)).doesNotContain(FlagKey.LATE_EATING);
+    }
+
+    /** But a post-midnight meal that lands close to a REAL (shifted) anchor still correctly fires
+     *  the bed arm — proving the shift still does its job for the one case it exists for: 00:20 is
+     *  65' after the 23:15 anchor (shifted diff, not a ~23h wraparound "early breakfast" misread). */
+    @Test
+    void raises_via_the_bed_arm_for_a_post_midnight_meal_close_to_the_anchor() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        sleepGoalPopulator.goal(owner);
+        meal(owner, today.minusDays(2), 0, 20);
+        meal(owner, today.minusDays(1), 0, 20);
+        meal(owner, today, 18, 0);
 
         assertThat(keys(owner)).contains(FlagKey.LATE_EATING);
         FlagPayloadEnvelope.LateEating p = payload(owner).orElseThrow();
-        // 00:30 in the shifted space is 24.5, well above the 22.5 absolute threshold — never "early".
+        // 00:20 in the shifted space is 24.333, well above the 22.5 absolute threshold's own
+        // plain-space number — but this raise came from the BED arm, not the absolute one.
+        assertThat(p.qualifyingArmByDay().values()).allSatisfy(arm -> assertThat(arm).isEqualTo("bed"));
         assertThat(p.lastMealHourByDay().values()).allSatisfy(v -> assertThat(v).isGreaterThan(24.0));
     }
 
