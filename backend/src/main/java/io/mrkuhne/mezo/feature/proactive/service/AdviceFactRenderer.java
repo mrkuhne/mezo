@@ -40,6 +40,7 @@ public final class AdviceFactRenderer {
             case FlagKey.MOMENTUM_AT_RISK -> momentumAtRisk(payload.momentumAtRisk());
             case FlagKey.RECOVERY_NEEDED -> recoveryNeeded(payload.recoveryNeeded());
             case FlagKey.ALL_HEALTHY -> allHealthy(payload.allHealthy());
+            case FlagKey.ACUTE_BAD_DAY -> acuteBadDay(payload.acuteBadDay());
             default -> List.of();
         };
     }
@@ -125,6 +126,26 @@ public final class AdviceFactRenderer {
                 .formatted(p.stressDay(), num(p.stress()), num(p.stressThreshold())));
         }
         return List.copyOf(facts);
+    }
+
+    private static List<String> acuteBadDay(FlagPayloadEnvelope.AcuteBadDay p) {
+        if (p == null) {
+            return List.of();
+        }
+        List<String> facts = new ArrayList<>();
+        facts.add("Ma %d check-in is jelzett nehéz napot (test vagy energia legfeljebb %d a 10-ből)"
+            .formatted(p.qualifyingCount(), p.bodyOrEnergyAtMost()));
+        if (p.qualifyingCheckIns() != null) {
+            for (FlagPayloadEnvelope.QualifyingCheckIn c : p.qualifyingCheckIns()) {
+                facts.add("%s: test %s, energia %s".formatted(
+                    c.slotTime(), scoreOrDash(c.body()), scoreOrDash(c.energy())));
+            }
+        }
+        return List.copyOf(facts);
+    }
+
+    private static String scoreOrDash(Integer score) {
+        return score == null ? "–" : score.toString();
     }
 
     private static List<String> allHealthy(FlagPayloadEnvelope.AllHealthy p) {

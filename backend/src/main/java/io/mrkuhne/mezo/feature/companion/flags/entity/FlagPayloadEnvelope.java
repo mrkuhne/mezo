@@ -18,7 +18,8 @@ public record FlagPayloadEnvelope(
     RecoveryNeeded recoveryNeeded,
     AllHealthy allHealthy,
     LoggingGap loggingGap,
-    MissedWorkouts missedWorkouts
+    MissedWorkouts missedWorkouts,
+    AcuteBadDay acuteBadDay
 ) {
 
     public record SustainedStress(
@@ -57,31 +58,45 @@ public record FlagPayloadEnvelope(
         List<String> missedDays, List<String> plannedDays) {
     }
 
+    /** Spec 2026-09-03 §4 row 6 (rank 1). One entry per qualifying check-in, so the card can name
+     *  the day's pattern rather than reciting a count. */
+    public record AcuteBadDay(
+        int minCheckIns, int bodyOrEnergyAtMost, int qualifyingCount,
+        List<QualifyingCheckIn> qualifyingCheckIns) {
+    }
+
+    public record QualifyingCheckIn(String slotTime, Integer body, Integer energy) {
+    }
+
     public static FlagPayloadEnvelope sustainedStress(SustainedStress p) {
-        return new FlagPayloadEnvelope(p, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(p, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope sleepDebt(SleepDebt p) {
-        return new FlagPayloadEnvelope(null, p, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, p, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope momentumAtRisk(MomentumAtRisk p) {
-        return new FlagPayloadEnvelope(null, null, p, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, p, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope recoveryNeeded(RecoveryNeeded p) {
-        return new FlagPayloadEnvelope(null, null, null, p, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, p, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope allHealthy(AllHealthy p) {
-        return new FlagPayloadEnvelope(null, null, null, null, p, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, p, null, null, null);
     }
 
     public static FlagPayloadEnvelope loggingGap(LoggingGap p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, p, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, p, null, null);
     }
 
     public static FlagPayloadEnvelope missedWorkouts(MissedWorkouts p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, p);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, p, null);
+    }
+
+    public static FlagPayloadEnvelope acuteBadDay(AcuteBadDay p) {
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, p);
     }
 }

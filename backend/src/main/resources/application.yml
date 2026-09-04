@@ -898,6 +898,14 @@ mezo:
         text-hu: "Több tervezett edzésnap is kimaradt egymás után. Ne a teljes hetet akard behozni: tedd vissza a naptárba a következő egyet, és vidd le könnyebbre, ha kell."
         cooldown-hours: 72
         quiet-hours-exempt: false
+      # S6 batch B (bd mezo-d58h.6, spec 2026-09-03 §4 row 6, rank 1): a same-day pattern of low
+      # body/energy check-ins — the most urgent card in the system.
+      - key: acute_bad_day_go_gentle
+        flag: acute_bad_day
+        channel: both
+        text-hu: "Ma többször is jelezted, hogy nehezen megy — a tested vagy az energiád most a padlón van. Nem kell ma teljesíteni: engedd el, ami elengedhető, és keress egy apró dolgot, ami mégis jólesik. Holnap újra nekifuthatsz."
+        cooldown-hours: 48
+        quiet-hours-exempt: false
     # W4.3 (mezo-b3pp.17): the pragmatic profile — "hogyan érdemes Daniellel beszélni"
     profile:
       # Monday 03:45 — after the 03:10 feedback rollups and the 03:30 weekly consolidation rung,

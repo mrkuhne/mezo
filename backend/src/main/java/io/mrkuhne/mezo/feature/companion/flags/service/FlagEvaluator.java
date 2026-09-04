@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.flags.service;
 
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
+import io.mrkuhne.mezo.feature.companion.flags.service.rule.AcuteBadDayRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.AllHealthyRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.LoggingGapRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.MissedWorkoutsRule;
@@ -38,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class FlagEvaluator {
 
+    private final AcuteBadDayRule acuteBadDayRule;
     private final SustainedStressRule sustainedStressRule;
     private final SleepDebtRule sleepDebtRule;
     private final MomentumAtRiskRule momentumAtRiskRule;
@@ -51,6 +53,7 @@ public class FlagEvaluator {
     public List<FlagRaise> evaluate(UUID userId) {
         LocalDate today = LocalDate.now();
         List<FlagRaise> raises = new ArrayList<>();
+        acuteBadDayRule.evaluate(userId, today).ifPresent(raises::add);
         sustainedStressRule.evaluate(userId, today).ifPresent(raises::add);
         sleepDebtRule.evaluate(userId, today).ifPresent(raises::add);
         momentumAtRiskRule.evaluate(userId, today).ifPresent(raises::add);
