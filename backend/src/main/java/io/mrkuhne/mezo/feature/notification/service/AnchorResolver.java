@@ -27,6 +27,7 @@ import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
+import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.DayOfWeek;
@@ -131,6 +132,7 @@ public class AnchorResolver {
 
     private final GymScheduleSlotRepository gymScheduleSlotRepository;
     private final SportScheduleSlotRepository sportScheduleSlotRepository;
+    private final SportSlotSkipService sportSlotSkipService;
     private final WorkoutService workoutService;
     private final SleepAnchorPort sleepAnchorPort;
     private final ObjectProvider<RitualService> ritualServiceProvider;
@@ -188,7 +190,8 @@ public class AnchorResolver {
         }
         for (SportScheduleSlotEntity slot : sportScheduleSlotRepository
                 .findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(owner)) {
-            if (slot.getDayOfWeek() == legacyDayOfWeek) {
+            if (slot.getDayOfWeek() == legacyDayOfWeek
+                    && !sportSlotSkipService.isSkipped(owner, legacyDayOfWeek, slot.getTime(), date)) {
                 events.add(sportSlotEvent(slot));
             }
         }

@@ -82,6 +82,7 @@ public class AdviceCardService {
 
     private final CompanionMessageRepository companionMessageRepository;
     private final AdviceProseGenerator adviceProseGenerator;
+    private final AdviceActionCatalog adviceActionCatalog;
 
     @Transactional
     public Optional<CompanionMessageEntity> deliver(UUID userId, AdviceCandidate candidate) {
@@ -113,7 +114,8 @@ public class AdviceCardService {
         row.setKind(CompanionMessageEntity.KIND_ADVICE);
         row.setContent(CompanionMessageEnvelope.advice(candidate.eyebrow(), prose,
             candidate.adviceKey(), candidate.interventionKey(), candidate.setupKey(),
-            candidate.facts(), candidate.suggestions()));
+            candidate.facts(), candidate.suggestions(),
+            adviceActionCatalog.forCard(userId, candidate.adviceKey())));
         row.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         CompanionMessageEntity saved = companionMessageRepository.saveAndFlush(row);
         log.info("Advice {} delivered for user {}", candidate.adviceKey(), userId);

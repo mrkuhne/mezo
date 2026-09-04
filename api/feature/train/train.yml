@@ -963,6 +963,29 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/train/sport-slot-skips:
+    get:
+      tags: [Train]
+      operationId: listSportSlotSkips
+      summary: Recurring sport-slot occurrences hidden by an applied skip_sport_slot advice action, in [from, to]
+      parameters:
+        - { name: from, in: query, required: true, schema: { type: string, format: date } }
+        - { name: to, in: query, required: true, schema: { type: string, format: date } }
+      responses:
+        '200':
+          description: Skips in range (empty array when none)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SportSlotSkipResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/gym-schedule:
     get:
       tags: [Train]
@@ -3610,6 +3633,23 @@ components:
           type: string
         intensityLabel:
           type: string
+    SportSlotSkipResponse:
+      type: object
+      description: One dated occurrence of a recurring sport slot hidden by skip_sport_slot (mezo-d58h.5)
+      required:
+        - dayOfWeek
+        - time
+        - date
+      properties:
+        dayOfWeek:
+          type: integer
+          description: 0=Hét .. 6=Vas
+        time:
+          type: string
+          description: "HH:mm"
+        date:
+          type: string
+          format: date
     GymScheduleSlotResponse:
       type: object
       required:

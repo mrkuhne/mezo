@@ -1642,6 +1642,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/train/sport-slot-skips:
+    get:
+      tags:
+        - Train
+      operationId: listSportSlotSkips
+      summary: >-
+        Recurring sport-slot occurrences hidden by an applied skip_sport_slot
+        advice action, in [from, to]
+      parameters:
+        - name: from
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Skips in range (empty array when none)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SportSlotSkipResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/train/gym-schedule:
     get:
       tags:
@@ -5748,6 +5784,65 @@ paths:
                   $ref: '#/components/schemas/FeedMessageResponse'
         '401':
           description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/proactive/advice/{id}/apply':
+    post:
+      tags:
+        - Proactive
+      operationId: applyAdviceAction
+      summary: 'Apply one of the advice card''s offered actions (S5, mezo-d58h.5)'
+      description: >-
+        Applies the named action and stamps `applied` onto the card. Idempotent:
+        re-applying the SAME action returns the card unchanged with its original
+        `applied` timestamp and runs no second mutation. A card that has been
+        superseded by a higher-severity card is gone (404), and an action the
+        card does not offer is refused (409) — a client can never invoke a
+        mutation the rule did not put there.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdviceApplyRequest'
+      responses:
+        '200':
+          description: The card with its applied state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FeedMessageResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: No such live advice card for this user (it may have been superseded)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            The card does not offer this action, or a different action was
+            already applied
           content:
             application/json:
               schema:
@@ -12161,6 +12256,25 @@ components:
           type: string
         intensityLabel:
           type: string
+    SportSlotSkipResponse:
+      type: object
+      description: >-
+        One dated occurrence of a recurring sport slot hidden by skip_sport_slot
+        (mezo-d58h.5)
+      required:
+        - dayOfWeek
+        - time
+        - date
+      properties:
+        dayOfWeek:
+          type: integer
+          description: 0=Hét .. 6=Vas
+        time:
+          type: string
+          description: 'HH:mm'
+        date:
+          type: string
+          format: date
     GymScheduleSlotResponse:
       type: object
       required:
@@ -17540,6 +17654,41 @@ components:
             (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory/Person)
         label:
           type: string
+    FeedAction:
+      type: object
+      required:
+        - key
+        - label
+      properties:
+        key:
+          type: string
+          description: >-
+            Which mutation the button applies (S5, mezo-d58h.5). The apply
+            endpoint dispatches on this.
+          enum:
+            - lighten_tomorrow
+            - skip_sport_slot
+            - shift_sleep_anchor
+        label:
+          type: string
+          description: 'The button''s Hungarian caption — rule-provided, never model-written.'
+        params:
+          type: object
+          additionalProperties: true
+          description: >-
+            The mutation's parameters, ALWAYS produced by the deterministic rule
+            (spec §6). The model can never invent an action or a number.
+    FeedApplied:
+      type: object
+      required:
+        - actionKey
+        - at
+      properties:
+        actionKey:
+          type: string
+        at:
+          type: string
+          format: date-time
     FeedMessageResponse:
       type: object
       required:
@@ -17603,6 +17752,15 @@ components:
             advice rows.
           items:
             type: string
+        actions:
+          type: array
+          description: >-
+            Up to two action buttons offered by this advice card (S5,
+            mezo-d58h.5). Present only on advice rows.
+          items:
+            $ref: '#/components/schemas/FeedAction'
+        applied:
+          $ref: '#/components/schemas/FeedApplied'
         generatedAt:
           type: string
           format: date-time
@@ -17751,6 +17909,17 @@ components:
         decision:
           type: string
           pattern: ^(accept|dismiss)$
+    AdviceApplyRequest:
+      type: object
+      required:
+        - actionKey
+      properties:
+        actionKey:
+          type: string
+          enum:
+            - lighten_tomorrow
+            - skip_sport_slot
+            - shift_sleep_anchor
     ExperimentResponse:
       type: object
       required:

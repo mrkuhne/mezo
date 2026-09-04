@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.proactive.service.SetupCheckService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
+import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.LocalDate;
@@ -45,6 +46,7 @@ class PlanFeasibilityIT extends AbstractIntegrationTest {
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private SportSlotSkipPopulator sportSlotSkipPopulator;
 
     @Test
     void testRunFor_shouldEmitTheFeasibilityCard_whenEveningSportEndsTooLateForTheMorningSlot() {
@@ -277,5 +279,63 @@ class PlanFeasibilityIT extends AbstractIntegrationTest {
         assertThat(card).isPresent();
         assertThat(card.orElseThrow().getContent().setupKey())
             .isEqualTo(SetupCheckService.CHECK_PLAN_FEASIBILITY);
+    }
+
+    @Test
+    void testEvaluate_shouldStopBindingTheSlot_whenItsOwnNextOccurrenceIsSkipped() {
+        // Task 12 (mezo-d58h.5): a skip on the sport slot's IDENTITY (weekday + time + date) must
+        // stop it binding the verdict — same fixture shape as the malformed-slot test above (Friday
+        // sport ⇒ Saturday gym, 75' misfit) but the Friday slot is skipped instead of malformed.
+        // The calculator has no per-slot date of its own, so the slot's occurrence is resolved to
+        // the NEXT Friday on/after `today` — see PlanFeasibilityCalculator.worstSportCandidate's
+        // comment for why that, and not any Friday ever, is the date checked.
+        UUID owner = userPopulator.createUser().getId();
+        sleepGoalPopulator.goal(owner, 480, "WAKE", "06:00", 15);
+        trainPopulator.createGymSlot(owner, 5, "07:00"); // Saturday 07:00 — pairs with Friday's sport slot
+        trainPopulator.createScheduleSlot(owner, 4, "21:00", 120, "training"); // Fri ends 23:00, +30' = 23:30
+        // Absent the skip below, Friday's following day (Saturday) is a real gym morning:
+        // 23:30 − 22:15 = 75' > 45' ⇒ infeasible (proven by the malformed-slot test above).
+
+        LocalDate today = LocalDate.now();
+        int todayDow = today.getDayOfWeek().getValue() - 1; // 0=Monday..6=Sunday, legacy convention
+        LocalDate nextFriday = today.plusDays(Math.floorMod(4 - todayDow, 7));
+        sportSlotSkipPopulator.createSkip(owner, 4, "21:00", nextFriday);
+
+        Optional<PlanFeasibilityCalculator.Verdict> verdict =
+            planFeasibilityCalculator.evaluate(owner, today);
+
+        // The skipped slot was the only sport slot and there are no logged bedtimes, so with the
+        // sport half silenced neither half has anything left to say — the check stays honestly
+        // silent (spec §7) rather than inventing a verdict.
+        assertThat(verdict).isEmpty();
+        assertThat(setupCheckService.runFor(owner)).isEmpty();
+    }
+
+    @Test
+    void testEvaluate_shouldNotBeAffectedByASkipOnADifferentWeeksOccurrenceOfTheSameWeekday() {
+        // Proves the next-occurrence rule is actually implemented, not a weekday-wide match: a
+        // skip dated on a DIFFERENT Friday (one week later than the Friday the slot resolves to)
+        // must leave the verdict exactly as infeasible as the unskipped case. A weekday-wide (date
+        // ignoring) implementation would incorrectly silence this too.
+        UUID owner = userPopulator.createUser().getId();
+        sleepGoalPopulator.goal(owner, 480, "WAKE", "06:00", 15);
+        trainPopulator.createGymSlot(owner, 5, "07:00");
+        trainPopulator.createScheduleSlot(owner, 4, "21:00", 120, "training"); // Fri ends 23:00, +30' = 23:30
+
+        LocalDate today = LocalDate.now();
+        int todayDow = today.getDayOfWeek().getValue() - 1;
+        LocalDate nextFriday = today.plusDays(Math.floorMod(4 - todayDow, 7));
+        LocalDate aDifferentFriday = nextFriday.plusWeeks(1); // same weekday, different week
+        sportSlotSkipPopulator.createSkip(owner, 4, "21:00", aDifferentFriday);
+
+        Optional<PlanFeasibilityCalculator.Verdict> verdict =
+            planFeasibilityCalculator.evaluate(owner, today);
+
+        assertThat(verdict).isPresent();
+        assertThat(verdict.orElseThrow().feasible()).isFalse();
+        assertThat(verdict.orElseThrow().constraintSource())
+            .isEqualTo(PlanFeasibilityCalculator.SOURCE_SPORT);
+        assertThat(verdict.orElseThrow().misfitMin()).isEqualTo(75);
+        assertThat(verdict.orElseThrow().bindingDay()).isEqualTo(4);
     }
 }
