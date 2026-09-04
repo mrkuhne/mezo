@@ -42,8 +42,8 @@ import org.springframework.transaction.annotation.Transactional;
  * There is exactly ONE day math in the codebase and it lives in that engine — this service holds
  * no formula at all any more: the four legacy {@code sleep/fuel/checkin/activity} sub-score methods
  * were deleted here and their semantics live on in the engine's six dimensions (the sleep formula
- * bit-for-bit, verified in Task 4). {@code MeWeekProperties} consequently has no reader left — it
- * is retired with the rest of the legacy documentation sweep (Task 11), not silently here.
+ * bit-for-bit, verified in Task 4). The legacy formula's tuning record {@code MeWeekProperties}
+ * lost its last reader here and was deleted with its yml block (mezo-jcpt.7).
  *
  * <p><b>Legacy wire mapping (binding).</b> {@link DaySubscores} stays on {@link DayScore} for the
  * weekly trend ({@code WeeklyScoreService}'s persisted per-domain averages and the {@code me-week}

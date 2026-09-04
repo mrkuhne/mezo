@@ -1317,7 +1317,7 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
   the codebase** — it lives in `DayEvaluationEngine` — replacing the legacy 4-subscore formula
   described in older revisions of this doc (the `sleepSubscore`/`fuelSubscore`/`checkinSubscore`/
   `activitySubscore` methods are **deleted**; `MeWeekProperties`, the legacy formula's config
-  record, is retired with them — the day target it once held is `DayEvaluationProperties`'s own
+  record, was DELETED with them (`mezo-jcpt.7`) — the day target it once held is `DayEvaluationProperties`'s own
   `sleepTargetH` now).
   - **`DayEvaluationEngine`** (`service/DayEvaluationEngine.java`) — a PURE function
     (`DayInputs -> DayEvaluation`, no repository access, the `MealScoringService` house style) over
@@ -3492,7 +3492,7 @@ NOT another `CompanionProperties` nested component), picked up by `@Configuratio
 | `nutrition.protein-under-band` / `protein-slope` | `0.05` / `2.5` | protein deficit band + falloff; a protein SURPLUS is forgiven (fitness policy) |
 | `nutrition.carb-fat-band` / `carb-fat-slope` | `0.15` / `1.5` | symmetric carb+fat tolerance + falloff |
 | `workout-day-kcal-widen` | `150` (kcal) | widens the kcal-fit upper target on a workout day |
-| `sleep-target-h` | `7.5` | the day evaluation's ONLY sleep target (the legacy `MeWeekProperties.sleepTargetH` — `8.0` — is retired with that record) |
+| `sleep-target-h` | `7.5` | the day evaluation's ONLY sleep target (the legacy `MeWeekProperties.sleepTargetH` — `8.0` — went with that record, deleted in `mezo-jcpt.7`) |
 | `rhythm-window-days` | `7` | how many prior days the `rhythm` dimension (and its rhythm-free-base recompute, above) looks back |
 | `rhythm-min-days` | `3` | minimum prior days with a base score before `rhythm` reports `DONE` rather than `NO_DATA` |
 | `log-timely-min` | `120` (minutes) | a meal counts "logged in time" within this many minutes of `eatenAt` (circular clock distance) |
@@ -5471,7 +5471,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `DAY_REVIEW_SWITCH` (`mezo.feature.day-review.enabled`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609031300_mezo-jcpt.4_create_day_review.sql` (the table) + `202609031200_mezo-jcpt.4_weekly_score_cache_invalidation.sql` (the one-off `weekly_score` purge).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/WeeklyScoreRepository.java` — `latestScoreInputWrittenAt` widened to probe `water_log` (§4 accepted-limitation note on the training schedule tables' exclusion).
-- **`config/MeWeekProperties.java` is now DEAD** — the legacy formula it configured is deleted (§3); no code reads it any more (`DayScoreService`'s javadoc flags this explicitly). Left in place, not deleted, by this documentation-only slice.
+- **`config/MeWeekProperties.java` is DELETED** (`mezo-jcpt.7`) — the legacy formula it configured is gone (§3), and a full-repo grep found zero readers: no injection, no field read, no test, no `@Value` (ArchUnit forbids it), no env-var/compose/CI mapping. The record and its `mezo.companion.me-week` block in `application.yml` were removed **together**: the record's components are primitives with no defaults, so the two are a matched pair and a yml-only removal would fail validation in every Spring context. The `me-week` **contract** (the `api/feature/me-week` fragment, the OpenAPI tag, `MeWeekController`/`MeWeekService`, the `MeWeekSubscores` wire shape) is untouched — only the config prefix retired. The `sleep-target-h: 8.0` it carried has no successor: the day evaluation's only sleep target is `DayEvaluationProperties.sleepTargetH` (`7.5`), and `kcal-band`/`xp-baseline` had no reader left at all.
 - Tests: `feature/companion/service/{DayEvaluationEngineTest,DayScoreServiceIT,DayReviewServiceTest}.java`, `feature/companion/config/DayEvaluationPropertiesTest.java`, `feature/companion/controller/{DayEvaluationApiIT,DayEvaluationSwitchOffApiIT}.java`, `feature/companion/DayReviewRepositoryIT.java`, `support/populator/DayReviewPopulator.java` — §8.
 - **FE side** — `frontend/src/data/me/{dayEvaluation.ts,dayEvaluationApi.ts,dayEvaluationHooks.ts}` (dual-mode read + 4 named mock fixtures) + `frontend/src/features/me/pages/WeekDayPage.tsx` + `frontend/src/features/me/components/week/{DayDimensionTile,DayReviewCard}.tsx` + `frontend/src/features/me/logic/weekDay.ts` (`DAY_DIMENSIONS`/`doneDimensionCount`) — documented in [me.md](me.md) (the day page section).
 
