@@ -10,18 +10,23 @@ import java.util.Map;
  * A V3.1 felszínre-engedő kapu tiszta függvényként (a {@link PearsonCorrelation} precedense: se
  * Spring, se DB, se LLM). Ugyanezt futtatja az éjszakai {@code PatternDetectionService} és az élő
  * {@code PatternMonitorService} — ez garantálja, hogy a monitor nem tud mást mondani, mint amit a
- * job tenne. A {@code FROZEN} szándékosan NEM verdikt: az a perzisztált sor státuszának
- * következménye, nem a matematikáé.
+ * job tenne. A teljes mintaméret után a bináris A metrikák mindkét csoportját külön is kapuzza,
+ * mielőtt Pearsont számolna. A {@code FROZEN} szándékosan NEM verdikt: az a perzisztált sor
+ * státuszának következménye, nem a matematikáé.
  */
 final class PatternGate {
 
-    enum Verdict { LIVE, FEW_DAYS, NO_DATA, DEGENERATE }
+    enum Verdict { LIVE, FEW_DAYS, NO_DATA, DEGENERATE, IMBALANCED_GROUPS }
 
     /** Melyik illesztett széria konstans — csak {@code DEGENERATE} esetén értelmezett. */
     enum Side { A, B, BOTH }
 
-    /** {@code result} csak LIVE-nál, {@code constantSide} csak DEGENERATE-nél nem null. */
-    record Outcome(Verdict verdict, int alignedDays, PearsonCorrelation.Result result, Side constantSide) {
+    /**
+     * {@code result} only exists for LIVE, {@code constantSide} only for DEGENERATE, while the
+     * group counts exist only when metric A is binary and has reached the total-size gate.
+     */
+    record Outcome(Verdict verdict, int alignedDays, PearsonCorrelation.Result result,
+                   Side constantSide, Integer groupZeroDays, Integer groupOneDays) {
     }
 
     private PatternGate() {
@@ -43,7 +48,8 @@ final class PatternGate {
      * A hívó felelőssége, hogy a két térképet a saját ablakára vágja (a job ezt teszi).
      */
     static Outcome evaluate(Map<LocalDate, Double> seriesA, Map<LocalDate, Double> seriesB,
-                            int lagDays, int minN) {
+                            int lagDays, int minN, int minGroupN,
+                            MetricValueKind metricAValueKind) {
         List<double[]> aligned = new ArrayList<>();
         seriesA.forEach((day, a) -> {
             Double b = seriesB.get(day.plusDays(lagDays));
@@ -53,16 +59,30 @@ final class PatternGate {
         });
         int n = aligned.size();
         if (n == 0) {
-            return new Outcome(Verdict.NO_DATA, 0, null, null);
+            return new Outcome(Verdict.NO_DATA, 0, null, null, null, null);
         }
         if (n < minN) {
-            return new Outcome(Verdict.FEW_DAYS, n, null, null);
+            return new Outcome(Verdict.FEW_DAYS, n, null, null, null, null);
+        }
+        Integer groupZeroDays = null;
+        Integer groupOneDays = null;
+        if (metricAValueKind == MetricValueKind.BINARY) {
+            groupZeroDays = (int) aligned.stream().filter(values -> values[0] == 0.0).count();
+            groupOneDays = (int) aligned.stream().filter(values -> values[0] == 1.0).count();
+            if (groupZeroDays < minGroupN || groupOneDays < minGroupN) {
+                return new Outcome(Verdict.IMBALANCED_GROUPS, n, null, null,
+                        groupZeroDays, groupOneDays);
+            }
         }
         double[] xs = aligned.stream().mapToDouble(v -> v[0]).toArray();
         double[] ys = aligned.stream().mapToDouble(v -> v[1]).toArray();
+        Integer finalGroupZeroDays = groupZeroDays;
+        Integer finalGroupOneDays = groupOneDays;
         return PearsonCorrelation.correlate(xs, ys)
-                .map(result -> new Outcome(Verdict.LIVE, n, result, null))
-                .orElseGet(() -> new Outcome(Verdict.DEGENERATE, n, null, constantSide(xs, ys)));
+                .map(result -> new Outcome(Verdict.LIVE, n, result, null,
+                        finalGroupZeroDays, finalGroupOneDays))
+                .orElseGet(() -> new Outcome(Verdict.DEGENERATE, n, null, constantSide(xs, ys),
+                        finalGroupZeroDays, finalGroupOneDays));
     }
 
     /**

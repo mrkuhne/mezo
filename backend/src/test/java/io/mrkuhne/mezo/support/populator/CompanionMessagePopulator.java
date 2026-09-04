@@ -70,6 +70,20 @@ public class CompanionMessagePopulator {
         return companionMessageRepository.saveAndFlush(entity);
     }
 
+    /** S4 advice card (bd mezo-d58h.4) — kind + both keys + the structured payload in one shot. */
+    public CompanionMessageEntity createAdvice(
+            UUID owner, LocalDate date, String adviceKey, String interventionKey, String eyebrow,
+            String prose, List<String> facts, List<String> suggestions, Instant generatedAt) {
+        CompanionMessageEntity entity = new CompanionMessageEntity();
+        entity.setCreatedBy(owner);
+        entity.setMessageDate(date);
+        entity.setKind(CompanionMessageEntity.KIND_ADVICE);
+        entity.setContent(CompanionMessageEnvelope.advice(
+            eyebrow, prose, adviceKey, interventionKey, null, facts, suggestions));
+        entity.setGeneratedAt(generatedAt);
+        return companionMessageRepository.saveAndFlush(entity);
+    }
+
     /** Inserts natively, so an unknown kind reaches the DB CHECK instead of being stopped by
      *  the entity's own {@code @NotNull}/length constraints — the {@code FlagLogPopulator.rawInsert}
      *  idiom, pinning that {@code ck_companion_message_kind} really lives in the schema. */

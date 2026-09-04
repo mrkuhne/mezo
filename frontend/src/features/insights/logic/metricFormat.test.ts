@@ -1,4 +1,4 @@
-import { axisEndLabels, formatMetricValue, formatP, formatR, lastSeenLabel } from '@/features/insights/logic/metricFormat'
+import { axisEndLabels, binaryGroupLabels, formatMetricValue, formatP, formatR, lastSeenLabel } from '@/features/insights/logic/metricFormat'
 import { addDays, huMonthDay, localDateString } from '@/shared/lib/dates'
 
 describe('formatMetricValue', () => {
@@ -41,6 +41,26 @@ describe('axisEndLabels', () => {
 
   test('everything else keeps the generic ends', () => {
     expect(axisEndLabels('sleep-quality')).toEqual({ low: 'alacsony', high: 'magas' })
+  })
+})
+
+describe('binaryGroupLabels', () => {
+  test('weekend has axis and sentence forms for both groups', () => {
+    expect(binaryGroupLabels('weekend')).toEqual({
+      zero: { axis: 'hétköznap', day: 'hétköznapi' },
+      one: { axis: 'hétvége', day: 'hétvégi' },
+    })
+  })
+
+  test('ritual and unknown binaries have honest fallbacks', () => {
+    expect(binaryGroupLabels('ritual-closed')).toEqual({
+      zero: { axis: 'kimaradt', day: 'lezárás nélküli' },
+      one: { axis: 'megvolt', day: 'lezárt esti' },
+    })
+    expect(binaryGroupLabels('unknown')).toEqual({
+      zero: { axis: '0-s csoport', day: '0-s csoportbeli' },
+      one: { axis: '1-es csoport', day: '1-es csoportbeli' },
+    })
   })
 })
 

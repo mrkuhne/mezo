@@ -33,12 +33,20 @@ public class InterventionEventListener {
         try {
             interventionService.deliverForFlag(event.userId(), event.flagKey());
         } catch (DataIntegrityViolationException e) {
-            // Expected under concurrency: two same-day raises can both pass the check-then-insert
-            // race in InterventionService#deliverForFlag before either commits — the partial unique
-            // index (one card per day) is the real arbiter, and the loser's insert fails here. Not
-            // a real failure, so info + no stack trace (the generic warn below is for actual bugs).
-            log.info("Intervention delivery for user {} flag {} lost the same-day race: "
-                    + "today's card already delivered by another raise", event.userId(), event.flagKey());
+            // NOT expected any more (bd mezo-d58h.4): two same-day raises used to be able to both
+            // pass the check-then-insert race in AdviceCardService#deliver before either committed,
+            // with the partial unique index (one card per day) as the real arbiter and the loser's
+            // insert failing here. Delivery is now serialized per user by the transaction-scoped
+            // advisory lock AdviceCardService#deliver takes via CompanionMessageRepository
+            // .lockForDelivery — the index is a backstop, not the arbiter. A violation on this path
+            // today means that serialization stopped working (lock removed, refactored behind a
+            // REQUIRES_NEW boundary, or a non-Postgres datasource where pg_advisory_xact_lock is a
+            // no-op) — warn loudly, with the stack trace, so a regression here is loud rather than
+            // silently swallowed the way the pre-fix "expected race" case used to be.
+            log.warn("Intervention delivery for user {} flag {} hit the companion_message unique "
+                    + "index — this should not happen any more now that AdviceCardService.deliver "
+                    + "is serialized per user; investigate as a possible lock regression",
+                event.userId(), event.flagKey(), e);
         } catch (Exception e) {
             log.warn("Intervention delivery failed for user {} flag {}", event.userId(), event.flagKey(), e);
         }

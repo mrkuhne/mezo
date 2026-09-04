@@ -33,6 +33,7 @@ public class GoalService {
     private final GoalMapper goalMapper;
     private final GoalEngineService goalEngineService;
     private final GoalFeasibilityService goalFeasibilityService;
+    private final GoalInvariantValidator goalInvariantValidator;
     private final ApplicationEventPublisher eventPublisher;
 
     /** Active goal first, then by start date desc (DB ordering, service hoists active). */
@@ -120,13 +121,9 @@ public class GoalService {
     }
 
     private void applyUpsert(GoalEntity e, GoalUpsertRequest req) {
-        // Reject an inverted window (targetDate < startDate) up front so it never reaches
-        // GoalTimelineService, where a negative window length would blow up with a 500.
-        if (req.getStartDate() != null && req.getTargetDate() != null
-                && req.getTargetDate().isBefore(req.getStartDate())) {
-            throw new SystemRuntimeErrorException(
-                SystemMessage.field("VALIDATION_INVALID_VALUE", "targetDate").build(), HttpStatus.BAD_REQUEST);
-        }
+        goalInvariantValidator.validate(
+            req.getTrajectory(), req.getStartWeightKg(), req.getTargetWeightKg(),
+            req.getStartDate(), req.getTargetDate());
         // segmentOverrides (deload accepts, slice 4) are keyed by 1-based GOAL week, derived from
         // startDate. A startDate change renumbers every week, so an override left in place would
         // silently retarget the wrong week — clear it here rather than carry stale weeks forward

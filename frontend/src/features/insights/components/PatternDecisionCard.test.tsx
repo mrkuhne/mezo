@@ -93,7 +93,7 @@ test('a live pair still shows the finding sentence, not the verdict', () => {
     </MemoryRouter>,
   )
   expect(screen.queryByText(/nap adat ebből/)).not.toBeInTheDocument()
-  expect(screen.getByText(/Igen:|Meglepő:/)).toBeInTheDocument()
+  expect(screen.getByText(/Eddig ebbe az irányba mutatnak a napjaid:/)).toBeInTheDocument()
 })
 
 test('showDetailLink={false} suppresses the self-referential detail link (mezo-tk88.5 review fix)', () => {

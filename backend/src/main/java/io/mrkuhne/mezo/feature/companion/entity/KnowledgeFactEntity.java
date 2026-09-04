@@ -1,20 +1,25 @@
 package io.mrkuhne.mezo.feature.companion.entity;
 
+import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryProvenanceEnvelope;
 import io.mrkuhne.mezo.techcore.persistence.OwnedEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.SQLDelete;
 import org.hibernate.annotations.SQLRestriction;
+import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 /** L3 memory: a confirmed, long-lived fact about the user — top-N of these ride in every system prompt (V1.1). */
@@ -66,4 +71,32 @@ public class KnowledgeFactEntity extends OwnedEntity {
 
     @Column(name = "last_reinforced_at")
     private Instant lastReinforcedAt;
+
+    /** Pinned active facts remain eligible even when lexical relevance is weak. */
+    @Column(nullable = false)
+    private boolean pinned;
+
+    @Column(name = "valid_from")
+    private LocalDate validFrom;
+
+    @Column(name = "valid_to")
+    private LocalDate validTo;
+
+    /** A superseded fact stays auditable but ordinary retrieval excludes it. */
+    @Column(name = "superseded_by", columnDefinition = "uuid")
+    private UUID supersededBy;
+
+    /** Unresolved contradictions remain linked so retrieval can surface both sides. */
+    @Column(name = "conflicts_with", columnDefinition = "uuid")
+    private UUID conflictsWith;
+
+    @NotNull
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(nullable = false, columnDefinition = "jsonb")
+    private MemoryProvenanceEnvelope provenance = MemoryProvenanceEnvelope.empty();
+
+    @AssertTrue(message = "valid_to must not precede valid_from")
+    public boolean isValidityRangeValid() {
+        return validFrom == null || validTo == null || !validTo.isBefore(validFrom);
+    }
 }

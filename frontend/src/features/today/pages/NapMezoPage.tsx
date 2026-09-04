@@ -220,17 +220,35 @@ export function NapMezoPage() {
         <p key={j} className="txt"><SafeMarkdown text={p} /></p>
       ))}
       {m.refs.length > 0 && <RefChips refs={m.refs} eyebrow="Amire épült" />}
+      {m.suggestions && m.suggestions.length > 0 && (
+        <ul className="nap-mzmsg-sug">
+          {m.suggestions.map((s, j) => (
+            <li key={j}><SafeMarkdown text={s} /></li>
+          ))}
+        </ul>
+      )}
+      {m.facts && m.facts.length > 0 && (
+        <>
+          <div className="nap-mzmsg-meta">Miből gondolom</div>
+          <ul className="nap-mzmsg-facts">
+            {m.facts.map((f, j) => (
+              <li key={j}>{f}</li>
+            ))}
+          </ul>
+        </>
+      )}
       {m.meta && <div className="nap-mzmsg-meta">{m.meta}</div>}
       {/* Chips CSAK perzisztált AI-artifactre (mezo-kr9v); a „Segített?" felirat a
-          W5.2 intervention-változat (mezo-b3pp.19) — a sheet szerződése változatlanul. */}
+          W5.2 intervention-változat (mezo-b3pp.19) ÉS az S4 advice-kártya (mezo-d58h.4) —
+          a sheet szerződése változatlanul. */}
       {m.artifactId != null && (
         <div className="mt-sm">
-          {m.kind === 'intervention' && <div className="nap-mzmsg-meta">Segített?</div>}
+          {(m.kind === 'intervention' || m.kind === 'advice') && <div className="nap-mzmsg-meta">Segített?</div>}
           <FeedbackChips
             key={m.artifactId}
             value={feedback.get(m.artifactId)}
             onVote={(verdict, reason) => feedback.vote(m.artifactId!, verdict, reason)}
-            label={m.kind === 'intervention' ? 'a közbelépésről' : 'az üzenetről'}
+            label={m.kind === 'intervention' || m.kind === 'advice' ? 'a közbelépésről' : 'az üzenetről'}
           />
         </div>
       )}

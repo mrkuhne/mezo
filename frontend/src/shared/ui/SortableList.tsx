@@ -17,17 +17,22 @@ import {
 } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { Icon } from '@/shared/ui/Icon'
+import { cn } from '@/shared/lib/cn'
 
 export interface SortableItem {
   id: string
   label?: string
 }
 
-interface SortableListProps<T extends SortableItem> {
+export interface SortableListProps<T extends SortableItem> {
   items: T[]
   onReorder: (ids: string[]) => void
   renderItem: (item: T, index: number) => ReactNode
   disabled?: boolean
+  /** 'focus' hides the ▲▼ reorder buttons visually until keyboard-focused (a11y-only
+   *  affordance for prototypes whose row design has no chevrons). Defaults to 'always'
+   *  so every existing consumer stays unchanged. */
+  chevrons?: 'always' | 'focus'
 }
 
 export function SortableList<T extends SortableItem>({
@@ -35,6 +40,7 @@ export function SortableList<T extends SortableItem>({
   onReorder,
   renderItem,
   disabled = false,
+  chevrons = 'always',
 }: SortableListProps<T>) {
   const ids = items.map((i) => i.id)
 
@@ -65,6 +71,7 @@ export function SortableList<T extends SortableItem>({
               index={index}
               count={items.length}
               disabled={disabled}
+              chevrons={chevrons}
               moveUp={() => onReorder(arrayMove(ids, index, index - 1))}
               moveDown={() => onReorder(arrayMove(ids, index, index + 1))}
             >
@@ -83,6 +90,7 @@ interface SortableRowProps {
   index: number
   count: number
   disabled: boolean
+  chevrons: 'always' | 'focus'
   children: ReactNode
   moveUp: () => void
   moveDown: () => void
@@ -94,6 +102,7 @@ function SortableRow({
   index,
   count,
   disabled,
+  chevrons,
   children,
   moveUp,
   moveDown,
@@ -160,7 +169,10 @@ function SortableRow({
         {children}
       </div>
 
-      <div className="row gap-sm" style={{ alignItems: 'center' }}>
+      <div
+        className={cn('row gap-sm', 'srt-chev', chevrons === 'focus' && 'srt-chev-focus')}
+        style={{ alignItems: 'center' }}
+      >
         <button
           type="button"
           aria-label={`${label} feljebb`}

@@ -4,12 +4,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import jakarta.validation.Validator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 class CompanionPropertiesIT extends AbstractIntegrationTest {
 
     @Autowired private CompanionProperties properties;
+    @Autowired private Validator validator;
 
     @Test
     void testLlmConfig_shouldBindModelTiersFromYaml_whenContextStarts() {
@@ -79,6 +81,7 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.patterns().cron()).isEqualTo("0 40 2 * * *");
         assertThat(properties.patterns().lookbackDays()).isEqualTo(60);
         assertThat(properties.patterns().minN()).isEqualTo(8);
+        assertThat(properties.patterns().minGroupN()).isEqualTo(3);
         assertThat(properties.patterns().reinforceCooldownDays()).isEqualTo(7);
         assertThat(properties.patterns().loadGymKgPerMin()).isEqualTo(100); // V3.4 derivált terhelés-skála
         assertThat(properties.patterns().pairs()).hasSize(29); // V3.4 katalógus (8 v1 + 21 új)
@@ -89,6 +92,18 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.patterns().pairs().getFirst().metricA())
                 .isEqualTo(io.mrkuhne.mezo.feature.companion.service.MetricKey.SLEEP_QUALITY);
         assertThat(properties.patterns().pairs().getFirst().lagDays()).isEqualTo(1);
+    }
+
+    @Test
+    void testPatternsConfig_shouldRejectGroupMinimumBelowThree_whenValidated() {
+        CompanionProperties.Patterns configured = properties.patterns();
+        CompanionProperties.Patterns invalid = new CompanionProperties.Patterns(
+                configured.cron(), configured.lookbackDays(), configured.minN(), 2,
+                configured.reinforceCooldownDays(), configured.loadGymKgPerMin(), configured.pairs());
+
+        assertThat(validator.validate(invalid))
+                .anySatisfy(violation ->
+                        assertThat(violation.getPropertyPath().toString()).isEqualTo("minGroupN"));
     }
 
     @Test

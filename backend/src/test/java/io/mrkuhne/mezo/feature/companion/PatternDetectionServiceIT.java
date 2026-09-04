@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.PatternDetectionService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
+import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -19,8 +20,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
@@ -43,6 +47,7 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
     @Autowired private UserPopulator userPopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
+    @Autowired private MealPopulator mealPopulator;
 
     /** Stress i ↔ quality inversely — a clean negative correlation over 10 finished days. */
     private void seedAntiCorrelatedDays(UUID owner, int days) {
@@ -52,6 +57,32 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
             int quality = 6 - stress;
             checkInPopulator.createCheckIn(owner, day, "08:00", 3, stress, null);
             sleepLogPopulator.createSleepLog(owner, day, new BigDecimal("7.0"), quality);
+        }
+    }
+
+    private void seedImbalancedWeekendMeals(UUID owner) {
+        int weekdays = 0;
+        int weekends = 0;
+        int index = 0;
+        LocalDate day = LocalDate.now().minusDays(1);
+        while (weekdays < 8 || weekends < 1) {
+            boolean weekend = day.getDayOfWeek() == DayOfWeek.SATURDAY
+                    || day.getDayOfWeek() == DayOfWeek.SUNDAY;
+            boolean take = weekend ? weekends < 1 : weekdays < 8;
+            if (take) {
+                LocalTime time = LocalTime.of(10 + index, index * 7 % 60);
+                Instant loggedAt = day.atTime(time).atZone(ZoneId.systemDefault()).toInstant();
+                mealPopulator.createMealWithItems(owner, day, "dinner", loggedAt,
+                        List.of(new MealPopulator.Line(
+                                "Pattern fixture", "500", "30", "45", "18", (short) 2)));
+                if (weekend) {
+                    weekends++;
+                } else {
+                    weekdays++;
+                }
+                index++;
+            }
+            day = day.minusDays(1);
         }
     }
 
@@ -121,6 +152,40 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
 
         assertThat(patternRepository
                 .findByCreatedByAndKindAndPairKeyAndDeletedFalse(owner, PatternEntity.KIND_STATISTICAL, PAIR_KEY))
+                .isEmpty();
+    }
+
+    @Test
+    void testDetect_shouldNotCreatePattern_whenBinaryGroupsAreImbalanced() {
+        UUID owner = userPopulator.createUser().getId();
+        seedImbalancedWeekendMeals(owner);
+
+        patternDetectionService.detect(owner);
+
+        assertThat(patternRepository.findByCreatedByAndKindAndPairKeyAndDeletedFalse(
+                owner, PatternEntity.KIND_STATISTICAL, "weekend~late-meal-hour")).isEmpty();
+    }
+
+    @Test
+    void testDetect_shouldNotRefreshProposedPattern_whenBinaryGroupsBecomeImbalanced() {
+        UUID owner = userPopulator.createUser().getId();
+        seedImbalancedWeekendMeals(owner);
+        PatternEntity proposed = patternPopulator.statistical(
+                owner, "weekend~late-meal-hour", PatternEntity.STATUS_PROPOSED);
+        BigDecimal frozenR = proposed.getR();
+        Integer frozenN = proposed.getN();
+        BigDecimal frozenP = proposed.getP();
+        Instant frozenDetectedAt = proposed.getLastDetectedAt();
+
+        patternDetectionService.detect(owner);
+
+        PatternEntity after = patternRepository.findById(proposed.getId()).orElseThrow();
+        assertThat(after.getR()).isEqualByComparingTo(frozenR);
+        assertThat(after.getN()).isEqualTo(frozenN);
+        assertThat(after.getP()).isEqualByComparingTo(frozenP);
+        assertThat(after.getLastDetectedAt()).isEqualTo(frozenDetectedAt);
+        assertThat(patternEventRepository
+                .findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(owner, proposed.getId()))
                 .isEmpty();
     }
 

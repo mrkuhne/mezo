@@ -27,6 +27,13 @@ const sleepLogFixed: SleepEntry[] = [
 // A skip-ág is MÁSOLATOT ad vissza: a `.sort()` helyben rendez, tehát a nyers ternary
 // magát a modul-szintű `*Fixed` konstanst mutálná (mezo-tzid).
 const todayIso = localDateString()
+
+// mezo-7vdm #6: az alvásnaplót SZÁNDÉKOSAN NEM hidaljuk át, a súlynaplóval ellentétben.
+// Az alvás-felületek DARABSZÁM szerint ablakoznak a legutóbbi éjszakákra (nem dátum
+// szerint), ezért a fix farok és a mai sor közti lyuk ott nem is látszik — viszont a
+// hídéjszakák kiszorítanák a kézzel írt, hypnogramos demó-éjszakákat generikus töltelékkel,
+// és a fázis-/REM-kártyák kiürülnének. A /me/suly heti csoportosítása ezzel szemben DÁTUM
+// szerint csoportosít, ott a lyuk valódi tünet — a hidat ezért csak a súlynapló kapja.
 export const sleepLog: SleepEntry[] = (
   sleepLogFixed.some((e) => e.date === todayIso)
     ? [...sleepLogFixed]

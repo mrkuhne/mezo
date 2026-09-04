@@ -96,7 +96,7 @@ TanStack Query · Vitest/RTL · Playwright · Mozaik 2.0.
 - Error: `GOAL_DIRECTION_TARGET_CONFLICT` (`targetWeightKg`) és `GOAL_WINDOW_TOO_SHORT`
   (`targetDate`).
 
-- [ ] **Step 1: Írd meg a három regressziós RED tesztet**
+- [x] **Step 1: Írd meg a három regressziós RED tesztet**
 
 `GoalContractIT` HTTP-n bizonyítsa a cross-field validációt:
 
@@ -122,7 +122,7 @@ maradjon proposed. `GoalEvaluationServiceIT` populátoron át mentsen legacy bul
 sort, tegyen rá régi prescriptiont, majd `goalEngineService.evaluate(...)` után ellenőrizze, hogy
 `goal.prescription == null` és nem keletkezik új suggestion.
 
-- [ ] **Step 2: Futtasd a RED teszteket**
+- [x] **Step 2: Futtasd a RED teszteket**
 
 ```bash
 cd backend && ./mvnw clean test \
@@ -133,7 +133,7 @@ cd backend && ./mvnw clean test \
 Várt: a cross-field esetek elfogadódnak, a phase accept trajektóriát fordít, a legacy evaluate
 veszélyes prescriptiont hagy/készít — a teszt a megfelelő okból piros.
 
-- [ ] **Step 3: Implementáld az egyetlen invariáns-validatort**
+- [x] **Step 3: Implementáld az egyetlen invariáns-validatort**
 
 ```java
 @Component
@@ -161,13 +161,13 @@ kombinációt validálja **mielőtt** a goalt módosítja. `GoalEngineService.ev
 után `isCoherent=false` esetén `goal.setPrescription(null)` és `goal.setTdeeBootstrap(null)`, majd
 `return null`; nem hív projectiont vagy suggestion triggert.
 
-- [ ] **Step 4: Javítsd a fixture-t és az error contractot**
+- [x] **Step 4: Javítsd a fixture-t és az error contractot**
 
 `GoalPopulator` valid bulk alapértéke `84.2 → 90.0`; az inkonzisztens legacy esethez külön
 `createLegacyIncoherentGoal(...)` helper közvetlen repository mentést használ. Add a két HU
 messages.properties sort, hardcoded szolgáltatásszöveg nélkül.
 
-- [ ] **Step 5: Futtasd GREEN-ben, majd dokumentálj**
+- [x] **Step 5: Futtasd GREEN-ben, majd dokumentálj**
 
 ```bash
 cd backend && ./mvnw clean test \
@@ -178,7 +178,7 @@ cd .. && node scripts/lint-docs.mjs --errors-only
 
 Frissítsd a `goal-engine.md` invariáns/fail-safe és a `fuel.md` prescription-biztonság részét.
 
-- [ ] **Step 6: Commit és PR-kapu**
+- [x] **Step 6: Commit és PR-kapu**
 
 ```bash
 git add backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalInvariantValidator.java \
@@ -228,7 +228,7 @@ Várd meg a zöld CI-t és a projekt `--no-ff` merge-folyamatát; csak ezután i
 - Consume unchanged: `WeightTrendService.computeTrend`, `GoalTimelineService.getTimeline`,
   `GoalSuggestionService.listOpen`, `SportService.getSchedule`, `WeeklyScheduledActivityService`.
 
-- [ ] **Step 1: Bővítsd contract-first a goal fragmentet**
+- [x] **Step 1: Bővítsd contract-first a goal fragmentet**
 
 Add az endpointot 200/401/404 válasszal és az alábbi kötelező szerkezetet; a részobjektumok neve
 legyen `GoalOverviewDiet`, `GoalOverviewSegment`, `GoalOverviewPlans`, `GoalOverviewGuards`:
@@ -256,7 +256,7 @@ GoalOverviewResponse:
 linkeket/gapeket és a valódi `SportScheduleSlotResponse[]`-t; guards a meglévő
 `GoalGuardStatus`-t és `healthyCount/totalCount/topIssueCode` mezőket használja.
 
-- [ ] **Step 2: Generáld a két fogyasztói oldalt**
+- [x] **Step 2: Generáld a két fogyasztói oldalt**
 
 ```bash
 cd api/generate && npm install && npm run generate:api
@@ -266,7 +266,7 @@ cd ../../frontend && pnpm generate:api
 Várt: `GoalApi#getGoalOverview`, Java `GoalOverviewResponse` és TS
 `components['schemas']['GoalOverviewResponse']` létrejön. Ne szerkessz generált Java fájlt.
 
-- [ ] **Step 3: Írd meg a RED classifier- és HTTP-teszteket**
+- [x] **Step 3: Írd meg a RED classifier- és HTTP-teszteket**
 
 `GoalOverviewCourseServiceTest` fedje le: invalid; `none→learning`; cut és bulk helyes előjellel
 on-track; rossz irányú observed trend watch; floor-domináns `0.10` tolerancia; maintain sáv.
@@ -275,7 +275,7 @@ aktuális prescription segment, mai nap-típus/kcal, P/C/F, `latestSuggestionId`
 sport schedule. A teszt dátumát `Clock`/mai lokális nap alapján képezd, ne hardcode-olj lejáró
 ablakot.
 
-- [ ] **Step 4: Futtasd RED-ben**
+- [x] **Step 4: Futtasd RED-ben**
 
 ```bash
 cd backend && ./mvnw clean test \
@@ -285,7 +285,7 @@ cd backend && ./mvnw clean test \
 
 Várt: hiányzó service/controller/config miatt compile vagy assertion FAIL.
 
-- [ ] **Step 5: Implementáld a pure besorolást**
+- [x] **Step 5: Implementáld a pure besorolást**
 
 ```java
 public Course classify(GoalEntity goal, WeightTrendResponse trend) {
@@ -307,7 +307,7 @@ public Course classify(GoalEntity goal, WeightTrendResponse trend) {
 `ceil(abs(current-target)/abs(observed))` hetet; különben null. Reason code-ok stabil wire-kulcsok:
 `goal_invalid`, `trend_missing`, `rate_on_track`, `rate_off_track`, `rate_wrong_direction`.
 
-- [ ] **Step 6: Implementáld az overview assemblert és controllert**
+- [x] **Step 6: Implementáld az overview assemblert és controllert**
 
 `GoalOverviewService` egy ownership-gated goal read után egyszer kér trendet, timeline-t,
 suggestion listát és sport schedule-t. A `currentWeek` clampelt 1..totalWeeks; az aktuális segment
@@ -315,7 +315,7 @@ suggestion listát és sport schedule-t. A `currentWeek` clampelt 1..totalWeeks;
 null splitnél a segment `kcal`. Invalid vagy prescription nélküli goal dietje `unavailable` és
 null számokat ad. `GoalController#getGoalOverview(UUID id)` csak delegál.
 
-- [ ] **Step 7: GREEN, contract drift és commit**
+- [x] **Step 7: GREEN, contract drift és commit**
 
 ```bash
 cd backend && ./mvnw clean test \
