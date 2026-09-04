@@ -1218,11 +1218,6 @@ mezo:
     # Phase 5 W1 journal (mezo-b3pp.1) — decision review-due offset in days (used by W1.4's decision journal).
     journal:
       decision-review-days: 30
-    # Weekly review (mezo-p2tr) — deterministic day-score constants (spec §2).
-    me-week:
-      sleep-target-h: 8.0
-      kcal-band: 0.25
-      xp-baseline: 150
     # Daily evaluation (mezo-jcpt.4) — the 6-dimension day-score engine's tuning knobs.
     day-evaluation:
       weights:

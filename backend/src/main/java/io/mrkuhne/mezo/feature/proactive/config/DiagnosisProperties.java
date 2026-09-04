@@ -7,7 +7,7 @@ import org.springframework.validation.annotation.Validated;
 
 /**
  * Diagnosis (mezo-hqfi, spec 2026-08-31 §3.2/§5) — every constant the collector and the quota
- * depend on, in one documented home (the {@code MeWeekProperties} precedent). Picked up by
+ * depend on, in one documented home (the {@code QuarterlyProperties} precedent). Picked up by
  * {@code @ConfigurationPropertiesScan}.
  *
  * @param windowDays      the diagnosed window, ending today (inclusive).
