@@ -344,6 +344,21 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 - `memory_embedding` is still the sole serving source. The new canonical rows are population and
   migration infrastructure only; retrieval cutover remains behind later shadow/evaluation gates.
 
+**Adaptive memory query preparation (`mezo-6dii.3`) — consumer-neutral input, still no serving cutover:**
+
+- `MemoryRequest` is the shared boundary for chat, morning briefing, weekly memoir and prediction
+  evidence. It carries owner, consumer policy, raw question, short history, as-of date, token budget,
+  optional conversation identity and deep-search intent; this slice only prepares the query and does
+  not retrieve or persist anything.
+- `MemoryQueryAnalyzer` routes conservatively in pure code: closed Hungarian greetings/thanks/meta
+  phrases need no memory; short referential follow-ups with usable history are context-dependent;
+  everything else is self-contained. Explicit ISO dates become deterministic `from`/`to` bounds.
+- Only context-dependent requests reach the existing cheap `CompanionLlm` port. The rewrite sees at
+  most the latest six nonblank turns, with each turn capped at 500 characters, and must return one
+  standalone Hungarian query of at most 500 characters. Provider failure, blank output or oversized
+  output falls back to the untouched raw query. `PreparedMemoryQuery` retains raw and dense forms
+  separately so later retrieval and audit can compare them.
+
 **V2.2 (`mezo-fnnq.10`) shipped daily summaries + the embed pipeline — the memory fills itself:**
 
 - **`daily_summary` table + generator** — `DailySummaryService.generate(userId, date)`: a
@@ -930,6 +945,25 @@ a separate transaction. It can therefore reuse the vector already paid for by OL
 only leaves a repairable projection gap. Re-offering an unchanged OLD row also republishes the event,
 which heals a previously missed canonical row without another provider call. The re-embedding path
 selects a named target version and never mutates `servingEmbeddingVersion`.
+
+**Adaptive memory-query preparation (`mezo-6dii.3`; no retrieval yet):**
+
+```text
+MemoryRequest
+  → MemoryQueryAnalyzer (deterministic)
+      ├─ NO_MEMORY_NEEDED → raw query retained; no LLM
+      ├─ SELF_CONTAINED   → raw query retained; optional ISO date bounds
+      └─ CONTEXT_DEPENDENT
+           → latest 6 nonblank turns × max 500 chars
+           → LlmMemoryQueryRewriter (cheap CompanionLlm)
+           → standalone dense query | raw-query fallback
+  → PreparedMemoryQuery(mode, rawQuery, denseQuery, from, to)
+```
+
+The analyzer, not the model, decides whether rewriting is warranted. This keeps greetings and
+self-contained questions free of rewrite latency/cost, bounds conversational prompt exposure, and
+makes failure behavior deterministic. The four-value `ConsumerPolicy` is already part of the core
+request contract; later tasks apply its retrieval/ranking differences.
 
 **The streamed turn (V0.4 + V0.5 tools — what the FE uses):**
 
@@ -4229,6 +4263,13 @@ coexisting v1/v2 generations, and active/onboarded-user fan-out. The frozen OLD 
 (`AmbientRecallEvalIT`, `NoteVectorLifecycleIT`, `TurnEmbeddingListenerIT`) remains the regression
 gate while serving has not cut over.
 
+**Adaptive query preparation (`mezo-6dii.3`).**
+`memory/service/MemoryQueryAnalyzerTest` pins the closed Hungarian routing table, history requirement and ISO-date
+bounds as a pure unit test. `MemoryQueryPreparerIT` uses the profile-gated `FakeCompanionLlm` to
+prove scripted standalone rewriting, raw-query retention, latest-six/nonblank/500-character history
+bounds, raw fallback on provider failure/blank/oversized output, and zero LLM calls for no-memory or
+self-contained requests. No test reaches a network model.
+
 **Daily evaluation (`mezo-jcpt.4`, plan 2/2).**
 `feature/companion/service/DayEvaluationEngineTest.java` is the formula's unit-level pin — one test
 per honesty rule, per dimension (asymmetric kcal bands, protein surplus forgiven/deficit counted,
@@ -5534,6 +5575,12 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryProjectionEvent,MemoryProjectionListener,MemoryProjectionWriter}.java` — AFTER_COMMIT hand-off, isolated transaction, source-key lifecycle and serving-generation write.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryReembeddingService,MemoryReembeddingJob}.java` — bounded resumable target-generation backfill and active-user fan-out without serving-version mutation.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/{MemoryProjectionWriterIT,MemoryProjectionFailureIsolationIT,MemoryReembeddingIT}.java` + `backend/src/test/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriterIT.java` — lifecycle, failure-isolation, generation coexistence/retry and all-source dual-write coverage.
+
+**Backend — adaptive memory query preparation (`mezo-6dii.3` — §3/§8)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/dto/{ConsumerPolicy,QueryMode,MemoryRequest,PreparedMemoryQuery}.java` — shared consumer/request boundary and the deterministic prepared-query result.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryQueryAnalyzer,MemoryQueryPreparer,MemoryQueryRewriter,LlmMemoryQueryRewriter}.java` — conservative routing, bounded contextual rewrite and raw-query fallback over the existing cheap LLM port.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — deterministic `[fake-memory-rewrite:…]` scripting plus captured bounded history for integration assertions.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/service/MemoryQueryAnalyzerTest.java` + `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/MemoryQueryPreparerIT.java` — routing/date unit coverage and real-context rewrite/fallback coverage.
 
 **Backend — feedback (W4.1, `mezo-b3pp.15` — §4/§5.7)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/controller/CompanionFeedbackController.java` — `implements CompanionFeedbackApi`, `COMPANION_SWITCH`-gated, ownership from `CurrentUserId`, thin delegation.
