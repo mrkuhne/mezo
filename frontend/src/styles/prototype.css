@@ -8156,11 +8156,13 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
    `.hlch` / `.adj`, scaled ×1.18 (330 → 390px frame).
 
    SCOPING — every dimension modifier (`is-nutrition` … `is-rhythm`) is written
-   under `.dayev-dim`, NEVER bare: the weekly mosaic already owns a differently
-   coloured `.wkd-sparks i.is-sleep` / `.wkd-legend i.is-sleep`, and the two must
-   never see each other's rules. The six domain colours come from the shared
-   --mz-wash-* / --mz-shadow-* / --mz-cell-*-ink token families, so both themes
-   follow without a parallel palette.
+   under `.dayev-dim`, NEVER bare: the weekly mosaic owns its OWN identically-named
+   `.wkd-sparks i.is-sleep` / `.wkd-legend i.is-sleep` rules (same six domain hues,
+   `mezo-jcpt.5` unified the palette on purpose), and the two rule families must
+   still never see each other's selectors — scoping, not colour, is what keeps
+   them apart. The six domain colours come from the shared --mz-wash-* /
+   --mz-shadow-* / --mz-cell-*-ink token families, so both themes follow without
+   a parallel palette.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── hero: szaggatott „este zárom" gyűrű + alap/kontextus chip-pár ────────── */

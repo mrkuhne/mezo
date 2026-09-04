@@ -2,9 +2,10 @@
 // Heti · nap-állapotok + nap-formázás (mezo-d20.6.10)
 // Source: en-body.html `dayCard()` / `dayPage()` / `daysPage()`.
 //
-// The one place the FOUR honest day states live (handoff §4). Today's
-// `WeekDayCard` conflates two of them into a single `—`; the design
-// insists they are different sentences:
+// The one place the FOUR honest day states live (handoff §4). The retired
+// `WeekDayCard` used to conflate two of them into a single `—`; `WeekDayTile`
+// (its live successor) and `WeekDayPage` render them as the design
+// insists — different sentences:
 //
 //   scored  — the Mezo scored the day
 //   thin    — something was logged, but fewer than TWO sub-scores have
