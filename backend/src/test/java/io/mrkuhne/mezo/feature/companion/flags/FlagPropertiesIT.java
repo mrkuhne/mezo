@@ -80,4 +80,35 @@ class FlagPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.missedWorkouts().windowDays()).isEqualTo(14);
         assertThat(properties.missedWorkouts().minConsecutiveMissed()).isEqualTo(2);
     }
+
+    /** S6 batch B (mezo-d58h.6, spec §4): the six new rules' own threshold records — every one
+     *  of their fields, so a YAML key that drifts from its record component is caught here rather
+     *  than surfacing as a silent null/zero at detection time. */
+    @Test
+    void binds_the_six_s6_rule_thresholds_from_application_yml() {
+        assertThat(properties.acuteBadDay().minCheckIns()).isEqualTo(2);
+        assertThat(properties.acuteBadDay().bodyOrEnergyAtMost()).isEqualTo(3);
+
+        assertThat(properties.loadFuelMismatch().windowDays()).isEqualTo(7);
+        assertThat(properties.loadFuelMismatch().loadThreshold()).isEqualTo(50.0);
+        assertThat(properties.loadFuelMismatch().kcalFractionOfTarget()).isEqualTo(0.80);
+        assertThat(properties.loadFuelMismatch().sleepFloorHours()).isEqualTo(7.0);
+        assertThat(properties.loadFuelMismatch().minLoggedDaysPerSide()).isEqualTo(4);
+
+        assertThat(properties.rapidWeightLoss().pctPerWeekAtMost()).isEqualTo(-0.7);
+        assertThat(properties.rapidWeightLoss().minWeighIns()).isEqualTo(4);
+
+        assertThat(properties.jointOveruse().windowDays()).isEqualTo(7);
+        assertThat(properties.jointOveruse().strainAvgAtLeast()).isEqualTo(5.0);
+        assertThat(properties.jointOveruse().muscleNeedle()).isEqualTo("shoulder");
+
+        assertThat(properties.ignoredNudge().category()).isEqualTo("lights_out");
+        assertThat(properties.ignoredNudge().minConsecutiveDays()).isEqualTo(5);
+        assertThat(properties.ignoredNudge().nonComplianceMinutes()).isEqualTo(60);
+
+        assertThat(properties.lateEating().minutesBeforeBed()).isEqualTo(90);
+        assertThat(properties.lateEating().absoluteHour()).isEqualTo(22.5);
+        assertThat(properties.lateEating().minDaysOfLastThree()).isEqualTo(2);
+        assertThat(properties.lateEating().windowDays()).isEqualTo(3);
+    }
 }

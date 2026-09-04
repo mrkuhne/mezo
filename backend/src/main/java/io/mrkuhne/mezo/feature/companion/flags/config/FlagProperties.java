@@ -33,7 +33,14 @@ public record FlagProperties(
     @NotNull @Valid AllHealthy allHealthy,
     @NotNull @Valid LoggingGap loggingGap,
     @NotNull @Valid MissedWorkouts missedWorkouts,
-    @NotNull @Valid CooldownHours cooldownHours
+    @NotNull @Valid CooldownHours cooldownHours,
+
+    @NotNull @Valid AcuteBadDay acuteBadDay,
+    @NotNull @Valid LoadFuelMismatch loadFuelMismatch,
+    @NotNull @Valid RapidWeightLoss rapidWeightLoss,
+    @NotNull @Valid JointOveruse jointOveruse,
+    @NotNull @Valid IgnoredNudge ignoredNudge,
+    @NotNull @Valid LateEating lateEating
 ) {
 
     /** Check-in stress is a 1–10 scale (the contract's SaveCheckInRequest bounds). */
@@ -111,6 +118,87 @@ public record FlagProperties(
         /** Consecutive PLANNED gym days with no completed instance needed to raise. Consecutive
          *  in the sequence of planned days, not in calendar days. */
         @Min(2) @Max(14) int minConsecutiveMissed
+    ) {
+    }
+
+    /** Spec 2026-09-03 §4 row 6 (rank 1, the most urgent card). Reads today's check-ins directly
+     *  (a day average would destroy the signal), never the sweep's metric series. */
+    public record AcuteBadDay(
+        /** Fewer than this many check-ins logged today ⇒ honest silence — one bad check-in is a
+         *  moment, not a day. */
+        @Min(1) @Max(20) int minCheckIns,
+        /** body/energy (1–10 scale, nullable — a null is "not answered", not a low score) at or
+         *  below this counts as a "bad" check-in. */
+        @Min(1) @Max(10) int bodyOrEnergyAtMost
+    ) {
+    }
+
+    /** Spec 2026-09-03 §4 row 2 (rank 2): 7-day training load vs. fuel/sleep conjunction. */
+    public record LoadFuelMismatch(
+        @Min(2) @Max(30) int windowDays,
+        /** {@code COMBINED_LOAD_MIN} 7-day average (minute-equivalents/day: sport minutes + gym
+         *  kg-volume ÷ {@code mezo.companion.patterns.load-gym-kg-per-min}) at or above which the
+         *  week counts as high-load. Derived from spec §0's live evidence week (2026-08-25 →
+         *  08-31): 3 gym days (~40 min-equiv each from a typical hypertrophy-block tonnage of
+         *  ~4000 kg ÷ 100 kg/min ⇒ 120 min-equiv) + volleyball 120′+240′+120′ = 480 min ⇒
+         *  600 min-equiv / 7 days ≈ 85.7 min-equiv/day average. 50.0 sits well below that (the
+         *  documented week would have raised) and well above a rest week's average (one 60′
+         *  session ÷ 7 ≈ 8.6 min-equiv/day would not). */
+        @DecimalMin("0.0") @DecimalMax("300.0") double loadThreshold,
+        /** 7-day kcal average below this fraction of the user's target counts as under-fuelled. */
+        @DecimalMin("0.1") @DecimalMax("1.0") double kcalFractionOfTarget,
+        /** 7-day sleep average below this (hours) counts as under-recovered. */
+        @DecimalMin("0.0") @DecimalMax("12.0") double sleepFloorHours,
+        /** Honest small-n gate, checked independently on EACH side (kcal, sleep) since the load
+         *  series' zeros are real and cannot supply a "was it logged" count — below this many
+         *  logged days on either side, {@code logging_gap} owns the story instead. */
+        @Min(1) @Max(30) int minLoggedDaysPerSide
+    ) {
+    }
+
+    /** Spec 2026-09-03 §4 row 10 (rank 3). */
+    public record RapidWeightLoss(
+        /** WEIGHT_TREND_PCT_WK at or below this (more negative — a % per week, so the bound is
+         *  negative) raises the flag. */
+        @DecimalMin("-20.0") @DecimalMax("-0.1") double pctPerWeekAtMost,
+        /** Honest small-n gate on the weigh-in count backing the trend. */
+        @Min(2) @Max(30) int minWeighIns
+    ) {
+    }
+
+    /** Spec 2026-09-03 §4 row 16 (rank 4, offers {@code lighten_tomorrow}). */
+    public record JointOveruse(
+        @Min(2) @Max(30) int windowDays,
+        @DecimalMin("1.0") @DecimalMax("10.0") double strainAvgAtLeast,
+        /** Substring matched against tomorrow's planned session's {@code MuscleGroup}, e.g.
+         *  {@code "shoulder"}. */
+        @NotBlank String muscleNeedle
+    ) {
+    }
+
+    /** Spec 2026-09-03 §4 (rank 8, offers {@code shift_sleep_anchor}): a push sent on N
+     *  consecutive nights with observed bedtime never within tolerance of the anchor. */
+    public record IgnoredNudge(
+        /** {@code NotificationCategory} wire value of the ignored push, e.g. {@code "lights_out"}. */
+        @NotBlank String category,
+        @Min(2) @Max(30) int minConsecutiveDays,
+        /** Observed bedtime within this many minutes of the anchor counts as compliant. */
+        @Min(1) @Max(1440) int nonComplianceMinutes
+    ) {
+    }
+
+    /** Spec 2026-09-03 §4 (rank 9): last meal too close to bedtime, or too late outright, on
+     *  enough of the last 3 days. */
+    public record LateEating(
+        /** Last meal within this many minutes of the bedtime anchor counts as "late". */
+        @Min(1) @Max(600) int minutesBeforeBed,
+        /** FRACTIONAL hour — {@code MetricKey.LATE_MEAL_HOUR}'s own unit, e.g. 22.5 == 22:30.
+         *  Never "fix" this into a clock string; the metric series is a double. */
+        @DecimalMin("0.0") @DecimalMax("30.0") double absoluteHour,
+        /** Of the last {@code windowDays} days, at least this many must qualify (either
+         *  condition) to raise. */
+        @Min(1) @Max(30) int minDaysOfLastThree,
+        @Min(1) @Max(30) int windowDays
     ) {
     }
 

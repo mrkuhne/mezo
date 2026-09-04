@@ -778,6 +778,42 @@ mezo:
         # (review fix, bd mezo-d58h.2).
         window-days: 14
         min-consecutive-missed: 2
+      # S6 batch B (bd mezo-d58h.6, spec 2026-09-03 §4): the six new rules' own thresholds. Rules
+      # land in tasks 4-9; this block only needs to bind cleanly.
+      acute-bad-day:
+        # Spec §4 row 6 (rank 1). Today's check-ins read directly, never a day average.
+        min-check-ins: 2
+        # body/energy 1-10 scale; nullable — a null is "not answered", not a low score.
+        body-or-energy-at-most: 3
+      load-fuel-mismatch:
+        # Spec §4 row 2 (rank 2). See FlagProperties.LoadFuelMismatch javadoc for the
+        # load-threshold derivation from the spec §0 evidence week.
+        window-days: 7
+        load-threshold: 50.0
+        kcal-fraction-of-target: 0.80
+        sleep-floor-hours: 7.0
+        min-logged-days-per-side: 4
+      rapid-weight-loss:
+        # Spec §4 row 10 (rank 3). pct-per-week-at-most is negative — %/week trend.
+        pct-per-week-at-most: -0.7
+        min-weigh-ins: 4
+      joint-overuse:
+        # Spec §4 row 16 (rank 4, offers lighten_tomorrow).
+        window-days: 7
+        strain-avg-at-least: 5.0
+        muscle-needle: "shoulder"
+      ignored-nudge:
+        # Rank 8, offers shift_sleep_anchor. category is NotificationCategory's wire value.
+        category: "lights_out"
+        min-consecutive-days: 5
+        non-compliance-minutes: 60
+      late-eating:
+        # Rank 9. absolute-hour is a FRACTIONAL hour (MetricKey.LATE_MEAL_HOUR's unit) —
+        # 22.5 == 22:30, never a clock string.
+        minutes-before-bed: 90
+        absolute-hour: 22.5
+        min-days-of-last-three: 2
+        window-days: 3
       cooldown-hours:
         # A raised flag stays raised for its cooldown: the evaluator re-runs constantly (every
         # write + hourly), and without this the log would fill with the same day's state.
