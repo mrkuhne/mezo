@@ -49,6 +49,10 @@ public interface PantryCatalogRepository extends JpaRepository<PantryCatalogEnti
     /** The live global index the AI name matcher is built from. */
     List<PantryCatalogEntity> findByDeletedFalseOrderByNameAsc();
 
-    /** Master rows (loader-owned). */
+    /**
+     * Master rows (loader-owned). Deliberately NOT filtered on {@code deleted}: the loader's
+     * revive-on-upsert (S4 Task 5) needs to see a soft-deleted master row in order to bring it
+     * back, and a filtered query would silently insert a duplicate instead (mezo-gmy0).
+     */
     List<PantryCatalogEntity> findByCreatedByIsNull();
 }
