@@ -49,10 +49,12 @@ const mockJournalNotesFixed: JournalNote[] = [
 // ezért a beszúrás idempotens: csak akkor adjuk hozzá, ha erre a napra még nincs sor,
 // majd a csökkenő („newest first") dátumsorrendet a beszúrás helyétől függetlenül
 // explicit rendezéssel biztosítjuk.
+// A skip-ág is MÁSOLATOT ad vissza: a `.sort()` helyben rendez, tehát a nyers ternary
+// magát a modul-szintű `*Fixed` konstanst mutálná (mezo-tzid).
 const todayIsoJournal = localDateString()
 export const mockJournalNotes: JournalNote[] = (
   mockJournalNotesFixed.some((n) => n.occurredOn === todayIsoJournal)
-    ? mockJournalNotesFixed
+    ? [...mockJournalNotesFixed]
     : [...mockJournalNotesFixed, {
         id: 'jn-today',
         occurredOn: todayIsoJournal,
