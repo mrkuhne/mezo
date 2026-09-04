@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-04
+updated: 2026-09-05
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -1303,11 +1303,12 @@ order (`repository/AiConversationRepository.java:14`); `AiMessageRepository` is 
 arithmetic over `MetricSeriesService` series the owning features already compose READ-ONLY — there
 is **no `LlmCallContextHolder` call anywhere in this slice**, because there is no LLM/embed call to
 tag. **Rule spine (S1, bd `mezo-d58h.1`, spec 2026-09-03 §3.1) — one class per rule.** `FlagEvaluator`
-itself is now a thin orchestrator: it holds no rule logic, just seven injected `FlagRule` beans
+itself is now a thin orchestrator: it holds no rule logic, just thirteen injected `FlagRule` beans
 (`SustainedStressRule`, `SleepDebtRule`, `MomentumAtRiskRule`, `RecoveryNeededRule`,
-`LoggingGapRule`, `MissedWorkoutsRule`, `AllHealthyRule` — each
-`feature/companion/flags/service/rule/*.java`) called in that fixed order, `allHealthyRule` only
-when the other six raised nothing. The `FlagRule` interface
+`LoggingGapRule`, `MissedWorkoutsRule`, `AcuteBadDayRule`, `LoadFuelMismatchRule`,
+`RapidWeightLossRule`, `JointOveruseRule`, `IgnoredNudgeRule`, `LateEatingRule`, `AllHealthyRule` —
+each `feature/companion/flags/service/rule/*.java`) called in that fixed order, `allHealthyRule`
+only when the other twelve raised nothing. The `FlagRule` interface
 (`flags/service/FlagRule.java`) is one method, `evaluate(userId, today) → Optional<FlagRaise>`,
 cooldowns NOT applied; each implementation carries its own reads and thresholds (still 100% from
 `FlagProperties` — no rule holds a number of its own) and stays reviewable in isolation. S1 was a
@@ -1339,6 +1340,74 @@ pure refactor of the original five; **S2 (bd `mezo-d58h.2`) adds two more rules*
   it and turns the result into a verdict; behavior is unchanged from the pre-extraction single-class
   version (`FlagEvaluatorStressSleepIT` covers it unmodified).
 
+**S6 batch B (bd `mezo-d58h.6`) adds the epic's last six rules**, in the spec's severity order
+(`AdvicePriority.ORDER`, [proactive.md](proactive.md) §9 decision (ll)) — each with its own honesty
+gate, the same discipline as the original seven:
+
+- **`AcuteBadDayRule`** (rank 1, `acute_bad_day`) — ≥`minCheckIns` of TODAY's raw `check_in` rows
+  with `body` or `energy` at or below `bodyOrEnergyAtMost`. Reads `CheckInRepository` directly,
+  never `MetricSeriesService`'s day-averaged `CHECKIN_BODY`/`CHECKIN_ENERGY` — averaging is exactly
+  what would destroy the signal (two 3s and a 7 average to a healthy-looking 4.3). A null
+  body/energy is an unanswered question, never a low score, so it never qualifies; fewer than
+  `minCheckIns` check-ins logged today ⇒ silent (one bad check-in is a moment, not a pattern).
+- **`LoadFuelMismatchRule`** (rank 2, `load_fuel_mismatch`) — 7-day `COMBINED_LOAD_MIN` average at
+  or above `loadThreshold` AND (7-day `DAILY_KCAL` average below `kcalFractionOfTarget` of the
+  day's kcal target OR 7-day `SLEEP_DURATION_H` average below `sleepFloorHours`). The
+  `≥minLoggedDaysPerSide` honesty gate is counted independently on each side from the SPARSE
+  kcal/sleep series, never from `COMBINED_LOAD_MIN` itself — that series is one of
+  `MetricSeriesService`'s two calendar-complete metrics (with `HABITS_DONE`), so an unlogged day
+  there is a real `0.0`, indistinguishable from a genuine rest day. The kcal target comes from
+  `FuelDayService.getDay`, paired per logged-kcal-day so a day whose target fails to resolve never
+  inflates the logged-day count. `WEIGHT_TREND_PCT_WK` rides along in the payload as a
+  corroborating fact only — it never gates or triggers the raise.
+- **`RapidWeightLossRule`** (rank 3, `rapid_weight_loss`) — `WEIGHT_TREND_PCT_WK` below
+  `pctPerWeekAtMost` (a negative %/week bound; MORE negative fires) AND the owner's single ACTIVE
+  goal's `trajectory` is not `cut`. The weigh-in-count honesty gate is the metric extractor's OWN
+  (`MetricSeriesService.weightTrendPctWk` yields no data point below 4 weigh-ins in the rolling
+  7-day window) — the rule relies on that null rather than re-gating. No active goal at all ⇒
+  silent, same as a `cut` goal: an absent goal makes "goal ≠ cut" unreadable, and per spec §7 the
+  house default is silence over guessing either direction.
+- **`JointOveruseRule`** (rank 4, `joint_overuse`, offers `lighten_tomorrow` — §9 decision (ll)
+  below) — 7-day `SHOULDER_STRAIN` average ≥ `strainAvgAtLeast` AND tomorrow's planned gym session
+  is shoulder-focused. Tomorrow's plan is read via `WorkoutService.findPlannedTemplateForDate`,
+  NEVER `getToday` — `getToday` auto-closes stale instances and closes exercises on every call, a
+  write a detection rule (evaluated hourly for every active user by the sweep job) must never
+  trigger as a side effect of merely looking. The session's `muscle` field (which can carry a
+  dashed sub-zone like `"shoulder-lateral"`) is normalised through `MuscleGroup.of` before
+  comparing against `muscleNeedle`, never via a raw substring test. Silent with no strain data
+  points in the window (never averages an empty set) or no planned session tomorrow.
+- **`IgnoredNudgeRule`** (rank 8, `ignored_nudge`, offers `shift_sleep_anchor`) — the `lights_out`
+  push sent on `minConsecutiveDays` consecutive evenings while the observed bedtime never complied
+  on any of those nights. Reads sent pushes through the new `NudgeSendPort` (a companion-owned
+  port — `notification → companion` already exists, so a direct `PushLogRepository` import would
+  close a cycle) and compares `BEDTIME_HOUR` against the sleep anchor in
+  `MetricSeriesService.clockHour`'s +24-shifted clock space (the rule's own `shiftedHour` applies
+  the identical convention to the anchor before comparing). Gated on a `sleep_goal` row EXISTING,
+  read directly off `SleepGoalRepository` BEFORE ever calling `SleepAnchorPort` — `resolve` ghosts a
+  config default with no row, and a user with no goal must never be measured against an invented
+  target. An unlogged night, a night with no push sent, or a night that complied all BREAK the
+  consecutive run rather than counting as compliance or being skipped over.
+- **`LateEatingRule`** (rank 9, the epic's last new detection, `late_eating`) — on ≥
+  `minDaysOfLastThree` of the last `windowDays` days, the last meal (`LATE_MEAL_HOUR`) was within
+  `minutesBeforeBed` minutes of the bedtime anchor (either direction) OR at/after `absoluteHour`
+  (22:30 by default, inclusive). Two arms, OR'd per day, with different preconditions: the BED arm
+  needs the same `sleep_goal`-row gate as `IgnoredNudgeRule` (`anchorShiftedHour` freezes `null`
+  without one, and only the absolute arm can then qualify a day); the ABSOLUTE arm needs no goal at
+  all — without one we still know 23:40 is late, we just do not know whether 21:00 is late for THIS
+  user. The ABSOLUTE arm compares the RAW `LATE_MEAL_HOUR` value, never the +24-shifted one:
+  `LATE_MEAL_HOUR` lives in its own plain 0.0–23.99 space, unlike `BEDTIME_HOUR`; shifting it before
+  the absolute comparison (an earlier version's bug, fixed same-slice) made every pre-noon last meal
+  unconditionally clear the threshold — a false positive on every intermittent-fasting or
+  simply-early eater. A day with no logged meal is skipped, not counted either way.
+
+Two prerequisite fixes underpin the rules above: `MetricSeriesService.weightTrendPctWk` and
+`.lateMealHour` used to load a user's ENTIRE history and filter in Java; both are now bounded reads
+(bd `mezo-9gp3`/`mezo-d58h.6`) — `weightTrendPctWk` to `[from-6, to]` (the 7-day rolling slope needs
+the 6-day margin BEFORE `from` too; narrowing to `[from, to]` would silently change every window's
+leading values) and `lateMealHour` to `[from, to]` (no rolling lookback, so no margin is needed).
+The hourly sweep job now calling both extractors per-user, every hour, for every active user is what
+made the unbounded reads actually matter.
+
 **The `logging_gap` recency-read exception.** Every other rule above reads
 `MetricSeriesService`'s day-bucketed series exclusively — but `LoggingGapRule`'s thresholds are in
 HOURS (`meal-stale-hours`/`checkin-stale-hours`), and a day bucket cannot express "36 hours since
@@ -1361,6 +1430,20 @@ nothing else re-derives from the other four; and the `@Pattern` regex on
 one layer up, gating the W5.2 intervention-library binding instead of the flag-log row. Miss either
 `@Pattern` mirror and its own `@Valid`/binding validation rejects a legitimately-CHECK-permitted
 key before it ever does anything useful.
+
+Three of the five mirrors above (the migration, the entity `@Pattern`, the properties `@Pattern`)
+fail loudly at Spring context startup or a `@Valid` rejection if missed. But a NEW `FlagKey` also
+needs three quieter **degrade-sites** updated, none of which fail startup when missed — S6's six
+new keys (bd `mezo-d58h.6`) cost a review round on each: `AdvicePriority.ORDER`
+([proactive.md](proactive.md) §9 decision (ll)) — an unranked key silently ranks last and only
+logs a warning, so a forgotten entry never blocks a card, it just always loses; `AdviceFactRenderer`
+(same file) — an unmapped key silently renders zero fact lines rather than throwing, so the card
+still delivers, just with no evidence block; and `CompanionFlagLogRepository.existsProblemRaiseSince`
+— a hardcoded `NOT IN ('all_healthy', 'logging_gap', ...)` exclusion list that a new key correctly
+counted as a "problem" needs no change to, but a key that is really a delivery-channel failure
+(like `ignored_nudge`, below) must be added to by hand or it silently blocks `all_healthy` for a
+full quiet-days window every time it fires.
+
 Pure refactor beyond the two new rules — behavior, thresholds and the fixed evaluation order for
 the original five are all unchanged; `FlagEvaluatorStressSleepIT`/`FlagEvaluatorMomentumRecoveryIT`
 (§8) cover the same scenarios unmodified. Two triggers feed the SAME code path: the on-write listener (`FlagEvaluationListener`, `@Async
@@ -3525,6 +3608,25 @@ and cooldown below is config, never code — `FlagEvaluator` holds no numbers of
 | `logging-gap.sleep-suspicion-deficit-hours` | `1.0` | when `sleep_debt` stayed silent for want of nights, the logged nights' average deficit at/above which the payload attaches the suspicion (spec §4 row 5) |
 | `missed-workouts.window-days` | `14` | how far back planned gym days are scanned, ending TODAY |
 | `missed-workouts.min-consecutive-missed` | `2` | consecutive PLANNED gym days with nothing completed needed to raise (consecutive in the sequence of planned days, not calendar days) |
+| `acute-bad-day.min-check-ins` | `2` | check-ins logged TODAY required before the pattern can even be judged |
+| `acute-bad-day.body-or-energy-at-most` | `3` | body/energy (1–10, nullable) at/below this counts as a "bad" check-in |
+| `load-fuel-mismatch.window-days` | `7` | the trailing load/kcal/sleep window |
+| `load-fuel-mismatch.load-threshold` | `50.0` | 7-day `COMBINED_LOAD_MIN` average at/above which the week counts as high-load (min-equivalents/day) |
+| `load-fuel-mismatch.kcal-fraction-of-target` | `0.80` | 7-day kcal average below this fraction of the day's target counts as under-fuelled |
+| `load-fuel-mismatch.sleep-floor-hours` | `7.0` | 7-day sleep average below this counts as under-recovered |
+| `load-fuel-mismatch.min-logged-days-per-side` | `4` | honest small-n gate, checked independently on the kcal side and the sleep side |
+| `rapid-weight-loss.pct-per-week-at-most` | `-0.7` | `WEIGHT_TREND_PCT_WK` at/below this (more negative — the bound is itself negative) raises the flag |
+| `rapid-weight-loss.min-weigh-ins` | `4` | display-only mirror of the extractor's own ≥4-weigh-ins gate |
+| `joint-overuse.window-days` | `7` | the trailing `SHOULDER_STRAIN` window |
+| `joint-overuse.strain-avg-at-least` | `5.0` | window average at/above which strain counts as overuse |
+| `joint-overuse.muscle-needle` | `"shoulder"` | matched against tomorrow's planned session's normalised `MuscleGroup` |
+| `ignored-nudge.category` | `"lights_out"` | the `NotificationCategory` wire value of the ignored push |
+| `ignored-nudge.min-consecutive-days` | `5` | consecutive push+non-compliant nights required |
+| `ignored-nudge.non-compliance-minutes` | `60` | observed bedtime within this many minutes of the anchor counts as compliant (breaks the run) |
+| `late-eating.minutes-before-bed` | `90` | last meal within this many minutes of the anchor (either direction) counts as "late" |
+| `late-eating.absolute-hour` | `22.5` | fractional hour (`LATE_MEAL_HOUR`'s own unit) — a meal at/after this counts as late outright |
+| `late-eating.min-days-of-last-three` | `2` | qualifying days required inside the window to raise |
+| `late-eating.window-days` | `3` | the trailing window the qualifying-day count is taken over |
 | `cooldown-hours.sustained-stress` | `24` | re-raise floor, per flag |
 | `cooldown-hours.sleep-debt` | `24` | ″ |
 | `cooldown-hours.momentum-at-risk` | `48` | ″ |
@@ -3532,15 +3634,22 @@ and cooldown below is config, never code — `FlagEvaluator` holds no numbers of
 | `cooldown-hours.all-healthy` | `168` | ″ (one week) |
 | `cooldown-hours.logging-gap` | `48` | ″ — long enough that a gap card does not repeat daily |
 | `cooldown-hours.missed-workouts` | `48` | ″ |
+| `cooldown-hours.acute-bad-day` | `48` | ″ — same-day/acute signal |
+| `cooldown-hours.load-fuel-mismatch` | `72` | ″ — slower trend-window signal |
+| `cooldown-hours.rapid-weight-loss` | `72` | ″ |
+| `cooldown-hours.joint-overuse` | `72` | ″ |
+| `cooldown-hours.ignored-nudge` | `72` | ″ |
+| `cooldown-hours.late-eating` | `48` | ″ — same-day/acute signal |
 
 Job switch `mezo.techcore.cron.flag-sweep-job.enabled`
 (`FeaturesConfiguration.FLAG_SWEEP_JOB_SWITCH`) — off ⇒ the `FlagSweepJob` bean does not exist;
 the on-write listener keeps running unaffected (it answers to `COMPANION_SWITCH` only).
 
-**The seven flags** (source of truth: the W5.1 plan's "The rules" table plus the S2 spec's §4 rows
-1/3 — all windows are whole days computed from `LocalDate.now()`; missing days stay absent, never
-invented — the `MetricSeriesService` rule — except `HABITS_DONE`, where no `habit_day` row
-genuinely means zero completions, and `logging_gap`'s meal/check-in reads, which bypass
+**The thirteen flags** (source of truth: the W5.1 plan's "The rules" table plus the S2 spec's §4
+rows 1/3 and the round-1 coaching spec 2026-09-03 §4's severity order for the S6 six — all windows
+are whole days computed from `LocalDate.now()`; missing days stay absent, never invented — the
+`MetricSeriesService` rule — except `HABITS_DONE`/`COMBINED_LOAD_MIN` (calendar-complete), and
+`logging_gap`'s meal/check-in reads plus `acute_bad_day`'s check-in read, both of which bypass
 `MetricSeriesService` entirely — see §3 above for why):
 
 | flag | fires when | inputs |
@@ -3551,16 +3660,27 @@ genuinely means zero completions, and `logging_gap`'s meal/check-in reads, which
 | `recovery_needed` | inside the last `window-days` days (today included): a day with `SLEEP_DURATION_H` ≤ `sleep-floor-hours` **and** a day with `TRAINING_RPE` ≥ `rpe-threshold` **and** a day with avg `CHECKIN_STRESS` ≥ `stress-threshold` | those three series |
 | `logging_gap` | `≥ min-stale-domains` of {meals, check-ins, sleep} stale (thresholds above); a domain with no row at all counts as stale | `meal_.logged_at`, `check_in.saved_at`, `sleep_log.date` (direct repository reads, not `MetricSeriesService`) |
 | `missed_workouts` | `≥ min-consecutive-missed` consecutive PLANNED gym days (in the sequence of planned days) with no completed workout instance, inside the `window-days`-day window ending YESTERDAY (today is still in progress), itself clamped to never start before the oldest surviving `gym_schedule_slot.created_at` — a day before the current schedule existed cannot be a violation of it (review fix, bd `mezo-d58h.2`) | `gym_schedule_slot.day_of_week`, `gym_schedule_slot.created_at`, `WorkoutSessionRepository.findDoneInstanceDates` |
-| `all_healthy` | none of the other six fire now, **and** no problem row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
+| `acute_bad_day` | ≥ `min-check-ins` of TODAY's raw check-ins have body OR energy ≤ `body-or-energy-at-most`; a null score never qualifies | `check_in.body`/`check_in.energy` (direct repository read, TODAY only) |
+| `load_fuel_mismatch` | 7-day `COMBINED_LOAD_MIN` avg ≥ `load-threshold` **and** (7-day `DAILY_KCAL` avg < `kcal-fraction-of-target` × the day's target **or** 7-day `SLEEP_DURATION_H` avg < `sleep-floor-hours`); each side's own `≥ min-logged-days-per-side` gate counted from the SPARSE series, never the calendar-complete load series | `MetricKey.COMBINED_LOAD_MIN`/`DAILY_KCAL`/`SLEEP_DURATION_H`, `FuelDayService.getDay` (kcal target); `WEIGHT_TREND_PCT_WK` rides along as a fact only |
+| `rapid_weight_loss` | `WEIGHT_TREND_PCT_WK` < `pct-per-week-at-most` (more negative) **and** the single ACTIVE goal's `trajectory` ≠ `cut`; no active goal ⇒ silent (unreadable precondition) | `MetricKey.WEIGHT_TREND_PCT_WK`, `goal.trajectory` |
+| `joint_overuse` | 7-day `SHOULDER_STRAIN` avg ≥ `strain-avg-at-least` **and** tomorrow's planned gym session is `muscle-needle`-focused (via `findPlannedTemplateForDate`, never `getToday`) | `MetricKey.SHOULDER_STRAIN`, `WorkoutService.findPlannedTemplateForDate` |
+| `ignored_nudge` | the `category` push sent on `min-consecutive-days` consecutive evenings **and** every one of those nights' `BEDTIME_HOUR` missed the sleep anchor by more than `non-compliance-minutes`; requires a `sleep_goal` row; any unlogged/unsent/compliant night breaks the run | `push_log` (via `NudgeSendPort`), `MetricKey.BEDTIME_HOUR`, `SleepAnchorPort` |
+| `late_eating` | on ≥ `min-days-of-last-three` of the last `window-days` days, `LATE_MEAL_HOUR` is within `minutes-before-bed` of the (shifted) sleep anchor **or** ≥ `absolute-hour`; the bed arm needs a `sleep_goal` row, the absolute arm does not | `MetricKey.LATE_MEAL_HOUR`, `SleepAnchorPort` (bed arm only) |
+| `all_healthy` | none of the other twelve fire now, **and** no problem row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
 
-`all_healthy`'s "no problem row" check (`existsProblemRaiseSince`) excludes both `all_healthy`
-itself and `logging_gap`: `logging_gap` names a data-availability gap (a domain has gone stale),
-not a health/behavior problem, so a user who tracks sleep and check-ins tightly but logs meals
-loosely must not have `all_healthy` blocked for a full `quiet-days` window every time
-`logging_gap` fires (review fix, bd `mezo-d58h.2`). `missed_workouts` stays counted as a problem —
-it IS a behavior signal, unlike a data gap. The other suppression is unchanged: `FlagEvaluator`
-only runs `AllHealthyRule` when nothing else raised in that same evaluation, so `all_healthy` and
-`logging_gap` still never appear together on the same day.
+`all_healthy`'s "no problem row" check (`existsProblemRaiseSince`) excludes `all_healthy` itself,
+`logging_gap`, and (since S6) `ignored_nudge`: `logging_gap` names a data-availability gap (a
+domain has gone stale), not a health/behavior problem, so a user who tracks sleep and check-ins
+tightly but logs meals loosely must not have `all_healthy` blocked for a full `quiet-days` window
+every time `logging_gap` fires (review fix, bd `mezo-d58h.2`). `ignored_nudge` joins it by the same
+argument (bd `mezo-d58h.6`): it names the app's OWN nudging failing to land — a
+delivery/behavior-change-channel problem, not a health/behavior problem of the user's. The other
+eleven flags — `missed_workouts` and the remaining five S6 keys (`acute_bad_day`,
+`load_fuel_mismatch`, `rapid_weight_loss`, `joint_overuse`, `late_eating`) included — stay counted
+as problems, since each IS a genuine behavior/health signal, unlike a data gap or a failed nudge.
+The other suppression is unchanged: `FlagEvaluator` only runs `AllHealthyRule` when nothing else
+raised in that same evaluation, so `all_healthy` never appears alongside any other flag on the same
+day regardless of this query.
 
 A flag is written only when `companion_flag_log` holds no row with that `flag_key` newer than
 `cooldown-hours.<flag>` — identical for both sources.
@@ -4640,6 +4760,18 @@ IT):**
   want of nights; `missed_workouts`: raises on `minConsecutiveMissed` consecutive PLANNED days with
   nothing completed, stays quiet with no gym schedule at all or when the run breaks, and treats a
   Mon/Wed/Fri schedule's consecutive PLANNED days correctly (not consecutive calendar days).
+- **`flags/FlagEvaluatorAcuteBadDayIT`, `FlagEvaluatorLoadFuelMismatchIT`,
+  `FlagEvaluatorRapidWeightLossIT`, `FlagEvaluatorJointOveruseIT`, `FlagEvaluatorIgnoredNudgeIT`,
+  `FlagEvaluatorLateEatingIT`** (S6 batch B, bd `mezo-d58h.6`) — one IT per new rule, each pinning
+  its own honesty gate: `acute_bad_day` stays quiet below `min-check-ins` and on a null-scored
+  check-in; `load_fuel_mismatch` gates the kcal/sleep logged-day counts off the SPARSE series, never
+  the calendar-complete load series, and carries `WEIGHT_TREND_PCT_WK` as a fact without ever
+  gating on it; `rapid_weight_loss` stays quiet with no active goal and with a `cut` goal, and relies
+  on the extractor's own <4-weigh-ins null; `joint_overuse` never calls the write-side `getToday`
+  and stays quiet with no planned session tomorrow; `ignored_nudge` breaks its run on an unlogged
+  night, a night with no push, or a single compliant night, and stays silent with no `sleep_goal`
+  row; `late_eating` exercises both arms independently (bed-arm-only, absolute-arm-only, neither)
+  and stays quiet on the days a goal-less user's absolute arm alone cannot yet qualify.
 - **`flags/FlagServiceIT`** — writes one audit row per raised flag with the right `source`; the
   cooldown blocks an immediate re-raise and lifts once it expires; the on-write and sweep sources
   raise IDENTICALLY apart from `source`
@@ -5557,27 +5689,32 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - **FE side** — at ship time, `frontend/src/features/me/pages/KnowledgePage.tsx` + `frontend/src/features/me/components/ProfileNodeCard.tsx`; **since `mezo-ms9a` (2026-09-01)** the card is `frontend/src/features/insights/components/ProfileNodeCard.tsx`, rendered by `KnowledgeListPage`'s `?view=profil` ("Így beszélj velem") view — plus `frontend/src/data/insights/graph.ts` (`PROFILE_SOURCE_KIND`), documented in [`insights.md` §2.4](insights.md).
 
 **Backend — composite flags (W5.1, `mezo-b3pp.18` — §3/§4, spec §4.5/§9.1; `logging_gap`/
-`missed_workouts` added S2, bd `mezo-d58h.2`, spec 2026-09-03 §4)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/config/FlagProperties.java` — the `mezo.companion.flags.*` knobs (`sweepCron` + seven per-flag threshold records + `cooldownHours`), a feature-scoped `@Validated` record — the `FeedbackLearningProperties`/`ProfileProperties` precedent (§9).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/FlagPayloadEnvelope.java` — the typed jsonb payload, one nested record per rule + a static factory each (the `FeedbackRollupStatsEnvelope` precedent); seven variants since S2.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/CompanionFlagLogEntity.java` — `extends OwnedEntity`, append-only, soft-deletable, `flagKey`/`source` `@Pattern`-mirrored CHECKs — `flagKey`'s regex is the FOURTH mirror of the flag-key list (§3 above; `CompanionProperties.Intervention.flag` is the FIFTH), widened by S2.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/repository/CompanionFlagLogRepository.java` — `existsRaiseSince` (the cooldown gate) and `existsProblemRaiseSince` (the `all_healthy` quiet-window gate).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagKey.java` — the seven flag-key constants + `SOURCE_WRITE`/`SOURCE_SWEEP`, string constants mirroring the DB CHECKs (the `MessageFeedbackEntity` verdict/reason precedent).
+`missed_workouts` added S2, bd `mezo-d58h.2`; `acute_bad_day`/`load_fuel_mismatch`/
+`rapid_weight_loss`/`joint_overuse`/`ignored_nudge`/`late_eating` added S6 batch B, bd
+`mezo-d58h.6`, spec 2026-09-03 §4)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/config/FlagProperties.java` — the `mezo.companion.flags.*` knobs (`sweepCron` + thirteen per-flag threshold records + `cooldownHours`), a feature-scoped `@Validated` record — the `FeedbackLearningProperties`/`ProfileProperties` precedent (§9).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/FlagPayloadEnvelope.java` — the typed jsonb payload, one nested record per rule + a static factory each (the `FeedbackRollupStatsEnvelope` precedent); thirteen variants since S6.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/CompanionFlagLogEntity.java` — `extends OwnedEntity`, append-only, soft-deletable, `flagKey`/`source` `@Pattern`-mirrored CHECKs — `flagKey`'s regex is the FOURTH mirror of the flag-key list (§3 above; `CompanionProperties.Intervention.flag` is the FIFTH), widened by S2 and again by S6.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/repository/CompanionFlagLogRepository.java` — `existsRaiseSince` (the cooldown gate) and `existsProblemRaiseSince` (the `all_healthy` quiet-window gate; its `NOT IN` exclusion list is a degrade-site the five formal mirrors do not cover — §3 above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagKey.java` — the thirteen flag-key constants + `SOURCE_WRITE`/`SOURCE_SWEEP`, string constants mirroring the DB CHECKs (the `MessageFeedbackEntity` verdict/reason precedent).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaise.java` — one flag the evaluator says is TRUE right now, with its payload, before the cooldown gate is applied.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluator.java` — since S1 (`mezo-d58h.1`) a thin orchestrator calling seven `FlagRule` beans in a fixed order, LLM-free (§3).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluator.java` — since S1 (`mezo-d58h.1`) a thin orchestrator calling thirteen `FlagRule` beans in a fixed order, LLM-free (§3).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRule.java` — S1 (`mezo-d58h.1`): the one-method rule contract, `evaluate(userId, today) → Optional<FlagRaise>`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/NudgeSendPort.java` — S6 (bd `mezo-d58h.6`): the companion-owned port `IgnoredNudgeRule` reads sent `push_log` rows through, avoiding a `companion → notification` import that would close the existing `notification → companion` cycle.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/{SustainedStressRule,SleepDebtRule,MomentumAtRiskRule,RecoveryNeededRule,AllHealthyRule}.java` — S1 (`mezo-d58h.1`): the original five rules, one class each, pure arithmetic over `MetricSeriesService`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/SleepDeficitCalculator.java` — S2 (bd `c6c045082`): the shared sleep-deficit-vs-goal computation, extracted out of `SleepDebtRule` so `LoggingGapRule`'s suspicion variant can reuse it (§3).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/LoggingGapRule.java` — S2 (bd `mezo-d58h.2`): the `logging_gap` rule; reads `MealRepository`/`CheckInRepository`/`SleepLogRepository` directly, not `MetricSeriesService` (§3 recency-read exception).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/MissedWorkoutsRule.java` — S2 (bd `mezo-d58h.2`): the `missed_workouts` rule; consecutive-in-planned-days-not-calendar-days logic (§3).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/{AcuteBadDayRule,LoadFuelMismatchRule,RapidWeightLossRule,JointOveruseRule,IgnoredNudgeRule,LateEatingRule}.java` — S6 batch B (bd `mezo-d58h.6`): the epic's last six rules, in severity order (§3 above has each one's own honesty gate).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagService.java` — the cooldown gate + append (`evaluateAndLog`), the ONLY write path into `companion_flag_log`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluationListener.java` — the on-write trigger, `@Async @TransactionalEventListener(AFTER_COMMIT)` on `CheckInSavedEvent`/`SleepLogSavedEvent`.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagSweepJob.java` — the hourly sweep (`mezo.companion.flags.sweep-cron`), own job switch, per-user try/catch.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagSweepJob.java` — the hourly sweep (`mezo.companion.flags.sweep-cron`), own job switch, per-user try/catch — the caller whose per-user, hourly cadence is what made the S6 bounded-read prerequisite fixes (§3 above) actually matter.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/checkin/service/CheckInSavedEvent.java` — the NEW `CheckInService.save` AFTER_COMMIT event this slice consumes; the check-in feature itself knows nothing about flags.
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `FLAG_SWEEP_JOB_SWITCH` (`mezo.techcore.cron.flag-sweep-job.enabled`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608241200_mezo-b3pp.18_create_companion_flag_log.sql` — the table (in `1.0.0_master.yml`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609031200_mezo-d58h.2_flag_key_logging_gap_missed_workouts.sql` — S2: widens `ck_companion_flag_log_flag_key` to seven keys.
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT,FlagEvaluatorLoggingGapIT,FlagEvaluatorMissedWorkoutsIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. **Since W5.2 (`mezo-b3pp.19`), `FlagRaisedEvent` (below) is the consumer** — see the next block.
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609041200_mezo-d58h.6_flag_key_batch_b.sql` — S6: widens `ck_companion_flag_log_flag_key` to the thirteen keys.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT,FlagEvaluatorLoggingGapIT,FlagEvaluatorMissedWorkoutsIT,FlagEvaluatorAcuteBadDayIT,FlagEvaluatorLoadFuelMismatchIT,FlagEvaluatorRapidWeightLossIT,FlagEvaluatorJointOveruseIT,FlagEvaluatorIgnoredNudgeIT,FlagEvaluatorLateEatingIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. **Since W5.2 (`mezo-b3pp.19`), `FlagRaisedEvent` (below) is the consumer** — see the next block.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaisedEvent.java` — W5.2 (bd `mezo-b3pp.19`): the `{userId, flagKey, source}` event `FlagService.evaluateAndLog` publishes for every WRITTEN raise, inside the logging transaction (§3/§4 above).
 
 **Backend — intervention delivery (W5.2, `mezo-b3pp.19` — §4/§5.8/§9, spec §9.2; consumer side, lives in `feature.proactive` not `feature.companion`)**
