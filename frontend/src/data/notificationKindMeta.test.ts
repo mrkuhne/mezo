@@ -15,7 +15,7 @@ const BACKEND_KINDS = [
   'prediction_new', 'prediction_outcome',
   'experiment_proposed', 'experiment_closed',
   'challenge_event', 'memory_note', 'weekly_review_ready',
-  'life_goal_plan',
+  'life_goal_plan', 'goal_suggestion',
 ] as const
 
 describe('APP_NOTIFICATION_KIND_META', () => {
@@ -32,6 +32,10 @@ describe('APP_NOTIFICATION_KIND_META', () => {
 
   it('az életcél-terv a cél clay ikonját viszi', () => {
     expect(APP_NOTIFICATION_KIND_META.life_goal_plan.clay).toBe('i-cel')
+  })
+
+  it('a céljavaslat a cél clay ikonját és goal tintet viszi', () => {
+    expect(APP_NOTIFICATION_KIND_META.goal_suggestion).toMatchObject({ clay: 'i-cel', tint: 'goal' })
   })
 })
 
