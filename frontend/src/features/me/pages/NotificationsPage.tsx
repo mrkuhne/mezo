@@ -122,7 +122,7 @@ export function NotificationsPage() {
   const intakes = useIntakes(localDateString())
   const { settings } = useFuelSettings()
   const { goal: sleepGoal } = useSleepGoal()
-  const { gymSchedule, sport } = useTrain()
+  const { gymSchedule, sport, sportSlotSkips } = useTrain()
   const { activeRunningBlock } = useRunning()
   const { data: ritualDay } = useRitualDay(localDateString())
   const { cycle: medicationCycle } = useMedication()
@@ -131,7 +131,7 @@ export function NotificationsPage() {
   // gym_schedule_slot + sport_schedule_slot only — never a running block). `null` = nothing
   // scheduled today → both the forecast and the row sub-line honestly fall back rather than
   // inventing a time.
-  const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock)
+  const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips)
   const gymBlock = blocks
     .filter((b) => b.kind === 'gym' || b.kind === 'sport')
     .sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0))[0] ?? null

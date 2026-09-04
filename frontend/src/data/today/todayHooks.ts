@@ -6,6 +6,8 @@ import { useTrain } from '@/data/train/trainHooks'
 import { useSleep } from '@/data/me/sleepHooks'
 import { useWeight } from '@/data/me/weightHooks'
 import { huMonthDay, huMonthDayDow, huWeekdayFull, localDateString } from '@/shared/lib/dates'
+import { todayIdx } from '@/data/train/runningAgenda'
+import { isSportSlotSkipped } from '@/features/train/logic/weekAgenda'
 import {
   today,
   user,
@@ -125,6 +127,14 @@ export function useToday(): TodayData {
   // date, so today's key is built the same way. Kind-keyed, not a flag — a mixed day flips
   // each sport hero on its own.
   const todayDisplayDate = huMonthDayDow(localDateString(now))
+  const todayIso = localDateString(now)
+  // A skip_sport_slot advice action (mezo-cq06) hides today's dated occurrence of a recurring
+  // sport slot from the hero the same way `buildWeekAgenda` already hides it from the week
+  // agenda — only entries actually flagged `today` can match (a future weekday's session has no
+  // ISO date to compare here), matched on today's weekday index + the slot's own time.
+  const volleyballSessionsReal = (train.sport.schedule?.volleyball.sessions ?? []).filter(
+    (s) => !(s.today && isSportSlotSkipped(train.sportSlotSkips, todayIdx(now), s.time, todayIso)),
+  )
   return {
     today: {
       dayLabel: huWeekdayFull(now),
@@ -149,7 +159,7 @@ export function useToday(): TodayData {
     workoutOpenSets: openWorkout ? openWorkout.sets.filter((s) => !s.skipped).length : null,
     loggedSportKinds: train.sport.sessions.filter((s) => s.date === todayDisplayDate).map((s) => s.sport),
     prediction: null,
-    volleyballSessions: train.sport.schedule?.volleyball.sessions ?? [],
+    volleyballSessions: volleyballSessionsReal,
     volleyballNote: null,
   }
 }

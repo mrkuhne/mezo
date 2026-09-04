@@ -24,6 +24,8 @@ import { addDays, localDateString } from '@/shared/lib/dates'
 import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
 import { dayOrbFill, type DayOrbPlan, type DayOrbSignals } from '@/features/today/logic/dayOrbFill'
 import { provisionalDayScore } from '@/features/today/logic/dayOrbTone'
+import { todayIdx } from '@/data/train/runningAgenda'
+import { isSportSlotSkipped } from '@/features/train/logic/weekAgenda'
 
 export interface DayOrbState {
   pct: number
@@ -53,6 +55,7 @@ export function useDayOrbFill(): DayOrbState {
   const sportSessions = train.sport.sessions
   const gymWeeklyTimes = train.gymSchedule?.weeklyTimes
   const sportScheduleSessions = train.sport.schedule?.volleyball.sessions
+  const sportSlotSkips = train.sportSlotSkips
 
   return useMemo(() => {
     // A `lastNight` mező a teljes napló utolsó eleme, NEM tegnap éjszakáé — ezért a
@@ -77,9 +80,14 @@ export function useDayOrbFill(): DayOrbState {
     // A nevezőhöz a `deriveBlocks` gym-ága NEM jó: az `d.time`-ot is megköveteli, tehát egy
     // time-slot nélküli meso-nap pihenőnapnak látszana. Itt csak az számít, hogy a nap
     // TERVE szerint jár-e edzés — az időpont nem.
+    // A skip_sport_slot advice action (mezo-cq06) hides today's dated occurrence the same way
+    // the week agenda already hides it — a "planned" sport signal must not stay lit for a slot
+    // the user has explicitly skipped for today.
     const plan: DayOrbPlan = {
       gymPlanned: Boolean(gymWeeklyTimes?.some((d) => d.today && d.active)),
-      sportPlanned: Boolean(sportScheduleSessions?.some((s) => s.today)),
+      sportPlanned: Boolean(sportScheduleSessions?.some(
+        (s) => s.today && !isSportSlotSkipped(sportSlotSkips, todayIdx(), s.time, todayIso),
+      )),
     }
 
     const evaluation = evaluationData ? normalizeDayEvaluation(evaluationData) : null
@@ -95,6 +103,6 @@ export function useDayOrbFill(): DayOrbState {
   }, [
     todayIso, yesterdayIso, sleepLog, weightLog, fuel.meals, checkins, journalToday,
     gymDoneDates, completedTodayWorkout, sportSessions, runSessions,
-    gymWeeklyTimes, sportScheduleSessions, evaluationData,
+    gymWeeklyTimes, sportScheduleSessions, sportSlotSkips, evaluationData,
   ])
 }

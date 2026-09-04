@@ -76,7 +76,7 @@ export function useFuelTimeline(date: string = localDateString()) {
   const { occurrences } = useProtocol()
   const { stash } = useStack()
   const intakes = useIntakes(date)
-  const { gymSchedule, sport } = useTrain()
+  const { gymSchedule, sport, sportSlotSkips } = useTrain()
   const { activeRunningBlock } = useRunning()
   const { settings } = useFuelSettings() // Fuel-owned meal cadence + caffeine cutoff (mezo-53su)
   const { profile } = useBiometricProfile() // NEAT band label for the energy-breakdown sheet (mezo-hobb)
@@ -89,7 +89,7 @@ export function useFuelTimeline(date: string = localDateString()) {
   const bed = sleepGoal.bedTime
   const mealsPerDay = settings.mealsPerDay
 
-  const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock)
+  const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, sportSlotSkips)
 
   // Day-type template (mezo-7102): today's REAL blocks resolve one of the three canonical day
   // types, which picks the matching cached template (absent → null, buildDayPlan's today-unchanged

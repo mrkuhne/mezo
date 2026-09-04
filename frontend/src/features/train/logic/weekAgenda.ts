@@ -26,6 +26,16 @@ export interface SportSlotSkip {
   date: string
 }
 
+/** True when `skips` hides the (weekday, time) occurrence pinned to `date` — the SAME identity
+ *  match every skip-aware FE read shares with the backend's own `hasScheduledTrainingOn`
+ *  (mezo-cq06): weekday index (0=Hét..6=Vas, matching `DAY_ORDER`) + the unnormalised `"HH:mm"`
+ *  time string, compared as-is + the exact ISO date. Exported so the other date-specific FE
+ *  reads (fuel protocol, Today hero, day-orb fill, ritual recap, fuel week) can match a skip the
+ *  same way `buildWeekAgenda` below does, instead of each re-deriving the comparison. */
+export function isSportSlotSkipped(skips: SportSlotSkip[], dayOfWeek: number, time: string, date: string): boolean {
+  return skips.some((s) => s.dayOfWeek === dayOfWeek && s.time === time && s.date === date)
+}
+
 export function buildWeekAgenda({
   gymTimes,
   sportSlots,
@@ -63,7 +73,7 @@ export function buildWeekAgenda({
       (x) =>
         x.day === d &&
         (!x.date || x.date === date) &&
-        !skips.some((s) => s.dayOfWeek === i && s.time === x.time && s.date === date),
+        !isSportSlotSkipped(skips, i, x.time, date),
     )
     return {
       day: d,

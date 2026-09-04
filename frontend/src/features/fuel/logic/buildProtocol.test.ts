@@ -1,5 +1,7 @@
-import { deriveProtocolAnchors } from '@/features/fuel/logic/buildProtocol'
-import type { GymSchedule } from '@/data/types'
+import { deriveBlocks, deriveProtocolAnchors } from '@/features/fuel/logic/buildProtocol'
+import { todayIdx } from '@/data/train/runningAgenda'
+import { localDateString } from '@/shared/lib/dates'
+import type { GymSchedule, VolleyballSession } from '@/data/types'
 
 // --- deriveProtocolAnchors — the CANONICAL preWorkout derivation (fix round 1, mezo-h4wp.6.3) ---
 // Pinning the bug the review caught: without this, both the notification schedule writer and
@@ -30,5 +32,35 @@ describe('deriveProtocolAnchors', () => {
     expect(anchors.preWorkout).toBeUndefined()
     expect(anchors.wake).toBe('07:00')
     expect(anchors.bedtime).toBe('23:00')
+  })
+})
+
+// --- deriveBlocks — sport-slot skip (mezo-cq06) ---
+// The fuel protocol used to keep anchoring the pre-workout meal / calorie budget on today's
+// sport block even after a skip_sport_slot advice action hid that exact dated occurrence — the
+// one FE read that visibly contradicted the backend's `hasScheduledTrainingOn`.
+describe('deriveBlocks — sport-slot skip', () => {
+  const sport = (overrides: Partial<VolleyballSession> = {}): VolleyballSession => ({
+    day: 'Kedd', time: '18:00', duration: 90, court: 'BVSC', intensity: 'közepes', role: 'edzés',
+    today: true,
+    ...overrides,
+  })
+
+  test('a skip matching today\'s weekday + time + date removes the sport block', () => {
+    const todayIso = localDateString(new Date())
+    const skips = [{ dayOfWeek: todayIdx(), time: '18:00', date: todayIso }]
+    const blocks = deriveBlocks(null, { schedule: { volleyball: { team: '', sessions: [sport()], season: '', weeklyHours: 0 } } }, null, skips)
+    expect(blocks.find((b) => b.kind === 'sport')).toBeUndefined()
+  })
+
+  test('a skip for a different date leaves today\'s sport block present', () => {
+    const skips = [{ dayOfWeek: todayIdx(), time: '18:00', date: '1999-01-01' }]
+    const blocks = deriveBlocks(null, { schedule: { volleyball: { team: '', sessions: [sport()], season: '', weeklyHours: 0 } } }, null, skips)
+    expect(blocks.find((b) => b.kind === 'sport')?.time).toBe('18:00')
+  })
+
+  test('no skips leaves today\'s sport block present (default param, byte-identical to pre-mezo-cq06 callers)', () => {
+    const blocks = deriveBlocks(null, { schedule: { volleyball: { team: '', sessions: [sport()], season: '', weeklyHours: 0 } } }, null)
+    expect(blocks.find((b) => b.kind === 'sport')?.time).toBe('18:00')
   })
 })

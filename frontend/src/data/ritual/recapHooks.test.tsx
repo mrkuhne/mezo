@@ -152,6 +152,56 @@ describe('useDayRecap (real mode)', () => {
     expect(result.current.checkinsDone).toBe(0)
     expect(result.current.thinDay).toBe(true)
   })
+
+  // mezo-cq06 — a skip_sport_slot advice action hides one dated occurrence of a recurring sport
+  // slot; the rest-day fallback (`train.sport.schedule.volleyball.sessions.find(s => s.today)`)
+  // used to keep reporting it regardless, contradicting the backend's own
+  // `hasScheduledTrainingOn`. Pin a Tuesday (fake `Date` only — trainHooks.ts derives the
+  // schedule's `today` flag from `new Date()`) so the fixture's Kedd slot deterministically
+  // matches "today", instead of depending on the weekday the suite happens to run.
+  describe('rest-day sport fallback honours a sport-slot skip', () => {
+    const REST_DAY = '2026-06-16' // Tuesday — dayOfWeek 1
+    const sportScheduleFixture = () =>
+      http.get(`${API_BASE}/api/train/sport-schedule`, () =>
+        HttpResponse.json([
+          { id: 'e1', dayOfWeek: 1, time: '17:00', durationMin: 90, kind: 'training', location: 'BVSC', intensityLabel: 'közepes' },
+        ]),
+      )
+    const restDay = () => http.get(`${API_BASE}/api/train/workouts/today`, () => new HttpResponse(null, { status: 404 }))
+
+    afterEach(() => { vi.useRealTimers() })
+
+    test('a skip matching the fallback slot removes the "i-sport" recap event', async () => {
+      vi.stubEnv('VITE_USE_MOCK', 'false')
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(`${REST_DAY}T08:00:00`))
+      server.use(
+        restDay(), sportScheduleFixture(),
+        http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
+          HttpResponse.json([{ dayOfWeek: 1, time: '17:00', date: REST_DAY }]),
+        ),
+      )
+      const { result } = renderHook(() => useDayRecap(REST_DAY), { wrapper: makeHookWrapper() })
+      await waitFor(() => expect(result.current.events.some((e) => e.icon === 'i-fuel')).toBe(true))
+      expect(result.current.events.some((e) => e.icon === 'i-sport')).toBe(false)
+    })
+
+    test('a skip for a different date leaves the "i-sport" recap event present', async () => {
+      vi.stubEnv('VITE_USE_MOCK', 'false')
+      vi.useFakeTimers({ toFake: ['Date'] })
+      vi.setSystemTime(new Date(`${REST_DAY}T08:00:00`))
+      server.use(
+        restDay(), sportScheduleFixture(),
+        http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
+          HttpResponse.json([{ dayOfWeek: 1, time: '17:00', date: '2026-06-23' }]), // next Tuesday
+        ),
+      )
+      const { result } = renderHook(() => useDayRecap(REST_DAY), { wrapper: makeHookWrapper() })
+      await waitFor(() => expect(result.current.events.some((e) => e.icon === 'i-sport')).toBe(true))
+      const sportEvent = result.current.events.find((e) => e.icon === 'i-sport')
+      expect(sportEvent).toEqual({ icon: 'i-sport', label: 'Röplabda', meta: '17:00', done: false })
+    })
+  })
 })
 
 describe('useDayRecap (mock mode)', () => {

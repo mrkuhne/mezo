@@ -1,10 +1,15 @@
-import { renderHook } from '@testing-library/react'
+import { renderHook, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { vi } from 'vitest'
+import { http, HttpResponse } from 'msw'
 import type { DayEvaluationResponse } from '@/data/hooks'
 import { NEUTRAL_INTENSITY } from '@/features/today/logic/dayOrbFill'
 import { useDayOrbFill } from '@/features/today/logic/useDayOrbFill'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
+import { todayIdx } from '@/data/train/runningAgenda'
+import { localDateString } from '@/shared/lib/dates'
 
 function wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -95,6 +100,61 @@ test('a label mindkét módban „A mai napod"-dal kezdődik', () => {
 // mindkét módban futó tesztek NEM tudnak ellenőrizni (azok a dayOrbFill saját invariánsait
 // ismétlik meg) — ha a hook véletlenül present-et hardcode-olná, vagy elrontaná a
 // `present === 0` ági feltételt a labelben, ez a teszt buktatná.
+// mezo-cq06 — a skip_sport_slot advice action hides one dated occurrence of a recurring sport
+// slot; `sportPlanned` used to stay lit for it regardless, contradicting the backend's own
+// `hasScheduledTrainingOn`. Uses the REAL wall-clock date (via `todayIdx`/`localDateString`,
+// the same functions the hook itself calls) rather than faking `Date` — `useMinuteTick`'s clock
+// is a module-level singleton captured at import time, so faking `Date` inside the test body
+// would not reach it.
+describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('sportPlanned honours a sport-slot skip (mezo-cq06)', () => {
+  const dow = todayIdx()
+  const todayIso = localDateString(new Date())
+
+  // Cold-start denominator is already 5 before the sport-schedule fetch resolves (no data yet →
+  // sportPlanned false), so a naive `waitFor(() => denominator === 5)` would pass trivially
+  // without ever observing the fetch. Wait for the ['train','sportSchedule'] query to actually
+  // SETTLE first, so both tests genuinely exercise the post-fetch filter.
+  function wrapperWithClient() {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    const Wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={qc}>{children}</QueryClientProvider>
+    )
+    return { Wrapper, qc }
+  }
+
+  test('a skip matching today\'s weekday + time + date drops the sport slot from the denominator', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/sport-schedule`, () =>
+        HttpResponse.json([{ id: 's1', dayOfWeek: dow, time: '17:00', durationMin: 90, kind: 'training', location: 'BVSC', intensityLabel: 'közepes' }]),
+      ),
+      http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
+        HttpResponse.json([{ dayOfWeek: dow, time: '17:00', date: todayIso }]),
+      ),
+    )
+    const { Wrapper, qc } = wrapperWithClient()
+    const { result } = renderHook(() => useDayOrbFill(), { wrapper: Wrapper })
+    await waitFor(() => expect(qc.getQueryState(['train', 'sportSchedule'])?.status).toBe('success'))
+    await waitFor(() => expect(result.current.denominator).toBe(5))
+  })
+
+  test('a skip for a different date leaves the sport slot in the denominator', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/gym-schedule`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/train/sport-schedule`, () =>
+        HttpResponse.json([{ id: 's1', dayOfWeek: dow, time: '17:00', durationMin: 90, kind: 'training', location: 'BVSC', intensityLabel: 'közepes' }]),
+      ),
+      http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
+        HttpResponse.json([{ dayOfWeek: dow, time: '17:00', date: '1999-01-01' }]),
+      ),
+    )
+    const { Wrapper, qc } = wrapperWithClient()
+    const { result } = renderHook(() => useDayOrbFill(), { wrapper: Wrapper })
+    await waitFor(() => expect(qc.getQueryState(['train', 'sportSchedule'])?.status).toBe('success'))
+    await waitFor(() => expect(result.current.denominator).toBe(6))
+  })
+})
+
 describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('real-módú hidegindítás — pontos érték', () => {
   test('nincs adat: present=0, denominator=5, pct=0, label „még nincs adat"', () => {
     const { result } = renderHook(() => useDayOrbFill(), { wrapper })
