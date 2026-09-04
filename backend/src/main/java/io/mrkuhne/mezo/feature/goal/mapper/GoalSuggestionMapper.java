@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.GoalSuggestionPayload;
 import io.mrkuhne.mezo.api.dto.GoalSuggestionResponse;
 import io.mrkuhne.mezo.feature.goal.entity.GoalSuggestionEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalSuggestionPayloadJson;
+import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import org.mapstruct.Mapper;
@@ -30,8 +31,20 @@ public interface GoalSuggestionMapper {
             .balanceOverrideKcal(j.balanceOverrideKcal())
             .fromWeek(j.fromWeek()).toWeek(j.toWeek())
             .mesoId(j.mesoId()).mesoTitle(j.mesoTitle())
-            .snapshotTrajectory(
-                GoalSuggestionPayload.SnapshotTrajectoryEnum.fromValue(j.snapshotTrajectory()))
+            // null on weekly_correction (this kind's race guard lives in prescriptionGeneratedAt instead).
+            .snapshotTrajectory(j.snapshotTrajectory() == null ? null
+                : GoalSuggestionPayload.SnapshotTrajectoryEnum.fromValue(j.snapshotTrajectory()))
+            .weekStart(j.weekStart() == null ? null : LocalDate.parse(j.weekStart()))
+            .deltaKcal(j.deltaKcal())
+            .observedRateKgPerWk(j.observedRateKgPerWk())
+            .targetRateKgPerWk(j.targetRateKgPerWk())
+            .dampedBySleep(j.dampedBySleep())
+            .adherenceLoggedDays(j.adherenceLoggedDays())
+            .adherenceAvgIntakeKcal(j.adherenceAvgIntakeKcal())
+            .adherenceAvgTargetKcal(j.adherenceAvgTargetKcal())
+            .prescriptionGeneratedAt(j.prescriptionGeneratedAt())
+            .snapshotRateTargetPctPerWeek(j.snapshotRateTargetPctPerWeek())
+            .snapshotBalanceAdjustmentKcal(j.snapshotBalanceAdjustmentKcal())
             .build();
     }
 

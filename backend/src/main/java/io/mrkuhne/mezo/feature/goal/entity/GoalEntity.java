@@ -75,4 +75,8 @@ public class GoalEntity extends OwnedEntity {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "segment_overrides", columnDefinition = "jsonb")
     private List<GoalSegmentOverrideJson> segmentOverrides;
+
+    /** Accepted adaptive-review corrections (kcal/day), summed; slice 5. Null = 0. */
+    @Column(name = "balance_adjustment_kcal")
+    private Integer balanceAdjustmentKcal;
 }

@@ -12501,6 +12501,10 @@ components:
           type: string
           pattern: '^([01]\d|2[0-3]):[0-5]\d$'
           description: 'Day-planner bed anchor, HH:mm'
+        balanceAdjustmentKcal:
+          type: integer
+          nullable: true
+          description: 'Accepted adaptive corrections, summed (kcal/day); slice 5'
         tdeeBootstrap:
           allOf:
             - $ref: '#/components/schemas/TdeeBootstrap'
@@ -12960,7 +12964,6 @@ components:
         guard.
       required:
         - reason
-        - snapshotTrajectory
       properties:
         reason:
           type: string
@@ -12997,6 +13000,54 @@ components:
             - cut
             - bulk
             - maintain
+          nullable: true
+          description: phase_change race guard; null on weekly_correction
+        weekStart:
+          type: string
+          format: date
+          nullable: true
+          description: 'weekly_correction: reviewed week Monday (mirrors the dedup key)'
+        deltaKcal:
+          type: integer
+          nullable: true
+        observedRateKgPerWk:
+          type: number
+          nullable: true
+        targetRateKgPerWk:
+          type: number
+          nullable: true
+        dampedBySleep:
+          type: boolean
+          nullable: true
+        adherenceLoggedDays:
+          type: integer
+          nullable: true
+        adherenceAvgIntakeKcal:
+          type: integer
+          nullable: true
+        adherenceAvgTargetKcal:
+          type: integer
+          nullable: true
+        prescriptionGeneratedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: >-
+            weekly_correction display/debug only — NOT the accept race guard
+            (rotates on every recompute); see
+            snapshotRateTargetPctPerWeek/snapshotBalanceAdjustmentKcal
+        snapshotRateTargetPctPerWeek:
+          type: number
+          nullable: true
+          description: >-
+            weekly_correction accept race guard: goal.rateTargetPctPerWeek at
+            propose time
+        snapshotBalanceAdjustmentKcal:
+          type: integer
+          nullable: true
+          description: >-
+            weekly_correction accept race guard: goal.balanceAdjustmentKcal at
+            propose time
     BiometricProfileResponse:
       type: object
       description: >-

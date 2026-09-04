@@ -56,7 +56,10 @@ public record GoalEngineProperties(
     @NotNull @Positive Integer bootstrapUncertaintyKcal,
 
     /** Suggest+approve trigger tunables (slice 4). */
-    @NotNull @Valid Suggestion suggestion
+    @NotNull @Valid Suggestion suggestion,
+
+    /** Weekly adaptive-review tunables (slice 5): correction clamp, dead-band, sleep-debt guard window. */
+    @NotNull @Valid Adaptive adaptive
 ) {
 
     /**
@@ -154,6 +157,20 @@ public record GoalEngineProperties(
      */
     public record Suggestion(
         @NotNull Map<String, String> presetTrajectory
+    ) {
+    }
+
+    /**
+     * Weekly adaptive-review tunables. The correction is
+     * {@code clamp((targetRate − observedRate) × kcalPerKg ÷ 7, ±maxStepKcal)} — deliberately small
+     * steps (RP's unsmoothed 200g→50g jumps are the anti-pattern; MacroFactor-style smoothing).
+     */
+    public record Adaptive(
+        @NotNull @Min(50) @Max(300) Integer maxStepKcal,        // 120 — max suggested change per week
+        @NotNull @Min(10) @Max(150) Integer deadBandKcal,       // 50 — below this, no suggestion at all
+        @NotNull @Min(3) @Max(14) Integer sleepDebtNights,      // 7 — guard window (spec §6.6: 7-day)
+        @NotNull @Min(2) @Max(14) Integer sleepDebtMinNights,   // 4 — honest small-n gate
+        @NotNull @Positive Double sleepDebtDeficitHours          // 5.0 — cumulative deficit that trips the guard
     ) {
     }
 }
