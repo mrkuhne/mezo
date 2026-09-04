@@ -70,16 +70,36 @@ public class CompanionMessagePopulator {
         return companionMessageRepository.saveAndFlush(entity);
     }
 
-    /** S4 advice card (bd mezo-d58h.4) — kind + both keys + the structured payload in one shot. */
+    /** S4 advice card (bd mezo-d58h.4) — kind + both keys + the structured payload in one shot.
+     *  Delegates to {@link #createAdviceWithActions} with null actions and no applied stamp — a
+     *  null (not empty) actions list is what actually round-trips to null, so this doubles as the
+     *  pre-S5 legacy-row shape the S5 deserialization test needs, and there is one construction
+     *  site. */
     public CompanionMessageEntity createAdvice(
             UUID owner, LocalDate date, String adviceKey, String interventionKey, String eyebrow,
             String prose, List<String> facts, List<String> suggestions, Instant generatedAt) {
+        return createAdviceWithActions(owner, date, adviceKey, interventionKey, eyebrow, prose,
+            facts, suggestions, null, null, generatedAt);
+    }
+
+    /** S5 advice card (bd mezo-d58h.5) — same shape as {@link #createAdvice} plus the mutation-set
+     *  {@code actions} and an optional {@code applied} stamp, so a test can seed an already-applied
+     *  card. Builds the envelope through the canonical constructor (not the {@code advice(...)}
+     *  factory) because only the canonical constructor accepts a non-null {@code applied}.
+     *  {@code actions} is passed through as-is (null stays null) rather than defensively copied,
+     *  so callers can deliberately seed the null pre-S5 shape as well as a real action list. */
+    public CompanionMessageEntity createAdviceWithActions(
+            UUID owner, LocalDate date, String adviceKey, String interventionKey, String eyebrow,
+            String prose, List<String> facts, List<String> suggestions,
+            List<CompanionMessageEnvelope.Action> actions, CompanionMessageEnvelope.Applied applied,
+            Instant generatedAt) {
         CompanionMessageEntity entity = new CompanionMessageEntity();
         entity.setCreatedBy(owner);
         entity.setMessageDate(date);
         entity.setKind(CompanionMessageEntity.KIND_ADVICE);
-        entity.setContent(CompanionMessageEnvelope.advice(
-            eyebrow, prose, adviceKey, interventionKey, null, facts, suggestions));
+        entity.setContent(new CompanionMessageEnvelope(eyebrow, List.of(prose), List.of(),
+            interventionKey, null, adviceKey, List.copyOf(facts), List.copyOf(suggestions),
+            actions == null ? null : List.copyOf(actions), applied));
         entity.setGeneratedAt(generatedAt);
         return companionMessageRepository.saveAndFlush(entity);
     }
