@@ -192,6 +192,32 @@ class PantryCatalogApiIT extends ApiIntegrationTest {
         assertThat(item.getCatalogId()).isEqualTo(draft.getId());
     }
 
+    /**
+     * mezo-qooi (Critical): {@code findOrCreate}'s natural-key lookup is deliberately status-blind
+     * (it shares the unique index with drafts), so a manual add with NO {@code catalogId} that
+     * happens to type the exact same name as another user's unreviewed draft binds to that draft
+     * row. Before the fix, {@code ensureItem} then refused it with a 404 — a name Béla never typed
+     * anything wrong about became permanently uncreatable for him. The row must stay a draft: no
+     * promotion, so it stays out of search, the name index, and everyone else's from-catalog reach.
+     */
+    @Test
+    void testCreate_shouldSucceed_whenNaturalKeyHitsAnotherUsersUnreviewedDraft() {
+        RegisteredUser anna = registerUser("Anna Draft Bumper");
+        RegisteredUser bela = registerUser("Béla Manual Add");
+        PantryCatalogEntity draft = catalogPopulator.createFoodDefinition(anna.id(), "Nutri Bar", null);
+        draft.setStatus(PantryCatalogEntity.STATUS_DRAFT);
+        catalogRepository.saveAndFlush(draft);
+
+        PantryItemResponse belas = postForBody("/api/pantry", food("Nutri Bar", null, 210),
+            bela.headers(), HttpStatus.CREATED, PantryItemResponse.class);
+
+        assertThat(belas.getCatalogId()).isEqualTo(draft.getId());
+        IngredientResponse belaSees = ingredientOf(bela.headers(), belas.getId());
+        assertThat(belaSees.getName()).isEqualTo("Nutri Bar");
+        assertThat(catalogRepository.findById(draft.getId()).orElseThrow().getStatus())
+            .isEqualTo(PantryCatalogEntity.STATUS_DRAFT); // still unreviewed, no promotion
+    }
+
     @Test
     void testUpdate_shouldGateDefinitionEditsByAuthorOrOwner_andAlwaysAllowState() {
         RegisteredUser anna = registerUser("Anna");

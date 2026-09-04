@@ -262,7 +262,7 @@ export function KamraItemDetailPage() {
         )}
 
         <div style={{ marginTop: 18 }}>
-          {item.macros && (
+          {hasAnyMacro && (
             <button className="cta-primary" onClick={() => setLogOpen(true)}>
               <Icon name="plus" size={14} /> Logolás · mai étkezésbe
             </button>

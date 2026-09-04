@@ -201,15 +201,16 @@ public class PantryCatalogService {
     }
 
     /**
-     * Idempotent "from-catalog": the caller's live row for the definition, created if missing.
-     *
-     * <p>A {@code draft} row (mezo-qooi) is unreviewed — visible only on its own author's shelf.
-     * The AUTHOR is deliberately the one exception: {@code PantryImportService#importItem} inserts
-     * the draft and immediately calls this method to bind the very same caller to it, so the gate
-     * would otherwise break the import flow it exists to protect. Every other caller is treated as
-     * if the row did not exist at all — same {@code RESOURCE_NOT_FOUND} as an unknown
-     * {@code catalogId}, not a more specific error that would confirm the row's existence to a
-     * bystander who merely guessed or was handed the id.
+     * Idempotent "internal" bind: the caller's live row for an ALREADY-RESOLVED {@code catalogId},
+     * created if missing. This method never looks at draft status — {@link #findOrCreate}'s
+     * natural-key lookup is deliberately status-blind (it has to be: it shares the
+     * {@code uq_pantry_catalog_natural} unique index with drafts, so a status filter there would
+     * just mint a duplicate row instead of binding), which means a caller who lands here via a
+     * natural-key hit may be binding to a draft authored by somebody else entirely (mezo-qooi).
+     * Gating that here would 404 a perfectly legitimate manual add or trusted import onto a name
+     * that happens to collide with a stranger's unreviewed draft. The draft-visibility gate belongs
+     * instead on the one caller that hands in an ARBITRARY, client-supplied {@code catalogId} —
+     * {@code PantryService#addFromCatalog} — where binding to a stranger's draft is never legitimate.
      */
     @Transactional
     public PantryItemEntity ensureItem(UUID userId, UUID catalogId) {
@@ -217,8 +218,6 @@ public class PantryCatalogService {
             .orElseGet(() -> {
                 PantryCatalogEntity catalog = catalogRepository.findById(catalogId)
                     .filter(c -> !c.isDeleted())
-                    .filter(c -> !PantryCatalogEntity.STATUS_DRAFT.equals(c.getStatus())
-                        || userId.equals(c.getCreatedBy()))
                     .orElseThrow(() -> new SystemRuntimeErrorException(
                         SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
                 PantryItemEntity item = new PantryItemEntity();

@@ -15,7 +15,7 @@ import { usePantry } from '@/data/fuel/pantryHooks'
 import type { Ingredient, PantryItemKind, PantryMacrosVM, SupplementStashItem } from '@/data/types'
 
 /** An Ingredient the recipe picker can offer. `kind` now comes from the server (mezo-4orh). */
-export interface PickableIngredient extends Ingredient {}
+export type PickableIngredient = Ingredient
 
 // A stash item with no macro facts has NO data — not four zeroes (mezo-6omv).
 const NO_MACROS: PantryMacrosVM = { kcal: null, p: null, c: null, f: null }
@@ -54,7 +54,7 @@ export function buildPickables(
   ingredients: Ingredient[],
   stash: SupplementStashItem[],
 ): PickableIngredient[] {
-  const foods: PickableIngredient[] = ingredients.map(i => ({ ...i, kind: i.kind }))
+  const foods: PickableIngredient[] = ingredients.map(i => ({ ...i }))
   const supplements: PickableIngredient[] = stash
     .filter(s => !ingredients.some(i => i.stashRefId === s.id))
     .map(supplementToPickable)
