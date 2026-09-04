@@ -21,7 +21,13 @@ import org.junit.jupiter.api.Test;
 class AdviceActionCatalogTest {
 
     private final SleepGoalRepository repository = mock(SleepGoalRepository.class);
-    private final AdviceActionCatalog catalog = new AdviceActionCatalog(repository);
+    private final AdviceMutationPort shiftSleepAnchorPort = mock(AdviceMutationPort.class);
+    private final AdviceActionCatalog catalog;
+
+    AdviceActionCatalogTest() {
+        when(shiftSleepAnchorPort.actionKey()).thenReturn(AdviceActionKey.SHIFT_SLEEP_ANCHOR);
+        catalog = new AdviceActionCatalog(repository, List.of(shiftSleepAnchorPort));
+    }
 
     @Test
     void testForCard_shouldOfferShiftSleepAnchor_whenSleepDebtAndGoalRowExists() {
@@ -43,6 +49,21 @@ class AdviceActionCatalogTest {
         when(repository.findByCreatedByAndDeletedFalse(user)).thenReturn(Optional.empty());
 
         assertThat(catalog.forCard(user, FlagKey.SLEEP_DEBT)).isEmpty();
+    }
+
+    /** mezo-d58h.5 review fix: {@code SleepAnchorShiftAdapter} carries its own feature-switch
+     *  gate independent of this catalog — with the switch off (so Spring never registers the
+     *  port) but a stale {@code sleep_goal} row still present, the OLD behavior offered
+     *  {@code shift_sleep_anchor} anyway and {@code AdviceApplyService#apply} 500'd with
+     *  {@code PROACTIVE_ADVICE_ACTION_PORT_MISSING} for a user who did nothing wrong. The catalog
+     *  must consult the actual port registry, not just the sleep-goal row. */
+    @Test
+    void testForCard_shouldOfferNothing_whenShiftSleepAnchorPortIsNotRegistered() {
+        UUID user = UUID.randomUUID();
+        when(repository.findByCreatedByAndDeletedFalse(user)).thenReturn(Optional.of(new SleepGoalEntity()));
+        AdviceActionCatalog catalogWithNoPorts = new AdviceActionCatalog(repository, List.of());
+
+        assertThat(catalogWithNoPorts.forCard(user, FlagKey.SLEEP_DEBT)).isEmpty();
     }
 
     @Test

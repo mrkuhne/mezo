@@ -20,4 +20,4 @@ create table sport_slot_skip (
 -- One skip per (user, slot identity, date); the partial index mirrors the soft-delete convention.
 create unique index uq_sport_slot_skip_slot_date
     on sport_slot_skip (created_by, day_of_week, time, date) where is_deleted = false;
-create index ix_sport_slot_skip_date on sport_slot_skip (created_by, date) where is_deleted = false;
+create index idx_sport_slot_skip_date on sport_slot_skip (created_by, date) where is_deleted = false;

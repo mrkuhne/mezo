@@ -23,12 +23,19 @@ const COMPANION_FEED_KEY = ['companionFeed']
  * (`WORKOUT_TODAY_QUERY_KEY`, `trainApi.workoutToday`) reads the `workout_day_adjustment` row
  * this action writes, and nothing else was refetching it: without this entry the applied card
  * would show done while the plan kept showing yesterday's (pre-lighten) set counts until some
- * unrelated navigation happened to refetch. An action with nothing else to invalidate simply has
- * no entry (the companion-feed invalidation alone already covers it).
+ * unrelated navigation happened to refetch. `shift_sleep_anchor` — the only action actually
+ * reachable in round 1 (`AdviceActionCatalog.forCard` offers no other key yet) — mutates the
+ * `sleep_goal` row directly, mirroring `useSleepGoalActions`'s own invalidation set
+ * (`sleepHooks.ts`): `sleepGoal` itself plus `habitDay` (wake/bed habits re-center) and `fuelDay`
+ * (meal slots cascade off the anchor); `sleepGoal` alone also cascades into every other surface
+ * that reads it (circadian theme, Nap hub, needs rings, day face, stack/timeline hooks, the
+ * notification schedule writer) once those hooks' own queries key off it. An action with nothing
+ * else to invalidate simply has no entry (the companion-feed invalidation alone already covers it).
  */
 const ACTION_INVALIDATES: Partial<Record<AdviceActionKey, readonly QueryKey[]>> = {
   skip_sport_slot: [SPORT_SLOT_SKIPS_QUERY_KEY],
   lighten_tomorrow: [WORKOUT_TODAY_QUERY_KEY],
+  shift_sleep_anchor: [['sleepGoal'], ['habitDay'], ['fuelDay']],
 }
 
 /**

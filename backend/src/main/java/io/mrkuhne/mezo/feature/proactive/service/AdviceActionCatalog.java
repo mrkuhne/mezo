@@ -6,8 +6,9 @@ import io.mrkuhne.mezo.feature.proactive.entity.AdviceActionKey;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEnvelope.Action;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 /**
@@ -27,7 +28,6 @@ import org.springframework.stereotype.Service;
  * contributor adding a third to one key finds out from a test rather than from a cramped card.
  */
 @Service
-@RequiredArgsConstructor
 public class AdviceActionCatalog {
 
     /** spec §5: "up to 2 action buttons" per card. */
@@ -37,10 +37,33 @@ public class AdviceActionCatalog {
 
     private final SleepGoalRepository sleepGoalRepository;
 
+    /** Every {@link AdviceMutationPort} Spring actually registered, keyed by {@link
+     *  AdviceMutationPort#actionKey()} (mezo-d58h.5 review fix). {@link SleepAnchorShiftAdapter}
+     *  carries its own {@code @ConditionalOnProperty} gate ({@code SLEEP_GOAL_SWITCH} among
+     *  others) that this catalog does not otherwise see — with the switch off but a stale
+     *  {@code sleep_goal} row still present, {@link #forCard} would offer {@code
+     *  shift_sleep_anchor} with no port to apply it, and {@link AdviceApplyService#apply} would
+     *  500 with {@code PROACTIVE_ADVICE_ACTION_PORT_MISSING} for a user who did nothing wrong.
+     *  Consulting the actual port registry (rather than re-declaring the same
+     *  {@code @ConditionalOnProperty} list here, which would drift the moment either changes)
+     *  keeps this catalog honest by construction: it can only ever offer what some registered
+     *  port can actually apply. */
+    private final Set<String> registeredActionKeys;
+
+    public AdviceActionCatalog(SleepGoalRepository sleepGoalRepository, List<AdviceMutationPort> mutationPorts) {
+        this.sleepGoalRepository = sleepGoalRepository;
+        this.registeredActionKeys = mutationPorts.stream()
+                .map(AdviceMutationPort::actionKey)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
     /** The actions offered on a card raised for {@code adviceKey}, for {@code userId}. Never
      *  exceeds {@link #MAX_ACTIONS_PER_CARD}. */
     public List<Action> forCard(UUID userId, String adviceKey) {
         if (FlagKey.SLEEP_DEBT.equals(adviceKey)) {
+            if (!registeredActionKeys.contains(AdviceActionKey.SHIFT_SLEEP_ANCHOR)) {
+                return List.of();
+            }
             // Read the REPOSITORY, never SleepGoalService/SleepAnchorResolver: both fall back to
             // a config-default ghost, so the missing-row condition is invisible through them (the
             // same trap SetupCheckService.runFor documents and avoids). Card 4 (missing_sleep_goal)

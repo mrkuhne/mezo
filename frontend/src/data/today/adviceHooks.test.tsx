@@ -27,7 +27,7 @@ test('real mode: a successful skip_sport_slot apply invalidates the sport-slot-s
   expect(client.getQueryState(['companionFeed', '2026-09-08'])?.isInvalidated).toBe(true)
 })
 
-test('real mode: a successful shift_sleep_anchor apply does NOT invalidate the sport-slot-skips query', async () => {
+test('real mode: a successful shift_sleep_anchor apply invalidates sleepGoal/habitDay/fuelDay but NOT the sport-slot-skips query (mezo-d58h.5 review fix)', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   setToken('t')
   server.use(http.post(`${API_BASE}/api/proactive/advice/:id/apply`, () =>
@@ -35,6 +35,9 @@ test('real mode: a successful shift_sleep_anchor apply does NOT invalidate the s
   const { wrapper, client } = makeHookWrapperWithClient()
   client.setQueryData(['train', 'sportSlotSkips', '2026-09-07'], [])
   client.setQueryData(['companionFeed', '2026-09-08'], [])
+  client.setQueryData(['sleepGoal'], {})
+  client.setQueryData(['habitDay'], {})
+  client.setQueryData(['fuelDay'], {})
 
   const { result } = renderHook(() => useAdviceActions(), { wrapper })
   result.current.apply('card1', 'shift_sleep_anchor')
@@ -43,6 +46,12 @@ test('real mode: a successful shift_sleep_anchor apply does NOT invalidate the s
   // The companion feed is ALWAYS invalidated (every action re-fetches the card's own `applied`
   // stamp from server truth) — only the EXTRA, action-specific key is action-scoped.
   expect(client.getQueryState(['companionFeed', '2026-09-08'])?.isInvalidated).toBe(true)
+  // This is the action a user can actually apply in round 1 (the only key `forCard` offers) — it
+  // mutates `sleep_goal`, so it must invalidate everything `useSleepGoalActions` itself
+  // invalidates (sleepHooks.ts), which in turn cascades into every surface reading `sleepGoal`.
+  expect(client.getQueryState(['sleepGoal'])?.isInvalidated).toBe(true)
+  expect(client.getQueryState(['habitDay'])?.isInvalidated).toBe(true)
+  expect(client.getQueryState(['fuelDay'])?.isInvalidated).toBe(true)
   expect(client.getQueryState(['train', 'sportSlotSkips', '2026-09-07'])?.isInvalidated).toBe(false)
 })
 
