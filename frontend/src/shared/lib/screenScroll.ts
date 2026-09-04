@@ -22,7 +22,16 @@ export function screenScroller(): HTMLElement | null {
  * neither scrollTo nor layout.
  */
 export function scrollToTop(el: HTMLElement | null): void {
+  scrollToOffset(el, 0)
+}
+
+/**
+ * Jump a scroll container to a REMEMBERED offset instantly — the back-navigation
+ * counterpart of `scrollToTop` (mezo-kuwj), sharing its `behavior: 'instant'` rationale
+ * and its jsdom-safe scrollTo guard.
+ */
+export function scrollToOffset(el: HTMLElement | null, top: number): void {
   if (!el) return
-  if (typeof el.scrollTo === 'function') el.scrollTo({ top: 0, behavior: 'instant' })
-  else el.scrollTop = 0
+  if (typeof el.scrollTo === 'function') el.scrollTo({ top, behavior: 'instant' })
+  else el.scrollTop = top
 }
