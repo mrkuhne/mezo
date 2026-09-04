@@ -1,10 +1,12 @@
 package io.mrkuhne.mezo.feature.goal.engine;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import java.math.BigDecimal;
 import java.util.Map;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
@@ -59,7 +61,10 @@ public record GoalEngineProperties(
     @NotNull @Valid Suggestion suggestion,
 
     /** Weekly adaptive-review tunables (slice 5): correction clamp, dead-band, sleep-debt guard window. */
-    @NotNull @Valid Adaptive adaptive
+    @NotNull @Valid Adaptive adaptive,
+
+    /** State-led overview tolerance around the signed target rate. */
+    @NotNull @Valid Overview overview
 ) {
 
     /**
@@ -171,6 +176,13 @@ public record GoalEngineProperties(
         @NotNull @Min(3) @Max(14) Integer sleepDebtNights,      // 7 — guard window (spec §6.6: 7-day)
         @NotNull @Min(2) @Max(14) Integer sleepDebtMinNights,   // 4 — honest small-n gate
         @NotNull @Positive Double sleepDebtDeficitHours          // 5.0 — cumulative deficit that trips the guard
+    ) {
+    }
+
+    /** Course classification tolerances; both are intentionally server-owned. */
+    public record Overview(
+        @NotNull @DecimalMin("0") BigDecimal rateTolerancePercent,
+        @NotNull @DecimalMin("0") BigDecimal rateToleranceFloorKgPerWeek
     ) {
     }
 }

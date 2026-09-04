@@ -955,6 +955,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/goals/{id}/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** State-led overview for the Goal hub */
+        get: operations["getGoalOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/goals/{id}/activate": {
         parameters: {
             query?: never;
@@ -5251,6 +5268,77 @@ export interface components {
             setCycleCompound: number;
             setCycleIsolation: number;
             transition: number;
+        };
+        GoalOverviewResponse: {
+            /** Format: uuid */
+            goalId: string;
+            title: string;
+            /** @enum {string} */
+            trajectory: "cut" | "bulk" | "maintain";
+            /** @enum {string} */
+            status: "planned" | "active" | "archived";
+            currentWeek: number;
+            totalWeeks: number;
+            completionPct: number;
+            currentWeightKg: number;
+            targetWeightKg?: number | null;
+            remainingKg?: number | null;
+            /** @enum {string} */
+            courseStatus: "on_track" | "watch" | "learning" | "invalid";
+            courseReasonCode: string;
+            observedRateKgPerWeek?: number | null;
+            targetRateKgPerWeek?: number | null;
+            /** Format: date */
+            projectedTargetDate?: string | null;
+            /** @enum {string} */
+            dataSufficiency: "none" | "provisional" | "full";
+            diet: components["schemas"]["GoalOverviewDiet"];
+            segment: components["schemas"]["GoalOverviewSegment"];
+            plans: components["schemas"]["GoalOverviewPlans"];
+            guards: components["schemas"]["GoalOverviewGuards"];
+            openSuggestionCount: number;
+            /** Format: uuid */
+            latestSuggestionId?: string | null;
+        };
+        GoalOverviewDiet: {
+            weekAverageKcal?: number | null;
+            /** @enum {string} */
+            todayDayType: "training" | "rest" | "uniform" | "unavailable";
+            todayKcal?: number | null;
+            trainingDayKcal?: number | null;
+            restDayKcal?: number | null;
+            proteinG?: number | null;
+            carbsG?: number | null;
+            fatG?: number | null;
+            /** @enum {string} */
+            basis: "formula" | "adaptive" | "unavailable";
+            explanationCode: string;
+        };
+        GoalOverviewSegment: {
+            available: boolean;
+            label?: string | null;
+            fromWeek?: number | null;
+            toWeek?: number | null;
+            remainingDays?: number | null;
+            nextLabel?: string | null;
+            nextFromWeek?: number | null;
+            /** Format: date */
+            nextChangeDate?: string | null;
+            explanationCode: string;
+        };
+        GoalOverviewPlans: {
+            links: components["schemas"]["GoalPlanLinkResponse"][];
+            gaps: components["schemas"]["GoalGap"][];
+            sportSchedule: components["schemas"]["SportScheduleSlotResponse"][];
+            activeLinkCount: number;
+            uncoveredWeekCount: number;
+            topIssueCode?: string | null;
+        };
+        GoalOverviewGuards: {
+            status?: components["schemas"]["GoalGuardStatus"] | null;
+            healthyCount: number;
+            totalCount: number;
+            topIssueCode?: string | null;
         };
         GoalResponse: {
             /** Format: uuid */
@@ -11879,6 +11967,46 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getGoalOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Goal overview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalOverviewResponse"];
+                };
             };
             /** @description Missing/invalid token */
             401: {

@@ -126,6 +126,10 @@ mezo:
       sleep-debt-deficit-hours: 5.0
       # Monday morning, before the proactive weekly-review job (6:50), after typical wake weigh-ins.
       cron: "0 40 6 * * MON"
+    overview:
+      # A provisional/full observed rate is on track inside max(target×20%, 0.10 kg/week).
+      rate-tolerance-percent: 20
+      rate-tolerance-floor-kg-per-week: 0.10
   nutrition:
     # Owner-wide daily macro targets feeding the Fuel-day MacroHero (targets vs consumed).
     # Binds onto NutritionTargetsProperties. Since mezo-najo kcal+p are only the FALLBACK —

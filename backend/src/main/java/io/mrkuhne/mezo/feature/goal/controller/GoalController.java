@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.controller.GoalApi;
 import io.mrkuhne.mezo.api.dto.FeasibilityPreviewRequest;
 import io.mrkuhne.mezo.api.dto.FeasibilityPreviewResponse;
 import io.mrkuhne.mezo.api.dto.GoalPlanAttachRequest;
+import io.mrkuhne.mezo.api.dto.GoalOverviewResponse;
 import io.mrkuhne.mezo.api.dto.GoalPlanLinkResponse;
 import io.mrkuhne.mezo.api.dto.GoalResponse;
 import io.mrkuhne.mezo.api.dto.GoalSuggestionResponse;
@@ -12,6 +13,7 @@ import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalFeasibilityService;
 import io.mrkuhne.mezo.feature.goal.service.GoalPlanLinkService;
+import io.mrkuhne.mezo.feature.goal.service.GoalOverviewService;
 import io.mrkuhne.mezo.feature.goal.service.GoalService;
 import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionService;
 import io.mrkuhne.mezo.feature.goal.service.GoalTimelineService;
@@ -27,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class GoalController implements GoalApi {
 
     private final GoalService goalService;
+    private final GoalOverviewService goalOverviewService;
     private final GoalPlanLinkService goalPlanLinkService;
     private final GoalTimelineService goalTimelineService;
     private final GoalEngineService goalEngineService;
@@ -42,6 +45,11 @@ public class GoalController implements GoalApi {
     @Override
     public GoalResponse getGoal(UUID id) {
         return goalService.getGoal(currentUserId.get(), id);
+    }
+
+    @Override
+    public GoalOverviewResponse getGoalOverview(UUID id) {
+        return goalOverviewService.getOverview(currentUserId.get(), id);
     }
 
     @Override
