@@ -68,6 +68,16 @@ paths:
         '204': { description: Deleted }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/goals/{id}/overview:
+    get:
+      tags: [Goal]
+      operationId: getGoalOverview
+      summary: State-led overview for the Goal hub
+      parameters: [ { name: id, in: path, required: true, schema: { type: string, format: uuid } } ]
+      responses:
+        '200': { description: Goal overview, content: { application/json: { schema: { $ref: '#/components/schemas/GoalOverviewResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/goals/{id}/activate:
     post:
       tags: [Goal]
@@ -170,6 +180,79 @@ paths:
         '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
 components:
   schemas:
+    GoalOverviewResponse:
+      type: object
+      required: [goalId, title, trajectory, status, currentWeek, totalWeeks, completionPct,
+                 currentWeightKg, courseStatus, courseReasonCode, dataSufficiency, diet,
+                 segment, plans, guards, openSuggestionCount]
+      properties:
+        goalId: { type: string, format: uuid }
+        title: { type: string }
+        trajectory: { type: string, enum: [cut, bulk, maintain] }
+        status: { type: string, enum: [planned, active, archived] }
+        currentWeek: { type: integer, minimum: 1 }
+        totalWeeks: { type: integer, minimum: 1 }
+        completionPct: { type: integer, minimum: 0, maximum: 100 }
+        currentWeightKg: { type: number }
+        targetWeightKg: { type: number, nullable: true }
+        remainingKg: { type: number, nullable: true }
+        courseStatus: { type: string, enum: [on_track, watch, learning, invalid] }
+        courseReasonCode: { type: string }
+        observedRateKgPerWeek: { type: number, nullable: true }
+        targetRateKgPerWeek: { type: number, nullable: true }
+        projectedTargetDate: { type: string, format: date, nullable: true }
+        dataSufficiency: { type: string, enum: [none, provisional, full] }
+        diet: { $ref: '#/components/schemas/GoalOverviewDiet' }
+        segment: { $ref: '#/components/schemas/GoalOverviewSegment' }
+        plans: { $ref: '#/components/schemas/GoalOverviewPlans' }
+        guards: { $ref: '#/components/schemas/GoalOverviewGuards' }
+        openSuggestionCount: { type: integer, minimum: 0 }
+        latestSuggestionId: { type: string, format: uuid, nullable: true }
+    GoalOverviewDiet:
+      type: object
+      required: [todayDayType, basis, explanationCode]
+      properties:
+        weekAverageKcal: { type: integer, nullable: true }
+        todayDayType: { type: string, enum: [training, rest, uniform, unavailable] }
+        todayKcal: { type: integer, nullable: true }
+        trainingDayKcal: { type: integer, nullable: true }
+        restDayKcal: { type: integer, nullable: true }
+        proteinG: { type: integer, nullable: true }
+        carbsG: { type: integer, nullable: true }
+        fatG: { type: integer, nullable: true }
+        basis: { type: string, enum: [formula, adaptive, unavailable] }
+        explanationCode: { type: string }
+    GoalOverviewSegment:
+      type: object
+      required: [available, explanationCode]
+      properties:
+        available: { type: boolean }
+        label: { type: string, nullable: true }
+        fromWeek: { type: integer, nullable: true }
+        toWeek: { type: integer, nullable: true }
+        remainingDays: { type: integer, nullable: true }
+        nextLabel: { type: string, nullable: true }
+        nextFromWeek: { type: integer, nullable: true }
+        nextChangeDate: { type: string, format: date, nullable: true }
+        explanationCode: { type: string }
+    GoalOverviewPlans:
+      type: object
+      required: [links, gaps, sportSchedule, activeLinkCount, uncoveredWeekCount]
+      properties:
+        links: { type: array, items: { $ref: '#/components/schemas/GoalPlanLinkResponse' } }
+        gaps: { type: array, items: { $ref: '#/components/schemas/GoalGap' } }
+        sportSchedule: { type: array, items: { $ref: '#/components/schemas/SportScheduleSlotResponse' } }
+        activeLinkCount: { type: integer, minimum: 0 }
+        uncoveredWeekCount: { type: integer, minimum: 0 }
+        topIssueCode: { type: string, nullable: true }
+    GoalOverviewGuards:
+      type: object
+      required: [healthyCount, totalCount]
+      properties:
+        status: { allOf: [ { $ref: '#/components/schemas/GoalGuardStatus' } ], nullable: true }
+        healthyCount: { type: integer, minimum: 0 }
+        totalCount: { type: integer, minimum: 0 }
+        topIssueCode: { type: string, nullable: true }
     GoalResponse:
       type: object
       required: [id, title, trajectory, guards, status, startDate, targetDate, startWeightKg, rateTargetPctPerWeek]

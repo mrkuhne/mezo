@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.WeightTrendResponse.DataSufficiencyEnum;
 import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.goal.engine.GoalEngineProperties;
+import io.mrkuhne.mezo.techcore.query.WeightTrendQuery;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -48,7 +49,7 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
-public class WeightTrendService {
+public class WeightTrendService implements WeightTrendQuery {
 
     /** A weigh-in is "dense" when there are at least this many per week (research threshold). */
     private static final double DENSITY_LOGS_PER_WEEK_FULL = 4.0;
@@ -72,6 +73,7 @@ public class WeightTrendService {
      * or single-day history yields {@code dataSufficiency=none} with zero rates and a (possibly
      * empty) series rather than throwing.
      */
+    @Override
     public WeightTrendResponse computeTrend(UUID userId) {
         // 1. Collapse to one observation per calendar day (averaging same-day weigh-ins), date-asc.
         Map<LocalDate, BigDecimal> dailyMean = collapseToDailyMean(repository.findAllOwned(userId));

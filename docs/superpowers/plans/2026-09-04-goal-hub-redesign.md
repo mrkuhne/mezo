@@ -228,7 +228,7 @@ Várd meg a zöld CI-t és a projekt `--no-ff` merge-folyamatát; csak ezután i
 - Consume unchanged: `WeightTrendService.computeTrend`, `GoalTimelineService.getTimeline`,
   `GoalSuggestionService.listOpen`, `SportService.getSchedule`, `WeeklyScheduledActivityService`.
 
-- [ ] **Step 1: Bővítsd contract-first a goal fragmentet**
+- [x] **Step 1: Bővítsd contract-first a goal fragmentet**
 
 Add az endpointot 200/401/404 válasszal és az alábbi kötelező szerkezetet; a részobjektumok neve
 legyen `GoalOverviewDiet`, `GoalOverviewSegment`, `GoalOverviewPlans`, `GoalOverviewGuards`:
@@ -256,7 +256,7 @@ GoalOverviewResponse:
 linkeket/gapeket és a valódi `SportScheduleSlotResponse[]`-t; guards a meglévő
 `GoalGuardStatus`-t és `healthyCount/totalCount/topIssueCode` mezőket használja.
 
-- [ ] **Step 2: Generáld a két fogyasztói oldalt**
+- [x] **Step 2: Generáld a két fogyasztói oldalt**
 
 ```bash
 cd api/generate && npm install && npm run generate:api
@@ -266,7 +266,7 @@ cd ../../frontend && pnpm generate:api
 Várt: `GoalApi#getGoalOverview`, Java `GoalOverviewResponse` és TS
 `components['schemas']['GoalOverviewResponse']` létrejön. Ne szerkessz generált Java fájlt.
 
-- [ ] **Step 3: Írd meg a RED classifier- és HTTP-teszteket**
+- [x] **Step 3: Írd meg a RED classifier- és HTTP-teszteket**
 
 `GoalOverviewCourseServiceTest` fedje le: invalid; `none→learning`; cut és bulk helyes előjellel
 on-track; rossz irányú observed trend watch; floor-domináns `0.10` tolerancia; maintain sáv.
@@ -275,7 +275,7 @@ aktuális prescription segment, mai nap-típus/kcal, P/C/F, `latestSuggestionId`
 sport schedule. A teszt dátumát `Clock`/mai lokális nap alapján képezd, ne hardcode-olj lejáró
 ablakot.
 
-- [ ] **Step 4: Futtasd RED-ben**
+- [x] **Step 4: Futtasd RED-ben**
 
 ```bash
 cd backend && ./mvnw clean test \
@@ -285,7 +285,7 @@ cd backend && ./mvnw clean test \
 
 Várt: hiányzó service/controller/config miatt compile vagy assertion FAIL.
 
-- [ ] **Step 5: Implementáld a pure besorolást**
+- [x] **Step 5: Implementáld a pure besorolást**
 
 ```java
 public Course classify(GoalEntity goal, WeightTrendResponse trend) {
@@ -307,7 +307,7 @@ public Course classify(GoalEntity goal, WeightTrendResponse trend) {
 `ceil(abs(current-target)/abs(observed))` hetet; különben null. Reason code-ok stabil wire-kulcsok:
 `goal_invalid`, `trend_missing`, `rate_on_track`, `rate_off_track`, `rate_wrong_direction`.
 
-- [ ] **Step 6: Implementáld az overview assemblert és controllert**
+- [x] **Step 6: Implementáld az overview assemblert és controllert**
 
 `GoalOverviewService` egy ownership-gated goal read után egyszer kér trendet, timeline-t,
 suggestion listát és sport schedule-t. A `currentWeek` clampelt 1..totalWeeks; az aktuális segment
@@ -315,7 +315,7 @@ suggestion listát és sport schedule-t. A `currentWeek` clampelt 1..totalWeeks;
 null splitnél a segment `kcal`. Invalid vagy prescription nélküli goal dietje `unavailable` és
 null számokat ad. `GoalController#getGoalOverview(UUID id)` csak delegál.
 
-- [ ] **Step 7: GREEN, contract drift és commit**
+- [x] **Step 7: GREEN, contract drift és commit**
 
 ```bash
 cd backend && ./mvnw clean test \
