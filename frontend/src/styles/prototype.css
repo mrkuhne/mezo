@@ -8884,6 +8884,14 @@ button.mz-wtile:active { transform: scale(0.96); }
 .lg-gtile .lg-arrow .v { font-size: 22px; font-weight: 200; letter-spacing: -0.02em; }
 .lg-gtile .lg-arrow .v small { font-size: 11px; font-weight: 500; color: #6E6257; }
 
+/* Cél-ütközés mondat (mezo-iizd.9): a backend findConflicts sorai. Figyelmeztetés, nem tiltás
+   (spec D7: a konfliktus companion-mondat, nem kemény korlát) — ezért borostyán, nem piros. */
+.lg-conflict { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 8px; padding: 10px 12px;
+  border-radius: 16px; font-size: 11.5px; line-height: 1.45; color: #6E6257;
+  background: linear-gradient(140deg, var(--lg-frame-warn), var(--lg-frame-warn2));
+  box-shadow: 0 12px 22px -14px rgba(181,126,20,0.45); }
+.lg-conflict svg { flex: none; margin-top: 1px; }
+
 /* ============================================================
    Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)
    Ez a szekció EGYKOR a Mai oldal teljes „inset grouped list" lapnyelvét vitte
