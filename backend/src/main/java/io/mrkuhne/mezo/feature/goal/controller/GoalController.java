@@ -7,6 +7,8 @@ import io.mrkuhne.mezo.api.dto.GoalPlanAttachRequest;
 import io.mrkuhne.mezo.api.dto.GoalOverviewResponse;
 import io.mrkuhne.mezo.api.dto.GoalPlanLinkResponse;
 import io.mrkuhne.mezo.api.dto.GoalResponse;
+import io.mrkuhne.mezo.api.dto.GoalSuggestionAcceptRequest;
+import io.mrkuhne.mezo.api.dto.GoalSuggestionPreviewResponse;
 import io.mrkuhne.mezo.api.dto.GoalSuggestionResponse;
 import io.mrkuhne.mezo.api.dto.GoalTimelineResponse;
 import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
@@ -16,6 +18,7 @@ import io.mrkuhne.mezo.feature.goal.service.GoalPlanLinkService;
 import io.mrkuhne.mezo.feature.goal.service.GoalOverviewService;
 import io.mrkuhne.mezo.feature.goal.service.GoalService;
 import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionService;
+import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionPreviewService;
 import io.mrkuhne.mezo.feature.goal.service.GoalTimelineService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.util.List;
@@ -35,6 +38,7 @@ public class GoalController implements GoalApi {
     private final GoalEngineService goalEngineService;
     private final GoalFeasibilityService goalFeasibilityService;
     private final GoalSuggestionService goalSuggestionService;
+    private final GoalSuggestionPreviewService goalSuggestionPreviewService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -116,8 +120,15 @@ public class GoalController implements GoalApi {
     }
 
     @Override
-    public GoalResponse acceptGoalSuggestion(UUID id, UUID suggestionId) {
-        return goalSuggestionService.accept(currentUserId.get(), id, suggestionId);
+    public GoalResponse acceptGoalSuggestion(
+            UUID id, UUID suggestionId, GoalSuggestionAcceptRequest goalSuggestionAcceptRequest) {
+        return goalSuggestionService.accept(
+            currentUserId.get(), id, suggestionId, goalSuggestionAcceptRequest);
+    }
+
+    @Override
+    public GoalSuggestionPreviewResponse previewGoalSuggestion(UUID id, UUID suggestionId) {
+        return goalSuggestionPreviewService.preview(currentUserId.get(), id, suggestionId);
     }
 
     @Override

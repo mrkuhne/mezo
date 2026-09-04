@@ -7,6 +7,8 @@ import io.mrkuhne.mezo.api.dto.BiometricProfileUpsertRequest;
 import io.mrkuhne.mezo.api.dto.FeasibilityPreviewRequest;
 import io.mrkuhne.mezo.api.dto.FeasibilityPreviewResponse;
 import io.mrkuhne.mezo.api.dto.GoalResponse;
+import io.mrkuhne.mezo.api.dto.GoalSuggestionAcceptRequest;
+import io.mrkuhne.mezo.api.dto.GoalSuggestionPreviewResponse;
 import io.mrkuhne.mezo.api.dto.GoalSuggestionResponse;
 import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
 import io.mrkuhne.mezo.api.dto.LogWeightRequest;
@@ -352,7 +354,8 @@ class GoalContractIT extends ApiIntegrationTest {
 
         String body = postForBody(
             "/api/goals/" + goal.getId() + "/suggestions/" + suggestionId + "/accept",
-            null, owner.headers(), HttpStatus.BAD_REQUEST, String.class);
+            GoalSuggestionAcceptRequest.builder().previewFingerprint("0".repeat(64)).build(),
+            owner.headers(), HttpStatus.BAD_REQUEST, String.class);
 
         assertHasFieldError(body, "targetWeightKg", "GOAL_DIRECTION_TARGET_CONFLICT");
     }
@@ -376,9 +379,17 @@ class GoalContractIT extends ApiIntegrationTest {
                 null, null, null, null, null, null, null, null, null, null, null)
         ).getId();
 
-        // snapshotTrajectory ("bulk") no longer matches the goal's current trajectory ("cut") → 409.
+        GoalSuggestionPreviewResponse preview = getForBody(
+            "/api/goals/" + goal.getId() + "/suggestions/" + suggestionId + "/preview",
+            owner.headers(), HttpStatus.OK, GoalSuggestionPreviewResponse.class);
+        putForBody("/api/goals/" + goal.getId(),
+            req().targetDate(LocalDate.of(2026, 8, 3)).build(),
+            owner.headers(), HttpStatus.OK, GoalResponse.class);
+
         postForBody("/api/goals/" + goal.getId() + "/suggestions/" + suggestionId + "/accept",
-            null, owner.headers(), HttpStatus.CONFLICT, String.class);
+            GoalSuggestionAcceptRequest.builder()
+                .previewFingerprint(preview.getPreviewFingerprint()).build(),
+            owner.headers(), HttpStatus.CONFLICT, String.class);
 
         // The supersede must have survived the 409 request's own rollback: a follow-up list call
         // must NOT show the suggestion as open — if the supersede had rolled back too, it would

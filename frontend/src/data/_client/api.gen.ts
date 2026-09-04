@@ -1088,6 +1088,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/goals/{id}/suggestions/{suggestionId}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview every semantic goal and prescription change before applying a suggestion */
+        get: operations["previewGoalSuggestion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/goals/{id}/suggestions/{suggestionId}/accept": {
         parameters: {
             query?: never;
@@ -5534,6 +5551,42 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             decidedAt?: string | null;
+        };
+        GoalSuggestionAcceptRequest: {
+            previewFingerprint: string;
+        };
+        GoalSuggestionPreviewResponse: {
+            /** @enum {string} */
+            status: "proposed" | "accepted" | "dismissed" | "superseded";
+            reasonCode: string;
+            affectedFromWeek: number | null;
+            affectedToWeek: number | null;
+            current: components["schemas"]["GoalSuggestionProjection"];
+            proposed: components["schemas"]["GoalSuggestionProjection"];
+            changedFields: string[];
+            unchangedFields: string[];
+            warnings: string[];
+            blockers: string[];
+            canApply: boolean;
+            previewFingerprint: string | null;
+        };
+        GoalSuggestionProjection: {
+            /** @enum {string} */
+            trajectory: "cut" | "bulk" | "maintain";
+            targetWeightKg: number | null;
+            /** Format: date */
+            targetDate: string;
+            targetRateKgPerWeek: number | null;
+            weekAverageKcal: number | null;
+            trainingDayKcal: number | null;
+            restDayKcal: number | null;
+            proteinG: number | null;
+            carbsG: number | null;
+            fatG: number | null;
+            segmentFromWeek: number | null;
+            segmentToWeek: number | null;
+            segmentLabel: string | null;
+            guardStatus: components["schemas"]["GoalGuardStatus"] | null;
         };
         /** @description Typed suggestion body. phase_change carries either suggestedTrajectory (preset↔trajectory mismatch) or balanceOverrideKcal+fromWeek+toWeek (deload maintenance week). snapshotTrajectory is the accept-time race guard. */
         GoalSuggestionPayload: {
@@ -12334,7 +12387,7 @@ export interface operations {
             };
         };
     };
-    acceptGoalSuggestion: {
+    previewGoalSuggestion: {
         parameters: {
             query?: never;
             header?: never;
@@ -12346,6 +12399,51 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Current/proposed comparison */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalSuggestionPreviewResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Goal or suggestion not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    acceptGoalSuggestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                suggestionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalSuggestionAcceptRequest"];
+            };
+        };
+        responses: {
             /** @description Applied + re-evaluated */
             200: {
                 headers: {
@@ -12353,6 +12451,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GoalResponse"];
+                };
+            };
+            /** @description Validation error or blocked preview */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Missing/invalid token */

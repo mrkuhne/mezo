@@ -153,6 +153,18 @@ paths:
           content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/GoalSuggestionResponse' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+  /api/goals/{id}/suggestions/{suggestionId}/preview:
+    get:
+      tags: [Goal]
+      operationId: previewGoalSuggestion
+      summary: Preview every semantic goal and prescription change before applying a suggestion
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: suggestionId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: Current/proposed comparison, content: { application/json: { schema: { $ref: '#/components/schemas/GoalSuggestionPreviewResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: Goal or suggestion not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/goals/{id}/suggestions/{suggestionId}/accept:
     post:
       tags: [Goal]
@@ -161,8 +173,14 @@ paths:
       parameters:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
         - { name: suggestionId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GoalSuggestionAcceptRequest' }
       responses:
         '200': { description: Applied + re-evaluated, content: { application/json: { schema: { $ref: '#/components/schemas/GoalResponse' } } } }
+        '400': { description: Validation error or blocked preview, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '409': { description: Stale — the goal changed since the proposal; the suggestion is now superseded, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
@@ -431,6 +449,52 @@ components:
         payload: { $ref: '#/components/schemas/GoalSuggestionPayload' }
         createdAt: { type: string, format: date-time }
         decidedAt: { type: string, format: date-time, nullable: true }
+    GoalSuggestionAcceptRequest:
+      type: object
+      required: [previewFingerprint]
+      properties:
+        previewFingerprint:
+          type: string
+          minLength: 64
+          maxLength: 64
+          pattern: '^[0-9a-f]{64}$'
+    GoalSuggestionPreviewResponse:
+      type: object
+      required: [status, reasonCode, affectedFromWeek, affectedToWeek, current, proposed,
+                 changedFields, unchangedFields, warnings, blockers, canApply, previewFingerprint]
+      properties:
+        status: { type: string, enum: [proposed, accepted, dismissed, superseded] }
+        reasonCode: { type: string }
+        affectedFromWeek: { type: integer, nullable: true }
+        affectedToWeek: { type: integer, nullable: true }
+        current: { $ref: '#/components/schemas/GoalSuggestionProjection' }
+        proposed: { $ref: '#/components/schemas/GoalSuggestionProjection' }
+        changedFields: { type: array, items: { type: string } }
+        unchangedFields: { type: array, items: { type: string } }
+        warnings: { type: array, items: { type: string } }
+        blockers: { type: array, items: { type: string } }
+        canApply: { type: boolean }
+        previewFingerprint: { type: string, nullable: true }
+    GoalSuggestionProjection:
+      type: object
+      required: [trajectory, targetWeightKg, targetDate, targetRateKgPerWeek,
+                 weekAverageKcal, trainingDayKcal, restDayKcal, proteinG, carbsG, fatG,
+                 segmentFromWeek, segmentToWeek, segmentLabel, guardStatus]
+      properties:
+        trajectory: { type: string, enum: [cut, bulk, maintain] }
+        targetWeightKg: { type: number, nullable: true }
+        targetDate: { type: string, format: date }
+        targetRateKgPerWeek: { type: number, nullable: true }
+        weekAverageKcal: { type: integer, nullable: true }
+        trainingDayKcal: { type: integer, nullable: true }
+        restDayKcal: { type: integer, nullable: true }
+        proteinG: { type: integer, nullable: true }
+        carbsG: { type: integer, nullable: true }
+        fatG: { type: integer, nullable: true }
+        segmentFromWeek: { type: integer, nullable: true }
+        segmentToWeek: { type: integer, nullable: true }
+        segmentLabel: { type: string, nullable: true }
+        guardStatus: { allOf: [ { $ref: '#/components/schemas/GoalGuardStatus' } ], nullable: true }
     GoalSuggestionPayload:
       type: object
       description: 'Typed suggestion body. phase_change carries either suggestedTrajectory (preset↔trajectory mismatch) or balanceOverrideKcal+fromWeek+toWeek (deload maintenance week). snapshotTrajectory is the accept-time race guard.'
