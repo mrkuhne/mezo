@@ -195,12 +195,32 @@ class FlagEvaluatorMissedWorkoutsIT extends AbstractIntegrationTest {
 
     @Test
     void missed_workouts_only_counts_planned_days_from_the_schedule_creation_date_onward() {
-        // The schedule is backdated to 3 days ago. Planned days before that (well inside the
-        // 14-day window) must not count as missed even though nothing at all was completed — only
-        // the handful of planned days from the schedule's creation date onward can be violations.
+        // The schedule's createdAt is walked back (not a flat .minusDays(3)) to the
+        // 2nd-most-recent Mon/Wed/Fri planned day before today: the clamped window
+        // [createdAt, yesterday] then always contains exactly 2 planned days, so
+        // min-consecutive-missed=2 is satisfiable no matter which weekday the suite runs on
+        // (mezo-oxlt — a flat 3-calendar-day window only happened to catch 2 planned days on
+        // Thu/Sat). The walk-back is at most 4 days, well under the rule's 14-day window, so
+        // the creation-date clamp (not the natural window) is still what's under test. Planned
+        // days before createdAt (well inside the 14-day window) must not count as missed even
+        // though nothing at all was completed — only the handful of planned days from the
+        // schedule's creation date onward can be violations.
         UUID owner = ownerId();
         LocalDate today = LocalDate.now();
-        Instant createdAt = today.minusDays(3).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        LocalDate yesterday = today.minusDays(1);
+        int plannedDaysFound = 0;
+        LocalDate createdAtDate = yesterday;
+        for (LocalDate day = yesterday; ; day = day.minusDays(1)) {
+            int dow = day.getDayOfWeek().getValue() - 1;
+            if (dow == 0 || dow == 2 || dow == 4) {
+                plannedDaysFound++;
+                createdAtDate = day;
+                if (plannedDaysFound == 2) {
+                    break;
+                }
+            }
+        }
+        Instant createdAt = createdAtDate.atStartOfDay(ZoneId.systemDefault()).toInstant();
         trainPopulator.createGymSlotAt(owner, 0, "07:00", createdAt);
         trainPopulator.createGymSlotAt(owner, 2, "07:00", createdAt);
         trainPopulator.createGymSlotAt(owner, 4, "07:00", createdAt);
