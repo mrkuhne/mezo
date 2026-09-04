@@ -28,6 +28,16 @@ import org.springframework.transaction.annotation.Transactional;
  * superseded card's „Segített?" votes are left dangling by design (spec §8.1 names a dangling
  * feedback artifact harmless in a single-user app).
  *
+ * <p><b>Concurrency (bd mezo-d58h.4):</b> {@code FlagService.evaluateAndLog} can raise several
+ * flags in one evaluation, each publishing a {@code FlagRaisedEvent} that
+ * {@code InterventionEventListener} handles {@code @Async} AFTER_COMMIT — so two {@code deliver}
+ * calls for the same user can race on separate threads. The gate above is a non-atomic
+ * check-then-act, so without help the partial unique index would let commit ORDER, not
+ * {@link AdvicePriority}, pick the day's card. {@code companionMessageRepository
+ * .lockForDelivery} (a transaction-scoped {@code pg_advisory_xact_lock}, first statement in
+ * {@link #deliver}) serializes deliveries per user so the read-then-write sequence is atomic
+ * against other deliveries for the same user — see its javadoc for the full mechanism.
+ *
  * <p><b>Not conditioned on {@code INTERVENTION_SWITCH}</b>, deliberately: {@code SetupCheckService}
  * (which runs without that switch) is one of its two callers, so gating this bean on the
  * intervention switch would fail the Spring context whenever that switch is off.
@@ -49,6 +59,11 @@ public class AdviceCardService {
 
     @Transactional
     public Optional<CompanionMessageEntity> deliver(UUID userId, AdviceCandidate candidate) {
+        // FIRST statement, before the incumbent read: see CompanionMessageRepository
+        // .lockForDelivery's javadoc for the race this closes (bd mezo-d58h.4). Serializes
+        // concurrent deliver() calls for the SAME user so the read-then-write gate below is
+        // atomic against them — the loser waits here, then re-reads a committed incumbent.
+        companionMessageRepository.lockForDelivery(userId);
         LocalDate today = LocalDate.now();
         Optional<CompanionMessageEntity> incumbent = companionMessageRepository
             .findByCreatedByAndMessageDateAndKind(userId, today, CompanionMessageEntity.KIND_ADVICE);
