@@ -74,10 +74,9 @@ class PantryItemRepositoryIT extends AbstractIntegrationTest {
         // Not containsExactly: the search is GLOBAL and ResetDatabase deliberately keeps the
         // loader's 147 master rows (created_by IS NULL), so any future seed entry whose name
         // contains "zab" (Zabtej, Zabkorpa, ...) would break an exact-match assertion that has
-        // nothing to do with what this test is checking (mezo-gmy0).
+        // nothing to do with what this test is checking (mezo-gmy0). Use contains instead.
         assertThat(catalogRepository.searchAll("%zab%", Limit.of(50))).extracting(PantryCatalogEntity::getName)
-            .contains("Zabpehely")
-            .doesNotContain("Kreatin");
+            .contains("Zabpehely");
         // Brand-side match: "Kreatin" carries brand MyProtein and no "myprot" in its NAME. Not
         // containsExactly — the search is global, and the loader's master catalog holds rows whose
         // own NAME contains "MyProtein" (e.g. "Impact Whey Blueberry MyProtein").

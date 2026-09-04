@@ -50,9 +50,12 @@ public interface PantryCatalogRepository extends JpaRepository<PantryCatalogEnti
     List<PantryCatalogEntity> findByDeletedFalseOrderByNameAsc();
 
     /**
-     * Master rows (loader-owned). Deliberately NOT filtered on {@code deleted}: the loader's
-     * revive-on-upsert (S4 Task 5) needs to see a soft-deleted master row in order to bring it
-     * back, and a filtered query would silently insert a duplicate instead (mezo-gmy0).
+     * Master rows (loader-owned), soft-deleted ones INCLUDED — deliberately unfiltered, like
+     * {@link #findByNaturalKey}: the entity carries no {@code @SQLRestriction} precisely so a
+     * dead master row stays visible to whoever needs to revive or count it, and every caller
+     * that wants only live rows filters {@code deleted} itself. Today the only caller is
+     * {@code PantryCatalogLoaderIT}, which counts the seeded master set across a re-run
+     * (mezo-gmy0).
      */
     List<PantryCatalogEntity> findByCreatedByIsNull();
 }
