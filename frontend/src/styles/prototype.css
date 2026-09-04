@@ -4514,6 +4514,72 @@ button.mz-tile:active { transform: scale(0.96); }
 .mz-page-body::-webkit-scrollbar { display: none; }
 .mz-principle { font-size: 11px; font-weight: 300; color: var(--mz-ink-mut); text-align: center; margin-top: 19px; }
 
+/* ===== Cél Mozaik hub — state first, then one inspectable tile per concern (mezo-ricj.2) ===== */
+.goal-hub-page .pgact { margin-left: auto; }
+.goal-hub-body { display: flex; flex-direction: column; gap: 14px; padding-top: 8px; }
+.goal-hub-title { padding: 0 3px; }
+.goal-hub-title h2 { margin-top: 3px; font-size: 28px; line-height: 1; letter-spacing: -0.045em; }
+
+.goal-course-hero {
+  --goal-course-accent: var(--mz-cell-sage-ink);
+  position: relative; overflow: hidden; min-height: 226px; border-radius: 29px;
+  background: radial-gradient(circle at 89% 18%, color-mix(in srgb, var(--surface-card) 74%, transparent), transparent 20%), var(--mz-wash-sage);
+  box-shadow: var(--mz-shadow-sage); border: 0.5px solid color-mix(in srgb, var(--goal-course-accent) 12%, transparent);
+}
+.goal-course-hero.is-watch { --goal-course-accent: var(--mz-cell-gold-ink); background: radial-gradient(circle at 89% 18%, color-mix(in srgb, var(--surface-card) 74%, transparent), transparent 20%), var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.goal-course-hero.is-learning { --goal-course-accent: var(--mz-cell-lav-ink); background: radial-gradient(circle at 89% 18%, color-mix(in srgb, var(--surface-card) 74%, transparent), transparent 20%), var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.goal-course-hero.is-invalid { --goal-course-accent: var(--mz-cell-coral-ink); background: radial-gradient(circle at 89% 18%, color-mix(in srgb, var(--surface-card) 74%, transparent), transparent 20%), var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
+.goal-course-hero::after { content: ''; position: absolute; width: 138px; height: 138px; right: -47px; top: -53px; border-radius: 50%; border: 24px solid color-mix(in srgb, var(--surface-card) 24%, transparent); box-shadow: 0 0 0 17px color-mix(in srgb, var(--surface-card) 11%, transparent); pointer-events: none; }
+.goal-course-open { position: relative; z-index: 1; width: 100%; padding: 20px 18px 17px; border: 0; background: none; color: var(--text-primary); font: inherit; text-align: left; cursor: pointer; }
+.goal-course-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 15px; }
+.goal-course-message { min-width: 0; }
+.goal-course-message h1 { max-width: 225px; margin-top: 7px; font-size: 28px; line-height: 0.98; font-weight: 800; letter-spacing: -0.045em; }
+.goal-course-message p { max-width: 245px; margin-top: 8px; color: var(--mz-ink-soft); font-size: 12px; line-height: 1.45; }
+.goal-course-ring { position: relative; flex: 0 0 64px; width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: conic-gradient(var(--goal-course-accent) calc(var(--goal-progress) * 1%), color-mix(in srgb, var(--surface-card) 58%, transparent) 0); box-shadow: 0 10px 20px color-mix(in srgb, var(--goal-course-accent) 20%, transparent); }
+.goal-course-ring::before { content: ''; position: absolute; inset: 8px; border-radius: 50%; background: color-mix(in srgb, var(--surface-card) 75%, var(--mz-tone-gold)); }
+.goal-course-ring span { position: relative; z-index: 1; font-size: 14px; font-weight: 800; }
+.goal-course-weights { margin-top: 23px; display: grid; grid-template-columns: 1fr minmax(56px, 1fr) 1fr; align-items: center; gap: 9px; }
+.goal-course-weights span:last-child { text-align: right; }
+.goal-course-weights b { display: block; font-size: 23px; line-height: 1; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.goal-course-weights small { display: block; margin-top: 5px; color: var(--mz-ink-mut); font-size: 9px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.goal-course-weights i { height: 3px; border-radius: 3px; background: linear-gradient(90deg, color-mix(in srgb, var(--goal-course-accent) 55%, var(--surface-card)), var(--goal-course-accent)); }
+.goal-course-paces { margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.goal-course-paces span { padding: 10px 11px; border-radius: 16px; background: color-mix(in srgb, var(--surface-card) 60%, transparent); }
+.goal-course-paces small { display: block; color: var(--mz-ink-mut); font-size: 8px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.goal-course-paces b { display: block; margin-top: 3px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.goal-course-date { display: block; margin-top: 10px; color: var(--mz-ink-soft); font-size: 10px; font-weight: 700; text-align: right; }
+.goal-course-repair { position: relative; z-index: 2; margin: 0 18px 18px; padding: 9px 14px; border: 0; border-radius: 999px; color: var(--mz-cell-coral-ink); background: color-mix(in srgb, var(--surface-card) 68%, transparent); font: 800 12px/1.2 inherit; cursor: pointer; }
+
+.goal-hub-mosaic { gap: 11px; }
+.goal-hub-mosaic .mz-tile { min-height: 154px; padding: 16px; }
+.goal-hub-mosaic .mz-spotwrap { padding: 3px 0 1px; }
+.goal-hub-mosaic .mz-tile-line { overflow: visible; -webkit-line-clamp: unset; }
+.goal-tile-copy { display: flex; min-height: 61px; flex-direction: column; align-items: center; }
+.goal-tile-copy strong { font-size: 20px; line-height: 1.05; font-weight: 800; letter-spacing: -0.035em; text-align: center; overflow-wrap: anywhere; }
+.goal-tile-copy small { margin-top: 7px; color: var(--mz-ink-soft); font-size: 9px; line-height: 1.3; font-weight: 600; text-align: center; }
+.goal-tile-copy em { margin-top: auto; padding-top: 7px; color: var(--mz-cell-coral-ink); font-size: 9px; font-style: normal; font-weight: 800; }
+.goal-empty-body { padding-top: 28px; }
+
+.goal-skeleton-head { padding: 9px 14px 0; }
+.goal-skeleton-hero { min-height: 226px; display: flex; flex-direction: column; gap: 16px; border-radius: 29px; }
+.goal-skeleton-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+.goal-skeleton-top > span { display: flex; flex-direction: column; gap: 9px; }
+.goal-skeleton-tile { min-height: 154px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; border-radius: 20px; }
+.goal-detail-shell { min-height: 140px; padding: 20px; border-radius: 24px; background: var(--mz-wash-white); box-shadow: var(--mz-shadow); color: var(--mz-ink-soft); font-size: 13px; line-height: 1.5; }
+
+@media (max-width: 340px) {
+  .goal-hub-body { padding-inline: 13px; }
+  .goal-course-open { padding-inline: 15px; }
+  .goal-course-message h1 { font-size: 24px; }
+  .goal-course-ring { width: 56px; height: 56px; flex-basis: 56px; }
+  .goal-hub-mosaic .mz-tile { min-height: 148px; padding: 14px; }
+  .goal-tile-copy strong { font-size: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .goal-course-ring { transition: none; }
+}
+
 /* thin collapsible reference strip — closed header already tells the story */
 .mz-colstrip { border-radius: 18px; background: var(--mz-stripbg); border: 0.5px solid rgba(43, 33, 24, 0.07);
   box-shadow: 0 14px 26px -17px rgba(43, 33, 24, 0.3); overflow: hidden; }

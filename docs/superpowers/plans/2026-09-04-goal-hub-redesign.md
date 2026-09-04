@@ -372,7 +372,7 @@ Pusholj `feat/goal-overview`, nyiss self-PR-t, várd meg a zöld CI-t és merge-
 - Change: `useGoal()` csak `status === 'active'` goalt választ; planned fallback nincs.
 - Consume: `Tile`, `Mosaic`, `PageHero`, `MCells`, `EntranceGroup` meglévő Mozaik API-ja.
 
-- [ ] **Step 1: Írd meg a data-layer RED teszteket mindkét módban**
+- [x] **Step 1: Írd meg a data-layer RED teszteket mindkét módban**
 
 Real teszt mockolja `GET /api/goals/{id}/overview`-t és ellenőrzi a query keyt
 `['goal-overview', id]`, a typed response-t és `goalId=null` disabled állapotot. Mock teszt a
@@ -388,7 +388,7 @@ VITE_USE_MOCK=true pnpm vitest run src/data/me/goalOverviewHooks.test.tsx \
 
 Várt: hiányzó hook/API és a planned fallback miatt FAIL.
 
-- [ ] **Step 2: Implementáld a stabil dual-mode határt**
+- [x] **Step 2: Implementáld a stabil dual-mode határt**
 
 ```ts
 export function useGoalOverview(goalId: string | null) {
@@ -407,7 +407,7 @@ Ha `useDualQuery` jelenlegi propsa nem tartalmaz `enabled`-et, előbb egészíts
 colocated tesztjét; ne indíts `null` id-val hálózati kérést. Re-export kizárólag
 `frontend/src/data/hooks.ts`-ban. A mock seed legyen az overview contract teljes, koherens példája.
 
-- [ ] **Step 3: Írd meg a hub RED render/navigation tesztjeit**
+- [x] **Step 3: Írd meg a hub RED render/navigation tesztjeit**
 
 Fedés: loading skeleton; no active goal CTA; invalid coral fail-safe kcal nélkül; learning copy;
 on-track hero; open suggestion esetén hat, nélküle öt tile; a tile-ok pontos útvonalai. Mockold az
@@ -419,7 +419,7 @@ expect(screen.getByRole('button', { name: /Mai étrendi keret/ })).toBeEnabled()
 expect(screen.queryByText('3878 kcal')).not.toBeInTheDocument() // invalid fixture
 ```
 
-- [ ] **Step 4: Építsd meg a herót és a csempés főoldalt**
+- [x] **Step 4: Építsd meg a herót és a csempés főoldalt**
 
 `GoalsPage` a hosszú `GoalRecept`, `GoalTimeline`, `GoalPlanSlots`, inline accept/dismiss és
 `remaining=current-target` blokkokat törli. A `GoalCourseHero` a course state-et, signed observed/
@@ -427,7 +427,7 @@ target rate-et, súlyutat és projected date-et mutatja; completion ring csak m�
 diet(sage), segment(gold), plans(sky), guards(lav), suggestion(coral, conditional), settings(white).
 Mindegyik `navigate(...)`; suggestion mindig review route-ra visz, soha `accept`-re.
 
-- [ ] **Step 5: Regisztráld az öt route-ot ship-safe shell oldallal**
+- [x] **Step 5: Regisztráld az öt route-ot ship-safe shell oldallal**
 
 Az öt `*Page.tsx` már ebben a commitban létezzen és rendereljen `MozaikPage + PageHead + PageHero +
 PageBody` scaffoldot, `‹ Cél` fix visszaúttal. Task 4 tölti fel a body-kat, de route ne legyen 404.
@@ -440,7 +440,7 @@ PageBody` scaffoldot, `‹ Cél` fix visszaúttal. Task 4 tölti fel a body-kat,
 { path: 'me/goals/weight/settings', element: <GoalSettingsPage /> },
 ```
 
-- [ ] **Step 6: GREEN mindkét módban és commit**
+- [x] **Step 6: GREEN mindkét módban és commit**
 
 ```bash
 cd frontend && pnpm vitest run src/data/me/goalOverviewHooks.test.tsx \
