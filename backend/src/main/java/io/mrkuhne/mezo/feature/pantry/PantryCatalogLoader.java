@@ -71,8 +71,14 @@ public class PantryCatalogLoader implements CommandLineRunner {
                 inserted++;
                 continue;
             }
-            if (!hit.isMaster() || hit.isDeleted()) {
+            if (!hit.isMaster()) {
+                log.warn("pantry catalog: seed collision claims user-authored row as master — "
+                        + "id={}, name='{}', brand='{}', was created_by={} (now cleared) (mezo-qw37.4)",
+                    hit.getId(), hit.getName(), hit.getBrand(), hit.getCreatedBy());
                 hit.setCreatedBy(null);
+                hit.setDeleted(false);
+                claimed++;
+            } else if (hit.isDeleted()) {
                 hit.setDeleted(false);
                 claimed++;
             }
