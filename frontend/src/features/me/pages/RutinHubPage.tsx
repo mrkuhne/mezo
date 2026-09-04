@@ -144,9 +144,11 @@ export function RutinHubPage() {
         <div className="gr-band-top">
           <ClayIcon name={DAYPART_ICON[chain.daypart]} size={17} />
           <span className="mz-eyebrow">{chain.title}</span>
-          <span className={cn('gr-band-chip', chain.daypart === 'EVENING' ? 'lav' : 'warn')}>
-            {doneOf(items)} / {items.length}{avg != null ? ` · erő ${avg}%` : ''}
-          </span>
+          {/* A prototípus .pw-je: a lánc EREJE. A napi kész/összes a heróban és a múltnapi
+              summában él — a hub nem napi teljesítés-felület. */}
+          {avg != null && (
+            <span className={cn('gr-band-chip', chain.daypart === 'EVENING' ? 'lav' : 'warn')}>erő {avg}%</span>
+          )}
           <Toggle on={chain.isActive} onToggle={() => updateChain(chain.id, { isActive: !chain.isActive })}
             ariaLabel={`${chain.title} aktív`} disabled={pending} />
           <button type="button" className="chip" aria-label={`${chain.title} szerkesztése`} onClick={() => setChainSheet({ chain })}>
@@ -204,7 +206,7 @@ export function RutinHubPage() {
         icon="i-hajnal" iconSize={52} big={totalToday > 0 ? `${doneToday} / ${totalToday}` : undefined} name="Rutin"
         sub={isToday ? (meanStrength != null ? `ma · 28 napos átlagerő ${meanStrength}%` : 'ma') : undefined}
       />
-      <PageBody principle="Kimaradt nap nem törli a láncot — holnap folytatódik. A százalék a lánc 30 napos ereje, nem ítélet.">
+      <PageBody principle="Egyszerre egy szokás. A logolás maga a jutalom: a csík minden pipával emelkedik, egy kihagyás nem nullázza — csak halványítja. A pipa a Nap tabon él, itt a sor a szerkesztőt nyitja.">
         <EntranceGroup replayKey={date}>
           {/* A 30 napos aggregátum a kiválasztott naptól független, ezért a múltnapi ágon is
               itt marad — a lap identitása nem ugrik napváltáskor. */}

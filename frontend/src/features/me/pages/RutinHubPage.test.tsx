@@ -144,6 +144,27 @@ describe('RutinHubPage', () => {
     expect(screen.getByLabelText('Hidratálás · keret nélkül')).toBeInTheDocument()
   })
 
+  // ---- fix wave (mezo-3zue.10): prototype's .pw chain head (strength only) + .habnote ----
+
+  test('the chain head shows only the chain strength, not today\'s done/total', () => {
+    renderPage()
+    const morning = screen.getByText('Reggeli rutin').closest('.gr-chain') as HTMLElement
+    expect(within(morning).getByText('erő 71%')).toBeInTheDocument()
+    expect(within(morning).queryByText(/1 \/ 3/)).toBeNull()
+  })
+
+  test('a chain with no strength data shows no chip at all (honesty rule)', () => {
+    renderPage()
+    const evening = screen.getByText('Esti rutin').closest('.gr-chain') as HTMLElement
+    expect(evening.querySelector('.gr-band-chip')).toBeNull()
+  })
+
+  test('closes with the prototype principle sentence', () => {
+    renderPage()
+    expect(screen.getByText(/A logolás maga a jutalom/)).toBeInTheDocument()
+    expect(screen.getByText(/a sor a szerkesztőt nyitja/)).toBeInTheDocument()
+  })
+
   // ---- fix wave (mezo-3zue.4): spec §5's strength NUMBER, and the bar not being silent ----
 
   test('a habit row shows the strength as a number beside the bar', () => {
