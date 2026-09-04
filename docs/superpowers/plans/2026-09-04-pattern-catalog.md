@@ -144,33 +144,33 @@ export function PatternFilterSheet(props: {
 - Minden `PatternTile` célja `/mezo/patterns/${entry.key}`, mert az entry pair-backed vagy
   perzisztált pattern-backed; a részletoldal kezeli a két esetet.
 
-- [ ] RED: módosítsd a mock page tesztet úgy, hogy induláskor csak az aktív bucket tartalma
+- [x] RED: módosítsd a mock page tesztet úgy, hogy induláskor csak az aktív bucket tartalma
   látszik; `Megerősítve` cellára kattintva eltűnik a döntési inbox és megjelenik a megerősített
   lista; a cellák `button` + `aria-pressed` szerződése rögzített.
-- [ ] RED: rögzítsd, hogy a monitor-pár nélküli megerősített minta is részletlink, és a korábbi
+- [x] RED: rögzítsd, hogy a monitor-pár nélküli megerősített minta is részletlink, és a korábbi
   „plain row/no link” tesztet cseréld ennek ellenkezőjére. Ugyanez igaz a pair nélküli döntési
   hipotézis `Részletek és előzmények` linkjére.
-- [ ] RED: adj 6+ elemű cél-fixture-t vagy real-mode MSW fixture-t, és teszteld az öt elem/oldal
+- [x] RED: adj 6+ elemű cél-fixture-t vagy real-mode MSW fixture-t, és teszteld az öt elem/oldal
   lapozást, az oldaljelzőt, valamint az első oldalra visszaállást állapot- és filter-alkalmazáskor.
-- [ ] RED: nyisd meg a filter sheetet a jól látható `Szűrés` gombbal; válassz domént, alkalmazd,
+- [x] RED: nyisd meg a filter sheetet a jól látható `Szűrés` gombbal; válassz domént, alkalmazd,
   és igazold, hogy csak az adott domén elemei maradnak, a számlálók pedig továbbra is a teljes
   motorállapotot mutatják.
-- [ ] Futtasd a lap tesztjét és lásd a bukást:
+- [x] Futtasd a lap tesztjét és lásd a bukást:
 
   ```bash
   cd frontend && pnpm vitest run src/features/insights/pages/PatternsPage.test.tsx
   ```
 
-- [ ] GREEN: alakítsd a hat `.mnt-lcel` elemet natív gombbá, a meglévő skin/hot stílusok és
+- [x] GREEN: alakítsd a hat `.mnt-lcel` elemet natív gombbá, a meglévő skin/hot stílusok és
   mozgás változatlan megtartásával. A kiválasztás kapjon külön, tokenes selected ringet.
-- [ ] GREEN: a jelenlegi hat egymás alatti JSX szekció helyett renderelj egy kiválasztott
+- [x] GREEN: a jelenlegi hat egymás alatti JSX szekció helyett renderelj egy kiválasztott
   bucket-kompozíciót. A `decide` továbbra is `PatternDecisionCard`, a többi a meglévő
   `PatternTile`/`mnt-mosaic`; a buckethez tartozó jelenlegi footnote szövegek maradjanak.
-- [ ] GREEN: kösd be `PatternFilterSheet`, `filterSortEntries` és `pageEntries`; több oldalnál
+- [x] GREEN: kösd be `PatternFilterSheet`, `filterSortEntries` és `pageEntries`; több oldalnál
   jelenjen meg tokenes előző/következő lapozó `N–M / összes` jelzéssel.
-- [ ] Az Adat-egészség és a Memória-link maradjon a katalógus után. A status/filter/pager új
+- [x] Az Adat-egészség és a Memória-link maradjon a katalógus után. A status/filter/pager új
   CSS-e a jelenlegi `mnt-*` blokkban, a meglévő tokenekkel készüljön.
-- [ ] Futtasd újra a page tesztet mindkét módban, majd commit:
+- [x] Futtasd újra a page tesztet mindkét módban, majd commit:
 
   ```bash
   cd frontend
@@ -200,29 +200,29 @@ export function PatternArtifactDetail(props: {
 }): JSX.Element
 ```
 
-- [ ] RED mock: nyisd meg a meglévő monitor-pár nélküli `ai_hypothesis` seed `pairKey`-ét. A
+- [x] RED mock: nyisd meg a meglévő monitor-pár nélküli `ai_hypothesis` seed `pairKey`-ét. A
   lap ne „Nincs ilyen minta” legyen, hanem mutassa a mentett címet, kategóriát, állapotot,
   mechanizmust és evidence sorokat; ha proposed, a három meglévő döntési gomb is működjön.
-- [ ] RED real: MSW-ben a pair detail adjon 404-et, a pattern list pedig egy megerősített
+- [x] RED real: MSW-ben a pair detail adjon 404-et, a pattern list pedig egy megerősített
   `ai_hypothesis` sort. A lap jelenítse meg a „Megerősítve” állapotot és a társban való
   felhasználás emberi magyarázatát, grafikon/technikai számok nélkül.
-- [ ] Regresszió: a pair-backed showcase továbbra is a teljes öt blokkot rendereli; pair 500
+- [x] Regresszió: a pair-backed showcase továbbra is a teljes öt blokkot rendereli; pair 500
   továbbra is retry; mindkét forráson ismeretlen kulcs továbbra is „Nincs ilyen minta”.
-- [ ] Futtasd a lap tesztjét és lásd a fallback-esetek bukását:
+- [x] Futtasd a lap tesztjét és lásd a fallback-esetek bukását:
 
   ```bash
   cd frontend && pnpm vitest run src/features/insights/pages/PatternDetailPage.test.tsx
   ```
 
-- [ ] GREEN: a `PatternDetailPage` hívja a `usePatterns()` hookot is, keresse a `pairKey`-et,
+- [x] GREEN: a `PatternDetailPage` hívja a `usePatterns()` hookot is, keresse a `pairKey`-et,
   és tartsa ezt a prioritást: pending bármely szükséges readen → loading; pair error → retry;
   pair detail → meglévő story flow; pair 404 + pattern → `PatternArtifactDetail`; különben not
   found.
-- [ ] GREEN: a fallback komponens a meglévő `PatternDecisionCard`-ot használja proposed sorhoz,
+- [x] GREEN: a fallback komponens a meglévő `PatternDecisionCard`-ot használja proposed sorhoz,
   megítélt sornál read-only Design 2.0 hero-t. Alatta csak a mentett mechanizmus, evidence és az
   állapot következménye jelenjen meg; nincs kitalált statisztikai blokk.
-- [ ] A CSS a meglévő `pdt-*` blokkot bővítse Design 2.0 tokenekkel, raw szín nélkül.
-- [ ] Futtasd újra a detail és page teszteket mindkét módban, majd commit:
+- [x] A CSS a meglévő `pdt-*` blokkot bővítse Design 2.0 tokenekkel, raw szín nélkül.
+- [x] Futtasd újra a detail és page teszteket mindkét módban, majd commit:
 
   ```bash
   cd frontend
@@ -244,10 +244,10 @@ export function PatternArtifactDetail(props: {
 - Modify: `docs/features/insights.md`
 - Regenerate if changed: `docs/CODEMAP.md`
 
-- [ ] Írd át az Insights §2.1 és §9/§10 releváns részeit: állapotválasztó katalógus, ikonos
+- [x] Írd át az Insights §2.1 és §9/§10 releváns részeit: állapotválasztó katalógus, ikonos
   filter sheet, ötös lapozás, pair-backed és pattern-backed részlet kettős útja. A korábbi
   „dead-detail-link guard” leírásokat töröld vagy cseréld a fallback szerződésre.
-- [ ] Generáld/ellenőrizd a CODEMAP-et és linteld a dokumentációt:
+- [x] Generáld/ellenőrizd a CODEMAP-et és linteld a dokumentációt:
 
   ```bash
   node scripts/gen-codemap.mjs
@@ -255,7 +255,7 @@ export function PatternArtifactDetail(props: {
   node scripts/lint-docs.mjs
   ```
 
-- [ ] Futtasd a teljes frontend kaput friss kimenettel:
+- [x] Futtasd a teljes frontend kaput friss kimenettel:
 
   ```bash
   cd frontend
@@ -264,7 +264,7 @@ export function PatternArtifactDetail(props: {
   VITE_USE_MOCK=true pnpm test
   ```
 
-- [ ] Ellenőrizd a diffet, a generált fájlokat és a whitespace-t:
+- [x] Ellenőrizd a diffet, a generált fájlokat és a whitespace-t:
 
   ```bash
   git diff --check
