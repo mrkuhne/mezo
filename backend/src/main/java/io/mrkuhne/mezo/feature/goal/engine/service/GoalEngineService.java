@@ -16,6 +16,7 @@ import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalPlanLinkRepository;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionTriggerService;
+import io.mrkuhne.mezo.feature.goal.service.GoalInvariantValidator;
 import io.mrkuhne.mezo.feature.train.service.WeeklyScheduledActivityService;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -61,6 +62,7 @@ public class GoalEngineService {
     private static final String STATUS_ACTIVE = "active";
 
     private final GoalRepository goalRepository;
+    private final GoalInvariantValidator goalInvariantValidator;
     private final GoalPlanLinkRepository linkRepository;
     private final BiometricProfileRepository profileRepository;
     private final WeightLogRepository weightLogRepository;
@@ -86,6 +88,12 @@ public class GoalEngineService {
         GoalEntity goal = goalRepository.findByIdAndCreatedByAndDeletedFalse(goalId, userId)
             .orElseThrow(() -> new SystemRuntimeErrorException(
                 SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
+
+        if (!goalInvariantValidator.isCoherent(goal)) {
+            goal.setPrescription(null);
+            goal.setTdeeBootstrap(null);
+            return null;
+        }
 
         // Guards never depend on the profile — evaluate them regardless so the graceful path still
         // carries the (inactive/empty) guard status.

@@ -204,9 +204,9 @@
   --mzh-deco-fill: rgba(43, 33, 24, 0.24);
   --mzh-glass: rgba(255, 255, 255, 0.6);
   --mzh-glass-line: rgba(43, 33, 24, 0.08);
-  /* A kompakt fejléc doboz-magassága (4px felső padding + 40px kontrollsor). A lapokon
+  /* A kompakt fejléc doboz-magassága (4px felső padding + 42px kontrollsor). A lapokon
      belüli sticky chrome ehhez képest tapad ki, hogy ne csússzon a shell-fejléc alá. */
-  --mzh-head-cond-h: 44px;
+  --mzh-head-cond-h: 46px;
   /* ── Napzárás night sky (mezo-d20.8.1.1) — the ritual's six-state darkening arc.
         The flow forces data-theme=dark (RitualPage's setForceTheme), so the two :root
         blocks carry IDENTICAL values: the duplication keeps the Mozaik rule (a --rz-*
@@ -538,7 +538,7 @@
   --mzh-deco-fill: rgba(255, 255, 255, 0.3);
   --mzh-glass: rgba(24, 19, 15, 0.6);
   --mzh-glass-line: rgba(255, 255, 255, 0.09);
-  --mzh-head-cond-h: 44px;
+  --mzh-head-cond-h: 46px;
   --mz-ink-soft: var(--text-secondary);
   /* ── Napzárás night sky (mezo-d20.8.1.1) — the ritual's six-state darkening arc.
         The flow forces data-theme=dark (RitualPage's setForceTheme), so the two :root
@@ -4562,6 +4562,7 @@ button.mz-tile:active { transform: scale(0.96); }
 .app-head {
   position: sticky;
   top: 0;
+  isolation: isolate;
   /* 46: a lapokon belüli sticky chrome (breadcrumb 40, chat-fejléc 30) FÖLÖTT, de a
      StatusBar (50) alatt — a shell fejléce mindig a lap saját chrome-ja fölött ül. */
   z-index: 46;
@@ -4577,13 +4578,15 @@ button.mz-tile:active { transform: scale(0.96); }
   top: 0;
   left: calc(-1 * var(--screen-gutter));
   right: calc(-1 * var(--screen-gutter));
-  height: 92px;
+  /* A vezérlősor saját magasságán túl külön fade-tail fut lefelé. Az abszolút
+     háttérréteg így összeolvad a lappal, miközben a fejléc tartalma nincs maszkolva. */
+  height: calc(100% + 18px);
   overflow: hidden;
   pointer-events: none;
-  transition: opacity var(--duration-normal) var(--ease-out);
-  /* az alja belefolyik a tartalomba — nincs éles vágás */
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 58%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 0%, black 58%, transparent 100%);
+  z-index: 0;
+  /* A kontrollsor mögött végig fedett, csak az önálló alsó tail mosódik a canvasba. */
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
 }
 .app-head-wash { position: absolute; inset: 0; }
 .app-head-bg[data-face="reggel"] .app-head-wash { background: var(--mzh-wash-reggel); }
@@ -4610,25 +4613,12 @@ button.mz-tile:active { transform: scale(0.96); }
   color: var(--text-primary);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-/* Kompakt üvegmód: az aurora kifakul, a helyét áttetsző, elmosott sáv veszi át.
-   A blur SZÁNDÉKOSAN csak erre az alacsony sávra kerül, nem a teljes aurorára —
-   nagy felületen a backdrop-filter gyenge telefonon képkockát ejt. */
-/* A padding-top a --mzh-head-cond-h tokenből SZÁRMAZIK, nem külön szám: 40px a
-   .nap-roundbtn kontrollsor magassága, a token a mérvadó (44px mindkét témában) — így
+/* Kompakt mód: csak a függőleges ritmus húzódik össze. Az aurora napszak-színe
+   változatlan marad, hogy görgetéskor se váltson semleges üvegsávra. */
+/* A padding-top a --mzh-head-cond-h tokenből SZÁRMAZIK, nem külön szám: 42px a
+   .nap-roundbtn kontrollsor magassága, a token a mérvadó (46px mindkét témában) — így
    nem szakadhat el csendben a kettő egymástól. */
-.app-head.is-cond { padding-top: calc(var(--mzh-head-cond-h) - 40px); margin-bottom: 3px; }
-.app-head.is-cond .app-head-bg { opacity: 0; }
-.app-head.is-cond::before {
-  content: "";
-  position: absolute;
-  top: 0; bottom: 0;
-  left: calc(-1 * var(--screen-gutter));
-  right: calc(-1 * var(--screen-gutter));
-  background: var(--mzh-glass);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-bottom: 0.5px solid var(--mzh-glass-line);
-}
+.app-head.is-cond { padding-top: calc(var(--mzh-head-cond-h) - 42px); margin-bottom: 3px; }
 /* A fejléc tartalma az aurora és az üvegsáv FÖLÖTT ül. Figyelem: ez minden fejléc-
    gyerekből saját stacking contextet csinál, tehát a bennük lévő .nap-dpmenu/
    .nap-ntfmenu 30-as z-indexe is EBBE a helyi kontextusba zárul, nem a globálisba.
@@ -4637,7 +4627,7 @@ button.mz-tile:active { transform: scale(0.96); }
 .app-head > *:not(.app-head-bg) { position: relative; z-index: 1; }
 .nap-head-grow { flex: 1; min-width: 0; }
 .nap-dpwrap { position: relative; }
-.nap-roundbtn { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12);
+.nap-roundbtn { position: relative; width: 42px; height: 42px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12);
   background: var(--mz-chipbg); display: grid; place-items: center; cursor: pointer;
   box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.3); }
 .nap-offnow { position: absolute; top: 2px; right: 2px; width: 9px; height: 9px; border-radius: 50%;
@@ -4645,11 +4635,11 @@ button.mz-tile:active { transform: scale(0.96); }
 .nap-badge { position: absolute; top: -3px; right: -3px; min-width: 17px; height: 17px; border-radius: 999px;
   background: var(--gradient-cta); color: #fff; font-size: 10px; font-weight: 800;
   display: grid; place-items: center; padding: 0 4px; }
-.nap-dpmenu, .nap-ntfmenu { position: absolute; right: 0; top: 46px; z-index: 30;
+.nap-dpmenu, .nap-ntfmenu { position: absolute; right: 0; top: 48px; z-index: 30;
   background: var(--surface-card); border-radius: 18px; padding: 8px;
   border: 0.5px solid rgba(43, 33, 24, 0.08); box-shadow: 0 20px 40px -16px rgba(43, 33, 24, 0.4);
   display: flex; gap: 6px; }
-.nap-dpmenu button { width: 40px; height: 40px; border-radius: 50%; border: none; background: none;
+.nap-dpmenu button { width: 42px; height: 42px; border-radius: 50%; border: none; background: none;
   display: grid; place-items: center; cursor: pointer; }
 .nap-dpmenu button.on { background: color-mix(in srgb, var(--primary-base) 14%, transparent); }
 .nap-ntfmenu { width: 264px; flex-direction: column; align-items: stretch; gap: 7px; padding: 11px; }
@@ -4659,7 +4649,7 @@ button.mz-tile:active { transform: scale(0.96); }
 .nap-ntf-x { font-size: 11px; color: var(--mz-ink-soft); }
 .nap-ntffoot { border: none; background: none; font-family: inherit; cursor: pointer;
   font-size: 12px; font-weight: 700; color: var(--primary-deep); padding: 5px 4px 2px; text-align: left; }
-.nap-avatar { width: 40px; height: 40px; border-radius: 50%; border: 0; background: none;
+.nap-avatar { width: 42px; height: 42px; border-radius: 50%; border: 0; background: none;
   display: grid; place-items: center; cursor: pointer; }
 
 /* DayOrb (mezo-idz2) — a fejléc napi állapotjelzője. Az alap a `#s-orb` szürkén;
@@ -4670,7 +4660,7 @@ button.mz-tile:active { transform: scale(0.96); }
 @media (prefers-reduced-motion: reduce) { .dayorb rect { transition: none; } }
 
 /* Mezo-kalauz „?" (mezo-gb1s.1) — Fraunces-dőlt kérdőjel, coral; nyitva coral wash. */
-.nap-q .nap-q-glyph { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 19px; font-weight: 500; color: var(--primary-deep); line-height: 1; }
+.nap-q .nap-q-glyph { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 21px; font-weight: 500; color: var(--primary-deep); line-height: 1; }
 .nap-q.is-open { background: color-mix(in srgb, var(--primary-base) 14%, transparent); }
 
 /* ── Mezo-kalauz (mezo-gb1s.1) — the page-guide sheet; prototype docs/design_2.0/prototypes/kalauz.html ×1.18 ── */
@@ -5400,7 +5390,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
    hosszú szál aljáról a kiút ismét csak a tabbar lenne (lásd a #page-chat page-head
    korábbi sticky-jét, prototype.css régi 6865). */
 .mzc-chathead { display: flex; align-items: center; gap: 9px; padding: 2px 19px 6px;
-  position: sticky; top: var(--mzh-head-cond-h); z-index: 30; background: var(--canvas); }
+  position: sticky; top: 0; z-index: 30; background: var(--canvas); }
 .mzc-hdisc {
   width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer; flex: none;
   font-family: inherit; font-size: 15px; color: var(--text-primary); padding: 0;
@@ -9294,3 +9284,192 @@ button.mz-wtile:active { transform: scale(0.96); }
 .rt-danger.is-hard { border-color: var(--mz-line-soft); color: var(--text-tertiary); font-weight: 600; }
 .rt-danger.is-hard.is-armed { border-color: var(--error); color: var(--error); font-weight: 700; }
 .rt-danger:disabled { opacity: 0.45; cursor: default; }
+
+/* ===== Fuel beállítások · önálló Mozaik 2.0 oldal (mezo-2xzf) ===== */
+.fset-page { min-width: 0; overflow-x: clip; }
+.fset-title {
+  margin: 0; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font: 700 15px/1.2 var(--ff-display); color: var(--text-primary);
+}
+.fset-body {
+  display: flex; flex-direction: column; gap: 13px;
+  padding-top: 10px; padding-bottom: 112px;
+}
+.fset-hero {
+  position: relative; overflow: hidden; min-height: 220px; padding: 19px 19px 14px;
+  border: 1px solid var(--border-subtle); border-radius: var(--r-2xl);
+  background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage);
+}
+.fset-hero::after {
+  content: ""; position: absolute; width: 150px; height: 150px; right: -55px; top: -64px;
+  border-radius: var(--r-full); background: var(--accent-soft); opacity: .28; filter: blur(12px);
+  pointer-events: none;
+}
+.fset-eyebrow,
+.fset-card > h2,
+.fset-card > span:first-child,
+.fset-row > span:first-child,
+.fset-selectrow > span:first-child {
+  font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase;
+  color: var(--text-muted);
+}
+.fset-hero-head {
+  position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; margin-top: 5px;
+}
+.fset-hero-head strong {
+  font: 300 36px/1 var(--ff-display); letter-spacing: -.04em; color: var(--text-primary);
+}
+.fset-cutoff-pill {
+  flex: none; padding: 6px 10px; border-radius: var(--r-full);
+  background: var(--mz-cell-gold-bg); color: var(--mz-cell-gold-ink);
+  font-size: 9px; font-weight: 800; letter-spacing: .03em;
+}
+.fset-summary { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+.fset-arc-wrap { position: relative; z-index: 1; margin-top: 9px; }
+.fset-dayarc { display: block; width: 100%; height: 104px; overflow: visible; }
+.fset-arc-track,
+.fset-arc-glow { fill: none; stroke-linecap: round; }
+.fset-arc-track { stroke: var(--divider); stroke-width: 5; }
+.fset-arc-glow {
+  stroke: var(--success-base); stroke-width: 2.5; stroke-dasharray: 410; stroke-dashoffset: 410;
+  animation: fset-draw 700ms var(--ease-out) 120ms forwards;
+}
+.fset-meal-dot {
+  fill: var(--surface-card); stroke: var(--success-hover); stroke-width: 3;
+  filter: drop-shadow(0 3px 3px var(--divider));
+}
+.fset-cutoff-line { stroke: var(--accent-hover); stroke-width: 2; stroke-linecap: round; }
+.fset-cutoff-dot { fill: var(--accent-base); stroke: var(--surface-card); stroke-width: 2; }
+.fset-axis { display: flex; justify-content: space-between; margin: -10px 5px 0; }
+.fset-axis span { font-size: 8px; font-weight: 700; color: var(--text-muted); }
+.fset-principle { margin: 8px 0 0; text-align: center; font-size: 10px; color: var(--text-secondary); }
+
+.fset-card {
+  min-width: 0; margin: 0; padding: 15px 16px; border: 1px solid var(--border-subtle);
+  border-radius: var(--r-xl); background: var(--surface-card); color: var(--text-primary);
+  box-shadow: var(--mz-shadow); font-family: inherit;
+}
+.fset-card > h2 { margin: 0 0 8px; }
+.fset-card p { margin: 8px 0 0; font-size: 10px; line-height: 1.45; color: var(--text-muted); }
+.fset-row,
+.fset-selectrow {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  min-height: 48px; border-top: 1px solid var(--divider);
+}
+.fset-card h2 + .fset-row,
+.fset-card h2 + .fset-selectrow { border-top: 0; }
+.fset-stepper { display: flex; align-items: center; gap: 9px; flex: none; }
+.fset-stepper .chip {
+  display: grid; place-items: center; width: 44px; height: 44px; padding: 0;
+  border: 1px solid var(--border-subtle); background: var(--surface-page);
+}
+.fset-stepper .chip:disabled { opacity: .38; }
+.fset-stepper > span {
+  min-width: 52px; text-align: center; font-size: 16px; font-weight: 750;
+  font-variant-numeric: tabular-nums; color: var(--text-primary);
+}
+.fset-row input,
+.fset-selectrow select,
+.fset-goalgrid input,
+.fset-custom input {
+  min-height: 44px; border: 1px solid var(--border-subtle); border-radius: var(--r-md);
+  background: var(--surface-page); color: var(--text-primary); font: 650 14px/1 var(--ff-body);
+}
+.fset-row input { width: 112px; padding: 0 10px; text-align: right; color-scheme: light dark; }
+.fset-selectrow { align-items: stretch; flex-direction: column; padding: 3px 0 12px; gap: 7px; }
+.fset-selectrow > span { align-self: flex-start; }
+.fset-selectrow select { width: 100%; padding: 0 38px 0 12px; cursor: pointer; }
+
+@keyframes fset-draw { to { stroke-dashoffset: 0; } }
+
+.fset-target-preview {
+  display: grid; gap: 10px; padding: 12px; border-radius: var(--r-lg);
+  background: var(--surface-page); border: 1px solid var(--border-subtle);
+}
+.fset-target-label { font-size: 10px; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+.fset-macro-preview-body { display: grid; grid-template-columns: 112px minmax(0, 1fr); align-items: center; gap: 14px; }
+.fset-donut {
+  width: 108px; aspect-ratio: 1; padding: 10px; border-radius: var(--r-full);
+  background: conic-gradient(
+    var(--macro-protein) 0 var(--protein-pct),
+    var(--macro-carbs) var(--protein-pct) var(--carbs-end),
+    var(--macro-fat) var(--carbs-end) 100%
+  );
+  box-shadow: var(--shadow-sm);
+}
+.fset-donut > span {
+  width: 100%; height: 100%; display: grid; place-content: center; justify-items: center;
+  border-radius: var(--r-full); background: var(--surface-card); text-align: center;
+}
+.fset-donut strong { font-size: 13px; font-weight: 750; color: var(--text-primary); }
+.fset-donut small { margin-top: 2px; font-size: 8px; color: var(--text-muted); }
+.fset-macro-rows { display: grid; min-width: 0; }
+.fset-macro-rows > div {
+  position: relative; display: flex; align-items: center; justify-content: space-between;
+  gap: 7px; min-height: 31px; padding-left: 15px; border-bottom: 1px solid var(--divider);
+}
+.fset-macro-rows > div:last-child { border-bottom: 0; }
+.fset-macro-rows > div::before {
+  content: ""; position: absolute; left: 0; width: 8px; height: 8px; border-radius: var(--r-full);
+  background: var(--macro-protein);
+}
+.fset-macro-rows > div:nth-child(2)::before { background: var(--macro-carbs); }
+.fset-macro-rows > div:nth-child(3)::before { background: var(--macro-fat); }
+.fset-target-preview span { font-size: 11px; color: var(--text-secondary); }
+.fset-target-preview b { font-size: 12px; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.fset-card .fset-refresh-note {
+  display: inline-flex; margin-top: 7px; padding: 4px 8px; border-radius: var(--r-full);
+  background: var(--mz-cell-gold-bg); color: var(--mz-cell-gold-ink); font-weight: 700;
+}
+.fset-custom { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: 10px; }
+.fset-custom label { min-width: 0; font-size: 9px; font-weight: 700; color: var(--text-muted); }
+.fset-custom input { width: 100%; margin-top: 4px; padding: 0 7px; text-align: center; }
+.fset-card .fset-error { color: var(--error-hover); font-weight: 700; }
+
+.fset-goalgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.fset-goalgrid .fset-card { display: grid; gap: 8px; background: var(--mz-wash-sky); box-shadow: var(--mz-shadow-sky); }
+.fset-goalgrid .fset-card:last-child { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.fset-goalgrid input {
+  width: 100%; min-width: 0; padding: 0 9px; border-color: transparent;
+  background: var(--mz-chipbg); text-align: right; font-size: 21px; font-weight: 350;
+  font-variant-numeric: tabular-nums;
+}
+.fset-segments { display: flex; gap: 6px; }
+.fset-segments .chip {
+  min-height: 44px; padding: 0 13px; border: 1px solid var(--border-subtle);
+  background: var(--surface-page); color: var(--text-secondary);
+}
+.fset-segments .chip[aria-pressed="true"] {
+  border-color: var(--primary-base); background: var(--primary-bg); color: var(--primary-deep);
+  font-weight: 800;
+}
+.fset-slots {
+  width: 100%; min-height: 62px; display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; text-align: left; cursor: pointer;
+}
+.fset-slots strong { flex: none; font-size: 12px; color: var(--primary-deep); }
+.fset-closing { margin: 1px 15px 0; text-align: center; font-size: 10px; line-height: 1.45; color: var(--text-muted); }
+.fset-savebar { padding-inline: 17px; }
+.fset-savebar .fset-save { width: 100%; min-height: 52px; justify-content: center; border-radius: var(--r-full); }
+.fset-save:disabled { opacity: .45; pointer-events: none; }
+
+@media (max-width: 380px) {
+  .fset-body { padding-inline: 14px; }
+  .fset-hero { min-height: 208px; padding-inline: 15px; }
+  .fset-hero-head { align-items: flex-start; flex-direction: column; gap: 7px; }
+  .fset-hero-head strong { font-size: 32px; }
+  .fset-dayarc { height: 88px; }
+  .fset-goalgrid { grid-template-columns: 1fr; }
+  .fset-row { align-items: flex-start; flex-direction: column; padding-block: 9px; gap: 6px; }
+  .fset-stepper, .fset-segments { align-self: stretch; justify-content: space-between; }
+  .fset-row input { align-self: stretch; width: 100%; }
+  .fset-macro-preview-body { grid-template-columns: 94px minmax(0, 1fr); gap: 10px; }
+  .fset-donut { width: 92px; }
+  .fset-macro-rows > div { align-items: flex-start; flex-direction: column; justify-content: center; gap: 1px; }
+  .fset-custom { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fset-arc-glow { animation: none; stroke-dashoffset: 0; }
+}
