@@ -14,6 +14,8 @@ import io.mrkuhne.mezo.api.dto.MealScore;
 import io.mrkuhne.mezo.api.dto.MealScoreDimension;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
+import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
+import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.companion.config.DayEvaluationProperties;
 import io.mrkuhne.mezo.feature.companion.service.DayEvaluationEngine.DayDimension;
 import io.mrkuhne.mezo.feature.companion.service.DayEvaluationEngine.DayInputs;
@@ -67,6 +69,7 @@ class DayScoreServiceTest {
     @Mock private FuelDayService fuelDayService;
     @Mock private MealRepository mealRepository;
     @Mock private WaterLogRepository waterLogRepository;
+    @Mock private WeightLogRepository weightLogRepository;
     @Mock private WorkoutWindowQueryService workoutWindowQueryService;
 
     private final DayEvaluationProperties props = new DayEvaluationProperties(
@@ -83,18 +86,24 @@ class DayScoreServiceTest {
     private final Map<LocalDate, List<Window>> windows = new HashMap<>();
     private final Map<LocalDate, Integer> waterMl = new HashMap<>();
     private final Map<LocalDate, Integer> checkins = new HashMap<>();
+    private final Map<LocalDate, Double> weightKg = new HashMap<>();
+    private final Map<LocalDate, Double> xp = new HashMap<>();
     private final List<MealEntity> mealRows = new ArrayList<>();
 
     @BeforeEach
     void setUp() {
         service = new DayScoreService(metricSeriesService, checkInRepository, fuelDayService,
-            mealRepository, waterLogRepository, workoutWindowQueryService,
+            mealRepository, waterLogRepository, weightLogRepository, workoutWindowQueryService,
             new DayEvaluationEngine(props), props);
 
         when(metricSeriesService.series(eq(USER), eq(MetricKey.SLEEP_DURATION_H), any(), any()))
             .thenAnswer(inv -> slice(sleepH, inv.getArgument(2), inv.getArgument(3)));
         when(metricSeriesService.series(eq(USER), eq(MetricKey.SLEEP_QUALITY), any(), any()))
             .thenAnswer(inv -> slice(sleepQuality, inv.getArgument(2), inv.getArgument(3)));
+        when(metricSeriesService.series(eq(USER), eq(MetricKey.DAILY_XP), any(), any()))
+            .thenAnswer(inv -> slice(xp, inv.getArgument(2), inv.getArgument(3)));
+        when(weightLogRepository.findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(
+            eq(USER), any())).thenAnswer(inv -> weightRows(inv.getArgument(1)));
         when(fuelDayService.getDay(eq(USER), any()))
             .thenAnswer(inv -> fuelDays.getOrDefault(inv.getArgument(1), emptyFuelDay(inv.getArgument(1))));
         when(workoutWindowQueryService.windowsFor(eq(USER), any()))
@@ -131,6 +140,26 @@ class DayScoreServiceTest {
                     c.setDate(d);
                     rows.add(c);
                 }
+            }
+        });
+        return rows;
+    }
+
+    /** Every seeded weigh-in from {@code from} onward — the repository's own contract (no upper
+     *  bound; the service filters {@code to} in Java, the house idiom {@code MeWeekService}'s
+     *  {@code latestWeightByDate} also uses). */
+    private List<WeightLogEntity> weightRows(LocalDate from) {
+        List<WeightLogEntity> rows = new ArrayList<>();
+        weightKg.forEach((d, kg) -> {
+            if (!d.isBefore(from)) {
+                WeightLogEntity w = new WeightLogEntity();
+                w.setCreatedBy(USER);
+                w.setDate(d);
+                w.setWeightKg(BigDecimal.valueOf(kg));
+                // @CreationTimestamp only fires on an actual persist; this is a plain-object
+                // fixture, so seed it directly -- the fold's tie-break comparator needs a value.
+                w.setCreatedAt(d.atStartOfDay(ZoneOffset.UTC).toInstant());
+                rows.add(w);
             }
         });
         return rows;
@@ -417,6 +446,35 @@ class DayScoreServiceTest {
             assertThat(m.kcal()).isEqualTo(2600.0);
         });
         assertThat(in.priorBaseScores()).hasSize(3);
+    }
+
+    /**
+     * The loading gap this task fixes (mezo-jcpt.8): {@code DayInputs} carried no weight and no
+     * XP, so a day with ONLY a morning weigh-in looked exactly like a day with nothing logged at
+     * all -- the false "tanulom" the honest day-state model needs to tell apart from real no-data.
+     * Both sources are loaded RANGED (one query for the whole window), the same idiom
+     * {@code sleepH}/{@code sleepQuality1to10} already use -- never a per-day fan-out
+     * (mezo-jcpt.6).
+     */
+    @Test
+    void inputsFor_carries_the_days_weight_and_xp() {
+        weightKg.put(MONDAY, 74.2);
+        xp.put(MONDAY, 120.0);
+
+        DayInputs in = service.inputsFor(USER, MONDAY);
+
+        assertThat(in.weightKg()).isEqualTo(74.2);
+        assertThat(in.xp()).isEqualTo(120);
+    }
+
+    /** A day with neither a weigh-in nor any XP carries {@code null} for both -- never a
+     *  fabricated 0, which the logging dimension would read as a real (zero-effort) measurement. */
+    @Test
+    void inputsFor_leavesWeightAndXpNull_whenNeitherWasLogged() {
+        DayInputs in = service.inputsFor(USER, MONDAY);
+
+        assertThat(in.weightKg()).isNull();
+        assertThat(in.xp()).isNull();
     }
 
     /** An unfinished day carries no overall score: {@code closed} is {@code date < today}. */

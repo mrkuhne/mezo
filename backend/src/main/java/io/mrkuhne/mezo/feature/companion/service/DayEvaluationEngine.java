@@ -53,6 +53,8 @@ public class DayEvaluationEngine {
         Double sleepH, Integer sleepQuality1to10,      // null = nincs alvás-log
         List<MealLogFact> meals,                       // logolási dimenzióhoz
         boolean waterLogged, int checkinCount,
+        Double weightKg,                               // null = aznap nem mérlegelt (mezo-jcpt.8)
+        Integer xp,                                    // null/0 = aznap nem gyűlt XP
         List<Integer> priorBaseScores                  // az előző rhythmWindowDays nap base-scoreja (ami van)
     ) { }
 

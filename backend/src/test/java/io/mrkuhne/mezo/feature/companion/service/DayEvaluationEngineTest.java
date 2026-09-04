@@ -56,6 +56,8 @@ class DayEvaluationEngineTest {
         private Integer sleepQuality1to10 = null;
         private boolean waterLogged = false;
         private int checkinCount = 0;
+        private Double weightKg = null;
+        private Integer xp = null;
         private List<Integer> priorBaseScores = List.of();
 
         DayInputsBuilder kcal(double v) {
@@ -152,11 +154,21 @@ class DayEvaluationEngineTest {
             return this;
         }
 
+        DayInputsBuilder weightKg(double v) {
+            this.weightKg = v;
+            return this;
+        }
+
+        DayInputsBuilder xp(int v) {
+            this.xp = v;
+            return this;
+        }
+
         DayInputs build() {
             return new DayInputs(date, closed, kcal, proteinG, carbsG, fatG,
                 kcalTarget, proteinTargetG, carbsTargetG, fatTargetG, workoutDay,
                 plannedWorkouts, doneWorkouts, sleepH, sleepQuality1to10, meals,
-                waterLogged, checkinCount, priorBaseScores);
+                waterLogged, checkinCount, weightKg, xp, priorBaseScores);
         }
     }
 

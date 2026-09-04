@@ -108,6 +108,8 @@ class DayReviewServiceTest {
         private List<DayEvaluationEngine.MealLogFact> meals = List.of();
         private boolean waterLogged;
         private int checkinCount;
+        private Double weightKg;
+        private Integer xp;
         private List<Integer> priorBaseScores = List.of();
 
         static DayInputsBuilder from(DayInputs in) {
@@ -130,6 +132,8 @@ class DayReviewServiceTest {
             b.meals = in.meals();
             b.waterLogged = in.waterLogged();
             b.checkinCount = in.checkinCount();
+            b.weightKg = in.weightKg();
+            b.xp = in.xp();
             b.priorBaseScores = in.priorBaseScores();
             return b;
         }
@@ -229,11 +233,21 @@ class DayReviewServiceTest {
             return this;
         }
 
+        DayInputsBuilder weightKg(Double v) {
+            this.weightKg = v;
+            return this;
+        }
+
+        DayInputsBuilder xp(Integer v) {
+            this.xp = v;
+            return this;
+        }
+
         DayInputs build() {
             return new DayInputs(date, closed, kcal, proteinG, carbsG, fatG,
                 kcalTarget, proteinTargetG, carbsTargetG, fatTargetG, workoutDay,
                 plannedWorkouts, doneWorkouts, sleepH, sleepQuality1to10, meals,
-                waterLogged, checkinCount, priorBaseScores);
+                waterLogged, checkinCount, weightKg, xp, priorBaseScores);
         }
     }
 
