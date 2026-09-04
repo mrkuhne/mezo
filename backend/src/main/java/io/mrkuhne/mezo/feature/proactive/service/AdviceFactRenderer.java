@@ -218,9 +218,9 @@ public final class AdviceFactRenderer {
         facts.add(p.anchorBedTimeHour() != null
             ? "Lefekvés-horgony: %s (közelség-küszöb %d perc), abszolút küszöb: %s"
                 .formatted(clockFromShiftedHour(p.anchorBedTimeHour()), p.minutesBeforeBed(),
-                    clockFromShiftedHour(p.absoluteHour()))
+                    plainClock(p.absoluteHour()))
             : "Nincs beállított alvási cél, ezért csak az abszolút óra (%s) számít"
-                .formatted(clockFromShiftedHour(p.absoluteHour())));
+                .formatted(plainClock(p.absoluteHour())));
         if (p.lastMealHourByDay() != null) {
             for (Map.Entry<String, Double> e : p.lastMealHourByDay().entrySet()) {
                 String arm = p.qualifyingArmByDay() == null ? null : p.qualifyingArmByDay().get(e.getKey());
@@ -256,6 +256,22 @@ public final class AdviceFactRenderer {
             hour = (hour + 1) % 24;
         }
         return "%02d:%02d".formatted(hour, minute);
+    }
+
+    /** {@code LateEating.absoluteHour} (whole-branch review fix, bd mezo-d58h.6): unlike
+     *  {@code anchorBedTimeHour} and the per-day meal hours above, this field is the RAW config
+     *  threshold compared directly against {@code LATE_MEAL_HOUR} in its own plain 0.0-23.99
+     *  space — it was never put through the +24-below-noon shift, so running it back through
+     *  {@code clockFromShiftedHour}'s "subtract 24 if ≥ 24" step is simply the wrong inverse for
+     *  it. A plain clock format is the only one that fits. */
+    private static String plainClock(double hour) {
+        int wholeHour = (int) hour;
+        int minute = (int) Math.round((hour - wholeHour) * 60);
+        if (minute == 60) {
+            minute = 0;
+            wholeHour = (wholeHour + 1) % 24;
+        }
+        return "%02d:%02d".formatted(wholeHour, minute);
     }
 
     /** {@code MuscleGroup.of}'s coarse English tokens (the actual matched value, frozen in the

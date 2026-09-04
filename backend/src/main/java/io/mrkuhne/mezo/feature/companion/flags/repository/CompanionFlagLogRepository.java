@@ -38,13 +38,24 @@ public interface CompanionFlagLogRepository extends JpaRepository<CompanionFlagL
      * <p>S6 (bd mezo-d58h.6) extends the same argument to {@code ignored_nudge}: it names the
      * app's OWN nudging failing to land (a delivery/behavior-change-channel problem), not a
      * health/behavior problem of the user's, so it joins {@code logging_gap} in the exclusion
-     * list. The other five S6 keys (acute_bad_day, load_fuel_mismatch, rapid_weight_loss,
-     * joint_overuse, late_eating) are genuine problem signals like {@code missed_workouts} and
-     * stay counted.
+     * list. Four of the remaining S6 keys (acute_bad_day, load_fuel_mismatch, rapid_weight_loss,
+     * late_eating) are genuine problem signals like {@code missed_workouts} and stay counted.
+     *
+     * <p>Whole-branch review fix (bd mezo-d58h.6): {@code joint_overuse} joins the exclusion too,
+     * by the SAME argument, not a new one. Its own intervention copy calls it a training tip, not
+     * an injury alert — it fires on a conjunction the user did nothing to earn (a 7-day strain
+     * average plus tomorrow's schedule already being shoulder-focused), so for a user on a weekly
+     * shoulder split it is true roughly weekly, and its cooldown lets it re-raise every third day.
+     * Counting it here would mean the seven-day quiet window essentially never opens and
+     * {@code all_healthy} could never appear again for that user — the same "quiet window
+     * permanently blocked by a signal that isn't a user problem" failure {@code logging_gap} and
+     * {@code ignored_nudge} were carved out to avoid. {@code AllHealthyRule}'s same-evaluation gate
+     * still keeps {@code joint_overuse} and {@code all_healthy} off the same day regardless.
      */
     @Query("""
         SELECT count(f) > 0 FROM CompanionFlagLogEntity f
-        WHERE f.createdBy = :createdBy AND f.flagKey NOT IN ('all_healthy', 'logging_gap', 'ignored_nudge')
+        WHERE f.createdBy = :createdBy
+        AND f.flagKey NOT IN ('all_healthy', 'logging_gap', 'ignored_nudge', 'joint_overuse')
         AND f.createdAt >= :since
         """)
     boolean existsProblemRaiseSince(@Param("createdBy") UUID createdBy, @Param("since") Instant since);

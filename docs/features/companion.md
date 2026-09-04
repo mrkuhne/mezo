@@ -3669,18 +3669,22 @@ are whole days computed from `LocalDate.now()`; missing days stay absent, never 
 | `all_healthy` | none of the other twelve fire now, **and** no problem row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
 
 `all_healthy`'s "no problem row" check (`existsProblemRaiseSince`) excludes `all_healthy` itself,
-`logging_gap`, and (since S6) `ignored_nudge`: `logging_gap` names a data-availability gap (a
-domain has gone stale), not a health/behavior problem, so a user who tracks sleep and check-ins
-tightly but logs meals loosely must not have `all_healthy` blocked for a full `quiet-days` window
-every time `logging_gap` fires (review fix, bd `mezo-d58h.2`). `ignored_nudge` joins it by the same
-argument (bd `mezo-d58h.6`): it names the app's OWN nudging failing to land — a
-delivery/behavior-change-channel problem, not a health/behavior problem of the user's. The other
-eleven flags — `missed_workouts` and the remaining five S6 keys (`acute_bad_day`,
-`load_fuel_mismatch`, `rapid_weight_loss`, `joint_overuse`, `late_eating`) included — stay counted
-as problems, since each IS a genuine behavior/health signal, unlike a data gap or a failed nudge.
-The other suppression is unchanged: `FlagEvaluator` only runs `AllHealthyRule` when nothing else
-raised in that same evaluation, so `all_healthy` never appears alongside any other flag on the same
-day regardless of this query.
+`logging_gap`, `ignored_nudge`, and (whole-branch review fix, bd `mezo-d58h.6`) `joint_overuse`:
+`logging_gap` names a data-availability gap (a domain has gone stale), not a health/behavior
+problem, so a user who tracks sleep and check-ins tightly but logs meals loosely must not have
+`all_healthy` blocked for a full `quiet-days` window every time `logging_gap` fires (review fix, bd
+`mezo-d58h.2`). `ignored_nudge` joins it by the same argument (bd `mezo-d58h.6`): it names the
+app's OWN nudging failing to land — a delivery/behavior-change-channel problem, not a
+health/behavior problem of the user's. `joint_overuse` joins by the same argument again: its own
+intervention copy calls it a training tip, not an injury alert, and it fires on a conjunction (a
+7-day strain average plus tomorrow's schedule) the user did nothing to earn — for a user on a
+weekly shoulder split it is true roughly weekly, so counting it here would keep the seven-day quiet
+window from ever opening. The other ten flags — `missed_workouts` and the remaining four S6 keys
+(`acute_bad_day`, `load_fuel_mismatch`, `rapid_weight_loss`, `late_eating`) included — stay counted
+as problems, since each IS a genuine behavior/health signal, unlike a data gap, a failed nudge, or a
+forward-looking training advisory. The other suppression is unchanged: `FlagEvaluator` only runs
+`AllHealthyRule` when nothing else raised in that same evaluation, so `all_healthy` never appears
+alongside any other flag on the same day regardless of this query.
 
 A flag is written only when `companion_flag_log` holds no row with that `flag_key` newer than
 `cooldown-hours.<flag>` — identical for both sources.

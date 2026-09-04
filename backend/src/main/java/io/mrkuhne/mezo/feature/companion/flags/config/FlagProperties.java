@@ -193,8 +193,13 @@ public record FlagProperties(
         /** Last meal within this many minutes of the bedtime anchor counts as "late". */
         @Min(1) @Max(600) int minutesBeforeBed,
         /** FRACTIONAL hour — {@code MetricKey.LATE_MEAL_HOUR}'s own unit, e.g. 22.5 == 22:30.
-         *  Never "fix" this into a clock string; the metric series is a double. */
-        @DecimalMin("0.0") @DecimalMax("30.0") double absoluteHour,
+         *  Never "fix" this into a clock string; the metric series is a double. Bounded to
+         *  23.99 (whole-branch review fix, bd mezo-d58h.6): {@code LATE_MEAL_HOUR} itself only
+         *  ever lives in 0.0-23.99 (it is the RAW meal hour, never shifted — see
+         *  {@code LateEatingRule}'s Trap 2), so anything ≥ 24 here can never be met by the metric
+         *  it is compared against — it would look like a valid setting while silently disabling
+         *  the absolute arm forever. */
+        @DecimalMin("0.0") @DecimalMax("23.99") double absoluteHour,
         /** Of the last {@code windowDays} days, at least this many must qualify (either
          *  condition) to raise. */
         @Min(1) @Max(30) int minDaysOfLastThree,

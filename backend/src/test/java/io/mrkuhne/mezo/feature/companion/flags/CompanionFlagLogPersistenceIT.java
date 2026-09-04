@@ -174,4 +174,22 @@ class CompanionFlagLogPersistenceIT extends AbstractIntegrationTest {
         flagLogPopulator.raise(owner, FlagKey.ACUTE_BAD_DAY, FlagKey.SOURCE_WRITE, null);
         assertThat(repository.existsProblemRaiseSince(owner, since)).isTrue();
     }
+
+    /** Whole-branch review fix (bd mezo-d58h.6): {@code joint_overuse} joins {@code logging_gap}
+     *  and {@code ignored_nudge} in the exclusion list — it fires on a conjunction (7-day strain
+     *  average + tomorrow's schedule) the user did nothing to earn, and its own intervention copy
+     *  calls it a training tip, not an injury alert, so it must not suppress {@code all_healthy}
+     *  for a whole quiet window either. {@code acute_bad_day} is a genuine problem and must still
+     *  suppress it. */
+    @Test
+    void joint_overuse_does_not_suppress_all_healthy_but_acute_bad_day_does() {
+        UUID owner = ownerId();
+        Instant since = Instant.now().minus(1, ChronoUnit.HOURS);
+
+        flagLogPopulator.raise(owner, FlagKey.JOINT_OVERUSE, FlagKey.SOURCE_SWEEP, null);
+        assertThat(repository.existsProblemRaiseSince(owner, since)).isFalse();
+
+        flagLogPopulator.raise(owner, FlagKey.ACUTE_BAD_DAY, FlagKey.SOURCE_WRITE, null);
+        assertThat(repository.existsProblemRaiseSince(owner, since)).isTrue();
+    }
 }

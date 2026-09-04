@@ -39,14 +39,17 @@ class FlagPropertiesIT extends AbstractIntegrationTest {
     }
 
     /** S6 (mezo-d58h.6): the six batch-B cooldowns bind before either rule/threshold exists —
-     *  same pattern as S2's logging-gap/missed-workouts cooldowns landing ahead of their rules. */
+     *  same pattern as S2's logging-gap/missed-workouts cooldowns landing ahead of their rules.
+     *  Whole-branch review fix: the values are deliberately unequal (see the application.yml
+     *  comment) so two rules that can co-fire from the same underlying state don't share a
+     *  cooldown and starve each other's delivery forever. */
     @Test
     void binds_the_six_s6_cooldowns_from_application_yml() {
-        assertThat(properties.cooldownHours().acuteBadDay()).isEqualTo(48);
+        assertThat(properties.cooldownHours().acuteBadDay()).isEqualTo(24);
         assertThat(properties.cooldownHours().loadFuelMismatch()).isEqualTo(72);
-        assertThat(properties.cooldownHours().rapidWeightLoss()).isEqualTo(72);
+        assertThat(properties.cooldownHours().rapidWeightLoss()).isEqualTo(96);
         assertThat(properties.cooldownHours().jointOveruse()).isEqualTo(72);
-        assertThat(properties.cooldownHours().ignoredNudge()).isEqualTo(72);
+        assertThat(properties.cooldownHours().ignoredNudge()).isEqualTo(120);
         assertThat(properties.cooldownHours().lateEating()).isEqualTo(48);
     }
 
@@ -54,11 +57,11 @@ class FlagPropertiesIT extends AbstractIntegrationTest {
      *  unmapped key throws {@code SystemRuntimeErrorException} at raise time. */
     @Test
     void forFlag_answers_for_the_six_s6_keys() {
-        assertThat(properties.cooldownHours().forFlag(FlagKey.ACUTE_BAD_DAY)).isEqualTo(48);
+        assertThat(properties.cooldownHours().forFlag(FlagKey.ACUTE_BAD_DAY)).isEqualTo(24);
         assertThat(properties.cooldownHours().forFlag(FlagKey.LOAD_FUEL_MISMATCH)).isEqualTo(72);
-        assertThat(properties.cooldownHours().forFlag(FlagKey.RAPID_WEIGHT_LOSS)).isEqualTo(72);
+        assertThat(properties.cooldownHours().forFlag(FlagKey.RAPID_WEIGHT_LOSS)).isEqualTo(96);
         assertThat(properties.cooldownHours().forFlag(FlagKey.JOINT_OVERUSE)).isEqualTo(72);
-        assertThat(properties.cooldownHours().forFlag(FlagKey.IGNORED_NUDGE)).isEqualTo(72);
+        assertThat(properties.cooldownHours().forFlag(FlagKey.IGNORED_NUDGE)).isEqualTo(120);
         assertThat(properties.cooldownHours().forFlag(FlagKey.LATE_EATING)).isEqualTo(48);
     }
 
