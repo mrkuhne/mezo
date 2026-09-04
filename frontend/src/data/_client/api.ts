@@ -78,6 +78,26 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 }
 
 /**
+ * Is this session still alive? Asked once, after a stream died mid-flight (mezo-qw37.8).
+ *
+ * A stream that has already answered 200 can only fail from inside the body, so the failure
+ * reaches us as a read error and never as a status code — and the backend authorises a request
+ * ONCE, on entry ({@code oauth2ResourceServer.jwt()}), so a token expiring during the stream
+ * cannot turn it into a 401 either. Either way the caller is left holding a generic stream error
+ * while the session may already be gone, and the user would only be sent to the login screen by
+ * whatever request happens to come next.
+ *
+ * {@code /api/auth/me} runs through {@link apiFetch}, whose non-OK path already clears the token
+ * and emits `signedOut` — this deliberately duplicates NO auth logic. A live session (or an
+ * unreachable server) changes nothing: the probe's own failure is swallowed, and the caller always
+ * sees the original stream error.
+ */
+async function probeSessionAfterStreamFailure(): Promise<void> {
+  if (!tokenStore.get()) return // never signed in — nothing to invalidate, and no round-trip to spend
+  await apiFetch('/api/auth/me').catch(() => {})
+}
+
+/**
  * SSE over fetch (POST-capable, Authorization-capable — EventSource is neither).
  * Yields `{ event, data }` per frame; every `data:` payload on this API is a single JSON
  * line by contract (the backend JSON-encodes deltas), multi-line data is still joined per
@@ -122,6 +142,12 @@ export async function* apiSse(
         if (event) yield event
       }
     }
+  } catch (streamFailure) {
+    // Only a genuine read failure lands here. A consumer that stops early (the companion
+    // returns out of its for-await on `done`) closes the generator with a RETURN completion,
+    // which runs `finally` but never this `catch` — so an ordinary early exit costs no probe.
+    await probeSessionAfterStreamFailure()
+    throw streamFailure
   } finally {
     reader.releaseLock()
   }
