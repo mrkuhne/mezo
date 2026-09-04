@@ -42,11 +42,14 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>Idempotent: no-op if the owner already has a profile row (restart-safe; a user who has since
  * accrued their own ledger is left untouched). Runs after {@link
  * io.mrkuhne.mezo.feature.auth.OwnerSeedData} (Order 0) and after {@link
- * io.mrkuhne.mezo.feature.people.PeopleSeedData} (130) — last among the plain-{@code demodata}
- * seeders, so it reads whatever skill XP any future demodata seeder may contribute by then.
+ * io.mrkuhne.mezo.feature.people.PeopleSeedData} (130) — last among the {@code demofixtures}
+ * seeders (S2, mezo-qw37.2: opt-in — a registered user gets their profile lazily from
+ * {@link io.mrkuhne.mezo.feature.gamification.service.GamificationService#ensureProfile} on the
+ * first purchase/award, and reads are null-safe ghost zeros before that), so it reads whatever
+ * skill XP any future fixture seeder may contribute by then.
  */
 @Component
-@Profile("demodata")
+@Profile("demofixtures")
 @Order(135) // after PeopleSeedData (130) — needs the seeded owner; last, for the freshest skill-XP read
 @RequiredArgsConstructor
 public class GamificationDemoData implements CommandLineRunner {

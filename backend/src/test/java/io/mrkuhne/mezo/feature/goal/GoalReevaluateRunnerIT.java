@@ -22,14 +22,14 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Verifies the startup re-evaluate runner (mezo-eujg) recomputes a live owner goal's prescription.
  *
- * <p>The runner is {@code @Profile("demodata")}, so the bean only exists under that profile — hence
- * {@code @ActiveProfiles("demodata")}. Under demodata the OWNER is master data (seeded by
+ * <p>The runner is {@code @Profile("demofixtures")} (S2), so the bean only exists with both profiles
+ * — hence {@code @ActiveProfiles({"demodata", "demofixtures"})}. Under demodata the OWNER is master data (seeded by
  * {@code OwnerSeedData}, preserved by {@code ResetDatabase}), so we do NOT re-create it; we resolve its
  * id via {@link AppUserRepository#findByEmail}. The goal's prescription is nulled after
  * {@code createGoal} so a non-null result proves the RUNNER (not the populator) recomputed it.
  */
 @Transactional
-@ActiveProfiles("demodata")
+@ActiveProfiles({"demodata", "demofixtures"})
 class GoalReevaluateRunnerIT extends AbstractIntegrationTest {
 
     @Autowired private GoalReevaluateRunner runner;

@@ -142,22 +142,27 @@ public class WeeklyScoreService {
      * The cache decision for ONE week: serve {@code cached} when it is still valid, otherwise
      * recompute and re-cache. Returns null when the week genuinely has no score.
      *
-     * <p>The cheap path first: when the week's window holds no score-relevant log at all, the
-     * week provably has no score and nothing is computed. That shortcut stays exact under the
-     * 6-dimension engine (mezo-jcpt.4): with no log in the window, nutrition and quality have no
-     * meal, training has no session and sleep has no {@code sleep_log}, so every dimension
-     * degrades except {@code logging} — which is DONE with an honest 0 (it measures effort, and no
-     * effort is a real measurement) — and {@code rhythm}, which may well be DONE here: it reads
-     * the days BEFORE this week, outside the probe's window, so an unlogged week following an
-     * active one does have prior bases. That does not matter, because the engine's gate counts
-     * only dimensions that measured the day itself and {@code rhythm} is excluded from it (review
-     * round 2): {@code logging} alone is ONE such dimension, one short of the 2-dimension gate, so
-     * every day's base is null and the week's score is null by construction. (Before that fix the
-     * shortcut was NOT exact in exactly this case — an unlogged week after an active one had real
-     * per-day bases in the engine's terms while this path returned null and deleted the cached
-     * row.) See {@link WeeklyScoreRepository#latestScoreInputWrittenAt} for exactly which
-     * tables the probe covers — notably NOT the training schedule tables, so a schedule edit alone
-     * does not invalidate a cached week.
+     * <p>The cheap path first: when the week's window holds no score-relevant log at all, this
+     * path returns null without computing anything. Under the 6-dimension engine (mezo-jcpt.4)
+     * that shortcut is a deliberate APPROXIMATION, not an identity. With no log in the window,
+     * nutrition and quality have no meal and sleep has no {@code sleep_log}, so those degrade;
+     * {@code logging} is DONE with an honest 0 (it measures effort, and no effort is a real
+     * measurement); {@code rhythm} may well be DONE, because it reads the days BEFORE this week,
+     * outside the probe's window. {@code rhythm} is excluded from the engine's gate (it does not
+     * measure the day itself), so on a week with no training PLAN {@code logging} alone is ONE
+     * intrinsic dimension, one short of the 2-dimension gate: every day's base is null and the
+     * week's score is null. There the shortcut is exact.
+     *
+     * <p><b>Where it is NOT exact (accepted limitation, mezo-jcpt.11).</b> The {@code training}
+     * dimension is driven by the PLAN, not by a logged session: {@code DayScoreService} reads
+     * {@code WorkoutWindowQueryService.windowsFor}, and the probe deliberately does not cover the
+     * training schedule tables. So a week that has planned workouts and closes with zero logs has
+     * {@code training} DONE and {@code logging} DONE — two intrinsic DONE dimensions, the gate
+     * opens, and each day carries a real base (~15-40, typically 25-35) in the engine's terms
+     * while this path returns null and deletes the cached row. That is the same trade-off spelled
+     * out on {@link WeeklyScoreRepository#latestScoreInputWrittenAt}, which lists exactly which
+     * tables the probe covers — notably NOT the training schedule tables, so a schedule edit
+     * alone does not invalidate a cached week.
      */
     private WeeklyScoreEntity resolve(UUID userId, LocalDate weekStart, WeeklyScoreEntity cached) {
         LocalDate weekEnd = weekStart.plusDays(6);

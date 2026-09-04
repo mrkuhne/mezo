@@ -14,7 +14,7 @@ import org.springframework.validation.annotation.Validated;
  * Daily evaluation (mezo-jcpt.4) — the 6-dimension day-score engine's tuning knobs: dimension
  * weights, nutrition tolerance bands, and the training/sleep/rhythm/logging thresholds later
  * tasks' pure engine consumes. Feature-scoped record rather than another {@code
- * CompanionProperties} nested component (the {@code MeWeekProperties}/{@code
+ * CompanionProperties} nested component (the {@code ProfileProperties}/{@code
  * QuarterlyProperties} precedent). Picked up by {@code @ConfigurationPropertiesScan}.
  *
  * <p>The legacy weekly-review day-score path is gone (Task 5): {@code DayScoreService} now runs

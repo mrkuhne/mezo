@@ -1043,10 +1043,12 @@ const sportSessionsFixed: Sport['sessions'] = [
 // ezért a beszúrás idempotens: csak akkor adjuk hozzá, ha erre a napra még nincs sor,
 // majd a csökkenő („newest first") dátumsorrendet a beszúrás helyétől függetlenül
 // explicit rendezéssel biztosítjuk.
+// A skip-ág is MÁSOLATOT ad vissza: a `.sort()` helyben rendez, tehát a nyers ternary
+// magát a modul-szintű `*Fixed` konstanst mutálná (mezo-tzid).
 const todayIsoSport = localDateString()
 const sportSessions: Sport['sessions'] = (
   sportSessionsFixed.some((s) => s.isoDate === todayIsoSport)
-    ? sportSessionsFixed
+    ? [...sportSessionsFixed]
     : [...sportSessionsFixed, { id: 'vb-today', sport: 'volleyball', date: huMonthDayDow(todayIsoSport), isoDate: todayIsoSport, time: '18:00', duration: 90, setsPlayed: 4, rounds: null, intensity: 7, rpe: 6.6, shoulderStrain: 5, jumpCount: 33, notes: null }]
 ).sort((a, b) => b.isoDate.localeCompare(a.isoDate))
 
