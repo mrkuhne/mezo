@@ -43,23 +43,23 @@ export function pageEntries(entries: LifecycleEntry[], page: number): {
 }
 ```
 
-- [ ] RED: írj tesztet arra, hogy `initialBucket` a nem üres `decide` kosarat választja, ennek
+- [x] RED: írj tesztet arra, hogy `initialBucket` a nem üres `decide` kosarat választja, ennek
   hiányában pedig a `BUCKET_ORDER` első nem üres kosarát; teljesen üres állapotban `decide`.
-- [ ] RED: írj tesztet arra, hogy a pair-backed entry a `metricBDomain` értéket, a monitor-pár
+- [x] RED: írj tesztet arra, hogy a pair-backed entry a `metricBDomain` értéket, a monitor-pár
   nélküli minta pedig `other` domént kap; a szűrés egyik elemet sem veszíti el a `Mind` (`null`)
   nézetben.
-- [ ] RED: írj tesztet a `domain` rendezésre (doménsorrend, azon belül `hu-HU` cím), valamint a
+- [x] RED: írj tesztet a `domain` rendezésre (doménsorrend, azon belül `hu-HU` cím), valamint a
   `PATTERN_PAGE_SIZE`-os lapozásra és a tartományon túli oldal biztonságos clampelésére.
-- [ ] Futtasd és lásd a helyes hiány miatti bukást:
+- [x] Futtasd és lásd a helyes hiány miatti bukást:
 
   ```bash
   cd frontend && pnpm vitest run src/features/insights/logic/patternCatalog.test.ts
   ```
 
-- [ ] GREEN: implementáld a fenti tiszta függvényeket. A `progress` rendezés másolatot adjon
+- [x] GREEN: implementáld a fenti tiszta függvényeket. A `progress` rendezés másolatot adjon
   vissza az eredeti bucket-sorrendben; a `domain` rendezés használja a meglévő `DOMAIN_ORDER`
   sorrendet és `localeCompare(..., 'hu-HU')`-t.
-- [ ] Futtasd újra a céltesztet, majd commit:
+- [x] Futtasd újra a céltesztet, majd commit:
 
   ```bash
   git add frontend/src/features/insights/logic/patternCatalog.ts \
@@ -93,12 +93,12 @@ export function PatternFilterSheet(props: {
 }): JSX.Element
 ```
 
-- [ ] RED: a sheet tesztje igazolja a jelenlegi értékek kijelölését, egy domén + rendezés draft
+- [x] RED: a sheet tesztje igazolja a jelenlegi értékek kijelölését, egy domén + rendezés draft
   módosítását, az `Alkalmazom` utáni egyetlen `onApply` hívást, valamint hogy `onClose` draft
   mentése nélkül fut.
-- [ ] RED: a `PatternDecisionCard` és `PatternDetailHero` meglévő tesztjében rögzítsd, hogy a
+- [x] RED: a `PatternDecisionCard` és `PatternDetailHero` meglévő tesztjében rögzítsd, hogy a
   doménjelzés SVG/clay ikont és magyar címkét tartalmaz, emojit nem.
-- [ ] Futtasd a három céltesztet, és ellenőrizd a bukást:
+- [x] Futtasd a három céltesztet, és ellenőrizd a bukást:
 
   ```bash
   cd frontend && pnpm vitest run \
@@ -107,15 +107,15 @@ export function PatternFilterSheet(props: {
     src/features/insights/components/PatternDetailHero.test.tsx
   ```
 
-- [ ] GREEN: készíts feature-local `PatternDomainMark` komponenst a meglévő `ClayIcon` és
-  `DOMAIN_META` címke használatával. Távolítsd el a renderelt emoji `icon` mezőt a tiszta
-  `DOMAIN_META`-ból, és cseréld a két jelenlegi fogyasztót a komponensre.
-- [ ] GREEN: készítsd el a house `Sheet`-re épülő szűrőt. Natív gombok, `aria-pressed`,
-  `Icon name="grid"` a Mind opcióhoz, clay doménjelek a témákhoz, natív `select` a rendezéshez;
+- [x] GREEN: készíts feature-local `PatternDomainMark` komponenst a meglévő `ClayIcon` és
+  `DOMAIN_META` címke használatával. Cseréld a döntési kártya és a detail hero emoji-fogyasztását
+  a komponensre; a főoldal utolsó fogyasztója és maga a mező Task 3-ban tűnik el együtt.
+- [x] GREEN: készítsd el a house `Sheet`-re épülő szűrőt. Natív gombok, `aria-pressed`,
+  `Icon name="insights"` a Mind opcióhoz, clay doménjelek a témákhoz, natív `select` a rendezéshez;
   a sheet saját draft state-et tart, csak Apply-kor ír vissza.
-- [ ] A `prototype.css`-ben kizárólag `mnt-filter-*` osztályokat és meglévő `--mz-*`/globális
+- [x] A `prototype.css`-ben kizárólag `mnt-filter-*` osztályokat és meglévő `--mz-*`/globális
   tokeneket használj; új raw szín vagy párhuzamos sheet-backdrop ne készüljön.
-- [ ] Futtasd újra a célteszteket, majd commit:
+- [x] Futtasd újra a célteszteket, majd commit:
 
   ```bash
   git add frontend/src/features/insights/components/PatternDomainMark.tsx \
