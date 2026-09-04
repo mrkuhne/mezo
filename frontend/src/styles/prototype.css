@@ -9061,7 +9061,10 @@ button.mz-wtile:active { transform: scale(0.96); }
   width: 100%; padding: 8px 2px; cursor: pointer; text-align: left;
   border: none; background: none; font-family: inherit; color: var(--mz-ink);
 }
-.rt-hrow + .rt-hrow, .row + .row > .rt-hrow { border-top: 0.5px solid var(--mz-line-soft); }
+/* SortableList wraps each row in `[data-sortable-row]` (grip + `.col` > our `.row` > `.rt-hrow`
+   + the ▲▼ `.row`) — the `.rt-hrow` buttons are never siblings, so the separator has to anchor
+   on the sortable wrappers themselves (frontend/src/shared/ui/SortableList.tsx:124-182). */
+[data-sortable-row] + [data-sortable-row] .rt-hrow { border-top: 0.5px solid var(--mz-line-soft); }
 .rt-nm { grid-area: n; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rt-hrow .rt-fw { grid-area: f; }
 .rt-bar { grid-area: b; display: flex; align-items: center; gap: 7px; }

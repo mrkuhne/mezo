@@ -61,7 +61,7 @@ const mockHabitSummary = {
 
 const {
   useHabitDay, useHabitSummary, useHabitCatalog, useHabitCatalogActions, useProgressionProfile,
-  useHabitAiSuggest, updateChain, updateDef, reorderChain,
+  useHabitAiSuggest, updateChain, reorderChain,
 } = vi.hoisted(() => ({
   useHabitDay: vi.fn(),
   useHabitSummary: vi.fn(),
@@ -70,7 +70,6 @@ const {
   useProgressionProfile: vi.fn(),
   useHabitAiSuggest: vi.fn(),
   updateChain: vi.fn(() => Promise.resolve()),
-  updateDef: vi.fn(() => Promise.resolve()),
   reorderChain: vi.fn(() => Promise.resolve()),
 }))
 vi.mock('@/data/hooks', () => ({
@@ -85,7 +84,6 @@ vi.mock('@/data/hooks', () => ({
 beforeEach(() => {
   navigate.mockClear()
   updateChain.mockClear()
-  updateDef.mockClear()
   reorderChain.mockClear()
   useHabitDay.mockReset()
   useHabitDay.mockReturnValue({ habits: habitsToday })
@@ -102,7 +100,6 @@ beforeEach(() => {
     deleteChain: vi.fn(() => Promise.resolve()),
     reorderChain,
     createDef: vi.fn(() => Promise.resolve()),
-    updateDef,
     deleteDef: vi.fn(() => Promise.resolve()),
     pending: false,
   })
