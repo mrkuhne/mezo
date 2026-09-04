@@ -6071,17 +6071,6 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .gr-band.expanded .gr-skl.more { display: flex; }
 .gr-expand { width: 100%; border: none; background: none; font-family: inherit; font-size: 10.5px; font-weight: 700; color: var(--tc, var(--mz-ink-soft)); cursor: pointer; padding: 7px 0 0; text-align: center; min-height: 44px; }
 /* rutin */
-.gr-covgrid { display: flex; gap: 9px; margin-bottom: 11px; }
-.gr-covtile { flex: 1; border-radius: 18px; padding: 11px 12px; background: var(--mz-stripbg); border: 0.5px solid var(--mz-line-soft); box-shadow: var(--mz-shadow); }
-.gr-cov-hd { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
-.gr-cov-hd b { font-size: 11px; font-weight: 700; }
-.gr-cov-n { margin-left: auto; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.gr-cov-n small { font-size: 9px; color: var(--mz-ink-mut); font-weight: 600; }
-.gr-cells { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
-.gr-cells i { aspect-ratio: 1; border-radius: 4px; background: var(--mz-gbar-bg); transform: scale(0.4); opacity: 0; }
-.gr-cells i.on { background: var(--mz-strength); }
-.gr-cells i.ev.on { background: var(--mz-gbar-lav); }
-.mz-play .gr-cells i { animation: gr-dotpop 0.35s cubic-bezier(0.3, 1.4, 0.4, 1) forwards; animation-delay: calc(var(--d) + var(--i) * 14ms); }
 .gr-daynav { display: flex; align-items: center; gap: 9px; padding: 2px 2px 9px; }
 .gr-chain { border-radius: 20px; padding: 13px 14px; margin-bottom: 11px; border: 0.5px solid var(--mz-line-soft); background: var(--mz-stripbg); box-shadow: var(--mz-shadow); }
 .gr-chain.amber { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
@@ -6154,7 +6143,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 }
 @media (prefers-reduced-motion: reduce) {
   .gr-tbar i, .mz-play .gr-tbar i, .gr-msbar i, .mz-play .gr-msbar i,
-  .gr-wdots i, .mz-play .gr-wdots i, .gr-cells i, .mz-play .gr-cells i { transform: none; opacity: 1; animation: none; }
+  .gr-wdots i, .mz-play .gr-wdots i { transform: none; opacity: 1; animation: none; }
 }
 /* ── Napló re-face (mezo-d20.6.6) — prototype en-body.html #page-naplo ×1.18.
       The gratitude tile and the gold decision card reuse the Előrejelzések/Kísérletek family's
@@ -9056,7 +9045,25 @@ button.mz-wtile:active { transform: scale(0.96); }
 
 /* Rutin hub — framework badge + strength bar + new-recipe highlight (mezo-3zue.3),
    docs/design_2.0/prototypes/src/rutin-epito-head.html .fw/.strength/.hrow.new ×1.18. */
-.rt-hrow { cursor: pointer; }
+.rt-hrow {
+  display: grid; grid-template-columns: 1fr auto; grid-template-areas: "n f" "b b";
+  column-gap: 8.3px; row-gap: 3.5px; align-items: center;
+  width: 100%; padding: 8px 2px; cursor: pointer; text-align: left;
+  border: none; background: none; font-family: inherit; color: var(--text-primary);
+}
+/* SortableList wraps each row in `[data-sortable-row]` (grip + `.col` > our `.row` > `.rt-hrow`
+   + the ▲▼ `.row`) — the `.rt-hrow` buttons are never siblings, so the separator has to anchor
+   on the sortable wrappers themselves (frontend/src/shared/ui/SortableList.tsx:124-182). */
+[data-sortable-row] + [data-sortable-row] .rt-hrow { border-top: 0.5px solid var(--mz-line-soft); }
+.rt-nm { grid-area: n; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rt-hrow .rt-fw { grid-area: f; }
+.rt-bar { grid-area: b; display: flex; align-items: center; gap: 7px; }
+.rt-tick {
+  width: 16.5px; height: 16.5px; border-radius: 50%; flex: none; display: grid; place-items: center;
+  font-size: 9.5px; border: 1.4px solid var(--mz-line); color: transparent;
+}
+.rt-done .rt-tick { background: var(--gradient-sage); border-color: transparent; color: #fff; }
+.rt-done .rt-strength div { background: var(--gradient-sage); }
 .rt-fw {
   font-size: 8px; font-weight: 800; letter-spacing: 0.08em; border-radius: 6px;
   padding: 2px 7px; flex: none; text-transform: uppercase; font-variant-numeric: tabular-nums;
@@ -9065,10 +9072,9 @@ button.mz-wtile:active { transform: scale(0.96); }
 .rt-fw-clear { color: var(--mz-cell-lav-ink); background: var(--mz-cell-lav-bg); }
 .rt-fw-none { color: var(--mz-ink-mut); background: var(--surface-recess); }
 .rt-strength {
-  flex: 1; max-width: 64px; height: 5px; border-radius: 2px; background: var(--mz-line-soft); overflow: hidden;
+  flex: 1; height: 5px; border-radius: 2px; background: var(--mz-line-soft); overflow: hidden;
 }
 .rt-strength div { height: 100%; border-radius: 2px; background: var(--mz-strength); transition: width 0.6s cubic-bezier(0.22, 0.9, 0.32, 1); }
-.gr-chainrow.done .rt-strength div { background: var(--gradient-sage); }
 /* The number beside the bar (spec §5, restored from the retired GrowthRutinPage): the bar alone
    is a silent graphic, and the exact standing is the thing a user actually reads. */
 .rt-strength-n {
@@ -9082,6 +9088,12 @@ button.mz-wtile:active { transform: scale(0.96); }
 /* A paused chain stays VISIBLE and merely dims — the toggle that un-pauses it lives on this
    card, so hiding it would strand the chain (`.is-inert` is otherwise scoped to .card/.row). */
 .gr-chain.is-inert { opacity: 0.55; }
+
+/* A ▲▼ átrendező gombok a11y-affordanciák: a prototípus .hrow-ján nincsenek, ezért
+   alapból nem foglalnak helyet, és csak billentyű-fókuszra jelennek meg. Rejtve is az
+   a11y fában maradnak (nincs display:none / visibility:hidden). */
+.srt-chev-focus { width: 0; overflow: hidden; opacity: 0; transition: opacity 0.15s ease; }
+.srt-chev-focus:focus-within { width: auto; overflow: visible; opacity: 1; }
 
 /* ===== Rutin wizard — /me/rutin/uj (mezo-3zue.4) =====
    docs/design_2.0/prototypes/src/rutin-epito-head.html `.sentence` / `.fwcard` / `.tip` /

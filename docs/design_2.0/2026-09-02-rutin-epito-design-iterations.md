@@ -121,3 +121,23 @@ maps to `isActive=false`). Delete stays behind ⋯ with two taps, as today.
    maradjon a mai „elfogadom → kész sor" sheet?
 3. A Clear-ág **identitás** mezője maradjon opcionális, vagy legyen kötelező, mint az Atoms appban?
 4. Kell-e a Fogg-ágban a **„pici?" figyelmeztetés** (6 szó / 5-nél nagyobb szám), vagy csak zavar?
+
+## 2026-09-04 — fidelity-kör (mezo-3zue.10)
+
+A shipped `/me/rutin` (`RutinHubPage`) vizuálisan újra lett vágva erre a prototípusra
+(`#pg-rutin`), miután a két korábbi merge a saját `.gr-covtile` 30-cellás számláló csíkjait és
+a per-soros toggle-lel bővített sorlayoutot hozta létre — egyik sem volt a prototípusban. A
+kör visszaállította a prototípus `statstrip`-jét (tökéletes reggel/este · 30 n + aktív szokás)
+és a kétsoros `.rt-hrow` szokás-sort (név + keret-chip fent, read-only pipa + erő-csík + %
+lent), törölte a per-soros toggle-t, és a lánc-fejléc chipjét a lánc erejére (`erő {avg}%`)
+szűkítette.
+
+**Két bevallott eltérés a prototípustól, mindkettő tudatos döntés, nem csúszás:**
+
+1. **A napnavigátor marad a hubon.** A prototípus `#pg-rutin`-ja nem ismerte a múltnapi
+   nézetet; a shipped hub megtartja, mert valódi funkció, és ez az egyetlen felület, ami
+   múltnapi szokás-böngészést kínál (`mezo-x9c2` gazdafelülete). Lásd [habit.md §2](../features/habit.md).
+2. **A `SortableList` ▲▼ gombjai megmaradnak a11y-affordanciaként.** A prototípus rendezhető
+   listája vizuálisan gomb nélküli; a shipped verzió az új `chevrons="focus"` móddal old fel —
+   a gombok az a11y fában maradnak, de csak `:focus-within`-re látszanak. Lásd
+   [_platform-design-system.md §2 item 5](../features/_platform-design-system.md).
