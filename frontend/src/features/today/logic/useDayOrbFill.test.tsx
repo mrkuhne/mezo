@@ -1,12 +1,66 @@
 import { renderHook } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
+import { vi } from 'vitest'
+import type { DayEvaluationResponse } from '@/data/hooks'
+import { NEUTRAL_INTENSITY } from '@/features/today/logic/dayOrbFill'
 import { useDayOrbFill } from '@/features/today/logic/useDayOrbFill'
 
 function wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
 }
+
+// A tónus-tengelyt (mezo-x5va) a mai nap `useDayEvaluation` válaszából számoljuk — ezeket a
+// teszteket a hook mockolásával, mindkét módtól FÜGGETLENÜL futtatjuk (a `vi.mock` ugyanúgy
+// felülírja a valós és a mock ágat is), hogy a vezetékezést önmagában, a dual-mode olvasás
+// részletei nélkül ellenőrizzük. A többi `@/data/hooks` export valós marad (`importOriginal`).
+const hoisted = vi.hoisted(() => ({ evaluation: undefined as DayEvaluationResponse | undefined }))
+vi.mock('@/data/hooks', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/data/hooks')>()
+  return {
+    ...actual,
+    useDayEvaluation: () => ({
+      data: hoisted.evaluation, isPending: false, error: null, refetch: () => {},
+    }),
+  }
+})
+
+function evaluation(dimensions: DayEvaluationResponse['dimensions'], score: number | null = null): DayEvaluationResponse {
+  return {
+    date: '2026-09-04', state: score === null ? 'in_progress' : 'scored', score, base: null,
+    adjustment: null, narrative: [], highlights: [], context: [], dimensions,
+  }
+}
+
+describe('tónus-tengely (mezo-x5va) — a napi értékelésből', () => {
+  afterEach(() => { hoisted.evaluation = undefined })
+
+  test('2+ KÉSZ dimenzióval nem-semleges intenzitást ad', () => {
+    hoisted.evaluation = evaluation([
+      { id: 'training', label: 'Edzés', weight: 0.6, score: 90, status: 'DONE', facts: [], note: null },
+      { id: 'sleep', label: 'Alvás', weight: 0.4, score: 90, status: 'DONE', facts: [], note: null },
+    ])
+    const { result } = renderHook(() => useDayOrbFill(), { wrapper })
+    expect(result.current.intensity).not.toBe(NEUTRAL_INTENSITY)
+    expect(result.current.intensity).toBeGreaterThan(0.9)
+  })
+
+  test('2 KÉSZ dimenzió alatt semleges marad az intenzitás', () => {
+    hoisted.evaluation = evaluation([
+      { id: 'training', label: 'Edzés', weight: 1, score: 90, status: 'DONE', facts: [], note: null },
+      { id: 'sleep', label: 'Alvás', weight: 0, score: null, status: 'NO_DATA', facts: [], note: null },
+    ])
+    const { result } = renderHook(() => useDayOrbFill(), { wrapper })
+    expect(result.current.intensity).toBe(NEUTRAL_INTENSITY)
+  })
+
+  test('válasz hiányában (még nem érkezett meg) semleges marad az intenzitás', () => {
+    hoisted.evaluation = undefined
+    const { result } = renderHook(() => useDayOrbFill(), { wrapper })
+    expect(result.current.intensity).toBe(NEUTRAL_INTENSITY)
+  })
+})
 
 // Real módban hálózat nélkül minden lekérdezés `realEmpty`-re old fel az első renderben, tehát
 // `present` 0 marad — ezek az asszerciók a mock-seedhez kötöttek (Task 3), real módban nem
