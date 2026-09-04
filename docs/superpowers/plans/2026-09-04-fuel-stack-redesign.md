@@ -156,7 +156,7 @@ undoIntake(
 ): Promise<void>
 ```
 
-- [ ] **Step 1: Írd meg a bukó ToastProvider teszteket**
+- [x] **Step 1: Írd meg a bukó ToastProvider teszteket**
 
 A `ToastProvider.test.tsx` új tesztjei bizonyítsák, hogy:
 
@@ -177,7 +177,7 @@ expect(action).toHaveBeenCalledOnce()
 - action nélküli simple toast és reward toast DOM-ja változatlan;
 - a gomb fókuszolható valódi `button`, nem click handleres `span`.
 
-- [ ] **Step 2: Futtasd a toast tesztet és rögzítsd a bukást**
+- [x] **Step 2: Futtasd a toast tesztet és rögzítsd a bukást**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo/frontend
@@ -186,7 +186,7 @@ pnpm vitest run src/shared/ui/ToastProvider.test.tsx
 
 Várt: FAIL, mert `SimpleToast.action` és a toast-action button még nem létezik.
 
-- [ ] **Step 3: Implementáld az opcionális simple-toast actiont**
+- [x] **Step 3: Implementáld az opcionális simple-toast actiont**
 
 A `toastBus.ts`-ben add hozzá a fenti `ToastAction` típust kizárólag a
 `SimpleToast` ághoz. A `ToastProvider` simple body-jában a szöveg mellé renderelj
@@ -209,7 +209,7 @@ A JSX handler `onClick={() => { void runAction(e) }}` legyen, hogy rejected Prom
 ne maradjon kezeletlen event-returnként. A meglévő close gomb, queue cap és 4/6
 másodperces timer ne változzon.
 
-- [ ] **Step 4: Írd meg a bukó stack-hook teszteket**
+- [x] **Step 4: Írd meg a bukó stack-hook teszteket**
 
 A `stackHooks.test.tsx`-ben legyen real-mode teszt, amely:
 
@@ -228,7 +228,7 @@ await result.current.undoIntake('kreatin', 'wake', 'intake-fresh')
 Mock-mode tesztben a `logIntake` adjon vissza stabil id-jű `Intake` sort, majd az
 exact id-s undo távolítsa el ugyanazt a cache-elemet.
 
-- [ ] **Step 5: Futtasd a focused hook tesztet és rögzítsd a bukást**
+- [x] **Step 5: Futtasd a focused hook tesztet és rögzítsd a bukást**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo/frontend
@@ -238,7 +238,7 @@ pnpm vitest run src/data/fuel/stackHooks.test.tsx
 Várt: FAIL, mert a mai `logIntake`/`undoIntake` fire-and-forget és nem fogad exact
 intake id-t.
 
-- [ ] **Step 6: Tedd Promise-ossá és exact-id képessé a stack actionöket**
+- [x] **Step 6: Tedd Promise-ossá és exact-id képessé a stack actionöket**
 
 - A real `logM.mutationFn` térjen vissza a `fuelApi.logIntake(...)` eredményével.
 - A `mockAddIntake(...)` térjen vissza a már létező vagy az újonnan létrehozott
@@ -250,7 +250,7 @@ intake id-t.
 - Exact id hiányában őrizd meg a jelenlegi pantryItemId+slotKey legacy feloldást.
 - A meglévő query invalidációk és globális mutation-error viselkedés maradjon meg.
 
-- [ ] **Step 7: Futtasd újra a két focused tesztet**
+- [x] **Step 7: Futtasd újra a két focused tesztet**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo/frontend
@@ -259,7 +259,7 @@ pnpm vitest run src/shared/ui/ToastProvider.test.tsx src/data/fuel/stackHooks.te
 
 Várt: PASS.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo
