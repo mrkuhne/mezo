@@ -200,13 +200,25 @@ public class PantryCatalogService {
         }
     }
 
-    /** Idempotent "from-catalog": the caller's live row for the definition, created if missing. */
+    /**
+     * Idempotent "from-catalog": the caller's live row for the definition, created if missing.
+     *
+     * <p>A {@code draft} row (mezo-qooi) is unreviewed — visible only on its own author's shelf.
+     * The AUTHOR is deliberately the one exception: {@code PantryImportService#importItem} inserts
+     * the draft and immediately calls this method to bind the very same caller to it, so the gate
+     * would otherwise break the import flow it exists to protect. Every other caller is treated as
+     * if the row did not exist at all — same {@code RESOURCE_NOT_FOUND} as an unknown
+     * {@code catalogId}, not a more specific error that would confirm the row's existence to a
+     * bystander who merely guessed or was handed the id.
+     */
     @Transactional
     public PantryItemEntity ensureItem(UUID userId, UUID catalogId) {
         return itemRepository.findByCreatedByAndCatalog_IdAndDeletedFalse(userId, catalogId)
             .orElseGet(() -> {
                 PantryCatalogEntity catalog = catalogRepository.findById(catalogId)
                     .filter(c -> !c.isDeleted())
+                    .filter(c -> !PantryCatalogEntity.STATUS_DRAFT.equals(c.getStatus())
+                        || userId.equals(c.getCreatedBy()))
                     .orElseThrow(() -> new SystemRuntimeErrorException(
                         SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
                 PantryItemEntity item = new PantryItemEntity();
