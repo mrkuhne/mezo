@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import tools.jackson.databind.JsonNode;
 
 /**
  * HTTP-level companion-feed flow (unified {@code GET /api/proactive/feed}): the persisted-row
@@ -161,6 +162,19 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
                         AdviceActionKey.SHIFT_SLEEP_ANCHOR, "Horgony −30 perc", Map.of("minutes", -30))),
                 null, Instant.now());
 
+        // Raw body FIRST — params-value-type integrity (mezo-d58h.5 review finding) can only be
+        // pinned at the JSON level: a numeric-vs-string mixup round-trips CLEANLY through the
+        // DTO's Map<String,Object> in either direction, so a DTO-only assertion could pass even
+        // if the wire actually carried "-30" (a quoted string) instead of -30 (a number). The
+        // apply layer (a later task) reads this value as a number; the wire must actually carry one.
+        String rawBody = getForBody(
+                "/api/proactive/feed", ownerAuthHeaders(), HttpStatus.OK, String.class);
+        JsonNode paramsNode = objectMapper.readTree(rawBody).get(0).get("actions").get(0).get("params");
+        assertThat(paramsNode.get("minutes").isNumber())
+                .withFailMessage("expected a JSON number, got: %s", paramsNode.get("minutes"))
+                .isTrue();
+        assertThat(paramsNode.get("minutes").asInt()).isEqualTo(-30);
+
         List<FeedMessageResponse> feed = getForList(
                 "/api/proactive/feed", ownerAuthHeaders(), HttpStatus.OK, FeedMessageResponse.class);
 
@@ -169,6 +183,7 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
         assertThat(feed.get(0).getActions().get(0).getKey().getValue())
                 .isEqualTo(AdviceActionKey.SHIFT_SLEEP_ANCHOR);
         assertThat(feed.get(0).getActions().get(0).getLabel()).isEqualTo("Horgony −30 perc");
+        assertThat(feed.get(0).getActions().get(0).getParams()).containsEntry("minutes", -30);
         assertThat(feed.get(0).getApplied()).isNull();
     }
 

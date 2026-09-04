@@ -169,7 +169,7 @@ describe('buildMezoMessages', () => {
   const adviceWithActions: FeedMessage = {
     ...advice,
     actions: [{ key: 'shift_sleep_anchor', label: 'Horgony −30 perc', params: { minutes: -30 } }],
-    applied: undefined,
+    applied: { actionKey: 'shift_sleep_anchor', at: '2026-09-04T15:00:00Z' },
   }
 
   test('az advice feed-elem actions/applied mezői átfutnak a szál elemére', () => {
@@ -178,6 +178,13 @@ describe('buildMezoMessages', () => {
     expect(m.actions).toEqual([
       { key: 'shift_sleep_anchor', label: 'Horgony −30 perc', params: { minutes: -30 } },
     ])
+    expect(m.applied).toEqual({ actionKey: 'shift_sleep_anchor', at: '2026-09-04T15:00:00Z' })
+  })
+
+  // Absent-applied shape (the S4 createAdvice fixture, and every non-advice/demo/nudge item)
+  // must still come through as undefined — not coerced to null or an empty object.
+  test('applied hiányában undefined marad a szál elemén', () => {
+    const [m] = buildMezoMessages({ feed: [advice], demoBriefing: null })
     expect(m.applied).toBeUndefined()
   })
 })
