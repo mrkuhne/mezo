@@ -30,11 +30,18 @@ import { LogFlowPage } from '@/features/fuel/pages/LogFlowPage'
 import { SleepLogSheet } from '@/features/me/sheets/SleepLogSheet'
 import type { HabitDaypart, HabitItem } from '@/data/types'
 
-type Face = 'reggel' | 'este'
-const FACE_DAYPART: Record<Face, HabitDaypart> = { reggel: 'MORNING', este: 'EVENING' }
-const FACE_SPOT: Record<Face, 's-reggel' | 's-este'> = { reggel: 's-reggel', este: 's-este' }
-const FACE_TITLE: Record<Face, string> = { reggel: 'Reggeli rutin', este: 'Esti rutin' }
-const FACE_PERFECT: Record<Face, string> = { reggel: 'tökéletes reggel', este: 'tökéletes este' }
+// A DAY chain is user-created (the wizard and the chain editor both offer "Napközbeni"), so it
+// gets its own face here — without one it was editable under Én and impossible to tick from the
+// day, i.e. a habit you could create but never log (mezo-025v). It has no hub tile: the day's
+// two faces (reggel/este) are the hub's own metaphor, and DAY carries no perfect-day counter.
+type Face = 'reggel' | 'napkozben' | 'este'
+const FACE_ORDER: Face[] = ['reggel', 'napkozben', 'este']
+const FACE_DAYPART: Record<Face, HabitDaypart> = { reggel: 'MORNING', napkozben: 'DAY', este: 'EVENING' }
+const FACE_SPOT: Record<Face, 's-reggel' | 's-energia' | 's-este'> = { reggel: 's-reggel', napkozben: 's-energia', este: 's-este' }
+const FACE_TITLE: Record<Face, string> = { reggel: 'Reggeli rutin', napkozben: 'Napközbeni rutin', este: 'Esti rutin' }
+// Only the two seeded dayparts have a 30-day perfect counter in the summary contract — the DAY
+// face therefore shows no such cell at all rather than a fabricated zero (honesty rule).
+const FACE_PERFECT: Partial<Record<Face, string>> = { reggel: 'tökéletes reggel', este: 'tökéletes este' }
 
 interface Group {
   face: Face
@@ -71,7 +78,7 @@ export function NapRutinPage() {
 
   // ?dp preselects the chain group shown first (the hub tile hands its face over).
   const dpParam = params.get('dp')
-  const firstFace: Face = dpParam === 'este' ? 'este' : 'reggel'
+  const firstFace: Face = FACE_ORDER.find((f) => f === dpParam) ?? 'reggel'
 
   const groupFor = (face: Face): Group => {
     const keys = new Set(
@@ -81,7 +88,7 @@ export function NapRutinPage() {
     return { face, items, done: items.filter((h) => h.status === 'done').length }
   }
   // Honest states: a group with no rows renders NOTHING (no placeholder theater).
-  const groups = ([firstFace, firstFace === 'reggel' ? 'este' : 'reggel'] as Face[])
+  const groups = [firstFace, ...FACE_ORDER.filter((f) => f !== firstFace)]
     .map(groupFor)
     .filter((g) => g.items.length > 0)
   const hero = groups[0] ?? null
@@ -91,7 +98,11 @@ export function NapRutinPage() {
   const chainStrength = strengths.length > 0
     ? Math.round(strengths.reduce((a, b) => a + b, 0) / strengths.length)
     : null
-  const perfectDays = hero ? (hero.face === 'reggel' ? summary.perfectMorningDays30 : summary.perfectEveningDays30) : 0
+  // null for the DAY face — the contract has no perfect-day counter for it, so the cell goes.
+  const perfectLabel = hero ? FACE_PERFECT[hero.face] : undefined
+  const perfectDays = hero?.face === 'reggel' ? summary.perfectMorningDays30
+    : hero?.face === 'este' ? summary.perfectEveningDays30
+    : null
   const xpToday = hero ? hero.items.filter((h) => h.status === 'done').reduce((s, h) => s + h.xp, 0) : 0
 
   const chainProgress = (chainKey: string) => {
@@ -144,7 +155,7 @@ export function NapRutinPage() {
         <PageBody principle="A lánc-erő az elmúlt 28 nap konzisztenciája — egy kihagyás nem nullázza, csak halványítja.">
           {hero && (
             <StatStrip className="rise nr-stats">
-              <StatCell value={`${perfectDays}/30`} label={FACE_PERFECT[hero.face]} />
+              {perfectDays !== null && perfectLabel && <StatCell value={`${perfectDays}/30`} label={perfectLabel} />}
               {chainStrength !== null && <StatCell value={`${chainStrength}%`} label="lánc-erő · 28 nap" />}
               <StatCell value={`+${xpToday}`} label="XP ma" />
             </StatStrip>
