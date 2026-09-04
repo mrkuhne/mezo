@@ -318,7 +318,7 @@ export interface PatternMonitorPair {
 }
 ```
 
-- [ ] RED: create `patternPairMapper.test.ts` with a generated-wire-shaped 8/1 fixture. Assert the
+- [x] RED: create `patternPairMapper.test.ts` with a generated-wire-shaped 8/1 fixture. Assert the
   mapper preserves `binary`, `clock_hour`, `imbalanced_groups`, `8`, `1`, `3`, and normalizes all
   omitted nullable fields to `null`. Add `verdicts.test.ts` asserting the exact strings:
 
@@ -329,7 +329,7 @@ export interface PatternMonitorPair {
   )
   ```
 
-- [ ] Change `findings.test.ts` expectations before production code:
+- [x] Change `findings.test.ts` expectations before production code:
 
   ```ts
   expect(findingSentence(base)?.prefix).toBe('Eddig az ellenkezője látszik:')
@@ -339,7 +339,7 @@ export interface PatternMonitorPair {
     .toBe('13 közös nap — bizonytalan jel; ebből még nem érdemes következtetést levonni')
   ```
 
-- [ ] Run the focused frontend tests in both modes and observe RED/compile failure:
+- [x] Run the focused frontend tests in both modes and observe RED/compile failure:
 
   ```bash
   cd frontend
@@ -351,7 +351,7 @@ export interface PatternMonitorPair {
     src/features/insights/logic/verdicts.test.ts
   ```
 
-- [ ] GREEN: add the domain types. Move the duplicated wire mapper from `monitorApi.ts` and
+- [x] GREEN: add the domain types. Move the duplicated wire mapper from `monitorApi.ts` and
   `patternDetailApi.ts` into `patternPairMapper.ts`:
 
   ```ts
@@ -369,14 +369,14 @@ export interface PatternMonitorPair {
 
   Both APIs import this file directly by `@/data/insights/patternPairMapper`; do not add a barrel.
 
-- [ ] Add value kinds and null group fields to every mock monitor pair. Add the approved
+- [x] Add value kinds and null group fields to every mock monitor pair. Add the approved
   `weekend~late-meal-hour` 8+1 fixture as `imbalanced_groups` and make its mock detail days match
   the prototype's nine dates and clock values. Do not retain a live `r/p` on that pair.
 
-- [ ] Replace `findingSentence` prefixes and `confidenceMeta` sentences exactly as specified.
+- [x] Replace `findingSentence` prefixes and `confidenceMeta` sentences exactly as specified.
   Preserve the existing `strengthWord` thresholds and category chips.
 
-- [ ] Extend `metricFormat.ts` with binary group copy metadata, not chart-type detection:
+- [x] Extend `metricFormat.ts` with binary group copy metadata, not chart-type detection:
 
   ```ts
   binaryGroupLabels('weekend')
@@ -387,11 +387,11 @@ export interface PatternMonitorPair {
   `ritual-closed` gets `kimaradt/megvolt` axis labels and `lezárás nélküli/lezárt esti` day
   labels; unknown keys receive neutral `0-s csoport/1-es csoport` fallbacks.
 
-- [ ] Implement `verdictSentence`'s `imbalanced_groups` arm from actual count/required fields and
+- [x] Implement `verdictSentence`'s `imbalanced_groups` arm from actual count/required fields and
   a separate `groupBalanceSentence(pair)` for the explanatory paragraph. If fields are missing,
   return „Mindkét oldalról több nap kell.” without inventing a number.
 
-- [ ] Run focused tests, then TypeScript build in both environment modes:
+- [x] Run focused tests, then TypeScript build in both environment modes:
 
   ```bash
   cd frontend
@@ -406,7 +406,7 @@ export interface PatternMonitorPair {
   pnpm build
   ```
 
-- [ ] Commit:
+- [x] Commit:
 
   ```bash
   git add frontend/src/data/types.ts frontend/src/data/insights \

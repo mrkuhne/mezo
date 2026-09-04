@@ -194,7 +194,7 @@ export const experiments: Experiment[] = [
   },
 ]
 
-/** A monitor demo-pillanatképe (mezo-viqs) — a 8 katalógus-páron 4 verdikt látszik (live, few_days, no_data, degenerate). */
+/** A monitor demo-pillanatképe (mezo-viqs) — köztük a bináris 8+1 csoportarányú adatgyűjtés. */
 export const patternMonitor: PatternMonitor = {
   windowFrom: '2026-06-13',
   windowTo: '2026-08-10',
@@ -208,13 +208,16 @@ export const patternMonitor: PatternMonitor = {
       title: 'Alvásminőség ↔ másnapi edzés-RPE',
       category: 'physiology', categoryLabel: 'Fiziológia', lagDays: 1,
       metricAKey: 'sleep-quality', metricALabel: 'alvásminőség',
+      metricAValueKind: 'number',
       metricBKey: 'training-rpe', metricBLabel: 'edzés-RPE',
+      metricBValueKind: 'number',
       mechanismHu: 'A rosszabb alvás másnap nehezebbnek érződő edzést hozhat.',
       questionHu: 'Könnyebb az edzés, ha jól aludtál?', expectedDirection: 'negative',
       whenPositiveHu: 'a jobb alvás után {erősség} nehezebbnek érződött az edzés',
       whenNegativeHu: 'a jobb alvás után {erősség} könnyebbnek érződött az edzés',
       metricADomain: 'sleep', metricBDomain: 'train',
       verdict: 'live', alignedDays: 21, missingDays: null, bottleneckMetricKey: null,
+      groupZeroDays: null, groupOneDays: null, requiredPerGroup: null,
       r: -0.42, n: 21, p: 0.058, status: null,
     },
     {
@@ -222,13 +225,16 @@ export const patternMonitor: PatternMonitor = {
       title: 'Stressz-szint ↔ aznapi alvásminőség',
       category: 'trigger', categoryLabel: 'Kiváltó', lagDays: 0,
       metricAKey: 'checkin-stress', metricALabel: 'stressz-szint',
+      metricAValueKind: 'number',
       metricBKey: 'sleep-quality', metricBLabel: 'alvásminőség',
+      metricBValueKind: 'number',
       mechanismHu: 'A stresszes nap ronthatja az aznapi alvásminőséget.',
       questionHu: 'Elrontja az alvásod a stresszes nap?', expectedDirection: 'negative',
       whenPositiveHu: 'a stresszesebb napokon {erősség} jobban aludtál',
       whenNegativeHu: 'a stresszesebb napokon {erősség} rosszabbul aludtál',
       metricADomain: 'mind', metricBDomain: 'sleep',
       verdict: 'live', alignedDays: 34, missingDays: null, bottleneckMetricKey: null,
+      groupZeroDays: null, groupOneDays: null, requiredPerGroup: null,
       r: -0.61, n: 34, p: 0.001, status: null,
     },
     {
@@ -236,13 +242,16 @@ export const patternMonitor: PatternMonitor = {
       title: 'Alváshossz ↔ másnapi edzés-RPE',
       category: 'physiology', categoryLabel: 'Fiziológia', lagDays: 1,
       metricAKey: 'sleep-duration-h', metricALabel: 'alváshossz',
+      metricAValueKind: 'number',
       metricBKey: 'training-rpe', metricBLabel: 'edzés-RPE',
+      metricBValueKind: 'number',
       mechanismHu: 'A rövidebb alvás másnap magasabb erőkifejtés-érzetet hozhat.',
       questionHu: 'Könnyebb az edzés hosszabb alvás után?', expectedDirection: 'negative',
       whenPositiveHu: 'a hosszabb alvás után {erősség} nehezebbnek érződött az edzés',
       whenNegativeHu: 'a hosszabb alvás után {erősség} könnyebbnek érződött az edzés',
       metricADomain: 'sleep', metricBDomain: 'train',
       verdict: 'few_days', alignedDays: 6, missingDays: 2, bottleneckMetricKey: 'training-rpe',
+      groupZeroDays: null, groupOneDays: null, requiredPerGroup: null,
       r: null, n: null, p: null, status: null,
     },
     {
@@ -250,7 +259,9 @@ export const patternMonitor: PatternMonitor = {
       title: 'Késői étkezés ↔ rákövetkező alvásminőség',
       category: 'trigger', categoryLabel: 'Kiváltó', lagDays: 1,
       metricAKey: 'late-meal-hour', metricALabel: 'utolsó étkezés ideje',
+      metricAValueKind: 'clock_hour',
       metricBKey: 'sleep-quality', metricBLabel: 'alvásminőség',
+      metricBValueKind: 'number',
       mechanismHu: 'A késői étkezés ronthatja a rákövetkező éjszaka minőségét.',
       questionHu: 'Rosszabbul alszol, ha későn eszel?', expectedDirection: 'negative',
       whenPositiveHu: 'a későbbi vacsorák után {erősség} jobban aludtál',
@@ -261,6 +272,7 @@ export const patternMonitor: PatternMonitor = {
       // döntés-inbox nem kérdezhet olyan összefüggésre, amit a mai ablak ki sem tud számolni) —
       // így a mock ezt a jelenetet nem is állíthatja elő.
       verdict: 'live', alignedDays: 14, missingDays: null, bottleneckMetricKey: null,
+      groupZeroDays: null, groupOneDays: null, requiredPerGroup: null,
       r: -0.52, n: 14, p: 0.03, status: null,
     },
     {
@@ -268,13 +280,16 @@ export const patternMonitor: PatternMonitor = {
       title: 'Napi kalória ↔ másnap reggeli súlyváltozás',
       category: 'response', categoryLabel: 'Válasz', lagDays: 1,
       metricAKey: 'daily-kcal', metricALabel: 'napi kalória',
+      metricAValueKind: 'number',
       metricBKey: 'weight-delta-kg', metricBLabel: 'reggeli súlyváltozás',
+      metricBValueKind: 'number',
       mechanismHu: 'A napi bevitel a másnap reggeli súlyban csapódhat le.',
       questionHu: 'Meglátszik a napi kalória a reggeli súlyon?', expectedDirection: 'positive',
       whenPositiveHu: 'a nagyobb kalóriájú napok után {erősség} nagyobb volt a reggeli súlyugrás',
       whenNegativeHu: 'a nagyobb kalóriájú napok után {erősség} kisebb volt a reggeli súly',
       metricADomain: 'fuel', metricBDomain: 'body',
       verdict: 'few_days', alignedDays: 3, missingDays: 5, bottleneckMetricKey: 'weight-delta-kg',
+      groupZeroDays: null, groupOneDays: null, requiredPerGroup: null,
       r: null, n: null, p: null, status: null,
     },
     {
@@ -282,13 +297,16 @@ export const patternMonitor: PatternMonitor = {
       title: 'Sportterhelés ↔ másnapi gym-volumen',
       category: 'response', categoryLabel: 'Válasz', lagDays: 1,
       metricAKey: 'sport-load-min', metricALabel: 'sportterhelés',
+      metricAValueKind: 'number',
       metricBKey: 'gym-volume-kg', metricBLabel: 'gym-volumen',
+      metricBValueKind: 'number',
       mechanismHu: 'A sportterhelés másnapra elvehet a gym-teljesítményből.',
       questionHu: 'Elveszi a sport a másnapi gym-erőt?', expectedDirection: 'negative',
       whenPositiveHu: 'a sportosabb napok után {erősség} nagyobb volument toltál',
       whenNegativeHu: 'a sportosabb napok után {erősség} kisebb volument toltál',
       metricADomain: 'train', metricBDomain: 'train',
       verdict: 'no_data', alignedDays: 0, missingDays: null, bottleneckMetricKey: 'sport-load-min',
+      groupZeroDays: null, groupOneDays: null, requiredPerGroup: null,
       r: null, n: null, p: null, status: null,
     },
     {
@@ -296,13 +314,16 @@ export const patternMonitor: PatternMonitor = {
       title: 'Vízbevitel ↔ energia-szint',
       category: 'physiology', categoryLabel: 'Fiziológia', lagDays: 0,
       metricAKey: 'daily-water-ml', metricALabel: 'vízbevitel',
+      metricAValueKind: 'number',
       metricBKey: 'checkin-energy', metricBLabel: 'energia-szint',
+      metricBValueKind: 'number',
       mechanismHu: 'A hidratáltság az energia-szintben érződhet.',
       questionHu: 'Több energiád van, ha többet iszol?', expectedDirection: 'positive',
       whenPositiveHu: 'a jól hidratált napokon {erősség} több energiád volt',
       whenNegativeHu: 'a jól hidratált napokon {erősség} kevesebb energiád volt',
       metricADomain: 'fuel', metricBDomain: 'mind',
       verdict: 'degenerate', alignedDays: 19, missingDays: null, bottleneckMetricKey: 'daily-water-ml',
+      groupZeroDays: null, groupOneDays: null, requiredPerGroup: null,
       r: null, n: null, p: null, status: null,
     },
     {
@@ -310,13 +331,33 @@ export const patternMonitor: PatternMonitor = {
       title: 'Gyógyszer-ciklusnap ↔ napi kalória',
       category: 'physiology', categoryLabel: 'Fiziológia', lagDays: 0,
       metricAKey: 'medication-cycle-day', metricALabel: 'Gyógyszer-ciklusnap',
+      metricAValueKind: 'number',
       metricBKey: 'daily-kcal', metricBLabel: 'napi kalória',
+      metricBValueKind: 'number',
       mechanismHu: 'A ciklus fázisa befolyásolhatja az étvágyat és a bevitelt.',
       questionHu: 'A ciklus vége felé nő az étvágyad?', expectedDirection: 'positive',
       whenPositiveHu: 'a ciklus későbbi napjain {erősség} többet ettél',
       whenNegativeHu: 'a ciklus későbbi napjain {erősség} kevesebbet ettél',
       metricADomain: 'fuel', metricBDomain: 'fuel',
       verdict: 'no_data', alignedDays: 0, missingDays: null, bottleneckMetricKey: 'medication-cycle-day',
+      groupZeroDays: null, groupOneDays: null, requiredPerGroup: null,
+      r: null, n: null, p: null, status: null,
+    },
+    {
+      key: 'weekend~late-meal-hour',
+      title: 'Hétvége ↔ késői étkezés',
+      category: 'trigger', categoryLabel: 'Trigger', lagDays: 0,
+      metricAKey: 'weekend', metricALabel: 'hétvége',
+      metricAValueKind: 'binary',
+      metricBKey: 'late-meal-hour', metricBLabel: 'utolsó étkezés ideje',
+      metricBValueKind: 'clock_hour',
+      mechanismHu: 'Hétvége-hatás: lazább napokon később csúszhat az utolsó étkezés.',
+      questionHu: 'Hétvégén később csúszik az utolsó étkezés?', expectedDirection: 'positive',
+      whenPositiveHu: 'hétvégén {erősség} később ettél utoljára',
+      whenNegativeHu: 'hétvégén {erősség} korábban ettél utoljára',
+      metricADomain: 'other', metricBDomain: 'fuel',
+      verdict: 'imbalanced_groups', alignedDays: 9, missingDays: null, bottleneckMetricKey: null,
+      groupZeroDays: 8, groupOneDays: 1, requiredPerGroup: 3,
       r: null, n: null, p: null, status: null,
     },
   ],
@@ -329,13 +370,14 @@ export const patternMonitor: PatternMonitor = {
     { key: 'medication-cycle-day', label: 'Gyógyszer-ciklusnap', sourceHu: 'Gyógyszer-napló', domain: 'fuel', coveredDays: 0, windowDays: 60, lastDayWithData: null, pairCount: 1 },
     { key: 'sport-load-min', label: 'sportterhelés', sourceHu: 'Sport-napló (perc)', domain: 'train', coveredDays: 0, windowDays: 60, lastDayWithData: null, pairCount: 1 },
     { key: 'checkin-stress', label: 'stressz-szint', sourceHu: 'Check-in sheet', domain: 'mind', coveredDays: 34, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
-    { key: 'late-meal-hour', label: 'utolsó étkezés ideje', sourceHu: 'Étkezés-napló (utolsó étkezés)', domain: 'fuel', coveredDays: 16, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
+    { key: 'late-meal-hour', label: 'utolsó étkezés ideje', sourceHu: 'Étkezés-napló (utolsó étkezés)', domain: 'fuel', coveredDays: 16, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 2 },
     { key: 'daily-kcal', label: 'napi kalória', sourceHu: 'Étkezés-napló', domain: 'fuel', coveredDays: 27, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 2 },
     { key: 'gym-volume-kg', label: 'gym-volumen', sourceHu: 'Workout szettek (súly×ism.)', domain: 'train', coveredDays: 4, windowDays: 60, lastDayWithData: '2026-07-02', pairCount: 1 },
     { key: 'checkin-energy', label: 'energia-szint', sourceHu: 'Check-in sheet', domain: 'mind', coveredDays: 34, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
     { key: 'sleep-duration-h', label: 'alváshossz', sourceHu: 'Alvás-napló', domain: 'sleep', coveredDays: 22, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
     { key: 'weight-delta-kg', label: 'reggeli súlyváltozás', sourceHu: 'Reggeli mérlegelés', domain: 'body', coveredDays: 9, windowDays: 60, lastDayWithData: '2026-08-06', pairCount: 1 },
     { key: 'daily-water-ml', label: 'vízbevitel', sourceHu: 'Víz-számláló', domain: 'fuel', coveredDays: 19, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
+    { key: 'weekend', label: 'hétvége', sourceHu: 'Naptár (származtatott)', domain: 'other', coveredDays: 60, windowDays: 60, lastDayWithData: '2026-08-10', pairCount: 1 },
   ],
 }
 
@@ -346,6 +388,24 @@ export const patternMonitor: PatternMonitor = {
 const SHOWCASE_PAIR_KEY = 'sleep-quality~next-day-training-rpe'
 
 const EMPTY_IMPACT: PatternImpact = { fact: null, predictions: [], experiments: [], challenges: [] }
+
+const weekendDetail: PatternPairDetail = {
+  pair: patternMonitor.pairs.find((p) => p.key === 'weekend~late-meal-hour')!,
+  pattern: null,
+  events: [],
+  days: [
+    { date: '2026-08-24', a: 0, b: 23.6333 },
+    { date: '2026-08-25', a: 0, b: 21.35 },
+    { date: '2026-08-26', a: 0, b: 23.7167 },
+    { date: '2026-08-27', a: 0, b: 12.85 },
+    { date: '2026-08-29', a: 1, b: 14.5833 },
+    { date: '2026-08-31', a: 0, b: 17.95 },
+    { date: '2026-09-01', a: 0, b: 17.0333 },
+    { date: '2026-09-02', a: 0, b: 22.2667 },
+    { date: '2026-09-03', a: 0, b: 10.1167 },
+  ],
+  impact: EMPTY_IMPACT,
+}
 
 /** Kézzel írt kirakat-detail (spec-mockup a forrás): 5 snapshot a jel erősödéséről
  *  (r -0.18 → -0.58, jún 3 → aug 13), megerősítve + promotálva júl 12-én, kétszer
@@ -416,6 +476,7 @@ const showcaseDetail: PatternPairDetail = {
  *  `null` (a hook ezt a real-mode 404-gyel egyenértékű "nincs ilyen minta" állapotra képezi). */
 export function mockPatternPairDetail(pairKey: string): PatternPairDetail | null {
   if (pairKey === SHOWCASE_PAIR_KEY) return showcaseDetail
+  if (pairKey === 'weekend~late-meal-hour') return weekendDetail
   const pair = patternMonitor.pairs.find((p) => p.key === pairKey)
   if (!pair) return null
   return { pair, pattern: null, events: [], days: [], impact: EMPTY_IMPACT }

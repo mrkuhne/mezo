@@ -60,10 +60,11 @@ describe('bucketize', () => {
   })
 
   // mezo-mqdj: a job a kapu-bukáskor nem nyúl a már perzisztált proposed sorhoz, így az
-  // elavult statisztikával életben marad. A monitor ilyenkor few_days/no_data/degenerate
+  // elavult statisztikával életben marad. A monitor ilyenkor few_days/no_data/degenerate/
+  // imbalanced_groups
   // verdiktet ad r/p NÉLKÜL — ez NEM ugyanaz, mint a monitor hiánya: nem kérdezhetünk rá egy
   // olyan összefüggésre, amit a mai adat ki sem tud számolni.
-  test.each(['few_days', 'no_data', 'degenerate'] as const)(
+  test.each(['few_days', 'no_data', 'degenerate', 'imbalanced_groups'] as const)(
     'stale proposed row whose pair is %s → gathering, never the decision inbox', (verdict) => {
       const monitor: PatternMonitor = { ...patternMonitor, pairs: [
         pair({ key: 'k1', verdict, r: null, n: null, p: null }),
