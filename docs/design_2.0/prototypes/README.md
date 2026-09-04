@@ -36,6 +36,7 @@ they inline come from `../assets/`.
 | `growth-tab.html` | https://claude.ai/code/artifact/393bca87-9095-42dd-ac55-127162ad0412 |
 | `rutin-epito.html` | https://claude.ai/code/artifact/78c8f0f9-925f-44a9-93b4-3e9cc077e162 (Rutin-építő — széles Rutin csempe az Én hubon, /me/rutin hub erő-csíkokkal, 4 lépéses szokás-recept wizard Fogg / Clear keretre, szokás-szerkesztő — mezo-3zue) |
 | `celok.html` | https://claude.ai/code/artifact/e404d1d4-55c3-4e81-a8b4-716c6ba45f87 |
+| `minta-reszlet.html` | — (emberi következtetés + bináris összevetés + rétegzett diagnosztika — mezo-0469) |
 
 ## Workflow
 
@@ -631,6 +632,10 @@ are usable without a build step).
   the new row highlighted. **Habit page** (`/me/rutin/szokas/:id`): framework band, the recipe
   sentence large, 28-day history strip, framework fields, pause-without-losing-progress.
   Backend vision it mocks: spec `docs/superpowers/specs/2026-09-02-routine-builder-design.md`.
+- **minta-reszlet** — the Pattern detail redesign visual iteration (`mezo-0469`): a Design 2.0
+  story-flow over the live `weekend~late-meal-hour` example (8 weekday + 1 weekend day), with an
+  honest gathering hero, per-group tiles, a binary-group dot plot without a premature regression
+  line, meaningful history events, and layered human/technical diagnostics.
 - **celok** — the Célok (life goals) hub + goal detail + five-step creation wizard, spec
   `docs/superpowers/specs/2026-09-02-lifegoal-system-design.md`. **Slice 1 implemented**
   (`mezo-iizd.1`, real backend `docs/features/lifegoal.md`): the PERMAH-ring hero, dimension

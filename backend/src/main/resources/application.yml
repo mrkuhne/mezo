@@ -825,6 +825,8 @@ mezo:
       lookback-days: 60
       # Minimum aligned days before a pair may surface (honest small-n gate)
       min-n: 8
+      # Binary A metrics need enough observations on BOTH sides before an effect may surface
+      min-group-n: 3
       # A confirmed pattern reinforces its promoted fact at most once per this many days
       # (the nightly window slides one day - re-counting the same evidence would inflate ranks)
       reinforce-cooldown-days: 7

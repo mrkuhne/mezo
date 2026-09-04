@@ -61,7 +61,7 @@ const mockHabitSummary = {
 
 const {
   useHabitDay, useHabitSummary, useHabitCatalog, useHabitCatalogActions, useProgressionProfile,
-  useHabitAiSuggest, updateChain, updateDef, reorderChain,
+  useHabitAiSuggest, updateChain, reorderChain,
 } = vi.hoisted(() => ({
   useHabitDay: vi.fn(),
   useHabitSummary: vi.fn(),
@@ -70,7 +70,6 @@ const {
   useProgressionProfile: vi.fn(),
   useHabitAiSuggest: vi.fn(),
   updateChain: vi.fn(() => Promise.resolve()),
-  updateDef: vi.fn(() => Promise.resolve()),
   reorderChain: vi.fn(() => Promise.resolve()),
 }))
 vi.mock('@/data/hooks', () => ({
@@ -85,7 +84,6 @@ vi.mock('@/data/hooks', () => ({
 beforeEach(() => {
   navigate.mockClear()
   updateChain.mockClear()
-  updateDef.mockClear()
   reorderChain.mockClear()
   useHabitDay.mockReset()
   useHabitDay.mockReturnValue({ habits: habitsToday })
@@ -102,7 +100,6 @@ beforeEach(() => {
     deleteChain: vi.fn(() => Promise.resolve()),
     reorderChain,
     createDef: vi.fn(() => Promise.resolve()),
-    updateDef,
     deleteDef: vi.fn(() => Promise.resolve()),
     pending: false,
   })
@@ -113,18 +110,59 @@ beforeEach(() => {
 })
 
 describe('RutinHubPage', () => {
-  test('keeps the 30-day counter tiles and the day navigator from the Growth page', () => {
+  test('shows the prototype statstrip instead of the 30-cell counter tiles', () => {
+    const { container } = renderPage()
+    expect(screen.getByText('tökéletes reggel · 30 n')).toBeInTheDocument()
+    expect(screen.getByText('tökéletes este · 30 n')).toBeInTheDocument()
+    expect(screen.getByText('aktív szokás')).toBeInTheDocument()
+    expect(screen.getByText('6')).toBeInTheDocument() // perfectMorningDays30
+    expect(container.querySelector('.gr-covtile')).toBeNull()
+    expect(container.querySelector('.gr-cells')).toBeNull()
+  })
+
+  test('keeps the day navigator — the accepted extension over the prototype', () => {
     renderPage()
-    expect(screen.getByText('Reggel')).toBeInTheDocument()
-    expect(screen.getByText('Este')).toBeInTheDocument()
     expect(screen.getByLabelText(/előző nap/i)).toBeInTheDocument()
+  })
+
+  test('the active-habit cell counts ACTIVE definitions only', () => {
+    useHabitCatalog.mockReturnValue({
+      catalog: {
+        chains: [{ ...MORNING, defs: [MORNING.defs[0], MORNING.defs[1], { ...MORNING.defs[2], isActive: false }] }, EVENING],
+      },
+      isPending: false, isError: false, refetch: vi.fn(),
+    })
+    renderPage()
+    const cell = screen.getByText('aktív szokás').closest('.mz-statcell') as HTMLElement
+    expect(within(cell).getByText('2')).toBeInTheDocument()
   })
 
   test('badges each habit row with its framework, legacy rows included', () => {
     renderPage()
-    expect(screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71%')).toBeInTheDocument()
-    expect(screen.getByLabelText('Napi szándék · négy törvény')).toBeInTheDocument()
-    expect(screen.getByLabelText('Hidratálás · keret nélkül')).toBeInTheDocument()
+    expect(screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71% · kész')).toBeInTheDocument()
+    expect(screen.getByLabelText('Napi szándék · négy törvény · nyitott')).toBeInTheDocument()
+    expect(screen.getByLabelText('Hidratálás · keret nélkül · nyitott')).toBeInTheDocument()
+  })
+
+  // ---- fix wave (mezo-3zue.10): prototype's .pw chain head (strength only) + .habnote ----
+
+  test('the chain head shows only the chain strength, not today\'s done/total', () => {
+    renderPage()
+    const morning = screen.getByText('Reggeli rutin').closest('.gr-chain') as HTMLElement
+    expect(within(morning).getByText('erő 71%')).toBeInTheDocument()
+    expect(within(morning).queryByText(/1 \/ 3/)).toBeNull()
+  })
+
+  test('a chain with no strength data shows no chip at all (honesty rule)', () => {
+    renderPage()
+    const evening = screen.getByText('Esti rutin').closest('.gr-chain') as HTMLElement
+    expect(evening.querySelector('.gr-band-chip')).toBeNull()
+  })
+
+  test('closes with the prototype principle sentence', () => {
+    renderPage()
+    expect(screen.getByText(/A logolás maga a jutalom/)).toBeInTheDocument()
+    expect(screen.getByText(/a sor a szerkesztőt nyitja/)).toBeInTheDocument()
   })
 
   // ---- fix wave (mezo-3zue.4): spec §5's strength NUMBER, and the bar not being silent ----
@@ -137,14 +175,14 @@ describe('RutinHubPage', () => {
 
   test('the row button names the strength — the bar alone is silent to a screen reader', () => {
     renderPage()
-    expect(screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71%')).toBeInTheDocument()
+    expect(screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71% · kész')).toBeInTheDocument()
     // a def with no summary row names no standing at all (honesty rule)
-    expect(screen.getByLabelText('Hidratálás · keret nélkül')).toBeInTheDocument()
+    expect(screen.getByLabelText('Hidratálás · keret nélkül · nyitott')).toBeInTheDocument()
   })
 
   test('opens the habit page from a row and never renders a tick control', () => {
     renderPage()
-    screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71%').click()
+    screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71% · kész').click()
     expect(navigate).toHaveBeenCalledWith('/me/rutin/szokas/sun')
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
   })
@@ -238,10 +276,40 @@ describe('RutinHubPage', () => {
     expect(row).toHaveClass('is-inert')
   })
 
-  test('the per-definition toggle pauses that definition', () => {
+  test('the row carries a read-only tick beside the bar and no per-def toggle', () => {
+    const { container } = renderPage()
+    const row = screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71% · kész')
+    expect(within(row).getByText('✓')).toBeInTheDocument()
+    expect(row.closest('.row')).toHaveClass('rt-done')
+    // a toggle a soron soha többé — a szüneteltetés a HabitPage-en él
+    expect(screen.queryByLabelText('Napi szándék aktív')).toBeNull()
+    expect(container.querySelector('.rt-hrow .rt-bar')).not.toBeNull()
+  })
+
+  // ---- fix wave (mezo-3zue.10): the dead sr-only status span is not read by name-based
+  // queries — the tick's ✓ is aria-hidden, so today's done/open state must travel in the
+  // row's own accessible name (getByLabelText resolves it, unlike getByText on inner spans).
+
+  test('the accessible name of today\'s row carries its done/open status', () => {
     renderPage()
-    fireEvent.click(screen.getByLabelText('Napi szándék aktív'))
-    expect(updateDef).toHaveBeenCalledWith('def-intent', { isActive: false })
+    expect(screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71% · kész')).toBeInTheDocument()
+    expect(screen.getByLabelText('Napi szándék · négy törvény · nyitott')).toBeInTheDocument()
+  })
+
+  test('a paused definition dims but stays tappable through to its habit page', () => {
+    useHabitCatalog.mockReturnValue({
+      catalog: {
+        chains: [{ ...MORNING, defs: [MORNING.defs[0], MORNING.defs[1], { ...MORNING.defs[2], isActive: false }] }, EVENING],
+      },
+      isPending: false, isError: false, refetch: vi.fn(),
+    })
+    useHabitDay.mockReturnValue({ habits: habitsToday.slice(0, 2) })
+    renderPage()
+    const paused = screen.getByLabelText('Hidratálás · keret nélkül')
+    expect(paused.closest('.row')).toHaveClass('is-inert')
+    expect(paused).not.toBeDisabled()
+    fireEvent.click(paused)
+    expect(navigate).toHaveBeenCalledWith('/me/rutin/szokas/water')
   })
 
   test('＋ Új habit opens the habit sheet in create mode for that chain', () => {
@@ -299,7 +367,7 @@ describe('RutinHubPage', () => {
   test('?new= highlights the freshly created habit row', () => {
     const { container } = renderPage('/me/rutin?new=intent')
     expect(container.querySelectorAll('.rt-row-new')).toHaveLength(1)
-    expect(screen.getByLabelText('Napi szándék · négy törvény')).toHaveClass('rt-row-new')
+    expect(screen.getByLabelText('Napi szándék · négy törvény · nyitott')).toHaveClass('rt-row-new')
   })
 
   test('suppresses the hero standing until the day view has something real', () => {

@@ -17,8 +17,10 @@ const pair: PatternMonitorPair = {
   lagDays: 1,
   metricAKey: 'sleep-quality',
   metricALabel: 'alvásminőség',
+  metricAValueKind: 'number',
   metricBKey: 'training-rpe',
   metricBLabel: 'edzés-RPE',
+  metricBValueKind: 'number',
   mechanismHu: 'A rosszabb alvás másnap nehezebbnek érződő edzést hozhat.',
   questionHu: 'Nehezebb edzés után rosszabbul alszol?',
   expectedDirection: 'negative',
@@ -30,6 +32,9 @@ const pair: PatternMonitorPair = {
   alignedDays: 32,
   missingDays: null,
   bottleneckMetricKey: null,
+  groupZeroDays: null,
+  groupOneDays: null,
+  requiredPerGroup: null,
   r: -0.58,
   n: 32,
   p: 0.001,
@@ -38,39 +43,21 @@ const pair: PatternMonitorPair = {
 
 // --- journalEntries ---------------------------------------------------------
 
-test('the first snapshot logs the birth line with its strength band', () => {
+test('the first snapshot says when the pair first became calculable without strength jargon', () => {
   const events: PatternEvent[] = [
     { kind: 'snapshot', occurredAt: '2026-06-03T02:40:00Z', r: -0.18, n: 14, p: 0.52 },
   ]
   expect(journalEntries(events, pair)).toEqual([
-    { date: 'jún 3.', tone: 'neutral', text: 'Életre kelt — 14 közös nap gyűlt össze, gyenge jel.' },
+    { date: 'jún 3.', tone: 'neutral', text: 'Először számolhatóvá vált — 14 közös nap.' },
   ])
 })
 
-test('a snapshot whose strengthWord band differs from the previous one logs the crossing (strengthening)', () => {
+test('later snapshot strength changes do not create motor-jargon history rows', () => {
   const events: PatternEvent[] = [
     { kind: 'snapshot', occurredAt: '2026-06-03T02:40:00Z', r: -0.18, n: 14, p: 0.52 },
     { kind: 'snapshot', occurredAt: '2026-06-24T02:40:00Z', r: -0.31, n: 18, p: 0.19 },
   ]
-  const entries = journalEntries(events, pair)
-  expect(entries).toHaveLength(2)
-  expect(entries[1]).toEqual({
-    date: 'jún 24.',
-    tone: 'neutral',
-    text: 'A jel erősödött, átlépte az „érezhető" sávot.',
-  })
-})
-
-test('a weakening crossing reads "gyengült" and names the lower band', () => {
-  const events: PatternEvent[] = [
-    { kind: 'snapshot', occurredAt: '2026-06-03T02:40:00Z', r: 0.5, n: 14, p: 0.2 },
-    { kind: 'snapshot', occurredAt: '2026-06-24T02:40:00Z', r: 0.2, n: 18, p: 0.4 },
-  ]
-  expect(journalEntries(events, pair)[1]).toEqual({
-    date: 'jún 24.',
-    tone: 'neutral',
-    text: 'A jel gyengült, átlépte a „gyenge" sávot.',
-  })
+  expect(journalEntries(events, pair)).toHaveLength(1)
 })
 
 test('a same-band snapshot logs nothing beyond the first entry', () => {
@@ -143,6 +130,21 @@ test('journalEntries returns nothing while the pair has not loaded', () => {
   expect(journalEntries(events, null)).toEqual([])
 })
 
+test('an imbalanced pair appends its current group progress', () => {
+  expect(journalEntries([], {
+    ...pair,
+    key: 'weekend~late-meal-hour',
+    metricAKey: 'weekend',
+    metricAValueKind: 'binary',
+    verdict: 'imbalanced_groups',
+    groupZeroDays: 8,
+    groupOneDays: 1,
+    requiredPerGroup: 3,
+  })).toEqual([
+    { date: 'Most', tone: 'accent', text: 'Még gyűlik — 1/3 hétvégi nap.' },
+  ])
+})
+
 test('the full showcase narrative reads in chronological order', () => {
   const events: PatternEvent[] = [
     { kind: 'snapshot', occurredAt: '2026-06-03T02:40:00Z', r: -0.18, n: 14, p: 0.52 },
@@ -156,8 +158,7 @@ test('the full showcase narrative reads in chronological order', () => {
     { kind: 'reinforced', occurredAt: '2026-08-13T02:40:01Z', reinforcementCount: 4 },
   ]
   expect(journalEntries(events, pair)).toEqual([
-    { date: 'jún 3.', tone: 'neutral', text: 'Életre kelt — 14 közös nap gyűlt össze, gyenge jel.' },
-    { date: 'jún 24.', tone: 'neutral', text: 'A jel erősödött, átlépte az „érezhető" sávot.' },
+    { date: 'jún 3.', tone: 'neutral', text: 'Először számolhatóvá vált — 14 közös nap.' },
     { date: 'júl 12.', tone: 'success', text: '**Megerősítetted.**', factLink: true },
     {
       date: 'júl 30.',

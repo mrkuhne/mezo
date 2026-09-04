@@ -16368,8 +16368,10 @@ components:
         - lagDays
         - metricAKey
         - metricALabel
+        - metricAValueKind
         - metricBKey
         - metricBLabel
+        - metricBValueKind
         - mechanismHu
         - questionHu
         - expectedDirection
@@ -16397,10 +16399,22 @@ components:
           type: string
         metricALabel:
           type: string
+        metricAValueKind:
+          type: string
+          pattern: ^(number|clock_hour|binary)$
+          description: >-
+            A metrika megjelenítési típusa; a grafikon és az értékformázás
+            contractos forrása.
         metricBKey:
           type: string
         metricBLabel:
           type: string
+        metricBValueKind:
+          type: string
+          pattern: ^(number|clock_hour|binary)$
+          description: >-
+            A metrika megjelenítési típusa; a grafikon és az értékformázás
+            contractos forrása.
         mechanismHu:
           type: string
           description: Miért figyeljük — a katalógus mechanism-egysorosa (mezo-18bx).
@@ -16427,7 +16441,7 @@ components:
           description: metric-b (a kimenet) doménje — a Motor tab elsődleges csoportja.
         verdict:
           type: string
-          pattern: ^(live|few_days|no_data|degenerate|frozen)$
+          pattern: ^(live|few_days|no_data|degenerate|imbalanced_groups|frozen)$
         alignedDays:
           type: integer
           description: Az illesztett napok száma (frozen sornál a befagyasztott n).
@@ -16439,6 +16453,18 @@ components:
           type: string
           nullable: true
           description: A szűk keresztmetszet metrikája — few_days / no_data / degenerate.
+        groupZeroDays:
+          type: integer
+          nullable: true
+          description: A 0 értékű illesztett napok száma — csak bináris metric-a esetén.
+        groupOneDays:
+          type: integer
+          nullable: true
+          description: Az 1 értékű illesztett napok száma — csak bináris metric-a esetén.
+        requiredPerGroup:
+          type: integer
+          nullable: true
+          description: A csoportonként megkövetelt minimum — csak bináris metric-a esetén.
         r:
           type: number
           format: double

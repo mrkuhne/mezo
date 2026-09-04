@@ -877,7 +877,14 @@ export interface Pattern {
   kind?: 'statistical' | 'ai_hypothesis'
 }
 
-export type PatternGateVerdict = 'live' | 'few_days' | 'no_data' | 'degenerate' | 'frozen'
+export type PatternMetricValueKind = 'number' | 'clock_hour' | 'binary'
+export type PatternGateVerdict =
+  | 'live'
+  | 'few_days'
+  | 'no_data'
+  | 'degenerate'
+  | 'imbalanced_groups'
+  | 'frozen'
 
 /** A metrikák élet-domén besorolása — a Motor tab csoportosítási kulcsa (mezo-18bx). */
 export type MetricDomain = 'sleep' | 'train' | 'fuel' | 'mind' | 'body' | 'other'
@@ -890,8 +897,10 @@ export interface PatternMonitorPair {
   lagDays: number
   metricAKey: string
   metricALabel: string
+  metricAValueKind: PatternMetricValueKind
   metricBKey: string
   metricBLabel: string
+  metricBValueKind: PatternMetricValueKind
   /** Miért figyeljük — a katalógus mechanism-egysorosa (mezo-18bx). */
   mechanismHu: string
   /** Kérdés-cím a Motor kártyán (mezo-fj1g). */
@@ -908,6 +917,9 @@ export interface PatternMonitorPair {
   alignedDays: number
   missingDays: number | null
   bottleneckMetricKey: string | null
+  groupZeroDays: number | null
+  groupOneDays: number | null
+  requiredPerGroup: number | null
   r: number | null
   n: number | null
   p: number | null

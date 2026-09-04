@@ -202,6 +202,14 @@ public class MealPopulator {
         return repository.saveAndFlush(meal);
     }
 
+    /** Multi-line meal whose logging instant is explicit — pattern tests need its local clock hour. */
+    public MealEntity createMealWithItems(UUID owner, LocalDate mealDate, String slot,
+        Instant loggedAt, List<Line> lines) {
+        MealEntity meal = createMealWithItems(owner, mealDate, slot, lines);
+        meal.setLoggedAt(loggedAt);
+        return repository.saveAndFlush(meal);
+    }
+
     /** One item line for {@link #createMealWithItems}: name + macro strings + NOVA class. */
     public record Line(String name, String kcal, String proteinG, String carbsG, String fatG, short nova) {
     }

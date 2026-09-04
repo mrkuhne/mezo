@@ -13,8 +13,8 @@ export function strengthWord(r: number): string {
 }
 
 export interface FindingSentence {
-  /** „Igen:" ha a talált irány egyezik a várttal, különben „Meglepő:". */
-  prefix: 'Igen:' | 'Meglepő:'
+  /** Explicitly separates the hypothesis from the direction visible in today's evidence. */
+  prefix: 'Eddig ebbe az irányba mutatnak a napjaid:' | 'Eddig az ellenkezője látszik:'
   /** Az írott olvasat a {erősség} slot ELŐTTI része. */
   before: string
   /** A behelyettesített erősség-szó (a UI félkövérrel emeli ki). */
@@ -30,7 +30,9 @@ export function findingSentence(pair: PatternMonitorPair): FindingSentence | nul
   const reading = found === 'positive' ? pair.whenPositiveHu : pair.whenNegativeHu
   const [before, after = ''] = reading.split('{erősség}')
   return {
-    prefix: found === pair.expectedDirection ? 'Igen:' : 'Meglepő:',
+    prefix: found === pair.expectedDirection
+      ? 'Eddig ebbe az irányba mutatnak a napjaid:'
+      : 'Eddig az ellenkezője látszik:',
     before,
     strength: strengthWord(pair.r),
     after,
@@ -48,16 +50,23 @@ export interface ConfidenceMeta {
 export function confidenceMeta(n: number, p: number): ConfidenceMeta {
   const days = `${n} közös nap`
   if (p <= 0.05) {
-    return { chip: 'megbízható jel', tone: 'success', sentence: `${days} — ez már aligha véletlen` }
+    return {
+      chip: 'megbízható jel',
+      tone: 'success',
+      sentence: `${days} — erősebb bizonyíték; ez már kevésbé magyarázható véletlennel`,
+    }
   }
   if (p <= 0.15) {
-    return { chip: 'ígéretes jel', tone: 'accent', sentence: `${days} — még összejöhet véletlenül is, gyűlik az adat` }
+    return {
+      chip: 'ígéretes jel',
+      tone: 'accent',
+      sentence: `${days} — ígéretes irány, de még gyűlik az adat`,
+    }
   }
-  const oneIn = Math.max(2, Math.round(1 / p))
   return {
     chip: 'még bizonytalan',
     tone: 'warning',
-    sentence: `${days} — kb. minden ${oneIn}. ilyen minta véletlenül is összejönne`,
+    sentence: `${days} — bizonytalan jel; ebből még nem érdemes következtetést levonni`,
   }
 }
 

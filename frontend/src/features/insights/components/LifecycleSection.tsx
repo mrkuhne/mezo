@@ -5,17 +5,15 @@ import { Icon } from '@/shared/ui/Icon'
 /**
  * Egy összecsukható életciklus-szekció a Minták dashboardon (spec 2026-08-14 · mezo-tk88.4):
  * cím+darabszám fejléc + chevron, nyitva/csukva `useState`-tel. Üres kosarat nem rajzol ki —
- * a hívó a hat `BUCKET_ORDER` szekciót sorban rendereli, ez dobja el a nullákat. `count` opcionális
- * (mezo-tk88.5 review fix) — a részlet-oldal „Motor-diagnosztika" szekciója nem egy lista-elemszám,
- * hanem egy önálló blokk, ezért nincs `· N` utótagja: `count` nélkül a szekció sosem tűnik el ÉS
- * a suffix sem jelenik meg; a dashboard hívói (mind számot adnak át) változatlanok.
+ * a hívó a hat `BUCKET_ORDER` szekciót sorban rendereli, ez dobja el a nullákat. `count` opcionális:
+ * nélküle a szekció sosem tűnik el és a `· N` utótag sem jelenik meg.
  *
  * `forceOpen` (mezo-9ryh review fix) — opcionális, visszafelé kompatibilis: nyitva tartja a
  * szekciót a belső `open` állapottól függetlenül (a chevron/gomb tovább működik, csak a
  * megjelenítés nem hallgat rá). A Tudástár lista adja át, amíg aktív szűrő fut — enélkül egy
  * csak kikapcsolt tényekre illeszkedő keresés összecsukott „Kikapcsolva · 1" fejlécet mutatna,
- * a találat pedig sosem látszana. A `PatternsPage`/`PatternDetailPage` hívói nem adnak át
- * semmit, ezért változatlanul viselkednek. */
+ * a találat pedig sosem látszana. A `PatternsPage` hívói nem adnak át semmit, ezért változatlanul
+ * viselkednek. */
 export function LifecycleSection({
   title,
   accent,
