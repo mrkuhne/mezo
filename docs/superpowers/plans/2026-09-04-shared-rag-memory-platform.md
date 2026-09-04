@@ -222,7 +222,7 @@ Javadoc and tests.
 - Produces: persisted canonical items/vectors/audit rows and the repositories used by every later
   task.
 
-- [ ] **Step 1: Create the failing PostgreSQL persistence test**
+- [x] **Step 1: Create the failing PostgreSQL persistence test**
 
 Write `MemoryPlatformPersistenceIT` extending `AbstractIntegrationTest` with `@Transactional`.
 The test must prove: all JSON/array fields round-trip; two vector generations coexist for one item;
@@ -247,7 +247,7 @@ void testPersist_shouldKeepTwoVectorGenerations_whenVersionsDiffer() {
 }
 ```
 
-- [ ] **Step 2: Run the test and confirm the schema is missing**
+- [x] **Step 2: Run the test and confirm the schema is missing**
 
 Run:
 
@@ -258,7 +258,7 @@ cd backend
 
 Expected: FAIL because `memory_item`, `memory_vector` and audit entities/tables do not exist.
 
-- [ ] **Step 3: Add the migration and register it**
+- [x] **Step 3: Add the migration and register it**
 
 The migration must create `pg_trgm`, then these tables and constraints:
 
@@ -363,7 +363,7 @@ Extend `knowledge_fact` additively with `pinned`, `valid_from`, `valid_to`, `sup
 candidate conflicting when `conflicts_with` is non-null and returns both owned active sides when
 both remain valid; no service silently chooses a winner.
 
-- [ ] **Step 4: Add constraint-mirroring entities and repositories**
+- [x] **Step 4: Add constraint-mirroring entities and repositories**
 
 Entities extend `OwnedEntity`, mirror lengths/check domains with validation, map JSON through typed
 records and arrays through Hibernate array support. `MemoryItemEntity` adds `@UpdateTimestamp` for
@@ -380,7 +380,7 @@ Optional<MemoryVectorEntity> findByCreatedByAndMemoryItemIdAndEmbeddingVersionAn
         UUID createdBy, UUID memoryItemId, String embeddingVersion, String status);
 ```
 
-- [ ] **Step 5: Add test data/reset support and run the focused test**
+- [x] **Step 5: Add test data/reset support and run the focused test**
 
 Add all five tables before `memory_embedding` in `ResetDatabase`'s TRUNCATE statement. The
 `MemoryItemPopulator` persists valid items, vectors, runs and results with `saveAndFlush` and exposes
@@ -388,7 +388,7 @@ the existing 768-dimensional axis-vector helper rather than duplicating vector m
 
 Run the Step 2 command. Expected: PASS.
 
-- [ ] **Step 6: Update living docs, validate and commit**
+- [x] **Step 6: Update living docs, validate and commit**
 
 Update Companion §§3–4, §8 and §10; generate CODEMAP and run:
 

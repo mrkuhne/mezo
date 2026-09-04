@@ -32,6 +32,7 @@ import io.mrkuhne.mezo.support.populator.FlagLogPopulator;
 import io.mrkuhne.mezo.support.populator.MemoirPopulator;
 import io.mrkuhne.mezo.support.populator.PredictionPopulator;
 import io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator;
+import io.mrkuhne.mezo.support.populator.MemoryItemPopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationPopulator;
 import io.mrkuhne.mezo.support.populator.MentionPopulator;
@@ -88,6 +89,7 @@ import org.springframework.context.annotation.Import;
 @Import({TestcontainersConfiguration.class, DatabasePopulator.class, UserPopulator.class,
     AiConversationPopulator.class, AiMessagePopulator.class,
     KnowledgeFactPopulator.class, LearnedFactPopulator.class, MemoryEmbeddingPopulator.class,
+    MemoryItemPopulator.class,
     DailySummaryPopulator.class, PeriodSummaryPopulator.class, PatternPopulator.class, PatternEventPopulator.class,
     CompanionMessagePopulator.class, FeedbackPopulator.class, FlagLogPopulator.class,
     WeeklySuggestionPopulator.class, MemoirPopulator.class, WeeklyReviewPopulator.class,

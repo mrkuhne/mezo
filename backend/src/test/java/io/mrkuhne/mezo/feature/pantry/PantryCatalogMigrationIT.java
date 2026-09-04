@@ -119,7 +119,7 @@ class PantryCatalogMigrationIT {
             seedLegacyRows(conn);
             conn.commit(); // Liquibase leaves the connection in manual-commit mode; make the seed durable before the split runs.
 
-            liquibase.update(new Contexts(), new LabelExpression()); // applies exactly the split
+            liquibase.update(1, new Contexts(), new LabelExpression()); // applies exactly the split
 
             try (Statement st = conn.createStatement()) {
                 // Túró group + Zabpehely + Kefir(deleted) + Kölesgolyó + Rizottó group + Levendula group
@@ -269,7 +269,7 @@ class PantryCatalogMigrationIT {
             }
             conn.commit(); // Liquibase leaves the connection in manual-commit mode; make the seed durable before the split runs.
 
-            assertThatThrownBy(() -> liquibase.update(new Contexts(), new LabelExpression()))
+            assertThatThrownBy(() -> liquibase.update(1, new Contexts(), new LabelExpression()))
                 .hasMessageContaining("uq_pantry_item_split_guard");
 
             // Rolled back cleanly: no half-applied split. The catalog table (created in the same
@@ -289,12 +289,15 @@ class PantryCatalogMigrationIT {
         }
     }
 
-    /** Count of `- changeSet:` entries before ours, and a guard that ours is the LAST one registered. */
+    /** Count changesets before the pantry split, independent of migrations registered after it. */
     private static int countChangesetsBeforeSplit() throws IOException {
         String yml = Files.readString(MASTER_YML, StandardCharsets.UTF_8);
-        int total = yml.split("- changeSet:", -1).length - 1;
-        assertThat(yml.strip()).endsWith("path: script/" + SPLIT_SCRIPT);
-        return total - 1;
+        String marker = "path: script/" + SPLIT_SCRIPT;
+        int splitPathStart = yml.indexOf(marker);
+        assertThat(splitPathStart).isNotNegative();
+        assertThat(yml.indexOf(marker, splitPathStart + marker.length())).isEqualTo(-1);
+        int changesetsThroughSplit = yml.substring(0, splitPathStart).split("- changeSet:", -1).length - 1;
+        return changesetsThroughSplit - 1;
     }
 
     private static void seedLegacyRows(Connection conn) throws Exception {
