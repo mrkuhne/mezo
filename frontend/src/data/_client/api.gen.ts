@@ -6702,8 +6702,12 @@ export interface components {
             lagDays: number;
             metricAKey: string;
             metricALabel: string;
+            /** @description A metrika megjelenítési típusa; a grafikon és az értékformázás contractos forrása. */
+            metricAValueKind: string;
             metricBKey: string;
             metricBLabel: string;
+            /** @description A metrika megjelenítési típusa; a grafikon és az értékformázás contractos forrása. */
+            metricBValueKind: string;
             /** @description Miért figyeljük — a katalógus mechanism-egysorosa (mezo-18bx). */
             mechanismHu: string;
             /** @description Kérdés-cím a Motor kártyán — „Jobban alszol, ha…?" (mezo-fj1g). */
@@ -6725,6 +6729,12 @@ export interface components {
             missingDays?: number | null;
             /** @description A szűk keresztmetszet metrikája — few_days / no_data / degenerate. */
             bottleneckMetricKey?: string | null;
+            /** @description A 0 értékű illesztett napok száma — csak bináris metric-a esetén. */
+            groupZeroDays?: number | null;
+            /** @description Az 1 értékű illesztett napok száma — csak bináris metric-a esetén. */
+            groupOneDays?: number | null;
+            /** @description A csoportonként megkövetelt minimum — csak bináris metric-a esetén. */
+            requiredPerGroup?: number | null;
             /**
              * Format: double
              * @description live: élő számítás · frozen: a befagyasztott sor értéke.

@@ -35,11 +35,11 @@ first; backend integration-first; frontend mindkét adat-módja zöld.
 - `PatternMonitorPair.verdict` gains `imbalanced_groups`
 - nullable `groupZeroDays`, `groupOneDays`, `requiredPerGroup`
 
-- [ ] In `PatternMonitorPair.required`, add `metricAValueKind` and `metricBValueKind`. Add the two
+- [x] In `PatternMonitorPair.required`, add `metricAValueKind` and `metricBValueKind`. Add the two
   string properties with pattern `^(number|clock_hour|binary)$`.
-- [ ] Widen the verdict pattern to
+- [x] Widen the verdict pattern to
   `^(live|few_days|no_data|degenerate|imbalanced_groups|frozen)$`.
-- [ ] Add nullable integer properties with descriptions that say they are populated only when
+- [x] Add nullable integer properties with descriptions that say they are populated only when
   metric A is binary:
 
   ```yaml
@@ -48,7 +48,7 @@ first; backend integration-first; frontend mindkét adat-módja zöld.
   requiredPerGroup: { type: integer, nullable: true }
   ```
 
-- [ ] Generate in contract-first order:
+- [x] Generate in contract-first order:
 
   ```bash
   cd api/generate
@@ -58,7 +58,7 @@ first; backend integration-first; frontend mindkét adat-módja zöld.
   pnpm generate:api
   ```
 
-- [ ] Verify the merged and generated shapes contain every new property and no endpoint drift:
+- [x] Verify the merged and generated shapes contain every new property and no endpoint drift:
 
   ```bash
   rg -n "metricAValueKind|imbalanced_groups|groupZeroDays|requiredPerGroup" \
@@ -66,7 +66,7 @@ first; backend integration-first; frontend mindkét adat-módja zöld.
   git diff --check
   ```
 
-- [ ] Commit only the contract and generated artifacts:
+- [x] Commit only the contract and generated artifacts:
 
   ```bash
   git add api/feature/companion/companion.yml api/openapi.yml \
@@ -658,7 +658,6 @@ copy, UI state matrix, chart branches, file map and test coverage.
     --body-file /tmp/mezo-0469-pr.md
   ```
 
-- [ ] Wait for authoritative CI. If it is green, follow the repository close protocol: update and
-  close `mezo-0469`, pull/rebase `main` before the local `--no-ff` merge, push `main`, and delete the
-  feature branch. If CI is red, fix on this branch, rerun the relevant focused gate, push and wait
-  again; do not merge red.
+- [ ] Wait for authoritative CI. If it is green, leave `mezo-0469` in progress and hand the PR to
+  Daniel for review and merge, as required by the executing-plans workflow. If CI is red, fix on
+  this branch, rerun the relevant focused gate, push and wait again; never merge from this session.
