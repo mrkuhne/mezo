@@ -15,6 +15,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ActiveProfiles;
 
 /**
  * S3 (bd mezo-d58h.3, spec 2026-09-03 §4 setup table, row 6): the plan-feasibility setup check —
@@ -29,7 +30,13 @@ import org.springframework.beans.factory.annotation.Autowired;
  * {@code gym_schedule_slot.dayOfWeek} and {@code sport_schedule_slot.dayOfWeek}. The bedtime half
  * stays day-agnostic on purpose (a habitual bedtime happens every night, so it is judged against
  * the week's tightest morning) — see {@link PlanFeasibilityCalculator}'s class javadoc.
+ *
+ * <p>{@code @ActiveProfiles("companion-fake")}: {@link SetupCheckService#runFor} now delivers
+ * through {@code AdviceCardService} / {@code AdviceProseGenerator} (S4, bd mezo-d58h.4), so this
+ * pins the fake chat model instead of wiring the real one (the {@code SetupCheckServiceIT} /
+ * {@code AdviceCardServiceIT} precedent).
  */
+@ActiveProfiles("companion-fake")
 class PlanFeasibilityIT extends AbstractIntegrationTest {
 
     @Autowired private SetupCheckService setupCheckService;

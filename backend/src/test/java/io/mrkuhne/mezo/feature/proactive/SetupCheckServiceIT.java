@@ -2,8 +2,10 @@ package io.mrkuhne.mezo.feature.proactive;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
+import io.mrkuhne.mezo.feature.proactive.service.InterventionService;
 import io.mrkuhne.mezo.feature.proactive.service.SetupCheckService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CompanionMessagePopulator;
@@ -17,14 +19,20 @@ import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ActiveProfiles;
 
 /**
  * S3 (bd mezo-d58h.3, spec 2026-09-03 §4 setup table): the missing-sleep-goal setup check —
- * {@link SetupCheckService#runFor} emits a {@code setup} card when no {@code sleep_goal} row
- * exists for the user, stays silent once one does, and re-emits the SAME check at most weekly
- * (the one-per-day card gate and the per-check re-emit window are two separate gates, pinned
- * separately below).
+ * {@link SetupCheckService#runFor} emits an {@code advice} card (S4, bd mezo-d58h.4) when no
+ * {@code sleep_goal} row exists for the user, stays silent once one does, and re-emits the SAME
+ * check at most weekly (the one-card-per-day gate now lives in {@code AdviceCardService} and the
+ * per-check re-emit window stays here — pinned separately below).
+ *
+ * <p>{@code @ActiveProfiles("companion-fake")}: delivery now goes through
+ * {@code AdviceProseGenerator}, so this pins the fake chat model instead of wiring the real one
+ * (the {@code AdviceCardServiceIT} / {@code InterventionServiceIT} precedent).
  */
+@ActiveProfiles("companion-fake")
 class SetupCheckServiceIT extends AbstractIntegrationTest {
 
     @Autowired private SetupCheckService setupCheckService;
@@ -40,7 +48,7 @@ class SetupCheckServiceIT extends AbstractIntegrationTest {
         Optional<CompanionMessageEntity> card = setupCheckService.runFor(owner);
 
         assertThat(card).isPresent();
-        assertThat(card.orElseThrow().getKind()).isEqualTo(CompanionMessageEntity.KIND_SETUP);
+        assertThat(card.orElseThrow().getKind()).isEqualTo(CompanionMessageEntity.KIND_ADVICE);
         assertThat(card.orElseThrow().getContent().setupKey())
             .isEqualTo(SetupCheckService.CHECK_MISSING_SLEEP_GOAL);
     }
@@ -81,6 +89,33 @@ class SetupCheckServiceIT extends AbstractIntegrationTest {
         assertThat(card.orElseThrow().getContent().setupKey())
             .isEqualTo(SetupCheckService.CHECK_MISSING_SLEEP_GOAL);
         assertThat(companionMessageRepository.findByCreatedByAndMessageDateAndKind(
-            owner, LocalDate.now(), CompanionMessageEntity.KIND_SETUP)).isPresent();
+            owner, LocalDate.now(), CompanionMessageEntity.KIND_ADVICE)).isPresent();
+    }
+
+    @Test
+    void testRunFor_shouldWriteAnAdviceRowCarryingBothKeys() {
+        UUID owner = userPopulator.createUser().getId();
+
+        Optional<CompanionMessageEntity> card = setupCheckService.runFor(owner);
+
+        assertThat(card).isPresent();
+        assertThat(card.orElseThrow().getKind()).isEqualTo(CompanionMessageEntity.KIND_ADVICE);
+        assertThat(card.orElseThrow().getContent().adviceKey())
+            .isEqualTo(SetupCheckService.CHECK_MISSING_SLEEP_GOAL);
+        assertThat(card.orElseThrow().getContent().setupKey())
+            .isEqualTo(SetupCheckService.CHECK_MISSING_SLEEP_GOAL);
+        assertThat(card.orElseThrow().getContent().interventionKey()).isNull();
+    }
+
+    /** Setup cards are the LOWEST non-round-0 tier: a flag card already on today's thread keeps
+     *  the slot, and the setup check stays quiet (S4 item 1 — one card per day across tiers). */
+    @Test
+    void testRunFor_shouldStaySilent_whenAMoreSevereAdviceCardAlreadyOwnsTheDay() {
+        UUID owner = userPopulator.createUser().getId();
+        companionMessagePopulator.createAdvice(owner, LocalDate.now(), FlagKey.SLEEP_DEBT,
+            "sleep_recover_tonight", InterventionService.EYEBROW, "kártya", List.of(),
+            List.of("javaslat"), Instant.now());
+
+        assertThat(setupCheckService.runFor(owner)).isEmpty();
     }
 }

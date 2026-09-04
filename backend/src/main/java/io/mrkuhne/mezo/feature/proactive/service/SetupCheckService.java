@@ -3,7 +3,6 @@ package io.mrkuhne.mezo.feature.proactive.service;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepGoalRepository;
 import io.mrkuhne.mezo.feature.proactive.config.SetupCheckProperties;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
-import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEnvelope;
 import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.Instant;
@@ -12,6 +11,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -28,7 +28,10 @@ import org.springframework.transaction.annotation.Transactional;
  * is nothing to tag with LlmCallContextHolder.
  *
  * <p>Checks are ordered and first-wins — a user with no sleep goal at all gets the goal card, not
- * a feasibility card computed against a goal that does not exist.
+ * a feasibility card computed against a goal that does not exist. Since S4 (mezo-d58h.4) the card
+ * itself is an {@code advice} row written by {@link AdviceCardService}, which applies the spec §4
+ * severity order across flags AND setup checks; this service only decides WHICH check speaks and
+ * whether its weekly window is open.
  */
 @Slf4j
 @Service
@@ -52,24 +55,21 @@ public class SetupCheckService {
     private final CompanionMessageRepository companionMessageRepository;
     private final SetupCheckProperties properties;
     private final PlanFeasibilityCalculator planFeasibilityCalculator;
+    private final AdviceCardService adviceCardService;
 
-    /** The first check that fires for {@code userId} today, or empty when the setup is sound. */
+    /** The first check that fires for {@code userId} today, or empty when the setup is sound (or
+     *  when a more severe advice card already owns the day — {@link AdviceCardService}). */
     @Transactional
     public Optional<CompanionMessageEntity> runFor(UUID userId) {
         LocalDate today = LocalDate.now();
-        if (companionMessageRepository.findByCreatedByAndMessageDateAndKind(
-                userId, today, CompanionMessageEntity.KIND_SETUP).isPresent()) {
-            log.info("Setup check skipped for user {}: today's setup card already exists", userId);
-            return Optional.empty();
-        }
         // Read the REPOSITORY, never SleepGoalService/SleepAnchorResolver: both fall back to a
         // config-default ghost, so the missing-row condition is invisible through them.
         if (sleepGoalRepository.findByCreatedByAndDeletedFalse(userId).isEmpty()) {
-            return emit(userId, today, CHECK_MISSING_SLEEP_GOAL, MISSING_SLEEP_GOAL_TEXT);
+            return emit(userId, CHECK_MISSING_SLEEP_GOAL, MISSING_SLEEP_GOAL_TEXT);
         }
         return planFeasibilityCalculator.evaluate(userId, today)
             .filter(verdict -> !verdict.feasible())
-            .flatMap(verdict -> emit(userId, today, CHECK_PLAN_FEASIBILITY, feasibilityText(verdict)));
+            .flatMap(verdict -> emit(userId, CHECK_PLAN_FEASIBILITY, feasibilityText(verdict)));
     }
 
     /** Adjectival Hungarian weekday names, 0=Monday..6=Sunday — the same index convention as
@@ -106,30 +106,27 @@ public class SetupCheckService {
             .formatted(verdict.requiredLightsOut(), verdict.latestConstraint(), verdict.misfitMin());
     }
 
-    /** Writes the card unless this same check already spoke inside the re-emit window. */
-    private Optional<CompanionMessageEntity> emit(UUID userId, LocalDate today, String checkKey, String text) {
+    /** Hands the check to the advice-card layer unless this same check already spoke inside the
+     *  re-emit window. The card's severity rank (setup cards sit below every flag) is applied by
+     *  {@link AdviceCardService}, so a quiet return here can mean either "already said this week"
+     *  or "a more severe card owns today" — both are logged. */
+    private Optional<CompanionMessageEntity> emit(UUID userId, String checkKey, String text) {
         if (inReEmitWindow(userId, checkKey)) {
             log.info("Setup check {} skipped for user {}: inside the re-emit window", checkKey, userId);
             return Optional.empty();
         }
-        CompanionMessageEntity row = new CompanionMessageEntity();
-        row.setCreatedBy(userId);
-        row.setMessageDate(today);
-        row.setKind(CompanionMessageEntity.KIND_SETUP);
-        row.setContent(new CompanionMessageEnvelope(EYEBROW, List.of(text), List.of(), null, checkKey));
-        row.setGeneratedAt(Instant.now());
-        CompanionMessageEntity saved = companionMessageRepository.saveAndFlush(row);
-        log.info("Setup check {} delivered for user {}", checkKey, userId);
-        return Optional.of(saved);
+        return adviceCardService.deliver(userId,
+            AdviceCandidate.fromSetupCheck(checkKey, EYEBROW, List.of(text), text));
     }
 
-    /** The same CHECK must not repeat inside its window — envelope keys of recent setup cards,
-     *  filtered in memory (single-user volumes), the InterventionService cooldown idiom. */
+    /** The same CHECK must not repeat inside its window — envelope {@code setupKey}s of recent
+     *  cards, filtered in memory (single-user volumes). Reads BOTH kinds: {@code advice} is what
+     *  S4 writes, {@code setup} is what pre-S4 rows carry. */
     private boolean inReEmitWindow(UUID userId, String checkKey) {
         Instant since = Instant.now().minus(properties.reEmitHours(), ChronoUnit.HOURS);
-        return companionMessageRepository
-            .findByCreatedByAndKindAndGeneratedAtAfter(userId, CompanionMessageEntity.KIND_SETUP, since)
-            .stream()
+        return Stream.of(CompanionMessageEntity.KIND_ADVICE, CompanionMessageEntity.KIND_SETUP)
+            .flatMap(kind -> companionMessageRepository
+                .findByCreatedByAndKindAndGeneratedAtAfter(userId, kind, since).stream())
             .anyMatch(row -> checkKey.equals(row.getContent().setupKey()));
     }
 }
