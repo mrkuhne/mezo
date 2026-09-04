@@ -204,9 +204,9 @@
   --mzh-deco-fill: rgba(43, 33, 24, 0.24);
   --mzh-glass: rgba(255, 255, 255, 0.6);
   --mzh-glass-line: rgba(43, 33, 24, 0.08);
-  /* A kompakt fejléc doboz-magassága (4px felső padding + 40px kontrollsor). A lapokon
+  /* A kompakt fejléc doboz-magassága (4px felső padding + 42px kontrollsor). A lapokon
      belüli sticky chrome ehhez képest tapad ki, hogy ne csússzon a shell-fejléc alá. */
-  --mzh-head-cond-h: 44px;
+  --mzh-head-cond-h: 46px;
   /* ── Napzárás night sky (mezo-d20.8.1.1) — the ritual's six-state darkening arc.
         The flow forces data-theme=dark (RitualPage's setForceTheme), so the two :root
         blocks carry IDENTICAL values: the duplication keeps the Mozaik rule (a --rz-*
@@ -538,7 +538,7 @@
   --mzh-deco-fill: rgba(255, 255, 255, 0.3);
   --mzh-glass: rgba(24, 19, 15, 0.6);
   --mzh-glass-line: rgba(255, 255, 255, 0.09);
-  --mzh-head-cond-h: 44px;
+  --mzh-head-cond-h: 46px;
   --mz-ink-soft: var(--text-secondary);
   /* ── Napzárás night sky (mezo-d20.8.1.1) — the ritual's six-state darkening arc.
         The flow forces data-theme=dark (RitualPage's setForceTheme), so the two :root
@@ -4562,6 +4562,7 @@ button.mz-tile:active { transform: scale(0.96); }
 .app-head {
   position: sticky;
   top: 0;
+  isolation: isolate;
   /* 46: a lapokon belüli sticky chrome (breadcrumb 40, chat-fejléc 30) FÖLÖTT, de a
      StatusBar (50) alatt — a shell fejléce mindig a lap saját chrome-ja fölött ül. */
   z-index: 46;
@@ -4577,15 +4578,15 @@ button.mz-tile:active { transform: scale(0.96); }
   top: 0;
   left: calc(-1 * var(--screen-gutter));
   right: calc(-1 * var(--screen-gutter));
-  /* 6px felső padding + 40px kontrollsor + 8px kifutás: az aurora megmarad, de már
-     nem ül rá a lap első kártyájára/szövegére. */
-  height: 54px;
+  /* A vezérlősor saját magasságán túl külön fade-tail fut lefelé. Az abszolút
+     háttérréteg így összeolvad a lappal, miközben a fejléc tartalma nincs maszkolva. */
+  height: calc(100% + 18px);
   overflow: hidden;
   pointer-events: none;
-  /* csak az utolsó pár pixelben folyik bele a tartalomba: a kontrollsor mögött végig
-     fedett marad, ezért a görgetett kártyák/szövegek nem ütnek át rajta. */
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 86%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 0%, black 86%, transparent 100%);
+  z-index: 0;
+  /* A kontrollsor mögött végig fedett, csak az önálló alsó tail mosódik a canvasba. */
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 70%, transparent 100%);
 }
 .app-head-wash { position: absolute; inset: 0; }
 .app-head-bg[data-face="reggel"] .app-head-wash { background: var(--mzh-wash-reggel); }
@@ -4614,10 +4615,10 @@ button.mz-tile:active { transform: scale(0.96); }
 }
 /* Kompakt mód: csak a függőleges ritmus húzódik össze. Az aurora napszak-színe
    változatlan marad, hogy görgetéskor se váltson semleges üvegsávra. */
-/* A padding-top a --mzh-head-cond-h tokenből SZÁRMAZIK, nem külön szám: 40px a
-   .nap-roundbtn kontrollsor magassága, a token a mérvadó (44px mindkét témában) — így
+/* A padding-top a --mzh-head-cond-h tokenből SZÁRMAZIK, nem külön szám: 42px a
+   .nap-roundbtn kontrollsor magassága, a token a mérvadó (46px mindkét témában) — így
    nem szakadhat el csendben a kettő egymástól. */
-.app-head.is-cond { padding-top: calc(var(--mzh-head-cond-h) - 40px); margin-bottom: 3px; }
+.app-head.is-cond { padding-top: calc(var(--mzh-head-cond-h) - 42px); margin-bottom: 3px; }
 /* A fejléc tartalma az aurora és az üvegsáv FÖLÖTT ül. Figyelem: ez minden fejléc-
    gyerekből saját stacking contextet csinál, tehát a bennük lévő .nap-dpmenu/
    .nap-ntfmenu 30-as z-indexe is EBBE a helyi kontextusba zárul, nem a globálisba.
@@ -4626,7 +4627,7 @@ button.mz-tile:active { transform: scale(0.96); }
 .app-head > *:not(.app-head-bg) { position: relative; z-index: 1; }
 .nap-head-grow { flex: 1; min-width: 0; }
 .nap-dpwrap { position: relative; }
-.nap-roundbtn { position: relative; width: 40px; height: 40px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12);
+.nap-roundbtn { position: relative; width: 42px; height: 42px; border-radius: 50%; border: 0.5px solid rgba(43, 33, 24, 0.12);
   background: var(--mz-chipbg); display: grid; place-items: center; cursor: pointer;
   box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.3); }
 .nap-offnow { position: absolute; top: 2px; right: 2px; width: 9px; height: 9px; border-radius: 50%;
@@ -4634,11 +4635,11 @@ button.mz-tile:active { transform: scale(0.96); }
 .nap-badge { position: absolute; top: -3px; right: -3px; min-width: 17px; height: 17px; border-radius: 999px;
   background: var(--gradient-cta); color: #fff; font-size: 10px; font-weight: 800;
   display: grid; place-items: center; padding: 0 4px; }
-.nap-dpmenu, .nap-ntfmenu { position: absolute; right: 0; top: 46px; z-index: 30;
+.nap-dpmenu, .nap-ntfmenu { position: absolute; right: 0; top: 48px; z-index: 30;
   background: var(--surface-card); border-radius: 18px; padding: 8px;
   border: 0.5px solid rgba(43, 33, 24, 0.08); box-shadow: 0 20px 40px -16px rgba(43, 33, 24, 0.4);
   display: flex; gap: 6px; }
-.nap-dpmenu button { width: 40px; height: 40px; border-radius: 50%; border: none; background: none;
+.nap-dpmenu button { width: 42px; height: 42px; border-radius: 50%; border: none; background: none;
   display: grid; place-items: center; cursor: pointer; }
 .nap-dpmenu button.on { background: color-mix(in srgb, var(--primary-base) 14%, transparent); }
 .nap-ntfmenu { width: 264px; flex-direction: column; align-items: stretch; gap: 7px; padding: 11px; }
@@ -4648,7 +4649,7 @@ button.mz-tile:active { transform: scale(0.96); }
 .nap-ntf-x { font-size: 11px; color: var(--mz-ink-soft); }
 .nap-ntffoot { border: none; background: none; font-family: inherit; cursor: pointer;
   font-size: 12px; font-weight: 700; color: var(--primary-deep); padding: 5px 4px 2px; text-align: left; }
-.nap-avatar { width: 40px; height: 40px; border-radius: 50%; border: 0; background: none;
+.nap-avatar { width: 42px; height: 42px; border-radius: 50%; border: 0; background: none;
   display: grid; place-items: center; cursor: pointer; }
 
 /* DayOrb (mezo-idz2) — a fejléc napi állapotjelzője. Az alap a `#s-orb` szürkén;
@@ -4659,7 +4660,7 @@ button.mz-tile:active { transform: scale(0.96); }
 @media (prefers-reduced-motion: reduce) { .dayorb rect { transition: none; } }
 
 /* Mezo-kalauz „?" (mezo-gb1s.1) — Fraunces-dőlt kérdőjel, coral; nyitva coral wash. */
-.nap-q .nap-q-glyph { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 19px; font-weight: 500; color: var(--primary-deep); line-height: 1; }
+.nap-q .nap-q-glyph { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 21px; font-weight: 500; color: var(--primary-deep); line-height: 1; }
 .nap-q.is-open { background: color-mix(in srgb, var(--primary-base) 14%, transparent); }
 
 /* ── Mezo-kalauz (mezo-gb1s.1) — the page-guide sheet; prototype docs/design_2.0/prototypes/kalauz.html ×1.18 ── */

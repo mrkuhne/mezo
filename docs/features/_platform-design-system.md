@@ -201,8 +201,11 @@ S8 re-skinned the **shared primitives themselves** (the `Common` block, `prototy
 **Fejléc-aurora (mezo-8az6; görgetési tisztázás `mezo-oq8z`).** A shell-fejléc kitapad (`position: sticky`, `top: 0` a
 `.screen-content` scrollerben), és napszak-követő aurora hátteret visel: wash + két
 elmosott fényfolt + dekoratív SVG (`HeaderAurora.tsx`), a réteg alja maszkkal fakul a
-tartalomba. Az aurora **54px magas** (a 40px-es kontrollsor + szűk kifutás), és csak az
-utolsó pár pixelén fakul, így nem ül rá a lap első tartalmára. Görgetéskor
+tartalomba. A **42px-es kontrollsor** és minden benne ülő clay ikon 2px-rel nagyobb a
+korábbi méretnél; az aurora ettől független háttérréteg (`z-index: 0`), amely a fejléc
+saját magasságán túl 18px-es, 70%-nál induló fade-taillel mosódik a canvasba. A fejléc
+szövege és vezérlői külön, maszkolatlan rétegen (`z-index: 1`) maradnak végig élesen
+láthatók. Görgetéskor
 (`useCondensedHeader`, küszöb 14px) csak a fejléc függőleges ritmusa tömörödik; a
 napszak-szín és az aurora `opacity: 1` változatlan marad, nincs semleges üvegsávra váltás.
 A bal oldalon a SZEKCIÓ
@@ -210,14 +213,13 @@ neve + clay spot (`headerSection.ts`), nem a dátum. Tokenek: `--mzh-*`, light �
 párral. A látvány forrása: `docs/design_2.0/prototypes/header-aurora.html`.
 
 A kitapadó fejléc átrendezte a lapon belüli sticky chrome-ot is. Bevezettünk egy
-`--mzh-head-cond-h: 44px` tokent (a kompakt fejléc doboz-magassága: 4px felső padding +
-40px kontrollsor). Az `.app-head` z-indexe **46** (a lap-chrome fölött, a StatusBar 50
-alatt), a `.sticky-top` (breadcrumb-sávok) és a `.mzc-chathead` (chat-fejléc) pedig
-`top: var(--mzh-head-cond-h)`-nál tapad ki — a fő szabályban ÉS a „Real mobile / installed
-PWA" media query-ben is (`frontend/src/styles/prototype.css:1107`). **Kivétel a
-`/mezo/chat`:** ott a redundáns shell-header nem renderelődik, ezért az egyetlen,
-beszélgetés-specifikus `.mzc-chathead` `top: 0`-nál tapad ki. Bármely ÚJ, lapon belüli
-sticky elem a saját route-jának tényleges shell-chrome-jához igazodjon.
+`--mzh-head-cond-h: 46px` tokent (a kompakt fejléc doboz-magassága: 4px felső padding +
+42px kontrollsor). Az `.app-head` z-indexe **46** (a lap-chrome fölött, a StatusBar 50
+alatt), a `.sticky-top` breadcrumb-sávok pedig `top: var(--mzh-head-cond-h)`-nál tapadnak
+ki — a fő szabályban ÉS a „Real mobile / installed PWA" media query-ben is. A
+`/mezo/chat` redundáns shell-headere nem renderelődik, ezért az egyetlen,
+beszélgetés-specifikus `.mzc-chathead` közvetlenül `top: 0`-nál tapad ki. Bármely ÚJ,
+lapon belüli sticky elem a saját route-jának tényleges shell-chrome-jához igazodjon.
 
 Két új clay spot készült ehhez a slice-hoz: **`s-fuel`** (Fuel szekció) és **`s-en`** (Én
 szekció) — a `docs/design_2.0/assets/clay-spots.svg`-ben és a verbatim frontend-másolatban,

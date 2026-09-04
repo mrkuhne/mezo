@@ -259,11 +259,24 @@ test('hides the quick-log FAB on the chat page but keeps the tab bar', () => {
 test('the sticky header keeps its compact aurora without covering content or doubling the chat header', async () => {
   const auroraRule = rawCss.match(/\.app-head-bg\s*\{[^}]+\}/)?.[0] ?? ''
   const condensedAuroraRule = rawCss.match(/\.app-head\.is-cond \.app-head-bg\s*\{[^}]+\}/)?.[0] ?? ''
+  const roundButtonRule = rawCss.match(/\.nap-roundbtn\s*\{[^}]+\}/)?.[0] ?? ''
 
-  expect.soft(auroraRule).toContain('height: 54px')
-  expect.soft(auroraRule).toContain('black 86%')
+  expect.soft(auroraRule).toContain('height: calc(100% + 18px)')
+  expect.soft(auroraRule).toContain('black 70%')
   expect.soft(condensedAuroraRule).not.toContain('opacity: 0')
   expect.soft(rawCss).not.toMatch(/\.app-head\.is-cond::before\s*\{/)
+  expect.soft(rawCss).toContain('--mzh-head-cond-h: 46px')
+  expect.soft(roundButtonRule).toContain('width: 42px')
+  expect.soft(roundButtonRule).toContain('height: 42px')
+
+  const nap = renderApp('/nap')
+  const napHeader = nap.container.querySelector('.app-head')!
+  expect.soft(napHeader.querySelector('.app-head-sec svg')).toHaveAttribute('width', '32')
+  expect.soft(screen.getByLabelText('Napszak váltása').querySelector('svg')).toHaveAttribute('width', '24')
+  expect.soft(screen.getByLabelText(/Mezo üzenetei/).querySelector('svg')).toHaveAttribute('width', '23')
+  expect.soft(screen.getByLabelText(/Értesítések/).querySelector('svg')).toHaveAttribute('width', '23')
+  expect.soft(napHeader.querySelector('.nap-avatar svg')).toHaveAttribute('width', '42')
+  nap.unmount()
 
   const { container } = renderApp('/mezo/chat')
   await screen.findByLabelText('Küldés')
