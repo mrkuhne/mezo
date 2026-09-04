@@ -55,6 +55,11 @@ const SCREENS: Array<[string, string, string?]> = [
   ['meso-week', '/train/mesocycles/meso-hyp-04/week'],
   ['train-session', '/train/session'],
   ['fuel', '/fuel'],
+  ['fuel-stack', '/fuel/stack'],
+  ['fuel-stack-protocol', '/fuel/stack/protocol'],
+  ['fuel-stack-today', '/fuel/stack/today'],
+  ['fuel-stack-meals', '/fuel/stack/meals'],
+  ['fuel-stack-manage', '/fuel/stack/manage'],
   ['fuel-settings', '/fuel/settings'],
   ['fuel-terv', '/fuel/plan'],
   // F7.3 Fuel deep (mezo-d20.8.3.1): the gyógyszer page's honest empty state now carries the

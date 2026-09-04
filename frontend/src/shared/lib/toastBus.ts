@@ -7,9 +7,15 @@
 // DS §Notification `RewardToast` (habit/quest completion — mezo-k5sa).
 export type ToastKind = 'error' | 'success' | 'info'
 
+export interface ToastAction {
+  label: string
+  onClick: () => void | Promise<void>
+}
+
 export interface SimpleToast {
   kind: ToastKind
   text: string
+  action?: ToastAction
 }
 
 /** DS §Notification reward variant. Every field beyond eyebrow/title is optional —

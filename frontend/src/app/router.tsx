@@ -34,6 +34,14 @@ import { FuelLogNewPage } from '@/features/fuel/pages/FuelLogNewPage'
 import { FuelNaploPage } from '@/features/fuel/pages/FuelNaploPage'
 import { FuelPlanPage } from '@/features/fuel/pages/FuelPlanPage'
 import { FuelStackPage } from '@/features/fuel/pages/FuelStackPage'
+import { FuelStackProtocolPage } from '@/features/fuel/pages/FuelStackProtocolPage'
+import { FuelStackTodayPage } from '@/features/fuel/pages/FuelStackTodayPage'
+import { FuelStackMealsPage } from '@/features/fuel/pages/FuelStackMealsPage'
+import { FuelStackManagePage } from '@/features/fuel/pages/FuelStackManagePage'
+import { FuelStackManageProtocolPage } from '@/features/fuel/pages/FuelStackManageProtocolPage'
+import { FuelStackManageTimingPage } from '@/features/fuel/pages/FuelStackManageTimingPage'
+import { FuelStackManageMealsPage } from '@/features/fuel/pages/FuelStackManageMealsPage'
+import { FuelStackAddPage } from '@/features/fuel/pages/FuelStackAddPage'
 import { FuelRecipesPage } from '@/features/fuel/pages/FuelRecipesPage'
 import { FuelKamraPage } from '@/features/fuel/pages/FuelKamraPage'
 import { KamraItemDetailPage } from '@/features/fuel/pages/KamraItemDetailPage'
@@ -223,6 +231,14 @@ export const routes: RouteObject[] = [
       // Fuel tile → own full page: the hub's Mezo banner (fuel iterations §2).
       { path: 'fuel/plan', element: <FuelPlanPage /> },
       { path: 'fuel/stack', element: <FuelStackPage /> },
+      { path: 'fuel/stack/protocol', element: <FuelStackProtocolPage /> },
+      { path: 'fuel/stack/today', element: <FuelStackTodayPage /> },
+      { path: 'fuel/stack/meals', element: <FuelStackMealsPage /> },
+      { path: 'fuel/stack/manage', element: <FuelStackManagePage /> },
+      { path: 'fuel/stack/manage/protocol', element: <FuelStackManageProtocolPage /> },
+      { path: 'fuel/stack/manage/timing', element: <FuelStackManageTimingPage /> },
+      { path: 'fuel/stack/manage/meals', element: <FuelStackManageMealsPage /> },
+      { path: 'fuel/stack/manage/add', element: <FuelStackAddPage /> },
       { path: 'fuel/kamra', element: <FuelKamraPage /> },
       { path: 'fuel/kamra/:id', element: <KamraItemDetailPage /> },
       { path: 'fuel/gyogyszer', element: <FuelMedicationPage /> },

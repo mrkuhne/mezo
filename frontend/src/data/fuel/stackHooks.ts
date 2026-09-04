@@ -73,7 +73,7 @@ export function useIntakes(date: string): Intake[] {
 /**
  * Dual-mode stack read — the pantry stash with each item's `taken` re-derived from the day's
  * intakes (mock/real share the shape). Keeps the pre-existing `{ stash }` return so the Stack
- * views + StackPickerSheet are untouched.
+ * views + full-page Stack Kamra picker keep the same shape.
  */
 export function useStack(): { stash: SupplementStashItem[]; pending: boolean; error: boolean } {
   const { stash, pending, error } = usePantry()
@@ -118,28 +118,35 @@ export function useStackActions(date: string = localDateString()) {
     mutationFn: mock
       ? async (input: { pantryItemId: string; slotKey?: StackZoneKey; dose?: string | null }) =>
           mockAddIntake(qc, date, input.pantryItemId, input.slotKey, input.dose)
-      : async (input: { pantryItemId: string; slotKey?: StackZoneKey; dose?: string | null }) => {
-          await fuelApi.logIntake({ pantryItemId: input.pantryItemId, slotKey: input.slotKey, dose: input.dose ?? undefined })
-        },
+      : async (input: { pantryItemId: string; slotKey?: StackZoneKey; dose?: string | null }) =>
+          fuelApi.logIntake({ pantryItemId: input.pantryItemId, slotKey: input.slotKey, dose: input.dose ?? undefined }),
     onSuccess: mock ? undefined : invalidate,
   })
   const undoM = useMutation({
     mutationFn: mock
-      ? async (input: { pantryItemId: string; slotKey?: StackZoneKey }) =>
-          mockRemoveIntake(qc, date, input.pantryItemId, input.slotKey)
-      : async (input: { pantryItemId: string; slotKey?: StackZoneKey }) => {
-          const row = findIntakeRow(qc.getQueryData<Intake[]>(intakeKey(date)) ?? [], input.pantryItemId, input.slotKey)
+      ? async (input: { pantryItemId: string; slotKey?: StackZoneKey; intakeId?: string }) =>
+          mockRemoveIntake(qc, date, input.pantryItemId, input.slotKey, input.intakeId)
+      : async (input: { pantryItemId: string; slotKey?: StackZoneKey; intakeId?: string }) => {
+          const rows = qc.getQueryData<Intake[]>(intakeKey(date)) ?? []
+          const row = input.intakeId
+            ? rows.find(candidate => candidate.id === input.intakeId)
+            : findIntakeRow(rows, input.pantryItemId, input.slotKey)
+          if (input.intakeId && !row) {
+            await fuelApi.deleteIntake(input.intakeId)
+            return
+          }
           if (row) await fuelApi.deleteIntake(row.id)
         },
     onSuccess: mock ? undefined : invalidate,
   })
 
   const logIntake = useCallback(
-    (pantryItemId: string, slotKey?: StackZoneKey, dose?: string | null) => logM.mutate({ pantryItemId, slotKey, dose }),
+    (pantryItemId: string, slotKey?: StackZoneKey, dose?: string | null) => logM.mutateAsync({ pantryItemId, slotKey, dose }),
     [logM],
   )
   const undoIntake = useCallback(
-    (pantryItemId: string, slotKey?: StackZoneKey) => undoM.mutate({ pantryItemId, slotKey }),
+    (pantryItemId: string, slotKey?: StackZoneKey, intakeId?: string) =>
+      undoM.mutateAsync({ pantryItemId, slotKey, intakeId }),
     [undoM],
   )
   return { logIntake, undoIntake }
@@ -216,20 +223,24 @@ export function useProtocolActions() {
 }
 
 // --- mock-mode cache mutators: keep the offline app interactive ---
-function mockAddIntake(qc: QueryClient, date: string, pantryItemId: string, slotKey?: StackZoneKey, dose?: string | null) {
+function mockAddIntake(qc: QueryClient, date: string, pantryItemId: string, slotKey?: StackZoneKey, dose?: string | null): Intake {
   const key = slotKey ?? null
-  qc.setQueryData<Intake[]>(intakeKey(date), (rows = []) =>
-    rows.some(r => r.pantryItemId === pantryItemId && r.slotKey === key)
-      ? rows
-      : [...rows, {
-          id: key ? `intake-${pantryItemId}-${key}` : `intake-${pantryItemId}`,
-          pantryItemId, takenAt: '', dose: dose ?? null, slotKey: key,
-        }])
+  const rows = qc.getQueryData<Intake[]>(intakeKey(date)) ?? []
+  const existing = rows.find(r => r.pantryItemId === pantryItemId && r.slotKey === key)
+  if (existing) return existing
+  const created: Intake = {
+    id: key ? `intake-${pantryItemId}-${key}` : `intake-${pantryItemId}`,
+    pantryItemId, takenAt: '', dose: dose ?? null, slotKey: key,
+  }
+  qc.setQueryData<Intake[]>(intakeKey(date), [...rows, created])
+  return created
 }
 
-function mockRemoveIntake(qc: QueryClient, date: string, pantryItemId: string, slotKey?: StackZoneKey) {
+function mockRemoveIntake(qc: QueryClient, date: string, pantryItemId: string, slotKey?: StackZoneKey, intakeId?: string) {
   qc.setQueryData<Intake[]>(intakeKey(date), (rows = []) => {
-    const row = findIntakeRow(rows, pantryItemId, slotKey)
+    const row = intakeId
+      ? rows.find(candidate => candidate.id === intakeId)
+      : findIntakeRow(rows, pantryItemId, slotKey)
     return row ? rows.filter(r => r.id !== row.id) : rows
   })
 }
