@@ -36,7 +36,18 @@ describe('WeekDayTile', () => {
       hasNote={false} delayMs={0} onOpen={() => {}} />)
     const none = container.querySelectorAll('.wkd-sparks i.is-none')
     expect(none).toHaveLength(2)
-    // a csonk a csoportrést akkor is viszi, ha éppen ő a harmadik
-    expect(container.querySelectorAll('.wkd-sparks i')[2]).toHaveClass('is-gsep')
+    // ez a fixture NEM a csoporthatáron nullázott (quality = idx 1, rhythm = idx 5) — a
+    // határon álló csonk esetét (is-none ÉS is-gsep egyszerre) külön teszt fedi le lentebb.
+  })
+
+  it('a csonk a csoportrést akkor is viszi, ha éppen ő a harmadik (a csoporthatáron áll)', () => {
+    // a `training` (idx 2) a tényleges csoporthatár — ha ez a dimenzió null, a stub
+    // elemnek egyszerre kell `is-none`-nak ÉS `is-gsep`-nek lennie.
+    const day = { ...scoredDay, subscores: { ...scoredDay.subscores, training: null } }
+    const { container } = render(<WeekDayTile day={day} todayIso="2026-05-21"
+      hasNote={false} delayMs={0} onOpen={() => {}} />)
+    const bars = container.querySelectorAll('.wkd-sparks i')
+    expect(bars[2]).toHaveClass('is-none')
+    expect(bars[2]).toHaveClass('is-gsep')
   })
 })
