@@ -39,7 +39,7 @@ public class ResetDatabase {
         entityManager.createNativeQuery(
             "TRUNCATE TABLE invite, llm_log_history, gamification_profile, push_subscription, notification_pref, push_log, notification_schedule, app_notification, coin_event, owned_title, needs_day, ritual_day, intention_creed, intention_focus, daily_intention, habit_day, habit_def, habit_chain, activity_log, daily_quest, challenge, diagnosis, experiment, prediction, weekly_review, weekly_score, day_review, memoir, weekly_suggestion, companion_message, pattern_event, pattern, daily_summary, period_summary, memory_retrieval_feedback, memory_retrieval_result, memory_retrieval_run, memory_vector, memory_item, memory_embedding, message_feedback, feedback_rollup, companion_flag_log, knowledge_node, knowledge_edge, learned_fact, knowledge_fact, ai_message, ai_conversation, supplement_intake, protocol_item, protocol, water_log, medication_dose, medication, meal_item, meal, recipe_ingredient, recipe, pantry_import, pantry_item, weight_log, sleep_log, sleep_goal, fuel_settings, diet_settings, tutorial_progress, "
                 + "meal_slot_template, check_in, journal_entry, decision_entry, gratitude_entry, "
-                + "exercise_feedback, exercise_set, exercise, workout_session, muscle_group_volume_log, mesocycle, "
+                + "exercise_feedback, exercise_set, exercise, workout_session, muscle_group_volume_log, workout_day_adjustment, mesocycle, "
                 + "meso_template, mesocycle_report, "
                 + "gym_schedule_slot, sport_schedule_slot, sport_slot_skip, sport_event, sport_session, run_session_log, running_block, "
                 + "skill_progress, level_up_event, perk_unlock, "

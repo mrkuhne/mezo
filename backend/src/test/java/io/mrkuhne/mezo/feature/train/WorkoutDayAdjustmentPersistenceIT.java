@@ -94,4 +94,22 @@ class WorkoutDayAdjustmentPersistenceIT extends AbstractIntegrationTest {
 
         assertThat(repository.findByCreatedByAndDateAndDeletedFalse(user, DATE)).isEmpty();
     }
+
+    @Test
+    void testSave_shouldAllowNewRow_whenPreviousAdjustmentWasSoftDeletedForSameDateAndUser() {
+        UUID user = ownerId();
+
+        // Create first adjustment and soft-delete it
+        WorkoutDayAdjustmentEntity first = populator.createAdjustment(user, DATE, (short) -2);
+        populator.softDelete(first);
+
+        // Create new adjustment for same (user, date) — should succeed because unique index
+        // filters on is_deleted = false, so the deleted row does not block the insert
+        WorkoutDayAdjustmentEntity second = populator.createAdjustment(user, DATE, (short) -1);
+
+        assertThat(repository.findByCreatedByAndDateAndDeletedFalse(user, DATE))
+            .isPresent()
+            .contains(second);
+        assertThat(second.getSetDelta()).isEqualTo((short) -1);
+    }
 }
