@@ -311,7 +311,7 @@ export function buildStackDayView(slots: StackDaySlot[]): StackDayView
 6. A helper nem mutálhatja a `slots` vagy `entries` inputot, nem olvas órát és nem
    importál Reactot.
 
-- [ ] **Step 1: Írd meg a bukó unit teszteket**
+- [x] **Step 1: Írd meg a bukó unit teszteket**
 
 A fixture legalább négy időrendi sort tartalmazzon: egy kész, egy következő, egy
 későbbi és egy `skippedToday`. Ellenőrizd:
@@ -335,7 +335,7 @@ Külön tesztelje:
 - a skipped sor a `rows` listában megmarad, de progressbe/preview-ba nem számít;
 - az input deep snapshotja hívás után változatlan.
 
-- [ ] **Step 2: Futtasd a focused tesztet és rögzítsd a bukást**
+- [x] **Step 2: Futtasd a focused tesztet és rögzítsd a bukást**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo/frontend
@@ -344,7 +344,7 @@ pnpm vitest run src/features/fuel/logic/stackPresentation.test.ts
 
 Várt: FAIL, mert a modul még nem létezik.
 
-- [ ] **Step 3: Implementáld a tiszta view-model buildert**
+- [x] **Step 3: Implementáld a tiszta view-model buildert**
 
 A lapítás `flatMap`-pel készüljön, de minden `StackDayRow` új wrapper objektum legyen;
 az eredeti `entry` referenciát csak olvassa. A preview indexelése:
@@ -359,7 +359,7 @@ const previewRows = nextIndex < 0
 A return objektum minden derivált mezőt egyszer, ugyanabból az `applicableRows`
 listából számoljon; routed oldal ne implementálja újra ezt a logikát.
 
-- [ ] **Step 4: Futtasd újra a focused tesztet**
+- [x] **Step 4: Futtasd újra a focused tesztet**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo/frontend
@@ -368,7 +368,7 @@ pnpm vitest run src/features/fuel/logic/stackPresentation.test.ts
 
 Várt: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo
