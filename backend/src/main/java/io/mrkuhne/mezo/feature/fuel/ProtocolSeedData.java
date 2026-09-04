@@ -29,7 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
  * needle) at {@code pre_workout}. {@code @Profile("demodata")} is the profile prod runs, so the
  * rows land on the live DB at the next deploy. Idempotent by NAME per item (the shelf is curated —
  * {@code PantryCatalogLoader}'s empty-shelf guard would never fire here) and by active-protocol
- * presence; an existing active protocol is never touched. Runs after {@code PantryCatalogLoader} (60).
+ * presence; an existing active protocol is never touched. Runs after {@code PantryCatalogLoader} (50).
  */
 @Slf4j
 @Component

@@ -210,7 +210,12 @@ function mockAddFromCatalog(qc: ReturnType<typeof useQueryClient>, catalogId: st
     const base = prev ?? mockData
     const already = base.ingredients.some(i => i.catalogId === catalogId) || base.stash.some(s => s.catalogId === catalogId)
     if (already) return base
-    const shared = { catalogId, sharedFrom: entry.authorName ? { authorName: entry.authorName } : null, catalogEditable: false }
+    // catalogEditable mirrors the SERVER's rule (PantryCatalogService.editable): the OWNER edits any
+    // definition, and the mock's demo account IS the owner — so a from-catalog row is editable here,
+    // exactly as the real API reports it. Stamping `false` made mock mode show every shared row as
+    // locked while real mode showed it unlocked (mezo-qw37.4 final review, M-5). `sharedFrom` still
+    // names the other author, so the "shared" provenance is unchanged.
+    const shared = { catalogId, sharedFrom: entry.authorName ? { authorName: entry.authorName } : null, catalogEditable: true }
     if (entry.kind === 'food') {
       const ing: Ingredient = {
         id: crypto.randomUUID(), name: entry.name, brand: entry.brand ?? '', source: entry.source,

@@ -111,13 +111,20 @@ public class PantryService {
      * NOTHING is written. The gate deliberately runs before {@code applyDefinitionPartial}: the
      * catalog entity is managed, so a half-applied refused edit would still be flushed on commit.
      * A rename onto another entry's natural key is a 409 rather than a unique-index 500.
+     *
+     * <p>Per-kind validation runs INSIDE the definition branch and against the MERGED definition
+     * (see {@link #validateEffectivePerKind}): a PATCH that touches no definition field is a
+     * state-only edit of the caller's own row and has no definition to validate. Validating the
+     * bare request here forced every state-only PATCH to echo the whole definition back
+     * ("food needs unit + kcal"), and that echo is exactly what turned a price edit into a 403 /
+     * a silent shared-row overwrite (mezo-qw37.4 final review, I-1).
      */
     @Transactional
     public PantryItemResponse updateItem(AppUserEntity user, UUID id, PantryItemRequest req) {
-        validatePerKind(req);
         PantryItemEntity e = requireOwned(user.getId(), id);
         PantryCatalogEntity c = e.getCatalog();
         if (mapper.definitionDiffers(c, req)) {
+            validateEffectivePerKind(req, e);
             catalogService.requireEditable(user, c);
             String newName = req.getName() == null ? c.getName() : req.getName().strip();
             String newBrand = req.getBrand() == null ? c.getBrand() : req.getBrand().strip();
@@ -157,6 +164,30 @@ public class PantryService {
             // saved and its ADAG edits silently revert (mezo-2567).
             boolean hasDose = req.getDose() != null && !req.getDose().isBlank();
             if (!hasDose && req.getPer() == null) {
+                throw new SystemRuntimeErrorException(
+                    SystemMessage.field("VALIDATION_INVALID_VALUE", "dose").build(), HttpStatus.BAD_REQUEST);
+            }
+        }
+    }
+
+    /**
+     * Update-side twin of {@link #validatePerKind}: the same rules, applied to the definition that
+     * WOULD result from the PATCH merge (request field, else the stored one) rather than to the
+     * bare request. A PATCH may legitimately omit a field the stored row already carries — demanding
+     * it back is what made the FE echo the whole definition on every edit. Nothing is weakened: a
+     * real definition edit still cannot leave a food without unit/kcal or a supplement without any
+     * quantity basis, because the merged value is what gets persisted.
+     */
+    private void validateEffectivePerKind(PantryItemRequest req, PantryItemEntity item) {
+        PantryCatalogEntity c = item.getCatalog();
+        String kind = req.getKind() == null ? c.getKind() : req.getKind().getValue();
+        if ("food".equals(kind)) {
+            requireField(req.getUnit() == null ? c.getServingUnit() : req.getUnit(), "unit");
+            requireField(req.getKcal() == null ? c.getKcal() : req.getKcal(), "kcal");
+        } else { // supplement | stim | med — see validatePerKind for why it is dose OR per
+            String dose = req.getDose() == null ? item.getDose() : req.getDose();
+            boolean hasDose = dose != null && !dose.isBlank();
+            if (!hasDose && (req.getPer() == null ? c.getServingAmount() : req.getPer()) == null) {
                 throw new SystemRuntimeErrorException(
                     SystemMessage.field("VALIDATION_INVALID_VALUE", "dose").build(), HttpStatus.BAD_REQUEST);
             }

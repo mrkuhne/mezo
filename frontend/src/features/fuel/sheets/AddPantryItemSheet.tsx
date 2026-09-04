@@ -105,44 +105,61 @@ export function AddPantryItemSheet({
   const isFood = kind === 'food'
 
   function submit() {
+    const isEdit = editId != null
+    // STATE half — the caller's OWN shelf row (price/stock/dose/protocol). Always sent, never gated.
+    // `kind`/`name` ride along because PantryItemRequest requires them; an UNCHANGED echo of them is
+    // not a definition edit (PantryMapper.definitionDiffers compares stripped values, and the
+    // backend validates/writes the definition only when it actually differs).
     const input: PantryItemInput = {
       kind,
       name,
-      source,
-      category,
-      // Create pins the per-100 g / grams basis explicitly (a null serving_amount would re-open
-      // the `per ?? 1` recipe-math trap). Edit ECHOES the stored basis unchanged (omitting it
-      // for a row that HAS one would 400: validatePerKind runs on the update request too — food
-      // always carries per/unit, so this always fires for food). The legacy per-serving row
-      // survives because inputFromItem always hands the stored per/unit back via `initial`.
-      // A dose/protocol-based supplement/stim/med row may legitimately have NEITHER (the
-      // backend's validatePerKind allows a dose-only row with no serving_unit at all) — mirror
-      // that by omitting per/unit entirely rather than defaulting to 100/'g' when `initial` never
-      // carried a per (mezo-qw37.4 review round 1): a locked shared dose-only row with a null
-      // server-side unit must echo null, not fabricate 'g', or PantryMapper.definitionDiffers
-      // sees a spurious change and requireEditable() 403s a pure price/dose edit.
-      ...(editId
-        ? (initial?.per != null ? { per: initial.per, unit: initial?.unit ?? 'g' } : {})
-        : { per: 100, unit: 'g' }),
       stockQty: toNum(stockQty),
       stockUnit: stockUnit || undefined,
       price: toNum(price),
       priceUnit: initial?.priceUnit,
-      pkg: initial?.pkg,
     }
-    if (isFood) {
-      input.kcal = toNum(kcal) ?? 0
-      input.proteinG = toNum(proteinG)
-      input.carbsG = toNum(carbsG)
-      input.fatG = toNum(fatG)
-      input.fiberG = toNum(fiberG)
-      input.sugarG = toNum(sugarG)
-      input.saturatedFatG = toNum(saturatedFatG)
-      input.saltG = toNum(saltG)
-    } else {
+    if (!isFood) {
       input.dose = dose
-      input.form = initial?.form
       input.protocol = initial?.protocol
+    }
+    // DEFINITION half — the SHARED catalog row (mezo-qw37.4 final review, I-1). Send a field only
+    // when THIS save actually changes it, and never at all while the row is locked. The sheet used
+    // to echo the whole definition back on every save; since PantryMapper zero-fills NULL macros on
+    // the way out, that echo turned a pure price edit into a definition edit — a 403
+    // (PANTRY_CATALOG_NOT_EDITABLE) for a non-author, and for an OWNER, who passes the gate, a
+    // silent write of fabricated 0 kcal/protein/carbs/fat onto a definition other users read.
+    // Dropping only UNCHANGED values keeps a genuinely typed 0 intact: it differs from the
+    // prefill it replaces, so it is still sent.
+    const put = <K extends keyof PantryItemInput>(key: K, value: PantryItemInput[K] | undefined) => {
+      if (value === undefined) return
+      if (isEdit && initial?.[key] === value) return
+      input[key] = value as PantryItemInput[K]
+    }
+    if (!lock) {
+      put('source', source)
+      put('category', category)
+      put('pkg', initial?.pkg)
+      // Create pins the per-100 g / grams basis explicitly (a null serving_amount would re-open the
+      // `per ?? 1` recipe-math trap). Edit never changes the basis — it is not an input (mezo-0gjr) —
+      // so it is simply omitted now that a state-only PATCH no longer has to satisfy validatePerKind.
+      if (!isEdit) {
+        input.per = 100
+        input.unit = 'g'
+      }
+      if (isFood) {
+        // `?? 0` only on create, where the backend requires kcal; on edit an empty box means
+        // "unchanged", never a fabricated 0 onto a NULL column.
+        put('kcal', isEdit ? toNum(kcal) : (toNum(kcal) ?? 0))
+        put('proteinG', toNum(proteinG))
+        put('carbsG', toNum(carbsG))
+        put('fatG', toNum(fatG))
+        put('fiberG', toNum(fiberG))
+        put('sugarG', toNum(sugarG))
+        put('saturatedFatG', toNum(saturatedFatG))
+        put('saltG', toNum(saltG))
+      } else {
+        put('form', initial?.form)
+      }
     }
     if (editId) updateItem(editId, input)
     else addItem(input)

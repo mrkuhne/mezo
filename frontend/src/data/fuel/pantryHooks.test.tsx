@@ -154,7 +154,7 @@ describe('usePantry (mock mode)', () => {
     expect(supp.length).toBeGreaterThan(0)
   })
 
-  it('addFromCatalog appends the catalog entry to the shared cache with sharedFrom + catalogEditable=false', async () => {
+  it('addFromCatalog appends the catalog entry to the shared cache with sharedFrom + catalogEditable=true (the demo user is the OWNER)', async () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(
       () => ({ pantry: usePantry(), actions: usePantryActions() }),
@@ -166,7 +166,9 @@ describe('usePantry (mock mode)', () => {
     const added = result.current.pantry.ingredients.find(i => i.catalogId === 'cat-skyr')
     expect(added?.name).toBe('Skyr natúr')
     expect(added?.sharedFrom).toEqual({ authorName: 'Anna' })
-    expect(added?.catalogEditable).toBe(false)
+    // Mirrors PantryCatalogService.editable: the mock demo account is the OWNER, and the OWNER may
+    // edit ANY definition — the real API returns true here too (mezo-qw37.4 final review, M-5).
+    expect(added?.catalogEditable).toBe(true)
     // idempotent: a second add does not duplicate the row
     await act(async () => { await result.current.actions.addFromCatalog('cat-skyr') })
     expect(result.current.pantry.ingredients.filter(i => i.catalogId === 'cat-skyr')).toHaveLength(1)

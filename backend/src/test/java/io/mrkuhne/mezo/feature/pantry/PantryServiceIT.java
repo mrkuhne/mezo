@@ -7,12 +7,14 @@ import io.mrkuhne.mezo.api.dto.PantryItemRequest;
 import io.mrkuhne.mezo.feature.auth.entity.AppUserEntity;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.feature.pantry.service.PantryCatalogService;
 import io.mrkuhne.mezo.feature.pantry.service.PantryService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.PantryCatalogPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
+import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -35,6 +37,8 @@ class PantryServiceIT extends AbstractIntegrationTest {
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private PantryCatalogService catalogService;
     @Autowired private PantryCatalogPopulator catalogPopulator;
+    @Autowired private PantryCatalogRepository catalogRepository;
+    @Autowired private UserPopulator userPopulator;
 
     // created_by has an FK to app_user(id) — owners MUST be real users (populateUser),
     // never UUID.randomUUID().
@@ -119,6 +123,76 @@ class PantryServiceIT extends AbstractIntegrationTest {
         var ing = service.getPantry(user(other)).getIngredients().getFirst();
         assertThat(ing.getPrice()).isEqualByComparingTo(java.math.BigDecimal.valueOf(1290));
         assertThat(ing.getName()).isEqualTo("Túró "); // the shared definition is untouched
+    }
+
+    /**
+     * A shared food definition whose macros are NULL (creatable today: a blank macro input is sent
+     * as no value at all) is read back with kcal/protein/carbs/fat ZERO-FILLED by
+     * {@code PantryMapper.toIngredientResponse}. The edit sheet used to echo those zeros back on
+     * every save, so {@code definitionDiffers} saw 0-vs-null and a pure PRICE edit became a
+     * definition edit — a 403 for a non-author. The sheet now sends the state half only, and the
+     * service no longer demands the definition fields back on such a PATCH (mezo-qw37.4, I-1).
+     */
+    @Test
+    void testUpdateItem_shouldAllowPriceOnlyEdit_whenSharedFoodDefinitionHasNullMacros() {
+        PantryCatalogEntity shared = nullMacroFoodDefinition(owner, "Olívaolaj Teszt");
+        UUID shelfRow = catalogService.ensureItem(other, shared.getId()).getId();
+
+        service.updateItem(user(other), shelfRow, priceOnlyReq("Olívaolaj Teszt", 2490));
+
+        var ing = service.getPantry(user(other)).getIngredients().getFirst();
+        assertThat(ing.getPrice()).isEqualByComparingTo(java.math.BigDecimal.valueOf(2490));
+        assertSharedMacrosStillNull(shared.getId());
+    }
+
+    /**
+     * The other half of the same bug: an OWNER PASSES the edit gate, so the echoed zeros used to be
+     * written straight onto the shared definition as an unasked-for side effect of a price edit —
+     * silently degrading what every other user sees. A price-only PATCH must leave the shared row
+     * untouched even for the one role allowed to edit it.
+     */
+    @Test
+    void testUpdateItem_shouldLeaveSharedDefinitionUntouched_whenOwnerEditsPriceOnly() {
+        AppUserEntity ownerRole = userPopulator.createUser("s4-price-owner@test.local");
+        ownerRole.setRole(AppUserEntity.UserRole.OWNER);
+        ownerRole = userPopulator.save(ownerRole);
+        PantryCatalogEntity shared = nullMacroFoodDefinition(other, "Lenmagolaj Teszt");
+        UUID shelfRow = catalogService.ensureItem(ownerRole.getId(), shared.getId()).getId();
+
+        service.updateItem(ownerRole, shelfRow, priceOnlyReq("Lenmagolaj Teszt", 3190));
+
+        var ing = service.getPantry(ownerRole).getIngredients().getFirst();
+        assertThat(ing.getPrice()).isEqualByComparingTo(java.math.BigDecimal.valueOf(3190));
+        assertSharedMacrosStillNull(shared.getId());
+    }
+
+    /** kcal present, protein/carbs/fat NULL — the shape the zero-fill fabricates values for. */
+    private PantryCatalogEntity nullMacroFoodDefinition(UUID author, String name) {
+        PantryCatalogEntity c = new PantryCatalogEntity();
+        c.setCreatedBy(author);
+        c.setKind("food");
+        c.setName(name);
+        c.setSource("manual");
+        c.setServingAmount(java.math.BigDecimal.valueOf(100));
+        c.setServingUnit("g");
+        c.setKcal(java.math.BigDecimal.valueOf(884));
+        return catalogRepository.saveAndFlush(c);
+    }
+
+    /** What the fixed edit sheet sends for a price-only save: the contract-required identity + state. */
+    private PantryItemRequest priceOnlyReq(String name, int price) {
+        PantryItemRequest r = new PantryItemRequest();
+        r.setKind(PantryItemRequest.KindEnum.FOOD);
+        r.setName(name);
+        r.setPrice(price);
+        return r;
+    }
+
+    private void assertSharedMacrosStillNull(UUID catalogId) {
+        PantryCatalogEntity after = catalogRepository.findById(catalogId).orElseThrow();
+        assertThat(after.getProteinG()).isNull();
+        assertThat(after.getCarbsG()).isNull();
+        assertThat(after.getFatG()).isNull();
     }
 
     @Test

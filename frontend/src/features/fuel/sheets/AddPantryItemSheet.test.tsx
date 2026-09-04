@@ -1,9 +1,12 @@
 import type { ReactNode } from 'react'
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent, renderHook, waitFor } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AddPantryItemSheet } from '@/features/fuel/sheets/AddPantryItemSheet'
 import { usePantry } from '@/data/hooks'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
 
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 afterEach(() => vi.unstubAllEnvs())
@@ -271,5 +274,81 @@ describe('AddPantryItemSheet', () => {
       expect(edited?.unit).toBeUndefined()
     })
     expect(onClose).toHaveBeenCalled()
+  })
+})
+
+// The PAYLOAD the edit sheet puts on the wire — the half of I-1 (mezo-qw37.4 final review) that
+// mock mode cannot observe, because the mock merge treats an echoed value and an omitted one alike.
+describe('AddPantryItemSheet · update payload (real mode)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+
+  function renderEdit(props: Record<string, unknown>) {
+    const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+    let body: Record<string, unknown> | null = null
+    server.use(http.put(`${API_BASE}/api/pantry/:id`, async ({ request }) => {
+      body = (await request.json()) as Record<string, unknown>
+      return new HttpResponse(null, { status: 204 })
+    }))
+    render(
+      <QueryClientProvider client={qc}>
+        <AddPantryItemSheet open onClose={vi.fn()} editId="e1" {...props} />
+      </QueryClientProvider>,
+    )
+    return () => body
+  }
+
+  // PantryMapper zero-fills a NULL protein/carbs/fat to 0 on the way out, so echoing the prefill
+  // back made `definitionDiffers` see 0-vs-null: a 403 for a non-author, and for an OWNER a silent
+  // write of fabricated zeros onto the SHARED definition.
+  it('a locked row sends the state half only — no macro/nutrition echo', async () => {
+    const read = renderEdit({
+      definitionLocked: true,
+      initial: { kind: 'food', name: 'Közös Olívaolaj', per: 100, unit: 'g', kcal: 884, proteinG: 0, carbsG: 0, fatG: 0 },
+    })
+
+    fireEvent.change(screen.getByLabelText(/ár \(ft\)/i), { target: { value: '2490' } })
+    fireEvent.click(screen.getByRole('button', { name: /mentés/i }))
+
+    await waitFor(() => expect(read()).not.toBeNull())
+    const sent = read()!
+    expect(sent.price).toBe(2490)
+    expect(Object.keys(sent)).toEqual(expect.arrayContaining(['kind', 'name', 'price']))
+    for (const definitionKey of ['kcal', 'proteinG', 'carbsG', 'fatG', 'fiberG', 'sugarG', 'saltG',
+      'saturatedFatG', 'per', 'unit', 'source', 'category', 'pkg']) {
+      expect(sent[definitionKey]).toBeUndefined()
+    }
+  })
+
+  // The same echo hurts an UNLOCKED editor too (an OWNER passes the gate, so the zeros land), so an
+  // untouched definition field is dropped there as well — while a value the user really changes,
+  // a typed 0 included, still goes out.
+  it('an unlocked edit sends only the definition fields this save actually changed', async () => {
+    const read = renderEdit({
+      initial: { kind: 'food', name: 'Saját Olívaolaj', per: 100, unit: 'g', kcal: 884, proteinG: 0, carbsG: 0, fatG: 0 },
+    })
+
+    fireEvent.change(screen.getByLabelText(/^zsír$/i), { target: { value: '99.9' } })
+    fireEvent.change(screen.getByLabelText(/ár \(ft\)/i), { target: { value: '2490' } })
+    fireEvent.click(screen.getByRole('button', { name: /mentés/i }))
+
+    await waitFor(() => expect(read()).not.toBeNull())
+    const sent = read()!
+    expect(sent.fatG).toBe(99.9)   // the edited field
+    expect(sent.price).toBe(2490)
+    expect(sent.kcal).toBeUndefined()      // untouched — never echoed back
+    expect(sent.proteinG).toBeUndefined()
+    expect(sent.carbsG).toBeUndefined()
+  })
+
+  it('a genuinely typed 0 over an empty macro is still sent (the echo fix must not swallow it)', async () => {
+    const read = renderEdit({
+      initial: { kind: 'food', name: 'Hiányos makrójú étel', per: 100, unit: 'g', kcal: 884 },
+    })
+
+    fireEvent.change(screen.getByLabelText(/fehérje/i), { target: { value: '0' } })
+    fireEvent.click(screen.getByRole('button', { name: /mentés/i }))
+
+    await waitFor(() => expect(read()).not.toBeNull())
+    expect(read()!.proteinG).toBe(0)
   })
 })
