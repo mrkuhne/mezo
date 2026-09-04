@@ -103,6 +103,30 @@ class WeeklyReviewContextSourcesIT extends ApiIntegrationTest {
         assertThat(payload).doesNotContain("pillér");
     }
 
+    /**
+     * A goal with NO activity at all: every {@code days7} slot is {@code NO_DATA}. The block must
+     * say so explicitly instead of tallying "0 találat-nap a 7-ből" — a zero there would read as a
+     * measured miss and invite the model to explain a week nobody measured. This is the frontend's
+     * rule mirrored ({@code goalWeekSentence.ts} refuses the same sentence), so one week can never
+     * read as a miss in the prompt and as silence on the Heti hub.
+     */
+    @Test
+    void a_goal_with_no_data_day_says_so_instead_of_tallying_zero_hits() {
+        UUID owner = ownerId();
+        LifeGoalEntity goal = lifeGoalPopulator.goal(owner, "active");
+        lifeGoalPopulator.pillar(goal, "Fokusz", "habit",
+            new PillarSourceJson("activity", null, "productivity", "minutes", null, null),
+            new PillarRuleJson(new BigDecimal("30"), "gte", 4, null, null, null, null, null, null, null));
+        // deliberately NO activity row — nothing was measured in the window
+
+        String payload = renderReviewedWeek(owner);
+
+        assertThat(payload).contains("ÉLETCÉLOK · AZ ELMÚLT 7 NAP");
+        assertThat(payload).contains(goal.getTitle());
+        assertThat(payload).contains("ezen a héten még nincs adata");
+        assertThat(payload).doesNotContain("0 találat-nap");
+    }
+
     @Test
     void renders_no_scaffolding_when_the_user_has_no_active_goal() {
         assertThat(renderReviewedWeek(ownerId())).doesNotContain("ÉLETCÉLOK");

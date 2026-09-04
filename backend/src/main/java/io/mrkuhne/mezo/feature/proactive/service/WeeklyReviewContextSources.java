@@ -129,6 +129,12 @@ public class WeeklyReviewContextSources {
     static final int NARRATIVE_CLIP = 600;
     /** More active life goals than this is not a week the model can hold apart. */
     static final int MAX_LIFE_GOALS = 5;
+    /**
+     * What a goal with no measured day says INSTEAD of a tally — the frontend's rule, mirrored
+     * ({@code goalWeekSentence.ts}: "Ezen a héten még nincs adata."). "0 találat-nap" would read
+     * as a measured miss and invite the model to explain a zero nobody measured.
+     */
+    static final String NO_DATA_PHRASE = "ezen a héten még nincs adata";
 
     private final JournalEntryRepository journalEntryRepository;
     private final DecisionEntryRepository decisionEntryRepository;
@@ -343,6 +349,13 @@ public class WeeklyReviewContextSources {
      *
      * <p>The arrow is rendered as a WORD, not the glyph: {@code →} and {@code ↑} are easy for a
      * model to misread inside prose, "tartja" is not.
+     *
+     * <p><b>A goal with NO data-day gets an explicit no-data phrase, never a "0 találat-nap"
+     * tally.</b> A zero there does not mean "missed every day", it means "we measured nothing" —
+     * and a measured-looking zero is exactly the kind of fact the model would go on to explain.
+     * This mirrors the frontend rule verbatim ({@code frontend/src/features/me/logic/
+     * goalWeekSentence.ts}, which refuses the same sentence and says "Ezen a héten még nincs
+     * adata."), so the same week never reads as a miss on one surface and as silence on the other.
      */
     private void appendLifeGoals(StringBuilder out, UUID userId) {
         LifeGoalProgressService progress = lifeGoalProgressService.getIfAvailable();
@@ -355,14 +368,15 @@ public class WeeklyReviewContextSources {
         }
         out.append("\nÉLETCÉLOK · AZ ELMÚLT 7 NAP (a motor számolta — magyarázd, ne számold újra):\n");
         for (LifeGoalTodaySummary goal : goals.subList(0, Math.min(goals.size(), MAX_LIFE_GOALS))) {
-            long hits = goal.getDays7() == null ? 0
-                    : goal.getDays7().stream().filter(status -> status == PillarDayStatus.HIT).count();
+            List<PillarDayStatus> days = goal.getDays7() == null ? List.of() : goal.getDays7();
+            long dataDays = days.stream().filter(status -> status != PillarDayStatus.NO_DATA).count();
+            long hits = days.stream().filter(status -> status == PillarDayStatus.HIT).count();
             out.append("- ").append(goal.getTitle());
             if (goal.getDimension() != null) {
                 out.append(" [").append(goal.getDimension()).append(']');
             }
-            out.append(' ').append(arrowWord(goal.getArrow()))
-                    .append(" · ").append(hits).append(" találat-nap a 7-ből")
+            out.append(' ').append(arrowWord(goal.getArrow())).append(" · ")
+                    .append(dataDays == 0 ? NO_DATA_PHRASE : hits + " találat-nap a 7-ből")
                     .append('\n');
         }
     }

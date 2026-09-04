@@ -201,6 +201,18 @@ describe('Heti hub (mock mode)', () => {
     renderPage()
     expect(await screen.findByText('Célok · a hét iránya')).toBeInTheDocument()
   })
+
+  /**
+   * mezo-iizd.9 final review, finding 2: `useLifeGoalToday`'s window is the 7 days trailing NOW,
+   * so on a browsed-back week the card would show THIS week's arrows under „a hét iránya". The
+   * card is therefore gated on `running`, exactly like WeekNextCard.
+   */
+  test('a cél-kártya eltűnik, ha visszalapozol egy korábbi hétre (mezo-iizd.9)', async () => {
+    renderPage()
+    expect(await screen.findByText('Célok · a hét iránya')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Előző hét' }))
+    expect(screen.queryByText('Célok · a hét iránya')).not.toBeInTheDocument()
+  })
 })
 
 describe('Heti hub (real mode)', () => {

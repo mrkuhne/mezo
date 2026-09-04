@@ -301,8 +301,12 @@ export function WeekHubPage() {
 
           {/* Célok · a hét iránya (mezo-iizd.9) — a motor számolt nyilai. A magyarázó
               narratíva a fenti „Mezo · heti elemzés" csempén él (a prompt a nyilakat a
-              WeeklyReviewContextSources cél-blokkjából kapja), ez a kártya a tényeké. */}
-          <WeekGoalsCard />
+              WeeklyReviewContextSources cél-blokkjából kapja), ez a kártya a tényeké.
+              A kapu a WeekNextCard-éval AZONOS: running week only. A `useLifeGoalToday` ablaka a MOSTANI
+              nap előtti 7 nap — egy visszalapozott héten a kártya a MOSTANI hét nyilait
+              mutatná „a hét iránya" felirat alatt. Amíg nincs windowed `today(from,to)`,
+              a kártya csak ott jelenhet meg, ahol az ablaka tényleg a nézett hét. */}
+          {running && <WeekGoalsCard />}
 
           {/* „Mezo · a következő heted" — running week only, gating unchanged. */}
           {running && <WeekNextCard suggestion={nextSuggestion} />}
