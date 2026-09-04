@@ -40,6 +40,7 @@ import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SkillProgressPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
+import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
 import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -91,6 +92,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private SleepGoalPopulator sleepGoalPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private TrainPopulator trainPopulator;
+    @Autowired private SportSlotSkipPopulator sportSlotSkipPopulator;
     @Autowired private RunningPopulator runningPopulator;
     @Autowired private PantryItemPopulator pantryItemPopulator;
     @Autowired private MealPopulator mealPopulator;
@@ -453,6 +455,50 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
                 .doesNotContain("nincs adat");
         assertThat(audit.toRefsEnvelope().refs())
                 .contains(new RefsEnvelope.Ref("TrainingPlan", today.toString()));
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldOmitSkippedSportSlot_whenSkippedForResolvedDate() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        int todayDow = today.getDayOfWeek().getValue() - 1; // 0=Hét..6=Vas (schedule-slot convention)
+        trainPopulator.createScheduleSlot(owner, todayDow, "18:00", 120, "training");
+        sportSlotSkipPopulator.createSkip(owner, todayDow, "18:00", today);
+
+        String out = trainTools.getTrainingPlan("today", null, ctx(owner));
+
+        // the recurring slot exists and would normally render — the skip for THIS date hides it,
+        // and with no meso/running block the day is an honest rest day, never fabricated.
+        assertThat(out).doesNotContain("sport: volleyball").contains("pihenőnap (gym)");
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldStillRenderSportSlot_whenSkipAppliesToADifferentDate() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        int todayDow = today.getDayOfWeek().getValue() - 1;
+        trainPopulator.createScheduleSlot(owner, todayDow, "18:00", 120, "training");
+        // a skip for a DIFFERENT dated occurrence of the same recurring slot must not hide today's.
+        sportSlotSkipPopulator.createSkip(owner, todayDow, "18:00", today.minusDays(7));
+
+        String out = trainTools.getTrainingPlan("today", null, ctx(owner));
+
+        assertThat(out).contains("sport: volleyball 18:00 training (120 perc)");
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldOmitSkippedSportSlot_whenScopeWeek() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        LocalDate sportDay = today.plusDays(2);
+        int sportDow = sportDay.getDayOfWeek().getValue() - 1;
+        trainPopulator.createScheduleSlot(owner, sportDow, "19:30", 90, "match");
+        sportSlotSkipPopulator.createSkip(owner, sportDow, "19:30", sportDay);
+
+        String out = trainTools.getTrainingPlan("week", null, ctx(owner));
+
+        assertThat(out).doesNotContain("sport: volleyball 19:30 match (90 perc)")
+                .contains(sportDay + ": pihenőnap (gym)");
     }
 
     @Test

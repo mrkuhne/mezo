@@ -28,6 +28,7 @@ import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SkillProgressPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
+import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
 import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -58,6 +59,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private GoalPopulator goalPopulator;
     @Autowired private TrainPopulator trainPopulator;
+    @Autowired private SportSlotSkipPopulator sportSlotSkipPopulator;
     @Autowired private RunningPopulator runningPopulator;
     @Autowired private PantryItemPopulator pantryItemPopulator;
     @Autowired private MealPopulator mealPopulator;
@@ -438,6 +440,35 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         String maSegment = snapshot.substring(snapshot.indexOf("Ma (terv):"), snapshot.indexOf("Holnap (terv):"));
         assertThat(maSegment).contains(todayLabel).contains("Fekvenyomás 3×6-8")
             .contains("sport: volleyball 18:00 training (120 perc)");
+    }
+
+    @Test
+    void testTrainBlock_shouldOmitSkippedSportSlot_whenSkippedForTodaysDate() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        int todayDow = today.getDayOfWeek().getValue() - 1; // 0=Hét..6=Vas (schedule-slot convention)
+        trainPopulator.createScheduleSlot(owner, todayDow, "18:00", 120, "training");
+        sportSlotSkipPopulator.createSkip(owner, todayDow, "18:00", today);
+
+        String snapshot = assembler.render(owner, today);
+
+        String maSegment = snapshot.substring(snapshot.indexOf("Ma (terv):"), snapshot.indexOf("Holnap (terv):"));
+        assertThat(maSegment).doesNotContain("sport: volleyball");
+    }
+
+    @Test
+    void testTrainBlock_shouldStillRenderSportSlot_whenSkipAppliesToADifferentDate() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        int todayDow = today.getDayOfWeek().getValue() - 1;
+        trainPopulator.createScheduleSlot(owner, todayDow, "18:00", 120, "training");
+        // a skip for a DIFFERENT dated occurrence of the same recurring slot must not hide today's.
+        sportSlotSkipPopulator.createSkip(owner, todayDow, "18:00", today.minusDays(7));
+
+        String snapshot = assembler.render(owner, today);
+
+        String maSegment = snapshot.substring(snapshot.indexOf("Ma (terv):"), snapshot.indexOf("Holnap (terv):"));
+        assertThat(maSegment).contains("sport: volleyball 18:00 training (120 perc)");
     }
 
     @Test

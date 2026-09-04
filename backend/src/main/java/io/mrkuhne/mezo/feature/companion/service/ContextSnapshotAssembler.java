@@ -54,6 +54,7 @@ import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
+import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
@@ -97,6 +98,10 @@ public class ContextSnapshotAssembler {
     private final MesocycleRepository mesocycleRepository;
     private final GymScheduleService gymScheduleService;
     private final SportService sportService;
+    // mezo-d58h.5: the ONE skip predicate (SportSlotSkipService) — dayLine below MUST filter through
+    // it, exactly like TrainTools#sportSlotsOn, or the two read paths drift and the AI contradicts
+    // the "skip tonight" card the user just tapped.
+    private final SportSlotSkipService sportSlotSkipService;
     private final WorkoutService workoutService;
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseRepository exerciseRepository;
@@ -362,6 +367,7 @@ public class ContextSnapshotAssembler {
                         .toList()));
         sport.stream()
                 .filter(s -> s.getDayOfWeek() != null && s.getDayOfWeek() == dow)
+                .filter(s -> !sportSlotSkipService.isSkipped(userId, dow, s.getTime(), date))
                 .forEach(s -> parts.add(ToolText.sportLine(s.getSport(), s.getTime(),
                         s.getKind() == null ? null : s.getKind().getValue(), s.getDurationMin())));
         runningBlockRepository.findByCreatedByAndStatusAndDeletedFalse(userId, "active").stream().findFirst()

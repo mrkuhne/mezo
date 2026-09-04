@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.api.dto.RunPrescribedSession;
 import io.mrkuhne.mezo.api.dto.RunningBlockResponse;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseEntity;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseSetEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunSessionLogEntity;
@@ -21,6 +22,7 @@ import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.feature.train.service.RunningService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
+import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -69,6 +71,10 @@ public class TrainTools {
     // mezo-ajp: the recurring weekly sport schedule is the ONLY forward-planned sport in the model
     // (sport_session is a backward log), so a day's sport can only come from here — read-only.
     private final SportService sportService;
+    // mezo-d58h.5: the ONE skip predicate (SportSlotSkipService) — sportSlotsOn below MUST filter
+    // through it, exactly like ContextSnapshotAssembler#dayLine, or the two read paths drift and
+    // the AI contradicts the "skip tonight" card the user just tapped.
+    private final SportSlotSkipService sportSlotSkipService;
     // Read-only compute-on-read aggregation over working sets (ExerciseRecordService#list) —
     // NEVER a write-transactional method; there is none on this service.
     private final ExerciseRecordService exerciseRecordService;
@@ -308,7 +314,7 @@ public class TrainTools {
                 exercises.stream()
                         .map(e -> ToolText.exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
                         .toList()));
-        sportSlotsOn(sportSlots, date).forEach(s -> line.append("; ").append(ToolText.sportLine(
+        sportSlotsOn(userId, sportSlots, date).forEach(s -> line.append("; ").append(ToolText.sportLine(
                 s.getSport(), s.getTime(), s.getKind() == null ? null : s.getKind().getValue(),
                 s.getDurationMin())));
         activeBlocks.stream().findFirst()
@@ -317,11 +323,18 @@ public class TrainTools {
         return line.toString();
     }
 
-    /** The recurring slots whose weekday matches {@code date} (slot convention: 0=Hét..6=Vas). */
-    static List<SportScheduleSlotResponse> sportSlotsOn(List<SportScheduleSlotResponse> slots, LocalDate date) {
+    /**
+     * The recurring slots whose weekday matches {@code date} (slot convention: 0=Hét..6=Vas), minus
+     * any occurrence the user skipped for that exact date (mezo-d58h.5, SportSlotSkipService — the
+     * ONE predicate; see {@link ContextSnapshotAssembler}'s {@code dayLine}, which must apply it the
+     * same way or the two read paths disagree about the same day).
+     */
+    private List<SportScheduleSlotResponse> sportSlotsOn(UUID userId, List<SportScheduleSlotResponse> slots,
+            LocalDate date) {
         int dow = date.getDayOfWeek().getValue() - 1;
         return slots.stream()
                 .filter(s -> s.getDayOfWeek() != null && s.getDayOfWeek() == dow)
+                .filter(s -> !sportSlotSkipService.isSkipped(userId, dow, s.getTime(), date))
                 .toList();
     }
 
