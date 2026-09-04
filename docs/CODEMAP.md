@@ -513,7 +513,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### habit
 
-*BE + API + FE-data* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-03, done)
+*BE + API + FE-data* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-04, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/habit`
   - **entities→tables:** `HabitChainEntity`→`habit_chain`, `HabitDayEntity`→`habit_day`, `HabitDefEntity`→`habit_def`
@@ -695,7 +695,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *FE-data + FE-ui* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-02, done) ·
   [docs/features/growth.md](features/growth.md) (updated 2026-09-04, done) ·
-  [docs/features/habit.md](features/habit.md) (updated 2026-09-03, done) ·
+  [docs/features/habit.md](features/habit.md) (updated 2026-09-04, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-03, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-04, mixed) ·
@@ -1096,7 +1096,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### today
 
-*FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-03, done) ·
+*FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-04, done) ·
   [docs/features/intention.md](features/intention.md) (updated 2026-08-30, done) ·
   [docs/features/needs.md](features/needs.md) (updated 2026-08-30, done) ·
   [docs/features/ritual.md](features/ritual.md) (updated 2026-08-30, done) ·
