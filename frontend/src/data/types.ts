@@ -1331,7 +1331,12 @@ export interface ExerciseLibraryItem {
   // absent means the exercise has no image at all (37 of the 161 master rows, ADR 0020).
   imageStartUrl?: string | null
   imageEndUrl?: string | null
-  editable?: boolean  // true for user-authored catalog rows (created_by == current user)
+  // Multi-user catalog (mezo-qw37.5) — all four are SERVER-derived for the current viewer;
+  // the FE never reasons about roles. Absent on the Phase-1 static seed (mock mode).
+  editable?: boolean       // the viewer may edit/delete this row (author or OWNER; never a master row)
+  mediaEditable?: boolean  // the viewer may set/clear its video/stills (OWNER only on master rows)
+  authoredByMe?: boolean   // created_by == the viewer → the `Saját` stamp
+  authorName?: string | null  // the author's name on user-authored rows → the `Közös · {név}` stamp
 }
 
 // ── Daily quests (gamified growth E1, mezo-df7q) ─────────────────────────────

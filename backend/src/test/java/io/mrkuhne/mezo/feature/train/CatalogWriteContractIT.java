@@ -20,8 +20,9 @@ import org.springframework.http.HttpStatus;
 
 /**
  * HTTP-level contract tests for the catalog write endpoints: creating a user-authored row (editable,
- * slug generated), master rows staying read-only (409 CATALOG_MASTER_READONLY), and attaching a demo
- * video to any row (master stays non-editable).
+ * slug generated), master rows staying read-only (409 CATALOG_MASTER_READONLY), and attaching
+ * demo media to a master row as the OWNER (master stays content-non-editable, media-editable for
+ * the OWNER only — the USER side of the matrix lives in {@code ExerciseCatalogPermissionIT}).
  */
 class CatalogWriteContractIT extends ApiIntegrationTest {
 
@@ -37,6 +38,8 @@ class CatalogWriteContractIT extends ApiIntegrationTest {
             "/api/train/exercises", req, ownerAuthHeaders(), HttpStatus.CREATED, ExerciseCatalogItem.class);
         assertThat(body.getEditable()).isTrue();
         assertThat(body.getSlug()).startsWith("db-jump-squat");
+        assertThat(body.getAuthoredByMe()).isTrue();
+        assertThat(body.getMediaEditable()).isTrue();
     }
 
     @Test
@@ -54,7 +57,7 @@ class CatalogWriteContractIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testSetVideo_shouldAttachToMaster_whenAnyRow() {
+    void testSetVideo_shouldAttachToMaster_whenOwner() {
         HttpHeaders auth = ownerAuthHeaders();
         ExerciseCatalogItem boxJump = getForList("/api/train/exercises", auth, HttpStatus.OK, ExerciseCatalogItem.class)
             .stream().filter(e -> "box-jump".equals(e.getSlug())).findFirst().orElseThrow();
@@ -63,6 +66,9 @@ class CatalogWriteContractIT extends ApiIntegrationTest {
             "/api/train/exercises/" + boxJump.getId() + "/video", vidReq, auth, HttpStatus.OK, ExerciseCatalogItem.class);
         assertThat(out.getVideoUrl()).isEqualTo("https://youtu.be/dQw4w9WgXcQ");
         assertThat(out.getEditable()).isFalse(); // master stays non-editable
+        assertThat(out.getMediaEditable()).isTrue();   // OWNER may re-mediate master content
+        assertThat(out.getAuthoredByMe()).isFalse();
+        assertThat(out.getAuthorName()).isNull();
 
         // box-jump is a master row ResetDatabase never cleans — clear the video so no cross-test residue.
         CatalogVideoRequest clear = CatalogVideoRequest.builder().videoUrl(null).build();
@@ -95,7 +101,7 @@ class CatalogWriteContractIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testSetExerciseImages_shouldAttachAndClearOnMasterRow_whenOwnershipFree() {
+    void testSetExerciseImages_shouldAttachAndClearOnMasterRow_whenOwner() {
         HttpHeaders auth = ownerAuthHeaders();
         ExerciseCatalogItem boxJump = getForList("/api/train/exercises", auth, HttpStatus.OK, ExerciseCatalogItem.class)
             .stream().filter(e -> "box-jump".equals(e.getSlug())).findFirst().orElseThrow();
@@ -107,6 +113,9 @@ class CatalogWriteContractIT extends ApiIntegrationTest {
         assertThat(out.getImageStartUrl()).isEqualTo("/exercises/box-jump-a.jpg");
         assertThat(out.getImageEndUrl()).isEqualTo("/exercises/box-jump-b.jpg");
         assertThat(out.getEditable()).isFalse(); // master stays non-editable — attaching media is not authoring
+        assertThat(out.getMediaEditable()).isTrue();   // OWNER may re-mediate master content
+        assertThat(out.getAuthoredByMe()).isFalse();
+        assertThat(out.getAuthorName()).isNull();
 
         // Both frames are written unconditionally, so nulls clear. Same residue reason as the video test:
         // box-jump is a master row ResetDatabase never truncates.
@@ -156,15 +165,22 @@ class CatalogWriteContractIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testUpdateForeignUserExercise_shouldReturn404_whenNotOwner() {
+    void testUpdateForeignUserExercise_shouldReturn200_whenOwnerCurates() {
+        // The OWNER curates the shared catalog: another user's row is editable for them (S5).
+        // A plain USER touching a foreign row gets 403 — see ExerciseCatalogPermissionIT.
         HttpHeaders auth = ownerAuthHeaders();
         UUID otherUserId = databasePopulator.populateUser("other@example.com");
         ExerciseCatalogEntity foreign = train.createUserCatalogExercise(otherUserId, "Foreign Move", "quad", "plyo");
         CatalogExerciseCreateRequest req = CatalogExerciseCreateRequest.builder()
-            .name("x").muscle(CatalogExerciseCreateRequest.MuscleEnum.QUAD)
+            .name("Foreign Move · curated").muscle(CatalogExerciseCreateRequest.MuscleEnum.QUAD)
             .type(CatalogExerciseCreateRequest.TypeEnum.PLYO)
             .stim(BigDecimal.valueOf(0.6)).fatigue(BigDecimal.valueOf(0.4)).build();
-        putForBody("/api/train/exercises/" + foreign.getId(), req, auth, HttpStatus.NOT_FOUND, String.class);
+        ExerciseCatalogItem out = putForBody(
+            "/api/train/exercises/" + foreign.getId(), req, auth, HttpStatus.OK, ExerciseCatalogItem.class);
+        assertThat(out.getName()).isEqualTo("Foreign Move · curated");
+        assertThat(out.getAuthoredByMe()).isFalse();
+        assertThat(out.getEditable()).isTrue();
+        assertThat(out.getAuthorName()).isEqualTo("other@example.com"); // UserPopulator sets name = email
     }
 
     @Test

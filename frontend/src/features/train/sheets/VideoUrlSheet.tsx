@@ -1,11 +1,14 @@
 // ============================================================
-// Mezo · VideoUrlSheet — attach / replace / remove the demo video URL on ANY
-// catalog exercise, master (seed) or user-authored. Single URL input + Mentés;
-// when a video already exists an Eltávolítás ghost clears it (saves null). Calls
-// setExerciseVideo (PUT /api/train/exercises/{id}/video) — the ownership-free
-// endpoint — so built-in rows get demo videos too, unlike the owner-only full
-// edit in CatalogExerciseSheet. The contract pattern accepts a YouTube watch/short
-// URL or an Instagram reel/post permalink; anything else comes back 400.
+// Mezo · VideoUrlSheet — attach / replace / remove the demo video URL on a
+// catalog exercise the viewer may re-mediate (`mediaEditable`: the author or
+// the OWNER on a user row, the OWNER only on a master row — multi-user S5,
+// mezo-qw37.5). Single URL input + Mentés; when a video already exists an
+// Eltávolítás ghost clears it (saves null). Calls setExerciseVideo (PUT
+// /api/train/exercises/{id}/video) — gated server-side by the same rule; a 403
+// EXERCISE_CATALOG_NOT_EDITABLE surfaces as the generic „Mentés sikertelen"
+// toast, unlike the owner-only full edit in CatalogExerciseSheet. The contract
+// pattern accepts a YouTube watch/short URL or an Instagram reel/post
+// permalink; anything else comes back 400.
 // Mirrors the CatalogExerciseSheet visual idiom.
 // ============================================================
 import { useState } from 'react'

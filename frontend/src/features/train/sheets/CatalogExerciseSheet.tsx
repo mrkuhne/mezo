@@ -95,6 +95,11 @@ export function CatalogExerciseSheet({ onClose, edit }: CatalogExerciseSheetProp
       stim,
       fatigue,
       videoUrl: videoUrl.trim() || null,
+      // Carry the row's existing demo stills through unchanged (mezo-qw37.5 fix-wave):
+      // the backend writes these fields unconditionally on update, so omitting them
+      // here would silently wipe them — including on rows the OWNER doesn't own.
+      imageStartUrl: edit?.imageStartUrl ?? null,
+      imageEndUrl: edit?.imageEndUrl ?? null,
     } satisfies CatalogExerciseCreateRequest
     setSaving(true)
     // Defer the animated close until the mutation lands (mock resolves synchronously). onError
