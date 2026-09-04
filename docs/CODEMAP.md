@@ -489,9 +489,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **repositories:** `GoalPlanLinkRepository`, `GoalRepository`, `GoalSuggestionRepository`
   - **services:** `AdaptiveCorrectionService`, `AdaptiveReviewJob`, `AdaptiveReviewService`, `DayTypeShiftCalculator`,
     `DietPreferences`, `DietPreferencesPort`, `GoalDeletedEvent`, `GoalEngineService`, `GoalEvaluationService`,
-    `GoalFeasibilityService`, `GoalPlanLinkService`, `GoalProjectionService`, `GoalSavedEvent`, `GoalService`,
-    `GoalSuggestionService`, `GoalSuggestionSupersedeWriter`, `GoalSuggestionTriggerService`, `GoalTimelineService`,
-    `GuardEvaluationService`, `MesoLifecycleSuggestionListener`, `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`
+    `GoalFeasibilityService`, `GoalInvariantValidator`, `GoalPlanLinkService`, `GoalProjectionService`,
+    `GoalSavedEvent`, `GoalService`, `GoalSuggestionService`, `GoalSuggestionSupersedeWriter`,
+    `GoalSuggestionTriggerService`, `GoalTimelineService`, `GuardEvaluationService`, `MesoLifecycleSuggestionListener`,
+    `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`
   - **controllers→contract:** `GoalController`→`GoalApi`
   - **mappers:** `GoalMapper`, `GoalPlanLinkMapper`, `GoalSuggestionMapper`
   - **other:** `GoalEngineProperties`, `GoalPrescriptionJson`, `GoalReevaluateRunner`, `GoalSeedData`,

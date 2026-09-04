@@ -143,19 +143,38 @@ class GoalSuggestionServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testAccept_shouldApplyTrajectoryAndReevaluate_whenSnapshotMatches() {
+    void testAccept_shouldReevaluate_whenSuggestedTrajectoryRemainsCoherent() {
         UUID user = databasePopulator.populateUser("sug5@test.local");
         profilePopulator.create(user);
         GoalEntity goal = goalPopulator.createGoal(user, "bulk", "active");
         GoalSuggestionEntity s = suggestionService.propose(
-            user, goal.getId(), GoalSuggestionService.KIND_PHASE_CHANGE, "preset:cut-prep:m1", payload("cut", "bulk"));
+            user, goal.getId(), GoalSuggestionService.KIND_PHASE_CHANGE, "preset:bulk:m1", payload("bulk", "bulk"));
 
         var response = suggestionService.accept(user, goal.getId(), s.getId());
 
-        assertThat(response.getTrajectory().getValue()).isEqualTo("cut");
+        assertThat(response.getTrajectory().getValue()).isEqualTo("bulk");
         GoalEntity reloaded = goalRepository.findById(goal.getId()).orElseThrow();
         assertThat(reloaded.getPrescription()).as("accept re-evaluates").isNotNull();
         assertThat(suggestionRepository.findById(s.getId()).orElseThrow().getStatus()).isEqualTo("accepted");
+    }
+
+    @Test
+    void testAccept_shouldRejectDirectionConflictAndKeepProposalOpen_whenCutChangesToBulk() {
+        UUID user = databasePopulator.populateUser("sug-direction-conflict@test.local");
+        GoalEntity goal = goalPopulator.createGoal(user, "cut", "active");
+        GoalSuggestionEntity suggestion = suggestionService.propose(
+            user, goal.getId(), GoalSuggestionService.KIND_PHASE_CHANGE, "preset:bulk:m1",
+            payload("bulk", "cut"));
+
+        assertThatThrownBy(() -> suggestionService.accept(user, goal.getId(), suggestion.getId()))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .satisfies(error -> assertThat(((SystemRuntimeErrorException) error).getMessages())
+                .extracting("code")
+                .containsExactly("GOAL_DIRECTION_TARGET_CONFLICT"));
+
+        assertThat(goalRepository.findById(goal.getId()).orElseThrow().getTrajectory()).isEqualTo("cut");
+        assertThat(suggestionRepository.findById(suggestion.getId()).orElseThrow().getStatus())
+            .isEqualTo("proposed");
     }
 
     @Test

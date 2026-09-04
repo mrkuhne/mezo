@@ -96,7 +96,7 @@ TanStack Query · Vitest/RTL · Playwright · Mozaik 2.0.
 - Error: `GOAL_DIRECTION_TARGET_CONFLICT` (`targetWeightKg`) és `GOAL_WINDOW_TOO_SHORT`
   (`targetDate`).
 
-- [ ] **Step 1: Írd meg a három regressziós RED tesztet**
+- [x] **Step 1: Írd meg a három regressziós RED tesztet**
 
 `GoalContractIT` HTTP-n bizonyítsa a cross-field validációt:
 
@@ -122,7 +122,7 @@ maradjon proposed. `GoalEvaluationServiceIT` populátoron át mentsen legacy bul
 sort, tegyen rá régi prescriptiont, majd `goalEngineService.evaluate(...)` után ellenőrizze, hogy
 `goal.prescription == null` és nem keletkezik új suggestion.
 
-- [ ] **Step 2: Futtasd a RED teszteket**
+- [x] **Step 2: Futtasd a RED teszteket**
 
 ```bash
 cd backend && ./mvnw clean test \
@@ -133,7 +133,7 @@ cd backend && ./mvnw clean test \
 Várt: a cross-field esetek elfogadódnak, a phase accept trajektóriát fordít, a legacy evaluate
 veszélyes prescriptiont hagy/készít — a teszt a megfelelő okból piros.
 
-- [ ] **Step 3: Implementáld az egyetlen invariáns-validatort**
+- [x] **Step 3: Implementáld az egyetlen invariáns-validatort**
 
 ```java
 @Component
@@ -161,13 +161,13 @@ kombinációt validálja **mielőtt** a goalt módosítja. `GoalEngineService.ev
 után `isCoherent=false` esetén `goal.setPrescription(null)` és `goal.setTdeeBootstrap(null)`, majd
 `return null`; nem hív projectiont vagy suggestion triggert.
 
-- [ ] **Step 4: Javítsd a fixture-t és az error contractot**
+- [x] **Step 4: Javítsd a fixture-t és az error contractot**
 
 `GoalPopulator` valid bulk alapértéke `84.2 → 90.0`; az inkonzisztens legacy esethez külön
 `createLegacyIncoherentGoal(...)` helper közvetlen repository mentést használ. Add a két HU
 messages.properties sort, hardcoded szolgáltatásszöveg nélkül.
 
-- [ ] **Step 5: Futtasd GREEN-ben, majd dokumentálj**
+- [x] **Step 5: Futtasd GREEN-ben, majd dokumentálj**
 
 ```bash
 cd backend && ./mvnw clean test \
@@ -178,7 +178,7 @@ cd .. && node scripts/lint-docs.mjs --errors-only
 
 Frissítsd a `goal-engine.md` invariáns/fail-safe és a `fuel.md` prescription-biztonság részét.
 
-- [ ] **Step 6: Commit és PR-kapu**
+- [x] **Step 6: Commit és PR-kapu**
 
 ```bash
 git add backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalInvariantValidator.java \
