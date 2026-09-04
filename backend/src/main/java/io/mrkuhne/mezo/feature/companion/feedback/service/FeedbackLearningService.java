@@ -92,7 +92,12 @@ public class FeedbackLearningService {
         // intervention verdict ALSO counts in surface:feed_message above (it IS a feed_message
         // artifact) — deliberate, not double-counted signal: the per-key scope here is the
         // selection signal a `feed:intervention` aggregate would only duplicate, so FEED_KINDS
-        // deliberately stays the five prose kinds.
+        // deliberately stays the five prose kinds. `setup` (S3, mezo-d58h.3) is excluded the same
+        // way: it is config text, never LLM-generated, so a per-kind effectiveness rollup would
+        // not measure anything a prompt could act on. `people` (Emberek S6, mezo-06o0.8) IS
+        // LLM-generated prose like the five above, but has no per-kind rollup scope yet — that is
+        // a gap, not a design choice; add it to FEED_KINDS when a `feed:people` scope is wanted.
+        // Both still count in surface:feed_message above.
         // Known/harmless: a key removed from mezo.companion.interventions leaves its
         // intervention:<key> rollup row behind forever — nothing prunes or zero-fills a retired
         // key's row, because nothing reads it either (InterventionService only ever looks up keys

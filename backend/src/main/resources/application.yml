@@ -397,6 +397,11 @@ mezo:
       # off = the CompanionMessageJob bean does not exist (the lazy GET still serves)
       feed-job:
         enabled: true
+      # S3 (mezo-d58h.3) daily setup-check pass (schedule: mezo.proactive.setup-checks.cron);
+      # off = the SetupCheckJob bean does not exist (SetupCheckService itself is unaffected —
+      # a direct call still works, same as FlagSweepJob vs FlagService)
+      setup-check-job:
+        enabled: true
       # W1 Monday weekly-suggestion pre-generation (schedule: mezo.proactive.weekly.cron);
       # off = the WeeklySuggestionJob bean does not exist
       weekly-suggestion-job:
@@ -1312,6 +1317,27 @@ mezo:
       # How many finished days of narrative memory (daily_summary) the feed gather reads;
       # doubles as the emptiness gate: zero summaries in the window -> no message
       past-days: 7
+    setup-checks:
+      # S3 (mezo-d58h.3, spec 2026-09-03 §4 setup table): checks against CONFIGURATION, not
+      # against a day's data — so they run once daily and re-emit at most weekly until the
+      # configuration stops contradicting them. Config text, never an LLM call.
+      # 06:10 — after the 05:45 morning message job, so a setup card lands below the briefing.
+      cron: "0 10 6 * * *"
+      # "At most weekly": 7 days.
+      re-emit-hours: 168
+      plan-feasibility:
+        # Wake → out-the-door: shower, breakfast, travel to the morning obligation.
+        wake-buffer-min: 45
+        # Sport slot end → home. sport_schedule_slot.location is free text, never geocoded,
+        # so one flat number is the honest granularity.
+        commute-buffer-min: 30
+        # A gym slot at or before 10:00 is a morning obligation; later ones are evening training.
+        morning-cutoff-hour: 10
+        # Spec §4: "if the plan misses by >45′".
+        misfit-tolerance-min: 45
+        bedtime-window-days: 14
+        # Fewer than 4 logged bedtimes ⇒ the observed-bedtime half stays silent.
+        min-bedtime-samples: 4
   fuel:
     protocol:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this
@@ -1501,6 +1527,8 @@ mezo:
     # (source_type=LIFE_GOAL, kulcs: UUID.nameUUIDFromBytes("lifegoal:<pillarId>:<day>")).
     xp-per-hit: 5
     # 00:20 — a habit close (00:10) UTÁN, hogy a nap metrikái már véglegesek legyenek.
+    # A job ETTŐL a futástól kezdve a késleltetett ha–akkor terveket (és a hiány-alapú
+    # ritual_missed-et) is emittálja a tegnapi napra — külön ütemező nincs (mezo-iizd.7, spec D-3).
     eval-cron: "0 20 0 * * *"
   # Web Push (RFC 8030/8291/8292) — bd mezo-h4wp.6.1. The private key NEVER has a real default:
   # production supplies it from the mezo-app SealedSecret, local dev from an untracked .env.

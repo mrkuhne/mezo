@@ -1029,16 +1029,16 @@ databaseChangeLog:
             relativeToChangelogFile: true
             path: script/202609031300_mezo-jcpt.4_create_day_review.sql
   - changeSet:
-      id: "1.0.0:202609031200_mezo-d58h.2_flag_key_logging_gap_missed_workouts"
-      author: daniel.kuhne
-      changes:
-        - sqlFile:
-            relativeToChangelogFile: true
-            path: script/202609031200_mezo-d58h.2_flag_key_logging_gap_missed_workouts.sql
-  - changeSet:
       id: "1.0.0:202609031400_mezo-jcpt.2_weekly_score_cache_invalidation"
       author: daniel.kuhne
       changes:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609031400_mezo-jcpt.2_weekly_score_cache_invalidation.sql
+  - changeSet:
+      id: "1.0.0:202609040900_mezo-d58h.3_companion_message_setup_kind"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609040900_mezo-d58h.3_companion_message_setup_kind.sql

@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,6 +54,7 @@ public class SportService {
     private final LevelUpResultMapper levelUpResultMapper;
     private final ObjectProvider<ProgressionGate> progressionGate;
     private final GoalRecomputePort goalRecomputePort;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public SportSessionResponse logSportSession(UUID createdBy, SportSessionCreateRequest req) {
@@ -75,6 +77,9 @@ public class SportService {
             SportSignal signal = sportSignalCalculator.compute(createdBy, s.getId());
             base.setLevelUp(levelUpResultMapper.toDto(progressionService.applySport(createdBy, signal)));
         }
+        // mezo-iizd.7 (spec D-4): a ha–akkor triggerek AFTER_COMMIT reagálnak; a listener @Async
+        // és nyeli a saját hibáit, tehát ez a válasz sem lassulni, sem bukni nem tud tőle.
+        eventPublisher.publishEvent(new SportSessionLoggedEvent(createdBy, s.getDate()));
         return base;
     }
 

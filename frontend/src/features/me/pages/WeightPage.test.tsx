@@ -6,6 +6,7 @@ import { WeightPage } from '@/features/me/pages/WeightPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
+import { huMonthDayDow, localDateString } from '@/shared/lib/dates'
 
 // Súly re-face (mezo-d20.6.3) — MozaikPage subpage scaffold (‹ Én back chip,
 // page-head CTA, hero, stat strip, trend chart, weekly tiles). Behavior is
@@ -49,8 +50,10 @@ test('renders the ‹ Én back chip, hero, stat strip, trend chart, weekly histo
 
 test('newest week is expanded by default and a day row is visible', () => {
   renderPage()
-  // mock spine ends 2026-05-22 (Fri); huMonthDayDow → "Máj 22 · Pén"
-  expect(screen.getByText('Máj 22 · Pén')).toBeInTheDocument()
+  // mezo-idz2 appended a date-relative today row to weightLog (DayOrb mock parity), so the
+  // genuinely-newest week is now the one containing today, not the old fixed 2026-05-22
+  // spine end — computed date-relatively so this doesn't go stale.
+  expect(screen.getByText(huMonthDayDow(localDateString()))).toBeInTheDocument()
 })
 
 test('real mode: the 7-nap/hét stat reads the backend EWMA weekly rate', async () => {

@@ -136,7 +136,7 @@ export function FuelLogPage() {
     <MozaikPage tone={past ? 'gold' : 'coral'} className="flog-page">
       <PageHead onBack={() => navigate('/fuel')} label="‹ Fuel" />
       <div className="mz-page-hero">
-        <div className="flog-daysw">
+        <div className="flog-daysw" data-kalauz-anchor="log-napvalto">
           <button type="button" onClick={() => stepDay(1)} disabled={offset >= MAX_BACK} aria-label="Előző nap">‹</button>
           <span className="flog-dlbl">
             <b>{huMonthDay(date).toLowerCase()}.</b>

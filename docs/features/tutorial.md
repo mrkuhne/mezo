@@ -22,8 +22,9 @@ related: [today, train, insights, me, fuel, _platform-design-system, _platform-d
 > for the motor (`TutorialProvider`, `KalauzSheet`, registry, header "?") and the `T0` welcome flow
 > (`KalauzWelcome`, `registry/welcome.ts`), content 🔶 five T1 hub guides (`nap`, `train`,
 > `fuel`, `mezo`, `me` — all version 1) plus the S3a batch of **fourteen T2 guides** for the Nap
-> and Edzés sub-pages (mezo-gb1s.5), the shared `fogalmak.ts` glossary and the four-step welcome;
-> the Fuel/Mezo/Én T2 batches (S3b–d) and every T3 guide are still unbuilt.**
+> and Edzés sub-pages (mezo-gb1s.5) and the S3b batch of **eight T2 guides** for the Fuel
+> sub-pages (mezo-gb1s.6), the shared `fogalmak.ts` glossary and the four-step welcome;
+> the Mezo/Én T2 batches (S3c–d) and every T3 guide are still unbuilt.**
 
 ## 1. Summary
 
@@ -50,8 +51,12 @@ header "?", which then carries the `.nap-offnow` amber dot while unseen. **S3a (
 shipped the first T2 batch**: all five Nap sub-pages (`/nap/uzenetek|rutin|kuldetesek|checkin|eletjel`)
 and all nine Edzés sub-pages (`/train/mai|week|sport|futas|exercises|medals|mesocycles|session`,
 `/train/review/:workoutId` — the registry's first parameterised route), each with a
-`data-kalauz-anchor` spotlight target where the page has an always-rendered one. The Fuel/Mezo/Én
-T2 batches (S3b–d) and the T3 single-card layer are still **out of scope**.
+`data-kalauz-anchor` spotlight target where the page has an always-rendered one. **S3b
+(`mezo-gb1s.6`) shipped the Fuel batch**: `/fuel/log`, `/fuel/log/uj`, `/fuel/plan`, `/fuel/stack`,
+`/fuel/recipes`, `/fuel/kamra`, `/fuel/gyogyszer`, `/fuel/naplo` — eight guides, three new glossary
+keys (`ablak`, `stack`, `pontszam`) and six anchors, three of them through `PageHero`'s new
+optional `kalauzAnchor` prop. The Mezo/Én T2 batches (S3c–d) and the T3 single-card layer are
+still **out of scope**.
 
 **S2b (`mezo-gb1s.4`) added `T0`**: a one-time, four-step first-launch **welcome pager**
 (`frontend/src/shared/ui/kalauz/KalauzWelcome.tsx`), shown once on `/nap` before any per-route
@@ -268,7 +273,11 @@ Adding a guide to an existing route:
    `a (route) ⇄ b (route) — <witness pathname>`; fix it by making one pattern more specific.
 3. If a `hogyan` card wants a spotlight, add `data-kalauz-anchor="<name>"` to the target DOM
    element on the real page — the spotlight button only renders when the anchor is present, so a
-   missing anchor degrades gracefully rather than pointing at nothing.
+   missing anchor degrades gracefully rather than pointing at nothing. Two shared components carry
+   the attribute behind an optional prop rather than making every call site hand-roll the markup:
+   `DayStrip`'s `kalauzAnchor` (S3a) and `PageHero`'s `kalauzAnchor` (S3b, `shared/ui/mozaik`) —
+   on a Mozaik sub-page the hero is often the ONLY unconditionally rendered element, so it is
+   frequently the only honest target. Anchor **unconditional** elements only.
 4. A `fogalom` card never has its `term`/`def` typed by hand: it spreads
    `...fogalom('<key>')` from `frontend/src/features/tutorial/registry/fogalmak.ts` at
    registry-construction time. A new concept lands in `fogalmak.ts` first (with a source
@@ -380,11 +389,24 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
   either daypart order, and `mai-napsav` travels through `DayStrip`'s optional `kalauzAnchor`
   prop (only `/train/mai` passes it — the hub's own anchor stays `train-hero`). Two S3a guides
   are deliberately anchor-less: `/nap/kuldetesek` (quest cards are data-conditional, an empty
-  day is real) and `/train/review/:workoutId` (the whole page is data-gated).
+  day is real) and `/train/review/:workoutId` (the whole page is data-gated). The S3b anchors add
+  `log-napvalto` (the `/fuel/log` day stepper), `log-forrasok` (the `MealComposer` source tiles —
+  shared, so the same node also exists inside the `LogFlowPage` overlay on other routes),
+  `receptek-tabs`, and three `PageHero kalauzAnchor` targets (`stack-hero`, `kamra-hero`,
+  `naplo-hero`). Two more guides are deliberately anchor-less: `/fuel/plan` (every speaking card —
+  weekly note, medication strip, supplement map — is data-conditional) and `/fuel/gyogyszer`
+  (the page has two disjoint faces, empty vs. tracked cycle, and is permanently empty in
+  practice — see [`fuel.md`](fuel.md) §2 and ADR 0027).
+- **The spec's `quickinput` T2 item is deferred to S4, not dropped** (S3b): spec §10 lists a
+  "Gyors logolás sheet" guide triggered by the `QuickInputSheet`'s first open, but that is **not a
+  route** — the engine's only auto-open trigger is the route effect, so it cannot fire.
+  `open(id)` already accepts an arbitrary id, so the missing piece is a component-event seam
+  (engine work, not registry content); it rides with S4's engine touch-ups rather than with a
+  content batch.
 - **Shell tests must seed every guide, not just seen-render one**: any shell test that mounts
   `AppLayout` on a route with a registry hit needs `seedAllKalauzSeen()` (from
   `frontend/src/test/kalauz.ts`) in its `beforeEach`, or the 600 ms auto-open can fire mid-test —
-  seeding a single guide by hand is no longer enough now that nineteen guides exist.
+  seeding a single guide by hand is no longer enough now that twenty-seven guides exist.
 
 ## 10. Key files
 
@@ -395,7 +417,9 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
   (`KALAUZ_REGISTRY`, `resolveKalauz`, `findKalauz`, `getKalauz`, `versionOf`).
 - `frontend/src/features/tutorial/registry/fogalmak.ts` — canonical Hungarian glossary
   (`FOGALMAK`, `fogalom(key)`), consumed via `...fogalom('<key>')` spread by any `fogalom` card.
-- `frontend/src/features/tutorial/registry/fuel.ts` — the Fuel hub guide (`fuel`).
+- `frontend/src/features/tutorial/registry/fuel.ts` — the Fuel hub guide (`fuel`, anchor
+  `fuel-log`) plus the eight S3b T2 guides (`fuel-log`, `fuel-log-uj`, `fuel-terv`, `fuel-stack`,
+  `fuel-receptek`, `fuel-kamra`, `fuel-gyogyszer`, `fuel-naplo`).
 - `frontend/src/features/tutorial/registry/nap.ts` — the Nap hub guide (`nap`), anchor `nap-hero`.
 - `frontend/src/features/tutorial/registry/train.ts` — the Edzés hub guide (`train`), anchor
   `train-hero`.
@@ -414,6 +438,9 @@ is only meaningful to the frontend registry. Bump `version` on an existing entry
 - `frontend/src/app/AppLayout.tsx` — `TutorialProvider` mount point.
 - `frontend/src/features/me/pages/BeallitasokPage.tsx` — the "Kalauzok újranézése" reset row (§5).
 - `frontend/src/features/fuel/pages/FuelMaiPage.tsx` — `data-kalauz-anchor="fuel-log"`.
+- `frontend/src/shared/ui/mozaik/index.tsx` — `PageHero`'s optional `kalauzAnchor` prop (§7).
+- `frontend/src/features/fuel/pages/{FuelLogPage,FuelRecipesPage,FuelStackPage,FuelKamraPage,FuelNaploPage}.tsx`
+  and `components/MealComposer.tsx` — the six S3b anchors (§9).
 - `frontend/src/features/today/pages/NapHubPage.tsx` — `data-kalauz-anchor="nap-hero"` × 4
   (one per daypart face).
 - `frontend/src/features/train/pages/EdzesHubPage.tsx` — `data-kalauz-anchor="train-hero"` × 6

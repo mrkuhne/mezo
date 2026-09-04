@@ -4662,6 +4662,13 @@ button.mz-tile:active { transform: scale(0.96); }
 .nap-avatar { width: 40px; height: 40px; border-radius: 50%; border: 0; background: none;
   display: grid; place-items: center; cursor: pointer; }
 
+/* DayOrb (mezo-idz2) — a fejléc napi állapotjelzője. Az alap a `#s-orb` szürkén;
+   a kitöltés magassága a `clipPath` rect y-ja, ami új adatnál átcsúszik. */
+.dayorb { display: block; }
+.dayorb-base { filter: grayscale(1) brightness(1.28) contrast(0.55); opacity: 0.55; }
+.dayorb rect { transition: y 0.45s cubic-bezier(0.25, 0.8, 0.35, 1), height 0.45s cubic-bezier(0.25, 0.8, 0.35, 1); }
+@media (prefers-reduced-motion: reduce) { .dayorb rect { transition: none; } }
+
 /* Mezo-kalauz „?" (mezo-gb1s.1) — Fraunces-dőlt kérdőjel, coral; nyitva coral wash. */
 .nap-q .nap-q-glyph { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 19px; font-weight: 500; color: var(--primary-deep); line-height: 1; }
 .nap-q.is-open { background: color-mix(in srgb, var(--primary-base) 14%, transparent); }
@@ -8859,6 +8866,22 @@ button.mz-wtile:active { transform: scale(0.96); }
 .lg-aiwait { display: flex; align-items: center; gap: 8px; padding: 12px; border-radius: 15px; background: rgba(255,255,255,0.7); margin-bottom: 8px; font-size: 11px; color: #6E6257; }
 .lg-sumpil { display: flex; align-items: center; gap: 10px; padding: 9px 12px; margin-bottom: 6px; border-radius: 15px; background: #fff; border: 0.5px solid rgba(43,33,24,0.06); }
 .lg-sumpil b { font-size: 12px; display: block; } .lg-sumpil small { font-size: 10px; color: #6E6257; display: block; }
+
+/* Jelek-oldal (mezo-iizd.7, prototype celok.html #page-jelek): forrás-sorok él/alszik ponttal. */
+.lg-siglist { list-style: none; margin: 0 0 10px; padding: 0; }
+.lg-sig { display: flex; align-items: center; gap: 10px; padding: 9px 12px; margin-bottom: 7px; border-radius: 16px;
+  background: #fff; border: 0.5px solid rgba(43,33,24,0.06); box-shadow: 0 10px 20px -14px rgba(43,33,24,0.28); }
+.lg-sig.off { opacity: 0.55; }
+.lg-sig .grow { flex: 1; min-width: 0; }
+.lg-sig b { font-size: 12.5px; display: block; }
+.lg-sig small { font-size: 10px; color: #6E6257; display: block; }
+.lg-sig i.live { width: 8px; height: 8px; border-radius: 50%; flex: none; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+.lg-sig i.dead { width: 8px; height: 8px; border-radius: 50%; flex: none; background: rgba(43,33,24,0.18); }
+.lg-sigchips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.lg-sigchips span { font-size: 8.5px; font-weight: 700; color: #6E6257; background: rgba(43,33,24,0.06); border-radius: 6px; padding: 2px 6px; }
+.lg-sighead { display: flex; align-items: baseline; gap: 8px; margin: 10px 2px 6px; }
+.lg-sighead .cnt { margin-left: auto; font-size: 9.5px; color: #A2958A; }
+.lg-sighint { font-size: 11px; color: #6E6257; margin: 0 2px 4px; }
 
 /* ============================================================
    Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)

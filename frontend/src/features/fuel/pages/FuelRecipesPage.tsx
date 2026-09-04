@@ -75,7 +75,7 @@ export function FuelRecipesPage() {
 
         <PageBody principle="A fit-jelvény ✨, amíg a Mezo még nem pontozta — a szám csak akkor kerül ki, ha valóban megszületett.">
           {/* Type filter — the prototype's .segtabs, each segment carrying its own count */}
-          <div className="fh-segtabs rise" style={{ '--d': '30ms' } as React.CSSProperties} aria-label="Recept-szűrő">
+          <div className="fh-segtabs rise" style={{ '--d': '30ms' } as React.CSSProperties} aria-label="Recept-szűrő" data-kalauz-anchor="receptek-tabs">
             {FILTERS.map(f => {
               const active = filter === f.id
               return (

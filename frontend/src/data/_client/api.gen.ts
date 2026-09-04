@@ -6955,10 +6955,10 @@ export interface components {
             /** Format: date */
             date: string;
             /**
-             * @description Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; intervention is config text (mezo.companion.interventions), never LLM output.
+             * @description Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; intervention is config text (mezo.companion.interventions) and setup is config text for a configuration gap (mezo.proactive.setup-checks), neither ever LLM output.
              * @enum {string}
              */
-            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention" | "people";
+            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention" | "people" | "setup";
             eyebrow: string;
             body: string[];
             refs: components["schemas"]["FeedRef"][];
@@ -8587,6 +8587,8 @@ export interface components {
             source: "ai" | "template";
         };
         SignalCatalogEntry: {
+            /** @description stable catalog id (SignalCatalog#id) — the JelekPage row key */
+            id: string;
             source: components["schemas"]["PillarSource"];
             label: string;
             /** @description Hungarian group label (Alvás · Fuel · Edzés · Elme · Activity · Emberek · Életjel) */
@@ -8594,6 +8596,12 @@ export interface components {
             kinds: components["schemas"]["PillarKind"][];
             unit: string;
             defaultSkillKey?: string;
+            /** @description had at least one data day in the last 7 days (mezo-iizd.7) */
+            live: boolean;
+            /** @description data days out of the last 7 */
+            daysWithData: number;
+            /** @description labels of the caller's ACTIVE goals' active pillars fed by this signal */
+            fedPillars: string[];
         };
         SignalCatalogResponse: {
             entries: components["schemas"]["SignalCatalogEntry"][];
