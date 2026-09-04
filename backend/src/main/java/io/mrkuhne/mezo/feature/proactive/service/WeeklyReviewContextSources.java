@@ -1,11 +1,15 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
+import io.mrkuhne.mezo.api.dto.LifeGoalTodaySummary;
+import io.mrkuhne.mezo.api.dto.PillarDayStatus;
+import io.mrkuhne.mezo.api.dto.TrendArrow;
 import io.mrkuhne.mezo.feature.companion.entity.PeriodSummaryEntity;
 import io.mrkuhne.mezo.feature.companion.repository.PeriodSummaryRepository;
 import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
 import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
 import io.mrkuhne.mezo.feature.journal.repository.DecisionEntryRepository;
 import io.mrkuhne.mezo.feature.journal.repository.JournalEntryRepository;
+import io.mrkuhne.mezo.feature.lifegoal.service.LifeGoalProgressService;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
 import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
@@ -28,6 +32,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
@@ -92,6 +97,16 @@ import org.springframework.stereotype.Service;
  * precedent for the other half of that rule — a plain read is preferred when the direction is
  * already safe. {@code proactive → companion} (period_summary) and the experiment read are not
  * new edges at all. {@code ArchitectureTest} is run explicitly for this change.
+ *
+ * <p><b>mezo-iizd.9 — the life-goal edge, and why it is a DIRECT read here.</b> {@code companion}
+ * may NOT import {@code lifegoal}: {@code lifegoal} already imports {@code companion}
+ * ({@code MetricSeriesService}, {@code LifeGoalProposePort}), so the reverse edge would close a
+ * cycle that {@code ArchitectureTest#feature_slices_are_cycle_free} catches. The weekly review,
+ * however, lives in {@code feature/proactive}, which already reads journal/medication/people
+ * directly (above), and {@code lifegoal} imports NO proactive class — so {@code proactive →
+ * lifegoal} is one-directional and precedent-following. No port/adapter is introduced here; the
+ * companion-side {@code [Célok]} block, whose direction genuinely IS cycle-closing, gets its
+ * {@code LifeGoalSource} port in mezo-iizd.10.
  */
 @Service
 @RequiredArgsConstructor
@@ -112,6 +127,8 @@ public class WeeklyReviewContextSources {
     /** The inner circle a week actually touches. */
     static final int MAX_PEOPLE = 5;
     static final int NARRATIVE_CLIP = 600;
+    /** More active life goals than this is not a week the model can hold apart. */
+    static final int MAX_LIFE_GOALS = 5;
 
     private final JournalEntryRepository journalEntryRepository;
     private final DecisionEntryRepository decisionEntryRepository;
@@ -121,6 +138,15 @@ public class WeeklyReviewContextSources {
     private final MedicationRepository medicationRepository;
     private final MedicationCycleService medicationCycleService;
     private final PeriodSummaryRepository periodSummaryRepository;
+    /**
+     * Cycle-free DIRECT read ({@code lifegoal} imports no proactive class — see the class javadoc);
+     * the companion direction needs a port instead, which is mezo-iizd.10. Held through an
+     * {@link ObjectProvider} because {@code LifeGoalProgressService} hangs off
+     * {@link FeaturesConfiguration#LIFEGOAL_SWITCH}, which this bean's own
+     * companion+proactive condition does NOT imply: a hard field would turn "life goals off" into a
+     * context-startup failure. Absent bean ⇒ no section, exactly like an empty source.
+     */
+    private final ObjectProvider<LifeGoalProgressService> lifeGoalProgressService;
 
     /**
      * The wider-context block for {@code [weekStart, weekEnd]}, or an EMPTY string when not one of
@@ -136,6 +162,7 @@ public class WeeklyReviewContextSources {
         appendMentions(out, userId, since, until);
         appendMedicationCycle(out, userId, weekStart, weekEnd);
         appendWeekNarrative(out, userId, weekStart);
+        appendLifeGoals(out, userId);
         return out.toString();
     }
 
@@ -282,6 +309,62 @@ public class WeeklyReviewContextSources {
                         userId, PeriodSummaryEntity.GRANULARITY_WEEK, weekStart)
                 .ifPresent(summary -> out.append("\nA HÉT KONSZOLIDÁLT NARRATÍVÁJA:\n")
                         .append(clip(summary.getSummaryText(), NARRATIVE_CLIP)).append('\n'));
+    }
+
+    /**
+     * {@code ÉLETCÉLOK · A HÉT IRÁNYA} — the life-goal engine's ALREADY-COMPUTED weekly arrows
+     * (mezo-iizd.9). Code collects, model explains: the arrow, the hit-day tally and today's pillar
+     * ratio are all stored/derived facts, and the prompt explicitly FORBIDS recomputing them
+     * ({@link WeeklyReviewGenerator}'s {@code PROMPT}).
+     *
+     * <p>Only ACTIVE goals arrive — {@code today()} yields exactly those, under the same "evaluable"
+     * definition the nightly engine uses, so a parked or closed goal can never leak into the prompt.
+     * No goal ⇒ NO header: an empty section would still cost context and would tempt the model to
+     * talk about the absence (the same rule every other source above follows).
+     *
+     * <p>The arrow is rendered as a WORD, not the glyph: {@code →} and {@code ↑} are easy for a
+     * model to misread inside prose, "tartja" is not. {@code pillarsTotal}/{@code pillarsHitToday}
+     * are optional in the contract, so the ratio is appended only when BOTH are present — a
+     * half-known ratio is not a fact.
+     */
+    private void appendLifeGoals(StringBuilder out, UUID userId) {
+        LifeGoalProgressService progress = lifeGoalProgressService.getIfAvailable();
+        if (progress == null) {
+            return; // life goals switched off — nothing is known, so nothing is said
+        }
+        List<LifeGoalTodaySummary> goals = progress.today(userId).getGoals();
+        if (goals == null || goals.isEmpty()) {
+            return;
+        }
+        out.append("\nÉLETCÉLOK · A HÉT IRÁNYA (a motor számolta — magyarázd, ne számold újra):\n");
+        for (LifeGoalTodaySummary goal : goals.subList(0, Math.min(goals.size(), MAX_LIFE_GOALS))) {
+            long hits = goal.getDays7() == null ? 0
+                    : goal.getDays7().stream().filter(status -> status == PillarDayStatus.HIT).count();
+            out.append("- ").append(goal.getTitle());
+            if (goal.getDimension() != null) {
+                out.append(" [").append(goal.getDimension()).append(']');
+            }
+            out.append(' ').append(arrowWord(goal.getArrow()))
+                    .append(" · ").append(hits).append(" találat-nap a 7-ből");
+            if (goal.getPillarsTotal() != null && goal.getPillarsHitToday() != null) {
+                out.append(" · ma ").append(goal.getPillarsHitToday())
+                        .append(" / ").append(goal.getPillarsTotal()).append(" pillér");
+            }
+            out.append('\n');
+        }
+    }
+
+    /** The arrow's Hungarian word — the glyph is misreadable inside prompt prose, the word is not. */
+    private static String arrowWord(TrendArrow arrow) {
+        if (arrow == null) {
+            return "nincs irány";
+        }
+        return switch (arrow) {
+            case UP -> "emelkedik";
+            case FLAT -> "tartja";
+            case DOWN -> "csúszik";
+            case INSUFFICIENT -> "kevés adat az irányhoz";
+        };
     }
 
     /** Hard clip with an explicit continuation mark — a cut sentence must LOOK cut. */
