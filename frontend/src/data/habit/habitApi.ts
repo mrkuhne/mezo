@@ -7,6 +7,9 @@ type HabitDayWire = paths['/api/habit/day/{date}']['get']['responses']['200']['c
 type HabitWire = HabitDayWire['habits'][number]
 type HabitWriteWire = paths['/api/habit/{key}/check']['post']['responses']['200']['content']['application/json']
 type HabitSummaryWire = paths['/api/habit/summary']['get']['responses']['200']['content']['application/json']
+// The check body is contract-typed too, so a renamed/added field fails the build here rather
+// than at runtime (mezo-sfsw review minor).
+type HabitCheckBody = paths['/api/habit/{key}/check']['post']['requestBody'] extends { content: { 'application/json': infer B } } ? B : never
 
 export interface HabitDay {
   habits: HabitItem[]
@@ -41,7 +44,7 @@ export const habitApi = {
   check: (key: string, date: string) =>
     apiFetch<HabitWriteWire>(`/api/habit/${key}/check`, {
       method: 'POST',
-      body: JSON.stringify({ date }),
+      body: JSON.stringify({ date } satisfies HabitCheckBody),
     }).then((r) => ({ habit: toHabit(r.habit), levelUps: (r.levelUps ?? []) as LevelUpResult[] })),
   uncheck: (key: string, date: string): Promise<HabitItem> =>
     apiFetch<HabitWire>(`/api/habit/${key}/check?date=${date}`, { method: 'DELETE' }).then(toHabit),
