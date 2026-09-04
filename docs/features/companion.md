@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-03
+updated: 2026-09-04
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -784,6 +784,10 @@ architecture stays acyclic with no frozen exception.
 The ChatPage under Insights (`/insights/chat`, [`insights.md`](insights.md) §2.5) is the real
 companion surface since V0.4, dual-mode:
 
+- **One header, not two (`mezo-oq8z`)** — `/mezo/chat` suppresses the generic shell
+  `AppHeader` and keeps the page's orb-led conversation header as the only top bar. Its
+  back/thread-picker/new/actions controls remain available and the row sticks at `top: 0`;
+  the tab bar remains visible and only the quick-log FAB stays suppressed as before.
 - **Real mode** (default `pnpm dev`, backend on :8090): the page bootstraps the **selected
   conversation + its full history** on load (header: `Mezo · társ` / `Gemini · élő`). Sending a
   message renders the user bubble immediately, thinking-dots until the first chunk, then the
@@ -5655,4 +5659,3 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - Phase 5 "deep memory" design spec (`mezo-b3pp`, the journal embedding seam's driver): [`docs/superpowers/specs/2026-08-18-phase5-deep-memory-personalization-design.md`](../superpowers/specs/2026-08-18-phase5-deep-memory-personalization-design.md) §4.3/§5.1 · full feature doc: [`journal.md`](journal.md)
 - Roadmap/milestone log: [`docs/milestones/roadmap.md`](../milestones/roadmap.md)
 - References: [`docs/references/`](../references/) (`api_contract_conventions`, `liquibase_conventions`, `spring_patterns`, `testing_standards`, `integration_test_framework`, `configuration_conventions`, `java_package_structure`, `error_handling`, `companion_tool_conventions` — mezo-xixu's `@Tool` description house rule)
-

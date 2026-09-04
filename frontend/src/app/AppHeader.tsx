@@ -91,7 +91,7 @@ export function AppHeader() {
       <div className="nap-head-grow app-head-sec">
         {section && (
           <>
-            <ClaySpot name={section.spot} size={30} className="app-head-spot" />
+            <ClaySpot name={section.spot} size={32} className="app-head-spot" />
             <span className="app-head-title">{section.label}</span>
           </>
         )}
@@ -113,7 +113,7 @@ export function AppHeader() {
         <button type="button" className="nap-roundbtn" aria-label="Napszak váltása"
           aria-haspopup="menu" aria-expanded={dpOpen}
           onClick={() => { setNtfOpen(false); setDpOpen((o) => !o) }}>
-          <ClayIcon name={FACE_ICON[face]} size={22} />
+          <ClayIcon name={FACE_ICON[face]} size={24} />
           {onNap && face !== nowFace && <span className="nap-offnow" aria-hidden="true" />}
         </button>
         {dpOpen && (
@@ -124,7 +124,7 @@ export function AppHeader() {
               <button key={f} type="button" role="menuitemradio" aria-checked={f === face}
                 aria-label={FACE_LABEL[f]}
                 className={cn(f === face && 'on')} onClick={() => pickFace(f)}>
-                <ClayIcon name={FACE_ICON[f]} size={22} />
+                <ClayIcon name={FACE_ICON[f]} size={24} />
               </button>
             ))}
           </div>
@@ -134,7 +134,7 @@ export function AppHeader() {
       <button type="button" className="nap-roundbtn"
         aria-label={unreadMsgs > 0 ? `Mezo üzenetei, ${unreadMsgs} olvasatlan` : 'Mezo üzenetei'}
         onClick={() => navigate('/nap/uzenetek')}>
-        <ClayIcon name="i-level" size={21} />
+        <ClayIcon name="i-level" size={23} />
         {unreadMsgs > 0 && <span className="nap-badge">{unreadMsgs}</span>}
       </button>
 
@@ -142,7 +142,7 @@ export function AppHeader() {
         <button type="button" className="nap-roundbtn" aria-haspopup="menu" aria-expanded={ntfOpen}
           aria-label={unreadNtf > 0 ? `Értesítések, ${unreadNtf} olvasatlan` : 'Értesítések'}
           onClick={() => { setDpOpen(false); setNtfOpen((o) => !o) }}>
-          <ClayIcon name="i-ertesites" size={21} />
+          <ClayIcon name="i-ertesites" size={23} />
           {unreadNtf > 0 && <span className="nap-badge">{unreadNtf}</span>}
         </button>
         {ntfOpen && (
@@ -171,7 +171,7 @@ export function AppHeader() {
           ezért nincs rajta badge. */}
       <button type="button" className="nap-avatar" aria-label={dayOrb.label}
         onClick={() => navigate(`/me/week/napok/${localDateString()}`)}>
-        <DayOrb pct={dayOrb.pct} intensity={dayOrb.intensity} size={40} />
+        <DayOrb pct={dayOrb.pct} intensity={dayOrb.intensity} size={42} />
       </button>
     </header>
   )
