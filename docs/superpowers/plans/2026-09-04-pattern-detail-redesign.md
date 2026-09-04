@@ -215,7 +215,7 @@ record Outcome(
 LocalDate to)` builds every new generated `PatternMonitorPair` field. Wire verdict constant:
 `imbalanced_groups`.
 
-- [ ] RED: add a `MealPopulator` overload that accepts `mealDate` + `loggedAt` while reusing the
+- [x] RED: add a `MealPopulator` overload that accepts `mealDate` + `loggedAt` while reusing the
   existing line/cascade builder. In `CompanionPatternMonitorApiIT`, seed nine finished dates:
   eight weekdays and one weekend, one meal per date, with different local clock hours. Assert:
 
@@ -234,23 +234,23 @@ LocalDate to)` builds every new generated `PatternMonitorPair` field. Wire verdi
 
   Derive weekend/weekday dates with `DayOfWeek`; do not pin the test to today's weekday.
 
-- [ ] Add the same pair assertion through
+- [x] Add the same pair assertion through
   `GET /api/companion/pattern/pair/weekend~late-meal-hour` in
   `CompanionPatternPairDetailApiIT`, including `days.size() == 9`. This pins monitor/detail
   agreement at the HTTP boundary.
 
-- [ ] Add `PatternDetectionServiceIT` coverage for a pre-existing proposed row: capture its
+- [x] Add `PatternDetectionServiceIT` coverage for a pre-existing proposed row: capture its
   `r/n/p/lastDetectedAt` and snapshot count, run `detect(owner)`, then assert those values and the
   count are unchanged for the 8+1 pair. A separate no-row case asserts no pattern is created.
 
-- [ ] Run and observe failure before mapper implementation:
+- [x] Run and observe failure before mapper implementation:
 
   ```bash
   cd backend
   ./mvnw -Dtest=CompanionPatternMonitorApiIT,CompanionPatternPairDetailApiIT,PatternDetectionServiceIT clean test
   ```
 
-- [ ] GREEN: in `PatternMonitorService`, always map both value kinds:
+- [x] GREEN: in `PatternMonitorService`, always map both value kinds:
 
   ```java
   .metricAValueKind(pair.metricA().valueKind().wireKey())
@@ -269,10 +269,10 @@ LocalDate to)` builds every new generated `PatternMonitorPair` field. Wire verdi
   Also attach the three group fields to a binary `LIVE` pair so the detail hero can show both
   sample sizes after the gate opens. Keep them null for non-binary and frozen pairs.
 
-- [ ] Re-run the three focused IT classes with `clean`. Confirm the old no-data/few/live/frozen
+- [x] Re-run the three focused IT classes with `clean`. Confirm the old no-data/few/live/frozen
   assertions remain green, not only the new case.
 
-- [ ] Commit:
+- [x] Commit:
 
   ```bash
   git add backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PatternMonitorService.java \

@@ -40,6 +40,7 @@ public class PatternMonitorService {
     static final String VERDICT_FEW_DAYS = "few_days";
     static final String VERDICT_NO_DATA = "no_data";
     static final String VERDICT_DEGENERATE = "degenerate";
+    static final String VERDICT_IMBALANCED_GROUPS = "imbalanced_groups";
     static final String VERDICT_FROZEN = "frozen";
 
     private static final Set<String> FROZEN_STATUSES =
@@ -114,8 +115,10 @@ public class PatternMonitorService {
                 .lagDays(pair.lagDays())
                 .metricAKey(pair.metricA().wireKey())
                 .metricALabel(pair.metricA().labelHu())
+                .metricAValueKind(pair.metricA().valueKind().wireKey())
                 .metricBKey(pair.metricB().wireKey())
                 .metricBLabel(pair.metricB().labelHu())
+                .metricBValueKind(pair.metricB().valueKind().wireKey())
                 .mechanismHu(pair.mechanism())
                 .questionHu(pair.question())
                 .expectedDirection(pair.expectedDirection())
@@ -142,6 +145,11 @@ public class PatternMonitorService {
         PatternGate.Outcome outcome = PatternGate.evaluate(seriesA, seriesB, pair.lagDays(),
                 minN, minGroupN, pair.metricA().valueKind());
         builder.alignedDays(outcome.alignedDays());
+        if (outcome.groupZeroDays() != null) {
+            builder.groupZeroDays(outcome.groupZeroDays())
+                    .groupOneDays(outcome.groupOneDays())
+                    .requiredPerGroup(minGroupN);
+        }
 
         // Switch EXPRESSION, nem statement: az enum feletti kifejezést a fordító teljességre
         // ellenőrzi, így egy jövőbeli Verdict konstans fordítási hiba lesz — nem pedig egy csendben
@@ -160,7 +168,7 @@ public class PatternMonitorService {
                     .bottleneckMetricKey(thinnerMetric(pair, cache, from, to).wireKey());
             case DEGENERATE -> builder.verdict(VERDICT_DEGENERATE)
                     .bottleneckMetricKey(constantMetric(pair, outcome.constantSide()).wireKey());
-            case IMBALANCED_GROUPS -> builder.verdict("imbalanced_groups");
+            case IMBALANCED_GROUPS -> builder.verdict(VERDICT_IMBALANCED_GROUPS);
         };
         return verdicted.build();
     }
