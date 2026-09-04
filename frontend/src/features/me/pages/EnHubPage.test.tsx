@@ -5,6 +5,9 @@ import { EnHubPage } from '@/features/me/pages/EnHubPage'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { setToken } from '@/data/_client/api'
+import { http, HttpResponse } from 'msw'
+import { server } from '@/test/msw/server'
+import { API_BASE } from '@/test/msw/handlers'
 
 // Én hub (mezo-d20.6.1) — the /me index's Mozaik face: identity hero + coral-ringed goal
 // card + 6-tile mosaic (Beállítások csempével). The behavioral contracts it inherits from the
@@ -137,7 +140,7 @@ test('with nothing measured the bio line vanishes — the hero offers the biomet
 
 test('a hero-kártya az életcélokat összegzi és a Célok hubra visz (mezo-iizd.4)', async () => {
   renderHub()
-  const card = await screen.findByRole('button', { name: /Célok/ })
+  const card = await screen.findByRole('button', { name: 'Célok · összegzés' })
   expect(card).toBeInTheDocument()
   fireEvent.click(card)
   expect(screen.getByText('CELOK HUB')).toBeInTheDocument()
@@ -145,7 +148,7 @@ test('a hero-kártya az életcélokat összegzi és a Célok hubra visz (mezo-ii
 
 test('a súlycél-track eltűnt az Én-hubról', async () => {
   renderHub()
-  await screen.findByRole('button', { name: /Célok/ })
+  await screen.findByRole('button', { name: 'Célok · összegzés' })
   expect(document.querySelector('.enh-gtrack')).toBeNull()
 })
 
@@ -246,7 +249,7 @@ test('the coin and streak stats deep-link to the Growth awards tab too', async (
 
 test('the entrance choreography is armed — every .rise sits inside .mz-play', async () => {
   const { container } = renderHub()
-  await screen.findByRole('button', { name: /Célok/ })
+  await screen.findByRole('button', { name: 'Célok · összegzés' })
   const rises = container.querySelectorAll('.rise')
   expect(rises.length).toBeGreaterThan(0)
   for (const r of rises) expect(r.closest('.mz-play')).not.toBeNull()
@@ -260,6 +263,31 @@ test('real mode: the identity hero shows the account name from /api/auth/me', as
   renderHub()
   await waitFor(() => expect(document.querySelector('.enh-nm')).toHaveTextContent('Owner'))
   expect(document.querySelector('.enh-idring i')).toHaveTextContent('O')
+  vi.unstubAllEnvs()
+  setToken(null)
+})
+
+// mezo-rn9u: a hero CSAK aktív cél mellett rajzolódott, és a Nap-csempe / Heti-kártya is
+// aktív célra kapuzott — nulla aktív céllal a /me/goals SEHONNAN nem nyílt. Ez egyirányú
+// ajtót csinált a parkolásból (parkolod az egyetlen célod → a hub eltűnik → nem tudod
+// visszakapcsolni), és a lezárt célokat, a Jelek oldalt és a Súlycél-sort is elzárta.
+// A mozaik Célok csempéje az ÁLLANDÓ ajtó; a hero marad adat-vezérelt.
+test('a mozaik Célok csempéje a hubra visz (mezo-rn9u)', async () => {
+  renderHub()
+  fireEvent.click(await screen.findByRole('button', { name: 'Célok' }))
+  expect(screen.getByText('CELOK HUB')).toBeInTheDocument()
+})
+
+test('aktív életcél NÉLKÜL is ott a Célok csempe — a park-csapda ellen (mezo-rn9u)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  setToken('t')
+  server.use(http.get(`${API_BASE}/api/life-goals`, () => HttpResponse.json([])))
+  renderHub()
+  // a hero összegző kártyája joggal hiányzik (nincs mit összegezni), a csempe viszont áll
+  const tile = await screen.findByRole('button', { name: 'Célok' })
+  await waitFor(() => expect(screen.queryByRole('button', { name: 'Célok · összegzés' })).toBeNull())
+  fireEvent.click(tile)
+  expect(screen.getByText('CELOK HUB')).toBeInTheDocument()
   vi.unstubAllEnvs()
   setToken(null)
 })
