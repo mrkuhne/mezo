@@ -1,6 +1,6 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, within } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { http, HttpResponse } from 'msw'
+import { delay, http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/data/_client/api'
 import { QueryWrapper } from '@/test/queryWrapper'
@@ -28,81 +28,71 @@ describe('PatternDetailPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('confirmed showcase pair renders all five blocks in order + the judged header', () => {
+  test('confirmed showcase pair renders the clear story and a read-only judged state', () => {
     renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
     // the house full-page header row (AiUsagePage idiom): back chevron + h1
     expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Minták')
     expect(screen.getByText('Minta részletei')).toBeInTheDocument()
-    expect(screen.getByText('Hogyan erősödött a jel')).toBeInTheDocument()
-    expect(screen.getByText(/nap, amiből ez kijött/)).toBeInTheDocument()
+    expect(screen.getByText('Hogyan változott a kapcsolat?')).toBeInTheDocument()
+    expect(screen.getByText('Az eddigi napok')).toBeInTheDocument()
     expect(screen.getByText('A minta története')).toBeInTheDocument()
     expect(screen.getByText('Mit kezd ezzel az app')).toBeInTheDocument()
-    expect(screen.getByText(/Motor-diagnosztika/)).toBeInTheDocument()
-    expect(screen.getByText(/Megerősítetted/)).toBeInTheDocument()
-    // the reused PatternDecisionCard reflects the judged state through its active button label
-    expect(screen.getByRole('button', { name: 'Megerősítve' })).toBeInTheDocument()
-    // raw r/n/p never appear outside the collapsed diagnostics section
-    expect(screen.queryByText(/r=-0\.42/)).not.toBeInTheDocument()
+    expect(screen.getByText('Hogyan számoltuk?')).toBeInTheDocument()
+    expect(screen.getByText('Ezt a kapcsolatot már megerősítetted.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Megerősítem' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Elvetem' })).not.toBeInTheDocument()
     // the header's own "Részletek és előzmények →" link would point at this very page — suppressed
     // on the detail page (review fix)
     expect(screen.queryByRole('link', { name: /Részletek és előzmények/ })).not.toBeInTheDocument()
-    // the diagnostics section (mockup: no count) never shows a list-style "· N" suffix
-    expect(screen.queryByText(/Motor-diagnosztika · \d/)).not.toBeInTheDocument()
   })
 
-  test('a decision made from the detail header updates the page without a reload (review fix, mezo-tk88.5)', async () => {
+  test('a judged pattern cannot be decided again from its detail page', () => {
     renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
-    expect(screen.getByRole('button', { name: 'Megerősítve' })).toBeInTheDocument()
-
-    fireEvent.click(screen.getByRole('button', { name: 'Elvetem' }))
-
-    // the pattern is no longer confirmed — the confirm button reverts to its inactive label
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: 'Megerősítem' })).toBeInTheDocument()
-    })
-    expect(screen.queryByRole('button', { name: 'Megerősítve' })).not.toBeInTheDocument()
-    // downstream of the same status flip: the impact card falls back to the future-tense row
-    expect(screen.getByText(/Ha megerősíted/)).toBeInTheDocument()
+    expect(screen.getByText('Megerősítve')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Megerősít/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Elvetem' })).not.toBeInTheDocument()
   })
 
-  test('the strength/scatter captions use the first/last snapshot n and the latest day', () => {
+  test('the strength caption uses first/last snapshot n and the evidence chart marks the latest day', () => {
     renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
     // showcase events: first snapshot n=14 (jún 3), last snapshot n=32 (aug 13)
     expect(screen.getByText(/14 napról 32-re/)).toBeInTheDocument()
     // showcase days: latest aligned day is 2026-08-13
-    expect(screen.getByText(/legutóbbi: aug 13/)).toBeInTheDocument()
+    expect(screen.getByLabelText('legutóbbi nap: 2026-08-13')).toBeInTheDocument()
   })
 
-  test('opening Motor-diagnosztika reveals the raw stats and the freeze note (judged row)', () => {
+  test('Hogyan számoltuk? contains a second-level technical disclosure and freeze note', () => {
     renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
-    expect(screen.queryByText(/r=-0\.42/)).not.toBeInTheDocument()
-    fireEvent.click(screen.getByText(/Motor-diagnosztika/))
-    expect(screen.getByText(/r=-0\.42/)).toBeInTheDocument()
-    expect(screen.getByText(/számok/)).toBeInTheDocument()
+    const diagnostics = screen.getByText('Hogyan számoltuk?').closest('details') as HTMLDetailsElement
+    expect(diagnostics.open).toBe(false)
+    fireEvent.click(screen.getByText('Hogyan számoltuk?'))
+    expect(diagnostics.open).toBe(true)
+    const technical = screen.getByText('Technikai számok').closest('details') as HTMLDetailsElement
+    expect(technical.open).toBe(false)
+    fireEvent.click(screen.getByText('Technikai számok'))
+    expect(technical.open).toBe(true)
+    expect(screen.getByText('-0.58')).toBeInTheDocument()
     expect(screen.getByText(/befagytak/)).toBeInTheDocument()
   })
 
   test('Napok listája toggles the inline aligned-days table', () => {
     renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
-    expect(screen.queryByRole('table')).not.toBeInTheDocument()
+    const dayList = screen.getByText('Napok listája →').closest('details') as HTMLDetailsElement
+    expect(dayList.open).toBe(false)
     fireEvent.click(screen.getByText('Napok listája →'))
+    expect(dayList.open).toBe(true)
     expect(screen.getByRole('table')).toBeInTheDocument()
-    expect(screen.getByText('alvásminőség')).toBeInTheDocument()
+    expect(within(screen.getByRole('table')).getByRole('columnheader', { name: 'alvásminőség' })).toBeInTheDocument()
   })
 
-  test('gathering pair (no persisted row) renders the gate nudge, honest empty states and the future-tense impact row', () => {
+  test('gathering pair renders the gate nudge, honest empty states and no premature impact or decisions', () => {
     renderAt(`/mezo/patterns/${GATHERING_KEY}`)
     expect(screen.getByText(/Még \d+ nap adat/)).toBeInTheDocument() // verdictSentence's few_days nudge
-    // "Még nincs előzmény…" is the shared no-history line — it renders TWICE (strength card +
-    // journal card, review fix item 3), both describing the same empty `events: []`.
-    expect(screen.getAllByText('Még nincs előzmény — az éjszakai futások töltik.')).toHaveLength(2)
-    // scatter card: days.length < 2 gets the future-tense title, not "A 0 nap…" (review fix item 4)
-    expect(screen.getByText('Napok, amikből ez majd kijön')).toBeInTheDocument()
-    expect(screen.queryByText(/nap, amiből ez kijött/)).not.toBeInTheDocument()
+    expect(screen.getByText('Az eddigi napok')).toBeInTheDocument()
+    expect(screen.getByText('Még nincs jelentős esemény — az új adatok töltik majd.')).toBeInTheDocument()
     expect(screen.getByText(/Még nincs elég nap az összevetéshez/)).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Napok listája →' })).not.toBeInTheDocument()
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
-    expect(screen.getByText(/Ha megerősíted/)).toBeInTheDocument()
+    expect(screen.queryByText('Mit kezd ezzel az app')).not.toBeInTheDocument()
     // the plain header has no decision buttons
     expect(screen.queryByRole('button', { name: /Megerősítem/ })).not.toBeInTheDocument()
   })
@@ -128,8 +118,10 @@ describe('PatternDetailPage (real mode)', () => {
     lagDays: 1,
     metricAKey: 'sleep-quality',
     metricALabel: 'alvásminőség',
+    metricAValueKind: 'number',
     metricBKey: 'training-rpe',
     metricBLabel: 'edzés-RPE',
+    metricBValueKind: 'number',
     mechanismHu: 'A rosszabb alvás másnap nehezebbnek érződő edzést hozhat.',
     questionHu: 'Könnyebb az edzés, ha jól aludtál?',
     expectedDirection: 'negative',
@@ -144,6 +136,28 @@ describe('PatternDetailPage (real mode)', () => {
     p: 0.001,
     status: 'confirmed',
   }
+
+  test('renders the honest pending state while the detail request is unresolved', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/pattern/pair/pending-key`, async () => {
+        await delay('infinite')
+        return HttpResponse.json({})
+      }),
+    )
+    renderAt('/mezo/patterns/pending-key')
+    expect(await screen.findByText('A minta betöltése…')).toBeInTheDocument()
+  })
+
+  test('renders a retryable error state when loading fails', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/companion/pattern/pair/error-key`, () =>
+        HttpResponse.json({ code: 'UNEXPECTED' }, { status: 500 }),
+      ),
+    )
+    renderAt('/mezo/patterns/error-key')
+    expect(await screen.findByText('Nem sikerült betölteni a mintát.')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Újra' })).toBeInTheDocument()
+  })
 
   test('a confirmed detail payload renders the five blocks', async () => {
     server.use(
@@ -181,14 +195,14 @@ describe('PatternDetailPage (real mode)', () => {
     )
     renderAt(`/mezo/patterns/${SHOWCASE_KEY}`)
     expect(await screen.findByText('Mit kezd ezzel az app')).toBeInTheDocument()
-    expect(screen.getByText('Hogyan erősödött a jel')).toBeInTheDocument()
-    expect(screen.getByText(/nap, amiből ez kijött/)).toBeInTheDocument()
+    expect(screen.getByText('Hogyan változott a kapcsolat?')).toBeInTheDocument()
+    expect(screen.getByText('Az eddigi napok')).toBeInTheDocument()
     expect(screen.getByText('A minta története')).toBeInTheDocument()
-    expect(screen.getByText(/Motor-diagnosztika/)).toBeInTheDocument()
-    expect(screen.getByText(/Megerősítetted/)).toBeInTheDocument()
+    expect(screen.getByText('Hogyan számoltuk?')).toBeInTheDocument()
+    expect(screen.getByText('Ezt a kapcsolatot már megerősítetted.')).toBeInTheDocument()
   })
 
-  test('hour + binary metric values render human-readable in the days table, the scatter and the diagnostics (mezo-fy97)', async () => {
+  test('an 8+1 binary pair stays in collection and explains the missing weekend evidence', async () => {
     const weekendKey = 'weekend~late-meal-hour'
     server.use(
       http.get(`${API_BASE}/api/companion/pattern/pair/${weekendKey}`, () =>
@@ -200,22 +214,33 @@ describe('PatternDetailPage (real mode)', () => {
             lagDays: 0,
             metricAKey: 'weekend',
             metricALabel: 'hétvége',
+            metricAValueKind: 'binary',
             metricBKey: 'late-meal-hour',
             metricBLabel: 'utolsó étkezés ideje',
+            metricBValueKind: 'clock_hour',
             questionHu: 'Hétvégén később csúszik az utolsó étkezés?',
-            verdict: 'live',
-            alignedDays: 3,
-            r: -0.37383063546416445,
-            n: 14,
-            p: 0.18794141905232353,
+            verdict: 'imbalanced_groups',
+            alignedDays: 9,
+            groupZeroDays: 8,
+            groupOneDays: 1,
+            requiredPerGroup: 3,
+            r: null,
+            n: null,
+            p: null,
             status: null,
           },
           pattern: null,
           events: [],
           days: [
-            { date: '2026-07-01', a: 0, b: 15.683333333333334 },
-            { date: '2026-07-04', a: 1, b: 6.416666666666667 },
-            { date: '2026-07-19', a: 1, b: 20.3 },
+            { date: '2026-08-24', a: 0, b: 23.6333 },
+            { date: '2026-08-25', a: 0, b: 21.3333 },
+            { date: '2026-08-26', a: 0, b: 23.7167 },
+            { date: '2026-08-27', a: 0, b: 12.85 },
+            { date: '2026-08-29', a: 1, b: 14.5833 },
+            { date: '2026-08-31', a: 0, b: 17.9333 },
+            { date: '2026-09-01', a: 0, b: 17.0333 },
+            { date: '2026-09-02', a: 0, b: 22.2667 },
+            { date: '2026-09-03', a: 0, b: 10.1167 },
           ],
           impact: { fact: null, predictions: [], experiments: [], challenges: [] },
         }),
@@ -223,24 +248,12 @@ describe('PatternDetailPage (real mode)', () => {
     )
     renderAt(`/mezo/patterns/${weekendKey}`)
 
-    // scatter x-axis: a binary metric gets named columns, not alacsony/magas
-    expect(await screen.findByText('hétköznap')).toBeInTheDocument()
-    expect(screen.getByText('hétvége')).toBeInTheDocument()
-    expect(screen.queryByText('alacsony')).not.toBeInTheDocument()
-
-    // days table: fractional hours become wall-clock times, 0/1 becomes igen/nem
-    fireEvent.click(screen.getByText('Napok listája →'))
-    expect(screen.getByText('15:41')).toBeInTheDocument()
-    expect(screen.getByText('06:25')).toBeInTheDocument()
-    expect(screen.getByText('20:18')).toBeInTheDocument()
-    expect(screen.getAllByText('igen')).toHaveLength(2)
-    expect(screen.getByText('nem')).toBeInTheDocument()
-    expect(screen.queryByText(/15\.68333/)).not.toBeInTheDocument()
-
-    // diagnostics: r/p rounded, never full double precision
-    fireEvent.click(screen.getByText(/Motor-diagnosztika/))
-    expect(screen.getByText(/r=-0\.37 · n=14 · p=0\.188/)).toBeInTheDocument()
-    expect(screen.queryByText(/0\.37383063546416445/)).not.toBeInTheDocument()
+    expect(await screen.findByText('Még nincs elég hétvégi adat.')).toBeInTheDocument()
+    expect(screen.getByText('1 / 3')).toBeInTheDocument()
+    expect(screen.getByText('Még 2 hétvégi nap kell.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Megerősítem' })).not.toBeInTheDocument()
+    expect(screen.queryByText(/r=-0\.27/)).not.toBeInTheDocument()
+    expect(screen.getByText('Hogyan számoltuk?')).toBeInTheDocument()
   })
 
   test('a 404 renders the honest not-found state', async () => {

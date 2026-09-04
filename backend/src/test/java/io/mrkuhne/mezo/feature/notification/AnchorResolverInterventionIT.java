@@ -172,4 +172,20 @@ class AnchorResolverInterventionIT extends AbstractIntegrationTest {
         assertThat(anchors.backendAnchors())
                 .noneMatch(e -> e.category() == NotificationCategory.INTERVENTION);
     }
+
+    /** S4 (mezo-d58h.4): after Tasks 8-9 flip both card writers to {@code kind=advice}, a
+     *  flag-sourced advice row (interventionKey set, same as a pre-S4 intervention row) must
+     *  still anchor a push — the twin of the plain-intervention case above. */
+    @Test
+    void testResolve_shouldAnchorAPushOnAnAdviceCard() {
+        UUID owner = ownerId();
+        companionMessagePopulator.createAdvice(owner, WEDNESDAY, "sleep_debt", "sleep_recover_tonight",
+                "Mezo · észrevétel", "Az elmúlt éjszakák alváshiánya összeadódott.", List.of("tény"),
+                List.of("javaslat"), generatedAt(WEDNESDAY, 14, 37));
+
+        AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
+
+        assertThat(anchors.backendAnchors())
+                .anyMatch(e -> e.category() == NotificationCategory.INTERVENTION);
+    }
 }

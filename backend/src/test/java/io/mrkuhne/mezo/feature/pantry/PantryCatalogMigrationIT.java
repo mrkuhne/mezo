@@ -120,8 +120,8 @@ class PantryCatalogMigrationIT {
             conn.commit(); // Liquibase leaves the connection in manual-commit mode; make the seed durable before the split runs.
 
             // Bounded to exactly one more changeset (not an unbounded "apply everything remaining"):
-            // mezo-qooi added a status changeset AFTER the split, so an unbounded update() here would
-            // also run that one, and this test only wants to exercise the split in isolation.
+            // changesets registered AFTER the split (mezo-qooi's status column, and others from main)
+            // would otherwise run too, and this test only wants to exercise the split in isolation.
             liquibase.update(1, new Contexts(), new LabelExpression()); // applies exactly the split
 
             try (Statement st = conn.createStatement()) {
@@ -273,8 +273,7 @@ class PantryCatalogMigrationIT {
             conn.commit(); // Liquibase leaves the connection in manual-commit mode; make the seed durable before the split runs.
 
             // Bounded to exactly one more changeset for the same reason as the other test: an
-            // unbounded update() would also attempt the mezo-qooi status changeset that now follows
-            // the split in master.yml.
+            // unbounded update() would also attempt the changesets that now follow the split.
             assertThatThrownBy(() -> liquibase.update(1, new Contexts(), new LabelExpression()))
                 .hasMessageContaining("uq_pantry_item_split_guard");
 
@@ -296,19 +295,19 @@ class PantryCatalogMigrationIT {
     }
 
     /**
-     * Count of `- changeSet:` entries before ours, located by finding the split's own entry rather
-     * than assuming it is the LAST one registered — mezo-qooi appended a status changeset after it,
-     * so master.yml no longer ends with the split.
+     * Count of `- changeSet:` entries before the split's own entry, located by searching for the
+     * split script rather than assuming it is the LAST one registered: several changesets now
+     * follow it in master.yml (mezo-qooi's status column among them). Asserts the marker is unique
+     * so a future rename cannot make this silently count the wrong prefix.
      */
     private static int countChangesetsBeforeSplit() throws IOException {
         String yml = Files.readString(MASTER_YML, StandardCharsets.UTF_8);
-        String[] entries = yml.split("- changeSet:", -1);
-        for (int i = 1; i < entries.length; i++) {
-            if (entries[i].contains("path: script/" + SPLIT_SCRIPT)) {
-                return i - 1;
-            }
-        }
-        throw new AssertionError("split changeset not found in " + MASTER_YML);
+        String marker = "path: script/" + SPLIT_SCRIPT;
+        int splitPathStart = yml.indexOf(marker);
+        assertThat(splitPathStart).isNotNegative();
+        assertThat(yml.indexOf(marker, splitPathStart + marker.length())).isEqualTo(-1);
+        int changesetsThroughSplit = yml.substring(0, splitPathStart).split("- changeSet:", -1).length - 1;
+        return changesetsThroughSplit - 1;
     }
 
     private static void seedLegacyRows(Connection conn) throws Exception {

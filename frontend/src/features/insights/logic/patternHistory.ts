@@ -1,4 +1,5 @@
 import { strengthWord } from '@/features/insights/logic/findings'
+import { binaryGroupLabels } from '@/features/insights/logic/metricFormat'
 import type { AlignedDay, PatternEvent, PatternMonitorPair } from '@/data/types'
 
 /**
@@ -23,25 +24,6 @@ function huShortDate(occurredAt: string): string {
 export function chartDateLabel(iso: string): string {
   const [, m, d] = iso.split('-').map(Number)
   return `${HU_MONTHS[m - 1]} ${d}`
-}
-
-// `strengthWord`'s three adverb tiers, remapped to the noun/adjective form usable before
-// "jel"/"sávot" (the strength chart's own guide labels "érezhető · 0.3" / "határozott · 0.6").
-// Keyed off `strengthWord`'s own output — never a second copy of its 0.3/0.6 thresholds — so the
-// two bandings cannot drift apart.
-const BAND_NAME_BY_STRENGTH_WORD: Record<string, string> = {
-  kicsit: 'gyenge',
-  érezhetően: 'érezhető',
-  határozottan: 'határozott',
-}
-
-function bandName(r: number): string {
-  return BAND_NAME_BY_STRENGTH_WORD[strengthWord(r)]
-}
-
-/** "a" vs "az" before a quoted band name, by its first letter. */
-function aOrAz(word: string): string {
-  return /^[aáeéiíoóöőuúüű]/i.test(word) ? 'az' : 'a'
 }
 
 function isoDateOnly(occurredAt: string): string {
@@ -150,30 +132,19 @@ export function journalEntries(events: PatternEvent[], pair: PatternMonitorPair 
 
   const sorted = [...events].sort((a, b) => a.occurredAt.localeCompare(b.occurredAt))
   const entries: JournalEntry[] = []
-  let prevSnapshot: PatternEvent | null = null
   let sawFirstSnapshot = false
 
   for (const event of sorted) {
     switch (event.kind) {
       case 'snapshot': {
-        if (event.r == null) break
         if (!sawFirstSnapshot) {
           entries.push({
             date: huShortDate(event.occurredAt),
             tone: 'neutral',
-            text: `Életre kelt — ${event.n ?? 0} közös nap gyűlt össze, ${bandName(event.r)} jel.`,
+            text: `Először számolhatóvá vált — ${event.n ?? 0} közös nap.`,
           })
           sawFirstSnapshot = true
-        } else if (prevSnapshot?.r != null && strengthWord(prevSnapshot.r) !== strengthWord(event.r)) {
-          const newBand = bandName(event.r)
-          const strengthened = Math.abs(event.r) > Math.abs(prevSnapshot.r)
-          entries.push({
-            date: huShortDate(event.occurredAt),
-            tone: 'neutral',
-            text: `A jel ${strengthened ? 'erősödött' : 'gyengült'}, átlépte ${aOrAz(newBand)} „${newBand}" sávot.`,
-          })
         }
-        prevSnapshot = event
         break
       }
       case 'confirmed': {
@@ -203,6 +174,21 @@ export function journalEntries(events: PatternEvent[], pair: PatternMonitorPair 
         // Folds into the preceding confirmed entry's factLink — no line of its own.
         break
     }
+  }
+
+  if (pair.verdict === 'imbalanced_groups'
+    && pair.groupZeroDays != null
+    && pair.groupOneDays != null
+    && pair.requiredPerGroup != null) {
+    const labels = binaryGroupLabels(pair.metricAKey)
+    const deficient = pair.groupZeroDays <= pair.groupOneDays
+      ? { count: pair.groupZeroDays, day: labels.zero.day }
+      : { count: pair.groupOneDays, day: labels.one.day }
+    entries.push({
+      date: 'Most',
+      tone: 'accent',
+      text: `Még gyűlik — ${deficient.count}/${pair.requiredPerGroup} ${deficient.day} nap.`,
+    })
   }
 
   return entries

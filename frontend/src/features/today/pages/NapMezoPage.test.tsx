@@ -188,6 +188,25 @@ test('a ref-chipek a chat-mintát követik: csoportosított, emberi címkés, ne
   expect(screen.getByText('aug. 26.')).toBeInTheDocument()
 })
 
+// S4 (mezo-d58h.4): the advice card's config-provided suggestions and deterministic
+// evidence render as their own lists, and the „Segített?" verdict widens to the advice kind.
+test('an advice feed message renders its suggestions, its facts, and the „Segített?" label', async () => {
+  const adviceMsg: FeedMessage = {
+    id: 'fm-9', kind: 'advice', eyebrow: 'Mezo · észrevétel',
+    body: [{ type: 'p', text: 'Ma este feküdj le korábban.' }],
+    refs: [],
+    facts: ['Alvásadósság: 1,6 óra/éjszaka'],
+    suggestions: ['Told előre a villanyoltást.'],
+    generatedAt: '2026-05-22T15:00:00',
+  }
+  feedMock.useCompanionFeed.mockReturnValue([adviceMsg])
+  renderPage()
+  expect(await screen.findByText('Told előre a villanyoltást.')).toBeInTheDocument()
+  expect(screen.getByText('Alvásadósság: 1,6 óra/éjszaka')).toBeInTheDocument()
+  expect(screen.getByText('Miből gondolom')).toBeInTheDocument()
+  expect(screen.getByText('Segített?')).toBeInTheDocument()
+})
+
 // ── Visszacsukható régebbi üzenet (mezo-z4h4): a korábbi `expand`-only halmaz miatt egy
 // felhasználó által kinyitott régebbi kártyát soha nem lehetett visszacsukni.
 test('egy felhasználó által kinyitott régebbi kártya az összecsukás gombbal visszacsukható', async () => {

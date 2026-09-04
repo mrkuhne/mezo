@@ -1,50 +1,27 @@
-// Layout-aware loading skeleton for GoalsPage (mezo-f2z). Mirrors the real Goals
-// shape — page-header → goal hero card (eyebrow + title + window + a wide weight
-// track + 2 stats) → a timeline-row placeholder — so the swap to real content does
-// not reflow. Built from the Skeleton primitives.
 import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
+import { MozaikPage, PageBody } from '@/shared/ui/mozaik'
 
 export default function GoalsSkeleton() {
   return (
-    <div role="status" aria-label="Betöltés…">
-      <div className="pghead-np lav">
-        <div className="col gap-xs"><Skeleton width={70} height={11} /><Skeleton width={120} height={20} /></div>
-        <Skeleton width={64} height={24} radius={999} />
-      </div>
-      {/* Goal hero — eyebrow + title + window, a wide weight-track block, 2 stats */}
-      <div style={{ padding: '0 24px 16px' }}>
-        <SkeletonCard style={{ padding: 20 }}>
-          <div className="col gap-sm">
-            <Skeleton width={110} height={9} />
-            <Skeleton width="65%" height={22} />
-            <Skeleton width={130} height={11} />
-          </div>
-          {/* Weight track — mirrors the shared .track pill (Task 3/5), not the old 6px bar */}
-          <div className="mt-lg col gap-sm">
-            <div className="row gap-md" style={{ justifyContent: 'space-between', alignItems: 'flex-end' }}>
-              <Skeleton width={70} height={34} />
-              <Skeleton width={50} height={22} />
-            </div>
-            <Skeleton width="100%" height={13} radius={999} />
-            <div className="row gap-md" style={{ justifyContent: 'space-between' }}>
-              <Skeleton width={80} height={9} /><Skeleton width={70} height={9} />
-            </div>
-          </div>
-          {/* Stats — 2 backend-derived figures */}
-          <div className="row gap-md mt-lg" style={{ paddingTop: 14, borderTop: '1px solid var(--border-subtle)' }}>
-            {Array.from({ length: 2 }, (_, i) => (
-              <div key={i} className="col gap-sm" style={{ flex: 1 }}>
-                <Skeleton width="50%" height={9} /><Skeleton width="60%" height={16} />
-              </div>
+    <MozaikPage tone="coral" className="goal-hub-page">
+      <div role="status" aria-label="Betöltés…">
+        <div className="goal-skeleton-head"><Skeleton width={58} height={28} radius={999} /></div>
+        <PageBody className="goal-hub-body">
+          <div className="goal-hub-title"><Skeleton width={120} height={10} /><Skeleton width={150} height={28} /></div>
+          <SkeletonCard className="goal-skeleton-hero">
+            <div className="goal-skeleton-top"><span><Skeleton width={88} height={10} /><Skeleton width={190} height={28} /></span><Skeleton width={64} height={64} radius={999} /></div>
+            <Skeleton width="100%" height={45} radius={16} />
+            <Skeleton width="100%" height={54} radius={16} />
+          </SkeletonCard>
+          <div className="goal-hub-mosaic mz-mosaic">
+            {Array.from({ length: 6 }, (_, index) => (
+              <SkeletonCard key={index} className="goal-skeleton-tile">
+                <Skeleton width="70%" height={10} /><Skeleton width={47} height={47} radius={18} /><Skeleton width="85%" height={14} />
+              </SkeletonCard>
             ))}
           </div>
-        </SkeletonCard>
+        </PageBody>
       </div>
-      {/* Timeline row placeholder */}
-      <div style={{ padding: '0 24px 24px' }}>
-        <Skeleton width={150} height={10} style={{ marginBottom: 12 }} />
-        <Skeleton width="100%" height={72} radius={11} />
-      </div>
-    </div>
+    </MozaikPage>
   )
 }

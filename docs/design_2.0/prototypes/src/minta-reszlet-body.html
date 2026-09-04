@@ -1,0 +1,238 @@
+<style>
+  /* Minta-részlet v1 reuses the exact Mezo prototype shell from mezo-head.html. */
+  .pattern-screen {
+    background:
+      radial-gradient(circle at 86% 2%, rgba(149, 209, 225, .62), transparent 24%),
+      radial-gradient(circle at 18% 4%, rgba(255, 190, 121, .38), transparent 25%),
+      linear-gradient(180deg, #FCEFD5 0%, #FDFAF4 28%, #F8F1E6 100%);
+  }
+  .detail-head { display:flex; align-items:center; gap:9px; padding:6px 13px 2px; z-index:2; }
+  .detail-head .crumb { font-size:8px; font-weight:800; letter-spacing:.14em; text-transform:uppercase; color:#A2958A; }
+  .detail-scroll { flex:1; min-height:0; overflow-y:auto; scrollbar-width:none; padding:8px 13px 102px; }
+  .detail-scroll::-webkit-scrollbar { display:none; }
+
+  .state-card {
+    position:relative; overflow:hidden; padding:13px 14px 12px; border-radius:21px;
+    background:linear-gradient(145deg,#FFF0C9 0%,#FFFAEF 62%,#FFFFFF 100%);
+    border:1px solid rgba(201,150,46,.35);
+    box-shadow:0 18px 34px -18px rgba(168,128,31,.54), inset 0 1px 0 rgba(255,255,255,.9);
+  }
+  .state-card::after { content:""; position:absolute; width:106px; height:106px; border-radius:50%; right:-52px; top:-56px; border:18px solid rgba(201,150,46,.08); }
+  .state-top { display:flex; align-items:center; gap:9px; position:relative; z-index:1; }
+  .clay-disc { width:37px; height:37px; border-radius:14px; display:grid; place-items:center; flex:none;
+    background:linear-gradient(145deg,#FFFFFF,#F8E9BD); box-shadow:0 8px 15px -9px rgba(110,82,20,.65), inset 0 1px 0 #fff; }
+  .state-pill { margin-left:auto; padding:3px 9px; border-radius:999px; background:rgba(201,150,46,.13); color:#967015;
+    border:.5px solid rgba(201,150,46,.3); font-size:7.5px; font-weight:800; letter-spacing:.1em; }
+  .question { margin-top:10px; font-size:8.5px; color:#7F7163; font-weight:600; }
+  .answer { margin-top:3px; max-width:245px; font-family:"Fraunces",Georgia,serif; font-style:italic; font-size:20px; line-height:1.12; letter-spacing:-.02em; color:#2B2118; }
+  .answer-sub { margin-top:7px; max-width:250px; font-size:9.5px; line-height:1.45; color:#6E6257; font-weight:300; }
+  .answer-sub b { color:#2B2118; font-weight:650; }
+  .progress-copy { display:flex; align-items:center; margin-top:11px; font-size:8px; font-weight:700; color:#8B6C25; }
+  .progress-copy strong { margin-left:auto; color:#604A18; }
+  .progress-track { height:6px; border-radius:999px; margin-top:5px; background:rgba(201,150,46,.14); overflow:hidden; }
+  .progress-track i { display:block; height:100%; width:33.333%; border-radius:999px; background:linear-gradient(90deg,#E6C367,#C9962E); transform-origin:left; }
+  .play .progress-track i { animation:collect .85s cubic-bezier(.2,.8,.3,1) forwards; }
+  @keyframes collect { from { transform:scaleX(0); } to { transform:scaleX(1); } }
+
+  .section-head { display:flex; align-items:flex-end; gap:8px; padding:15px 2px 7px; }
+  .section-head h2 { font-size:10px; line-height:1; text-transform:uppercase; letter-spacing:.17em; color:#8E8175; }
+  .section-head span { margin-left:auto; font-size:8px; color:#A2958A; }
+  .compare-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .compare-tile { min-height:105px; padding:10px 11px; border-radius:18px; position:relative; overflow:hidden;
+    border:.5px solid rgba(43,33,24,.07); box-shadow:0 14px 25px -15px rgba(43,33,24,.32), inset 0 1px 0 rgba(255,255,255,.75); }
+  .compare-tile.weekday { background:linear-gradient(150deg,#DDEDF6,#F7FBFD); }
+  .compare-tile.weekend { background:linear-gradient(150deg,#EEE9FA,#FCFAFF); border:1px dashed rgba(108,95,163,.35); }
+  .compare-tile .tile-label { font-size:7.5px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+  .weekday .tile-label { color:#3F7A9F; } .weekend .tile-label { color:#6654A3; }
+  .day-count { font-size:26px; font-weight:200; line-height:1; margin-top:7px; font-variant-numeric:tabular-nums; }
+  .day-count small { font-size:8px; font-weight:700; color:#6E6257; }
+  .typical { margin-top:7px; font-size:8px; color:#6E6257; }
+  .typical b { display:block; font-size:13px; color:#2B2118; font-weight:650; font-variant-numeric:tabular-nums; }
+  .need-tag { display:inline-flex; align-items:center; margin-top:6px; padding:2px 7px; border-radius:999px; background:rgba(108,95,163,.1); color:#5D4FA0; font-size:7px; font-weight:800; }
+
+  .chart-card { padding:11px 11px 9px; border-radius:20px; background:#FFFFFF; border:.5px solid rgba(43,33,24,.06);
+    box-shadow:0 18px 32px -18px rgba(43,33,24,.34), inset 0 1px 0 rgba(255,255,255,.9); }
+  .chart-title { display:flex; align-items:center; gap:6px; }
+  .chart-title b { font-size:10.5px; }
+  .mini-chip { margin-left:auto; padding:3px 8px; border-radius:999px; font-size:7px; font-weight:800; color:#6E6257; background:#F4F0EA; }
+  .group-chart { width:100%; height:auto; display:block; margin-top:5px; }
+  .chart-note { display:flex; align-items:center; gap:5px; margin-top:2px; font-size:7.3px; color:#8E8175; }
+  .chart-note i { width:6px; height:6px; border-radius:50%; background:#6F9CBB; }
+  .chart-note i:last-of-type { background:#8A76CC; margin-left:5px; }
+
+  .story-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .story-tile { border-radius:18px; min-height:111px; padding:11px; border:.5px solid rgba(43,33,24,.06);
+    box-shadow:0 14px 25px -16px rgba(43,33,24,.32), inset 0 1px 0 rgba(255,255,255,.75); }
+  .story-tile.meaning { background:linear-gradient(150deg,#FFE9DF,#FFF9F5); }
+  .story-tile.next { background:linear-gradient(150deg,#E8F1E2,#FAFCF7); }
+  .story-icon { width:26px; height:26px; border-radius:10px; display:grid; place-items:center; background:rgba(255,255,255,.72); }
+  .story-tile h3 { margin-top:8px; font-size:9px; }
+  .story-tile p { margin-top:4px; font-size:8px; line-height:1.45; color:#6E6257; font-weight:300; }
+  .story-tile p b { color:#2B2118; font-weight:650; }
+
+  .fold { border-radius:18px; overflow:hidden; border:.5px solid rgba(43,33,24,.07); background:rgba(255,255,255,.78);
+    box-shadow:0 13px 24px -17px rgba(43,33,24,.35); }
+  .fold + .fold { margin-top:8px; }
+  .fold-button { width:100%; display:flex; align-items:center; gap:9px; padding:11px 12px; border:0; background:transparent; color:#2B2118; font:inherit; cursor:pointer; text-align:left; }
+  .fold-button .fold-icon { width:28px; height:28px; border-radius:10px; display:grid; place-items:center; background:#F1EDF9; }
+  .fold-button b { display:block; font-size:9.5px; }
+  .fold-button small { display:block; margin-top:1px; font-size:7.5px; color:#8E8175; }
+  .chev { margin-left:auto; font-size:13px; color:#8E8175; transition:transform .2s ease; }
+  .fold.open .chev { transform:rotate(180deg); }
+  .fold-body { display:none; padding:0 12px 12px; }
+  .fold.open .fold-body { display:block; }
+  .timeline { position:relative; padding-left:18px; }
+  .timeline::before { content:""; position:absolute; left:4px; top:4px; bottom:8px; width:1px; background:rgba(108,95,163,.18); }
+  .event { position:relative; padding-bottom:10px; }
+  .event:last-child { padding-bottom:0; }
+  .event::before { content:""; position:absolute; left:-17px; top:3px; width:7px; height:7px; border-radius:50%; background:#8A76CC; box-shadow:0 0 0 3px #F1EDF9; }
+  .event time { display:block; font-size:6.8px; font-weight:800; letter-spacing:.12em; text-transform:uppercase; color:#8E8175; }
+  .event p { margin-top:2px; font-size:8.5px; line-height:1.4; color:#55493E; }
+  .diag-grid { display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .diag-cell { padding:8px; border-radius:13px; min-height:51px; }
+  .diag-cell:nth-child(1) { background:#FFF1D6; } .diag-cell:nth-child(2) { background:#E3EFF7; }
+  .diag-cell:nth-child(3) { background:#F0EBFA; } .diag-cell:nth-child(4) { background:#EAF2E5; }
+  .diag-cell small { display:block; font-size:6.5px; font-weight:800; letter-spacing:.1em; text-transform:uppercase; color:#8E8175; }
+  .diag-cell b { display:block; margin-top:3px; font-size:10.5px; font-variant-numeric:tabular-nums; }
+  .source-row { display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
+  .source-chip { padding:3px 7px; border-radius:999px; background:#F5F1EB; color:#6E6257; font-size:7px; font-weight:650; }
+  .tech-toggle { margin-top:9px; width:100%; padding:7px 9px; border-radius:12px; border:0; background:#F1EDF9; color:#5D4FA0; font:inherit; font-size:7.5px; font-weight:800; cursor:pointer; }
+  .tech-raw { display:none; grid-template-columns:repeat(3,1fr); gap:5px; margin-top:6px; }
+  .tech-raw.show { display:grid; }
+  .tech-raw span { padding:7px 4px; border-radius:10px; background:#F8F5FC; text-align:center; font-size:7px; color:#7B6F91; }
+  .tech-raw b { display:block; font-size:10px; color:#4F436E; font-variant-numeric:tabular-nums; }
+
+  .floatfab { position:absolute; right:15px; bottom:67px; width:46px; height:46px; border-radius:50%; display:grid; place-items:center;
+    background:linear-gradient(135deg,#FF7A55,#FF5B36); box-shadow:0 12px 24px -6px rgba(255,91,54,.65); z-index:8; }
+  .tabbar.five { position:absolute; left:0; right:0; bottom:12px; z-index:7; margin:0 12px; padding:7px 10px; background:rgba(255,255,255,.92); }
+  .tabbar.five .mtab { flex:1; font-size:7.5px; }
+  .homebar { position:absolute; left:50%; bottom:3px; transform:translateX(-50%); margin:0; z-index:9; }
+
+  .aside-card { border:1px solid var(--line); border-radius:20px; padding:18px; background:rgba(255,255,255,.35); }
+  .aside-card + .aside-card { margin-top:14px; }
+  .aside-card h2 { margin-bottom:8px; }
+  .aside-card p { font-size:14px; line-height:1.55; color:var(--ink-2); }
+  .aside-card b { color:var(--ink); }
+  .jump-row { display:flex; flex-wrap:wrap; gap:8px; }
+  .jump-row button { border:1px solid var(--line); background:var(--card); color:var(--ink); font:inherit; font-size:12px; font-weight:650; border-radius:999px; padding:7px 12px; cursor:pointer; }
+  .jump-row button:hover { border-color:var(--accent); color:var(--accent); }
+
+  @media (prefers-reduced-motion:reduce) { .progress-track i { animation:none!important; } .chev { transition:none; } }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Mezo · vizuális iteráció · mezo-0469</p>
+  <h1>Minta részletei · v1</h1>
+  <p class="lede">A bináris minták új, <strong>emberi következtetésre épülő</strong> részletoldala.
+    Az első állapot a 2026. szeptember 4-i éles rekordot használja: nyolc hétköznap, egy hétvégi nap.</p>
+
+  <div class="stage">
+    <div class="phone">
+      <div class="screen pattern-screen play" id="patternScreen">
+        <div class="isl"></div>
+        <div class="p-status"><span>13:30</span><span>ᯤ ▮▮▮</span></div>
+        <div class="detail-head">
+          <button class="backbtn" type="button">‹ Minták</button>
+          <span class="crumb">Minta részletei</span>
+        </div>
+
+        <main class="detail-scroll" id="detailScroll">
+          <section class="state-card rise" style="--d:0ms;" aria-labelledby="stateAnswer">
+            <div class="state-top">
+              <span class="clay-disc"><svg width="27" height="27" viewBox="0 0 100 100"><use href="#i-minta"/></svg></span>
+              <div><div class="p-eyebrow" style="color:#98701A;">Táplálkozás</div><b style="font-size:10px;">Hétvégi ritmus</b></div>
+              <span class="state-pill">MÉG GYŰLIK</span>
+            </div>
+            <div class="question">Vizsgálat: hétvégén későbbre csúszik az utolsó étkezés?</div>
+            <div class="answer" id="stateAnswer">Még nincs elég hétvégi adat.</div>
+            <p class="answer-sub"><b>Nyolc hétköznapot</b>, de még csak <b>egy hétvégi napot</b> tudok összevetni. Ebből még nem mondok szokást.</p>
+            <div class="progress-copy"><span>Hétvégi napok</span><strong>1 / 3</strong></div>
+            <div class="progress-track" aria-label="1 a szükséges 3 hétvégi napból"><i></i></div>
+          </section>
+
+          <div class="section-head"><h2>Az összevetés alapja</h2><span>éles adatok</span></div>
+          <section class="compare-grid" aria-label="Hétköznap és hétvége összevetése">
+            <article class="compare-tile weekday rise" style="--d:70ms;">
+              <div class="tile-label">Hétköznap</div>
+              <div class="day-count">8 <small>nap</small></div>
+              <div class="typical">középső időpont<b>19:38</b></div>
+              <div style="font-size:7px;color:#7F91A0;margin-top:3px;">10:07–23:43 között</div>
+            </article>
+            <article class="compare-tile weekend rise" style="--d:110ms;">
+              <div class="tile-label">Hétvége</div>
+              <div class="day-count">1 <small>nap</small></div>
+              <div class="typical">eddigi időpont<b>14:35</b></div>
+              <span class="need-tag">+2 nap kell</span>
+            </article>
+          </section>
+
+          <div class="section-head"><h2>Az eddigi napok</h2><span>pont = egy nap</span></div>
+          <section class="chart-card rise" style="--d:150ms;" id="chartSection">
+            <div class="chart-title"><b>Utolsó étkezés ideje</b><span class="mini-chip">8 + 1 nap</span></div>
+            <svg class="group-chart" viewBox="0 0 278 214" role="img" aria-label="Utolsó étkezések időpontjai: nyolc hétköznap és egy hétvégi nap">
+              <defs>
+                <linearGradient id="wdWash" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#E3F0F7"/><stop offset="1" stop-color="#F8FBFD"/></linearGradient>
+                <linearGradient id="weWash" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#EEE9FA"/><stop offset="1" stop-color="#FCFAFF"/></linearGradient>
+              </defs>
+              <rect x="48" y="14" width="86" height="164" rx="16" fill="url(#wdWash)"/>
+              <rect x="154" y="14" width="86" height="164" rx="16" fill="url(#weWash)" stroke="#B8AADE" stroke-dasharray="4 4"/>
+              <g stroke="#D9D0C5" stroke-width=".7" stroke-dasharray="3 4"><line x1="38" y1="26" x2="246" y2="26"/><line x1="38" y1="91" x2="246" y2="91"/><line x1="38" y1="156" x2="246" y2="156"/><line x1="38" y1="177" x2="246" y2="177"/></g>
+              <g fill="#998C7F" font-size="8" text-anchor="end" font-family="Geist, sans-serif"><text x="33" y="29">24:00</text><text x="33" y="94">18:00</text><text x="33" y="159">12:00</text><text x="33" y="180">10:00</text></g>
+              <g fill="#6F9CBB" opacity=".92"><circle cx="79" cy="30" r="5"/><circle cx="94" cy="55" r="5"/><circle cx="111" cy="29" r="5"/><circle cx="72" cy="147" r="5"/><circle cx="102" cy="92" r="5"/><circle cx="85" cy="102" r="5"/><circle cx="115" cy="46" r="5"/><circle cx="89" cy="177" r="5"/></g>
+              <line x1="62" y1="73" x2="120" y2="73" stroke="#3F7A9F" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="197" cy="128" r="6" fill="#8A76CC"/><circle cx="89" cy="177" r="11" fill="none" stroke="#C9962E" stroke-width="2"/>
+              <g font-family="Geist, sans-serif" text-anchor="middle"><text x="91" y="194" font-size="9" font-weight="700" fill="#3F7A9F">Hétköznap</text><text x="197" y="194" font-size="9" font-weight="700" fill="#6654A3">Hétvége</text><text x="91" y="205" font-size="7" fill="#8A8178">medián 19:38</text><text x="197" y="205" font-size="7" fill="#8A8178">még nincs medián</text></g>
+            </svg>
+            <div class="chart-note"><i></i> hétköznap <i></i> hétvége <span style="margin-left:auto;">arany kör = legutóbbi</span></div>
+          </section>
+
+          <div class="section-head"><h2>Mit vigyél magaddal?</h2></div>
+          <section class="story-grid">
+            <article class="story-tile meaning rise" style="--d:190ms;"><span class="story-icon"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></span><h3>Mit jelent ez?</h3><p>Az egyetlen hétvégi nap <b>korábbinak látszik</b>, de ebből még nem következik hétvégi szokás.</p></article>
+            <article class="story-tile next rise" style="--d:230ms;"><span class="story-icon"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-naplo"/></svg></span><h3>Mi történik ezután?</h3><p>Még <b>két hétvégi napot</b> figyelek. Utána újraszámolom az összevetést.</p></article>
+          </section>
+
+          <div class="section-head"><h2>Háttér</h2><span>csak ha érdekel</span></div>
+          <section class="fold rise" style="--d:270ms;" id="historyFold">
+            <button class="fold-button" type="button" aria-expanded="false"><span class="fold-icon"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-naplo"/></svg></span><span><b>A minta története</b><small>2 jelentős esemény</small></span><span class="chev">⌄</span></button>
+            <div class="fold-body"><div class="timeline"><div class="event"><time>Szept. 3.</time><p>Először lett számolható a két adatsor. A hétvégi oldal még túl vékony volt.</p></div><div class="event"><time>Szept. 4.</time><p>Új hétköznapi nap érkezett. Az arány <b>8 : 1</b>, ezért tovább gyűjtöm az adatot.</p></div></div></div>
+          </section>
+
+          <section class="fold rise" style="--d:310ms;" id="diagnosticsFold">
+            <button class="fold-button" type="button" aria-expanded="false"><span class="fold-icon"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-eletjel"/></svg></span><span><b>Hogyan számoltuk?</b><small>ablak, források és technikai adatok</small></span><span class="chev">⌄</span></button>
+            <div class="fold-body">
+              <div class="diag-grid"><div class="diag-cell"><small>Adatablak</small><b>60 nap</b></div><div class="diag-cell"><small>Párosított nap</small><b>9</b></div><div class="diag-cell"><small>Csoportarány</small><b>8 : 1</b></div><div class="diag-cell"><small>Utolsó számítás</small><b>ma 02:40</b></div></div>
+              <div class="source-row"><span class="source-chip">📅 naptár</span><span class="source-chip">🍲 étkezésnapló</span><span class="source-chip">0 nap eltolás</span></div>
+              <button class="tech-toggle" id="techToggle" type="button" aria-expanded="false">Technikai adatok megmutatása</button>
+              <div class="tech-raw" id="techRaw"><span><b>−0,27</b>korreláció</span><span><b>0,479</b>p-érték</span><span><b>gyenge</b>nyers jel</span></div>
+            </div>
+          </section>
+        </main>
+
+        <div class="floatfab" role="button" tabindex="0" aria-label="Gyors logolás"><svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div>
+        <nav class="tabbar five" aria-label="Fő navigáció"><div class="mtab off"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div><div class="mtab off"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div><div class="mtab off"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div><div class="mtab on"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div><div class="mtab off"><svg width="20" height="20" viewBox="0 0 100 100"><use href="#i-emberek"/></svg>Én</div></nav>
+        <div class="homebar"></div>
+      </div>
+    </div>
+
+    <aside>
+      <div class="aside-card"><h2>V1 fókusz</h2><p>A hipotézis kérdés marad kontextus, de a fő válasz az aktuális állapot. A <b>8 : 1</b> arány miatt nincs döntés és nincs regressziós vonal.</p></div>
+      <div class="aside-card"><h2>Gyors bejárás</h2><div class="jump-row"><button type="button" data-jump="chartSection">Grafikon</button><button type="button" data-open="historyFold">Történet</button><button type="button" data-open="diagnosticsFold">Számítás</button></div></div>
+      <div class="aside-card"><h2>Mi változott?</h2><ul><li><strong>Állítás helyett állapot:</strong> „Még nincs elég adat.”</li><li><strong>Összes n helyett csoportok:</strong> 8 hétköznap + 1 hétvége.</li><li><strong>Adaptív grafikon:</strong> bináris párnál kétcsoportos dot plot.</li><li><strong>Jelentős történet:</strong> nincs belső „gyenge sáv” zsargon.</li><li><strong>Rétegzett diagnosztika:</strong> emberi összefoglaló, utána opcionális r/p.</li></ul></div>
+      <p class="note">A prototípus az éles rekord időpontjait mutatja. A medián csak három vagy több napnál jelenik meg csoport-összegzésként.</p>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  document.title = 'Minta részletei · Mezo prototípus';
+  var scroll = document.getElementById('detailScroll');
+  function toggleFold(fold, forceOpen) { var open = forceOpen == null ? !fold.classList.contains('open') : forceOpen; fold.classList.toggle('open', open); fold.querySelector('.fold-button').setAttribute('aria-expanded', String(open)); return open; }
+  document.querySelectorAll('.fold-button').forEach(function (button) { button.addEventListener('click', function () { toggleFold(button.closest('.fold')); }); });
+  document.getElementById('techToggle').addEventListener('click', function () { var raw = document.getElementById('techRaw'); var show = raw.classList.toggle('show'); this.setAttribute('aria-expanded', String(show)); this.textContent = show ? 'Technikai adatok elrejtése' : 'Technikai adatok megmutatása'; });
+  document.querySelectorAll('[data-jump]').forEach(function (button) { button.addEventListener('click', function () { document.getElementById(button.getAttribute('data-jump')).scrollIntoView({ behavior:'smooth', block:'start' }); }); });
+  document.querySelectorAll('[data-open]').forEach(function (button) { button.addEventListener('click', function () { var fold = document.getElementById(button.getAttribute('data-open')); toggleFold(fold, true); setTimeout(function () { fold.scrollIntoView({ behavior:'smooth', block:'center' }); }, 30); }); });
+  document.querySelector('.backbtn').addEventListener('click', function () { scroll.scrollTo({ top:0, behavior:'smooth' }); });
+})();
+</script>

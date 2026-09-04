@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.CompanionMessagePopulator;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -130,6 +131,22 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
         // all rows here are lazily generated inside the endpoint — no populated row to pin
         // identity against, so only assert every row's id came back non-null
         assertThat(feed).extracting(FeedMessageResponse::getId).doesNotContainNull();
+    }
+
+    @Test
+    void testGetFeed_shouldExposeTheAdviceCardsFactsAndSuggestions() {
+        companionMessagePopulator.createAdvice(ownerId(), LocalDate.now(), "sleep_debt",
+                "sleep_recover_tonight", "Mezo · észrevétel", "kártya szöveg",
+                List.of("Alvásadósság: 1,6 óra/éjszaka"), List.of("Told előre a villanyoltást."),
+                Instant.now());
+
+        List<FeedMessageResponse> feed = getForList(
+                "/api/proactive/feed", ownerAuthHeaders(), HttpStatus.OK, FeedMessageResponse.class);
+
+        assertThat(feed).hasSize(1);
+        assertThat(feed.get(0).getKind()).isEqualTo(FeedMessageResponse.KindEnum.ADVICE);
+        assertThat(feed.get(0).getFacts()).containsExactly("Alvásadósság: 1,6 óra/éjszaka");
+        assertThat(feed.get(0).getSuggestions()).containsExactly("Told előre a villanyoltást.");
     }
 
     @Test

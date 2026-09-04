@@ -7,7 +7,7 @@
 // the hub's contracts here are: the keret-hero stays ONE number, the Logolás hero
 // tile honestly mirrors the day's window states and opens /fuel/log, the víz ring
 // opens the water sheet, the energy chips reopen their own EnergyBreakdownSheet
-// section, and the Fuel-beállítások band still opens FuelSettingsSheet.
+// section, and the Fuel-beállítások band opens the standalone settings page.
 // ============================================================
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -290,12 +290,10 @@ test('a Napló line only appears once something is scored today — never a fake
 
 // ── the Fuel-beállítások band (the retired dropdown's extra action) ──────────
 
-test('the Fuel-beállítások band opens FuelSettingsSheet — the dropdown\'s ⚙️ action, re-homed', async () => {
+test('the Fuel-beállítások band navigates to its own page', async () => {
   renderView()
   await userEvent.click(screen.getByRole('button', { name: 'Fuel-beállítások' }))
-  const dialog = await screen.findByRole('dialog', { name: 'Fuel beállítások' })
-  // Something real from the sheet, not just the title — the meals-per-day segmented control.
-  expect(within(dialog).getByText(/étkezés\/nap/i)).toBeInTheDocument()
+  expect(screen.getByTestId('loc')).toHaveTextContent('/fuel/settings')
 })
 
 test('the hero carries no settings entry of its own — Fuel-beállítások lives only on the band', () => {

@@ -955,6 +955,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/goals/{id}/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** State-led overview for the Goal hub */
+        get: operations["getGoalOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/goals/{id}/activate": {
         parameters: {
             query?: never;
@@ -5252,6 +5269,77 @@ export interface components {
             setCycleIsolation: number;
             transition: number;
         };
+        GoalOverviewResponse: {
+            /** Format: uuid */
+            goalId: string;
+            title: string;
+            /** @enum {string} */
+            trajectory: "cut" | "bulk" | "maintain";
+            /** @enum {string} */
+            status: "planned" | "active" | "archived";
+            currentWeek: number;
+            totalWeeks: number;
+            completionPct: number;
+            currentWeightKg: number;
+            targetWeightKg?: number | null;
+            remainingKg?: number | null;
+            /** @enum {string} */
+            courseStatus: "on_track" | "watch" | "learning" | "invalid";
+            courseReasonCode: string;
+            observedRateKgPerWeek?: number | null;
+            targetRateKgPerWeek?: number | null;
+            /** Format: date */
+            projectedTargetDate?: string | null;
+            /** @enum {string} */
+            dataSufficiency: "none" | "provisional" | "full";
+            diet: components["schemas"]["GoalOverviewDiet"];
+            segment: components["schemas"]["GoalOverviewSegment"];
+            plans: components["schemas"]["GoalOverviewPlans"];
+            guards: components["schemas"]["GoalOverviewGuards"];
+            openSuggestionCount: number;
+            /** Format: uuid */
+            latestSuggestionId?: string | null;
+        };
+        GoalOverviewDiet: {
+            weekAverageKcal?: number | null;
+            /** @enum {string} */
+            todayDayType: "training" | "rest" | "uniform" | "unavailable";
+            todayKcal?: number | null;
+            trainingDayKcal?: number | null;
+            restDayKcal?: number | null;
+            proteinG?: number | null;
+            carbsG?: number | null;
+            fatG?: number | null;
+            /** @enum {string} */
+            basis: "formula" | "adaptive" | "unavailable";
+            explanationCode: string;
+        };
+        GoalOverviewSegment: {
+            available: boolean;
+            label?: string | null;
+            fromWeek?: number | null;
+            toWeek?: number | null;
+            remainingDays?: number | null;
+            nextLabel?: string | null;
+            nextFromWeek?: number | null;
+            /** Format: date */
+            nextChangeDate?: string | null;
+            explanationCode: string;
+        };
+        GoalOverviewPlans: {
+            links: components["schemas"]["GoalPlanLinkResponse"][];
+            gaps: components["schemas"]["GoalGap"][];
+            sportSchedule: components["schemas"]["SportScheduleSlotResponse"][];
+            activeLinkCount: number;
+            uncoveredWeekCount: number;
+            topIssueCode?: string | null;
+        };
+        GoalOverviewGuards: {
+            status?: components["schemas"]["GoalGuardStatus"] | null;
+            healthyCount: number;
+            totalCount: number;
+            topIssueCode?: string | null;
+        };
         GoalResponse: {
             /** Format: uuid */
             id: string;
@@ -6704,8 +6792,12 @@ export interface components {
             lagDays: number;
             metricAKey: string;
             metricALabel: string;
+            /** @description A metrika megjelenítési típusa; a grafikon és az értékformázás contractos forrása. */
+            metricAValueKind: string;
             metricBKey: string;
             metricBLabel: string;
+            /** @description A metrika megjelenítési típusa; a grafikon és az értékformázás contractos forrása. */
+            metricBValueKind: string;
             /** @description Miért figyeljük — a katalógus mechanism-egysorosa (mezo-18bx). */
             mechanismHu: string;
             /** @description Kérdés-cím a Motor kártyán — „Jobban alszol, ha…?" (mezo-fj1g). */
@@ -6727,6 +6819,12 @@ export interface components {
             missingDays?: number | null;
             /** @description A szűk keresztmetszet metrikája — few_days / no_data / degenerate. */
             bottleneckMetricKey?: string | null;
+            /** @description A 0 értékű illesztett napok száma — csak bináris metric-a esetén. */
+            groupZeroDays?: number | null;
+            /** @description Az 1 értékű illesztett napok száma — csak bináris metric-a esetén. */
+            groupOneDays?: number | null;
+            /** @description A csoportonként megkövetelt minimum — csak bináris metric-a esetén. */
+            requiredPerGroup?: number | null;
             /**
              * Format: double
              * @description live: élő számítás · frozen: a befagyasztott sor értéke.
@@ -7066,13 +7164,17 @@ export interface components {
             /** Format: date */
             date: string;
             /**
-             * @description Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; intervention is config text (mezo.companion.interventions) and setup is config text for a configuration gap (mezo.proactive.setup-checks), neither ever LLM output.
+             * @description Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; advice is the single daily coaching card (S4, mezo-d58h.4) whose prose is LLM-written over deterministic facts; intervention and setup are the pre-S4 config-text cards, kept for existing rows only.
              * @enum {string}
              */
-            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention" | "people" | "setup";
+            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention" | "people" | "setup" | "advice";
             eyebrow: string;
             body: string[];
             refs: components["schemas"]["FeedRef"][];
+            /** @description Advice-card evidence — deterministic, rule-provided lines rendered from the raise's own frozen payload (S4, mezo-d58h.4). Present only on advice rows; the model never writes these. */
+            facts?: string[];
+            /** @description Advice-card suggestion texts (config-provided). Present only on advice rows. */
+            suggestions?: string[];
             /** Format: date-time */
             generatedAt: string;
         };
@@ -11881,6 +11983,46 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getGoalOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Goal overview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalOverviewResponse"];
+                };
             };
             /** @description Missing/invalid token */
             401: {

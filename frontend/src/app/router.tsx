@@ -41,6 +41,7 @@ import { FuelMedicationPage } from '@/features/fuel/pages/FuelMedicationPage'
 import { RecipeDetailPage } from '@/features/fuel/pages/RecipeDetailPage'
 import { RecipeEditorPage } from '@/features/fuel/pages/RecipeEditorPage'
 import { RecipeWorkshopPage } from '@/features/fuel/pages/RecipeWorkshopPage'
+import { FuelSettingsPage } from '@/features/fuel/pages/FuelSettingsPage'
 import { FuelSlotsPage } from '@/features/fuel/pages/FuelSlotsPage'
 import { MezoHubPage } from '@/features/insights/pages/MezoHubPage'
 import { PatternsPage } from '@/features/insights/pages/PatternsPage'
@@ -73,6 +74,11 @@ import { WeekDayPage } from '@/features/me/pages/WeekDayPage'
 import { WeekLessonsPage } from '@/features/me/pages/WeekLessonsPage'
 import { WeekDiscoveriesPage } from '@/features/me/pages/WeekDiscoveriesPage'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
+import { GoalDietPage } from '@/features/me/pages/GoalDietPage'
+import { GoalSegmentPage } from '@/features/me/pages/GoalSegmentPage'
+import { GoalPlansPage } from '@/features/me/pages/GoalPlansPage'
+import { GoalGuardsPage } from '@/features/me/pages/GoalGuardsPage'
+import { GoalSettingsPage } from '@/features/me/pages/GoalSettingsPage'
 import { CelokPage } from '@/features/me/pages/CelokPage'
 import { CelPage } from '@/features/me/pages/CelPage'
 import { CelWizardPage } from '@/features/me/pages/CelWizardPage'
@@ -229,8 +235,9 @@ export const routes: RouteObject[] = [
       { path: 'fuel/recipes', element: <FuelRecipesPage /> },
       { path: 'fuel/recipes/:id', element: <RecipeDetailPage /> },
       { path: 'fuel/recipes/:id/edit', element: <RecipeEditorPage /> },
-      // Meal-slot template editor (mezo-7102) — reachable only from FuelSettingsSheet,
-      // which now opens from the hub's Fuel-beállítások band.
+      // Fuel settings is a full-page sibling; its meal-window row continues to the
+      // dedicated slot-template editor (mezo-7102).
+      { path: 'fuel/settings', element: <FuelSettingsPage /> },
       { path: 'fuel/slots', element: <FuelSlotsPage /> },
       // Pattern-pair detail (mezo-tk88.5) — a full leaf page, same sibling idiom as
       // fuel/recipes/:id above (no Insights sub-nav chrome).
@@ -332,6 +339,11 @@ export const routes: RouteObject[] = [
       // `me/people/*` precedent above (React Router ranks static over dynamic regardless of
       // source order, but the ordering stays explicit here too).
       { path: 'me/goals/weight', element: <GoalsPage /> },
+      { path: 'me/goals/weight/diet', element: <GoalDietPage /> },
+      { path: 'me/goals/weight/segment', element: <GoalSegmentPage /> },
+      { path: 'me/goals/weight/plans', element: <GoalPlansPage /> },
+      { path: 'me/goals/weight/guards', element: <GoalGuardsPage /> },
+      { path: 'me/goals/weight/settings', element: <GoalSettingsPage /> },
       { path: 'me/goals/weight/new', element: <GoalPlannerPage /> },
       // Task 11's five-step wizard (mezo-iizd.1) — another static `me/goals/*` sibling,
       // registered ahead of the dynamic `me/goals/:id` below per the same precedent.

@@ -1,6 +1,17 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { SortableList } from '@/shared/ui/SortableList'
+import { SortableList, type SortableListProps } from '@/shared/ui/SortableList'
+
+function renderList(props: Partial<SortableListProps<{ id: string; label?: string }>> = {}) {
+  return render(
+    <SortableList
+      items={[{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }]}
+      onReorder={vi.fn()}
+      renderItem={(it) => <span>{it.label}</span>}
+      {...props}
+    />,
+  )
+}
 
 test('▲▼ buttons reorder items and call onReorder with the new id order', async () => {
   const onReorder = vi.fn()
@@ -36,4 +47,17 @@ test('falls back to item.id for the control label when no label is given', () =>
   render(<SortableList items={[{id:'x'},{id:'y'}]}
     onReorder={vi.fn()} renderItem={(it)=> <span>{it.id}</span>} />)
   expect(screen.getByRole('button', { name: 'x lejjebb' })).toBeInTheDocument()
+})
+
+test('chevrons="focus" hides the reorder buttons visually but keeps them focusable', () => {
+  const { container } = renderList({ chevrons: 'focus' })
+  const chev = container.querySelector('.srt-chev') as HTMLElement
+  expect(chev).toHaveClass('srt-chev-focus')
+  // a gombok az a11y fában maradnak — csak CSS rejti őket
+  expect(within(chev).getByRole('button', { name: /feljebb/i })).toBeInTheDocument()
+})
+
+test('the default keeps the chevrons visible', () => {
+  const { container } = renderList()
+  expect(container.querySelector('.srt-chev')).not.toHaveClass('srt-chev-focus')
 })

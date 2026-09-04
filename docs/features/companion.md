@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-03
+updated: 2026-09-04
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -312,6 +312,38 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 - **Nothing writes embeddings yet** — the daily-summary generator + embed pipeline is V2.2;
   recall-in-chat is V2.3.
 
+**Shared RAG memory platform foundation (`mezo-6dii.1`) — canonical storage without a serving cutover:**
+
+- `memory_item` is the owner-scoped, source-addressable canonical retrieval projection. It keeps
+  normalized search text, temporal validity, salience, topics/people and typed provenance apart
+  from any embedding model.
+- `memory_vector` stores independently deployable embedding generations per item. Multiple
+  generations can coexist; only a ready live row is ANN-searchable. This makes re-embedding and
+  OLD/SHADOW/NEW comparison possible without overwriting the current vector.
+- `memory_retrieval_run` → `memory_retrieval_result` → `memory_retrieval_feedback` is the durable
+  retrieval audit chain: policy/query/serving mode, ranked candidates with score components, then
+  a user judgement. Composite foreign keys keep every link within one owner.
+- The migration backfills every live legacy `memory_embedding` into one canonical item plus one
+  ready `gemini-embedding-001-768-v1` vector and fails on an incomplete copy. The legacy table is
+  deliberately unchanged and remains the chat's OLD serving source until the later shadow gate.
+- `knowledge_fact` now has additive pinning, validity, supersession/conflict links and typed
+  provenance. Existing prompt inclusion semantics remain unchanged.
+
+**Canonical dual-write and vector generations (`mezo-6dii.2`) — population without a serving cutover:**
+
+- Every successful legacy `memory_embedding` write now schedules an AFTER_COMMIT projection into
+  `memory_item` plus the configured ready serving generation in `memory_vector`; all ten narrative
+  kinds use this one path. The projection runs in its own transaction, so a canonical-write failure
+  is logged but cannot roll back the already-durable OLD row.
+- Projection is source-key idempotent: content is accent-folded for search, SHA-256 hashed, updated
+  in place on drift, suppressed with all live generations on source deletion, and revived under the
+  same canonical id when the source returns. Same hash plus an existing ready generation is a no-op.
+- The optional re-embedding job is disabled by default. When enabled it fans out over active,
+  onboarded users and fills one explicit target generation in bounded, `SKIP LOCKED` batches;
+  pending/failed/stale rows resume safely while older ready generations remain readable.
+- `memory_embedding` is still the sole serving source. The new canonical rows are population and
+  migration infrastructure only; retrieval cutover remains behind later shadow/evaluation gates.
+
 **V2.2 (`mezo-fnnq.10`) shipped daily summaries + the embed pipeline — the memory fills itself:**
 
 - **`daily_summary` table + generator** — `DailySummaryService.generate(userId, date)`: a
@@ -364,7 +396,8 @@ Mezo: …`, ref = assistant message id).
 - **The second nightly cron** — `PatternDetectionJob` (02:40, switch
   `mezo.techcore.cron.pattern-detection-job.enabled`): for every pair in the config catalog
   (`mezo.companion.patterns.pairs`, 8 pairs v1 — **29 since V3.4**, `mezo-6ha5`) it lag-aligns two per-day metric series over the
-  lookback window, gates on `min-n` (8), runs PURE Pearson math (`PearsonCorrelation` — r, n and
+  lookback window, gates on `min-n` (8) and — for binary A metrics — `min-group-n` (3 per
+  0/1 group), runs PURE Pearson math (`PearsonCorrelation` — r, n and
   a real two-sided p via the incomplete-beta t-test, fixture-tested; no LLM anywhere) and
   **upserts one row per `(user, kind, pair_key)`**: stats refresh while `proposed`/`monitoring`,
   a user-judged `confirmed`/`rejected` row is never auto-touched (V3.3 adds reinforcement).
@@ -381,24 +414,35 @@ Mezo: …`, ref = assistant message id).
   PatternCard's decision buttons persist, critique bars render only when present (V3.2),
   degraded card on switch-off 404.
 
-**The gate extracted into `PatternGate` + a live monitor (`mezo-viqs`, post-epic):** the
+**The gate extracted into `PatternGate` + a live monitor (`mezo-viqs`, group-balance extension
+`mezo-0469`):** the
 surfacing gate `detectPair` ran inline (the `aligned < min-n` and constant-series checks) moved
 into `PatternGate` (`service/PatternGate.java`) — package-private, static, Spring-free, the
-`PearsonCorrelation` precedent. `evaluate(seriesA, seriesB, lagDays, minN)` (`PatternGate.java:33-54`) `→ Outcome(Verdict,
-alignedDays, PearsonCorrelation.Result, Side constantSide)` (types at `PatternGate.java:17-24`),
-`Verdict ∈ {LIVE, FEW_DAYS, NO_DATA, DEGENERATE}`, `Side ∈ {A, B, BOTH}` (which series is
-constant, `DEGENERATE`-only). **`FROZEN` is deliberately NOT in `Verdict`** — it is the
+`PearsonCorrelation` precedent. `evaluate(seriesA, seriesB, lagDays, minN, minGroupN,
+metricAValueKind)` → `Outcome(Verdict, alignedDays, PearsonCorrelation.Result,
+Side constantSide, groupZeroDays, groupOneDays)`. `Verdict ∈ {LIVE, FEW_DAYS, NO_DATA,
+IMBALANCED_GROUPS, DEGENERATE}`; the exact order is `NO_DATA → FEW_DAYS → IMBALANCED_GROUPS →
+DEGENERATE/LIVE`. `MetricValueKind ∈ {NUMBER, CLOCK_HOUR, BINARY}` lives on every `MetricKey`;
+the group gate runs only for `BINARY` A metrics and requires at least `min-group-n` exact 0 and 1
+values before Pearson is meaningful. `Side ∈ {A, B, BOTH}` names the constant series on
+`DEGENERATE`; group counts exist only for a binary pair that reached the total-size gate.
+**`FROZEN` is deliberately NOT in `Verdict`** — it is the
 consequence of a persisted row's `confirmed`/`rejected` status, decided by the caller, never by
 the gate math. `detectPair` now calls `PatternGate.evaluate` and upserts only on `LIVE`
-(`PatternDetectionService.java:66-78`); the per-pair `try/catch` isolation and the
+(`PatternDetectionService.java`); therefore `few_days`, `no_data`, `imbalanced_groups` and
+`degenerate` create/update no pattern row, snapshot or notification. A stale proposed row is left
+byte-for-byte unchanged until the pair is LIVE again. The per-pair `try/catch` isolation and the
 `upsert`/`reinforcePromotedFact` logic are unchanged, and `PatternDetectionServiceIT` is
-untouched. **`PatternMonitorService`** (`service/PatternMonitorService.java`, read-only,
+the persistence boundary proof. **`PatternMonitorService`** (`service/PatternMonitorService.java`, read-only,
 switch-gated) sits behind the new `GET /api/companion/pattern/monitor` — for every catalog pair
 it re-runs `PatternGate.evaluate` over the EXACT SAME windows the nightly job would use
-(`to = yesterday`, `from = to − (lookbackDays−1)`, B lag-shifted) and reports the **5-verdict
-model**: `live` (gate passed, live `r`/`n`/`p`) / `few_days` (aligned days below `min-n`, with
+(`to = yesterday`, `from = to − (lookbackDays−1)`, B lag-shifted) and reports the **6-verdict
+model**: `live` (gate passed, live `r`/`n`/`p`; binary pairs also carry both group counts) /
+`few_days` (aligned days below `min-n`, with
 `missingDays` + the thinner-covered bottleneck metric) / `no_data` (zero aligned days) /
-`degenerate` (enough days but a constant series) / `frozen` (a `confirmed`/`rejected` row — no
+`imbalanced_groups` (enough total days, but fewer than `min-group-n` observations in either
+binary group; counts + required threshold, no `r`/`n`/`p`) / `degenerate` (enough eligible days
+but a constant series) / `frozen` (a `confirmed`/`rejected` row — no
 recompute, its own frozen `r`/`n`/`p` are reported) — plus per-metric coverage for ALL
 `MetricKey`s (31 since V3.4; series pulled once per metric into a request-scoped cache, so the pair verdicts and
 the coverage block share one snapshot — windowed via the shared `PatternGate.window` since V3.4). Because the nightly job and the monitor call the
@@ -619,6 +663,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Advisor chain (never-ask-twice + self-check) | ✅ V1.3, criterion renamed `mezo-q71s` | Clinical regex + LLM verdict (`redundantQuestion`/`unmarkedClaim` — marked speculation allowed since [ADR 0028](../decisions/0028-marked-speculation-in-chat.md)), retry-once → `degraded` flag (`mezo.companion.advisors.*`); reinforcement on extraction dedupe-hit. |
 | Vector infra (pgvector + EmbeddingPort) | ✅ V2.1 | `memory_embedding` (`vector(768)`, HNSW, cosine) + `EmbeddingPort` (real Gemini SDK adapter / fake); image `pgvector/pgvector:pg16` in compose + k3s + Testcontainers. |
 | Narrative memory (summaries + embed pipeline) | ✅ V2.2 | Nightly `DailySummaryJob` (first cron; catch-up = backfill) → `daily_summary` + embeddings; post-turn `TurnEmbeddingListener` embeds every chat turn; `mezo.companion.summary.*` + `embedding.*` tunables. |
+| Canonical dual-write + vector generations | ✅ `mezo-6dii.2` | Every OLD memory write projects AFTER_COMMIT into source-addressable `memory_item` + versioned `memory_vector`; isolated failure preserves OLD. Optional resumable re-embedding builds a target generation without switching serving. |
 | Journal embedding seam | ✅ `mezo-b3pp.1` | `memory_embedding` kind-CHECK widened to 10 (only `journal_entry` populated); `JournalEmbeddingListener` (AFTER_COMMIT, `COMPANION_SWITCH`+journal-switch gated) → `MemoryEmbeddingWriter.writeJournal`/`.deleteJournalEmbedding` (edit = update-in-place, not delete+insert). Full detail: [`journal.md`](journal.md). |
 | Decision embedding seam | ✅ `mezo-b3pp.4` | A FOURTH `memory_embedding` kind, `decision`, joins `chat_turn`/`daily_summary`/`journal_entry`; `DecisionEmbeddingListener` (same AFTER_COMMIT/`@Async`, `COMPANION_SWITCH`+journal-switch gated idiom) → `MemoryEmbeddingWriter.writeDecision` — embeds the decision text on create, then **re-embeds the SAME row in place on review** with the outcome folded in (`"…\n\nKimenet (N/5): …"`), because the outcome is the half worth recalling. No delete path (decisions aren't deletable), so no orphaned-vector race to handle. Full detail: [`journal.md`](journal.md). |
 | Reflection embedding seam | ✅ `mezo-b3pp.2` | A FIFTH `memory_embedding` kind, `reflection`: the Napzárás evening prose (`ritual_day.reflection_text`, [`ritual.md`](ritual.md) §4). `ReflectionEmbeddingListener` reuses the AFTER_COMMIT/`@Async` idiom but is gated on `COMPANION_SWITCH` + **`RITUAL_SWITCH`** — the first seam whose second switch isn't journal's — and consumes `feature/ritual`'s `RitualClosedEvent` → `MemoryEmbeddingWriter.writeReflection`, embedding **on close** rather than per keystroke-save; a post-close edit re-publishes the event and re-embeds the same `(kind, ref_id)` row in place, and clearing the prose soft-deletes the vector so an erased evening stops being recallable. No migration — `reflection` was already legal in the W1.1 kind CHECK. Full detail: [`ritual.md`](ritual.md) §5. |
@@ -633,7 +678,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Ambient recall in chat (W3.1) | ✅ `mezo-b3pp.12` | `service/PromptMemoryAssembler` — every turn embeds the user message ONCE (`LlmCallContext("companion_recall","recall_embed","conversation",id)`), then runs the kind-group ANN queries through `repository/MemoryEmbeddingAnnQuery` (four here, five since W3.2 added the rungs) (raw JDBC under a savepoint, §9 — NOT a JPA finder): daily_summary · journal family (journal_entry/reflection/gratitude/decision) · chat_turn · notes (activity_note/checkin_note). Per group: the V2.3 `similarity × exp(-age/τ)` re-rank over `recall.candidate-pool` candidates, the stricter ambient floor, today-and-later dates skipped (the snapshot already carries the day), the group's cap of items kept (a cap of 0 skips the query entirely) — **since W3.3 (`mezo-b3pp.14`) the floor, τ and cap are all per kind-group, `ambient-recall.<group>.{min-similarity,decay-days,cap}`**. Survivors dedupe by `(kind, ref_id)`, sort by score and render the **`[Emlékek]`** block (`- <ISO date> (<HU forrás>): <first line, cut at recall.render-max-chars and suffixed with …>`) under `ambient-recall.max-tokens` (≈3 chars/token; the loop STOPS at the first overflowing item — relevance order is never reshuffled). Position: pattern-ack → **[Emlékek]** → **[Összefüggések]** (W2.4) → `TONE_REMINDER`, assembled ONCE for both paths (`ChatService.assembleSystemPrompt`). Every rendered **day** adds one `Memory`/date ref (same-day items collapse; tool refs keep priority under `tools.max-refs-per-turn`) **after** the LLM round. IDENT-3: an embed/ANN failure logs + omits the block; `degraded` stays `false` and the turn's transaction survives. Runtime kill-switch `ambient-recall.enabled`. **W3.1b (`mezo-b3pp.28`) made it visible:** the rendered items are persisted per answer as the `ai_message.recalled_memories` jsonb envelope and returned as `MessageResponse.recalled`, which the chat UI shows as the collapsible „Emlékek · N" disclosure (§2). |
 | Consolidation ladder (W3.2) | ✅ `mezo-b3pp.13` | Phase 5 W3.2 — `period_summary` (`week`/`month` rungs, uq `(created_by, granularity, period_start)`) generated by `service/PeriodSummaryService`: pure-code gather (the week's `daily_summary` narratives → the week rung; the month's week rungs → the month rung) + ONE cheap-tier condensation call (`LlmCallContext("companion_consolidation", "weekly"|"monthly", …)`), idempotent per period (an existing rung is returned, the model is NOT called) and honest (no source rows or a blank answer ⇒ no row). `service/ConsolidationJob` (Monday 03:30 weekly + 1st-of-month 03:50 monthly, switch `mezo.techcore.cron.consolidation-job.enabled`) fills and embeds every missing rung of its backfill window per user, so the catch-up doubles as the history backfill; each rung is embedded through `MemoryEmbeddingWriter.writePeriodSummary` as `weekly_summary`/`monthly_summary` at `occurred_on = period_start` (unchanged text short-circuits before the provider call). Recall SHADOWING: `PromptMemoryAssembler` asks for `daily_summary` hits only inside `ambient-recall.weekly-shadow-days` and queries the rung group unfiltered — beyond the cutoff a stretch is remembered through its rung. **Nothing is ever deleted** (spec §12). |
 | Recall tuning pass (W3.3) | ✅ `mezo-b3pp.14` | Ambient recall is tuned from yml ALONE: `ambient-recall.<group>.{cap,min-similarity,decay-days}` per kind-group (`daily-summary` · `period-summary` · `journal` · `chat-turn` · `other`; `CompanionProperties.AmbientRecall.Group(cap, minSimilarity, decayDays)`) replaced the flat `cap-*` keys, the single `min-similarity` floor and the τ borrowed from `recall.decay-days` — no ambient-recall TUNING number lives in code any more (the render-side `CHARS_PER_TOKEN = 3` estimate is not a tuning knob). Defaults keep W3.1/W3.2 behaviour except the **journal floor 0.60** (lived-with 2026-08-22: 0.59–0.62 journal hits were noise) and **period rungs τ=180 d** (a rung stands for a whole stretch, so it fades slower than a single day). `AmbientRecallEvalIT` is the regression net — a hand-crafted 20-row axis/blend vector corpus + a `@ParameterizedTest` TABLE of (query → expected gists in prompt order), every entry mutation-verified; `AmbientRecallTuningIT` proves a `@TestPropertySource` override ALONE re-ranks and drops items with no code change. `mezo-b3pp.27` input: `ambient-recall.exclude-current-conversation` (default **true**) makes the chat_turn ANN query skip the conversation being answered (`ref_id not in (select m.id from ai_message m where m.conversation_id = :excludeConversationId)`, composed into `MemoryEmbeddingAnnQuery`'s statement) — this excludes the WHOLE conversation, not just what fits `chat.history-window` (20 messages ≈ 10 turns); beyond the window it is a deliberate trade — a long thread's own early turns drop out of ambient recall, but the thread is still the conversation being answered. The `find_similar_past_days` tool embed is retagged `LlmCallContext("companion_recall","recall_embed","tool",null)` (was `embed_memory`/`query`), so the `/me/ai-usage` `companion_recall` feature row is recall's WHOLE cost share, ambient and tool alike. |
-| Statistical patterns + Inbox | ✅ V3.1, monitor added `mezo-viqs` | Nightly `PatternDetectionJob` (Pearson + real p-value, upsert by pair key, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode** (`mezo.companion.patterns.*`); **`mezo-viqs`** extracted the shared `PatternGate` and added a read-only `GET /api/companion/pattern/monitor` (5-verdict live diagnostics over the job's exact windows, no writes) → **Insights Motor tab** ([`insights.md`](insights.md) §2.8). |
+| Statistical patterns + Inbox | ✅ V3.1, monitor `mezo-viqs`, group balance `mezo-0469` | Nightly `PatternDetectionJob` (Pearson + real p-value, LIVE-only persistence, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode**. The shared `PatternGate` also powers the read-only monitor/detail pair DTO: six surface verdicts including `imbalanced_groups`, exact windows, value kinds and group counts, no diagnostic writes ([`insights.md`](insights.md) §2.1/§2.1b). |
 | AI hypothesis loop | ✅ V3.2 | Weekly smart-tier propose→critique→revise (`mezo.companion.hypotheses.*`, arch §4.7 scoring); survivors = `ai_hypothesis` Inbox rows with critique + `thinking`. |
 | Pattern → fact promotion + reinforcement | ✅ V3.3 | Confirm ⇒ `knowledge_fact` (source=pattern, linked back); same-direction recurrence reinforces; `ÚJ FELISMERÉSEK` ack block; `minta:` evidence chip on the Knowledge tab. **Epic complete.** |
 | LLM call audit log (`mezo-2zyu`) | ✅ v1 + read API (`mezo-uakh`) | Every provider call (chat/stream/vision/tool/smart + embeddings + crons) records one append-only `llm_log_history` row with the token breakdown, a frozen price snapshot and caller attribution; async writer, `mezo.feature.llm-log.enabled` (off by default, ON in k8s). **Read side (`mezo-uakh`):** `GET /api/llm-usage/{summary,breakdown,calls,calls/{id}}` (`LlmUsageController`/`LlmUsageService`, ungated + no user filter — endpoint table in [`_platform-api-backend.md`](_platform-api-backend.md) §4c) surfaces the log as the Me **AI-napló** page at `/me/ai-usage` + `/me/ai-usage/:id` ([`me.md`](me.md) §2). [ADR 0014](../decisions/0014-llm-call-audit-log.md). |
@@ -784,6 +829,10 @@ architecture stays acyclic with no frozen exception.
 The ChatPage under Insights (`/insights/chat`, [`insights.md`](insights.md) §2.5) is the real
 companion surface since V0.4, dual-mode:
 
+- **One header, not two (`mezo-oq8z`)** — `/mezo/chat` suppresses the generic shell
+  `AppHeader` and keeps the page's orb-led conversation header as the only top bar. Its
+  back/thread-picker/new/actions controls remain available and the row sticks at `top: 0`;
+  the tab bar remains visible and only the quick-log FAB stays suppressed as before.
 - **Real mode** (default `pnpm dev`, backend on :8090): the page bootstraps the **selected
   conversation + its full history** on load (header: `Mezo · társ` / `Gemini · élő`). Sending a
   message renders the user bubble immediately, thinking-dots until the first chunk, then the
@@ -857,6 +906,30 @@ companion surface since V0.4, dual-mode:
   header is honest in both modes.
 
 ## 3. Architecture & data flow
+
+**Shared-memory dual-write (`mezo-6dii.2`; OLD still serves):**
+
+```text
+source event/job → MemoryEmbeddingWriter transaction
+  ├─ embed once → write/update/delete memory_embedding (OLD)
+  └─ publish MemoryProjectionEvent
+       AFTER_COMMIT → MemoryProjectionListener
+         → MemoryProjectionWriter (REQUIRES_NEW)
+           ├─ upsert/suppress memory_item by owner + source kind + source id
+           └─ create/update/soft-delete the configured memory_vector generation
+
+optional MemoryReembeddingJob
+  → UserFanOut(active + onboarded users)
+  → MemoryReembeddingService
+    → lock bounded target-version candidates with FOR UPDATE SKIP LOCKED
+    → pending → one document-embedding batch → ready | failed
+```
+
+The commit boundary is load-bearing: canonical projection is synchronous after OLD commits, but in
+a separate transaction. It can therefore reuse the vector already paid for by OLD while a failure
+only leaves a repairable projection gap. Re-offering an unchanged OLD row also republishes the event,
+which heals a previously missed canonical row without another provider call. The re-embedding path
+selects a named target version and never mutates `servingEmbeddingVersion`.
 
 **The streamed turn (V0.4 + V0.5 tools — what the FE uses):**
 
@@ -1563,6 +1636,36 @@ swapped in-slice across compose/k3s/Testcontainers):
   `occurred_on date` (when the episode happened — the recency-ranking key); indexes
   `idx_memory_embedding_created_by_kind_occurred_on (created_by, kind, occurred_on desc)` +
   `idx_memory_embedding_vector` (**HNSW, `vector_cosine_ops`** — pairs with the `<=>` operator).
+
+### Backend tables (shared RAG foundation, `mezo-6dii.1`)
+
+Migration `202609041020_mezo-6dii.1_memory_platform.sql` adds five owner-scoped tables while
+leaving `memory_embedding` intact:
+
+- **`memory_item`** — one canonical projection per `(created_by, source_kind, source_id)`, with
+  SHA-256 `content_hash`, `text[]` topics/people, validity and lifecycle state, typed `provenance`
+  jsonb, generated simple-language `tsvector`, GIN full-text/trigram indexes and owner-led reads.
+- **`memory_vector`** — one row per `(memory_item_id, embedding_version)`, fixed 768 dimensions,
+  pending/ready/failed lifecycle, embedded-content hash and partial ready/live HNSW cosine index.
+- **`memory_retrieval_run` / `memory_retrieval_result` / `memory_retrieval_feedback`** — the
+  auditable query→ranked candidate→user action chain. Results snapshot rendered content and typed
+  score components; feedback is unique per live owner/result pair.
+- **`knowledge_fact` additive columns** — `pinned`, `valid_from/to`, `superseded_by`,
+  `conflicts_with`, and typed provenance. Defaults preserve all existing rows and prompt behavior.
+
+`content_hash` and `embedded_content_hash` use `varchar(64)` plus an exact lowercase-hex CHECK.
+This avoids Hibernate/PostgreSQL `bpchar` schema-validation drift while retaining the intended
+fixed SHA-256 invariant.
+
+Runtime population (`mezo-6dii.2`) is configured under `mezo.companion.memory-platform`:
+`serving-embedding-version`, provider/model/schema metadata, future retrieval limits, an explicit
+re-embedding target/batch/cron switch, and audit-retention settings. `MemoryProjectionWriter`
+normalizes `search_text` with `ToolText.fold`, writes deterministic empty topics/people and default
+salience `0.5`, and updates only the configured serving generation during dual-write. The optional
+`MemoryReembeddingService` separately repairs or creates a requested generation when it is absent,
+failed, deleted, pending, or carries a stale content hash; provider and malformed-response failures
+are persisted with stable codes for a later retry. No runtime path changes the configured serving
+version, and no endpoint or FE DTO is added in this slice.
 
 ### Backend tables (LLM audit log, ✅ `mezo-2zyu`)
 
@@ -2957,7 +3060,7 @@ Every non-2xx returns `SystemMessageList`. All paths are protected (401 without 
 | `PATCH /api/companion/fact/{id}` | `KnowledgeFactResponse` | 200 · 400 · 401 · 404 | V1.1 partial update — `UpdateFactRequest {factText?, category?, includeInPrompt?}`, only provided fields applied (the KnowledgeListPage toggle). |
 | `GET /api/companion/fact/candidate` | `FactCandidateResponse[]` | 200 · 401 | V1.2 — the pending inbox: undecided candidates, newest first. |
 | `POST /api/companion/fact/candidate/{id}/decision` | `FactCandidateResponse` | 200 · 400 · 401 · 404 | V1.2 — `FactDecisionRequest {decision accept\|reject\|refine, refinedText?}`; accept/refine promote (`promotedFactId` set); refine without text → FIELD `VALIDATION_REQUIRED_FIELD`; re-decide → `COMPANION_CANDIDATE_ALREADY_DECIDED`. |
-| `GET /api/companion/pattern/monitor` | `PatternMonitorResponse` | 200 · 401 | `mezo-viqs` — live diagnostics: re-runs `PatternGate` over the exact windows the nightly job uses, writing nothing; per-pair verdict + per-`MetricKey` coverage — `missingDays` populated only for `few_days`, `bottleneckMetricKey` for `few_days`/`no_data`/`degenerate` (`PatternMonitorService.java:140-146`). **mezo-18bx (additive):** pairs carry `mechanismHu` (the catalog's config `mechanism`) + `metricADomain`/`metricBDomain`, coverage rows carry `sourceHu` + `domain` — straight pass-through from `MetricKey`/`PatternPair`, no new computation. |
+| `GET /api/companion/pattern/monitor` | `PatternMonitorResponse` | 200 · 401 | `mezo-viqs` — live diagnostics: re-runs `PatternGate` over the exact windows the nightly job uses, writing nothing; per-pair verdict + per-`MetricKey` coverage. `missingDays` exists only for `few_days`; `bottleneckMetricKey` for `few_days`/`no_data`/`degenerate`. **mezo-0469:** every pair carries both `metric*ValueKind` fields; binary pairs that reach the total-size gate carry `groupZeroDays`/`groupOneDays`/`requiredPerGroup`, and `imbalanced_groups` deliberately has no correlation stats. **mezo-18bx:** pairs also carry `mechanismHu` + domains, coverage rows `sourceHu` + domain. |
 | `GET /api/companion/pattern/pair/{pairKey}` | `PatternPairDetailResponse` | 200 · 401 · 404 | **S1 close (`mezo-tk88.3`):** the pattern detail page's one-stop read — `PatternPairDetailService.detail` reuses `PatternMonitorService.toPair` (package-widened) so the gate verdict can never disagree with the Motor dashboard. `pattern` is `null` until the pair goes live (no synthetic row); `events[]` is the `pattern_event` history (first reader, oldest-first); `days[]` are the CURRENT window's aligned points, computed live (never stored — frozen `confirmed`/`rejected` rows still show today's data); `impact` is the "what came of this" block (promoted fact + grounded predictions/experiments/challenges). Unknown `pairKey` (not in the `mezo.companion.patterns.pairs` catalog) → 404 `COMPANION_PATTERN_PAIR_NOT_FOUND`. **FE consumer since `mezo-tk88.5`:** `usePatternPairDetail(pairKey)` (`patternDetailHooks.ts`) → `PatternDetailPage.tsx` (`/insights/patterns/:pairKey`) — any 404 (unknown key OR the companion switch off) maps to one honest `notFound` state; see [`insights.md`](insights.md) §2.1b/§4. |
 | `GET /api/companion/memory/overview` | `MemoryOverviewResponse` | 200 · 401 · 404 | `mezo-al1i` — L0–L3 layer counts + the 3 job cron strings, one read-only aggregate (`MemoryObservatoryService.overview`). |
 | `GET /api/companion/memory/summary` | `MemorySummaryListResponse` | 200 · 401 · 404 | `mezo-al1i` — the L1 journal, date-desc, optional `from`/`to`; `embedded` flags a live `memory_embedding` row for that day. |
@@ -3055,7 +3158,9 @@ visible in the observatory the day its writer ships.
 **`PatternPairDetailResponse` (S1 close, `mezo-tk88.3`):** `{pair: PatternMonitorPair,
 pattern: PatternResponse | null, events: PatternEventResponse[], days: AlignedDayResponse[],
 impact: PatternImpactResponse}` — `pair`/`days` are the SAME `PatternMonitorPair`/live-window
-shapes the monitor endpoint returns (§ above), so the two surfaces never disagree. `PatternEventResponse
+shapes the monitor endpoint returns (§ above), through the same `toPair(..., minN, minGroupN,
+from, to)` path, so the two surfaces never disagree — including the binary group-balance verdict.
+`PatternEventResponse
 {kind, occurredAt, r?, n?, p?, reinforcementCount?, factId?}` mirrors one `pattern_event` row 1:1
 (`CompanionMapper.toPatternEventResponse`) — only the fields the `kind` actually uses are non-null.
 `PatternImpactResponse {fact: PatternImpactFact | null, predictions: PatternImpactRef[],
@@ -3279,6 +3384,9 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
 - `mezo.companion.patterns.lookback-days` = **60** (`@Min(14) @Max(365)`) — correlation window.
 - `mezo.companion.patterns.min-n` = **8** (`@Min(3) @Max(60)`) — aligned-days floor before a pair
   may surface at all.
+- `mezo.companion.patterns.min-group-n` = **3** (`@Min(3) @Max(30)`) — after the total-size gate,
+  each exact 0/1 group of a binary A metric must independently reach this floor. Until then the
+  verdict is `imbalanced_groups` and Pearson is not run.
 - `mezo.companion.patterns.reinforce-cooldown-days` = **7** (`@Min(1) @Max(60)`) — a confirmed
   pattern reinforces its promoted fact at most once per window (the nightly lookback slides one
   day; re-counting the same evidence would inflate top-N ranks — review finding).
@@ -3287,12 +3395,13 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
   when-negative-hu, metric-a, metric-b, lag-days}`) — `mechanism` is the „miért figyeljük"
   one-liner (`mezo-18bx`); **`mezo-fj1g` added the human-language card fields:** `question`
   (the card's question-title), `expected-direction` (`positive|negative` — the hypothesized
-  correlation sign; the FE renders „Meglepő:" when the found sign disagrees) and the two authored
+  correlation sign; the FE uses it to select the authored result sentence) and the two authored
   direction readings `when-positive-hu`/`when-negative-hu` (what a positive/negative r MEANS for
   this pair, in Hungarian, with an `{erősség}` slot the FE fills from |r|). All `@NotBlank` —
   the config validator refuses a pair without them. Pair keys are pattern identity (never rename
   a live key); metrics come from the `MetricKey` enum, which since `mezo-18bx` also carries
-  `sourceHu` and a `MetricDomain` (`SLEEP/TRAIN/FUEL/MIND/BODY/OTHER`); the monitor DTOs pass
+  `sourceHu`, a `MetricDomain` (`SLEEP/TRAIN/FUEL/MIND/BODY/OTHER`) and, since `mezo-0469`, a
+  `MetricValueKind` (`NUMBER/CLOCK_HOUR/BINARY`); the monitor DTOs pass
   everything through (`questionHu`/`expectedDirection`/`whenPositiveHu`/`whenNegativeHu` since
   `mezo-fj1g`), and `PatternResponse` gained `pairKey` (the Motor↔Patterns cross-link anchor).
 
@@ -4102,6 +4211,23 @@ execution checklist"). The house recipe, **contract-first**:
 Backend integration-first (compose Postgres up: `cd backend && docker compose up -d`), run with
 `./mvnw clean test` (ALWAYS `clean` — Lombok+MapStruct incremental compile is flaky). The LLM in
 tests is **always** `FakeCompanionLlm` — network never touched.
+
+**Shared RAG persistence foundation (`mezo-6dii.1`).**
+`feature/companion/memory/MemoryPlatformPersistenceIT.java` runs against real PostgreSQL/pgvector
+and proves typed jsonb plus arrays round-trip, two embedding generations coexist, duplicate item
+generations fail, owner B cannot read owner A's item, and physical audit-run purge cascades through
+result and feedback. Its migration invariants also assert that every live legacy embedding has a
+canonical item and ready v1 vector. `MemoryItemPopulator` supplies valid canonical/audit fixtures;
+all five tables are reset before the legacy `memory_embedding` table.
+
+**Canonical dual-write and re-embedding (`mezo-6dii.2`).**
+`MemoryEmbeddingWriterIT` and `MemoryProjectionWriterIT` cover all ten source kinds plus
+idempotent update/no-op, suppress and revive behavior. `MemoryProjectionFailureIsolationIT` forces
+the NEW write to fail and proves the committed OLD row remains available. `MemoryReembeddingIT`
+covers pending-batch resume, matching-hash skip, stale-hash refresh, stable provider failure + retry,
+coexisting v1/v2 generations, and active/onboarded-user fan-out. The frozen OLD retrieval suite
+(`AmbientRecallEvalIT`, `NoteVectorLifecycleIT`, `TurnEmbeddingListenerIT`) remains the regression
+gate while serving has not cut over.
 
 **Daily evaluation (`mezo-jcpt.4`, plan 2/2).**
 `feature/companion/service/DayEvaluationEngineTest.java` is the formula's unit-level pin — one test
@@ -5395,6 +5521,20 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `api/feature/companion-feedback/companion-feedback.yml` — **`mezo-b3pp.15`** the 👍/👎 surface on its OWN fragment + tag (`CompanionFeedback` → `CompanionFeedbackApi`); GET batch-read / PUT upsert / DELETE retract, also registered in `api/generate/merge.yml`.
 - `api/feature/knowledge-graph/knowledge-graph.yml` — **`mezo-b3pp.6`** the W2.1 knowledge-graph surface on its OWN fragment + tag (`KnowledgeGraph` → `KnowledgeGraphApi`); GET active nodes / POST archive, also registered in `api/generate/merge.yml`.
 
+**Backend — shared RAG persistence foundation (`mezo-6dii.1` — §3/§4/§8)**
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609041020_mezo-6dii.1_memory_platform.sql` — canonical item/vector generations, retrieval audit/feedback tables, legacy backfill and migration invariants; `memory_embedding` remains untouched.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/entity/` — the five entities plus typed `MemoryProvenanceEnvelope` and `ScoreBreakdownEnvelope` jsonb records.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/repository/` — owner-scoped business finders for canonical items, vectors and the audit chain.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/KnowledgeFactEntity.java` — additive pinning, validity, conflict/supersession and provenance mappings.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/MemoryPlatformPersistenceIT.java` + `support/populator/MemoryItemPopulator.java` — PostgreSQL persistence/backfill/ownership/cascade coverage.
+
+**Backend — canonical dual-write + vector generations (`mezo-6dii.2` — §3/§4/§8)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java` — unchanged OLD persistence semantics plus commit-bound canonical upsert/suppress events, reusing the already-produced vector.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/config/MemoryPlatformProperties.java` + `backend/src/main/resources/application.yml` — typed serving-generation, retrieval, re-embedding and audit-retention configuration; scheduled re-embedding is off by default.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryProjectionEvent,MemoryProjectionListener,MemoryProjectionWriter}.java` — AFTER_COMMIT hand-off, isolated transaction, source-key lifecycle and serving-generation write.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryReembeddingService,MemoryReembeddingJob}.java` — bounded resumable target-generation backfill and active-user fan-out without serving-version mutation.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/{MemoryProjectionWriterIT,MemoryProjectionFailureIsolationIT,MemoryReembeddingIT}.java` + `backend/src/test/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriterIT.java` — lifecycle, failure-isolation, generation coexistence/retry and all-source dual-write coverage.
+
 **Backend — feedback (W4.1, `mezo-b3pp.15` — §4/§5.7)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/controller/CompanionFeedbackController.java` — `implements CompanionFeedbackApi`, `COMPANION_SWITCH`-gated, ownership from `CurrentUserId`, thin delegation.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/service/MessageFeedbackService.java` — `put` (the honest `FEEDBACK_REASON_REQUIRES_DOWN` 400 before the upsert, then a re-read so the response is server truth — the can't-happen empty re-read raises `FEEDBACK_UPSERT_READBACK_FAILED` **500**: our fault, not the caller's) / `retract` (idempotent soft delete) / `list` (batch read).
@@ -5513,6 +5653,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/AsyncConfiguration.java` — `@EnableAsync` (born with V1.2).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/mapper/CompanionMapper.java` — entity → generated `api.dto` (null envelope → `[]`; + `toKnowledgeFactResponse`; + `degraded` since V1.3; + `toPatternEventResponse` since S1 close `mezo-tk88.3`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PatternPairDetailService.java` — **S1 close (`mezo-tk88.3`)** the pattern detail page's read; reuses `PatternMonitorService.toPair` (package-widened) + delegates the impact block to `PatternImpactSource`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/{MetricKey,MetricValueKind,PatternGate,PatternMonitorService,PatternDetectionService}.java` — the shared pattern math and metadata spine: value-kind-aware metric catalog, total/group/degeneracy gate, read-only monitor mapping and LIVE-only nightly persistence (`mezo-0469`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/PatternImpactSource.java` — the companion-owned inversion port `PatternPairDetailService` depends on; implemented in `feature.proactive.service.PatternImpactService` (see [`proactive.md`](proactive.md) §10) — keeps the companion↔proactive dependency graph cycle-free in the NEW direction, mirroring `TodayQuestSource`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/MemoryObservatoryService.java` — **`mezo-al1i`** the memory-observatory read-only aggregate: `overview`/`summaries`/`similarDays`/`llmUsage`, companion-switch conditional.
 
@@ -5655,4 +5796,3 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - Phase 5 "deep memory" design spec (`mezo-b3pp`, the journal embedding seam's driver): [`docs/superpowers/specs/2026-08-18-phase5-deep-memory-personalization-design.md`](../superpowers/specs/2026-08-18-phase5-deep-memory-personalization-design.md) §4.3/§5.1 · full feature doc: [`journal.md`](journal.md)
 - Roadmap/milestone log: [`docs/milestones/roadmap.md`](../milestones/roadmap.md)
 - References: [`docs/references/`](../references/) (`api_contract_conventions`, `liquibase_conventions`, `spring_patterns`, `testing_standards`, `integration_test_framework`, `configuration_conventions`, `java_package_structure`, `error_handling`, `companion_tool_conventions` — mezo-xixu's `@Tool` description house rule)
-
