@@ -78,7 +78,7 @@ export function buildFuelSettingsMacroPreview(
 
 Az energia-súlyok `p * 4`, `c * 4`, `f * 9`. A százalékokhoz számold ki a floor értékeket, majd a még hiányzó pontokat a legnagyobb törtmaradék sorrendjében oszd ki; azonos maradéknál a stabil sorrend protein → carbs → fat. Nem véges/negatív érték vagy nulla teljes makróenergia esetén `null` az eredmény.
 
-- [ ] **Step 1: Írd meg a bukó unit teszteket**
+- [x] **Step 1: Írd meg a bukó unit teszteket**
 
 A `fuelSettingsPreview.test.ts` fedje le:
 
@@ -97,7 +97,7 @@ Továbbá legyen külön teszt arra, hogy:
 - az inputot nem mutálja;
 - nulla/negatív/`NaN` céloknál `null`-t ad, tehát nem rajzol hazug 0%-os preview-t.
 
-- [ ] **Step 2: Futtasd a focused tesztet és rögzítsd a bukást**
+- [x] **Step 2: Futtasd a focused tesztet és rögzítsd a bukást**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo/frontend && pnpm vitest run src/features/fuel/logic/fuelSettingsPreview.test.ts
@@ -105,11 +105,11 @@ cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo/frontend && pnpm vitest run src/fea
 
 Várt: FAIL, mert a helper modul még nem létezik.
 
-- [ ] **Step 3: Implementáld a tiszta helpert**
+- [x] **Step 3: Implementáld a tiszta helpert**
 
 Írd meg a fenti publikus interfészt és a determinisztikus normalizálást. Ne importáld a preset-konfigurációt és ne számolj a diet draftból új grammcélokat: ez a helper kizárólag a célmotor már kiszolgált céljait formázza.
 
-- [ ] **Step 4: Futtasd újra a focused tesztet**
+- [x] **Step 4: Futtasd újra a focused tesztet**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo/frontend && pnpm vitest run src/features/fuel/logic/fuelSettingsPreview.test.ts
@@ -117,7 +117,7 @@ cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo/frontend && pnpm vitest run src/fea
 
 Várt: PASS, minden helper-teszt zöld.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo && git add frontend/src/features/fuel/logic/fuelSettingsPreview.ts frontend/src/features/fuel/logic/fuelSettingsPreview.test.ts && git commit -m "feat(fuel): add honest macro target preview (mezo-2xzf)"
@@ -141,7 +141,7 @@ cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo && git add frontend/src/features/fu
 - Routes: hub band → `/fuel/settings`; back/save → `/fuel`; meal-window row → `/fuel/slots`.
 - The page owns no dialog semantics. Root composition: `MozaikPage` → `PageHead` → `PageBody`, plus a portaled save bar into `.phone-screen`.
 
-- [ ] **Step 1: Költöztesd át a sheet regressziós tesztjeit page-tesztként, még implementáció nélkül**
+- [x] **Step 1: Költöztesd át a sheet regressziós tesztjeit page-tesztként, még implementáció nélkül**
 
 Hozd létre a `FuelSettingsPage.test.tsx`-et a régi sheet tesztjeinek tartalmi átemelésével. A render helper route-olt legyen:
 
@@ -192,7 +192,7 @@ test('the Fuel-beállítások band navigates to its own page', async () => {
 })
 ```
 
-- [ ] **Step 2: Futtasd a két focused tesztfájlt és rögzítsd a bukást**
+- [x] **Step 2: Futtasd a két focused tesztfájlt és rögzítsd a bukást**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo/frontend && pnpm vitest run src/features/fuel/pages/FuelSettingsPage.test.tsx src/features/fuel/pages/FuelMaiPage.test.tsx
@@ -200,7 +200,7 @@ cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo/frontend && pnpm vitest run src/fea
 
 Várt: FAIL, mert `FuelSettingsPage`/route még nincs, a hub továbbra is sheetet nyit.
 
-- [ ] **Step 3: Hozd létre a működő routed page-et a meglévő state machine megőrzésével**
+- [x] **Step 3: Hozd létre a működő routed page-et a meglévő state machine megőrzésével**
 
 A `FuelSettingsPage.tsx`-ben:
 
@@ -215,13 +215,13 @@ A `FuelSettingsPage.tsx`-ben:
 
 A Task 3 végleges vizuális osztályneveit már itt használd (`fset-page`, `fset-hero`, `fset-card`, `fset-preview`, `fset-save`), de ebben a taskban még csak a funkcionális DOM a cél.
 
-- [ ] **Step 4: Kösd be a route-ot és a hub entry pointot**
+- [x] **Step 4: Kösd be a route-ot és a hub entry pointot**
 
 - `router.tsx`: importáld a `FuelSettingsPage`-et és add hozzá a `{ path: 'fuel/settings', element: <FuelSettingsPage /> }` sibling route-ot a `/fuel` és `/fuel/slots` közelében.
 - `FuelMaiPage.tsx`: töröld a `FuelSettingsSheet` importot, a `settingsOpen` state-et és a conditional sheet mountot; a sáv `onClick={() => navigate('/fuel/settings')}` legyen.
 - Frissítsd az érintett kódkommenteket: többé sehol ne állítsák, hogy a sáv sheetet nyit vagy hogy a slots csak sheetből érhető el.
 
-- [ ] **Step 5: Futtasd a focused teszteket, majd töröld a régi sheetet**
+- [x] **Step 5: Futtasd a focused teszteket, majd töröld a régi sheetet**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo/frontend && pnpm vitest run src/features/fuel/pages/FuelSettingsPage.test.tsx src/features/fuel/pages/FuelMaiPage.test.tsx
@@ -229,7 +229,7 @@ cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo/frontend && pnpm vitest run src/fea
 
 Várt: PASS. Ezután töröld a `FuelSettingsSheet.tsx` és `FuelSettingsSheet.test.tsx` fájlokat, majd futtasd ugyanazt a parancsot újra. Egy célzott `rg -n "FuelSettingsSheet" frontend/src` keresésnek 0 találatot kell adnia.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo && git add frontend/src/app/router.tsx frontend/src/features/fuel/pages/FuelMaiPage.tsx frontend/src/features/fuel/pages/FuelMaiPage.test.tsx frontend/src/features/fuel/pages/FuelSettingsPage.tsx frontend/src/features/fuel/pages/FuelSettingsPage.test.tsx frontend/src/features/fuel/sheets/FuelSettingsSheet.tsx frontend/src/features/fuel/sheets/FuelSettingsSheet.test.tsx && git commit -m "feat(fuel): move settings from sheet to page (mezo-2xzf)"
