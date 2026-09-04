@@ -317,13 +317,21 @@ public class DayReviewService {
     /**
      * The cache key: {@code sha256} over each dimension's {@code id|score|status} AND its facts
      * (in the engine's fixed order, the facts in their own emission order) plus the day's
-     * {@code base}. Those are everything the prose was shown — {@link #userMessage} hands the
-     * model exactly these fields, and the narrative typically QUOTES the facts ("312 g szénhidrát").
-     * The facts must therefore be in the key: dimension scores are integers 0..100, so a
-     * retroactive log can move a fact (carbs 312 g → 280 g) without moving the rounded score, and
-     * a facts-free key would keep serving a narrative quoting the old number (review round 2,
-     * Minor). The unscored context signals stay OUTSIDE the key: they are re-read fresh on every
-     * call and never fold into a cached sentence's correctness.
+     * {@code base}. The narrative typically QUOTES the facts ("312 g szénhidrát"), so the facts
+     * must be in the key: dimension scores are integers 0..100, so a retroactive log can move a
+     * fact (carbs 312 g → 280 g) without moving the rounded score, and a facts-free key would keep
+     * serving a narrative quoting the old number (review round 2, Minor).
+     *
+     * <p><b>What the prompt sees and the key does not (mezo-jcpt.11).</b> {@link #userMessage} is
+     * handed two further inputs, both deliberately outside the key. The unscored context signals
+     * are re-read fresh on every call and never fold into a cached sentence's correctness. The raw
+     * {@code priorBaseScores} list IS written into the prompt ("Előző napok base-pontjai"), and
+     * stays out of the key because the {@code rhythm} dimension is computed FROM that list and
+     * {@code rhythm}'s own score and facts are already hashed: every prior-day change that matters
+     * moves the key through {@code rhythm}. What remains is a narrow, accepted gap — a change to
+     * the prior list that moves neither {@code rhythm}'s score nor its facts leaves the key
+     * identical while the prompt text differs. The prose rarely quotes the raw list, so the cached
+     * sentence stays true.
      */
     static String inputsHash(DayEvaluation evaluation) throws NoSuchAlgorithmException {
         StringBuilder sb = new StringBuilder();
