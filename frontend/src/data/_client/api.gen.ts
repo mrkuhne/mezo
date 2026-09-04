@@ -7071,6 +7071,10 @@ export interface components {
             eyebrow: string;
             body: string[];
             refs: components["schemas"]["FeedRef"][];
+            /** @description Advice-card evidence — deterministic, rule-provided lines rendered from the raise's own frozen payload (S4, mezo-d58h.4). Present only on advice rows; the model never writes these. */
+            facts?: string[];
+            /** @description Advice-card suggestion texts (config-provided). Present only on advice rows. */
+            suggestions?: string[];
             /** Format: date-time */
             generatedAt: string;
         };

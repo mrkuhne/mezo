@@ -459,6 +459,14 @@ components:
         refs:
           type: array
           items: { $ref: '#/components/schemas/FeedRef' }
+        facts:
+          type: array
+          description: Advice-card evidence — deterministic, rule-provided lines rendered from the raise's own frozen payload (S4, mezo-d58h.4). Present only on advice rows; the model never writes these.
+          items: { type: string }
+        suggestions:
+          type: array
+          description: Advice-card suggestion texts (config-provided). Present only on advice rows.
+          items: { type: string }
         generatedAt: { type: string, format: date-time }
     WeeklySuggestionResponse:
       type: object

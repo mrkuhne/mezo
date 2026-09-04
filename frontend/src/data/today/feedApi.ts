@@ -14,6 +14,8 @@ export function toFeedMessages(wire: FeedWire): FeedMessage[] {
     eyebrow: m.eyebrow,
     body: m.body.map((text) => ({ type: 'p' as const, text })),
     refs: m.refs.map((r) => ({ kind: r.kind, label: r.label })),
+    facts: m.facts,
+    suggestions: m.suggestions,
     generatedAt: m.generatedAt,
   }))
 }

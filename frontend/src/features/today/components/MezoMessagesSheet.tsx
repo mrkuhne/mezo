@@ -57,12 +57,12 @@ export function MezoMessagesSheet({ messages, onClose, feedback }: {
                       (mezo-b3pp.19). */}
                   {feedback && m.artifactId != null && (
                     <div className="mt-sm">
-                      {m.kind === 'intervention' && <div className="td-bub-meta">Segített?</div>}
+                      {(m.kind === 'intervention' || m.kind === 'advice') && <div className="td-bub-meta">Segített?</div>}
                       <FeedbackChips
                         key={m.artifactId}
                         value={feedback.get(m.artifactId)}
                         onVote={(verdict, reason) => feedback.vote(m.artifactId!, verdict, reason)}
-                        label={m.kind === 'intervention' ? 'a közbelépésről' : 'az üzenetről'}
+                        label={m.kind === 'intervention' || m.kind === 'advice' ? 'a közbelépésről' : 'az üzenetről'}
                       />
                     </div>
                   )}

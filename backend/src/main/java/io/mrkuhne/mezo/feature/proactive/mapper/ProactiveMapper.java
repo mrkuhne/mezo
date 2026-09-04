@@ -93,6 +93,8 @@ public interface ProactiveMapper {
     @Mapping(target = "eyebrow", source = "content.eyebrow")
     @Mapping(target = "body", source = "content.body")
     @Mapping(target = "refs", source = "content.refs")
+    @Mapping(target = "facts", source = "content.facts")
+    @Mapping(target = "suggestions", source = "content.suggestions")
     FeedMessageResponse toFeedResponse(CompanionMessageEntity entity);
 
     FeedRef toFeedRef(CompanionMessageEnvelope.Ref ref);

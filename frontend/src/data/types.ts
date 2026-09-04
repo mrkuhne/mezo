@@ -25,6 +25,10 @@ export interface FeedMessage {
   eyebrow: string
   body: BriefingPara[]
   refs: BriefingRef[]
+  /** Advice-card evidence (S4, mezo-d58h.4) — deterministic, rule-provided; only advice rows. */
+  facts?: string[]
+  /** Advice-card suggestion texts (config-provided); only advice rows. */
+  suggestions?: string[]
   generatedAt: string // ISO date-time
 }
 export interface NiggleWarning { muscle: string; muscleLabel: string; detail: string }
