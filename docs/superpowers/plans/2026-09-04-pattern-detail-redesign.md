@@ -647,7 +647,7 @@ copy, UI state matrix, chart branches, file map and test coverage.
 - [x] Add a bd comment with the exact focused backend results, both frontend modes, build,
   contract drift, visual QA and the doc-lint baseline. Do not close the issue before CI is green.
 
-- [ ] Push the feature branch and open the self-PR whose body lists commits, gate output and any
+- [x] Push the feature branch and open the self-PR whose body lists commits, gate output and any
   baseline-only deviation:
 
   ```bash
