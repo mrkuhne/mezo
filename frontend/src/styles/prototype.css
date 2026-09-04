@@ -9648,6 +9648,29 @@ button.mz-wtile:active { transform: scale(0.96); }
 .pdt-tech-grid b { display: block; color: var(--mz-cell-lav-ink); font-size: 11px; }
 .pdt-tech p { padding: 0 9px 9px; color: var(--text-secondary); font-size: 8px; }
 .pdt-empty { padding: 18px; border-radius: 20px; background: var(--surface-card); color: var(--text-muted); text-align: center; }
+.pdt-artifact-hero { border-radius: 24px; padding: 17px; border: 1px solid var(--mz-line-soft); }
+.pdt-artifact-confirmed { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.pdt-artifact-monitoring { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.pdt-artifact-rejected { background: var(--mz-wash-sand); box-shadow: var(--mz-shadow); }
+.pdt-artifact-top { display: flex; align-items: center; gap: 10px; color: var(--text-secondary); }
+.pdt-artifact-top > span:nth-child(2) { min-width: 0; flex: 1; }
+.pdt-artifact-top small { display: block; font-size: 9px; font-weight: 800; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--mz-ink-mut); }
+.pdt-artifact-top b { display: block; margin-top: 2px; font-size: 12px; color: var(--text-primary); }
+.pdt-artifact-icon { width: 42px; height: 42px; border-radius: 15px; display: grid; place-items: center;
+  background: var(--mz-cellbg); box-shadow: var(--mz-shadow); }
+.pdt-artifact-hero h1 { margin: 14px 0 0; font: 750 24px/1.14 var(--ff-display); letter-spacing: -.025em;
+  color: var(--text-primary); }
+.pdt-artifact-hero p { margin: 9px 0 0; font-size: 12px; line-height: 1.5; color: var(--text-secondary); }
+.pdt-artifact-card { padding-top: 15px; }
+.pdt-artifact-card .pdt-section-head { margin: 0 0 10px; }
+.pdt-artifact-mechanism { margin: 0; font-size: 13px; line-height: 1.55; color: var(--text-primary); }
+.pdt-artifact-evidence { list-style: none; display: grid; gap: 7px; padding: 12px 0 0; margin: 12px 0 0;
+  border-top: 1px solid var(--mz-line-soft); }
+.pdt-artifact-evidence li { display: flex; align-items: flex-start; gap: 7px; font-size: 11px; line-height: 1.45;
+  color: var(--text-secondary); }
+.pdt-artifact-evidence svg { flex: none; margin-top: 1px; color: var(--success-deep); }
+.pdt-artifact-note { padding: 4px 3px 0; }
 
 :root[data-theme="dark"] .pdt-chart-col-zero,
 :root[data-theme="dark"] .pdt-chart-col-one { opacity: .72; }

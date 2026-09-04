@@ -2,7 +2,8 @@ import type { ReactNode } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
-import { usePatternActions, usePatternMonitor, usePatternPairDetail } from '@/data/hooks'
+import { usePatternActions, usePatternMonitor, usePatternPairDetail, usePatterns } from '@/data/hooks'
+import { PatternArtifactDetail } from '@/features/insights/components/PatternArtifactDetail'
 import { PatternDetailHero } from '@/features/insights/components/PatternDetailHero'
 import { PatternEvidenceChart } from '@/features/insights/components/PatternEvidenceChart'
 import { PatternImpactCard } from '@/features/insights/components/PatternImpactCard'
@@ -148,12 +149,21 @@ function Diagnostics({ pair, monitor }: {
 export function PatternDetailPage() {
   const { pairKey = '' } = useParams<{ pairKey: string }>()
   const { detail, notFound, isPending, isError, refetch } = usePatternPairDetail(pairKey)
+  const { patterns, isPending: patternsPending } = usePatterns()
   const { decide } = usePatternActions()
   const { monitor } = usePatternMonitor()
+  const artifact = patterns.find((pattern) => pattern.pairKey === pairKey) ?? null
 
-  if (isPending) return <DetailFrame><GhostState message="A minta betöltése…" /></DetailFrame>
+  if (isPending || patternsPending) return <DetailFrame><GhostState message="A minta betöltése…" /></DetailFrame>
   if (isError) {
     return <DetailFrame><GhostState message="Nem sikerült betölteni a mintát." ctaLabel="Újra" onCta={refetch} /></DetailFrame>
+  }
+  if (detail == null && notFound && artifact != null) {
+    return (
+      <DetailFrame>
+        <PatternArtifactDetail pattern={artifact} onDecide={(status) => decide(artifact.id, status)} />
+      </DetailFrame>
+    )
   }
   if (notFound || !detail) {
     return <DetailFrame><div className="pdt-empty">Nincs ilyen minta.</div></DetailFrame>
