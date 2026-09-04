@@ -18,6 +18,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -539,7 +540,7 @@ public class MealScoringService {
             null, null, null, rows, timing);
     }
 
-    private static final DateTimeFormatter HHMM = DateTimeFormatter.ofPattern("HH:mm");
+    private static final DateTimeFormatter HHMM = DateTimeFormatter.ofPattern("HH:mm").withLocale(Locale.ROOT);
 
     /** In-window 1.0; outside: linear to 0 at 3h distance. A snack fits at any hour. */
     private double timingSub(String slot, LocalTime t) {
@@ -566,7 +567,7 @@ public class MealScoringService {
     }
 
     private static String hourOrNull(Integer h) {
-        return h == null ? null : String.format("%02d:00", h);
+        return h == null ? null : String.format(Locale.ROOT, "%02d:00", h);
     }
 
     private static String slotLabel(String slot) {

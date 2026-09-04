@@ -250,9 +250,15 @@ const m2Dimensions: MealDimension[] = [
       { label: 'PR-attempt', value: 'Chest Row · 107.5kg' },
       { label: 'Glikémia', value: 'Mixed-release' },
     ],
-    // Kívül az ebéd-ablakon (13:30 a 11:00–13:00 után) — pont ez adja a borderline 0.78-as
-    // pontszámot a fenti prózában ("ablakon belül van, de a határán").
-    timing: { eatenAt: '13:30', windowFrom: '11:00', windowTo: '13:00', slotLabel: 'ebéd' },
+    // Review fix (mezo-jcpt.3/4): a korábbi { windowTo: '13:00' } hamisan szűkítette az ablakot —
+    // a valós SlotWindows-config (backend/.../application.yml `slot-windows`) szerint az ebéd
+    // 11:00–15:00, amiben a 13:30 VALÓJÁBAN benne van, tehát az „ablakon kívül" itt nem
+    // ábrázolható hitelesen az ebéd-narratíván belül. Ehelyett a valós vacsora-ablakot
+    // (17:00–22:00) használjuk egy éjfél-közeli „miss" mintaként — ez az az eset, amit a sáv
+    // legkönnyebben elronthat (a pont majdnem 100%-nál, a szaggatott híd az ablak VÉGÉTŐL indul,
+    // nem a tengely elejétől) —, függetlenül attól, hogy m2 fenti prózája ebédről szól: ez a
+    // `timing` mező kizárólag a MealTimingStrip demó-mintája, nem a dimenzió szöveges igazsága.
+    timing: { eatenAt: '23:35', windowFrom: '17:00', windowTo: '22:00', slotLabel: 'vacsora' },
   },
   // Degraded (weight 0 — zero input coverage, mezo-jcpt.1): no adag-adat for this meal, so the
   // backend can't score portion-arány at all. Weight 0 contributes nothing to weightedScore()

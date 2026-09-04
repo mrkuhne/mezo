@@ -569,6 +569,21 @@ const recipeTemplateBreakdowns: Record<string, MealBreakdown> = {
   },
 }
 
+// Task 4 fix (mezo-jcpt.3/4): a mirrored templateBreakdown below is the LINKED MEAL's own
+// `breakdown` object (same `context` dimension reference) — it carries that meal's `timing`
+// (Task 3), so without this the new MealTimingStrip (mezo-jcpt.3) would leak onto the RECIPE
+// page too, contradicting the "strip is logged-meal-only" invariant the backend upholds for a
+// real recipe-template breakdown (RecipeBreakdownService never attaches `context`/`timing`,
+// pinned by a backend test). The pre-existing `context` fact-chips stay as-is — only the new
+// timing strip's gate (`dim.timing != null`) needs this dimension's `timing` to read `undefined`.
+function stripMealOnlyTiming(breakdown: MealBreakdown): MealBreakdown {
+  return {
+    ...breakdown,
+    dimensions: breakdown.dimensions.map(d =>
+      d.id === 'context' && 'timing' in d ? { ...d, timing: undefined } : d),
+  }
+}
+
 // ============================================================
 // Runtime links — replicate pantry-data.js:301–332 + 532–536.
 // Recipe ↔ meal mapping: m1↔rec-1, m2↔rec-2. (The m3↔rec-4 snack link was dropped with the
@@ -624,7 +639,8 @@ export const recipes: Recipe[] = recipesBase.map(r => {
   const sourceMeal = linkedMeals.find(lm => lm.recipeId === r.id && lm.meal.breakdown)
   // pantry-data.js:532–536 — orphan recipes (rec-3/5/6) get standalone breakdowns.
   const templateBreakdown: MealBreakdown | undefined =
-    sourceMeal?.meal.breakdown ?? recipeTemplateBreakdowns[r.id]
+    (sourceMeal?.meal.breakdown && stripMealOnlyTiming(sourceMeal.meal.breakdown))
+    ?? recipeTemplateBreakdowns[r.id]
 
   // Enrich each line with snapshot name + contribution, then roll the whole-recipe macros up
   // from those contributions — IDENTICAL to what the backend RecipeMapper produces, so the

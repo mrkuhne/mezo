@@ -7476,6 +7476,28 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
 .sb-legend b { width: 8px; height: 8px; border-radius: 3px; flex: none; }
 
+/* ── Időzítés-sáv a `context` csempén (mezo-jcpt.3) ──────────────────────────
+   Few bullet-graph: track + KITÖLTÖTT ablak-band + egy pont. A band nem körvonal,
+   mert egy 1px-es stroke megbukná a WCAG 1.4.11 3:1-es nem-szöveges kontrasztját. */
+.sb-tline { position: relative; height: 34px; margin: 8px 0 2px; }
+.sb-tline .trk { position: absolute; left: 0; right: 0; top: 19px; height: 5px;
+  border-radius: 3px; background: var(--mz-sc-track); }
+.sb-tline .band { position: absolute; top: 17px; height: 9px; border-radius: 5px;
+  background: color-mix(in srgb, var(--mz-cell-sky-ink) 30%, transparent); }
+.sb-tline .band.is-any { background: color-mix(in srgb, var(--mz-cell-sky-ink) 13%, transparent); }
+.sb-tline .dot { position: absolute; top: 14.5px; width: 14px; height: 14px; margin-left: -7px;
+  border-radius: 50%; background: var(--mz-cell-sky-ink);
+  box-shadow: 0 0 0 3px var(--mz-wash-white), 0 3px 7px -3px rgba(43, 33, 24, 0.5); }
+.sb-tline .dot.is-miss { background: var(--mz-cell-coral-ink); }
+.sb-tline .miss-lnk { position: absolute; top: 20.5px; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--mz-cell-coral-ink) 0 3px, transparent 3px 6px); }
+.sb-tline .tlab { position: absolute; top: 0; font-size: 9.5px; font-weight: 800;
+  color: var(--mz-cell-sky-ink); transform: translateX(-50%); white-space: nowrap;
+  font-variant-numeric: tabular-nums; }
+.sb-tline .tlab.is-miss { color: var(--mz-cell-coral-ink); }
+.sb-tline .ax { position: absolute; top: 27px; font-size: 7.5px; font-weight: 800;
+  letter-spacing: 0.08em; color: var(--mz-ink-mut); transform: translateX(-50%); }
+
 /* tény-chipek (prototype `.hlch`) — a ContextRow-k csempén belüli formája */
 .sb-fchips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
 .sb-fchip { display: inline-flex; flex-direction: column; border-radius: 11px; padding: 5px 9px;
