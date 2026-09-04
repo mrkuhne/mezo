@@ -72,4 +72,10 @@ class GoalEnginePropertiesIT extends AbstractIntegrationTest {
         assertThat(props.adaptive().sleepDebtMinNights()).isEqualTo(4);
         assertThat(props.adaptive().sleepDebtDeficitHours()).isEqualTo(5.0);
     }
+
+    @Test
+    void testOverviewTunables_shouldBindFromYml() {
+        assertThat(props.overview().rateTolerancePercent()).isEqualByComparingTo("20");
+        assertThat(props.overview().rateToleranceFloorKgPerWeek()).isEqualByComparingTo("0.10");
+    }
 }

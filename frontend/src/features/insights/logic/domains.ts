@@ -16,9 +16,10 @@ export const DOMAIN_ORDER: MetricDomain[] = ['sleep', 'train', 'fuel', 'mind', '
 const VERDICT_ORDER: Record<PatternGateVerdict, number> = {
   live: 0,
   few_days: 1,
-  degenerate: 2,
-  no_data: 3,
-  frozen: 4,
+  imbalanced_groups: 2,
+  degenerate: 3,
+  no_data: 4,
+  frozen: 5,
 }
 
 export function comparePairs(a: PatternMonitorPair, b: PatternMonitorPair): number {

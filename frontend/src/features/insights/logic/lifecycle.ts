@@ -26,7 +26,7 @@ function bucketFor(pattern: Pattern, pair: PatternMonitorPair | null): Lifecycle
       if (pattern.kind === 'ai_hypothesis') {
         return pattern.confidence != null && pattern.confidence >= MIN_PATTERN_CONFIDENCE ? 'decide' : 'noRelationship'
       }
-      // mezo-mqdj: a monitor VAN, de a pár ma nem él (few_days/no_data/degenerate). Az éjszakai
+      // mezo-mqdj: a monitor VAN, de a pár ma nem él (few_days/no_data/degenerate/imbalanced).
       // job a kapu-bukáskor nem nyúl a korábban perzisztált sorhoz, így az elavult statisztikával
       // itt maradt — vissza a gyűjtésbe. Döntést kérni rá hazugság volna: a „Megerősítem" tartós
       // tudássá tenné (Tudástár + prompt + előrejelzés) azt, amit a mai adat ki sem tud számolni.
@@ -48,7 +48,7 @@ export function bucketize(patterns: Pattern[], monitor: PatternMonitor | null): 
     const bucket = bucketFor(pattern, pair)
     buckets.get(bucket)!.push({ key: pattern.pairKey, pattern, pair, bucket })
   }
-  // sor nélküli párok: still gathering — a few_days/no_data/degenerate nudge a képviselőjük;
+  // sor nélküli párok: still gathering — a nem élő verdikt nudgja a képviselőjük;
   // egy LIVE-de-még-sor-nélküli pár is ide esik (ma éjjel dolgozza fel a job)
   for (const pair of monitor?.pairs ?? []) {
     if (!seenPairKeys.has(pair.key)) {

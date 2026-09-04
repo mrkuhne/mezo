@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
+import { goal } from '@/data/me/goals'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { server } from '@/test/msw/server'
@@ -112,8 +113,11 @@ describe('mock mode (demo goal)', () => {
     render(<GoalsPage />, { wrapper: Wrapper })
     expect(screen.getByText('Hosszú cél')).toBeInTheDocument()
     expect(screen.getByText('Fogyás · aktív')).toBeInTheDocument()
-    // current weight — the track-l label speaks hu1's Hungarian decimal comma.
-    expect(screen.getAllByText(/78,6/).length).toBeGreaterThan(0)
+    // current weight — the track-l label speaks hu1's Hungarian decimal comma. mezo-7vdm #6:
+    // a currentWeight már a naplóból származik, tehát a KONKRÉT szám a fali órától függ —
+    // a seedhez mérünk, nem literálhoz.
+    const currentHu = String(goal.currentWeight).replace('.', ',')
+    expect(screen.getAllByText(new RegExp(currentHu)).length).toBeGreaterThan(0)
     expect(screen.getByText(/Egészséges erő/)).toBeInTheDocument() // identityFrame
     expect(screen.queryByText('7 nap')).not.toBeInTheDocument() // trend cells moved to /me/weight
   })

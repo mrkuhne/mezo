@@ -55,6 +55,7 @@ const SCREENS: Array<[string, string, string?]> = [
   ['meso-week', '/train/mesocycles/meso-hyp-04/week'],
   ['train-session', '/train/session'],
   ['fuel', '/fuel'],
+  ['fuel-settings', '/fuel/settings'],
   ['fuel-terv', '/fuel/plan'],
   // F7.3 Fuel deep (mezo-d20.8.3.1): the gyógyszer page's honest empty state now carries the
   // ＋ Gyógyszer felvétele CTA (mock seeds no medication); the recipe detail is the 2×2 mosaic;

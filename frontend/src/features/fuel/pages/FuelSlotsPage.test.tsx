@@ -278,7 +278,7 @@ test('an existing template loads straight into the editor with Ajánlott vissza�
 // (`templates = []`), so a cold mount commits `rows = []` off a still-null `existing`. Before the
 // fix, once the delayed GET resolved to a saved template, `existing` flipped non-null but `rows`
 // never re-synced — the editor rendered the (stale) empty draft, tripping a spurious `too_few`
-// error instead of showing the saved template. The FuelSettingsSheet.test.tsx delayed-handler
+// error instead of showing the saved template. The FuelSettingsPage.test.tsx delayed-handler
 // idiom reproduces the race deterministically.
 test('real mode cold mount: a delayed GET resolving to a saved template lands in the editor, not a stale empty draft', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
