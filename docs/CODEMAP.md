@@ -272,9 +272,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `KnowledgeFactService`, `LifeEventCandidateService`, `LifeEventExtractionService`, `LifeEventSuggestion`,
     `MeWeekService`, `MemoryObservatoryService`, `MemoryRecallService`, `MesoContextAssembler`, `MesoReviewGenerator`,
     `MesoReviewListener`, `MessageFeedbackService`, `MetricDomain`, `MetricKey`, `MetricSeriesService`,
-    `PatternConfirmedEvent`, `PatternDetectionJob`, `PatternDetectionService`, `PatternGate`, `PatternImpactSource`,
-    `PatternMonitorService`, `PatternPairDetailService`, `PatternRetractedEvent`, `PatternService`,
-    `PearsonCorrelation`, `PeopleSnapshotBlock`, `PeriodSummaryService`, `PersonExtractionResult`,
+    `MetricValueKind`, `PatternConfirmedEvent`, `PatternDetectionJob`, `PatternDetectionService`, `PatternGate`,
+    `PatternImpactSource`, `PatternMonitorService`, `PatternPairDetailService`, `PatternRetractedEvent`,
+    `PatternService`, `PearsonCorrelation`, `PeopleSnapshotBlock`, `PeriodSummaryService`, `PersonExtractionResult`,
     `PersonExtractionService`, `PersonGraphEdgeAdapter`, `ProfileAssembler`, `ProfileAssemblerJob`,
     `ProfilePromptAssembler`, `PromptMemoryAssembler`, `QuarterlyReviewJob`, `QuarterlyReviewService`, `Quarters`,
     `SeasonSuggestion`, `TranscriptionService`, `WeekContextRenderer`, `WeeklyScoreService`
@@ -557,8 +557,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **modules:** chat.ts, chatApi.ts, chatHooks.ts, diagnosisApi.ts, diagnosisHooks.ts, diagnosisMock.ts,
     experimentsApi.ts, experimentsHooks.ts, graph.ts, graphApi.ts, graphHooks.ts, insights.ts, knowledge.ts,
     knowledgeApi.ts, knowledgeHooks.ts, memoirApi.ts, memoirHooks.ts, memory.ts, memoryApi.ts, memoryHooks.ts,
-    monitorApi.ts, monitorHooks.ts, patternDetailApi.ts, patternDetailHooks.ts, patternsApi.ts, patternsHooks.ts,
-    predictionsApi.ts, predictionsHooks.ts, weeklyHooks.ts, weeklySuggestionApi.ts
+    monitorApi.ts, monitorHooks.ts, patternDetailApi.ts, patternDetailHooks.ts, patternPairMapper.ts, patternsApi.ts,
+    patternsHooks.ts, predictionsApi.ts, predictionsHooks.ts, weeklyHooks.ts, weeklySuggestionApi.ts
 - **FE ui** `frontend/src/features/insights`
   - **pages:** ChatPage.tsx, DiagnosisDetailPage.tsx, DiagnosisListPage.tsx, ExperimentsPage.tsx,
     KnowledgeListPage.tsx, MemoirArchivePage.tsx, MemoirChapterPage.tsx, MemoirPage.tsx, MemoryPage.tsx,
@@ -568,12 +568,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     HowItWorksView.tsx, KategoriakView.tsx, KindNodeList.tsx, KindTileGrid.tsx, KnowledgeBaseView.tsx,
     KnowledgeFactRow.tsx, LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx, LifecycleSection.tsx,
     MemoryAuditPanel.tsx, MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx,
-    PatternDecisionCard.tsx, PatternImpactCard.tsx, PatternJournal.tsx, PatternScatter.tsx, PatternStrengthChart.tsx,
-    ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx, SimilarDayCard.tsx, TokenColumns.tsx,
-    ToolWorkStrip.tsx
+    PatternDecisionCard.tsx, PatternDetailHero.tsx, PatternEvidenceChart.tsx, PatternImpactCard.tsx,
+    PatternJournal.tsx, PatternStrengthChart.tsx, ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx,
+    RefChips.tsx, SimilarDayCard.tsx, TokenColumns.tsx, ToolWorkStrip.tsx
   - **logic:** chatRefs.ts, diagnosisCatalog.ts, diagnosisCopy.ts, domains.ts, factCopy.ts, findings.ts,
-    humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternHistory.ts, quickQuestions.ts,
-    toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
+    humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternEvidence.ts, patternHistory.ts,
+    quickQuestions.ts, toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
 
 ### intention
 
