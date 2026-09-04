@@ -411,10 +411,41 @@ Ha a codemap elmozdult a merge miatt, commitold a regenerált fájlt.
 
 ```bash
 git push -u origin feat/jcpt-koteg-a-chore
-gh pr create --title "chore(companion): elavult javadocok + MeWeekProperties nyugdíjazása (mezo-jcpt.11, mezo-jcpt.7)" --body "..."
-```
+gh pr create --title "chore(companion): elavult javadocok + MeWeekProperties nyugdíjazása (mezo-jcpt.11, mezo-jcpt.7)" --body "$(cat <<'BODY'
+Köteg A a `mezo-jcpt` epic maradék follow-upjaiból. **Két bd issue egy PR-ban** — ez a
+„1 bd issue + 1 branch" házirend user-jóváhagyott felülbírálása (indoklás a `mezo-jcpt` epic
+2026-09-04-i kommentjében): mindkettő triviális backend-takarítás, és átfedő fájlokat érintenek
+(a `DayScoreService` javadoc-ja hordozza a `.7` TODO-jelölőjét), így külön PR-ban egymás
+merge-konfliktusa lennének.
 
-A PR-leírás sorolja fel a két bd issue-t, mondja ki a kötegelés user-jóváhagyott házirend-felülbírálását, és záruljon a `🤖 Generated with [Claude Code](https://claude.com/claude-code)` sorral.
+**mezo-jcpt.11 — két elavult javadoc (viselkedés nem változik)**
+- `WeeklyScoreService.resolve`: a cache-shortcut NEM egzakt tervezett edzésekkel + nulla loggal
+  záruló héten (a training dimenziót a terv hajtja, a probe kihagyja az ütemterv-táblákat).
+  Elfogadott korlátként dokumentálva, a `WeeklyScoreRepository.latestScoreInputWrittenAt`
+  korlát-listájához horgonyozva.
+- `DayReviewService.inputsHash`: a nyers `priorBaseScores` lista a promptba kerül, de nincs a
+  kulcsban. A kulcs szándékosan változatlan (a `rhythm` score+tényei már hashelve vannak); a
+  maradék szűk rés kimondva.
+
+**mezo-jcpt.7 — `MeWeekProperties` nyugdíjazása**
+- A record + a `mezo.companion.me-week` yml-blokk törölve **együtt** (default nélküli primitívek:
+  yml-only törlés minden Spring-kontextust eltörne). Grep-igazolt nulla fogyasztó.
+- Három javadoc-precedens élő recordra irányítva; a companion/me/proactive §10 fájltérképek
+  átvezetve; `docs/CODEMAP.md` regenerálva.
+- A `me-week` **contract** (fragment, tag, controller, service, `MeWeekSubscores` wire-alak)
+  érintetlen — csak a config-prefix megy nyugdíjba.
+
+**Verifikáció:** `MezoApplicationIT` + `DayEvaluationPropertiesTest` Testcontainers-módban
+(a boot-idejű config-validáció az egyetlen éles vezeték), `gen-codemap.mjs --check` zöld.
+A teljes suite ezen a CI-futáson.
+
+Terv: `docs/superpowers/plans/2026-09-04-jcpt-koteg-a-chore.md` ·
+Spec: `docs/superpowers/specs/2026-09-04-jcpt-koteg-a-chore-design.md`
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+BODY
+)"
+```
 
 - [ ] **Step 4: CI zöld megvárása**
 
