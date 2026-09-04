@@ -7,10 +7,11 @@
 // ============================================================
 import type { CSSProperties, ReactNode } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useProgressionProfile } from '@/data/hooks'
+import { useLifeGoals, useProgressionProfile } from '@/data/hooks'
 import type { SkillLevel } from '@/data/progression/progressionApi'
 import { MUSCLE_LABELS } from '@/data/train/train'
 import { SkillBandCard, type SkillRowVM } from '@/features/me/components/SkillBandCard'
+import { goalSkillChips } from '@/features/me/logic/goalSkillChips'
 import { growthStats } from '@/features/me/logic/growthStats'
 import { ATHLETIC_META, LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
 import { ClayIcon } from '@/shared/ui/clay'
@@ -35,6 +36,11 @@ export function GrowthSkillsPage() {
   const s = growthStats(profile)
   const lifeMeta = (k: string) => LIFE_SKILLS.find((x) => x.key === k)
   const savings = profile.savingsHuf30d
+  // A goalchip (mezo-iizd.12) mindhárom sávra megy: a pillér `skillKey`-e a LIFE-taxonómián
+  // KÍVÜLRE is mutathat (a jel-katalógus `weight_goal`/`gym_volume` bejegyzései például
+  // `max_strength`/`aerobic_capacity` atlétikai skillt adnak).
+  const { goals: lifeGoals } = useLifeGoals()
+  const chips = goalSkillChips(lifeGoals)
 
   return (
     <MozaikPage tone="lav">
@@ -52,17 +58,20 @@ export function GrowthSkillsPage() {
           {life.length > 0 && (
             <SkillBandCard delayMs={60} wash="lav" chipTone="lav" eyebrow="LIFE" chip={`${life.length} skill · ${huInt(s.lifeXp)} XP`}
               rows={toRows(life, (k, n) => { const m = lifeMeta(k); return m ? <ClayIcon name={m.clayIcon} size={16} /> : initials(n) }, (k) => lifeMeta(k)?.name ?? k)}
-              footer={typeof savings === 'number' && savings > 0 ? <>Megtakarítás (30 nap) · <b>{huInt(savings)} Ft</b></> : undefined} />
+              footer={typeof savings === 'number' && savings > 0 ? <>Megtakarítás (30 nap) · <b>{huInt(savings)} Ft</b></> : undefined}
+              goalChips={chips} />
           )}
           {athletic.length > 0 && (
             <SkillBandCard delayMs={120} wash="sage" chipTone="ok" eyebrow="Atlétikus"
               chip={`${athletic.length} skill · átlag ${s.athleticAvg != null ? hu1(s.athleticAvg) : '—'}`}
-              rows={toRows(athletic, (_, n) => initials(n), (k) => ATHLETIC_META[k]?.name ?? k)} />
+              rows={toRows(athletic, (_, n) => initials(n), (k) => ATHLETIC_META[k]?.name ?? k)}
+              goalChips={chips} />
           )}
           {muscle.length > 0 && (
             <SkillBandCard delayMs={180} wash="amber" chipTone="warn" eyebrow="Izom"
               chip={`${muscle.length} izom · legjobb Lv ${s.muscleBest ?? '—'}`}
-              rows={toRows(muscle, (_, n) => initials(n), (k) => MUSCLE_LABELS[k] ?? k)} />
+              rows={toRows(muscle, (_, n) => initials(n), (k) => MUSCLE_LABELS[k] ?? k)}
+              goalChips={chips} />
           )}
         </EntranceGroup>
       </PageBody>

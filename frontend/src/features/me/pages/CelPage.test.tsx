@@ -222,3 +222,21 @@ describe('real mode (default MSW handlers)', () => {
     expect((await fetch(`${API_BASE}/api/life-goals/nope`, { method: 'DELETE' })).status).toBe(404)
   })
 })
+
+// ── Task 2 (mezo-iizd.9): conflict sentence rendered from progress.conflicts ────────────────
+test('a konfliktus-mondat megjelenik, ha a progress hoz ilyet (mezo-iizd.9)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}/api/life-goals/:id/progress`, () => HttpResponse.json({
+    goalId: 'lg-kockahas', from: '2026-08-08', to: '2026-09-04', arrow: 'flat',
+    days: [], pillars: [],
+    conflicts: ['A Kockahas és a Side hustle ugyanazt az estét kéri — a napzárás mindkettőben pillér.'],
+  })))
+  renderGoal('lg-kockahas')
+  expect(await screen.findByText(/ugyanazt az estét kéri/)).toBeInTheDocument()
+})
+
+test('konfliktus nélkül nincs szekció-maradvány', async () => {
+  renderGoal('lg-kockahas')
+  await screen.findByText(/Pillérek/)
+  expect(document.querySelector('.lg-conflict')).toBeNull()
+})

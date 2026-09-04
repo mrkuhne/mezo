@@ -4,6 +4,7 @@ import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageHead, PageHero, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
+import { ClayIcon } from '@/shared/ui/clay'
 import { useLifeGoal, useLifeGoalMutations, useLifeGoalProgress } from '@/data/hooks'
 import type { LifeGoalPillarInput, SignalCatalogEntry } from '@/data/lifegoal/lifegoalApi'
 import { ARROW_CLASS, ARROW_GLYPH, DIMENSIONS, STATUS_LABEL } from '@/features/me/logic/lifegoalLabels'
@@ -70,6 +71,11 @@ export function CelPage() {
   const pillarProgressById = new Map(
     progressPending ? [] : (progress?.pillars ?? []).map((p) => [p.pillarId, p]),
   )
+  // A backend MÁR számolja (LifeGoalProgressService.findConflicts) és a `conflicts` mezőben
+  // küldi — mezo-iizd.9-ig a FE eldobta. Betöltés alatt üres: a feloldatlan lekérés
+  // `conflicts: []`-e ugyanaz, mint a „nincs konfliktus", és egy villanó szekció rosszabb,
+  // mint egy késve érkező (a `heroArrow` progressPending-guardjának ugyanaz a logikája).
+  const conflicts = progressPending ? [] : (progress?.conflicts ?? [])
 
   const addPillar = (e: SignalCatalogEntry) => {
     // The existing pillars go back WITH their ids so the replace updates those rows in place
@@ -122,6 +128,17 @@ export function CelPage() {
             <PillarCard key={p.id} pillar={p} progress={pillarProgressById.get(p.id)} period={period} delayMs={40 + i * 40} />
           ))}
           {goal.pillars.length === 0 && <p className="mz-eyebrow rise" style={{ padding: '0 2px 10px' }}>Még nincs pillér — ＋ Pillér a katalógusból.</p>}
+          {conflicts.length > 0 && (
+            <>
+              <div className="mz-eyebrow rise" style={{ '--d': '240ms', padding: '8px 2px 6px' } as React.CSSProperties}>Cél-ütközés</div>
+              {conflicts.map((line, i) => (
+                <p key={i} className="lg-conflict rise" style={{ '--d': `${250 + i * 30}ms` } as React.CSSProperties}>
+                  <ClayIcon name="i-retegek" size={18} />
+                  <span>{line}</span>
+                </p>
+              ))}
+            </>
+          )}
           {(goal.whyText || goal.ifThenPlans.length > 0) && (
             <>
               <div className="mz-eyebrow rise" style={{ '--d': '260ms', padding: '8px 2px 6px' } as React.CSSProperties}>Miért · ha–akkor</div>

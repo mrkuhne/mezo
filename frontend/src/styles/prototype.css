@@ -9034,6 +9034,52 @@ button.mz-wtile:active { transform: scale(0.96); }
 .lg-sighead .cnt { margin-left: auto; font-size: 9.5px; color: #A2958A; }
 .lg-sighint { font-size: 11px; color: #6E6257; margin: 0 2px 4px; }
 
+/* Nap-mozaik „Célok · ma" csempe (mezo-iizd.9, prototípus celok-body.html #page-nap .gtile).
+   A dimenzió-mosást a `.lg-d-*` osztály adja (ugyanaz a --dw/--dw2/--ds hármas, amit a
+   `.lg-tile` is olvas), így a csempe a Célok hub tile-jaival egy nyelvet beszél. */
+.lg-gtile { background: linear-gradient(150deg, var(--dw), var(--dw2)) !important;
+  box-shadow: 0 14px 26px -14px var(--ds), 0 2px 5px rgba(43,33,24,0.04), inset 0 1px 0 rgba(255,255,255,0.7) !important; }
+.lg-gtile .mz-eyebrow { color: var(--dc); display: inline-flex; align-items: center; gap: 5px; }
+.lg-gtile .mz-eyebrow i { width: 6px; height: 6px; border-radius: 50%; background: var(--dc); flex: none; }
+.lg-gtile-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.lg-gtile .lg-arrow .v { font-size: 22px; font-weight: 200; letter-spacing: -0.02em; }
+.lg-gtile .lg-arrow .v small { font-size: 11px; font-weight: 500; color: #6E6257; }
+
+/* Cél-ütközés mondat (mezo-iizd.9): a backend findConflicts sorai. Figyelmeztetés, nem tiltás
+   (spec D7: a konfliktus companion-mondat, nem kemény korlát) — ezért borostyán, nem piros. */
+.lg-conflict { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 8px; padding: 10px 12px;
+  border-radius: 16px; font-size: 11.5px; line-height: 1.45; color: #6E6257;
+  background: linear-gradient(140deg, var(--lg-frame-warn), var(--lg-frame-warn2));
+  box-shadow: 0 12px 22px -14px rgba(181,126,20,0.45); }
+.lg-conflict svg { flex: none; margin-top: 1px; }
+
+/* Heti hub cél-kártya + goalchip (mezo-iizd.9, prototípus celok-body.html #page-heti .qcard/
+   .wgrow/.goalchip). A `.lg-goalchip` a Growth skill-sorban is ezt a nyelvet viseli (mezo-iizd.12). */
+.lg-wcard { border-radius: 18px; padding: 4px 12px 10px; margin-bottom: 10px; background: var(--mz-stripbg);
+  border: 0.5px solid rgba(43,33,24,0.06); box-shadow: 0 14px 26px -16px rgba(43,33,24,0.3); }
+.lg-wcard-top { display: flex; align-items: baseline; gap: 8px; padding: 10px 2px 4px; }
+.lg-wcard-cnt { margin-left: auto; font-size: 9.5px; color: #A2958A; }
+.lg-wgrow { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; }
+.lg-wgrow + .lg-wgrow { border-top: 0.5px solid rgba(43,33,24,0.08); }
+.lg-wgrow .grow { flex: 1; min-width: 0; }
+.lg-wgrow .nm { font-size: 12.5px; font-weight: 700; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.lg-wgrow .x { font-size: 11px; color: #6E6257; margin-top: 2px; line-height: 1.4; }
+.lg-goalchip { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 2px 8px 2px 6px;
+  font-size: 8.5px; font-weight: 700; color: var(--dc, #6E6257); background: var(--dw, rgba(43,33,24,0.06)); flex: none; }
+.lg-goalchip i { width: 6px; height: 6px; border-radius: 50%; background: var(--dc, #A2958A); flex: none; }
+.lg-wcard-cta { width: 100%; margin-top: 6px; border: 1px solid rgba(43,33,24,0.14); background: var(--mz-stripbg);
+  border-radius: 999px; padding: 8px 0; font-size: 11px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
+
+/* Lezárt cél sora (mezo-iizd.4): a parkolt sor nyelve, halványabban — egy kész cél emlék,
+   nem tennivaló. A pipa a jobb szélen a lezárás egyetlen jele. */
+.lg-donerow { opacity: 0.72; }
+.lg-donetick { margin-left: auto; flex: none; font-size: 12px; font-weight: 700; color: #4E6B42; }
+
+/* Én-hub életcél-hero (mezo-iizd.4): az `.enh-goalcard` váza, súly-track nélkül — a helyére
+   a célok dimenzió-chipjei kerülnek. */
+.enh-lgcard .mz-eyebrow { display: inline-flex; align-items: center; gap: 5px; }
+.enh-lgdims { display: flex; flex-wrap: wrap; gap: 5px; margin: 8px 0 10px; }
+
 /* ============================================================
    Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)
    Ez a szekció EGYKOR a Mai oldal teljes „inset grouped list" lapnyelvét vitte

@@ -1,5 +1,7 @@
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import { perkHint } from '@/features/me/logic/perkMilestones'
+import type { GoalChip } from '@/features/me/logic/goalSkillChips'
+import { DIMENSIONS } from '@/features/me/logic/lifegoalLabels'
 import { clampPct } from '@/shared/lib/pct'
 import { cn } from '@/shared/lib/cn'
 
@@ -14,9 +16,11 @@ const BAR: Record<SkillBandWash, string> = { lav: 'lav', sage: 'sage', amber: 'g
  * level before a milestone · `Lv n` plaque. The first `previewRows` show; the rest sit behind
  * `Mind a {n} ▸` (card-local `expanded`). No XP readout per row — the chip carries the band XP.
  */
-export function SkillBandCard({ eyebrow, chip, chipTone, rows, footer, wash, delayMs, previewRows = 4 }: {
+export function SkillBandCard({ eyebrow, chip, chipTone, rows, footer, wash, delayMs, previewRows = 4, goalChips }: {
   eyebrow: string; chip: string; chipTone: 'ok' | 'warn' | 'lav'; rows: SkillRowVM[]
   footer?: ReactNode; wash: SkillBandWash; delayMs?: number; previewRows?: number
+  /** `skillKey → chip` (mezo-iizd.12). Csak akkor kap sor chipet, ha aktív cél pillére rá mutat. */
+  goalChips?: Map<string, GoalChip>
 }) {
   const [expanded, setExpanded] = useState(false)
   const d = delayMs ?? 0
@@ -34,6 +38,11 @@ export function SkillBandCard({ eyebrow, chip, chipTone, rows, footer, wash, del
             <span className="gr-skl-nm">{r.name}</span>
             <div className="gr-tbar"><i className={BAR[wash]} style={{ '--w': `${clampPct(r.progressPct)}%`, '--d': `${d + 260 + i * 55}ms` } as CSSProperties} /></div>
             {hint != null && <span className="gr-skl-perk">→ perk Lv {hint}</span>}
+            {goalChips?.get(r.key) && (
+              <span className={`lg-goalchip ${DIMENSIONS[goalChips.get(r.key)!.dimension].cls}`}>
+                <i />{goalChips.get(r.key)!.title}
+              </span>
+            )}
             <span className="gr-skl-lv">Lv {r.level}</span>
           </div>
         )
