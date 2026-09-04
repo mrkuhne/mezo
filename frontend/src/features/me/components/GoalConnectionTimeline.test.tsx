@@ -6,11 +6,11 @@ import { GoalConnectionTimeline } from '@/features/me/components/GoalConnectionT
 
 const plans = {
   links: [
-    { id: 'm1', planType: 'mesocycle' as const, planId: 'p1', startWeek: 2, endWeek: 5, plan: { title: 'Erőblokk', status: 'active', startDate: '2026-09-01', endDate: '2026-09-28', weeks: 4 } },
-    { id: 'r1', planType: 'running_block' as const, planId: 'p2', startWeek: 4, endWeek: 7, plan: { title: '5K alap', status: 'planned', startDate: '2026-09-15', endDate: '2026-10-12', weeks: 4 } },
+    { id: 'm1', planType: 'mesocycle' as const, planId: 'p1', startWeek: 2, endWeek: 5, clippedAtGoalEnd: false, plan: { title: 'Erőblokk', status: 'active', startDate: '2026-09-01', endDate: '2026-09-28', weeks: 4 } },
+    { id: 'r1', planType: 'running_block' as const, planId: 'p2', startWeek: 4, endWeek: 8, clippedAtGoalEnd: true, plan: { title: '5K alap', status: 'planned', startDate: '2026-09-15', endDate: '2026-10-26', weeks: 6 } },
   ],
   gaps: [{ fromWeek: 1, toWeek: 1 }],
-  sportSchedule: [{ id: 's1', dayOfWeek: 2, time: '19:00', durationMin: 75, kind: 'training', location: 'Városi csarnok', sport: 'handball' }],
+  sportSchedule: [{ id: 's1', dayOfWeek: 1, time: '19:00', durationMin: 75, kind: 'training', location: 'Városi csarnok', sport: 'handball' }],
   activeLinkCount: 2,
   uncoveredWeekCount: 1,
   topIssueCode: 'mesocycle_gap',
@@ -26,8 +26,10 @@ test('renders separate plan lanes, actual sport schedule and gaps from server da
   expect(screen.getByText(/Kézilabda/)).toBeInTheDocument()
   expect(screen.getByText(/Kedd/)).toBeInTheDocument()
   expect(screen.getByText(/75 perc/)).toBeInTheDocument()
+  expect(screen.getByText(/Edzés/)).toBeInTheDocument()
+  expect(screen.getByText('A cél végéig')).toBeInTheDocument()
   expect(screen.getByText('W1 fedezetlen')).toBeInTheDocument()
-  expect(screen.queryByText(/BVSC|végig/i)).not.toBeInTheDocument()
+  expect(screen.queryByText(/BVSC/i)).not.toBeInTheDocument()
 })
 
 test('detaches only the selected server link', async () => {

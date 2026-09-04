@@ -12,14 +12,15 @@ afterEach(() => vi.unstubAllEnvs())
 // --- Mock mode: candidate listing + exclusion of already-linked plans -----
 // The static mock timeline (data/goals.ts) links meso-hyp-04 / meso-str-02 /
 // meso-maint-01; the mock library (data/train.ts) also has meso-rec-03. So the
-// mesocycle picker must show only the un-linked one (Recovery 03) and exclude
-// the three already on the goal.
+// mesocycle picker must exclude the three already on the goal and the only
+// remaining library item (Recovery 03), because that plan is archived.
 describe('mock mode (candidate listing + exclusion)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 
-  test('lists an un-linked mesocycle and excludes already-linked ones', () => {
+  test('excludes archived and already-linked mesocycles', () => {
     render(<AttachPlanSheet planType="mesocycle" goalId="goal-cut-2026" onClose={() => {}} />, { wrapper: QueryWrapper })
-    expect(screen.getByText('Recovery 03')).toBeInTheDocument()
+    expect(screen.queryByText('Recovery 03')).not.toBeInTheDocument()
+    expect(screen.getByText(/Nincs csatolható terv/)).toBeInTheDocument()
     // Already linked under the goal → must NOT be offered again.
     expect(screen.queryByText('Hypertrophy 04')).not.toBeInTheDocument()
     expect(screen.queryByText('Strength 02')).not.toBeInTheDocument()
@@ -36,7 +37,7 @@ const GOAL = {
 const TIMELINE = {
   goalId: 'g1', weeks: 8,
   // run-1 is already linked → the running picker must exclude it.
-  links: [{ id: 'link-1', planType: 'running_block', planId: 'run-1', startWeek: 1, endWeek: 4, plan: { title: 'Base Build', status: 'active', startDate: '2026-06-01', endDate: '2026-06-29', weeks: 4 } }],
+  links: [{ id: 'link-1', planType: 'running_block', planId: 'run-1', startWeek: 1, endWeek: 4, clippedAtGoalEnd: false, plan: { title: 'Base Build', status: 'active', startDate: '2026-06-01', endDate: '2026-06-29', weeks: 4 } }],
   gaps: [],
 }
 const MESO = {
@@ -63,7 +64,7 @@ describe('real mode (attach wire body)', () => {
     server.use(
       http.post(`${API_BASE}/api/goals/g1/plans`, async ({ request }) => {
         attached = (await request.json()) as typeof attached
-        return HttpResponse.json({ id: 'link-new', planType: 'mesocycle', planId: 'meso-9', startWeek: 3, endWeek: 8, plan: MESO }, { status: 201 })
+        return HttpResponse.json({ id: 'link-new', planType: 'mesocycle', planId: 'meso-9', startWeek: 3, endWeek: 8, clippedAtGoalEnd: true, plan: MESO }, { status: 201 })
       }),
     )
     const onClose = vi.fn()
@@ -97,5 +98,17 @@ describe('real mode (attach wire body)', () => {
     // (wait for the timeline query to resolve so the linked set is populated).
     expect(await screen.findByText('Speed Block')).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByText('Base Build')).not.toBeInTheDocument())
+  })
+
+  test('excludes archived plans even when they are not linked', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/mesocycles`, () => HttpResponse.json([
+        MESO,
+        { ...MESO, id: 'meso-old', title: 'Archived block', shortTitle: 'Archived block', status: 'archived' },
+      ])),
+    )
+    render(<AttachPlanSheet planType="mesocycle" goalId="g1" onClose={() => {}} />, { wrapper: QueryWrapper })
+    expect(await screen.findByText('Hypertrophy 09')).toBeInTheDocument()
+    expect(screen.queryByText('Archived block')).not.toBeInTheDocument()
   })
 })

@@ -2,8 +2,9 @@ import type { CSSProperties } from 'react'
 import type { GoalOverviewResponse } from '@/data/me/goalApi'
 
 type Plans = GoalOverviewResponse['plans']
-const DAY = ['', 'Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek', 'Szombat', 'Vasárnap']
-const SPORT: Record<string, string> = { volleyball: 'Röplabda', handball: 'Kézilabda', running: 'Futás' }
+const DAY = ['Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek', 'Szombat', 'Vasárnap']
+const SPORT: Record<string, string> = { volleyball: 'Röplabda', handball: 'Kézilabda', running: 'Futás', cross: 'Cross', trx: 'TRX' }
+const KIND: Record<string, string> = { training: 'Edzés', match: 'Mérkőzés' }
 
 function weekRange(from: number, to: number) {
   return from === to ? `W${from}` : `W${from}–${to}`
@@ -28,7 +29,10 @@ export function GoalConnectionTimeline({ plans, totalWeeks, onDetach }: {
             <div className="goal-plan-grid" style={{ '--goal-weeks': totalWeeks } as CSSProperties}>
               {plans.links.filter((link) => link.planType === lane.type).map((link) => (
                 <div className={`goal-plan-bar goal-plan-${lane.type}`} key={link.id} style={{ gridColumn: `${link.startWeek} / ${Math.min(totalWeeks, link.endWeek) + 1}` }}>
-                  <span><strong>{link.plan.title}</strong><small>{weekRange(link.startWeek, link.endWeek)} · {link.plan.status}</small></span>
+                  <span>
+                    <strong>{link.plan.title}</strong>
+                    <small>{weekRange(link.startWeek, link.endWeek)} · {link.plan.status}{link.clippedAtGoalEnd && <span className="goal-plan-clip">A cél végéig</span>}</small>
+                  </span>
                   {onDetach && <button type="button" aria-label={`${link.plan.title} leválasztása`} onClick={() => onDetach(link.id)}>×</button>}
                 </div>
               ))}
@@ -42,7 +46,7 @@ export function GoalConnectionTimeline({ plans, totalWeeks, onDetach }: {
         <div className="goal-detail-kicker">Sport · heti rend</div>
         {plans.sportSchedule.length ? plans.sportSchedule.map((slot) => (
           <div className="goal-sport-row" key={slot.id}>
-            <span><strong>{SPORT[slot.sport] ?? slot.sport}</strong><small>{slot.location || 'Helyszín nélkül'}</small></span>
+            <span><strong>{SPORT[slot.sport] ?? slot.sport}</strong><small>{KIND[slot.kind] ?? slot.kind} · {slot.location || 'Helyszín nélkül'}</small></span>
             <span>{DAY[slot.dayOfWeek] ?? `Nap ${slot.dayOfWeek}`} · {slot.time} · {slot.durationMin} perc</span>
           </div>
         )) : <div className="goal-plan-empty">Nincs heti sportidőpont.</div>}

@@ -46,16 +46,36 @@ public class GoalPlanLinkService {
 
     @Transactional
     public GoalPlanLinkResponse attachPlan(UUID userId, UUID goalId, GoalPlanAttachRequest req) {
-        requireGoal(userId, goalId);
+        GoalEntity goal = requireGoal(userId, goalId);
+        int goalWeeks = GoalTimelineService.goalWeeks(goal);
+        int startWeek = req.getStartWeek();
+        if (startWeek < 1 || startWeek > goalWeeks) {
+            throw badRequest("GOAL_PLAN_OUTSIDE_WINDOW");
+        }
         GoalPlanRef plan = resolvePlan(userId, req.getPlanType(), req.getPlanId());
+        if (plan.getStatus() == GoalPlanRef.StatusEnum.ARCHIVED) {
+            throw badRequest("GOAL_PLAN_ARCHIVED");
+        }
+        int rawEndWeek = startWeek + plan.getWeeks() - 1;
+        int endWeek = Math.min(rawEndWeek, goalWeeks);
+        List<GoalPlanLinkEntity> existing =
+            linkRepository.findByGoalIdAndCreatedByAndDeletedFalseOrderByStartWeekAsc(goalId, userId);
+        if (existing.stream().anyMatch(link -> link.getPlanType().equals(req.getPlanType())
+            && link.getPlanId().equals(req.getPlanId()))) {
+            throw badRequest("GOAL_PLAN_DUPLICATE");
+        }
+        if (existing.stream().anyMatch(link -> link.getPlanType().equals(req.getPlanType())
+            && link.getStartWeek() <= endWeek && startWeek <= link.getEndWeek())) {
+            throw badRequest("GOAL_PLAN_OVERLAP");
+        }
         GoalPlanLinkEntity e = new GoalPlanLinkEntity();
         e.setCreatedBy(userId);   // server-side ownership — never from the client
         e.setGoalId(goalId);
         e.setPlanType(req.getPlanType());
         e.setPlanId(req.getPlanId());
-        e.setStartWeek(req.getStartWeek());
-        e.setEndWeek(req.getStartWeek() + plan.getWeeks() - 1); // derived — request never sets end_week
-        GoalPlanLinkResponse resp = mapper.toResponse(linkRepository.save(e), plan);
+        e.setStartWeek(startWeek);
+        e.setEndWeek(endWeek); // derived and clamped — request never sets end_week
+        GoalPlanLinkResponse resp = mapper.toResponse(linkRepository.save(e), plan, goalWeeks);
         // The timeline changed → recompute the goal whose links changed (G5 trigger). Simplest
         // gate: recompute this goal regardless of its status — an inactive goal's prescription still
         // reflects its plan. Graceful on a missing profile (evaluate never throws).
@@ -99,5 +119,9 @@ public class GoalPlanLinkService {
     private SystemRuntimeErrorException notFound() {
         return new SystemRuntimeErrorException(
             SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND);
+    }
+
+    private SystemRuntimeErrorException badRequest(String code) {
+        return new SystemRuntimeErrorException(SystemMessage.error(code).build());
     }
 }

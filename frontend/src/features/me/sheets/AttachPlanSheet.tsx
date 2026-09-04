@@ -5,11 +5,11 @@ import { Icon } from '@/shared/ui/Icon'
 import { useGoal, useGoalActions, useTrain, useRunning } from '@/data/hooks'
 import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 
-// Attach-an-existing-plan picker (G4b hub). Opened from a GoalPlanSlots "＋ Csatolj
-// meglévőt" CTA for a given plan type. Lists the user's owned mesocycles
+// Attach-an-existing-plan picker (G4b hub). Opened from the plan connections page
+// for a given plan type. Lists the user's owned mesocycles
 // (`useTrain().mesocycles`) or running blocks (`useRunning().runningBlocks`),
-// EXCLUDING plans already linked to the goal (their id appears in
-// timeline.links[].planId for that type — don't offer a duplicate attach). The
+// EXCLUDING archived plans and plans already linked to the goal (their id appears in
+// timeline.links[].planId for that type — don't offer an invalid attach). The
 // user picks one + a start-week (1..timeline.weeks) and confirms → attachPlan(
 // goalId, { planType, planId, startWeek }) → on success the sheet closes.
 
@@ -45,7 +45,7 @@ export function AttachPlanSheet({
     planType === 'mesocycle'
       ? mesocycles.map((m) => ({ id: m.id, title: m.shortTitle || m.title, weeks: m.weeks, status: m.status }))
       : runningBlocks.map((b) => ({ id: b.id, title: b.title, weeks: b.weeks, status: b.status }))
-  const candidates = all.filter((c) => !linkedIds.has(c.id))
+  const candidates = all.filter((c) => c.status !== 'archived' && !linkedIds.has(c.id))
 
   const maxWeek = timeline?.weeks ?? 1
   const [selectedId, setSelectedId] = useState<string | null>(null)

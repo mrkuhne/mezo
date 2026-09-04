@@ -21,7 +21,7 @@ export function GoalPlansPage() {
       <EntranceGroup><PageHero icon="i-meso" name="Tervkapcsolatok" big="Céljavítás szükséges" /><PageBody><div className="goal-detail-notice rise">A kapcsolati idővonal a cél javítása után áll helyre.</div></PageBody></EntranceGroup>
     ) : <EntranceGroup>
       <PageHero icon="i-meso" name="Tervkapcsolatok" big={`${overview.plans.activeLinkCount} aktív`} sub={overview.plans.uncoveredWeekCount ? `${overview.plans.uncoveredWeekCount} fedezetlen hét` : 'Teljes célablak lefedve'} />
-      <PageBody principle="A cél csak egyszer számol energiát; a tervek a heti terhelést és a szakaszokat adják.">
+      <PageBody principle="A mesociklus önmagában nem emeli a kalóriát: a szakaszokat és a guardokat adja. Az edzőtermi/sport heti rend és a futóterv sessionjei módosítják az EAT-et.">
         <GoalConnectionTimeline plans={overview.plans} totalWeeks={overview.totalWeeks} onDetach={goalId && !writePending ? (linkId) => { void detachPlan(goalId, linkId) } : undefined} />
         <section className="goal-attach-card rise">
           <div><span className="goal-detail-kicker">Kapcsolatok bővítése</span><strong>Adj tervet a célablakhoz</strong></div>

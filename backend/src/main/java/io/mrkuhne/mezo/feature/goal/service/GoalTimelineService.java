@@ -49,7 +49,7 @@ public class GoalTimelineService {
         List<GoalPlanLinkResponse> linkDtos = new ArrayList<>();
         for (GoalPlanLinkEntity l : links) {
             GoalPlanRef ref = linkService.resolvePlan(userId, l.getPlanType(), l.getPlanId());
-            linkDtos.add(mapper.toResponse(l, ref));
+            linkDtos.add(mapper.toResponse(l, ref, weeks));
             if ("mesocycle".equals(l.getPlanType())) { // only the gym lane tiles coverage
                 int from = Math.max(1, l.getStartWeek());
                 int to = Math.min(weeks, l.getEndWeek());
@@ -81,7 +81,7 @@ public class GoalTimelineService {
     }
 
     /** Goal-window length in whole weeks, derived from the start..target span. */
-    private int goalWeeks(GoalEntity goal) {
+    static int goalWeeks(GoalEntity goal) {
         return (int) ChronoUnit.WEEKS.between(goal.getStartDate(), goal.getTargetDate());
     }
 

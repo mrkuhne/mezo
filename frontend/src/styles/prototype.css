@@ -4669,7 +4669,8 @@ button.mz-tile:active { transform: scale(0.96); }
 .goal-plan-running_block { background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
 .goal-plan-bar span { min-width: 0; display: grid; gap: 2px; }
 .goal-plan-bar strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; }
-.goal-plan-bar small { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.goal-plan-bar small { display: flex; align-items: center; flex-wrap: wrap; gap: 3px; font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+.goal-plan-clip { display: inline-flex; border-radius: 999px; padding: 2px 5px; background: color-mix(in srgb, currentColor 12%, transparent); white-space: nowrap; }
 .goal-plan-bar button { flex: none; border: 0; border-radius: 50%; width: 28px; height: 28px; background: var(--mz-chipbg); color: inherit; font: inherit; cursor: pointer; }
 .goal-plan-empty { grid-column: 1 / -1; padding: 12px; border: 1px dashed var(--mz-line); border-radius: 14px; text-align: center; font-size: 10px; color: var(--mz-ink-mut); }
 .goal-gap-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 14px; }

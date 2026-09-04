@@ -140,6 +140,7 @@ test('useGoal (real mode) builds linkedMesocycles + goal.mesocycles from the tim
             planId: 'meso-1',
             startWeek: 1,
             endWeek: 6,
+            clippedAtGoalEnd: false,
             plan: {
               title: 'Hypertrophy 04',
               status: 'active',
@@ -176,6 +177,7 @@ test('useGoal (real mode) exposes the fetched timeline + goalId', async () => {
         planId: 'meso-1',
         startWeek: 1,
         endWeek: 6,
+        clippedAtGoalEnd: false,
         plan: { title: 'Hypertrophy 04', status: 'active', startDate: '2026-06-01', endDate: '2026-07-13', weeks: 6 },
       },
     ],
@@ -268,7 +270,7 @@ test('useGoalActions (real mode) attach/detach hit goalLinkApi with the right ar
       calls.push('attach')
       attachBody = await request.json()
       return HttpResponse.json(
-        { id: 'link-9', planType: 'mesocycle', planId: 'meso-7', startWeek: 2, endWeek: 8, plan: { title: 'X', status: 'planned', startDate: '2026-06-08', endDate: '2026-08-03', weeks: 6 } },
+        { id: 'link-9', planType: 'mesocycle', planId: 'meso-7', startWeek: 2, endWeek: 8, clippedAtGoalEnd: false, plan: { title: 'X', status: 'planned', startDate: '2026-06-08', endDate: '2026-08-03', weeks: 6 } },
         { status: 201 },
       )
     }),
@@ -285,7 +287,7 @@ test('useGoalActions (real mode) invalidates goals, overview and timeline on pla
   server.use(
     http.post(`${API_BASE}/api/goals/g1/plans`, () =>
       HttpResponse.json(
-        { id: 'link-9', planType: 'mesocycle', planId: 'meso-7', startWeek: 2, endWeek: 8, plan: { title: 'X', status: 'planned', startDate: '2026-06-08', endDate: '2026-08-03', weeks: 6 } },
+        { id: 'link-9', planType: 'mesocycle', planId: 'meso-7', startWeek: 2, endWeek: 8, clippedAtGoalEnd: false, plan: { title: 'X', status: 'planned', startDate: '2026-06-08', endDate: '2026-08-03', weeks: 6 } },
         { status: 201 },
       ),
     ),

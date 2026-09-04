@@ -5566,6 +5566,8 @@ export interface components {
             planId: string;
             startWeek: number;
             endWeek: number;
+            /** @description True when the source plan continues beyond the goal window and endWeek is clamped to the final goal week. */
+            clippedAtGoalEnd: boolean;
             plan: components["schemas"]["GoalPlanRef"];
         };
         GoalPlanAttachRequest: {

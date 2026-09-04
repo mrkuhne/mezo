@@ -374,6 +374,7 @@ export const goalOverviewSeed: GoalOverviewResponse = {
         planId: 'meso-hyp-04',
         startWeek: 5,
         endWeek: 10,
+        clippedAtGoalEnd: false,
         plan: { title: 'Hypertrophy 04', status: 'active', startDate: '2026-05-01', endDate: '2026-06-12', weeks: 6 },
       },
       {
@@ -382,6 +383,7 @@ export const goalOverviewSeed: GoalOverviewResponse = {
         planId: 'run-base-01',
         startWeek: 6,
         endWeek: 13,
+        clippedAtGoalEnd: false,
         plan: { title: 'Base Build · 5K', status: 'active', startDate: '2026-05-08', endDate: '2026-07-03', weeks: 8 },
       },
     ],
@@ -449,6 +451,7 @@ export const goalTimeline: GoalTimelineResponse = {
       planId: 'meso-hyp-04',
       startWeek: 5,
       endWeek: 10,
+      clippedAtGoalEnd: false,
       plan: { title: 'Hypertrophy 04', status: 'active', startDate: '2026-05-01', endDate: '2026-06-12', weeks: 6 },
     },
     {
@@ -457,6 +460,7 @@ export const goalTimeline: GoalTimelineResponse = {
       planId: 'meso-str-02',
       startWeek: 11,
       endWeek: 17,
+      clippedAtGoalEnd: false,
       plan: { title: 'Strength 02', status: 'planned', startDate: '2026-06-16', endDate: '2026-08-04', weeks: 7 },
     },
     {
@@ -465,6 +469,7 @@ export const goalTimeline: GoalTimelineResponse = {
       planId: 'meso-maint-01',
       startWeek: 18,
       endWeek: 20,
+      clippedAtGoalEnd: false,
       plan: { title: 'Maintenance', status: 'planned', startDate: '2026-08-07', endDate: '2026-08-28', weeks: 3 },
     },
     {
@@ -473,6 +478,7 @@ export const goalTimeline: GoalTimelineResponse = {
       planId: 'run-base-01',
       startWeek: 6,
       endWeek: 13,
+      clippedAtGoalEnd: false,
       plan: { title: 'Base Build · 5K', status: 'active', startDate: '2026-05-08', endDate: '2026-07-03', weeks: 8 },
     },
   ],
