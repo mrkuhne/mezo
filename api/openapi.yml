@@ -14429,7 +14429,8 @@ components:
         One weighted dimension; exactly one payload field is populated, matching
         id — macro/micros/nova for their ids, `context` carries the generic
         label/value rows for context, who, fat_quality, plant_diversity,
-        energy_density and portion.
+        energy_density and portion. Dimension `context` additionally carries
+        `timing` when it comes from a logged meal.
       required:
         - id
         - label
@@ -14470,6 +14471,10 @@ components:
           nullable: true
           items:
             $ref: '#/components/schemas/MealContextRow'
+        timing:
+          allOf:
+            - $ref: '#/components/schemas/MealTimingDetail'
+          nullable: true
         note:
           type: string
           nullable: true
@@ -14585,6 +14590,32 @@ components:
           type: string
         value:
           type: string
+    MealTimingDetail:
+      type: object
+      description: >-
+        A `context` dimenzió időzítés-tényei rajzolható alakban (mezo-jcpt.3).
+        UGYANABBÓL a szerver-oldali slot-ablak configból származik, ami a
+        timing-részpontszámot adta, ezért a rajzolt sáv és a pontszám nem tud
+        eltérni. Csak logolt étkezésen van jelen; a recept-sablon breakdownjában
+        nincs `context` dimenzió, tehát ott soha.
+      required:
+        - eatenAt
+        - slotLabel
+      properties:
+        eatenAt:
+          type: string
+          description: 'Helyi idő "HH:mm" alakban'
+        windowFrom:
+          type: string
+          nullable: true
+          description: 'Az ablak kezdete "HH:mm"; null = nasi, bármikor jó'
+        windowTo:
+          type: string
+          nullable: true
+          description: 'Az ablak vége "HH:mm"; null = nasi, bármikor jó'
+        slotLabel:
+          type: string
+          description: 'Magyar slot-név, pl. "vacsora"'
     MealCoachResponse:
       type: object
       description: >-

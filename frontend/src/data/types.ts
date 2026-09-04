@@ -101,7 +101,10 @@ export interface MacroDimension extends MealDimensionBase { id: 'macro'; macroRa
 export type MicroStatus = 'good' | 'ok' | 'low'
 export interface MicroDimension extends MealDimensionBase { id: 'micro'; micros: { name: string; value: string; pct: number; status: MicroStatus }[] }
 export interface NovaDimension extends MealDimensionBase { id: 'nova'; nova: { dominant: NovaGroup; stack: { nova: NovaGroup; pct: number; label: string }[]; items: { name: string; nova: NovaGroup; warning?: boolean }[] } }
-export interface ContextDimension extends MealDimensionBase { id: 'context'; context: { label: string; value: string }[] }
+/** A `context` dimenzió időzítés-tényei rajzolható alakban (mezo-jcpt.3). Opcionális: a
+ *  cache-elt régi envelope-okban nincs, és a sáv ilyenkor egyszerűen nem rajzolódik. */
+export interface MealTiming { eatenAt: string; windowFrom: string | null; windowTo: string | null; slotLabel: string }
+export interface ContextDimension extends MealDimensionBase { id: 'context'; context: { label: string; value: string }[]; timing?: MealTiming | null }
 /** Generic label/value-row dimensions (mezo-7797): WHO, zsírminőség, növényi diverzitás, energia-sűrűség, adag-arány. Same payload shape as ContextDimension. */
 export interface RowsDimension extends MealDimensionBase { id: 'who' | 'fat_quality' | 'plant_diversity' | 'energy_density' | 'portion'; context: { label: string; value: string }[] }
 /** A degraded dimension (weight 0 — zero input coverage on the backend, mezo-jcpt.1): base

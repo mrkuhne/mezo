@@ -10,10 +10,12 @@ import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson.MicroRow;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson.NovaDetail;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson.NovaItemRow;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson.NovaStackRow;
+import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson.TimingDetail;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson.ToolRow;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -308,7 +310,7 @@ public class MealScoringService {
             Math.round(sp * 100), Math.round(sc * 100), Math.round(sf * 100),
             Math.round(tp * 100), Math.round(tc * 100), Math.round(tf * 100));
         return new Dim("macro", "Kcal & makró arány", props.weights().macro(), score, 1.0, text,
-            detail, null, null, null);
+            detail, null, null, null, null);
     }
 
     // --- Micro (.10): fiber target (sugar/salt/satFat redistributed to who/fat-quality) ---------
@@ -330,7 +332,7 @@ public class MealScoringService {
         String text = String.format("Rost %s a(z) %s allotmenthez (%d%%).",
             grams(fiber), grams(props.micro().fiberG() * kcalShare), pct(fiberRatio));
         return new Dim("micro", "Rost & mikro", props.weights().micro(), score, coverage, text,
-            null, rows, null, null);
+            null, rows, null, null, null);
     }
 
     // --- WHO (.14): free-sugar energy-share + salt allotment (mezo-7797) -----------------------
@@ -358,7 +360,7 @@ public class MealScoringService {
         String text = String.format("Cukor az energia %.0f%%-a (WHO ≤%.0f%%) · só a keret %d%%-án.",
             sugarShare * 100, who.sugarEnergyShareLimit() * 100, pct(saltRatio));
         return new Dim("who", "Ajánlások · WHO", props.weights().who(), score, coverage, text,
-            null, null, null, rows);
+            null, null, null, rows, null);
     }
 
     // --- Fat quality (.10): satFat energy-share + saturated share of total fat -----------------
@@ -385,7 +387,7 @@ public class MealScoringService {
         String text = String.format("Telített zsír az energia %.0f%%-a · az összzsír %.0f%%-a.",
             satEnergyShare * 100, satShare * 100);
         return new Dim("fat_quality", "Zsírminőség", props.weights().fatQuality(), score, coverage,
-            text, null, null, null, rows);
+            text, null, null, null, rows, null);
     }
 
     // --- Plant diversity (.08): distinct plant categories ---------------------------------------
@@ -407,7 +409,7 @@ public class MealScoringService {
         String text = String.format("%d különböző növényi kategória a %d-s célhoz.",
             plants.size(), props.plantDiversity().targetCategories());
         return new Dim("plant_diversity", "Növényi diverzitás", props.weights().plantDiversity(),
-            score, coverage, text, null, null, null, rows);
+            score, coverage, text, null, null, null, rows, null);
     }
 
     // --- Energy density (.06): kcal/100g over gram-mass lines -----------------------------------
@@ -432,7 +434,7 @@ public class MealScoringService {
         String text = String.format("%.0f kcal/100g (%.0f alatt teljes pont, %.0f felett nulla).",
             density, good, bad);
         return new Dim("energy_density", "Energia-sűrűség", props.weights().energyDensity(),
-            score, coverage, text, null, null, null, rows);
+            score, coverage, text, null, null, null, rows, null);
     }
 
     // --- Portion (.12, template only): per-serving kcal vs the slot budget ----------------------
@@ -450,7 +452,7 @@ public class MealScoringService {
         String text = String.format("Egy adag a %s büdzsé %d%%-a.",
             slot == null ? "alapértelmezett" : slotLabel(slot), (int) Math.round(rel * 100));
         return new Dim("portion", "Adag-arány", props.weights().portion(), score, 1.0, text,
-            null, null, null, rows);
+            null, null, null, rows, null);
     }
 
     /** Limit subscore: 1.0 while inside the allotment, then linear to 0 at 2× the allotment. */
@@ -497,7 +499,7 @@ public class MealScoringService {
         String text = String.format("Domináns NOVA %d · a kalóriák %d%%-a NOVA 1–2 forrásból.",
             dominant, (int) Math.round((groupKcal[1] + groupKcal[2]) / coveredKcal * 100));
         return new Dim("nova", "Feldolgozottság · NOVA", props.weights().nova(), score, coverage, text,
-            null, null, new NovaDetail(dominant, stack, items), null);
+            null, null, new NovaDetail(dominant, stack, items), null, null);
     }
 
     // --- Context (.20): deterministic slot/timing fit -------------------------------------------
@@ -526,24 +528,45 @@ public class MealScoringService {
             Math.round(protein), Math.round(proteinRef))));
         String text = String.format("Időzítés %.0f%% · kcal-keret %.0f%% · fehérje %.0f%%.",
             timingSub * 100, shareSub * 100, proteinSub * 100);
+        MealScoringProperties.SlotWindows w = props.slotWindows();
+        int[] window = windowOf(w, slot);
+        TimingDetail timing = new TimingDetail(
+            localTime.format(HHMM),
+            hourOrNull(window == null ? null : window[0]),
+            hourOrNull(window == null ? null : window[1]),
+            slotLabel(slot));
         return new Dim("context", "Időzítés & kontextus", props.weights().context(), score, 1.0, text,
-            null, null, null, rows);
+            null, null, null, rows, timing);
     }
+
+    private static final DateTimeFormatter HHMM = DateTimeFormatter.ofPattern("HH:mm");
 
     /** In-window 1.0; outside: linear to 0 at 3h distance. A snack fits at any hour. */
     private double timingSub(String slot, LocalTime t) {
         MealScoringProperties.SlotWindows w = props.slotWindows();
-        int from;
-        int to;
-        switch (slot) {
-            case "breakfast" -> { from = w.breakfastFrom(); to = w.breakfastTo(); }
-            case "lunch" -> { from = w.lunchFrom(); to = w.lunchTo(); }
-            case "dinner" -> { from = w.dinnerFrom(); to = w.dinnerTo(); }
-            default -> { return 1.0; }
+        int[] window = windowOf(w, slot);
+        if (window == null) {
+            return 1.0;
         }
         double hour = t.getHour() + t.getMinute() / 60.0;
-        double distance = hour < from ? from - hour : hour > to ? hour - to : 0;
+        double distance = hour < window[0] ? window[0] - hour : hour > window[1] ? hour - window[1] : 0;
         return Math.max(0, 1 - distance / 3);
+    }
+
+    /** The slot→window mapping SHARED by {@link #timingSub} and the {@code contextDim} timing
+     *  detail (mezo-jcpt.3) — one source of truth, so the drawn strip can never disagree with the
+     *  score. {@code null} for a snack (fits any hour) and any unrecognized slot. */
+    private static int[] windowOf(MealScoringProperties.SlotWindows w, String slot) {
+        return switch (slot) {
+            case "breakfast" -> new int[] {w.breakfastFrom(), w.breakfastTo()};
+            case "lunch" -> new int[] {w.lunchFrom(), w.lunchTo()};
+            case "dinner" -> new int[] {w.dinnerFrom(), w.dinnerTo()};
+            default -> null;
+        };
+    }
+
+    private static String hourOrNull(Integer h) {
+        return h == null ? null : String.format("%02d:00", h);
     }
 
     private static String slotLabel(String slot) {
@@ -593,23 +616,23 @@ public class MealScoringService {
     /** Computed dimension before rounding: keeps the unrounded score for the weighted total. */
     private record Dim(String id, String label, double effectiveWeight, double score,
                        double coverage, String detail, MacroDetail macro, List<MicroRow> micros,
-                       NovaDetail nova, List<ContextRow> context) {
+                       NovaDetail nova, List<ContextRow> context, TimingDetail timing) {
 
         static Dim degraded(String id, String label, double configWeight, String detail) {
             // configWeight intentionally unused: a no-coverage dimension carries weight 0 (honest),
             // the total renormalizes over the rest, and confidence drops via coverage 0.
-            return new Dim(id, label, 0, 0, 0, detail, null, null, null, null);
+            return new Dim(id, label, 0, 0, 0, detail, null, null, null, null, null);
         }
 
         /** The same dimension with its weight renormalized over the present dimensions (mezo-bw3y). */
         Dim renormalized(double weightSum) {
             return new Dim(id, label, effectiveWeight / weightSum, score, coverage, detail,
-                macro, micros, nova, context);
+                macro, micros, nova, context, timing);
         }
 
         Dimension toJson() {
             return new Dimension(id, label, round2(effectiveWeight), round2(score), detail,
-                macro, micros, nova, context, null);
+                macro, micros, nova, context, timing, null);
         }
     }
 

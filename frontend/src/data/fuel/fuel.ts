@@ -130,6 +130,7 @@ const m1Dimensions: MealDimension[] = [
       { label: 'Sport', value: 'Csü volleyball T-12h' },
       { label: 'Glikémia', value: 'Slow-release' },
     ],
+    timing: { eatenAt: '07:15', windowFrom: '05:00', windowTo: '10:00', slotLabel: 'reggeli' },
   },
 ]
 
@@ -249,6 +250,9 @@ const m2Dimensions: MealDimension[] = [
       { label: 'PR-attempt', value: 'Chest Row · 107.5kg' },
       { label: 'Glikémia', value: 'Mixed-release' },
     ],
+    // Kívül az ebéd-ablakon (13:30 a 11:00–13:00 után) — pont ez adja a borderline 0.78-as
+    // pontszámot a fenti prózában ("ablakon belül van, de a határán").
+    timing: { eatenAt: '13:30', windowFrom: '11:00', windowTo: '13:00', slotLabel: 'ebéd' },
   },
   // Degraded (weight 0 — zero input coverage, mezo-jcpt.1): no adag-adat for this meal, so the
   // backend can't score portion-arány at all. Weight 0 contributes nothing to weightedScore()

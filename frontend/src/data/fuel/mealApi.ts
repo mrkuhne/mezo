@@ -83,7 +83,14 @@ function fromDimension(d: MealScoreDimensionResponse): MealDimension | null {
     return { id: d.id, ...base, context: d.context.map(c => ({ label: c.label, value: c.value })) } as MealDimension
   }
   if (d.id === 'context' && d.context && d.context.length > 0) {
-    return { id: 'context', ...base, context: d.context.map(c => ({ label: c.label, value: c.value })) }
+    return {
+      id: 'context', ...base,
+      context: d.context.map(c => ({ label: c.label, value: c.value })),
+      ...(d.timing ? { timing: {
+        eatenAt: d.timing.eatenAt, windowFrom: d.timing.windowFrom ?? null,
+        windowTo: d.timing.windowTo ?? null, slotLabel: d.timing.slotLabel,
+      } } : {}),
+    }
   }
   // No per-kind payload matched — keep it iff it's a genuine degraded dim (weight 0, known id);
   // drop it iff it's malformed (weight > 0 with a missing payload, or an unrecognized id).
