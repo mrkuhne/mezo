@@ -965,6 +965,30 @@ self-contained questions free of rewrite latency/cost, bounds conversational pro
 makes failure behavior deterministic. The four-value `ConsumerPolicy` is already part of the core
 request contract; later tasks apply its retrieval/ranking differences.
 
+**Shared hybrid candidate retrieval (`mezo-6dii.4`; implemented, not serving chat yet):**
+
+```text
+RetrievalInput(request, prepared query, serving embedding version, per-retriever limit)
+  ├─ dense   → query embedding → memory_vector ⟕ active memory_item
+  ├─ lexical → folded raw query → memory_item FTS + trigram score
+  ├─ facts   → pinned ∪ query-matching knowledge_fact (+ valid conflict counterpart)
+  └─ graph   → deterministic seed nodes → bounded GraphTraversalService neighborhood
+       ↓
+  provenance-rich MemoryCandidate lists (no fusion/selection/rendering in this slice)
+```
+
+Dense and lexical retrieval enforce owner, soft-delete, active state, validity and `asOf` in their
+SQL, exclude the current conversation's own `chat_turn` rows, and apply their limit before mapping.
+Dense additionally requires a ready, live, content-hash-current vector in the requested serving
+generation. Fact retrieval respects `include_in_prompt` as the user's global injection opt-out,
+excludes future/expired/superseded rows, and applies its limit to ranked seeds before expanding
+each selected conflict to both still-valid owned sides; both sides carry the conflict flag. Graph
+retrieval adds `asOf`-aware seed/neighborhood overloads to the existing traversal, excludes
+future-dated nodes, keeps the configured hop/top-K bounds, and maps each edge under its stable ID.
+All three new JDBC queries use the existing same-connection savepoint pattern and deliberately
+rethrow failures; per-retriever catch/timeout/audit belongs to the Task-5 coordinator, so a genuine
+empty result cannot be mistaken for an outage. The old chat recall path still serves unchanged.
+
 **The streamed turn (V0.4 + V0.5 tools — what the FE uses):**
 
 ```
@@ -3836,6 +3860,15 @@ spends writing vectors — nothing else. An untagged site records `feature = 'un
 `mezo.feature.llm-log.enabled` off ⇒ the injected recorder is the no-op ⇒ nothing happens; the
 adapters never branch on the switch.
 
+**Shared RAG retriever seam (`mezo-6dii.4`, staged).** The new `MemoryRetriever` contract has four
+named implementations (`dense`, `lexical`, `facts`, `graph`). Dense is the only adapter that crosses
+the `EmbeddingPort` provider seam and embeds `PreparedMemoryQuery.denseQuery`; lexical and facts are
+local PostgreSQL reads, while graph delegates to the existing deterministic
+`GraphTraversalService`. Every adapter receives the same owner/as-of/policy envelope and returns
+`MemoryCandidate` source identity, label/content, local score and selection signals. Nothing calls
+these beans from a user turn yet: fusion, timeout/failure isolation, selection and OLD/SHADOW/NEW
+wiring arrive in the following slices.
+
 ### 5.4 Companion ↔ API contract & backend platform (wired)
 Companion is now a backed feature on the contract-first pipeline
 ([`_platform-api-backend.md`](_platform-api-backend.md) §3–§4): `companion.yml` → merged
@@ -4269,6 +4302,16 @@ bounds as a pure unit test. `MemoryQueryPreparerIT` uses the profile-gated `Fake
 prove scripted standalone rewriting, raw-query retention, latest-six/nonblank/500-character history
 bounds, raw fallback on provider failure/blank/oversized output, and zero LLM calls for no-memory or
 self-contained requests. No test reaches a network model.
+
+**Hybrid candidate retrievers (`mezo-6dii.4`).**
+`HybridMemoryRetrieverIT` runs all four real retriever beans against PostgreSQL/pgvector with the
+profile-gated fake embedder. Its matrix covers semantic and exact-term hits, old salient memory,
+suppressed/superseded/expired/future rows, serving-vector version and content-hash eligibility,
+current-conversation exclusion, cross-user isolation, fact pinning/opt-out/conflict expansion, and
+stable graph-edge mapping. A forced wrong-dimension ANN call plus invalid limits prove dense,
+lexical and fact JDBC failures propagate while their savepoints leave the enclosing transaction
+usable. The dense case also executes `EXPLAIN (ANALYZE, BUFFERS)` over seeded data as a diagnostic;
+no planner cost or node choice is asserted.
 
 **Daily evaluation (`mezo-jcpt.4`, plan 2/2).**
 `feature/companion/service/DayEvaluationEngineTest.java` is the formula's unit-level pin — one test
@@ -5581,6 +5624,13 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryQueryAnalyzer,MemoryQueryPreparer,MemoryQueryRewriter,LlmMemoryQueryRewriter}.java` — conservative routing, bounded contextual rewrite and raw-query fallback over the existing cheap LLM port.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — deterministic `[fake-memory-rewrite:…]` scripting plus captured bounded history for integration assertions.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/service/MemoryQueryAnalyzerTest.java` + `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/MemoryQueryPreparerIT.java` — routing/date unit coverage and real-context rewrite/fallback coverage.
+
+**Backend — hybrid candidate retrievers (`mezo-6dii.4` — §3/§5/§8)**
+
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/dto/{RetrievalInput,MemoryCandidate}.java` + `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/MemoryRetriever.java` — the common invocation and provenance-rich candidate contracts; fact/graph candidates honestly have no `memoryItemId`, and graph edges may have no event date.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/repository/{DenseMemoryQuery,LexicalMemoryQuery,KnowledgeFactRetrievalQuery}.java` — owner/state/validity/as-of filtering in SQL, serving-generation ANN, folded FTS+trigram ranking, pinned/matching/conflict fact union and same-connection savepoint isolation.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{DenseMemoryRetriever,LexicalMemoryRetriever,FactMemoryRetriever,GraphMemoryRetriever}.java` — the named `dense`/`lexical`/`facts`/`graph` adapters; graph reuses the configured `GraphTraversalService` bounds.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/HybridMemoryRetrieverIT.java` — deterministic pgvector/FTS/fact/graph result, ownership and failure-boundary matrix.
 
 **Backend — feedback (W4.1, `mezo-b3pp.15` — §4/§5.7)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/controller/CompanionFeedbackController.java` — `implements CompanionFeedbackApi`, `COMPANION_SWITCH`-gated, ownership from `CurrentUserId`, thin delegation.
