@@ -3679,7 +3679,7 @@ health/behavior problem of the user's. `joint_overuse` joins by the same argumen
 intervention copy calls it a training tip, not an injury alert, and it fires on a conjunction (a
 7-day strain average plus tomorrow's schedule) the user did nothing to earn — for a user on a
 weekly shoulder split it is true roughly weekly, so counting it here would keep the seven-day quiet
-window from ever opening. The other ten flags — `missed_workouts` and the remaining four S6 keys
+window from ever opening. The other nine flags — `missed_workouts` and the remaining four S6 keys
 (`acute_bad_day`, `load_fuel_mismatch`, `rapid_weight_loss`, `late_eating`) included — stay counted
 as problems, since each IS a genuine behavior/health signal, unlike a data gap, a failed nudge, or a
 forward-looking training advisory. The other suppression is unchanged: `FlagEvaluator` only runs

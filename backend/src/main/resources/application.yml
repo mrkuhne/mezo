@@ -832,14 +832,23 @@ mezo:
         # lockstep forever, starving the lower-ranked one of any delivery window. load_fuel_mismatch
         # and rapid_weight_loss co-fire from the same overreaching state (high load + under-fuelled
         # + weight falling); acute_bad_day and late_eating can plausibly co-fire from the same rough
-        # day; joint_overuse and ignored_nudge are independent of everything else here. The six
+        # day. joint_overuse ALSO co-fires with load_fuel_mismatch — SHOULDER_STRAIN is a component
+        # of the very COMBINED_LOAD_MIN that feeds load_fuel_mismatch, and "tomorrow is a shoulder
+        # day" signals an ongoing shoulder-heavy block that is also pushing that same aggregate up,
+        # so a hard training block with under-fuelling is exactly the state that raises both — they
+        # must not share 72h either. joint_overuse gets 60h, not just a different number: its advice
+        # is about TOMORROW specifically, so a stale, undelivered raise is useless in a way the
+        # others' aren't, which argues for a SHORTER cycle on its own merits, and 60 against
+        # load_fuel_mismatch's 72 drifts their phases apart so each eventually lands on a day the
+        # other is cooling down. ignored_nudge is independent of everything else here. The six
         # values below are therefore DELIBERATELY UNEQUAL — do NOT "tidy" them back to a uniform
-        # 48h/72h, that reintroduces the starvation bug. More urgent ranks also get the SHORTER
-        # wait, so a starved-out cycle still favors the more urgent card next time around.
+        # 48h/72h (or make joint_overuse 72 again), that reintroduces the starvation bug. More
+        # urgent ranks also get the SHORTER wait, so a starved-out cycle still favors the more
+        # urgent card next time around.
         acute-bad-day: 24
         load-fuel-mismatch: 72
         rapid-weight-loss: 96
-        joint-overuse: 72
+        joint-overuse: 60
         ignored-nudge: 120
         late-eating: 48
     # W5.2 (bd mezo-b3pp.19, spec §9.2): the intervention library — config, not DB. Selection per

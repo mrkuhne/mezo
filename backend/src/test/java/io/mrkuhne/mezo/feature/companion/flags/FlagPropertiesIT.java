@@ -48,7 +48,7 @@ class FlagPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.cooldownHours().acuteBadDay()).isEqualTo(24);
         assertThat(properties.cooldownHours().loadFuelMismatch()).isEqualTo(72);
         assertThat(properties.cooldownHours().rapidWeightLoss()).isEqualTo(96);
-        assertThat(properties.cooldownHours().jointOveruse()).isEqualTo(72);
+        assertThat(properties.cooldownHours().jointOveruse()).isEqualTo(60);
         assertThat(properties.cooldownHours().ignoredNudge()).isEqualTo(120);
         assertThat(properties.cooldownHours().lateEating()).isEqualTo(48);
     }
@@ -60,7 +60,7 @@ class FlagPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.cooldownHours().forFlag(FlagKey.ACUTE_BAD_DAY)).isEqualTo(24);
         assertThat(properties.cooldownHours().forFlag(FlagKey.LOAD_FUEL_MISMATCH)).isEqualTo(72);
         assertThat(properties.cooldownHours().forFlag(FlagKey.RAPID_WEIGHT_LOSS)).isEqualTo(96);
-        assertThat(properties.cooldownHours().forFlag(FlagKey.JOINT_OVERUSE)).isEqualTo(72);
+        assertThat(properties.cooldownHours().forFlag(FlagKey.JOINT_OVERUSE)).isEqualTo(60);
         assertThat(properties.cooldownHours().forFlag(FlagKey.IGNORED_NUDGE)).isEqualTo(120);
         assertThat(properties.cooldownHours().forFlag(FlagKey.LATE_EATING)).isEqualTo(48);
     }
