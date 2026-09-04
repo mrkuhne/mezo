@@ -184,9 +184,32 @@ public final class AdviceFactRenderer {
             return List.of();
         }
         return List.of(
-            "Váll-terhelés %d nap átlagban: %s (küszöb %s), holnap (%s) váll-fókuszú edzés"
+            "Váll-terhelés %d nap átlagban: %s (küszöb %s), holnap (%s) %s-fókuszú edzés"
                 .formatted(p.windowDays(), num(p.strainAvg()), num(p.strainAvgAtLeast()),
-                    p.tomorrowDate()));
+                    p.tomorrowDate(), muscleHu(p.tomorrowMuscle())));
+    }
+
+    /** {@code MuscleGroup.of}'s coarse English tokens (the actual matched value, frozen in the
+     *  payload), in the Hungarian noun this card's prose uses for the "X-fókuszú edzés" pattern.
+     *  An unmapped token falls back to itself rather than fabricating a translation — the card
+     *  never says more than the payload actually froze. */
+    private static String muscleHu(String muscle) {
+        if (muscle == null) {
+            return "";
+        }
+        return switch (muscle) {
+            case "shoulder" -> "váll";
+            case "chest" -> "mell";
+            case "back" -> "hát";
+            case "biceps" -> "bicepsz";
+            case "triceps" -> "tricepsz";
+            case "quad" -> "comb";
+            case "ham" -> "hajlítóizom";
+            case "glute" -> "far";
+            case "calf" -> "vádli";
+            case "core" -> "törzs";
+            default -> muscle;
+        };
     }
 
     private static String scoreOrDash(Integer score) {

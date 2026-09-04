@@ -66,6 +66,20 @@ class AdviceFactRendererTest {
         assertThat(String.join(" ", facts)).contains("1,4");
     }
 
+    /** The rendered fact must surface the payload's OWN {@code tomorrowMuscle} — the value
+     *  actually matched against {@code muscleNeedle} — not a hardcoded "shoulder" claim. Uses a
+     *  non-shoulder muscle precisely so a hardcoded string could not pass this test. */
+    @Test
+    void testRender_shouldDescribeAJointOveruseRaise_usingThePayloadsOwnMuscleNotAHardcodedOne() {
+        FlagPayloadEnvelope payload = FlagPayloadEnvelope.jointOveruse(
+            new FlagPayloadEnvelope.JointOveruse(8.0, 5.0, 7, 7, "2026-09-05", "back"));
+
+        List<String> facts = AdviceFactRenderer.render(FlagKey.JOINT_OVERUSE, payload);
+
+        assertThat(facts).hasSize(1);
+        assertThat(facts.get(0)).contains("hát-fókuszú").doesNotContain("váll-fókuszú");
+    }
+
     /** Honest absence: no payload (a raise written before the payload existed, or a key with no
      *  renderer) yields NO facts rather than a fabricated one. The card still ships — its prose
      *  falls back to the template, which needs no facts. */
