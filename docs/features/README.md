@@ -43,6 +43,8 @@ Status legend: ✅ done · 🔶 mock-only (Phase-1 FE, no real backend yet) · �
 | [`today.md`](today.md) | Today (`/today`, "Ma") | 🔶 mock-only (one real seam: check-in save) | Daily morning-briefing aggregation surface; every section mock except the `POST /api/biometrics/checkin` write. Includes AnchorMode + the "Heartbeat" 4×/day check-in. |
 | [`train.md`](train.md) | Train (`/train`, "Edzés") | ✅ done (FE mock + FE real + backend) | The largest domain: six tabs (Mai · GYM · Sport · Futás · Gyakorlatok · Mesociklusok) — mesocycles, workout execution, exercise catalog/records, volleyball, interval running. AI/cross-load engine is 🟣 Phase-3. |
 | [`fuel.md`](fuel.md) | Fuel (`/fuel`) | 🔶 mock-only (Slice C not started) | Nutrition: meal pacing, supplement stack/protocol, pantry ("Kamra"), recipes, weekly rhythm. AI scoring/replan/import simulated client-side. |
+| [`pantry.md`](pantry.md) | Pantry / Kamra (`/fuel/kamra`) | ✅ done | Shared definition catalog (`pantry_catalog`, master + user-authored) + per-user shelf state (`pantry_item`); OFF/URL/photo import; catalog search "Hozzáadás a közösből". |
+| [`recipe.md`](recipe.md) | Recipes / Receptek (`/fuel/recipes`) | ✅ done | Owned recipe aggregate with frozen line snapshots, deterministic mezo-fit at read, AI breakdown, stateless Receptműhely turn. |
 | [`insights.md`](insights.md) | Insights (`/insights`) | 🔶 mock-only (🟣 Phase-3 landing zone) | The "AI brain" read surface: 7 sub-tabs (patterns, weekly, memoir, knowledge, chat, predictions, experiments) — hand-authored mock copy simulating the future AI. |
 | [`me.md`](me.md) | Me (`/me`, "Én") | mixed — `Cél`/`Alvás` ✅ backed; `Profil`/`Emberek`/`Tudás` 🔶 | Profile + biometrics + relationships hub. Weight (`Cél`) and sleep (`Alvás`) are real; profile, People, and the Knowledge alias are mock. |
 | [`companion.md`](companion.md) | Companion (AI chat brain, Phase-3) | mixed — backend ✅ V0.2 spine; FE 🔶 mock | The Phase-3 AI companion: persisted conversations + a sync Hungarian chat endpoint over the `CompanionLlm` port (Spring AI 2 / Gemini). No FE surface yet — the ChatPage stays the mock `insights` chat until V0.4. |
@@ -84,8 +86,8 @@ Jump from a route, tab, sub-feature, or concept to the doc + the section that co
 | Meal pacing ("Mai") + meal score sheet | `/fuel` | [`fuel.md`](fuel.md) §2 (`FuelMaiPage`) |
 | Weekly fuel rhythm / gym-time grid | `/fuel/plan` | [`fuel.md`](fuel.md) §2 (`FuelPlanPage`) |
 | Supplement protocol builder | `/fuel/stack` | [`fuel.md`](fuel.md) §2, §3 (`buildProtocol`) |
-| Recipe library / new recipe | `/fuel/recipes` | [`fuel.md`](fuel.md) §2 (`FuelRecipesPage`) |
-| Pantry / "Kamra" / scrape import | `/fuel/kamra` | [`fuel.md`](fuel.md) §2, §3 (`buildKamraItems`) |
+| Recipe library / new recipe | `/fuel/recipes` | [`recipe.md`](recipe.md) §2 |
+| Pantry / "Kamra" / scrape import | `/fuel/kamra` | [`pantry.md`](pantry.md) §2–§4 |
 | Detected patterns (critique grid, confirm/reject) | `/insights` | [`insights.md`](insights.md) §2.1 |
 | Weekly review / memoir / predictions / experiments | `/insights/{weekly,memoir,predictions,experiments}` | [`insights.md`](insights.md) §2.2–§2.7 |
 | Companion chat (simulated) | `/insights/chat` | [`insights.md`](insights.md) §2.5 |

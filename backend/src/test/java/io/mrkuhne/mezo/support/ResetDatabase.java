@@ -19,9 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
  * <p><b>Growth rule:</b> every new owned domain table (Slice B+) MUST be added to the
  * TRUNCATE list here in the same change that creates it.
  *
- * <p><b>exercise_catalog is a hybrid table</b> (since mezo-52zg): master rows (created_by null)
- * are loader-owned and must NOT join the TRUNCATE list; only the user-authored rows
- * (created_by set) are deleted here so the startup ExerciseCatalogLoader's content survives.
+ * <p><b>exercise_catalog and pantry_catalog are hybrid tables</b> (since mezo-52zg / mezo-qw37.4):
+ * master rows (created_by null) are loader-owned and must NOT join the TRUNCATE list; only the
+ * user-authored rows (created_by set) are deleted here so the startup loaders' content survives.
  */
 @TestComponent
 @RequiredArgsConstructor
@@ -47,6 +47,10 @@ public class ResetDatabase {
                 + "goal_suggestion, goal_plan_link, goal, biometric_profile, "
                 + "character_run, character_portrait_revision, character_conference, character_observation, character_claim, character_dimension, "
                 + "mention, person CASCADE").executeUpdate();
+        // Hybrid catalog (S4, mezo-qw37.4): user-authored definitions go, loader master rows
+        // (created_by IS NULL) survive. MUST run before the app_user delete — the FK is ON DELETE
+        // SET NULL, so a deleted test user's rows would otherwise be promoted to master and leak.
+        entityManager.createNativeQuery("DELETE FROM pantry_catalog WHERE created_by IS NOT NULL").executeUpdate();
         // Master data (demodata owner) survives; everything else goes. Case-insensitive: AuthService
         // normalises every login/register email to lowercase, so this must match the same way (see
         // mezo-qw37.1 review finding 4 — a mixed-case configured owner email must still be preserved).

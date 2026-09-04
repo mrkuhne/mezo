@@ -50,7 +50,7 @@ public class PlacementEngine {
     private final LlmCallContextHolder llmCallContextHolder;
 
     public Placement place(PantryItemEntity item) {
-        String name = item.getName() == null ? "" : item.getName().toLowerCase();
+        String name = item.getCatalog().getName() == null ? "" : item.getCatalog().getName().toLowerCase();
         for (PlacementRules.Rule rule : PlacementRules.RULES) {
             if (rule.needles().stream().anyMatch(name::contains)) {
                 return new Placement(rule.slotKey(), "rule", rule.reasonHu(), rule.restDayFallback());
@@ -83,7 +83,7 @@ public class PlacementEngine {
         try {
             String raw = llmCallContextHolder.runWith(
                 new LlmCallContext("stack_placement", "place", null, null),
-                () -> port.complete(SYSTEM_PROMPT, item.getName()));
+                () -> port.complete(SYSTEM_PROMPT, item.getCatalog().getName()));
             String json = raw.substring(raw.indexOf('{'), raw.lastIndexOf('}') + 1);
             JsonNode node = objectMapper.readTree(json);
             String slotKey = node.path("slotKey").asString();
@@ -91,7 +91,7 @@ public class PlacementEngine {
             String reason = node.path("reasonHu").asString(FALLBACK_REASON);
             return Optional.of(new Placement(slotKey, "llm", reason, null));
         } catch (Exception e) {
-            log.warn("Stack placement LLM fallback failed for '{}': {}", item.getName(), e.getMessage());
+            log.warn("Stack placement LLM fallback failed for '{}': {}", item.getCatalog().getName(), e.getMessage());
             return Optional.empty();
         }
     }

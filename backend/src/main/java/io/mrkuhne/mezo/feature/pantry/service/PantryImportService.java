@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.api.dto.PantryItemResponse;
 import io.mrkuhne.mezo.api.dto.PantryLookupResponse;
 import io.mrkuhne.mezo.api.dto.PantryLookupResult;
 import io.mrkuhne.mezo.feature.pantry.config.PantryScrapeProperties;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryImportEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.mapper.PantryMapper;
@@ -39,6 +40,7 @@ public class PantryImportService {
 
     private final OffClient offClient;
     private final PantryItemRepository itemRepository;
+    private final PantryCatalogService catalogService;
     private final PantryImportRepository importRepository;
     private final PantryMapper mapper;
     /**
@@ -80,34 +82,55 @@ public class PantryImportService {
             ? PantryScrapeService.sourceFor(req.getSourceUrl())
             : "photo".equals(req.getOrigin()) ? SOURCE_PHOTO : SOURCE_OPENFOODFACTS;
 
-        PantryItemEntity item = new PantryItemEntity();
-        item.setCreatedBy(userId); // server-side ownership — never from the client
-        item.setKind("food");
-        item.setSource(source);
-        item.setName(req.getName());
-        item.setBrand(req.getBrand());
-        item.setCategory(req.getCategory() == null ? null : req.getCategory().getValue());
-        item.setServingAmount(req.getPer());
-        item.setServingUnit(req.getUnit());
-        item.setKcal(req.getKcal());
-        item.setProteinG(req.getProteinG());
-        item.setCarbsG(req.getCarbsG());
-        item.setFatG(req.getFatG());
-        item.setFiberG(req.getFiberG());
-        item.setSugarG(req.getSugarG());
-        item.setSaltG(req.getSaltG());
-        item.setSaturatedFatG(req.getSaturatedFatG());
-        item.setPriceHuf(req.getPriceHuf());
-        item.setPriceUnit(req.getPriceUnit());
-        item.setNova(req.getNova() == null ? null : req.getNova().shortValue());
+        // created_by is stamped server-side inside PantryCatalogService#findOrCreate on insert; a
+        // null author means "loader master content" (S4, mezo-qw37.4), so a user import must never
+        // skip that step and silently join the seeded master catalog (review finding i).
+        PantryCatalogEntity candidate = new PantryCatalogEntity();
+        candidate.setKind("food");
+        candidate.setSource(source);
+        candidate.setName(req.getName());
+        candidate.setBrand(req.getBrand());
+        candidate.setCategory(req.getCategory() == null ? null : req.getCategory().getValue());
+        candidate.setServingAmount(req.getPer());
+        candidate.setServingUnit(req.getUnit());
+        candidate.setKcal(req.getKcal());
+        candidate.setProteinG(req.getProteinG());
+        candidate.setCarbsG(req.getCarbsG());
+        candidate.setFatG(req.getFatG());
+        candidate.setFiberG(req.getFiberG());
+        candidate.setSugarG(req.getSugarG());
+        candidate.setSaltG(req.getSaltG());
+        candidate.setSaturatedFatG(req.getSaturatedFatG());
+        candidate.setNova(req.getNova() == null ? null : req.getNova().shortValue());
+        // A confirmed but not-yet-reviewed draft (low-confidence scrape/photo) must not backfill
+        // the shared row's facts before a human confirms them — even when this user IS its author
+        // (fix round 1 Important 2c).
+        boolean manualReview = isManualReview(req.getConfidence());
+        // A natural-key hit binds to the shared definition (fill-only merge of NULL fields, author
+        // only, master rows never merged — see PantryCatalogService#mergeIfAuthor, review finding
+        // h / fix round 1 Important 2); a miss is authored by this user.
+        PantryCatalogEntity catalog = catalogService.findOrCreate(userId, candidate, !manualReview);
+        // Idempotent shelf row (review finding g): a second import of the same product by the same
+        // user must bind to their existing row instead of tripping
+        // uq_pantry_item_created_by_catalog_id with an unconditional insert.
+        PantryItemEntity item = catalogService.ensureItem(userId, catalog.getId());
+        // Partial apply (fix round 1 Important 1): ensureItem can now return an EXISTING shelf row
+        // (a re-import), so an unconditional set would null out a price the user already entered —
+        // only overwrite when this draft actually carries a price.
+        if (req.getPriceHuf() != null) {
+            item.setPriceHuf(req.getPriceHuf());
+        }
+        if (req.getPriceUnit() != null) {
+            item.setPriceUnit(req.getPriceUnit());
+        }
         item = itemRepository.save(item);
 
         PantryImportEntity feed = new PantryImportEntity();
         feed.setCreatedBy(userId);
         feed.setSource(source);
-        feed.setItemName(item.getName());
+        feed.setItemName(catalog.getName());
         feed.setItemCount(1);
-        feed.setStatus(isManualReview(req.getConfidence()) ? "manual-review" : "synced");
+        feed.setStatus(manualReview ? "manual-review" : "synced");
         feed.setBarcode(req.getBarcode());
         feed.setSourceUrl(req.getSourceUrl());
         feed.setPantryItemId(item.getId());

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.PantrySuggestionResponse;
 import io.mrkuhne.mezo.feature.pantry.config.PantrySuggestionProperties;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import java.math.BigDecimal;
 import java.util.List;
@@ -20,14 +21,16 @@ class PantrySuggestionServiceTest {
         new PantrySuggestionService(new PantrySuggestionProperties(3, new BigDecimal("0.8")));
 
     private PantryItemEntity food(String name, String category, Integer priceHuf, String priceUnit, Integer nova) {
+        PantryCatalogEntity c = new PantryCatalogEntity();
+        c.setKind("food");
+        c.setName(name);
+        c.setSource("manual");
+        c.setCategory(category);
+        c.setNova(nova == null ? null : nova.shortValue());
         PantryItemEntity e = new PantryItemEntity();
-        e.setKind("food");
-        e.setName(name);
-        e.setSource("manual");
-        e.setCategory(category);
+        e.setCatalog(c);
         e.setPriceHuf(priceHuf);
         e.setPriceUnit(priceUnit);
-        e.setNova(nova == null ? null : nova.shortValue());
         return e;
     }
 
@@ -98,7 +101,7 @@ class PantrySuggestionServiceTest {
     @Test
     void testSuggest_shouldIgnoreNonFoodAndUncategorized_whenPresent() {
         PantryItemEntity supp = food("Kreatin", "supplement", 4000, "/kg", null);
-        supp.setKind("supplement");
+        supp.getCatalog().setKind("supplement");
         List<PantrySuggestionResponse> out = service.suggest(List.of(
             supp,
             food("Kategóriátlan", null, 100, "/kg", null)));

@@ -26,7 +26,7 @@ class PantryApiIT extends ApiIntegrationTest {
     private PantryItemRequest supplementReq() {
         PantryItemRequest r = new PantryItemRequest();
         r.setKind(PantryItemRequest.KindEnum.SUPPLEMENT);
-        r.setName("Collagen Protein");
+        r.setName("Kollagén Teszt Protein");
         r.setDose("20g"); // supplement's required field
         r.setPer(BigDecimal.valueOf(100));
         r.setUnit("g");
@@ -44,7 +44,7 @@ class PantryApiIT extends ApiIntegrationTest {
         PantryResponse pantry = getForBody("/api/pantry", auth, HttpStatus.OK, PantryResponse.class);
 
         var supp = pantry.getStash().stream()
-            .filter(s -> "Collagen Protein".equals(s.getName())).findFirst().orElseThrow();
+            .filter(s -> "Kollagén Teszt Protein".equals(s.getName())).findFirst().orElseThrow();
         assertThat(supp.getMacros()).isNotNull();
         assertThat(supp.getMacros().getKcal()).isEqualByComparingTo(BigDecimal.valueOf(360));
         assertThat(supp.getMacros().getP()).isEqualByComparingTo(BigDecimal.valueOf(90));
@@ -62,6 +62,13 @@ class PantryApiIT extends ApiIntegrationTest {
         // P6 (mezo-bka): the response always carries the feed + suggestion arrays (honest-empty)
         assertThat(pantry.getImports()).isNotNull();
         assertThat(pantry.getSuggestions()).isNotNull();
+        // S4 (mezo-qw37.4): every shelf row names its shared definition, and the seeded account is
+        // the OWNER, so the definition fields are unlocked for it.
+        var turo = pantry.getIngredients().stream()
+            .filter(i -> "Túró".equals(i.getName())).findFirst().orElseThrow();
+        assertThat(turo.getCatalogId()).isNotNull();
+        assertThat(turo.getCatalogEditable()).isTrue();
+        assertThat(turo.getSharedFrom()).isNull();
     }
 
     @Test

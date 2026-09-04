@@ -1,9 +1,13 @@
 # Purge-restart runbook — brand-new-user reset (mezo-rcsy)
 
 One-off, hand-executed reset of the LIVE database. Keeps: `app_user`,
-`user_profiles`, `pantry_item`, `recipe`, `recipe_ingredient`,
+`pantry_catalog`, `pantry_item`, `recipe`, `recipe_ingredient`,
 `exercise_catalog`, `habit_chain`, `habit_def` (+ Liquibase tables).
-Deletes: everything else. Design:
+Deletes: everything else — including `pantry_item_definition_archive`, the
+one-way snapshot the S4 pantry split (mezo-qw37.4) took of the pre-split
+definition columns: it is migration scaffolding rather than live user data,
+and the point of the restart is that no trace remains. (`user_profiles`,
+listed here until mezo-qw37.1, no longer exists.) Design:
 [2026-08-23-database-purge-restart-design.md](../superpowers/specs/2026-08-23-database-purge-restart-design.md).
 
 The script is safe by default: without `purge.dry_run=off` it only reports.

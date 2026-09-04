@@ -18,7 +18,7 @@ table `created_by NOT NULL`, every unique constraint led by `created_by`). Goal:
 | A / A1 | Invite code + email + password; codes handed over by the owner; reset = admin temporary password | Magic link (SMTP + PWA link issues), open registration, OAuth |
 | Q3a | Minimal in-app admin UI (`role=OWNER`): invites, users, reset, disable | psql/CLI only |
 | M1 | Keep HS256 JWT + `CurrentUserId`; token in localStorage; disable via per-request status check | Session cookie + CSRF SPA rewrite, Keycloak/Authentik |
-| K1 | Community pantry catalog: `pantry_catalog` global (seed + user-added, author marked), `pantry_item` per-user state — **ACCEPTED, NOT YET BUILT**: at S6 (`mezo-qw37.6`) HEAD, only `pantry_item` exists (fully owned, `created_by uuid NOT NULL`, no master rows); the shared `pantry_catalog` half is slice S4 (`mezo-qw37.4`, plan `docs/superpowers/plans/2026-09-02-s4-pantry-catalog.md`), not yet implemented | K2 private additions, K3 copy at registration |
+| K1 | Community pantry catalog: `pantry_catalog` global (seed + user-added, author marked), `pantry_item` per-user state — **BUILT (S4, `mezo-qw37.4`)**: `pantry_catalog` (master `created_by NULL` + user-authored rows, visible to everyone) and per-user `pantry_item` (`catalog_id NOT NULL`) now exist per this decision; see [`pantry.md`](../features/pantry.md) | K2 private additions, K3 copy at registration |
 | E1 | Community exercise catalog: user-added exercises visible to all; media/edit by author or OWNER | E2 private exercises |
 | O2-lite | Onboarding wizard: name, birth date, sex, weight, height | O1 empty app, full wizard with meso |
 | T1 | HU-only beta: `app_user.timezone` column stored, not yet used | Per-user timezone now (47+ `LocalDate.now()` sites) |

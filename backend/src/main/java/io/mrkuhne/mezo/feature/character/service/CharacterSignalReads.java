@@ -453,7 +453,7 @@ public class CharacterSignalReads {
         }
         Map<UUID, String> names = new HashMap<>();
         for (PantryItemEntity p : pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(owner)) {
-            names.put(p.getId(), p.getName());
+            names.put(p.getId(), p.getCatalog().getName());
         }
         List<DetectorInput.StackItem> items = new ArrayList<>();
         for (ProtocolItemEntity pi : protocolItemRepository

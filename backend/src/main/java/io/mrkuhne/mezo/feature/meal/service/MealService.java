@@ -21,6 +21,7 @@ import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService.ScoredLine;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
@@ -257,7 +258,7 @@ public class MealService {
     /** The live pantry category of a pantry-arm line (plant-diversity input); null when the row is gone. */
     private String pantryCategory(UUID userId, UUID pantryItemId) {
         return pantryItemRepository.findByIdAndCreatedByAndDeletedFalse(pantryItemId, userId)
-            .map(PantryItemEntity::getCategory)
+            .map(p -> p.getCatalog().getCategory())
             .orElse(null);
     }
 
@@ -339,19 +340,20 @@ public class MealService {
                 ? dominantNova(recipe, overrides) : recipe.getNovaDominant());
         } else if ("pantry".equals(req.getSource())) {
             PantryItemEntity p = resolvePantry(userId, req.getPantryItemId());
+            PantryCatalogEntity c = p.getCatalog();
             item.setPantryItemId(p.getId());
-            item.setSnapshotName(p.getName());
-            item.setSnapshotPer(orDefault(p.getServingAmount(), BigDecimal.ONE));
-            item.setSnapshotBasisUnit(p.getServingUnit() == null ? "unit" : p.getServingUnit());
-            item.setSnapshotKcal(orDefault(p.getKcal(), BigDecimal.ZERO));
-            item.setSnapshotProteinG(orDefault(p.getProteinG(), BigDecimal.ZERO));
-            item.setSnapshotCarbsG(orDefault(p.getCarbsG(), BigDecimal.ZERO));
-            item.setSnapshotFatG(orDefault(p.getFatG(), BigDecimal.ZERO));
-            item.setSnapshotFiberG(p.getFiberG());
-            item.setSnapshotSugarG(p.getSugarG());
-            item.setSnapshotSaltG(p.getSaltG());
-            item.setSnapshotSaturatedFatG(p.getSaturatedFatG());
-            item.setSnapshotNova(p.getNova());
+            item.setSnapshotName(c.getName());
+            item.setSnapshotPer(orDefault(c.getServingAmount(), BigDecimal.ONE));
+            item.setSnapshotBasisUnit(c.getServingUnit() == null ? "unit" : c.getServingUnit());
+            item.setSnapshotKcal(orDefault(c.getKcal(), BigDecimal.ZERO));
+            item.setSnapshotProteinG(orDefault(c.getProteinG(), BigDecimal.ZERO));
+            item.setSnapshotCarbsG(orDefault(c.getCarbsG(), BigDecimal.ZERO));
+            item.setSnapshotFatG(orDefault(c.getFatG(), BigDecimal.ZERO));
+            item.setSnapshotFiberG(c.getFiberG());
+            item.setSnapshotSugarG(c.getSugarG());
+            item.setSnapshotSaltG(c.getSaltG());
+            item.setSnapshotSaturatedFatG(c.getSaturatedFatG());
+            item.setSnapshotNova(c.getNova());
         } else if ("estimate".equals(req.getSource())) {
             // AI/manual estimate arm: NO recipe/pantry FK — the request carries its own verbatim
             // per-basis snapshot (name + basis + full macro set), persisted as-is (no live source).
@@ -452,8 +454,8 @@ public class MealService {
         if (ids.isEmpty()) {
             return null;
         }
-        return pantryItemRepository.findAllById(ids).stream()
-            .map(PantryItemEntity::getNova)
+        return pantryItemRepository.findAllWithCatalogByIdIn(ids).stream()
+            .map(p -> p.getCatalog().getNova())
             .filter(Objects::nonNull)
             .max(Short::compareTo)
             .orElse(null);

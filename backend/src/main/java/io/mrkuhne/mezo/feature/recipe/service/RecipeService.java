@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.RecipeIngredientRequest;
 import io.mrkuhne.mezo.api.dto.RecipeListResponse;
 import io.mrkuhne.mezo.api.dto.RecipeRequest;
 import io.mrkuhne.mezo.api.dto.RecipeResponse;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
@@ -92,7 +93,7 @@ public class RecipeService {
             .flatMap(r -> r.getLines().stream().map(RecipeIngredientEntity::getPantryItemId))
             .distinct()
             .toList();
-        return ids.isEmpty() ? Map.of() : pantryItemRepository.findAllById(ids).stream()
+        return ids.isEmpty() ? Map.of() : pantryItemRepository.findAllWithCatalogByIdIn(ids).stream()
             .collect(Collectors.toMap(PantryItemEntity::getId, Function.identity()));
     }
 
@@ -132,13 +133,13 @@ public class RecipeService {
                 line.getAmount().stripTrailingZeros().toPlainString() + line.getUnit(),
                 mul(line.getSnapshotKcal(), factor), mul(line.getSnapshotProteinG(), factor),
                 mul(line.getSnapshotCarbsG(), factor), mul(line.getSnapshotFatG(), factor),
-                p == null ? null : p.getNova(),
+                p == null ? null : p.getCatalog().getNova(),
                 mulOrNull(line.getSnapshotFiberG(), factor),
                 mulOrNull(line.getSnapshotSugarG(), factor),
                 mulOrNull(line.getSnapshotSaltG(), factor),
                 mulOrNull(line.getSnapshotSaturatedFatG(), factor),
                 hasFacts,
-                p == null ? null : p.getCategory(),
+                p == null ? null : p.getCatalog().getCategory(),
                 mulOrNull(gramAmount(line.getAmount(), line.getUnit()), servingScale));
         }).toList();
     }
@@ -205,6 +206,7 @@ public class RecipeService {
     private RecipeIngredientEntity buildLine(
             UUID userId, RecipeEntity recipe, RecipeIngredientRequest req, int index) {
         PantryItemEntity item = resolvePantryItem(userId, req.getPantryItemId());
+        PantryCatalogEntity c = item.getCatalog();
         RecipeIngredientEntity line = new RecipeIngredientEntity();
         line.setCreatedBy(userId); // owned child — set server-side, never from the client
         line.setRecipe(recipe);
@@ -214,19 +216,19 @@ public class RecipeService {
         line.setNote(req.getNote());
         line.setLineOrder(index);
         // Snapshot = the pantry item's per-basis macros at compose time (stable basis for contribution).
-        line.setSnapshotName(item.getName());
-        line.setSnapshotPer(orDefault(item.getServingAmount(), BigDecimal.ONE));
-        line.setSnapshotBasisUnit(item.getServingUnit() == null ? "unit" : item.getServingUnit());
-        line.setSnapshotKcal(orDefault(item.getKcal(), BigDecimal.ZERO));
-        line.setSnapshotProteinG(orDefault(item.getProteinG(), BigDecimal.ZERO));
-        line.setSnapshotCarbsG(orDefault(item.getCarbsG(), BigDecimal.ZERO));
-        line.setSnapshotFatG(orDefault(item.getFatG(), BigDecimal.ZERO));
+        line.setSnapshotName(c.getName());
+        line.setSnapshotPer(orDefault(c.getServingAmount(), BigDecimal.ONE));
+        line.setSnapshotBasisUnit(c.getServingUnit() == null ? "unit" : c.getServingUnit());
+        line.setSnapshotKcal(orDefault(c.getKcal(), BigDecimal.ZERO));
+        line.setSnapshotProteinG(orDefault(c.getProteinG(), BigDecimal.ZERO));
+        line.setSnapshotCarbsG(orDefault(c.getCarbsG(), BigDecimal.ZERO));
+        line.setSnapshotFatG(orDefault(c.getFatG(), BigDecimal.ZERO));
         // Nutrition-quality facts (mezo-m6uv): NO orDefault — a missing fact stays null, because
         // "the source carried no value" is not "0 g" and the scorer distinguishes the two.
-        line.setSnapshotFiberG(item.getFiberG());
-        line.setSnapshotSugarG(item.getSugarG());
-        line.setSnapshotSaltG(item.getSaltG());
-        line.setSnapshotSaturatedFatG(item.getSaturatedFatG());
+        line.setSnapshotFiberG(c.getFiberG());
+        line.setSnapshotSugarG(c.getSugarG());
+        line.setSnapshotSaltG(c.getSaltG());
+        line.setSnapshotSaturatedFatG(c.getSaturatedFatG());
         return line;
     }
 
@@ -242,7 +244,7 @@ public class RecipeService {
     /** Dominant NOVA = the max source NOVA across the resolved lines; null when no line carries one. */
     private Short deriveNovaDominant(UUID userId, List<RecipeIngredientRequest> lineReqs) {
         return lineReqs.stream()
-            .map(l -> resolvePantryItem(userId, l.getPantryItemId()).getNova())
+            .map(l -> resolvePantryItem(userId, l.getPantryItemId()).getCatalog().getNova())
             .filter(Objects::nonNull)
             .max(Short::compareTo)
             .orElse(null);

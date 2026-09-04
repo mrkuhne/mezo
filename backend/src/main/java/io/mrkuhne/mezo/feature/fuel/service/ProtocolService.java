@@ -114,7 +114,7 @@ public class ProtocolService {
         item.setRestDayFallback(restDay);
         itemRepository.save(item);
         touch(protocol);
-        return toItemResponse(item, pantryItem.getName());
+        return toItemResponse(item, pantryItem.getCatalog().getName());
     }
 
     @Transactional
@@ -206,7 +206,7 @@ public class ProtocolService {
                 resolved.add(item);
                 continue;
             }
-            PantryItemEntity pantryItem = pantryItemRepository.findById(item.getPantryItemId()).orElse(null);
+            PantryItemEntity pantryItem = pantryItemRepository.findWithCatalogById(item.getPantryItemId()).orElse(null);
             // A missing pantry item (stale FK on an ancient row) still needs a resolvable zone —
             // the engine's own deterministic fallback covers the normal case; here we mirror it by
             // hand since PlacementEngine#place requires a non-null item.
@@ -275,7 +275,7 @@ public class ProtocolService {
         PantryItemEntity item = pantryItemRepository.findByIdAndCreatedByAndDeletedFalse(pantryItemId, userId)
             .orElseThrow(() -> new SystemRuntimeErrorException(
                 SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
-        if (KIND_FOOD.equals(item.getKind())) {
+        if (KIND_FOOD.equals(item.getCatalog().getKind())) {
             throw new SystemRuntimeErrorException(
                 SystemMessage.field("VALIDATION_INVALID_VALUE", "pantryItemId").build(), HttpStatus.BAD_REQUEST);
         }
@@ -303,7 +303,7 @@ public class ProtocolService {
      *  protocol item that itself only ever holds ids validated at write-time — so a plain lookup
      *  by id is enough for a display-name resolution. */
     private String pantryName(UUID pantryItemId) {
-        return pantryItemRepository.findById(pantryItemId).map(PantryItemEntity::getName).orElse(null);
+        return pantryItemRepository.findWithCatalogById(pantryItemId).map(p -> p.getCatalog().getName()).orElse(null);
     }
 
     private void rejectDuplicate(UUID protocolId, UUID pantryItemId, String slotKey) {

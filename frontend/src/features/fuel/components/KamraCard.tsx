@@ -45,6 +45,11 @@ export function KamraCard({ item, onOpen }: { item: PantryItem; onOpen: (i: Pant
               koffein
             </span>
           )}
+          {item.sharedFrom && (
+            <span className="chip" style={{ fontSize: 8, padding: '1px 5px', color: 'var(--mz-cell-sage-ink)', background: 'var(--mz-cell-sage-bg)' }}>
+              közös
+            </span>
+          )}
         </div>
       </div>
 

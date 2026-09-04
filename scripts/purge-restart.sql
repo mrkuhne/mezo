@@ -22,7 +22,11 @@ DO $$
 DECLARE
     whitelist constant text[] := ARRAY[
         'app_user',                                      -- identity
-        'pantry_item',                                  -- kamra
+        -- A kamra ketté van választva (mezo-qw37.4): a definíció (pantry_catalog) a
+        -- gyakorlattár párja — közös törzsadat + felhasználói definíciók —, a készlet
+        -- (pantry_item) pedig csak rá mutatva értelmes. A pantry_item.catalog_id FK miatt
+        -- a pantry_catalog kihagyása a TRUNCATE ... CASCADE-en át a kamrát is kiürítené.
+        'pantry_catalog', 'pantry_item',                -- kamra (definíció + készlet)
         'recipe', 'recipe_ingredient',                  -- receptek
         'exercise_catalog',                             -- gyakorlattar
         'habit_chain', 'habit_def',                     -- routine definitions (not habit_day!)

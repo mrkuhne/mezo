@@ -6,11 +6,14 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.mrkuhne.mezo.api.dto.MealAiDraftItem;
 import io.mrkuhne.mezo.api.dto.MealAiDraftResponse;
 import io.mrkuhne.mezo.feature.meal.service.MealAiDraftService;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import io.mrkuhne.mezo.feature.recipe.mapper.RecipeMapper;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
+import io.mrkuhne.mezo.support.populator.PantryCatalogPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.RecipePopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -49,6 +52,36 @@ class MealAiDraftServiceIT extends AbstractIntegrationTest {
     @Autowired
     private DatabasePopulator databasePopulator;
 
+    @Autowired
+    private PantryCatalogPopulator catalogPopulator;
+
+    @Autowired
+    private PantryItemRepository pantryItemRepository;
+
+    @Test
+    void testDraft_shouldMatchAnotherUsersCatalogDefinition_andCreateMyShelfRow() {
+        UUID anna = databasePopulator.populateUser("meal-ai-anna@test.local");
+        UUID owner = databasePopulator.populateUser(OWNER_EMAIL);
+        PantryCatalogEntity def = catalogPopulator.createFoodDefinition(anna, "Kölesgolyó", null); // per 100 g, 110 kcal
+        assertThat(pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(owner)).isEmpty();
+
+        String json = """
+            {"slot":"snack","title":null,"note":null,"items":[
+              {"pantryItemId":null,"recipeId":null,"name":"kölesgolyó","amount":40,"unit":"g",
+               "kcal":999,"proteinG":1,"carbsG":1,"fatG":1}
+            ]}""";
+        MealAiDraftResponse res = service.draft(owner, LocalDate.now(), "[fake-meal:" + json + "]", null);
+
+        MealAiDraftItem line = res.getItems().getFirst();
+        assertThat(line.getSource()).isEqualTo("pantry");
+        assertThat(line.getKcal()).isEqualByComparingTo("110");          // the catalog's numbers, not 999
+        assertThat(line.getNeedsReview()).isTrue();
+        var mine = pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(owner);
+        assertThat(mine).hasSize(1);                                       // auto-added from the catalog
+        assertThat(mine.getFirst().getCatalog().getId()).isEqualTo(def.getId());
+        assertThat(line.getPantryItemId()).isEqualTo(mine.getFirst().getId()); // MY row, resolvable by MealService.create
+    }
+
     @Test
     void testDraft_shouldMatchPantryAndEstimate_whenSentinelCarriesBoth() {
         UUID owner = databasePopulator.populateUser(OWNER_EMAIL);
@@ -72,7 +105,7 @@ class MealAiDraftServiceIT extends AbstractIntegrationTest {
         assertThat(matched.getSource()).isEqualTo("pantry");
         assertThat(matched.getPantryItemId()).isEqualTo(pantry.getId());
         // macros come from the DB row, NOT the LLM numbers above (kcal 220 vs the row's 110):
-        assertThat(matched.getKcal()).isEqualByComparingTo(pantry.getKcal());
+        assertThat(matched.getKcal()).isEqualByComparingTo(pantry.getCatalog().getKcal());
         assertThat(matched.getConfidence()).isEqualByComparingTo("1.0");
         assertThat(matched.getNeedsReview()).isFalse();
 
@@ -187,8 +220,8 @@ class MealAiDraftServiceIT extends AbstractIntegrationTest {
         MealAiDraftItem line = res.getItems().getFirst();
         assertThat(line.getSource()).isEqualTo("pantry");
         assertThat(line.getPantryItemId()).isEqualTo(pantry.getId());
-        assertThat(line.getName()).isEqualTo(pantry.getName());          // DB name, not the LLM's casing
-        assertThat(line.getKcal()).isEqualByComparingTo(pantry.getKcal()); // DB macros, not the LLM's 220
+        assertThat(line.getName()).isEqualTo(pantry.getCatalog().getName());          // DB name, not the LLM's casing
+        assertThat(line.getKcal()).isEqualByComparingTo(pantry.getCatalog().getKcal()); // DB macros, not the LLM's 220
         assertThat(line.getAmount()).isEqualByComparingTo("60");           // the draft's own portion
         assertThat(line.getBasisUnit()).isEqualTo("g");
         assertThat(line.getNeedsReview()).isTrue();                        // identity is the uncertain part
@@ -231,7 +264,7 @@ class MealAiDraftServiceIT extends AbstractIntegrationTest {
         MealAiDraftItem line = res.getItems().getFirst();
         assertThat(line.getSource()).isEqualTo("pantry"); // demoted, then rescued by the name index
         assertThat(line.getPantryItemId()).isEqualTo(pantry.getId());
-        assertThat(line.getKcal()).isEqualByComparingTo(pantry.getKcal());
+        assertThat(line.getKcal()).isEqualByComparingTo(pantry.getCatalog().getKcal());
         assertThat(line.getNeedsReview()).isTrue();
     }
 }

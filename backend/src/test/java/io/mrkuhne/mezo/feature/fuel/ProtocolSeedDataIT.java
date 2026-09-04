@@ -41,16 +41,16 @@ class ProtocolSeedDataIT extends ApiIntegrationTest {
         seed.run();
         var items = pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(owner);
         var tasty = items.stream()
-            .filter(i -> i.getName().equals(ProtocolSeedData.TASTY_DOSE_NAME)).findFirst().orElseThrow();
+            .filter(i -> i.getCatalog().getName().equals(ProtocolSeedData.TASTY_DOSE_NAME)).findFirst().orElseThrow();
         var origin = items.stream()
-            .filter(i -> i.getName().equals(ProtocolSeedData.ORIGIN_PWO_NAME)).findFirst().orElseThrow();
-        assertThat(tasty.getKind()).isEqualTo("stim");
-        assertThat(tasty.getCaffeine()).isTrue();
+            .filter(i -> i.getCatalog().getName().equals(ProtocolSeedData.ORIGIN_PWO_NAME)).findFirst().orElseThrow();
+        assertThat(tasty.getCatalog().getKind()).isEqualTo("stim");
+        assertThat(tasty.getCatalog().getCaffeine()).isTrue();
         assertThat(tasty.getDose()).isEqualTo("8 g");
         assertThat(tasty.getTiming()).isEqualTo("morning");
         assertThat(tasty.getStockQty()).isEqualByComparingTo(new BigDecimal("30"));
-        assertThat(origin.getKind()).isEqualTo("stim");
-        assertThat(origin.getCaffeine()).isTrue();
+        assertThat(origin.getCatalog().getKind()).isEqualTo("stim");
+        assertThat(origin.getCatalog().getCaffeine()).isTrue();
         assertThat(origin.getTiming()).isEqualTo("pre-workout");
 
         var active = protocolRepository
@@ -78,9 +78,9 @@ class ProtocolSeedDataIT extends ApiIntegrationTest {
         seed.run();
         var items = pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(owner);
         assertThat(items.stream()
-            .filter(i -> i.getName().equals(ProtocolSeedData.TASTY_DOSE_NAME))).hasSize(1);
+            .filter(i -> i.getCatalog().getName().equals(ProtocolSeedData.TASTY_DOSE_NAME))).hasSize(1);
         assertThat(items.stream()
-            .filter(i -> i.getName().equals(ProtocolSeedData.ORIGIN_PWO_NAME))).hasSize(1);
+            .filter(i -> i.getCatalog().getName().equals(ProtocolSeedData.ORIGIN_PWO_NAME))).hasSize(1);
         assertThat(protocolRepository.findByCreatedByAndDeletedFalseOrderByVersionDesc(owner)).hasSize(1);
     }
 
@@ -90,7 +90,7 @@ class ProtocolSeedDataIT extends ApiIntegrationTest {
         var existing = pantryItemPopulator.createStim(owner, ProtocolSeedData.TASTY_DOSE_NAME);
         seed.run();
         var sameName = pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(owner).stream()
-            .filter(i -> i.getName().equals(ProtocolSeedData.TASTY_DOSE_NAME)).toList();
+            .filter(i -> i.getCatalog().getName().equals(ProtocolSeedData.TASTY_DOSE_NAME)).toList();
         assertThat(sameName).hasSize(1);
         assertThat(sameName.getFirst().getId()).isEqualTo(existing.getId());
         var active = protocolRepository
@@ -115,6 +115,6 @@ class ProtocolSeedDataIT extends ApiIntegrationTest {
             .containsExactly(mine.getId());
         // items are still seeded even when the protocol is left alone
         assertThat(pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(owner).stream()
-            .filter(i -> i.getName().equals(ProtocolSeedData.ORIGIN_PWO_NAME))).hasSize(1);
+            .filter(i -> i.getCatalog().getName().equals(ProtocolSeedData.ORIGIN_PWO_NAME))).hasSize(1);
     }
 }

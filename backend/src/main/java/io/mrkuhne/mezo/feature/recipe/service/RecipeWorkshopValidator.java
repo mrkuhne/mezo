@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +43,11 @@ public class RecipeWorkshopValidator {
     }
 
     public WorkshopDraft sanitize(RawDraft raw, Function<UUID, Optional<PantryItemEntity>> pantryLookup) {
+        return sanitize(raw, pantryLookup, (n, u) -> Optional.empty());
+    }
+
+    public WorkshopDraft sanitize(RawDraft raw, Function<UUID, Optional<PantryItemEntity>> pantryLookup,
+            BiFunction<String, String, Optional<PantryItemEntity>> nameMatch) {
         WorkshopDraft out = new WorkshopDraft();
         out.setName(raw.name() == null || raw.name().isBlank() ? "Új recept" : raw.name().strip());
         out.setCategory(raw.category() != null && CATEGORIES.contains(raw.category()) ? raw.category() : "dinner");
@@ -56,7 +62,7 @@ public class RecipeWorkshopValidator {
                 log.warn("Workshop draft truncated at {} lines", props.maxLines());
                 break;
             }
-            WorkshopDraftLine mapped = mapLine(line, pantryLookup);
+            WorkshopDraftLine mapped = mapLine(line, pantryLookup, nameMatch);
             if (mapped != null) {
                 lines.add(mapped);
             }
@@ -65,7 +71,8 @@ public class RecipeWorkshopValidator {
         return out;
     }
 
-    private WorkshopDraftLine mapLine(RawLine line, Function<UUID, Optional<PantryItemEntity>> pantryLookup) {
+    private WorkshopDraftLine mapLine(RawLine line, Function<UUID, Optional<PantryItemEntity>> pantryLookup,
+            BiFunction<String, String, Optional<PantryItemEntity>> nameMatch) {
         UUID pantryId = parseUuid(line.pantryItemId());
         if (pantryId != null) {
             PantryItemEntity p = pantryLookup.apply(pantryId).orElse(null);
@@ -73,11 +80,22 @@ public class RecipeWorkshopValidator {
                 WorkshopDraftLine out = base(line);
                 out.setSource("pantry");
                 out.setPantryItemId(p.getId());
-                out.setName(p.getName());                       // DB name, never the LLM's
-                out.setUnit(p.getServingUnit() == null || p.getServingUnit().isBlank() ? "g" : p.getServingUnit());
+                out.setName(p.getCatalog().getName());          // DB name, never the LLM's
+                out.setUnit(p.getCatalog().getServingUnit() == null || p.getCatalog().getServingUnit().isBlank()
+                    ? "g" : p.getCatalog().getServingUnit());
                 return out;                                     // macros stay null: FE computes
             }
             log.warn("Workshop draft: hallucinated pantry id {} demoted to estimate", pantryId);
+        }
+        PantryItemEntity byName = nameMatch.apply(line.name(), line.unit()).orElse(null);
+        if (byName != null) {
+            WorkshopDraftLine out = base(line);
+            out.setSource("pantry");
+            out.setPantryItemId(byName.getId());
+            out.setName(byName.getCatalog().getName());
+            out.setUnit(byName.getCatalog().getServingUnit() == null || byName.getCatalog().getServingUnit().isBlank()
+                ? "g" : byName.getCatalog().getServingUnit());
+            return out; // macros stay null: FE computes from the pantry row
         }
         if (line.kcal() == null || line.name() == null || line.name().isBlank()) {
             log.warn("Workshop draft: dropping macro-less estimate line '{}'", line.name());

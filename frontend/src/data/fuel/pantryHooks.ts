@@ -3,12 +3,12 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { pantryApi, type PantryData } from '@/data/fuel/pantryApi'
 import { isMockMode } from '@/data/_client/mode'
 import { useDualQuery } from '@/data/useDualQuery'
-import { ingredients as mockIngredients, pantryCategoryMeta, pantryImports, pantrySuggestions, MOCK_SCRAPE_DRAFT, MOCK_PHOTO_DRAFT } from '@/data/fuel/pantry'
+import { ingredients as mockIngredients, pantryCategoryMeta, pantryImports, pantrySuggestions, MOCK_SCRAPE_DRAFT, MOCK_PHOTO_DRAFT, pantryCatalogFixture } from '@/data/fuel/pantry'
 import { pantrySources, type PantrySourceKey } from '@/data/pantrySources'
 import { supplementsStash } from '@/data/fuel/fuel'
 import { PANTRY_KEY, RECIPES_KEY, RECIPE_BREAKDOWN_KEY } from '@/data/fuel/queryKeys'
 import { movesRecipeScores, recipesUsingPantryItem, type ScoredPantryFacts } from '@/data/fuel/pantryImpact'
-import type { Ingredient, Recipe, SupplementStashItem, PantryItemInput, PantryImport, PantryImportInput, PantryScrapeDraft } from '@/data/types'
+import type { Ingredient, Recipe, SupplementStashItem, PantryItemInput, PantryImport, PantryImportInput, PantryScrapeDraft, PantryCatalogEntry } from '@/data/types'
 
 // P6 (mezo-bka): imports + suggestions ride the same PantryResponse — one query, no extra key.
 const mockData: PantryData = {
@@ -142,7 +142,28 @@ export function usePantryActions() {
         : pantryApi.photoExtract(photo, photo2),
     [mock],
   )
-  return { addItem, updateItem, deleteItem, importItem, scrapeItem, photoExtract }
+  // S4 (mezo-qw37.4): shared catalog. Search is ephemeral (no cache); mock filters the fixture.
+  const searchCatalog = useCallback(
+    (q: string, kind?: string): Promise<PantryCatalogEntry[]> => {
+      if (!mock) return pantryApi.searchCatalog(q, kind)
+      const needle = q.trim().toLowerCase()
+      return new Promise(resolve => setTimeout(() => resolve(
+        pantryCatalogFixture.filter(e =>
+          (!kind || e.kind === kind)
+          && (!needle || e.name.toLowerCase().includes(needle) || (e.brand ?? '').toLowerCase().includes(needle))),
+      ), 200))
+    },
+    [mock],
+  )
+  const fromCatalogMut = useMutation({
+    mutationFn: mock
+      ? async (catalogId: string) => mockAddFromCatalog(qc, catalogId)
+      : (catalogId: string) => pantryApi.addFromCatalog(catalogId),
+    onSuccess: mock ? undefined : invalidate,
+  })
+  const addFromCatalog = useCallback((catalogId: string) => fromCatalogMut.mutateAsync(catalogId), [fromCatalogMut])
+
+  return { addItem, updateItem, deleteItem, importItem, scrapeItem, photoExtract, searchCatalog, addFromCatalog }
 }
 
 // --- mock-mode cache mutators: keep the offline app interactive ---
@@ -181,6 +202,46 @@ function mockImport(qc: ReturnType<typeof useQueryClient>, input: PantryImportIn
   })
   return undefined
 }
+/** Mock from-catalog: idempotent append of the fixture entry as an ingredient (food) or stash row, marked shared. */
+function mockAddFromCatalog(qc: ReturnType<typeof useQueryClient>, catalogId: string) {
+  const entry = pantryCatalogFixture.find(e => e.id === catalogId)
+  if (!entry) return undefined
+  qc.setQueryData<PantryCache>(PANTRY_KEY, prev => {
+    const base = prev ?? mockData
+    const already = base.ingredients.some(i => i.catalogId === catalogId) || base.stash.some(s => s.catalogId === catalogId)
+    if (already) return base
+    // catalogEditable mirrors the SERVER's rule (PantryCatalogService.editable): the OWNER edits any
+    // definition, and the mock's demo account IS the owner — so a from-catalog row is editable here,
+    // exactly as the real API reports it. Stamping `false` made mock mode show every shared row as
+    // locked while real mode showed it unlocked (mezo-qw37.4 final review, M-5). `sharedFrom` still
+    // names the other author, so the "shared" provenance is unchanged.
+    const shared = { catalogId, sharedFrom: entry.authorName ? { authorName: entry.authorName } : null, catalogEditable: true }
+    if (entry.kind === 'food') {
+      const ing: Ingredient = {
+        id: crypto.randomUUID(), name: entry.name, brand: entry.brand ?? '', source: entry.source,
+        category: entry.category ?? 'other', per: entry.per ?? 100, unit: entry.unit ?? 'g',
+        macros: { kcal: entry.kcal ?? 0, p: entry.proteinG ?? 0, c: entry.carbsG ?? 0, f: entry.fatG ?? 0 },
+        price: 0, priceUnit: '', pkg: '', micros: [], nova: entry.nova ?? 1,
+        fiberG: entry.fiberG ?? undefined, sugarG: entry.sugarG ?? undefined,
+        saltG: entry.saltG ?? undefined, saturatedFatG: entry.saturatedFatG ?? undefined,
+        stock: null, lastUsed: '—', usedInRecipes: 0, ...shared,
+      }
+      return { ...base, ingredients: [...base.ingredients, ing] }
+    }
+    const supp: SupplementStashItem = {
+      id: crypto.randomUUID(), name: entry.name, brand: entry.brand ?? '',
+      type: entry.kind === 'stim' ? 'stimulant' : entry.kind === 'med' ? 'medication' : 'supplement',
+      category: entry.category ?? 'supplement', dose: '', form: entry.form ?? '',
+      stock: null, stockUnit: null, protocol: '', timing: 'flexible', taken: false, caffeine: entry.caffeine ?? undefined,
+      source: entry.source, per: entry.per ?? undefined, unit: entry.unit ?? undefined,
+      macros: entry.kcal != null ? { kcal: entry.kcal, p: entry.proteinG ?? 0, c: entry.carbsG ?? 0, f: entry.fatG ?? 0 } : undefined,
+      nova: entry.nova ?? undefined, ...shared,
+    }
+    return { ...base, stash: [...base.stash, supp] }
+  })
+  return undefined
+}
+
 function mockAdd(qc: ReturnType<typeof useQueryClient>, input: PantryItemInput) {
   qc.setQueryData<PantryCache>(PANTRY_KEY, prev => {
     const base = prev ?? mockData

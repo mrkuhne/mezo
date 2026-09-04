@@ -5,7 +5,9 @@ import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import java.math.BigDecimal;
@@ -29,6 +31,7 @@ public class MealPopulator {
 
     private final MealRepository repository;
     private final PantryItemRepository pantryItemRepository;
+    private final PantryCatalogRepository pantryCatalogRepository;
 
     /** A lunch meal with one recipe-arm line referencing the given (real, persisted) recipe. */
     public MealEntity createRecipeMeal(UUID owner, RecipeEntity recipe) {
@@ -54,7 +57,7 @@ public class MealPopulator {
         MealItemEntity line = baseLine(meal, owner, 0, new BigDecimal("150"), "g");
         line.setSource("pantry");
         line.setPantryItemId(pantryItem.getId());
-        line.setSnapshotName(pantryItem.getName());
+        line.setSnapshotName(pantryItem.getCatalog().getName());
         line.setSnapshotPer(new BigDecimal("100"));
         line.setSnapshotBasisUnit("g");
         line.setSnapshotKcal(new BigDecimal("110"));
@@ -149,19 +152,23 @@ public class MealPopulator {
         meal.setMealDate(mealDate);
         int order = 0;
         for (Line line : lines) {
+            PantryCatalogEntity catalog = new PantryCatalogEntity();
+            catalog.setKind("food");
+            catalog.setName(line.name());
+            catalog.setSource("manual");
+            catalog.setCategory("meat");
+            catalog.setServingAmount(BigDecimal.ONE);
+            catalog.setServingUnit("adag");
+            catalog.setKcal(new BigDecimal(line.kcal()));
+            catalog.setProteinG(new BigDecimal(line.proteinG()));
+            catalog.setCarbsG(new BigDecimal(line.carbsG()));
+            catalog.setFatG(new BigDecimal(line.fatG()));
+            catalog.setNova(line.nova());
+            catalog = pantryCatalogRepository.saveAndFlush(catalog);
+
             PantryItemEntity pantryItem = new PantryItemEntity();
             pantryItem.setCreatedBy(owner);
-            pantryItem.setKind("food");
-            pantryItem.setName(line.name());
-            pantryItem.setSource("manual");
-            pantryItem.setCategory("meat");
-            pantryItem.setServingAmount(BigDecimal.ONE);
-            pantryItem.setServingUnit("adag");
-            pantryItem.setKcal(new BigDecimal(line.kcal()));
-            pantryItem.setProteinG(new BigDecimal(line.proteinG()));
-            pantryItem.setCarbsG(new BigDecimal(line.carbsG()));
-            pantryItem.setFatG(new BigDecimal(line.fatG()));
-            pantryItem.setNova(line.nova());
+            pantryItem.setCatalog(catalog);
             pantryItem = pantryItemRepository.saveAndFlush(pantryItem);
 
             MealItemEntity item = baseLine(meal, owner, order++, BigDecimal.ONE, "adag");

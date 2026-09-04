@@ -1,6 +1,6 @@
-package io.mrkuhne.mezo.feature.meal.service;
+package io.mrkuhne.mezo.feature.pantry.service;
 
-import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import java.text.Normalizer;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -14,10 +14,12 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * Strict, deterministic name -> pantry-row lookup for the AI meal draft (mezo-qrks). It is the
- * net UNDER the LLM's own catalog matching: when the model recognizes a food but leaves
- * {@code pantryItemId} null, {@link MealAiDraftService} asks this index before falling through to
- * an estimate line.
+ * Strict, deterministic name -> CATALOG-row lookup shared by the AI meal draft and the
+ * Receptműhely (S4: the index is the whole live catalog, so a food any user defined is
+ * matchable; the caller turns the hit into the user's own shelf row via
+ * PantryCatalogService.ensureItem). It is the net UNDER the LLM's own catalog matching: when the
+ * model recognizes a food but leaves {@code pantryItemId} null, the caller asks this index before
+ * falling through to an estimate line.
  *
  * <p>Deliberately unforgiving — a wrong match silently writes wrong macros into the log, while a
  * miss only costs convenience. Hence: normalized FULL-name equality (no substring, no similarity
@@ -43,16 +45,16 @@ public final class PantryNameIndex {
     private static final String DEFAULT_SERVING_UNIT = "g";
 
     /** Keys that survived the ambiguity check; a key claimed by two different rows is dropped. */
-    private final Map<String, PantryItemEntity> byKey;
+    private final Map<String, PantryCatalogEntity> byKey;
 
-    private PantryNameIndex(Map<String, PantryItemEntity> byKey) {
+    private PantryNameIndex(Map<String, PantryCatalogEntity> byKey) {
         this.byKey = byKey;
     }
 
-    public static PantryNameIndex of(List<PantryItemEntity> items) {
-        Map<String, PantryItemEntity> byKey = new HashMap<>();
+    public static PantryNameIndex of(List<PantryCatalogEntity> rows) {
+        Map<String, PantryCatalogEntity> byKey = new HashMap<>();
         Set<String> ambiguous = new HashSet<>();
-        for (PantryItemEntity item : items) {
+        for (PantryCatalogEntity item : rows) {
             // Only kind="food" rows reach the composer's `usePantry().ingredients` list
             // (PantryService.getPantry splits food into ingredients, everything else into
             // stash) - matching a supplement/stim/med row here would return a source=pantry
@@ -62,7 +64,7 @@ public final class PantryNameIndex {
                 continue;
             }
             for (String key : keysOf(item)) {
-                PantryItemEntity previous = byKey.putIfAbsent(key, item);
+                PantryCatalogEntity previous = byKey.putIfAbsent(key, item);
                 if (previous != null && !Objects.equals(previous.getId(), item.getId())) {
                     ambiguous.add(key);
                 }
@@ -73,19 +75,19 @@ public final class PantryNameIndex {
     }
 
     /** The row whose name (or brand+name, or pack-size-stripped name) equals {@code name}. */
-    public Optional<PantryItemEntity> match(String name, String unit) {
+    public Optional<PantryCatalogEntity> match(String name, String unit) {
         String key = normalize(name);
         if (key.isEmpty()) {
             return Optional.empty();
         }
-        PantryItemEntity hit = byKey.get(key);
+        PantryCatalogEntity hit = byKey.get(key);
         if (hit == null || !unitsAgree(unit, hit.getServingUnit())) {
             return Optional.empty();
         }
         return Optional.of(hit);
     }
 
-    private static Set<String> keysOf(PantryItemEntity item) {
+    private static Set<String> keysOf(PantryCatalogEntity item) {
         String name = item.getName() == null ? "" : item.getName();
         String brand = item.getBrand() == null ? "" : item.getBrand().trim();
         String stripped = PACK_SIZE.matcher(name).replaceFirst("");
