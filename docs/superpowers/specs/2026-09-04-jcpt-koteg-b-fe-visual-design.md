@@ -238,11 +238,17 @@ kimenete a sáv; nem tud a sheetről, a mealről és a scorer belső szabályair
 - `dualMode.guard` és `mozaikCssTokens` / `prototypeCssStructure` változatlanul zöld.
 
 **Kapuk:** contract-drift (kétszer), `gen-codemap.mjs --check`, `lint-liquibase.mjs`,
-`pnpm build`, Playwright vizuális suite. **Vizuális baseline-frissítést nem várunk** — a `/me/week`
-golden a `WeekHubPage` (ring + spark), a `WeekDayTile` a suite-on kívüli `/me/week/napok`-on van,
-a `fuel-recept-score` goldenen pedig nincs `context` dimenzió. Ezt a szelet **explicit
-ellenőrző lépéssel** zárja le, nem feltételezéssel: ha a CI mégis diffet mutat,
-`update-visual-baselines.yml` dispatch (a linux baseline darwin gépen nem regenerálható).
+`pnpm build`, Playwright vizuális suite. **Javítás (Task 5, a human jóváhagyásával):**
+vizuális baseline-frissítést MÉGIS várunk, de szűkítve — az új `m4` mock étkezés (kései vacsora,
+23:35, az ablakon kívül, a `MealTimingStrip` out-of-window ágának lefedésére) megváltoztatja, mit
+renderel a `/fuel` és a `/fuel/plan`, mindkettő a Playwright suite-ban van
+(`frontend/tests/visual/visual.spec.ts:57-58`, `fuel`/`fuel-terv` goldenek) — ezért **a `fuel` és
+a `fuel-terv` goldenek el FOGNAK mozdulni**, és a PR után egy `update-visual-baselines.yml`
+dispatch szükséges (a linux baseline darwin gépen nem regenerálható). A `WEEK` csempe és a
+recept-lap goldenje viszont továbbra sem mozdul: a `/me/week`
+golden a `WeekHubPage` (ring + spark), a `WeekDayTile` a suite-on kívüli `/me/week/napok`-on van;
+a `fuel-recept-score` goldenen pedig nincs `context` dimenzió (recept-sablon, nem logolt étkezés).
+Ezt a szelet **explicit ellenőrző lépéssel** zárja le, nem feltételezéssel.
 
 **Futásidejű ellenőrzés** a `verify` skillel, mock-módban: `/me/week/napok` (benne a `100 / 100`
 szoros eset, ahol az 56px-es sáv a legkritikusabb) és egy meal score-lap a `.tline` három

@@ -1377,14 +1377,28 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
       bug if they disagree.
     - `public DayInputs inputsFor(UUID userId, LocalDate date)` exposes one day's fully-resolved
       inputs (priors included) for the day-evaluation read path, without loading a whole week.
-  - **Legacy wire mapping (binding, `DaySubscores`).** The weekly trend (`WeeklyScoreService`'s
-    persisted per-domain averages, `me-week`'s `MeWeekSubscores`) still reads the OLD four-field
-    shape — deliberately NOT changed by this slice — now populated as projections of the closest
-    successor dimension: `sleep ← sleep`, `fuel ← nutrition`, `checkin ← logging`,
-    `activity ← training`. A degraded (`NO_DATA`/`IN_PROGRESS`) dimension projects to `null`, the
-    same "tanulom" signal the legacy subscores carried. `DaySubscores.score` is `DayEvaluation
-    .base()`. The day page itself does not read this shape — it consumes the full `DayEvaluation`
-    through `GET /api/me/day/{date}/evaluation` (§4).
+  - **Wire mapping (binding, `DaySubscores`).** **Since `mezo-jcpt.5` this projection is a
+    straight 1:1**, not a remap: `DaySubscores`' six fields carry the engine's six dimensions
+    under their OWN ids (`nutrition`/`quality`/`training`/`sleep`/`logging`/`rhythm`), and
+    `me-week`'s wire shape `MeWeekSubscores` gained the same two fields (`quality`/`rhythm`) so
+    the heti mozaik and the day page now share ONE six-key vocabulary — the historical
+    "legacy four-field wire shape" this paragraph used to describe is gone from the *live* wire.
+    **The one place a four-field shape survives is the persisted `weekly_score` cache**
+    (`WeeklyScoreEntity`'s `sleep_avg`/`fuel_avg`/`checkin_avg`/`activity_avg` columns,
+    `MeWeekTrendPoint`'s matching fields) — deliberately UNCHANGED (spec D3, no migration): the
+    cache only needed the same four dimensions the legacy formula tracked, so widening it to six
+    columns for two fields nothing yet reads would have been speculative. `WeeklyScoreService`
+    narrows the now-six-field `DaySubscores` back down to those four columns via the SAME
+    closest-successor mapping the wire used to carry: `sleepAvg ← sleep`, `fuelAvg ← nutrition`,
+    `checkinAvg ← logging`, `activityAvg ← training`; `quality` and `rhythm` get no cache column.
+    A degraded (`NO_DATA`/`IN_PROGRESS`) dimension projects to `null` throughout, the same
+    "tanulom" signal the legacy subscores carried. `DaySubscores.score` is `DayEvaluation
+    .base()`. The day page itself does not read either shape — it consumes the full
+    `DayEvaluation` through `GET /api/me/day/{date}/evaluation` (§4). **`MeWeekService
+    .renderDayLine`** (below) is a separate, deliberately-unwidened consumer: it is an LLM-prompt
+    payload rendered on every chat turn, so it still renders only the four legacy-named signals
+    (alvás/fuel/checkin/aktivitás) off the six-field `DaySubscores` — widening it to `quality`/
+    `rhythm` too is a separate decision (spec D4), not a byproduct of the wire change.
 - **`MeWeekService`** (`service/MeWeekService.java`) — assembles `GET /api/me/week/{start}`
   (`MeWeekController`, one ISO-Monday week, live for the current in-progress week): per-day
   fuel/sleep/weight/check-in/workout/XP values + `DayScoreService` scores + weekly aggregates

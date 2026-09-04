@@ -433,12 +433,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     MealScoreSheet.tsx, MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, ReplanSheet.tsx,
     StackItemSheet.tsx, StackPickerSheet.tsx, WaterLogSheet.tsx
   - **components:** ContextPanel.tsx, DietSuggestionBanner.tsx, DimensionCard.tsx, FuelLogHeroTile.tsx, KamraCard.tsx,
-    KeretHero.tsx, MacroCells.tsx, MacroPanel.tsx, MealComposer.tsx, MealScoreChip.tsx, MedicationCycleBar.tsx,
-    MedicationWeekStrip.tsx, MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx, PatternRow.tsx,
-    RecipeCard.tsx, RecipeFitBadge.tsx, RecipeIngredientList.tsx, RecipeIngredientRow.tsx, RecipeLogsList.tsx,
-    RecipeOverrideRow.tsx, ScoreBreakdownBody.tsx, ScoreHero.tsx, ScoreLedger.tsx, ServingToggle.tsx, SourceBadge.tsx,
-    StackDayArc.tsx, StackMealMatch.tsx, StackNextCard.tsx, StackZoneCard.tsx, SuggestionCard.tsx, WeekRhythmGrid.tsx,
-    WeeklySupplementGrid.tsx, WindowBlock.tsx, WorkshopChatDock.tsx, WorkshopIngredientRow.tsx, WorkshopMacroCard.tsx
+    KeretHero.tsx, MacroCells.tsx, MacroPanel.tsx, MealComposer.tsx, MealScoreChip.tsx, MealTimingStrip.tsx,
+    MedicationCycleBar.tsx, MedicationWeekStrip.tsx, MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx,
+    PatternRow.tsx, RecipeCard.tsx, RecipeFitBadge.tsx, RecipeIngredientList.tsx, RecipeIngredientRow.tsx,
+    RecipeLogsList.tsx, RecipeOverrideRow.tsx, ScoreBreakdownBody.tsx, ScoreHero.tsx, ScoreLedger.tsx,
+    ServingToggle.tsx, SourceBadge.tsx, StackDayArc.tsx, StackMealMatch.tsx, StackNextCard.tsx, StackZoneCard.tsx,
+    SuggestionCard.tsx, WeekRhythmGrid.tsx, WeeklySupplementGrid.tsx, WindowBlock.tsx, WorkshopChatDock.tsx,
+    WorkshopIngredientRow.tsx, WorkshopMacroCard.tsx
   - **logic:** amountGuard.ts, buildDayPlan.ts, buildEnergyBreakdown.ts, buildProtocol.ts, compileTemplate.ts,
     dayZones.ts, defaultMealSlot.ts, deriveMealName.ts, dimensionFace.ts, formatImpact.ts, fuelSwimlane.ts,
     heroWindow.ts, kamraItems.ts, keretHero.ts, macroSplit.ts, matchMealsToStack.ts, mealContext.ts,
