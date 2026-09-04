@@ -23,6 +23,7 @@ import {
 import { buildHabitRewardToast } from '@/features/progression/logic/rewardToast'
 import { habitAction, habitHint } from '@/features/today/logic/habitAction'
 import { celebrationFor } from '@/features/today/logic/habitCelebration'
+import { daypartMilestone } from '@/features/today/logic/chainMilestone'
 import { habitClayIcon, DAYPART_CLAY } from '@/features/today/logic/habitClayIcon'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
 import { ReflectSheet } from '@/features/today/sheets/ReflectSheet'
@@ -113,10 +114,13 @@ export function NapRutinPage() {
           const { done, total } = chainProgress(h.chain)
           // az ünneplés a katalógusból jön (a napi sor nem viszi) — hiányában a toast a régi
           const celebration = celebrationFor(catalog, h.key)
+          // a mérföldkő a pipa ELŐTTI állapotból dől el: csak akkor szólal meg, ha ez a sor
+          // az utolsó nyitott a napszakában (mezo-sqe3)
+          const chainLabel = daypartMilestone(catalog, habits, h.chain)
           check(h.key)
             .then((lu) => emitToast(buildHabitRewardToast({
               title: h.title, chainDone: done, chainTotal: total, xp: h.xp, levelUp: lu?.[0],
-              celebration,
+              celebration, chainLabel,
             })))
             .catch(() => {})
         }

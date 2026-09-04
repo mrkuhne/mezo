@@ -284,6 +284,25 @@ test('the lánc-erő bars carry a staggered --d so the .mz-play fill animates', 
 
 // ── logging as reward (mezo-3zue.5) ─────────────────────────────────────────────
 
+// ── the daypart milestone rides the closing tick (mezo-sqe3) ────────────────────
+
+test('a napszakot lezáró pipa toastja viszi a „Tökéletes este" mérföldkövet', async () => {
+  const user = userEvent.setup()
+  // egyetlen nyitott esti sor: ez a pipa zárja a napszakot
+  habitStore.seed([{ ...eveningHabits[0] }])
+  renderPage('/nap/rutin?dp=este')
+  await user.click(await screen.findByRole('button', { name: 'Konyha zárva' }))
+  expect(await screen.findByText(/Tökéletes este/)).toBeInTheDocument()
+})
+
+test('nyitva maradó napszaknál nincs mérföldkő', async () => {
+  const user = userEvent.setup()
+  renderPage('/nap/rutin?dp=este') // kitchen_close + bed_on_time, utóbbi nyitva marad
+  await user.click(await screen.findByRole('button', { name: 'Konyha zárva' }))
+  expect(await screen.findByText('Szokás · 1 / 2')).toBeInTheDocument()
+  expect(screen.queryByText(/Tökéletes este/)).toBeNull()
+})
+
 test('ünnepléses szokás pipálása visszajátssza a saját mondatot', async () => {
   const user = userEvent.setup()
   renderPage()
