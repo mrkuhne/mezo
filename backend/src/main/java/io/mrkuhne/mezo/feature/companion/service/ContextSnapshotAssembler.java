@@ -51,9 +51,11 @@ import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunningBlockRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
+import io.mrkuhne.mezo.feature.train.repository.WorkoutDayAdjustmentRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.service.GymScheduleService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
+import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
@@ -97,9 +99,17 @@ public class ContextSnapshotAssembler {
     private final MesocycleRepository mesocycleRepository;
     private final GymScheduleService gymScheduleService;
     private final SportService sportService;
+    // mezo-d58h.5: the ONE skip predicate (SportSlotSkipService) — dayLine below MUST filter through
+    // it, exactly like TrainTools#sportSlotsOn, or the two read paths drift and the AI contradicts
+    // the "skip tonight" card the user just tapped.
+    private final SportSlotSkipService sportSlotSkipService;
     private final WorkoutService workoutService;
     private final WorkoutSessionRepository workoutSessionRepository;
     private final ExerciseRepository exerciseRepository;
+    // mezo-d58h.5: the per-date lighten overlay — dayLine renders "Holnap (terv)" straight from the
+    // template's raw workingSets (not through WorkoutService.getToday), so it must apply this itself
+    // or the AI contradicts the "lighten tomorrow" card the user just tapped (see TrainTools' twin).
+    private final WorkoutDayAdjustmentRepository workoutDayAdjustmentRepository;
     private final SportSessionRepository sportSessionRepository;
     private final RunSessionLogRepository runSessionLogRepository;
     private final RunningBlockRepository runningBlockRepository;
@@ -351,6 +361,11 @@ public class ContextSnapshotAssembler {
         List<ExerciseEntity> exercises = template.map(t -> exerciseRepository
                 .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(userId, List.of(t.getId())))
                 .orElse(List.of());
+        // mezo-d58h.5: per-date lighten overlay, looked up once for this date and applied to each
+        // exercise's raw template workingSets — same floor as WorkoutService.getToday.
+        int dayDelta = workoutDayAdjustmentRepository.findByCreatedByAndDateAndDeletedFalse(userId, date)
+                .map(a -> (int) a.getSetDelta())
+                .orElse(0);
         // mezo-4qu: the gym half comes from the SHARED ToolText.gymLine, the same way the sport half
         // comes from ToolText.sportLine — the criterion that a present-but-EMPTY meso template day
         // is a REST day (the mezo-650a weekend-training hallucination) now lives in ONE place, so
@@ -358,10 +373,12 @@ public class ContextSnapshotAssembler {
         parts.add(ToolText.gymLine(
                 template.map(WorkoutSessionEntity::getDayLabel).orElse(null),
                 exercises.stream()
-                        .map(e -> ToolText.exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
+                        .map(e -> ToolText.exerciseLine(e.getName(), Math.max(1, e.getWorkingSets() + dayDelta),
+                                e.getRepMin(), e.getRepMax()))
                         .toList()));
         sport.stream()
                 .filter(s -> s.getDayOfWeek() != null && s.getDayOfWeek() == dow)
+                .filter(s -> !sportSlotSkipService.isSkipped(userId, dow, s.getTime(), date))
                 .forEach(s -> parts.add(ToolText.sportLine(s.getSport(), s.getTime(),
                         s.getKind() == null ? null : s.getKind().getValue(), s.getDurationMin())));
         runningBlockRepository.findByCreatedByAndStatusAndDeletedFalse(userId, "active").stream().findFirst()

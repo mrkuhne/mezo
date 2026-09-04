@@ -9,6 +9,7 @@
 // ============================================================
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { cn } from '@/shared/lib/cn'
+import { useSettledArrival } from '@/shared/ui/mozaik/arrival'
 
 function prefersReducedMotion(): boolean {
   return typeof window.matchMedia === 'function'
@@ -16,27 +17,47 @@ function prefersReducedMotion(): boolean {
 }
 
 /** Wraps a panel whose .rise children should stagger in once on mount.
- *  A changed replayKey remounts the wrapper, re-arming the choreography. */
+ *  A changed replayKey remounts the wrapper, re-arming the choreography.
+ *
+ *  A 'pop' arrival (the user swiped BACK to a screen they have already seen) is not an
+ *  arrival at all, so the class is withheld and the tiles render settled — react-router
+ *  remounts the page on every route change, which without this makes a back navigation
+ *  replay the whole entrance and read as the page flashing/reloading (mezo-kuwj). A
+ *  replayKey change (daypart switch) still re-arms it, pop or not. */
 export function EntranceGroup({ children, replayKey, className }: {
   children: ReactNode
   replayKey?: string | number
   className?: string
 }) {
+  const returning = useSettledArrival()
+  // The key this group mounted with — only a LATER change to it is a deliberate replay.
+  const [mountKey] = useState(replayKey)
+  const settled = returning && replayKey === mountKey
   return (
-    <div key={replayKey} className={cn('mz-play', className)}>
+    <div key={replayKey} className={cn(!settled && 'mz-play', className)}>
       {children}
     </div>
   )
 }
 
 /** Animated number for hero count-ups (kcal, XP). ~30 fps stepping with
- *  ease-out; instant under prefers-reduced-motion. */
+ *  ease-out; instant under prefers-reduced-motion.
+ *
+ *  On a 'pop' arrival the number SITS at its value instead of spinning up from 0 — the
+ *  user has already watched it count once and a replay reads as a reload (mezo-kuwj).
+ *  Mount-time only: a later target change still animates, from wherever it sits. */
 export function useCountUp(target: number, durationMs = 600): number {
-  const [value, setValue] = useState(() => (prefersReducedMotion() ? target : 0))
+  const returning = useSettledArrival()
+  const [value, setValue] = useState(() => (prefersReducedMotion() || returning ? target : 0))
   const startRef = useRef(target)
+  const firstRunRef = useRef(true)
 
   useEffect(() => {
-    if (prefersReducedMotion()) { setValue(target); return }
+    const first = firstRunRef.current
+    firstRunRef.current = false
+    // `from` below derives 0 from `startRef.current === target`, so settling the state
+    // alone would not stop the mount animation — the first effect run has to bow out.
+    if (prefersReducedMotion() || (first && returning)) { setValue(target); startRef.current = target; return }
     const from = startRef.current === target ? 0 : startRef.current
     startRef.current = target
     const stepMs = 33
@@ -55,7 +76,7 @@ export function useCountUp(target: number, durationMs = 600): number {
       }
     }, stepMs)
     return () => clearInterval(id)
-  }, [target, durationMs])
+  }, [target, durationMs, returning])
 
   return value
 }
@@ -104,11 +125,17 @@ function isJsdom(): boolean {
 
 /** Count-up that CONTINUES from the last displayed value when `target` changes (the KeretHero
  *  recipe, mezo-rmi0.1): a chip tap / saved activity bumps the Growth hero's XP from where it
- *  sits, never restarting at 0. Instant under prefers-reduced-motion and jsdom. */
+ *  sits, never restarting at 0. Instant under prefers-reduced-motion and jsdom.
+ *
+ *  A 'pop' arrival seeds it AT the target (mezo-kuwj) — the "continue from the last displayed
+ *  value" contract then carries the rest for free: the first effect run reads `from === target`
+ *  and animates nowhere, while a later bump travels from the settled value as always. */
 export function useContinuingCountUp(target: number, durationMs = 900): number {
+  const returning = useSettledArrival()
   const skip = prefersReducedMotion() || isJsdom()
-  const [val, setVal] = useState(skip ? target : 0)
-  const shownRef = useRef(skip ? target : 0)
+  const settleOnMount = skip || returning
+  const [val, setVal] = useState(settleOnMount ? target : 0)
+  const shownRef = useRef(settleOnMount ? target : 0)
   useEffect(() => {
     if (skip) { setVal(target); shownRef.current = target; return }
     const from = shownRef.current

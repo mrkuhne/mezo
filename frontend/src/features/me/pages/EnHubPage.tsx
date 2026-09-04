@@ -6,16 +6,22 @@
 // routes (they keep their current faces until their own F5 slices land).
 // Anatomy: the shell fejléc (app/AppHeader.tsx, mezo-atry) → identity hero (in-level XP ring around
 // the initial, name, equipped title chip, Lv · XP · 🔥 · 🪙, bio line) → the
-// coral-ringed GOAL CARD (animated track + Hátra/Tempó/ETA cells) → the 6-tile mosaic
+// ÉLETCÉL-HERO (mezo-iizd.4: the active life goals' dimension chips + the engine's
+// ↗ / → / ↘ counters, opening /me/goals) → the 6-tile mosaic
 // with live bottom lines — Beállítások is a tile opening /me/beallitasok
 // (hub-tile-reorg: the AI tiles moved to the Mezo hub, Értesítés + AI-napló under
 // Beállítások).
+// The hero used to be the WEIGHT goal's coral track (with GoalMiniCard's maintain→„tartás"
+// rule) navigating to /me/goals/weight; mezo-iizd.4 retired that face — the weight goal's
+// entry point is now the Súlycél row on the Célok hub (CelokPage), and the daily weight
+// number stays on the mosaic's Súly tile.
 // Honest states (en-audit §6) are the contract, not the face:
 //  · the bio line renders only the bits that exist and vanishes at zero bits;
 //    with nothing set at all the hero offers BiometricCard's own CTA instead,
 //    so the write path survives the card's retirement;
-//  · a maintain goal (total range 0) drops the track and reads „tartás" —
-//    GoalMiniCard's rule, verbatim;
+//  · an unresolved/failed `today` never becomes a fabricated „0↗ · 0→ · 0↘" — the hero
+//    falls back to the plain active-goal count (CelokPage's `todayHonest` idiom);
+//  · no active life goal at all → no invented ring, just the ＋ Új cél door;
 //  · null statistics render `—` in a mini-cell, never 0;
 //  · a tile line vanishes while its source is unresolved/empty — no page ever
 //    shows a fabricated number.
@@ -26,16 +32,15 @@ import { ClayIcon } from '@/shared/ui/clay'
 import { MCells, Mosaic, Tile, type MCell } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import {
-  useBiometricProfile, useDecisions, useGamification, useGoal,
+  useBiometricProfile, useDecisions, useGamification, useLifeGoals, useLifeGoalToday,
   useGratitudeEntries, useHabitDay, useHabitSummary, usePeople, useProfile, useProgressionProfile, useSleep, useTitles, useWeight,
 } from '@/data/hooks'
 import { BiometricSheet } from '@/features/me/sheets/BiometricSheet'
 import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import { buildTdeeBreakdown } from '@/features/me/logic/buildTdeeBreakdown'
 import { ageFromBirthDate } from '@/features/me/logic/biometricFields'
-import { TRAJECTORY_LABEL } from '@/features/me/logic/goalLabels'
+import { DIMENSIONS, ARROW_GLYPH } from '@/features/me/logic/lifegoalLabels'
 import { gratitudeStreakDays } from '@/features/me/logic/gratitudeStreak'
-import { etaWeeks } from '@/features/me/logic/weightStats'
 import { useTheme } from '@/app/ThemeProvider'
 import { addDays, localDateString } from '@/shared/lib/dates'
 import { hu1, huInt } from '@/shared/lib/huNum'
@@ -81,60 +86,57 @@ export function EnHubPage() {
     biometric?.bodyFatPct != null ? `${biometric.bodyFatPct}% testzsír` : null,
   ].filter((b): b is string => b !== null)
 
-  // ── goal card ───────────────────────────────────────────────────────
-  const { goal, goalResponse, pending: goalPending } = useGoal()
+  // ── életcél-hero (mezo-iizd.4) ───────────────────────────────────────
+  // A hero mostanáig a SÚLYCÉL adata volt és /me/goals/weight-re vitt — az Én-hubról így
+  // semmi nem nyílt a /me/goals Célok hubra, pedig a spec D5 szerint a hosszú cél ott lakik.
+  // A súlycél parancsnoksága a Célok hub saját sorára költözött (mezo-iizd.4, CelokPage);
+  // a napi súly-szám a mozaik Súly-csempéjén marad.
+  // A korábbi bare `useGoal()` hívás („a cache-t melegen tartjuk a `rate`-hez") ELDOBOTT
+  // eredményű, és az indoklása sem állt: a `rate` a `weightTrends`-ból jön, a `weightLog`
+  // cache-t a fenti `useWeight` már meghúzza, a súlycél parancsnoksága pedig a Célok hubra
+  // költözött (mezo-iizd.4) — az Én-hubon semmi nem olvassa. Ezért kikerült.
   const rate = weightTrends.last4w.weeklyRate
+  const { goals: lifeGoals, isPending: lifeGoalsPending } = useLifeGoals()
+  const { today: lifeToday, isPending: lifeTodayPending, isError: lifeTodayError } = useLifeGoalToday()
+  const activeGoals = lifeGoals.filter((g) => g.status === 'active')
+  // `insufficient` kimarad: túl kevés adat sosem irány (a CelokPage/LifeGoalTile guardrailje).
+  const arrows = lifeToday.goals.reduce(
+    (acc, s) => { if (s.arrow !== 'insufficient') acc[s.arrow] += 1; return acc },
+    { up: 0, flat: 0, down: 0 } as Record<'up' | 'flat' | 'down', number>,
+  )
+  // Feloldatlan/hibás `today` üres listája alakilag azonos a „még nincs iránya" esettel —
+  // számolni belőle kitalált „0↗ · 0→ · 0↘"-t adna (CelokPage `todayHonest` idióma).
+  const arrowsHonest = lifeTodayPending || lifeTodayError
+
   let goalCard: React.ReactNode = null
-  if (!goalPending && goal != null && goalResponse != null) {
-    // Signed math so bulk (negative/negative) still lands in 0..100; maintain (total 0)
-    // hides the track and reads „tartás" — GoalMiniCard's contract.
-    const total = goal.startWeight - goal.targetWeight
-    const progressed = goal.startWeight - goal.currentWeight
-    const p = total !== 0 ? Math.min(100, Math.max(0, (progressed / total) * 100)) : 0
-    const remaining = Math.abs(goal.currentWeight - goal.targetWeight)
-    const eta = etaWeeks(goal.currentWeight, goal.targetWeight, rate)
-    // The prototype eyebrow is „trajektória · cím"; a seeded title that already opens with its
-    // own trajectory („Fogyás · Nyári forma") must not be prefixed twice.
-    const trajectory = TRAJECTORY_LABEL[goalResponse.trajectory]
-    const goalHeadline = goalResponse.title.toLowerCase().startsWith(trajectory.toLowerCase())
-      ? goalResponse.title
-      : `${trajectory} · ${goalResponse.title}`
-    const cells: MCell[] = total !== 0
-      ? [
-          { label: 'hátra', value: `${hu1(remaining)} kg`, tone: 'coral' },
-          { label: 'kg / hét', value: rate !== 0 ? huSigned(rate) : '—', tone: 'sage' },
-          { label: 'eta', value: eta != null ? `${eta} hét` : '—', tone: 'lav' },
+  if (!lifeGoalsPending && activeGoals.length > 0) {
+    const cells: MCell[] = arrowsHonest
+      ? [{ label: 'aktív cél', value: `${activeGoals.length}`, tone: 'coral' }]
+      : [
+          { label: 'emelkedik', value: `${ARROW_GLYPH.up} ${arrows.up}`, tone: 'sage' },
+          { label: 'tartja', value: `${ARROW_GLYPH.flat} ${arrows.flat}`, tone: 'lav' },
+          { label: 'csúszik', value: `${ARROW_GLYPH.down} ${arrows.down}`, tone: 'coral' },
         ]
-      : [{ label: 'kg / hét', value: rate !== 0 ? huSigned(rate) : '—', tone: 'sage' }]
     goalCard = (
-      <button type="button" className="enh-goalcard rise" style={{ '--d': '70ms' } as React.CSSProperties}
-        aria-label="Hosszú cél" onClick={() => navigate('/me/goals/weight')}>
+      <button type="button" className="enh-goalcard enh-lgcard rise" style={{ '--d': '70ms' } as React.CSSProperties}
+        aria-label="Célok" onClick={() => navigate('/me/goals')}>
         <div className="enh-goalhead">
-          <span className="mz-eyebrow">🎯 {goalHeadline}</span>
-          <span className="enh-stch">{total !== 0 ? `${Math.round(p)}% a célig` : 'tartás'}</span>
+          <span className="mz-eyebrow"><ClayIcon name="i-cel" size={15} /> Célok</span>
+          <span className="enh-stch">{activeGoals.length} aktív</span>
         </div>
-        {total !== 0 && (
-          <>
-            <div className="enh-gtrack" style={{ '--p': `${p}%` } as React.CSSProperties}>
-              <div className="fill" />
-              <i className="dot" />
-            </div>
-            <div className="enh-gtlbl">
-              <span>{hu1(goal.startWeight)}</span>
-              <b>{hu1(goal.currentWeight)} most</b>
-              <span>{hu1(goal.targetWeight)} cél</span>
-            </div>
-          </>
-        )}
+        <div className="enh-lgdims">
+          {activeGoals.slice(0, 4).map((g) => (
+            <span key={g.id} className={`lg-goalchip ${DIMENSIONS[g.dimension].cls}`}><i />{g.title}</span>
+          ))}
+        </div>
         <MCells cells={cells} />
       </button>
     )
-  } else if (!goalPending) {
-    // No active goal — no fabricated track. The door to /me/goals/weight stays open, which is
-    // where the real ghost state + the „＋ Új cél" planner CTA live.
+  } else if (!lifeGoalsPending) {
+    // Nincs aktív életcél — nincs kitalált gyűrű. Az ajtó a varázslóra nyílik.
     goalCard = (
       <button type="button" className="enh-newgoal rise" style={{ '--d': '70ms' } as React.CSSProperties}
-        onClick={() => navigate('/me/goals/weight')}>
+        onClick={() => navigate('/me/goals/new')}>
         ＋ Új cél
       </button>
     )

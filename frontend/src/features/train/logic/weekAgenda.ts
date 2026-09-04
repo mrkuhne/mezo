@@ -17,18 +17,29 @@ export function weekDateIso(index: number, today = new Date()): string {
   return localDateString(base)
 }
 
+/** One skipped dated occurrence of a recurring sport slot (proactive coaching S5, mezo-d58h.5) —
+ *  the same identity key the backend's `sport_slot_skip` uses: weekday (0=Hét..6=Vas, matching
+ *  `DAY_ORDER`'s own index) + clock time + the skipped date. */
+export interface SportSlotSkip {
+  dayOfWeek: number
+  time: string
+  date: string
+}
+
 export function buildWeekAgenda({
   gymTimes,
   sportSlots,
   runningBlock,
   weekWorkouts,
   today = new Date(),
+  skips = [],
 }: {
   gymTimes: GymScheduleDay[]
   sportSlots: VolleyballSession[]
   runningBlock: RunningBlockResponse | null
   weekWorkouts: { id: string; date: string; origin: string; status: string; title: string }[]
   today?: Date
+  skips?: SportSlotSkip[]
 }): WeeklyAgendaDay[] {
   // Completed custom (saját) instances of this week, grouped by ISO date — extra
   // rows on the date they were actually trained (mezo-ws2x).
@@ -46,7 +57,14 @@ export function buildWeekAgenda({
     const date = weekDateIso(i, today)
     // A dated one-off event (mezo-e1sp) pins to its exact ISO date — weekday-label matching
     // alone would repeat it on that weekday of every rendered week. Recurring slots carry no date.
-    const v = sportSlots.filter((x) => x.day === d && (!x.date || x.date === date))
+    // A skip_sport_slot advice action (mezo-d58h.5) hides one dated occurrence of a recurring
+    // slot — matched on the same identity the backend uses: weekday index + clock time + date.
+    const v = sportSlots.filter(
+      (x) =>
+        x.day === d &&
+        (!x.date || x.date === date) &&
+        !skips.some((s) => s.dayOfWeek === i && s.time === x.time && s.date === date),
+    )
     return {
       day: d,
       date,

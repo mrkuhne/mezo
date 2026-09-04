@@ -597,6 +597,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/sport-slot-skips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recurring sport-slot occurrences hidden by an applied skip_sport_slot advice action, in [from, to] */
+        get: operations["listSportSlotSkips"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/gym-schedule": {
         parameters: {
             query?: never;
@@ -1080,6 +1097,23 @@ export interface paths {
         };
         /** The goal's OPEN (proposed) suggestions — diet-phase / correction proposals awaiting a decision */
         get: operations["listGoalSuggestions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/goals/{id}/suggestions/{suggestionId}/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Preview every semantic goal and prescription change before applying a suggestion */
+        get: operations["previewGoalSuggestion"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2221,6 +2255,26 @@ export interface paths {
         get: operations["getFeed"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/proactive/advice/{id}/apply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Apply one of the advice card's offered actions (S5, mezo-d58h.5)
+         * @description Applies the named action and stamps `applied` onto the card. Idempotent: re-applying the SAME action returns the card unchanged with its original `applied` timestamp and runs no second mutation. A card that has been superseded by a higher-severity card is gone (404), and an action the card does not offer is refused (409) — a client can never invoke a mutation the rule did not put there.
+         */
+        post: operations["applyAdviceAction"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5116,6 +5170,15 @@ export interface components {
             location?: string;
             intensityLabel?: string;
         };
+        /** @description One dated occurrence of a recurring sport slot hidden by skip_sport_slot (mezo-d58h.5) */
+        SportSlotSkipResponse: {
+            /** @description 0=Hét .. 6=Vas */
+            dayOfWeek: number;
+            /** @description HH:mm */
+            time: string;
+            /** Format: date */
+            date: string;
+        };
         GymScheduleSlotResponse: {
             /** Format: uuid */
             id: string;
@@ -5534,6 +5597,42 @@ export interface components {
             createdAt: string;
             /** Format: date-time */
             decidedAt?: string | null;
+        };
+        GoalSuggestionAcceptRequest: {
+            previewFingerprint: string;
+        };
+        GoalSuggestionPreviewResponse: {
+            /** @enum {string} */
+            status: "proposed" | "accepted" | "dismissed" | "superseded";
+            reasonCode: string;
+            affectedFromWeek: number | null;
+            affectedToWeek: number | null;
+            current: components["schemas"]["GoalSuggestionProjection"];
+            proposed: components["schemas"]["GoalSuggestionProjection"];
+            changedFields: string[];
+            unchangedFields: string[];
+            warnings: string[];
+            blockers: string[];
+            canApply: boolean;
+            previewFingerprint: string | null;
+        };
+        GoalSuggestionProjection: {
+            /** @enum {string} */
+            trajectory: "cut" | "bulk" | "maintain";
+            targetWeightKg: number | null;
+            /** Format: date */
+            targetDate: string;
+            targetRateKgPerWeek: number | null;
+            weekAverageKcal: number | null;
+            trainingDayKcal: number | null;
+            restDayKcal: number | null;
+            proteinG: number | null;
+            carbsG: number | null;
+            fatG: number | null;
+            segmentFromWeek: number | null;
+            segmentToWeek: number | null;
+            segmentLabel: string | null;
+            guardStatus: components["schemas"]["GoalGuardStatus"] | null;
         };
         /** @description Typed suggestion body. phase_change carries either suggestedTrajectory (preset↔trajectory mismatch) or balanceOverrideKcal+fromWeek+toWeek (deload maintenance week). snapshotTrajectory is the accept-time race guard. */
         GoalSuggestionPayload: {
@@ -7155,6 +7254,24 @@ export interface components {
             kind: string;
             label: string;
         };
+        FeedAction: {
+            /**
+             * @description Which mutation the button applies (S5, mezo-d58h.5). The apply endpoint dispatches on this.
+             * @enum {string}
+             */
+            key: "lighten_tomorrow" | "skip_sport_slot" | "shift_sleep_anchor";
+            /** @description The button's Hungarian caption — rule-provided, never model-written. */
+            label: string;
+            /** @description The mutation's parameters, ALWAYS produced by the deterministic rule (spec §6). The model can never invent an action or a number. */
+            params?: {
+                [key: string]: unknown;
+            };
+        };
+        FeedApplied: {
+            actionKey: string;
+            /** Format: date-time */
+            at: string;
+        };
         FeedMessageResponse: {
             /**
              * Format: uuid
@@ -7175,6 +7292,9 @@ export interface components {
             facts?: string[];
             /** @description Advice-card suggestion texts (config-provided). Present only on advice rows. */
             suggestions?: string[];
+            /** @description Up to two action buttons offered by this advice card (S5, mezo-d58h.5). Present only on advice rows. */
+            actions?: components["schemas"]["FeedAction"][];
+            applied?: components["schemas"]["FeedApplied"];
             /** Format: date-time */
             generatedAt: string;
         };
@@ -7245,6 +7365,10 @@ export interface components {
         };
         ExperimentDecisionRequest: {
             decision: string;
+        };
+        AdviceApplyRequest: {
+            /** @enum {string} */
+            actionKey: "lighten_tomorrow" | "skip_sport_slot" | "shift_sleep_anchor";
         };
         ExperimentResponse: {
             /** Format: uuid */
@@ -10781,6 +10905,38 @@ export interface operations {
             };
         };
     };
+    listSportSlotSkips: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Skips in range (empty array when none) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SportSlotSkipResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     getGymSchedule: {
         parameters: {
             query?: never;
@@ -12336,7 +12492,7 @@ export interface operations {
             };
         };
     };
-    acceptGoalSuggestion: {
+    previewGoalSuggestion: {
         parameters: {
             query?: never;
             header?: never;
@@ -12348,6 +12504,51 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
+            /** @description Current/proposed comparison */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoalSuggestionPreviewResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Goal or suggestion not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    acceptGoalSuggestion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                suggestionId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoalSuggestionAcceptRequest"];
+            };
+        };
+        responses: {
             /** @description Applied + re-evaluated */
             200: {
                 headers: {
@@ -12355,6 +12556,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GoalResponse"];
+                };
+            };
+            /** @description Validation error or blocked preview */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Missing/invalid token */
@@ -15736,6 +15946,68 @@ export interface operations {
             };
             /** @description Missing or invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    applyAdviceAction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdviceApplyRequest"];
+            };
+        };
+        responses: {
+            /** @description The card with its applied state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FeedMessageResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such live advice card for this user (it may have been superseded) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The card does not offer this action, or a different action was already applied */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

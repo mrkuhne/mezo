@@ -78,3 +78,55 @@ test('populates `custom` only from COMPLETED custom instances, on their own date
   expect(agenda.find((a) => a.day === 'Csü')!.custom).toEqual([])
   expect(agenda.filter((a) => a.custom!.length > 0)).toHaveLength(1)
 })
+
+// Proactive coaching S5 (mezo-d58h.5): a skip_sport_slot advice action hides one dated
+// occurrence of a recurring sport slot — identified by weekday + clock time, same as the
+// backend (day_of_week 0=Hét..6=Vas). Clock pinned: week = Mon 2026-07-13 … Sun 07-19.
+test('a skipped recurring slot is absent on its skipped date and present on another date', () => {
+  const today = new Date(2026, 6, 15) // Wednesday 2026-07-15
+  const agenda = buildWeekAgenda({
+    gymTimes: [],
+    sportSlots: [sport('Kedd', '18:00')], // Kedd = index 1 -> dayOfWeek 1
+    runningBlock: null,
+    weekWorkouts: [],
+    today,
+    skips: [{ dayOfWeek: 1, time: '18:00', date: '2026-07-14' }], // this week's Kedd only
+  })
+  expect(agenda.find((a) => a.day === 'Kedd')!.sport).toEqual([])
+})
+
+test('a skipped date does not hide the same recurring slot on a different week', () => {
+  const today = new Date(2026, 6, 15) // Wednesday 2026-07-15
+  const agenda = buildWeekAgenda({
+    gymTimes: [],
+    sportSlots: [sport('Kedd', '18:00')],
+    runningBlock: null,
+    weekWorkouts: [],
+    today,
+    skips: [{ dayOfWeek: 1, time: '18:00', date: '2026-07-21' }], // next week's Kedd
+  })
+  expect(agenda.find((a) => a.day === 'Kedd')!.sport).toHaveLength(1)
+})
+
+test('a skip for a different clock time on the same day does not hide the slot', () => {
+  const today = new Date(2026, 6, 15) // Wednesday 2026-07-15
+  const agenda = buildWeekAgenda({
+    gymTimes: [],
+    sportSlots: [sport('Kedd', '18:00')],
+    runningBlock: null,
+    weekWorkouts: [],
+    today,
+    skips: [{ dayOfWeek: 1, time: '20:00', date: '2026-07-14' }],
+  })
+  expect(agenda.find((a) => a.day === 'Kedd')!.sport).toHaveLength(1)
+})
+
+test('omitting skips behaves exactly as an empty list', () => {
+  const agenda = buildWeekAgenda({
+    gymTimes: [],
+    sportSlots: [sport('Kedd', '18:00')],
+    runningBlock: null,
+    weekWorkouts: [],
+  })
+  expect(agenda.find((a) => a.day === 'Kedd')!.sport).toHaveLength(1)
+})

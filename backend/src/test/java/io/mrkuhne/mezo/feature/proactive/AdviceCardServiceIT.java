@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.proactive.service.AdviceCandidate;
 import io.mrkuhne.mezo.feature.proactive.service.AdviceCardService;
 import io.mrkuhne.mezo.feature.proactive.service.SetupCheckService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.LocalDate;
 import java.util.List;
@@ -34,6 +35,7 @@ class AdviceCardServiceIT extends AbstractIntegrationTest {
     @Autowired private AdviceCardService adviceCardService;
     @Autowired private CompanionMessageRepository companionMessageRepository;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private SleepGoalPopulator sleepGoalPopulator;
 
     private AdviceCandidate flag(String flagKey) {
         return AdviceCandidate.fromFlag(flagKey, flagKey + "_entry", "Mezo · észrevétel",
@@ -67,6 +69,33 @@ class AdviceCardServiceIT extends AbstractIntegrationTest {
         assertThat(adviceCardService.deliver(owner, flag(FlagKey.LOGGING_GAP))).isEmpty();
 
         assertThat(todaysCard(owner).getContent().adviceKey()).isEqualTo(FlagKey.MISSED_WORKOUTS);
+    }
+
+    /** S5 (bd mezo-d58h.5, spec §6): the delivered card carries the {@code sleep_debt} action
+     *  ({@link io.mrkuhne.mezo.feature.proactive.entity.AdviceActionKey#SHIFT_SLEEP_ANCHOR})
+     *  when the user has a sleep-goal row, and NONE when they don't — asserted through the
+     *  delivery path (not the catalog directly), since that is what actually reaches the wire. */
+    @Test
+    void testDeliver_shouldOfferShiftSleepAnchor_whenSleepDebtAndGoalRowExists() {
+        UUID owner = userPopulator.createUser().getId();
+        sleepGoalPopulator.goal(owner);
+
+        Optional<CompanionMessageEntity> card = adviceCardService.deliver(owner, flag(FlagKey.SLEEP_DEBT));
+
+        assertThat(card).isPresent();
+        assertThat(card.orElseThrow().getContent().actions()).hasSize(1);
+        assertThat(card.orElseThrow().getContent().actions().get(0).key())
+            .isEqualTo(io.mrkuhne.mezo.feature.proactive.entity.AdviceActionKey.SHIFT_SLEEP_ANCHOR);
+    }
+
+    @Test
+    void testDeliver_shouldOfferNoActions_whenSleepDebtAndNoGoalRow() {
+        UUID owner = userPopulator.createUser().getId();
+
+        Optional<CompanionMessageEntity> card = adviceCardService.deliver(owner, flag(FlagKey.SLEEP_DEBT));
+
+        assertThat(card).isPresent();
+        assertThat(card.orElseThrow().getContent().actions()).isEmpty();
     }
 
     /** Equal rank never churns the card — a re-raise of the same flag must leave the row (and its

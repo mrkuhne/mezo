@@ -10,6 +10,7 @@ import { LevelUpProvider } from '@/features/progression/LevelUpProvider'
 import { TutorialProvider } from '@/features/tutorial/TutorialProvider'
 import { MezoThreadProvider } from '@/features/today/MezoThreadProvider'
 import { ClaySprites } from '@/shared/ui/clay'
+import { ArrivalProvider } from '@/shared/ui/mozaik/arrival'
 import { ErrorBoundary } from '@/shared/ui/ErrorBoundary'
 import { ToastProvider } from '@/shared/ui/ToastProvider'
 import { useTodayScenario, useScheduleSnapshotWriter } from '@/data/hooks'
@@ -54,7 +55,7 @@ export function AppLayout() {
     </ScreenContent>
   )
   return (
-    <>
+    <ArrivalProvider>
       <CircadianTheme />
       {/* Clay sprite defs — mounted once so every ClayIcon/ClaySpot <use> resolves. */}
       <ClaySprites />
@@ -83,6 +84,6 @@ export function AppLayout() {
           </LevelUpProvider>
         </ToastProvider>
       </PhoneFrame>
-    </>
+    </ArrivalProvider>
   )
 }

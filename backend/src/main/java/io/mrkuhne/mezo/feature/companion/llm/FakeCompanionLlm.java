@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.companion.advisor.AdvisorRetry;
 import io.mrkuhne.mezo.feature.companion.advisor.TurnVerdictCheck;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphEdgeStructurer;
 import io.mrkuhne.mezo.feature.companion.graph.service.LifeEventExtractionService;
+import io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryQueryRewriter;
 import io.mrkuhne.mezo.feature.companion.quarterly.service.QuarterlyReviewService;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
@@ -47,6 +48,12 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** Content markers that force a deterministic failure — lets ITs exercise error paths. */
     public static final String FAIL_COMPLETE = "[fake-fail]";
     public static final String FAIL_STREAM = "[fake-stream-fail]";
+
+    /** Scripted memory-query rewrite: {@code [fake-memory-rewrite:…]} returns the payload. */
+    public static final Pattern MEMORY_REWRITE_SENTINEL =
+            Pattern.compile("\\[fake-memory-rewrite:([^\\]]*)]", Pattern.DOTALL);
+    public static final String MEMORY_REWRITE_EXACT_LIMIT = "[fake-memory-rewrite-exact-limit]";
+    public static final String MEMORY_REWRITE_OVERLONG = "[fake-memory-rewrite-overlong]";
 
     /** mezo-8z79: the provider answered with NO text at all — a candidate with zero text parts (the
      *  2026-08-23 live incident). Streams as an empty Flux and completes as "", so ITs can drive the
@@ -521,9 +528,14 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  never by this fake, so it cannot serve as the call-count oracle under {@code companion-fake}. */
     private final java.util.concurrent.atomic.AtomicInteger completeCallCount =
             new java.util.concurrent.atomic.AtomicInteger();
+    private volatile List<Turn> lastMemoryRewriteHistory = List.of();
 
     public int completeCallCount() {
         return completeCallCount.get();
+    }
+
+    public List<Turn> lastMemoryRewriteHistory() {
+        return List.copyOf(lastMemoryRewriteHistory);
     }
 
     @Override
@@ -536,6 +548,17 @@ public class FakeCompanionLlm implements CompanionLlm {
         // reach this same forced-failure path.
         if (userMessage.contains(FAIL_COMPLETE) || systemPrompt.contains(FAIL_COMPLETE)) {
             throw new IllegalStateException("FAKE-LLM forced complete failure");
+        }
+        if (systemPrompt.startsWith(LlmMemoryQueryRewriter.REWRITE_MARKER)) {
+            lastMemoryRewriteHistory = List.copyOf(history);
+            if (userMessage.contains(MEMORY_REWRITE_EXACT_LIMIT)) {
+                return "x".repeat(500);
+            }
+            if (userMessage.contains(MEMORY_REWRITE_OVERLONG)) {
+                return "x".repeat(501);
+            }
+            Matcher rewrite = MEMORY_REWRITE_SENTINEL.matcher(userMessage);
+            return rewrite.find() ? rewrite.group(1) : "FAKE-ÖNÁLLÓ-KERESŐKÉRDÉS";
         }
         if (userMessage.contains(SYSTEM_ECHO_SENTINEL)) {
             return systemPrompt;

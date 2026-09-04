@@ -16,6 +16,7 @@ import io.mrkuhne.mezo.feature.train.service.TrainService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
+import io.mrkuhne.mezo.support.populator.WorkoutDayAdjustmentPopulator;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,6 +43,7 @@ class VolumeEffectiveSetsIT extends AbstractIntegrationTest {
     @Autowired TrainPopulator train;
     @Autowired MesocycleRepository mesocycleRepository;
     @Autowired TrainService trainService;
+    @Autowired WorkoutDayAdjustmentPopulator workoutDayAdjustmentPopulator;
 
     @Test
     void testGetToday_shouldDistributeEffectiveSets_whenChestVolumeLogExceedsTemplateSum() {
@@ -267,6 +269,99 @@ class VolumeEffectiveSetsIT extends AbstractIntegrationTest {
         exercises.forEach(e -> assertThat(byId(res, e.getId()).getWorkingSets()).isEqualTo(1));
         int total = exercises.stream().mapToInt(e -> byId(res, e.getId()).getWorkingSets()).sum();
         assertThat(total).isEqualTo(5); // one each — the floor overshoots the weekly target(4)
+    }
+
+    @Test
+    void testGetToday_shouldApplyDeltaAfterDistribution_whenDayIsLightened() {
+        // Same fixture as testGetToday_shouldPreserveGroupTargetSum_whenThreeExercisesShareTheGroup:
+        // template workingSets 5/4/1 (sum 10), group currentSets(9) -> baseline effective 4/3/2 (a
+        // non-trivial largest-remainder distribution, not a flat pass-through).
+        UUID owner = ownerId();
+        MesocycleEntity meso = pinnedActiveMeso(owner);
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
+        var day = train.createTemplateDay(owner, meso.getId(), todayLabel);
+        ExerciseEntity benchPress = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+        benchPress.setWorkingSets(5);
+        train.save(benchPress);
+        ExerciseEntity inclinePress = train.createExercise(owner, day.getId(), "Ferde nyomás", "chest", "compound");
+        inclinePress.setWorkingSets(4);
+        train.save(inclinePress);
+        ExerciseEntity flye = train.createExercise(owner, day.getId(), "Cable Flye", "chest", "isolation");
+        flye.setWorkingSets(1);
+        train.save(flye);
+        train.createVolumeLog(owner, meso.getId(), "chest", 9);
+
+        // Baseline call — no adjustment row yet. Confirms the known 4/3/2 distribution before any
+        // delta enters the picture, and gives the exact "no leak" reference point below.
+        WorkoutTodayResponse baseline = workoutService.getToday(owner, null);
+        int benchBaseline = byId(baseline, benchPress.getId()).getWorkingSets();
+        int inclineBaseline = byId(baseline, inclinePress.getId()).getWorkingSets();
+        int flyeBaseline = byId(baseline, flye.getId()).getWorkingSets();
+        assertThat(benchBaseline).isEqualTo(4);
+        assertThat(inclineBaseline).isEqualTo(3);
+        assertThat(flyeBaseline).isEqualTo(2);
+
+        workoutDayAdjustmentPopulator.createAdjustment(owner, LocalDate.now(), (short) -1);
+
+        WorkoutTodayResponse lightened = workoutService.getToday(owner, null);
+
+        // ORDERING PROOF: if the delta had leaked into effectiveWorkingSets' input (e.g. by
+        // mutating the template workingSets before the distribution ran), the group's weights
+        // would become 4/3/0 instead of 5/4/1, and the largest-remainder distribution over the
+        // SAME group target (9) would land on different numbers than "baseline - 1" per exercise —
+        // it would NOT simply be a uniform per-exercise shift. Asserting the lightened result is
+        // exactly the baseline distribution minus one (floored at 1) proves the delta was applied
+        // strictly AFTER effectiveWorkingSets returned, on the final per-exercise number.
+        assertThat(byId(lightened, benchPress.getId()).getWorkingSets()).isEqualTo(benchBaseline - 1);
+        assertThat(byId(lightened, inclinePress.getId()).getWorkingSets()).isEqualTo(inclineBaseline - 1);
+        assertThat(byId(lightened, flye.getId()).getWorkingSets()).isEqualTo(flyeBaseline - 1);
+        // The muscle-group volume distribution itself (the weighting) is unchanged: recomputing
+        // with the SAME inputs (template workingSets, volume log) minus a uniform per-exercise -1
+        // reproduces the lightened numbers exactly — proving no leak.
+        assertThat(byId(lightened, benchPress.getId()).getWorkingSets()).isEqualTo(3);
+        assertThat(byId(lightened, inclinePress.getId()).getWorkingSets()).isEqualTo(2);
+        assertThat(byId(lightened, flye.getId()).getWorkingSets()).isEqualTo(1); // floored at 1 (2-1=1, no floor needed)
+
+        // The prescription reflects the LIGHTENED count, not the baseline one (must run after the
+        // delta, per the task's ordering requirement).
+        long benchWorkingRows = byId(lightened, benchPress.getId()).getPrescribedSets().stream()
+            .filter(p -> p.getKind() == io.mrkuhne.mezo.api.dto.PrescribedSet.KindEnum.WORKING)
+            .count();
+        assertThat(benchWorkingRows).isEqualTo(3);
+    }
+
+    @Test
+    void testGetToday_shouldFloorAtOneWorkingSet_whenDeltaWouldGoBelowOne() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = pinnedActiveMeso(owner);
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
+        var day = train.createTemplateDay(owner, meso.getId(), todayLabel);
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+        ex.setWorkingSets(1);
+        train.save(ex);
+        // No volume log row -> effective == template workingSets == 1 (the pass-through branch).
+        workoutDayAdjustmentPopulator.createAdjustment(owner, LocalDate.now(), (short) -3);
+
+        WorkoutTodayResponse res = workoutService.getToday(owner, null);
+
+        assertThat(byId(res, ex.getId()).getWorkingSets()).isEqualTo(1);
+    }
+
+    @Test
+    void testGetToday_shouldKeepEffectiveSets_whenNoAdjustmentExistsForToday() {
+        UUID owner = ownerId();
+        MesocycleEntity meso = pinnedActiveMeso(owner);
+        String todayLabel = WorkoutService.HU_DAY_LABELS.get(LocalDate.now().getDayOfWeek().getValue() - 1);
+        var day = train.createTemplateDay(owner, meso.getId(), todayLabel);
+        ExerciseEntity ex = train.createExercise(owner, day.getId(), "Fekvenyomás", "chest", "compound");
+        ex.setWorkingSets(3);
+        train.save(ex);
+        // An adjustment exists, but for a DIFFERENT date — must not affect today.
+        workoutDayAdjustmentPopulator.createAdjustment(owner, LocalDate.now().plusDays(1), (short) -2);
+
+        WorkoutTodayResponse res = workoutService.getToday(owner, null);
+
+        assertThat(byId(res, ex.getId()).getWorkingSets()).isEqualTo(3);
     }
 
     /** An active meso whose rollover is a guaranteed no-op — see class javadoc. */

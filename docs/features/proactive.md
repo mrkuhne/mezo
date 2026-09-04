@@ -599,8 +599,9 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   its settled state) — always `200`, empty list = honest empty. `POST …/regenerate` archives the
   week's still-OPEN candidates with the old review and leaves DECIDED ones untouched — a
   regeneration must never undo a user decision.
-- **The WIDER gather input (`mezo-d20.7.8`)** — `WeeklyReviewContextSources` adds the six sources
-  the design spec listed as input and the first cut dropped, rendered into the payload **after**
+- **The WIDER gather input (`mezo-d20.7.8`, extended by `mezo-iizd.9`)** —
+  `WeeklyReviewContextSources` adds **seven** sources — the six the design spec listed as input and
+  the first cut dropped, plus the life-goal block — rendered into the payload **after**
   the predictions block and **before** the numbered anchor list: **journal entries**
   (`occurredOn` in-week, prose clipped to 180 chars, max 7), **decisions** (recorded in-week +
   **reviewed** in-week with their 1–5 rating, text clipped to 140, max 6 combined), **N=1
@@ -610,6 +611,20 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   position on the week's first and last day (one line, derived via `MedicationCycleService`), and
   the week's consolidated **`period_summary(week)`** narrative (clipped to 600 — its `03:30 MON`
   consolidation cron runs three hours before the `06:50` review cron on the SAME `weekStart`).
+  **The seventh source (`mezo-iizd.9`): `ÉLETCÉLOK · AZ ELMÚLT 7 NAP`** — the life-goal engine's
+  ALREADY-COMPUTED per-goal trend off `LifeGoalProgressService#today` (max 5 ACTIVE goals;
+  `title [dimension] <arrow-word> · N találat-nap a 7-ből`). Three honesty rules shape it, all
+  pinned by `WeeklyReviewContextSourcesIT`: the header names the **trailing-7-day** window it
+  actually measures, NOT the reviewed week (`today()`'s `[now-6, now]` sits one day off the
+  Monday-06:50 cron's `[D-7, D-1]`; a windowed `today(from, to)` variant is a separate, later
+  issue); today's `pillarsHitToday / pillarsTotal` snapshot is dropped as meaningless in a
+  retrospective; and a goal with **no data-day at all** renders `ezen a héten még nincs adata`
+  instead of a `0 találat-nap` tally — a zero there means "we measured nothing", and a
+  measured-looking zero would invite the model to explain a week nobody measured. That last rule
+  mirrors the frontend's `goalWeekSentence.ts` verbatim, so one week can never read as a miss in
+  the prompt and as silence on the Heti hub. The arrow is rendered as a WORD (`emelkedik` /
+  `tartja` / `csúszik` / `kevés adat az irányhoz`) — glyphs are misreadable inside prompt prose.
+  See [`lifegoal.md`](lifegoal.md) §5.
   Three disciplines make this a widening rather than a bloat: it is **data only** (the prompt is
   byte-identical and mints no new anchor kinds — the `Pattern|Fact|LifeEvent|Memory` RefTag
   vocabulary is unchanged, and every candidate costs double tokens because it renders in its own
@@ -1371,13 +1386,22 @@ S3's (`mezo-d58h.3`), `KIND_ADVICE` is S4's (`mezo-d58h.4`) — constants) +
 `CompanionMessageEnvelope` (`entity/CompanionMessageEnvelope.java`, renamed from
 `BriefingContentEnvelope`) — a record `{String eyebrow, List<String> body, List<Ref> refs,
 String interventionKey, String setupKey, String adviceKey, List<String> facts,
-List<String> suggestions}` with a nested `Ref(String kind, String label)` (ADR 0006 /
-`ProvenanceEnvelope` typed-jsonb precedent, unchanged). The envelope **deliberately mirrors the FE
+List<String> suggestions, List<FeedAction> actions, Applied applied}` with a nested `Ref(String
+kind, String label)` (ADR 0006 / `ProvenanceEnvelope` typed-jsonb precedent, unchanged), plus S5's
+(`mezo-d58h.5`) trailing `FeedAction(String key, String label, Map<String, Object> params)` and
+`Applied(String actionKey, Instant at)`. The envelope **deliberately mirrors the FE
 Briefing shape MINUS `confidence` and `tone`** (§9 gotcha c, unchanged — a fabricated-number rule
 that predates and outlives the rename). `refs` are code-collected candidates the model selected by
 index, never invented — empty for the `midday`/`evening` kinds (the retired heartbeat generator
 never collected refs either) and ALWAYS empty for `intervention`/`setup`/`advice` (config text and
-deterministic facts have nothing to select refs from). **`interventionKey`** is set on pre-S4
+deterministic facts have nothing to select refs from). **`actions`/`applied` (S5) are set ONLY on
+`kind=advice` rows, and `actions` is ALWAYS rule-provided — `AdviceProseGenerator`'s LLM call never
+sees them and never writes them; the model writes prose only.** `actions` is
+`AdviceActionCatalog.forCard(userId, adviceKey)`'s output at generation time, capped at two entries
+(`AdviceActionCatalogTest` enforces the cap; the `MAX_ACTIONS_PER_CARD` constant on the catalog is
+documentation only, not a runtime guard) and empty for every `adviceKey` the catalog does not
+recognise; `applied` is `null` until `AdviceApplyService.apply` stamps it (§4 REST endpoints below).
+**`interventionKey`** is set on pre-S4
 `kind=intervention` rows AND on flag-sourced `kind=advice` rows — it names the
 `mezo.companion.interventions[].key` library entry the card came from, so the „Segített?" verdict
 rolls up per-entry ([companion.md](companion.md) §4), the per-entry cooldown reads it, and
@@ -1393,11 +1417,12 @@ as `interventionKey` (one flag can be served by several library entries). `facts
 `companion_flag_log.payload` (empty for a setup-sourced card, or for a flag with no payload — never
 a placeholder). `suggestions` is config text (the library entry's `textHu`, or the setup check's own
 text) — the ONLY facts/suggestions `AdviceProseGenerator` is allowed to lean on. The record's
-CANONICAL constructor is now the 8-arg `(eyebrow, body, refs, interventionKey, setupKey, adviceKey,
-facts, suggestions)` shape; the pre-W5.2 3-arg, the W5.2 4-arg and the S3 5-arg constructors are ALL
-kept as overloads delegating to it (with `null` for the trailing fields), so every existing writer
-compiles unchanged. **No `regenCount` field** — the column that made the old briefing's
-`refreshIfStale` possible has no successor on this entity.
+CANONICAL constructor is now the 10-arg `(eyebrow, body, refs, interventionKey, setupKey, adviceKey,
+facts, suggestions, actions, applied)` shape (S5, `mezo-d58h.5`); the pre-W5.2 3-arg, the W5.2 4-arg,
+the S3 5-arg and the S4 8-arg constructors are ALL kept as overloads delegating to it (with `null`/
+`List.of()` for the trailing fields), so every existing writer compiles unchanged. **No `regenCount`
+field** — the column that made the old briefing's `refreshIfStale` possible has no successor on this
+entity.
 **S2's `logging_gap`/`missed_workouts` flag keys ([companion.md](companion.md) §3) finally got
 library entries in S4** (`logging_gap_restart`/`logging_gap_sleep_suspicion` and
 `missed_workouts_restart` in `mezo.companion.interventions`) — before S4 they raised and delivered
@@ -1453,6 +1478,7 @@ Every non-2xx returns `SystemMessageList`. The paths are protected (401 without 
 | Method + path | Returns | Status | Notes |
 |---|---|---|---|
 | `GET /api/proactive/feed?date=` | `FeedMessageResponse[]` | 200 · 401 | **Replaces the old `…/briefing` + `…/heartbeat`.** `date` optional (FE sends its LOCAL date; defaults to server today). The day's `companion_message` rows in generation order; for TODAY, cron-kind (morning/midday/evening) miss-recovery lazy-generates ahead of the read — event kinds (sleep/weight) never lazy-generate here. **`200 []` is the honest empty state, NEVER a 404** (a list endpoint — a behavioral change from the single-resource briefing/heartbeat reads it replaces). |
+| `POST /api/proactive/advice/{id}/apply` | `FeedMessageResponse` | 200 · 400 · 401 · 404 · 409 | **S5 (`mezo-d58h.5`).** `{actionKey}`. `AdviceApplyService.apply` takes the per-user advisory lock FIRST (`CompanionMessageRepository.lockForDelivery`, the same lock `AdviceCardService.deliver` takes — the documented ordering invariant), then `findByIdAndCreatedBy`; **404 `PROACTIVE_ADVICE_NOT_FOUND`** covers an unknown id, a foreign-user id, AND a superseded card uniformly (`@SQLRestriction("is_deleted = false")` makes a soft-deleted superseded row invisible to this one finder — there is no separate superseded branch). A non-`advice`-kind card ⇒ **409 `PROACTIVE_ADVICE_NOT_ADVICE_CARD`**; an `actionKey` not present in the card's own `content.actions()` ⇒ **409 `PROACTIVE_ADVICE_ACTION_NOT_OFFERED`**. **Idempotent:** if `content.applied()` is already set, the SAME `actionKey` returns the card unchanged with the ORIGINAL `applied.at` (no second port call); a DIFFERENT `actionKey` ⇒ **409 `PROACTIVE_ADVICE_ACTION_CONFLICT`**. Otherwise dispatches to the `AdviceMutationPort` registered for that key (§9 below) and stamps `applied={actionKey, at=now}` on a fresh envelope. |
 | `GET /api/proactive/weekly-suggestion?date=` | `WeeklySuggestionResponse` | 200 · 401 · 404 | `date` optional (any day of the wanted week; the week identity is its ISO Monday; defaults to server today). Persisted row or lazy-generate; **404 `RESOURCE_NOT_FOUND`** when the prior week has no `daily_summary` (§9 gotcha d) — the FE keeps its honest placeholder. |
 | `GET /api/proactive/memoir` | `MemoirResponse` | 200 · 401 · 404 | **No parameters.** The LATEST persisted memoir, else lazy-generate the LAST COMPLETED week (`previousOrSame(MONDAY).minusWeeks(1)`); **404 `RESOURCE_NOT_FOUND`** when that week has no `daily_summary` (§9 gotcha d) — the FE renders its honest „készül" state. Archive (older rows) is a later slice. |
 | `GET /api/proactive/prediction` | `PredictionResponse[]` | 200 · 401 | **No parameters.** ALL live predictions, newest window first; lazily generates the CURRENT week when it has no rows (needs CONFIRMED patterns). **`200 []` is the honest empty state — NEVER a 404** (a list endpoint). |
@@ -1462,7 +1488,8 @@ Every non-2xx returns `SystemMessageList`. The paths are protected (401 without 
 | `GET /api/proactive/challenge?templateSessionId=&date=` | `ChallengeResponse[]` | 200 · 401 | HBWI. A planned session's live challenges for `date` (dismissed excluded), oldest first. **Lazily generates** when none exist AND `date == today`; **lazily resolves** accepted ones when the instance is done. **`200 []` = honest empty, never 404.** Owner-scoped. |
 | `POST /api/proactive/challenge/{id}/decision` | `ChallengeResponse` | 200 · 400 · 401 · 404 · 409 | HBWI. **L2 accept/dismiss** (`{decision: accept\|dismiss}`, `@Pattern ^(accept\|dismiss)$`). `accept` ⇒ `accepted`; `dismiss` ⇒ `dismissed`. 404 `PROACTIVE_CHALLENGE_NOT_FOUND` = not-found/foreign; **409 `PROACTIVE_CHALLENGE_NOT_PROPOSED`** = already decided; 400 = invalid decision value. **No `propose` endpoint** (generation is implicit on the prep-read). |
 
-Schemas: `FeedMessageResponse{id, date, kind, eyebrow, body[], refs[], generatedAt, facts?, suggestions?}`
+Schemas: `FeedMessageResponse{id, date, kind, eyebrow, body[], refs[], generatedAt, facts?,
+suggestions?, actions?, applied?}`
 (replaces `BriefingResponse` + `HeartbeatNoteResponse`) + `FeedRef{kind, label}` — **no `confidence`,
 no `tone`** on the wire (§9 gotcha c, unchanged). `kind` is the **9-value** companion-feed enum
 (`morning|sleep|weight|midday|evening|intervention|people|setup|advice` — the sixth, `intervention`,
@@ -1484,6 +1511,15 @@ suggestion list and `facts` as a „Miből gondolom" evidence list. **Neither `i
 matter server-side — `interventionKey` for the feedback rollup (§4 below,
 [companion.md](companion.md) §4), `setupKey` for the weekly re-emit cooldown (§3 above), `adviceKey`
 for `AdvicePriority`'s severity comparison (§3 above).
+**`actions`/`applied` (S5) are OPTIONAL, present ONLY on `advice` rows.**
+`FeedAction{key, label, params}` — `key` is the 3-value `AdviceActionKey` enum
+(`lighten_tomorrow`/`skip_sport_slot`/`shift_sleep_anchor`), `label` is the rule-authored HU button
+text, `params` is a free-form object the FE echoes back verbatim in the apply request body (e.g.
+`{"minutes": -30}`) — the model never writes any of the three. `FeedApplied{actionKey, at}` mirrors
+whichever action was applied and when; `null` until the FE calls apply. `AdviceApplyRequest{actionKey}`
+is the apply body, same 3-value enum. The thread card renders the offered `actions` as buttons while
+`applied` is null, and swaps to a single applied-state pill once it is set — server-driven, never a
+client-side optimistic flip.
 `WeeklySuggestionResponse{id, weekStart, prose, generatedAt}` — plain prose, no structured fields.
 `MemoirResponse{id, weekStart, title, body, anchors[], generatedAt}` + `MemoirAnchor{kind, label}` —
 `anchors[].kind` is the same FE `RefTag` vocabulary (`Memory`/`Pattern` in practice), model-SELECTED
@@ -2777,6 +2813,58 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
     (a single-user app has nobody to confuse), not a new risk this slice introduces — recorded here
     because supersession is the first place `companion_message` rows are soft-deleted WHILE having
     live feedback attached to them.
+- **(ll) S5 (bd `mezo-d58h.5`) gives the advice card a mutation set — buttons that DO something,
+  not just prose.** `AdviceActionCatalog.forCard(userId, adviceKey)` decides what a card offers, at
+  GENERATION time, per `adviceKey`; round 1 offers exactly one action, `shift_sleep_anchor` on a
+  `sleep_debt` card, `params={"minutes": -30}`, and ONLY when a `sleep_goal` row actually exists —
+  read via `SleepGoalRepository` directly, never through `SleepGoalService`/`SleepAnchorResolver`
+  (both of those ghost a config default when no row exists, the same ghosting trap §3 already
+  documents for `SetupCheckService`'s missing-sleep-goal check). Actions are capped at two per card
+  (`AdviceActionCatalogTest`; the `MAX_ACTIONS_PER_CARD` constant on the catalog is documentation,
+  not an enforced runtime cap). **Actions are ALWAYS rule-provided, never model-provided** — the
+  catalog runs independently of `AdviceProseGenerator`'s LLM call, so a hallucinated action can
+  never reach the wire.
+  - **`POST /api/proactive/advice/{id}/apply`** (`AdviceApplyService.apply`, REST row above) takes
+    the per-user advisory lock FIRST — same lock, same ordering `AdviceCardService.deliver` already
+    uses — then resolves the card via the SAME `findByIdAndCreatedBy` finder the read path uses, so
+    unknown/foreign/superseded all collapse to one 404 with no separate supersede branch to keep in
+    sync. Dispatch is a `Map<String, AdviceMutationPort>` built from `List<AdviceMutationPort>` at
+    construction; **a second bean registered for the same `actionKey()` fails Spring context
+    startup**, not a runtime 500 — `AdviceApplyServiceIT`'s enumeration guard additionally asserts
+    every `AdviceActionKey` resolves to EXACTLY one port, so a new action key with no adapter yet is
+    a test failure, not a silent gap.
+  - **Idempotence is inconsistent BY DESIGN across the three ports, and that inconsistency is
+    intentional, not an oversight worth normalizing:** `shift_sleep_anchor` and `skip_sport_slot`
+    inherit idempotence from their OWN target's existence check (`SleepGoalService.shiftAnchor`
+    reads the one goal row it already owns; `SportSlotSkipService.skip` does an
+    existence-check-then-insert against the slot-identity unique index); `lighten_tomorrow` has no
+    natural existing-row check to lean on, so `LightenTomorrowAdapter` implements its own
+    existence-check-then-insert against `workout_day_adjustment`'s `(created_by, date)` unique index.
+    `AdviceApplyService` itself ALSO enforces idempotence one layer up, at the envelope: re-applying
+    the SAME `actionKey` after `applied` is already set never reaches a port at all — the two layers
+    overlap on purpose (the envelope check is the fast, uniform path; the port-level checks are the
+    ones that hold under a genuine race, since two concurrent applies for the same never-yet-applied
+    card can both pass the envelope check before either commits).
+  - **The three mutations never write a template or a schedule.** `shift_sleep_anchor` moves
+    `sleep_goal.anchor_time`, refusing (409) rather than inventing a goal, because a card action must
+    change something the user already committed to, never create a new commitment from a button tap
+    (`SleepGoalService.setGoal` upserts and was deliberately NOT reused here). `skip_sport_slot`
+    writes a `sport_slot_skip` row keyed on the slot's IDENTITY (`day_of_week`, `time`, `date`) rather
+    than `sport_schedule_slot.id`, because a schedule save fully replaces its slot rows and their ids
+    churn — an id-keyed skip would silently detach from the slot it was meant to skip the next time
+    the schedule was edited. `lighten_tomorrow` writes a `workout_day_adjustment` row applied at READ
+    time rather than touching the workout template, because gym exercises hang off the weekday
+    template row with no per-instance override, and the only existing template-write path re-creates
+    exercise rows with new UUIDs — writing the template would both lighten every future occurrence of
+    that weekday AND orphan already-logged sets. Full read-path and overlay detail for the latter two
+    lives in [`train.md`](train.md) (Sport / volleyball section for the skip; Workout execution for
+    the lighten overlay) since both belong to train's data model, not proactive's — the mutation
+    adapters are the only proactive-owned code that reaches into them, via the `AdviceMutationPort`
+    seam (same port-inversion shape as the companion tool ports, §5.12/§5.13).
+  - **`params` crosses jsonb, so a numeric param can arrive as `Integer`, `Long`, `Double` or
+    `BigDecimal`** depending on how it was serialized — every adapter that reads a numeric param
+    coerces via `instanceof Number` rather than assuming a fixed boxed type, or a legitimate `-30`
+    written as one numeric subtype fails to parse when it round-trips as another.
 - **Epic complete, H2 Web Push shipped with it, and `mezo-gst9` then redesigned the B/H stages.**
   All eight original slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2), **H2 (`mezo-h4wp.6`) shipped** — N1
   (delivery spine) + N2 (dispatcher + `notification_pref`/`push_log` + categories 1-9) + N3
@@ -2887,6 +2975,20 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageGenerator.java` — `missedWorkoutsBlock(userId, date)` (S4, package-private): the morning prompt's `missed_workouts` fact block, off the raise's own frozen payload inside the `feed.past-days` window (§3 above).
 - `backend/src/main/resources/application.yml` — `mezo.companion.interventions[]` gained `logging_gap_restart`/`logging_gap_sleep_suspicion`/`missed_workouts_restart` entries (S4) — before this slice those two flag keys raised and delivered nothing.
 - Tests: `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{AdvicePriorityTest,AdviceFactRendererTest,ProseNumberGuardTest,AdviceCardServiceIT,AdviceProseGeneratorIT,CompanionMessageAdvicePersistenceIT,CompanionMessageMissedWorkoutsIT}.java` + `AnchorResolverInterventionIT`/`FeedbackLearningServiceIT` (regression guards on the two trap-fixed consumers) — §8.
+
+**Backend — advice card actions (S5, `mezo-d58h.5` — §4/§9 decision ll; the mutation set behind the card's buttons)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/AdviceActionCatalog.java` — `forCard(userId, adviceKey)`: decides what a generated card offers, per key; round 1 offers `SHIFT_SLEEP_ANCHOR` on `sleep_debt` only, gated on `SleepGoalRepository.findByCreatedByAndDeletedFalse` being non-empty (repository-direct read, the ghosting trap); `MAX_ACTIONS_PER_CARD = 2` (documentation constant, enforced by test not runtime).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/AdviceActionKey.java` — the 3-value string-constant catalog (`LIGHTEN_TOMORROW`/`SKIP_SPORT_SLOT`/`SHIFT_SLEEP_ANCHOR`) + `ALL`, the enumeration `AdviceApplyServiceIT`'s port guard iterates.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/AdviceMutationPort.java` — the port interface (`actionKey()`, `apply(userId, params)`) every mutation adapter implements; keeps `feature.proactive` from importing `feature.train`/`feature.biometrics` directly for anything but this one seam.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/AdviceApplyService.java` — `apply(userId, id, actionKey)`: advisory-lock-first (§9 decision ll), `findByIdAndCreatedBy` (unknown/foreign/superseded ⇒ one 404), not-advice-kind ⇒ 409, action-not-offered ⇒ 409, already-applied-different-action ⇒ 409, already-applied-same-action ⇒ idempotent no-op returning the original `applied.at`, else dispatches to the matching `AdviceMutationPort` and stamps `applied`. Groups its injected `List<AdviceMutationPort>` by key at construction; a duplicate registration for one key throws at Spring context startup, not at request time.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/SleepAnchorShiftAdapter.java` — `shift_sleep_anchor` port: bounds `params.minutes` (`instanceof Number`, `[-120, 120]`) then delegates to `SleepGoalService.shiftAnchor`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/SportSlotSkipAdapter.java` — `skip_sport_slot` port: validates `dayOfWeek`/`time`/`date` params then delegates to `SportSlotSkipService.skip` (train-owned, [train.md](train.md)).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/LightenTomorrowAdapter.java` — `lighten_tomorrow` port: no params (fixed `DEFAULT_DELTA = -1` for `tomorrow = today + 1`), existence-check-then-insert against `workout_day_adjustment`'s own unique index (its OWN idempotence, since it has no pre-existing row to lean on — §9 decision ll).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics/sleep/service/SleepGoalService.java` — `shiftAnchor(userId, minutes)` (S5 addition): refuses 409 `SLEEP_GOAL_NOT_SET` with no row (deliberately NOT `setGoal`'s upsert); `LocalTime.plusMinutes` wraps mod-24h natively.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/controller/ProactiveController.java` — `applyAdviceAction` (`POST .../advice/{id}/apply`, REST table above).
+- `api/feature/proactive/proactive.yml` — the `POST /api/proactive/advice/{id}/apply` operation + `FeedAction`/`FeedApplied`/`AdviceApplyRequest` schemas + `FeedMessageResponse.actions`/`.applied` (both optional).
+- Tests: `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{AdviceActionCatalogTest,AdviceApplyServiceIT,SleepAnchorShiftAdapterIT,SportSlotSkipAdapterIT,LightenTomorrowAdapterIT}.java` — §8; `AdviceApplyServiceIT` carries the port-enumeration guard.
+- FE: `frontend/src/features/today/pages/NapMezoPage.tsx` (the action-buttons block: `m.actions?.length` gate, applied-state pill replacing the buttons once `m.applied` is set — server-driven, not local state — and an inline `role="alert"` error that leaves the card intact on a failed apply); `frontend/src/data/today/adviceHooks.ts` (`useAdviceActions`, the `ACTION_INVALIDATES` per-action-key map — `skip_sport_slot` invalidates the sport-slot-skips query, `lighten_tomorrow` invalidates today's workout query — plus always invalidating the companion feed itself; no-ops in mock mode).
 
 **Frontend — Today consumer (`mezo-gst9`, replaces the B1.2 briefing seam + the H1 companion-note seam)**
 - `frontend/src/data/today/feedApi.ts` — `feedApi.get(date)` + `toFeedMessages` (wire→`FeedMessage[]`); replaces `briefingApi.ts` + `heartbeatApi.ts` (both DELETED).

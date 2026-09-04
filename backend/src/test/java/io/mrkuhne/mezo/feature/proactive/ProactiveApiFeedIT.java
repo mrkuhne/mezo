@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.api.dto.FeedMessageResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.proactive.entity.AdviceActionKey;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
+import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEnvelope;
 import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
@@ -14,12 +16,14 @@ import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
+import tools.jackson.databind.JsonNode;
 
 /**
  * HTTP-level companion-feed flow (unified {@code GET /api/proactive/feed}): the persisted-row
@@ -147,6 +151,40 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
         assertThat(feed.get(0).getKind()).isEqualTo(FeedMessageResponse.KindEnum.ADVICE);
         assertThat(feed.get(0).getFacts()).containsExactly("Alvásadósság: 1,6 óra/éjszaka");
         assertThat(feed.get(0).getSuggestions()).containsExactly("Told előre a villanyoltást.");
+    }
+
+    @Test
+    void testGetFeed_shouldExposeTheAdviceCardsActions() {
+        companionMessagePopulator.createAdviceWithActions(ownerId(), LocalDate.now(), "sleep_debt",
+                "sleep_recover_tonight", "Mezo · észrevétel", "kártya szöveg",
+                List.of("tény"), List.of("javaslat"),
+                List.of(new CompanionMessageEnvelope.Action(
+                        AdviceActionKey.SHIFT_SLEEP_ANCHOR, "Horgony −30 perc", Map.of("minutes", -30))),
+                null, Instant.now());
+
+        // Raw body FIRST — params-value-type integrity (mezo-d58h.5 review finding) can only be
+        // pinned at the JSON level: a numeric-vs-string mixup round-trips CLEANLY through the
+        // DTO's Map<String,Object> in either direction, so a DTO-only assertion could pass even
+        // if the wire actually carried "-30" (a quoted string) instead of -30 (a number). The
+        // apply layer (a later task) reads this value as a number; the wire must actually carry one.
+        String rawBody = getForBody(
+                "/api/proactive/feed", ownerAuthHeaders(), HttpStatus.OK, String.class);
+        JsonNode paramsNode = objectMapper.readTree(rawBody).get(0).get("actions").get(0).get("params");
+        assertThat(paramsNode.get("minutes").isNumber())
+                .withFailMessage("expected a JSON number, got: %s", paramsNode.get("minutes"))
+                .isTrue();
+        assertThat(paramsNode.get("minutes").asInt()).isEqualTo(-30);
+
+        List<FeedMessageResponse> feed = getForList(
+                "/api/proactive/feed", ownerAuthHeaders(), HttpStatus.OK, FeedMessageResponse.class);
+
+        assertThat(feed).hasSize(1);
+        assertThat(feed.get(0).getActions()).hasSize(1);
+        assertThat(feed.get(0).getActions().get(0).getKey().getValue())
+                .isEqualTo(AdviceActionKey.SHIFT_SLEEP_ANCHOR);
+        assertThat(feed.get(0).getActions().get(0).getLabel()).isEqualTo("Horgony −30 perc");
+        assertThat(feed.get(0).getActions().get(0).getParams()).containsEntry("minutes", -30);
+        assertThat(feed.get(0).getApplied()).isNull();
     }
 
     @Test

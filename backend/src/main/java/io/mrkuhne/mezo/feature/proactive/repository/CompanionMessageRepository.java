@@ -71,4 +71,9 @@ public interface CompanionMessageRepository extends JpaRepository<CompanionMessa
      *  from the envelope in memory — single-user volumes, no jsonb query needed. */
     List<CompanionMessageEntity> findByCreatedByAndKindAndGeneratedAtAfter(
             UUID createdBy, String kind, Instant after);
+
+    /** Owner-scoped load for the S5 apply path (the {@code ExperimentRepository} precedent): a card
+     *  belonging to someone else, or one superseded into {@code is_deleted = true}, simply is not
+     *  found — the caller turns that into a 404 rather than leaking existence. */
+    Optional<CompanionMessageEntity> findByIdAndCreatedBy(UUID id, UUID createdBy);
 }

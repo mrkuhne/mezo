@@ -2,7 +2,7 @@
 title: Life goals
 type: feature-domain
 status: in-progress
-updated: 2026-09-03
+updated: 2026-09-04
 tags: [me, growth, companion, backend, data-layer, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal
@@ -22,6 +22,8 @@ key_files:
   - frontend/src/features/me/pages/CelPage.tsx
   - frontend/src/features/me/pages/CelWizardPage.tsx
   - frontend/src/features/me/pages/JelekPage.tsx
+  - frontend/src/features/today/components/LifeGoalTodayTile.tsx
+  - frontend/src/features/me/components/WeekGoalsCard.tsx
 related: [goal-engine, growth, companion, me, today, train]
 ---
 
@@ -29,16 +31,20 @@ related: [goal-engine, growth, companion, me, today, train]
 
 > One-line: general-purpose life goals ("Célok") at route `/me/goals` (tab "Én"), tagged to a
 > PERMAH dimension and measured by 1–5 pillars drawn from a closed signal catalog.
-> **Status: slice 2 of 3 (`mezo-iizd.5`/`mezo-iizd.6`/`mezo-iizd.7`) — ✅ backend CRUD/lifecycle/
+> **Status: slice 3 (`mezo-iizd.5`–`.7` engine, `.9`/`.4`/`.12` embedding) — ✅ backend CRUD/lifecycle/
 > catalog/AI-propose (slice 1) ✅ scorer core: `LifeGoalScorer` + 5 `SignalSource` adapters +
 > `progress`/`evaluate`/`today` endpoints (`mezo-iizd.5`); ✅ nightly `LifeGoalEvalJob` (dual-gated
 > cron, per-user + per-goal error isolation) and pillar-hit XP via `LifeGoalXpService` →
 > `ProgressionService.applyLifeGoal` (`mezo-iizd.6`); ✅ ha–akkor trigger evaluation
 > (`LifeGoalTriggerRules`/`LifeGoalTriggerService`, immediate + delayed branches) and
 > `LIFE_GOAL_PLAN` notifications, ✅ `GET /signals` liveness + `JelekPage` + the hub's Jelek row
-> (`mezo-iizd.7`); ✅ FE hub/detail/wizard render live dots/arrows/weekly% in both modes. Still
-> 🔴 not built: the Nap "Célok · ma" tile, the Heti card, the `[Célok]` companion prompt block,
-> the knowledge-graph `GOAL` node — see §9.**
+> (`mezo-iizd.7`); ✅ FE hub/detail/wizard render live dots/arrows/weekly% in both modes;
+> ✅ **slice 3's EMBEDDING (`mezo-iizd.9`/`.4`/`.12`)** — the engine now surfaces on seven places
+> OUTSIDE its own pages: the Nap "Célok · ma" tile, the goal-detail conflict sentence, the Heti
+> `WeekGoalsCard`, the weekly-review prompt's `ÉLETCÉLOK` block, the Célok hub's closed-goals
+> section + Súlycél row, the Én-hub life-goal hero, and the Growth skill-row `goalchip` — see §2.
+> Still 🔴 not built: the `[Célok]` **companion (chat) prompt block** + a `get_life_goals` chat
+> tool, and the knowledge-graph `GOAL` node — see §9.**
 
 ## 1. Summary
 
@@ -81,9 +87,14 @@ ADR: [`0034-measurable-life-goals.md`](../decisions/0034-measurable-life-goals.m
   and per-tile dots, all dual-mode via `useLifeGoalProgress`/`useLifeGoalToday`. **Plus,
   `mezo-iizd.7`:** `JelekPage` at `/me/goals/signals` (live/asleep source lists,
   `daysWithData`/`fedPillars` per entry) and the hub's "Jelek · mit figyel a rendszer" row.
-- **Deferred to slice 3** (§9): the Nap "Célok · ma" tile, the Heti goals card, the `[Célok]`
-  companion prompt block, the knowledge-graph `GOAL` node, the Growth skill-row chip, and the
-  Én-hub hero's goal-count line.
+- **FE, slice 3's embedding (`mezo-iizd.9`/`.4`/`.12`):** ✅ the Nap mosaic's `LifeGoalTodayTile`,
+  the `CelPage` conflict sentence, the Heti hub's `WeekGoalsCard` + `goalWeekSentence`, the Célok
+  hub's closed-goals section + Súlycél row, the `EnHubPage` life-goal hero, and the Growth
+  skill-row `goalchip` (`goalSkillChips`) — all dual-mode, all with their own tests + visual
+  goldens. **Backend, same slice:** the weekly-review prompt's `ÉLETCÉLOK · AZ ELMÚLT 7 NAP`
+  block in `WeeklyReviewContextSources` (see [`proactive.md`](proactive.md) §3).
+- **Still deferred** (§9): the `[Célok]` **companion (chat)** prompt block + a `get_life_goals`
+  chat tool, and the knowledge-graph `GOAL` node (blocked on `mezo-06o0.5`).
 
 ## 2. User-facing behavior
 
@@ -136,6 +147,50 @@ ADR: [`0034-measurable-life-goals.md`](../decisions/0034-measurable-life-goals.m
 - **`/me/goals/weight` (+ `/me/goals/weight/new`)** — the pre-existing body-weight goal
   (`GoalsPage`/`GoalPlannerPage`), unchanged in behavior, moved here in Task 8 so `/me/goals`
   could become the Célok hub. See [`goal-engine.md`](goal-engine.md) §2 and [`me.md`](me.md) §2.
+
+### 2.1 The engine OUTSIDE its own pages (slice 3's embedding, `mezo-iizd.9`/`.4`/`.12`)
+
+Seven surfaces read the same already-computed engine output. None of them recomputes anything, and
+every one of them renders NOTHING rather than a fabricated number when its source is unresolved:
+
+- **Nap mosaic · "Célok · ma"** (`frontend/src/features/today/components/LifeGoalTodayTile.tsx`) —
+  one tile stating today's pillar tally (`{hit} / {total}`) over the goals that report counts, the
+  leading goal's 7 day-dots, and the wash of the dimension carrying the most active goals; opens
+  `/me/goals`. The big numeral wears the NEUTRAL `lg-arrow none` class, not the success-green
+  `up` — it is a tally, not a direction. Goals that report **no** pillar counts are excluded from
+  BOTH numerator and denominator explicitly (a silent `?? 0` would let the tile assert "2 / 3"
+  while a fourth goal went uncounted). The tile is absent with no active goal, with an
+  unresolved/failed `today`, or when no goal reports counts.
+- **Goal detail · conflict sentence** (`CelPage`) — the `LifeGoalTodaySummary.conflicts` field the
+  engine already computed finally has a face: one `.lg-conflict` line naming the goal it pulls
+  against. No conflict ⇒ no scaffolding.
+- **Heti hub · `WeekGoalsCard`** (`features/me/components/WeekGoalsCard.tsx` +
+  `logic/goalWeekSentence.ts`) — per active goal an arrow glyph (`—` for `insufficient`), a
+  dimension `goalchip` and ONE counted sentence: `{hits} találat-nap a 7-ből · ma {n} / {m}
+  pillér`. **`no_data` days are never hits and never misses**: with no data-day at all the sentence
+  reads „Ezen a héten még nincs adata." rather than claiming a measured zero. The card renders on
+  the **RUNNING week only** — `useLifeGoalToday`'s window is the 7 days trailing NOW, so on a
+  browsed-back week it would show this week's arrows under the header „Célok · a hét iránya"; the
+  gate is `WeekHubPage`'s existing `running` boolean, the same one `WeekNextCard` uses.
+- **Weekly-review prompt · `ÉLETCÉLOK · AZ ELMÚLT 7 NAP`** — backend, see §5 and
+  [`proactive.md`](proactive.md) §3.
+- **Célok hub · closed goals + Súlycél row** (`CelokPage`, `mezo-iizd.4`) — a `done` goal used to
+  vanish from every surface even though `GET /api/life-goals` returns it; it now gets its own
+  "Lezárt célok" section BELOW the mosaic (the mosaic is the tense of LIVE goals; a finished goal
+  is a memory), each row dimmed with a `✓`. Beneath the Jelek row, a **Súlycél** row carries the
+  body-weight goal's entry point (`{trajectory} · {current} → {target} kg`), since the Én-hub hero
+  stopped being that door — three honest states, `töltöm…` / `a súlycél most nem elérhető` (a
+  FAILED `/api/goals` read) / `nincs aktív súlycél`, never a network error reported as an absence.
+  The hub hero's own sentence likewise splits loading from failure („A heti irány most töltődik"
+  vs „A heti irányt most nem sikerült lekérni").
+- **Én hub · life-goal hero** (`EnHubPage`, `mezo-iizd.4`) — the coral weight track is retired; the
+  hero is now the active goals' dimension chips + an `MCells` trio `emelkedik ↗ / tartja → /
+  csúszik ↘` off `useLifeGoalToday`, opening `/me/goals`. An unresolved/failed `today` collapses
+  the trio to a single „aktív cél" count rather than printing „0↗ · 0→ · 0↘"; with no active goal
+  at all the hero is a bare `＋ Új cél` door into `/me/goals/new`. See [`me.md`](me.md) §2.
+- **Growth skill row · `goalchip`** (`logic/goalSkillChips.ts` + `SkillBandCard`, `mezo-iizd.12`) —
+  a skill whose key feeds an active goal's pillar wears that goal's dimension chip, so the Growth
+  page shows WHY a skill matters.
 
 ## 3. Architecture & data flow
 
@@ -468,11 +523,28 @@ hand-written types, mirroring the contract), `lifegoalMock.ts` (`MOCK_LIFE_GOALS
   deeplink `/me/goals/{goalId}`, `dedupKey = <goalId>:<planKey>:<day>`, where `planKey` is the
   first 12 hex chars of `SHA-256(ha + " " + akkor + " " + trigger.source)`
   (`LifeGoalTriggerRules.planKey`) — see §3 and §9.
-- **🟣 Deferred seams (slice 3, spec §5–§7):** `companion/LifeGoalSource` port feeding the
-  `ContextSnapshotAssembler` `[Célok]` prompt block + a `get_life_goals` chat tool; the
-  knowledge-graph `GOAL` node (`GraphPromotionService`, blocked on `mezo-06o0.5`); the Nap
-  "Célok · ma" tile; the Heti `WeekGoalsCard`; the Growth skill-row `goalchip`; the Én-hub
-  hero's goal-count line. None of these read or write anything today.
+- **→ Proactive (weekly review)** (`mezo-iizd.9`, new): `WeeklyReviewContextSources` reads
+  `LifeGoalProgressService#today(userId)` directly (an acyclic `proactive → lifegoal` read, the
+  `CheckInNoteSourceAdapter` precedent — no port minted) and renders the `ÉLETCÉLOK · AZ ELMÚLT
+  7 NAP` prompt block: max 5 ACTIVE goals, `title [dimension] <arrow-word> · N találat-nap a
+  7-ből`. *Contract:* the block is FACTS the model must explain, never recompute; the header names
+  the trailing-7-day window it actually measures (one day off the Monday-06:50 cron's reviewed
+  week — a windowed `today(from, to)` variant is a separate, later issue); and a goal with **no
+  data-day** renders `ezen a héten még nincs adata` rather than a `0 találat-nap` tally, the same
+  rule `goalWeekSentence.ts` enforces on the Heti hub. See [`proactive.md`](proactive.md) §3.
+- **→ Today (Nap mosaic)** (`mezo-iizd.9`): `LifeGoalTodayTile` reads `useLifeGoalToday()` and
+  renders ONE fact — today's pillar tally over the goals that report counts — plus the leading
+  goal's 7 dots. It renders `null` (never a fabricated `0 / 0`) when there is no active goal, when
+  `today` is unresolved/failed, or when no goal reports pillar counts. See [`today.md`](today.md).
+- **→ Me (Heti hub, Én hub, Growth)** (`mezo-iizd.9`/`.4`/`.12`): the Heti hub's `WeekGoalsCard`
+  (running week ONLY — `useLifeGoalToday`'s window trails NOW, so a browsed-back week would show
+  this week's arrows under „a hét iránya"), the Én hub's life-goal hero (dimension chips + the
+  ↗/→/↘ counters, opening `/me/goals`), and the Growth skill row's `goalchip` (`goalSkillChips`).
+  See [`me.md`](me.md) §2 and [`growth.md`](growth.md).
+- **🟣 Deferred seams (spec §5–§7):** `companion/LifeGoalSource` port feeding the
+  `ContextSnapshotAssembler` `[Célok]` **chat** prompt block + a `get_life_goals` chat tool; the
+  knowledge-graph `GOAL` node (`GraphPromotionService`, blocked on `mezo-06o0.5`). Neither reads
+  nor writes anything today.
 
 ## 6. How to use it (consume)
 
@@ -663,7 +735,8 @@ convention. The two structural CSS guards in `shared/ui/mozaik/prototypeCssStruc
   (`frontend/src/data/lifegoal/lifegoalHooks.ts`) now stamps `closedAt` on `done`/`archived`
   alongside `activatedAt` on activation, matching the backend — the earlier divergence (and the
   "no UI may read `closedAt`" embargo it forced) is resolved. Note `done → archived` still
-  OVERWRITES `closedAt` on both sides; a completed-goals surface (slice 3) must not present it
+  OVERWRITES `closedAt` on both sides; the completed-goals surface (`mezo-iizd.4`'s "Lezárt
+  célok" section, §2.1) therefore shows only the status and dimension — it must not present it
   as the completion date without fixing that first.
 - **ADR:** [`0034-measurable-life-goals.md`](../decisions/0034-measurable-life-goals.md) —
   records that this feature overrides the old PRD's IDENT-5 / anti-pattern D38 prohibition
@@ -711,9 +784,17 @@ convention. The two structural CSS guards in `shared/ui/mozaik/prototypeCssStruc
 - **Deferred to `.8`** (the immediate follow-up bucket, NOT slice 3): the `partial` non-award
   test gap, a `LIFE_GOAL_PLAN` push category, and batching `/signals`'s 28 per-source queries if
   that ever measurably matters.
-- **Deferred to slice 3** (spec §6–§7): the Nap "Célok · ma" tile, the Heti `WeekGoalsCard`, the
-  companion `[Célok]` prompt block + `get_life_goals` chat tool, the knowledge-graph `GOAL` node
-  (blocked on `mezo-06o0.5`), the Growth skill-row chip, the Én-hub hero's goal line.
+- **Slice 3's embedding SHIPPED** (`mezo-iizd.9`/`.4`/`.12`, spec §6–§7): the Nap "Célok · ma"
+  tile, the `CelPage` conflict sentence, the Heti `WeekGoalsCard`, the weekly-review `ÉLETCÉLOK`
+  prompt block, the Célok hub's closed-goals section + Súlycél row, the Én-hub life-goal hero and
+  the Growth skill-row chip — see §2/§5. Two honesty gotchas the embedding forced, both pinned by
+  tests: the **`WeekGoalsCard` renders on the RUNNING week only** (`useLifeGoalToday`'s window is
+  the 7 days trailing NOW, so on a browsed-back week it would label this week's arrows as that
+  week's direction — the same gate `WeekNextCard` uses), and **a no-data week is never a zero**
+  (`goalWeekSentence.ts` and the backend's `ÉLETCÉLOK` block both say "nincs adata" instead of
+  tallying `0 találat-nap`, on both sides of the wire).
+- **Still deferred** (spec §5–§7): the companion `[Célok]` **chat** prompt block +
+  `get_life_goals` chat tool, and the knowledge-graph `GOAL` node (blocked on `mezo-06o0.5`).
 
 ## 10. Key files
 
@@ -741,6 +822,19 @@ LifeGoalEvalJobSwitchOffIT, LifeGoalTriggerIT, LifeGoalSignalsLivenessIT}.java`;
 `.../lifegoal/service/LifeGoalTriggerRulesTest.java`;
 `.../lifegoal/engine/{LifeGoalScorerTest, SignalSourceIT, WeightGoalSignalSourceIT}.java`;
 `.../progression/ProgressionLifeGoalIT.java`; `.../lifegoal/LifeGoalXpIT.java`.
+
+**FE — slice 3's embedding (`mezo-iizd.9`/`.4`/`.12`)** —
+`frontend/src/features/today/components/LifeGoalTodayTile.tsx` (the Nap tile);
+`frontend/src/features/me/components/WeekGoalsCard.tsx` +
+`frontend/src/features/me/logic/goalWeekSentence.ts` (the Heti card + its counted sentence);
+`frontend/src/features/me/logic/goalSkillChips.ts` (the Growth skill-row chip, consumed by
+`components/SkillBandCard.tsx` + `pages/GrowthSkillsPage.tsx`);
+`frontend/src/features/me/pages/{CelokPage, CelPage, EnHubPage, WeekHubPage}.tsx`;
+`frontend/src/styles/prototype.css` (the `lg-gtile` / `lg-wcard` / `lg-goalchip` / `lg-donerow` /
+`enh-lgcard` rules). **Backend, same slice** —
+`backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewContextSources.java`
+(`appendLifeGoals` + `NO_DATA_PHRASE`), pinned by
+`backend/src/test/java/io/mrkuhne/mezo/feature/proactive/WeeklyReviewContextSourcesIT.java`.
 
 **Contract** — `api/feature/lifegoal/lifegoal.yml`.
 

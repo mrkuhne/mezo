@@ -16,6 +16,8 @@ export function toFeedMessages(wire: FeedWire): FeedMessage[] {
     refs: m.refs.map((r) => ({ kind: r.kind, label: r.label })),
     facts: m.facts,
     suggestions: m.suggestions,
+    actions: m.actions,
+    applied: m.applied,
     generatedAt: m.generatedAt,
   }))
 }

@@ -17,12 +17,24 @@ import { localDateString } from '@/shared/lib/dates'
 // real mode — this suite tests the page, not the data layer (QuickInputSheet.test pattern).
 const feedMock = vi.hoisted(() => ({ useCompanionFeed: vi.fn<() => FeedMessage[]>(() => []) }))
 const voteMock = vi.hoisted(() => ({ vote: vi.fn() }))
+// S5 (mezo-d58h.5) advice-card action buttons: `apply` is a plain spy, `pending`/`failedId`
+// are mutable so a test can drive the pending/error branches without a real mutation.
+const adviceMock = vi.hoisted(() => ({
+  apply: vi.fn(),
+  pending: false,
+  failedId: undefined as string | undefined,
+}))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
     ...actual,
     useCompanionFeed: () => feedMock.useCompanionFeed(),
     useFeedback: () => ({ get: () => undefined, vote: voteMock.vote, pending: false }),
+    useAdviceActions: () => ({
+      apply: adviceMock.apply,
+      pending: adviceMock.pending,
+      failedId: adviceMock.failedId,
+    }),
   }
 })
 
@@ -73,6 +85,9 @@ const refsMsg: FeedMessage = {
 beforeEach(() => {
   feedMock.useCompanionFeed.mockReturnValue([])
   voteMock.vote.mockClear()
+  adviceMock.apply.mockClear()
+  adviceMock.pending = false
+  adviceMock.failedId = undefined
   needsMock.states = []
   tickMock.now = new Date('2026-05-22T13:42:00')
   localStorage.clear()
@@ -205,6 +220,68 @@ test('an advice feed message renders its suggestions, its facts, and the „Seg�
   expect(screen.getByText('Alvásadósság: 1,6 óra/éjszaka')).toBeInTheDocument()
   expect(screen.getByText('Miből gondolom')).toBeInTheDocument()
   expect(screen.getByText('Segített?')).toBeInTheDocument()
+})
+
+// S5 (mezo-d58h.5): the advice card's offered action renders as a button; tapping it calls
+// the mutation hook with the card's artifactId and the action's own key.
+test('an advice card offering an action renders its button, and tapping it applies that action', async () => {
+  const adviceMsg: FeedMessage = {
+    id: 'fm-10', kind: 'advice', eyebrow: 'Mezo · észrevétel',
+    body: [{ type: 'p', text: 'Told el a horgonyt.' }],
+    refs: [],
+    actions: [{ key: 'shift_sleep_anchor', label: 'Horgony −30 perc' }],
+    generatedAt: '2026-05-22T15:00:00',
+  }
+  feedMock.useCompanionFeed.mockReturnValue([adviceMsg])
+  renderPage()
+  const btn = await screen.findByRole('button', { name: 'Horgony −30 perc' })
+  await userEvent.click(btn)
+  expect(adviceMock.apply).toHaveBeenCalledWith('fm-10', 'shift_sleep_anchor')
+})
+
+// An applied card shows the applied state instead of the buttons — driven by the server's
+// `applied` stamp on the feed row, not by any local click-state.
+test('an applied advice card renders the applied state and no action button', async () => {
+  const appliedMsg: FeedMessage = {
+    id: 'fm-11', kind: 'advice', eyebrow: 'Mezo · észrevétel',
+    body: [{ type: 'p', text: 'Told el a horgonyt.' }],
+    refs: [],
+    actions: [{ key: 'shift_sleep_anchor', label: 'Horgony −30 perc' }],
+    applied: { actionKey: 'shift_sleep_anchor', at: '2026-05-22T15:05:00' },
+    generatedAt: '2026-05-22T15:00:00',
+  }
+  feedMock.useCompanionFeed.mockReturnValue([appliedMsg])
+  renderPage()
+  expect(await screen.findByText('Horgony −30 perc')).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: 'Horgony −30 perc' })).toBeNull()
+})
+
+// A card that carries no `actions` at all (a plain advice card, or any non-advice kind) gets
+// neither the button row nor the applied state.
+test('a card with no offered actions renders neither the button row nor the applied state', async () => {
+  feedMock.useCompanionFeed.mockReturnValue([morningMsg])
+  renderPage()
+  expect(await screen.findByText(/W3-csúcs/)).toBeInTheDocument()
+  expect(document.querySelector('.nap-mzmsg-actions')).toBeNull()
+  expect(document.querySelector('.nap-mzmsg-applied')).toBeNull()
+})
+
+// Spec §7: a failed apply leaves the card intact and surfaces the error next to it — no
+// partial application, no card disappearing.
+test('a failed apply leaves the advice card intact and shows the error next to it', async () => {
+  const adviceMsg: FeedMessage = {
+    id: 'fm-12', kind: 'advice', eyebrow: 'Mezo · észrevétel',
+    body: [{ type: 'p', text: 'Told el a horgonyt.' }],
+    refs: [],
+    actions: [{ key: 'shift_sleep_anchor', label: 'Horgony −30 perc' }],
+    generatedAt: '2026-05-22T15:00:00',
+  }
+  feedMock.useCompanionFeed.mockReturnValue([adviceMsg])
+  adviceMock.failedId = 'fm-12'
+  renderPage()
+  expect(await screen.findByRole('button', { name: 'Horgony −30 perc' })).toBeInTheDocument()
+  expect(screen.getByRole('alert')).toHaveTextContent('Nem sikerült')
+  expect(screen.getByText('Told el a horgonyt.')).toBeInTheDocument()
 })
 
 // ── Visszacsukható régebbi üzenet (mezo-z4h4): a korábbi `expand`-only halmaz miatt egy

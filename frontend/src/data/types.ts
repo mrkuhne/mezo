@@ -17,6 +17,11 @@ export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: Briefin
  *  mezo-d58h.3), whose card body is composed in `SetupCheckService` from a check verdict's own
  *  numbers. */
 export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening' | 'intervention' | 'people' | 'setup' | 'advice'
+export type AdviceActionKey = 'lighten_tomorrow' | 'skip_sport_slot' | 'shift_sleep_anchor'
+/** One offered action button on an advice card (S5, mezo-d58h.5) — `params` is ALWAYS rule-provided. */
+export interface FeedAction { key: AdviceActionKey; label: string; params?: Record<string, unknown> }
+/** Stamped once an offered action has actually been applied (S5, mezo-d58h.5). */
+export interface FeedApplied { actionKey: string; at: string }
 /** One companion-feed message — the MezoChip thread's real-mode source (`useCompanionFeed`), mirrors FeedMessageResponse. */
 export interface FeedMessage {
   /** The companion_message row id (uuid) — the W4.1 feedback artifactId (`feed_message`). */
@@ -29,6 +34,10 @@ export interface FeedMessage {
   facts?: string[]
   /** Advice-card suggestion texts (config-provided); only advice rows. */
   suggestions?: string[]
+  /** Advice-card action buttons (S5, mezo-d58h.5) — rule-provided; only advice rows. */
+  actions?: FeedAction[]
+  /** Advice-card applied stamp (S5, mezo-d58h.5) — set once an action has been applied; only advice rows. */
+  applied?: FeedApplied
   generatedAt: string // ISO date-time
 }
 export interface NiggleWarning { muscle: string; muscleLabel: string; detail: string }

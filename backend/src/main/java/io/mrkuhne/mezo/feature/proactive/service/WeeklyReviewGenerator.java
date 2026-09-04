@@ -90,6 +90,8 @@ public class WeeklyReviewGenerator {
             + "adatokból vagy minta-eseményekből következtethetsz — külső tudásból, feltételezésből vagy "
             + "egyetlen napból nem —, és az evidence mezőben nevezd meg, MIRE épül (mely napok, hány nap, "
             + "melyik minta). Ha nincs ilyen összefüggés, a candidateFacts üres tömb; kitalált jelölt tilos. "
+            + "Az ÉLETCÉLOK blokk nyilait a motor számolta ki: MAGYARÁZD őket a hét adataival, "
+            + "de sose számold újra és sose mondj velük ellentétes irányt. "
             + "Válaszolj KIZÁRÓLAG szigorú JSON-nal: {\"summary\": \"a heti elemzés szövege\", "
             + "\"dayNotes\": [{\"date\": \"YYYY-MM-DD\", \"note\": \"...\"}], "
             + "\"anchorIndexes\": [a felhasznált HORGONY-JELÖLTEK sorszámai], "

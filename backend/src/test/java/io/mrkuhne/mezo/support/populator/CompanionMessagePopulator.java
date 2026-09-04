@@ -70,16 +70,52 @@ public class CompanionMessagePopulator {
         return companionMessageRepository.saveAndFlush(entity);
     }
 
-    /** S4 advice card (bd mezo-d58h.4) — kind + both keys + the structured payload in one shot. */
+    /** The CURRENT advice-card shape — the same one {@link
+     *  io.mrkuhne.mezo.feature.proactive.service.AdviceCardService} actually writes via the 7-arg
+     *  {@code CompanionMessageEnvelope.advice(...)} overload: an empty (non-null) {@code actions}
+     *  list and a null {@code applied} stamp. Delegates to {@link #createAdviceWithActions} with
+     *  {@code List.of(), null} so there is one construction site. Use this for "a normal advice
+     *  card" in any test that isn't specifically about the pre-S5 legacy shape — see {@link
+     *  #createLegacyAdvice} for that one. */
     public CompanionMessageEntity createAdvice(
             UUID owner, LocalDate date, String adviceKey, String interventionKey, String eyebrow,
             String prose, List<String> facts, List<String> suggestions, Instant generatedAt) {
+        return createAdviceWithActions(owner, date, adviceKey, interventionKey, eyebrow, prose,
+            facts, suggestions, List.of(), null, generatedAt);
+    }
+
+    /** The PRE-S5 legacy advice-card shape — simulates a row written before this slice existed,
+     *  whose jsonb literally has no {@code actions}/{@code applied} keys, by passing null for
+     *  both (a null actions list round-trips through jsonb as null, not the {@code []} an empty
+     *  list would produce). This is the fixture that proves the two trailing components are
+     *  jsonb-safe to ADD: old rows deserialize them to null rather than failing. Use only for
+     *  legacy-row tests — every other caller wanting "an advice card" should use {@link
+     *  #createAdvice}, which matches what production writes today. */
+    public CompanionMessageEntity createLegacyAdvice(
+            UUID owner, LocalDate date, String adviceKey, String interventionKey, String eyebrow,
+            String prose, List<String> facts, List<String> suggestions, Instant generatedAt) {
+        return createAdviceWithActions(owner, date, adviceKey, interventionKey, eyebrow, prose,
+            facts, suggestions, null, null, generatedAt);
+    }
+
+    /** S5 advice card (bd mezo-d58h.5) — same shape as {@link #createAdvice} plus the mutation-set
+     *  {@code actions} and an optional {@code applied} stamp, so a test can seed an already-applied
+     *  card. Builds the envelope through the canonical constructor (not the {@code advice(...)}
+     *  factory) because only the canonical constructor accepts a non-null {@code applied}.
+     *  {@code actions} is passed through as-is (null stays null) rather than defensively copied,
+     *  so callers can deliberately seed the null pre-S5 shape as well as a real action list. */
+    public CompanionMessageEntity createAdviceWithActions(
+            UUID owner, LocalDate date, String adviceKey, String interventionKey, String eyebrow,
+            String prose, List<String> facts, List<String> suggestions,
+            List<CompanionMessageEnvelope.Action> actions, CompanionMessageEnvelope.Applied applied,
+            Instant generatedAt) {
         CompanionMessageEntity entity = new CompanionMessageEntity();
         entity.setCreatedBy(owner);
         entity.setMessageDate(date);
         entity.setKind(CompanionMessageEntity.KIND_ADVICE);
-        entity.setContent(CompanionMessageEnvelope.advice(
-            eyebrow, prose, adviceKey, interventionKey, null, facts, suggestions));
+        entity.setContent(new CompanionMessageEnvelope(eyebrow, List.of(prose), List.of(),
+            interventionKey, null, adviceKey, List.copyOf(facts), List.copyOf(suggestions),
+            actions == null ? null : List.copyOf(actions), applied));
         entity.setGeneratedAt(generatedAt);
         return companionMessageRepository.saveAndFlush(entity);
     }

@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.support.populator.MedicationPopulator;
 import io.mrkuhne.mezo.support.populator.MemoirPopulator;
 import io.mrkuhne.mezo.support.populator.NotificationPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
+import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.support.populator.WeeklyReviewPopulator;
@@ -60,6 +61,7 @@ class AnchorResolverIT extends AbstractIntegrationTest {
     @Autowired private AnchorResolver anchorResolver;
     @Autowired private UserPopulator userPopulator;
     @Autowired private TrainPopulator trainPopulator;
+    @Autowired private SportSlotSkipPopulator sportSlotSkipPopulator;
     @Autowired private CompanionMessagePopulator companionMessagePopulator;
     @Autowired private MedicationPopulator medicationPopulator;
     @Autowired private MedicationDosePopulator medicationDosePopulator;
@@ -112,6 +114,44 @@ class AnchorResolverIT extends AbstractIntegrationTest {
         assertThat(gymEvents.get(0).dedupSuffix()).as("dedupSuffix is the raw HH:mm, zero-padded")
                 .isEqualTo(expectedTime);
         assertThat(gymEvents.get(0).minuteOfDay()).isEqualTo((6 + expectedLegacyDayOfWeek) * 60);
+    }
+
+    @Test
+    void testResolve_shouldYieldNoAnchorForTheSportSlot_whenItsDatedOccurrenceIsSkipped() {
+        UUID owner = ownerId();
+        int legacyDayOfWeek = WEDNESDAY.getDayOfWeek().getValue() - 1;
+        trainPopulator.createGymSlot(owner, legacyDayOfWeek, "07:00"); // untouched control anchor
+        trainPopulator.createScheduleSlot(owner, legacyDayOfWeek, "18:30", 90, "training");
+        sportSlotSkipPopulator.createSkip(owner, legacyDayOfWeek, "18:30", WEDNESDAY);
+
+        AnchorSet anchors = anchorResolver.resolve(owner, WEDNESDAY);
+
+        List<AnchoredEvent> gymEvents = anchors.backendAnchors().stream()
+                .filter(e -> e.category() == NotificationCategory.GYM)
+                .toList();
+        assertThat(gymEvents)
+                .as("the gym slot still resolves — only the skipped sport slot's own anchor is gone")
+                .hasSize(1);
+        assertThat(gymEvents)
+                .as("no anchor carries the skipped sport slot's own time")
+                .noneMatch(e -> "18:30".equals(e.dedupSuffix()));
+    }
+
+    @Test
+    void testResolve_shouldStillYieldTheSportSlotAnchor_onADifferentDateTheSameSlotIsNotSkipped() {
+        UUID owner = ownerId();
+        int legacyDayOfWeek = WEDNESDAY.getDayOfWeek().getValue() - 1;
+        LocalDate laterSameWeekday = WEDNESDAY.plusWeeks(1);
+        trainPopulator.createScheduleSlot(owner, legacyDayOfWeek, "18:30", 90, "training");
+        sportSlotSkipPopulator.createSkip(owner, legacyDayOfWeek, "18:30", WEDNESDAY); // only this date
+
+        AnchorSet anchors = anchorResolver.resolve(owner, laterSameWeekday);
+
+        assertThat(anchors.backendAnchors())
+                .filteredOn(e -> e.category() == NotificationCategory.GYM)
+                .as("the same recurring slot still anchors on a date it was NOT skipped")
+                .singleElement()
+                .satisfies(e -> assertThat(e.dedupSuffix()).isEqualTo("18:30"));
     }
 
     @Test
