@@ -178,6 +178,16 @@ class DayEvaluationEngineTest {
         return b.build();
     }
 
+    /** A closed day with NO log of any kind — {@link DayEvaluationEngine#anyLogPresent} is false
+     *  (mezo-el0t). Returns the builder (not a built {@link DayInputs}) so a caller can layer one
+     *  or two fields on top before {@code .build()}, per {@code a_weigh_in_only_day_counts_as_logged}
+     *  and friends. */
+    private static DayInputsBuilder untouchedClosedDay() {
+        DayInputsBuilder b = new DayInputsBuilder();
+        b.noKcalLogged();
+        return b;
+    }
+
     /** Builds a closed day at the given kcal target with the customization applied, evaluates it,
      *  and returns the nutrition dimension's score — isolates the kcal-fit component since the
      *  builder's other macros default to a full-fit baseline. */
@@ -252,9 +262,9 @@ class DayEvaluationEngineTest {
         assertThat(nutrition.score()).isNull();
         // renormalized weight: nutrition itself is degraded -> 0, regardless of what else survives
         assertThat(nutrition.weight()).isZero();
-        // logging is the only DONE dimension in this fixture (Task 4: it is never NO_DATA on a
-        // closed day -- false/0 water/check-ins are real measurements, not missing data) -- still
-        // <2 DONE dimensions overall -> no overall score
+        // noKcalLogged() alone leaves this fixture fully untouched (no meals/water/check-ins/
+        // sleep/workout/weigh-in/XP either) -- every dimension, including `logging`, degrades to
+        // NO_DATA (mezo-el0t) -> 0 DONE dimensions -> no overall score
         assertThat(e.base()).isNull();
     }
 
@@ -536,16 +546,18 @@ class DayEvaluationEngineTest {
     void overall_fewerThanTwoDoneDims_isNull() {
         // nutrition/quality/training/sleep/rhythm mind adat nélkül degradálnak (nincs kcal, nincs
         // meal, nincs terv, nincs alvás-log egy zárt napon, nincs elég korábbi nap). A logging
-        // viszont a Task 4 fix után SOHA nem NO_DATA egy zárt napon -- víz=false és checkinCount=0
-        // valós mért adat, nem "nincs adat" -- így DONE marad 0 ponttal, az egyetlen DONE
-        // dimenzióként. Ez pontosan a <2-DONE kaput teszteli: ha a kapu (doneCount >= 2) eltűnne,
-        // a base = round(1.0 * 0) = 0 lenne, nem null.
-        DayEvaluation e = engine.evaluate(closedDay(DayInputsBuilder::noKcalLogged));
+        // dimenziónak a Task 4 fix után is csak a SAJÁT bemeneteire (meal/víz/check-in) nézve
+        // nincs NO_DATA menekülőútja -- de mezo-el0t óta az EGÉSZ napra nézve van: ha ez lenne az
+        // egyetlen log a napon, a logging is NO_DATA-ra degradálna. A checkinCount(1) itt a nap
+        // EGYETLEN logja -- anyLogPresent igaz, logging DONE marad, őszinte (alacsony) ponttal.
+        // Ez pontosan a <2-DONE kaput teszteli: ha a kapu (doneCount >= 2) eltűnne,
+        // a base = round(1.0 * 15) = 15 lenne, nem null.
+        DayEvaluation e = engine.evaluate(closedDay(b -> b.noKcalLogged().checkinCount(1)));
         long doneCount = e.dimensions().stream().filter(d -> "DONE".equals(d.status())).count();
         assertThat(doneCount).isEqualTo(1);
         DayDimension logging = dim(e, "logging");
         assertThat(logging.status()).isEqualTo("DONE");
-        assertThat(logging.score()).isEqualTo(0);
+        assertThat(logging.score()).isEqualTo(15);
         assertThat(logging.weight()).isEqualTo(1.0);
         assertThat(e.base()).isNull();
     }
@@ -560,14 +572,17 @@ class DayEvaluationEngineTest {
      */
     @Test
     void overall_untouchedClosedDayWithPriors_stillHasNoBaseScore() {
+        // mezo-el0t: this fixture is now a fully UNTOUCHED day (no kcal, no meals, no water, no
+        // check-ins, no sleep, no workout, no weigh-in, no XP) -- `logging` degrades to NO_DATA
+        // too, not just nutrition. rhythm alone still cannot open the gate.
         DayEvaluation e = engine.evaluate(closedDay(b -> b.noKcalLogged()
             .priorBaseScores(List.of(84, 72, 80))));
 
         assertThat(dim(e, "rhythm").status()).isEqualTo("DONE");
         assertThat(dim(e, "rhythm").score()).isEqualTo(79);
-        assertThat(dim(e, "logging").status()).isEqualTo("DONE");
-        assertThat(dim(e, "logging").score()).isZero();
-        // logging is the ONLY dimension that measured this day -> below the 2-dimension gate
+        assertThat(dim(e, "logging").status()).isEqualTo("NO_DATA");
+        assertThat(dim(e, "logging").score()).isNull();
+        // rhythm is the ONLY DONE dimension, and it is EXTRINSIC -> below the 2-dimension gate
         assertThat(e.base()).isNull();
     }
 
@@ -576,15 +591,21 @@ class DayEvaluationEngineTest {
      *  about the day (training DONE at 30), so it scores even though nothing else was logged. */
     @Test
     void overall_skippedPlannedWorkout_scoresAndRhythmStillCarriesWeight() {
-        DayEvaluation e = engine.evaluate(closedDay(b -> b.noKcalLogged()
+        // A skipped workout (doneWorkouts=0) is a PLAN comparison, not itself something the user
+        // logged that day -- anyLogPresent only counts doneWorkouts > 0 (mezo-el0t). So this
+        // fixture also logs a single check-in, keeping `logging` DONE (mezo-el0t narrows the
+        // NO_DATA escape hatch to a day with NO log of any kind, not to this dimension's own
+        // inputs) alongside `training`, which still measures the plan-vs-actual gap regardless.
+        DayEvaluation e = engine.evaluate(closedDay(b -> b.noKcalLogged().checkinCount(1)
             .plannedWorkouts(1).doneWorkouts(0).priorBaseScores(List.of(84, 72, 80))));
 
         assertThat(dim(e, "training").score()).isEqualTo(30);   // 0.3 + 0.7*0
-        assertThat(dim(e, "logging").score()).isZero();
+        assertThat(dim(e, "logging").status()).isEqualTo("DONE");
+        assertThat(dim(e, "logging").score()).isEqualTo(15);    // (0.3*0.25)/0.5 -> 0.15 -> 15
         assertThat(dim(e, "rhythm").score()).isEqualTo(79);
         // weights .20 training + .10 logging + .10 rhythm = .40 -> 0.5 / 0.25 / 0.25
-        // base = round(0.5*30 + 0.25*0 + 0.25*79) = round(34.75) = 35
-        assertThat(e.base()).isEqualTo(35);
+        // base = round(0.5*30 + 0.25*15 + 0.25*79) = round(38.5) = 39
+        assertThat(e.base()).isEqualTo(39);
     }
 
     /** A lone sleep log is also a measurement of THIS day, so it opens the gate too. */
@@ -605,5 +626,46 @@ class DayEvaluationEngineTest {
         assertThat(e.base()).isNull();
         assertThat(dim(e, "sleep").status()).isEqualTo("DONE");
         assertThat(dim(e, "nutrition").status()).isEqualTo("IN_PROGRESS");
+    }
+
+    // --- Task 2 (mezo-el0t): logging is not measurable on a day with NO log of any kind --------
+
+    @Test
+    void logging_is_not_measurable_on_a_day_with_no_logs_at_all() {
+        // The contract (me-week.yml) has always said: "null = not measurable this day -- never 0".
+        // Until now the engine sent an honest-looking 0 regardless, so "no data" could never
+        // actually occur in production for this dimension (mezo-el0t).
+        DayEvaluation e = engine.evaluate(untouchedClosedDay().build());
+        DayDimension logging = dim(e, "logging");
+        assertThat(logging.status()).isEqualTo("NO_DATA");
+        assertThat(logging.score()).isNull();
+    }
+
+    @Test
+    void logging_STILL_penalises_a_day_that_was_lived_but_not_logged() {
+        // The loggingDim javadoc's earlier review decision (:348-359) is untouched: someone who
+        // trained and slept, but logged no meals/water/check-ins, is still measurable and still
+        // gets an honest 0.
+        DayEvaluation e = engine.evaluate(untouchedClosedDay()
+            .doneWorkouts(1).sleepH(7.5).build());
+        DayDimension logging = dim(e, "logging");
+        assertThat(logging.status()).isEqualTo("DONE");
+        assertThat(logging.score()).isZero();
+    }
+
+    @Test
+    void a_weigh_in_only_day_counts_as_logged() {
+        // mezo-jcpt.8: this used to read as 'empty', even though the user DID do something.
+        assertThat(DayEvaluationEngine.anyLogPresent(
+            untouchedClosedDay().weightKg(74.2).build())).isTrue();
+    }
+
+    @Test
+    void an_untouched_day_stays_below_the_gate_even_with_priors() {
+        // REGRESSION PIN -- the Köteg A/B lesson: rhythm is extrinsic, it may not open the gate
+        // alone. Now structurally true too: zero intrinsic DONE dimensions.
+        DayEvaluation e = engine.evaluate(untouchedClosedDay()
+            .priorBaseScores(List.of(70, 78, 80)).build());
+        assertThat(e.base()).isNull();
     }
 }

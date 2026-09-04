@@ -85,6 +85,25 @@ public class DayEvaluationEngine {
     private record RawDim(String id, String label, double configWeight, Integer score,
                           String status, List<DimFact> facts) { }
 
+    /**
+     * Logolt-e a felhasználó EZEN A NAPON bármit egyáltalán — a nap „becsületes állapot"
+     * modelljének egyetlen igazságforrása (mezo-el0t). SZÁNDÉKOSAN a teljes loghalmaz felett
+     * kérdez, nem a logolás-dimenzió saját bemenetei felett: egy nap, amelyen a felhasználó
+     * edzett vagy aludt, de étkezést/vizet/check-int nem logolt, LOGOLT napnak számít — így a
+     * {@code loggingDim} ott továbbra is mérhető marad és őszinte 0-val bünteti a napot,
+     * ahogy azt a {@code loggingDim} javadoc-jában rögzített korábbi review-döntés megköveteli.
+     */
+    public static boolean anyLogPresent(DayInputs in) {
+        return in.kcal() != null
+            || (in.meals() != null && !in.meals().isEmpty())
+            || in.waterLogged()
+            || in.checkinCount() > 0
+            || in.sleepH() != null
+            || (in.doneWorkouts() != null && in.doneWorkouts() > 0)
+            || in.weightKg() != null
+            || (in.xp() != null && in.xp() > 0);
+    }
+
     public DayEvaluation evaluate(DayInputs in) {
         List<RawDim> raw = List.of(nutritionDim(in), qualityDim(in), trainingDim(in),
             sleepDim(in), loggingDim(in), rhythmDim(in));
@@ -359,6 +378,15 @@ public class DayEvaluationEngine {
     // component can be genuinely missing (0 meals, or none carrying timing data): it then drops
     // out and the remaining two renormalize over their combined 0.5 share (0.2/0.5=0.4,
     // 0.3/0.5=0.6).
+    //
+    // Narrowed (mezo-el0t): the escape hatch above still does not exist for THIS dimension's own
+    // inputs (meals/water/check-ins) -- a day with those all empty but SOME other log elsewhere
+    // (workout done, sleep logged, weighed in, XP earned) is still a LOGGED day, and `logging`
+    // stays DONE and still scores its honest 0, exactly as the round-1 decision requires. What
+    // changed is the day with NO log of ANY kind: {@link #anyLogPresent} is checked first, and
+    // only that fully-untouched day degrades to NO_DATA -- safely, because such a day has zero
+    // intrinsic DONE dimensions anyway, so the data-sufficiency gate in {@link #evaluate} is
+    // already closed and there is no score left for dropping this weight to soften.
 
     private RawDim loggingDim(DayInputs in) {
         String id = "logging";
@@ -371,6 +399,13 @@ public class DayEvaluationEngine {
 
         if (!in.closed()) {
             return new RawDim(id, label, configWeight, null, IN_PROGRESS, loggingFacts(in, mealPart));
+        }
+
+        if (!anyLogPresent(in)) {
+            // No log of any kind -- nothing to measure. Dropping the weight here does NOT let a
+            // penalty slip away: on such a day the gate is closed anyway (zero intrinsic DONE
+            // dimensions), so there is no score for this weight to have softened.
+            return new RawDim(id, label, configWeight, null, NO_DATA, loggingFacts(in, mealPart));
         }
 
         double waterComponent = in.waterLogged() ? 1.0 : 0.0;

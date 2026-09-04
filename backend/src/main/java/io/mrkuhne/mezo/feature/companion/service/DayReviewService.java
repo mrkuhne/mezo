@@ -187,18 +187,7 @@ public class DayReviewService {
         if (evaluation.base() != null) {
             return STATE_SCORED;
         }
-        return hasAnyLog(inputs) ? STATE_THIN : STATE_EMPTY;
-    }
-
-    /** Did the user write ANYTHING down for this day? (weight/XP live outside {@link DayInputs};
-     *  a day carrying only those reads as {@code empty} here — noted, not silently assumed away.) */
-    private static boolean hasAnyLog(DayInputs in) {
-        return in.kcal() != null
-            || in.sleepH() != null
-            || in.checkinCount() > 0
-            || in.waterLogged()
-            || (in.meals() != null && !in.meals().isEmpty())
-            || (in.doneWorkouts() != null && in.doneWorkouts() > 0);
+        return DayEvaluationEngine.anyLogPresent(inputs) ? STATE_THIN : STATE_EMPTY;
     }
 
     // --- Context signals (deterministic, never the model's) ----------------------------------
