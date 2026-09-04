@@ -338,15 +338,18 @@ function applyStashUpdate(s: SupplementStashItem, input: PantryItemInput): Suppl
     stock: input.stockQty ?? s.stock,
     stockUnit: input.stockUnit ?? s.stockUnit,
     // Nutrition + commerce (mezo-1za9) — apply when carried, preserve untouched (mirror food).
+    // Honest since mezo-6omv: a preserved macro that was null stays null, NOT a fabricated 0 — the
+    // old trailing `?? 0` only fired when `s.macros` was absent entirely, but once `s.macros.kcal`
+    // itself can be null (a partially-known definition), it silently zeroed an honest "no data".
     source: input.source ?? s.source,
     per: input.per ?? s.per,
     unit: input.unit ?? s.unit,
     macros: input.kcal != null || s.macros
       ? {
-          kcal: input.kcal ?? s.macros?.kcal ?? 0,
-          p: input.proteinG ?? s.macros?.p ?? 0,
-          c: input.carbsG ?? s.macros?.c ?? 0,
-          f: input.fatG ?? s.macros?.f ?? 0,
+          kcal: input.kcal ?? s.macros?.kcal ?? null,
+          p: input.proteinG ?? s.macros?.p ?? null,
+          c: input.carbsG ?? s.macros?.c ?? null,
+          f: input.fatG ?? s.macros?.f ?? null,
         }
       : undefined,
     fiberG: input.fiberG ?? s.fiberG,
