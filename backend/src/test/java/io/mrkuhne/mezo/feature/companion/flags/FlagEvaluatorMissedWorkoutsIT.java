@@ -195,12 +195,17 @@ class FlagEvaluatorMissedWorkoutsIT extends AbstractIntegrationTest {
 
     @Test
     void missed_workouts_only_counts_planned_days_from_the_schedule_creation_date_onward() {
-        // The schedule is backdated to 3 days ago. Planned days before that (well inside the
-        // 14-day window) must not count as missed even though nothing at all was completed — only
-        // the handful of planned days from the schedule's creation date onward can be violations.
+        // The schedule is backdated 5 days. Planned days before that (well inside the 14-day
+        // window) must not count as missed even though nothing at all was completed — only the
+        // handful of planned days from the schedule's creation date onward can be violations.
+        // 5 days (not fewer) is deliberate: the clamped window is [createdAt date, yesterday],
+        // and a Mon/Wed/Fri schedule's worst-case gap between two occurrences is Fri->Mon (3
+        // calendar days). A shorter backdate is flaky — whether it contains >=2 planned days
+        // depends on which weekday "today" happens to be when the suite runs; 5 guarantees >=2
+        // regardless of alignment (reproduced failing at 3 days on 2026-09-04, a Friday).
         UUID owner = ownerId();
         LocalDate today = LocalDate.now();
-        Instant createdAt = today.minusDays(3).atStartOfDay(ZoneId.systemDefault()).toInstant();
+        Instant createdAt = today.minusDays(5).atStartOfDay(ZoneId.systemDefault()).toInstant();
         trainPopulator.createGymSlotAt(owner, 0, "07:00", createdAt);
         trainPopulator.createGymSlotAt(owner, 2, "07:00", createdAt);
         trainPopulator.createGymSlotAt(owner, 4, "07:00", createdAt);
