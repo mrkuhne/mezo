@@ -1063,3 +1063,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609021410_mezo-qw37.4_pantry_catalog_split.sql
+  - changeSet:
+      id: "1.0.0:202609041000_mezo-qooi_pantry_catalog_status"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609041000_mezo-qooi_pantry_catalog_status.sql

@@ -119,7 +119,10 @@ class PantryCatalogMigrationIT {
             seedLegacyRows(conn);
             conn.commit(); // Liquibase leaves the connection in manual-commit mode; make the seed durable before the split runs.
 
-            liquibase.update(new Contexts(), new LabelExpression()); // applies exactly the split
+            // Bounded to exactly one more changeset (not an unbounded "apply everything remaining"):
+            // mezo-qooi added a status changeset AFTER the split, so an unbounded update() here would
+            // also run that one, and this test only wants to exercise the split in isolation.
+            liquibase.update(1, new Contexts(), new LabelExpression()); // applies exactly the split
 
             try (Statement st = conn.createStatement()) {
                 // Túró group + Zabpehely + Kefir(deleted) + Kölesgolyó + Rizottó group + Levendula group
@@ -269,7 +272,10 @@ class PantryCatalogMigrationIT {
             }
             conn.commit(); // Liquibase leaves the connection in manual-commit mode; make the seed durable before the split runs.
 
-            assertThatThrownBy(() -> liquibase.update(new Contexts(), new LabelExpression()))
+            // Bounded to exactly one more changeset for the same reason as the other test: an
+            // unbounded update() would also attempt the mezo-qooi status changeset that now follows
+            // the split in master.yml.
+            assertThatThrownBy(() -> liquibase.update(1, new Contexts(), new LabelExpression()))
                 .hasMessageContaining("uq_pantry_item_split_guard");
 
             // Rolled back cleanly: no half-applied split. The catalog table (created in the same
@@ -289,12 +295,20 @@ class PantryCatalogMigrationIT {
         }
     }
 
-    /** Count of `- changeSet:` entries before ours, and a guard that ours is the LAST one registered. */
+    /**
+     * Count of `- changeSet:` entries before ours, located by finding the split's own entry rather
+     * than assuming it is the LAST one registered — mezo-qooi appended a status changeset after it,
+     * so master.yml no longer ends with the split.
+     */
     private static int countChangesetsBeforeSplit() throws IOException {
         String yml = Files.readString(MASTER_YML, StandardCharsets.UTF_8);
-        int total = yml.split("- changeSet:", -1).length - 1;
-        assertThat(yml.strip()).endsWith("path: script/" + SPLIT_SCRIPT);
-        return total - 1;
+        String[] entries = yml.split("- changeSet:", -1);
+        for (int i = 1; i < entries.length; i++) {
+            if (entries[i].contains("path: script/" + SPLIT_SCRIPT)) {
+                return i - 1;
+            }
+        }
+        throw new AssertionError("split changeset not found in " + MASTER_YML);
     }
 
     private static void seedLegacyRows(Connection conn) throws Exception {

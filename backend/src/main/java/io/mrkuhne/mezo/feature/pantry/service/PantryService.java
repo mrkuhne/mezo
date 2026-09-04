@@ -135,6 +135,14 @@ public class PantryService {
                         SystemMessage.error("PANTRY_CATALOG_NAME_TAKEN").build(), HttpStatus.CONFLICT);
                 });
             mapper.applyDefinitionPartial(c, req); // dirty-checked, flushed on commit
+            // A draft is an UNREVIEWED import candidate; the author actually editing its facts is
+            // the confirmation gesture the manual-review badge asks for, so it promotes the row
+            // (mezo-qooi). Deliberately author-only: passing requireEditable as a bystander OWNER
+            // is not a review of somebody else's scraped data.
+            if (PantryCatalogEntity.STATUS_DRAFT.equals(c.getStatus())
+                && user.getId().equals(c.getCreatedBy())) {
+                c.setStatus(PantryCatalogEntity.STATUS_VERIFIED);
+            }
         }
         mapper.applyUserFieldsPartial(e, req);
         return mapper.toItemResponse(e);

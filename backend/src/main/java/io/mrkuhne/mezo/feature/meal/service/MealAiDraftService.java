@@ -201,7 +201,8 @@ public class MealAiDraftService {
             List<PantryItemEntity> pantry) {
         Map<UUID, PantryItemEntity> pantryById = pantry.stream()
                 .collect(Collectors.toMap(PantryItemEntity::getId, Function.identity()));
-        PantryNameIndex nameIndex = PantryNameIndex.of(pantryCatalogRepository.findByDeletedFalseOrderByNameAsc());
+        PantryNameIndex nameIndex = PantryNameIndex.of(
+            pantryCatalogRepository.findByDeletedFalseAndStatusOrderByNameAsc(PantryCatalogEntity.STATUS_VERIFIED));
         MealAiDraftResponse res = new MealAiDraftResponse();
         res.setSlot(extracted.slot() != null && SLOTS.contains(extracted.slot()) ? extracted.slot() : "snack");
         res.setTitle(extracted.title());

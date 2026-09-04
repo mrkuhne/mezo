@@ -80,12 +80,15 @@ public class PantryCatalogService {
     }
 
     /**
-     * Natural-key find-or-create. {@code allowMerge = false} skips {@link #mergeIfAuthor} on a hit
-     * entirely — for a caller whose candidate facts are not yet trustworthy (S4 Task 7 fix round 1:
-     * a low-confidence / manual-review import draft must not touch the shared row before a human
-     * has confirmed it, even when the caller IS the row's author).
+     * Natural-key find-or-create. {@code trusted = false} means the caller's facts are not yet
+     * confirmed by a human (S4 Task 7 fix round 1 + mezo-qooi): on a HIT it skips
+     * {@link #mergeIfAuthor} entirely, and on a MISS it inserts the new definition as
+     * {@code status = draft} — visible on the author's own shelf, but excluded from catalog search
+     * and from the {@code PantryNameIndex} until the author's own definition edit promotes it
+     * ({@code PantryService#updateItem}). The old parameter only guarded the HIT branch, so a MISS
+     * still published unreviewed scrape/photo data to every user.
      */
-    public PantryCatalogEntity findOrCreate(UUID authorId, PantryCatalogEntity candidate, boolean allowMerge) {
+    public PantryCatalogEntity findOrCreate(UUID authorId, PantryCatalogEntity candidate, boolean trusted) {
         Objects.requireNonNull(candidate.getName(), "candidate.name");
         candidate.setName(candidate.getName().strip());
         if (candidate.getBrand() != null) {
@@ -93,8 +96,8 @@ public class PantryCatalogService {
         }
         return catalogRepository.findByNaturalKey(candidate.getName(), candidate.getBrand())
             .map(this::revive)
-            .map(existing -> allowMerge ? mergeIfAuthor(authorId, existing, candidate) : existing)
-            .orElseGet(() -> insertOrBind(authorId, candidate));
+            .map(existing -> trusted ? mergeIfAuthor(authorId, existing, candidate) : existing)
+            .orElseGet(() -> insertOrBind(authorId, candidate, trusted));
     }
 
     /**
@@ -169,7 +172,7 @@ public class PantryCatalogService {
         return true;
     }
 
-    private PantryCatalogEntity insertOrBind(UUID authorId, PantryCatalogEntity candidate) {
+    private PantryCatalogEntity insertOrBind(UUID authorId, PantryCatalogEntity candidate, boolean trusted) {
         TransactionTemplate own = new TransactionTemplate(transactionManager);
         own.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         try {
@@ -180,17 +183,19 @@ public class PantryCatalogService {
                 if (candidate.getSource() == null) {
                     candidate.setSource("manual");
                 }
+                // An untrusted candidate lands as a draft (mezo-qooi): on the author's shelf, out
+                // of everyone else's search and out of the AI name index until they confirm it.
+                candidate.setStatus(trusted
+                    ? PantryCatalogEntity.STATUS_VERIFIED : PantryCatalogEntity.STATUS_DRAFT);
                 return catalogRepository.saveAndFlush(candidate).getId();
             });
             return catalogRepository.findById(id).orElseThrow(); // re-read in the caller's session
         } catch (DataIntegrityViolationException raced) {
-            // The race loser takes the SAME path as an ordinary hit (revive + author-only merge):
-            // the loser's candidate carried createdBy == authorId, so if the winner happens to BE
-            // authorId (a genuine same-user race) its facts still get a fill-only merge; otherwise
-            // mergeIfAuthor's author check is a no-op, same as any other author-mismatch hit.
+            // The race loser takes the SAME path as an ordinary hit — and honours `trusted` there
+            // too, so an untrusted loser never merges its facts into the winner.
             return catalogRepository.findByNaturalKey(candidate.getName(), candidate.getBrand())
                 .map(this::revive)
-                .map(existing -> mergeIfAuthor(authorId, existing, candidate))
+                .map(existing -> trusted ? mergeIfAuthor(authorId, existing, candidate) : existing)
                 .orElseThrow(() -> raced);
         }
     }

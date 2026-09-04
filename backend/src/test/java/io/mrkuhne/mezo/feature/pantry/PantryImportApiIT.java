@@ -15,7 +15,9 @@ import io.mrkuhne.mezo.api.dto.PantryLookupResponse;
 import io.mrkuhne.mezo.api.dto.PantryLookupResult;
 import io.mrkuhne.mezo.api.dto.PantryResponse;
 import io.mrkuhne.mezo.api.dto.PantrySource;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.PantryImportPopulator;
@@ -24,6 +26,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Limit;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -55,6 +58,9 @@ class PantryImportApiIT extends ApiIntegrationTest {
 
     @Autowired
     private PantryItemRepository itemRepository;
+
+    @Autowired
+    private PantryCatalogRepository catalogRepository;
 
     @BeforeEach
     void resetStubs() {
@@ -266,6 +272,11 @@ class PantryImportApiIT extends ApiIntegrationTest {
         return postForBody("/api/pantry-import", req, auth, HttpStatus.CREATED, PantryItemResponse.class);
     }
 
+    /** No price on this draft — only the (name, confidence) pair the manual-review tests vary (mezo-qooi). */
+    private PantryItemResponse importOnce(HttpHeaders auth, String name, BigDecimal confidence) {
+        return importOnce(auth, name, null, null, confidence);
+    }
+
     /**
      * Before this fix, priceHuf and priceUnit were applied under two INDEPENDENT null-checks
      * (fix round 1 Important 1's partial-apply), so a re-import that carries a new price but no
@@ -306,6 +317,38 @@ class PantryImportApiIT extends ApiIntegrationTest {
             .filter(f -> "Skyr epres".equals(f.getOfWhat())).findFirst().orElseThrow();
         assertThat(feed.getSource()).isEqualTo(PantrySource.PHOTO);
         assertThat(feed.getStatus()).isEqualTo(PantryImportEntryResponse.StatusEnum.SYNCED);
+    }
+
+    /**
+     * The manual-review gate (S4 Task 7) only covered a natural-key HIT (no mergeIfAuthor). A MISS
+     * still inserted a full, globally visible shared definition from low-confidence scrape/photo
+     * data straight into the catalog before any human confirmed it — this is the MISS fix (mezo-qooi).
+     */
+    @Test
+    void testImport_shouldInsertDraftCatalogRow_andHideItFromSearch_whenConfidenceIsLow() {
+        RegisteredUser user = registerUser("Draft Import");
+
+        // Low confidence -> manual-review. A natural-key MISS used to insert a full, globally
+        // visible shared definition from scrape/photo data before any human confirmed it (mezo-qooi).
+        importOnce(user.headers(), "Bizonytalan Kekszféle", BigDecimal.valueOf(0.1));
+
+        PantryCatalogEntity row = catalogRepository.findByNaturalKey("Bizonytalan Kekszféle", null).orElseThrow();
+        assertThat(row.getStatus()).isEqualTo(PantryCatalogEntity.STATUS_DRAFT);
+        assertThat(catalogRepository.searchAll("%kekszféle%", Limit.of(50))).isEmpty();
+        assertThat(catalogRepository.findByDeletedFalseAndStatusOrderByNameAsc(
+            PantryCatalogEntity.STATUS_VERIFIED)).extracting(PantryCatalogEntity::getName)
+            .doesNotContain("Bizonytalan Kekszféle");
+    }
+
+    @Test
+    void testImport_shouldInsertVerifiedCatalogRow_whenConfidenceIsHigh() {
+        RegisteredUser user = registerUser("Trusted Import");
+
+        importOnce(user.headers(), "Biztos Kekszféle", BigDecimal.valueOf(0.99));
+
+        assertThat(catalogRepository.findByNaturalKey("Biztos Kekszféle", null).orElseThrow().getStatus())
+            .isEqualTo(PantryCatalogEntity.STATUS_VERIFIED);
+        assertThat(catalogRepository.searchAll("%biztos kekszféle%", Limit.of(50))).hasSize(1);
     }
 
     @Test
