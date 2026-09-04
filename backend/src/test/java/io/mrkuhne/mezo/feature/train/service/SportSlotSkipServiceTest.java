@@ -5,8 +5,12 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.mrkuhne.mezo.api.dto.SportSlotSkipResponse;
 import io.mrkuhne.mezo.feature.train.entity.SportSlotSkipEntity;
 import io.mrkuhne.mezo.feature.train.repository.SportSlotSkipRepository;
 import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService.SkipKey;
@@ -93,5 +97,49 @@ class SportSlotSkipServiceTest {
             .thenReturn(List.of());
 
         assertThat(service.skipsBetween(USER, DATE, DATE.plusDays(7))).isEmpty();
+    }
+
+    @Test
+    void testSkip_shouldInsertRow_whenNotAlreadySkipped() {
+        when(repository.existsByCreatedByAndDayOfWeekAndTimeAndDateAndDeletedFalse(USER, 4, "18:00", DATE))
+            .thenReturn(false);
+
+        service.skip(USER, 4, "18:00", DATE);
+
+        verify(repository, times(1)).saveAndFlush(any(SportSlotSkipEntity.class));
+    }
+
+    @Test
+    void testSkip_shouldNoOp_whenAlreadySkipped() {
+        when(repository.existsByCreatedByAndDayOfWeekAndTimeAndDateAndDeletedFalse(USER, 4, "18:00", DATE))
+            .thenReturn(true);
+
+        service.skip(USER, 4, "18:00", DATE);
+
+        verify(repository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void testListResponses_shouldMapEveryRowDateThenTimeAscending() {
+        when(repository.findByCreatedByAndDateBetweenAndDeletedFalse(USER, DATE, DATE.plusDays(7)))
+            .thenReturn(List.of(
+                skip(USER, 1, "20:00", DATE.plusDays(3)),
+                skip(USER, 4, "18:00", DATE)));
+
+        List<SportSlotSkipResponse> result = service.listResponses(USER, DATE, DATE.plusDays(7));
+
+        assertThat(result).extracting(SportSlotSkipResponse::getDayOfWeek, SportSlotSkipResponse::getTime,
+            SportSlotSkipResponse::getDate)
+            .containsExactly(
+                org.assertj.core.groups.Tuple.tuple(4, "18:00", DATE),
+                org.assertj.core.groups.Tuple.tuple(1, "20:00", DATE.plusDays(3)));
+    }
+
+    @Test
+    void testListResponses_shouldReturnEmptyList_whenNoSkipsInRange() {
+        when(repository.findByCreatedByAndDateBetweenAndDeletedFalse(any(), any(), any()))
+            .thenReturn(List.of());
+
+        assertThat(service.listResponses(USER, DATE, DATE.plusDays(7))).isEmpty();
     }
 }

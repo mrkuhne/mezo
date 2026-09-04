@@ -597,6 +597,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/train/sport-slot-skips": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Recurring sport-slot occurrences hidden by an applied skip_sport_slot advice action, in [from, to] */
+        get: operations["listSportSlotSkips"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/train/gym-schedule": {
         parameters: {
             query?: never;
@@ -5135,6 +5152,15 @@ export interface components {
             sport: string;
             location?: string;
             intensityLabel?: string;
+        };
+        /** @description One dated occurrence of a recurring sport slot hidden by skip_sport_slot (mezo-d58h.5) */
+        SportSlotSkipResponse: {
+            /** @description 0=Hét .. 6=Vas */
+            dayOfWeek: number;
+            /** @description HH:mm */
+            time: string;
+            /** Format: date */
+            date: string;
         };
         GymScheduleSlotResponse: {
             /** Format: uuid */
@@ -10815,6 +10841,38 @@ export interface operations {
             };
             /** @description Not found (or not owned) */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listSportSlotSkips: {
+        parameters: {
+            query: {
+                from: string;
+                to: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Skips in range (empty array when none) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SportSlotSkipResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

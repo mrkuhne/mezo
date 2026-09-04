@@ -22,6 +22,7 @@ import {
   type SportScheduleSlotResponse,
   type SportSessionCreateRequest,
   type SportSessionResponse,
+  type SportSlotSkipResponse,
   type WorkoutFeedbackInput,
   type WorkoutInstanceResponse,
   type WorkoutTodayResponse,
@@ -193,15 +194,21 @@ function dayIdxOf(iso: string): number {
 // concrete `date` so weekAgenda pins it to that one day instead of every same-weekday.
 // `today` is date-based (never weekday-based) for a one-off. Base passes through
 // untouched when the week has no events, keeping mock mode byte-identical to Phase 1.
-export function mergeEventsIntoSchedule(
-  base: SportSchedule | null,
-  events: SportEventResponse[],
-): SportSchedule | null {
+/** This week's Mon–Sun ISO bounds — the one range every current-week surface (the agenda, the
+ *  one-off event merge above, the skip fetch below) reasons over. */
+export function currentWeekRange(): { mondayIso: string; sundayIso: string } {
   const now = new Date()
   const mondayIso = localDateString(
     new Date(now.getFullYear(), now.getMonth(), now.getDate() - ((now.getDay() + 6) % 7)),
   )
-  const sundayIso = addDays(mondayIso, 6)
+  return { mondayIso, sundayIso: addDays(mondayIso, 6) }
+}
+
+export function mergeEventsIntoSchedule(
+  base: SportSchedule | null,
+  events: SportEventResponse[],
+): SportSchedule | null {
+  const { mondayIso, sundayIso } = currentWeekRange()
   const week = events.filter((e) => e.date >= mondayIso && e.date <= sundayIso)
   if (!week.length) return base
   const today = localDateString()
@@ -430,6 +437,9 @@ type TrainData = {
   sportEvents: SportEventResponse[]
   addSportEvent: (req: SportEventCreateRequest, opts?: { onSuccess?: () => void; onSettled?: () => void }) => void
   deleteSportEvent: (id: string, opts?: MutateOpts) => void
+  /** This week's skipped recurring sport-slot occurrences (mezo-d58h.5) — feed straight into
+   *  `buildWeekAgenda`'s `skips` param. Empty in mock mode (no apply flow there yet). */
+  sportSlotSkips: SportSlotSkipResponse[]
   saveGymSchedule: (slots: GymScheduleSlotInput[], opts?: MutateOpts) => void
   createCatalogExercise: (req: CatalogExerciseCreateRequest, opts?: MutateOpts) => void
   updateCatalogExercise: (id: string, req: CatalogExerciseCreateRequest, opts?: MutateOpts) => void
@@ -555,6 +565,20 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
     queryFn: mock ? async () => [] as SportEventResponse[] : () => trainApi.sportEvents(),
     initialData: mock ? ([] as SportEventResponse[]) : undefined,
     staleTime: mock ? Infinity : undefined,
+  })
+  // Sport-slot skips (mezo-d58h.5) — this week's dated occurrences a skip_sport_slot advice
+  // action hid, fed into buildWeekAgenda's own filter (weekAgenda.ts). Mock has no advice-card
+  // apply flow yet, so mock mode always answers the empty list — the FE has never had a skip to
+  // show there; the real fetch scopes to the same Mon–Sun window `mergeEventsIntoSchedule` uses.
+  const { data: sportSlotSkipsData } = useQuery({
+    queryKey: ['train', 'sportSlotSkips'],
+    queryFn: mock
+      ? async () => [] as SportSlotSkipResponse[]
+      : () => {
+          const { mondayIso, sundayIso } = currentWeekRange()
+          return trainApi.sportSlotSkips(mondayIso, sundayIso)
+        },
+    initialData: mock ? ([] as SportSlotSkipResponse[]) : undefined,
   })
   // Standalone weekly gym slots (WHEN) — joined onto the active meso's gym days
   // by `deriveGymSchedule`. Mock serves the static slots; real fetches + maps.
@@ -950,6 +974,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
       ? { ...sport, schedule: mergeEventsIntoSchedule(sport.schedule, eventsData ?? []), sessions: sportData?.sessions ?? [] }
       : { schedule: mergeEventsIntoSchedule(scheduleData ?? null, eventsData ?? []), week: sportData?.week ?? null, crossLoad: null, sessions: sportData?.sessions ?? [] },
     sportEvents: eventsData ?? [],
+    sportSlotSkips: sportSlotSkipsData ?? [],
     exerciseLibrary: catalogData ?? [], // API catalog in real mode, Phase-1 statics in mock
     exerciseRecords: recordsData ?? [],
     activateMesocycle,

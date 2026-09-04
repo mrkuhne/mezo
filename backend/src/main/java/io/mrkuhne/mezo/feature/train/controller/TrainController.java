@@ -38,6 +38,7 @@ import io.mrkuhne.mezo.api.dto.SportScheduleSlotInput;
 import io.mrkuhne.mezo.api.dto.SportScheduleSlotResponse;
 import io.mrkuhne.mezo.api.dto.SportSessionCreateRequest;
 import io.mrkuhne.mezo.api.dto.SportSessionResponse;
+import io.mrkuhne.mezo.api.dto.SportSlotSkipResponse;
 import io.mrkuhne.mezo.api.dto.TimingProfileResponse;
 import io.mrkuhne.mezo.api.dto.TimingProfileSamples;
 import io.mrkuhne.mezo.api.dto.WorkoutDetailResponse;
@@ -59,6 +60,7 @@ import io.mrkuhne.mezo.feature.train.service.MesoTemplateService;
 import io.mrkuhne.mezo.feature.train.service.MesocycleReportService;
 import io.mrkuhne.mezo.feature.train.service.RunningService;
 import io.mrkuhne.mezo.feature.train.service.SportService;
+import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService;
 import io.mrkuhne.mezo.feature.train.service.TimingObservationExtractor;
 import io.mrkuhne.mezo.feature.train.service.TimingProfileService;
 import io.mrkuhne.mezo.feature.train.service.TrainService;
@@ -83,6 +85,7 @@ public class TrainController implements TrainApi {
     private final MesocycleReportService mesocycleReportService;
     private final WorkoutService workoutService;
     private final SportService sportService;
+    private final SportSlotSkipService sportSlotSkipService;
     private final GymScheduleService gymScheduleService;
     private final ExerciseCatalogService exerciseCatalogService;
     private final ExerciseRecordService exerciseRecordService;
@@ -267,6 +270,11 @@ public class TrainController implements TrainApi {
     @Override
     public void deleteSportEvent(UUID id) {
         sportService.deleteEvent(currentUserId.get(), id);
+    }
+
+    @Override
+    public List<SportSlotSkipResponse> listSportSlotSkips(LocalDate from, LocalDate to) {
+        return sportSlotSkipService.listResponses(currentUserId.get(), from, to);
     }
 
     @Override

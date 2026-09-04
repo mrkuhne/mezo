@@ -47,6 +47,7 @@ import TrainWeekSkeleton from '@/features/train/pages/TrainWeekSkeleton'
 export function TrainWeekPage() {
   const {
     gymSchedule, sport, activeMeso, gymDoneDates, workoutPending, todaySession, gymSlots, saveGymSchedule,
+    sportSlotSkips,
   } = useTrain()
   const { activeRunningBlock, runSessions, runningPending } = useRunning()
   const { workouts: weekWorkouts } = useWeekWorkouts()
@@ -80,6 +81,7 @@ export function TrainWeekPage() {
     sportSlots: sport.schedule?.volleyball.sessions ?? [],
     runningBlock: activeRunningBlock,
     weekWorkouts,
+    skips: sportSlotSkips,
   })
   const sessionCount = agenda.filter((a) => a.gym || a.sport.length || a.running.length).length
   const sportDoneOn = (iso: string | undefined, k: SportKind) =>

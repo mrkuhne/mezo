@@ -53,6 +53,7 @@ export function EdzesHubPage() {
   const {
     workout, gymSchedule, sport, activeMeso, gymDoneDates, workoutPending, todaySession,
     completedTodayWorkout, logSportSession, exerciseLibrary, exerciseRecords, exercisesPending,
+    sportSlotSkips,
   } = useTrain()
   const { activeRunningBlock, runSessions, runningPending, logRunSession } = useRunning()
   const { workouts: weekWorkouts } = useWeekWorkouts()
@@ -63,6 +64,7 @@ export function EdzesHubPage() {
     sportSlots: sport.schedule?.volleyball.sessions ?? [],
     runningBlock: activeRunningBlock,
     weekWorkouts,
+    skips: sportSlotSkips,
   })
   // "Today" is the flagged agenda row's own date (mock pins the flag to a fixture day),
   // falling back to the wall clock when no row carries it — TrainTodayPage's rule verbatim.
