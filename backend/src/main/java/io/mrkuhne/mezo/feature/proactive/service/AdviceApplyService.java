@@ -9,9 +9,10 @@ import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
+import java.util.stream.Collectors;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
@@ -28,11 +29,17 @@ import org.springframework.transaction.annotation.Transactional;
  * "no writer may acquire a {@code companion_message} row lock (or any lock this advisory lock
  * could itself be waiting behind) before this lock is taken in the same transaction, or the two
  * would form a lock-ordering cycle." {@link #apply} writes a {@code companion_message} row (the
- * {@code applied} stamp), so {@code lockForDelivery} is this method's FIRST statement — before the
- * owner-scoped read, before anything else — exactly like {@link AdviceCardService#deliver}. This
+ * {@code applied} stamp), so {@code lockForDelivery} is called before the owner-scoped read, before
+ * anything else this method itself does — exactly like {@link AdviceCardService#deliver}. This
  * is not ceremony: dropping it would let {@code AdviceCardService.deliver} and {@link #apply} take
  * their respective row/advisory locks in opposite orders on two concurrent transactions for the
- * same user, which is how a lock-ordering cycle (a Postgres deadlock) gets built.
+ * same user, which is how a lock-ordering cycle (a Postgres deadlock) gets built. As
+ * {@code lockForDelivery}'s own javadoc stresses, "first in the method" is not itself the
+ * invariant — {@code first in the TRANSACTION} is. {@link #apply} today opens its own
+ * {@code @Transactional} boundary, so the two coincide; a future caller (the Task 6 controller, or
+ * anything else) must NOT wrap this call inside an outer transaction that itself writes or locks a
+ * {@code companion_message} row before {@link #apply} runs, or that write becomes the thing that
+ * precedes this lock and the invariant breaks silently.
  *
  * <p><b>Idempotence is the point.</b> A second apply of the SAME action on the SAME card must run
  * the port's effect zero additional times and return the original {@code applied.at()} unchanged
@@ -42,7 +49,6 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor
 @ConditionalOnProperty(
         name = {FeaturesConfiguration.COMPANION_SWITCH, FeaturesConfiguration.PROACTIVE_SWITCH},
         havingValue = "true")
@@ -51,10 +57,32 @@ public class AdviceApplyService {
     private final CompanionMessageRepository companionMessageRepository;
     private final List<AdviceMutationPort> mutationPorts;
 
+    /** Constructor DI (no field injection) — and the one place {@link AdviceMutationPort}'s
+     *  "exactly one port per key" promise is actually enforced: a duplicate registration fails
+     *  Spring context startup here rather than silently picking an arbitrary port at call time. */
+    public AdviceApplyService(CompanionMessageRepository companionMessageRepository,
+            List<AdviceMutationPort> mutationPorts) {
+        this.companionMessageRepository = companionMessageRepository;
+        this.mutationPorts = mutationPorts;
+        List<String> duplicateKeys = mutationPorts.stream()
+                .collect(Collectors.groupingBy(AdviceMutationPort::actionKey, Collectors.counting()))
+                .entrySet().stream()
+                .filter(e -> e.getValue() > 1)
+                .map(Map.Entry::getKey)
+                .toList();
+        if (!duplicateKeys.isEmpty()) {
+            throw new SystemRuntimeErrorException(
+                    SystemMessage.error("PROACTIVE_ADVICE_ACTION_PORT_AMBIGUOUS")
+                            .params(duplicateKeys).build(),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @Transactional
     public CompanionMessageEntity apply(UUID userId, UUID cardId, String actionKey) {
-        // FIRST statement in this transaction: see the advisory-lock invariant quoted above and
-        // in CompanionMessageRepository.lockForDelivery's own javadoc.
+        // First statement in this method AND (today) in the transaction it opens: see the
+        // advisory-lock invariant quoted above and in CompanionMessageRepository.lockForDelivery's
+        // own javadoc — no companion_message row lock before this, ever, in the same transaction.
         companionMessageRepository.lockForDelivery(userId);
 
         CompanionMessageEntity card = companionMessageRepository.findByIdAndCreatedBy(cardId, userId)

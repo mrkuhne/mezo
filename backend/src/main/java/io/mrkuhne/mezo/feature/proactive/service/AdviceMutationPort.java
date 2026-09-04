@@ -16,7 +16,10 @@ import java.util.UUID;
  */
 public interface AdviceMutationPort {
 
-    /** The {@code AdviceActionKey} this port serves. Exactly one port per key. */
+    /** The {@code AdviceActionKey} this port serves. Exactly one port per key — {@link
+     *  AdviceApplyService}'s constructor validates this at Spring context startup (a duplicate
+     *  registration fails the context rather than dispatching to an arbitrary port at call time),
+     *  so the promise is enforced, not merely documented. */
     String actionKey();
 
     /** Applies the effect. Params come from the card's own rule-provided action; validate them
