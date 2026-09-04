@@ -8,6 +8,10 @@ import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.MemoryEmbeddingEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PeriodSummaryEntity;
+import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryItemEntity;
+import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryVectorEntity;
+import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryItemRepository;
+import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryVectorRepository;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.MemoryEmbeddingRepository;
 import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
@@ -23,7 +27,6 @@ import io.mrkuhne.mezo.support.populator.UserPopulator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -32,7 +35,6 @@ import java.util.List;
 import java.util.UUID;
 
 /** V2.2 embed pipeline: idempotent unit writes, message-derived dating, replace-by-day. */
-@Transactional
 @ActiveProfiles("companion-fake")
 class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
 
@@ -40,6 +42,8 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
 
     @Autowired private MemoryEmbeddingWriter memoryEmbeddingWriter;
     @Autowired private MemoryEmbeddingRepository memoryEmbeddingRepository;
+    @Autowired private MemoryItemRepository memoryItemRepository;
+    @Autowired private MemoryVectorRepository memoryVectorRepository;
     @Autowired private DailySummaryRepository dailySummaryRepository;
     @Autowired private UserPopulator userPopulator;
     @Autowired private DailySummaryPopulator dailySummaryPopulator;
@@ -68,6 +72,7 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
         assertThat(row.getOccurredOn())
                 .isEqualTo(LocalDate.ofInstant(assistant.getCreatedAt(), ZoneId.systemDefault()));
         assertThat(row.getEmbedding()).hasSize(EmbeddingPort.DIMENSIONS);
+        assertProjected(owner, MemoryEmbeddingEntity.KIND_CHAT_TURN, assistant.getId(), row.getContent());
     }
 
     @Test
@@ -125,6 +130,7 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
         assertThat(rows.getFirst().getRefId()).isEqualTo(summary.getId());
         assertThat(rows.getFirst().getContent()).isEqualTo("kemény leg-day volt");
         assertThat(rows.getFirst().getOccurredOn()).isEqualTo(DAY);
+        assertProjected(owner, MemoryEmbeddingEntity.KIND_DAILY_SUMMARY, summary.getId(), summary.getNarrative());
     }
 
     @Test
@@ -179,6 +185,7 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
         assertThat(row.getContent()).isEqualTo(entry.getText());
         assertThat(row.getOccurredOn()).isEqualTo(entry.getOccurredOn());
         assertThat(row.getEmbedding()).hasSize(EmbeddingPort.DIMENSIONS);
+        assertProjected(owner, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, entry.getId(), entry.getText());
     }
 
     @Test
@@ -206,6 +213,7 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
         // not just re-stamped content/occurredOn on a stale vector.
         assertThat(row.getEmbedding()).hasSize(EmbeddingPort.DIMENSIONS);
         assertThat(row.getEmbedding()).isNotEqualTo(originalEmbedding);
+        assertProjected(owner, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, entry.getId(), entry.getText());
     }
 
     @Test
@@ -220,6 +228,7 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
         assertThat(memoryEmbeddingRepository
                 .findByKindAndRefId(MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, entry.getId()))
                 .isEmpty();
+        assertSuppressed(owner, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, entry.getId());
     }
 
     @Test
@@ -239,6 +248,7 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
         assertThat(row.getContent()).isEqualTo(decision.getDecisionText());
         assertThat(row.getOccurredOn()).isEqualTo(decision.getDecidedOn());
         assertThat(row.getEmbedding()).hasSize(EmbeddingPort.DIMENSIONS);
+        assertProjected(owner, MemoryEmbeddingEntity.KIND_DECISION, decision.getId(), decision.getDecisionText());
     }
 
     @Test
@@ -267,6 +277,7 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
         // precedent above).
         assertThat(row.getEmbedding()).hasSize(EmbeddingPort.DIMENSIONS);
         assertThat(row.getEmbedding()).isNotEqualTo(originalEmbedding);
+        assertProjected(owner, MemoryEmbeddingEntity.KIND_DECISION, decision.getId(), row.getContent());
     }
 
     @Test
@@ -279,6 +290,7 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
 
         assertThat(memoryEmbeddingRepository.findByKindAndRefId(MemoryEmbeddingEntity.KIND_GRATITUDE, entry.getId()))
                 .isPresent();
+        assertProjected(owner, MemoryEmbeddingEntity.KIND_GRATITUDE, entry.getId(), entry.getText());
     }
 
     @Test
@@ -291,6 +303,7 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
 
         assertThat(memoryEmbeddingRepository.findByKindAndRefId(MemoryEmbeddingEntity.KIND_GRATITUDE, entry.getId()))
                 .isEmpty();
+        assertSuppressed(owner, MemoryEmbeddingEntity.KIND_GRATITUDE, entry.getId());
     }
 
     @Test
@@ -309,6 +322,7 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
         assertThat(row.getOccurredOn()).isEqualTo(monday);
         assertThat(row.getContent()).isEqualTo("Három edzés, stabil alvás.");
         assertThat(row.getEmbedding()).hasSize(EmbeddingPort.DIMENSIONS);
+        assertProjected(owner, MemoryEmbeddingEntity.KIND_WEEKLY_SUMMARY, week.getId(), week.getSummaryText());
     }
 
     @Test
@@ -323,6 +337,7 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
                 MemoryEmbeddingEntity.KIND_MONTHLY_SUMMARY, month.getId())).isTrue();
         assertThat(memoryEmbeddingRepository.countByCreatedByAndKind(
                 owner, MemoryEmbeddingEntity.KIND_WEEKLY_SUMMARY)).isZero();
+        assertProjected(owner, MemoryEmbeddingEntity.KIND_MONTHLY_SUMMARY, month.getId(), month.getSummaryText());
     }
 
     @Test
@@ -341,5 +356,27 @@ class MemoryEmbeddingWriterIT extends AbstractIntegrationTest {
         assertThat(memoryEmbeddingRepository
                 .findByKindAndRefId(MemoryEmbeddingEntity.KIND_WEEKLY_SUMMARY, week.getId())
                 .orElseThrow().getContent()).isEqualTo("Javított változat.");
+        assertProjected(owner, MemoryEmbeddingEntity.KIND_WEEKLY_SUMMARY, week.getId(), week.getSummaryText());
+    }
+
+    private void assertProjected(UUID owner, String kind, UUID refId, String content) {
+        MemoryItemEntity item = memoryItemRepository
+                .findByCreatedByAndSourceKindAndSourceId(owner, kind, refId)
+                .orElseThrow();
+        assertThat(item.getContent()).isEqualTo(content);
+        assertThat(item.getState()).isEqualTo(MemoryItemEntity.STATE_ACTIVE);
+        assertThat(memoryVectorRepository
+                .findByCreatedByAndMemoryItemIdAndEmbeddingVersionAndStatusAndDeletedFalse(
+                        owner, item.getId(), "gemini-embedding-001-768-v1", MemoryVectorEntity.STATUS_READY))
+                .isPresent();
+    }
+
+    private void assertSuppressed(UUID owner, String kind, UUID refId) {
+        MemoryItemEntity item = memoryItemRepository
+                .findByCreatedByAndSourceKindAndSourceId(owner, kind, refId)
+                .orElseThrow();
+        assertThat(item.getState()).isEqualTo(MemoryItemEntity.STATE_SUPPRESSED);
+        assertThat(memoryVectorRepository.findByCreatedByAndMemoryItemIdOrderByEmbeddingVersion(owner, item.getId()))
+                .isEmpty();
     }
 }

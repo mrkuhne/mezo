@@ -22,6 +22,10 @@ public class FeaturesConfiguration {
     /** V2.2 post-turn chat embedding — sub-switch of companion; gates ONLY the async listener. */
     public static final String COMPANION_EMBED_TURNS_SWITCH = "mezo.companion.embedding.embed-chat-turns";
 
+    /** Shared-memory offline generation backfill; off removes only the scheduled job. */
+    public static final String MEMORY_REEMBEDDING_JOB_SWITCH =
+            "mezo.companion.memory-platform.reembedding.enabled";
+
     /** V2.2 nightly daily-summary job (the app's first cron) — techcore cron zone. */
     public static final String DAILY_SUMMARY_JOB_SWITCH = "mezo.techcore.cron.daily-summary-job.enabled";
 
