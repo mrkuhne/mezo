@@ -143,7 +143,7 @@ public class DayReviewService {
         LocalDate today = LocalDate.now();
         DayInputs inputs = dayScoreService.inputsFor(userId, date, today);
         DayEvaluation evaluation = dayEvaluationEngine.evaluate(inputs);
-        String state = state(inputs, evaluation, today);
+        String state = state(inputs, evaluation, today, weightTrendService.hasEntryOn(userId, date));
 
         // A future day has no signals to report: its energy/sleep series are empty by definition
         // and the user-level weight trend would be the only thing shown, which would read as a
@@ -176,7 +176,8 @@ public class DayReviewService {
      * design) and {@code rhythm} is computed from PRIOR days, so "all dimensions degraded" would
      * never fire and every untouched day would read as {@code thin}.
      */
-    private static String state(DayInputs inputs, DayEvaluation evaluation, LocalDate today) {
+    private static String state(DayInputs inputs, DayEvaluation evaluation, LocalDate today,
+                                boolean weighedIn) {
         LocalDate date = inputs.date();
         if (date.isAfter(today)) {
             return STATE_FUTURE;
@@ -187,11 +188,12 @@ public class DayReviewService {
         if (evaluation.base() != null) {
             return STATE_SCORED;
         }
-        return hasAnyLog(inputs) ? STATE_THIN : STATE_EMPTY;
+        return (hasAnyLog(inputs) || weighedIn) ? STATE_THIN : STATE_EMPTY;
     }
 
-    /** Did the user write ANYTHING down for this day? (weight/XP live outside {@link DayInputs};
-     *  a day carrying only those reads as {@code empty} here — noted, not silently assumed away.) */
+    /** Did the user write ANYTHING down for this day, of what {@link DayInputs} carries? A weigh-in
+     *  lives OUTSIDE DayInputs, so it comes in as the caller's {@code weighedIn} flag (mezo-jcpt.8)
+     *  — that is why the record (and the engine's 27 pinned tests) stayed untouched. */
     private static boolean hasAnyLog(DayInputs in) {
         return in.kcal() != null
             || in.sleepH() != null
