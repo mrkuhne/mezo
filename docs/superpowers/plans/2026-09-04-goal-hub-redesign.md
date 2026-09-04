@@ -488,7 +488,7 @@ Maradj a `feat/goal-hub-ui` branchen; Task 4 ugyanennek a beadnek és PR-nek a m
 - Consume: `useGoalActions`, `AttachPlanSheet`, `EditGoalSheet` write műveletekhez.
 - Produce: négy tisztán presentational goal component; data hookot egyik sem importál.
 
-- [ ] **Step 1: Írd meg oldalanként a RED viselkedési teszteket**
+- [x] **Step 1: Írd meg oldalanként a RED viselkedési teszteket**
 
 - Diet: training/rest/uniform/unavailable hero, P/C/F, heti átlag és magyarázat.
 - Segment: aktuális label + hétintervallum, következő szakasz/dátum, nincs következő állapot.
@@ -505,7 +505,7 @@ cd frontend && pnpm vitest run src/features/me/pages/GoalDietPage.test.tsx \
 
 Várt: az üres scaffoldok miatt FAIL.
 
-- [ ] **Step 2: Töltsd fel a Diet és Segment oldalakat**
+- [x] **Step 2: Töltsd fel a Diet és Segment oldalakat**
 
 Diet tone `sage`: `PageHero` big=`todayKcal`, sub=`Edzésnap|Pihenőnap|Egységes keret`; MCells P/C/F;
 `GoalDietWeekCard` egymás mellett mutat training/rest kcal-t és heti átlagot; külön provenance
@@ -516,7 +516,7 @@ Segment tone `gold`: hero current label, `W{from}–{to}`; `GoalSegmentRail` a c
 és váltási dátumot mutatja. A magyarázat explicit: a fázis a guardot/szakaszolást változtathatja,
 de önmagában nem becsül új kcal-égetést.
 
-- [ ] **Step 3: Töltsd fel a Plans oldalt**
+- [x] **Step 3: Töltsd fel a Plans oldalt**
 
 Plans tone `sky`; a `GoalConnectionTimeline` a szervertől kapott `timeline.links`, `gaps` és
 `sportSchedule` adatokból rajzol. Ne maradjon `BVSC`, `végig` vagy más statikus sport copy. A plan
@@ -524,20 +524,20 @@ row mutassa `plan.status`, start/end week, illetve később a `clippedAtGoalEnd`
 ugyanazt az `AttachPlanSheet`-et nyitja előválasztott `mesocycle|running_block` típussal; detach után
 overview és timeline invalidálódjon.
 
-- [ ] **Step 4: Töltsd fel a Guards és Settings oldalakat**
+- [x] **Step 4: Töltsd fel a Guards és Settings oldalakat**
 
 Guards tone `lav`: összesített pajzs hero (`healthyCount/totalCount`), külön
 `GoalGuardCard` strength/muscle statusra. Notes csak részletező szöveg; a státusz a typed mezőkből
 jön. Settings tone `rose`: irány, célsúly, dátum, signed rate és guard chipek; az edit CTA a
 meglévő sheetet nyitja, archive/delete másodlagos marad.
 
-- [ ] **Step 5: Alkalmazd a mockup színeit és nyugodt motiont**
+- [x] **Step 5: Alkalmazd a mockup színeit és nyugodt motiont**
 
 Új CSS kizárólag `--mz-*`/theme tokenből és `color-mix`-ből épül. Kártyánként egy `rise`, az
 oldal `EntranceGroup`-ja indítja; hover/tap csak `np-press`. A komponensek 320 px-en is egy oszlopba
 engedik a stat sort, értéket nem vágnak.
 
-- [ ] **Step 6: GREEN mindkét módban, build és commit**
+- [x] **Step 6: GREEN mindkét módban, build és commit**
 
 ```bash
 cd frontend && pnpm vitest run src/features/me/pages/Goal*Page.test.tsx \

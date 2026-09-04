@@ -144,7 +144,10 @@ export function useGoalActions() {
 
   const invalidateGoals = () => { if (!mock) qc.invalidateQueries({ queryKey: ['goals'] }) }
   const invalidateTimeline = (goalId: string) => {
-    if (!mock) qc.invalidateQueries({ queryKey: ['goal', goalId, 'timeline'] })
+    if (!mock) {
+      qc.invalidateQueries({ queryKey: ['goal-overview', goalId] })
+      qc.invalidateQueries({ queryKey: ['goal', goalId, 'timeline'] })
+    }
   }
 
   const archiveM = useMutation({

@@ -281,7 +281,7 @@ test('useGoalActions (real mode) attach/detach hit goalLinkApi with the right ar
   expect(attachBody).toEqual({ planType: 'mesocycle', planId: 'meso-7', startWeek: 2 })
 })
 
-test('useGoalActions (real mode) invalidates goals + the goal timeline on success', async () => {
+test('useGoalActions (real mode) invalidates goals, overview and timeline on plan changes', async () => {
   server.use(
     http.post(`${API_BASE}/api/goals/g1/plans`, () =>
       HttpResponse.json(
@@ -309,6 +309,7 @@ test('useGoalActions (real mode) invalidates goals + the goal timeline on succes
   )
   await act(async () => { await result.current.attachPlan('g1', { planType: 'mesocycle', planId: 'meso-7', startWeek: 2 }) })
   expect(invalidated).toContainEqual(['goals'])
+  expect(invalidated).toContainEqual(['goal-overview', 'g1'])
   expect(invalidated).toContainEqual(['goal', 'g1', 'timeline'])
 })
 

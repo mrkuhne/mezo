@@ -23,7 +23,7 @@ export function courseCopy(status: CourseStatus, reasonCode: string) {
 }
 
 const DIET_EXPLANATION: Record<string, string> = {
-  training_day_split: 'Ma edzésnap van: a heti keretből több energia jut az edzés köré.',
+  training_day_split: 'Ma edzésnap van: a heti keretből több energia jut az edzésnapok terheléséhez.',
   rest_day_split: 'Ma pihenőnap van: a heti átlagot alacsonyabb napi keret tartja egyensúlyban.',
   uniform_kcal: 'A Diet Plan minden napra egységes kalóriakeretet ad.',
   prescription_missing: 'Még nincs kiszámolt Diet Plan ehhez a célhoz.',
