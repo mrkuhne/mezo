@@ -597,8 +597,9 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   its settled state) — always `200`, empty list = honest empty. `POST …/regenerate` archives the
   week's still-OPEN candidates with the old review and leaves DECIDED ones untouched — a
   regeneration must never undo a user decision.
-- **The WIDER gather input (`mezo-d20.7.8`)** — `WeeklyReviewContextSources` adds the six sources
-  the design spec listed as input and the first cut dropped, rendered into the payload **after**
+- **The WIDER gather input (`mezo-d20.7.8`, extended by `mezo-iizd.9`)** —
+  `WeeklyReviewContextSources` adds **seven** sources — the six the design spec listed as input and
+  the first cut dropped, plus the life-goal block — rendered into the payload **after**
   the predictions block and **before** the numbered anchor list: **journal entries**
   (`occurredOn` in-week, prose clipped to 180 chars, max 7), **decisions** (recorded in-week +
   **reviewed** in-week with their 1–5 rating, text clipped to 140, max 6 combined), **N=1
@@ -608,6 +609,20 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   position on the week's first and last day (one line, derived via `MedicationCycleService`), and
   the week's consolidated **`period_summary(week)`** narrative (clipped to 600 — its `03:30 MON`
   consolidation cron runs three hours before the `06:50` review cron on the SAME `weekStart`).
+  **The seventh source (`mezo-iizd.9`): `ÉLETCÉLOK · AZ ELMÚLT 7 NAP`** — the life-goal engine's
+  ALREADY-COMPUTED per-goal trend off `LifeGoalProgressService#today` (max 5 ACTIVE goals;
+  `title [dimension] <arrow-word> · N találat-nap a 7-ből`). Three honesty rules shape it, all
+  pinned by `WeeklyReviewContextSourcesIT`: the header names the **trailing-7-day** window it
+  actually measures, NOT the reviewed week (`today()`'s `[now-6, now]` sits one day off the
+  Monday-06:50 cron's `[D-7, D-1]`; a windowed `today(from, to)` variant is a separate, later
+  issue); today's `pillarsHitToday / pillarsTotal` snapshot is dropped as meaningless in a
+  retrospective; and a goal with **no data-day at all** renders `ezen a héten még nincs adata`
+  instead of a `0 találat-nap` tally — a zero there means "we measured nothing", and a
+  measured-looking zero would invite the model to explain a week nobody measured. That last rule
+  mirrors the frontend's `goalWeekSentence.ts` verbatim, so one week can never read as a miss in
+  the prompt and as silence on the Heti hub. The arrow is rendered as a WORD (`emelkedik` /
+  `tartja` / `csúszik` / `kevés adat az irányhoz`) — glyphs are misreadable inside prompt prose.
+  See [`lifegoal.md`](lifegoal.md) §5.
   Three disciplines make this a widening rather than a bloat: it is **data only** (the prompt is
   byte-identical and mints no new anchor kinds — the `Pattern|Fact|LifeEvent|Memory` RefTag
   vocabulary is unchanged, and every candidate costs double tokens because it renders in its own

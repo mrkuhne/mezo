@@ -47,7 +47,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [quickinput](#quickinput) | · | · | · | ✓ | · |
 | [recipe](#recipe) | ✓ | 1 | · | · | [recipe](features/recipe.md) |
 | [ritual](#ritual) | ✓ | 1 | ✓ | ✓ | [ritual](features/ritual.md) |
-| [today](#today) | · | · | ✓ | ✓ | [habit](features/habit.md), [intention](features/intention.md), [needs](features/needs.md), [ritual](features/ritual.md), [today](features/today.md) |
+| [today](#today) | · | · | ✓ | ✓ | [habit](features/habit.md), [intention](features/intention.md), [lifegoal](features/lifegoal.md), [needs](features/needs.md), [ritual](features/ritual.md), [today](features/today.md) |
 | [train](#train) | ✓ | 1 | ✓ | ✓ | [fuel](features/fuel.md), [goal-engine](features/goal-engine.md), [train](features/train.md), [_platform-data-layer](features/_platform-data-layer.md) |
 | [tutorial](#tutorial) | ✓ | 1 | ✓ | ✓ | [tutorial](features/tutorial.md) |
 
@@ -244,7 +244,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-02, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-09-04, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
-  [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-03, in-progress) ·
+  [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-04, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-04, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
@@ -629,7 +629,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### lifegoal
 
-*BE + API + FE-data* · read next: [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-03, in-progress)
+*BE + API + FE-data* · read next: [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-04, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal`
   - **sub-features:** `catalog`, `engine`
@@ -697,7 +697,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/growth.md](features/growth.md) (updated 2026-09-04, done) ·
   [docs/features/habit.md](features/habit.md) (updated 2026-09-03, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
-  [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-03, in-progress) ·
+  [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-04, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-04, mixed) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-02, done) ·
   [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-02, mixed)
@@ -1098,6 +1098,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-03, done) ·
   [docs/features/intention.md](features/intention.md) (updated 2026-08-30, done) ·
+  [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-04, in-progress) ·
   [docs/features/needs.md](features/needs.md) (updated 2026-08-30, done) ·
   [docs/features/ritual.md](features/ritual.md) (updated 2026-08-30, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-09-04, mixed)
