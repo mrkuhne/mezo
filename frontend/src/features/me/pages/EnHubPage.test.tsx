@@ -1,9 +1,10 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { EnHubPage } from '@/features/me/pages/EnHubPage'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { setToken } from '@/data/_client/api'
 
 // Én hub (mezo-d20.6.1) — the /me index's Mozaik face: identity hero + coral-ringed goal
 // card + 6-tile mosaic (Beállítások csempével). The behavioral contracts it inherits from the
@@ -297,4 +298,16 @@ test('the entrance choreography is armed — every .rise sits inside .mz-play', 
   const rises = container.querySelectorAll('.rise')
   expect(rises.length).toBeGreaterThan(0)
   for (const r of rises) expect(r.closest('.mz-play')).not.toBeNull()
+})
+
+// S2 (mezo-qw37.2): the hero's identity is the SIGNED-IN account, not a seed. `useProfile` is
+// deliberately not stubbed above, so this walks the real hook → useMe() → MSW /api/auth/me.
+test('real mode: the identity hero shows the account name from /api/auth/me', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  setToken('t')
+  renderHub()
+  await waitFor(() => expect(document.querySelector('.enh-nm')).toHaveTextContent('Owner'))
+  expect(document.querySelector('.enh-idring i')).toHaveTextContent('O')
+  vi.unstubAllEnvs()
+  setToken(null)
 })

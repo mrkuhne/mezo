@@ -2,7 +2,7 @@
 title: Goal Engine (G5–G6)
 type: feature-domain
 status: done
-updated: 2026-09-03
+updated: 2026-09-04
 tags: [goal, engine, backend, tdee, projection, guards, adaptive]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/GoalEngineProperties.java
@@ -107,7 +107,7 @@ Unlike the rows above, the **Meso activate/close** row never calls `evaluate` �
 
 **Transaction note:** because each trigger's enclosing method is already `@Transactional`, `evaluate` joins the same transaction — the recompute is part of the triggering write's atomic unit (a failed evaluate would roll back the weigh-in/profile-save/schedule-edit). The weigh-in, diet-settings, and (since mezo-3g5w) all five schedule-mutation paths funnel through the shared `GoalEngineService.recomputeActiveGoal` and deliberately depend on **no** goal: if the owner has no active goal, it returns without calling `evaluate`. The biometric-profile-change path keeps its own separate copy of the same no-goal-graceful check (table row above) rather than calling the shared helper. Either way, a weigh-in/profile-save/schedule-edit must never require a goal. The five schedule-mutation rows are covered by `feature/train/service/ScheduleGoalRecomputeIT` (sport/gym schedule replace + running block activate/close/delete all recompute the active goal's prescription; a schedule replace with no active goal is a no-op).
 
-**Startup reconciliation (Fuel Layer C, `mezo-eujg`).** A **sixth**, batch caller sits outside the write-triggered five: `GoalReevaluateRunner` (`feature/goal/GoalReevaluateRunner.java`) — a `CommandLineRunner`, `@Profile("demodata")` (the prod-active profile), `@Order(200)` so it runs after the seed runners — re-`evaluate`s **every non-archived owner goal** at boot. It exists because the NEAT/weekly-EAT migration made any goal's stored prescription stale (old BMR×PAL numbers, no `dailyEnergyBalanceKcal`); the runner refreshes them so the recept the user next opens carries the new model. Idempotent (`evaluate` overwrites both jsonb columns each run, and the graceful no-profile path is safe); ITs annotate `@ActiveProfiles("demodata")` and drive the no-arg `run()` overload against a reset DB.
+**Startup reconciliation (Fuel Layer C, `mezo-eujg`).** A **sixth**, batch caller sits outside the write-triggered five: `GoalReevaluateRunner` (`feature/goal/GoalReevaluateRunner.java`) — a `CommandLineRunner`, `@Profile("demofixtures")` (opt-in since S2 `mezo-qw37.2` — the owner's pre-NEAT reconciliation is done on the live DB), `@Order(200)` so it runs after the seed runners — re-`evaluate`s **every non-archived owner goal** at boot. It exists because the NEAT/weekly-EAT migration made any goal's stored prescription stale (old BMR×PAL numbers, no `dailyEnergyBalanceKcal`); the runner refreshes them so the recept the user next opens carries the new model. Idempotent (`evaluate` overwrites both jsonb columns each run, and the graceful no-profile path is safe); ITs annotate `@ActiveProfiles({"demodata", "demofixtures"})` and drive the no-arg `run()` overload against a reset DB.
 
 ### Weekly adaptive review (Diet Plan slice 5, `mezo-r4n7`)
 
@@ -287,7 +287,7 @@ Add a tunable, a guard leg, or a projection input — always config-first, contr
 - `service/DietPreferencesPort.java` + `service/DietPreferences.java` (Diet Plan slice 1, `mezo-xwgb`) — the goal-owned consumer port + its resolved-preferences record (split preset, custom %s, protein tier, water, fiber); implemented by nutrition's `DietPreferencesResolver` (§5).
 - `service/GoalEngineService.java` — the `@Transactional` orchestrator (`evaluate`) — the only entry point (pulls the weekly EAT from `WeeklyScheduledActivityService`, resolves diet preferences via `DietPreferencesPort`, then calls `TdeeBootstrapService.compute`).
 - `service/TdeeBootstrapService.java` — formula TDEE (MSJ / Katch-McArdle BMR × NEAT baseline + weekly scheduled EAT).
-- `../GoalReevaluateRunner.java` (`feature/goal/`) — the `@Profile("demodata")` startup runner that re-`evaluate`s every non-archived owner goal so stale prescriptions pick up the NEAT/weekly-EAT model (mezo-eujg, §3).
+- `../GoalReevaluateRunner.java` (`feature/goal/`) — the `@Profile("demofixtures")` (S2) startup runner that re-`evaluate`s every non-archived owner goal so stale prescriptions pick up the NEAT/weekly-EAT model (mezo-eujg, §3).
 - `../../train/service/WeeklyScheduledActivityService.java` — the train-owned weekly scheduled EAT (MET×kg×óra ÷ 7) the bootstrap + projection consume (mezo-eujg, §5).
 - `service/GoalProjectionService.java` — the segmented projection (block-boundary deltas, trend reconciliation, all 3 trajectories).
 - `service/GuardEvaluationService.java` — strength (e1RM) + muscle-volume + rate-cap soft guards.

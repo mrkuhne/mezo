@@ -35,6 +35,11 @@ Rules:
   (so the owner exists for login) and the helpers below.
 - HTTP-level test classes must NOT be `@Transactional` — the server handles requests in its
   own transactions; a test-side transaction would just hide committed state from cleanup.
+- Beans under `@Profile("demofixtures")` (`TrainSeedData`, `RunningSeedData`, `GoalSeedData`,
+  `MentionSeedData`, and since S2 `ProtocolSeedData`/`PeopleSeedData`/`GamificationDemoData`/
+  `GoalReevaluateRunner`) do NOT exist in the default `demodata` context — an IT that autowires
+  one annotates `@ActiveProfiles({"demodata", "demofixtures"})` (its own cached context) and
+  calls the runner's no-arg `run()` after the per-test reset.
 
 ## Database Reset — every test starts clean
 
