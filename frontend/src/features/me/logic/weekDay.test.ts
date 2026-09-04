@@ -149,6 +149,11 @@ describe('a heti mozaik hat sub-jelet rajzol (mezo-jcpt.5)', () => {
       .toEqual(['is-nutrition', 'is-quality', 'is-training', 'is-sleep', 'is-logging', 'is-rhythm'])
   })
 
+  test('a hat magyar címke, bar-sorrendben', () => {
+    expect(DAY_DIMENSIONS.map((s) => s.label))
+      .toEqual(['tápanyag', 'minőség', 'edzés', 'alvás', 'logolás', 'ritmus'])
+  })
+
   test('doneDimensionCount counts only DONE dimensions, never NO_DATA/IN_PROGRESS', () => {
     const dims = [
       { status: 'DONE' }, { status: 'DONE' }, { status: 'IN_PROGRESS' }, { status: 'NO_DATA' },

@@ -99,7 +99,7 @@ export const DAY_COPY = {
   /** day page, there is no review at all yet */
   noReview: 'A heti elemzés nem írt külön ehhez a naphoz — az elemzés még nem készült el.',
   footnote:
-    'A négy pálcika a nap részpontszáma. A „tanulom" azt jelenti: kevesebb mint két területről van adat — '
+    'A hat pálcika a nap részpontszáma. A „tanulom" azt jelenti: kevesebb mint két területről van adat — '
     + 'nem azt, hogy nulla volt a nap.',
 } as const
 

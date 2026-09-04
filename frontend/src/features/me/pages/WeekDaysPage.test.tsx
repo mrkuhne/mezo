@@ -58,7 +58,7 @@ describe('WeekDaysPage (mock mode)', () => {
     // legend — mezo-jcpt.5: hat sub-jel (nutrition/quality/training/sleep/logging/rhythm)
     expect(screen.getByText('edzés')).toBeInTheDocument()
     expect(screen.getByText('ritmus')).toBeInTheDocument()
-    expect(screen.getByText(/A négy pálcika a nap részpontszáma/)).toBeInTheDocument()
+    expect(screen.getByText(/A hat pálcika a nap részpontszáma/)).toBeInTheDocument()
   })
 
   test('CONTRACT — a day with fewer than two sub-scores says `tanulom`, not a zero', () => {
