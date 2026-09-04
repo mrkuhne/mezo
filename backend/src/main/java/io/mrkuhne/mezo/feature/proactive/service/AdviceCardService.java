@@ -34,9 +34,11 @@ import org.springframework.transaction.annotation.Transactional;
  * calls for the same user can race on separate threads. The gate above is a non-atomic
  * check-then-act, so without help the partial unique index would let commit ORDER, not
  * {@link AdvicePriority}, pick the day's card. {@code companionMessageRepository
- * .lockForDelivery} (a transaction-scoped {@code pg_advisory_xact_lock}, first statement in
- * {@link #deliver}) serializes deliveries per user so the read-then-write sequence is atomic
- * against other deliveries for the same user — see its javadoc for the full mechanism.
+ * .lockForDelivery} (a transaction-scoped {@code pg_advisory_xact_lock}, taken in {@link #deliver}
+ * before the incumbent read) serializes deliveries per user so the read-then-write sequence is
+ * atomic against other deliveries for the same user. See its javadoc for the full mechanism —
+ * including the narrower invariant it actually depends on (no write before this lock in the same
+ * transaction, not "first statement in the method") and the READ COMMITTED requirement.
  *
  * <p><b>Not conditioned on {@code INTERVENTION_SWITCH}</b>, deliberately: {@code SetupCheckService}
  * (which runs without that switch) is one of its two callers, so gating this bean on the
@@ -59,8 +61,9 @@ public class AdviceCardService {
 
     @Transactional
     public Optional<CompanionMessageEntity> deliver(UUID userId, AdviceCandidate candidate) {
-        // FIRST statement, before the incumbent read: see CompanionMessageRepository
-        // .lockForDelivery's javadoc for the race this closes (bd mezo-d58h.4). Serializes
+        // Taken before the incumbent read: see CompanionMessageRepository.lockForDelivery's
+        // javadoc for the race this closes (bd mezo-d58h.4) and the actual invariant it depends
+        // on — no WRITE before this call in the same transaction, in either caller. Serializes
         // concurrent deliver() calls for the SAME user so the read-then-write gate below is
         // atomic against them — the loser waits here, then re-reads a committed incumbent.
         companionMessageRepository.lockForDelivery(userId);
