@@ -5,7 +5,8 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { BeallitasokPage } from '@/features/me/pages/BeallitasokPage'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { API_BASE } from '@/data/_client/api'
+import { API_BASE, setToken } from '@/data/_client/api'
+import { tokenStore } from '@/data/_client/tokenStore'
 import { server } from '@/test/msw/server'
 import { TutorialProvider } from '@/features/tutorial/TutorialProvider'
 
@@ -140,4 +141,32 @@ test('a sor visszajelzést ad, és hiba esetén nem hazudik sikert', async () =>
   const user = userEvent.setup()
   await user.click(screen.getByRole('button', { name: 'Kalauzok újranézése' }))
   expect(await screen.findByText('Most nem sikerült — próbáld újra.')).toBeInTheDocument()
+})
+
+// Fiók csoport (S2, mezo-qw37.2): a fiók azonossága a /api/auth/me-ből, jelszócsere sheetben,
+// kijelentkezés csak ott, ahol van munkamenet mögötte.
+test('a Fiók csoport a nevet és az e-mailt mutatja, a jelszócsere sheetet nyit', async () => {
+  renderPage()
+  expect(await screen.findByText('Fiók')).toBeInTheDocument()
+  expect(screen.getByText('Daniel')).toBeInTheDocument()
+  expect(screen.getByText('daniel@mezo.local')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Jelszó módosítása' }))
+  expect(await screen.findByRole('dialog', { name: 'Új jelszó' })).toBeInTheDocument()
+})
+
+test('mock módban nincs Kijelentkezés sor (nincs mögötte munkamenet)', async () => {
+  renderPage()
+  await screen.findByText('Fiók')
+  expect(screen.queryByRole('button', { name: 'Kijelentkezés' })).not.toBeInTheDocument()
+})
+
+test('valós módban a Kijelentkezés törli a tokent', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  setToken('t'); tokenStore.set('t')
+  renderPage()
+  expect(await screen.findByText('Owner')).toBeInTheDocument()
+  expect(screen.getByText('owner@mezo.local')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Kijelentkezés' }))
+  expect(tokenStore.get()).toBeNull()
+  setToken(null)
 })
