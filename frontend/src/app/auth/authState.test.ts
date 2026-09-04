@@ -11,6 +11,11 @@ test('must-change-password wins over everything', () => {
   expect(deriveFromMe({ ...me, mustChangePassword: true, onboarded: false })).toBe('mustChangePassword')
 })
 
+test('a not-yet-onboarded user goes to the wizard (after the password gate)', () => {
+  expect(deriveFromMe({ ...me, onboarded: false })).toBe('onboarding')
+  expect(deriveFromMe({ ...me, onboarded: false, mustChangePassword: true })).toBe('mustChangePassword')
+})
+
 test('a 401/403 on me means the session is dead', () => {
   expect(deriveFromError(new ApiError([{ code: 'AUTH_TOKEN_MISSING', message: '' }], 401))).toBe('signedOut')
   expect(deriveFromError(new ApiError([{ code: 'AUTH_ACCOUNT_DISABLED', message: '' }], 403))).toBe('signedOut')
