@@ -47,7 +47,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [quickinput](#quickinput) | · | · | · | ✓ | · |
 | [recipe](#recipe) | ✓ | 1 | · | · | [recipe](features/recipe.md) |
 | [ritual](#ritual) | ✓ | 1 | ✓ | ✓ | [ritual](features/ritual.md) |
-| [today](#today) | · | · | ✓ | ✓ | [habit](features/habit.md), [intention](features/intention.md), [needs](features/needs.md), [ritual](features/ritual.md), [today](features/today.md) |
+| [today](#today) | · | · | ✓ | ✓ | [habit](features/habit.md), [intention](features/intention.md), [lifegoal](features/lifegoal.md), [needs](features/needs.md), [ritual](features/ritual.md), [today](features/today.md) |
 | [train](#train) | ✓ | 1 | ✓ | ✓ | [fuel](features/fuel.md), [goal-engine](features/goal-engine.md), [train](features/train.md), [_platform-data-layer](features/_platform-data-layer.md) |
 | [tutorial](#tutorial) | ✓ | 1 | ✓ | ✓ | [tutorial](features/tutorial.md) |
 
@@ -244,7 +244,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-02, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-09-04, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
-  [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-03, in-progress) ·
+  [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-04, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-04, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
@@ -276,21 +276,23 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `GraphPromotionService`, `GraphPromptAssembler`, `GraphReconcileResult`, `GraphService`, `GraphTraversalService`,
     `HypothesisJob`, `HypothesisPipelineService`, `KnowledgeFactChangedEvent`, `KnowledgeFactPromotedEvent`,
     `KnowledgeFactService`, `LifeEventCandidateService`, `LifeEventExtractionService`, `LifeEventSuggestion`,
-    `MeWeekService`, `MemoryObservatoryService`, `MemoryRecallService`, `MesoContextAssembler`, `MesoReviewGenerator`,
-    `MesoReviewListener`, `MessageFeedbackService`, `MetricDomain`, `MetricKey`, `MetricSeriesService`,
-    `MetricValueKind`, `PatternConfirmedEvent`, `PatternDetectionJob`, `PatternDetectionService`, `PatternGate`,
-    `PatternImpactSource`, `PatternMonitorService`, `PatternPairDetailService`, `PatternRetractedEvent`,
-    `PatternService`, `PearsonCorrelation`, `PeopleSnapshotBlock`, `PeriodSummaryService`, `PersonExtractionResult`,
-    `PersonExtractionService`, `PersonGraphEdgeAdapter`, `ProfileAssembler`, `ProfileAssemblerJob`,
-    `ProfilePromptAssembler`, `PromptMemoryAssembler`, `QuarterlyReviewJob`, `QuarterlyReviewService`, `Quarters`,
-    `SeasonSuggestion`, `TranscriptionService`, `WeekContextRenderer`, `WeeklyScoreService`
+    `MeWeekService`, `MemoryObservatoryService`, `MemoryProjectionEvent`, `MemoryProjectionListener`,
+    `MemoryProjectionWriter`, `MemoryRecallService`, `MemoryReembeddingJob`, `MemoryReembeddingService`,
+    `MesoContextAssembler`, `MesoReviewGenerator`, `MesoReviewListener`, `MessageFeedbackService`, `MetricDomain`,
+    `MetricKey`, `MetricSeriesService`, `MetricValueKind`, `PatternConfirmedEvent`, `PatternDetectionJob`,
+    `PatternDetectionService`, `PatternGate`, `PatternImpactSource`, `PatternMonitorService`,
+    `PatternPairDetailService`, `PatternRetractedEvent`, `PatternService`, `PearsonCorrelation`, `PeopleSnapshotBlock`,
+    `PeriodSummaryService`, `PersonExtractionResult`, `PersonExtractionService`, `PersonGraphEdgeAdapter`,
+    `ProfileAssembler`, `ProfileAssemblerJob`, `ProfilePromptAssembler`, `PromptMemoryAssembler`, `QuarterlyReviewJob`,
+    `QuarterlyReviewService`, `Quarters`, `SeasonSuggestion`, `TranscriptionService`, `WeekContextRenderer`,
+    `WeeklyScoreService`
   - **controllers→contract:** `CompanionController`→`CompanionApi`,
     `CompanionFeedbackController`→`CompanionFeedbackApi`, `CompanionStreamController`,
     `CompanionVoiceController`→`CompanionVoiceApi`, `GraphController`→`KnowledgeGraphApi`,
     `MeWeekController`→`MeWeekApi`
   - **mappers:** `CompanionMapper`, `GraphMapper`, `MessageFeedbackMapper`
   - **config:** `CompanionProperties`, `DayEvaluationProperties`, `FeedbackLearningProperties`, `FlagProperties`,
-    `ProfileProperties`, `QuarterlyProperties`
+    `MemoryPlatformProperties`, `ProfileProperties`, `QuarterlyProperties`
   - **events/listeners:** `DecisionEmbeddingListener`, `GratitudeEmbeddingListener`, `JournalEmbeddingListener`,
     `ReflectionEmbeddingListener`, `TurnEmbeddingListener`
   - **other:** `AdvisedAnswer`, `AdvisorRetry`, `AdvisorViolation`, `AllHealthyRule`, `BiometricsTools`,
@@ -329,7 +331,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     GET /api/companion/graph/edge/count
 - **Contract** `api/feature/me-week/me-week.yml` — 3 operations
   - **endpoints:** GET /api/me/week/{start} · GET /api/me/week/{start}/trend · GET /api/me/day/{date}/evaluation
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 149 IT + 22 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 152 IT + 22 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMentionListenerIT`, `ChatServiceAmbientRecallIT`,
     `ChatServiceGraphBlockFailureIT`, `ChatServiceGraphBlockIT`, `ChatServiceGraphBlockSwitchOffIT`, `ChatServiceIT`,
@@ -358,7 +360,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `KnowledgeFactServiceIT`, `LearnedFactPersistenceIT`, `LifeEventExtractionServiceIT`, `LifeGoalProposeNameIT`,
     `MeWeekControllerIT`, `MeWeekServiceFuelFetchCountIT`, `MeWeekTrendIT`, `MemoryEmbeddingAnnQueryIT`,
     `MemoryEmbeddingRepositoryIT`, `MemoryEmbeddingWriterIT`, `MemoryLlmUsageIsolationIT`,
-    `MemoryPlatformPersistenceIT`, `MemoryRecallServiceIT`, `MemoryToolsRenderIT`, `MesoReviewGeneratorIT`,
+    `MemoryPlatformPersistenceIT`, `MemoryProjectionFailureIsolationIT`, `MemoryProjectionWriterIT`,
+    `MemoryRecallServiceIT`, `MemoryReembeddingIT`, `MemoryToolsRenderIT`, `MesoReviewGeneratorIT`,
     `MessageFeedbackPersistenceIT`, `MetricSeriesCoachingIT`, `MetricSeriesDerivedIT`, `MetricSeriesExpansionIT`,
     `MetricSeriesServiceIT`, `NoteEmbeddingBudgetIT`, `NoteEmbeddingCatchUpIT`, `NoteEmbeddingSwitchOffIT`,
     `NoteEmbeddingWriterIT`, `NoteMentionCatchUpIT`, `NoteVectorLifecycleBudgetIT`, `NoteVectorLifecycleIT`,
@@ -636,7 +639,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### lifegoal
 
-*BE + API + FE-data* · read next: [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-03, in-progress)
+*BE + API + FE-data* · read next: [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-04, in-progress)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal`
   - **sub-features:** `catalog`, `engine`
@@ -704,7 +707,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/growth.md](features/growth.md) (updated 2026-09-04, done) ·
   [docs/features/habit.md](features/habit.md) (updated 2026-09-04, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
-  [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-03, in-progress) ·
+  [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-04, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-04, mixed) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-02, done) ·
   [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-02, mixed)
@@ -712,18 +715,19 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/me`
   - **hooks (via `@/data/hooks`):** `DayEvaluationResponse`, `NormalizedDayDimension`, `NormalizedDayEvaluation`,
     `normalizeDayEvaluation`, `useBiometricActions`, `useBiometricProfile`, `useDayEvaluation`,
-    `useFeasibilityPreview`, `useGoal`, `useGoalActions`, `useGoalCreation`, `useGoalSuggestions`, `useLlmCall`,
-    `useLlmCalls`, `useLlmUsageBreakdown`, `useLlmUsageSummary`, `useMeWeek`, `usePeople`, `useProfile`, `useSleep`,
-    `useSleepGoal`, `useSleepGoalActions`, `useSleepShot`, `useSuggestionActions`, `useWeekLessons`, `useWeeklyReview`,
-    `useWeight`
+    `useFeasibilityPreview`, `useGoal`, `useGoalActions`, `useGoalCreation`, `useGoalOverview`, `useGoalSuggestions`,
+    `useLlmCall`, `useLlmCalls`, `useLlmUsageBreakdown`, `useLlmUsageSummary`, `useMeWeek`, `usePeople`, `useProfile`,
+    `useSleep`, `useSleepGoal`, `useSleepGoalActions`, `useSleepShot`, `useSuggestionActions`, `useWeekLessons`,
+    `useWeeklyReview`, `useWeight`
   - **modules:** biometricHooks.ts, biometricProfileApi.ts, biometricsApi.ts, dayEvaluation.ts, dayEvaluationApi.ts,
-    dayEvaluationHooks.ts, goalApi.ts, goalHooks.ts, goalLinkApi.ts, goals.ts, llmUsageApi.ts, llmUsageHooks.ts,
-    meHooks.ts, meWeek.ts, meWeekApi.ts, meWeekHooks.ts, people.ts, peopleApi.ts, peopleHooks.ts, sleep.ts,
-    sleepGoal.ts, sleepHooks.ts, sleepShot.ts, weekLessons.ts, weekLessonsHooks.ts, weeklyReviewApi.ts,
+    dayEvaluationHooks.ts, goalApi.ts, goalHooks.ts, goalLinkApi.ts, goalOverviewHooks.ts, goals.ts, llmUsageApi.ts,
+    llmUsageHooks.ts, meHooks.ts, meWeek.ts, meWeekApi.ts, meWeekHooks.ts, people.ts, peopleApi.ts, peopleHooks.ts,
+    sleep.ts, sleepGoal.ts, sleepHooks.ts, sleepShot.ts, weekLessons.ts, weekLessonsHooks.ts, weeklyReviewApi.ts,
     weeklyReviewHooks.ts, weeklyReviewMock.ts, weightHooks.ts
 - **FE ui** `frontend/src/features/me`
   - **pages:** AiCallDetailPage.tsx, AiUsagePage.tsx, BeallitasokPage.tsx, BetaAdminPage.tsx, CelPage.tsx,
-    CelWizardPage.tsx, CelokPage.tsx, EnHubPage.tsx, GoalPlannerPage.tsx, GoalsPage.tsx, GoalsSkeleton.tsx,
+    CelWizardPage.tsx, CelokPage.tsx, EnHubPage.tsx, GoalDietPage.tsx, GoalGuardsPage.tsx, GoalPlannerPage.tsx,
+    GoalPlansPage.tsx, GoalSegmentPage.tsx, GoalSettingsPage.tsx, GoalsPage.tsx, GoalsSkeleton.tsx,
     GrowthAwardsPage.tsx, GrowthHubPage.tsx, GrowthNaploPage.tsx, GrowthSkillsPage.tsx, HabitPage.tsx, JelekPage.tsx,
     JournalPage.tsx, NightPage.tsx, NotificationFeedPage.tsx, NotificationsPage.tsx, PeopleEmlitesekPage.tsx,
     PeopleHetiPage.tsx, PeopleJeloltekPage.tsx, PeopleKorPage.tsx, PeoplePage.tsx, PersonDetailPage.tsx,
@@ -736,22 +740,24 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **components:** AdminInviteRow.tsx, AdminUserRow.tsx, AiCallFilters.tsx, AiCallRow.tsx, AiCallUsage.tsx,
     AiFeatureBreakdown.tsx, AiModelBreakdown.tsx, AiPayloadBlock.tsx, AiPriceSnapshot.tsx, AiTokenBar.tsx,
     AiUsageHero.tsx, AiUserFilter.tsx, BadgesCard.tsx, DayDimensionTile.tsx, DayNavTiles.tsx, DayReviewCard.tsx,
-    DetailStat.tsx, FieldRow.tsx, GoalGate.tsx, GoalMiniCard.tsx, GoalPlanSlots.tsx, GoalRecept.tsx,
+    DetailStat.tsx, FieldRow.tsx, GoalConnectionTimeline.tsx, GoalCourseHero.tsx, GoalDietWeekCard.tsx, GoalGate.tsx,
+    GoalGuardCard.tsx, GoalMiniCard.tsx, GoalPlanSlots.tsx, GoalRecept.tsx, GoalSegmentRail.tsx,
     GoalSuggestionCard.tsx, GoalTimeline.tsx, GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthHero.tsx,
     GrowthJournalCard.tsx, LifeGoalTile.tsx, MaStrip.tsx, MentionRow.tsx, NightArcCard.tsx, NightBodyScan.tsx,
     NightBreathing.tsx, NightWalk.tsx, NotificationCategoryRow.tsx, NotificationPreviewHeader.tsx, PerksCard.tsx,
     PermahRing.tsx, PersonCard.tsx, PhaseAverageCard.tsx, PhaseRail.tsx, PhaseReferenceRow.tsx, PillarCard.tsx,
     PushInstallGate.tsx, RemDurationCard.tsx, SkillBandCard.tsx, SleepChart.tsx, SleepEscalationCard.tsx,
     SleepLogRow.tsx, SleepStat.tsx, SleepStatCard.tsx, TimePicker.tsx, WeekDayCard.tsx, WeekDayTile.tsx,
-    WeekDiscoveries.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx,
-    WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx,
+    WeekDiscoveries.tsx, WeekGoalsCard.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx,
+    WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx,
     WeightTrendChart.tsx
-  - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, dayScoreState.ts, goalLabels.ts, gratitudeStreak.ts,
-    growthJournal.ts, growthStats.ts, habitAnchors.ts, habitMetricPalette.ts, humanGeneratedAt.ts,
-    knowledgeNodeVisuals.ts, lifegoalLabels.ts, llmCallFormat.ts, nightContent.ts, nightFlow.ts, nightTrace.ts,
-    notificationForecast.ts, peopleDerive.ts, peopleVisuals.ts, perkMilestones.ts, pillarFromCatalog.ts,
-    routineSentence.ts, scoreBand.ts, sleepEducation.ts, sleepEscalation.ts, sleepPhases.ts, sleepStats.ts,
-    useChatHandoff.ts, weekDay.ts, weekHighlight.ts, weekHub.ts, weekNav.ts, weightStats.ts
+  - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, dayScoreState.ts, goalLabels.ts, goalOverviewCopy.ts,
+    goalSkillChips.ts, goalWeekSentence.ts, gratitudeStreak.ts, growthJournal.ts, growthStats.ts, habitAnchors.ts,
+    habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, lifegoalLabels.ts, llmCallFormat.ts,
+    nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts, peopleVisuals.ts,
+    perkMilestones.ts, pillarFromCatalog.ts, routineSentence.ts, scoreBand.ts, sleepEducation.ts, sleepEscalation.ts,
+    sleepPhases.ts, sleepStats.ts, useChatHandoff.ts, weekDay.ts, weekHighlight.ts, weekHub.ts, weekNav.ts,
+    weightStats.ts
 
 ### meal
 
@@ -968,7 +974,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/proactive/challenge/{id}/decision · GET /api/proactive/weekly-review/{start} ·
     POST /api/proactive/weekly-review/{start}/regenerate · GET /api/proactive/weekly-review/{start}/lessons ·
     GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 66 IT + 5 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 67 IT + 5 unit
   - **ITs:** `AdviceApplyServiceIT`, `AdviceCardServiceIT`, `AdviceProseGeneratorIT`, `ChallengeGeneratorIT`,
     `ChallengeJobIT`, `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`, `ChallengePersistenceIT`,
     `CompanionMessageAdvicePersistenceIT`, `CompanionMessageEventIT`, `CompanionMessageGeneratorIT`,
@@ -984,16 +990,16 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ProactiveApiExperimentIT`, `ProactiveApiFeedIT`, `ProactiveApiIT`, `ProactiveApiSwitchOffIT`,
     `ProactiveMemoirArchiveIT`, `ProactiveMemoirArchiveSwitchOffIT`, `SetupCheckJobSwitchOffIT`,
     `SetupCheckPropertiesIT`, `SetupCheckServiceIT`, `SleepAnchorShiftAdapterIT`, `SleepDiagnosisIT`,
-    `SportSlotSkipAdapterIT`, `WeeklyLessonServiceIT`, `WeeklyReviewControllerIT`, `WeeklyReviewGeneratorIT`,
-    `WeeklySuggestionGeneratorIT`, `WeeklySuggestionJobIT`, `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionNameIT`,
-    `WeeklySuggestionPersistenceIT`
+    `SportSlotSkipAdapterIT`, `WeeklyLessonServiceIT`, `WeeklyReviewContextSourcesIT`, `WeeklyReviewControllerIT`,
+    `WeeklyReviewGeneratorIT`, `WeeklySuggestionGeneratorIT`, `WeeklySuggestionJobIT`,
+    `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionNameIT`, `WeeklySuggestionPersistenceIT`
   - **populators:** `ActivityPopulator`, `ChallengePopulator`, `CheckInPopulator`, `CompanionMessagePopulator`,
     `DailySummaryPopulator`, `DatabasePopulator`, `DiagnosisPopulator`, `ExperimentPopulator`, `FlagLogPopulator`,
     `GoalPopulator`, `GraphPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`,
-    `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`, `MentionPopulator`, `PatternPopulator`,
-    `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`, `QuestPopulator`, `SleepGoalPopulator`,
-    `SleepLogPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
-    `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`
+    `LifeGoalPopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`, `MentionPopulator`,
+    `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`, `QuestPopulator`,
+    `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`, `UserPopulator`,
+    `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`
 
 ### progression
 
@@ -1110,6 +1116,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-04, done) ·
   [docs/features/intention.md](features/intention.md) (updated 2026-08-30, done) ·
+  [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-04, in-progress) ·
   [docs/features/needs.md](features/needs.md) (updated 2026-08-30, done) ·
   [docs/features/ritual.md](features/ritual.md) (updated 2026-08-30, done) ·
   [docs/features/today.md](features/today.md) (updated 2026-09-04, mixed)
@@ -1124,7 +1131,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     NapRutinPage.tsx
   - **sheets:** ActivityLogSheet.tsx, CheckInSheet.tsx, IntentionSheet.tsx, ReflectSheet.tsx
   - **components:** ActivityLogCard.tsx, DailyQuestList.tsx, DailyQuestsCard.tsx, DailyQuestsSheet.tsx,
-    EletjelStrip.tsx, MezoMessagesSheet.tsx
+    EletjelStrip.tsx, LifeGoalTodayTile.tsx, MezoMessagesSheet.tsx
   - **logic:** dayArc.ts, dayFace.ts, dayOrbFill.ts, dayOrbTone.ts, habitAction.ts, habitCelebration.ts,
     habitClayIcon.ts, itemIcon.ts, mezoMessages.ts, needs.ts, needsInputs.ts, needsNudges.ts, nudgeSeen.ts,
     questAction.ts, todayItems.ts, useDayFace.ts, useDayOrbFill.ts, useMinuteTick.ts, useNeeds.ts, windDown.ts
@@ -1305,7 +1312,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   ItemRow.tsx, NumberInput.tsx, PageTitle.tsx, ProgressBar.tsx, RefTag.tsx, ScoreRing.tsx, ScreenSkeleton.tsx,
   Sheet.tsx, Skeleton.tsx, SortableList.tsx, Spinner.tsx, StatCell.tsx, StatStrip.tsx, Stepper.tsx, ToastProvider.tsx,
   Toggle.tsx, ToolChip.tsx, ToolChipRow.tsx, TrendChart.tsx, clay/clay-icons.svg, clay/clay-spots.svg, clay/index.tsx,
-  kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/index.tsx, mozaik/motion.tsx, sectionLabel.ts
+  kalauz/KalauzSheet.tsx, kalauz/KalauzWelcome.tsx, mozaik/arrival.tsx, mozaik/index.tsx, mozaik/motion.tsx,
+  sectionLabel.ts
 
 ### test infrastructure — `backend/src/test/java/io/mrkuhne/mezo/support`, `frontend/src/test`
 
