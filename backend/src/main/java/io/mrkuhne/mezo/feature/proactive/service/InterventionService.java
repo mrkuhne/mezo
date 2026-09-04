@@ -4,12 +4,13 @@ import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.feedback.config.FeedbackLearningProperties;
 import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupEntity;
 import io.mrkuhne.mezo.feature.companion.feedback.repository.FeedbackRollupRepository;
+import io.mrkuhne.mezo.feature.companion.flags.entity.CompanionFlagLogEntity;
+import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
+import io.mrkuhne.mezo.feature.companion.flags.repository.CompanionFlagLogRepository;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
-import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEnvelope;
 import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.Instant;
-import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -18,6 +19,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -36,8 +38,9 @@ import org.springframework.transaction.annotation.Transactional;
  * entry is always tried before a proven-mediocre one. Ties keep config order (Stream.max keeps
  * the FIRST max under a strict comparator).
  *
- * <p><b>One card per day</b> (the partial unique index — first raise wins): a second same-day
- * raise of ANY flag delivers nothing (anti-nagging), logged at info.
+ * <p><b>One card per day</b> is no longer enforced here: since S4 (mezo-d58h.4) the day gate and
+ * the spec §4 severity order live in {@link AdviceCardService}, so a higher-severity raise later
+ * in the day supersedes the card this method produced.
  *
  * <p>The push half is NOT here: {@code AnchorResolver} anchors on the card row and applies
  * quiet-hours deferral + the channel gate (feed = no push).
@@ -61,15 +64,19 @@ public class InterventionService {
     private final FeedbackLearningProperties feedbackLearningProperties;
     private final FeedbackRollupRepository feedbackRollupRepository;
     private final CompanionMessageRepository companionMessageRepository;
+    private final CompanionFlagLogRepository companionFlagLogRepository;
+    private final AdviceCardService adviceCardService;
 
+    /**
+     * The eligible library entry with the best effectiveness becomes today's advice CANDIDATE;
+     * {@link AdviceCardService} owns the day gate and the severity comparison from there (S4,
+     * mezo-d58h.4). This method keeps exactly what is intervention-specific: the library filter,
+     * the per-entry cooldown, and the effectiveness weighting. The same-day short-circuit this
+     * method used to carry is GONE on purpose — a higher-severity flag raised later in the day
+     * must be able to supersede the card, which it cannot do if delivery returns early here.
+     */
     @Transactional
     public Optional<CompanionMessageEntity> deliverForFlag(UUID userId, String flagKey) {
-        LocalDate today = LocalDate.now();
-        if (companionMessageRepository.findByCreatedByAndMessageDateAndKind(
-                userId, today, CompanionMessageEntity.KIND_INTERVENTION).isPresent()) {
-            log.info("Intervention for {} skipped for user {}: today's card already exists", flagKey, userId);
-            return Optional.empty();
-        }
         List<CompanionProperties.Intervention> candidates = companionProperties.interventions().stream()
             .filter(entry -> entry.flag().equals(flagKey))
             .filter(entry -> !inCooldown(userId, entry))
@@ -88,24 +95,28 @@ public class InterventionService {
         CompanionProperties.Intervention picked = candidates.stream()
             .max(Comparator.comparingDouble(entry -> effectivenessByKey.get(entry.key())))
             .orElseThrow();
-        CompanionMessageEntity row = new CompanionMessageEntity();
-        row.setCreatedBy(userId);
-        row.setMessageDate(today);
-        row.setKind(CompanionMessageEntity.KIND_INTERVENTION);
-        row.setContent(new CompanionMessageEnvelope(EYEBROW, List.of(picked.textHu()), List.of(), picked.key()));
-        row.setGeneratedAt(Instant.now());
-        CompanionMessageEntity saved = companionMessageRepository.saveAndFlush(row);
-        log.info("Intervention {} delivered for user {} (flag {})", picked.key(), userId, flagKey);
-        return Optional.of(saved);
+        // The raise's OWN frozen payload — never a re-derivation of the rule (spec §5: facts are
+        // rule-provided). A raise with no payload yields no facts, and the card still ships.
+        FlagPayloadEnvelope payload = companionFlagLogRepository
+            .findFirstByCreatedByAndFlagKeyAndDeletedFalseOrderByCreatedAtDesc(userId, flagKey)
+            .map(CompanionFlagLogEntity::getPayload)
+            .orElse(null);
+        return adviceCardService.deliver(userId, AdviceCandidate.fromFlag(
+            flagKey, picked.key(), EYEBROW,
+            AdviceFactRenderer.render(flagKey, payload),
+            List.of(picked.textHu()), picked.textHu()));
     }
 
-    /** The same key must not repeat inside its own cooldown window — envelope keys of recent
-     *  cards, filtered in memory (single-user volumes, spec §12). */
+    /** The same library ENTRY must not repeat inside its own cooldown window — envelope
+     *  {@code interventionKey}s of recent cards, filtered in memory (single-user volumes, spec
+     *  §12). Reads BOTH kinds: {@code advice} is what S4 writes, {@code intervention} is what rows
+     *  written before S4 carry, and a cooldown that stopped seeing the older rows would let a
+     *  just-delivered entry repeat the day after the deploy. */
     private boolean inCooldown(UUID userId, CompanionProperties.Intervention entry) {
         Instant since = Instant.now().minus(entry.cooldownHours(), ChronoUnit.HOURS);
-        return companionMessageRepository
-            .findByCreatedByAndKindAndGeneratedAtAfter(userId, CompanionMessageEntity.KIND_INTERVENTION, since)
-            .stream()
+        return Stream.of(CompanionMessageEntity.KIND_ADVICE, CompanionMessageEntity.KIND_INTERVENTION)
+            .flatMap(kind -> companionMessageRepository
+                .findByCreatedByAndKindAndGeneratedAtAfter(userId, kind, since).stream())
             .anyMatch(row -> entry.key().equals(row.getContent().interventionKey()));
     }
 
