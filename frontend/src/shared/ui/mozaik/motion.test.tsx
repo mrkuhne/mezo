@@ -1,5 +1,7 @@
 import { act, render, renderHook, screen } from '@testing-library/react'
+import type { ReactNode } from 'react'
 import { EntranceGroup, useCountUp, useContinuingCountUp, useCountUpOnChange } from '@/shared/ui/mozaik/motion'
+import { ArrivalContext } from '@/shared/ui/mozaik/arrival'
 
 // Motion kit (mezo-d20.1.4): one-shot entrance choreography + count-up.
 // Reduced-motion is CSS-guarded for the choreography; the count-up hook
@@ -148,5 +150,64 @@ describe('useCountUpOnChange — a CSS transition tükre: mountoláskor a helyé
     )
     rerender({ t: 100 })
     expect(result.current).toBe(100)
+  })
+})
+
+describe('arrival-aware choreography — a back navigation must not replay the entrance (mezo-kuwj)', () => {
+  function returning(node: ReactNode) {
+    return <ArrivalContext.Provider value="pop">{node}</ArrivalContext.Provider>
+  }
+
+  test('EntranceGroup leaves the choreography UNARMED when the user returned by a back navigation', () => {
+    stubReducedMotion(false)
+    const { container } = render(returning(<EntranceGroup><div className="rise">tile</div></EntranceGroup>))
+    // No .mz-play means `.mz-play .rise { opacity: 0 }` never matches — the tiles render settled
+    // instead of fading in from nothing, which is the flash the user reported on swipe-back.
+    expect(container.querySelector('.mz-play')).toBeNull()
+    expect(container.querySelector('.rise')).not.toBeNull()
+  })
+
+  test('a replayKey change still re-arms the choreography after a pop arrival (daypart switch)', () => {
+    stubReducedMotion(false)
+    const { container, rerender } = render(returning(<EntranceGroup replayKey="reggel"><div /></EntranceGroup>))
+    expect(container.querySelector('.mz-play')).toBeNull()
+    rerender(returning(<EntranceGroup replayKey="este"><div /></EntranceGroup>))
+    expect(container.querySelector('.mz-play')).not.toBeNull()
+  })
+
+  test('useCountUp sits at its target on a pop arrival — the hero numeral does not re-spin from 0', () => {
+    stubReducedMotion(false)
+    render(returning(<CountUpProbe target={420} />))
+    expect(Number(screen.getByRole('status').textContent)).toBe(420)
+  })
+
+  test('useCountUp still animates a target change made AFTER a pop arrival (mount-time snapshot only)', () => {
+    stubReducedMotion(false)
+    vi.useFakeTimers()
+    const { rerender } = render(returning(<CountUpProbe target={420} />))
+    rerender(returning(<CountUpProbe target={500} />))
+    act(() => { vi.advanceTimersByTime(200) })
+    const mid = Number(screen.getByRole('status').textContent)
+    expect(mid).toBeGreaterThan(420)
+    expect(mid).toBeLessThan(500)
+    act(() => { vi.advanceTimersByTime(500) })
+    expect(Number(screen.getByRole('status').textContent)).toBe(500)
+    vi.useRealTimers()
+  })
+
+  test('useContinuingCountUp sits at its target on a pop arrival instead of climbing from 0', () => {
+    stubReducedMotion(false)
+    // isJsdom() would skip the animation anyway — pretend to be a real browser so this
+    // asserts the arrival rule, not the jsdom escape hatch.
+    const realUserAgent = navigator.userAgent
+    Object.defineProperty(navigator, 'userAgent', { value: 'TestBrowser/1.0', configurable: true })
+    try {
+      const { result } = renderHook(() => useContinuingCountUp(3140, 900), {
+        wrapper: ({ children }) => returning(children),
+      })
+      expect(result.current).toBe(3140)
+    } finally {
+      Object.defineProperty(navigator, 'userAgent', { value: realUserAgent, configurable: true })
+    }
   })
 })

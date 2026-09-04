@@ -6,6 +6,7 @@ import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { KeretHero } from '@/features/fuel/components/KeretHero'
+import { ArrivalContext } from '@/shared/ui/mozaik/arrival'
 import type { KeretHeroVM, RingVM } from '@/features/fuel/logic/keretHero'
 
 // Force reduced-motion (the stubReduced pattern, CountUp.test.tsx precedent).
@@ -79,6 +80,20 @@ describe('KeretHero — count-up (the number is today\'s CONSUMED kcal)', () => 
     render(<KeretHero vm={VM({ consumedKcal: 2640, targetKcal: 2400 })} onChip={vi.fn()} onWaterRing={vi.fn()} />)
     expect(screen.getByText('2 640')).toBeInTheDocument()
     expect(screen.getByLabelText('2 640 kcal ma')).toBeInTheDocument()
+  })
+
+  it('sits at the consumed-kcal value on a pop arrival — no respin from 0 on swipe-back (mezo-kuwj)', () => {
+    // The hero's sweep is 2s long, so replaying it on every back navigation is the single
+    // loudest part of the "the page reloaded" feel. Real-browser UA + no reduced-motion stub
+    // means the animated branch is live and only the arrival rule can settle the number.
+    vi.spyOn(window.navigator, 'userAgent', 'get').mockReturnValue('Mozilla/5.0 (Test Browser)')
+    render(
+      <ArrivalContext.Provider value="pop">
+        <KeretHero vm={VM({ consumedKcal: 1240 })} onChip={vi.fn()} onWaterRing={vi.fn()} />
+      </ArrivalContext.Provider>,
+    )
+    expect(screen.getByText('1 240')).toBeInTheDocument()
+    expect(screen.queryByText('0')).not.toBeInTheDocument()
   })
 
   it('moving-path smoke: shows 0 at mount, then the final HU-grouped value once the rAF loop completes', async () => {
