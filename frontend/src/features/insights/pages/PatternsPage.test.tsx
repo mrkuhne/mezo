@@ -68,6 +68,10 @@ describe('PatternsPage (mock mode)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Következő oldal' }))
     expect(container.querySelectorAll('.mnt-ptile.dashed')).toHaveLength(3)
     expect(screen.getByText('6–8 / 8')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /megerősítve/i }))
+    fireEvent.click(screen.getByRole('button', { name: /még gyűlik/i }))
+    expect(container.querySelectorAll('.mnt-ptile.dashed')).toHaveLength(5)
+    expect(screen.getByText('1–5 / 8')).toBeInTheDocument()
     // raw statistics never reach a tile face
     expect(screen.queryByText(/r=/)).not.toBeInTheDocument()
   })
@@ -115,6 +119,9 @@ describe('PatternsPage (mock mode)', () => {
     expect(screen.getByRole('button', { name: /még gyűlik/i }).textContent).toBe(gatheringCount)
     expect(screen.queryByText('6–8 / 8')).not.toBeInTheDocument()
     expect(screen.getByText(/Táplálkozás/)).toBeInTheDocument()
+    expect(screen.getByText('A ciklus vége felé nő az étvágyad?')).toBeInTheDocument()
+    expect(screen.getByText('Hétvégén később csúszik az utolsó étkezés?')).toBeInTheDocument()
+    expect(screen.queryByText('Könnyebb az edzés, ha jól aludtál?')).not.toBeInTheDocument()
   })
 
   test('a decide-bucket hypothesis entry with no monitor pair has a working detail link', () => {
