@@ -145,6 +145,25 @@ describe('buildMezoMessages', () => {
     const msgs = buildMezoMessages({ feed: [midday], demoBriefing: null, nudges: [] })
     expect(msgs.map((m) => m.id)).toEqual(['midday'])
   })
+
+  // S4 (mezo-d58h.4) — az advice-kártya facts/suggestions tömbjei 1:1 futnak át a szál elemére.
+  const advice: FeedMessage = {
+    id: '44444444-4444-4444-8444-444444444444',
+    kind: 'advice',
+    eyebrow: 'Mezo · észrevétel',
+    body: [{ type: 'p', text: 'Ma este feküdj le korábban.' }],
+    refs: [],
+    facts: ['Alvásadósság: 1,6 óra/éjszaka'],
+    suggestions: ['Told előre a villanyoltást.'],
+    generatedAt: '2026-07-06T15:00:00Z',
+  }
+
+  test('az advice feed-elem facts/suggestions tömbjei átfutnak a szál elemére', () => {
+    const [m] = buildMezoMessages({ feed: [advice], demoBriefing: null })
+    expect(m.kind).toBe('advice')
+    expect(m.facts).toEqual(['Alvásadósság: 1,6 óra/éjszaka'])
+    expect(m.suggestions).toEqual(['Told előre a villanyoltást.'])
+  })
 })
 
 describe('partitionMezoThread (mezo-ho9k)', () => {

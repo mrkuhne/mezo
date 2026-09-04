@@ -927,7 +927,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### proactive
 
-*BE + API* · read next: [docs/features/proactive.md](features/proactive.md) (updated 2026-09-03, complete)
+*BE + API* · read next: [docs/features/proactive.md](features/proactive.md) (updated 2026-09-04, complete)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/proactive`
   - **entities→tables:** `ChallengeEntity`→`challenge`, `CompanionMessageEntity`→`companion_message`,
@@ -937,18 +937,19 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **repositories:** `ChallengeRepository`, `CompanionMessageRepository`, `DiagnosisRepository`,
     `ExperimentRepository`, `MemoirRepository`, `PredictionRepository`, `WeeklyReviewRepository`,
     `WeeklySuggestionRepository`
-  - **services:** `ChallengeGenerator`, `ChallengeJob`, `ChallengeOutcomeEvaluator`, `CompanionMessageEventListener`,
-    `CompanionMessageGenerator`, `CompanionMessageJob`, `DiagnosisGenerator`, `DiagnosisRecipe`, `DiagnosisService`,
-    `ExperimentJob`, `ExperimentOutcomeService`, `ExperimentProposalGenerator`, `FatigueEvidenceCollector`,
-    `FeedMessageKindService`, `GrowthDigestBlock`, `HighlightCitationSourceAdapter`, `InterventionEventListener`,
-    `InterventionService`, `LogFreshnessProbe`, `MemoirGenerator`, `MemoirJob`, `MetricWindowEvaluator`,
-    `OverloadChallengeGenerator`, `PatternImpactService`, `PeopleMezoNoteAdapter`, `PlanFeasibilityCalculator`,
-    `PredictionGenerator`, `PredictionJob`, `PredictionValidationService`, `ProactiveChallengeService`,
-    `ProactiveExperimentService`, `ProactiveFeedService`, `ProactiveMemoirService`, `ProactivePredictionService`,
-    `ProactiveWeeklySuggestionService`, `SetupCheckJob`, `SetupCheckService`, `WeekReviewSourceAdapter`,
-    `WeeklyLessonService`, `WeeklyReviewContextSources`, `WeeklyReviewDigestService`, `WeeklyReviewGenerator`,
-    `WeeklyReviewJob`, `WeeklyReviewService`, `WeeklyReviewWeekWindow`, `WeeklySuggestionGenerator`,
-    `WeeklySuggestionJob`
+  - **services:** `AdviceCandidate`, `AdviceCardService`, `AdviceFactRenderer`, `AdvicePriority`,
+    `AdviceProseGenerator`, `ChallengeGenerator`, `ChallengeJob`, `ChallengeOutcomeEvaluator`,
+    `CompanionMessageEventListener`, `CompanionMessageGenerator`, `CompanionMessageJob`, `DiagnosisGenerator`,
+    `DiagnosisRecipe`, `DiagnosisService`, `ExperimentJob`, `ExperimentOutcomeService`, `ExperimentProposalGenerator`,
+    `FatigueEvidenceCollector`, `FeedMessageKindService`, `GrowthDigestBlock`, `HighlightCitationSourceAdapter`,
+    `InterventionEventListener`, `InterventionService`, `LogFreshnessProbe`, `MemoirGenerator`, `MemoirJob`,
+    `MetricWindowEvaluator`, `OverloadChallengeGenerator`, `PatternImpactService`, `PeopleMezoNoteAdapter`,
+    `PlanFeasibilityCalculator`, `PredictionGenerator`, `PredictionJob`, `PredictionValidationService`,
+    `ProactiveChallengeService`, `ProactiveExperimentService`, `ProactiveFeedService`, `ProactiveMemoirService`,
+    `ProactivePredictionService`, `ProactiveWeeklySuggestionService`, `ProseNumberGuard`, `SetupCheckJob`,
+    `SetupCheckService`, `WeekReviewSourceAdapter`, `WeeklyLessonService`, `WeeklyReviewContextSources`,
+    `WeeklyReviewDigestService`, `WeeklyReviewGenerator`, `WeeklyReviewJob`, `WeeklyReviewService`,
+    `WeeklyReviewWeekWindow`, `WeeklySuggestionGenerator`, `WeeklySuggestionJob`
   - **controllers→contract:** `DiagnosisController`→`DiagnosisApi`, `ProactiveController`→`ProactiveApi`
   - **mappers:** `ChallengeDisplay`, `ProactiveMapper`
   - **config:** `DiagnosisProperties`, `ProactiveProperties`, `SetupCheckProperties`
@@ -965,10 +966,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     GET /api/proactive/challenge · POST /api/proactive/challenge/{id}/decision ·
     GET /api/proactive/weekly-review/{start} · POST /api/proactive/weekly-review/{start}/regenerate ·
     GET /api/proactive/weekly-review/{start}/lessons · GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 58 IT + 1 unit
-  - **ITs:** `ChallengeGeneratorIT`, `ChallengeJobIT`, `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`,
-    `ChallengePersistenceIT`, `CompanionMessageEventIT`, `CompanionMessageGeneratorIT`,
-    `CompanionMessageInterventionPersistenceIT`, `CompanionMessageJobIT`, `CompanionMessageJobSwitchOffIT`,
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 62 IT + 4 unit
+  - **ITs:** `AdviceCardServiceIT`, `AdviceProseGeneratorIT`, `ChallengeGeneratorIT`, `ChallengeJobIT`,
+    `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`, `ChallengePersistenceIT`, `CompanionMessageAdvicePersistenceIT`,
+    `CompanionMessageEventIT`, `CompanionMessageGeneratorIT`, `CompanionMessageInterventionPersistenceIT`,
+    `CompanionMessageJobIT`, `CompanionMessageJobSwitchOffIT`, `CompanionMessageMissedWorkoutsIT`,
     `CompanionMessagePersistenceIT`, `CompanionMessageSetupPersistenceIT`, `DiagnosisControllerIT`,
     `DiagnosisExperimentIT`, `DiagnosisGeneratorIT`, `ExperimentJobIT`, `ExperimentJobSwitchOffIT`,
     `ExperimentOutcomeIT`, `ExperimentPersistenceIT`, `ExperimentProposalGeneratorIT`, `FatigueEvidenceCollectorIT`,
@@ -983,8 +985,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `WeeklySuggestionJobIT`, `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionNameIT`,
     `WeeklySuggestionPersistenceIT`
   - **populators:** `ActivityPopulator`, `ChallengePopulator`, `CheckInPopulator`, `CompanionMessagePopulator`,
-    `DailySummaryPopulator`, `DiagnosisPopulator`, `ExperimentPopulator`, `GoalPopulator`, `GraphPopulator`,
-    `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `MedicationDosePopulator`,
+    `DailySummaryPopulator`, `DiagnosisPopulator`, `ExperimentPopulator`, `FlagLogPopulator`, `GoalPopulator`,
+    `GraphPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `MedicationDosePopulator`,
     `MedicationPopulator`, `MemoirPopulator`, `MentionPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`,
     `PersonPopulator`, `PredictionPopulator`, `QuestPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`,
     `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`,

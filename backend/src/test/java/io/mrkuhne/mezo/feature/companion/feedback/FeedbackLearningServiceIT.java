@@ -220,4 +220,26 @@ class FeedbackLearningServiceIT extends AbstractIntegrationTest {
             .findByCreatedByAndScopeAndWindowDaysAndDeletedFalse(owner, "surface:feed_message", 30)
             .orElseThrow().getStats().up()).isEqualTo(1);
     }
+
+    /** S4 (mezo-d58h.4): after Tasks 8-9 flip the flag-sourced card writer to {@code kind=advice},
+     *  a flag-sourced advice row (interventionKey set, same envelope field as a pre-S4 intervention
+     *  row) must still roll up under its library-entry scope — the twin of
+     *  {@link #interventionVerdictRollsUpUnderItsKey}. */
+    @Test
+    void testComputeRollups_shouldCountAnAdviceCardsVerdict_underItsLibraryEntryScope() {
+        UUID owner = userPopulator.createUser().getId();
+        CompanionMessageEntity card = companionMessagePopulator.createAdvice(owner, LocalDate.now(),
+            "sleep_debt", "sleep_recover_tonight", "Mezo · észrevétel",
+            "Az elmúlt éjszakák alváshiánya összeadódott.", java.util.List.of("tény"),
+            java.util.List.of("javaslat"), Instant.now());
+        feedbackPopulator.createVerdict(owner, MessageFeedbackEntity.KIND_FEED_MESSAGE, card.getId(),
+            MessageFeedbackEntity.VERDICT_UP, null);
+
+        feedbackLearningService.computeRollups(owner);
+
+        assertThat(feedbackRollupRepository
+            .findByCreatedByAndScopeAndWindowDaysAndDeletedFalse(owner,
+                FeedbackRollupEntity.SCOPE_INTERVENTION_PREFIX + "sleep_recover_tonight", 30)
+            .orElseThrow().getStats().up()).isEqualTo(1);
+    }
 }

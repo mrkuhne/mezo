@@ -16,7 +16,7 @@ export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: Briefin
  *  whose card body comes straight from `mezo.companion.interventions[].textHu`, and `setup` (S3,
  *  mezo-d58h.3), whose card body is composed in `SetupCheckService` from a check verdict's own
  *  numbers. */
-export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening' | 'intervention' | 'people' | 'setup'
+export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening' | 'intervention' | 'people' | 'setup' | 'advice'
 /** One companion-feed message — the MezoChip thread's real-mode source (`useCompanionFeed`), mirrors FeedMessageResponse. */
 export interface FeedMessage {
   /** The companion_message row id (uuid) — the W4.1 feedback artifactId (`feed_message`). */
@@ -25,6 +25,10 @@ export interface FeedMessage {
   eyebrow: string
   body: BriefingPara[]
   refs: BriefingRef[]
+  /** Advice-card evidence (S4, mezo-d58h.4) — deterministic, rule-provided; only advice rows. */
+  facts?: string[]
+  /** Advice-card suggestion texts (config-provided); only advice rows. */
+  suggestions?: string[]
   generatedAt: string // ISO date-time
 }
 export interface NiggleWarning { muscle: string; muscleLabel: string; detail: string }

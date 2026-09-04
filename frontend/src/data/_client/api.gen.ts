@@ -7074,13 +7074,17 @@ export interface components {
             /** Format: date */
             date: string;
             /**
-             * @description Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; intervention is config text (mezo.companion.interventions) and setup is config text for a configuration gap (mezo.proactive.setup-checks), neither ever LLM output.
+             * @description Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; advice is the single daily coaching card (S4, mezo-d58h.4) whose prose is LLM-written over deterministic facts; intervention and setup are the pre-S4 config-text cards, kept for existing rows only.
              * @enum {string}
              */
-            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention" | "people" | "setup";
+            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention" | "people" | "setup" | "advice";
             eyebrow: string;
             body: string[];
             refs: components["schemas"]["FeedRef"][];
+            /** @description Advice-card evidence — deterministic, rule-provided lines rendered from the raise's own frozen payload (S4, mezo-d58h.4). Present only on advice rows; the model never writes these. */
+            facts?: string[];
+            /** @description Advice-card suggestion texts (config-provided). Present only on advice rows. */
+            suggestions?: string[];
             /** Format: date-time */
             generatedAt: string;
         };

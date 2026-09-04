@@ -287,6 +287,26 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern WEEKLY_SENTINEL =
             Pattern.compile("\\[fake-weekly:([^\\]]*)]", Pattern.DOTALL);
 
+    /** Mirror of AdviceProseGenerator.ADVICE_MARKER (feature/proactive) — a LITERAL, not an
+     *  import: same cycle rationale as {@link #WEEKLY_MARKER_MIRROR}. Drift is caught by
+     *  AdviceProseGeneratorIT's equality assertion against the real constant. */
+    public static final String ADVICE_MARKER_MIRROR = "TANACS-KARTYA-FELADAT";
+
+    /** Scripted advice prose (S4, mezo-d58h.4): {@code [fake-advice:…]} planted in a FACT is
+     *  returned verbatim, so an IT can drive the number-guard and fallback paths. */
+    public static final Pattern ADVICE_SENTINEL =
+            Pattern.compile("\\[fake-advice:([^\\]]*)]", Pattern.DOTALL);
+
+    /** The un-scripted advice answer — number-free on purpose, so the happy path passes the guard. */
+    public static final String ADVICE_DEFAULT_ANSWER =
+            "Látom, mi történt az elmúlt napokban. Kezdd egyetlen apró lépéssel még ma.";
+
+    /** Scripted INVENTED number (S4): the sentinel itself is digit-free, so the number below
+     *  appears nowhere in the call's grounding text and ProseNumberGuard genuinely rejects it. */
+    public static final String ADVICE_INVENT_SENTINEL = "[fake-advice-invent]";
+
+    public static final String ADVICE_UNGROUNDED_ANSWER = "Aludj ma 9999 órát.";
+
     /** Mirror of MemoirGenerator.MEMOIR_MARKER (feature/proactive) — LITERAL, cycle rule. */
     public static final String MEMOIR_MARKER_MIRROR = "HETI-MEMOIR-FELADAT";
 
@@ -598,6 +618,19 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(WEEKLY_MARKER_MIRROR)) {
             Matcher m = WEEKLY_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1) : "FAKE-HETI-TERVJAVASLAT";
+        }
+        if (systemPrompt.startsWith(ADVICE_MARKER_MIRROR)) {
+            // EMPTY_ANSWER's own branch sits AFTER every marker branch in this method, so a
+            // marker branch that answered unconditionally would swallow the blank-answer path —
+            // the advice card's fallback needs it, so it is honoured here explicitly.
+            if (userMessage.contains(EMPTY_ANSWER)) {
+                return "";
+            }
+            if (userMessage.contains(ADVICE_INVENT_SENTINEL)) {
+                return ADVICE_UNGROUNDED_ANSWER;
+            }
+            Matcher m = ADVICE_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : ADVICE_DEFAULT_ANSWER;
         }
         if (systemPrompt.startsWith(MEMOIR_MARKER_MIRROR)) {
             Matcher m = MEMOIR_SENTINEL.matcher(userMessage);

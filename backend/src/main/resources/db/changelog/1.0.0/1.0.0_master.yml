@@ -1064,6 +1064,13 @@ databaseChangeLog:
             relativeToChangelogFile: true
             path: script/202609021410_mezo-qw37.4_pantry_catalog_split.sql
   - changeSet:
+      id: "1.0.0:202609041000_mezo-d58h.4_companion_message_advice_kind"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609041000_mezo-d58h.4_companion_message_advice_kind.sql
+  - changeSet:
       id: "1.0.0:202609041020_mezo-6dii.1_memory_platform"
       author: daniel.kuhne
       changes:
