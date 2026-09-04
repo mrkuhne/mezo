@@ -7,6 +7,7 @@ export type GoalUpsertRequest = components['schemas']['GoalUpsertRequest']
 export type FeasibilityPreviewRequest = components['schemas']['FeasibilityPreviewRequest']
 export type FeasibilityPreviewResponse = components['schemas']['FeasibilityPreviewResponse']
 export type GoalSuggestionResponse = components['schemas']['GoalSuggestionResponse']
+export type GoalOverviewResponse = components['schemas']['GoalOverviewResponse']
 
 // toRequest mapper — rebuild a full GoalUpsertRequest from a persisted
 // GoalResponse so a partial edit (the meal cadence) can PUT the whole contract
@@ -37,6 +38,8 @@ export function goalResponseToUpsert(
 export const goalApi = {
   list: (): Promise<GoalResponse[]> => apiFetch<GoalResponse[]>('/api/goals'),
   get: (id: string): Promise<GoalResponse> => apiFetch<GoalResponse>(`/api/goals/${id}`),
+  overview: (id: string): Promise<GoalOverviewResponse> =>
+    apiFetch<GoalOverviewResponse>(`/api/goals/${id}/overview`),
   create: (body: GoalUpsertRequest): Promise<GoalResponse> =>
     apiFetch<GoalResponse>('/api/goals', { method: 'POST', body: JSON.stringify(body satisfies GoalUpsertRequest) }),
   update: (id: string, body: GoalUpsertRequest): Promise<GoalResponse> =>

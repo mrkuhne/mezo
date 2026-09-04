@@ -12,7 +12,7 @@ afterEach(() => vi.unstubAllEnvs())
 
 function renderHub() {
   return render(<QueryWrapper><MemoryRouter initialEntries={['/me/goals']}>
-    <Routes><Route path="/me/goals" element={<CelokPage />} /><Route path="/me/goals/:id" element={<div>GOAL PAGE</div>} /><Route path="/me/goals/new" element={<div>WIZARD</div>} /><Route path="/me/goals/signals" element={<div>SIGNALS PAGE</div>} /></Routes>
+    <Routes><Route path="/me/goals" element={<CelokPage />} /><Route path="/me/goals/:id" element={<div>GOAL PAGE</div>} /><Route path="/me/goals/new" element={<div>WIZARD</div>} /><Route path="/me/goals/signals" element={<div>SIGNALS PAGE</div>} /><Route path="/me/goals/weight" element={<div>SULYCEL</div>} /></Routes>
   </MemoryRouter></QueryWrapper>)
 }
 
@@ -90,12 +90,38 @@ describe('real mode', () => {
     expect(screen.queryByText(/0↗ · 0→ · 0↘/)).not.toBeInTheDocument()
   })
 
-  test('today counters stay honest when /today fails, even though the goal list loaded fine', async () => {
+  /**
+   * A loading `/today` says LOADING — and only that. (The error case below must not borrow this
+   * sentence: conflating a failure with a load is the house error rule's own prohibition.)
+   */
+  test('a still-loading /today says „töltődik", not a failure', async () => {
+    server.use(http.get(`${API_BASE}/api/life-goals/today`, () => new Promise(() => {})))
+    renderHub()
+    await screen.findByText('Célok')
+    expect(await screen.findByText(/A heti irány most töltődik/)).toBeInTheDocument()
+    expect(screen.queryByText(/nem sikerült lekérni/)).not.toBeInTheDocument()
+  })
+
+  test('today counters stay honest when /today fails — its OWN sentence, never „töltődik"', async () => {
     server.use(http.get(`${API_BASE}/api/life-goals/today`, () => new HttpResponse(null, { status: 500 })))
     renderHub()
     await screen.findByText('Célok')
     expect(screen.queryByText(/0↗ · 0→ · 0↘/)).not.toBeInTheDocument()
-    expect(await screen.findByText(/Az irány-nyíl a 2\. szelettel jön/)).toBeInTheDocument()
+    expect(await screen.findByText(/A heti irányt most nem sikerült lekérni/)).toBeInTheDocument()
+    expect(screen.queryByText(/A heti irány most töltődik/)).not.toBeInTheDocument()
+  })
+
+  /**
+   * mezo-iizd.4 final review, finding 4: a FAILED /api/goals read reduces to the same empty shape
+   * as "no weight goal yet" — without `useGoal().isError` the row reported a network error as a
+   * measured „nincs aktív súlycél".
+   */
+  test('a Súlycél sor egy elhasalt /api/goals olvasást NEM mond „nincs aktív súlycél"-nak', async () => {
+    server.use(http.get(`${API_BASE}/api/goals`, () => new HttpResponse(null, { status: 500 })))
+    renderHub()
+    const row = await screen.findByRole('button', { name: /Súlycél/ })
+    await waitFor(() => expect(row).toHaveTextContent('a súlycél most nem elérhető'))
+    expect(row).not.toHaveTextContent('nincs aktív súlycél')
   })
 
   test('a failed list read renders a terminal error + retry, not the empty state', async () => {
@@ -108,4 +134,19 @@ describe('real mode', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Újra' }))
     await waitFor(() => expect(calls).toBeGreaterThan(before))
   })
+})
+
+test('a lezárt cél a saját szekciójában jelenik meg, nem a mozaikban (mezo-iizd.4)', async () => {
+  renderHub()
+  await screen.findByText('Célok')
+  expect(screen.getByText('Lezárt célok')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Félmaraton · kész/ })).toBeInTheDocument()
+  // nem szivárog a mozaikba
+  expect(screen.queryByRole('button', { name: 'Félmaraton' })).toBeNull()
+})
+
+test('a súlycél sora a Célok hubról nyílik (mezo-iizd.4)', async () => {
+  renderHub()
+  fireEvent.click(await screen.findByRole('button', { name: /Súlycél/ }))
+  expect(screen.getByText('SULYCEL')).toBeInTheDocument()
 })

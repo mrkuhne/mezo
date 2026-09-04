@@ -84,12 +84,12 @@ export function useGoal() {
     queryFn: weightApi.list,
     enabled: !mock,
   })
-  const { data: goals, isPending: goalPending } = useQuery({
+  const { data: goals, isPending: goalPending, isError: goalError } = useQuery({
     queryKey: ['goals'],
     queryFn: mock ? async () => null : goalApi.list,
     initialData: mock ? null : undefined,
   })
-  const activeGoal = mock ? null : (goals ?? []).find(g => g.status === 'active') ?? (goals ?? [])[0] ?? null
+  const activeGoal = mock ? null : (goals ?? []).find(g => g.status === 'active') ?? null
   const goalId = activeGoal?.id
 
   // Real mode: fetch the active goal's plan timeline and build the linked plans
@@ -113,6 +113,9 @@ export function useGoal() {
       // Real-mode loading window only — mock seeds synchronously so this is always
       // false here; GoalsPage branches on it to show the skeleton (mezo-f2z).
       pending: !mock && goalPending,
+      // Mock mode never fetches, so it can never fail — a consumer that branches on `isError`
+      // (CelokPage's Súlycél sora) must get an honest `false`, not the query's real-mode flag.
+      isError: false,
     }
   }
 
@@ -120,7 +123,10 @@ export function useGoal() {
   // back to mockGoal here, which surfaced the demo placeholder to real users —
   // see mezo-72d.) GoalsPage guards on `goal === null` and renders the setup CTA.
   if (!activeGoal) {
-    return { goal: null, goalResponse: null, linkedMesocycles: {}, timeline: null, goalId: null, pending: !mock && goalPending }
+    // `isError` rides along: a FAILED /api/goals read reduces to the same "no active goal" shape
+    // as an empty list, so without it the Célok hub's Súlycél sora reported a network error as a
+    // measured „nincs aktív súlycél" (mezo-iizd.4 final review, finding 4).
+    return { goal: null, goalResponse: null, linkedMesocycles: {}, timeline: null, goalId: null, pending: !mock && goalPending, isError: goalError }
   }
 
   const goal: Goal = toGoal(activeGoal, (weightLog as WeightEntry[]) ?? [])
@@ -130,7 +136,7 @@ export function useGoal() {
   // straight off the contract — Decision C) + the raw timeline (the lane component
   // consumes timeline.links[] for lane positions — LinkedMeso can't drive lanes) +
   // goalId (attach/detach target).
-  return { goal, goalResponse: activeGoal, linkedMesocycles, timeline: timeline ?? null, goalId: activeGoal.id, pending: !mock && goalPending }
+  return { goal, goalResponse: activeGoal, linkedMesocycles, timeline: timeline ?? null, goalId: activeGoal.id, pending: !mock && goalPending, isError: goalError }
 }
 
 // Goal-management mutations (slice G4b). Real mode runs the write, then in
@@ -144,7 +150,10 @@ export function useGoalActions() {
 
   const invalidateGoals = () => { if (!mock) qc.invalidateQueries({ queryKey: ['goals'] }) }
   const invalidateTimeline = (goalId: string) => {
-    if (!mock) qc.invalidateQueries({ queryKey: ['goal', goalId, 'timeline'] })
+    if (!mock) {
+      qc.invalidateQueries({ queryKey: ['goal-overview', goalId] })
+      qc.invalidateQueries({ queryKey: ['goal', goalId, 'timeline'] })
+    }
   }
 
   const archiveM = useMutation({

@@ -1,16 +1,70 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
-import { scrollToTop } from '@/shared/lib/screenScroll'
+import { scrollToOffset, scrollToTop } from '@/shared/lib/screenScroll'
+import { useArrival } from '@/shared/ui/mozaik/arrival'
+
+/** How many frames a scroll restore may keep re-applying itself while the landing page's
+ *  content settles (~0.3s at 60fps) before it gives up and leaves the user where it got to. */
+const RESTORE_FRAME_BUDGET = 20
 
 export function ScreenContent({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null)
-  const { pathname } = useLocation()
+  const { pathname, key } = useLocation()
+  const arrival = useArrival()
+  // Where the user left each history entry, so a back navigation can put them back there
+  // instead of at the top — losing the offset is half of what makes the browser/OS
+  // swipe-back gesture feel like a reload (mezo-kuwj).
+  const offsets = useRef(new Map<string, number>())
+  // The pathname the scroller is currently parked on. The reset is gated on the PATH, not
+  // on the history entry: a search-param-only navigation (a Mai day-hop, a FuelLog day
+  // step — both `replace`) mints a fresh location key but is a view switch, not an arrival,
+  // and must leave the scroll position alone.
+  const parked = useRef<string | null>(null)
+
+  // Record the offset live from the scroll event rather than reading it on the way out:
+  // swapping in a shorter page clamps scrollTop in the same commit, so a read taken after
+  // the route change would remember the clamped value instead of where the user was.
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const remember = () => { offsets.current.set(key, el.scrollTop) }
+    el.addEventListener('scroll', remember, { passive: true })
+    return () => el.removeEventListener('scroll', remember)
+  }, [key])
+
   // The .screen-content div is the app's scroll container — without this, a route
   // change keeps the previous page's scroll offset (user QA, mezo-87d2). The instant
   // (never smooth-animated) reset itself lives in scrollToTop, which a page swapping
   // its whole tree WITHOUT navigating also calls (mezo-vad0).
   useEffect(() => {
-    scrollToTop(ref.current)
-  }, [pathname])
-  return <div ref={ref} className="screen-content">{children}</div>
+    const el = ref.current
+    if (!el) return
+    const remembered = offsets.current.get(key)
+    const wasParkedElsewhere = parked.current !== pathname
+    parked.current = pathname
+
+    if (arrival !== 'pop' || remembered === undefined) {
+      if (wasParkedElsewhere) scrollToTop(el)
+      return
+    }
+    // The landing page's content can still be growing when this runs (a ring that fills on
+    // an effect, a real-mode list one round-trip behind), and a scrollTop write is clamped to
+    // whatever height exists at that moment — measured 6px short on the Én hub, and it lands
+    // on 0 outright for content that only arrives a frame later, losing the position
+    // entirely. So re-apply until it sticks, within a bounded frame budget.
+    let raf = 0
+    let framesLeft = RESTORE_FRAME_BUDGET
+    const restore = () => {
+      scrollToOffset(el, remembered)
+      if (el.scrollTop < remembered && framesLeft-- > 0) raf = requestAnimationFrame(restore)
+    }
+    restore()
+    return () => cancelAnimationFrame(raf)
+  }, [key, pathname, arrival])
+
+  // The arrival mode has to reach CSS as well, not just the JS motion kit: `.np-anim` (the
+  // Napív entrance on the train hero and the ritual steps) declares its own `opacity: 0` with
+  // no arming class for `EntranceGroup` to withhold, so only a marker on an ancestor can stop
+  // it replaying on a back navigation. See the `[data-arrival="pop"]` rule in prototype.css.
+  return <div ref={ref} className="screen-content" data-arrival={arrival}>{children}</div>
 }

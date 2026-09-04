@@ -15,9 +15,9 @@ describe('useLifeGoals (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('seeds the four prototype goals synchronously', () => {
+  test('seeds the five prototype goals synchronously (mezo-iizd.4: + the done Félmaraton)', () => {
     const { result } = renderHook(() => useLifeGoals(), { wrapper: makeHookWrapper() })
-    expect(result.current.goals.map((g) => g.title)).toEqual(['Kockahas', 'Side hustle', 'Az utolsó barátnő', 'Spanyol B2'])
+    expect(result.current.goals.map((g) => g.title)).toEqual(['Kockahas', 'Side hustle', 'Az utolsó barátnő', 'Spanyol B2', 'Félmaraton'])
   })
 
   test('changeStatus parks a goal in the cache', async () => {

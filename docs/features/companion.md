@@ -329,6 +329,21 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 - `knowledge_fact` now has additive pinning, validity, supersession/conflict links and typed
   provenance. Existing prompt inclusion semantics remain unchanged.
 
+**Canonical dual-write and vector generations (`mezo-6dii.2`) — population without a serving cutover:**
+
+- Every successful legacy `memory_embedding` write now schedules an AFTER_COMMIT projection into
+  `memory_item` plus the configured ready serving generation in `memory_vector`; all ten narrative
+  kinds use this one path. The projection runs in its own transaction, so a canonical-write failure
+  is logged but cannot roll back the already-durable OLD row.
+- Projection is source-key idempotent: content is accent-folded for search, SHA-256 hashed, updated
+  in place on drift, suppressed with all live generations on source deletion, and revived under the
+  same canonical id when the source returns. Same hash plus an existing ready generation is a no-op.
+- The optional re-embedding job is disabled by default. When enabled it fans out over active,
+  onboarded users and fills one explicit target generation in bounded, `SKIP LOCKED` batches;
+  pending/failed/stale rows resume safely while older ready generations remain readable.
+- `memory_embedding` is still the sole serving source. The new canonical rows are population and
+  migration infrastructure only; retrieval cutover remains behind later shadow/evaluation gates.
+
 **V2.2 (`mezo-fnnq.10`) shipped daily summaries + the embed pipeline — the memory fills itself:**
 
 - **`daily_summary` table + generator** — `DailySummaryService.generate(userId, date)`: a
@@ -648,6 +663,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Advisor chain (never-ask-twice + self-check) | ✅ V1.3, criterion renamed `mezo-q71s` | Clinical regex + LLM verdict (`redundantQuestion`/`unmarkedClaim` — marked speculation allowed since [ADR 0028](../decisions/0028-marked-speculation-in-chat.md)), retry-once → `degraded` flag (`mezo.companion.advisors.*`); reinforcement on extraction dedupe-hit. |
 | Vector infra (pgvector + EmbeddingPort) | ✅ V2.1 | `memory_embedding` (`vector(768)`, HNSW, cosine) + `EmbeddingPort` (real Gemini SDK adapter / fake); image `pgvector/pgvector:pg16` in compose + k3s + Testcontainers. |
 | Narrative memory (summaries + embed pipeline) | ✅ V2.2 | Nightly `DailySummaryJob` (first cron; catch-up = backfill) → `daily_summary` + embeddings; post-turn `TurnEmbeddingListener` embeds every chat turn; `mezo.companion.summary.*` + `embedding.*` tunables. |
+| Canonical dual-write + vector generations | ✅ `mezo-6dii.2` | Every OLD memory write projects AFTER_COMMIT into source-addressable `memory_item` + versioned `memory_vector`; isolated failure preserves OLD. Optional resumable re-embedding builds a target generation without switching serving. |
 | Journal embedding seam | ✅ `mezo-b3pp.1` | `memory_embedding` kind-CHECK widened to 10 (only `journal_entry` populated); `JournalEmbeddingListener` (AFTER_COMMIT, `COMPANION_SWITCH`+journal-switch gated) → `MemoryEmbeddingWriter.writeJournal`/`.deleteJournalEmbedding` (edit = update-in-place, not delete+insert). Full detail: [`journal.md`](journal.md). |
 | Decision embedding seam | ✅ `mezo-b3pp.4` | A FOURTH `memory_embedding` kind, `decision`, joins `chat_turn`/`daily_summary`/`journal_entry`; `DecisionEmbeddingListener` (same AFTER_COMMIT/`@Async`, `COMPANION_SWITCH`+journal-switch gated idiom) → `MemoryEmbeddingWriter.writeDecision` — embeds the decision text on create, then **re-embeds the SAME row in place on review** with the outcome folded in (`"…\n\nKimenet (N/5): …"`), because the outcome is the half worth recalling. No delete path (decisions aren't deletable), so no orphaned-vector race to handle. Full detail: [`journal.md`](journal.md). |
 | Reflection embedding seam | ✅ `mezo-b3pp.2` | A FIFTH `memory_embedding` kind, `reflection`: the Napzárás evening prose (`ritual_day.reflection_text`, [`ritual.md`](ritual.md) §4). `ReflectionEmbeddingListener` reuses the AFTER_COMMIT/`@Async` idiom but is gated on `COMPANION_SWITCH` + **`RITUAL_SWITCH`** — the first seam whose second switch isn't journal's — and consumes `feature/ritual`'s `RitualClosedEvent` → `MemoryEmbeddingWriter.writeReflection`, embedding **on close** rather than per keystroke-save; a post-close edit re-publishes the event and re-embeds the same `(kind, ref_id)` row in place, and clearing the prose soft-deletes the vector so an erased evening stops being recallable. No migration — `reflection` was already legal in the W1.1 kind CHECK. Full detail: [`ritual.md`](ritual.md) §5. |
@@ -890,6 +906,30 @@ companion surface since V0.4, dual-mode:
   header is honest in both modes.
 
 ## 3. Architecture & data flow
+
+**Shared-memory dual-write (`mezo-6dii.2`; OLD still serves):**
+
+```text
+source event/job → MemoryEmbeddingWriter transaction
+  ├─ embed once → write/update/delete memory_embedding (OLD)
+  └─ publish MemoryProjectionEvent
+       AFTER_COMMIT → MemoryProjectionListener
+         → MemoryProjectionWriter (REQUIRES_NEW)
+           ├─ upsert/suppress memory_item by owner + source kind + source id
+           └─ create/update/soft-delete the configured memory_vector generation
+
+optional MemoryReembeddingJob
+  → UserFanOut(active + onboarded users)
+  → MemoryReembeddingService
+    → lock bounded target-version candidates with FOR UPDATE SKIP LOCKED
+    → pending → one document-embedding batch → ready | failed
+```
+
+The commit boundary is load-bearing: canonical projection is synchronous after OLD commits, but in
+a separate transaction. It can therefore reuse the vector already paid for by OLD while a failure
+only leaves a repairable projection gap. Re-offering an unchanged OLD row also republishes the event,
+which heals a previously missed canonical row without another provider call. The re-embedding path
+selects a named target version and never mutates `servingEmbeddingVersion`.
 
 **The streamed turn (V0.4 + V0.5 tools — what the FE uses):**
 
@@ -1616,6 +1656,16 @@ leaving `memory_embedding` intact:
 `content_hash` and `embedded_content_hash` use `varchar(64)` plus an exact lowercase-hex CHECK.
 This avoids Hibernate/PostgreSQL `bpchar` schema-validation drift while retaining the intended
 fixed SHA-256 invariant.
+
+Runtime population (`mezo-6dii.2`) is configured under `mezo.companion.memory-platform`:
+`serving-embedding-version`, provider/model/schema metadata, future retrieval limits, an explicit
+re-embedding target/batch/cron switch, and audit-retention settings. `MemoryProjectionWriter`
+normalizes `search_text` with `ToolText.fold`, writes deterministic empty topics/people and default
+salience `0.5`, and updates only the configured serving generation during dual-write. The optional
+`MemoryReembeddingService` separately repairs or creates a requested generation when it is absent,
+failed, deleted, pending, or carries a stale content hash; provider and malformed-response failures
+are persisted with stable codes for a later retry. No runtime path changes the configured serving
+version, and no endpoint or FE DTO is added in this slice.
 
 ### Backend tables (LLM audit log, ✅ `mezo-2zyu`)
 
@@ -4170,6 +4220,15 @@ result and feedback. Its migration invariants also assert that every live legacy
 canonical item and ready v1 vector. `MemoryItemPopulator` supplies valid canonical/audit fixtures;
 all five tables are reset before the legacy `memory_embedding` table.
 
+**Canonical dual-write and re-embedding (`mezo-6dii.2`).**
+`MemoryEmbeddingWriterIT` and `MemoryProjectionWriterIT` cover all ten source kinds plus
+idempotent update/no-op, suppress and revive behavior. `MemoryProjectionFailureIsolationIT` forces
+the NEW write to fail and proves the committed OLD row remains available. `MemoryReembeddingIT`
+covers pending-batch resume, matching-hash skip, stale-hash refresh, stable provider failure + retry,
+coexisting v1/v2 generations, and active/onboarded-user fan-out. The frozen OLD retrieval suite
+(`AmbientRecallEvalIT`, `NoteVectorLifecycleIT`, `TurnEmbeddingListenerIT`) remains the regression
+gate while serving has not cut over.
+
 **Daily evaluation (`mezo-jcpt.4`, plan 2/2).**
 `feature/companion/service/DayEvaluationEngineTest.java` is the formula's unit-level pin — one test
 per honesty rule, per dimension (asymmetric kcal bands, protein surplus forgiven/deficit counted,
@@ -5468,6 +5527,13 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/repository/` — owner-scoped business finders for canonical items, vectors and the audit chain.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/KnowledgeFactEntity.java` — additive pinning, validity, conflict/supersession and provenance mappings.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/MemoryPlatformPersistenceIT.java` + `support/populator/MemoryItemPopulator.java` — PostgreSQL persistence/backfill/ownership/cascade coverage.
+
+**Backend — canonical dual-write + vector generations (`mezo-6dii.2` — §3/§4/§8)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriter.java` — unchanged OLD persistence semantics plus commit-bound canonical upsert/suppress events, reusing the already-produced vector.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/config/MemoryPlatformProperties.java` + `backend/src/main/resources/application.yml` — typed serving-generation, retrieval, re-embedding and audit-retention configuration; scheduled re-embedding is off by default.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryProjectionEvent,MemoryProjectionListener,MemoryProjectionWriter}.java` — AFTER_COMMIT hand-off, isolated transaction, source-key lifecycle and serving-generation write.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryReembeddingService,MemoryReembeddingJob}.java` — bounded resumable target-generation backfill and active-user fan-out without serving-version mutation.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/{MemoryProjectionWriterIT,MemoryProjectionFailureIsolationIT,MemoryReembeddingIT}.java` + `backend/src/test/java/io/mrkuhne/mezo/feature/companion/embedding/MemoryEmbeddingWriterIT.java` — lifecycle, failure-isolation, generation coexistence/retry and all-source dual-write coverage.
 
 **Backend — feedback (W4.1, `mezo-b3pp.15` — §4/§5.7)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/controller/CompanionFeedbackController.java` — `implements CompanionFeedbackApi`, `COMPANION_SWITCH`-gated, ownership from `CurrentUserId`, thin delegation.

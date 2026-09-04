@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom'
 import { EnHubPage } from '@/features/me/pages/EnHubPage'
@@ -16,14 +16,6 @@ import { setToken } from '@/data/_client/api'
 // the real-mode MSW fixtures differ, and these assertions are about the FACE, not about
 // which fixture a mode happens to serve. Only the hooks each assertion reads are stubbed;
 // everything else falls through to the real dual-mode hooks.
-const goalStore = vi.hoisted(() => ({
-  goal: {
-    startWeight: 81.4, currentWeight: 78.6, targetWeight: 73,
-    identityFrame: 'Erős és könnyű.',
-  } as { startWeight: number; currentWeight: number; targetWeight: number; identityFrame: string } | null,
-  trajectory: 'cut' as 'cut' | 'bulk' | 'maintain',
-  pending: false,
-}))
 const bioStore = vi.hoisted(() => ({
   profile: { birthDate: '1991-03-04', heightCm: 180, bodyFatPct: 15, sex: 'male', activityLevel: 'mixed' } as Record<string, unknown> | null,
 }))
@@ -49,11 +41,9 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       weightTrends: { last7d: { avg: 78.96, weeklyRate: -0.5 }, last4w: { weeklyRate: weightStore.rate } },
       logWeight: vi.fn(),
     }),
-    useGoal: () => ({
-      goal: goalStore.goal,
-      goalResponse: goalStore.goal == null ? null : { trajectory: goalStore.trajectory, title: 'Nyári forma' },
-      pending: goalStore.pending,
-    }),
+    // A hero már nem a súlycélt mutatja (mezo-iizd.4) — a `useGoal()` hívás csak a
+    // weightLog cache-t melegíti, az EnHubPage nem destrukturálja többé az eredményét.
+    useGoal: () => ({ goal: null, goalResponse: null, pending: false }),
     useSleep: () => ({
       sleepLog: [],
       lastNight: { date: '2026-05-22', bedtime: '00:42', wakeup: '09:03', duration: 7.5, quality: 9, awakenings: 1, mealToSleep: 125, notes: null },
@@ -65,9 +55,6 @@ vi.mock('@/data/hooks', async (importOriginal) => {
 })
 
 beforeEach(() => {
-  goalStore.goal = { startWeight: 81.4, currentWeight: 78.6, targetWeight: 73, identityFrame: 'Erős és könnyű.' }
-  goalStore.trajectory = 'cut'
-  goalStore.pending = false
   bioStore.profile = { birthDate: '1991-03-04', heightCm: 180, bodyFatPct: 15, sex: 'male', activityLevel: 'mixed' }
   weightStore.log = [{ date: '2026-05-22', value: 78.6 }]
   weightStore.rate = -0.5
@@ -104,6 +91,7 @@ function renderHub() {
           <>
             <Routes>
               <Route path="/me" element={<EnHubPage />} />
+              <Route path="/me/goals" element={<div>CELOK HUB</div>} />
               <Route path="*" element={null} />
             </Routes>
             <LocationProbe />
@@ -147,54 +135,18 @@ test('with nothing measured the bio line vanishes — the hero offers the biomet
   expect(screen.queryByRole('button', { name: 'Biometria szerkesztése' })).not.toBeInTheDocument()
 })
 
-test('the goal card shows the coral track, the indulás/most/cél labels and the Hátra · Tempó · ETA cells', async () => {
+test('a hero-kártya az életcélokat összegzi és a Célok hubra visz (mezo-iizd.4)', async () => {
   renderHub()
-  const card = await screen.findByRole('button', { name: 'Hosszú cél' })
-  expect(card).toHaveTextContent('🎯 Fogyás · Nyári forma')
-  // a seeded title that already opens with its trajectory is not prefixed twice
-  expect(card).not.toHaveTextContent('Fogyás · Fogyás')
-  expect(card).toHaveTextContent('33% a célig')
-  expect(card.querySelector('.enh-gtrack')).not.toBeNull()
-  expect(card).toHaveTextContent('81,4')
-  expect(card).toHaveTextContent('78,6 most')
-  expect(card).toHaveTextContent('73 cél')
-  // 78.6 → 73 = 5,6 kg hátra; the real 4-week EWMA rate; ETA = round(5.6 / 0.5) = 11 hét
-  expect(card).toHaveTextContent('5,6 kg')
-  expect(card).toHaveTextContent('−0,5')
-  expect(card).toHaveTextContent('11 hét')
-  await userEvent.click(card)
-  expect(screen.getByTestId('loc')).toHaveTextContent('/me/goals/weight')
+  const card = await screen.findByRole('button', { name: /Célok/ })
+  expect(card).toBeInTheDocument()
+  fireEvent.click(card)
+  expect(screen.getByText('CELOK HUB')).toBeInTheDocument()
 })
 
-test('a maintain goal drops the track and reads „tartás" (the real contract)', async () => {
-  goalStore.goal = { startWeight: 78.6, currentWeight: 78.6, targetWeight: 78.6, identityFrame: 'Tartom.' }
-  goalStore.trajectory = 'maintain'
+test('a súlycél-track eltűnt az Én-hubról', async () => {
   renderHub()
-  const card = await screen.findByRole('button', { name: 'Hosszú cél' })
-  expect(card).toHaveTextContent('tartás')
-  expect(card.querySelector('.enh-gtrack')).toBeNull()
-  expect(card).not.toHaveTextContent('a célig')
-})
-
-test('a null tempo renders `—` in the mini-cell, never 0', async () => {
-  weightStore.rate = 0
-  renderHub()
-  const card = await screen.findByRole('button', { name: 'Hosszú cél' })
-  const tempo = [...card.querySelectorAll('.mz-mcells span')].find((s) => s.textContent?.includes('kg / hét'))
-  expect(tempo).toBeDefined()
-  expect(tempo!.querySelector('b')).toHaveTextContent('—')
-  // …and with no rate there is no ETA to fabricate either
-  const eta = [...card.querySelectorAll('.mz-mcells span')].find((s) => s.textContent?.includes('eta'))
-  expect(eta!.querySelector('b')).toHaveTextContent('—')
-})
-
-test('with no active goal the card becomes the honest ＋ Új cél door', async () => {
-  goalStore.goal = null
-  renderHub()
-  const opener = await screen.findByRole('button', { name: /Új cél/ })
-  expect(screen.queryByRole('button', { name: 'Hosszú cél' })).not.toBeInTheDocument()
-  await userEvent.click(opener)
-  expect(screen.getByTestId('loc')).toHaveTextContent('/me/goals/weight')
+  await screen.findByRole('button', { name: /Célok/ })
+  expect(document.querySelector('.enh-gtrack')).toBeNull()
 })
 
 test('renders the six small tiles plus the wide Rutin tile, each opening its own page', async () => {
@@ -294,7 +246,7 @@ test('the coin and streak stats deep-link to the Growth awards tab too', async (
 
 test('the entrance choreography is armed — every .rise sits inside .mz-play', async () => {
   const { container } = renderHub()
-  await screen.findByRole('button', { name: 'Hosszú cél' })
+  await screen.findByRole('button', { name: /Célok/ })
   const rises = container.querySelectorAll('.rise')
   expect(rises.length).toBeGreaterThan(0)
   for (const r of rises) expect(r.closest('.mz-play')).not.toBeNull()
