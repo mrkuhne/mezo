@@ -970,7 +970,7 @@ git commit -m "feat(fuel): apply colorful Stack Design 2.0 (mezo-ubxd)"
 - Modify: `docs/features/_platform-design-system.md`
 - Regenerate: `docs/CODEMAP.md`
 
-- [ ] **Step 1: Frissítsd a Fuel living docot helyben**
+- [x] **Step 1: Frissítsd a Fuel living docot helyben**
 
 A `docs/features/fuel.md` releváns szakaszait írd át, ne adj changelogot:
 
@@ -985,7 +985,7 @@ A `docs/features/fuel.md` releváns szakaszait írd át, ne adj changelogot:
 
 Linkeld a design specet és a `mezo-ubxd` issue-t.
 
-- [ ] **Step 2: Frissítsd a két platform living docot**
+- [x] **Step 2: Frissítsd a két platform living docot**
 
 `docs/features/_platform-notifications.md`:
 
@@ -1004,7 +1004,7 @@ Linkeld a design specet és a `mezo-ubxd` issue-t.
 Mindkét doc frontmatter `last_reviewed` mezője és releváns key-file hivatkozása a
 valós új állapotot tükrözze.
 
-- [ ] **Step 3: Regeneráld a CODEMAP-et és futtasd a docs lintet**
+- [x] **Step 3: Regeneráld a CODEMAP-et és futtasd a docs lintet**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo
@@ -1017,7 +1017,7 @@ baseline 13 más, scope-on kívüli stale doc + 5 warning + 0 error volt; ha eze
 a parancs non-zero marad, rögzítsd pontosan a bd kommentben, de ne javíts más domaint.
 Új stale/error nem fogadható el.
 
-- [ ] **Step 4: Futtasd a teljes lokális frontend kapukat friss állapotból**
+- [x] **Step 4: Futtasd a teljes lokális frontend kapukat friss állapotból**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo/frontend
@@ -1032,7 +1032,7 @@ Playwright visual/layout suite zöld. Ha a teljes visual suite csak nem e taskho
 tartozó baseline-on bukik, külön rögzítsd; az összes `fuel-stack*` golden és Stack
 layout gate kötelezően zöld.
 
-- [ ] **Step 5: Ellenőrizd a scope-ot és az elavult Stack maradványokat**
+- [x] **Step 5: Ellenőrizd a scope-ot és az elavult Stack maradványokat**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo
