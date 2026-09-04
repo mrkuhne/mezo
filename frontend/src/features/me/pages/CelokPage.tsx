@@ -4,9 +4,11 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { MozaikPage, PageHead, PageBody, Mosaic } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { useLifeGoals, useLifeGoalMutations, useLifeGoalToday, useSignalCatalog } from '@/data/hooks'
+import { useLifeGoals, useLifeGoalMutations, useLifeGoalToday, useSignalCatalog, useGoal } from '@/data/hooks'
 import type { LifeGoalDimension, TrendArrow } from '@/data/lifegoal/lifegoalApi'
-import { DIMENSIONS, DIMENSION_ORDER } from '@/features/me/logic/lifegoalLabels'
+import { DIMENSIONS, DIMENSION_ORDER, STATUS_LABEL } from '@/features/me/logic/lifegoalLabels'
+import { TRAJECTORY_LABEL } from '@/features/me/logic/goalLabels'
+import { hu1 } from '@/shared/lib/huNum'
 import { PermahRing } from '@/features/me/components/PermahRing'
 import { LifeGoalTile } from '@/features/me/components/LifeGoalTile'
 
@@ -21,6 +23,11 @@ export function CelokPage() {
   const liveSignals = signals.filter((s) => s.live).length
   const active = goals.filter((g) => g.status === 'active')
   const parked = goals.filter((g) => g.status === 'parked' || g.status === 'draft')
+  // A `done` cél mostanáig SEHOL nem jelent meg (sem a mozaikban, sem a parkolt sorban) — egy
+  // lezárt cél eltűnt minden felületről, pedig a GET /api/life-goals visszaadja (mezo-iizd.4).
+  // Külön szekció, nem a mozaikban: a mozaik az ÉLŐ célok tere, egy kész cél emlék.
+  const done = goals.filter((g) => g.status === 'done')
+  const { goal: weightGoal, goalResponse, pending: weightPending } = useGoal()
   const counts = Object.fromEntries(DIMENSION_ORDER.map((d) => [d, active.filter((g) => g.dimension === d).length])) as Record<LifeGoalDimension, number>
   const summaryByGoalId = new Map(today.goals.map((s) => [s.goalId, s]))
   // `insufficient` is excluded from the hero counters on purpose — same guardrail as the tile/
@@ -72,7 +79,7 @@ export function CelokPage() {
               {active.length === 0
                 ? <>Még nincs aktív célod. <strong>Egy cél, két-három pillér</strong> — a többit a naplód hozza.</>
                 : todayHonest
-                  ? <>A pillérek a meglévő naplódból számolnak. <strong>Az irány-nyíl a 2. szelettel jön</strong> — addig a célok és pilléreik itt élnek.</>
+                  ? <>A pillérek a meglévő naplódból számolnak. <strong>A heti irány most töltődik</strong> — a célok és pilléreik addig is itt élnek.</>
                   : <>A pillérek a meglévő naplódból számolnak. <strong>{arrowCounts.up}↗ · {arrowCounts.flat}→ · {arrowCounts.down}↘</strong> ezen a héten.</>}
             </div>
           </div>
@@ -117,6 +124,43 @@ export function CelokPage() {
             </div>
             <span style={{ marginLeft: 'auto', color: 'var(--text-secondary)', fontSize: 12 }}>›</span>
           </button>
+          {/* Súlycél (mezo-iizd.4): a spec D5 szerint a súlycél a Célok alá költözött, és a
+              .4 óta az Én-hub heroja életcél-összegzés — tehát a /me/goals/weight bejárata
+              ITT van, különben a súly-parancsnokság elárvul. */}
+          <button type="button" className="lg-parkrow rise"
+            style={{ '--d': `${340 + parked.length * 40}ms`, marginTop: 10 } as React.CSSProperties}
+            onClick={() => navigate('/me/goals/weight')} aria-label="Súlycél">
+            <ClayIcon name="i-suly" size={22} />
+            <div style={{ flex: 1 }}>
+              <div className="nm" style={{ color: 'var(--text-primary)' }}>Súlycél</div>
+              <div className="sb">
+                {weightPending
+                  ? 'töltöm…'
+                  : goalResponse != null && weightGoal != null
+                    ? `${TRAJECTORY_LABEL[goalResponse.trajectory]} · ${hu1(weightGoal.currentWeight)} → ${hu1(weightGoal.targetWeight)} kg`
+                    : 'nincs aktív súlycél'}
+              </div>
+            </div>
+            <span style={{ marginLeft: 'auto', color: 'var(--text-secondary)', fontSize: 12 }}>›</span>
+          </button>
+
+          {done.length > 0 && (
+            <>
+              <div className="mz-eyebrow rise" style={{ '--d': '380ms', padding: '12px 2px 6px' } as React.CSSProperties}>Lezárt célok</div>
+              {done.map((g, i) => (
+                <button key={g.id} type="button" className="lg-parkrow lg-donerow rise"
+                  style={{ '--d': `${400 + i * 40}ms` } as React.CSSProperties}
+                  onClick={() => navigate(`/me/goals/${g.id}`)} aria-label={`${g.title} · kész`}>
+                  <ClayIcon name={DIMENSIONS[g.dimension].icon} size={22} />
+                  <div style={{ flex: 1 }}>
+                    <div className="nm">{g.title}</div>
+                    <div className="sb">{STATUS_LABEL[g.status]} · {DIMENSIONS[g.dimension].label}</div>
+                  </div>
+                  <span className="lg-donetick" aria-hidden="true">✓</span>
+                </button>
+              ))}
+            </>
+          )}
         </EntranceGroup>
       </PageBody>
     </MozaikPage>

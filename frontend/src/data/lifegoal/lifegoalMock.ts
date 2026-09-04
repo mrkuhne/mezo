@@ -120,6 +120,19 @@ export const MOCK_LIFE_GOALS: LifeGoalResponse[] = [
     ifThenPlans: [],
     pillars: [],
   },
+  {
+    id: 'lg-felmarathon',
+    title: 'Félmaraton',
+    whyText: 'Meg akartam tudni, meddig bírom.',
+    frame: 'intrinsic',
+    dimension: 'health',
+    status: 'done',
+    startDate: '2026-02-02',
+    targetDate: '2026-05-31',
+    closedAt: '2026-06-01T09:00:00Z',
+    ifThenPlans: [],
+    pillars: [pillar('lg-fm-p1', 0, 'Sportterhelés · heti', 'aerobic_capacity', 'habit', 1, metric('SPORT_LOAD_MIN'), habit(1, 3))],
+  },
 ]
 
 // ── Signal catalog (SignalCatalog.java's 28 ENTRIES). `id` mirrors the Java-side catalog id

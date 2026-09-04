@@ -12,7 +12,7 @@ afterEach(() => vi.unstubAllEnvs())
 
 function renderHub() {
   return render(<QueryWrapper><MemoryRouter initialEntries={['/me/goals']}>
-    <Routes><Route path="/me/goals" element={<CelokPage />} /><Route path="/me/goals/:id" element={<div>GOAL PAGE</div>} /><Route path="/me/goals/new" element={<div>WIZARD</div>} /><Route path="/me/goals/signals" element={<div>SIGNALS PAGE</div>} /></Routes>
+    <Routes><Route path="/me/goals" element={<CelokPage />} /><Route path="/me/goals/:id" element={<div>GOAL PAGE</div>} /><Route path="/me/goals/new" element={<div>WIZARD</div>} /><Route path="/me/goals/signals" element={<div>SIGNALS PAGE</div>} /><Route path="/me/goals/weight" element={<div>SULYCEL</div>} /></Routes>
   </MemoryRouter></QueryWrapper>)
 }
 
@@ -95,7 +95,7 @@ describe('real mode', () => {
     renderHub()
     await screen.findByText('Célok')
     expect(screen.queryByText(/0↗ · 0→ · 0↘/)).not.toBeInTheDocument()
-    expect(await screen.findByText(/Az irány-nyíl a 2\. szelettel jön/)).toBeInTheDocument()
+    expect(await screen.findByText(/A heti irány most töltődik/)).toBeInTheDocument()
   })
 
   test('a failed list read renders a terminal error + retry, not the empty state', async () => {
@@ -108,4 +108,19 @@ describe('real mode', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Újra' }))
     await waitFor(() => expect(calls).toBeGreaterThan(before))
   })
+})
+
+test('a lezárt cél a saját szekciójában jelenik meg, nem a mozaikban (mezo-iizd.4)', async () => {
+  renderHub()
+  await screen.findByText('Célok')
+  expect(screen.getByText('Lezárt célok')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Félmaraton · kész/ })).toBeInTheDocument()
+  // nem szivárog a mozaikba
+  expect(screen.queryByRole('button', { name: 'Félmaraton' })).toBeNull()
+})
+
+test('a súlycél sora a Célok hubról nyílik (mezo-iizd.4)', async () => {
+  renderHub()
+  fireEvent.click(await screen.findByRole('button', { name: /Súlycél/ }))
+  expect(screen.getByText('SULYCEL')).toBeInTheDocument()
 })

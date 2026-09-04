@@ -8909,6 +8909,11 @@ button.mz-wtile:active { transform: scale(0.96); }
 .lg-wcard-cta { width: 100%; margin-top: 6px; border: 1px solid rgba(43,33,24,0.14); background: #fff;
   border-radius: 999px; padding: 8px 0; font-size: 11px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
 
+/* Lezárt cél sora (mezo-iizd.4): a parkolt sor nyelve, halványabban — egy kész cél emlék,
+   nem tennivaló. A pipa a jobb szélen a lezárás egyetlen jele. */
+.lg-donerow { opacity: 0.72; }
+.lg-donetick { margin-left: auto; flex: none; font-size: 12px; font-weight: 700; color: #4E6B42; }
+
 /* ============================================================
    Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)
    Ez a szekció EGYKOR a Mai oldal teljes „inset grouped list" lapnyelvét vitte
