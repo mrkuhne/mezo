@@ -7,6 +7,7 @@ import {
   type FeasibilityPreviewRequest,
   type FeasibilityPreviewResponse,
   type GoalSuggestionResponse,
+  type GoalSuggestionPreviewResponse,
 } from '@/data/me/goalApi'
 import { goalLinkApi, type GoalTimelineResponse, type GoalPlanAttachRequest } from '@/data/me/goalLinkApi'
 import { weightApi } from '@/data/me/biometricsApi'
@@ -19,6 +20,8 @@ import {
   goalTimeline as mockTimeline,
   feasibilityPreview as mockFeasibilityPreview,
   goalSuggestions as mockGoalSuggestions,
+  goalSuggestionPreviewSeed as mockGoalSuggestionPreview,
+  goalSuggestionPreviewSeeds as mockGoalSuggestionPreviews,
 } from '@/data/me/goals'
 import type { Goal, GoalKind, LinkedMeso, WeightEntry } from '@/data/types'
 
@@ -299,40 +302,79 @@ export function useGoalSuggestions(goalId: string | null) {
   return { suggestions: data ?? [], pending: !mock && isPending }
 }
 
-// accept/dismiss mutations for a goal suggestion. Real mode invalidates the goal's
-// suggestions AND ['goals'] on accept (the engine re-evaluates the prescription in the
-// same call); mock mode no-ops and resolves so the cards still feel interactive offline.
+export function useGoalSuggestionPreview(goalId: string | null, suggestionId: string | null) {
+  const mock = isMockMode()
+  const enabled = !!goalId && !!suggestionId
+  const query = useQuery<GoalSuggestionPreviewResponse>({
+    queryKey: ['goal-suggestion-preview', goalId, suggestionId],
+    queryFn: mock
+      ? async () => mockGoalSuggestionPreviews[suggestionId as string] ?? mockGoalSuggestionPreview
+      : () => goalApi.previewSuggestion(goalId as string, suggestionId as string),
+    enabled,
+    initialData: mock && enabled
+      ? (mockGoalSuggestionPreviews[suggestionId as string] ?? mockGoalSuggestionPreview)
+      : undefined,
+    staleTime: mock ? Infinity : undefined,
+  })
+  return {
+    preview: enabled ? query.data : undefined,
+    pending: enabled && !mock && query.isPending,
+    error: query.error,
+    refetch: query.refetch,
+  }
+}
+
+// Fingerprint-gated accept/dismiss mutations for a goal suggestion. Real mode invalidates
+// every goal/suggestion/notification read touched by the decision. Mock mode rewrites the
+// concrete preview query to its historical status so the review flow behaves statefully offline.
 export function useSuggestionActions() {
   const qc = useQueryClient()
   const mock = isMockMode()
-  const invalidate = (goalId: string) => {
-    if (mock) return
+  const invalidate = (goalId: string, sid: string) => {
     qc.invalidateQueries({ queryKey: ['goal', goalId, 'suggestions'] })
-    qc.invalidateQueries({ queryKey: ['goals'] }) // accept re-evaluates the prescription
+    qc.invalidateQueries({ queryKey: ['goals'] })
+    qc.invalidateQueries({ queryKey: ['goal-overview', goalId] })
+    qc.invalidateQueries({ queryKey: ['goal-suggestion-preview', goalId, sid] })
+    qc.invalidateQueries({ queryKey: ['notification-feed'] })
   }
-  // A REJECTED accept (409 stale snapshot) still supersedes the suggestion server-side — only the
-  // suggestions list needs a refetch (the goal/prescription never changed), so the caller's catch
-  // block can clear the now-superseded card without a manual page refresh (mezo-ktg8 final-review
-  // finding 4).
+  // A rejected accept (409 stale fingerprint) supersedes the suggestion server-side. The review
+  // page owns the richer stale UI and can explicitly refetch the concrete preview.
   const invalidateSuggestions = (goalId: string) => {
     if (mock) return
     qc.invalidateQueries({ queryKey: ['goal', goalId, 'suggestions'] })
   }
   const acceptM = useMutation({
-    mutationFn: async ({ goalId, sid }: { goalId: string; sid: string }) => {
+    mutationFn: async ({ goalId, sid, previewFingerprint }: { goalId: string; sid: string; previewFingerprint: string }) => {
       if (mock) return null
-      return goalApi.acceptSuggestion(goalId, sid)
+      return goalApi.acceptSuggestion(goalId, sid, previewFingerprint)
     },
-    onSuccess: (_d, { goalId }) => invalidate(goalId),
+    onSuccess: (_d, { goalId, sid }) => {
+      if (mock) {
+        qc.setQueryData<GoalSuggestionPreviewResponse>(
+          ['goal-suggestion-preview', goalId, sid],
+          old => old ? { ...old, status: 'accepted', canApply: false, previewFingerprint: null } : old,
+        )
+      } else invalidate(goalId, sid)
+    },
   })
   const dismissM = useMutation({
     mutationFn: async ({ goalId, sid }: { goalId: string; sid: string }) => {
       if (mock) return
       await goalApi.dismissSuggestion(goalId, sid)
     },
-    onSuccess: (_d, { goalId }) => invalidate(goalId),
+    onSuccess: (_d, { goalId, sid }) => {
+      if (mock) {
+        qc.setQueryData<GoalSuggestionPreviewResponse>(
+          ['goal-suggestion-preview', goalId, sid],
+          old => old ? { ...old, status: 'dismissed', canApply: false, previewFingerprint: null } : old,
+        )
+      } else invalidate(goalId, sid)
+    },
   })
-  const accept = useCallback((goalId: string, sid: string) => acceptM.mutateAsync({ goalId, sid }), [acceptM])
+  const accept = useCallback(
+    (goalId: string, sid: string, previewFingerprint: string) => acceptM.mutateAsync({ goalId, sid, previewFingerprint }),
+    [acceptM],
+  )
   const dismiss = useCallback((goalId: string, sid: string) => dismissM.mutateAsync({ goalId, sid }), [dismissM])
   return { accept, dismiss, pending: acceptM.isPending || dismissM.isPending, invalidateSuggestions }
 }

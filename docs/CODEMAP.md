@@ -499,25 +499,28 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **services:** `AdaptiveCorrectionService`, `AdaptiveReviewJob`, `AdaptiveReviewService`, `DayTypeShiftCalculator`,
     `DietPreferences`, `DietPreferencesPort`, `GoalDeletedEvent`, `GoalEngineService`, `GoalEvaluationService`,
     `GoalFeasibilityService`, `GoalInvariantValidator`, `GoalOverviewCourseService`, `GoalOverviewService`,
-    `GoalPlanLinkService`, `GoalProjectionService`, `GoalSavedEvent`, `GoalService`, `GoalSuggestionService`,
-    `GoalSuggestionSupersedeWriter`, `GoalSuggestionTriggerService`, `GoalTimelineService`, `GuardEvaluationService`,
-    `MesoLifecycleSuggestionListener`, `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`
+    `GoalPlanLinkService`, `GoalPrescriptionCalculator`, `GoalProjectionService`, `GoalSavedEvent`, `GoalService`,
+    `GoalSuggestionDraftApplier`, `GoalSuggestionFingerprintService`, `GoalSuggestionPreviewService`,
+    `GoalSuggestionService`, `GoalSuggestionSupersedeWriter`, `GoalSuggestionTriggerService`, `GoalTimelineService`,
+    `GuardEvaluationService`, `MesoLifecycleSuggestionListener`, `TdeeBootstrapService`, `TrainGoalRecomputeAdapter`
   - **controllers→contract:** `GoalController`→`GoalApi`
   - **mappers:** `GoalMapper`, `GoalPlanLinkMapper`, `GoalSuggestionMapper`
   - **other:** `GoalEngineProperties`, `GoalPrescriptionJson`, `GoalReevaluateRunner`, `GoalSeedData`,
     `GoalSegmentOverrideJson`, `GoalSuggestionPayloadJson`, `IntakeAdherencePort`, `SleepAdequacyPort`,
     `TdeeBootstrapJson`
-- **Contract** `api/feature/goal/goal.yml` — 16 operations
+- **Contract** `api/feature/goal/goal.yml` — 17 operations
   - **endpoints:** GET /api/goals · POST /api/goals · POST /api/goals/feasibility-preview · GET /api/goals/{id} ·
     PUT /api/goals/{id} · DELETE /api/goals/{id} · GET /api/goals/{id}/overview · POST /api/goals/{id}/activate ·
     POST /api/goals/{id}/archive · GET /api/goals/{id}/timeline · POST /api/goals/{id}/evaluate ·
     POST /api/goals/{id}/plans · DELETE /api/goals/{id}/plans/{linkId} · GET /api/goals/{id}/suggestions ·
-    POST /api/goals/{id}/suggestions/{suggestionId}/accept · POST /api/goals/{id}/suggestions/{suggestionId}/dismiss
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 16 IT + 5 unit
+    GET /api/goals/{id}/suggestions/{suggestionId}/preview · POST /api/goals/{id}/suggestions/{suggestionId}/accept ·
+    POST /api/goals/{id}/suggestions/{suggestionId}/dismiss
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/goal` — 17 IT + 5 unit
   - **ITs:** `AdaptiveReviewServiceIT`, `GoalContractIT`, `GoalEnginePropertiesIT`, `GoalEngineRecomputeIT`,
     `GoalEvaluationServiceIT`, `GoalFeasibilityServiceIT`, `GoalOverviewApiIT`, `GoalPlanLinkServiceIT`,
-    `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`, `GoalServiceIT`, `GoalSuggestionServiceIT`,
-    `GoalSuggestionTriggerIT`, `GoalTimelineContractIT`, `GoalTimelineServiceIT`, `GuardEvaluationServiceIT`
+    `GoalProjectionServiceIT`, `GoalReevaluateRunnerIT`, `GoalServiceIT`, `GoalSuggestionPreviewApiIT`,
+    `GoalSuggestionServiceIT`, `GoalSuggestionTriggerIT`, `GoalTimelineContractIT`, `GoalTimelineServiceIT`,
+    `GuardEvaluationServiceIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`,
     `GoalSuggestionPopulator`, `RunningPopulator`, `TrainPopulator`, `WeightLogPopulator`
 
@@ -715,10 +718,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/me`
   - **hooks (via `@/data/hooks`):** `DayEvaluationResponse`, `NormalizedDayDimension`, `NormalizedDayEvaluation`,
     `normalizeDayEvaluation`, `useBiometricActions`, `useBiometricProfile`, `useDayEvaluation`,
-    `useFeasibilityPreview`, `useGoal`, `useGoalActions`, `useGoalCreation`, `useGoalOverview`, `useGoalSuggestions`,
-    `useLlmCall`, `useLlmCalls`, `useLlmUsageBreakdown`, `useLlmUsageSummary`, `useMeWeek`, `usePeople`, `useProfile`,
-    `useSleep`, `useSleepGoal`, `useSleepGoalActions`, `useSleepShot`, `useSuggestionActions`, `useWeekLessons`,
-    `useWeeklyReview`, `useWeight`
+    `useFeasibilityPreview`, `useGoal`, `useGoalActions`, `useGoalCreation`, `useGoalOverview`,
+    `useGoalSuggestionPreview`, `useGoalSuggestions`, `useLlmCall`, `useLlmCalls`, `useLlmUsageBreakdown`,
+    `useLlmUsageSummary`, `useMeWeek`, `usePeople`, `useProfile`, `useSleep`, `useSleepGoal`, `useSleepGoalActions`,
+    `useSleepShot`, `useSuggestionActions`, `useWeekLessons`, `useWeeklyReview`, `useWeight`
   - **modules:** biometricHooks.ts, biometricProfileApi.ts, biometricsApi.ts, dayEvaluation.ts, dayEvaluationApi.ts,
     dayEvaluationHooks.ts, goalApi.ts, goalHooks.ts, goalLinkApi.ts, goalOverviewHooks.ts, goals.ts, llmUsageApi.ts,
     llmUsageHooks.ts, meHooks.ts, meWeek.ts, meWeekApi.ts, meWeekHooks.ts, people.ts, peopleApi.ts, peopleHooks.ts,
@@ -727,12 +730,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE ui** `frontend/src/features/me`
   - **pages:** AiCallDetailPage.tsx, AiUsagePage.tsx, BeallitasokPage.tsx, BetaAdminPage.tsx, CelPage.tsx,
     CelWizardPage.tsx, CelokPage.tsx, EnHubPage.tsx, GoalDietPage.tsx, GoalGuardsPage.tsx, GoalPlannerPage.tsx,
-    GoalPlansPage.tsx, GoalSegmentPage.tsx, GoalSettingsPage.tsx, GoalsPage.tsx, GoalsSkeleton.tsx,
-    GrowthAwardsPage.tsx, GrowthHubPage.tsx, GrowthNaploPage.tsx, GrowthSkillsPage.tsx, HabitPage.tsx, JelekPage.tsx,
-    JournalPage.tsx, NightPage.tsx, NotificationFeedPage.tsx, NotificationsPage.tsx, PeopleEmlitesekPage.tsx,
-    PeopleHetiPage.tsx, PeopleJeloltekPage.tsx, PeopleKorPage.tsx, PeoplePage.tsx, PersonDetailPage.tsx,
-    RoutineWizardPage.tsx, RutinHubPage.tsx, SleepPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx, WeekDaysPage.tsx,
-    WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
+    GoalPlansPage.tsx, GoalSegmentPage.tsx, GoalSettingsPage.tsx, GoalSuggestionPage.tsx, GoalsPage.tsx,
+    GoalsSkeleton.tsx, GrowthAwardsPage.tsx, GrowthHubPage.tsx, GrowthNaploPage.tsx, GrowthSkillsPage.tsx,
+    HabitPage.tsx, JelekPage.tsx, JournalPage.tsx, NightPage.tsx, NotificationFeedPage.tsx, NotificationsPage.tsx,
+    PeopleEmlitesekPage.tsx, PeopleHetiPage.tsx, PeopleJeloltekPage.tsx, PeopleKorPage.tsx, PeoplePage.tsx,
+    PersonDetailPage.tsx, RoutineWizardPage.tsx, RutinHubPage.tsx, SleepPage.tsx, WeekAnalysisPage.tsx,
+    WeekDayPage.tsx, WeekDaysPage.tsx, WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
   - **sheets:** AiSuggestSheet.tsx, AttachPlanSheet.tsx, BiometricSheet.tsx, ChainEditSheet.tsx,
     DecisionReviewSheet.tsx, EditGoalSheet.tsx, HabitEditSheet.tsx, JournalSheet.tsx, PersonEditSheet.tsx,
     PersonLogSheet.tsx, PillarCatalogSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx, SleepStatsSheet.tsx,
@@ -742,22 +745,22 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     AiUsageHero.tsx, AiUserFilter.tsx, BadgesCard.tsx, DayDimensionTile.tsx, DayNavTiles.tsx, DayReviewCard.tsx,
     DetailStat.tsx, FieldRow.tsx, GoalConnectionTimeline.tsx, GoalCourseHero.tsx, GoalDietWeekCard.tsx, GoalGate.tsx,
     GoalGuardCard.tsx, GoalMiniCard.tsx, GoalPlanSlots.tsx, GoalRecept.tsx, GoalSegmentRail.tsx,
-    GoalSuggestionCard.tsx, GoalTimeline.tsx, GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthHero.tsx,
-    GrowthJournalCard.tsx, LifeGoalTile.tsx, MaStrip.tsx, MentionRow.tsx, NightArcCard.tsx, NightBodyScan.tsx,
-    NightBreathing.tsx, NightWalk.tsx, NotificationCategoryRow.tsx, NotificationPreviewHeader.tsx, PerksCard.tsx,
-    PermahRing.tsx, PersonCard.tsx, PhaseAverageCard.tsx, PhaseRail.tsx, PhaseReferenceRow.tsx, PillarCard.tsx,
-    PushInstallGate.tsx, RemDurationCard.tsx, SkillBandCard.tsx, SleepChart.tsx, SleepEscalationCard.tsx,
-    SleepLogRow.tsx, SleepStat.tsx, SleepStatCard.tsx, TimePicker.tsx, WeekDayCard.tsx, WeekDayTile.tsx,
-    WeekDiscoveries.tsx, WeekGoalsCard.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx,
+    GoalSuggestionCard.tsx, GoalSuggestionDiffGrid.tsx, GoalTimeline.tsx, GratitudeRows.tsx, GratitudeStreakCard.tsx,
+    GrowthHero.tsx, GrowthJournalCard.tsx, LifeGoalTile.tsx, MaStrip.tsx, MentionRow.tsx, NightArcCard.tsx,
+    NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx, NotificationCategoryRow.tsx, NotificationPreviewHeader.tsx,
+    PerksCard.tsx, PermahRing.tsx, PersonCard.tsx, PhaseAverageCard.tsx, PhaseRail.tsx, PhaseReferenceRow.tsx,
+    PillarCard.tsx, PushInstallGate.tsx, RemDurationCard.tsx, SkillBandCard.tsx, SleepChart.tsx,
+    SleepEscalationCard.tsx, SleepLogRow.tsx, SleepStat.tsx, SleepStatCard.tsx, TimePicker.tsx, WeekDayCard.tsx,
+    WeekDayTile.tsx, WeekDiscoveries.tsx, WeekGoalsCard.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx,
     WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx,
     WeightTrendChart.tsx
   - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, dayScoreState.ts, goalLabels.ts, goalOverviewCopy.ts,
-    goalSkillChips.ts, goalWeekSentence.ts, gratitudeStreak.ts, growthJournal.ts, growthStats.ts, habitAnchors.ts,
-    habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, lifegoalLabels.ts, llmCallFormat.ts,
-    nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts, peopleVisuals.ts,
-    perkMilestones.ts, pillarFromCatalog.ts, routineSentence.ts, scoreBand.ts, sleepEducation.ts, sleepEscalation.ts,
-    sleepPhases.ts, sleepStats.ts, useChatHandoff.ts, weekDay.ts, weekHighlight.ts, weekHub.ts, weekNav.ts,
-    weightStats.ts
+    goalSkillChips.ts, goalSuggestionDiff.ts, goalWeekSentence.ts, gratitudeStreak.ts, growthJournal.ts,
+    growthStats.ts, habitAnchors.ts, habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts,
+    lifegoalLabels.ts, llmCallFormat.ts, nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts,
+    peopleDerive.ts, peopleVisuals.ts, perkMilestones.ts, pillarFromCatalog.ts, routineSentence.ts, scoreBand.ts,
+    sleepEducation.ts, sleepEscalation.ts, sleepPhases.ts, sleepStats.ts, useChatHandoff.ts, weekDay.ts,
+    weekHighlight.ts, weekHub.ts, weekNav.ts, weightStats.ts
 
 ### meal
 

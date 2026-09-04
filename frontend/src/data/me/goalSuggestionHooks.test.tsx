@@ -2,8 +2,8 @@ import { renderHook, act, waitFor } from '@testing-library/react'
 import { useQueryClient } from '@tanstack/react-query'
 import { http, HttpResponse } from 'msw'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
-import { useGoalSuggestions, useSuggestionActions } from '@/data/me/goalHooks'
-import { goalSuggestions as mockGoalSuggestions } from '@/data/me/goals'
+import { useGoalSuggestionPreview, useGoalSuggestions, useSuggestionActions } from '@/data/me/goalHooks'
+import { goalSuggestionPreviewSeed, goalSuggestions as mockGoalSuggestions } from '@/data/me/goals'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { makeHookWrapper } from '@/test/queryWrapper'
@@ -51,11 +51,26 @@ test('useGoalSuggestions (real mode) stays disabled + empty when goalId is null'
   expect(result.current.pending).toBe(true)
 })
 
-test('useSuggestionActions (real mode) accept hits the accept endpoint and invalidates suggestions + goals', async () => {
+test('useGoalSuggestionPreview (real mode) fetches the typed preview', async () => {
+  server.use(http.get(`${API_BASE}/api/goals/g1/suggestions/sug-1/preview`, () =>
+    HttpResponse.json(goalSuggestionPreviewSeed)))
+  const { result } = renderHook(() => useGoalSuggestionPreview('g1', 'sug-1'), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.preview?.previewFingerprint).toBe(goalSuggestionPreviewSeed.previewFingerprint))
+})
+
+test('useGoalSuggestionPreview stays disabled when either id is null', () => {
+  const { result } = renderHook(() => useGoalSuggestionPreview(null, null), { wrapper: makeHookWrapper() })
+  expect(result.current.preview).toBeUndefined()
+  expect(result.current.pending).toBe(false)
+})
+
+test('useSuggestionActions (real mode) sends the preview fingerprint and invalidates every dependent surface', async () => {
+  let body: unknown
   server.use(
-    http.post(`${API_BASE}/api/goals/g1/suggestions/sug-1/accept`, () =>
-      HttpResponse.json({ id: 'g1', title: 'Nyári cut' }),
-    ),
+    http.post(`${API_BASE}/api/goals/g1/suggestions/sug-1/accept`, async ({ request }) => {
+      body = await request.json()
+      return HttpResponse.json({ id: 'g1', title: 'Nyári cut' })
+    }),
   )
   const wrapper = makeHookWrapper()
   const invalidated: unknown[] = []
@@ -71,9 +86,13 @@ test('useSuggestionActions (real mode) accept hits the accept endpoint and inval
     },
     { wrapper },
   )
-  await act(async () => { await result.current.accept('g1', 'sug-1') })
+  await act(async () => { await result.current.accept('g1', 'sug-1', 'f'.repeat(64)) })
+  expect(body).toEqual({ previewFingerprint: 'f'.repeat(64) })
   expect(invalidated).toContainEqual(['goal', 'g1', 'suggestions'])
   expect(invalidated).toContainEqual(['goals'])
+  expect(invalidated).toContainEqual(['goal-overview', 'g1'])
+  expect(invalidated).toContainEqual(['goal-suggestion-preview', 'g1', 'sug-1'])
+  expect(invalidated).toContainEqual(['notification-feed'])
 })
 
 test('useSuggestionActions (real mode) dismiss hits the dismiss endpoint and invalidates suggestions', async () => {
@@ -100,14 +119,19 @@ test('useGoalSuggestions (mock mode) returns the static fixture synchronously', 
   expect(result.current.pending).toBe(false)
 })
 
-test('useSuggestionActions (mock mode) accept/dismiss are no-ops that resolve without calling the API', async () => {
+test('useSuggestionActions (mock mode) makes an accepted preview historical without calling the API', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   // Any real network call would fail (MSW has no handlers for these in mock mode);
   // resolving cleanly proves the actions short-circuit.
-  const { result } = renderHook(() => useSuggestionActions(), { wrapper: makeHookWrapper() })
+  const wrapper = makeHookWrapper()
+  const preview = renderHook(() => useGoalSuggestionPreview('goal-cut-2026', 'sug-weekly-w17'), { wrapper })
+  const { result } = renderHook(() => useSuggestionActions(), { wrapper })
+  expect(preview.result.current.preview?.status).toBe('proposed')
   await act(async () => {
-    await result.current.accept('goal-cut-2026', 'sug-deload-w3')
-    await result.current.dismiss('goal-cut-2026', 'sug-deload-w3')
+    await result.current.accept('goal-cut-2026', 'sug-weekly-w17', goalSuggestionPreviewSeed.previewFingerprint as string)
   })
+  await waitFor(() => expect(preview.result.current.preview?.status).toBe('accepted'))
+  expect(preview.result.current.preview?.canApply).toBe(false)
+  expect(preview.result.current.preview?.previewFingerprint).toBeNull()
   expect(result.current.pending).toBe(false)
 })
