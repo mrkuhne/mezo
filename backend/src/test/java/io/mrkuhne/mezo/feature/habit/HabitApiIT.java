@@ -39,7 +39,7 @@ class HabitApiIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testCheckHabit_shouldRejectDerivedAndUnknown() {
+    void testCheckHabit_shouldReject_whenDerivedOrUnknown() {
         HabitCheckRequest body = HabitCheckRequest.builder().date(LocalDate.now()).build();
         String notManual = postForBody("/api/habit/morning_weigh_in/check", body,
             ownerAuthHeaders(), HttpStatus.CONFLICT, String.class);
