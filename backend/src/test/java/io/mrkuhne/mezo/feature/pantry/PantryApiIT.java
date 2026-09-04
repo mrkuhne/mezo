@@ -233,11 +233,27 @@ class PantryApiIT extends ApiIntegrationTest {
     }
 
     /**
-     * The worst of the definition-echo family: a fabricated "" for {@code category} is not even a
-     * LEGAL enum value, so a client echoing it back on a state-only edit either fails Jackson enum
-     * deserialization (400) or — if the field is simply omitted, as a fixed client now would —
-     * exercises {@code definitionDiffers} as a true no-op. Either way, a bystander editing only
-     * their own price on a row whose shared definition carries no category must succeed.
+     * Fix-round 1 (coordinator finding): {@code KamraItemDetailPage.tsx}'s {@code inputFromItem}
+     * builds {@code brand}/{@code category} UNCONDITIONALLY from the read model, so a NULL-category,
+     * NULL-brand row's client-sent PUT literally carries {@code "category":""} and {@code "brand":""}
+     * today — the exact wire shape a not-yet-fixed FE still emits even after this task's backend fix
+     * (the FE guard is a later task). This test pins down the resolved open factual question: that
+     * literal echo does NOT 400 and does NOT 403.
+     *
+     * <p>Why: {@code PantryItemRequest.CategoryEnum#fromValue("")} returns {@code null} rather than
+     * throwing (the contract enum is {@code nullable: true}, generated the same degrade-not-throw way
+     * as {@code PantrySource}), so the deserialized request never carries a non-null category for
+     * {@code definitionDiffers} to compare. And {@code definitionDiffers} already null-normalizes
+     * {@code brand} on BOTH sides ({@code c.getBrand() == null ? "" : c.getBrand().strip()}) — the
+     * same trick it uses for {@code name} — so an echoed {@code ""} against a null stored brand reads
+     * as no change either. Verified empirically against this task's actual (post-fix) code; the
+     * mechanism is independent of the mapper's honesty, so the same holds pre-fix too.
+     *
+     * <p>NOT a regression test for the mapper fix (this passes regardless of it) — it is a regression
+     * guard for {@code definitionDiffers}'s null-normalization, and the answer to the bundle's open
+     * question for THIS field pair. The analogous echo genuinely DOES 403 for {@code pkg}/{@code form}
+     * — plain strings with no such normalization — but {@code definitionDiffers}/{@code numDiffers}
+     * are explicitly out of this task's scope to change; see the report for that finding.
      */
     @Test
     void testUpdateItem_shouldAllowAPureStateEdit_onARowWhoseCategoryIsNull() {
@@ -246,21 +262,22 @@ class PantryApiIT extends ApiIntegrationTest {
         PantryItemEntity authored = populator.createFood(author.id(), "Kategória nélküli", LocalDate.now().plusDays(6));
         PantryCatalogEntity c = authored.getCatalog();
         c.setCategory(null);
+        c.setBrand(null);
         catalogRepository.saveAndFlush(c);
         PantryItemEntity theirs = catalogService.ensureItem(bystander.id(), c.getId());
 
         HttpHeaders auth = bystander.headers();
         auth.setContentType(MediaType.APPLICATION_JSON); // for the raw-JSON body below
 
-        // The bystander edits ONLY their own price/priceUnit — a state-only PATCH-shaped PUT that
-        // carries no category at all, exactly what the fixed edit sheet now sends for a definition
-        // it was handed as null.
+        // The literal bytes today's (not-yet-fixed) edit sheet sends for this row.
         String body = """
-            {"kind":"food","name":"Kategória nélküli","price":1290,"priceUnit":"/kg"}
+            {"kind":"food","name":"Kategória nélküli","brand":"","category":"","price":1290,"priceUnit":"/kg"}
             """;
 
         exchangeForBody(HttpMethod.PUT, "/api/pantry/" + theirs.getId(), body, auth, HttpStatus.OK, String.class);
 
-        assertThat(catalogRepository.findById(c.getId()).orElseThrow().getCategory()).isNull();
+        PantryCatalogEntity after = catalogRepository.findById(c.getId()).orElseThrow();
+        assertThat(after.getCategory()).isNull();
+        assertThat(after.getBrand()).isNull();
     }
 }
