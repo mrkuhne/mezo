@@ -849,7 +849,7 @@ az utóbbit ugyanebben a taskban frissítsd.
 5. Manage: lavender hero and four large colorful management cards; nested manager
    pages keep the same family, not a white admin list.
 
-- [ ] **Step 1: Írd meg a bukó CSS-contract tesztet**
+- [x] **Step 1: Írd meg a bukó CSS-contract tesztet**
 
 A `stackCssContract.test.ts` ESM-safe `readFileSync`-fel olvassa a
 `frontend/src/styles/prototype.css` fájlt, és ellenőrizze:
@@ -863,7 +863,7 @@ A `stackCssContract.test.ts` ESM-safe `readFileSync`-fel olvassa a
   `.stk-hub-progress-fill` és `.stk-hub-next` motion neutralizálását;
 - a 44 px hit-area szabály szerepel a pipa, manage row és add button selectorán.
 
-- [ ] **Step 2: Futtasd a CSS-contract tesztet és rögzítsd a bukást**
+- [x] **Step 2: Futtasd a CSS-contract tesztet és rögzítsd a bukást**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo/frontend
@@ -872,14 +872,14 @@ pnpm vitest run src/features/fuel/components/stackCssContract.test.ts
 
 Várt: FAIL, mert a teljes scoped Stack CSS még hiányzik.
 
-- [ ] **Step 3: Add hozzá a scoped markup hookokat és a StackItemSheet wrappert**
+- [x] **Step 3: Add hozzá a scoped markup hookokat és a StackItemSheet wrappert**
 
 Minden új oldalnak egyedi `.stk-*` root/class neve legyen. A `StackItemSheet`
 render-prop tartalmát egy `<div className="stk-item-sheet">...</div>` wrapperbe
 tedd; belső actionök, inputok és `close()` hívások byte-for-byte azonosak maradnak.
 Ne tegyél `position: fixed` fejlécet vagy hátteret feature komponensbe.
 
-- [ ] **Step 4: Implementáld a Design 2.0 CSS-t**
+- [x] **Step 4: Implementáld a Design 2.0 CSS-t**
 
 A `prototype.css` végén egyetlen kommentelt `Fuel Stack 3.0 (mezo-ubxd)` szekcióban:
 
@@ -899,7 +899,7 @@ Az elérhetetlenné vált régi `.stk-next`, `.stk-mosaic` és `StackZoneCard`-s
 szabályokat töröld, de a továbbra használt `StackDayArc` és `StackMealMatch`
 selectorait tartsd meg.
 
-- [ ] **Step 5: Futtasd a DOM- és CSS-focused teszteket**
+- [x] **Step 5: Futtasd a DOM- és CSS-focused teszteket**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo/frontend
@@ -908,7 +908,7 @@ pnpm vitest run src/features/fuel/components/stackCssContract.test.ts src/featur
 
 Várt: PASS.
 
-- [ ] **Step 6: Add hozzá az öt két-témás visual goldent**
+- [x] **Step 6: Add hozzá az öt két-témás visual goldent**
 
 A `visual.spec.ts` `SCREENS` listájába:
 
@@ -924,7 +924,7 @@ Ez light + dark témában tíz Darwin snapshotot hoz létre. A seedelt kalauz ma
 lezárva, a clock maradjon a közös délutáni fix időn, hogy a valódi AppHeader és
 HeaderAurora determinisztikusan jelenjen meg.
 
-- [ ] **Step 7: Add hozzá a 320/390/430 px layout gate-et**
+- [x] **Step 7: Add hozzá a 320/390/430 px layout gate-et**
 
 A `layout.spec.ts` új helperrel ellenőrizze a hubot mindhárom szélességen, a négy
 fő részletoldalt 390 px-en:
@@ -940,7 +940,7 @@ Minden ellenőrzés a `.screen-content` valódi scrolleren mérjen. A 390 px-es
 részletoldal-tesztek bizonyítsák, hogy az utolsó kártya elérhető és a tabbar/FAB nem
 takarja tartósan. A checkbox bounding box mindkét oldala legalább 44 px.
 
-- [ ] **Step 8: Generáld és vizsgáld meg a goldent, majd iterálj vizuálisan**
+- [x] **Step 8: Generáld és vizsgáld meg a goldent, majd iterálj vizuálisan**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo/frontend
@@ -954,7 +954,7 @@ FAB-ot; ellenőrizd a hub, today, protocol, meals, manage és legalább egy nest
 manage route görgetését. Konzolhiba, vízszintes overflow vagy puritán/fehér aloldal
 esetén CSS/markup iteráció után futtasd újra a focused visual gate-et.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo

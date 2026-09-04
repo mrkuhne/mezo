@@ -21,7 +21,7 @@ function StackProgress({ view }: { view: StackDayView }) {
         aria-valuemax={view.totalCount}
         aria-valuenow={view.takenCount}
       >
-        <span style={{ width: `${width}%` }} />
+        <span className="stk-hub-progress-fill" style={{ width: `${width}%` }} />
       </div>
       <span>{view.takenCount} / {view.totalCount} bevéve</span>
     </div>

@@ -34,7 +34,7 @@ export function StackItemSheet({ entry, onClose }: { entry: StackDayEntry; onClo
   return (
     <Sheet onClose={onClose} labelledBy="stack-item-title">
       {(close) => (
-        <>
+        <div className="stk-item-sheet">
           {/* Header */}
           <div className="row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
             <div className="col">
@@ -161,7 +161,7 @@ export function StackItemSheet({ entry, onClose }: { entry: StackDayEntry; onClo
           </button>
 
           <div style={{ height: 24 }} />
-        </>
+        </div>
       )}
     </Sheet>
   )

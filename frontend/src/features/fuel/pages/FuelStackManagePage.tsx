@@ -19,7 +19,7 @@ export function FuelStackManagePage() {
       tone="lav" backTo="/fuel/stack" backLabel="‹ Stack" icon="i-beallitas"
       name="Protokoll kezelése" sub="Minden változás azonnal mentődik"
     >
-      <div className="stk-manage-cards">
+      <div className="stk-manage-grid">
         <StackManageCard icon="i-stack" wash="sage" title="Protokoll tételei"
           detail={loading ? '—' : `${occurrences.length} tétel`} onClick={() => navigate('/fuel/stack/manage/protocol')} />
         <StackManageCard icon="i-idozito" wash="gold" title="Időzítési rend"

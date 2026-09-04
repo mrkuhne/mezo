@@ -23,7 +23,7 @@ export function StackPageScaffold({
     <MozaikPage tone={tone} className="stk-detail-page">
       <PageHead onBack={() => navigate(backTo)} label={backLabel} />
       <EntranceGroup>
-        <PageHero icon={icon} name={name} big={big} sub={sub} />
+        <div className="stk-page-hero"><PageHero icon={icon} name={name} big={big} sub={sub} /></div>
         <PageBody className="stk-detail-body">{children}</PageBody>
       </EntranceGroup>
     </MozaikPage>
