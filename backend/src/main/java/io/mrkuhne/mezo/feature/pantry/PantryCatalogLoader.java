@@ -5,10 +5,7 @@ import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
-import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
@@ -56,18 +53,19 @@ public class PantryCatalogLoader implements CommandLineRunner {
     /** No-arg overload — used by the IT to re-run against a drifted DB. */
     @Transactional
     public void run() {
-        Map<String, PantryCatalogEntity> byKey = new HashMap<>();
-        repository.findAll().forEach(c -> byKey.put(naturalKey(c.getName(), c.getBrand()), c));
         int inserted = 0;
         int claimed = 0;
         for (CatalogRow row : readCatalog()) {
-            String key = naturalKey(row.name(), null);
-            PantryCatalogEntity hit = byKey.get(key);
+            // The natural key is folded by POSTGRES, never by Java (mezo-imet): a Java-side
+            // toLowerCase disagrees with Postgres lower() on the Greek final sigma and the Turkish
+            // dotted I, and the loader's own in-memory map would then MISS an existing row, insert,
+            // and take down APPLICATION STARTUP on uq_pantry_catalog_natural.
+            PantryCatalogEntity hit = repository.findByNaturalKey(row.name(), null).orElse(null);
             if (hit == null) {
                 PantryCatalogEntity c = new PantryCatalogEntity();
                 c.setName(row.name().strip()); // every producer stores the natural key trimmed
                 fill(c, row, true);
-                byKey.put(key, repository.save(c));
+                repository.saveAndFlush(c); // flush: the next row's lookup must see this insert
                 inserted++;
                 continue;
             }
@@ -84,7 +82,7 @@ public class PantryCatalogLoader implements CommandLineRunner {
                 claimed++;
             }
             fill(hit, row, false); // NULL-only backfill (the mezo-32ko nova rule, generalized)
-            repository.save(hit);
+            repository.saveAndFlush(hit);
         }
         if (inserted > 0 || claimed > 0) {
             log.info("pantry catalog: {} master row(s) inserted, {} claimed (mezo-qw37.4)", inserted, claimed);
@@ -115,14 +113,9 @@ public class PantryCatalogLoader implements CommandLineRunner {
         if (overwrite || getter.get() == null) setter.accept(seed);
     }
 
-    /**
-     * Mirrors {@code uq_pantry_catalog_natural}: {@code lower(name)} + {@code lower(coalesce(brand,''))}.
-     * Uses {@link Locale#ROOT} deliberately — the default JVM locale (e.g. Turkish "i") lowercases
-     * differently and would desync this key from the DB's SQL {@code lower()}.
-     */
-    static String naturalKey(String name, String brand) {
-        return name.strip().toLowerCase(Locale.ROOT) + "|"
-            + (brand == null ? "" : brand.strip().toLowerCase(Locale.ROOT));
+    /** Package-private test seam: the IT needs a real seed name to build its fold-collision case. */
+    List<CatalogRow> readCatalogForTest() {
+        return readCatalog();
     }
 
     private List<CatalogRow> readCatalog() {
