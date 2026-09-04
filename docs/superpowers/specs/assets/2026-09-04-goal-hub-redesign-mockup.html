@@ -1,0 +1,1985 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src 'unsafe-inline' blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<title>Mezo Goal Hub Prototype</title>
+<style>:root{color-scheme:light dark;background:light-dark(rgb(255 255 255), rgb(24 24 24))}html,body{margin:0}body{box-sizing:border-box;padding:1rem;background:inherit}iframe{display:block;width:100%;height:calc(100vh - 2rem);margin:0 auto;border:0}</style>
+</head>
+<body>
+<iframe sandbox="allow-scripts" referrerpolicy="no-referrer" title="Mezo Goal Hub Prototype" srcdoc="&lt;!doctype html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1&quot;&gt;
+&lt;meta name=&quot;referrer&quot; content=&quot;no-referrer&quot;&gt;
+&lt;meta http-equiv=&quot;Content-Security-Policy&quot; content=&quot;default-src &#x27;none&#x27;; script-src &#x27;unsafe-inline&#x27; &#x27;unsafe-eval&#x27; &#x27;wasm-unsafe-eval&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; style-src &#x27;unsafe-inline&#x27; blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; img-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; font-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; media-src blob: data: https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://esm.sh https://fonts.bunny.net https://fonts.googleapis.com https://fonts.gstatic.com https://unpkg.com; worker-src blob:; connect-src blob: data:; frame-src &#x27;none&#x27;; object-src &#x27;none&#x27;; base-uri &#x27;none&#x27;; form-action &#x27;none&#x27;&quot;&gt;
+&lt;title&gt;Mezo Goal Hub Prototype&lt;/title&gt;
+&lt;style&gt;:root {
+  color-scheme: light dark;
+  background-color: var(
+    --background,
+    var(--color-background-primary, light-dark(rgb(255 255 255), rgb(24 24 24)))
+  ) !important;
+
+  /* Agent-facing contract; keep in sync with SKILL.md. */
+  --background: var(
+    --color-background-primary,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --card: color-mix(in oklab, var(--foreground) 5%, var(--background));
+  --card-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --popover: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255), rgb(45 45 45))
+  );
+  --popover-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --primary: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --primary-foreground: var(
+    --color-text-inverse,
+    light-dark(rgb(255 255 255), rgb(13 13 13))
+  );
+  --secondary: var(
+    --color-background-secondary,
+    light-dark(rgb(255 255 255 / 96%), rgb(54 54 54 / 96%))
+  );
+  --secondary-foreground: var(
+    --color-text-primary,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --muted: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --muted-foreground: var(
+    --color-text-secondary,
+    light-dark(rgb(26 28 31 / 49.4%), rgb(255 255 255 / 49.8%))
+  );
+  --accent: var(
+    --color-background-info,
+    light-dark(rgb(229 242 255), rgb(13 39 63))
+  );
+  --accent-foreground: var(
+    --color-text-info,
+    light-dark(rgb(51 156 255), rgb(131 195 255))
+  );
+  --destructive: var(
+    --color-text-warning,
+    light-dark(rgb(226 85 7), rgb(255 133 73))
+  );
+  --border: var(
+    --color-border-secondary,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+  --input: var(
+    --color-border-primary,
+    light-dark(
+      rgb(26 28 31 / 11.8%),
+      color-mix(in oklab, rgb(0 0 0) 10%, transparent)
+    )
+  );
+  --ring: var(
+    --color-ring-primary,
+    light-dark(rgb(51 156 255), rgb(131 195 255 / 76%))
+  );
+  --font-size-base: var(--font-text-md-size, 14px);
+  --blue: light-dark(rgb(51 156 255), rgb(51 156 255));
+  --orange: light-dark(rgb(226 85 7), rgb(251 106 34));
+  --green: light-dark(rgb(0 162 64), rgb(64 201 119));
+  --red: light-dark(rgb(224 46 42), rgb(255 103 100));
+  --purple: light-dark(rgb(146 79 247), rgb(173 123 249));
+  --yellow: light-dark(rgb(255 195 0), rgb(255 210 64));
+  --viz-series-1: var(--primary);
+  --viz-series-2: light-dark(rgb(243 136 59), rgb(245 154 86));
+  --viz-series-3: light-dark(rgb(93 201 119), rgb(116 213 139));
+  --viz-series-4: light-dark(rgb(235 119 177), rgb(240 143 192));
+  --viz-series-5: light-dark(rgb(155 121 236), rgb(170 145 239));
+  --viz-series-6: light-dark(rgb(58 185 177), rgb(90 203 194));
+
+  /* Internal implementation variables; not part of the agent contract. */
+  --font-sans: -apple-system, system-ui, &quot;Segoe UI&quot;, sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, &quot;SF Mono&quot;, Menlo, Consolas, &quot;Liberation Mono&quot;,
+    monospace;
+  --font-size-normal: max(11px, var(--font-size-base));
+  --font-size-tooltip: calc(var(--font-size-base) - 1px);
+  --font-size-small: max(11px, calc(var(--font-size-base) - 2px));
+  --font-size-h1: calc(var(--font-size-normal) * 1.7142857143);
+  --font-size-h2: calc(var(--font-size-normal) * 1.4285714286);
+  --font-size-h3: calc(var(--font-size-normal) * 1.2857142857);
+  --font-weight-normal: 430;
+  --font-weight-medium: 500;
+  --line-height-normal: calc(var(--font-size-normal) * 1.5);
+  --line-height-tooltip: calc(var(--font-size-tooltip) * 1.4285714286);
+  --line-height-small: calc(var(--font-size-small) + 4px);
+  --radius: var(--border-radius-lg, 12.5px);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-2xl: calc(var(--radius) * 1.6);
+  --radius-full: 9999px;
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0 / 8%);
+  --checkmark-image: url(&quot;data:image/svg+xml,%3Csvg xmlns=&#x27;http://www.w3.org/2000/svg&#x27; viewBox=&#x27;0 0 17 17&#x27;%3E%3Cpath d=&#x27;M12.8961 3.64101C13.1297 3.41418 13.4984 3.37523 13.7779 3.56581C14.0571 3.75635 14.1554 4.11331 14.0299 4.41347L13.9615 4.53847L7.71151 13.7045C7.59411 13.8767 7.4063 13.9877 7.19881 14.0072C6.99136 14.0267 6.78564 13.9533 6.63826 13.806L2.88826 10.056L2.79842 9.9457C2.6192 9.67407 2.64927 9.30496 2.88826 9.06581C3.12738 8.82669 3.49647 8.79676 3.76815 8.97597L3.8785 9.06581L7.03084 12.2182L12.8053 3.74941L12.8961 3.64101Z&#x27;/%3E%3C/svg%3E&quot;);
+
+  /* Legacy aliases; not part of the current agent contract. */
+  --viz-bg: transparent;
+  --viz-panel: var(--card);
+  --viz-border: var(--border);
+  --viz-text: var(--foreground);
+  --viz-muted: var(--muted-foreground);
+  --viz-accent: var(--primary);
+  --viz-accent-text: var(--primary-foreground);
+  --viz-accent-bg: var(--accent);
+  --viz-font-size: var(--font-size-base);
+  --viz-warning: var(--destructive);
+}
+
+:root[data-theme=&quot;light&quot;] {
+  color-scheme: light;
+}
+
+:root[data-theme=&quot;dark&quot;] {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html &gt; body {
+  /* Preserve MCP aliases for older inline renderers without creating :root cycles. */
+  --color-background-primary: var(
+    --background,
+    light-dark(rgb(255 255 255), rgb(24 24 24))
+  );
+  --color-text-primary: var(
+    --foreground,
+    light-dark(rgb(26 28 31), rgb(255 255 255))
+  );
+  --color-border-secondary: var(
+    --border,
+    light-dark(rgb(26 28 31 / 8%), rgb(255 255 255 / 8.2%))
+  );
+
+  margin: 0;
+  padding: 5px;
+  color: var(--foreground);
+  background: transparent !important;
+  font-family: var(--font-sans);
+  font-size: var(--font-size-normal);
+  font-weight: var(--font-weight-normal);
+  line-height: var(--line-height-normal);
+}
+
+a {
+  color: color-mix(in srgb, var(--viz-accent) 80%, var(--viz-text) 20%);
+  cursor: pointer;
+  font-weight: var(--font-weight-medium, 500);
+  text-decoration: none;
+  text-underline-offset: 2px;
+}
+
+a:is(:hover, :focus-visible) {
+  text-decoration-line: underline;
+  text-decoration-style: dashed;
+  text-decoration-thickness: 0.5px;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p {
+  margin-block: 0;
+}
+
+h1 {
+  font-size: var(--font-size-h1);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h2 {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+h3,
+h4,
+h5,
+h6 {
+  font-size: var(--font-size-h3);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.3;
+}
+
+b,
+strong,
+th {
+  font-weight: var(--font-weight-medium);
+}
+
+code:not(pre code) {
+  display: inline;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  corner-shape: superellipse(1.5);
+  background: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+  overflow-wrap: anywhere;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  word-break: break-word;
+}
+
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  color: var(--foreground);
+  font: inherit;
+  text-align: start;
+}
+
+.table :is(th, td) {
+  padding-block: 10px;
+  padding-inline: 0 24px;
+  overflow-wrap: anywhere;
+  border-bottom: 1px solid var(--border);
+  text-align: start;
+  vertical-align: top;
+}
+
+.table-responsive &gt; .table :is(th, td) {
+  overflow-wrap: break-word;
+}
+
+.table :is(th, td):last-child {
+  padding-inline-end: 0;
+}
+
+.table :is(caption, thead th) {
+  font-weight: 600;
+}
+
+.table thead th {
+  padding-block: 8px;
+  border-bottom-color: color-mix(in srgb, var(--foreground) 16%, transparent);
+}
+
+.table tbody tr:last-child :is(th, td) {
+  border-bottom: 0;
+}
+
+.table.table-sm :is(th, td) {
+  padding-block: 6px;
+}
+
+.table.table-sm :is(th, td):not(:last-child) {
+  padding-inline-end: 16px;
+}
+
+.table :is(.text-end, [align=&quot;right&quot;]) {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+}
+
+.table :is(.text-center, [align=&quot;center&quot;]) {
+  text-align: center;
+}
+
+.table .text-nowrap {
+  white-space: nowrap;
+}
+
+#widget {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  padding: 0;
+  background: transparent !important;
+}
+
+.card {
+  min-width: 0;
+  padding: 12px;
+  overflow: hidden;
+  overflow-wrap: break-word;
+  border-radius: var(--radius-2xl);
+  corner-shape: superellipse(1.5);
+  color: var(--card-foreground);
+  background: var(--card);
+}
+
+#widget &gt; :not(.card, .progress) {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.tooltip {
+  position: fixed;
+  z-index: 50;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: min(
+    20rem,
+    var(--tooltip-available-width, calc(100vw - 10px)),
+    calc(100vw - 10px)
+  );
+  max-height: min(
+    var(--tooltip-available-height, calc(100vh - 10px)),
+    calc(100vh - 10px)
+  );
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--popover-foreground);
+  background: var(--popover);
+  box-shadow: none;
+  font-size: var(--font-size-tooltip);
+  line-height: var(--line-height-tooltip);
+  overflow-wrap: break-word;
+  white-space: normal;
+  pointer-events: none;
+  user-select: none;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(max(180px, 24%), 1fr));
+  gap: 10px;
+}
+
+.viz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.viz-stat-value {
+  font-size: var(--font-size-h2);
+  font-weight: var(--font-weight-medium);
+  line-height: 1.25;
+}
+
+.viz-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.progress {
+  display: flex;
+  height: 6px;
+  overflow: hidden;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+}
+
+.progress-bar {
+  height: 100%;
+  flex-shrink: 0;
+  border: 0;
+  background: var(--viz-series-1);
+}
+
+.viz-badge {
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  color: var(--accent-foreground);
+  background: var(--accent);
+  font-weight: var(--font-weight-medium);
+}
+
+small,
+.text-small,
+.viz-badge {
+  font-size: var(--font-size-small);
+  line-height: var(--line-height-small);
+}
+
+.text-muted {
+  color: var(--muted-foreground);
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.viz-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.viz-controls &gt; .form-label {
+  display: grid;
+  min-width: min(100%, 260px);
+  flex: 1 1 280px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 2px 12px;
+  margin-bottom: 0;
+}
+
+.viz-controls &gt; .form-label &gt; :is(.form-control, .form-range, .form-select) {
+  grid-column: 1 / -1;
+}
+
+.btn,
+.form-check-input,
+.form-control,
+.form-range,
+.form-select {
+  font: inherit;
+}
+
+.btn {
+  appearance: button;
+  display: inline-flex;
+  inline-size: fit-content;
+  max-inline-size: 100%;
+  min-height: 28px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin: 0;
+  padding: 0 8px;
+  -webkit-app-region: no-drag;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: var(--cursor-interaction, pointer);
+  text-align: center;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  -webkit-font-smoothing: antialiased;
+}
+
+.btn:is(.btn-block, .viz-tile) {
+  inline-size: 100%;
+}
+
+.btn.viz-tile {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+
+a.btn {
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn-primary {
+  border-color: transparent;
+  color: var(--primary-foreground);
+  background: var(--foreground);
+  background-clip: padding-box;
+}
+
+.btn-primary .text-muted {
+  color: color-mix(in srgb, var(--primary-foreground) 50%, transparent);
+}
+
+.btn-primary:not(:disabled):hover {
+  background: color-mix(in srgb, var(--foreground) 80%, transparent);
+  background-clip: padding-box;
+}
+
+.btn-ghost {
+  border-color: transparent;
+  color: var(--muted-foreground);
+  background: transparent;
+}
+
+.btn-ghost:not(:disabled):hover {
+  color: var(--foreground);
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+[data-lucide] {
+  stroke-width: 1.6;
+}
+
+.form-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--foreground);
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  padding: 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--foreground);
+  background: var(--secondary);
+}
+
+.form-control::placeholder {
+  color: var(--muted-foreground);
+}
+
+.form-control[type=&quot;file&quot;] {
+  padding: 0;
+  overflow: hidden;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control[type=&quot;file&quot;]::file-selector-button {
+  min-height: 26px;
+  margin-right: 8px;
+  padding: 0 8px;
+  border: 0;
+  border-right: 1px solid var(--input);
+  color: var(--secondary-foreground);
+  background: var(--secondary);
+  cursor: inherit;
+  font: inherit;
+}
+
+.form-control[type=&quot;file&quot;]:not(:disabled):hover::file-selector-button {
+  background: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-control-color[type=&quot;color&quot;] {
+  width: 40px;
+  height: 28px;
+  padding: 3px;
+  cursor: var(--cursor-interaction, pointer);
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-control-color[type=&quot;color&quot;]::-webkit-color-swatch {
+  border: 0;
+  border-radius: calc(var(--radius-lg) - 4px);
+  corner-shape: superellipse(1.5);
+}
+
+textarea.form-control {
+  height: auto;
+  min-height: 72px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+.form-control:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.form-select {
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-height: 28px;
+  margin: 0;
+  padding: 0 32px 0 8px;
+  outline: none;
+  border: 1px solid var(--input);
+  border-radius: var(--radius-lg);
+  corner-shape: superellipse(1.5);
+  color: var(--foreground);
+  background-color: var(--secondary);
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--muted-foreground) 50%),
+    linear-gradient(135deg, var(--muted-foreground) 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
+  background-size: 4px 4px;
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-select:not(:disabled):hover {
+  background-color: color-mix(in srgb, var(--foreground) 6%, var(--secondary));
+}
+
+.form-select:focus-visible {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-check {
+  display: flex;
+  min-height: 20px;
+  align-items: center;
+  gap: 6px;
+}
+
+.form-check-input {
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin: 0;
+  border: 1px solid var(--input);
+  color: var(--primary-foreground);
+  background-color: transparent;
+  cursor: var(--cursor-interaction, default);
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    box-shadow 150ms;
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;] {
+  border-color: var(--input);
+  border-radius: var(--radius-sm);
+  corner-shape: superellipse(1.5);
+  background-color: var(--secondary);
+  box-shadow: var(--shadow-sm);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input:not(:disabled):not(:checked):hover {
+  background-color: var(--card);
+}
+
+.form-check:not(.form-switch) .form-check-input[type=&quot;checkbox&quot;]:checked {
+  border-color: var(--primary);
+  background-color: var(--primary);
+}
+
+.form-check:not(.form-switch)
+  .form-check-input[type=&quot;checkbox&quot;]:checked::before {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: var(--primary-foreground);
+  content: &quot;&quot;;
+  mask: var(--checkmark-image) center / 12px 12px no-repeat;
+}
+
+.form-check-input[type=&quot;radio&quot;] {
+  width: 14px;
+  height: 14px;
+  border-radius: var(--radius-full);
+}
+
+.form-check-input[type=&quot;radio&quot;]:checked {
+  border: 2px solid var(--primary);
+  background:
+    radial-gradient(circle, var(--primary-foreground) 0 2.5px, transparent 3px),
+    var(--primary);
+}
+
+.form-check:not(.form-switch) .form-check-input:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.form-check:not(.form-switch) .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+}
+
+.form-switch .form-check-input:disabled,
+.form-switch .form-check-input:disabled + .form-check-label {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.form-check-label {
+  color: var(--foreground);
+  cursor: var(--cursor-interaction, default);
+}
+
+.form-switch .form-check-input {
+  position: relative;
+  width: 32px;
+  height: 20px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--muted);
+  box-shadow: none;
+  transition: background-color 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input::before {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 16px;
+  height: 16px;
+  box-sizing: border-box;
+  border: 1px solid light-dark(var(--primary-foreground), var(--foreground));
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+  box-shadow: var(--shadow-sm);
+  content: &quot;&quot;;
+  transform: translate(2px, -50%);
+  transition: transform 200ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.form-switch .form-check-input:checked {
+  background: var(--primary);
+}
+
+.form-switch .form-check-input:checked::before {
+  transform: translate(14px, -50%);
+}
+
+.form-switch .form-check-input:focus-visible {
+  box-shadow: 0 0 0 2px var(--ring);
+}
+
+.form-range {
+  appearance: none;
+  display: block;
+  width: 100%;
+  height: 28px;
+  flex: 1;
+  margin: 0;
+  padding: 0;
+  outline: none;
+  border: 0;
+  accent-color: var(--primary);
+  background: linear-gradient(
+      color-mix(in srgb, var(--foreground) 7%, transparent),
+      color-mix(in srgb, var(--foreground) 7%, transparent)
+    )
+    center / 100% 2px no-repeat;
+}
+
+.form-range::-webkit-slider-runnable-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-webkit-slider-thumb {
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 4px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-webkit-slider-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range::-moz-range-track {
+  height: 28px;
+  background: transparent;
+}
+
+.form-range::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-full);
+  background: light-dark(var(--primary-foreground), var(--foreground));
+}
+
+.form-range:focus-visible::-moz-range-thumb {
+  border-color: var(--ring);
+  box-shadow: inset 0 0 0 1px var(--ring);
+}
+
+.form-range:disabled {
+  cursor: not-allowed;
+  opacity: 0.4;
+}
+
+.btn:not(.btn-primary, .viz-tile):is(
+  [aria-pressed=&quot;true&quot;],
+  [aria-selected=&quot;true&quot;],
+  .is-selected
+) {
+  border-color: var(--primary);
+  color: var(--primary-foreground);
+  background: var(--primary);
+}
+
+.btn.viz-tile:is([aria-pressed=&quot;true&quot;], [aria-selected=&quot;true&quot;], .is-selected) {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+}
+
+svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+#widget &gt; svg {
+  width: 100%;
+}
+
+/* Model-authored chart rules can otherwise stretch icons after these styles load. */
+svg.lucide {
+  display: block;
+  width: 16px !important;
+  height: 16px !important;
+  flex: none;
+  margin: 0 !important;
+  stroke-width: 1.6;
+}
+
+.text-warning,
+.text-destructive {
+  color: var(--destructive);
+}
+
+html&gt;body{padding:0}&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div id=&quot;mezo-goal-prototype&quot;&gt;
+  &lt;style&gt;
+    #mezo-goal-prototype {
+      --mezo-ink: #2d241e;
+      --mezo-muted: #796f66;
+      --mezo-soft: #a79b90;
+      --mezo-shell: #faf4e9;
+      --mezo-paper: #fffdf8;
+      --mezo-coral: #ff684c;
+      --mezo-coral-deep: #b54c31;
+      --mezo-sage: #55754b;
+      --mezo-sage-soft: #e8f1df;
+      --mezo-gold: #aa7612;
+      --mezo-gold-soft: #fff1cb;
+      --mezo-sky: #65a7d8;
+      --mezo-sky-soft: #e5f4ff;
+      --mezo-lav: #6c5ab2;
+      --mezo-lav-soft: #eee9ff;
+      --mezo-blush: #fff0e9;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding: 12px 0 22px;
+      color: var(--mezo-ink);
+      font-family: Inter, ui-rounded, &quot;SF Pro Rounded&quot;, &quot;SF Pro Display&quot;, system-ui, -apple-system, sans-serif;
+      box-sizing: border-box;
+    }
+
+    #mezo-goal-prototype * { box-sizing: border-box; }
+    #mezo-goal-prototype button { font: inherit; }
+
+    #mezo-goal-prototype .mezo-phone {
+      position: relative;
+      width: min(430px, calc(100vw - 24px));
+      overflow: hidden;
+      border: 9px solid #1b1a19;
+      border-radius: 48px;
+      background:
+        radial-gradient(circle at 90% 8%, rgba(102, 211, 191, .34), transparent 24%),
+        radial-gradient(circle at 14% 8%, rgba(98, 190, 240, .40), transparent 27%),
+        linear-gradient(180deg, #eef8f6 0, #fff0e8 18%, var(--mezo-shell) 54%, #fbf5e7 100%);
+      box-shadow: 0 24px 70px rgba(50, 39, 29, .25), inset 0 0 0 2px #000;
+    }
+
+    #mezo-goal-prototype .mezo-statusbar {
+      height: 38px;
+      padding: 12px 21px 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: .01em;
+    }
+
+    #mezo-goal-prototype .mezo-island {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      width: 108px;
+      height: 28px;
+      transform: translateX(-50%);
+      border-radius: 18px;
+      background: #070707;
+    }
+
+    #mezo-goal-prototype .mezo-signals { display: flex; gap: 5px; align-items: center; }
+    #mezo-goal-prototype .mezo-signal-bars { display: flex; gap: 2px; align-items: flex-end; height: 11px; }
+    #mezo-goal-prototype .mezo-signal-bars span { width: 2px; background: #332a24; border-radius: 2px; }
+    #mezo-goal-prototype .mezo-signal-bars span:nth-child(1) { height: 3px; }
+    #mezo-goal-prototype .mezo-signal-bars span:nth-child(2) { height: 6px; }
+    #mezo-goal-prototype .mezo-signal-bars span:nth-child(3) { height: 9px; }
+    #mezo-goal-prototype .mezo-signal-bars span:nth-child(4) { height: 11px; }
+
+    #mezo-goal-prototype .mezo-apphead {
+      position: relative;
+      z-index: 12;
+      min-height: 76px;
+      padding: 13px 18px 12px;
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      background: rgba(250, 248, 241, .74);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(255, 255, 255, .7);
+    }
+
+    #mezo-goal-prototype .mezo-app-title {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      margin-right: auto;
+      font-size: 20px;
+      font-weight: 800;
+    }
+
+    #mezo-goal-prototype .mezo-people-spot {
+      position: relative;
+      width: 30px;
+      height: 30px;
+      filter: drop-shadow(0 5px 6px rgba(178, 76, 44, .2));
+    }
+
+    #mezo-goal-prototype .mezo-people-spot::before,
+    #mezo-goal-prototype .mezo-people-spot::after {
+      content: &quot;&quot;;
+      position: absolute;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #ff997c, #d5482c);
+      box-shadow: inset 3px 3px 4px rgba(255,255,255,.65);
+    }
+
+    #mezo-goal-prototype .mezo-people-spot::before { width: 12px; height: 12px; left: 9px; top: 1px; }
+    #mezo-goal-prototype .mezo-people-spot::after { width: 25px; height: 13px; left: 2px; bottom: 2px; border-radius: 14px 14px 7px 7px; }
+
+    #mezo-goal-prototype .mezo-head-action {
+      position: relative;
+      width: 38px;
+      height: 38px;
+      border: 1px solid rgba(255,255,255,.85);
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #554a41;
+      background: rgba(255,255,255,.72);
+      box-shadow: 0 8px 16px rgba(70, 55, 43, .08), inset 0 1px 0 #fff;
+      cursor: pointer;
+    }
+
+    #mezo-goal-prototype .mezo-head-action svg { width: 17px; height: 17px; stroke-width: 2; }
+    #mezo-goal-prototype .mezo-head-action .mezo-badge {
+      position: absolute;
+      top: -3px;
+      right: -2px;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      display: grid;
+      place-items: center;
+      border: 2px solid var(--mezo-shell);
+      border-radius: 10px;
+      background: var(--mezo-coral);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 800;
+    }
+
+    #mezo-goal-prototype .mezo-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 1px solid rgba(255,255,255,.8);
+      background:
+        radial-gradient(circle at 34% 28%, rgba(255,255,255,.88) 0 6%, transparent 7%),
+        linear-gradient(145deg, #cfded8, #83b8aa);
+      box-shadow: inset 4px 5px 9px rgba(255,255,255,.55), 0 8px 15px rgba(70, 99, 91, .14);
+    }
+
+    #mezo-goal-prototype .mezo-screen { display: none; padding: 17px 18px 22px; }
+    #mezo-goal-prototype .mezo-screen.is-active { display: block; animation: mezo-rise .36s ease-out both; }
+    #mezo-goal-prototype .mezo-page-kicker { color: var(--mezo-coral-deep); font-size: 11px; font-weight: 800; letter-spacing: .15em; text-transform: uppercase; }
+    #mezo-goal-prototype .mezo-page-heading { margin: 3px 0 15px; font-size: 25px; line-height: 1.05; font-weight: 800; letter-spacing: -.035em; }
+
+    #mezo-goal-prototype .mezo-hero {
+      position: relative;
+      min-height: 228px;
+      overflow: hidden;
+      padding: 22px 20px 18px;
+      border-radius: 31px;
+      background:
+        radial-gradient(circle at 85% 19%, rgba(255, 255, 255, .62), transparent 21%),
+        radial-gradient(circle at 97% 0%, rgba(255, 190, 99, .75), transparent 34%),
+        linear-gradient(145deg, #fff2c8 0%, #ffe3bd 49%, #ffd6c7 100%);
+      box-shadow: 0 18px 34px rgba(177, 111, 46, .18), inset 0 1px 0 rgba(255,255,255,.95);
+    }
+
+    #mezo-goal-prototype .mezo-hero::after {
+      content: &quot;&quot;;
+      position: absolute;
+      width: 136px;
+      height: 136px;
+      right: -44px;
+      top: -50px;
+      border-radius: 50%;
+      border: 24px solid rgba(255,255,255,.21);
+      box-shadow: 0 0 0 17px rgba(255,255,255,.11);
+    }
+
+    #mezo-goal-prototype .mezo-hero-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; position: relative; z-index: 2; }
+    #mezo-goal-prototype .mezo-hero-status { margin: 4px 0 7px; font-size: 28px; line-height: .98; font-weight: 800; letter-spacing: -.045em; max-width: 220px; }
+    #mezo-goal-prototype .mezo-hero-copy { margin: 0; max-width: 240px; color: #765c43; font-size: 12px; line-height: 1.45; }
+
+    #mezo-goal-prototype .mezo-ring {
+      width: 64px;
+      height: 64px;
+      flex: 0 0 64px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: conic-gradient(var(--mezo-coral) 0 29%, rgba(255,255,255,.55) 29% 100%);
+      box-shadow: 0 9px 18px rgba(188, 82, 42, .16);
+    }
+
+    #mezo-goal-prototype .mezo-ring::before { content: &quot;&quot;; position: absolute; width: 48px; height: 48px; border-radius: 50%; background: #fff4dc; }
+    #mezo-goal-prototype .mezo-ring span { position: relative; z-index: 1; font-size: 14px; font-weight: 800; }
+
+    #mezo-goal-prototype .mezo-weight-line { position: relative; z-index: 2; margin-top: 25px; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 9px; }
+    #mezo-goal-prototype .mezo-weight-point strong { display: block; font-size: 23px; line-height: 1; letter-spacing: -.04em; }
+    #mezo-goal-prototype .mezo-weight-point span { display: block; margin-top: 5px; color: #8d7258; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+    #mezo-goal-prototype .mezo-weight-point:last-child { text-align: right; }
+    #mezo-goal-prototype .mezo-weight-arrow { width: 100%; min-width: 58px; height: 3px; border-radius: 3px; background: linear-gradient(90deg, #de926f, #ff6a4e); position: relative; }
+    #mezo-goal-prototype .mezo-weight-arrow::after { content: &quot;&quot;; position: absolute; right: -1px; top: -3px; width: 8px; height: 8px; border-right: 2px solid #d95539; border-top: 2px solid #d95539; transform: rotate(45deg); }
+
+    #mezo-goal-prototype .mezo-pace-strip { position: relative; z-index: 2; margin-top: 15px; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    #mezo-goal-prototype .mezo-pace-item { padding: 10px 11px; border-radius: 16px; background: rgba(255,255,255,.58); }
+    #mezo-goal-prototype .mezo-pace-item span { display: block; color: #8b725d; font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+    #mezo-goal-prototype .mezo-pace-item strong { display: block; margin-top: 3px; font-size: 13px; }
+
+    #mezo-goal-prototype .mezo-mosaic { margin-top: 14px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+    #mezo-goal-prototype .mezo-tile {
+      position: relative;
+      min-height: 154px;
+      overflow: hidden;
+      padding: 16px;
+      border: 0;
+      border-radius: 25px;
+      text-align: left;
+      color: var(--mezo-ink);
+      background: var(--mezo-paper);
+      box-shadow: 0 13px 25px rgba(60, 48, 36, .09), inset 0 1px 0 rgba(255,255,255,.94);
+    }
+    #mezo-goal-prototype button.mezo-tile { cursor: pointer; transition: transform .18s ease, box-shadow .18s ease; }
+    #mezo-goal-prototype button.mezo-tile:active { transform: scale(.975); }
+    #mezo-goal-prototype .mezo-tile.is-sage { background: linear-gradient(145deg, #f4f9ee, var(--mezo-sage-soft)); box-shadow: 0 13px 25px rgba(82, 115, 72, .13), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-tile.is-sky { background: linear-gradient(145deg, #f7fcff, var(--mezo-sky-soft)); box-shadow: 0 13px 25px rgba(82, 145, 189, .13), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-tile.is-lav { background: linear-gradient(145deg, #fbf9ff, var(--mezo-lav-soft)); box-shadow: 0 13px 25px rgba(99, 82, 166, .12), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-tile.is-gold { background: linear-gradient(145deg, #fffaf0, var(--mezo-gold-soft)); box-shadow: 0 14px 27px rgba(174, 124, 26, .18), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-tile.is-blush { background: linear-gradient(145deg, #fffaf8, var(--mezo-blush)); box-shadow: 0 13px 25px rgba(186, 90, 55, .12), inset 0 1px 0 #fff; }
+
+    #mezo-goal-prototype .mezo-tile-eyebrow { position: relative; z-index: 2; color: var(--mezo-muted); font-size: 9px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    #mezo-goal-prototype .mezo-tile-value { position: relative; z-index: 2; display: block; margin-top: 11px; font-size: 24px; line-height: 1; font-weight: 800; letter-spacing: -.04em; }
+    #mezo-goal-prototype .mezo-tile-value.is-small { font-size: 19px; line-height: 1.06; }
+    #mezo-goal-prototype .mezo-tile-unit { font-size: 11px; font-weight: 700; letter-spacing: 0; }
+    #mezo-goal-prototype .mezo-tile-line { position: relative; z-index: 2; display: block; margin-top: 8px; color: var(--mezo-muted); font-size: 11px; line-height: 1.35; }
+    #mezo-goal-prototype .mezo-tile-link { position: absolute; z-index: 2; left: 16px; bottom: 14px; color: var(--mezo-coral-deep); font-size: 10px; font-weight: 800; }
+    #mezo-goal-prototype .mezo-tile-dot { position: absolute; right: 14px; top: 13px; width: 32px; height: 32px; border-radius: 12px; display: grid; place-items: center; color: var(--mezo-coral-deep); background: rgba(255,255,255,.62); box-shadow: inset 0 1px 0 #fff, 0 5px 10px rgba(73,51,36,.07); }
+    #mezo-goal-prototype .mezo-tile-dot svg { width: 16px; height: 16px; }
+    #mezo-goal-prototype .mezo-mini-progress { position: absolute; left: 16px; right: 16px; bottom: 16px; height: 5px; overflow: hidden; border-radius: 6px; background: rgba(94, 84, 72, .10); }
+    #mezo-goal-prototype .mezo-mini-progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #78a06d, #efb34d); }
+
+    #mezo-goal-prototype .mezo-notification-menu {
+      position: absolute;
+      z-index: 30;
+      top: 104px;
+      right: 18px;
+      width: 300px;
+      padding: 10px;
+      border: 1px solid rgba(255,255,255,.95);
+      border-radius: 24px;
+      background: rgba(255,253,248,.96);
+      box-shadow: 0 22px 55px rgba(58, 43, 32, .26);
+      backdrop-filter: blur(20px);
+    }
+    #mezo-goal-prototype .mezo-notification-menu[hidden] { display: none; }
+    #mezo-goal-prototype .mezo-menu-title { padding: 4px 6px 8px; font-size: 12px; font-weight: 800; }
+    #mezo-goal-prototype .mezo-notification-row { width: 100%; border: 0; border-radius: 17px; padding: 11px; display: grid; grid-template-columns: 34px 1fr auto; gap: 9px; align-items: center; background: #fff2d8; color: var(--mezo-ink); text-align: left; cursor: pointer; }
+    #mezo-goal-prototype .mezo-notification-icon { width: 34px; height: 34px; border-radius: 12px; display: grid; place-items: center; color: var(--mezo-gold); background: rgba(255,255,255,.72); }
+    #mezo-goal-prototype .mezo-notification-copy strong { display: block; font-size: 11px; }
+    #mezo-goal-prototype .mezo-notification-copy span { display: block; margin-top: 2px; color: var(--mezo-muted); font-size: 9px; line-height: 1.25; }
+    #mezo-goal-prototype .mezo-unread-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--mezo-coral); }
+    #mezo-goal-prototype .mezo-menu-foot { display: block; padding: 10px 6px 2px; color: var(--mezo-coral-deep); font-size: 10px; font-weight: 800; text-align: center; }
+
+    #mezo-goal-prototype .mezo-subhead { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+    #mezo-goal-prototype .mezo-back { width: 38px; height: 38px; border: 0; border-radius: 50%; display: grid; place-items: center; color: var(--mezo-ink); background: rgba(255,255,255,.78); box-shadow: 0 8px 18px rgba(63,49,38,.08); cursor: pointer; }
+    #mezo-goal-prototype .mezo-subhead-text { flex: 1; }
+    #mezo-goal-prototype .mezo-subhead h2 { margin: 1px 0 0; font-size: 22px; letter-spacing: -.035em; }
+
+    #mezo-goal-prototype [data-mezo-screen=&quot;suggestion&quot;] .mezo-back { color: #9e521e; background: #fff0cb; box-shadow: 0 9px 20px rgba(183,113,32,.17), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype [data-mezo-screen=&quot;plans&quot;] .mezo-back { color: #3e789d; background: #e5f5ff; box-shadow: 0 9px 20px rgba(62,125,168,.15), inset 0 1px 0 #fff; }
+
+    #mezo-goal-prototype .mezo-reason {
+      position: relative;
+      min-height: 170px;
+      overflow: hidden;
+      padding: 19px;
+      border-radius: 24px;
+      background:
+        radial-gradient(circle at 89% 19%, rgba(255,255,255,.75), transparent 17%),
+        linear-gradient(145deg, #fff4c8 0%, #ffe3b6 58%, #ffd9cc 100%);
+      box-shadow: 0 17px 34px rgba(173, 104, 28, .19), inset 0 1px 0 #fff;
+    }
+    #mezo-goal-prototype .mezo-reason::before { content: &quot;&quot;; position: absolute; width: 126px; height: 126px; right: -37px; bottom: -57px; border-radius: 50%; border: 21px solid rgba(255,255,255,.25); box-shadow: 0 0 0 15px rgba(255,255,255,.12); }
+    #mezo-goal-prototype .mezo-reason-top { position: relative; z-index: 2; display: flex; gap: 8px; align-items: center; color: var(--mezo-gold); font-size: 9px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; }
+    #mezo-goal-prototype .mezo-reason p { position: relative; z-index: 2; margin: 9px 0 0; max-width: 61%; color: #70543f; font-size: 11px; line-height: 1.45; }
+    #mezo-goal-prototype .mezo-reason-visual { position: absolute; z-index: 2; top: 44px; right: 18px; width: 106px; height: 101px; display: grid; place-items: center; }
+    #mezo-goal-prototype .mezo-reason-orb { position: absolute; width: 88px; height: 88px; border-radius: 50%; background: radial-gradient(circle at 34% 27%, #fff9e9 0 9%, #ffc96c 29%, #ff8b5d 73%, #e85c40 100%); box-shadow: inset 8px 9px 15px rgba(255,255,255,.48), 0 14px 25px rgba(201,89,46,.24); }
+    #mezo-goal-prototype .mezo-reason-orb::after { content: &quot;&quot;; position: absolute; inset: 14px; border-radius: 50%; border: 9px solid rgba(255,255,255,.45); }
+    #mezo-goal-prototype .mezo-reason-metric { position: relative; z-index: 2; color: #66341e; text-align: center; }
+    #mezo-goal-prototype .mezo-reason-metric strong { display: block; font-size: 22px; line-height: 1; letter-spacing: -.05em; }
+    #mezo-goal-prototype .mezo-reason-metric span { display: block; margin-top: 4px; font-size: 8px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; }
+    #mezo-goal-prototype .mezo-reason-tags { position: relative; z-index: 2; margin-top: 11px; display: flex; gap: 5px; }
+    #mezo-goal-prototype .mezo-reason-tags span { padding: 4px 7px; border-radius: 9px; color: #8c581d; background: rgba(255,255,255,.53); font-size: 8px; font-weight: 800; }
+
+    #mezo-goal-prototype .mezo-section-title { margin: 21px 2px 10px; display: flex; justify-content: space-between; align-items: baseline; font-size: 11px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; color: #9a8c80; }
+    #mezo-goal-prototype .mezo-diff-list { display: grid; gap: 9px; }
+    #mezo-goal-prototype .mezo-diff-row { display: grid; grid-template-columns: 1fr 28px 1fr; gap: 7px; align-items: start; min-height: 90px; padding: 14px 13px 12px; border-radius: 21px; background: rgba(255,255,255,.82); box-shadow: 0 11px 22px rgba(54,44,35,.09), inset 0 1px 0 rgba(255,255,255,.9); }
+    #mezo-goal-prototype .mezo-diff-row:nth-child(1) { background: linear-gradient(135deg, #fff7df, #ffe7c8); box-shadow: 0 12px 23px rgba(174,112,34,.15), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-diff-row:nth-child(2) { background: linear-gradient(135deg, #f5faef, #e4f1db); box-shadow: 0 12px 23px rgba(78,112,67,.13), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-diff-row:nth-child(3) { background: linear-gradient(135deg, #f4fbff, #ddf1ff); box-shadow: 0 12px 23px rgba(70,134,178,.13), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-diff-row:nth-child(4) { background: linear-gradient(135deg, #faf8ff, #ece6ff); box-shadow: 0 12px 23px rgba(96,78,165,.13), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-diff-side { min-width: 0; min-height: 64px; display: grid; grid-template-rows: 16px 28px 20px; align-content: start; }
+    #mezo-goal-prototype .mezo-diff-side span { display: block; align-self: start; color: var(--mezo-soft); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .08em; white-space: nowrap; }
+    #mezo-goal-prototype .mezo-diff-side strong { display: block; align-self: start; margin: 0; font-size: 17px; line-height: 1.25; letter-spacing: -.025em; white-space: nowrap; }
+    #mezo-goal-prototype .mezo-diff-side:last-child { text-align: right; }
+    #mezo-goal-prototype .mezo-diff-side:last-child strong { color: var(--mezo-sage); }
+    #mezo-goal-prototype .mezo-diff-row:nth-child(4) .mezo-diff-side strong { font-size: 13px; white-space: normal; }
+    #mezo-goal-prototype .mezo-diff-arrow { width: 28px; height: 28px; margin-top: 21px; border-radius: 50%; color: var(--mezo-coral); display: grid; place-items: center; background: rgba(255,255,255,.64); box-shadow: 0 5px 12px rgba(82,58,39,.08), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-diff-arrow svg { width: 15px; }
+    #mezo-goal-prototype .mezo-change-chip { display: inline-block; align-self: start; justify-self: end; margin: 0; padding: 3px 7px; border-radius: 8px; color: #a24c2f; background: #ffe8df; font-size: 8px; line-height: 1.35; font-weight: 800; }
+
+    #mezo-goal-prototype .mezo-keep-list { padding: 4px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    #mezo-goal-prototype .mezo-keep-item { min-height: 48px; padding: 12px; border-radius: 17px; background: linear-gradient(140deg, #f5faef, #e5f0dc); color: #53634b; font-size: 10px; font-weight: 700; box-shadow: 0 8px 16px rgba(75,103,65,.09), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-keep-item:nth-child(2), #mezo-goal-prototype .mezo-keep-item:nth-child(4) { background: linear-gradient(140deg, #f5fbff, #e3f2fb); color: #4b7187; box-shadow: 0 8px 16px rgba(63,119,153,.09), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-keep-item svg { width: 14px; vertical-align: -3px; margin-right: 5px; }
+
+    #mezo-goal-prototype .mezo-actions { margin-top: 20px; display: grid; gap: 9px; }
+    #mezo-goal-prototype .mezo-actions.is-decision { padding: 13px; border-radius: 23px; background: linear-gradient(145deg, rgba(255,240,229,.78), rgba(255,250,240,.9)); box-shadow: 0 12px 24px rgba(172,88,48,.11), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-primary,
+    #mezo-goal-prototype .mezo-secondary { width: 100%; min-height: 49px; border-radius: 18px; font-weight: 800; cursor: pointer; }
+    #mezo-goal-prototype .mezo-primary { border: 0; color: #fff; background: linear-gradient(135deg, #ff7459, #e85035); box-shadow: 0 13px 25px rgba(223,77,48,.25); }
+    #mezo-goal-prototype .mezo-secondary { border: 1px solid rgba(105,89,76,.12); color: var(--mezo-muted); background: rgba(255,255,255,.68); }
+    #mezo-goal-prototype .mezo-fineprint { margin: 9px 6px 0; color: #9a8d82; font-size: 9px; line-height: 1.4; text-align: center; }
+
+    #mezo-goal-prototype .mezo-plan-summary { position: relative; min-height: 188px; overflow: hidden; padding: 21px; border-radius: 28px; background: radial-gradient(circle at 91% 18%, rgba(255,255,255,.65), transparent 18%), linear-gradient(145deg, #eaf8ff 0%, #d8f0ed 54%, #dff0d5 100%); box-shadow: 0 17px 34px rgba(57,120,137,.17), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-plan-summary::after { content: &quot;&quot;; position: absolute; width: 132px; height: 132px; right: -47px; top: -52px; border-radius: 50%; border: 22px solid rgba(255,255,255,.22); box-shadow: 0 0 0 15px rgba(255,255,255,.10); }
+    #mezo-goal-prototype .mezo-plan-summary strong { position: relative; z-index: 2; display: block; max-width: 210px; font-size: 26px; line-height: 1.02; letter-spacing: -.045em; }
+    #mezo-goal-prototype .mezo-plan-summary &gt; span { position: relative; z-index: 2; display: block; max-width: 235px; margin-top: 7px; color: #56736d; font-size: 11px; line-height: 1.4; }
+    #mezo-goal-prototype .mezo-plan-orbit { position: absolute; z-index: 2; right: 21px; top: 51px; width: 92px; height: 92px; border: 2px solid rgba(78,148,157,.22); border-radius: 50%; transform: rotate(-13deg); }
+    #mezo-goal-prototype .mezo-plan-orbit::before { content: &quot;&quot;; position: absolute; inset: 15px; border: 2px solid rgba(78,148,157,.19); border-radius: 50%; }
+    #mezo-goal-prototype .mezo-plan-node { position: absolute; width: 28px; height: 28px; border-radius: 11px; display: grid; place-items: center; color: #fff; box-shadow: inset 3px 4px 6px rgba(255,255,255,.32), 0 8px 14px rgba(56,111,122,.18); }
+    #mezo-goal-prototype .mezo-plan-node svg { width: 14px; }
+    #mezo-goal-prototype .mezo-plan-node.n1 { left: -7px; top: 30px; background: linear-gradient(145deg, #ff9076, #dd593e); }
+    #mezo-goal-prototype .mezo-plan-node.n2 { right: 2px; top: -8px; background: linear-gradient(145deg, #7dc7ec, #4f96c6); }
+    #mezo-goal-prototype .mezo-plan-node.n3 { right: -5px; bottom: 4px; background: linear-gradient(145deg, #91b886, #5d8955); }
+    #mezo-goal-prototype .mezo-plan-metrics { position: absolute; z-index: 3; left: 20px; right: 20px; bottom: 18px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+    #mezo-goal-prototype .mezo-plan-metric { padding: 9px 8px; border-radius: 14px; background: rgba(255,255,255,.6); box-shadow: inset 0 1px 0 rgba(255,255,255,.9); }
+    #mezo-goal-prototype .mezo-plan-metric span { display: block; color: #6f8883; font-size: 7px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    #mezo-goal-prototype .mezo-plan-metric strong { display: block; margin-top: 3px; font-size: 12px; line-height: 1; }
+    #mezo-goal-prototype .mezo-week-axis { margin: 18px 4px 8px; display: grid; grid-template-columns: repeat(8, 1fr); color: var(--mezo-soft); font-size: 9px; font-weight: 800; text-align: center; }
+    #mezo-goal-prototype .mezo-lanes { padding: 15px; border-radius: 23px; background: linear-gradient(145deg, rgba(255,255,255,.93), rgba(247,244,255,.83)); box-shadow: 0 13px 26px rgba(75,61,117,.11), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-lane + .mezo-lane { margin-top: 13px; }
+    #mezo-goal-prototype .mezo-lane-label { margin-bottom: 6px; color: var(--mezo-muted); font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    #mezo-goal-prototype .mezo-lane-track { display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; }
+    #mezo-goal-prototype .mezo-lane-bar { min-height: 38px; padding: 7px 8px; border-radius: 12px; display: flex; align-items: center; color: #fff; font-size: 9px; font-weight: 800; line-height: 1.15; }
+    #mezo-goal-prototype .mezo-lane-bar.meso { grid-column: 1 / span 6; background: linear-gradient(90deg, #ff7255, #d85a31); }
+    #mezo-goal-prototype .mezo-lane-gap { grid-column: 7 / span 2; min-height: 38px; border: 1px dashed #c99228; border-radius: 12px; display: grid; place-items: center; color: #9b6f1c; background: #fff8e6; font-size: 8px; font-weight: 800; }
+    #mezo-goal-prototype .mezo-lane-bar.sport { grid-column: 1 / span 8; color: #a43e54; background: #fce4e9; }
+    #mezo-goal-prototype .mezo-empty-lane { grid-column: 1 / span 8; min-height: 38px; border: 1px dashed #cfc6be; border-radius: 12px; display: grid; place-items: center; color: #a2978c; font-size: 9px; font-weight: 700; }
+    #mezo-goal-prototype .mezo-plan-cards { margin-top: 12px; display: grid; gap: 9px; }
+    #mezo-goal-prototype .mezo-plan-card { padding: 14px; display: grid; grid-template-columns: 38px 1fr auto; gap: 11px; align-items: center; border-radius: 20px; background: linear-gradient(135deg, #fff7f3, #ffe8df); box-shadow: 0 10px 20px rgba(178,76,46,.11), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-plan-card:nth-child(2) { background: linear-gradient(135deg, #fff6f8, #f9e5eb); box-shadow: 0 10px 20px rgba(166,61,88,.10), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-plan-icon { width: 38px; height: 38px; border-radius: 14px; display: grid; place-items: center; color: var(--mezo-coral-deep); background: #ffe7df; }
+    #mezo-goal-prototype .mezo-plan-card strong { display: block; font-size: 12px; }
+    #mezo-goal-prototype .mezo-plan-card span { display: block; margin-top: 3px; color: var(--mezo-muted); font-size: 9px; }
+    #mezo-goal-prototype .mezo-plan-state { padding: 5px 8px; border-radius: 9px; color: var(--mezo-sage); background: var(--mezo-sage-soft); font-size: 8px; font-weight: 800; }
+    #mezo-goal-prototype .mezo-plan-action { border: 0; color: #fff; background: linear-gradient(135deg, #75b9dc, #4b94c4); box-shadow: 0 13px 25px rgba(62,137,184,.21); }
+
+    #mezo-goal-prototype .mezo-detail-hero { position: relative; min-height: 220px; overflow: hidden; padding: 21px; border-radius: 29px; box-shadow: 0 17px 34px rgba(57,74,65,.15), inset 0 1px 0 rgba(255,255,255,.95); }
+    #mezo-goal-prototype .mezo-detail-hero.nutrition { background: radial-gradient(circle at 88% 17%, rgba(255,255,255,.64), transparent 18%), linear-gradient(145deg, #eef8e8, #dcefd4 58%, #f8edc9); }
+    #mezo-goal-prototype .mezo-detail-hero.segment { background: radial-gradient(circle at 87% 17%, rgba(255,255,255,.66), transparent 18%), linear-gradient(145deg, #f0edff, #e5ddff 57%, #dbeeff); }
+    #mezo-goal-prototype .mezo-detail-hero.guards { background: radial-gradient(circle at 87% 17%, rgba(255,255,255,.65), transparent 18%), linear-gradient(145deg, #fff0ea, #ffe0d6 56%, #ffecc5); }
+    #mezo-goal-prototype .mezo-detail-hero.settings { background: radial-gradient(circle at 87% 17%, rgba(255,255,255,.66), transparent 18%), linear-gradient(145deg, #eaf6ff, #d9ecf7 55%, #dfeedd); }
+    #mezo-goal-prototype .mezo-detail-hero::after { content: &quot;&quot;; position: absolute; width: 150px; height: 150px; right: -53px; top: -52px; border-radius: 50%; border: 24px solid rgba(255,255,255,.24); box-shadow: 0 0 0 17px rgba(255,255,255,.11); }
+    #mezo-goal-prototype .mezo-detail-copy { position: relative; z-index: 2; max-width: 66%; }
+    #mezo-goal-prototype .mezo-detail-copy &gt; span { color: var(--mezo-muted); font-size: 9px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    #mezo-goal-prototype .mezo-detail-copy &gt; strong { display: block; margin-top: 9px; font-size: 34px; line-height: .95; letter-spacing: -.055em; }
+    #mezo-goal-prototype .mezo-detail-copy &gt; p { margin: 8px 0 0; color: #667062; font-size: 11px; line-height: 1.42; }
+    #mezo-goal-prototype .mezo-detail-emblem { position: absolute; z-index: 2; right: 21px; top: 53px; width: 96px; height: 96px; border-radius: 34px; display: grid; place-items: center; transform: rotate(6deg); background: linear-gradient(145deg, rgba(255,255,255,.86), rgba(255,255,255,.40)); box-shadow: inset 5px 6px 12px rgba(255,255,255,.85), 0 16px 28px rgba(70,80,65,.16); }
+    #mezo-goal-prototype .mezo-detail-emblem svg { width: 42px; height: 42px; stroke-width: 1.5; }
+    #mezo-goal-prototype .mezo-detail-emblem.sage { color: var(--mezo-sage); }
+    #mezo-goal-prototype .mezo-detail-emblem.lav { color: var(--mezo-lav); }
+    #mezo-goal-prototype .mezo-detail-emblem.coral { color: var(--mezo-coral-deep); }
+    #mezo-goal-prototype .mezo-detail-emblem.sky { color: #3f83ad; }
+    #mezo-goal-prototype .mezo-detail-pods { position: absolute; z-index: 3; left: 20px; right: 20px; bottom: 18px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+    #mezo-goal-prototype .mezo-detail-pod { min-width: 0; padding: 9px 8px; border-radius: 14px; background: rgba(255,255,255,.60); box-shadow: inset 0 1px 0 rgba(255,255,255,.9); }
+    #mezo-goal-prototype .mezo-detail-pod span { display: block; color: var(--mezo-muted); font-size: 7px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    #mezo-goal-prototype .mezo-detail-pod strong { display: block; margin-top: 3px; overflow: hidden; font-size: 12px; line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
+    #mezo-goal-prototype .mezo-detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    #mezo-goal-prototype .mezo-detail-card { position: relative; min-height: 126px; overflow: hidden; padding: 15px; border-radius: 22px; background: rgba(255,255,255,.82); box-shadow: 0 11px 22px rgba(56,46,38,.08), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-detail-card.wide { grid-column: 1 / -1; min-height: 112px; }
+    #mezo-goal-prototype .mezo-detail-card.sage { background: linear-gradient(140deg, #f4faef, #e1efd8); box-shadow: 0 11px 22px rgba(73,111,63,.11), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-detail-card.sky { background: linear-gradient(140deg, #f5fbff, #e0f2ff); box-shadow: 0 11px 22px rgba(67,128,167,.11), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-detail-card.gold { background: linear-gradient(140deg, #fff9e9, #ffedc7); box-shadow: 0 11px 22px rgba(164,109,24,.12), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-detail-card.lav { background: linear-gradient(140deg, #faf8ff, #ebe5ff); box-shadow: 0 11px 22px rgba(93,75,159,.11), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-detail-card.blush { background: linear-gradient(140deg, #fff7f3, #ffe6de); box-shadow: 0 11px 22px rgba(174,76,47,.11), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-detail-label { color: var(--mezo-muted); font-size: 8px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
+    #mezo-goal-prototype .mezo-detail-value { display: block; margin-top: 9px; font-size: 22px; line-height: 1; letter-spacing: -.04em; }
+    #mezo-goal-prototype .mezo-detail-note { display: block; margin-top: 7px; color: var(--mezo-muted); font-size: 10px; line-height: 1.35; }
+    #mezo-goal-prototype .mezo-macro-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    #mezo-goal-prototype .mezo-macro { padding: 14px 9px; border-radius: 19px; text-align: center; background: rgba(255,255,255,.82); box-shadow: 0 9px 18px rgba(57,45,36,.07); }
+    #mezo-goal-prototype .mezo-macro:nth-child(1) { color: var(--mezo-coral-deep); background: #fff0e9; }
+    #mezo-goal-prototype .mezo-macro:nth-child(2) { color: var(--mezo-gold); background: #fff3d7; }
+    #mezo-goal-prototype .mezo-macro:nth-child(3) { color: var(--mezo-lav); background: #eee9ff; }
+    #mezo-goal-prototype .mezo-macro strong { display: block; font-size: 18px; }
+    #mezo-goal-prototype .mezo-macro span { display: block; margin-top: 4px; color: var(--mezo-muted); font-size: 8px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    #mezo-goal-prototype .mezo-phase-river { display: grid; grid-template-columns: 2fr 3fr 1fr 2fr; gap: 5px; }
+    #mezo-goal-prototype .mezo-phase { min-height: 58px; padding: 9px 7px; border-radius: 15px; display: flex; flex-direction: column; justify-content: space-between; color: #6f675f; background: rgba(255,255,255,.62); font-size: 8px; font-weight: 800; }
+    #mezo-goal-prototype .mezo-phase strong { font-size: 11px; }
+    #mezo-goal-prototype .mezo-phase.is-current { color: #fff; background: linear-gradient(145deg, #8b78d1, #6552ad); box-shadow: 0 9px 18px rgba(89,70,160,.23); }
+    #mezo-goal-prototype .mezo-guard-list { display: grid; gap: 9px; }
+    #mezo-goal-prototype .mezo-guard-row { padding: 13px; display: grid; grid-template-columns: 38px 1fr auto; gap: 10px; align-items: center; border-radius: 20px; background: linear-gradient(140deg, #f5faef, #e3f0dc); box-shadow: 0 9px 18px rgba(70,105,61,.09), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-guard-row.is-watch { background: linear-gradient(140deg, #fff8e7, #ffebc7); box-shadow: 0 9px 18px rgba(168,111,23,.12), inset 0 1px 0 #fff; }
+    #mezo-goal-prototype .mezo-guard-icon { width: 38px; height: 38px; border-radius: 14px; display: grid; place-items: center; color: var(--mezo-sage); background: rgba(255,255,255,.65); }
+    #mezo-goal-prototype .mezo-guard-row.is-watch .mezo-guard-icon { color: var(--mezo-gold); }
+    #mezo-goal-prototype .mezo-guard-row strong { display: block; font-size: 12px; }
+    #mezo-goal-prototype .mezo-guard-row span { display: block; margin-top: 3px; color: var(--mezo-muted); font-size: 9px; }
+    #mezo-goal-prototype .mezo-guard-status { padding: 5px 8px; border-radius: 9px; color: var(--mezo-sage); background: rgba(255,255,255,.62); font-size: 8px; font-weight: 800; }
+    #mezo-goal-prototype .mezo-guard-row.is-watch .mezo-guard-status { color: #976812; }
+    #mezo-goal-prototype .mezo-setting-row { padding: 14px; display: grid; grid-template-columns: 37px 1fr auto; gap: 10px; align-items: center; border-radius: 20px; background: rgba(255,255,255,.80); box-shadow: 0 9px 18px rgba(56,46,38,.07); }
+    #mezo-goal-prototype .mezo-setting-row + .mezo-setting-row { margin-top: 9px; }
+    #mezo-goal-prototype .mezo-setting-icon { width: 37px; height: 37px; border-radius: 13px; display: grid; place-items: center; color: #4f86a8; background: #e5f4ff; }
+    #mezo-goal-prototype .mezo-setting-row strong { display: block; font-size: 11px; }
+    #mezo-goal-prototype .mezo-setting-row span { display: block; margin-top: 2px; color: var(--mezo-muted); font-size: 9px; }
+    #mezo-goal-prototype .mezo-setting-data { color: var(--mezo-ink); font-size: 10px; font-weight: 800; text-align: right; }
+
+    #mezo-goal-prototype .mezo-toast { position: absolute; z-index: 40; left: 50%; bottom: 86px; transform: translateX(-50%); width: max-content; max-width: calc(100% - 40px); padding: 11px 16px; border-radius: 15px; color: #fff; background: rgba(45,36,30,.92); box-shadow: 0 12px 28px rgba(37,29,23,.25); font-size: 10px; font-weight: 700; animation: mezo-pop .25s ease-out both; }
+    #mezo-goal-prototype .mezo-toast[hidden] { display: none; }
+
+    #mezo-goal-prototype .mezo-tabbar { margin: 0 13px 11px; min-height: 72px; padding: 10px 10px 8px; display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; border: 1px solid rgba(255,255,255,.92); border-radius: 31px; background: rgba(255,253,247,.91); box-shadow: 0 16px 35px rgba(60,47,37,.12); backdrop-filter: blur(18px); }
+    #mezo-goal-prototype .mezo-tab { display: grid; justify-items: center; gap: 4px; color: #7d736a; font-size: 9px; font-weight: 700; }
+    #mezo-goal-prototype .mezo-tab svg { width: 19px; height: 19px; stroke-width: 1.8; }
+    #mezo-goal-prototype .mezo-tab.is-active { color: var(--mezo-coral-deep); }
+
+    @keyframes mezo-rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes mezo-pop { from { opacity: 0; transform: translate(-50%, 7px) scale(.97); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+
+    @media (max-width: 390px) {
+      #mezo-goal-prototype { padding-inline: 0; }
+      #mezo-goal-prototype .mezo-phone { width: calc(100vw - 12px); border-width: 6px; border-radius: 37px; }
+      #mezo-goal-prototype .mezo-screen { padding-inline: 13px; }
+      #mezo-goal-prototype .mezo-apphead { padding-inline: 13px; }
+      #mezo-goal-prototype .mezo-head-action, #mezo-goal-prototype .mezo-avatar { width: 34px; height: 34px; }
+      #mezo-goal-prototype .mezo-hero { padding: 19px 17px 16px; }
+      #mezo-goal-prototype .mezo-hero-status { font-size: 25px; }
+      #mezo-goal-prototype .mezo-tile { min-height: 148px; padding: 14px; }
+      #mezo-goal-prototype .mezo-tile-value { font-size: 21px; }
+      #mezo-goal-prototype .mezo-tile-link { left: 14px; bottom: 13px; }
+      #mezo-goal-prototype .mezo-notification-menu { right: 12px; width: calc(100% - 24px); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      #mezo-goal-prototype .mezo-screen.is-active,
+      #mezo-goal-prototype .mezo-toast { animation: none; }
+      #mezo-goal-prototype button.mezo-tile { transition: none; }
+    }
+  &lt;/style&gt;
+
+  &lt;div class=&quot;mezo-phone&quot; aria-label=&quot;Mezo Cél oldal interaktív mobil prototípus&quot;&gt;
+    &lt;div class=&quot;mezo-island&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+    &lt;div class=&quot;mezo-statusbar&quot; aria-hidden=&quot;true&quot;&gt;
+      &lt;span&gt;13:42&lt;/span&gt;
+      &lt;span class=&quot;mezo-signals&quot;&gt;
+        &lt;span class=&quot;mezo-signal-bars&quot;&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;span&gt;&lt;/span&gt;&lt;/span&gt;
+        &lt;span&gt;⌁&lt;/span&gt;&lt;span&gt;▰&lt;/span&gt;
+      &lt;/span&gt;
+    &lt;/div&gt;
+
+    &lt;header class=&quot;mezo-apphead&quot;&gt;
+      &lt;div class=&quot;mezo-app-title&quot;&gt;&lt;span class=&quot;mezo-people-spot&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;&lt;span&gt;Cél&lt;/span&gt;&lt;/div&gt;
+      &lt;button class=&quot;mezo-head-action&quot; type=&quot;button&quot; aria-label=&quot;Napszak váltása&quot;&gt;&lt;i data-lucide=&quot;sun&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;
+      &lt;button class=&quot;mezo-head-action&quot; type=&quot;button&quot; aria-label=&quot;Mezo üzenetei&quot;&gt;&lt;i data-lucide=&quot;message-circle&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;
+      &lt;button class=&quot;mezo-head-action&quot; id=&quot;mezo-proto-bell&quot; type=&quot;button&quot; aria-label=&quot;Értesítések&quot; aria-expanded=&quot;false&quot;&gt;
+        &lt;i data-lucide=&quot;bell&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;span class=&quot;mezo-badge&quot; id=&quot;mezo-proto-badge&quot;&gt;1&lt;/span&gt;
+      &lt;/button&gt;
+      &lt;span class=&quot;mezo-avatar&quot; aria-hidden=&quot;true&quot;&gt;&lt;/span&gt;
+    &lt;/header&gt;
+
+    &lt;div class=&quot;mezo-notification-menu&quot; id=&quot;mezo-proto-menu&quot; hidden&gt;
+      &lt;div class=&quot;mezo-menu-title&quot;&gt;Értesítések&lt;/div&gt;
+      &lt;button class=&quot;mezo-notification-row&quot; id=&quot;mezo-proto-notification&quot; type=&quot;button&quot;&gt;
+        &lt;span class=&quot;mezo-notification-icon&quot;&gt;&lt;i data-lucide=&quot;sparkles&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+        &lt;span class=&quot;mezo-notification-copy&quot;&gt;&lt;strong&gt;Új javaslat a célodhoz&lt;/strong&gt;&lt;span&gt;A heti étrendi keret finomhangolható.&lt;/span&gt;&lt;/span&gt;
+        &lt;span class=&quot;mezo-unread-dot&quot; aria-label=&quot;Olvasatlan&quot;&gt;&lt;/span&gt;
+      &lt;/button&gt;
+      &lt;span class=&quot;mezo-menu-foot&quot;&gt;Összes értesítés ›&lt;/span&gt;
+    &lt;/div&gt;
+
+    &lt;main&gt;
+      &lt;section class=&quot;mezo-screen is-active&quot; data-mezo-screen=&quot;hub&quot;&gt;
+        &lt;div class=&quot;mezo-page-kicker&quot;&gt;Utolsó Cut · aktív&lt;/div&gt;
+        &lt;h1 class=&quot;mezo-page-heading&quot;&gt;A célod ma&lt;/h1&gt;
+
+        &lt;article class=&quot;mezo-hero&quot;&gt;
+          &lt;div class=&quot;mezo-hero-top&quot;&gt;
+            &lt;div&gt;
+              &lt;div class=&quot;mezo-page-kicker&quot;&gt;Figyelmet kér&lt;/div&gt;
+              &lt;div class=&quot;mezo-hero-status&quot;&gt;Lassabb vagy a tervnél&lt;/div&gt;
+              &lt;p class=&quot;mezo-hero-copy&quot;&gt;A trend biztos, de a jelenlegi ütemmel később érnéd el a célt.&lt;/p&gt;
+            &lt;/div&gt;
+            &lt;div class=&quot;mezo-ring&quot; aria-label=&quot;A cél 29 százaléka teljesült&quot;&gt;&lt;span&gt;29%&lt;/span&gt;&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;mezo-weight-line&quot;&gt;
+            &lt;div class=&quot;mezo-weight-point&quot;&gt;&lt;strong&gt;82,4&lt;/strong&gt;&lt;span&gt;most · kg&lt;/span&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-weight-arrow&quot; aria-hidden=&quot;true&quot;&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-weight-point&quot;&gt;&lt;strong&gt;78,0&lt;/strong&gt;&lt;span&gt;cél · kg&lt;/span&gt;&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;mezo-pace-strip&quot;&gt;
+            &lt;div class=&quot;mezo-pace-item&quot;&gt;&lt;span&gt;Tényleges ütem&lt;/span&gt;&lt;strong&gt;−0,18 kg/hét&lt;/strong&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-pace-item&quot;&gt;&lt;span&gt;Tervezett ütem&lt;/span&gt;&lt;strong&gt;−0,74 kg/hét&lt;/strong&gt;&lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/article&gt;
+
+        &lt;div class=&quot;mezo-mosaic&quot;&gt;
+          &lt;button class=&quot;mezo-tile is-sage&quot; id=&quot;mezo-proto-nutrition-open&quot; type=&quot;button&quot;&gt;
+            &lt;span class=&quot;mezo-tile-dot&quot;&gt;&lt;i data-lucide=&quot;utensils&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+            &lt;span class=&quot;mezo-tile-eyebrow&quot;&gt;Mai étrendi keret&lt;/span&gt;
+            &lt;strong class=&quot;mezo-tile-value&quot;&gt;&lt;span id=&quot;mezo-proto-kcal&quot;&gt;2 940&lt;/span&gt; &lt;span class=&quot;mezo-tile-unit&quot;&gt;kcal&lt;/span&gt;&lt;/strong&gt;
+            &lt;span class=&quot;mezo-tile-line&quot;&gt;Edzésnap · P 188 · C 361 · F 82&lt;/span&gt;
+            &lt;span class=&quot;mezo-tile-link&quot;&gt;Részletek ›&lt;/span&gt;
+          &lt;/button&gt;
+
+          &lt;button class=&quot;mezo-tile is-lav&quot; id=&quot;mezo-proto-segment-open&quot; type=&quot;button&quot;&gt;
+            &lt;span class=&quot;mezo-tile-dot&quot;&gt;&lt;i data-lucide=&quot;layers-3&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+            &lt;span class=&quot;mezo-tile-eyebrow&quot;&gt;Aktuális szakasz&lt;/span&gt;
+            &lt;strong class=&quot;mezo-tile-value&quot;&gt;MAV&lt;/strong&gt;
+            &lt;span class=&quot;mezo-tile-line&quot;&gt;W3–5 · még 5 nap&lt;/span&gt;
+            &lt;div class=&quot;mezo-mini-progress&quot; aria-label=&quot;A szakasz 64 százaléka eltelt&quot;&gt;&lt;span style=&quot;width:64%&quot;&gt;&lt;/span&gt;&lt;/div&gt;
+          &lt;/button&gt;
+
+          &lt;button class=&quot;mezo-tile is-sky&quot; id=&quot;mezo-proto-plans-open&quot; type=&quot;button&quot;&gt;
+            &lt;span class=&quot;mezo-tile-dot&quot;&gt;&lt;i data-lucide=&quot;link-2&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+            &lt;span class=&quot;mezo-tile-eyebrow&quot;&gt;Tervkapcsolatok&lt;/span&gt;
+            &lt;strong class=&quot;mezo-tile-value is-small&quot;&gt;2 aktív&lt;/strong&gt;
+            &lt;span class=&quot;mezo-tile-line&quot;&gt;W7–8: nincs mezociklus&lt;/span&gt;
+            &lt;span class=&quot;mezo-tile-link&quot;&gt;Idővonal ›&lt;/span&gt;
+          &lt;/button&gt;
+
+          &lt;button class=&quot;mezo-tile is-blush&quot; id=&quot;mezo-proto-guards-open&quot; type=&quot;button&quot;&gt;
+            &lt;span class=&quot;mezo-tile-dot&quot;&gt;&lt;i data-lucide=&quot;shield-check&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+            &lt;span class=&quot;mezo-tile-eyebrow&quot;&gt;Védőkorlátok&lt;/span&gt;
+            &lt;strong class=&quot;mezo-tile-value&quot;&gt;3/4&lt;/strong&gt;
+            &lt;span class=&quot;mezo-tile-line&quot;&gt;Az ütem figyelmet kér&lt;/span&gt;
+            &lt;span class=&quot;mezo-tile-link&quot;&gt;Állapot ›&lt;/span&gt;
+          &lt;/button&gt;
+
+          &lt;button class=&quot;mezo-tile is-gold&quot; id=&quot;mezo-proto-suggestion-open&quot; type=&quot;button&quot;&gt;
+            &lt;span class=&quot;mezo-tile-dot&quot;&gt;&lt;i data-lucide=&quot;sparkles&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+            &lt;span class=&quot;mezo-tile-eyebrow&quot;&gt;Új javaslat&lt;/span&gt;
+            &lt;strong class=&quot;mezo-tile-value is-small&quot;&gt;−120 kcal&lt;/strong&gt;
+            &lt;span class=&quot;mezo-tile-line&quot;&gt;Heti korrekció vár rád&lt;/span&gt;
+            &lt;span class=&quot;mezo-tile-link&quot;&gt;Áttekintés ›&lt;/span&gt;
+          &lt;/button&gt;
+
+          &lt;button class=&quot;mezo-tile&quot; id=&quot;mezo-proto-settings-open&quot; type=&quot;button&quot;&gt;
+            &lt;span class=&quot;mezo-tile-dot&quot;&gt;&lt;i data-lucide=&quot;sliders-horizontal&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+            &lt;span class=&quot;mezo-tile-eyebrow&quot;&gt;Cél beállításai&lt;/span&gt;
+            &lt;strong class=&quot;mezo-tile-value is-small&quot;&gt;78 kg&lt;/strong&gt;
+            &lt;span class=&quot;mezo-tile-line&quot;&gt;Fogyás · okt. 24.&lt;/span&gt;
+            &lt;span class=&quot;mezo-tile-link&quot;&gt;Szerkesztés ›&lt;/span&gt;
+          &lt;/button&gt;
+        &lt;/div&gt;
+      &lt;/section&gt;
+
+      &lt;section class=&quot;mezo-screen&quot; data-mezo-screen=&quot;suggestion&quot;&gt;
+        &lt;div class=&quot;mezo-subhead&quot;&gt;
+          &lt;button class=&quot;mezo-back&quot; type=&quot;button&quot; data-mezo-back aria-label=&quot;Vissza a Cél oldalra&quot;&gt;&lt;i data-lucide=&quot;arrow-left&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;
+          &lt;div class=&quot;mezo-subhead-text&quot;&gt;&lt;div class=&quot;mezo-page-kicker&quot;&gt;Javaslat&lt;/div&gt;&lt;h2&gt;Mielőtt alkalmazod&lt;/h2&gt;&lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;article class=&quot;mezo-reason&quot;&gt;
+          &lt;div class=&quot;mezo-reason-top&quot;&gt;&lt;i data-lucide=&quot;sparkles&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;span&gt;Miért javasoljuk?&lt;/span&gt;&lt;/div&gt;
+          &lt;p&gt;Az elmúlt három hét súlytrendje lassabb a tervezettnél. Egy óvatos, napi 120 kcal-os korrekció közelebb vihet a célütemhez.&lt;/p&gt;
+          &lt;div class=&quot;mezo-reason-tags&quot;&gt;&lt;span&gt;W3–8&lt;/span&gt;&lt;span&gt;biztos trend&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-reason-visual&quot; aria-hidden=&quot;true&quot;&gt;&lt;span class=&quot;mezo-reason-orb&quot;&gt;&lt;/span&gt;&lt;span class=&quot;mezo-reason-metric&quot;&gt;&lt;strong&gt;−120&lt;/strong&gt;&lt;span&gt;kcal / nap&lt;/span&gt;&lt;/span&gt;&lt;/div&gt;
+        &lt;/article&gt;
+
+        &lt;div class=&quot;mezo-section-title&quot;&gt;&lt;span&gt;Mi változik?&lt;/span&gt;&lt;span&gt;W3–8&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;mezo-diff-list&quot;&gt;
+          &lt;div class=&quot;mezo-diff-row&quot;&gt;
+            &lt;div class=&quot;mezo-diff-side&quot;&gt;&lt;span&gt;Most · napi átlag&lt;/span&gt;&lt;strong&gt;2 780 kcal&lt;/strong&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-diff-arrow&quot;&gt;&lt;i data-lucide=&quot;arrow-right&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-diff-side&quot;&gt;&lt;span&gt;Javasolt&lt;/span&gt;&lt;strong&gt;2 660 kcal&lt;/strong&gt;&lt;em class=&quot;mezo-change-chip&quot;&gt;−120&lt;/em&gt;&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;mezo-diff-row&quot;&gt;
+            &lt;div class=&quot;mezo-diff-side&quot;&gt;&lt;span&gt;Edzésnap&lt;/span&gt;&lt;strong&gt;2 940 kcal&lt;/strong&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-diff-arrow&quot;&gt;&lt;i data-lucide=&quot;arrow-right&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-diff-side&quot;&gt;&lt;span&gt;Javasolt&lt;/span&gt;&lt;strong&gt;2 820 kcal&lt;/strong&gt;&lt;em class=&quot;mezo-change-chip&quot;&gt;−120&lt;/em&gt;&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;mezo-diff-row&quot;&gt;
+            &lt;div class=&quot;mezo-diff-side&quot;&gt;&lt;span&gt;Pihenőnap&lt;/span&gt;&lt;strong&gt;2 580 kcal&lt;/strong&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-diff-arrow&quot;&gt;&lt;i data-lucide=&quot;arrow-right&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-diff-side&quot;&gt;&lt;span&gt;Javasolt&lt;/span&gt;&lt;strong&gt;2 460 kcal&lt;/strong&gt;&lt;em class=&quot;mezo-change-chip&quot;&gt;−120&lt;/em&gt;&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;mezo-diff-row&quot;&gt;
+            &lt;div class=&quot;mezo-diff-side&quot;&gt;&lt;span&gt;Makrók&lt;/span&gt;&lt;strong&gt;P188 · C361 · F82&lt;/strong&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-diff-arrow&quot;&gt;&lt;i data-lucide=&quot;arrow-right&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-diff-side&quot;&gt;&lt;span&gt;Javasolt&lt;/span&gt;&lt;strong&gt;P188 · C331 · F82&lt;/strong&gt;&lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class=&quot;mezo-section-title&quot;&gt;&lt;span&gt;Mi marad változatlan?&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;mezo-keep-list&quot;&gt;
+          &lt;div class=&quot;mezo-keep-item&quot;&gt;&lt;i data-lucide=&quot;check&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;78 kg célsúly&lt;/div&gt;
+          &lt;div class=&quot;mezo-keep-item&quot;&gt;&lt;i data-lucide=&quot;check&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;Okt. 24. határidő&lt;/div&gt;
+          &lt;div class=&quot;mezo-keep-item&quot;&gt;&lt;i data-lucide=&quot;check&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;188 g fehérje&lt;/div&gt;
+          &lt;div class=&quot;mezo-keep-item&quot;&gt;&lt;i data-lucide=&quot;check&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;Kapcsolt edzésterv&lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class=&quot;mezo-actions is-decision&quot;&gt;
+          &lt;button class=&quot;mezo-primary&quot; id=&quot;mezo-proto-apply&quot; type=&quot;button&quot;&gt;Módosítások alkalmazása&lt;/button&gt;
+          &lt;button class=&quot;mezo-secondary&quot; type=&quot;button&quot; data-mezo-back&gt;Most nem&lt;/button&gt;
+        &lt;/div&gt;
+        &lt;p class=&quot;mezo-fineprint&quot;&gt;Alkalmazás előtt újra ellenőrizzük, hogy a cél és a terv adatai nem változtak-e.&lt;/p&gt;
+      &lt;/section&gt;
+
+      &lt;section class=&quot;mezo-screen&quot; data-mezo-screen=&quot;plans&quot;&gt;
+        &lt;div class=&quot;mezo-subhead&quot;&gt;
+          &lt;button class=&quot;mezo-back&quot; type=&quot;button&quot; data-mezo-back aria-label=&quot;Vissza a Cél oldalra&quot;&gt;&lt;i data-lucide=&quot;arrow-left&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;
+          &lt;div class=&quot;mezo-subhead-text&quot;&gt;&lt;div class=&quot;mezo-page-kicker&quot;&gt;Cél alatt fut&lt;/div&gt;&lt;h2&gt;Tervkapcsolatok&lt;/h2&gt;&lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;article class=&quot;mezo-plan-summary&quot;&gt;
+          &lt;strong&gt;2 aktív kapcsolat&lt;/strong&gt;
+          &lt;span&gt;A mezociklus és a heti sportterv beleszámít a célod aktuális keretébe.&lt;/span&gt;
+          &lt;div class=&quot;mezo-plan-orbit&quot; aria-hidden=&quot;true&quot;&gt;
+            &lt;span class=&quot;mezo-plan-node n1&quot;&gt;&lt;i data-lucide=&quot;dumbbell&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+            &lt;span class=&quot;mezo-plan-node n2&quot;&gt;&lt;i data-lucide=&quot;circle-dot&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+            &lt;span class=&quot;mezo-plan-node n3&quot;&gt;&lt;i data-lucide=&quot;target&quot;&gt;&lt;/i&gt;&lt;/span&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;mezo-plan-metrics&quot;&gt;
+            &lt;div class=&quot;mezo-plan-metric&quot;&gt;&lt;span&gt;Mezo&lt;/span&gt;&lt;strong&gt;MAV&lt;/strong&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-plan-metric&quot;&gt;&lt;span&gt;Sport&lt;/span&gt;&lt;strong&gt;2× / hét&lt;/strong&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-plan-metric&quot;&gt;&lt;span&gt;Rés&lt;/span&gt;&lt;strong&gt;2 hét&lt;/strong&gt;&lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/article&gt;
+
+        &lt;div class=&quot;mezo-week-axis&quot; aria-label=&quot;Nyolchetes célablak&quot;&gt;&lt;span&gt;1&lt;/span&gt;&lt;span&gt;2&lt;/span&gt;&lt;span&gt;3&lt;/span&gt;&lt;span&gt;4&lt;/span&gt;&lt;span&gt;5&lt;/span&gt;&lt;span&gt;6&lt;/span&gt;&lt;span&gt;7&lt;/span&gt;&lt;span&gt;8&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;mezo-lanes&quot;&gt;
+          &lt;div class=&quot;mezo-lane&quot;&gt;
+            &lt;div class=&quot;mezo-lane-label&quot;&gt;Gym · mezociklus&lt;/div&gt;
+            &lt;div class=&quot;mezo-lane-track&quot;&gt;&lt;div class=&quot;mezo-lane-bar meso&quot;&gt;Shoulder &amp;amp; Back #1&lt;/div&gt;&lt;div class=&quot;mezo-lane-gap&quot;&gt;nincs terv&lt;/div&gt;&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;mezo-lane&quot;&gt;
+            &lt;div class=&quot;mezo-lane-label&quot;&gt;Futás&lt;/div&gt;
+            &lt;div class=&quot;mezo-lane-track&quot;&gt;&lt;div class=&quot;mezo-empty-lane&quot;&gt;Nincs futóblokk&lt;/div&gt;&lt;/div&gt;
+          &lt;/div&gt;
+          &lt;div class=&quot;mezo-lane&quot;&gt;
+            &lt;div class=&quot;mezo-lane-label&quot;&gt;Sport · heti ritmus&lt;/div&gt;
+            &lt;div class=&quot;mezo-lane-track&quot;&gt;&lt;div class=&quot;mezo-lane-bar sport&quot;&gt;BVSC · kedd és péntek&lt;/div&gt;&lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class=&quot;mezo-section-title&quot;&gt;&lt;span&gt;Kapcsolatok&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;mezo-plan-cards&quot;&gt;
+          &lt;div class=&quot;mezo-plan-card&quot;&gt;&lt;span class=&quot;mezo-plan-icon&quot;&gt;&lt;i data-lucide=&quot;dumbbell&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;&lt;div&gt;&lt;strong&gt;Shoulder &amp;amp; Back Mezo #1&lt;/strong&gt;&lt;span&gt;W1–6 · jelenleg MAV&lt;/span&gt;&lt;/div&gt;&lt;span class=&quot;mezo-plan-state&quot;&gt;aktív&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-plan-card&quot;&gt;&lt;span class=&quot;mezo-plan-icon&quot;&gt;&lt;i data-lucide=&quot;circle-dot&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;&lt;div&gt;&lt;strong&gt;BVSC röplabda&lt;/strong&gt;&lt;span&gt;Heti 2 alkalom · 180 perc&lt;/span&gt;&lt;/div&gt;&lt;span class=&quot;mezo-plan-state&quot;&gt;aktív&lt;/span&gt;&lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;mezo-actions&quot;&gt;&lt;button class=&quot;mezo-secondary mezo-plan-action&quot; type=&quot;button&quot;&gt;Kapcsolatok kezelése&lt;/button&gt;&lt;/div&gt;
+      &lt;/section&gt;
+
+      &lt;section class=&quot;mezo-screen&quot; data-mezo-screen=&quot;nutrition&quot;&gt;
+        &lt;div class=&quot;mezo-subhead&quot;&gt;
+          &lt;button class=&quot;mezo-back&quot; type=&quot;button&quot; data-mezo-back aria-label=&quot;Vissza a Cél oldalra&quot;&gt;&lt;i data-lucide=&quot;arrow-left&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;
+          &lt;div class=&quot;mezo-subhead-text&quot;&gt;&lt;div class=&quot;mezo-page-kicker&quot;&gt;Diet Plan&lt;/div&gt;&lt;h2&gt;Mai étrendi keret&lt;/h2&gt;&lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;article class=&quot;mezo-detail-hero nutrition&quot;&gt;
+          &lt;div class=&quot;mezo-detail-copy&quot;&gt;&lt;span&gt;Ma · edzésnap&lt;/span&gt;&lt;strong&gt;2 940 kcal&lt;/strong&gt;&lt;p&gt;A heti keretből ma több energia jut az edzés köré, a heti átlag változatlan marad.&lt;/p&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-detail-emblem sage&quot; aria-hidden=&quot;true&quot;&gt;&lt;i data-lucide=&quot;utensils&quot;&gt;&lt;/i&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-detail-pods&quot;&gt;
+            &lt;div class=&quot;mezo-detail-pod&quot;&gt;&lt;span&gt;Heti átlag&lt;/span&gt;&lt;strong&gt;2 780&lt;/strong&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-detail-pod&quot;&gt;&lt;span&gt;Edzésnap&lt;/span&gt;&lt;strong&gt;4 nap&lt;/strong&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-detail-pod&quot;&gt;&lt;span&gt;Pihenőnap&lt;/span&gt;&lt;strong&gt;3 nap&lt;/strong&gt;&lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/article&gt;
+
+        &lt;div class=&quot;mezo-section-title&quot;&gt;&lt;span&gt;Mai makrók&lt;/span&gt;&lt;span&gt;célérték&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;mezo-macro-row&quot;&gt;
+          &lt;div class=&quot;mezo-macro&quot;&gt;&lt;strong&gt;188 g&lt;/strong&gt;&lt;span&gt;Fehérje&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-macro&quot;&gt;&lt;strong&gt;361 g&lt;/strong&gt;&lt;span&gt;Szénhidrát&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-macro&quot;&gt;&lt;strong&gt;82 g&lt;/strong&gt;&lt;span&gt;Zsír&lt;/span&gt;&lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class=&quot;mezo-section-title&quot;&gt;&lt;span&gt;Heti ritmus&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;mezo-detail-grid&quot;&gt;
+          &lt;div class=&quot;mezo-detail-card sage&quot;&gt;&lt;span class=&quot;mezo-detail-label&quot;&gt;Edzésnap&lt;/span&gt;&lt;strong class=&quot;mezo-detail-value&quot;&gt;2 940 kcal&lt;/strong&gt;&lt;span class=&quot;mezo-detail-note&quot;&gt;Hétfő · kedd · csütörtök · péntek&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-detail-card sky&quot;&gt;&lt;span class=&quot;mezo-detail-label&quot;&gt;Pihenőnap&lt;/span&gt;&lt;strong class=&quot;mezo-detail-value&quot;&gt;2 580 kcal&lt;/strong&gt;&lt;span class=&quot;mezo-detail-note&quot;&gt;Szerda · szombat · vasárnap&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-detail-card wide gold&quot;&gt;&lt;span class=&quot;mezo-detail-label&quot;&gt;Honnan jön?&lt;/span&gt;&lt;strong class=&quot;mezo-detail-value&quot;&gt;TDEE + célütem&lt;/strong&gt;&lt;span class=&quot;mezo-detail-note&quot;&gt;A profilod, a heti edzésritmus, a súlytrended és az elfogadott korrekciók együtt adják a keretet.&lt;/span&gt;&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/section&gt;
+
+      &lt;section class=&quot;mezo-screen&quot; data-mezo-screen=&quot;segment&quot;&gt;
+        &lt;div class=&quot;mezo-subhead&quot;&gt;
+          &lt;button class=&quot;mezo-back&quot; type=&quot;button&quot; data-mezo-back aria-label=&quot;Vissza a Cél oldalra&quot;&gt;&lt;i data-lucide=&quot;arrow-left&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;
+          &lt;div class=&quot;mezo-subhead-text&quot;&gt;&lt;div class=&quot;mezo-page-kicker&quot;&gt;Aktuális szakasz&lt;/div&gt;&lt;h2&gt;MAV · W3–5&lt;/h2&gt;&lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;article class=&quot;mezo-detail-hero segment&quot;&gt;
+          &lt;div class=&quot;mezo-detail-copy&quot;&gt;&lt;span&gt;Alapozó · 3. hét&lt;/span&gt;&lt;strong&gt;MAV&lt;/strong&gt;&lt;p&gt;A volumen emelkedik, miközben az izom- és erővédelmet szorosabban figyeljük.&lt;/p&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-detail-emblem lav&quot; aria-hidden=&quot;true&quot;&gt;&lt;i data-lucide=&quot;layers-3&quot;&gt;&lt;/i&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-detail-pods&quot;&gt;
+            &lt;div class=&quot;mezo-detail-pod&quot;&gt;&lt;span&gt;Hátra&lt;/span&gt;&lt;strong&gt;5 nap&lt;/strong&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-detail-pod&quot;&gt;&lt;span&gt;Következő&lt;/span&gt;&lt;strong&gt;Deload&lt;/strong&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-detail-pod&quot;&gt;&lt;span&gt;Heti cél&lt;/span&gt;&lt;strong&gt;−0,74 kg&lt;/strong&gt;&lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/article&gt;
+
+        &lt;div class=&quot;mezo-section-title&quot;&gt;&lt;span&gt;A teljes ív&lt;/span&gt;&lt;span&gt;8 hét&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;mezo-phase-river&quot; aria-label=&quot;A nyolchetes cél szakaszai&quot;&gt;
+          &lt;div class=&quot;mezo-phase&quot;&gt;&lt;span&gt;W1–2&lt;/span&gt;&lt;strong&gt;MEV&lt;/strong&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-phase is-current&quot;&gt;&lt;span&gt;W3–5 · most&lt;/span&gt;&lt;strong&gt;MAV&lt;/strong&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-phase&quot;&gt;&lt;span&gt;W6&lt;/span&gt;&lt;strong&gt;DEL&lt;/strong&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-phase&quot;&gt;&lt;span&gt;W7–8&lt;/span&gt;&lt;strong&gt;ALAP&lt;/strong&gt;&lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;div class=&quot;mezo-section-title&quot;&gt;&lt;span&gt;Mit jelent most?&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;mezo-detail-grid&quot;&gt;
+          &lt;div class=&quot;mezo-detail-card lav&quot;&gt;&lt;span class=&quot;mezo-detail-label&quot;&gt;Kalóriakeret&lt;/span&gt;&lt;strong class=&quot;mezo-detail-value&quot;&gt;2 780&lt;/strong&gt;&lt;span class=&quot;mezo-detail-note&quot;&gt;napi heti átlag&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-detail-card sage&quot;&gt;&lt;span class=&quot;mezo-detail-label&quot;&gt;Izomvédelem&lt;/span&gt;&lt;strong class=&quot;mezo-detail-value&quot;&gt;Rendben&lt;/strong&gt;&lt;span class=&quot;mezo-detail-note&quot;&gt;≥6 szett / izom&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-detail-card wide gold&quot;&gt;&lt;span class=&quot;mezo-detail-label&quot;&gt;Következő döntés&lt;/span&gt;&lt;strong class=&quot;mezo-detail-value&quot;&gt;Deload · tartási hét&lt;/strong&gt;&lt;span class=&quot;mezo-detail-note&quot;&gt;Az app előnézetet készít, mielőtt a W6 kalóriakerete megváltozna.&lt;/span&gt;&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/section&gt;
+
+      &lt;section class=&quot;mezo-screen&quot; data-mezo-screen=&quot;guards&quot;&gt;
+        &lt;div class=&quot;mezo-subhead&quot;&gt;
+          &lt;button class=&quot;mezo-back&quot; type=&quot;button&quot; data-mezo-back aria-label=&quot;Vissza a Cél oldalra&quot;&gt;&lt;i data-lucide=&quot;arrow-left&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;
+          &lt;div class=&quot;mezo-subhead-text&quot;&gt;&lt;div class=&quot;mezo-page-kicker&quot;&gt;Védőkorlátok&lt;/div&gt;&lt;h2&gt;3 a 4-ből rendben&lt;/h2&gt;&lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;article class=&quot;mezo-detail-hero guards&quot;&gt;
+          &lt;div class=&quot;mezo-detail-copy&quot;&gt;&lt;span&gt;Célbiztonság&lt;/span&gt;&lt;strong&gt;3/4&lt;/strong&gt;&lt;p&gt;A terv védi az izmot, az erőt és a fehérjecélt. A fogyási ütem még figyelmet kér.&lt;/p&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-detail-emblem coral&quot; aria-hidden=&quot;true&quot;&gt;&lt;i data-lucide=&quot;shield-check&quot;&gt;&lt;/i&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-detail-pods&quot;&gt;
+            &lt;div class=&quot;mezo-detail-pod&quot;&gt;&lt;span&gt;Rendben&lt;/span&gt;&lt;strong&gt;3 jel&lt;/strong&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-detail-pod&quot;&gt;&lt;span&gt;Figyelendő&lt;/span&gt;&lt;strong&gt;1 jel&lt;/strong&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-detail-pod&quot;&gt;&lt;span&gt;Frissítve&lt;/span&gt;&lt;strong&gt;ma&lt;/strong&gt;&lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/article&gt;
+
+        &lt;div class=&quot;mezo-section-title&quot;&gt;&lt;span&gt;Állapotok&lt;/span&gt;&lt;/div&gt;
+        &lt;div class=&quot;mezo-guard-list&quot;&gt;
+          &lt;div class=&quot;mezo-guard-row&quot;&gt;&lt;span class=&quot;mezo-guard-icon&quot;&gt;&lt;i data-lucide=&quot;dumbbell&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;&lt;div&gt;&lt;strong&gt;Erő megtartása&lt;/strong&gt;&lt;span&gt;Nincs 5%-nál nagyobb e1RM-esés&lt;/span&gt;&lt;/div&gt;&lt;span class=&quot;mezo-guard-status&quot;&gt;rendben&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-guard-row&quot;&gt;&lt;span class=&quot;mezo-guard-icon&quot;&gt;&lt;i data-lucide=&quot;activity&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;&lt;div&gt;&lt;strong&gt;Izomvolumen&lt;/strong&gt;&lt;span&gt;A kapcsolt mezociklus fedezi a minimumot&lt;/span&gt;&lt;/div&gt;&lt;span class=&quot;mezo-guard-status&quot;&gt;rendben&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-guard-row&quot;&gt;&lt;span class=&quot;mezo-guard-icon&quot;&gt;&lt;i data-lucide=&quot;drumstick&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;&lt;div&gt;&lt;strong&gt;Fehérje&lt;/strong&gt;&lt;span&gt;188 g napi cél szerepel a Diet Planben&lt;/span&gt;&lt;/div&gt;&lt;span class=&quot;mezo-guard-status&quot;&gt;rendben&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-guard-row is-watch&quot;&gt;&lt;span class=&quot;mezo-guard-icon&quot;&gt;&lt;i data-lucide=&quot;gauge&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;&lt;div&gt;&lt;strong&gt;Fogyási ütem&lt;/strong&gt;&lt;span&gt;−0,18 a tervezett −0,74 kg/hét helyett&lt;/span&gt;&lt;/div&gt;&lt;span class=&quot;mezo-guard-status&quot;&gt;figyeld&lt;/span&gt;&lt;/div&gt;
+        &lt;/div&gt;
+      &lt;/section&gt;
+
+      &lt;section class=&quot;mezo-screen&quot; data-mezo-screen=&quot;settings&quot;&gt;
+        &lt;div class=&quot;mezo-subhead&quot;&gt;
+          &lt;button class=&quot;mezo-back&quot; type=&quot;button&quot; data-mezo-back aria-label=&quot;Vissza a Cél oldalra&quot;&gt;&lt;i data-lucide=&quot;arrow-left&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/button&gt;
+          &lt;div class=&quot;mezo-subhead-text&quot;&gt;&lt;div class=&quot;mezo-page-kicker&quot;&gt;Utolsó Cut&lt;/div&gt;&lt;h2&gt;Cél beállításai&lt;/h2&gt;&lt;/div&gt;
+        &lt;/div&gt;
+
+        &lt;article class=&quot;mezo-detail-hero settings&quot;&gt;
+          &lt;div class=&quot;mezo-detail-copy&quot;&gt;&lt;span&gt;Aktív · fogyás&lt;/span&gt;&lt;strong&gt;78,0 kg&lt;/strong&gt;&lt;p&gt;84,2 kg-ról indulva, október 24-i céldátummal.&lt;/p&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-detail-emblem sky&quot; aria-hidden=&quot;true&quot;&gt;&lt;i data-lucide=&quot;target&quot;&gt;&lt;/i&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-detail-pods&quot;&gt;
+            &lt;div class=&quot;mezo-detail-pod&quot;&gt;&lt;span&gt;Most&lt;/span&gt;&lt;strong&gt;82,4 kg&lt;/strong&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-detail-pod&quot;&gt;&lt;span&gt;Hátra&lt;/span&gt;&lt;strong&gt;4,4 kg&lt;/strong&gt;&lt;/div&gt;
+            &lt;div class=&quot;mezo-detail-pod&quot;&gt;&lt;span&gt;Teljesült&lt;/span&gt;&lt;strong&gt;29%&lt;/strong&gt;&lt;/div&gt;
+          &lt;/div&gt;
+        &lt;/article&gt;
+
+        &lt;div class=&quot;mezo-section-title&quot;&gt;&lt;span&gt;Alapadatok&lt;/span&gt;&lt;/div&gt;
+        &lt;div&gt;
+          &lt;div class=&quot;mezo-setting-row&quot;&gt;&lt;span class=&quot;mezo-setting-icon&quot;&gt;&lt;i data-lucide=&quot;trending-down&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;&lt;div&gt;&lt;strong&gt;Irány&lt;/strong&gt;&lt;span&gt;A kalóriamotor előjele&lt;/span&gt;&lt;/div&gt;&lt;span class=&quot;mezo-setting-data&quot;&gt;Fogyás&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-setting-row&quot;&gt;&lt;span class=&quot;mezo-setting-icon&quot;&gt;&lt;i data-lucide=&quot;calendar-days&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;&lt;div&gt;&lt;strong&gt;Célablak&lt;/strong&gt;&lt;span&gt;Kezdés és céldátum&lt;/span&gt;&lt;/div&gt;&lt;span class=&quot;mezo-setting-data&quot;&gt;aug. 24. → okt. 24.&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-setting-row&quot;&gt;&lt;span class=&quot;mezo-setting-icon&quot;&gt;&lt;i data-lucide=&quot;gauge&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;&lt;div&gt;&lt;strong&gt;Tervezett ütem&lt;/strong&gt;&lt;span&gt;A célablakból számolva&lt;/span&gt;&lt;/div&gt;&lt;span class=&quot;mezo-setting-data&quot;&gt;−0,74 kg/hét&lt;/span&gt;&lt;/div&gt;
+          &lt;div class=&quot;mezo-setting-row&quot;&gt;&lt;span class=&quot;mezo-setting-icon&quot;&gt;&lt;i data-lucide=&quot;shield&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;/span&gt;&lt;div&gt;&lt;strong&gt;Védelmek&lt;/strong&gt;&lt;span&gt;Erő · izom · fehérje&lt;/span&gt;&lt;/div&gt;&lt;span class=&quot;mezo-setting-data&quot;&gt;3 aktív&lt;/span&gt;&lt;/div&gt;
+        &lt;/div&gt;
+        &lt;div class=&quot;mezo-actions&quot;&gt;&lt;button class=&quot;mezo-primary&quot; type=&quot;button&quot;&gt;Cél szerkesztése&lt;/button&gt;&lt;/div&gt;
+      &lt;/section&gt;
+    &lt;/main&gt;
+
+    &lt;div class=&quot;mezo-toast&quot; id=&quot;mezo-proto-toast&quot; role=&quot;status&quot; hidden&gt;A javaslatot alkalmaztuk · új keret: 2 820 kcal&lt;/div&gt;
+
+    &lt;nav class=&quot;mezo-tabbar&quot; aria-label=&quot;Fő navigáció&quot;&gt;
+      &lt;span class=&quot;mezo-tab&quot;&gt;&lt;i data-lucide=&quot;sun&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;span&gt;Nap&lt;/span&gt;&lt;/span&gt;
+      &lt;span class=&quot;mezo-tab&quot;&gt;&lt;i data-lucide=&quot;dumbbell&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;span&gt;Edzés&lt;/span&gt;&lt;/span&gt;
+      &lt;span class=&quot;mezo-tab&quot;&gt;&lt;i data-lucide=&quot;soup&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;span&gt;Fuel&lt;/span&gt;&lt;/span&gt;
+      &lt;span class=&quot;mezo-tab&quot;&gt;&lt;i data-lucide=&quot;orbit&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;span&gt;Mezo&lt;/span&gt;&lt;/span&gt;
+      &lt;span class=&quot;mezo-tab is-active&quot;&gt;&lt;i data-lucide=&quot;users&quot; aria-hidden=&quot;true&quot;&gt;&lt;/i&gt;&lt;span&gt;Én&lt;/span&gt;&lt;/span&gt;
+    &lt;/nav&gt;
+  &lt;/div&gt;
+
+  &lt;script&gt;
+    (() =&gt; {
+      const root = document.getElementById(&#x27;mezo-goal-prototype&#x27;);
+      if (!root) return;
+      const screens = Array.from(root.querySelectorAll(&#x27;[data-mezo-screen]&#x27;));
+      const menu = root.querySelector(&#x27;#mezo-proto-menu&#x27;);
+      const bell = root.querySelector(&#x27;#mezo-proto-bell&#x27;);
+      const badge = root.querySelector(&#x27;#mezo-proto-badge&#x27;);
+      const toast = root.querySelector(&#x27;#mezo-proto-toast&#x27;);
+      const suggestionTile = root.querySelector(&#x27;#mezo-proto-suggestion-open&#x27;);
+      let toastTimer;
+
+      const showScreen = (name) =&gt; {
+        screens.forEach((screen) =&gt; screen.classList.toggle(&#x27;is-active&#x27;, screen.dataset.mezoScreen === name));
+        menu.hidden = true;
+        bell.setAttribute(&#x27;aria-expanded&#x27;, &#x27;false&#x27;);
+      };
+
+      bell.addEventListener(&#x27;click&#x27;, () =&gt; {
+        menu.hidden = !menu.hidden;
+        bell.setAttribute(&#x27;aria-expanded&#x27;, String(!menu.hidden));
+      });
+      root.querySelector(&#x27;#mezo-proto-notification&#x27;).addEventListener(&#x27;click&#x27;, () =&gt; showScreen(&#x27;suggestion&#x27;));
+      suggestionTile.addEventListener(&#x27;click&#x27;, () =&gt; showScreen(&#x27;suggestion&#x27;));
+      root.querySelector(&#x27;#mezo-proto-plans-open&#x27;).addEventListener(&#x27;click&#x27;, () =&gt; showScreen(&#x27;plans&#x27;));
+      root.querySelector(&#x27;#mezo-proto-nutrition-open&#x27;).addEventListener(&#x27;click&#x27;, () =&gt; showScreen(&#x27;nutrition&#x27;));
+      root.querySelector(&#x27;#mezo-proto-segment-open&#x27;).addEventListener(&#x27;click&#x27;, () =&gt; showScreen(&#x27;segment&#x27;));
+      root.querySelector(&#x27;#mezo-proto-guards-open&#x27;).addEventListener(&#x27;click&#x27;, () =&gt; showScreen(&#x27;guards&#x27;));
+      root.querySelector(&#x27;#mezo-proto-settings-open&#x27;).addEventListener(&#x27;click&#x27;, () =&gt; showScreen(&#x27;settings&#x27;));
+      root.querySelectorAll(&#x27;[data-mezo-back]&#x27;).forEach((button) =&gt; button.addEventListener(&#x27;click&#x27;, () =&gt; showScreen(&#x27;hub&#x27;)));
+      root.querySelector(&#x27;#mezo-proto-apply&#x27;).addEventListener(&#x27;click&#x27;, () =&gt; {
+        root.querySelector(&#x27;#mezo-proto-kcal&#x27;).textContent = &#x27;2 820&#x27;;
+        suggestionTile.hidden = true;
+        badge.hidden = true;
+        showScreen(&#x27;hub&#x27;);
+        toast.hidden = false;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() =&gt; { toast.hidden = true; }, 2600);
+      });
+      document.addEventListener(&#x27;click&#x27;, (event) =&gt; {
+        if (!root.contains(event.target) || (!menu.contains(event.target) &amp;&amp; !bell.contains(event.target))) {
+          menu.hidden = true;
+          bell.setAttribute(&#x27;aria-expanded&#x27;, &#x27;false&#x27;);
+        }
+      });
+    })();
+  &lt;/script&gt;
+&lt;/div&gt;
+
+&lt;script src=&quot;https://unpkg.com/@floating-ui/core@1.7.3/dist/floating-ui.core.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script src=&quot;https://unpkg.com/@floating-ui/dom@1.7.4/dist/floating-ui.dom.umd.min.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  if (window.FloatingUIDOM == null) {
+    return;
+  }
+  const { autoUpdate, computePosition, flip, offset, shift, size } =
+    window.FloatingUIDOM;
+  const tooltipPlacements = new Set([&quot;top&quot;, &quot;right&quot;, &quot;bottom&quot;, &quot;left&quot;]);
+  const tooltipId = `codex-visualization-tooltip-${
+    window.crypto?.randomUUID?.() ?? Date.now().toString(36)
+  }`;
+  const tooltipGap = 5;
+  const hoverDelay = 700;
+  const skipDelay = 300;
+  let activeTrigger = null;
+  let pendingTrigger = null;
+  let tooltip = null;
+  let openTimeout = null;
+  let autoUpdateCleanup = null;
+  let positionRequest = 0;
+  let skipDelayUntil = 0;
+
+  const getTrigger = (target) =&gt;
+    target?.nodeType === Node.ELEMENT_NODE
+      ? target.closest(&quot;[data-tooltip]&quot;)
+      : null;
+  const containsTarget = (trigger, target) =&gt;
+    target?.nodeType != null &amp;&amp; trigger.contains(target);
+  const getContent = (trigger) =&gt;
+    trigger.getAttribute(&quot;data-tooltip&quot;)?.trim() ?? &quot;&quot;;
+  const getPlacement = (trigger) =&gt; {
+    const placement = trigger.getAttribute(&quot;data-tooltip-placement&quot;);
+    return tooltipPlacements.has(placement) ? placement : &quot;top&quot;;
+  };
+  const getTooltip = () =&gt; {
+    if (tooltip == null) {
+      tooltip = document.createElement(&quot;div&quot;);
+      tooltip.id = tooltipId;
+      tooltip.className = &quot;tooltip&quot;;
+      tooltip.setAttribute(&quot;role&quot;, &quot;tooltip&quot;);
+    }
+    return tooltip;
+  };
+  const setDescribedBy = (trigger, described) =&gt; {
+    const ids = new Set(
+      (trigger.getAttribute(&quot;aria-describedby&quot;) ?? &quot;&quot;)
+        .split(/\s+/)
+        .filter(Boolean),
+    );
+    if (described) {
+      ids.add(tooltipId);
+    } else {
+      ids.delete(tooltipId);
+    }
+    if (ids.size === 0) {
+      trigger.removeAttribute(&quot;aria-describedby&quot;);
+    } else {
+      trigger.setAttribute(&quot;aria-describedby&quot;, [...ids].join(&quot; &quot;));
+    }
+  };
+  const clearOpenTimeout = () =&gt; {
+    if (openTimeout != null) {
+      window.clearTimeout(openTimeout);
+      openTimeout = null;
+    }
+    pendingTrigger = null;
+  };
+  const closeTooltip = (activateSkipDelay = true) =&gt; {
+    clearOpenTimeout();
+    positionRequest += 1;
+    autoUpdateCleanup?.();
+    autoUpdateCleanup = null;
+    if (activeTrigger == null) {
+      return;
+    }
+    setDescribedBy(activeTrigger, false);
+    activeTrigger = null;
+    tooltip?.remove();
+    if (activateSkipDelay) {
+      skipDelayUntil = Date.now() + skipDelay;
+    }
+  };
+  const updatePosition = (trigger, floating) =&gt; {
+    const request = ++positionRequest;
+    void computePosition(trigger, floating, {
+      middleware: [
+        offset(tooltipGap),
+        flip({ padding: tooltipGap }),
+        shift({ padding: tooltipGap }),
+        size({
+          padding: tooltipGap,
+          apply({ availableHeight, availableWidth, elements }) {
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-width&quot;,
+              `${Math.max(0, availableWidth)}px`,
+            );
+            elements.floating.style.setProperty(
+              &quot;--tooltip-available-height&quot;,
+              `${Math.max(0, availableHeight)}px`,
+            );
+          },
+        }),
+      ],
+      placement: getPlacement(trigger),
+      strategy: &quot;fixed&quot;,
+    })
+      .then(({ x, y }) =&gt; {
+        if (activeTrigger !== trigger || request !== positionRequest) {
+          return;
+        }
+        const scale = window.devicePixelRatio || 1;
+        floating.style.transform = `translate(${Math.round(x * scale) / scale}px, ${Math.round(y * scale) / scale}px)`;
+        floating.style.visibility = &quot;visible&quot;;
+      })
+      .catch(() =&gt; {
+        if (activeTrigger === trigger &amp;&amp; request === positionRequest) {
+          closeTooltip(false);
+        }
+      });
+  };
+  const openTooltip = (trigger) =&gt; {
+    const content = getContent(trigger);
+    if (!trigger.isConnected || content.length === 0) {
+      return;
+    }
+    clearOpenTimeout();
+    if (activeTrigger === trigger) {
+      return;
+    }
+    closeTooltip();
+    const floating = getTooltip();
+    floating.textContent = content;
+    floating.style.visibility = &quot;hidden&quot;;
+    floating.style.transform = &quot;translate(0, 0)&quot;;
+    document.body.appendChild(floating);
+    activeTrigger = trigger;
+    setDescribedBy(trigger, true);
+    autoUpdateCleanup = autoUpdate(trigger, floating, () =&gt; {
+      updatePosition(trigger, floating);
+    });
+  };
+  const requestOpen = (trigger, immediate = false) =&gt; {
+    if (
+      getContent(trigger).length === 0 ||
+      activeTrigger === trigger ||
+      pendingTrigger === trigger
+    ) {
+      return;
+    }
+    clearOpenTimeout();
+    pendingTrigger = trigger;
+    const delay =
+      immediate || activeTrigger != null || Date.now() &lt; skipDelayUntil
+        ? 0
+        : hoverDelay;
+    if (delay === 0) {
+      openTooltip(trigger);
+      return;
+    }
+    openTimeout = window.setTimeout(() =&gt; {
+      openTimeout = null;
+      pendingTrigger = null;
+      openTooltip(trigger);
+    }, delay);
+  };
+  const handlePointerOpen = (event) =&gt; {
+    if (event.pointerType === &quot;touch&quot;) {
+      return;
+    }
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    requestOpen(trigger);
+  };
+  const handleLeave = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (trigger == null || containsTarget(trigger, event.relatedTarget)) {
+      return;
+    }
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const handleFocusIn = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (trigger?.matches(&quot;:focus-visible&quot;)) {
+      requestOpen(trigger, true);
+    }
+  };
+  const handleKeyDown = (event) =&gt; {
+    if (event.key === &quot;Escape&quot;) {
+      closeTooltip();
+    }
+  };
+  const handleContextMenu = (event) =&gt; {
+    const trigger = getTrigger(event.target);
+    if (activeTrigger === trigger || pendingTrigger === trigger) {
+      closeTooltip();
+    }
+  };
+  const destroy = () =&gt; {
+    closeTooltip(false);
+    document.removeEventListener(&quot;pointerover&quot;, handlePointerOpen);
+    document.removeEventListener(&quot;pointerout&quot;, handleLeave);
+    document.removeEventListener(&quot;focusin&quot;, handleFocusIn);
+    document.removeEventListener(&quot;focusout&quot;, handleLeave);
+    document.removeEventListener(&quot;keydown&quot;, handleKeyDown);
+    document.removeEventListener(&quot;contextmenu&quot;, handleContextMenu);
+    tooltip = null;
+  };
+
+  document.addEventListener(&quot;pointerover&quot;, handlePointerOpen);
+  document.addEventListener(&quot;pointerout&quot;, handleLeave);
+  document.addEventListener(&quot;focusin&quot;, handleFocusIn);
+  document.addEventListener(&quot;focusout&quot;, handleLeave);
+  document.addEventListener(&quot;keydown&quot;, handleKeyDown);
+  document.addEventListener(&quot;contextmenu&quot;, handleContextMenu);
+  window.addEventListener(&quot;pagehide&quot;, destroy, { once: true });
+})();
+&lt;/script&gt;
+&lt;script id=&quot;codex-visualization-lucide&quot; async src=&quot;https://unpkg.com/lucide@1.17.0/dist/umd/lucide.js&quot;&gt;&lt;/script&gt;
+&lt;script&gt;
+(() =&gt; {
+  const initialize = () =&gt; {
+    globalThis.lucide?.createIcons({ attrs: { width: 16, height: 16 } });
+  };
+  if (globalThis.lucide != null) {
+    initialize();
+    return;
+  }
+  document
+    .getElementById(&quot;codex-visualization-lucide&quot;)
+    ?.addEventListener(&quot;load&quot;, initialize, { once: true });
+})();
+&lt;/script&gt;
+
+&lt;/body&gt;
+&lt;/html&gt;
+"></iframe>
+</body>
+</html>
