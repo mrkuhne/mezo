@@ -26,8 +26,11 @@ import org.springframework.stereotype.Component;
  * them.
  *
  * <p>Idempotence (the {@link AdviceMutationPort} contract) is inherited from {@link
- * SportSlotSkipService#skip} itself treating an existing skip for the same (user, slot identity,
- * date) as a no-op — this adapter adds no additional guard of its own.
+ * SportSlotSkipService#skip}'s own existence check — this adapter adds no additional guard of
+ * its own. That check is authoritative (not merely advisory) specifically because {@link
+ * AdviceApplyService#apply} takes a per-user advisory lock before this adapter is ever reached
+ * (see {@link SportSlotSkipService#skip}'s javadoc for the full argument) — a guarantee this
+ * adapter relies on but does not itself enforce.
  */
 @Component
 @RequiredArgsConstructor

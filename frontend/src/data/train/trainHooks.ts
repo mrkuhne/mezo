@@ -204,6 +204,19 @@ export function currentWeekRange(): { mondayIso: string; sundayIso: string } {
   return { mondayIso, sundayIso: addDays(mondayIso, 6) }
 }
 
+/** Query-key PREFIX for `sportSlotSkips` — exported (not just the full key below) so a
+ *  successful skip_sport_slot apply (`adviceHooks.ts`) can invalidate every cached week's skips
+ *  via react-query's own default prefix matching, without importing `currentWeekRange` itself or
+ *  re-deriving "this week" a second time. */
+export const SPORT_SLOT_SKIPS_QUERY_KEY = ['train', 'sportSlotSkips'] as const
+
+/** The `sportSlotSkips` query's own key — the Monday ISO date is IN the key (not just resolved
+ *  inside the queryFn) so a session left open across a week boundary invalidates into a fresh
+ *  fetch instead of serving last week's cached skips forever. */
+export function sportSlotSkipsQueryKey(): readonly [string, string, string] {
+  return [...SPORT_SLOT_SKIPS_QUERY_KEY, currentWeekRange().mondayIso]
+}
+
 export function mergeEventsIntoSchedule(
   base: SportSchedule | null,
   events: SportEventResponse[],
@@ -571,7 +584,7 @@ export function useTrain(opts?: { workoutDay?: string | null }): TrainData {
   // apply flow yet, so mock mode always answers the empty list — the FE has never had a skip to
   // show there; the real fetch scopes to the same Mon–Sun window `mergeEventsIntoSchedule` uses.
   const { data: sportSlotSkipsData } = useQuery({
-    queryKey: ['train', 'sportSlotSkips'],
+    queryKey: sportSlotSkipsQueryKey(),
     queryFn: mock
       ? async () => [] as SportSlotSkipResponse[]
       : () => {

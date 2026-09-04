@@ -56,6 +56,17 @@ class SportSlotSkipContractIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testListSportSlotSkips_shouldReturn400_whenFromIsAfterTo() {
+        HttpHeaders auth = ownerAuthHeaders();
+
+        String body = getForBody(
+            "/api/train/sport-slot-skips?from=" + FRI + "&to=" + FRI.minusDays(1), auth,
+            HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasRequestError(body, "TRAIN_INVALID_DATE_RANGE");
+    }
+
+    @Test
     void testListSportSlotSkips_shouldNotLeakAnotherUsersSkips() {
         RegisteredUser owner = registerUser("Skip Leak Owner");
         RegisteredUser other = registerUser("Other Skip User");

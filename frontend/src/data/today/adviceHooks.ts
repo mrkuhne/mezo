@@ -1,6 +1,7 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { adviceApi } from '@/data/today/adviceApi'
+import { SPORT_SLOT_SKIPS_QUERY_KEY } from '@/data/train/trainHooks'
 import type { AdviceActionKey } from '@/data/types'
 
 /** Shared with `useCompanionFeed`'s query key prefix (`feedHooks.ts`) — invalidating this
@@ -8,23 +9,51 @@ import type { AdviceActionKey } from '@/data/types'
 const COMPANION_FEED_KEY = ['companionFeed']
 
 /**
+ * Action key -> the EXTRA query keys a successful apply invalidates, beyond the always-invalidated
+ * companion feed below (mezo-d58h.5 review fix). The card's own re-fetch is not enough on its
+ * own: `skip_sport_slot` changes what the week agenda renders (`weekAgenda.ts`'s `skips` filter),
+ * and nothing else was refetching `sportSlotSkips` — the applied card looked done while the
+ * skipped session kept showing on the week agenda until an unrelated navigation happened to
+ * refetch it. Each entry is a PREFIX: react-query's default (non-`exact`) `invalidateQueries`
+ * matches every more-specific cached key underneath it (every week's own `sportSlotSkips` key,
+ * via `SPORT_SLOT_SKIPS_QUERY_KEY`), so this map does not need to know which week is cached.
+ *
+ * One row per action that has FE-cached data beyond the card itself. A future adapter (e.g.
+ * `lighten_tomorrow`, S5's next slice) that similarly affects a query outside the companion feed
+ * adds its own row here instead of re-deriving this mechanism; an action with nothing else to
+ * invalidate simply has no entry (the companion-feed invalidation alone already covers it).
+ */
+const ACTION_INVALIDATES: Partial<Record<AdviceActionKey, readonly QueryKey[]>> = {
+  skip_sport_slot: [SPORT_SLOT_SKIPS_QUERY_KEY],
+}
+
+/**
  * Applies one advice-card action (S5, mezo-d58h.5). Persisted in real mode: on success the
  * companion feed is invalidated so the applied card's own re-fetch carries the server's
  * `applied` stamp — the applied state is driven by that server truth, never local-only state
- * a reload would lose. A no-op in mock mode (`useExperimentActions`'s shape, copied verbatim):
- * the mock companion feed is always `[]`, so there is no advice card to apply anything to.
+ * a reload would lose. Any query the action's own effect touches beyond the card (see
+ * `ACTION_INVALIDATES`) is invalidated in the SAME success handler, unconditionally alongside the
+ * feed — a half-applied skip (card done, week agenda stale) is exactly the bug this closes. A
+ * no-op in mock mode (`useExperimentActions`'s shape, copied verbatim): the mock companion feed
+ * is always `[]`, so there is no advice card to apply anything to, and nothing to invalidate.
  */
 export function useAdviceActions() {
   const queryClient = useQueryClient()
   const mock = isMockMode()
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: COMPANION_FEED_KEY })
 
   const mutation = useMutation({
     mutationFn: async ({ id, actionKey }: { id: string; actionKey: AdviceActionKey }) => {
       if (mock) return
       await adviceApi.apply(id, actionKey)
     },
-    onSuccess: mock ? undefined : invalidate,
+    onSuccess: mock
+      ? undefined
+      : (_data, { actionKey }) => {
+          queryClient.invalidateQueries({ queryKey: COMPANION_FEED_KEY })
+          for (const queryKey of ACTION_INVALIDATES[actionKey] ?? []) {
+            queryClient.invalidateQueries({ queryKey: [...queryKey] })
+          }
+        },
   })
 
   return {

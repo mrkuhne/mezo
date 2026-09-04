@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.train.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -14,6 +15,7 @@ import io.mrkuhne.mezo.api.dto.SportSlotSkipResponse;
 import io.mrkuhne.mezo.feature.train.entity.SportSlotSkipEntity;
 import io.mrkuhne.mezo.feature.train.repository.SportSlotSkipRepository;
 import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService.SkipKey;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
@@ -141,5 +143,14 @@ class SportSlotSkipServiceTest {
             .thenReturn(List.of());
 
         assertThat(service.listResponses(USER, DATE, DATE.plusDays(7))).isEmpty();
+    }
+
+    @Test
+    void testListResponses_shouldReject_whenFromIsAfterTo() {
+        assertThatThrownBy(() -> service.listResponses(USER, DATE, DATE.minusDays(1)))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .satisfies(ex -> assertThat(((SystemRuntimeErrorException) ex).getMessages())
+                .extracting(m -> m.getCode())
+                .containsExactly("TRAIN_INVALID_DATE_RANGE"));
     }
 }
