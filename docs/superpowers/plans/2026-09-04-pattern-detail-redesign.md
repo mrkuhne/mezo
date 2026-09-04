@@ -453,17 +453,17 @@ export function groupedEvidence(days: AlignedDay[], requiredPerGroup: number): {
 }
 ```
 
-- [ ] RED: add pure `patternEvidence.test.ts` cases using the exact nine prototype values. Assert:
+- [x] RED: add pure `patternEvidence.test.ts` cases using the exact nine prototype values. Assert:
   zero count `8`, median `19:38` after formatting, range `10:07–23:43`; one count `1`, no median;
   latest date `2026-09-03` belongs to the zero group. Add a balanced 3+3 case where both medians
   exist.
 
-- [ ] RED: add component assertions to `PatternEvidenceChart.test.tsx`: binary value kind renders
+- [x] RED: add component assertions to `PatternEvidenceChart.test.tsx`: binary value kind renders
   `Hétköznap`, `Hétvége`, `24:00`, `18:00`, `12:00`, an accessible „legutóbbi nap” marker and no
   `trendvonal`; number value kind renders formatted X/Y tick labels, and a non-live number pair
   renders no trendline.
 
-- [ ] RED: rewrite the 8+1 real-mode fixture in `PatternDetailPage.test.tsx` to assert:
+- [x] RED: rewrite the 8+1 real-mode fixture in `PatternDetailPage.test.tsx` to assert:
 
   ```ts
   expect(await screen.findByText('Még nincs elég hétvégi adat.')).toBeInTheDocument()
@@ -477,7 +477,7 @@ export function groupedEvidence(days: AlignedDay[], requiredPerGroup: number): {
   Keep explicit pending/error/404 coverage and add live-strong, live-weak, monitoring, confirmed
   and rejected hero cases from the state matrix.
 
-- [ ] Run the focused UI suite in both modes and observe RED before implementation:
+- [x] Run the focused UI suite in both modes and observe RED before implementation:
 
   ```bash
   cd frontend
@@ -489,12 +489,12 @@ export function groupedEvidence(days: AlignedDay[], requiredPerGroup: number): {
     src/features/insights/pages/PatternDetailPage.test.tsx
   ```
 
-- [ ] GREEN: implement `patternEvidence.ts` as pure data transforms. Median uses sorted values;
+- [x] GREEN: implement `patternEvidence.ts` as pure data transforms. Median uses sorted values;
   a group summary sets `median: null` until `values.length >= requiredPerGroup`. Axis ticks are
   derived from observed min/max, but clock-hour charts expand to readable whole-hour bounds and
   always label with `formatMetricValue`.
 
-- [ ] Implement `PatternEvidenceChart`:
+- [x] Implement `PatternEvidenceChart`:
 
   - branch on `pair.metricAValueKind`, never a metric-key allowlist;
   - binary branch: two softly colored plot columns, jittered points, four horizontal grid lines,
@@ -503,13 +503,13 @@ export function groupedEvidence(days: AlignedDay[], requiredPerGroup: number): {
   - render the dashed regression line only when `pair.verdict === 'live'`;
   - retain an accessible `role="img"` label describing the pair and number of days.
 
-- [ ] Implement `PatternDetailHero` from the state table. For `imbalanced_groups`, use the exact
+- [x] Implement `PatternDetailHero` from the state table. For `imbalanced_groups`, use the exact
   approved copy, a `groupOneDays / requiredPerGroup` progress bar for the deficient group, and no
   action buttons even when a stale proposed `pattern` row exists. For live proposed patterns,
   show decision actions only when `isStrongSignal(pair.r, pair.p)`; judged states are read-only
   summaries.
 
-- [ ] Recompose `PatternDetailPage` in the prototype order. Use semantic sections and
+- [x] Recompose `PatternDetailPage` in the prototype order. Use semantic sections and
   `<details>`/buttons for the two folds. The comparison cards read from `days`; the story tiles
   read from pair verdict + group summary; `PatternImpactCard` renders only when there is a pattern
   or non-empty impact. Replace `Motor-diagnosztika` with the four-cell „Hogyan számoltuk?” block
@@ -517,19 +517,19 @@ export function groupedEvidence(days: AlignedDay[], requiredPerGroup: number): {
   `pair.r/n/p`; a non-live pair's persisted `pattern.r/n/p` may appear only inside that nested
   disclosure under „Korábbi nyers számítás — még a csoportkapu előtt”.
 
-- [ ] Simplify `journalEntries`: first snapshot becomes „Először számolhatóvá vált — N közös
+- [x] Simplify `journalEntries`: first snapshot becomes „Először számolhatóvá vált — N közös
   nap”; remove strength-band crossings; retain user decisions, promotion link and reinforcement;
   append a „Most” group-progress row for `imbalanced_groups`. The `PatternStrengthChart` remains
   available only in valid live/frozen history; it is not rendered for a non-live pair.
 
-- [ ] Port the approved prototype styling into `prototype.css` under a collision-safe `pdt-`
+- [x] Port the approved prototype styling into `prototype.css` under a collision-safe `pdt-`
   prefix, replacing fixed hexes with existing `--mz-*`, `--dv-*`, surface and text tokens where a
   token exists. Add dark-theme-safe colors and the required `prefers-reduced-motion` override.
 
-- [ ] Update dashboard/page assertions affected by the new deterministic copy. Do not weaken the
+- [x] Update dashboard/page assertions affected by the new deterministic copy. Do not weaken the
   lifecycle guard: an `imbalanced_groups` proposed row must still bucket into `gathering`.
 
-- [ ] Run focused suites and the complete frontend gates:
+- [x] Run focused suites and the complete frontend gates:
 
   ```bash
   cd frontend
@@ -548,11 +548,11 @@ export function groupedEvidence(days: AlignedDay[], requiredPerGroup: number): {
   pnpm build
   ```
 
-- [ ] Start the app in mock mode and perform Browser visual QA at a mobile viewport against the
+- [x] Start the app in mock mode and perform Browser visual QA at a mobile viewport against the
   approved prototype: hero hierarchy, 8+1 cards, chart scale, latest ring, fold interactions,
   dark theme, reduced-motion emulation where available, and zero console errors.
 
-- [ ] Commit:
+- [x] Commit:
 
   ```bash
   git add frontend/src/features/insights frontend/src/styles/prototype.css

@@ -395,11 +395,11 @@ const weekendDetail: PatternPairDetail = {
   events: [],
   days: [
     { date: '2026-08-24', a: 0, b: 23.6333 },
-    { date: '2026-08-25', a: 0, b: 21.35 },
+    { date: '2026-08-25', a: 0, b: 21.3333 },
     { date: '2026-08-26', a: 0, b: 23.7167 },
     { date: '2026-08-27', a: 0, b: 12.85 },
     { date: '2026-08-29', a: 1, b: 14.5833 },
-    { date: '2026-08-31', a: 0, b: 17.95 },
+    { date: '2026-08-31', a: 0, b: 17.9333 },
     { date: '2026-09-01', a: 0, b: 17.0333 },
     { date: '2026-09-02', a: 0, b: 22.2667 },
     { date: '2026-09-03', a: 0, b: 10.1167 },
@@ -411,7 +411,10 @@ const weekendDetail: PatternPairDetail = {
  *  (r -0.18 → -0.58, jún 3 → aug 13), megerősítve + promotálva júl 12-én, kétszer
  *  megerősödve (júl 30 ×2, aug 13 ×4), ~24 illesztett nap negatív trenden. */
 const showcaseDetail: PatternPairDetail = {
-  pair: patternMonitor.pairs.find((p) => p.key === SHOWCASE_PAIR_KEY)!,
+  pair: {
+    ...patternMonitor.pairs.find((p) => p.key === SHOWCASE_PAIR_KEY)!,
+    verdict: 'frozen', status: 'confirmed', alignedDays: 32, r: -0.58, n: 32, p: 0.001,
+  },
   pattern: {
     id: 'pattern-showcase-1',
     pairKey: SHOWCASE_PAIR_KEY,
