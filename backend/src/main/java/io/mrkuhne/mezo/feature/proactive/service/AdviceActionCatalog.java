@@ -34,6 +34,7 @@ public class AdviceActionCatalog {
     public static final int MAX_ACTIONS_PER_CARD = 2;
 
     private static final String SHIFT_SLEEP_ANCHOR_LABEL = "Horgony −30 perc";
+    private static final String LIGHTEN_TOMORROW_LABEL = "Holnap könnyebb legyen";
 
     private final SleepGoalRepository sleepGoalRepository;
 
@@ -60,21 +61,42 @@ public class AdviceActionCatalog {
     /** The actions offered on a card raised for {@code adviceKey}, for {@code userId}. Never
      *  exceeds {@link #MAX_ACTIONS_PER_CARD}. */
     public List<Action> forCard(UUID userId, String adviceKey) {
-        if (FlagKey.SLEEP_DEBT.equals(adviceKey)) {
-            if (!registeredActionKeys.contains(AdviceActionKey.SHIFT_SLEEP_ANCHOR)) {
-                return List.of();
-            }
-            // Read the REPOSITORY, never SleepGoalService/SleepAnchorResolver: both fall back to
-            // a config-default ghost, so the missing-row condition is invisible through them (the
-            // same trap SetupCheckService.runFor documents and avoids). Card 4 (missing_sleep_goal)
-            // is the prerequisite for ever offering a shift here — with no row there is nothing to
-            // shift.
-            if (sleepGoalRepository.findByCreatedByAndDeletedFalse(userId).isEmpty()) {
-                return List.of();
-            }
-            return List.of(new Action(AdviceActionKey.SHIFT_SLEEP_ANCHOR, SHIFT_SLEEP_ANCHOR_LABEL,
-                Map.of("minutes", -30)));
+        if (FlagKey.SLEEP_DEBT.equals(adviceKey) || FlagKey.IGNORED_NUDGE.equals(adviceKey)) {
+            return shiftSleepAnchorOffer(userId);
+        }
+        if (FlagKey.JOINT_OVERUSE.equals(adviceKey)) {
+            return lightenTomorrowOffer();
         }
         return List.of();
+    }
+
+    /** Shared by {@code sleep_debt} (S5) and {@code ignored_nudge} (S6, mezo-d58h.6) — both cards
+     *  offer the same anchor shift. {@code ignored_nudge}'s own rule gate happens to guarantee a
+     *  sleep-goal row exists before it can ever raise, but this offer must not lean on that: the
+     *  precondition is re-checked here so the invariant holds locally rather than depending on a
+     *  rule three files away. */
+    private List<Action> shiftSleepAnchorOffer(UUID userId) {
+        if (!registeredActionKeys.contains(AdviceActionKey.SHIFT_SLEEP_ANCHOR)) {
+            return List.of();
+        }
+        // Read the REPOSITORY, never SleepGoalService/SleepAnchorResolver: both fall back to
+        // a config-default ghost, so the missing-row condition is invisible through them (the
+        // same trap SetupCheckService.runFor documents and avoids). Card 4 (missing_sleep_goal)
+        // is the prerequisite for ever offering a shift here — with no row there is nothing to
+        // shift.
+        if (sleepGoalRepository.findByCreatedByAndDeletedFalse(userId).isEmpty()) {
+            return List.of();
+        }
+        return List.of(new Action(AdviceActionKey.SHIFT_SLEEP_ANCHOR, SHIFT_SLEEP_ANCHOR_LABEL,
+            Map.of("minutes", -30)));
+    }
+
+    /** {@code joint_overuse}'s round-2 offer (S6, mezo-d58h.6, spec §6 item 1). */
+    private List<Action> lightenTomorrowOffer() {
+        if (!registeredActionKeys.contains(AdviceActionKey.LIGHTEN_TOMORROW)) {
+            return List.of();
+        }
+        return List.of(new Action(AdviceActionKey.LIGHTEN_TOMORROW, LIGHTEN_TOMORROW_LABEL,
+            Map.of("delta", -1)));
     }
 }

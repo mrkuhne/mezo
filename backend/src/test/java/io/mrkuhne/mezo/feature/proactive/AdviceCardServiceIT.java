@@ -98,6 +98,48 @@ class AdviceCardServiceIT extends AbstractIntegrationTest {
         assertThat(card.orElseThrow().getContent().actions()).isEmpty();
     }
 
+    /** S6 (bd mezo-d58h.6): the delivered {@code joint_overuse} card carries the {@code
+     *  lighten_tomorrow} action, and specifically NOT {@code shift_sleep_anchor} — the
+     *  cross-check that catches a copy-paste mapping error in the catalog. */
+    @Test
+    void testDeliver_shouldOfferLightenTomorrow_whenJointOveruse() {
+        UUID owner = userPopulator.createUser().getId();
+
+        Optional<CompanionMessageEntity> card = adviceCardService.deliver(owner, flag(FlagKey.JOINT_OVERUSE));
+
+        assertThat(card).isPresent();
+        assertThat(card.orElseThrow().getContent().actions()).hasSize(1);
+        assertThat(card.orElseThrow().getContent().actions().get(0).key())
+            .isEqualTo(io.mrkuhne.mezo.feature.proactive.entity.AdviceActionKey.LIGHTEN_TOMORROW);
+    }
+
+    /** S6: the delivered {@code ignored_nudge} card carries {@code shift_sleep_anchor} when a
+     *  sleep-goal row exists, and specifically NOT {@code lighten_tomorrow}. */
+    @Test
+    void testDeliver_shouldOfferShiftSleepAnchor_whenIgnoredNudgeAndGoalRowExists() {
+        UUID owner = userPopulator.createUser().getId();
+        sleepGoalPopulator.goal(owner);
+
+        Optional<CompanionMessageEntity> card = adviceCardService.deliver(owner, flag(FlagKey.IGNORED_NUDGE));
+
+        assertThat(card).isPresent();
+        assertThat(card.orElseThrow().getContent().actions()).hasSize(1);
+        assertThat(card.orElseThrow().getContent().actions().get(0).key())
+            .isEqualTo(io.mrkuhne.mezo.feature.proactive.entity.AdviceActionKey.SHIFT_SLEEP_ANCHOR);
+    }
+
+    /** S6: the catalog must not assume {@code ignored_nudge}'s rule gate guarantees a goal row —
+     *  it re-checks the repository itself, so the offer is absent without one. */
+    @Test
+    void testDeliver_shouldOfferNoActions_whenIgnoredNudgeAndNoGoalRow() {
+        UUID owner = userPopulator.createUser().getId();
+
+        Optional<CompanionMessageEntity> card = adviceCardService.deliver(owner, flag(FlagKey.IGNORED_NUDGE));
+
+        assertThat(card).isPresent();
+        assertThat(card.orElseThrow().getContent().actions()).isEmpty();
+    }
+
     /** Equal rank never churns the card — a re-raise of the same flag must leave the row (and its
      *  „Segített?" votes) exactly where they are. */
     @Test
