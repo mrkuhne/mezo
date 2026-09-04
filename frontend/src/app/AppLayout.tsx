@@ -39,6 +39,20 @@ export function AppLayout() {
   // műveletek). A shell-fejléc ugyanitt ugyanazt a Mezo-identitást rajzolta ki még egyszer,
   // ezért ezen az egy route-on csak a chat saját fejléce marad.
   const hideHeader = hideChrome || location.pathname === '/mezo/chat'
+  // A képernyő-részfa egyszer, hogy a fenti kapu ne duplikálja a JSX-et (mezo-eekm).
+  const screen = (
+    <ScreenContent>
+      {/* A fejléc a shellé, nem az oldalaké (mezo-atry): egy példány, minden oldalon
+          ugyanaz. A scrollerben ÜL, de kitapad (mezo-8az6, position: sticky) — a tartalom
+          görög alatta, ő maga a görgetőport tetején marad. */}
+      {!hideHeader && <AppHeader />}
+      {/* Tab-level boundary: a crashed page degrades to a fallback card; the chrome
+          (TabBar) stays usable and navigating away (resetKey) recovers. */}
+      <ErrorBoundary resetKey={location.pathname}>
+        <Outlet />
+      </ErrorBoundary>
+    </ScreenContent>
+  )
   return (
     <>
       <CircadianTheme />
@@ -54,20 +68,12 @@ export function AppLayout() {
               {/* A mezo-szál EGY példánya a fejlécnek és az /nap/uzenetek oldalnak (mezo-atry):
                   a fejléc az Outlet ELŐTTI testvér, tehát a két fogyasztó csak közös
                   ősként osztozhat a szálon — így az olvasatlan-vízjel is közös. */}
-              <MezoThreadProvider>
-                <ScreenContent>
-                  {/* A fejléc a shellé, nem az oldalaké (mezo-atry): egy példány, minden
-                      oldalon ugyanaz. A scrollerben ÜL, de mostantól kitapad (mezo-8az6,
-                      position: sticky) — a tartalom görög alatta, ő maga a görgetőport
-                      tetején marad. */}
-                  {!hideHeader && <AppHeader />}
-                  {/* Tab-level boundary: a crashed page degrades to a fallback card; the chrome
-                      (TabBar) stays usable and navigating away (resetKey) recovers. */}
-                  <ErrorBoundary resetKey={location.pathname}>
-                    <Outlet />
-                  </ErrorBoundary>
-                </ScreenContent>
-              </MezoThreadProvider>
+              {/* mezo-eekm: a szál-provider a hideChrome kapun BELÜL. A három chrome-mentes
+                  útvonalon nincs fejléc és nincs TabBar, tehát a szálnak nincs fogyasztója —
+                  a provider ~15 `useNeeds`-olvasása ott tiszta pazarlás volt. A provider
+                  EGYÜTTES őse marad a fejlécnek és az Outlet-nek (mezo-atry), csak épp már
+                  nem mountol ott, ahol egyik sincs. */}
+              {hideChrome ? screen : <MezoThreadProvider>{screen}</MezoThreadProvider>}
             </TutorialProvider>
             {!hideChrome && <TabBar />}
             {/* Decision B (mezo-d20.1.1): quick log = floating coral FAB, present on
