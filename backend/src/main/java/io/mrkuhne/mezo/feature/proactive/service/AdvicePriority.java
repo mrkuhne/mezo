@@ -22,25 +22,24 @@ import lombok.extern.slf4j.Slf4j;
 public final class AdvicePriority {
 
     /**
-     * Highest severity first. The six S6 keys are string LITERALS on purpose: they are not
-     * {@link FlagKey} constants yet, and adding constants there without widening the
-     * {@code ck_companion_flag_log_flag_key} CHECK and the two mirroring {@code @Pattern} regexes
-     * would be a trap (bd memory: adding-a-flagkey-needs-five-mirrored-changes). S6 replaces them
-     * with constants in the same change that adds the flags.
+     * Highest severity first. The six S6 keys are {@link FlagKey} constants (bd mezo-d58h.6):
+     * the constants, the {@code ck_companion_flag_log_flag_key} CHECK and the two mirroring
+     * {@code @Pattern} regexes all widened in the same change (bd memory:
+     * adding-a-flagkey-needs-five-mirrored-changes).
      *
      * <p>The round-0 tail order (recovery → stress → momentum → all_healthy) is a plan decision:
      * the spec only ranks them collectively, below the setup cards.
      */
     public static final List<String> ORDER = List.of(
-        "acute_bad_day",            // S6
-        "load_fuel_mismatch",       // S6
-        "rapid_weight_loss",        // S6
-        "joint_overuse",            // S6
+        FlagKey.ACUTE_BAD_DAY,
+        FlagKey.LOAD_FUEL_MISMATCH,
+        FlagKey.RAPID_WEIGHT_LOSS,
+        FlagKey.JOINT_OVERUSE,
         FlagKey.MISSED_WORKOUTS,
         FlagKey.SLEEP_DEBT,
         FlagKey.LOGGING_GAP,
-        "ignored_nudge",            // S6
-        "late_eating",              // S6
+        FlagKey.IGNORED_NUDGE,
+        FlagKey.LATE_EATING,
         SetupCheckService.CHECK_MISSING_SLEEP_GOAL,
         SetupCheckService.CHECK_PLAN_FEASIBILITY,
         FlagKey.RECOVERY_NEEDED,

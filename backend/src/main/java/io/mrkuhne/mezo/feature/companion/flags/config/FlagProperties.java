@@ -122,7 +122,13 @@ public record FlagProperties(
         @Min(1) @Max(8760) int recoveryNeeded,
         @Min(1) @Max(8760) int allHealthy,
         @Min(1) @Max(8760) int loggingGap,
-        @Min(1) @Max(8760) int missedWorkouts
+        @Min(1) @Max(8760) int missedWorkouts,
+        @Min(1) @Max(8760) int acuteBadDay,
+        @Min(1) @Max(8760) int loadFuelMismatch,
+        @Min(1) @Max(8760) int rapidWeightLoss,
+        @Min(1) @Max(8760) int jointOveruse,
+        @Min(1) @Max(8760) int ignoredNudge,
+        @Min(1) @Max(8760) int lateEating
     ) {
 
         /** The cooldown for {@code flagKey} — keeps the switch out of the service. */
@@ -135,6 +141,12 @@ public record FlagProperties(
                 case "all_healthy" -> allHealthy;
                 case "logging_gap" -> loggingGap;
                 case "missed_workouts" -> missedWorkouts;
+                case "acute_bad_day" -> acuteBadDay;
+                case "load_fuel_mismatch" -> loadFuelMismatch;
+                case "rapid_weight_loss" -> rapidWeightLoss;
+                case "joint_overuse" -> jointOveruse;
+                case "ignored_nudge" -> ignoredNudge;
+                case "late_eating" -> lateEating;
                 default -> throw new SystemRuntimeErrorException(
                     SystemMessage.error("COMPANION_FLAG_UNKNOWN_KEY").params(List.of(flagKey)).build());
             };

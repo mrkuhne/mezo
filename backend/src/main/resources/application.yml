@@ -789,6 +789,16 @@ mezo:
         # 48h per spec §4 row 1 — long enough that a gap card does not repeat daily.
         logging-gap: 48
         missed-workouts: 48
+        # S6 batch B (bd mezo-d58h.6, spec 2026-09-03 §4): keys/mirrors only in this slice, no
+        # thresholds yet. 48h for same-day/acute signals (acute_bad_day, late_eating), 72h for the
+        # slower trend-window signals (load_fuel_mismatch, rapid_weight_loss, joint_overuse,
+        # ignored_nudge) — the spec states no explicit cooldown for these six.
+        acute-bad-day: 48
+        load-fuel-mismatch: 72
+        rapid-weight-loss: 72
+        joint-overuse: 72
+        ignored-nudge: 72
+        late-eating: 48
     # W5.2 (bd mezo-b3pp.19, spec §9.2): the intervention library — config, not DB. Selection per
     # raised flag: highest W4.2 effectiveness (feedback_rollup intervention:<key>), unseen keys
     # optimistic; per-key cooldown-hours below; ONE card per day (first raise wins). channel:
