@@ -7,6 +7,9 @@ export type GoalUpsertRequest = components['schemas']['GoalUpsertRequest']
 export type FeasibilityPreviewRequest = components['schemas']['FeasibilityPreviewRequest']
 export type FeasibilityPreviewResponse = components['schemas']['FeasibilityPreviewResponse']
 export type GoalSuggestionResponse = components['schemas']['GoalSuggestionResponse']
+export type GoalSuggestionAcceptRequest = components['schemas']['GoalSuggestionAcceptRequest']
+export type GoalSuggestionPreviewResponse = components['schemas']['GoalSuggestionPreviewResponse']
+export type GoalOverviewResponse = components['schemas']['GoalOverviewResponse']
 
 // toRequest mapper — rebuild a full GoalUpsertRequest from a persisted
 // GoalResponse so a partial edit (the meal cadence) can PUT the whole contract
@@ -37,6 +40,8 @@ export function goalResponseToUpsert(
 export const goalApi = {
   list: (): Promise<GoalResponse[]> => apiFetch<GoalResponse[]>('/api/goals'),
   get: (id: string): Promise<GoalResponse> => apiFetch<GoalResponse>(`/api/goals/${id}`),
+  overview: (id: string): Promise<GoalOverviewResponse> =>
+    apiFetch<GoalOverviewResponse>(`/api/goals/${id}/overview`),
   create: (body: GoalUpsertRequest): Promise<GoalResponse> =>
     apiFetch<GoalResponse>('/api/goals', { method: 'POST', body: JSON.stringify(body satisfies GoalUpsertRequest) }),
   update: (id: string, body: GoalUpsertRequest): Promise<GoalResponse> =>
@@ -63,8 +68,15 @@ export const goalApi = {
   // the owner decides. accept returns the updated goal (trajectory/override applied + re-evaluated).
   suggestions: (id: string): Promise<GoalSuggestionResponse[]> =>
     apiFetch<GoalSuggestionResponse[]>(`/api/goals/${id}/suggestions`),
-  acceptSuggestion: (id: string, suggestionId: string): Promise<GoalResponse> =>
-    apiFetch<GoalResponse>(`/api/goals/${id}/suggestions/${suggestionId}/accept`, { method: 'POST' }),
+  previewSuggestion: (id: string, suggestionId: string): Promise<GoalSuggestionPreviewResponse> =>
+    apiFetch<GoalSuggestionPreviewResponse>(`/api/goals/${id}/suggestions/${suggestionId}/preview`),
+  acceptSuggestion: (id: string, suggestionId: string, previewFingerprint: string): Promise<GoalResponse> => {
+    const body = { previewFingerprint } satisfies GoalSuggestionAcceptRequest
+    return apiFetch<GoalResponse>(`/api/goals/${id}/suggestions/${suggestionId}/accept`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    })
+  },
   dismissSuggestion: (id: string, suggestionId: string): Promise<void> =>
     apiFetch<void>(`/api/goals/${id}/suggestions/${suggestionId}/dismiss`, { method: 'POST' }),
 }

@@ -26,6 +26,33 @@ const PHONE_VIEWPORTS = [
 ]
 
 for (const vp of PHONE_VIEWPORTS) {
+  test(`Fuel settings page stays horizontally contained and fully reachable @ ${vp.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: vp.width, height: vp.height })
+    await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+    await page.goto('/fuel/settings')
+    await page.waitForLoadState('networkidle')
+    await page.evaluate(() => document.fonts.ready)
+
+    const overflow = await page.locator('.fset-page').evaluate((element) => ({
+      scrollWidth: element.scrollWidth,
+      clientWidth: element.clientWidth,
+    }))
+    expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth + 1)
+
+    const slots = page.getByRole('button', { name: 'Étkezési ablakok szerkesztése' })
+    const save = page.getByRole('button', { name: 'Mentés' })
+    await slots.scrollIntoViewIfNeeded()
+    await expect(slots).toBeVisible()
+    await expect(save).toBeVisible()
+
+    const spacing = await page.evaluate(() => {
+      const slotsRect = document.querySelector('.fset-slots')!.getBoundingClientRect()
+      const saveRect = document.querySelector('.fset-savebar')!.getBoundingClientRect()
+      return { slotsBottom: Math.round(slotsRect.bottom), saveTop: Math.round(saveRect.top) }
+    })
+    expect(spacing.slotsBottom).toBeLessThanOrEqual(spacing.saveTop)
+  })
+
   test(`fuel · the Logolás hero tile and the /fuel/log blocks are reachable, never clipped @ ${vp.name}`, async ({ page }) => {
     // mezo-byo1: the horizontal window swimlane dissolved — the hub carries ONE Logolás
     // hero tile and the whole day's logging lives on /fuel/log as VERTICALLY stacked
@@ -160,11 +187,11 @@ test("today's day view is fully reachable @ iphone-15-pro", async ({ page }) => 
 test('header · kitapad, kompakt magasság és a lap-chrome offsetje (mezo-8az6)', async ({ page }) => {
   // Spec §5 (docs/superpowers/specs/2026-09-03-header-aurora-design.md) ígérte ezt a
   // regressziós tesztet: a shell-fejléc (`.app-head`) kitapad a görgetőport (`.screen-content`)
-  // tetejéhez és a küszöb (14px) fölött kompakt magasságra (--mzh-head-cond-h: 44px) húzódik;
+  // tetejéhez és a küszöb (14px) fölött kompakt magasságra (--mzh-head-cond-h: 46px) húzódik;
   // a lap saját sticky chrome-ja (`.sticky-top`) ehhez képest tapad ki, sosem csúszhat a
   // fejléc alá; a fejléc nélküli oldalakon (AppLayout.tsx hideChrome) viszont nincs mi alá
   // tapadni, ott a `.sticky-top`-nak a görgetőport tetejéhez KELL tapadnia (top ≈ 0), nem
-  // 44px-cel lejjebb.
+  // 46px-cel lejjebb.
   // /fuel (not /nap): the Nap hub's panel exactly fills a 393×852 viewport with no
   // overflow, so `.screen-content` cannot be scrolled there — /fuel's longer hub
   // reliably overflows, which the condensed-header transition needs to trigger.
@@ -201,7 +228,7 @@ test('header · kitapad, kompakt magasság és a lap-chrome offsetje (mezo-8az6)
     }
   })
   expect(withHead.headTop, 'a kompakt fejléc a görgetőport tetejéhez tapad').toBe(0)
-  expect(withHead.headHeight, 'a kompakt fejléc magassága a --mzh-head-cond-h token (44px)').toBe(44)
+  expect(withHead.headHeight, 'a kompakt fejléc magassága a --mzh-head-cond-h token (46px)').toBe(46)
   if (withHead.stickyTopBelowHead !== null) {
     expect(
       withHead.stickyTopBelowHead,
@@ -210,7 +237,7 @@ test('header · kitapad, kompakt magasság és a lap-chrome offsetje (mezo-8az6)
   }
 
   // Chrome nélküli oldal: nincs .app-head, a .sticky-top a görgetőport tetejéhez tapad,
-  // NEM 44px-cel lejjebb (az 1. finding regressziója: üres sáv a lap tetején).
+  // NEM 46px-cel lejjebb (az 1. finding regressziója: üres sáv a lap tetején).
   await page.goto('/train/session')
   await page.waitForLoadState('networkidle')
   await page.evaluate(() => document.fonts.ready)
@@ -246,3 +273,61 @@ test('fuel · a Kamra-picker sorai sok találatnál sem lapulnak össze', async 
   // A healthy row is ~114px; the squash bug collapsed every row to ~20px.
   expect(Math.min(...heights)).toBeGreaterThan(60)
 })
+
+for (const width of [320, 390, 430]) {
+  test(`Stack hub stays contained and reachable @ ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 820 })
+    await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+    await page.goto('/fuel/stack')
+    await page.waitForLoadState('networkidle')
+    await page.evaluate(() => document.fonts.ready)
+
+    const scroller = page.locator('.screen-content')
+    const size = await scroller.evaluate(element => ({
+      scrollWidth: element.scrollWidth, clientWidth: element.clientWidth,
+    }))
+    expect(size.scrollWidth).toBeLessThanOrEqual(size.clientWidth + 1)
+
+    for (const name of ['Teljes protokoll', 'Mai ritmus', 'Étkezéshez', 'Kezelés']) {
+      await expect(page.getByRole('button', { name })).toBeVisible()
+    }
+    const lastTile = page.locator('.stk-hub-mosaic .mz-tile').last()
+    await lastTile.scrollIntoViewIfNeeded()
+    await expect(lastTile).toBeVisible()
+
+    const check = page.locator('.stk-hub-check')
+    const box = await check.boundingBox()
+    expect(box?.width ?? 0).toBeGreaterThanOrEqual(44)
+    expect(box?.height ?? 0).toBeGreaterThanOrEqual(44)
+  })
+}
+
+const STACK_DEPTH: Array<[string, string]> = [
+  ['/fuel/stack/protocol', '.stk-protocol-zone:last-child'],
+  ['/fuel/stack/today', '.stk-timeline-slot:last-child'],
+  ['/fuel/stack/meals', '.stk-detail-body .card:last-child'],
+  ['/fuel/stack/manage', '.stk-manage-card:last-child'],
+]
+
+for (const [path, lastSelector] of STACK_DEPTH) {
+  test(`Stack page last card stays above shell chrome · ${path}`, async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 820 })
+    await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+    await page.goto(path)
+    await page.waitForLoadState('networkidle')
+    await page.evaluate(() => document.fonts.ready)
+
+    const last = page.locator(lastSelector).last()
+    await last.scrollIntoViewIfNeeded()
+    await expect(last).toBeVisible()
+    const reachable = await last.evaluate(element => {
+      const scroller = document.querySelector('.screen-content')!.getBoundingClientRect()
+      const tabbar = document.querySelector('.tab-bar')?.getBoundingClientRect()
+      const card = element.getBoundingClientRect()
+      const visibleBottom = Math.min(scroller.bottom, tabbar?.top ?? scroller.bottom)
+      return { top: card.top, bottom: card.bottom, viewportTop: scroller.top, visibleBottom }
+    })
+    expect(reachable.top).toBeGreaterThanOrEqual(reachable.viewportTop - 1)
+    expect(reachable.bottom).toBeLessThanOrEqual(reachable.visibleBottom + 1)
+  })
+}

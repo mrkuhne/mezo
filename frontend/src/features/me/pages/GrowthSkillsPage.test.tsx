@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, expect, test, vi } from 'vitest'
 import { MemoryRouter } from 'react-router-dom'
 import { GrowthSkillsPage } from '@/features/me/pages/GrowthSkillsPage'
@@ -37,6 +37,12 @@ test('ghost profile: stat cells show — and no bands', () => {
   const { container } = renderPage()
   expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(3)
   expect(container.querySelectorAll('.gr-band')).toHaveLength(0)
+})
+
+test('a skill-sor goalchipet kap, ha aktív cél pillére rá mutat (mezo-iizd.12)', async () => {
+  renderPage()
+  await screen.findByText('LIFE')
+  await waitFor(() => expect(document.querySelectorAll('.lg-goalchip').length).toBeGreaterThan(0))
 })
 
 test('an unknown LIFE skillKey falls back to a two-letter icon cell, never an emoji', () => {

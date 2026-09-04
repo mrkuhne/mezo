@@ -1,13 +1,13 @@
 import type { MetricDomain, PatternGateVerdict, PatternMonitorPair } from '@/data/types'
 
 /** A Motor tab domén-szekcióinak megjelenítési metaadatai (mezo-18bx) — tokenek, sosem hex. */
-export const DOMAIN_META: Record<MetricDomain, { label: string; icon: string; rail: string; tint: string }> = {
-  sleep: { label: 'Alvás', icon: '🌙', rail: 'var(--lav)', tint: 'var(--wash-lav)' },
-  train: { label: 'Edzés', icon: '🏋️', rail: 'var(--primary-base)', tint: 'var(--primary-bg)' },
-  fuel: { label: 'Táplálkozás', icon: '🥗', rail: 'var(--success-base)', tint: 'var(--success-bg)' },
-  mind: { label: 'Mentális & társas', icon: '🧠', rail: 'var(--accent-base)', tint: 'var(--accent-bg)' },
-  body: { label: 'Test', icon: '⚖️', rail: 'var(--secondary-soft)', tint: 'var(--secondary-bg)' },
-  other: { label: 'Egyéb', icon: '📅', rail: 'var(--text-muted)', tint: 'var(--surface-recess)' },
+export const DOMAIN_META: Record<MetricDomain, { label: string; rail: string; tint: string }> = {
+  sleep: { label: 'Alvás', rail: 'var(--lav)', tint: 'var(--wash-lav)' },
+  train: { label: 'Edzés', rail: 'var(--primary-base)', tint: 'var(--primary-bg)' },
+  fuel: { label: 'Táplálkozás', rail: 'var(--success-base)', tint: 'var(--success-bg)' },
+  mind: { label: 'Mentális & társas', rail: 'var(--accent-base)', tint: 'var(--accent-bg)' },
+  body: { label: 'Test', rail: 'var(--secondary-soft)', tint: 'var(--secondary-bg)' },
+  other: { label: 'Egyéb', rail: 'var(--text-muted)', tint: 'var(--surface-recess)' },
 }
 
 export const DOMAIN_ORDER: MetricDomain[] = ['sleep', 'train', 'fuel', 'mind', 'body', 'other']
@@ -16,9 +16,10 @@ export const DOMAIN_ORDER: MetricDomain[] = ['sleep', 'train', 'fuel', 'mind', '
 const VERDICT_ORDER: Record<PatternGateVerdict, number> = {
   live: 0,
   few_days: 1,
-  degenerate: 2,
-  no_data: 3,
-  frozen: 4,
+  imbalanced_groups: 2,
+  degenerate: 3,
+  no_data: 4,
+  frozen: 5,
 }
 
 export function comparePairs(a: PatternMonitorPair, b: PatternMonitorPair): number {

@@ -101,7 +101,7 @@ class GeminiCompanionLlmPromptOrderTest {
                 new Summary("0 20 2 * * *", 7, 200),
                 new Consolidation("0 30 3 * * MON", "0 50 3 1 * *", 8, 3),
                 new Recall(90, 5, 0.25, 20, 300),
-                new Patterns("0 40 2 * * *", 60, 8, 7, 100, List.of(minimalPatternPair())),
+                new Patterns("0 40 2 * * *", 60, 8, 3, 7, 100, List.of(minimalPatternPair())),
                 new Hypotheses("0 0 3 * * SUN", 3, 0.75, 0.50),
                 new HabitSuggest(5),
                 new CompanionProperties.LifegoalPropose(5),

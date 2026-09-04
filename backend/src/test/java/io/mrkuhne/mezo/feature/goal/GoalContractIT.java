@@ -7,6 +7,8 @@ import io.mrkuhne.mezo.api.dto.BiometricProfileUpsertRequest;
 import io.mrkuhne.mezo.api.dto.FeasibilityPreviewRequest;
 import io.mrkuhne.mezo.api.dto.FeasibilityPreviewResponse;
 import io.mrkuhne.mezo.api.dto.GoalResponse;
+import io.mrkuhne.mezo.api.dto.GoalSuggestionAcceptRequest;
+import io.mrkuhne.mezo.api.dto.GoalSuggestionPreviewResponse;
 import io.mrkuhne.mezo.api.dto.GoalSuggestionResponse;
 import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
 import io.mrkuhne.mezo.api.dto.LogWeightRequest;
@@ -68,7 +70,48 @@ class GoalContractIT extends ApiIntegrationTest {
         String body = postForBody("/api/goals",
             req().startDate(LocalDate.of(2026, 6, 1)).targetDate(LocalDate.of(2026, 5, 1)).build(),
             ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
-        assertHasFieldError(body, "targetDate", "VALIDATION_INVALID_VALUE");
+        assertHasFieldError(body, "targetDate", "GOAL_WINDOW_TOO_SHORT");
+    }
+
+    @Test
+    void testCreateGoal_shouldReturn400_whenCutTargetIsAboveStart() {
+        String body = postForBody("/api/goals",
+            req().trajectory("cut")
+                .startWeightKg(new BigDecimal("84.20"))
+                .targetWeightKg(new BigDecimal("90.00"))
+                .build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "targetWeightKg", "GOAL_DIRECTION_TARGET_CONFLICT");
+    }
+
+    @Test
+    void testCreateGoal_shouldReturn400_whenBulkTargetIsBelowStart() {
+        String body = postForBody("/api/goals",
+            req().trajectory("bulk")
+                .startWeightKg(new BigDecimal("84.20"))
+                .targetWeightKg(new BigDecimal("78.00"))
+                .build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "targetWeightKg", "GOAL_DIRECTION_TARGET_CONFLICT");
+    }
+
+    @Test
+    void testCreateGoal_shouldReturn400_whenMaintainHasTargetWeight() {
+        String body = postForBody("/api/goals",
+            req().trajectory("maintain")
+                .targetWeightKg(new BigDecimal("84.20"))
+                .build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "targetWeightKg", "GOAL_DIRECTION_TARGET_CONFLICT");
+    }
+
+    @Test
+    void testCreateGoal_shouldReturn400_whenGoalWindowIsSixDays() {
+        LocalDate startDate = LocalDate.of(2026, 6, 1);
+        String body = postForBody("/api/goals",
+            req().startDate(startDate).targetDate(startDate.plusDays(6)).build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasFieldError(body, "targetDate", "GOAL_WINDOW_TOO_SHORT");
     }
 
     // ── Fuel P5 day-planner settings round-trip (mezo-9ys) ──────────────────────────────────────────
@@ -298,22 +341,23 @@ class GoalContractIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testAcceptGoalSuggestion_shouldFlipTrajectory_whenSnapshotMatches() {
+    void testAcceptGoalSuggestion_shouldRejectDirectionConflict_whenSnapshotMatches() {
         RegisteredUser owner = registerUser("Suggestion Acceptor");
-        GoalResponse goal = postForBody("/api/goals", req().trajectory("bulk").build(), owner.headers(),
+        GoalResponse goal = postForBody("/api/goals", req().trajectory("cut").build(), owner.headers(),
             HttpStatus.CREATED, GoalResponse.class);
         UUID suggestionId = suggestionPopulator.createOpen(
-            owner.id(), goal.getId(), "phase_change", "preset:cut-prep:m1",
+            owner.id(), goal.getId(), "phase_change", "preset:bulk:m1",
             new GoalSuggestionPayloadJson(
-                "A cut-prep mezo deficitet javasol.", "cut", null, null, null, null, "Pre-cut prep", "bulk",
+                "A mezo tömegelést javasol.", "bulk", null, null, null, null, "Bulk", "cut",
                 null, null, null, null, null, null, null, null, null, null, null)
         ).getId();
 
-        GoalResponse accepted = postForBody(
+        String body = postForBody(
             "/api/goals/" + goal.getId() + "/suggestions/" + suggestionId + "/accept",
-            null, owner.headers(), HttpStatus.OK, GoalResponse.class);
+            GoalSuggestionAcceptRequest.builder().previewFingerprint("0".repeat(64)).build(),
+            owner.headers(), HttpStatus.BAD_REQUEST, String.class);
 
-        assertThat(accepted.getTrajectory()).isEqualTo(GoalResponse.TrajectoryEnum.CUT);
+        assertHasFieldError(body, "targetWeightKg", "GOAL_DIRECTION_TARGET_CONFLICT");
     }
 
     @Test
@@ -335,9 +379,17 @@ class GoalContractIT extends ApiIntegrationTest {
                 null, null, null, null, null, null, null, null, null, null, null)
         ).getId();
 
-        // snapshotTrajectory ("bulk") no longer matches the goal's current trajectory ("cut") → 409.
+        GoalSuggestionPreviewResponse preview = getForBody(
+            "/api/goals/" + goal.getId() + "/suggestions/" + suggestionId + "/preview",
+            owner.headers(), HttpStatus.OK, GoalSuggestionPreviewResponse.class);
+        putForBody("/api/goals/" + goal.getId(),
+            req().targetDate(LocalDate.of(2026, 8, 3)).build(),
+            owner.headers(), HttpStatus.OK, GoalResponse.class);
+
         postForBody("/api/goals/" + goal.getId() + "/suggestions/" + suggestionId + "/accept",
-            null, owner.headers(), HttpStatus.CONFLICT, String.class);
+            GoalSuggestionAcceptRequest.builder()
+                .previewFingerprint(preview.getPreviewFingerprint()).build(),
+            owner.headers(), HttpStatus.CONFLICT, String.class);
 
         // The supersede must have survived the 409 request's own rollback: a follow-up list call
         // must NOT show the suggestion as open — if the supersede had rolled back too, it would

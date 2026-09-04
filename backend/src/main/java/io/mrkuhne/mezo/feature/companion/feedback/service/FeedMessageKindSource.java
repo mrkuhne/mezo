@@ -35,6 +35,7 @@ public interface FeedMessageKindSource {
     String KIND_INTERVENTION = "intervention";
     String KIND_PEOPLE = "people";
     String KIND_SETUP = "setup";
+    String KIND_ADVICE = "advice";
 
     /** {@code (companion_message.id → kind)} for every id in {@code feedMessageIds} that is both a
      *  live {@code companion_message} row AND owned by {@code userId}; an id with no match (a

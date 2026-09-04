@@ -9,7 +9,7 @@
 // nap legfrissebb hangjai, ezért a demo-briefing előtag UTÁN, minden más elem UTÁN
 // jönnek. Pure: no React, no hooks, no side effects.
 // ============================================================
-import type { Briefing, BriefingRef, FeedMessage, FeedMessageKind } from '@/data/types'
+import type { Briefing, BriefingRef, FeedAction, FeedApplied, FeedMessage, FeedMessageKind } from '@/data/types'
 import type { ClayIconName } from '@/shared/ui/clay'
 
 export interface MezoMessageItem {
@@ -29,6 +29,18 @@ export interface MezoMessageItem {
   /** Markdown-forrás; a renderelő `SafeMarkdown`-ozza. */
   paragraphs: string[]
   refs: BriefingRef[]
+  /** Advice-card evidence (S4, mezo-d58h.4) — rendered as the „Miből gondolom" list. Feed advice
+   *  rows only; demo/nudge items never have it. */
+  facts?: string[]
+  /** Advice-card suggestions — rendered as the card's action-less bullet list until S5 turns the
+   *  actionable ones into buttons. */
+  suggestions?: string[]
+  /** Advice-card action buttons (S5, mezo-d58h.5) — rendering is a later task; carried through
+   *  here so it reaches the thread item. Feed advice rows only; demo/nudge items never have it. */
+  actions?: FeedAction[]
+  /** Advice-card applied stamp (S5, mezo-d58h.5). Feed advice rows only; demo/nudge items never
+   *  have it. */
+  applied?: FeedApplied
   meta: string | null
   /** Tab-partíció kulcs (mezo-ho9k): 'eletjel' = Életjel-figyelő nudge — a NapMezoPage
    *  Életjelek tabjára tartozik. Hiánya = companion-üzenet (Üzenetek tab). */
@@ -61,6 +73,10 @@ export function feedToMessageItem(m: FeedMessage): MezoMessageItem {
     time: hhmm(m.generatedAt),
     paragraphs: m.body.map((p) => p.text),
     refs: m.refs,
+    facts: m.facts,
+    suggestions: m.suggestions,
+    actions: m.actions,
+    applied: m.applied,
     meta: null,
   }
 }

@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.PatternDetectionService;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
+import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -23,7 +24,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -37,6 +43,7 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
 
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
+    @Autowired private MealPopulator mealPopulator;
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private PatternDetectionService patternDetectionService;
     @Autowired private PatternRepository patternRepository;
@@ -70,6 +77,33 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
             // it's the correlated metric for STRESS_SLEEP_PAIR (energy is unused, stays constant).
             checkInPopulator.createCheckIn(owner, day, "08:00", 3, 1 + i % 5, null);
             sleepLogPopulator.createSleepLog(owner, day, new BigDecimal("7.0"), 1 + (i * 2) % 5);
+        }
+    }
+
+    /** Nine finished days with the production incident's exact 8 weekday : 1 weekend balance. */
+    private void seedImbalancedWeekendMeals(UUID owner) {
+        int weekdays = 0;
+        int weekends = 0;
+        int index = 0;
+        LocalDate day = LocalDate.now().minusDays(1);
+        while (weekdays < 8 || weekends < 1) {
+            boolean weekend = day.getDayOfWeek() == DayOfWeek.SATURDAY
+                    || day.getDayOfWeek() == DayOfWeek.SUNDAY;
+            boolean take = weekend ? weekends < 1 : weekdays < 8;
+            if (take) {
+                LocalTime time = LocalTime.of(10 + index, index * 7 % 60);
+                Instant loggedAt = day.atTime(time).atZone(ZoneId.systemDefault()).toInstant();
+                mealPopulator.createMealWithItems(owner, day, "dinner", loggedAt,
+                        List.of(new MealPopulator.Line(
+                                "Pattern fixture", "500", "30", "45", "18", (short) 2)));
+                if (weekend) {
+                    weekends++;
+                } else {
+                    weekdays++;
+                }
+                index++;
+            }
+            day = day.minusDays(1);
         }
     }
 
@@ -114,6 +148,23 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
         assertThat(pair.getR()).isNotNull();
         assertThat(pair.getP()).isNotNull();
         assertThat(pair.getMissingDays()).isNull();
+    }
+
+    @Test
+    void testPatternMonitor_shouldReturnImbalancedGroups_whenWeekendHasOnlyOneDay() {
+        seedImbalancedWeekendMeals(ownerId());
+
+        PatternMonitorPair pair = pair(monitor(), "weekend~late-meal-hour");
+
+        assertThat(pair.getVerdict()).isEqualTo("imbalanced_groups");
+        assertThat(pair.getAlignedDays()).isEqualTo(9);
+        assertThat(pair.getGroupZeroDays()).isEqualTo(8);
+        assertThat(pair.getGroupOneDays()).isEqualTo(1);
+        assertThat(pair.getRequiredPerGroup()).isEqualTo(3);
+        assertThat(pair.getR()).isNull();
+        assertThat(pair.getP()).isNull();
+        assertThat(pair.getMetricAValueKind()).isEqualTo("binary");
+        assertThat(pair.getMetricBValueKind()).isEqualTo("clock_hour");
     }
 
     /**

@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.companion.advisor.AdvisorRetry;
 import io.mrkuhne.mezo.feature.companion.advisor.TurnVerdictCheck;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphEdgeStructurer;
 import io.mrkuhne.mezo.feature.companion.graph.service.LifeEventExtractionService;
+import io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryQueryRewriter;
 import io.mrkuhne.mezo.feature.companion.quarterly.service.QuarterlyReviewService;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
@@ -47,6 +48,12 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** Content markers that force a deterministic failure — lets ITs exercise error paths. */
     public static final String FAIL_COMPLETE = "[fake-fail]";
     public static final String FAIL_STREAM = "[fake-stream-fail]";
+
+    /** Scripted memory-query rewrite: {@code [fake-memory-rewrite:…]} returns the payload. */
+    public static final Pattern MEMORY_REWRITE_SENTINEL =
+            Pattern.compile("\\[fake-memory-rewrite:([^\\]]*)]", Pattern.DOTALL);
+    public static final String MEMORY_REWRITE_EXACT_LIMIT = "[fake-memory-rewrite-exact-limit]";
+    public static final String MEMORY_REWRITE_OVERLONG = "[fake-memory-rewrite-overlong]";
 
     /** mezo-8z79: the provider answered with NO text at all — a candidate with zero text parts (the
      *  2026-08-23 live incident). Streams as an empty Flux and completes as "", so ITs can drive the
@@ -287,6 +294,26 @@ public class FakeCompanionLlm implements CompanionLlm {
     public static final Pattern WEEKLY_SENTINEL =
             Pattern.compile("\\[fake-weekly:([^\\]]*)]", Pattern.DOTALL);
 
+    /** Mirror of AdviceProseGenerator.ADVICE_MARKER (feature/proactive) — a LITERAL, not an
+     *  import: same cycle rationale as {@link #WEEKLY_MARKER_MIRROR}. Drift is caught by
+     *  AdviceProseGeneratorIT's equality assertion against the real constant. */
+    public static final String ADVICE_MARKER_MIRROR = "TANACS-KARTYA-FELADAT";
+
+    /** Scripted advice prose (S4, mezo-d58h.4): {@code [fake-advice:…]} planted in a FACT is
+     *  returned verbatim, so an IT can drive the number-guard and fallback paths. */
+    public static final Pattern ADVICE_SENTINEL =
+            Pattern.compile("\\[fake-advice:([^\\]]*)]", Pattern.DOTALL);
+
+    /** The un-scripted advice answer — number-free on purpose, so the happy path passes the guard. */
+    public static final String ADVICE_DEFAULT_ANSWER =
+            "Látom, mi történt az elmúlt napokban. Kezdd egyetlen apró lépéssel még ma.";
+
+    /** Scripted INVENTED number (S4): the sentinel itself is digit-free, so the number below
+     *  appears nowhere in the call's grounding text and ProseNumberGuard genuinely rejects it. */
+    public static final String ADVICE_INVENT_SENTINEL = "[fake-advice-invent]";
+
+    public static final String ADVICE_UNGROUNDED_ANSWER = "Aludj ma 9999 órát.";
+
     /** Mirror of MemoirGenerator.MEMOIR_MARKER (feature/proactive) — LITERAL, cycle rule. */
     public static final String MEMOIR_MARKER_MIRROR = "HETI-MEMOIR-FELADAT";
 
@@ -501,9 +528,14 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  never by this fake, so it cannot serve as the call-count oracle under {@code companion-fake}. */
     private final java.util.concurrent.atomic.AtomicInteger completeCallCount =
             new java.util.concurrent.atomic.AtomicInteger();
+    private volatile List<Turn> lastMemoryRewriteHistory = List.of();
 
     public int completeCallCount() {
         return completeCallCount.get();
+    }
+
+    public List<Turn> lastMemoryRewriteHistory() {
+        return List.copyOf(lastMemoryRewriteHistory);
     }
 
     @Override
@@ -516,6 +548,17 @@ public class FakeCompanionLlm implements CompanionLlm {
         // reach this same forced-failure path.
         if (userMessage.contains(FAIL_COMPLETE) || systemPrompt.contains(FAIL_COMPLETE)) {
             throw new IllegalStateException("FAKE-LLM forced complete failure");
+        }
+        if (systemPrompt.startsWith(LlmMemoryQueryRewriter.REWRITE_MARKER)) {
+            lastMemoryRewriteHistory = List.copyOf(history);
+            if (userMessage.contains(MEMORY_REWRITE_EXACT_LIMIT)) {
+                return "x".repeat(500);
+            }
+            if (userMessage.contains(MEMORY_REWRITE_OVERLONG)) {
+                return "x".repeat(501);
+            }
+            Matcher rewrite = MEMORY_REWRITE_SENTINEL.matcher(userMessage);
+            return rewrite.find() ? rewrite.group(1) : "FAKE-ÖNÁLLÓ-KERESŐKÉRDÉS";
         }
         if (userMessage.contains(SYSTEM_ECHO_SENTINEL)) {
             return systemPrompt;
@@ -598,6 +641,19 @@ public class FakeCompanionLlm implements CompanionLlm {
         if (systemPrompt.startsWith(WEEKLY_MARKER_MIRROR)) {
             Matcher m = WEEKLY_SENTINEL.matcher(userMessage);
             return m.find() ? m.group(1) : "FAKE-HETI-TERVJAVASLAT";
+        }
+        if (systemPrompt.startsWith(ADVICE_MARKER_MIRROR)) {
+            // EMPTY_ANSWER's own branch sits AFTER every marker branch in this method, so a
+            // marker branch that answered unconditionally would swallow the blank-answer path —
+            // the advice card's fallback needs it, so it is honoured here explicitly.
+            if (userMessage.contains(EMPTY_ANSWER)) {
+                return "";
+            }
+            if (userMessage.contains(ADVICE_INVENT_SENTINEL)) {
+                return ADVICE_UNGROUNDED_ANSWER;
+            }
+            Matcher m = ADVICE_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : ADVICE_DEFAULT_ANSWER;
         }
         if (systemPrompt.startsWith(MEMOIR_MARKER_MIRROR)) {
             Matcher m = MEMOIR_SENTINEL.matcher(userMessage);

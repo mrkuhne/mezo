@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson.GuardStatus;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
+import io.mrkuhne.mezo.feature.goal.repository.GoalSuggestionRepository;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -44,8 +45,10 @@ import org.springframework.transaction.annotation.Transactional;
 class GoalEvaluationServiceIT extends AbstractIntegrationTest {
 
     @Autowired private GoalEngineService engine;
+    @Autowired private GoalPrescriptionCalculator calculator;
     @Autowired private GoalEvaluationService evaluationService;
     @Autowired private GoalRepository goalRepository;
+    @Autowired private GoalSuggestionRepository suggestionRepository;
     @Autowired private BiometricProfileRepository profileRepository;
     @Autowired private GoalPopulator goalPopulator;
     @Autowired private GoalPlanLinkPopulator linkPopulator;
@@ -66,6 +69,41 @@ class GoalEvaluationServiceIT extends AbstractIntegrationTest {
         g.setRateTargetPctPerWeek(new BigDecimal(ratePct));
         g.setGuards(guards);
         return goalRepository.saveAndFlush(g);
+    }
+
+    @Test
+    void testEvaluate_shouldClearArtifactsAndSkipSuggestions_whenLegacyGoalIsIncoherent() {
+        UUID user = databasePopulator.populateUser("eval-legacy-incoherent@test.local");
+        GoalPrescriptionJson stalePrescription = new GoalPrescriptionJson(
+            null, "formula", List.of(), null, null);
+        GoalEntity goal = goalPopulator.createLegacyIncoherentGoal(user, stalePrescription);
+
+        GoalPrescriptionJson result = engine.evaluate(user, goal.getId());
+
+        GoalEntity reloaded = goalRepository.findById(goal.getId()).orElseThrow();
+        assertThat(result).isNull();
+        assertThat(reloaded.getPrescription()).isNull();
+        assertThat(reloaded.getTdeeBootstrap()).isNull();
+        assertThat(suggestionRepository.findAll())
+            .noneMatch(suggestion -> suggestion.getGoalId().equals(goal.getId()));
+    }
+
+    @Test
+    void testCalculate_shouldReturnArtifactWithoutPersistingOrSuggesting_whenDraftIsTransient() {
+        UUID user = databasePopulator.populateUser("calc-draft@test.local");
+        profilePopulator.create(user);
+        seedWeight(user, "84.00");
+        GoalEntity goal = goal(user, "cut", "0.70", List.of("muscle"));
+
+        GoalPrescriptionCalculator.Calculation calculation = calculator.calculate(user, goal);
+
+        assertThat(calculation.bootstrap()).isNotNull();
+        assertThat(calculation.prescription()).isNotNull();
+        GoalEntity reloaded = goalRepository.findById(goal.getId()).orElseThrow();
+        assertThat(reloaded.getTdeeBootstrap()).isNull();
+        assertThat(reloaded.getPrescription()).isNull();
+        assertThat(suggestionRepository.findAll())
+            .noneMatch(suggestion -> suggestion.getGoalId().equals(goal.getId()));
     }
 
     // ── Realistic cut: in-band rate → feasible, descending kcal as running ends, protein ≈2 g/kg ──

@@ -14,7 +14,8 @@ public enum MetricKey {
     TRAINING_RPE("edzés-RPE", "Sport- és futás-napló (RPE)", MetricDomain.TRAIN),
     SPORT_LOAD_MIN("sportterhelés", "Sport-napló (perc)", MetricDomain.TRAIN),
     GYM_VOLUME_KG("gym-volumen", "Workout szettek (súly×ism.)", MetricDomain.TRAIN),
-    LATE_MEAL_HOUR("utolsó étkezés ideje", "Étkezés-napló (utolsó étkezés)", MetricDomain.FUEL),
+    LATE_MEAL_HOUR("utolsó étkezés ideje", "Étkezés-napló (utolsó étkezés)", MetricDomain.FUEL,
+            MetricValueKind.CLOCK_HOUR),
     DAILY_KCAL("napi kalória", "Étkezés-napló", MetricDomain.FUEL),
     MEDICATION_CYCLE_DAY("Gyógyszer-ciklusnap", "Gyógyszer-napló", MetricDomain.FUEL),
     DAILY_WATER_ML("vízbevitel", "Víz-számláló", MetricDomain.FUEL),
@@ -25,18 +26,18 @@ public enum MetricKey {
     GYM_JOINT_PAIN("ízületi fájdalom", "Set debrief a workoutban", MetricDomain.TRAIN),
     CHECKIN_BODY("testérzet", "Check-in sheet", MetricDomain.BODY),
     CHECKIN_MENTAL("mentális állapot", "Check-in sheet", MetricDomain.MIND),
-    BEDTIME_HOUR("lefekvés ideje", "Alvás-napló", MetricDomain.SLEEP),
-    WAKEUP_HOUR("ébredés ideje", "Alvás-napló", MetricDomain.SLEEP),
+    BEDTIME_HOUR("lefekvés ideje", "Alvás-napló", MetricDomain.SLEEP, MetricValueKind.CLOCK_HOUR),
+    WAKEUP_HOUR("ébredés ideje", "Alvás-napló", MetricDomain.SLEEP, MetricValueKind.CLOCK_HOUR),
     SLEEP_AWAKENINGS("éjszakai ébredések", "Alvás-napló", MetricDomain.SLEEP),
     DAILY_PROTEIN_G("napi fehérje", "Étkezés-napló", MetricDomain.FUEL),
     MEAL_SCORE("étkezés-pontszám", "Étkezés-pontozó", MetricDomain.FUEL),
     MEDICATION_DOSE_MG("Gyógyszer-dózis", "Gyógyszer-napló", MetricDomain.FUEL),
     HABITS_DONE("kész szokások", "Szokás-követő", MetricDomain.MIND),
-    RITUAL_CLOSED("esti lezárás", "Esti lezárás rituálé", MetricDomain.MIND),
+    RITUAL_CLOSED("esti lezárás", "Esti lezárás rituálé", MetricDomain.MIND, MetricValueKind.BINARY),
     DAILY_XP("napi XP", "Activity + szokás + küldetés XP", MetricDomain.MIND),
     SOCIAL_MENTIONS("társas említések", "People-említések", MetricDomain.MIND),
     RUN_HR_RECOVERY_S("pulzus-visszaállás", "Futás-napló (pulzus-visszaállás)", MetricDomain.TRAIN),
-    WEEKEND("hétvége", "naptár (származtatott)", MetricDomain.OTHER),
+    WEEKEND("hétvége", "naptár (származtatott)", MetricDomain.OTHER, MetricValueKind.BINARY),
     ACWR("akut:krónikus terhelés", "származtatott: sport + gym terhelésből", MetricDomain.TRAIN),
     TRAINING_MONOTONY("edzés-monotónia", "származtatott: a napi terhelés szórásából", MetricDomain.TRAIN),
     BEDTIME_VARIABILITY("lefekvés-szórás", "származtatott: a lefekvési időkből", MetricDomain.SLEEP),
@@ -47,11 +48,17 @@ public enum MetricKey {
     private final String labelHu;
     private final String sourceHu;
     private final MetricDomain domain;
+    private final MetricValueKind valueKind;
 
     MetricKey(String labelHu, String sourceHu, MetricDomain domain) {
+        this(labelHu, sourceHu, domain, MetricValueKind.NUMBER);
+    }
+
+    MetricKey(String labelHu, String sourceHu, MetricDomain domain, MetricValueKind valueKind) {
         this.labelHu = labelHu;
         this.sourceHu = sourceHu;
         this.domain = domain;
+        this.valueKind = valueKind;
     }
 
     public String labelHu() {
@@ -65,6 +72,10 @@ public enum MetricKey {
 
     public MetricDomain domain() {
         return domain;
+    }
+
+    public MetricValueKind valueKind() {
+        return valueKind;
     }
 
     /**

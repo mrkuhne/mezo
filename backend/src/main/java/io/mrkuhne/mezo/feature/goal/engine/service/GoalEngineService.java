@@ -1,28 +1,13 @@
 package io.mrkuhne.mezo.feature.goal.engine.service;
 
-import io.mrkuhne.mezo.api.dto.WeightTrendResponse;
-import io.mrkuhne.mezo.feature.biometrics.profile.entity.BiometricProfileEntity;
-import io.mrkuhne.mezo.feature.biometrics.profile.repository.BiometricProfileRepository;
-import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepTargetPort;
-import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
-import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
-import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
-import io.mrkuhne.mezo.feature.goal.engine.service.GoalProjectionService.ProjectionSegment;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
-import io.mrkuhne.mezo.feature.goal.entity.GoalPlanLinkEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
-import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson.GuardStatus;
-import io.mrkuhne.mezo.feature.goal.entity.TdeeBootstrapJson;
-import io.mrkuhne.mezo.feature.goal.repository.GoalPlanLinkRepository;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionTriggerService;
-import io.mrkuhne.mezo.feature.train.service.WeeklyScheduledActivityService;
+import io.mrkuhne.mezo.feature.goal.service.GoalInvariantValidator;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
-import java.math.BigDecimal;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -57,21 +42,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class GoalEngineService {
 
-    private static final String PLAN_MESOCYCLE = "mesocycle";
     private static final String STATUS_ACTIVE = "active";
 
     private final GoalRepository goalRepository;
-    private final GoalPlanLinkRepository linkRepository;
-    private final BiometricProfileRepository profileRepository;
-    private final WeightLogRepository weightLogRepository;
-    private final TdeeBootstrapService bootstrapService;
-    private final WeightTrendService weightTrendService;
-    private final GoalProjectionService projectionService;
-    private final GuardEvaluationService guardService;
-    private final GoalEvaluationService evaluationService;
-    private final WeeklyScheduledActivityService weeklyActivity;
-    private final DietPreferencesPort dietPreferences;
-    private final SleepTargetPort sleepTargetPort;
+    private final GoalInvariantValidator goalInvariantValidator;
+    private final GoalPrescriptionCalculator calculator;
     private final GoalSuggestionTriggerService triggerService;
 
     /**
@@ -87,37 +62,17 @@ public class GoalEngineService {
             .orElseThrow(() -> new SystemRuntimeErrorException(
                 SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
 
-        // Guards never depend on the profile — evaluate them regardless so the graceful path still
-        // carries the (inactive/empty) guard status.
-        GuardStatus guards = guardService.evaluate(goal, linkedMesoIds(goal, userId),
-            weightTrendService.computeTrend(userId));
-
-        BiometricProfileEntity profile =
-            profileRepository.findByCreatedByAndDeletedFalse(userId).orElse(null);
-        if (profile == null) {
-            // Graceful: no profile → no bootstrap, a feasibility note, never throw (Task 9 relies on it).
-            GoalPrescriptionJson rx = evaluationService.missingProfile(guards);
-            goal.setPrescription(rx);
-            return rx;
+        if (!goalInvariantValidator.isCoherent(goal)) {
+            goal.setPrescription(null);
+            goal.setTdeeBootstrap(null);
+            return null;
         }
 
-        BigDecimal currentWeightKg = currentWeightKg(userId, goal);
-        BigDecimal weeklyEat = weeklyActivity.totalWeeklyEatKcalPerDay(userId, currentWeightKg);
-        TdeeBootstrapJson bootstrap = bootstrapService.compute(profile, currentWeightKg, weeklyEat);
-        goal.setTdeeBootstrap(bootstrap);
-
-        WeightTrendResponse trend = weightTrendService.computeTrend(userId);
-        DietPreferences prefs = dietPreferences.resolve(userId);
-        List<ProjectionSegment> segments =
-            projectionService.project(goal, userId, bootstrap, trend, prefs.dayTypeShiftKcal());
-        BigDecimal sleepTargetH = sleepTargetPort.targetHours(userId);
-
-        GoalPrescriptionJson rx = evaluationService.assemble(
-            goal, currentWeightKg, profile.getBodyFatPct(), segments, guards,
-            prefs, sleepTargetH);
-        goal.setPrescription(rx);
+        GoalPrescriptionCalculator.Calculation calculation = calculator.calculate(userId, goal);
+        goal.setTdeeBootstrap(calculation.bootstrap());
+        goal.setPrescription(calculation.prescription());
         triggerService.checkPhaseSuggestions(userId, goalId); // slice-4 probe — idempotent, deduped
-        return rx;
+        return calculation.prescription();
     }
 
     /**
@@ -135,28 +90,4 @@ public class GoalEngineService {
         evaluate(userId, active.get(0).getId());
     }
 
-    /** The goal's linked mesocycle planIds — the muscle-volume guard scope (Task 7). */
-    private Set<UUID> linkedMesoIds(GoalEntity goal, UUID userId) {
-        List<GoalPlanLinkEntity> links =
-            linkRepository.findByGoalIdAndCreatedByAndDeletedFalseOrderByStartWeekAsc(goal.getId(), userId);
-        Set<UUID> ids = new LinkedHashSet<>();
-        for (GoalPlanLinkEntity l : links) {
-            if (PLAN_MESOCYCLE.equals(l.getPlanType())) {
-                ids.add(l.getPlanId());
-            }
-        }
-        return ids;
-    }
-
-    /**
-     * The current body weight (kg): the latest weigh-in ({@code findAllOwned} is date-ascending, so the
-     * last row), falling back to the goal's {@code startWeightKg} when no weigh-in exists yet.
-     */
-    private BigDecimal currentWeightKg(UUID userId, GoalEntity goal) {
-        List<WeightLogEntity> logs = weightLogRepository.findAllOwned(userId);
-        if (logs.isEmpty()) {
-            return goal.getStartWeightKg();
-        }
-        return logs.get(logs.size() - 1).getWeightKg();
-    }
 }

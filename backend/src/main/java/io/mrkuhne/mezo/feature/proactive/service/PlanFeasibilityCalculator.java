@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.proactive.config.SetupCheckProperties;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
+import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -67,6 +68,7 @@ public class PlanFeasibilityCalculator {
     private final SleepGoalRepository sleepGoalRepository;
     private final GymScheduleSlotRepository gymScheduleSlotRepository;
     private final SportScheduleSlotRepository sportScheduleSlotRepository;
+    private final SportSlotSkipService sportSlotSkipService;
     private final MetricSeriesService metricSeriesService;
     private final SetupCheckProperties properties;
 
@@ -90,7 +92,7 @@ public class PlanFeasibilityCalculator {
         int bedtimeRequiredLightsOut =
             tightestMorning.getAsInt() - cfg.wakeBufferMin() - goal.getTargetMinutes();
 
-        Optional<Candidate> sportCandidate = worstSportCandidate(userId, gymSlots, goal, cfg);
+        Optional<Candidate> sportCandidate = worstSportCandidate(userId, today, gymSlots, goal, cfg);
         OptionalInt medianBedtime = medianBedtime(userId, today, cfg);
         Optional<Candidate> bedtimeCandidate = medianBedtime.stream()
             .mapToObj(bedtime -> new Candidate(
@@ -112,12 +114,25 @@ public class PlanFeasibilityCalculator {
 
     /**
      * The sport slot whose day-paired misfit is largest, or empty when no sport slot has a
-     * following-morning obligation at all (skipped, not compared against an unrelated day).
+     * following-morning obligation at all (skipped, not compared against an unrelated day) — or
+     * when every remaining candidate was itself skipped (mezo-d58h.5).
      */
-    private Optional<Candidate> worstSportCandidate(UUID userId, List<GymScheduleSlotEntity> gymSlots,
-            SleepGoalEntity goal, SetupCheckProperties.PlanFeasibility cfg) {
+    private Optional<Candidate> worstSportCandidate(UUID userId, LocalDate today,
+            List<GymScheduleSlotEntity> gymSlots, SleepGoalEntity goal, SetupCheckProperties.PlanFeasibility cfg) {
+        // This calculator has no per-slot date — it reasons over the recurring weekly pattern, not
+        // a dated occurrence — so a dated sport_slot_skip needs a rule for WHICH date a weekday
+        // slot D is checked against. Judgement call (not an obvious reading, spelled out here for
+        // the next reader): the NEXT occurrence of D on or after `today`, since that is the week
+        // the feasibility card is actually talking about. Note this is the SLOT's own weekday, not
+        // the paired following day used below for the morning obligation — the skip silences the
+        // evening session itself, regardless of which morning it was pairing against.
+        int todayDow = today.getDayOfWeek().getValue() - 1; // legacy 0=Monday..6=Sunday, per slot tables
         return sportScheduleSlotRepository
             .findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
+            .filter(slot -> {
+                LocalDate occurrence = today.plusDays(Math.floorMod(slot.getDayOfWeek() - todayDow, DAYS_PER_WEEK));
+                return !sportSlotSkipService.isSkipped(userId, slot.getDayOfWeek(), slot.getTime(), occurrence);
+            })
             .flatMap(slot -> parseClock(slot.getTime()).stream()
                 .flatMap(t -> {
                     int end = shiftedMinutes(t) + slot.getDurationMin() + cfg.commuteBufferMin();

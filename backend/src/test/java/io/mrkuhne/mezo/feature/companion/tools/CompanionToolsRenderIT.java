@@ -40,11 +40,13 @@ import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SkillProgressPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
+import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
 import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
+import io.mrkuhne.mezo.support.populator.WorkoutDayAdjustmentPopulator;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.Instant;
@@ -91,6 +93,8 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private SleepGoalPopulator sleepGoalPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private TrainPopulator trainPopulator;
+    @Autowired private WorkoutDayAdjustmentPopulator workoutDayAdjustmentPopulator;
+    @Autowired private SportSlotSkipPopulator sportSlotSkipPopulator;
     @Autowired private RunningPopulator runningPopulator;
     @Autowired private PantryItemPopulator pantryItemPopulator;
     @Autowired private MealPopulator mealPopulator;
@@ -403,6 +407,43 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void testGetTrainingPlan_shouldApplyLightenDelta_whenTomorrowIsAdjusted() {
+        // mezo-d58h.5: dayContentLine renders "holnap" straight from the template's raw
+        // workingSets — it must fold in the per-date lighten overlay itself, or the AI would
+        // contradict the "lighten tomorrow" card the user just tapped.
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+        String tomorrowLabel = WorkoutService.HU_DAY_LABELS.get(tomorrow.getDayOfWeek().getValue() - 1);
+        WorkoutSessionEntity template =
+                trainPopulator.createWorkoutSession(owner, meso.getId(), tomorrowLabel, "Push A", 0, "planned");
+        // TrainPopulator default exercise: workingSets=3, repMin=6, repMax=8.
+        trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+        workoutDayAdjustmentPopulator.createAdjustment(owner, tomorrow, (short) -1);
+
+        String out = trainTools.getTrainingPlan("tomorrow", null, ctx(owner));
+
+        assertThat(out).contains("Fekvenyomás 2×6-8").doesNotContain("Fekvenyomás 3×6-8");
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldKeepTemplateCount_whenTomorrowHasNoAdjustment() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+        String tomorrowLabel = WorkoutService.HU_DAY_LABELS.get(tomorrow.getDayOfWeek().getValue() - 1);
+        WorkoutSessionEntity template =
+                trainPopulator.createWorkoutSession(owner, meso.getId(), tomorrowLabel, "Push A", 0, "planned");
+        trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+        // An adjustment exists, but for a different date — must not leak into tomorrow's line.
+        workoutDayAdjustmentPopulator.createAdjustment(owner, tomorrow.plusDays(3), (short) -2);
+
+        String out = trainTools.getTrainingPlan("tomorrow", null, ctx(owner));
+
+        assertThat(out).contains("Fekvenyomás 3×6-8");
+    }
+
+    @Test
     void testGetTrainingPlan_shouldResolveExplicitDateParam_whenScopeDate() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate future = LocalDate.now().plusDays(10);
@@ -453,6 +494,50 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
                 .doesNotContain("nincs adat");
         assertThat(audit.toRefsEnvelope().refs())
                 .contains(new RefsEnvelope.Ref("TrainingPlan", today.toString()));
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldOmitSkippedSportSlot_whenSkippedForResolvedDate() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        int todayDow = today.getDayOfWeek().getValue() - 1; // 0=Hét..6=Vas (schedule-slot convention)
+        trainPopulator.createScheduleSlot(owner, todayDow, "18:00", 120, "training");
+        sportSlotSkipPopulator.createSkip(owner, todayDow, "18:00", today);
+
+        String out = trainTools.getTrainingPlan("today", null, ctx(owner));
+
+        // the recurring slot exists and would normally render — the skip for THIS date hides it,
+        // and with no meso/running block the day is an honest rest day, never fabricated.
+        assertThat(out).doesNotContain("sport: volleyball").contains("pihenőnap (gym)");
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldStillRenderSportSlot_whenSkipAppliesToADifferentDate() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        int todayDow = today.getDayOfWeek().getValue() - 1;
+        trainPopulator.createScheduleSlot(owner, todayDow, "18:00", 120, "training");
+        // a skip for a DIFFERENT dated occurrence of the same recurring slot must not hide today's.
+        sportSlotSkipPopulator.createSkip(owner, todayDow, "18:00", today.minusDays(7));
+
+        String out = trainTools.getTrainingPlan("today", null, ctx(owner));
+
+        assertThat(out).contains("sport: volleyball 18:00 training (120 perc)");
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldOmitSkippedSportSlot_whenScopeWeek() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        LocalDate sportDay = today.plusDays(2);
+        int sportDow = sportDay.getDayOfWeek().getValue() - 1;
+        trainPopulator.createScheduleSlot(owner, sportDow, "19:30", 90, "match");
+        sportSlotSkipPopulator.createSkip(owner, sportDow, "19:30", sportDay);
+
+        String out = trainTools.getTrainingPlan("week", null, ctx(owner));
+
+        assertThat(out).doesNotContain("sport: volleyball 19:30 match (90 perc)")
+                .contains(sportDay + ": pihenőnap (gym)");
     }
 
     @Test

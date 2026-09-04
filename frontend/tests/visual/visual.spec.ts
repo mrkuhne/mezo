@@ -55,6 +55,12 @@ const SCREENS: Array<[string, string, string?]> = [
   ['meso-week', '/train/mesocycles/meso-hyp-04/week'],
   ['train-session', '/train/session'],
   ['fuel', '/fuel'],
+  ['fuel-stack', '/fuel/stack'],
+  ['fuel-stack-protocol', '/fuel/stack/protocol'],
+  ['fuel-stack-today', '/fuel/stack/today'],
+  ['fuel-stack-meals', '/fuel/stack/meals'],
+  ['fuel-stack-manage', '/fuel/stack/manage'],
+  ['fuel-settings', '/fuel/settings'],
   ['fuel-terv', '/fuel/plan'],
   // F7.3 Fuel deep (mezo-d20.8.3.1): the gyógyszer page's honest empty state now carries the
   // ＋ Gyógyszer felvétele CTA (mock seeds no medication); the recipe detail is the 2×2 mosaic;
@@ -85,6 +91,9 @@ const SCREENS: Array<[string, string, string?]> = [
   ['me-rutin-uj', '/me/rutin/uj'],
   ['me-rutin-szokas', '/me/rutin/szokas/daily_intention'],
   ['me-growth', '/me/growth'],
+  // mezo-iizd.12: a Growth skill-sorok goalchipje (aktív cél pillére → skill) saját felület,
+  // amit a /me/growth hub shotja nem lát — a chip enélkül pixel-szinten őrizetlen maradna.
+  ['me-growth-skillek', '/me/growth/skillek'],
   ['me-growth-awards', '/me/growth/kituntetesek'],
   ['me-ai-call', '/me/ai-usage/22222222-2222-4222-8222-222222222222'],
   ['insights-mintak', '/insights'],

@@ -27,6 +27,7 @@ import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportScheduleSlotRepository;
+import io.mrkuhne.mezo.feature.train.service.SportSlotSkipService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.DayOfWeek;
@@ -42,6 +43,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.UUID;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
@@ -130,6 +132,7 @@ public class AnchorResolver {
 
     private final GymScheduleSlotRepository gymScheduleSlotRepository;
     private final SportScheduleSlotRepository sportScheduleSlotRepository;
+    private final SportSlotSkipService sportSlotSkipService;
     private final WorkoutService workoutService;
     private final SleepAnchorPort sleepAnchorPort;
     private final ObjectProvider<RitualService> ritualServiceProvider;
@@ -187,7 +190,8 @@ public class AnchorResolver {
         }
         for (SportScheduleSlotEntity slot : sportScheduleSlotRepository
                 .findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(owner)) {
-            if (slot.getDayOfWeek() == legacyDayOfWeek) {
+            if (slot.getDayOfWeek() == legacyDayOfWeek
+                    && !sportSlotSkipService.isSkipped(owner, legacyDayOfWeek, slot.getTime(), date)) {
                 events.add(sportSlotEvent(slot));
             }
         }
@@ -281,7 +285,8 @@ public class AnchorResolver {
                 .toList();
     }
 
-    // ---- intervention (companion_message kind=intervention, W5.2 bd mezo-b3pp.19) --------------
+    // ---- intervention (companion_message kind=advice|intervention, W5.2 bd mezo-b3pp.19,
+    // widened S4 bd mezo-d58h.4) --------------------------------------------------------------
 
     /**
      * The card's own generation minute is the anchor (the sleep_reaction rule), except that a
@@ -302,8 +307,13 @@ public class AnchorResolver {
         LocalTime quietEnd = LocalTime.parse(notificationProperties.quietHours().end());
         List<AnchoredEvent> events = new ArrayList<>();
         for (LocalDate cardDate : List.of(date.minusDays(1), date)) {
-            companionMessageRepository
-                .findByCreatedByAndMessageDateAndKind(owner, cardDate, CompanionMessageEntity.KIND_INTERVENTION)
+            // S4 (mezo-d58h.4): the coaching card's kind is `advice`; `intervention` rows are
+            // pre-S4 history. Both are read so a deploy day does not silently lose a push.
+            Stream.of(CompanionMessageEntity.KIND_ADVICE, CompanionMessageEntity.KIND_INTERVENTION)
+                .map(kind -> companionMessageRepository
+                    .findByCreatedByAndMessageDateAndKind(owner, cardDate, kind))
+                .flatMap(Optional::stream)
+                .findFirst()
                 .ifPresent(msg -> {
                     String key = msg.getContent().interventionKey();
                     Optional<CompanionProperties.Intervention> entry = companionProperties.interventions()

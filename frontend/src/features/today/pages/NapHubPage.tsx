@@ -41,6 +41,7 @@ import { habitAction } from '@/features/today/logic/habitAction'
 import { celebrationFor } from '@/features/today/logic/habitCelebration'
 import { habitClayIcon, DAYPART_CLAY } from '@/features/today/logic/habitClayIcon'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
+import { LifeGoalTodayTile } from '@/features/today/components/LifeGoalTodayTile'
 import type { HabitItem } from '@/data/types'
 
 function fmtHm(mins: number): string {
@@ -343,6 +344,7 @@ export function NapHubPage() {
                   line={<span className="nap-tilemore nap-coral">Logold ›</span>}
                   onClick={() => navigate('/fuel')} aria-label={`Logold — ${nowWindow.label}`} />
               )}
+              <LifeGoalTodayTile delayMs={90} />
               {today.workoutType && (
                 <Tile wash="coral" icon="i-edzes" eyebrow="Edzés" delayMs={110}
                   line={today.workoutType} onClick={() => navigate('/train')} aria-label="Edzés" />

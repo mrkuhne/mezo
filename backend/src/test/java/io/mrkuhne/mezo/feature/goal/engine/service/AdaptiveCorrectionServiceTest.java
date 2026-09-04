@@ -41,7 +41,8 @@ class AdaptiveCorrectionServiceTest {
             0,
             300,
             new GoalEngineProperties.Suggestion(Map.of()),
-            new GoalEngineProperties.Adaptive(120, 50, 7, 4, 5.0));
+            new GoalEngineProperties.Adaptive(120, 50, 7, 4, 5.0),
+            new GoalEngineProperties.Overview(new BigDecimal("20"), new BigDecimal("0.10")));
     }
 
     private static GoalEntity goal(String trajectory, String ratePct) {

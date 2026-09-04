@@ -19,6 +19,7 @@
 // ============================================================
 import { useEffect, useRef, useState } from 'react'
 import { useReducedMotion } from '@/shared/hooks/useReducedMotion'
+import { useSettledArrival } from '@/shared/ui/mozaik/arrival'
 import { hu1, huInt } from '@/shared/lib/huNum'
 import type { EnergySection } from '@/features/fuel/sheets/EnergyBreakdownSheet'
 import type { KeretHeroVM, RingVM } from '@/features/fuel/logic/keretHero'
@@ -51,9 +52,15 @@ function isJsdomEnv(): boolean {
  *  restart would flash the number down through the whole 0..to range on every small update. */
 function useCountUpKcal(to: number, durationMs = 2000): number {
   const reduced = useReducedMotion()
+  // A 'pop' arrival (swipe-back to a screen already seen) seeds the sweep AT its target —
+  // this is a 2s animation, so replaying it is the loudest part of the "page reloaded" feel
+  // the back gesture used to produce (mezo-kuwj). The "animate from the last displayed value"
+  // rule below then makes the first effect run a no-op, and later bumps animate as always.
+  const returning = useSettledArrival()
   const skip = reduced || isJsdomEnv()
-  const [val, setVal] = useState(skip ? to : 0)
-  const displayedRef = useRef(skip ? to : 0)
+  const settleOnMount = skip || returning
+  const [val, setVal] = useState(settleOnMount ? to : 0)
+  const displayedRef = useRef(settleOnMount ? to : 0)
 
   useEffect(() => {
     if (skip) {

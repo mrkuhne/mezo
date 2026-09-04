@@ -264,3 +264,34 @@ test('valid token → me → the storage scope is the signed-in user; sign-out c
   await screen.findByRole('heading', { name: 'Bejelentkezés' })
   expect(currentUserId()).toBeNull()
 })
+
+test('onboarded=false → wizard; completing it re-reads me and lands in the app', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  let onboarded = false
+  server.use(
+    http.get(`${API_BASE}/api/auth/me`, () => HttpResponse.json({
+      id: '1', email: 'bela@test.local', name: 'Béla', role: 'USER', onboarded, mustChangePassword: false, timezone: 'Europe/Budapest',
+    })),
+    http.post(`${API_BASE}/api/auth/onboarding-complete`, () => { onboarded = true; return new HttpResponse(null, { status: 204 }) }),
+  )
+  setToken('t')
+  renderGate()
+  expect(await screen.findByRole('heading', { name: 'Első lépések' })).toBeInTheDocument()
+  expect(screen.getByText('Szia, Béla!')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Férfi' }))
+  await userEvent.type(screen.getByLabelText('Születési dátum'), '1993-05-14')
+  await userEvent.click(screen.getByRole('button', { name: 'Tovább' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Tovább' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Kezdjük' }))
+  expect(await screen.findByText('APP')).toBeInTheDocument()
+})
+
+test('must-change-password outranks onboarding', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}/api/auth/me`, () => HttpResponse.json({
+    id: '1', email: 'a@b.c', name: 'A', role: 'USER', onboarded: false, mustChangePassword: true, timezone: 'Europe/Budapest',
+  })))
+  setToken('t')
+  renderGate()
+  expect(await screen.findByRole('heading', { name: 'Új jelszó' })).toBeInTheDocument()
+})

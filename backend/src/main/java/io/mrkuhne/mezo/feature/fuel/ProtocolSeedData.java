@@ -26,14 +26,17 @@ import org.springframework.transaction.annotation.Transactional;
  * (mezo-67rb, spec D6; reworked onto {@link ProtocolService#addItem} in mezo-vx9v Task 10 —
  * there is no whole-selection activate step anymore). The rule table places "Tasty Dose gombakávé"
  * (matches the {@code kávé} needle) at {@code wake} and "Origin PWO" (matches the {@code pwo}
- * needle) at {@code pre_workout}. {@code @Profile("demodata")} is the profile prod runs, so the
- * rows land on the live DB at the next deploy. Idempotent by NAME per item (the shelf is curated —
+ * needle) at {@code pre_workout}. {@code @Profile("demofixtures")} (S2, mezo-qw37.2): opt-in demo
+ * content for the OWNER's account only — a plain {@code demodata} (prod) boot seeds no pantry rows
+ * or protocol, so a registered user starts with an empty Kamra/Stack. Run with
+ * {@code --spring.profiles.active=demodata,demofixtures} to load it (needs the demodata owner).
+ * Idempotent by NAME per item (the shelf is curated —
  * {@code PantryCatalogLoader}'s empty-shelf guard would never fire here) and by active-protocol
  * presence; an existing active protocol is never touched. Runs after {@code PantryCatalogLoader} (50).
  */
 @Slf4j
 @Component
-@Profile("demodata")
+@Profile("demofixtures")
 @Order(65)
 @RequiredArgsConstructor
 public class ProtocolSeedData implements CommandLineRunner {

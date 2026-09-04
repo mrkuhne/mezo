@@ -12,6 +12,7 @@ import { deriveFromError, deriveFromMe, type AuthPhase } from '@/app/auth/authSt
 import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { RegisterPage } from '@/features/auth/pages/RegisterPage'
 import { ChangePasswordPage } from '@/features/auth/pages/ChangePasswordPage'
+import { OnboardingPage } from '@/features/auth/pages/OnboardingPage'
 
 /** Backoff between boot attempts (mezo-l0k0 semantics kept from the old owner bootstrap). */
 const BOOT_RETRY_DELAYS_MS = [500, 1500, 4000]
@@ -27,6 +28,11 @@ const SIGN_OUT_NOTICE: Record<SignOutReason, string | undefined> = {
  * Boot gate (S1, mezo-qw37.1): decides between the auth pages and the app from the persisted
  * token + GET /api/auth/me. Mock mode short-circuits to the app. Renders the auth pages itself
  * (outside the router) so they carry no app chrome.
+ *
+ * <p>Phases: `pending → signedOut | mustChangePassword | onboarding | ready | failed`. The
+ * `onboarding` phase (S2, mezo-qw37.2) renders the wizard for `me.onboarded === false`, after
+ * the forced-password gate — `onAuthenticated` re-reads `me` and re-derives, so a completed
+ * wizard lands on `ready`.
  */
 export function AuthGate({ children }: { children: ReactNode }) {
   const mock = isMockMode()
@@ -165,6 +171,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
       : <RegisterPage onSuccess={onAuthenticated} onBack={() => setAuthView('login')} />
   }
   if (phase === 'mustChangePassword') return <ChangePasswordPage forced onSuccess={onAuthenticated} />
+  if (phase === 'onboarding') {
+    const meName = client.getQueryData<MeResponse>(ME_QUERY_KEY)?.name ?? ''
+    return <OnboardingPage name={meName} onSuccess={onAuthenticated} />
+  }
   if (phase === 'failed') {
     return (
       <div style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', padding: 24, background: 'var(--surface-base, #FDFAF4)', color: 'var(--text-primary, #2B2118)' }}>

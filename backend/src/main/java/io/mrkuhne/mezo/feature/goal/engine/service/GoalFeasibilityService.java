@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.goal.engine.service;
 import io.mrkuhne.mezo.api.dto.FeasibilityPreviewRequest;
 import io.mrkuhne.mezo.api.dto.FeasibilityPreviewResponse;
 import io.mrkuhne.mezo.feature.goal.engine.GoalEngineProperties;
+import io.mrkuhne.mezo.feature.goal.service.GoalInvariantValidator;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -42,20 +43,21 @@ public class GoalFeasibilityService {
     private static final int RATIO_SCALE = 10;
 
     private final GoalEngineProperties props;
+    private final GoalInvariantValidator goalInvariantValidator;
 
     /**
-     * Derives the weekly rate magnitude: {@code |startW − targetW| / startW * 100 / weeks}. Returns
-     * {@link BigDecimal#ZERO} for maintain (or a missing target weight) and guards weeks &le; 0 (equal
-     * start/target date, or an inverted window) against a divide-by-zero. Always non-null. This is the
-     * ONE rate formula — {@code GoalService.applyUpsert} delegates here so the persisted rate equals
-     * the previewed rate.
+     * Derives the weekly rate magnitude: {@code |startW − targetW| / startW * 100 / weeks}. The shared
+     * goal invariant is checked first, so contradictory directions and windows shorter than seven
+     * days never reach the formula. Returns {@link BigDecimal#ZERO} for a valid maintain goal. This is
+     * the ONE rate formula — {@code GoalService.applyUpsert} delegates here so the persisted rate
+     * equals the previewed rate.
      */
     public BigDecimal deriveRatePctPerWeek(
             String trajectory, BigDecimal startWeightKg, BigDecimal targetWeightKg,
             LocalDate startDate, LocalDate targetDate) {
-        if (TRAJ_MAINTAIN.equals(trajectory) || targetWeightKg == null
-                || startWeightKg == null || startWeightKg.signum() == 0
-                || startDate == null || targetDate == null) {
+        goalInvariantValidator.validate(
+            trajectory, startWeightKg, targetWeightKg, startDate, targetDate);
+        if (TRAJ_MAINTAIN.equals(trajectory)) {
             return BigDecimal.ZERO;
         }
         long weeks = ChronoUnit.WEEKS.between(startDate, targetDate);

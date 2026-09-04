@@ -2,9 +2,11 @@
 // the implementations live in the per-domain hook modules — this file only re-exports,
 // so consumer import paths and the dual-mode contract stay stable.
 export { useMe, useAuthActions, ME_QUERY_KEY } from '@/data/auth/authHooks'
+export { useOnboardingActions } from '@/data/auth/onboardingHooks'
 export { useTodayScenario, resolveBriefing, useToday, useFuelPreview, useQuickStats } from '@/data/today/todayHooks'
 export { useCheckins } from '@/data/today/checkinHooks'
 export { useCompanionFeed } from '@/data/today/feedHooks'
+export { useAdviceActions } from '@/data/today/adviceHooks'
 export { useSleep, useSleepGoal, useSleepGoalActions, useSleepShot } from '@/data/me/sleepHooks'
 export { useProfile } from '@/data/me/meHooks'
 export { useMeWeek } from '@/data/me/meWeekHooks'
@@ -55,7 +57,8 @@ export { useFuelSettings, useFuelSettingsActions } from '@/data/fuel/fuelSetting
 export { useDietSettings, useDietSettingsActions, DIET_SETTINGS_GHOST } from '@/data/fuel/dietSettingsHooks'
 export { useTutorialProgress, useTutorialProgressActions, TUTORIAL_PROGRESS_GHOST } from '@/data/tutorial/tutorialProgressHooks'
 export { useSlotTemplates, useSlotTemplateActions, useSlotTemplateEvaluation } from '@/data/fuel/slotTemplateHooks'
-export { useGoal, useGoalCreation, useGoalActions, useFeasibilityPreview, useGoalSuggestions, useSuggestionActions } from '@/data/me/goalHooks'
+export { useGoal, useGoalCreation, useGoalActions, useFeasibilityPreview, useGoalSuggestions, useGoalSuggestionPreview, useSuggestionActions } from '@/data/me/goalHooks'
+export { useGoalOverview } from '@/data/me/goalOverviewHooks'
 export { useLifeGoals, useLifeGoal, useLifeGoalMutations, useLifeGoalPropose, useSignalCatalog, useLifeGoalProgress, useLifeGoalToday } from '@/data/lifegoal/lifegoalHooks'
 
 export { useBiometricProfile, useBiometricActions } from '@/data/me/biometricHooks'

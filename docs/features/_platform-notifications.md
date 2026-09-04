@@ -2,7 +2,7 @@
 title: Push Notifications Platform
 type: feature-platform
 status: mixed
-updated: 2026-09-02
+updated: 2026-09-04
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
@@ -15,6 +15,8 @@ key_files:
   - frontend/src/data/notification/feedHooks.ts
   - frontend/src/features/me/pages/NotificationFeedPage.tsx
   - frontend/src/features/me/pages/NotificationsPage.tsx
+  - frontend/src/shared/lib/toastBus.ts
+  - frontend/src/shared/ui/ToastProvider.tsx
   - backend/src/main/resources/db/changelog/1.0.0/script/202607291000_mezo-h4wp.6.1_create_push_subscription.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607291400_mezo-h4wp.6.2_create_notification_pref_and_push_log.sql
   - backend/src/main/resources/db/changelog/1.0.0/script/202607291500_mezo-h4wp.6.3_create_notification_schedule.sql
@@ -134,6 +136,8 @@ shipped; the epic is complete.
   `/me/ertesitesek` (`NotificationFeedPage.tsx`, mezo-nol0, §2a).
 
 ## 2. User-facing behavior
+
+**In-app toast action contract (`mezo-ubxd`).** The global host also supports an optional action on a simple toast: `SimpleToast.action?: { label: string; onClick: () => void | Promise<void> }`. Stack uses this for the intake confirmation's **Visszavonás** button. It remains a simple success toast — the `RewardToast` shape and progression presentation are unchanged. Invoking the action dismisses that toast immediately; if its Promise rejects, the global TanStack `MutationCache.onError` emits the normal error toast. Queue capacity, kind-specific timers, newest-first order, per-item `role="status"`, close control and live-region behavior are unchanged.
 
 **Route:** `/me/ertesitesek` is now the in-app notification **feed** (`NotificationFeedPage.tsx`,
 §2a) — the settings surface described below moved one level down, to
@@ -986,6 +990,7 @@ one of the 12 current producer IT classes had to have this annotation dropped).
 - Commands: `cd backend && ./mvnw clean test -Dtest='*Notification*,DueEvaluator*,AnchorResolver*,InterventionFireMinuteTest'` (the last is added by name — its `service/` package doesn't match the other three globs).
 
 **Frontend (Vitest + RTL + MSW, both modes) — N2/N3 add:**
+- `shared/ui/ToastProvider.test.tsx` + `shared/lib/toastBus.test.ts` — optional simple-toast action rendering, Promise invocation, immediate dismissal and unchanged reward/queue behavior (`mezo-ubxd`).
 - `data/notification/notificationPrefHooks.test.tsx` — the optimistic per-category upsert + rollback,
   the code-default seed as the pre-resolve ghost.
 - `data/notification/notificationScheduleWriter.test.ts` — `buildScheduleEntries` (checkin + fuel_slot
@@ -1433,6 +1438,7 @@ cycle, §9)**
 - `frontend/public/push-sw.js`, `frontend/vite.config.ts` (`workbox.importScripts`), `frontend/.env.example` (`VITE_VAPID_PUBLIC`), `.github/workflows/deploy.yml` (same variable in `build-frontend`'s `env:`)
 
 **Frontend — data layer**
+- `frontend/src/shared/lib/toastBus.ts` + `frontend/src/shared/ui/ToastProvider.tsx` — the global simple/reward toast bus and host; simple toasts alone may carry the optional Promise-capable action (§2).
 - `frontend/src/data/notification/{notificationApi,notificationMock,notificationHooks,notificationPrefHooks,notificationScheduleWriter}.ts` — `usePushSubscription()` (N1) + `useNotificationPrefs()` (N2) + `useScheduleSnapshotWriter()`/`buildScheduleEntries()` (N3), all re-exported from `frontend/src/data/hooks.ts`
 - `frontend/src/data/notification/{feedApi,feedMock,feedHooks}.ts` (F1) — `useNotificationFeed()` + `useNotificationFeedActions()`, re-exported from `frontend/src/data/hooks.ts` (§6)
 - `frontend/src/data/types.ts` — `PushSubscriptionState`/`PushErrorCode` (N1); `NotificationCategoryKey`/`NOTIFICATION_CATEGORIES`/`NotificationPrefView`/`NotificationCategoryMeta`/`NOTIFICATION_CATEGORY_META` (N2, the 22-key HU copy catalog — `decision_review` appended, mezo-b3pp.4, then `intervention` last, mezo-b3pp.19); `AppNotificationKindKey`/`AppNotificationView`/`APP_NOTIFICATION_KIND_META` (F1, the 12-key catalog)

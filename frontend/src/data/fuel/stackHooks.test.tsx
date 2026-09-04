@@ -54,11 +54,31 @@ describe('useStack / useProtocol (mock mode)', () => {
     const isTaken = () => result.current.stack.stash.find(s => s.id === 'magnez')!.taken
     expect(isTaken()).toBe(false)
 
-    act(() => result.current.actions.logIntake('magnez'))
+    await act(async () => { await result.current.actions.logIntake('magnez') })
     await waitFor(() => expect(isTaken()).toBe(true))
 
-    act(() => result.current.actions.undoIntake('magnez'))
+    await act(async () => { await result.current.actions.undoIntake('magnez') })
     await waitFor(() => expect(isTaken()).toBe(false))
+  })
+
+  it('mock logIntake returns the created row and exact-id undo removes it', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ stack: useStack(), actions: useStackActions() }),
+      { wrapper: Wrapper },
+    )
+
+    let created: Awaited<ReturnType<typeof result.current.actions.logIntake>> | undefined
+    await act(async () => { created = await result.current.actions.logIntake('magnez', 'evening', '200mg') })
+    expect(created).toMatchObject({
+      id: 'intake-magnez-evening', pantryItemId: 'magnez', slotKey: 'evening', dose: '200mg',
+    })
+    await waitFor(() => expect(result.current.stack.stash.find(s => s.id === 'magnez')?.taken).toBe(true))
+
+    await act(async () => {
+      await result.current.actions.undoIntake('magnez', 'evening', created!.id)
+    })
+    await waitFor(() => expect(result.current.stack.stash.find(s => s.id === 'magnez')?.taken).toBe(false))
   })
 
   it('useProtocol returns the v3 seed protocol + its 8 occurrence seed rows', () => {
@@ -185,10 +205,10 @@ describe('useStack / useProtocol (mock mode)', () => {
     const isTaken = () => result.current.stack.stash.find(s => s.id === 'magnez')!.taken
     expect(isTaken()).toBe(false)
 
-    act(() => result.current.actions.logIntake('magnez', 'evening'))
+    await act(async () => { await result.current.actions.logIntake('magnez', 'evening') })
     await waitFor(() => expect(isTaken()).toBe(true))
 
-    act(() => result.current.actions.undoIntake('magnez', 'evening'))
+    await act(async () => { await result.current.actions.undoIntake('magnez', 'evening') })
     await waitFor(() => expect(isTaken()).toBe(false))
   })
 })
@@ -308,7 +328,7 @@ describe('useStack / useProtocol (real mode)', () => {
     const { qc, Wrapper } = sharedWrapper()
     const spy = vi.spyOn(qc, 'invalidateQueries')
     const { result } = renderHook(() => useStackActions('2026-07-02'), { wrapper: Wrapper })
-    act(() => result.current.logIntake('magnez'))
+    await act(async () => { await result.current.logIntake('magnez') })
     await waitFor(() => expect(posted).toHaveLength(1))
     expect(posted[0]).toMatchObject({ pantryItemId: 'magnez' })
     // FE stamps an offset-bearing takenAt for "now" so the server's day key = the browser's
@@ -327,7 +347,7 @@ describe('useStack / useProtocol (real mode)', () => {
     const date = localDateString()
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useStackActions(date), { wrapper: Wrapper })
-    act(() => result.current.logIntake('p-1'))
+    await act(async () => { await result.current.logIntake('p-1') })
     await waitFor(() => {
       const keys = invalidateSpy.mock.calls.map(c => JSON.stringify((c[0] as { queryKey?: unknown })?.queryKey))
       expect(keys).toContain(JSON.stringify(['habitDay']))
@@ -361,7 +381,7 @@ describe('useStack / useProtocol (real mode)', () => {
     // Wait until the seeded intake row lands in the shared cache (p-1 shows taken) before undoing it.
     await waitFor(() => expect(result.current.stack.stash.find(s => s.id === 'p-1')?.taken).toBe(true))
     const invalidateSpy = vi.spyOn(QueryClient.prototype, 'invalidateQueries')
-    act(() => result.current.actions.undoIntake('p-1'))
+    await act(async () => { await result.current.actions.undoIntake('p-1') })
     await waitFor(() => {
       const keys = invalidateSpy.mock.calls.map(c => JSON.stringify((c[0] as { queryKey?: unknown })?.queryKey))
       expect(keys).toContain(JSON.stringify(['habitDay']))
@@ -395,10 +415,34 @@ describe('useStack / useProtocol (real mode)', () => {
     )
     // Wait until the intake row lands in the shared cache (kreatin shows taken).
     await waitFor(() => expect(result.current.stack.stash.find(s => s.id === 'kreatin')?.taken).toBe(true))
-    act(() => result.current.actions.undoIntake('kreatin'))
+    await act(async () => { await result.current.actions.undoIntake('kreatin') })
     await waitFor(() => expect(deletedId).toBe('intake-xyz'))
     // Cache key used matches today (both hooks default to localDateString()).
     expect(date).toBe(localDateString())
+  })
+
+  it('returns the POSTed intake and exact-id undo DELETEs it before a list refetch', async () => {
+    let deletedId: string | undefined
+    server.use(
+      http.post(`${API_BASE}/api/fuel/intake`, () => HttpResponse.json({
+        id: 'intake-fresh', pantryItemId: 'kreatin', slotKey: 'wake', dose: '5g',
+        takenAt: '2026-07-02T07:00:00Z', takenDate: '2026-07-02',
+      }, { status: 201 })),
+      http.delete(`${API_BASE}/api/fuel/intake/entry/:id`, ({ params }) => {
+        deletedId = String(params.id)
+        return new HttpResponse(null, { status: 204 })
+      }),
+    )
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(() => useStackActions('2026-07-02'), { wrapper: Wrapper })
+
+    let created: Awaited<ReturnType<typeof result.current.logIntake>> | undefined
+    await act(async () => { created = await result.current.logIntake('kreatin', 'wake', '5g') })
+    expect(created?.id).toBe('intake-fresh')
+    await act(async () => {
+      await result.current.undoIntake('kreatin', 'wake', created!.id)
+    })
+    expect(deletedId).toBe('intake-fresh')
   })
 
   it('addItem POSTs {pantryItemId} and invalidates ["protocol"]', async () => {

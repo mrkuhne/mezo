@@ -46,6 +46,13 @@ public class CompanionMessageEntity extends OwnedEntity {
      *  schedule). Config text, never LLM-generated; the envelope carries {@code setupKey} so the
      *  weekly re-emit cooldown can be keyed per check. */
     public static final String KIND_SETUP = "setup";
+    /** Advice card (S4, bd mezo-d58h.4, spec 2026-09-03 §5): the SINGLE coaching card of the day.
+     *  Successor to {@code intervention} and {@code setup} — after S4 nothing writes those two,
+     *  and this kind's row is picked across ALL tiers by {@code AdvicePriority}. Its envelope
+     *  carries {@code adviceKey} (the severity key: flag key or setup-check key), {@code facts}
+     *  (deterministic, rule-provided) and {@code suggestions} (config text); the body is ONE
+     *  paragraph of LLM prose over those facts, or the template fallback. */
+    public static final String KIND_ADVICE = "advice";
 
     @Id
     @GeneratedValue

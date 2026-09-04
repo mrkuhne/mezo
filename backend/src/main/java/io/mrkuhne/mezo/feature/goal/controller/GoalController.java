@@ -4,16 +4,21 @@ import io.mrkuhne.mezo.api.controller.GoalApi;
 import io.mrkuhne.mezo.api.dto.FeasibilityPreviewRequest;
 import io.mrkuhne.mezo.api.dto.FeasibilityPreviewResponse;
 import io.mrkuhne.mezo.api.dto.GoalPlanAttachRequest;
+import io.mrkuhne.mezo.api.dto.GoalOverviewResponse;
 import io.mrkuhne.mezo.api.dto.GoalPlanLinkResponse;
 import io.mrkuhne.mezo.api.dto.GoalResponse;
+import io.mrkuhne.mezo.api.dto.GoalSuggestionAcceptRequest;
+import io.mrkuhne.mezo.api.dto.GoalSuggestionPreviewResponse;
 import io.mrkuhne.mezo.api.dto.GoalSuggestionResponse;
 import io.mrkuhne.mezo.api.dto.GoalTimelineResponse;
 import io.mrkuhne.mezo.api.dto.GoalUpsertRequest;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalEngineService;
 import io.mrkuhne.mezo.feature.goal.engine.service.GoalFeasibilityService;
 import io.mrkuhne.mezo.feature.goal.service.GoalPlanLinkService;
+import io.mrkuhne.mezo.feature.goal.service.GoalOverviewService;
 import io.mrkuhne.mezo.feature.goal.service.GoalService;
 import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionService;
+import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionPreviewService;
 import io.mrkuhne.mezo.feature.goal.service.GoalTimelineService;
 import io.mrkuhne.mezo.techcore.security.CurrentUserId;
 import java.util.List;
@@ -27,11 +32,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class GoalController implements GoalApi {
 
     private final GoalService goalService;
+    private final GoalOverviewService goalOverviewService;
     private final GoalPlanLinkService goalPlanLinkService;
     private final GoalTimelineService goalTimelineService;
     private final GoalEngineService goalEngineService;
     private final GoalFeasibilityService goalFeasibilityService;
     private final GoalSuggestionService goalSuggestionService;
+    private final GoalSuggestionPreviewService goalSuggestionPreviewService;
     private final CurrentUserId currentUserId;
 
     @Override
@@ -42,6 +49,11 @@ public class GoalController implements GoalApi {
     @Override
     public GoalResponse getGoal(UUID id) {
         return goalService.getGoal(currentUserId.get(), id);
+    }
+
+    @Override
+    public GoalOverviewResponse getGoalOverview(UUID id) {
+        return goalOverviewService.getOverview(currentUserId.get(), id);
     }
 
     @Override
@@ -108,8 +120,15 @@ public class GoalController implements GoalApi {
     }
 
     @Override
-    public GoalResponse acceptGoalSuggestion(UUID id, UUID suggestionId) {
-        return goalSuggestionService.accept(currentUserId.get(), id, suggestionId);
+    public GoalResponse acceptGoalSuggestion(
+            UUID id, UUID suggestionId, GoalSuggestionAcceptRequest goalSuggestionAcceptRequest) {
+        return goalSuggestionService.accept(
+            currentUserId.get(), id, suggestionId, goalSuggestionAcceptRequest);
+    }
+
+    @Override
+    public GoalSuggestionPreviewResponse previewGoalSuggestion(UUID id, UUID suggestionId) {
+        return goalSuggestionPreviewService.preview(currentUserId.get(), id, suggestionId);
     }
 
     @Override

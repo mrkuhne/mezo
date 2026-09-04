@@ -5,6 +5,7 @@ import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { seedAllKalauzSeen } from '@/test/kalauz'
+import rawCss from '@/styles/prototype.css?raw'
 
 // mezo-gb1s.3: a hub-kalauzok 600 ms után felugranának a navigációs asszertek közben.
 beforeEach(() => seedAllKalauzSeen())
@@ -63,11 +64,11 @@ test('the Fuel tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20
 
 test('/fuel/stack stays a stable full-page sibling of the Fuel hub', async () => {
   const { container } = renderApp('/fuel/stack')
-  // Mozaik face since the fidelity audit (mezo-d20.11): the `.pghead-np` h1 "Napi protokoll"
-  // became a sage MozaikPage with the prototype's "Stack" hero — the ROUTE is what this
-  // navigation test pins, so it asserts the page scaffold, not the retired headline.
-  expect(await screen.findByText('Stack')).toBeInTheDocument()
+  // The hub's protocol tile is stable across loading, empty, next-action and all-done states.
+  // Real-mode CI intentionally starts with an empty protocol, while mock mode has a next item.
+  expect(await screen.findByRole('button', { name: 'Teljes protokoll' })).toBeInTheDocument()
   expect(container.querySelector('.mz-page.mz-p-sage')).toBeInTheDocument()
+  expect(container.querySelector('.mz-page-head')).not.toBeInTheDocument()
 })
 
 test('/me/karakter is the Karakter dossier hub — reachable as a stable route (mezo-1gim.13)', async () => {
@@ -253,6 +254,35 @@ test('hides the quick-log FAB on the chat page but keeps the tab bar', () => {
   const { container } = renderApp('/mezo/chat')
   expect(container.querySelector('.quicklog-fab')).toBeNull()
   expect(container.querySelector('.tab-bar')).not.toBeNull()
+})
+
+test('the sticky header keeps its compact aurora without covering content or doubling the chat header', async () => {
+  const auroraRule = rawCss.match(/\.app-head-bg\s*\{[^}]+\}/)?.[0] ?? ''
+  const condensedAuroraRule = rawCss.match(/\.app-head\.is-cond \.app-head-bg\s*\{[^}]+\}/)?.[0] ?? ''
+  const roundButtonRule = rawCss.match(/\.nap-roundbtn\s*\{[^}]+\}/)?.[0] ?? ''
+
+  expect.soft(auroraRule).toContain('height: calc(100% + 18px)')
+  expect.soft(auroraRule).toContain('black 70%')
+  expect.soft(condensedAuroraRule).not.toContain('opacity: 0')
+  expect.soft(rawCss).not.toMatch(/\.app-head\.is-cond::before\s*\{/)
+  expect.soft(rawCss).toContain('--mzh-head-cond-h: 46px')
+  expect.soft(roundButtonRule).toContain('width: 42px')
+  expect.soft(roundButtonRule).toContain('height: 42px')
+
+  const nap = renderApp('/nap')
+  const napHeader = nap.container.querySelector('.app-head')!
+  expect.soft(napHeader.querySelector('.app-head-sec svg')).toHaveAttribute('width', '32')
+  expect.soft(screen.getByLabelText('Napszak váltása').querySelector('svg')).toHaveAttribute('width', '24')
+  expect.soft(screen.getByLabelText(/Mezo üzenetei/).querySelector('svg')).toHaveAttribute('width', '23')
+  expect.soft(screen.getByLabelText(/Értesítések/).querySelector('svg')).toHaveAttribute('width', '23')
+  expect.soft(napHeader.querySelector('.nap-avatar svg')).toHaveAttribute('width', '42')
+  nap.unmount()
+
+  const { container } = renderApp('/mezo/chat')
+  await screen.findByLabelText('Küldés')
+  expect.soft(container.querySelector('.app-head')).toBeNull()
+  expect.soft(container.querySelectorAll('.mzc-chathead')).toHaveLength(1)
+  expect.soft(rawCss.match(/\.mzc-chathead\s*\{[^}]+\}/)?.[0] ?? '').toContain('top: 0')
 })
 
 test('/fuel/log/uj is a stable full-page sibling — the logging page (mezo-bq2t)', async () => {

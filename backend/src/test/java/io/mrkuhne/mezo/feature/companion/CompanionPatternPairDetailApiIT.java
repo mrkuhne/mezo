@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.PredictionRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
+import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.PatternEventPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.PredictionPopulator;
@@ -21,8 +22,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
+import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.util.List;
 import java.util.UUID;
 
 /** mezo-tk88.3: the one-stop detail read — meta+gate, nullable row, events, live days, impact. */
@@ -35,6 +40,7 @@ class CompanionPatternPairDetailApiIT extends ApiIntegrationTest {
     @Autowired private PatternEventPopulator patternEventPopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
+    @Autowired private MealPopulator mealPopulator;
     @Autowired private PredictionPopulator predictionPopulator;
     @Autowired private PredictionRepository predictionRepository;
     @Autowired private UserPopulator userPopulator;
@@ -51,6 +57,32 @@ class CompanionPatternPairDetailApiIT extends ApiIntegrationTest {
             int stress = (i % 5) + 1;
             checkInPopulator.createCheckIn(owner, day, "08:00", 3, stress, null);
             sleepLogPopulator.createSleepLog(owner, day, new BigDecimal("7.0"), 6 - stress);
+        }
+    }
+
+    private void seedImbalancedWeekendMeals(UUID owner) {
+        int weekdays = 0;
+        int weekends = 0;
+        int index = 0;
+        LocalDate day = LocalDate.now().minusDays(1);
+        while (weekdays < 8 || weekends < 1) {
+            boolean weekend = day.getDayOfWeek() == DayOfWeek.SATURDAY
+                    || day.getDayOfWeek() == DayOfWeek.SUNDAY;
+            boolean take = weekend ? weekends < 1 : weekdays < 8;
+            if (take) {
+                LocalTime time = LocalTime.of(10 + index, index * 7 % 60);
+                Instant loggedAt = day.atTime(time).atZone(ZoneId.systemDefault()).toInstant();
+                mealPopulator.createMealWithItems(owner, day, "dinner", loggedAt,
+                        List.of(new MealPopulator.Line(
+                                "Pattern fixture", "500", "30", "45", "18", (short) 2)));
+                if (weekend) {
+                    weekends++;
+                } else {
+                    weekdays++;
+                }
+                index++;
+            }
+            day = day.minusDays(1);
         }
     }
 
@@ -81,6 +113,24 @@ class CompanionPatternPairDetailApiIT extends ApiIntegrationTest {
         assertThat(detail.getPattern()).isNull();
         assertThat(detail.getEvents()).isEmpty();
         assertThat(detail.getPair().getVerdict()).isIn("no_data", "few_days");
+    }
+
+    @Test
+    void testPatternPairDetail_shouldMatchMonitorGroupBalance_whenWeekendHasOnlyOneDay() {
+        seedImbalancedWeekendMeals(ownerId());
+
+        PatternPairDetailResponse detail = getForBody(
+                "/api/companion/pattern/pair/weekend~late-meal-hour",
+                ownerAuthHeaders(), HttpStatus.OK, PatternPairDetailResponse.class);
+
+        assertThat(detail.getPair().getVerdict()).isEqualTo("imbalanced_groups");
+        assertThat(detail.getPair().getAlignedDays()).isEqualTo(9);
+        assertThat(detail.getPair().getGroupZeroDays()).isEqualTo(8);
+        assertThat(detail.getPair().getGroupOneDays()).isEqualTo(1);
+        assertThat(detail.getPair().getRequiredPerGroup()).isEqualTo(3);
+        assertThat(detail.getPair().getMetricAValueKind()).isEqualTo("binary");
+        assertThat(detail.getPair().getMetricBValueKind()).isEqualTo("clock_hour");
+        assertThat(detail.getDays()).hasSize(9);
     }
 
     @Test

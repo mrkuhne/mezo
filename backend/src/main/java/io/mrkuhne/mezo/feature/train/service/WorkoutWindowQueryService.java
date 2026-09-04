@@ -41,6 +41,7 @@ public class WorkoutWindowQueryService {
     private final WorkoutSessionRepository workoutSessionRepository;
     private final SportSessionRepository sportSessionRepository;
     private final WorkoutService workoutService;
+    private final SportSlotSkipService sportSlotSkipService;
     private final TrainProperties props;
 
     /**
@@ -105,7 +106,8 @@ public class WorkoutWindowQueryService {
         boolean gymScheduled = gymRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
             .anyMatch(s -> s.getDayOfWeek() == dow);
         boolean sportScheduled = sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
-            .anyMatch(s -> s.getDayOfWeek() == dow);
+            .filter(s -> s.getDayOfWeek() == dow)
+            .anyMatch(s -> !sportSlotSkipService.isSkipped(userId, dow, s.getTime(), date));
         boolean sportEvent = !sportEventRepo
             .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscTimeAsc(userId, date, date).isEmpty();
         boolean prescribedRun = runningBlockRepository.findByCreatedByAndStatusAndDeletedFalse(userId, "active")
@@ -133,6 +135,7 @@ public class WorkoutWindowQueryService {
         List<PlannedSport> unmatched = new ArrayList<>();
         sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId).stream()
             .filter(s -> s.getDayOfWeek() == dow)
+            .filter(s -> !sportSlotSkipService.isSkipped(userId, dow, s.getTime(), date))
             .forEach(s -> unmatched.add(new PlannedSport(s.getTime(), s.getDurationMin(), s.getSport())));
         sportEventRepo.findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscTimeAsc(userId, date, date)
             .forEach(e -> unmatched.add(new PlannedSport(e.getTime(), e.getDurationMin(), e.getSport())));

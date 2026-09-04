@@ -1,0 +1,70 @@
+package io.mrkuhne.mezo.feature.proactive.service;
+
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
+import java.util.List;
+import lombok.extern.slf4j.Slf4j;
+
+/**
+ * The spec §4 severity order (2026-09-03 design, bottom of §4) as an integer rank — S4's
+ * replacement for the two independent first-wins gates S1–S3 shipped. Lower rank wins.
+ *
+ * <p>Pure static lookup, deliberately NOT config: this is the spec's editorial ranking of which
+ * problem deserves the day's single card, not a threshold. Thresholds stay in
+ * {@code FlagProperties} / {@code SetupCheckProperties}.
+ *
+ * <p>An unknown key ranks LAST and logs a warning rather than throwing — an unmapped key must
+ * never blow up delivery inside {@code InterventionEventListener}'s catch, which is exactly the
+ * failure mode {@code FlagProperties.CooldownHours.forFlag}'s throwing default produces.
+ * {@code AdvicePriorityTest} asserts every live {@link FlagKey} constant is present, so the
+ * warning path is a genuine last resort rather than the normal way a new key behaves.
+ */
+@Slf4j
+public final class AdvicePriority {
+
+    /**
+     * Highest severity first. The six S6 keys are string LITERALS on purpose: they are not
+     * {@link FlagKey} constants yet, and adding constants there without widening the
+     * {@code ck_companion_flag_log_flag_key} CHECK and the two mirroring {@code @Pattern} regexes
+     * would be a trap (bd memory: adding-a-flagkey-needs-five-mirrored-changes). S6 replaces them
+     * with constants in the same change that adds the flags.
+     *
+     * <p>The round-0 tail order (recovery → stress → momentum → all_healthy) is a plan decision:
+     * the spec only ranks them collectively, below the setup cards.
+     */
+    public static final List<String> ORDER = List.of(
+        "acute_bad_day",            // S6
+        "load_fuel_mismatch",       // S6
+        "rapid_weight_loss",        // S6
+        "joint_overuse",            // S6
+        FlagKey.MISSED_WORKOUTS,
+        FlagKey.SLEEP_DEBT,
+        FlagKey.LOGGING_GAP,
+        "ignored_nudge",            // S6
+        "late_eating",              // S6
+        SetupCheckService.CHECK_MISSING_SLEEP_GOAL,
+        SetupCheckService.CHECK_PLAN_FEASIBILITY,
+        FlagKey.RECOVERY_NEEDED,
+        FlagKey.SUSTAINED_STRESS,
+        FlagKey.MOMENTUM_AT_RISK,
+        FlagKey.ALL_HEALTHY);
+
+    private AdvicePriority() {
+    }
+
+    /** Lower is more severe; an unknown (or null) key ranks one past the end of the table. */
+    public static int rankOf(String adviceKey) {
+        int index = adviceKey == null ? -1 : ORDER.indexOf(adviceKey);
+        if (index < 0) {
+            log.warn("Advice key {} has no severity rank — ranking it last. Add it to "
+                + "AdvicePriority.ORDER (spec 2026-09-03 §4).", adviceKey);
+            return ORDER.size();
+        }
+        return index;
+    }
+
+    /** STRICT: an equal-ranked candidate does not displace the incumbent, so a re-raise of the
+     *  same flag leaves the day's card (and its „Segített?" votes) alone. */
+    public static boolean outranks(String candidateKey, String incumbentKey) {
+        return rankOf(candidateKey) < rankOf(incumbentKey);
+    }
+}

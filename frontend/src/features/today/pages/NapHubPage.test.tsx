@@ -322,3 +322,8 @@ test.each(['reggel', 'nap', 'este'])('a(z) %s panel mozaikjában nincs Mezo-üze
   expect(screen.queryByRole('button', { name: /Mezo üzenetei/ })).toBeNull()
   expect(document.querySelector('.nap-unread')).toBeNull()
 })
+
+test('a nap-panel mozaikja viszi a Célok · ma csempét (mezo-iizd.9)', async () => {
+  renderHub('/nap?dp=nap')
+  expect(await screen.findByRole('button', { name: /Célok · ma/ })).toBeInTheDocument()
+})

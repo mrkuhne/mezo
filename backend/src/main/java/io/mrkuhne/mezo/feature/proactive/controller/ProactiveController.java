@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.proactive.controller;
 
 import io.mrkuhne.mezo.api.controller.ProactiveApi;
+import io.mrkuhne.mezo.api.dto.AdviceApplyRequest;
 import io.mrkuhne.mezo.api.dto.ChallengeDecisionRequest;
 import io.mrkuhne.mezo.api.dto.ChallengeResponse;
 import io.mrkuhne.mezo.api.dto.ExperimentDecisionRequest;
@@ -13,6 +14,8 @@ import io.mrkuhne.mezo.api.dto.WeeklyLessonResponse;
 import io.mrkuhne.mezo.api.dto.WeeklyReviewDigestResponse;
 import io.mrkuhne.mezo.api.dto.WeeklyReviewResponse;
 import io.mrkuhne.mezo.api.dto.WeeklySuggestionResponse;
+import io.mrkuhne.mezo.feature.proactive.mapper.ProactiveMapper;
+import io.mrkuhne.mezo.feature.proactive.service.AdviceApplyService;
 import io.mrkuhne.mezo.feature.proactive.service.ProactiveChallengeService;
 import io.mrkuhne.mezo.feature.proactive.service.ProactiveExperimentService;
 import io.mrkuhne.mezo.feature.proactive.service.ProactiveFeedService;
@@ -48,6 +51,8 @@ public class ProactiveController implements ProactiveApi {
     private final ProactiveExperimentService experimentService;
     private final ProactiveChallengeService challengeService;
     private final ProactiveFeedService feedService;
+    private final AdviceApplyService adviceApplyService;
+    private final ProactiveMapper mapper;
     private final WeeklyReviewService weeklyReviewService;
     private final WeeklyReviewDigestService weeklyReviewDigestService;
     private final WeeklyLessonService weeklyLessonService;
@@ -98,6 +103,19 @@ public class ProactiveController implements ProactiveApi {
     @Override
     public ExperimentResponse decideExperiment(UUID id, ExperimentDecisionRequest request) {
         return experimentService.decide(currentUserId.get(), id, request);
+    }
+
+    /**
+     * S5 (bd mezo-d58h.5): delegates straight into {@link AdviceApplyService#apply} — no
+     * transaction opened here. {@code apply} is itself {@code @Transactional} and takes the
+     * per-user advisory lock as the first statement of THAT transaction (see its javadoc); a
+     * caller that wrapped it in an outer transaction which had already touched
+     * {@code companion_message} would break that lock-ordering invariant.
+     */
+    @Override
+    public FeedMessageResponse applyAdviceAction(UUID id, AdviceApplyRequest request) {
+        return mapper.toFeedResponse(
+                adviceApplyService.apply(currentUserId.get(), id, request.getActionKey().getValue()));
     }
 
     @Override

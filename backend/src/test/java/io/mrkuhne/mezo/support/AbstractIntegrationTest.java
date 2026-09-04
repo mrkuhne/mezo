@@ -32,6 +32,7 @@ import io.mrkuhne.mezo.support.populator.FlagLogPopulator;
 import io.mrkuhne.mezo.support.populator.MemoirPopulator;
 import io.mrkuhne.mezo.support.populator.PredictionPopulator;
 import io.mrkuhne.mezo.support.populator.MemoryEmbeddingPopulator;
+import io.mrkuhne.mezo.support.populator.MemoryItemPopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationPopulator;
 import io.mrkuhne.mezo.support.populator.MentionPopulator;
@@ -54,8 +55,10 @@ import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.SkillProgressPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
+import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
 import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
+import io.mrkuhne.mezo.support.populator.WorkoutDayAdjustmentPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
 import io.mrkuhne.mezo.support.populator.DiagnosisPopulator;
@@ -88,6 +91,7 @@ import org.springframework.context.annotation.Import;
 @Import({TestcontainersConfiguration.class, DatabasePopulator.class, UserPopulator.class,
     AiConversationPopulator.class, AiMessagePopulator.class,
     KnowledgeFactPopulator.class, LearnedFactPopulator.class, MemoryEmbeddingPopulator.class,
+    MemoryItemPopulator.class,
     DailySummaryPopulator.class, PeriodSummaryPopulator.class, PatternPopulator.class, PatternEventPopulator.class,
     CompanionMessagePopulator.class, FeedbackPopulator.class, FlagLogPopulator.class,
     WeeklySuggestionPopulator.class, MemoirPopulator.class, WeeklyReviewPopulator.class,
@@ -95,7 +99,7 @@ import org.springframework.context.annotation.Import;
     PredictionPopulator.class, ExperimentPopulator.class, ChallengePopulator.class,
     QuestPopulator.class, ActivityPopulator.class, HabitPopulator.class,
     IntentionPopulator.class, RitualPopulator.class, NeedsPopulator.class, JournalPopulator.class,
-    TrainPopulator.class, MesoTemplatePopulator.class, RunningPopulator.class, GoalPopulator.class,
+    TrainPopulator.class, SportSlotSkipPopulator.class, WorkoutDayAdjustmentPopulator.class, MesoTemplatePopulator.class, RunningPopulator.class, GoalPopulator.class,
     GoalPlanLinkPopulator.class, GoalSuggestionPopulator.class, GraphPopulator.class,
     BiometricProfilePopulator.class, WeightLogPopulator.class, SleepLogPopulator.class,
     SleepGoalPopulator.class,

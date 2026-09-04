@@ -35,6 +35,7 @@ import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.MesocycleRepository;
 import io.mrkuhne.mezo.feature.train.repository.MuscleGroupVolumeLogRepository;
+import io.mrkuhne.mezo.feature.train.repository.WorkoutDayAdjustmentRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -125,6 +126,10 @@ public class WorkoutService {
     // idiom) — gated on the switch there, not here (mirrors ChatService, which publishes
     // ChatTurnCompleted unconditionally too).
     private final ApplicationEventPublisher eventPublisher;
+    // Proactive coaching S5 (mezo-d58h.5): per-date lighten overlay. Applied AFTER
+    // effectiveWorkingSets resolves the muscle-group volume distribution (see below) — subtracting
+    // it earlier would corrupt that week-wide proportional split instead of lightening one day.
+    private final WorkoutDayAdjustmentRepository workoutDayAdjustmentRepository;
 
     public WorkoutTodayResponse getToday(UUID createdBy, UUID templateSessionId) {
         // Settle abandoned instances FIRST (own @Transactional bean — getToday is a read):
@@ -228,6 +233,13 @@ public class WorkoutService {
                 effectiveSets = effectiveWorkingSets(weekTemplateExercises(createdBy, mesoSessions), logs);
             }
         }
+        // Per-date lighten delta (mezo-d58h.5): looked up ONCE for today's date, applied per
+        // exercise below AFTER effectiveSets (the volume-weighting map) is already resolved —
+        // never before, and never into effectiveSets itself.
+        int dayDelta = workoutDayAdjustmentRepository
+            .findByCreatedByAndDateAndDeletedFalse(createdBy, LocalDate.now())
+            .map(a -> (int) a.getSetDelta())
+            .orElse(0);
         int weightUp = 0;
         int repUp = 0;
         int hold = 0;
@@ -244,6 +256,7 @@ public class WorkoutService {
                 }
             }
             int effective = effectiveSets.getOrDefault(e.getId(), e.getWorkingSets());
+            effective = Math.max(1, effective + dayDelta);
             t.setWorkingSets(effective);
             if (hypertrophyGate.getIfAvailable() != null) {
                 Prescription p = setRecommendationService.prescribe(createdBy, e, deloadWeek, effective);

@@ -16,7 +16,12 @@ export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: Briefin
  *  whose card body comes straight from `mezo.companion.interventions[].textHu`, and `setup` (S3,
  *  mezo-d58h.3), whose card body is composed in `SetupCheckService` from a check verdict's own
  *  numbers. */
-export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening' | 'intervention' | 'people' | 'setup'
+export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening' | 'intervention' | 'people' | 'setup' | 'advice'
+export type AdviceActionKey = 'lighten_tomorrow' | 'skip_sport_slot' | 'shift_sleep_anchor'
+/** One offered action button on an advice card (S5, mezo-d58h.5) — `params` is ALWAYS rule-provided. */
+export interface FeedAction { key: AdviceActionKey; label: string; params?: Record<string, unknown> }
+/** Stamped once an offered action has actually been applied (S5, mezo-d58h.5). */
+export interface FeedApplied { actionKey: string; at: string }
 /** One companion-feed message — the MezoChip thread's real-mode source (`useCompanionFeed`), mirrors FeedMessageResponse. */
 export interface FeedMessage {
   /** The companion_message row id (uuid) — the W4.1 feedback artifactId (`feed_message`). */
@@ -25,6 +30,14 @@ export interface FeedMessage {
   eyebrow: string
   body: BriefingPara[]
   refs: BriefingRef[]
+  /** Advice-card evidence (S4, mezo-d58h.4) — deterministic, rule-provided; only advice rows. */
+  facts?: string[]
+  /** Advice-card suggestion texts (config-provided); only advice rows. */
+  suggestions?: string[]
+  /** Advice-card action buttons (S5, mezo-d58h.5) — rule-provided; only advice rows. */
+  actions?: FeedAction[]
+  /** Advice-card applied stamp (S5, mezo-d58h.5) — set once an action has been applied; only advice rows. */
+  applied?: FeedApplied
   generatedAt: string // ISO date-time
 }
 export interface NiggleWarning { muscle: string; muscleLabel: string; detail: string }
@@ -880,7 +893,14 @@ export interface Pattern {
   kind?: 'statistical' | 'ai_hypothesis'
 }
 
-export type PatternGateVerdict = 'live' | 'few_days' | 'no_data' | 'degenerate' | 'frozen'
+export type PatternMetricValueKind = 'number' | 'clock_hour' | 'binary'
+export type PatternGateVerdict =
+  | 'live'
+  | 'few_days'
+  | 'no_data'
+  | 'degenerate'
+  | 'imbalanced_groups'
+  | 'frozen'
 
 /** A metrikák élet-domén besorolása — a Motor tab csoportosítási kulcsa (mezo-18bx). */
 export type MetricDomain = 'sleep' | 'train' | 'fuel' | 'mind' | 'body' | 'other'
@@ -893,8 +913,10 @@ export interface PatternMonitorPair {
   lagDays: number
   metricAKey: string
   metricALabel: string
+  metricAValueKind: PatternMetricValueKind
   metricBKey: string
   metricBLabel: string
+  metricBValueKind: PatternMetricValueKind
   /** Miért figyeljük — a katalógus mechanism-egysorosa (mezo-18bx). */
   mechanismHu: string
   /** Kérdés-cím a Motor kártyán (mezo-fj1g). */
@@ -911,6 +933,9 @@ export interface PatternMonitorPair {
   alignedDays: number
   missingDays: number | null
   bottleneckMetricKey: string | null
+  groupZeroDays: number | null
+  groupOneDays: number | null
+  requiredPerGroup: number | null
   r: number | null
   n: number | null
   p: number | null

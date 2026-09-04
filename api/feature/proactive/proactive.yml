@@ -40,6 +40,33 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/proactive/advice/{id}/apply:
+    post:
+      tags: [Proactive]
+      operationId: applyAdviceAction
+      summary: Apply one of the advice card's offered actions (S5, mezo-d58h.5)
+      description: >-
+        Applies the named action and stamps `applied` onto the card. Idempotent: re-applying the
+        SAME action returns the card unchanged with its original `applied` timestamp and runs no
+        second mutation. A card that has been superseded by a higher-severity card is gone (404),
+        and an action the card does not offer is refused (409) — a client can never invoke a
+        mutation the rule did not put there.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdviceApplyRequest' }
+      responses:
+        '200': { description: The card with its applied state, content: { application/json: { schema: { $ref: '#/components/schemas/FeedMessageResponse' } } } }
+        '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing or invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '404': { description: 'No such live advice card for this user (it may have been superseded)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '409': { description: 'The card does not offer this action, or a different action was already applied', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/proactive/weekly-suggestion:
     get:
       tags: [Proactive]
@@ -442,6 +469,27 @@ components:
           description: FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory/Person)
         label:
           type: string
+    FeedAction:
+      type: object
+      required: [key, label]
+      properties:
+        key:
+          type: string
+          description: Which mutation the button applies (S5, mezo-d58h.5). The apply endpoint dispatches on this.
+          enum: [lighten_tomorrow, skip_sport_slot, shift_sleep_anchor]
+        label:
+          type: string
+          description: The button's Hungarian caption — rule-provided, never model-written.
+        params:
+          type: object
+          additionalProperties: true
+          description: The mutation's parameters, ALWAYS produced by the deterministic rule (spec §6). The model can never invent an action or a number.
+    FeedApplied:
+      type: object
+      required: [actionKey, at]
+      properties:
+        actionKey: { type: string }
+        at: { type: string, format: date-time }
     FeedMessageResponse:
       type: object
       required: [id, date, kind, eyebrow, body, refs, generatedAt]
@@ -450,8 +498,8 @@ components:
         date: { type: string, format: date }
         kind:
           type: string
-          description: Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; intervention is config text (mezo.companion.interventions) and setup is config text for a configuration gap (mezo.proactive.setup-checks), neither ever LLM output.
-          enum: [morning, sleep, weight, midday, evening, intervention, people, setup]
+          description: Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; advice is the single daily coaching card (S4, mezo-d58h.4) whose prose is LLM-written over deterministic facts; intervention and setup are the pre-S4 config-text cards, kept for existing rows only.
+          enum: [morning, sleep, weight, midday, evening, intervention, people, setup, advice]
         eyebrow: { type: string }
         body:
           type: array
@@ -459,6 +507,20 @@ components:
         refs:
           type: array
           items: { $ref: '#/components/schemas/FeedRef' }
+        facts:
+          type: array
+          description: Advice-card evidence — deterministic, rule-provided lines rendered from the raise's own frozen payload (S4, mezo-d58h.4). Present only on advice rows; the model never writes these.
+          items: { type: string }
+        suggestions:
+          type: array
+          description: Advice-card suggestion texts (config-provided). Present only on advice rows.
+          items: { type: string }
+        actions:
+          type: array
+          description: Up to two action buttons offered by this advice card (S5, mezo-d58h.5). Present only on advice rows.
+          items: { $ref: '#/components/schemas/FeedAction' }
+        applied:
+          $ref: '#/components/schemas/FeedApplied'
         generatedAt: { type: string, format: date-time }
     WeeklySuggestionResponse:
       type: object
@@ -540,6 +602,13 @@ components:
       required: [decision]
       properties:
         decision: { type: string, pattern: '^(accept|dismiss)$' }
+    AdviceApplyRequest:
+      type: object
+      required: [actionKey]
+      properties:
+        actionKey:
+          type: string
+          enum: [lighten_tomorrow, skip_sport_slot, shift_sleep_anchor]
     ExperimentResponse:
       type: object
       required: [id, title, hypothesis, status, metricKey, expectedDirection, totalDays, generatedAt]

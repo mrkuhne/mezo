@@ -876,7 +876,7 @@ components:
           items: { $ref: '#/components/schemas/PatternMetricCoverage' }
     PatternMonitorPair:
       type: object
-      required: [key, title, category, categoryLabel, lagDays, metricAKey, metricALabel, metricBKey, metricBLabel, mechanismHu, questionHu, expectedDirection, whenPositiveHu, whenNegativeHu, metricADomain, metricBDomain, verdict, alignedDays]
+      required: [key, title, category, categoryLabel, lagDays, metricAKey, metricALabel, metricAValueKind, metricBKey, metricBLabel, metricBValueKind, mechanismHu, questionHu, expectedDirection, whenPositiveHu, whenNegativeHu, metricADomain, metricBDomain, verdict, alignedDays]
       properties:
         key: { type: string, description: 'A pár stabil identitása (pair_key).' }
         title: { type: string }
@@ -885,8 +885,10 @@ components:
         lagDays: { type: integer, description: 'metric-b ennyi nappal metric-a napja UTÁN olvasódik.' }
         metricAKey: { type: string }
         metricALabel: { type: string }
+        metricAValueKind: { type: string, pattern: '^(number|clock_hour|binary)$', description: 'A metrika megjelenítési típusa; a grafikon és az értékformázás contractos forrása.' }
         metricBKey: { type: string }
         metricBLabel: { type: string }
+        metricBValueKind: { type: string, pattern: '^(number|clock_hour|binary)$', description: 'A metrika megjelenítési típusa; a grafikon és az értékformázás contractos forrása.' }
         mechanismHu: { type: string, description: 'Miért figyeljük — a katalógus mechanism-egysorosa (mezo-18bx).' }
         questionHu: { type: string, description: 'Kérdés-cím a Motor kártyán — „Jobban alszol, ha…?" (mezo-fj1g).' }
         expectedDirection: { type: string, pattern: '^(positive|negative)$', description: 'A mechanizmus által várt korreláció-irány (mezo-fj1g).' }
@@ -894,10 +896,13 @@ components:
         whenNegativeHu: { type: string, description: 'Negatív r emberi olvasata — {erősség} behelyettesítővel (mezo-fj1g).' }
         metricADomain: { type: string, pattern: '^(sleep|train|fuel|mind|body|other)$', description: 'metric-a élet-doménje.' }
         metricBDomain: { type: string, pattern: '^(sleep|train|fuel|mind|body|other)$', description: 'metric-b (a kimenet) doménje — a Motor tab elsődleges csoportja.' }
-        verdict: { type: string, pattern: '^(live|few_days|no_data|degenerate|frozen)$' }
+        verdict: { type: string, pattern: '^(live|few_days|no_data|degenerate|imbalanced_groups|frozen)$' }
         alignedDays: { type: integer, description: 'Az illesztett napok száma (frozen sornál a befagyasztott n).' }
         missingDays: { type: integer, nullable: true, description: 'minN - alignedDays — csak few_days.' }
         bottleneckMetricKey: { type: string, nullable: true, description: 'A szűk keresztmetszet metrikája — few_days / no_data / degenerate.' }
+        groupZeroDays: { type: integer, nullable: true, description: 'A 0 értékű illesztett napok száma — csak bináris metric-a esetén.' }
+        groupOneDays: { type: integer, nullable: true, description: 'Az 1 értékű illesztett napok száma — csak bináris metric-a esetén.' }
+        requiredPerGroup: { type: integer, nullable: true, description: 'A csoportonként megkövetelt minimum — csak bináris metric-a esetén.' }
         r: { type: number, format: double, nullable: true, description: 'live: élő számítás · frozen: a befagyasztott sor értéke.' }
         n: { type: integer, nullable: true }
         p: { type: number, format: double, nullable: true }

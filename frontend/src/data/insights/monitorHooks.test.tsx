@@ -73,9 +73,9 @@ describe('usePatternMonitor (mock mode)', () => {
     const { result } = renderHook(() => usePatternMonitor(), { wrapper: makeHookWrapper() })
 
     expect(result.current.mode).toBe('mock')
-    expect(result.current.monitor!.pairs).toHaveLength(8)
+    expect(result.current.monitor!.pairs).toHaveLength(9)
     const verdicts = new Set(result.current.monitor!.pairs.map((p) => p.verdict))
-    expect(verdicts).toEqual(new Set(['live', 'few_days', 'no_data', 'degenerate']))
-    expect(result.current.monitor!.metrics).toHaveLength(12)
+    expect(verdicts).toEqual(new Set(['live', 'few_days', 'no_data', 'degenerate', 'imbalanced_groups']))
+    expect(result.current.monitor!.metrics).toHaveLength(13)
   })
 })

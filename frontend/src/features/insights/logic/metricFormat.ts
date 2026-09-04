@@ -33,6 +33,31 @@ export function axisEndLabels(metricKey: string): { low: string; high: string } 
   return { low: 'alacsony', high: 'magas' }
 }
 
+export interface BinaryGroupLabels {
+  zero: { axis: string; day: string }
+  one: { axis: string; day: string }
+}
+
+/** Copy metadata for binary comparison groups; chart selection comes from the API value kind. */
+export function binaryGroupLabels(metricKey: string): BinaryGroupLabels {
+  if (metricKey === 'weekend') {
+    return {
+      zero: { axis: 'hétköznap', day: 'hétköznapi' },
+      one: { axis: 'hétvége', day: 'hétvégi' },
+    }
+  }
+  if (metricKey === 'ritual-closed') {
+    return {
+      zero: { axis: 'kimaradt', day: 'lezárás nélküli' },
+      one: { axis: 'megvolt', day: 'lezárt esti' },
+    }
+  }
+  return {
+    zero: { axis: '0-s csoport', day: '0-s csoportbeli' },
+    one: { axis: '1-es csoport', day: '1-es csoportbeli' },
+  }
+}
+
 /** Diagnostics r at the mockup's precision (r=0.58), em dash when the gate hasn't produced one. */
 export function formatR(r: number | null | undefined): string {
   return r == null ? '—' : r.toFixed(2)

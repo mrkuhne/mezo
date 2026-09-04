@@ -7,6 +7,7 @@ import {
   type FeasibilityPreviewRequest,
   type FeasibilityPreviewResponse,
   type GoalSuggestionResponse,
+  type GoalSuggestionPreviewResponse,
 } from '@/data/me/goalApi'
 import { goalLinkApi, type GoalTimelineResponse, type GoalPlanAttachRequest } from '@/data/me/goalLinkApi'
 import { weightApi } from '@/data/me/biometricsApi'
@@ -19,6 +20,8 @@ import {
   goalTimeline as mockTimeline,
   feasibilityPreview as mockFeasibilityPreview,
   goalSuggestions as mockGoalSuggestions,
+  goalSuggestionPreviewSeed as mockGoalSuggestionPreview,
+  goalSuggestionPreviewSeeds as mockGoalSuggestionPreviews,
 } from '@/data/me/goals'
 import type { Goal, GoalKind, LinkedMeso, WeightEntry } from '@/data/types'
 
@@ -84,12 +87,12 @@ export function useGoal() {
     queryFn: weightApi.list,
     enabled: !mock,
   })
-  const { data: goals, isPending: goalPending } = useQuery({
+  const { data: goals, isPending: goalPending, isError: goalError } = useQuery({
     queryKey: ['goals'],
     queryFn: mock ? async () => null : goalApi.list,
     initialData: mock ? null : undefined,
   })
-  const activeGoal = mock ? null : (goals ?? []).find(g => g.status === 'active') ?? (goals ?? [])[0] ?? null
+  const activeGoal = mock ? null : (goals ?? []).find(g => g.status === 'active') ?? null
   const goalId = activeGoal?.id
 
   // Real mode: fetch the active goal's plan timeline and build the linked plans
@@ -113,6 +116,9 @@ export function useGoal() {
       // Real-mode loading window only — mock seeds synchronously so this is always
       // false here; GoalsPage branches on it to show the skeleton (mezo-f2z).
       pending: !mock && goalPending,
+      // Mock mode never fetches, so it can never fail — a consumer that branches on `isError`
+      // (CelokPage's Súlycél sora) must get an honest `false`, not the query's real-mode flag.
+      isError: false,
     }
   }
 
@@ -120,7 +126,10 @@ export function useGoal() {
   // back to mockGoal here, which surfaced the demo placeholder to real users —
   // see mezo-72d.) GoalsPage guards on `goal === null` and renders the setup CTA.
   if (!activeGoal) {
-    return { goal: null, goalResponse: null, linkedMesocycles: {}, timeline: null, goalId: null, pending: !mock && goalPending }
+    // `isError` rides along: a FAILED /api/goals read reduces to the same "no active goal" shape
+    // as an empty list, so without it the Célok hub's Súlycél sora reported a network error as a
+    // measured „nincs aktív súlycél" (mezo-iizd.4 final review, finding 4).
+    return { goal: null, goalResponse: null, linkedMesocycles: {}, timeline: null, goalId: null, pending: !mock && goalPending, isError: goalError }
   }
 
   const goal: Goal = toGoal(activeGoal, (weightLog as WeightEntry[]) ?? [])
@@ -130,7 +139,7 @@ export function useGoal() {
   // straight off the contract — Decision C) + the raw timeline (the lane component
   // consumes timeline.links[] for lane positions — LinkedMeso can't drive lanes) +
   // goalId (attach/detach target).
-  return { goal, goalResponse: activeGoal, linkedMesocycles, timeline: timeline ?? null, goalId: activeGoal.id, pending: !mock && goalPending }
+  return { goal, goalResponse: activeGoal, linkedMesocycles, timeline: timeline ?? null, goalId: activeGoal.id, pending: !mock && goalPending, isError: goalError }
 }
 
 // Goal-management mutations (slice G4b). Real mode runs the write, then in
@@ -144,7 +153,10 @@ export function useGoalActions() {
 
   const invalidateGoals = () => { if (!mock) qc.invalidateQueries({ queryKey: ['goals'] }) }
   const invalidateTimeline = (goalId: string) => {
-    if (!mock) qc.invalidateQueries({ queryKey: ['goal', goalId, 'timeline'] })
+    if (!mock) {
+      qc.invalidateQueries({ queryKey: ['goal-overview', goalId] })
+      qc.invalidateQueries({ queryKey: ['goal', goalId, 'timeline'] })
+    }
   }
 
   const archiveM = useMutation({
@@ -290,40 +302,79 @@ export function useGoalSuggestions(goalId: string | null) {
   return { suggestions: data ?? [], pending: !mock && isPending }
 }
 
-// accept/dismiss mutations for a goal suggestion. Real mode invalidates the goal's
-// suggestions AND ['goals'] on accept (the engine re-evaluates the prescription in the
-// same call); mock mode no-ops and resolves so the cards still feel interactive offline.
+export function useGoalSuggestionPreview(goalId: string | null, suggestionId: string | null) {
+  const mock = isMockMode()
+  const enabled = !!goalId && !!suggestionId
+  const query = useQuery<GoalSuggestionPreviewResponse>({
+    queryKey: ['goal-suggestion-preview', goalId, suggestionId],
+    queryFn: mock
+      ? async () => mockGoalSuggestionPreviews[suggestionId as string] ?? mockGoalSuggestionPreview
+      : () => goalApi.previewSuggestion(goalId as string, suggestionId as string),
+    enabled,
+    initialData: mock && enabled
+      ? (mockGoalSuggestionPreviews[suggestionId as string] ?? mockGoalSuggestionPreview)
+      : undefined,
+    staleTime: mock ? Infinity : undefined,
+  })
+  return {
+    preview: enabled ? query.data : undefined,
+    pending: enabled && !mock && query.isPending,
+    error: query.error,
+    refetch: query.refetch,
+  }
+}
+
+// Fingerprint-gated accept/dismiss mutations for a goal suggestion. Real mode invalidates
+// every goal/suggestion/notification read touched by the decision. Mock mode rewrites the
+// concrete preview query to its historical status so the review flow behaves statefully offline.
 export function useSuggestionActions() {
   const qc = useQueryClient()
   const mock = isMockMode()
-  const invalidate = (goalId: string) => {
-    if (mock) return
+  const invalidate = (goalId: string, sid: string) => {
     qc.invalidateQueries({ queryKey: ['goal', goalId, 'suggestions'] })
-    qc.invalidateQueries({ queryKey: ['goals'] }) // accept re-evaluates the prescription
+    qc.invalidateQueries({ queryKey: ['goals'] })
+    qc.invalidateQueries({ queryKey: ['goal-overview', goalId] })
+    qc.invalidateQueries({ queryKey: ['goal-suggestion-preview', goalId, sid] })
+    qc.invalidateQueries({ queryKey: ['notification-feed'] })
   }
-  // A REJECTED accept (409 stale snapshot) still supersedes the suggestion server-side — only the
-  // suggestions list needs a refetch (the goal/prescription never changed), so the caller's catch
-  // block can clear the now-superseded card without a manual page refresh (mezo-ktg8 final-review
-  // finding 4).
+  // A rejected accept (409 stale fingerprint) supersedes the suggestion server-side. The review
+  // page owns the richer stale UI and can explicitly refetch the concrete preview.
   const invalidateSuggestions = (goalId: string) => {
     if (mock) return
     qc.invalidateQueries({ queryKey: ['goal', goalId, 'suggestions'] })
   }
   const acceptM = useMutation({
-    mutationFn: async ({ goalId, sid }: { goalId: string; sid: string }) => {
+    mutationFn: async ({ goalId, sid, previewFingerprint }: { goalId: string; sid: string; previewFingerprint: string }) => {
       if (mock) return null
-      return goalApi.acceptSuggestion(goalId, sid)
+      return goalApi.acceptSuggestion(goalId, sid, previewFingerprint)
     },
-    onSuccess: (_d, { goalId }) => invalidate(goalId),
+    onSuccess: (_d, { goalId, sid }) => {
+      if (mock) {
+        qc.setQueryData<GoalSuggestionPreviewResponse>(
+          ['goal-suggestion-preview', goalId, sid],
+          old => old ? { ...old, status: 'accepted', canApply: false, previewFingerprint: null } : old,
+        )
+      } else invalidate(goalId, sid)
+    },
   })
   const dismissM = useMutation({
     mutationFn: async ({ goalId, sid }: { goalId: string; sid: string }) => {
       if (mock) return
       await goalApi.dismissSuggestion(goalId, sid)
     },
-    onSuccess: (_d, { goalId }) => invalidate(goalId),
+    onSuccess: (_d, { goalId, sid }) => {
+      if (mock) {
+        qc.setQueryData<GoalSuggestionPreviewResponse>(
+          ['goal-suggestion-preview', goalId, sid],
+          old => old ? { ...old, status: 'dismissed', canApply: false, previewFingerprint: null } : old,
+        )
+      } else invalidate(goalId, sid)
+    },
   })
-  const accept = useCallback((goalId: string, sid: string) => acceptM.mutateAsync({ goalId, sid }), [acceptM])
+  const accept = useCallback(
+    (goalId: string, sid: string, previewFingerprint: string) => acceptM.mutateAsync({ goalId, sid, previewFingerprint }),
+    [acceptM],
+  )
   const dismiss = useCallback((goalId: string, sid: string) => dismissM.mutateAsync({ goalId, sid }), [dismissM])
   return { accept, dismiss, pending: acceptM.isPending || dismissM.isPending, invalidateSuggestions }
 }

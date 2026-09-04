@@ -49,9 +49,13 @@ public class FeedMessageKindService implements FeedMessageKindSource {
         if (feedMessageIds.isEmpty()) {
             return Map.of();
         }
+        // S4 (mezo-d58h.4): a flag-sourced `advice` row carries the library ENTRY key in the same
+        // envelope field, so the W5.2 per-entry effectiveness rollup keeps working across the kind
+        // change. Setup-sourced advice rows have a null interventionKey and drop out below.
         return companionMessageRepository.findAllById(feedMessageIds).stream()
             .filter(m -> userId.equals(m.getCreatedBy()))
-            .filter(m -> CompanionMessageEntity.KIND_INTERVENTION.equals(m.getKind()))
+            .filter(m -> CompanionMessageEntity.KIND_INTERVENTION.equals(m.getKind())
+                || CompanionMessageEntity.KIND_ADVICE.equals(m.getKind()))
             .filter(m -> m.getContent().interventionKey() != null)
             .collect(Collectors.toMap(CompanionMessageEntity::getId, m -> m.getContent().interventionKey()));
     }
