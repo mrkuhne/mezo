@@ -18,6 +18,7 @@ import io.mrkuhne.mezo.feature.train.repository.ExerciseRepository;
 import io.mrkuhne.mezo.feature.train.repository.ExerciseSetRepository;
 import io.mrkuhne.mezo.feature.train.repository.RunSessionLogRepository;
 import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
+import io.mrkuhne.mezo.feature.train.repository.WorkoutDayAdjustmentRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.feature.train.service.ExerciseRecordService;
 import io.mrkuhne.mezo.feature.train.service.RunningService;
@@ -78,6 +79,10 @@ public class TrainTools {
     // Read-only compute-on-read aggregation over working sets (ExerciseRecordService#list) —
     // NEVER a write-transactional method; there is none on this service.
     private final ExerciseRecordService exerciseRecordService;
+    // mezo-d58h.5: the per-date lighten overlay — dayContentLine renders a future day straight from
+    // the template's raw workingSets (not through WorkoutService.getToday), so it must apply this
+    // itself or the AI contradicts the "lighten tomorrow" card the user just tapped.
+    private final WorkoutDayAdjustmentRepository workoutDayAdjustmentRepository;
 
     @Tool(name = "get_training_log", description = "Múltbeli edzésnapló megadott ablakra scope szerint: "
             + "scope=gym — gym-edzések (dátum, edzésnap, sorozatszám, összvolumen kg-ban); scope=sport — "
@@ -306,13 +311,19 @@ public class TrainTools {
         List<ExerciseEntity> exercises = template.map(t -> exerciseRepository
                 .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(userId, List.of(t.getId())))
                 .orElse(List.of());
+        // mezo-d58h.5: per-date lighten overlay, looked up once for this date and applied to each
+        // exercise's raw template workingSets — same floor as WorkoutService.getToday.
+        int dayDelta = workoutDayAdjustmentRepository.findByCreatedByAndDateAndDeletedFalse(userId, date)
+                .map(a -> (int) a.getSetDelta())
+                .orElse(0);
         // mezo-4qu: the gym half is rendered by the SHARED ToolText.gymLine, exactly like the sport
         // half (ToolText.sportLine) — the tool and the chat snapshot can no longer disagree about a
         // day. An absent template yields no exercises, which the helper reads as a rest day.
         StringBuilder line = new StringBuilder(ToolText.gymLine(
                 template.map(WorkoutSessionEntity::getDayLabel).orElse(null),
                 exercises.stream()
-                        .map(e -> ToolText.exerciseLine(e.getName(), e.getWorkingSets(), e.getRepMin(), e.getRepMax()))
+                        .map(e -> ToolText.exerciseLine(e.getName(), Math.max(1, e.getWorkingSets() + dayDelta),
+                                e.getRepMin(), e.getRepMax()))
                         .toList()));
         sportSlotsOn(userId, sportSlots, date).forEach(s -> line.append("; ").append(ToolText.sportLine(
                 s.getSport(), s.getTime(), s.getKind() == null ? null : s.getKind().getValue(),

@@ -46,6 +46,7 @@ import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
+import io.mrkuhne.mezo.support.populator.WorkoutDayAdjustmentPopulator;
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.Instant;
@@ -92,6 +93,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private SleepGoalPopulator sleepGoalPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private TrainPopulator trainPopulator;
+    @Autowired private WorkoutDayAdjustmentPopulator workoutDayAdjustmentPopulator;
     @Autowired private SportSlotSkipPopulator sportSlotSkipPopulator;
     @Autowired private RunningPopulator runningPopulator;
     @Autowired private PantryItemPopulator pantryItemPopulator;
@@ -402,6 +404,43 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
                 .contains(tomorrowLabel).contains("Fekvenyomás 3×6-8");
         assertThat(audit.toRefsEnvelope().refs())
                 .contains(new RefsEnvelope.Ref("TrainingPlan", tomorrow.toString()));
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldApplyLightenDelta_whenTomorrowIsAdjusted() {
+        // mezo-d58h.5: dayContentLine renders "holnap" straight from the template's raw
+        // workingSets — it must fold in the per-date lighten overlay itself, or the AI would
+        // contradict the "lighten tomorrow" card the user just tapped.
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+        String tomorrowLabel = WorkoutService.HU_DAY_LABELS.get(tomorrow.getDayOfWeek().getValue() - 1);
+        WorkoutSessionEntity template =
+                trainPopulator.createWorkoutSession(owner, meso.getId(), tomorrowLabel, "Push A", 0, "planned");
+        // TrainPopulator default exercise: workingSets=3, repMin=6, repMax=8.
+        trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+        workoutDayAdjustmentPopulator.createAdjustment(owner, tomorrow, (short) -1);
+
+        String out = trainTools.getTrainingPlan("tomorrow", null, ctx(owner));
+
+        assertThat(out).contains("Fekvenyomás 2×6-8").doesNotContain("Fekvenyomás 3×6-8");
+    }
+
+    @Test
+    void testGetTrainingPlan_shouldKeepTemplateCount_whenTomorrowHasNoAdjustment() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Blokk", "active");
+        String tomorrowLabel = WorkoutService.HU_DAY_LABELS.get(tomorrow.getDayOfWeek().getValue() - 1);
+        WorkoutSessionEntity template =
+                trainPopulator.createWorkoutSession(owner, meso.getId(), tomorrowLabel, "Push A", 0, "planned");
+        trainPopulator.createExercise(owner, template.getId(), "Fekvenyomás", 0);
+        // An adjustment exists, but for a different date — must not leak into tomorrow's line.
+        workoutDayAdjustmentPopulator.createAdjustment(owner, tomorrow.plusDays(3), (short) -2);
+
+        String out = trainTools.getTrainingPlan("tomorrow", null, ctx(owner));
+
+        assertThat(out).contains("Fekvenyomás 3×6-8");
     }
 
     @Test
