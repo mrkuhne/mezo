@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { fireEvent, render, screen } from '@testing-library/react'
+import { MemoryRouter, useLocation } from 'react-router-dom'
 import { NotificationFeedPage } from '@/features/me/pages/NotificationFeedPage'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { useNotificationFeed } from '@/data/notification/feedHooks'
@@ -25,21 +25,26 @@ const at = (hhmm: string) => {
   return d.toISOString()
 }
 
-const item = (id: string, kind: string): AppNotificationView => ({
+const item = (id: string, kind: string, deeplink = '/me/week'): AppNotificationView => ({
   id,
   kind: kind as AppNotificationKindKey,
   title: `cím ${id}`,
   body: null,
-  deeplink: '/me/week',
+  deeplink,
   occurredAt: at('09:00'),
   readAt: null,
 })
+
+function LocationProbe() {
+  return <output aria-label="Aktuális útvonal">{useLocation().pathname}</output>
+}
 
 const renderPage = () =>
   render(
     <QueryWrapper>
       <MemoryRouter initialEntries={['/me/ertesitesek']}>
         <NotificationFeedPage />
+        <LocationProbe />
       </MemoryRouter>
     </QueryWrapper>,
   )
@@ -66,4 +71,18 @@ test('egy ismeretlen backend-fajta semlegesen rajzolódik, a többi sor megmarad
   // A semleges bejegyzés a csengő-ikon; az oldal él, nem az ErrorBoundary kártyája látszik.
   expect(container.querySelector('.nf-ico use[href="#i-ertesites"]')).not.toBeNull()
   expect(screen.queryByText('Valami elromlott ezen a nézeten.')).not.toBeInTheDocument()
+})
+
+test('a céljavaslat cél ikonnal jelenik meg és a konkrét review oldalra navigál', async () => {
+  const reviewPath = '/me/goals/weight/suggestions/9fd2d287-238e-48ea-bf28-87b8a24ad998'
+  vi.mocked(useNotificationFeed).mockReturnValue({
+    items: [item('goal', 'goal_suggestion', reviewPath)],
+    isPending: false,
+  })
+  const { container } = renderPage()
+
+  const row = await screen.findByRole('button', { name: /cím goal/ })
+  expect(container.querySelector('.nf-ico use[href="#i-cel"]')).not.toBeNull()
+  fireEvent.click(row)
+  expect(screen.getByRole('status', { name: 'Aktuális útvonal' })).toHaveTextContent(reviewPath)
 })

@@ -2903,6 +2903,7 @@ button.itemrow { cursor: pointer; }
 .nf-ico.experiment { background: color-mix(in srgb, var(--dv-amber) 22%, transparent); }
 .nf-ico.memoir { background: color-mix(in srgb, var(--primary-base) 12%, transparent); }
 .nf-ico.memory { background: var(--surface-recess); }
+.nf-ico.goal { background: color-mix(in srgb, var(--dv-coral) 18%, transparent); }
 
 /* ===== Habit routine =====
    The `.hab-chain`/`.hab-row`/`.hab-node`/`.hab-main`/`.hab-anchor`/`.hab-title`/`.hab-link`/

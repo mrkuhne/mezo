@@ -17,6 +17,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -65,6 +66,7 @@ public class GoalSuggestionService {
     private final GoalSuggestionPreviewService previewService;
     private final GoalSuggestionFingerprintService fingerprintService;
     private final GoalSuggestionDraftApplier draftApplier;
+    private final ApplicationEventPublisher eventPublisher;
 
     public GoalSuggestionService(
         GoalSuggestionRepository suggestionRepository,
@@ -75,7 +77,8 @@ public class GoalSuggestionService {
         GoalSuggestionSupersedeWriter supersedeWriter,
         GoalSuggestionPreviewService previewService,
         GoalSuggestionFingerprintService fingerprintService,
-        GoalSuggestionDraftApplier draftApplier) {
+        GoalSuggestionDraftApplier draftApplier,
+        ApplicationEventPublisher eventPublisher) {
         this.suggestionRepository = suggestionRepository;
         this.goalRepository = goalRepository;
         this.mapper = mapper;
@@ -85,6 +88,7 @@ public class GoalSuggestionService {
         this.previewService = previewService;
         this.fingerprintService = fingerprintService;
         this.draftApplier = draftApplier;
+        this.eventPublisher = eventPublisher;
     }
 
     /**
@@ -128,7 +132,10 @@ public class GoalSuggestionService {
         e.setStatus(STATUS_PROPOSED);
         e.setDedupKey(dedupKey);
         e.setPayload(payload);
-        return suggestionRepository.save(e);
+        GoalSuggestionEntity saved = suggestionRepository.save(e);
+        eventPublisher.publishEvent(new GoalSuggestionProposedEvent(
+            userId, goalId, saved.getId(), kind));
+        return saved;
     }
 
     /** The goal's open proposals (newest first), ownership-gated through the goal. */

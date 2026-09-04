@@ -5,12 +5,12 @@ import java.util.Optional;
 
 /**
  * The AI-brain notification kinds (bd mezo-gzhp, spec 2026-08-18 §2; {@code weekly_review_ready}
- * added mezo-p2tr; {@code life_goal_plan} added mezo-iizd.7) — the single source of truth for
+ * added mezo-p2tr; {@code life_goal_plan} added mezo-iizd.7; {@code goal_suggestion} added
+ * mezo-ricj.4) — the single source of truth for
  * kind key, push family (slice F3 maps it to a {@link NotificationCategory}), and the deeplink
- * base. {@code familyKey} is null for {@code memoir_ready}, {@code weekly_review_ready} and
- * {@code life_goal_plan}: an existing push category already covers each of those events — a
- * second category would double-notify. Pattern-detail kinds interpolate {@code {pairKey}} into
- * the deeplink at emit time.
+ * base. {@code familyKey} is null for feed-only kinds and for events an existing push category
+ * already covers; this prevents double notification. Pattern-detail kinds interpolate
+ * {@code {pairKey}} into the deeplink at emit time.
  */
 public enum AppNotificationKind {
 
@@ -31,7 +31,9 @@ public enum AppNotificationKind {
     WEEKLY_REVIEW_READY("weekly_review_ready", null, "/me/week"),
     /** mezo-iizd.7: a ha–akkor terv megszólalása. familyKey null (feed-only, spec D-3) — a
      *  {@code /me/goals} bázis mellé az emitter a konkrét cél id-jét teszi. */
-    LIFE_GOAL_PLAN("life_goal_plan", null, "/me/goals");
+    LIFE_GOAL_PLAN("life_goal_plan", null, "/me/goals"),
+    /** mezo-ricj.4: feed-only; the concrete suggestion id is appended after commit. */
+    GOAL_SUGGESTION("goal_suggestion", null, "/me/goals/weight/suggestions");
 
     private final String key;
     private final String familyKey;

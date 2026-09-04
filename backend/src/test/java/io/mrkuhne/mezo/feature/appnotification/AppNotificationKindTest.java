@@ -8,8 +8,8 @@ import org.junit.jupiter.api.Test;
 class AppNotificationKindTest {
 
     @Test
-    void testCatalog_shouldPinTwelveKindsWithFamiliesAndDeeplinks_perSpec() {
-        assertThat(AppNotificationKind.values()).hasSize(14);
+    void testCatalog_shouldPinFifteenKindsWithFamiliesAndDeeplinks_perSpec() {
+        assertThat(AppNotificationKind.values()).hasSize(15);
         assertThat(AppNotificationKind.PATTERN_INBOX.key()).isEqualTo("pattern_inbox");
         assertThat(AppNotificationKind.PATTERN_INBOX.familyKey()).isEqualTo("pattern");
         assertThat(AppNotificationKind.PATTERN_SIGNAL.familyKey()).isEqualTo("pattern");
@@ -35,6 +35,10 @@ class AppNotificationKindTest {
         assertThat(AppNotificationKind.LIFE_GOAL_PLAN.key()).isEqualTo("life_goal_plan");
         assertThat(AppNotificationKind.LIFE_GOAL_PLAN.familyKey()).isNull();
         assertThat(AppNotificationKind.LIFE_GOAL_PLAN.deeplink()).isEqualTo("/me/goals");
+        assertThat(AppNotificationKind.GOAL_SUGGESTION.key()).isEqualTo("goal_suggestion");
+        assertThat(AppNotificationKind.GOAL_SUGGESTION.familyKey()).isNull();
+        assertThat(AppNotificationKind.GOAL_SUGGESTION.deeplink())
+            .isEqualTo("/me/goals/weight/suggestions");
         assertThat(AppNotificationKind.fromKey("pattern_inbox")).contains(AppNotificationKind.PATTERN_INBOX);
         assertThat(AppNotificationKind.fromKey("nope")).isEmpty();
     }
