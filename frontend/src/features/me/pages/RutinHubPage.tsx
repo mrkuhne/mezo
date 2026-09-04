@@ -161,6 +161,7 @@ export function RutinHubPage() {
           onReorder={(ids) => reorderChain(chain.id, ids)}
           renderItem={(def) => defRow(def, items.find((it) => it.key === def.habitKey))}
           disabled={pending}
+          chevrons="focus"
         />
         <button
           type="button"

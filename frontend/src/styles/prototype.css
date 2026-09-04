@@ -9099,6 +9099,12 @@ button.mz-wtile:active { transform: scale(0.96); }
    card, so hiding it would strand the chain (`.is-inert` is otherwise scoped to .card/.row). */
 .gr-chain.is-inert { opacity: 0.55; }
 
+/* A ▲▼ átrendező gombok a11y-affordanciák: a prototípus .hrow-ján nincsenek, ezért
+   alapból nem foglalnak helyet, és csak billentyű-fókuszra jelennek meg. Rejtve is az
+   a11y fában maradnak (nincs display:none / visibility:hidden). */
+.srt-chev-focus { width: 0; overflow: hidden; opacity: 0; transition: opacity 0.15s ease; }
+.srt-chev-focus:focus-within { width: auto; overflow: visible; opacity: 1; }
+
 /* ===== Rutin wizard — /me/rutin/uj (mezo-3zue.4) =====
    docs/design_2.0/prototypes/src/rutin-epito-head.html `.sentence` / `.fwcard` / `.tip` /
    `.commit` + the form language (`.fcard`/`.flabel`/`.fin`/`.chips`/`.stepin`/`.lifegrid`),
