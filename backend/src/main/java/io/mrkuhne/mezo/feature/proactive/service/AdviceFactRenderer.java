@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * The advice card's FACTS (spec §5): deterministic, numeric, rule-provided lines rendered from the
@@ -44,6 +45,7 @@ public final class AdviceFactRenderer {
             case FlagKey.LOAD_FUEL_MISMATCH -> loadFuelMismatch(payload.loadFuelMismatch());
             case FlagKey.RAPID_WEIGHT_LOSS -> rapidWeightLoss(payload.rapidWeightLoss());
             case FlagKey.JOINT_OVERUSE -> jointOveruse(payload.jointOveruse());
+            case FlagKey.IGNORED_NUDGE -> ignoredNudge(payload.ignoredNudge());
             default -> List.of();
         };
     }
@@ -187,6 +189,36 @@ public final class AdviceFactRenderer {
             "Váll-terhelés %d nap átlagban: %s (küszöb %s), holnap (%s) %s-fókuszú edzés"
                 .formatted(p.windowDays(), num(p.strainAvg()), num(p.strainAvgAtLeast()),
                     p.tomorrowDate(), muscleHu(p.tomorrowMuscle())));
+    }
+
+    private static List<String> ignoredNudge(FlagPayloadEnvelope.IgnoredNudge p) {
+        if (p == null) {
+            return List.of();
+        }
+        List<String> facts = new ArrayList<>();
+        facts.add(("Az esti emlékeztető %d egymást követő nap ment ki, de a lefekvés minden "
+                + "alkalommal több mint %d perccel később volt, mint a cél (%s)")
+            .formatted(p.runLength(), p.nonComplianceMinutes(), clockFromShiftedHour(p.anchorBedTimeHour())));
+        if (p.bedtimeHourByNight() != null) {
+            for (Map.Entry<String, Double> e : p.bedtimeHourByNight().entrySet()) {
+                facts.add("%s este: lefekvés %s".formatted(e.getKey(), clockFromShiftedHour(e.getValue())));
+            }
+        }
+        return List.copyOf(facts);
+    }
+
+    /** Inverts {@code MetricSeriesService.clockHour}'s +24-below-noon shift back to a clock
+     *  string for display — the payload freezes the shifted value (the arithmetic space the rule
+     *  compared in), this only formats it. */
+    private static String clockFromShiftedHour(double shiftedHour) {
+        double wallClockHour = shiftedHour >= 24 ? shiftedHour - 24 : shiftedHour;
+        int hour = (int) wallClockHour;
+        int minute = (int) Math.round((wallClockHour - hour) * 60);
+        if (minute == 60) {
+            minute = 0;
+            hour = (hour + 1) % 24;
+        }
+        return "%02d:%02d".formatted(hour, minute);
     }
 
     /** {@code MuscleGroup.of}'s coarse English tokens (the actual matched value, frozen in the

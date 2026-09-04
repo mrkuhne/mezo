@@ -80,6 +80,21 @@ class AdviceFactRendererTest {
         assertThat(facts.get(0)).contains("hát-fókuszú").doesNotContain("váll-fókuszú");
     }
 
+    /** The card names the run length, the threshold and the anchor as a CLOCK string (the
+     *  shifted-hour payload value formatted back), plus one line per frozen night. */
+    @Test
+    void testRender_shouldDescribeAnIgnoredNudgeRaise() {
+        FlagPayloadEnvelope payload = FlagPayloadEnvelope.ignoredNudge(
+            new FlagPayloadEnvelope.IgnoredNudge("lights_out", 5, 5, 23.25, 60,
+                Map.of("2026-09-01", 24.5)));
+
+        List<String> facts = AdviceFactRenderer.render(FlagKey.IGNORED_NUDGE, payload);
+
+        assertThat(facts).hasSize(2);
+        assertThat(facts.get(0)).contains("5").contains("60").contains("23:15");
+        assertThat(facts.get(1)).contains("2026-09-01").contains("00:30");
+    }
+
     /** Honest absence: no payload (a raise written before the payload existed, or a key with no
      *  renderer) yields NO facts rather than a fabricated one. The card still ships — its prose
      *  falls back to the template, which needs no facts. */
@@ -158,6 +173,9 @@ class AdviceFactRendererTest {
                 new FlagPayloadEnvelope.RapidWeightLoss(-1.2, -0.7, 5, 4, "bulk"));
             case FlagKey.JOINT_OVERUSE -> FlagPayloadEnvelope.jointOveruse(
                 new FlagPayloadEnvelope.JointOveruse(8.0, 5.0, 7, 7, "2026-09-05", "shoulder"));
+            case FlagKey.IGNORED_NUDGE -> FlagPayloadEnvelope.ignoredNudge(
+                new FlagPayloadEnvelope.IgnoredNudge("lights_out", 5, 5, 23.25, 60,
+                    Map.of("2026-09-01", 24.5)));
             default -> throw new AssertionError(
                 "no AdviceFactRendererTest fixture for live flag key '" + flagKey + "' — "
                     + "add both a fixture here and a render() branch in AdviceFactRenderer");

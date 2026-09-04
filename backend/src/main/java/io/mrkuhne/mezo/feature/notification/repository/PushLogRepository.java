@@ -12,4 +12,9 @@ public interface PushLogRepository extends JpaRepository<PushLogEntity, UUID> {
     List<PushLogEntity> findByCreatedByAndLogDate(UUID createdBy, LocalDate logDate);
 
     boolean existsByCreatedByAndLogDateAndDedupKey(UUID createdBy, LocalDate logDate, String dedupKey);
+
+    /** S6 (bd mezo-d58h.6, {@code ignored_nudge}): bounded date-range read for one category —
+     *  the sibling to {@link #findByCreatedByAndLogDate}, ranged instead of single-day. */
+    List<PushLogEntity> findByCreatedByAndCategoryAndLogDateBetween(
+            UUID createdBy, String category, LocalDate from, LocalDate to);
 }

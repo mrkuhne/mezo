@@ -22,7 +22,8 @@ public record FlagPayloadEnvelope(
     AcuteBadDay acuteBadDay,
     LoadFuelMismatch loadFuelMismatch,
     RapidWeightLoss rapidWeightLoss,
-    JointOveruse jointOveruse
+    JointOveruse jointOveruse,
+    IgnoredNudge ignoredNudge
 ) {
 
     public record SustainedStress(
@@ -117,47 +118,68 @@ public record FlagPayloadEnvelope(
         String tomorrowDate, String tomorrowMuscle) {
     }
 
+    /** Spec 2026-09-03 §4 row 7/8 (rank 8, offers {@code shift_sleep_anchor} — wired by a later
+     *  task): the {@code category} push sent on {@code runLength} consecutive evenings (always
+     *  equal to {@code minConsecutiveDays} — a raise only ever exists for the exact required
+     *  run) while the observed bedtime NEVER complied. {@code anchorBedTimeHour} and every value
+     *  in {@code bedtimeHourByNight} are in {@code MetricKey.BEDTIME_HOUR}'s own SHIFTED-clock
+     *  space (hours below 12 read +24, so a post-midnight bedtime sorts after every pre-midnight
+     *  one) — the same space the rule compares in, so the raise is reproducible from these
+     *  numbers alone without re-deriving the shift. {@code bedtimeHourByNight} is keyed by the
+     *  EVENING the nudge was sent ({@code push_log.log_date}), not the wake-morning
+     *  {@code sleep_log.date} the value was actually read from (sleep_log.date = that key + 1
+     *  day) — the user-facing "night" is the evening, not the following morning. */
+    public record IgnoredNudge(
+        String category, int runLength, int minConsecutiveDays,
+        double anchorBedTimeHour, int nonComplianceMinutes,
+        Map<String, Double> bedtimeHourByNight) {
+    }
+
     public static FlagPayloadEnvelope sustainedStress(SustainedStress p) {
-        return new FlagPayloadEnvelope(p, null, null, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(p, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope sleepDebt(SleepDebt p) {
-        return new FlagPayloadEnvelope(null, p, null, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, p, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope momentumAtRisk(MomentumAtRisk p) {
-        return new FlagPayloadEnvelope(null, null, p, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, p, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope recoveryNeeded(RecoveryNeeded p) {
-        return new FlagPayloadEnvelope(null, null, null, p, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, p, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope allHealthy(AllHealthy p) {
-        return new FlagPayloadEnvelope(null, null, null, null, p, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, p, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope loggingGap(LoggingGap p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, p, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, p, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope missedWorkouts(MissedWorkouts p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, p, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, p, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope acuteBadDay(AcuteBadDay p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, p, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, p, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope loadFuelMismatch(LoadFuelMismatch p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, p, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, p, null, null, null);
     }
 
     public static FlagPayloadEnvelope rapidWeightLoss(RapidWeightLoss p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, p, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, p, null, null);
     }
 
     public static FlagPayloadEnvelope jointOveruse(JointOveruse p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, p);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, p, null);
+    }
+
+    public static FlagPayloadEnvelope ignoredNudge(IgnoredNudge p) {
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, null, p);
     }
 }
