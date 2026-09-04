@@ -271,7 +271,7 @@ export function PatternArtifactDetail(props: {
   git status --short
   ```
 
-- [ ] Commitold a living doc/CODEMAP változást:
+- [x] Commitold a living doc/CODEMAP változást:
 
   ```bash
   git add docs/features/insights.md docs/CODEMAP.md
