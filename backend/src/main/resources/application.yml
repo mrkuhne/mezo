@@ -906,6 +906,14 @@ mezo:
         text-hu: "Ma többször is jelezted, hogy nehezen megy — a tested vagy az energiád most a padlón van. Nem kell ma teljesíteni: engedd el, ami elengedhető, és keress egy apró dolgot, ami mégis jólesik. Holnap újra nekifuthatsz."
         cooldown-hours: 48
         quiet-hours-exempt: false
+      # S6 batch B (bd mezo-d58h.6, spec 2026-09-03 §4 row 2, rank 2): magas heti terhelés,
+      # miközben az üzemanyag vagy az alvás nem tartja a lépést — sérülés-/kimerülés-kockázat.
+      - key: load_fuel_mismatch_refuel
+        flag: load_fuel_mismatch
+        channel: both
+        text-hu: "Az utóbbi napokban sokat edzettél, de kevesebbet ettél vagy aludtál a kelleténél. Ez a kombináció hosszabb távon sérülést vagy kimerülést okozhat. Ma egyél közelebb a céladhoz, és feküdj le időben — a terhelést csak megfelelő üzemanyaggal és pihenéssel lehet kibírni."
+        cooldown-hours: 72
+        quiet-hours-exempt: false
     # W4.3 (mezo-b3pp.17): the pragmatic profile — "hogyan érdemes Daniellel beszélni"
     profile:
       # Monday 03:45 — after the 03:10 feedback rollups and the 03:30 weekly consolidation rung,

@@ -41,6 +41,7 @@ public final class AdviceFactRenderer {
             case FlagKey.RECOVERY_NEEDED -> recoveryNeeded(payload.recoveryNeeded());
             case FlagKey.ALL_HEALTHY -> allHealthy(payload.allHealthy());
             case FlagKey.ACUTE_BAD_DAY -> acuteBadDay(payload.acuteBadDay());
+            case FlagKey.LOAD_FUEL_MISMATCH -> loadFuelMismatch(payload.loadFuelMismatch());
             default -> List.of();
         };
     }
@@ -140,6 +141,29 @@ public final class AdviceFactRenderer {
                 facts.add("%s: test %s, energia %s".formatted(
                     c.slotTime(), scoreOrDash(c.body()), scoreOrDash(c.energy())));
             }
+        }
+        return List.copyOf(facts);
+    }
+
+    private static List<String> loadFuelMismatch(FlagPayloadEnvelope.LoadFuelMismatch p) {
+        if (p == null) {
+            return List.of();
+        }
+        List<String> facts = new ArrayList<>();
+        facts.add("Terhelés %d nap átlagban: %s perc-ekvivalens/nap (küszöb %s)"
+            .formatted(p.windowDays(), num(p.loadAvg()), num(p.loadThreshold())));
+        if (p.kcalAvg() != null && p.kcalTargetAvg() != null) {
+            facts.add("Kalória %d nap átlagban: %s kcal a %s kcal cél %d%%-a (%d rögzített napból)"
+                .formatted(p.windowDays(), num(p.kcalAvg()), num(p.kcalTargetAvg()),
+                    Math.round(p.kcalFraction() * 100), p.kcalLoggedDays()));
+        }
+        if (p.sleepAvg() != null) {
+            facts.add("Alvás %d nap átlagban: %s óra (padló %s óra, %d rögzített éjszakából)"
+                .formatted(p.windowDays(), num(p.sleepAvg()), num(p.sleepFloorHours()),
+                    p.sleepLoggedDays()));
+        }
+        if (p.weightTrendPctWk() != null) {
+            facts.add("Súlytrend: %s%%/hét".formatted(num(p.weightTrendPctWk())));
         }
         return List.copyOf(facts);
     }

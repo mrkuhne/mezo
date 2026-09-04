@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.flags.service;
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.AcuteBadDayRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.AllHealthyRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.rule.LoadFuelMismatchRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.LoggingGapRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.MissedWorkoutsRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.MomentumAtRiskRule;
@@ -40,6 +41,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class FlagEvaluator {
 
     private final AcuteBadDayRule acuteBadDayRule;
+    private final LoadFuelMismatchRule loadFuelMismatchRule;
     private final SustainedStressRule sustainedStressRule;
     private final SleepDebtRule sleepDebtRule;
     private final MomentumAtRiskRule momentumAtRiskRule;
@@ -54,6 +56,7 @@ public class FlagEvaluator {
         LocalDate today = LocalDate.now();
         List<FlagRaise> raises = new ArrayList<>();
         acuteBadDayRule.evaluate(userId, today).ifPresent(raises::add);
+        loadFuelMismatchRule.evaluate(userId, today).ifPresent(raises::add);
         sustainedStressRule.evaluate(userId, today).ifPresent(raises::add);
         sleepDebtRule.evaluate(userId, today).ifPresent(raises::add);
         momentumAtRiskRule.evaluate(userId, today).ifPresent(raises::add);

@@ -19,7 +19,8 @@ public record FlagPayloadEnvelope(
     AllHealthy allHealthy,
     LoggingGap loggingGap,
     MissedWorkouts missedWorkouts,
-    AcuteBadDay acuteBadDay
+    AcuteBadDay acuteBadDay,
+    LoadFuelMismatch loadFuelMismatch
 ) {
 
     public record SustainedStress(
@@ -68,35 +69,57 @@ public record FlagPayloadEnvelope(
     public record QualifyingCheckIn(String slotTime, Integer body, Integer energy) {
     }
 
+    /** Spec 2026-09-03 §4 row 2 (rank 2): 7-day training load vs. fuel/sleep conjunction.
+     *  {@code kcalAvg}/{@code kcalTargetAvg}/{@code kcalFraction} and {@code sleepAvg} are null
+     *  when their side's honesty gate ({@code kcalLoggedDays}/{@code sleepLoggedDays} vs
+     *  {@code minLoggedDaysPerSide}) is not met — the count comes from the SPARSE kcal/sleep
+     *  series, never from {@code COMBINED_LOAD_MIN} (calendar-complete, so an unlogged day there
+     *  is a real 0.0, not an absence). {@code firedArm} is {@code "kcal"}, {@code "sleep"} or
+     *  {@code "both"}. {@code weightTrendPctWk} is a CORROBORATING FACT only — it never affects
+     *  whether the rule fires, and is null whenever the 7-day regression has too few weigh-ins. */
+    public record LoadFuelMismatch(
+        int windowDays, double loadAvg, double loadThreshold,
+        Double kcalAvg, Double kcalTargetAvg, Double kcalFraction, double kcalFractionThreshold,
+        int kcalLoggedDays,
+        Double sleepAvg, double sleepFloorHours, int sleepLoggedDays,
+        int minLoggedDaysPerSide,
+        String firedArm,
+        Double weightTrendPctWk) {
+    }
+
     public static FlagPayloadEnvelope sustainedStress(SustainedStress p) {
-        return new FlagPayloadEnvelope(p, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(p, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope sleepDebt(SleepDebt p) {
-        return new FlagPayloadEnvelope(null, p, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, p, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope momentumAtRisk(MomentumAtRisk p) {
-        return new FlagPayloadEnvelope(null, null, p, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, p, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope recoveryNeeded(RecoveryNeeded p) {
-        return new FlagPayloadEnvelope(null, null, null, p, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, p, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope allHealthy(AllHealthy p) {
-        return new FlagPayloadEnvelope(null, null, null, null, p, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, p, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope loggingGap(LoggingGap p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, p, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, p, null, null, null);
     }
 
     public static FlagPayloadEnvelope missedWorkouts(MissedWorkouts p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, p, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, p, null, null);
     }
 
     public static FlagPayloadEnvelope acuteBadDay(AcuteBadDay p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, p);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, p, null);
+    }
+
+    public static FlagPayloadEnvelope loadFuelMismatch(LoadFuelMismatch p) {
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, p);
     }
 }

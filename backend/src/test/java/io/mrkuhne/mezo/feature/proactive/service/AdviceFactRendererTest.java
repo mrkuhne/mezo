@@ -135,6 +135,11 @@ class AdviceFactRendererTest {
                 new FlagPayloadEnvelope.AcuteBadDay(2, 3, 2, List.of(
                     new FlagPayloadEnvelope.QualifyingCheckIn("08:00", 2, 3),
                     new FlagPayloadEnvelope.QualifyingCheckIn("20:00", 3, 2))));
+            case FlagKey.LOAD_FUEL_MISMATCH -> FlagPayloadEnvelope.loadFuelMismatch(
+                new FlagPayloadEnvelope.LoadFuelMismatch(7, 85.0, 50.0,
+                    2100.0, 3100.0, 0.677, 0.8, 7,
+                    null, 7.0, 0,
+                    4, "kcal", -0.8));
             default -> throw new AssertionError(
                 "no AdviceFactRendererTest fixture for live flag key '" + flagKey + "' — "
                     + "add both a fixture here and a render() branch in AdviceFactRenderer");
