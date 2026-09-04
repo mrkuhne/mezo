@@ -60,7 +60,7 @@ export function RutinHubPage() {
   const { habits } = useHabitDay(date)
   const { data: summary } = useHabitSummary()
   const { catalog, isPending, isError, refetch } = useHabitCatalog()
-  const { updateChain, updateDef, reorderChain, pending } = useHabitCatalogActions()
+  const { updateChain, reorderChain, pending } = useHabitCatalogActions()
   const [chainSheet, setChainSheet] = useState<{ chain?: HabitChainInfo } | null>(null)
   // CREATE only — a habit ROW navigates to /me/rutin/szokas/{habitKey}, which is where a
   // definition is edited and deleted. `HabitEditSheet` no longer has an edit branch at all.
@@ -99,41 +99,35 @@ export function RutinHubPage() {
   const defRow = (def: HabitDefInfo, item: HabitItem | undefined) => {
     const fw = frameworkKey(def.framework)
     const pct = strength(def.habitKey)
+    const done = item?.status === 'done'
     return (
-      // The Toggle is a SIBLING of the row button, never nested inside it (RoutineEditorPage's
-      // HabitDefRow doctrine — a button-in-button is invalid HTML and click-conflicting).
-      <div className={cn('row', !def.isActive && 'is-inert')} style={{ alignItems: 'center', gap: 8 }}>
+      // A prototípus .hrow kétsoros rácsa: "n f" / "b b". A grip a SortableList fogantyúja,
+      // a soron kívül. A per-def Toggle ELTŰNT — szüneteltetni a HabitPage-en lehet, ezért a
+      // szünetelő sor halványul, de tapphatóan odanavigál (mezo-3zue.4 hibahulláma).
+      <div className={cn('row', !def.isActive && 'is-inert', done && 'rt-done')} style={{ alignItems: 'center', gap: 8 }}>
         <button
           type="button"
-          className={cn('gr-chainrow', 'rt-hrow', item?.status === 'done' && 'done', newHabitKey === def.habitKey && 'rt-row-new')}
+          className={cn('rt-hrow', newHabitKey === def.habitKey && 'rt-row-new')}
           style={{ flex: 1, minWidth: 0 }}
           onClick={() => navigate(`/me/rutin/szokas/${def.habitKey}`)}
-          /* The row is a button, so its aria-label REPLACES its inner text: the strength has to
-             be spelled out here or it stays a silent graphic for assistive tech. */
           aria-label={`${def.title} · ${FRAMEWORK_LABEL[fw]}${pct != null ? ` · 28 napos erő ${pct}%` : ''}`}
         >
-          <span className="gr-ck" aria-hidden="true">✓</span>
-          {item && <span className="sr-only">{STATUS_SR[item.status]}</span>}
-          <span className="tx">{def.title}</span>
+          <span className="rt-nm">{def.title}</span>
           <span className={cn('rt-fw', `rt-fw-${fw.toLowerCase()}`)}>{FRAMEWORK_BADGE[fw]}</span>
-          {/* Spec §5 (and the retired GrowthRutinPage) show the NUMBER beside the bar: a bare
-              graphic is silent to a screen reader and unreadable at a glance, so the bar is
-              aria-hidden and the percentage carries the meaning in text. */}
-          {pct != null && (
-            <>
-              <span className="rt-strength" aria-hidden="true">
-                <div style={{ width: `${pct}%` }} />
-              </span>
-              <span className="rt-strength-n">{pct}%</span>
-            </>
-          )}
+          <span className="rt-bar">
+            {/* READ-ONLY jelző, nem kontroll: a pipálás a /nap/rutin-on él (ADR). */}
+            <span className="rt-tick" aria-hidden="true">✓</span>
+            {item && <span className="sr-only">{STATUS_SR[item.status]}</span>}
+            {pct != null && (
+              <>
+                <span className="rt-strength" aria-hidden="true">
+                  <div style={{ width: `${pct}%` }} />
+                </span>
+                <span className="rt-strength-n">{pct}%</span>
+              </>
+            )}
+          </span>
         </button>
-        <Toggle
-          on={def.isActive}
-          onToggle={() => updateDef(def.id, { isActive: !def.isActive })}
-          ariaLabel={`${def.title} aktív`}
-          disabled={pending}
-        />
       </div>
     )
   }

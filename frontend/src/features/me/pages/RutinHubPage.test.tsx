@@ -258,10 +258,30 @@ describe('RutinHubPage', () => {
     expect(row).toHaveClass('is-inert')
   })
 
-  test('the per-definition toggle pauses that definition', () => {
+  test('the row carries a read-only tick beside the bar and no per-def toggle', () => {
+    const { container } = renderPage()
+    const row = screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71%')
+    expect(within(row).getByText('✓')).toBeInTheDocument()
+    expect(row.closest('.row')).toHaveClass('rt-done')
+    // a toggle a soron soha többé — a szüneteltetés a HabitPage-en él
+    expect(screen.queryByLabelText('Napi szándék aktív')).toBeNull()
+    expect(container.querySelector('.rt-hrow .rt-bar')).not.toBeNull()
+  })
+
+  test('a paused definition dims but stays tappable through to its habit page', () => {
+    useHabitCatalog.mockReturnValue({
+      catalog: {
+        chains: [{ ...MORNING, defs: [MORNING.defs[0], MORNING.defs[1], { ...MORNING.defs[2], isActive: false }] }, EVENING],
+      },
+      isPending: false, isError: false, refetch: vi.fn(),
+    })
+    useHabitDay.mockReturnValue({ habits: habitsToday.slice(0, 2) })
     renderPage()
-    fireEvent.click(screen.getByLabelText('Napi szándék aktív'))
-    expect(updateDef).toHaveBeenCalledWith('def-intent', { isActive: false })
+    const paused = screen.getByLabelText('Hidratálás · keret nélkül')
+    expect(paused.closest('.row')).toHaveClass('is-inert')
+    expect(paused).not.toBeDisabled()
+    fireEvent.click(paused)
+    expect(navigate).toHaveBeenCalledWith('/me/rutin/szokas/water')
   })
 
   test('＋ Új habit opens the habit sheet in create mode for that chain', () => {
