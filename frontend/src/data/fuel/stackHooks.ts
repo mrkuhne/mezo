@@ -73,7 +73,7 @@ export function useIntakes(date: string): Intake[] {
 /**
  * Dual-mode stack read — the pantry stash with each item's `taken` re-derived from the day's
  * intakes (mock/real share the shape). Keeps the pre-existing `{ stash }` return so the Stack
- * views + StackPickerSheet are untouched.
+ * views + full-page Stack Kamra picker keep the same shape.
  */
 export function useStack(): { stash: SupplementStashItem[]; pending: boolean; error: boolean } {
   const { stash, pending, error } = usePantry()

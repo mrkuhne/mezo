@@ -713,7 +713,7 @@ export function StackManageOccurrenceList(props: {
 }): React.JSX.Element
 ```
 
-- [ ] **Step 1: Írd meg a kezelési route-ok bukó tesztjeit**
+- [x] **Step 1: Írd meg a kezelési route-ok bukó tesztjeit**
 
 A `FuelStackManagePages.test.tsx` lokális route tree-vel fedje le:
 
@@ -730,7 +730,7 @@ A `FuelStackManagePages.test.tsx` lokális route tree-vel fedje le:
   hozzáadható, a page nyitva marad;
 - sikeres add után `${name} hozzáadva` toast, rejected add után nincs success-toast.
 
-- [ ] **Step 2: Futtasd a focused tesztet és rögzítsd a bukást**
+- [x] **Step 2: Futtasd a focused tesztet és rögzítsd a bukást**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo/frontend
@@ -739,7 +739,7 @@ pnpm vitest run src/features/fuel/pages/FuelStackManagePages.test.tsx
 
 Várt: FAIL, mert a management route-ok még nem léteznek.
 
-- [ ] **Step 3: Készítsd el a Kezelés hubot**
+- [x] **Step 3: Készítsd el a Kezelés hubot**
 
 A `FuelStackManagePage` `useProtocol`, `useStackDay` és `useNavigate` hookokat
 használjon. Lavender `StackPageScaffold`, `i-beallitas`, majd négy
@@ -756,7 +756,7 @@ Az alcímeket valós adatokból képezd: occurrence count, használt zone count,
 breakfast/lunch/dinner occurrence count és stash count. Pendingnél skeleton/`—`,
 nem seed érték.
 
-- [ ] **Step 4: Készítsd el a három management lens oldalt**
+- [x] **Step 4: Készítsd el a három management lens oldalt**
 
 A `StackManageOccurrenceList` közös row-anatómiája: saját clay ikon helyett színes
 status-dot, név, dózis, zónacímke, idő, `kézi`/`auto`, chevron. A teljes sor
@@ -769,7 +769,7 @@ status-dot, név, dózis, zónacímke, idő, `kézi`/`auto`, chevron. A teljes s
 Mindhárom routed wrapper `useStackDay`-t olvas, lokális `openEntry` state-et tart és
 ugyanazt a `StackItemSheet`-et nyitja. Sem draft, sem page-level save nincs.
 
-- [ ] **Step 5: Költöztesd a Kamra-pickert teljes oldalra**
+- [x] **Step 5: Költöztesd a Kamra-pickert teljes oldalra**
 
 A `FuelStackAddPage` `useStack`, `useProtocol`, `useProtocolActions`, `useToast` és
 lokális `query` state-et használ. Gold/sage `StackPageScaffold`, `i-kamra`,
@@ -792,7 +792,7 @@ Ne navigáljon el és ne zárjon sheetet. Az occupied jelzés az
 `new Set(occurrences.map(item => item.pantryItemId))` halmazból származzon; az elem
 ettől még maradjon button, hogy a backend valós duplicate-szabálya adhasson hibát.
 
-- [ ] **Step 6: Regisztráld az öt explicit management route-ot**
+- [x] **Step 6: Regisztráld az öt explicit management route-ot**
 
 ```tsx
 { path: 'fuel/stack/manage', element: <FuelStackManagePage /> },
@@ -805,7 +805,7 @@ ettől még maradjon button, hogy a backend valós duplicate-szabálya adhasson 
 A statikus route-ok közvetlen page importokat kapjanak; wildcard vagy route-param
 nem szükséges.
 
-- [ ] **Step 7: Futtasd a focused management és sheet regressziókat**
+- [x] **Step 7: Futtasd a focused management és sheet regressziókat**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo/frontend
@@ -814,7 +814,7 @@ pnpm vitest run src/features/fuel/pages/FuelStackManagePages.test.tsx src/featur
 
 Várt: PASS.
 
-- [ ] **Step 8: Töröld a fogyasztó nélküli picker sheetet és commitolj**
+- [x] **Step 8: Töröld a fogyasztó nélküli picker sheetet és commitolj**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo
