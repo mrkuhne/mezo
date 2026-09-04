@@ -571,17 +571,17 @@ export function groupedEvidence(days: AlignedDay[], requiredPerGroup: number): {
 **Interfaces:** the feature docs become the current source of truth for the new gate, contract,
 copy, UI state matrix, chart branches, file map and test coverage.
 
-- [ ] Update `docs/features/companion.md` in place: `min-group-n`, `MetricValueKind`, gate order,
+- [x] Update `docs/features/companion.md` in place: `min-group-n`, `MetricValueKind`, gate order,
   `imbalanced_groups`, group fields, no persistence/snapshot/notification outside LIVE, and the
   monitor/detail shared-math invariant. Remove any sentence that still says `min-n` is the only
   eligibility condition.
 
-- [ ] Update `docs/features/insights.md` in place: story hero, deterministic question/conclusion
+- [x] Update `docs/features/insights.md` in place: story hero, deterministic question/conclusion
   split, new confidence copy, csoportos chart, significant-event journal, layered diagnostics and
   stale-row CTA suppression. Update §10 for `PatternDetailHero`, `PatternEvidenceChart`,
   `patternEvidence` and the removed `PatternScatter`.
 
-- [ ] Regenerate CODEMAP because source files were added/removed, then verify it:
+- [x] Regenerate CODEMAP because source files were added/removed, then verify it:
 
   ```bash
   node scripts/gen-codemap.mjs
@@ -589,7 +589,7 @@ copy, UI state matrix, chart branches, file map and test coverage.
   node --test scripts/gen-codemap.test.mjs
   ```
 
-- [ ] Run doc lint. If the known clean-HEAD baseline still reports unrelated stale feature docs,
+- [x] Run doc lint. If the known clean-HEAD baseline still reports unrelated stale feature docs,
   save the exact count in the PR body; `insights.md` and `companion.md` must not appear in the
   stale/error list and no new error may exist:
 
@@ -597,7 +597,7 @@ copy, UI state matrix, chart branches, file map and test coverage.
   node scripts/lint-docs.mjs
   ```
 
-- [ ] Run final contract drift check by regenerating and requiring a clean diff for generated
+- [x] Run final contract drift check by regenerating and requiring a clean diff for generated
   artifacts:
 
   ```bash
@@ -608,7 +608,7 @@ copy, UI state matrix, chart branches, file map and test coverage.
   git diff --exit-code -- ../api/openapi.yml src/data/_client/api.gen.ts
   ```
 
-- [ ] Run the proportionate local backend gate with PostgreSQL available. Always use `clean`:
+- [x] Run the proportionate local backend gate with PostgreSQL available. Always use `clean`:
 
   ```bash
   cd backend
@@ -616,7 +616,7 @@ copy, UI state matrix, chart branches, file map and test coverage.
   ./mvnw -Dtest=PatternGateTest,CompanionPropertiesIT,CompanionPatternMonitorApiIT,CompanionPatternPairDetailApiIT,PatternDetectionServiceIT clean test
   ```
 
-- [ ] Run the complete frontend gates in both data modes:
+- [x] Run the complete frontend gates in both data modes:
 
   ```bash
   cd frontend
@@ -625,7 +625,7 @@ copy, UI state matrix, chart branches, file map and test coverage.
   pnpm build
   ```
 
-- [ ] Run source/copy guards and whitespace checks:
+- [x] Run source/copy guards and whitespace checks:
 
   ```bash
   rg -n "Meglepő:|minden [0-9]+\. ilyen minta|Motor-diagnosztika|gyenge.*sáv" \
@@ -637,14 +637,14 @@ copy, UI state matrix, chart branches, file map and test coverage.
   The `rg` command must return no user-facing production occurrence; historical test comments may
   be rewritten instead of exempted.
 
-- [ ] Commit docs and generated CODEMAP:
+- [x] Commit docs and generated CODEMAP:
 
   ```bash
   git add docs/features/insights.md docs/features/companion.md docs/CODEMAP.md
   git commit -m "docs(insights): document balanced pattern evidence (mezo-0469)"
   ```
 
-- [ ] Add a bd comment with the exact focused backend results, both frontend modes, build,
+- [x] Add a bd comment with the exact focused backend results, both frontend modes, build,
   contract drift, visual QA and the doc-lint baseline. Do not close the issue before CI is green.
 
 - [ ] Push the feature branch and open the self-PR whose body lists commits, gate output and any
