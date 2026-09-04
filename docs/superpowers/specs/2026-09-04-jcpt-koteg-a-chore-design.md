@@ -111,8 +111,9 @@ Egyenes törlés, egy commitban:
    maradjon élő horgonya:
    - `DayScoreService.java:45-46`: a „Task 11-ben nyugdíjazzuk" mondat **törlése** (a jövőidő
      tárgytalan, amint a record eltűnik).
-   - `DayEvaluationProperties.java:17` és `DiagnosisProperties.java:10`: a `MeWeekProperties`
-     említés cseréje túlélő recordra.
+   - `DayEvaluationProperties.java:17`: a `MeWeekProperties`/`QuarterlyProperties` párosból az
+     előbbi helyére `ProfileProperties` (a `QuarterlyProperties` marad).
+   - `DiagnosisProperties.java:10`: a „`MeWeekProperties` precedent" → `QuarterlyProperties`.
 4. Feature-doksik:
    - `companion.md:5474` — a „**`config/MeWeekProperties.java` is now DEAD** … Left in place, not
      deleted" bullet cseréje `KeretBelt`-hangnemű törlés-bulletre (mi tűnt el, miért, és hogy a
