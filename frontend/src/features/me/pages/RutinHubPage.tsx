@@ -110,14 +110,15 @@ export function RutinHubPage() {
           className={cn('rt-hrow', newHabitKey === def.habitKey && 'rt-row-new')}
           style={{ flex: 1, minWidth: 0 }}
           onClick={() => navigate(`/me/rutin/szokas/${def.habitKey}`)}
-          aria-label={`${def.title} · ${FRAMEWORK_LABEL[fw]}${pct != null ? ` · 28 napos erő ${pct}%` : ''}`}
+          aria-label={`${def.title} · ${FRAMEWORK_LABEL[fw]}${pct != null ? ` · 28 napos erő ${pct}%` : ''}${item ? ` · ${STATUS_SR[item.status]}` : ''}`}
         >
           <span className="rt-nm">{def.title}</span>
           <span className={cn('rt-fw', `rt-fw-${fw.toLowerCase()}`)}>{FRAMEWORK_BADGE[fw]}</span>
           <span className="rt-bar">
-            {/* READ-ONLY jelző, nem kontroll: a pipálás a /nap/rutin-on él (ADR). */}
+            {/* READ-ONLY jelző, nem kontroll: a pipálás a /nap/rutin-on él (ADR). A napi
+                státusz (kész/nyitott/kimaradt) a gomb aria-label-jében utazik fentebb —
+                nem itt, hogy egy screen reader ténylegesen felolvassa. */}
             <span className="rt-tick" aria-hidden="true">✓</span>
-            {item && <span className="sr-only">{STATUS_SR[item.status]}</span>}
             {pct != null && (
               <>
                 <span className="rt-strength" aria-hidden="true">

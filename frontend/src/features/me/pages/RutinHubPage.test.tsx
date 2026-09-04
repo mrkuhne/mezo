@@ -139,9 +139,9 @@ describe('RutinHubPage', () => {
 
   test('badges each habit row with its framework, legacy rows included', () => {
     renderPage()
-    expect(screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71%')).toBeInTheDocument()
-    expect(screen.getByLabelText('Napi szándék · négy törvény')).toBeInTheDocument()
-    expect(screen.getByLabelText('Hidratálás · keret nélkül')).toBeInTheDocument()
+    expect(screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71% · kész')).toBeInTheDocument()
+    expect(screen.getByLabelText('Napi szándék · négy törvény · nyitott')).toBeInTheDocument()
+    expect(screen.getByLabelText('Hidratálás · keret nélkül · nyitott')).toBeInTheDocument()
   })
 
   // ---- fix wave (mezo-3zue.10): prototype's .pw chain head (strength only) + .habnote ----
@@ -175,14 +175,14 @@ describe('RutinHubPage', () => {
 
   test('the row button names the strength — the bar alone is silent to a screen reader', () => {
     renderPage()
-    expect(screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71%')).toBeInTheDocument()
+    expect(screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71% · kész')).toBeInTheDocument()
     // a def with no summary row names no standing at all (honesty rule)
-    expect(screen.getByLabelText('Hidratálás · keret nélkül')).toBeInTheDocument()
+    expect(screen.getByLabelText('Hidratálás · keret nélkül · nyitott')).toBeInTheDocument()
   })
 
   test('opens the habit page from a row and never renders a tick control', () => {
     renderPage()
-    screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71%').click()
+    screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71% · kész').click()
     expect(navigate).toHaveBeenCalledWith('/me/rutin/szokas/sun')
     expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
   })
@@ -278,12 +278,22 @@ describe('RutinHubPage', () => {
 
   test('the row carries a read-only tick beside the bar and no per-def toggle', () => {
     const { container } = renderPage()
-    const row = screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71%')
+    const row = screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71% · kész')
     expect(within(row).getByText('✓')).toBeInTheDocument()
     expect(row.closest('.row')).toHaveClass('rt-done')
     // a toggle a soron soha többé — a szüneteltetés a HabitPage-en él
     expect(screen.queryByLabelText('Napi szándék aktív')).toBeNull()
     expect(container.querySelector('.rt-hrow .rt-bar')).not.toBeNull()
+  })
+
+  // ---- fix wave (mezo-3zue.10): the dead sr-only status span is not read by name-based
+  // queries — the tick's ✓ is aria-hidden, so today's done/open state must travel in the
+  // row's own accessible name (getByLabelText resolves it, unlike getByText on inner spans).
+
+  test('the accessible name of today\'s row carries its done/open status', () => {
+    renderPage()
+    expect(screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71% · kész')).toBeInTheDocument()
+    expect(screen.getByLabelText('Napi szándék · négy törvény · nyitott')).toBeInTheDocument()
   })
 
   test('a paused definition dims but stays tappable through to its habit page', () => {
@@ -357,7 +367,7 @@ describe('RutinHubPage', () => {
   test('?new= highlights the freshly created habit row', () => {
     const { container } = renderPage('/me/rutin?new=intent')
     expect(container.querySelectorAll('.rt-row-new')).toHaveLength(1)
-    expect(screen.getByLabelText('Napi szándék · négy törvény')).toHaveClass('rt-row-new')
+    expect(screen.getByLabelText('Napi szándék · négy törvény · nyitott')).toHaveClass('rt-row-new')
   })
 
   test('suppresses the hero standing until the day view has something real', () => {
