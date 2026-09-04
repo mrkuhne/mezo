@@ -99,6 +99,18 @@ export function EnHubPage() {
   const { goals: lifeGoals, isPending: lifeGoalsPending } = useLifeGoals()
   const { today: lifeToday, isPending: lifeTodayPending, isError: lifeTodayError } = useLifeGoalToday()
   const activeGoals = lifeGoals.filter((g) => g.status === 'active')
+  // A mozaik Célok csempéje az ÁLLANDÓ ajtó a hubra (mezo-rn9u). A hero fölötte
+  // adat-vezérelt — aktív cél nélkül nem rajzolódik —, így korábban nulla aktív céllal
+  // a /me/goals sehonnan nem nyílt: a parkolás egyirányú ajtó lett (parkolod az egyetlen
+  // célod → a hub eltűnik → nem tudod visszakapcsolni), és vele tűnt el a lezárt célok
+  // szekció, a Jelek oldal és a Súlycél-sor is. A csempe SOSEM kapuzott.
+  const parkedGoals = lifeGoals.filter((g) => g.status === 'parked' || g.status === 'draft')
+  // A ház sor-szabálya: feloldatlan vagy üres forrásnál a sor eltűnik, nem hazudik nullát.
+  const celokBits = [
+    activeGoals.length > 0 ? `${activeGoals.length} aktív` : null,
+    parkedGoals.length > 0 ? `${parkedGoals.length} parkol` : null,
+  ].filter((b): b is string => b !== null)
+  const celokLine = lifeGoalsPending || celokBits.length === 0 ? undefined : celokBits.join(' · ')
   // `insufficient` kimarad: túl kevés adat sosem irány (a CelokPage/LifeGoalTile guardrailje).
   const arrows = lifeToday.goals.reduce(
     (acc, s) => { if (s.arrow !== 'insufficient') acc[s.arrow] += 1; return acc },
@@ -119,7 +131,7 @@ export function EnHubPage() {
         ]
     goalCard = (
       <button type="button" className="enh-goalcard enh-lgcard rise" style={{ '--d': '70ms' } as React.CSSProperties}
-        aria-label="Célok" onClick={() => navigate('/me/goals')}>
+        aria-label="Célok · összegzés" onClick={() => navigate('/me/goals')}>
         <div className="enh-goalhead">
           <span className="mz-eyebrow"><ClayIcon name="i-cel" size={15} /> Célok</span>
           <span className="enh-stch">{activeGoals.length} aktív</span>
@@ -247,19 +259,21 @@ export function EnHubPage() {
 
         {/* ===== 6-tile mosaic ===== */}
         <Mosaic>
-          <Tile wash="sky" icon="i-suly" eyebrow="Súly" delayMs={130} className="enh-eb-sky"
+          <Tile wash="coral" icon="i-cel" eyebrow="Célok" delayMs={130} className="enh-eb-coral"
+            line={celokLine} onClick={() => navigate('/me/goals')} aria-label="Célok" />
+          <Tile wash="sky" icon="i-suly" eyebrow="Súly" delayMs={170} className="enh-eb-sky"
             line={sulyLine} onClick={() => navigate('/me/weight')} aria-label="Súly" />
-          <Tile wash="lav" icon="i-alvas" eyebrow="Alvás" delayMs={170} className="enh-eb-lav"
+          <Tile wash="lav" icon="i-alvas" eyebrow="Alvás" delayMs={210} className="enh-eb-lav"
             line={alvasLine} onClick={() => navigate('/me/sleep')} aria-label="Alvás" />
-          <Tile wash="lav" icon="i-growth" eyebrow="Growth" delayMs={210} className="enh-t-minta enh-eb-lav"
+          <Tile wash="lav" icon="i-growth" eyebrow="Growth" delayMs={250} className="enh-t-minta enh-eb-lav"
             line={growthLine} onClick={() => navigate('/me/growth')} aria-label="Growth" />
-          <Tile wash="white" icon="i-naplo" eyebrow="Napló" delayMs={250} className="enh-t-kreed enh-eb-coral"
+          <Tile wash="white" icon="i-naplo" eyebrow="Napló" delayMs={290} className="enh-t-kreed enh-eb-coral"
             line={naploLine} onClick={() => navigate('/me/naplo')} aria-label="Napló" />
-          <Tile wash="rose" icon="i-emberek" eyebrow="Emberek" delayMs={290} className="enh-eb-rose"
+          <Tile wash="rose" icon="i-emberek" eyebrow="Emberek" delayMs={330} className="enh-eb-rose"
             line={emberekLine} onClick={() => navigate('/me/people')} aria-label="Emberek" />
-          <Tile wash="sage" icon="i-beallitas" eyebrow="Beállítások" delayMs={330} className="enh-eb-sage"
+          <Tile wash="sage" icon="i-beallitas" eyebrow="Beállítások" delayMs={370} className="enh-eb-sage"
             line={`téma: ${THEME_LABEL[themeMode]}`} onClick={() => navigate('/me/beallitasok')} aria-label="Beállítások" />
-          <Tile wide wash="gold" icon="i-rend" iconSize={34} eyebrow="Rutin" delayMs={370}
+          <Tile wide wash="gold" icon="i-rend" iconSize={34} eyebrow="Rutin" delayMs={410}
             line={rutinLine} onClick={() => navigate('/me/rutin')} aria-label="Rutin" />
         </Mosaic>
       </EntranceGroup>

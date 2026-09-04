@@ -2,7 +2,7 @@
 title: Life goals
 type: feature-domain
 status: in-progress
-updated: 2026-09-04
+updated: 2026-09-05
 tags: [me, growth, companion, backend, data-layer, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal
@@ -188,6 +188,16 @@ every one of them renders NOTHING rather than a fabricated number when its sourc
   csúszik ↘` off `useLifeGoalToday`, opening `/me/goals`. An unresolved/failed `today` collapses
   the trio to a single „aktív cél" count rather than printing „0↗ · 0→ · 0↘"; with no active goal
   at all the hero is a bare `＋ Új cél` door into `/me/goals/new`. See [`me.md`](me.md) §2.
+- **Én hub · `Célok` mosaic tile** (`EnHubPage`, `mezo-rn9u`) — the hub's PERMANENT door to
+  `/me/goals`, unconditional by design; only its line varies (`{n} aktív · {m} parkol`, each
+  clause dropped at zero, the whole line absent while the list is pending or when there is no
+  goal at all). Every other `/me/goals` door is data-gated — the hero above needs an active goal,
+  the Nap tile needs one with pillar counts, the Heti card needs a running week AND an active
+  goal — so with zero active goals the hub had NO entry point at all. That made parking a
+  one-way door (park your last active goal → the hub vanishes → you cannot un-park it) and took
+  the closed-goals section, the Jelek page and the Súlycél row down with it. No test or golden
+  caught it because `lifegoalMock` seeds three ACTIVE goals, so every run took the populated
+  branch; the fix ships with the empty-branch coverage that was missing.
 - **Growth skill row · `goalchip`** (`logic/goalSkillChips.ts` + `SkillBandCard`, `mezo-iizd.12`) —
   a skill whose key feeds an active goal's pillar wears that goal's dimension chip, so the Growth
   page shows WHY a skill matters.
