@@ -1134,7 +1134,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-04, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-04, done) ·
-  [docs/features/train.md](features/train.md) (updated 2026-09-03, done) ·
+  [docs/features/train.md](features/train.md) (updated 2026-09-04, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-02, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
