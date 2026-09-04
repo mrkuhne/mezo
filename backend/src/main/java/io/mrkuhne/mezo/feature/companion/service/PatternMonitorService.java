@@ -65,7 +65,8 @@ public class PatternMonitorService {
 
         List<PatternMonitorPair> pairs = new ArrayList<>();
         for (CompanionProperties.PatternPair pair : config.pairs()) {
-            pairs.add(toPair(pair, cache, rows.get(pair.key()), config.minN(), from, to));
+            pairs.add(toPair(pair, cache, rows.get(pair.key()), config.minN(), config.minGroupN(),
+                    from, to));
         }
 
         return PatternMonitorResponse.builder()
@@ -103,7 +104,8 @@ public class PatternMonitorService {
     /** Package-private (mezo-tk88.3): {@link PatternPairDetailService} reuses this EXACT math. */
     PatternMonitorPair toPair(CompanionProperties.PatternPair pair,
                               Map<MetricKey, Map<LocalDate, Double>> cache,
-                              PatternEntity row, int minN, LocalDate from, LocalDate to) {
+                              PatternEntity row, int minN, int minGroupN,
+                              LocalDate from, LocalDate to) {
         PatternMonitorPair.PatternMonitorPairBuilder builder = PatternMonitorPair.builder()
                 .key(pair.key())
                 .title(pair.title())
@@ -137,7 +139,8 @@ public class PatternMonitorService {
         Map<LocalDate, Double> seriesA = PatternGate.window(cache.get(pair.metricA()), from, to);
         Map<LocalDate, Double> seriesB = PatternGate.window(cache.get(pair.metricB()),
                 from.plusDays(pair.lagDays()), to.plusDays(pair.lagDays()));
-        PatternGate.Outcome outcome = PatternGate.evaluate(seriesA, seriesB, pair.lagDays(), minN);
+        PatternGate.Outcome outcome = PatternGate.evaluate(seriesA, seriesB, pair.lagDays(),
+                minN, minGroupN, pair.metricA().valueKind());
         builder.alignedDays(outcome.alignedDays());
 
         // Switch EXPRESSION, nem statement: az enum feletti kifejezést a fordító teljességre
@@ -157,6 +160,7 @@ public class PatternMonitorService {
                     .bottleneckMetricKey(thinnerMetric(pair, cache, from, to).wireKey());
             case DEGENERATE -> builder.verdict(VERDICT_DEGENERATE)
                     .bottleneckMetricKey(constantMetric(pair, outcome.constantSide()).wireKey());
+            case IMBALANCED_GROUPS -> builder.verdict("imbalanced_groups");
         };
         return verdicted.build();
     }

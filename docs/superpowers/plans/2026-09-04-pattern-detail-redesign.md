@@ -113,7 +113,7 @@ record Outcome(
 ) {}
 ```
 
-- [ ] RED: extend `PatternGateTest` first. Update existing calls to pass `3` and `NUMBER`, then
+- [x] RED: extend `PatternGateTest` first. Update existing calls to pass `3` and `NUMBER`, then
   add these cases:
 
   ```java
@@ -134,14 +134,14 @@ record Outcome(
   Add the complementary `3+3 → LIVE` case and keep one NUMBER case proving that a numerically
   two-valued non-binary metric does not enter the group gate.
 
-- [ ] Run the focused test and observe compile/failing assertions before production edits:
+- [x] Run the focused test and observe compile/failing assertions before production edits:
 
   ```bash
   cd backend
   ./mvnw -Dtest=PatternGateTest clean test
   ```
 
-- [ ] GREEN: create `MetricValueKind` with lowercase `wireKey()`. Keep the current three-argument
+- [x] GREEN: create `MetricValueKind` with lowercase `wireKey()`. Keep the current three-argument
   `MetricKey` constructor as a `NUMBER` default and add a four-argument overload. Mark only:
 
   ```java
@@ -154,7 +154,7 @@ record Outcome(
 
   Expose `MetricKey.valueKind()`; do not change its config/wire key.
 
-- [ ] Add `IMBALANCED_GROUPS` and the two nullable counts to `PatternGate`. After alignment, keep
+- [x] Add `IMBALANCED_GROUPS` and the two nullable counts to `PatternGate`. After alignment, keep
   the exact gate order from Global Constraints. For binary A, count exact extractor values:
 
   ```java
@@ -167,25 +167,25 @@ record Outcome(
 
   LIVE binary outcomes retain both counts; non-binary outcomes carry `null/null`.
 
-- [ ] Add `@Min(3) @Max(30) int minGroupN` immediately after `minN` in
+- [x] Add `@Min(3) @Max(30) int minGroupN` immediately after `minN` in
   `CompanionProperties.Patterns`, and `min-group-n: 3` next to `min-n: 8` in `application.yml`.
   Extend `CompanionPropertiesIT` to assert the bound value is `3` and invalid `2` fails binding.
 
-- [ ] Thread `config.minGroupN()` and `pair.metricA().valueKind()` through both shared callers:
+- [x] Thread `config.minGroupN()` and `pair.metricA().valueKind()` through both shared callers:
   `PatternDetectionService.detectPair(...)` and `PatternMonitorService.toPair(...)`.
   `PatternPairDetailService` must pass both thresholds when it reuses `toPair`; no duplicate math.
 
-- [ ] Run RED→GREEN focused gates:
+- [x] Run RED→GREEN focused gates:
 
   ```bash
   cd backend
   ./mvnw -Dtest=PatternGateTest,CompanionPropertiesIT clean test
   ```
 
-- [ ] Refactor only after green: update javadocs so they say total-size **and** binary-balance
+- [x] Refactor only after green: update javadocs so they say total-size **and** binary-balance
   gate, then rerun the same command.
 
-- [ ] Commit:
+- [x] Commit:
 
   ```bash
   git add backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/MetricValueKind.java \
