@@ -85,6 +85,9 @@ const SCREENS: Array<[string, string, string?]> = [
   ['me-rutin-uj', '/me/rutin/uj'],
   ['me-rutin-szokas', '/me/rutin/szokas/daily_intention'],
   ['me-growth', '/me/growth'],
+  // mezo-iizd.12: a Growth skill-sorok goalchipje (aktív cél pillére → skill) saját felület,
+  // amit a /me/growth hub shotja nem lát — a chip enélkül pixel-szinten őrizetlen maradna.
+  ['me-growth-skillek', '/me/growth/skillek'],
   ['me-growth-awards', '/me/growth/kituntetesek'],
   ['me-ai-call', '/me/ai-usage/22222222-2222-4222-8222-222222222222'],
   ['insights-mintak', '/insights'],
