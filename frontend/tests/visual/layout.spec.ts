@@ -187,11 +187,11 @@ test("today's day view is fully reachable @ iphone-15-pro", async ({ page }) => 
 test('header · kitapad, kompakt magasság és a lap-chrome offsetje (mezo-8az6)', async ({ page }) => {
   // Spec §5 (docs/superpowers/specs/2026-09-03-header-aurora-design.md) ígérte ezt a
   // regressziós tesztet: a shell-fejléc (`.app-head`) kitapad a görgetőport (`.screen-content`)
-  // tetejéhez és a küszöb (14px) fölött kompakt magasságra (--mzh-head-cond-h: 44px) húzódik;
+  // tetejéhez és a küszöb (14px) fölött kompakt magasságra (--mzh-head-cond-h: 46px) húzódik;
   // a lap saját sticky chrome-ja (`.sticky-top`) ehhez képest tapad ki, sosem csúszhat a
   // fejléc alá; a fejléc nélküli oldalakon (AppLayout.tsx hideChrome) viszont nincs mi alá
   // tapadni, ott a `.sticky-top`-nak a görgetőport tetejéhez KELL tapadnia (top ≈ 0), nem
-  // 44px-cel lejjebb.
+  // 46px-cel lejjebb.
   // /fuel (not /nap): the Nap hub's panel exactly fills a 393×852 viewport with no
   // overflow, so `.screen-content` cannot be scrolled there — /fuel's longer hub
   // reliably overflows, which the condensed-header transition needs to trigger.
@@ -228,7 +228,7 @@ test('header · kitapad, kompakt magasság és a lap-chrome offsetje (mezo-8az6)
     }
   })
   expect(withHead.headTop, 'a kompakt fejléc a görgetőport tetejéhez tapad').toBe(0)
-  expect(withHead.headHeight, 'a kompakt fejléc magassága a --mzh-head-cond-h token (44px)').toBe(44)
+  expect(withHead.headHeight, 'a kompakt fejléc magassága a --mzh-head-cond-h token (46px)').toBe(46)
   if (withHead.stickyTopBelowHead !== null) {
     expect(
       withHead.stickyTopBelowHead,
@@ -237,7 +237,7 @@ test('header · kitapad, kompakt magasság és a lap-chrome offsetje (mezo-8az6)
   }
 
   // Chrome nélküli oldal: nincs .app-head, a .sticky-top a görgetőport tetejéhez tapad,
-  // NEM 44px-cel lejjebb (az 1. finding regressziója: üres sáv a lap tetején).
+  // NEM 46px-cel lejjebb (az 1. finding regressziója: üres sáv a lap tetején).
   await page.goto('/train/session')
   await page.waitForLoadState('networkidle')
   await page.evaluate(() => document.fonts.ready)

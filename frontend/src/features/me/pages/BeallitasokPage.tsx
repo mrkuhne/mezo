@@ -14,7 +14,9 @@ import { Icon } from '@/shared/ui/Icon'
 import { SECTION_LABEL } from '@/shared/ui/sectionLabel'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { useLlmUsageSummary, useMe, useNotificationPrefs } from '@/data/hooks'
+import { isMockMode } from '@/data/_client/mode'
+import { useAuthActions, useLlmUsageSummary, useMe, useNotificationPrefs } from '@/data/hooks'
+import { ChangePasswordSheet } from '@/features/auth/sheets/ChangePasswordSheet'
 import { formatRollupCost } from '@/features/me/logic/llmCallFormat'
 import { useTheme } from '@/app/ThemeProvider'
 import { useTutorial } from '@/features/tutorial/TutorialProvider'
@@ -37,7 +39,15 @@ export function BeallitasokPage() {
     ? undefined
     : `${enabledPrefs} / ${prefs.length} kategória`
 
-  const isOwner = useMe().data?.role === 'OWNER'
+  // Fiók (S2, mezo-qw37.2): identity from /api/auth/me (mock: the static owner), password change
+  // in a sheet, logout. Logout only exists where a session does — mock mode has no token and
+  // AuthGate short-circuits to the app there, so the row is hidden rather than dead.
+  const { data: me } = useMe()
+  const { logout } = useAuthActions()
+  const [sheet, setSheet] = useState<'password' | null>(null)
+  const canLogout = !isMockMode()
+
+  const isOwner = me?.role === 'OWNER'
   // The endpoint is OWNER-only (LlmUsageController.requireOwner()) — a non-owner visiting
   // Beállítások must never fire this request (it would 403, twice with the query's retry).
   // `enabled: isOwner` skips the fetch entirely for a non-owner; the row below is ALSO
@@ -95,7 +105,7 @@ export function BeallitasokPage() {
   return (
     <MozaikPage tone="lav">
       <PageHead onBack={() => navigate('/me')} label="‹ Én" />
-      <PageHero icon="i-beallitas" name="Beállítások" sub="téma · értesítések · AI-napló · admin" />
+      <PageHero icon="i-beallitas" name="Beállítások" sub="téma · fiók · értesítések · AI-napló · admin" />
       <PageBody>
         <EntranceGroup className="col gap-lg">
           <div className="col gap-sm rise" style={{ '--d': '0ms' } as React.CSSProperties}>
@@ -124,6 +134,25 @@ export function BeallitasokPage() {
           </div>
 
           <div className="col gap-sm rise" style={{ '--d': '80ms' } as React.CSSProperties}>
+            <span style={SECTION_LABEL}>Fiók</span>
+            <div className="card col" style={{ padding: 14, gap: 2 }}>
+              <span>{me?.name ?? '—'}</span>
+              <span style={SECTION_LABEL}>{me?.email ?? '—'}</span>
+            </div>
+            <button type="button" className="card row" aria-label="Jelszó módosítása" onClick={() => setSheet('password')}
+              style={{ justifyContent: 'space-between', padding: 14, gap: 12, textAlign: 'left' }}>
+              <span>Jelszó módosítása</span>
+              <span aria-hidden="true" style={{ color: 'var(--text-tertiary)' }}>›</span>
+            </button>
+            {canLogout && (
+              <button type="button" className="card row" aria-label="Kijelentkezés" onClick={logout}
+                style={{ justifyContent: 'space-between', padding: 14, gap: 12, textAlign: 'left', color: 'var(--coral-deep)' }}>
+                <span>Kijelentkezés</span>
+              </button>
+            )}
+          </div>
+
+          <div className="col gap-sm rise" style={{ '--d': '160ms' } as React.CSSProperties}>
             <span style={SECTION_LABEL}>Felületek</span>
             {row('i-ertesites', 'Értesítések', ertesitesLine, '/me/ertesitesek/beallitasok')}
             {isOwner && row('i-erme', 'AI-napló', aiLine, '/me/ai-usage')}
@@ -132,6 +161,7 @@ export function BeallitasokPage() {
           </div>
         </EntranceGroup>
       </PageBody>
+      {sheet === 'password' && <ChangePasswordSheet onClose={() => setSheet(null)} />}
     </MozaikPage>
   )
 }

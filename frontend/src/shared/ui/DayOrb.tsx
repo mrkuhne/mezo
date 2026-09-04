@@ -6,6 +6,13 @@
 // Buta prezentáció: a számokat a `useDayOrbFill` hook adja.
 // ============================================================
 import { useId } from 'react'
+import type { ClaySpotName } from '@/shared/ui/clay'
+
+/** Az alap sprite — a `ClaySpotName` unión keresztül nevezve, hogy egy sprite-átnevezés
+ *  tsc-n bukjon, ne csendben, futásidőben (a `<use href>`-hez kézzel írt `'#s-orb'`
+ *  string ezt megkerülte). A `ClaySpot` komponens nem jó ide: az orbnak a saját svg-jén
+ *  belül, saját `className`-mel kell a `<use>`. */
+const ORB_SPRITE: ClaySpotName = 's-orb'
 
 /** A `#s-orb` teste: `circle cx=50 cy=48 r=34` → y-ban 14…82. */
 const ORB_TOP = 14
@@ -35,7 +42,10 @@ interface DayOrbProps {
 }
 
 export function DayOrb({ pct, intensity, size = 40 }: DayOrbProps) {
-  const uid = useId().replace(/:/g, '')
+  // React 19 `useId`-je `_r_0_` alakú — a korábbi `.replace(/:/g, '')` a React-18-as
+  // `:r0:` formátum maradványa volt, itt állandó no-op. A `DayOrb.test.tsx` őrzi, hogy az
+  // id `url(#…)`-ben biztonságos maradjon, ha a React formátumot vált.
+  const uid = useId()
   const clipped = Math.max(0, Math.min(100, pct))
   const fillY = ORB_BOTTOM - (clipped / 100) * ORB_SPAN
   const t = Math.max(0, Math.min(1, intensity))
@@ -57,7 +67,7 @@ export function DayOrb({ pct, intensity, size = 40 }: DayOrbProps) {
         </radialGradient>
       </defs>
 
-      <use href="#s-orb" className="dayorb-base" />
+      <use href={`#${ORB_SPRITE}`} className="dayorb-base" />
 
       {clipped > 0 && (
         <g clipPath={`url(#dayorb-fill-${uid})`} className="dayorb-fill">
