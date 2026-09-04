@@ -10,6 +10,10 @@ import io.mrkuhne.mezo.feature.biometrics.weight.service.WeightTrendService;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
+import io.mrkuhne.mezo.feature.companion.flags.entity.CompanionFlagLogEntity;
+import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
+import io.mrkuhne.mezo.feature.companion.flags.repository.CompanionFlagLogRepository;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
@@ -34,11 +38,13 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -189,6 +195,7 @@ public class CompanionMessageGenerator {
     private final MentionRepository mentionRepository;
     private final PersonAffectTrendCalculator affectTrendCalculator;
     private final PromptPersona promptPersona;
+    private final CompanionFlagLogRepository companionFlagLogRepository;
 
     /**
      * Generates (or returns the existing) morning message for one day. Returns null when there
@@ -222,6 +229,7 @@ public class CompanionMessageGenerator {
             candidates.add(new CompanionMessageEnvelope.Ref(
                     "Memory", summary.getSummaryDate().toString()));
         }
+        payload.append(missedWorkoutsBlock(userId, date));
         payload.append("\nHIVATKOZÁS-JELÖLTEK (a refIndexes ezekre mutat):\n");
         for (int i = 0; i < candidates.size(); i++) {
             CompanionMessageEnvelope.Ref ref = candidates.get(i);
@@ -246,6 +254,31 @@ public class CompanionMessageGenerator {
                 parsed.eyebrow(), parsed.body(), resolveRefs(parsed.refIndexes(), candidates)));
         message.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         return companionMessageRepository.saveAndFlush(message);
+    }
+
+    /**
+     * S4 (bd mezo-d58h.4, spec §4 row 3): a live {@code missed_workouts} raise as a FACT block for
+     * the morning briefing — "no more blind cheering". Reads the raise's OWN frozen payload
+     * (append-only flag log), never re-deriving the rule, and only inside the same lookback window
+     * the briefing already uses for daily summaries, so an ancient raise cannot keep scolding.
+     * Package-private: {@code CompanionMessageMissedWorkoutsIT} asserts it directly rather than
+     * trying to read prompt text back out of a scripted answer.
+     */
+    String missedWorkoutsBlock(UUID userId, LocalDate date) {
+        Instant windowStart = date.minusDays(properties.feed().pastDays())
+                .atStartOfDay(ZoneId.systemDefault()).toInstant();
+        return companionFlagLogRepository
+                .findFirstByCreatedByAndFlagKeyAndDeletedFalseOrderByCreatedAtDesc(
+                        userId, FlagKey.MISSED_WORKOUTS)
+                .filter(row -> !row.getCreatedAt().isBefore(windowStart))
+                .map(CompanionFlagLogEntity::getPayload)
+                .map(FlagPayloadEnvelope::missedWorkouts)
+                .filter(Objects::nonNull)
+                .map(mw -> "\nKIMARADT EDZÉSEK (tény — ne dicsérj vakon, de ne is szidj):\n"
+                        + "- leghosszabb kihagyott sorozat: " + mw.longestMissedRun()
+                        + " egymást követő tervezett nap\n"
+                        + "- kimaradt napok: " + String.join(", ", mw.missedDays()) + "\n")
+                .orElse("");
     }
 
     /**
