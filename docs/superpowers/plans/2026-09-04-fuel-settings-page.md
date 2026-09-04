@@ -256,7 +256,7 @@ cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo && git add frontend/src/app/router.
 6. „Étkezési ablakok” navigációs row.
 7. Fixen elérhető coral Mentés CTA a tab bar felett.
 
-- [ ] **Step 1: Írd meg a vizuális anatómia bukó DOM-tesztjeit**
+- [x] **Step 1: Írd meg a vizuális anatómia bukó DOM-tesztjeit**
 
 A `FuelSettingsPage.test.tsx`-et egészítsd ki:
 
@@ -266,7 +266,7 @@ A `FuelSettingsPage.test.tsx`-et egészítsd ki:
 - étkezésszám-változtatás után a hero ugyanazon élő számának frissülésével;
 - annak ellenőrzésével, hogy a dekoratív ív `aria-hidden="true"`, miközben az összefoglaló szöveg hozzáférhető.
 
-- [ ] **Step 2: Futtasd a focused page tesztet és rögzítsd a bukást**
+- [x] **Step 2: Futtasd a focused page tesztet és rögzítsd a bukást**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo/frontend && pnpm vitest run src/features/fuel/pages/FuelSettingsPage.test.tsx
@@ -274,7 +274,7 @@ cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo/frontend && pnpm vitest run src/fea
 
 Várt: FAIL a még hiányzó hero/anatómia/preview szövegeken.
 
-- [ ] **Step 3: Építsd meg a jóváhagyott kompozíciót**
+- [x] **Step 3: Építsd meg a jóváhagyott kompozíciót**
 
 A `FuelSettingsPage.tsx` markupja használja az `EntranceGroup`-ot a fő blokkok enyhe staggeréhez, de a beállítások állapota maradjon egyszerű kontrollált input. A hero íve CSS/SVG dekoráció lehet, a pontok száma a `mealsPerDay` draftból származzon; a koffein marker szöveges összefoglalója ugyanott hozzáférhető legyen.
 
@@ -290,7 +290,7 @@ custom    → Egyéni
 
 Az aktuális cél preview-ja nem változik optimistán profilváltáskor: ilyenkor a számok mellett a „Mentés után frissül” jelzés teszi világossá, hogy ezek még az aktív cél értékei.
 
-- [ ] **Step 4: Írd meg az izolált `.fset-*` CSS-t**
+- [x] **Step 4: Írd meg az izolált `.fset-*` CSS-t**
 
 A `prototype.css` végén, kommentelt Fuel-settings szekcióban készítsd el:
 
@@ -304,7 +304,7 @@ A `prototype.css` végén, kommentelt Fuel-settings szekcióban készítsd el:
 
 Ne módosíts globális `.row`, `.zcard`, `.recipe-save-bar` vagy Mozaik primitive szabályt; szükség esetén kompozíciós osztállyal bővítsd őket.
 
-- [ ] **Step 5: Futtasd a focused tesztet**
+- [x] **Step 5: Futtasd a focused tesztet**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo/frontend && pnpm vitest run src/features/fuel/pages/FuelSettingsPage.test.tsx src/features/fuel/pages/FuelMaiPage.test.tsx
@@ -312,7 +312,7 @@ cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo/frontend && pnpm vitest run src/fea
 
 Várt: PASS.
 
-- [ ] **Step 6: Adj visual és kis-kijelzős layout kaput**
+- [x] **Step 6: Adj visual és kis-kijelzős layout kaput**
 
 A `visual.spec.ts` `SCREENS` listájába add:
 
@@ -326,7 +326,7 @@ A `layout.spec.ts` mindkét `PHONE_VIEWPORTS` esetére ellenőrizze, hogy `/fuel
 - az „Étkezési ablakok” és a Mentés gomb görgetéssel/kattintással elérhető;
 - a portaled save bar nem takarja ki végleg az utolsó content sort.
 
-- [ ] **Step 7: Frissítsd és ellenőrizd a darwin goldent**
+- [x] **Step 7: Frissítsd és ellenőrizd a darwin goldent**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo/frontend && pnpm test:visual:update -- --grep "fuel-settings"

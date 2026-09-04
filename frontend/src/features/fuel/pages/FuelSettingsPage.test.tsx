@@ -18,7 +18,7 @@ function LocationProbe() {
 
 function renderPage() {
   const { wrapper: Wrapper, client } = makeHookWrapperWithClient()
-  render(
+  const view = render(
     <Wrapper>
       <MemoryRouter initialEntries={['/fuel', '/fuel/settings']} initialIndex={1}>
         <Routes>
@@ -29,7 +29,7 @@ function renderPage() {
       </MemoryRouter>
     </Wrapper>,
   )
-  return { client }
+  return { client, ...view }
 }
 
 describe('FuelSettingsPage', () => {
@@ -107,6 +107,51 @@ describe('FuelSettingsPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Étkezési ablakok szerkesztése' }))
 
     expect(screen.getByTestId('location')).toHaveTextContent('/fuel/slots')
+  })
+
+  test('composes the rhythm hero before the floating settings cards', () => {
+    const { container } = renderPage()
+    const page = container.querySelector('.fset-page')
+    const hero = container.querySelector('.fset-hero')
+    const rhythm = container.querySelector('[aria-labelledby="fset-rhythm-title"]')
+    const macros = container.querySelector('[aria-labelledby="fset-macros-title"]')
+
+    expect(page).toBeInTheDocument()
+    expect(hero).toBeInTheDocument()
+    expect(rhythm).toBeInTheDocument()
+    expect(macros).toBeInTheDocument()
+    expect(hero!.compareDocumentPosition(rhythm!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    expect(rhythm!.compareDocumentPosition(macros!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
+  test('shows the active target as kcal plus normalized percent and grams', () => {
+    renderPage()
+
+    expect(screen.getByText('3 100 kcal')).toBeInTheDocument()
+    expect(screen.getByText('27% · 220 g')).toBeInTheDocument()
+    expect(screen.getByText('47% · 380 g')).toBeInTheDocument()
+    expect(screen.getByText('26% · 95 g')).toBeInTheDocument()
+  })
+
+  test('keeps the active preview honest when a different profile is selected', async () => {
+    renderPage()
+
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Makróprofil' }), 'low_carb')
+
+    expect(screen.getByText('Mentés után frissül')).toBeInTheDocument()
+    expect(screen.getByText('27% · 220 g')).toBeInTheDocument()
+  })
+
+  test('updates the accessible hero summary and decorative meal dots from the draft', async () => {
+    const { container } = renderPage()
+
+    expect(screen.getByText('4 étkezés · koffein-stop 14:00')).toBeInTheDocument()
+    expect(container.querySelectorAll('.fset-meal-dot')).toHaveLength(4)
+    expect(container.querySelector('.fset-dayarc')).toHaveAttribute('aria-hidden', 'true')
+    await userEvent.click(screen.getByRole('button', { name: 'Étkezés növelése' }))
+    fireEvent.change(screen.getByLabelText('Koffein-cutoff'), { target: { value: '13:00' } })
+    expect(screen.getByText('5 étkezés · koffein-stop 13:00')).toBeInTheDocument()
+    expect(container.querySelectorAll('.fset-meal-dot')).toHaveLength(5)
   })
 })
 

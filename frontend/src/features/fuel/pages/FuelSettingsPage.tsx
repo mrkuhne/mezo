@@ -12,6 +12,7 @@ import {
 import { buildFuelSettingsMacroPreview } from '@/features/fuel/logic/fuelSettingsPreview'
 import { Icon } from '@/shared/ui/Icon'
 import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
+import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
 const PRESET_LABELS: Record<DietSettings['splitPreset'], string> = {
   balanced: 'Kiegyensúlyozott',
@@ -22,7 +23,14 @@ const PRESET_LABELS: Record<DietSettings['splitPreset'], string> = {
 }
 
 const PRESET_KEYS = Object.keys(PRESET_LABELS) as DietSettings['splitPreset'][]
-const huInt = new Intl.NumberFormat('hu-HU', { maximumFractionDigits: 0 })
+const huInt = new Intl.NumberFormat('hu-HU', { maximumFractionDigits: 0, useGrouping: true })
+
+function arcPoint(progress: number) {
+  return {
+    x: 24 + progress * 272,
+    y: 100 - Math.sin(progress * Math.PI) * 72,
+  }
+}
 
 function NumberStepper({ label, actionLabel = label, value, min, max, step = 1, suffix, offAtZero, onChange }: {
   label: string
@@ -102,6 +110,11 @@ export function FuelSettingsPage() {
       || Math.round(cPct * 10) !== diet.carbsPctX10
       || Math.round(fPct * 10) !== diet.fatPctX10
     ))
+  const mealPoints = Array.from({ length: mealsPerDay }, (_, index) =>
+    arcPoint(0.08 + index * (0.84 / Math.max(1, mealsPerDay - 1))))
+  const [cutoffHours, cutoffMinutes] = caffeineCutoff.split(':').map(Number)
+  const cutoffProgress = Math.min(1, Math.max(0, ((cutoffHours + cutoffMinutes / 60) - 6) / 18))
+  const cutoffPoint = arcPoint(cutoffProgress)
 
   const save = async () => {
     await Promise.all([
@@ -132,8 +145,33 @@ export function FuelSettingsPage() {
       <PageHead onBack={() => navigate(-1)} label="‹ Fuel">
         <h1 className="fset-title">Fuel beállítások</h1>
       </PageHead>
+      <EntranceGroup>
       <PageBody className="fset-body">
-        <section className="fset-card" aria-labelledby="fset-rhythm-title">
+        <section className="fset-hero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
+          <span className="fset-eyebrow">Napi ritmus</span>
+          <div className="fset-hero-head">
+            <strong>{mealsPerDay} étkezés</strong>
+            <span className="fset-cutoff-pill">koffein-stop · {caffeineCutoff}</span>
+          </div>
+          <p className="fset-summary">{mealsPerDay} étkezés · koffein-stop {caffeineCutoff}</p>
+          <div className="fset-arc-wrap">
+            <svg className="fset-dayarc" viewBox="0 0 320 118" aria-hidden="true" focusable="false">
+              <path className="fset-arc-track" d="M24 100 C88 4 232 4 296 100" />
+              <path className="fset-arc-glow" d="M24 100 C88 4 232 4 296 100" />
+              {mealPoints.map((point, index) => (
+                <circle key={index} className="fset-meal-dot" cx={point.x} cy={point.y} r="6" />
+              ))}
+              <line className="fset-cutoff-line" x1={cutoffPoint.x} y1={cutoffPoint.y - 13}
+                x2={cutoffPoint.x} y2={cutoffPoint.y + 13} />
+              <circle className="fset-cutoff-dot" cx={cutoffPoint.x} cy={cutoffPoint.y} r="4" />
+            </svg>
+            <div className="fset-axis"><span>06</span><span>12</span><span>18</span><span>24</span></div>
+          </div>
+          <p className="fset-principle">A napi ív együtt mozdul a beállításaiddal.</p>
+        </section>
+
+        <section className="fset-card rise" style={{ '--d': '60ms' } as React.CSSProperties}
+          aria-labelledby="fset-rhythm-title">
           <h2 id="fset-rhythm-title">Ritmus</h2>
           <div className="fset-row">
             <span>Étkezés/nap</span>
@@ -152,7 +190,8 @@ export function FuelSettingsPage() {
           <p>A cutoff a Mai chipet, a nap-tervet és a koffein-habitot is állítja.</p>
         </section>
 
-        <section className="fset-card fset-preview" aria-labelledby="fset-macros-title">
+        <section className="fset-card fset-preview rise" style={{ '--d': '110ms' } as React.CSSProperties}
+          aria-labelledby="fset-macros-title">
           <h2 id="fset-macros-title">Makrók</h2>
           <label className="fset-selectrow">
             <span>Makróprofil</span>
@@ -167,10 +206,20 @@ export function FuelSettingsPage() {
 
           {preview ? (
             <div className="fset-target-preview">
-              <div><span>Mai cél alapján</span><strong>{huInt.format(preview.kcal)} kcal</strong></div>
-              <div><span>Fehérje</span><b>{preview.protein.pct}% · {huInt.format(preview.protein.grams)} g</b></div>
-              <div><span>Szénhidrát</span><b>{preview.carbs.pct}% · {huInt.format(preview.carbs.grams)} g</b></div>
-              <div><span>Zsír</span><b>{preview.fat.pct}% · {huInt.format(preview.fat.grams)} g</b></div>
+              <span className="fset-target-label">Mai cél alapján</span>
+              <div className="fset-macro-preview-body">
+                <div className="fset-donut" style={{
+                  '--protein-pct': `${preview.protein.pct}%`,
+                  '--carbs-end': `${preview.protein.pct + preview.carbs.pct}%`,
+                } as React.CSSProperties}>
+                  <span><strong>{huInt.format(preview.kcal)} kcal</strong><small>aktív cél</small></span>
+                </div>
+                <div className="fset-macro-rows">
+                  <div><span>Fehérje</span><b>{preview.protein.pct}% · {huInt.format(preview.protein.grams)} g</b></div>
+                  <div><span>Szénhidrát</span><b>{preview.carbs.pct}% · {huInt.format(preview.carbs.grams)} g</b></div>
+                  <div><span>Zsír</span><b>{preview.fat.pct}% · {huInt.format(preview.fat.grams)} g</b></div>
+                </div>
+              </div>
             </div>
           ) : <p>A napi cél betöltése…</p>}
           {dietDirty && <p className="fset-refresh-note">Mentés után frissül</p>}
@@ -195,7 +244,7 @@ export function FuelSettingsPage() {
             && <p>A fehérje-cél g/kg alapon védett; az eltérést a szénhidrát nyeli el.</p>}
         </section>
 
-        <div className="fset-goalgrid">
+        <div className="fset-goalgrid rise" style={{ '--d': '160ms' } as React.CSSProperties}>
           <label className="fset-card">
             <span>Víz-cél (ml)</span>
             <input type="number" min={500} max={8000} step={100} aria-label="Víz-cél" value={waterMl}
@@ -208,7 +257,8 @@ export function FuelSettingsPage() {
           </label>
         </div>
 
-        <section className="fset-card" aria-labelledby="fset-protein-title">
+        <section className="fset-card rise" style={{ '--d': '210ms' } as React.CSSProperties}
+          aria-labelledby="fset-protein-title">
           <h2 id="fset-protein-title">Finomhangolás</h2>
           <div className="fset-row">
             <span>Fehérje-szint</span>
@@ -228,12 +278,17 @@ export function FuelSettingsPage() {
           <p>Pihenőnapról edzőnapra átcsoportosított kcal; a heti keret nem változik.</p>
         </section>
 
-        <button type="button" className="fset-card fset-slots np-press"
+        <button type="button" className="fset-card fset-slots np-press rise"
+          style={{ '--d': '260ms' } as React.CSSProperties}
           aria-label="Étkezési ablakok szerkesztése" onClick={() => navigate('/fuel/slots')}>
           <span>Étkezési ablakok</span>
           <strong>szerkesztése <span aria-hidden="true">›</span></strong>
         </button>
+        <p className="fset-closing rise" style={{ '--d': '300ms' } as React.CSSProperties}>
+          A ritmus vezet, nem korlátoz — bármelyik ablak utólag is logolható.
+        </p>
       </PageBody>
+      </EntranceGroup>
       {saveBar}
     </MozaikPage>
   )

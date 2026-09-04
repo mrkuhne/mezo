@@ -26,6 +26,33 @@ const PHONE_VIEWPORTS = [
 ]
 
 for (const vp of PHONE_VIEWPORTS) {
+  test(`Fuel settings page stays horizontally contained and fully reachable @ ${vp.name}`, async ({ page }) => {
+    await page.setViewportSize({ width: vp.width, height: vp.height })
+    await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+    await page.goto('/fuel/settings')
+    await page.waitForLoadState('networkidle')
+    await page.evaluate(() => document.fonts.ready)
+
+    const overflow = await page.locator('.fset-page').evaluate((element) => ({
+      scrollWidth: element.scrollWidth,
+      clientWidth: element.clientWidth,
+    }))
+    expect(overflow.scrollWidth).toBeLessThanOrEqual(overflow.clientWidth + 1)
+
+    const slots = page.getByRole('button', { name: 'Étkezési ablakok szerkesztése' })
+    const save = page.getByRole('button', { name: 'Mentés' })
+    await slots.scrollIntoViewIfNeeded()
+    await expect(slots).toBeVisible()
+    await expect(save).toBeVisible()
+
+    const spacing = await page.evaluate(() => {
+      const slotsRect = document.querySelector('.fset-slots')!.getBoundingClientRect()
+      const saveRect = document.querySelector('.fset-savebar')!.getBoundingClientRect()
+      return { slotsBottom: Math.round(slotsRect.bottom), saveTop: Math.round(saveRect.top) }
+    })
+    expect(spacing.slotsBottom).toBeLessThanOrEqual(spacing.saveTop)
+  })
+
   test(`fuel · the Logolás hero tile and the /fuel/log blocks are reachable, never clipped @ ${vp.name}`, async ({ page }) => {
     // mezo-byo1: the horizontal window swimlane dissolved — the hub carries ONE Logolás
     // hero tile and the whole day's logging lives on /fuel/log as VERTICALLY stacked
