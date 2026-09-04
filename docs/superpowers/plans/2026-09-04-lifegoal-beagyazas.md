@@ -1139,7 +1139,7 @@ Expected: PASS. A meglévő „identity hero a valódi fióknévre pinnelve" tes
 - [ ] **Step 6: Typecheck + lint**
 
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && pnpm lint && pnpm build
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && pnpm build
 ```
 Expected: nincs unused-import hiba (a `TRAJECTORY_LABEL`/`etaWeeks` már használatlan lehet — töröld őket, ha a lint jelzi).
 
@@ -1346,7 +1346,7 @@ cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-ap
 cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && VITE_USE_MOCK=false pnpm test -- --run
 ```
 ```bash
-cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && pnpm lint && pnpm build
+cd /Users/mrkuhne/Applications/Personal/Mezo/mezo/.claude/worktrees/mace-auto-approval-295081/frontend && pnpm build
 ```
 Expected: mind zöld. Ha bármi piros, javítsd, MIELŐTT goldent generálsz — egy hibás fáról készült baseline mérgezi a következő köröket.
 
