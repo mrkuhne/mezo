@@ -57,6 +57,7 @@ export { useDietSettings, useDietSettingsActions, DIET_SETTINGS_GHOST } from '@/
 export { useTutorialProgress, useTutorialProgressActions, TUTORIAL_PROGRESS_GHOST } from '@/data/tutorial/tutorialProgressHooks'
 export { useSlotTemplates, useSlotTemplateActions, useSlotTemplateEvaluation } from '@/data/fuel/slotTemplateHooks'
 export { useGoal, useGoalCreation, useGoalActions, useFeasibilityPreview, useGoalSuggestions, useSuggestionActions } from '@/data/me/goalHooks'
+export { useGoalOverview } from '@/data/me/goalOverviewHooks'
 export { useLifeGoals, useLifeGoal, useLifeGoalMutations, useLifeGoalPropose, useSignalCatalog, useLifeGoalProgress, useLifeGoalToday } from '@/data/lifegoal/lifegoalHooks'
 
 export { useBiometricProfile, useBiometricActions } from '@/data/me/biometricHooks'

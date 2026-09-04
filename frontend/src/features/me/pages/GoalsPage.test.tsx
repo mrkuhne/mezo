@@ -1,550 +1,143 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import type { ReactNode } from 'react'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, beforeEach, vi } from 'vitest'
-import { http, HttpResponse } from 'msw'
-import { goal } from '@/data/me/goals'
+import { beforeEach, expect, test, vi } from 'vitest'
+import type { GoalOverviewResponse, GoalResponse } from '@/data/me/goalApi'
+import type { Goal } from '@/data/types'
 import { GoalsPage } from '@/features/me/pages/GoalsPage'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { server } from '@/test/msw/server'
-import { API_BASE } from '@/test/msw/handlers'
 
-// The `+ Új cél` entries route via useNavigate; mock it so we can assert the
-// hard-gate decision (navigate to the wizard vs. open the gate interstitial)
-// without a full route tree.
-const mockNavigate = vi.fn()
+const mocks = vi.hoisted(() => ({
+  navigate: vi.fn(),
+  useGoal: vi.fn(),
+  useGoalOverview: vi.fn(),
+  useBiometricProfile: vi.fn(),
+}))
+
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
-  return { ...actual, useNavigate: () => mockNavigate }
+  return { ...actual, useNavigate: () => mocks.navigate }
 })
 
-// GoalsPage's `+ Új cél` entry uses useNavigate, so it needs router context.
+vi.mock('@/data/hooks', async () => {
+  const actual = await vi.importActual<typeof import('@/data/hooks')>('@/data/hooks')
+  return { ...actual, useGoal: mocks.useGoal, useGoalOverview: mocks.useGoalOverview, useBiometricProfile: mocks.useBiometricProfile }
+})
+
 function Wrapper({ children }: { children: ReactNode }) {
-  return (
-    <QueryWrapper>
-      <MemoryRouter>{children}</MemoryRouter>
-    </QueryWrapper>
-  )
+  return <QueryWrapper><MemoryRouter>{children}</MemoryRouter></QueryWrapper>
 }
 
-// A complete biometric profile (the gate's pass condition).
-const COMPLETE_PROFILE = {
-  sex: 'M',
-  heightCm: 180,
-  birthDate: '1991-03-01',
-  bodyFatPct: 15,
-  activityLevel: 'MIXED',
-  tdeeBootstrap: null,
+const GOAL: Goal = {
+  id: 'g1', title: 'Utolsó Cut', kind: 'cut', status: 'active', startWeight: 84.2,
+  currentWeight: 82.4, targetWeight: 78,
+  rateTarget: { value: 0.7, unit: '%/hét', direction: 'down' },
+  mesocycles: [], identityFrame: 'Erősen érem el a célom.', mealsPerDay: null, wakeTime: null, bedTime: null,
 }
 
-// A real-mode active goal + a timeline with a gym link, a run link and a gap —
-// enough to drive every GoalTimeline lane.
-const GOAL = {
-  id: 'g1',
-  title: 'Nyári cut',
-  trajectory: 'cut',
-  guards: ['strength', 'muscle'],
-  status: 'active',
-  startDate: '2026-06-01',
-  targetDate: '2026-07-27',
-  startWeightKg: 84.2,
-  targetWeightKg: 80,
+const GOAL_RESPONSE: GoalResponse = {
+  id: 'g1', title: 'Utolsó Cut', trajectory: 'cut', guards: ['strength', 'muscle'], status: 'active',
+  startDate: '2026-08-24', targetDate: '2026-10-24', startWeightKg: 84.2, targetWeightKg: 78,
   rateTargetPctPerWeek: 0.7,
-  identityFrame: 'Erős és könnyű.',
-}
-const TIMELINE = {
-  goalId: 'g1',
-  weeks: 8,
-  links: [
-    { id: 'link-1', planType: 'mesocycle', planId: 'meso-1', startWeek: 1, endWeek: 6, plan: { title: 'Hypertrophy 04', status: 'active', startDate: '2026-06-01', endDate: '2026-07-13', weeks: 6 } },
-    { id: 'link-2', planType: 'running_block', planId: 'run-1', startWeek: 1, endWeek: 4, plan: { title: 'Base Build', status: 'active', startDate: '2026-06-01', endDate: '2026-06-29', weeks: 4 } },
-  ],
-  gaps: [{ fromWeek: 7, toWeek: 8 }],
 }
 
-// A real-mode goal that already carries an engine prescription (G5) — drives the
-// recept card in real mode.
-const PRESCRIPTION = {
-  generatedAt: '2026-06-10T06:00:00Z',
-  basis: 'formula',
-  segments: [
-    { fromWeek: 1, toWeek: 6, label: 'Deficit blokk', kcal: 2200, proteinG: 168, sleepTargetH: 7.5, restDays: [3, 7], projectedRateKgPerWk: -0.5, rationale: 'Deficit a gym blokk alatt.' },
-    { fromWeek: 7, toWeek: 8, label: 'Befutó', kcal: 2400, proteinG: 160, sleepTargetH: 8, restDays: [4, 7], projectedRateKgPerWk: -0.3, rationale: 'Lassítunk a végén.' },
-  ],
-  guardStatus: {
-    strength: { active: true, e1rmTrendPct: 0.8, breached: false, notes: [] },
-    muscle: { active: true, minWeeklySetsPerMuscle: 8, belowMaintenanceMuscles: [], rateWithinCap: true, proteinMonitored: false, notes: [] },
+const OVERVIEW: GoalOverviewResponse = {
+  goalId: 'g1', title: 'Utolsó Cut', trajectory: 'cut', status: 'active', currentWeek: 3, totalWeeks: 8,
+  completionPct: 29, currentWeightKg: 82.4, targetWeightKg: 78, remainingKg: 4.4,
+  courseStatus: 'on_track', courseReasonCode: 'rate_on_track', observedRateKgPerWeek: -0.68,
+  targetRateKgPerWeek: -0.74, projectedTargetDate: '2026-10-24', dataSufficiency: 'full',
+  diet: {
+    weekAverageKcal: 2780, todayDayType: 'training', todayKcal: 2940, trainingDayKcal: 2940,
+    restDayKcal: 2580, proteinG: 188, carbsG: 361, fatG: 82, basis: 'formula',
+    explanationCode: 'training_day_split',
   },
-  feasibility: { verdict: 'feasible', notes: [] },
-}
-const GOAL_WITH_RX = { ...GOAL, prescription: PRESCRIPTION }
-
-// An open diet-phase suggestion (slice 4, mezo-ktg8) — drives the suggestion-card
-// integration coverage below (real mode) + the mock-mode fixture assertion.
-const SUGGESTION = {
-  id: 'sug-1',
-  kind: 'phase_change',
-  status: 'proposed',
-  payload: {
-    reason: 'Deload hét — érdemes tartáson enni.',
-    balanceOverrideKcal: 0,
-    fromWeek: 3,
-    toWeek: 3,
-    snapshotTrajectory: 'cut',
+  segment: {
+    available: true, label: 'MAV', fromWeek: 3, toWeek: 5, remainingDays: 5, nextLabel: 'Deload',
+    nextFromWeek: 6, nextChangeDate: '2026-09-14', explanationCode: 'mesocycle_phase',
   },
-  createdAt: '2026-06-10T06:00:00Z',
+  plans: {
+    links: [], gaps: [{ fromWeek: 7, toWeek: 8 }], sportSchedule: [], activeLinkCount: 2,
+    uncoveredWeekCount: 2, topIssueCode: 'mesocycle_gap',
+  },
+  guards: { status: null, healthyCount: 3, totalCount: 4, topIssueCode: 'rate_off_track' },
+  openSuggestionCount: 1, latestSuggestionId: 'sug-1',
 }
 
-function useGoalHandlers() {
-  server.use(
-    http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL])),
-    http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
-    http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
-  )
+function useActiveGoal() {
+  mocks.useGoal.mockReturnValue({ goal: GOAL, goalResponse: GOAL_RESPONSE, linkedMesocycles: {}, timeline: null, goalId: 'g1', pending: false })
 }
 
-// The hero tests assert Phase-1 mock goal data, so pin mock mode explicitly.
-describe('mock mode (demo goal)', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
-  afterEach(() => vi.unstubAllEnvs())
-
-  test('renders the goal hero, weights and identity frame', () => {
-    render(<GoalsPage />, { wrapper: Wrapper })
-    expect(screen.getByText('Hosszú cél')).toBeInTheDocument()
-    expect(screen.getByText('Fogyás · aktív')).toBeInTheDocument()
-    // current weight — the track-l label speaks hu1's Hungarian decimal comma. mezo-7vdm #6:
-    // a currentWeight már a naplóból származik, tehát a KONKRÉT szám a fali órától függ —
-    // a seedhez mérünk, nem literálhoz.
-    const currentHu = String(goal.currentWeight).replace('.', ',')
-    expect(screen.getAllByText(new RegExp(currentHu)).length).toBeGreaterThan(0)
-    expect(screen.getByText(/Egészséges erő/)).toBeInTheDocument() // identityFrame
-    expect(screen.queryByText('7 nap')).not.toBeInTheDocument() // trend cells moved to /me/weight
-  })
-
-  // Mozaik re-face (mezo-d20.6.2): own scaffold is the tile→page Huawei pattern —
-  // `.mz-page.mz-p-coral` with a `‹ Én` back chip (PageHead) and a `.pgact`
-  // "＋ Új cél" header action; the hero's weight progress reuses the shared
-  // `.track/.fill/.dot/.track-l` vocabulary (Task 3) instead of a bespoke bar.
-  test('own scaffold: mz-page mz-p-coral + ‹ Én back chip + pgact action', () => {
-    const { container } = render(<GoalsPage />, { wrapper: Wrapper })
-    expect(container.querySelector('.mz-page.mz-p-coral')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Én')
-    expect(screen.getByRole('button', { name: /Új cél/ })).toHaveClass('pgact')
-  })
-
-  test('hero reuses the shared .track/.fill/.dot/.track-l progress vocabulary', () => {
-    const { container } = render(<GoalsPage />, { wrapper: Wrapper })
-    expect(container.querySelector('.track .fill')).toBeInTheDocument()
-    expect(container.querySelector('.track .dot')).toBeInTheDocument()
-    expect(container.querySelector('.track-l')).toBeInTheDocument()
-  })
-
-  test('renders the timeline lane (not the old linked-meso cards)', () => {
-    render(<GoalsPage />, { wrapper: Wrapper })
-    // The GoalTimeline gym lane + a positioned plan bar replace the old cards.
-    expect(screen.getByText('Gym · meso')).toBeInTheDocument()
-    expect(screen.getByText(/Hypertrophy 04 · 6 hét/)).toBeInTheDocument()
-    // The old "Cél alatt fut · N meso" card-section header is gone.
-    expect(screen.queryByText(/Cél alatt fut · \d+ meso/)).not.toBeInTheDocument()
-    // The G5 placeholder is gone — the real recept card renders instead.
-    expect(screen.queryByText('G5 · hamarosan')).not.toBeInTheDocument()
-  })
-
-  test('renders the static G5 recept card (verdict + segments + guard pills)', () => {
-    render(<GoalsPage />, { wrapper: Wrapper })
-    // Feasibility verdict from the mock prescription (feasible-with-warnings).
-    expect(screen.getByText('Reális, figyelmeztetésekkel')).toBeInTheDocument()
-    // Both mock segments render with their labels + kcal.
-    expect(screen.getByText('Mély deficit')).toBeInTheDocument()
-    expect(screen.getByText('Lassú befutó · taper')).toBeInTheDocument()
-    expect(screen.getByText(/2150/)).toBeInTheDocument()
-    expect(screen.getByText(/163/)).toBeInTheDocument()
-    // Guard pills: strength e1RM trend + muscle sets + protein "Fuel-re vár".
-    // ("e1RM" appears in both the pill and the strength note in the mock rx.)
-    expect(screen.getAllByText(/e1RM/).length).toBeGreaterThan(0)
-    expect(screen.getByText(/Fuel-re vár/)).toBeInTheDocument()
-    expect(screen.getByText(/8 szett/)).toBeInTheDocument()
-  })
-
-  // Diet-phase suggestions (slice 4, mezo-ktg8) — the mock fixture (goals.ts
-  // `goalSuggestions`) always carries one open deload-week proposal.
-  test('renders the fixture diet-phase suggestion card', () => {
-    render(<GoalsPage />, { wrapper: Wrapper })
-    expect(screen.getByText(/Javaslat: deload hét tartáson \(W3\)/)).toBeInTheDocument()
-    expect(screen.getByText(/a regeneráció többet ér/)).toBeInTheDocument()
-  })
+beforeEach(() => {
+  mocks.navigate.mockReset()
+  mocks.useGoal.mockReset()
+  mocks.useGoalOverview.mockReset()
+  mocks.useBiometricProfile.mockReturnValue({ isComplete: true })
+  useActiveGoal()
+  mocks.useGoalOverview.mockReturnValue({ overview: OVERVIEW, pending: false })
 })
 
-describe('real mode (active goal + timeline)', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
-  afterEach(() => vi.unstubAllEnvs())
-
-  test('renders the GoalTimeline lane with bars and gap', async () => {
-    useGoalHandlers()
-    render(<GoalsPage />, { wrapper: Wrapper })
-    // Hero reads the raw contract (trajectory label + guard pills + window).
-    expect(await screen.findByText('Fogyás · aktív')).toBeInTheDocument()
-    expect(screen.getByText('Erő-gard')).toBeInTheDocument()
-    // The timeline lanes render the linked plans + the uncovered-week gap chip.
-    expect(await screen.findByText(/Hypertrophy 04 · 6 hét/)).toBeInTheDocument()
-    expect(screen.getByText(/Base Build · 4 hét/)).toBeInTheDocument()
-    expect(screen.getByText(/W7–8 fedezetlen/)).toBeInTheDocument()
-    expect(screen.getByTestId('ruler-week-8')).toBeInTheDocument()
-  })
-
-  test('renders the recept card from a goal that already carries a prescription', async () => {
-    server.use(
-      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL_WITH_RX])),
-      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
-    )
-    render(<GoalsPage />, { wrapper: Wrapper })
-    expect(await screen.findByText('Reális')).toBeInTheDocument() // feasible verdict
-    expect(screen.getByText('Deficit blokk')).toBeInTheDocument()
-    expect(screen.getByText('Befutó')).toBeInTheDocument()
-    expect(screen.getByText(/2200/)).toBeInTheDocument()
-    expect(screen.getByText(/168/)).toBeInTheDocument()
-    // no evaluate CTA when a prescription is already present
-    expect(screen.queryByRole('button', { name: /Értékeld a célt/ })).not.toBeInTheDocument()
-  })
-
-  test('null prescription → the "Értékeld a célt" CTA evaluates the goal (POST /evaluate)', async () => {
-    const calls: string[] = []
-    server.use(
-      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL])), // GOAL has no prescription
-      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
-      http.post(`${API_BASE}/api/goals/g1/evaluate`, () => {
-        calls.push('evaluate')
-        return HttpResponse.json(GOAL_WITH_RX)
-      }),
-    )
-    render(<GoalsPage />, { wrapper: Wrapper })
-    const cta = await screen.findByRole('button', { name: /Értékeld a célt/ })
-    await userEvent.click(cta)
-    await waitFor(() => expect(calls).toEqual(['evaluate']))
-    // after the invalidation refetch serves the same goal (still no rx in this stub),
-    // but the POST was made — that's the contract this test guards.
-  })
-
-  // Maintain-trajectory goal (review fix, Task 5): no targetWeightKg → toGoal falls
-  // back targetWeight = startWeight → totalRange = 0. The hero must mirror
-  // GoalMiniCard's guard: render WITHOUT the shared .track (a zero-range track is
-  // meaningless) and leak no NaN/Infinity into the DOM.
-  test('maintain goal (zero range) renders the hero without the .track and without NaN', async () => {
-    const { targetWeightKg: _omit, ...rest } = GOAL
-    const MAINTAIN_GOAL = { ...rest, trajectory: 'maintain' }
-    server.use(
-      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([MAINTAIN_GOAL])),
-      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
-    )
-    const { container } = render(<GoalsPage />, { wrapper: Wrapper })
-    expect(await screen.findByText('Nyári cut')).toBeInTheDocument() // hero rendered
-    expect(container.querySelector('.track')).toBeNull()
-    expect(container.querySelector('.track-l')).toBeNull()
-    expect(container.innerHTML).not.toMatch(/NaN|Infinity/)
-  })
-
-  test('the manage sheet Archiválás archives the goal, then closes', async () => {
-    useGoalHandlers()
-    const calls: string[] = []
-    server.use(
-      http.post(`${API_BASE}/api/goals/g1/archive`, () => {
-        calls.push('archive')
-        return HttpResponse.json({ ...GOAL, status: 'archived' })
-      }),
-    )
-    render(<GoalsPage />, { wrapper: Wrapper })
-    await userEvent.click(await screen.findByText('Nyári cut')) // open the hero sheet
-    await userEvent.click(await screen.findByRole('button', { name: 'Archiválás' }))
-    await waitFor(() => expect(calls).toEqual(['archive']))
-    await waitFor(() => expect(screen.queryByRole('button', { name: 'Archiválás' })).not.toBeInTheDocument())
-  })
-
-  test('the manage sheet Törlés removes the goal (through confirm) → empty state appears', async () => {
-    // First /api/goals call returns the goal; after a successful delete the
-    // invalidation refetches and we serve an empty list → empty-state CTA shows.
-    let removed = false
-    server.use(
-      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json(removed ? [] : [GOAL])),
-      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
-      http.delete(`${API_BASE}/api/goals/g1`, () => { removed = true; return new HttpResponse(null, { status: 204 }) }),
-    )
-    render(<GoalsPage />, { wrapper: Wrapper })
-    await userEvent.click(await screen.findByText('Nyári cut')) // open the hero sheet
-    await userEvent.click(await screen.findByRole('button', { name: 'Törlés' }))
-    await userEvent.click(await screen.findByRole('button', { name: 'Biztosan törlöd?' }))
-    // After delete + refetch, GoalsPage falls back to the empty "set up a goal" state.
-    expect(await screen.findByText(/Még nincs aktív célod/)).toBeInTheDocument()
-  })
+test('renders the layout-aware skeleton while the overview is loading', () => {
+  mocks.useGoalOverview.mockReturnValue({ overview: null, pending: true })
+  render(<GoalsPage />, { wrapper: Wrapper })
+  expect(screen.getByRole('status', { name: 'Betöltés…' })).toBeInTheDocument()
 })
 
-// Diet-phase suggestion cards (slice 4, mezo-ktg8) — real-mode integration coverage:
-// GoalsPage wires useGoalSuggestions/useSuggestionActions itself (no MSW handler was
-// exercising the endpoint before this block — the query silently resolved to []).
-describe('diet-phase suggestions (slice 4, mezo-ktg8)', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
-  afterEach(() => vi.unstubAllEnvs())
-
-  test('an open suggestion renders its card above the recept', async () => {
-    server.use(
-      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL_WITH_RX])),
-      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
-      http.get(`${API_BASE}/api/goals/g1/suggestions`, () => HttpResponse.json([SUGGESTION])),
-    )
-    render(<GoalsPage />, { wrapper: Wrapper })
-    const headline = await screen.findByText(/Javaslat: deload hét tartáson \(W3\)/)
-    const verdict = await screen.findByText('Reális') // GOAL_WITH_RX's feasible verdict, from the recept
-    expect(headline.compareDocumentPosition(verdict) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  })
-
-  test('Elvetem dismisses the suggestion — POSTs /dismiss, and the card clears after the refetch', async () => {
-    const calls: string[] = []
-    let dismissed = false
-    server.use(
-      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL_WITH_RX])),
-      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
-      http.get(`${API_BASE}/api/goals/g1/suggestions`, () => HttpResponse.json(dismissed ? [] : [SUGGESTION])),
-      http.post(`${API_BASE}/api/goals/g1/suggestions/sug-1/dismiss`, () => {
-        calls.push('dismiss')
-        dismissed = true
-        return new HttpResponse(null, { status: 204 })
-      }),
-    )
-    render(<GoalsPage />, { wrapper: Wrapper })
-    await screen.findByText(/Javaslat: deload hét tartáson/)
-    await userEvent.click(screen.getByRole('button', { name: 'Elvetem' }))
-    await waitFor(() => expect(calls).toEqual(['dismiss']))
-    await waitFor(() => expect(screen.queryByText(/Javaslat: deload hét tartáson/)).not.toBeInTheDocument())
-  })
-
-  test('accept on a stale suggestion (409) surfaces the fallback notice', async () => {
-    server.use(
-      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL_WITH_RX])),
-      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
-      http.get(`${API_BASE}/api/goals/g1/suggestions`, () => HttpResponse.json([SUGGESTION])),
-      http.post(`${API_BASE}/api/goals/g1/suggestions/sug-1/accept`, () => new HttpResponse(null, { status: 409 })),
-    )
-    render(<GoalsPage />, { wrapper: Wrapper })
-    await screen.findByText(/Javaslat: deload hét tartáson/)
-    await userEvent.click(screen.getByRole('button', { name: /Elfogadom/ }))
-    expect(await screen.findByText('A javaslat elavult — frissítsd az oldalt.')).toBeInTheDocument()
-  })
-
-  // mezo-ktg8 final-review finding 4: a 409'd accept means the backend already superseded the
-  // suggestion server-side — the card must clear on its own via a refetch, not require a manual
-  // page reload.
-  test('a 409 accept refetches the suggestions list so a superseded card can clear on its own', async () => {
-    let getCalls = 0
-    server.use(
-      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL_WITH_RX])),
-      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
-      http.get(`${API_BASE}/api/goals/g1/suggestions`, () => { getCalls += 1; return HttpResponse.json([SUGGESTION]) }),
-      http.post(`${API_BASE}/api/goals/g1/suggestions/sug-1/accept`, () => new HttpResponse(null, { status: 409 })),
-    )
-    render(<GoalsPage />, { wrapper: Wrapper })
-    await screen.findByText(/Javaslat: deload hét tartáson/)
-    const callsBeforeAccept = getCalls
-    await userEvent.click(screen.getByRole('button', { name: /Elfogadom/ }))
-    await screen.findByText('A javaslat elavult — frissítsd az oldalt.')
-    await waitFor(() => expect(getCalls).toBeGreaterThan(callsBeforeAccept))
-  })
-
-  // mezo-ktg8 final-review finding 4: dismiss has no staleness branch server-side — a failure is
-  // only ever a 404 (already decided) or a network error, so the copy must not claim staleness.
-  test('a failed dismiss shows a generic retry notice, not a staleness claim', async () => {
-    server.use(
-      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([GOAL_WITH_RX])),
-      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/goals/g1/timeline`, () => HttpResponse.json(TIMELINE)),
-      http.get(`${API_BASE}/api/goals/g1/suggestions`, () => HttpResponse.json([SUGGESTION])),
-      http.post(`${API_BASE}/api/goals/g1/suggestions/sug-1/dismiss`, () => new HttpResponse(null, { status: 404 })),
-    )
-    render(<GoalsPage />, { wrapper: Wrapper })
-    await screen.findByText(/Javaslat: deload hét tartáson/)
-    await userEvent.click(screen.getByRole('button', { name: 'Elvetem' }))
-    expect(await screen.findByText('Nem sikerült — próbáld újra.')).toBeInTheDocument()
-  })
+test('renders the creation CTA when there is no active goal', () => {
+  mocks.useGoal.mockReturnValue({ goal: null, goalResponse: null, linkedMesocycles: {}, timeline: null, goalId: null, pending: false })
+  mocks.useGoalOverview.mockReturnValue({ overview: null, pending: false })
+  render(<GoalsPage />, { wrapper: Wrapper })
+  expect(screen.getByText(/Még nincs aktív célod/)).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Új cél/ })).toBeEnabled()
 })
 
-// Loading skeleton (mezo-f2z) — real mode shows the GoalsSkeleton (role="status")
-// while the active-goal query is unresolved (useGoal pending); mock seeds → no
-// skeleton. The other GoalsPage queries (weight/trend/profile) resolve so ONLY the
-// goal query stalls and forces the skeleton.
-describe('GoalsPage (real mode, pending)', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
-  afterEach(() => vi.unstubAllEnvs())
-
-  it('shows the skeleton while the active-goal query is unresolved', async () => {
-    server.use(
-      http.get(`${API_BASE}/api/goals`, () => new Promise(() => {})), // never resolves
-      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/biometrics/weight/trend`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/biometrics/profile`, () => new HttpResponse(null, { status: 404 })),
-    )
-    render(<GoalsPage />, { wrapper: Wrapper })
-    expect(await screen.findByRole('status')).toBeInTheDocument()
-  })
-})
-
-describe('GoalsPage (mock mode, no skeleton)', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
-  afterEach(() => vi.unstubAllEnvs())
-
-  it('renders content with no skeleton (synchronous seed)', () => {
-    render(<GoalsPage />, { wrapper: Wrapper })
-    expect(screen.queryByRole('status')).toBeNull()
-  })
-})
-
-// Real mode with no active goal: the empty "set up a goal" state + CTA, never
-// the mock placeholder hero.
-describe('real mode (no goal)', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
-  afterEach(() => vi.unstubAllEnvs())
-
-  test('shows the empty-state setup CTA, not the mock placeholder', async () => {
-    server.use(
-      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
-    )
-    render(<GoalsPage />, { wrapper: Wrapper })
-    expect(await screen.findByText(/Még nincs aktív célod/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Új cél/ })).toBeInTheDocument()
-    // the mock placeholder hero must NOT appear
-    expect(screen.queryByText('Fogyás · Nyári forma')).not.toBeInTheDocument()
-  })
-
-  // Mozaik re-face: the empty-state branch gets the same `.mz-page.mz-p-coral`
-  // scaffold as the active-goal branch (binding rule — BOTH branches).
-  test('empty state also gets the mz-page mz-p-coral own scaffold', async () => {
-    server.use(
-      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
-    )
-    const { container } = render(<GoalsPage />, { wrapper: Wrapper })
-    await screen.findByText(/Még nincs aktív célod/)
-    expect(container.querySelector('.mz-page.mz-p-coral')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Vissza' })).toHaveTextContent('‹ Én')
-  })
-})
-
-// Task 7: the "Új cél" hard gate — goal creation requires a complete biometric
-// profile. Both entry points (empty-state CTA + header chip) route through the
-// gate: complete → straight to the wizard; incomplete → the gate interstitial
-// that opens the BiometricSheet, then continues to the wizard once complete.
-describe('Új cél hard gate (incomplete biometric profile)', () => {
-  beforeEach(() => {
-    vi.stubEnv('VITE_USE_MOCK', 'false')
-    mockNavigate.mockClear()
-  })
-  afterEach(() => vi.unstubAllEnvs())
-
-  function noProfile() {
-    // 404 = no biometric profile yet → isComplete = false.
-    server.use(
-      http.get(`${API_BASE}/api/biometrics/profile`, () => new HttpResponse(null, { status: 404 })),
-    )
-  }
-
-  test('empty-state CTA with no profile shows the gate, NOT the wizard', async () => {
-    noProfile()
-    server.use(
-      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
-    )
-    render(<GoalsPage />, { wrapper: Wrapper })
-    await userEvent.click(await screen.findByRole('button', { name: /Új cél/ }))
-    expect(await screen.findByText(/Előbb: a/)).toBeInTheDocument()
-    expect(mockNavigate).not.toHaveBeenCalled()
-  })
-
-  test('header chip with no profile shows the gate with missing-field chips', async () => {
-    noProfile()
-    useGoalHandlers()
-    render(<GoalsPage />, { wrapper: Wrapper })
-    // Let the active-goal hero (and its header chip) render first.
-    await screen.findByText('Nyári cut')
-    await userEvent.click(screen.getByRole('button', { name: /Új cél/ }))
-    expect(await screen.findByText(/Előbb: a/)).toBeInTheDocument()
-    // all three required fields are missing → three warning chips.
-    expect(screen.getByText('⚠ hiányzik: nem')).toBeInTheDocument()
-    expect(screen.getByText('magasság', { selector: 'span.chip' })).toBeInTheDocument()
-    expect(screen.getByText('szül.dátum', { selector: 'span.chip' })).toBeInTheDocument()
-    expect(mockNavigate).not.toHaveBeenCalled()
-  })
-
-  test('the gate CTA opens the BiometricSheet; saving a complete profile continues to the wizard', async () => {
-    // Stateful profile: 404 until the PUT lands, then a complete profile.
-    let filled = false
-    server.use(
-      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/biometrics/profile`, () =>
-        filled ? HttpResponse.json(COMPLETE_PROFILE) : new HttpResponse(null, { status: 404 }),
-      ),
-      http.put(`${API_BASE}/api/biometrics/profile`, async ({ request }) => {
-        filled = true
-        const body = (await request.json()) as Record<string, unknown>
-        return HttpResponse.json({ ...body, tdeeBootstrap: null })
-      }),
-    )
-    render(<GoalsPage />, { wrapper: Wrapper })
-    await userEvent.click(await screen.findByRole('button', { name: /Új cél/ }))
-    // gate interstitial → CTA opens the editor sheet.
-    await userEvent.click(await screen.findByRole('button', { name: /Biometria beállítása/ }))
-    expect(await screen.findByText('A motor ebből számol')).toBeInTheDocument()
-    // save the (default-complete) profile → now complete → continue to the wizard.
-    await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/me/goals/weight/new'))
-  })
-})
-
-describe('Új cél hard gate (complete biometric profile)', () => {
-  afterEach(() => vi.unstubAllEnvs())
-
-  test('real mode: tapping Új cél navigates straight to the wizard, no gate', async () => {
-    vi.stubEnv('VITE_USE_MOCK', 'false')
-    mockNavigate.mockClear()
-    server.use(
-      http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
-      http.get(`${API_BASE}/api/biometrics/profile`, () => HttpResponse.json(COMPLETE_PROFILE)),
-    )
-    render(<GoalsPage />, { wrapper: Wrapper })
-    await userEvent.click(await screen.findByRole('button', { name: /Új cél/ }))
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/me/goals/weight/new'))
-    expect(screen.queryByText(/Előbb: a/)).not.toBeInTheDocument()
-  })
-
-  test('mock mode: tapping Új cél navigates straight to the wizard (static complete profile)', async () => {
-    vi.stubEnv('VITE_USE_MOCK', 'true')
-    mockNavigate.mockClear()
-    render(<GoalsPage />, { wrapper: Wrapper })
-    // header chip (mock mode renders the active-goal hero with the chip).
-    await userEvent.click(screen.getByRole('button', { name: /Új cél/ }))
-    await waitFor(() => expect(mockNavigate).toHaveBeenCalledWith('/me/goals/weight/new'))
-    expect(screen.queryByText(/Előbb: a/)).not.toBeInTheDocument()
-  })
-})
-
-// ── entrance choreography (mezo-d20.11) ──
-// The audit found exactly ONE `.rise` on /me/goals; the prototype (#page-cel)
-// staggers the whole body (--d 0 / 60 / 90 / 130 / 160 / 190 / 220 / 260 ms).
-test('the Cél body staggers — recept, idővonal and plan slots all rise inside .mz-play', async () => {
-  vi.stubEnv('VITE_USE_MOCK', 'true')
+test('renders the on-track course hero and six actionable tiles when a suggestion is open', () => {
   const { container } = render(<GoalsPage />, { wrapper: Wrapper })
-  await waitFor(() => expect(container.querySelector('.gc-card')).not.toBeNull())
-  const rises = [...container.querySelectorAll('.rise')]
-  expect(rises.length).toBeGreaterThanOrEqual(4)
-  for (const r of rises) expect(r.closest('.mz-play')).not.toBeNull()
-  const delays = rises.map((r) => (r as HTMLElement).style.getPropertyValue('--d'))
-  expect(new Set(delays).size).toBe(delays.length) // a real stagger, not one shared delay
+  expect(screen.getByRole('heading', { name: 'Jó úton haladsz' })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Mai étrendi keret/ })).toBeEnabled()
+  expect(container.querySelectorAll('.goal-hub-mosaic .mz-tile')).toHaveLength(6)
+})
+
+test('renders five tiles without leaving a suggestion gap', () => {
+  mocks.useGoalOverview.mockReturnValue({ overview: { ...OVERVIEW, openSuggestionCount: 0, latestSuggestionId: null }, pending: false })
+  const { container } = render(<GoalsPage />, { wrapper: Wrapper })
+  expect(screen.queryByRole('button', { name: /Új javaslat/ })).not.toBeInTheDocument()
+  expect(container.querySelectorAll('.goal-hub-mosaic .mz-tile')).toHaveLength(5)
+})
+
+test('renders the learning explanation from the server state', () => {
+  mocks.useGoalOverview.mockReturnValue({
+    overview: { ...OVERVIEW, courseStatus: 'learning', courseReasonCode: 'trend_missing', dataSufficiency: 'none' }, pending: false,
+  })
+  render(<GoalsPage />, { wrapper: Wrapper })
+  expect(screen.getByRole('heading', { name: 'Még tanulom az ütemed' })).toBeInTheDocument()
+  expect(screen.getByText(/több súlymérés/)).toBeInTheDocument()
+})
+
+test('invalid goals fail safe: coral status, no stale kcal, direct settings route', async () => {
+  mocks.useGoalOverview.mockReturnValue({
+    overview: {
+      ...OVERVIEW, courseStatus: 'invalid', courseReasonCode: 'goal_invalid',
+      diet: { todayDayType: 'unavailable', basis: 'unavailable', explanationCode: 'goal_invalid' },
+    },
+    pending: false,
+  })
+  render(<GoalsPage />, { wrapper: Wrapper })
+  expect(screen.getByRole('heading', { name: 'A cél beállítása hibás' })).toBeInTheDocument()
+  expect(screen.queryByText('3878 kcal')).not.toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /Cél javítása/ }))
+  expect(mocks.navigate).toHaveBeenCalledWith('/me/goals/weight/settings')
+})
+
+test.each([
+  [/Mai étrendi keret/, '/me/goals/weight/diet'],
+  [/Aktuális szakasz/, '/me/goals/weight/segment'],
+  [/Tervkapcsolatok/, '/me/goals/weight/plans'],
+  [/Védőkorlátok/, '/me/goals/weight/guards'],
+  [/Új javaslat/, '/me/goals/weight/suggestions/sug-1'],
+  [/Cél beállításai/, '/me/goals/weight/settings'],
+] as const)('tile navigates to %s', async (name, route) => {
+  render(<GoalsPage />, { wrapper: Wrapper })
+  await userEvent.click(screen.getByRole('button', { name }))
+  expect(mocks.navigate).toHaveBeenCalledWith(route)
 })

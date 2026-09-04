@@ -217,6 +217,30 @@ test('useGoal (real mode) returns null timeline + goalId when no active goal exi
   expect(result.current.goalId).toBeNull()
 })
 
+test('useGoal (real mode) does not promote a planned goal when no active goal exists', async () => {
+  server.use(
+    http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([
+      {
+        id: 'planned-1',
+        title: 'Következő cél',
+        trajectory: 'cut',
+        guards: ['strength'],
+        status: 'planned',
+        startDate: '2026-10-01',
+        targetDate: '2026-12-01',
+        startWeightKg: 82,
+        targetWeightKg: 78,
+        rateTargetPctPerWeek: 0.5,
+      },
+    ])),
+    http.get(`${API_BASE}/api/biometrics/weight`, () => HttpResponse.json([])),
+  )
+  const { result } = renderHook(() => useGoal(), { wrapper: makeHookWrapper() })
+  await waitFor(() => expect(result.current.pending).toBe(false))
+  expect(result.current.goal).toBeNull()
+  expect(result.current.goalId).toBeNull()
+})
+
 test('useGoalActions (real mode) archive/remove/activate hit the right endpoints', async () => {
   const calls: string[] = []
   server.use(
@@ -257,7 +281,7 @@ test('useGoalActions (real mode) attach/detach hit goalLinkApi with the right ar
   expect(attachBody).toEqual({ planType: 'mesocycle', planId: 'meso-7', startWeek: 2 })
 })
 
-test('useGoalActions (real mode) invalidates goals + the goal timeline on success', async () => {
+test('useGoalActions (real mode) invalidates goals, overview and timeline on plan changes', async () => {
   server.use(
     http.post(`${API_BASE}/api/goals/g1/plans`, () =>
       HttpResponse.json(
@@ -285,6 +309,7 @@ test('useGoalActions (real mode) invalidates goals + the goal timeline on succes
   )
   await act(async () => { await result.current.attachPlan('g1', { planType: 'mesocycle', planId: 'meso-7', startWeek: 2 }) })
   expect(invalidated).toContainEqual(['goals'])
+  expect(invalidated).toContainEqual(['goal-overview', 'g1'])
   expect(invalidated).toContainEqual(['goal', 'g1', 'timeline'])
 })
 
