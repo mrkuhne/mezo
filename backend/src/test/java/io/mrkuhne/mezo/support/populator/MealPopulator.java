@@ -152,24 +152,39 @@ public class MealPopulator {
         meal.setMealDate(mealDate);
         int order = 0;
         for (Line line : lines) {
-            PantryCatalogEntity catalog = new PantryCatalogEntity();
-            catalog.setKind("food");
-            catalog.setName(line.name());
-            catalog.setSource("manual");
-            catalog.setCategory("meat");
-            catalog.setServingAmount(BigDecimal.ONE);
-            catalog.setServingUnit("adag");
-            catalog.setKcal(new BigDecimal(line.kcal()));
-            catalog.setProteinG(new BigDecimal(line.proteinG()));
-            catalog.setCarbsG(new BigDecimal(line.carbsG()));
-            catalog.setFatG(new BigDecimal(line.fatG()));
-            catalog.setNova(line.nova());
-            catalog = pantryCatalogRepository.saveAndFlush(catalog);
+            // Find-or-create by natural key (S4, mezo-qw37.4) — same idiom as PantryCatalogPopulator.
+            // pantry_catalog is a GLOBAL table (uq_pantry_catalog_natural on lower(name)+lower(brand))
+            // that outlives ResetDatabase's per-user reset, so a blind insert-always here collides the
+            // moment two lines (in this test or another) reuse the same fixture name.
+            PantryCatalogEntity catalog = pantryCatalogRepository.findByNaturalKey(line.name(), null)
+                .orElseGet(() -> {
+                    PantryCatalogEntity c = new PantryCatalogEntity();
+                    c.setCreatedBy(owner);
+                    c.setKind("food");
+                    c.setName(line.name());
+                    c.setSource("manual");
+                    c.setCategory("meat");
+                    c.setServingAmount(BigDecimal.ONE);
+                    c.setServingUnit("adag");
+                    c.setKcal(new BigDecimal(line.kcal()));
+                    c.setProteinG(new BigDecimal(line.proteinG()));
+                    c.setCarbsG(new BigDecimal(line.carbsG()));
+                    c.setFatG(new BigDecimal(line.fatG()));
+                    c.setNova(line.nova());
+                    return pantryCatalogRepository.saveAndFlush(c);
+                });
 
-            PantryItemEntity pantryItem = new PantryItemEntity();
-            pantryItem.setCreatedBy(owner);
-            pantryItem.setCatalog(catalog);
-            pantryItem = pantryItemRepository.saveAndFlush(pantryItem);
+            // Same find-or-create idiom for the owner's live item row (uq_pantry_item_created_by_catalog_id,
+            // S4) — see PantryItemPopulator.itemFor: at most one live pantry_item per (owner, catalog).
+            PantryCatalogEntity finalCatalog = catalog;
+            PantryItemEntity pantryItem = pantryItemRepository
+                .findByCreatedByAndCatalog_IdAndDeletedFalse(owner, catalog.getId())
+                .orElseGet(() -> {
+                    PantryItemEntity e = new PantryItemEntity();
+                    e.setCreatedBy(owner);
+                    e.setCatalog(finalCatalog);
+                    return pantryItemRepository.saveAndFlush(e);
+                });
 
             MealItemEntity item = baseLine(meal, owner, order++, BigDecimal.ONE, "adag");
             item.setSource("pantry");
