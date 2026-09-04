@@ -11,6 +11,11 @@
 **Spec:** [`docs/superpowers/specs/2026-09-04-jcpt-koteg-b-fe-visual-design.md`](../specs/2026-09-04-jcpt-koteg-b-fe-visual-design.md)
 **bd issue-k:** `mezo-jcpt.5`, `mezo-jcpt.3` (egy branch, egy PR — user-jóváhagyott házirend-felülbírálás)
 
+> **Megjegyzés (F5, záró review):** ez a terv `MeWeekServiceTest`-et és `WeeklyScoreServiceTest`-et
+> ír elő (l. lentebb, `92, 109, 137, 261, 1231`) — ezek NEM léteznek a repóban, tervezési hiba. Az
+> egyenértékű fedés a `DayScoreServiceTest` / `MeWeekControllerIT` / `MeWeekTrendIT` hármasban
+> landolt; a következő szelet ezeket keresse, ne a fent nevezetteket.
+
 ## Global Constraints
 
 - **Mozaik 2.0 kötelező** (CLAUDE.md „Design direction"): csempe-mozaik, poszter-anatómia, adat mint grafika, clay 3D SVG ikonok — **soha emoji**, kétrétegű színes árnyékok, belépő-koreográfia. Nem találunk ki új look-ot; a jóváhagyott prototípusból indulunk.

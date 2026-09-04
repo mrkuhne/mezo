@@ -219,9 +219,12 @@ kimenete a sáv; nem tud a sheetről, a mealről és a scorer belső szabályair
 
 **Backend** (fókuszált, `-Dmezo.test.use-testcontainers=true`):
 
-- `MeWeekServiceTest` — a hat mező projekciója a `DayEvaluation`-ből, és hogy a degradált
-  dimenzió `null`-ként megy ki, nem 0-ként.
-- `WeeklyScoreServiceTest` — a négy átlagoszlop ugyanazt adja, mint a szelet előtt.
+- **Megjegyzés (F5, záró review):** `MeWeekServiceTest` és `WeeklyScoreServiceTest` NEM léteznek
+  a repóban — tervezési hiba. Az egyenértékű fedés a `DayScoreServiceTest` /
+  `MeWeekControllerIT` / `MeWeekTrendIT` hármasban landolt; a következő szelet ezeket keresse.
+- `DayScoreServiceTest` / `MeWeekControllerIT` / `MeWeekTrendIT` — a hat mező projekciója a
+  `DayEvaluation`-ből (degradált dimenzió `null`-ként megy ki, nem 0-ként), és hogy a négy
+  átlagoszlop ugyanazt adja, mint a szelet előtt.
 - `MeWeekServiceRenderDayLineTest` — **változatlanul zöld** (D4 bizonyítéka).
 - `MealScoringServiceTest` — `MealTimingDetail` ablakban / ablakon kívül / snack (null ablak);
   és hogy a `recipeTemplateBreakdown` továbbra sem ad `context` dimenziót.

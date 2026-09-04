@@ -521,7 +521,7 @@ public class MealScoringService {
         if (role != MealRole.STANDARD) {
             rows.add(new ContextRow("Szerep", roleLabel(role)));
         }
-        rows.add(new ContextRow("Időzítés", String.format("%s · %s", localTime, timingSub >= 1
+        rows.add(new ContextRow("Időzítés", String.format("%s · %s", localTime.format(HHMM), timingSub >= 1
             ? slotLabel(slot) + " ablakban" : "a " + slotLabel(slot) + " ablakon kívül")));
         rows.add(new ContextRow("Slot-arány", String.format("%d%% vs ~%d%% cél",
             (int) Math.round(kcal / base.kcal() * 100), (int) Math.round(slotShare * 100))));
@@ -556,7 +556,9 @@ public class MealScoringService {
 
     /** The slot→window mapping SHARED by {@link #timingSub} and the {@code contextDim} timing
      *  detail (mezo-jcpt.3) — one source of truth, so the drawn strip can never disagree with the
-     *  score. {@code null} for a snack (fits any hour) and any unrecognized slot. */
+     *  score. {@code null} for a snack (fits any hour) and any other unrecognized-but-non-null
+     *  slot; a {@code null} slot is NOT handled by the {@code switch} and throws {@link
+     *  NullPointerException}, same as the inline switch this helper replaced. */
     private static int[] windowOf(MealScoringProperties.SlotWindows w, String slot) {
         return switch (slot) {
             case "breakfast" -> new int[] {w.breakfastFrom(), w.breakfastTo()};

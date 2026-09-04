@@ -333,7 +333,7 @@
      nap-oldal domain-színeivel (.dayev-dim), hogy egy átkattintás után ne kelljen újratanulni:
      tápanyag=sage · minőség=gold · edzés=coral · alvás=lavender · logolás=rose · ritmus=sky. */
   --mz-wk-sub-nutrition: #8FAF7E;
-  --mz-wk-sub-quality: #A8801F;
+  --mz-wk-sub-quality: var(--mz-hl-gold);
   --mz-wk-sub-training: #FF6B4A;
   --mz-wk-sub-sleep: #9B8FC4;
   --mz-wk-sub-logging: #C46FA0;
@@ -669,7 +669,7 @@
   --mz-wka-cardshadow: var(--mz-shadow);
   --mz-wka-hlshadow: none;
   --mz-wk-sub-nutrition: var(--dv-sage);
-  --mz-wk-sub-quality: var(--dv-amber);
+  --mz-wk-sub-quality: var(--mz-hl-gold);
   --mz-wk-sub-training: var(--primary-base);
   --mz-wk-sub-sleep: var(--dv-lav);
   --mz-wk-sub-logging: var(--dv-rose);
