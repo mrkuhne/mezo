@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.sql.Savepoint;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
@@ -77,6 +78,7 @@ public class GraphTraversalQuery {
             from walk w
             join knowledge_node n on n.id = w.frontier and n.created_by = :userId
                  and n.is_deleted = false and n.status = 'active'
+                 and (:applyAsOf = false or n.occurred_on is null or n.occurred_on <= :asOf)
             join knowledge_edge e on e.created_by = :userId and e.is_deleted = false
                  and (e.from_node_id = w.frontier or e.to_node_id = w.frontier)
                  and not (case when e.from_node_id = w.frontier then e.to_node_id else e.from_node_id end = any(w.path))
@@ -92,8 +94,10 @@ public class GraphTraversalQuery {
         from best b
         join knowledge_node f on f.id = b.from_node_id and f.created_by = :userId
              and f.is_deleted = false and f.status = 'active'
+             and (:applyAsOf = false or f.occurred_on is null or f.occurred_on <= :asOf)
         join knowledge_node t on t.id = b.to_node_id and t.created_by = :userId
              and t.is_deleted = false and t.status = 'active'
+             and (:applyAsOf = false or t.occurred_on is null or t.occurred_on <= :asOf)
         order by b.weight desc, b.hops asc, b.edge_id
         limit :topK
         """;
@@ -106,8 +110,9 @@ public class GraphTraversalQuery {
      *  keep equally-ranked nodes in a deterministic order across repeated calls (mezo-b3pp.34). */
     private static final String ACTIVE_NODES_SQL = """
         select id, title, summary
-        from knowledge_node
+        from knowledge_node n
         where created_by = :userId and status = 'active' and is_deleted = false
+          and (:applyAsOf = false or occurred_on is null or occurred_on <= :asOf)
         order by created_at desc, id
         """;
 
@@ -130,17 +135,43 @@ public class GraphTraversalQuery {
 
     /** Weight-ordered ≤maxHops neighborhood; a failure rolls back to the savepoint and rethrows. */
     public List<NeighborEdge> neighborhood(UUID userId, Collection<UUID> seedNodeIds, int maxHops, int topK) {
+        return neighborhood(userId, seedNodeIds, maxHops, topK, LocalDate.EPOCH, false);
+    }
+
+    /** Historical neighborhood whose seed and endpoint nodes cannot lie after {@code asOf}. */
+    public List<NeighborEdge> neighborhood(UUID userId, Collection<UUID> seedNodeIds,
+                                            int maxHops, int topK, LocalDate asOf) {
+        return neighborhood(userId, seedNodeIds, maxHops, topK, asOf, true);
+    }
+
+    private List<NeighborEdge> neighborhood(UUID userId, Collection<UUID> seedNodeIds,
+                                             int maxHops, int topK, LocalDate asOf,
+                                             boolean applyAsOf) {
         MapSqlParameterSource params = new MapSqlParameterSource()
                 .addValue("userId", userId)
                 .addValue("seeds", seedNodeIds)
                 .addValue("maxHops", maxHops)
-                .addValue("topK", topK);
+                .addValue("topK", topK)
+                .addValue("asOf", asOf)
+                .addValue("applyAsOf", applyAsOf);
         return underSavepoint(template -> template.query(SQL, params, ROW_MAPPER));
     }
 
     /** The owner's active, non-deleted nodes, newest first; same savepoint guarantee as above. */
     public List<ActiveNode> activeNodes(UUID userId) {
-        MapSqlParameterSource params = new MapSqlParameterSource().addValue("userId", userId);
+        return activeNodes(userId, LocalDate.EPOCH, false);
+    }
+
+    /** The owner's active nodes that were already effective at {@code asOf}. */
+    public List<ActiveNode> activeNodes(UUID userId, LocalDate asOf) {
+        return activeNodes(userId, asOf, true);
+    }
+
+    private List<ActiveNode> activeNodes(UUID userId, LocalDate asOf, boolean applyAsOf) {
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("userId", userId)
+                .addValue("asOf", asOf)
+                .addValue("applyAsOf", applyAsOf);
         return underSavepoint(template -> template.query(ACTIVE_NODES_SQL, params, ACTIVE_NODE_ROW_MAPPER));
     }
 

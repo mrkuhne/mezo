@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.companion.graph.repository.GraphTraversalQuery.Ac
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphTraversalQuery.NeighborEdge;
 import io.mrkuhne.mezo.feature.companion.tools.ToolText;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -74,6 +75,11 @@ public class GraphTraversalService {
      * capped at {@code graph.max-seeds} (mezo-b3pp.34).
      */
     public List<UUID> seedsFor(UUID userId, String userMessage) {
+        return seedsFor(userId, userMessage, null);
+    }
+
+    /** Historical seed selection excludes nodes whose event date lies after {@code asOf}. */
+    public List<UUID> seedsFor(UUID userId, String userMessage, LocalDate asOf) {
         List<String> tokens = ToolText.searchTokens(userMessage).stream()
                 .map(t -> t.replaceAll(EDGE_PUNCTUATION, ""))
                 .filter(t -> t.length() >= MIN_TOKEN_CHARS)
@@ -94,7 +100,10 @@ public class GraphTraversalService {
         // seedsFor runs on the synchronous chat path, and folding is a Normalizer.normalize + regex
         // pass over the whole field.
         record Scored(ActiveNode node, boolean titleHit, long tokenHits) {}
-        return traversalQuery.activeNodes(userId).stream()
+        List<ActiveNode> activeNodes = asOf == null
+                ? traversalQuery.activeNodes(userId)
+                : traversalQuery.activeNodes(userId, asOf);
+        return activeNodes.stream()
                 .map(n -> {
                     String foldedTitle = ToolText.fold(n.title());
                     String foldedSummary = ToolText.fold(n.summary());
@@ -145,5 +154,14 @@ public class GraphTraversalService {
             return List.of();
         }
         return traversalQuery.neighborhood(userId, seedNodeIds, maxHops, topK);
+    }
+
+    /** Historical neighborhood excludes future-dated seed, frontier, and endpoint nodes. */
+    public List<NeighborEdge> neighborhood(UUID userId, Collection<UUID> seedNodeIds,
+                                            int maxHops, int topK, LocalDate asOf) {
+        if (seedNodeIds.isEmpty()) {
+            return List.of();
+        }
+        return traversalQuery.neighborhood(userId, seedNodeIds, maxHops, topK, asOf);
     }
 }
