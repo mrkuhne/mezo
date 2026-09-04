@@ -276,21 +276,23 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `GraphPromotionService`, `GraphPromptAssembler`, `GraphReconcileResult`, `GraphService`, `GraphTraversalService`,
     `HypothesisJob`, `HypothesisPipelineService`, `KnowledgeFactChangedEvent`, `KnowledgeFactPromotedEvent`,
     `KnowledgeFactService`, `LifeEventCandidateService`, `LifeEventExtractionService`, `LifeEventSuggestion`,
-    `MeWeekService`, `MemoryObservatoryService`, `MemoryRecallService`, `MesoContextAssembler`, `MesoReviewGenerator`,
-    `MesoReviewListener`, `MessageFeedbackService`, `MetricDomain`, `MetricKey`, `MetricSeriesService`,
-    `MetricValueKind`, `PatternConfirmedEvent`, `PatternDetectionJob`, `PatternDetectionService`, `PatternGate`,
-    `PatternImpactSource`, `PatternMonitorService`, `PatternPairDetailService`, `PatternRetractedEvent`,
-    `PatternService`, `PearsonCorrelation`, `PeopleSnapshotBlock`, `PeriodSummaryService`, `PersonExtractionResult`,
-    `PersonExtractionService`, `PersonGraphEdgeAdapter`, `ProfileAssembler`, `ProfileAssemblerJob`,
-    `ProfilePromptAssembler`, `PromptMemoryAssembler`, `QuarterlyReviewJob`, `QuarterlyReviewService`, `Quarters`,
-    `SeasonSuggestion`, `TranscriptionService`, `WeekContextRenderer`, `WeeklyScoreService`
+    `MeWeekService`, `MemoryObservatoryService`, `MemoryProjectionEvent`, `MemoryProjectionListener`,
+    `MemoryProjectionWriter`, `MemoryRecallService`, `MemoryReembeddingJob`, `MemoryReembeddingService`,
+    `MesoContextAssembler`, `MesoReviewGenerator`, `MesoReviewListener`, `MessageFeedbackService`, `MetricDomain`,
+    `MetricKey`, `MetricSeriesService`, `MetricValueKind`, `PatternConfirmedEvent`, `PatternDetectionJob`,
+    `PatternDetectionService`, `PatternGate`, `PatternImpactSource`, `PatternMonitorService`,
+    `PatternPairDetailService`, `PatternRetractedEvent`, `PatternService`, `PearsonCorrelation`, `PeopleSnapshotBlock`,
+    `PeriodSummaryService`, `PersonExtractionResult`, `PersonExtractionService`, `PersonGraphEdgeAdapter`,
+    `ProfileAssembler`, `ProfileAssemblerJob`, `ProfilePromptAssembler`, `PromptMemoryAssembler`, `QuarterlyReviewJob`,
+    `QuarterlyReviewService`, `Quarters`, `SeasonSuggestion`, `TranscriptionService`, `WeekContextRenderer`,
+    `WeeklyScoreService`
   - **controllers→contract:** `CompanionController`→`CompanionApi`,
     `CompanionFeedbackController`→`CompanionFeedbackApi`, `CompanionStreamController`,
     `CompanionVoiceController`→`CompanionVoiceApi`, `GraphController`→`KnowledgeGraphApi`,
     `MeWeekController`→`MeWeekApi`
   - **mappers:** `CompanionMapper`, `GraphMapper`, `MessageFeedbackMapper`
   - **config:** `CompanionProperties`, `DayEvaluationProperties`, `FeedbackLearningProperties`, `FlagProperties`,
-    `ProfileProperties`, `QuarterlyProperties`
+    `MemoryPlatformProperties`, `ProfileProperties`, `QuarterlyProperties`
   - **events/listeners:** `DecisionEmbeddingListener`, `GratitudeEmbeddingListener`, `JournalEmbeddingListener`,
     `ReflectionEmbeddingListener`, `TurnEmbeddingListener`
   - **other:** `AdvisedAnswer`, `AdvisorRetry`, `AdvisorViolation`, `AllHealthyRule`, `BiometricsTools`,
@@ -329,7 +331,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     GET /api/companion/graph/edge/count
 - **Contract** `api/feature/me-week/me-week.yml` — 3 operations
   - **endpoints:** GET /api/me/week/{start} · GET /api/me/week/{start}/trend · GET /api/me/day/{date}/evaluation
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 149 IT + 22 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 152 IT + 22 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMentionListenerIT`, `ChatServiceAmbientRecallIT`,
     `ChatServiceGraphBlockFailureIT`, `ChatServiceGraphBlockIT`, `ChatServiceGraphBlockSwitchOffIT`, `ChatServiceIT`,
@@ -358,7 +360,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `KnowledgeFactServiceIT`, `LearnedFactPersistenceIT`, `LifeEventExtractionServiceIT`, `LifeGoalProposeNameIT`,
     `MeWeekControllerIT`, `MeWeekServiceFuelFetchCountIT`, `MeWeekTrendIT`, `MemoryEmbeddingAnnQueryIT`,
     `MemoryEmbeddingRepositoryIT`, `MemoryEmbeddingWriterIT`, `MemoryLlmUsageIsolationIT`,
-    `MemoryPlatformPersistenceIT`, `MemoryRecallServiceIT`, `MemoryToolsRenderIT`, `MesoReviewGeneratorIT`,
+    `MemoryPlatformPersistenceIT`, `MemoryProjectionFailureIsolationIT`, `MemoryProjectionWriterIT`,
+    `MemoryRecallServiceIT`, `MemoryReembeddingIT`, `MemoryToolsRenderIT`, `MesoReviewGeneratorIT`,
     `MessageFeedbackPersistenceIT`, `MetricSeriesCoachingIT`, `MetricSeriesDerivedIT`, `MetricSeriesExpansionIT`,
     `MetricSeriesServiceIT`, `NoteEmbeddingBudgetIT`, `NoteEmbeddingCatchUpIT`, `NoteEmbeddingSwitchOffIT`,
     `NoteEmbeddingWriterIT`, `NoteMentionCatchUpIT`, `NoteVectorLifecycleBudgetIT`, `NoteVectorLifecycleIT`,
