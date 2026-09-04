@@ -31,7 +31,7 @@ function StackProgress({ view }: { view: StackDayView }) {
 export function StackNextHero({ view, onToggle, onOpen, onAdd }: StackNextHeroProps) {
   if (view.totalCount === 0) {
     return (
-      <section className="stk-hub-next stk-hub-empty rise">
+      <section className="stk-hub-next stk-hub-empty rise" data-kalauz-anchor="stack-hero">
         <ClayIcon name="i-stack" size={76} />
         <div>
           <span className="stk-hub-kicker">A SAJÁT RITMUSOD</span>
@@ -45,7 +45,7 @@ export function StackNextHero({ view, onToggle, onOpen, onAdd }: StackNextHeroPr
 
   if (view.allDone) {
     return (
-      <section className="stk-hub-next stk-hub-done rise">
+      <section className="stk-hub-next stk-hub-done rise" data-kalauz-anchor="stack-hero">
         <ClayIcon name="i-stack" size={76} />
         <div>
           <span className="stk-hub-kicker">MAI RITMUS</span>
@@ -60,7 +60,7 @@ export function StackNextHero({ view, onToggle, onOpen, onAdd }: StackNextHeroPr
   const row = view.nextRow!
   const { entry } = row
   return (
-    <section className="stk-hub-next rise">
+    <section className="stk-hub-next rise" data-kalauz-anchor="stack-hero">
       <div className="stk-hub-next-top">
         <span className="stk-hub-kicker">MOST KÖVETKEZIK</span>
         <span className="stk-hub-time">{row.time}</span>
