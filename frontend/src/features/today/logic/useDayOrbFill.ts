@@ -4,17 +4,26 @@
 // useNeeds-e minden chrome-os route-on mountol), plusz két új olvasás: súly + napló.
 // A `useDayFace` / MezoThreadProvider precedens: a fejléc és a Nap hub nem drift-elhet
 // szét két külön olvasáson — ha bárhol máshol is kell a töltöttség, EZT hívd.
-// A tónus külön forrásból jön (useMeWeek napi pont), hogy a „milyen jó a nap"-nak
-// egyetlen definíciója legyen: ugyanaz, amit a nap-oldal mutat.
+//
+// A tónus (mezo-x5va) a mai nap `useDayEvaluation` válaszából jön — ugyanabból a 6-dimenziós
+// napi értékelésből, amit a nap-oldal mutat, tehát „milyen jó a nap"-nak egyetlen definíciója
+// van. A `DayEvaluationEngine.evaluate` viszont csak LEZÁRT napra ad alap-pontot
+// (`closed && doneCount >= 2`, `closed = date < today`) — MA sosem lezárt, tehát a válasz
+// `score`-ja mindig null a mai napra, és az orb tónusa örökre semleges maradna. Ezért a
+// `dimensions[]`-ből (amiknek a `weight`-je a backendtől MÁR a KÉSZ dimenziókra
+// renormalizálva jön) egy MENET KÖZBENI pontot számolunk ugyanazzal a képlettel — lásd
+// `dayOrbTone.ts`. Lezárt napra ez sosem fut le itt (a hook mindig a mai napot kéri).
 // Spec: docs/superpowers/specs/2026-09-03-napi-orb-fejlec-design.md
 // ============================================================
 import { useMemo } from 'react'
 import {
-  useCheckins, useFuelDay, useJournalNotes, useMeWeek, useRunning, useSleep, useTrain, useWeight,
+  useCheckins, useDayEvaluation, useFuelDay, useJournalNotes, useRunning, useSleep, useTrain, useWeight,
+  normalizeDayEvaluation,
 } from '@/data/hooks'
-import { addDays, localDateString, mondayOf } from '@/shared/lib/dates'
+import { addDays, localDateString } from '@/shared/lib/dates'
 import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
 import { dayOrbFill, type DayOrbPlan, type DayOrbSignals } from '@/features/today/logic/dayOrbFill'
+import { provisionalDayScore } from '@/features/today/logic/dayOrbTone'
 
 export interface DayOrbState {
   pct: number
@@ -37,7 +46,7 @@ export function useDayOrbFill(): DayOrbState {
   const { data: journalToday } = useJournalNotes(todayIso, todayIso)
   const train = useTrain()
   const { runSessions } = useRunning()
-  const { week } = useMeWeek(mondayOf(todayIso))
+  const { data: evaluationData } = useDayEvaluation(todayIso)
 
   const gymDoneDates = train.gymDoneDates
   const completedTodayWorkout = train.completedTodayWorkout
@@ -73,7 +82,8 @@ export function useDayOrbFill(): DayOrbState {
       sportPlanned: Boolean(sportScheduleSessions?.some((s) => s.today)),
     }
 
-    const score = week?.days.find((d) => d.date === todayIso)?.score ?? null
+    const evaluation = evaluationData ? normalizeDayEvaluation(evaluationData) : null
+    const score = evaluation ? provisionalDayScore(evaluation.dimensions, evaluation.score) : null
     const fill = dayOrbFill(signals, plan, score)
 
     return {
@@ -85,6 +95,6 @@ export function useDayOrbFill(): DayOrbState {
   }, [
     todayIso, yesterdayIso, sleepLog, weightLog, fuel.meals, checkins, journalToday,
     gymDoneDates, completedTodayWorkout, sportSessions, runSessions,
-    gymWeeklyTimes, sportScheduleSessions, week,
+    gymWeeklyTimes, sportScheduleSessions, evaluationData,
   ])
 }
