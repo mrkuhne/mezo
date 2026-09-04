@@ -79,6 +79,7 @@ import { GoalSegmentPage } from '@/features/me/pages/GoalSegmentPage'
 import { GoalPlansPage } from '@/features/me/pages/GoalPlansPage'
 import { GoalGuardsPage } from '@/features/me/pages/GoalGuardsPage'
 import { GoalSettingsPage } from '@/features/me/pages/GoalSettingsPage'
+import { GoalSuggestionPage } from '@/features/me/pages/GoalSuggestionPage'
 import { CelokPage } from '@/features/me/pages/CelokPage'
 import { CelPage } from '@/features/me/pages/CelPage'
 import { CelWizardPage } from '@/features/me/pages/CelWizardPage'
@@ -344,6 +345,7 @@ export const routes: RouteObject[] = [
       { path: 'me/goals/weight/plans', element: <GoalPlansPage /> },
       { path: 'me/goals/weight/guards', element: <GoalGuardsPage /> },
       { path: 'me/goals/weight/settings', element: <GoalSettingsPage /> },
+      { path: 'me/goals/weight/suggestions/:suggestionId', element: <GoalSuggestionPage /> },
       { path: 'me/goals/weight/new', element: <GoalPlannerPage /> },
       // Task 11's five-step wizard (mezo-iizd.1) — another static `me/goals/*` sibling,
       // registered ahead of the dynamic `me/goals/:id` below per the same precedent.

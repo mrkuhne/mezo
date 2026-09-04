@@ -4586,6 +4586,54 @@ button.mz-tile:active { transform: scale(0.96); }
 .goal-detail-kicker { font-size: 9px; font-weight: 850; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mz-ink-mut); }
 .goal-detail-notice { font-size: 13px; line-height: 1.55; background: var(--mz-wash-coral); }
 .goal-detail-macros { margin-bottom: 12px; }
+
+/* Goal suggestion review (mezo-ricj.3): a fixed-baseline before/after grid. Every row keeps
+   the same three-area anatomy even at 320px, so values never staircase between cards. */
+.goal-suggestion-page .mz-page-hero { padding-bottom: 18px; }
+.goal-suggestion-page .mz-bignum { max-width: 300px; font-size: 26px; line-height: 1.02; font-weight: 750; letter-spacing: -0.035em; }
+.goal-suggestion-page .mz-page-body { padding-top: 8px; }
+.gs-status { margin-top: 10px; border-radius: 999px; padding: 5px 10px; background: var(--mz-cell-gold-bg); color: var(--mz-cell-gold-ink); font-size: 9px; font-weight: 850; letter-spacing: 0.08em; text-transform: uppercase; }
+.gs-status-accepted { background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
+.gs-status-dismissed, .gs-status-superseded { background: var(--mz-chipbg); color: var(--mz-ink-mut); }
+.gs-section-head { display: flex; align-items: center; justify-content: space-between; margin: 0 3px 10px; color: var(--mz-ink-mut); font-size: 10px; font-weight: 850; letter-spacing: 0.12em; text-transform: uppercase; }
+.gs-section-head b { border-radius: 999px; padding: 4px 8px; background: var(--mz-chipbg); color: var(--mz-cell-coral-ink); }
+.gdiff-grid { display: grid; gap: 10px; }
+.gdiff-row {
+  display: grid; grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr);
+  grid-template-rows: 20px 52px 23px; grid-template-areas: 'label label label' 'current arrow proposed' 'delta delta delta';
+  min-height: 119px; padding: 15px 15px 9px; border: 0.5px solid color-mix(in srgb, var(--surface-card) 85%, var(--mz-line));
+  border-radius: 24px; background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); color: var(--text-primary);
+}
+.gdiff-row:nth-child(3n + 2) { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.gdiff-row:nth-child(3n) { background: var(--mz-wash-sky); box-shadow: var(--mz-shadow-sky); }
+.gdiff-row[data-field='guards'], .gdiff-row[data-field='segment'] { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
+.gdiff-unchanged { filter: saturate(.67); box-shadow: var(--mz-shadow); }
+.gdiff-label { grid-area: label; align-self: start; color: var(--mz-ink-mut); font-size: 9px; font-weight: 850; letter-spacing: 0.11em; text-transform: uppercase; }
+.gdiff-current, .gdiff-proposed { display: grid; grid-template-rows: 15px 27px; align-content: center; min-width: 0; }
+.gdiff-current { grid-area: current; }
+.gdiff-proposed { grid-area: proposed; text-align: right; }
+.gdiff-current small, .gdiff-proposed small { align-self: end; color: var(--mz-ink-mut); font-size: 8px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; }
+.gdiff-current strong, .gdiff-proposed strong { align-self: start; overflow-wrap: anywhere; font-size: 15px; line-height: 27px; font-weight: 760; font-variant-numeric: tabular-nums; }
+.gdiff-proposed strong { color: var(--mz-cell-sage-ink); }
+.gdiff-arrow { grid-area: arrow; align-self: center; justify-self: center; display: grid; place-items: center; width: 27px; height: 27px; border-radius: 50%; background: color-mix(in srgb, var(--surface-card) 74%, transparent); color: var(--primary-deep); font-size: 17px; }
+.gdiff-delta { grid-area: delta; align-self: center; justify-self: end; border-radius: 999px; padding: 4px 8px; background: var(--mz-cell-coral-bg); color: var(--mz-cell-coral-ink); font-size: 9px; font-weight: 850; font-variant-numeric: tabular-nums; }
+.gdiff-unchanged .gdiff-delta { background: var(--mz-chipbg); color: var(--mz-ink-mut); font-weight: 700; }
+.gs-message, .gs-history { margin-top: 12px; border-radius: 21px; padding: 15px 16px; box-shadow: var(--mz-shadow); }
+.gs-message strong, .gs-history strong { display: block; font-size: 13px; }
+.gs-message p, .gs-history p { margin: 6px 0 0; color: var(--mz-ink-soft); font-size: 11px; line-height: 1.5; }
+.gs-warning { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.gs-blocker, .gs-stale { background: var(--mz-wash-coral); box-shadow: var(--mz-shadow-coral); }
+.gs-refresh { margin-top: 12px; border: 0; border-radius: 999px; padding: 9px 13px; background: var(--mz-chipbg); color: var(--mz-cell-coral-ink); font: 800 11px/1 inherit; cursor: pointer; }
+.gs-history { display: grid; gap: 4px; background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.gs-history > span { width: max-content; border-radius: 999px; padding: 4px 8px; background: var(--mz-chipbg); color: var(--mz-cell-sage-ink); font-size: 9px; font-weight: 850; text-transform: uppercase; }
+.gs-actions { display: grid; gap: 8px; margin-top: 16px; }
+.gs-actions > button { min-height: 48px; border-radius: 17px; font: 800 12px/1 inherit; cursor: pointer; }
+.gs-apply { border: 0; background: linear-gradient(135deg, var(--primary), var(--primary-deep)); color: white; box-shadow: 0 13px 24px color-mix(in srgb, var(--primary) 28%, transparent); }
+.gs-apply:disabled { opacity: .42; box-shadow: none; cursor: default; }
+.gs-later { border: 1px solid var(--mz-line); background: var(--mz-chipbg); color: var(--text-primary); }
+.gs-dismiss { min-height: 36px !important; border: 0; background: transparent; color: var(--mz-ink-mut); text-decoration: underline; text-underline-offset: 3px; }
+.gs-dismiss-confirm { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 6px; border-radius: 17px; padding: 9px 10px; background: var(--mz-wash-coral); color: var(--mz-ink-soft); font-size: 10px; }
+.gs-dismiss-confirm button { border: 0; border-radius: 999px; padding: 7px 9px; background: var(--mz-chipbg); color: var(--text-primary); font: 800 9px/1 inherit; cursor: pointer; }
 .goal-diet-week { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
 .goal-diet-comparison { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-top: 12px; }
 .goal-diet-comparison > div, .goal-diet-uniform > div { display: flex; min-width: 0; flex-direction: column; justify-content: space-between; gap: 7px; padding: 12px; border-radius: 17px; background: var(--mz-chipbg); }
