@@ -16,18 +16,28 @@
 // batch-clearing "Mind" chip, `?pair=` redirect.
 // ============================================================
 import { useState, type ReactNode } from 'react'
-import { Icon } from '@/shared/ui/Icon'
+import { Icon, type IconName } from '@/shared/ui/Icon'
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom'
 import { cn } from '@/shared/lib/cn'
-import { ClayIcon, ClaySpot, type ClayIconName } from '@/shared/ui/clay'
+import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
 import { MozaikPage, PageHead, PageBody } from '@/shared/ui/mozaik'
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { GhostState } from '@/shared/ui/GhostState'
 import { usePatterns, usePatternMonitor, usePatternActions } from '@/data/hooks'
 import { PatternDecisionCard } from '@/features/insights/components/PatternDecisionCard'
+import { PatternDomainMark } from '@/features/insights/components/PatternDomainMark'
+import { PatternFilterSheet } from '@/features/insights/components/PatternFilterSheet'
 import { lastSeenLabel } from '@/features/insights/logic/metricFormat'
-import { DOMAIN_META, DOMAIN_ORDER } from '@/features/insights/logic/domains'
+import { DOMAIN_ORDER } from '@/features/insights/logic/domains'
 import { bucketize, BUCKET_ORDER, type LifecycleBucket, type LifecycleEntry } from '@/features/insights/logic/lifecycle'
+import {
+  entryDomain,
+  filterSortEntries,
+  initialBucket,
+  PATTERN_PAGE_SIZE,
+  pageEntries,
+  type PatternCatalogSort,
+} from '@/features/insights/logic/patternCatalog'
 import { confidenceMeta, findingSentence } from '@/features/insights/logic/findings'
 import { verdictSentence } from '@/features/insights/logic/verdicts'
 import type { MetricDomain, PatternMonitorPair, PatternStatus } from '@/data/types'
@@ -52,19 +62,14 @@ function lastRunLabel(lastRunAt: string | null): string {
   return `ma ${time}`
 }
 
-/** A pár KIMENETI (B) doménjének clay ikonja — pár híján a minta-ikon (i-minta). */
-const DOMAIN_ICON: Record<MetricDomain, ClayIconName> = {
-  sleep: 'i-alvas', train: 'i-edzes', fuel: 'i-fuel', mind: 'i-checkin', body: 'i-suly', other: 'i-minta',
-}
-
 /** A 3×2 életciklus-rács cellái — prototípus .lcel skinek (a hot ráépül a decide-ra). */
-const LCEL_META: Record<LifecycleBucket, { label: string; skin: string }> = {
-  decide: { label: 'döntésre vár', skin: 'c-mute' },
-  monitoring: { label: 'megfigyelés', skin: 'c-lav' },
-  confirmed: { label: 'megerősítve', skin: 'c-sage' },
-  gathering: { label: 'még gyűlik', skin: 'c-amber' },
-  noRelationship: { label: 'nincs kapcsolat', skin: 'c-mute' },
-  rejected: { label: 'elvetve', skin: 'c-mute' },
+const LCEL_META: Record<LifecycleBucket, { label: string; skin: string; icon: IconName }> = {
+  decide: { label: 'döntésre vár', skin: 'c-mute', icon: 'bell' },
+  monitoring: { label: 'megfigyelés', skin: 'c-lav', icon: 'eye' },
+  confirmed: { label: 'megerősítve', skin: 'c-sage', icon: 'check' },
+  gathering: { label: 'még gyűlik', skin: 'c-amber', icon: 'trend-up' },
+  noRelationship: { label: 'nincs kapcsolat', skin: 'c-mute', icon: 'minus' },
+  rejected: { label: 'elvetve', skin: 'c-mute', icon: 'x' },
 }
 
 /** A döntés zsálya-nyugtázása (prototípus decdone) — a mutáció maga a régi `decide`. */
@@ -97,11 +102,10 @@ function PatternTile({ entry, skin, chip, sb, barPct, delayMs }: {
   barPct?: number | null
   delayMs: number
 }) {
-  const icon = entry.pair ? DOMAIN_ICON[entry.pair.metricBDomain] : 'i-minta'
   const inner = (
     <>
       <div className="mnt-ptile-top">
-        <ClayIcon name={icon} size={26} />
+        <PatternDomainMark domain={entryDomain(entry)} size={26} showLabel={false} />
         {chip}
       </div>
       <div className="mnt-ttl">{rowTitle(entry)}</div>
@@ -115,7 +119,6 @@ function PatternTile({ entry, skin, chip, sb, barPct, delayMs }: {
   )
   const cls = cn('mnt-ptile', skin !== 'mute' && skin, 'rise')
   const style = { '--d': `${delayMs}ms` } as React.CSSProperties
-  if (!entry.pair) return <div className={cls} style={style}>{inner}</div>
   return (
     <Link to={`/mezo/patterns/${entry.key}`} className={cls} style={style}>
       {inner}
@@ -173,11 +176,11 @@ export function PatternsPage() {
   } = usePatternMonitor()
   const { decide } = usePatternActions()
   const [params] = useSearchParams()
-  // Domén-szűrő (spec): üres set = nincs szűrés. A „Mind" chip egy kattintásra az ÖSSZES aktív
-  // domént eltávolítja — `toggleDomain`-t hívja egyszer/domén UGYANABBAN a batch-ben, ezért a
-  // toggle csak funkcionális setState-tel biztonságos (külön kattintásonkénti stale closure
-  // eldobná a korábbi hívásokat).
-  const [activeDomains, setActiveDomains] = useState<Set<MetricDomain>>(new Set())
+  const [selectedBucket, setSelectedBucket] = useState<LifecycleBucket | null>(null)
+  const [activeDomain, setActiveDomain] = useState<MetricDomain | null>(null)
+  const [sort, setSort] = useState<PatternCatalogSort>('progress')
+  const [page, setPage] = useState(0)
+  const [filterOpen, setFilterOpen] = useState(false)
   // Zsálya-nyugtázások (prototípus decdone) — a döntés a régi mutáción megy, a kártya helyén
   // a nyugtázó sor marad, miközben az adat a kosarak közt költözik.
   const [acks, setAcks] = useState<{ key: string; msg: ReactNode }[]>([])
@@ -240,17 +243,9 @@ export function PatternsPage() {
     )
   }
 
-  const toggleDomain = (d: MetricDomain) =>
-    setActiveDomains((prev) => {
-      const next = new Set(prev)
-      if (next.has(d)) next.delete(d)
-      else next.add(d)
-      return next
-    })
-
-  const byDomain = (e: LifecycleEntry) =>
-    activeDomains.size === 0 || (e.pair != null && activeDomains.has(e.pair.metricBDomain))
-  const visibleFor = (bucket: LifecycleBucket) => buckets.get(bucket)!.filter(byDomain)
+  const activeBucket = selectedBucket ?? initialBucket(buckets)
+  const filteredEntries = filterSortEntries(buckets.get(activeBucket)!, activeDomain, sort)
+  const pagedEntries = pageEntries(filteredEntries, page)
 
   const coverageByKey = new Map((monitor?.metrics ?? []).map((m) => [m.key, m]))
   const bottleneckCoveredDays = (pair: PatternMonitorPair) =>
@@ -259,14 +254,8 @@ export function PatternsPage() {
   const sortedMetrics = monitor ? [...monitor.metrics].sort((a, b) => a.coveredDays - b.coveredDays) : []
 
   const questionCount = monitor?.pairs.length ?? 0
-  const presentDomains = DOMAIN_ORDER.filter((d) => monitor?.pairs.some((p) => p.metricBDomain === d))
-
-  const decideVisible = visibleFor('decide')
-  const confirmedVisible = visibleFor('confirmed')
-  const monitoringVisible = visibleFor('monitoring')
-  const gatheringVisible = visibleFor('gathering')
-  const noRelationshipVisible = visibleFor('noRelationship')
-  const rejectedVisible = visibleFor('rejected')
+  const allEntries = BUCKET_ORDER.flatMap((bucket) => buckets.get(bucket)!)
+  const presentDomains = DOMAIN_ORDER.filter((domain) => allEntries.some((entry) => entryDomain(entry) === domain))
 
   const onDecide = (entry: LifecycleEntry, d: PatternStatus) => {
     decide(entry.pattern!.id, d)
@@ -293,31 +282,29 @@ export function PatternsPage() {
             const meta = LCEL_META[bucket]
             const hot = bucket === 'decide' && counts.decide > 0
             return (
-              <div key={bucket} className={cn('mnt-lcel', hot ? 'hot' : meta.skin)}>
+              <button
+                key={bucket}
+                type="button"
+                aria-pressed={activeBucket === bucket}
+                className={cn('mnt-lcel', hot ? 'hot' : meta.skin, activeBucket === bucket && 'is-selected')}
+                onClick={() => {
+                  setSelectedBucket(bucket)
+                  setPage(0)
+                }}
+              >
                 <b>{counts[bucket]}</b>
-                <small>{meta.label}</small>
-              </div>
+                <small><Icon name={meta.icon} size={10} />{meta.label}</small>
+              </button>
             )
           })}
         </div>
-        <div className="row gap-sm" style={{ marginTop: 12, flexWrap: 'wrap' }}>
-          <button
-            type="button"
-            className={activeDomains.size === 0 ? 'chip brand' : 'chip'}
-            onClick={() => activeDomains.forEach((d) => toggleDomain(d))}
-          >
-            Mind
+        <div className="mnt-catalog-toolbar">
+          <span className="mnt-catalog-filter-value">
+            {activeDomain == null ? 'Minden téma' : <PatternDomainMark domain={activeDomain} size={18} />}
+          </span>
+          <button type="button" className="mnt-filter-trigger" onClick={() => setFilterOpen(true)}>
+            <Icon name="settings" size={16} /> Szűrés
           </button>
-          {presentDomains.map((d) => (
-            <button
-              key={d}
-              type="button"
-              className={activeDomains.has(d) ? 'chip brand' : 'chip'}
-              onClick={() => toggleDomain(d)}
-            >
-              {DOMAIN_META[d].icon} {DOMAIN_META[d].label}
-            </button>
-          ))}
         </div>
       </div>
 
@@ -328,21 +315,18 @@ export function PatternsPage() {
           <span className="mz-icin">{a.msg}</span>
         </div>
       ))}
-      {decideVisible.length > 0 && (
+      {activeBucket === 'decide' && filteredEntries.length > 0 && (
         <>
-          <Lsec title={<><Icon name="bell" size={12} /> Döntésre vár · {decideVisible.length}</>} ink="var(--mz-cell-amber-ink)"
+          <Lsec title={<><Icon name="bell" size={12} /> Döntésre vár · {filteredEntries.length}</>} ink="var(--mz-cell-amber-ink)"
             count="csak erős jel" delayMs={80} />
-          {decideVisible.map((entry, i) => (
+          {pagedEntries.items.map((entry, i) => (
             <div key={entry.key} className="mnt-decwrap rise" style={{ '--d': `${110 + i * 40}ms` } as React.CSSProperties}>
               <PatternDecisionCard
                 pattern={entry.pattern!}
                 pair={entry.pair}
                 onDecide={(d: PatternStatus) => onDecide(entry, d)}
                 showExplainer={i === 0}
-                // A V3.2 AI-hipotézis soroknak nincs katalógus-párja (hyp-<hash> pairKey) — a
-                // részlet-link garantáltan "Nincs ilyen minta."-ra futna, ezért csak pár-backed
-                // sorokon jelenik meg (mezo-tk88.5 review fix).
-                showDetailLink={entry.pair != null}
+                showDetailLink
               />
             </div>
           ))}
@@ -350,29 +334,29 @@ export function PatternsPage() {
       )}
 
       {/* ── Megerősítve: zsálya-csempék, domén clay ikon + HUMÁN bizonyosság-chip ── */}
-      {confirmedVisible.length > 0 && (
+      {activeBucket === 'confirmed' && filteredEntries.length > 0 && (
         <>
-          <Lsec title="✓ Megerősítve — él a tudásban" ink="var(--mz-cell-sage-ink)"
-            count={confirmedVisible.length} countTestId="mnt-cnt-confirmed" delayMs={140} />
+          <Lsec title={<><Icon name="check" size={12} /> Megerősítve — él a tudásban</>} ink="var(--mz-cell-sage-ink)"
+            count={filteredEntries.length} countTestId="mnt-cnt-confirmed" delayMs={140} />
           <div className="mnt-mosaic">
-            {confirmedVisible.map((entry, i) => (
+            {pagedEntries.items.map((entry, i) => (
               <PatternTile key={entry.key} entry={entry} skin="sage" chip={tileChip(entry, 'sage')}
                 sb={entry.pair?.n != null ? `${entry.pair.n} közös nap` : 'megerősítve'} delayMs={170 + i * 30} />
             ))}
           </div>
           <p className="mnt-foot rise" style={{ '--d': '190ms' } as React.CSSProperties}>
-            Ez a {confirmedVisible.length} összefüggés benne van a társ fejében minden beszélgetésnél, és ebből
+            Ez a {filteredEntries.length} összefüggés benne van a társ fejében minden beszélgetésnél, és ebből
             épülnek az előrejelzések.
           </p>
         </>
       )}
 
       {/* ── Megfigyelés alatt: levendula-csempék animált bizonyíték-sávval ── */}
-      {monitoringVisible.length > 0 && (
+      {activeBucket === 'monitoring' && filteredEntries.length > 0 && (
         <>
-          <Lsec title={<><Icon name="eye" size={12} /> Megfigyelés alatt</>} ink="var(--mz-cell-lav-ink)" count={monitoringVisible.length} delayMs={220} />
+          <Lsec title={<><Icon name="eye" size={12} /> Megfigyelés alatt</>} ink="var(--mz-cell-lav-ink)" count={filteredEntries.length} delayMs={220} />
           <div className="mnt-mosaic">
-            {monitoringVisible.map((entry, i) => (
+            {pagedEntries.items.map((entry, i) => (
               <PatternTile
                 key={entry.key}
                 entry={entry}
@@ -396,11 +380,11 @@ export function PatternsPage() {
       )}
 
       {/* ── Még gyűlik az adat: szaggatott borostyán-csempék ── */}
-      {gatheringVisible.length > 0 && (
+      {activeBucket === 'gathering' && filteredEntries.length > 0 && (
         <>
-          <Lsec title="⏳ Még gyűlik az adat" ink="var(--mz-cell-amber-ink)" count={gatheringVisible.length} delayMs={280} />
+          <Lsec title={<><Icon name="trend-up" size={12} /> Még gyűlik az adat</>} ink="var(--mz-cell-amber-ink)" count={filteredEntries.length} delayMs={280} />
           <div className="mnt-mosaic">
-            {gatheringVisible.map((entry, i) => (
+            {pagedEntries.items.map((entry, i) => (
               <PatternTile key={entry.key} entry={entry} skin="dashed"
                 sb={entry.pair ? verdictSentence(entry.pair, bottleneckCoveredDays(entry.pair)) : ''}
                 delayMs={310 + i * 30} />
@@ -413,12 +397,12 @@ export function PatternsPage() {
       )}
 
       {/* ── Megnéztük — nincs összefüggés: halk, mosott csempék ── */}
-      {noRelationshipVisible.length > 0 && (
+      {activeBucket === 'noRelationship' && filteredEntries.length > 0 && (
         <>
-          <Lsec title="○ Megnéztük — nincs összefüggés" ink="var(--mz-ink-mut)"
-            count={noRelationshipVisible.length} delayMs={360} />
+          <Lsec title={<><Icon name="minus" size={12} /> Megnéztük — nincs összefüggés</>} ink="var(--mz-ink-mut)"
+            count={filteredEntries.length} delayMs={360} />
           <div className="mnt-mosaic">
-            {noRelationshipVisible.map((entry, i) => (
+            {pagedEntries.items.map((entry, i) => (
               <PatternTile key={entry.key} entry={entry} skin="mute"
                 sb={findingOneLiner(entry.pair) ?? entry.pattern?.mechanism ?? ''} delayMs={390 + i * 30} />
             ))}
@@ -430,17 +414,41 @@ export function PatternsPage() {
       )}
 
       {/* ── Elvetve ── */}
-      {rejectedVisible.length > 0 && (
+      {activeBucket === 'rejected' && filteredEntries.length > 0 && (
         <>
-          <Lsec title={<><Icon name="x" size={12} /> Elvetve</>} ink="var(--mz-ink-mut)" count={rejectedVisible.length} delayMs={440} />
+          <Lsec title={<><Icon name="x" size={12} /> Elvetve</>} ink="var(--mz-ink-mut)" count={filteredEntries.length} delayMs={440} />
           <div className="mnt-mosaic">
-            {rejectedVisible.map((entry, i) => (
+            {pagedEntries.items.map((entry, i) => (
               <PatternTile key={entry.key} entry={entry} skin="mute"
                 sb={entry.pair ? verdictSentence(entry.pair, bottleneckCoveredDays(entry.pair)) : 'elvetve'}
                 delayMs={470 + i * 30} />
             ))}
           </div>
         </>
+      )}
+
+      {filteredEntries.length === 0 && (
+        <div className="mnt-catalog-empty rise">
+          <ClayIcon name="i-minta" size={34} />
+          <p>Ebben az állapotban ezzel a szűréssel most nincs minta.</p>
+        </div>
+      )}
+
+      {pagedEntries.pageCount > 1 && (
+        <nav className="mnt-pager rise" aria-label="Minták lapozása">
+          <button type="button" aria-label="Előző oldal" disabled={pagedEntries.page === 0}
+            onClick={() => setPage(pagedEntries.page - 1)}>
+            <Icon name="chevron-left" size={16} />
+          </button>
+          <span>
+            {pagedEntries.page * PATTERN_PAGE_SIZE + 1}–{Math.min((pagedEntries.page + 1) * PATTERN_PAGE_SIZE, filteredEntries.length)} / {filteredEntries.length}
+          </span>
+          <button type="button" aria-label="Következő oldal"
+            disabled={pagedEntries.page === pagedEntries.pageCount - 1}
+            onClick={() => setPage(pagedEntries.page + 1)}>
+            <Icon name="chevron-right" size={16} />
+          </button>
+        </nav>
       )}
 
       {/* ── Adat-egészség: lefedettség-gyűrűs csempe-sáv, legvékonyabb elöl ── */}
@@ -473,6 +481,20 @@ export function PatternsPage() {
           A motor bemenete: memória-rétegek →
         </Link>
       </p>
+
+      {filterOpen && (
+        <PatternFilterSheet
+          domain={activeDomain}
+          sort={sort}
+          availableDomains={presentDomains}
+          onApply={(next) => {
+            setActiveDomain(next.domain)
+            setSort(next.sort)
+            setPage(0)
+          }}
+          onClose={() => setFilterOpen(false)}
+        />
+      )}
     </EntranceGroup>
     </MintakFrame>
   )

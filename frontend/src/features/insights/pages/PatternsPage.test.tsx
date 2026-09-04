@@ -18,14 +18,21 @@ describe('PatternsPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('renders the hero, the motor prose and the lifecycle sections from the seeds', () => {
+  test('renders one active lifecycle list and exposes the six states as pressed buttons', () => {
     renderPage()
     // Mozaik hero (mezo-d20.5.3): name + confirmed big number + honest sub line
     expect(screen.getByText('Minták')).toBeInTheDocument()
     expect(screen.getByText('megerősített összefüggés él a tudásban')).toBeInTheDocument()
     expect(screen.getByText('A motor állapota')).toBeInTheDocument()
     expect(screen.getByText(/kérdést/)).toBeInTheDocument()
-    expect(screen.getByText(/Döntésre vár/)).toBeInTheDocument()
+    const decide = screen.getByRole('button', { name: /döntésre vár/i })
+    expect(decide).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByText(/Döntésre vár · 2/)).toBeInTheDocument()
+    expect(screen.queryByText(/Megerősítve — él a tudásban/)).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /megerősítve/i }))
+    expect(decide).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: /megerősítve/i })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.queryByText(/Döntésre vár · 2/)).not.toBeInTheDocument()
     expect(screen.getByText(/Megerősítve — él a tudásban/)).toBeInTheDocument()
     expect(screen.getByText('Adat-egészség')).toBeInTheDocument()
   })
@@ -45,14 +52,22 @@ describe('PatternsPage (mock mode)', () => {
     expect(container.querySelector('.mnt-lcel.c-amber')?.textContent).toContain('még gyűlik')
   })
 
-  test('lifecycle mosaics: confirmed tiles speak human confidence words, gathering tiles are dashed amber', () => {
+  test('lifecycle mosaics show only the selected bucket and paginate gathering five at a time', () => {
     const { container } = renderPage()
+    fireEvent.click(screen.getByRole('button', { name: /megerősítve/i }))
     // p1 (confirmed, no monitor pair): honest "tanulom" chip on a sage tile, no fabricated stats
     const confirmedTile = container.querySelector('.mnt-ptile.sage') as HTMLElement
     expect(confirmedTile).not.toBeNull()
     expect(within(confirmedTile).getByText('tanulom')).toBeInTheDocument()
-    // the 8 pattern-less monitor pairs are gathering → dashed tiles carrying the gate verdicts
-    expect(container.querySelectorAll('.mnt-ptile.dashed')).toHaveLength(8)
+    expect(container.querySelectorAll('.mnt-ptile.dashed')).toHaveLength(0)
+    fireEvent.click(screen.getByRole('button', { name: /még gyűlik/i }))
+    expect(container.querySelectorAll('.mnt-ptile.sage')).toHaveLength(0)
+    // the 8 pattern-less monitor pairs are gathering, five per page
+    expect(container.querySelectorAll('.mnt-ptile.dashed')).toHaveLength(5)
+    expect(screen.getByText('1–5 / 8')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Következő oldal' }))
+    expect(container.querySelectorAll('.mnt-ptile.dashed')).toHaveLength(3)
+    expect(screen.getByText('6–8 / 8')).toBeInTheDocument()
     // raw statistics never reach a tile face
     expect(screen.queryByText(/r=/)).not.toBeInTheDocument()
   })
@@ -70,7 +85,7 @@ describe('PatternsPage (mock mode)', () => {
     const confirmButtons = screen.getAllByRole('button', { name: /Megerősítem/ })
     fireEvent.click(confirmButtons[0])
     await waitFor(() => {
-      expect(screen.getByTestId('mnt-cnt-confirmed')).toHaveTextContent('2')
+      expect(screen.getByRole('button', { name: /megerősítve/i })).toHaveTextContent('2')
     })
     // prototype decdone: the decision settles to a sage acknowledgement row
     expect(screen.getByText('✓ Beépítettem a tudásba — mostantól számolok vele.')).toBeInTheDocument()
@@ -85,41 +100,43 @@ describe('PatternsPage (mock mode)', () => {
     expect(labels).toHaveLength(13)
   })
 
-  test('domain filter chips: multi-select and the "Mind" chip batch-clears all of them at once', () => {
+  test('the visible filter sheet applies one domain and resets pagination without changing motor counts', async () => {
     renderPage()
-    const sleepChip = screen.getByRole('button', { name: /Alvás/ })
-    const trainChip = screen.getByRole('button', { name: /Edzés/ })
-    const mindChip = screen.getByRole('button', { name: 'Mind' })
-    expect(mindChip).toHaveClass('chip', 'brand')
+    fireEvent.click(screen.getByRole('button', { name: /még gyűlik/i }))
+    fireEvent.click(screen.getByRole('button', { name: 'Következő oldal' }))
+    expect(screen.getByText('6–8 / 8')).toBeInTheDocument()
+    const gatheringCount = screen.getByRole('button', { name: /még gyűlik/i }).textContent
 
-    fireEvent.click(sleepChip)
-    fireEvent.click(trainChip)
-    expect(mindChip).not.toHaveClass('brand')
+    fireEvent.click(screen.getByRole('button', { name: /Szűrés/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Táplálkozás/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Alkalmazom' }))
 
-    // one click on "Mind" clears BOTH active domains in the same batch (mezo-tk88.4 correction —
-    // MotorStateHero calls onToggleDomain once per active domain synchronously; a non-functional
-    // setState would drop all but the last toggle, leaving one domain filter stuck on).
-    fireEvent.click(mindChip)
-    expect(mindChip).toHaveClass('chip', 'brand')
+    await waitFor(() => expect(screen.queryByRole('heading', { name: 'Szűrés' })).not.toBeInTheDocument())
+    expect(screen.getByRole('button', { name: /még gyűlik/i }).textContent).toBe(gatheringCount)
+    expect(screen.queryByText('6–8 / 8')).not.toBeInTheDocument()
+    expect(screen.getByText(/Táplálkozás/)).toBeInTheDocument()
   })
 
-  test('a decide-bucket hypothesis entry with no monitor pair renders without a dead detail link (review fix, mezo-tk88.5)', () => {
+  test('a decide-bucket hypothesis entry with no monitor pair has a working detail link', () => {
     renderPage()
     // p3 (hyp-3fa1c2d9) has no matching monitor pair — its pairKey is never a real catalog key,
     // so a "/insights/patterns/hyp-3fa1c2d9" link would guarantee "Nincs ilyen minta.".
     const card = screen.getByText('Caffeine 14:00 utáni dózis → sleep onset +24 perc').closest('.card') as HTMLElement
-    expect(within(card).queryByRole('link', { name: /Részletek és előzmények/ })).not.toBeInTheDocument()
+    expect(within(card).getByRole('link', { name: /Részletek és előzmények/ })).toHaveAttribute(
+      'href', '/mezo/patterns/hyp-3fa1c2d9',
+    )
     // a pair-backed decide card in the SAME bucket still gets its link.
     const pairBackedCard = screen.getByText('Rosszabbul alszol, ha későn eszel?').closest('.card') as HTMLElement
     expect(within(pairBackedCard).getByRole('link', { name: /Részletek és előzmények/ })).toBeInTheDocument()
   })
 
-  test('a confirmed lifecycle row with no monitor pair renders as a plain row, no dead detail link (review fix, mezo-tk88.5)', () => {
+  test('a confirmed lifecycle row with no monitor pair links to its persisted detail', () => {
     renderPage()
+    fireEvent.click(screen.getByRole('button', { name: /megerősítve/i }))
     // p1 (status: confirmed, pairKey "sport-load~next-sleep-quality") has no matching monitor pair
     // either — the confirmed bucket's mini-row falls back to the pattern's own title and must not link out.
     const title = screen.getByText('Magas sportterhelés → rákövetkező éjjel mélyebb alvás')
-    expect(title.closest('a')).toBeNull()
+    expect(title.closest('a')).toHaveAttribute('href', '/mezo/patterns/sport-load~next-sleep-quality')
   })
 
   test('?pair= redirects to the detail page', () => {
@@ -351,8 +368,7 @@ describe('PatternsPage (real mode)', () => {
   })
 })
 
-// mezo-hq44: a Minták életciklus-fejlécei és a döntés-nyugtázások ikonosak. A ✓ marad
-// glifa: az a ház pipa-idiómája (rutin/küldetés/szokás), amihez ez a kör nem nyúl.
+// mezo-hq44: a Minták életciklus-fejlécei és a döntés-nyugtázások ikonosak.
 describe('PatternsPage — emoji→ikon (mezo-hq44)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
@@ -393,9 +409,12 @@ describe('PatternsPage — emoji→ikon (mezo-hq44)', () => {
     expect(rejected.textContent).not.toMatch(/✕/)
   })
 
-  test('a ✓ Megerősítve fejléc szándékosan glifa marad (házi pipa-idióma)', () => {
+  test('a Megerősítve fejléc pipa-ikont rajzol, nem emoji glifát', () => {
     renderPage()
-    expect(screen.getByText('✓ Megerősítve — él a tudásban')).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: /megerősítve/i }))
+    const confirmed = screen.getByText(/Megerősítve — él a tudásban/)
+    expect(confirmed.querySelector('svg')).toBeTruthy()
+    expect(confirmed.textContent).not.toMatch(/✓/)
   })
 
   test('az elvetés nyugtázása x-ikont kap, a mondat változatlan', async () => {
