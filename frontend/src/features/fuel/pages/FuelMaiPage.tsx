@@ -16,7 +16,7 @@
 //   Logolás hero tile — ONE live door to /fuel/log (mezo-byo1; the swimlane dissolved)
 //   Mezo banner — only the counter; the voice lives on /fuel/uzenetek (iterations §2)
 //   6-tile mosaic: Terv · Stack · Receptek · Kamra · Gyógyszer · Napló
-//   Fuel-beállítások band (→ FuelSettingsSheet → /fuel/slots)
+//   Fuel-beállítások band (→ /fuel/settings → /fuel/slots)
 //
 // The data layer is untouched: the same composed day (useFuelDay/useFuelTimeline),
 // the same mutations, the same sheets. Honest states are the contract — a tile line
@@ -47,7 +47,6 @@ import { DietSuggestionBanner } from '@/features/fuel/components/DietSuggestionB
 import { FuelLogHeroTile } from '@/features/fuel/components/FuelLogHeroTile'
 import { WaterLogSheet } from '@/features/fuel/sheets/WaterLogSheet'
 import { EnergyBreakdownSheet } from '@/features/fuel/sheets/EnergyBreakdownSheet'
-import { FuelSettingsSheet } from '@/features/fuel/sheets/FuelSettingsSheet'
 
 export function FuelMaiPage() {
   const navigate = useNavigate()
@@ -60,7 +59,6 @@ export function FuelMaiPage() {
 
   const [waterOpen, setWaterOpen] = useState(false)
   const [energyOpen, setEnergyOpen] = useState<EnergySection | null>(null)
-  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // ── keret-hero (unchanged VM, v3 face) ────────────────────────────────
   // Static-fallback energy (real mode, no BMR): base equals the FULL segment kcal and
@@ -161,11 +159,10 @@ export function FuelMaiPage() {
             line={naploLine} onClick={() => navigate('/fuel/naplo')} aria-label="Napló" />
         </Mosaic>
 
-        {/* The retired SubNavDropdown's ⚙️ Fuel-beállítások extra action, re-homed onto the
-            hub (the Én hub's Beállítások band precedent) — it is also the ONLY route to the
-            meal-window editor at /fuel/slots. */}
+        {/* The retired SubNavDropdown's ⚙️ action, re-homed as the entry to the standalone
+            settings page; its own row continues onward to the meal-window editor. */}
         <button type="button" className="fh-band rise" style={{ '--d': '400ms' } as React.CSSProperties}
-          aria-label="Fuel-beállítások" onClick={() => setSettingsOpen(true)}>
+          aria-label="Fuel-beállítások" onClick={() => navigate('/fuel/settings')}>
           <ClayIcon name="i-beallitas" size={26} />
           <span className="txt"><b>Fuel-beállítások</b> · étkezési ablakok, koffein-stop</span>
           <span className="chev" aria-hidden="true">›</span>
@@ -183,7 +180,6 @@ export function FuelMaiPage() {
       {energyOpen && energyBreakdown && (
         <EnergyBreakdownSheet breakdown={energyBreakdown} initial={energyOpen} onClose={() => setEnergyOpen(null)} />
       )}
-      {settingsOpen && <FuelSettingsSheet onClose={() => setSettingsOpen(false)} />}
     </div>
   )
 }

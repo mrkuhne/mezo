@@ -58,19 +58,17 @@ function rootDeclaredCustomProperties(css: string): Set<string> {
   return declared
 }
 
-/** Slices from the Today section's own header comment to end of file — still (re-verified
- *  2026-08-29, mezo-d20.9.1) the LAST top-level section in `prototype.css`: no `/* =====` or
- *  `/* ═══` section header appears after it, only the `── ── ──` sub-headers of its own
- *  sub-blocks. If a future edit appends a new section after this one, this slice would start
- *  silently swallowing it too — the sanity assertion below (selector count) is the tripwire
- *  for that: an unrelated section's `var()` usages could still all resolve fine, but it is
- *  cheap insurance either way. */
+/** Slices the Today section up to the next top-level `/* =====` section header. New feature
+ *  sections are appended to `prototype.css`, so reading to EOF would incorrectly treat their
+ *  local custom properties as Today dependencies. The `── ── ──` sub-headers remain inside. */
 const TODAY_SECTION_MARKER = 'Today · maradék sheet-nyelv (mezo-e26w heritage → mezo-d20.9.1)'
 
 function todayBlock(css: string): string {
   const start = css.indexOf(TODAY_SECTION_MARKER)
   if (start === -1) throw new Error(`Marker "${TODAY_SECTION_MARKER}" not found in prototype.css`)
-  return css.slice(start)
+  const tail = css.slice(start)
+  const nextSection = tail.indexOf('/* =====')
+  return nextSection === -1 ? tail : tail.slice(0, nextSection)
 }
 
 /** Every `var(--name...)` reference in a chunk of CSS, deduped — covers plain usages
