@@ -119,6 +119,9 @@ class PantryCatalogMigrationIT {
             seedLegacyRows(conn);
             conn.commit(); // Liquibase leaves the connection in manual-commit mode; make the seed durable before the split runs.
 
+            // Bounded to exactly one more changeset (not an unbounded "apply everything remaining"):
+            // changesets registered AFTER the split (mezo-qooi's status column, and others from main)
+            // would otherwise run too, and this test only wants to exercise the split in isolation.
             liquibase.update(1, new Contexts(), new LabelExpression()); // applies exactly the split
 
             try (Statement st = conn.createStatement()) {
@@ -269,6 +272,8 @@ class PantryCatalogMigrationIT {
             }
             conn.commit(); // Liquibase leaves the connection in manual-commit mode; make the seed durable before the split runs.
 
+            // Bounded to exactly one more changeset for the same reason as the other test: an
+            // unbounded update() would also attempt the changesets that now follow the split.
             assertThatThrownBy(() -> liquibase.update(1, new Contexts(), new LabelExpression()))
                 .hasMessageContaining("uq_pantry_item_split_guard");
 
@@ -289,7 +294,12 @@ class PantryCatalogMigrationIT {
         }
     }
 
-    /** Count changesets before the pantry split, independent of migrations registered after it. */
+    /**
+     * Count of `- changeSet:` entries before the split's own entry, located by searching for the
+     * split script rather than assuming it is the LAST one registered: several changesets now
+     * follow it in master.yml (mezo-qooi's status column among them). Asserts the marker is unique
+     * so a future rename cannot make this silently count the wrong prefix.
+     */
     private static int countChangesetsBeforeSplit() throws IOException {
         String yml = Files.readString(MASTER_YML, StandardCharsets.UTF_8);
         String marker = "path: script/" + SPLIT_SCRIPT;

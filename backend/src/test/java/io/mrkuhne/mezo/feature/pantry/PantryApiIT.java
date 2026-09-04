@@ -5,14 +5,27 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.api.dto.PantryItemRequest;
 import io.mrkuhne.mezo.api.dto.PantryItemResponse;
 import io.mrkuhne.mezo.api.dto.PantryResponse;
+import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 
 class PantryApiIT extends ApiIntegrationTest {
+
+    @Autowired private PantryItemPopulator populator;
+    @Autowired private PantryCatalogRepository catalogRepository;
+    @Autowired private AppUserRepository appUserRepository;
+    @Autowired private OwnerProperties ownerProperties;
 
     private PantryItemRequest foodReq() {
         PantryItemRequest r = new PantryItemRequest();
@@ -100,5 +113,46 @@ class PantryApiIT extends ApiIntegrationTest {
 
         PantryResponse pantry = getForBody("/api/pantry", auth, HttpStatus.OK, PantryResponse.class);
         assertThat(pantry.getIngredients()).extracting("id").doesNotContain(created.getId());
+    }
+
+    @Test
+    void testGetPantry_shouldReportFoodKind_forAFoodRowCategorisedAsSupplement() {
+        HttpHeaders auth = ownerAuthHeaders();
+        // 'supplement' is a LEGAL category on a food row (the add sheet offers it) — the kind and
+        // the category are independent axes, and the client must not conflate them (mezo-4orh).
+        PantryItemRequest req = foodReq();
+        req.setName("Kollagén por");
+        req.setCategory(PantryItemRequest.CategoryEnum.SUPPLEMENT);
+
+        postForBody("/api/pantry", req, auth, HttpStatus.CREATED, PantryItemResponse.class);
+        PantryResponse pantry = getForBody("/api/pantry", auth, HttpStatus.OK, PantryResponse.class);
+
+        var kollagen = pantry.getIngredients().stream()
+            .filter(i -> "Kollagén por".equals(i.getName())).findFirst().orElseThrow();
+        assertThat(kollagen.getKind().getValue()).isEqualTo("food");
+        assertThat(kollagen.getCategory()).isEqualTo("supplement");
+    }
+
+    @Test
+    void testGetPantry_shouldReportNullMacros_whenTheDefinitionHasNone() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID owner = appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
+
+        PantryItemEntity item = populator.createFood(owner, "Ismeretlen alapanyag", LocalDate.now().plusDays(9));
+        PantryCatalogEntity c = item.getCatalog();
+        c.setKcal(null);
+        c.setProteinG(null);
+        c.setCarbsG(BigDecimal.ZERO); // a REAL, entered zero — must survive as 0, not become null
+        c.setFatG(null);
+        catalogRepository.saveAndFlush(c);
+
+        PantryResponse pantry = getForBody("/api/pantry", auth, HttpStatus.OK, PantryResponse.class);
+
+        var ismeretlen = pantry.getIngredients().stream()
+            .filter(i -> "Ismeretlen alapanyag".equals(i.getName())).findFirst().orElseThrow();
+        assertThat(ismeretlen.getMacros().getKcal()).isNull();
+        assertThat(ismeretlen.getMacros().getP()).isNull();
+        assertThat(ismeretlen.getMacros().getC()).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(ismeretlen.getMacros().getF()).isNull();
     }
 }

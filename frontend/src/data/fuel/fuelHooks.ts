@@ -213,10 +213,10 @@ function buildLine(item: MealInput['items'][number]): MealItemLine {
     source: 'pantry', refId: item.refId, amount: item.amount, unit: item.unit,
     name: ing?.name ?? 'Kamra',
     contribution: {
-      kcal: Math.round((m.kcal / per) * item.amount),
-      p: Math.round((m.p / per) * item.amount),
-      c: Math.round((m.c / per) * item.amount),
-      f: Math.round((m.f / per) * item.amount),
+      kcal: Math.round(((m.kcal ?? 0) / per) * item.amount),
+      p: Math.round(((m.p ?? 0) / per) * item.amount),
+      c: Math.round(((m.c ?? 0) / per) * item.amount),
+      f: Math.round(((m.f ?? 0) / per) * item.amount),
     },
     nova: ing?.nova,
   }

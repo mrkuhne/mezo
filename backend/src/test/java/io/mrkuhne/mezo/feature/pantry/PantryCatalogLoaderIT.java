@@ -148,4 +148,45 @@ class PantryCatalogLoaderIT extends AbstractIntegrationTest {
             logger.detachAppender(appender);
         }
     }
+
+    /**
+     * The brief's original fixture (trailing whitespace + {@code toUpperCase}) does NOT reproduce
+     * the bug: {@code PantryCatalogLoader.naturalKey} already calls {@code .strip()}, so plain
+     * ASCII whitespace/case drift folds identically on both sides — confirmed by first running this
+     * test with that fixture and watching it pass against the pre-fix loader (see task-3-report.md).
+     *
+     * <p>The REAL, deterministic divergence (verified empirically against this exact Postgres image,
+     * {@code en_US.utf8} collation, via a throwaway diagnostic query) is the Turkish dotted capital
+     * I (U+0130): Postgres {@code lower('İ')} folds it to a single plain {@code 'i'} (glibc
+     * {@code towlower} has no Unicode decomposition), while Java {@code "İ".toLowerCase(Locale.ROOT)}
+     * yields TWO characters, {@code 'i'} + COMBINING DOT ABOVE (U+0307) — this is exactly the
+     * "Turkish dotted I" case the class javadoc and repository javadoc already name. Swapping one
+     * lowercase 'i' in a real seed name for U+0130 makes Postgres consider the row identical to the
+     * seed's natural key while Java's map does not.
+     */
+    @Test
+    void testRun_shouldFindExistingRowThroughPostgresFold_notJavaFold() {
+        String seedName = loader.readCatalogForTest().getFirst().name();
+        int i = seedName.indexOf('i');
+        assertThat(i).as("seed name must contain a lowercase 'i' for the fold-collision fixture").isNotNegative();
+        String driftedName = seedName.substring(0, i) + "İ" + seedName.substring(i + 1); // İ (dotted cap. I)
+
+        // The loader already ran at context startup and inserted the master row for this natural
+        // key — remove it first, or the insert below (same Postgres-folded key) hits
+        // uq_pantry_catalog_natural itself, before the loader logic under test even runs.
+        catalogRepository.delete(catalogRepository.findByNaturalKey(seedName, null).orElseThrow());
+        catalogRepository.flush();
+        PantryCatalogEntity preexisting = new PantryCatalogEntity();
+        preexisting.setKind("food");
+        preexisting.setName(driftedName);
+        preexisting.setSource("manual");
+        catalogRepository.saveAndFlush(preexisting);
+        UUID preexistingId = preexisting.getId();
+
+        loader.run();
+
+        assertThat(catalogRepository.findByNaturalKey(seedName, null))
+            .get().extracting(PantryCatalogEntity::getId).isEqualTo(preexistingId);
+        assertThat(catalogRepository.findByCreatedByIsNull()).hasSize(CATALOG_SIZE); // no duplicate row
+    }
 }

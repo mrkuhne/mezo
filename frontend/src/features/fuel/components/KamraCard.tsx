@@ -55,7 +55,7 @@ export function KamraCard({ item, onOpen }: { item: PantryItem; onOpen: (i: Pant
 
       {isFood ? (
         <div className="km-cell">
-          <b>{item.macros?.kcal}</b>
+          <b>{item.macros?.kcal ?? '—'}</b>
           <small>kcal · 100 g</small>
         </div>
       ) : (

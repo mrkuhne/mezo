@@ -1,5 +1,5 @@
 import type { components } from '@/data/_client/api.gen'
-import type { Ingredient, Nutrients, RecipeIngredientLine } from '@/data/types'
+import type { Ingredient, Nutrients, PantryMacrosVM, RecipeIngredientLine } from '@/data/types'
 
 type Macros = { kcal: number; p: number; c: number; f: number }
 
@@ -15,13 +15,15 @@ export function roundMacro(n: number): number {
  * One ingredient line's macro contribution. factor = amount / per (per defaults to 1 for
  * discrete units so amount/1 = amount). IDENTICAL to the backend RecipeMapper formula.
  */
-export function lineContribution(amount: number, per: number, src: Macros): Macros {
+export function lineContribution(amount: number, per: number, src: PantryMacrosVM): Macros {
+  // `?? 0` at the boundary since mezo-6omv: a missing definition macro contributes nothing to a
+  // recipe line's total — but the underlying null on `src` is NOT rewritten anywhere.
   const factor = amount / (per || 1)
   return {
-    kcal: roundMacro(src.kcal * factor),
-    p: roundMacro(src.p * factor),
-    c: roundMacro(src.c * factor),
-    f: roundMacro(src.f * factor),
+    kcal: roundMacro((src.kcal ?? 0) * factor),
+    p: roundMacro((src.p ?? 0) * factor),
+    c: roundMacro((src.c ?? 0) * factor),
+    f: roundMacro((src.f ?? 0) * factor),
   }
 }
 

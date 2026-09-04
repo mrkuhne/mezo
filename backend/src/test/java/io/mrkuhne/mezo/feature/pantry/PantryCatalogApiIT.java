@@ -8,11 +8,15 @@ import io.mrkuhne.mezo.api.dto.PantryFromCatalogRequest;
 import io.mrkuhne.mezo.api.dto.PantryItemRequest;
 import io.mrkuhne.mezo.api.dto.PantryItemResponse;
 import io.mrkuhne.mezo.api.dto.PantryResponse;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import io.mrkuhne.mezo.support.populator.PantryCatalogPopulator;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
@@ -25,6 +29,12 @@ class PantryCatalogApiIT extends ApiIntegrationTest {
 
     /** A loader master row (seed/pantry-catalog.json) — written out literally, never read from a production constant. */
     private static final String MASTER_FOOD_NAME = "Bulgur Raw Kifli";
+
+    @Autowired
+    private PantryCatalogRepository catalogRepository;
+
+    @Autowired
+    private PantryCatalogPopulator catalogPopulator;
 
     private PantryItemRequest food(String name, String brand, int kcal) {
         PantryItemRequest r = new PantryItemRequest();
@@ -142,6 +152,70 @@ class PantryCatalogApiIT extends ApiIntegrationTest {
         String body = postForBody("/api/pantry/items/from-catalog", fromCatalog(UUID.randomUUID()),
             bela.headers(), HttpStatus.NOT_FOUND, String.class);
         assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    /**
+     * The fourth read path onto a shared definition (mezo-qooi, Important): a NON-author who
+     * somehow knows a draft's catalogId must not be able to bind to it through from-catalog — a
+     * draft is unreviewed and lives only on its own author's shelf. Must behave EXACTLY like an
+     * unknown catalogId (same RESOURCE_NOT_FOUND), not a more specific error that would confirm the
+     * row exists.
+     */
+    @Test
+    void testFromCatalog_shouldReturn404_whenCatalogRowIsAnUnreviewedDraft() {
+        RegisteredUser anna = registerUser("Anna Draft");
+        RegisteredUser bela = registerUser("Béla Bystander");
+        PantryCatalogEntity draft = catalogPopulator.createFoodDefinition(anna.id(), "Négyes Draft", null);
+        draft.setStatus(PantryCatalogEntity.STATUS_DRAFT);
+        catalogRepository.saveAndFlush(draft);
+
+        String body = postForBody("/api/pantry/items/from-catalog", fromCatalog(draft.getId()),
+            bela.headers(), HttpStatus.NOT_FOUND, String.class);
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
+    }
+
+    /**
+     * The AUTHOR is the deliberate exception to the draft gate: PantryImportService#importItem
+     * inserts the draft row and immediately calls ensureItem with the SAME userId to bind the
+     * caller's own shelf to it — the gate must not break that flow.
+     */
+    @Test
+    void testFromCatalog_shouldSucceed_whenAuthorBindsToTheirOwnDraft() {
+        RegisteredUser anna = registerUser("Anna Own Draft");
+        PantryCatalogEntity draft = catalogPopulator.createFoodDefinition(anna.id(), "Ötös Draft", null);
+        draft.setStatus(PantryCatalogEntity.STATUS_DRAFT);
+        catalogRepository.saveAndFlush(draft);
+
+        PantryItemResponse item = postForBody("/api/pantry/items/from-catalog", fromCatalog(draft.getId()),
+            anna.headers(), HttpStatus.OK, PantryItemResponse.class);
+
+        assertThat(item.getCatalogId()).isEqualTo(draft.getId());
+    }
+
+    /**
+     * mezo-qooi (Critical): {@code findOrCreate}'s natural-key lookup is deliberately status-blind
+     * (it shares the unique index with drafts), so a manual add with NO {@code catalogId} that
+     * happens to type the exact same name as another user's unreviewed draft binds to that draft
+     * row. Before the fix, {@code ensureItem} then refused it with a 404 — a name Béla never typed
+     * anything wrong about became permanently uncreatable for him. The row must stay a draft: no
+     * promotion, so it stays out of search, the name index, and everyone else's from-catalog reach.
+     */
+    @Test
+    void testCreate_shouldSucceed_whenNaturalKeyHitsAnotherUsersUnreviewedDraft() {
+        RegisteredUser anna = registerUser("Anna Draft Bumper");
+        RegisteredUser bela = registerUser("Béla Manual Add");
+        PantryCatalogEntity draft = catalogPopulator.createFoodDefinition(anna.id(), "Nutri Bar", null);
+        draft.setStatus(PantryCatalogEntity.STATUS_DRAFT);
+        catalogRepository.saveAndFlush(draft);
+
+        PantryItemResponse belas = postForBody("/api/pantry", food("Nutri Bar", null, 210),
+            bela.headers(), HttpStatus.CREATED, PantryItemResponse.class);
+
+        assertThat(belas.getCatalogId()).isEqualTo(draft.getId());
+        IngredientResponse belaSees = ingredientOf(bela.headers(), belas.getId());
+        assertThat(belaSees.getName()).isEqualTo("Nutri Bar");
+        assertThat(catalogRepository.findById(draft.getId()).orElseThrow().getStatus())
+            .isEqualTo(PantryCatalogEntity.STATUS_DRAFT); // still unreviewed, no promotion
     }
 
     @Test

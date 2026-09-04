@@ -166,6 +166,41 @@ class PantryServiceIT extends AbstractIntegrationTest {
         assertSharedMacrosStillNull(shared.getId());
     }
 
+    /**
+     * A draft is an UNREVIEWED import candidate (mezo-qooi). The author actually editing its facts
+     * is exactly the "I checked this" gesture the manual-review badge asks for, so it promotes the
+     * row to verified — the only exit a draft has, since there is no separate confirm endpoint.
+     */
+    @Test
+    void testUpdateItem_shouldPromoteDraftToVerified_whenTheAuthorEditsTheDefinition() {
+        PantryCatalogEntity draft = catalogPopulator.createFoodDefinition(owner, "Draftos Étel", null);
+        draft.setStatus(PantryCatalogEntity.STATUS_DRAFT);
+        catalogRepository.saveAndFlush(draft);
+        UUID shelfRow = catalogService.ensureItem(owner, draft.getId()).getId();
+
+        PantryItemRequest kcalEdit = foodReq();
+        kcalEdit.setName("Draftos Étel");
+        kcalEdit.setKcal(java.math.BigDecimal.valueOf(321));
+        service.updateItem(user(owner), shelfRow, kcalEdit);
+
+        assertThat(catalogRepository.findById(draft.getId()).orElseThrow().getStatus())
+            .isEqualTo(PantryCatalogEntity.STATUS_VERIFIED);
+    }
+
+    /** A pure price edit is NOT a review of the definition's facts, so the draft must stay a draft. */
+    @Test
+    void testUpdateItem_shouldLeaveDraft_whenOnlyStateFieldsChange() {
+        PantryCatalogEntity draft = catalogPopulator.createFoodDefinition(owner, "Maradjon Draft", null);
+        draft.setStatus(PantryCatalogEntity.STATUS_DRAFT);
+        catalogRepository.saveAndFlush(draft);
+        UUID shelfRow = catalogService.ensureItem(owner, draft.getId()).getId();
+
+        service.updateItem(user(owner), shelfRow, priceOnlyReq("Maradjon Draft", 1490));
+
+        assertThat(catalogRepository.findById(draft.getId()).orElseThrow().getStatus())
+            .isEqualTo(PantryCatalogEntity.STATUS_DRAFT);
+    }
+
     /** kcal present, protein/carbs/fat NULL — the shape the zero-fill fabricates values for. */
     private PantryCatalogEntity nullMacroFoodDefinition(UUID author, String name) {
         PantryCatalogEntity c = new PantryCatalogEntity();

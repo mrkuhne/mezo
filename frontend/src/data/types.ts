@@ -249,7 +249,7 @@ export interface SupplementStashItem {
   // Nutrition + commerce facts (mezo-1za9) — supplements carry macros/nutrients/price too;
   // optional because pure dose/protocol items (many stim/med) have none. Mirrors Ingredient.
   source?: PantrySourceKey; per?: number; unit?: string
-  macros?: { kcal: number; p: number; c: number; f: number }
+  macros?: PantryMacrosVM
   price?: number; priceUnit?: string; pkg?: string
   micros?: { name: string; pct: number }[]; nova?: NovaGroup
   fiberG?: number | null; sugarG?: number | null; saltG?: number | null; saturatedFatG?: number | null
@@ -343,9 +343,16 @@ export interface PantryCatalogEntry {
   authorName?: string | null
 }
 export interface Ingredient {
-  id: string; name: string; brand: string; source: PantrySourceKey; category: string
+  id: string
+  /**
+   * The SHARED definition's kind, straight from the server (mezo-4orh). NEVER re-derive it
+   * from `category`: 'supplement' is a legal category on a FOOD row, and the derived value
+   * echoed back on save rewrote the shared definition's kind for every other user.
+   */
+  kind: PantryItemKind
+  name: string; brand: string; source: PantrySourceKey; category: string
   per: number; unit: string
-  macros: { kcal: number; p: number; c: number; f: number }
+  macros: PantryMacrosVM
   fiberG?: number | null; sugarG?: number | null; saltG?: number | null; saturatedFatG?: number | null
   price: number; priceUnit: string; pkg: string
   micros: { name: string; pct: number }[]
@@ -478,6 +485,14 @@ export interface PantryImportInput extends PantryLookupItem {
   priceUnit?: string | null
 }
 
+/**
+ * Pantry definition macros (mezo-6omv). `null` = the shared definition has no value for this
+ * nutrient; `0` = somebody entered a real zero. Do NOT collapse them: the read model used to
+ * zero-fill, and echoing that back wrote fabricated 0s onto a definition every user reads.
+ * Computing consumers fall back with `?? 0` at their own boundary; displaying consumers print '—'.
+ */
+export interface PantryMacrosVM { kcal: number | null; p: number | null; c: number | null; f: number | null }
+
 // Unified pantry item shape — built by buildKamraItems (Task 28), consumed by KamraCard.
 // Merges scraped Ingredient (food) + SupplementStashItem (supplement/stim/med) into one card model.
 export type PantryItemKind = 'food' | 'supplement' | 'stim' | 'med'
@@ -485,7 +500,7 @@ export interface PantryItem {
   id: string; name: string; brand: string; source: PantrySourceKey; category: string
   kind: PantryItemKind
   per?: number; unit?: string
-  macros?: { kcal: number; p: number; c: number; f: number }
+  macros?: PantryMacrosVM
   fiberG?: number | null; sugarG?: number | null; saltG?: number | null; saturatedFatG?: number | null
   price?: number; priceUnit?: string; pkg?: string
   micros?: { name: string; pct: number }[]

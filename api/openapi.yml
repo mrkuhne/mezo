@@ -13745,12 +13745,16 @@ components:
       properties:
         kcal:
           type: number
+          nullable: true
         p:
           type: number
+          nullable: true
         c:
           type: number
+          nullable: true
         f:
           type: number
+          nullable: true
     PantryMicro:
       type: object
       required:
@@ -13781,6 +13785,7 @@ components:
       type: object
       required:
         - id
+        - kind
         - name
         - brand
         - source
@@ -13800,6 +13805,13 @@ components:
         id:
           type: string
           format: uuid
+        kind:
+          type: string
+          enum:
+            - food
+            - supplement
+            - stim
+            - med
         name:
           type: string
         brand:

@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.api.dto.WorkshopTurnResponse;
 import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
+import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
@@ -84,7 +85,8 @@ public class RecipeWorkshopService {
                 () -> port.complete(systemPrompt, userMessage));
 
         LlmAnswer parsed = parse(answer);
-        PantryNameIndex nameIndex = PantryNameIndex.of(pantryCatalogRepository.findByDeletedFalseOrderByNameAsc());
+        PantryNameIndex nameIndex = PantryNameIndex.of(
+            pantryCatalogRepository.findByDeletedFalseAndStatusOrderByNameAsc(PantryCatalogEntity.STATUS_VERIFIED));
         WorkshopDraft draft = validator.sanitize(parsed.draft(),
                 id -> pantryItemRepository.findByIdAndCreatedByAndDeletedFalse(id, userId),
                 (name, unit) -> nameIndex.match(name, unit).map(c -> pantryCatalogService.ensureItem(userId, c.getId())));

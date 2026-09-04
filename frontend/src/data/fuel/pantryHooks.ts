@@ -185,9 +185,11 @@ function mockImport(qc: ReturnType<typeof useQueryClient>, input: PantryImportIn
     const base = prev ?? mockData
     const source = sourceFor(input)
     const ing: Ingredient = {
-      id: crypto.randomUUID(), name: input.name, brand: input.brand ?? '', source,
+      id: crypto.randomUUID(), kind: 'food', name: input.name, brand: input.brand ?? '', source,
       category: input.category ?? 'other', per: input.per, unit: input.unit,
-      macros: { kcal: input.kcal ?? 0, p: input.proteinG ?? 0, c: input.carbsG ?? 0, f: input.fatG ?? 0 },
+      // Honest since mezo-6omv: a field the draft didn't carry is `null` (no data), not a
+      // fabricated 0 — mirrors the server's mapper.
+      macros: { kcal: input.kcal ?? null, p: input.proteinG ?? null, c: input.carbsG ?? null, f: input.fatG ?? null },
       price: 0, priceUnit: '', pkg: '',
       micros: [], nova: input.nova ?? 1,
       fiberG: input.fiberG ?? undefined, sugarG: input.sugarG ?? undefined,
@@ -218,9 +220,10 @@ function mockAddFromCatalog(qc: ReturnType<typeof useQueryClient>, catalogId: st
     const shared = { catalogId, sharedFrom: entry.authorName ? { authorName: entry.authorName } : null, catalogEditable: true }
     if (entry.kind === 'food') {
       const ing: Ingredient = {
-        id: crypto.randomUUID(), name: entry.name, brand: entry.brand ?? '', source: entry.source,
+        id: crypto.randomUUID(), kind: 'food', name: entry.name, brand: entry.brand ?? '', source: entry.source,
         category: entry.category ?? 'other', per: entry.per ?? 100, unit: entry.unit ?? 'g',
-        macros: { kcal: entry.kcal ?? 0, p: entry.proteinG ?? 0, c: entry.carbsG ?? 0, f: entry.fatG ?? 0 },
+        // Honest since mezo-6omv: mirrors the server — a fact the catalog entry lacks is null.
+        macros: { kcal: entry.kcal ?? null, p: entry.proteinG ?? null, c: entry.carbsG ?? null, f: entry.fatG ?? null },
         price: 0, priceUnit: '', pkg: '', micros: [], nova: entry.nova ?? 1,
         fiberG: entry.fiberG ?? undefined, sugarG: entry.sugarG ?? undefined,
         saltG: entry.saltG ?? undefined, saturatedFatG: entry.saturatedFatG ?? undefined,
@@ -234,7 +237,7 @@ function mockAddFromCatalog(qc: ReturnType<typeof useQueryClient>, catalogId: st
       category: entry.category ?? 'supplement', dose: '', form: entry.form ?? '',
       stock: null, stockUnit: null, protocol: '', timing: 'flexible', taken: false, caffeine: entry.caffeine ?? undefined,
       source: entry.source, per: entry.per ?? undefined, unit: entry.unit ?? undefined,
-      macros: entry.kcal != null ? { kcal: entry.kcal, p: entry.proteinG ?? 0, c: entry.carbsG ?? 0, f: entry.fatG ?? 0 } : undefined,
+      macros: entry.kcal != null ? { kcal: entry.kcal, p: entry.proteinG ?? null, c: entry.carbsG ?? null, f: entry.fatG ?? null } : undefined,
       nova: entry.nova ?? undefined, ...shared,
     }
     return { ...base, stash: [...base.stash, supp] }
@@ -248,9 +251,10 @@ function mockAdd(qc: ReturnType<typeof useQueryClient>, input: PantryItemInput) 
     const id = crypto.randomUUID()
     if (input.kind === 'food') {
       const ing: Ingredient = {
-        id, name: input.name, brand: input.brand ?? '', source: input.source ?? 'manual',
+        id, kind: 'food', name: input.name, brand: input.brand ?? '', source: input.source ?? 'manual',
         category: input.category ?? 'protein', per: input.per ?? 100, unit: input.unit ?? 'g',
-        macros: { kcal: input.kcal ?? 0, p: input.proteinG ?? 0, c: input.carbsG ?? 0, f: input.fatG ?? 0 },
+        // Honest since mezo-6omv: mirrors the server — a field the form didn't carry is null.
+        macros: { kcal: input.kcal ?? null, p: input.proteinG ?? null, c: input.carbsG ?? null, f: input.fatG ?? null },
         price: input.price ?? 0, priceUnit: input.priceUnit ?? '', pkg: input.pkg ?? '',
         micros: input.micros ?? [], nova: input.nova ?? 1,
         stock: input.stockQty != null ? { qty: input.stockQty, unit: input.stockUnit ?? 'g', expires: input.stockExpires ?? '' } : null,
@@ -267,7 +271,7 @@ function mockAdd(qc: ReturnType<typeof useQueryClient>, input: PantryItemInput) 
       // Nutrition + commerce (mezo-1za9) — preserve so a mock-mode supplement shows macros/price too.
       source: input.source, per: input.per, unit: input.unit,
       macros: input.kcal != null
-        ? { kcal: input.kcal, p: input.proteinG ?? 0, c: input.carbsG ?? 0, f: input.fatG ?? 0 }
+        ? { kcal: input.kcal, p: input.proteinG ?? null, c: input.carbsG ?? null, f: input.fatG ?? null }
         : undefined,
       price: input.price, priceUnit: input.priceUnit, pkg: input.pkg,
       micros: input.micros, nova: input.nova,
@@ -334,15 +338,18 @@ function applyStashUpdate(s: SupplementStashItem, input: PantryItemInput): Suppl
     stock: input.stockQty ?? s.stock,
     stockUnit: input.stockUnit ?? s.stockUnit,
     // Nutrition + commerce (mezo-1za9) — apply when carried, preserve untouched (mirror food).
+    // Honest since mezo-6omv: a preserved macro that was null stays null, NOT a fabricated 0 — the
+    // old trailing `?? 0` only fired when `s.macros` was absent entirely, but once `s.macros.kcal`
+    // itself can be null (a partially-known definition), it silently zeroed an honest "no data".
     source: input.source ?? s.source,
     per: input.per ?? s.per,
     unit: input.unit ?? s.unit,
     macros: input.kcal != null || s.macros
       ? {
-          kcal: input.kcal ?? s.macros?.kcal ?? 0,
-          p: input.proteinG ?? s.macros?.p ?? 0,
-          c: input.carbsG ?? s.macros?.c ?? 0,
-          f: input.fatG ?? s.macros?.f ?? 0,
+          kcal: input.kcal ?? s.macros?.kcal ?? null,
+          p: input.proteinG ?? s.macros?.p ?? null,
+          c: input.carbsG ?? s.macros?.c ?? null,
+          f: input.fatG ?? s.macros?.f ?? null,
         }
       : undefined,
     fiberG: input.fiberG ?? s.fiberG,

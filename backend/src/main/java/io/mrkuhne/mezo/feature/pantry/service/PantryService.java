@@ -99,10 +99,25 @@ public class PantryService {
         return mapper.toItemResponse(item);
     }
 
-    /** The from-catalog endpoint — service-level twin of the AI/workshop auto-add. Idempotent. */
+    /**
+     * The from-catalog endpoint — service-level twin of the AI/workshop auto-add. Idempotent.
+     *
+     * <p>This is the ONLY caller that hands {@link PantryCatalogService#ensureItem} an ARBITRARY,
+     * client-supplied {@code catalogId} the caller merely guessed or was handed — every other path
+     * to {@code ensureItem} resolves the id itself via {@code findOrCreate}'s natural-key lookup.
+     * So the {@code draft}-visibility gate (mezo-qooi) lives here, not in {@code ensureItem}: a
+     * {@code draft} row is unreviewed and lives only on its own author's shelf. A non-author must
+     * be refused with the SAME {@code RESOURCE_NOT_FOUND} as an unknown {@code catalogId}, never a
+     * more specific error that would confirm the row's existence to a bystander.
+     */
     @Transactional
     public PantryItemResponse addFromCatalog(UUID userId, UUID catalogId) {
-        return mapper.toItemResponse(catalogService.ensureItem(userId, catalogId));
+        PantryCatalogEntity catalog = catalogRepository.findById(catalogId)
+            .filter(c -> !c.isDeleted())
+            .filter(c -> !PantryCatalogEntity.STATUS_DRAFT.equals(c.getStatus()) || userId.equals(c.getCreatedBy()))
+            .orElseThrow(() -> new SystemRuntimeErrorException(
+                SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
+        return mapper.toItemResponse(catalogService.ensureItem(userId, catalog.getId()));
     }
 
     /**
@@ -135,6 +150,14 @@ public class PantryService {
                         SystemMessage.error("PANTRY_CATALOG_NAME_TAKEN").build(), HttpStatus.CONFLICT);
                 });
             mapper.applyDefinitionPartial(c, req); // dirty-checked, flushed on commit
+            // A draft is an UNREVIEWED import candidate; the author actually editing its facts is
+            // the confirmation gesture the manual-review badge asks for, so it promotes the row
+            // (mezo-qooi). Deliberately author-only: passing requireEditable as a bystander OWNER
+            // is not a review of somebody else's scraped data.
+            if (PantryCatalogEntity.STATUS_DRAFT.equals(c.getStatus())
+                && user.getId().equals(c.getCreatedBy())) {
+                c.setStatus(PantryCatalogEntity.STATUS_VERIFIED);
+            }
         }
         mapper.applyUserFieldsPartial(e, req);
         return mapper.toItemResponse(e);

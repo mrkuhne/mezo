@@ -116,11 +116,11 @@ public class PantryImportService {
         PantryItemEntity item = catalogService.ensureItem(userId, catalog.getId());
         // Partial apply (fix round 1 Important 1): ensureItem can now return an EXISTING shelf row
         // (a re-import), so an unconditional set would null out a price the user already entered —
-        // only overwrite when this draft actually carries a price.
-        if (req.getPriceHuf() != null) {
+        // only touch the price at all when this draft actually carries one. The pair moves as ONE
+        // unit (mezo-rxy0): applying priceHuf without priceUnit left the new amount next to the
+        // OLD unit (1490 "db" reading as 1490 "kg"), which is worse than either value alone.
+        if (req.getPriceHuf() != null || req.getPriceUnit() != null) {
             item.setPriceHuf(req.getPriceHuf());
-        }
-        if (req.getPriceUnit() != null) {
             item.setPriceUnit(req.getPriceUnit());
         }
         item = itemRepository.save(item);

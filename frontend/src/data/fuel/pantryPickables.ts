@@ -12,23 +12,13 @@
 // ============================================================
 import { useMemo } from 'react'
 import { usePantry } from '@/data/fuel/pantryHooks'
-import type { Ingredient, PantryItemKind, SupplementStashItem } from '@/data/types'
+import type { Ingredient, PantryItemKind, PantryMacrosVM, SupplementStashItem } from '@/data/types'
 
-/** An Ingredient the recipe picker can offer, tagged with its pantry kind. */
-export interface PickableIngredient extends Ingredient {
-  kind: PantryItemKind
-}
+/** An Ingredient the recipe picker can offer. `kind` now comes from the server (mezo-4orh). */
+export type PickableIngredient = Ingredient
 
-const ZERO = { kcal: 0, p: 0, c: 0, f: 0 }
-
-// A food's kind is encoded in its category prefix (same rule as buildKamraItems).
-function foodKind(category: string): PantryItemKind {
-  return category.startsWith('supplement-stim')
-    ? 'stim'
-    : category.startsWith('supplement')
-      ? 'supplement'
-      : 'food'
-}
+// A stash item with no macro facts has NO data — not four zeroes (mezo-6omv).
+const NO_MACROS: PantryMacrosVM = { kcal: null, p: null, c: null, f: null }
 
 // Map a stash supplement onto the Ingredient shape, filling defaults for the
 // nutrition/commerce facts a pure dose/protocol item lacks (mezo-1za9 made these
@@ -42,7 +32,7 @@ function supplementToPickable(s: SupplementStashItem): PickableIngredient {
     category: s.category,
     per: s.per ?? 100,
     unit: s.unit ?? 'g',
-    macros: s.macros ?? { ...ZERO },
+    macros: s.macros ?? { ...NO_MACROS },
     fiberG: s.fiberG,
     sugarG: s.sugarG,
     saltG: s.saltG,
@@ -64,7 +54,7 @@ export function buildPickables(
   ingredients: Ingredient[],
   stash: SupplementStashItem[],
 ): PickableIngredient[] {
-  const foods: PickableIngredient[] = ingredients.map(i => ({ ...i, kind: foodKind(i.category) }))
+  const foods: PickableIngredient[] = ingredients.map(i => ({ ...i }))
   const supplements: PickableIngredient[] = stash
     .filter(s => !ingredients.some(i => i.stashRefId === s.id))
     .map(supplementToPickable)
