@@ -6,16 +6,22 @@
 // routes (they keep their current faces until their own F5 slices land).
 // Anatomy: the shell fejléc (app/AppHeader.tsx, mezo-atry) → identity hero (in-level XP ring around
 // the initial, name, equipped title chip, Lv · XP · 🔥 · 🪙, bio line) → the
-// coral-ringed GOAL CARD (animated track + Hátra/Tempó/ETA cells) → the 6-tile mosaic
+// ÉLETCÉL-HERO (mezo-iizd.4: the active life goals' dimension chips + the engine's
+// ↗ / → / ↘ counters, opening /me/goals) → the 6-tile mosaic
 // with live bottom lines — Beállítások is a tile opening /me/beallitasok
 // (hub-tile-reorg: the AI tiles moved to the Mezo hub, Értesítés + AI-napló under
 // Beállítások).
+// The hero used to be the WEIGHT goal's coral track (with GoalMiniCard's maintain→„tartás"
+// rule) navigating to /me/goals/weight; mezo-iizd.4 retired that face — the weight goal's
+// entry point is now the Súlycél row on the Célok hub (CelokPage), and the daily weight
+// number stays on the mosaic's Súly tile.
 // Honest states (en-audit §6) are the contract, not the face:
 //  · the bio line renders only the bits that exist and vanishes at zero bits;
 //    with nothing set at all the hero offers BiometricCard's own CTA instead,
 //    so the write path survives the card's retirement;
-//  · a maintain goal (total range 0) drops the track and reads „tartás" —
-//    GoalMiniCard's rule, verbatim;
+//  · an unresolved/failed `today` never becomes a fabricated „0↗ · 0→ · 0↘" — the hero
+//    falls back to the plain active-goal count (CelokPage's `todayHonest` idiom);
+//  · no active life goal at all → no invented ring, just the ＋ Új cél door;
 //  · null statistics render `—` in a mini-cell, never 0;
 //  · a tile line vanishes while its source is unresolved/empty — no page ever
 //    shows a fabricated number.
@@ -26,7 +32,7 @@ import { ClayIcon } from '@/shared/ui/clay'
 import { MCells, Mosaic, Tile, type MCell } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import {
-  useBiometricProfile, useDecisions, useGamification, useGoal, useLifeGoals, useLifeGoalToday,
+  useBiometricProfile, useDecisions, useGamification, useLifeGoals, useLifeGoalToday,
   useGratitudeEntries, useHabitDay, useHabitSummary, usePeople, useProfile, useProgressionProfile, useSleep, useTitles, useWeight,
 } from '@/data/hooks'
 import { BiometricSheet } from '@/features/me/sheets/BiometricSheet'
@@ -85,7 +91,10 @@ export function EnHubPage() {
   // semmi nem nyílt a /me/goals Célok hubra, pedig a spec D5 szerint a hosszú cél ott lakik.
   // A súlycél parancsnoksága a Célok hub saját sorára költözött (mezo-iizd.4, CelokPage);
   // a napi súly-szám a mozaik Súly-csempéjén marad.
-  useGoal() // a `rate` a `weightTrends`-ból jön (lásd lent), de a cache-t itt is melegen tartjuk
+  // A korábbi bare `useGoal()` hívás („a cache-t melegen tartjuk a `rate`-hez") ELDOBOTT
+  // eredményű, és az indoklása sem állt: a `rate` a `weightTrends`-ból jön, a `weightLog`
+  // cache-t a fenti `useWeight` már meghúzza, a súlycél parancsnoksága pedig a Célok hubra
+  // költözött (mezo-iizd.4) — az Én-hubon semmi nem olvassa. Ezért kikerült.
   const rate = weightTrends.last4w.weeklyRate
   const { goals: lifeGoals, isPending: lifeGoalsPending } = useLifeGoals()
   const { today: lifeToday, isPending: lifeTodayPending, isError: lifeTodayError } = useLifeGoalToday()

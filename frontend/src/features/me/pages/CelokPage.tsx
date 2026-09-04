@@ -27,7 +27,7 @@ export function CelokPage() {
   // lezárt cél eltűnt minden felületről, pedig a GET /api/life-goals visszaadja (mezo-iizd.4).
   // Külön szekció, nem a mozaikban: a mozaik az ÉLŐ célok tere, egy kész cél emlék.
   const done = goals.filter((g) => g.status === 'done')
-  const { goal: weightGoal, goalResponse, pending: weightPending } = useGoal()
+  const { goal: weightGoal, goalResponse, pending: weightPending, isError: weightIsError } = useGoal()
   const counts = Object.fromEntries(DIMENSION_ORDER.map((d) => [d, active.filter((g) => g.dimension === d).length])) as Record<LifeGoalDimension, number>
   const summaryByGoalId = new Map(today.goals.map((s) => [s.goalId, s]))
   // `insufficient` is excluded from the hero counters on purpose — same guardrail as the tile/
@@ -41,7 +41,10 @@ export function CelokPage() {
   // means an unresolved/failed fetch silently reduces to the SAME shape as "no active goals had
   // any data this week", so counting off it unconditionally prints a fabricated "0↗ · 0→ · 0↘"
   // instead of the honest neutral sentence below (LifeGoalTile/PillarCard `honest` idiom).
-  const todayHonest = todayIsPending || todayIsError
+  //
+  // A két eset KÜLÖN mondatot kap (`todayIsPending` vs `todayIsError`): egy közös „most töltődik"
+  // ág egy elhasalt lekérésre is betöltést állítana, ami pont az a hiba↔betöltés összemosás,
+  // amit a ház hibaszabálya tilt (JournalPage.tsx:193 idióma).
 
   // Real mode's unresolved window yields an honest empty list (useDualQuery's `realEmpty`), so
   // rendering the page body then printed a fabricated "0 aktív · 0 parkol" + an empty PERMAH ring
@@ -78,9 +81,11 @@ export function CelokPage() {
             <div style={{ flex: 1, fontSize: 13.5, fontWeight: 300 }}>
               {active.length === 0
                 ? <>Még nincs aktív célod. <strong>Egy cél, két-három pillér</strong> — a többit a naplód hozza.</>
-                : todayHonest
+                : todayIsPending
                   ? <>A pillérek a meglévő naplódból számolnak. <strong>A heti irány most töltődik</strong> — a célok és pilléreik addig is itt élnek.</>
-                  : <>A pillérek a meglévő naplódból számolnak. <strong>{arrowCounts.up}↗ · {arrowCounts.flat}→ · {arrowCounts.down}↘</strong> ezen a héten.</>}
+                  : todayIsError
+                    ? <>A pillérek a meglévő naplódból számolnak. <strong>A heti irányt most nem sikerült lekérni</strong> — a célok és pilléreik addig is itt élnek.</>
+                    : <>A pillérek a meglévő naplódból számolnak. <strong>{arrowCounts.up}↗ · {arrowCounts.flat}→ · {arrowCounts.down}↘</strong> ezen a héten.</>}
             </div>
           </div>
           <div className="lg-dimband rise" style={{ '--d': '90ms', marginBottom: 12 } as React.CSSProperties} aria-label="Életterületek">
@@ -134,11 +139,16 @@ export function CelokPage() {
             <div style={{ flex: 1 }}>
               <div className="nm" style={{ color: 'var(--text-primary)' }}>Súlycél</div>
               <div className="sb">
+                {/* Három állapot, nem kettő: egy ELHASALT /api/goals olvasás ugyanabba az üres
+                    alakba esik, mint a „nincs célod", tehát az `isError` nélkül a sor egy
+                    hálózati hibát mért hiányként jelentett (mezo-iizd.4 final review, 4. lelet). */}
                 {weightPending
                   ? 'töltöm…'
-                  : goalResponse != null && weightGoal != null
-                    ? `${TRAJECTORY_LABEL[goalResponse.trajectory]} · ${hu1(weightGoal.currentWeight)} → ${hu1(weightGoal.targetWeight)} kg`
-                    : 'nincs aktív súlycél'}
+                  : weightIsError
+                    ? 'a súlycél most nem elérhető'
+                    : goalResponse != null && weightGoal != null
+                      ? `${TRAJECTORY_LABEL[goalResponse.trajectory]} · ${hu1(weightGoal.currentWeight)} → ${hu1(weightGoal.targetWeight)} kg`
+                      : 'nincs aktív súlycél'}
               </div>
             </div>
             <span style={{ marginLeft: 'auto', color: 'var(--text-secondary)', fontSize: 12 }}>›</span>

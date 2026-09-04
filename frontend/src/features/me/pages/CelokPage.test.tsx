@@ -90,12 +90,38 @@ describe('real mode', () => {
     expect(screen.queryByText(/0↗ · 0→ · 0↘/)).not.toBeInTheDocument()
   })
 
-  test('today counters stay honest when /today fails, even though the goal list loaded fine', async () => {
+  /**
+   * A loading `/today` says LOADING — and only that. (The error case below must not borrow this
+   * sentence: conflating a failure with a load is the house error rule's own prohibition.)
+   */
+  test('a still-loading /today says „töltődik", not a failure', async () => {
+    server.use(http.get(`${API_BASE}/api/life-goals/today`, () => new Promise(() => {})))
+    renderHub()
+    await screen.findByText('Célok')
+    expect(await screen.findByText(/A heti irány most töltődik/)).toBeInTheDocument()
+    expect(screen.queryByText(/nem sikerült lekérni/)).not.toBeInTheDocument()
+  })
+
+  test('today counters stay honest when /today fails — its OWN sentence, never „töltődik"', async () => {
     server.use(http.get(`${API_BASE}/api/life-goals/today`, () => new HttpResponse(null, { status: 500 })))
     renderHub()
     await screen.findByText('Célok')
     expect(screen.queryByText(/0↗ · 0→ · 0↘/)).not.toBeInTheDocument()
-    expect(await screen.findByText(/A heti irány most töltődik/)).toBeInTheDocument()
+    expect(await screen.findByText(/A heti irányt most nem sikerült lekérni/)).toBeInTheDocument()
+    expect(screen.queryByText(/A heti irány most töltődik/)).not.toBeInTheDocument()
+  })
+
+  /**
+   * mezo-iizd.4 final review, finding 4: a FAILED /api/goals read reduces to the same empty shape
+   * as "no weight goal yet" — without `useGoal().isError` the row reported a network error as a
+   * measured „nincs aktív súlycél".
+   */
+  test('a Súlycél sor egy elhasalt /api/goals olvasást NEM mond „nincs aktív súlycél"-nak', async () => {
+    server.use(http.get(`${API_BASE}/api/goals`, () => new HttpResponse(null, { status: 500 })))
+    renderHub()
+    const row = await screen.findByRole('button', { name: /Súlycél/ })
+    await waitFor(() => expect(row).toHaveTextContent('a súlycél most nem elérhető'))
+    expect(row).not.toHaveTextContent('nincs aktív súlycél')
   })
 
   test('a failed list read renders a terminal error + retry, not the empty state', async () => {
