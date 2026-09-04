@@ -380,7 +380,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `PersonPopulator`, `PredictionPopulator`, `ProtocolPopulator`, `QuestPopulator`, `RecipePopulator`,
     `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`,
     `SportSlotSkipPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
-    `WeeklyScorePopulator`, `WeightLogPopulator`
+    `WeeklyScorePopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
 
 ### feedback
 
@@ -943,14 +943,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CompanionMessageJob`, `DiagnosisGenerator`, `DiagnosisRecipe`, `DiagnosisService`, `ExperimentJob`,
     `ExperimentOutcomeService`, `ExperimentProposalGenerator`, `FatigueEvidenceCollector`, `FeedMessageKindService`,
     `GrowthDigestBlock`, `HighlightCitationSourceAdapter`, `InterventionEventListener`, `InterventionService`,
-    `LogFreshnessProbe`, `MemoirGenerator`, `MemoirJob`, `MetricWindowEvaluator`, `OverloadChallengeGenerator`,
-    `PatternImpactService`, `PeopleMezoNoteAdapter`, `PlanFeasibilityCalculator`, `PredictionGenerator`,
-    `PredictionJob`, `PredictionValidationService`, `ProactiveChallengeService`, `ProactiveExperimentService`,
-    `ProactiveFeedService`, `ProactiveMemoirService`, `ProactivePredictionService`, `ProactiveWeeklySuggestionService`,
-    `ProseNumberGuard`, `SetupCheckJob`, `SetupCheckService`, `SleepAnchorShiftAdapter`, `SportSlotSkipAdapter`,
-    `WeekReviewSourceAdapter`, `WeeklyLessonService`, `WeeklyReviewContextSources`, `WeeklyReviewDigestService`,
-    `WeeklyReviewGenerator`, `WeeklyReviewJob`, `WeeklyReviewService`, `WeeklyReviewWeekWindow`,
-    `WeeklySuggestionGenerator`, `WeeklySuggestionJob`
+    `LightenTomorrowAdapter`, `LogFreshnessProbe`, `MemoirGenerator`, `MemoirJob`, `MetricWindowEvaluator`,
+    `OverloadChallengeGenerator`, `PatternImpactService`, `PeopleMezoNoteAdapter`, `PlanFeasibilityCalculator`,
+    `PredictionGenerator`, `PredictionJob`, `PredictionValidationService`, `ProactiveChallengeService`,
+    `ProactiveExperimentService`, `ProactiveFeedService`, `ProactiveMemoirService`, `ProactivePredictionService`,
+    `ProactiveWeeklySuggestionService`, `ProseNumberGuard`, `SetupCheckJob`, `SetupCheckService`,
+    `SleepAnchorShiftAdapter`, `SportSlotSkipAdapter`, `WeekReviewSourceAdapter`, `WeeklyLessonService`,
+    `WeeklyReviewContextSources`, `WeeklyReviewDigestService`, `WeeklyReviewGenerator`, `WeeklyReviewJob`,
+    `WeeklyReviewService`, `WeeklyReviewWeekWindow`, `WeeklySuggestionGenerator`, `WeeklySuggestionJob`
   - **controllers→contract:** `DiagnosisController`→`DiagnosisApi`, `ProactiveController`→`ProactiveApi`
   - **mappers:** `ChallengeDisplay`, `ProactiveMapper`
   - **config:** `DiagnosisProperties`, `ProactiveProperties`, `SetupCheckProperties`
@@ -1325,7 +1325,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   `SleepLogPopulator`, `SportSlotSkipPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`,
   `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`,
   `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
-- **`ResetDatabase` TRUNCATE list** — 105 tables; a new owned domain table MUST be added here in the same change:
+- **`ResetDatabase` TRUNCATE list** — 106 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `activity_log`, `ai_conversation`, `ai_message`, `app_notification`, `biometric_profile`, `challenge`,
     `character_claim`, `character_conference`, `character_dimension`, `character_observation`,
     `character_portrait_revision`, `character_run`, `check_in`, `coin_event`, `companion_flag_log`,
@@ -1343,7 +1343,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `push_subscription`, `recipe`, `recipe_ingredient`, `ritual_day`, `run_session_log`, `running_block`,
     `skill_progress`, `sleep_goal`, `sleep_log`, `sport_event`, `sport_schedule_slot`, `sport_session`,
     `sport_slot_skip`, `supplement_intake`, `tutorial_progress`, `water_log`, `weekly_review`, `weekly_score`,
-    `weekly_suggestion`, `weight_log`, `workout_session`
+    `weekly_suggestion`, `weight_log`, `workout_day_adjustment`, `workout_session`
 - **Frontend:** `frontend/src/test/msw/handlers.ts` (mock-mode HTTP fixtures) · `msw/server.ts` · `queryWrapper.tsx` (TanStack Query test wrapper) · `setup.ts`
 
 ### scripts

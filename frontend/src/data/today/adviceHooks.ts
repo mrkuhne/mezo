@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient, type QueryKey } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { adviceApi } from '@/data/today/adviceApi'
-import { SPORT_SLOT_SKIPS_QUERY_KEY } from '@/data/train/trainHooks'
+import { SPORT_SLOT_SKIPS_QUERY_KEY, WORKOUT_TODAY_QUERY_KEY } from '@/data/train/trainHooks'
 import type { AdviceActionKey } from '@/data/types'
 
 /** Shared with `useCompanionFeed`'s query key prefix (`feedHooks.ts`) — invalidating this
@@ -18,13 +18,17 @@ const COMPANION_FEED_KEY = ['companionFeed']
  * matches every more-specific cached key underneath it (every week's own `sportSlotSkips` key,
  * via `SPORT_SLOT_SKIPS_QUERY_KEY`), so this map does not need to know which week is cached.
  *
- * One row per action that has FE-cached data beyond the card itself. A future adapter (e.g.
- * `lighten_tomorrow`, S5's next slice) that similarly affects a query outside the companion feed
- * adds its own row here instead of re-deriving this mechanism; an action with nothing else to
- * invalidate simply has no entry (the companion-feed invalidation alone already covers it).
+ * One row per action that has FE-cached data beyond the card itself. `lighten_tomorrow` (S5,
+ * Task 16) similarly affects a query outside the companion feed — the Train/Today plan
+ * (`WORKOUT_TODAY_QUERY_KEY`, `trainApi.workoutToday`) reads the `workout_day_adjustment` row
+ * this action writes, and nothing else was refetching it: without this entry the applied card
+ * would show done while the plan kept showing yesterday's (pre-lighten) set counts until some
+ * unrelated navigation happened to refetch. An action with nothing else to invalidate simply has
+ * no entry (the companion-feed invalidation alone already covers it).
  */
 const ACTION_INVALIDATES: Partial<Record<AdviceActionKey, readonly QueryKey[]>> = {
   skip_sport_slot: [SPORT_SLOT_SKIPS_QUERY_KEY],
+  lighten_tomorrow: [WORKOUT_TODAY_QUERY_KEY],
 }
 
 /**

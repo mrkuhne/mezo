@@ -12,6 +12,8 @@ import io.mrkuhne.mezo.feature.proactive.service.AdviceApplyService;
 import io.mrkuhne.mezo.feature.proactive.service.AdviceMutationPort;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CompanionMessagePopulator;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutDayAdjustmentEntity;
+import io.mrkuhne.mezo.feature.train.repository.WorkoutDayAdjustmentRepository;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -21,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -47,6 +48,7 @@ class AdviceApplyServiceIT extends AbstractIntegrationTest {
     @Autowired private CountingMutationPort countingMutationPort;
     @Autowired private SleepGoalRepository sleepGoalRepository;
     @Autowired private SleepGoalPopulator sleepGoalPopulator;
+    @Autowired private WorkoutDayAdjustmentRepository workoutDayAdjustmentRepository;
 
     /** Deliberately NOT a member of {@link AdviceActionKey#ALL}. A card's offered actions are
      *  rule-provided test data — nothing requires the keys in a fixture to be real production
@@ -131,6 +133,97 @@ class AdviceApplyServiceIT extends AbstractIntegrationTest {
                 .isEqualTo("06:15");
     }
 
+    /** The SECOND real {@link AdviceMutationPort} (S5, Task 16, bd mezo-d58h.5) — the missing
+     *  {@code delta} param defaults to -1 (spec §6 item 1: "lower ... by one working set"). */
+    @Test
+    void testApply_shouldWriteDefaultLightenDelta_whenNoDeltaParamIsGiven() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        CompanionMessageEntity card = companionMessagePopulator.createAdviceWithActions(
+                owner, LocalDate.now(), "some_advice_key", null, "Mezo · javaslat",
+                "Sablon-szöveg.", List.of("tény"), List.of("javaslat"),
+                List.of(new CompanionMessageEnvelope.Action(
+                        AdviceActionKey.LIGHTEN_TOMORROW, "Könnyítsen", Map.of())),
+                null, Instant.now());
+
+        adviceApplyService.apply(owner, card.getId(), AdviceActionKey.LIGHTEN_TOMORROW);
+
+        WorkoutDayAdjustmentEntity saved = workoutDayAdjustmentRepository
+                .findByCreatedByAndDateAndDeletedFalse(owner, tomorrow).orElseThrow();
+        assertThat(saved.getSetDelta()).isEqualTo((short) -1);
+    }
+
+    /** Idempotence at the DATA level (S5, Task 16): a second apply for the same tomorrow must
+     *  leave exactly one row behind with the ORIGINAL delta — not a second row (the unique index
+     *  would reject that anyway) and not a doubled/overwritten delta. Two separate cards are used
+     *  so {@link AdviceApplyService#apply}'s own per-card "already applied" short-circuit is not
+     *  what is being tested here — the adapter's OWN idempotence (an existing row for the date) is. */
+    @Test
+    void testApply_shouldNotStackTheLightenDelta_whenAppliedTwiceForTheSameTomorrow() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate tomorrow = LocalDate.now().plusDays(1);
+        CompanionMessageEntity firstCard = companionMessagePopulator.createAdviceWithActions(
+                owner, LocalDate.now(), "some_advice_key", null, "Mezo · javaslat",
+                "Sablon-szöveg.", List.of("tény"), List.of("javaslat"),
+                List.of(new CompanionMessageEnvelope.Action(
+                        AdviceActionKey.LIGHTEN_TOMORROW, "Könnyítsen", Map.of("delta", -1))),
+                null, Instant.now());
+        CompanionMessageEntity secondCard = companionMessagePopulator.createAdviceWithActions(
+                owner, LocalDate.now().minusDays(1), "some_advice_key", null, "Mezo · javaslat",
+                "Sablon-szöveg.", List.of("tény"), List.of("javaslat"),
+                List.of(new CompanionMessageEnvelope.Action(
+                        AdviceActionKey.LIGHTEN_TOMORROW, "Könnyítsen", Map.of("delta", -3))),
+                null, Instant.now());
+
+        adviceApplyService.apply(owner, firstCard.getId(), AdviceActionKey.LIGHTEN_TOMORROW);
+        adviceApplyService.apply(owner, secondCard.getId(), AdviceActionKey.LIGHTEN_TOMORROW);
+
+        List<WorkoutDayAdjustmentEntity> rows = workoutDayAdjustmentRepository
+                .findByCreatedByAndDateBetweenAndDeletedFalse(owner, tomorrow, tomorrow);
+        assertThat(rows).hasSize(1);
+        assertThat(rows.get(0).getSetDelta()).isEqualTo((short) -1);
+    }
+
+    /** The adapter, not the entity's {@code @NotNull} or the schema's CHECK alone, rejects a
+     *  delta outside the schema's {@code -3..0} bound — a client-shaped 400, not a DB constraint
+     *  violation surfacing as a 500. */
+    @Test
+    void testApply_shouldReject_whenTheLightenDeltaIsOutOfRange() {
+        UUID owner = userPopulator.createUser().getId();
+        CompanionMessageEntity card = companionMessagePopulator.createAdviceWithActions(
+                owner, LocalDate.now(), "some_advice_key", null, "Mezo · javaslat",
+                "Sablon-szöveg.", List.of("tény"), List.of("javaslat"),
+                List.of(new CompanionMessageEnvelope.Action(
+                        AdviceActionKey.LIGHTEN_TOMORROW, "Könnyítsen", Map.of("delta", -4))),
+                null, Instant.now());
+
+        assertThatThrownBy(() -> adviceApplyService.apply(owner, card.getId(), AdviceActionKey.LIGHTEN_TOMORROW))
+                .isInstanceOf(SystemRuntimeErrorException.class)
+                .satisfies(ex -> assertThat(((SystemRuntimeErrorException) ex).getStatus())
+                        .isEqualTo(HttpStatus.BAD_REQUEST));
+        assertThat(workoutDayAdjustmentRepository
+                .findByCreatedByAndDateAndDeletedFalse(owner, LocalDate.now().plusDays(1))).isEmpty();
+    }
+
+    /** A non-numeric {@code delta} (e.g. a string, from a hand-crafted client call against the
+     *  loose {@code params} map) must be rejected as a validation error, not let a
+     *  {@link ClassCastException} escape and surface as a 500. */
+    @Test
+    void testApply_shouldReject_whenTheLightenDeltaIsNonNumeric() {
+        UUID owner = userPopulator.createUser().getId();
+        CompanionMessageEntity card = companionMessagePopulator.createAdviceWithActions(
+                owner, LocalDate.now(), "some_advice_key", null, "Mezo · javaslat",
+                "Sablon-szöveg.", List.of("tény"), List.of("javaslat"),
+                List.of(new CompanionMessageEnvelope.Action(
+                        AdviceActionKey.LIGHTEN_TOMORROW, "Könnyítsen", Map.of("delta", "one"))),
+                null, Instant.now());
+
+        assertThatThrownBy(() -> adviceApplyService.apply(owner, card.getId(), AdviceActionKey.LIGHTEN_TOMORROW))
+                .isInstanceOf(SystemRuntimeErrorException.class)
+                .satisfies(ex -> assertThat(((SystemRuntimeErrorException) ex).getStatus())
+                        .isEqualTo(HttpStatus.BAD_REQUEST));
+    }
+
     @Test
     void testApply_shouldReject_whenTheKeyIsNotOfferedByTheCard() {
         UUID owner = userPopulator.createUser().getId();
@@ -161,20 +254,28 @@ class AdviceApplyServiceIT extends AbstractIntegrationTest {
                         .isEqualTo(HttpStatus.CONFLICT));
     }
 
-    /** A card can offer a REAL {@link AdviceActionKey} that has no registered port yet (every key
-     *  is real production data before its adapter ships) — that is a wiring bug, not a user error,
-     *  so it surfaces as 500 rather than a client-shaped 4xx. */
+    /** Deliberately NOT a member of {@link AdviceActionKey#ALL}, for the same reason as {@link
+     *  #OFFERED_KEY}. Task 16 gave every real key a registered port, so this scenario ("a card
+     *  offers a real key with no adapter") can no longer be built with a real key — the
+     *  enumeration guard below is exactly what makes that permanently true. A synthetic key with
+     *  no {@code @Component} serving it is the only way left to exercise the port-missing 500
+     *  path. */
+    private static final String UNPORTED_KEY = "test_unported_action";
+
+    /** A card can offer a key with no registered port — that is a wiring bug, not a user error,
+     *  so it surfaces as 500 rather than a client-shaped 4xx. Before Task 16 this used a real
+     *  {@link AdviceActionKey} (every key was production data before its adapter shipped); now
+     *  that all three have adapters, {@link #UNPORTED_KEY} stands in (see its own javadoc). */
     @Test
-    void testApply_shouldReturn500_whenNoPortIsRegisteredForTheOfferedRealKey() {
+    void testApply_shouldReturn500_whenNoPortIsRegisteredForTheOfferedKey() {
         UUID owner = userPopulator.createUser().getId();
         CompanionMessageEntity card = companionMessagePopulator.createAdviceWithActions(
                 owner, LocalDate.now(), "some_advice_key", null, "Mezo · javaslat",
                 "Sablon-szöveg.", List.of("tény"), List.of("javaslat"),
-                List.of(new CompanionMessageEnvelope.Action(
-                        AdviceActionKey.LIGHTEN_TOMORROW, "Könnyítsen", Map.of())),
+                List.of(new CompanionMessageEnvelope.Action(UNPORTED_KEY, "Könnyítsen", Map.of())),
                 null, Instant.now());
 
-        assertThatThrownBy(() -> adviceApplyService.apply(owner, card.getId(), AdviceActionKey.LIGHTEN_TOMORROW))
+        assertThatThrownBy(() -> adviceApplyService.apply(owner, card.getId(), UNPORTED_KEY))
                 .isInstanceOf(SystemRuntimeErrorException.class)
                 .satisfies(ex -> assertThat(((SystemRuntimeErrorException) ex).getStatus())
                         .isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR));
@@ -216,16 +317,14 @@ class AdviceApplyServiceIT extends AbstractIntegrationTest {
 
     /**
      * The enumeration guard: every key in {@link AdviceActionKey#ALL} must resolve to exactly one
-     * registered {@link AdviceMutationPort}. This CANNOT pass yet — no real adapter for any of the
-     * three keys exists (Tasks 5 and 13 add {@code lighten_tomorrow} and {@code skip_sport_slot};
-     * Task 16 adds the third and is the one that turns this test on), and this IT's own {@link
-     * CountingMutationPort} deliberately serves a key OUTSIDE {@link AdviceActionKey#ALL} (see
-     * {@link #OFFERED_KEY}), so it never counts toward any real key here. Left in place (disabled,
-     * not deleted or weakened) as the slice's structural guard against a forgotten adapter —
-     * remove {@code @Disabled} in Task 16, once the third adapter lands.
+     * registered {@link AdviceMutationPort}. All three real adapters now exist ({@code
+     * SleepAnchorShiftAdapter}, Task 5; {@code SportSlotSkipAdapter}, Task 13; {@code
+     * LightenTomorrowAdapter}, Task 16), and this IT's own {@link CountingMutationPort}
+     * deliberately serves a key OUTSIDE {@link AdviceActionKey#ALL} (see {@link #OFFERED_KEY}), so
+     * it never counts toward any real key here. The slice's structural guard against a forgotten
+     * adapter — the direct analogue of S4's reflection test over the severity table.
      */
     @Test
-    @Disabled("enumeration guard — enable in Task 16 once all three AdviceMutationPort adapters exist")
     void testMutationPorts_shouldCoverEveryActionKeyExactlyOnce() {
         for (String key : AdviceActionKey.ALL) {
             long matches = mutationPorts.stream().filter(p -> p.actionKey().equals(key)).count();

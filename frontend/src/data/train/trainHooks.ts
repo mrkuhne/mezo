@@ -217,6 +217,13 @@ export function sportSlotSkipsQueryKey(): readonly [string, string, string] {
   return [...SPORT_SLOT_SKIPS_QUERY_KEY, currentWeekRange().mondayIso]
 }
 
+/** Query-key PREFIX for `workoutToday` (the Train/Today plan endpoint, `trainApi.workoutToday`)
+ *  — exported so a successful `lighten_tomorrow` apply (`adviceHooks.ts`) can invalidate every
+ *  cached day's plan (the plain today context and any pinned-day session,
+ *  `['train','workoutToday', workoutDay]`) via react-query's default prefix matching, the same
+ *  `['train','workoutToday']` prefix this file's own mutations already invalidate on write. */
+export const WORKOUT_TODAY_QUERY_KEY = ['train', 'workoutToday'] as const
+
 export function mergeEventsIntoSchedule(
   base: SportSchedule | null,
   events: SportEventResponse[],

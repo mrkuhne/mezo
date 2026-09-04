@@ -46,6 +46,27 @@ test('real mode: a successful shift_sleep_anchor apply does NOT invalidate the s
   expect(client.getQueryState(['train', 'sportSlotSkips', '2026-09-07'])?.isInvalidated).toBe(false)
 })
 
+test('real mode: a successful lighten_tomorrow apply invalidates the workoutToday query (mezo-d58h.5)', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  setToken('t')
+  server.use(http.post(`${API_BASE}/api/proactive/advice/:id/apply`, () =>
+    HttpResponse.json({ ...APPLY_RESPONSE, appliedActionKey: 'lighten_tomorrow' })))
+  const { wrapper, client } = makeHookWrapperWithClient()
+  // Seed both the plain today context and a pinned-day session — the prefix match
+  // (`['train','workoutToday']`) must invalidate both, matching every other workoutToday writer.
+  client.setQueryData(['train', 'workoutToday', null], {})
+  client.setQueryData(['train', 'workoutToday', '2026-09-08'], {})
+  client.setQueryData(['companionFeed', '2026-09-08'], [])
+
+  const { result } = renderHook(() => useAdviceActions(), { wrapper })
+  result.current.apply('card1', 'lighten_tomorrow')
+
+  await waitFor(() => expect(result.current.pending).toBe(false))
+  expect(client.getQueryState(['train', 'workoutToday', null])?.isInvalidated).toBe(true)
+  expect(client.getQueryState(['train', 'workoutToday', '2026-09-08'])?.isInvalidated).toBe(true)
+  expect(client.getQueryState(['companionFeed', '2026-09-08'])?.isInvalidated).toBe(true)
+})
+
 test('mock mode: apply is a no-op and invalidates nothing', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'true')
   const { wrapper, client } = makeHookWrapperWithClient()
