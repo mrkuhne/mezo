@@ -14,9 +14,12 @@ const TRAJECTORY_HU: Record<string, string> = { cut: 'Fogyás ↓', bulk: 'Híz�
 
 export function GoalSuggestionCard({ suggestion, onAccept, onDismiss, pending }: GoalSuggestionCardProps) {
   const p = suggestion.payload
-  const headline = p.suggestedTrajectory
-    ? `Javaslat: váltás — ${TRAJECTORY_HU[p.suggestedTrajectory]}`
-    : `Javaslat: deload hét tartáson (W${p.fromWeek})`
+  const isWeeklyCorrection = suggestion.kind === 'weekly_correction'
+  const headline = isWeeklyCorrection
+    ? `Heti felülvizsgálat: ${p.deltaKcal != null && p.deltaKcal > 0 ? '+' : '−'}${Math.abs(p.deltaKcal ?? 0)} kcal/nap${p.deltaKcal != null && p.deltaKcal < 0 ? ' (mélyebb deficit)' : ' (több étel)'}`
+    : p.suggestedTrajectory
+      ? `Javaslat: váltás — ${TRAJECTORY_HU[p.suggestedTrajectory]}`
+      : `Javaslat: deload hét tartáson (W${p.fromWeek})`
   return (
     <div
       className="card"
@@ -32,6 +35,22 @@ export function GoalSuggestionCard({ suggestion, onAccept, onDismiss, pending }:
         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--warning)' }}>{headline}</span>
       </div>
       <p style={{ fontSize: 10, lineHeight: 1.5, color: 'var(--text-secondary)', margin: '6px 0 8px' }}>{p.reason}</p>
+      {isWeeklyCorrection && (
+        <>
+          {p.observedRateKgPerWk != null && p.targetRateKgPerWk != null && (
+            <p style={{ fontSize: 10, lineHeight: 1.5, color: 'var(--text-tertiary)', margin: p.dampedBySleep ? '0 0 4px' : '0 0 8px' }}>
+              Mért ütem {p.observedRateKgPerWk.toFixed(2)} kg/hét · cél {p.targetRateKgPerWk.toFixed(2)} kg/hét
+              {p.adherenceLoggedDays != null && p.adherenceLoggedDays > 0 &&
+                ` · loggolva ${p.adherenceLoggedDays}/7 nap (átlag ${p.adherenceAvgIntakeKcal} / cél ${p.adherenceAvgTargetKcal} kcal)`}
+            </p>
+          )}
+          {p.dampedBySleep && (
+            <p style={{ fontSize: 10, lineHeight: 1.5, color: 'var(--warning)', margin: '0 0 8px' }}>
+              Alváshiány miatt a javasolt lépés a felére tompítva.
+            </p>
+          )}
+        </>
+      )}
       <div className="row" style={{ gap: 6 }}>
         <button type="button" className="chip" onClick={onAccept} disabled={pending}
           style={{ borderColor: 'transparent', background: 'var(--wash-sage)', color: 'var(--sage-deep)' }}>

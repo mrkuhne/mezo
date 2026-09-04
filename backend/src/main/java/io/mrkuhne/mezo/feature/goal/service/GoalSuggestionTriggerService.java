@@ -85,7 +85,8 @@ public class GoalSuggestionTriggerService {
                     "A(z) „" + m.getTitle() + "” mezociklus " + m.getGoalPreset()
                         + " presetje " + huTrajectory(wanted) + " irányt javasol, a cél most "
                         + huTrajectory(goal.getTrajectory()) + ".",
-                    wanted, null, null, null, m.getId(), m.getTitle(), goal.getTrajectory()));
+                    wanted, null, null, null, m.getId(), m.getTitle(), goal.getTrajectory(),
+                    null, null, null, null, null, null, null, null, null, null, null));
             if (proposed != null) {
                 return true;
             }
@@ -121,7 +122,8 @@ public class GoalSuggestionTriggerService {
             userId, goal.getId(), GoalSuggestionService.KIND_PHASE_CHANGE, dedupKey,
             new GoalSuggestionPayloadJson(
                 "Deload hét (W" + week + ") — a regeneráció többet ér, ha ezen a héten tartáson eszel.",
-                null, 0, (int) week, (int) week, null, null, goal.getTrajectory()));
+                null, 0, (int) week, (int) week, null, null, goal.getTrajectory(),
+                null, null, null, null, null, null, null, null, null, null, null));
     }
 
     /**

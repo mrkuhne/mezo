@@ -44,6 +44,8 @@ export const goalResponse: GoalResponse = {
   mealsPerDay: goal.mealsPerDay ?? undefined,
   wakeTime: goal.wakeTime ?? undefined,
   bedTime: goal.bedTime ?? undefined,
+  // Slice 5: no adaptive correction accepted in the mock baseline.
+  balanceAdjustmentKcal: undefined,
   // G5 engine output (mock) — a feasible-with-warnings verdict + two recept
   // segments (deficit during the gym blocks, taper near the target) + the guard
   // status the recept card renders. Mirrors the GoalPrescription contract so the
@@ -114,8 +116,9 @@ export const goalResponse: GoalResponse = {
   },
 }
 
-// Open diet-phase suggestion (slice 4) — mock mode renders one proposed card so the
-// GoalsPage suggestion surface + Fuel banner are visible offline. Accept/dismiss no-op.
+// Open diet-phase + weekly-correction suggestions (slice 4 + slice 5) — mock mode
+// renders both proposed cards so the GoalsPage suggestion surface + Fuel banner
+// demo both kinds offline. Accept/dismiss no-op.
 export const goalSuggestions: GoalSuggestionResponse[] = [
   {
     id: 'sug-deload-w3',
@@ -132,6 +135,30 @@ export const goalSuggestions: GoalSuggestionResponse[] = [
       snapshotTrajectory: 'cut',
     },
     createdAt: '2026-05-22T06:10:00Z',
+    decidedAt: null,
+  },
+  {
+    id: 'sug-weekly-w17',
+    kind: 'weekly_correction',
+    status: 'proposed',
+    payload: {
+      // Note: adherenceAvgTargetKcal is nudged off the brief's literal 2150 (kept
+      // exact in GoalSuggestionCard.test.tsx's own fixture) so GoalsPage.test.tsx's
+      // /2150/ assertion (the mock prescription's segment kcal) stays unambiguous
+      // with this card rendering on the same page.
+      reason:
+        'A mért trend -0.20 kg/hét, a cél -0.48 kg/hét — a heti felülvizsgálat -60 kcal/nap csökkentést javasol. Az alváshiány miatt a deficit-mélyítés a felére tompítva.',
+      weekStart: '2026-08-24',
+      deltaKcal: -120,
+      observedRateKgPerWk: -0.2,
+      targetRateKgPerWk: -0.48,
+      dampedBySleep: true,
+      adherenceLoggedDays: 5,
+      adherenceAvgIntakeKcal: 2210,
+      adherenceAvgTargetKcal: 2160,
+      prescriptionGeneratedAt: '2026-08-20T06:00:00Z',
+    },
+    createdAt: '2026-08-24T06:10:00Z',
     decidedAt: null,
   },
 ]

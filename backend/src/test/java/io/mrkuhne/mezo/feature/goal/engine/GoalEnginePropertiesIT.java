@@ -63,4 +63,13 @@ class GoalEnginePropertiesIT extends AbstractIntegrationTest {
         assertThat(props.diet().fatShareFor("custom", 300)).isEqualTo(0.30);
         assertThat(props.diet().fatShareFor("unknown", null)).isEqualTo(0.275); // safe default
     }
+
+    @Test
+    void testAdaptiveReviewTunables_shouldBindFromYml() {
+        assertThat(props.adaptive().maxStepKcal()).isEqualTo(120);
+        assertThat(props.adaptive().deadBandKcal()).isEqualTo(50);
+        assertThat(props.adaptive().sleepDebtNights()).isEqualTo(7);
+        assertThat(props.adaptive().sleepDebtMinNights()).isEqualTo(4);
+        assertThat(props.adaptive().sleepDebtDeficitHours()).isEqualTo(5.0);
+    }
 }

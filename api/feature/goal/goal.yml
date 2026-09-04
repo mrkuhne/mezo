@@ -188,6 +188,7 @@ components:
         mealsPerDay: { type: integer, minimum: 3, maximum: 6, description: 'Day-planner: eating occasions per day' }
         wakeTime: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$', description: 'Day-planner wake anchor, HH:mm' }
         bedTime: { type: string, pattern: '^([01]\d|2[0-3]):[0-5]\d$', description: 'Day-planner bed anchor, HH:mm' }
+        balanceAdjustmentKcal: { type: integer, nullable: true, description: 'Accepted adaptive corrections, summed (kcal/day); slice 5' }
         # Engine outputs — null until the goal is evaluated (POST /api/goals/{id}/evaluate).
         tdeeBootstrap: { allOf: [ { $ref: '#/components/schemas/TdeeBootstrap' } ], nullable: true }
         prescription: { allOf: [ { $ref: '#/components/schemas/GoalPrescription' } ], nullable: true }
@@ -350,7 +351,7 @@ components:
     GoalSuggestionPayload:
       type: object
       description: 'Typed suggestion body. phase_change carries either suggestedTrajectory (preset↔trajectory mismatch) or balanceOverrideKcal+fromWeek+toWeek (deload maintenance week). snapshotTrajectory is the accept-time race guard.'
-      required: [reason, snapshotTrajectory]
+      required: [reason]
       properties:
         reason: { type: string, description: 'Hungarian, user-facing rationale' }
         suggestedTrajectory: { type: string, enum: [cut, bulk, maintain], nullable: true }
@@ -359,4 +360,15 @@ components:
         toWeek: { type: integer, nullable: true }
         mesoId: { type: string, format: uuid, nullable: true }
         mesoTitle: { type: string, nullable: true }
-        snapshotTrajectory: { type: string, enum: [cut, bulk, maintain] }
+        snapshotTrajectory: { type: string, enum: [cut, bulk, maintain], nullable: true, description: 'phase_change race guard; null on weekly_correction' }
+        weekStart: { type: string, format: date, nullable: true, description: 'weekly_correction: reviewed week Monday (mirrors the dedup key)' }
+        deltaKcal: { type: integer, nullable: true }
+        observedRateKgPerWk: { type: number, nullable: true }
+        targetRateKgPerWk: { type: number, nullable: true }
+        dampedBySleep: { type: boolean, nullable: true }
+        adherenceLoggedDays: { type: integer, nullable: true }
+        adherenceAvgIntakeKcal: { type: integer, nullable: true }
+        adherenceAvgTargetKcal: { type: integer, nullable: true }
+        prescriptionGeneratedAt: { type: string, format: date-time, nullable: true, description: 'weekly_correction display/debug only — NOT the accept race guard (rotates on every recompute); see snapshotRateTargetPctPerWeek/snapshotBalanceAdjustmentKcal' }
+        snapshotRateTargetPctPerWeek: { type: number, nullable: true, description: 'weekly_correction accept race guard: goal.rateTargetPctPerWeek at propose time' }
+        snapshotBalanceAdjustmentKcal: { type: integer, nullable: true, description: 'weekly_correction accept race guard: goal.balanceAdjustmentKcal at propose time' }

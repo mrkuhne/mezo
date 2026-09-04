@@ -5269,6 +5269,8 @@ export interface components {
             wakeTime?: string;
             /** @description Day-planner bed anchor, HH:mm */
             bedTime?: string;
+            /** @description Accepted adaptive corrections, summed (kcal/day); slice 5 */
+            balanceAdjustmentKcal?: number | null;
             tdeeBootstrap?: components["schemas"]["TdeeBootstrap"] | null;
             prescription?: components["schemas"]["GoalPrescription"] | null;
         };
@@ -5452,8 +5454,32 @@ export interface components {
             /** Format: uuid */
             mesoId?: string | null;
             mesoTitle?: string | null;
-            /** @enum {string} */
-            snapshotTrajectory: "cut" | "bulk" | "maintain";
+            /**
+             * @description phase_change race guard; null on weekly_correction
+             * @enum {string|null}
+             */
+            snapshotTrajectory?: "cut" | "bulk" | "maintain" | null;
+            /**
+             * Format: date
+             * @description weekly_correction: reviewed week Monday (mirrors the dedup key)
+             */
+            weekStart?: string | null;
+            deltaKcal?: number | null;
+            observedRateKgPerWk?: number | null;
+            targetRateKgPerWk?: number | null;
+            dampedBySleep?: boolean | null;
+            adherenceLoggedDays?: number | null;
+            adherenceAvgIntakeKcal?: number | null;
+            adherenceAvgTargetKcal?: number | null;
+            /**
+             * Format: date-time
+             * @description weekly_correction display/debug only — NOT the accept race guard (rotates on every recompute); see snapshotRateTargetPctPerWeek/snapshotBalanceAdjustmentKcal
+             */
+            prescriptionGeneratedAt?: string | null;
+            /** @description weekly_correction accept race guard: goal.rateTargetPctPerWeek at propose time */
+            snapshotRateTargetPctPerWeek?: number | null;
+            /** @description weekly_correction accept race guard: goal.balanceAdjustmentKcal at propose time */
+            snapshotBalanceAdjustmentKcal?: number | null;
         };
         /** @description Every field is optional AND nullable: an owner with no profile row yet gets a 200 with an empty profile — an object whose every field is null — not a 404 (mezo-5cmq). The UPSERT request keeps its required trio. */
         BiometricProfileResponse: {

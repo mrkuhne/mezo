@@ -363,11 +363,19 @@ public class GoalProjectionService {
     /**
      * Daily energy balance (kcal/day) for the goal's trajectory: cut → negative (deficit), bulk →
      * positive (surplus), maintain → 0. Magnitude = {@code rateTargetPctPerWeek/100 × weight ×
-     * kcalPerKg ÷ 7}.
+     * kcalPerKg ÷ 7}. An accepted adaptive-review correction ({@code balanceAdjustmentKcal}, slice 5)
+     * is added on top — for EVERY trajectory, maintain included (an accepted correction is a
+     * deliberate calibration even on a maintenance goal). This is the goal's FORMULA balance; a
+     * per-week segment override (slice 4) substitutes a DIFFERENT value entirely for its own week
+     * (see {@link #buildSegment}'s {@code effectiveBalance}) — the adjustment therefore composes
+     * with the override as "override wins per week": weeks with an accepted deload/maintenance
+     * override do not feel the adjustment, every other week does.
      */
     private BigDecimal dailyEnergyBalance(GoalEntity goal, BigDecimal weightKg) {
+        BigDecimal adjustment = goal.getBalanceAdjustmentKcal() == null
+            ? BigDecimal.ZERO : BigDecimal.valueOf(goal.getBalanceAdjustmentKcal());
         if (TRAJ_MAINTAIN.equalsIgnoreCase(goal.getTrajectory())) {
-            return BigDecimal.ZERO;
+            return adjustment; // an accepted correction calibrates maintain too
         }
         BigDecimal weeklyKgMagnitude = goal.getRateTargetPctPerWeek()
             .divide(ONE_HUNDRED, 10, RoundingMode.HALF_UP)
@@ -375,9 +383,10 @@ public class GoalProjectionService {
         BigDecimal dailyKcalMagnitude = weeklyKgMagnitude
             .multiply(BigDecimal.valueOf(props.kcalPerKg()))
             .divide(BigDecimal.valueOf(DAYS_PER_WEEK), SCALE, RoundingMode.HALF_UP);
-        return TRAJ_BULK.equalsIgnoreCase(goal.getTrajectory())
+        BigDecimal base = TRAJ_BULK.equalsIgnoreCase(goal.getTrajectory())
             ? dailyKcalMagnitude
             : dailyKcalMagnitude.negate(); // cut (default for any non-bulk/non-maintain)
+        return base.add(adjustment);
     }
 
     /**
