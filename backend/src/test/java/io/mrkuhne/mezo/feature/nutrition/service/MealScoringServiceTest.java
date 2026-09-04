@@ -244,6 +244,39 @@ class MealScoringServiceTest {
     }
 
     @Test
+    void contextDim_carries_the_timing_detail_from_the_SAME_config_windows_that_scored_it() {
+        // 19:00-kor logolt vacsora — a configolt ablak 17–22.
+        MealBreakdownJson b = service.scoreMeal("dinner", lunchLines(), LocalTime.of(19, 0));
+        MealBreakdownJson.Dimension ctx = dimension(b, "context");
+
+        assertThat(ctx.timing()).isNotNull();
+        assertThat(ctx.timing().eatenAt()).isEqualTo("19:00");
+        assertThat(ctx.timing().windowFrom()).isEqualTo("17:00");
+        assertThat(ctx.timing().windowTo()).isEqualTo("22:00");
+        assertThat(ctx.timing().slotLabel()).isEqualTo("vacsora");
+    }
+
+    @Test
+    void contextDim_timing_has_no_window_for_a_snack_that_fits_any_hour() {
+        MealBreakdownJson b = service.scoreMeal("snack", lunchLines(), LocalTime.of(15, 30));
+        MealBreakdownJson.Dimension ctx = dimension(b, "context");
+
+        assertThat(ctx.timing().eatenAt()).isEqualTo("15:30");
+        // Nincs ablak — a sáv „bármikor jó"-t rajzol, nem hamis „mindig tökéletes"-t.
+        assertThat(ctx.timing().windowFrom()).isNull();
+        assertThat(ctx.timing().windowTo()).isNull();
+    }
+
+    @Test
+    void recipe_template_breakdown_still_has_no_context_dimension() {
+        // Ez tartja a fuel-recept-score vizuális goldent mozdulatlanul: az időzítés-sáv
+        // csak logolt étkezésen jelenhet meg, mert a sablonnak nincs `context` dimenziója.
+        MealBreakdownJson b = service.recipeTemplateBreakdown("dinner", lunchLines());
+        assertThat(b.dimensions().stream().map(MealBreakdownJson.Dimension::id))
+            .doesNotContain("context");
+    }
+
+    @Test
     void testScoreMeal_shouldScoreWhoDimension_whenSugarAndSaltWithinLimits() {
         // one 620-kcal line (20% of 3100): sugar 8g → 8*4/620 = 5.2 E% (≤10% → sub 1.0);
         // salt allotment 5g*0.2 = 1.0g, salt 0.5g → ratio 0.5 → sub 1.0; score = 1.0

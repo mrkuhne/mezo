@@ -6104,7 +6104,7 @@ export interface components {
             improve: components["schemas"]["MealImproveRow"][];
             tools: components["schemas"]["MealToolRow"][];
         };
-        /** @description One weighted dimension; exactly one payload field is populated, matching id — macro/micros/nova for their ids, `context` carries the generic label/value rows for context, who, fat_quality, plant_diversity, energy_density and portion. */
+        /** @description One weighted dimension; exactly one payload field is populated, matching id — macro/micros/nova for their ids, `context` carries the generic label/value rows for context, who, fat_quality, plant_diversity, energy_density and portion. Dimension `context` additionally carries `timing` when it comes from a logged meal. */
         MealScoreDimension: {
             id: string;
             label: string;
@@ -6116,6 +6116,7 @@ export interface components {
             micros?: components["schemas"]["MealMicroRow"][] | null;
             nova?: components["schemas"]["MealNovaDetail"] | null;
             context?: components["schemas"]["MealContextRow"][] | null;
+            timing?: components["schemas"]["MealTimingDetail"] | null;
             /** @description 1-2 mondatos AI-jegyzet ehhez a dimenzióhoz (meal-coach tölti; determinisztikusan null) */
             note?: string | null;
         };
@@ -6162,6 +6163,17 @@ export interface components {
         MealContextRow: {
             label: string;
             value: string;
+        };
+        /** @description A `context` dimenzió időzítés-tényei rajzolható alakban (mezo-jcpt.3). UGYANABBÓL a szerver-oldali slot-ablak configból származik, ami a timing-részpontszámot adta, ezért a rajzolt sáv és a pontszám nem tud eltérni. Csak logolt étkezésen van jelen; a recept-sablon breakdownjában nincs `context` dimenzió, tehát ott soha. */
+        MealTimingDetail: {
+            /** @description Helyi idő "HH:mm" alakban */
+            eatenAt: string;
+            /** @description Az ablak kezdete "HH:mm"; null = nasi, bármikor jó */
+            windowFrom?: string | null;
+            /** @description Az ablak vége "HH:mm"; null = nasi, bármikor jó */
+            windowTo?: string | null;
+            /** @description Magyar slot-név, pl. "vacsora" */
+            slotLabel: string;
         };
         /** @description Coach verdicts (mezo-mr4n). An empty list means nothing generated/cached — never an error. */
         MealCoachResponse: {
@@ -8431,12 +8443,15 @@ export interface components {
         GraphEdgeCountResponse: {
             count: number;
         };
+        /** @description A napi motor hat dimenziójának pontszáma ezen a napon (mezo-jcpt.5). A mezőnevek a DayEvaluation dimenzió-idjei, hogy a heti mozaik és a nap-oldal EGY szókincset használjon. null = a dimenzió degradált vagy nem mérhető ezen a napon — soha nem 0. */
         MeWeekSubscores: {
-            /** @description 0–100; null = no sleep data */
+            /** @description 0–100; null = no data */
+            nutrition?: number | null;
+            quality?: number | null;
+            training?: number | null;
             sleep?: number | null;
-            fuel?: number | null;
-            checkin?: number | null;
-            activity?: number | null;
+            logging?: number | null;
+            rhythm?: number | null;
         };
         MeWeekDay: {
             /** Format: date */

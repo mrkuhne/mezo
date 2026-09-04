@@ -2,7 +2,11 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { test, expect } from 'vitest'
 import { DimensionCard } from '@/features/fuel/components/DimensionCard'
-import type { RowsDimension } from '@/data/types'
+import type { ContextDimension, RowsDimension } from '@/data/types'
+
+function renderOpen(dim: ContextDimension | RowsDimension) {
+  return render(<DimensionCard dim={dim} defaultOpen />)
+}
 
 // A generic rows-dimension (mezo-7797): the WHO dimension renders its label/value
 // rows through the (widened) ContextPanel, exactly like the legacy `context` card.
@@ -56,4 +60,49 @@ test('a degraded (weight 0, no per-kind payload) dimension renders without crash
   expect(screen.getByText(/súly/)).toHaveTextContent('súly 0% → 0 pont')
   // no ContextPanel rows (it has no `context` payload to render)
   expect(screen.queryByText('Cukor')).not.toBeInTheDocument()
+})
+
+// Az időzítés-sáv (mezo-jcpt.3): kizárólag a logolt étkezés `context` dimenzióján jelenik meg.
+const contextDimWithTiming: ContextDimension = {
+  id: 'context',
+  label: 'Időzítés & kontextus',
+  weight: 0.2,
+  score: 0.9,
+  color: 'var(--cat-preference)',
+  detail: '19:00 · vacsora ablakban.',
+  context: [{ label: 'Időzítés', value: '19:00 · vacsora ablakban' }],
+  timing: { eatenAt: '19:00', windowFrom: '17:00', windowTo: '22:00', slotLabel: 'vacsora' },
+}
+
+const contextDimWithoutTiming: ContextDimension = {
+  ...contextDimWithTiming,
+  timing: undefined,
+}
+
+const portionDim: RowsDimension = {
+  id: 'portion',
+  label: 'Adag-arány',
+  weight: 0.1,
+  score: 0.8,
+  color: 'var(--coral-deep)',
+  detail: 'Egy adag a slot büdzsé 92%-a.',
+  context: [{ label: 'Adag kcal', value: '620 kcal' }],
+}
+
+test('a context csempe kinyitva megkapja az időzítés-sávot', () => {
+  const { container } = renderOpen(contextDimWithTiming)
+  expect(container.querySelector('.sb-tline')).toBeInTheDocument()
+  // a tény-chipek MEGMARADNAK a sáv alatt
+  expect(container.querySelectorAll('.sb-fchip').length).toBeGreaterThan(0)
+})
+
+test('timing nélküli context csempe csak a tény-chipeket mutatja', () => {
+  const { container } = renderOpen(contextDimWithoutTiming)
+  expect(container.querySelector('.sb-tline')).not.toBeInTheDocument()
+  expect(container.querySelectorAll('.sb-fchip').length).toBeGreaterThan(0)
+})
+
+test('a többi sor-dimenzió (who, portion, …) SOHA nem kap sávot', () => {
+  const { container } = renderOpen(portionDim)
+  expect(container.querySelector('.sb-tline')).not.toBeInTheDocument()
 })

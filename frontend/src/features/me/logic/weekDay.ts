@@ -2,9 +2,10 @@
 // Heti · nap-állapotok + nap-formázás (mezo-d20.6.10)
 // Source: en-body.html `dayCard()` / `dayPage()` / `daysPage()`.
 //
-// The one place the FOUR honest day states live (handoff §4). Today's
-// `WeekDayCard` conflates two of them into a single `—`; the design
-// insists they are different sentences:
+// The one place the FOUR honest day states live (handoff §4). The retired
+// `WeekDayCard` used to conflate two of them into a single `—`; `WeekDayTile`
+// (its live successor) and `WeekDayPage` render them as the design
+// insists — different sentences:
 //
 //   scored  — the Mezo scored the day
 //   thin    — something was logged, but fewer than TWO sub-scores have
@@ -21,49 +22,40 @@ import type { WeeklyReview } from '@/data/me/weeklyReviewMock'
 
 export type WeekDayState = 'scored' | 'thin' | 'empty' | 'future'
 
-const SUBSCORE_KEYS = ['sleep', 'fuel', 'checkin', 'activity'] as const
-export type SubscoreKey = (typeof SUBSCORE_KEYS)[number]
-
-/** The four sub-scores, in the prototype's bar order (alvás · fuel · check-in · aktivitás). */
-export const SUBSCORES: readonly { key: SubscoreKey; label: string; barClass: string }[] = [
-  { key: 'sleep', label: 'alvás', barClass: 'is-sleep' },
-  { key: 'fuel', label: 'fuel', barClass: 'is-fuel' },
-  { key: 'checkin', label: 'check-in', barClass: 'is-checkin' },
-  { key: 'activity', label: 'aktivitás', barClass: 'is-activity' },
-]
-
-/** The day-page sub-ring labels — the prototype abbreviates "aktivitás" to "aktív" there. */
-export const SUBRING_LABEL: Record<SubscoreKey, string> = {
-  sleep: 'alvás', fuel: 'fuel', checkin: 'check-in', activity: 'aktív',
-}
-
-export function subscoreCount(day: MeWeekDay): number {
-  return SUBSCORE_KEYS.filter((k) => day.subscores[k] != null).length
-}
-
-// ── Day-page six dimensions (mezo-jcpt.4) ─────────────────────────────────────
-// The evaluation endpoint's `DayDimension.id`s, in the config-weight order (constraints.md:
-// nutrition .30 · quality .15 · training .20 · sleep .15 · logging .10 · rhythm .10). This is
-// DELIBERATELY separate from `SUBSCORES`/`SUBRING_LABEL` above: those stay bound to
-// `MeWeekDay.subscores`'s four-key wire shape for the weekly mosaic (WeekScoreBars/WeekDayTile),
-// which is unchanged by this slice. The six dimensions belong to the DAY PAGE only, sourced
-// from `useDayEvaluation` (Task 10 wires the UI on top of these exports).
+// ── A napi motor hat dimenziója — EGY lista a heti mozaiknak ÉS a nap-oldalnak ────────────────
+// mezo-jcpt.5 óta a `MeWeekDay.subscores` wire-alakja ugyanez a hat kulcs, ezért a korábbi
+// négyes `SUBSCORES` lista megszűnt: az oka (a szűkebb heti wire-alak) elmúlt.
+// A `barClass` mindkét felületen ugyanaz az `is-<key>` név, de KÉT KÜLÖN, scope-olt CSS-családot
+// címez (`.dayev-dim.is-*` a nap-oldalon, `.wkd-sparks i.is-*` a heti csempén) — a két szabálycsalád
+// most már azonos szemantikát kap, de egyiket sem szabad bare szelektorrá oldani.
 const DAY_DIMENSION_KEYS = ['nutrition', 'quality', 'training', 'sleep', 'logging', 'rhythm'] as const
 export type DayDimensionKey = (typeof DAY_DIMENSION_KEYS)[number]
 
-/** The six day-page dimension bars, in bar order. `barClass` follows the existing `is-sleep`
- *  naming pattern (`is-<key>`) — Task 10 backs each with its own CSS token (sage/gold/coral/
- *  lav/rose/sky per constraints.md), scoped to the day page's own container so it never
- *  collides with the weekly mosaic's identically-named-by-coincidence `is-sleep` class (which
- *  carries a DIFFERENT color there — sky, not lav). */
-export const DAY_DIMENSIONS: readonly { key: DayDimensionKey; label: string; barClass: string }[] = [
-  { key: 'nutrition', label: 'tápanyag', barClass: 'is-nutrition' },
-  { key: 'quality', label: 'minőség', barClass: 'is-quality' },
-  { key: 'training', label: 'edzés', barClass: 'is-training' },
-  { key: 'sleep', label: 'alvás', barClass: 'is-sleep' },
-  { key: 'logging', label: 'logolás', barClass: 'is-logging' },
-  { key: 'rhythm', label: 'ritmus', barClass: 'is-rhythm' },
+/** `do` = amit a nap folyamán TETTÉL, `be` = ahogy a tested/ritmusod ÁLL. A heti csempe
+ *  ezen a határon nyit egy szélesebb rést, hogy a hat pálcika legend nélkül is csoportosuljon. */
+export type DimensionGroup = 'do' | 'be'
+
+export const DAY_DIMENSIONS: readonly {
+  key: DayDimensionKey; label: string; barClass: string; group: DimensionGroup
+}[] = [
+  { key: 'nutrition', label: 'tápanyag', barClass: 'is-nutrition', group: 'do' },
+  { key: 'quality', label: 'minőség', barClass: 'is-quality', group: 'do' },
+  { key: 'training', label: 'edzés', barClass: 'is-training', group: 'do' },
+  { key: 'sleep', label: 'alvás', barClass: 'is-sleep', group: 'be' },
+  { key: 'logging', label: 'logolás', barClass: 'is-logging', group: 'be' },
+  { key: 'rhythm', label: 'ritmus', barClass: 'is-rhythm', group: 'be' },
 ]
+
+/** A `rhythm` KIMARAD: extrinsic jel — MÁS napok base-scoreainak átlaga
+ *  (`DayEvaluationEngine` javadoc :93-97), ezért egy érintetlen napon is lehet értéke.
+ *  A motor is kihagyja a saját adat-elegendőségi kapujából; minden „mennyit mértünk ezen a
+ *  napon" próba ezt a listát használja, nem a teljes hatot. */
+export const INTRINSIC_SUBSCORE_KEYS: readonly DayDimensionKey[] =
+  ['nutrition', 'quality', 'training', 'sleep', 'logging']
+
+export function subscoreCount(day: MeWeekDay): number {
+  return INTRINSIC_SUBSCORE_KEYS.filter((k) => day.subscores[k] != null).length
+}
 
 /** Count of day-page dimensions with real data (`DONE`) — the day-page analogue of
  *  `subscoreCount` above, over the evaluation endpoint's `dimensions[]` instead of
@@ -108,7 +100,7 @@ export const DAY_COPY = {
   /** day page, there is no review at all yet */
   noReview: 'A heti elemzés nem írt külön ehhez a naphoz — az elemzés még nem készült el.',
   footnote:
-    'A négy pálcika a nap részpontszáma. A „tanulom" azt jelenti: kevesebb mint két területről van adat — '
+    'A hat pálcika a nap részpontszáma. A „tanulom" azt jelenti: kevesebb mint két területről van adat — '
     + 'nem azt, hogy nulla volt a nap.',
 } as const
 

@@ -312,7 +312,7 @@ export function WeekHubPage() {
           {running && <WeekNextCard suggestion={nextSuggestion} />}
 
           <p className="wkh-foot rise" style={d(270)}>
-            A pontszám a négy mért területből áll össze — ha kettőnél kevesebb van, „tanulom" áll a szám
+            A pontszám a hat mért területből áll össze — ha kettőnél kevesebb van, „tanulom" áll a szám
             helyén. A Mezo sosem talál ki számot: az elemzés csak a logolt adatokból dolgozik.
           </p>
         </EntranceGroup>

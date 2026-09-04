@@ -4,6 +4,7 @@ import { usePantry, useRecipes } from '@/data/hooks'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { ingredients } from '@/data/fuel/pantry'
 import { lineContribution } from '@/data/fuel/recipeMacros'
+import type { ContextDimension } from '@/data/types'
 
 // usePantry became a dual-mode TanStack query (Task 7, mezo-9xu). Pin mock mode so
 // it returns the static Phase-1 seed synchronously (initialData) and wrap the hook
@@ -48,6 +49,24 @@ test('logged recipes (rec-1/2 — breakfast + lunch) carry recentLogs with non-e
   const rec1 = result.current.recipes.find(r => r.id === 'rec-1')!
   expect(rec1.recentLogs![0].score).toBe(0.92)
   expect(rec1.recentLogs![0].delta).toBe(0.92)
+})
+
+test('a tükrözött recept-sablon breakdownból hiányzik a timing (meal-only, mezo-jcpt.3 fix-round-1 F2)', () => {
+  // rec-1 ↔ m1, rec-2 ↔ m2 mirror their linked meal's FULL breakdown (pantry.ts's `sourceMeal`
+  // path) — including its `context` dimension, which since mezo-jcpt.3 carries `timing`. The new
+  // MealTimingStrip is gated to a logged MEAL's context dimension only (DimensionCard.tsx); if
+  // `stripMealOnlyTiming` (pantry.ts) regressed, the strip would silently leak back onto these
+  // recipe pages — exactly the bug the Task 4 runtime check caught by hand. This pins it.
+  const { result } = renderHook(() => useRecipes(), { wrapper: QueryWrapper })
+  for (const id of ['rec-1', 'rec-2']) {
+    const recipe = result.current.recipes.find(r => r.id === id)!
+    const ctx = recipe.templateBreakdown!.dimensions.find(d => d.id === 'context') as ContextDimension
+    expect(ctx).toBeDefined()
+    expect(ctx.timing).toBeUndefined()
+    // The pre-existing (out-of-scope) fact-chip mirroring is untouched by the fix — only `timing`
+    // is stripped, so the dimension's `context` rows still carry the linked meal's real facts.
+    expect(ctx.context.length).toBeGreaterThan(0)
+  }
 })
 
 test('standalone recipes (rec-3/5/6) have empty recentLogs but a templateBreakdown', () => {

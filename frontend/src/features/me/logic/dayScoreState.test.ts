@@ -4,7 +4,7 @@ import type { MeWeekDay } from '@/data/me/meWeek'
 
 const EMPTY: MeWeekDay = {
   date: '2026-05-20', score: null,
-  subscores: { sleep: null, fuel: null, checkin: null, activity: null },
+  subscores: { nutrition: null, quality: null, training: null, sleep: null, logging: null, rhythm: null },
   kcal: null, proteinG: null, carbsG: null, fatG: null, kcalTarget: 3000, proteinTargetG: 200,
   weightKg: null, sleepMin: null, sleepQuality: null,
   checkinCount: 0, checkinEnergyAvg: null, workoutCount: 0, xp: null,
@@ -19,13 +19,22 @@ describe('dayScoreState — the honest-state split (handoff §4)', () => {
 
   test('a day with SOME logs but no score is "learning" (tanulom), not "nincs adat"', () => {
     // Csütörtök in the seed week: two check-ins, one sub-score, no score.
-    const sparse = day({ subscores: { sleep: null, fuel: null, checkin: 65, activity: null }, checkinCount: 2, xp: 20 })
+    const sparse = day({ subscores: { nutrition: null, quality: null, training: null, sleep: null, logging: 65, rhythm: null }, checkinCount: 2, xp: 20 })
     expect(dayScoreState(sparse, '2026-05-25')).toBe('learning')
   })
 
   test('a day with NOTHING logged is "nodata" — a different state, not tanulom', () => {
     expect(dayScoreState(EMPTY, '2026-05-25')).toBe('nodata')
     expect(isDayUnlogged(EMPTY)).toBe(true)
+  })
+
+  test('egy érintetlen nap NINCS ADAT marad akkor is, ha a ritmus más napokból kapott pontot', () => {
+    // A ritmus EXTRINSIC: más napok base-scoreainak átlaga (DayEvaluationEngine javadoc :93-97).
+    // Ha beleszámítana az "unlogged" próbába, egy soha nem érintett nap "tanulom"-ra váltana.
+    const untouched = day({ subscores: { nutrition: null, quality: null, training: null,
+      sleep: null, logging: null, rhythm: 41 } })
+    expect(isDayUnlogged(untouched)).toBe(true)
+    expect(dayScoreState(untouched, '2026-05-21')).toBe('nodata')
   })
 
   test('a single workout with no other log still counts as logged', () => {
