@@ -658,6 +658,6 @@ copy, UI state matrix, chart branches, file map and test coverage.
     --body-file /tmp/mezo-0469-pr.md
   ```
 
-- [ ] Wait for authoritative CI. If it is green, leave `mezo-0469` in progress and hand the PR to
+- [x] Wait for authoritative CI. If it is green, leave `mezo-0469` in progress and hand the PR to
   Daniel for review and merge, as required by the executing-plans workflow. If CI is red, fix on
   this branch, rerun the relevant focused gate, push and wait again; never merge from this session.
