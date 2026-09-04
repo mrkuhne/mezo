@@ -10,6 +10,8 @@ import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryCatalogEntity;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
+import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
+import io.mrkuhne.mezo.feature.pantry.service.PantryCatalogService;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import java.math.BigDecimal;
@@ -18,12 +20,16 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 
 class PantryApiIT extends ApiIntegrationTest {
 
     @Autowired private PantryItemPopulator populator;
     @Autowired private PantryCatalogRepository catalogRepository;
+    @Autowired private PantryItemRepository itemRepository;
+    @Autowired private PantryCatalogService catalogService;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
 
@@ -154,5 +160,107 @@ class PantryApiIT extends ApiIntegrationTest {
         assertThat(ismeretlen.getMacros().getP()).isNull();
         assertThat(ismeretlen.getMacros().getC()).isEqualByComparingTo(BigDecimal.ZERO);
         assertThat(ismeretlen.getMacros().getF()).isNull();
+    }
+
+    // ==== Honest nulls (mezo-xaq5): the read model must not fabricate "" / 0 for a value the
+    // definition simply does not carry — a fabricated "" echoed back by any client reads as a
+    // definition CHANGE in PantryMapper#definitionDiffers (403 for a non-author, silent shared-row
+    // rewrite for the author); a fabricated 0 is indistinguishable from a genuinely free item. ====
+
+    @Test
+    void testGetPantry_shouldReportNullCategoryAndPkgAndPrice_insteadOfFabricatedDefaults() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID owner = appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
+
+        PantryItemEntity item = populator.createFood(owner, "Névtelen alapanyag", LocalDate.now().plusDays(4));
+        PantryCatalogEntity c = item.getCatalog();
+        c.setCategory(null);
+        c.setBrand(null);
+        c.setPackageLabel(null);
+        catalogRepository.saveAndFlush(c);
+        item.setPriceHuf(null);
+        item.setPriceUnit(null);
+        itemRepository.saveAndFlush(item);
+
+        PantryResponse pantry = getForBody("/api/pantry", auth, HttpStatus.OK, PantryResponse.class);
+
+        var ing = pantry.getIngredients().stream()
+            .filter(i -> "Névtelen alapanyag".equals(i.getName())).findFirst().orElseThrow();
+        assertThat(ing.getCategory()).isNull();
+        assertThat(ing.getBrand()).isNull();
+        assertThat(ing.getPkg()).isNull();
+        assertThat(ing.getPrice()).isNull();
+        assertThat(ing.getPriceUnit()).isNull();
+    }
+
+    @Test
+    void testGetPantry_shouldKeepARealZeroPrice_distinctFromNoPrice() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID owner = appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
+
+        PantryItemEntity item = populator.createFood(owner, "Ingyenes minta", LocalDate.now().plusDays(4));
+        item.setPriceHuf(0);
+        item.setPriceUnit("/db");
+        itemRepository.saveAndFlush(item);
+
+        // A genuinely free item is 0, not "no data" — the whole point of the honest null.
+        PantryResponse pantry = getForBody("/api/pantry", auth, HttpStatus.OK, PantryResponse.class);
+
+        var ing = pantry.getIngredients().stream()
+            .filter(i -> "Ingyenes minta".equals(i.getName())).findFirst().orElseThrow();
+        assertThat(ing.getPrice()).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
+    void testGetPantry_shouldReportNullCategoryAndFormOnTheStash_insteadOfEmptyStrings() {
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID owner = appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
+
+        PantryItemEntity item = populator.createSupplement(owner, "Névtelen kapszula");
+        PantryCatalogEntity c = item.getCatalog();
+        c.setCategory(null);
+        c.setForm(null);
+        c.setBrand(null);
+        catalogRepository.saveAndFlush(c);
+
+        PantryResponse pantry = getForBody("/api/pantry", auth, HttpStatus.OK, PantryResponse.class);
+
+        var supp = pantry.getStash().stream()
+            .filter(s -> "Névtelen kapszula".equals(s.getName())).findFirst().orElseThrow();
+        assertThat(supp.getCategory()).isNull();
+        assertThat(supp.getForm()).isNull();
+        assertThat(supp.getBrand()).isNull();
+    }
+
+    /**
+     * The worst of the definition-echo family: a fabricated "" for {@code category} is not even a
+     * LEGAL enum value, so a client echoing it back on a state-only edit either fails Jackson enum
+     * deserialization (400) or — if the field is simply omitted, as a fixed client now would —
+     * exercises {@code definitionDiffers} as a true no-op. Either way, a bystander editing only
+     * their own price on a row whose shared definition carries no category must succeed.
+     */
+    @Test
+    void testUpdateItem_shouldAllowAPureStateEdit_onARowWhoseCategoryIsNull() {
+        RegisteredUser author = registerUser("Kategória Szerző");
+        RegisteredUser bystander = registerUser("Kategória Mellékszereplő");
+        PantryItemEntity authored = populator.createFood(author.id(), "Kategória nélküli", LocalDate.now().plusDays(6));
+        PantryCatalogEntity c = authored.getCatalog();
+        c.setCategory(null);
+        catalogRepository.saveAndFlush(c);
+        PantryItemEntity theirs = catalogService.ensureItem(bystander.id(), c.getId());
+
+        HttpHeaders auth = bystander.headers();
+        auth.setContentType(MediaType.APPLICATION_JSON); // for the raw-JSON body below
+
+        // The bystander edits ONLY their own price/priceUnit — a state-only PATCH-shaped PUT that
+        // carries no category at all, exactly what the fixed edit sheet now sends for a definition
+        // it was handed as null.
+        String body = """
+            {"kind":"food","name":"Kategória nélküli","price":1290,"priceUnit":"/kg"}
+            """;
+
+        exchangeForBody(HttpMethod.PUT, "/api/pantry/" + theirs.getId(), body, auth, HttpStatus.OK, String.class);
+
+        assertThat(catalogRepository.findById(c.getId()).orElseThrow().getCategory()).isNull();
     }
 }
