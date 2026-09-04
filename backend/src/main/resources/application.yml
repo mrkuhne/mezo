@@ -797,6 +797,27 @@ mezo:
         text-hu: "Egy hete minden mutatód rendben — alvás, stressz, lendület. Ez nem szerencse: a rendszered működik. Vedd észre, és élvezd."
         cooldown-hours: 168
         quiet-hours-exempt: false
+      # S4 (mezo-d58h.4): S2's two flags raised into an EMPTY library — they detected and then
+      # delivered nothing. These are their advice-card suggestion texts (and the template prose
+      # used whenever the LLM call fails).
+      - key: logging_gap_restart
+        flag: logging_gap
+        channel: both
+        text-hu: "Napok óta nincs friss adat rólad, így csak találgatni tudnék. Rögzíts ma egyetlen dolgot — egy étkezést vagy egy check-int —, és onnantól újra veled tudok gondolkodni."
+        cooldown-hours: 48
+        quiet-hours-exempt: false
+      - key: logging_gap_sleep_suspicion
+        flag: logging_gap
+        channel: feed
+        text-hu: "A rögzítetlen éjszakák mellett a bejegyzett alvásaid is rövidebbek a célodnál. Ma este kezdd a lefekvéssel, és reggel rögzítsd — így kiderül, tényleg adósság-e."
+        cooldown-hours: 72
+        quiet-hours-exempt: false
+      - key: missed_workouts_restart
+        flag: missed_workouts
+        channel: both
+        text-hu: "Több tervezett edzésnap is kimaradt egymás után. Ne a teljes hetet akard behozni: tedd vissza a naptárba a következő egyet, és vidd le könnyebbre, ha kell."
+        cooldown-hours: 72
+        quiet-hours-exempt: false
     # W4.3 (mezo-b3pp.17): the pragmatic profile — "hogyan érdemes Daniellel beszélni"
     profile:
       # Monday 03:45 — after the 03:10 feedback rollups and the 03:30 weekly consolidation rung,

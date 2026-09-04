@@ -31,6 +31,14 @@ class InterventionConfigIT extends AbstractIntegrationTest {
         // every W5.1 flag has at least one entry — a raised flag must never be undeliverable
         assertThat(lib.stream().map(CompanionProperties.Intervention::flag).distinct())
             .containsExactlyInAnyOrder(FlagKey.SUSTAINED_STRESS, FlagKey.SLEEP_DEBT,
-                FlagKey.MOMENTUM_AT_RISK, FlagKey.RECOVERY_NEEDED, FlagKey.ALL_HEALTHY);
+                FlagKey.MOMENTUM_AT_RISK, FlagKey.RECOVERY_NEEDED, FlagKey.ALL_HEALTHY,
+                FlagKey.LOGGING_GAP, FlagKey.MISSED_WORKOUTS);
+    }
+
+    @Test
+    void testLibrary_shouldServeEveryRoundOneFlag() {
+        assertThat(companionProperties.interventions())
+            .extracting(CompanionProperties.Intervention::flag)
+            .contains(FlagKey.LOGGING_GAP, FlagKey.MISSED_WORKOUTS);
     }
 }
