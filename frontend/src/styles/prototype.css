@@ -3768,8 +3768,8 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
    consumer — the ablak-folyam recomposition replaced this page outright with the .sky-islands/.isl*
    family (window-island hero + KeretBelt's kibontott view owns the energy-breakdown + macro bars
    now). The napszak zone cards below this comment (.zcard/.zrow/.zh/.zn/.zk/.zt/.a/.b) SURVIVE —
-   FuelStackPage's StackZoneCard still rides that shared family — only their DayZoneCard/ZoneSlotRow-
-   only nested rules (donez/openz, .caps/.burn, .zf/.zv/.zacts/.log/.ai, .missedrow/.act/.anchor, .mm)
+   other legacy readers still ride that shared family — only their DayZoneCard/ZoneSlotRow-only
+   nested rules (donez/openz, .caps/.burn, .zf/.zv/.zacts/.log/.ai, .missedrow/.act/.anchor, .mm)
    were pruned below, along with .misstag/.coachline/.cskel (ZoneSlotRow-only) further up this file. */
 
 /* Zone cards */
@@ -3791,8 +3791,7 @@ button.creedchip-tx { border: 0; background: none; padding: 0; cursor: pointer; 
    .zcard .zh .zk .burn / .caps* (stack-pip dots) / .donez/.openz (zone-state tints); .zrow .zf
    (avatar) / .zv (kcal readout) / .zacts+.log/.ai (log/AI buttons) / .missedrow / .act(+.sport)
    / .anchor / .mm (macro dots) — plus the standalone .misstag (further up this file) and
-   .coachline/.cskel below. StackZoneCard (FuelStackPage) only ever used the base .zcard/.zh/.zn/
-   .zk/.zrow/.zt/.a/.b rules above, which all survive untouched. */
+   .coachline/.cskel below. The base .zcard/.zh/.zn/.zk/.zrow/.zt/.a/.b rules above survive. */
 
 /* AI score chip */
 .aiscore { display: inline-flex; align-items: center; gap: 5px; border: 0; cursor: pointer; font: inherit;

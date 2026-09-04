@@ -64,11 +64,10 @@ test('the Fuel tab lands on the hub Mozaik face — no subnav dropdown (mezo-d20
 
 test('/fuel/stack stays a stable full-page sibling of the Fuel hub', async () => {
   const { container } = renderApp('/fuel/stack')
-  // Mozaik face since the fidelity audit (mezo-d20.11): the `.pghead-np` h1 "Napi protokoll"
-  // became a sage MozaikPage with the prototype's "Stack" hero — the ROUTE is what this
-  // navigation test pins, so it asserts the page scaffold, not the retired headline.
-  expect(await screen.findByText('Stack')).toBeInTheDocument()
+  // The redesigned hub starts directly with the next action under the real app header.
+  expect(await screen.findByText('MOST KÖVETKEZIK')).toBeInTheDocument()
   expect(container.querySelector('.mz-page.mz-p-sage')).toBeInTheDocument()
+  expect(container.querySelector('.mz-page-head')).not.toBeInTheDocument()
 })
 
 test('/me/karakter is the Karakter dossier hub — reachable as a stable route (mezo-1gim.13)', async () => {

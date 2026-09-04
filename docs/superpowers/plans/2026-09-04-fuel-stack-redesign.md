@@ -563,7 +563,7 @@ export function StackTimeline(props: {
 }): React.JSX.Element
 ```
 
-- [ ] **Step 1: Írd meg a három route bukó oldaltesztjeit**
+- [x] **Step 1: Írd meg a három route bukó oldaltesztjeit**
 
 A `FuelStackReadPages.test.tsx` lokális `Routes`-ban renderelje a három oldalt és
 `/fuel/stack` location probe-ot. Fedje le:
@@ -578,7 +578,7 @@ A `FuelStackReadPages.test.tsx` lokális `Routes`-ban renderelje a három oldalt
 - mindhárom `‹ Stack` gomb `/fuel/stack`-re navigál;
 - mindhárom page saját `MozaikPage` tone-t és a specifikált clay ikont használja.
 
-- [ ] **Step 2: Futtasd a tesztet és rögzítsd a bukást**
+- [x] **Step 2: Futtasd a tesztet és rögzítsd a bukást**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo/frontend
@@ -587,14 +587,14 @@ pnpm vitest run src/features/fuel/pages/FuelStackReadPages.test.tsx
 
 Várt: FAIL, mert a routed oldalak még nem léteznek.
 
-- [ ] **Step 3: Készítsd el a közös részletoldal-keretet**
+- [x] **Step 3: Készítsd el a közös részletoldal-keretet**
 
 A `StackPageScaffold` `MozaikPage` → `PageHead` → `EntranceGroup` → `PageHero` →
 `PageBody` kompozíció legyen. A back gomb `useNavigate()(backTo)` hívást végezzen;
 a hero csak a kapott saját clay ikont használja. Ne rendereljen app-headert, tabbart
 vagy saját fixed háttérréteget.
 
-- [ ] **Step 4: Készítsd el a teljes protokoll read oldalt**
+- [x] **Step 4: Készítsd el a teljes protokoll read oldalt**
 
 A `FuelStackProtocolPage` `useProtocol()` és `useStackDay()` eredményeit használja.
 A hero:
@@ -616,7 +616,7 @@ row neve/dózisa/reasonje és `pinned ? 'kézi' : 'auto'` szövege látható. A 
 `Szerkesztés` button `/fuel/stack/manage/protocol`-ra visz. Pending/empty/error
 állapotban ne mutasson seedből származó metaértéket.
 
-- [ ] **Step 5: Készítsd el a teljes napi timeline-t**
+- [x] **Step 5: Készítsd el a teljes napi timeline-t**
 
 A `StackTimeline` egy `.stk-timeline` listát renderel slot-headekkel és occurrence
 sorokkal. Migráld bele a régi `StackZoneCard` bizonyított állapotait:
@@ -633,7 +633,7 @@ A `FuelStackTodayPage` `useStackDay`, `buildStackDayView` és
 `useStackIntakeToggle` hookokat használja; gold `StackPageScaffold`,
 `StackDayArc`, `StackTimeline`, lokális `openEntry` state és `StackItemSheet`.
 
-- [ ] **Step 6: Készítsd el az étkezési match oldalt**
+- [x] **Step 6: Készítsd el az étkezési match oldalt**
 
 A `FuelStackMealsPage` ugyanazzal a mai/tegnapi dátumképzéssel hívja a
 `useFuelDay`, `useRecipes` és `matchMealsToStack` párost, mint a régi hub. A hero
@@ -641,7 +641,7 @@ A `FuelStackMealsPage` ugyanazzal a mai/tegnapi dátumképzéssel hívja a
 tónussal és `i-recept` ikonnal. Nem üres eredménynél `StackMealMatch`, egyébként
 `.stk-meals-empty` magyarázó kártya jelenik meg; write control nincs.
 
-- [ ] **Step 7: Regisztráld a három explicit route-ot**
+- [x] **Step 7: Regisztráld a három explicit route-ot**
 
 A `router.tsx` Fuel blokkja pontosan ezt a sorrendet kapja:
 
@@ -654,7 +654,7 @@ A `router.tsx` Fuel blokkja pontosan ezt a sorrendet kapja:
 
 Az importok közvetlenül a `pages/` fájlokra mutassanak.
 
-- [ ] **Step 8: Futtasd a focused route/page teszteket**
+- [x] **Step 8: Futtasd a focused route/page teszteket**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo/frontend
@@ -663,7 +663,7 @@ pnpm vitest run src/features/fuel/pages/FuelStackReadPages.test.tsx src/features
 
 Várt: PASS.
 
-- [ ] **Step 9: Távolítsd el a régi zone cardot és commitolj**
+- [x] **Step 9: Távolítsd el a régi zone cardot és commitolj**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/04f3/mezo

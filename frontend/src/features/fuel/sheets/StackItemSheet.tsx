@@ -1,6 +1,6 @@
 // ============================================================
 // Mezo · StackItemSheet (mezo-vx9v Task 8)
-// Opened by tapping a StackZoneCard row. Shows why the occurrence landed where it did (a manual
+// Opened by tapping a StackTimeline occurrence row. Shows why the occurrence landed where it did (a manual
 // pin, with a one-tap "Vissza autóra" unpin; or the rule/llm placement's own reason string), lets
 // the user move it to a different zone, edit its dose (save-on-blur), add one more occurrence for
 // the same pantry item in a different zone, or remove every occurrence of it from the stack.
