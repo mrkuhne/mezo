@@ -13198,12 +13198,16 @@ components:
       properties:
         kcal:
           type: number
+          nullable: true
         p:
           type: number
+          nullable: true
         c:
           type: number
+          nullable: true
         f:
           type: number
+          nullable: true
     PantryMicro:
       type: object
       required:

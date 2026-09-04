@@ -5515,10 +5515,10 @@ export interface components {
             suggestions: components["schemas"]["PantrySuggestionResponse"][];
         };
         PantryMacros: {
-            kcal: number;
-            p: number;
-            c: number;
-            f: number;
+            kcal: number | null;
+            p: number | null;
+            c: number | null;
+            f: number | null;
         };
         PantryMicro: {
             name: string;

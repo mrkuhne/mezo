@@ -186,7 +186,7 @@ describe('AddPantryItemSheet', () => {
           open
           onClose={onClose}
           editId={target.id}
-          initial={{ kind: 'food', name: target.name, kcal: target.macros.kcal }}
+          initial={{ kind: 'food', name: target.name, kcal: target.macros.kcal ?? undefined }}
         />
       </QueryClientProvider>,
     )

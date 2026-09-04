@@ -383,7 +383,7 @@ export const MOCK_AI_MEAL_DRAFT: MealAiDraft = {
     {
       source: 'pantry', pantryItemId: _aiSeed.id, recipeId: null, name: _aiSeed.name,
       amount: 60, unit: _aiSeed.unit, per: _aiSeed.per, basisUnit: _aiSeed.unit,
-      kcal: _aiSeed.macros.kcal, proteinG: _aiSeed.macros.p, carbsG: _aiSeed.macros.c, fatG: _aiSeed.macros.f,
+      kcal: _aiSeed.macros.kcal ?? 0, proteinG: _aiSeed.macros.p ?? 0, carbsG: _aiSeed.macros.c ?? 0, fatG: _aiSeed.macros.f ?? 0,
       nova: _aiSeed.nova, confidence: 1, needsReview: true,
     },
     {

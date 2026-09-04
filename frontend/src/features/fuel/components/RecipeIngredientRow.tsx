@@ -22,12 +22,14 @@ export function RecipeIngredientRow({ item }: { item: RecipeIngredientItem }) {
   const catColor = categoryMeta[ing.category]?.color ?? 'var(--text-secondary)'
 
   // Scaled macros for this amount (gram-based ingredients scale by amount/per).
+  // `?? 0` at the boundary since mezo-6omv: a missing definition macro contributes nothing to a
+  // recipe line's total — but the underlying null is NOT rewritten anywhere.
   const ratio = item.unit === 'g' ? item.amount / ing.per : 1
   const m = {
-    kcal: Math.round(ing.macros.kcal * ratio),
-    p: +(ing.macros.p * ratio).toFixed(1),
-    c: +(ing.macros.c * ratio).toFixed(1),
-    f: +(ing.macros.f * ratio).toFixed(1),
+    kcal: Math.round((ing.macros.kcal ?? 0) * ratio),
+    p: +((ing.macros.p ?? 0) * ratio).toFixed(1),
+    c: +((ing.macros.c ?? 0) * ratio).toFixed(1),
+    f: +((ing.macros.f ?? 0) * ratio).toFixed(1),
   }
 
   return (

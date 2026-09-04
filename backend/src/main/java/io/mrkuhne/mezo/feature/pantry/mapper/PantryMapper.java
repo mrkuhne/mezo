@@ -176,8 +176,11 @@ public interface PantryMapper {
             .category(c.getCategory() == null ? "" : c.getCategory())
             .per(c.getServingAmount())
             .unit(c.getServingUnit())
+            // Honest nulls since mezo-6omv: nz() used to zero-fill these, making "no data" and
+            // "a user-entered 0" identical on the wire — and any caller echoing the read model
+            // back then wrote a fabricated 0 onto the SHARED definition.
             .macros(PantryMacros.builder()
-                .kcal(nz(c.getKcal())).p(nz(c.getProteinG())).c(nz(c.getCarbsG())).f(nz(c.getFatG())).build())
+                .kcal(c.getKcal()).p(c.getProteinG()).c(c.getCarbsG()).f(c.getFatG()).build())
             .price(e.getPriceHuf() == null ? BigDecimal.ZERO : BigDecimal.valueOf(e.getPriceHuf()))
             .priceUnit(e.getPriceUnit() == null ? "" : e.getPriceUnit())
             .pkg(c.getPackageLabel() == null ? "" : c.getPackageLabel())
@@ -227,13 +230,14 @@ public interface PantryMapper {
             .taken(e.isTaken())
             .caffeine(c.getCaffeine())
             // Nutrition + commerce (mezo-1za9): supplements carry macros/nutrients/price to the UI
-            // too. macros stays null for pure dose/protocol items (kcal unset) so the detail view
-            // hides the Makrók block; nz() zero-fills a partial macro row when kcal is present.
+            // too. Since mezo-6omv every field is honestly nullable, so the response no longer
+            // decides "no macros at all" from kcal alone — the UI hides the Makrók block when all
+            // four are null, and a partial row (kcal known, fat unknown) stays partial.
             .source(c.getSource() == null ? null : toStashSource(c.getSource()))
             .per(c.getServingAmount())
             .unit(c.getServingUnit())
-            .macros(c.getKcal() == null ? null : PantryMacros.builder()
-                .kcal(nz(c.getKcal())).p(nz(c.getProteinG())).c(nz(c.getCarbsG())).f(nz(c.getFatG())).build())
+            .macros(PantryMacros.builder()
+                .kcal(c.getKcal()).p(c.getProteinG()).c(c.getCarbsG()).f(c.getFatG()).build())
             .price(e.getPriceHuf() == null ? null : BigDecimal.valueOf(e.getPriceHuf()))
             .priceUnit(e.getPriceUnit())
             .pkg(c.getPackageLabel())
@@ -328,8 +332,6 @@ public interface PantryMapper {
             return PantrySource.MANUAL;
         }
     }
-
-    private static BigDecimal nz(BigDecimal v) { return v == null ? BigDecimal.ZERO : v; }
 
     private static String typeFromKind(String kind) {
         return switch (kind) {

@@ -54,11 +54,15 @@ export function inputFromItem(item: PantryItem): PantryItemInput {
     stockQty: item.stock?.qty,
     stockUnit: item.stock?.unit,
   }
+  // Null macro = "no data on the shared definition" (mezo-6omv). It must stay OUT of the request:
+  // the DTO cannot distinguish an omitted field from an explicit null, and applyDefinitionPartial
+  // reads "absent" as "leave unchanged". Assigning null here would send `kcal: null` and blank the
+  // field on a definition every other user reads.
   if (item.macros) {
-    base.kcal = item.macros.kcal
-    base.proteinG = item.macros.p
-    base.carbsG = item.macros.c
-    base.fatG = item.macros.f
+    if (item.macros.kcal != null) base.kcal = item.macros.kcal
+    if (item.macros.p != null) base.proteinG = item.macros.p
+    if (item.macros.c != null) base.carbsG = item.macros.c
+    if (item.macros.f != null) base.fatG = item.macros.f
   }
   if (item.fiberG != null) base.fiberG = item.fiberG
   if (item.sugarG != null) base.sugarG = item.sugarG
@@ -151,12 +155,15 @@ export function KamraItemDetailPage() {
     navigate('/fuel/kamra')
   }
 
-  const macroCells: MCell[] | null = item.macros
+  const hasAnyMacro = item.macros != null
+    && (item.macros.kcal != null || item.macros.p != null || item.macros.c != null || item.macros.f != null)
+  const g = (v: number | null) => (v == null ? '—' : `${v} g`)
+  const macroCells: MCell[] | null = hasAnyMacro && item.macros
     ? [
-        { label: 'kcal', value: item.macros.kcal, tone: 'sage' },
-        { label: 'fehérje', value: `${item.macros.p} g`, tone: 'coral' },
-        { label: 'szénh.', value: `${item.macros.c} g`, tone: 'gold' },
-        { label: 'zsír', value: `${item.macros.f} g`, tone: 'lav' },
+        { label: 'kcal', value: item.macros.kcal ?? '—', tone: 'sage' },
+        { label: 'fehérje', value: g(item.macros.p), tone: 'coral' },
+        { label: 'szénh.', value: g(item.macros.c), tone: 'gold' },
+        { label: 'zsír', value: g(item.macros.f), tone: 'lav' },
       ]
     : null
 

@@ -187,7 +187,9 @@ function mockImport(qc: ReturnType<typeof useQueryClient>, input: PantryImportIn
     const ing: Ingredient = {
       id: crypto.randomUUID(), kind: 'food', name: input.name, brand: input.brand ?? '', source,
       category: input.category ?? 'other', per: input.per, unit: input.unit,
-      macros: { kcal: input.kcal ?? 0, p: input.proteinG ?? 0, c: input.carbsG ?? 0, f: input.fatG ?? 0 },
+      // Honest since mezo-6omv: a field the draft didn't carry is `null` (no data), not a
+      // fabricated 0 — mirrors the server's mapper.
+      macros: { kcal: input.kcal ?? null, p: input.proteinG ?? null, c: input.carbsG ?? null, f: input.fatG ?? null },
       price: 0, priceUnit: '', pkg: '',
       micros: [], nova: input.nova ?? 1,
       fiberG: input.fiberG ?? undefined, sugarG: input.sugarG ?? undefined,
@@ -220,7 +222,8 @@ function mockAddFromCatalog(qc: ReturnType<typeof useQueryClient>, catalogId: st
       const ing: Ingredient = {
         id: crypto.randomUUID(), kind: 'food', name: entry.name, brand: entry.brand ?? '', source: entry.source,
         category: entry.category ?? 'other', per: entry.per ?? 100, unit: entry.unit ?? 'g',
-        macros: { kcal: entry.kcal ?? 0, p: entry.proteinG ?? 0, c: entry.carbsG ?? 0, f: entry.fatG ?? 0 },
+        // Honest since mezo-6omv: mirrors the server — a fact the catalog entry lacks is null.
+        macros: { kcal: entry.kcal ?? null, p: entry.proteinG ?? null, c: entry.carbsG ?? null, f: entry.fatG ?? null },
         price: 0, priceUnit: '', pkg: '', micros: [], nova: entry.nova ?? 1,
         fiberG: entry.fiberG ?? undefined, sugarG: entry.sugarG ?? undefined,
         saltG: entry.saltG ?? undefined, saturatedFatG: entry.saturatedFatG ?? undefined,
@@ -234,7 +237,7 @@ function mockAddFromCatalog(qc: ReturnType<typeof useQueryClient>, catalogId: st
       category: entry.category ?? 'supplement', dose: '', form: entry.form ?? '',
       stock: null, stockUnit: null, protocol: '', timing: 'flexible', taken: false, caffeine: entry.caffeine ?? undefined,
       source: entry.source, per: entry.per ?? undefined, unit: entry.unit ?? undefined,
-      macros: entry.kcal != null ? { kcal: entry.kcal, p: entry.proteinG ?? 0, c: entry.carbsG ?? 0, f: entry.fatG ?? 0 } : undefined,
+      macros: entry.kcal != null ? { kcal: entry.kcal, p: entry.proteinG ?? null, c: entry.carbsG ?? null, f: entry.fatG ?? null } : undefined,
       nova: entry.nova ?? undefined, ...shared,
     }
     return { ...base, stash: [...base.stash, supp] }
@@ -250,7 +253,8 @@ function mockAdd(qc: ReturnType<typeof useQueryClient>, input: PantryItemInput) 
       const ing: Ingredient = {
         id, kind: 'food', name: input.name, brand: input.brand ?? '', source: input.source ?? 'manual',
         category: input.category ?? 'protein', per: input.per ?? 100, unit: input.unit ?? 'g',
-        macros: { kcal: input.kcal ?? 0, p: input.proteinG ?? 0, c: input.carbsG ?? 0, f: input.fatG ?? 0 },
+        // Honest since mezo-6omv: mirrors the server — a field the form didn't carry is null.
+        macros: { kcal: input.kcal ?? null, p: input.proteinG ?? null, c: input.carbsG ?? null, f: input.fatG ?? null },
         price: input.price ?? 0, priceUnit: input.priceUnit ?? '', pkg: input.pkg ?? '',
         micros: input.micros ?? [], nova: input.nova ?? 1,
         stock: input.stockQty != null ? { qty: input.stockQty, unit: input.stockUnit ?? 'g', expires: input.stockExpires ?? '' } : null,
@@ -267,7 +271,7 @@ function mockAdd(qc: ReturnType<typeof useQueryClient>, input: PantryItemInput) 
       // Nutrition + commerce (mezo-1za9) — preserve so a mock-mode supplement shows macros/price too.
       source: input.source, per: input.per, unit: input.unit,
       macros: input.kcal != null
-        ? { kcal: input.kcal, p: input.proteinG ?? 0, c: input.carbsG ?? 0, f: input.fatG ?? 0 }
+        ? { kcal: input.kcal, p: input.proteinG ?? null, c: input.carbsG ?? null, f: input.fatG ?? null }
         : undefined,
       price: input.price, priceUnit: input.priceUnit, pkg: input.pkg,
       micros: input.micros, nova: input.nova,

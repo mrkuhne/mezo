@@ -6,7 +6,8 @@
 // the basis (e.g. "160 g" for an editor row at its amount, "/100g" in the picker).
 // ============================================================
 export interface MacroCellsProps {
-  macros: { kcal: number; p: number; c: number; f: number }
+  /** Nullable since mezo-6omv: a null cell prints an em dash, a 0 prints "0". */
+  macros: { kcal: number | null; p: number | null; c: number | null; f: number | null }
   perLabel?: string
   size?: 'sm' | 'md'
 }
@@ -41,7 +42,7 @@ export function MacroCells({ macros, perLabel, size = 'sm' }: MacroCellsProps) {
           style={{ flex: 1, textAlign: 'center', padding: '6px 2px', background: 'var(--surface-glass)' }}
         >
           <div style={{ fontVariantNumeric: 'tabular-nums', fontSize: valFs, fontWeight: 600, color: c.color }}>
-            {macros[c.key]}
+            {macros[c.key] ?? '—'}
           </div>
           <div className="label-mono" style={{ fontSize: 7, letterSpacing: '0.1em', color: 'var(--text-tertiary)', marginTop: 2 }}>
             {c.label}

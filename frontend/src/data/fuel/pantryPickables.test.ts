@@ -29,7 +29,9 @@ test('buildPickables includes a stash supplement (raw id) with defaults for miss
   expect(out[0].id).toBe('s1') // raw id — NOT the buildKamraItems 'stash-' prefix
   expect(out[0].per).toBe(100)
   expect(out[0].unit).toBe('g')
-  expect(out[0].macros).toEqual({ kcal: 0, p: 0, c: 0, f: 0 })
+  // Honest since mezo-6omv: a stash item with no macro facts has NO data, not four
+  // fabricated zeroes — the old {kcal:0,...} expectation here locked in the zero-fill bug.
+  expect(out[0].macros).toEqual({ kcal: null, p: null, c: null, f: null })
 })
 
 test('buildPickables preserves supplement macros/per/unit when present (post mezo-1za9)', () => {

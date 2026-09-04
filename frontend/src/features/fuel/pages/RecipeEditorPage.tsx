@@ -46,10 +46,10 @@ function contributionOf(line: DraftLine, ing: Ingredient | undefined) {
   if (!ing) return { kcal: 0, p: 0, c: 0, f: 0 }
   const factor = line.amount / (ing.per || 1)
   return {
-    kcal: round(ing.macros.kcal * factor),
-    p: round(ing.macros.p * factor),
-    c: round(ing.macros.c * factor),
-    f: round(ing.macros.f * factor),
+    kcal: round((ing.macros.kcal ?? 0) * factor),
+    p: round((ing.macros.p ?? 0) * factor),
+    c: round((ing.macros.c ?? 0) * factor),
+    f: round((ing.macros.f ?? 0) * factor),
   }
 }
 

@@ -38,7 +38,7 @@ function KamraRow({ ing, added, onPick }: { ing: Ingredient; added: boolean; onP
           </span>
         </div>
         <span className="fkp-kcell">
-          <b>{ing.macros.kcal}</b><small>kcal /{ing.per}{ing.unit}</small>
+          <b>{ing.macros.kcal ?? '—'}</b><small>kcal /{ing.per}{ing.unit}</small>
         </span>
         {added ? (
           <button disabled aria-label={ing.name + ' hozzáadva'} className="rad-12"

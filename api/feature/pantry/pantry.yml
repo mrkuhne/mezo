@@ -152,14 +152,18 @@ components:
         # P6 (mezo-bka): recent import feed + deterministic swap suggestions — always present, honest-empty arrays
         imports: { type: array, items: { $ref: '#/components/schemas/PantryImportEntryResponse' } }
         suggestions: { type: array, items: { $ref: '#/components/schemas/PantrySuggestionResponse' } }
+    # Honest nulls since mezo-6omv: a null macro means "no data on the shared definition",
+    # a 0 means somebody actually entered zero. The old nz() zero-fill made them identical on
+    # the wire, so any caller echoing the read model back wrote fabricated 0s onto a definition
+    # every other user reads. The fields stay REQUIRED (always present) — only nullable.
     PantryMacros:
       type: object
       required: [kcal, p, c, f]
       properties:
-        kcal: { type: number }
-        p: { type: number }
-        c: { type: number }
-        f: { type: number }
+        kcal: { type: number, nullable: true }
+        p: { type: number, nullable: true }
+        c: { type: number, nullable: true }
+        f: { type: number, nullable: true }
     PantryMicro:
       type: object
       required: [name, pct]
