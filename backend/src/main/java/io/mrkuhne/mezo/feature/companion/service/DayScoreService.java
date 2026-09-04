@@ -26,7 +26,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -86,9 +85,9 @@ import org.springframework.transaction.annotation.Transactional;
  *       the logging dimension's timeliness component measures;</li>
  *   <li>{@code waterLogged} — {@link WaterLogRepository#sumsBetween} (one grouped query);</li>
  *   <li>{@code checkinCount} — {@link CheckInRepository}'s windowed finder, unchanged;</li>
- *   <li>{@code weightKg} — the day's LATEST weigh-in, the same "latest entry per day" fold
- *       {@code MeWeekService.latestWeightByDate} already does over
- *       {@link WeightLogRepository#findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc}
+ *   <li>{@code weightKg} — the day's LATEST weigh-in, via the shared
+ *       {@link WeightByDateSupport#latestWeightByDate} fold (also used by {@code MeWeekService})
+ *       over {@link WeightLogRepository#findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc}
  *       (one ranged query, never per-day — mezo-jcpt.6 exists to stop exactly that
  *       amplification, so this field must not reintroduce it);</li>
  *   <li>{@code xp} — {@link MetricSeriesService} {@code DAILY_XP} over the whole window (one
@@ -220,7 +219,8 @@ public class DayScoreService {
         Map<LocalDate, Long> checkinCounts = checkinCounts(userId, from, to);
         Set<LocalDate> wateredDays = wateredDays(userId, from, to);
         Map<UUID, Instant> mealWrittenAt = mealWrittenAt(userId, from, to);
-        Map<LocalDate, WeightLogEntity> weightByDate = latestWeightByDate(userId, from, to);
+        Map<LocalDate, WeightLogEntity> weightByDate =
+                WeightByDateSupport.latestWeightByDate(weightLogRepository, userId, from, to);
 
         Map<LocalDate, DayInputs> inputs = new LinkedHashMap<>();
         for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
@@ -261,19 +261,6 @@ public class DayScoreService {
                     List.of()));
         }
         return inputs;
-    }
-
-    /** Latest (by {@code createdAt}) weigh-in per calendar day inside {@code [from, to]} — the
-     *  same "latest entry per day" fold {@code MeWeekService.latestWeightByDate} already does,
-     *  one ranged query rather than a per-day fan-out (mezo-jcpt.6). */
-    private Map<LocalDate, WeightLogEntity> latestWeightByDate(UUID userId, LocalDate from, LocalDate to) {
-        Map<LocalDate, WeightLogEntity> byDate = new HashMap<>();
-        weightLogRepository.findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, from)
-                .stream()
-                .filter(w -> !w.getDate().isAfter(to))
-                .sorted(Comparator.comparing(WeightLogEntity::getCreatedAt))
-                .forEach(w -> byDate.put(w.getDate(), w)); // last write per date wins = most recent createdAt
-        return byDate;
     }
 
     /** Each day's base score computed WITHOUT the rhythm dimension (empty prior list) — the values

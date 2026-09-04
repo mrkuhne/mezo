@@ -88,7 +88,8 @@ public class MeWeekService {
                 .collect(Collectors.toMap(DayScoreService.DayScore::date, s -> s));
         Map<LocalDate, SleepLogEntity> sleepByDate = latestSleepByDate(userId, start, end);
         Map<LocalDate, List<CheckInEntity>> checkinsByDate = checkinsByDate(userId, start, end);
-        Map<LocalDate, WeightLogEntity> weightByDate = latestWeightByDate(userId, start, end);
+        Map<LocalDate, WeightLogEntity> weightByDate =
+                WeightByDateSupport.latestWeightByDate(weightLogRepository, userId, start, end);
         Map<LocalDate, Long> gymCounts = countByDate(
                 workoutSessionRepository.findDoneInstancesBetween(userId, start, end), WorkoutSessionEntity::getDate);
         Map<LocalDate, Long> sportCounts = countByDate(sportSessionsInWindow(userId, start, end), SportSessionEntity::getDate);
@@ -308,17 +309,6 @@ public class MeWeekService {
     private Map<LocalDate, List<CheckInEntity>> checkinsByDate(UUID userId, LocalDate start, LocalDate end) {
         return checkInRepository.findByCreatedByAndDeletedFalseAndDateBetween(userId, start, end).stream()
                 .collect(Collectors.groupingBy(CheckInEntity::getDate));
-    }
-
-    /** Latest (by {@code createdAt}) weigh-in per calendar day — the "latest entry per day" rule. */
-    private Map<LocalDate, WeightLogEntity> latestWeightByDate(UUID userId, LocalDate start, LocalDate end) {
-        Map<LocalDate, WeightLogEntity> byDate = new HashMap<>();
-        weightLogRepository.findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(userId, start)
-                .stream()
-                .filter(w -> !w.getDate().isAfter(end))
-                .sorted(Comparator.comparing(WeightLogEntity::getCreatedAt))
-                .forEach(w -> byDate.put(w.getDate(), w)); // last write per date wins = most recent createdAt
-        return byDate;
     }
 
     private List<SportSessionEntity> sportSessionsInWindow(UUID userId, LocalDate start, LocalDate end) {
