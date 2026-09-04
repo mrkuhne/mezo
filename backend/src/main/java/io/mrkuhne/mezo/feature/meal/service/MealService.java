@@ -34,6 +34,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,6 +44,7 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,6 +65,7 @@ import org.springframework.transaction.annotation.Transactional;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class MealService {
 
     private final MealRepository repository;
@@ -103,6 +106,41 @@ public class MealService {
         // soft-delete (UPDATE, not DELETE) — so bulk-soft-delete the items explicitly first.
         mealItemRepository.softDeleteByMealId(meal.getId());
         repository.delete(meal); // @SQLDelete -> is_deleted = true
+    }
+
+    /**
+     * Újrapontoz egy MÁR PERZISZTÁLT étkezést ugyanazon a write-path-on, amit a {@link #create} és
+     * az {@link #update} használ (mezo-jcpt.2 backfill) — így a súly-renormalizálás és a makró
+     * kcal-szignifikancia szabálya pontosan EGY helyen él, és nem duplikálódik SQL-be.
+     *
+     * <p>A timing-kontextushoz kellő LOKÁLIS falóra-idő NINCS a soron fagyasztva (csak egy UTC
+     * {@code Instant} van), ezért a ház konvenciójával vezetjük le ugyanerre az oszlopra:
+     * {@code ZoneId.systemDefault()} — ahogy a {@code MealCoachService} is teszi. Ez egyben
+     * MEGGYÓGYÍTJA a mezo-g8qm sorokat: azoknál a tárolt {@code Instant} helyes UTC volt, csak az
+     * írás-idejű falióra-idő csúszott el, így a helyes instantból levezetett helyi idő most a
+     * helyes {@code MealRole}-t adja (az issue jegyzete szerint ezek addig csak újralogolással
+     * gyógyultak volna). A konvenció korlátja a SZERVER zónája, nem a felhasználóé — amíg a kettő
+     * egyezik, pontos.
+     *
+     * <p>Az envelope ÜRES próza-fészkekkel íródik újra, betartva a coach-invariánst: egy elavult
+     * verdikt nem élheti túl a számokat, amiket magyarázott ({@code MealCoachService} javadoc). A
+     * coach a következő score-sheet-nyitáskor újragenerálja.
+     *
+     * @return {@code true}, ha újrapontozott; {@code false}, ha az étkezés eltűnt vagy sosem volt
+     *     envelope-ja (pre-scoring sor — annak a backfillhez semmi köze).
+     */
+    @Transactional
+    public boolean rescore(UUID mealId) {
+        MealEntity meal = repository.findById(mealId).orElse(null);
+        if (meal == null || meal.getBreakdown() == null) {
+            return false;
+        }
+        BigDecimal before = meal.getScore();
+        OffsetDateTime loggedAt = meal.getLoggedAt().atZone(ZoneId.systemDefault()).toOffsetDateTime();
+        applyScore(meal.getCreatedBy(), meal, loggedAt);
+        repository.saveAndFlush(meal);
+        log.debug("Re-scored meal {} ({}): {} -> {}", mealId, meal.getMealDate(), before, meal.getScore());
+        return true;
     }
 
     /** Thin delegation so the controller depends on {@code MealService} only (cf. recipe slice). */

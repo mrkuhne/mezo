@@ -39,6 +39,15 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class MealScoringService {
 
+    /**
+     * A determinisztikus formula generációja. **Bumpold**, valahányszor egy változás a MÁR TÁROLT
+     * envelope-ok számait elmozdítaná — ez az egyetlen jel, amiből a mezo-jcpt.2 backfill runner
+     * tudja, melyik sort kell újrapontozni. A `1` az első bélyegzett generáció: a súly-
+     * renormalizálás (`d51ec268b`) + a makró kcal-szignifikancia-skálázás (`01b194ac7`) UTÁNI
+     * állapot. A bélyeg nélküli (`null`) envelope-ok az azok ELŐTTI, javítandó generáció.
+     */
+    public static final int FORMULA_VERSION = 1;
+
     private final MealScoringProperties props;
     private final NutritionTargetsProperties targets;
 
@@ -142,7 +151,7 @@ public class MealScoringService {
             : dims.stream().map(d -> d.renormalized(weightSum).toJson()).toList();
         return new MealBreakdownJson(round2(value), round2(confidence), null, null,
             jsonDims, List.of(),
-            tools(slot, lines, dims, localTime, base));
+            tools(slot, lines, dims, localTime, base), FORMULA_VERSION);
     }
 
     /**
@@ -224,7 +233,7 @@ public class MealScoringService {
         tools.add(new ToolRow("compute", "templateFit(weights_renormalized)"));
 
         return new MealBreakdownJson(round2(value), round2(confidence), null, null, dims, List.of(),
-            tools);
+            tools, FORMULA_VERSION);
     }
 
     /**

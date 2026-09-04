@@ -73,7 +73,7 @@ class MealCoachStore {
                 MealBreakdownJson det = meal.getBreakdown();
                 meal.setBreakdown(new MealBreakdownJson(det.value(), det.confidence(), summary,
                     tagline, mergeDimensionNotes(det.dimensions(), dimensionNotes), improve,
-                    det.tools()));
+                    det.tools(), det.formulaVersion()));
                 return toLoaded(mealRepository.saveAndFlush(meal));
             });
     }

@@ -19,6 +19,12 @@ import java.util.List;
  * <p>The envelope is also the MICRO SNAPSHOT: the nutrition-quality rows are computed from the
  * live pantry/recipe sources at write time and frozen here — a later source edit never rewrites
  * a logged meal's score (same rationale as the {@code meal_item.snapshot*} columns).
+ *
+ * <p>{@code formulaVersion} a scorer FORMULA-generációja, nem a jsonb séma verziója
+ * ({@link io.mrkuhne.mezo.feature.nutrition.service.MealScoringService#FORMULA_VERSION}).
+ * A mezo-jcpt.1 ELŐTT írt envelope-okban hiányzik (deszerializáláskor {@code null}) — ez a
+ * „0-s generáció", amit a mezo-jcpt.2 backfill újrapontoz. NEM lép ki a wire-re: a
+ * {@code BreakdownDtoMapper} mezőnként képez és ezt kihagyja.
  */
 public record MealBreakdownJson(
     BigDecimal value,
@@ -27,7 +33,8 @@ public record MealBreakdownJson(
     String tagline,
     List<Dimension> dimensions,
     List<ImproveRow> improve,
-    List<ToolRow> tools
+    List<ToolRow> tools,
+    Integer formulaVersion
 ) {
 
     /**

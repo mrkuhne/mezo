@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
+import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -28,7 +29,7 @@ class MealCoachPromptTest {
         return new MealBreakdownJson(new BigDecimal("0.62"), new BigDecimal("0.80"), null, null,
             List.of(new MealBreakdownJson.Dimension("macro", "Kcal & makró", new BigDecimal("0.22"),
                 new BigDecimal("0.50"), "P/C/F 17/71/11 vs 27/47/26", null, null, null, null, null)),
-            List.of(), List.of());
+            List.of(), List.of(), MealScoringService.FORMULA_VERSION);
     }
 
     private static MealCoachPrompt.MealBlock block(UUID id, String name, int indexInDay,

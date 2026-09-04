@@ -142,7 +142,7 @@ class MealCoachServiceIT extends AbstractIntegrationTest {
         MealEntity edited = mealRepository.findById(meal.getId()).orElseThrow();
         MealBreakdownJson det = edited.getBreakdown();
         edited.setBreakdown(new MealBreakdownJson(det.value(), det.confidence(), null, null,
-            det.dimensions(), List.of(), det.tools()));
+            det.dimensions(), List.of(), det.tools(), det.formulaVersion()));
         mealRepository.saveAndFlush(edited);
 
         assertThat(mealRepository.findById(meal.getId()).orElseThrow()

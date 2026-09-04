@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
+import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
 import java.math.BigDecimal;
 import java.util.List;
@@ -32,7 +33,7 @@ class RecipeBreakdownProseServiceTest {
 
     private MealBreakdownJson envelope() {
         return new MealBreakdownJson(new BigDecimal("0.60"), new BigDecimal("0.80"), null, null,
-            List.of(), List.of(), List.of());
+            List.of(), List.of(), List.of(), MealScoringService.FORMULA_VERSION);
     }
 
     @Test
