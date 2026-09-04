@@ -164,6 +164,22 @@ describe('buildMezoMessages', () => {
     expect(m.facts).toEqual(['Alvásadósság: 1,6 óra/éjszaka'])
     expect(m.suggestions).toEqual(['Told előre a villanyoltást.'])
   })
+
+  // S5 (mezo-d58h.5) — az advice-kártya actions/applied mezői 1:1 futnak át a szál elemére.
+  const adviceWithActions: FeedMessage = {
+    ...advice,
+    actions: [{ key: 'shift_sleep_anchor', label: 'Horgony −30 perc', params: { minutes: -30 } }],
+    applied: undefined,
+  }
+
+  test('az advice feed-elem actions/applied mezői átfutnak a szál elemére', () => {
+    const [m] = buildMezoMessages({ feed: [adviceWithActions], demoBriefing: null })
+    expect(m.kind).toBe('advice')
+    expect(m.actions).toEqual([
+      { key: 'shift_sleep_anchor', label: 'Horgony −30 perc', params: { minutes: -30 } },
+    ])
+    expect(m.applied).toBeUndefined()
+  })
 })
 
 describe('partitionMezoThread (mezo-ho9k)', () => {

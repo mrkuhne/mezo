@@ -442,6 +442,27 @@ components:
           description: FE RefTag kind (WeightTrend/Goal/Workout/FuelDay/Medication/Sleep/Memory/Person)
         label:
           type: string
+    FeedAction:
+      type: object
+      required: [key, label]
+      properties:
+        key:
+          type: string
+          description: Which mutation the button applies (S5, mezo-d58h.5). The apply endpoint dispatches on this.
+          enum: [lighten_tomorrow, skip_sport_slot, shift_sleep_anchor]
+        label:
+          type: string
+          description: The button's Hungarian caption — rule-provided, never model-written.
+        params:
+          type: object
+          additionalProperties: true
+          description: The mutation's parameters, ALWAYS produced by the deterministic rule (spec §6). The model can never invent an action or a number.
+    FeedApplied:
+      type: object
+      required: [actionKey, at]
+      properties:
+        actionKey: { type: string }
+        at: { type: string, format: date-time }
     FeedMessageResponse:
       type: object
       required: [id, date, kind, eyebrow, body, refs, generatedAt]
@@ -467,6 +488,12 @@ components:
           type: array
           description: Advice-card suggestion texts (config-provided). Present only on advice rows.
           items: { type: string }
+        actions:
+          type: array
+          description: Up to two action buttons offered by this advice card (S5, mezo-d58h.5). Present only on advice rows.
+          items: { $ref: '#/components/schemas/FeedAction' }
+        applied:
+          $ref: '#/components/schemas/FeedApplied'
         generatedAt: { type: string, format: date-time }
     WeeklySuggestionResponse:
       type: object

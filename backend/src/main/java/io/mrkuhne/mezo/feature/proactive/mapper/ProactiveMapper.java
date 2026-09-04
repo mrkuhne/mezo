@@ -6,6 +6,8 @@ import io.mrkuhne.mezo.api.dto.DiagnosisEvidenceItem;
 import io.mrkuhne.mezo.api.dto.DiagnosisResponse;
 import io.mrkuhne.mezo.api.dto.DiagnosisSuspect;
 import io.mrkuhne.mezo.api.dto.ExperimentResponse;
+import io.mrkuhne.mezo.api.dto.FeedAction;
+import io.mrkuhne.mezo.api.dto.FeedApplied;
 import io.mrkuhne.mezo.api.dto.FeedMessageResponse;
 import io.mrkuhne.mezo.api.dto.FeedRef;
 import io.mrkuhne.mezo.api.dto.MemoirAnchor;
@@ -95,9 +97,22 @@ public interface ProactiveMapper {
     @Mapping(target = "refs", source = "content.refs")
     @Mapping(target = "facts", source = "content.facts")
     @Mapping(target = "suggestions", source = "content.suggestions")
+    @Mapping(target = "actions", source = "content.actions")
+    @Mapping(target = "applied", source = "content.applied")
     FeedMessageResponse toFeedResponse(CompanionMessageEntity entity);
 
     FeedRef toFeedRef(CompanionMessageEnvelope.Ref ref);
+
+    FeedAction toFeedAction(CompanionMessageEnvelope.Action action);
+
+    FeedApplied toFeedApplied(CompanionMessageEnvelope.Applied applied);
+
+    /** String→enum via the generated {@code fromValue}, the same {@code kind} precedent below —
+     *  named distinctly from {@link #map(String)} because two default methods differing only in
+     *  return type are not a valid Java overload. */
+    default FeedAction.KeyEnum mapActionKey(String key) {
+        return key == null ? null : FeedAction.KeyEnum.fromValue(key);
+    }
 
     /** String→enum via the generated {@code fromValue} (the wire value, e.g. "morning"), not
      *  MapStruct's default {@code Enum.valueOf} (the constant NAME, "MORNING") — the entity's

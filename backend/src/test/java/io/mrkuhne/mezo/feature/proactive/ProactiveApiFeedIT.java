@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.api.dto.FeedMessageResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.proactive.entity.AdviceActionKey;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
+import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEnvelope;
 import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
@@ -14,6 +16,7 @@ import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -147,6 +150,26 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
         assertThat(feed.get(0).getKind()).isEqualTo(FeedMessageResponse.KindEnum.ADVICE);
         assertThat(feed.get(0).getFacts()).containsExactly("Alvásadósság: 1,6 óra/éjszaka");
         assertThat(feed.get(0).getSuggestions()).containsExactly("Told előre a villanyoltást.");
+    }
+
+    @Test
+    void testGetFeed_shouldExposeTheAdviceCardsActions() {
+        companionMessagePopulator.createAdviceWithActions(ownerId(), LocalDate.now(), "sleep_debt",
+                "sleep_recover_tonight", "Mezo · észrevétel", "kártya szöveg",
+                List.of("tény"), List.of("javaslat"),
+                List.of(new CompanionMessageEnvelope.Action(
+                        AdviceActionKey.SHIFT_SLEEP_ANCHOR, "Horgony −30 perc", Map.of("minutes", -30))),
+                null, Instant.now());
+
+        List<FeedMessageResponse> feed = getForList(
+                "/api/proactive/feed", ownerAuthHeaders(), HttpStatus.OK, FeedMessageResponse.class);
+
+        assertThat(feed).hasSize(1);
+        assertThat(feed.get(0).getActions()).hasSize(1);
+        assertThat(feed.get(0).getActions().get(0).getKey().getValue())
+                .isEqualTo(AdviceActionKey.SHIFT_SLEEP_ANCHOR);
+        assertThat(feed.get(0).getActions().get(0).getLabel()).isEqualTo("Horgony −30 perc");
+        assertThat(feed.get(0).getApplied()).isNull();
     }
 
     @Test

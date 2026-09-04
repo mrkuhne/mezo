@@ -7153,6 +7153,24 @@ export interface components {
             kind: string;
             label: string;
         };
+        FeedAction: {
+            /**
+             * @description Which mutation the button applies (S5, mezo-d58h.5). The apply endpoint dispatches on this.
+             * @enum {string}
+             */
+            key: "lighten_tomorrow" | "skip_sport_slot" | "shift_sleep_anchor";
+            /** @description The button's Hungarian caption — rule-provided, never model-written. */
+            label: string;
+            /** @description The mutation's parameters, ALWAYS produced by the deterministic rule (spec §6). The model can never invent an action or a number. */
+            params?: {
+                [key: string]: unknown;
+            };
+        };
+        FeedApplied: {
+            actionKey: string;
+            /** Format: date-time */
+            at: string;
+        };
         FeedMessageResponse: {
             /**
              * Format: uuid
@@ -7173,6 +7191,9 @@ export interface components {
             facts?: string[];
             /** @description Advice-card suggestion texts (config-provided). Present only on advice rows. */
             suggestions?: string[];
+            /** @description Up to two action buttons offered by this advice card (S5, mezo-d58h.5). Present only on advice rows. */
+            actions?: components["schemas"]["FeedAction"][];
+            applied?: components["schemas"]["FeedApplied"];
             /** Format: date-time */
             generatedAt: string;
         };
