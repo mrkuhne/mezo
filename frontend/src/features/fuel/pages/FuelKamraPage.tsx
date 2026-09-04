@@ -27,6 +27,7 @@ import { SuggestionCard } from '@/features/fuel/components/SuggestionCard'
 import { SourceBadge } from '@/features/fuel/components/SourceBadge'
 import { AddPantryItemSheet } from '@/features/fuel/sheets/AddPantryItemSheet'
 import { ImportItemSheet } from '@/features/fuel/sheets/ImportItemSheet'
+import { CatalogSearchSheet } from '@/features/fuel/sheets/CatalogSearchSheet'
 import { CategoryFilterSheet, categoryOption } from '@/features/fuel/sheets/CategoryFilterSheet'
 import { SHOW_PANTRY_STOCK } from '@/data/_client/flags'
 import KamraSkeleton from '@/features/fuel/pages/KamraSkeleton'
@@ -58,6 +59,7 @@ export function FuelKamraPage() {
   const [filterOpen, setFilterOpen] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [importOpen, setImportOpen] = useState(false)
+  const [catalogOpen, setCatalogOpen] = useState(false)
 
   const allItems = buildKamraItems(ingredients, stash)
 
@@ -107,7 +109,10 @@ export function FuelKamraPage() {
   return (
     <MozaikPage tone="gold">
       <PageHead onBack={() => navigate('/fuel')} label="‹ Fuel">
-        <button type="button" className="pgact" onClick={() => setImportOpen(true)}>
+        <button type="button" className="pgact" onClick={() => setCatalogOpen(true)}>
+          <Icon name="bookmark" size={12} /> Közös
+        </button>
+        <button type="button" className="pgact" style={{ marginLeft: 6 }} onClick={() => setImportOpen(true)}>
           <Icon name="search" size={12} /> Import
         </button>
         <button type="button" className="pgact" style={{ marginLeft: 6 }} onClick={() => setAddOpen(true)}>
@@ -123,10 +128,13 @@ export function FuelKamraPage() {
           <div className="card col" style={{ padding: 28, alignItems: 'center', textAlign: 'center', gap: 10 }}>
             <span style={{ fontFamily: 'var(--ff-display)', fontSize: 17, color: 'var(--text-primary)' }}>A kamra üres</span>
             <span className="text-tertiary" style={{ fontSize: 12, lineHeight: 1.5, maxWidth: 250 }}>
-              Vedd fel az első tételt — ételt vagy supplementet —, és itt jelenik meg a leltárban.
+              Vedd fel az első tételt — vagy válassz a közös katalógusból —, és itt jelenik meg a leltárban.
             </span>
             <button onClick={() => setAddOpen(true)} className="chip brand mt-sm" style={{ padding: '10px 16px' }}>
               <Icon name="plus" size={12} /> Első tétel felvétele
+            </button>
+            <button onClick={() => setCatalogOpen(true)} className="chip mt-sm" style={{ padding: '10px 16px' }}>
+              Hozzáadás a közösből
             </button>
           </div>
         ) : (
@@ -303,6 +311,7 @@ export function FuelKamraPage() {
       )}
       <AddPantryItemSheet open={addOpen} onClose={() => setAddOpen(false)} />
       {importOpen && <ImportItemSheet onClose={() => setImportOpen(false)} />}
+      {catalogOpen && <CatalogSearchSheet onClose={() => setCatalogOpen(false)} />}
     </MozaikPage>
   )
 }

@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { KamraItemDetailPage } from '@/features/fuel/pages/KamraItemDetailPage'
 import { usePantry } from '@/data/hooks'
+import { ingredients } from '@/data/fuel/pantry'
 
 // KamraItemDetailPage reads usePantry (a dual-mode TanStack query). Pin mock mode.
 beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
@@ -152,4 +153,17 @@ test('"Receptekben" chips surface the real recipes that use this ingredient (aud
 test('a pantry item with no recipe references hides the "Receptekben" section entirely', () => {
   renderDetail('ing-kreatin', newQc())
   expect(screen.queryByText(/Receptekben/)).not.toBeInTheDocument()
+})
+
+test('a shared-catalog item shows "közös · <author>" and locks the edit sheet\'s definition fields', async () => {
+  const qc = newQc()
+  qc.setQueryData(['pantry'], {
+    ingredients: [{ ...ingredients[0], id: 'shared-1', catalogId: 'cat-skyr', sharedFrom: { authorName: 'Anna' }, catalogEditable: false }],
+    stash: [], imports: [], suggestions: [],
+  })
+  renderDetail('shared-1', qc)
+  expect(screen.getByText('közös · Anna')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: /Szerkesztés/ }))
+  expect(await screen.findByText('Tétel szerkesztése')).toBeInTheDocument()
+  expect(screen.getByLabelText(/név/i)).toBeDisabled()
 })

@@ -64,12 +64,18 @@ export function AddPantryItemSheet({
   onClose,
   editId,
   initial,
+  definitionLocked,
 }: {
   open: boolean
   onClose: () => void
   editId?: string
   initial?: Partial<PantryItemInput>
+  /** S4 (mezo-qw37.4): true when this row's shared definition may not be edited by this
+   *  user (item.catalogEditable === false) — kind/category/name/source/macro/nutrition
+   *  inputs lock; price/stock/dose stay editable (they are the caller's own facts). */
+  definitionLocked?: boolean
 }) {
+  const lock = definitionLocked === true
   const { addItem, updateItem } = usePantryActions()
   const [kind, setKind] = useState<PantryItemKind>(initial?.kind ?? 'food')
   const [category, setCategory] = useState(initial?.category ?? 'protein')
@@ -99,36 +105,61 @@ export function AddPantryItemSheet({
   const isFood = kind === 'food'
 
   function submit() {
+    const isEdit = editId != null
+    // STATE half — the caller's OWN shelf row (price/stock/dose/protocol). Always sent, never gated.
+    // `kind`/`name` ride along because PantryItemRequest requires them; an UNCHANGED echo of them is
+    // not a definition edit (PantryMapper.definitionDiffers compares stripped values, and the
+    // backend validates/writes the definition only when it actually differs).
     const input: PantryItemInput = {
       kind,
       name,
-      source,
-      category,
-      // Create pins the per-100 g / grams basis explicitly (a null serving_amount would re-open
-      // the `per ?? 1` recipe-math trap). Edit ECHOES the stored basis unchanged (omitting it
-      // would 400: validatePerKind runs on the update request too — food requires unit, a
-      // gram-based dose-less supplement requires per). The legacy per-serving row survives
-      // because inputFromItem always hands the stored per/unit back via `initial`.
-      ...(editId ? { per: initial?.per ?? 100, unit: initial?.unit ?? 'g' } : { per: 100, unit: 'g' }),
       stockQty: toNum(stockQty),
       stockUnit: stockUnit || undefined,
       price: toNum(price),
       priceUnit: initial?.priceUnit,
-      pkg: initial?.pkg,
     }
-    if (isFood) {
-      input.kcal = toNum(kcal) ?? 0
-      input.proteinG = toNum(proteinG)
-      input.carbsG = toNum(carbsG)
-      input.fatG = toNum(fatG)
-      input.fiberG = toNum(fiberG)
-      input.sugarG = toNum(sugarG)
-      input.saturatedFatG = toNum(saturatedFatG)
-      input.saltG = toNum(saltG)
-    } else {
+    if (!isFood) {
       input.dose = dose
-      input.form = initial?.form
       input.protocol = initial?.protocol
+    }
+    // DEFINITION half — the SHARED catalog row (mezo-qw37.4 final review, I-1). Send a field only
+    // when THIS save actually changes it, and never at all while the row is locked. The sheet used
+    // to echo the whole definition back on every save; since PantryMapper zero-fills NULL macros on
+    // the way out, that echo turned a pure price edit into a definition edit — a 403
+    // (PANTRY_CATALOG_NOT_EDITABLE) for a non-author, and for an OWNER, who passes the gate, a
+    // silent write of fabricated 0 kcal/protein/carbs/fat onto a definition other users read.
+    // Dropping only UNCHANGED values keeps a genuinely typed 0 intact: it differs from the
+    // prefill it replaces, so it is still sent.
+    const put = <K extends keyof PantryItemInput>(key: K, value: PantryItemInput[K] | undefined) => {
+      if (value === undefined) return
+      if (isEdit && initial?.[key] === value) return
+      input[key] = value as PantryItemInput[K]
+    }
+    if (!lock) {
+      put('source', source)
+      put('category', category)
+      put('pkg', initial?.pkg)
+      // Create pins the per-100 g / grams basis explicitly (a null serving_amount would re-open the
+      // `per ?? 1` recipe-math trap). Edit never changes the basis — it is not an input (mezo-0gjr) —
+      // so it is simply omitted now that a state-only PATCH no longer has to satisfy validatePerKind.
+      if (!isEdit) {
+        input.per = 100
+        input.unit = 'g'
+      }
+      if (isFood) {
+        // `?? 0` only on create, where the backend requires kcal; on edit an empty box means
+        // "unchanged", never a fabricated 0 onto a NULL column.
+        put('kcal', isEdit ? toNum(kcal) : (toNum(kcal) ?? 0))
+        put('proteinG', toNum(proteinG))
+        put('carbsG', toNum(carbsG))
+        put('fatG', toNum(fatG))
+        put('fiberG', toNum(fiberG))
+        put('sugarG', toNum(sugarG))
+        put('saturatedFatG', toNum(saturatedFatG))
+        put('saltG', toNum(saltG))
+      } else {
+        put('form', initial?.form)
+      }
     }
     if (editId) updateItem(editId, input)
     else addItem(input)
@@ -158,24 +189,24 @@ export function AddPantryItemSheet({
           <SectionHead>Alap</SectionHead>
           <div style={grid2}>
             <Field label="Típus">
-              <select value={kind} onChange={e => setKind(e.target.value as PantryItemKind)} style={selectStyle}>
+              <select disabled={lock} value={kind} onChange={e => setKind(e.target.value as PantryItemKind)} style={selectStyle}>
                 {kinds.map(k => <option key={k.id} value={k.id}>{k.label}</option>)}
               </select>
             </Field>
             <Field label="Kategória">
-              <select value={category} onChange={e => setCategory(e.target.value)} style={selectStyle}>
+              <select disabled={lock} value={category} onChange={e => setCategory(e.target.value)} style={selectStyle}>
                 {categoryKeys.map(c => <option key={c} value={c}>{pantryCategoryMeta[c].label}</option>)}
               </select>
             </Field>
           </div>
           <div style={{ marginBottom: 8 }}>
             <Field label="Név">
-              <input value={name} onChange={e => setName(e.target.value)} placeholder="pl. Görög joghurt 10%" style={fieldInputStyle} />
+              <input disabled={lock} value={name} onChange={e => setName(e.target.value)} placeholder="pl. Görög joghurt 10%" style={fieldInputStyle} />
             </Field>
           </div>
           <div style={grid2}>
             <Field label="Forrás">
-              <select value={source} onChange={e => setSource(e.target.value as PantrySourceKey)} style={selectStyle}>
+              <select disabled={lock} value={source} onChange={e => setSource(e.target.value as PantrySourceKey)} style={selectStyle}>
                 {sourceKeys.map(s => <option key={s} value={s}>{pantrySources[s].label}</option>)}
               </select>
             </Field>
@@ -185,29 +216,34 @@ export function AddPantryItemSheet({
               Bázis: /{legacyPer} {initial?.unit ?? 'g'} · örökölt
             </p>
           )}
+          {lock && (
+            <p className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', margin: '0 2px 8px' }}>
+              Közös katalógus-tétel: az adatait csak a szerző vagy a tulajdonos szerkesztheti. Az ár, a készlet és a dózis a tiéd.
+            </p>
+          )}
 
           {isFood ? (
             <>
               {/* Makrók — the label's per-100 g column, verbatim (mezo-0gjr) */}
               <SectionHead>Makrók · /100 g</SectionHead>
               <div style={grid2}>
-                <Field label="kcal"><input {...numProps} value={kcal} onChange={e => setKcal(e.target.value)} placeholder="119" style={fieldInputStyle} /></Field>
-                <Field label="Fehérje"><input {...numProps} value={proteinG} onChange={e => setProteinG(e.target.value)} placeholder="6" style={fieldInputStyle} /></Field>
+                <Field label="kcal"><input disabled={lock} {...numProps} value={kcal} onChange={e => setKcal(e.target.value)} placeholder="119" style={fieldInputStyle} /></Field>
+                <Field label="Fehérje"><input disabled={lock} {...numProps} value={proteinG} onChange={e => setProteinG(e.target.value)} placeholder="6" style={fieldInputStyle} /></Field>
               </div>
               <div style={grid2}>
-                <Field label="Szénhidrát"><input {...numProps} value={carbsG} onChange={e => setCarbsG(e.target.value)} placeholder="4" style={fieldInputStyle} /></Field>
-                <Field label="Zsír"><input {...numProps} value={fatG} onChange={e => setFatG(e.target.value)} placeholder="9" style={fieldInputStyle} /></Field>
+                <Field label="Szénhidrát"><input disabled={lock} {...numProps} value={carbsG} onChange={e => setCarbsG(e.target.value)} placeholder="4" style={fieldInputStyle} /></Field>
+                <Field label="Zsír"><input disabled={lock} {...numProps} value={fatG} onChange={e => setFatG(e.target.value)} placeholder="9" style={fieldInputStyle} /></Field>
               </div>
 
               {/* Tápanyag — same per-100 g basis as the macros */}
               <SectionHead>Tápanyag · /100 g</SectionHead>
               <div style={grid2}>
-                <Field label="Rost"><input {...numProps} value={fiberG} onChange={e => setFiberG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
-                <Field label="Cukor"><input {...numProps} value={sugarG} onChange={e => setSugarG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
+                <Field label="Rost"><input disabled={lock} {...numProps} value={fiberG} onChange={e => setFiberG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
+                <Field label="Cukor"><input disabled={lock} {...numProps} value={sugarG} onChange={e => setSugarG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
               </div>
               <div style={grid2}>
-                <Field label="Tel. zsír"><input {...numProps} value={saturatedFatG} onChange={e => setSaturatedFatG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
-                <Field label="Só"><input {...numProps} value={saltG} onChange={e => setSaltG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
+                <Field label="Tel. zsír"><input disabled={lock} {...numProps} value={saturatedFatG} onChange={e => setSaturatedFatG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
+                <Field label="Só"><input disabled={lock} {...numProps} value={saltG} onChange={e => setSaltG(e.target.value)} placeholder="0" style={fieldInputStyle} /></Field>
               </div>
             </>
           ) : (

@@ -6,6 +6,7 @@ import type {
   PantryImport,
   PantrySuggestion,
   PantryScrapeDraft,
+  PantryCatalogEntry,
   MealAiDraft,
   MealBreakdown,
   FuelMeal,
@@ -636,3 +637,10 @@ export const recipes: Recipe[] = recipesBase.map(r => {
 
   return { ...r, ingredients: enrichedIngredients, macros, nutrients, recentLogs, templateBreakdown }
 })
+
+// === Mock shared catalog (S4, mezo-qw37.4) — what "Hozzáadás a közösből" searches in demo mode ===
+export const pantryCatalogFixture: PantryCatalogEntry[] = [
+  { id: 'cat-skyr', kind: 'food', name: 'Skyr natúr', brand: 'Ehrmann', source: 'manual', category: 'dairy', per: 100, unit: 'g', kcal: 63, proteinG: 10.6, carbsG: 4, fatG: 0.2, sugarG: 3.9, saltG: 0.09, saturatedFatG: 0.1, nova: 1, authorName: 'Anna' },
+  { id: 'cat-bulgur', kind: 'food', name: 'Bulgur Raw Kifli', brand: null, source: 'kifli.hu', category: 'grains', per: 100, unit: 'g', kcal: 331, proteinG: 11, carbsG: 63, fatG: 1, fiberG: 13, nova: 1, authorName: null },
+  { id: 'cat-kreatin', kind: 'supplement', name: 'Creatine Monohydrate', brand: 'MyProtein', source: 'myprotein.hu', category: 'supplement', per: 100, unit: 'g', kcal: 0, form: 'por', authorName: 'Béla' },
+]

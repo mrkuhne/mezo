@@ -49,6 +49,10 @@ export function buildKamraItems(
         pkg: s.pkg,
         micros: s.micros,
         nova: s.nova,
+        // S4 (mezo-qw37.4): shared-catalog provenance — carry through like the food arm below.
+        catalogId: s.catalogId,
+        sharedFrom: s.sharedFrom,
+        catalogEditable: s.catalogEditable,
       }
     })
 

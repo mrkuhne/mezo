@@ -38,6 +38,7 @@ import io.mrkuhne.mezo.support.populator.MentionPopulator;
 import io.mrkuhne.mezo.support.populator.MesoTemplatePopulator;
 import io.mrkuhne.mezo.support.populator.NeedsPopulator;
 import io.mrkuhne.mezo.support.populator.NotificationPopulator;
+import io.mrkuhne.mezo.support.populator.PantryCatalogPopulator;
 import io.mrkuhne.mezo.support.populator.PantryImportPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.PeriodSummaryPopulator;
@@ -99,7 +100,7 @@ import org.springframework.context.annotation.Import;
     BiometricProfilePopulator.class, WeightLogPopulator.class, SleepLogPopulator.class,
     SleepGoalPopulator.class,
     CheckInPopulator.class,
-    PantryItemPopulator.class, PantryImportPopulator.class,
+    PantryCatalogPopulator.class, PantryItemPopulator.class, PantryImportPopulator.class,
     RecipePopulator.class, MealPopulator.class, WaterLogPopulator.class,
     FuelSettingsPopulator.class, MealSlotTemplatePopulator.class,
     MedicationPopulator.class, MedicationDosePopulator.class,

@@ -24,7 +24,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [character](#character) | ✓ | 1 | ✓ | ✓ | [character](features/character.md) |
 | [companion](#companion) | ✓ | 4 | · | · | [character](features/character.md), [companion](features/companion.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md) |
 | [feedback](#feedback) | · | · | ✓ | · | [insights](features/insights.md) |
-| [fuel](#fuel) | ✓ | 2 | ✓ | ✓ | [fuel](features/fuel.md), [_platform-api-backend](features/_platform-api-backend.md), [_platform-data-layer](features/_platform-data-layer.md) |
+| [fuel](#fuel) | ✓ | 2 | ✓ | ✓ | [fuel](features/fuel.md), [pantry](features/pantry.md), [recipe](features/recipe.md), [_platform-api-backend](features/_platform-api-backend.md), [_platform-data-layer](features/_platform-data-layer.md) |
 | [gamification](#gamification) | ✓ | 1 | ✓ | · | [growth](features/growth.md), [_platform-data-layer](features/_platform-data-layer.md) |
 | [goal](#goal) | ✓ | 1 | · | · | [goal-engine](features/goal-engine.md), [me](features/me.md) |
 | [habit](#habit) | ✓ | 1 | ✓ | · | [habit](features/habit.md) |
@@ -39,13 +39,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [needs](#needs) | ✓ | 1 | ✓ | · | [needs](features/needs.md) |
 | [notification](#notification) | ✓ | 1 | ✓ | ✓ | [_platform-notifications](features/_platform-notifications.md) |
 | [nutrition](#nutrition) | ✓ | 1 | · | · | [fuel](features/fuel.md) |
-| [pantry](#pantry) | ✓ | 1 | · | · | [fuel](features/fuel.md) |
+| [pantry](#pantry) | ✓ | 1 | · | · | [fuel](features/fuel.md), [pantry](features/pantry.md) |
 | [people](#people) | ✓ | 1 | · | · | [me](features/me.md) |
 | [proactive](#proactive) | ✓ | 2 | · | · | [proactive](features/proactive.md) |
 | [progression](#progression) | ✓ | 1 | ✓ | ✓ | [growth](features/growth.md) |
 | [quest](#quest) | ✓ | 1 | ✓ | · | [growth](features/growth.md) |
 | [quickinput](#quickinput) | · | · | · | ✓ | · |
-| [recipe](#recipe) | ✓ | 1 | · | · | · |
+| [recipe](#recipe) | ✓ | 1 | · | · | [recipe](features/recipe.md) |
 | [ritual](#ritual) | ✓ | 1 | ✓ | ✓ | [ritual](features/ritual.md) |
 | [today](#today) | · | · | ✓ | ✓ | [habit](features/habit.md), [intention](features/intention.md), [needs](features/needs.md), [ritual](features/ritual.md), [today](features/today.md) |
 | [train](#train) | ✓ | 1 | ✓ | ✓ | [fuel](features/fuel.md), [goal-engine](features/goal-engine.md), [train](features/train.md), [_platform-data-layer](features/_platform-data-layer.md) |
@@ -385,6 +385,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### fuel
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-03, done) ·
+  [docs/features/pantry.md](features/pantry.md) (updated 2026-09-02, done) ·
+  [docs/features/recipe.md](features/recipe.md) (updated 2026-09-02, done) ·
   [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-03, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-02, done)
 
@@ -425,10 +427,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     FuelNaploPage.tsx, FuelPlanPage.tsx, FuelRecipesPage.tsx, FuelSlotsPage.tsx, FuelStackPage.tsx,
     KamraItemDetailPage.tsx, KamraSkeleton.tsx, LogFlowPage.tsx, RecipeDetailPage.tsx, RecipeEditorPage.tsx,
     RecipeWorkshopPage.tsx, RecipesSkeleton.tsx
-  - **sheets:** AddPantryItemSheet.tsx, CategoryFilterSheet.tsx, EnergyBreakdownSheet.tsx, FuelSettingsSheet.tsx,
-    ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, LogDoseSheet.tsx, MealScoreSheet.tsx,
-    MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, ReplanSheet.tsx, StackItemSheet.tsx,
-    StackPickerSheet.tsx, WaterLogSheet.tsx
+  - **sheets:** AddPantryItemSheet.tsx, CatalogSearchSheet.tsx, CategoryFilterSheet.tsx, EnergyBreakdownSheet.tsx,
+    FuelSettingsSheet.tsx, ImportItemSheet.tsx, IngredientPickerSheet.tsx, KamraPickSheet.tsx, LogDoseSheet.tsx,
+    MealScoreSheet.tsx, MedicationFormSheet.tsx, ReceptPickSheet.tsx, RecipeScoreSheet.tsx, ReplanSheet.tsx,
+    StackItemSheet.tsx, StackPickerSheet.tsx, WaterLogSheet.tsx
   - **components:** ContextPanel.tsx, DietSuggestionBanner.tsx, DimensionCard.tsx, FuelLogHeroTile.tsx, KamraCard.tsx,
     KeretHero.tsx, MacroCells.tsx, MacroPanel.tsx, MealComposer.tsx, MealScoreChip.tsx, MedicationCycleBar.tsx,
     MedicationWeekStrip.tsx, MicroPanel.tsx, NovaDot.tsx, NovaPanel.tsx, NutrientCells.tsx, PatternRow.tsx,
@@ -747,7 +749,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **entities→tables:** `MealEntity`→`meal`, `MealItemEntity`→`meal_item`, `WaterLogEntity`→`water_log`
   - **repositories:** `MealItemRepository`, `MealRepository`, `WaterLogRepository`
   - **services:** `FuelDayService`, `MealAiDraftService`, `MealAiDraftValidator`, `MealCoachLlm`, `MealCoachPrompt`,
-    `MealCoachService`, `MealCoachStore`, `MealDraftLlm`, `MealService`, `PantryNameIndex`, `WaterLogService`
+    `MealCoachService`, `MealCoachStore`, `MealDraftLlm`, `MealService`, `WaterLogService`
   - **controllers→contract:** `MealAiDraftController`→`MealAiLogApi`, `MealController`→`MealApi`
   - **mappers:** `MealMapper`
   - **config:** `MealAiLogProperties`
@@ -756,14 +758,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/fuel/day/{date} · GET /api/fuel/week/{start} · POST /api/meal · PUT /api/meal/{id} ·
     DELETE /api/meal/{id} · POST /api/meal/ai-draft · GET /api/recipe/{id}/logs · GET /api/meal/coach ·
     GET /api/meal/{id}/coach · POST /api/water-log · DELETE /api/water-log/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 20 IT + 5 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 20 IT + 4 unit
   - **ITs:** `FuelDayDayTypeIT`, `FuelDayServiceIT`, `MealAiDraftApiIT`, `MealAiDraftServiceIT`,
     `MealAiDraftSwitchOffApiIT`, `MealAiLlmUnavailableApiIT`, `MealAiUploadLimitApiIT`, `MealApiIT`, `MealCoachApiIT`,
     `MealCoachServiceIT`, `MealCoachSwitchOffApiIT`, `MealItemRecipeOverridesIT`, `MealOverridesIT`,
     `MealOverridesScoringIT`, `MealOverridesServiceIT`, `MealRepositoryIT`, `MealServiceIT`,
     `NutritionTargetsPropertiesIT`, `RecipeLogsServiceIT`, `WaterLogApiIT`
-  - **populators:** `DatabasePopulator`, `GoalPopulator`, `MealPopulator`, `PantryItemPopulator`, `RecipePopulator`,
-    `TrainPopulator`, `WaterLogPopulator`, `WeightLogPopulator`
+  - **populators:** `DatabasePopulator`, `GoalPopulator`, `MealPopulator`, `PantryCatalogPopulator`,
+    `PantryItemPopulator`, `RecipePopulator`, `TrainPopulator`, `WaterLogPopulator`, `WeightLogPopulator`
 
 ### medication
 
@@ -859,30 +861,34 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### pantry
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-03, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-03, done) ·
+  [docs/features/pantry.md](features/pantry.md) (updated 2026-09-02, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/pantry`
-  - **entities→tables:** `PantryImportEntity`→`pantry_import`, `PantryItemEntity`→`pantry_item`
-  - **repositories:** `PantryImportRepository`, `PantryItemRepository`
-  - **services:** `HtmlNutritionStripper`, `OffClient`, `PantryImportService`, `PantryPhotoService`,
-    `PantryScrapeService`, `PantryService`, `PantrySuggestionService`, `PhotoExtractLlm`, `ScrapeDraftValidator`,
-    `ScrapeExtractionService`, `ScrapeLlm`, `WebPageClient`
+  - **entities→tables:** `PantryCatalogEntity`→`pantry_catalog`, `PantryImportEntity`→`pantry_import`,
+    `PantryItemEntity`→`pantry_item`
+  - **repositories:** `PantryCatalogRepository`, `PantryImportRepository`, `PantryItemRepository`
+  - **services:** `HtmlNutritionStripper`, `OffClient`, `PantryCatalogService`, `PantryImportService`,
+    `PantryNameIndex`, `PantryPhotoService`, `PantryScrapeService`, `PantryService`, `PantrySuggestionService`,
+    `PhotoExtractLlm`, `ScrapeDraftValidator`, `ScrapeExtractionService`, `ScrapeLlm`, `WebPageClient`
   - **controllers→contract:** `PantryController`→`PantryApi`, `PantryImportController`→`PantryImportApi`,
     `PantryPhotoController`→`PantryPhotoApi`, `PantryScrapeController`→`PantryScrapeApi`
   - **mappers:** `PantryMapper`
   - **config:** `PantryImportProperties`, `PantryPhotoProperties`, `PantryScrapeProperties`,
     `PantrySuggestionProperties`
   - **other:** `MicroFact`, `PantryCatalogLoader`
-- **Contract** `api/feature/pantry/pantry.yml` — 8 operations
+- **Contract** `api/feature/pantry/pantry.yml` — 10 operations
   - **endpoints:** GET /api/pantry · POST /api/pantry · PUT /api/pantry/{id} · DELETE /api/pantry/{id} ·
-    GET /api/pantry-import/lookup · POST /api/pantry-import · POST /api/pantry-import/scrape ·
-    POST /api/pantry-import/photo
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/pantry` — 14 IT + 4 unit
-  - **ITs:** `PantryApiIT`, `PantryCatalogLoaderIT`, `PantryImportApiIT`, `PantryImportDisabledApiIT`,
-    `PantryItemRepositoryIT`, `PantryPhotoApiIT`, `PantryPhotoDisabledApiIT`, `PantryPhotoLlmUnavailableApiIT`,
-    `PantryPhotoScrapeOffApiIT`, `PantryScrapeApiIT`, `PantryScrapeDisabledApiIT`, `PantryScrapeLlmUnavailableApiIT`,
-    `PantryServiceIT`, `WebPageClientIT`
-  - **populators:** `DatabasePopulator`, `PantryImportPopulator`, `PantryItemPopulator`
+    GET /api/pantry/catalog · POST /api/pantry/items/from-catalog · GET /api/pantry-import/lookup ·
+    POST /api/pantry-import · POST /api/pantry-import/scrape · POST /api/pantry-import/photo
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/pantry` — 17 IT + 5 unit
+  - **ITs:** `PantryApiIT`, `PantryCatalogApiIT`, `PantryCatalogLoaderIT`, `PantryCatalogMigrationIT`,
+    `PantryCatalogServiceIT`, `PantryImportApiIT`, `PantryImportDisabledApiIT`, `PantryItemRepositoryIT`,
+    `PantryPhotoApiIT`, `PantryPhotoDisabledApiIT`, `PantryPhotoLlmUnavailableApiIT`, `PantryPhotoScrapeOffApiIT`,
+    `PantryScrapeApiIT`, `PantryScrapeDisabledApiIT`, `PantryScrapeLlmUnavailableApiIT`, `PantryServiceIT`,
+    `WebPageClientIT`
+  - **populators:** `DatabasePopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
+    `UserPopulator`
 
 ### people
 
@@ -1039,7 +1045,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### recipe
 
-*BE + API* · read next: **none — no HOW doc exists for this feature yet**
+*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-09-02, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/recipe`
   - **entities→tables:** `RecipeEntity`→`recipe`, `RecipeIngredientEntity`→`recipe_ingredient`
@@ -1287,11 +1293,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   `IntentionPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LevelUpEventPopulator`,
   `LifeGoalPopulator`, `LlmLogPopulator`, `MealPopulator`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`,
   `MedicationPopulator`, `MemoirPopulator`, `MemoryEmbeddingPopulator`, `MentionPopulator`, `MesoTemplatePopulator`,
-  `NeedsPopulator`, `NotificationPopulator`, `PantryImportPopulator`, `PantryItemPopulator`, `PatternEventPopulator`,
-  `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`, `ProtocolPopulator`,
-  `QuestPopulator`, `RecipePopulator`, `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`,
-  `SleepGoalPopulator`, `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`,
-  `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`,
+  `NeedsPopulator`, `NotificationPopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
+  `PatternEventPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`,
+  `ProtocolPopulator`, `QuestPopulator`, `RecipePopulator`, `RitualPopulator`, `RunningPopulator`,
+  `SkillProgressPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `SupplementIntakePopulator`, `TrainPopulator`,
+  `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`,
   `WeightLogPopulator`
 - **`ResetDatabase` TRUNCATE list** — 99 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `activity_log`, `ai_conversation`, `ai_message`, `app_notification`, `biometric_profile`, `challenge`,
@@ -1323,5 +1329,5 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 Sources that could not be bound to a feature block by convention — bind them by adding the missing controller/`key_files` entry, or read them directly.
 
 - **Feature doc** [`docs/features/_platform-design-system.md`](features/_platform-design-system.md) — its `key_files` point outside any single feature package
-- **Features with no `docs/features/` doc:** `medication`, `quickinput`, `recipe`
+- **Features with no `docs/features/` doc:** `medication`, `quickinput`
   There is no HOW doc for these — read the code, and write the doc when you touch them (AGENTS.md §Documentation).

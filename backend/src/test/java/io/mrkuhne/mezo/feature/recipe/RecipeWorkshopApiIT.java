@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.PantryItemRequest;
 import io.mrkuhne.mezo.api.dto.PantryItemResponse;
+import io.mrkuhne.mezo.api.dto.PantryResponse;
 import io.mrkuhne.mezo.api.dto.WorkshopDraftLine;
 import io.mrkuhne.mezo.api.dto.WorkshopTurnRequest;
 import io.mrkuhne.mezo.api.dto.WorkshopTurnResponse;
@@ -87,6 +88,30 @@ class RecipeWorkshopApiIT extends ApiIntegrationTest {
         WorkshopDraftLine line = res.getDraft().getLines().get(0);
         assertThat(line.getSource()).isEqualTo("estimate");
         assertThat(line.getPantryItemId()).isNull();
+    }
+
+    @Test
+    void testTurn_shouldMatchCatalogByName_andPutItOnMyShelf_whenLlmLeftTheIdNull() {
+        RegisteredUser anna = registerUser("Anna");
+        HttpHeaders bela = registerUser("Béla").headers();
+        createFood(anna.headers(), "Kölesgolyó"); // Anna's definition, shared
+
+        String sentinel = """
+            [fake-workshop:{"reply":"Kész.","draft":{"name":"Golyós tál","category":"snack",\
+            "servings":1,"steps":[],\
+            "lines":[{"pantryItemId":null,"name":"kölesgolyó","amount":40,"unit":"g",\
+            "kcal":200,"proteinG":10,"carbsG":20,"fatG":5}]}}]""";
+        WorkshopTurnRequest req = new WorkshopTurnRequest();
+        req.setMessage(sentinel);
+
+        WorkshopTurnResponse res = postForBody("/api/recipe/workshop/turn", req, bela, HttpStatus.OK, WorkshopTurnResponse.class);
+
+        WorkshopDraftLine line = res.getDraft().getLines().get(0);
+        assertThat(line.getSource()).isEqualTo("pantry");
+        assertThat(line.getName()).isEqualTo("Kölesgolyó");
+        assertThat(line.getKcal()).isNull(); // pantry lines carry no macros — the FE computes them
+        PantryResponse pantry = getForBody("/api/pantry", bela, HttpStatus.OK, PantryResponse.class);
+        assertThat(pantry.getIngredients()).extracting("id").contains(line.getPantryItemId()); // Béla's own row now exists
     }
 
     @Test

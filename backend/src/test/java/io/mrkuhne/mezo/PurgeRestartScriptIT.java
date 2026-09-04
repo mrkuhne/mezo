@@ -76,6 +76,7 @@ class PurgeRestartScriptIT extends AbstractIntegrationTest {
     void testDryRun_shouldDeleteNothing_whenGucUnset() throws IOException {
         seed();
         long pantry = count("pantry_item");
+        long pantryCatalog = count("pantry_catalog");
         long recipes = count("recipe");
         long recipeIngredients = count("recipe_ingredient");
         long weight = count("weight_log");
@@ -85,6 +86,7 @@ class PurgeRestartScriptIT extends AbstractIntegrationTest {
         runScript(false);
 
         assertThat(count("pantry_item")).isEqualTo(pantry);
+        assertThat(count("pantry_catalog")).isEqualTo(pantryCatalog);
         assertThat(count("recipe")).isEqualTo(recipes);
         assertThat(count("recipe_ingredient")).isEqualTo(recipeIngredients);
         assertThat(count("weight_log")).isEqualTo(weight);
@@ -96,21 +98,27 @@ class PurgeRestartScriptIT extends AbstractIntegrationTest {
         seed();
         long users = count("app_user");
         long pantry = count("pantry_item");
+        long pantryCatalog = count("pantry_catalog");
         long recipes = count("recipe");
         long recipeIngredients = count("recipe_ingredient");
         long chains = count("habit_chain");
         long defs = count("habit_def");
         assertThat(count("weight_log")).isPositive();
         assertThat(count("habit_day")).isPositive();
+        assertThat(pantryCatalog).isPositive();
 
         runScript(true);
 
         // purged side: logs gone, routine day-ticks gone
         assertThat(count("weight_log")).isZero();
         assertThat(count("habit_day")).isZero();
-        // kept side: identity, pantry, recipes (+ ingredients), routine definitions untouched
+        // kept side: identity, pantry, recipes (+ ingredients), routine definitions untouched.
+        // pantry_catalog (mezo-qw37.4) is the pantry's definition half — dropping it from the
+        // whitelist empties the kept pantry_item through the catalog_id FK's TRUNCATE CASCADE,
+        // so pin both halves here.
         assertThat(count("app_user")).isEqualTo(users);
         assertThat(count("pantry_item")).isEqualTo(pantry);
+        assertThat(count("pantry_catalog")).isEqualTo(pantryCatalog);
         assertThat(count("recipe")).isEqualTo(recipes);
         assertThat(count("recipe_ingredient")).isEqualTo(recipeIngredients);
         assertThat(count("habit_chain")).isEqualTo(chains);
