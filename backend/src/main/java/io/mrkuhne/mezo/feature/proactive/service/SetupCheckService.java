@@ -21,8 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Setup checks (S3, bd mezo-d58h.3, spec 2026-09-03 §4 setup table) — the user's CONFIGURATION
  * contradicts what coaching needs. Not flags: these read configuration rather than metric series,
- * run on their own daily cron rather than the flag spine, and emit a {@code setup} card that
- * re-emits at most weekly until the configuration stops contradicting them.
+ * run on their own daily cron rather than the flag spine, and emit an {@code advice} card (S4, bd
+ * mezo-d58h.4) that re-emits at most weekly until the configuration stops contradicting them.
  *
  * <p>PURE CODE, like {@code InterventionService}: the text is config, never an LLM call, so there
  * is nothing to tag with LlmCallContextHolder.

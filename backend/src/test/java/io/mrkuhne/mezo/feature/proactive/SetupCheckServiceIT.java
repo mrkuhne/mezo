@@ -92,6 +92,23 @@ class SetupCheckServiceIT extends AbstractIntegrationTest {
             owner, LocalDate.now(), CompanionMessageEntity.KIND_ADVICE)).isPresent();
     }
 
+    /** Pins that a pre-S4 {@code setup} row still counts against the weekly re-emit window — the
+     *  dual-kind read in {@code inReEmitWindow} cannot be silently dropped back to advice-only.
+     *  The seeded row's {@code messageDate} is in the PAST (not today), so the advice day-gate is
+     *  not what would silence the check; only the re-emit window can be responsible for the empty
+     *  result. Deleting {@code CompanionMessageEntity.KIND_SETUP} from the read would make this
+     *  test fail (the row would no longer be seen, and a fresh {@code advice} card would be
+     *  written instead of staying silent). */
+    @Test
+    void testRunFor_shouldStaySilent_whenARecentLegacySetupRowIsInsideTheReEmitWindow() {
+        UUID owner = userPopulator.createUser().getId();
+        companionMessagePopulator.createSetup(owner, LocalDate.now().minusDays(1),
+            SetupCheckService.CHECK_MISSING_SLEEP_GOAL, SetupCheckService.EYEBROW,
+            List.of("…"), Instant.now().minus(24, ChronoUnit.HOURS)); // 24h < 168h window
+
+        assertThat(setupCheckService.runFor(owner)).isEmpty();
+    }
+
     @Test
     void testRunFor_shouldWriteAnAdviceRowCarryingBothKeys() {
         UUID owner = userPopulator.createUser().getId();
