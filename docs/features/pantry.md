@@ -54,7 +54,7 @@ Shared-provenance UI:
 
 - `createItem` — binds to an existing catalog entry (`req.catalogId` set) or resolves/creates one via `PantryCatalogService.findOrCreate` from the request's definition fields, natural-key bound.
 - `addFromCatalog` → `PantryCatalogService.ensureItem(userId, catalogId)` — the idempotent "put on my shelf": returns the caller's existing live row for that catalog id if there is one, else creates one.
-- `updateItem` — calls `PantryMapper.definitionDiffers(catalog, req)` first; if any *definition* field in the request differs from the catalog row, per-kind validation (`validateEffectivePerKind`) and `PantryCatalogService.requireEditable(user, catalog)` run BEFORE any mutation (so a refused edit never gets flushed); *state* fields (stock/price/notes/dose/timing/taken) apply unconditionally. A **state-only PATCH is never validated against the per-kind rules** and never has to carry the definition back: validation applies to the MERGED definition (request field, else the stored one), so a food edit no longer has to resend `unit`/`kcal`. The edit sheet correspondingly sends a definition field only when that save CHANGES it — echoing the response back used to turn a price edit into a definition edit, because `PantryMapper` zero-fills NULL macros on the way out (a 403 for a non-author, a silent zero-overwrite of the shared row for an OWNER).
+- `updateItem` — calls `PantryMapper.definitionDiffers(catalog, req)` first; if any *definition* field in the request differs from the catalog row, per-kind validation (`validateEffectivePerKind`) and `PantryCatalogService.requireEditable(user, catalog)` run BEFORE any mutation (so a refused edit never gets flushed); *state* fields (stock/price/notes/dose/timing/taken) apply unconditionally. A **state-only PATCH is never validated against the per-kind rules** and never has to carry the definition back: validation applies to the MERGED definition (request field, else the stored one), so a food edit no longer has to resend `unit`/`kcal`. The edit sheet correspondingly sends a definition field only when that save CHANGES it — echoing the response back used to turn a price edit into a definition edit, because (pre-`mezo-6omv`) `PantryMapper` zero-filled NULL macros on the way out (a 403 for a non-author, a silent zero-overwrite of the shared row for an OWNER); since `mezo-6omv` the macros round-trip as honest nulls (see §4), so that particular echo hazard is gone, though sending only the changed fields remains the rule. When the definition edit lands on a **draft** row and the caller is its author, `updateItem` also promotes `status` to `verified` — see §9.
 - `deleteItem` — soft-deletes only the caller's `pantry_item`; the catalog row is untouched.
 
 **`PantryCatalogService.findOrCreate`** (the shared natural-key resolver every writer funnels through — `PantryService`, `PantryImportService`, `ProtocolSeedData`, the AI meal draft, the Receptműhely): a hit is revived if soft-deleted and fill-only merged (never overwrites a curated value) *only when the caller is the row's author* — a bystander OWNER's ordinary add/import never silently backfills someone else's or a master row's NULL fields. A miss inserts in its **own `REQUIRES_NEW` transaction**; on a unique-index race (two users typing the same food at once) the loser catches `DataIntegrityViolationException` and re-resolves via `findByNaturalKey`, binding to whichever row won — the same fill-only-if-author merge then applies.
@@ -62,6 +62,39 @@ Shared-provenance UI:
 `findOrCreate` has a second overload, `findOrCreate(authorId, candidate, allowMerge)`, and the plain two-arg form is just `allowMerge = true`. **`PantryImportService` deliberately calls the three-arg form as `findOrCreate(userId, candidate, !manualReview)`** (`PantryImportService.java`): a low-confidence scrape/photo draft that still needs human review must not touch the shared definition's NULL fields before the user confirms it, even when the caller IS that row's author — `allowMerge = false` skips `mergeIfAuthor` entirely on a hit and returns the existing row untouched. See §9.
 
 Mock-mode mutators (`mockAddFromCatalog` in `pantryHooks.ts`) mirror the real endpoint's idempotency against the client-owned TanStack cache.
+
+**Megőrzési terv (`mezo-ho5w`).** Az archive tábla egyirányú biztonsági háló: a split előtti
+20 definíció-oszlop minden sorra, a soft-deleted-eket is beleértve. Nincs FK-ja, nincs
+JPA-mappingje, és nem is lesz.
+
+A takarító changeset feltétele — MINDHÁROM teljesüljön, produkciós adaton:
+
+1. a split legalább egy teljes release-cikluson át fut éles adaton, definíció-visszaállítási
+   igény nélkül;
+2. minden archive sor lefedett a mai adattal, azaz nincs olyan archivált definíció, aminek nincs
+   élő megfelelője a `pantry_catalog`-ban;
+3. a `pantry_item` minden sora egy létező `pantry_catalog` sorra mutat.
+
+Ellenőrző lekérdezés a 2. és 3. ponthoz:
+
+```sql
+-- 2) archivált definíciók, amiknek nincs katalógus-megfelelője (elvárt: 0 sor)
+select a.id, a.name, a.brand
+from pantry_item_definition_archive a
+where not exists (
+    select 1 from pantry_catalog c
+    where lower(trim(c.name)) = lower(trim(a.name))
+      and lower(trim(coalesce(c.brand, ''))) = lower(trim(coalesce(a.brand, '')))
+);
+
+-- 3) árva polc-sorok (elvárt: 0 sor)
+select i.id from pantry_item i
+left join pantry_catalog c on c.id = i.catalog_id
+where c.id is null;
+```
+
+Amíg mindhárom feltétel nincs igazolva produkción, a tábla marad. A takarítás külön
+changeset lesz — a split SQL-je immutábilis, sosem szerkeszthető.
 
 ## 4. Data model & API
 
@@ -72,9 +105,12 @@ Mock-mode mutators (`mockAddFromCatalog` in `pantryHooks.ts`) mirror the real en
 | `id` | UUID PK |
 | `created_by` | nullable FK → `app_user`, `ON DELETE SET NULL` — NULL = loader master |
 | `is_deleted` | soft-delete; no `@SQLRestriction` on the entity — a deleted catalog row stays loadable through a `pantry_item.catalog_id` FK and is revivable by `PantryCatalogService.findOrCreate`/the loader |
+| `status` | `draft` \| `verified` (`ck_pantry_catalog_status`), default `verified`; added by `202609041000_mezo-qooi_pantry_catalog_status.sql` (`mezo-qooi`). `draft` = an unreviewed import candidate, visible only on its own author's shelf — see §9 |
 | `kind`, `name`, `brand`, `source`, `category`, `serving_amount`, `serving_unit`, `kcal`, `protein_g`, `carbs_g`, `fat_g`, `fiber_g`, `sugar_g`, `salt_g`, `saturated_fat_g`, `package_label`, `micros` (jsonb), `nova`, `form`, `caffeine` | the definition columns, moved verbatim off `pantry_item` |
 
 Constraints/indexes: `pk_pantry_catalog_id`, `fk_pantry_catalog_created_by_app_user_id` (`SET NULL`), `ck_pantry_catalog_kind`/`_source`/`_category`/`_nova`, **`uq_pantry_catalog_natural`** — a unique expression index on `(lower(trim(name)), lower(trim(coalesce(brand, ''))))` — this trim-normalized, case-insensitive natural key is used by EVERY producer/consumer: the migration's dedupe (§ below), `PantryCatalogRepository.findByNaturalKey`, and the operational diagnostic in §9 — plus `idx_pantry_catalog_created_by`, `idx_pantry_catalog_kind`.
+
+**The `lower(trim(...))` folding is Postgres-side only** — no Java-side normalization mirrors it (`mezo-imet`). `PantryCatalogRepository.findByNaturalKey` and the `searchAll`/`searchByKind` queries all express the fold directly in JPQL/SQL against the same expression the unique index uses, and `PantryCatalogLoader` (§5, §9) resolves every seed row's natural key the same way, through `findByNaturalKey` — it does not build its own in-memory Java map of existing rows to dedupe against. One expression, one place, no drift.
 
 **`pantry_item`** (state, same table, definition columns dropped):
 
@@ -109,6 +145,8 @@ Constraints/indexes: `fk_pantry_item_catalog_id_pantry_catalog_id` (`RESTRICT` �
 | GET | `/api/pantry/catalog?q=&kind=` | **new (S4)** — global search, master + every user's live definitions, max 50, `PantryCatalogEntry[]` |
 | POST | `/api/pantry/items/from-catalog` | **new (S4)** — `PantryFromCatalogRequest{catalogId}` → the caller's `PantryItemResponse`, idempotent |
 
+**`kind` and macros contract (`mezo-4orh`, `mezo-6omv`).** `IngredientResponse` itself now carries `kind` (server-computed off `pantry_catalog.kind`), so FE consumers read it straight off the response instead of re-deriving it client-side — the two derivations this replaced, `kamraItems.ts`'s own kind lookup and `pantryPickables.foodKind`, are gone. `PantryMacros`' fields (`kcal`, `proteinG`, `carbsG`, `fatG`, …) are all nullable in the contract and on the wire: `PantryMapper` no longer zero-fills a missing macro with `nz()` before serializing, so "no data recorded" (`null`) and "recorded as zero" (`0`) are two distinct, round-tripping states — a FE macro consumer that used to treat every value as a definite number must null-check before formatting/summing (see the split calculator-vs-display consumers in `pantryImpact.ts`/`FuelKamraPage.tsx`).
+
 ## 5. Integrations
 
 - **Meal** — `MealService` snapshots macro/nutrient facts from `item.getCatalog()` at log time (frozen snapshot, ADR 0026); `MealAiDraftService` + `PantryNameIndex` match free-text/photo food mentions against the GLOBAL catalog (not just the caller's shelf) and auto-`ensureItem` the caller onto the shelf at match time.
@@ -130,7 +168,7 @@ Backend: to turn a shared definition into a shelf row, call `PantryCatalogServic
 
 - **New definition field** (something the item universally IS): add the catalog column + `PantryCatalogEntity` + `PantryMapper` (`applyDefinition`, `applyDefinitionPartial`, `definitionDiffers`, the response mappers, `toCatalogEntry`) + the contract (`PantryCatalogEntry`, `PantryItemRequest`).
 - **New state field** (something the CALLER holds of it): add the `pantry_item` column + `PantryMapper`'s `applyUserFields*` + the contract's response/request schemas.
-- **The natural key is name+brand only.** Changing it means a new unique index on `pantry_catalog` AND updating `PantryCatalogRepository.findByNaturalKey` and `PantryCatalogLoader`'s own key computation together — they must never drift from the SQL expression index.
+- **The natural key is name+brand only, folded Postgres-side (`mezo-imet`).** Changing it means a new unique index on `pantry_catalog` AND updating `PantryCatalogRepository.findByNaturalKey`'s query together — never add a second, Java-side `lower(trim(...))` (e.g. an in-memory map) that could drift from the SQL expression index; `PantryCatalogLoader` itself resolves seed rows through `findByNaturalKey`, not its own key computation, precisely to avoid that drift.
 
 ## 8. Testing
 
@@ -154,7 +192,10 @@ Commands: backend focused `./mvnw clean test -Dtest='Pantry*,...' -Dmezo.test.us
   ```
 
   Resolve by hand (merge or rename one of the duplicates) before re-running the migration — it must never be left to auto-pick a winner.
-- **A manual-review import draft never merges into the shared definition (`allowMerge = false`).** `PantryImportService` calls `findOrCreate(userId, candidate, !manualReview)` — a low-confidence scrape/photo draft the user hasn't confirmed yet must not backfill the shared row's NULL fields, even when the caller already authored that row, because a bad AI-extracted value would otherwise permanently block the correct curated value from ever filling that column later (fill-only merge never overwrites a non-null value). This is a deliberate fix for a real defect; a new `findOrCreate` caller for unreviewed/low-confidence data should default to `allowMerge = false` too, not copy the plain two-arg (`allowMerge = true`) call.
+- **A manual-review import draft never merges into the shared definition on a natural-key HIT, and lands as `status = draft` on a MISS (`mezo-qooi`).** `PantryImportService` calls `findOrCreate(userId, candidate, !manualReview)` — the third parameter is `trusted`, and it now gates BOTH branches of `findOrCreate`, not just the merge:
+  - **HIT** (existing definition): `trusted = false` skips `mergeIfAuthor` entirely and returns the existing row untouched — a low-confidence scrape/photo draft must not backfill the shared row's NULL fields, even when the caller already authored that row, because a bad AI-extracted value would otherwise permanently block the correct curated value from ever filling that column later (fill-only merge never overwrites a non-null value).
+  - **MISS** (new definition): `trusted = false` inserts the new row as `status = 'draft'` instead of `'verified'`. A draft is excluded from THREE read paths — `PantryCatalogRepository.searchAll`/`searchByKind` (so it never appears in `CatalogSearchSheet` for anyone but its author browsing their own shelf) and `PantryNameIndex` (so `MealAiDraftService`/`RecipeWorkshopValidator` never auto-match free text against it) — and from a FOURTH: `PantryCatalogService.ensureItem` (the `from-catalog` idempotent add) refuses to bind ANY caller to a draft row except the row's own author, returning the same `RESOURCE_NOT_FOUND` a bystander gets for an unknown id, so a guessed or leaked draft `catalogId` cannot be probed into existence by a non-author. The author's own subsequent definition edit (`PantryService#updateItem`, when it touches a definition field and the caller is the row's author) promotes the row to `verified` — that edit IS the human confirmation the manual-review badge asks for; a natural-key HIT is never promoted this way, since a HIT never touches an unreviewed row's `status` in the first place.
+  This closes a gap the original manual-review gate left open: the S4 gate only covered the HIT branch, so a MISS from low-confidence data still published unreviewed content straight into the shared catalog every user searches. A new `findOrCreate` caller for unreviewed/low-confidence data should default to `trusted = false` too, not copy the plain two-arg (`trusted = true`) call.
 - **A seed collision no longer claims a user-authored row silently.** When `PantryCatalogLoader` finds an existing `pantry_catalog` row whose natural key matches a seed entry and that row is user-authored (`created_by` set), it clears `created_by` to convert it into shared master content — this is intentional (see the loader's javadoc) but it does destroy that user's sole authorship claim on the row. The loader now emits one `WARN` line PER claimed **user-authored** row (not just an end-of-run summary) naming the row's id, name (and brand, when set), and the `created_by` UUID being cleared, so an operator scanning startup logs can reconstruct exactly which rows lost authorship and why. A plain revive of an already-master (soft-deleted) row, or an ordinary insert of a brand-new seed row, does not log this WARN — only an actual authorship claim does. Note the `claimed` count in the run's end-of-run `INFO` summary line is broader than the WARN count: it also tallies those silent already-master revives, so "N claimed" in the summary can exceed the number of WARN lines for the same run.
 - **A deleted author's definitions become master-like.** The catalog FK is `ON DELETE SET NULL`, so once an author's account is gone the row reads as loader-master (`isMaster() == true`) and is thereafter OWNER-editable only.
 - **`ResetDatabase` ordering** — `pantry_catalog` rows must TRUNCATE before `app_user` (the FK is `SET NULL`, not `CASCADE`, so order still matters for a clean re-seed).
