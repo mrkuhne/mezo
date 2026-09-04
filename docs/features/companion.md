@@ -312,6 +312,23 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 - **Nothing writes embeddings yet** — the daily-summary generator + embed pipeline is V2.2;
   recall-in-chat is V2.3.
 
+**Shared RAG memory platform foundation (`mezo-6dii.1`) — canonical storage without a serving cutover:**
+
+- `memory_item` is the owner-scoped, source-addressable canonical retrieval projection. It keeps
+  normalized search text, temporal validity, salience, topics/people and typed provenance apart
+  from any embedding model.
+- `memory_vector` stores independently deployable embedding generations per item. Multiple
+  generations can coexist; only a ready live row is ANN-searchable. This makes re-embedding and
+  OLD/SHADOW/NEW comparison possible without overwriting the current vector.
+- `memory_retrieval_run` → `memory_retrieval_result` → `memory_retrieval_feedback` is the durable
+  retrieval audit chain: policy/query/serving mode, ranked candidates with score components, then
+  a user judgement. Composite foreign keys keep every link within one owner.
+- The migration backfills every live legacy `memory_embedding` into one canonical item plus one
+  ready `gemini-embedding-001-768-v1` vector and fails on an incomplete copy. The legacy table is
+  deliberately unchanged and remains the chat's OLD serving source until the later shadow gate.
+- `knowledge_fact` now has additive pinning, validity, supersession/conflict links and typed
+  provenance. Existing prompt inclusion semantics remain unchanged.
+
 **V2.2 (`mezo-fnnq.10`) shipped daily summaries + the embed pipeline — the memory fills itself:**
 
 - **`daily_summary` table + generator** — `DailySummaryService.generate(userId, date)`: a
@@ -1567,6 +1584,26 @@ swapped in-slice across compose/k3s/Testcontainers):
   `occurred_on date` (when the episode happened — the recency-ranking key); indexes
   `idx_memory_embedding_created_by_kind_occurred_on (created_by, kind, occurred_on desc)` +
   `idx_memory_embedding_vector` (**HNSW, `vector_cosine_ops`** — pairs with the `<=>` operator).
+
+### Backend tables (shared RAG foundation, `mezo-6dii.1`)
+
+Migration `202609041020_mezo-6dii.1_memory_platform.sql` adds five owner-scoped tables while
+leaving `memory_embedding` intact:
+
+- **`memory_item`** — one canonical projection per `(created_by, source_kind, source_id)`, with
+  SHA-256 `content_hash`, `text[]` topics/people, validity and lifecycle state, typed `provenance`
+  jsonb, generated simple-language `tsvector`, GIN full-text/trigram indexes and owner-led reads.
+- **`memory_vector`** — one row per `(memory_item_id, embedding_version)`, fixed 768 dimensions,
+  pending/ready/failed lifecycle, embedded-content hash and partial ready/live HNSW cosine index.
+- **`memory_retrieval_run` / `memory_retrieval_result` / `memory_retrieval_feedback`** — the
+  auditable query→ranked candidate→user action chain. Results snapshot rendered content and typed
+  score components; feedback is unique per live owner/result pair.
+- **`knowledge_fact` additive columns** — `pinned`, `valid_from/to`, `superseded_by`,
+  `conflicts_with`, and typed provenance. Defaults preserve all existing rows and prompt behavior.
+
+`content_hash` and `embedded_content_hash` use `varchar(64)` plus an exact lowercase-hex CHECK.
+This avoids Hibernate/PostgreSQL `bpchar` schema-validation drift while retaining the intended
+fixed SHA-256 invariant.
 
 ### Backend tables (LLM audit log, ✅ `mezo-2zyu`)
 
@@ -4107,6 +4144,14 @@ Backend integration-first (compose Postgres up: `cd backend && docker compose up
 `./mvnw clean test` (ALWAYS `clean` — Lombok+MapStruct incremental compile is flaky). The LLM in
 tests is **always** `FakeCompanionLlm` — network never touched.
 
+**Shared RAG persistence foundation (`mezo-6dii.1`).**
+`feature/companion/memory/MemoryPlatformPersistenceIT.java` runs against real PostgreSQL/pgvector
+and proves typed jsonb plus arrays round-trip, two embedding generations coexist, duplicate item
+generations fail, owner B cannot read owner A's item, and physical audit-run purge cascades through
+result and feedback. Its migration invariants also assert that every live legacy embedding has a
+canonical item and ready v1 vector. `MemoryItemPopulator` supplies valid canonical/audit fixtures;
+all five tables are reset before the legacy `memory_embedding` table.
+
 **Daily evaluation (`mezo-jcpt.4`, plan 2/2).**
 `feature/companion/service/DayEvaluationEngineTest.java` is the formula's unit-level pin — one test
 per honesty rule, per dimension (asymmetric kcal bands, protein surplus forgiven/deficit counted,
@@ -5398,6 +5443,13 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   registered in `api/generate/merge.yml` → merged `api/openapi.yml` → `api.gen.ts` + `io.mrkuhne.mezo.api.*`.
 - `api/feature/companion-feedback/companion-feedback.yml` — **`mezo-b3pp.15`** the 👍/👎 surface on its OWN fragment + tag (`CompanionFeedback` → `CompanionFeedbackApi`); GET batch-read / PUT upsert / DELETE retract, also registered in `api/generate/merge.yml`.
 - `api/feature/knowledge-graph/knowledge-graph.yml` — **`mezo-b3pp.6`** the W2.1 knowledge-graph surface on its OWN fragment + tag (`KnowledgeGraph` → `KnowledgeGraphApi`); GET active nodes / POST archive, also registered in `api/generate/merge.yml`.
+
+**Backend — shared RAG persistence foundation (`mezo-6dii.1` — §3/§4/§8)**
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609041020_mezo-6dii.1_memory_platform.sql` — canonical item/vector generations, retrieval audit/feedback tables, legacy backfill and migration invariants; `memory_embedding` remains untouched.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/entity/` — the five entities plus typed `MemoryProvenanceEnvelope` and `ScoreBreakdownEnvelope` jsonb records.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/repository/` — owner-scoped business finders for canonical items, vectors and the audit chain.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/KnowledgeFactEntity.java` — additive pinning, validity, conflict/supersession and provenance mappings.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/MemoryPlatformPersistenceIT.java` + `support/populator/MemoryItemPopulator.java` — PostgreSQL persistence/backfill/ownership/cascade coverage.
 
 **Backend — feedback (W4.1, `mezo-b3pp.15` — §4/§5.7)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/controller/CompanionFeedbackController.java` — `implements CompanionFeedbackApi`, `COMPANION_SWITCH`-gated, ownership from `CurrentUserId`, thin delegation.
