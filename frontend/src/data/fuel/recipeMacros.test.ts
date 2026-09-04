@@ -3,7 +3,7 @@ import { roundMacro, lineContribution, enrichLine, computeRecipeMacros, computeR
 import type { Ingredient, RecipeIngredientLine } from '@/data/types'
 
 const zab: Ingredient = {
-  id: 'ing-zab', name: 'Zabpehely', brand: '', source: 'kifli.hu', category: 'carb',
+  id: 'ing-zab', kind: 'food', name: 'Zabpehely', brand: '', source: 'kifli.hu', category: 'carb',
   per: 100, unit: 'g', macros: { kcal: 372, p: 13.5, c: 60, f: 7 },
   price: 0, priceUnit: '', pkg: '', micros: [], nova: 1, stock: null,
   lastUsed: '—', usedInRecipes: 0,
@@ -194,7 +194,7 @@ test('an empty override map reproduces the plain nutrient rollup', () => {
 test('an overridden line rescales from the live source when one resolves', () => {
   const lines = [{ refId: 'a', amount: 200, unit: 'g', nutrients: { fiberG: 6.4, sugarG: null, saltG: 0.8, saturatedFatG: 5.6 } }]
   const ingredients = [{
-    id: 'a', name: 'Túró', brand: '', source: 'manual' as const, category: 'dairy',
+    id: 'a', kind: 'food' as const, name: 'Túró', brand: '', source: 'manual' as const, category: 'dairy',
     per: 100, unit: 'g', macros: { kcal: 110, p: 13, c: 4, f: 4.5 },
     fiberG: 3.2, sugarG: null, saltG: 0.4, saturatedFatG: 2.8,
     price: 0, priceUnit: '', pkg: '', micros: [], nova: 1 as const, stock: null,

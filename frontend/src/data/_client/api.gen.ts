@@ -5533,6 +5533,8 @@ export interface components {
         IngredientResponse: {
             /** Format: uuid */
             id: string;
+            /** @enum {string} */
+            kind: "food" | "supplement" | "stim" | "med";
             name: string;
             brand: string;
             source: components["schemas"]["PantrySource"];

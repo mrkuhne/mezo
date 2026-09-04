@@ -13234,6 +13234,7 @@ components:
       type: object
       required:
         - id
+        - kind
         - name
         - brand
         - source
@@ -13253,6 +13254,13 @@ components:
         id:
           type: string
           format: uuid
+        kind:
+          type: string
+          enum:
+            - food
+            - supplement
+            - stim
+            - med
         name:
           type: string
         brand:

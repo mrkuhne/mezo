@@ -178,9 +178,13 @@ components:
       type: object
       # nova left OUT of required since mezo-32ko: an unclassified item is an honest null,
       # not a fabricated NOVA 1 (the old mapper default masked the data gap on the Kamra UI).
-      required: [id, name, brand, source, category, per, unit, macros, price, priceUnit, pkg, micros, lastUsed, usedInRecipes, catalogId, catalogEditable]
+      required: [id, kind, name, brand, source, category, per, unit, macros, price, priceUnit, pkg, micros, lastUsed, usedInRecipes, catalogId, catalogEditable]
       properties:
         id: { type: string, format: uuid }
+        # The SHARED definition's kind, carried explicitly since mezo-4orh. getPantry projects
+        # this arm by kind == food, so it is always 'food' today — but the client must READ it,
+        # never re-derive it from `category` ('supplement' is a legal category on a FOOD row).
+        kind: { type: string, enum: [food, supplement, stim, med] }
         name: { type: string }
         brand: { type: string }
         source: { $ref: '#/components/schemas/PantrySource' }

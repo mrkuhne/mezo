@@ -3,7 +3,7 @@ import { buildPickables } from '@/data/fuel/pantryPickables'
 import type { Ingredient, SupplementStashItem } from '@/data/types'
 
 const food = (over: Partial<Ingredient> = {}): Ingredient => ({
-  id: 'f1', name: 'Csirkemell', brand: 'kifli', source: 'kifli.hu', category: 'protein',
+  id: 'f1', kind: 'food', name: 'Csirkemell', brand: 'kifli', source: 'kifli.hu', category: 'protein',
   per: 100, unit: 'g', macros: { kcal: 110, p: 23, c: 0, f: 1.5 },
   price: 0, priceUnit: '', pkg: '', micros: [], nova: 1, stock: null,
   lastUsed: '—', usedInRecipes: 0, ...over,
@@ -50,11 +50,12 @@ test('buildPickables skips a stash item already mirrored as a food ingredient (s
   expect(out[0].id).toBe('wheyFood')
 })
 
-test('buildPickables derives supplement/stim kind from a food category prefix', () => {
+test('buildPickables trusts the ingredient kind and never re-derives it from the category (mezo-4orh)', () => {
+  // 'supplement' is a legal category on a FOOD row — the kind and category are independent axes.
   const out = buildPickables(
     [food({ id: 'x', category: 'supplement-stim' }), food({ id: 'y', category: 'supplement' })],
     [],
   )
-  expect(out.find(p => p.id === 'x')?.kind).toBe('stim')
-  expect(out.find(p => p.id === 'y')?.kind).toBe('supplement')
+  expect(out.find(p => p.id === 'x')?.kind).toBe('food')
+  expect(out.find(p => p.id === 'y')?.kind).toBe('food')
 })

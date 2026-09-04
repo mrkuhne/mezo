@@ -14,21 +14,10 @@ import { useMemo } from 'react'
 import { usePantry } from '@/data/fuel/pantryHooks'
 import type { Ingredient, PantryItemKind, SupplementStashItem } from '@/data/types'
 
-/** An Ingredient the recipe picker can offer, tagged with its pantry kind. */
-export interface PickableIngredient extends Ingredient {
-  kind: PantryItemKind
-}
+/** An Ingredient the recipe picker can offer. `kind` now comes from the server (mezo-4orh). */
+export interface PickableIngredient extends Ingredient {}
 
 const ZERO = { kcal: 0, p: 0, c: 0, f: 0 }
-
-// A food's kind is encoded in its category prefix (same rule as buildKamraItems).
-function foodKind(category: string): PantryItemKind {
-  return category.startsWith('supplement-stim')
-    ? 'stim'
-    : category.startsWith('supplement')
-      ? 'supplement'
-      : 'food'
-}
 
 // Map a stash supplement onto the Ingredient shape, filling defaults for the
 // nutrition/commerce facts a pure dose/protocol item lacks (mezo-1za9 made these
@@ -64,7 +53,7 @@ export function buildPickables(
   ingredients: Ingredient[],
   stash: SupplementStashItem[],
 ): PickableIngredient[] {
-  const foods: PickableIngredient[] = ingredients.map(i => ({ ...i, kind: foodKind(i.category) }))
+  const foods: PickableIngredient[] = ingredients.map(i => ({ ...i, kind: i.kind }))
   const supplements: PickableIngredient[] = stash
     .filter(s => !ingredients.some(i => i.stashRefId === s.id))
     .map(supplementToPickable)

@@ -330,7 +330,14 @@ export interface PantryCatalogEntry {
   authorName?: string | null
 }
 export interface Ingredient {
-  id: string; name: string; brand: string; source: PantrySourceKey; category: string
+  id: string
+  /**
+   * The SHARED definition's kind, straight from the server (mezo-4orh). NEVER re-derive it
+   * from `category`: 'supplement' is a legal category on a FOOD row, and the derived value
+   * echoed back on save rewrote the shared definition's kind for every other user.
+   */
+  kind: PantryItemKind
+  name: string; brand: string; source: PantrySourceKey; category: string
   per: number; unit: string
   macros: { kcal: number; p: number; c: number; f: number }
   fiberG?: number | null; sugarG?: number | null; saltG?: number | null; saturatedFatG?: number | null

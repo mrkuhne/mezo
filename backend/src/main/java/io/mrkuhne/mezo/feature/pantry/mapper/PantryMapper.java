@@ -165,6 +165,11 @@ public interface PantryMapper {
         PantryCatalogEntity c = e.getCatalog();
         return IngredientResponse.builder()
             .id(e.getId())
+            // The shared definition's kind, on the wire since mezo-4orh: the client used to
+            // re-derive it from `category`, and a FOOD row categorised 'supplement' then echoed
+            // kind='supplement' back on every save — tripping definitionDiffers into a 403 for a
+            // non-author and a silent rewrite of the SHARED row for the author/OWNER.
+            .kind(IngredientResponse.KindEnum.fromValue(c.getKind()))
             .name(c.getName())
             .brand(c.getBrand() == null ? "" : c.getBrand())
             .source(toIngredientSource(c.getSource()))

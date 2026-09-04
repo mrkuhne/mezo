@@ -185,7 +185,7 @@ function mockImport(qc: ReturnType<typeof useQueryClient>, input: PantryImportIn
     const base = prev ?? mockData
     const source = sourceFor(input)
     const ing: Ingredient = {
-      id: crypto.randomUUID(), name: input.name, brand: input.brand ?? '', source,
+      id: crypto.randomUUID(), kind: 'food', name: input.name, brand: input.brand ?? '', source,
       category: input.category ?? 'other', per: input.per, unit: input.unit,
       macros: { kcal: input.kcal ?? 0, p: input.proteinG ?? 0, c: input.carbsG ?? 0, f: input.fatG ?? 0 },
       price: 0, priceUnit: '', pkg: '',
@@ -218,7 +218,7 @@ function mockAddFromCatalog(qc: ReturnType<typeof useQueryClient>, catalogId: st
     const shared = { catalogId, sharedFrom: entry.authorName ? { authorName: entry.authorName } : null, catalogEditable: true }
     if (entry.kind === 'food') {
       const ing: Ingredient = {
-        id: crypto.randomUUID(), name: entry.name, brand: entry.brand ?? '', source: entry.source,
+        id: crypto.randomUUID(), kind: 'food', name: entry.name, brand: entry.brand ?? '', source: entry.source,
         category: entry.category ?? 'other', per: entry.per ?? 100, unit: entry.unit ?? 'g',
         macros: { kcal: entry.kcal ?? 0, p: entry.proteinG ?? 0, c: entry.carbsG ?? 0, f: entry.fatG ?? 0 },
         price: 0, priceUnit: '', pkg: '', micros: [], nova: entry.nova ?? 1,
@@ -248,7 +248,7 @@ function mockAdd(qc: ReturnType<typeof useQueryClient>, input: PantryItemInput) 
     const id = crypto.randomUUID()
     if (input.kind === 'food') {
       const ing: Ingredient = {
-        id, name: input.name, brand: input.brand ?? '', source: input.source ?? 'manual',
+        id, kind: 'food', name: input.name, brand: input.brand ?? '', source: input.source ?? 'manual',
         category: input.category ?? 'protein', per: input.per ?? 100, unit: input.unit ?? 'g',
         macros: { kcal: input.kcal ?? 0, p: input.proteinG ?? 0, c: input.carbsG ?? 0, f: input.fatG ?? 0 },
         price: input.price ?? 0, priceUnit: input.priceUnit ?? '', pkg: input.pkg ?? '',

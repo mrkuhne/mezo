@@ -101,4 +101,22 @@ class PantryApiIT extends ApiIntegrationTest {
         PantryResponse pantry = getForBody("/api/pantry", auth, HttpStatus.OK, PantryResponse.class);
         assertThat(pantry.getIngredients()).extracting("id").doesNotContain(created.getId());
     }
+
+    @Test
+    void testGetPantry_shouldReportFoodKind_forAFoodRowCategorisedAsSupplement() {
+        HttpHeaders auth = ownerAuthHeaders();
+        // 'supplement' is a LEGAL category on a food row (the add sheet offers it) — the kind and
+        // the category are independent axes, and the client must not conflate them (mezo-4orh).
+        PantryItemRequest req = foodReq();
+        req.setName("Kollagén por");
+        req.setCategory(PantryItemRequest.CategoryEnum.SUPPLEMENT);
+
+        postForBody("/api/pantry", req, auth, HttpStatus.CREATED, PantryItemResponse.class);
+        PantryResponse pantry = getForBody("/api/pantry", auth, HttpStatus.OK, PantryResponse.class);
+
+        var kollagen = pantry.getIngredients().stream()
+            .filter(i -> "Kollagén por".equals(i.getName())).findFirst().orElseThrow();
+        assertThat(kollagen.getKind().getValue()).isEqualTo("food");
+        assertThat(kollagen.getCategory()).isEqualTo("supplement");
+    }
 }

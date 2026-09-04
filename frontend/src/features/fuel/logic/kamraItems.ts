@@ -56,14 +56,7 @@ export function buildKamraItems(
       }
     })
 
-  const ingItems: PantryItem[] = ingredients.map(i => ({
-    ...i,
-    kind: i.category.startsWith('supplement-stim')
-      ? 'stim'
-      : i.category.startsWith('supplement')
-        ? 'supplement'
-        : 'food',
-  }))
+  const ingItems: PantryItem[] = ingredients.map(i => ({ ...i }))
 
   return [...ingItems, ...stashAsItems]
 }
