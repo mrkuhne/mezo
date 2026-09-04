@@ -3,6 +3,10 @@ import { useLocation } from 'react-router-dom'
 import { scrollToOffset, scrollToTop } from '@/shared/lib/screenScroll'
 import { useArrival } from '@/shared/ui/mozaik/arrival'
 
+/** How many frames a scroll restore may keep re-applying itself while the landing page's
+ *  content settles (~0.3s at 60fps) before it gives up and leaves the user where it got to. */
+const RESTORE_FRAME_BUDGET = 20
+
 export function ScreenContent({ children }: { children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null)
   const { pathname, key } = useLocation()
@@ -36,10 +40,31 @@ export function ScreenContent({ children }: { children: ReactNode }) {
     const el = ref.current
     if (!el) return
     const remembered = offsets.current.get(key)
-    if (arrival === 'pop' && remembered !== undefined) scrollToOffset(el, remembered)
-    else if (parked.current !== pathname) scrollToTop(el)
+    const wasParkedElsewhere = parked.current !== pathname
     parked.current = pathname
+
+    if (arrival !== 'pop' || remembered === undefined) {
+      if (wasParkedElsewhere) scrollToTop(el)
+      return
+    }
+    // The landing page's content can still be growing when this runs (a ring that fills on
+    // an effect, a real-mode list one round-trip behind), and a scrollTop write is clamped to
+    // whatever height exists at that moment — measured 6px short on the Én hub, and it lands
+    // on 0 outright for content that only arrives a frame later, losing the position
+    // entirely. So re-apply until it sticks, within a bounded frame budget.
+    let raf = 0
+    let framesLeft = RESTORE_FRAME_BUDGET
+    const restore = () => {
+      scrollToOffset(el, remembered)
+      if (el.scrollTop < remembered && framesLeft-- > 0) raf = requestAnimationFrame(restore)
+    }
+    restore()
+    return () => cancelAnimationFrame(raf)
   }, [key, pathname, arrival])
 
-  return <div ref={ref} className="screen-content">{children}</div>
+  // The arrival mode has to reach CSS as well, not just the JS motion kit: `.np-anim` (the
+  // Napív entrance on the train hero and the ritual steps) declares its own `opacity: 0` with
+  // no arming class for `EntranceGroup` to withhold, so only a marker on an ancestor can stop
+  // it replaying on a back navigation. See the `[data-arrival="pop"]` rule in prototype.css.
+  return <div ref={ref} className="screen-content" data-arrival={arrival}>{children}</div>
 }

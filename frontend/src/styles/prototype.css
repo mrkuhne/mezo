@@ -2213,6 +2213,13 @@ input, textarea { font-family: inherit; color: inherit; background: none; border
   .sky, .phone-screen { transition: none; }
 }
 
+/* A back navigation is a RETURN, not an arrival — the entrance settles instantly instead of
+   replaying, which is what made swipe-back read as the page flashing/reloading (mezo-kuwj).
+   Same neutralisation the reduce query above applies, keyed on the shell's arrival marker
+   (ScreenContent). The `.rise` family needs no rule here: EntranceGroup withholds its
+   `.mz-play` arming class on a pop, so `.mz-play .rise { opacity: 0 }` simply never matches. */
+[data-arrival="pop"] .np-anim { animation: none; opacity: 1; }
+
 /* The `.dayarc`/`.arc-*`/`.arclbl` day-arc family retired with the daypart faces
    (mezo-j7u4) — the DayFaceStrip pill counters carry the day-progress job now. The
    Bézier itself lives on in `logic/dayArc.ts`, redrawn by the Napzárás recap under
