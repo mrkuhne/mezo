@@ -1,5 +1,5 @@
 import type { GoalTimelineResponse } from '@/data/me/goalLinkApi'
-import type { GoalResponse, FeasibilityPreviewResponse, GoalSuggestionResponse } from '@/data/me/goalApi'
+import type { GoalOverviewResponse, GoalResponse, FeasibilityPreviewResponse, GoalSuggestionResponse } from '@/data/me/goalApi'
 import type { BiometricProfileResponse } from '@/data/me/biometricProfileApi'
 import type { Goal, WeightEntry, WeightTrends, LinkedMeso } from '@/data/types'
 import { addDays, localDateString } from '@/shared/lib/dates'
@@ -277,6 +277,97 @@ export const goalSuggestions: GoalSuggestionResponse[] = [
     decidedAt: null,
   },
 ]
+
+/** Full contract-shaped Goal Overview seed. Mock and real surfaces deliberately consume the
+ * same server vocabulary; only the transport differs. The split-day values mirror the current
+ * prescription above, and the plan rows mirror `goalTimeline` below. */
+export const goalOverviewSeed: GoalOverviewResponse = {
+  goalId: goal.id,
+  title: goal.title,
+  trajectory: 'cut',
+  status: 'active',
+  currentWeek: 8,
+  totalWeeks: 20,
+  completionPct: 33,
+  currentWeightKg: goal.currentWeight,
+  targetWeightKg: goal.targetWeight,
+  remainingKg: goal.currentWeight - goal.targetWeight,
+  courseStatus: 'on_track',
+  courseReasonCode: 'rate_on_track',
+  observedRateKgPerWeek: -0.5,
+  targetRateKgPerWeek: -0.48,
+  projectedTargetDate: '2026-08-14',
+  dataSufficiency: 'full',
+  diet: {
+    weekAverageKcal: 2150,
+    todayDayType: 'training',
+    todayKcal: 2300,
+    trainingDayKcal: 2300,
+    restDayKcal: 1950,
+    proteinG: 163,
+    carbsG: 226,
+    fatG: 66,
+    basis: 'formula',
+    explanationCode: 'training_day_split',
+  },
+  segment: {
+    available: true,
+    label: 'MAV',
+    fromWeek: 5,
+    toWeek: 10,
+    remainingDays: 5,
+    nextLabel: 'Strength 02',
+    nextFromWeek: 11,
+    nextChangeDate: '2026-06-16',
+    explanationCode: 'mesocycle_phase',
+  },
+  plans: {
+    links: [
+      {
+        id: 'link-hyp-04',
+        planType: 'mesocycle',
+        planId: 'meso-hyp-04',
+        startWeek: 5,
+        endWeek: 10,
+        plan: { title: 'Hypertrophy 04', status: 'active', startDate: '2026-05-01', endDate: '2026-06-12', weeks: 6 },
+      },
+      {
+        id: 'link-run-01',
+        planType: 'running_block',
+        planId: 'run-base-01',
+        startWeek: 6,
+        endWeek: 13,
+        plan: { title: 'Base Build · 5K', status: 'active', startDate: '2026-05-08', endDate: '2026-07-03', weeks: 8 },
+      },
+    ],
+    gaps: [{ fromWeek: 1, toWeek: 4 }],
+    sportSchedule: [
+      { id: 'sport-bvsc-tue', dayOfWeek: 1, time: '18:30', durationMin: 90, kind: 'training', location: 'BVSC', sport: 'volleyball' },
+      { id: 'sport-bvsc-fri', dayOfWeek: 4, time: '18:30', durationMin: 90, kind: 'training', location: 'BVSC', sport: 'volleyball' },
+    ],
+    activeLinkCount: 2,
+    uncoveredWeekCount: 4,
+    topIssueCode: 'mesocycle_gap',
+  },
+  guards: {
+    status: {
+      strength: { active: true, e1rmTrendPct: 1.2, breached: false, notes: ['Az erőtrend stabil.'] },
+      muscle: {
+        active: true,
+        minWeeklySetsPerMuscle: 8,
+        belowMaintenanceMuscles: [],
+        rateWithinCap: true,
+        proteinMonitored: false,
+        notes: ['A volumen fedezi a fenntartó minimumot.'],
+      },
+    },
+    healthyCount: 3,
+    totalCount: 4,
+    topIssueCode: 'protein_unmonitored',
+  },
+  openSuggestionCount: 1,
+  latestSuggestionId: 'sug-weekly-w17',
+}
 
 // Static biometric profile for mock mode (G6, mezo-06n) — a complete profile so
 // the Profile Biometria card + the goal-creation gate render offline without a

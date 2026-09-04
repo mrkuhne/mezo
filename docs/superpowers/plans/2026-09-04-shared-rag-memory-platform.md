@@ -443,7 +443,7 @@ public void suppress(UUID userId, String sourceKind, UUID sourceId) { }
 public ReembeddingResult reembedMissing(UUID userId, String targetVersion, int batchSize) { }
 ```
 
-- [ ] **Step 1: Write failing dual-write lifecycle tests**
+- [x] **Step 1: Write failing dual-write lifecycle tests**
 
 For chat turn, daily/weekly/monthly summary, journal, decision, gratitude, reflection, activity note
 and check-in note, assert that the existing writer produces both the unchanged `memory_embedding`
@@ -459,7 +459,7 @@ assertThat(memoryVectorRepository
         .isPresent();
 ```
 
-- [ ] **Step 2: Run the tests and confirm the projection is absent**
+- [x] **Step 2: Run the tests and confirm the projection is absent**
 
 ```bash
 cd backend
@@ -468,7 +468,7 @@ cd backend
 
 Expected: FAIL because current writes touch only `memory_embedding`.
 
-- [ ] **Step 3: Bind versioned projection configuration**
+- [x] **Step 3: Bind versioned projection configuration**
 
 Add `mezo.companion.memory-platform` with explicit commented defaults and this record shape:
 
@@ -499,7 +499,7 @@ Use defaults `gemini-embedding-001-768-v1`, `google`, existing embedding model, 
 version `gemini-embedding-001-768-v1`, batch size `100` and cron `0 10 4 * * *`, retention `30`
 days and cron `0 50 3 * * *`.
 
-- [ ] **Step 4: Implement idempotent canonical projection writes**
+- [x] **Step 4: Implement idempotent canonical projection writes**
 
 `MemoryProjectionWriter` computes lowercase accent-folded `searchText` with the existing
 `ToolText.fold`, SHA-256 hex with `MessageDigest`, and deterministic defaults (`topics=[]`,
@@ -512,7 +512,7 @@ Keep current `MemoryEmbeddingWriter` behavior byte-for-byte, then call the proje
 the already-produced vector. A failure in the new projection must be logged and leave OLD serving
 available; do not make existing source writes fail during `OLD`/`SHADOW` rollout.
 
-- [ ] **Step 5: Implement and test resumable parallel re-embedding**
+- [x] **Step 5: Implement and test resumable parallel re-embedding**
 
 `MemoryReembeddingService` selects at most `batchSize` active items whose target-version vector is
 absent, failed or has a stale `embedded_content_hash`; it creates/updates `pending`, embeds one
@@ -522,7 +522,7 @@ reembedding switch, fans out through `UserFanOut`, and never changes `servingEmb
 `MemoryReembeddingIT` proves interrupted batches resume, a ready matching hash is skipped, a changed
 hash is refreshed, and generation v1 stays readable while v2 is incomplete.
 
-- [ ] **Step 6: Run lifecycle and regression tests**
+- [x] **Step 6: Run lifecycle and regression tests**
 
 Run the Step 2 command plus:
 
@@ -532,7 +532,7 @@ Run the Step 2 command plus:
 
 Expected: PASS; the frozen OLD eval output is unchanged.
 
-- [ ] **Step 7: Update docs and commit**
+- [x] **Step 7: Update docs and commit**
 
 Update Companion §§3–4 and §10, regenerate CODEMAP, lint docs, then commit:
 
