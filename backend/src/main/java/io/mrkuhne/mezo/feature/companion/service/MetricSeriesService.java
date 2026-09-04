@@ -227,13 +227,14 @@ public class MetricSeriesService {
         return series;
     }
 
-    /** The day's LAST meal as fractional hour-of-day (system zone) — the "late eating" signal. */
+    /** The day's LAST meal as fractional hour-of-day (system zone) — the "late eating" signal.
+     *  Bounded read (mezo-9gp3, mezo-d58h.6): the metric only ever looks at {@code [from, to]},
+     *  no rolling margin, so the query is scoped there directly instead of loading every meal
+     *  the user has ever logged and filtering in Java. */
     private Map<LocalDate, Double> lateMealHour(UUID userId, LocalDate from, LocalDate to) {
         Map<LocalDate, Double> series = new HashMap<>();
-        for (MealEntity meal : mealRepository.findAllOwned(userId)) {
-            if (meal.getMealDate().isBefore(from) || meal.getMealDate().isAfter(to)) {
-                continue;
-            }
+        for (MealEntity meal : mealRepository
+                .findByCreatedByAndDeletedFalseAndMealDateBetweenOrderByMealDateAsc(userId, from, to)) {
             var local = meal.getLoggedAt().atZone(ZoneId.systemDefault());
             double hour = local.getHour() + local.getMinute() / 60.0;
             series.merge(meal.getMealDate(), hour, Math::max);
@@ -355,11 +356,17 @@ public class MetricSeriesService {
      * 7 napos gördülő legkisebb-négyzetes súly-lejtő %/hét-ben (a lejtő kg/nap × 7 / ablakátlag
      * × 100). Honest gate: <4 mérés a gördülő ablakban ⇒ nincs adatpont. Belső ablak-kiterjesztés
      * (az ACWR mintája): a hívó [from,to]-ja változatlan.
+     *
+     * <p>Bounded read (mezo-9gp3, mezo-d58h.6): the rolling slope needs the 6-day margin BEFORE
+     * {@code from} too, so the query is scoped to {@code [from-6, to]} — narrowing it to
+     * {@code [from, to]} would silently drop the first window's leading days and change values.
      */
     private Map<LocalDate, Double> weightTrendPctWk(UUID userId, LocalDate from, LocalDate to) {
         TreeMap<LocalDate, Double> weights = new TreeMap<>();
-        weightLogRepository.findAllOwned(userId).stream()
-                .filter(log -> !log.getDate().isBefore(from.minusDays(6)) && !log.getDate().isAfter(to))
+        weightLogRepository
+                .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscCreatedAtAsc(
+                        userId, from.minusDays(6), to)
+                .stream()
                 .sorted(java.util.Comparator.comparing(WeightLogEntity::getDate)
                         .thenComparing(WeightLogEntity::getCreatedAt))
                 .forEach(log -> weights.put(log.getDate(), log.getWeightKg().doubleValue()));
