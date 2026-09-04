@@ -64,9 +64,9 @@ function Tag({ bg, color, children }: { bg: string; color: string; children: Rea
 function AuthorTags({ lib }: { lib?: ExerciseLibraryItem }) {
   if (!lib) return null
   if (lib.authoredByMe) return <Tag bg="var(--primary-bg)" color="var(--primary-deep)">Saját</Tag>
-  // The lav family (`--wash-lav` / `--lav-deep`, the same pair `muscleColors.ts:20` uses for Váll)
-  // is neutral among the muscle washes here — the stamp must not read as a muscle tag.
-  if (lib.authorName) return <Tag bg="var(--wash-lav)" color="var(--lav-deep)">Közös · {lib.authorName}</Tag>
+  // Every wash in muscleColors.ts is already claimed by a muscle region (lav = Váll), so the
+  // stamp uses the neutral surface pair instead — a colored one would read as a muscle tag (mezo-vy0s).
+  if (lib.authorName) return <Tag bg="var(--surface-2)" color="var(--text-secondary)">Közös · {lib.authorName}</Tag>
   return null
 }
 
