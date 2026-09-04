@@ -35,6 +35,10 @@ export function AppLayout() {
   // (measured: the FAB sat right on top of it), and a "quick log" FAB on the logging page
   // itself is redundant anyway. Same deal: header and tab bar stay.
   const hideFab = hideChrome || ['/mezo/chat', '/fuel/log/uj'].includes(location.pathname)
+  // A chatnek saját, beszélgetés-specifikus fejléce van (vissza, szálválasztó, új szál,
+  // műveletek). A shell-fejléc ugyanitt ugyanazt a Mezo-identitást rajzolta ki még egyszer,
+  // ezért ezen az egy route-on csak a chat saját fejléce marad.
+  const hideHeader = hideChrome || location.pathname === '/mezo/chat'
   return (
     <>
       <CircadianTheme />
@@ -56,7 +60,7 @@ export function AppLayout() {
                       oldalon ugyanaz. A scrollerben ÜL, de mostantól kitapad (mezo-8az6,
                       position: sticky) — a tartalom görög alatta, ő maga a görgetőport
                       tetején marad. */}
-                  {!hideChrome && <AppHeader />}
+                  {!hideHeader && <AppHeader />}
                   {/* Tab-level boundary: a crashed page degrades to a fallback card; the chrome
                       (TabBar) stays usable and navigating away (resetKey) recovers. */}
                   <ErrorBoundary resetKey={location.pathname}>

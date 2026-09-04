@@ -5,6 +5,7 @@ import { routes } from '@/app/router'
 import { ThemeProvider } from '@/app/ThemeProvider'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { seedAllKalauzSeen } from '@/test/kalauz'
+import rawCss from '@/styles/prototype.css?raw'
 
 // mezo-gb1s.3: a hub-kalauzok 600 ms után felugranának a navigációs asszertek közben.
 beforeEach(() => seedAllKalauzSeen())
@@ -253,6 +254,22 @@ test('hides the quick-log FAB on the chat page but keeps the tab bar', () => {
   const { container } = renderApp('/mezo/chat')
   expect(container.querySelector('.quicklog-fab')).toBeNull()
   expect(container.querySelector('.tab-bar')).not.toBeNull()
+})
+
+test('the sticky header keeps its compact aurora without covering content or doubling the chat header', async () => {
+  const auroraRule = rawCss.match(/\.app-head-bg\s*\{[^}]+\}/)?.[0] ?? ''
+  const condensedAuroraRule = rawCss.match(/\.app-head\.is-cond \.app-head-bg\s*\{[^}]+\}/)?.[0] ?? ''
+
+  expect.soft(auroraRule).toContain('height: 54px')
+  expect.soft(auroraRule).toContain('black 86%')
+  expect.soft(condensedAuroraRule).not.toContain('opacity: 0')
+  expect.soft(rawCss).not.toMatch(/\.app-head\.is-cond::before\s*\{/)
+
+  const { container } = renderApp('/mezo/chat')
+  await screen.findByLabelText('Küldés')
+  expect.soft(container.querySelector('.app-head')).toBeNull()
+  expect.soft(container.querySelectorAll('.mzc-chathead')).toHaveLength(1)
+  expect.soft(rawCss.match(/\.mzc-chathead\s*\{[^}]+\}/)?.[0] ?? '').toContain('top: 0')
 })
 
 test('/fuel/log/uj is a stable full-page sibling — the logging page (mezo-bq2t)', async () => {

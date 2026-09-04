@@ -4577,13 +4577,15 @@ button.mz-tile:active { transform: scale(0.96); }
   top: 0;
   left: calc(-1 * var(--screen-gutter));
   right: calc(-1 * var(--screen-gutter));
-  height: 92px;
+  /* 6px felső padding + 40px kontrollsor + 8px kifutás: az aurora megmarad, de már
+     nem ül rá a lap első kártyájára/szövegére. */
+  height: 54px;
   overflow: hidden;
   pointer-events: none;
-  transition: opacity var(--duration-normal) var(--ease-out);
-  /* az alja belefolyik a tartalomba — nincs éles vágás */
-  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 58%, transparent 100%);
-  mask-image: linear-gradient(to bottom, black 0%, black 58%, transparent 100%);
+  /* csak az utolsó pár pixelben folyik bele a tartalomba: a kontrollsor mögött végig
+     fedett marad, ezért a görgetett kártyák/szövegek nem ütnek át rajta. */
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, black 86%, transparent 100%);
+  mask-image: linear-gradient(to bottom, black 0%, black 86%, transparent 100%);
 }
 .app-head-wash { position: absolute; inset: 0; }
 .app-head-bg[data-face="reggel"] .app-head-wash { background: var(--mzh-wash-reggel); }
@@ -4610,25 +4612,12 @@ button.mz-tile:active { transform: scale(0.96); }
   color: var(--text-primary);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-/* Kompakt üvegmód: az aurora kifakul, a helyét áttetsző, elmosott sáv veszi át.
-   A blur SZÁNDÉKOSAN csak erre az alacsony sávra kerül, nem a teljes aurorára —
-   nagy felületen a backdrop-filter gyenge telefonon képkockát ejt. */
+/* Kompakt mód: csak a függőleges ritmus húzódik össze. Az aurora napszak-színe
+   változatlan marad, hogy görgetéskor se váltson semleges üvegsávra. */
 /* A padding-top a --mzh-head-cond-h tokenből SZÁRMAZIK, nem külön szám: 40px a
    .nap-roundbtn kontrollsor magassága, a token a mérvadó (44px mindkét témában) — így
    nem szakadhat el csendben a kettő egymástól. */
 .app-head.is-cond { padding-top: calc(var(--mzh-head-cond-h) - 40px); margin-bottom: 3px; }
-.app-head.is-cond .app-head-bg { opacity: 0; }
-.app-head.is-cond::before {
-  content: "";
-  position: absolute;
-  top: 0; bottom: 0;
-  left: calc(-1 * var(--screen-gutter));
-  right: calc(-1 * var(--screen-gutter));
-  background: var(--mzh-glass);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  border-bottom: 0.5px solid var(--mzh-glass-line);
-}
 /* A fejléc tartalma az aurora és az üvegsáv FÖLÖTT ül. Figyelem: ez minden fejléc-
    gyerekből saját stacking contextet csinál, tehát a bennük lévő .nap-dpmenu/
    .nap-ntfmenu 30-as z-indexe is EBBE a helyi kontextusba zárul, nem a globálisba.
@@ -5400,7 +5389,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
    hosszú szál aljáról a kiút ismét csak a tabbar lenne (lásd a #page-chat page-head
    korábbi sticky-jét, prototype.css régi 6865). */
 .mzc-chathead { display: flex; align-items: center; gap: 9px; padding: 2px 19px 6px;
-  position: sticky; top: var(--mzh-head-cond-h); z-index: 30; background: var(--canvas); }
+  position: sticky; top: 0; z-index: 30; background: var(--canvas); }
 .mzc-hdisc {
   width: 34px; height: 34px; border-radius: 50%; border: none; cursor: pointer; flex: none;
   font-family: inherit; font-size: 15px; color: var(--text-primary); padding: 0;

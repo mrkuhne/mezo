@@ -137,7 +137,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### biometrics
 
 *BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-03, mixed) ·
-  [docs/features/today.md](features/today.md) (updated 2026-09-02, mixed)
+  [docs/features/today.md](features/today.md) (updated 2026-09-04, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
   - **sub-features:** `checkin`, `profile`, `sleep`, `weight`
@@ -241,7 +241,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### companion
 
 *BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-02, shipped) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-09-03, mixed) ·
+  [docs/features/companion.md](features/companion.md) (updated 2026-09-04, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-03, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-03, mixed)
@@ -377,7 +377,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### feedback
 
-*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-08-30, mixed)
+*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-04, mixed)
 
 - **FE data** `frontend/src/data/feedback`
   - **hooks (via `@/data/hooks`):** `useFeedback`
@@ -543,8 +543,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### insights
 
-*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-03, mixed) ·
-  [docs/features/insights.md](features/insights.md) (updated 2026-08-30, mixed)
+*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-04, mixed) ·
+  [docs/features/insights.md](features/insights.md) (updated 2026-09-04, mixed)
 
 - **FE data** `frontend/src/data/insights`
   - **hooks (via `@/data/hooks`):** `NEW_CHAT`, `useChat`, `useChatActions`, `useConversationActions`,
@@ -664,7 +664,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### llmlog
 
-*BE + API* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-03, mixed)
+*BE + API* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-04, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
@@ -1097,7 +1097,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/intention.md](features/intention.md) (updated 2026-08-30, done) ·
   [docs/features/needs.md](features/needs.md) (updated 2026-08-30, done) ·
   [docs/features/ritual.md](features/ritual.md) (updated 2026-08-30, done) ·
-  [docs/features/today.md](features/today.md) (updated 2026-09-02, mixed)
+  [docs/features/today.md](features/today.md) (updated 2026-09-04, mixed)
 
 - **FE data** `frontend/src/data/today`
   - **hooks (via `@/data/hooks`):** `resolveBriefing`, `useCheckins`, `useCompanionFeed`, `useFuelPreview`,

@@ -2,7 +2,7 @@
 title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0)
 type: feature-platform
 status: in-progress
-updated: 2026-09-02
+updated: 2026-09-04
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -198,11 +198,14 @@ S8 re-skinned the **shared primitives themselves** (the `Common` block, `prototy
 
 > **RETIRED (`mezo-d20.9.1`, 2026-08-29).** `AppHero.tsx` and the whole `.apphero*` family are deleted: under [ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md) no tab root mounts a shared header — as of `mezo-d20.9.1` each Mozaik hub rendered its own header recipe (date eyebrow · daypart switch · clay bell · orb avatar) and each sibling page renders `PageHead`. The account-progression surfaces the counters linked to (`TitleShopSheet`, `StreakSheet`, `/me/growth`) all survive; only the header that hosted them is gone. **Superseded again by `mezo-atry` (2026-08-30):** the five hubs' near-identical per-hub copies of that recipe are themselves gone now — the header is back to being a single shared component, `frontend/src/app/AppHeader.tsx`, mounted once by `AppLayout` above every tab-root and sub-page (mounted inside `ScreenContent`, the app's one scroller; **kitapad since `mezo-8az6`** — see the note right below, superseding the earlier "not sticky" state); at `mezo-atry` it carried date eyebrow · daypart switch · a Mezo-messages circle (new — the tile that used to sit in Today's daypart mosaics) · notification bell · profile orb — the date eyebrow was itself later replaced by the section label + clay spot (`mezo-8az6`, below). See [today.md](today.md#the-header-is-the-shells-not-the-hubs) for the full contract. Kept below as the record of what the five sections used to share, in both eras.
 
-**Fejléc-aurora (mezo-8az6).** A shell-fejléc kitapad (`position: sticky`, `top: 0` a
+**Fejléc-aurora (mezo-8az6; görgetési tisztázás `mezo-oq8z`).** A shell-fejléc kitapad (`position: sticky`, `top: 0` a
 `.screen-content` scrollerben), és napszak-követő aurora hátteret visel: wash + két
 elmosott fényfolt + dekoratív SVG (`HeaderAurora.tsx`), a réteg alja maszkkal fakul a
-tartalomba. Görgetéskor (`useCondensedHeader`, küszöb 14px) az aurora kifakul, és
-áttetsző, elmosott üvegsáv marad — az ikonok végig elérhetők. A bal oldalon a SZEKCIÓ
+tartalomba. Az aurora **54px magas** (a 40px-es kontrollsor + szűk kifutás), és csak az
+utolsó pár pixelén fakul, így nem ül rá a lap első tartalmára. Görgetéskor
+(`useCondensedHeader`, küszöb 14px) csak a fejléc függőleges ritmusa tömörödik; a
+napszak-szín és az aurora `opacity: 1` változatlan marad, nincs semleges üvegsávra váltás.
+A bal oldalon a SZEKCIÓ
 neve + clay spot (`headerSection.ts`), nem a dátum. Tokenek: `--mzh-*`, light és dark
 párral. A látvány forrása: `docs/design_2.0/prototypes/header-aurora.html`.
 
@@ -211,8 +214,10 @@ A kitapadó fejléc átrendezte a lapon belüli sticky chrome-ot is. Bevezettün
 40px kontrollsor). Az `.app-head` z-indexe **46** (a lap-chrome fölött, a StatusBar 50
 alatt), a `.sticky-top` (breadcrumb-sávok) és a `.mzc-chathead` (chat-fejléc) pedig
 `top: var(--mzh-head-cond-h)`-nál tapad ki — a fő szabályban ÉS a „Real mobile / installed
-PWA" media query-ben is (`frontend/src/styles/prototype.css:1107`). Bármely ÚJ, lapon
-belüli sticky elem is ezt a mintát kell kövesse, különben a shell-fejléc alá csúszik.
+PWA" media query-ben is (`frontend/src/styles/prototype.css:1107`). **Kivétel a
+`/mezo/chat`:** ott a redundáns shell-header nem renderelődik, ezért az egyetlen,
+beszélgetés-specifikus `.mzc-chathead` `top: 0`-nál tapad ki. Bármely ÚJ, lapon belüli
+sticky elem a saját route-jának tényleges shell-chrome-jához igazodjon.
 
 Két új clay spot készült ehhez a slice-hoz: **`s-fuel`** (Fuel szekció) és **`s-en`** (Én
 szekció) — a `docs/design_2.0/assets/clay-spots.svg`-ben és a verbatim frontend-másolatban,

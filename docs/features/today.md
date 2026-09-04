@@ -2,7 +2,7 @@
 title: Today
 type: feature-domain
 status: mixed
-updated: 2026-09-02
+updated: 2026-09-04
 tags: [today, nap, mozaik, biometrics, frontend, data-layer, ritual, needs]
 key_files:
   - frontend/src/features/today/pages/NapHubPage.tsx
@@ -35,7 +35,7 @@ related: [_platform-data-layer, _platform-design-system, me, insights, companion
 
 ### The header is the shell's, not the hub's
 
-Until `mezo-atry`, `NapHubPage`'s `.nap-head` was copy-pasted verbatim into the Edzés, Fuel, Mezo and Én hubs — five near-identical blocks with drifting content. It now lives once, as **`AppHeader`** (`frontend/src/app/AppHeader.tsx`), mounted by `AppLayout` as the first child inside `ScreenContent` on every route except the three chrome-free ones (`/train/session`, `/me/sleep/night`, `/ritual` — the same `hideChrome` flag that also gates `TabBar` and `QuickLogFab`). Since `mezo-8az6` the header **kitapad** (`position: sticky`, `top: 0` in the `.screen-content` scroller) instead of scrolling away with the page, and carries a napszak-követő aurora background (`HeaderAurora.tsx`) that fades to a translucent glass bar past a 14px scroll threshold (`useCondensedHeader`). `NapHubPage` itself renders no header at all any more. Six elements (the guide button only where the route has a guide), left to right:
+Until `mezo-atry`, `NapHubPage`'s `.nap-head` was copy-pasted verbatim into the Edzés, Fuel, Mezo and Én hubs — five near-identical blocks with drifting content. It now lives once, as **`AppHeader`** (`frontend/src/app/AppHeader.tsx`), mounted by `AppLayout` as the first child inside `ScreenContent` on every route except the three chrome-free ones (`/train/session`, `/me/sleep/night`, `/ritual` — the same `hideChrome` flag that also gates `TabBar` and `QuickLogFab`) and `/mezo/chat`, whose own conversation-control header is the single header on that route (`mezo-oq8z`). Since `mezo-8az6` the shell header **kitapad** (`position: sticky`, `top: 0` in the `.screen-content` scroller) instead of scrolling away with the page, and carries a napszak-követő aurora background (`HeaderAurora.tsx`). Since `mezo-oq8z` that aurora is a compact 54px layer and remains fully present after the 14px compact threshold (`useCondensedHeader`); only the spacing tightens, so the daypart color neither disappears nor turns into glass while the short, late mask fade cannot cover the first content row. `NapHubPage` itself renders no header at all any more. Six elements (the guide button only where the route has a guide), left to right:
 
 1. **Kalauz „?"** — `.nap-roundbtn.nap-q`, rendered **only when the route has a registry entry** (`findKalauz(pathname)`, `frontend/src/features/tutorial/registry`), always the first button so the daypart switch's presence never shifts it. Opens the page's guide through `useTutorial().open(id)`; carries the `.nap-offnow` amber dot when the route is a T3 guide not yet seen. See [`tutorial.md`](tutorial.md).
 2. **Szekció (clay spot + név)** — the mezo-8az6 replacement for the date eyebrow: the dátumot a telefon státuszsávja mutatja, a helyét az „épp melyik szekcióban vagyok" vette át (`app/headerSection.ts` — szekció-szintű, a path első szegmenséből, 115 route mellett tábla nélkül).
