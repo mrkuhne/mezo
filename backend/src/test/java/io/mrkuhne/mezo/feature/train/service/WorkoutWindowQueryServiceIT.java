@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.RunningPopulator;
+import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -24,6 +25,7 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
     @Autowired private RunningPopulator running;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private OwnerProperties ownerProperties;
+    @Autowired private SportSlotSkipPopulator skips;
 
     private UUID owner() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -271,5 +273,62 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
         var windows = service.windowsFor(owner, wed);
         assertThat(windows).hasSize(1);
         assertThat(windows.getFirst().done()).isTrue();
+    }
+
+    @Test
+    void testWindowsFor_shouldNotReturnSportWindow_whenTheSlotOccurrenceIsSkippedOnThatDate() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);          // Wednesday → dayOfWeek index 2
+        train.createScheduleSlot(owner, 2, "17:00", 60, "training");
+        skips.createSkip(owner, 2, "17:00", wed);
+
+        assertThat(service.windowsFor(owner, wed)).isEmpty();
+    }
+
+    @Test
+    void testWindowsFor_shouldStillReturnSportWindow_onADifferentDateTheSameSlotIsNotSkipped() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);          // Wednesday → dayOfWeek index 2
+        LocalDate nextWed = LocalDate.of(2026, 7, 1);       // same weekday, different date
+        train.createScheduleSlot(owner, 2, "17:00", 60, "training");
+        skips.createSkip(owner, 2, "17:00", wed);           // only this date's occurrence is skipped
+
+        List<WorkoutWindowQueryService.Window> windows = service.windowsFor(owner, nextWed);
+
+        assertThat(windows).hasSize(1);
+        assertThat(windows.getFirst().kind()).isEqualTo("sport");
+        assertThat(windows.getFirst().start()).isEqualTo(LocalTime.of(17, 0));
+    }
+
+    @Test
+    void testHasScheduledTrainingOn_shouldReturnFalse_whenTheOnlyScheduledThingIsASkippedSportSlot() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);          // Wednesday → dayOfWeek index 2
+        train.createScheduleSlot(owner, 2, "17:00", 60, "training");
+        skips.createSkip(owner, 2, "17:00", wed);
+
+        assertThat(service.hasScheduledTrainingOn(owner, wed)).isFalse();
+    }
+
+    @Test
+    void testHasScheduledTrainingOn_shouldReturnTrue_whenASkippedSportSlotCoexistsWithAGymSlot() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);
+        train.createScheduleSlot(owner, 2, "17:00", 60, "training");
+        skips.createSkip(owner, 2, "17:00", wed);
+        train.createGymSlot(owner, 2, "09:00");
+
+        assertThat(service.hasScheduledTrainingOn(owner, wed)).isTrue();
+    }
+
+    @Test
+    void testHasScheduledTrainingOn_shouldReturnTrue_whenASkippedSportSlotCoexistsWithAOneOffSportEvent() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);
+        train.createScheduleSlot(owner, 2, "17:00", 60, "training");
+        skips.createSkip(owner, 2, "17:00", wed);
+        train.createSportEvent(owner, wed, "19:30", 120);
+
+        assertThat(service.hasScheduledTrainingOn(owner, wed)).isTrue();
     }
 }
