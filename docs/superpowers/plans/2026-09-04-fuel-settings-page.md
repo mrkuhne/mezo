@@ -347,7 +347,7 @@ cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo && git add frontend/src/features/fu
 - Modify: `docs/features/fuel.md`
 - Regenerate: `docs/CODEMAP.md`
 
-- [ ] **Step 1: Frissítsd az élő Fuel-dokumentációt**
+- [x] **Step 1: Frissítsd az élő Fuel-dokumentációt**
 
 A `docs/features/fuel.md`-ben írj át minden elavult `FuelSettingsSheet` hivatkozást:
 
@@ -359,7 +359,7 @@ A `docs/features/fuel.md`-ben írj át minden elavult `FuelSettingsSheet` hivatk
 
 Ne adj changelog-szekciót: az élő dokumentumot helyben írd át.
 
-- [ ] **Step 2: Regeneráld a CODEMAP-et és futtasd a docs lintet**
+- [x] **Step 2: Regeneráld a CODEMAP-et és futtasd a docs lintet**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo && node scripts/gen-codemap.mjs
@@ -368,7 +368,7 @@ cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo && node scripts/lint-docs.mjs
 
 Várt: 0 lint error; a Fuel feature doc key-file driftje megszűnik. Ha más, már a kezdőállapotban stale dokumentum warning marad, rögzítsd baseline-ként, de ne javíts scope-on kívüli fájlokat.
 
-- [ ] **Step 3: Futtasd a teljes lokális frontend kapukat friss állapotból**
+- [x] **Step 3: Futtasd a teljes lokális frontend kapukat friss állapotból**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo/frontend && pnpm build
@@ -379,7 +379,7 @@ cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo/frontend && pnpm test:visual
 
 Várt: TypeScript/Vite build, real-mode Vitest, mock-mode Vitest, valamint a teljes Playwright visual+layout suite zöld.
 
-- [ ] **Step 4: Ellenőrizd a scope-ot és az accessibility maradványokat**
+- [x] **Step 4: Ellenőrizd a scope-ot és az accessibility maradványokat**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo && rg -n "FuelSettingsSheet|opens FuelSettingsSheet|only from FuelSettingsSheet" frontend/src docs/features/fuel.md
@@ -389,13 +389,13 @@ cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo && git status --short
 
 Várt: az `rg` 0 találat, `git diff --check` 0 hiba, csak a terv szerinti doc/CODEMAP módosítások staged/unstagedek.
 
-- [ ] **Step 5: Commitold a dokumentációt**
+- [x] **Step 5: Commitold a dokumentációt**
 
 ```bash
 cd /Users/mrkuhne/.codex/worktrees/0d4c/mezo && git add docs/features/fuel.md docs/CODEMAP.md && git commit -m "docs(fuel): document settings page flow (mezo-2xzf)"
 ```
 
-- [ ] **Step 6: Frissítsd a Beads issue-t a bizonyítékokkal**
+- [x] **Step 6: Frissítsd a Beads issue-t a bizonyítékokkal**
 
 Adj `bd` kommentet a focused/full gate eredményeiről, a két darwin visual golden kézi ellenőrzéséről és minden baseline warningról. Csak akkor zárd `mezo-2xzf`-et, amikor a branch push és a CI gate is sikeres.
 
