@@ -137,6 +137,18 @@ describe('RutinHubPage', () => {
     expect(within(cell).getByText('2')).toBeInTheDocument()
   })
 
+  test('the active-habit cell ignores the defs of a PAUSED chain', () => {
+    // A paused chain does not run, so its still-active defs are not active habits — counting
+    // them overstated the number the cell's own label claims (mezo-4kbl).
+    useHabitCatalog.mockReturnValue({
+      catalog: { chains: [{ ...MORNING, isActive: false }, EVENING] },
+      isPending: false, isError: false, refetch: vi.fn(),
+    })
+    renderPage()
+    const cell = screen.getByText('aktív szokás').closest('.mz-statcell') as HTMLElement
+    expect(within(cell).getByText('0')).toBeInTheDocument()
+  })
+
   test('badges each habit row with its framework, legacy rows included', () => {
     renderPage()
     expect(screen.getByLabelText('Reggeli fény · szokás-láncolás · 28 napos erő 71% · kész')).toBeInTheDocument()
