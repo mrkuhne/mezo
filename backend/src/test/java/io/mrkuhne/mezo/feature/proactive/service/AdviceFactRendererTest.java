@@ -131,6 +131,10 @@ class AdviceFactRendererTest {
                     7, 6.0, 8.0, 6.0, 5.0, "ma", null, null, null, null));
             case FlagKey.ALL_HEALTHY -> FlagPayloadEnvelope.allHealthy(
                 new FlagPayloadEnvelope.AllHealthy(7, 7));
+            case FlagKey.ACUTE_BAD_DAY -> FlagPayloadEnvelope.acuteBadDay(
+                new FlagPayloadEnvelope.AcuteBadDay(2, 3, 2, List.of(
+                    new FlagPayloadEnvelope.QualifyingCheckIn("08:00", 2, 3),
+                    new FlagPayloadEnvelope.QualifyingCheckIn("20:00", 3, 2))));
             default -> throw new AssertionError(
                 "no AdviceFactRendererTest fixture for live flag key '" + flagKey + "' — "
                     + "add both a fixture here and a render() branch in AdviceFactRenderer");
