@@ -113,11 +113,31 @@ beforeEach(() => {
 })
 
 describe('RutinHubPage', () => {
-  test('keeps the 30-day counter tiles and the day navigator from the Growth page', () => {
+  test('shows the prototype statstrip instead of the 30-cell counter tiles', () => {
+    const { container } = renderPage()
+    expect(screen.getByText('tökéletes reggel · 30 n')).toBeInTheDocument()
+    expect(screen.getByText('tökéletes este · 30 n')).toBeInTheDocument()
+    expect(screen.getByText('aktív szokás')).toBeInTheDocument()
+    expect(screen.getByText('6')).toBeInTheDocument() // perfectMorningDays30
+    expect(container.querySelector('.gr-covtile')).toBeNull()
+    expect(container.querySelector('.gr-cells')).toBeNull()
+  })
+
+  test('keeps the day navigator — the accepted extension over the prototype', () => {
     renderPage()
-    expect(screen.getByText('Reggel')).toBeInTheDocument()
-    expect(screen.getByText('Este')).toBeInTheDocument()
     expect(screen.getByLabelText(/előző nap/i)).toBeInTheDocument()
+  })
+
+  test('the active-habit cell counts ACTIVE definitions only', () => {
+    useHabitCatalog.mockReturnValue({
+      catalog: {
+        chains: [{ ...MORNING, defs: [MORNING.defs[0], MORNING.defs[1], { ...MORNING.defs[2], isActive: false }] }, EVENING],
+      },
+      isPending: false, isError: false, refetch: vi.fn(),
+    })
+    renderPage()
+    const cell = screen.getByText('aktív szokás').closest('.mz-statcell') as HTMLElement
+    expect(within(cell).getByText('2')).toBeInTheDocument()
   })
 
   test('badges each habit row with its framework, legacy rows included', () => {

@@ -6081,17 +6081,6 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .gr-band.expanded .gr-skl.more { display: flex; }
 .gr-expand { width: 100%; border: none; background: none; font-family: inherit; font-size: 10.5px; font-weight: 700; color: var(--tc, var(--mz-ink-soft)); cursor: pointer; padding: 7px 0 0; text-align: center; min-height: 44px; }
 /* rutin */
-.gr-covgrid { display: flex; gap: 9px; margin-bottom: 11px; }
-.gr-covtile { flex: 1; border-radius: 18px; padding: 11px 12px; background: var(--mz-stripbg); border: 0.5px solid var(--mz-line-soft); box-shadow: var(--mz-shadow); }
-.gr-cov-hd { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
-.gr-cov-hd b { font-size: 11px; font-weight: 700; }
-.gr-cov-n { margin-left: auto; font-size: 13px; font-weight: 600; font-variant-numeric: tabular-nums; }
-.gr-cov-n small { font-size: 9px; color: var(--mz-ink-mut); font-weight: 600; }
-.gr-cells { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
-.gr-cells i { aspect-ratio: 1; border-radius: 4px; background: var(--mz-gbar-bg); transform: scale(0.4); opacity: 0; }
-.gr-cells i.on { background: var(--mz-strength); }
-.gr-cells i.ev.on { background: var(--mz-gbar-lav); }
-.mz-play .gr-cells i { animation: gr-dotpop 0.35s cubic-bezier(0.3, 1.4, 0.4, 1) forwards; animation-delay: calc(var(--d) + var(--i) * 14ms); }
 .gr-daynav { display: flex; align-items: center; gap: 9px; padding: 2px 2px 9px; }
 .gr-chain { border-radius: 20px; padding: 13px 14px; margin-bottom: 11px; border: 0.5px solid var(--mz-line-soft); background: var(--mz-stripbg); box-shadow: var(--mz-shadow); }
 .gr-chain.amber { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
@@ -6164,7 +6153,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 }
 @media (prefers-reduced-motion: reduce) {
   .gr-tbar i, .mz-play .gr-tbar i, .gr-msbar i, .mz-play .gr-msbar i,
-  .gr-wdots i, .mz-play .gr-wdots i, .gr-cells i, .mz-play .gr-cells i { transform: none; opacity: 1; animation: none; }
+  .gr-wdots i, .mz-play .gr-wdots i { transform: none; opacity: 1; animation: none; }
 }
 /* ── Napló re-face (mezo-d20.6.6) — prototype en-body.html #page-naplo ×1.18.
       The gratitude tile and the gold decision card reuse the Előrejelzések/Kísérletek family's

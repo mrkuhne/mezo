@@ -22,17 +22,16 @@ import { AiSuggestSheet } from '@/features/me/sheets/AiSuggestSheet'
 import { ChainEditSheet } from '@/features/me/sheets/ChainEditSheet'
 import { HabitEditSheet } from '@/features/me/sheets/HabitEditSheet'
 import { localDateString } from '@/shared/lib/dates'
-import { ClayIcon, ClaySpot, type ClaySpotName, type ClayIconName } from '@/shared/ui/clay'
+import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 import { DayNavigator } from '@/shared/ui/DayNavigator'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
-import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
+import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { SortableList } from '@/shared/ui/SortableList'
 import { Toggle } from '@/shared/ui/Toggle'
 import { cn } from '@/shared/lib/cn'
 
-const DAYS = 30
 const DAYPART_ICON: Record<HabitDaypart, ClayIconName> = { MORNING: 'i-hajnal', DAY: 'i-nap', EVENING: 'i-alvas' }
 const DAYPART_WASH: Record<HabitDaypart, 'amber' | '' | 'lav'> = { MORNING: 'amber', DAY: '', EVENING: 'lav' }
 const STATUS_SR: Record<HabitItem['status'], string> = { done: 'kész', missed: 'kimaradt', pending: 'nyitott' }
@@ -49,25 +48,6 @@ const ADD_HABIT_STYLE: CSSProperties = {
 
 function frameworkKey(f: HabitFramework | null | undefined): 'FOGG' | 'CLEAR' | 'NONE' {
   return f ?? 'NONE'
-}
-
-function Cells({ id, count, evening, delayMs }: { id: string; count: number; evening?: boolean; delayMs: number }) {
-  return (
-    <div className="gr-cells" id={id} aria-hidden="true">
-      {Array.from({ length: DAYS }, (_, i) => (
-        <i key={i} className={cn(evening && 'ev', i < count && 'on')} style={{ '--d': `${delayMs}ms`, '--i': i } as CSSProperties} />
-      ))}
-    </div>
-  )
-}
-
-function CounterTile({ id, spot, label, count, evening, delayMs }: { id: string; spot: ClaySpotName; label: string; count: number; evening?: boolean; delayMs: number }) {
-  return (
-    <div className="gr-covtile">
-      <div className="gr-cov-hd"><ClaySpot name={spot} size={19} /><b>{label}</b><span className="gr-cov-n">{count}<small> / {DAYS}</small></span></div>
-      <Cells id={id} count={count} evening={evening} delayMs={delayMs} />
-    </div>
-  )
 }
 
 export function RutinHubPage() {
@@ -102,6 +82,7 @@ export function RutinHubPage() {
   const totalToday = habits.length
   const strengthPcts = summary.habits.map((h) => h.strengthPct).filter((p): p is number => p != null)
   const meanStrength = strengthPcts.length ? Math.round(strengthPcts.reduce((s, p) => s + p, 0) / strengthPcts.length) : null
+  const activeDefs = catalog.chains.flatMap((c) => c.defs).filter((d) => d.isActive).length
 
   // Past-day row: status-only, exactly as GrowthRutinPage rendered it.
   const pastRow = (h: HabitItem) => (
@@ -230,12 +211,13 @@ export function RutinHubPage() {
       />
       <PageBody principle="Kimaradt nap nem törli a láncot — holnap folytatódik. A százalék a lánc 30 napos ereje, nem ítélet.">
         <EntranceGroup replayKey={date}>
-          {isToday && (
-            <div className="gr-covgrid rise" style={{ '--d': '0ms' } as CSSProperties}>
-              <CounterTile id="gr-cells-m" spot="s-reggel" label="Reggel" count={summary.perfectMorningDays30} delayMs={120} />
-              <CounterTile id="gr-cells-e" spot="s-este" label="Este" count={summary.perfectEveningDays30} evening delayMs={200} />
-            </div>
-          )}
+          {/* A 30 napos aggregátum a kiválasztott naptól független, ezért a múltnapi ágon is
+              itt marad — a lap identitása nem ugrik napváltáskor. */}
+          <StatStrip className="rise">
+            <StatCell value={summary.perfectMorningDays30} label="tökéletes reggel · 30 n" />
+            <StatCell value={summary.perfectEveningDays30} label="tökéletes este · 30 n" />
+            <StatCell value={activeDefs} label="aktív szokás" />
+          </StatStrip>
           <div className="gr-daynav rise" style={{ '--d': '60ms' } as CSSProperties}>
             <DayNavigator date={date} maxDate={today} onChange={setDate} />
           </div>
