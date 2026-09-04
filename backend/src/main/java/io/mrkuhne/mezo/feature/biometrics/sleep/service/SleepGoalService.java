@@ -6,11 +6,14 @@ import io.mrkuhne.mezo.feature.biometrics.sleep.config.SleepGoalProperties;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepGoalEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepGoalRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,6 +54,28 @@ public class SleepGoalService {
             ? req.getRegularityBandMin() : properties.regularityBandMin());
         repository.save(row);
         return compose(row.getTargetMinutes(), row.getAnchor(), row.getAnchorTime(), row.getRegularityBandMin());
+    }
+
+    /**
+     * Moves the anchor by {@code minutes} (negative = earlier) WITHOUT creating a goal (S5, bd
+     * mezo-d58h.5). Deliberately not {@link #setGoal}: that one upserts, so calling it for a user
+     * with no row would silently invent a goal — and the spec makes the missing-sleep-goal card the
+     * prerequisite for ever offering this action. The missing-row condition is invisible through
+     * {@code getGoal}/{@code SleepAnchorResolver} (both ghost a config default), so this reads the
+     * repository directly.
+     *
+     * <p>{@code anchor_time} is an {@code HH:mm} string; {@link LocalTime} arithmetic wraps mod-24h,
+     * so a shift across midnight needs no special case — but string math on it would be a bug.
+     */
+    @Transactional
+    public SleepGoalResponse shiftAnchor(UUID userId, int minutes) {
+        SleepGoalEntity row = repository.findByCreatedByAndDeletedFalse(userId)
+            .orElseThrow(() -> new SystemRuntimeErrorException(
+                SystemMessage.error("SLEEP_GOAL_NOT_SET").build(), HttpStatus.CONFLICT));
+        row.setAnchorTime(LocalTime.parse(row.getAnchorTime()).plusMinutes(minutes).format(HH_MM));
+        repository.save(row);
+        return compose(row.getTargetMinutes(), row.getAnchor(), row.getAnchorTime(),
+            row.getRegularityBandMin());
     }
 
     private SleepGoalResponse compose(int targetMinutes, String anchor, String anchorTime, int bandMin) {

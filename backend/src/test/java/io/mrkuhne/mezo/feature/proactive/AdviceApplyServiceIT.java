@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.proactive;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepGoalRepository;
 import io.mrkuhne.mezo.feature.proactive.entity.AdviceActionKey;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEnvelope;
@@ -11,6 +12,7 @@ import io.mrkuhne.mezo.feature.proactive.service.AdviceApplyService;
 import io.mrkuhne.mezo.feature.proactive.service.AdviceMutationPort;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CompanionMessagePopulator;
+import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.Instant;
@@ -43,6 +45,8 @@ class AdviceApplyServiceIT extends AbstractIntegrationTest {
     @Autowired private CompanionMessageRepository companionMessageRepository;
     @Autowired private List<AdviceMutationPort> mutationPorts;
     @Autowired private CountingMutationPort countingMutationPort;
+    @Autowired private SleepGoalRepository sleepGoalRepository;
+    @Autowired private SleepGoalPopulator sleepGoalPopulator;
 
     /** Deliberately NOT a member of {@link AdviceActionKey#ALL}. A card's offered actions are
      *  rule-provided test data — nothing requires the keys in a fixture to be real production
@@ -103,6 +107,28 @@ class AdviceApplyServiceIT extends AbstractIntegrationTest {
         assertThat(second.getContent().applied().at()).isEqualTo(firstAppliedAt);
         assertThat(countingMutationPort.invocationCount())
                 .as("the effect must run exactly once across both applies").isEqualTo(1);
+    }
+
+    /** The FIRST real {@link AdviceMutationPort} (S5, Task 5, bd mezo-d58h.5) — proves idempotence
+     *  end to end through the real {@code shift_sleep_anchor} action rather than only through the
+     *  test-only {@link CountingMutationPort}: applying twice must shift the sleep goal's anchor
+     *  ONCE, not twice (which would silently double the effect on a re-tap). */
+    @Test
+    void testApply_shouldShiftTheSleepAnchorOnce_whenTheRealActionIsAppliedTwice() {
+        UUID owner = userPopulator.createUser().getId();
+        sleepGoalPopulator.goal(owner, 480, "WAKE", "06:45", 15);
+        CompanionMessageEntity card = companionMessagePopulator.createAdviceWithActions(
+                owner, LocalDate.now(), "some_advice_key", null, "Mezo · javaslat",
+                "Sablon-szöveg.", List.of("tény"), List.of("javaslat"),
+                List.of(new CompanionMessageEnvelope.Action(
+                        AdviceActionKey.SHIFT_SLEEP_ANCHOR, "Tolja el", Map.of("minutes", -30))),
+                null, Instant.now());
+
+        adviceApplyService.apply(owner, card.getId(), AdviceActionKey.SHIFT_SLEEP_ANCHOR);
+        adviceApplyService.apply(owner, card.getId(), AdviceActionKey.SHIFT_SLEEP_ANCHOR);
+
+        assertThat(sleepGoalRepository.findByCreatedByAndDeletedFalse(owner).orElseThrow().getAnchorTime())
+                .isEqualTo("06:15");
     }
 
     @Test
