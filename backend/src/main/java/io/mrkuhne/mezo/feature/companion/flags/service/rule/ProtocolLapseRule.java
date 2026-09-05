@@ -151,13 +151,21 @@ public class ProtocolLapseRule implements FlagRule {
                 continue;
             }
             LocalDate startedOn = item.getCreatedAt().atZone(ZoneId.systemDefault()).toLocalDate();
+            // Whole-branch review fix (bd mezo-d58h.7.1): the walk's own lower bound is clamped to
+            // `from` too — `startedOn` alone stays correct in MEANING (Trap 2 is unchanged), but for
+            // an item added long before `from` the loop would otherwise keep walking below the data
+            // actually loaded (takenByDate/gymDates only cover [from, to]) and read every such day as
+            // "missed" (or "not due" for peri items) purely because nothing was loaded for it — never
+            // fabricating a raise (adherence still computes to ~0 and the item is dropped), just
+            // wasted work walking years of unloaded history on every evaluation.
+            LocalDate walkFloor = startedOn.isAfter(from) ? startedOn : from;
 
             // Miss run: walk backwards from `to`, skipping non-due days entirely, stopping at the
             // first due day that HAS an intake, or when the day drops below startedOn (Trap 2).
             List<LocalDate> missedDueDates = new ArrayList<>();
             LocalDate lastTaken = null;
             LocalDate earliestMissedDay = null;
-            for (LocalDate d = to; !d.isBefore(startedOn); d = d.minusDays(1)) {
+            for (LocalDate d = to; !d.isBefore(walkFloor); d = d.minusDays(1)) {
                 if (!dueOn(item, d, gymDates)) {
                     continue;
                 }
@@ -177,7 +185,7 @@ public class ProtocolLapseRule implements FlagRule {
             // walked back to the history window (clamped to startedOn), requiring both enough due
             // days and enough adherence for a real habit to have existed.
             LocalDate historyEnd = null;
-            for (LocalDate d = earliestMissedDay.minusDays(1); !d.isBefore(startedOn); d = d.minusDays(1)) {
+            for (LocalDate d = earliestMissedDay.minusDays(1); !d.isBefore(walkFloor); d = d.minusDays(1)) {
                 if (dueOn(item, d, gymDates)) {
                     historyEnd = d;
                     break;

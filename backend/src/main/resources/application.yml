@@ -1026,11 +1026,19 @@ mezo:
       # napon kimaradt, de előtte valódi szokás volt. A hangnem szándékosan grace-window (Duolingo
       # streak-freeze): a sorozat ÉL, csak folytatni kell. channel: feed — egy kimaradt kiegészítő
       # nem érdemel pusht. A konkrét készítmény nevét a tények blokk mondja meg, nem ez a szöveg.
+      # Whole-branch review fix (bd mezo-d58h.7.1): cooldown-hours here is scoped PER INTERVENTION
+      # KEY PER USER (InterventionService.deliverForFlag), NOT per item — unlike ProtocolLapseRule's
+      # own 7-day PER-ITEM cooldown. Setting this to 168 would have silently defeated the whole
+      # point of that per-item design: item A's card being delivered would block item B's card for
+      # a full week even though the rule itself is happy to raise for B the next day. This MUST
+      # match cooldown-hours.protocol-lapse (24h) so the library entry's cadence never falls behind
+      # the key-level cooldown the rest of the design assumes — the rule's own per-item cooldown is
+      # what actually enforces the spec's 7-day-per-item cadence.
       - key: protocol_lapse_resume
         flag: protocol_lapse
         channel: feed
         text-hu: "Az egyik kiegészítőd két egymás utáni tervezett napon kimaradt — pedig előtte hetekig stabilan ment. A sorozat nem veszett el: vedd be ma, és onnantól ott folytatod, ahol abbahagytad. Ha viszont szándékosan hagytad el, nyugodtan vedd ki a stackből, és nem szólok érte többet."
-        cooldown-hours: 168
+        cooldown-hours: 24
         quiet-hours-exempt: false
     # W4.3 (mezo-b3pp.17): the pragmatic profile — "hogyan érdemes Daniellel beszélni"
     profile:

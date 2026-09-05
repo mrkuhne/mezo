@@ -2891,9 +2891,13 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
     written as one numeric subtype fails to parse when it round-trips as another.
 - **(mm) Round 2 S1 (bd `mezo-d58h.7.1`, spec 2026-09-05 §(11)) adds `protocol_lapse_resume`, the
   `protocol_lapse` intervention-library entry — but the entry itself, its `channel: feed` (no
-  push — a missed supplement dose does not earn one), and its `cooldown-hours: 168` (a week, mirroring
-  `ProtocolLapseRule`'s own per-item cooldown so the card's cadence and the rule's re-announce window
-  agree) all live in [companion.md](companion.md) §4/§10 alongside the other thirteen entries
+  push — a missed supplement dose does not earn one), and its `cooldown-hours: 24` (whole-branch
+  review fix, bd `mezo-d58h.7.1`: matches `cooldown-hours.protocol-lapse`, NOT
+  `ProtocolLapseRule`'s own 7-day per-item cooldown — `InterventionService`'s cooldown is scoped
+  per intervention key per USER, not per item, so a 168h value here would have silently blocked a
+  DIFFERENT item's card for a week even while the rule itself was happy to raise for it the next
+  day, defeating the whole point of the rule's per-item design) all live in
+  [companion.md](companion.md) §4/§10 alongside the other thirteen entries
   (`mezo.companion.interventions`, `CompanionProperties.Intervention`) — this feature only owns the
   entry's SEVERITY RANK, `AdvicePriority.ORDER`'s tail-of-the-flag-block placement documented just
   above. It offers no `AdviceActionCatalog` mutation (unlike `sleep_debt`/`ignored_nudge`'s
