@@ -884,6 +884,11 @@ mezo:
         joint-overuse: 60
         ignored-nudge: 120
         late-eating: 48
+        # Round 2 S1 (mezo-d58h.7.1): deliberately SHORT. The spec's "7 days per item" cooldown is
+        # enforced inside ProtocolLapseRule against its own past raises' payloads; this key-level
+        # value only stops the same evaluation repeating within a day, so a DIFFERENT item lapsing
+        # tomorrow still gets a delivery window.
+        protocol-lapse: 24
     # W5.2 (bd mezo-b3pp.19, spec §9.2): the intervention library — config, not DB. Selection per
     # raised flag: highest W4.2 effectiveness (feedback_rollup intervention:<key>), unseen keys
     # optimistic; per-key cooldown-hours below; ONE card per day (first raise wins). channel:

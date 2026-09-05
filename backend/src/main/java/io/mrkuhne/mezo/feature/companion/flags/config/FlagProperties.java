@@ -221,7 +221,8 @@ public record FlagProperties(
         @Min(1) @Max(8760) int rapidWeightLoss,
         @Min(1) @Max(8760) int jointOveruse,
         @Min(1) @Max(8760) int ignoredNudge,
-        @Min(1) @Max(8760) int lateEating
+        @Min(1) @Max(8760) int lateEating,
+        @Min(1) @Max(8760) int protocolLapse
     ) {
 
         /** The cooldown for {@code flagKey} — keeps the switch out of the service. */
@@ -240,6 +241,7 @@ public record FlagProperties(
                 case "joint_overuse" -> jointOveruse;
                 case "ignored_nudge" -> ignoredNudge;
                 case "late_eating" -> lateEating;
+                case "protocol_lapse" -> protocolLapse;
                 default -> throw new SystemRuntimeErrorException(
                     SystemMessage.error("COMPANION_FLAG_UNKNOWN_KEY").params(List.of(flagKey)).build());
             };
