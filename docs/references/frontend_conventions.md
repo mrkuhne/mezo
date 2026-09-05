@@ -59,6 +59,11 @@ Only folders with content exist. A non-routed full-screen overlay provider (e.g.
 - **No barrels** anywhere except `data/hooks.ts`. Do not add per-feature `index.ts`.
 - **Deep + absolute** imports through the `@/*`→`src/*` alias: `@/features/train/pages/GymPage`, `@/shared/ui/Chip`, `@/data/fuel/fuelHooks`. Never write relative `../` imports.
 - **Colocate tests** next to their source (`GymPage.tsx` + `GymPage.test.tsx`).
+- **Load-flake ceilings are config-level** (`vite.config.ts` `testTimeout`/`hookTimeout: 20_000`,
+  `setup.ts`'s `configure({ asyncUtilTimeout: 5_000 })`, mezo-0121) — every wait in the suite is
+  condition-based, so a slower global ceiling only ever costs time on a genuinely broken test. A
+  per-test explicit timeout override is a smell: it usually means the test is compensating for a
+  slow condition rather than fixing it, so keep it only when its own comment documents a specific incident.
 
 ## 7. Recipes
 
