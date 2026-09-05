@@ -212,6 +212,10 @@ class AdviceFactRendererTest {
                 new FlagPayloadEnvelope.LateEating(90, 22.5, 2, 3, 23.25, 2,
                     Map.of("2026-09-01", 22.5, "2026-09-02", 24.5),
                     Map.of("2026-09-01", "both", "2026-09-02", "absolute")));
+            case FlagKey.PROTOCOL_LAPSE -> FlagPayloadEnvelope.protocolLapse(
+                new FlagPayloadEnvelope.ProtocolLapse("11111111-1111-1111-1111-111111111111",
+                    "Magnézium", "evening", 2, 2,
+                    List.of("2026-09-03", "2026-09-04"), "2026-09-02", 14, 12, 0.857, 0.60));
             default -> throw new AssertionError(
                 "no AdviceFactRendererTest fixture for live flag key '" + flagKey + "' — "
                     + "add both a fixture here and a render() branch in AdviceFactRenderer");
