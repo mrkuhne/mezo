@@ -1392,8 +1392,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### scripts
 
-- **scripts/:** backup-live-db.sh, com.mezo.db-backup.plist, gen-codemap.mjs, gen-codemap.test.mjs,
-  import-exercise-images.mjs, lint-docs.mjs, lint-liquibase.mjs, purge-restart.sql, setup-git.sh
+- **scripts/:** backup-live-db.sh, check-beads-backup.mjs, com.mezo.db-backup.plist, gen-codemap.mjs,
+  gen-codemap.test.mjs, import-exercise-images.mjs, lint-docs.mjs, lint-liquibase.mjs, purge-restart.sql, setup-git.sh
 
 ## Unaligned
 
