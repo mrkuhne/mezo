@@ -37,9 +37,13 @@ function supplementToPickable(s: SupplementStashItem): PickableIngredient {
     sugarG: s.sugarG,
     saltG: s.saltG,
     saturatedFatG: s.saturatedFatG,
-    price: s.price ?? 0,
-    priceUnit: s.priceUnit ?? '',
-    pkg: s.pkg ?? '',
+    // Honest nulls (mezo-xaq5): a dose-only stash item genuinely has no price/pkg fact — a
+    // fabricated 0/'' would be indistinguishable from a real free item / real empty package.
+    // No current pickable consumer reads these fields; Ingredient.price/priceUnit/pkg are
+    // already nullable, so this is a pure honesty fix, not a behavior change.
+    price: s.price ?? null,
+    priceUnit: s.priceUnit ?? null,
+    pkg: s.pkg ?? null,
     micros: s.micros ?? [],
     nova: s.nova ?? 1,
     stock: s.stock != null ? { qty: s.stock, unit: s.stockUnit ?? '', expires: null } : null,

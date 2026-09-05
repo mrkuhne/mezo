@@ -71,8 +71,8 @@ export function FuelKamraPage() {
   // live tally) or skip the category axis entirely (cats=[] → category-count options).
   const matches = (it: PantryItem, cats: string[]) => {
     if (typeFilter !== 'all' && it.kind !== typeFilter) return false
-    if (cats.length > 0 && !cats.includes(it.category)) return false
-    if (query && !(it.name + ' ' + it.brand).toLowerCase().includes(query.toLowerCase())) return false
+    if (cats.length > 0 && !cats.includes(it.category ?? '')) return false
+    if (query && !(it.name + ' ' + (it.brand ?? '')).toLowerCase().includes(query.toLowerCase())) return false
     return true
   }
 
@@ -83,7 +83,8 @@ export function FuelKamraPage() {
   // each with a count, sorted by size.
   const catCounts = new Map<string, number>()
   allItems.filter(it => matches(it, [])).forEach(it => {
-    catCounts.set(it.category, (catCounts.get(it.category) ?? 0) + 1)
+    const cat = it.category ?? ''
+    catCounts.set(cat, (catCounts.get(cat) ?? 0) + 1)
   })
   const categoryOptions = [...catCounts.entries()]
     .map(([key, count]) => categoryOption(key, count))

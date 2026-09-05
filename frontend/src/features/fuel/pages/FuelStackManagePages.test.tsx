@@ -109,3 +109,23 @@ test('rejected add nem mutat success-toastot', async () => {
   await userEvent.click(await screen.findByRole('button', { name: /Kreatin/ }))
   expect(screen.queryByText('Kreatin hozzáadva')).not.toBeInTheDocument()
 })
+
+test('a "null" keresőszó nem illeszkedik egy null márkájú tételre (mezo-xaq5)', async () => {
+  // Regression guard: a template literal (`${item.name} ${item.brand}`) stringifies a null
+  // brand to the literal word "null" — a bare `${item.brand}` (no `?? ''` boundary guard) would
+  // make a null-brand stash row falsely match the search term "null". pnpm build cannot catch
+  // this: the template literal accepts any type, so only a runtime assertion proves it.
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(
+    http.get(`${API_BASE}/api/pantry`, () => HttpResponse.json({ ingredients: [], stash: [{
+      id: 'null-brand', name: 'Magnézium-glicinát', brand: null, type: 'supplement', category: 'sleep',
+      dose: '300mg', form: 'kapszula', stock: 10, stockUnit: 'db', protocol: '', timing: 'evening', taken: false,
+      macros: { kcal: null, p: null, c: null, f: null },
+    }] })),
+  )
+  renderPage('/fuel/stack/manage/add')
+  const search = await screen.findByRole('searchbox', { name: 'Keresés a Kamrában' })
+  expect(await screen.findByRole('button', { name: /Magnézium-glicinát/ })).toBeInTheDocument()
+  await userEvent.type(search, 'null')
+  expect(screen.queryByRole('button', { name: /Magnézium-glicinát/ })).not.toBeInTheDocument()
+})

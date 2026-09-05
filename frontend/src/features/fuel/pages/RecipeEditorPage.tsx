@@ -194,7 +194,7 @@ export function RecipeEditorPage() {
     }
   }
 
-  const catColor = (cat: string | undefined): string => (cat && categoryMeta[cat]?.color) || 'var(--success)'
+  const catColor = (cat: string | null | undefined): string => (cat && categoryMeta[cat]?.color) || 'var(--success)'
 
   return (
     <MozaikPage tone="sage">

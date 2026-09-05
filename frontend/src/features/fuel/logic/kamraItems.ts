@@ -25,7 +25,7 @@ export function buildKamraItems(
         id: 'stash-' + s.id,
         name: s.name,
         brand: s.brand,
-        source: s.source ?? (s.brand.toLowerCase().includes('myprotein') ? 'myprotein.hu' : 'manual'),
+        source: s.source ?? ((s.brand ?? '').toLowerCase().includes('myprotein') ? 'myprotein.hu' : 'manual'),
         category,
         kind,
         dose: s.dose,

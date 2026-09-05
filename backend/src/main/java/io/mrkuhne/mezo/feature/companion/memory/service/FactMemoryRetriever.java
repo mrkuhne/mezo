@@ -31,7 +31,7 @@ public class FactMemoryRetriever implements MemoryRetriever {
                 .map(hit -> new MemoryCandidate(
                         name(), "knowledge_fact", hit.id(), null, hit.id(), "knowledge_fact",
                         hit.category(), hit.factText(), hit.occurredOn(), hit.score(),
-                        hit.pinned(), hit.conflicting(), 1.0))
+                        hit.pinned(), hit.conflicting(), 1.0, null, hit.conflictingWithId()))
                 .toList();
     }
 }
