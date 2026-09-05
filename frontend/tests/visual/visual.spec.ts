@@ -19,7 +19,8 @@ import { seedThemeAndKalauz } from './kalauzSeed'
  *  - clock frozen BEFORE goto → the daypart-derived sky tint (PhoneFrame) + greeting
  *    (GreetingHeader) stay fixed even as the 60s re-derive interval keeps firing
  *    (setFixedTime keeps timers running but pins `new Date()`). The default is
- *    2026-05-21T13:42 (délután), which matches the StatusBar's hardcoded 13:42; a screen
+ *    2026-05-21T13:42+02:00 (délután), which matches the StatusBar's hardcoded 13:42 — the
+ *    offset is load-bearing, see DEFAULT_FROZEN; a screen
  *    may override it via the third `SCREENS` tuple slot. The /ritual flow is reachable any
  *    time (ADR 0010 D2 — the window nudges, never locks), so it renders at 13:42.
  *  - the three `/today` shots pin BOTH levers, and both are load-bearing (mezo-1khu):
@@ -43,9 +44,9 @@ import { seedThemeAndKalauz } from './kalauzSeed'
  */
 /** `[name, path, frozenTime?]` — the third slot overrides the default frozen clock. */
 const SCREENS: Array<[string, string, string?]> = [
-  ['today-reggel', '/today?dp=reggel', '2026-05-21T09:12:00'],
-  ['today-nap', '/today?dp=nap', '2026-05-21T13:42:00'],
-  ['today-este', '/today?dp=este', '2026-05-21T21:05:00'],
+  ['today-reggel', '/today?dp=reggel', '2026-05-21T09:12:00+02:00'],
+  ['today-nap', '/today?dp=nap', '2026-05-21T13:42:00+02:00'],
+  ['today-este', '/today?dp=este', '2026-05-21T21:05:00+02:00'],
   ['train', '/train'],
   ['train-heti', '/train/week'],
   ['train-gym', '/train/gym'],
@@ -127,8 +128,23 @@ const SCREENS: Array<[string, string, string?]> = [
   ['ritual-arrival', '/ritual'],
 ]
 
-/** The clock every screen freezes to unless its `SCREENS` tuple overrides it. */
-const DEFAULT_FROZEN = '2026-05-21T13:42:00'
+/**
+ * The clock every screen freezes to unless its `SCREENS` tuple overrides it.
+ *
+ * The `+02:00` is LOAD-BEARING (mezo-in3h). `new Date('2026-05-21T13:42:00')` — no offset —
+ * is parsed in the MACHINE's local timezone, so the "frozen" clock was not frozen at all: it
+ * meant 13:42 CEST on the developer's Mac and 13:42 UTC on a CI runner. `timezoneId:
+ * 'Europe/Budapest'` then rendered that instant as 15:42 in CI. The two golden sets therefore
+ * encoded DIFFERENT APPLICATION STATES, and nobody could see it because each platform was
+ * self-consistent and only linux had a gate. Caught the moment a macOS runner met the darwin
+ * goldens: today-este rendered "VILLANYOLTÁSIG 0:10" plus an ÉJSZAKAI MÓD tile (23:05) instead
+ * of "2:10" (21:05) — 65 000 pixels, pure content. The committed linux golden still shows the
+ * 23:05 state, i.e. the authoritative gate was guarding the wrong moment, while the file's own
+ * comment says 13:42 "matches the StatusBar's hardcoded 13:42".
+ *
+ * All frozen times are on 2026-05-21, which is CEST, hence +02:00 throughout.
+ */
+const DEFAULT_FROZEN = '2026-05-21T13:42:00+02:00'
 
 for (const theme of ['light', 'dark'] as const) {
   test.describe(theme, () => {
