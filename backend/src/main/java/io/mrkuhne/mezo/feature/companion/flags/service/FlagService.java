@@ -32,29 +32,34 @@ public class FlagService {
     private final CompanionFlagLogRepository repository;
     private final FlagProperties properties;
     private final ApplicationEventPublisher eventPublisher;
+    private final FlagTraceWriter traceWriter;
 
     /** Evaluates {@code userId} and logs every flag past its cooldown; returns the keys written. */
     @Transactional
     public List<String> evaluateAndLog(UUID userId, String source) {
         List<String> written = new ArrayList<>();
+        Instant at = Instant.now();
         for (FlagVerdict verdict : evaluator.evaluate(userId)) {
-            if (verdict.outcome() != FlagOutcome.RAISED) {
-                continue;
+            TraceDisposition disposition = null;
+            if (verdict.outcome() == FlagOutcome.RAISED) {
+                Instant coolUntil = at.minus(
+                    properties.cooldownHours().forFlag(verdict.flagKey()), ChronoUnit.HOURS);
+                if (repository.existsRaiseSince(userId, verdict.flagKey(), coolUntil)) {
+                    disposition = TraceDisposition.SUPPRESSED_BY_COOLDOWN;
+                } else {
+                    CompanionFlagLogEntity row = new CompanionFlagLogEntity();
+                    row.setCreatedBy(userId);
+                    row.setFlagKey(verdict.flagKey());
+                    row.setSource(source);
+                    row.setPayload(verdict.payload());
+                    repository.save(row);
+                    written.add(verdict.flagKey());
+                    eventPublisher.publishEvent(
+                        new FlagRaisedEvent(userId, verdict.flagKey(), source));
+                    disposition = TraceDisposition.LOGGED;
+                }
             }
-            FlagRaise raise = verdict.toRaise();
-            Instant coolUntil = Instant.now()
-                .minus(properties.cooldownHours().forFlag(raise.flagKey()), ChronoUnit.HOURS);
-            if (repository.existsRaiseSince(userId, raise.flagKey(), coolUntil)) {
-                continue;
-            }
-            CompanionFlagLogEntity row = new CompanionFlagLogEntity();
-            row.setCreatedBy(userId);
-            row.setFlagKey(raise.flagKey());
-            row.setSource(source);
-            row.setPayload(raise.payload());
-            repository.save(row);
-            written.add(raise.flagKey());
-            eventPublisher.publishEvent(new FlagRaisedEvent(userId, raise.flagKey(), source));
+            traceWriter.record(userId, verdict, disposition, at);
         }
         if (!written.isEmpty()) {
             log.info("Flags raised for user {} ({}): {}", userId, source, written);
