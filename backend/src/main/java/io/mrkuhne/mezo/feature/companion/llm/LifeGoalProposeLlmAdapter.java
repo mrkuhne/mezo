@@ -13,7 +13,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -76,7 +75,8 @@ public class LifeGoalProposeLlmAdapter implements LifeGoalProposePort {
     private final PromptPersona promptPersona;
 
     @Override
-    public Optional<Proposal> propose(UUID userId, String title, String whyText, String catalogText, Set<String> skillKeys) {
+    public Optional<Proposal> propose(UUID userId, String title, String whyText, String catalogText,
+            Set<String> catalogIds, Set<String> skillKeys) {
         String prompt = promptPersona.render(userId,
                 String.format(Locale.ROOT, SYSTEM_PROMPT, properties.lifegoalPropose().maxPillars()));
         String context = "[Cél]\n" + title + "\n[Miért]\n" + (whyText == null ? "" : whyText)
@@ -105,11 +105,6 @@ public class LifeGoalProposeLlmAdapter implements LifeGoalProposePort {
         if (p.dimension() == null || !DIMENSIONS.contains(p.dimension())) {
             return Optional.empty();
         }
-        // catalogText's format is `<id> · <label> (...)` per line (SignalCatalog#promptText) — the
-        // id is everything before the first " · " separator.
-        Set<String> catalogIds = catalogText.lines()
-            .map(line -> line.split(" · ", 2)[0].trim())
-            .collect(Collectors.toSet());
         List<PillarProposal> pillars = (p.pillars() == null ? List.<PillarProposal>of() : p.pillars()).stream()
             .filter(Objects::nonNull)
             .filter(x -> x.catalogId() != null && catalogIds.contains(x.catalogId()))

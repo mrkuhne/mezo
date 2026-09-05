@@ -62,6 +62,38 @@ class LifeGoalApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testChangeStatus_shouldBeIdempotentNoOp_whenTargetEqualsCurrentStatus() {
+        LifeGoalResponse g = postForBody("/api/life-goals", kockahas(List.of(sleepPillar())),
+            ownerAuthHeaders(), HttpStatus.CREATED, LifeGoalResponse.class);
+        LifeGoalResponse active = postForBody("/api/life-goals/" + g.getId() + "/status",
+            LifeGoalStatusRequest.builder().status(LifeGoalStatus.ACTIVE).build(), ownerAuthHeaders(), HttpStatus.OK, LifeGoalResponse.class);
+        assertThat(active.getStatus()).isEqualTo(LifeGoalStatus.ACTIVE);
+
+        LifeGoalResponse again = postForBody("/api/life-goals/" + g.getId() + "/status",
+            LifeGoalStatusRequest.builder().status(LifeGoalStatus.ACTIVE).build(), ownerAuthHeaders(), HttpStatus.OK, LifeGoalResponse.class);
+
+        assertThat(again.getStatus()).isEqualTo(LifeGoalStatus.ACTIVE);
+        assertThat(again.getActivatedAt()).isEqualTo(active.getActivatedAt());
+    }
+
+    @Test
+    void testChangeStatus_shouldKeepCompletionDate_whenArchivingADoneGoal() {
+        LifeGoalResponse g = postForBody("/api/life-goals", kockahas(List.of(sleepPillar())),
+            ownerAuthHeaders(), HttpStatus.CREATED, LifeGoalResponse.class);
+        postForBody("/api/life-goals/" + g.getId() + "/status",
+            LifeGoalStatusRequest.builder().status(LifeGoalStatus.ACTIVE).build(), ownerAuthHeaders(), HttpStatus.OK, LifeGoalResponse.class);
+        LifeGoalResponse done = postForBody("/api/life-goals/" + g.getId() + "/status",
+            LifeGoalStatusRequest.builder().status(LifeGoalStatus.DONE).build(), ownerAuthHeaders(), HttpStatus.OK, LifeGoalResponse.class);
+        assertThat(done.getClosedAt()).isNotNull();
+
+        LifeGoalResponse archived = postForBody("/api/life-goals/" + g.getId() + "/status",
+            LifeGoalStatusRequest.builder().status(LifeGoalStatus.ARCHIVED).build(), ownerAuthHeaders(), HttpStatus.OK, LifeGoalResponse.class);
+
+        assertThat(archived.getStatus()).isEqualTo(LifeGoalStatus.ARCHIVED);
+        assertThat(archived.getClosedAt()).isEqualTo(done.getClosedAt());
+    }
+
+    @Test
     void testChangeStatus_shouldAllowFourActiveGoals_whenNoCap() {
         for (int i = 0; i < 4; i++) {
             LifeGoalResponse g = postForBody("/api/life-goals", kockahas(List.of(sleepPillar())),

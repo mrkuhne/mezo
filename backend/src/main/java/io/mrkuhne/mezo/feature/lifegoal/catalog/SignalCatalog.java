@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.lifegoal.entity.PillarSourceJson;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Component;
 
@@ -65,6 +66,11 @@ public class SignalCatalog {
 
     public Optional<SignalCatalogEntry> byId(String id) {
         return ENTRIES.stream().filter(e -> e.id().equals(id)).findFirst();
+    }
+
+    /** The legal catalog-id set — handed to the propose port so the adapter never re-derives it from prompt text. */
+    public Set<String> ids() {
+        return ENTRIES.stream().map(SignalCatalogEntry::id).collect(Collectors.toUnmodifiableSet());
     }
 
     /** One line per entry — the AI prompt's [Jelek] block. */

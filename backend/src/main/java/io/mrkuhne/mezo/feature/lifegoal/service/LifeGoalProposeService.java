@@ -50,7 +50,7 @@ public class LifeGoalProposeService {
         skills.addAll(ProgressionTaxonomy.ATHLETIC);
         LifeGoalProposePort p = port.getIfAvailable();
         Optional<Proposal> ai = p == null ? Optional.empty()
-            : p.propose(userId, req.getTitle(), req.getWhyText(), catalog.promptText(), skills);
+            : p.propose(userId, req.getTitle(), req.getWhyText(), catalog.promptText(), catalog.ids(), skills);
         // The ai/template decision happens AFTER mapping: the per-pillar filters below (kind
         // whitelist, undated target drop) can empty an AI answer, and an ai-sourced response with
         // zero pillars would strand wizard step 3 (canNext needs one active pillar).
