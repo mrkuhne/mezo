@@ -4,6 +4,8 @@ import io.mrkuhne.mezo.feature.train.config.TrainProperties;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockEntity;
 import io.mrkuhne.mezo.feature.train.entity.RunningBlockStructure;
+import io.mrkuhne.mezo.feature.train.entity.SportEventEntity;
+import io.mrkuhne.mezo.feature.train.entity.SportScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
@@ -17,8 +19,12 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -86,6 +92,116 @@ public class WorkoutWindowQueryService {
             .ifPresent(block -> addRunWindows(block, date, windows));
 
         return windows;
+    }
+
+    /**
+     * Batched form of {@link #windowsFor(UUID, LocalDate)} for a whole {@code [from, to]} range
+     * (mezo-jcpt.6, filed against {@code DayScoreService#rhythmFreeInputs}): every query the
+     * single-date method above fires PER DAY runs ONCE for the whole range here instead — the two
+     * USER-GLOBAL lookups the issue named (gym slots, the active running block) plus the sport
+     * slots, the active meso's planned sessions, and the three genuinely date-scoped reads (done
+     * gym instances, sport events, sport sessions, slot skips), each batched with its own
+     * {@code Between}/range finder and grouped in memory per date. Same days, same windows, same
+     * {@code done} signal as calling {@link #windowsFor(UUID, LocalDate)} once per date — only the
+     * query count changes (a week read: ~14 single-date calls, ~90 statements, down to ~8 total).
+     */
+    @Transactional(readOnly = true)
+    public Map<LocalDate, List<Window>> windowsFor(UUID userId, LocalDate from, LocalDate to) {
+        List<GymScheduleSlotEntity> gymSlots =
+            gymRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId);
+        Map<LocalDate, Long> gymDoneCounts = workoutSessionRepository
+            .findDoneInstancesBetween(userId, from, to).stream()
+            .collect(Collectors.groupingBy(WorkoutSessionEntity::getDate, Collectors.counting()));
+        List<WorkoutSessionEntity> mesoSessions = workoutService.activeMesoSessions(userId);
+        List<SportScheduleSlotEntity> sportSlots =
+            sportRepo.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId);
+        Map<LocalDate, List<SportEventEntity>> sportEventsByDate = sportEventRepo
+            .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateAscTimeAsc(userId, from, to).stream()
+            .collect(Collectors.groupingBy(SportEventEntity::getDate));
+        Map<LocalDate, List<SportSessionEntity>> sportSessionsByDate = sportSessionRepository
+            .findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc(userId, from, to).stream()
+            .collect(Collectors.groupingBy(SportSessionEntity::getDate));
+        Set<SportSlotSkipService.SkipKey> skips = sportSlotSkipService.skipsBetween(userId, from, to);
+        RunningBlockEntity activeBlock = runningBlockRepository
+            .findByCreatedByAndStatusAndDeletedFalse(userId, "active").stream().findFirst().orElse(null);
+
+        Map<LocalDate, List<Window>> result = new LinkedHashMap<>();
+        for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
+            result.put(day, windowsForDay(day, gymSlots, gymDoneCounts, mesoSessions, sportSlots,
+                sportEventsByDate.getOrDefault(day, List.of()),
+                sportSessionsByDate.getOrDefault(day, List.of()), skips, activeBlock));
+        }
+        return result;
+    }
+
+    /** One day's windows built entirely from pre-fetched, range-batched data — no query inside
+     *  this method or anything it calls; the shared per-day resolution both {@link #windowsFor(UUID,
+     *  LocalDate, LocalDate)} and (via its own fetches) {@link #windowsFor(UUID, LocalDate)} apply. */
+    private List<Window> windowsForDay(LocalDate date, List<GymScheduleSlotEntity> gymSlots,
+            Map<LocalDate, Long> gymDoneCounts, List<WorkoutSessionEntity> mesoSessions,
+            List<SportScheduleSlotEntity> sportSlots, List<SportEventEntity> dayEvents,
+            List<SportSessionEntity> daySessions, Set<SportSlotSkipService.SkipKey> skips,
+            RunningBlockEntity activeBlock) {
+        int dow = date.getDayOfWeek().getValue() - 1;
+        List<Window> windows = new ArrayList<>();
+
+        List<GymScheduleSlotEntity> todaysGymSlots =
+            gymSlots.stream().filter(s -> s.getDayOfWeek() == dow).toList();
+        boolean gymDone = !todaysGymSlots.isEmpty()
+            && gymDoneCounts.getOrDefault(date, 0L) >= todaysGymSlots.size();
+        String gymLabel = workoutService.findPlannedTemplateForDate(mesoSessions, date)
+            .map(WorkoutSessionEntity::getType)
+            .orElse(null);
+        todaysGymSlots.forEach(s -> {
+            LocalTime start = LocalTime.parse(s.getTime());
+            windows.add(new Window(start, start.plusMinutes(props.gymDefaultMinutes()),
+                "gym", gymDone, gymLabel));
+        });
+
+        addSportWindowsForDay(date, dow, sportSlots, dayEvents, daySessions, skips, windows);
+
+        if (activeBlock != null) {
+            addRunWindows(activeBlock, date, windows);
+        }
+        return windows;
+    }
+
+    /** Ranged sibling of {@link #addSportWindows}: same nearest-match resolution, sourced from a
+     *  range fetch's already-grouped-by-date data instead of a per-date query. {@code daySessions}
+     *  is sorted here by clock time — {@code findByCreatedByAndDeletedFalseAndDateBetweenOrderByDateDesc}
+     *  only orders by date, not by time within a date, unlike the single-date finder. */
+    private void addSportWindowsForDay(LocalDate date, int dow, List<SportScheduleSlotEntity> sportSlots,
+            List<SportEventEntity> dayEvents, List<SportSessionEntity> daySessions,
+            Set<SportSlotSkipService.SkipKey> skips, List<Window> windows) {
+        List<PlannedSport> unmatched = new ArrayList<>();
+        sportSlots.stream()
+            .filter(s -> s.getDayOfWeek() == dow)
+            .filter(s -> !skips.contains(new SportSlotSkipService.SkipKey(dow, s.getTime(), date)))
+            .forEach(s -> unmatched.add(new PlannedSport(s.getTime(), s.getDurationMin(), s.getSport())));
+        dayEvents.forEach(e -> unmatched.add(new PlannedSport(e.getTime(), e.getDurationMin(), e.getSport())));
+
+        List<SportSessionEntity> sessions = daySessions.stream()
+            .sorted(Comparator.comparing(SportSessionEntity::getTime,
+                Comparator.nullsFirst(Comparator.naturalOrder())))
+            .toList();
+        for (SportSessionEntity session : sessions) {
+            PlannedSport plan = nearestPlan(unmatched, session.getTime());
+            unmatched.remove(plan);
+            String time = session.getTime() != null ? session.getTime()
+                : (plan == null ? null : plan.time());
+            if (time == null) {
+                continue;
+            }
+            LocalTime start = LocalTime.parse(time);
+            windows.add(new Window(start, start.plusMinutes(durationOf(session, plan)),
+                "sport", true, session.getSport()));
+        }
+
+        unmatched.forEach(s -> {
+            LocalTime start = LocalTime.parse(s.time());
+            windows.add(new Window(start, start.plusMinutes(s.durationMin()), "sport", false,
+                s.sport()));
+        });
     }
 
     /**

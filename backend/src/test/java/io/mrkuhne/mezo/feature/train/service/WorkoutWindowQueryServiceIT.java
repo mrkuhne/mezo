@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Map;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -330,5 +331,53 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
         train.createSportEvent(owner, wed, "19:30", 120);
 
         assertThat(service.hasScheduledTrainingOn(owner, wed)).isTrue();
+    }
+
+    /**
+     * mezo-jcpt.6: the ranged {@code windowsFor(userId, from, to)} must return EXACTLY what calling
+     * the single-date overload once per date would — same windows, same {@code done} — even though
+     * it sources every field from range-batched queries instead. One user seeded with every kind of
+     * window this class exercises elsewhere (gym w/ a partially-done multi-slot day, a sport
+     * session consuming a one-off event, an untouched recurring sport slot, a skipped occurrence on
+     * one date but not the next, and a prescribed run) over a week that spans two running-block
+     * weeks, so the range genuinely exercises multiple distinct days' worth of every branch.
+     */
+    @Test
+    void testWindowsFor_ranged_shouldMatchCallingTheSingleDateOverloadForEveryDayInTheRange() {
+        UUID owner = owner();
+        LocalDate monday = LocalDate.of(2026, 6, 22);       // Mon → dayOfWeek index 0
+        LocalDate wed = LocalDate.of(2026, 6, 24);          // Wed → dayOfWeek index 2
+        LocalDate sunday = monday.plusDays(6);
+
+        // Gym: two Wednesday slots, only one completed → neither reads done.
+        train.createGymSlot(owner, 2, "09:00");
+        train.createGymSlot(owner, 2, "18:00");
+        var meso = train.createActiveMeso(owner);
+        train.createWorkoutInstance(owner,
+            train.createTemplateDay(owner, meso.getId(), "Sze reggel"), wed, "completed");
+
+        // Sport: a recurring Wednesday slot the session doesn't touch, plus a one-off event the
+        // logged session consumes.
+        train.createScheduleSlot(owner, 2, "09:00", 60, "training");
+        train.createSportEvent(owner, wed, "18:00", 90);
+        train.createSportSession(owner, wed);               // played 18:15/90 min, consumes the event
+
+        // Skip: only this week's Thursday occurrence — the recurring slot still applies on other
+        // Thursdays (a range read must not smear one date's skip across the whole week).
+        train.createScheduleSlot(owner, 3, "17:00", 45, "match");
+        skips.createSkip(owner, 3, "17:00", wed.plusDays(1));
+
+        // Run: prescribed session anchored so it lands within this range.
+        running.createBlockAnchored(owner, monday.minusDays(7), 8, 3, 2, 2, "06:30");
+
+        Map<LocalDate, List<WorkoutWindowQueryService.Window>> ranged =
+            service.windowsFor(owner, monday, sunday);
+
+        assertThat(ranged.keySet()).hasSize(7);
+        for (LocalDate day = monday; !day.isAfter(sunday); day = day.plusDays(1)) {
+            assertThat(ranged.getOrDefault(day, List.of()))
+                .as("windows on %s", day)
+                .containsExactlyInAnyOrderElementsOf(service.windowsFor(owner, day));
+        }
     }
 }
