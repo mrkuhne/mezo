@@ -77,6 +77,12 @@ public class LifeGoalProposeService {
                 .filter(e2 -> !"target".equals(x.kind())
                     || (x.startValue() != null && x.targetValue() != null
                         && goalTargetDate != null && goalTargetDate.isAfter(LocalDate.now())))
+                // Same story for habit/average (mezo-iwoc): requireRuleShape demands
+                // threshold+comparator for these kinds, but PillarProposal — the LLM's shape —
+                // does not guarantee either, so a habit/average pillar missing one would answer
+                // 200 here and then 400 the wizard's create.
+                .filter(e3 -> !("habit".equals(x.kind()) || "average".equals(x.kind()))
+                    || (x.threshold() != null && x.comparator() != null))
                 .map(e -> LifeGoalPillarInput.builder()
                     .label(x.label()).skillKey(x.skillKey()).kind(PillarKind.fromValue(x.kind()))
                     .weight(x.weight() < 1 ? 1 : Math.min(3, x.weight()))

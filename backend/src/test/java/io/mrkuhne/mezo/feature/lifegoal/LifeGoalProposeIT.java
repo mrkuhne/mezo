@@ -110,8 +110,11 @@ class LifeGoalProposeIT extends ApiIntegrationTest {
     void testPropose_shouldTruncateStringsToSchemaMaxima_whenFakeOverruns() {
         String longHa = "h".repeat(250);
         String longLabel = "L".repeat(90);
+        // threshold/comparator (mezo-iwoc): the propose drop-filter now requires both for
+        // kind=average — this fixture is about label/ha truncation, not the filter, so it must
+        // carry a valid rule to survive and stay observable below.
         String pillar = "{\"catalogId\":\"protein\",\"label\":\"" + longLabel
-            + "\",\"kind\":\"average\",\"skillKey\":\"cooking\",\"weight\":1}";
+            + "\",\"kind\":\"average\",\"skillKey\":\"cooking\",\"weight\":1,\"threshold\":160,\"comparator\":\"gte\"}";
         LifeGoalProposeResponse res = propose(script(pillar, "", "{\"ha\":\"" + longHa + "\",\"akkor\":\"b\"}"));
 
         assertThat(res.getPillars().get(0).getLabel()).hasSize(80);
@@ -214,5 +217,19 @@ class LifeGoalProposeIT extends ApiIntegrationTest {
 
         assertThat(res.getSource()).isEqualTo(LifeGoalProposeResponse.SourceEnum.TEMPLATE);
         assertThat(res.getPillars()).isNotEmpty();
+    }
+
+    // mezo-iwoc: requireRuleShape demands threshold+comparator for habit/average, same as it does
+    // the pace line for target — a scripted habit pillar missing threshold must be dropped rather
+    // than answer 200 and then 400 the wizard's create.
+    @Test
+    void testPropose_shouldDropHabitPillar_whenFakeScriptsOneWithoutThreshold() {
+        String habitNoThreshold =
+            "{\"catalogId\":\"sleep_duration\",\"label\":\"Alvás\",\"kind\":\"habit\",\"skillKey\":\"recovery\",\"weight\":1}";
+        LifeGoalProposeResponse res = propose(script(habitNoThreshold + "," + PROTEIN, "", ""));
+
+        assertThat(res.getSource()).isEqualTo(LifeGoalProposeResponse.SourceEnum.AI);
+        assertThat(res.getPillars()).hasSize(1);
+        assertThat(res.getPillars().get(0).getLabel()).isEqualTo("Fehérje");
     }
 }
