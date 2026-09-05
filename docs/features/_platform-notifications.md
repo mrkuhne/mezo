@@ -2,12 +2,13 @@
 title: Push Notifications Platform
 type: feature-platform
 status: mixed
-updated: 2026-09-04
+updated: 2026-09-05
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
   - backend/src/main/java/io/mrkuhne/mezo/feature/notification
   - backend/src/main/java/io/mrkuhne/mezo/feature/appnotification
+  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalSuggestionNotificationListener.java
   - api/feature/notification/notification.yml
   - frontend/public/push-sw.js
   - frontend/src/data/notification
@@ -367,6 +368,14 @@ sources can never double-notify the same reinforcement count.
 rules as push) — never re-derived on read. This is deliberate: **F3** (bd `mezo-gzhp.3`) has the push
 dispatcher send this **same stored `body`** verbatim (`AnchorResolver.feedAnchors(...)`, below), so
 the in-app feed and its push for the same event can never say two different things.
+
+**Goal proposals use a transaction-safe variant of the same spine (`mezo-ricj.4`).**
+`GoalSuggestionService.propose` publishes `GoalSuggestionProposedEvent` only when it actually inserts
+a new proposal; `GoalSuggestionNotificationListener` consumes it `AFTER_COMMIT` and emits
+`goal_suggestion` with dedup key `goal_suggestion:{suggestionId}` and deeplink
+`/me/goals/weight/suggestions/{suggestionId}`. An existing open proposal therefore creates no second
+bell row, a rolled-back proposal creates no ghost row, and a genuinely new suggestion gets its own
+review notification. The kind remains feed-only (`familyKey=null`), so this adds no OS-push category.
 
 ### 3b. F3 — feed rows as a push source (bd `mezo-gzhp.3`)
 
@@ -830,6 +839,9 @@ the OpenAPI schema itself (1..100).
 - **Me** ([`me.md`](me.md) §2 "`Értesítés`") — the FE consumer: the settings page owns no
   notification data itself beyond composing `usePushSubscription()` + `useNotificationPrefs()` +
   the pure `notificationForecast.ts` + `projectStackDay`'s zoned slots.
+- **Goal Engine** ([`goal-engine.md`](goal-engine.md) §5) — a newly committed phase-change or weekly
+  kcal-correction proposal emits one feed-only `goal_suggestion` row. The notification opens the
+  dedicated preview page; it never accepts the proposal from the bell or hub.
 - **`_platform-api-backend.md`** — same contract-first pipeline + platform conventions as every
   other feature; the notification endpoint table now lists all six push operations (§5c there).
 - **Insights / pattern engine** ([`insights.md`](insights.md) §5) — **F1's producer, unchanged.**

@@ -10,14 +10,14 @@ const renderPage = () => render(<MemoryRouter><GoalSegmentPage /></MemoryRouter>
 
 beforeEach(() => {
   mocks.useGoal.mockReturnValue({ goalId: 'g1', pending: false })
-  mocks.useGoalOverview.mockReturnValue({ overview: { courseStatus: 'on_track', segment }, pending: false })
+  mocks.useGoalOverview.mockReturnValue({ overview: { courseStatus: 'on_track', currentWeek: 3, totalWeeks: 8, targetRateKgPerWeek: -0.74, segment }, pending: false })
 })
 
 test('shows current range, next segment and explains kcal independence', () => {
   renderPage()
   expect(screen.getAllByText('MAV')).toHaveLength(2)
   expect(screen.getAllByText(/W3–5/).length).toBeGreaterThan(0)
-  expect(screen.getByText('Deload')).toBeInTheDocument()
+  expect(screen.getAllByText('Deload')).toHaveLength(2)
   expect(screen.getByText(/nem becsül új kalóriaégetést/)).toBeInTheDocument()
 })
 

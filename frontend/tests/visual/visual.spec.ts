@@ -74,7 +74,16 @@ const SCREENS: Array<[string, string, string?]> = [
   // the second entry this slice would have silently dropped the weight command centre from the
   // visual gate. `me-cel-reszlet` is the new per-goal detail page (mock id from lifegoalMock).
   ['me-cel', '/me/goals'],
-  ['me-cel-suly', '/me/goals/weight'],
+  // Cél command centre + all six inspectable siblings (mezo-ricj.6). These names are
+  // intentionally one family so the fixed-baseline workflow can regenerate/audit only
+  // this product surface with `--grep 'me-goal-'`.
+  ['me-goal-hub', '/me/goals/weight'],
+  ['me-goal-diet', '/me/goals/weight/diet'],
+  ['me-goal-segment', '/me/goals/weight/segment'],
+  ['me-goal-plans', '/me/goals/weight/plans'],
+  ['me-goal-guards', '/me/goals/weight/guards'],
+  ['me-goal-settings', '/me/goals/weight/settings'],
+  ['me-goal-suggestion', '/me/goals/weight/suggestions/sug-weekly-w17'],
   ['me-cel-reszlet', '/me/goals/lg-kockahas'],
   // mezo-iizd.7: a Jelek transzparencia-oldal saját felület, saját anatómiával (Él/Alszik szekciók).
   ['me-cel-jelek', '/me/goals/signals'],

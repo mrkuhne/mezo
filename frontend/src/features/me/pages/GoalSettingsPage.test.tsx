@@ -20,9 +20,9 @@ beforeEach(() => {
 
 test('shows trajectory, weights, window, signed rate and guard chips from overview', () => {
   renderPage()
-  expect(screen.getAllByText('Fogyás')).toHaveLength(2)
-  expect(screen.getByText(/82,4 kg/)).toBeInTheDocument()
-  expect(screen.getByText(/78 kg/)).toBeInTheDocument()
+  expect(screen.getByText('Fogyás')).toBeInTheDocument()
+  expect(screen.getAllByText(/82,4 kg/).length).toBeGreaterThan(0)
+  expect(screen.getAllByText(/78 kg/).length).toBeGreaterThan(0)
   expect(screen.getByText('W3 / 8')).toBeInTheDocument()
   expect(screen.getByText('−0,7 kg/hét')).toBeInTheDocument()
   expect(screen.getByText('Erővédelem')).toBeInTheDocument()

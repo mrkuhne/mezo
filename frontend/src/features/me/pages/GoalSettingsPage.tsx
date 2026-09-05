@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useGoal, useGoalOverview } from '@/data/hooks'
 import { EditGoalSheet } from '@/features/me/sheets/EditGoalSheet'
+import { GoalDetailHero } from '@/features/me/components/GoalDetailHero'
 import { TRAJECTORY_LABEL } from '@/features/me/logic/goalLabels'
 import { huMonthDay } from '@/shared/lib/dates'
 import { hu1 } from '@/shared/lib/huNum'
@@ -21,13 +22,26 @@ export function GoalSettingsPage() {
   const target = overview?.targetWeightKg
   const guardStatus = overview?.guards.status
 
-  return <MozaikPage tone="rose">
+  return <MozaikPage tone="rose" className="goal-detail-page goal-detail-settings-page">
     <PageHead onBack={() => navigate('/me/goals/weight')} label="‹ Cél" />
     {loading ? <div className="goal-detail-loading" role="status" aria-label="Betöltés…"><span /><span /><span /></div> : !overview || invalid ? (
       <EntranceGroup><PageHero icon="i-beallitas" name="Cél beállításai" big="Céljavítás szükséges" /><PageBody><div className="goal-detail-notice rise">Nyisd meg a szerkesztőt az ellentmondó céladatok javításához.</div>{goal && goalResponse && goalId && <button className="goal-settings-edit np-press rise" type="button" onClick={() => setEditing(true)}>Cél szerkesztése</button>}</PageBody></EntranceGroup>
     ) : <EntranceGroup>
-      <PageHero icon="i-beallitas" name="Cél beállításai" big={TRAJECTORY_LABEL[overview.trajectory]} sub={overview.title} />
       <PageBody principle="Az archiválás és törlés a szerkesztőn belül, másodlagos művelet marad.">
+        <GoalDetailHero
+          tone="settings"
+          icon="i-beallitas"
+          name="Cél beállításai"
+          eyebrow={`${overview.title} · aktív`}
+          big={target == null ? TRAJECTORY_LABEL[overview.trajectory] : `${hu1(target)} kg`}
+          description={`${hu1(overview.currentWeightKg)} kg-ról indulva, ${TRAJECTORY_LABEL[overview.trajectory].toLocaleLowerCase('hu-HU')} iránnyal.`}
+          stats={[
+            { label: 'Most', value: `${hu1(overview.currentWeightKg)} kg` },
+            { label: 'Hátra', value: overview.remainingKg == null ? '—' : `${hu1(overview.remainingKg)} kg` },
+            { label: 'Teljesült', value: overview.completionPct == null ? '—' : `${Math.round(overview.completionPct)}%` },
+          ]}
+        />
+        <div className="goal-detail-section-head rise"><span>Alapadatok</span></div>
         <section className="goal-settings-grid rise">
           <div><small>Irány</small><strong>{TRAJECTORY_LABEL[overview.trajectory]}</strong></div>
           <div><small>Súlyút</small><strong>{hu1(overview.currentWeightKg)} kg → {target == null ? 'tartás' : `${hu1(target)} kg`}</strong></div>
