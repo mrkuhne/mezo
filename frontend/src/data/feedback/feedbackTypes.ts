@@ -1,7 +1,9 @@
 /** 👍/👎 feedback on an AI-produced artifact (CompanionFeedback, mezo-b3pp.15).
  *
- * The five kinds span five different backend tables — one verdict per
- * (user, artifactKind, artifactId), overwritten by a new verdict and removed by a retraction. */
+ * The seven kinds span seven different backend tables — one verdict per
+ * (user, artifactKind, artifactId), overwritten by a new verdict and removed by a retraction.
+ * `day_review` (mezo-jcpt.9) is the day page's analogue of `weekly_review`: it targets the
+ * evaluation's own `reviewId`, present only when the scored day actually has LLM prose. */
 export type FeedbackArtifactKind =
   | 'chat_message'
   | 'feed_message'
@@ -9,6 +11,7 @@ export type FeedbackArtifactKind =
   | 'memoir'
   | 'prediction'
   | 'weekly_review'
+  | 'day_review'
 
 export type FeedbackVerdict = 'up' | 'down'
 

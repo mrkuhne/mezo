@@ -14,7 +14,7 @@ paths:
         - name: kind
           in: query
           required: true
-          schema: { type: string, pattern: '^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction)$' }
+          schema: { type: string, pattern: '^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review)$' }
         - name: ids
           in: query
           required: true
@@ -82,7 +82,7 @@ paths:
         - name: artifactKind
           in: path
           required: true
-          schema: { type: string, pattern: '^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction)$' }
+          schema: { type: string, pattern: '^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review)$' }
         - name: artifactId
           in: path
           required: true
@@ -106,7 +106,7 @@ components:
       type: object
       required: [artifactKind, artifactId, verdict]
       properties:
-        artifactKind: { type: string, pattern: '^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction)$' }
+        artifactKind: { type: string, pattern: '^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review)$' }
         artifactId: { type: string, format: uuid }
         verdict: { type: string, pattern: '^(up|down)$' }
         reason:
@@ -118,7 +118,7 @@ components:
       type: object
       required: [artifactKind, artifactId, verdict, updatedAt]
       properties:
-        artifactKind: { type: string, description: "'chat_message' | 'feed_message' | 'weekly_suggestion' | 'weekly_review' | 'memoir' | 'prediction'" }
+        artifactKind: { type: string, description: "'chat_message' | 'feed_message' | 'weekly_suggestion' | 'weekly_review' | 'memoir' | 'prediction' | 'day_review'" }
         artifactId: { type: string, format: uuid }
         verdict: { type: string, description: "'up' | 'down'" }
         reason: { type: string, nullable: true, description: "'inaccurate' | 'too_much' | 'bad_timing' | 'not_about_me' — down verdicts only" }

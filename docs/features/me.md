@@ -192,8 +192,23 @@ mosaic rather than crashing on a `Date NaN`.
   (`weekDay.ts`) is the day-page analogue of the weekly `subscoreCount`.
 - **`DayReviewCard`** (`components/week/DayReviewCard.tsx`) renders the prose layer when present:
   `narrative[]`, up to 3 `highlights` (chip-colored by `kind`), and the `adjustment` chip
-  (`±delta`, its `reason` as a reasoned row) when the day's cached review carried one — absent
-  entirely on a day with no prose (open/thin/empty, or a degraded LLM call), never an empty shell.
+  (`±delta`, its `reason` as a reasoned row) when the day's cached review carried one. **The card
+  itself mounts on `state === 'scored'` alone** (`WeekDayPage.tsx`), not on prose presence — a
+  scored day whose prose generation failed still renders the card's orb and „Mezo · a napodról"
+  eyebrow with nothing beneath (`WeekDayPage.test.tsx`'s `reviewId`-less scored fixture asserts
+  exactly that eyebrow). This empty-shell gap is a known, accepted-for-now behaviour, tracked as
+  bd `mezo-jcpt.18` rather than fixed here. The narrative/highlights/adjustment content is what is
+  actually absent-not-empty on such a day; the card wrapper is not.
+- **Feedback chips (`mezo-jcpt.9`)** — the card's `evaluation.reviewId` (the `day_review` row's own
+  id, present on the wire only when the day actually has LLM prose — [companion.md §5.7](companion.md))
+  drives `useFeedback('day_review', reviewId ? [reviewId] : [])`; the shared `FeedbackChips`
+  (`features/insights/components/FeedbackChips.tsx`) render below the narrative only when a
+  `reviewId` exists, the `WeekReviewCard` precedent. This IS correctly gated on prose PRESENCE,
+  deliberately not on the `scored` state: a scored day whose prose generation failed carries no
+  `reviewId`, so it shows no chips either — even though (per the mount note above) it still shows
+  the card's empty shell. (The now-orphaned `DAY_COPY.noNote`/`noReview` — leftover
+  copy from the pre-`mezo-jcpt.4` weekly-review-based day model, with no consumer left — were
+  deleted alongside this wiring.)
 - **Chat handoff** reuses `useChatHandoff().open({kind: 'day', date})` (§2 above, "Beszélgess a
   napról") the same as the legacy inline card did.
 

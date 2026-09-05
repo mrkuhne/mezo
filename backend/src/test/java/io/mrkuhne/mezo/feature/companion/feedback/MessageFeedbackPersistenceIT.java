@@ -46,6 +46,25 @@ class MessageFeedbackPersistenceIT extends AbstractIntegrationTest {
         assertThat(found.isDeleted()).isFalse();
     }
 
+    /** The seventh kind (mezo-jcpt.9): the CHECK-swap migration widened
+     *  {@code ck_message_feedback_artifact_kind} to admit {@code day_review} — round-tripped here
+     *  exactly like every other kind, proving the DB itself (not only bean validation) accepts it. */
+    @Test
+    void testSave_shouldPersistVerdict_whenKindIsDayReview() {
+        UUID owner = userPopulator.createUser("mf-day-review@test.local").getId();
+        UUID artifactId = UUID.randomUUID();
+        populator.createVerdict(owner, MessageFeedbackEntity.KIND_DAY_REVIEW, artifactId,
+            MessageFeedbackEntity.VERDICT_UP, null);
+
+        MessageFeedbackEntity found = repository
+            .findByCreatedByAndArtifactKindAndArtifactIdAndDeletedFalse(
+                owner, MessageFeedbackEntity.KIND_DAY_REVIEW, artifactId)
+            .orElseThrow();
+
+        assertThat(found.getVerdict()).isEqualTo(MessageFeedbackEntity.VERDICT_UP);
+        assertThat(found.getArtifactKind()).isEqualTo(MessageFeedbackEntity.KIND_DAY_REVIEW);
+    }
+
     @Test
     void testSave_shouldPersistReason_whenDownWithReason() {
         UUID owner = userPopulator.createUser("mf-down@test.local").getId();

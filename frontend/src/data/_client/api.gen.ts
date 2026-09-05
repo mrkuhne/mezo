@@ -8399,7 +8399,7 @@ export interface components {
             reason?: string | null;
         };
         MessageFeedbackResponse: {
-            /** @description 'chat_message' | 'feed_message' | 'weekly_suggestion' | 'weekly_review' | 'memoir' | 'prediction' */
+            /** @description 'chat_message' | 'feed_message' | 'weekly_suggestion' | 'weekly_review' | 'memoir' | 'prediction' | 'day_review' */
             artifactKind: string;
             /** Format: uuid */
             artifactId: string;
@@ -8548,6 +8548,11 @@ export interface components {
             date: string;
             /** @description scored|in_progress|thin|empty|future */
             state: string;
+            /**
+             * Format: uuid
+             * @description A naphoz tartozó LLM-próza (day_review) sor-azonosítója — a visszajelzés-gombok artifact-id-je (mezo-jcpt.9). CSAK prózás (pontozott) napon van jelen: nincs próza → nincs id → nincs gomb, mert artifact nélkül nincs mire szavazni.
+             */
+            reviewId?: string | null;
             /** @description base + adjustment.delta, clamped 0..100 */
             score?: number | null;
             base?: number | null;

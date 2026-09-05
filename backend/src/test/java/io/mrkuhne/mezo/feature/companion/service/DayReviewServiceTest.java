@@ -267,6 +267,11 @@ class DayReviewServiceTest {
             .thenAnswer(i -> Optional.ofNullable(stored.get()));
         when(dayReviewRepository.save(any(DayReviewEntity.class))).thenAnswer(i -> {
             DayReviewEntity e = i.getArgument(0);
+            // The real repository assigns the row's id on first insert (@GeneratedValue) — this
+            // mock mirrors that so reviewId tests can observe a real, stable id (mezo-jcpt.9).
+            if (e.getId() == null) {
+                e.setId(UUID.randomUUID());
+            }
             stored.set(e);
             return e;
         });
@@ -322,6 +327,81 @@ class DayReviewServiceTest {
             org.assertj.core.groups.Tuple.tuple("win", "Edzés kész"),
             org.assertj.core.groups.Tuple.tuple("key", "Kitalált fajta"),
             org.assertj.core.groups.Tuple.tuple("key", "Üres fajta"));
+    }
+
+    // --- reviewId (mezo-jcpt.9): the feedback chips' artifact id -----------------------------
+
+    /** The house pattern: the artifact id IS the artifact's own row id — never a natural key. */
+    @Test
+    void testAssemble_shouldCarryTheRowIdAsReviewId_afterFirstGeneration() {
+        fakeLlm.answer = answer("""
+            {"narrative":["Első."],"dimensionNotes":{},"highlights":[],"adjustment":null}""");
+
+        DayEvaluationResponse response = service.assemble(USER, DAY);
+
+        assertThat(response.getReviewId()).isNotNull();
+        assertThat(response.getReviewId()).isEqualTo(stored.get().getId());
+    }
+
+    /** A cache hit must serve the SAME row's id, not a fresh one — voting on a cached narrative
+     *  must not move the target out from under an already-cast vote. */
+    @Test
+    void testAssemble_shouldServeTheSameReviewId_whenServedFromCache() {
+        fakeLlm.answer = answer("""
+            {"narrative":["Első."],"dimensionNotes":{},"highlights":[],"adjustment":null}""");
+
+        UUID first = service.assemble(USER, DAY).getReviewId();
+        UUID second = service.assemble(USER, DAY).getReviewId();
+
+        assertThat(second).isEqualTo(first);
+        assertThat(fakeLlm.calls).isEqualTo(1);
+    }
+
+    /** The row is rewritten IN PLACE on a hash change (the {@code existing} branch of upsert) —
+     *  so the id stays stable even across a regenerate, exactly like the real one-row-per-day
+     *  partial unique index guarantees. */
+    @Test
+    void testAssemble_shouldKeepTheSameReviewId_acrossARegenerate() {
+        fakeLlm.answer = answer("""
+            {"narrative":["Régi."],"dimensionNotes":{},"highlights":[],"adjustment":null}""");
+        UUID before = service.assemble(USER, DAY).getReviewId();
+
+        // A builderen keresztül (mezo-jcpt.8): a DayInputs pozicionális rekord, és a
+        // weightKg/xp felvétele óta egy nyers `new DayInputs(...)` másolat csendben elcsúszna.
+        inputs = DayInputsBuilder.from(inputs).closed(true).sleepH(4.0).sleepQuality1to10(3).build();
+        fakeLlm.answer = answer("""
+            {"narrative":["Új."],"dimensionNotes":{},"highlights":[],"adjustment":null}""");
+
+        UUID after = service.assemble(USER, DAY).getReviewId();
+
+        assertThat(after).isEqualTo(before);
+    }
+
+    /** No prose, no artifact, no chips — the house rule: an absent narrative means an absent id,
+     *  never a dangling one the FE could try to vote on. */
+    @Test
+    void testAssemble_shouldHaveNoReviewId_whenAnswerIsGarbage() {
+        fakeLlm.answer = "ez nem json egyáltalán";
+
+        assertThat(service.assemble(USER, DAY).getReviewId()).isNull();
+    }
+
+    @Test
+    void testAssemble_shouldHaveNoReviewId_whenPortAbsent() {
+        service = new DayReviewService(dayScoreService, new DayEvaluationEngine(props),
+            dayReviewRepository, metricSeriesService, weightTrendService, props,
+            provider(null), new ObjectMapper(), new LlmCallContextHolder());
+
+        assertThat(service.assemble(USER, DAY).getReviewId()).isNull();
+    }
+
+    @Test
+    void testAssemble_shouldHaveNoReviewId_whenDayIsNotScored() {
+        LocalDate today = LocalDate.now();
+        DayInputs open = openDay(today);
+        when(dayScoreService.inputsFor(eq(USER), eq(today), any())).thenReturn(open);
+
+        assertThat(service.assemble(USER, today).getReviewId()).isNull();
     }
 
     // --- (b) an inputs change regenerates -----------------------------------------------------

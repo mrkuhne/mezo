@@ -649,7 +649,9 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   backend-only `weekly` pref row is filtered out client-side, never rendered) and adds
   **`weekly_review`** with the label **„Heti elemzés"** ([`me.md`](me.md) `Értesítés` §2).
 - **Feedback** — `weekly_review` joined `MessageFeedbackEntity`'s artifact-kind CHECK constraint
-  (`chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction`); the
+  (`chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction` at the time;
+  `day_review` joined afterward, `mezo-jcpt.9` — [`companion.md` §5.7](companion.md) carries the
+  current seven-kind enumeration); the
   `WeeklyReviewResponse.id` IS the feedback artifact id, exactly the W2/`(a2)` memoir precedent
   (§9 below) — no per-kind branch anywhere in the feedback surface, just another string the generic
   `POST /api/companion/feedback` accepts.

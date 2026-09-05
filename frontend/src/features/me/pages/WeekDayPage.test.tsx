@@ -220,6 +220,19 @@ describe('WeekDayPage (mock mode)', () => {
     expect(screen.getByRole('button', { name: /Előző nap/ })).toBeInTheDocument()
   })
 
+  // Feedback chips on the review card (mezo-jcpt.9) — mounted off `reviewId`, not `state`: no
+  // artifact behind the day, no chip row at all (bug mezo-kr9v was exactly this asymmetry
+  // between mock and real mode).
+  test('a scored day shows the feedback chips on the review card', () => {
+    renderDay(mockDayEvaluationDates.scored, '2026-05-18')
+    expect(screen.getByRole('button', { name: /Segített/i })).toBeInTheDocument()
+  })
+
+  test('a próza nélküli (thin) napon nincs gomb-sor — nincs artifact, nincs mire szavazni', () => {
+    renderDay(mockDayEvaluationDates.thin, '2026-05-18')
+    expect(screen.queryByRole('button', { name: /Segített/i })).not.toBeInTheDocument()
+  })
+
   test('a bare deep link (no ?start=) derives the week from :date', () => {
     renderDay('2026-05-13')
     expect(screen.getByText('Szerda')).toBeInTheDocument()
@@ -245,6 +258,20 @@ describe('WeekDayPage (real mode)', () => {
     expect(await screen.findByRole('img', { name: 'Pontszám: 66 / 100' })).toBeInTheDocument()
     expect(screen.queryByRole('img', { name: 'Pontszám: 78 / 100' })).not.toBeInTheDocument()
     expect(screen.queryByText('Mezo-kontextus +3')).not.toBeInTheDocument()
+  })
+
+  // mezo-jcpt.9 — bug mezo-kr9v was exactly "chips work in mock mode but not real mode", so
+  // this must be proven against the real-mode fetch too, not just the mock fixture.
+  test('a scored day (real fetch) shows the feedback chips — the server response carries reviewId', async () => {
+    renderDay('2026-05-11', '2026-05-11')
+    expect(await screen.findByRole('button', { name: /Segített/i })).toBeInTheDocument()
+  })
+
+  test('a scored evaluation with NO reviewId (no LLM prose behind it) renders no chip row', async () => {
+    serveEvaluation(evaluationFixture('2026-05-11'))
+    renderDay('2026-05-11', '2026-05-11')
+    expect(await screen.findByText('Mezo · a napodról')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Segített/i })).not.toBeInTheDocument()
   })
 
   test('CONTRACT — a NO_DATA dimension still shows its FACT, under a dashed ring, never a 0', async () => {
