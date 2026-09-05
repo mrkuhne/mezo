@@ -10,6 +10,11 @@ import { addDays, localDateString } from '@/shared/lib/dates'
 
 const key = (d: string) => ['habitDay', d]
 
+// Backfill window (mezo-x9c2): mirrors `mezo.habit.backfill-days` in application.yml, the
+// backend's source of truth (HabitProperties.backfillDays, gated by HabitService's
+// requireManualWithinBackfillWindow). Keep in sync if that config value ever changes.
+const MOCK_BACKFILL_DAYS = 1
+
 const MOCK_DAY: HabitDay = { habits: mockHabitDay, levelUps: [] }
 const EMPTY_DAY: HabitDay = { habits: [], levelUps: [] }
 
@@ -135,7 +140,9 @@ export function useHabitActions(date: string) {
   const checkM = useMutation({
     mutationFn: async (habitKey: string) => {
       if (mock) {
-        if (date < addDays(localDateString(), -1)) throw new Error('HABIT_TOO_OLD')
+        if (date < addDays(localDateString(), -MOCK_BACKFILL_DAYS) || date > localDateString()) {
+          throw new Error('HABIT_TOO_OLD')
+        }
         patchMock(habitKey, 'done')
         const xp = mockHabitDay.find((h) => h.key === habitKey)?.xp ?? 0
         // The call site emits its own DS reward toast for the check (mezo-k5sa), so the
@@ -164,7 +171,9 @@ export function useHabitActions(date: string) {
   const uncheckM = useMutation({
     mutationFn: async (habitKey: string) => {
       if (mock) {
-        if (date < addDays(localDateString(), -1)) throw new Error('HABIT_TOO_OLD')
+        if (date < addDays(localDateString(), -MOCK_BACKFILL_DAYS) || date > localDateString()) {
+          throw new Error('HABIT_TOO_OLD')
+        }
         patchMock(habitKey, 'pending')
         return undefined
       }
