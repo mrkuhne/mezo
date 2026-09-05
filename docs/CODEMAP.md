@@ -1151,9 +1151,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **sheets:** ActivityLogSheet.tsx, CheckInSheet.tsx, IntentionSheet.tsx, ReflectSheet.tsx
   - **components:** ActivityLogCard.tsx, DailyQuestList.tsx, DailyQuestsCard.tsx, DailyQuestsSheet.tsx,
     EletjelStrip.tsx, LifeGoalTodayTile.tsx, MezoMessagesSheet.tsx
-  - **logic:** dayArc.ts, dayFace.ts, dayOrbFill.ts, dayOrbTone.ts, habitAction.ts, habitCelebration.ts,
-    habitClayIcon.ts, itemIcon.ts, mezoMessages.ts, needs.ts, needsInputs.ts, needsNudges.ts, nudgeSeen.ts,
-    questAction.ts, todayItems.ts, useDayFace.ts, useDayOrbFill.ts, useMinuteTick.ts, useNeeds.ts, windDown.ts
+  - **logic:** chainMilestone.ts, dayArc.ts, dayFace.ts, dayOrbFill.ts, dayOrbTone.ts, habitAction.ts,
+    habitCelebration.ts, habitClayIcon.ts, itemIcon.ts, mezoMessages.ts, needs.ts, needsInputs.ts, needsNudges.ts,
+    nudgeSeen.ts, questAction.ts, todayItems.ts, useDayFace.ts, useDayOrbFill.ts, useMinuteTick.ts, useNeeds.ts,
+    windDown.ts
   - **root:** MezoThreadProvider.tsx
 
 ### train
