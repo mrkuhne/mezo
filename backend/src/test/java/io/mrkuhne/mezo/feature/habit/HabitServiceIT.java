@@ -266,6 +266,50 @@ class HabitServiceIT extends AbstractIntegrationTest {
             "morning_sunlight").getStatus()).isEqualTo("missed");
     }
 
+    /**
+     * Midnight race, ordering A (mezo-x9c2): the user checks late, the close job runs after.
+     * closePast only closes PENDING rows, so it must skip the done row — no double-close,
+     * no second award for THIS habit. check() bootstraps the full day's rows (ensureRows runs
+     * for the request date), so closePast afterward also honestly closes other pending habits
+     * for yesterday (e.g. caffeine_cutoff/kitchen_close with no signal logged) — legitimate,
+     * unrelated awards. The race assertion therefore scopes to morning_sunlight's own row via
+     * sourceRefId, not the day's total award count.
+     */
+    @Test
+    void testClosePastAfterCheck_shouldKeepDoneAndSingleAward_whenCheckWonTheRace() {
+        UUID owner = owner();
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        habitPopulator.row(owner, yesterday, "morning_sunlight", HabitDayEntity.STATUS_PENDING);
+        habitService.check(owner, "morning_sunlight", yesterday); // pending -> done (backfill window)
+
+        habitService.closePast(owner, LocalDate.now()); // the "cron" arrives second
+
+        HabitDayEntity sunlight = byKey(repository.findByCreatedByAndHabitDate(owner, yesterday),
+            "morning_sunlight");
+        assertThat(sunlight.getStatus()).isEqualTo("done");
+        assertThat(levelUpEventRepository.findByCreatedByAndOccurredOn(owner, yesterday))
+            .filteredOn(e -> sunlight.getId().equals(e.getSourceRefId()))
+            .hasSize(1); // exactly one award for morning_sunlight — no double-close, no second award
+    }
+
+    /**
+     * Midnight race, ordering B (mezo-x9c2): the close job wins and closes the row missed;
+     * the user's late check then flips missed -> done. Both orderings converge on done + 1 award.
+     */
+    @Test
+    void testCheckAfterClosePast_shouldFlipMissedToDone_whenCronWonTheRace() {
+        UUID owner = owner();
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        habitPopulator.row(owner, yesterday, "morning_sunlight", HabitDayEntity.STATUS_PENDING);
+        habitService.closePast(owner, LocalDate.now()); // cron closes it missed first
+
+        HabitWriteResponse res = habitService.check(owner, "morning_sunlight", yesterday);
+
+        assertThat(res.getHabit().getStatus().getValue()).isEqualTo("done");
+        assertThat(levelUpEventRepository.findByCreatedByAndOccurredOn(owner, yesterday))
+            .hasSize(1);
+    }
+
     @Test
     void testClosePast_shouldCloseEndOfDayAndMissRest_whenYesterdayPending() {
         UUID owner = owner();
