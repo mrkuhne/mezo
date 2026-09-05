@@ -12,7 +12,9 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.GamificationPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -91,22 +93,27 @@ class GamificationStreakIT extends AbstractIntegrationTest {
     @Test
     void testStreak_shouldAwardStreak7BonusExactlyOnce_whenSevenConsecutiveDates() {
         UUID owner = owner();
-        LocalDate start = LocalDate.now().minusDays(6);
+        // The coin row's occurredOn is stamped by the SERVER's own clock, so the day it lands on is
+        // captured AROUND the awarding calls instead of re-read afterwards: a second LocalDate.now()
+        // names a different day whenever midnight falls between the two reads.
+        LocalDate dayBefore = LocalDate.now();
+        LocalDate start = dayBefore.minusDays(6);
         for (int i = 0; i < 7; i++) {
             applyHabit(owner, start.plusDays(i));
         }
+        LocalDate dayAfter = LocalDate.now();
 
         var profile = gamificationProfileRepository.findByCreatedBy(owner).orElseThrow();
         assertThat(profile.getStreakDays()).isEqualTo(7);
         assertThat(profile.getCoins()).isEqualTo(50); // only the streak_7 milestone (35 XP total stays well under Lv1->2)
 
-        long streak7Rows = coinEventRepository
-            .findByCreatedByAndOccurredOnOrderByCreatedAtAsc(owner, LocalDate.now())
-            .stream().filter(e -> "streak_7".equals(e.getReason())).count();
-        assertThat(streak7Rows).isEqualTo(1);
-        assertThat(coinEventRepository.findByCreatedByAndOccurredOnOrderByCreatedAtAsc(owner, LocalDate.now())
-            .stream().filter(e -> "streak_7".equals(e.getReason())).mapToInt(CoinEventEntity::getAmount).sum())
-            .isEqualTo(50);
+        List<CoinEventEntity> streak7Events = Stream.of(dayBefore, dayAfter).distinct()
+            .flatMap(day -> coinEventRepository
+                .findByCreatedByAndOccurredOnOrderByCreatedAtAsc(owner, day).stream())
+            .filter(e -> "streak_7".equals(e.getReason()))
+            .toList();
+        assertThat(streak7Events).hasSize(1);
+        assertThat(streak7Events.stream().mapToInt(CoinEventEntity::getAmount).sum()).isEqualTo(50);
     }
 
     @Test

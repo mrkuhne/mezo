@@ -100,13 +100,17 @@ class SportServiceIT extends AbstractIntegrationTest {
     void testLogSportSession_shouldDefaultDateAndTimeToNow_whenAbsent() {
         UUID user = databasePopulator.populateUser("sport@test.local");
 
+        // the date default comes from the SERVER's clock: capture the day AROUND the call and accept
+        // either side, so a midnight between the two reads cannot flip the assert
+        LocalDate dayBefore = LocalDate.now();
         SportSessionResponse r = sportService.logSportSession(user, SportSessionCreateRequest.builder()
             .duration(90).setsPlayed(5).rpe(new BigDecimal("7")).shoulderStrain(6).build());
+        LocalDate dayAfter = LocalDate.now();
         entityManager.flush();
         entityManager.clear();
 
         SportSessionEntity saved = sportSessionRepository.findById(r.getId()).orElseThrow();
-        assertThat(saved.getDate()).isEqualTo(LocalDate.now());
+        assertThat(saved.getDate()).isIn(dayBefore, dayAfter);
         assertThat(saved.getTime()).matches("\\d{2}:\\d{2}");
         assertThat(saved.getSport()).isEqualTo("volleyball");
         assertThat(saved.getDurationMin()).isEqualTo(90);

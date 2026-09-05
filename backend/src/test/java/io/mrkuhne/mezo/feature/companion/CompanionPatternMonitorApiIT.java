@@ -109,12 +109,16 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
 
     @Test
     void testPatternMonitor_shouldEchoWindowAndConfig_whenNoDataAtAll() {
+        // windowTo is the SERVER's own yesterday: capture the day AROUND the call and accept either
+        // side, so a midnight between the two reads cannot flip the assert
+        LocalDate dayBefore = LocalDate.now();
         PatternMonitorResponse response = monitor();
+        LocalDate dayAfter = LocalDate.now();
 
         assertThat(response.getLookbackDays()).isEqualTo(60);
         assertThat(response.getMinN()).isEqualTo(8);
         assertThat(response.getCron()).isNotBlank();
-        assertThat(response.getWindowTo()).isEqualTo(LocalDate.now().minusDays(1));
+        assertThat(response.getWindowTo()).isIn(dayBefore.minusDays(1), dayAfter.minusDays(1));
         assertThat(response.getWindowFrom()).isEqualTo(response.getWindowTo().minusDays(59));
         assertThat(response.getLastRunAt()).isNull();
         assertThat(response.getPairs()).hasSize(29); // V3.4 katalógus (8 eredeti + 21 új)
@@ -273,13 +277,17 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
     void testPatternMonitor_shouldCountCoveragePerMetric_whenDaysLogged() {
         seedStressAndSleep(ownerId(), 6);
 
+        // the last day with data is the seeded window's end = the SERVER's yesterday: capture the
+        // day AROUND the call and accept either side, so a midnight in between cannot flip it
+        LocalDate dayBefore = LocalDate.now();
         PatternMonitorResponse response = monitor();
+        LocalDate dayAfter = LocalDate.now();
 
         PatternMetricCoverage stress = metric(response, "checkin-stress");
         assertThat(stress.getLabel()).isEqualTo("stressz-szint");
         assertThat(stress.getCoveredDays()).isEqualTo(6);
         assertThat(stress.getWindowDays()).isEqualTo(60);
-        assertThat(stress.getLastDayWithData()).isEqualTo(LocalDate.now().minusDays(1));
+        assertThat(stress.getLastDayWithData()).isIn(dayBefore.minusDays(1), dayAfter.minusDays(1));
         assertThat(stress.getPairCount()).isEqualTo(2); // V3.4: + checkin-stress~late-meal-hour
         assertThat(metric(response, "daily-kcal").getCoveredDays()).isZero();
         assertThat(metric(response, "daily-kcal").getLastDayWithData()).isNull();

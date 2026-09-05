@@ -41,7 +41,11 @@ class DiagnosisExperimentIT extends ApiIntegrationTest {
     void createsAnActiveExperimentFromTheProbe() {
         DiagnosisEntity diagnosis = diagnosisPopulator.diagnosis(ownerId());
 
+        // startDate is stamped by the SERVER's clock: capture the day AROUND the call and accept
+        // either side, so a midnight between the two reads cannot flip the assert
+        LocalDate dayBefore = LocalDate.now();
         ExperimentResponse body = start(diagnosis, 1, HttpStatus.CREATED);
+        LocalDate dayAfter = LocalDate.now();
 
         assertThat(body.getStatus()).isEqualTo("active");
         assertThat(body.getMetricKey()).isEqualTo("SLEEP_DURATION_H");
@@ -51,7 +55,7 @@ class DiagnosisExperimentIT extends ApiIntegrationTest {
                 ownerId(), ExperimentEntity.SOURCE_DIAGNOSIS);
         assertThat(rows).hasSize(1);
         assertThat(rows.get(0).getSourceDiagnosisId()).isEqualTo(diagnosis.getId());
-        assertThat(rows.get(0).getStartDate()).isEqualTo(LocalDate.now());
+        assertThat(rows.get(0).getStartDate()).isIn(dayBefore, dayAfter);
         assertThat(rows.get(0).getExpectedDirection()).isEqualTo("up");
     }
 

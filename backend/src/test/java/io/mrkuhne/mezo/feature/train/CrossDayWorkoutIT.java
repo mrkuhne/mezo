@@ -31,23 +31,35 @@ class CrossDayWorkoutIT extends AbstractIntegrationTest {
     @Autowired private TrainPopulator trainPopulator;
     @Autowired private DatabasePopulator databasePopulator;
 
-    /** A weekday label that is NOT today's — offset rotates over the HU label ring. */
+    /**
+     * The test's own reading of "today", taken ONCE. Every date and weekday label below is derived
+     * from it, so the fixture can never be built from two different days: a second
+     * {@code LocalDate.now()} taken later in the test names tomorrow whenever midnight falls in
+     * between, and the labels/dates would then disagree with each other.
+     */
+    private static final LocalDate TODAY = LocalDate.now();
+
+    /**
+     * A weekday label that is neither today's nor tomorrow's — offset rotates over the HU label
+     * ring from {@code TODAY + 1}. Skipping tomorrow as well is what keeps the "no template day
+     * carries today's label" expectation true even if the SERVER's own clock has meanwhile rolled
+     * over to the next day (it reads its own {@code LocalDate.now()}, which this test cannot pin).
+     */
     private static String otherDayLabel(int offset) {
-        int todayIdx = LocalDate.now().getDayOfWeek().getValue() - 1;
-        return WorkoutService.HU_DAY_LABELS.get((todayIdx + offset) % 7);
+        int todayIdx = TODAY.getDayOfWeek().getValue() - 1;
+        return WorkoutService.HU_DAY_LABELS.get((todayIdx + 1 + offset) % 7);
     }
 
     /** Monday of the current Mon–Sun week — always inside getToday's completed window. */
     private static LocalDate monday() {
-        LocalDate today = LocalDate.now();
-        return today.minusDays(today.getDayOfWeek().getValue() - 1L);
+        return TODAY.minusDays(TODAY.getDayOfWeek().getValue() - 1L);
     }
 
     private static WorkoutStartRequest startRequest(WorkoutSessionEntity template) {
         return WorkoutStartRequest.builder().templateSessionId(template.getId()).build();
     }
 
-    /** A gym template day on a non-today weekday label, with one exercise so it is not a rest day. */
+    /** A gym template day on a not-today/not-tomorrow label, with one exercise so it is not a rest day. */
     private WorkoutSessionEntity gymDay(UUID user, UUID mesoId, int labelOffset, int orderIndex) {
         WorkoutSessionEntity day = trainPopulator.createWorkoutSession(
             user, mesoId, otherDayLabel(labelOffset), "Pull Day", orderIndex, "planned");
@@ -77,7 +89,7 @@ class CrossDayWorkoutIT extends AbstractIntegrationTest {
         WorkoutSessionEntity openDay = gymDay(user, meso.getId(), 1, 0);
         WorkoutSessionEntity requestedDay = gymDay(user, meso.getId(), 2, 1);
         WorkoutSessionEntity instance =
-            trainPopulator.createWorkoutInstance(user, openDay, LocalDate.now(), "active");
+            trainPopulator.createWorkoutInstance(user, openDay, TODAY, "active");
 
         WorkoutTodayResponse r = workoutService.getToday(user, requestedDay.getId());
 
@@ -120,7 +132,7 @@ class CrossDayWorkoutIT extends AbstractIntegrationTest {
         MesocycleEntity meso = trainPopulator.createMesocycle(user, "meso", "active");
         WorkoutSessionEntity openDay = gymDay(user, meso.getId(), 1, 0);
         WorkoutSessionEntity otherDay = gymDay(user, meso.getId(), 2, 1);
-        trainPopulator.createWorkoutInstance(user, openDay, LocalDate.now(), "active");
+        trainPopulator.createWorkoutInstance(user, openDay, TODAY, "active");
 
         assertThatThrownBy(() -> workoutService.startWorkout(user, startRequest(otherDay)))
             .isInstanceOf(SystemRuntimeErrorException.class)
@@ -145,7 +157,7 @@ class CrossDayWorkoutIT extends AbstractIntegrationTest {
         MesocycleEntity meso = trainPopulator.createMesocycle(user, "meso", "active");
         WorkoutSessionEntity day = gymDay(user, meso.getId(), 1, 0);
         WorkoutSessionEntity instance =
-            trainPopulator.createWorkoutInstance(user, day, LocalDate.now(), "active");
+            trainPopulator.createWorkoutInstance(user, day, TODAY, "active");
 
         // the resume branch must stay BEFORE the D5/D6 guards — same-template start never 409s
         WorkoutInstanceResponse r = workoutService.startWorkout(user, startRequest(day));
