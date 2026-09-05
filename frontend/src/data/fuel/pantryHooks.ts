@@ -185,12 +185,16 @@ function mockImport(qc: ReturnType<typeof useQueryClient>, input: PantryImportIn
     const base = prev ?? mockData
     const source = sourceFor(input)
     const ing: Ingredient = {
-      id: crypto.randomUUID(), kind: 'food', name: input.name, brand: input.brand ?? '', source,
-      category: input.category ?? 'other', per: input.per, unit: input.unit,
+      id: crypto.randomUUID(), kind: 'food', name: input.name, brand: input.brand ?? null, source,
+      category: input.category ?? null, per: input.per, unit: input.unit,
       // Honest since mezo-6omv: a field the draft didn't carry is `null` (no data), not a
-      // fabricated 0 — mirrors the server's mapper.
+      // fabricated 0 — mirrors the server's mapper. Same honesty now applies to
+      // price/priceUnit/pkg (mezo-xaq5): Ingredient declares them nullable, so a draft that
+      // never priced the item stays null, not a fabricated free/empty-package 0/''. A Link-mode
+      // scrape draft DOES carry priceHuf/priceUnit — those still ride through; `pkg` has no
+      // import-draft source, so it is always null here.
       macros: { kcal: input.kcal ?? null, p: input.proteinG ?? null, c: input.carbsG ?? null, f: input.fatG ?? null },
-      price: 0, priceUnit: '', pkg: '',
+      price: input.priceHuf ?? null, priceUnit: input.priceUnit ?? null, pkg: null,
       micros: [], nova: input.nova ?? 1,
       fiberG: input.fiberG ?? undefined, sugarG: input.sugarG ?? undefined,
       saltG: input.saltG ?? undefined, saturatedFatG: input.saturatedFatG ?? undefined,
@@ -220,11 +224,13 @@ function mockAddFromCatalog(qc: ReturnType<typeof useQueryClient>, catalogId: st
     const shared = { catalogId, sharedFrom: entry.authorName ? { authorName: entry.authorName } : null, catalogEditable: true }
     if (entry.kind === 'food') {
       const ing: Ingredient = {
-        id: crypto.randomUUID(), kind: 'food', name: entry.name, brand: entry.brand ?? '', source: entry.source,
-        category: entry.category ?? 'other', per: entry.per ?? 100, unit: entry.unit ?? 'g',
+        id: crypto.randomUUID(), kind: 'food', name: entry.name, brand: entry.brand ?? null, source: entry.source,
+        category: entry.category ?? null, per: entry.per ?? 100, unit: entry.unit ?? 'g',
         // Honest since mezo-6omv: mirrors the server — a fact the catalog entry lacks is null.
+        // Same honesty for price/priceUnit/pkg (mezo-xaq5): the catalog entry carries no price
+        // fact at all (it's a personal, not a shared, fact), so a from-catalog add is always null.
         macros: { kcal: entry.kcal ?? null, p: entry.proteinG ?? null, c: entry.carbsG ?? null, f: entry.fatG ?? null },
-        price: 0, priceUnit: '', pkg: '', micros: [], nova: entry.nova ?? 1,
+        price: null, priceUnit: null, pkg: null, micros: [], nova: entry.nova ?? 1,
         fiberG: entry.fiberG ?? undefined, sugarG: entry.sugarG ?? undefined,
         saltG: entry.saltG ?? undefined, saturatedFatG: entry.saturatedFatG ?? undefined,
         stock: null, lastUsed: '—', usedInRecipes: 0, ...shared,
@@ -232,9 +238,9 @@ function mockAddFromCatalog(qc: ReturnType<typeof useQueryClient>, catalogId: st
       return { ...base, ingredients: [...base.ingredients, ing] }
     }
     const supp: SupplementStashItem = {
-      id: crypto.randomUUID(), name: entry.name, brand: entry.brand ?? '',
+      id: crypto.randomUUID(), name: entry.name, brand: entry.brand ?? null,
       type: entry.kind === 'stim' ? 'stimulant' : entry.kind === 'med' ? 'medication' : 'supplement',
-      category: entry.category ?? 'supplement', dose: '', form: entry.form ?? '',
+      category: entry.category ?? null, dose: '', form: entry.form ?? null,
       stock: null, stockUnit: null, protocol: '', timing: 'flexible', taken: false, caffeine: entry.caffeine ?? undefined,
       source: entry.source, per: entry.per ?? undefined, unit: entry.unit ?? undefined,
       macros: entry.kcal != null
@@ -253,11 +259,13 @@ function mockAdd(qc: ReturnType<typeof useQueryClient>, input: PantryItemInput) 
     const id = crypto.randomUUID()
     if (input.kind === 'food') {
       const ing: Ingredient = {
-        id, kind: 'food', name: input.name, brand: input.brand ?? '', source: input.source ?? 'manual',
-        category: input.category ?? 'protein', per: input.per ?? 100, unit: input.unit ?? 'g',
+        id, kind: 'food', name: input.name, brand: input.brand ?? null, source: input.source ?? 'manual',
+        category: input.category ?? null, per: input.per ?? 100, unit: input.unit ?? 'g',
         // Honest since mezo-6omv: mirrors the server — a field the form didn't carry is null.
+        // Same honesty for price/priceUnit/pkg (mezo-xaq5): an item created without a price
+        // stays null, not a fabricated free/0 fact.
         macros: { kcal: input.kcal ?? null, p: input.proteinG ?? null, c: input.carbsG ?? null, f: input.fatG ?? null },
-        price: input.price ?? 0, priceUnit: input.priceUnit ?? '', pkg: input.pkg ?? '',
+        price: input.price ?? null, priceUnit: input.priceUnit ?? null, pkg: input.pkg ?? null,
         micros: input.micros ?? [], nova: input.nova ?? 1,
         stock: input.stockQty != null ? { qty: input.stockQty, unit: input.stockUnit ?? 'g', expires: input.stockExpires ?? '' } : null,
         lastUsed: '—', usedInRecipes: 0,
@@ -265,9 +273,9 @@ function mockAdd(qc: ReturnType<typeof useQueryClient>, input: PantryItemInput) 
       return { ...base, ingredients: [...base.ingredients, ing] }
     }
     const supp: SupplementStashItem = {
-      id, name: input.name, brand: input.brand ?? '',
+      id, name: input.name, brand: input.brand ?? null,
       type: input.kind === 'stim' ? 'stimulant' : input.kind === 'med' ? 'medication' : 'supplement',
-      category: input.category ?? 'muscle', dose: input.dose ?? '', form: input.form ?? '',
+      category: input.category ?? null, dose: input.dose ?? '', form: input.form ?? null,
       stock: input.stockQty ?? null, stockUnit: input.stockUnit ?? null,
       protocol: input.protocol ?? '', timing: input.timing ?? 'flexible', taken: false, caffeine: input.caffeine,
       // Nutrition + commerce (mezo-1za9) — preserve so a mock-mode supplement shows macros/price too.

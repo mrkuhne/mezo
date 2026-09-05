@@ -47,7 +47,7 @@ export function FuelStackAddPage() {
             <span className="stk-add-symbol" aria-hidden="true"><Icon name="plus" size={14} /></span>
             <span className="stk-add-copy">
               <strong>{item.name}</strong>
-              <small>{item.brand} · {item.dose}</small>
+              <small>{item.brand && `${item.brand} · `}{item.dose}</small>
             </span>
             {occupied.has(item.id) && <span className="stk-add-occupied">a stackben</span>}
             <span aria-hidden="true">＋</span>

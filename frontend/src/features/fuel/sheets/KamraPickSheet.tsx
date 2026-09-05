@@ -69,7 +69,7 @@ export function KamraPickSheet({
   // Only categories actually on the shelf become chips — labeled/colored from categoryMeta,
   // falling back to the raw key so an unmapped category still filters honestly.
   const cats = useMemo(
-    () => [...new Set(ingredients.map(i => i.category))].filter(Boolean),
+    () => [...new Set(ingredients.map(i => i.category))].filter((c): c is string => !!c),
     [ingredients],
   )
   const filtered = ingredients.filter(i =>
@@ -105,10 +105,10 @@ export function KamraPickSheet({
             </button>
             {cats.map(c => (
               <button key={c} type="button" className={'fkp-chip' + (cat === c ? ' is-on' : '')}
-                style={{ '--cc': categoryMeta[c ?? '']?.color ?? FALLBACK_COLOR } as React.CSSProperties}
+                style={{ '--cc': categoryMeta[c]?.color ?? FALLBACK_COLOR } as React.CSSProperties}
                 aria-pressed={cat === c} onClick={() => setCat(prev => (prev === c ? null : c))}>
                 <span className="fkp-cdot" aria-hidden="true" />
-                {categoryMeta[c ?? '']?.label ?? c}
+                {categoryMeta[c]?.label ?? c}
               </button>
             ))}
           </div>
