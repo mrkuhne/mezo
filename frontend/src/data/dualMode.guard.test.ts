@@ -93,17 +93,26 @@ describe('dual-mode seed-leak guard', () => {
 // `useDualQuery` itself (`const q = useQuery({` — see the "not vacuous" test above).
 // That is an ACCIDENTAL pass: nothing checks that the hand-rolled `initialData` is
 // actually gated. This second check makes the acceptance deliberate: any `useQuery`
-// call that sets `initialData` must gate the value with `<flag>[ && <flag2>] ? … :
-// undefined` (so it degrades to `undefined`, never the seed, whenever the flag is
-// false) — anything else is the same seed-leak bug class as above, just spelled without
-// a destructure default.
+// call that sets `initialData` must gate the value with `mock[ && <flag2>] ? … :
+// undefined` (so it degrades to `undefined`, never the seed, whenever `mock` is false)
+// — anything else is the same seed-leak bug class as above, just spelled without a
+// destructure default.
+//
+// The gate is anchored to the LITERAL identifier `mock` (every real caller — `trainHooks.ts`,
+// `authHooks.ts`, `dayEvaluationHooks.ts`, `useDualQuery.ts` itself — names its
+// `isMockMode()` result exactly that), not an arbitrary identifier: checking only the
+// SHAPE `<ident> ? seed : undefined` would let `true ? seed : undefined` (or any other
+// always-true non-flag) read as "gated" while leaking the seed into real mode
+// unconditionally — precisely the bug class this guard exists to catch.
 //
 // Excluded by construction (not by name): an `initialData` that lives INSIDE the TRUE
-// branch of a `<flag> ? { … }` object-literal ternary (whole-call, e.g.
+// branch of a `mock ? { … }` object-literal ternary (whole-call, e.g.
 // `useQuery(mock ? {...} : {...})` in `trainHooks.ts`'s `useOpenWorkout`, or a partial
 // spread, e.g. `...(mock ? { initialData: mockMe, … } : { … })` in `authHooks.ts`'s
-// `useMe`) is already safe — it only exists when the flag is true — so it is not
-// re-checked against the ternary-ending-in-`undefined` shape.
+// `useMe`) is already safe — it only exists when `mock` is true — so it is not
+// re-checked against the ternary-ending-in-`undefined` shape. Redundant WRAPPING parens
+// around a safe value (`(mock ? seed : undefined)`) are tolerated — harmless reformatting
+// must not turn a green guard red.
 // ============================================================
 
 function extractBalancedParen(src: string, openIdx: number): string {
@@ -138,11 +147,18 @@ function extractBalancedBraceEnd(src: string, openIdx: number): number {
   return i
 }
 
-// Ranges of `{ … }` object literals that are the TRUE branch of a `<flag>[ && <flag2>] ? {`
+// Ranges of `{ … }` object literals that are the TRUE branch of a `mock[ && <flag2>] ? {`
 // ternary — safe by construction, since the contents only apply when the flag is true.
+//
+// Anchored to the literal identifier `mock` (every real caller — `trainHooks.ts`,
+// `authHooks.ts`, `dayEvaluationHooks.ts`, `useDualQuery.ts` itself — names its
+// `isMockMode()` result exactly that): an arbitrary identifier here would accept
+// `true ? seed : undefined` as "gated" when `true` is an always-true non-flag, letting the
+// seed leak into real mode unconditionally while the guard stays green.
+const MOCK_FLAG = /mock(\s*&&\s*[A-Za-z_$][\w$]*)*/
 function mockGatedRanges(arg: string): Array<[number, number]> {
   const ranges: Array<[number, number]> = []
-  const re = /[A-Za-z_$][\w$]*(\s*&&\s*[A-Za-z_$][\w$]*)*\s*\?\s*\{/g
+  const re = new RegExp(`\\b${MOCK_FLAG.source}\\s*\\?\\s*\\{`, 'g')
   let m: RegExpExecArray | null
   while ((m = re.exec(arg))) {
     const braceIdx = arg.indexOf('{', m.index)
@@ -174,10 +190,38 @@ function extractAllInitialData(arg: string): Array<{ value: string; index: numbe
   return out
 }
 
-// Safe iff `undefined` outright, or a ternary that DEGRADES to literal `undefined`.
+// Strips redundant WRAPPING parens (`(mock ? seed : undefined)` ~ `mock ? seed : undefined`)
+// so harmless reformatting can't turn a safe value into a false failure. Only strips a `(`
+// whose matching `)` is the very last character — `(a) + (b)` is left alone.
+function stripOuterParens(value: string): string {
+  let v = value.trim()
+  for (;;) {
+    if (!v.startsWith('(') || !v.endsWith(')')) return v
+    let depth = 0
+    let matchesToEnd = true
+    for (let i = 0; i < v.length; i++) {
+      if (v[i] === '(') depth++
+      else if (v[i] === ')') {
+        depth--
+        if (depth === 0 && i !== v.length - 1) {
+          matchesToEnd = false
+          break
+        }
+      }
+    }
+    if (!matchesToEnd) return v
+    v = v.slice(1, -1).trim()
+  }
+}
+
+// Safe iff `undefined` outright, or a ternary GATED ON THE LITERAL `mock` FLAG (mirroring
+// `mockGatedRanges` above — an arbitrary identifier, e.g. `true ? seed : undefined`, would
+// leak the seed into real mode unconditionally while reading as "gated") that DEGRADES to
+// literal `undefined` in its real-mode arm.
 function isSafeInitialData(valueText: string): boolean {
-  if (valueText === 'undefined') return true
-  return /^[A-Za-z_$][\w$.]*(\s*&&\s*[A-Za-z_$][\w$.]*)?\s*\?[\s\S]*:\s*undefined$/.test(valueText)
+  const v = stripOuterParens(valueText)
+  if (v === 'undefined') return true
+  return new RegExp(`^${MOCK_FLAG.source}\\s*\\?[\\s\\S]*:\\s*undefined$`).test(v)
 }
 
 function ungatedSeedInitialData(source: string): string[] {
@@ -205,11 +249,21 @@ describe('manual useDualQuery (initialData) seed-leak guard', () => {
         'useQuery({ initialData: mock ? mockDayEvaluation(dateIso) : mockDayEvaluation(dateIso) })',
       ),
     ).toHaveLength(1)
+    // an always-true "flag" is not a flag: `true ? seed : undefined` has the right SHAPE
+    // but leaks the seed into real mode unconditionally — must be rejected, not accepted
+    // as if it were gated on `mock`.
+    expect(
+      ungatedSeedInitialData('useQuery({ initialData: true ? mockDayEvaluation(dateIso) : undefined })'),
+    ).toEqual(['true ? mockDayEvaluation(dateIso) : undefined'])
     // safe forms — must NOT be flagged
     expect(ungatedSeedInitialData('useQuery({ initialData: undefined })')).toEqual([])
     expect(ungatedSeedInitialData('useQuery({ initialData: mock ? seed : undefined })')).toEqual([])
     expect(
       ungatedSeedInitialData('useQuery({ initialData: mock && enabled ? seed : undefined })'),
+    ).toEqual([])
+    // redundant wrapping parens are harmless reformatting, not a leak — must not go red
+    expect(
+      ungatedSeedInitialData('useQuery({ initialData: (mock ? seed : undefined) })'),
     ).toEqual([])
     // mock-only branches — the whole-call two-literal ternary (trainHooks' useOpenWorkout)
     // and the partial-options spread (authHooks' useMe) are safe by construction.
