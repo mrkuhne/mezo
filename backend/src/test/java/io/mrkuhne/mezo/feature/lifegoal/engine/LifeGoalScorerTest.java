@@ -126,9 +126,15 @@ class LifeGoalScorerTest {
     }
 
     @Test
-    void testScoreAverage_shouldReturnMiss_whenThresholdIsZeroAndAverageMisses() {
-        // threshold=0, comparator=lte, avg=0.5 -> the +-10% band around 0 is degenerate (division
-        // by |threshold|=0 would be undefined) -> the guard short-circuits it to miss, never partial.
+    void testScoreAverage_shouldReturnPlainMiss_whenThresholdIsZeroAndAverageIsOnTheBadSide() {
+        // threshold=0, comparator=lte, avg=0.5 (bad side of the threshold): the +-10% band around
+        // a zero threshold is degenerate (division by |threshold|=0), and this must resolve to a
+        // plain "miss", never a "partial" band-hit. NOTE: this assertion alone does not prove the
+        // scorer's `threshold != 0` guard clause is what enforces that — with double arithmetic,
+        // 0.5/0 -> Infinity, and Infinity <= 0.10 is already false by IEEE-754 semantics, so this
+        // case passes independently of the guard. The guard remains documented, load-bearing
+        // production intent (see LifeGoalScorer.scoreAverage); this test only pins the observable
+        // contract (zero threshold + miss-side average => "miss"), not the mechanism.
         Map<LocalDate, BigDecimal> vals = new HashMap<>();
         for (int i = 0; i < 7; i++) vals.put(DAY.minusDays(i), new BigDecimal("0.5"));
         PillarRuleJson rule = new PillarRuleJson(BigDecimal.ZERO, "lte", null, 7, null, null, null, null, null, null);
