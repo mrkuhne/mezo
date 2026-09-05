@@ -146,6 +146,21 @@ const SCREENS: Array<[string, string, string?]> = [
  */
 const DEFAULT_FROZEN = '2026-05-21T13:42:00+02:00'
 
+/**
+ * Native date/time inputs are rendered by the OS, in the OS's language — `02:00 P` /
+ * `mm/dd/yyyy` on an en-US machine, `14:00` / `yyyy. mm. dd.` on a Hungarian one. On macOS
+ * Chromium ignores both Playwright's `locale` and `--lang` for these controls, so a golden
+ * containing one is machine-dependent BY CONSTRUCTION: it made 3 screens × 2 themes disagree
+ * between the developer's Mac and the macOS CI runner, with no way to pin either (mezo-in3h).
+ * Mask them. Their pixels are OS chrome we neither design nor can regress; everything around
+ * them stays under the gate.
+ */
+const OS_RENDERED_CONTROLS =
+  'input[type="time"], input[type="date"], input[type="datetime-local"], input[type="month"], input[type="week"]'
+
+const shot = (page: import('@playwright/test').Page, name: string) =>
+  expect(page).toHaveScreenshot(name, { mask: [page.locator(OS_RENDERED_CONTROLS)], maskColor: '#000000' })
+
 for (const theme of ['light', 'dark'] as const) {
   test.describe(theme, () => {
     test.use({ colorScheme: theme })
@@ -158,7 +173,7 @@ for (const theme of ['light', 'dark'] as const) {
         await page.goto(path)
         await page.waitForLoadState('networkidle')
         await page.evaluate(() => document.fonts.ready)
-        await expect(page).toHaveScreenshot(`${name}-${theme}.png`)
+        await shot(page, `${name}-${theme}.png`)
       })
     }
 
@@ -193,7 +208,7 @@ for (const theme of ['light', 'dark'] as const) {
       await toasts.first().waitFor({ state: 'visible', timeout: 2000 }).catch(() => {})
       await expect(toasts).toHaveCount(0)
       await page.evaluate(() => document.fonts.ready)
-      await expect(page).toHaveScreenshot(`ritual-harvest-${theme}.png`)
+      await shot(page, `ritual-harvest-${theme}.png`)
     })
 
     // Napzárás act 6 (Elengedés) — the far end of the darkening arc (mezo-d20.8.1.1). Act 1 and
@@ -216,7 +231,7 @@ for (const theme of ['light', 'dark'] as const) {
       const toasts = page.locator('.toast')
       await expect(toasts).toHaveCount(0)
       await page.evaluate(() => document.fonts.ready)
-      await expect(page).toHaveScreenshot(`ritual-release-${theme}.png`)
+      await shot(page, `ritual-release-${theme}.png`)
     })
 
     // The exercise swimlane (mezo-d20.8.2.1). It sits below the fold on the `train-review`
@@ -232,7 +247,7 @@ for (const theme of ['light', 'dark'] as const) {
       await lane.waitFor()
       await lane.scrollIntoViewIfNeeded()
       await page.evaluate(() => document.fonts.ready)
-      await expect(page).toHaveScreenshot(`train-review-lane-${theme}.png`)
+      await shot(page, `train-review-lane-${theme}.png`)
     })
 
     // The exercise view behind a swimlane tile (mezo-d20.8.2.1). This is the shot the round
@@ -246,7 +261,7 @@ for (const theme of ['light', 'dark'] as const) {
       await page.getByRole('button', { name: /Chest Supported Row/ }).click()
       await page.locator('.wr-set').first().waitFor()
       await page.evaluate(() => document.fonts.ready)
-      await expect(page).toHaveScreenshot(`train-review-exercise-${theme}.png`)
+      await shot(page, `train-review-exercise-${theme}.png`)
     })
 
     // F7.3 (mezo-d20.8.3.1): the recipe Pontszám tile opens the score sheet — the shot that
@@ -259,7 +274,7 @@ for (const theme of ['light', 'dark'] as const) {
       await page.getByTestId('recipe-score-tile').click()
       await page.locator('.sheet').waitFor()
       await page.evaluate(() => document.fonts.ready)
-      await expect(page).toHaveScreenshot(`fuel-recept-score-${theme}.png`)
+      await shot(page, `fuel-recept-score-${theme}.png`)
     })
 
     // F7.3: the slots EDITOR (zcard rows + Σ BUDGET + the portaled save bar) — only reachable
@@ -272,7 +287,7 @@ for (const theme of ['light', 'dark'] as const) {
       await page.getByRole('button', { name: /Testreszabás/ }).click()
       await page.getByRole('button', { name: /Mezo értékelése/ }).waitFor()
       await page.evaluate(() => document.fonts.ready)
-      await expect(page).toHaveScreenshot(`fuel-slots-editor-${theme}.png`)
+      await shot(page, `fuel-slots-editor-${theme}.png`)
     })
   })
 }
