@@ -26,16 +26,20 @@ import org.springframework.stereotype.Service;
  * never a fabricated day.
  *
  * <p>{@link #MEDICATION_ZONE} is the zone in which the medication "today" is derived. One zone for
- * EVERY caller (service, companion tool) — mezo-8h2s was a UTC-vs-default-zone split that shifted
- * the rendered cycle day by one between the two midnights. Owner-local like
- * {@code TrainingStreakCalculator.TZ}; if per-user timezones ever become real
- * ({@code AppUserEntity.timezone}), both move together.
+ * every caller that derives its own "now" ({@link #deriveToday} is the only such path) — mezo-8h2s
+ * was a UTC-vs-default-zone split that shifted the rendered cycle day by one between the two
+ * midnights. Callers of {@link #derive} pass an explicit {@code onDate} and own that date's zone
+ * themselves; notably {@code ContextSnapshotAssembler.medicationBlock} is handed a
+ * default-zone {@code LocalDate.now()} from {@code ChallengeGenerator}/{@code
+ * ExperimentProposalGenerator} and is NOT yet unified onto {@link #MEDICATION_ZONE} (tracked as a
+ * separate follow-up). Owner-local like {@code TrainingStreakCalculator.TZ}; if per-user timezones
+ * ever become real ({@code AppUserEntity.timezone}), both move together.
  */
 @Service
 @RequiredArgsConstructor
 public class MedicationCycleService {
 
-    /** The single zone every "today" derivation of the medication cycle uses — see class javadoc. */
+    /** The single zone {@link #deriveToday} uses — see class javadoc. */
     public static final ZoneId MEDICATION_ZONE = ZoneId.of("Europe/Budapest");
 
     private final MedicationDoseRepository doseRepo;
