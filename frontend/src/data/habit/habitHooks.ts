@@ -164,9 +164,9 @@ export function useHabitActions(date: string) {
   })
   // NOTE: check() resolves the write's levelUps — the caller builds a reward toast via
   // @/features/progression/logic/rewardToast and emits it on the toastBus (mezo-k5sa).
-  // Callers today: TodayPage's `act()` dispatcher (every habit row on all three daypart
-  // faces) and WindDownBanner (the `wind_down` Pipa). RoutineCard, the original caller,
-  // was retired by the daypart-faces re-composition (mezo-j7u4).
+  // Callers today: NapRutinPage.tickAction and NapHubPage.tileTick (every habit row on all
+  // three daypart faces). RoutineCard, the original caller, was retired by the daypart-faces
+  // re-composition (mezo-j7u4).
 
   const uncheckM = useMutation({
     mutationFn: async (habitKey: string) => {

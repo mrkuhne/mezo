@@ -25,6 +25,7 @@ import { buildHabitRewardToast } from '@/features/progression/logic/rewardToast'
 import { habitAction, habitHint } from '@/features/today/logic/habitAction'
 import { celebrationFor } from '@/features/today/logic/habitCelebration'
 import { daypartMilestone } from '@/features/today/logic/chainMilestone'
+import { nextInChain } from '@/features/today/logic/chainPrompt'
 import { habitClayIcon, DAYPART_CLAY } from '@/features/today/logic/habitClayIcon'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
 import { ReflectSheet } from '@/features/today/sheets/ReflectSheet'
@@ -82,6 +83,9 @@ export function NapRutinPage() {
   const [sleepOpen, setSleepOpen] = useState(false)
   const [focusOpen, setFocusOpen] = useState(false)
   const [reflectOpen, setReflectOpen] = useState(false)
+  // mezo-3zue.6: a horgony pipálásának KÖVETKEZMÉNYE — a rá kötött szokás kulcsa. Tartós
+  // (nem toast), de nincs saját takarító effektje: a render deriválja, lásd `promptRow`.
+  const [promptKey, setPromptKey] = useState<string | null>(null)
 
   // ?dp preselects the chain group shown first (the hub tile hands its face over).
   const dpParam = params.get('dp')
@@ -117,7 +121,8 @@ export function NapRutinPage() {
     return { done: steps.filter((h) => h.status === 'done').length, total: steps.length }
   }
 
-  // The Today dispatcher's habit branch, verbatim semantics (TodayPage `act()`).
+  // Tegnapi backfill: nincs lánc-prompt (a promptolt sor a MA-nézeten él, mezo-3zue.6 nem
+  // nyúlt ehhez az ösvényhez — a backfill mezo-x9c2 ezután érkezett).
   const runCheck = (h: HabitItem) => () => {
     const { done, total } = chainProgress(h.chain)
     // az ünneplés a katalógusból jön (a napi sor nem viszi) — hiányában a toast a régi
@@ -133,6 +138,7 @@ export function NapRutinPage() {
       .catch(() => {})
   }
 
+  /** A napi sor tick-viselkedése: a pipa, illetve a sor saját felületére vivő CTA. */
   const tickAction = (h: HabitItem): (() => void) | null => {
     if (h.status === 'done') {
       // the prototype tick toggles both ways — only a MANUAL check can honestly untick
@@ -148,7 +154,27 @@ export function NapRutinPage() {
     if (h.status !== 'pending') return null
     const ha = habitAction(h)
     switch (ha.kind) {
-      case 'check': return runCheck(h)
+      case 'check':
+        return () => {
+          const { done, total } = chainProgress(h.chain)
+          // az ünneplés a katalógusból jön (a napi sor nem viszi) — hiányában a toast a régi
+          const celebration = celebrationFor(catalog, h.key)
+          // a mérföldkő a pipa ELŐTTI állapotból dől el: csak akkor szólal meg, ha ez a sor
+          // az utolsó nyitott a napszakában (mezo-sqe3)
+          const chainLabel = daypartMilestone(catalog, habits, h.chain)
+          // ugyanabból a pipa előtti állapotból: mi van erre a horgonyra kötve (mezo-3zue.6)
+          const chained = nextInChain(catalog, habits, h.key)
+          check(h.key)
+            .then((lu) => {
+              emitToast(buildHabitRewardToast({
+                title: h.title, chainDone: done, chainTotal: total, xp: h.xp, levelUp: lu?.[0],
+                celebration, chainLabel,
+              }))
+              // csak sikeres írás után — egy elhasalt pipa nem ígérhet folytatást
+              setPromptKey(chained?.key ?? null)
+            })
+            .catch(() => {})
+        }
       case 'nav': return () => navigate(ha.to)
       case 'meal-sheet': return () => setMealOpen(true)
       case 'sleep-sheet': return () => setSleepOpen(true)
@@ -159,6 +185,13 @@ export function NapRutinPage() {
   }
 
   const intention = intentionData ?? { date, creed: null, foci: [], reflection: null }
+
+  // A kiemelés DERIVÁLT, nem külön állapotgép: amint a promptolt sor kész lesz vagy eltűnik
+  // a napból (a szerver `releaseAnchors`-e menet közben is oldhatja a kötést), magától
+  // elmúlik — nincs mit takarítani.
+  const promptRow = promptKey
+    ? habits.find((h) => h.key === promptKey && h.status === 'pending') ?? null
+    : null
 
   return (
     <MozaikPage tone="gold" className="nr-page">
@@ -196,8 +229,9 @@ export function NapRutinPage() {
                   const icon = chain
                     ? habitClayIcon(h.key, chain)
                     : DAYPART_CLAY[FACE_DAYPART[g.face]]
+                  const isNow = promptRow?.key === h.key
                   return (
-                    <div key={h.key} className="nr-row">
+                    <div key={h.key} className={cn('nr-row', isNow && 'now')}>
                       {act ? (
                         <button type="button" className="nr-tickbtn" aria-label={h.title}
                           disabled={pending} onClick={act}>
@@ -211,6 +245,7 @@ export function NapRutinPage() {
                       {/* prototype #page-hab habrow: tick · the habit's OWN clay icon · name+bar · % */}
                       <ClayIcon name={icon} size={28} />
                       <div className="nr-grow">
+                        {isNow && <span className="mz-eyebrow nr-nowtag">Most jön</span>}
                         {/* a row carrying its own external content (linkUrl — e.g. `morning_video`)
                             renders the title as that link; the tick stays the separate control, so
                             the anchor never sits inside a button (mezo-d20.11 restore). */}
