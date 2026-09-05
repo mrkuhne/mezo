@@ -44,13 +44,18 @@ class DecisionApiIT extends ApiIntegrationTest {
     void testCreateDecisionEntry_shouldDefaultDayAndReviewDue_whenDecidedOnAbsent() {
         ownerId();
 
+        // decidedOn (and the reviewDue derived from it) come from the SERVER's clock: capture the
+        // day AROUND the call and accept either side, so a midnight between the two reads cannot
+        // flip the assert. Both must land on the SAME side — reviewDue is decidedOn + N days.
+        LocalDate dayBefore = LocalDate.now();
         DecisionEntryResponse created = postForBody("/api/journal/decision",
             CreateDecisionEntryRequest.builder().decisionText("Váltok esti edzésre.").build(),
             ownerAuthHeaders(), HttpStatus.CREATED, DecisionEntryResponse.class);
+        LocalDate dayAfter = LocalDate.now();
 
-        assertThat(created.getDecidedOn()).isEqualTo(LocalDate.now());
+        assertThat(created.getDecidedOn()).isIn(dayBefore, dayAfter);
         assertThat(created.getReviewDue())
-            .isEqualTo(LocalDate.now().plusDays(journalProperties.decisionReviewDays()));
+            .isEqualTo(created.getDecidedOn().plusDays(journalProperties.decisionReviewDays()));
         assertThat(created.getReviewedAt()).isNull();
         assertThat(created.getOutcomeRating()).isNull();
     }

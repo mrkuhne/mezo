@@ -70,9 +70,12 @@ class NeedsApiIT extends ApiIntegrationTest {
 
     @Test
     void testCloseNeedsDay_shouldContinueStreak_whenYesterdayAllGreen() {
-        needsPopulator.needsDay(ownerId(), LocalDate.now().minusDays(1),
+        // one read of the clock for the whole fixture: the seeded "yesterday" and the closed day
+        // must be consecutive, which two separate LocalDate.now() calls cannot guarantee
+        LocalDate today = LocalDate.now();
+        needsPopulator.needsDay(ownerId(), today.minusDays(1),
             new int[]{80, 80, 80, 80, 80, 80}, 6, true, 60, 4);
-        var req = NeedsCloseRequest.builder().date(LocalDate.now())
+        var req = NeedsCloseRequest.builder().date(today)
             .rings(rings(60, 70, 80, 90, 100, 65)).build();
         NeedsCloseResponse res = postForBody("/api/needs/day-close", req,
             ownerAuthHeaders(), HttpStatus.OK, NeedsCloseResponse.class);
@@ -82,9 +85,11 @@ class NeedsApiIT extends ApiIntegrationTest {
 
     @Test
     void testCloseNeedsDay_shouldResetStreak_whenNotAllGreen() {
-        needsPopulator.needsDay(ownerId(), LocalDate.now().minusDays(1),
+        // one read of the clock for the whole fixture — see the streak test above
+        LocalDate today = LocalDate.now();
+        needsPopulator.needsDay(ownerId(), today.minusDays(1),
             new int[]{80, 80, 80, 80, 80, 80}, 6, true, 60, 4);
-        var req = NeedsCloseRequest.builder().date(LocalDate.now())
+        var req = NeedsCloseRequest.builder().date(today)
             .rings(rings(60, 70, 80, 90, 100, 10)).build();
         NeedsCloseResponse res = postForBody("/api/needs/day-close", req,
             ownerAuthHeaders(), HttpStatus.OK, NeedsCloseResponse.class);
@@ -135,14 +140,17 @@ class NeedsApiIT extends ApiIntegrationTest {
 
     @Test
     void testGetNeedsSummary_shouldReturnLatest_whenCloses() {
-        needsPopulator.needsDay(ownerId(), LocalDate.now().minusDays(2),
+        // one read of the clock: the two seeded days AND the asserted lastCloseDate below all
+        // derive from it, so a midnight mid-test can no longer make them disagree
+        LocalDate today = LocalDate.now();
+        needsPopulator.needsDay(ownerId(), today.minusDays(2),
             new int[]{80, 80, 80, 80, 80, 80}, 6, true, 60, 1);
-        needsPopulator.needsDay(ownerId(), LocalDate.now().minusDays(1),
+        needsPopulator.needsDay(ownerId(), today.minusDays(1),
             new int[]{80, 80, 80, 80, 80, 80}, 6, true, 60, 2);
         NeedsSummaryResponse summary = getForBody("/api/needs/summary",
             ownerAuthHeaders(), HttpStatus.OK, NeedsSummaryResponse.class);
         assertThat(summary.getStreakDays()).isEqualTo(2);
-        assertThat(summary.getLastCloseDate()).isEqualTo(LocalDate.now().minusDays(1));
+        assertThat(summary.getLastCloseDate()).isEqualTo(today.minusDays(1));
         assertThat(summary.getLastAllGreen()).isTrue();
     }
 }

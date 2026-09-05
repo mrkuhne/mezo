@@ -61,9 +61,10 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
     void testGetFeed_shouldReturnMessagesInGeneratedOrder_whenRowsExist() {
         // no daily summaries planted -> the elapsed-window miss-recovery is a no-op (honest null),
         // so only the two pre-populated rows come back, in insertion (generatedAt) order
-        CompanionMessageEntity morningRow = companionMessagePopulator.createMessage(ownerId(), LocalDate.now(),
+        LocalDate today = LocalDate.now(); // read ONCE — both rows and the assert below share it
+        CompanionMessageEntity morningRow = companionMessagePopulator.createMessage(ownerId(), today,
                 CompanionMessageEntity.KIND_MORNING, "Jó reggelt", List.of("Mai terv."));
-        CompanionMessageEntity sleepRow = companionMessagePopulator.createMessage(ownerId(), LocalDate.now(),
+        CompanionMessageEntity sleepRow = companionMessagePopulator.createMessage(ownerId(), today,
                 CompanionMessageEntity.KIND_SLEEP, "Jó alvás", List.of("Pihenten kelsz."));
 
         List<FeedMessageResponse> feed = getForList(
@@ -71,7 +72,7 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
 
         assertThat(feed).extracting(FeedMessageResponse::getKind)
                 .containsExactly(FeedMessageResponse.KindEnum.MORNING, FeedMessageResponse.KindEnum.SLEEP);
-        assertThat(feed.get(0).getDate()).isEqualTo(LocalDate.now());
+        assertThat(feed.get(0).getDate()).isEqualTo(today);
         assertThat(feed.get(0).getEyebrow()).isEqualTo("Jó reggelt");
         assertThat(feed.get(0).getBody()).containsExactly("Mai terv.");
         assertThat(feed.get(0).getRefs()).isEmpty();
@@ -87,9 +88,10 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
         // The realistic case is a lost insert race against the cron; [fake-fail] reproduces the
         // shape (generation blows up mid-read) without one. The already-written message must
         // still reach the reader — and it only can if the generate ran in its OWN transaction.
-        dailySummaryPopulator.summary(ownerId(), LocalDate.now().minusDays(1), "Tegnap pihenőnap volt.");
-        checkInPopulator.createCheckIn(ownerId(), LocalDate.now(), "06:30", 4, 2, "[fake-fail]");
-        CompanionMessageEntity sleepRow = companionMessagePopulator.createMessage(ownerId(), LocalDate.now(),
+        LocalDate today = LocalDate.now(); // read ONCE — the whole fixture is anchored on one day
+        dailySummaryPopulator.summary(ownerId(), today.minusDays(1), "Tegnap pihenőnap volt.");
+        checkInPopulator.createCheckIn(ownerId(), today, "06:30", 4, 2, "[fake-fail]");
+        CompanionMessageEntity sleepRow = companionMessagePopulator.createMessage(ownerId(), today,
                 CompanionMessageEntity.KIND_SLEEP, "Jó alvás", List.of("Pihenten kelsz."));
 
         List<FeedMessageResponse> feed = getForList(
@@ -103,8 +105,9 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
 
     @Test
     void testGetFeed_shouldLazilyGenerateMorning_whenTodayAndMissing() {
-        dailySummaryPopulator.summary(ownerId(), LocalDate.now().minusDays(1), "Tegnap pihenőnap volt.");
-        checkInPopulator.createCheckIn(ownerId(), LocalDate.now(), "06:30", 4, 2,
+        LocalDate today = LocalDate.now(); // read ONCE — the whole fixture is anchored on one day
+        dailySummaryPopulator.summary(ownerId(), today.minusDays(1), "Tegnap pihenőnap volt.");
+        checkInPopulator.createCheckIn(ownerId(), today, "06:30", 4, 2,
                 "[fake-feed-morning:{\"eyebrow\":\"Jó reggelt\",\"body\":[\"Mai terv.\"],\"refIndexes\":[]}]");
 
         List<FeedMessageResponse> feed = getForList(
@@ -115,7 +118,7 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
                 .findFirst().orElseThrow(() -> new AssertionError("no morning message in feed: " + feed));
         assertThat(morning.getEyebrow()).isEqualTo("Jó reggelt");
         assertThat(morning.getBody()).containsExactly("Mai terv.");
-        assertThat(morning.getDate()).isEqualTo(LocalDate.now());
+        assertThat(morning.getDate()).isEqualTo(today);
         assertThat(morning.getGeneratedAt()).isNotNull();
         // lazily generated inside the endpoint — no populated row to pin identity against
         assertThat(morning.getId()).isNotNull();

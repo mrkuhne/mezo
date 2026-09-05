@@ -70,7 +70,16 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
 
     /** Aznapi stressz + alvásminőség N napra visszamenőleg (lag=0 pár), változó értékekkel. */
     private void seedStressAndSleep(UUID owner, int days) {
-        LocalDate to = LocalDate.now().minusDays(1);
+        seedStressAndSleep(owner, days, LocalDate.now());
+    }
+
+    /**
+     * Same seeding, anchored on a day the CALLER has already read. A test that later asserts against
+     * "yesterday" must use this overload: the seeded window and the assertion are BOTH test-owned,
+     * so they have to come from ONE reading of the clock — two reads disagree across a midnight.
+     */
+    private void seedStressAndSleep(UUID owner, int days, LocalDate today) {
+        LocalDate to = today.minusDays(1);
         for (int i = 0; i < days; i++) {
             LocalDate day = to.minusDays(i);
             // createCheckIn(owner, date, slotTime, energy, stress, note) — stress must vary here,
@@ -80,12 +89,15 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
         }
     }
 
-    /** Nine finished days with the production incident's exact 8 weekday : 1 weekend balance. */
-    private void seedImbalancedWeekendMeals(UUID owner) {
+    /**
+     * Nine finished days with the production incident's exact 8 weekday : 1 weekend balance,
+     * anchored on a day the caller has already read (see {@link #seedStressAndSleep}).
+     */
+    private void seedImbalancedWeekendMeals(UUID owner, LocalDate today) {
         int weekdays = 0;
         int weekends = 0;
         int index = 0;
-        LocalDate day = LocalDate.now().minusDays(1);
+        LocalDate day = today.minusDays(1);
         while (weekdays < 8 || weekends < 1) {
             boolean weekend = day.getDayOfWeek() == DayOfWeek.SATURDAY
                     || day.getDayOfWeek() == DayOfWeek.SUNDAY;
@@ -109,12 +121,16 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
 
     @Test
     void testPatternMonitor_shouldEchoWindowAndConfig_whenNoDataAtAll() {
+        // windowTo is the SERVER's own yesterday: capture the day AROUND the call and accept either
+        // side, so a midnight between the two reads cannot flip the assert
+        LocalDate dayBefore = LocalDate.now();
         PatternMonitorResponse response = monitor();
+        LocalDate dayAfter = LocalDate.now();
 
         assertThat(response.getLookbackDays()).isEqualTo(60);
         assertThat(response.getMinN()).isEqualTo(8);
         assertThat(response.getCron()).isNotBlank();
-        assertThat(response.getWindowTo()).isEqualTo(LocalDate.now().minusDays(1));
+        assertThat(response.getWindowTo()).isIn(dayBefore.minusDays(1), dayAfter.minusDays(1));
         assertThat(response.getWindowFrom()).isEqualTo(response.getWindowTo().minusDays(59));
         assertThat(response.getLastRunAt()).isNull();
         assertThat(response.getPairs()).hasSize(29); // V3.4 katalógus (8 eredeti + 21 új)
@@ -152,7 +168,7 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
 
     @Test
     void testPatternMonitor_shouldReturnImbalancedGroups_whenWeekendHasOnlyOneDay() {
-        seedImbalancedWeekendMeals(ownerId());
+        seedImbalancedWeekendMeals(ownerId(), LocalDate.now());
 
         PatternMonitorPair pair = pair(monitor(), "weekend~late-meal-hour");
 
@@ -176,9 +192,11 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
     @Test
     void testPatternMonitor_shouldExcludeTodaysLogging_whenComputingAlignedDays() {
         UUID owner = ownerId();
-        seedStressAndSleep(owner, 10);
-
+        // ONE read of the clock: the seeded 10-day window and the extra "today" row below must be
+        // consecutive, which two separate LocalDate.now() calls cannot guarantee
         LocalDate today = LocalDate.now();
+        seedStressAndSleep(owner, 10, today);
+
         checkInPopulator.createCheckIn(owner, today, "08:00", 3, 5, null);
         sleepLogPopulator.createSleepLog(owner, today, new BigDecimal("7.0"), 5);
 
@@ -192,7 +210,7 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
     @Test
     void testPatternMonitor_shouldReturnDegenerateWithBottleneck_whenSeriesIsConstant() {
         UUID owner = ownerId();
-        LocalDate to = LocalDate.now().minusDays(1);
+        LocalDate to = LocalDate.now().minusDays(1); // read ONCE — the whole loop shares it
         for (int i = 0; i < 10; i++) {
             LocalDate day = to.minusDays(i);
             // stressz KONSTANS (4) — a sleep-quality változó marad, hogy a DEGENERATE a
@@ -271,7 +289,12 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
 
     @Test
     void testPatternMonitor_shouldCountCoveragePerMetric_whenDaysLogged() {
-        seedStressAndSleep(ownerId(), 6);
+        // lastDayWithData is the max SEEDED day, not a server stamp: both sides of the assert are
+        // test-owned, so the clock is read ONCE and the same `today` anchors the fixture AND the
+        // expectation. (A before/after capture taken after the seeding would not close this: a
+        // midnight between the helper's read and the capture still shifts the two apart.)
+        LocalDate today = LocalDate.now();
+        seedStressAndSleep(ownerId(), 6, today);
 
         PatternMonitorResponse response = monitor();
 
@@ -279,7 +302,7 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
         assertThat(stress.getLabel()).isEqualTo("stressz-szint");
         assertThat(stress.getCoveredDays()).isEqualTo(6);
         assertThat(stress.getWindowDays()).isEqualTo(60);
-        assertThat(stress.getLastDayWithData()).isEqualTo(LocalDate.now().minusDays(1));
+        assertThat(stress.getLastDayWithData()).isEqualTo(today.minusDays(1));
         assertThat(stress.getPairCount()).isEqualTo(2); // V3.4: + checkin-stress~late-meal-hour
         assertThat(metric(response, "daily-kcal").getCoveredDays()).isZero();
         assertThat(metric(response, "daily-kcal").getLastDayWithData()).isNull();
