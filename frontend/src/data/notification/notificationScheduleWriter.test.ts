@@ -160,10 +160,12 @@ const STASH: SupplementStashItem[] = [
   {
     id: 'kreatin-1', name: 'Kreatin monohidrát', brand: 'Test', type: 'supplement', category: 'test',
     dose: '5g', form: 'por', stock: 30, stockUnit: 'adag', protocol: 'daily', timing: 'wake', taken: false,
+    macros: { kcal: null, p: null, c: null, f: null },
   },
   {
     id: 'aakg-1', name: 'AAKG · L-Arginine', brand: 'Test', type: 'supplement', category: 'test',
     dose: '3g', form: 'por', stock: 30, stockUnit: 'adag', protocol: 'daily', timing: 'pre-workout', taken: false,
+    macros: { kcal: null, p: null, c: null, f: null },
   },
 ]
 

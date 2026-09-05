@@ -25,7 +25,7 @@ const FALLBACK_COLOR = 'var(--text-secondary)'
 
 function KamraRow({ ing, added, onPick }: { ing: Ingredient; added: boolean; onPick: () => void }) {
   const { categoryMeta } = usePantry()
-  const catColor = categoryMeta[ing.category]?.color ?? FALLBACK_COLOR
+  const catColor = categoryMeta[ing.category ?? '']?.color ?? FALLBACK_COLOR
   const nova = (ing.nova != null && ing.nova >= 1 && ing.nova <= 4 ? ing.nova : null) as NovaGroup | null
   return (
     <div className="fkp-item" style={{ '--kc': catColor } as React.CSSProperties}>
@@ -74,7 +74,7 @@ export function KamraPickSheet({
   )
   const filtered = ingredients.filter(i =>
     (cat == null || i.category === cat)
-    && (!q || i.name.toLowerCase().includes(q) || i.brand.toLowerCase().includes(q)))
+    && (!q || i.name.toLowerCase().includes(q) || (i.brand ?? '').toLowerCase().includes(q)))
 
   return (
     <Sheet onClose={onClose} className="sheet-nested" labelledBy="kamra-pick-title">
@@ -105,10 +105,10 @@ export function KamraPickSheet({
             </button>
             {cats.map(c => (
               <button key={c} type="button" className={'fkp-chip' + (cat === c ? ' is-on' : '')}
-                style={{ '--cc': categoryMeta[c]?.color ?? FALLBACK_COLOR } as React.CSSProperties}
+                style={{ '--cc': categoryMeta[c ?? '']?.color ?? FALLBACK_COLOR } as React.CSSProperties}
                 aria-pressed={cat === c} onClick={() => setCat(prev => (prev === c ? null : c))}>
                 <span className="fkp-cdot" aria-hidden="true" />
-                {categoryMeta[c]?.label ?? c}
+                {categoryMeta[c ?? '']?.label ?? c}
               </button>
             ))}
           </div>

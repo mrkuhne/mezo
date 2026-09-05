@@ -194,6 +194,29 @@ test('inputFromItem omits null macros instead of sending an explicit null (mezo-
   expect(input).not.toHaveProperty('carbsG')
 })
 
+const baseItem: PantryItem = {
+  id: 'x', name: 'Null Fields Item', brand: 'Acme', source: 'manual', category: 'food', kind: 'food',
+  price: 500, priceUnit: '/db', pkg: '1kg',
+}
+
+test('inputFromItem omits the fields the definition does not carry (mezo-xaq5)', () => {
+  // `category` used to be assigned unconditionally, so a null category put "" on the wire — not
+  // a legal enum value. `pkg`/`priceUnit` carry the real 403 risk: definitionDiffers has no
+  // null-normalization for them, so an echoed "" trips PANTRY_CATALOG_NOT_EDITABLE.
+  const input = inputFromItem({ ...baseItem, brand: null, category: null, pkg: null, priceUnit: null, price: null })
+  expect(input).not.toHaveProperty('brand')
+  expect(input).not.toHaveProperty('category')
+  expect(input).not.toHaveProperty('pkg')
+  expect(input).not.toHaveProperty('priceUnit')
+  expect(input).not.toHaveProperty('price')
+})
+
+test('inputFromItem keeps a genuinely zero price (mezo-xaq5)', () => {
+  const input = inputFromItem({ ...baseItem, price: 0, priceUnit: '/db' })
+  expect(input.price).toBe(0)
+  expect(input.priceUnit).toBe('/db')
+})
+
 test('a shared-catalog item shows "közös · <author>" and locks the edit sheet\'s definition fields', async () => {
   const qc = newQc()
   qc.setQueryData(['pantry'], {

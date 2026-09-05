@@ -25,6 +25,7 @@ const stashLite = (id: string, name: string, dose = '5g'): SupplementStashItem =
   protocol: 'test',
   timing: 'flexible',
   taken: false,
+  macros: { kcal: null, p: null, c: null, f: null },
 })
 
 const occ = (over: Partial<ProtocolOccurrence>): ProtocolOccurrence => ({

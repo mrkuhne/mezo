@@ -237,7 +237,9 @@ function mockAddFromCatalog(qc: ReturnType<typeof useQueryClient>, catalogId: st
       category: entry.category ?? 'supplement', dose: '', form: entry.form ?? '',
       stock: null, stockUnit: null, protocol: '', timing: 'flexible', taken: false, caffeine: entry.caffeine ?? undefined,
       source: entry.source, per: entry.per ?? undefined, unit: entry.unit ?? undefined,
-      macros: entry.kcal != null ? { kcal: entry.kcal, p: entry.proteinG ?? null, c: entry.carbsG ?? null, f: entry.fatG ?? null } : undefined,
+      macros: entry.kcal != null
+        ? { kcal: entry.kcal, p: entry.proteinG ?? null, c: entry.carbsG ?? null, f: entry.fatG ?? null }
+        : { kcal: null, p: null, c: null, f: null },
       nova: entry.nova ?? undefined, ...shared,
     }
     return { ...base, stash: [...base.stash, supp] }
@@ -272,7 +274,7 @@ function mockAdd(qc: ReturnType<typeof useQueryClient>, input: PantryItemInput) 
       source: input.source, per: input.per, unit: input.unit,
       macros: input.kcal != null
         ? { kcal: input.kcal, p: input.proteinG ?? null, c: input.carbsG ?? null, f: input.fatG ?? null }
-        : undefined,
+        : { kcal: null, p: null, c: null, f: null },
       price: input.price, priceUnit: input.priceUnit, pkg: input.pkg,
       micros: input.micros, nova: input.nova,
       fiberG: input.fiberG, sugarG: input.sugarG, saltG: input.saltG, saturatedFatG: input.saturatedFatG,
@@ -344,14 +346,16 @@ function applyStashUpdate(s: SupplementStashItem, input: PantryItemInput): Suppl
     source: input.source ?? s.source,
     per: input.per ?? s.per,
     unit: input.unit ?? s.unit,
-    macros: input.kcal != null || s.macros
-      ? {
-          kcal: input.kcal ?? s.macros?.kcal ?? null,
-          p: input.proteinG ?? s.macros?.p ?? null,
-          c: input.carbsG ?? s.macros?.c ?? null,
-          f: input.fatG ?? s.macros?.f ?? null,
-        }
-      : undefined,
+    // `s.macros?.` stays defensive even though the type now requires it: a locked shared-catalog
+    // row can reach this cache via a raw setQueryData write (bypassing the type check) with no
+    // macros object at all — a crash here would silently drop the whole state-only edit (price
+    // included), not just the macros field.
+    macros: {
+      kcal: input.kcal ?? s.macros?.kcal ?? null,
+      p: input.proteinG ?? s.macros?.p ?? null,
+      c: input.carbsG ?? s.macros?.c ?? null,
+      f: input.fatG ?? s.macros?.f ?? null,
+    },
     fiberG: input.fiberG ?? s.fiberG,
     sugarG: input.sugarG ?? s.sugarG,
     saltG: input.saltG ?? s.saltG,

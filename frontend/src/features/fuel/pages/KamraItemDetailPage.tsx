@@ -46,18 +46,21 @@ export function inputFromItem(item: PantryItem): PantryItemInput {
   const base: PantryItemInput = {
     kind: item.kind,
     name: item.name,
-    brand: item.brand,
     source: item.source,
-    category: item.category,
     per: item.per,
     unit: item.unit,
     stockQty: item.stock?.qty,
     stockUnit: item.stock?.unit,
   }
-  // Null macro = "no data on the shared definition" (mezo-6omv). It must stay OUT of the request:
-  // the DTO cannot distinguish an omitted field from an explicit null, and applyDefinitionPartial
-  // reads "absent" as "leave unchanged". Assigning null here would send `kcal: null` and blank the
-  // field on a definition every other user reads.
+  // Honest nulls (mezo-xaq5): a field the definition does not carry must stay OUT of the request.
+  // The DTO cannot tell an omitted field from an explicit null, and applyDefinitionPartial reads
+  // "absent" as "leave unchanged" — so sending null would blank the value on a definition every
+  // other user reads. `category` used to be assigned unconditionally, which put an empty string
+  // on the wire for a null category. `pkg`/`form` carry the real 403 risk: definitionDiffers has
+  // no null-normalization for them, so an echoed "" trips PANTRY_CATALOG_NOT_EDITABLE.
+  if (item.brand != null) base.brand = item.brand
+  if (item.category != null) base.category = item.category
+  // Null macro = "no data on the shared definition" (mezo-6omv). Same OUT-of-request rule.
   if (item.macros) {
     if (item.macros.kcal != null) base.kcal = item.macros.kcal
     if (item.macros.p != null) base.proteinG = item.macros.p
@@ -69,10 +72,10 @@ export function inputFromItem(item: PantryItem): PantryItemInput {
   if (item.saltG != null) base.saltG = item.saltG
   if (item.saturatedFatG != null) base.saturatedFatG = item.saturatedFatG
   if (item.price != null) base.price = item.price
-  if (item.priceUnit) base.priceUnit = item.priceUnit
-  if (item.pkg) base.pkg = item.pkg
+  if (item.priceUnit != null) base.priceUnit = item.priceUnit
+  if (item.pkg != null) base.pkg = item.pkg
   if (item.dose) base.dose = item.dose
-  if (item.form) base.form = item.form
+  if (item.form != null) base.form = item.form
   if (item.protocol) base.protocol = item.protocol
   return base
 }
@@ -131,8 +134,8 @@ export function KamraItemDetailPage() {
   // Ingredient row (kreatin/whey carry BOTH — buildKamraItems represents them by their
   // ingredient id, not 'stash-<id>'): prefer stashRefId when present, else the backend id.
   const stackKey = item.stashRefId ?? backendId
-  const catColor = categoryMeta[item.category]?.color ?? 'var(--text-secondary)'
-  const catLabel = categoryMeta[item.category]?.label ?? item.category
+  const catColor = categoryMeta[item.category ?? '']?.color ?? 'var(--text-secondary)'
+  const catLabel = categoryMeta[item.category ?? '']?.label ?? item.category
 
   const stock = item.stock ?? null
   const stockQty: number | undefined = stock?.qty
@@ -248,7 +251,7 @@ export function KamraItemDetailPage() {
           )}
           <div className="card col" style={{ padding: 8, gap: 2, alignItems: 'flex-start', flex: 1 }}>
             <span className="label-mono" style={{ fontSize: 8, color: 'var(--text-tertiary)' }}>Ár</span>
-            <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 15, fontWeight: 600 }}>{item.price ? `${item.price} Ft` : '—'}</span>
+            <span style={{ fontVariantNumeric: 'tabular-nums', fontSize: 15, fontWeight: 600 }}>{item.price != null ? `${item.price} Ft` : '—'}</span>
           </div>
         </div>
 
