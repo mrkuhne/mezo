@@ -14,7 +14,6 @@ import io.mrkuhne.mezo.api.dto.PillarSource;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
@@ -69,15 +68,17 @@ class LifeGoalApiIT extends ApiIntegrationTest {
         LifeGoalResponse active = postForBody("/api/life-goals/" + g.getId() + "/status",
             LifeGoalStatusRequest.builder().status(LifeGoalStatus.ACTIVE).build(), ownerAuthHeaders(), HttpStatus.OK, LifeGoalResponse.class);
         assertThat(active.getStatus()).isEqualTo(LifeGoalStatus.ACTIVE);
+        // The activation response reflects the in-memory Instant.now() from THIS request, before
+        // Postgres has rounded it to microsecond precision; re-fetch so the baseline we compare
+        // against is the same persisted-and-rounded value the no-op request's fresh load will return.
+        LifeGoalResponse activePersisted = getForBody("/api/life-goals/" + g.getId(),
+            ownerAuthHeaders(), HttpStatus.OK, LifeGoalResponse.class);
 
         LifeGoalResponse again = postForBody("/api/life-goals/" + g.getId() + "/status",
             LifeGoalStatusRequest.builder().status(LifeGoalStatus.ACTIVE).build(), ownerAuthHeaders(), HttpStatus.OK, LifeGoalResponse.class);
 
         assertThat(again.getStatus()).isEqualTo(LifeGoalStatus.ACTIVE);
-        // Linux Postgres round-trips Instant at microsecond precision while Instant.now() itself can
-        // carry nanoseconds (JDK-dependent) — truncate both sides so the comparison isn't platform-sensitive.
-        assertThat(again.getActivatedAt().truncatedTo(ChronoUnit.MICROS))
-            .isEqualTo(active.getActivatedAt().truncatedTo(ChronoUnit.MICROS));
+        assertThat(again.getActivatedAt()).isEqualTo(activePersisted.getActivatedAt());
     }
 
     @Test
@@ -89,13 +90,18 @@ class LifeGoalApiIT extends ApiIntegrationTest {
         LifeGoalResponse done = postForBody("/api/life-goals/" + g.getId() + "/status",
             LifeGoalStatusRequest.builder().status(LifeGoalStatus.DONE).build(), ownerAuthHeaders(), HttpStatus.OK, LifeGoalResponse.class);
         assertThat(done.getClosedAt()).isNotNull();
+        // Same in-memory-vs-persisted hazard as activatedAt above: the DONE response's closedAt is
+        // the raw Instant.now() from that request, while the ARCHIVED response reads the entity back
+        // from Postgres, which rounds (not just truncates) to microseconds — re-fetch the DONE state
+        // so both sides of the comparison are DB-rounded.
+        LifeGoalResponse donePersisted = getForBody("/api/life-goals/" + g.getId(),
+            ownerAuthHeaders(), HttpStatus.OK, LifeGoalResponse.class);
 
         LifeGoalResponse archived = postForBody("/api/life-goals/" + g.getId() + "/status",
             LifeGoalStatusRequest.builder().status(LifeGoalStatus.ARCHIVED).build(), ownerAuthHeaders(), HttpStatus.OK, LifeGoalResponse.class);
 
         assertThat(archived.getStatus()).isEqualTo(LifeGoalStatus.ARCHIVED);
-        assertThat(archived.getClosedAt().truncatedTo(ChronoUnit.MICROS))
-            .isEqualTo(done.getClosedAt().truncatedTo(ChronoUnit.MICROS));
+        assertThat(archived.getClosedAt()).isEqualTo(donePersisted.getClosedAt());
     }
 
     @Test
