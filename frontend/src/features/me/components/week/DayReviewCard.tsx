@@ -11,6 +11,8 @@
 // (constraints.md — a delta with no justification is dropped upstream).
 // ============================================================
 import type { CSSProperties, ReactNode } from 'react'
+import { useFeedback } from '@/data/hooks'
+import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { ClaySpot } from '@/shared/ui/clay'
 import type { HighlightKind, NormalizedDayEvaluation } from '@/data/me/dayEvaluation'
 
@@ -32,12 +34,16 @@ function fmtDelta(delta: number): string {
 }
 
 export function DayReviewCard({ evaluation, delayMs, children }: {
-  evaluation: Pick<NormalizedDayEvaluation, 'narrative' | 'highlights' | 'adjustment'>
+  evaluation: Pick<NormalizedDayEvaluation, 'narrative' | 'highlights' | 'adjustment' | 'reviewId'>
   delayMs: number
   /** The chat handoff button — kept owned by the page, which holds `useChatHandoff`. */
   children?: ReactNode
 }) {
-  const { narrative, highlights, adjustment } = evaluation
+  const { narrative, highlights, adjustment, reviewId } = evaluation
+  // No `reviewId` ⇒ no prose behind this day (Task 1 makes that unreachable while `reviewId` is
+  // present) ⇒ nothing to vote on — the `weekly_review` card's precedent (`WeekReviewCard.tsx`):
+  // no id, no request, no chip row at all.
+  const feedback = useFeedback('day_review', reviewId ? [reviewId] : [])
   return (
     <section className="dayev-revcard rise" style={{ '--d': `${delayMs}ms` } as CSSProperties}>
       <div className="dayev-revhead">
@@ -61,6 +67,16 @@ export function DayReviewCard({ evaluation, delayMs, children }: {
         <div className="dayev-adj">
           <b>{fmtDelta(adjustment.delta)}</b>
           <span>{adjustment.reason}</span>
+        </div>
+      )}
+      {reviewId && (
+        <div className="mt-md">
+          <FeedbackChips
+            key={reviewId}
+            value={feedback.get(reviewId)}
+            onVote={(verdict, reason) => feedback.vote(reviewId, verdict, reason)}
+            label="a napodról"
+          />
         </div>
       )}
       {children}

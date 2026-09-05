@@ -95,10 +95,6 @@ export const DAY_COPY = {
   emptyPage: 'Egyik területről sincs adat — a nap a heti pontszámba sem számít bele.',
   /** day page, the day is still ahead */
   futurePage: 'Ez a nap még előtted van — ide majd a logolt adatai kerülnek.',
-  /** day page, the review exists but wrote nothing about this day */
-  noNote: 'A heti elemzés nem írt külön ehhez a naphoz — a Mezo csak azokhoz a napokhoz ír, ahol volt mit mondani.',
-  /** day page, there is no review at all yet */
-  noReview: 'A heti elemzés nem írt külön ehhez a naphoz — az elemzés még nem készült el.',
   footnote:
     'A hat pálcika a nap részpontszáma. A „tanulom" azt jelenti: kevesebb mint két területről van adat — '
     + 'nem azt, hogy nulla volt a nap.',
