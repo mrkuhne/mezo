@@ -215,6 +215,37 @@ existing `ghcr-pull` secret (unchanged).
 **Caveat:** if `main` ever gains PR-required branch protection, the default `GITHUB_TOKEN`
 commit-back push is rejected — it would then need a PAT / GitHub App token or a protection bypass.
 
+### Gotcha — SIGPIPE in `compute-release.sh` silently stopped every deploy (mezo-0j9n)
+
+Between 2026-09-04 and 2026-09-05, **14 of 15 consecutive `main` deploys failed** on the
+`version` job with `exit 141` and **not one line of output** — while `ci.yml` stayed green, so
+nothing surfaced it (deploys are deliberately not gated on CI, ADR 0007).
+
+`141 = 128 + 13 = SIGPIPE`. The culprit was
+
+```bash
+last_tag=$(git tag -l 'v*' --sort=-v:refname | head -n1)   # under `set -euo pipefail`
+```
+
+`head -n1` prints line 1 and **exits**, closing the pipe. What matters is *not* the 64 KiB pipe
+buffer (the tag list is only ~4 KiB) but git's **4 KiB stdio buffer**: once the repo passed
+**500 tags = 4130 bytes**, git needed a *second* `write(2)`, which hit the closed pipe →
+`SIGPIPE` → git exits 141 → `pipefail` promotes 141 to the pipeline's status → `set -e` kills
+the script before its first `echo`. Below 4096 bytes git wrote once and the bug did not exist —
+which is why the failure appeared suddenly and then became 100% reproducible as tags accrued.
+It reproduces only on the Linux/glibc runner, never on macOS.
+
+**Fix:** `git for-each-ref --count=1 --sort=-v:refname --format='%(refname:short)' 'refs/tags/v*'`
+— the limit happens inside git, so there is no pipe and no reader to race. The same hazard was
+removed from `compute_bump` (it used to `return 0` on the first breaking-change line while
+`git log` was still writing into it) and from its per-line `printf | grep -q` pairs, now bash
+`=~`. An `ERR` trap makes any future abort print `::error::… at: <command>` instead of dying mute.
+
+**Gate:** `.github/scripts/compute-release.test.sh` existed but **no workflow ran it**. Both it
+and the new `compute-release.sigpipe.test.sh` now run in `ci.yml`'s `lint` job. The SIGPIPE test
+drives `main()` against a fake `git` that streams a >64 KiB, line-flushed tag list, so any
+early-exiting pipe reader fails it deterministically on every platform, macOS included.
+
 ### Gotcha — a changed `VITE_*` repo variable does NOT trigger a frontend rebuild
 
 `deploy.yml` decides what to build from **tree-hash path detection** (`.github/scripts/compute-release.sh`
