@@ -158,8 +158,20 @@ const DEFAULT_FROZEN = '2026-05-21T13:42:00+02:00'
 const OS_RENDERED_CONTROLS =
   'input[type="time"], input[type="date"], input[type="datetime-local"], input[type="month"], input[type="week"]'
 
-const shot = (page: import('@playwright/test').Page, name: string) =>
-  expect(page).toHaveScreenshot(name, { mask: [page.locator(OS_RENDERED_CONTROLS)], maskColor: '#000000' })
+/**
+ * Masking hides those controls' pixels but NOT their GEOMETRY: an en-US `<input type="time">`
+ * renders `02:00 PM` and is measurably wider than a Hungarian `14:00`, so the mask rectangle
+ * itself moves and everything laid out beside it shifts — fuel-slots-editor still differed by
+ * 3106 px across a column of them. Pinning the box makes the layout deterministic; the width
+ * is arbitrary but must fit the widest OS rendering. No single "true" width exists here anyway,
+ * since production width already varies per viewer's OS.
+ */
+const PIN_OS_CONTROL_BOX = `${OS_RENDERED_CONTROLS} { width: 120px !important; box-sizing: border-box !important; }`
+
+const shot = async (page: import('@playwright/test').Page, name: string) => {
+  await page.addStyleTag({ content: PIN_OS_CONTROL_BOX })
+  await expect(page).toHaveScreenshot(name, { mask: [page.locator(OS_RENDERED_CONTROLS)], maskColor: '#000000' })
+}
 
 for (const theme of ['light', 'dark'] as const) {
   test.describe(theme, () => {
