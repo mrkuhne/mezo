@@ -2,7 +2,7 @@
 title: Goal Engine (G5–G6)
 type: feature-domain
 status: done
-updated: 2026-09-04
+updated: 2026-09-05
 tags: [goal, engine, backend, tdee, projection, guards, adaptive]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/GoalEngineProperties.java
@@ -21,6 +21,9 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalInvariantValidator.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalOverviewService.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalOverviewCourseService.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalPlanLinkService.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalTimelineService.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/mapper/GoalPlanLinkMapper.java
 related: [me, fuel, lifegoal, _platform-api-backend, _platform-data-layer]
 ---
 
@@ -46,6 +49,8 @@ The engine has **no screen of its own**. Its output appears on `/me/goals/weight
 The engine also runs **invisibly** on the recompute triggers (§3) — logging a weigh-in, activating a goal, or attaching/detaching a plan all silently refresh the active goal's prescription, so the recept the user next opens is current without an explicit re-evaluate.
 
 The redesigned Goal Hub reads a single `GoalOverviewResponse` instead of making the UI reconstruct domain truth from scattered fields. Its primary status is `on_track | watch | learning | invalid`: cut/bulk compare the signed trailing-four-week EWMA rate with the signed target inside a configurable tolerance, maintain compares against a zero-rate band, and missing trend data stays `learning`. Projection is shown only for a non-zero rate moving toward the target. Invalid or missing prescriptions never leak stale kcal; diet is explicitly `unavailable`. A day-type split selects today's training/rest kcal from the union of recurring gym and sport weekdays, while a uniform segment returns its one kcal value.
+
+The dedicated `Tervkapcsolatok` page renders the server-owned mesocycle/running lanes, uncovered goal weeks, and the real recurring sport schedule (sport, training/match kind, location, Hungarian weekday, time and duration). A link that would run past the goal window is deliberately clipped and marked **„A cél végéig”**. The page also explains the calorie model directly: a mesocycle changes projection boundaries and muscle guards but has zero TDEE delta by itself; recurring gym/sport sessions and linked running sessions supply EAT. Consequently, attaching only a mesocycle may correctly leave every kcal segment unchanged.
 
 ## 3. Architecture & data flow
 
@@ -185,6 +190,8 @@ Both jsonb records are **plain records, no Jackson/Hibernate annotations** — t
 
 `GoalResponse` additively gained `prescription` + `tdeeBootstrap` (both `nullable` — null until first evaluate) and, since Diet Plan slice 5, **`balanceAdjustmentKcal`** (nullable, the running accepted-correction total, §4 above). The HTTP surface and these contract shapes are documented in [`_platform-api-backend.md`](_platform-api-backend.md) §3 (the Goal/Biometrics rows) and [`me.md`](me.md) §4.
 
+**Plan-link write invariants (`mezo-ricj.5`).** `POST /api/goals/{id}/plans` remains the single attach command, but `GoalPlanLinkService` now rejects a foreign plan as 404 and an archived plan, an exact duplicate, a same-type week overlap, or a start week outside the goal window as typed 400 errors. Mesocycles and running blocks may overlap each other because they model distinct load lanes. A plan may extend beyond the goal end: persistence clamps `endWeek` to the final goal week and `GoalPlanLinkResponse.clippedAtGoalEnd=true` makes that loss of tail coverage explicit to every reader. Only a successful attach/detach reaches `GoalEngineService.evaluate`; failed writes do not mutate links or prescription.
+
 ### Config — `mezo.goal.*` (the grounded constants)
 
 **Every** engine number lives in `application.yml` under `mezo.goal:` (`:28`), bound by `GoalEngineProperties` (`feature/goal/engine/GoalEngineProperties.java`, a `@Validated @ConfigurationProperties` record). No `@Value`, no hardcoded tunable downstream — per [`docs/references/configuration_conventions.md`](../references/configuration_conventions.md). The defaults and where each is consumed:
@@ -265,7 +272,8 @@ Add a tunable, a guard leg, or a projection input — always config-first, contr
 **Backend (integration-first, real Postgres — `cd backend && ./mvnw clean test`):**
 - Per-service ITs: `feature/goal/engine/service/TdeeBootstrapServiceIT` (MSJ vs Katch branch, NEAT-band lookup + weekly-EAT add), `GoalProjectionServiceIT` (segment collapse, running boundary delta, meso-phase zero-delta, `dailyEnergyBalanceKcal`, trend reconciliation), `GuardEvaluationServiceIT` (e1RM trend + breach, muscle floor, rate-cap, deferred protein), `GoalEvaluationServiceIT` (rate grading, conflict rule, protein target, missing-profile artifact — since Diet Plan slice 1 also `testAssemble_shouldPrescribeCarbsAndFat_fromBalancedGhost`, asserting the balanced-ghost split's prescribed `carbsG`/`fatG`), `GoalFeasibilityServiceIT` (G6 — shared rate derivation, `verdictForRate` band boundaries, over-cap suggested date). The HTTP preview round-trip is in `GoalContractIT`.
 - `feature/goal/engine/GoalEnginePropertiesIT` — the `mezo.goal.*` binding + validation, incl. the `diet.*` subrecord (Diet Plan slice 1).
-- `feature/goal/GoalEngineRecomputeIT` — the recompute triggers fire `evaluate` (activate / attach / detach / weigh-in) and the no-active-goal weigh-in is a no-op.
+- `feature/goal/GoalEngineRecomputeIT` — the recompute triggers fire `evaluate` (activate / attach / detach / weigh-in) and the no-active-goal weigh-in is a no-op. The plan-link cases additionally prove that attaching a mesocycle changes segmentation/guards without inventing a kcal delta, while attaching a scheduled running block raises EAT and changes segment kcal.
+- `feature/goal/GoalPlanLinkServiceIT` + `GoalTimelineContractIT` (`mezo-ricj.5`) — archived/foreign/duplicate/same-type-overlap/out-of-window rejection, cross-type overlap allowance, end-of-goal clipping persistence + `clippedAtGoalEnd`, B-user ownership and typed HTTP errors.
 - `feature/nutrition/DietPreferencesResolverIT` (nutrition-side) — the ghost-vs-saved-row resolution `DietPreferencesResolver` implements against the goal-owned `DietPreferencesPort` (§5); `feature/nutrition/DietSettingsApiIT` — the `GET/PUT /api/diet/settings` surface, incl. `testSetDietSettings_shouldReprescribeActiveGoal_withNewSplit` (the 7th recompute trigger, §3 — re-prescribing the active goal on a new split).
 - `feature/biometrics/profile/BiometricProfileServiceIT` / `BiometricProfileContractIT` (G6) — the GET carries a derived `tdeeBootstrap` (profile + weigh-in → non-null, matches `TdeeBootstrapService.compute`; no weigh-in → null) and the profile upsert recomputes the active goal (prescription was null → populated) yet succeeds with no active goal.
 - `feature/goal/GoalContractIT` — the HTTP `POST /api/goals/{id}/evaluate` surface (200 + prescription, 200 graceful no-profile, 404 foreign).
@@ -314,6 +322,7 @@ Add a tunable, a guard leg, or a projection input — always config-first, contr
 **Goal Hub read model (`feature/goal/service/`, `mezo-ricj.1`):**
 - `GoalOverviewService.java` — ownership-gated assembler for course, diet/day type, segment boundary, plan/sport coverage, guards and suggestions.
 - `GoalOverviewCourseService.java` — pure signed-rate classification and target-date projection; thresholds come from `GoalEngineProperties.Overview`.
+- `GoalPlanLinkService.java` / `GoalTimelineService.java` / `../mapper/GoalPlanLinkMapper.java` (`mezo-ricj.5`) — ownership + archived/duplicate/overlap/window validation, goal-end clipping, recompute trigger, and the explicit `clippedAtGoalEnd` read contract.
 - `backend/.../techcore/query/WeightTrendQuery.java` — feature-neutral read seam implemented by `WeightTrendService`, used by the assembler without widening the frozen goal↔biometrics dependency cycle.
 
 **Goal suggestion bell bridge (`feature/goal/service/`, `mezo-ricj.4`):**

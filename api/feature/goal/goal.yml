@@ -410,13 +410,14 @@ components:
         weeks: { type: integer }
     GoalPlanLinkResponse:
       type: object
-      required: [id, planType, planId, startWeek, endWeek, plan]
+      required: [id, planType, planId, startWeek, endWeek, clippedAtGoalEnd, plan]
       properties:
         id: { type: string, format: uuid }
         planType: { type: string, enum: [mesocycle, running_block] }
         planId: { type: string, format: uuid }
         startWeek: { type: integer }
         endWeek: { type: integer }
+        clippedAtGoalEnd: { type: boolean, description: 'True when the source plan continues beyond the goal window and endWeek is clamped to the final goal week.' }
         plan: { $ref: '#/components/schemas/GoalPlanRef' }
     GoalPlanAttachRequest:
       type: object

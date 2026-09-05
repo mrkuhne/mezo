@@ -129,6 +129,7 @@ class GoalPlanLinkServiceIT extends AbstractIntegrationTest {
         assertThat(resp.getPlan().getTitle()).isEqualTo("RP block");
         assertThat(resp.getPlan().getWeeks()).isEqualTo(6);
         assertThat(resp.getPlan().getStatus().getValue()).isEqualTo("active");
+        assertThat(resp.getClippedAtGoalEnd()).isFalse();
         // persisted with server-side ownership + the derived end_week.
         GoalPlanLinkEntity persisted = linkRepository.findById(resp.getId()).orElseThrow();
         assertThat(persisted.getCreatedBy()).isEqualTo(user);
@@ -150,6 +151,103 @@ class GoalPlanLinkServiceIT extends AbstractIntegrationTest {
         assertThat(resp.getPlan().getTitle()).isEqualTo("8w base");
         assertThat(resp.getPlan().getWeeks()).isEqualTo(8);
         assertThat(resp.getPlan().getStatus().getValue()).isEqualTo("planned");
+        assertThat(resp.getClippedAtGoalEnd()).isFalse();
+    }
+
+    @Test
+    void testAttachPlan_shouldRejectArchivedPlan_whenMesocycleArchived() {
+        UUID user = databasePopulator.populateUser("archived@test.local");
+        GoalEntity goal = goalPopulator.createGoal(user, "cut", "active");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "Régi blokk", "archived");
+
+        GoalPlanAttachRequest req = new GoalPlanAttachRequest()
+            .planType("mesocycle").planId(meso.getId()).startWeek(1);
+
+        assertThatThrownBy(() -> service.attachPlan(user, goal.getId(), req))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .hasMessageContaining("GOAL_PLAN_ARCHIVED");
+    }
+
+    @Test
+    void testAttachPlan_shouldRejectDuplicate_whenPlanAlreadyLinked() {
+        UUID user = databasePopulator.populateUser("duplicate@test.local");
+        GoalEntity goal = goalPopulator.createGoal(user, "cut", "active");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "RP block", "active");
+        GoalPlanAttachRequest req = new GoalPlanAttachRequest()
+            .planType("mesocycle").planId(meso.getId()).startWeek(1);
+        service.attachPlan(user, goal.getId(), req);
+
+        assertThatThrownBy(() -> service.attachPlan(user, goal.getId(), req))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .hasMessageContaining("GOAL_PLAN_DUPLICATE");
+    }
+
+    @Test
+    void testAttachPlan_shouldRejectOverlap_whenSamePlanTypeOverlaps() {
+        UUID user = databasePopulator.populateUser("overlap@test.local");
+        GoalEntity goal = goalPopulator.createGoal(user, "cut", "active");
+        MesocycleEntity first = trainPopulator.createMesocycle(user, "Első", "active");
+        MesocycleEntity second = trainPopulator.createMesocycle(user, "Második", "planned");
+        service.attachPlan(user, goal.getId(), new GoalPlanAttachRequest()
+            .planType("mesocycle").planId(first.getId()).startWeek(1));
+
+        assertThatThrownBy(() -> service.attachPlan(user, goal.getId(), new GoalPlanAttachRequest()
+            .planType("mesocycle").planId(second.getId()).startWeek(6)))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .hasMessageContaining("GOAL_PLAN_OVERLAP");
+    }
+
+    @Test
+    void testAttachPlan_shouldRejectOutsideWindow_whenStartWeekIsZero() {
+        UUID user = databasePopulator.populateUser("before-window@test.local");
+        GoalEntity goal = goalPopulator.createGoal(user, "cut", "active");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "RP block", "active");
+
+        assertThatThrownBy(() -> service.attachPlan(user, goal.getId(), new GoalPlanAttachRequest()
+            .planType("mesocycle").planId(meso.getId()).startWeek(0)))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .hasMessageContaining("GOAL_PLAN_OUTSIDE_WINDOW");
+    }
+
+    @Test
+    void testAttachPlan_shouldRejectOutsideWindow_whenStartWeekIsAfterGoal() {
+        UUID user = databasePopulator.populateUser("after-window@test.local");
+        GoalEntity goal = goalPopulator.createGoal(user, "cut", "active");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "RP block", "active");
+
+        assertThatThrownBy(() -> service.attachPlan(user, goal.getId(), new GoalPlanAttachRequest()
+            .planType("mesocycle").planId(meso.getId()).startWeek(9)))
+            .isInstanceOf(SystemRuntimeErrorException.class)
+            .hasMessageContaining("GOAL_PLAN_OUTSIDE_WINDOW");
+    }
+
+    @Test
+    void testAttachPlan_shouldAllowOverlap_whenPlanTypesDiffer() {
+        UUID user = databasePopulator.populateUser("cross-lane@test.local");
+        GoalEntity goal = goalPopulator.createGoal(user, "cut", "active");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "Gym", "active");
+        RunningBlockEntity running = runningPopulator.createBlock(user, "Futás", "active");
+        service.attachPlan(user, goal.getId(), new GoalPlanAttachRequest()
+            .planType("mesocycle").planId(meso.getId()).startWeek(1));
+
+        GoalPlanLinkResponse response = service.attachPlan(user, goal.getId(), new GoalPlanAttachRequest()
+            .planType("running_block").planId(running.getId()).startWeek(1));
+
+        assertThat(response.getPlanType()).isEqualTo(GoalPlanLinkResponse.PlanTypeEnum.RUNNING_BLOCK);
+    }
+
+    @Test
+    void testAttachPlan_shouldClampEndWeekAndExposeClipping_whenPlanExtendsPastGoal() {
+        UUID user = databasePopulator.populateUser("clipped@test.local");
+        GoalEntity goal = goalPopulator.createGoal(user, "cut", "active");
+        MesocycleEntity meso = trainPopulator.createMesocycle(user, "RP block", "active");
+
+        GoalPlanLinkResponse response = service.attachPlan(user, goal.getId(), new GoalPlanAttachRequest()
+            .planType("mesocycle").planId(meso.getId()).startWeek(5));
+
+        assertThat(response.getEndWeek()).isEqualTo(8);
+        assertThat(response.getClippedAtGoalEnd()).isTrue();
+        assertThat(linkRepository.findById(response.getId()).orElseThrow().getEndWeek()).isEqualTo(8);
     }
 
     @Test

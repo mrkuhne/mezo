@@ -16,6 +16,7 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
+import io.mrkuhne.mezo.support.populator.RunningPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import jakarta.persistence.EntityManager;
@@ -45,6 +46,7 @@ class GoalEngineRecomputeIT extends AbstractIntegrationTest {
     @Autowired private BiometricProfilePopulator profilePopulator;
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private TrainPopulator trainPopulator;
+    @Autowired private RunningPopulator runningPopulator;
     @Autowired private DatabasePopulator databasePopulator;
     @PersistenceContext private EntityManager entityManager;
 
@@ -95,6 +97,9 @@ class GoalEngineRecomputeIT extends AbstractIntegrationTest {
         entityManager.clear();
         List<GoalPrescriptionJson.Segment> before =
             goalRepository.findById(goal.getId()).orElseThrow().getPrescription().segments();
+        BigDecimal eatBefore = goalRepository.findById(goal.getId()).orElseThrow()
+            .getTdeeBootstrap().weeklyEatKcalPerDay();
+        Integer kcalBefore = before.get(0).kcal();
 
         // A mesocycle spans goal-weeks → splits the timeline into gym/no-gym segments; the recompute
         // on attach must re-segment the prescription.
@@ -109,6 +114,37 @@ class GoalEngineRecomputeIT extends AbstractIntegrationTest {
             goalRepository.findById(goal.getId()).orElseThrow().getPrescription().segments();
         assertThat(after).as("attach re-evaluated the prescription").isNotEqualTo(before);
         assertThat(after).hasSizeGreaterThan(before.size());
+        GoalEntity afterGoal = goalRepository.findById(goal.getId()).orElseThrow();
+        assertThat(afterGoal.getTdeeBootstrap().weeklyEatKcalPerDay())
+            .as("a mesociklus-kapcsolat nem hoz létre edzésidőpontot, ezért az EAT változatlan")
+            .isEqualByComparingTo(eatBefore);
+        assertThat(after).extracting(GoalPrescriptionJson.Segment::kcal)
+            .as("azonos heti gym/sport rend mellett csak a szakaszolás változik")
+            .containsOnly(kcalBefore);
+    }
+
+    @Test
+    void testAttachPlan_shouldIncreaseSegmentKcal_whenRunningBlockAddsLoad() {
+        UUID user = databasePopulator.populateUser("running-attach@test.local");
+        profilePopulator.create(user);
+        GoalEntity goal = goalPopulator.createGoal(user, "cut", "active");
+        goalService.activateGoal(user, goal.getId());
+        entityManager.flush();
+        entityManager.clear();
+        Integer kcalBefore = goalRepository.findById(goal.getId()).orElseThrow()
+            .getPrescription().segments().get(0).kcal();
+
+        var block = runningPopulator.createBlockWithSessions(user, "8 hetes alap", "planned", 8, 2);
+        linkService.attachPlan(user, goal.getId(), new GoalPlanAttachRequest()
+            .planType("running_block").planId(block.getId()).startWeek(1));
+        entityManager.flush();
+        entityManager.clear();
+
+        Integer kcalAfter = goalRepository.findById(goal.getId()).orElseThrow()
+            .getPrescription().segments().get(0).kcal();
+        assertThat(kcalAfter)
+            .as("a célhoz csatolt futóterv sessionjei szegmensenként növelik az EAT-et")
+            .isGreaterThan(kcalBefore);
     }
 
     @Test

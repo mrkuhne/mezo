@@ -13,7 +13,7 @@ vi.mock('@/data/hooks', () => ({
 vi.mock('@/features/me/sheets/AttachPlanSheet', () => ({ AttachPlanSheet: ({ planType }: { planType: string }) => <div role="dialog">Picker: {planType}</div> }))
 
 const plans = {
-  links: [{ id: 'm1', planType: 'mesocycle', planId: 'p1', startWeek: 2, endWeek: 5, plan: { title: 'Erőblokk', status: 'active', startDate: '2026-09-01', endDate: '2026-09-28', weeks: 4 } }],
+  links: [{ id: 'm1', planType: 'mesocycle', planId: 'p1', startWeek: 2, endWeek: 5, clippedAtGoalEnd: false, plan: { title: 'Erőblokk', status: 'active', startDate: '2026-09-01', endDate: '2026-09-28', weeks: 4 } }],
   gaps: [{ fromWeek: 1, toWeek: 1 }],
   sportSchedule: [{ id: 's1', dayOfWeek: 2, time: '19:00', durationMin: 75, kind: 'training', location: 'Városi csarnok', sport: 'handball' }],
   activeLinkCount: 1, uncoveredWeekCount: 1, topIssueCode: 'mesocycle_gap',
@@ -31,6 +31,7 @@ test('shows server-owned plans, sport schedule and gap without static club copy'
   expect(screen.getByText('Erőblokk')).toBeInTheDocument()
   expect(screen.getByText(/Városi csarnok/)).toBeInTheDocument()
   expect(screen.getByText('W1 fedezetlen')).toBeInTheDocument()
+  expect(screen.getByText(/A mesociklus önmagában nem emeli a kalóriát/)).toBeInTheDocument()
   expect(screen.queryByText(/BVSC|végig/i)).not.toBeInTheDocument()
 })
 

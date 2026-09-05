@@ -505,7 +505,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### goal
 
-*BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-04, done) ·
+*BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-05, done) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-05, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
@@ -763,16 +763,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     AiFeatureBreakdown.tsx, AiModelBreakdown.tsx, AiPayloadBlock.tsx, AiPriceSnapshot.tsx, AiTokenBar.tsx,
     AiUsageHero.tsx, AiUserFilter.tsx, BadgesCard.tsx, DayDimensionTile.tsx, DayNavTiles.tsx, DayReviewCard.tsx,
     DetailStat.tsx, FieldRow.tsx, GoalConnectionTimeline.tsx, GoalCourseHero.tsx, GoalDietWeekCard.tsx, GoalGate.tsx,
-    GoalGuardCard.tsx, GoalMiniCard.tsx, GoalPlanSlots.tsx, GoalRecept.tsx, GoalSegmentRail.tsx,
-    GoalSuggestionCard.tsx, GoalSuggestionDiffGrid.tsx, GoalTimeline.tsx, GratitudeRows.tsx, GratitudeStreakCard.tsx,
-    GrowthHero.tsx, GrowthJournalCard.tsx, LifeGoalTile.tsx, MaStrip.tsx, MentionRow.tsx, NightArcCard.tsx,
-    NightBodyScan.tsx, NightBreathing.tsx, NightWalk.tsx, NotificationCategoryRow.tsx, NotificationPreviewHeader.tsx,
-    PerksCard.tsx, PermahRing.tsx, PersonCard.tsx, PhaseAverageCard.tsx, PhaseRail.tsx, PhaseReferenceRow.tsx,
-    PillarCard.tsx, PushInstallGate.tsx, RemDurationCard.tsx, SkillBandCard.tsx, SleepChart.tsx,
-    SleepEscalationCard.tsx, SleepLogRow.tsx, SleepStat.tsx, SleepStatCard.tsx, TimePicker.tsx, WeekDayTile.tsx,
-    WeekDiscoveries.tsx, WeekGoalsCard.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx,
-    WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx,
-    WeightTrendChart.tsx
+    GoalGuardCard.tsx, GoalMiniCard.tsx, GoalRecept.tsx, GoalSegmentRail.tsx, GoalSuggestionCard.tsx,
+    GoalSuggestionDiffGrid.tsx, GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthHero.tsx, GrowthJournalCard.tsx,
+    LifeGoalTile.tsx, MaStrip.tsx, MentionRow.tsx, NightArcCard.tsx, NightBodyScan.tsx, NightBreathing.tsx,
+    NightWalk.tsx, NotificationCategoryRow.tsx, NotificationPreviewHeader.tsx, PerksCard.tsx, PermahRing.tsx,
+    PersonCard.tsx, PhaseAverageCard.tsx, PhaseRail.tsx, PhaseReferenceRow.tsx, PillarCard.tsx, PushInstallGate.tsx,
+    RemDurationCard.tsx, SkillBandCard.tsx, SleepChart.tsx, SleepEscalationCard.tsx, SleepLogRow.tsx, SleepStat.tsx,
+    SleepStatCard.tsx, TimePicker.tsx, WeekDayTile.tsx, WeekDiscoveries.tsx, WeekGoalsCard.tsx, WeekLessonCard.tsx,
+    WeekLoadStates.tsx, WeekNextCard.tsx, WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx,
+    WeeklyWeightCard.tsx, WeightHero.tsx, WeightTrendChart.tsx
   - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, goalLabels.ts, goalOverviewCopy.ts, goalSkillChips.ts,
     goalSuggestionDiff.ts, goalWeekSentence.ts, gratitudeStreak.ts, growthJournal.ts, growthStats.ts, habitAnchors.ts,
     habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, lifegoalLabels.ts, llmCallFormat.ts,
@@ -1164,7 +1163,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### train
 
 *BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-05, done) ·
-  [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-04, done) ·
+  [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-05, done) ·
   [docs/features/train.md](features/train.md) (updated 2026-09-04, done) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-02, done)
 

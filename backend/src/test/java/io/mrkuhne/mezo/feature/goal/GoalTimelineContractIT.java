@@ -71,7 +71,72 @@ class GoalTimelineContractIT extends ApiIntegrationTest {
         assertThat(link.getStartWeek()).isEqualTo(1);
         // end_week derived server-side from the plan's own weeks (1 + 6 - 1 = 6), never from the request.
         assertThat(link.getEndWeek()).isEqualTo(6);
+        assertThat(link.getClippedAtGoalEnd()).isFalse();
         assertThat(link.getPlan().getTitle()).isEqualTo("RP block");
+    }
+
+    @Test
+    void testAttachGoalPlan_shouldClampAndRoundTripClipping_whenPlanExtendsPastGoal() {
+        UUID owner = ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID goalId = createGoalOverHttp(auth);
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "RP block", "active");
+
+        GoalPlanLinkResponse link = postForBody("/api/goals/" + goalId + "/plans",
+            new GoalPlanAttachRequest().planType("mesocycle").planId(meso.getId()).startWeek(5),
+            auth, HttpStatus.CREATED, GoalPlanLinkResponse.class);
+
+        assertThat(link.getEndWeek()).isEqualTo(8);
+        assertThat(link.getClippedAtGoalEnd()).isTrue();
+        GoalTimelineResponse timeline = getForBody("/api/goals/" + goalId + "/timeline", auth,
+            HttpStatus.OK, GoalTimelineResponse.class);
+        assertThat(timeline.getLinks()).singleElement().satisfies(roundTripped -> {
+            assertThat(roundTripped.getEndWeek()).isEqualTo(8);
+            assertThat(roundTripped.getClippedAtGoalEnd()).isTrue();
+        });
+    }
+
+    @Test
+    void testAttachGoalPlan_shouldReturnTyped400_whenPlanArchived() {
+        UUID owner = ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID goalId = createGoalOverHttp(auth);
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "Régi blokk", "archived");
+
+        String body = postForBody("/api/goals/" + goalId + "/plans",
+            new GoalPlanAttachRequest().planType("mesocycle").planId(meso.getId()).startWeek(1),
+            auth, HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasRequestError(body, "GOAL_PLAN_ARCHIVED");
+    }
+
+    @Test
+    void testAttachGoalPlan_shouldReturnTyped400_whenPlanDuplicated() {
+        UUID owner = ownerId();
+        HttpHeaders auth = ownerAuthHeaders();
+        UUID goalId = createGoalOverHttp(auth);
+        MesocycleEntity meso = trainPopulator.createMesocycle(owner, "RP block", "active");
+        GoalPlanAttachRequest req = new GoalPlanAttachRequest()
+            .planType("mesocycle").planId(meso.getId()).startWeek(1);
+        postForBody("/api/goals/" + goalId + "/plans", req, auth,
+            HttpStatus.CREATED, GoalPlanLinkResponse.class);
+
+        String body = postForBody("/api/goals/" + goalId + "/plans", req, auth,
+            HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasRequestError(body, "GOAL_PLAN_DUPLICATE");
+    }
+
+    @Test
+    void testAttachGoalPlan_shouldReturn404_whenGoalBelongsToAnotherUser() {
+        ownerId();
+        UUID goalId = createGoalOverHttp(ownerAuthHeaders());
+
+        String body = postForBody("/api/goals/" + goalId + "/plans",
+            new GoalPlanAttachRequest().planType("mesocycle").planId(UUID.randomUUID()).startWeek(1),
+            registerUser("Goal link B-user").headers(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "RESOURCE_NOT_FOUND");
     }
 
     @Test

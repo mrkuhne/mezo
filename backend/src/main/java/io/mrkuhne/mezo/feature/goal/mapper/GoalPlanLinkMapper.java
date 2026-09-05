@@ -19,5 +19,7 @@ public interface GoalPlanLinkMapper {
     @Mapping(target = "planType",
         expression = "java(GoalPlanLinkResponse.PlanTypeEnum.fromValue(entity.getPlanType()))")
     @Mapping(target = "plan", source = "plan")
-    GoalPlanLinkResponse toResponse(GoalPlanLinkEntity entity, GoalPlanRef plan);
+    @Mapping(target = "clippedAtGoalEnd",
+        expression = "java(entity.getStartWeek() + plan.getWeeks() - 1 > goalWeeks)")
+    GoalPlanLinkResponse toResponse(GoalPlanLinkEntity entity, GoalPlanRef plan, int goalWeeks);
 }
