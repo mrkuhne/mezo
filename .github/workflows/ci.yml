@@ -33,8 +33,12 @@ jobs:
         run: node scripts/lint-liquibase.mjs
       - name: Codemap generator tests (fixture trees)
         run: node --test scripts/gen-codemap.test.mjs
-      - name: Codemap freshness (docs/CODEMAP.md must regenerate identically)
+      - name: Codemap freshness (whole file — header included — must regenerate identically)
         run: node scripts/gen-codemap.mjs --check
+      - name: No merge-conflict markers in any tracked file
+        # Repo-wide net for the failure mode that reached main twice via CODEMAP.md's
+        # header, where the only gate compared the generated body (mezo-ag1b).
+        run: node scripts/lint-conflict-markers.mjs
 
   contract-drift:
     # Fails when api/openapi.yml is a stale merge of the api/feature/* fragments,
