@@ -13816,10 +13816,12 @@ components:
           type: string
         brand:
           type: string
+          nullable: true
         source:
           $ref: '#/components/schemas/PantrySource'
         category:
           type: string
+          nullable: true
         per:
           type: number
         unit:
@@ -13828,10 +13830,13 @@ components:
           $ref: '#/components/schemas/PantryMacros'
         price:
           type: number
+          nullable: true
         priceUnit:
           type: string
+          nullable: true
         pkg:
           type: string
+          nullable: true
         micros:
           type: array
           items:
@@ -13883,6 +13888,7 @@ components:
         - protocol
         - timing
         - taken
+        - macros
         - catalogId
         - catalogEditable
       properties:
@@ -13893,6 +13899,7 @@ components:
           type: string
         brand:
           type: string
+          nullable: true
         type:
           type: string
           enum:
@@ -13901,10 +13908,12 @@ components:
             - medication
         category:
           type: string
+          nullable: true
         dose:
           type: string
         form:
           type: string
+          nullable: true
         stock:
           type: number
           nullable: true
@@ -13931,9 +13940,7 @@ components:
           type: string
           nullable: true
         macros:
-          allOf:
-            - $ref: '#/components/schemas/PantryMacros'
-          nullable: true
+          $ref: '#/components/schemas/PantryMacros'
         price:
           type: number
           nullable: true

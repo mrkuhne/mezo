@@ -19,7 +19,7 @@ export function RecipeIngredientRow({ item }: { item: RecipeIngredientItem }) {
   const { categoryMeta } = usePantry()
   const ing = item.ingredient
   if (!ing) return null
-  const catColor = categoryMeta[ing.category]?.color ?? 'var(--text-secondary)'
+  const catColor = categoryMeta[ing.category ?? '']?.color ?? 'var(--text-secondary)'
 
   // Scaled macros for this amount (gram-based ingredients scale by amount/per).
   // `?? 0` at the boundary since mezo-6omv: a missing definition macro contributes nothing to a

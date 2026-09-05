@@ -5723,15 +5723,15 @@ export interface components {
             /** @enum {string} */
             kind: "food" | "supplement" | "stim" | "med";
             name: string;
-            brand: string;
+            brand: string | null;
             source: components["schemas"]["PantrySource"];
-            category: string;
+            category: string | null;
             per: number;
             unit: string;
             macros: components["schemas"]["PantryMacros"];
-            price: number;
-            priceUnit: string;
-            pkg: string;
+            price: number | null;
+            priceUnit: string | null;
+            pkg: string | null;
             micros: components["schemas"]["PantryMicro"][];
             nova?: number | null;
             stock?: components["schemas"]["PantryStock"] | null;
@@ -5750,12 +5750,12 @@ export interface components {
             /** Format: uuid */
             id: string;
             name: string;
-            brand: string;
+            brand: string | null;
             /** @enum {string} */
             type: "supplement" | "stimulant" | "medication";
-            category: string;
+            category: string | null;
             dose: string;
-            form: string;
+            form: string | null;
             stock?: number | null;
             stockUnit?: string | null;
             protocol: string;
@@ -5765,7 +5765,7 @@ export interface components {
             source?: components["schemas"]["PantrySource"] | null;
             per?: number | null;
             unit?: string | null;
-            macros?: components["schemas"]["PantryMacros"] | null;
+            macros: components["schemas"]["PantryMacros"];
             price?: number | null;
             priceUnit?: string | null;
             pkg?: string | null;

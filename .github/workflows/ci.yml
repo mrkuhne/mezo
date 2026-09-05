@@ -137,7 +137,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: visual-diffs
-          path: frontend/tests/visual/test-results/
+          path: frontend/test-results/
           retention-days: 7
 
   test-backend:

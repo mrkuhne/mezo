@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-04
+updated: 2026-09-05
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -358,6 +358,25 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   standalone Hungarian query of at most 500 characters. Provider failure, blank output or oversized
   output falls back to the untouched raw query. `PreparedMemoryQuery` retains raw and dense forms
   separately so later retrieval and audit can compare them.
+
+**Shared memory context pipeline (`mezo-6dii.5`) — production-shaped retrieval, still no chat cutover:**
+
+- `MemoryContextService` prepares the query, runs the four named retrievers concurrently with an
+  independent 200 ms deadline, cancels timed-out work, isolates every failure,
+  fuses their results, applies a strict
+  prompt budget and persists a complete audit in a separate transaction. `NO_MEMORY_NEEDED`
+  still creates an auditable empty run without an embedding, retriever or reranker call.
+- Weighted reciprocal-rank fusion deduplicates stable candidates and records every bounded score
+  component. Chat candidates carry their source conversation separately from the message source ID;
+  selection collapses near-duplicates, caps one conversation at two chat turns, keeps exact
+  unresolved fact pairs together, preserves standalone conflict edges and uses the renderer's exact
+  conservative length estimate.
+- The optional smart-tier reranker is disabled by default and only eligible on explicit uncertainty
+  or deep/weekly policy. It can reorder only the IDs actually exposed to it; its own configured
+  deadline, malformed output or provider failure returns the deterministic fused order.
+- The result is one provenance-carrying `MemoryContext` (`items`, `[Hosszú távú memória]` block,
+  refs, trace ID). Task 6 owns the deliberate OLD/SHADOW/NEW chat wiring; this slice does not change
+  the current user-facing recall path.
 
 **V2.2 (`mezo-fnnq.10`) shipped daily summaries + the embed pipeline — the memory fills itself:**
 
@@ -989,6 +1008,27 @@ All three new JDBC queries use the existing same-connection savepoint pattern an
 rethrow failures; per-retriever catch/timeout/audit belongs to the Task-5 coordinator, so a genuine
 empty result cannot be mistaken for an outage. The old chat recall path still serves unchanged.
 
+**Shared memory context orchestration (`mezo-6dii.5`; implemented, chat cutover remains Task 6):**
+
+```text
+MemoryRequest → prepare query
+  ├─ NO_MEMORY_NEEDED → REQUIRES_NEW empty audit (no provider/retriever work)
+  └─ dense + lexical + facts + graph on applicationTaskExecutor
+       → independent timeout/cancellation/error trace
+       → weighted RRF + bounded explainable modifiers
+       → exact-budget selection → optional uncertainty rerank → reselect
+       → REQUIRES_NEW run/result audit
+       → MemoryContext(items + rendered block + refs + traceId)
+```
+
+Fusion uses `(candidateKind, stableId)` identity and deterministic `finalScore desc → occurredOn
+desc → stableId` ordering. The selector and renderer share the same line-length calculation, so an
+`old`/`summary`/`conflict` marker can never make a selected item disappear at the prompt boundary.
+Every successful or degraded execution is therefore attributable by trace ID, including raw versus
+rewritten query, serving generation, retriever duration/count/error details, rank sources, selected
+IDs and all score components. When every retriever fails the service returns an audited empty
+context instead of failing the caller.
+
 **The streamed turn (V0.4 + V0.5 tools — what the FE uses):**
 
 ```
@@ -1465,19 +1505,56 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
       the day is not yet `closed` (`date < today`, v1 day closure) — an open/future day gets
       per-dimension progress only, never an overall number. `rhythm` is **excluded from that
       count**: it is *extrinsic*, the mean of OTHER days' bases, and knows nothing about this one.
-      It still carries its weight in the weighted sum once the gate IS open. Without that
-      exclusion the gate could be opened by two dimensions that never looked at the day: `logging`
-      (always `DONE` on a closed day, an honest 0 for an untouched one) plus `rhythm` (`DONE` from
-      ≥3 prior days), which reported `round(0.5×0 + 0.5×rhythmMean)` — roughly *half the user's
-      running average* — for a day they never touched, and pushed the state from `empty` to
-      `scored` so the page rendered a full score ring and spent an LLM call narrating nothing.
+      It still carries its weight in the weighted sum once the gate IS open. **This exclusion used
+      to be load-bearing on its own** — before `mezo-el0t`, `logging` was `DONE` (an honest 0) on
+      EVERY closed day including a fully untouched one, so `logging` + `rhythm` (`DONE` from ≥3
+      prior days) could open the gate alone, reporting `round(0.5×0 + 0.5×rhythmMean)` — roughly
+      *half the user's running average* — for a day the user never touched, pushing the state from
+      `empty` to `scored` and spending an LLM call narrating nothing. `mezo-el0t` closed that path
+      **structurally, not just by policy**: `logging` itself now goes `NO_DATA` on a fully
+      untouched closed day (see below), so such a day has **zero** intrinsic `DONE` dimensions and
+      the `≥2` gate cannot open regardless of what `rhythm` reports. The `rhythm`-exclusion rule
+      above still matters for the OTHER case it always covered — a day with exactly one real,
+      intrinsic signal (say `sleep` alone) must not get a second, free "dimension" from `rhythm` —
+      but it is no longer the only thing standing between an untouched day and a fabricated score.
     - A **rest day** (`plannedWorkouts` null/0) makes `training` `NO_DATA` ("Pihenőnap · nem
-      számít") rather than a penalty — resting must never cost points.
-    - `logging` is the one dimension with **no missing-target escape hatch**: water-logged and
-      check-in count are never "unknown" (false/0 IS the measurement), so on a closed day it is
-      always `DONE` and a genuinely untouched day scores an honest **0** rather than degrading —
-      the opposite of nutrition/quality, whose components drop out and renormalize when the
-      underlying DATA (not the target) is missing.
+      számít") rather than a penalty — resting must never cost points. One second-order consequence
+      of the `mezo-el0t` change below: a day whose only fact is a planned-but-skipped workout
+      (`training` `NO_DATA`, nothing else logged) no longer scores a `logging` 0 to pair with — on
+      the **day page** it now reads `empty` ("nincs adat"), not `thin`. That is deliberate, not a
+      regression: a plan is not evidence about what actually happened that day, so a day with
+      nothing but an unmet plan genuinely has no log at all. Pinned by `DayEvaluationEngineTest`.
+      **This is NOT yet true of the weekly mosaic.** `training: 30` (the config weight, not a
+      score) is still on the `me-week` wire for a planned-but-skipped workout, and the frontend's
+      `subscoreCount` (`weekDay.ts`) counts any non-null `subscores.training` regardless of
+      whether it represents `NO_DATA` on the backend — so the mosaic still derives `thin` for
+      exactly this day class while the day page's `DayEvaluationEngine` says `empty`. This is a
+      genuine, currently-live backend/frontend disagreement introduced by `mezo-el0t`, not a
+      documentation gap: fixing it needs a contract change (the wire has no way today to
+      distinguish "training weight present but NO_DATA" from "training actually scored") plus a
+      design decision on which surface should change. Tracked as `mezo-jcpt.16` (P2); deliberately
+      NOT fixed in this change.
+    - **`logging`'s measurability rule (`mezo-el0t`, narrowing a `mezo-jcpt` review-round-1
+      decision, not reversing it).** The original decision: `logging`'s own inputs (meal
+      timeliness, water-logged, check-in count) are never "unknown" — false/0 IS the measurement,
+      so this dimension gets **no missing-target escape hatch** the way nutrition/quality's
+      components do, and a genuinely untouched day must score an honest **0**, not degrade to
+      `NO_DATA`, or the process dimension that exists to measure logging effort would silently stop
+      penalizing the one day that most deserves it. That decision **still holds** for any day on
+      which the user logged something, anything, at all — meals/water/check-ins empty, but a
+      workout done, sleep logged, a weigh-in, or XP earned elsewhere: `logging` is still `DONE` and
+      still reports its honest 0. What `mezo-el0t` narrows is the day with **no log of any kind**:
+      `DayEvaluationEngine.anyLogPresent(DayInputs)` is the one predicate that answers "did the
+      user log ANYTHING at all this day" — spanning meals/kcal, water, check-ins, sleep duration,
+      sleep quality, completed workouts, weight (`DayInputs.weightKg`) and XP
+      (`DayInputs.xp`) — and `loggingDim` checks it FIRST: only when it is `false` does `logging`
+      degrade to `NO_DATA` (`null`, no score) instead of scoring the 0. This is safe precisely
+      because such a day has zero intrinsic `DONE` dimensions anyway (the gate above is already
+      closed), so dropping `logging`'s weight there softens nothing that was ever going to render.
+      `weightKg`/`xp` join the predicate alongside the day's OWN logging inputs — not because they
+      feed `logging`'s own score, but because `anyLogPresent` answers a broader question ("did the
+      user log anything at all today") than `logging`'s own formula does, and a day whose only
+      activity was a weigh-in or an XP-earning action must count as logged, not `empty`.
     - `sleep` is the one dimension that does **not** wait for `closed` — it finalizes as soon as
       it's logged, even on an open day (the "A+ lifecycle": each dimension closes on its own
       natural trigger). Formula: `0.7 × min(1, sleepH / sleepTargetH) + 0.3 × (quality-1)/9` when a
@@ -1523,7 +1600,25 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
     closest-successor mapping the wire used to carry: `sleepAvg ← sleep`, `fuelAvg ← nutrition`,
     `checkinAvg ← logging`, `activityAvg ← training`; `quality` and `rhythm` get no cache column.
     A degraded (`NO_DATA`/`IN_PROGRESS`) dimension projects to `null` throughout, the same
-    "tanulom" signal the legacy subscores carried. `DaySubscores.score` is `DayEvaluation
+    "tanulom" signal the legacy subscores carried.
+    **`checkinAvg`'s MEANING changed underneath the same formula (`mezo-el0t`).**
+    `WeeklyScoreService.aggregate`'s per-column average still just means-the-non-null values — that
+    formula did not change. What changed is what counts as non-null: `checkinAvg` averages
+    `logging`, and before `mezo-el0t` a fully untouched day's `logging` was a fabricated `0`
+    (never `null`), so it pulled every average down; now such a day's `logging` is genuinely `null`
+    (see above) and the day drops OUT of the average entirely instead of dragging it toward 0. Two
+    weeks with identical real logging behaviour but different untouched-day counts can now report
+    different `checkinAvg` values than they would have before this slice, even though nothing about
+    how the user actually logged changed — only how an untouched day is counted. Because
+    `weekly_score` rows already computed under the OLD rule are silently wrong under the new one (a
+    stale cached average, not a stale schema), this slice ships a one-off purge changeset,
+    `202609051200_mezo-el0t_weekly_score_cache_invalidation.sql`, the same invalidate-the-cache
+    pattern `mezo-jcpt.2`/`mezo-jcpt.4` used for their own `checkinAvg`-affecting changes — every
+    row is deleted and the next read recomputes and re-caches under the current rule. This is
+    currently **inert for end users**: nothing yet calls the week-trend endpoint that would surface
+    a changed `checkinAvg` (§4/§9 below), so the purge is a correctness fix with no visible effect
+    today, just no drifted cache waiting for the day something does read it.
+    `DaySubscores.score` is `DayEvaluation
     .base()`. The day page itself does not read either shape — it consumes the full
     `DayEvaluation` through `GET /api/me/day/{date}/evaluation` (§4). **`MeWeekService
     .renderDayLine`** (below) is a separate, deliberately-unwidened consumer: it is an LLM-prompt
@@ -1738,6 +1833,14 @@ salience `0.5`, and updates only the configured serving generation during dual-w
 failed, deleted, pending, or carries a stale content hash; provider and malformed-response failures
 are persisted with stable codes for a later retry. No runtime path changes the configured serving
 version, and no endpoint or FE DTO is added in this slice.
+
+Runtime retrieval (`mezo-6dii.5`) extends the same validated property tree with weighted-RRF and
+modifier bounds, per-retriever timeout, reranker eligibility/size/deadline limits
+and the old-item threshold.
+Audit runs are retained for 30 days by default; `MemoryRetrievalRetentionJob` fans out over active
+users at 03:50 and physically deletes expired runs so database cascades remove their result and
+feedback children. This is an explicit audit-retention exception to normal domain soft deletion;
+source memories and vectors are never touched by the purge.
 
 ### Backend tables (LLM audit log, ✅ `mezo-2zyu`)
 
@@ -3884,9 +3987,15 @@ named implementations (`dense`, `lexical`, `facts`, `graph`). Dense is the only 
 the `EmbeddingPort` provider seam and embeds `PreparedMemoryQuery.denseQuery`; lexical and facts are
 local PostgreSQL reads, while graph delegates to the existing deterministic
 `GraphTraversalService`. Every adapter receives the same owner/as-of/policy envelope and returns
-`MemoryCandidate` source identity, label/content, local score and selection signals. Nothing calls
-these beans from a user turn yet: fusion, timeout/failure isolation, selection and OLD/SHADOW/NEW
-wiring arrive in the following slices.
+`MemoryCandidate` source identity, label/content, local score and selection signals. The shared
+Task-5 coordinator now calls them, but no user turn does yet; OLD/SHADOW/NEW chat wiring remains the
+next rollout slice.
+
+**Shared RAG context seam (`mezo-6dii.5`, staged).** `MemoryContextService.retrieve` is now the
+single consumer-neutral entrypoint above all four retrievers. It returns rendered context and
+structured provenance together, while `MemoryReranker` keeps optional ordering replaceable without
+coupling the coordinator to an orchestration framework. Chat, briefing, memoir and prediction do
+not consume it yet; the next rollout slice connects them incrementally behind OLD/SHADOW/NEW modes.
 
 ### 5.4 Companion ↔ API contract & backend platform (wired)
 Companion is now a backed feature on the contract-first pipeline
@@ -4357,6 +4466,18 @@ stable graph-edge mapping. A forced wrong-dimension ANN call plus invalid limits
 lexical and fact JDBC failures propagate while their savepoints leave the enclosing transaction
 usable. The dense case also executes `EXPLAIN (ANALYZE, BUFFERS)` over seeded data as a diagnostic;
 no planner cost or node choice is asserted.
+
+**Fusion, selection, audit and retention (`mezo-6dii.5`).**
+Pure tests pin weighted RRF/dedupe/tie order, canonical source reliability, bounded recency,
+duplicate/conversation caps, exact conflict pairs plus standalone conflict edges, exact rendered
+budgets and strict reranker ID validation/deadline fallback. `MemoryContextServiceIT` uses the
+four real retrievers plus fake embedding/LLM and proves no-call routing, parallel success, isolated
+dense failure, total failure → audited empty context, raw/rewrite fields, timing/count/error trace,
+selected result IDs, score JSON and cancellation of timed-out work. `HybridMemoryRetrieverIT`
+additionally proves conversation identity and exact conflict counterparts survive the real SQL →
+candidate seam. `MemoryPlatformPropertiesIT` proves valid binding and startup
+rejection for invalid positive bounds. `MemoryRetrievalRetentionIT` proves the active-user purge
+hard-deletes an expired run and cascade children while preserving a recent run.
 
 **Daily evaluation (`mezo-jcpt.4`, plan 2/2).**
 `feature/companion/service/DayEvaluationEngineTest.java` is the formula's unit-level pin — one test
@@ -5612,6 +5733,18 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   house alternative to the banned `@Value`. Phase 1 is deliberately NOT gated on it: the season
   proposal is not the profile job, and one switch must not silently disable an unrelated feature.
 
+**Shared RAG context decisions (`mezo-6dii.5`).**
+
+- Deterministic fusion/selection is the default serving algorithm; LLM reranking is an optional,
+  disabled-by-default seam, not a mandatory framework dependency. This keeps the baseline cheap,
+  reproducible and measurable before any later LangGraph-style orchestration would earn its cost.
+- Retriever failures remain distinguishable from honest empty results in the persisted trace. Audit
+  writes use a separate `REQUIRES_NEW` bean so a later caller/model failure cannot erase retrieval
+  evidence, and selected result IDs are available for feedback linkage.
+- Audit retention uses physical deletion intentionally. It is narrowly owner-and-cutoff scoped and
+  exists only so FK cascade can purge expired audit/result/feedback rows; canonical memories retain
+  normal lifecycle/soft-delete semantics.
+
 **Deferred (with bd ids):**
 - ~~**W3.3 recall tuning (`mezo-b3pp.14`, spec §7.3)**~~ — **shipped**: per-group
   `min-similarity`/τ/cap in config, the deterministic eval harness, and its follow-up
@@ -5677,6 +5810,14 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/repository/{DenseMemoryQuery,LexicalMemoryQuery,KnowledgeFactRetrievalQuery}.java` — owner/state/validity/as-of filtering in SQL, serving-generation ANN, folded FTS+trigram ranking, pinned/matching/conflict fact union and same-connection savepoint isolation.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{DenseMemoryRetriever,LexicalMemoryRetriever,FactMemoryRetriever,GraphMemoryRetriever}.java` — the named `dense`/`lexical`/`facts`/`graph` adapters; graph reuses the configured `GraphTraversalService` bounds.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/HybridMemoryRetrieverIT.java` — deterministic pgvector/FTS/fact/graph result, ownership and failure-boundary matrix.
+
+**Backend — fusion, selection, reranking and retrieval audit (`mezo-6dii.5` — §3–§5/§8–§9)**
+
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryContextService,MemoryCandidateFusion,MemoryContextSelector,MemoryContextRenderer}.java` — concurrent failure-isolated orchestration, deterministic explainable ranking and exact-budget provenance rendering.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryReranker,LlmMemoryReranker}.java` — optional uncertainty-only smart-tier ordering with exposed-ID validation and deterministic fallback.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryRetrievalAuditWriter,MemoryRetrievalRetentionJob}.java` — independent run/result persistence and active-user 30-day physical audit purge.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/dto/{MemoryContext,MemoryContextItem,ScoreBreakdown,RetrievalServingMode}.java` — structured context/provenance/score and staged rollout contracts.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/{MemoryCandidateFusionTest,MemoryContextSelectorTest,LlmMemoryRerankerTest,MemoryContextServiceIT,MemoryPlatformPropertiesIT,MemoryRetrievalRetentionIT}.java` — pure ranking/rendering and PostgreSQL orchestration/config/retention gates.
 
 **Backend — feedback (W4.1, `mezo-b3pp.15` — §4/§5.7)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/controller/CompanionFeedbackController.java` — `implements CompanionFeedbackApi`, `COMPANION_SWITCH`-gated, ownership from `CurrentUserId`, thin delegation.

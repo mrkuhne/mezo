@@ -31,7 +31,7 @@ public class LexicalMemoryRetriever implements MemoryRetriever {
                 .map(hit -> new MemoryCandidate(
                         name(), "memory_item", hit.itemId(), hit.itemId(), hit.sourceId(),
                         hit.sourceKind(), hit.label(), hit.content(), hit.occurredOn(), hit.score(),
-                        false, false, hit.salience().doubleValue()))
+                        false, false, hit.salience().doubleValue(), hit.diversityGroupId(), null))
                 .toList();
     }
 }

@@ -1,4 +1,8 @@
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { defineConfig, devices } from '@playwright/test'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 /**
  * Visual baseline harness — self-baselined `toHaveScreenshot` goldens.
@@ -17,6 +21,15 @@ import { defineConfig, devices } from '@playwright/test'
 export default defineConfig({
   testDir: '.',
   timeout: 30_000,
+  // Explicit (not left to Playwright's cwd-relative default): the default
+  // `test-results/` is resolved relative to the process's working directory,
+  // not this config file, so it silently landed wherever `pnpm test:visual`
+  // happened to be invoked from (frontend/test-results/, since the script's
+  // cwd is `frontend/`) instead of the `frontend/tests/visual/test-results/`
+  // path the CI upload step assumed — which is why "Upload visual diffs on
+  // failure" always found nothing (mezo-7qms). Anchoring it to __dirname
+  // makes the location independent of invocation cwd.
+  outputDir: path.resolve(__dirname, '../../test-results'),
   // mezo-kf4f — MÉRT értékek, nem tippeltek. A korábbi `maxDiffPixels: 120` (default
   // threshold 0.2 mellett) egy egész új fejléc-gombot átengedett (~38 px, PR #401), és a
   // DayOrb tónus-átkötését (mezo-x5va) is: annak YIQ-deltája ~101, a pixelmatch határa

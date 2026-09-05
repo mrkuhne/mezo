@@ -25,7 +25,7 @@ const FALLBACK_COLOR = 'var(--text-secondary)'
 
 function KamraRow({ ing, added, onPick }: { ing: Ingredient; added: boolean; onPick: () => void }) {
   const { categoryMeta } = usePantry()
-  const catColor = categoryMeta[ing.category]?.color ?? FALLBACK_COLOR
+  const catColor = categoryMeta[ing.category ?? '']?.color ?? FALLBACK_COLOR
   const nova = (ing.nova != null && ing.nova >= 1 && ing.nova <= 4 ? ing.nova : null) as NovaGroup | null
   return (
     <div className="fkp-item" style={{ '--kc': catColor } as React.CSSProperties}>
@@ -69,12 +69,12 @@ export function KamraPickSheet({
   // Only categories actually on the shelf become chips — labeled/colored from categoryMeta,
   // falling back to the raw key so an unmapped category still filters honestly.
   const cats = useMemo(
-    () => [...new Set(ingredients.map(i => i.category))].filter(Boolean),
+    () => [...new Set(ingredients.map(i => i.category))].filter((c): c is string => !!c),
     [ingredients],
   )
   const filtered = ingredients.filter(i =>
     (cat == null || i.category === cat)
-    && (!q || i.name.toLowerCase().includes(q) || i.brand.toLowerCase().includes(q)))
+    && (!q || i.name.toLowerCase().includes(q) || (i.brand ?? '').toLowerCase().includes(q)))
 
   return (
     <Sheet onClose={onClose} className="sheet-nested" labelledBy="kamra-pick-title">
