@@ -6,18 +6,20 @@
 // invariant `useDualQuery` enforces elsewhere, applied directly here since the contract this
 // task hands to Task 10 is an OPTIONAL `data`, not a `realEmpty`-backed non-null value).
 //
-// NOTE — this hook deliberately does NOT call `useDualQuery` (see `useDualQuery.ts`), unlike
-// every sibling `me/*` hook. `useDualQuery` needs a `realEmpty` fallback so `data` is always
-// non-null; `DayEvaluationResponse` has no natural "empty" shape to synthesize for that, and
-// the brief's own contract for this hook is an OPTIONAL `data` (undefined while unresolved),
-// not a non-null placeholder. The "no fabricated fallback in real mode" guarantee is instead
-// upheld BY HAND here, via `initialData: mock ? seed : undefined` below — real mode passes no
-// `initialData`, so `q.data` genuinely stays `undefined` until the fetch resolves. Because
-// this reads `q.data` off a plain `useQuery` result rather than destructuring with a seed
-// default, `dualMode.guard.test.ts` stays quiet about it too — but that is the guard's
-// whitelisted-safe-shape check passing, not `useDualQuery`'s own invariant applying here. If
-// `useDualQuery`'s contract ever grows a new safety invariant, this hook will NOT inherit it
-// automatically — check this file by hand when that happens.
+// RESOLVED (mezo-jcpt.10) — this hook deliberately does NOT call `useDualQuery` (see
+// `useDualQuery.ts`), unlike every sibling `me/*` hook, and that is the considered outcome,
+// not an oversight: `useDualQuery` requires a non-optional `realEmpty: T` so `data` is always
+// non-null, and `DayEvaluationResponse` has no natural "empty" shape to synthesize for that —
+// inventing one would itself be a fabricated value, the exact thing `useDualQuery` exists to
+// forbid. Forcing this hook through `useDualQuery` was rejected FOR that reason, not chosen
+// against for being more typing. The "no fabricated fallback in real mode" guarantee is
+// instead upheld BY HAND here, via `initialData: mock ? seed : undefined` below — real mode
+// passes no `initialData`, so `q.data` genuinely stays `undefined` until the fetch resolves.
+// This is no longer merely tolerated by coincidence: `dualMode.guard.test.ts`'s second guard
+// ("manual useDualQuery (initialData) seed-leak guard") parses every `useQuery` call's
+// `initialData` argument and fails the build if it is not `undefined` or a `<mock-flag> ? seed
+// : undefined` ternary that degrades to `undefined` — the same invariant `useDualQuery` bakes
+// in, enforced here by hand and checked deliberately, not inherited by accident.
 import { useQuery } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { DEFAULT_QUERY_STALE_TIME_MS } from '@/data/useDualQuery'
