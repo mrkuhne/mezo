@@ -60,7 +60,6 @@ public class LifeGoalProgressService {
     private static final double DOT_HIT = 0.66;
     private static final double DOT_PARTIAL = 0.33;
     private static final int SCALE = 3;
-    private static final String STATUS_ACTIVE = "active";
 
     private final LifeGoalService lifeGoalService;
     private final LifeGoalRepository goalRepository;
@@ -86,8 +85,10 @@ public class LifeGoalProgressService {
     @Transactional
     public LifeGoalProgressResponse evaluate(UUID userId, UUID goalId) {
         LifeGoalEntity goal = lifeGoalService.requireOwned(userId, goalId);
-        evaluateDays(userId, goal);
+        // Captured once: evaluateDays and the response window must share one clock read, or a
+        // midnight crossing mid-call skews the two against each other.
         LocalDate today = LocalDate.now();
+        evaluateDays(userId, goal, today);
         return buildProgress(userId, goal, activePillars(goal.getId()),
             today.minusDays(PROGRESS_WINDOW_DAYS - 1), today);
     }
@@ -102,10 +103,15 @@ public class LifeGoalProgressService {
      */
     @Transactional
     public void evaluateDays(UUID userId, LifeGoalEntity goal) {
-        if (!STATUS_ACTIVE.equals(goal.getStatus())) {
+        evaluateDays(userId, goal, LocalDate.now());
+    }
+
+    /** Same as {@link #evaluateDays(UUID, LifeGoalEntity)}, with the caller's clock read (mezo-iizd.8). */
+    @Transactional
+    public void evaluateDays(UUID userId, LifeGoalEntity goal, LocalDate today) {
+        if (!LifeGoalEntity.STATUS_ACTIVE.equals(goal.getStatus())) {
             return;
         }
-        LocalDate today = LocalDate.now();
         // Newest-first (yesterday, -2, -3): a backfill pass (late logging flipping an older day)
         // must not visit that day last and re-fire the gamification streak roll out of order —
         // GamificationAccountAdapter.onXpAwarded rolls the streak on every award, so award order
@@ -135,7 +141,7 @@ public class LifeGoalProgressService {
     public LifeGoalTodayResponse today(UUID userId, LocalDate today) {
         LocalDate from = today.minusDays(PROGRESS_WINDOW_DAYS - 1);
         List<LifeGoalEntity> activeGoals = goalRepository.findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(userId)
-            .stream().filter(g -> "active".equals(g.getStatus())).toList();
+            .stream().filter(g -> LifeGoalEntity.STATUS_ACTIVE.equals(g.getStatus())).toList();
         List<LifeGoalTodaySummary> summaries = activeGoals.stream()
             .map(goal -> buildTodaySummary(userId, goal, from, today)).toList();
         return LifeGoalTodayResponse.builder().goals(summaries).build();
@@ -205,7 +211,7 @@ public class LifeGoalProgressService {
         List<UUID> pillarIds = activePillars.stream().map(LifeGoalPillarEntity::getId).toList();
         if (!pillarIds.isEmpty()) {
             for (LifeGoalPillarDayEntity stored
-                : pillarDayRepository.findByPillarIdInAndDayBetweenAndDeletedFalseOrderByDayAsc(pillarIds, from, to)) {
+                : pillarDayRepository.findByPillarIdInAndDayBetweenAndDeletedFalseOrderByDayAsc(pillarIds, wideFrom, to)) {
                 SortedMap<LocalDate, PillarDayScore> perDay = byPillar.get(stored.getPillarId());
                 if (perDay != null) {
                     perDay.put(stored.getDay(),
@@ -344,9 +350,15 @@ public class LifeGoalProgressService {
             return List.of();
         }
         List<LifeGoalEntity> otherActiveGoals = goalRepository.findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(userId)
-            .stream().filter(g -> "active".equals(g.getStatus()) && !g.getId().equals(goal.getId())).toList();
+            .stream().filter(g -> LifeGoalEntity.STATUS_ACTIVE.equals(g.getStatus()) && !g.getId().equals(goal.getId()))
+            .toList();
         if (otherActiveGoals.isEmpty()) {
             return List.of();
+        }
+        // Prefetch once instead of re-querying every other goal's pillars per "mine" pillar (N×M).
+        Map<UUID, List<LifeGoalPillarEntity>> theirPillarsByGoal = new LinkedHashMap<>();
+        for (LifeGoalEntity other : otherActiveGoals) {
+            theirPillarsByGoal.put(other.getId(), activePillars(other.getId()));
         }
         Set<String> messages = new LinkedHashSet<>();
         for (LifeGoalPillarEntity mine : activePillars) {
@@ -358,7 +370,7 @@ public class LifeGoalProgressService {
                 continue;
             }
             for (LifeGoalEntity other : otherActiveGoals) {
-                for (LifeGoalPillarEntity theirs : activePillars(other.getId())) {
+                for (LifeGoalPillarEntity theirs : theirPillarsByGoal.get(other.getId())) {
                     if ("linked".equals(theirs.getKind())) {
                         continue;
                     }

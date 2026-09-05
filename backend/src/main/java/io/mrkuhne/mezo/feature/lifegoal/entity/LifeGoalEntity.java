@@ -28,6 +28,9 @@ import org.hibernate.type.SqlTypes;
 @SQLRestriction("is_deleted = false")
 public class LifeGoalEntity extends OwnedEntity {
 
+    /** Shared status literal — every lifegoal service compares against this, not an inline string. */
+    public static final String STATUS_ACTIVE = "active";
+
     @Id @GeneratedValue @Column(columnDefinition = "uuid") private UUID id;
     @NotNull @Column(nullable = false) private String title;
     @Column(name = "why_text") private String whyText;

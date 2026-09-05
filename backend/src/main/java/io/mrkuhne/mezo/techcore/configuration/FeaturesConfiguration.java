@@ -237,7 +237,9 @@ public class FeaturesConfiguration {
     /** Életjel-ring day-close (mezo-dhzk) — off ⇒ the /api/needs surface 404s and no needs beans exist. */
     public static final String NEEDS_SWITCH = "mezo.feature.needs.enabled";
 
-    /** Életcél-rendszer (bd mezo-iizd) — off ⇒ /api/life-goals 404s, no lifegoal beans. */
+    /** Életcél-rendszer (bd mezo-iizd) — off ⇒ /api/life-goals 404s; the gated beans (controller,
+     *  services, jobs, signal sources) are absent, while SignalCatalog, LifeGoalMapper and
+     *  LifeGoalTemplateProposer remain as ungated, stateless components. */
     public static final String LIFEGOAL_SWITCH = "mezo.feature.lifegoal.enabled";
 
     /** Nightly life-goal evaluation cron (mezo-iizd.6) — schedule: mezo.lifegoal.eval-cron;

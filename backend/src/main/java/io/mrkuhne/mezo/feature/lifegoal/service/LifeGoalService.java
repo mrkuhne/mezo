@@ -91,13 +91,19 @@ public class LifeGoalService {
     public LifeGoalResponse changeStatus(UUID userId, UUID id, LifeGoalStatus target) {
         LifeGoalEntity g = requireOwned(userId, id);
         String to = target.getValue();
+        if (to.equals(g.getStatus())) {
+            // Idempotent no-op: a same-status request re-affirms the state instead of 409-ing —
+            // a double-tap or a replayed request must not read as an "illegal transition".
+            return mapper.toResponse(g, pillarRepository.findByGoalIdAndDeletedFalseOrderByPositionAsc(id));
+        }
         if (!TRANSITIONS.getOrDefault(g.getStatus(), Set.of()).contains(to)) {
             throw new SystemRuntimeErrorException(
                 SystemMessage.error("LIFE_GOAL_INVALID_STATUS_TRANSITION").build(), HttpStatus.CONFLICT);
         }
         g.setStatus(to);
-        if ("active".equals(to) && g.getActivatedAt() == null) g.setActivatedAt(Instant.now());
-        if ("done".equals(to) || "archived".equals(to)) g.setClosedAt(Instant.now());
+        if (LifeGoalEntity.STATUS_ACTIVE.equals(to) && g.getActivatedAt() == null) g.setActivatedAt(Instant.now());
+        // done→archived keeps the completion date: closedAt is when the goal ENDED, not when it was tidied away.
+        if (("done".equals(to) || "archived".equals(to)) && g.getClosedAt() == null) g.setClosedAt(Instant.now());
         return mapper.toResponse(g, pillarRepository.findByGoalIdAndDeletedFalseOrderByPositionAsc(id));
     }
 

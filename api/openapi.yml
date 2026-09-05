@@ -6737,6 +6737,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HabitWriteResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: HABIT_UNKNOWN
           content:
@@ -6775,6 +6781,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HabitResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: HABIT_UNKNOWN
           content:
@@ -6819,6 +6831,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HabitCatalogResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/habit/chain:
     post:
       tags:
@@ -6837,6 +6855,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HabitChainAdmin'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/habit/chain/{id}':
     patch:
       tags:
@@ -6862,6 +6886,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HabitChainAdmin'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
     delete:
       tags:
         - Habit
@@ -6876,6 +6906,12 @@ paths:
       responses:
         '204':
           description: Soft-deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/habit/chain/{id}/order':
     put:
       tags:
@@ -6902,6 +6938,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HabitChainAdmin'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/habit/def:
     post:
       tags:
@@ -6920,6 +6962,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HabitDefAdmin'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/habit/def/{id}':
     patch:
       tags:
@@ -6945,6 +6993,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HabitDefAdmin'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
     delete:
       tags:
         - Habit
@@ -6959,6 +7013,12 @@ paths:
       responses:
         '204':
           description: Soft-deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/habit/ai/suggest:
     post:
       tags:
@@ -6978,6 +7038,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/HabitSuggestResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '503':
           description: Suggester unavailable (switch off / companion off)
   '/api/intention/day/{date}':
@@ -7031,6 +7097,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/intention/focus:
     post:
       tags:
@@ -7052,6 +7124,12 @@ paths:
                 $ref: '#/components/schemas/IntentionFocusResponse'
         '400':
           description: INTENTION_TEXT_REQUIRED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema:
@@ -7078,6 +7156,12 @@ paths:
       responses:
         '204':
           description: Removed
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: INTENTION_FOCUS_NOT_FOUND
           content:
@@ -7105,6 +7189,12 @@ paths:
                 $ref: '#/components/schemas/IntentionDayResponse'
         '400':
           description: INTENTION_REFLECTION_INVALID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema:
@@ -7432,6 +7522,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RitualDayResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '409':
           description: RITUAL_NOT_TODAY
           content:
@@ -7457,6 +7553,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RitualDayResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '409':
           description: RITUAL_NOT_TODAY
           content:
@@ -7476,6 +7578,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GamificationProfileResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/gamification/day/{date}':
     get:
       tags:
@@ -7498,6 +7606,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GamificationDayResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/gamification/title/{key}/buy':
     post:
       tags:
@@ -7517,6 +7631,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GamificationProfileResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: GAMIFICATION_TITLE_UNKNOWN
           content:
@@ -7550,6 +7670,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GamificationProfileResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: GAMIFICATION_TITLE_UNKNOWN
           content:
@@ -7575,6 +7701,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GamificationProfileResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '409':
           description: GAMIFICATION_COINS_INSUFFICIENT / GAMIFICATION_SAVER_LIMIT
           content:
@@ -7785,6 +7917,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LlmUsageSummaryResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '403':
           description: Not the owner (AUTH_FORBIDDEN)
           content:
@@ -7818,6 +7956,12 @@ paths:
                 $ref: '#/components/schemas/LlmUsageBreakdownResponse'
         '400':
           description: Unknown period
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema:
@@ -7895,6 +8039,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '403':
           description: Not the owner (AUTH_FORBIDDEN)
           content:
@@ -7923,6 +8073,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LlmCallDetailResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '403':
           description: Not the owner (AUTH_FORBIDDEN)
           content:
@@ -7962,6 +8118,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '409':
           description: Not today (NEEDS_NOT_TODAY)
           content:
@@ -7981,6 +8143,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NeedsSummaryResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/journal:
     get:
       tags:
@@ -8039,6 +8207,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/journal/{id}':
     put:
       tags:
@@ -8071,6 +8245,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: JOURNAL_ENTRY_NOT_FOUND
           content:
@@ -8092,6 +8272,12 @@ paths:
       responses:
         '204':
           description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: JOURNAL_ENTRY_NOT_FOUND
           content:
@@ -8143,6 +8329,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/journal/decision/{id}/review':
     put:
       tags:
@@ -8171,6 +8363,12 @@ paths:
                 $ref: '#/components/schemas/DecisionEntryResponse'
         '400':
           description: Validation error (rating out of 1..5)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema:
@@ -8215,6 +8413,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
     post:
       tags:
         - Journal
@@ -8239,6 +8443,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/journal/gratitude/{id}':
     delete:
       tags:
@@ -8255,6 +8465,12 @@ paths:
       responses:
         '204':
           description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Not found
           content:
@@ -9250,6 +9466,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '403':
           description: Not the owner (AUTH_FORBIDDEN)
           content:
@@ -9270,6 +9492,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/InviteResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '403':
           description: Not the owner (AUTH_FORBIDDEN)
           content:
@@ -9292,6 +9520,12 @@ paths:
       responses:
         '204':
           description: Revoked
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '403':
           description: Not the owner (AUTH_FORBIDDEN)
           content:
@@ -9327,6 +9561,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/AdminUserResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '403':
           description: Not the owner (AUTH_FORBIDDEN)
           content:
@@ -9357,6 +9597,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResetPasswordResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '403':
           description: Not the owner (AUTH_FORBIDDEN)
           content:
@@ -9399,6 +9645,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '403':
           description: Not the owner (AUTH_FORBIDDEN)
           content:
@@ -9432,6 +9684,12 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/LifeGoalResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
     post:
       tags:
         - LifeGoal
@@ -9458,6 +9716,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/life-goals/signals:
     get:
       tags:
@@ -9471,6 +9735,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SignalCatalogResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/life-goals/propose:
     post:
       tags:
@@ -9494,6 +9764,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LifeGoalProposeResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/life-goals/{id}':
     parameters:
       - name: id
@@ -9514,6 +9790,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LifeGoalResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Not found / not owned
           content:
@@ -9540,6 +9822,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LifeGoalResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Not found
           content:
@@ -9554,6 +9842,12 @@ paths:
       responses:
         '204':
           description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Not found
           content:
@@ -9588,6 +9882,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LifeGoalResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '409':
           description: Illegal transition (LIFE_GOAL_INVALID_STATUS_TRANSITION)
           content:
@@ -9626,6 +9926,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/life-goals/today:
     get:
       tags:
@@ -9641,6 +9947,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LifeGoalTodayResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   '/api/life-goals/{id}/progress':
     parameters:
       - name: id
@@ -9676,6 +9988,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LifeGoalProgressResponse'
+        '400':
+          description: from after to (VALIDATION_INVALID_VALUE)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Not found / not owned
           content:
@@ -9704,6 +10028,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LifeGoalProgressResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Not found / not owned
           content:

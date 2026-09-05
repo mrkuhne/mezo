@@ -91,7 +91,10 @@ public final class LifeGoalScorer {
             return noData(null, null, null);
         }
         BigDecimal value = window.values().get(day);
-        long elapsed = ChronoUnit.DAYS.between(rule.startDate(), day);
+        // Clamp to the pace line's ends: past targetDate the expectation stays the target value
+        // (otherwise an achieved goal decays into an eternal miss as the line extrapolates), and
+        // before startDate it stays the start value.
+        long elapsed = Math.clamp(ChronoUnit.DAYS.between(rule.startDate(), day), 0, total);
         double expected = rule.startValue().doubleValue()
             + (rule.targetValue().doubleValue() - rule.startValue().doubleValue()) * elapsed / (double) total;
         if (value == null) {
@@ -142,10 +145,17 @@ public final class LifeGoalScorer {
             LocalDate latestDay = targets.keySet().stream().max(LocalDate::compareTo).orElseThrow();
             BigDecimal earliestVal = targets.get(earliestDay);
             BigDecimal latestVal = targets.get(latestDay);
-            boolean losing = latestVal.compareTo(earliestVal) < 0;
-            hit = losing
-                ? trend.compareTo(expected.add(LINKED_TOLERANCE)) <= 0
-                : trend.compareTo(expected.subtract(LINKED_TOLERANCE)) >= 0;
+            int paceDirection = latestVal.compareTo(earliestVal);
+            if (paceDirection == 0) {
+                // Maintenance line (target == start): both drifting up AND drifting down is off-plan,
+                // so the single-point symmetric band applies, not the one-sided losing/gaining rule.
+                hit = trend.subtract(expected).abs().compareTo(LINKED_TOLERANCE) <= 0;
+            } else {
+                boolean losing = paceDirection < 0;
+                hit = losing
+                    ? trend.compareTo(expected.add(LINKED_TOLERANCE)) <= 0
+                    : trend.compareTo(expected.subtract(LINKED_TOLERANCE)) >= 0;
+            }
         }
         return new PillarDayScore(hit ? "hit" : "partial", round(trend), round(expected), null);
     }

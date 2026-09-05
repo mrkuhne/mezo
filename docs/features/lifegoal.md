@@ -77,7 +77,7 @@ ADR: [`0034-measurable-life-goals.md`](../decisions/0034-measurable-life-goals.m
   `POST /{id}/evaluate`, `GET /today`) — see §3/§4. **Plus, `mezo-iizd.6`:** `LifeGoalEvalJob`
   (nightly cron, dual `@ConditionalOnProperty`, calling `evaluateDays` for every user's `active`
   goals with per-user + per-goal error isolation) and `LifeGoalXpService` (the D-1-keyed, hit-only
-  XP seam on the pillar's own skill, `source_type=LIFE_GOAL`) — see §3/§5/§9. **Plus,
+  XP seam on the pillar's own skill, `source_type=LIFE_GOAL`, see below) — see §3/§5/§9. **Plus,
   `mezo-iizd.7`:** `LifeGoalTriggerRules` (the closed 3-source → metric-predicate mapping),
   `LifeGoalTriggerService` (immediate + delayed evaluation over the same predicate),
   `LifeGoalTriggerListener` (`CheckInSavedEvent` + the new `SportSessionLoggedEvent`),
@@ -150,6 +150,17 @@ ADR: [`0034-measurable-life-goals.md`](../decisions/0034-measurable-life-goals.m
   plan list, and a prose "Aktiválás után" paragraph — never a computed number, per the
   honest-state house rule). Two CTAs on the last step: "Mentés tervezettként" (`activate=false`)
   and "Aktiválás" (`activate=true`, immediately calls `changeStatus(id, 'active')` after create).
+  **Save failure renders an inline error card, retry-safe** (`mezo-iwoc`): a failed `create` no
+  longer navigates blindly or leaves only the global toast — it sets a `saveFailed` flag that
+  renders an `.lg-fcard` ("Nem sikerült elmenteni — A cél nem veszett el, próbáld újra…") under the
+  step-4 CTAs, and the wizard stays on step 4 with the draft intact so retrying `save()` cannot
+  double-submit or lose input. **A create-succeeded-but-activate-failed run still navigates to the
+  goal**, not back to the wizard or to the hub: the goal already exists as a `draft` by the time
+  `changeStatus(g.id, 'active')` is called, so a retry from inside the wizard would create a
+  SECOND goal, while the goal-detail page (plus the global toast) is where the user can see and
+  retry the activation itself. `useLifeGoalMutations().create`/`.changeStatus` both widened to
+  accept an `opts?: { onSuccess?; onError? }` (previously `onSuccess`-only) to carry this — see
+  [`_platform-data-layer.md`](_platform-data-layer.md) §7.
 - **`/me/goals/weight` (+ `/me/goals/weight/new`)** — the pre-existing body-weight goal
   (`GoalsPage`/`GoalPlannerPage`), unchanged in behavior, moved here in Task 8 so `/me/goals`
   could become the Célok hub. See [`goal-engine.md`](goal-engine.md) §2 and [`me.md`](me.md) §2.
@@ -230,7 +241,15 @@ while the manual `evaluate` endpoint keeps working. Failures are isolated per us
 fetch) and per goal (each `evaluateDays` call) — one broken signal source or a user with a bad row
 must not cost every other user, or every other goal, its evaluation. `evaluateDays`'s day-upsert
 also calls `LifeGoalXpService.awardIfHit` per pillar-day, so both writers grant XP identically —
-see §5.
+see §5. **One clock per call** (`mezo-iizd.8`): `LifeGoalProgressService.evaluate` now reads
+`LocalDate.now()` exactly once and threads it into both `evaluateDays(userId, goal, today)` (an
+overload taking the caller's clock read; the pre-existing no-arg-day `evaluateDays(userId, goal)`
+still reads its own `now()` for the job's call site) and the response-window computation — a
+midnight crossing mid-request used to be able to skew the upserted days against the returned
+window by one day. **`LifeGoalEntity.STATUS_ACTIVE`** is now the one shared `"active"` literal —
+`LifeGoalProgressService`, `LifeGoalEvalJob`, `LifeGoalSignalService`, and
+`LifeGoalTriggerService` all compare against it instead of each carrying its own inline string
+(`LifeGoalTriggerService` also dropped its own now-redundant local `STATUS_ACTIVE` constant).
 
 **Ha–akkor trigger evaluation, two entry points over one predicate** (`mezo-iizd.7`,
 `feature/lifegoal/service/{LifeGoalTriggerRules,LifeGoalTriggerService,LifeGoalTriggerListener}`,
@@ -304,13 +323,28 @@ core with no Spring context.
   the good side, `partial` inside a ±10% band around the threshold, else `miss`; no data in the
   window → `no_data`. **target** — linear-interpolates an `expected` value between
   `rule.startValue`/`startDate` and `targetValue`/`targetDate`, compares today's value against it
-  per `rule.direction` (`up`/`down`). **baseline** — compares today's value against the *median*
-  of the preceding `rule.windowDays` (default 28, needs ≥`rule.minDataDays`, default 14, or
-  `no_data`) per `rule.direction`; there is no `partial` for baseline. **linked** — see
-  `WeightGoalSignalSource` below; ±0.3 kg tolerance around the expected pace, `hit`/`partial`
-  (linked never scores a plain `miss` — a declining trend still inside tolerance is honest
-  progress, not failure). A day with no signal value is `no_data` in every kind — never coerced
-  into `miss` (the ADR-0034 guardrail in §9).
+  per `rule.direction` (`up`/`down`). The interpolation **clamps `elapsed` to `[0, total]`**
+  (`mezo-iizd.8`) so a day before `startDate` reads the start value and a day past `targetDate`
+  reads the target value, rather than the line extrapolating past its own ends — without the
+  clamp, an already-achieved goal would decay back into an eternal `miss` the further past its
+  deadline the user checks, and a day logged before the pillar's own `startDate` would compare
+  against a nonsensical negative-elapsed expectation. One honest consequence of the clamp: past
+  its own `targetDate`, an achieved, still-active target pillar keeps scoring `hit` indefinitely
+  and keeps earning daily XP — XP is a feedback-only currency, so this is left as-is rather than
+  capped, but capping it is a product decision still open. **baseline** — compares today's value
+  against the *median* of the preceding `rule.windowDays` (default 28, needs
+  ≥`rule.minDataDays`, default 14, or `no_data`) per `rule.direction`; there is no `partial` for
+  baseline. **linked** — see `WeightGoalSignalSource` below; ±0.3 kg tolerance around the
+  expected pace, `hit`/`partial` (linked never scores a plain `miss` — a declining trend still
+  inside tolerance is honest progress, not failure). A **flat** pace line (`target == start`, a
+  maintenance goal) uses a **symmetric** ±0.3 kg band around the expected value (`mezo-iizd.8`):
+  drifting up *or* down by more than the tolerance is a `partial`, not just one direction — the
+  pre-existing one-sided losing/gaining rule only fires when the two trend endpoints actually
+  differ (`paceDirection != 0`); with `paceDirection == 0` that rule degenerates to always-`hit`
+  (any trend compared against `expected + tolerance` reads "not losing enough") or always-`partial`
+  depending on rounding, neither of which is honest for a maintain-this-weight goal. A day with no
+  signal value is `no_data` in every kind — never coerced into `miss` (the ADR-0034 guardrail in
+  §9).
 - **`LifeGoalScorer.dailyPoint`** turns one day's per-pillar statuses into the goal's weighted
   daily point: `hit=1`, `partial=0.5`, `miss=0`, weighted by each pillar's `weight` (1–3),
   `no_data` pillars excluded from both the sum and the weight total; **a day where every active
@@ -337,11 +371,15 @@ core with no Spring context.
   **is creatable** (see the catalog-validation note below), not rejected — it is permanently
   unscored by design, not unbuildable.
 - **`WeightGoalSignalSource`** (linked pillars, `feature/goal`/`feature/biometrics.weight`
-  imports) reads the trend-weight EWMA series (`WeightTrendService.computeTrend`) and the single
+  imports) reads the trend-weight EWMA series (`WeightTrendService.computeTrend`) and the
   active body-weight `GoalEntity`'s start/target line, builds a day→expected-weight `targets` map
   by the same linear interpolation as `target` kind, and returns empty `values`/`targets` (→
   every day `no_data`) when there is no active goal or no `targetWeightKg` — the honest-absence
-  rule holds even for the linked kind.
+  rule holds even for the linked kind. **The "single" active goal is picked deterministically**
+  now (`mezo-iizd.8`): `GoalRepository.findByCreatedByAndStatusAndDeletedFalseOrderByCreatedAtDesc`
+  (a new finder alongside the pre-existing unordered one) and `active.get(0)` — the newest active
+  goal is the pace-line truth if a user somehow has more than one (the single-active-goal
+  invariant is enforced on activate elsewhere, but this source cannot assume it holds).
 
 **Catalog validation** (`SignalCatalog`, `LifeGoalPillarService.validate`): every pillar's
 `source` (type+key/skillKey+measure/ring) must exact-match one of the 28 closed
@@ -357,11 +395,35 @@ pillars this creates score `no_data` forever (no `SignalSource` adapter serves `
 habit`, see above) — excluded from `dailyPoint` and from conflict detection, but not rejected at
 creation time.
 
-**AI propose, port-first-then-template** (`LifeGoalProposeService.propose`): if
-`LifeGoalProposePort` has no bean (any of `LIFEGOAL_AI_PROPOSE_SWITCH` /
-`COMPANION_SWITCH` / `LIFEGOAL_SWITCH` off) or the LLM call/parse fails or every proposed
-pillar fails catalog validation, the service falls through to `LifeGoalTemplateProposer` — a
-deterministic, dimension-keyed rule-based proposal. **The response is never empty** (spec §7).
+**AI propose, port-first-then-template, decided AFTER mapping** (`LifeGoalProposeService.propose`,
+`mezo-iwoc`): if `LifeGoalProposePort` has no bean (any of `LIFEGOAL_AI_PROPOSE_SWITCH` /
+`COMPANION_SWITCH` / `LIFEGOAL_SWITCH` off) or the LLM call/parse fails, the service falls through
+to `LifeGoalTemplateProposer` — a deterministic, dimension-keyed rule-based proposal. But an AI
+answer that *parses* can still end up with zero pillars once `toResponse`'s per-pillar filters run
+— the kind whitelist (pre-existing) plus, this round, a **target-kind drop**: a proposed `target`
+pillar needs a full pace line to be savable (`requireRuleShape`'s `startValue`/`targetValue`/
+`startDate`/`targetDate`/`direction`), and neither `PillarProposal` nor the wizard's create request
+supplies dates on its own, so a `target` pillar without a usable line is dropped rather than
+emitted unsavable — specifically one that is undated (no `req.targetDate` on the wizard's step-1
+request), already past due (`targetDate` not strictly after today), or valueless
+(`startValue`/`targetValue` null). **The ai/template choice happens only after these filters run**:
+`toResponse` is called on the AI proposal first, and only if its filtered `pillars` list comes back
+non-empty is it returned as `source="ai"`; an AI proposal that the filters emptied out falls
+through to the template exactly like a failed LLM call — the response is `source="ai"` with pillars
+**or** `source="template"`, never `source="ai"` with an empty pillar list (that would strand the
+wizard's step 3, whose `canNext` requires ≥1 active pillar). **The response is never empty**
+overall (spec §7).
+
+For a **surviving** `target` pillar, `toResponse` fills the pace line the AI/template layer never
+carries: `startDate = today`, `targetDate = req.targetDate` (the goal's own deadline — the same
+value that gated the drop above), and `direction` derived from the pace itself
+(`targetValue > startValue ⇒ up`, else `down`); a `baseline` pillar still gets the `up` default
+(pre-existing). The port signature widened alongside this:
+`LifeGoalProposePort.propose(userId, title, whyText, catalogText, catalogIds, skillKeys)` now takes
+the legal catalog-id set as its own parameter (`SignalCatalog.ids()`) — `LifeGoalProposeLlmAdapter`
+used to re-derive that set itself by string-splitting `catalogText` on `" · "` per line; the caller
+now hands it the authoritative set instead, so the adapter never depends on `promptText()`'s
+formatting to stay parseable (`mezo-iizd.3`).
 
 **The propose response must be a LEGAL create request.** The wizard feeds it into
 `POST /api/life-goals` verbatim, so anything the model over-produces would answer 200 on propose
@@ -410,11 +472,18 @@ Three tables (`db/changelog/1.0.0/script/…life_goal…sql`), all `OwnedEntity`
 **Stored rows win, missing days compute on read** (`LifeGoalProgressService.compute`): for a
 `progress`/`today` read, every active pillar is scored across a widened `[from−28, to]` window
 purely in memory via `LifeGoalScorer`, and then any stored `life_goal_pillar_day` row inside
-`[from, to]` **overwrites** the in-memory score for that day — a read never persists anything, so
-a goal that has never been `evaluate`d still renders live numbers, just none of them durable
-until the first `evaluate` call.
+that **same widened `[wideFrom, to]` window** (`mezo-iizd.8` — the stored-row fetch used to be
+scoped to the narrower `[from, to]`, so a stored row sitting inside the extra `−28` lookback the
+scorer needs for `average`/`baseline`/`arrow` context, but outside the caller's requested
+`[from, to]`, silently lost to the freshly-computed in-memory score) **overwrites** the in-memory
+score for that day — a read never persists anything, so a goal that has never been `evaluate`d
+still renders live numbers, just none of them durable until the first `evaluate` call.
 
-**Contract** — `api/feature/lifegoal/lifegoal.yml`, twelve operations:
+**Contract** — `api/feature/lifegoal/lifegoal.yml`, twelve operations, every one declaring `401`
+(missing/invalid token) alongside its own error responses (`mezo-iizd.3`, part of an
+across-fragments 401 audit — five fragments including this one had it fully missing); the
+`progress` GET's contract also now declares its `400` (`from > to`, `VALIDATION_INVALID_VALUE`) —
+the code already threw it, the contract just hadn't caught up (`mezo-iizd.8`):
 
 | Method | Path | Returns | Notes |
 |---|---|---|---|
@@ -423,7 +492,7 @@ until the first `evaluate` call.
 | GET | `/api/life-goals/{id}` | `LifeGoalResponse` | 404 if not found/owned |
 | PUT | `/api/life-goals/{id}` | `LifeGoalResponse` | editable fields only — status/pillars untouched |
 | DELETE | `/api/life-goals/{id}` | 204 | soft-delete goal + pillars + their day rows |
-| POST | `/api/life-goals/{id}/status` | `LifeGoalResponse` | lifecycle transition; 409 on illegal one |
+| POST | `/api/life-goals/{id}/status` | `LifeGoalResponse` | lifecycle transition; 409 on illegal one; a **same-status request is an idempotent 200 no-op**, not a 409 (`mezo-iizd.3`) |
 | PUT | `/api/life-goals/{id}/pillars` | `LifeGoalResponse` | replaces the whole list, `maxItems: 5`; an echoed `id` keeps that pillar |
 | GET | `/api/life-goals/signals` | `SignalCatalogResponse` | the 28-entry closed catalog + per-entry `live`/`daysWithData`/`fedPillars` liveness (`mezo-iizd.7`, see below) |
 | POST | `/api/life-goals/propose` | `LifeGoalProposeResponse` | AI-or-template draft, never empty |
@@ -448,7 +517,10 @@ non-`linked` pillar of *this* goal, matched by `SignalCatalog.find` identity aga
 active goal's active, non-`linked` pillars — an opposite intent (habit/average: `comparator`
 `gte`↔`lte`; target/baseline: `direction` `up`↔`down`) adds a deduplicated Hungarian line: `"<jel
 label> · két cél ellentétes irányba húzza (<másik cél címe>)"`. `linked` pillars are excluded on
-both sides (a body-weight pace pillar cannot "conflict" with itself across goals).
+both sides (a body-weight pace pillar cannot "conflict" with itself across goals). **The other
+goals' pillars are prefetched once** (`mezo-iizd.8`, a `Map<UUID, List<LifeGoalPillarEntity>>`
+keyed by goal id) before the double loop starts — the previous shape re-ran `activePillars(other
+Id)` once per "mine" pillar, an N×M repeat query for a goal with several pillars.
 
 **Error codes** (`messages.properties`): `LIFE_GOAL_INVALID_STATUS_TRANSITION`,
 `LIFE_GOAL_UNKNOWN_SIGNAL`, `LIFE_GOAL_UNKNOWN_SKILL`, `LIFE_GOAL_TOO_MANY_PILLARS`,
@@ -488,8 +560,36 @@ every `metric`-sourced entry simply reads `daysWithData=0`/`live=false` — inte
 same as the trigger path in §3.
 
 **FE types & mocks** — `frontend/src/data/lifegoal/lifegoalApi.ts` (generated-DTO-shaped
-hand-written types, mirroring the contract), `lifegoalMock.ts` (`MOCK_LIFE_GOALS`,
-`MOCK_SIGNAL_CATALOG`, `mockPropose`).
+hand-written types, mirroring the contract; `evaluate` was dropped from it, `mezo-iizd.8` — grep
+confirms nothing in `frontend/src` ever called it, the endpoint itself keeps its own backend ITs),
+`lifegoalMock.ts` (`MOCK_LIFE_GOALS`, `MOCK_SIGNAL_CATALOG`, `mockPropose`).
+
+**Mock mode mirrors the backend's write-side rules, not just its shapes** (`lifegoalHooks.ts`,
+`mezo-iizd.3`) — four gaps closed so a mock-mode bug can no longer hide behind a mock that is more
+permissive than the real API:
+- **`changeStatus`** now runs the same lifecycle rules `LifeGoalService` does: a `MOCK_TRANSITIONS`
+  table mirroring `LifeGoalService.TRANSITIONS` (kept in sync by comment, not by import — there is
+  no shared FE/BE source for it), a same-status idempotent no-op, and a missing goal throwing
+  `RESOURCE_NOT_FOUND` — an illegal transition throws `LIFE_GOAL_INVALID_STATUS_TRANSITION` instead
+  of silently applying.
+- **`create`/`replacePillars`** now run `mockValidatePillars`, mirroring
+  `LifeGoalPillarService.validate`'s cap (`LIFE_GOAL_TOO_MANY_PILLARS` past 5) and catalog/kind gate
+  (`LIFE_GOAL_UNKNOWN_SIGNAL` for a source not in `MOCK_SIGNAL_CATALOG`, `LIFE_GOAL_KIND_NOT_ALLOWED`
+  for a kind the entry doesn't list) — a `habit`-typed source still skips the catalog check, same
+  exception as the backend. Skill-key validation is deliberately NOT mirrored (no FE taxonomy copy
+  to check against; the real backend stays the authority there).
+- **`update`** now does a **full replace**, mirroring `LifeGoalService.apply`: every editable field
+  comes from the request, and an omitted optional (`whyText`/`targetDate`/`obstacleText`/`frame`)
+  CLEARS rather than survives from the old goal — the previous mock spread `{...g, ...v.req}`, which
+  silently kept a stale field the request meant to blank.
+- **The seed array is now hand-ordered to satisfy the backend's newest-first RULE** (`createdAt
+  DESC`, using each goal's `startDate` as the mock's proxy — the seed carries no `createdAt`),
+  which puts `lg-hustle` before `lg-kockahas`. This mirrors the *ordering rule*, not the demo
+  seed's own row order (the FE has no way to observe that). The reorder also forced
+  `mockProgress`'s arrow/pattern assignment off each goal's array *index* (`arrowFor(goalIndex)`)
+  and onto its **id** (`arrowFor(goalId)`) — an index-keyed assignment would have silently
+  reshuffled which goal gets the 'up'/'down'/'insufficient' story the moment the seed order changed
+  for an unrelated reason, which is exactly what motivated the id-keyed rewrite in the first place.
 
 ## 5. Integrations
 
@@ -506,8 +606,15 @@ hand-written types, mirroring the contract), `lifegoalMock.ts` (`MOCK_LIFE_GOALS
   tail — `LifeGoalSignal{sourceRefId, skillKey, skillKind, xp, label, occurredOn}`, `skillKind`
   derived from `ProgressionTaxonomy` (LIFE/ATHLETIC/MUSCLE). Idempotency key is the D-1
   deterministic `LifeGoalXpService.refIdFor(pillarId, day)` = `UUID.nameUUIDFromBytes(
-  "lifegoal:<pillarId>:<day>")` — stable across the job's 3-day rewrite window and across a
-  source/kind change that drops and recomputes the pillar-day rows. Only a `hit` day awards; a
+  "lifegoal:<pillarId>:<day>")` — stable across the job's 3-day rewrite window and across an
+  in-place retune (`mezo-iizd.2` keeps the pillar's UUID through edits). **Keyed on row identity,
+  not content, and that is a documented trade-off** (`mezo-iizd.8`, javadoc on `refIdFor`): a
+  pillar that is deleted and re-created as an equivalent new row mints a new UUID, so up to the
+  last 3 hit-days can double-award (≤ 3 × `xp-per-hit`, feedback-only currency, never a ledger
+  correctness issue). Keying on content (source+kind) instead would close that narrow leak but
+  break idempotency across a legitimate source/kind edit — which deliberately drops and honestly
+  re-evaluates history (§4's pillar-identity rule) — so the narrow leak is the accepted side of
+  the trade. Only a `hit` day awards; a
   `miss`/`partial`/`no_data` day never subtracts (ADR 0034). A `robustness`-keyed pillar's `hit`
   grants **nothing** — the shared progression tail recomputes that skill to an absolute streak
   target, so a delta award there would be discarded (see §9). Progression is optional via
@@ -776,10 +883,17 @@ correctly in every golden while being invisible in the app (§9).
 - **Mock/real parity, `closedAt`:** the mock `changeStatus` arm
   (`frontend/src/data/lifegoal/lifegoalHooks.ts`) now stamps `closedAt` on `done`/`archived`
   alongside `activatedAt` on activation, matching the backend — the earlier divergence (and the
-  "no UI may read `closedAt`" embargo it forced) is resolved. Note `done → archived` still
-  OVERWRITES `closedAt` on both sides; the completed-goals surface (`mezo-iizd.4`'s "Lezárt
-  célok" section, §2.1) therefore shows only the status and dimension — it must not present it
-  as the completion date without fixing that first.
+  "no UI may read `closedAt`" embargo it forced) is resolved. **`done → archived` now PRESERVES
+  `closedAt` on both sides** (`mezo-iizd.3`, flipped from the earlier overwrite-every-time
+  behavior): `LifeGoalService.changeStatus` only stamps `closedAt` when it is still `null`, and the
+  mock arm mirrors the same guard — `closedAt` is when the goal ENDED (went `done`), not when it
+  was later tidied away into `archived`. The completed-goals surface (`mezo-iizd.4`'s "Lezárt
+  célok" section, §2.1) still shows only status and dimension, not the date, but the date it would
+  read is now the honest completion date rather than the archive-tidying date if that surface is
+  ever extended to show it. **Same-status is also now an idempotent 200 no-op** on both sides
+  (`LifeGoalService.changeStatus` returns early before the transition-table check; the mock arm's
+  `if (cur.status === v.status) return` mirrors it) — a double-tap or a replayed request re-affirms
+  the state instead of 409-ing.
 - **ADR:** [`0034-measurable-life-goals.md`](../decisions/0034-measurable-life-goals.md) —
   records that this feature overrides the old PRD's IDENT-5 / anti-pattern D38 prohibition
   ("PERMA is never a widget", identity-goal progress is "never a UI progress bar") with D1's

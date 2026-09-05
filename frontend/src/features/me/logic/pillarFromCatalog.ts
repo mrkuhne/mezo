@@ -37,6 +37,8 @@ export function defaultRule(kind: PillarKind): PillarRule {
  *  measure/ring) — used by `PillarCard` to recover a pillar's unit for its value row, since
  *  `LifeGoalPillarResponse.source` carries no unit of its own. */
 export function findCatalogEntry(entries: SignalCatalogEntry[], source: PillarSource): SignalCatalogEntry | undefined {
+  // Twin of data/lifegoal/lifegoalHooks.ts's mockValidatePillars match — layering forbids
+  // data/ from importing features/me/, so this five-field match is duplicated rather than shared.
   return entries.find((e) => e.source.type === source.type
     && e.source.key === source.key
     && e.source.skillKey === source.skillKey

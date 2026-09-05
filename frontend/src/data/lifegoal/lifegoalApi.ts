@@ -46,6 +46,4 @@ export const lifegoalApi = {
   progress: (id: string, from: string, to: string) =>
     apiFetch<LifeGoalProgressResponse>(`/api/life-goals/${id}/progress?from=${from}&to=${to}`),
   today: () => apiFetch<LifeGoalTodayResponse>('/api/life-goals/today'),
-  evaluate: (id: string) =>
-    apiFetch<LifeGoalProgressResponse>(`/api/life-goals/${id}/evaluate`, { method: 'POST' }),
 }

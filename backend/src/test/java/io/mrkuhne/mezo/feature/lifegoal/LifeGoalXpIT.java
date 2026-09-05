@@ -17,6 +17,7 @@ import io.mrkuhne.mezo.feature.progression.ProgressionTaxonomy;
 import io.mrkuhne.mezo.feature.progression.repository.LevelUpEventRepository;
 import io.mrkuhne.mezo.feature.progression.repository.SkillProgressRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.LifeGoalPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.math.BigDecimal;
@@ -42,6 +43,7 @@ class LifeGoalXpIT extends AbstractIntegrationTest {
     @Autowired private SkillProgressRepository skillProgressRepository;
     @Autowired private LifeGoalPillarRepository pillarRepository;
     @Autowired private LifeGoalPillarDayRepository pillarDayRepository;
+    @Autowired private CheckInPopulator checkInPopulator;
 
     private final LocalDate today = LocalDate.now();
 
@@ -138,6 +140,35 @@ class LifeGoalXpIT extends AbstractIntegrationTest {
             .hasValueSatisfying(r -> assertThat(r.getStatus()).isEqualTo("hit"));
         assertThat(skillProgressRepository.findByCreatedByAndSkillKey(owner, ProgressionTaxonomy.ROBUSTNESS))
             .isEmpty();
+        assertThat(levelUpEventRepository.findByCreatedByAndSourceTypeAndSourceRefId(
+            owner, "LIFE_GOAL", LifeGoalXpService.refIdFor(pillar.getId(), today.minusDays(1)))).isEmpty();
+    }
+
+    /**
+     * Step 4 gap (mezo-iizd.8): a `partial` day must never award XP either — the seam
+     * (LifeGoalXpService.awardIfHit) is hit-only. Seeds an `average`-kind pillar over
+     * CHECKIN_ENERGY (metric source, CheckInPopulator) so yesterday's 7-day average lands inside
+     * the 10% band on the miss side of the threshold (avg 51/7≈7.29 vs gte 8 -> partial, not miss).
+     */
+    @Test
+    void testEvaluate_shouldAwardNothing_whenTheDayIsPartial() {
+        UUID owner = userPopulator.createUser("lifegoal-xp-partial@test.hu").getId();
+        LifeGoalEntity goal = lifeGoalPopulator.goal(owner, "active");
+        LifeGoalPillarEntity pillar = lifeGoalPopulator.pillar(goal, "Energia", "average",
+            new PillarSourceJson("metric", "CHECKIN_ENERGY", null, null, null, null),
+            new PillarRuleJson(new BigDecimal("8"), "gte", null, 7, null, null, null, null, null, null));
+        // 7 days ending yesterday: six at 8 (on-target), one at 3 -> avg 51/7 ~= 7.2857,
+        // |7.2857-8|/8 ~= 0.0893 <= 0.10 -> partial.
+        for (int i = 1; i <= 7; i++) {
+            int energy = i == 7 ? 3 : 8;
+            checkInPopulator.createCheckIn(owner, today.minusDays(i), "08:00", energy, 3, "");
+        }
+
+        progressService.evaluate(owner, goal.getId());
+
+        assertThat(pillarDayRepository.findByPillarIdAndDayAndDeletedFalse(pillar.getId(), today.minusDays(1)))
+            .hasValueSatisfying(r -> assertThat(r.getStatus()).isEqualTo("partial"));
+        assertThat(skillProgressRepository.findByCreatedByAndSkillKey(owner, "recovery")).isEmpty();
         assertThat(levelUpEventRepository.findByCreatedByAndSourceTypeAndSourceRefId(
             owner, "LIFE_GOAL", LifeGoalXpService.refIdFor(pillar.getId(), today.minusDays(1)))).isEmpty();
     }

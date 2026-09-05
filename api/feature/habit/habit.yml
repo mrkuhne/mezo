@@ -37,6 +37,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/HabitWriteResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '404':
           description: HABIT_UNKNOWN
           content:
@@ -60,6 +65,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/HabitResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '404':
           description: HABIT_UNKNOWN
           content:
@@ -97,6 +107,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HabitCatalogResponse" }
+        "401":
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemMessageList" }
   /api/habit/chain:
     post:
       tags: [Habit]
@@ -112,6 +127,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HabitChainAdmin" }
+        "401":
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemMessageList" }
   /api/habit/chain/{id}:
     patch:
       tags: [Habit]
@@ -129,6 +149,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HabitChainAdmin" }
+        "401":
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemMessageList" }
     delete:
       tags: [Habit]
       operationId: deleteHabitChain
@@ -136,6 +161,7 @@ paths:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         "204": { description: Soft-deleted }
+        "401": { description: Missing/invalid token, content: { application/json: { schema: { $ref: "#/components/schemas/SystemMessageList" } } } }
   /api/habit/chain/{id}/order:
     put:
       tags: [Habit]
@@ -154,6 +180,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HabitChainAdmin" }
+        "401":
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemMessageList" }
   /api/habit/def:
     post:
       tags: [Habit]
@@ -169,6 +200,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HabitDefAdmin" }
+        "401":
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemMessageList" }
   /api/habit/def/{id}:
     patch:
       tags: [Habit]
@@ -186,6 +222,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HabitDefAdmin" }
+        "401":
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemMessageList" }
     delete:
       tags: [Habit]
       operationId: deleteHabitDef
@@ -193,6 +234,7 @@ paths:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         "204": { description: Soft-deleted }
+        "401": { description: Missing/invalid token, content: { application/json: { schema: { $ref: "#/components/schemas/SystemMessageList" } } } }
   /api/habit/ai/suggest:
     post:
       tags: [Habit]
@@ -209,6 +251,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HabitSuggestResponse" }
+        "401": { description: Missing/invalid token, content: { application/json: { schema: { $ref: "#/components/schemas/SystemMessageList" } } } }
         "503": { description: Suggester unavailable (switch off / companion off) }
 components:
   schemas:

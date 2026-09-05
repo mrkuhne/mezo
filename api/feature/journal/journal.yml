@@ -42,6 +42,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/journal/{id}:
     put:
       tags: [Journal]
@@ -65,6 +70,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '404':
           description: JOURNAL_ENTRY_NOT_FOUND
           content:
@@ -79,6 +89,11 @@ paths:
       responses:
         '204':
           description: Deleted
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '404':
           description: JOURNAL_ENTRY_NOT_FOUND
           content:
@@ -122,6 +137,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/journal/decision/{id}/review:
     put:
       tags: [Journal]
@@ -145,6 +165,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '404':
           description: DECISION_ENTRY_NOT_FOUND
           content:
@@ -165,6 +190,7 @@ paths:
             application/json:
               schema: { type: array, items: { $ref: '#/components/schemas/GratitudeEntryResponse' } }
         '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
     post:
       tags: [Journal]
       summary: Create a gratitude entry (Journal)
@@ -181,6 +207,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/GratitudeEntryResponse' }
         '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/journal/gratitude/{id}:
     delete:
       tags: [Journal]
@@ -190,6 +217,7 @@ paths:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         '204': { description: Deleted }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
 components:
   schemas:

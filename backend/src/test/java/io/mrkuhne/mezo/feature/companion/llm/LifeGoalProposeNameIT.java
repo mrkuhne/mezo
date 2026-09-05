@@ -37,7 +37,7 @@ class LifeGoalProposeNameIT extends AbstractIntegrationTest {
 
         Optional<LifeGoalProposePort.Proposal> proposal = proposePort.propose(user.getId(), "Kockahas",
                 "hogy jól nézzek ki " + FakeCompanionLlm.LIFEGOAL_PROPOSE_SYSTEM_ECHO,
-                "sleep_duration · Alvás (average)", Set.of("recovery"));
+                "sleep_duration · Alvás (average)", Set.of("sleep_duration"), Set.of("recovery"));
 
         assertThat(proposal).isPresent();
         assertThat(proposal.get().frameNote())

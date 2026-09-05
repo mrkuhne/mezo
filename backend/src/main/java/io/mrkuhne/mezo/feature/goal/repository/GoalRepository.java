@@ -18,6 +18,9 @@ public interface GoalRepository extends JpaRepository<GoalEntity, UUID> {
     /** All owned goals in one status — drives the single-active invariant on activate. */
     List<GoalEntity> findByCreatedByAndStatusAndDeletedFalse(UUID createdBy, String status);
 
+    /** Same, newest first — for callers that must pick ONE deterministically among several. */
+    List<GoalEntity> findByCreatedByAndStatusAndDeletedFalseOrderByCreatedAtDesc(UUID createdBy, String status);
+
     /**
      * All owned goals whose status is NOT the excluded one — the startup re-evaluate runner passes
      * {@code "archived"} to reconcile every live (planned/active) goal's prescription in one query.

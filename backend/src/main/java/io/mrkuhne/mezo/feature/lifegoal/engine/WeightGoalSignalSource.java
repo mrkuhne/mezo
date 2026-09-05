@@ -47,10 +47,12 @@ public class WeightGoalSignalSource implements SignalSource {
 
     @Override
     public SignalWindow window(UUID userId, PillarSourceJson source, LocalDate from, LocalDate to) {
-        List<GoalEntity> active = goalRepository.findByCreatedByAndStatusAndDeletedFalse(userId, ACTIVE_STATUS);
+        List<GoalEntity> active =
+            goalRepository.findByCreatedByAndStatusAndDeletedFalseOrderByCreatedAtDesc(userId, ACTIVE_STATUS);
         if (active.isEmpty()) {
             return new SignalWindow(Map.of(), Map.of());
         }
+        // Multiple actives → the newest one is the pace-line truth (deterministic pick).
         GoalEntity goal = active.get(0);
         if (goal.getTargetWeightKg() == null) {
             return new SignalWindow(Map.of(), Map.of());

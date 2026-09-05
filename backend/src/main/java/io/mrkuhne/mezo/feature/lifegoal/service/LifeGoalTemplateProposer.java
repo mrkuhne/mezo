@@ -20,8 +20,13 @@ public class LifeGoalTemplateProposer {
         return new PillarProposal(id, label, "average", skill, 1, new BigDecimal(threshold), "gte", null, null, null);
     }
 
+    // threshold/comparator: LifeGoalPillarService.requireRuleShape needs both for kind=habit too
+    // (not just daysPerWeek) — the same honest-placeholder default the FE catalog sheet's
+    // defaultRule() ships for a habit pick (pillarFromCatalog.ts), since the template has no
+    // per-signal numeric default to draw on either. Without this, LifeGoalProposeService's
+    // habit/average drop-filter (mezo-iwoc) would strip every template habit pillar as unsavable.
     private static PillarProposal habit(String id, String label, String skill, int days) {
-        return new PillarProposal(id, label, "habit", skill, 1, null, null, days, null, null);
+        return new PillarProposal(id, label, "habit", skill, 1, BigDecimal.ONE, "gte", days, null, null);
     }
 
     private static PillarProposal base(String id, String label, String skill) {
