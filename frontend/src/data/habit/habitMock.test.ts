@@ -51,4 +51,20 @@ describe('mock habit seed — keret-invariánsok', () => {
         .toEqual([null, null, null, null])
     }
   })
+
+  test('a mock katalógus hordoz egy játszható horgony-párt (mezo-3zue.6)', () => {
+    const defs = mockHabitCatalog.chains.flatMap((c) => c.defs)
+    const dependent = defs.find((d) => d.habitKey === 'morning_video')
+    const anchor = defs.find((d) => d.habitKey === 'morning_pushups')
+    expect(dependent?.anchorHabitKey).toBe('morning_pushups')
+    // mindkét oldal MANUAL és nyitott a mock napban — különben a lánc nem játszható végig
+    expect(anchor?.mode).toBe('MANUAL')
+    expect(dependent?.mode).toBe('MANUAL')
+    const day = mockHabitDay.filter((h) => h.key === 'morning_pushups' || h.key === 'morning_video')
+    expect(day).toHaveLength(2)
+    expect(day.every((h) => h.status === 'pending')).toBe(true)
+    // FOGG-teljes: a validátor horgonyt ÉS ünneplést vár (HabitFrameworkValidator)
+    expect(dependent?.framework).toBe('FOGG')
+    expect(dependent?.celebration).toBeTruthy()
+  })
 })

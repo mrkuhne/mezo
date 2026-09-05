@@ -529,6 +529,10 @@ mezo:
       # names a block that is not actually rendered (deliberate: the prompt is not made
       # conditional on this value).
       people-max-persons: 12
+      # mezo-iizd.10: how many active life goals the [Célok] snapshot block lists (chat AND the
+      # morning variant — user decision: the morning reminder is a wanted, supportive nudge).
+      # 0 = the block is omitted entirely.
+      lifegoal-max-goals: 3
     tools:
       # V0.5 tool calling — per-turn call budget + result-window clamps (spec §5 discipline)
       max-calls-per-turn: 15

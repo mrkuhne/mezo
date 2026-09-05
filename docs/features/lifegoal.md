@@ -16,6 +16,8 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/service/LifeGoalSignalService.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/LifeGoalProposePort.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/LifeGoalProposeLlmAdapter.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/LifeGoalSource.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/service/LifeGoalCompanionAdapter.java
   - api/feature/lifegoal/lifegoal.yml
   - frontend/src/data/lifegoal
   - frontend/src/features/me/pages/CelokPage.tsx
@@ -43,8 +45,9 @@ related: [goal-engine, growth, companion, me, today, train]
 > OUTSIDE its own pages: the Nap "Célok · ma" tile, the goal-detail conflict sentence, the Heti
 > `WeekGoalsCard`, the weekly-review prompt's `ÉLETCÉLOK` block, the Célok hub's closed-goals
 > section + Súlycél row, the Én-hub life-goal hero, and the Growth skill-row `goalchip` — see §2.
-> Still 🔴 not built: the `[Célok]` **companion (chat) prompt block** + a `get_life_goals` chat
-> tool, and the knowledge-graph `GOAL` node — see §9.**
+> ✅ **`mezo-iizd.10`** — the companion `[Célok]` **chat + morning prompt block** (via the
+> `LifeGoalSource` port's `LifeGoalCompanionAdapter`, read-only) + the `get_life_goals` chat tool —
+> see §5. Still 🔴 not built: the knowledge-graph `GOAL` node — see §9.**
 
 ## 1. Summary
 
@@ -93,8 +96,11 @@ ADR: [`0034-measurable-life-goals.md`](../decisions/0034-measurable-life-goals.m
   skill-row `goalchip` (`goalSkillChips`) — all dual-mode, all with their own tests + visual
   goldens. **Backend, same slice:** the weekly-review prompt's `ÉLETCÉLOK · AZ ELMÚLT 7 NAP`
   block in `WeeklyReviewContextSources` (see [`proactive.md`](proactive.md) §3).
-- **Still deferred** (§9): the `[Célok]` **companion (chat)** prompt block + a `get_life_goals`
-  chat tool, and the knowledge-graph `GOAL` node (blocked on `mezo-06o0.5`).
+- **Companion embedding (`mezo-iizd.10`, ✅ shipped):** `LifeGoalCompanionAdapter` implements the
+  companion-owned `LifeGoalSource` port; the `[Célok]` block rides both `ContextSnapshotAssembler
+  .render` (chat) and `.renderWithoutBiometrics` (morning message), and `get_life_goals` is a new
+  chat tool — see §5.
+- **Still deferred** (§9): the knowledge-graph `GOAL` node (blocked on `mezo-06o0.5`).
 
 ## 2. User-facing behavior
 
@@ -551,10 +557,27 @@ hand-written types, mirroring the contract), `lifegoalMock.ts` (`MOCK_LIFE_GOALS
   this week's arrows under „a hét iránya"), the Én hub's life-goal hero (dimension chips + the
   ↗/→/↘ counters, opening `/me/goals`), and the Growth skill row's `goalchip` (`goalSkillChips`).
   See [`me.md`](me.md) §2 and [`growth.md`](growth.md).
-- **🟣 Deferred seams (spec §5–§7):** `companion/LifeGoalSource` port feeding the
-  `ContextSnapshotAssembler` `[Célok]` **chat** prompt block + a `get_life_goals` chat tool; the
-  knowledge-graph `GOAL` node (`GraphPromotionService`, blocked on `mezo-06o0.5`). Neither reads
-  nor writes anything today.
+- **→ Companion (chat + morning message)** (`mezo-iizd.10`, ✅ shipped): `LifeGoalCompanionAdapter`
+  (`feature/lifegoal/service`, `LIFEGOAL_SWITCH`-gated) implements the companion-owned
+  `companion/LifeGoalSource` port (`summary`/`details`), read straight from `LifeGoalProgressService
+  .today`/`.progress` + the active-goal/pillar repositories — no new query surface. It feeds
+  `ContextSnapshotAssembler`'s `[Célok]` block (BOTH the chat turn and the biometrics-free morning
+  message — a deliberate 2026-09-05 design decision, unlike the chat-only `[Emberek]` precedent)
+  and the `get_life_goals` chat tool's rich per-goal view. See [`companion.md`](companion.md)'s
+  "Célok a chat pillanatképben" section for the full write-up. STRICTLY read-only: the adapter
+  never emits, never writes, and never calls `LifeGoalTriggerService` — it re-runs the SAME pure
+  `LifeGoalTriggerRules` predicates the trigger service uses, privately, purely to answer "is this
+  ha–akkor plan live today" for the prompt. In particular `ritual_missed` — an absence-based signal
+  that would otherwise ALWAYS look "missed" on the still-open current day — is evaluated against
+  the last CLOSED day (`today.minusDays(1)`), and only once the ritual has been "adopted" (a
+  positive-value day exists for that signal within the `RITUAL_ADOPTION_WINDOW_DAYS` window ending
+  the day before the eval day) — mirroring the `LifeGoalTriggerService`'s own private adoption gate
+  (its "F4 kapu"). A sleeping signal (no matching `SignalSource` bean) leaves the plan out rather
+  than guessing. The real reminder push (and its `dedupKey` dedup) still rides
+  `LifeGoalTriggerService`'s feed notification — this surface states a fact ("ma él: …") for the
+  model, never a second nudge channel.
+- **🟣 Still deferred (spec §5–§7):** the knowledge-graph `GOAL` node (`GraphPromotionService`,
+  blocked on `mezo-06o0.5`). Reads nor writes anything today.
 
 ## 6. How to use it (consume)
 
@@ -812,8 +835,27 @@ correctly in every golden while being invisible in the app (§9).
   week's direction — the same gate `WeekNextCard` uses), and **a no-data week is never a zero**
   (`goalWeekSentence.ts` and the backend's `ÉLETCÉLOK` block both say "nincs adata" instead of
   tallying `0 találat-nap`, on both sides of the wire).
-- **Still deferred** (spec §5–§7): the companion `[Célok]` **chat** prompt block +
-  `get_life_goals` chat tool, and the knowledge-graph `GOAL` node (blocked on `mezo-06o0.5`).
+- **Companion embedding SHIPPED** (`mezo-iizd.10`, spec §5–§7): the `companion/LifeGoalSource`
+  port + `LifeGoalCompanionAdapter` (`LIFEGOAL_SWITCH`-gated, strictly read-only, never emits)
+  feed the `[Célok]` snapshot block into BOTH `ContextSnapshotAssembler.render` (chat) and
+  `.renderWithoutBiometrics` (morning message — a deliberate departure from the chat-only
+  `[Emberek]` precedent, see [`companion.md`](companion.md)) and the `get_life_goals` chat tool
+  — see §5. **Gotcha — the "ma él" (live today) re-evaluation is a documented simplification, not
+  the real trigger engine:** the adapter re-runs `LifeGoalTriggerRules`'s pure predicates
+  privately (no `LifeGoalTriggerService` call, no emit, no `dedupKey`) to answer "is this
+  ha–akkor plan live today" for the prompt. It deliberately ignores `delayHours` (the gate that
+  pushes a delayed plan onto the job branch and re-evaluates only the last 3 closed days) for
+  every trigger EXCEPT `ritual_missed` — so a `delayHours > 0` plan can render "live" here earlier
+  than the real trigger service would actually fire it (pinned by
+  `LifeGoalCompanionAdapterIT.testSummary_shouldMarkDelayedPlanLiveOnToday_asADocumentedSimplification`).
+  `ritual_missed` gets the one exception it needs: since it's an ABSENCE signal that would always
+  read "missed" on the still-open current day, it is evaluated against the last CLOSED day
+  (`today.minusDays(1)`), and ONLY once the ritual has been "adopted" — a positive-value day
+  exists for that signal within `RITUAL_ADOPTION_WINDOW_DAYS` (14 days) ending the day before the
+  eval day — mirroring `LifeGoalTriggerService`'s own private adoption gate (its "F4 kapu"), so an
+  unused or abandoned ritual is never nagged about. A sleeping signal (no `SignalSource` bean
+  supports it) drops the plan out rather than guessing.
+- **Still deferred** (spec §5–§7): the knowledge-graph `GOAL` node (blocked on `mezo-06o0.5`).
 
 ## 10. Key files
 
@@ -854,6 +896,16 @@ LifeGoalEvalJobSwitchOffIT, LifeGoalTriggerIT, LifeGoalSignalsLivenessIT}.java`;
 `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewContextSources.java`
 (`appendLifeGoals` + `NO_DATA_PHRASE`), pinned by
 `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/WeeklyReviewContextSourcesIT.java`.
+
+**Companion embedding (`mezo-iizd.10`)** —
+`backend/src/main/java/io/mrkuhne/mezo/feature/companion/LifeGoalSource.java` (the companion-owned
+port); `backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/service/LifeGoalCompanionAdapter.java`
+(`LIFEGOAL_SWITCH`-gated implementation — read-only, re-runs `LifeGoalTriggerRules` privately for
+"ma él", never emits); `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/
+LifeGoalSnapshotBlock.java` + `feature/companion/tools/{LifeGoalText, LifeGoalTools}.java` (the
+`[Célok]` snapshot block + `get_life_goals` tool — full write-up in [`companion.md`](companion.md)).
+**Tests** — `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal/LifeGoalCompanionAdapterIT.java`
+(incl. the documented `ritual_missed`/delayed-plan simplifications).
 
 **Contract** — `api/feature/lifegoal/lifegoal.yml`.
 

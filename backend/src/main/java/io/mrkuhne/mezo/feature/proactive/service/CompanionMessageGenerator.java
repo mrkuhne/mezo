@@ -82,7 +82,9 @@ public class CompanionMessageGenerator {
             + "külön üzenet szól majd, amint {{NÉV}} rögzítette őket; (2) fókusz: a mai terv "
             + "(edzés, kalóriakeret, gyógyszer) és a hét trendje; (3) zárd 2-3 konkrét, apró "
             + "fókuszponttal; (4) számot vagy adatot kitalálni tilos; (5) gyógyszer adagolására "
-            + "vonatkozó változtatást SOHA ne javasolj — az orvosi döntés. "
+            + "vonatkozó változtatást SOHA ne javasolj — az orvosi döntés; (6) a [Célok] blokk "
+            + "életcéljaira támogatóan utalhatsz, de a ha–akkor tervek emlékeztetőit külön "
+            + "értesítés viszi — azok szövegét NE ismételd. "
             + "Válaszolj KIZÁRÓLAG szigorú JSON-nal, markdown nélkül, pontosan ebben a formában: "
             + "{\"eyebrow\": \"egysoros fejléc\", \"body\": [\"bekezdés\", ...], "
             + "\"refIndexes\": [a felhasznált HIVATKOZÁS-JELÖLTEK sorszámai]}";

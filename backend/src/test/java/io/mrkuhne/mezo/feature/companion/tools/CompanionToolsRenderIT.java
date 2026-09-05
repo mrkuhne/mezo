@@ -28,6 +28,7 @@ import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.HabitPopulator;
 import io.mrkuhne.mezo.support.populator.IntentionPopulator;
 import io.mrkuhne.mezo.support.populator.LevelUpEventPopulator;
+import io.mrkuhne.mezo.support.populator.LifeGoalPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationPopulator;
@@ -79,6 +80,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private GrowthTools growthTools;
     @Autowired private PracticeTools practiceTools;
     @Autowired private InsightsTools insightsTools;
+    @Autowired private LifeGoalTools lifeGoalTools;
     @Autowired private QuestPopulator questPopulator;
     @Autowired private HabitPopulator habitPopulator;
     @Autowired private IntentionPopulator intentionPopulator;
@@ -107,6 +109,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private LevelUpEventPopulator levelUpEventPopulator;
     @Autowired private GamificationPopulator gamificationPopulator;
     @Autowired private PatternPopulator patternPopulator;
+    @Autowired private LifeGoalPopulator lifeGoalPopulator;
 
     private ToolCallAudit audit;
 
@@ -1525,5 +1528,22 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         assertThat(insightsTools.getInsights("experiments", ctx(owner)))
                 .isEqualTo("Kísérletek: még nem elérhető");
         assertThat(audit.toRefsEnvelope()).isNull();
+    }
+
+    @Test
+    void testGetLifeGoals_shouldRenderGoalPillarsAndPlans_whenActiveGoalSeeded() {
+        UUID owner = userPopulator.createUser().getId();
+        var goal = lifeGoalPopulator.goal(owner, "active");
+        lifeGoalPopulator.sleepPillar(goal);
+
+        String out = lifeGoalTools.getLifeGoals(ctx(owner));
+
+        assertThat(out).contains("Kockahas").contains("Egészség").contains("Alvás");
+    }
+
+    @Test
+    void testGetLifeGoals_shouldSayNincsAktivEletcel_whenNoGoals() {
+        UUID owner = userPopulator.createUser().getId();
+        assertThat(lifeGoalTools.getLifeGoals(ctx(owner))).isEqualTo("Életcél: nincs aktív életcél");
     }
 }
