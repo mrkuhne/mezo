@@ -847,6 +847,19 @@ mezo:
         absolute-hour: 22.5
         min-days-of-last-three: 2
         window-days: 3
+      protocol-lapse:
+        # Round 2 S1 (mezo-d58h.7.1, spec 2026-09-05 §(11)). The FIRST missed due day is an
+        # implicit grace day and never speaks — Duolingo's streak-freeze pattern, adopted
+        # deliberately: this card's job is "resume today and the streak lives", not "you broke it".
+        consecutive-missed-days: 2
+        # A habit must have EXISTED before it can lapse: >=7 due days of history at >=60%
+        # adherence inside the 30 days before the miss run. A brand-new item is silent by
+        # construction, and so is an item that was never really taken.
+        history-window-days: 30
+        min-history-due-days: 7
+        min-history-adherence: 0.60
+        # Per-ITEM re-announce guard, enforced in the rule (see the cooldown-hours comment).
+        per-item-cooldown-days: 7
       cooldown-hours:
         # A raised flag stays raised for its cooldown: the evaluator re-runs constantly (every
         # write + hourly), and without this the log would fill with the same day's state.

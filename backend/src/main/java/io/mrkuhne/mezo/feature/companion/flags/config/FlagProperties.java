@@ -40,7 +40,9 @@ public record FlagProperties(
     @NotNull @Valid RapidWeightLoss rapidWeightLoss,
     @NotNull @Valid JointOveruse jointOveruse,
     @NotNull @Valid IgnoredNudge ignoredNudge,
-    @NotNull @Valid LateEating lateEating
+    @NotNull @Valid LateEating lateEating,
+
+    @NotNull @Valid ProtocolLapse protocolLapse
 ) {
 
     /** Check-in stress is a 1–10 scale (the contract's SaveCheckInRequest bounds). */
@@ -204,6 +206,24 @@ public record FlagProperties(
          *  condition) to raise. */
         @Min(1) @Max(30) int minDaysOfLastThree,
         @Min(1) @Max(30) int windowDays
+    ) {
+    }
+
+    /** Spec 2026-09-05 §(11): a protocol item missed on consecutive DUE days, but only where a
+     *  real habit existed first. "Due" is derived, never stored — see {@code ProtocolLapseRule}. */
+    public record ProtocolLapse(
+        /** Fire only on the Nth consecutive missed due day; N-1 misses are implicit grace days. */
+        @Min(2) @Max(14) int consecutiveMissedDays,
+        /** How far back the prior-habit adherence is measured, ending the day before the miss run. */
+        @Min(7) @Max(90) int historyWindowDays,
+        /** Honest small-n gate: fewer DUE days than this inside the history window ⇒ no habit to
+         *  lose, so no flag (a freshly added item can never lapse). */
+        @Min(1) @Max(90) int minHistoryDueDays,
+        /** Taken/due ratio in the history window at or above which a live streak is credited. */
+        @DecimalMin("0.0") @DecimalMax("1.0") double minHistoryAdherence,
+        /** The spec's per-ITEM cooldown, enforced inside the rule against its own past raises —
+         *  FlagService's cooldown is per key and cannot express this. */
+        @Min(1) @Max(90) int perItemCooldownDays
     ) {
     }
 
