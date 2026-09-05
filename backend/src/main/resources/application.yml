@@ -1726,6 +1726,7 @@ mezo:
     strength-window-days: 28
     min-sample: 5
     summary-days: 30
+    backfill-days: 1              # MANUAL check/uncheck window: today - N .. today (mezo-x9c2)
   # Daily intention tuning (mezo-a686): focus cap + text limits are config, never code.
   # Binds onto IntentionProperties.
   intention:

@@ -16,4 +16,5 @@ public record HabitProperties(
     @Min(0) int kitchenCloseOffsetMin,
     @Min(1) int strengthWindowDays,
     @Min(1) int minSample,
-    @Min(1) int summaryDays) {}
+    @Min(1) int summaryDays,
+    @Min(0) int backfillDays) {}
