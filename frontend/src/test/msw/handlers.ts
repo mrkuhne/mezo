@@ -184,6 +184,17 @@ export function resetTutorialProgressState(): void {
   tutorialProgressState = {}
 }
 
+type MemoryFeedbackState = {
+  runId: string
+  resultId: string
+  action: 'useful' | 'irrelevant' | 'suppress'
+  updatedAt: string
+}
+let memoryRetrievalFeedbackState: MemoryFeedbackState[] = []
+export function resetMemoryRetrievalFeedbackState(): void {
+  memoryRetrievalFeedbackState = []
+}
+
 // ── Life-goal write helpers (mezo-iizd.1) ────────────────────────────────────────────────
 // The five write endpoints all answer with a full LifeGoalResponse built off the seeded goal,
 // so a real-mode test of a write path asserts against the SAME shape the backend echoes
@@ -1410,6 +1421,10 @@ export const handlers = [
           recalled: [{
             occurredOn: '2026-07-01', kind: 'journal_entry', label: 'napló',
             gist: 'korábban is rosszul aludtál edzés után', similarity: 0.88,
+            retrievalRunId: '44444444-4444-4444-8444-444444444444',
+            retrievalResultId: '55555555-5555-4555-8555-555555555555',
+            memoryItemId: '66666666-6666-4666-8666-666666666666',
+            indicator: 'naplóbejegyzés',
           }],
           degraded: false,
         })))
@@ -1441,6 +1456,27 @@ export const handlers = [
       enabled: false, perDay: [],
       totals: { calls: 0, inputTokens: 0, outputTokens: 0, costUsd: null },
     }),
+  ),
+  http.get(`${API_BASE}/api/companion/memory/retrieval-feedback`, ({ request }) => {
+    const ids = new URL(request.url).searchParams.get('resultIds')?.split(',') ?? []
+    return HttpResponse.json(memoryRetrievalFeedbackState.filter((row) => ids.includes(row.resultId)))
+  }),
+  http.put(
+    `${API_BASE}/api/companion/memory/retrieval/:runId/result/:resultId/feedback`,
+    async ({ params, request }) => {
+      const body = (await request.json()) as { action: MemoryFeedbackState['action'] }
+      const stored: MemoryFeedbackState = {
+        runId: String(params.runId),
+        resultId: String(params.resultId),
+        action: body.action,
+        updatedAt: new Date().toISOString(),
+      }
+      memoryRetrievalFeedbackState = [
+        ...memoryRetrievalFeedbackState.filter((row) => row.resultId !== stored.resultId),
+        stored,
+      ]
+      return HttpResponse.json(stored)
+    },
   ),
 
   // Journal (mezo-b3pp.1) — honest-empty default list; create/update echo a

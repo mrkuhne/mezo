@@ -1,7 +1,7 @@
 import '@testing-library/jest-dom/vitest'
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 import { server } from '@/test/msw/server'
-import { resetTutorialProgressState } from '@/test/msw/handlers'
+import { resetMemoryRetrievalFeedbackState, resetTutorialProgressState } from '@/test/msw/handlers'
 import { setCurrentUserId } from '@/shared/lib/userScope'
 
 // Node 25 ships an experimental native `localStorage` global that lacks the
@@ -42,6 +42,7 @@ afterEach(() => server.resetHandlers())
 // in-memory state a handler closes over (e.g. the tutorial-progress seen-store), so that state
 // needs its own explicit reset or a PUT in one test leaks into the next test's GET.
 afterEach(() => resetTutorialProgressState())
+afterEach(() => resetMemoryRetrievalFeedbackState())
 // Sticky in-view tabs (useStickyTab) persist to sessionStorage; clear it between
 // tests so a remembered segment never leaks into the next test's default.
 afterEach(() => {
