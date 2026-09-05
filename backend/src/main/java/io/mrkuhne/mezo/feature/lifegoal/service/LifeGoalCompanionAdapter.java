@@ -132,7 +132,18 @@ public class LifeGoalCompanionAdapter implements LifeGoalSource {
             .map(Candidate::label).orElse(null);
     }
 
-    /** „ma él": a trigger predikátuma áll ma — LifeGoalTriggerRules, EMIT NÉLKÜL. */
+    /**
+     * „ma él": a trigger predikátuma áll ma — LifeGoalTriggerRules, EMIT NÉLKÜL.
+     *
+     * <p>SZÁNDÉKOS EGYSZERŰSÍTÉS: a {@code delayHours}-t (a {@code LifeGoalTriggerService.isDelayed}
+     * gate-jét, ami a késleltetett tervet a job-ágra tolja és csak a három lezárt napra futtatná
+     * újra) itt figyelmen kívül hagyjuk a {@code ritual_missed}-en kívül — minden más tervet a MAI
+     * nap értékére kérdezünk. Ez a felület egy „ma él" TÉNY-állítás a promptnak, nem pontos
+     * tüzelés-előrejelzés; egy delayHours&gt;0 terv tehát itt korábban látszhat élőnek, mint amikor
+     * a valódi trigger-service ténylegesen kiértékelné (lásd {@code LifeGoalCompanionAdapterIT
+     * .testSummary_shouldMarkDelayedPlanLiveOnToday_asADocumentedSimplification}, ami lepinneli ezt
+     * a viselkedést).
+     */
     private List<String> livePlans(UUID userId, LocalDate today) {
         List<String> live = new ArrayList<>();
         for (LifeGoalEntity goal : activeGoals(userId)) {

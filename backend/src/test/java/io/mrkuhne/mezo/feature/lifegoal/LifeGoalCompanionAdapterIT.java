@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.lifegoal.repository.LifeGoalRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.LifeGoalPopulator;
+import io.mrkuhne.mezo.support.populator.RitualPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.LocalDate;
 import java.util.List;
@@ -29,6 +30,7 @@ class LifeGoalCompanionAdapterIT extends AbstractIntegrationTest {
     @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private LifeGoalRepository goalRepository;
     @Autowired private AppNotificationRepository notificationRepository;
+    @Autowired private RitualPopulator ritualPopulator;
 
     @Test
     void testSummary_shouldListActiveGoalsAndWeakestPillar_whenPillarDaysExist() {
@@ -78,6 +80,63 @@ class LifeGoalCompanionAdapterIT extends AbstractIntegrationTest {
         assertThat(summary.livePlans()).containsExactly("ha az energiám 4 alatt van, akkor 10 perc séta");
         // a blokk KONTEXTUS: az adapter sosem emittál (a nudge a LifeGoalTriggerService-é)
         assertThat(notificationRepository.findAll()).isEmpty();
+    }
+
+    @Test
+    void testSummary_shouldMarkRitualMissedPlanLive_whenRitualIsAdoptedAndYesterdayWasMissed() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        LifeGoalEntity goal = lifeGoalPopulator.goal(owner, "active");
+        goal.setIfThenPlans(List.of(new IfThenPlanJson(
+            "ha kihagyom a napzárást", "akkor 2 perc lélegzés",
+            new PlanTriggerJson("ritual_missed", null, null))));
+        goalRepository.saveAndFlush(goal);
+        // Adopció: volt lezárt nap a 14 napos ablakon belül (today-2 óta visszamenőleg) —
+        // tegnap (today-1) viszont NINCS lezárva, tehát a hiány valódi.
+        ritualPopulator.closedDay(owner, today.minusDays(5));
+
+        LifeGoalSource.Summary summary = adapter.summary(owner, today);
+
+        assertThat(summary.livePlans()).containsExactly("ha kihagyom a napzárást, akkor 2 perc lélegzés");
+    }
+
+    @Test
+    void testSummary_shouldKeepRitualMissedPlanQuiet_whenRitualWasNeverAdopted() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        LifeGoalEntity goal = lifeGoalPopulator.goal(owner, "active");
+        goal.setIfThenPlans(List.of(new IfThenPlanJson(
+            "ha kihagyom a napzárást", "akkor 2 perc lélegzés",
+            new PlanTriggerJson("ritual_missed", null, null))));
+        goalRepository.saveAndFlush(goal);
+        // Sosem volt lezárt napzárás — a felhasználó nem is kezdte el a rituálét, nem nyaggatjuk.
+
+        LifeGoalSource.Summary summary = adapter.summary(owner, today);
+
+        assertThat(summary.livePlans()).isEmpty();
+    }
+
+    /**
+     * A {@code delayHours}-t (LifeGoalTriggerRules-szinten "delayed" tervek) az adapter MA is
+     * a mai napra értékeli — ez SZÁNDÉKOS egyszerűsítés (a companion-blokk tény-állítás, nem
+     * pontos tüzelés-előrejelzés): a valódi {@code LifeGoalTriggerService.fireDelayed} csak a
+     * három lezárt napra (tegnap, -2, -3) futtatná újra, itt viszont a "ma él" a mai nap
+     * értékét kérdezi. Ez a teszt PINNEL le a jelenlegi (elfogadott) viselkedést.
+     */
+    @Test
+    void testSummary_shouldMarkDelayedPlanLiveOnToday_asADocumentedSimplification() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        LifeGoalEntity goal = lifeGoalPopulator.goal(owner, "active");
+        goal.setIfThenPlans(List.of(new IfThenPlanJson(
+            "ha az energiám 4 alatt van", "akkor 10 perc séta",
+            new PlanTriggerJson("checkin_energy_lte", "4", 24))));
+        goalRepository.saveAndFlush(goal);
+        checkInPopulator.createCheckIn(owner, today, "06:30", 3, 5, null); // energia 3 ≤ 4 → él
+
+        LifeGoalSource.Summary summary = adapter.summary(owner, today);
+
+        assertThat(summary.livePlans()).containsExactly("ha az energiám 4 alatt van, akkor 10 perc séta");
     }
 
     @Test
