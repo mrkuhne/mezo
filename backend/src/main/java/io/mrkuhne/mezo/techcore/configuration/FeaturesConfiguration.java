@@ -211,6 +211,13 @@ public class FeaturesConfiguration {
     public static final String LLM_LOG_RETENTION_JOB_SWITCH =
         "mezo.techcore.cron.llm-log-retention-job.enabled";
 
+    /** mezo-oou9: retrieval-audit physical-purge cron — was gated ONLY by {@link #COMPANION_SWITCH}
+     *  with no independent kill-switch (a test-infra gap the ResetDatabase-vs-async audit surfaced).
+     *  Off ⇒ the MemoryRetrievalRetentionJob bean does not exist (audit rows keep aging past their
+     *  retention window; nothing else changes). */
+    public static final String MEMORY_RETRIEVAL_RETENTION_JOB_SWITCH =
+        "mezo.techcore.cron.memory-retrieval-retention-job.enabled";
+
     /** Push notifications (bd mezo-h4wp.6) — off ⇒ no notification beans, /api/notification/* 404s. */
     public static final String NOTIFICATION_SWITCH = "mezo.feature.notification.enabled";
 
