@@ -144,10 +144,20 @@ public class HabitService {
     public HabitWriteResponse check(UUID userId, String key, LocalDate date) {
         HabitDefEntity def = requireDef(userId, key);
         requireManualWithinBackfillWindow(def, date);
-        ensureRows(userId, date); // the REQUEST date — a never-opened yesterday has no rows yet
+        // TODAY keeps the full-catalog reconcile (the day's lazy-creation heartbeat — other defs'
+        // rows must exist for getDay/evaluateIntraday). A PAST date (backfill) must materialize
+        // ONLY the checked key's row: reconciling the whole catalog on a never-opened yesterday
+        // would plant pending rows for every other habit too, and closeStaleRows (next today-open)
+        // would then silently DERIVED-complete the vacuously-satisfied ones and award unearned XP
+        // for a day the user never touched — see mezo-x9c2 final review finding 1.
+        if (date.equals(LocalDate.now())) {
+            ensureRows(userId, date);
+        } else {
+            ensureRow(userId, date, def);
+        }
         HabitDayEntity row = repository
             .findByCreatedByAndHabitDateAndHabitKey(userId, date, key)
-            .orElseThrow(); // unreachable: ensureRows just reconciled every catalog row for date
+            .orElseThrow(); // unreachable: ensureRows/ensureRow just materialized this row
         // pending (live day) and missed (cron-closed backfill target) both flip; done guards.
         if (!HabitDayEntity.STATUS_PENDING.equals(row.getStatus())
             && !HabitDayEntity.STATUS_MISSED.equals(row.getStatus())) {
@@ -348,6 +358,30 @@ public class HabitService {
         } catch (DataIntegrityViolationException e) {
             // lost the race against the cron/another read/concurrent check — the rows exist now
             return repository.findByCreatedByAndHabitDate(userId, date);
+        }
+    }
+
+    /**
+     * Single-row counterpart to {@link #ensureRows(UUID, LocalDate, List)} for a PAST date
+     * (mezo-x9c2 final review finding 1): materializes only the one def's row for {@code date},
+     * never the whole catalog — reconciling every def would plant pending rows for unrelated
+     * habits on a never-opened yesterday, which the next today-open's {@code closeStaleRows}
+     * would then silently DERIVED-complete (some metrics are vacuously satisfied with zero data)
+     * and award XP for a day the user never touched. No-op if the row already exists.
+     */
+    private void ensureRow(UUID userId, LocalDate date, HabitDefEntity def) {
+        if (repository.findByCreatedByAndHabitDateAndHabitKey(userId, date, def.getHabitKey())
+            .isPresent()) {
+            return;
+        }
+        HabitDayEntity e = new HabitDayEntity();
+        e.setCreatedBy(userId);
+        e.setHabitDate(date);
+        e.setHabitKey(def.getHabitKey());
+        try {
+            repository.saveAndFlush(e);
+        } catch (DataIntegrityViolationException ex) {
+            // lost the race against a concurrent check/cron for this exact row — it exists now
         }
     }
 

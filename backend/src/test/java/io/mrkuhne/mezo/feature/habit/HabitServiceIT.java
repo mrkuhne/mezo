@@ -232,7 +232,11 @@ class HabitServiceIT extends AbstractIntegrationTest {
 
     /**
      * Backfill (mezo-x9c2): a yesterday whose rows never materialized (the user never opened
-     * the app that day) must not 500 — ensureRows materializes the REQUEST date's rows.
+     * the app that day) must not 500 — check() materializes the checked key's row for the
+     * REQUEST date. Final review finding 1: for a PAST date this must be narrow — ONLY the
+     * checked habit's row, not the whole catalog (a full-catalog reconcile here would plant
+     * pending rows for every other habit too, which the next today-open's closeStaleRows would
+     * then silently DERIVED-complete for vacuously-satisfied metrics and award unearned XP).
      */
     @Test
     void testCheck_shouldMaterializeAbsentRows_whenYesterdayNeverTouched() {
@@ -243,7 +247,28 @@ class HabitServiceIT extends AbstractIntegrationTest {
         HabitWriteResponse res = habitService.check(owner, "morning_sunlight", yesterday);
 
         assertThat(res.getHabit().getStatus().getValue()).isEqualTo("done");
-        assertThat(repository.findByCreatedByAndHabitDate(owner, yesterday)).isNotEmpty();
+        assertThat(repository.findByCreatedByAndHabitDate(owner, yesterday)).hasSize(1);
+    }
+
+    /**
+     * Backfill (mezo-x9c2, final review finding 1 — critical): backfilling one MANUAL habit on a
+     * never-opened yesterday must not fabricate DERIVED awards for unrelated habits. Before the
+     * fix, check()'s full-catalog ensureRows planted pending rows for every def on that date, and
+     * the next today-open's closeStaleRows silently completed the vacuously-satisfied DERIVED
+     * ones (no data at all reads as "satisfied" for some metrics) and awarded them XP for a day
+     * the user never touched. Only the one manual award should exist for yesterday afterward.
+     */
+    @Test
+    void testCheck_shouldNotAwardUnrelatedDerivedHabits_whenYesterdayNeverTouched() {
+        UUID owner = owner();
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        // no populator call — yesterday has zero rows and zero signals of any kind
+
+        habitService.check(owner, "morning_sunlight", yesterday);
+        habitService.closePast(owner, LocalDate.now()); // simulates the next day's cron/open
+
+        assertThat(levelUpEventRepository.findByCreatedByAndOccurredOn(owner, yesterday))
+            .hasSize(1); // only the one manual award — no unrelated DERIVED habits got completed
     }
 
     /**
@@ -269,11 +294,11 @@ class HabitServiceIT extends AbstractIntegrationTest {
     /**
      * Midnight race, ordering A (mezo-x9c2): the user checks late, the close job runs after.
      * closePast only closes PENDING rows, so it must skip the done row — no double-close,
-     * no second award for THIS habit. check() bootstraps the full day's rows (ensureRows runs
-     * for the request date), so closePast afterward also honestly closes other pending habits
-     * for yesterday (e.g. caffeine_cutoff/kitchen_close with no signal logged) — legitimate,
-     * unrelated awards. The race assertion therefore scopes to morning_sunlight's own row via
-     * sourceRefId, not the day's total award count.
+     * no second award for THIS habit. Since final review finding 1, check() on a past date only
+     * materializes the checked key's own row (not the whole catalog), so closePast afterward has
+     * no other pending rows to touch for yesterday here. The race assertion still scopes to
+     * morning_sunlight's own row via sourceRefId rather than the day's total award count, to stay
+     * robust to that scope.
      */
     @Test
     void testClosePastAfterCheck_shouldKeepDoneAndSingleAward_whenCheckWonTheRace() {
