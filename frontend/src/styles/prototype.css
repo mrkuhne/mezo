@@ -428,6 +428,27 @@
   /* Hét/Hónap chip "on" wash (Task 9, mezo-iizd.5) — same hoisting reason as the wizard
      washes above: the mozaikCssTokens hex guard flags raw D/E/FF hex outside :root. */
   --lg-fchip-on: #FFEDE5;
+  /* Dark-mód tokenizálás (mezo-hhdo): a kártya-alap, a vonalak, a chip-hátterek, a
+     pötty-alapszín és a nyíl/akcentus tinták eddig hardkódolt világos értékek voltak a
+     szabályokban — sötétben fehér kártya + majdnem fehér szöveg lett belőlük. Mostantól
+     mind token, és mind kap dark párt; a mozaikCssTokens teszt őrzi, hogy így maradjon. */
+  --lg-hairline: rgba(43,33,24,0.06);
+  --lg-hairline-2: rgba(43,33,24,0.14);
+  --lg-inset-hi: rgba(255,255,255,0.85);
+  --lg-chipbg: rgba(43,33,24,0.06);
+  --lg-dot-idle: rgba(43,33,24,0.12);
+  --lg-ok-ink: #6E8B5E;
+  --lg-ok-ink2: #8FAF7E;
+  --lg-ink-coral: #A84A26;
+  --lg-ink-amber: #A8801F;
+  --lg-arrow-up: #4E6B42;
+  --lg-arrow-down: #A8801F;
+  --lg-hero-wash: #F2F7EC;
+  --lg-dot-partial2: #C9962E;
+  --lg-link-ink: #3E7396;
+  --lg-link-bg: rgba(78,143,184,0.14);
+  --lg-input-bg: #FDFAF4;
+  --lg-ok-wash2: #FBFDF9;
 }
 
 /* ===== Dark mode · "Pulse" warm graphite — DS stop overrides =====
@@ -527,6 +548,40 @@
   --mz-cellbg: color-mix(in srgb, var(--surface-card) 72%, transparent);
   --mz-chipbg: color-mix(in srgb, var(--surface-elevated) 80%, transparent);
   --mz-stripbg: var(--surface-card);
+  /* ── Életcél (lg-*) dark párok (mezo-hhdo) ──────────────────────────────────────
+     A hat PERMAH-dimenzió a ház hat --dv-* színcsaládjára képez, így a mosás ugyanazzal
+     a color-mix idiómával készül, amit a --mz-cell-*-bg tokenek is használnak fölötte —
+     nem kitalált hexek. A tinta a --dv-* élénk változat, ami sötét alapon olvasható. */
+  --lg-p-dc: var(--dv-amber); --lg-p-dw: color-mix(in srgb, var(--dv-amber) 22%, var(--surface-card)); --lg-p-dw2: color-mix(in srgb, var(--dv-amber) 9%, var(--surface-card));
+  --lg-e-dc: var(--dv-lav);   --lg-e-dw: color-mix(in srgb, var(--dv-lav) 24%, var(--surface-card));   --lg-e-dw2: color-mix(in srgb, var(--dv-lav) 10%, var(--surface-card));
+  --lg-r-dc: var(--dv-rose);  --lg-r-dw: color-mix(in srgb, var(--dv-rose) 22%, var(--surface-card));  --lg-r-dw2: color-mix(in srgb, var(--dv-rose) 9%, var(--surface-card));
+  --lg-m-dc: var(--dv-coral); --lg-m-dw: color-mix(in srgb, var(--dv-coral) 22%, var(--surface-card)); --lg-m-dw2: color-mix(in srgb, var(--dv-coral) 9%, var(--surface-card));
+  --lg-a-dc: var(--dv-sky);   --lg-a-dw: color-mix(in srgb, var(--dv-sky) 22%, var(--surface-card));   --lg-a-dw2: color-mix(in srgb, var(--dv-sky) 9%, var(--surface-card));
+  --lg-h-dc: var(--dv-sage);  --lg-h-dw: color-mix(in srgb, var(--dv-sage) 24%, var(--surface-card));  --lg-h-dw2: color-mix(in srgb, var(--dv-sage) 10%, var(--surface-card));
+  --lg-white: var(--surface-card);
+  --lg-wk7-p2: var(--dv-amber);
+  --lg-why-bg: color-mix(in srgb, var(--dv-coral) 16%, var(--surface-card));
+  --lg-frame-warn: color-mix(in srgb, var(--dv-amber) 20%, var(--surface-card));
+  --lg-frame-warn2: color-mix(in srgb, var(--dv-amber) 8%, var(--surface-card));
+  --lg-ok-wash: color-mix(in srgb, var(--dv-sage) 20%, var(--surface-card));
+  --lg-fchip-on: color-mix(in srgb, var(--dv-coral) 20%, var(--surface-card));
+  --lg-hairline: rgba(245,239,230,0.10);
+  --lg-hairline-2: rgba(245,239,230,0.20);
+  --lg-inset-hi: rgba(255,255,255,0.05);
+  --lg-chipbg: rgba(245,239,230,0.10);
+  --lg-dot-idle: rgba(245,239,230,0.16);
+  --lg-ok-ink: var(--dv-sage);
+  --lg-ok-ink2: var(--dv-sage);
+  --lg-ink-coral: var(--dv-coral);
+  --lg-ink-amber: var(--dv-amber);
+  --lg-arrow-up: var(--dv-sage);
+  --lg-arrow-down: var(--dv-amber);
+  --lg-hero-wash: color-mix(in srgb, var(--dv-sage) 18%, var(--surface-card));
+  --lg-dot-partial2: var(--dv-amber);
+  --lg-link-ink: var(--dv-sky);
+  --lg-link-bg: color-mix(in srgb, var(--dv-sky) 20%, transparent);
+  --lg-input-bg: var(--surface-elevated);
+  --lg-ok-wash2: color-mix(in srgb, var(--dv-sage) 8%, var(--surface-card));
   --mz-sheet-bg: var(--surface-1); /* F7.3 sheet-minta — dark keeps the theme surface */
   --mz-ink-mut: #8A7A6A;
   /* ── Fejléc-aurora dark párja (mezo-8az6): mélyebb, tompított tónusok a grafit
@@ -9003,54 +9058,58 @@ button.mz-wtile:active { transform: scale(0.96); }
 .lg-d-a { --dc: var(--lg-a-dc); --dw: var(--lg-a-dw); --dw2: var(--lg-a-dw2); --ds: rgba(78,143,184,0.4); }
 .lg-d-h { --dc: var(--lg-h-dc); --dw: var(--lg-h-dw); --dw2: var(--lg-h-dw2); --ds: rgba(110,139,94,0.45); }
 .lg-hero { display: flex; gap: 14px; align-items: center; padding: 13px 15px; border-radius: 21px;
-  background: linear-gradient(140deg, #F2F7EC, var(--lg-white) 72%); border: 0.5px solid rgba(43,33,24,0.06);
-  box-shadow: 0 18px 32px -16px rgba(43,33,24,0.32), inset 0 1px 0 rgba(255,255,255,0.85); }
+  background: linear-gradient(140deg, var(--lg-hero-wash), var(--lg-white) 72%); border: 0.5px solid var(--lg-hairline);
+  box-shadow: 0 18px 32px -16px rgba(43,33,24,0.32), inset 0 1px 0 var(--lg-inset-hi); }
 .lg-ring { width: 94px; height: 94px; position: relative; flex: none; display: grid; place-items: center; }
 .lg-ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
-.lg-ring .arc { fill: none; stroke: var(--dc); stroke-width: 5.5; stroke-dasharray: 0 188.5; opacity: 0.2; }
+.lg-ring .arc { fill: none; stroke: var(--dc); stroke-width: 5.5; stroke-dasharray: 27.4 161.1; opacity: 0.2; }
 .lg-ring .arc.live { opacity: 1; stroke-width: 8; }
-.play .lg-ring .arc { animation: lg-arcin 0.6s cubic-bezier(0.25,0.8,0.35,1) forwards; animation-delay: calc(260ms + var(--i) * 70ms); }
+/* A REJTETT kezdőállapot az arming osztályhoz kötve — a `.rise` háza mintája
+   (prototype.css `.mz-play .rise`). Feltétel nélküli rejtés esetén a vissza-navigálás
+   (`EntranceGroup` szándékosan nem arm-ol pop érkezésnél, mezo-kuwj) az ívet/pöttyöt
+   véglegesen eltüntetné — pontosan ez volt a mezo-7eq0 hibája. */
+.mz-play .lg-ring .arc { stroke-dasharray: 0 188.5; animation: lg-arcin 0.6s cubic-bezier(0.25,0.8,0.35,1) forwards; animation-delay: calc(260ms + var(--i) * 70ms); }
 @keyframes lg-arcin { to { stroke-dasharray: 27.4 161.1; } }
 .lg-ring .c { text-align: center; line-height: 1; }
 .lg-ring .c b { font-size: 32px; font-weight: 200; display: block; letter-spacing: -0.02em; }
-.lg-ring .c small { font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted, #A2958A); }
+.lg-ring .c small { font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted, var(--text-muted)); }
 .lg-dimband { display: flex; gap: 5px; flex-wrap: wrap; }
 .lg-dimchip { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; padding: 4px 10px 4px 7px;
   font-size: 9px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; background: var(--dw); color: var(--dc); border: none; font-family: inherit; }
 .lg-dimchip i { width: 8px; height: 8px; border-radius: 50%; background: var(--dc); flex: none; }
-.lg-dimchip.empty { background: rgba(43,33,24,0.05); color: #A2958A; }
-.lg-dimchip.empty i { background: rgba(43,33,24,0.18); }
-.lg-tile { background: linear-gradient(150deg, var(--dw), var(--dw2)) !important; box-shadow: 0 14px 26px -14px var(--ds), 0 2px 5px rgba(43,33,24,0.04), inset 0 1px 0 rgba(255,255,255,0.7) !important; }
+.lg-dimchip.empty { background: var(--lg-chipbg); color: var(--text-muted); }
+.lg-dimchip.empty i { background: var(--lg-hairline-2); }
+.lg-tile { background: linear-gradient(150deg, var(--dw), var(--dw2)) !important; box-shadow: 0 14px 26px -14px var(--ds), 0 2px 5px rgba(43,33,24,0.04), inset 0 1px 0 var(--lg-inset-hi) !important; }
 .lg-tile .mz-eyebrow { color: var(--dc); }
 .lg-tile .nm { font-size: 13px; font-weight: 700; text-align: left; }
 .lg-arrow { display: inline-flex; align-items: baseline; gap: 4px; line-height: 1; font-variant-numeric: tabular-nums; }
 .lg-arrow .g { font-size: 26px; font-weight: 300; }
 .lg-arrow .v { font-size: 14px; font-weight: 600; }
-.lg-arrow.up { color: #4E6B42; } .lg-arrow.flat { color: #6E6257; } .lg-arrow.down { color: #A8801F; } .lg-arrow.none { color: #A2958A; }
+.lg-arrow.up { color: var(--lg-arrow-up); } .lg-arrow.flat { color: var(--text-secondary); } .lg-arrow.down { color: var(--lg-ink-amber); } .lg-arrow.none { color: var(--text-muted); }
 .lg-wk7 { display: flex; gap: 5px; align-items: center; }
-.lg-wk7 i { width: 11px; height: 11px; border-radius: 50%; flex: none; background: rgba(43,33,24,0.12); transform: scale(0); }
-.lg-wk7 i.h { background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
-.lg-wk7 i.p { background: linear-gradient(135deg, var(--lg-wk7-p2), #C9962E); }
-.lg-wk7 i.m { background: rgba(43,33,24,0.12); }
+.lg-wk7 i { width: 11px; height: 11px; border-radius: 50%; flex: none; background: var(--lg-dot-idle); }
+.lg-wk7 i.h { background: linear-gradient(135deg, var(--lg-ok-ink2), var(--lg-ok-ink)); }
+.lg-wk7 i.p { background: linear-gradient(135deg, var(--lg-wk7-p2), var(--lg-dot-partial2)); }
+.lg-wk7 i.m { background: var(--lg-dot-idle); }
 .lg-wk7 i.n { background: transparent; border: 1px dashed rgba(43,33,24,0.28); }
-.play .lg-wk7 i { animation: lg-dotpop 0.35s cubic-bezier(0.3,1.4,0.5,1) forwards; animation-delay: calc(var(--d, 0ms) + 280ms + var(--i) * 45ms); }
+.mz-play .lg-wk7 i { transform: scale(0); animation: lg-dotpop 0.35s cubic-bezier(0.3,1.4,0.5,1) forwards; animation-delay: calc(var(--d, 0ms) + 280ms + var(--i) * 45ms); }
 @keyframes lg-dotpop { to { transform: scale(1); } }
-.lg-wk7 .lbl { font-size: 8.5px; font-weight: 700; color: #A2958A; margin-left: auto; }
+.lg-wk7 .lbl { font-size: 8.5px; font-weight: 700; color: var(--text-muted); margin-left: auto; }
 /* Hét/Hónap chips + the 28-cell heatmap row (Task 9, mezo-iizd.5, prototype celok.html
    #page-g1 `.chiprow`/`.fchip`/`.hm` — reusing the `.lg-wk7 i.*` status colors so the two
    views read as the same data at two grains). */
 .lg-chiprow { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
-.lg-fchip { border: 1px solid rgba(43,33,24,0.14); background: #fff; border-radius: 999px; padding: 4px 11px; font-size: 9px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
-.lg-fchip.on { background: var(--lg-fchip-on); border-color: #FF6B4A; color: #A84A26; }
-.lg-fchip:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+.lg-fchip { border: 1px solid var(--lg-hairline-2); background: var(--lg-white); border-radius: 999px; padding: 4px 11px; font-size: 9px; font-weight: 700; color: var(--text-secondary); font-family: inherit; cursor: pointer; }
+.lg-fchip.on { background: var(--lg-fchip-on); border-color: var(--dv-coral); color: var(--lg-ink-coral); }
+.lg-fchip:focus-visible { outline: 2px solid var(--lg-ink-coral); outline-offset: 2px; }
 .lg-hm { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-top: 8px; }
-.lg-hm i { height: 12px; border-radius: 3px; background: rgba(43,33,24,0.1); }
-.lg-hm i.h { background: #8FAF7E; }
+.lg-hm i { height: 12px; border-radius: 3px; background: var(--lg-dot-idle); }
+.lg-hm i.h { background: var(--lg-ok-ink2); }
 .lg-hm i.p { background: var(--lg-wk7-p2); }
-.lg-hm i.m { background: rgba(43,33,24,0.1); }
-.lg-hm i.n { background: transparent; border: 1px dashed rgba(43,33,24,0.2); }
+.lg-hm i.m { background: var(--lg-dot-idle); }
+.lg-hm i.n { background: transparent; border: 1px dashed var(--lg-hairline-2); }
 .lg-parkrow { display: flex; align-items: center; gap: 10px; padding: 10px 13px; border-radius: 17px; width: 100%; text-align: left;
-  background: rgba(255,255,255,0.55); border: 0.5px dashed rgba(43,33,24,0.18); }
+  background: color-mix(in srgb, var(--lg-white) 55%, transparent); border: 0.5px dashed var(--lg-hairline-2); }
 /* Two real, focusable buttons live inside the row (mezo-iizd.1 review fix): a nested
    interactive element inside a <button> is both invalid HTML and keyboard-unreachable, so
    the row itself is a plain (non-interactive) div and `.lg-parkrow-nav` + `.act` are its
@@ -9058,98 +9117,98 @@ button.mz-wtile:active { transform: scale(0.96); }
    button's first two children had; `button { background:none;border:none;cursor:pointer;
    font-family:inherit;color:inherit; }` (line 788) already resets both. */
 .lg-parkrow-nav { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; padding: 0; text-align: left; }
-.lg-parkrow .nm { font-size: 12px; font-weight: 600; color: #6E6257; }
-.lg-parkrow .sb { font-size: 9.5px; color: #A2958A; }
-.lg-parkrow .act { margin-left: auto; font-size: 10px; font-weight: 700; color: #A84A26; border: 1px solid rgba(43,33,24,0.14); background: #fff; border-radius: 999px; padding: 4px 11px; flex: none; }
+.lg-parkrow .nm { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.lg-parkrow .sb { font-size: 9.5px; color: var(--text-muted); }
+.lg-parkrow .act { margin-left: auto; font-size: 10px; font-weight: 700; color: var(--lg-ink-coral); border: 1px solid var(--lg-hairline-2); background: var(--lg-white); border-radius: 999px; padding: 4px 11px; flex: none; }
 @media (prefers-reduced-motion: reduce) {
-  .lg-ring .arc, .play .lg-ring .arc { stroke-dasharray: 27.4 161.1; animation: none; }
-  .lg-wk7 i, .play .lg-wk7 i { transform: scale(1); animation: none; }
+  .mz-play .lg-ring .arc { stroke-dasharray: 27.4 161.1; animation: none; }
+  .mz-play .lg-wk7 i { transform: none; animation: none; }
 }
 
 /* Goal detail page (Task 10, mezo-iizd.1, prototype celok.html #page-g1): pillar card,
    Miért · ha–akkor card, status action row. */
-.lg-pillar { border-radius: 18px; padding: 12px 14px 13px; margin-bottom: 10px; background: #fff; border: 0.5px solid rgba(43,33,24,0.06);
-  box-shadow: 0 14px 26px -16px rgba(43,33,24,0.3), inset 0 1px 0 rgba(255,255,255,0.85); }
+.lg-pillar { border-radius: 18px; padding: 12px 14px 13px; margin-bottom: 10px; background: var(--lg-white); border: 0.5px solid var(--lg-hairline);
+  box-shadow: 0 14px 26px -16px rgba(43,33,24,0.3), inset 0 1px 0 var(--lg-inset-hi); }
 .lg-pillar.washed { background: linear-gradient(150deg, var(--dw), var(--lg-white) 72%); }
 .lg-pillar.off { opacity: 0.55; }
 .lg-pillar .ph { display: flex; align-items: center; gap: 8px; }
 .lg-pillar .ph .nm { font-size: 13px; font-weight: 700; }
-.lg-kind { font-size: 8px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: #6E6257; background: rgba(43,33,24,0.06); border-radius: 6px; padding: 2px 7px; flex: none; }
-.lg-kind.link { color: #3E7396; background: rgba(78,143,184,0.14); }
+.lg-kind { font-size: 8px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-secondary); background: var(--lg-hairline); border-radius: 6px; padding: 2px 7px; flex: none; }
+.lg-kind.link { color: var(--lg-link-ink); background: var(--lg-link-bg); }
 .lg-pillar .val { display: flex; align-items: baseline; gap: 7px; margin-top: 7px; }
 .lg-pillar .val b { font-size: 21px; font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
-.lg-pillar .val small { font-size: 10px; color: #6E6257; }
-.lg-why { border-radius: 18px; padding: 12px 14px; margin-bottom: 10px; background: linear-gradient(140deg, var(--lg-why-bg), var(--lg-white) 75%); border: 0.5px solid rgba(43,33,24,0.06); box-shadow: 0 12px 22px -15px rgba(43,33,24,0.3); }
+.lg-pillar .val small { font-size: 10px; color: var(--text-secondary); }
+.lg-why { border-radius: 18px; padding: 12px 14px; margin-bottom: 10px; background: linear-gradient(140deg, var(--lg-why-bg), var(--lg-white) 75%); border: 0.5px solid var(--lg-hairline); box-shadow: 0 12px 22px -15px rgba(43,33,24,0.3); }
 .lg-why .q { font-family: var(--ff-display, "Fraunces", serif); font-style: italic; font-size: 13.5px; font-weight: 500; }
 .lg-ifthen { display: flex; gap: 8px; align-items: flex-start; padding: 7px 0; font-size: 11px; }
-.lg-ifthen + .lg-ifthen { border-top: 0.5px solid rgba(43,33,24,0.08); }
-.lg-ifthen .ha { flex: none; width: 46px; text-align: center; font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em; color: #A84A26; background: rgba(168,74,38,0.1); border-radius: 6px; padding: 3px 0; margin-top: 2px; }
-.lg-ifthen .ha.akkor { color: #4E6B42; background: rgba(110,139,94,0.16); }
+.lg-ifthen + .lg-ifthen { border-top: 0.5px solid var(--lg-hairline); }
+.lg-ifthen .ha { flex: none; width: 46px; text-align: center; font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em; color: var(--lg-ink-coral); background: rgba(168,74,38,0.1); border-radius: 6px; padding: 3px 0; margin-top: 2px; }
+.lg-ifthen .ha.akkor { color: var(--lg-arrow-up); background: rgba(110,139,94,0.16); }
 .lg-actrow { display: flex; gap: 8px; margin: 6px 0 10px; }
-.lg-actrow button { flex: 1; border: 1px solid rgba(43,33,24,0.14); background: #fff; border-radius: 999px; padding: 8px 0; font-size: 11px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
+.lg-actrow button { flex: 1; border: 1px solid var(--lg-hairline-2); background: var(--lg-white); border-radius: 999px; padding: 8px 0; font-size: 11px; font-weight: 700; color: var(--text-secondary); font-family: inherit; cursor: pointer; }
 
 /* ===== Cél-varázsló (Task 11, mezo-iizd.1, prototype celok.html #page-wiz) =====
    Progress rail · fcards · Keret frame-nudge · Pillérek toggle cards · Ha–akkor
    plan editor · Összegzés summary pills. Reuses the `.lg-*` family above. */
 .lg-wprog { display: flex; gap: 5px; margin-bottom: 6px; }
-.lg-wprog i { flex: 1; height: 4px; border-radius: 2px; background: rgba(43,33,24,0.1); }
+.lg-wprog i { flex: 1; height: 4px; border-radius: 2px; background: var(--lg-dot-idle); }
 .lg-wprog i.f { background: var(--gradient-cta); }
-.lg-fcard { background: #fff; border-radius: 16px; padding: 11px 13px 12px; margin-bottom: 9px; border: 0.5px solid rgba(43,33,24,0.06); box-shadow: 0 10px 20px -14px rgba(43,33,24,0.28); }
-.lg-flabel { font-size: 8.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #A2958A; margin-bottom: 5px; display: block; }
-.lg-fin { width: 100%; border: 1px solid rgba(43,33,24,0.12); border-radius: 11px; padding: 8px 11px; font-family: inherit; font-size: 13px; background: #FDFAF4; color: #2B2118; resize: none; }
+.lg-fcard { background: var(--lg-white); border-radius: 16px; padding: 11px 13px 12px; margin-bottom: 9px; border: 0.5px solid var(--lg-hairline); box-shadow: 0 10px 20px -14px rgba(43,33,24,0.28); }
+.lg-flabel { font-size: 8.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--text-muted); margin-bottom: 5px; display: block; }
+.lg-fin { width: 100%; border: 1px solid var(--lg-dot-idle); border-radius: 11px; padding: 8px 11px; font-family: inherit; font-size: 13px; background: var(--lg-input-bg); color: var(--text-primary); resize: none; }
 .lg-frame { border-radius: 16px; padding: 11px 13px; margin: 8px 0; background: linear-gradient(140deg, var(--lg-frame-warn), var(--lg-frame-warn2)); box-shadow: 0 12px 22px -14px rgba(181,126,20,0.45); }
-.lg-frame.ok { background: linear-gradient(140deg, var(--lg-h-dw), #FBFDF9); box-shadow: 0 12px 22px -14px rgba(110,139,94,0.45); }
-.lg-frame .lb { font-size: 11px; font-weight: 800; color: #A8801F; } .lg-frame.ok .lb { color: #4E6B42; }
-.lg-frame p { font-size: 11px; color: #6E6257; margin-top: 4px; }
-.lg-pilcard { display: flex; align-items: center; gap: 10px; border-radius: 16px; padding: 10px 12px; margin-bottom: 8px; background: #fff; border: 1.5px solid rgba(43,33,24,0.08); box-shadow: 0 10px 20px -14px rgba(43,33,24,0.28); }
-.lg-pilcard.on { border-color: #8FAF7E; background: linear-gradient(140deg, var(--lg-ok-wash), var(--lg-white) 70%); }
+.lg-frame.ok { background: linear-gradient(140deg, var(--lg-h-dw), var(--lg-ok-wash2)); box-shadow: 0 12px 22px -14px rgba(110,139,94,0.45); }
+.lg-frame .lb { font-size: 11px; font-weight: 800; color: var(--lg-ink-amber); } .lg-frame.ok .lb { color: var(--lg-arrow-up); }
+.lg-frame p { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+.lg-pilcard { display: flex; align-items: center; gap: 10px; border-radius: 16px; padding: 10px 12px; margin-bottom: 8px; background: var(--lg-white); border: 1.5px solid var(--lg-hairline); box-shadow: 0 10px 20px -14px rgba(43,33,24,0.28); }
+.lg-pilcard.on { border-color: var(--lg-ok-ink2); background: linear-gradient(140deg, var(--lg-ok-wash), var(--lg-white) 70%); }
 .lg-pilcard.off { opacity: 0.5; }
-.lg-pilcard b { font-size: 12.5px; display: block; } .lg-pilcard small { font-size: 10px; color: #6E6257; display: block; }
-.lg-togg { width: 38px; height: 22px; border-radius: 999px; background: rgba(43,33,24,0.14); position: relative; flex: none; border: none; padding: 0; cursor: pointer; }
-.lg-togg::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: left 0.15s ease; }
-.lg-togg.on { background: linear-gradient(135deg, #8FAF7E, #6E8B5E); } .lg-togg.on::after { left: 18px; }
-.lg-plan { border-radius: 16px; padding: 10px 11px 9px; margin-bottom: 8px; background: #fff; border: 1.5px solid rgba(43,33,24,0.08); }
-.lg-plan.on { border-color: #8FAF7E; background: linear-gradient(140deg, var(--lg-ok-wash), var(--lg-white) 62%); }
+.lg-pilcard b { font-size: 12.5px; display: block; } .lg-pilcard small { font-size: 10px; color: var(--text-secondary); display: block; }
+.lg-togg { width: 38px; height: 22px; border-radius: 999px; background: var(--lg-hairline-2); position: relative; flex: none; border: none; padding: 0; cursor: pointer; }
+.lg-togg::after { content: ''; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: var(--lg-white); transition: left 0.15s ease; }
+.lg-togg.on { background: linear-gradient(135deg, var(--lg-ok-ink2), var(--lg-ok-ink)); } .lg-togg.on::after { left: 18px; }
+.lg-plan { border-radius: 16px; padding: 10px 11px 9px; margin-bottom: 8px; background: var(--lg-white); border: 1.5px solid var(--lg-hairline); }
+.lg-plan.on { border-color: var(--lg-ok-ink2); background: linear-gradient(140deg, var(--lg-ok-wash), var(--lg-white) 62%); }
 .lg-plan.own { border-style: dashed; }
-.lg-prow { display: flex; gap: 8px; align-items: flex-start; } .lg-prow + .lg-prow { margin-top: 5px; padding-top: 6px; border-top: 0.5px solid rgba(43,33,24,0.08); }
-.lg-ptxt { flex: 1; min-width: 0; border: none; background: transparent; font-family: inherit; font-size: 12px; line-height: 1.4; color: #2B2118; resize: none; padding: 2px 0; }
-.lg-pfoot { display: flex; align-items: center; gap: 6px; margin-top: 7px; padding-top: 6px; border-top: 0.5px solid rgba(43,33,24,0.08); font-size: 9.5px; font-weight: 700; color: #6E6257; }
-.lg-addrow { width: 100%; border: 1.2px dashed rgba(43,33,24,0.2); background: none; border-radius: 12px; padding: 9px 0; font-size: 11px; font-weight: 700; color: #6E6257; cursor: pointer; font-family: inherit; margin-top: 4px; }
-.lg-aiwait { display: flex; align-items: center; gap: 8px; padding: 12px; border-radius: 15px; background: rgba(255,255,255,0.7); margin-bottom: 8px; font-size: 11px; color: #6E6257; }
-.lg-sumpil { display: flex; align-items: center; gap: 10px; padding: 9px 12px; margin-bottom: 6px; border-radius: 15px; background: #fff; border: 0.5px solid rgba(43,33,24,0.06); }
-.lg-sumpil b { font-size: 12px; display: block; } .lg-sumpil small { font-size: 10px; color: #6E6257; display: block; }
+.lg-prow { display: flex; gap: 8px; align-items: flex-start; } .lg-prow + .lg-prow { margin-top: 5px; padding-top: 6px; border-top: 0.5px solid var(--lg-hairline); }
+.lg-ptxt { flex: 1; min-width: 0; border: none; background: transparent; font-family: inherit; font-size: 12px; line-height: 1.4; color: var(--text-primary); resize: none; padding: 2px 0; }
+.lg-pfoot { display: flex; align-items: center; gap: 6px; margin-top: 7px; padding-top: 6px; border-top: 0.5px solid var(--lg-hairline); font-size: 9.5px; font-weight: 700; color: var(--text-secondary); }
+.lg-addrow { width: 100%; border: 1.2px dashed var(--lg-hairline-2); background: none; border-radius: 12px; padding: 9px 0; font-size: 11px; font-weight: 700; color: var(--text-secondary); cursor: pointer; font-family: inherit; margin-top: 4px; }
+.lg-aiwait { display: flex; align-items: center; gap: 8px; padding: 12px; border-radius: 15px; background: var(--lg-inset-hi); margin-bottom: 8px; font-size: 11px; color: var(--text-secondary); }
+.lg-sumpil { display: flex; align-items: center; gap: 10px; padding: 9px 12px; margin-bottom: 6px; border-radius: 15px; background: var(--lg-white); border: 0.5px solid var(--lg-hairline); }
+.lg-sumpil b { font-size: 12px; display: block; } .lg-sumpil small { font-size: 10px; color: var(--text-secondary); display: block; }
 
 /* Jelek-oldal (mezo-iizd.7, prototype celok.html #page-jelek): forrás-sorok él/alszik ponttal. */
 .lg-siglist { list-style: none; margin: 0 0 10px; padding: 0; }
 .lg-sig { display: flex; align-items: center; gap: 10px; padding: 9px 12px; margin-bottom: 7px; border-radius: 16px;
-  background: #fff; border: 0.5px solid rgba(43,33,24,0.06); box-shadow: 0 10px 20px -14px rgba(43,33,24,0.28); }
+  background: var(--lg-white); border: 0.5px solid var(--lg-hairline); box-shadow: 0 10px 20px -14px rgba(43,33,24,0.28); }
 .lg-sig.off { opacity: 0.55; }
 .lg-sig .grow { flex: 1; min-width: 0; }
 .lg-sig b { font-size: 12.5px; display: block; }
-.lg-sig small { font-size: 10px; color: #6E6257; display: block; }
-.lg-sig i.live { width: 8px; height: 8px; border-radius: 50%; flex: none; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
-.lg-sig i.dead { width: 8px; height: 8px; border-radius: 50%; flex: none; background: rgba(43,33,24,0.18); }
+.lg-sig small { font-size: 10px; color: var(--text-secondary); display: block; }
+.lg-sig i.live { width: 8px; height: 8px; border-radius: 50%; flex: none; background: linear-gradient(135deg, var(--lg-ok-ink2), var(--lg-ok-ink)); }
+.lg-sig i.dead { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--lg-hairline-2); }
 .lg-sigchips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
-.lg-sigchips span { font-size: 8.5px; font-weight: 700; color: #6E6257; background: rgba(43,33,24,0.06); border-radius: 6px; padding: 2px 6px; }
+.lg-sigchips span { font-size: 8.5px; font-weight: 700; color: var(--text-secondary); background: var(--lg-hairline); border-radius: 6px; padding: 2px 6px; }
 .lg-sighead { display: flex; align-items: baseline; gap: 8px; margin: 10px 2px 6px; }
-.lg-sighead .cnt { margin-left: auto; font-size: 9.5px; color: #A2958A; }
-.lg-sighint { font-size: 11px; color: #6E6257; margin: 0 2px 4px; }
+.lg-sighead .cnt { margin-left: auto; font-size: 9.5px; color: var(--text-muted); }
+.lg-sighint { font-size: 11px; color: var(--text-secondary); margin: 0 2px 4px; }
 
 /* Nap-mozaik „Célok · ma" csempe (mezo-iizd.9, prototípus celok-body.html #page-nap .gtile).
    A dimenzió-mosást a `.lg-d-*` osztály adja (ugyanaz a --dw/--dw2/--ds hármas, amit a
    `.lg-tile` is olvas), így a csempe a Célok hub tile-jaival egy nyelvet beszél. */
 .lg-gtile { background: linear-gradient(150deg, var(--dw), var(--dw2)) !important;
-  box-shadow: 0 14px 26px -14px var(--ds), 0 2px 5px rgba(43,33,24,0.04), inset 0 1px 0 rgba(255,255,255,0.7) !important; }
+  box-shadow: 0 14px 26px -14px var(--ds), 0 2px 5px rgba(43,33,24,0.04), inset 0 1px 0 var(--lg-inset-hi) !important; }
 .lg-gtile .mz-eyebrow { color: var(--dc); display: inline-flex; align-items: center; gap: 5px; }
 .lg-gtile .mz-eyebrow i { width: 6px; height: 6px; border-radius: 50%; background: var(--dc); flex: none; }
 .lg-gtile-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
 .lg-gtile .lg-arrow .v { font-size: 22px; font-weight: 200; letter-spacing: -0.02em; }
-.lg-gtile .lg-arrow .v small { font-size: 11px; font-weight: 500; color: #6E6257; }
+.lg-gtile .lg-arrow .v small { font-size: 11px; font-weight: 500; color: var(--text-secondary); }
 
 /* Cél-ütközés mondat (mezo-iizd.9): a backend findConflicts sorai. Figyelmeztetés, nem tiltás
    (spec D7: a konfliktus companion-mondat, nem kemény korlát) — ezért borostyán, nem piros. */
 .lg-conflict { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 8px; padding: 10px 12px;
-  border-radius: 16px; font-size: 11.5px; line-height: 1.45; color: #6E6257;
+  border-radius: 16px; font-size: 11.5px; line-height: 1.45; color: var(--text-secondary);
   background: linear-gradient(140deg, var(--lg-frame-warn), var(--lg-frame-warn2));
   box-shadow: 0 12px 22px -14px rgba(181,126,20,0.45); }
 .lg-conflict svg { flex: none; margin-top: 1px; }
@@ -9157,24 +9216,24 @@ button.mz-wtile:active { transform: scale(0.96); }
 /* Heti hub cél-kártya + goalchip (mezo-iizd.9, prototípus celok-body.html #page-heti .qcard/
    .wgrow/.goalchip). A `.lg-goalchip` a Growth skill-sorban is ezt a nyelvet viseli (mezo-iizd.12). */
 .lg-wcard { border-radius: 18px; padding: 4px 12px 10px; margin-bottom: 10px; background: var(--mz-stripbg);
-  border: 0.5px solid rgba(43,33,24,0.06); box-shadow: 0 14px 26px -16px rgba(43,33,24,0.3); }
+  border: 0.5px solid var(--lg-hairline); box-shadow: 0 14px 26px -16px rgba(43,33,24,0.3); }
 .lg-wcard-top { display: flex; align-items: baseline; gap: 8px; padding: 10px 2px 4px; }
-.lg-wcard-cnt { margin-left: auto; font-size: 9.5px; color: #A2958A; }
+.lg-wcard-cnt { margin-left: auto; font-size: 9.5px; color: var(--text-muted); }
 .lg-wgrow { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; }
-.lg-wgrow + .lg-wgrow { border-top: 0.5px solid rgba(43,33,24,0.08); }
+.lg-wgrow + .lg-wgrow { border-top: 0.5px solid var(--lg-hairline); }
 .lg-wgrow .grow { flex: 1; min-width: 0; }
 .lg-wgrow .nm { font-size: 12.5px; font-weight: 700; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.lg-wgrow .x { font-size: 11px; color: #6E6257; margin-top: 2px; line-height: 1.4; }
+.lg-wgrow .x { font-size: 11px; color: var(--text-secondary); margin-top: 2px; line-height: 1.4; }
 .lg-goalchip { display: inline-flex; align-items: center; gap: 4px; border-radius: 999px; padding: 2px 8px 2px 6px;
-  font-size: 8.5px; font-weight: 700; color: var(--dc, #6E6257); background: var(--dw, rgba(43,33,24,0.06)); flex: none; }
-.lg-goalchip i { width: 6px; height: 6px; border-radius: 50%; background: var(--dc, #A2958A); flex: none; }
-.lg-wcard-cta { width: 100%; margin-top: 6px; border: 1px solid rgba(43,33,24,0.14); background: var(--mz-stripbg);
-  border-radius: 999px; padding: 8px 0; font-size: 11px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; }
+  font-size: 8.5px; font-weight: 700; color: var(--dc, var(--text-secondary)); background: var(--dw, var(--lg-hairline)); flex: none; }
+.lg-goalchip i { width: 6px; height: 6px; border-radius: 50%; background: var(--dc, var(--text-muted)); flex: none; }
+.lg-wcard-cta { width: 100%; margin-top: 6px; border: 1px solid var(--lg-hairline-2); background: var(--mz-stripbg);
+  border-radius: 999px; padding: 8px 0; font-size: 11px; font-weight: 700; color: var(--text-secondary); font-family: inherit; cursor: pointer; }
 
 /* Lezárt cél sora (mezo-iizd.4): a parkolt sor nyelve, halványabban — egy kész cél emlék,
    nem tennivaló. A pipa a jobb szélen a lezárás egyetlen jele. */
 .lg-donerow { opacity: 0.72; }
-.lg-donetick { margin-left: auto; flex: none; font-size: 12px; font-weight: 700; color: #4E6B42; }
+.lg-donetick { margin-left: auto; flex: none; font-size: 12px; font-weight: 700; color: var(--lg-arrow-up); }
 
 /* Én-hub életcél-hero (mezo-iizd.4): az `.enh-goalcard` váza, súly-track nélkül — a helyére
    a célok dimenzió-chipjei kerülnek. */
