@@ -235,7 +235,7 @@ this redesign and remain as shipped.
   in live mode** (false affordance — §9 decision k), mock keeps them + byte-parity. Details:
   [insights.md §2.2](insights.md). **As originally shipped at W1** — the Insights Weekly tab
   (`useWeekly`/`WeeklyPage`) was retired outright at `mezo-p2tr`; the SAME suggestion endpoint is now
-  read directly by `/me/week`'s `WeekPage` (its own `useWeekNextSuggestion`, current-week-only) — see
+  read directly by `/me/week`'s `Heti` hub (`WeekHubPage`'s own `useWeekNextSuggestion`, current-week-only) — see
   [insights.md §2.2](insights.md) and [me.md](me.md).
 
 **W2 (`mezo-h4wp.4`) — weekly Memoir (the W stage closes):**
@@ -685,7 +685,7 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
 | Event triggers (sleep/weight log → reaction message) | 🟢 `mezo-gst9` | `CompanionMessageEventListener` — `@Async` `@TransactionalEventListener(AFTER_COMMIT)` on `SleepLogSavedEvent`/`WeightLogSavedEvent` (published by `SleepLogService`/`WeightLogService`); backfilled/old logs never trigger. **Replaces the retired sleep-triggered "regen" (`refreshIfStale`)** — see §9. |
 | Frontend (Today MezoChip thread) | 🟢 `mezo-gst9` | `useCompanionFeed()` (`['companionFeed', date]`, 60s poll real mode); `buildMezoMessages` maps the feed 1:1 to thread bubbles, prepending an honestly-labelled demo card only while no `morning` kind exists; the retired `CompanionNoteCard`/`useCompanionNote()` are gone. |
 | Weekly suggestion (table + generator + Monday cron + lazy read) | 🟢 W1 | `weekly_suggestion` table (ISO-Monday identity, partial unique); smart-tier `WeeklySuggestionGenerator` (gather = snapshot + facts + prior-week summaries + patterns → ONE `completeSmart` call, honest-null); Monday-06:00 `WeeklySuggestionJob` (three-switch, no backfill); `GET /api/proactive/weekly-suggestion` (lazy; 404 = empty prior week). |
-| Frontend (Insights Weekly card swap, shipped W1) | 🟢 → moved `mezo-p2tr` | `useWeekly().weeklySuggestion` real (404→null) on the retired `WeeklyPage`; the same endpoint is now read by `/me/week`'s `WeekPage` (`useWeekNextSuggestion`, current week only) — honest placeholder still applies. |
+| Frontend (Insights Weekly card swap, shipped W1) | 🟢 → moved `mezo-p2tr` | `useWeekly().weeklySuggestion` real (404→null) on the retired `WeeklyPage`; the same endpoint is now read by `/me/week`'s `Heti` hub (`useWeekNextSuggestion`, current week only) — honest placeholder still applies. |
 | Memoir (table + generator + Sunday cron + lazy read) | 🟢 W2 | `memoir` table (ISO-Monday identity, partial unique, typed-jsonb `anchors`); smart-tier `MemoirGenerator` (gather = the week's OWN summaries + facts + patterns + numbered anchor candidates → ONE `completeSmart` call, model-selected anchors, honest-null); Sunday-19:00 `MemoirJob` (three-switch, no backfill); `GET /api/proactive/memoir` (no params; latest row else lazy-generate the LAST COMPLETED week; 404 = empty week). |
 | Frontend (Insights Memoir tab un-ghost) | 🟢 W2 | `useMemoir()` real (404→null); `memoir` left `PHASE3_TAB_IDS`, `MemoirPage` guard dropped; renders the real memoir + derived week label, else the honest „készül" null-state; anniversary/archive mock-only, and since **W4.1** (`mezo-b3pp.15`) a real 👍/👎 chip row in both modes replaces the retired mock reactions. |
 | Predictions (table + generator + validation + weekly/daily job + list read) | 🟢 P1 | `prediction` table (week_start idempotence probe, nullable confidence, CHECK-pinned direction/status); smart-tier `PredictionGenerator` (gather = snapshot + facts + numbered CONFIRMED-pattern candidates + metric catalog → ONE `completeSmart`, code-set windows, pattern-copied confidence, honest-empty); deterministic `PredictionValidationService` (window-vs-prior-7-days, no-data ⇒ stays pending); `PredictionJob` two crons (Mon 06:30 generate + daily 06:15 validate, three-switch); `GET /api/proactive/prediction` (list; lazy current-week; `[]` = honest empty, never 404). |
@@ -1847,7 +1847,7 @@ in that otherwise-`useRealQuery` file. The „Elfogad/Hangoljuk" buttons were hi
 
 **Current state:** the Insights Weekly tab (`useWeekly`/`WeeklyPage`) is **retired outright**
 (`mezo-p2tr`) — this endpoint has **no dual-mode consumer left**. The SAME `weeklySuggestionApi.get`
-client is now called directly by **`/me/week`'s `WeekPage`** (its own `useWeekNextSuggestion` helper,
+client is now called directly by **`/me/week`'s `Heti` hub (`WeekHubPage`)** (its own `useWeekNextSuggestion` helper,
 current-week-only, mock branch returns the same `insights.ts` seed) — same wire contract, same
 404→honest-placeholder behavior, new home. See [insights.md §2.2](insights.md) and [me.md](me.md).
 
@@ -2390,7 +2390,7 @@ messages map 1:1 in order; the demo card prepends only when the feed has no `mor
 card is absent once a real morning message exists; an empty feed with no demo briefing ⇒ `[]`
 (replaces the old briefing-only+heartbeat-note thread-building coverage — `CompanionNoteCard.test.tsx`
 is deleted, there is no separate card any more). **W1 (as originally shipped — both files retired
-`mezo-p2tr` along with the Insights Weekly tab; the coverage lives on in `features/me/pages/WeekPage.test.tsx`, [me.md](me.md)):**
+`mezo-p2tr` along with the Insights Weekly tab; the coverage lives on with the `Heti` hub in `features/me/pages/WeekHubPage.test.tsx`, [me.md](me.md)):**
 `data/insights/weeklyHooks.test.tsx` (+2) — serves the generated prose when the GET succeeds; keeps
 `weeklySuggestion` null on the default 404; `features/insights/pages/WeeklyPage.test.tsx` (+1) —
 renders the live prose WITHOUT the inert „Elfogad/Hangoljuk" buttons. **W2:**
@@ -2427,9 +2427,8 @@ at `mezo-gst9` close (BE clean-test green — 1898 tests, 0 failures; FE both mo
 `dayNotes`/`anchorIndexes` payload — the payload nests objects, so the match must run to the LAST
 brace, planted via a memoir title) dispatches on `WEEKLY_REVIEW_MARKER_MIRROR` (§9 gotcha a, the
 literal-mirror rule). `feature/companion/service/DayScoreServiceIT.java` pins the day-score formula
-per subscore (a fully-logged day → 100/100/100/100 → overall 100; a sleep-only day leaves the other
-three null and the overall score null under the `<2` gate; a zero-kcal day → `fuel()==0`, not null
-— kcal WAS logged) and the 1–10 (not 1–5) normalization. `feature/companion/controller/
+per subscore over the engine's **six** dimensions (`nutrition`/`quality`/`training`/`sleep`/`logging`/`rhythm`
+— see [me.md](me.md) for the current dimension table) and the 1–10 (not 1–5) normalization. `feature/companion/controller/
 MeWeekControllerIT.java` covers the 7-day shape + the `ME_WEEK_START_NOT_MONDAY` 400 +
 weekly-aggregate math. `feature/proactive/service/WeeklyReviewGeneratorIT.java` covers the empty-week
 no-row gate, the idempotent existing-row short-circuit, bounds-checked anchor resolution, and the
@@ -2437,9 +2436,9 @@ no-row gate, the idempotent existing-row short-circuit, bounds-checked anchor re
 covers the never-lazy 404, the `stale` probe (re-probed on `regenerate` too, not hardcoded), the
 regenerate 409/404, and the digest's 400-on-non-Monday + otherwise-always-200 contract. `AnchoredConversationIT` (companion) covers `context_kind`/`context_date` persistence, the
 assistant-only opening turn, and its swallow-and-log failure path. FE: `frontend/src/data/me/
-{meWeekHooks.test.tsx,weeklyReviewHooks.test.ts}`, `frontend/src/features/me/{pages/WeekPage.test.tsx,
-logic/useChatHandoff.test.ts,components/WeekDayCard.test.tsx}` (`WeekReviewCard`/`WeekScoreBars`
-have no dedicated component test files — their behavior is covered at the `WeekPage.test.tsx`
+{meWeekHooks.test.tsx,weeklyReviewHooks.test.ts}`, `frontend/src/features/me/{pages/{WeekHubPage,WeekAnalysisPage,WeekDaysPage,WeekLessonsPage,WeekDiscoveriesPage}.test.tsx,
+logic/useChatHandoff.test.ts,components/week/WeekDayTile.test.tsx}` (`WeekReviewCard`/`WeekScoreBars`
+have no dedicated component test files — their behavior is covered at the hub/view-page
 integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/insights/weekly →
 /me/week` redirect). Full test list: [me.md §8](me.md).
 
@@ -3027,7 +3026,7 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 **Frontend — Insights Weekly consumer (W1)**
 - `frontend/src/data/insights/weeklySuggestionApi.ts` — `weeklySuggestionApi.get(date)` (wire → `w.prose` string).
 - **DELETED (`mezo-p2tr`):** `frontend/src/data/insights/weeklyHooks.ts`'s `useWeekly().weeklySuggestion` real-only `useQuery` and `frontend/src/features/insights/pages/WeeklyPage.tsx` (rendered the prose or the honest placeholder; „Elfogad/Hangoljuk" hidden when `mode !== 'mock'`, §9 decision k) — both retired with the Insights Weekly tab.
-- `frontend/src/features/me/pages/WeekPage.tsx` (`useWeekNextSuggestion`) + `frontend/src/features/me/components/WeekNextCard.tsx` — the **current** consumer of this endpoint, post-`mezo-p2tr` ([me.md](me.md)).
+- `frontend/src/features/me/pages/WeekHubPage.tsx` (`useWeekNextSuggestion`) + `frontend/src/features/me/components/WeekNextCard.tsx` — the **current** consumer of this endpoint, post-`mezo-p2tr` ([me.md](me.md)).
 
 **Frontend — Insights Memoir consumer (W2)**
 - `frontend/src/data/insights/memoirApi.ts` — `memoirApi.latest()` + `toMemoir` (wire → FE `Memoir`; the `Hét N · …` week label derives client-side via `isoWeekNumber`/`deriveWeekTitle`).
@@ -3059,7 +3058,7 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 - Contract: `api/feature/proactive/proactive.yml` (weekly-review paths + `WeeklyReview*` schemas), `api/feature/me-week/me-week.yml`, `api/feature/companion/companion.yml` (`CreateConversationRequest.context`).
 - Migrations: `...202608271200_mezo-p2tr_create_weekly_review.sql`, `...202608271500_mezo-p2tr_feedback_weekly_review_kind.sql`, `...202608271800_mezo-p2tr_ai_conversation_context.sql`, `...202608291100_mezo-d20.7.6_learned_fact_weekly_source.sql` (learned_fact `source`/`week_start`/`evidence` + the fourth `knowledge_fact` source).
 - Tests: `feature/proactive/service/WeeklyReviewGeneratorIT.java`, `feature/proactive/service/WeeklyLessonServiceIT.java`, `feature/proactive/controller/WeeklyReviewControllerIT.java`, `support/populator/{WeeklyReviewPopulator,LearnedFactPopulator}.java`; companion-side `feature/companion/service/DayScoreServiceIT.java`, `feature/companion/controller/MeWeekControllerIT.java`, `AnchoredConversationIT`.
-- FE consumer: `frontend/src/data/me/{weeklyReviewApi.ts,weeklyReviewHooks.ts,weeklyReviewMock.ts}`, `frontend/src/features/me/{pages/WeekPage.tsx,components/{WeekReviewCard,WeekDiscoveries}.tsx,logic/useChatHandoff.ts}` — full anatomy [me.md](me.md) `Heti` §2/§10. **RETIRED alongside this slice:** the Insights Weekly consumer block just above (`useWeekly`/`WeeklyPage`) — WR does not extend it, it replaces it.
+- FE consumer: `frontend/src/data/me/{weeklyReviewApi.ts,weeklyReviewHooks.ts,weeklyReviewMock.ts}`, `frontend/src/features/me/{pages/{WeekHubPage,WeekAnalysisPage,WeekDaysPage,WeekLessonsPage,WeekDiscoveriesPage}.tsx,components/{WeekReviewCard,WeekDiscoveries}.tsx,logic/useChatHandoff.ts}` — full anatomy [me.md](me.md) `Heti` §2/§10. **RETIRED alongside this slice:** the Insights Weekly consumer block just above (`useWeekly`/`WeeklyPage`) — WR does not extend it, it replaces it.
 
 **Docs (link, don't duplicate)**
 - Weekly review design of record (WR): `.superpowers/sdd/2026-08-27-weekly-review/`
