@@ -23,7 +23,7 @@ export const mockHabitDay: HabitItem[] = [
     anchorCopy: 'megvolt a reggeli napfény', mode: 'MANUAL', status: 'pending', xp: 10, strengthPct: 48 },
   { key: 'morning_video', chain: 'MORNING', position: 4, title: 'Reggeli videó',
     why: 'A napi videó egy kattintással — nézd meg és indítsd vele fókuszáltan a reggelt.',
-    anchorCopy: 'napfény után', mode: 'MANUAL', status: 'pending', xp: 5, strengthPct: 39,
+    anchorCopy: 'megvolt az 50 fekvőtámasz', mode: 'MANUAL', status: 'pending', xp: 5, strengthPct: 39,
     linkUrl: 'https://www.facebook.com/share/r/1ERXP5zNFs/?mibextid=wwXIfr' },
   { key: 'morning_weigh_in', chain: 'MORNING', position: 5, title: 'Reggeli súlymérés',
     why: 'Ugyanakkor mérve a reggeli súly a valódi alapvonal — azonnali visszajelzés a hétre.',

@@ -1,8 +1,9 @@
 // ============================================================
 // Mezo · habitAnchors — the step-2 anchor chip list for the Fogg branch of the routine wizard
 // (mezo-3zue). Two sources: the user's own active habits (a real reference, stored as
-// anchorHabitKey so the stack stays machine-readable) and a fixed list of mezo moments (free
-// text in v1 — event binding is mezo-3zue.6). Pure.
+// anchorHabitKey so the stack stays machine-readable) and a fixed list of mezo moments (still
+// free text — event binding for these tracked separately as mezo-t45n; mezo-3zue.6 bound only
+// habit→habit anchors). Pure.
 // ============================================================
 import type { HabitCatalog } from '@/data/types'
 
@@ -14,7 +15,7 @@ export interface AnchorOption {
   habitKey?: string
 }
 
-/** Moments the app itself knows about; free text in v1, event-bound in mezo-3zue.6. */
+/** Moments the app itself knows about; still free text — event binding tracked as mezo-t45n. */
 export const MEZO_EVENT_ANCHORS: AnchorOption[] = [
   { label: 'megmértem magam', source: 'MEZO' },
   { label: 'logoltam a reggelit', source: 'MEZO' },
