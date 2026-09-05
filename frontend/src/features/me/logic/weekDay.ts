@@ -84,11 +84,22 @@ export function doneDimensionCount(dimensions: readonly { status: string }[]): n
  *  is the frontend's analogue: it is populated from the same meal aggregation as `kcal` (see
  *  `data/me/meWeek.ts` — every mock day carries both together, or neither), so a day with a
  *  logged protein value already has a logged kcal value in practice. Including it here is the
- *  same harmless, intentional redundancy as the backend's — not a second, competing signal. */
+ *  same harmless, intentional redundancy as the backend's — not a second, competing signal.
+ *
+ *  `sleepQuality` joins the test too (mezo-el0t, review round 1, Important) — the mirror of
+ *  `anyLogPresent`'s OWN separate `sleepQuality1to10` disjunct, which exists because the sleep
+ *  log's API makes `durationH` and `quality` independently optional: a "quality only, no
+ *  duration" entry is a real logged day, not a non-event. Unlike `proteinG`/`kcal` this is NOT
+ *  redundant with `sleepMin` — it is its own, wire-carried signal (`me-week.yml`, populated by
+ *  `MeWeekService`), and omitting it is invisible on a CLOSED day (there `subscoreCount === 0`
+ *  already mirrors the backend's own verdict) but wrong on an OPEN one — today — where the
+ *  `logging` sub-score is still null (IN_PROGRESS) and so carries no information: a day with
+ *  only a sleep-quality check-in would otherwise read `empty` while the backend already knows
+ *  it has a log. */
 export function isEmptyDay(day: MeWeekDay): boolean {
   return subscoreCount(day) === 0
-    && day.kcal == null && day.proteinG == null && day.sleepMin == null && day.weightKg == null
-    && !day.checkinCount && !day.workoutCount && !day.xp
+    && day.kcal == null && day.proteinG == null && day.sleepMin == null && day.sleepQuality == null
+    && day.weightKg == null && !day.checkinCount && !day.workoutCount && !day.xp
 }
 
 /** The positive reading of `isEmptyDay` — true when the day carries ANY logged signal at all.

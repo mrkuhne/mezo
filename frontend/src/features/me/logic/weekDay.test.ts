@@ -100,6 +100,17 @@ describe('dayState — the four honest states (handoff §4)', () => {
     expect(dayState(day({ xp: 15 }), TODAY)).toBe('thin')
     expect(isEmptyDay(day({ xp: 0, checkinCount: 0 }))).toBe(true)
   })
+
+  // mezo-el0t, review round 1 (F1): `sleepQuality` mirrors the backend's OWN separate
+  // `sleepQuality1to10` disjunct in `anyLogPresent` — a "quality only, no duration" sleep entry
+  // is a real logged day. This is invisible on a CLOSED day (subscoreCount already carries the
+  // verdict there), but matters on an OPEN one — TODAY — where `logging` is still null
+  // (IN_PROGRESS) and so that conjunct carries no information on its own.
+  test('a logged sleep QUALITY alone still counts as a log, on an OPEN (today) day', () => {
+    const todayDay = day({ date: TODAY, sleepQuality: 6 })
+    expect(isEmptyDay(todayDay)).toBe(false)
+    expect(dayState(todayDay, TODAY)).toBe('thin')
+  })
 })
 
 describe('summariseDays', () => {
