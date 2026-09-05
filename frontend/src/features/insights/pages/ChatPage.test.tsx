@@ -270,6 +270,43 @@ describe('ChatPage (real mode)', () => {
     expect(screen.getByText('élő · Gemini')).toBeInTheDocument()
   })
 
+  test('batch-reads retrieval feedback once for the whole rendered thread', async () => {
+    const runId = '11111111-1111-4111-8111-111111111111'
+    const resultA = '22222222-2222-4222-8222-222222222222'
+    const resultB = '33333333-3333-4333-8333-333333333333'
+    const searches: string[] = []
+    server.use(
+      http.get(`${API_BASE}/api/companion/conversation/:id/messages`, () => HttpResponse.json([
+        {
+          id: 'm-a', role: 'assistant', content: 'Első válasz', createdAt: '2026-09-05T08:00:00Z',
+          tools: [], refs: [], degraded: false,
+          recalled: [{
+            occurredOn: '2026-09-01', kind: 'journal_entry', label: 'napló', gist: 'Első emlék',
+            similarity: 0.8, retrievalRunId: runId, retrievalResultId: resultA,
+            memoryItemId: '44444444-4444-4444-8444-444444444444', indicator: 'régi',
+          }],
+        },
+        {
+          id: 'm-b', role: 'assistant', content: 'Második válasz', createdAt: '2026-09-05T08:01:00Z',
+          tools: [], refs: [], degraded: false,
+          recalled: [{
+            occurredOn: '2026-09-02', kind: 'daily_summary', label: 'összefoglaló', gist: 'Második emlék',
+            similarity: 0.7, retrievalRunId: runId, retrievalResultId: resultB,
+            memoryItemId: '55555555-5555-4555-8555-555555555555', indicator: 'összegzés',
+          }],
+        },
+      ])),
+      http.get(`${API_BASE}/api/companion/memory/retrieval-feedback`, ({ request }) => {
+        searches.push(new URL(request.url).search)
+        return HttpResponse.json([])
+      }),
+    )
+
+    renderPage('/mezo/chat?c=c-1')
+    await screen.findByText('Második válasz')
+    await waitFor(() => expect(searches).toEqual([`?resultIds=${resultA},${resultB}`]))
+  })
+
   test('sending a message streams the reply into the thread', async () => {
     renderPage()
     await screen.findByText(/Jó reggelt\. Tegnap a Push Day/)

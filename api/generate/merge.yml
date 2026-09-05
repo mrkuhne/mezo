@@ -35,6 +35,7 @@ inputs:
   - inputFile: ../feature/needs/needs.yml
   - inputFile: ../feature/journal/journal.yml
   - inputFile: ../feature/companion-feedback/companion-feedback.yml
+  - inputFile: ../feature/memory-retrieval/memory-retrieval.yml
   - inputFile: ../feature/knowledge-graph/knowledge-graph.yml
   - inputFile: ../feature/me-week/me-week.yml
   - inputFile: ../feature/character/character.yml

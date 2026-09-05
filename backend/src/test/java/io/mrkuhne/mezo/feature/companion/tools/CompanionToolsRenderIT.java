@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.habit.entity.HabitDayEntity;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
+import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.progression.entity.LevelUpResult;
 import io.mrkuhne.mezo.feature.quest.entity.DailyQuestEntity;
@@ -1025,13 +1026,17 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     void testGetMedication_shouldRenderCyclePhaseAndDoses_whenScopeCycleAndDoseAnchored() {
         UUID owner = userPopulator.createUser().getId();
         MedicationEntity med = medicationPopulator.createMedication(owner);
-        medicationDosePopulator.createDose(owner, med.getId(), LocalDate.now().minusDays(3), new BigDecimal("4"));
+        // seed and render both anchor on MedicationCycleService.MEDICATION_ZONE (mezo-8h2s) — the
+        // only residual race is a midnight flip between this seed and the render call below,
+        // microseconds wide, acceptable.
+        LocalDate seedDay = LocalDate.now(MedicationCycleService.MEDICATION_ZONE).minusDays(3);
+        medicationDosePopulator.createDose(owner, med.getId(), seedDay, new BigDecimal("4"));
 
         String out = medicationTools.getMedication("cycle", ctx(owner));
 
         assertThat(out).startsWith("Gyógyszer-ciklus: Teszt gyógyszer — 4. nap (Stabil)")
-                .contains("utolsó dózis: " + LocalDate.now().minusDays(3) + " (4 mg)")
-                .contains("következő esedékes: " + LocalDate.now().minusDays(3).plusDays(7));
+                .contains("utolsó dózis: " + seedDay + " (4 mg)")
+                .contains("következő esedékes: " + seedDay.plusDays(7));
         assertThat(audit.toRefsEnvelope().refs())
                 .containsExactly(new RefsEnvelope.Ref("Medication", "Teszt gyógyszer"));
     }
@@ -1056,13 +1061,17 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     void testGetMedication_shouldRenderGeneralOverview_whenScopeAll() {
         UUID owner = userPopulator.createUser().getId();
         MedicationEntity med = medicationPopulator.createMedication(owner);
-        medicationDosePopulator.createDose(owner, med.getId(), LocalDate.now().minusDays(3), new BigDecimal("4"));
+        // seed and render both anchor on MedicationCycleService.MEDICATION_ZONE (mezo-8h2s) — the
+        // only residual race is a midnight flip between this seed and the render call below,
+        // microseconds wide, acceptable.
+        LocalDate seedDay = LocalDate.now(MedicationCycleService.MEDICATION_ZONE).minusDays(3);
+        medicationDosePopulator.createDose(owner, med.getId(), seedDay, new BigDecimal("4"));
 
         String out = medicationTools.getMedication("all", ctx(owner));
 
         assertThat(out).startsWith("Gyógyszer: Teszt gyógyszer (teszthatoanyag) — weekly, 6 mg")
                 .contains("ciklus: 4. nap (Stabil)")
-                .contains("Utolsó dózisok: " + LocalDate.now().minusDays(3) + ": 4 mg");
+                .contains("Utolsó dózisok: " + seedDay + ": 4 mg");
         assertThat(audit.toRefsEnvelope().refs())
                 .containsExactly(new RefsEnvelope.Ref("Medication", "Teszt gyógyszer"));
     }

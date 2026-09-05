@@ -3494,6 +3494,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/memory/retrieval-feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Batch-read feedback for caller-owned retrieval results (MemoryRetrieval)
+         * @description Returns only feedback rows owned by the caller among the requested result IDs. Unknown, foreign and never-rated IDs are omitted.
+         */
+        get: operations["listMemoryRetrievalFeedback"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/memory/retrieval/{runId}/result/{resultId}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Upsert feedback for one caller-owned retrieval result (MemoryRetrieval) */
+        put: operations["putMemoryRetrievalFeedback"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/graph/node": {
         parameters: {
             query?: never;
@@ -8428,6 +8465,23 @@ export interface components {
             verdict: string;
             /** @description 'inaccurate' | 'too_much' | 'bad_timing' | 'not_about_me' — down verdicts only */
             reason?: string | null;
+            /** Format: date-time */
+            updatedAt: string;
+        };
+        PutMemoryRetrievalFeedbackRequest: {
+            /** @description 'useful' | 'irrelevant' | 'suppress' */
+            action: string;
+        };
+        MemoryRetrievalFeedbackResponse: {
+            /** Format: uuid */
+            runId: string;
+            /** Format: uuid */
+            resultId: string;
+            /**
+             * @description 'useful' | 'irrelevant' | 'suppress'
+             * @enum {string}
+             */
+            action: "useful" | "irrelevant" | "suppress";
             /** Format: date-time */
             updatedAt: string;
         };
@@ -18980,6 +19034,100 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listMemoryRetrievalFeedback: {
+        parameters: {
+            query: {
+                resultIds: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Existing feedback for the requested owned results, possibly empty */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryRetrievalFeedbackResponse"][];
+                };
+            };
+            /** @description Validation error (empty or oversized result ID list) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    putMemoryRetrievalFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                runId: string;
+                resultId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PutMemoryRetrievalFeedbackRequest"];
+            };
+        };
+        responses: {
+            /** @description Stored feedback */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MemoryRetrievalFeedbackResponse"];
+                };
+            };
+            /** @description Validation error, including non-memory suppression or changing a terminal suppression */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Retrieval run/result pair is not owned by the caller or does not match */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

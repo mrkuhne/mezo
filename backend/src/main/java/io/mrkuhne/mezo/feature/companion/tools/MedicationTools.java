@@ -19,7 +19,6 @@ import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -70,8 +69,7 @@ public class MedicationTools {
         if (med == null) {
             return "Gyógyszer-ciklus: " + ToolText.NO_DATA;
         }
-        LocalDate today = LocalDate.now();
-        MedicationCycle cycle = medicationCycleService.derive(userId, med, today);
+        MedicationCycle cycle = medicationCycleService.deriveToday(userId, med);
         if (cycle.cycleDay() == 0) {
             // honest zero — active med but no recorded dose to anchor the cycle
             return "Gyógyszer-ciklus: " + med.getName() + " — nincs rögzített dózis";

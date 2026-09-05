@@ -31,8 +31,22 @@ export const initialChat: ChatMessage[] = [
     // W3.1b (mezo-b3pp.28): the ambient-recall block behind this answer — the demo surface
     // shows the same provenance the live one does.
     recalled: [
-      { occurredOn: '2026-05-18', kind: 'journal_entry', label: 'napló', gist: 'futás után jobban aludtam', similarity: 0.92 },
-      { occurredOn: '2026-05-12', kind: 'daily_summary', label: 'napi összefoglaló', gist: 'Kemény Pull Day, este korán ágyba.', similarity: 0.71 },
+      {
+        occurredOn: '2026-05-18', kind: 'journal_entry', label: 'napló',
+        gist: 'futás után jobban aludtam', similarity: 0.92,
+        retrievalRunId: '11111111-1111-4111-8111-111111111111',
+        retrievalResultId: '22222222-2222-4222-8222-222222222221',
+        memoryItemId: '33333333-3333-4333-8333-333333333331',
+        indicator: 'naplóbejegyzés',
+      },
+      {
+        occurredOn: '2026-05-12', kind: 'daily_summary', label: 'napi összefoglaló',
+        gist: 'Kemény Pull Day, este korán ágyba.', similarity: 0.71,
+        retrievalRunId: '11111111-1111-4111-8111-111111111111',
+        retrievalResultId: '22222222-2222-4222-8222-222222222222',
+        memoryItemId: '33333333-3333-4333-8333-333333333332',
+        indicator: 'összefoglaló',
+      },
     ],
   },
   {
