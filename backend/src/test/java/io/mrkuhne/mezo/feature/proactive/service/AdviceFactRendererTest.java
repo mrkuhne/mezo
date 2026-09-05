@@ -144,6 +144,21 @@ class AdviceFactRendererTest {
         assertThat(facts).anySatisfy(f -> assertThat(f).contains("86"));
     }
 
+    /** Code-review fix (mezo-d58h.7.1): a malformed upstream payload — a null {@code itemName} or a
+     *  null {@code missedDueDates} — must not crash the whole advice-card render pipeline. No
+     *  production caller populates a null field here today ({@code ProtocolLapseRule} is a later
+     *  task), but the renderer must not assume a well-formed caller. */
+    @Test
+    void testRender_shouldNotThrow_whenProtocolLapseFieldsAreNull() {
+        FlagPayloadEnvelope payload = FlagPayloadEnvelope.protocolLapse(
+            new FlagPayloadEnvelope.ProtocolLapse("11111111-1111-1111-1111-111111111111",
+                null, "evening", 2, 2, null, "2026-09-02", 14, 12, 0.857, 0.60));
+
+        List<String> facts = AdviceFactRenderer.render(FlagKey.PROTOCOL_LAPSE, payload);
+
+        assertThat(facts).anySatisfy(f -> assertThat(f).contains("ismeretlen kiegészítő"));
+    }
+
     /** Honest absence: no payload (a raise written before the payload existed, or a key with no
      *  renderer) yields NO facts rather than a fabricated one. The card still ships — its prose
      *  falls back to the template, which needs no facts. */

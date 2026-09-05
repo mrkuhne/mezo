@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * The advice card's FACTS (spec §5): deterministic, numeric, rule-provided lines rendered from the
@@ -239,10 +240,12 @@ public final class AdviceFactRenderer {
             return List.of();
         }
         List<String> facts = new ArrayList<>();
-        facts.add("Kiegészítő: %s%s".formatted(p.itemName(),
+        facts.add("Kiegészítő: %s%s".formatted(
+            Objects.requireNonNullElse(p.itemName(), "ismeretlen kiegészítő"),
             p.slotKey() == null ? "" : " (%s zóna)".formatted(p.slotKey())));
         facts.add("Kimaradt %d egymást követő tervezett napon: %s"
-            .formatted(p.consecutiveMissedDueDays(), String.join(", ", p.missedDueDates())));
+            .formatted(p.consecutiveMissedDueDays(),
+                p.missedDueDates() == null ? "" : String.join(", ", p.missedDueDates())));
         facts.add(p.lastTakenDate() == null
             ? "Az ablakon belül nincs rögzített bevétel"
             : "Utoljára ekkor volt bevéve: %s".formatted(p.lastTakenDate()));
