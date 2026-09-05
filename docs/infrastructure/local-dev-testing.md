@@ -72,6 +72,33 @@ app in **mock mode** on a dedicated port (4318, no backend needed) so the seeds 
 pixel-compares each screen against a committed golden. This is a fast, JVM-less gate (unlike the
 backend suite above) — it runs fine locally.
 
+**Both platforms are CI-gated (mezo-in3h).** `ci.yml` runs `test-visual` on `ubuntu-latest`
+*and* `test-visual-darwin` on `macos-latest`; `update-visual-baselines.yml` regenerates both
+sets (`platforms: both | linux | darwin`). Actions minutes are free on this public repo and the
+jobs run in parallel, so the second platform costs no wall clock.
+
+Before this, the darwin half had **no machine gate at all** — 118 committed `*-darwin.png` files
+guarded only by whether a developer happened to run `pnpm test:visual`. They rotted silently: on
+`feat/orb-seed-and-provider` the me-rutinok darwin goldens were ~39 000 pixels off main, because a
+branch regenerated darwin, *then* merged a main that shifted the page vertically, and only the
+linux half was refreshed by the workflow.
+
+**Two things the first macOS run exposed, both of which had been invisible:**
+
+1. **The frozen clock was not frozen.** `new Date('2026-05-21T13:42:00')` has no offset, so it is
+   parsed in the *machine's* local timezone; `timezoneId: 'Europe/Budapest'` then rendered that
+   instant as 15:42 in CI. The two golden sets encoded **different application states** —
+   `today-este` showed `VILLANYOLTÁSIG 2:10` on darwin and `0:10` plus an extra ÉJSZAKAI MÓD tile
+   on linux (23:05), 65 000 pixels of pure content. The authoritative linux gate was guarding a
+   moment the spec says it is not guarding. Fixed by pinning `+02:00`; the linux set was
+   regenerated, the darwin set was already right.
+2. **Native date/time inputs are rendered by the OS, in the OS's language** — `02:00 P` /
+   `mm/dd/yyyy` on the en-US runner, `14:00` / `yyyy. mm. dd.` on a Hungarian Mac. On macOS,
+   Chromium ignores both Playwright's `locale` and `--lang` for these controls (measured), so any
+   golden containing one is machine-dependent by construction. They are now masked
+   (`OS_RENDERED_CONTROLS` in `visual.spec.ts`): their pixels are OS chrome we neither design nor
+   can regress, and everything around them stays under the gate.
+
 **Two-platform golden model.** Playwright names goldens per-platform, and darwin vs linux font
 rendering differs by a few sub-pixels, so the harness commits **both** sets under
 `visual.spec.ts-snapshots/`:

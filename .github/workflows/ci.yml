@@ -140,6 +140,47 @@ jobs:
           path: frontend/test-results/
           retention-days: 7
 
+  test-visual-darwin:
+    # The darwin half of the two-platform golden set had NO machine gate at all: CI ran
+    # only on ubuntu-latest, so the 118 committed *-darwin.png files were guarded solely
+    # by whether a developer happened to run `pnpm test:visual` locally. They rotted
+    # silently — on feat/orb-seed-and-provider the me-rutinok darwin goldens were ~39 000
+    # pixels off main, because a branch regenerated darwin, THEN merged a main that moved
+    # the page vertically, and only the linux half was refreshed by the workflow. CI
+    # stayed green and the PR stayed mergeable (mezo-in3h, mezo-a3tr).
+    # Actions minutes are free on this public repo and this job runs in parallel with the
+    # others, so the coverage costs no wall clock.
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+      - run: pnpm exec playwright install chromium
+      - name: Visual goldens (compare vs committed darwin baselines)
+        run: pnpm test:visual
+      - name: Upload visual diffs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diffs-darwin
+          path: frontend/test-results/
+          retention-days: 7
+
   test-backend:
     # Full IT suite on a throwaway Testcontainers Postgres (no fixed-DB
     # dependency; ubuntu-latest ships Docker). Same command as the CI variant
