@@ -33,6 +33,7 @@ public class CompanionToolRegistry {
     private final GrowthTools growthTools;
     private final PracticeTools practiceTools;
     private final InsightsTools insightsTools;
+    private final LifeGoalTools lifeGoalTools;
     private final CompanionProperties properties;
 
     public ToolCallAudit newTurnAudit() {
@@ -43,7 +44,7 @@ public class CompanionToolRegistry {
     public List<ToolCallback> callbacks(ToolCallAudit audit) {
         return Arrays.stream(
                         ToolCallbacks.from(trainTools, biometricsTools, fuelTools, goalTools, medicationTools,
-                                memoryTools, growthTools, practiceTools, insightsTools))
+                                memoryTools, growthTools, practiceTools, insightsTools, lifeGoalTools))
                 .<ToolCallback>map(cb -> new RecordingToolCallback(cb, audit))
                 .toList();
     }
