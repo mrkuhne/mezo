@@ -177,6 +177,29 @@ class LifeGoalScorerTest {
         assertThat(LifeGoalScorer.scoreDay("target", empty, DAY, w).status()).isEqualTo("no_data");
     }
 
+    @Test
+    void testScoreTarget_shouldClampExpectedAtTargetValue_whenDayIsPastTargetDate() {
+        // start 0 → target 100 over 10 days, direction up; day = startDate + 20 (targetDate + 10)
+        PillarRuleJson rule = new PillarRuleJson(null, null, null, null, new BigDecimal("0"),
+            new BigDecimal("100"), DAY.minusDays(20), DAY.minusDays(10), "up", null);
+        // value 100 on that day → expected must clamp to 100 (not extrapolate to 200) → hit
+        SignalWindow w = SignalWindow.of(Map.of(DAY, new BigDecimal("100")));
+        PillarDayScore s = LifeGoalScorer.scoreDay("target", rule, DAY, w);
+        assertThat(s.target()).isEqualByComparingTo("100");
+        assertThat(s.status()).isEqualTo("hit");
+    }
+
+    @Test
+    void testScoreTarget_shouldClampExpectedAtStartValue_whenDayIsBeforeStartDate() {
+        PillarRuleJson rule = new PillarRuleJson(null, null, null, null, new BigDecimal("0"),
+            new BigDecimal("100"), DAY, DAY.plusDays(10), "up", null);
+        // day = startDate - 5, value = startValue → expected must clamp to startValue → hit
+        SignalWindow w = SignalWindow.of(Map.of(DAY.minusDays(5), new BigDecimal("0")));
+        PillarDayScore s = LifeGoalScorer.scoreDay("target", rule, DAY.minusDays(5), w);
+        assertThat(s.target()).isEqualByComparingTo("0");
+        assertThat(s.status()).isEqualTo("hit");
+    }
+
     // ---- baseline ----
 
     @Test
@@ -302,6 +325,30 @@ class LifeGoalScorerTest {
         Map<LocalDate, BigDecimal> expected = Map.of(DAY, new BigDecimal("88.0"));
         PillarDayScore s = LifeGoalScorer.scoreDay("linked", LINKED_RULE, DAY, new SignalWindow(trend, expected));
         assertThat(s.status()).isEqualTo("partial");
+    }
+
+    @Test
+    void testScoreLinked_shouldUseSymmetricBand_whenTargetLineIsFlat() {
+        // maintenance goal: target pace line is flat (both target days share the same value)
+        Map<LocalDate, BigDecimal> expected = Map.of(
+            DAY.minusDays(1), new BigDecimal("88.0"),
+            DAY, new BigDecimal("88.0"));
+
+        // trend = expected + 0.5 → outside ±0.3 symmetric band → partial
+        PillarDayScore above = LifeGoalScorer.scoreDay("linked", LINKED_RULE, DAY,
+            new SignalWindow(Map.of(DAY, new BigDecimal("88.5")), expected));
+        assertThat(above.status()).isEqualTo("partial");
+
+        // trend = expected + 0.2 → inside ±0.3 symmetric band → hit
+        PillarDayScore withinAbove = LifeGoalScorer.scoreDay("linked", LINKED_RULE, DAY,
+            new SignalWindow(Map.of(DAY, new BigDecimal("88.2")), expected));
+        assertThat(withinAbove.status()).isEqualTo("hit");
+
+        // trend = expected - 0.5 → outside ±0.3 symmetric band → partial (old one-sided
+        // "gaining" rule would have called this a hit since it only penalized drifting down)
+        PillarDayScore below = LifeGoalScorer.scoreDay("linked", LINKED_RULE, DAY,
+            new SignalWindow(Map.of(DAY, new BigDecimal("87.5")), expected));
+        assertThat(below.status()).isEqualTo("partial");
     }
 
     // ---- unknown kind ----
