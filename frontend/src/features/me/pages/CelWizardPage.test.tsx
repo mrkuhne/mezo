@@ -95,4 +95,58 @@ describe('real mode', () => {
 
     await waitFor(() => expect(screen.getByText('GOAL PAGE lg-new')).toBeInTheDocument())
   })
+
+  // mezo-iwoc: a failed create used to navigate blindly (or silently do nothing beyond the
+  // global toast) — the draft was gone with no way to retry. It must now stay on the summary
+  // step with an inline error card, and the same button must re-fire the request.
+  test('a failed create keeps the wizard on the summary with an inline error card', async () => {
+    server.use(http.post(`${API_BASE}/api/life-goals`, () =>
+      HttpResponse.json([{ code: 'LIFE_GOAL_INVALID_RULE', message: 'Invalid life goal rule' }], { status: 400 })))
+    renderWiz()
+    fireEvent.change(screen.getByLabelText('A cél, a te szavaiddal'), { target: { value: 'Félmaraton tavasszal' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Tovább →' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Pillérek →' })).toBeEnabled())
+    fireEvent.click(screen.getByRole('button', { name: 'Pillérek →' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Ha–akkor →' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Összegzés →' }))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Mentés tervezettként' }))
+    await screen.findByText('Nem sikerült elmenteni')
+    expect(screen.queryByText('HUB')).not.toBeInTheDocument()
+
+    // Retry re-uses the same draft (still on step 4) and re-fires the request.
+    let secondAttempt = false
+    server.use(http.post(`${API_BASE}/api/life-goals`, async ({ request }) => {
+      secondAttempt = true
+      const body = (await request.json()) as Record<string, unknown>
+      return HttpResponse.json({ ...body, id: 'lg-retry', status: 'draft' }, { status: 201 })
+    }))
+    fireEvent.click(screen.getByRole('button', { name: 'Mentés tervezettként' }))
+    await waitFor(() => expect(screen.getByText('HUB')).toBeInTheDocument())
+    expect(secondAttempt).toBe(true)
+  })
+
+  // Create succeeds (the goal now exists as a draft) but the follow-up activation call fails —
+  // staying on the wizard would let a retry create a DUPLICATE goal, so navigation must still
+  // land on the created goal's detail page; the global toast + the draft state tell the truth.
+  test('activation failure after a successful create still lands on the goal detail', async () => {
+    server.use(
+      http.post(`${API_BASE}/api/life-goals`, async ({ request }) => {
+        const body = (await request.json()) as Record<string, unknown>
+        return HttpResponse.json({ ...body, id: 'lg-activate-fail', status: 'draft' }, { status: 201 })
+      }),
+      http.post(`${API_BASE}/api/life-goals/:id/status`, () =>
+        HttpResponse.json([{ code: 'LIFE_GOAL_STATUS_CONFLICT', message: 'Cannot activate' }], { status: 409 })),
+    )
+    renderWiz()
+    fireEvent.change(screen.getByLabelText('A cél, a te szavaiddal'), { target: { value: 'Félmaraton tavasszal' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Tovább →' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Pillérek →' })).toBeEnabled())
+    fireEvent.click(screen.getByRole('button', { name: 'Pillérek →' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Ha–akkor →' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Összegzés →' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Aktiválás' }))
+
+    await waitFor(() => expect(screen.getByText('GOAL PAGE lg-activate-fail')).toBeInTheDocument())
+  })
 })

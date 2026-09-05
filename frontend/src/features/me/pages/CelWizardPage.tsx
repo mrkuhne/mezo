@@ -39,6 +39,9 @@ export function CelWizardPage() {
   // and „Tovább" stayed disabled, stranding the wizard. This flag swaps the spinner for a
   // terminal error card whose retry re-runs `goToFrame` (house loading/empty/error triad).
   const [proposeFailed, setProposeFailed] = useState(false)
+  // A failed create used to navigate blindly (or leave the draft with no feedback beyond the
+  // global toast) — this keeps the wizard on the summary step with a retry-safe error card.
+  const [saveFailed, setSaveFailed] = useState(false)
   const [d, setD] = useState<WizardDraft>({
     title: '', whyText: '', targetDate: '', dimension: 'health', frame: 'unset', useReframe: false,
     pillars: [], obstacle: '', obstacles: [], plans: [], source: null,
@@ -68,12 +71,24 @@ export function CelWizardPage() {
   const canNext = [d.title.trim().length > 0, true, activePillars.length > 0, true, true][step]
 
   const save = (activate: boolean) => {
+    setSaveFailed(false)
     create({
       title: d.title, whyText: d.useReframe && d.reframedWhy ? d.reframedWhy : d.whyText || undefined, frame: d.useReframe ? 'intrinsic' : d.frame,
       dimension: d.dimension, secondaryDimension: d.secondaryDimension, startDate: new Date().toISOString().slice(0, 10),
       targetDate: d.targetDate || undefined, obstacleText: d.obstacle || undefined,
       ifThenPlans: d.plans.filter((p) => p.ha.trim() && p.akkor.trim()).map(({ own: _o, ...rest }) => rest), pillars: activePillars,
-    }, { onSuccess: (g) => { if (activate) { changeStatus(g.id, 'active'); navigate(`/me/goals/${g.id}`) } else navigate('/me/goals') } })
+    }, {
+      onSuccess: (g) => {
+        if (!activate) { navigate('/me/goals'); return }
+        // Aktiválás-bukás után is a cél-oldalra megyünk: a cél már létezik draftként, a
+        // varázslóban maradva egy újrapróba DUPLIKÁLNÁ; a globális toast + a draft állapot mondja el.
+        changeStatus(g.id, 'active', {
+          onSuccess: () => navigate(`/me/goals/${g.id}`),
+          onError: () => navigate(`/me/goals/${g.id}`),
+        })
+      },
+      onError: () => setSaveFailed(true),
+    })
   }
 
   const addFromCatalog = (e: SignalCatalogEntry) => {
@@ -182,6 +197,15 @@ export function CelWizardPage() {
                 <div style={{ fontSize: 11.5, fontWeight: 300 }}>Holnaptól a Nap „Célok · ma” csempéjén számol · hétfőnként a Hetiben nyíl + egy mondat · teljesült pillér-nap → XP a skillre. Nincs felső korlát az aktív célokra — ha kettő ugyanazt a pihenőt kéri, Mezo szól.</div></div>
             </>)}
           </div>
+
+          {step === 4 && saveFailed && (
+            <div className="rise" style={{ '--d': '100ms', padding: '0 24px 4px' } as React.CSSProperties}>
+              <div className="lg-fcard">
+                <span className="lg-flabel">Nem sikerült elmenteni</span>
+                <div style={{ fontSize: 12.5, fontWeight: 300 }}>A cél nem veszett el — próbáld újra, vagy nézd át a pilléreket.</div>
+              </div>
+            </div>
+          )}
 
           <div className="rise row gap-sm" style={{ '--d': '120ms', padding: '8px 24px 16px' } as React.CSSProperties}>
             {step < 4 && <button type="button" className="cta-primary" style={{ flex: 1 }} disabled={!canNext || (step === 1 && !d.source)} onClick={() => (step === 0 ? void goToFrame() : setStep(step + 1))}>{step === 0 ? 'Tovább →' : `${STEPS[step + 1]} →`}</button>}

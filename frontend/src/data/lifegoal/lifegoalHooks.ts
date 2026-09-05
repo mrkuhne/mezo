@@ -138,10 +138,11 @@ export function useLifeGoalMutations() {
   })
 
   return {
-    create: useCallback((req: LifeGoalUpsertRequest, opts?: { onSuccess?: (g: LifeGoalResponse) => void }) =>
-      create.mutate(req, { onSuccess: opts?.onSuccess }), [create]),
+    create: useCallback((req: LifeGoalUpsertRequest, opts?: { onSuccess?: (g: LifeGoalResponse) => void; onError?: () => void }) =>
+      create.mutate(req, { onSuccess: opts?.onSuccess, onError: opts?.onError }), [create]),
     update: useCallback((id: string, req: LifeGoalUpsertRequest) => update.mutate({ id, req }), [update]),
-    changeStatus: useCallback((id: string, status: LifeGoalStatus) => changeStatus.mutate({ id, status }), [changeStatus]),
+    changeStatus: useCallback((id: string, status: LifeGoalStatus, opts?: { onSuccess?: () => void; onError?: () => void }) =>
+      changeStatus.mutate({ id, status }, { onSuccess: opts?.onSuccess, onError: opts?.onError }), [changeStatus]),
     replacePillars: useCallback((id: string, pillars: LifeGoalPillarInput[]) => replacePillars.mutate({ id, pillars }), [replacePillars]),
     remove: useCallback((id: string) => remove.mutate(id), [remove]),
     pending: create.isPending || update.isPending || changeStatus.isPending || replacePillars.isPending || remove.isPending,
