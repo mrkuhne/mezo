@@ -27,14 +27,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Docs lint (errors block; staleness advisory — known false positives)
-        run: node scripts/lint-docs.mjs --errors-only
-      - name: Liquibase conventions lint (filenames, constraint prefixes, seed-SQL ban)
-        run: node scripts/lint-liquibase.mjs
-      - name: Codemap generator tests (fixture trees)
-        run: node --test scripts/gen-codemap.test.mjs
-      - name: Codemap freshness (docs/CODEMAP.md must regenerate identically)
-        run: node scripts/gen-codemap.mjs --check
+      - name: Convention + generator gates (shared with premerge.yml)
+        # Defined ONCE in .github/scripts/cheap-gates.sh so the pre-merge re-check and
+        # the PR run can never drift apart. All of these are merge-sensitive: two PRs
+        # can each be green and their merge still red (mezo-l4am, mezo-mxrc).
+        run: bash .github/scripts/cheap-gates.sh
 
   contract-drift:
     # Fails when api/openapi.yml is a stale merge of the api/feature/* fragments,

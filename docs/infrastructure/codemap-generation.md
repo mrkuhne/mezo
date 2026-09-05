@@ -66,19 +66,35 @@ under *other*); the `data/hooks.ts` re-export barrel as the source of hook names
 
 The file has two halves split by a `<!-- CODEMAP:BODY -->` marker:
 
-- the **header** carries the generation date and commit — volatile by design;
+- the **header** is a fixed literal (deterministic since mezo-hnkd — it used to stamp the date
+  and short commit, which made every regeneration differ and merge-conflict);
 - the **body** is a pure function of the tree (every list sorted).
 
-`--check` compares the **body only**, so an unrelated commit never trips the gate, and a plain
-run leaves the file untouched when the body did not change (true idempotence — no diff noise).
+`--check` validates the **whole file** against `renderHeader() + body`, and a plain run rewrites
+whenever the whole file differs. It reports what is wrong, in this order: merge-conflict markers →
+missing `CODEMAP:BODY` marker → stale body → hand-edited header.
+
+> **It used to compare the body only** — and that made both gates blind to a corrupted header.
+> Unresolved `<<<<<<< HEAD / ======= / >>>>>>> origin/main` markers reached `main` **twice**
+> inside the header (PR #287, and commit `6ecb76fa2` on the mezo-b3pp.29 branch): with the body
+> current, `gen-codemap.mjs` printed *"already current — left untouched"* and did not rewrite the
+> file, `--check` passed, and so did CI's `lint` job. The local gate and the CI gate were green
+> while unresolved conflict markers sat on `main` (mezo-ag1b, mezo-miw6).
+
+Because that failure mode is not specific to CODEMAP — most files here have no generator gate at
+all — `scripts/lint-conflict-markers.mjs` scans **every tracked text file** for git's markers and
+is a separate `lint` step. (It lives in CI rather than in a pre-commit hook on purpose: the local
+hooks are beads-managed, untracked, and bypassable with `--no-verify`; CI is the authoritative
+gate per ADR 0007.)
 
 ```bash
-node scripts/gen-codemap.mjs           # regenerate; writes only if the body changed
-node scripts/gen-codemap.mjs --check   # exit 1 if regenerating would change the body
+node scripts/gen-codemap.mjs           # regenerate; writes only if the whole file changed
+node scripts/gen-codemap.mjs --check   # exit 1 on stale body, edited header, or conflict markers
+node scripts/lint-conflict-markers.mjs # exit 1 on conflict markers in ANY tracked text file
 node --test scripts/gen-codemap.test.mjs   # fixture-tree tests for the generator itself
 ```
 
-Both the check and the generator tests run in the `lint` job of
+All four run in the `lint` job of
 [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml), alongside `lint-docs.mjs` and
 `lint-liquibase.mjs`.
 
