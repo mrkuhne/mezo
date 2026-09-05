@@ -587,8 +587,11 @@ class DayEvaluationEngineTest {
     }
 
     /** The other side of the same gate: a dimension that DID measure the day opens it, and rhythm
-     *  keeps its weight in the sum once it is open. A planned-but-skipped workout is real evidence
-     *  about the day (training DONE at 30), so it scores even though nothing else was logged. */
+     *  keeps its weight in the sum once it is open. Here the day's ONE actual log is a check-in
+     *  (keeping `logging` DONE); the planned-but-skipped workout is a PLAN comparison, not itself
+     *  a log (mezo-el0t: {@code doneWorkouts=0} does not satisfy {@code anyLogPresent}), so on its
+     *  own it could not open the gate -- see {@code a_skipped_planned_workout_alone_no_longer_opens_the_gate}
+     *  for that case. */
     @Test
     void overall_skippedPlannedWorkout_scoresAndRhythmStillCarriesWeight() {
         // A skipped workout (doneWorkouts=0) is a PLAN comparison, not itself something the user
@@ -606,6 +609,19 @@ class DayEvaluationEngineTest {
         // weights .20 training + .10 logging + .10 rhythm = .40 -> 0.5 / 0.25 / 0.25
         // base = round(0.5*30 + 0.25*15 + 0.25*79) = round(38.5) = 39
         assertThat(e.base()).isEqualTo(39);
+    }
+
+    /** Pins the deliberate behaviour change (Köteg C plan decision): a day whose ONLY event is a
+     *  planned-but-skipped workout used to score (training DONE(30) + logging's forced honest 0
+     *  opened the gate together -- two mutually-propping fabrications about a day the app knew
+     *  nothing else about). mezo-el0t removes the second fabrication: a plan is not a log, so
+     *  `logging` degrades to NO_DATA here and the gate stays shut. */
+    @Test
+    void a_skipped_planned_workout_alone_no_longer_opens_the_gate() {
+        DayEvaluation e = engine.evaluate(untouchedClosedDay()
+            .plannedWorkouts(1).doneWorkouts(0).build());
+        assertThat(dim(e, "logging").status()).isEqualTo("NO_DATA");
+        assertThat(e.base()).isNull();
     }
 
     /** A lone sleep log is also a measurement of THIS day, so it opens the gate too. */
@@ -658,6 +674,17 @@ class DayEvaluationEngineTest {
         // mezo-jcpt.8: this used to read as 'empty', even though the user DID do something.
         assertThat(DayEvaluationEngine.anyLogPresent(
             untouchedClosedDay().weightKg(74.2).build())).isTrue();
+    }
+
+    @Test
+    void a_quality_only_sleep_entry_counts_as_logged() {
+        // Fix round 1, F3: checked the real contract, not assumed it -- LogSleepRequest
+        // (api/feature/sleep/sleep.yml) requires only `date`; durationH and quality are
+        // independently optional, and SleepLogEntity has no constraint tying them together.
+        // A "quality but no duration" entry is a real case, so anyLogPresent must also ask
+        // sleepQuality1to10, not just sleepH.
+        assertThat(DayEvaluationEngine.anyLogPresent(
+            untouchedClosedDay().sleepQuality1to10(6).build())).isTrue();
     }
 
     @Test

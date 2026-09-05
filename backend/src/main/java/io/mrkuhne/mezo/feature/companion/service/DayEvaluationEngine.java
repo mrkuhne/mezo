@@ -92,6 +92,20 @@ public class DayEvaluationEngine {
      * edzett vagy aludt, de étkezést/vizet/check-int nem logolt, LOGOLT napnak számít — így a
      * {@code loggingDim} ott továbbra is mérhető marad és őszinte 0-val bünteti a napot,
      * ahogy azt a {@code loggingDim} javadoc-jában rögzített korábbi review-döntés megköveteli.
+     *
+     * <p>{@code kcal != null} és a nem-üres {@code meals} részben átfedő diszjunkt: produkcióban
+     * ({@code DayScoreService}) {@code kcal} csak akkor nem null, ha volt legalább egy meal, tehát
+     * a két feltétel gyakorlatban együtt mozog. Szándékosan mindkettő szerepel itt: ez a metódus
+     * bármilyen kézzel épített {@link DayInputs}-ra (tesztek, jövőbeli hívók) is védekezik, nem
+     * csak a jelenlegi egyetlen élő betöltőre — a redundancia ártalmatlan defenzív fedezet, nem
+     * két külön eset.
+     *
+     * <p>{@code sleepH} ÉS {@code sleepQuality1to10} is szerepel, nem csak {@code sleepH}: az
+     * alvás-napló API-ja ({@code LogSleepRequest}, {@code api/feature/sleep/sleep.yml}) csak a
+     * {@code date}-et követeli meg — {@code durationH} és {@code quality} egymástól függetlenül
+     * opcionális, és az entitáson ({@code SleepLogEntity}) sincs őket összekötő megszorítás. Egy
+     * „csak minőséget adtam meg, időtartamot nem" bejegyzés tehát valós eset (nem csak elméleti),
+     * és e nélkül a diszjunkt nélkül tévesen érintetlennek olvasódna.
      */
     public static boolean anyLogPresent(DayInputs in) {
         return in.kcal() != null
@@ -99,6 +113,7 @@ public class DayEvaluationEngine {
             || in.waterLogged()
             || in.checkinCount() > 0
             || in.sleepH() != null
+            || in.sleepQuality1to10() != null
             || (in.doneWorkouts() != null && in.doneWorkouts() > 0)
             || in.weightKg() != null
             || (in.xp() != null && in.xp() > 0);
