@@ -174,10 +174,12 @@ for the build-out steps.
 3. **`build-backend`** (only if BE changed) — `./mvnw -B clean package -DskipTests` (no
    Testcontainers/Docker needed since tests are skipped) → docker build/push
    `ghcr.io/mrkuhne/mezo-backend:<ver>`.
-4. **`release`** (if nothing failed and ≥1 component shipped) — `sed`-rewrites the changed
-   `k8s/<comp>/deployment.yaml` image tag to `<ver>`, commits it back as
-   `chore(release): v<ver> [skip ci]`, `git pull --rebase origin main` (non-fast-forward guard),
-   tags `v<ver>`, and pushes. **ArgoCD then syncs that commit and deploys it.**
+4. **`release`** (if nothing failed and ≥1 component shipped) — runs
+   `.github/scripts/release-commit.sh`: rewrites the changed `k8s/<comp>/deployment.yaml` image
+   tag to `<ver>`, commits it back as `chore(release): v<ver> [skip ci]`,
+   `git pull --rebase origin main` (non-fast-forward guard), tags **`v<ver>` on the commit the
+   images were built from** (`github.sha`, *not* the rebased manifest commit — see the
+   concurrency invariant below), and pushes. **ArgoCD then syncs that commit and deploys it.**
 
 **Loop guard:** the release commit carries `[skip ci]`, and the `version` job is gated
 `if: !contains(head_commit.message, '[skip ci]')`, so the release commit does not re-trigger the
@@ -214,6 +216,68 @@ existing `ghcr-pull` secret (unchanged).
 
 **Caveat:** if `main` ever gains PR-required branch protection, the default `GITHUB_TOKEN`
 commit-back push is rejected — it would then need a PAT / GitHub App token or a protection bypass.
+
+### Concurrency invariant — the tag names what was BUILT, never what main has become (mezo-pl7d)
+
+`concurrency: deploy-main` queues deploys, so a run can finish long after its own merge. That
+opens a race:
+
+1. merge **M1** lands; its run builds images from M1;
+2. merge **M2** lands while those images build (GitHub cancels the *pending* run for any
+   intermediate merge, so only the newest queued run survives);
+3. M1's `release` job rebases its manifest commit onto the new main — which now contains M2 —
+   and *used to tag there*.
+
+Tag `vX` therefore described **M2's** `frontend`/`backend`/`api` trees, which were never in any
+image. The next run takes `vX` as its base, compares tree hashes, sees no difference, reports
+`fe=false/be=false` and **skips the build entirely**. M2 ships never, and nothing goes red.
+Observed 2026-09-04 (run 33920695717 built `ca82135`, released `v2.163.0` rebased onto
+`58608d47` which already contained PRs #436 and #435).
+
+**Invariant:** the manifest commit *must* rebase (main moves), but the **tag must stay on
+`github.sha`** — the commit the images were built from. `release-commit.sh` tags
+`git tag -a "v$VERSION" "$BUILT_SHA"`, so tag provenance matches image provenance by
+construction, and the queued run for M2 correctly still sees M2 as unbuilt.
+
+`release-commit.test.sh` (run by `ci.yml`) replays exactly this two-merge sequence against a
+throwaway repo with a local bare origin, and asserts both halves: the tag's per-directory tree
+hashes equal the built commit's, *and* the next `compute-release.sh` run still reports
+`backend_changed=true`. Against the pre-fix logic it fails on both.
+
+**Recovery**, if a component was skipped this way: re-run `deploy.yml` via
+`workflow_dispatch` with `force_frontend` / `force_backend`, which ORs past the tree-hash
+detection. Then hard-refresh ArgoCD and confirm the pod's image tag.
+
+### Gotcha — SIGPIPE in `compute-release.sh` silently stopped every deploy (mezo-0j9n)
+
+Between 2026-09-04 and 2026-09-05, **14 of 15 consecutive `main` deploys failed** on the
+`version` job with `exit 141` and **not one line of output** — while `ci.yml` stayed green, so
+nothing surfaced it (deploys are deliberately not gated on CI, ADR 0007).
+
+`141 = 128 + 13 = SIGPIPE`. The culprit was
+
+```bash
+last_tag=$(git tag -l 'v*' --sort=-v:refname | head -n1)   # under `set -euo pipefail`
+```
+
+`head -n1` prints line 1 and **exits**, closing the pipe. What matters is *not* the 64 KiB pipe
+buffer (the tag list is only ~4 KiB) but git's **4 KiB stdio buffer**: once the repo passed
+**500 tags = 4130 bytes**, git needed a *second* `write(2)`, which hit the closed pipe →
+`SIGPIPE` → git exits 141 → `pipefail` promotes 141 to the pipeline's status → `set -e` kills
+the script before its first `echo`. Below 4096 bytes git wrote once and the bug did not exist —
+which is why the failure appeared suddenly and then became 100% reproducible as tags accrued.
+It reproduces only on the Linux/glibc runner, never on macOS.
+
+**Fix:** `git for-each-ref --count=1 --sort=-v:refname --format='%(refname:short)' 'refs/tags/v*'`
+— the limit happens inside git, so there is no pipe and no reader to race. The same hazard was
+removed from `compute_bump` (it used to `return 0` on the first breaking-change line while
+`git log` was still writing into it) and from its per-line `printf | grep -q` pairs, now bash
+`=~`. An `ERR` trap makes any future abort print `::error::… at: <command>` instead of dying mute.
+
+**Gate:** `.github/scripts/compute-release.test.sh` existed but **no workflow ran it**. Both it
+and the new `compute-release.sigpipe.test.sh` now run in `ci.yml`'s `lint` job. The SIGPIPE test
+drives `main()` against a fake `git` that streams a >64 KiB, line-flushed tag list, so any
+early-exiting pipe reader fails it deterministically on every platform, macOS included.
 
 ### Gotcha — a changed `VITE_*` repo variable does NOT trigger a frontend rebuild
 
