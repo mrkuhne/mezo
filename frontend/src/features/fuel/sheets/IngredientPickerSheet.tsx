@@ -36,7 +36,7 @@ function KindBadge({ ing }: { ing: PickableIngredient }) {
 
 function PickerRow({ ing, added, onPick }: { ing: PickableIngredient; added: boolean; onPick: () => void }) {
   const { categoryMeta } = usePantry()
-  const catColor = categoryMeta[ing.category]?.color ?? 'var(--text-secondary)'
+  const catColor = categoryMeta[ing.category ?? '']?.color ?? 'var(--text-secondary)'
   return (
     <div className="card" style={{ padding: '11px 12px', borderLeft: '2px solid ' + catColor }}>
       <div className="row" style={{ alignItems: 'center', gap: 8 }}>
@@ -94,7 +94,7 @@ export function IngredientPickerSheet({
     i =>
       !query ||
       i.name.toLowerCase().includes(query.toLowerCase()) ||
-      i.brand.toLowerCase().includes(query.toLowerCase()),
+      (i.brand ?? '').toLowerCase().includes(query.toLowerCase()),
   )
 
   return (

@@ -17,6 +17,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 /** The catalog loader is master content (every profile), upserts by natural key, never creates a shelf row. */
@@ -25,10 +26,20 @@ class PantryCatalogLoaderIT extends AbstractIntegrationTest {
 
     private static final int CATALOG_SIZE = 147;
 
+    /**
+     * Turkish dotted capital I (U+0130): Postgres {@code lower()} folds it to a plain {@code 'i'}
+     * (glibc {@code towlower} has no Unicode decomposition), while Java's
+     * {@code toLowerCase(Locale.ROOT)} yields TWO characters, {@code 'i'} + COMBINING DOT ABOVE
+     * (U+0307). Shared by the fold-collision test and its assumption guard (mezo-3vb1) so both
+     * exercise the exact same character.
+     */
+    private static final String FOLD_FIXTURE = "İ";
+
     @Autowired private PantryCatalogLoader loader;
     @Autowired private PantryCatalogRepository catalogRepository;
     @Autowired private PantryItemRepository itemRepository;
     @Autowired private DatabasePopulator databasePopulator;
+    @Autowired private JdbcTemplate jdbcTemplate;
 
     @Test
     void testRun_shouldLoadMasterRows_whenContextStarts() {
@@ -169,7 +180,7 @@ class PantryCatalogLoaderIT extends AbstractIntegrationTest {
         String seedName = loader.readCatalogForTest().getFirst().name();
         int i = seedName.indexOf('i');
         assertThat(i).as("seed name must contain a lowercase 'i' for the fold-collision fixture").isNotNegative();
-        String driftedName = seedName.substring(0, i) + "İ" + seedName.substring(i + 1); // İ (dotted cap. I)
+        String driftedName = seedName.substring(0, i) + FOLD_FIXTURE + seedName.substring(i + 1);
 
         // The loader already ran at context startup and inserted the master row for this natural
         // key — remove it first, or the insert below (same Postgres-folded key) hits
@@ -188,5 +199,19 @@ class PantryCatalogLoaderIT extends AbstractIntegrationTest {
         assertThat(catalogRepository.findByNaturalKey(seedName, null))
             .get().extracting(PantryCatalogEntity::getId).isEqualTo(preexistingId);
         assertThat(catalogRepository.findByCreatedByIsNull()).hasSize(CATALOG_SIZE); // no duplicate row
+    }
+
+    @Test
+    void testFoldAssumption_javaAndPostgresMustStillDisagreeOnTheFixture() {
+        // The fold-collision test above is only meaningful while Java's toLowerCase and Postgres'
+        // lower() actually disagree on this character. If a future Postgres/glibc aligns them, that
+        // test would keep passing on the OLD loader too — a silent false green. This one fails
+        // loudly instead, so the fixture gets revisited rather than quietly losing its teeth
+        // (mezo-3vb1).
+        String javaFold = FOLD_FIXTURE.toLowerCase(java.util.Locale.ROOT);
+        String postgresFold = jdbcTemplate.queryForObject("select lower(?)", String.class, FOLD_FIXTURE);
+        assertThat(postgresFold)
+            .as("fixture no longer exercises a Java-vs-Postgres fold difference — pick a new one")
+            .isNotEqualTo(javaFold);
     }
 }

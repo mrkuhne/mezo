@@ -510,6 +510,31 @@ public class TrainPopulator {
         return sportSessionRepository.saveAndFlush(s);
     }
 
+    /**
+     * A sport session with NO clock time — legacy/seeded rows can carry a null {@code time} even
+     * though every writer today stamps one ({@code SportService}); the window-query sort-order
+     * parity test (mezo-jcpt.6 F2) needs this shape and no other populator method produces it.
+     */
+    public SportSessionEntity createSportSessionNoTime(UUID createdBy, LocalDate date, int durationMin) {
+        SportSessionEntity s = new SportSessionEntity();
+        s.setCreatedBy(createdBy);
+        s.setDate(date);
+        s.setDurationMin(durationMin);
+        return sportSessionRepository.saveAndFlush(s);
+    }
+
+    /** A sport session at an explicit clock time — for tests pinning nearest-plan-match ordering
+     *  (mezo-jcpt.6 F2) that need a specific time rather than the default 18:15/18:00. */
+    public SportSessionEntity createSportSessionAt(UUID createdBy, LocalDate date, String time,
+        int durationMin) {
+        SportSessionEntity s = new SportSessionEntity();
+        s.setCreatedBy(createdBy);
+        s.setDate(date);
+        s.setTime(time);
+        s.setDurationMin(durationMin);
+        return sportSessionRepository.saveAndFlush(s);
+    }
+
     /** Explicit perc-terhelésű sport-session — a V3.4 derivált terhelés-metrika IT-khez (mezo-6ha5). */
     public SportSessionEntity createSportSession(UUID createdBy, LocalDate date, int durationMin) {
         SportSessionEntity s = new SportSessionEntity();

@@ -171,9 +171,13 @@ public interface PantryMapper {
             // non-author and a silent rewrite of the SHARED row for the author/OWNER.
             .kind(IngredientResponse.KindEnum.fromValue(c.getKind()))
             .name(c.getName())
-            .brand(c.getBrand() == null ? "" : c.getBrand())
+            // Honest nulls since mezo-xaq5 (definition-echo family, 5th case — root shared with
+            // mezo-6omv's macros fix below): a fabricated "" / 0 for a value the definition simply
+            // does not carry is indistinguishable from a real empty string / a genuinely free item,
+            // and any caller echoing the read model back then reads as a definition CHANGE.
+            .brand(c.getBrand())
             .source(toIngredientSource(c.getSource()))
-            .category(c.getCategory() == null ? "" : c.getCategory())
+            .category(c.getCategory())
             .per(c.getServingAmount())
             .unit(c.getServingUnit())
             // Honest nulls since mezo-6omv: nz() used to zero-fill these, making "no data" and
@@ -181,9 +185,9 @@ public interface PantryMapper {
             // back then wrote a fabricated 0 onto the SHARED definition.
             .macros(PantryMacros.builder()
                 .kcal(c.getKcal()).p(c.getProteinG()).c(c.getCarbsG()).f(c.getFatG()).build())
-            .price(e.getPriceHuf() == null ? BigDecimal.ZERO : BigDecimal.valueOf(e.getPriceHuf()))
-            .priceUnit(e.getPriceUnit() == null ? "" : e.getPriceUnit())
-            .pkg(c.getPackageLabel() == null ? "" : c.getPackageLabel())
+            .price(e.getPriceHuf() == null ? null : BigDecimal.valueOf(e.getPriceHuf()))
+            .priceUnit(e.getPriceUnit())
+            .pkg(c.getPackageLabel())
             .micros(c.getMicros() == null ? List.of()
                 : c.getMicros().stream().map(m -> PantryMicro.builder().name(m.name()).pct(m.pct()).build()).toList())
             // Honest null since mezo-32ko — the old `null -> 1` default dressed unclassified
@@ -218,11 +222,12 @@ public interface PantryMapper {
         return SupplementStashResponse.builder()
             .id(e.getId())
             .name(c.getName())
-            .brand(c.getBrand() == null ? "" : c.getBrand())
+            // Honest nulls since mezo-xaq5 — same reasoning as toIngredientResponse above.
+            .brand(c.getBrand())
             .type(SupplementStashResponse.TypeEnum.fromValue(typeFromKind(c.getKind())))
-            .category(c.getCategory() == null ? "" : c.getCategory())
-            .dose(e.getDose() == null ? "" : e.getDose())
-            .form(c.getForm() == null ? "" : c.getForm())
+            .category(c.getCategory())
+            .dose(e.getDose() == null ? "" : e.getDose())   // unchanged: per-user free text
+            .form(c.getForm())
             .stock(e.getStockQty())
             .stockUnit(e.getStockUnit())
             .protocol(e.getProtocol() == null ? "" : e.getProtocol())

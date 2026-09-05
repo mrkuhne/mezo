@@ -78,7 +78,12 @@ export function AddPantryItemSheet({
   const lock = definitionLocked === true
   const { addItem, updateItem } = usePantryActions()
   const [kind, setKind] = useState<PantryItemKind>(initial?.kind ?? 'food')
-  const [category, setCategory] = useState(initial?.category ?? 'protein')
+  // No fabricated default (mezo-xaq5 review, Important-1): a row whose shared
+  // definition has category IS NULL must stay category-less in state — defaulting
+  // to 'protein' here made an untouched price-only save on an UNLOCKED row send
+  // `category: 'protein'` on the wire (put() below only skips a value that equals
+  // `initial`, and `initial?.category` is undefined, never 'protein').
+  const [category, setCategory] = useState(initial?.category ?? '')
   const [source, setSource] = useState<PantrySourceKey>(initial?.source ?? 'manual')
   const [name, setName] = useState(initial?.name ?? '')
   // The macro BASIS is not an input (mezo-0gjr): create always lands per-100 g / grams — the
@@ -137,7 +142,10 @@ export function AddPantryItemSheet({
     }
     if (!lock) {
       put('source', source)
-      put('category', category)
+      // '' means "no category chosen / left as-is on a null-category row" — never send it as
+      // a real value (an untouched null-category item must not fabricate `category: ''` or
+      // any default onto the wire; see the useState comment above).
+      put('category', category || undefined)
       put('pkg', initial?.pkg)
       // Create pins the per-100 g / grams basis explicitly (a null serving_amount would re-open the
       // `per ?? 1` recipe-math trap). Edit never changes the basis — it is not an input (mezo-0gjr) —
@@ -195,6 +203,7 @@ export function AddPantryItemSheet({
             </Field>
             <Field label="Kategória">
               <select disabled={lock} value={category} onChange={e => setCategory(e.target.value)} style={selectStyle}>
+                {category === '' && <option value="">— nincs —</option>}
                 {categoryKeys.map(c => <option key={c} value={c}>{pantryCategoryMeta[c].label}</option>)}
               </select>
             </Field>

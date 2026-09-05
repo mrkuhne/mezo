@@ -22,7 +22,7 @@ import org.springframework.stereotype.Repository;
 public class LexicalMemoryQuery {
 
     public record Hit(UUID itemId, UUID sourceId, String sourceKind, String label, String content,
-                      LocalDate occurredOn, BigDecimal salience, double score) {
+                      LocalDate occurredOn, BigDecimal salience, double score, UUID diversityGroupId) {
     }
 
     private static final String SAVEPOINT_NAME = "memory_lexical_retrieval";
@@ -30,10 +30,14 @@ public class LexicalMemoryQuery {
         with scored as (
             select i.id as item_id, i.source_id, i.source_kind,
                    coalesce(i.title, i.source_kind) as label, i.content, i.occurred_on, i.salience,
+                   source_message.conversation_id as diversity_group_id,
                    ts_rank_cd(i.search_vector, websearch_to_tsquery('simple', :query))
                      + greatest(similarity(i.search_text, :query),
                                 word_similarity(:query, i.search_text)) * 0.25 as score
             from memory_item i
+            left join ai_message source_message
+              on i.source_kind = 'chat_turn' and source_message.id = i.source_id
+             and source_message.created_by = :userId and source_message.is_deleted = false
             where i.created_by = :userId and i.is_deleted = false and i.state = 'active'
               and (i.valid_from is null or i.valid_from <= :asOf)
               and (i.valid_to is null or i.valid_to >= :asOf)
@@ -47,7 +51,8 @@ public class LexicalMemoryQuery {
         """;
     private static final String SQL_TAIL = """
         )
-        select item_id, source_id, source_kind, label, content, occurred_on, salience, score
+        select item_id, source_id, source_kind, label, content, occurred_on, salience, score,
+               diversity_group_id
         from scored
         where score > 0
         order by score desc, occurred_on desc, item_id
@@ -62,7 +67,8 @@ public class LexicalMemoryQuery {
             rs.getString("content"),
             rs.getObject("occurred_on", LocalDate.class),
             rs.getBigDecimal("salience"),
-            rs.getDouble("score"));
+            rs.getDouble("score"),
+            rs.getObject("diversity_group_id", UUID.class));
 
     private final NamedParameterJdbcTemplate jdbc;
 
