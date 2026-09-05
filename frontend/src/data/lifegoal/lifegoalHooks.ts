@@ -15,6 +15,29 @@ import {
 import { MOCK_LIFE_GOALS, MOCK_SIGNAL_CATALOG, mockPropose, mockProgress, mockToday } from '@/data/lifegoal/lifegoalMock'
 import { addDays, localDateString } from '@/shared/lib/dates'
 
+// Mirrors LifeGoalService.TRANSITIONS — keep in sync.
+const MOCK_TRANSITIONS: Record<string, string[]> = {
+  draft: ['active', 'archived'], active: ['parked', 'done', 'archived'],
+  parked: ['active', 'done', 'archived'], done: ['archived'], archived: [],
+}
+
+// Mirrors LifeGoalPillarService.validate's cap + catalog/kind gate (habit-source pillars skip the
+// catalog check there too). Skill validation is NOT mirrored — the FE has no taxonomy mirror, and
+// inventing one here would drift; the real backend remains the authority.
+function mockValidatePillars(pillars: LifeGoalPillarInput[] | undefined) {
+  const list = pillars ?? []
+  if (list.length > 5) throw new Error('LIFE_GOAL_TOO_MANY_PILLARS')
+  for (const p of list) {
+    if (p.source.type === 'habit') continue
+    const entry = MOCK_SIGNAL_CATALOG.find((e) =>
+      e.source.type === p.source.type && e.source.key === p.source.key
+      && e.source.skillKey === p.source.skillKey && e.source.measure === p.source.measure
+      && e.source.ring === p.source.ring)
+    if (!entry) throw new Error('LIFE_GOAL_UNKNOWN_SIGNAL')
+    if (!entry.kinds.includes(p.kind)) throw new Error('LIFE_GOAL_KIND_NOT_ALLOWED')
+  }
+}
+
 export const LIFE_GOALS_KEY = ['lifeGoals'] as const
 export const SIGNAL_CATALOG_KEY = ['lifeGoalSignals'] as const
 export const LIFE_GOAL_PROGRESS_KEY = (id: string) => ['lifeGoalProgress', id] as const
@@ -82,6 +105,7 @@ export function useLifeGoalMutations() {
   const create = useMutation({
     mutationFn: async (req: LifeGoalUpsertRequest): Promise<LifeGoalResponse> => {
       if (mock) {
+        mockValidatePillars(req.pillars)
         const g: LifeGoalResponse = {
           id: mockId(), title: req.title, whyText: req.whyText, frame: req.frame ?? 'unset',
           dimension: req.dimension, secondaryDimension: req.secondaryDimension, status: 'draft',
@@ -104,9 +128,13 @@ export function useLifeGoalMutations() {
   const changeStatus = useMutation({
     mutationFn: async (v: { id: string; status: LifeGoalStatus }) => {
       if (mock) {
+        const cur = (qc.getQueryData<LifeGoalResponse[]>(LIFE_GOALS_KEY) ?? MOCK_LIFE_GOALS).find((g) => g.id === v.id)
+        if (!cur) throw new Error('RESOURCE_NOT_FOUND')
+        if (cur.status === v.status) return   // idempotent no-op, mirrors LifeGoalService
+        if (!MOCK_TRANSITIONS[cur.status]?.includes(v.status)) throw new Error('LIFE_GOAL_INVALID_STATUS_TRANSITION')
         patch((l) => l.map((g) => (g.id === v.id ? { ...g, status: v.status,
           activatedAt: v.status === 'active' ? (g.activatedAt ?? new Date().toISOString()) : g.activatedAt,
-          closedAt: v.status === 'done' || v.status === 'archived' ? new Date().toISOString() : g.closedAt } : g)))
+          closedAt: (v.status === 'done' || v.status === 'archived') && !g.closedAt ? new Date().toISOString() : g.closedAt } : g)))
         return
       }
       await lifegoalApi.changeStatus(v.id, v.status)
@@ -115,7 +143,18 @@ export function useLifeGoalMutations() {
   })
   const update = useMutation({
     mutationFn: async (v: { id: string; req: LifeGoalUpsertRequest }) => {
-      if (mock) { patch((l) => l.map((g) => (g.id === v.id ? { ...g, ...v.req, ifThenPlans: v.req.ifThenPlans ?? [], pillars: g.pillars } : g))); return }
+      if (mock) {
+        // Mirrors LifeGoalService.apply: full replace, not a partial patch — an omitted optional
+        // (whyText/targetDate/obstacleText/frame) clears rather than survives from the old goal.
+        patch((l) => l.map((g) => (g.id !== v.id ? g : {
+          id: g.id, status: g.status, pillars: g.pillars, activatedAt: g.activatedAt, closedAt: g.closedAt,
+          title: v.req.title, whyText: v.req.whyText, frame: v.req.frame ?? 'unset',
+          dimension: v.req.dimension, secondaryDimension: v.req.secondaryDimension,
+          startDate: v.req.startDate, targetDate: v.req.targetDate, obstacleText: v.req.obstacleText,
+          ifThenPlans: v.req.ifThenPlans ?? [],
+        })))
+        return
+      }
       await lifegoalApi.update(v.id, v.req)
     },
     onSuccess: invalidate,
@@ -123,6 +162,7 @@ export function useLifeGoalMutations() {
   const replacePillars = useMutation({
     mutationFn: async (v: { id: string; pillars: LifeGoalPillarInput[] }) => {
       if (mock) {
+        mockValidatePillars(v.pillars)
         // Mirrors LifeGoalPillarService.replace (mezo-iizd.2): an echoed id keeps the pillar's
         // identity (and, in real mode, its evaluation history); only a new pillar gets a new id.
         patch((l) => l.map((g) => (g.id === v.id ? { ...g, pillars: v.pillars.map((p, i) => ({ ...p, id: p.id ?? mockId(), position: i, weight: p.weight ?? 1, active: p.active ?? true })) } : g)))

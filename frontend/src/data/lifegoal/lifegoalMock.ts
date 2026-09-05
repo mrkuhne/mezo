@@ -51,6 +51,26 @@ const BARATNO_PLANS: IfThenPlan[] = [
 
 export const MOCK_LIFE_GOALS: LifeGoalResponse[] = [
   {
+    id: 'lg-hustle',
+    title: 'Side hustle',
+    whyText: 'Egy saját termék, ami mások napját is rendbe teszi — és ami nem függ egy munkáltatótól.',
+    frame: 'intrinsic',
+    dimension: 'accomplishment',
+    secondaryDimension: 'engagement',
+    status: 'active',
+    startDate: '2026-08-24',
+    activatedAt: '2026-08-24T07:00:00Z',
+    obstacleText: 'Este nincs energia a mély munkára',
+    ifThenPlans: HUSTLE_PLANS,
+    pillars: [
+      pillar('pil-hustle-0', 0, 'Fejlesztés', 'productivity', 'baseline', 2, activitySrc('productivity', 'minutes'), base()),
+      pillar('pil-hustle-1', 1, 'Tanulás', 'learning', 'habit', 1, activitySrc('learning', 'count'), habit(1, 2)),
+      pillar('pil-hustle-2', 2, 'Bevétel', 'financial', 'target', 1, activitySrc('financial', 'huf'), {
+        startValue: 0, targetValue: 50000, startDate: '2026-09-01', targetDate: '2026-12-31', direction: 'up',
+      }),
+    ],
+  },
+  {
     id: 'lg-kockahas',
     title: 'Kockahas',
     whyText: 'Erős, egészséges test, ami bírja a röpit és a hétköznapokat — a kockahas ennek a jele, nem a célja.',
@@ -69,26 +89,6 @@ export const MOCK_LIFE_GOALS: LifeGoalResponse[] = [
       pillar('pil-kockahas-2', 2, 'Alvás', 'recovery', 'average', 2, metric('SLEEP_DURATION_H'), avg(7.0)),
       pillar('pil-kockahas-3', 3, 'Edzés', 'max_strength', 'habit', 1, metric('GYM_VOLUME_KG'), habit(1, 4)),
       pillar('pil-kockahas-4', 4, 'Fegyelem · napzárás', 'mindset', 'habit', 1, metric('RITUAL_CLOSED'), habit(1, 6)),
-    ],
-  },
-  {
-    id: 'lg-hustle',
-    title: 'Side hustle',
-    whyText: 'Egy saját termék, ami mások napját is rendbe teszi — és ami nem függ egy munkáltatótól.',
-    frame: 'intrinsic',
-    dimension: 'accomplishment',
-    secondaryDimension: 'engagement',
-    status: 'active',
-    startDate: '2026-08-24',
-    activatedAt: '2026-08-24T07:00:00Z',
-    obstacleText: 'Este nincs energia a mély munkára',
-    ifThenPlans: HUSTLE_PLANS,
-    pillars: [
-      pillar('pil-hustle-0', 0, 'Fejlesztés', 'productivity', 'baseline', 2, activitySrc('productivity', 'minutes'), base()),
-      pillar('pil-hustle-1', 1, 'Tanulás', 'learning', 'habit', 1, activitySrc('learning', 'count'), habit(1, 2)),
-      pillar('pil-hustle-2', 2, 'Bevétel', 'financial', 'target', 1, activitySrc('financial', 'huf'), {
-        startValue: 0, targetValue: 50000, startDate: '2026-09-01', targetDate: '2026-12-31', direction: 'up',
-      }),
     ],
   },
   {
@@ -285,9 +285,9 @@ export function mockPropose(req: LifeGoalProposeRequest): LifeGoalProposeRespons
 // Deterministic 28-day mock progress: a hash of (goalId, pillarId/​'goal', dayIndex) drives the
 // EARLY (days 0..20) status mix so real/mock diffing never depends on Math.random. The LAST 7
 // days use a fixed per-arrow pattern instead of the hash, so the arrow's story is guaranteed by
-// construction rather than by luck of the hash: the first seed goal (kockahas) trends 'up' and
-// always shows at least one 'hit' in its last 7 days; the second (hustle) trends 'down' with
-// missingHitDays=2; every other goal (incl. the pillarless, parked 'spanyol') is 'insufficient'.
+// construction rather than by luck of the hash: lg-kockahas trends 'up' and always shows at
+// least one 'hit' in its last 7 days; lg-hustle trends 'down' with missingHitDays=2; every other
+// goal (incl. the pillarless, parked lg-spanyol) is 'insufficient'.
 
 const WINDOW_DAYS = 28
 
@@ -302,20 +302,20 @@ const RECENT_STATUS_UP: PillarDayStatus[] = ['hit', 'partial', 'hit', 'miss', 'h
 const RECENT_STATUS_DOWN: PillarDayStatus[] = ['miss', 'miss', 'partial', 'miss', 'no_data', 'partial', 'miss']
 const RECENT_STATUS_INSUFFICIENT: PillarDayStatus[] = ['no_data', 'no_data', 'miss', 'no_data', 'partial', 'no_data', 'no_data']
 
-function arrowFor(goalIndex: number): TrendArrow {
-  if (goalIndex === 0) return 'up'
-  if (goalIndex === 1) return 'down'
+function arrowFor(goalId: string): TrendArrow {
+  if (goalId === 'lg-kockahas') return 'up'
+  if (goalId === 'lg-hustle') return 'down'
   return 'insufficient'
 }
 
-function recentPatternFor(goalIndex: number): PillarDayStatus[] {
-  if (goalIndex === 0) return RECENT_STATUS_UP
-  if (goalIndex === 1) return RECENT_STATUS_DOWN
+function recentPatternFor(goalId: string): PillarDayStatus[] {
+  if (goalId === 'lg-kockahas') return RECENT_STATUS_UP
+  if (goalId === 'lg-hustle') return RECENT_STATUS_DOWN
   return RECENT_STATUS_INSUFFICIENT
 }
 
-function statusFor(goalIndex: number, dayIndex: number, hashValue: number): PillarDayStatus {
-  if (dayIndex >= WINDOW_DAYS - 7) return recentPatternFor(goalIndex)[dayIndex - (WINDOW_DAYS - 7)]
+function statusFor(goalId: string, dayIndex: number, hashValue: number): PillarDayStatus {
+  if (dayIndex >= WINDOW_DAYS - 7) return recentPatternFor(goalId)[dayIndex - (WINDOW_DAYS - 7)]
   return EARLY_CYCLE[hashValue % EARLY_CYCLE.length]
 }
 
@@ -346,21 +346,21 @@ function valuesFor(p: LifeGoalPillarResponse): Pick<PillarProgress, 'currentValu
   }
 }
 
-function buildPillarProgress(goalId: string, p: LifeGoalPillarResponse, goalIndex: number, from: string): PillarProgress {
-  const arrow = arrowFor(goalIndex)
+function buildPillarProgress(goalId: string, p: LifeGoalPillarResponse, from: string): PillarProgress {
+  const arrow = arrowFor(goalId)
   const days: PillarDayEntry[] = Array.from({ length: WINDOW_DAYS }, (_, dayIndex) => {
     const day = addDays(from, dayIndex)
-    const status = statusFor(goalIndex, dayIndex, hash(`${goalId}:${p.id}:${dayIndex}`))
+    const status = statusFor(goalId, dayIndex, hash(`${goalId}:${p.id}:${dayIndex}`))
     const value = STATUS_TO_POINT[status]
     return value === undefined ? { day, status } : { day, status, value }
   })
   return { pillarId: p.id, arrow, ...(arrow === 'down' ? { missingHitDays: 2 } : {}), ...valuesFor(p), days }
 }
 
-function buildGoalDays(goalId: string, goalIndex: number, from: string): GoalDayEntry[] {
+function buildGoalDays(goalId: string, from: string): GoalDayEntry[] {
   return Array.from({ length: WINDOW_DAYS }, (_, dayIndex) => {
     const day = addDays(from, dayIndex)
-    const status = statusFor(goalIndex, dayIndex, hash(`${goalId}:goal:${dayIndex}`))
+    const status = statusFor(goalId, dayIndex, hash(`${goalId}:goal:${dayIndex}`))
     const point = STATUS_TO_POINT[status]
     return point === undefined ? { day } : { day, point }
   })
@@ -382,18 +382,17 @@ function last7StatusFromPoints(days: GoalDayEntry[]): PillarDayStatus[] {
 }
 
 /** Determinisztikus 28 napos mock-progress a seed-célokhoz: a (goalId, pillarId, dayIndex) hash
- *  dönti a státuszt úgy, hogy legyen hit/partial/miss/no_data vegyesen, az első seed-cél nyila 'up',
- *  a másodiké 'down' (missingHitDays=2), a többi 'insufficient'. */
+ *  dönti a státuszt úgy, hogy legyen hit/partial/miss/no_data vegyesen, lg-kockahas nyila 'up',
+ *  lg-hustle-é 'down' (missingHitDays=2), a többi 'insufficient'. */
 export function mockProgress(goalId: string): LifeGoalProgressResponse {
-  const goalIndex = MOCK_LIFE_GOALS.findIndex((g) => g.id === goalId)
-  const goal = goalIndex >= 0 ? MOCK_LIFE_GOALS[goalIndex] : undefined
+  const goal = MOCK_LIFE_GOALS.find((g) => g.id === goalId)
   const to = localDateString()
   const from = addDays(to, -(WINDOW_DAYS - 1))
-  const days = buildGoalDays(goalId, goalIndex, from)
-  const pillars = (goal?.pillars ?? []).map((p) => buildPillarProgress(goalId, p, goalIndex, from))
+  const days = buildGoalDays(goalId, from)
+  const pillars = (goal?.pillars ?? []).map((p) => buildPillarProgress(goalId, p, from))
   const weeklyPct = weeklyPctOf(days)
   return {
-    goalId, from, to, arrow: arrowFor(goalIndex),
+    goalId, from, to, arrow: arrowFor(goalId),
     ...(weeklyPct === undefined ? {} : { weeklyPct }),
     days, pillars, conflicts: [],
   }

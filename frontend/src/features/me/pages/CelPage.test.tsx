@@ -26,7 +26,7 @@ test('renders Kockahas with five pillars, the why quote and two ha–akkor plans
   renderGoal()
   await screen.findByText('Kockahas')
   expect(document.querySelectorAll('.lg-pillar')).toHaveLength(5)
-  // Kockahas (goalIndex 0) trends 'up' — none of its five pillars are 'insufficient', so the
+  // Kockahas (lg-kockahas) trends 'up' — none of its five pillars are 'insufficient', so the
   // honest empty-state copy must not appear anywhere on the page any more.
   expect(screen.queryByText(/még nincs adat/)).toBeNull()
   expect(screen.getByText(/Erős, egészséges test/)).toBeInTheDocument()
@@ -36,15 +36,16 @@ test('renders Kockahas with five pillars, the why quote and two ha–akkor plans
 // ── Task 9 (mezo-iizd.5): live progress wired into PillarCard + CelPage ─────────────────────
 describe('live progress (Task 9, mezo-iizd.5)', () => {
   test('renders live dots and arrow from progress', async () => {
-    renderGoal(MOCK_LIFE_GOALS[0].id)
-    await screen.findByText(MOCK_LIFE_GOALS[0].pillars[0].label)
+    const kockahas = MOCK_LIFE_GOALS.find((g) => g.id === 'lg-kockahas')!
+    renderGoal(kockahas.id)
+    await screen.findByText(kockahas.pillars[0].label)
     // the prototype's hit-dot class, on the CelPage's own `.lg-wk7` (not the raw `.wk7`).
     expect(document.querySelectorAll('.lg-wk7 i.h').length).toBeGreaterThan(0)
     expect(screen.queryByText('még nincs adat · az első nyíl 5 adat-nap után')).toBeNull()
   })
 
   test('hero shows the goal arrow + weekly % from progress', async () => {
-    renderGoal(MOCK_LIFE_GOALS[0].id)
+    renderGoal('lg-kockahas')
     await screen.findByText('Kockahas')
     const hero = document.querySelector('.mz-bignum .lg-arrow')
     expect(hero).not.toBeNull()
@@ -52,7 +53,7 @@ describe('live progress (Task 9, mezo-iizd.5)', () => {
     expect(hero!.textContent).toMatch(/\d+%/)
   })
 
-  test('insufficient arrow keeps the honest placeholder on every pillar (lg-baratno, goalIndex 2)', async () => {
+  test('insufficient arrow keeps the honest placeholder on every pillar (lg-baratno)', async () => {
     const goal = MOCK_LIFE_GOALS.find((g) => g.id === 'lg-baratno')!
     renderGoal('lg-baratno')
     await screen.findByText(goal.title)
@@ -62,8 +63,8 @@ describe('live progress (Task 9, mezo-iizd.5)', () => {
   test('a down-arrow habit pillar shows "még N hit-nap a héten a fordulásig" instead of the rule line (lg-hustle)', async () => {
     renderGoal('lg-hustle')
     await screen.findByText('Side hustle')
-    // 'Tanulás' is the only habit-kind pillar on lg-hustle (goalIndex 1, arrow 'down',
-    // missingHitDays=2 per lifegoalMock.buildPillarProgress).
+    // 'Tanulás' is the only habit-kind pillar on lg-hustle (arrow 'down', missingHitDays=2 per
+    // lifegoalMock.buildPillarProgress).
     expect(screen.getByText('még 2 hit-nap a héten a fordulásig')).toBeInTheDocument()
   })
 
@@ -75,15 +76,16 @@ describe('live progress (Task 9, mezo-iizd.5)', () => {
    * must render through `hu1` (comma decimal, no trailing zero) with the catalog's "g" unit.
    */
   test('the value row is locale-formatted and carries the catalog unit (Fehérje, lg-kockahas)', async () => {
-    renderGoal(MOCK_LIFE_GOALS[0].id)
+    renderGoal('lg-kockahas')
     await screen.findByText('Fehérje')
     expect(screen.getByText('172,8 g')).toBeInTheDocument()
     expect(screen.getByText(/· cél 160 g/)).toBeInTheDocument()
   })
 
   test('the Hónap chip swaps every pillar to the 28-cell heatmap', async () => {
-    renderGoal(MOCK_LIFE_GOALS[0].id)
-    await screen.findByText(MOCK_LIFE_GOALS[0].pillars[0].label)
+    const kockahas = MOCK_LIFE_GOALS.find((g) => g.id === 'lg-kockahas')!
+    renderGoal(kockahas.id)
+    await screen.findByText(kockahas.pillars[0].label)
     expect(document.querySelectorAll('.lg-hm i')).toHaveLength(0)
     fireEvent.click(screen.getByRole('button', { name: 'Hónap' }))
     // 5 pillars × 28 days.
