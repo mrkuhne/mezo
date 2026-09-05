@@ -118,6 +118,32 @@ Rules:
 - Where a domain type is stricter than the contract (legacy mock-era types), bridge with an
   EXPLICIT documented cast and file a bd issue — never silently re-widen `apiFetch<T>`.
 
+## Generator toolchain — pinned, and verified before every generation
+
+`api/openapi.yml` and `frontend/src/data/_client/api.gen.ts` are **generated and committed**, and
+CI's `contract-drift` job regenerates both from a lockfile-exact toolchain and fails on any byte
+difference. The generator's *version* is therefore part of those artifacts' identity.
+
+Two things enforce that (`scripts/check-generator-toolchain.mjs`):
+
+- **Exact pins, no ranges.** `openapi-merge-cli` and `openapi-typescript` are pinned to exact
+  versions in their manifests; `node scripts/check-generator-toolchain.mjs --manifests` runs in
+  CI's `lint` job and rejects a caret or tilde. A range let a plain `npm install` / `pnpm install`
+  float the generator at any moment.
+- **The installed copy must be the pinned one.** Both `generate:api` scripts run the check first,
+  so generating from a stale `node_modules` is *refused* instead of silently producing a
+  byte-different artifact.
+
+The second half is the one that actually bit: the `d20-fuel-mely` merge (`efa5a1bb5`) committed an
+`openapi.yml` produced by a stale `node_modules` whose serializer quoted strings differently, so
+**every open PR failed `contract-drift` through no fault of its own** until a canonical
+regeneration healed it (`224637b36`, mezo-a5m2). Note what the gate did there: it was *right*, and
+still useless — it went red on everyone except the change that caused it.
+
+> Verified 2026-09-05: the committed `api/openapi.yml` is **byte-identical** to the output of the
+> lockfile-exact toolchain, and a floating `npm install` resolves to the same version today. The
+> contract-drift gate is not currently guarding a false baseline.
+
 ## Versioning & Compatibility
 
 - `info.version` in `base.yml` tracks the contract (bump minor per slice).
