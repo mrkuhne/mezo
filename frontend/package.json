@@ -1,6 +1,7 @@
 {
   "name": "mezo",
   "version": "1.0.0",
+  "packageManager": "pnpm@11.25.0",
   "description": "",
   "main": "index.js",
   "type": "module",
