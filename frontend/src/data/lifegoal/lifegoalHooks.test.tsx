@@ -15,7 +15,11 @@ describe('useLifeGoals (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
   afterEach(() => vi.unstubAllEnvs())
 
-  test('mock seed lists goals newest-first like the backend createdAt DESC ordering', () => {
+  // Note the claim this pins down: the mock array is hand-ordered to satisfy the backend's
+  // newest-first RULE (createdAt DESC, using startDate as the mock's proxy since the seed carries
+  // no createdAt) — it does NOT assert row-order equality with the demo seed's actual rows, which
+  // this file has no way to observe.
+  test('mock seed orders goals newest-first by startDate, mirroring the backend createdAt DESC rule', () => {
     const { result } = renderHook(() => useLifeGoals(), { wrapper: makeHookWrapper() })
     expect(result.current.goals.map((g) => g.title)).toEqual(['Side hustle', 'Kockahas', 'Az utolsó barátnő', 'Spanyol B2', 'Félmaraton'])
   })

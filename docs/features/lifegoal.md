@@ -322,7 +322,10 @@ core with no Spring context.
   reads the target value, rather than the line extrapolating past its own ends — without the
   clamp, an already-achieved goal would decay back into an eternal `miss` the further past its
   deadline the user checks, and a day logged before the pillar's own `startDate` would compare
-  against a nonsensical negative-elapsed expectation. **baseline** — compares today's value
+  against a nonsensical negative-elapsed expectation. One honest consequence of the clamp: past
+  its own `targetDate`, an achieved, still-active target pillar keeps scoring `hit` indefinitely
+  and keeps earning daily XP — XP is a feedback-only currency, so this is left as-is rather than
+  capped, but capping it is a product decision still open. **baseline** — compares today's value
   against the *median* of the preceding `rule.windowDays` (default 28, needs
   ≥`rule.minDataDays`, default 14, or `no_data`) per `rule.direction`; there is no `partial` for
   baseline. **linked** — see `WeightGoalSignalSource` below; ±0.3 kg tolerance around the
@@ -573,12 +576,14 @@ permissive than the real API:
   comes from the request, and an omitted optional (`whyText`/`targetDate`/`obstacleText`/`frame`)
   CLEARS rather than survives from the old goal — the previous mock spread `{...g, ...v.req}`, which
   silently kept a stale field the request meant to blank.
-- **The seed order changed to newest-first** (`lg-hustle` now precedes `lg-kockahas`) so
-  `mockProgress`'s arrow/pattern assignment could stop depending on each goal's array *index*
-  (`arrowFor(goalIndex)`) and switch to its **id** (`arrowFor(goalId)`) — an index-keyed assignment
-  would have silently reshuffled which goal gets the 'up'/'down'/'insufficient' story the moment
-  the seed order changed for an unrelated reason, which is exactly what motivated the id-keyed
-  rewrite in the first place.
+- **The seed array is now hand-ordered to satisfy the backend's newest-first RULE** (`createdAt
+  DESC`, using each goal's `startDate` as the mock's proxy — the seed carries no `createdAt`),
+  which puts `lg-hustle` before `lg-kockahas`. This mirrors the *ordering rule*, not the demo
+  seed's own row order (the FE has no way to observe that). The reorder also forced
+  `mockProgress`'s arrow/pattern assignment off each goal's array *index* (`arrowFor(goalIndex)`)
+  and onto its **id** (`arrowFor(goalId)`) — an index-keyed assignment would have silently
+  reshuffled which goal gets the 'up'/'down'/'insufficient' story the moment the seed order changed
+  for an unrelated reason, which is exactly what motivated the id-keyed rewrite in the first place.
 
 ## 5. Integrations
 

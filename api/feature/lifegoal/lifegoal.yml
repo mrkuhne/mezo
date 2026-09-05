@@ -25,9 +25,7 @@ paths:
         '201':
           description: Created (status draft)
           content: { application/json: { schema: { $ref: '#/components/schemas/LifeGoalResponse' } } }
-        '400':
-          description: Validation error — unknown signal/skill, >5 pillars, target before start (LIFE_GOAL_*)
-          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+        '400': { description: 'Validation error — unknown signal/skill, >5 pillars, target before start (LIFE_GOAL_*)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401':
           description: Missing/invalid token
           content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }

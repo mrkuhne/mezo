@@ -51,6 +51,9 @@ export function CelWizardPage() {
   // Step 1 → 2 runs the proposal ONCE (title + why); later steps only edit its result.
   const goToFrame = async () => {
     setStep(1)
+    // Known limitation: this one-shot guard means editing (or clearing) the step-0 target date
+    // AFTER the initial propose does not re-propose — a target pillar's rule.targetDate can then
+    // go stale relative to d.targetDate. A follow-up issue will track re-propose invalidation.
     if (d.source) return
     setProposeFailed(false)
     try {

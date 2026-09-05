@@ -29,6 +29,8 @@ function mockValidatePillars(pillars: LifeGoalPillarInput[] | undefined) {
   if (list.length > 5) throw new Error('LIFE_GOAL_TOO_MANY_PILLARS')
   for (const p of list) {
     if (p.source.type === 'habit') continue
+    // Twin of features/me/logic/pillarFromCatalog.ts's findCatalogEntry — layering forbids
+    // data/ from importing features/me/, so this five-field match is duplicated rather than shared.
     const entry = MOCK_SIGNAL_CATALOG.find((e) =>
       e.source.type === p.source.type && e.source.key === p.source.key
       && e.source.skillKey === p.source.skillKey && e.source.measure === p.source.measure
