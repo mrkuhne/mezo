@@ -2689,9 +2689,9 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Manually check a MANUAL habit for today (Habits) */
+        /** Manually check a MANUAL habit for today or yesterday (max 1 day back) (Habits) */
         post: operations["checkHabit"];
-        /** Same-day un-check of a MANUAL habit; reverses the XP (Habits) */
+        /** Un-check of a MANUAL habit for today or yesterday; reverses the XP (Habits) */
         delete: operations["uncheckHabit"];
         options?: never;
         head?: never;
@@ -17006,7 +17006,7 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
-            /** @description HABIT_NOT_MANUAL | HABIT_NOT_TODAY | HABIT_ALREADY_DONE */
+            /** @description HABIT_NOT_MANUAL | HABIT_TOO_OLD | HABIT_ALREADY_DONE */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -17048,7 +17048,7 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
-            /** @description HABIT_NOT_MANUAL | HABIT_NOT_TODAY | HABIT_NOT_DONE */
+            /** @description HABIT_NOT_MANUAL | HABIT_TOO_OLD | HABIT_NOT_DONE */
             409: {
                 headers: {
                     [name: string]: unknown;

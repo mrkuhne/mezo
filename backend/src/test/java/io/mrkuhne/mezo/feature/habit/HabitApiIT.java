@@ -51,6 +51,14 @@ class HabitApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testCheckHabit_shouldReject_whenOutsideBackfillWindow() {
+        HabitCheckRequest body = HabitCheckRequest.builder().date(LocalDate.now().minusDays(2)).build();
+        String tooOld = postForBody("/api/habit/morning_sunlight/check", body,
+            ownerAuthHeaders(), HttpStatus.CONFLICT, String.class);
+        assertHasRequestError(tooOld, "HABIT_TOO_OLD");
+    }
+
+    @Test
     void testUncheckHabit_shouldRevert_whenSameDayManualDone() {
         HabitCheckRequest body = HabitCheckRequest.builder().date(LocalDate.now()).build();
         postForBody("/api/habit/wind_down/check", body,
