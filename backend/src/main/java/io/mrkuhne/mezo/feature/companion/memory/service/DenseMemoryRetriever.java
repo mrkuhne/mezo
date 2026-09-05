@@ -35,7 +35,7 @@ public class DenseMemoryRetriever implements MemoryRetriever {
                         name(), "memory_item", hit.itemId(), hit.itemId(), hit.sourceId(),
                         hit.sourceKind(), hit.label(), hit.content(), hit.occurredOn(),
                         Math.clamp(1.0 - hit.distance(), 0.0, 1.0), false, false,
-                        hit.salience().doubleValue()))
+                        hit.salience().doubleValue(), hit.diversityGroupId(), null))
                 .toList();
     }
 

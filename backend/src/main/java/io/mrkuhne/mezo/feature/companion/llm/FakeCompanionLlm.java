@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.companion.advisor.TurnVerdictCheck;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphEdgeStructurer;
 import io.mrkuhne.mezo.feature.companion.graph.service.LifeEventExtractionService;
 import io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryQueryRewriter;
+import io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryReranker;
 import io.mrkuhne.mezo.feature.companion.quarterly.service.QuarterlyReviewService;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
@@ -54,6 +55,11 @@ public class FakeCompanionLlm implements CompanionLlm {
             Pattern.compile("\\[fake-memory-rewrite:([^\\]]*)]", Pattern.DOTALL);
     public static final String MEMORY_REWRITE_EXACT_LIMIT = "[fake-memory-rewrite-exact-limit]";
     public static final String MEMORY_REWRITE_OVERLONG = "[fake-memory-rewrite-overlong]";
+
+    /** Scripted memory reranking: the payload is returned as the UUID JSON array. */
+    public static final Pattern MEMORY_RERANK_SENTINEL =
+            Pattern.compile("\\[fake-memory-rerank:(\\[.*?])]");
+    public static final String MEMORY_RERANK_BROKEN = "[fake-memory-rerank-broken]";
 
     /** mezo-8z79: the provider answered with NO text at all — a candidate with zero text parts (the
      *  2026-08-23 live incident). Streams as an empty Flux and completes as "", so ITs can drive the
@@ -559,6 +565,13 @@ public class FakeCompanionLlm implements CompanionLlm {
             }
             Matcher rewrite = MEMORY_REWRITE_SENTINEL.matcher(userMessage);
             return rewrite.find() ? rewrite.group(1) : "FAKE-ÖNÁLLÓ-KERESŐKÉRDÉS";
+        }
+        if (systemPrompt.startsWith(LlmMemoryReranker.RERANK_MARKER)) {
+            if (userMessage.contains(MEMORY_RERANK_BROKEN)) {
+                return "[not-json]";
+            }
+            Matcher rerank = MEMORY_RERANK_SENTINEL.matcher(userMessage);
+            return rerank.find() ? rerank.group(1) : "[]";
         }
         if (userMessage.contains(SYSTEM_ECHO_SENTINEL)) {
             return systemPrompt;

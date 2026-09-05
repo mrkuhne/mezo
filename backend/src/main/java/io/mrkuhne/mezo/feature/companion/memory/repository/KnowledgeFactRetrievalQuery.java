@@ -21,7 +21,7 @@ import org.springframework.stereotype.Repository;
 public class KnowledgeFactRetrievalQuery {
 
     public record Hit(UUID id, String category, String factText, LocalDate occurredOn,
-                      double score, boolean pinned, boolean conflicting) {
+                      double score, boolean pinned, boolean conflicting, UUID conflictingWithId) {
     }
 
     private static final String SAVEPOINT_NAME = "memory_fact_retrieval";
@@ -57,7 +57,13 @@ public class KnowledgeFactRetrievalQuery {
                exists (
                    select 1 from eligible peer
                    where peer.id = c.conflicts_with or peer.conflicts_with = c.id
-               ) as conflicting
+               ) as conflicting,
+               coalesce(c.conflicts_with, (
+                   select peer.id from eligible peer
+                   where peer.conflicts_with = c.id
+                   order by peer.id
+                   limit 1
+               )) as conflicting_with_id
         from candidates c
         order by c.pinned desc, c.score desc, c.reinforcement_count desc, c.id
         """;
@@ -69,7 +75,8 @@ public class KnowledgeFactRetrievalQuery {
             rs.getObject("occurred_on", LocalDate.class),
             rs.getDouble("score"),
             rs.getBoolean("pinned"),
-            rs.getBoolean("conflicting"));
+            rs.getBoolean("conflicting"),
+            rs.getObject("conflicting_with_id", UUID.class));
 
     private final NamedParameterJdbcTemplate jdbc;
 
