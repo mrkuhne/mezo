@@ -35,12 +35,20 @@ bd close <id>         # Complete work
 
 1. File bd issues for remaining work; close/update finished ones
 2. Run quality gates if code changed (backend: `./mvnw clean test`; frontend: tests in both modes + build)
-3. Push everything (if push fails, resolve and retry until it succeeds):
+3. **Refresh the off-machine tracker backup** — `.beads/issues.jsonl` is the ONLY copy of the
+   tracker outside this machine (the Dolt DB is gitignored), and **nothing maintains it
+   automatically**: the beads pre-commit hook leaves it byte-identical. It silently drifted 429
+   records / 115 open issues behind the DB (mezo-m2au).
+   ```bash
+   node scripts/check-beads-backup.mjs --fix   # then commit the result
+   ```
+   It cannot be a CI gate — the runner has no Dolt DB — so it belongs here.
+4. Push everything (if push fails, resolve and retry until it succeeds):
    ```bash
    git pull --rebase && bd dolt push && git push
    git status  # MUST show "up to date with origin"
    ```
-4. Hand off: short context for the next session
+5. Hand off: short context for the next session
 <!-- END BEADS INTEGRATION -->
 
 ## Non-Interactive Shell Commands
