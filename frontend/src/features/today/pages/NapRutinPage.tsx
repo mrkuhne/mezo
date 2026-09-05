@@ -11,10 +11,11 @@
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
+import { DayNavigator } from '@/shared/ui/DayNavigator'
 import { EntranceGroup, useCountUpOnChange } from '@/shared/ui/mozaik/motion'
 import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { cn } from '@/shared/lib/cn'
-import { localDateString } from '@/shared/lib/dates'
+import { addDays, localDateString } from '@/shared/lib/dates'
 import { emitToast } from '@/shared/lib/toastBus'
 import {
   useHabitActions, useHabitCatalog, useHabitDay, useHabitSummary,
@@ -60,7 +61,12 @@ function NrPct({ pct }: { pct: number }) {
 }
 
 export function NapRutinPage() {
-  const date = localDateString()
+  // Tegnapra visszalapozható logoló felület (mezo-x9c2, Streaks-minta): a navigátor a
+  // backfill-ablakra szorít — ma és tegnap, semmi több.
+  const today = localDateString()
+  const yesterday = addDays(today, -1)
+  const [date, setDate] = useState(today)
+  const isToday = date === today
   const navigate = useNavigate()
   const [params] = useSearchParams()
 
@@ -112,29 +118,37 @@ export function NapRutinPage() {
   }
 
   // The Today dispatcher's habit branch, verbatim semantics (TodayPage `act()`).
+  const runCheck = (h: HabitItem) => () => {
+    const { done, total } = chainProgress(h.chain)
+    // az ünneplés a katalógusból jön (a napi sor nem viszi) — hiányában a toast a régi
+    const celebration = celebrationFor(catalog, h.key)
+    // a mérföldkő a pipa ELŐTTI állapotból dől el: csak akkor szólal meg, ha ez a sor
+    // az utolsó nyitott a napszakában (mezo-sqe3)
+    const chainLabel = daypartMilestone(catalog, habits, h.chain)
+    check(h.key)
+      .then((lu) => emitToast(buildHabitRewardToast({
+        title: h.title, chainDone: done, chainTotal: total, xp: h.xp, levelUp: lu?.[0],
+        celebration, chainLabel,
+      })))
+      .catch(() => {})
+  }
+
   const tickAction = (h: HabitItem): (() => void) | null => {
     if (h.status === 'done') {
       // the prototype tick toggles both ways — only a MANUAL check can honestly untick
       return h.mode === 'MANUAL' ? () => { uncheck(h.key).catch(() => {}) } : null
     }
+    if (!isToday) {
+      // Tegnap (mezo-x9c2): csak a MANUAL sor pipálható vissza — a DERIVED sorok logoló
+      // felületei a mai naphoz kötnek, ott a sor csendes történelem (ADR 0010 hangnem).
+      return h.mode === 'MANUAL' && (h.status === 'pending' || h.status === 'missed')
+        ? runCheck(h)
+        : null
+    }
     if (h.status !== 'pending') return null
     const ha = habitAction(h)
     switch (ha.kind) {
-      case 'check':
-        return () => {
-          const { done, total } = chainProgress(h.chain)
-          // az ünneplés a katalógusból jön (a napi sor nem viszi) — hiányában a toast a régi
-          const celebration = celebrationFor(catalog, h.key)
-          // a mérföldkő a pipa ELŐTTI állapotból dől el: csak akkor szólal meg, ha ez a sor
-          // az utolsó nyitott a napszakában (mezo-sqe3)
-          const chainLabel = daypartMilestone(catalog, habits, h.chain)
-          check(h.key)
-            .then((lu) => emitToast(buildHabitRewardToast({
-              title: h.title, chainDone: done, chainTotal: total, xp: h.xp, levelUp: lu?.[0],
-              celebration, chainLabel,
-            })))
-            .catch(() => {})
-        }
+      case 'check': return runCheck(h)
       case 'nav': return () => navigate(ha.to)
       case 'meal-sheet': return () => setMealOpen(true)
       case 'sleep-sheet': return () => setSleepOpen(true)
@@ -150,6 +164,7 @@ export function NapRutinPage() {
     <MozaikPage tone="gold" className="nr-page">
       <PageHead onBack={() => navigate(-1)} label="‹ Ma" />
       <EntranceGroup>
+        <DayNavigator date={date} onChange={setDate} maxDate={today} minDate={yesterday} />
         {hero && (
           <PageHero name={FACE_TITLE[hero.face]} big={`${hero.done}/${hero.items.length}`}
             sub={`${hero.items.length} elem · lánc`}>
@@ -161,7 +176,7 @@ export function NapRutinPage() {
             <StatStrip className="rise nr-stats">
               {perfectDays !== null && perfectLabel && <StatCell value={`${perfectDays}/30`} label={perfectLabel} />}
               {chainStrength !== null && <StatCell value={`${chainStrength}%`} label="lánc-erő · 28 nap" />}
-              <StatCell value={`+${xpToday}`} label="XP ma" />
+              <StatCell value={`+${xpToday}`} label={isToday ? 'XP ma' : 'XP tegnap'} />
             </StatStrip>
           )}
           {groups.map((g, gi) => (
