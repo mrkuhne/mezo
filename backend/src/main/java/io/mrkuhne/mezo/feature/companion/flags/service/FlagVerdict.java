@@ -51,9 +51,4 @@ public record FlagVerdict(
         }
         return new FlagVerdict(flagKey, FlagOutcome.UNAVAILABLE, null, null, reason);
     }
-
-    /** The raise this verdict represents, or null when the rule did not fire. */
-    public FlagRaise toRaise() {
-        return outcome == FlagOutcome.RAISED ? new FlagRaise(flagKey, payload) : null;
-    }
 }
