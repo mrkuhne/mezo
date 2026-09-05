@@ -1480,10 +1480,20 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
     - A **rest day** (`plannedWorkouts` null/0) makes `training` `NO_DATA` ("Pihenőnap · nem
       számít") rather than a penalty — resting must never cost points. One second-order consequence
       of the `mezo-el0t` change below: a day whose only fact is a planned-but-skipped workout
-      (`training` `NO_DATA`, nothing else logged) no longer scores a `logging` 0 to pair with — it
-      now reads `empty` ("nincs adat"), not `thin`. That is deliberate, not a regression: a plan is
-      not evidence about what actually happened that day, so a day with nothing but an unmet plan
-      genuinely has no log at all. Pinned by `DayEvaluationEngineTest`.
+      (`training` `NO_DATA`, nothing else logged) no longer scores a `logging` 0 to pair with — on
+      the **day page** it now reads `empty` ("nincs adat"), not `thin`. That is deliberate, not a
+      regression: a plan is not evidence about what actually happened that day, so a day with
+      nothing but an unmet plan genuinely has no log at all. Pinned by `DayEvaluationEngineTest`.
+      **This is NOT yet true of the weekly mosaic.** `training: 30` (the config weight, not a
+      score) is still on the `me-week` wire for a planned-but-skipped workout, and the frontend's
+      `subscoreCount` (`weekDay.ts`) counts any non-null `subscores.training` regardless of
+      whether it represents `NO_DATA` on the backend — so the mosaic still derives `thin` for
+      exactly this day class while the day page's `DayEvaluationEngine` says `empty`. This is a
+      genuine, currently-live backend/frontend disagreement introduced by `mezo-el0t`, not a
+      documentation gap: fixing it needs a contract change (the wire has no way today to
+      distinguish "training weight present but NO_DATA" from "training actually scored") plus a
+      design decision on which surface should change. Tracked as `mezo-jcpt.16` (P2); deliberately
+      NOT fixed in this change.
     - **`logging`'s measurability rule (`mezo-el0t`, narrowing a `mezo-jcpt` review-round-1
       decision, not reversing it).** The original decision: `logging`'s own inputs (meal
       timeliness, water-logged, check-in count) are never "unknown" — false/0 IS the measurement,

@@ -73,12 +73,15 @@ describe('dayState — the four honest states (handoff §4)', () => {
   })
 
   // mezo-el0t: the hub and the mosaic used to run TWO derivations that already disagreed — one
-  // tested `proteinG`, the other did not. `weekHubState` is now a bare re-export of `dayState`,
-  // so this holds by construction; it stays as a regression guard against a THIRD derivation
-  // creeping back in for either surface.
-  test('the hub and the mosaic say the SAME thing about the same day', () => {
-    const withProtein = day({ proteinG: 12 })
-    expect(dayState(withProtein, TODAY)).toBe(weekHubState(withProtein, TODAY))
+  // tested `proteinG`, the other did not. `weekHubState` is now a bare re-export of `dayState`
+  // (see `weekHub.ts`) — calling both and comparing their outputs would be a tautology (it is
+  // the same function invoked twice with the same input, so it can never fail). The real
+  // invariant worth pinning is the re-export itself: assert reference identity, so a future
+  // change that reimplements `weekHubState` as its OWN function — even one that behaves
+  // identically on every test input — fails this test immediately instead of silently
+  // reintroducing the two-derivation split.
+  test('weekHubState is dayState, not a second derivation', () => {
+    expect(weekHubState).toBe(dayState)
   })
 
   test('a logged proteinG alone counts as a log (mirrors DayEvaluationEngine.anyLogPresent\'s kcal/meals pair)', () => {

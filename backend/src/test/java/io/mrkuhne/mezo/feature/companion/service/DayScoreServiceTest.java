@@ -3,6 +3,8 @@ package io.mrkuhne.mezo.feature.companion.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.mrkuhne.mezo.api.dto.FuelDayResponse;
@@ -465,6 +467,11 @@ class DayScoreServiceTest {
 
         assertThat(in.weightKg()).isEqualTo(74.2);
         assertThat(in.xp()).isEqualTo(120);
+        // The javadoc's actual claim: one ranged query per source, never a per-day fan-out.
+        verify(metricSeriesService, times(1))
+            .series(eq(USER), eq(MetricKey.DAILY_XP), any(), any());
+        verify(weightLogRepository, times(1))
+            .findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc(eq(USER), any());
     }
 
     /** A day with neither a weigh-in nor any XP carries {@code null} for both -- never a

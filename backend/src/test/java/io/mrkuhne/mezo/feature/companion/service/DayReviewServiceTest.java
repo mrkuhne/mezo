@@ -554,6 +554,46 @@ class DayReviewServiceTest {
         assertThat(fakeLlm.calls).isZero();
     }
 
+    /**
+     * The headline user-visible fix this task (`mezo-jcpt.8`) closes: before it, a day with
+     * ONLY a morning weigh-in and nothing else looked exactly like a fully untouched day --
+     * both read "empty". A logged weight IS a log, so this must read "thin" (something was
+     * measured, just not enough dimensions for a base score), never "empty".
+     */
+    @Test
+    void testAssemble_shouldReportThin_whenOnlyAWeighInWasLogged() {
+        inputs = new DayInputsBuilder()
+            .date(DAY).closed(true)
+            .kcalTarget(2600.0).proteinTargetG(160.0).carbsTargetG(300.0).fatTargetG(80.0)
+            .weightKg(74.2)
+            .build();
+
+        DayEvaluationResponse response = service.assemble(USER, DAY);
+
+        assertThat(response.getState()).isEqualTo("thin");
+        assertThat(response.getScore()).isNull();
+        assertThat(fakeLlm.calls).isZero();
+    }
+
+    /**
+     * The XP half of the same `mezo-jcpt.8` fix: a day with ONLY an XP grant and nothing else
+     * logged must also read "thin", not "empty" -- an XP grant is a real, measured signal.
+     */
+    @Test
+    void testAssemble_shouldReportThin_whenOnlyXpWasLogged() {
+        inputs = new DayInputsBuilder()
+            .date(DAY).closed(true)
+            .kcalTarget(2600.0).proteinTargetG(160.0).carbsTargetG(300.0).fatTargetG(80.0)
+            .xp(120)
+            .build();
+
+        DayEvaluationResponse response = service.assemble(USER, DAY);
+
+        assertThat(response.getState()).isEqualTo("thin");
+        assertThat(response.getScore()).isNull();
+        assertThat(fakeLlm.calls).isZero();
+    }
+
     // --- context signals ----------------------------------------------------------------------
 
     @Test

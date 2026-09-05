@@ -95,7 +95,16 @@ export function doneDimensionCount(dimensions: readonly { status: string }[]): n
  *  already mirrors the backend's own verdict) but wrong on an OPEN one — today — where the
  *  `logging` sub-score is still null (IN_PROGRESS) and so carries no information: a day with
  *  only a sleep-quality check-in would otherwise read `empty` while the backend already knows
- *  it has a log. */
+ *  it has a log.
+ *
+ *  Two more FE/backend gaps this test does NOT try to close, both structural: the backend's
+ *  `anyLogPresent` also checks logged **water**, but `me-week.yml` carries no per-day water
+ *  field at all — there is nothing on the wire for this test to read, so a water-only day is
+ *  invisible to the FE regardless. And `workoutCount` here counts every logged session, while
+ *  the backend's `WorkoutWindowQueryService.windowsFor` deliberately excludes ad-hoc (unplanned)
+ *  sessions from the windows it builds, so an ad-hoc-only day can have `doneWorkouts === 0` on
+ *  the backend while `workoutCount === 1` here. Both are pre-existing, out of scope for
+ *  `mezo-el0t`. */
 export function isEmptyDay(day: MeWeekDay): boolean {
   return subscoreCount(day) === 0
     && day.kcal == null && day.proteinG == null && day.sleepMin == null && day.sleepQuality == null
