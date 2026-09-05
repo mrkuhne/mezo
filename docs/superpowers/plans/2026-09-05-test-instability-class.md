@@ -22,7 +22,7 @@
 
 ## Slice S1 — mezo-7qpy: LlmCallListIT day-anchored seeding (branch `fix/llmlist-midnight-anchor`)
 
-Root cause: rows seeded at `Instant.now().minus(i, MINUTES)` while `period=DAY` starts at `LocalDate.now(reportZone).atStartOfDay` (`UsagePeriod.java:26-33`, zone = `mezo.llmlog.report-zone` = Europe/Budapest, `application.yml:479`). Repository filters are `createdAt >= :since` with NO upper bound (`LlmLogRepository.java:120`), so same-day timestamps "in the future of now" are fine — a start-of-day anchor is always inside the window.
+Root cause: rows seeded at `Instant.now().minus(i, MINUTES)` while `period=DAY` starts at `LocalDate.now(reportZone).atStartOfDay` (`UsagePeriod.java:26-33`, zone = `mezo.llm-log.report-zone` = Europe/Budapest, `application.yml:479`). Repository filters are `createdAt >= :since` with NO upper bound (`LlmLogRepository.java:120`), so same-day timestamps "in the future of now" are fine — a start-of-day anchor is always inside the window.
 
 ### Task S1.1: Reproduce deterministically, then fix the seeding
 
@@ -75,7 +75,7 @@ class LlmCallListMidnightIT extends ApiIntegrationTest {
     /** An offset zone in which the current wall time is a few minutes past midnight. */
     @DynamicPropertySource
     static void justPastMidnightZone(DynamicPropertyRegistry registry) {
-        registry.add("mezo.llmlog.report-zone", () -> {
+        registry.add("mezo.llm-log.report-zone", () -> {
             LocalTime utcNow = LocalTime.now(ZoneOffset.UTC);
             // offset that maps "now" to ~00:05 local; ZoneOffset supports ±18h so this always resolves
             int targetSeconds = 5 * 60;
