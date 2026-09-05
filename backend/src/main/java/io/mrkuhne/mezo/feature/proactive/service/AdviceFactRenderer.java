@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 /**
  * The advice card's FACTS (spec §5): deterministic, numeric, rule-provided lines rendered from the
@@ -40,6 +41,12 @@ public final class AdviceFactRenderer {
             case FlagKey.MOMENTUM_AT_RISK -> momentumAtRisk(payload.momentumAtRisk());
             case FlagKey.RECOVERY_NEEDED -> recoveryNeeded(payload.recoveryNeeded());
             case FlagKey.ALL_HEALTHY -> allHealthy(payload.allHealthy());
+            case FlagKey.ACUTE_BAD_DAY -> acuteBadDay(payload.acuteBadDay());
+            case FlagKey.LOAD_FUEL_MISMATCH -> loadFuelMismatch(payload.loadFuelMismatch());
+            case FlagKey.RAPID_WEIGHT_LOSS -> rapidWeightLoss(payload.rapidWeightLoss());
+            case FlagKey.JOINT_OVERUSE -> jointOveruse(payload.jointOveruse());
+            case FlagKey.IGNORED_NUDGE -> ignoredNudge(payload.ignoredNudge());
+            case FlagKey.LATE_EATING -> lateEating(payload.lateEating());
             default -> List.of();
         };
     }
@@ -125,6 +132,173 @@ public final class AdviceFactRenderer {
                 .formatted(p.stressDay(), num(p.stress()), num(p.stressThreshold())));
         }
         return List.copyOf(facts);
+    }
+
+    private static List<String> acuteBadDay(FlagPayloadEnvelope.AcuteBadDay p) {
+        if (p == null) {
+            return List.of();
+        }
+        List<String> facts = new ArrayList<>();
+        facts.add("Ma %d check-in is jelzett nehéz napot (test vagy energia legfeljebb %d a 10-ből)"
+            .formatted(p.qualifyingCount(), p.bodyOrEnergyAtMost()));
+        if (p.qualifyingCheckIns() != null) {
+            for (FlagPayloadEnvelope.QualifyingCheckIn c : p.qualifyingCheckIns()) {
+                facts.add("%s: test %s, energia %s".formatted(
+                    c.slotTime(), scoreOrDash(c.body()), scoreOrDash(c.energy())));
+            }
+        }
+        return List.copyOf(facts);
+    }
+
+    private static List<String> loadFuelMismatch(FlagPayloadEnvelope.LoadFuelMismatch p) {
+        if (p == null) {
+            return List.of();
+        }
+        List<String> facts = new ArrayList<>();
+        facts.add("Terhelés %d nap átlagban: %s perc-ekvivalens/nap (küszöb %s)"
+            .formatted(p.windowDays(), num(p.loadAvg()), num(p.loadThreshold())));
+        if (p.kcalAvg() != null && p.kcalTargetAvg() != null) {
+            facts.add("Kalória %d nap átlagban: %s kcal a %s kcal cél %d%%-a (%d rögzített napból)"
+                .formatted(p.windowDays(), num(p.kcalAvg()), num(p.kcalTargetAvg()),
+                    Math.round(p.kcalFraction() * 100), p.kcalLoggedDays()));
+        }
+        if (p.sleepAvg() != null) {
+            facts.add("Alvás %d nap átlagban: %s óra (padló %s óra, %d rögzített éjszakából)"
+                .formatted(p.windowDays(), num(p.sleepAvg()), num(p.sleepFloorHours()),
+                    p.sleepLoggedDays()));
+        }
+        if (p.weightTrendPctWk() != null) {
+            facts.add("Súlytrend: %s%%/hét".formatted(num(p.weightTrendPctWk())));
+        }
+        return List.copyOf(facts);
+    }
+
+    private static List<String> rapidWeightLoss(FlagPayloadEnvelope.RapidWeightLoss p) {
+        if (p == null) {
+            return List.of();
+        }
+        return List.of("Súlytrend: %s%%/hét (küszöb %s%%/hét, %d rögzített napból, cél: %s)"
+            .formatted(num(p.weightTrendPctWk()), num(p.pctPerWeekAtMost()), p.weighInCount(),
+                p.goalTrajectory()));
+    }
+
+    private static List<String> jointOveruse(FlagPayloadEnvelope.JointOveruse p) {
+        if (p == null) {
+            return List.of();
+        }
+        return List.of(
+            "Váll-terhelés %d nap átlagban: %s (küszöb %s), holnap (%s) %s-fókuszú edzés"
+                .formatted(p.windowDays(), num(p.strainAvg()), num(p.strainAvgAtLeast()),
+                    p.tomorrowDate(), muscleHu(p.tomorrowMuscle())));
+    }
+
+    private static List<String> ignoredNudge(FlagPayloadEnvelope.IgnoredNudge p) {
+        if (p == null) {
+            return List.of();
+        }
+        List<String> facts = new ArrayList<>();
+        facts.add(("Az esti emlékeztető %d egymást követő nap ment ki, de a lefekvés minden "
+                + "alkalommal több mint %d perccel később volt, mint a cél (%s)")
+            .formatted(p.runLength(), p.nonComplianceMinutes(), clockFromShiftedHour(p.anchorBedTimeHour())));
+        if (p.bedtimeHourByNight() != null) {
+            for (Map.Entry<String, Double> e : p.bedtimeHourByNight().entrySet()) {
+                facts.add("%s este: lefekvés %s".formatted(e.getKey(), clockFromShiftedHour(e.getValue())));
+            }
+        }
+        return List.copyOf(facts);
+    }
+
+    private static List<String> lateEating(FlagPayloadEnvelope.LateEating p) {
+        if (p == null) {
+            return List.of();
+        }
+        List<String> facts = new ArrayList<>();
+        facts.add("Késői étkezés: az utolsó %d nap közül %d napon volt későn az utolsó étkezés (küszöb: legalább %d nap)"
+            .formatted(p.windowDays(), p.qualifyingDays(), p.minDaysOfLastThree()));
+        facts.add(p.anchorBedTimeHour() != null
+            ? "Lefekvés-horgony: %s (közelség-küszöb %d perc), abszolút küszöb: %s"
+                .formatted(clockFromShiftedHour(p.anchorBedTimeHour()), p.minutesBeforeBed(),
+                    plainClock(p.absoluteHour()))
+            : "Nincs beállított alvási cél, ezért csak az abszolút óra (%s) számít"
+                .formatted(plainClock(p.absoluteHour())));
+        if (p.lastMealHourByDay() != null) {
+            for (Map.Entry<String, Double> e : p.lastMealHourByDay().entrySet()) {
+                String arm = p.qualifyingArmByDay() == null ? null : p.qualifyingArmByDay().get(e.getKey());
+                facts.add("%s: utolsó étkezés %s (%s)"
+                    .formatted(e.getKey(), clockFromShiftedHour(e.getValue()), lateEatingArmHu(arm)));
+            }
+        }
+        return List.copyOf(facts);
+    }
+
+    /** {@code LateEatingRule}'s frozen arm token, in the Hungarian noun the per-day fact uses. */
+    private static String lateEatingArmHu(String arm) {
+        if (arm == null) {
+            return "";
+        }
+        return switch (arm) {
+            case "bed" -> "közel a lefekvéshez";
+            case "absolute" -> "túl későn";
+            case "both" -> "közel a lefekvéshez és túl későn";
+            default -> arm;
+        };
+    }
+
+    /** Inverts {@code MetricSeriesService.clockHour}'s +24-below-noon shift back to a clock
+     *  string for display — the payload freezes the shifted value (the arithmetic space the rule
+     *  compared in), this only formats it. */
+    private static String clockFromShiftedHour(double shiftedHour) {
+        double wallClockHour = shiftedHour >= 24 ? shiftedHour - 24 : shiftedHour;
+        int hour = (int) wallClockHour;
+        int minute = (int) Math.round((wallClockHour - hour) * 60);
+        if (minute == 60) {
+            minute = 0;
+            hour = (hour + 1) % 24;
+        }
+        return "%02d:%02d".formatted(hour, minute);
+    }
+
+    /** {@code LateEating.absoluteHour} (whole-branch review fix, bd mezo-d58h.6): unlike
+     *  {@code anchorBedTimeHour} and the per-day meal hours above, this field is the RAW config
+     *  threshold compared directly against {@code LATE_MEAL_HOUR} in its own plain 0.0-23.99
+     *  space — it was never put through the +24-below-noon shift, so running it back through
+     *  {@code clockFromShiftedHour}'s "subtract 24 if ≥ 24" step is simply the wrong inverse for
+     *  it. A plain clock format is the only one that fits. */
+    private static String plainClock(double hour) {
+        int wholeHour = (int) hour;
+        int minute = (int) Math.round((hour - wholeHour) * 60);
+        if (minute == 60) {
+            minute = 0;
+            wholeHour = (wholeHour + 1) % 24;
+        }
+        return "%02d:%02d".formatted(wholeHour, minute);
+    }
+
+    /** {@code MuscleGroup.of}'s coarse English tokens (the actual matched value, frozen in the
+     *  payload), in the Hungarian noun this card's prose uses for the "X-fókuszú edzés" pattern.
+     *  An unmapped token falls back to itself rather than fabricating a translation — the card
+     *  never says more than the payload actually froze. */
+    private static String muscleHu(String muscle) {
+        if (muscle == null) {
+            return "";
+        }
+        return switch (muscle) {
+            case "shoulder" -> "váll";
+            case "chest" -> "mell";
+            case "back" -> "hát";
+            case "biceps" -> "bicepsz";
+            case "triceps" -> "tricepsz";
+            case "quad" -> "comb";
+            case "ham" -> "hajlítóizom";
+            case "glute" -> "far";
+            case "calf" -> "vádli";
+            case "core" -> "törzs";
+            default -> muscle;
+        };
+    }
+
+    private static String scoreOrDash(Integer score) {
+        return score == null ? "–" : score.toString();
     }
 
     private static List<String> allHealthy(FlagPayloadEnvelope.AllHealthy p) {

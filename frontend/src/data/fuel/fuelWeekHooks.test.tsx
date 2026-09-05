@@ -119,4 +119,30 @@ describe('useFuelWeek (real mode)', () => {
     expect(result.current.title).not.toBe('Máj 18 – 24')
     expect(result.current.title).toBe(deriveWeekTitle(mondayIso()))
   })
+
+  // mezo-cq06 — a skip_sport_slot advice action hides one dated occurrence of a recurring sport
+  // slot; the week grid used to keep rendering it regardless. The default sport-schedule fixture's
+  // first entry (dayOfWeek 0 = Hét, 18:15) lands on this week's Monday — `mondayIso()` itself.
+  it('drops a recurring sport-slot occurrence this week\'s grid honours as skipped', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
+        HttpResponse.json([{ dayOfWeek: 0, time: '18:15', date: mondayIso() }]),
+      ),
+    )
+    const { result } = renderHook(() => useFuelWeek(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.volleyball.length).toBeGreaterThan(0))
+    expect(result.current.volleyball).toHaveLength(4) // 5 fixture − the skipped Hét slot
+    expect(result.current.volleyball.some((s) => s.day === 'Hét')).toBe(false)
+  })
+
+  it('keeps a recurring sport-slot occurrence whose skip targets a different date', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
+        HttpResponse.json([{ dayOfWeek: 0, time: '18:15', date: '1999-01-01' }]),
+      ),
+    )
+    const { result } = renderHook(() => useFuelWeek(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.volleyball.length).toBe(5)) // full fixture, untouched
+    expect(result.current.volleyball.some((s) => s.day === 'Hét')).toBe(true)
+  })
 })

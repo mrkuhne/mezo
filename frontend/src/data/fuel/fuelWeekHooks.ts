@@ -13,7 +13,7 @@
 
 import { useQuery } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
-import { localDateString, huMonthDay } from '@/shared/lib/dates'
+import { addDays, localDateString, huMonthDay } from '@/shared/lib/dates'
 import { mealApi, type FuelWeekDay } from '@/data/fuel/mealApi'
 import {
   weekTitle as mockWeekTitle,
@@ -28,6 +28,8 @@ import { volleyballSessions as mockVolleyball } from '@/data/today/today'
 import { DEFAULT_BLOCK_MIN } from '@/data/fuel/fuelConfig'
 import { useTrain } from '@/data/train/trainHooks'
 import { useMedication } from '@/data/fuel/medicationHooks'
+import { DAY_ORDER } from '@/data/train/train'
+import { isSportSlotSkipped, type SportSlotSkip } from '@/features/train/logic/weekAgenda'
 import type {
   GymScheduleDay,
   MedicationCycleCell,
@@ -83,6 +85,23 @@ export function withDefaultDuration(d: GymScheduleDay): GymScheduleDay {
   return d.active && d.time && d.duration == null ? { ...d, duration: DEFAULT_BLOCK_MIN } : d
 }
 
+/** Drops any recurring sport-slot occurrence `skips` hides (mezo-cq06) — mirrors
+ *  `buildWeekAgenda`'s identity match (weekday index + time + ISO date), but this grid renders
+ *  the RAW weekly session list (each session carries a `day` label, not an already-resolved
+ *  weekday index), and a one-off event pins its own `date` rather than deriving one from
+ *  `start` + weekday, so both cases are handled the same way weekAgenda's own filter does. */
+export function filterSkippedSessions(
+  sessions: VolleyballSession[],
+  skips: SportSlotSkip[],
+  start: string,
+): VolleyballSession[] {
+  return sessions.filter((s) => {
+    const dayOfWeek = DAY_ORDER.indexOf(s.day as (typeof DAY_ORDER)[number])
+    const date = s.date ?? addDays(start, dayOfWeek)
+    return !isSportSlotSkipped(skips, dayOfWeek, s.time, date)
+  })
+}
+
 /** Weekly stats from the 7-day rollup: kcal avg over days with any logged kcal; protein-hit =
  *  days meeting the protein target; adherence stays null (honest `—`) until P8. */
 export function deriveWeeklyStats(days: FuelWeekDay[]): WeeklyStats {
@@ -99,7 +118,7 @@ export function deriveWeeklyStats(days: FuelWeekDay[]): WeeklyStats {
 
 export function useFuelWeek(): FuelWeekView {
   const mock = isMockMode()
-  const { gymSchedule: trainGym, sport } = useTrain()
+  const { gymSchedule: trainGym, sport, sportSlotSkips } = useTrain()
   const { cycle } = useMedication()
   const start = mondayIso()
   const { data: week } = useQuery({
@@ -128,7 +147,7 @@ export function useFuelWeek(): FuelWeekView {
     weeklySupplements: [],
     patterns: [],
     weeklyStats: deriveWeeklyStats(week?.days ?? []),
-    volleyball: sport.schedule?.volleyball.sessions ?? [],
+    volleyball: filterSkippedSessions(sport.schedule?.volleyball.sessions ?? [], sportSlotSkips, start),
     weeklyNote: null,
   }
 }

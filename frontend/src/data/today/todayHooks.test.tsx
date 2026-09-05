@@ -142,6 +142,47 @@ test('useToday (real) lets a completed instance win over a lingering open one', 
 
 // mezo-6kap — the sport hero had the same hardcoded `logged: false`. Its done-state is a logged
 // SportSession on TODAY's date, matched by kind (a mixed day flips each hero independently).
+// mezo-cq06 — a skip_sport_slot advice action hides one dated occurrence of a recurring sport
+// slot; the Today hero's `volleyballSessions` used to keep rendering it regardless, contradicting
+// the backend's own `hasScheduledTrainingOn`. Pin a Tuesday so the sport-schedule fixture's own
+// Kedd 17:00 slot is deterministically "today" (dayOfWeek 1), instead of depending on the day the
+// suite happens to run.
+test('useToday (real) drops today\'s sport session once its dated occurrence is skipped', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-06-16T08:00:00')) // Tuesday
+  try {
+    server.use(
+      http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
+        HttpResponse.json([{ dayOfWeek: 1, time: '17:00', date: '2026-06-16' }]),
+      ),
+    )
+    const { result } = renderHook(() => useToday(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.volleyballSessions).toHaveLength(4)) // 5 fixture − the skipped Kedd slot
+    expect(result.current.volleyballSessions.some((s) => s.day === 'Kedd')).toBe(false)
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
+test('useToday (real) keeps today\'s sport session when the skip targets a different date', async () => {
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-06-16T08:00:00')) // Tuesday
+  try {
+    server.use(
+      http.get(`${API_BASE}/api/train/sport-slot-skips`, () =>
+        HttpResponse.json([{ dayOfWeek: 1, time: '17:00', date: '2026-06-23' }]), // next Tuesday, not today
+      ),
+    )
+    const { result } = renderHook(() => useToday(), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.volleyballSessions).toHaveLength(5)) // full fixture, untouched
+    expect(result.current.volleyballSessions.some((s) => s.day === 'Kedd' && s.today)).toBe(true)
+  } finally {
+    vi.useRealTimers()
+  }
+})
+
 test('useToday (real) reports today\'s logged sport kinds', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const todayIso = localDateString(new Date())

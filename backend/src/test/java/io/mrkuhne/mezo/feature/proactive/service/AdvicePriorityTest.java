@@ -6,7 +6,9 @@ import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -67,5 +69,39 @@ class AdvicePriorityTest {
         }
         assertThat(flagKeys).isNotEmpty();
         assertThat(AdvicePriority.ORDER).containsAll(flagKeys);
+    }
+
+    /** S6 (bd mezo-d58h.6): the reverse direction — every entry in {@code ORDER} must resolve to
+     *  a real, live constant ({@link FlagKey} or a {@code SetupCheckService.CHECK_*} key), never a
+     *  bare string literal that never got promoted. This is what catches a key added to the
+     *  severity table without the matching {@code FlagKey} constant (the S6 batch's own trap:
+     *  literals were deliberately left unpromoted until the CHECK/@Pattern mirrors were widened). */
+    @Test
+    void testOrder_shouldContainOnlyLiveConstants() {
+        Set<String> liveKeys = new HashSet<>();
+        for (Field f : FlagKey.class.getDeclaredFields()) {
+            if (Modifier.isPublic(f.getModifiers()) && Modifier.isStatic(f.getModifiers())
+                    && f.getType() == String.class && !f.getName().startsWith("SOURCE_")) {
+                try {
+                    liveKeys.add((String) f.get(null));
+                } catch (IllegalAccessException e) {
+                    throw new AssertionError(e);
+                }
+            }
+        }
+        for (Field f : SetupCheckService.class.getDeclaredFields()) {
+            if (Modifier.isPublic(f.getModifiers()) && Modifier.isStatic(f.getModifiers())
+                    && f.getType() == String.class && f.getName().startsWith("CHECK_")) {
+                try {
+                    liveKeys.add((String) f.get(null));
+                } catch (IllegalAccessException e) {
+                    throw new AssertionError(e);
+                }
+            }
+        }
+        assertThat(liveKeys).isNotEmpty();
+        assertThat(AdvicePriority.ORDER).allSatisfy(entry ->
+            assertThat(liveKeys).as("ORDER entry '%s' must be a live FlagKey/CHECK_ constant", entry)
+                .contains(entry));
     }
 }

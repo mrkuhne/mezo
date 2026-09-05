@@ -1093,6 +1093,13 @@ databaseChangeLog:
             relativeToChangelogFile: true
             path: script/202609041100_mezo-d58h.5_workout_day_adjustment.sql
   - changeSet:
+      id: "1.0.0:202609041200_mezo-d58h.6_flag_key_batch_b"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609041200_mezo-d58h.6_flag_key_batch_b.sql
+  - changeSet:
       id: "1.0.0:202609041800_mezo-qooi_pantry_catalog_status"
       author: daniel.kuhne
       changes:

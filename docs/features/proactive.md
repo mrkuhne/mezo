@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-09-04
+updated: 2026-09-05
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -2294,6 +2294,12 @@ of the day's coaching card, unifying the W5.2 intervention and S3 setup-check de
   equal rank does not outrank); an unmapped key ranks past the end of the table (logged, not thrown).
 - **`AdviceFactRendererTest`** — pure unit test: each mapped `FlagKey` renders its own deterministic
   fact lines off a scripted `FlagPayloadEnvelope`; a null payload or an unmapped key yields `[]`.
+  **This reflection guard is what actually enforces the "every `FlagKey` needs a render case"
+  contract** (`AdviceFactRenderer`'s `default -> List.of()` degrades silently otherwise, §9 decision
+  (ll) above) — when S6's six `FlagKey` constants first landed, the task that added them did not
+  run this class, so the guard went red and stayed red for two commits; the fix was for each of the
+  six rules' own task to add its own fixture, closing the guard incrementally rather than in one
+  sweep at the end.
 - **`ProseNumberGuardTest`** — pure unit test: every numeral in grounded prose passes; an invented
   numeral fails; a decimal-comma numeral in the prose matches its decimal-dot form in the grounding
   (and vice versa); blank prose never passes.
@@ -2820,11 +2826,19 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
   `sleep_debt` card, `params={"minutes": -30}`, and ONLY when a `sleep_goal` row actually exists —
   read via `SleepGoalRepository` directly, never through `SleepGoalService`/`SleepAnchorResolver`
   (both of those ghost a config default when no row exists, the same ghosting trap §3 already
-  documents for `SetupCheckService`'s missing-sleep-goal check). Actions are capped at two per card
-  (`AdviceActionCatalogTest`; the `MAX_ACTIONS_PER_CARD` constant on the catalog is documentation,
-  not an enforced runtime cap). **Actions are ALWAYS rule-provided, never model-provided** — the
-  catalog runs independently of `AdviceProseGenerator`'s LLM call, so a hallucinated action can
-  never reach the wire.
+  documents for `SetupCheckService`'s missing-sleep-goal check). **S6 (bd `mezo-d58h.6`) adds the
+  epic's other two offers**, both on cards the round-2 detection rules ([companion.md](companion.md)
+  §3) raise: `joint_overuse` offers `lighten_tomorrow` (`params={"delta": -1}`, no precondition —
+  `LightenTomorrowAdapter`'s own existence-check-then-insert against `workout_day_adjustment` is its
+  idempotence, so the catalog need not gate on anything); `ignored_nudge` OFFERS THE SAME
+  `shift_sleep_anchor` action `sleep_debt` already does, same `params`/label, with the identical
+  `sleep_goal`-row gate RE-CHECKED in the catalog rather than trusted from the rule three files
+  away — even though `ignored_nudge`'s own rule gate already guarantees a row exists by the time it
+  can ever raise, the catalog holds its own precondition locally on purpose. Actions are capped at
+  two per card (`AdviceActionCatalogTest`; the `MAX_ACTIONS_PER_CARD` constant on the catalog is
+  documentation, not an enforced runtime cap). **Actions are ALWAYS rule-provided, never
+  model-provided** — the catalog runs independently of `AdviceProseGenerator`'s LLM call, so a
+  hallucinated action can never reach the wire.
   - **`POST /api/proactive/advice/{id}/apply`** (`AdviceApplyService.apply`, REST row above) takes
     the per-user advisory lock FIRST — same lock, same ordering `AdviceCardService.deliver` already
     uses — then resolves the card via the SAME `findByIdAndCreatedBy` finder the read path uses, so
@@ -2978,7 +2992,7 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
 - Tests: `backend/src/test/java/io/mrkuhne/mezo/feature/proactive/{AdvicePriorityTest,AdviceFactRendererTest,ProseNumberGuardTest,AdviceCardServiceIT,AdviceProseGeneratorIT,CompanionMessageAdvicePersistenceIT,CompanionMessageMissedWorkoutsIT}.java` + `AnchorResolverInterventionIT`/`FeedbackLearningServiceIT` (regression guards on the two trap-fixed consumers) — §8.
 
 **Backend — advice card actions (S5, `mezo-d58h.5` — §4/§9 decision ll; the mutation set behind the card's buttons)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/AdviceActionCatalog.java` — `forCard(userId, adviceKey)`: decides what a generated card offers, per key; round 1 offers `SHIFT_SLEEP_ANCHOR` on `sleep_debt` only, gated on `SleepGoalRepository.findByCreatedByAndDeletedFalse` being non-empty (repository-direct read, the ghosting trap); `MAX_ACTIONS_PER_CARD = 2` (documentation constant, enforced by test not runtime).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/AdviceActionCatalog.java` — `forCard(userId, adviceKey)`: decides what a generated card offers, per key; `SHIFT_SLEEP_ANCHOR` on `sleep_debt` (round 1) AND `ignored_nudge` (S6), both gated on `SleepGoalRepository.findByCreatedByAndDeletedFalse` being non-empty (repository-direct read, the ghosting trap); `LIGHTEN_TOMORROW` on `joint_overuse` (S6), no precondition; every offer additionally checked against the actually-registered `AdviceMutationPort` set so a switched-off port never gets offered with nothing to apply it; `MAX_ACTIONS_PER_CARD = 2` (documentation constant, enforced by test not runtime).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/entity/AdviceActionKey.java` — the 3-value string-constant catalog (`LIGHTEN_TOMORROW`/`SKIP_SPORT_SLOT`/`SHIFT_SLEEP_ANCHOR`) + `ALL`, the enumeration `AdviceApplyServiceIT`'s port guard iterates.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/AdviceMutationPort.java` — the port interface (`actionKey()`, `apply(userId, params)`) every mutation adapter implements; keeps `feature.proactive` from importing `feature.train`/`feature.biometrics` directly for anything but this one seam.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/AdviceApplyService.java` — `apply(userId, id, actionKey)`: advisory-lock-first (§9 decision ll), `findByIdAndCreatedBy` (unknown/foreign/superseded ⇒ one 404), not-advice-kind ⇒ 409, action-not-offered ⇒ 409, already-applied-different-action ⇒ 409, already-applied-same-action ⇒ idempotent no-op returning the original `applied.at`, else dispatches to the matching `AdviceMutationPort` and stamps `applied`. Groups its injected `List<AdviceMutationPort>` by key at construction; a duplicate registration for one key throws at Spring context startup, not at request time.

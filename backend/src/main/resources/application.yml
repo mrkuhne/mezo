@@ -809,6 +809,42 @@ mezo:
         # (review fix, bd mezo-d58h.2).
         window-days: 14
         min-consecutive-missed: 2
+      # S6 batch B (bd mezo-d58h.6, spec 2026-09-03 §4): the six new rules' own thresholds. Rules
+      # land in tasks 4-9; this block only needs to bind cleanly.
+      acute-bad-day:
+        # Spec §4 row 6 (rank 1). Today's check-ins read directly, never a day average.
+        min-check-ins: 2
+        # body/energy 1-10 scale; nullable — a null is "not answered", not a low score.
+        body-or-energy-at-most: 3
+      load-fuel-mismatch:
+        # Spec §4 row 2 (rank 2). See FlagProperties.LoadFuelMismatch javadoc for the
+        # load-threshold derivation from the spec §0 evidence week.
+        window-days: 7
+        load-threshold: 50.0
+        kcal-fraction-of-target: 0.80
+        sleep-floor-hours: 7.0
+        min-logged-days-per-side: 4
+      rapid-weight-loss:
+        # Spec §4 row 10 (rank 3). pct-per-week-at-most is negative — %/week trend.
+        pct-per-week-at-most: -0.7
+        min-weigh-ins: 4
+      joint-overuse:
+        # Spec §4 row 16 (rank 4, offers lighten_tomorrow).
+        window-days: 7
+        strain-avg-at-least: 5.0
+        muscle-needle: "shoulder"
+      ignored-nudge:
+        # Rank 8, offers shift_sleep_anchor. category is NotificationCategory's wire value.
+        category: "lights_out"
+        min-consecutive-days: 5
+        non-compliance-minutes: 60
+      late-eating:
+        # Rank 9. absolute-hour is a FRACTIONAL hour (MetricKey.LATE_MEAL_HOUR's unit) —
+        # 22.5 == 22:30, never a clock string.
+        minutes-before-bed: 90
+        absolute-hour: 22.5
+        min-days-of-last-three: 2
+        window-days: 3
       cooldown-hours:
         # A raised flag stays raised for its cooldown: the evaluator re-runs constantly (every
         # write + hourly), and without this the log would fill with the same day's state.
@@ -820,6 +856,32 @@ mezo:
         # 48h per spec §4 row 1 — long enough that a gap card does not repeat daily.
         logging-gap: 48
         missed-workouts: 48
+        # Whole-branch review fix (bd mezo-d58h.6): these six were originally a uniform 48h/72h
+        # split, but FlagService starts a raise's cooldown independently of whether AdviceCardService
+        # ever delivers it (only the highest-ranked raise of an evaluation is shown) — two rules
+        # that can be true from the SAME underlying state and share a cooldown value raise in
+        # lockstep forever, starving the lower-ranked one of any delivery window. load_fuel_mismatch
+        # and rapid_weight_loss co-fire from the same overreaching state (high load + under-fuelled
+        # + weight falling); acute_bad_day and late_eating can plausibly co-fire from the same rough
+        # day. joint_overuse ALSO co-fires with load_fuel_mismatch — SHOULDER_STRAIN is a component
+        # of the very COMBINED_LOAD_MIN that feeds load_fuel_mismatch, and "tomorrow is a shoulder
+        # day" signals an ongoing shoulder-heavy block that is also pushing that same aggregate up,
+        # so a hard training block with under-fuelling is exactly the state that raises both — they
+        # must not share 72h either. joint_overuse gets 60h, not just a different number: its advice
+        # is about TOMORROW specifically, so a stale, undelivered raise is useless in a way the
+        # others' aren't, which argues for a SHORTER cycle on its own merits, and 60 against
+        # load_fuel_mismatch's 72 drifts their phases apart so each eventually lands on a day the
+        # other is cooling down. ignored_nudge is independent of everything else here. The six
+        # values below are therefore DELIBERATELY UNEQUAL — do NOT "tidy" them back to a uniform
+        # 48h/72h (or make joint_overuse 72 again), that reintroduces the starvation bug. More
+        # urgent ranks also get the SHORTER wait, so a starved-out cycle still favors the more
+        # urgent card next time around.
+        acute-bad-day: 24
+        load-fuel-mismatch: 72
+        rapid-weight-loss: 96
+        joint-overuse: 60
+        ignored-nudge: 120
+        late-eating: 48
     # W5.2 (bd mezo-b3pp.19, spec §9.2): the intervention library — config, not DB. Selection per
     # raised flag: highest W4.2 effectiveness (feedback_rollup intervention:<key>), unseen keys
     # optimistic; per-key cooldown-hours below; ONE card per day (first raise wins). channel:
@@ -882,6 +944,63 @@ mezo:
         channel: both
         text-hu: "Több tervezett edzésnap is kimaradt egymás után. Ne a teljes hetet akard behozni: tedd vissza a naptárba a következő egyet, és vidd le könnyebbre, ha kell."
         cooldown-hours: 72
+        quiet-hours-exempt: false
+      # S6 batch B (bd mezo-d58h.6, spec 2026-09-03 §4 row 6, rank 1): a same-day pattern of low
+      # body/energy check-ins — the most urgent card in the system.
+      - key: acute_bad_day_go_gentle
+        flag: acute_bad_day
+        channel: both
+        text-hu: "Ma többször is jelezted, hogy nehezen megy — a tested vagy az energiád most a padlón van. Nem kell ma teljesíteni: engedd el, ami elengedhető, és keress egy apró dolgot, ami mégis jólesik. Holnap újra nekifuthatsz."
+        cooldown-hours: 48
+        quiet-hours-exempt: false
+      # S6 batch B (bd mezo-d58h.6, spec 2026-09-03 §4 row 2, rank 2): magas heti terhelés,
+      # miközben az üzemanyag vagy az alvás nem tartja a lépést — sérülés-/kimerülés-kockázat.
+      - key: load_fuel_mismatch_refuel
+        flag: load_fuel_mismatch
+        channel: both
+        text-hu: "Az utóbbi napokban sokat edzettél, de kevesebbet ettél vagy aludtál a kelleténél. Ez a kombináció hosszabb távon sérülést vagy kimerülést okozhat. Ma egyél közelebb a céladhoz, és feküdj le időben — a terhelést csak megfelelő üzemanyaggal és pihenéssel lehet kibírni."
+        cooldown-hours: 72
+        quiet-hours-exempt: false
+      # S6 batch B (bd mezo-d58h.6, spec 2026-09-03 §4 row 10, rank 3): a súly gyorsabban csökken,
+      # mint amit a heti trend-küszöb enged, és ez nem szándékos cut — érdemes ránézni a tempóra.
+      - key: rapid_weight_loss_pace
+        flag: rapid_weight_loss
+        channel: both
+        text-hu: "Az utóbbi hetekben a szokásosnál gyorsabban csökken a súlyod. Ha ez nem tudatos cél, érdemes átnézni, hogy az étkezésed és a pihenésed tartja-e a lépést — ha viszont ez a szándékod, akkor csak jelzés, nem intés."
+        cooldown-hours: 72
+        quiet-hours-exempt: false
+      # S6 batch B (bd mezo-d58h.6, spec 2026-09-03 §4 row 16, rank 4, offers lighten_tomorrow —
+      # the button itself is wired by a later task, not here): sport-napi váll-terhelés az utóbbi
+      # napokban magas, és holnap váll-fókuszú edzésnap jön — egy edzésre vonatkozó tanács, nem
+      # sérülés-riasztás.
+      - key: joint_overuse_go_lighter
+        flag: joint_overuse
+        channel: both
+        text-hu: "A vállad az utóbbi napok sportjai miatt eléggé igénybe van véve, és holnap váll-fókuszú edzésnap jön. Vidd le kicsit könnyebbre a holnapi súlyokat vagy ismétlésszámot — a váll így is kap elég ingert, csak nem tetézed rá a friss terhelést."
+        cooldown-hours: 72
+        quiet-hours-exempt: false
+      # S6 batch B (bd mezo-d58h.6, spec 2026-09-03 §4 row 7/8, rank 8, offers
+      # shift_sleep_anchor — the button itself is wired by a later task, not here): the
+      # villanyoltás-emlékeztető napok óta megy ki, de a lefekvés minden alkalommal ugyanúgy
+      # később van. Ez a kártya nem a felhasználót hibáztatja: elismeri, hogy az emlékeztető nem
+      # működik, és felkínálja a két kiutat — később állítjuk a célt, vagy arrébb toljuk a
+      # horgonyt (a gomb egy későbbi taskban kerül a kártyára).
+      - key: ignored_nudge_rethink
+        flag: ignored_nudge
+        channel: both
+        text-hu: "Napok óta ugyanazt az esti emlékeztetőt küldöm, hogy feküdj le időben — és a lefekvésed ezalatt egyszer sem igazodott hozzá. Ez azt jelzi, hogy a mostani cél vagy időpont nem passzol az életedhez. Vagy állítsunk be egy reálisabb célt, vagy toljuk arrébb magát a horgonyt — bármelyik jobb, mint hogy tovább ismételjem ugyanazt."
+        cooldown-hours: 72
+        quiet-hours-exempt: false
+      # S6 batch B (bd mezo-d58h.6, spec 2026-09-03 §4 row 8, rank 9, the epic's last new
+      # detection): az utolsó napok jó részén az utolsó étkezés vagy nagyon közel volt a
+      # lefekvéshez, vagy egyszerűen nagyon későn esett. Nem intés — a késői étkezés szokás, nem
+      # hiba —, és nem ír elő konkrét időpontot sem: a szabály ismeri a horgonyt, de nem az esti
+      # programot.
+      - key: late_eating_ease_up
+        flag: late_eating
+        channel: both
+        text-hu: "Az utóbbi napok jó részén az utolsó étkezésed vagy nagyon közel esett a lefekvéshez, vagy egyszerűen nagyon későn volt. Ez nem hiba, csak egy szokás — viszont hosszabb távon rontja az alvásminőséget. Nem kell egy fix időpontot betartanod, csak érdemes hagyni egy kis levegőt a nap utolsó étkezése és a lefekvés között."
+        cooldown-hours: 48
         quiet-hours-exempt: false
     # W4.3 (mezo-b3pp.17): the pragmatic profile — "hogyan érdemes Daniellel beszélni"
     profile:

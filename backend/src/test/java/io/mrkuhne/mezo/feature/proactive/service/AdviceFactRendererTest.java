@@ -66,6 +66,67 @@ class AdviceFactRendererTest {
         assertThat(String.join(" ", facts)).contains("1,4");
     }
 
+    /** The rendered fact must surface the payload's OWN {@code tomorrowMuscle} — the value
+     *  actually matched against {@code muscleNeedle} — not a hardcoded "shoulder" claim. Uses a
+     *  non-shoulder muscle precisely so a hardcoded string could not pass this test. */
+    @Test
+    void testRender_shouldDescribeAJointOveruseRaise_usingThePayloadsOwnMuscleNotAHardcodedOne() {
+        FlagPayloadEnvelope payload = FlagPayloadEnvelope.jointOveruse(
+            new FlagPayloadEnvelope.JointOveruse(8.0, 5.0, 7, 7, "2026-09-05", "back"));
+
+        List<String> facts = AdviceFactRenderer.render(FlagKey.JOINT_OVERUSE, payload);
+
+        assertThat(facts).hasSize(1);
+        assertThat(facts.get(0)).contains("hát-fókuszú").doesNotContain("váll-fókuszú");
+    }
+
+    /** The card names the run length, the threshold and the anchor as a CLOCK string (the
+     *  shifted-hour payload value formatted back), plus one line per frozen night. */
+    @Test
+    void testRender_shouldDescribeAnIgnoredNudgeRaise() {
+        FlagPayloadEnvelope payload = FlagPayloadEnvelope.ignoredNudge(
+            new FlagPayloadEnvelope.IgnoredNudge("lights_out", 5, 5, 23.25, 60,
+                Map.of("2026-09-01", 24.5)));
+
+        List<String> facts = AdviceFactRenderer.render(FlagKey.IGNORED_NUDGE, payload);
+
+        assertThat(facts).hasSize(2);
+        assertThat(facts.get(0)).contains("5").contains("60").contains("23:15");
+        assertThat(facts.get(1)).contains("2026-09-01").contains("00:30");
+    }
+
+    /** The card names the window/threshold, the anchor as a CLOCK string plus the absolute
+     *  threshold, and one line per frozen day naming which arm qualified it. */
+    @Test
+    void testRender_shouldDescribeALateEatingRaise() {
+        FlagPayloadEnvelope payload = FlagPayloadEnvelope.lateEating(
+            new FlagPayloadEnvelope.LateEating(90, 22.5, 2, 3, 23.25, 2,
+                Map.of("2026-09-01", 22.5, "2026-09-02", 24.5),
+                Map.of("2026-09-01", "both", "2026-09-02", "absolute")));
+
+        List<String> facts = AdviceFactRenderer.render(FlagKey.LATE_EATING, payload);
+
+        assertThat(facts).hasSize(4);
+        assertThat(facts.get(0)).contains("3").contains("2").contains("2");
+        assertThat(facts.get(1)).contains("23:15").contains("90").contains("22:30");
+        assertThat(String.join(" ", facts)).contains("2026-09-01").contains("22:30")
+            .contains("2026-09-02").contains("00:30");
+    }
+
+    /** Trap 1's honest split: with NO goal row (a null anchor), the card must say so rather than
+     *  fabricate a bedtime — only the absolute-hour threshold is meaningful in that case. */
+    @Test
+    void testRender_shouldDescribeALateEatingRaise_withNoAnchor() {
+        FlagPayloadEnvelope payload = FlagPayloadEnvelope.lateEating(
+            new FlagPayloadEnvelope.LateEating(90, 22.5, 2, 3, null, 2,
+                Map.of("2026-09-01", 22.5, "2026-09-02", 23.0),
+                Map.of("2026-09-01", "absolute", "2026-09-02", "absolute")));
+
+        List<String> facts = AdviceFactRenderer.render(FlagKey.LATE_EATING, payload);
+
+        assertThat(facts.get(1)).contains("Nincs").contains("22:30");
+    }
+
     /** Honest absence: no payload (a raise written before the payload existed, or a key with no
      *  renderer) yields NO facts rather than a fabricated one. The card still ships — its prose
      *  falls back to the template, which needs no facts. */
@@ -131,6 +192,26 @@ class AdviceFactRendererTest {
                     7, 6.0, 8.0, 6.0, 5.0, "ma", null, null, null, null));
             case FlagKey.ALL_HEALTHY -> FlagPayloadEnvelope.allHealthy(
                 new FlagPayloadEnvelope.AllHealthy(7, 7));
+            case FlagKey.ACUTE_BAD_DAY -> FlagPayloadEnvelope.acuteBadDay(
+                new FlagPayloadEnvelope.AcuteBadDay(2, 3, 2, List.of(
+                    new FlagPayloadEnvelope.QualifyingCheckIn("08:00", 2, 3),
+                    new FlagPayloadEnvelope.QualifyingCheckIn("20:00", 3, 2))));
+            case FlagKey.LOAD_FUEL_MISMATCH -> FlagPayloadEnvelope.loadFuelMismatch(
+                new FlagPayloadEnvelope.LoadFuelMismatch(7, 85.0, 50.0,
+                    2100.0, 3100.0, 0.677, 0.8, 7,
+                    null, 7.0, 0,
+                    4, "kcal", -0.8));
+            case FlagKey.RAPID_WEIGHT_LOSS -> FlagPayloadEnvelope.rapidWeightLoss(
+                new FlagPayloadEnvelope.RapidWeightLoss(-1.2, -0.7, 5, 4, "bulk"));
+            case FlagKey.JOINT_OVERUSE -> FlagPayloadEnvelope.jointOveruse(
+                new FlagPayloadEnvelope.JointOveruse(8.0, 5.0, 7, 7, "2026-09-05", "shoulder"));
+            case FlagKey.IGNORED_NUDGE -> FlagPayloadEnvelope.ignoredNudge(
+                new FlagPayloadEnvelope.IgnoredNudge("lights_out", 5, 5, 23.25, 60,
+                    Map.of("2026-09-01", 24.5)));
+            case FlagKey.LATE_EATING -> FlagPayloadEnvelope.lateEating(
+                new FlagPayloadEnvelope.LateEating(90, 22.5, 2, 3, 23.25, 2,
+                    Map.of("2026-09-01", 22.5, "2026-09-02", 24.5),
+                    Map.of("2026-09-01", "both", "2026-09-02", "absolute")));
             default -> throw new AssertionError(
                 "no AdviceFactRendererTest fixture for live flag key '" + flagKey + "' — "
                     + "add both a fixture here and a render() branch in AdviceFactRenderer");

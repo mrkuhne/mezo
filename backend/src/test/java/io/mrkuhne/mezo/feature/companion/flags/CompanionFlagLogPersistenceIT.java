@@ -136,4 +136,60 @@ class CompanionFlagLogPersistenceIT extends AbstractIntegrationTest {
             .extracting(CompanionFlagLogEntity::getFlagKey)
             .contains(FlagKey.LOGGING_GAP, FlagKey.MISSED_WORKOUTS);
     }
+
+    /** S6 (mezo-d58h.6): the six batch-B keys widen the CHECK constraint before any of their
+     *  rules exist to raise them — this proves the DB accepts all six, and still rejects nonsense. */
+    @Test
+    void accepts_the_six_s6_keys_and_still_rejects_nonsense() {
+        UUID owner = ownerId();
+
+        flagLogPopulator.rawInsert(owner, FlagKey.ACUTE_BAD_DAY, FlagKey.SOURCE_WRITE);
+        flagLogPopulator.rawInsert(owner, FlagKey.LOAD_FUEL_MISMATCH, FlagKey.SOURCE_SWEEP);
+        flagLogPopulator.rawInsert(owner, FlagKey.RAPID_WEIGHT_LOSS, FlagKey.SOURCE_SWEEP);
+        flagLogPopulator.rawInsert(owner, FlagKey.JOINT_OVERUSE, FlagKey.SOURCE_SWEEP);
+        flagLogPopulator.rawInsert(owner, FlagKey.IGNORED_NUDGE, FlagKey.SOURCE_SWEEP);
+        flagLogPopulator.rawInsert(owner, FlagKey.LATE_EATING, FlagKey.SOURCE_WRITE);
+
+        assertThat(repository.findAll())
+            .extracting(CompanionFlagLogEntity::getFlagKey)
+            .contains(FlagKey.ACUTE_BAD_DAY, FlagKey.LOAD_FUEL_MISMATCH, FlagKey.RAPID_WEIGHT_LOSS,
+                FlagKey.JOINT_OVERUSE, FlagKey.IGNORED_NUDGE, FlagKey.LATE_EATING);
+
+        assertThatThrownBy(() -> flagLogPopulator.rawInsert(owner, "vibes_off_s6", FlagKey.SOURCE_SWEEP))
+            .hasStackTraceContaining("ck_companion_flag_log_flag_key");
+    }
+
+    /** S6: {@code ignored_nudge} joins {@code logging_gap} in the exclusion list — it names the
+     *  app's own nudging failing to land, not a health/behavior problem, so it must not suppress
+     *  {@code all_healthy} for a whole quiet window. {@code acute_bad_day} is a genuine problem
+     *  and must still suppress it. */
+    @Test
+    void ignored_nudge_does_not_suppress_all_healthy_but_acute_bad_day_does() {
+        UUID owner = ownerId();
+        Instant since = Instant.now().minus(1, ChronoUnit.HOURS);
+
+        flagLogPopulator.raise(owner, FlagKey.IGNORED_NUDGE, FlagKey.SOURCE_SWEEP, null);
+        assertThat(repository.existsProblemRaiseSince(owner, since)).isFalse();
+
+        flagLogPopulator.raise(owner, FlagKey.ACUTE_BAD_DAY, FlagKey.SOURCE_WRITE, null);
+        assertThat(repository.existsProblemRaiseSince(owner, since)).isTrue();
+    }
+
+    /** Whole-branch review fix (bd mezo-d58h.6): {@code joint_overuse} joins {@code logging_gap}
+     *  and {@code ignored_nudge} in the exclusion list — it fires on a conjunction (7-day strain
+     *  average + tomorrow's schedule) the user did nothing to earn, and its own intervention copy
+     *  calls it a training tip, not an injury alert, so it must not suppress {@code all_healthy}
+     *  for a whole quiet window either. {@code acute_bad_day} is a genuine problem and must still
+     *  suppress it. */
+    @Test
+    void joint_overuse_does_not_suppress_all_healthy_but_acute_bad_day_does() {
+        UUID owner = ownerId();
+        Instant since = Instant.now().minus(1, ChronoUnit.HOURS);
+
+        flagLogPopulator.raise(owner, FlagKey.JOINT_OVERUSE, FlagKey.SOURCE_SWEEP, null);
+        assertThat(repository.existsProblemRaiseSince(owner, since)).isFalse();
+
+        flagLogPopulator.raise(owner, FlagKey.ACUTE_BAD_DAY, FlagKey.SOURCE_WRITE, null);
+        assertThat(repository.existsProblemRaiseSince(owner, since)).isTrue();
+    }
 }

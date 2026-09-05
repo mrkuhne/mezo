@@ -18,6 +18,14 @@ public final class FlagKey {
     public static final String LOGGING_GAP = "logging_gap";
     public static final String MISSED_WORKOUTS = "missed_workouts";
 
+    /** Round-1 batch B (S6, bd mezo-d58h.6, spec 2026-09-03 §4), in the spec's severity order. */
+    public static final String ACUTE_BAD_DAY = "acute_bad_day";
+    public static final String LOAD_FUEL_MISMATCH = "load_fuel_mismatch";
+    public static final String RAPID_WEIGHT_LOSS = "rapid_weight_loss";
+    public static final String JOINT_OVERUSE = "joint_overuse";
+    public static final String IGNORED_NUDGE = "ignored_nudge";
+    public static final String LATE_EATING = "late_eating";
+
     public static final String SOURCE_WRITE = "write";
     public static final String SOURCE_SWEEP = "sweep";
 

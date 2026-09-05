@@ -8,6 +8,8 @@ import { useWeight } from '@/data/me/weightHooks'
 import { useCheckins } from '@/data/today/checkinHooks'
 import { useCompanionFeed } from '@/data/today/feedHooks'
 import { useTrain } from '@/data/train/trainHooks'
+import { todayIdx } from '@/data/train/runningAgenda'
+import { isSportSlotSkipped } from '@/features/train/logic/weekAgenda'
 
 // `icon` is a clay symbol name, not an emoji (mezo-d20.8.1.1). The choice of glyph was always
 // a presentation decision this hook happened to carry; naming a ClayIconName makes that explicit
@@ -63,7 +65,11 @@ export function useDayRecap(date: string): DayRecap {
     // Rest day (no plan) — fall back to a volleyball session flagged "today" in the weekly
     // schedule (the TodayPage `volleyballSessions.find(s => s.today)` precedent). This is a
     // SCHEDULE flag, not an attendance record, so it is honestly reported as not-done.
-    const todaySport = train.sport.schedule?.volleyball.sessions.find((s) => s.today)
+    // A skip_sport_slot advice action (mezo-cq06) hides today's dated occurrence — the ritual
+    // only ever runs for today (see docstring above), so `date` IS today's ISO date here.
+    const todaySport = train.sport.schedule?.volleyball.sessions.find(
+      (s) => s.today && !isSportSlotSkipped(train.sportSlotSkips, todayIdx(), s.time, date),
+    )
     if (todaySport) {
       events.push({ icon: 'i-sport', label: 'Röplabda', meta: todaySport.time, done: false })
     }

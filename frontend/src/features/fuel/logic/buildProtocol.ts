@@ -1,6 +1,8 @@
 import { toHHmm, toMin } from '@/data/fuel/fuelConfig'
 import { runSessionsForDay, todayIdx } from '@/data/train/runningAgenda'
 import { sportOf, SPORT_TITLES } from '@/features/train/logic/sportKinds'
+import { isSportSlotSkipped, type SportSlotSkip } from '@/features/train/logic/weekAgenda'
+import { localDateString } from '@/shared/lib/dates'
 import type { PlannerBlock } from '@/features/fuel/logic/buildDayPlan'
 import type { RunningBlockResponse } from '@/data/train/runningApi'
 import type { GymSchedule, SportSchedule } from '@/data/types'
@@ -30,6 +32,11 @@ export function deriveBlocks(
   gymSchedule: GymSchedule | null,
   sport: { schedule: SportSchedule | null },
   activeRunningBlock: RunningBlockResponse | null,
+  // Skipped dated occurrences of a recurring sport slot (mezo-cq06) — a skip_sport_slot advice
+  // action hides one dated occurrence; without this, the fuel protocol kept anchoring the
+  // pre-workout meal / calorie budget on a sport block the backend already treats as absent.
+  // Empty default keeps every caller that hasn't threaded skips through yet byte-identical.
+  skips: SportSlotSkip[] = [],
 ): PlannerBlock[] {
   const blocks: PlannerBlock[] = []
   // Gym: the meso's today gym day joined with its standalone weekly slot (needs a time).
@@ -39,7 +46,12 @@ export function deriveBlocks(
   // a single .find silently dropped the second block of a stacked day (e.g. a recurring
   // training + a one-off match) from the calorie budget and the meal windows. The label
   // carries the session's sport identity so cross/TRX don't render as 'Volleyball' (mezo-rhe5).
-  for (const vb of sport.schedule?.volleyball.sessions.filter(s => s.today && s.time) ?? []) {
+  // A skipped occurrence (mezo-cq06) is matched on today's weekday index + the slot's own
+  // unnormalised time + today's ISO date — the same identity `buildWeekAgenda` uses.
+  const todayIso = localDateString(new Date())
+  for (const vb of sport.schedule?.volleyball.sessions.filter(
+    s => s.today && s.time && !isSportSlotSkipped(skips, todayIdx(), s.time, todayIso),
+  ) ?? []) {
     blocks.push({ kind: 'sport', time: vb.time, durationMin: vb.duration ?? null, label: SPORT_TITLES[sportOf(vb)] })
   }
   // Run: today's prescribed session in the active block's current week (needs a plan time).
@@ -65,8 +77,9 @@ export function deriveProtocolAnchors(
   activeRunningBlock: RunningBlockResponse | null,
   wake: string,
   bedtime: string,
+  skips: SportSlotSkip[] = [],
 ): ProtocolAnchors {
-  const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock)
+  const blocks = deriveBlocks(gymSchedule, sport, activeRunningBlock, skips)
   const firstBlock = blocks.length ? [...blocks].sort((a, b) => toMin(a.time) - toMin(b.time))[0] : null
   return {
     wake,
