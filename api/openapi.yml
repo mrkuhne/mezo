@@ -9887,6 +9887,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LifeGoalProgressResponse'
+        '400':
+          description: from after to (VALIDATION_INVALID_VALUE)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing/invalid token
           content:

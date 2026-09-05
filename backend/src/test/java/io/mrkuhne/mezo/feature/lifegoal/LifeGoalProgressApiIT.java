@@ -190,4 +190,17 @@ class LifeGoalProgressApiIT extends ApiIntegrationTest {
         getForBody("/api/life-goals/" + goal.getId() + "/progress?from=" + today.minusDays(6) + "&to=" + today,
             ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
     }
+
+    /** Contract (mezo-iizd.8): from > to → 400 VALIDATION_INVALID_VALUE on field "to". */
+    @Test
+    void testGetProgress_shouldReturn400_whenFromIsAfterTo() {
+        UUID owner = ownerId();
+        LifeGoalEntity goal = lifeGoalPopulator.goal(owner, "active");
+
+        String body = getForBody(
+            "/api/life-goals/" + goal.getId() + "/progress?from=" + today + "&to=" + today.minusDays(1),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasFieldError(body, "to", "VALIDATION_INVALID_VALUE");
+    }
 }

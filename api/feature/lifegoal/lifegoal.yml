@@ -134,6 +134,7 @@ paths:
         - { name: to, in: query, required: true, schema: { type: string, format: date } }
       responses:
         '200': { description: Progress, content: { application/json: { schema: { $ref: '#/components/schemas/LifeGoalProgressResponse' } } } }
+        '400': { description: from after to (VALIDATION_INVALID_VALUE), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found / not owned, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/life-goals/{id}/evaluate:

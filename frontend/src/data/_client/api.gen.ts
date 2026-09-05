@@ -20864,6 +20864,15 @@ export interface operations {
                     "application/json": components["schemas"]["LifeGoalProgressResponse"];
                 };
             };
+            /** @description from after to (VALIDATION_INVALID_VALUE) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description Missing/invalid token */
             401: {
                 headers: {
