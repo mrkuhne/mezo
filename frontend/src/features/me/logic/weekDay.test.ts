@@ -1,14 +1,18 @@
 import { describe, expect, test } from 'vitest'
 import {
-  DAY_DIMENSIONS, dayNoteFor, dayState, dayVerdict, doneDimensionCount, fmtSleep, hu1, huDowFull,
-  huDowShort, huInt, isEmptyDay, isInWeek, isValidIsoDate, mondayOf, ringLearningLabels,
-  subscoreCount, summariseDays, tileScoreLabel,
+  DAY_DIMENSIONS, dayHasAnyLog, dayNoteFor, dayState, dayVerdict, doneDimensionCount, fmtSleep,
+  hu1, huDowFull, huDowShort, huInt, isEmptyDay, isInWeek, isValidIsoDate, mondayOf,
+  ringLearningLabels, subscoreCount, summariseDays, tileScoreLabel,
 } from '@/features/me/logic/weekDay'
+import { weekHubState } from '@/features/me/logic/weekHub'
 import type { MeWeekDay } from '@/data/me/meWeek'
 
-// Heti nap-állapotok (mezo-d20.6.10) — handoff §4's honest-state contracts as unit tests.
-// The point of this module is that `tanulom` and `nincs adat` are DIFFERENT states; today's
-// WeekDayCard renders a single `—` for both.
+// Heti nap-állapotok (mezo-d20.6.10 → mezo-el0t) — handoff §4's honest-state contracts as unit
+// tests. The point of this module is that `tanulom` and `nincs adat` are DIFFERENT states; today's
+// WeekDayCard renders a single `—` for both. Since mezo-el0t this is ALSO the only place that
+// derivation lives — the week hub used to run its own (`dayScoreState.ts`, deleted), and the two
+// disagreed on whether a logged `proteinG` alone counts as a log. They cannot drift again: the
+// hub's `weekHubState` (imported above) is a bare re-export of `dayState`, not a second function.
 
 function day(over: Partial<MeWeekDay> = {}): MeWeekDay {
   return {
@@ -56,6 +60,45 @@ describe('dayState — the four honest states (handoff §4)', () => {
   test('the ring words separate `nincs / adat` from `tanulom / még gyűlik`', () => {
     expect(ringLearningLabels('empty')).toEqual({ label: 'nincs', caption: 'adat' })
     expect(ringLearningLabels('thin')).toEqual({ label: 'tanulom', caption: 'még gyűlik' })
+  })
+
+  // mezo-el0t: the backend now reports `logging: null` on a genuinely untouched day (instead of
+  // a fabricated 0), which makes this branch reachable again against the real backend.
+  test('an untouched day is `empty` again now that `logging` is null, not a fabricated 0', () => {
+    const untouched = day({ subscores: {
+      nutrition: null, quality: null, training: null, sleep: null, logging: null, rhythm: 41,
+    } })
+    expect(subscoreCount(untouched)).toBe(0)
+    expect(dayState(untouched, TODAY)).toBe('empty')
+  })
+
+  // mezo-el0t: the hub and the mosaic used to run TWO derivations that already disagreed — one
+  // tested `proteinG`, the other did not. `weekHubState` is now a bare re-export of `dayState`,
+  // so this holds by construction; it stays as a regression guard against a THIRD derivation
+  // creeping back in for either surface.
+  test('the hub and the mosaic say the SAME thing about the same day', () => {
+    const withProtein = day({ proteinG: 12 })
+    expect(dayState(withProtein, TODAY)).toBe(weekHubState(withProtein, TODAY))
+  })
+
+  test('a logged proteinG alone counts as a log (mirrors DayEvaluationEngine.anyLogPresent\'s kcal/meals pair)', () => {
+    expect(isEmptyDay(day({ proteinG: 12 }))).toBe(false)
+    expect(dayState(day({ proteinG: 12 }), TODAY)).toBe('thin')
+    expect(dayHasAnyLog(day({ proteinG: 12 }))).toBe(true)
+  })
+
+  test('rhythm alone (extrinsic, borrowed from neighbour days) does NOT make an untouched day "thin"', () => {
+    const untouched = day({ subscores: {
+      nutrition: null, quality: null, training: null, sleep: null, logging: null, rhythm: 41,
+    } })
+    expect(isEmptyDay(untouched)).toBe(true)
+    expect(dayState(untouched, TODAY)).toBe('empty')
+  })
+
+  test('a workout or an XP grant alone still counts as a log', () => {
+    expect(dayState(day({ workoutCount: 1 }), TODAY)).toBe('thin')
+    expect(dayState(day({ xp: 15 }), TODAY)).toBe('thin')
+    expect(isEmptyDay(day({ xp: 0, checkinCount: 0 }))).toBe(true)
   })
 })
 

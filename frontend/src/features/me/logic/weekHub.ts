@@ -19,11 +19,16 @@ import type { WeeklyReview, WeeklyReviewDigest } from '@/data/me/weeklyReviewHoo
 // The week-URL and day-state rules are shared with every sibling Heti page and are
 // therefore declared ONCE, elsewhere; re-exported here so the hub keeps a single
 // import surface (mezo-d20.6.10 integration — three slices had each grown their own copy).
+//
+// `weekHubState` is `dayState` under the name the hub already called it (mezo-el0t): the hub
+// used to run its OWN derivation (`dayScoreState.ts`, since deleted) that disagreed with the
+// mosaic's on the `proteinG` edge case. It is now a bare re-export, not a second function that
+// merely happens to agree — there is nothing left to drift.
 export { resolveWeekStart, weekHubPath } from '@/features/me/logic/weekNav'
 export {
-  type DayScoreState, dayScoreState, isDayUnlogged, dayHasAnyLog, measuredSubscores,
-  DAY_STATE_LABEL, DAY_STATE_COPY,
-} from '@/features/me/logic/dayScoreState'
+  type WeekDayState as DayScoreState, dayState as weekHubState, isEmptyDay, dayHasAnyLog,
+  subscoreCount, DAY_STATE_LABEL, DAY_STATE_COPY,
+} from '@/features/me/logic/weekDay'
 
 /** Hungarian one-decimal that KEEPS the ",0" (the prototype's `hu1`, which sets
  *  minimumFractionDigits: 1 — "7,0", not the shared `hu1`'s "7"). */
@@ -36,12 +41,12 @@ export function huDec(value: number, digits = 1): string {
 
 
 // ── the four honest day states (handoff §4) ───────────────────────────────
-// Today's code collapses "tanulom" and "nincs adat" into one null score. They
-// are DIFFERENT facts about the day and the design says so out loud:
-//   learning = you logged something, but from fewer than two areas — the Mezo
-//              refuses to invent a score from one signal;
-//   nodata   = you logged nothing at all, and the day does not drag the week's
-//              score down either (it is simply not in the average).
+// The states themselves (`scored`/`thin`/`empty`/`future`) live in `weekDay.ts` and are
+// re-exported above as `weekHubState`; the two non-scored ones, spelled out:
+//   thin  (tanulom)    = you logged something, but from fewer than two areas — the Mezo
+//                        refuses to invent a score from one signal;
+//   empty (nincs adat) = you logged nothing at all, and the day does not drag the week's
+//                        score down either (it is simply not in the average).
 /** Days that actually carry a score — the `5 / 7 nap` numerator and the analysis
  *  tile's `napi pontszám · N / 7 nap` footer (the prototype's `logged`). */
 export function loggedDayCount(days: readonly MeWeekDay[]): number {
