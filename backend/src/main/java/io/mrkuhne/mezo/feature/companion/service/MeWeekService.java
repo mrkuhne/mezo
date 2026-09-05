@@ -218,6 +218,10 @@ public class MeWeekService {
      * <p>The sor SZÁNDÉKOSAN a régi négy jelet írja, az új {@code quality}/{@code rhythm} nélkül
      * (spec D4, mezo-jcpt.5): ez LLM-prompt payload, minden chat-fordulóban fut, a bővítése külön
      * döntés.
+     *
+     * <p>Egy érintetlen nap {@code checkin –}-t ír, nem {@code 0}-t (mezo-el0t): a {@code –} az
+     * igazat mondja, a {@code 0} egy nem létező mérést állítana. Ez LLM-prompt payload — minden
+     * chat-fordulóban fut.
      */
     public static String renderDayLine(MeWeekDay day) {
         MeWeekSubscores subscores = day.getSubscores();
