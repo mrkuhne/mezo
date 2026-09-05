@@ -1,17 +1,23 @@
-package io.mrkuhne.mezo.feature.proactive.service;
+package io.mrkuhne.mezo.feature.companion.flags.service;
 
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
 /**
- * The advice card's FACTS (spec §5): deterministic, numeric, rule-provided lines rendered from the
+ * The deterministic, numeric, rule-provided evidence lines for a RAISED flag, rendered from the
  * raise's own frozen {@code companion_flag_log.payload}. Nothing here re-derives a rule — the
  * payload already froze both the thresholds and the observed values at raise time, which is the
  * whole point of {@code FlagPayloadEnvelope}.
+ *
+ * <p>TWO consumers (spec 2026-09-05 §5): the advice card's {@code facts} ({@code
+ * InterventionService}) and the coaching observer's RAISED evidence ({@code FlagTraceReadService}).
+ * It lives here rather than in {@code proactive} because it renders companion's own payload
+ * envelope AND because companion may not import proactive — see {@code AdviceRankPort}'s javadoc
+ * for the cycle that forbids it. {@link FlagTraceCopy} renders the other two outcomes, CLEAR and
+ * UNAVAILABLE, in the same family and the same locale.
  *
  * <p>An unmapped key or a null payload yields an EMPTY list, never a placeholder: the card is
  * still delivered (its prose falls back to the template text), it simply shows no evidence block.
@@ -22,11 +28,11 @@ import java.util.Map;
  * {@code ProseNumberGuard} normalises the separator before comparing, so a model that answers
  * with a dot is not punished for it.
  */
-public final class AdviceFactRenderer {
+public final class FlagFactRenderer {
 
     private static final Locale HU = Locale.of("hu");
 
-    private AdviceFactRenderer() {
+    private FlagFactRenderer() {
     }
 
     public static List<String> render(String flagKey, FlagPayloadEnvelope payload) {
@@ -310,7 +316,7 @@ public final class AdviceFactRenderer {
     }
 
     /** One decimal, Hungarian comma — the display form the model may echo verbatim. */
-    private static String num(double value) {
+    public static String num(double value) {
         return String.format(HU, "%.1f", value);
     }
 }
