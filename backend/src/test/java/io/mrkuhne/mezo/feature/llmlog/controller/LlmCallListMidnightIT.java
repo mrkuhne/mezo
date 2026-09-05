@@ -33,19 +33,27 @@ class LlmCallListMidnightIT extends ApiIntegrationTest {
     @Autowired private LlmLogProperties llmLogProperties;
     @Autowired private UserPopulator userPopulator;
 
-    /** An offset zone in which the current wall time is a few minutes past midnight. */
+    /**
+     * An offset zone in which the current wall time is a few minutes past midnight, computed once
+     * at class init so every property resolution (Spring may query the supplier repeatedly) sees
+     * the same zone instead of drifting as wall-clock time passes during the test run.
+     */
+    private static final String JUST_PAST_MIDNIGHT_ZONE_ID = computeJustPastMidnightZoneId();
+
+    private static String computeJustPastMidnightZoneId() {
+        LocalTime utcNow = LocalTime.now(ZoneOffset.UTC);
+        // offset that maps "now" to ~00:05 local; ZoneOffset supports ±18h so this always resolves
+        int targetSeconds = 5 * 60;
+        int offsetSeconds = targetSeconds - utcNow.toSecondOfDay();
+        if (offsetSeconds < -18 * 3600) {
+            offsetSeconds += 24 * 3600;
+        }
+        return ZoneOffset.ofTotalSeconds(offsetSeconds).getId();
+    }
+
     @DynamicPropertySource
     static void justPastMidnightZone(DynamicPropertyRegistry registry) {
-        registry.add("mezo.llmlog.report-zone", () -> {
-            LocalTime utcNow = LocalTime.now(ZoneOffset.UTC);
-            // offset that maps "now" to ~00:05 local; ZoneOffset supports ±18h so this always resolves
-            int targetSeconds = 5 * 60;
-            int offsetSeconds = targetSeconds - utcNow.toSecondOfDay();
-            if (offsetSeconds < -18 * 3600) {
-                offsetSeconds += 24 * 3600;
-            }
-            return ZoneOffset.ofTotalSeconds(offsetSeconds).getId();
-        });
+        registry.add("mezo.llm-log.report-zone", () -> JUST_PAST_MIDNIGHT_ZONE_ID);
     }
 
     @Test
