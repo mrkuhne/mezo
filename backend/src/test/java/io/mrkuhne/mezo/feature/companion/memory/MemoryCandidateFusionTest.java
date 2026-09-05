@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryCandidate;
 import io.mrkuhne.mezo.feature.companion.memory.dto.PreparedMemoryQuery;
 import io.mrkuhne.mezo.feature.companion.memory.dto.QueryMode;
+import io.mrkuhne.mezo.feature.companion.memory.dto.RetrievalServingMode;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryCandidateFusion;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
@@ -105,7 +106,7 @@ class MemoryCandidateFusionTest {
 
     static MemoryPlatformProperties properties() {
         return new MemoryPlatformProperties(
-                "v1", "google", "model", 1,
+                "v1", "google", "model", 1, RetrievalServingMode.SHADOW,
                 new MemoryPlatformProperties.Retrieval(30, 1200, 600),
                 new MemoryPlatformProperties.Reembedding(false, "v1", 100, "0 10 4 * * *"),
                 new MemoryPlatformProperties.Audit(30, "0 50 3 * * *"),

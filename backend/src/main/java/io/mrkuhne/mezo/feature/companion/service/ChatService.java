@@ -15,8 +15,9 @@ import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.entity.RecalledMemoriesEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.RefsEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.ToolCallsEnvelope;
-import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromptAssembler;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
+import io.mrkuhne.mezo.feature.companion.memory.service.ChatMemoryContextAdapter;
+import io.mrkuhne.mezo.feature.companion.memory.service.ChatMemoryContextAdapter.ChatMemoryPayload;
 import io.mrkuhne.mezo.feature.companion.profile.service.ProfilePromptAssembler;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
@@ -38,7 +39,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -167,10 +167,8 @@ public class ChatService {
     private final ConversationService conversationService;
     private final ContextSnapshotAssembler contextSnapshotAssembler;
     private final KnowledgeFactService knowledgeFactService;
-    /** W3.1 — the always-on [Emlékek] block (mezo-b3pp.12). */
-    private final PromptMemoryAssembler promptMemoryAssembler;
-    /** W2.4 — the [Összefüggések] block (mezo-b3pp.9); absent (null) when the graph switch is off. */
-    private final ObjectProvider<GraphPromptAssembler> graphPromptAssembler;
+    /** Shared OLD/SHADOW/NEW boundary used identically by synchronous and streamed turns. */
+    private final ChatMemoryContextAdapter chatMemoryContextAdapter;
     /** W4.3 — the [Rólad tanultam] block (mezo-b3pp.17); absent (null) when the graph switch is off. */
     private final ObjectProvider<ProfilePromptAssembler> profilePromptAssembler;
     /** mezo-1gim.8 — the [Karakter] dossier block; absent (null) unless CHARACTER_SWITCH + COMPANION_SWITCH are both on. */
@@ -207,17 +205,17 @@ public class ChatService {
     public PreparedTurn prepareTurn(UUID userId, UUID conversationId, SendMessageRequest request) {
         AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
         LocalDate today = LocalDate.now();
-        PromptMemoryAssembler.AmbientRecall recalled =
-                promptMemoryAssembler.recall(userId, conversationId, request.getContent(), today);
-        GraphPromptAssembler.GraphContext graph = graphContext(userId, request.getContent());
-        String systemPrompt = assembleSystemPrompt(userId, today, recalled.block(), graph.block(),
-                conversation.getContextKind(), conversation.getContextDate());
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
+        ChatMemoryPayload memory = chatMemoryContextAdapter.resolve(
+                userId, conversationId, request.getContent(), history, today);
+        String systemPrompt = assembleSystemPrompt(userId, today, memory.factsBlock(),
+                memory.memoriesBlock(), memory.graphBlock(),
+                conversation.getContextKind(), conversation.getContextDate());
         AiMessageEntity userRow = persistMessage(
                 conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false, null);
         touchConversation(conversation, request.getContent());
         return new PreparedTurn(conversationId, userRow.getId(), systemPrompt, history, request.getContent(),
-                ambientRefs(recalled, graph), RecalledMemoriesEnvelope.ofOrNull(recalled.items()));
+                memory.refs(), memory.recalled());
     }
 
     /**
@@ -246,13 +244,13 @@ public class ChatService {
         // Prompt order: see assembleSystemPrompt. The history travels as real prior messages
         // (mezo-q71s), not a transcript inside the system prompt.
         LocalDate today = LocalDate.now();
-        PromptMemoryAssembler.AmbientRecall recalled =
-                promptMemoryAssembler.recall(userId, conversationId, request.getContent(), today);
-        GraphPromptAssembler.GraphContext graph = graphContext(userId, request.getContent());
-        String systemPrompt = assembleSystemPrompt(userId, today, recalled.block(), graph.block(),
-                conversation.getContextKind(), conversation.getContextDate());
         // Window BEFORE persisting the new message — the current content travels as the user param.
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
+        ChatMemoryPayload memory = chatMemoryContextAdapter.resolve(
+                userId, conversationId, request.getContent(), history, today);
+        String systemPrompt = assembleSystemPrompt(userId, today, memory.factsBlock(),
+                memory.memoriesBlock(), memory.graphBlock(),
+                conversation.getContextKind(), conversation.getContextDate());
 
         AiMessageEntity userRow = persistMessage(
                 conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false, null);
@@ -286,11 +284,11 @@ public class ChatService {
         }
         // W3.1/W2.4: ambient refs (Memory, then GraphNode) join the audit AFTER the LLM round — tool
         // refs are the answer's own provenance and win the per-turn ref cap.
-        ambientRefs(recalled, graph).forEach(ref -> audit.addRef(ref.kind(), ref.id(), ref.label()));
+        memory.refs().forEach(ref -> audit.addRef(ref.kind(), ref.id(), ref.label()));
         // W3.1b: the answer also DISCLOSES what it was given — the same items, on the row
         AiMessageEntity assistant = persistMessage(conversation, userId, AiMessageEntity.ROLE_ASSISTANT,
                 answer, audit.toToolCallsEnvelope(), audit.toRefsEnvelope(), degraded,
-                RecalledMemoriesEnvelope.ofOrNull(recalled.items()));
+                memory.recalled());
 
         touchConversation(conversation, request.getContent());
         // V1.2: post-turn extraction trigger — the async listener runs AFTER this turn commits
@@ -312,7 +310,8 @@ public class ChatService {
     public void openingTurn(UUID userId, UUID conversationId) {
         try {
             AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
-            String systemPrompt = assembleSystemPrompt(userId, LocalDate.now(), "", "",
+            String systemPrompt = assembleSystemPrompt(userId, LocalDate.now(),
+                    knowledgeFactService.renderPromptBlock(userId), "", "",
                     conversation.getContextKind(), conversation.getContextDate());
             String answer = companionLlm.complete(
                     systemPrompt, List.of(), KICKOFF_PROMPT, List.of(), Map.of());
@@ -338,12 +337,18 @@ public class ChatService {
      * context (W2.4, "" when the graph switch is off or nothing matched) → TONE_REMINDER
      * (mezo-q71s, always last). The history travels as real prior messages, not a transcript here.
      */
-    private String assembleSystemPrompt(UUID userId, LocalDate today, String memoriesBlock, String graphBlock,
-            String contextKind, LocalDate contextDate) {
+    private String assembleSystemPrompt(
+            UUID userId,
+            LocalDate today,
+            String factsBlock,
+            String memoriesBlock,
+            String graphBlock,
+            String contextKind,
+            LocalDate contextDate) {
         return promptPersona.render(userId, SYSTEM_PROMPT
                 + contextSnapshotAssembler.render(userId, today)
                 + anchoredBlock(userId, contextKind, contextDate)
-                + knowledgeFactService.renderPromptBlock(userId)
+                + factsBlock
                 + knowledgeFactService.renderNewPatternFactsBlock(userId)
                 + characterBlock(userId)
                 + profileBlock(userId)
@@ -357,12 +362,6 @@ public class ChatService {
         return contextKind == null ? "" : weekContextRenderer.render(userId, contextKind, contextDate);
     }
 
-    /** W2.4: the graph's contribution — EMPTY when the switch is off (no bean) or nothing matched. */
-    private GraphPromptAssembler.GraphContext graphContext(UUID userId, String userMessage) {
-        GraphPromptAssembler assembler = graphPromptAssembler.getIfAvailable();
-        return assembler == null ? GraphPromptAssembler.GraphContext.EMPTY : assembler.assemble(userId, userMessage);
-    }
-
     /** W4.3: the profile's contribution — "" when the bean is absent or nothing is stored. */
     private String profileBlock(UUID userId) {
         ProfilePromptAssembler assembler = profilePromptAssembler.getIfAvailable();
@@ -374,17 +373,6 @@ public class ChatService {
     private String characterBlock(UUID userId) {
         CharacterPromptSource source = characterPromptSource.getIfAvailable();
         return source == null ? "" : source.render(userId);
-    }
-
-    /** Memory refs first (W3.1), GraphNode refs after (W2.4) — one list so the stream path stays unchanged. */
-    private static List<RefsEnvelope.Ref> ambientRefs(PromptMemoryAssembler.AmbientRecall recalled,
-                                                      GraphPromptAssembler.GraphContext graph) {
-        if (graph.refs().isEmpty()) {
-            return recalled.refs();
-        }
-        List<RefsEnvelope.Ref> refs = new ArrayList<>(recalled.refs());
-        refs.addAll(graph.refs());
-        return List.copyOf(refs);
     }
 
     private List<AiMessageEntity> loadWindow(UUID userId, UUID conversationId) {

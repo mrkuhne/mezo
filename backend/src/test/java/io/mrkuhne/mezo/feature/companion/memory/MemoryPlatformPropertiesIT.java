@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.memory;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties;
+import io.mrkuhne.mezo.feature.companion.memory.dto.RetrievalServingMode;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.context.properties.bind.validation.BindValidationException;
@@ -19,7 +20,7 @@ class MemoryPlatformPropertiesIT {
     private static final String PREFIX = "mezo.companion.memory-platform.";
     private static final String[] VALID = {
         PREFIX + "serving-embedding-version=v1", PREFIX + "embedding-provider=google",
-        PREFIX + "embedding-model=model", PREFIX + "schema-version=1",
+        PREFIX + "embedding-model=model", PREFIX + "schema-version=1", PREFIX + "serving-mode=shadow",
         PREFIX + "serving.candidate-limit=30", PREFIX + "serving.chat-max-tokens=1200",
         PREFIX + "serving.item-max-chars=600", PREFIX + "reembedding.enabled=false",
         PREFIX + "reembedding.target-version=v1", PREFIX + "reembedding.batch-size=100",
@@ -44,6 +45,7 @@ class MemoryPlatformPropertiesIT {
         runner.withPropertyValues(VALID).run(context -> {
             assertThat(context).hasNotFailed();
             MemoryPlatformProperties properties = context.getBean(MemoryPlatformProperties.class);
+            assertThat(properties.servingMode()).isEqualTo(RetrievalServingMode.SHADOW);
             assertThat(properties.fusion().rrfConstant()).isEqualTo(60);
             assertThat(properties.fusion().retrieverWeights()).containsEntry("dense", 1.0);
             assertThat(properties.execution().retrieverTimeoutMs()).isEqualTo(200);

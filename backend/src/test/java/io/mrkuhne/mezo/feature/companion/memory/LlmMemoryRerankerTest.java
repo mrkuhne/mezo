@@ -164,7 +164,7 @@ class LlmMemoryRerankerTest {
         var base = MemoryCandidateFusionTest.properties();
         return new io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties(
                 base.servingEmbeddingVersion(), base.embeddingProvider(), base.embeddingModel(), base.schemaVersion(),
-                base.serving(), base.reembedding(), base.audit(), base.fusion(), base.execution(),
+                base.servingMode(), base.serving(), base.reembedding(), base.audit(), base.fusion(), base.execution(),
                 new io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties.Reranker(
                         true, 0.002, 20, 600, timeoutMs), base.indicators());
     }

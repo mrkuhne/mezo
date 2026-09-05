@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -49,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * and this test observes exactly that (cleanup is the per-test ResetDatabase).
  */
 @ActiveProfiles("companion-fake")
+@TestPropertySource(properties = "mezo.companion.memory-platform.serving-mode=OLD")
 class ChatStreamServiceIT extends AbstractIntegrationTest {
 
     @Autowired private ChatStreamService chatStreamService;

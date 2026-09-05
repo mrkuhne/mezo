@@ -35,14 +35,19 @@ test('omits empty tools/refs so user bubbles stay lean', () => {
 
 test('passes the recalled memories through untouched so the Emlékek row can render (mezo-b3pp.28)', () => {
   const recalled = [
-    { occurredOn: '2026-05-21', kind: 'SleepLog', label: 'Alvás', gist: '7.2 h, 4 ébredés', similarity: 0.84 },
+    {
+      occurredOn: '2026-05-21', kind: 'SleepLog', label: 'Alvás', gist: '7.2 h, 4 ébredés', similarity: 0.84,
+      retrievalRunId: 'ca425c7b-b738-49b6-bde3-e76b73d45962',
+      retrievalResultId: '4776cb22-2d64-413d-be2b-450a8c3ff5da',
+      memoryItemId: '98f87302-51a9-47a6-a3b9-f4e3e799973a', indicator: 'old',
+    },
     { occurredOn: '2026-03-04', kind: 'Workout', label: 'Pull Day', gist: 'Lat Pulldown 105 × 9', similarity: 0.71 },
   ]
   const mapped = toChatMessage({
     id: 'm4', role: 'assistant', content: 'Jó jel.', createdAt: '2026-07-03T06:36:00Z',
     tools: [], refs: [], recalled, degraded: false,
   })
-  // Same order, same values — the row renders prompt order and the raw cosine (as NN%).
+  // Same order, same values — legacy and unified provenance both survive the wire adapter.
   expect(mapped.recalled).toEqual(recalled)
 })
 

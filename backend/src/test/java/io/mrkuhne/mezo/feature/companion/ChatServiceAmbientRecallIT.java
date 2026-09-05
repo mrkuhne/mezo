@@ -23,6 +23,7 @@ import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -48,6 +49,7 @@ import static org.assertj.core.api.Assertions.within;
  * on another thread and another transaction, and cannot affect this or any other test.
  */
 @ActiveProfiles("companion-fake")
+@TestPropertySource(properties = "mezo.companion.memory-platform.serving-mode=OLD")
 class ChatServiceAmbientRecallIT extends AbstractIntegrationTest {
 
     @Autowired private ChatService chatService;

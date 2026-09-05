@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.memory.config;
 
+import io.mrkuhne.mezo.feature.companion.memory.dto.RetrievalServingMode;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -25,6 +26,8 @@ public record MemoryPlatformProperties(
         @NotBlank String embeddingModel,
         /** Canonical projection schema version written to memory items. */
         @Min(1) @Max(10) int schemaVersion,
+        /** Chat rollout mode: legacy serving, background comparison, or unified serving. */
+        @NotNull RetrievalServingMode servingMode,
         /** Online retrieval limits. */
         @NotNull @Valid Retrieval serving,
         /** Offline generation backfill controls. */

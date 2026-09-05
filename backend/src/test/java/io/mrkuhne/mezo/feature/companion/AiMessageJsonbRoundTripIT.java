@@ -147,4 +147,36 @@ class AiMessageJsonbRoundTripIT extends AbstractIntegrationTest {
             assertThat(ref.label()).isNull();
         });
     }
+
+    @Test
+    void testRecalled_shouldDeserialiseWithNullAuditIds_whenJsonbPredatesSharedRetrieval() {
+        UUID userId = databasePopulator.populateUser("companion-jsonb-legacy-recalled@test.local");
+        AiConversationEntity conversation = conversationPopulator.conversation(userId);
+        UUID refId = UUID.randomUUID();
+
+        AiMessageEntity message = new AiMessageEntity();
+        message.setConversation(conversation);
+        message.setCreatedBy(userId);
+        message.setRole(AiMessageEntity.ROLE_ASSISTANT);
+        message.setContent("válasz régi emlékkel");
+        UUID id = messageRepository.saveAndFlush(message).getId();
+        entityManager.clear();
+
+        jdbcTemplate.update(
+                "update ai_message set recalled_memories = ?::jsonb where id = ?",
+                """
+                {"items":[{"kind":"journal_entry","refId":"%s","occurredOn":"2026-08-10",
+                "label":"napló","gist":"régi emlék","similarity":0.8}]}
+                """.formatted(refId), id);
+        entityManager.clear();
+
+        AiMessageEntity reloaded = messageRepository.findById(id).orElseThrow();
+        assertThat(reloaded.getRecalledMemories().items()).singleElement().satisfies(item -> {
+            assertThat(item.refId()).isEqualTo(refId);
+            assertThat(item.retrievalRunId()).isNull();
+            assertThat(item.retrievalResultId()).isNull();
+            assertThat(item.memoryItemId()).isNull();
+            assertThat(item.indicator()).isNull();
+        });
+    }
 }
