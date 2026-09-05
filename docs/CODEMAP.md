@@ -290,7 +290,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `PeriodSummaryService`, `PersonExtractionResult`, `PersonExtractionService`, `PersonGraphEdgeAdapter`,
     `ProfileAssembler`, `ProfileAssemblerJob`, `ProfilePromptAssembler`, `PromptMemoryAssembler`, `QuarterlyReviewJob`,
     `QuarterlyReviewService`, `Quarters`, `SeasonSuggestion`, `TranscriptionService`, `WeekContextRenderer`,
-    `WeeklyScoreService`
+    `WeeklyScoreService`, `WeightByDateSupport`
   - **controllers→contract:** `CompanionController`→`CompanionApi`,
     `CompanionFeedbackController`→`CompanionFeedbackApi`, `CompanionStreamController`,
     `CompanionVoiceController`→`CompanionVoiceApi`, `GraphController`→`KnowledgeGraphApi`,
@@ -770,13 +770,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     WeekDiscoveries.tsx, WeekGoalsCard.tsx, WeekLessonCard.tsx, WeekLoadStates.tsx, WeekNextCard.tsx,
     WeekReviewCard.tsx, WeekScoreBars.tsx, WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx,
     WeightTrendChart.tsx
-  - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, dayScoreState.ts, goalLabels.ts, goalOverviewCopy.ts,
-    goalSkillChips.ts, goalSuggestionDiff.ts, goalWeekSentence.ts, gratitudeStreak.ts, growthJournal.ts,
-    growthStats.ts, habitAnchors.ts, habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts,
-    lifegoalLabels.ts, llmCallFormat.ts, nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts,
-    peopleDerive.ts, peopleVisuals.ts, perkMilestones.ts, pillarFromCatalog.ts, routineSentence.ts, scoreBand.ts,
-    sleepEducation.ts, sleepEscalation.ts, sleepPhases.ts, sleepStats.ts, useChatHandoff.ts, weekDay.ts,
-    weekHighlight.ts, weekHub.ts, weekNav.ts, weightStats.ts
+  - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, goalLabels.ts, goalOverviewCopy.ts, goalSkillChips.ts,
+    goalSuggestionDiff.ts, goalWeekSentence.ts, gratitudeStreak.ts, growthJournal.ts, growthStats.ts, habitAnchors.ts,
+    habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, lifegoalLabels.ts, llmCallFormat.ts,
+    nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts, peopleVisuals.ts,
+    perkMilestones.ts, pillarFromCatalog.ts, routineSentence.ts, scoreBand.ts, sleepEducation.ts, sleepEscalation.ts,
+    sleepPhases.ts, sleepStats.ts, useChatHandoff.ts, weekDay.ts, weekHighlight.ts, weekHub.ts, weekNav.ts,
+    weightStats.ts
 
 ### meal
 

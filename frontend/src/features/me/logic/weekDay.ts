@@ -1,11 +1,19 @@
 // ============================================================
-// Heti · nap-állapotok + nap-formázás (mezo-d20.6.10)
+// Heti · nap-állapotok + nap-formázás (mezo-d20.6.10 → mezo-el0t)
 // Source: en-body.html `dayCard()` / `dayPage()` / `daysPage()`.
 //
-// The one place the FOUR honest day states live (handoff §4). The retired
-// `WeekDayCard` used to conflate two of them into a single `—`; `WeekDayTile`
-// (its live successor) and `WeekDayPage` render them as the design
-// insists — different sentences:
+// The ONE place the FOUR honest day states live (handoff §4) — now truly the
+// only one. Until mezo-el0t this module and the sibling `dayScoreState.ts`
+// BOTH claimed to be "the one place", under two different vocabularies
+// (`scored/thin/empty/future` here, `scored/learning/nodata/future` there),
+// and disagreed on the wire besides (`dayScoreState.isDayUnlogged` tested
+// `proteinG`, `isEmptyDay` here did not) — the week hub and the mosaic could
+// label the same day differently. `dayScoreState.ts` is gone; the hub reads
+// this module (via `weekHub.ts`'s `weekHubState`, which is this file's
+// `dayState` under a name its callers already used) exactly like the mosaic
+// and the day page do. The backend's own state names (`empty`/`thin`) win
+// over the hub's old `nodata`/`learning`, because `WeekDayPage` already reads
+// them off the wire (`evaluation?.state`) — one vocabulary, not two:
 //
 //   scored  — the Mezo scored the day
 //   thin    — something was logged, but fewer than TWO sub-scores have
@@ -67,11 +75,48 @@ export function doneDimensionCount(dimensions: readonly { status: string }[]): n
 
 /** True when NOTHING was logged on the day — the `nincs adat` state, distinct from `tanulom`.
  *  The prototype checks kcal/sleep/check-in/workout; the real contract also carries a per-day
- *  weight and XP, and a logged weight IS a log, so both join the test (see the slice report). */
+ *  weight and XP, and a logged weight IS a log, so both join the test (see the slice report).
+ *
+ *  `proteinG` joins the test too (mezo-el0t) — the mirrored decision to `DayEvaluationEngine
+ *  .anyLogPresent`'s own `kcal`/`meals` pair (companion service, backend). There, `kcal` and a
+ *  non-empty meal list are checked as a defensive DISJUNCT of the SAME fact ("a meal was
+ *  logged"), because in production `kcal` is only ever non-null once a meal exists. `proteinG`
+ *  is the frontend's analogue: it is populated from the same meal aggregation as `kcal` (see
+ *  `data/me/meWeek.ts` — every mock day carries both together, or neither), so a day with a
+ *  logged protein value already has a logged kcal value in practice. Including it here is the
+ *  same harmless, intentional redundancy as the backend's — not a second, competing signal.
+ *
+ *  `sleepQuality` joins the test too (mezo-el0t, review round 1, Important) — the mirror of
+ *  `anyLogPresent`'s OWN separate `sleepQuality1to10` disjunct, which exists because the sleep
+ *  log's API makes `durationH` and `quality` independently optional: a "quality only, no
+ *  duration" entry is a real logged day, not a non-event. Unlike `proteinG`/`kcal` this is NOT
+ *  redundant with `sleepMin` — it is its own, wire-carried signal (`me-week.yml`, populated by
+ *  `MeWeekService`), and omitting it is invisible on a CLOSED day (there `subscoreCount === 0`
+ *  already mirrors the backend's own verdict) but wrong on an OPEN one — today — where the
+ *  `logging` sub-score is still null (IN_PROGRESS) and so carries no information: a day with
+ *  only a sleep-quality check-in would otherwise read `empty` while the backend already knows
+ *  it has a log.
+ *
+ *  Two more FE/backend gaps this test does NOT try to close, both structural: the backend's
+ *  `anyLogPresent` also checks logged **water**, but `me-week.yml` carries no per-day water
+ *  field at all — there is nothing on the wire for this test to read, so a water-only day is
+ *  invisible to the FE regardless. And `workoutCount` here counts every logged session, while
+ *  the backend's `WorkoutWindowQueryService.windowsFor` deliberately excludes ad-hoc (unplanned)
+ *  sessions from the windows it builds, so an ad-hoc-only day can have `doneWorkouts === 0` on
+ *  the backend while `workoutCount === 1` here. Both are pre-existing, out of scope for
+ *  `mezo-el0t`. */
 export function isEmptyDay(day: MeWeekDay): boolean {
   return subscoreCount(day) === 0
-    && day.kcal == null && day.sleepMin == null && day.weightKg == null
-    && !day.checkinCount && !day.workoutCount && !day.xp
+    && day.kcal == null && day.proteinG == null && day.sleepMin == null && day.sleepQuality == null
+    && day.weightKg == null && !day.checkinCount && !day.workoutCount && !day.xp
+}
+
+/** The positive reading of `isEmptyDay` — true when the day carries ANY logged signal at all.
+ *  Kept as its own name (not just `!isEmptyDay(...)` inline at call sites) because "you logged
+ *  nothing" and "you logged too little to score" are different sentences to a user, and the
+ *  name should say which one a caller means. */
+export function dayHasAnyLog(day: MeWeekDay): boolean {
+  return !isEmptyDay(day)
 }
 
 /** `todayIso` defaults to the device's local today — a day AFTER it has not happened yet. */
@@ -103,6 +148,27 @@ export const DAY_COPY = {
     'A hat pálcika a nap részpontszáma. A „tanulom" azt jelenti: kevesebb mint két területről van adat — '
     + 'nem azt, hogy nulla volt a nap.',
 } as const
+
+/** The short state word that stands where a score would be — the week hub's mini-ring
+ *  accessible name and score-bar column name (mezo-el0t: formerly `dayScoreState.ts`'s
+ *  `DAY_STATE_LABEL`, under the `learning`/`nodata` vocabulary). Never `0`, never `—` passed
+ *  off as a value: `—` is the missing-datum glyph, these are STATES. */
+export const DAY_STATE_LABEL: Record<WeekDayState, string> = {
+  scored: '',
+  thin: 'tanulom',
+  empty: 'nincs adat',
+  future: 'még előtted',
+}
+
+/** The one-sentence reading of each non-scored state — the week hub's mini-ring tooltip
+ *  (mezo-el0t: formerly `dayScoreState.ts`'s `DAY_STATE_COPY`). Reuses `DAY_COPY`'s verbatim
+ *  sentences rather than inventing a third set of copy for the same three facts. */
+export const DAY_STATE_COPY: Record<WeekDayState, string> = {
+  scored: '',
+  thin: DAY_COPY.thinPage,
+  empty: DAY_COPY.emptyTile,
+  future: DAY_COPY.futureTile,
+}
 
 /** The mosaic tile's big slot: the score, or the state's word (never a fabricated 0). */
 export function tileScoreLabel(state: WeekDayState): string | null {

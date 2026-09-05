@@ -32,7 +32,7 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { prevMonday, nextMonday, isCurrentWeek } from '@/features/me/logic/weekNav'
 import { scoreBandClass, scoreBandColor, scoreDelta } from '@/features/me/logic/scoreBand'
 import {
-  analysisSnippet, dayScoreState, DAY_STATE_COPY, discoverySummary, generationStamp,
+  analysisSnippet, weekHubState, DAY_STATE_COPY, discoverySummary, generationStamp,
   loggedDayCount, resolveWeekStart, weekPhase, weekStatCells, weekSubline,
 } from '@/features/me/logic/weekHub'
 import { WeekScoreRing } from '@/features/me/components/week/WeekScoreRing'
@@ -158,7 +158,7 @@ export function WeekHubPage() {
   const stamp = generationStamp(review, phase)
   const snippet = analysisSnippet(review, phase)
   const discoveries = discoverySummary(digest)
-  const dayStates = week.days.map((day) => dayScoreState(day, todayIso))
+  const dayStates = week.days.map((day) => weekHubState(day, todayIso))
 
   // The 8-week score series is the F6.6 backend slice (no `/api/me/week/trend` yet). Until it
   // exists the spark is honestly absent — the delta pill carries the longitudinal signal.
@@ -258,13 +258,13 @@ export function WeekHubPage() {
               <div className="big">{logged}<span> / 7 nap</span></div>
               <div className="lb days">A hét napjai</div>
               <div className="wkh-miniring" role="img"
-                aria-label={`${logged} mért nap · ${dayStates.filter((s) => s === 'learning').length} tanulom · ${dayStates.filter((s) => s === 'nodata').length} nincs adat`}>
+                aria-label={`${logged} mért nap · ${dayStates.filter((s) => s === 'thin').length} tanulom · ${dayStates.filter((s) => s === 'empty').length} nincs adat`}>
                 {week.days.map((day, i) => {
                   const state = dayStates[i]
                   return (
                     <i
                       key={day.date}
-                      className={state === 'nodata' ? 'is-nodata' : state === 'future' ? 'is-future' : undefined}
+                      className={state === 'empty' ? 'is-nodata' : state === 'future' ? 'is-future' : undefined}
                       title={DAY_STATE_COPY[state] ?? undefined}
                       style={{ '--c': scoreBandColor(day.score), '--v': day.score ?? 0 } as CSSProperties}
                     />

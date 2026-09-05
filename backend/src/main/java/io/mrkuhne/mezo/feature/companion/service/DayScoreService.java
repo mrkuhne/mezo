@@ -6,6 +6,8 @@ import io.mrkuhne.mezo.api.dto.MealResponse;
 import io.mrkuhne.mezo.api.dto.MealScoreDimension;
 import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
+import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
+import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.companion.config.DayEvaluationProperties;
 import io.mrkuhne.mezo.feature.companion.service.DayEvaluationEngine.DayDimension;
 import io.mrkuhne.mezo.feature.companion.service.DayEvaluationEngine.DayEvaluation;
@@ -83,6 +85,13 @@ import org.springframework.transaction.annotation.Transactional;
  *       the logging dimension's timeliness component measures;</li>
  *   <li>{@code waterLogged} — {@link WaterLogRepository#sumsBetween} (one grouped query);</li>
  *   <li>{@code checkinCount} — {@link CheckInRepository}'s windowed finder, unchanged;</li>
+ *   <li>{@code weightKg} — the day's LATEST weigh-in, via the shared
+ *       {@link WeightByDateSupport#latestWeightByDate} fold (also used by {@code MeWeekService})
+ *       over {@link WeightLogRepository#findByCreatedByAndDeletedFalseAndDateGreaterThanEqualOrderByDateDesc}
+ *       (one ranged query, never per-day — mezo-jcpt.6 exists to stop exactly that
+ *       amplification, so this field must not reintroduce it);</li>
+ *   <li>{@code xp} — {@link MetricSeriesService} {@code DAILY_XP} over the whole window (one
+ *       ranged query, the same idiom as {@code sleepH}/{@code sleepQuality1to10} above);</li>
  *   <li>{@code priorBaseScores} — see below.</li>
  * </ul>
  *
@@ -114,6 +123,7 @@ public class DayScoreService {
     private final FuelDayService fuelDayService;
     private final MealRepository mealRepository;
     private final WaterLogRepository waterLogRepository;
+    private final WeightLogRepository weightLogRepository;
     private final WorkoutWindowQueryService workoutWindowQueryService;
     private final DayEvaluationEngine dayEvaluationEngine;
     private final DayEvaluationProperties properties;
@@ -205,9 +215,12 @@ public class DayScoreService {
                                                        LocalDate today) {
         Map<LocalDate, Double> sleepH = metricSeriesService.series(userId, MetricKey.SLEEP_DURATION_H, from, to);
         Map<LocalDate, Double> sleepQuality = metricSeriesService.series(userId, MetricKey.SLEEP_QUALITY, from, to);
+        Map<LocalDate, Double> xpSeries = metricSeriesService.series(userId, MetricKey.DAILY_XP, from, to);
         Map<LocalDate, Long> checkinCounts = checkinCounts(userId, from, to);
         Set<LocalDate> wateredDays = wateredDays(userId, from, to);
         Map<UUID, Instant> mealWrittenAt = mealWrittenAt(userId, from, to);
+        Map<LocalDate, WeightLogEntity> weightByDate =
+                WeightByDateSupport.latestWeightByDate(weightLogRepository, userId, from, to);
         // Ranged fetch (mezo-jcpt.6, fixing the review round 1 / Important 3 finding filed here):
         // one call for the whole [from, to] window instead of once per date — the per-date
         // overload's user-global gym-slot/running-block queries used to repeat 7 (rendered) + 7
@@ -227,6 +240,8 @@ public class DayScoreService {
             int planned = windows.size();
             int done = (int) windows.stream().filter(Window::done).count();
             Double quality = sleepQuality.get(day);
+            WeightLogEntity weight = weightByDate.get(day);
+            Double xp = xpSeries.get(day);
 
             inputs.put(day, new DayInputs(
                     day, day.isBefore(today),
@@ -241,6 +256,8 @@ public class DayScoreService {
                     mealFacts(fuelDay, mealWrittenAt),
                     wateredDays.contains(day),
                     checkinCounts.getOrDefault(day, 0L).intValue(),
+                    weight != null ? dbl(weight.getWeightKg()) : null,
+                    xp == null ? null : (int) Math.round(xp),
                     List.of()));
         }
         return inputs;
@@ -274,7 +291,8 @@ public class DayScoreService {
                 inputs.kcalTarget(), inputs.proteinTargetG(), inputs.carbsTargetG(), inputs.fatTargetG(),
                 inputs.workoutDay(), inputs.plannedWorkouts(), inputs.doneWorkouts(),
                 inputs.sleepH(), inputs.sleepQuality1to10(), inputs.meals(),
-                inputs.waterLogged(), inputs.checkinCount(), List.copyOf(priors));
+                inputs.waterLogged(), inputs.checkinCount(),
+                inputs.weightKg(), inputs.xp(), List.copyOf(priors));
     }
 
     /** Slot count per day inside the window — canonical Heartbeat cadence is 4/day (the engine's

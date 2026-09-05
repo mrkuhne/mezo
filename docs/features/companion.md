@@ -1505,19 +1505,56 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
       the day is not yet `closed` (`date < today`, v1 day closure) — an open/future day gets
       per-dimension progress only, never an overall number. `rhythm` is **excluded from that
       count**: it is *extrinsic*, the mean of OTHER days' bases, and knows nothing about this one.
-      It still carries its weight in the weighted sum once the gate IS open. Without that
-      exclusion the gate could be opened by two dimensions that never looked at the day: `logging`
-      (always `DONE` on a closed day, an honest 0 for an untouched one) plus `rhythm` (`DONE` from
-      ≥3 prior days), which reported `round(0.5×0 + 0.5×rhythmMean)` — roughly *half the user's
-      running average* — for a day they never touched, and pushed the state from `empty` to
-      `scored` so the page rendered a full score ring and spent an LLM call narrating nothing.
+      It still carries its weight in the weighted sum once the gate IS open. **This exclusion used
+      to be load-bearing on its own** — before `mezo-el0t`, `logging` was `DONE` (an honest 0) on
+      EVERY closed day including a fully untouched one, so `logging` + `rhythm` (`DONE` from ≥3
+      prior days) could open the gate alone, reporting `round(0.5×0 + 0.5×rhythmMean)` — roughly
+      *half the user's running average* — for a day the user never touched, pushing the state from
+      `empty` to `scored` and spending an LLM call narrating nothing. `mezo-el0t` closed that path
+      **structurally, not just by policy**: `logging` itself now goes `NO_DATA` on a fully
+      untouched closed day (see below), so such a day has **zero** intrinsic `DONE` dimensions and
+      the `≥2` gate cannot open regardless of what `rhythm` reports. The `rhythm`-exclusion rule
+      above still matters for the OTHER case it always covered — a day with exactly one real,
+      intrinsic signal (say `sleep` alone) must not get a second, free "dimension" from `rhythm` —
+      but it is no longer the only thing standing between an untouched day and a fabricated score.
     - A **rest day** (`plannedWorkouts` null/0) makes `training` `NO_DATA` ("Pihenőnap · nem
-      számít") rather than a penalty — resting must never cost points.
-    - `logging` is the one dimension with **no missing-target escape hatch**: water-logged and
-      check-in count are never "unknown" (false/0 IS the measurement), so on a closed day it is
-      always `DONE` and a genuinely untouched day scores an honest **0** rather than degrading —
-      the opposite of nutrition/quality, whose components drop out and renormalize when the
-      underlying DATA (not the target) is missing.
+      számít") rather than a penalty — resting must never cost points. One second-order consequence
+      of the `mezo-el0t` change below: a day whose only fact is a planned-but-skipped workout
+      (`training` `NO_DATA`, nothing else logged) no longer scores a `logging` 0 to pair with — on
+      the **day page** it now reads `empty` ("nincs adat"), not `thin`. That is deliberate, not a
+      regression: a plan is not evidence about what actually happened that day, so a day with
+      nothing but an unmet plan genuinely has no log at all. Pinned by `DayEvaluationEngineTest`.
+      **This is NOT yet true of the weekly mosaic.** `training: 30` (the config weight, not a
+      score) is still on the `me-week` wire for a planned-but-skipped workout, and the frontend's
+      `subscoreCount` (`weekDay.ts`) counts any non-null `subscores.training` regardless of
+      whether it represents `NO_DATA` on the backend — so the mosaic still derives `thin` for
+      exactly this day class while the day page's `DayEvaluationEngine` says `empty`. This is a
+      genuine, currently-live backend/frontend disagreement introduced by `mezo-el0t`, not a
+      documentation gap: fixing it needs a contract change (the wire has no way today to
+      distinguish "training weight present but NO_DATA" from "training actually scored") plus a
+      design decision on which surface should change. Tracked as `mezo-jcpt.16` (P2); deliberately
+      NOT fixed in this change.
+    - **`logging`'s measurability rule (`mezo-el0t`, narrowing a `mezo-jcpt` review-round-1
+      decision, not reversing it).** The original decision: `logging`'s own inputs (meal
+      timeliness, water-logged, check-in count) are never "unknown" — false/0 IS the measurement,
+      so this dimension gets **no missing-target escape hatch** the way nutrition/quality's
+      components do, and a genuinely untouched day must score an honest **0**, not degrade to
+      `NO_DATA`, or the process dimension that exists to measure logging effort would silently stop
+      penalizing the one day that most deserves it. That decision **still holds** for any day on
+      which the user logged something, anything, at all — meals/water/check-ins empty, but a
+      workout done, sleep logged, a weigh-in, or XP earned elsewhere: `logging` is still `DONE` and
+      still reports its honest 0. What `mezo-el0t` narrows is the day with **no log of any kind**:
+      `DayEvaluationEngine.anyLogPresent(DayInputs)` is the one predicate that answers "did the
+      user log ANYTHING at all this day" — spanning meals/kcal, water, check-ins, sleep duration,
+      sleep quality, completed workouts, weight (`DayInputs.weightKg`) and XP
+      (`DayInputs.xp`) — and `loggingDim` checks it FIRST: only when it is `false` does `logging`
+      degrade to `NO_DATA` (`null`, no score) instead of scoring the 0. This is safe precisely
+      because such a day has zero intrinsic `DONE` dimensions anyway (the gate above is already
+      closed), so dropping `logging`'s weight there softens nothing that was ever going to render.
+      `weightKg`/`xp` join the predicate alongside the day's OWN logging inputs — not because they
+      feed `logging`'s own score, but because `anyLogPresent` answers a broader question ("did the
+      user log anything at all today") than `logging`'s own formula does, and a day whose only
+      activity was a weigh-in or an XP-earning action must count as logged, not `empty`.
     - `sleep` is the one dimension that does **not** wait for `closed` — it finalizes as soon as
       it's logged, even on an open day (the "A+ lifecycle": each dimension closes on its own
       natural trigger). Formula: `0.7 × min(1, sleepH / sleepTargetH) + 0.3 × (quality-1)/9` when a
@@ -1563,7 +1600,25 @@ NARRATIVE itself (that's proactive-owned, [proactive.md §1 "WR"](proactive.md))
     closest-successor mapping the wire used to carry: `sleepAvg ← sleep`, `fuelAvg ← nutrition`,
     `checkinAvg ← logging`, `activityAvg ← training`; `quality` and `rhythm` get no cache column.
     A degraded (`NO_DATA`/`IN_PROGRESS`) dimension projects to `null` throughout, the same
-    "tanulom" signal the legacy subscores carried. `DaySubscores.score` is `DayEvaluation
+    "tanulom" signal the legacy subscores carried.
+    **`checkinAvg`'s MEANING changed underneath the same formula (`mezo-el0t`).**
+    `WeeklyScoreService.aggregate`'s per-column average still just means-the-non-null values — that
+    formula did not change. What changed is what counts as non-null: `checkinAvg` averages
+    `logging`, and before `mezo-el0t` a fully untouched day's `logging` was a fabricated `0`
+    (never `null`), so it pulled every average down; now such a day's `logging` is genuinely `null`
+    (see above) and the day drops OUT of the average entirely instead of dragging it toward 0. Two
+    weeks with identical real logging behaviour but different untouched-day counts can now report
+    different `checkinAvg` values than they would have before this slice, even though nothing about
+    how the user actually logged changed — only how an untouched day is counted. Because
+    `weekly_score` rows already computed under the OLD rule are silently wrong under the new one (a
+    stale cached average, not a stale schema), this slice ships a one-off purge changeset,
+    `202609051200_mezo-el0t_weekly_score_cache_invalidation.sql`, the same invalidate-the-cache
+    pattern `mezo-jcpt.2`/`mezo-jcpt.4` used for their own `checkinAvg`-affecting changes — every
+    row is deleted and the next read recomputes and re-caches under the current rule. This is
+    currently **inert for end users**: nothing yet calls the week-trend endpoint that would surface
+    a changed `checkinAvg` (§4/§9 below), so the purge is a correctness fix with no visible effect
+    today, just no drifted cache waiting for the day something does read it.
+    `DaySubscores.score` is `DayEvaluation
     .base()`. The day page itself does not read either shape — it consumes the full
     `DayEvaluation` through `GET /api/me/day/{date}/evaluation` (§4). **`MeWeekService
     .renderDayLine`** (below) is a separate, deliberately-unwidened consumer: it is an LLM-prompt
