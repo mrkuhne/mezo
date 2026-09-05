@@ -68,8 +68,10 @@ import io.mrkuhne.mezo.support.populator.WeeklySuggestionPopulator;
 import io.mrkuhne.mezo.support.populator.WeightLogPopulator;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 /**
  * Base class for all integration tests — see
@@ -119,7 +121,18 @@ public abstract class AbstractIntegrationTest {
     private ResetDatabase resetDatabase;
 
     @Autowired(required = false)
-    private org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor applicationTaskExecutor;
+    private ThreadPoolTaskExecutor applicationTaskExecutor;
+
+    /**
+     * {@code LlmLogWriter#onLlmCall} runs its {@code REQUIRES_NEW} audit write on this SEPARATE
+     * bounded pool (mezo-2zyu) rather than {@code applicationTaskExecutor} — see
+     * {@code LlmLogAsyncConfig}. It is just as capable of holding a read/write transaction across
+     * the next test's {@code ResetDatabase} TRUNCATE, so it must drain on the same schedule
+     * (mezo-oou9).
+     */
+    @Autowired(required = false)
+    @Qualifier("llmLogExecutor")
+    private ThreadPoolTaskExecutor llmLogExecutor;
 
     @BeforeEach
     void resetDatabaseState() {
@@ -128,18 +141,26 @@ public abstract class AbstractIntegrationTest {
     }
 
     /**
-     * V1.2: committed chat turns trigger AFTER_COMMIT {@code @Async} work (fact extraction).
-     * A leftover async task from a previous test must not race this test's DB reset or writes —
-     * wait until the executor is idle before truncating (bounded, so a hung task cannot stall the suite).
+     * V1.2 → mezo-oou9: committed writes trigger AFTER_COMMIT {@code @Async} work (fact extraction,
+     * embedding/graph writers, the LLM-log audit write). A leftover async task must not race the
+     * next test's TRUNCATE — PR #306 hit a real 'deadlock detected' when a reader outlived the old
+     * silent 2 s cap. The drain now waits up to 30 s per pool and FAILS the test loudly instead of
+     * proceeding into a likely deadlock: a deterministic failure naming the cause beats a flaky
+     * PessimisticLockException.
      */
     private void drainAsyncWork() {
-        if (applicationTaskExecutor == null) {
+        if (applicationTaskExecutor == null && llmLogExecutor == null) {
             return;
         }
-        long deadline = System.currentTimeMillis() + 2000;
-        while ((applicationTaskExecutor.getActiveCount() > 0
-                || !applicationTaskExecutor.getThreadPoolExecutor().getQueue().isEmpty())
-                && System.currentTimeMillis() < deadline) {
+        long deadline = System.currentTimeMillis() + 30_000;
+        while (isBusy(applicationTaskExecutor) || isBusy(llmLogExecutor)) {
+            if (System.currentTimeMillis() > deadline) {
+                throw new IllegalStateException(
+                    "Async work did not drain within 30s before DB reset ("
+                        + describe("applicationTaskExecutor", applicationTaskExecutor)
+                        + ", " + describe("llmLogExecutor", llmLogExecutor)
+                        + ") — a hung AFTER_COMMIT listener would deadlock the TRUNCATE (mezo-oou9)");
+            }
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
@@ -147,5 +168,19 @@ public abstract class AbstractIntegrationTest {
                 return;
             }
         }
+    }
+
+    private static boolean isBusy(ThreadPoolTaskExecutor executor) {
+        return executor != null
+            && (executor.getActiveCount() > 0
+                || !executor.getThreadPoolExecutor().getQueue().isEmpty());
+    }
+
+    private static String describe(String name, ThreadPoolTaskExecutor executor) {
+        if (executor == null) {
+            return name + "=absent";
+        }
+        return name + "(active=" + executor.getActiveCount()
+            + ", queued=" + executor.getThreadPoolExecutor().getQueue().size() + ")";
     }
 }
