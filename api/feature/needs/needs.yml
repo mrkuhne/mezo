@@ -23,6 +23,9 @@ paths:
         '400':
           description: Validation error
           content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+        '401':
+          description: Missing/invalid token
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
         '409':
           description: Not today (NEEDS_NOT_TODAY)
           content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
@@ -37,6 +40,9 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/NeedsSummaryResponse' }
+        '401':
+          description: Missing/invalid token
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
 components:
   schemas:
     NeedsRings:
