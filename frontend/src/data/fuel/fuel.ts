@@ -562,6 +562,7 @@ export const supplementsStash: SupplementStashItem[] = [
     protocol: 'Naponta egy adag · időponttól független',
     timing: 'morning',
     taken: true,
+    macros: { kcal: null, p: null, c: null, f: null },
   },
   {
     id: 'd3k2',
@@ -576,6 +577,7 @@ export const supplementsStash: SupplementStashItem[] = [
     protocol: 'Naponta zsírral · délben legjobban',
     timing: 'midday',
     taken: true,
+    macros: { kcal: null, p: null, c: null, f: null },
   },
   {
     id: 'magnez',
@@ -590,6 +592,7 @@ export const supplementsStash: SupplementStashItem[] = [
     protocol: '21:00-kor lefekvés előtt 2h-val · pattern P2 megerősítve',
     timing: 'evening',
     taken: false,
+    macros: { kcal: null, p: null, c: null, f: null },
   },
   {
     id: 'omega3',
@@ -604,6 +607,7 @@ export const supplementsStash: SupplementStashItem[] = [
     protocol: 'Vacsorához · zsír felszívódáshoz',
     timing: 'dinner',
     taken: false,
+    macros: { kcal: null, p: null, c: null, f: null },
   },
   {
     id: 'whey',
@@ -618,6 +622,7 @@ export const supplementsStash: SupplementStashItem[] = [
     protocol: 'Pre/post workout · pre-volleyball T-2h',
     timing: 'flexible',
     taken: true,
+    macros: { kcal: null, p: null, c: null, f: null },
   },
   {
     id: 'origin-pwo',
@@ -633,6 +638,7 @@ export const supplementsStash: SupplementStashItem[] = [
     timing: 'pre-workout',
     taken: false,
     caffeine: true,
+    macros: { kcal: null, p: null, c: null, f: null },
   },
   {
     id: 'tastydose',
@@ -648,6 +654,7 @@ export const supplementsStash: SupplementStashItem[] = [
     timing: 'morning',
     taken: true,
     caffeine: true,
+    macros: { kcal: null, p: null, c: null, f: null },
   },
   {
     id: 'kohi',
@@ -663,6 +670,7 @@ export const supplementsStash: SupplementStashItem[] = [
     timing: 'morning',
     taken: true,
     caffeine: true,
+    macros: { kcal: null, p: null, c: null, f: null },
   },
   {
     id: 'cink',
@@ -677,6 +685,7 @@ export const supplementsStash: SupplementStashItem[] = [
     protocol: 'Este · vacsora után',
     timing: 'evening',
     taken: false,
+    macros: { kcal: null, p: null, c: null, f: null },
   },
 ]
 
