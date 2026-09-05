@@ -72,7 +72,12 @@ public record CompanionProperties(
          * snapshot lists — name, relationship, this week's mention count and mood direction, one
          * line each, never quotes. 0 turns the block off entirely (it is omitted, not "nincs adat").
          */
-        @Min(0) @Max(30) int peopleMaxPersons
+        @Min(0) @Max(30) int peopleMaxPersons,
+        /**
+         * mezo-iizd.10: hány aktív életcél-sort mutat a [Célok] blokk (chat ÉS reggeli variáns).
+         * 0 = a blokk teljesen elmarad (omit, nem "nincs adat").
+         */
+        @Min(0) @Max(10) int lifegoalMaxGoals
     ) {}
 
     /** V1.1 knowledge-fact injection — how much confirmed memory rides in every system prompt. */
