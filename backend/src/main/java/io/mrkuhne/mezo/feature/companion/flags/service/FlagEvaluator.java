@@ -58,26 +58,34 @@ public class FlagEvaluator {
     private final MissedWorkoutsRule missedWorkoutsRule;
     private final AllHealthyRule allHealthyRule;
 
-    /** Every flag that is TRUE for {@code userId} right now, cooldowns NOT yet applied. */
+    /** Every rule's verdict for {@code userId} right now, cooldowns NOT yet applied — 13 entries,
+     *  one per rule, in AdvicePriority order. */
     @Transactional(readOnly = true)
-    public List<FlagRaise> evaluate(UUID userId) {
+    public List<FlagVerdict> evaluate(UUID userId) {
         LocalDate today = LocalDate.now();
-        List<FlagRaise> raises = new ArrayList<>();
-        acuteBadDayRule.evaluate(userId, today).ifPresent(raises::add);
-        loadFuelMismatchRule.evaluate(userId, today).ifPresent(raises::add);
-        rapidWeightLossRule.evaluate(userId, today).ifPresent(raises::add);
-        jointOveruseRule.evaluate(userId, today).ifPresent(raises::add);
-        ignoredNudgeRule.evaluate(userId, today).ifPresent(raises::add);
-        lateEatingRule.evaluate(userId, today).ifPresent(raises::add);
-        sustainedStressRule.evaluate(userId, today).ifPresent(raises::add);
-        sleepDebtRule.evaluate(userId, today).ifPresent(raises::add);
-        momentumAtRiskRule.evaluate(userId, today).ifPresent(raises::add);
-        recoveryNeededRule.evaluate(userId, today).ifPresent(raises::add);
-        loggingGapRule.evaluate(userId, today).ifPresent(raises::add);
-        missedWorkoutsRule.evaluate(userId, today).ifPresent(raises::add);
-        if (raises.isEmpty()) {
-            allHealthyRule.evaluate(userId, today).ifPresent(raises::add);
+        List<FlagVerdict> verdicts = new ArrayList<>();
+        verdicts.add(acuteBadDayRule.evaluate(userId, today));
+        verdicts.add(loadFuelMismatchRule.evaluate(userId, today));
+        verdicts.add(rapidWeightLossRule.evaluate(userId, today));
+        verdicts.add(jointOveruseRule.evaluate(userId, today));
+        verdicts.add(missedWorkoutsRule.evaluate(userId, today));
+        verdicts.add(sleepDebtRule.evaluate(userId, today));
+        verdicts.add(loggingGapRule.evaluate(userId, today));
+        verdicts.add(ignoredNudgeRule.evaluate(userId, today));
+        verdicts.add(lateEatingRule.evaluate(userId, today));
+        verdicts.add(recoveryNeededRule.evaluate(userId, today));
+        verdicts.add(sustainedStressRule.evaluate(userId, today));
+        verdicts.add(momentumAtRiskRule.evaluate(userId, today));
+
+        boolean anyRaised = verdicts.stream().anyMatch(v -> v.outcome() == FlagOutcome.RAISED);
+        FlagVerdict healthy = allHealthyRule.evaluate(userId, today);
+        if (anyRaised && healthy.outcome() == FlagOutcome.RAISED) {
+            // The quiet state is not true while something else is firing. Same behaviour as the
+            // old `if (raises.isEmpty())` gate, but it now leaves a trace instead of a hole.
+            healthy = FlagVerdict.clear(FlagKey.ALL_HEALTHY, new FlagVerdict.ClearEvidence(
+                "other_flags_raised", null, null, "another_rule_fired"));
         }
-        return raises;
+        verdicts.add(healthy);
+        return verdicts;
     }
 }

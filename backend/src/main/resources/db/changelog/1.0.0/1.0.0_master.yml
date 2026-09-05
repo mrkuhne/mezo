@@ -1120,3 +1120,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609051200_mezo-el0t_weekly_score_cache_invalidation.sql
+  - changeSet:
+      id: "1.0.0:202609051200_mezo-6269.1_companion_flag_trace"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609051200_mezo-6269.1_companion_flag_trace.sql

@@ -3,11 +3,11 @@ package io.mrkuhne.mezo.feature.companion.flags.service.rule;
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -22,7 +22,7 @@ public class SleepDebtRule implements FlagRule {
     private final FlagProperties properties;
 
     @Override
-    public Optional<FlagRaise> evaluate(UUID userId, LocalDate today) {
+    public FlagVerdict evaluate(UUID userId, LocalDate today) {
         FlagProperties.SleepDebt cfg = properties.sleepDebt();
         // The window ends TODAY: sleep_log.date is the wake morning, so today's row is last
         // night. See SleepDeficitCalculator for the full date-semantics note.
@@ -30,12 +30,18 @@ public class SleepDebtRule implements FlagRule {
         LocalDate from = to.minusDays(cfg.nights() - 1L);
         SleepDeficitCalculator.Deficit d = sleepDeficitCalculator.over(userId, from, to);
 
-        if (d.loggedNights() < cfg.minNights() || d.deficitHours() < cfg.deficitHours()) {
-            return Optional.empty();
+        if (d.loggedNights() < cfg.minNights()) {
+            // Not "the user slept fine" — we do not have the nights to say anything.
+            return FlagVerdict.unavailable(FlagKey.SLEEP_DEBT,
+                UnavailableReason.NOT_ENOUGH_LOGGED_NIGHTS);
         }
-        return Optional.of(new FlagRaise(FlagKey.SLEEP_DEBT,
+        if (d.deficitHours() < cfg.deficitHours()) {
+            return FlagVerdict.clear(FlagKey.SLEEP_DEBT, new FlagVerdict.ClearEvidence(
+                "deficit_hours", d.deficitHours(), cfg.deficitHours(), null));
+        }
+        return FlagVerdict.raised(FlagKey.SLEEP_DEBT,
             FlagPayloadEnvelope.sleepDebt(new FlagPayloadEnvelope.SleepDebt(
                 d.goalHours(), cfg.nights(), d.loggedNights(), cfg.deficitHours(),
-                d.deficitHours(), d.byDay()))));
+                d.deficitHours(), d.byDay())));
     }
 }

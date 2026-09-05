@@ -1512,11 +1512,11 @@ itself is now a thin orchestrator: it holds no rule logic, just thirteen injecte
 `LoggingGapRule`, `MissedWorkoutsRule`, `AcuteBadDayRule`, `LoadFuelMismatchRule`,
 `RapidWeightLossRule`, `JointOveruseRule`, `IgnoredNudgeRule`, `LateEatingRule`, `AllHealthyRule` —
 each `feature/companion/flags/service/rule/*.java`) called in that fixed order, `allHealthyRule`
-only when the other twelve raised nothing. The `FlagRule` interface
-(`flags/service/FlagRule.java`) is one method, `evaluate(userId, today) → Optional<FlagRaise>`,
-cooldowns NOT applied; each implementation carries its own reads and thresholds (still 100% from
-`FlagProperties` — no rule holds a number of its own) and stays reviewable in isolation. S1 was a
-pure refactor of the original five; **S2 (bd `mezo-d58h.2`) adds two more rules**:
+called EVERY evaluation. The `FlagRule` interface (`flags/service/FlagRule.java`) is one method,
+`evaluate(userId, today) → FlagVerdict`, cooldowns NOT applied; each implementation carries its own
+reads and thresholds (still 100% from `FlagProperties` — no rule holds a number of its own) and
+stays reviewable in isolation. S1 was a pure refactor of the original five; **S2 (bd
+`mezo-d58h.2`) adds two more rules**:
 
 - **`LoggingGapRule`** (spec §4 row 1) — the detector that must NOT go quiet when logging itself
   stops: every value-based rule above reads a `MetricSeriesService` series, and a series with no
@@ -1668,6 +1668,57 @@ the same transaction), and `feature.proactive.service.InterventionEventListener`
 @TransactionalEventListener(AFTER_COMMIT)` — the `CompanionMessageEventListener` template) turns a
 committed raise into a `companion_message` feed card. See the W5.2 subsection below and
 [`proactive.md`](proactive.md) §3/§4 for the card mechanics.
+
+**Proactive coaching observer S1 — the verdict model and the evaluation trace (bd `mezo-6269.1`,
+spec 2026-09-05 §4).** Every `FlagRule.evaluate` returns a `FlagVerdict`
+(`flags/service/FlagVerdict.java`), not an `Optional<FlagRaise>` — the old empty case collapsed two
+different answers ("I checked and it's fine" and "I couldn't check") into one silence, discarding
+both. A verdict carries exactly one of three `FlagOutcome`s (`flags/service/FlagOutcome.java`):
+`RAISED` (`payload` — the same frozen-inputs envelope `companion_flag_log` always stored), `CLEAR`
+(`clear`, a `FlagVerdict.ClearEvidence(metric, observed, threshold, detail)` — the rule's own
+observed value and threshold when it ran and found them below the line; `observed`/`threshold` are
+null and `detail` carries the value for a non-numeric clear such as a goal trajectory or muscle
+group), or `UNAVAILABLE` (`reason`, an `UnavailableReason` — one member per honesty gate that
+already existed across the 13 rules, derived by reading every gate site in `service/rule/`, e.g.
+`NOT_ENOUGH_LOGGED_NIGHTS` for `sleep_debt`, `NO_ACTIVE_GOAL` for `rapid_weight_loss`,
+`NOTIFICATIONS_OFF` for `ignored_nudge`). `UnavailableReason` is the exhaustive list of ways a rule
+can decline to judge, as opposed to judging and finding nothing wrong — new gates without a member
+are impossible now that the verdict is a rule's only return type. The factories
+(`FlagVerdict.raised`/`clear`/`unavailable`) are the only way to build one and each validates its
+own required field is non-null.
+
+`all_healthy` is now evaluated on EVERY pass, not only when the other twelve raised nothing.
+`FlagEvaluator.evaluate` always calls `AllHealthyRule`; when it comes back RAISED but another rule
+also raised this same evaluation, `FlagEvaluator` overrides it to a synthetic CLEAR
+(`ClearEvidence("other_flags_raised", null, null, "another_rule_fired")`) before appending it —
+same externally-visible behavior as the old `if (raises.isEmpty())` gate (a quiet day still needs
+every other flag silent), but now the suppression itself leaves a trace entry instead of the rule
+never having run at all.
+
+**`companion_flag_trace`** (migration `202609051200_mezo-6269.1_companion_flag_trace.sql`,
+entity `flags/entity/CompanionFlagTraceEntity.java`, writer `flags/service/FlagTraceWriter.java`)
+is the observer's read of "what did the engine actually decide, and why" — a record of every
+rule's verdict, RAISED, CLEAR or UNAVAILABLE alike, which `companion_flag_log` (raises only) never
+gave a way to see. `FlagService.evaluateAndLog` calls `FlagTraceWriter.record` once per verdict,
+every evaluation, for all 13 rules — but the writer only INSERTs when the verdict actually CHANGED
+since that rule's last row: same `outcome` + `reasonCode` + `disposition` as the newest existing
+row for that `(createdBy, flagKey)` (`findFirstByCreatedByAndFlagKeyOrderByOccurredAtDesc`) is a
+no-op, which is what keeps an hourly sweep from writing 13 identical rows a day forever. The
+comparison deliberately includes `disposition`
+(`flags/service/TraceDisposition.java`: `LOGGED` or `SUPPRESSED_BY_COOLDOWN`, null unless the
+verdict is RAISED) — a rule that stays RAISED while flipping from `LOGGED` to
+`SUPPRESSED_BY_COOLDOWN` (or back) has genuinely changed state, and that flip is exactly the "why
+did it go quiet" moment the trace exists to answer. Before this slice, `FlagService` computed
+`SUPPRESSED_BY_COOLDOWN` internally to decide whether to skip the write, then discarded it — a
+raised-but-cooling-down flag left no record anywhere. Columns: `flag_key`, `outcome`
+(`raised|clear|unavailable`, lower-cased `FlagOutcome`), `reason_code` (lower-cased
+`UnavailableReason`, null unless `outcome = unavailable`), `disposition` (lower-cased
+`TraceDisposition`, null unless the rule raised), `evidence` (jsonb `FlagVerdict.ClearEvidence`,
+null unless `outcome = clear`), `occurred_at`. Two indexes: `(created_by, flag_key, occurred_at
+desc)` — the transition-comparison read above — and `(created_by, occurred_at)` — the observer's
+day-timeline read. Soft-deletable `OwnedEntity` like every other companion table; no FK from
+`evidence` to anything, same "frozen at the time" precedent as `companion_flag_log.payload` (§4
+above).
 
 **Weekly review data layer + anchored conversations (`mezo-p2tr`).** Two companion-owned pieces
 back the `/me/week` "Heti" tab ([me.md](me.md)) and its chat handoff — neither is the weekly-review
@@ -3210,6 +3261,29 @@ append-only audit trail behind the composite-flag evaluator (spec §4.5/§9.1). 
   raise time; those source rows can later change or be deleted without touching this row (the
   `message_feedback`/`feedback_rollup` dangling-reference precedent, spec §8.1).
 
+### Backend tables (coaching observer S1 — the evaluation trace, ✅ `mezo-6269.1`, spec 2026-09-05 §4.3)
+
+Migration `202609051200_mezo-6269.1_companion_flag_trace.sql` (in `1.0.0_master.yml`).
+
+- **`companion_flag_trace`** — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id)
+  ON DELETE CASCADE`, `is_deleted`, `created_at timestamptz`, `flag_key varchar(24)` (same 13-key
+  CHECK as `companion_flag_log`), `outcome varchar(12)` (`raised|clear|unavailable`), `reason_code
+  varchar(32)` (nullable), `disposition varchar(24)` (nullable, `logged|suppressed_by_cooldown`),
+  `evidence jsonb` (nullable), `occurred_at timestamptz`. Indexes:
+  `idx_companion_flag_trace_owner_flag_time (created_by, flag_key, occurred_at desc)` — the
+  transition-comparison read — and `idx_companion_flag_trace_owner_time (created_by, occurred_at)`
+  — the observer's day-timeline read.
+- **One row per CHANGE of verdict, not per evaluation.** `FlagEvaluator` produces 13 verdicts every
+  time it runs (on-write or hourly sweep), but `FlagTraceWriter` only inserts when a rule's
+  `outcome`/`reason_code`/`disposition` differ from that rule's own most recent row — an unchanged
+  hourly sweep across all 13 rules writes nothing, which is what keeps this table small enough to
+  keep forever despite running far more often than `companion_flag_log` ever does.
+- **`evidence` is the typed jsonb `FlagVerdict.ClearEvidence`**, populated only when `outcome =
+  clear`; null for `raised` (the payload lives in `companion_flag_log` instead, written by the same
+  transaction) and for `unavailable` (`reason_code` already says why).
+- **No FK from `evidence` to anything** — same "frozen at read time" precedent as
+  `companion_flag_log.payload` above.
+
 ### W5.2 intervention delivery (✅ `mezo-b3pp.19`, spec §9.2) — JITAI-lite
 
 **Not a new companion table** — the flag log above is read only for its EVENT (below); the
@@ -4036,9 +4110,11 @@ weekly shoulder split it is true roughly weekly, so counting it here would keep 
 window from ever opening. The other nine flags — `missed_workouts` and the remaining four S6 keys
 (`acute_bad_day`, `load_fuel_mismatch`, `rapid_weight_loss`, `late_eating`) included — stay counted
 as problems, since each IS a genuine behavior/health signal, unlike a data gap, a failed nudge, or a
-forward-looking training advisory. The other suppression is unchanged: `FlagEvaluator` only runs
-`AllHealthyRule` when nothing else raised in that same evaluation, so `all_healthy` never appears
-alongside any other flag on the same day regardless of this query.
+forward-looking training advisory. The other suppression still holds the same outcome, but not the
+same mechanism since `mezo-6269.1`: `FlagEvaluator` now calls `AllHealthyRule` on every evaluation
+and overrides a RAISED verdict to CLEAR when another rule also raised, so `all_healthy` still never
+appears alongside any other flag on the same day, but the rule genuinely runs (and its suppression
+lands in `companion_flag_trace`) rather than never being invoked at all (see above).
 
 A flag is written only when `companion_flag_log` holds no row with that `flag_key` newer than
 `cooldown-hours.<flag>` — identical for both sources.
@@ -5263,6 +5339,26 @@ IT):**
   `FlagSweepJob` bean (the house cron-switch idiom; the on-write listener is unaffected — a
   separate switch).
 
+**Coaching observer S1 test additions (`mezo-6269.1`, spec 2026-09-05 §4) — the verdict model and
+the evaluation trace:**
+
+- **`flags/service/FlagVerdictTest`** — the three factories build the right `FlagOutcome` and
+  reject a null `payload`/`clear`/`reason` for `raised`/`clear`/`unavailable` respectively;
+  `toRaise()` returns a `FlagRaise` for a RAISED verdict and `null` for the other two outcomes.
+- **`flags/CompanionFlagTracePersistenceIT`** — entity round-trip for all three `outcome` values
+  including the nullable `reason_code`/`disposition`/`evidence` combinations; an unknown
+  `flag_key`/`outcome`/`disposition` is rejected by the entity's `@Pattern`s AND, via a native
+  insert bypassing bean validation, by the DB CHECKs too;
+  `findFirstByCreatedByAndFlagKeyOrderByOccurredAtDesc` returns the newest row for that rule, and
+  `findByCreatedByAndOccurredAtBetweenOrderByOccurredAtAsc` returns a window's rows in time order.
+- **`flags/FlagServiceTraceIT`** — a RAISED-and-written verdict traces `outcome=raised,
+  disposition=logged`; a RAISED-but-cooling-down verdict traces `outcome=raised,
+  disposition=suppressed_by_cooldown` — the case `SUPPRESSED_BY_COOLDOWN` used to be computed and
+  then thrown away entirely, with no row anywhere recording it; a repeat of the identical verdict
+  (same outcome/reason/disposition) on a second evaluation writes no second trace row; a verdict
+  that genuinely changes (e.g. a flag's disposition flipping from `logged` to
+  `suppressed_by_cooldown` on the next cooldown-window evaluation) writes a new row.
+
 **W5.2 intervention delivery test additions (`mezo-b3pp.19`, spec §9.2) — no LLM anywhere in this
 path either (the `flags/` suite above already pins `FlagService`'s event publish; these are the
 consumer side, in `feature.proactive`, and the push-anchor side, in `feature.notification`):**
@@ -6264,9 +6360,17 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/CompanionFlagLogEntity.java` — `extends OwnedEntity`, append-only, soft-deletable, `flagKey`/`source` `@Pattern`-mirrored CHECKs — `flagKey`'s regex is the FOURTH mirror of the flag-key list (§3 above; `CompanionProperties.Intervention.flag` is the FIFTH), widened by S2 and again by S6.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/repository/CompanionFlagLogRepository.java` — `existsRaiseSince` (the cooldown gate) and `existsProblemRaiseSince` (the `all_healthy` quiet-window gate; its `NOT IN` exclusion list is a degrade-site the five formal mirrors do not cover — §3 above).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagKey.java` — the thirteen flag-key constants + `SOURCE_WRITE`/`SOURCE_SWEEP`, string constants mirroring the DB CHECKs (the `MessageFeedbackEntity` verdict/reason precedent).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaise.java` — one flag the evaluator says is TRUE right now, with its payload, before the cooldown gate is applied.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluator.java` — since S1 (`mezo-d58h.1`) a thin orchestrator calling thirteen `FlagRule` beans in a fixed order, LLM-free (§3).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRule.java` — S1 (`mezo-d58h.1`): the one-method rule contract, `evaluate(userId, today) → Optional<FlagRaise>`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaise.java` — one flag the evaluator says is TRUE right now, with its payload; `FlagVerdict.toRaise()` (below) is the only way one gets built since `mezo-6269.1`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluator.java` — since S1 (`mezo-d58h.1`) a thin orchestrator calling thirteen `FlagRule` beans in a fixed order, LLM-free (§3); since `mezo-6269.1` also always calls `AllHealthyRule` and overrides it to CLEAR when another rule raised.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRule.java` — S1 (`mezo-d58h.1`): the one-method rule contract, `evaluate(userId, today) → FlagVerdict` (was `Optional<FlagRaise>` before `mezo-6269.1`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagVerdict.java` — `mezo-6269.1`, spec 2026-09-05 §4.1: the record replacing `Optional<FlagRaise>` — `RAISED`/`CLEAR`/`UNAVAILABLE`, one non-null payload field per outcome, factories only.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagOutcome.java` — `mezo-6269.1`: the three-value enum a verdict carries.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/UnavailableReason.java` — `mezo-6269.1`: one member per honesty gate across all 13 rules, derived by reading every gate site in `service/rule/`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/TraceDisposition.java` — `mezo-6269.1`: `LOGGED`/`SUPPRESSED_BY_COOLDOWN`, what `FlagService` did with a RAISED verdict; null when the rule did not fire.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagTraceWriter.java` — `mezo-6269.1`: appends to `companion_flag_trace` only when a rule's verdict changed since its own last row (the comparison includes `disposition`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/CompanionFlagTraceEntity.java` — `mezo-6269.1`: `extends OwnedEntity`, soft-deletable, `@Pattern`-mirrored CHECKs on `flagKey`/`outcome`/`disposition`, jsonb `evidence`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/repository/CompanionFlagTraceRepository.java` — `mezo-6269.1`: `findFirstByCreatedByAndFlagKeyOrderByOccurredAtDesc` (the transition comparison) and `findByCreatedByAndOccurredAtBetweenOrderByOccurredAtAsc` (the day-timeline read).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609051200_mezo-6269.1_companion_flag_trace.sql` — the table (in `1.0.0_master.yml`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/NudgeSendPort.java` — S6 (bd `mezo-d58h.6`): the companion-owned port `IgnoredNudgeRule` reads sent `push_log` rows through, avoiding a `companion → notification` import that would close the existing `notification → companion` cycle.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/{SustainedStressRule,SleepDebtRule,MomentumAtRiskRule,RecoveryNeededRule,AllHealthyRule}.java` — S1 (`mezo-d58h.1`): the original five rules, one class each, pure arithmetic over `MetricSeriesService`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/SleepDeficitCalculator.java` — S2 (bd `c6c045082`): the shared sleep-deficit-vs-goal computation, extracted out of `SleepDebtRule` so `LoggingGapRule`'s suspicion variant can reuse it (§3).
@@ -6283,6 +6387,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609041200_mezo-d58h.6_flag_key_batch_b.sql` — S6: widens `ck_companion_flag_log_flag_key` to the thirteen keys.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT,FlagEvaluatorLoggingGapIT,FlagEvaluatorMissedWorkoutsIT,FlagEvaluatorAcuteBadDayIT,FlagEvaluatorLoadFuelMismatchIT,FlagEvaluatorRapidWeightLossIT,FlagEvaluatorJointOveruseIT,FlagEvaluatorIgnoredNudgeIT,FlagEvaluatorLateEatingIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. **Since W5.2 (`mezo-b3pp.19`), `FlagRaisedEvent` (below) is the consumer** — see the next block.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaisedEvent.java` — W5.2 (bd `mezo-b3pp.19`): the `{userId, flagKey, source}` event `FlagService.evaluateAndLog` publishes for every WRITTEN raise, inside the logging transaction (§3/§4 above).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagTracePersistenceIT,FlagServiceTraceIT}.java` + `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagVerdictTest.java` — `mezo-6269.1`, §8.
 
 **Backend — intervention delivery (W5.2, `mezo-b3pp.19` — §4/§5.8/§9, spec §9.2; consumer side, lives in `feature.proactive` not `feature.companion`)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/InterventionEventListener.java` — `@Async @TransactionalEventListener(AFTER_COMMIT)` on `FlagRaisedEvent`, the `CompanionMessageEventListener` template; catches and warns rather than propagating.

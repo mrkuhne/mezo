@@ -3,8 +3,9 @@ package io.mrkuhne.mezo.feature.companion.flags.service.rule;
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
@@ -15,7 +16,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -40,7 +40,7 @@ public class MomentumAtRiskRule implements FlagRule {
      * as a collapse would flag every morning.
      */
     @Override
-    public Optional<FlagRaise> evaluate(UUID userId, LocalDate today) {
+    public FlagVerdict evaluate(UUID userId, LocalDate today) {
         FlagProperties.Momentum cfg = properties.momentum();
         LocalDate recentTo = today.minusDays(1);
         LocalDate recentFrom = recentTo.minusDays(cfg.windowDays() - 1L);
@@ -55,18 +55,24 @@ public class MomentumAtRiskRule implements FlagRule {
             metricSeriesService.series(userId, MetricKey.HABITS_DONE, baselineFrom, baselineTo),
             baselineFrom, baselineTo);
 
-        if (baselineAvg < cfg.minBaseline() || recentAvg > baselineAvg * (1 - cfg.dropRatio())) {
-            return Optional.empty();
+        if (baselineAvg < cfg.minBaseline()) {
+            return FlagVerdict.unavailable(FlagKey.MOMENTUM_AT_RISK,
+                UnavailableReason.NO_HABIT_BASELINE);
+        }
+        if (recentAvg > baselineAvg * (1 - cfg.dropRatio())) {
+            return FlagVerdict.clear(FlagKey.MOMENTUM_AT_RISK, new FlagVerdict.ClearEvidence(
+                "habits_recent_avg", recentAvg, baselineAvg * (1 - cfg.dropRatio()), null));
         }
 
         List<String> missedGymDays = missedPlannedGymDays(userId, recentFrom, recentTo);
         if (missedGymDays.isEmpty()) {
-            return Optional.empty();
+            return FlagVerdict.clear(FlagKey.MOMENTUM_AT_RISK, new FlagVerdict.ClearEvidence(
+                "missed_gym_days", 0.0, 1.0, null));
         }
-        return Optional.of(new FlagRaise(FlagKey.MOMENTUM_AT_RISK,
+        return FlagVerdict.raised(FlagKey.MOMENTUM_AT_RISK,
             FlagPayloadEnvelope.momentumAtRisk(new FlagPayloadEnvelope.MomentumAtRisk(
                 cfg.windowDays(), cfg.baselineDays(), recentAvg, baselineAvg,
-                cfg.dropRatio(), cfg.minBaseline(), missedGymDays))));
+                cfg.dropRatio(), cfg.minBaseline(), missedGymDays)));
     }
 
     /** Mean over EVERY calendar day in the window, absent days counted as 0. */
