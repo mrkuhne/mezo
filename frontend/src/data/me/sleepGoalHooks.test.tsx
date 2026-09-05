@@ -40,8 +40,10 @@ describe('useSleepGoal (real mode)', () => {
   it('starts from the honest ghost, then loads the server goal', async () => {
     const { result } = renderHook(() => useSleepGoal(), { wrapper: makeHookWrapper() })
     expect(result.current.goal).toEqual(SLEEP_GOAL_GHOST) // never the mock seed
+    expect(result.current.goal.isSet).toBe(false)          // ...and the ghost admits it (mezo-k0hp)
     await waitFor(() => expect(result.current.goal.anchorTime).toBe('06:45'))
     expect(result.current.goal.bedTime).toBe('23:15')
+    expect(result.current.goal.isSet).toBe(true)           // the server's own goal, not a default
   })
 
   it('setGoal PUTs and refetches', async () => {
@@ -49,15 +51,17 @@ describe('useSleepGoal (real mode)', () => {
     server.use(
       http.put(`${API_BASE}/api/sleep/goal`, async ({ request }) => {
         putBody = await request.json()
-        return HttpResponse.json({ targetMinutes: 480, anchor: 'WAKE', anchorTime: '06:00', wakeTime: '06:00', bedTime: '22:00', regularityBandMin: 15 })
+        return HttpResponse.json({ isSet: true, targetMinutes: 480, anchor: 'WAKE', anchorTime: '06:00', wakeTime: '06:00', bedTime: '22:00', regularityBandMin: 15 })
       }),
       http.get(`${API_BASE}/api/sleep/goal`, () =>
-        HttpResponse.json({ targetMinutes: 480, anchor: 'WAKE', anchorTime: '06:00', wakeTime: '06:00', bedTime: '22:00', regularityBandMin: 15 })),
+        HttpResponse.json({ isSet: true, targetMinutes: 480, anchor: 'WAKE', anchorTime: '06:00', wakeTime: '06:00', bedTime: '22:00', regularityBandMin: 15 })),
     )
     const wrapper = makeHookWrapper()
     const { result } = renderHook(() => ({ read: useSleepGoal(), act: useSleepGoalActions() }), { wrapper })
     await act(() => result.current.act.setGoal({ targetMinutes: 480, anchor: 'WAKE', anchorTime: '06:00', regularityBandMin: 15 }))
     expect(putBody).toEqual({ targetMinutes: 480, anchor: 'WAKE', anchorTime: '06:00', regularityBandMin: 15 })
     await waitFor(() => expect(result.current.read.goal.bedTime).toBe('22:00'))
+    expect(result.current.read.goal.isSet).toBe(true) // a PUT always leaves a row behind
+    expect(putBody).not.toHaveProperty('isSet')       // server-owned, never sent (SleepGoalInput omits it)
   })
 })
