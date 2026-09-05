@@ -23,6 +23,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.api.Assertions.within;
 
@@ -227,6 +228,17 @@ class PromptMemoryAssemblerIT extends AbstractIntegrationTest {
         // …and the savepoint rollback left THIS (test-managed) transaction healthy — a poisoned
         // one would fail here with "current transaction is aborted" instead of counting the seed
         assertThat(memoryEmbeddingRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    void testRecallStrict_shouldExposeFailure_whenAnnQueryFails() {
+        UUID owner = userPopulator.createUser().getId();
+        seed(owner, MemoryEmbeddingEntity.KIND_JOURNAL_ENTRY, "lenne mit felidézni", TODAY.minusDays(1),
+                MemoryEmbeddingPopulator.axisVector(0));
+
+        assertThatThrownBy(() -> assembler.recallStrict(
+                owner, UUID.randomUUID(), FakeEmbeddingAdapter.FAIL_ANN + " hogy aludtam?", TODAY))
+                .isInstanceOf(RuntimeException.class);
     }
 
     @Test

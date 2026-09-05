@@ -345,7 +345,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 172 IT + 32 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 173 IT + 35 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatServiceAmbientRecallIT`, `ChatServiceGraphBlockFailureIT`, `ChatServiceGraphBlockIT`,
@@ -381,13 +381,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MemoryEmbeddingWriterIT`, `MemoryLlmUsageIsolationIT`, `MemoryPlatformPersistenceIT`,
     `MemoryPlatformPropertiesIT`, `MemoryProjectionFailureIsolationIT`, `MemoryProjectionWriterIT`,
     `MemoryQueryPreparerIT`, `MemoryRecallServiceIT`, `MemoryReembeddingIT`, `MemoryRetrievalDeterministicEvalIT`,
-    `MemoryRetrievalFeedbackApiIT`, `MemoryRetrievalRetentionIT`, `MemoryToolsRenderIT`, `MesoReviewGeneratorIT`,
-    `MessageFeedbackPersistenceIT`, `MetricSeriesCoachingIT`, `MetricSeriesDerivedIT`, `MetricSeriesExpansionIT`,
-    `MetricSeriesServiceIT`, `NoteEmbeddingBudgetIT`, `NoteEmbeddingCatchUpIT`, `NoteEmbeddingSwitchOffIT`,
-    `NoteEmbeddingWriterIT`, `NoteMentionCatchUpIT`, `NoteVectorLifecycleBudgetIT`, `NoteVectorLifecycleIT`,
-    `PatternDetectionJobSwitchOffIT`, `PatternDetectionServiceIT`, `PeriodSummaryPersistenceIT`,
-    `PeriodSummaryServiceIT`, `PersonExtractionServiceIT`, `PersonGraphEdgeAdapterIT`, `ProfileAssemblerIT`,
-    `ProfileAssemblerJobIT`, `ProfileAssemblerJobSwitchOffIT`, `ProfileAssemblerWindowHeaderIT`,
+    `MemoryRetrievalFeedbackApiIT`, `MemoryRetrievalGeminiEvalIT`, `MemoryRetrievalRetentionIT`, `MemoryToolsRenderIT`,
+    `MesoReviewGeneratorIT`, `MessageFeedbackPersistenceIT`, `MetricSeriesCoachingIT`, `MetricSeriesDerivedIT`,
+    `MetricSeriesExpansionIT`, `MetricSeriesServiceIT`, `NoteEmbeddingBudgetIT`, `NoteEmbeddingCatchUpIT`,
+    `NoteEmbeddingSwitchOffIT`, `NoteEmbeddingWriterIT`, `NoteMentionCatchUpIT`, `NoteVectorLifecycleBudgetIT`,
+    `NoteVectorLifecycleIT`, `PatternDetectionJobSwitchOffIT`, `PatternDetectionServiceIT`,
+    `PeriodSummaryPersistenceIT`, `PeriodSummaryServiceIT`, `PersonExtractionServiceIT`, `PersonGraphEdgeAdapterIT`,
+    `ProfileAssemblerIT`, `ProfileAssemblerJobIT`, `ProfileAssemblerJobSwitchOffIT`, `ProfileAssemblerWindowHeaderIT`,
     `ProfilePromptAssemblerFailureIT`, `ProfilePromptAssemblerIT`, `ProfilePropertiesIT`, `ProfileSourceFindersIT`,
     `PromptMemoryAssemblerIT`, `PromptMemoryAssemblerShadowIT`, `PromptMemoryAssemblerSwitchOffIT`,
     `QuarterlyPropertiesIT`, `QuarterlyReviewJobIT`, `QuarterlyReviewJobProfileSwitchOffIT`,

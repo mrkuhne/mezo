@@ -41,6 +41,43 @@ The **frontend** vitest suite has none of this (no Docker, light JVM-less runtim
   ```
   Foreground focused runs complete; long **background full-suite** runs are the ones that get killed.
 
+### Opt-in real Gemini memory release eval
+
+The shared memory platform's semantic release gate is intentionally outside normal CI: it makes
+paid network calls, while CI has no provider key and remains deterministic. It requires the
+human-approved `memory-hu-v1` holdout plus two independent opt-ins (`eval` tag exclusion cleared and
+`mezo.memory.eval.real=true`). Run it from `backend/`:
+
+```bash
+test -n "$GEMINI_API_KEY"
+./mvnw clean test \
+  -Dtest=MemoryRetrievalGeminiEvalIT \
+  -Dgroups=eval \
+  -Dmezo.excludedTestGroups= \
+  -Dmezo.memory.eval.real=true \
+  -Dmezo.memory.eval.max-embedding-usd=5.00 \
+  -Dmezo.memory.eval.max-reranking-usd=0.00 \
+  -Dmezo.test.use-testcontainers=true
+```
+
+`-Dmezo.excludedTestGroups=` is essential: the POM excludes `eval` by default, and merely adding
+`-Dgroups=eval` does not cancel that exclusion. A real run writes
+`backend/target/memory-eval/memory-v1-report.json` and logs each gate as PASS/FAIL. The report covers
+overall and persona/family quality, a separate no-rewrite/no-rerank OLD/NEW latency pass,
+phase/path-qualified failed execution IDs, and audited embedding/rewrite/reranker usage. Embedding
+and reranking are checked against the two command-line budgets; rewrite usage/cost is separately
+reported with its actually served chat model because it is a conditional quality path, not part of
+the latency gate. The runner propagates its unique correlation IDs through async retrievers, scopes
+every audit query to those IDs, drains the dedicated audit executor before requiring the exact
+terminal row count, and treats missing usage/cost or unexpected calls as a hard failure. The
+no-rewrite latency pass runs immediately after the single warm query, before the longer semantic
+quality pass can add cache, rate-limit or load bias. It contains no API key or raw provider payload.
+
+The harness uses a dedicated `gemini-embedding-001-memory-v1` vector generation and cannot change
+the application serving mode. Even a fully passing report leaves chat in its configured mode;
+`SHADOW` → `NEW` and any briefing/memoir/prediction adoption require separate product-owner
+approval and changes.
+
 ### The frontend dual-mode gate: which mode am I actually in? (mezo-h4wp.6.3)
 
 `isMockMode()` (`frontend/src/data/_client/mode.ts`) is `import.meta.env.VITE_USE_MOCK !== 'false'`

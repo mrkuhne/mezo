@@ -26,6 +26,8 @@ import io.mrkuhne.mezo.feature.companion.memory.service.MemoryRetrievalAuditWrit
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryRetriever;
 import io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryReranker;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.KnowledgeFactPopulator;
@@ -38,6 +40,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -75,6 +78,7 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
     @Autowired private LlmMemoryReranker reranker;
     @Autowired private MemoryRetrievalAuditWriter auditWriter;
     @Autowired private MemoryPlatformProperties properties;
+    @Autowired private LlmCallContextHolder contextHolder;
     @Autowired @Qualifier("applicationTaskExecutor") private AsyncTaskExecutor taskExecutor;
 
     @Test
@@ -180,7 +184,7 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
                 "graph", failingRetriever("graph"));
         MemoryContextService failingService = new MemoryContextService(
                 queryPreparer, failingRetrievers, fusion, selector, renderer, reranker,
-                auditWriter, properties, taskExecutor);
+                auditWriter, properties, taskExecutor, contextHolder);
 
         MemoryContext result = failingService.retrieve(request(owner, "Mi történt Boglárkával?"));
 
@@ -203,7 +207,7 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
                 "graph", failingRetriever("graph"));
         MemoryContextService failingService = new MemoryContextService(
                 queryPreparer, failingRetrievers, fusion, selector, renderer, reranker,
-                auditWriter, properties, taskExecutor);
+                auditWriter, properties, taskExecutor, contextHolder);
 
         assertThatThrownBy(() -> failingService.retrieveForServing(
                 request(owner, "Mi történt Boglárkával?")))
@@ -231,7 +235,7 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
                 "graph", emptyRetriever("graph"));
         MemoryContextService boundedService = new MemoryContextService(
                 queryPreparer, retrieverSet, fusion, selector, renderer, reranker,
-                auditWriter, properties, taskExecutor);
+                auditWriter, properties, taskExecutor, contextHolder);
 
         MemoryContext result = boundedService.retrieve(request(owner, "Mi történt Boglárkával?"));
 
@@ -246,13 +250,44 @@ class MemoryContextServiceIT extends AbstractIntegrationTest {
         AsyncTaskExecutor callerThreadExecutor = new TaskExecutorAdapter(new SyncTaskExecutor());
         MemoryContextService boundedService = new MemoryContextService(
                 queryPreparer, Map.of("dense", delayedEmptyRetriever("dense", 250)),
-                fusion, selector, renderer, reranker, auditWriter, properties, callerThreadExecutor);
+                fusion, selector, renderer, reranker, auditWriter, properties, callerThreadExecutor,
+                contextHolder);
 
         MemoryContext result = boundedService.retrieve(request(owner, "Mi történt Boglárkával?"));
 
         MemoryRetrievalRunEntity run = runRepository.findByTraceIdAndCreatedBy(result.traceId(), owner).orElseThrow();
         assertThat(((Map<?, ?>) run.getRetrieverTrace().get("dense")).get("error")).isEqualTo("TIMEOUT");
         assertThat(run.getErrorCode()).isEqualTo("MEMORY_RETRIEVAL_ALL_FAILED");
+    }
+
+    @Test
+    void testRetrieve_shouldPropagateLlmCallContextToAsyncRetrievers() {
+        UUID owner = databasePopulator.populateUser("memory-context-correlation@test.local");
+        AtomicReference<LlmCallContext> observed = new AtomicReference<>();
+        MemoryRetriever capturingRetriever = new MemoryRetriever() {
+            @Override
+            public String name() {
+                return "capture";
+            }
+
+            @Override
+            public List<io.mrkuhne.mezo.feature.companion.memory.dto.MemoryCandidate> retrieve(
+                    io.mrkuhne.mezo.feature.companion.memory.dto.RetrievalInput input) {
+                observed.set(contextHolder.get());
+                return List.of();
+            }
+        };
+        MemoryContextService correlatedService = new MemoryContextService(
+                queryPreparer, Map.of("capture", capturingRetriever), fusion, selector, renderer, reranker,
+                auditWriter, properties, taskExecutor, contextHolder);
+        LlmCallContext expected = new LlmCallContext(
+                "memory_eval", "quality_new", "conversation", UUID.randomUUID());
+
+        contextHolder.runWith(expected,
+                () -> correlatedService.retrieve(request(owner, "Mi történt Boglárkával?")));
+
+        assertThat(observed.get()).isEqualTo(expected);
+        assertThat(contextHolder.get()).isEqualTo(LlmCallContext.UNKNOWN);
     }
 
     private MemoryItemEntity item(UUID owner, String content) {

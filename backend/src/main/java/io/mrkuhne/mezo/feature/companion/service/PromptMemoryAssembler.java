@@ -121,62 +121,61 @@ public class PromptMemoryAssembler {
      * skipped. Never throws: any failure ⇒ {@link AmbientRecall#EMPTY} + a warn log.
      */
     public AmbientRecall recall(UUID userId, UUID conversationId, String userMessage, LocalDate today) {
-        CompanionProperties.AmbientRecall ambient = properties.ambientRecall();
-        if (!ambient.enabled() || userMessage == null || userMessage.isBlank()) {
-            return AmbientRecall.EMPTY;
-        }
         try {
-            float[] queryVector = llmCallContextHolder.runWith(
-                    new LlmCallContext("companion_recall", "recall_embed", "conversation", conversationId),
-                    () -> embeddingPort.embedQuery(userMessage));
-            String literal = MemoryEmbeddingRepository.toVectorLiteral(queryVector);
-            CompanionProperties.Recall recall = properties.recall();
-
-            // (kind, ref_id)-keyed so a unit can never enter twice; groups are disjoint today, the
-            // map is the cheap guarantee that they stay so. Order matters only for the dedupe
-            // tie-break — the final sort below is by score.
-            // W3.2 (mezo-b3pp.13) coverage filter: fine-grained days are only asked for inside the
-            // shadow window — beyond it the ladder's weekly/monthly rungs (queried WITHOUT a floor)
-            // speak for the stretch. The daily rows themselves are never touched (spec §12).
-            LocalDate dailyCutoff = today.minusDays(ambient.weeklyShadowDays());
-            UUID excluded = ambient.excludeCurrentConversation() ? conversationId : null;
-            List<Group> groups = List.of(
-                    new Group(KINDS_DAILY_SUMMARY, ambient.dailySummary(), dailyCutoff, null),
-                    new Group(KINDS_PERIOD_SUMMARY, ambient.periodSummary(), null, null),
-                    new Group(KINDS_JOURNAL, ambient.journal(), null, null),
-                    new Group(KINDS_CHAT_TURN, ambient.chatTurn(), null, excluded),
-                    new Group(KINDS_OTHER, ambient.other(), null, null));
-            Map<String, RecalledItem> byUnit = new LinkedHashMap<>();
-            for (Group group : groups) {
-                for (RecalledItem item : recallGroup(userId, group, literal, today, recall)) {
-                    byUnit.putIfAbsent(item.kind() + ':' + item.refId(), item);
-                }
-            }
-            List<RecalledItem> items = new ArrayList<>(byUnit.values());
-            items.sort(Comparator.comparingDouble(RecalledItem::score).reversed());
-
-            Rendered rendered = renderBlock(items, ambient.maxTokens(), recall.renderMaxChars());
-            if (rendered.rendered().isEmpty()) {
-                return AmbientRecall.EMPTY;
-            }
-            // Memory refs carry the DATE (the V2.3 tool's convention — the FE chip is generic);
-            // two items of one day collapse to one ref.
-            LinkedHashSet<RefsEnvelope.Ref> refs = new LinkedHashSet<>();
-            // W3.1b: the disclosure is per EPISODE (no day collapse) and reuses oneLine, so the
-            // gist on the wire is byte-identical to the line the model actually read.
-            List<RecalledMemoriesEnvelope.Item> disclosed = new ArrayList<>();
-            for (RecalledItem item : rendered.rendered()) {
-                refs.add(new RefsEnvelope.Ref("Memory", item.occurredOn().toString()));
-                disclosed.add(new RecalledMemoriesEnvelope.Item(item.kind(), item.refId(),
-                        item.occurredOn(), KIND_LABELS.getOrDefault(item.kind(), item.kind()),
-                        oneLine(item.content(), recall.renderMaxChars()), item.similarity()));
-            }
-            return new AmbientRecall(rendered.block(), List.copyOf(refs), List.copyOf(disclosed));
+            return recallStrict(userId, conversationId, userMessage, today);
         } catch (RuntimeException e) {
             log.warn("Ambient recall skipped for conversation {} — the turn continues without [Emlékek]",
                     conversationId, e);
             return AmbientRecall.EMPTY;
         }
+    }
+
+    /**
+     * Diagnostic twin of {@link #recall}: returns the same result but exposes provider/ANN failures
+     * to offline evaluators. Online callers must use {@code recall}, whose fail-open contract is
+     * unchanged.
+     */
+    public AmbientRecall recallStrict(UUID userId, UUID conversationId, String userMessage, LocalDate today) {
+        CompanionProperties.AmbientRecall ambient = properties.ambientRecall();
+        if (!ambient.enabled() || userMessage == null || userMessage.isBlank()) {
+            return AmbientRecall.EMPTY;
+        }
+        float[] queryVector = llmCallContextHolder.runWith(
+                new LlmCallContext("companion_recall", "recall_embed", "conversation", conversationId),
+                () -> embeddingPort.embedQuery(userMessage));
+        String literal = MemoryEmbeddingRepository.toVectorLiteral(queryVector);
+        CompanionProperties.Recall recall = properties.recall();
+
+        LocalDate dailyCutoff = today.minusDays(ambient.weeklyShadowDays());
+        UUID excluded = ambient.excludeCurrentConversation() ? conversationId : null;
+        List<Group> groups = List.of(
+                new Group(KINDS_DAILY_SUMMARY, ambient.dailySummary(), dailyCutoff, null),
+                new Group(KINDS_PERIOD_SUMMARY, ambient.periodSummary(), null, null),
+                new Group(KINDS_JOURNAL, ambient.journal(), null, null),
+                new Group(KINDS_CHAT_TURN, ambient.chatTurn(), null, excluded),
+                new Group(KINDS_OTHER, ambient.other(), null, null));
+        Map<String, RecalledItem> byUnit = new LinkedHashMap<>();
+        for (Group group : groups) {
+            for (RecalledItem item : recallGroup(userId, group, literal, today, recall)) {
+                byUnit.putIfAbsent(item.kind() + ':' + item.refId(), item);
+            }
+        }
+        List<RecalledItem> items = new ArrayList<>(byUnit.values());
+        items.sort(Comparator.comparingDouble(RecalledItem::score).reversed());
+
+        Rendered rendered = renderBlock(items, ambient.maxTokens(), recall.renderMaxChars());
+        if (rendered.rendered().isEmpty()) {
+            return AmbientRecall.EMPTY;
+        }
+        LinkedHashSet<RefsEnvelope.Ref> refs = new LinkedHashSet<>();
+        List<RecalledMemoriesEnvelope.Item> disclosed = new ArrayList<>();
+        for (RecalledItem item : rendered.rendered()) {
+            refs.add(new RefsEnvelope.Ref("Memory", item.occurredOn().toString()));
+            disclosed.add(new RecalledMemoriesEnvelope.Item(item.kind(), item.refId(),
+                    item.occurredOn(), KIND_LABELS.getOrDefault(item.kind(), item.kind()),
+                    oneLine(item.content(), recall.renderMaxChars()), item.similarity()));
+        }
+        return new AmbientRecall(rendered.block(), List.copyOf(refs), List.copyOf(disclosed));
     }
 
     /**
