@@ -106,6 +106,10 @@ const SCREENS: Array<[string, string, string?]> = [
   ['me-growth-awards', '/me/growth/kituntetesek'],
   ['me-ai-call', '/me/ai-usage/22222222-2222-4222-8222-222222222222'],
   ['insights-mintak', '/insights'],
+  // mezo-nn6o: a Minták/Motor oldal maga (PatternsPage) sosem került a kapu alá. Az issue
+  // a régi `/insights/motor` útvonalat nevezi meg; a Design 2.0 átnevezés óta az
+  // `/mezo/motor` -> `/mezo/patterns` redirect a valódi cím, ezért ARRA mutat ez a shot.
+  ['mezo-minta', '/mezo/patterns'],
   ['insights-memoar', '/insights/memoir'],
   // F7.5 Mezo deep (mezo-d20.8.5.1): the memoir archive shelf + one chapter page.
   ['mezo-memoar-archiv', '/mezo/memoir/archivum'],
@@ -231,6 +235,36 @@ for (const theme of ['light', 'dark'] as const) {
       await page.locator('.wr-set').first().waitFor()
       await page.evaluate(() => document.fonts.ready)
       await expect(page).toHaveScreenshot(`train-review-exercise-${theme}.png`)
+    })
+
+    // mezo-5z1j: a goldenek SOSEM érték el az aktív edzés fázist. Mock módban a
+    // todaySession null, így az ActiveWorkoutPage initialPhase-e mindig 'prep' — a
+    // sorozat-naplózó kártya, a progressziós sáv és a demó-videó chip pixel-szinten
+    // őrizetlen volt. A briefing CTA-ja a lap alján ül; a click görgeti oda.
+    test('train-session-active', async ({ page }) => {
+      await page.clock.setFixedTime(new Date(DEFAULT_FROZEN))
+      await seedThemeAndKalauz(page, theme)
+      await page.goto('/train/session')
+      await page.waitForLoadState('networkidle')
+      await page.getByRole('button', { name: /Kezdjük el/ }).click()
+      await page.getByRole('button', { name: /Kezdjük el/ }).waitFor({ state: 'detached' })
+      await page.evaluate(() => document.fonts.ready)
+      await expect(page).toHaveScreenshot(`train-session-active-${theme}.png`)
+    })
+
+    // mezo-v03q: a Tudástár Életesemény-jelöltek csoportja a 440x956-os viewport ALATT van,
+    // tehát az insights-tudastar shot sosem látta. Saját, odagörgetett felvétel — ugyanaz a
+    // minta, mint a train-review-lane-nél.
+    test('insights-tudastar-eletesemenyek', async ({ page }) => {
+      await page.clock.setFixedTime(new Date(DEFAULT_FROZEN))
+      await seedThemeAndKalauz(page, theme)
+      await page.goto('/insights/knowledge')
+      await page.waitForLoadState('networkidle')
+      const group = page.getByText(/Életesemény-jelöltek/).first()
+      await group.waitFor()
+      await group.scrollIntoViewIfNeeded()
+      await page.evaluate(() => document.fonts.ready)
+      await expect(page).toHaveScreenshot(`insights-tudastar-eletesemenyek-${theme}.png`)
     })
 
     // F7.3 (mezo-d20.8.3.1): the recipe Pontszám tile opens the score sheet — the shot that
