@@ -125,6 +125,28 @@ class LifeGoalScorerTest {
         assertThat(LifeGoalScorer.scoreDay("average", empty, DAY, SignalWindow.of(vals)).status()).isEqualTo("no_data");
     }
 
+    @Test
+    void testScoreAverage_shouldReturnMiss_whenThresholdIsZeroAndAverageMisses() {
+        // threshold=0, comparator=lte, avg=0.5 -> the +-10% band around 0 is degenerate (division
+        // by |threshold|=0 would be undefined) -> the guard short-circuits it to miss, never partial.
+        Map<LocalDate, BigDecimal> vals = new HashMap<>();
+        for (int i = 0; i < 7; i++) vals.put(DAY.minusDays(i), new BigDecimal("0.5"));
+        PillarRuleJson rule = new PillarRuleJson(BigDecimal.ZERO, "lte", null, 7, null, null, null, null, null, null);
+        assertThat(LifeGoalScorer.scoreDay("average", rule, DAY, SignalWindow.of(vals)).status()).isEqualTo("miss");
+    }
+
+    @Test
+    void testScoreAverage_shouldReturnPartial_whenAverageSitsExactlyOnTheTenPercentBoundary() {
+        // threshold=10, comparator=gte, avg=9.0 -> |9-10|/10 == 0.10 exactly -> the <= comparison
+        // must still call this partial, not miss.
+        Map<LocalDate, BigDecimal> vals = new HashMap<>();
+        for (int i = 0; i < 7; i++) vals.put(DAY.minusDays(i), new BigDecimal("9.0"));
+        PillarRuleJson rule = new PillarRuleJson(new BigDecimal("10"), "gte", null, 7, null, null, null, null, null, null);
+        PillarDayScore s = LifeGoalScorer.scoreDay("average", rule, DAY, SignalWindow.of(vals));
+        assertThat(s.value()).isEqualByComparingTo("9.000");
+        assertThat(s.status()).isEqualTo("partial");
+    }
+
     // ---- target ----
 
     @Test
@@ -413,6 +435,19 @@ class LifeGoalScorerTest {
         for (int i = 7; i < 28; i++) series.put(DAY.minusDays(i), 0.5);
         for (int i = 0; i < 7; i++) series.put(DAY.minusDays(i), 0.55);
         assertThat(LifeGoalScorer.arrow(series, DAY)).isEqualTo("flat");
+    }
+
+    @Test
+    void testArrow_shouldReturnInsufficient_whenOnlyFourDataDaysInShortWindow() {
+        // Only 4 of the 7 short-window days have data (min is ARROW_MIN_DATA_DAYS=5); the long
+        // window is plentifully supplied, so a bug that only gated the long window would miss this.
+        Map<LocalDate, Double> series = new HashMap<>();
+        series.put(DAY, 0.6);
+        series.put(DAY.minusDays(1), 0.6);
+        series.put(DAY.minusDays(2), 0.6);
+        series.put(DAY.minusDays(3), 0.6);
+        for (int i = 7; i < 28; i++) series.put(DAY.minusDays(i), 0.5);
+        assertThat(LifeGoalScorer.arrow(series, DAY)).isEqualTo("insufficient");
     }
 
     @Test
