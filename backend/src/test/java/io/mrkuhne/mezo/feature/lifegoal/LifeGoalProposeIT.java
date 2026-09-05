@@ -4,9 +4,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.LifeGoalDimension;
 import io.mrkuhne.mezo.api.dto.LifeGoalFrame;
+import io.mrkuhne.mezo.api.dto.LifeGoalPillarInput;
 import io.mrkuhne.mezo.api.dto.LifeGoalProposeRequest;
 import io.mrkuhne.mezo.api.dto.LifeGoalProposeResponse;
+import io.mrkuhne.mezo.api.dto.LifeGoalResponse;
+import io.mrkuhne.mezo.api.dto.LifeGoalUpsertRequest;
+import io.mrkuhne.mezo.api.dto.PillarKind;
+import io.mrkuhne.mezo.api.dto.PillarRule;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
+import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
@@ -146,5 +152,67 @@ class LifeGoalProposeIT extends ApiIntegrationTest {
         assertThat(res.getSource()).isEqualTo(LifeGoalProposeResponse.SourceEnum.AI);
         assertThat(res.getPillars()).hasSize(1);
         assertThat(res.getPillars().get(0).getLabel()).isEqualTo("Fehérje");
+    }
+
+    // mezo-iwoc: a target pillar's pace line (startDate/targetDate/direction) is
+    // LifeGoalPillarService.requireRuleShape's requirement for kind=target — the proposer must fill
+    // it so the response is savable verbatim, not merely echo the LLM's start/target values.
+    private static final String TARGET_UP =
+        "{\"catalogId\":\"activity_financial\",\"label\":\"Megtakarítás\",\"kind\":\"target\",\"skillKey\":\"financial\","
+            + "\"weight\":1,\"startValue\":0,\"targetValue\":50000}";
+    private static final String TARGET_DOWN =
+        "{\"catalogId\":\"activity_financial\",\"label\":\"Fogyás\",\"kind\":\"target\",\"skillKey\":\"financial\","
+            + "\"weight\":1,\"startValue\":90,\"targetValue\":80}";
+    private static final String HABIT =
+        "{\"catalogId\":\"sleep_duration\",\"label\":\"Alvás\",\"kind\":\"habit\",\"skillKey\":\"recovery\","
+            + "\"weight\":1,\"threshold\":7,\"comparator\":\"gte\"}";
+
+    private LifeGoalProposeResponse propose(String script, LocalDate targetDate) {
+        return postForBody("/api/life-goals/propose",
+            LifeGoalProposeRequest.builder().title("Kockahas").whyText(script).targetDate(targetDate).build(),
+            ownerAuthHeaders(), HttpStatus.OK, LifeGoalProposeResponse.class);
+    }
+
+    @Test
+    void testPropose_shouldFillTargetRulePaceLine_whenRequestHasTargetDate() {
+        LocalDate deadline = LocalDate.now().plusMonths(3);
+        LifeGoalProposeResponse res = propose(script(TARGET_UP + "," + TARGET_DOWN + "," + HABIT, "", ""), deadline);
+
+        assertThat(res.getSource()).isEqualTo(LifeGoalProposeResponse.SourceEnum.AI);
+        assertThat(res.getPillars()).hasSize(3);
+        LifeGoalPillarInput up = res.getPillars().get(0);
+        assertThat(up.getKind()).isEqualTo(PillarKind.TARGET);
+        assertThat(up.getRule().getStartDate()).isEqualTo(LocalDate.now());
+        assertThat(up.getRule().getTargetDate()).isEqualTo(deadline);
+        assertThat(up.getRule().getDirection()).isEqualTo(PillarRule.DirectionEnum.UP);
+        assertThat(up.getRule().getStartValue()).isEqualByComparingTo("0");
+        assertThat(up.getRule().getTargetValue()).isEqualByComparingTo("50000");
+        LifeGoalPillarInput down = res.getPillars().get(1);
+        assertThat(down.getRule().getDirection()).isEqualTo(PillarRule.DirectionEnum.DOWN);
+
+        // The real point: a propose response must be savable verbatim, not just structurally shaped.
+        LifeGoalResponse created = postForBody("/api/life-goals",
+            LifeGoalUpsertRequest.builder().title("Kockahas").whyText("hogy jól nézzek ki")
+                .dimension(res.getDimension()).startDate(LocalDate.now()).targetDate(deadline)
+                .pillars(res.getPillars()).build(),
+            ownerAuthHeaders(), HttpStatus.CREATED, LifeGoalResponse.class);
+        assertThat(created.getPillars()).hasSize(3);
+    }
+
+    @Test
+    void testPropose_shouldDropTargetPillar_whenRequestHasNoTargetDate() {
+        LifeGoalProposeResponse res = propose(script(TARGET_UP + "," + HABIT, "", ""), null);
+
+        assertThat(res.getSource()).isEqualTo(LifeGoalProposeResponse.SourceEnum.AI);
+        assertThat(res.getPillars()).hasSize(1);
+        assertThat(res.getPillars().get(0).getKind()).isEqualTo(PillarKind.HABIT);
+    }
+
+    @Test
+    void testPropose_shouldFallBackToTemplate_whenEveryAiPillarIsDropped() {
+        LifeGoalProposeResponse res = propose(script(TARGET_UP, "", ""), null);
+
+        assertThat(res.getSource()).isEqualTo(LifeGoalProposeResponse.SourceEnum.TEMPLATE);
+        assertThat(res.getPillars()).isNotEmpty();
     }
 }
