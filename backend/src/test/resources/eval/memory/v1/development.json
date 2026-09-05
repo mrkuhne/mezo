@@ -1,0 +1,2403 @@
+{
+  "corpusVersion" : "memory-hu-v1",
+  "generatorSeed" : 20260904,
+  "split" : "development",
+  "sources" : [ {
+    "key" : "rich:journal_entry:2026-01-05:01",
+    "personaId" : "rich",
+    "scenarioId" : "rich:paraphrase:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-01-05",
+    "content" : "Dóra a Pilis-túrán Boglárka társaságában érezte újra igazán könnyűnek a mozgást.",
+    "vectorAxis" : 0,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:daily_summary:2026-01-06:02",
+    "personaId" : "rich",
+    "scenarioId" : "rich:paraphrase:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2026-01-06",
+    "content" : "A Pilis-kirándulás után Dóra energikus és nyugodt maradt.",
+    "vectorAxis" : 0,
+    "salience" : 0.64,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:journal_entry:2026-01-05:99-rich-0-0",
+    "personaId" : "rich",
+    "scenarioId" : "rich:paraphrase:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-01-05",
+    "content" : "A Pilis közelében tett másik séta esős és kimerítő volt.",
+    "vectorAxis" : 1,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:reflection:2026-01-04:70",
+    "personaId" : "rich",
+    "scenarioId" : "rich:paraphrase:01",
+    "sourceKind" : "reflection",
+    "occurredOn" : "2026-01-04",
+    "content" : "Dóra a 2026-01-04-i részletes reflexióban a napi teendőit rendezte.",
+    "vectorAxis" : 300,
+    "salience" : 0.42,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:activity_note:2026-01-07:71",
+    "personaId" : "rich",
+    "scenarioId" : "rich:paraphrase:01",
+    "sourceKind" : "activity_note",
+    "occurredOn" : "2026-01-07",
+    "content" : "Dóra a 2026-01-07-i rövid átmozgatást külön bejegyzésben rögzítette.",
+    "vectorAxis" : 400,
+    "salience" : 0.38,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:journal_entry:2026-01-10:01",
+    "personaId" : "rich",
+    "scenarioId" : "rich:follow_up:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-01-10",
+    "content" : "Dóra a Pilis-futás előtti este 6 órát aludt, és Boglárka biztatása megnyugtatta.",
+    "vectorAxis" : 5,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:daily_summary:2026-01-11:02",
+    "personaId" : "rich",
+    "scenarioId" : "rich:follow_up:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2026-01-11",
+    "content" : "Másnap Dóra frissen kezdte a Pilis-futást, a felkészülést sikeresnek írta le.",
+    "vectorAxis" : 5,
+    "salience" : 0.64,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:journal_entry:2026-01-12:99-rich-1-0",
+    "personaId" : "rich",
+    "scenarioId" : "rich:follow_up:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-01-12",
+    "content" : "A Pilis-futás utáni este csak hat óra alvás jutott, ez egy másik nap volt.",
+    "vectorAxis" : 6,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:reflection:2026-01-09:70",
+    "personaId" : "rich",
+    "scenarioId" : "rich:follow_up:01",
+    "sourceKind" : "reflection",
+    "occurredOn" : "2026-01-09",
+    "content" : "Dóra a 2026-01-09-i részletes reflexióban a napi teendőit rendezte.",
+    "vectorAxis" : 305,
+    "salience" : 0.42,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:activity_note:2026-01-12:71",
+    "personaId" : "rich",
+    "scenarioId" : "rich:follow_up:01",
+    "sourceKind" : "activity_note",
+    "occurredOn" : "2026-01-12",
+    "content" : "Dóra a 2026-01-12-i rövid átmozgatást külön bejegyzésben rögzítette.",
+    "vectorAxis" : 405,
+    "salience" : 0.38,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:activity_note:2026-01-15:01",
+    "personaId" : "rich",
+    "scenarioId" : "rich:exact_value:01",
+    "sourceKind" : "activity_note",
+    "occurredOn" : "2026-01-15",
+    "content" : "Dóra a Pilis útvonalon pontosan 9 kilométert futott, 142-es átlagpulzussal.",
+    "vectorAxis" : 10,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:daily_summary:2026-01-16:02",
+    "personaId" : "rich",
+    "scenarioId" : "rich:exact_value:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2026-01-16",
+    "content" : "A napi összegzésben a 9 kilométeres Pilis futás volt a fő terhelés.",
+    "vectorAxis" : 10,
+    "salience" : 0.64,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:journal_entry:2026-01-15:99-rich-2-0",
+    "personaId" : "rich",
+    "scenarioId" : "rich:exact_value:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-01-15",
+    "content" : "Egy másik Pilis környéki útvonal 10 kilométeres volt, 151-es átlagpulzussal.",
+    "vectorAxis" : 11,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:reflection:2026-01-14:70",
+    "personaId" : "rich",
+    "scenarioId" : "rich:exact_value:01",
+    "sourceKind" : "reflection",
+    "occurredOn" : "2026-01-14",
+    "content" : "Dóra a 2026-01-14-i részletes reflexióban a napi teendőit rendezte.",
+    "vectorAxis" : 310,
+    "salience" : 0.42,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:activity_note:2026-01-17:71",
+    "personaId" : "rich",
+    "scenarioId" : "rich:exact_value:01",
+    "sourceKind" : "activity_note",
+    "occurredOn" : "2026-01-17",
+    "content" : "Dóra a 2026-01-17-i rövid átmozgatást külön bejegyzésben rögzítette.",
+    "vectorAxis" : 410,
+    "salience" : 0.38,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:decision:2023-01-20:01",
+    "personaId" : "rich",
+    "scenarioId" : "rich:old_salient:01",
+    "sourceKind" : "decision",
+    "occurredOn" : "2023-01-20",
+    "content" : "Dóra évekkel ezelőtt eldöntötte, hogy minden ősszel visszatér Boglárka társaságában a Pilis-túrára.",
+    "vectorAxis" : 15,
+    "salience" : 0.98,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:daily_summary:2023-01-21:02",
+    "personaId" : "rich",
+    "scenarioId" : "rich:old_salient:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2023-01-21",
+    "content" : "A régi Pilis-döntés azóta is fontos éves kapaszkodó Dóra számára.",
+    "vectorAxis" : 15,
+    "salience" : 0.64,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:journal_entry:2026-01-20:99-rich-3-0",
+    "personaId" : "rich",
+    "scenarioId" : "rich:old_salient:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-01-20",
+    "content" : "Egy friss, de jelentéktelen Pilis környéki rövid sétáról szólt.",
+    "vectorAxis" : 16,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:reflection:2023-01-19:70",
+    "personaId" : "rich",
+    "scenarioId" : "rich:old_salient:01",
+    "sourceKind" : "reflection",
+    "occurredOn" : "2023-01-19",
+    "content" : "Dóra a 2023-01-19-i részletes reflexióban a napi teendőit rendezte.",
+    "vectorAxis" : 315,
+    "salience" : 0.42,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:activity_note:2023-01-22:71",
+    "personaId" : "rich",
+    "scenarioId" : "rich:old_salient:01",
+    "sourceKind" : "activity_note",
+    "occurredOn" : "2023-01-22",
+    "content" : "Dóra a 2023-01-22-i rövid átmozgatást külön bejegyzésben rögzítette.",
+    "vectorAxis" : 415,
+    "salience" : 0.38,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:journal_entry:2026-01-25:01",
+    "personaId" : "rich",
+    "scenarioId" : "rich:near_negative:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-01-25",
+    "content" : "Dóra a Pilis-túrán Boglárka mellett a kék jelzésen ment, és 8 percet pihent a forrásnál.",
+    "vectorAxis" : 20,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:daily_summary:2026-01-26:02",
+    "personaId" : "rich",
+    "scenarioId" : "rich:near_negative:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2026-01-26",
+    "content" : "A Pilis környéki napi összegzés a kék jelzést és a forrásnál tartott pihenőt emelte ki.",
+    "vectorAxis" : 20,
+    "salience" : 0.64,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:journal_entry:2026-02-01:99-rich-4-0",
+    "personaId" : "rich",
+    "scenarioId" : "rich:near_negative:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-02-01",
+    "content" : "Ugyanott, Pilis térségében a piros jelzésen egy héttel később 10 perces pihenő volt, más társasággal.",
+    "vectorAxis" : 21,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:reflection:2026-01-24:70",
+    "personaId" : "rich",
+    "scenarioId" : "rich:near_negative:01",
+    "sourceKind" : "reflection",
+    "occurredOn" : "2026-01-24",
+    "content" : "Dóra a 2026-01-24-i részletes reflexióban a napi teendőit rendezte.",
+    "vectorAxis" : 320,
+    "salience" : 0.42,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:activity_note:2026-01-27:71",
+    "personaId" : "rich",
+    "scenarioId" : "rich:near_negative:01",
+    "sourceKind" : "activity_note",
+    "occurredOn" : "2026-01-27",
+    "content" : "Dóra a 2026-01-27-i rövid átmozgatást külön bejegyzésben rögzítette.",
+    "vectorAxis" : 420,
+    "salience" : 0.38,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:decision:2026-01-30:01",
+    "personaId" : "rich",
+    "scenarioId" : "rich:negation:01",
+    "sourceKind" : "decision",
+    "occurredOn" : "2026-01-30",
+    "content" : "Dóra kifejezetten úgy döntött, hogy vasárnap NEM fut a Pilis útvonalon, hanem Boglárka társaságában pihen.",
+    "vectorAxis" : 25,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:daily_summary:2026-01-31:02",
+    "personaId" : "rich",
+    "scenarioId" : "rich:negation:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2026-01-31",
+    "content" : "A heti terv vasárnapra pihenőt, nem Pilis-edzést rögzített.",
+    "vectorAxis" : 25,
+    "salience" : 0.64,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:journal_entry:2026-01-09:99-rich-5-0",
+    "personaId" : "rich",
+    "scenarioId" : "rich:negation:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-01-09",
+    "content" : "Egy korábbi terv még vasárnapi Pilis-futást javasolt, de azt nem követte.",
+    "vectorAxis" : 26,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:reflection:2026-01-29:70",
+    "personaId" : "rich",
+    "scenarioId" : "rich:negation:01",
+    "sourceKind" : "reflection",
+    "occurredOn" : "2026-01-29",
+    "content" : "Dóra a 2026-01-29-i részletes reflexióban a napi teendőit rendezte.",
+    "vectorAxis" : 325,
+    "salience" : 0.42,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:activity_note:2026-02-01:71",
+    "personaId" : "rich",
+    "scenarioId" : "rich:negation:01",
+    "sourceKind" : "activity_note",
+    "occurredOn" : "2026-02-01",
+    "content" : "Dóra a 2026-02-01-i rövid átmozgatást külön bejegyzésben rögzítette.",
+    "vectorAxis" : 425,
+    "salience" : 0.38,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:decision:2026-02-04:01",
+    "personaId" : "rich",
+    "scenarioId" : "rich:superseded:01",
+    "sourceKind" : "decision",
+    "occurredOn" : "2026-02-04",
+    "content" : "Dóra jelenlegi terve szerint hetente 9 kilométert fut, a hosszú edzés helyszíne a Pilis.",
+    "vectorAxis" : 30,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:daily_summary:2026-02-05:02",
+    "personaId" : "rich",
+    "scenarioId" : "rich:superseded:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2026-02-05",
+    "content" : "A korábbi Pilis-terv heti 17 kilométer és másik útvonal volt; ezt felülírta.",
+    "vectorAxis" : 30,
+    "salience" : 0.64,
+    "state" : "superseded",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:journal_entry:2026-01-25:99-rich-6-0",
+    "personaId" : "rich",
+    "scenarioId" : "rich:superseded:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-01-25",
+    "content" : "A Pilis-tervhez ötletként felmerült heti 13 kilométer, de sosem lett érvényes.",
+    "vectorAxis" : 31,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:reflection:2026-02-03:70",
+    "personaId" : "rich",
+    "scenarioId" : "rich:superseded:01",
+    "sourceKind" : "reflection",
+    "occurredOn" : "2026-02-03",
+    "content" : "Dóra a 2026-02-03-i részletes reflexióban a napi teendőit rendezte.",
+    "vectorAxis" : 330,
+    "salience" : 0.42,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:activity_note:2026-02-06:71",
+    "personaId" : "rich",
+    "scenarioId" : "rich:superseded:01",
+    "sourceKind" : "activity_note",
+    "occurredOn" : "2026-02-06",
+    "content" : "Dóra a 2026-02-06-i rövid átmozgatást külön bejegyzésben rögzítette.",
+    "vectorAxis" : 430,
+    "salience" : 0.38,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:journal_entry:2026-02-09:01",
+    "personaId" : "rich",
+    "scenarioId" : "rich:empty:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-02-09",
+    "content" : "Dóra egy átlagos Pilis környéki napon röviden naplózott a munkáról.",
+    "vectorAxis" : 35,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:daily_summary:2026-02-10:02",
+    "personaId" : "rich",
+    "scenarioId" : "rich:empty:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2026-02-10",
+    "content" : "A Pilis környéki napi összegzés nem tartalmazott kiemelkedő eseményt.",
+    "vectorAxis" : 35,
+    "salience" : 0.64,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:journal_entry:2026-02-09:99-rich-7-0",
+    "personaId" : "rich",
+    "scenarioId" : "rich:empty:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-02-09",
+    "content" : "Egy másik, hasonlóan átlagos Pilis környéki munkanapon csak egy rövid sétát jegyzett fel.",
+    "vectorAxis" : 36,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:reflection:2026-02-08:70",
+    "personaId" : "rich",
+    "scenarioId" : "rich:empty:01",
+    "sourceKind" : "reflection",
+    "occurredOn" : "2026-02-08",
+    "content" : "Dóra a 2026-02-08-i részletes reflexióban a napi teendőit rendezte.",
+    "vectorAxis" : 335,
+    "salience" : 0.42,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:activity_note:2026-02-11:71",
+    "personaId" : "rich",
+    "scenarioId" : "rich:empty:01",
+    "sourceKind" : "activity_note",
+    "occurredOn" : "2026-02-11",
+    "content" : "Dóra a 2026-02-11-i rövid átmozgatást külön bejegyzésben rögzítette.",
+    "vectorAxis" : 435,
+    "salience" : 0.38,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:journal_entry:2026-02-14:01",
+    "personaId" : "rich",
+    "scenarioId" : "rich:ownership:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-02-14",
+    "content" : "Dóra a hétvégén Pilis térségében Boglárka társaságában 8 kilométert túrázott.",
+    "vectorAxis" : 40,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:daily_summary:2026-02-15:02",
+    "personaId" : "rich",
+    "scenarioId" : "rich:ownership:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2026-02-15",
+    "content" : "A saját napi összegzés szerint a Pilis-túra feltöltő volt.",
+    "vectorAxis" : 40,
+    "salience" : 0.64,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:journal_entry:2026-02-14:99-rich-8-0",
+    "personaId" : "sparse",
+    "scenarioId" : "rich:ownership:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-02-14",
+    "content" : "Egy másik felhasználó a hétvégén Pilis térségében Márton társaságában 8 kilométert túrázott.",
+    "vectorAxis" : 40,
+    "salience" : 0.9,
+    "state" : "active",
+    "foreignDistractor" : true
+  }, {
+    "key" : "rich:reflection:2026-02-13:70",
+    "personaId" : "rich",
+    "scenarioId" : "rich:ownership:01",
+    "sourceKind" : "reflection",
+    "occurredOn" : "2026-02-13",
+    "content" : "Dóra a 2026-02-13-i részletes reflexióban a napi teendőit rendezte.",
+    "vectorAxis" : 340,
+    "salience" : 0.42,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:activity_note:2026-02-16:71",
+    "personaId" : "rich",
+    "scenarioId" : "rich:ownership:01",
+    "sourceKind" : "activity_note",
+    "occurredOn" : "2026-02-16",
+    "content" : "Dóra a 2026-02-16-i rövid átmozgatást külön bejegyzésben rögzítette.",
+    "vectorAxis" : 440,
+    "salience" : 0.38,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:journal_entry:2026-02-09:01",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:paraphrase:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-02-09",
+    "content" : "Áron az Őrség-túrán Gergő társaságában érezte újra igazán könnyűnek a mozgást.",
+    "vectorAxis" : 64,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:journal_entry:2026-02-09:99-sparse-0-0",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:paraphrase:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-02-09",
+    "content" : "Az Őrség közelében tett másik séta esős és kimerítő volt.",
+    "vectorAxis" : 65,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:journal_entry:2026-02-27:01",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:follow_up:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-02-27",
+    "content" : "Áron az Őrség-futás előtti este 8 órát aludt, és Gergő biztatása megnyugtatta.",
+    "vectorAxis" : 69,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:journal_entry:2026-03-01:99-sparse-1-0",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:follow_up:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-03-01",
+    "content" : "A Őrség-futás utáni este csak hat óra alvás jutott, ez egy másik nap volt.",
+    "vectorAxis" : 70,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:activity_note:2026-03-17:01",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:exact_value:01",
+    "sourceKind" : "activity_note",
+    "occurredOn" : "2026-03-17",
+    "content" : "Áron az Őrség útvonalon pontosan 9 kilométert futott, 142-es átlagpulzussal.",
+    "vectorAxis" : 74,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:journal_entry:2026-03-17:99-sparse-2-0",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:exact_value:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-03-17",
+    "content" : "Egy másik Őrség környéki útvonal 10 kilométeres volt, 151-es átlagpulzussal.",
+    "vectorAxis" : 75,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:decision:2023-04-04:01",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:old_salient:01",
+    "sourceKind" : "decision",
+    "occurredOn" : "2023-04-04",
+    "content" : "Áron évekkel ezelőtt eldöntötte, hogy minden ősszel visszatér Gergő társaságában az Őrség-túrára.",
+    "vectorAxis" : 79,
+    "salience" : 0.98,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:journal_entry:2026-04-04:99-sparse-3-0",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:old_salient:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-04-04",
+    "content" : "Egy friss, de jelentéktelen Őrség környéki rövid sétáról szólt.",
+    "vectorAxis" : 80,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:journal_entry:2026-04-22:01",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:near_negative:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-04-22",
+    "content" : "Áron az Őrség-túrán Gergő mellett a kék jelzésen ment, és 9 percet pihent a forrásnál.",
+    "vectorAxis" : 84,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:journal_entry:2026-04-29:99-sparse-4-0",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:near_negative:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-04-29",
+    "content" : "Ugyanott, Őrség térségében a piros jelzésen egy héttel később 11 perces pihenő volt, más társasággal.",
+    "vectorAxis" : 85,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:decision:2026-05-10:01",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:negation:01",
+    "sourceKind" : "decision",
+    "occurredOn" : "2026-05-10",
+    "content" : "Áron kifejezetten úgy döntött, hogy vasárnap NEM fut az Őrség útvonalon, hanem Gergő társaságában pihen.",
+    "vectorAxis" : 89,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:journal_entry:2026-04-19:99-sparse-5-0",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:negation:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-04-19",
+    "content" : "Egy korábbi terv még vasárnapi Őrség-futást javasolt, de azt nem követte.",
+    "vectorAxis" : 90,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:decision:2026-05-28:01",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:superseded:01",
+    "sourceKind" : "decision",
+    "occurredOn" : "2026-05-28",
+    "content" : "Áron jelenlegi terve szerint hetente 8 kilométert fut, a hosszú edzés helyszíne az Őrség.",
+    "vectorAxis" : 94,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:journal_entry:2026-05-18:99-sparse-6-0",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:superseded:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-05-18",
+    "content" : "A Őrség-tervhez ötletként felmerült heti 12 kilométer, de sosem lett érvényes.",
+    "vectorAxis" : 95,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:journal_entry:2026-06-15:01",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:empty:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-06-15",
+    "content" : "Áron egy átlagos Őrség környéki napon röviden naplózott a munkáról.",
+    "vectorAxis" : 99,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:journal_entry:2026-06-15:99-sparse-7-0",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:empty:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-06-15",
+    "content" : "Egy másik, hasonlóan átlagos Őrség környéki munkanapon csak egy rövid sétát jegyzett fel.",
+    "vectorAxis" : 100,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:journal_entry:2026-07-03:01",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:ownership:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-07-03",
+    "content" : "Áron a hétvégén Őrség térségében Gergő társaságában 9 kilométert túrázott.",
+    "vectorAxis" : 104,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "sparse:daily_summary:2026-07-04:02",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:ownership:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2026-07-04",
+    "content" : "A saját napi összegzés szerint a Őrség-túra feltöltő volt.",
+    "vectorAxis" : 104,
+    "salience" : 0.64,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:journal_entry:2026-07-03:99-sparse-8-0",
+    "personaId" : "changing",
+    "scenarioId" : "sparse:ownership:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-07-03",
+    "content" : "Egy másik felhasználó a hétvégén Őrség térségében Júlia társaságában 9 kilométert túrázott.",
+    "vectorAxis" : 104,
+    "salience" : 0.9,
+    "state" : "active",
+    "foreignDistractor" : true
+  }, {
+    "key" : "changing:journal_entry:2026-05-25:01",
+    "personaId" : "changing",
+    "scenarioId" : "changing:paraphrase:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-05-25",
+    "content" : "Eszter a Kőszegi-hegység-túrán Lilla társaságában érezte újra igazán könnyűnek a mozgást.",
+    "vectorAxis" : 128,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:daily_summary:2026-05-26:02",
+    "personaId" : "changing",
+    "scenarioId" : "changing:paraphrase:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2026-05-26",
+    "content" : "A Kőszegi-hegység-kirándulás után Eszter energikus és nyugodt maradt.",
+    "vectorAxis" : 128,
+    "salience" : 0.64,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:journal_entry:2026-05-25:99-changing-0-0",
+    "personaId" : "changing",
+    "scenarioId" : "changing:paraphrase:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-05-25",
+    "content" : "A Kőszegi-hegység közelében tett másik séta esős és kimerítő volt.",
+    "vectorAxis" : 129,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:decision:2026-04-25:80",
+    "personaId" : "changing",
+    "scenarioId" : "changing:paraphrase:01",
+    "sourceKind" : "decision",
+    "occurredOn" : "2026-04-25",
+    "content" : "Korábbi, már felülírt állapot ugyanerről: A Kőszegi-hegység közelében tett másik séta esős és kimerítő volt.",
+    "vectorAxis" : 128,
+    "salience" : 0.88,
+    "state" : "superseded",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:journal_entry:2026-05-30:01",
+    "personaId" : "changing",
+    "scenarioId" : "changing:follow_up:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-05-30",
+    "content" : "Eszter a Kőszegi-hegység-futás előtti este 8 órát aludt, és Lilla biztatása megnyugtatta.",
+    "vectorAxis" : 133,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:daily_summary:2026-05-31:02",
+    "personaId" : "changing",
+    "scenarioId" : "changing:follow_up:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2026-05-31",
+    "content" : "Másnap Eszter frissen kezdte a Kőszegi-hegység-futást, a felkészülést sikeresnek írta le.",
+    "vectorAxis" : 133,
+    "salience" : 0.64,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:journal_entry:2026-06-01:99-changing-1-0",
+    "personaId" : "changing",
+    "scenarioId" : "changing:follow_up:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-06-01",
+    "content" : "A Kőszegi-hegység-futás utáni este csak hat óra alvás jutott, ez egy másik nap volt.",
+    "vectorAxis" : 134,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:decision:2026-04-30:80",
+    "personaId" : "changing",
+    "scenarioId" : "changing:follow_up:01",
+    "sourceKind" : "decision",
+    "occurredOn" : "2026-04-30",
+    "content" : "Korábbi, már felülírt állapot ugyanerről: A Kőszegi-hegység-futás utáni este csak hat óra alvás jutott, ez egy másik nap volt.",
+    "vectorAxis" : 133,
+    "salience" : 0.88,
+    "state" : "superseded",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:activity_note:2026-06-04:01",
+    "personaId" : "changing",
+    "scenarioId" : "changing:exact_value:01",
+    "sourceKind" : "activity_note",
+    "occurredOn" : "2026-06-04",
+    "content" : "Eszter a Kőszegi-hegység útvonalon pontosan 9 kilométert futott, 142-es átlagpulzussal.",
+    "vectorAxis" : 138,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:daily_summary:2026-06-05:02",
+    "personaId" : "changing",
+    "scenarioId" : "changing:exact_value:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2026-06-05",
+    "content" : "A napi összegzésben a 9 kilométeres Kőszegi-hegység futás volt a fő terhelés.",
+    "vectorAxis" : 138,
+    "salience" : 0.64,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:journal_entry:2026-06-04:99-changing-2-0",
+    "personaId" : "changing",
+    "scenarioId" : "changing:exact_value:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-06-04",
+    "content" : "Egy másik Kőszegi-hegység környéki útvonal 10 kilométeres volt, 151-es átlagpulzussal.",
+    "vectorAxis" : 139,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:decision:2026-05-05:80",
+    "personaId" : "changing",
+    "scenarioId" : "changing:exact_value:01",
+    "sourceKind" : "decision",
+    "occurredOn" : "2026-05-05",
+    "content" : "Korábbi, már felülírt állapot ugyanerről: Egy másik Kőszegi-hegység környéki útvonal 10 kilométeres volt, 151-es átlagpulzussal.",
+    "vectorAxis" : 138,
+    "salience" : 0.88,
+    "state" : "superseded",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:decision:2023-06-09:01",
+    "personaId" : "changing",
+    "scenarioId" : "changing:old_salient:01",
+    "sourceKind" : "decision",
+    "occurredOn" : "2023-06-09",
+    "content" : "Eszter évekkel ezelőtt eldöntötte, hogy minden ősszel visszatér Lilla társaságában a Kőszegi-hegység-túrára.",
+    "vectorAxis" : 143,
+    "salience" : 0.98,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:daily_summary:2023-06-10:02",
+    "personaId" : "changing",
+    "scenarioId" : "changing:old_salient:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2023-06-10",
+    "content" : "A régi Kőszegi-hegység-döntés azóta is fontos éves kapaszkodó Eszter számára.",
+    "vectorAxis" : 143,
+    "salience" : 0.64,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:journal_entry:2026-06-09:99-changing-3-0",
+    "personaId" : "changing",
+    "scenarioId" : "changing:old_salient:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-06-09",
+    "content" : "Egy friss, de jelentéktelen Kőszegi-hegység környéki rövid sétáról szólt.",
+    "vectorAxis" : 144,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:decision:2023-05-10:80",
+    "personaId" : "changing",
+    "scenarioId" : "changing:old_salient:01",
+    "sourceKind" : "decision",
+    "occurredOn" : "2023-05-10",
+    "content" : "Korábbi, már felülírt állapot ugyanerről: Egy friss, de jelentéktelen Kőszegi-hegység környéki rövid sétáról szólt.",
+    "vectorAxis" : 143,
+    "salience" : 0.88,
+    "state" : "superseded",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:journal_entry:2026-06-14:01",
+    "personaId" : "changing",
+    "scenarioId" : "changing:near_negative:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-06-14",
+    "content" : "Eszter a Kőszegi-hegység-túrán Lilla mellett a kék jelzésen ment, és 7 percet pihent a forrásnál.",
+    "vectorAxis" : 148,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:daily_summary:2026-06-15:02",
+    "personaId" : "changing",
+    "scenarioId" : "changing:near_negative:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2026-06-15",
+    "content" : "A Kőszegi-hegység környéki napi összegzés a kék jelzést és a forrásnál tartott pihenőt emelte ki.",
+    "vectorAxis" : 148,
+    "salience" : 0.64,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:journal_entry:2026-06-21:99-changing-4-0",
+    "personaId" : "changing",
+    "scenarioId" : "changing:near_negative:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-06-21",
+    "content" : "Ugyanott, Kőszegi-hegység térségében a piros jelzésen egy héttel később 9 perces pihenő volt, más társasággal.",
+    "vectorAxis" : 149,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:decision:2026-05-15:80",
+    "personaId" : "changing",
+    "scenarioId" : "changing:near_negative:01",
+    "sourceKind" : "decision",
+    "occurredOn" : "2026-05-15",
+    "content" : "Korábbi, már felülírt állapot ugyanerről: Ugyanott, Kőszegi-hegység térségében a piros jelzésen egy héttel később 9 perces pihenő volt, más társasággal.",
+    "vectorAxis" : 148,
+    "salience" : 0.88,
+    "state" : "superseded",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:decision:2026-06-19:01",
+    "personaId" : "changing",
+    "scenarioId" : "changing:negation:01",
+    "sourceKind" : "decision",
+    "occurredOn" : "2026-06-19",
+    "content" : "Eszter kifejezetten úgy döntött, hogy vasárnap NEM fut a Kőszegi-hegység útvonalon, hanem Lilla társaságában pihen.",
+    "vectorAxis" : 153,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:daily_summary:2026-06-20:02",
+    "personaId" : "changing",
+    "scenarioId" : "changing:negation:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2026-06-20",
+    "content" : "A heti terv vasárnapra pihenőt, nem Kőszegi-hegység-edzést rögzített.",
+    "vectorAxis" : 153,
+    "salience" : 0.64,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:journal_entry:2026-05-29:99-changing-5-0",
+    "personaId" : "changing",
+    "scenarioId" : "changing:negation:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-05-29",
+    "content" : "Egy korábbi terv még vasárnapi Kőszegi-hegység-futást javasolt, de azt nem követte.",
+    "vectorAxis" : 154,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:decision:2026-05-20:80",
+    "personaId" : "changing",
+    "scenarioId" : "changing:negation:01",
+    "sourceKind" : "decision",
+    "occurredOn" : "2026-05-20",
+    "content" : "Korábbi, már felülírt állapot ugyanerről: Egy korábbi terv még vasárnapi Kőszegi-hegység-futást javasolt, de azt nem követte.",
+    "vectorAxis" : 153,
+    "salience" : 0.88,
+    "state" : "superseded",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:decision:2026-06-24:01",
+    "personaId" : "changing",
+    "scenarioId" : "changing:superseded:01",
+    "sourceKind" : "decision",
+    "occurredOn" : "2026-06-24",
+    "content" : "Eszter jelenlegi terve szerint hetente 8 kilométert fut, a hosszú edzés helyszíne a Kőszegi-hegység.",
+    "vectorAxis" : 158,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:daily_summary:2026-06-25:02",
+    "personaId" : "changing",
+    "scenarioId" : "changing:superseded:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2026-06-25",
+    "content" : "A korábbi Kőszegi-hegység-terv heti 16 kilométer és másik útvonal volt; ezt felülírta.",
+    "vectorAxis" : 158,
+    "salience" : 0.64,
+    "state" : "superseded",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:journal_entry:2026-06-14:99-changing-6-0",
+    "personaId" : "changing",
+    "scenarioId" : "changing:superseded:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-06-14",
+    "content" : "A Kőszegi-hegység-tervhez ötletként felmerült heti 12 kilométer, de sosem lett érvényes.",
+    "vectorAxis" : 159,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:decision:2026-05-25:80",
+    "personaId" : "changing",
+    "scenarioId" : "changing:superseded:01",
+    "sourceKind" : "decision",
+    "occurredOn" : "2026-05-25",
+    "content" : "Korábbi, már felülírt állapot ugyanerről: A Kőszegi-hegység-tervhez ötletként felmerült heti 12 kilométer, de sosem lett érvényes.",
+    "vectorAxis" : 158,
+    "salience" : 0.88,
+    "state" : "superseded",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:journal_entry:2026-06-29:01",
+    "personaId" : "changing",
+    "scenarioId" : "changing:empty:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-06-29",
+    "content" : "Eszter egy átlagos Kőszegi-hegység környéki napon röviden naplózott a munkáról.",
+    "vectorAxis" : 163,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:daily_summary:2026-06-30:02",
+    "personaId" : "changing",
+    "scenarioId" : "changing:empty:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2026-06-30",
+    "content" : "A Kőszegi-hegység környéki napi összegzés nem tartalmazott kiemelkedő eseményt.",
+    "vectorAxis" : 163,
+    "salience" : 0.64,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:journal_entry:2026-06-29:99-changing-7-0",
+    "personaId" : "changing",
+    "scenarioId" : "changing:empty:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-06-29",
+    "content" : "Egy másik, hasonlóan átlagos Kőszegi-hegység környéki munkanapon csak egy rövid sétát jegyzett fel.",
+    "vectorAxis" : 164,
+    "salience" : 0.48,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:decision:2026-05-30:80",
+    "personaId" : "changing",
+    "scenarioId" : "changing:empty:01",
+    "sourceKind" : "decision",
+    "occurredOn" : "2026-05-30",
+    "content" : "Korábbi, már felülírt állapot ugyanerről: Egy másik, hasonlóan átlagos Kőszegi-hegység környéki munkanapon csak egy rövid sétát jegyzett fel.",
+    "vectorAxis" : 163,
+    "salience" : 0.88,
+    "state" : "superseded",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:journal_entry:2026-07-04:01",
+    "personaId" : "changing",
+    "scenarioId" : "changing:ownership:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-07-04",
+    "content" : "Eszter a hétvégén Kőszegi-hegység térségében Lilla társaságában 8 kilométert túrázott.",
+    "vectorAxis" : 168,
+    "salience" : 0.78,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "changing:daily_summary:2026-07-05:02",
+    "personaId" : "changing",
+    "scenarioId" : "changing:ownership:01",
+    "sourceKind" : "daily_summary",
+    "occurredOn" : "2026-07-05",
+    "content" : "A saját napi összegzés szerint a Kőszegi-hegység-túra feltöltő volt.",
+    "vectorAxis" : 168,
+    "salience" : 0.64,
+    "state" : "active",
+    "foreignDistractor" : false
+  }, {
+    "key" : "rich:journal_entry:2026-07-04:99-changing-8-0",
+    "personaId" : "rich",
+    "scenarioId" : "changing:ownership:01",
+    "sourceKind" : "journal_entry",
+    "occurredOn" : "2026-07-04",
+    "content" : "Egy másik felhasználó a hétvégén Kőszegi-hegység térségében Bence társaságában 8 kilométert túrázott.",
+    "vectorAxis" : 168,
+    "salience" : 0.9,
+    "state" : "active",
+    "foreignDistractor" : true
+  }, {
+    "key" : "changing:decision:2026-06-04:80",
+    "personaId" : "changing",
+    "scenarioId" : "changing:ownership:01",
+    "sourceKind" : "decision",
+    "occurredOn" : "2026-06-04",
+    "content" : "Korábbi, már felülírt állapot ugyanerről: Egy másik felhasználó a hétvégén Kőszegi-hegység térségében Bence társaságában 8 kilométert túrázott.",
+    "vectorAxis" : 168,
+    "salience" : 0.88,
+    "state" : "superseded",
+    "foreignDistractor" : false
+  } ],
+  "queries" : [ {
+    "id" : "rich:paraphrase:01:q1",
+    "personaId" : "rich",
+    "scenarioId" : "rich:paraphrase:01",
+    "family" : "paraphrase",
+    "query" : "A korábbi naplómból: kivel lett újra könnyed a mozgásom a Pilis-kiránduláson?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:journal_entry:2026-01-05:01" : 2,
+      "rich:daily_summary:2026-01-06:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:paraphrase:01:q2",
+    "personaId" : "rich",
+    "scenarioId" : "rich:paraphrase:01",
+    "family" : "paraphrase",
+    "query" : "A korábbi naplómból: melyik Pilis környéki túra adott nekem könnyedségérzést?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:journal_entry:2026-01-05:01" : 2,
+      "rich:daily_summary:2026-01-06:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:paraphrase:01:q3",
+    "personaId" : "rich",
+    "scenarioId" : "rich:paraphrase:01",
+    "family" : "paraphrase",
+    "query" : "A korábbi naplómból: ki volt velem Pilis térségében, amikor energikusnak éreztem magam?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:journal_entry:2026-01-05:01" : 2,
+      "rich:daily_summary:2026-01-06:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:paraphrase:01:q4",
+    "personaId" : "rich",
+    "scenarioId" : "rich:paraphrase:01",
+    "family" : "paraphrase",
+    "query" : "A korábbi naplómból: melyik Pilis környéki emlékem szól a felszabadult mozgásról?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:journal_entry:2026-01-05:01" : 2,
+      "rich:daily_summary:2026-01-06:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:follow_up:01:q1",
+    "personaId" : "rich",
+    "scenarioId" : "rich:follow_up:01",
+    "family" : "follow_up",
+    "query" : "A korábbi naplómból: és előtte, a Pilis-futásnál?",
+    "history" : [ {
+      "role" : "USER",
+      "content" : "Mesélj a Pilis-futásomról."
+    }, {
+      "role" : "ASSISTANT",
+      "content" : "Igen, emlékszem erre."
+    } ],
+    "relevanceBySourceKey" : {
+      "rich:journal_entry:2026-01-10:01" : 2,
+      "rich:daily_summary:2026-01-11:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:follow_up:01:q2",
+    "personaId" : "rich",
+    "scenarioId" : "rich:follow_up:01",
+    "family" : "follow_up",
+    "query" : "A korábbi naplómból: mi történt az azt megelőző este a Pilis-futás előtt?",
+    "history" : [ {
+      "role" : "USER",
+      "content" : "Mesélj a Pilis-futásomról."
+    }, {
+      "role" : "ASSISTANT",
+      "content" : "Igen, emlékszem erre."
+    } ],
+    "relevanceBySourceKey" : {
+      "rich:journal_entry:2026-01-10:01" : 2,
+      "rich:daily_summary:2026-01-11:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:follow_up:01:q3",
+    "personaId" : "rich",
+    "scenarioId" : "rich:follow_up:01",
+    "family" : "follow_up",
+    "query" : "A korábbi naplómból: és az alvással előtte mi volt a Pilis-futásnál?",
+    "history" : [ {
+      "role" : "USER",
+      "content" : "Mesélj a Pilis-futásomról."
+    }, {
+      "role" : "ASSISTANT",
+      "content" : "Igen, emlékszem erre."
+    } ],
+    "relevanceBySourceKey" : {
+      "rich:journal_entry:2026-01-10:01" : 2,
+      "rich:daily_summary:2026-01-11:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:follow_up:01:q4",
+    "personaId" : "rich",
+    "scenarioId" : "rich:follow_up:01",
+    "family" : "follow_up",
+    "query" : "A korábbi naplómból: arról a Pilis-futás előtti estéről mit jegyeztem fel?",
+    "history" : [ {
+      "role" : "USER",
+      "content" : "Mesélj a Pilis-futásomról."
+    }, {
+      "role" : "ASSISTANT",
+      "content" : "Igen, emlékszem erre."
+    } ],
+    "relevanceBySourceKey" : {
+      "rich:journal_entry:2026-01-10:01" : 2,
+      "rich:daily_summary:2026-01-11:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:exact_value:01:q1",
+    "personaId" : "rich",
+    "scenarioId" : "rich:exact_value:01",
+    "family" : "exact_value",
+    "query" : "A korábbi naplómból: pontosan hány kilométert futottam Pilis térségében?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:activity_note:2026-01-15:01" : 2,
+      "rich:daily_summary:2026-01-16:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:exact_value:01:q2",
+    "personaId" : "rich",
+    "scenarioId" : "rich:exact_value:01",
+    "family" : "exact_value",
+    "query" : "A korábbi naplómból: mi volt a Pilis-futás távja?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:activity_note:2026-01-15:01" : 2,
+      "rich:daily_summary:2026-01-16:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:exact_value:01:q3",
+    "personaId" : "rich",
+    "scenarioId" : "rich:exact_value:01",
+    "family" : "exact_value",
+    "query" : "A korábbi naplómból: hány kilométer szerepel a 142-es pulzusú Pilis-futásnál?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:activity_note:2026-01-15:01" : 2,
+      "rich:daily_summary:2026-01-16:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:exact_value:01:q4",
+    "personaId" : "rich",
+    "scenarioId" : "rich:exact_value:01",
+    "family" : "exact_value",
+    "query" : "A korábbi naplómból: mekkora volt számszerűen a Pilis-edzésem?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:activity_note:2026-01-15:01" : 2,
+      "rich:daily_summary:2026-01-16:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:old_salient:01:q1",
+    "personaId" : "rich",
+    "scenarioId" : "rich:old_salient:01",
+    "family" : "old_salient",
+    "query" : "A korábbi naplómból: melyik régi Pilis környéki őszi hagyomány fontos még mindig nekem?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:decision:2023-01-20:01" : 2,
+      "rich:daily_summary:2023-01-21:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:old_salient:01:q2",
+    "personaId" : "rich",
+    "scenarioId" : "rich:old_salient:01",
+    "family" : "old_salient",
+    "query" : "A korábbi naplómból: kivel terveztem évről évre visszatérni Pilis térségébe túrázni?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:decision:2023-01-20:01" : 2,
+      "rich:daily_summary:2023-01-21:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:old_salient:01:q3",
+    "personaId" : "rich",
+    "scenarioId" : "rich:old_salient:01",
+    "family" : "old_salient",
+    "query" : "A korábbi naplómból: mi az a régi Pilis-döntésem, amely ma is kapaszkodó?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:decision:2023-01-20:01" : 2,
+      "rich:daily_summary:2023-01-21:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:old_salient:01:q4",
+    "personaId" : "rich",
+    "scenarioId" : "rich:old_salient:01",
+    "family" : "old_salient",
+    "query" : "A korábbi naplómból: melyik többéves Pilis emléket érdemes felidézni?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:decision:2023-01-20:01" : 2,
+      "rich:daily_summary:2023-01-21:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:near_negative:01:q1",
+    "personaId" : "rich",
+    "scenarioId" : "rich:near_negative:01",
+    "family" : "near_negative",
+    "query" : "A korábbi naplómból: melyik jelzésen mentem Boglárka mellett?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:journal_entry:2026-01-25:01" : 2,
+      "rich:daily_summary:2026-01-26:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:near_negative:01:q2",
+    "personaId" : "rich",
+    "scenarioId" : "rich:near_negative:01",
+    "family" : "near_negative",
+    "query" : "A korábbi naplómból: hány percet pihentem a kék jelzéses Pilis-túrán?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:journal_entry:2026-01-25:01" : 2,
+      "rich:daily_summary:2026-01-26:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:near_negative:01:q3",
+    "personaId" : "rich",
+    "scenarioId" : "rich:near_negative:01",
+    "family" : "near_negative",
+    "query" : "A korábbi naplómból: a forrásnál tartott pihenő melyik Pilis-túrához tartozott?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:journal_entry:2026-01-25:01" : 2,
+      "rich:daily_summary:2026-01-26:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:near_negative:01:q4",
+    "personaId" : "rich",
+    "scenarioId" : "rich:near_negative:01",
+    "family" : "near_negative",
+    "query" : "A korábbi naplómból: ne a piros jelzéses napot: mi történt a kék Pilis-útvonalon?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:journal_entry:2026-01-25:01" : 2,
+      "rich:daily_summary:2026-01-26:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:negation:01:q1",
+    "personaId" : "rich",
+    "scenarioId" : "rich:negation:01",
+    "family" : "negation",
+    "query" : "A korábbi naplómból: futást vagy pihenést terveztem vasárnapra Pilis térségében?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:decision:2026-01-30:01" : 2,
+      "rich:daily_summary:2026-01-31:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:negation:01:q2",
+    "personaId" : "rich",
+    "scenarioId" : "rich:negation:01",
+    "family" : "negation",
+    "query" : "A korábbi naplómból: mit döntöttem arról, hogy vasárnap fussak-e a Pilis-útvonalon?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:decision:2026-01-30:01" : 2,
+      "rich:daily_summary:2026-01-31:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:negation:01:q3",
+    "personaId" : "rich",
+    "scenarioId" : "rich:negation:01",
+    "family" : "negation",
+    "query" : "A korábbi naplómból: mi az, amit kifejezetten nem csinálok Pilis térségében vasárnap?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:decision:2026-01-30:01" : 2,
+      "rich:daily_summary:2026-01-31:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:negation:01:q4",
+    "personaId" : "rich",
+    "scenarioId" : "rich:negation:01",
+    "family" : "negation",
+    "query" : "A korábbi naplómból: a régi Pilis-futásterv helyett mi lett a vasárnapi döntésem?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:decision:2026-01-30:01" : 2,
+      "rich:daily_summary:2026-01-31:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:superseded:01:q1",
+    "personaId" : "rich",
+    "scenarioId" : "rich:superseded:01",
+    "family" : "superseded",
+    "query" : "A korábbi naplómból: mi a jelenlegi heti futástávom a Pilis-tervben?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:decision:2026-02-04:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:superseded:01:q2",
+    "personaId" : "rich",
+    "scenarioId" : "rich:superseded:01",
+    "family" : "superseded",
+    "query" : "A korábbi naplómból: melyik Pilis-futásterv érvényes most?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:decision:2026-02-04:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:superseded:01:q3",
+    "personaId" : "rich",
+    "scenarioId" : "rich:superseded:01",
+    "family" : "superseded",
+    "query" : "A korábbi naplómból: hány kilométerre módosítottam a heti Pilis-tervet?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:decision:2026-02-04:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:superseded:01:q4",
+    "personaId" : "rich",
+    "scenarioId" : "rich:superseded:01",
+    "family" : "superseded",
+    "query" : "A korábbi naplómból: mi írta felül a régi, hosszabb Pilis-futástervet?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:decision:2026-02-04:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:empty:01:q1",
+    "personaId" : "rich",
+    "scenarioId" : "rich:empty:01",
+    "family" : "empty",
+    "query" : "Szia!",
+    "history" : [ ],
+    "relevanceBySourceKey" : { },
+    "expectsEmpty" : true
+  }, {
+    "id" : "rich:empty:01:q2",
+    "personaId" : "rich",
+    "scenarioId" : "rich:empty:01",
+    "family" : "empty",
+    "query" : "Helló!",
+    "history" : [ ],
+    "relevanceBySourceKey" : { },
+    "expectsEmpty" : true
+  }, {
+    "id" : "rich:empty:01:q3",
+    "personaId" : "rich",
+    "scenarioId" : "rich:empty:01",
+    "family" : "empty",
+    "query" : "Jó reggelt!",
+    "history" : [ ],
+    "relevanceBySourceKey" : { },
+    "expectsEmpty" : true
+  }, {
+    "id" : "rich:empty:01:q4",
+    "personaId" : "rich",
+    "scenarioId" : "rich:empty:01",
+    "family" : "empty",
+    "query" : "Jó estét!",
+    "history" : [ ],
+    "relevanceBySourceKey" : { },
+    "expectsEmpty" : true
+  }, {
+    "id" : "rich:ownership:01:q1",
+    "personaId" : "rich",
+    "scenarioId" : "rich:ownership:01",
+    "family" : "ownership",
+    "query" : "A korábbi naplómból: kivel túráztam Pilis térségében azon a hétvégén?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:journal_entry:2026-02-14:01" : 2,
+      "rich:daily_summary:2026-02-15:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:ownership:01:q2",
+    "personaId" : "rich",
+    "scenarioId" : "rich:ownership:01",
+    "family" : "ownership",
+    "query" : "A korábbi naplómból: mekkora volt a saját Pilis-túrám?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:journal_entry:2026-02-14:01" : 2,
+      "rich:daily_summary:2026-02-15:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:ownership:01:q3",
+    "personaId" : "rich",
+    "scenarioId" : "rich:ownership:01",
+    "family" : "ownership",
+    "query" : "A korábbi naplómból: mit írtam a saját napi összegzésemben a Pilis-túráról?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:journal_entry:2026-02-14:01" : 1,
+      "rich:daily_summary:2026-02-15:02" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "rich:ownership:01:q4",
+    "personaId" : "rich",
+    "scenarioId" : "rich:ownership:01",
+    "family" : "ownership",
+    "query" : "A korábbi naplómból: az én Pilis környéki emlékeim szerint ki kísért el?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "rich:journal_entry:2026-02-14:01" : 2,
+      "rich:daily_summary:2026-02-15:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:paraphrase:01:q1",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:paraphrase:01",
+    "family" : "paraphrase",
+    "query" : "A korábbi naplómból: kivel lett újra könnyed a mozgásom a Őrség-kiránduláson?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:journal_entry:2026-02-09:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:paraphrase:01:q2",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:paraphrase:01",
+    "family" : "paraphrase",
+    "query" : "A korábbi naplómból: melyik Őrség környéki túra adott nekem könnyedségérzést?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:journal_entry:2026-02-09:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:paraphrase:01:q3",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:paraphrase:01",
+    "family" : "paraphrase",
+    "query" : "A korábbi naplómból: ki volt velem Őrség térségében, amikor energikusnak éreztem magam?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:journal_entry:2026-02-09:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:paraphrase:01:q4",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:paraphrase:01",
+    "family" : "paraphrase",
+    "query" : "A korábbi naplómból: melyik Őrség környéki emlékem szól a felszabadult mozgásról?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:journal_entry:2026-02-09:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:follow_up:01:q1",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:follow_up:01",
+    "family" : "follow_up",
+    "query" : "A korábbi naplómból: és előtte, a Őrség-futásnál?",
+    "history" : [ {
+      "role" : "USER",
+      "content" : "Mesélj az Őrség-futásomról."
+    }, {
+      "role" : "ASSISTANT",
+      "content" : "Igen, emlékszem erre."
+    } ],
+    "relevanceBySourceKey" : {
+      "sparse:journal_entry:2026-02-27:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:follow_up:01:q2",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:follow_up:01",
+    "family" : "follow_up",
+    "query" : "A korábbi naplómból: mi történt az azt megelőző este a Őrség-futás előtt?",
+    "history" : [ {
+      "role" : "USER",
+      "content" : "Mesélj az Őrség-futásomról."
+    }, {
+      "role" : "ASSISTANT",
+      "content" : "Igen, emlékszem erre."
+    } ],
+    "relevanceBySourceKey" : {
+      "sparse:journal_entry:2026-02-27:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:follow_up:01:q3",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:follow_up:01",
+    "family" : "follow_up",
+    "query" : "A korábbi naplómból: és az alvással előtte mi volt a Őrség-futásnál?",
+    "history" : [ {
+      "role" : "USER",
+      "content" : "Mesélj az Őrség-futásomról."
+    }, {
+      "role" : "ASSISTANT",
+      "content" : "Igen, emlékszem erre."
+    } ],
+    "relevanceBySourceKey" : {
+      "sparse:journal_entry:2026-02-27:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:follow_up:01:q4",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:follow_up:01",
+    "family" : "follow_up",
+    "query" : "A korábbi naplómból: arról a Őrség-futás előtti estéről mit jegyeztem fel?",
+    "history" : [ {
+      "role" : "USER",
+      "content" : "Mesélj az Őrség-futásomról."
+    }, {
+      "role" : "ASSISTANT",
+      "content" : "Igen, emlékszem erre."
+    } ],
+    "relevanceBySourceKey" : {
+      "sparse:journal_entry:2026-02-27:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:exact_value:01:q1",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:exact_value:01",
+    "family" : "exact_value",
+    "query" : "A korábbi naplómból: pontosan hány kilométert futottam Őrség térségében?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:activity_note:2026-03-17:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:exact_value:01:q2",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:exact_value:01",
+    "family" : "exact_value",
+    "query" : "A korábbi naplómból: mi volt az Őrség-futás távja?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:activity_note:2026-03-17:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:exact_value:01:q3",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:exact_value:01",
+    "family" : "exact_value",
+    "query" : "A korábbi naplómból: hány kilométer szerepel a 142-es pulzusú Őrség-futásnál?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:activity_note:2026-03-17:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:exact_value:01:q4",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:exact_value:01",
+    "family" : "exact_value",
+    "query" : "A korábbi naplómból: mekkora volt számszerűen az Őrség-edzésem?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:activity_note:2026-03-17:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:old_salient:01:q1",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:old_salient:01",
+    "family" : "old_salient",
+    "query" : "A korábbi naplómból: melyik régi Őrség környéki őszi hagyomány fontos még mindig nekem?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:decision:2023-04-04:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:old_salient:01:q2",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:old_salient:01",
+    "family" : "old_salient",
+    "query" : "A korábbi naplómból: kivel terveztem évről évre visszatérni Őrség térségébe túrázni?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:decision:2023-04-04:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:old_salient:01:q3",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:old_salient:01",
+    "family" : "old_salient",
+    "query" : "A korábbi naplómból: mi az a régi Őrség-döntésem, amely ma is kapaszkodó?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:decision:2023-04-04:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:old_salient:01:q4",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:old_salient:01",
+    "family" : "old_salient",
+    "query" : "A korábbi naplómból: melyik többéves Őrség emléket érdemes felidézni?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:decision:2023-04-04:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:near_negative:01:q1",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:near_negative:01",
+    "family" : "near_negative",
+    "query" : "A korábbi naplómból: melyik jelzésen mentem Gergő mellett?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:journal_entry:2026-04-22:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:near_negative:01:q2",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:near_negative:01",
+    "family" : "near_negative",
+    "query" : "A korábbi naplómból: hány percet pihentem a kék jelzéses Őrség-túrán?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:journal_entry:2026-04-22:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:near_negative:01:q3",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:near_negative:01",
+    "family" : "near_negative",
+    "query" : "A korábbi naplómból: a forrásnál tartott pihenő melyik Őrség-túrához tartozott?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:journal_entry:2026-04-22:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:near_negative:01:q4",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:near_negative:01",
+    "family" : "near_negative",
+    "query" : "A korábbi naplómból: ne a piros jelzéses napot: mi történt a kék Őrség-útvonalon?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:journal_entry:2026-04-22:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:negation:01:q1",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:negation:01",
+    "family" : "negation",
+    "query" : "A korábbi naplómból: futást vagy pihenést terveztem vasárnapra Őrség térségében?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:decision:2026-05-10:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:negation:01:q2",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:negation:01",
+    "family" : "negation",
+    "query" : "A korábbi naplómból: mit döntöttem arról, hogy vasárnap fussak-e a Őrség-útvonalon?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:decision:2026-05-10:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:negation:01:q3",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:negation:01",
+    "family" : "negation",
+    "query" : "A korábbi naplómból: mi az, amit kifejezetten nem csinálok Őrség térségében vasárnap?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:decision:2026-05-10:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:negation:01:q4",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:negation:01",
+    "family" : "negation",
+    "query" : "A korábbi naplómból: a régi Őrség-futásterv helyett mi lett a vasárnapi döntésem?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:decision:2026-05-10:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:superseded:01:q1",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:superseded:01",
+    "family" : "superseded",
+    "query" : "A korábbi naplómból: mi a jelenlegi heti futástávom a Őrség-tervben?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:decision:2026-05-28:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:superseded:01:q2",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:superseded:01",
+    "family" : "superseded",
+    "query" : "A korábbi naplómból: melyik Őrség-futásterv érvényes most?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:decision:2026-05-28:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:superseded:01:q3",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:superseded:01",
+    "family" : "superseded",
+    "query" : "A korábbi naplómból: hány kilométerre módosítottam a heti Őrség-tervet?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:decision:2026-05-28:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:superseded:01:q4",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:superseded:01",
+    "family" : "superseded",
+    "query" : "A korábbi naplómból: mi írta felül a régi, hosszabb Őrség-futástervet?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:decision:2026-05-28:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:empty:01:q1",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:empty:01",
+    "family" : "empty",
+    "query" : "Szia.",
+    "history" : [ ],
+    "relevanceBySourceKey" : { },
+    "expectsEmpty" : true
+  }, {
+    "id" : "sparse:empty:01:q2",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:empty:01",
+    "family" : "empty",
+    "query" : "Helló.",
+    "history" : [ ],
+    "relevanceBySourceKey" : { },
+    "expectsEmpty" : true
+  }, {
+    "id" : "sparse:empty:01:q3",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:empty:01",
+    "family" : "empty",
+    "query" : "Jó reggelt.",
+    "history" : [ ],
+    "relevanceBySourceKey" : { },
+    "expectsEmpty" : true
+  }, {
+    "id" : "sparse:empty:01:q4",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:empty:01",
+    "family" : "empty",
+    "query" : "Jó estét.",
+    "history" : [ ],
+    "relevanceBySourceKey" : { },
+    "expectsEmpty" : true
+  }, {
+    "id" : "sparse:ownership:01:q1",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:ownership:01",
+    "family" : "ownership",
+    "query" : "A korábbi naplómból: kivel túráztam Őrség térségében azon a hétvégén?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:journal_entry:2026-07-03:01" : 2,
+      "sparse:daily_summary:2026-07-04:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:ownership:01:q2",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:ownership:01",
+    "family" : "ownership",
+    "query" : "A korábbi naplómból: mekkora volt a saját Őrség-túrám?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:journal_entry:2026-07-03:01" : 2,
+      "sparse:daily_summary:2026-07-04:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:ownership:01:q3",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:ownership:01",
+    "family" : "ownership",
+    "query" : "A korábbi naplómból: mit írtam a saját napi összegzésemben a Őrség-túráról?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:journal_entry:2026-07-03:01" : 1,
+      "sparse:daily_summary:2026-07-04:02" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "sparse:ownership:01:q4",
+    "personaId" : "sparse",
+    "scenarioId" : "sparse:ownership:01",
+    "family" : "ownership",
+    "query" : "A korábbi naplómból: az én Őrség környéki emlékeim szerint ki kísért el?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "sparse:journal_entry:2026-07-03:01" : 2,
+      "sparse:daily_summary:2026-07-04:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:paraphrase:01:q1",
+    "personaId" : "changing",
+    "scenarioId" : "changing:paraphrase:01",
+    "family" : "paraphrase",
+    "query" : "A korábbi naplómból: kivel lett újra könnyed a mozgásom a Kőszegi-hegység-kiránduláson?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:journal_entry:2026-05-25:01" : 2,
+      "changing:daily_summary:2026-05-26:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:paraphrase:01:q2",
+    "personaId" : "changing",
+    "scenarioId" : "changing:paraphrase:01",
+    "family" : "paraphrase",
+    "query" : "A korábbi naplómból: melyik Kőszegi-hegység környéki túra adott nekem könnyedségérzést?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:journal_entry:2026-05-25:01" : 2,
+      "changing:daily_summary:2026-05-26:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:paraphrase:01:q3",
+    "personaId" : "changing",
+    "scenarioId" : "changing:paraphrase:01",
+    "family" : "paraphrase",
+    "query" : "A korábbi naplómból: ki volt velem Kőszegi-hegység térségében, amikor energikusnak éreztem magam?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:journal_entry:2026-05-25:01" : 2,
+      "changing:daily_summary:2026-05-26:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:paraphrase:01:q4",
+    "personaId" : "changing",
+    "scenarioId" : "changing:paraphrase:01",
+    "family" : "paraphrase",
+    "query" : "A korábbi naplómból: melyik Kőszegi-hegység környéki emlékem szól a felszabadult mozgásról?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:journal_entry:2026-05-25:01" : 2,
+      "changing:daily_summary:2026-05-26:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:follow_up:01:q1",
+    "personaId" : "changing",
+    "scenarioId" : "changing:follow_up:01",
+    "family" : "follow_up",
+    "query" : "A korábbi naplómból: és előtte, a Kőszegi-hegység-futásnál?",
+    "history" : [ {
+      "role" : "USER",
+      "content" : "Mesélj a Kőszegi-hegység-futásomról."
+    }, {
+      "role" : "ASSISTANT",
+      "content" : "Igen, emlékszem erre."
+    } ],
+    "relevanceBySourceKey" : {
+      "changing:journal_entry:2026-05-30:01" : 2,
+      "changing:daily_summary:2026-05-31:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:follow_up:01:q2",
+    "personaId" : "changing",
+    "scenarioId" : "changing:follow_up:01",
+    "family" : "follow_up",
+    "query" : "A korábbi naplómból: mi történt az azt megelőző este a Kőszegi-hegység-futás előtt?",
+    "history" : [ {
+      "role" : "USER",
+      "content" : "Mesélj a Kőszegi-hegység-futásomról."
+    }, {
+      "role" : "ASSISTANT",
+      "content" : "Igen, emlékszem erre."
+    } ],
+    "relevanceBySourceKey" : {
+      "changing:journal_entry:2026-05-30:01" : 2,
+      "changing:daily_summary:2026-05-31:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:follow_up:01:q3",
+    "personaId" : "changing",
+    "scenarioId" : "changing:follow_up:01",
+    "family" : "follow_up",
+    "query" : "A korábbi naplómból: és az alvással előtte mi volt a Kőszegi-hegység-futásnál?",
+    "history" : [ {
+      "role" : "USER",
+      "content" : "Mesélj a Kőszegi-hegység-futásomról."
+    }, {
+      "role" : "ASSISTANT",
+      "content" : "Igen, emlékszem erre."
+    } ],
+    "relevanceBySourceKey" : {
+      "changing:journal_entry:2026-05-30:01" : 2,
+      "changing:daily_summary:2026-05-31:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:follow_up:01:q4",
+    "personaId" : "changing",
+    "scenarioId" : "changing:follow_up:01",
+    "family" : "follow_up",
+    "query" : "A korábbi naplómból: arról a Kőszegi-hegység-futás előtti estéről mit jegyeztem fel?",
+    "history" : [ {
+      "role" : "USER",
+      "content" : "Mesélj a Kőszegi-hegység-futásomról."
+    }, {
+      "role" : "ASSISTANT",
+      "content" : "Igen, emlékszem erre."
+    } ],
+    "relevanceBySourceKey" : {
+      "changing:journal_entry:2026-05-30:01" : 2,
+      "changing:daily_summary:2026-05-31:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:exact_value:01:q1",
+    "personaId" : "changing",
+    "scenarioId" : "changing:exact_value:01",
+    "family" : "exact_value",
+    "query" : "A korábbi naplómból: pontosan hány kilométert futottam Kőszegi-hegység térségében?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:activity_note:2026-06-04:01" : 2,
+      "changing:daily_summary:2026-06-05:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:exact_value:01:q2",
+    "personaId" : "changing",
+    "scenarioId" : "changing:exact_value:01",
+    "family" : "exact_value",
+    "query" : "A korábbi naplómból: mi volt a Kőszegi-hegység-futás távja?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:activity_note:2026-06-04:01" : 2,
+      "changing:daily_summary:2026-06-05:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:exact_value:01:q3",
+    "personaId" : "changing",
+    "scenarioId" : "changing:exact_value:01",
+    "family" : "exact_value",
+    "query" : "A korábbi naplómból: hány kilométer szerepel a 142-es pulzusú Kőszegi-hegység-futásnál?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:activity_note:2026-06-04:01" : 2,
+      "changing:daily_summary:2026-06-05:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:exact_value:01:q4",
+    "personaId" : "changing",
+    "scenarioId" : "changing:exact_value:01",
+    "family" : "exact_value",
+    "query" : "A korábbi naplómból: mekkora volt számszerűen a Kőszegi-hegység-edzésem?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:activity_note:2026-06-04:01" : 2,
+      "changing:daily_summary:2026-06-05:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:old_salient:01:q1",
+    "personaId" : "changing",
+    "scenarioId" : "changing:old_salient:01",
+    "family" : "old_salient",
+    "query" : "A korábbi naplómból: melyik régi Kőszegi-hegység környéki őszi hagyomány fontos még mindig nekem?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:decision:2023-06-09:01" : 2,
+      "changing:daily_summary:2023-06-10:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:old_salient:01:q2",
+    "personaId" : "changing",
+    "scenarioId" : "changing:old_salient:01",
+    "family" : "old_salient",
+    "query" : "A korábbi naplómból: kivel terveztem évről évre visszatérni Kőszegi-hegység térségébe túrázni?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:decision:2023-06-09:01" : 2,
+      "changing:daily_summary:2023-06-10:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:old_salient:01:q3",
+    "personaId" : "changing",
+    "scenarioId" : "changing:old_salient:01",
+    "family" : "old_salient",
+    "query" : "A korábbi naplómból: mi az a régi Kőszegi-hegység-döntésem, amely ma is kapaszkodó?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:decision:2023-06-09:01" : 2,
+      "changing:daily_summary:2023-06-10:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:old_salient:01:q4",
+    "personaId" : "changing",
+    "scenarioId" : "changing:old_salient:01",
+    "family" : "old_salient",
+    "query" : "A korábbi naplómból: melyik többéves Kőszegi-hegység emléket érdemes felidézni?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:decision:2023-06-09:01" : 2,
+      "changing:daily_summary:2023-06-10:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:near_negative:01:q1",
+    "personaId" : "changing",
+    "scenarioId" : "changing:near_negative:01",
+    "family" : "near_negative",
+    "query" : "A korábbi naplómból: melyik jelzésen mentem Lilla mellett?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:journal_entry:2026-06-14:01" : 2,
+      "changing:daily_summary:2026-06-15:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:near_negative:01:q2",
+    "personaId" : "changing",
+    "scenarioId" : "changing:near_negative:01",
+    "family" : "near_negative",
+    "query" : "A korábbi naplómból: hány percet pihentem a kék jelzéses Kőszegi-hegység-túrán?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:journal_entry:2026-06-14:01" : 2,
+      "changing:daily_summary:2026-06-15:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:near_negative:01:q3",
+    "personaId" : "changing",
+    "scenarioId" : "changing:near_negative:01",
+    "family" : "near_negative",
+    "query" : "A korábbi naplómból: a forrásnál tartott pihenő melyik Kőszegi-hegység-túrához tartozott?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:journal_entry:2026-06-14:01" : 2,
+      "changing:daily_summary:2026-06-15:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:near_negative:01:q4",
+    "personaId" : "changing",
+    "scenarioId" : "changing:near_negative:01",
+    "family" : "near_negative",
+    "query" : "A korábbi naplómból: ne a piros jelzéses napot: mi történt a kék Kőszegi-hegység-útvonalon?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:journal_entry:2026-06-14:01" : 2,
+      "changing:daily_summary:2026-06-15:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:negation:01:q1",
+    "personaId" : "changing",
+    "scenarioId" : "changing:negation:01",
+    "family" : "negation",
+    "query" : "A korábbi naplómból: futást vagy pihenést terveztem vasárnapra Kőszegi-hegység térségében?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:decision:2026-06-19:01" : 2,
+      "changing:daily_summary:2026-06-20:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:negation:01:q2",
+    "personaId" : "changing",
+    "scenarioId" : "changing:negation:01",
+    "family" : "negation",
+    "query" : "A korábbi naplómból: mit döntöttem arról, hogy vasárnap fussak-e a Kőszegi-hegység-útvonalon?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:decision:2026-06-19:01" : 2,
+      "changing:daily_summary:2026-06-20:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:negation:01:q3",
+    "personaId" : "changing",
+    "scenarioId" : "changing:negation:01",
+    "family" : "negation",
+    "query" : "A korábbi naplómból: mi az, amit kifejezetten nem csinálok Kőszegi-hegység térségében vasárnap?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:decision:2026-06-19:01" : 2,
+      "changing:daily_summary:2026-06-20:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:negation:01:q4",
+    "personaId" : "changing",
+    "scenarioId" : "changing:negation:01",
+    "family" : "negation",
+    "query" : "A korábbi naplómból: a régi Kőszegi-hegység-futásterv helyett mi lett a vasárnapi döntésem?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:decision:2026-06-19:01" : 2,
+      "changing:daily_summary:2026-06-20:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:superseded:01:q1",
+    "personaId" : "changing",
+    "scenarioId" : "changing:superseded:01",
+    "family" : "superseded",
+    "query" : "A korábbi naplómból: mi a jelenlegi heti futástávom a Kőszegi-hegység-tervben?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:decision:2026-06-24:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:superseded:01:q2",
+    "personaId" : "changing",
+    "scenarioId" : "changing:superseded:01",
+    "family" : "superseded",
+    "query" : "A korábbi naplómból: melyik Kőszegi-hegység-futásterv érvényes most?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:decision:2026-06-24:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:superseded:01:q3",
+    "personaId" : "changing",
+    "scenarioId" : "changing:superseded:01",
+    "family" : "superseded",
+    "query" : "A korábbi naplómból: hány kilométerre módosítottam a heti Kőszegi-hegység-tervet?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:decision:2026-06-24:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:superseded:01:q4",
+    "personaId" : "changing",
+    "scenarioId" : "changing:superseded:01",
+    "family" : "superseded",
+    "query" : "A korábbi naplómból: mi írta felül a régi, hosszabb Kőszegi-hegység-futástervet?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:decision:2026-06-24:01" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:empty:01:q1",
+    "personaId" : "changing",
+    "scenarioId" : "changing:empty:01",
+    "family" : "empty",
+    "query" : "Szia?",
+    "history" : [ ],
+    "relevanceBySourceKey" : { },
+    "expectsEmpty" : true
+  }, {
+    "id" : "changing:empty:01:q2",
+    "personaId" : "changing",
+    "scenarioId" : "changing:empty:01",
+    "family" : "empty",
+    "query" : "Helló?",
+    "history" : [ ],
+    "relevanceBySourceKey" : { },
+    "expectsEmpty" : true
+  }, {
+    "id" : "changing:empty:01:q3",
+    "personaId" : "changing",
+    "scenarioId" : "changing:empty:01",
+    "family" : "empty",
+    "query" : "Jó reggelt?",
+    "history" : [ ],
+    "relevanceBySourceKey" : { },
+    "expectsEmpty" : true
+  }, {
+    "id" : "changing:empty:01:q4",
+    "personaId" : "changing",
+    "scenarioId" : "changing:empty:01",
+    "family" : "empty",
+    "query" : "Jó estét?",
+    "history" : [ ],
+    "relevanceBySourceKey" : { },
+    "expectsEmpty" : true
+  }, {
+    "id" : "changing:ownership:01:q1",
+    "personaId" : "changing",
+    "scenarioId" : "changing:ownership:01",
+    "family" : "ownership",
+    "query" : "A korábbi naplómból: kivel túráztam Kőszegi-hegység térségében azon a hétvégén?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:journal_entry:2026-07-04:01" : 2,
+      "changing:daily_summary:2026-07-05:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:ownership:01:q2",
+    "personaId" : "changing",
+    "scenarioId" : "changing:ownership:01",
+    "family" : "ownership",
+    "query" : "A korábbi naplómból: mekkora volt a saját Kőszegi-hegység-túrám?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:journal_entry:2026-07-04:01" : 2,
+      "changing:daily_summary:2026-07-05:02" : 1
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:ownership:01:q3",
+    "personaId" : "changing",
+    "scenarioId" : "changing:ownership:01",
+    "family" : "ownership",
+    "query" : "A korábbi naplómból: mit írtam a saját napi összegzésemben a Kőszegi-hegység-túráról?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:journal_entry:2026-07-04:01" : 1,
+      "changing:daily_summary:2026-07-05:02" : 2
+    },
+    "expectsEmpty" : false
+  }, {
+    "id" : "changing:ownership:01:q4",
+    "personaId" : "changing",
+    "scenarioId" : "changing:ownership:01",
+    "family" : "ownership",
+    "query" : "A korábbi naplómból: az én Kőszegi-hegység környéki emlékeim szerint ki kísért el?",
+    "history" : [ ],
+    "relevanceBySourceKey" : {
+      "changing:journal_entry:2026-07-04:01" : 2,
+      "changing:daily_summary:2026-07-05:02" : 1
+    },
+    "expectsEmpty" : false
+  } ]
+}

@@ -7,12 +7,16 @@ import { API_BASE } from '@/data/_client/api'
 import { gamificationProfileMock } from '@/data/gamification/gamificationMock'
 import { GAMIFICATION_KEY } from '@/data/gamification/gamificationStore'
 import { mockHabitDay } from '@/data/habit/habitMock'
+import { addDays, localDateString } from '@/shared/lib/dates'
 import { server } from '@/test/msw/server'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import type { GamificationProfile } from '@/data/gamification/gamificationTypes'
 import type { ReactNode } from 'react'
 
-const DATE = '2026-07-19'
+// Relative to the real clock (mezo-x9c2): a fixed past literal would drift out of the
+// backend-mirrored HABIT_TOO_OLD window as real time passes, breaking every "today" fixture
+// below — the backend's own IT suite computes fixtures off `LocalDate.now()` for the same reason.
+const DATE = localDateString()
 
 describe('useHabitDay (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
@@ -103,6 +107,42 @@ describe('useHabitDay (mock mode)', () => {
     await waitFor(() =>
       expect(day.result.current.habits.find((h) => h.key === 'evening_ritual')?.status).toBe('done'))
     expect(day.result.current.habits.find((h) => h.key === 'evening_ritual')?.strengthPct).toBeNull()
+  })
+})
+
+describe('useHabitDay past-day mock projection (mezo-x9c2)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('yesterday reads as a closed day: pending seeds become missed, done stays done', () => {
+    const yesterday = addDays(localDateString(), -1)
+    const { result } = renderHook(() => useHabitDay(yesterday), { wrapper: makeHookWrapper() })
+    const byKey = Object.fromEntries(result.current.habits.map((h) => [h.key, h.status]))
+    expect(byKey.morning_sunlight).toBe('done')     // seeded done — untouched
+    expect(byKey.morning_pushups).toBe('missed')    // seeded pending — the night closed it
+    expect(byKey.wind_down).toBe('missed')
+  })
+})
+
+describe('mock check window parity (mezo-x9c2)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('check for two days ago rejects with HABIT_TOO_OLD, like the backend', async () => {
+    const twoDaysAgo = addDays(localDateString(), -2)
+    const { result } = renderHook(() => useHabitActions(twoDaysAgo), { wrapper: makeHookWrapper() })
+    await expect(result.current.check('morning_pushups')).rejects.toThrow('HABIT_TOO_OLD')
+  })
+
+  test('yesterday check flips the missed row to done in the day cache', async () => {
+    const yesterday = addDays(localDateString(), -1)
+    const wrapper = makeHookWrapper()
+    const day = renderHook(() => useHabitDay(yesterday), { wrapper })
+    const actions = renderHook(() => useHabitActions(yesterday), { wrapper })
+    expect(day.result.current.habits.find((h) => h.key === 'morning_pushups')?.status).toBe('missed')
+    await act(() => actions.result.current.check('morning_pushups'))
+    await waitFor(() =>
+      expect(day.result.current.habits.find((h) => h.key === 'morning_pushups')?.status).toBe('done'))
   })
 })
 

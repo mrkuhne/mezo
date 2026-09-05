@@ -71,5 +71,14 @@ export default defineConfig({
     setupFiles: ['./src/test/setup.ts'],
     css: true,
     exclude: [...configDefaults.exclude, 'tests/**'],
+    // Load-flake policy (mezo-0121): every wait in the suite is condition-based (waitFor/findBy),
+    // so a slow ceiling only ever costs time on a genuinely broken test. Under full-suite CPU
+    // contention the heavy files run 3x their isolated time; 5s pops spuriously (measured:
+    // 20s drops 3 fails to 1, the last one being testing-library's own 1s ceiling — see setup.ts).
+    testTimeout: 20_000,
+    hookTimeout: 20_000,
+    // The reporter now flags tests living in the band the 20s ceiling newly permits (6-19s,
+    // mezo-0121), so a runtime perf regression there stays visible without being a hard gate.
+    slowTestThreshold: 8_000,
   },
 })

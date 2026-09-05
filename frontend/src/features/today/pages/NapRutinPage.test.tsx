@@ -350,3 +350,38 @@ test('the DAY group carries no perfect-day cell — the summary has no such coun
   expect(screen.getByText('lánc-erő · 28 nap')).toBeInTheDocument()
   expect(screen.getByText('XP ma')).toBeInTheDocument()
 })
+
+// ---- mezo-x9c2: yesterday backfill — DayNavigator on /nap/rutin ----
+
+describe('yesterday backfill (mezo-x9c2)', () => {
+  test('a missed MANUAL row is tickable on the yesterday view and calls check', async () => {
+    habitStore.seed([
+      { key: 'morning_sunlight', chain: 'MORNING', position: 1, title: 'Reggeli napfény',
+        why: 'w', anchorCopy: 'a', mode: 'MANUAL', status: 'missed', xp: 5, strengthPct: 64 },
+    ])
+    renderPage()
+    // ma: a missed sor nem kattintható (mai napon missed nem is létezhet — védőháló)
+    expect(screen.queryByRole('button', { name: 'Reggeli napfény' })).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Előző nap' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Reggeli napfény' }))
+    expect(habitStore.checked).toEqual(['morning_sunlight'])
+  })
+
+  test('a missed DERIVED row stays inert on the yesterday view', async () => {
+    habitStore.seed([
+      { key: 'morning_weigh_in', chain: 'MORNING', position: 1, title: 'Reggeli súlymérés',
+        why: 'w', anchorCopy: 'a', mode: 'DERIVED', status: 'missed', xp: 10, strengthPct: 93 },
+    ])
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: 'Előző nap' }))
+    expect(screen.queryByRole('button', { name: 'Reggeli súlymérés' })).not.toBeInTheDocument()
+  })
+
+  test('the prev arrow stops at yesterday: one step back disables it', async () => {
+    habitStore.seed([])
+    renderPage()
+    const prev = screen.getByRole('button', { name: 'Előző nap' })
+    await userEvent.click(prev)
+    expect(prev).toBeDisabled()
+  })
+})

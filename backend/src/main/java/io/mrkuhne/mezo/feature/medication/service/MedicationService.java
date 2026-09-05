@@ -14,7 +14,6 @@ import io.mrkuhne.mezo.feature.medication.service.dto.MedicationCycle;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
-import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -59,7 +58,7 @@ public class MedicationService {
     public MedicationDayResponse getDay(UUID userId) {
         return repository.findFirstByCreatedByAndActiveTrueAndDeletedFalse(userId)
             .map(med -> {
-                MedicationCycle cycle = cycleService.derive(userId, med, LocalDate.now(ZoneOffset.UTC));
+                MedicationCycle cycle = cycleService.deriveToday(userId, med);
                 List<MedicationDoseEntity> recent = doseRepository
                     .findTop10ByCreatedByAndMedicationIdAndDeletedFalseOrderByAdministeredAtDesc(
                         userId, med.getId());

@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.habit.config;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -16,4 +17,5 @@ public record HabitProperties(
     @Min(0) int kitchenCloseOffsetMin,
     @Min(1) int strengthWindowDays,
     @Min(1) int minSample,
-    @Min(1) int summaryDays) {}
+    @Min(1) int summaryDays,
+    @Min(0) @Max(7) int backfillDays) {}

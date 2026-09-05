@@ -391,6 +391,37 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   retrieval IDs display-only. Fact and graph candidates have no canonical `memory_item`, so the UI
   keeps useful/irrelevant but does not offer suppression; the API also rejects such a request.
 
+**Synthetic Hungarian retrieval evaluation (`mezo-6dii.8`):**
+
+- `memory-hu-v1` is a fixed-seed (`20260904`) corpus of coherent synthetic timelines for exactly
+  three isolated personas: rich logging, sparse logging and changing/contradictory circumstances.
+  It contains 540 natural-language Hungarian queries split by whole scenario into 108 development,
+  108 tuning and 324 sealed holdout cases (108 per persona). These are different data shapes, not
+  renamed copies: the rich persona has dense background notes, the sparse persona omits most
+  supporting summaries and spreads events farther apart, while the changing persona carries many
+  high-salience superseded states.
+- Every split covers paraphrase, contextual follow-up, exact value, old-salient, adversarial
+  near-negative, negation, superseded, empty and cross-owner families. Relevance is graded
+  `0/1/2`; the generator rejects missing gold sources, split leakage, malformed empty cases,
+  missing foreign distractors and persona/family minimum failures. It also rejects duplicate source
+  text, duplicate query text and cross-split query pairs with token Jaccard similarity `>= 0.90`.
+  Even the no-memory phrases use disjoint semantic phrase pools per split; punctuation variation is
+  confined within a split. Ownership distractors deliberately share the gold vector axis and have
+  higher salience, so owner filtering—not an easy ranking mismatch—is what keeps them out.
+- The JSON contains no fake-adapter sentinels. Network-free CI adds scripted geometry only in the
+  deterministic runner with source-derived stable fixture UUIDs, then compares the frozen OLD
+  assembler with `MemoryContextService` and
+  calculates macro Recall@5, nDCG@5, MRR, context precision, empty false positives and ownership
+  leakage over each path's final selected prompt context (the same lifecycle stage on both sides).
+  The runner relaxes the retriever deadline to 5 seconds only in this test so host load cannot turn
+  ranking results into timeout results; latency remains a real-provider concern. This is a
+  wiring/regression smoke test, not evidence for the 85% semantic release gate.
+- The holdout runner refuses to start until `review.json` records an explicit human approval whose
+  non-blank reviewer, review date, corpus version, seed, query count and SHA-256 match the exact
+  holdout bytes and the caller-supplied corpus equals that artifact. Regeneration therefore
+  invalidates an earlier approval instead of silently reusing it. The real Gemini release gate and
+  versioned report belong to `mezo-6dii.9`.
+
 **V2.2 (`mezo-fnnq.10`) shipped daily summaries + the embed pipeline — the memory fills itself:**
 
 - **`daily_summary` table + generator** — `DailySummaryService.generate(userId, date)`: a
@@ -3660,7 +3691,7 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
 | `get_recovery(scope, days, date, from, to)` (mezo-xixu, merged from `get_sleep`, adds sleep-goal + check-ins; **mezo-ohce: on-demand full sleep-log detail** via `date` (≤3 guidance, ISO dates) / `from` / `to`) | scope=sleep: compact last-N-days via `SleepLogRepository` since-date finder → duration, quality, awakenings; **when any of `date`/`from`/`to` is present**, full detail per requested day via the between-finder → bedtime, wakeup, duration, in-bed/awake/könnyű/REM/mély minutes, quality, awakenings, source + source quality, hypnogram (`bucketMin` + raw stages), notes; fields are null-guarded, missing day → `nincs rögzített alvás`, and the window is clamped to `tools().maxWindowDays()` with a `visszavágva N napra` header when trimmed. scope=sleep-goal: `SleepGoalService.getGoal` (target minutes, regularity band; `SLEEP_GOAL_SWITCH`-gated, read via `ObjectProvider`) + `SleepAnchorPort.resolve` (bed/wake anchor, ungated) → target hours/min, bed/wake, regularity band; scope=checkins: `CheckInService.listForDay` per day across the window → energy/stress/body/mental (1–10) per slot | scope=sleep: `Sleep`/date (≤5; detail mode emits one per rendered day, including missing days); scope=sleep-goal: `SleepGoal`/wake-time; scope=checkins: `CheckIn`/date (≤5) |
 | `get_protocol(scope, days)` (mezo-xixu, merged from `get_protocol_adherence`) | scope=adherence: `ProtocolService.getView().getActive()` + intake since-date finder → per-day taken/expected + total %; scope=intake: `IntakeService.listForDay` (today, protocol-independent) → item names (via the pantry stash) + known dose; scope=supplements: the active protocol's distinct `items[].pantryItemId` (mezo-vx9v living protocol, zone-sorted) → item names | `Protocol`/`v{n}` (adherence/supplements always; intake only when a protocol happens to be active) |
 | `get_goal(scope)` (mezo-xixu, merged from `get_goal_progress`) | scope=progress (default): active goal + `computeTrend` + `GoalPrescriptionJson.currentSegment` → week N, start→target, actual vs plan rate, e heti recept; scope=recept: the goal's `prescription.segments` (≤3) → per-segment kcal/protein/sleep/rest-days/rate/rationale; scope=guards: `prescription.guardStatus` → strength e1RM trend + breach, muscle weekly-set floor + below-maintenance list; scope=feasibility: `prescription.feasibility` → verdict + notes (≤3); scope=timeline: `GoalTimelineService.getTimeline` (pure read) → mapped plan links + uncovered gym-lane week gaps (≤3 each). recept/guards/feasibility render "még nincs kiértékelve" until the goal's first `evaluate` (never called from the tool) | `Goal`/title |
-| `get_medication(scope)` (mezo-xixu; `scope ∈ {cycle, all}`, default `cycle`, renamed from the drug-specific original scope names in `mezo-lwmq`) | scope=cycle (default): `MedicationCycleService.derive` + top-10 doses → cycle day, phase, last dose, next due; scope=all: `MedicationService.getDay` → name, active ingredient, cadence, default dose, cycle position (once a dose is on record) + recent doses, generic (no drug-specific naming) | `Medication`/name |
+| `get_medication(scope)` (mezo-xixu; `scope ∈ {cycle, all}`, default `cycle`, renamed from the drug-specific original scope names in `mezo-lwmq`) | scope=cycle (default): `MedicationCycleService.deriveToday` + top-10 doses → cycle day, phase, last dose, next due; scope=all: `MedicationService.getDay` → name, active ingredient, cadence, default dose, cycle position (once a dose is on record) + recent doses, generic (no drug-specific naming). Both scopes' "today" now derive off the SAME `MedicationCycleService.MEDICATION_ZONE` (`Europe/Budapest`, mezo-8h2s) — before this fix `renderCycle` used the JVM's system-default zone while `getDay` used UTC, so scope=cycle and scope=all could disagree on the cycle day by one near either midnight | `Medication`/name |
 | `get_exercise_records(exercise)` (mezo-xixu) | `ExerciseRecordService.list` (compute-on-read over working sets, read-only) → no/blank `exercise`: top-5 lifts by best e1RM; with `exercise`: case-insensitive name-contains match(es) → bestSet, bestE1rm (Epley), repRecords, recentTopSets | `ExerciseRecord`/exercise name (≤5) |
 | `get_recipes(filter)` (mezo-xixu, scored match mezo-sxe) | `RecipeService.list` (read-only) → no/blank `filter`: name/category/whole-recipe kcal+protein/mezo-fit score list; with `filter`: accent-folded token match scored over name (4) > ingredient name (3) > slot/category/role/tag/fitsFor/starred (2), all-token hits winning over partial — the best scorer renders full macros + ingredient lines (the detail comes from the same `.list` response, not a separate `.get` call) | `Recipe`/recipe name (≤5) |
 | `get_pantry(kind)` (mezo-xixu) | `PantryService.getPantry` (read-only) → `kind ∈ {food, supplement, stim, med}` (default: all kinds); food from `ingredients` (name + stock qty/unit + expiry), supplement/stim/med from `stash` filtered by `type` (name + stock qty/unit, no expiry in the contract) | `Pantry`/item name (≤5) |
@@ -4791,6 +4822,19 @@ deduplicated batch GET, network-free mock state, optimistic rollback and the sup
 `RecalledMemoriesRow.test.tsx` pins non-nested article/button semantics, display-only legacy rows,
 selection state and the two-tap destructive guard. `ChatPage.test.tsx` proves two assistant rows
 still cause one feedback batch request.
+
+**Synthetic Hungarian memory eval (`mezo-6dii.8`).**
+`MemoryEvalMetricsTest` pins the metric arithmetic with hand-calculated graded examples.
+`SyntheticMemoryCorpusGenerator` deterministically validates and reproduces `memory-hu-v1`; writing
+artifacts and approving the exact reviewed holdout are separate explicit system-property entry
+points. Its normal CI path also re-runs the generator's uniqueness, near-duplicate, persona-shape and
+minimum-size validators against the committed artifacts. `MemoryRetrievalDeterministicEvalIT` seeds
+real PostgreSQL/pgvector rows for all three users, runs OLD and NEW with the profile fake, compares
+both paths at final selected-context stage, emits both metric sets, and gates split integrity, a
+competitive same-axis ownership counterfactual, a modest geometry-only smoke floor, empty routing
+and zero cross-owner leakage. The committed holdout has 324
+questions, but fake vectors cannot validate Hungarian semantic quality, latency or the 85% Recall@5
+release threshold; those remain the opt-in real-provider responsibilities of `mezo-6dii.9`.
 
 **Daily evaluation (`mezo-jcpt.4`, plan 2/2).**
 `feature/companion/service/DayEvaluationEngineTest.java` is the formula's unit-level pin — one test
@@ -6213,6 +6257,15 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   mapper plus single-page batch query and optimistic action handle.
 - `frontend/src/features/insights/components/{RecalledMemoriesRow,ChatMessage}.tsx` +
   `frontend/src/features/insights/pages/ChatPage.tsx` — disclosure controls and one hook per thread.
+
+**Backend — synthetic Hungarian memory eval (`mezo-6dii.8` — §8)**
+
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/eval/{MemoryEvalCorpus,MemoryEvalMetrics,SyntheticMemoryCorpusGenerator,MemoryRetrievalDeterministicEvalIT,MemoryEvalMetricsTest}.java`
+  — immutable corpus/review shapes, metric arithmetic, deterministic generation plus approval entry
+  point, and network-free OLD-vs-NEW PostgreSQL regression runner.
+- `backend/src/test/resources/eval/memory/v1/{personas,development,tuning,holdout,review}.json`
+  — versioned three-persona corpus and SHA-bound human review metadata. `review.json` exists only
+  after the explicit holdout review/approval command; changing the holdout invalidates it.
 
 **Backend — feedback (W4.1, `mezo-b3pp.15` — §4/§5.7)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/controller/CompanionFeedbackController.java` — `implements CompanionFeedbackApi`, `COMPANION_SWITCH`-gated, ownership from `CurrentUserId`, thin delegation.
