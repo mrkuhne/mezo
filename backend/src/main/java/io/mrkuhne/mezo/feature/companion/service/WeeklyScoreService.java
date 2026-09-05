@@ -224,7 +224,7 @@ public class WeeklyScoreService {
      *  mostantól KIESNEK az átlagból, ahelyett hogy 0-val lefelé húznák. A {@code checkin_avg}
      *  oszlop ugyanazt a képletet futtatja, de más napkört átlagol — a már cache-elt heti sorok a
      *  régi szabály szerint számoltak, ezért egyszeri purge kell rájuk (lásd
-     *  202609041200_mezo-el0t_weekly_score_cache_invalidation.sql). */
+     *  202609051200_mezo-el0t_weekly_score_cache_invalidation.sql). */
     static WeekAverages aggregate(List<DayScoreService.DayScore> dayScores) {
         if (dayScores == null || dayScores.isEmpty()) {
             return WeekAverages.EMPTY;
