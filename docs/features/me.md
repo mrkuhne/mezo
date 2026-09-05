@@ -194,6 +194,16 @@ mosaic rather than crashing on a `Date NaN`.
   `narrative[]`, up to 3 `highlights` (chip-colored by `kind`), and the `adjustment` chip
   (`±delta`, its `reason` as a reasoned row) when the day's cached review carried one — absent
   entirely on a day with no prose (open/thin/empty, or a degraded LLM call), never an empty shell.
+- **Feedback chips (`mezo-jcpt.9`)** — the card's `evaluation.reviewId` (the `day_review` row's own
+  id, present on the wire only when the day actually has LLM prose — [companion.md §5.7](companion.md))
+  drives `useFeedback('day_review', reviewId ? [reviewId] : [])`; the shared `FeedbackChips`
+  (`features/insights/components/FeedbackChips.tsx`) render below the narrative only when a
+  `reviewId` exists, the `WeekReviewCard` precedent. This is gated on prose PRESENCE, deliberately
+  not on the `scored` state: a scored day whose prose generation failed still carries no
+  `reviewId`, so it shows no chips either — the same "absent, never an empty shell" rule the card
+  already follows for its narrative. (The now-orphaned `DAY_COPY.noNote`/`noReview` — leftover
+  copy from the pre-`mezo-jcpt.4` weekly-review-based day model, with no consumer left — were
+  deleted alongside this wiring.)
 - **Chat handoff** reuses `useChatHandoff().open({kind: 'day', date})` (§2 above, "Beszélgess a
   napról") the same as the legacy inline card did.
 

@@ -1810,16 +1810,21 @@ instead of months of unrecorded signal. Driving spec:
   wire's `updatedAt`), `artifact_kind varchar(20)`, `artifact_id uuid`, `verdict varchar(4)`,
   `reason varchar(16)` (nullable). Constraints: `pk_message_feedback_id`,
   `fk_message_feedback_created_by_app_user_id`, **`uq_message_feedback_artifact (created_by,
-  artifact_kind, artifact_id)`**, and four CHECKs — `ck_message_feedback_artifact_kind` (the five
-  kinds `chat_message|feed_message|weekly_suggestion|memoir|prediction`),
+  artifact_kind, artifact_id)`**, and four CHECKs — `ck_message_feedback_artifact_kind` (the seven
+  kinds `chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review`,
+  widened from five in two CK-swap-only migrations —
+  `202608271500_mezo-p2tr_feedback_weekly_review_kind.sql` added `weekly_review`,
+  `202609050900_mezo-jcpt.9_feedback_day_review_kind.sql` added `day_review`; neither touches
+  existing rows, only the CHECK's own claim of what a future insert may write),
   `ck_message_feedback_verdict` (`up|down`), `ck_message_feedback_reason_value`
   (`inaccurate|too_much|bad_timing|not_about_me`) and the cross-field
   **`ck_message_feedback_reason`** (`reason is null or verdict = 'down'`). Index
   `idx_message_feedback_created_by_kind (created_by, artifact_kind)` — the batch-read's key.
-- **The five kinds span FIVE different tables** — `ai_message` (chat answers), `companion_message`
-  (the Today feed), `weekly_suggestion`, `memoir`, `prediction` (the last four are proactive-owned,
-  [`proactive.md` §4](proactive.md)). **`artifact_id` therefore carries NO foreign key**: existence
-  is deliberately not validated cross-table (spec §8.1) — five conditional FKs cannot be expressed,
+- **The seven kinds span SEVEN different tables** — `ai_message` (chat answers), `companion_message`
+  (the Today feed), `weekly_suggestion`, `weekly_review`, `memoir`, `prediction` (proactive-owned,
+  [`proactive.md` §4/§10](proactive.md)) and `day_review` (companion-owned, §3/§4 above,
+  `mezo-jcpt.4`/`mezo-jcpt.9`). **`artifact_id` therefore carries NO foreign key**: existence
+  is deliberately not validated cross-table (spec §8.1) — seven conditional FKs cannot be expressed,
   and a dangling id is harmless in a single-user app. A vote on a since-deleted artifact simply
   never gets read back.
 - **`uq_message_feedback_artifact` spans soft-deleted rows too** (it is a plain unique constraint,
@@ -4104,7 +4109,7 @@ snapshot+facts+summaries+patterns stack — see the roadmap's "Relationship to o
 
 ### 5.7 Companion feedback → every AI surface (✅ W4.1 wired, `mezo-b3pp.15`)
 
-`message_feedback` is companion-owned but **votes on artifacts four of them do not belong to** — the
+`message_feedback` is companion-owned but **votes on artifacts five of them do not belong to** — the
 one seam in this doc that fans OUT to three other features at once. The crossing contract is the
 `(artifactKind, artifactId)` pair; nothing is joined server-side.
 
@@ -4113,14 +4118,40 @@ one seam in this doc that fans OUT to three other features at once. The crossing
 | `chat_message` | `ai_message` | this doc (§4) | `ChatPage` assistant bubbles ([`insights.md` §2.5](insights.md)) |
 | `feed_message` | `companion_message` | [`proactive.md` §4](proactive.md) | `MezoMessagesSheet` ([`today.md` §1](today.md)) |
 | `weekly_suggestion` | `weekly_suggestion` | [`proactive.md` §4](proactive.md) | Weekly „heti tervjavaslat" card ([`insights.md` §2.2](insights.md)) |
+| `weekly_review` | `weekly_review` | [`proactive.md` §10](proactive.md) | `WeekReviewCard` (`WeekHubPage` — [`me.md`](me.md)), `mezo-p2tr` |
 | `memoir` | `memoir` | [`proactive.md` §4](proactive.md) | `MemoirPage` ([`insights.md` §2.3](insights.md)) |
 | `prediction` | `prediction` | [`proactive.md` §4](proactive.md) | `PredictionsPage` cards ([`insights.md` §2.6](insights.md)) |
+| `day_review` | `day_review` | this doc (§3/§4, `mezo-jcpt.4`) | `DayReviewCard` (`WeekDayPage` — [`me.md`](me.md)), `mezo-jcpt.9` |
 
 Three of those artifacts had **no `id` on the wire** before this slice — `FeedMessageResponse`,
 `WeeklySuggestionResponse` and `MemoirResponse` gained a required `id` (contract-only; the entities
 always had one), because without it the FE has nothing to vote on. See [`proactive.md` §4](proactive.md).
 The FE side is a single page-level hook + one shared controlled component
 (`useFeedback(kind, ids)` / `FeedbackChips`) — [`insights.md` §4/§5.7](insights.md).
+
+**`weekly_review` and `day_review` both vote on the row that carries the artifact itself, not
+on a separate generated-message row** — `WeeklyReviewEntity.id` and `DayReviewEntity.id`
+respectively — so their FE cards (`WeekReviewCard`, `DayReviewCard`) gate the chip row on that
+id's presence rather than on any scored/closed state: a scored day whose prose generation failed
+carries no `reviewId` and therefore no chips either (`DayReviewCard.tsx` — see
+[`me.md`](me.md) "Day page").
+
+**Accepted limitation — a vote survives a prose regeneration (`day_review`, `mezo-jcpt.9`).**
+`DayReviewService.upsert` rewrites the `day_review` row IN PLACE on an `inputsHash` change (a
+new LLM narrative for the same day), so the row's `id` — and therefore any 👍/👎 already cast on
+it — is stable across a regeneration: a vote stays attached to "this day's review as an
+artifact" even after its prose has been rewritten underneath it. This is accepted rather than
+fixed: a closed day's inputs rarely change after the fact, and the alternative — deriving the
+feedback `artifactId` from the `inputsHash` instead of the row's own id — would abandon the house
+row-id pattern every other kind in the table above follows (§5.7), trading a rare staleness for a
+structural inconsistency.
+
+**Deferred — `weekly_review` and `day_review` votes do not reach the learning rollup.**
+`FeedbackLearningService.SURFACE_KINDS` (§5.7a below) lists only `chat_message`, `feed_message`,
+`weekly_suggestion`, `memoir` and `prediction` — both `weekly_review` (live since `mezo-p2tr`) and
+`day_review` (`mezo-jcpt.9`) are captured and readable via the batch API but never rolled up, so
+their votes are write-only today. Deliberately deferred to bd `mezo-jcpt.17`; nobody had
+previously documented that this also affects `weekly_review`.
 
 **The batch read is chunked at the api layer (`mezo-b3pp.23`).** At the old single-request shape,
 200 comma-joined uuids put the query string alone at ~7.45 KB — under Tomcat's default 8 KB
@@ -5304,8 +5335,9 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   `POST …/experiment/{id}/decision` and `POST …/challenge/{id}/decision` endpoints (accept/dismiss,
   [`proactive.md` §4](proactive.md)) ALREADY carry the same signal, and carry it better — a decision
   is an act with consequences, not an opinion. Adding a second, weaker channel for the same judgment
-  would split the training data W4.2 reads and let the two disagree. The five kinds are exactly the
-  artifacts the user can otherwise only read.
+  would split the training data W4.2 reads and let the two disagree. The seven kinds (five at
+  `mezo-b3pp.15`, `weekly_review` added `mezo-p2tr`, `day_review` added `mezo-jcpt.9`) are exactly
+  the artifacts the user can otherwise only read.
 - **Re-tapping the SAME verdict is a retraction, not a no-op** — one tap sets it, the same tap again
   clears it. The semantics live in the FE hook (`useFeedback.vote`), not in the backend: the API has
   a plain upsert and a plain delete, and it is `vote()` that decides which one a tap means. A tap
@@ -5724,6 +5756,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/{DayReviewEntity,DayReviewJson}.java` + `repository/DayReviewRepository.java` — the `day_review` cache row + its typed jsonb envelope.
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `DAY_REVIEW_SWITCH` (`mezo.feature.day-review.enabled`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609031300_mezo-jcpt.4_create_day_review.sql` (the table) + `202609031200_mezo-jcpt.4_weekly_score_cache_invalidation.sql` (the one-off `weekly_score` purge).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609050900_mezo-jcpt.9_feedback_day_review_kind.sql` — `day_review` becomes the seventh W4.1 `message_feedback` artifact kind (CK-swap only, no data migration; §5.7 above); `MessageFeedbackEntity.KIND_DAY_REVIEW` + `DayEvaluationResponse.reviewId` (`DayReviewService`'s `ProseResult`, present only when the day carries actual LLM prose) + `DayReviewCard`'s `useFeedback('day_review', reviewId ? [reviewId] : [])` (mounted, gated on `reviewId` — not on `scored`) are the rest of this slice.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/repository/WeeklyScoreRepository.java` — `latestScoreInputWrittenAt` widened to probe `water_log` (§4 accepted-limitation note on the training schedule tables' exclusion).
 - **`config/MeWeekProperties.java` is DELETED** (`mezo-jcpt.7`) — the legacy formula it configured is gone (§3), and a full-repo grep found zero readers: no injection, no field read, no test, no `@Value` (ArchUnit forbids it), no env-var/compose/CI mapping. The record and its `mezo.companion.me-week` block in `application.yml` were removed **together**: the record's components are primitives with no defaults, so the two are a matched pair and a yml-only removal would fail validation in every Spring context. The `me-week` **contract** (the `api/feature/me-week` fragment, the OpenAPI tag, `MeWeekController`/`MeWeekService`, the `MeWeekSubscores` wire shape) is untouched — only the config prefix retired. The `sleep-target-h: 8.0` it carried has no successor: the day evaluation's only sleep target is `DayEvaluationProperties.sleepTargetH` (`7.5`), and `kcal-band`/`xp-baseline` had no reader left at all.
 - Tests: `feature/companion/service/{DayEvaluationEngineTest,DayScoreServiceIT,DayReviewServiceTest}.java`, `feature/companion/config/DayEvaluationPropertiesTest.java`, `feature/companion/controller/{DayEvaluationApiIT,DayEvaluationSwitchOffApiIT}.java`, `feature/companion/DayReviewRepositoryIT.java`, `support/populator/DayReviewPopulator.java` — §8.
@@ -5736,6 +5769,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ConversationService.java` — `create` reads `CreateConversationRequest.context`, persists `contextKind`/`contextDate`, and (when a context was given) calls `chatService.getObject().openingTurn(userId, saved.getId())`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `KICKOFF_PROMPT` + `openingTurn` (the server-generated, assistant-only first turn) + the widened `assembleSystemPrompt` signature above.
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608271800_mezo-p2tr_ai_conversation_context.sql` — `ai_conversation.context_kind`/`.context_date` (nullable additive columns).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202608271500_mezo-p2tr_feedback_weekly_review_kind.sql` — `weekly_review` becomes the sixth W4.1 `message_feedback` artifact kind (CK-swap only; §5.7 above), live since this slice even though it went undocumented here until `mezo-jcpt.9`.
 - `api/feature/me-week/me-week.yml` (new fragment) + `api/feature/companion/companion.yml` (`CreateConversationRequest.context`).
 - Tests: `feature/companion/service/DayScoreServiceIT.java`, `feature/companion/controller/MeWeekControllerIT.java`, `AnchoredConversationIT`.
 - **Owned by `feature/proactive`, not restated here** (the generated weekly-review NARRATIVE + its Monday cron/push/feedback): `feature/proactive/{entity/WeeklyReviewEntity,service/WeeklyReviewGenerator,service/WeeklyReviewJob,service/WeeklyReviewService,service/WeeklyReviewDigestService,service/WeekReviewSourceAdapter}.java` — see [`proactive.md` §10](proactive.md).
