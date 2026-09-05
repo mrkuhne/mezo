@@ -427,6 +427,38 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   invalidates an earlier approval instead of silently reusing it. The real Gemini release gate and
   versioned report belong to `mezo-6dii.9`.
 
+**Real Gemini retrieval release gate (`mezo-6dii.9`):**
+
+- `MemoryRetrievalGeminiEvalIT` is excluded from normal tests by the `eval` tag and additionally
+  requires both a non-empty `GEMINI_API_KEY` and `-Dmezo.memory.eval.real=true`. It loads only the
+  SHA-approved `memory-hu-v1` holdout, embeds its 300 canonical sources once with the real
+  `gemini-embedding-001` adapter, writes the same vectors to OLD and NEW stores, warms one query,
+  and alternates path order across all 324 cases. The dedicated
+  `gemini-embedding-001-memory-v1` generation cannot affect the online serving generation.
+- Quality and latency are separate experiments. Quality runs OLD and NEW on the same corpus query;
+  NEW receives the corpus history, so the 36 `follow_up` cases exercise the real conditional query
+  rewrite, while both paths are scored at the same final-prompt selection stage. The dedicated
+  latency pass supplies empty history and keeps reranking off, so it measures the specified normal
+  no-rewrite/no-rerank path. Its wall clock begins before query embedding and ends only after the
+  complete `MemoryContext` returns; the normal 200 ms per-retriever deadline remains in force.
+- `target/memory-eval/memory-v1-report.json` records the corpus hash, timestamp and git commit;
+  provider/model/generation; OLD baseline, NEW candidate and deltas overall and by persona/family;
+  no-rewrite/no-rerank p50/p95/p99 for both paths; provider-audited embedding, conditional rewrite,
+  and reranker usage/cost; configured cost budgets; phase/path-qualified failed execution IDs; and
+  every hard-gate boolean. The runner waits for the exact expected terminal audit-row count and
+  rejects errors, missing usage/cost, model disagreement, unexpected SMART calls or row-count drift.
+  Release requires Recall@5 `>= 0.85`,
+  nDCG@5 and MRR both strictly above baseline, context precision at least `+0.10`, zero ownership
+  leaks, empty-query false-positive rate `<= 0.05`, candidate p95 `<= 250 ms`, no execution failure,
+  complete usage audit, and both gated costs within the command-line budgets. Conditional rewrite
+  cost is reported separately; reranking remains disabled and must stay at zero calls/cost.
+- `PromptMemoryAssembler.recallStrict(...)` is the evaluation-only diagnostic twin of the online
+  fail-open `recall(...)`: it shares the exact OLD implementation but exposes provider/ANN failures,
+  preventing a broken baseline query from being scored as a legitimate empty result.
+- A PASS is evidence for a separate product-owner promotion decision, not the decision itself. The
+  runner never changes `mezo.companion.memory-platform.serving-mode` and never enables briefing,
+  memoir or prediction retrieval.
+
 **V2.2 (`mezo-fnnq.10`) shipped daily summaries + the embed pipeline — the memory fills itself:**
 
 - **`daily_summary` table + generator** — `DailySummaryService.generate(userId, date)`: a
@@ -4899,6 +4931,21 @@ and zero cross-owner leakage. The committed holdout has 324
 questions, but fake vectors cannot validate Hungarian semantic quality, latency or the 85% Recall@5
 release threshold; those remain the opt-in real-provider responsibilities of `mezo-6dii.9`.
 
+**Real Gemini memory release gate (`mezo-6dii.9`).**
+`MemoryEvalGateTest` pins every inclusive/exclusive threshold edge, including 84.99% Recall@5,
+exactly +9.99 percentage-point context precision, one ownership leak and 251 ms p95.
+`MemoryRetrievalGeminiEvalIT` is the manually enabled semantic IT: it verifies the real adapter and
+dedicated generation, runs the approved holdout through both persisted paths, waits for the async
+LLM usage audit, emits the JSON report, and fails on any quality, latency, execution or configured
+cost gate. The caller's `LlmCallContext` is explicitly rebound around every async retriever task,
+so dense query embeddings retain their run/query correlation; report SQL filters by those unique
+entity IDs instead of a timestamp window. Before aggregating, the runner waits for the dedicated
+audit executor to become idle, then requires the correlated row count to equal the expectation
+exactly, so delayed extra calls cannot hide. Conditional rewrites are audited as `CHAT` calls and the
+report records the actually served rewrite model as well as its usage/cost. With no key or no
+explicit real-eval system property it skips before Spring/provider startup; regular CI therefore
+stays network-free.
+
 **Daily evaluation (`mezo-jcpt.4`, plan 2/2).**
 `feature/companion/service/DayEvaluationEngineTest.java` is the formula's unit-level pin — one test
 per honesty rule, per dimension (asymmetric kcal bands, protein surplus forgiven/deficit counted,
@@ -6329,6 +6376,16 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/test/resources/eval/memory/v1/{personas,development,tuning,holdout,review}.json`
   — versioned three-persona corpus and SHA-bound human review metadata. `review.json` exists only
   after the explicit holdout review/approval command; changing the holdout invalidates it.
+
+**Backend — real Gemini memory release gate (`mezo-6dii.9` — §8)**
+
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/eval/{MemoryEvalGate,MemoryEvalReport,MemoryRetrievalGeminiEvalIT,MemoryEvalGateTest}.java`
+  — pure threshold policy, versioned report shape, opt-in provider-backed OLD-vs-NEW runner and
+  exact boundary coverage. The generated report lives under `backend/target/memory-eval/` and is
+  deliberately not a committed runtime configuration artifact.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/MemoryContextService.java`
+  — snapshots the ambient LLM-call context before fan-out and restores it inside every retriever
+  worker, keeping provider audit rows attributable across the executor boundary.
 
 **Backend — feedback (W4.1, `mezo-b3pp.15` — §4/§5.7)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/controller/CompanionFeedbackController.java` — `implements CompanionFeedbackApi`, `COMPANION_SWITCH`-gated, ownership from `CurrentUserId`, thin delegation.

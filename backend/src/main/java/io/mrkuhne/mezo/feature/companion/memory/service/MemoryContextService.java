@@ -13,6 +13,8 @@ import io.mrkuhne.mezo.feature.companion.memory.dto.RetrievalServingMode;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryCandidateFusion.FusedCandidate;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryRetrievalAuditWriter.AuditCommand;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryRetrievalAuditWriter.AuditResult;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -51,6 +53,7 @@ public class MemoryContextService {
     private final MemoryRetrievalAuditWriter auditWriter;
     private final MemoryPlatformProperties properties;
     private final AsyncTaskExecutor applicationTaskExecutor;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     public MemoryContext retrieve(MemoryRequest request) {
         return retrieve(request, RetrievalServingMode.NEW);
@@ -118,12 +121,15 @@ public class MemoryContextService {
                 request, query, properties.servingEmbeddingVersion(), properties.serving().candidateLimit());
         Map<String, RetrieverTask> tasks = new LinkedHashMap<>();
         long timeoutNanos = TimeUnit.MILLISECONDS.toNanos(properties.execution().retrieverTimeoutMs());
+        LlmCallContext callContext = llmCallContextHolder.get();
         retrievers.values().stream()
                 .sorted(Comparator.comparing(MemoryRetriever::name))
                 .forEach(retriever -> {
                     long deadline = System.nanoTime() + timeoutNanos;
                     try {
-                        Future<RetrieverOutcome> future = applicationTaskExecutor.submit(() -> execute(retriever, input));
+                        Future<RetrieverOutcome> future = applicationTaskExecutor.submit(
+                                () -> llmCallContextHolder.runWith(
+                                        callContext, () -> execute(retriever, input)));
                         tasks.put(retriever.name(), new RetrieverTask(future, deadline, null));
                     } catch (RuntimeException exception) {
                         tasks.put(retriever.name(), new RetrieverTask(null, deadline,
