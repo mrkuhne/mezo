@@ -2,9 +2,9 @@
 -- rule per CHANGE of verdict — an hourly sweep where nothing changed writes nothing, which is
 -- what keeps this table small enough to keep forever.
 create table companion_flag_trace (
-    id            uuid         not null,
+    id            uuid         not null default gen_random_uuid(),
     created_by    uuid         not null,
-    created_at    timestamptz  not null,
+    created_at    timestamptz  not null default now(),
     is_deleted    boolean      not null default false,
     flag_key      varchar(24)  not null,
     outcome       varchar(12)  not null,
@@ -13,6 +13,8 @@ create table companion_flag_trace (
     evidence      jsonb,
     occurred_at   timestamptz  not null,
     constraint pk_companion_flag_trace_id primary key (id),
+    constraint fk_companion_flag_trace_created_by_app_user_id foreign key (created_by)
+        references app_user (id) on delete cascade,
     constraint ck_companion_flag_trace_flag_key check (flag_key in
         ('sustained_stress', 'sleep_debt', 'momentum_at_risk', 'recovery_needed', 'all_healthy',
          'logging_gap', 'missed_workouts', 'acute_bad_day', 'load_fuel_mismatch',
