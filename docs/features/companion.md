@@ -391,6 +391,37 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   retrieval IDs display-only. Fact and graph candidates have no canonical `memory_item`, so the UI
   keeps useful/irrelevant but does not offer suppression; the API also rejects such a request.
 
+**Synthetic Hungarian retrieval evaluation (`mezo-6dii.8`):**
+
+- `memory-hu-v1` is a fixed-seed (`20260904`) corpus of coherent synthetic timelines for exactly
+  three isolated personas: rich logging, sparse logging and changing/contradictory circumstances.
+  It contains 540 natural-language Hungarian queries split by whole scenario into 108 development,
+  108 tuning and 324 sealed holdout cases (108 per persona). These are different data shapes, not
+  renamed copies: the rich persona has dense background notes, the sparse persona omits most
+  supporting summaries and spreads events farther apart, while the changing persona carries many
+  high-salience superseded states.
+- Every split covers paraphrase, contextual follow-up, exact value, old-salient, adversarial
+  near-negative, negation, superseded, empty and cross-owner families. Relevance is graded
+  `0/1/2`; the generator rejects missing gold sources, split leakage, malformed empty cases,
+  missing foreign distractors and persona/family minimum failures. It also rejects duplicate source
+  text, duplicate query text and cross-split query pairs with token Jaccard similarity `>= 0.90`.
+  Even the no-memory phrases use disjoint semantic phrase pools per split; punctuation variation is
+  confined within a split. Ownership distractors deliberately share the gold vector axis and have
+  higher salience, so owner filtering—not an easy ranking mismatch—is what keeps them out.
+- The JSON contains no fake-adapter sentinels. Network-free CI adds scripted geometry only in the
+  deterministic runner with source-derived stable fixture UUIDs, then compares the frozen OLD
+  assembler with `MemoryContextService` and
+  calculates macro Recall@5, nDCG@5, MRR, context precision, empty false positives and ownership
+  leakage over each path's final selected prompt context (the same lifecycle stage on both sides).
+  The runner relaxes the retriever deadline to 5 seconds only in this test so host load cannot turn
+  ranking results into timeout results; latency remains a real-provider concern. This is a
+  wiring/regression smoke test, not evidence for the 85% semantic release gate.
+- The holdout runner refuses to start until `review.json` records an explicit human approval whose
+  non-blank reviewer, review date, corpus version, seed, query count and SHA-256 match the exact
+  holdout bytes and the caller-supplied corpus equals that artifact. Regeneration therefore
+  invalidates an earlier approval instead of silently reusing it. The real Gemini release gate and
+  versioned report belong to `mezo-6dii.9`.
+
 **V2.2 (`mezo-fnnq.10`) shipped daily summaries + the embed pipeline — the memory fills itself:**
 
 - **`daily_summary` table + generator** — `DailySummaryService.generate(userId, date)`: a
@@ -4716,6 +4747,19 @@ deduplicated batch GET, network-free mock state, optimistic rollback and the sup
 selection state and the two-tap destructive guard. `ChatPage.test.tsx` proves two assistant rows
 still cause one feedback batch request.
 
+**Synthetic Hungarian memory eval (`mezo-6dii.8`).**
+`MemoryEvalMetricsTest` pins the metric arithmetic with hand-calculated graded examples.
+`SyntheticMemoryCorpusGenerator` deterministically validates and reproduces `memory-hu-v1`; writing
+artifacts and approving the exact reviewed holdout are separate explicit system-property entry
+points. Its normal CI path also re-runs the generator's uniqueness, near-duplicate, persona-shape and
+minimum-size validators against the committed artifacts. `MemoryRetrievalDeterministicEvalIT` seeds
+real PostgreSQL/pgvector rows for all three users, runs OLD and NEW with the profile fake, compares
+both paths at final selected-context stage, emits both metric sets, and gates split integrity, a
+competitive same-axis ownership counterfactual, a modest geometry-only smoke floor, empty routing
+and zero cross-owner leakage. The committed holdout has 324
+questions, but fake vectors cannot validate Hungarian semantic quality, latency or the 85% Recall@5
+release threshold; those remain the opt-in real-provider responsibilities of `mezo-6dii.9`.
+
 **Daily evaluation (`mezo-jcpt.4`, plan 2/2).**
 `feature/companion/service/DayEvaluationEngineTest.java` is the formula's unit-level pin — one test
 per honesty rule, per dimension (asymmetric kcal bands, protein surplus forgiven/deficit counted,
@@ -6117,6 +6161,15 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   mapper plus single-page batch query and optimistic action handle.
 - `frontend/src/features/insights/components/{RecalledMemoriesRow,ChatMessage}.tsx` +
   `frontend/src/features/insights/pages/ChatPage.tsx` — disclosure controls and one hook per thread.
+
+**Backend — synthetic Hungarian memory eval (`mezo-6dii.8` — §8)**
+
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/eval/{MemoryEvalCorpus,MemoryEvalMetrics,SyntheticMemoryCorpusGenerator,MemoryRetrievalDeterministicEvalIT,MemoryEvalMetricsTest}.java`
+  — immutable corpus/review shapes, metric arithmetic, deterministic generation plus approval entry
+  point, and network-free OLD-vs-NEW PostgreSQL regression runner.
+- `backend/src/test/resources/eval/memory/v1/{personas,development,tuning,holdout,review}.json`
+  — versioned three-persona corpus and SHA-bound human review metadata. `review.json` exists only
+  after the explicit holdout review/approval command; changing the holdout invalidates it.
 
 **Backend — feedback (W4.1, `mezo-b3pp.15` — §4/§5.7)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/controller/CompanionFeedbackController.java` — `implements CompanionFeedbackApi`, `COMPANION_SWITCH`-gated, ownership from `CurrentUserId`, thin delegation.
