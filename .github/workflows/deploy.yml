@@ -41,7 +41,7 @@ jobs:
       frontend_changed: ${{ steps.eff.outputs.frontend_changed }}
       backend_changed: ${{ steps.eff.outputs.backend_changed }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0        # full history + tags for semver + diff
       - id: calc
@@ -71,11 +71,11 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
           version: 9
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: pnpm
@@ -91,12 +91,12 @@ jobs:
           # subscribe() rejects with InvalidAccessError on the real device.
           VITE_VAPID_PUBLIC: ${{ vars.VITE_VAPID_PUBLIC }}
         run: pnpm build
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: frontend
           platforms: linux/amd64
@@ -111,20 +111,20 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4    # full repo so ../api contract is present
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7    # full repo so ../api contract is present
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
           cache: maven
       - name: Package (skip tests — local pre-push gate; mezo-oa3)
         run: ./mvnw -B clean package -DskipTests
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: backend
           platforms: linux/amd64
@@ -141,7 +141,7 @@ jobs:
            needs.version.outputs.backend_changed == 'true') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Bump deployment image tags
