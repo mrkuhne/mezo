@@ -36,11 +36,12 @@ public class CompanionFlagTraceEntity extends OwnedEntity {
     @Column(columnDefinition = "uuid")
     private UUID id;
 
-    /** Mirrors ck_companion_flag_trace_flag_key — see {@code FlagKey}. */
+    /** Mirrors ck_companion_flag_trace_flag_key — see {@code FlagKey}. Widened by Round 2 S1
+     *  (bd mezo-d58h.7.1) for {@code protocol_lapse}. */
     @NotNull
     @Pattern(regexp = "sustained_stress|sleep_debt|momentum_at_risk|recovery_needed|all_healthy"
         + "|logging_gap|missed_workouts|acute_bad_day|load_fuel_mismatch|rapid_weight_loss"
-        + "|joint_overuse|ignored_nudge|late_eating")
+        + "|joint_overuse|ignored_nudge|late_eating|protocol_lapse")
     @Column(name = "flag_key", nullable = false, length = 24)
     private String flagKey;
 

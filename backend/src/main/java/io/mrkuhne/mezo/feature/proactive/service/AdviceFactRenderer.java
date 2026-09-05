@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * The advice card's FACTS (spec §5): deterministic, numeric, rule-provided lines rendered from the
@@ -47,6 +48,7 @@ public final class AdviceFactRenderer {
             case FlagKey.JOINT_OVERUSE -> jointOveruse(payload.jointOveruse());
             case FlagKey.IGNORED_NUDGE -> ignoredNudge(payload.ignoredNudge());
             case FlagKey.LATE_EATING -> lateEating(payload.lateEating());
+            case FlagKey.PROTOCOL_LAPSE -> protocolLapse(payload.protocolLapse());
             default -> List.of();
         };
     }
@@ -229,6 +231,29 @@ public final class AdviceFactRenderer {
             }
         }
         return List.copyOf(facts);
+    }
+
+    /** Round 2 S1 (mezo-d58h.7.1): the facts name the item, the two missed days and the habit the
+     *  user actually had — the card's copy leans on all three ("a sorozat nem veszett el"). */
+    private static List<String> protocolLapse(FlagPayloadEnvelope.ProtocolLapse p) {
+        if (p == null) {
+            return List.of();
+        }
+        List<String> facts = new ArrayList<>();
+        facts.add("Kiegészítő: %s%s".formatted(
+            Objects.requireNonNullElse(p.itemName(), "ismeretlen kiegészítő"),
+            p.slotKey() == null ? "" : " (%s zóna)".formatted(p.slotKey())));
+        facts.add("Kimaradt %d egymást követő tervezett napon: %s"
+            .formatted(p.consecutiveMissedDueDays(),
+                p.missedDueDates() == null ? "" : String.join(", ", p.missedDueDates())));
+        facts.add(p.lastTakenDate() == null
+            ? "Az ablakon belül nincs rögzített bevétel"
+            : "Utoljára ekkor volt bevéve: %s".formatted(p.lastTakenDate()));
+        facts.add("Előtte %d tervezett napból %d teljesült (%s%%, küszöb: %s%%)"
+            .formatted(p.historyDueDays(), p.historyTakenDays(),
+                String.format(HU, "%.0f", p.historyAdherence() * 100),
+                String.format(HU, "%.0f", p.minHistoryAdherence() * 100)));
+        return facts;
     }
 
     /** {@code LateEatingRule}'s frozen arm token, in the Hungarian noun the per-day fact uses. */

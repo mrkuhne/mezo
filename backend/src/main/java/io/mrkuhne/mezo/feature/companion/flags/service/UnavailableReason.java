@@ -4,7 +4,8 @@ package io.mrkuhne.mezo.feature.companion.flags.service;
  * One member per honesty gate that already exists in the 13 rules — the reason a rule could not
  * judge, as opposed to judging and finding nothing wrong. Derived by reading every
  * {@code Optional.empty()} site in {@code service/rule/} on 2026-09-05; adding a gate without a
- * member is impossible, because the verdict is now a rule's only return type.
+ * member is impossible, because the verdict is now a rule's only return type. Widened again by
+ * Round 2 S1 (bd mezo-d58h.7.1) for {@code ProtocolLapseRule}'s own honesty gates.
  */
 public enum UnavailableReason {
     /** sleep_debt: fewer logged nights than {@code min-nights}. */
@@ -38,5 +39,13 @@ public enum UnavailableReason {
     /** ignored_nudge: a night in the run has no bedtime — neither compliant nor violating. */
     UNLOGGED_NIGHT,
     /** late_eating: no last-meal hour anywhere in the window. */
-    NO_MEAL_DATA
+    NO_MEAL_DATA,
+    /** protocol_lapse: no active protocol row for this user. */
+    NO_ACTIVE_PROTOCOL,
+    /** protocol_lapse: the active protocol has no items. */
+    NO_PROTOCOL_ITEMS,
+    /** protocol_lapse: an item's miss run qualified, but not enough due-day history existed
+     *  behind it (either the item is too new, or too few historical due days survived the
+     *  {@code startedOn} clamp) to judge whether a real habit existed before the miss. */
+    NOT_ENOUGH_PROTOCOL_HISTORY
 }

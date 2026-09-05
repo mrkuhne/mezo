@@ -856,6 +856,19 @@ mezo:
         absolute-hour: 22.5
         min-days-of-last-three: 2
         window-days: 3
+      protocol-lapse:
+        # Round 2 S1 (mezo-d58h.7.1, spec 2026-09-05 §(11)). The FIRST missed due day is an
+        # implicit grace day and never speaks — Duolingo's streak-freeze pattern, adopted
+        # deliberately: this card's job is "resume today and the streak lives", not "you broke it".
+        consecutive-missed-days: 2
+        # A habit must have EXISTED before it can lapse: >=7 due days of history at >=60%
+        # adherence inside the 30 days before the miss run. A brand-new item is silent by
+        # construction, and so is an item that was never really taken.
+        history-window-days: 30
+        min-history-due-days: 7
+        min-history-adherence: 0.60
+        # Per-ITEM re-announce guard, enforced in the rule (see the cooldown-hours comment).
+        per-item-cooldown-days: 7
       cooldown-hours:
         # A raised flag stays raised for its cooldown: the evaluator re-runs constantly (every
         # write + hourly), and without this the log would fill with the same day's state.
@@ -893,6 +906,11 @@ mezo:
         joint-overuse: 60
         ignored-nudge: 120
         late-eating: 48
+        # Round 2 S1 (mezo-d58h.7.1): deliberately SHORT. The spec's "7 days per item" cooldown is
+        # enforced inside ProtocolLapseRule against its own past raises' payloads; this key-level
+        # value only stops the same evaluation repeating within a day, so a DIFFERENT item lapsing
+        # tomorrow still gets a delivery window.
+        protocol-lapse: 24
     # W5.2 (bd mezo-b3pp.19, spec §9.2): the intervention library — config, not DB. Selection per
     # raised flag: highest W4.2 effectiveness (feedback_rollup intervention:<key>), unseen keys
     # optimistic; per-key cooldown-hours below; ONE card per day (first raise wins). channel:
@@ -1012,6 +1030,24 @@ mezo:
         channel: both
         text-hu: "Az utóbbi napok jó részén az utolsó étkezésed vagy nagyon közel esett a lefekvéshez, vagy egyszerűen nagyon későn volt. Ez nem hiba, csak egy szokás — viszont hosszabb távon rontja az alvásminőséget. Nem kell egy fix időpontot betartanod, csak érdemes hagyni egy kis levegőt a nap utolsó étkezése és a lefekvés között."
         cooldown-hours: 48
+        quiet-hours-exempt: false
+      # Round 2 S1 (mezo-d58h.7.1, spec 2026-09-05 §(11)): a kiegészítő két egymás utáni tervezett
+      # napon kimaradt, de előtte valódi szokás volt. A hangnem szándékosan grace-window (Duolingo
+      # streak-freeze): a sorozat ÉL, csak folytatni kell. channel: feed — egy kimaradt kiegészítő
+      # nem érdemel pusht. A konkrét készítmény nevét a tények blokk mondja meg, nem ez a szöveg.
+      # Whole-branch review fix (bd mezo-d58h.7.1): cooldown-hours here is scoped PER INTERVENTION
+      # KEY PER USER (InterventionService.deliverForFlag), NOT per item — unlike ProtocolLapseRule's
+      # own 7-day PER-ITEM cooldown. Setting this to 168 would have silently defeated the whole
+      # point of that per-item design: item A's card being delivered would block item B's card for
+      # a full week even though the rule itself is happy to raise for B the next day. This MUST
+      # match cooldown-hours.protocol-lapse (24h) so the library entry's cadence never falls behind
+      # the key-level cooldown the rest of the design assumes — the rule's own per-item cooldown is
+      # what actually enforces the spec's 7-day-per-item cadence.
+      - key: protocol_lapse_resume
+        flag: protocol_lapse
+        channel: feed
+        text-hu: "Az egyik kiegészítőd két egymás utáni tervezett napon kimaradt — pedig előtte hetekig stabilan ment. A sorozat nem veszett el: vedd be ma, és onnantól ott folytatod, ahol abbahagytad. Ha viszont szándékosan hagytad el, nyugodtan vedd ki a stackből, és nem szólok érte többet."
+        cooldown-hours: 24
         quiet-hours-exempt: false
     # W4.3 (mezo-b3pp.17): the pragmatic profile — "hogyan érdemes Daniellel beszélni"
     profile:

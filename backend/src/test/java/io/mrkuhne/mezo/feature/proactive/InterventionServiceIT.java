@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.companion.feedback.config.FeedbackLearningPropert
 import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupEntity;
 import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupStatsEnvelope;
 import io.mrkuhne.mezo.feature.companion.feedback.repository.FeedbackRollupRepository;
+import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagService;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
@@ -17,6 +18,7 @@ import io.mrkuhne.mezo.feature.proactive.service.InterventionService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.CompanionMessagePopulator;
+import io.mrkuhne.mezo.support.populator.FlagLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -50,6 +52,7 @@ class InterventionServiceIT extends AbstractIntegrationTest {
     @Autowired private UserPopulator userPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private FlagService flagService;
+    @Autowired private FlagLogPopulator flagLogPopulator;
 
     private UUID ownerId() {
         return userPopulator.createUser().getId();
@@ -235,5 +238,42 @@ class InterventionServiceIT extends AbstractIntegrationTest {
         // sleep_recover_tonight is the ONLY sleep_debt entry in the library and it is inside its
         // 48h cooldown, so there is no eligible entry left.
         assertThat(card).isEmpty();
+    }
+
+    /** Whole-branch review fix (bd mezo-d58h.7.1): {@code protocol_lapse_resume}'s
+     *  {@code cooldown-hours} was originally 168 (a week) — but {@link
+     *  InterventionService#deliverForFlag}'s cooldown check is scoped PER INTERVENTION KEY PER
+     *  USER, not per item, unlike {@code ProtocolLapseRule}'s own 7-day PER-ITEM cooldown. A 168h
+     *  library-entry cooldown would have meant: once item A's card delivered, NO card for a
+     *  different item B for a full week, even though the rule itself is happy to raise for B the
+     *  next day — silently defeating the whole point of the per-item design. Now that the value
+     *  is fixed to 24h (matching {@code cooldown-hours.protocol-lapse}), item A's card delivered
+     *  48h ago — well past the FIXED 24h cooldown, but still well inside the OLD buggy 168h one —
+     *  must NOT block item B's fresh raise from becoming a card. This is a genuine regression
+     *  test for the config value, not just the rule's raise: it asserts a REAL {@code
+     *  companion_message} row for item B, through the exact delivery path
+     *  ({@code InterventionService.deliverForFlag}) real cards go through. */
+    @Test
+    void aDifferentItemsRaiseIsNotBlockedByAnEarlierItemsDeliveredCard() {
+        UUID owner = ownerId();
+        // Item A's card, delivered 48h ago — inside the OLD 168h cooldown, outside the FIXED 24h one.
+        companionMessagePopulator.createAdvice(owner, LocalDate.now().minusDays(2),
+            FlagKey.PROTOCOL_LAPSE, "protocol_lapse_resume", InterventionService.EYEBROW,
+            "Magnézium kimaradt.", List.of(), List.of(),
+            Instant.now().minus(48, ChronoUnit.HOURS));
+        // Item B's fresh raise, today — the frozen payload deliverForFlag actually renders facts from.
+        UUID otherPantryItemId = UUID.randomUUID();
+        flagLogPopulator.raise(owner, FlagKey.PROTOCOL_LAPSE, FlagKey.SOURCE_SWEEP,
+            FlagPayloadEnvelope.protocolLapse(new FlagPayloadEnvelope.ProtocolLapse(
+                otherPantryItemId.toString(), "D3-vitamin", "wake", 2, 2,
+                List.of(), null, 14, 12, 0.857, 0.60)));
+
+        Optional<CompanionMessageEntity> card =
+            interventionService.deliverForFlag(owner, FlagKey.PROTOCOL_LAPSE);
+
+        assertThat(card).isPresent();
+        assertThat(card.get().getContent().interventionKey()).isEqualTo("protocol_lapse_resume");
+        assertThat(card.get().getContent().adviceKey()).isEqualTo(FlagKey.PROTOCOL_LAPSE);
+        assertThat(card.get().getContent().facts()).anySatisfy(f -> assertThat(f).contains("D3-vitamin"));
     }
 }
