@@ -158,6 +158,67 @@ class CompanionFeedbackApiIT extends ApiIntegrationTest {
         assertThat(response.getVerdict()).isEqualTo(MessageFeedbackEntity.VERDICT_UP);
     }
 
+    /**
+     * The seventh kind (mezo-jcpt.9) — day-evaluation prose gains chips exactly like the other
+     * six artifact kinds. Exercised on all three surfaces the kind-regex lives on: PUT here,
+     * GET (list) and DELETE below — the CHECK-swap migration widened one CHECK, but the contract
+     * regex is duplicated across three parameters, and a silent divergence there is precisely
+     * the failure mode this epic has spent itself eliminating.
+     */
+    @Test
+    void testPutFeedback_shouldAccept_whenArtifactKindIsDayReview() {
+        MessageFeedbackResponse response = putForBody("/api/companion/feedback",
+            PutFeedbackRequest.builder()
+                .artifactKind(MessageFeedbackEntity.KIND_DAY_REVIEW)
+                .artifactId(UUID.randomUUID())
+                .verdict(MessageFeedbackEntity.VERDICT_UP)
+                .build(),
+            ownerAuthHeaders(), HttpStatus.OK, MessageFeedbackResponse.class);
+
+        assertThat(response.getArtifactKind()).isEqualTo(MessageFeedbackEntity.KIND_DAY_REVIEW);
+        assertThat(response.getVerdict()).isEqualTo(MessageFeedbackEntity.VERDICT_UP);
+    }
+
+    @Test
+    void testListFeedback_shouldAccept_whenKindIsDayReview() {
+        UUID owner = ownerId();
+        UUID artifactId = UUID.randomUUID();
+        feedbackPopulator.createVerdict(owner, MessageFeedbackEntity.KIND_DAY_REVIEW, artifactId,
+            MessageFeedbackEntity.VERDICT_DOWN, MessageFeedbackEntity.REASON_INACCURATE);
+
+        List<MessageFeedbackResponse> found = getForList(
+            "/api/companion/feedback?kind=" + MessageFeedbackEntity.KIND_DAY_REVIEW + "&ids=" + artifactId,
+            ownerAuthHeaders(), HttpStatus.OK, MessageFeedbackResponse.class);
+
+        assertThat(found).hasSize(1);
+        assertThat(found.get(0).getArtifactKind()).isEqualTo(MessageFeedbackEntity.KIND_DAY_REVIEW);
+    }
+
+    @Test
+    void testDeleteFeedback_shouldReturn204_whenArtifactKindIsDayReview() {
+        UUID owner = ownerId();
+        UUID artifactId = UUID.randomUUID();
+        feedbackPopulator.createVerdict(owner, MessageFeedbackEntity.KIND_DAY_REVIEW, artifactId,
+            MessageFeedbackEntity.VERDICT_UP, null);
+
+        deleteAndExpect("/api/companion/feedback/" + MessageFeedbackEntity.KIND_DAY_REVIEW + "/" + artifactId,
+            ownerAuthHeaders(), HttpStatus.NO_CONTENT);
+    }
+
+    /** The CHECK was WIDENED, not loosened — a genuinely invented kind still fails everywhere. */
+    @Test
+    void testPutFeedback_shouldReturn400_whenArtifactKindIsNotARealKind() {
+        String body = putForBody("/api/companion/feedback",
+            PutFeedbackRequest.builder()
+                .artifactKind("not_a_kind")
+                .artifactId(UUID.randomUUID())
+                .verdict(MessageFeedbackEntity.VERDICT_UP)
+                .build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasFieldError(body, "artifactKind", "VALIDATION_INVALID_VALUE");
+    }
+
     @Test
     void testDeleteFeedback_shouldReturn204AndRemoveVerdict_whenVoteExists() {
         UUID owner = ownerId();

@@ -8277,7 +8277,7 @@ paths:
           schema:
             type: string
             pattern: >-
-              ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction)$
+              ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review)$
         - name: ids
           in: query
           required: true
@@ -8362,7 +8362,7 @@ paths:
           schema:
             type: string
             pattern: >-
-              ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction)$
+              ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review)$
         - name: artifactId
           in: path
           required: true
@@ -20542,7 +20542,7 @@ components:
         artifactKind:
           type: string
           pattern: >-
-            ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction)$
+            ^(chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review)$
         artifactId:
           type: string
           format: uuid
@@ -20568,7 +20568,7 @@ components:
           type: string
           description: >-
             'chat_message' | 'feed_message' | 'weekly_suggestion' |
-            'weekly_review' | 'memoir' | 'prediction'
+            'weekly_review' | 'memoir' | 'prediction' | 'day_review'
         artifactId:
           type: string
           format: uuid
@@ -20917,6 +20917,15 @@ components:
         state:
           type: string
           description: scored|in_progress|thin|empty|future
+        reviewId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            A naphoz tartozó LLM-próza (day_review) sor-azonosítója — a
+            visszajelzés-gombok artifact-id-je (mezo-jcpt.9). CSAK prózás
+            (pontozott) napon van jelen: nincs próza → nincs id → nincs gomb,
+            mert artifact nélkül nincs mire szavazni.
         score:
           type: integer
           nullable: true
