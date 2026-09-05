@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagEvaluator;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagOutcome;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -26,7 +28,19 @@ class FlagEvaluatorAcuteBadDayIT extends AbstractIntegrationTest {
     }
 
     private List<String> keys(UUID owner) {
-        return evaluator.evaluate(owner).stream().map(FlagRaise::flagKey).toList();
+        return raisedKeys(evaluator.evaluate(owner));
+    }
+
+    /** The keys that actually RAISED — the old evaluate() return, reconstructed. */
+    private static List<String> raisedKeys(List<FlagVerdict> verdicts) {
+        return verdicts.stream()
+            .filter(v -> v.outcome() == FlagOutcome.RAISED)
+            .map(FlagVerdict::flagKey)
+            .toList();
+    }
+
+    private static FlagVerdict verdictFor(List<FlagVerdict> verdicts, String flagKey) {
+        return verdicts.stream().filter(v -> flagKey.equals(v.flagKey())).findFirst().orElseThrow();
     }
 
     @Test
@@ -96,16 +110,41 @@ class FlagEvaluatorAcuteBadDayIT extends AbstractIntegrationTest {
         checkInPopulator.createCheckIn(owner, today, "08:00", 3, 5, 2, 5, null);
         checkInPopulator.createCheckIn(owner, today, "20:00", 2, 5, 8, 5, null);
 
-        FlagRaise raise = evaluator.evaluate(owner).stream()
-            .filter(r -> FlagKey.ACUTE_BAD_DAY.equals(r.flagKey())).findFirst().orElseThrow();
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.ACUTE_BAD_DAY);
 
-        assertThat(raise.payload().acuteBadDay().minCheckIns()).isEqualTo(2);
-        assertThat(raise.payload().acuteBadDay().bodyOrEnergyAtMost()).isEqualTo(3);
-        assertThat(raise.payload().acuteBadDay().qualifyingCount()).isEqualTo(2);
-        assertThat(raise.payload().acuteBadDay().qualifyingCheckIns())
+        assertThat(verdict.payload().acuteBadDay().minCheckIns()).isEqualTo(2);
+        assertThat(verdict.payload().acuteBadDay().bodyOrEnergyAtMost()).isEqualTo(3);
+        assertThat(verdict.payload().acuteBadDay().qualifyingCount()).isEqualTo(2);
+        assertThat(verdict.payload().acuteBadDay().qualifyingCheckIns())
             .extracting("slotTime", "body", "energy")
             .containsExactlyInAnyOrder(
                 org.assertj.core.groups.Tuple.tuple("08:00", 2, 3),
                 org.assertj.core.groups.Tuple.tuple("20:00", 8, 2));
+    }
+
+    @Test
+    void is_unavailable_with_only_one_check_in_today() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today, "08:00", 2, 5, 2, 5, null);
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.ACUTE_BAD_DAY);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
+        assertThat(verdict.reason()).isEqualTo(UnavailableReason.NOT_ENOUGH_CHECKINS);
+    }
+
+    @Test
+    void is_clear_when_only_one_of_two_check_ins_qualifies() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today, "08:00", 2, 5, 2, 5, null);
+        checkInPopulator.createCheckIn(owner, today, "20:00", 8, 5, 8, 5, null);
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.ACUTE_BAD_DAY);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("bad_checkins");
+        assertThat(verdict.clear().observed()).isLessThan(verdict.clear().threshold());
     }
 }

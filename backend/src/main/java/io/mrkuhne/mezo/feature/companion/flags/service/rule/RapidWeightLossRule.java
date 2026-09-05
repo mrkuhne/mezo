@@ -5,15 +5,15 @@ import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
 import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -60,17 +60,19 @@ public class RapidWeightLossRule implements FlagRule {
     private final FlagProperties properties;
 
     @Override
-    public Optional<FlagRaise> evaluate(UUID userId, LocalDate today) {
+    public FlagVerdict evaluate(UUID userId, LocalDate today) {
         FlagProperties.RapidWeightLoss cfg = properties.rapidWeightLoss();
 
         Double trend = metricSeriesService
             .series(userId, MetricKey.WEIGHT_TREND_PCT_WK, today, today)
             .get(today);
         if (trend == null) {
-            return Optional.empty();
+            return FlagVerdict.unavailable(FlagKey.RAPID_WEIGHT_LOSS,
+                UnavailableReason.NO_WEIGHT_TREND);
         }
         if (trend >= cfg.pctPerWeekAtMost()) {
-            return Optional.empty();
+            return FlagVerdict.clear(FlagKey.RAPID_WEIGHT_LOSS, new FlagVerdict.ClearEvidence(
+                "weight_trend_pct_wk", trend, cfg.pctPerWeekAtMost(), null));
         }
 
         GoalEntity activeGoal = goalRepository
@@ -78,18 +80,20 @@ public class RapidWeightLossRule implements FlagRule {
             .stream().findFirst().orElse(null);
         if (activeGoal == null) {
             // Unreadable precondition ("goal ≠ cut" cannot be evaluated) ⇒ honest silence.
-            return Optional.empty();
+            return FlagVerdict.unavailable(FlagKey.RAPID_WEIGHT_LOSS,
+                UnavailableReason.NO_ACTIVE_GOAL);
         }
         String trajectory = activeGoal.getTrajectory();
         if (TRAJECTORY_CUT.equals(trajectory)) {
-            return Optional.empty();
+            return FlagVerdict.clear(FlagKey.RAPID_WEIGHT_LOSS, new FlagVerdict.ClearEvidence(
+                "trajectory", null, null, trajectory));
         }
 
         int weighInCount = countDistinctWeighInDays(userId, today.minusDays(6), today);
 
-        return Optional.of(new FlagRaise(FlagKey.RAPID_WEIGHT_LOSS,
+        return FlagVerdict.raised(FlagKey.RAPID_WEIGHT_LOSS,
             FlagPayloadEnvelope.rapidWeightLoss(new FlagPayloadEnvelope.RapidWeightLoss(
-                trend, cfg.pctPerWeekAtMost(), weighInCount, cfg.minWeighIns(), trajectory))));
+                trend, cfg.pctPerWeekAtMost(), weighInCount, cfg.minWeighIns(), trajectory)));
     }
 
     /** Distinct logged days in the same 7-day window the trend regression reads — display only;

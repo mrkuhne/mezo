@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagEvaluator;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagOutcome;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -35,7 +37,19 @@ class FlagEvaluatorRapidWeightLossIT extends AbstractIntegrationTest {
     }
 
     private List<String> keys(UUID owner) {
-        return evaluator.evaluate(owner).stream().map(FlagRaise::flagKey).toList();
+        return raisedKeys(evaluator.evaluate(owner));
+    }
+
+    /** The keys that actually RAISED — the old evaluate() return, reconstructed. */
+    private static List<String> raisedKeys(List<FlagVerdict> verdicts) {
+        return verdicts.stream()
+            .filter(v -> v.outcome() == FlagOutcome.RAISED)
+            .map(FlagVerdict::flagKey)
+            .toList();
+    }
+
+    private static FlagVerdict verdictFor(List<FlagVerdict> verdicts, String flagKey) {
+        return verdicts.stream().filter(v -> flagKey.equals(v.flagKey())).findFirst().orElseThrow();
     }
 
     /** One weigh-in per day for {@code weights.length} consecutive days ending {@code today}. */
@@ -122,11 +136,12 @@ class FlagEvaluatorRapidWeightLossIT extends AbstractIntegrationTest {
         goalPopulator.createGoal(owner, "bulk", "active");
         weighIns(owner, today, 80.00, 79.92, 79.84, 79.76, 79.68, 79.61, 79.53);
 
-        FlagRaise raise = evaluator.evaluate(owner).stream()
-            .filter(r -> FlagKey.RAPID_WEIGHT_LOSS.equals(r.flagKey())).findFirst().orElse(null);
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.RAPID_WEIGHT_LOSS);
 
         assertThat(keys(owner)).doesNotContain(FlagKey.RAPID_WEIGHT_LOSS);
-        assertThat(raise).isNull();
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("weight_trend_pct_wk");
+        assertThat(verdict.clear().observed()).isGreaterThanOrEqualTo(verdict.clear().threshold());
     }
 
     @Test
@@ -137,9 +152,8 @@ class FlagEvaluatorRapidWeightLossIT extends AbstractIntegrationTest {
         weighIns(owner, today, 80.00, 79.92, 79.84, 79.76, 79.68, 79.60, 79.52);
 
         assertThat(keys(owner)).contains(FlagKey.RAPID_WEIGHT_LOSS);
-        FlagRaise raise = evaluator.evaluate(owner).stream()
-            .filter(r -> FlagKey.RAPID_WEIGHT_LOSS.equals(r.flagKey())).findFirst().orElseThrow();
-        assertThat(raise.payload().rapidWeightLoss().weightTrendPctWk()).isLessThan(-0.7);
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.RAPID_WEIGHT_LOSS);
+        assertThat(verdict.payload().rapidWeightLoss().weightTrendPctWk()).isLessThan(-0.7);
     }
 
     @Test
@@ -149,14 +163,52 @@ class FlagEvaluatorRapidWeightLossIT extends AbstractIntegrationTest {
         goalPopulator.createGoal(owner, "maintain", "active");
         weighIns(owner, today, 80.00, 79.85, 79.70, 79.55, 79.40, 79.25, 79.10);
 
-        FlagRaise raise = evaluator.evaluate(owner).stream()
-            .filter(r -> FlagKey.RAPID_WEIGHT_LOSS.equals(r.flagKey())).findFirst().orElseThrow();
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.RAPID_WEIGHT_LOSS);
 
-        var p = raise.payload().rapidWeightLoss();
+        var p = verdict.payload().rapidWeightLoss();
         assertThat(p.pctPerWeekAtMost()).isEqualTo(-0.7);
         assertThat(p.weightTrendPctWk()).isLessThan(-0.7);
         assertThat(p.weighInCount()).isEqualTo(7);
         assertThat(p.minWeighIns()).isEqualTo(4);
         assertThat(p.goalTrajectory()).isEqualTo("maintain");
+    }
+
+    @Test
+    void is_unavailable_when_fewer_than_four_weighins_back_the_window() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        goalPopulator.createGoal(owner, "bulk", "active");
+        weighIns(owner, today, 80.00, 79.55, 79.10);
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.RAPID_WEIGHT_LOSS);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
+        assertThat(verdict.reason()).isEqualTo(UnavailableReason.NO_WEIGHT_TREND);
+    }
+
+    @Test
+    void is_unavailable_when_the_owner_has_no_active_goal_at_all() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        weighIns(owner, today, 80.00, 79.85, 79.70, 79.55, 79.40, 79.25, 79.10);
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.RAPID_WEIGHT_LOSS);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
+        assertThat(verdict.reason()).isEqualTo(UnavailableReason.NO_ACTIVE_GOAL);
+    }
+
+    @Test
+    void is_clear_when_the_active_goal_is_a_cut() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        goalPopulator.createGoal(owner, "cut", "active");
+        weighIns(owner, today, 80.00, 79.85, 79.70, 79.55, 79.40, 79.25, 79.10);
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.RAPID_WEIGHT_LOSS);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("trajectory");
+        assertThat(verdict.clear().detail()).isEqualTo("cut");
     }
 }

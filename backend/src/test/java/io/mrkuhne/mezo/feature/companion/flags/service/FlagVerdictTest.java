@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import org.junit.jupiter.api.Test;
 
 /** The verdict is the rule's ONLY return type, so its invariants are what stop a half-filled
@@ -62,18 +63,18 @@ class FlagVerdictTest {
     @Test
     void testRaised_shouldRejectNullPayload() {
         assertThatThrownBy(() -> FlagVerdict.raised(FlagKey.SLEEP_DEBT, null))
-            .isInstanceOf(IllegalArgumentException.class);
+            .isInstanceOf(SystemRuntimeErrorException.class);
     }
 
     @Test
     void testClear_shouldRejectNullEvidence() {
         assertThatThrownBy(() -> FlagVerdict.clear(FlagKey.SLEEP_DEBT, null))
-            .isInstanceOf(IllegalArgumentException.class);
+            .isInstanceOf(SystemRuntimeErrorException.class);
     }
 
     @Test
     void testUnavailable_shouldRejectNullReason() {
         assertThatThrownBy(() -> FlagVerdict.unavailable(FlagKey.SLEEP_DEBT, null))
-            .isInstanceOf(IllegalArgumentException.class);
+            .isInstanceOf(SystemRuntimeErrorException.class);
     }
 }

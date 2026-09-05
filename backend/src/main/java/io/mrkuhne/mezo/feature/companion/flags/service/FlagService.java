@@ -37,7 +37,11 @@ public class FlagService {
     @Transactional
     public List<String> evaluateAndLog(UUID userId, String source) {
         List<String> written = new ArrayList<>();
-        for (FlagRaise raise : evaluator.evaluate(userId)) {
+        for (FlagVerdict verdict : evaluator.evaluate(userId)) {
+            if (verdict.outcome() != FlagOutcome.RAISED) {
+                continue;
+            }
+            FlagRaise raise = verdict.toRaise();
             Instant coolUntil = Instant.now()
                 .minus(properties.cooldownHours().forFlag(raise.flagKey()), ChronoUnit.HOURS);
             if (repository.existsRaiseSince(userId, raise.flagKey(), coolUntil)) {

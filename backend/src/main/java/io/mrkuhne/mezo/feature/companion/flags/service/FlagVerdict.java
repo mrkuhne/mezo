@@ -1,6 +1,9 @@
 package io.mrkuhne.mezo.feature.companion.flags.service;
 
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.util.List;
 
 /**
  * What one rule concluded for one user on one evaluation (spec 2026-09-05 §4.1) — the replacement
@@ -27,21 +30,24 @@ public record FlagVerdict(
 
     public static FlagVerdict raised(String flagKey, FlagPayloadEnvelope payload) {
         if (payload == null) {
-            throw new IllegalArgumentException("RAISED verdict needs a payload: " + flagKey);
+            throw new SystemRuntimeErrorException(SystemMessage.error("FLAG_VERDICT_RAISED_NEEDS_PAYLOAD")
+                .params(List.of(flagKey)).build());
         }
         return new FlagVerdict(flagKey, FlagOutcome.RAISED, payload, null, null);
     }
 
     public static FlagVerdict clear(String flagKey, ClearEvidence evidence) {
         if (evidence == null) {
-            throw new IllegalArgumentException("CLEAR verdict needs evidence: " + flagKey);
+            throw new SystemRuntimeErrorException(SystemMessage.error("FLAG_VERDICT_CLEAR_NEEDS_EVIDENCE")
+                .params(List.of(flagKey)).build());
         }
         return new FlagVerdict(flagKey, FlagOutcome.CLEAR, null, evidence, null);
     }
 
     public static FlagVerdict unavailable(String flagKey, UnavailableReason reason) {
         if (reason == null) {
-            throw new IllegalArgumentException("UNAVAILABLE verdict needs a reason: " + flagKey);
+            throw new SystemRuntimeErrorException(SystemMessage.error("FLAG_VERDICT_UNAVAILABLE_NEEDS_REASON")
+                .params(List.of(flagKey)).build());
         }
         return new FlagVerdict(flagKey, FlagOutcome.UNAVAILABLE, null, null, reason);
     }

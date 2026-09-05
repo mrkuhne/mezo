@@ -6,7 +6,9 @@ import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagEvaluator;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagOutcome;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -39,13 +41,26 @@ class FlagEvaluatorMissedWorkoutsIT extends AbstractIntegrationTest {
     }
 
     private List<String> keys(UUID owner) {
-        return evaluator.evaluate(owner).stream().map(FlagRaise::flagKey).toList();
+        return raisedKeys(evaluator.evaluate(owner));
+    }
+
+    /** The keys that actually RAISED — the old evaluate() return, reconstructed. */
+    private static List<String> raisedKeys(List<FlagVerdict> verdicts) {
+        return verdicts.stream()
+            .filter(v -> v.outcome() == FlagOutcome.RAISED)
+            .map(FlagVerdict::flagKey)
+            .toList();
+    }
+
+    private static FlagVerdict verdictFor(List<FlagVerdict> verdicts, String flagKey) {
+        return verdicts.stream().filter(v -> flagKey.equals(v.flagKey())).findFirst().orElseThrow();
     }
 
     private Optional<FlagPayloadEnvelope.MissedWorkouts> payload(UUID owner) {
         return evaluator.evaluate(owner).stream()
-            .filter(r -> FlagKey.MISSED_WORKOUTS.equals(r.flagKey()))
-            .map(r -> r.payload().missedWorkouts())
+            .filter(v -> FlagKey.MISSED_WORKOUTS.equals(v.flagKey()))
+            .filter(v -> v.outcome() == FlagOutcome.RAISED)
+            .map(v -> v.payload().missedWorkouts())
             .findFirst();
     }
 
@@ -236,6 +251,58 @@ class FlagEvaluatorMissedWorkoutsIT extends AbstractIntegrationTest {
         assertThat(payload.orElseThrow().plannedDays())
             .allSatisfy(day -> assertThat(LocalDate.parse(day)).isAfterOrEqualTo(createdAt
                 .atZone(ZoneId.systemDefault()).toLocalDate()));
+    }
+
+    @Test
+    void missed_workouts_is_unavailable_without_a_gym_schedule() {
+        UUID owner = ownerId();
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.MISSED_WORKOUTS);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
+        assertThat(verdict.reason()).isEqualTo(UnavailableReason.NO_GYM_SCHEDULE);
+    }
+
+    @Test
+    void missed_workouts_is_unavailable_for_a_schedule_created_moments_ago() {
+        UUID owner = ownerId();
+        trainPopulator.createGymSlotAt(owner, 0, "07:00", Instant.now());
+        trainPopulator.createGymSlotAt(owner, 2, "07:00", Instant.now());
+        trainPopulator.createGymSlotAt(owner, 4, "07:00", Instant.now());
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.MISSED_WORKOUTS);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
+        assertThat(verdict.reason()).isEqualTo(UnavailableReason.SCHEDULE_YOUNGER_THAN_WINDOW);
+    }
+
+    @Test
+    void missed_workouts_is_clear_when_a_completed_day_breaks_the_run_just_under_the_threshold() {
+        // Single missed planned days on either side of a completed one never form a run of 2
+        // (min-consecutive-missed): the longest run stays at 1, one step under the threshold.
+        UUID owner = ownerId();
+        monWedFriSchedule(owner);
+        MesocycleEntity meso = trainPopulator.createActiveMeso(owner);
+        WorkoutSessionEntity template = trainPopulator.createTemplateDay(owner, meso.getId(), "A");
+        LocalDate today = LocalDate.now();
+        boolean train = true;
+        for (int i = windowDays(); i >= 1; i--) {
+            LocalDate day = today.minusDays(i);
+            int dow = day.getDayOfWeek().getValue() - 1;
+            if (dow != 0 && dow != 2 && dow != 4) {
+                continue;
+            }
+            if (train) {
+                trainPopulator.createWorkoutInstance(owner, template, day, "completed");
+            }
+            train = !train;
+        }
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.MISSED_WORKOUTS);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("longest_missed_run");
+        assertThat(verdict.clear().observed()).isLessThan(verdict.clear().threshold());
     }
 
     /** The configured window — read from config so the fixtures and the rule cannot drift. */
