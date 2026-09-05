@@ -2450,6 +2450,28 @@ have no dedicated component test files — their behavior is covered at the hub/
 integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/insights/weekly →
 /me/week` redirect). Full test list: [me.md §8](me.md).
 
+**Owner-zone snapshot (`mezo-ned9`, 2026-09-05):**
+
+- **`service/ContextSnapshotOwnerZoneIT` (4)** — the JVM default zone is swapped for a fixed-offset
+  zone sitting one calendar day off `MedicationCycleService.MEDICATION_ZONE` (the
+  `LlmCallListMidnightIT` idiom applied to the DEFAULT zone, since `MEDICATION_ZONE` is a constant
+  and cannot be moved by a property), with two hours of clearance either side of that zone's own
+  midnight so a slow run cannot roll the day back. **The `@AfterEach` zone restore is only safe
+  while Surefire runs one fork sequentially** — `TimeZone.setDefault` is JVM-global, so enabling
+  JUnit parallelism would make the flip visible to concurrent tests (noted on the class).
+  - Three gather tests (`ChallengeGenerator`, `ExperimentProposalGenerator`,
+    `WeeklySuggestionGenerator`) assert the snapshot header date IS the owner-local day and that the
+    `[Gyógyszer]` cycle day equals `MedicationCycleService#deriveToday`'s; the weekly one also pins
+    that the snapshot day falls INSIDE `[weekStart, weekStart+6]`. Before the fix all three failed
+    deterministically (header `2026-09-06` vs `2026-09-05`, `ciklus 4. nap` vs `3.`).
+  - A fourth pins the gate/stamp half: with the default zone a day off, `ChallengeGenerator.generate`
+    **and** `OverloadChallengeGenerator.generate` both refuse the default-zone day, while the
+    owner-local day is accepted and the persisted `workoutDate` equals the day the snapshot was
+    rendered for. A scripted `[fake-challenge:…]` sentinel rides the check-in note so generation
+    genuinely succeeds when the gate lets it through — without it both calls would return empty on
+    the unparseable answer and the assertion would hold vacuously. With the old default-zone gate
+    restored it fails with `Expecting empty but was: [ChallengeEntity@…]`.
+
 ## 9. Decisions, gotchas & deferred
 
 - **(a) All TEN generator markers are literal-mirrored in `FakeCompanionLlm` — keep in sync.** The
@@ -2890,6 +2912,41 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
   [`_platform-notifications.md`](_platform-notifications.md). `PHASE3_TAB_IDS` is now empty. The
   D′ score constants (`SLEEP_TARGET_H`/`KCAL_BAND`/`WEIGHT_RATE_EPSILON`) were **not** promoted to
   backend config (still FE consts — a small follow-up bd issue, see [insights.md §9](insights.md)).
+
+- **(mm) The three self-dating gathers render the snapshot for the OWNER-local day, not the JVM
+  default's (`mezo-ned9`, the `mezo-8h2s` follow-up).** `ChallengeGenerator.gather`,
+  `ExperimentProposalGenerator.gather` and `WeeklySuggestionGenerator.gather` are the only proactive
+  callers that mint their own "today" for `ContextSnapshotAssembler.render(userId, today)`; all
+  three passed a zero-arg `LocalDate.now()`, which is the JVM default zone — **UTC on CI and in the
+  k3s containers**, while every other medication read derives its day in
+  `MedicationCycleService.MEDICATION_ZONE` (`Europe/Budapest`). Between the two midnights the
+  `[Gyógyszer]` block in the LLM payload therefore showed a cycle day one off the one the Fuel
+  screen shows — the model contradicting the UI on the user's own medication. All three now pass
+  `LocalDate.now(MedicationCycleService.MEDICATION_ZONE)`.
+  **ONE derivation per path, not a relocated split.** Simply zoning the `render(...)` argument would
+  have left each generator holding *two* different "today"s. `ChallengeGenerator.generate` already
+  receives the `date` it stamps as `workoutDate`, so that date is now **threaded into
+  `gather(userId, templateSessionId, date)`** and is what the snapshot is rendered for — the payload
+  always describes the very session the challenge is written against. Its gate (and the identical
+  ones in `OverloadChallengeGenerator` and `ProactiveChallengeService`, which must accept the same
+  set of days or one challenge kind silently vanishes) moved to the owner zone with it; that also
+  fixes a latent mismatch against the FE, which sends its own device day. On the weekly path the two
+  dates are genuinely distinct by design (`weekStart` = week identity, today = current state), so
+  the single derivation is that **both** now come from `LocalDate.now(MEDICATION_ZONE)`:
+  `WeeklySuggestionJob` and `ProactiveWeeklySuggestionService`'s null-date fallback mint `weekStart`
+  owner-locally, so the snapshot day can no longer fall outside the week it is suggesting for across
+  the Sunday→Monday boundary.
+  **Deliberately the WHOLE snapshot, not just the medication block:** `render(userId, today)` uses
+  that one date for every block (fuel intake day, training day, recovery, check-in freshness…), so
+  the fix shifts the whole snapshot's day for these three generators. That is the correct scope —
+  these payloads describe *the owner's day*, and an owner-local medication day inside a UTC-dated
+  snapshot would be a worse, internally inconsistent state than either uniform choice. `medication`
+  is imported from `proactive` on the existing precedent (`WeeklyReviewContextSources` already does;
+  `medication` imports no other feature, so `feature_slices_are_cycle_free` stays satisfied).
+  **Not unified:** `PredictionGenerator:158` passes a `weekStart` (a deliberate week anchor, not a
+  "today") and is untouched; `CompanionMessageGenerator` and `ChatService` receive their date from
+  callers further up (the crons/jobs and the chat turn), which still derive it in the default zone —
+  a wider "one owner zone for every job-minted today" sweep is out of this slice's scope.
 
 ## 10. Key files
 

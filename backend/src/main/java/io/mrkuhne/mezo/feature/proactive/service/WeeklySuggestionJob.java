@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.feature.auth.service.UserFanOut;
+import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -30,7 +31,9 @@ public class WeeklySuggestionJob {
 
     @Scheduled(cron = "${mezo.proactive.weekly.cron}")
     public void run() {
-        LocalDate weekStart = LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        // mezo-ned9: owner-local, the SAME derivation the gathered snapshot day uses.
+        LocalDate weekStart = LocalDate.now(MedicationCycleService.MEDICATION_ZONE)
+                .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         AtomicInteger generated = new AtomicInteger();
         userFanOut.forEachActiveUser("Weekly suggestion", user -> {
             try {

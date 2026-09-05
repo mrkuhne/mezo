@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
+import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.feature.proactive.entity.WeeklySuggestionEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.WeeklySuggestionRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -106,7 +107,13 @@ public class WeeklySuggestionGenerator {
                 .findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(userId).stream()
                 .map(p -> "- " + p.getTitle() + " (státusz: " + p.getStatus() + ")")
                 .collect(Collectors.joining("\n"));
-        return contextSnapshotAssembler.render(userId, LocalDate.now())
+        // mezo-ned9: ONE owner-local derivation feeds both dates on this path — `weekStart` is the
+        // ISO Monday of LocalDate.now(MEDICATION_ZONE) at every site that mints it (WeeklySuggestionJob,
+        // ProactiveWeeklySuggestionService), and the snapshot day below is that same owner-local today.
+        // They therefore always agree on which week we are in; a default-zone `weekStart` against a
+        // Budapest snapshot day put the snapshot OUTSIDE the selected week across Sunday->Monday.
+        LocalDate ownerToday = LocalDate.now(MedicationCycleService.MEDICATION_ZONE);
+        return contextSnapshotAssembler.render(userId, ownerToday)
                 + facts
                 + "\n\nELŐZŐ HÉT NAPJAI (legfrissebb elöl):\n" + narratives
                 + (patterns.isBlank() ? "" : "\n\nMINTÁK:\n" + patterns)
