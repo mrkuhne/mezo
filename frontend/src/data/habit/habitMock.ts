@@ -98,6 +98,19 @@ const CATALOG_META: Record<string, { metric: string; skillKey: string }> = {
 const MOCK_CELEBRATION: Record<string, string> = {
   morning_pushups: 'ökölbe szorított kéz + „ez az”',
   kitchen_close: 'lekapcsolom a lámpát és bólintok',
+  // mezo-3zue.6: a horgony-pár függő oldala. FOGG-hoz a validátor horgonyt ÉS ünneplést
+  // vár, tehát ünneplés nélkül a mock elutasítandó állapotot írna le.
+  morning_video: 'bólintok, hogy megvolt',
+}
+
+/**
+ * A mock egyetlen szokás-láncolása (mezo-3zue.6): a reggeli videó a fekvőtámaszra van kötve.
+ * Mindkét sor MANUAL és pending a mock napban, tehát a „Most jön" prompt végig eljátszható.
+ * Nélküle a VITE_USE_MOCK=true teszt-arm vakon zöldülne és a mock PWA-n a habit stacking
+ * kifizetődése demózhatatlan lenne — ugyanaz az érv, ami a MOCK_CELEBRATION-t is indokolja.
+ */
+const MOCK_ANCHOR: Record<string, string> = {
+  morning_video: 'morning_pushups',
 }
 
 function toDefInfo(h: HabitItem): HabitDefInfo {
@@ -122,7 +135,7 @@ function toDefInfo(h: HabitItem): HabitDefInfo {
     linkUrl: h.linkUrl ?? null,
     isActive: true,
     framework: MOCK_CELEBRATION[h.key] ? 'FOGG' : null,
-    anchorHabitKey: null,
+    anchorHabitKey: MOCK_ANCHOR[h.key] ?? null,
     cue: null,
     craving: null,
     reward: null,

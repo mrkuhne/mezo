@@ -115,7 +115,7 @@ export function NapRutinPage() {
     return { done: steps.filter((h) => h.status === 'done').length, total: steps.length }
   }
 
-  // The Today dispatcher's habit branch, verbatim semantics (TodayPage `act()`).
+  /** A napi sor tick-viselkedése: a pipa, illetve a sor saját felületére vivő CTA. */
   const tickAction = (h: HabitItem): (() => void) | null => {
     if (h.status === 'done') {
       // the prototype tick toggles both ways — only a MANUAL check can honestly untick
