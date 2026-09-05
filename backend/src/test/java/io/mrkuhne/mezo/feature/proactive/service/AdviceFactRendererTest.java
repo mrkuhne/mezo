@@ -127,6 +127,23 @@ class AdviceFactRendererTest {
         assertThat(facts.get(1)).contains("Nincs").contains("22:30");
     }
 
+    /** Round 2 S1 (mezo-d58h.7.1): the facts name the item, the two missed days and the habit the
+     *  user actually had — the card's copy leans on all three ("a sorozat nem veszett el"). */
+    @Test
+    void testRender_shouldRenderProtocolLapseFacts() {
+        FlagPayloadEnvelope payload = FlagPayloadEnvelope.protocolLapse(
+            new FlagPayloadEnvelope.ProtocolLapse("11111111-1111-1111-1111-111111111111",
+                "Magnézium", "evening", 2, 2,
+                List.of("2026-09-03", "2026-09-04"), "2026-09-02", 14, 12, 0.857, 0.60));
+
+        List<String> facts = AdviceFactRenderer.render(FlagKey.PROTOCOL_LAPSE, payload);
+
+        assertThat(facts).anySatisfy(f -> assertThat(f).contains("Magnézium"));
+        assertThat(facts).anySatisfy(f -> assertThat(f).contains("2026-09-04"));
+        assertThat(facts).anySatisfy(f -> assertThat(f).contains("2026-09-02"));
+        assertThat(facts).anySatisfy(f -> assertThat(f).contains("86"));
+    }
+
     /** Honest absence: no payload (a raise written before the payload existed, or a key with no
      *  renderer) yields NO facts rather than a fabricated one. The card still ships — its prose
      *  falls back to the template, which needs no facts. */

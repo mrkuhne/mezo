@@ -1022,6 +1022,16 @@ mezo:
         text-hu: "Az utóbbi napok jó részén az utolsó étkezésed vagy nagyon közel esett a lefekvéshez, vagy egyszerűen nagyon későn volt. Ez nem hiba, csak egy szokás — viszont hosszabb távon rontja az alvásminőséget. Nem kell egy fix időpontot betartanod, csak érdemes hagyni egy kis levegőt a nap utolsó étkezése és a lefekvés között."
         cooldown-hours: 48
         quiet-hours-exempt: false
+      # Round 2 S1 (mezo-d58h.7.1, spec 2026-09-05 §(11)): a kiegészítő két egymás utáni tervezett
+      # napon kimaradt, de előtte valódi szokás volt. A hangnem szándékosan grace-window (Duolingo
+      # streak-freeze): a sorozat ÉL, csak folytatni kell. channel: feed — egy kimaradt kiegészítő
+      # nem érdemel pusht. A konkrét készítmény nevét a tények blokk mondja meg, nem ez a szöveg.
+      - key: protocol_lapse_resume
+        flag: protocol_lapse
+        channel: feed
+        text-hu: "Az egyik kiegészítőd két egymás utáni tervezett napon kimaradt — pedig előtte hetekig stabilan ment. A sorozat nem veszett el: vedd be ma, és onnantól ott folytatod, ahol abbahagytad. Ha viszont szándékosan hagytad el, nyugodtan vedd ki a stackből, és nem szólok érte többet."
+        cooldown-hours: 168
+        quiet-hours-exempt: false
     # W4.3 (mezo-b3pp.17): the pragmatic profile — "hogyan érdemes Daniellel beszélni"
     profile:
       # Monday 03:45 — after the 03:10 feedback rollups and the 03:30 weekly consolidation rung,
