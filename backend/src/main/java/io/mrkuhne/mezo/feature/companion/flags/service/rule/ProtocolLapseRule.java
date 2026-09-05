@@ -115,7 +115,17 @@ public class ProtocolLapseRule implements FlagRule {
 
         // The window ends YESTERDAY, not today — today is still in progress (Trap 3).
         LocalDate to = today.minusDays(1);
-        LocalDate from = to.minusDays((long) cfg.historyWindowDays() + cfg.consecutiveMissedDays());
+        // Widened past a single historyWindowDays (review fix, bd mezo-d58h.7.1): the miss-run walk
+        // does NOT stop at consecutiveMissedDays — it keeps walking until it hits a taken due day or
+        // startedOn, so a genuine run of length k > consecutiveMissedDays pushes historyEnd (the last
+        // due day strictly before the run) and therefore historyStart that much further into the
+        // past. Sizing `from` only for the THRESHOLD run length silently truncated takenByDate/
+        // gymDates before historyStart for any longer run, understating adherence (never causing a
+        // false raise, but able to hide a genuine one). Doubling historyWindowDays covers any run up
+        // to that same length before the loaded window would need to widen further — comfortably past
+        // what a real "was there a habit" question needs, while keeping the query bounded (not the
+        // "load everything" this in-memory-upper-bound trick exists to avoid).
+        LocalDate from = to.minusDays(2L * cfg.historyWindowDays() + cfg.consecutiveMissedDays());
 
         Set<LocalDate> gymDates =
             Set.copyOf(workoutSessionRepository.findDoneInstanceDates(userId, from, to));

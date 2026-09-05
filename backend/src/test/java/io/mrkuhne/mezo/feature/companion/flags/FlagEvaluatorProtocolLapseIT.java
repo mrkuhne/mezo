@@ -7,6 +7,8 @@ import io.mrkuhne.mezo.feature.companion.flags.service.FlagEvaluator;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
 import io.mrkuhne.mezo.feature.fuel.repository.ProtocolRepository;
+import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.FlagLogPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
@@ -148,6 +150,42 @@ class FlagEvaluatorProtocolLapseIT extends AbstractIntegrationTest {
         Fixture f = habitItem("BCAA", "post_workout", TODAY.minusDays(3));
 
         assertThat(keys(f.owner())).doesNotContain(FlagKey.PROTOCOL_LAPSE);
+    }
+
+    /** The positive half of the peri-workout gate: a {@code post_workout} item genuinely raises
+     *  when it IS due — i.e. on a day with a completed gym session — and was missed on the two
+     *  most-recent such days. A {@code dueOn} that always returned {@code false} for peri zones
+     *  would pass every other test in this file but would also make this one fail, since nothing
+     *  would ever be "due" enough to accumulate a miss run. */
+    @Test
+    void raises_for_a_peri_workout_item_on_days_it_was_actually_due() {
+        UUID owner = userPopulator.createUser().getId();
+        UUID pantry = pantryItemPopulator.createSupplement(owner, "BCAA").getId();
+        UUID protocolId = protocolPopulator.createActiveProtocol(owner).getId();
+        protocolPopulator.createProtocolItemAt(owner, protocolId, pantry, "post_workout", null,
+            TODAY.minusDays(40).atStartOfDay(ZoneId.systemDefault()).toInstant());
+
+        MesocycleEntity meso = trainPopulator.createActiveMeso(owner);
+        WorkoutSessionEntity templateDay = trainPopulator.createTemplateDay(owner, meso.getId(), "Push nap");
+        // Completed gym instances on every day from 32 days ago through yesterday — this makes
+        // the item DUE on every one of those days, both across the history window and across the
+        // two most-recent days it is missed on.
+        for (LocalDate d = TODAY.minusDays(32); !d.isAfter(TODAY.minusDays(1)); d = d.plusDays(1)) {
+            trainPopulator.createWorkoutInstance(owner, templateDay, d, "completed");
+        }
+        // Taken on every due day from 30 days ago through 3 days ago — then missed on the last two.
+        for (LocalDate d = TODAY.minusDays(30); !d.isAfter(TODAY.minusDays(3)); d = d.plusDays(1)) {
+            supplementIntakePopulator.createIntake(owner, pantry, d, "post_workout");
+        }
+
+        assertThat(keys(owner)).contains(FlagKey.PROTOCOL_LAPSE);
+        assertThat(payload(owner)).hasValueSatisfying(p -> {
+            assertThat(p.itemName()).isEqualTo("BCAA");
+            assertThat(p.consecutiveMissedDueDays()).isEqualTo(2);
+            assertThat(p.missedDueDates())
+                .containsExactly(TODAY.minusDays(2).toString(), TODAY.minusDays(1).toString());
+            assertThat(p.lastTakenDate()).isEqualTo(TODAY.minusDays(3).toString());
+        });
     }
 
     /** The per-ITEM cooldown: a raise for this item 3 days ago suppresses it, even though the
