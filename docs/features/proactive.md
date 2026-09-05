@@ -949,7 +949,16 @@ flag — equal rank — does NOT displace the incumbent and leaves its votes alo
 ranks one past the end of the table and logs a warning rather than throwing (an unmapped key must
 never blow up delivery inside `InterventionEventListener`'s catch); `AdvicePriorityTest` asserts
 every live `FlagKey` constant has a rank, so the warning path is a last resort, not the normal way a
-new key behaves. `AdviceCardService` is deliberately NOT conditioned on `INTERVENTION_SWITCH` —
+new key behaves. **Round 2 S1 (bd `mezo-d58h.7.1`) adds `FlagKey.PROTOCOL_LAPSE` at the very tail of
+the flag block in `ORDER`** — immediately after `late_eating`, immediately before the two
+`SetupCheckService.CHECK_*` entries (and well ahead of `outranks`'s round-0 tail —
+`recovery_needed`/`sustained_stress`/`momentum_at_risk`/`all_healthy`): it is the gentlest of the
+FLAG signals (grace-window copy, "the streak lives, just continue it," never blame —
+[companion.md](companion.md) §3), so it must never be able to outrank and displace any of the other
+thirteen flags' cards. Since `outranks` is index order and lower ranks harder, `protocol_lapse`
+still outranks (and can displace) the two setup checks and the round-0 tail below it in the list —
+only every OTHER flag sits ahead of it. `AdviceCardService` is deliberately NOT conditioned on
+`INTERVENTION_SWITCH` —
 `SetupCheckService` (which runs without that switch) is one of its two callers, so gating this bean
 on the intervention switch would fail the Spring context whenever that switch is off.
 
@@ -2880,6 +2889,17 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
     `BigDecimal`** depending on how it was serialized — every adapter that reads a numeric param
     coerces via `instanceof Number` rather than assuming a fixed boxed type, or a legitimate `-30`
     written as one numeric subtype fails to parse when it round-trips as another.
+- **(mm) Round 2 S1 (bd `mezo-d58h.7.1`, spec 2026-09-05 §(11)) adds `protocol_lapse_resume`, the
+  `protocol_lapse` intervention-library entry — but the entry itself, its `channel: feed` (no
+  push — a missed supplement dose does not earn one), and its `cooldown-hours: 168` (a week, mirroring
+  `ProtocolLapseRule`'s own per-item cooldown so the card's cadence and the rule's re-announce window
+  agree) all live in [companion.md](companion.md) §4/§10 alongside the other thirteen entries
+  (`mezo.companion.interventions`, `CompanionProperties.Intervention`) — this feature only owns the
+  entry's SEVERITY RANK, `AdvicePriority.ORDER`'s tail-of-the-flag-block placement documented just
+  above. It offers no `AdviceActionCatalog` mutation (unlike `sleep_debt`/`ignored_nudge`'s
+  `shift_sleep_anchor` or `joint_overuse`'s `lighten_tomorrow`, (ll) above) — the card's own copy asks
+  the user to either take the dose today or drop the item from the stack themselves; there is
+  nothing here for a button to safely automate.
 - **Epic complete, H2 Web Push shipped with it, and `mezo-gst9` then redesigned the B/H stages.**
   All eight original slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2), **H2 (`mezo-h4wp.6`) shipped** — N1
   (delivery spine) + N2 (dispatcher + `notification_pref`/`push_log` + categories 1-9) + N3

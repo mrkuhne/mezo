@@ -1466,12 +1466,12 @@ order (`repository/AiConversationRepository.java:14`); `AiMessageRepository` is 
 arithmetic over `MetricSeriesService` series the owning features already compose READ-ONLY — there
 is **no `LlmCallContextHolder` call anywhere in this slice**, because there is no LLM/embed call to
 tag. **Rule spine (S1, bd `mezo-d58h.1`, spec 2026-09-03 §3.1) — one class per rule.** `FlagEvaluator`
-itself is now a thin orchestrator: it holds no rule logic, just thirteen injected `FlagRule` beans
+itself is now a thin orchestrator: it holds no rule logic, just fourteen injected `FlagRule` beans
 (`SustainedStressRule`, `SleepDebtRule`, `MomentumAtRiskRule`, `RecoveryNeededRule`,
 `LoggingGapRule`, `MissedWorkoutsRule`, `AcuteBadDayRule`, `LoadFuelMismatchRule`,
-`RapidWeightLossRule`, `JointOveruseRule`, `IgnoredNudgeRule`, `LateEatingRule`, `AllHealthyRule` —
-each `feature/companion/flags/service/rule/*.java`) called in that fixed order, `allHealthyRule`
-only when the other twelve raised nothing. The `FlagRule` interface
+`RapidWeightLossRule`, `JointOveruseRule`, `IgnoredNudgeRule`, `LateEatingRule`, `ProtocolLapseRule`,
+`AllHealthyRule` — each `feature/companion/flags/service/rule/*.java`) called in that fixed order,
+`allHealthyRule` only when the other thirteen raised nothing. The `FlagRule` interface
 (`flags/service/FlagRule.java`) is one method, `evaluate(userId, today) → Optional<FlagRaise>`,
 cooldowns NOT applied; each implementation carries its own reads and thresholds (still 100% from
 `FlagProperties` — no rule holds a number of its own) and stays reviewable in isolation. S1 was a
@@ -1562,6 +1562,31 @@ gate, the same discipline as the original seven:
   the absolute comparison (an earlier version's bug, fixed same-slice) made every pre-noon last meal
   unconditionally clear the threshold — a false positive on every intermittent-fasting or
   simply-early eater. A day with no logged meal is skipped, not counted either way.
+- **`ProtocolLapseRule`** (rank 10, Round 2 S1's first new detection, bd `mezo-d58h.7.1`, spec
+  2026-09-05 §(11), `protocol_lapse`) — one active protocol item missed on ≥
+  `consecutiveMissedDays` consecutive DUE days, but only where a real habit existed first (≥
+  `minHistoryDueDays` due days of history immediately before the miss run, at ≥
+  `minHistoryAdherence` taken/due). "Due" is DERIVED, never stored — there is no protocol-item
+  schedule table: every item is due every day EXCEPT a `pre_workout`/`post_workout` item, which is
+  due only on a day with a completed gym instance (`WorkoutSessionRepository.findDoneInstanceDates`)
+  — on a rest day it is not a miss, it either displaces to its `restDayFallback` zone or is
+  deliberately dropped (the same `expectedOn` predicate `StackSkipPatternDetector` uses, copied on
+  purpose rather than shared across a third feature boundary — both copies name each other in their
+  javadoc). Both the miss-run walk and the prior-habit walk are bounded BELOW by the item's own
+  `created_at` (converted to the system-zone local date) — an item added to the protocol yesterday
+  cannot have "missed" a habit from last month, so a brand-new item is silent by construction. The
+  window ends YESTERDAY, never today — today is still in progress, so an evening supplement with
+  nothing logged yet today is not "missed" (same reasoning as `MissedWorkoutsRule`'s window). Of
+  multiple qualifying items, the one with the LONGEST miss run is the offender (tie-break: the
+  lower `item_order`, since iteration is already in that order). **Two cooldowns exist here and must
+  not be conflated:** `FlagService`'s usual key-level cooldown (`cooldown-hours.protocol-lapse`,
+  24h — config keys below) only stops the SAME evaluation from repeating within a day; the spec's
+  real cooldown is per ITEM, seven days, and only `ProtocolLapseRule` itself can enforce that — it
+  reads its OWN past raises off `CompanionFlagLogRepository` since `perItemCooldownDays` ago,
+  collects each row's frozen `payload().protocolLapse().pantryItemId()`, and skips any protocol item
+  already in that set before it is ever evaluated, so a suppressed item can never even become the
+  offender while a DIFFERENT item lapsing the next day still gets a delivery window through the
+  short key-level cooldown.
 
 Two prerequisite fixes underpin the rules above: `MetricSeriesService.weightTrendPctWk` and
 `.lateMealHour` used to load a user's ENTIRE history and filter in Java; both are now bounded reads
@@ -3887,6 +3912,11 @@ and cooldown below is config, never code — `FlagEvaluator` holds no numbers of
 | `late-eating.absolute-hour` | `22.5` | fractional hour (`LATE_MEAL_HOUR`'s own unit) — a meal at/after this counts as late outright |
 | `late-eating.min-days-of-last-three` | `2` | qualifying days required inside the window to raise |
 | `late-eating.window-days` | `3` | the trailing window the qualifying-day count is taken over |
+| `protocol-lapse.consecutive-missed-days` | `2` | fire only on the Nth consecutive missed DUE day — N-1 misses are implicit grace days (Duolingo streak-freeze, deliberate) |
+| `protocol-lapse.history-window-days` | `30` | how far back the prior-habit adherence is measured, ending the day before the miss run |
+| `protocol-lapse.min-history-due-days` | `7` | honest small-n gate: fewer DUE days than this inside the history window ⇒ no habit to lose, so a brand-new item can never lapse |
+| `protocol-lapse.min-history-adherence` | `0.60` | taken/due ratio in the history window at/above which a live streak is credited |
+| `protocol-lapse.per-item-cooldown-days` | `7` | the spec's per-ITEM re-announce guard, enforced inside `ProtocolLapseRule` against its own past raises — NOT the same as `cooldown-hours.protocol-lapse` below (see the rule's entry above) |
 | `cooldown-hours.sustained-stress` | `24` | re-raise floor, per flag |
 | `cooldown-hours.sleep-debt` | `24` | ″ |
 | `cooldown-hours.momentum-at-risk` | `48` | ″ |
@@ -3900,13 +3930,15 @@ and cooldown below is config, never code — `FlagEvaluator` holds no numbers of
 | `cooldown-hours.joint-overuse` | `72` | ″ |
 | `cooldown-hours.ignored-nudge` | `72` | ″ |
 | `cooldown-hours.late-eating` | `48` | ″ — same-day/acute signal |
+| `cooldown-hours.protocol-lapse` | `24` | ″ — deliberately SHORT: the spec's real "7 days per item" cooldown lives inside `ProtocolLapseRule` itself (`protocol-lapse.per-item-cooldown-days` above); this key-level value only stops the SAME evaluation repeating within a day, so a DIFFERENT item lapsing tomorrow still gets a delivery window |
 
 Job switch `mezo.techcore.cron.flag-sweep-job.enabled`
 (`FeaturesConfiguration.FLAG_SWEEP_JOB_SWITCH`) — off ⇒ the `FlagSweepJob` bean does not exist;
 the on-write listener keeps running unaffected (it answers to `COMPANION_SWITCH` only).
 
-**The thirteen flags** (source of truth: the W5.1 plan's "The rules" table plus the S2 spec's §4
-rows 1/3 and the round-1 coaching spec 2026-09-03 §4's severity order for the S6 six — all windows
+**The fourteen flags** (source of truth: the W5.1 plan's "The rules" table plus the S2 spec's §4
+rows 1/3, the round-1 coaching spec 2026-09-03 §4's severity order for the S6 six, and the round-2
+S1 spec 2026-09-05 §(11) for `protocol_lapse` — all windows
 are whole days computed from `LocalDate.now()`; missing days stay absent, never invented — the
 `MetricSeriesService` rule — except `HABITS_DONE`/`COMBINED_LOAD_MIN` (calendar-complete), and
 `logging_gap`'s meal/check-in reads plus `acute_bad_day`'s check-in read, both of which bypass
@@ -3926,7 +3958,8 @@ are whole days computed from `LocalDate.now()`; missing days stay absent, never 
 | `joint_overuse` | 7-day `SHOULDER_STRAIN` avg ≥ `strain-avg-at-least` **and** tomorrow's planned gym session is `muscle-needle`-focused (via `findPlannedTemplateForDate`, never `getToday`) | `MetricKey.SHOULDER_STRAIN`, `WorkoutService.findPlannedTemplateForDate` |
 | `ignored_nudge` | the `category` push sent on `min-consecutive-days` consecutive evenings **and** every one of those nights' `BEDTIME_HOUR` missed the sleep anchor by more than `non-compliance-minutes`; requires a `sleep_goal` row; any unlogged/unsent/compliant night breaks the run | `push_log` (via `NudgeSendPort`), `MetricKey.BEDTIME_HOUR`, `SleepAnchorPort` |
 | `late_eating` | on ≥ `min-days-of-last-three` of the last `window-days` days, `LATE_MEAL_HOUR` is within `minutes-before-bed` of the (shifted) sleep anchor **or** ≥ `absolute-hour`; the bed arm needs a `sleep_goal` row, the absolute arm does not | `MetricKey.LATE_MEAL_HOUR`, `SleepAnchorPort` (bed arm only) |
-| `all_healthy` | none of the other twelve fire now, **and** no problem row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
+| `protocol_lapse` | one active protocol item missed on ≥ `consecutive-missed-days` consecutive DUE days, **and** ≥ `min-history-due-days` due days of adherence-≥`min-history-adherence` history immediately before the miss run; "due" is DERIVED, never stored — a `pre_workout`/`post_workout` item is due only on a day with a completed gym instance (a rest day is not a miss), every other item is due every day; the scan is bounded BELOW by the item's own `created_at` (a freshly added item cannot have "missed" a habit that never had room to exist), and the window ends YESTERDAY, never today (today is still in progress); the per-item 7-day re-announce cooldown lives inside the rule itself, separate from the 24h key-level cooldown below | `protocol_item`, `supplement_intake`, `WorkoutSessionRepository.findDoneInstanceDates` |
+| `all_healthy` | none of the other thirteen fire now, **and** no problem row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
 
 `all_healthy`'s "no problem row" check (`existsProblemRaiseSince`) excludes `all_healthy` itself,
 `logging_gap`, `ignored_nudge`, and (whole-branch review fix, bd `mezo-d58h.6`) `joint_overuse`:
@@ -3939,10 +3972,14 @@ health/behavior problem of the user's. `joint_overuse` joins by the same argumen
 intervention copy calls it a training tip, not an injury alert, and it fires on a conjunction (a
 7-day strain average plus tomorrow's schedule) the user did nothing to earn — for a user on a
 weekly shoulder split it is true roughly weekly, so counting it here would keep the seven-day quiet
-window from ever opening. The other nine flags — `missed_workouts` and the remaining four S6 keys
-(`acute_bad_day`, `load_fuel_mismatch`, `rapid_weight_loss`, `late_eating`) included — stay counted
-as problems, since each IS a genuine behavior/health signal, unlike a data gap, a failed nudge, or a
-forward-looking training advisory. The other suppression is unchanged: `FlagEvaluator` only runs
+window from ever opening. The other ten flags — `missed_workouts`, the remaining four S6 keys
+(`acute_bad_day`, `load_fuel_mismatch`, `rapid_weight_loss`, `late_eating`), and Round 2 S1's
+`protocol_lapse` included — stay counted as problems, since each IS a genuine behavior/health
+signal, unlike a data gap, a failed nudge, or a forward-looking training advisory. `protocol_lapse`
+stays counted rather than joining the exclusion list: a missed dose on its own due day is a real
+behavior lapse, not a data-availability gap (`logging_gap`'s argument) or the app's own delivery
+channel failing (`ignored_nudge`'s), so it must still be able to block the quiet window. The other
+suppression is unchanged: `FlagEvaluator` only runs
 `AllHealthyRule` when nothing else raised in that same evaluation, so `all_healthy` never appears
 alongside any other flag on the same day regardless of this query.
 
@@ -6143,20 +6180,21 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 `missed_workouts` added S2, bd `mezo-d58h.2`; `acute_bad_day`/`load_fuel_mismatch`/
 `rapid_weight_loss`/`joint_overuse`/`ignored_nudge`/`late_eating` added S6 batch B, bd
 `mezo-d58h.6`, spec 2026-09-03 §4)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/config/FlagProperties.java` — the `mezo.companion.flags.*` knobs (`sweepCron` + thirteen per-flag threshold records + `cooldownHours`), a feature-scoped `@Validated` record — the `FeedbackLearningProperties`/`ProfileProperties` precedent (§9).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/FlagPayloadEnvelope.java` — the typed jsonb payload, one nested record per rule + a static factory each (the `FeedbackRollupStatsEnvelope` precedent); thirteen variants since S6.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/CompanionFlagLogEntity.java` — `extends OwnedEntity`, append-only, soft-deletable, `flagKey`/`source` `@Pattern`-mirrored CHECKs — `flagKey`'s regex is the FOURTH mirror of the flag-key list (§3 above; `CompanionProperties.Intervention.flag` is the FIFTH), widened by S2 and again by S6.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/repository/CompanionFlagLogRepository.java` — `existsRaiseSince` (the cooldown gate) and `existsProblemRaiseSince` (the `all_healthy` quiet-window gate; its `NOT IN` exclusion list is a degrade-site the five formal mirrors do not cover — §3 above).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagKey.java` — the thirteen flag-key constants + `SOURCE_WRITE`/`SOURCE_SWEEP`, string constants mirroring the DB CHECKs (the `MessageFeedbackEntity` verdict/reason precedent).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/config/FlagProperties.java` — the `mezo.companion.flags.*` knobs (`sweepCron` + fourteen per-flag threshold records + `cooldownHours`), a feature-scoped `@Validated` record — the `FeedbackLearningProperties`/`ProfileProperties` precedent (§9).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/FlagPayloadEnvelope.java` — the typed jsonb payload, one nested record per rule + a static factory each (the `FeedbackRollupStatsEnvelope` precedent); fourteen variants since Round 2 S1.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/CompanionFlagLogEntity.java` — `extends OwnedEntity`, append-only, soft-deletable, `flagKey`/`source` `@Pattern`-mirrored CHECKs — `flagKey`'s regex is the FOURTH mirror of the flag-key list (§3 above; `CompanionProperties.Intervention.flag` is the FIFTH), widened by S2, again by S6, and again by Round 2 S1 (`protocol_lapse`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/repository/CompanionFlagLogRepository.java` — `existsRaiseSince` (the cooldown gate), `existsProblemRaiseSince` (the `all_healthy` quiet-window gate; its `NOT IN` exclusion list is a degrade-site the five formal mirrors do not cover — §3 above), and `findByCreatedByAndFlagKeyAndDeletedFalseAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc` (Round 2 S1: the seam `ProtocolLapseRule` reads its own past raises through, to enforce its per-item cooldown — §3 above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagKey.java` — the fourteen flag-key constants + `SOURCE_WRITE`/`SOURCE_SWEEP`, string constants mirroring the DB CHECKs (the `MessageFeedbackEntity` verdict/reason precedent).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaise.java` — one flag the evaluator says is TRUE right now, with its payload, before the cooldown gate is applied.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluator.java` — since S1 (`mezo-d58h.1`) a thin orchestrator calling thirteen `FlagRule` beans in a fixed order, LLM-free (§3).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluator.java` — since S1 (`mezo-d58h.1`) a thin orchestrator calling fourteen `FlagRule` beans in a fixed order, LLM-free (§3).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRule.java` — S1 (`mezo-d58h.1`): the one-method rule contract, `evaluate(userId, today) → Optional<FlagRaise>`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/NudgeSendPort.java` — S6 (bd `mezo-d58h.6`): the companion-owned port `IgnoredNudgeRule` reads sent `push_log` rows through, avoiding a `companion → notification` import that would close the existing `notification → companion` cycle.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/{SustainedStressRule,SleepDebtRule,MomentumAtRiskRule,RecoveryNeededRule,AllHealthyRule}.java` — S1 (`mezo-d58h.1`): the original five rules, one class each, pure arithmetic over `MetricSeriesService`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/SleepDeficitCalculator.java` — S2 (bd `c6c045082`): the shared sleep-deficit-vs-goal computation, extracted out of `SleepDebtRule` so `LoggingGapRule`'s suspicion variant can reuse it (§3).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/LoggingGapRule.java` — S2 (bd `mezo-d58h.2`): the `logging_gap` rule; reads `MealRepository`/`CheckInRepository`/`SleepLogRepository` directly, not `MetricSeriesService` (§3 recency-read exception).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/MissedWorkoutsRule.java` — S2 (bd `mezo-d58h.2`): the `missed_workouts` rule; consecutive-in-planned-days-not-calendar-days logic (§3).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/{AcuteBadDayRule,LoadFuelMismatchRule,RapidWeightLossRule,JointOveruseRule,IgnoredNudgeRule,LateEatingRule}.java` — S6 batch B (bd `mezo-d58h.6`): the epic's last six rules, in severity order (§3 above has each one's own honesty gate).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/{AcuteBadDayRule,LoadFuelMismatchRule,RapidWeightLossRule,JointOveruseRule,IgnoredNudgeRule,LateEatingRule}.java` — S6 batch B (bd `mezo-d58h.6`): six rules, in severity order (§3 above has each one's own honesty gate).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/ProtocolLapseRule.java` — Round 2 S1 (bd `mezo-d58h.7.1`, spec 2026-09-05 §(11)): the epic's next new detection, `protocol_lapse` — derived due-days, the `created_at` lower bound, the yesterday-ending window, and the rule-internal per-item cooldown (§3 above has the full honesty-gate writeup).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagService.java` — the cooldown gate + append (`evaluateAndLog`), the ONLY write path into `companion_flag_log`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluationListener.java` — the on-write trigger, `@Async @TransactionalEventListener(AFTER_COMMIT)` on `CheckInSavedEvent`/`SleepLogSavedEvent`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagSweepJob.java` — the hourly sweep (`mezo.companion.flags.sweep-cron`), own job switch, per-user try/catch — the caller whose per-user, hourly cadence is what made the S6 bounded-read prerequisite fixes (§3 above) actually matter.
@@ -6164,8 +6202,9 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `FLAG_SWEEP_JOB_SWITCH` (`mezo.techcore.cron.flag-sweep-job.enabled`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608241200_mezo-b3pp.18_create_companion_flag_log.sql` — the table (in `1.0.0_master.yml`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609031200_mezo-d58h.2_flag_key_logging_gap_missed_workouts.sql` — S2: widens `ck_companion_flag_log_flag_key` to seven keys.
-- `backend/src/main/resources/db/changelog/1.0.0/script/202609041200_mezo-d58h.6_flag_key_batch_b.sql` — S6: widens `ck_companion_flag_log_flag_key` to the thirteen keys.
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT,FlagEvaluatorLoggingGapIT,FlagEvaluatorMissedWorkoutsIT,FlagEvaluatorAcuteBadDayIT,FlagEvaluatorLoadFuelMismatchIT,FlagEvaluatorRapidWeightLossIT,FlagEvaluatorJointOveruseIT,FlagEvaluatorIgnoredNudgeIT,FlagEvaluatorLateEatingIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. **Since W5.2 (`mezo-b3pp.19`), `FlagRaisedEvent` (below) is the consumer** — see the next block.
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609041200_mezo-d58h.6_flag_key_batch_b.sql` — S6: widens `ck_companion_flag_log_flag_key` to thirteen keys.
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609051600_mezo-d58h.7.1_flag_key_protocol_lapse.sql` — Round 2 S1: widens `ck_companion_flag_log_flag_key` to the fourteen keys (`protocol_lapse`).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT,FlagEvaluatorLoggingGapIT,FlagEvaluatorMissedWorkoutsIT,FlagEvaluatorAcuteBadDayIT,FlagEvaluatorLoadFuelMismatchIT,FlagEvaluatorRapidWeightLossIT,FlagEvaluatorJointOveruseIT,FlagEvaluatorIgnoredNudgeIT,FlagEvaluatorLateEatingIT,FlagEvaluatorProtocolLapseIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. **Since W5.2 (`mezo-b3pp.19`), `FlagRaisedEvent` (below) is the consumer** — see the next block.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaisedEvent.java` — W5.2 (bd `mezo-b3pp.19`): the `{userId, flagKey, source}` event `FlagService.evaluateAndLog` publishes for every WRITTEN raise, inside the logging transaction (§3/§4 above).
 
 **Backend — intervention delivery (W5.2, `mezo-b3pp.19` — §4/§5.8/§9, spec §9.2; consumer side, lives in `feature.proactive` not `feature.companion`)**
