@@ -105,6 +105,27 @@ test('real mode with an empty sleep log renders the placeholder instead of crash
   await waitFor(() => expect(screen.getByText('Még nincs alvásadat.')).toBeInTheDocument())
 })
 
+test('an unset goal (config-default ghost) says so instead of posing as the user\'s own', async () => {
+  // GET /api/sleep/goal never 404s — an unset goal arrives as config defaults with isSet=false.
+  // Before mezo-k0hp nothing on this card distinguished that from a chosen goal, so a sleep_goal
+  // row wiped by the 2026-08-24 purge read as "8 óra, 06:00" for two weeks.
+  vi.stubEnv('VITE_USE_MOCK', 'false')
+  server.use(http.get(`${API_BASE}/api/sleep/goal`, () => HttpResponse.json({
+    isSet: false, targetMinutes: 480, anchor: 'WAKE', anchorTime: '06:00',
+    wakeTime: '06:00', bedTime: '22:00', regularityBandMin: 15,
+  })))
+
+  render(
+    <MemoryRouter>
+      <SleepPage />
+    </MemoryRouter>,
+    { wrapper: makeHookWrapper() },
+  )
+
+  await waitFor(() => expect(screen.getByText(/még nincs saját alvás-célod/i)).toBeInTheDocument())
+  expect(screen.getByRole('button', { name: 'beállítom' })).toBeInTheDocument()
+})
+
 it('renders the sleep-goal card with derived ends and the regularity band', () => {
   renderPage()
   // The bed-rail (mezo-d20.6.4) joins the emoji + time in ONE span per the prototype

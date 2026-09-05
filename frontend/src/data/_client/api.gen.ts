@@ -7819,6 +7819,8 @@ export interface components {
             value: "yes" | "partial" | "no";
         };
         SleepGoalResponse: {
+            /** @description false when the numbers below are the config-default ghost (no sleep_goal row) rather than the user's own goal. The endpoint never 404s, so this is the ONLY signal the unset state exists — surfaces must not present a ghost as the user's goal (mezo-k0hp). */
+            isSet: boolean;
             /** @description Asleep target in minutes (UI hints the 7–9 h range; default 480) */
             targetMinutes: number;
             /** @description Which end is fixed — the other end is derived */

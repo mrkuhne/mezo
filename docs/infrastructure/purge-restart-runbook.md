@@ -106,6 +106,24 @@ In the PWA, open each surface and expect (spec §4):
 
 Any 500 → file its own bd issue (first-run bug, not a purge bug).
 
+### 5b. Re-enter the settings the purge silently drops (mezo-k0hp)
+
+The whitelist keeps identity + the catalogs; **every per-user CONFIG row is
+purged with the rest**, and the surfaces that read one through a
+config-default fallback keep rendering as if nothing was lost. Walk this list
+by hand after the restart — a missing row here does not look empty, it looks
+like a setting someone chose:
+
+| Row | Read through | What the ghost looks like |
+|---|---|---|
+| `sleep_goal` | `SleepGoalService.getGoal` → config default (`mezo.sleep`) | A real-looking "8 óra / ébredés 06:00" goal. Since `mezo-k0hp` the response carries `isSet:false` and the Alvás card + goal sheet say "alapértelmezett" — set the goal to clear it. |
+| `fuel_settings` | `FuelSettingsProperties` ghost (`mezo.fuel-settings`) | Default meal cadence, indistinguishable from a chosen one. |
+
+The 2026-08-24 purge is the case in point: the sleep goal (480 / WAKE / 05:30)
+was dropped and nobody noticed for twelve days, until the daily
+`missing_sleep_goal` setup card — which reads the repository, not the
+service — contradicted what the app had been showing all along.
+
 ## 6. Rollback (if needed)
 
 Restore the §2 dump (full overwrite, drops what was written since):

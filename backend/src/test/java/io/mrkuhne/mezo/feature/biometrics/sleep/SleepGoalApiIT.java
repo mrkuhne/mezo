@@ -17,6 +17,10 @@ class SleepGoalApiIT extends ApiIntegrationTest {
         SleepGoalResponse goal =
             getForBody("/api/sleep/goal", ownerAuthHeaders(), HttpStatus.OK, SleepGoalResponse.class);
 
+        // The ONLY signal that these numbers are nobody's goal — the endpoint never 404s, so a
+        // surface that ignores this flag shows a config default as if the user had chosen it
+        // (mezo-k0hp: exactly how a purged sleep_goal row stayed invisible for two weeks).
+        assertThat(goal.getIsSet()).isFalse();
         assertThat(goal.getTargetMinutes()).isEqualTo(480);
         assertThat(goal.getAnchor()).isEqualTo("WAKE");
         assertThat(goal.getAnchorTime()).isEqualTo("06:00");
@@ -34,6 +38,7 @@ class SleepGoalApiIT extends ApiIntegrationTest {
         SleepGoalResponse saved =
             putForBody("/api/sleep/goal", req, auth, HttpStatus.OK, SleepGoalResponse.class);
 
+        assertThat(saved.getIsSet()).isTrue();
         assertThat(saved.getWakeTime()).isEqualTo("06:45");
         assertThat(saved.getBedTime()).isEqualTo("23:15"); // 06:45 − 450 min
         assertThat(saved.getRegularityBandMin()).isEqualTo(20);
@@ -41,6 +46,7 @@ class SleepGoalApiIT extends ApiIntegrationTest {
         SleepGoalResponse read =
             getForBody("/api/sleep/goal", auth, HttpStatus.OK, SleepGoalResponse.class);
         assertThat(read.getBedTime()).isEqualTo("23:15");
+        assertThat(read.getIsSet()).isTrue(); // a row exists now — the ghost is gone for good
     }
 
     @Test

@@ -645,6 +645,12 @@ export interface SleepShotDraft {
 
 /** The sleep goal — target asleep-duration + one fixed end; the other end is derived (spec D1/D4). */
 export interface SleepGoal {
+  /**
+   * false when these numbers are the backend's config-default ghost (no sleep_goal row) rather
+   * than the user's own goal — GET /api/sleep/goal never 404s, so this is the only signal the
+   * unset state exists. Surfaces MUST NOT present a ghost as the user's choice (mezo-k0hp).
+   */
+  isSet: boolean
   targetMinutes: number
   anchor: 'WAKE' | 'BED'
   anchorTime: string
@@ -655,7 +661,7 @@ export interface SleepGoal {
 }
 
 /** PUT /api/sleep/goal payload — wake/bed are always server-derived, never sent. */
-export type SleepGoalInput = Omit<SleepGoal, 'wakeTime' | 'bedTime'>
+export type SleepGoalInput = Omit<SleepGoal, 'wakeTime' | 'bedTime' | 'isSet'>
 // --- Emberek (people) ---
 export type Affect = 'positive' | 'neutral' | 'mixed' | 'negative'
 export type Relationship = 'partner' | 'friend' | 'family' | 'colleague' | 'teammate' | 'mentee'

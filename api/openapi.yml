@@ -19240,6 +19240,7 @@ components:
     SleepGoalResponse:
       type: object
       required:
+        - isSet
         - targetMinutes
         - anchor
         - anchorTime
@@ -19247,6 +19248,13 @@ components:
         - bedTime
         - regularityBandMin
       properties:
+        isSet:
+          type: boolean
+          description: >-
+            false when the numbers below are the config-default ghost (no
+            sleep_goal row) rather than the user's own goal. The endpoint never
+            404s, so this is the ONLY signal the unset state exists — surfaces
+            must not present a ghost as the user's goal (mezo-k0hp).
         targetMinutes:
           type: integer
           minimum: 1

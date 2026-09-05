@@ -398,7 +398,7 @@ export const handlers = [
   // free end from the anchor. Tests override with server.use() for payload capture.
   http.get(`${API_BASE}/api/sleep/goal`, () =>
     HttpResponse.json({
-      targetMinutes: 450, anchor: 'WAKE', anchorTime: '06:45',
+      isSet: true, targetMinutes: 450, anchor: 'WAKE', anchorTime: '06:45',
       wakeTime: '06:45', bedTime: '23:15', regularityBandMin: 15,
     })),
   http.put(`${API_BASE}/api/sleep/goal`, async ({ request }) => {
@@ -407,7 +407,8 @@ export const handlers = [
     const toHHmm = (m: number) => `${String(Math.floor(((m % 1440) + 1440) % 1440 / 60)).padStart(2, '0')}:${String(((m % 1440) + 1440) % 1440 % 60).padStart(2, '0')}`
     const wakeTime = body.anchor === 'WAKE' ? body.anchorTime : toHHmm(toMin(body.anchorTime) + body.targetMinutes)
     const bedTime = body.anchor === 'BED' ? body.anchorTime : toHHmm(toMin(body.anchorTime) - body.targetMinutes)
-    return HttpResponse.json({ ...body, regularityBandMin: body.regularityBandMin ?? 15, wakeTime, bedTime })
+    // A PUT always leaves a row behind, so the saved goal is never a ghost (mezo-k0hp).
+    return HttpResponse.json({ isSet: true, ...body, regularityBandMin: body.regularityBandMin ?? 15, wakeTime, bedTime })
   }),
 
   http.get(`${API_BASE}/api/biometrics/checkin`, () => HttpResponse.json([])),

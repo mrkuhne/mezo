@@ -27,14 +27,22 @@ public class SleepGoalService {
     private final SleepGoalRepository repository;
     private final SleepGoalProperties properties;
 
-    /** Config-default ghost when unset — never 404 (spec §3): every user has a working anchor. */
+    /**
+     * Config-default ghost when unset — never 404 (spec §3): every user has a working anchor.
+     *
+     * <p>The ghost carries {@code isSet=false} (mezo-k0hp). Without it the response is
+     * indistinguishable from a real goal, and every surface presents config numbers as the user's
+     * own choice — which is how the sleep goal wiped by the 2026-08-24 purge stayed invisible
+     * until {@code SetupCheckService}'s missing-sleep-goal card contradicted the UI.
+     */
     public SleepGoalResponse getGoal(UUID userId) {
         return repository.findByCreatedByAndDeletedFalse(userId)
-            .map(g -> compose(g.getTargetMinutes(), g.getAnchor(), g.getAnchorTime(), g.getRegularityBandMin()))
+            .map(g -> compose(true, g.getTargetMinutes(), g.getAnchor(), g.getAnchorTime(),
+                g.getRegularityBandMin()))
             .orElseGet(() -> {
                 String time = "WAKE".equals(properties.defaultAnchor())
                     ? properties.defaultWake() : properties.defaultBed();
-                return compose(properties.defaultTargetMin(), properties.defaultAnchor(), time,
+                return compose(false, properties.defaultTargetMin(), properties.defaultAnchor(), time,
                     properties.regularityBandMin());
             });
     }
@@ -53,7 +61,8 @@ public class SleepGoalService {
         row.setRegularityBandMin(req.getRegularityBandMin() != null
             ? req.getRegularityBandMin() : properties.regularityBandMin());
         repository.save(row);
-        return compose(row.getTargetMinutes(), row.getAnchor(), row.getAnchorTime(), row.getRegularityBandMin());
+        return compose(true, row.getTargetMinutes(), row.getAnchor(), row.getAnchorTime(),
+            row.getRegularityBandMin());
     }
 
     /**
@@ -74,13 +83,17 @@ public class SleepGoalService {
                 SystemMessage.error("SLEEP_GOAL_NOT_SET").build(), HttpStatus.CONFLICT));
         row.setAnchorTime(LocalTime.parse(row.getAnchorTime()).plusMinutes(minutes).format(HH_MM));
         repository.save(row);
-        return compose(row.getTargetMinutes(), row.getAnchor(), row.getAnchorTime(),
+        return compose(true, row.getTargetMinutes(), row.getAnchor(), row.getAnchorTime(),
             row.getRegularityBandMin());
     }
 
-    private SleepGoalResponse compose(int targetMinutes, String anchor, String anchorTime, int bandMin) {
+    /** {@code isSet} is the caller's knowledge of whether a row backed these numbers — both write
+     *  paths have one by construction, only {@link #getGoal}'s fallback branch does not. */
+    private SleepGoalResponse compose(boolean isSet, int targetMinutes, String anchor,
+                                      String anchorTime, int bandMin) {
         var resolved = SleepAnchorResolver.derive(anchor, LocalTime.parse(anchorTime), targetMinutes);
         return SleepGoalResponse.builder()
+            .isSet(isSet)
             .targetMinutes(targetMinutes)
             .anchor(anchor)
             .anchorTime(anchorTime)

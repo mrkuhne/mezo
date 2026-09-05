@@ -102,16 +102,27 @@ export function SleepPage() {
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'baseline' }}>
               <span className="mz-eyebrow" style={{ color: 'var(--lav-deep)' }}>Alvás-cél</span>
               <button type="button" className="chip" onClick={() => setGoalOpen(true)} style={{ fontSize: 9, padding: '3px 8px' }}>
-                szerkeszt
+                {goal.isSet ? 'szerkeszt' : 'beállítom'}
               </button>
             </div>
+            {/* The backend never 404s the goal — an unset one arrives as a config-default ghost that
+                is otherwise indistinguishable from a chosen goal. Saying so here is the whole point
+                of isSet (mezo-k0hp): without it a purged sleep_goal row reads as "8 óra, 06:00". */}
+            {!goal.isSet && (
+              <p style={{ margin: '6px 0 0', fontSize: 10, lineHeight: 1.45, color: 'var(--amber-deep)' }}>
+                Alapértelmezett értékek — még nincs saját alvás-célod. Állítsd be, hogy az alvás-kártya
+                és a terv-javaslatok a te számaidra szóljanak.
+              </p>
+            )}
             <div className="mzalv-bedrail">
               <span className="mzalv-end">🛏️ {goal.bedTime}</span>
               <div className="mzalv-rail"><span>{(goal.targetMinutes / 60).toFixed(1)} ó cél</span></div>
               <span className="mzalv-end">☀️ {goal.wakeTime}</span>
             </div>
             <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
-              <span style={{ fontSize: 10, fontStyle: 'italic', color: 'var(--text-tertiary)' }}>„a rendszeresség a király"</span>
+              <span style={{ fontSize: 10, fontStyle: 'italic', color: 'var(--text-tertiary)' }}>
+                {goal.isSet ? '„a rendszeresség a király"' : 'alapértelmezett'}
+              </span>
               <span className="chip" style={{ fontSize: 9, padding: '2px 8px', background: 'var(--wash-sage)', color: 'var(--sage-deep)', borderColor: 'transparent' }}>
                 ±{goal.regularityBandMin}p
               </span>

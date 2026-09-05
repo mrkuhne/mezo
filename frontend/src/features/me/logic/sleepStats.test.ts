@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { regularityScore, efficiencyPct, bedDeltaMin, REGULARITY_WINDOW_DAYS, EFFICIENCY_TARGET_PCT } from '@/features/me/logic/sleepStats'
 import type { SleepEntry, SleepGoal } from '@/data/types'
 
-const goal: SleepGoal = { targetMinutes: 450, anchor: 'WAKE', anchorTime: '06:45', wakeTime: '06:45', bedTime: '23:15', regularityBandMin: 15 }
+const goal: SleepGoal = { isSet: true, targetMinutes: 450, anchor: 'WAKE', anchorTime: '06:45', wakeTime: '06:45', bedTime: '23:15', regularityBandMin: 15 }
 const entry = (date: string, bedtime: string, wakeup: string, extra: Partial<SleepEntry> = {}): SleepEntry =>
   ({ date, bedtime, wakeup, duration: 7.5, quality: 8, awakenings: 1, mealToSleep: 0, notes: null, ...extra })
 
