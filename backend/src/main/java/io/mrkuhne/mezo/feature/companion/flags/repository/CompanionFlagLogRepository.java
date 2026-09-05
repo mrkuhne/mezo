@@ -59,4 +59,14 @@ public interface CompanionFlagLogRepository extends JpaRepository<CompanionFlagL
         AND f.createdAt >= :since
         """)
     boolean existsProblemRaiseSince(@Param("createdBy") UUID createdBy, @Param("since") Instant since);
+
+    /**
+     * The observer's RAISED evidence (spec 2026-09-05 §5): the newest raise of this flag at or
+     * before the end of the day being read, so a past day shows what was frozen THEN rather than
+     * today's numbers. A raise that was SUPPRESSED_BY_COOLDOWN never got a log row of its own, so
+     * this legitimately returns the raise the engine last actually logged — the trace row still
+     * says the suppression happened.
+     */
+    Optional<CompanionFlagLogEntity> findFirstByCreatedByAndFlagKeyAndDeletedFalseAndCreatedAtLessThanEqualOrderByCreatedAtDesc(
+        UUID createdBy, String flagKey, Instant cutoff);
 }
