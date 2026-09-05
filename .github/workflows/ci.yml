@@ -38,6 +38,7 @@ jobs:
         run: |
           bash .github/scripts/compute-release.test.sh
           bash .github/scripts/compute-release.sigpipe.test.sh
+          bash .github/scripts/release-commit.test.sh
       - name: Codemap generator tests (fixture trees)
         run: node --test scripts/gen-codemap.test.mjs
       - name: Codemap freshness (docs/CODEMAP.md must regenerate identically)
