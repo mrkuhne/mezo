@@ -33,7 +33,9 @@ public class LevelUpEventEntity extends OwnedEntity {
 
     @NotNull
     @Column(name = "source_type", nullable = false)
-    private String sourceType; // GYM|SPORT|RUN (DB CHECK)
+    // DB CHECK, widened additively over time (latest: 202609021010_mezo-iizd.1):
+    // GYM|SPORT|RUN|QUEST|ACTIVITY|HABIT|NEEDS|LIFE_GOAL
+    private String sourceType;
 
     @NotNull
     @Column(name = "source_ref_id", nullable = false)

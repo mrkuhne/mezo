@@ -23,13 +23,19 @@ function declared(body: string): Set<string> {
 }
 
 const MOZAIK_MARKER = 'Mozaik 2.0 primitives (design_2.0 — mezo-d20.1.3)'
+// The section that follows Mozaik in prototype.css. Its predecessor ('Today · iOS list
+// language') was deleted with the Today view layer, and because the lookup silently accepted
+// a missing end marker, this scan had been running to EOF unnoticed ever since (mezo-sm21).
+// Both markers now fail LOUDLY: a section-scoped guard that quietly turns stylesheet-wide is
+// a guard nobody can reason about.
+const MOZAIK_END_MARKER = 'Cél Mozaik hub'
 
 function mozaikSection(css: string): string {
   const start = css.indexOf(MOZAIK_MARKER)
-  if (start === -1) throw new Error('Mozaik marker not found')
-  // the Today section follows it (todayCssTokens guard keeps Today last)
-  const end = css.indexOf('Today · iOS list language', start)
-  return end === -1 ? css.slice(start) : css.slice(start, end)
+  if (start === -1) throw new Error(`Mozaik start marker not found: ${MOZAIK_MARKER}`)
+  const end = css.indexOf(MOZAIK_END_MARKER, start)
+  if (end === -1) throw new Error(`Mozaik end marker not found: ${MOZAIK_END_MARKER}`)
+  return css.slice(start, end)
 }
 
 describe('Mozaik washes/cells/tones are theme-ready tokens (mezo-d20.1.5)', () => {
@@ -78,6 +84,25 @@ describe('Mozaik washes/cells/tones are theme-ready tokens (mezo-d20.1.5)', () =
       /var\(\s*--[a-zA-Z0-9-]+\s*,\s*#(?:F{2}[0-9A-F]{4}|E[0-9A-F]{5}|D[0-9A-F]{5}|F{2}[0-9A-F]|E[0-9A-F]{2}|D[0-9A-F]{2})(?![0-9A-F])/gi
     const offenders = [...section.matchAll(SURFACE_FALLBACK)].map(m => m[0])
     expect(offenders).toEqual([])
+  })
+})
+
+// ── Every --mz-* token, wherever it is read (mezo-sm21) ─────────────────────
+// The guard above is section-scoped on purpose (its hex rules are about the Mozaik block's own
+// language). But `--mz-*` tokens are read far outside that block — feature blocks at the end of
+// the stylesheet consume them freely — and an undeclared one there is exactly as broken: CSS
+// drops the declaration silently and the element falls back to `inherit`. That is how
+// `.rt-hrow`'s `color: var(--mz-ink)` (a token that never existed) shipped. While the end marker
+// was missing this scan happened to reach those blocks by accident; now it does so on purpose.
+describe('every --mz-* token read anywhere in the stylesheet is declared (mezo-sm21)', () => {
+  test('light AND dark both declare every --mz-* the stylesheet consumes', () => {
+    const used = new Set(
+      [...rawCss.matchAll(/var\(\s*(--mz-[a-zA-Z0-9-]+)/g)].map(m => m[1]).filter(p => !LOCAL_PROPS.has(p)),
+    )
+    const light = declared(blockBody(rawCss, /(?:^|\n):root[ \t]*\{([^}]*)\}/))
+    const dark = declared(blockBody(rawCss, /(?:^|\n):root\[data-theme="dark"\][ \t]*\{([^}]*)\}/))
+    expect([...used].filter(p => !light.has(p)).sort()).toEqual([])
+    expect([...used].filter(p => !dark.has(p)).sort()).toEqual([])
   })
 })
 
