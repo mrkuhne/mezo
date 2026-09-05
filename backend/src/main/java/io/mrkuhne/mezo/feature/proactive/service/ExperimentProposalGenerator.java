@@ -152,11 +152,12 @@ public class ExperimentProposalGenerator {
         if (confirmed.isEmpty()) {
             return null;
         }
-        // mezo-ned9: the snapshot's "today" is the OWNER-local day (MEDICATION_ZONE), not the JVM
-        // default's — zero-arg LocalDate.now() is UTC on CI/containers and drifted the rendered
-        // medication cycle day by one against MedicationCycleService#deriveToday between the two midnights.
-        StringBuilder payload = new StringBuilder(contextSnapshotAssembler.render(userId,
-                LocalDate.now(MedicationCycleService.MEDICATION_ZONE)));
+        // mezo-ned9: the OWNER-local day, not the JVM default's — zero-arg LocalDate.now() is UTC on
+        // CI/containers and drifted the rendered medication cycle day by one against
+        // MedicationCycleService#deriveToday between the two midnights. This gather has no other date
+        // of its own, so there is nothing here for the snapshot day to disagree with.
+        LocalDate ownerToday = LocalDate.now(MedicationCycleService.MEDICATION_ZONE);
+        StringBuilder payload = new StringBuilder(contextSnapshotAssembler.render(userId, ownerToday));
         payload.append(knowledgeFactService.renderPromptBlock(userId));
         payload.append("\n\nMINTA-JELÖLTEK (a patternIndex ezekre mutat):\n");
         for (int i = 0; i < confirmed.size(); i++) {

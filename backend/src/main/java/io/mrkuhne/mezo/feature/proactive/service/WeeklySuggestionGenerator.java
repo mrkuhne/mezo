@@ -107,11 +107,13 @@ public class WeeklySuggestionGenerator {
                 .findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(userId).stream()
                 .map(p -> "- " + p.getTitle() + " (státusz: " + p.getStatus() + ")")
                 .collect(Collectors.joining("\n"));
-        // mezo-ned9: the snapshot's "today" is the OWNER-local day (MEDICATION_ZONE), not the JVM
-        // default's — zero-arg LocalDate.now() is UTC on CI/containers and drifted the rendered
-        // medication cycle day by one against MedicationCycleService#deriveToday between the two midnights.
-        return contextSnapshotAssembler.render(userId,
-                LocalDate.now(MedicationCycleService.MEDICATION_ZONE))
+        // mezo-ned9: ONE owner-local derivation feeds both dates on this path — `weekStart` is the
+        // ISO Monday of LocalDate.now(MEDICATION_ZONE) at every site that mints it (WeeklySuggestionJob,
+        // ProactiveWeeklySuggestionService), and the snapshot day below is that same owner-local today.
+        // They therefore always agree on which week we are in; a default-zone `weekStart` against a
+        // Budapest snapshot day put the snapshot OUTSIDE the selected week across Sunday->Monday.
+        LocalDate ownerToday = LocalDate.now(MedicationCycleService.MEDICATION_ZONE);
+        return contextSnapshotAssembler.render(userId, ownerToday)
                 + facts
                 + "\n\nELŐZŐ HÉT NAPJAI (legfrissebb elöl):\n" + narratives
                 + (patterns.isBlank() ? "" : "\n\nMINTÁK:\n" + patterns)

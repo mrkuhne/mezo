@@ -42,7 +42,12 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class MedicationCycleService {
 
-    /** The single zone {@link #deriveToday} uses — see class javadoc. */
+    /**
+     * The owner-local zone every self-derived medication "today" is computed in — see class javadoc.
+     * Since mezo-ned9 it is no longer only {@link #deriveToday}'s: the three proactive generators key
+     * a WHOLE context-snapshot day on it (fuel, training, recovery and check-in freshness ride along
+     * with the medication block), so widening or moving this constant is a cross-feature change.
+     */
     public static final ZoneId MEDICATION_ZONE = ZoneId.of("Europe/Budapest");
 
     private final MedicationDoseRepository doseRepo;
