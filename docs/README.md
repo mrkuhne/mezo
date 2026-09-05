@@ -78,6 +78,7 @@ the work is **not done**. Capture it before closing the `bd` issue.
 - [`decisions/0035-multi-user-account-model.md`](decisions/0035-multi-user-account-model.md) — invite-gated beta, shared catalogs, app-level ownership (`mezo-qw37`).
 - [`references/security_conventions.md`](references/security_conventions.md) — house rules for authentication, identity and data ownership.
 - [`infrastructure/deployment-k3s-argocd.md`](infrastructure/deployment-k3s-argocd.md) — deployment architecture + current live facts.
+- [`infrastructure/impeccable-frontend-review.md`](infrastructure/impeccable-frontend-review.md) — how to review/refine the frontend with the impeccable design skill + detector, and how to keep it from flattening Mozaik 2.0.
 - [`infrastructure/hermes-playbook.md`](infrastructure/hermes-playbook.md) — how to start and chain Hermes local-agent sessions: prompt templates per session type, the state line, gates, troubleshooting.
 - [`infrastructure/local-llm-hermes-lmstudio.md`](infrastructure/local-llm-hermes-lmstudio.md) — the local LLM stack setup (LM Studio + Hermes + Hindsight) and its verified quirks.
 - [`infrastructure/runbook.md`](infrastructure/runbook.md) — **operational runbook**: access, logins, day-to-day ops, troubleshooting, recovery.
