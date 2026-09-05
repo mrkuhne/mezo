@@ -4757,7 +4757,7 @@ test surface that would fail if the history were ever accidentally reglued into 
 (see also the dedicated history-separation IT below).
 
 **`ContextSnapshotAssemblerIT` (V0.3, 24 tests)** — the snapshot is fully assertable without any
-LLM: empty-user render (all eight blocks in order, every absence an explicit `nincs adat`, config
+LLM: empty-user render (all ten blocks in order, every absence an explicit `nincs adat`, config
 targets still render), profile+trend, latest weigh-in beside the trend (`mérés:` — populated vs.
 `nincs adat` with no weigh-in row vs. two same-day weigh-ins, where only `created_at` breaks the
 tie), current-week segment + planner selection, train digest +
@@ -6274,7 +6274,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Snapshot.lifegoalMaxGoals` (`mezo.companion.snapshot.lifegoal-max-goals`, default 3, `@Min(0) @Max(10)`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `[Eszköz-útmutató]` gained the `get_life_goals` routing line; the `[Mit szabad állítani]`-adjacent system-prompt prose gained the `[Célok]` block's meaning (background, not a nudge to repeat).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageGenerator.java` — `MORNING_PROMPT` point (6): the model may reference life goals supportively but must not repeat the separate ha–akkor plan reminder (that ships through `LifeGoalTriggerService`'s feed notification).
-- `frontend/src/features/insights/logic/{toolDomains.ts,chatRefs.ts}` — `get_life_goals` tool chip + `LifeGoal` ref kind (label "Életcél(ok)", gold wash, `i-cel` icon).
+- `frontend/src/features/insights/logic/{toolDomains.ts,chatRefs.ts}` — `get_life_goals` tool chip (label "Életcélok") + `LifeGoal` ref kind (label "Életcél", gold wash, `i-cel` icon).
 - Tests: `LifeGoalCompanionAdapterIT` (incl. `testSummary_shouldMarkDelayedPlanLiveOnToday_asADocumentedSimplification`), `LifeGoalSnapshotBlockTest`, `ContextSnapshotAssemblerIT` (block present in both variants), `CompanionToolsRenderIT` (`get_life_goals`), `CompanionPropertiesIT`.
 
 **Backend — journal embedding seam (`mezo-b3pp.1`, Phase 5 W1.1, post-epic — full detail in [`journal.md`](journal.md))**
