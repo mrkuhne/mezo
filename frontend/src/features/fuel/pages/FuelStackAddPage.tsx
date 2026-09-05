@@ -19,7 +19,7 @@ export function FuelStackAddPage() {
   const { show } = useToast()
   const [query, setQuery] = useState('')
   const occupied = new Set(occurrences.map(occurrence => occurrence.pantryItemId))
-  const filtered = stash.filter(item => `${item.name} ${item.brand}`.toLocaleLowerCase('hu')
+  const filtered = stash.filter(item => `${item.name} ${item.brand ?? ''}`.toLocaleLowerCase('hu')
     .includes(query.toLocaleLowerCase('hu')))
 
   async function handleAdd(item: SupplementStashItem) {
