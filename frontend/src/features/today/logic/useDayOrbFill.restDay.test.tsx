@@ -30,10 +30,17 @@ const h = vi.hoisted(() => {
 
 // A hook a SAJÁT óráját olvassa (`useMinuteTick`), a jelek dátuma viszont a fenti, hoistolt
 // olvasásból jön — két független fali-óra olvasás, ami helyi éjfélt átlépve MÁS napot ad, és
-// akkor egyik jel sem esik a hook „mai" napjára (5/5 helyett 0/5). A `useMinuteTick` órája
-// modul-szintű, import-időben elkapott singleton, ezért `Date`-et fake-elni nem ér el hozzá —
-// magát a hookot pinneljük ugyanarra az EGYETLEN olvasásra (`NapHubPage.test.tsx:101`
-// precedens). mezo-4jtz
+// akkor egyik jel sem esik a hook „mai" napjára (5/5 helyett 0/5).
+//
+// Miért a hook mockja, és nem `setSystemTime`: a `useMinuteTick` modul-szintű órája MOUNT UTÁN
+// nem követi a fali órát — a `getSnapshot` önjavító ága (`useMinuteTick.ts:57-61`) csak akkor
+// frissít, ha ÉPP NINCS feliratkozó. Mount ELŐTT tehát egy `setSystemTime` elér hozzá
+// (`useMinuteTick.test.tsx:22-33`), mount után viszont már nem. A hookot ugyanarra az EGYETLEN
+// olvasásra pinnelni (`NapHubPage.test.tsx:101` precedens) az időzítéstől függetlenül tart.
+//
+// Lefedettségi ár (tudatos): a valós `useMinuteTick` ezzel kikerül ennek a hooknak a
+// lefedettségéből — ha a `useDayOrbFill` visszatérne renderenkénti `new Date()`-re (mezo-atry
+// fáziscsúszás), az itt már nem bukna; azt a `useMinuteTick.test.tsx` őrzi. mezo-4jtz
 vi.mock('@/features/today/logic/useMinuteTick', () => ({
   useMinuteTick: () => h.now,
 }))

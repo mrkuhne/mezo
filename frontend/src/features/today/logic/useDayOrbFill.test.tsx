@@ -14,10 +14,20 @@ import { localDateString } from '@/shared/lib/dates'
 // EGYETLEN fali-óra olvasás az egész fájlra (mezo-4jtz). A lenti tesztek kiolvassák a mai nap
 // hétköznap-indexét és ISO dátumát, a hook pedig a SAJÁTJÁT vezeti le a `useMinuteTick`-ből —
 // két független olvasás, ami helyi éjfélt átlépve MÁS napot ad, és a sport-slot skip nem talál
-// (a nevező 5 helyett 6). A `useMinuteTick` órája modul-szintű, import-időben elkapott
-// singleton, ezért a teszt-törzsből `Date`-et fake-elni nem ér el hozzá — helyette magát a
-// hookot pinneljük (a `NapHubPage.test.tsx:101` precedens). Valós `new Date()`, nem fix
-// literál: a mock-seedhez kötött describe-ok a TÉNYLEGES mai naphoz vannak horgonyozva.
+// (a nevező 5 helyett 6).
+//
+// Miért a hook mockja, és nem `setSystemTime`: a `useMinuteTick` modul-szintű órája MOUNT UTÁN
+// nem követi a fali órát. A `getSnapshot` önjavító ága (`useMinuteTick.ts:57-61`) csak akkor
+// frissít, ha ÉPP NINCS feliratkozó — mount előtt tehát egy `setSystemTime` ELÉR hozzá
+// (`useMinuteTick.test.tsx:22-33` pont ezt állítja), mount után viszont már nem. Egy fájl-szintű
+// `Date`-fagyasztás így vagy a render elé kényszerítené az egészet, vagy elrontaná a lenti,
+// mock-seedhez kötött describe-ot (az a TÉNYLEGES mai naphoz van horgonyozva) — ezért inkább
+// magát a hookot pinneljük UGYANARRA az egy olvasásra (a `NapHubPage.test.tsx:101` precedens),
+// valós `new Date()`-tel, nem fix literállal. Ez az időzítéstől függetlenül tart.
+//
+// Lefedettségi ár (tudatos): ezzel a valós `useMinuteTick` kikerül ENNEK a hooknak a
+// lefedettségéből, tehát ha a `useDayOrbFill` valaha visszatérne renderenkénti `new Date()`-re
+// (a mezo-atry fáziscsúszás), az itt már nem bukna — azt a `useMinuteTick.test.tsx` őrzi.
 const clock = vi.hoisted(() => ({ now: new Date() }))
 vi.mock('@/features/today/logic/useMinuteTick', () => ({
   useMinuteTick: () => clock.now,
