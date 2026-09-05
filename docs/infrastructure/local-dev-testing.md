@@ -27,6 +27,40 @@ a real Postgres (a Testcontainers container, or the docker-compose DB). This is 
 
 The **frontend** vitest suite has none of this (no Docker, light JVM-less runtime) — it stays green.
 
+## pnpm is pinned by `packageManager`, not by a CI input (mezo-q8oy)
+
+`frontend/package.json` carries `"packageManager": "pnpm@11.25.0"`, and `pnpm/action-setup`
+reads it (`package_json_file: frontend/package.json`, no `version:` input). One pin, so CI and
+every local shell resolve the same pnpm instead of two numbers that must be kept equal by hand.
+
+Two pnpm-10/11 behaviours are load-bearing here:
+
+- **Settings moved out of `package.json`.** The `pnpm` field is ignored (with a warning); the
+  settings root is `frontend/pnpm-workspace.yaml`. Its `packages: ['.']` marks frontend/ as that
+  root — it is *not* declaring a monorepo.
+- **Dependency build scripts are blocked by default, and pnpm 11 makes an ignored build an
+  error** (`ERR_PNPM_IGNORED_BUILDS`). `allowBuilds: {msw: true, sharp: true}` is therefore
+  required for `pnpm install` to succeed at all. (pnpm 11 renamed pnpm 10's
+  `onlyBuiltDependencies` to `allowBuilds` — it rewrites the file for you if you use the old
+  name.) Under an older pnpm the same gap would install "successfully" with no msw service
+  worker and no sharp binary.
+
+**pnpm 11 needs Node ≥ 22.13**, and the workflows pinned `node-version: 20` — so the first CI
+run failed inside `actions/setup-node`'s own pnpm cache probe:
+
+```
+Error [ERR_UNKNOWN_BUILTIN_MODULE]: No such built-in module: node:sqlite
+##[error]warn: This version of pnpm requires at least Node.js v22.13
+```
+
+That exposed a second, older divergence: the dev machine has been on **Node 22** while CI ran
+**Node 20**, and nothing declared or checked it. Both are now **22**, and
+`frontend/package.json` carries `"engines": { "node": ">=22.13" }` so the requirement is stated
+in the repo rather than discovered from a CI stack trace.
+
+The upgrade left `pnpm-lock.yaml` **byte-identical** (still `lockfileVersion: '9.0'`, same
+resolutions), so it does not churn every open branch.
+
 ## The gate model
 
 - **Full backend suite → CI.** `ci.yml`'s `test-backend` job runs `./mvnw -B clean test
