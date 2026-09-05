@@ -52,7 +52,7 @@ public class LifeGoalEvalJob {
             try {
                 for (LifeGoalEntity goal
                         : goalRepository.findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(user.getId())) {
-                    if (!"active".equals(goal.getStatus())) {
+                    if (!LifeGoalEntity.STATUS_ACTIVE.equals(goal.getStatus())) {
                         continue;
                     }
                     try {

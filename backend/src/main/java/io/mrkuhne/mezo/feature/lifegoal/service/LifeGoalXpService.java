@@ -37,7 +37,16 @@ public class LifeGoalXpService {
     private final ObjectProvider<ProgressionGate> progressionGate;
     private final ProgressionService progressionService;
 
-    /** The D-1 XP idempotency key: {@code lifegoal:<pillarId>:<day>} hashed to a stable UUID. */
+    /**
+     * The D-1 XP idempotency key: {@code lifegoal:<pillarId>:<day>} hashed to a stable UUID.
+     *
+     * <p>Keyed on the pillar's row identity ON PURPOSE: it must survive the job's 3-day rewrite and
+     * an in-place retune (mezo-iizd.2 keeps the UUID through edits). The accepted narrow leak: a
+     * pillar DELETED and then re-created as an equivalent new row mints a new UUID, so up to the
+     * last 3 hit-days can award XP twice (≤ 3 × xp-per-hit, feedback-only currency). Keying on
+     * content (source+kind) instead would close that but break idempotency across a legitimate
+     * source/kind edit, which drops and honestly re-evaluates history — the wrong trade.
+     */
     public static UUID refIdFor(UUID pillarId, LocalDate day) {
         return UUID.nameUUIDFromBytes(("lifegoal:" + pillarId + ":" + day).getBytes(StandardCharsets.UTF_8));
     }
