@@ -90,16 +90,25 @@ public class MemoryItemPopulator {
     public MemoryRetrievalResultEntity result(UUID createdBy, MemoryRetrievalRunEntity run,
                                                MemoryItemEntity item, int rank, boolean selected,
                                                ScoreBreakdownEnvelope scoreBreakdown) {
+        return result(createdBy, run, "memory_item", item.getSourceId(), item, rank, selected,
+                item.getContent(), item.getOccurredOn(), scoreBreakdown);
+    }
+
+    public MemoryRetrievalResultEntity result(UUID createdBy, MemoryRetrievalRunEntity run,
+                                               String candidateKind, UUID candidateRefId,
+                                               MemoryItemEntity item, int rank, boolean selected,
+                                               String content, LocalDate occurredOn,
+                                               ScoreBreakdownEnvelope scoreBreakdown) {
         MemoryRetrievalResultEntity entity = new MemoryRetrievalResultEntity();
         entity.setCreatedBy(createdBy);
         entity.setRunId(run.getId());
-        entity.setCandidateKind("memory_item");
-        entity.setCandidateRefId(item.getSourceId());
-        entity.setMemoryItemId(item.getId());
+        entity.setCandidateKind(candidateKind);
+        entity.setCandidateRefId(candidateRefId);
+        entity.setMemoryItemId(item == null ? null : item.getId());
         entity.setRank(rank);
         entity.setSelected(selected);
-        entity.setContentSnapshot(item.getContent());
-        entity.setOccurredOn(item.getOccurredOn());
+        entity.setContentSnapshot(content);
+        entity.setOccurredOn(occurredOn);
         entity.setScoreBreakdown(scoreBreakdown);
         return resultRepository.saveAndFlush(entity);
     }

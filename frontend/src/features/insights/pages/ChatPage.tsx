@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Icon } from '@/shared/ui/Icon'
 import { ClaySpot } from '@/shared/ui/clay'
-import { NEW_CHAT, useChat, useChatActions, useConversations, useFeedback } from '@/data/hooks'
+import { NEW_CHAT, useChat, useChatActions, useConversations, useFeedback, useMemoryRetrievalFeedback } from '@/data/hooks'
 import { ChatMessage } from '@/features/insights/components/ChatMessage'
 import { ToolWorkStrip } from '@/features/insights/components/ToolWorkStrip'
 import { ConversationPickerSheet } from '@/features/insights/sheets/ConversationPickerSheet'
@@ -87,6 +87,11 @@ export function ChatPage() {
     [messages],
   )
   const feedback = useFeedback('chat_message', assistantIds)
+  const recalledResultIds = useMemo(
+    () => messages.flatMap((m) => (m.recalled ?? []).flatMap((r) => r.retrievalResultId ? [r.retrievalResultId] : [])),
+    [messages],
+  )
+  const memoryFeedback = useMemoryRetrievalFeedback(recalledResultIds)
 
   // Landing on the conversation (or gaining a message) parks the view on the newest turn —
   // a chat opens at the bottom, never at its first line (mezo-at8x.2).
@@ -254,6 +259,7 @@ export function ChatPage() {
           <ChatMessage
             key={m.id ?? `idx-${i}`}
             m={m}
+            memoryFeedback={memoryFeedback}
             feedback={
               m.role === 'assistant' && m.id
                 ? {

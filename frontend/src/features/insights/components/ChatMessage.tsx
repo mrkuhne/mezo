@@ -6,6 +6,7 @@ import { ToolWorkStrip } from '@/features/insights/components/ToolWorkStrip'
 import { RefChips } from '@/features/insights/components/RefChips'
 import type { ChatMessage as ChatMessageT } from '@/data/types'
 import type { ArtifactFeedback, FeedbackReason, FeedbackVerdict } from '@/data/feedback/feedbackTypes'
+import type { MemoryRetrievalFeedbackHandle } from '@/data/hooks'
 
 /** The card's slice of the page-level `useFeedback` handle (mezo-b3pp.15). Absent when the
  *  message is not votable — a user bubble, or an answer still streaming (no persisted id yet). */
@@ -20,7 +21,15 @@ export interface ChatMessageFeedback {
 // user = warm-washed 16/4-radius bubble, timestamp below right. The behavioral
 // contracts (blank-answer naming, degraded badge, votable-only-persisted,
 // hidden-when-empty sections) are unchanged — this is a re-face, not a rewrite.
-export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatMessageFeedback }) {
+export function ChatMessage({
+  m,
+  feedback,
+  memoryFeedback,
+}: {
+  m: ChatMessageT
+  feedback?: ChatMessageFeedback
+  memoryFeedback?: MemoryRetrievalFeedbackHandle
+}) {
   if (m.role === 'user') {
     return (
       <div className="mzc-msg-u">
@@ -71,7 +80,7 @@ export function ChatMessage({ m, feedback }: { m: ChatMessageT; feedback?: ChatM
         {visibleRefs.length > 0 && <RefChips refs={visibleRefs} eyebrow="Amire épült · L3" />}
       </div>
       {/* W3.1b: the answer's ambient-recall provenance, collapsed (mezo-b3pp.28). */}
-      {m.recalled && <RecalledMemoriesRow items={m.recalled} />}
+      {m.recalled && <RecalledMemoriesRow items={m.recalled} feedback={memoryFeedback} />}
       {/* Under the card, assistant rows only — and only once the answer is persisted, i.e. has
           an artifactId to vote on. The parent keys this row by that id, so React never reuses
           one FeedbackChips instance (whose reason-row state is session-local) across two

@@ -7,10 +7,10 @@ tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
   - backend/src/main/java/io/mrkuhne/mezo/feature/llmlog
-  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiUsageExtractor.java
   - api/feature/companion/companion.yml
-  - api/feature/companion-feedback/companion-feedback.yml
+  - api/feature/memory-retrieval/memory-retrieval.yml
   - frontend/src/data/insights/chatHooks.ts
+  - frontend/src/data/insights/memoryFeedbackHooks.ts
   - backend/src/main/resources/db/changelog/1.0.0/script/202607031400_mezo-fnnq.2_create_ai_conversation_message.sql
   - docs/decisions/0008-companion-llm-spring-ai-2-gemini.md
 related: [insights, proactive, today, me, _platform-api-backend, _platform-auth-security, _platform-notifications, journal, ritual]
@@ -379,6 +379,17 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 - The result is one provenance-carrying `MemoryContext` (`items`, `[Hosszú távú memória]` block,
   refs, persisted run ID and diagnostic trace ID). Chat now consumes it in SHADOW by default and
   can switch to NEW without a second assembly path; OLD remains frozen for rollback.
+
+**Retrieval feedback and canonical suppression (`mezo-6dii.7`):**
+
+- NEW-mode disclosure cards with stable audit IDs now let the beta user mark a result useful or
+  irrelevant, or suppress its canonical memory after a two-tap confirmation. Feedback upserts on
+  the audited owner/result pair; suppression changes the canonical item state to `suppressed`, so
+  every subsequent retriever excludes it without deleting the source record or its audit history.
+- The chat page batch-loads the feedback for the newest 100 visible result IDs in one request,
+  writes actions optimistically with rollback on failure, and keeps pre-rollout cards that have no
+  retrieval IDs display-only. Fact and graph candidates have no canonical `memory_item`, so the UI
+  keeps useful/irrelevant but does not offer suppression; the API also rejects such a request.
 
 **V2.2 (`mezo-fnnq.10`) shipped daily summaries + the embed pipeline — the memory fills itself:**
 
@@ -917,6 +928,13 @@ companion surface since V0.4, dual-mode:
   nothing — and every user bubble, and every pre-W3.1b answer — renders **no row at all**, not an
   empty one. Both modes show it (mock seeds two items on the first assistant message, one on the
   canned reply); refs collapse a day into one chip, the disclosure lists every episode.
+- **The disclosure is also the beta memory-control surface (`mezo-6dii.7`).** Cards backed by a
+  stable retrieval run/result show their source, date and selection indicator plus `Hasznos`,
+  `Nem ide tartozik` and `Ne használd többé` actions. The first two are idempotent judgements; the
+  destructive action is offered only for a canonical `memoryItemId`, requires a second confirmation
+  tap and then marks the card unavailable with
+  `Nem lesz többé használva`. A successful suppression emits a toast. Legacy OLD/SHADOW cards
+  without stable IDs remain readable and expandable but deliberately show no action buttons.
 - **The `Memory` chip is deduped against the disclosure, per-day (`mezo-b3pp.29`)** — the
   sibling „Hivatkozott · L3" ref row is no longer unconditionally independent of the „Emlékek · N"
   disclosure above: `ChatMessage.tsx` drops a `Memory`-kind ref **only when its id (a day string)
@@ -1056,6 +1074,25 @@ one ChatMemoryPayload → identical prompt ordering and recalled_memories persis
 duplicate evidence. Pattern acknowledgement, character/profile context and tone retain their old
 positions. The opening turn has no user query and intentionally keeps the legacy confirmed-fact
 block rather than manufacturing a retrieval request.
+
+**Retrieval-feedback path (`mezo-6dii.7`):**
+
+```text
+ChatPage → one useMemoryRetrievalFeedback(resultIds) batch GET
+  → RecalledMemoriesRow reads per-result state and sends an optimistic PUT
+      useful / irrelevant → upsert memory_retrieval_feedback
+      suppress           → validate canonical memory_item → state=suppressed → upsert feedback
+  → later hybrid retrieval SQL admits active items only
+```
+
+Both endpoints resolve ownership from `CurrentUserId`. The write pessimistically locks the exact
+owned, selected `(runId,resultId)` pair before touching feedback or canonical state; a foreign
+result, mismatched run and undisclosed candidate are therefore the same 404, while simultaneous
+first writes serialize into one row. The feedback row and suppression transition share one
+transaction. Suppression is terminal through this endpoint: a later useful/irrelevant action is
+rejected instead of silently leaving a contradictory suppressed item. No learning event or
+rank-weight mutation is emitted in this slice: `.8` owns using the accumulated labels for
+evaluation/tuning.
 
 **The streamed turn (V0.4 + V0.5 tools — what the FE uses):**
 
@@ -1938,6 +1975,16 @@ leaving `memory_embedding` intact:
 `content_hash` and `embedded_content_hash` use `varchar(64)` plus an exact lowercase-hex CHECK.
 This avoids Hibernate/PostgreSQL `bpchar` schema-validation drift while retaining the intended
 fixed SHA-256 invariant.
+
+`mezo-6dii.7` exposes that existing feedback table through two contract-first endpoints:
+
+- `GET /api/companion/memory/retrieval-feedback?resultIds=<uuid,...>` — 1–100 IDs, returning only
+  the caller-owned rows that exist; unknown and foreign IDs are omitted.
+- `PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback` — body action
+  `useful|irrelevant|suppress`, idempotently upserting the owner/result row. `suppress` additionally
+  transitions its owned canonical `memory_item` to `suppressed`; a result without such an item
+  returns `MEMORY_RETRIEVAL_SUPPRESS_UNAVAILABLE` (400), while changing an already-suppressed
+  result returns `MEMORY_RETRIEVAL_SUPPRESSION_FINAL` (400).
 
 Runtime population (`mezo-6dii.2`) is configured under `mezo.companion.memory-platform`:
 `serving-mode` (`OLD|SHADOW|NEW`, default/environment fallback `SHADOW` since `mezo-6dii.6`),
@@ -4158,6 +4205,15 @@ touching the response; NEW serves the unified block and falls back to OLD only a
 retriever outage has itself been audited. Sync and SSE consume the same payload. Briefing, memoir
 and prediction remain on their existing paths until their own staged rollout tasks.
 
+**Retrieval feedback seam (`mezo-6dii.7`).** `MemoryItemFeedbackService` links user judgement to
+the immutable, selected retrieval audit result, not directly to an arbitrary client-supplied
+memory ID. A pessimistic result-row lock makes the find/create upsert safe under concurrent first
+writes and also serializes terminal-state checks.
+Canonical suppression then reuses the shared `memory_item.state` lifecycle already enforced by
+dense and lexical retrieval. The FE consumes it through the standard `@/data/hooks` boundary;
+one page-level hook owns batching/cache/rollback, while `RecalledMemoriesRow` stays a handle-driven
+component and never issues per-card requests.
+
 ### 5.4 Companion ↔ API contract & backend platform (wired)
 Companion is now a backed feature on the contract-first pipeline
 ([`_platform-api-backend.md`](_platform-api-backend.md) §3–§4): `companion.yml` → merged
@@ -4649,6 +4705,16 @@ legacy fact/graph blocks), stable run/result/item disclosure IDs, cross-owner is
 provider failure degrading to lexical context. `MemoryContextServiceIT` separately forces every
 retriever to fail and proves the serving variant persists the explicit fallback error before chat
 uses OLD.
+
+**Retrieval feedback and suppression (`mezo-6dii.7`).**
+`MemoryRetrievalFeedbackApiIT` pins authentication, owner-only batch reads, idempotent action
+switching, concurrent first writes, foreign/mismatched/unselected run-result 404s, request bounds,
+invalid-action validation, non-canonical suppression 400, terminal suppression and the real
+retrieval consequence of canonical suppression. Frontend hook tests pin one
+deduplicated batch GET, network-free mock state, optimistic rollback and the suppression toast;
+`RecalledMemoriesRow.test.tsx` pins non-nested article/button semantics, display-only legacy rows,
+selection state and the two-tap destructive guard. `ChatPage.test.tsx` proves two assistant rows
+still cause one feedback batch request.
 
 **Daily evaluation (`mezo-jcpt.4`, plan 2/2).**
 `feature/companion/service/DayEvaluationEngineTest.java` is the formula's unit-level pin — one test
@@ -5941,6 +6007,21 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   existing typed service boundary remains replaceable if later multi-step agent orchestration earns
   its operational cost.
 
+**Retrieval-feedback decisions (`mezo-6dii.7`).**
+
+- A feedback write is anchored to an audited owned run/result pair. The browser never submits a
+  canonical item ID as authority, and the server requires `selected=true`, preventing feedback or
+  suppression of a candidate that was not actually shown.
+- Suppression is a reversible lifecycle state, not physical deletion. It immediately affects all
+  active-item retrievers while retaining provenance and evaluation evidence. It is terminal on
+  this feedback endpoint; a future explicit restore flow may reactivate the canonical item, but a
+  later rating cannot do so implicitly.
+- Useful/irrelevant labels are collected but do not silently tune production ranking in this
+  slice. Offline evaluation and guarded weight proposals belong to `mezo-6dii.8`.
+- The PUT response is server truth and remains in the FE cache; an extra post-write refetch would
+  add latency and allow a fast stale read to erase the optimistic result. Failed writes restore the
+  exact pre-mutation cache snapshot.
+
 **Deferred (with bd ids):**
 - ~~**W3.3 recall tuning (`mezo-b3pp.14`, spec §7.3)**~~ — **shipped**: per-group
   `min-similarity`/τ/cap in config, the deterministic eval harness, and its follow-up
@@ -6022,6 +6103,20 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/RecalledMemoriesEnvelope.java` + `mapper/CompanionMapper.java` — backward-compatible JSONB plus optional retrieval run/result/item IDs and indicator on the wire.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{ChatMemoryRolloutIT,ChatMemoryShadowRolloutIT,ChatServiceAmbientRecallIT,ChatStreamServiceIT}.java` — NEW, SHADOW and frozen OLD behavior across synchronous and streamed turns.
 - `frontend/src/data/{types.ts,insights/chatApi.ts,insights/chatApi.test.ts,_client/api.gen.ts}` — optional disclosure provenance passthrough generated from the additive Companion contract.
+
+**Backend + FE — retrieval feedback (`mezo-6dii.7` — §2–§5/§8–§9)**
+
+- `api/feature/memory-retrieval/memory-retrieval.yml` — batch feedback read and audited
+  run/result feedback PUT contract.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/{controller/MemoryRetrievalController,service/MemoryItemFeedbackService}.java`
+  — current-user boundary, feedback upsert and canonical suppression transaction.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/repository/MemoryRetrievalFeedbackRepository.java`
+  + `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/MemoryRetrievalFeedbackApiIT.java`
+  — owned batch finder and HTTP/integration gate.
+- `frontend/src/data/insights/{memoryFeedbackApi,memoryFeedbackHooks}.ts` — generated-contract API
+  mapper plus single-page batch query and optimistic action handle.
+- `frontend/src/features/insights/components/{RecalledMemoriesRow,ChatMessage}.tsx` +
+  `frontend/src/features/insights/pages/ChatPage.tsx` — disclosure controls and one hook per thread.
 
 **Backend — feedback (W4.1, `mezo-b3pp.15` — §4/§5.7)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/controller/CompanionFeedbackController.java` — `implements CompanionFeedbackApi`, `COMPANION_SWITCH`-gated, ownership from `CurrentUserId`, thin delegation.
