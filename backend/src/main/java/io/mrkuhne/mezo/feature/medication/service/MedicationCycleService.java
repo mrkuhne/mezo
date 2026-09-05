@@ -26,14 +26,17 @@ import org.springframework.stereotype.Service;
  * never a fabricated day.
  *
  * <p>{@link #MEDICATION_ZONE} is the zone in which the medication "today" is derived. One zone for
- * every caller that derives its own "now" ({@link #deriveToday} is the only such path) — mezo-8h2s
- * was a UTC-vs-default-zone split that shifted the rendered cycle day by one between the two
- * midnights. Callers of {@link #derive} pass an explicit {@code onDate} and own that date's zone
- * themselves; notably {@code ContextSnapshotAssembler.medicationBlock} is handed a
- * default-zone {@code LocalDate.now()} from {@code ChallengeGenerator}/{@code
- * ExperimentProposalGenerator} and is NOT yet unified onto {@link #MEDICATION_ZONE} (tracked as a
- * separate follow-up). Owner-local like {@code TrainingStreakCalculator.TZ}; if per-user timezones
- * ever become real ({@code AppUserEntity.timezone}), both move together.
+ * every caller that derives its own "now" ({@link #deriveToday} is the only such path here) —
+ * mezo-8h2s was a UTC-vs-default-zone split that shifted the rendered cycle day by one between the
+ * two midnights. Callers of {@link #derive} pass an explicit {@code onDate} and own that date's
+ * zone themselves; the proactive generators that feed {@code
+ * ContextSnapshotAssembler.medicationBlock} its date ({@code ChallengeGenerator}, {@code
+ * ExperimentProposalGenerator}, {@code WeeklySuggestionGenerator}) derive it as {@code
+ * LocalDate.now(MEDICATION_ZONE)} since mezo-ned9 — they used to hand in a zero-arg (JVM-default,
+ * i.e. UTC on CI/containers) {@code LocalDate.now()} and reproduced the same one-day drift;
+ * {@code ContextSnapshotOwnerZoneIT} pins that. Owner-local like {@code
+ * TrainingStreakCalculator.TZ}; if per-user timezones ever become real ({@code
+ * AppUserEntity.timezone}), both move together.
  */
 @Service
 @RequiredArgsConstructor

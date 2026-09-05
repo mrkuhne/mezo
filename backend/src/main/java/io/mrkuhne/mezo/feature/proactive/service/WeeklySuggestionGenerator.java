@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
+import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.feature.proactive.entity.WeeklySuggestionEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.WeeklySuggestionRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -106,7 +107,11 @@ public class WeeklySuggestionGenerator {
                 .findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(userId).stream()
                 .map(p -> "- " + p.getTitle() + " (státusz: " + p.getStatus() + ")")
                 .collect(Collectors.joining("\n"));
-        return contextSnapshotAssembler.render(userId, LocalDate.now())
+        // mezo-ned9: the snapshot's "today" is the OWNER-local day (MEDICATION_ZONE), not the JVM
+        // default's — zero-arg LocalDate.now() is UTC on CI/containers and drifted the rendered
+        // medication cycle day by one against MedicationCycleService#deriveToday between the two midnights.
+        return contextSnapshotAssembler.render(userId,
+                LocalDate.now(MedicationCycleService.MEDICATION_ZONE))
                 + facts
                 + "\n\nELŐZŐ HÉT NAPJAI (legfrissebb elöl):\n" + narratives
                 + (patterns.isBlank() ? "" : "\n\nMINTÁK:\n" + patterns)
