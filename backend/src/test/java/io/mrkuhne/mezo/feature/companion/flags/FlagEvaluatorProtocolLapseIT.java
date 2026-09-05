@@ -111,6 +111,23 @@ class FlagEvaluatorProtocolLapseIT extends AbstractIntegrationTest {
         assertThat(keys(f.owner())).doesNotContain(FlagKey.PROTOCOL_LAPSE);
     }
 
+    /** The same single-missed-day fixture as above, but asserting the SPECIFIC verdict rather
+     *  than just "not raised": the miss run (1) never reached consecutiveMissedDays (2), so the
+     *  rule genuinely judged and found the observed count below threshold — CLEAR, not
+     *  UNAVAILABLE, with the exact metric/observed/threshold values the CLEAR-evidence
+     *  construction freezes. */
+    @Test
+    void is_clear_not_unavailable_when_the_miss_run_is_below_the_threshold() {
+        Fixture f = habitItem("Magnézium", "evening", TODAY.minusDays(2));
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(f.owner()), FlagKey.PROTOCOL_LAPSE);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("consecutive_missed");
+        assertThat(verdict.clear().observed()).isEqualTo(1.0);
+        assertThat(verdict.clear().threshold()).isEqualTo(2.0);
+    }
+
     /** Today is still in progress: an item taken through yesterday, with nothing logged today,
      *  is NOT lapsing. This is the window-ends-yesterday bound. */
     @Test
@@ -132,6 +149,24 @@ class FlagEvaluatorProtocolLapseIT extends AbstractIntegrationTest {
         supplementIntakePopulator.createIntake(owner, pantry, TODAY.minusDays(3), "wake");
 
         assertThat(keys(owner)).doesNotContain(FlagKey.PROTOCOL_LAPSE);
+    }
+
+    /** The same too-new-item fixture as above, but asserting the SPECIFIC verdict: fewer than
+     *  min-history-due-days of history survives the startedOn clamp, which is an honesty gate
+     *  (cannot tell whether a habit existed), not a judgement — UNAVAILABLE, not CLEAR. */
+    @Test
+    void is_unavailable_not_clear_when_the_item_is_too_new_to_have_a_habit() {
+        UUID owner = userPopulator.createUser().getId();
+        UUID pantry = pantryItemPopulator.createSupplement(owner, "Kreatin").getId();
+        UUID protocolId = protocolPopulator.createActiveProtocol(owner).getId();
+        protocolPopulator.createProtocolItemAt(owner, protocolId, pantry, "wake", null,
+            TODAY.minusDays(3).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        supplementIntakePopulator.createIntake(owner, pantry, TODAY.minusDays(3), "wake");
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.PROTOCOL_LAPSE);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
+        assertThat(verdict.reason()).isEqualTo(UnavailableReason.NOT_ENOUGH_PROTOCOL_HISTORY);
     }
 
     /** A habit that never really existed: 30 due days, taken on only 9 of them (30%), then two
@@ -156,6 +191,19 @@ class FlagEvaluatorProtocolLapseIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser().getId();
 
         assertThat(keys(owner)).doesNotContain(FlagKey.PROTOCOL_LAPSE);
+    }
+
+    /** The same no-active-protocol fixture as above, but asserting the SPECIFIC verdict: there is
+     *  nothing to evaluate at all, which is an honesty gate, not a judgement — UNAVAILABLE with
+     *  NO_ACTIVE_PROTOCOL, not CLEAR. */
+    @Test
+    void is_unavailable_with_no_active_protocol() {
+        UUID owner = userPopulator.createUser().getId();
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.PROTOCOL_LAPSE);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
+        assertThat(verdict.reason()).isEqualTo(UnavailableReason.NO_ACTIVE_PROTOCOL);
     }
 
     /** A peri-workout item is not DUE on a rest day, so two trainingless days are not two misses.

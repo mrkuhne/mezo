@@ -60,7 +60,7 @@ public class FlagEvaluator {
     private final MissedWorkoutsRule missedWorkoutsRule;
     private final AllHealthyRule allHealthyRule;
 
-    /** Every rule's verdict for {@code userId} right now, cooldowns NOT yet applied — 13 entries,
+    /** Every rule's verdict for {@code userId} right now, cooldowns NOT yet applied — 14 entries,
      *  one per rule, in AdvicePriority order. */
     @Transactional(readOnly = true)
     public List<FlagVerdict> evaluate(UUID userId) {
