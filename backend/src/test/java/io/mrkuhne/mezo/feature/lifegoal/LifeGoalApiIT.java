@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.api.dto.PillarSource;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpMethod;
@@ -73,7 +74,10 @@ class LifeGoalApiIT extends ApiIntegrationTest {
             LifeGoalStatusRequest.builder().status(LifeGoalStatus.ACTIVE).build(), ownerAuthHeaders(), HttpStatus.OK, LifeGoalResponse.class);
 
         assertThat(again.getStatus()).isEqualTo(LifeGoalStatus.ACTIVE);
-        assertThat(again.getActivatedAt()).isEqualTo(active.getActivatedAt());
+        // Linux Postgres round-trips Instant at microsecond precision while Instant.now() itself can
+        // carry nanoseconds (JDK-dependent) — truncate both sides so the comparison isn't platform-sensitive.
+        assertThat(again.getActivatedAt().truncatedTo(ChronoUnit.MICROS))
+            .isEqualTo(active.getActivatedAt().truncatedTo(ChronoUnit.MICROS));
     }
 
     @Test
@@ -90,7 +94,8 @@ class LifeGoalApiIT extends ApiIntegrationTest {
             LifeGoalStatusRequest.builder().status(LifeGoalStatus.ARCHIVED).build(), ownerAuthHeaders(), HttpStatus.OK, LifeGoalResponse.class);
 
         assertThat(archived.getStatus()).isEqualTo(LifeGoalStatus.ARCHIVED);
-        assertThat(archived.getClosedAt()).isEqualTo(done.getClosedAt());
+        assertThat(archived.getClosedAt().truncatedTo(ChronoUnit.MICROS))
+            .isEqualTo(done.getClosedAt().truncatedTo(ChronoUnit.MICROS));
     }
 
     @Test
