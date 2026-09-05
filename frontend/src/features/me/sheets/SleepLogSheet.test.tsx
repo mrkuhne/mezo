@@ -111,7 +111,16 @@ describe('screenshot mode (mezo-66ab)', () => {
 
     // flip back to Kézi — this used to silently drop everything the AI just read
     await userEvent.click(screen.getByRole('button', { name: 'Kézi' }))
+
+    // The component stamps the day at save time (`new Date().toISOString()`); reading the wall
+    // clock a SECOND time in the assertion below made the test disagree with itself whenever
+    // UTC midnight fell between the two reads (mezo-4jtz). Bracket the click instead: the
+    // stamp must be one of the two days observed around it — a window that is a single day
+    // except on the very run that straddles midnight, where both are legitimate.
+    const utcDay = () => new Date().toISOString().slice(0, 10)
+    const beforeSave = utcDay()
     await userEvent.click(screen.getByRole('button', { name: /Mentés/ }))
+    const afterSave = utcDay()
 
     expect(onSave).toHaveBeenCalledWith(expect.objectContaining({
       deepMin: 100, lightMin: 206, remMin: 144, awakeMin: 52,
@@ -122,7 +131,7 @@ describe('screenshot mode (mezo-66ab)', () => {
       durationH: 7.48,
     }))
     // Proof the MANUAL branch ran: saveShot() would have sent the 2026-01-15 we just typed.
-    expect(onSave.mock.calls[0][0].date).toBe(new Date().toISOString().slice(0, 10))
+    expect([beforeSave, afterSave]).toContain(onSave.mock.calls[0][0].date)
     expect(onSave.mock.calls[0][0].date).not.toBe('2026-01-15')
   })
 })

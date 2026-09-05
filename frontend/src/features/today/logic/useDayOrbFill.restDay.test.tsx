@@ -25,8 +25,25 @@ import { useDayOrbFill } from '@/features/today/logic/useDayOrbFill'
 const h = vi.hoisted(() => {
   const d = new Date()
   const p = (n: number) => String(n).padStart(2, '0')
-  return { iso: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}` }
+  return { now: d, iso: `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}` }
 })
+
+// A hook a SAJÁT óráját olvassa (`useMinuteTick`), a jelek dátuma viszont a fenti, hoistolt
+// olvasásból jön — két független fali-óra olvasás, ami helyi éjfélt átlépve MÁS napot ad, és
+// akkor egyik jel sem esik a hook „mai" napjára (5/5 helyett 0/5).
+//
+// Miért a hook mockja, és nem `setSystemTime`: a `useMinuteTick` modul-szintű órája MOUNT UTÁN
+// nem követi a fali órát — a `getSnapshot` önjavító ága (`useMinuteTick.ts:57-61`) csak akkor
+// frissít, ha ÉPP NINCS feliratkozó. Mount ELŐTT tehát egy `setSystemTime` elér hozzá
+// (`useMinuteTick.test.tsx:22-33`), mount után viszont már nem. A hookot ugyanarra az EGYETLEN
+// olvasásra pinnelni (`NapHubPage.test.tsx:101` precedens) az időzítéstől függetlenül tart.
+//
+// Lefedettségi ár (tudatos): a valós `useMinuteTick` ezzel kikerül ennek a hooknak a
+// lefedettségéből — ha a `useDayOrbFill` visszatérne renderenkénti `new Date()`-re (mezo-atry
+// fáziscsúszás), az itt már nem bukna; azt a `useMinuteTick.test.tsx` őrzi. mezo-4jtz
+vi.mock('@/features/today/logic/useMinuteTick', () => ({
+  useMinuteTick: () => h.now,
+}))
 
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
@@ -70,6 +87,8 @@ test('a pihenőnapi label az 5-ös nevezőt mondja ki', () => {
 // A hoistolt `h.iso` a `localDateString` kézzel másolt párja (a mock-gyár nem importálhat).
 // Ha a `localDateString` valaha mást ad — más időzóna-kezelést, más formátumot —, ez a
 // teszt bukik, mielőtt a fenti kettő rejtélyes okból elkezdene sodródni.
+// UGYANARRA a pillanatra hívjuk (`h.now`), nem egy friss `new Date()`-re: a formátumot/időzóna-
+// kezelést hasonlítjuk össze, nem két fali-óra olvasást — az utóbbi éjfélkor hamis bukást ad.
 test('a hoistolt mai-nap ISO egyezik a localDateString-gel', () => {
-  expect(h.iso).toBe(localDateString())
+  expect(h.iso).toBe(localDateString(h.now))
 })

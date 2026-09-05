@@ -11,6 +11,28 @@ import { API_BASE } from '@/test/msw/handlers'
 import { todayIdx } from '@/data/train/runningAgenda'
 import { localDateString } from '@/shared/lib/dates'
 
+// EGYETLEN fali-óra olvasás az egész fájlra (mezo-4jtz). A lenti tesztek kiolvassák a mai nap
+// hétköznap-indexét és ISO dátumát, a hook pedig a SAJÁTJÁT vezeti le a `useMinuteTick`-ből —
+// két független olvasás, ami helyi éjfélt átlépve MÁS napot ad, és a sport-slot skip nem talál
+// (a nevező 5 helyett 6).
+//
+// Miért a hook mockja, és nem `setSystemTime`: a `useMinuteTick` modul-szintű órája MOUNT UTÁN
+// nem követi a fali órát. A `getSnapshot` önjavító ága (`useMinuteTick.ts:57-61`) csak akkor
+// frissít, ha ÉPP NINCS feliratkozó — mount előtt tehát egy `setSystemTime` ELÉR hozzá
+// (`useMinuteTick.test.tsx:22-33` pont ezt állítja), mount után viszont már nem. Egy fájl-szintű
+// `Date`-fagyasztás így vagy a render elé kényszerítené az egészet, vagy elrontaná a lenti,
+// mock-seedhez kötött describe-ot (az a TÉNYLEGES mai naphoz van horgonyozva) — ezért inkább
+// magát a hookot pinneljük UGYANARRA az egy olvasásra (a `NapHubPage.test.tsx:101` precedens),
+// valós `new Date()`-tel, nem fix literállal. Ez az időzítéstől függetlenül tart.
+//
+// Lefedettségi ár (tudatos): ezzel a valós `useMinuteTick` kikerül ENNEK a hooknak a
+// lefedettségéből, tehát ha a `useDayOrbFill` valaha visszatérne renderenkénti `new Date()`-re
+// (a mezo-atry fáziscsúszás), az itt már nem bukna — azt a `useMinuteTick.test.tsx` őrzi.
+const clock = vi.hoisted(() => ({ now: new Date() }))
+vi.mock('@/features/today/logic/useMinuteTick', () => ({
+  useMinuteTick: () => clock.now,
+}))
+
 function wrapper({ children }: { children: ReactNode }) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return <QueryClientProvider client={qc}>{children}</QueryClientProvider>
@@ -102,13 +124,12 @@ test('a label mindkét módban „A mai napod"-dal kezdődik', () => {
 // `present === 0` ági feltételt a labelben, ez a teszt buktatná.
 // mezo-cq06 — a skip_sport_slot advice action hides one dated occurrence of a recurring sport
 // slot; `sportPlanned` used to stay lit for it regardless, contradicting the backend's own
-// `hasScheduledTrainingOn`. Uses the REAL wall-clock date (via `todayIdx`/`localDateString`,
-// the same functions the hook itself calls) rather than faking `Date` — `useMinuteTick`'s clock
-// is a module-level singleton captured at import time, so faking `Date` inside the test body
-// would not reach it.
+// `hasScheduledTrainingOn`. A weekday + date pár a fájl-szintű `clock.now`-ból jön — UGYANABBÓL
+// az egyetlen olvasásból, amit a hook is lát (lásd a fenti `useMinuteTick` mockot), tehát a
+// nap-váltás nem tudja szétcsúsztatni a kettőt.
 describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('sportPlanned honours a sport-slot skip (mezo-cq06)', () => {
-  const dow = todayIdx()
-  const todayIso = localDateString(new Date())
+  const dow = todayIdx(clock.now)
+  const todayIso = localDateString(clock.now)
 
   // Cold-start denominator is already 5 before the sport-schedule fetch resolves (no data yet →
   // sportPlanned false), so a naive `waitFor(() => denominator === 5)` would pass trivially
