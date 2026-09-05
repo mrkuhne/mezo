@@ -45,6 +45,19 @@ Two pnpm-10/11 behaviours are load-bearing here:
   name.) Under an older pnpm the same gap would install "successfully" with no msw service
   worker and no sharp binary.
 
+**pnpm 11 needs Node ≥ 22.13**, and the workflows pinned `node-version: 20` — so the first CI
+run failed inside `actions/setup-node`'s own pnpm cache probe:
+
+```
+Error [ERR_UNKNOWN_BUILTIN_MODULE]: No such built-in module: node:sqlite
+##[error]warn: This version of pnpm requires at least Node.js v22.13
+```
+
+That exposed a second, older divergence: the dev machine has been on **Node 22** while CI ran
+**Node 20**, and nothing declared or checked it. Both are now **22**, and
+`frontend/package.json` carries `"engines": { "node": ">=22.13" }` so the requirement is stated
+in the repo rather than discovered from a CI stack trace.
+
 The upgrade left `pnpm-lock.yaml` **byte-identical** (still `lockfileVersion: '9.0'`, same
 resolutions), so it does not churn every open branch.
 

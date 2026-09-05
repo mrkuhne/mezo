@@ -26,7 +26,7 @@ jobs:
           fetch-depth: 0    # lint-docs staleness compares per-file git commit dates
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
       - name: Docs lint (errors block; staleness advisory — known false positives)
         run: node scripts/lint-docs.mjs --errors-only
       - name: Liquibase conventions lint (filenames, constraint prefixes, seed-SQL ban)
@@ -51,7 +51,7 @@ jobs:
           package_json_file: frontend/package.json
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - name: Regenerate merged OpenAPI spec from fragments
@@ -89,7 +89,7 @@ jobs:
           package_json_file: frontend/package.json
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
@@ -126,7 +126,7 @@ jobs:
           package_json_file: frontend/package.json
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
