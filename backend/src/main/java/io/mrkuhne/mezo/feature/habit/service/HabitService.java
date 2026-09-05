@@ -43,8 +43,9 @@ import org.springframework.transaction.annotation.Transactional;
  * Habit day lifecycle (bd mezo-d1jb, ADR 0010): a day materializes lazily on the first today-read,
  * derived habits complete off honest signals (evaluated intraday + at closure, awarded once through
  * progression atomically with the status flip), and past pending days close quietly — kept if the
- * signal fired, else missed (no failure ceremony). Manual habits are user-checked/unchecked (same
- * day only); uncheck reverts the XP so a re-check can re-award. Gated {@code HABIT_SWITCH}.
+ * signal fired, else missed (no failure ceremony). Manual habits are user-checked/unchecked (today
+ * or yesterday — the backfill window); uncheck reverts the XP so a re-check can re-award. Gated
+ * {@code HABIT_SWITCH}.
  *
  * <p>Definitions come from {@link HabitCatalogService} (mezo-n5e9.1) — the DB-backed, per-user
  * catalog that lazily bootstraps from the {@link HabitCatalog} JSON seed on first read.
@@ -142,12 +143,24 @@ public class HabitService {
     @Transactional
     public HabitWriteResponse check(UUID userId, String key, LocalDate date) {
         HabitDefEntity def = requireDef(userId, key);
-        requireManualToday(def, date);
-        ensureRows(userId, LocalDate.now());
+        requireManualWithinBackfillWindow(def, date);
+        // TODAY keeps the full-catalog reconcile (the day's lazy-creation heartbeat — other defs'
+        // rows must exist for getDay/evaluateIntraday). A PAST date (backfill) must materialize
+        // ONLY the checked key's row: reconciling the whole catalog on a never-opened yesterday
+        // would plant pending rows for every other habit too, and closeStaleRows (next today-open)
+        // would then silently DERIVED-complete the vacuously-satisfied ones and award unearned XP
+        // for a day the user never touched — see mezo-x9c2 final review finding 1.
+        if (date.equals(LocalDate.now())) {
+            ensureRows(userId, date);
+        } else {
+            ensureRow(userId, date, def);
+        }
         HabitDayEntity row = repository
             .findByCreatedByAndHabitDateAndHabitKey(userId, date, key)
-            .orElseThrow(); // unreachable: ensureRows just created every catalog row for today
-        if (!HabitDayEntity.STATUS_PENDING.equals(row.getStatus())) {
+            .orElseThrow(); // unreachable: ensureRows/ensureRow just materialized this row
+        // pending (live day) and missed (cron-closed backfill target) both flip; done guards.
+        if (!HabitDayEntity.STATUS_PENDING.equals(row.getStatus())
+            && !HabitDayEntity.STATUS_MISSED.equals(row.getStatus())) {
             throw conflict("HABIT_ALREADY_DONE");
         }
         List<LevelUpResult> levelUps = complete(row, def, HabitDayEntity.SOURCE_MANUAL);
@@ -161,7 +174,7 @@ public class HabitService {
     @Transactional
     public HabitResponse uncheck(UUID userId, String key, LocalDate date) {
         HabitDefEntity def = requireDef(userId, key);
-        requireManualToday(def, date);
+        requireManualWithinBackfillWindow(def, date);
         HabitDayEntity row = repository
             .findByCreatedByAndHabitDateAndHabitKey(userId, date, key)
             .orElseThrow(() -> conflict("HABIT_NOT_DONE"));
@@ -348,6 +361,30 @@ public class HabitService {
         }
     }
 
+    /**
+     * Single-row counterpart to {@link #ensureRows(UUID, LocalDate, List)} for a PAST date
+     * (mezo-x9c2 final review finding 1): materializes only the one def's row for {@code date},
+     * never the whole catalog — reconciling every def would plant pending rows for unrelated
+     * habits on a never-opened yesterday, which the next today-open's {@code closeStaleRows}
+     * would then silently DERIVED-complete (some metrics are vacuously satisfied with zero data)
+     * and award XP for a day the user never touched. No-op if the row already exists.
+     */
+    private void ensureRow(UUID userId, LocalDate date, HabitDefEntity def) {
+        if (repository.findByCreatedByAndHabitDateAndHabitKey(userId, date, def.getHabitKey())
+            .isPresent()) {
+            return;
+        }
+        HabitDayEntity e = new HabitDayEntity();
+        e.setCreatedBy(userId);
+        e.setHabitDate(date);
+        e.setHabitKey(def.getHabitKey());
+        try {
+            repository.saveAndFlush(e);
+        } catch (DataIntegrityViolationException ex) {
+            // lost the race against a concurrent check/cron for this exact row — it exists now
+        }
+    }
+
     private Map<String, Integer> strengthByKey(UUID userId, LocalDate today) {
         LocalDate from = today.minusDays(properties.strengthWindowDays() - 1L);
         Map<String, long[]> counts = new HashMap<>();
@@ -385,12 +422,19 @@ public class HabitService {
             SystemMessage.error("HABIT_UNKNOWN").build(), HttpStatus.NOT_FOUND));
     }
 
-    private void requireManualToday(HabitDefEntity def, LocalDate date) {
+    /**
+     * MANUAL check/uncheck gate (mezo-x9c2): the write must target a MANUAL def and a date
+     * inside the backfill window — {@code today - backfillDays .. today}. One code for both
+     * out-of-window sides (older AND future): a future date is a client bug, not a product
+     * state, so it does not earn its own code.
+     */
+    private void requireManualWithinBackfillWindow(HabitDefEntity def, LocalDate date) {
         if (!HabitDefEntity.MODE_MANUAL.equals(def.getMode())) {
             throw conflict("HABIT_NOT_MANUAL");
         }
-        if (!date.equals(LocalDate.now())) {
-            throw conflict("HABIT_NOT_TODAY");
+        LocalDate today = LocalDate.now();
+        if (date.isAfter(today) || date.isBefore(today.minusDays(properties.backfillDays()))) {
+            throw conflict("HABIT_TOO_OLD");
         }
     }
 

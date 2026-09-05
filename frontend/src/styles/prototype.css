@@ -181,6 +181,15 @@
   --mz-cell-gold-bg: #FBEBCB;  --mz-cell-gold-ink: #8A5E07;
   --mz-tone-coral: #FFE3D4; --mz-tone-gold: #FBEBCB; --mz-tone-lav: #E9E3F7;
   --mz-tone-rose: #F7E3ED;  --mz-tone-sage: #E4EEDC; --mz-tone-sky: #DCEBF4;
+  /* Cél detail heroes — exact approved artifact washes, promoted to paired tokens so
+     the same asymmetrical card anatomy remains theme-native instead of baking light UI
+     surfaces into the component rules (mezo-ricj.6). */
+  --mz-goal-hero-nutrition: radial-gradient(circle at 88% 17%, rgba(255,255,255,.64), transparent 18%), linear-gradient(145deg, #EEF8E8, #DCEFD4 58%, #F8EDC9);
+  --mz-goal-hero-segment: radial-gradient(circle at 87% 17%, rgba(255,255,255,.66), transparent 18%), linear-gradient(145deg, #F0EDFF, #E5DDFF 57%, #DBEEFF);
+  --mz-goal-hero-plans: radial-gradient(circle at 91% 18%, rgba(255,255,255,.65), transparent 18%), linear-gradient(145deg, #EAF8FF 0%, #D8F0ED 54%, #DFF0D5 100%);
+  --mz-goal-hero-guards: radial-gradient(circle at 87% 17%, rgba(255,255,255,.65), transparent 18%), linear-gradient(145deg, #FFF0EA, #FFE0D6 56%, #FFECC5);
+  --mz-goal-hero-settings: radial-gradient(circle at 87% 17%, rgba(255,255,255,.66), transparent 18%), linear-gradient(145deg, #EAF6FF, #D9ECF7 55%, #DFEEDD);
+  --mz-goal-emblem: linear-gradient(145deg, rgba(255,255,255,.86), rgba(255,255,255,.40));
   --mz-cellbg: rgba(255, 255, 255, 0.72);
   --mz-chipbg: rgba(255, 255, 255, 0.7);
   --mz-stripbg: #FFFFFF;
@@ -545,6 +554,12 @@
   --mz-tone-rose:  color-mix(in srgb, var(--dv-rose) 22%, var(--surface-page));
   --mz-tone-sage:  color-mix(in srgb, var(--dv-sage) 22%, var(--surface-page));
   --mz-tone-sky:   color-mix(in srgb, var(--dv-sky) 22%, var(--surface-page));
+  --mz-goal-hero-nutrition: radial-gradient(circle at 88% 17%, rgba(255,255,255,.08), transparent 18%), linear-gradient(145deg, color-mix(in srgb, var(--dv-sage) 22%, var(--surface-card)), color-mix(in srgb, var(--dv-amber) 8%, var(--surface-page)));
+  --mz-goal-hero-segment: radial-gradient(circle at 87% 17%, rgba(255,255,255,.08), transparent 18%), linear-gradient(145deg, color-mix(in srgb, var(--dv-lav) 24%, var(--surface-card)), color-mix(in srgb, var(--dv-sky) 8%, var(--surface-page)));
+  --mz-goal-hero-plans: radial-gradient(circle at 91% 18%, rgba(255,255,255,.08), transparent 18%), linear-gradient(145deg, color-mix(in srgb, var(--dv-sky) 20%, var(--surface-card)), color-mix(in srgb, var(--dv-sage) 10%, var(--surface-page)));
+  --mz-goal-hero-guards: radial-gradient(circle at 87% 17%, rgba(255,255,255,.08), transparent 18%), linear-gradient(145deg, color-mix(in srgb, var(--dv-coral) 22%, var(--surface-card)), color-mix(in srgb, var(--dv-amber) 8%, var(--surface-page)));
+  --mz-goal-hero-settings: radial-gradient(circle at 87% 17%, rgba(255,255,255,.08), transparent 18%), linear-gradient(145deg, color-mix(in srgb, var(--dv-sky) 20%, var(--surface-card)), color-mix(in srgb, var(--dv-sage) 8%, var(--surface-page)));
+  --mz-goal-emblem: linear-gradient(145deg, color-mix(in srgb, var(--surface-elevated) 90%, transparent), color-mix(in srgb, var(--surface-card) 52%, transparent));
   --mz-cellbg: color-mix(in srgb, var(--surface-card) 72%, transparent);
   --mz-chipbg: color-mix(in srgb, var(--surface-elevated) 80%, transparent);
   --mz-stripbg: var(--surface-card);
@@ -4647,6 +4662,34 @@ button.mz-tile:active { transform: scale(0.96); }
 .goal-detail-notice { font-size: 13px; line-height: 1.55; background: var(--mz-wash-coral); }
 .goal-detail-macros { margin-bottom: 12px; }
 
+/* The five inspectable Goal siblings use the approved artifact's asymmetrical hero card:
+   compact factual copy on the left, one oversized clay emblem, three dense facts at the
+   foot. The source facts remain server-owned; only the visual anatomy is shared here. */
+.goal-detail-page .mz-page-body { padding-top: 8px; }
+.goal-detail-hero {
+  position: relative; min-height: 220px; overflow: hidden; padding: 21px; border: 0.5px solid var(--mz-line-soft);
+  border-radius: 29px; background: var(--mz-goal-hero-nutrition); box-shadow: var(--mz-shadow-sage); color: var(--text-primary);
+}
+.goal-detail-hero::after { content: ''; position: absolute; width: 150px; height: 150px; right: -53px; top: -52px; border-radius: 50%; border: 24px solid color-mix(in srgb, var(--surface-card) 24%, transparent); box-shadow: 0 0 0 17px color-mix(in srgb, var(--surface-card) 11%, transparent); pointer-events: none; }
+.goal-detail-hero-segment { background: var(--mz-goal-hero-segment); box-shadow: var(--mz-shadow-lav); }
+.goal-detail-hero-plans { background: var(--mz-goal-hero-plans); box-shadow: var(--mz-shadow-sky); }
+.goal-detail-hero-guards { background: var(--mz-goal-hero-guards); box-shadow: var(--mz-shadow-coral); }
+.goal-detail-hero-settings { background: var(--mz-goal-hero-settings); box-shadow: var(--mz-shadow-sky); }
+.goal-detail-hero-copy { position: relative; z-index: 2; max-width: 66%; }
+.goal-detail-hero-copy > span { color: var(--mz-ink-mut); font-size: 9px; font-weight: 850; letter-spacing: 0.12em; text-transform: uppercase; }
+.goal-detail-hero-copy > strong { display: block; margin-top: 9px; font-size: 34px; line-height: 0.95; font-weight: 800; letter-spacing: -0.055em; font-variant-numeric: tabular-nums; }
+.goal-detail-hero-copy > p { margin: 8px 0 0; color: var(--mz-ink-soft); font-size: 11px; line-height: 1.42; }
+.goal-detail-emblem { position: absolute; z-index: 2; right: 21px; top: 53px; width: 96px; height: 96px; border-radius: 34px; display: grid; place-items: center; transform: rotate(6deg); background: var(--mz-goal-emblem); box-shadow: inset 5px 6px 12px color-mix(in srgb, var(--surface-card) 85%, transparent), 0 16px 28px color-mix(in srgb, var(--text-primary) 16%, transparent); }
+.goal-detail-emblem-nutrition { color: var(--mz-cell-sage-ink); }
+.goal-detail-emblem-segment { color: var(--mz-cell-lav-ink); }
+.goal-detail-emblem-plans, .goal-detail-emblem-settings { color: var(--mz-cell-sky-ink); }
+.goal-detail-emblem-guards { color: var(--mz-cell-coral-ink); }
+.goal-detail-pods { position: absolute; z-index: 3; left: 20px; right: 20px; bottom: 18px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
+.goal-detail-pod { min-width: 0; padding: 9px 8px; border-radius: 14px; background: color-mix(in srgb, var(--surface-card) 60%, transparent); box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface-card) 90%, transparent); }
+.goal-detail-pod small { display: block; overflow: hidden; color: var(--mz-ink-mut); font-size: 7px; font-weight: 850; letter-spacing: 0.08em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
+.goal-detail-pod strong { display: block; margin-top: 3px; overflow: hidden; font-size: 12px; line-height: 1.1; text-overflow: ellipsis; white-space: nowrap; }
+.goal-detail-section-head { display: flex; align-items: baseline; justify-content: space-between; margin: 20px 2px 9px; color: var(--mz-ink-mut); font-size: 10px; font-weight: 850; letter-spacing: 0.12em; text-transform: uppercase; }
+
 /* Goal suggestion review (mezo-ricj.3): a fixed-baseline before/after grid. Every row keeps
    the same three-area anatomy even at 320px, so values never staircase between cards. */
 .goal-suggestion-page .mz-page-hero { padding-bottom: 18px; }
@@ -4657,6 +4700,12 @@ button.mz-tile:active { transform: scale(0.96); }
 .gs-status-dismissed, .gs-status-superseded { background: var(--mz-chipbg); color: var(--mz-ink-mut); }
 .gs-section-head { display: flex; align-items: center; justify-content: space-between; margin: 0 3px 10px; color: var(--mz-ink-mut); font-size: 10px; font-weight: 850; letter-spacing: 0.12em; text-transform: uppercase; }
 .gs-section-head b { border-radius: 999px; padding: 4px 8px; background: var(--mz-chipbg); color: var(--mz-cell-coral-ink); }
+.gs-reason-card { position: relative; min-height: 168px; overflow: hidden; margin-bottom: 20px; padding: 20px; border: 0.5px solid var(--mz-line-soft); border-radius: 27px; background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+.gs-reason-card::after { content: ''; position: absolute; width: 126px; height: 126px; right: -37px; bottom: -57px; border-radius: 50%; border: 21px solid color-mix(in srgb, var(--surface-card) 25%, transparent); box-shadow: 0 0 0 15px color-mix(in srgb, var(--surface-card) 12%, transparent); }
+.gs-reason-card > div { position: relative; z-index: 2; max-width: 61%; }
+.gs-reason-card p { margin: 9px 0 0; color: var(--mz-ink-soft); font-size: 11px; line-height: 1.45; }
+.gs-reason-card b { display: inline-flex; margin-top: 11px; border-radius: 9px; padding: 4px 7px; background: color-mix(in srgb, var(--surface-card) 53%, transparent); color: var(--mz-cell-gold-ink); font-size: 8px; }
+.gs-reason-orb { position: absolute; z-index: 2; right: 18px; top: 39px; width: 88px; height: 88px; border-radius: 50%; display: grid; place-items: center; padding: 12px; background: radial-gradient(circle at 34% 27%, color-mix(in srgb, var(--surface-card) 96%, var(--mz-tone-gold)) 0 9%, color-mix(in srgb, var(--dv-amber) 72%, var(--surface-card)) 29%, var(--primary-base) 73%, var(--primary-hover) 100%); box-shadow: inset 8px 9px 15px color-mix(in srgb, var(--surface-card) 48%, transparent), 0 14px 25px color-mix(in srgb, var(--primary-hover) 24%, transparent); color: var(--text-primary); font-size: 13px; font-weight: 850; text-align: center; }
 .gdiff-grid { display: grid; gap: 10px; }
 .gdiff-row {
   display: grid; grid-template-columns: minmax(0, 1fr) 30px minmax(0, 1fr);
@@ -4694,11 +4743,14 @@ button.mz-tile:active { transform: scale(0.96); }
 .gs-dismiss { min-height: 36px !important; border: 0; background: transparent; color: var(--mz-ink-mut); text-decoration: underline; text-underline-offset: 3px; }
 .gs-dismiss-confirm { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 6px; border-radius: 17px; padding: 9px 10px; background: var(--mz-wash-coral); color: var(--mz-ink-soft); font-size: 10px; }
 .gs-dismiss-confirm button { border: 0; border-radius: 999px; padding: 7px 9px; background: var(--mz-chipbg); color: var(--text-primary); font: 800 9px/1 inherit; cursor: pointer; }
-.goal-diet-week { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
-.goal-diet-comparison { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin-top: 12px; }
-.goal-diet-comparison > div, .goal-diet-uniform > div { display: flex; min-width: 0; flex-direction: column; justify-content: space-between; gap: 7px; padding: 12px; border-radius: 17px; background: var(--mz-chipbg); }
+.goal-diet-week { padding: 0; border: 0; background: transparent; box-shadow: none; }
+.goal-diet-week > .goal-detail-kicker { display: none; }
+.goal-diet-comparison { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 0; }
+.goal-diet-comparison > div, .goal-diet-uniform > div { display: flex; min-width: 0; min-height: 126px; flex-direction: column; justify-content: flex-start; gap: 9px; padding: 15px; border-radius: 22px; background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.goal-diet-comparison > div:nth-child(2) { background: var(--mz-wash-sky); box-shadow: var(--mz-shadow-sky); }
+.goal-diet-comparison > div:nth-child(3) { grid-column: 1 / -1; min-height: 104px; background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
 .goal-diet-comparison small, .goal-diet-uniform small { color: var(--mz-ink-mut); font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }
-.goal-diet-comparison strong, .goal-diet-uniform strong { font-size: 16px; line-height: 1.1; font-variant-numeric: tabular-nums; }
+.goal-diet-comparison strong, .goal-diet-uniform strong { font-size: 20px; line-height: 1.08; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .goal-diet-uniform { margin-top: 12px; }
 .goal-diet-uniform p { margin: 10px 2px 0; font-size: 11px; color: var(--mz-ink-soft); }
 .goal-provenance { display: flex; align-items: flex-start; gap: 10px; padding: 13px 15px; border-radius: 18px; background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); }
@@ -4768,6 +4820,10 @@ button.mz-tile:active { transform: scale(0.96); }
 
 @media (max-width: 360px) {
   .goal-diet-comparison { grid-template-columns: 1fr; }
+  .goal-diet-comparison > div:nth-child(3) { grid-column: auto; }
+  .goal-detail-hero-copy { max-width: 63%; }
+  .goal-detail-hero-copy > strong { font-size: 30px; }
+  .goal-detail-emblem { right: 16px; width: 82px; height: 82px; border-radius: 29px; }
   .goal-segment-rail { grid-template-columns: 1fr; gap: 12px; }
   .goal-segment-line { width: 3px; height: 28px; margin-left: 8px; }
   .goal-segment-line span { right: 50%; top: auto; bottom: 0; transform: translateX(50%); }
@@ -4787,6 +4843,9 @@ button.mz-tile:active { transform: scale(0.96); }
 
 @media (prefers-reduced-motion: reduce) {
   .goal-course-ring { transition: none; }
+  .goal-detail-page .rise, .goal-suggestion-page .rise, .goal-detail-emblem, .gs-reason-orb {
+    animation: none; transform: none; transition-duration: 0s;
+  }
 }
 
 /* thin collapsible reference strip — closed header already tells the story */
@@ -5651,11 +5710,16 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .mzc-memcards { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 7px 2px 12px; margin: 0 -2px; }
 .mzc-memcards::-webkit-scrollbar { display: none; }
 .mzc-memcard {
-  flex: none; width: 168px; border-radius: 14px; padding: 9px 10px; cursor: pointer;
+  flex: none; width: 168px; border-radius: 14px; padding: 9px 10px;
   text-align: left; font-family: inherit; border: 0.5px solid var(--mzc-strip-bd);
   background: var(--mz-wash-lav); box-shadow: var(--mzc-strip-shadow);
   display: flex; flex-direction: column; gap: 6px;
   transition: width 0.25s cubic-bezier(0.25, 0.8, 0.35, 1);
+}
+.mzc-memcard.feedback { width: 252px; }
+.mzc-memcard-body {
+  width: 100%; padding: 0; border: 0; background: transparent; color: inherit;
+  text-align: left; font: inherit; cursor: pointer; display: flex; flex-direction: column; gap: 6px;
 }
 .mzc-memtop { display: flex; align-items: center; gap: 6px; }
 .mzc-memic {
@@ -5680,6 +5744,24 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   font-size: 10.5px; font-weight: 300; line-height: 1.45; color: var(--text-primary);
   display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden;
 }
+.mzc-memindicator {
+  align-self: flex-start; padding: 2px 6px; border-radius: 999px; background: var(--surface-card);
+  color: var(--text-secondary); font-size: 8px; font-weight: 700; letter-spacing: 0.03em;
+}
+.mzc-memactions { display: flex; flex-wrap: wrap; gap: 4px; padding-top: 2px; }
+.mzc-memactions button {
+  min-height: 28px; padding: 4px 7px; border-radius: 999px; cursor: pointer;
+  border: 0.5px solid var(--mzc-strip-bd); background: var(--surface-card);
+  color: var(--text-secondary); font: 700 8.5px/1.2 inherit;
+}
+.mzc-memactions button[aria-pressed="true"] {
+  color: var(--lav-deep); border-color: var(--lav-deep); background: var(--mz-wash-lav);
+}
+.mzc-memactions button.danger { color: var(--text-tertiary); }
+.mzc-memactions button.confirm { color: var(--amber-deep); border-color: var(--amber-deep); }
+.mzc-memactions button:disabled { opacity: 0.55; cursor: default; }
+.mzc-memcard.suppressed { opacity: 0.72; }
+.mzc-memstatus { color: var(--text-tertiary); font-size: 9px; font-weight: 700; }
 .mzc-memcard.open { width: 252px; }
 .mzc-memcard.open .mzc-memgist { -webkit-line-clamp: unset; }
 

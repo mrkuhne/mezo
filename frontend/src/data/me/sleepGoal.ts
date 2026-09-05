@@ -11,14 +11,16 @@ export function deriveSleepTimes(anchor: 'WAKE' | 'BED', anchorTime: string, tar
     : { wakeTime: toHHmm(toMin(anchorTime) + targetMinutes), bedTime: anchorTime }
 }
 
-export function composeSleepGoal(input: SleepGoalInput): SleepGoal {
-  return { ...input, ...deriveSleepTimes(input.anchor, input.anchorTime, input.targetMinutes) }
+/** {@code isSet} defaults to true: every caller but the ghost composes a goal the user chose. */
+export function composeSleepGoal(input: SleepGoalInput, isSet = true): SleepGoal {
+  return { ...input, isSet, ...deriveSleepTimes(input.anchor, input.anchorTime, input.targetMinutes) }
 }
 
-/** The backend's config-default ghost (spec §3) — the honest real-mode empty value. */
+/** The backend's config-default ghost (spec §3) — the honest real-mode empty value. Carries
+ *  isSet=false, exactly as the real GET does when there is no sleep_goal row (mezo-k0hp). */
 export const SLEEP_GOAL_GHOST: SleepGoal = composeSleepGoal({
   targetMinutes: 480, anchor: 'WAKE', anchorTime: '06:00', regularityBandMin: 15,
-})
+}, false)
 
 // Demo seed tuned to the mock sleepLog cluster (bed ~23:15 / wake ~06:45) for a credible regularity score.
 export const mockSleepGoal: SleepGoal = composeSleepGoal({

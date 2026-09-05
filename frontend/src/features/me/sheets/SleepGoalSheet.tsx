@@ -33,6 +33,14 @@ export function SleepGoalSheet({ onClose }: { onClose: () => void }) {
             Alvás-cél
           </h2>
           <span style={{ fontSize: 10, color: 'var(--text-tertiary)' }}>Ajánlott sáv: 7–9 óra alvás</span>
+          {/* The editor is pre-filled from useSleepGoal(), which ghosts a config default when no
+              sleep_goal row exists — so without this line the form looks like it is showing a goal
+              the user chose, and "mentés" silently saves the defaults back (mezo-k0hp). */}
+          {!goal.isSet && (
+            <span style={{ fontSize: 10, lineHeight: 1.45, color: 'var(--amber-deep)' }}>
+              Még nincs saját célod — az alábbi értékek az alapértelmezettek. Igazítsd magadhoz, és mentsd el.
+            </span>
+          )}
 
           <div className="row" style={ROW}>
             <span style={LABEL}>Cél időtartam</span>

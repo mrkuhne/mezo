@@ -13,6 +13,11 @@ const REASON: Record<string, string> = {
   weekly_correction: 'Heti korrekció a mért trend alapján',
   deload_maintenance: 'Regenerációt támogató deload hét',
 }
+const REASON_DETAIL: Record<string, string> = {
+  phase_change: 'Új terhelési szakasz kezdődik, ezért az app előre megmutatja a hozzá illő célhangolást.',
+  weekly_correction: 'A mért súlytrend eltér a célütemtől, ezért az app óvatos korrekciót készített elő.',
+  deload_maintenance: 'A deload hét kisebb terheléséhez regenerációt támogató keret illeszkedik.',
+}
 const HISTORY: Record<string, string> = {
   accepted: 'Alkalmazva', dismissed: 'Elvetve', superseded: 'Elavult',
 }
@@ -66,18 +71,26 @@ export function GoalSuggestionPage() {
         <PageHero icon="i-cel" name="Javaslat" big="Nem található" />
         <PageBody><div className="goal-detail-notice rise">Ez a javaslat már nem érhető el.</div></PageBody>
       </EntranceGroup> : <EntranceGroup replayKey={`${preview.status}-${stale}`}>
-        <PageHero icon="i-cel" iconSize={58} name="Javasolt célhangolás" big={REASON[preview.reasonCode] ?? 'Célhangolási javaslat'} sub={`Érintett időszak · ${range}`}>
+        <PageHero icon="i-cel" iconSize={58} name="Javaslat" big="Mielőtt alkalmazod" sub={REASON[preview.reasonCode] ?? 'Célhangolási javaslat'}>
           <span className={`gs-status gs-status-${preview.status}`}>{preview.status === 'proposed' ? 'Átnézésre vár' : HISTORY[preview.status]}</span>
         </PageHero>
         <PageBody principle="Te döntesz: alkalmazás előtt minden változás ugyanazon a nézeten ellenőrizhető.">
+          <section className="gs-reason-card rise" aria-label="A javaslat indoklása">
+            <div>
+              <span className="goal-detail-kicker">Miért javasoljuk?</span>
+              <p>{REASON_DETAIL[preview.reasonCode] ?? 'Az app a célod és a legfrissebb adatok alapján készítette elő ezt a módosítást.'}</p>
+              <b>{range}</b>
+            </div>
+            <span className="gs-reason-orb" aria-hidden="true">{rows.find(row => row.field === 'weekAverageKcal')?.delta ?? 'előnézet'}</span>
+          </section>
           <div className="gs-section-head rise"><span>Mi változik?</span><b>{range}</b></div>
           <GoalSuggestionDiffGrid rows={rows} />
 
-          {preview.warnings.length > 0 && <section className="gs-message gs-warning rise">
+          {preview.warnings.length > 0 && <section className="gs-message gs-warning rise" role="status" aria-label="Figyelmeztetés">
             <strong>Érdemes tudnod</strong>
             {preview.warnings.map(warning => <p key={warning}>{warning}</p>)}
           </section>}
-          {preview.blockers.length > 0 && <section className="gs-message gs-blocker rise" role="alert">
+          {preview.blockers.length > 0 && <section className="gs-message gs-blocker rise" role="alert" aria-label="Alkalmazást blokkoló hiba">
             <strong>Előbb ezt rendezd</strong>
             {preview.blockers.map(blocker => <p key={blocker}>{blockerCopy(blocker)}</p>)}
           </section>}

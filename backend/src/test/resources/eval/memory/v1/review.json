@@ -1,0 +1,9 @@
+{
+  "corpusVersion" : "memory-hu-v1",
+  "generatorSeed" : 20260904,
+  "reviewedBy" : "Daniel Kuhne",
+  "reviewedAt" : "2026-09-05",
+  "queryCount" : 324,
+  "holdoutSha256" : "45c20d293edc3918765c9ba35468057d68997788f91e4ef31c2264a39738206b",
+  "status" : "approved"
+}

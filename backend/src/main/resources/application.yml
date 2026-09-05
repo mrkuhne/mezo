@@ -470,6 +470,11 @@ mezo:
       # off = the LifeGoalEvalJob bean does not exist (manual POST /{id}/evaluate stays on)
       life-goal-eval-job:
         enabled: true
+      # mezo-oou9: retrieval-audit physical purge (schedule: mezo.companion.memory-platform.audit.retention-cron);
+      # off = the MemoryRetrievalRetentionJob bean does not exist (audit rows keep aging past
+      # retention; nothing else changes). Previously gated ONLY by mezo.feature.companion.enabled.
+      memory-retrieval-retention-job:
+        enabled: true
   # LLM call audit log (mezo-2zyu) — binds LlmLogProperties + LlmPricingProperties.
   llm-log:
     # Prompt/response payloads are truncated to this many characters before persisting
@@ -1726,6 +1731,7 @@ mezo:
     strength-window-days: 28
     min-sample: 5
     summary-days: 30
+    backfill-days: 1              # MANUAL check/uncheck window: today - N .. today (mezo-x9c2)
   # Daily intention tuning (mezo-a686): focus cap + text limits are config, never code.
   # Binds onto IntentionProperties.
   intention:

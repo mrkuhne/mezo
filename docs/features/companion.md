@@ -7,10 +7,10 @@ tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
   - backend/src/main/java/io/mrkuhne/mezo/feature/llmlog
-  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiUsageExtractor.java
   - api/feature/companion/companion.yml
-  - api/feature/companion-feedback/companion-feedback.yml
+  - api/feature/memory-retrieval/memory-retrieval.yml
   - frontend/src/data/insights/chatHooks.ts
+  - frontend/src/data/insights/memoryFeedbackHooks.ts
   - backend/src/main/resources/db/changelog/1.0.0/script/202607031400_mezo-fnnq.2_create_ai_conversation_message.sql
   - docs/decisions/0008-companion-llm-spring-ai-2-gemini.md
 related: [insights, proactive, today, me, _platform-api-backend, _platform-auth-security, _platform-notifications, journal, ritual]
@@ -379,6 +379,48 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 - The result is one provenance-carrying `MemoryContext` (`items`, `[Hosszú távú memória]` block,
   refs, persisted run ID and diagnostic trace ID). Chat now consumes it in SHADOW by default and
   can switch to NEW without a second assembly path; OLD remains frozen for rollback.
+
+**Retrieval feedback and canonical suppression (`mezo-6dii.7`):**
+
+- NEW-mode disclosure cards with stable audit IDs now let the beta user mark a result useful or
+  irrelevant, or suppress its canonical memory after a two-tap confirmation. Feedback upserts on
+  the audited owner/result pair; suppression changes the canonical item state to `suppressed`, so
+  every subsequent retriever excludes it without deleting the source record or its audit history.
+- The chat page batch-loads the feedback for the newest 100 visible result IDs in one request,
+  writes actions optimistically with rollback on failure, and keeps pre-rollout cards that have no
+  retrieval IDs display-only. Fact and graph candidates have no canonical `memory_item`, so the UI
+  keeps useful/irrelevant but does not offer suppression; the API also rejects such a request.
+
+**Synthetic Hungarian retrieval evaluation (`mezo-6dii.8`):**
+
+- `memory-hu-v1` is a fixed-seed (`20260904`) corpus of coherent synthetic timelines for exactly
+  three isolated personas: rich logging, sparse logging and changing/contradictory circumstances.
+  It contains 540 natural-language Hungarian queries split by whole scenario into 108 development,
+  108 tuning and 324 sealed holdout cases (108 per persona). These are different data shapes, not
+  renamed copies: the rich persona has dense background notes, the sparse persona omits most
+  supporting summaries and spreads events farther apart, while the changing persona carries many
+  high-salience superseded states.
+- Every split covers paraphrase, contextual follow-up, exact value, old-salient, adversarial
+  near-negative, negation, superseded, empty and cross-owner families. Relevance is graded
+  `0/1/2`; the generator rejects missing gold sources, split leakage, malformed empty cases,
+  missing foreign distractors and persona/family minimum failures. It also rejects duplicate source
+  text, duplicate query text and cross-split query pairs with token Jaccard similarity `>= 0.90`.
+  Even the no-memory phrases use disjoint semantic phrase pools per split; punctuation variation is
+  confined within a split. Ownership distractors deliberately share the gold vector axis and have
+  higher salience, so owner filtering—not an easy ranking mismatch—is what keeps them out.
+- The JSON contains no fake-adapter sentinels. Network-free CI adds scripted geometry only in the
+  deterministic runner with source-derived stable fixture UUIDs, then compares the frozen OLD
+  assembler with `MemoryContextService` and
+  calculates macro Recall@5, nDCG@5, MRR, context precision, empty false positives and ownership
+  leakage over each path's final selected prompt context (the same lifecycle stage on both sides).
+  The runner relaxes the retriever deadline to 5 seconds only in this test so host load cannot turn
+  ranking results into timeout results; latency remains a real-provider concern. This is a
+  wiring/regression smoke test, not evidence for the 85% semantic release gate.
+- The holdout runner refuses to start until `review.json` records an explicit human approval whose
+  non-blank reviewer, review date, corpus version, seed, query count and SHA-256 match the exact
+  holdout bytes and the caller-supplied corpus equals that artifact. Regeneration therefore
+  invalidates an earlier approval instead of silently reusing it. The real Gemini release gate and
+  versioned report belong to `mezo-6dii.9`.
 
 **V2.2 (`mezo-fnnq.10`) shipped daily summaries + the embed pipeline — the memory fills itself:**
 
@@ -917,6 +959,13 @@ companion surface since V0.4, dual-mode:
   nothing — and every user bubble, and every pre-W3.1b answer — renders **no row at all**, not an
   empty one. Both modes show it (mock seeds two items on the first assistant message, one on the
   canned reply); refs collapse a day into one chip, the disclosure lists every episode.
+- **The disclosure is also the beta memory-control surface (`mezo-6dii.7`).** Cards backed by a
+  stable retrieval run/result show their source, date and selection indicator plus `Hasznos`,
+  `Nem ide tartozik` and `Ne használd többé` actions. The first two are idempotent judgements; the
+  destructive action is offered only for a canonical `memoryItemId`, requires a second confirmation
+  tap and then marks the card unavailable with
+  `Nem lesz többé használva`. A successful suppression emits a toast. Legacy OLD/SHADOW cards
+  without stable IDs remain readable and expandable but deliberately show no action buttons.
 - **The `Memory` chip is deduped against the disclosure, per-day (`mezo-b3pp.29`)** — the
   sibling „Hivatkozott · L3" ref row is no longer unconditionally independent of the „Emlékek · N"
   disclosure above: `ChatMessage.tsx` drops a `Memory`-kind ref **only when its id (a day string)
@@ -1056,6 +1105,25 @@ one ChatMemoryPayload → identical prompt ordering and recalled_memories persis
 duplicate evidence. Pattern acknowledgement, character/profile context and tone retain their old
 positions. The opening turn has no user query and intentionally keeps the legacy confirmed-fact
 block rather than manufacturing a retrieval request.
+
+**Retrieval-feedback path (`mezo-6dii.7`):**
+
+```text
+ChatPage → one useMemoryRetrievalFeedback(resultIds) batch GET
+  → RecalledMemoriesRow reads per-result state and sends an optimistic PUT
+      useful / irrelevant → upsert memory_retrieval_feedback
+      suppress           → validate canonical memory_item → state=suppressed → upsert feedback
+  → later hybrid retrieval SQL admits active items only
+```
+
+Both endpoints resolve ownership from `CurrentUserId`. The write pessimistically locks the exact
+owned, selected `(runId,resultId)` pair before touching feedback or canonical state; a foreign
+result, mismatched run and undisclosed candidate are therefore the same 404, while simultaneous
+first writes serialize into one row. The feedback row and suppression transition share one
+transaction. Suppression is terminal through this endpoint: a later useful/irrelevant action is
+rejected instead of silently leaving a contradictory suppressed item. No learning event or
+rank-weight mutation is emitted in this slice: `.8` owns using the accumulated labels for
+evaluation/tuning.
 
 **The streamed turn (V0.4 + V0.5 tools — what the FE uses):**
 
@@ -1938,6 +2006,16 @@ leaving `memory_embedding` intact:
 `content_hash` and `embedded_content_hash` use `varchar(64)` plus an exact lowercase-hex CHECK.
 This avoids Hibernate/PostgreSQL `bpchar` schema-validation drift while retaining the intended
 fixed SHA-256 invariant.
+
+`mezo-6dii.7` exposes that existing feedback table through two contract-first endpoints:
+
+- `GET /api/companion/memory/retrieval-feedback?resultIds=<uuid,...>` — 1–100 IDs, returning only
+  the caller-owned rows that exist; unknown and foreign IDs are omitted.
+- `PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback` — body action
+  `useful|irrelevant|suppress`, idempotently upserting the owner/result row. `suppress` additionally
+  transitions its owned canonical `memory_item` to `suppressed`; a result without such an item
+  returns `MEMORY_RETRIEVAL_SUPPRESS_UNAVAILABLE` (400), while changing an already-suppressed
+  result returns `MEMORY_RETRIEVAL_SUPPRESSION_FINAL` (400).
 
 Runtime population (`mezo-6dii.2`) is configured under `mezo.companion.memory-platform`:
 `serving-mode` (`OLD|SHADOW|NEW`, default/environment fallback `SHADOW` since `mezo-6dii.6`),
@@ -3539,7 +3617,7 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
 | `get_recovery(scope, days, date, from, to)` (mezo-xixu, merged from `get_sleep`, adds sleep-goal + check-ins; **mezo-ohce: on-demand full sleep-log detail** via `date` (≤3 guidance, ISO dates) / `from` / `to`) | scope=sleep: compact last-N-days via `SleepLogRepository` since-date finder → duration, quality, awakenings; **when any of `date`/`from`/`to` is present**, full detail per requested day via the between-finder → bedtime, wakeup, duration, in-bed/awake/könnyű/REM/mély minutes, quality, awakenings, source + source quality, hypnogram (`bucketMin` + raw stages), notes; fields are null-guarded, missing day → `nincs rögzített alvás`, and the window is clamped to `tools().maxWindowDays()` with a `visszavágva N napra` header when trimmed. scope=sleep-goal: `SleepGoalService.getGoal` (target minutes, regularity band; `SLEEP_GOAL_SWITCH`-gated, read via `ObjectProvider`) + `SleepAnchorPort.resolve` (bed/wake anchor, ungated) → target hours/min, bed/wake, regularity band; scope=checkins: `CheckInService.listForDay` per day across the window → energy/stress/body/mental (1–10) per slot | scope=sleep: `Sleep`/date (≤5; detail mode emits one per rendered day, including missing days); scope=sleep-goal: `SleepGoal`/wake-time; scope=checkins: `CheckIn`/date (≤5) |
 | `get_protocol(scope, days)` (mezo-xixu, merged from `get_protocol_adherence`) | scope=adherence: `ProtocolService.getView().getActive()` + intake since-date finder → per-day taken/expected + total %; scope=intake: `IntakeService.listForDay` (today, protocol-independent) → item names (via the pantry stash) + known dose; scope=supplements: the active protocol's distinct `items[].pantryItemId` (mezo-vx9v living protocol, zone-sorted) → item names | `Protocol`/`v{n}` (adherence/supplements always; intake only when a protocol happens to be active) |
 | `get_goal(scope)` (mezo-xixu, merged from `get_goal_progress`) | scope=progress (default): active goal + `computeTrend` + `GoalPrescriptionJson.currentSegment` → week N, start→target, actual vs plan rate, e heti recept; scope=recept: the goal's `prescription.segments` (≤3) → per-segment kcal/protein/sleep/rest-days/rate/rationale; scope=guards: `prescription.guardStatus` → strength e1RM trend + breach, muscle weekly-set floor + below-maintenance list; scope=feasibility: `prescription.feasibility` → verdict + notes (≤3); scope=timeline: `GoalTimelineService.getTimeline` (pure read) → mapped plan links + uncovered gym-lane week gaps (≤3 each). recept/guards/feasibility render "még nincs kiértékelve" until the goal's first `evaluate` (never called from the tool) | `Goal`/title |
-| `get_medication(scope)` (mezo-xixu; `scope ∈ {cycle, all}`, default `cycle`, renamed from the drug-specific original scope names in `mezo-lwmq`) | scope=cycle (default): `MedicationCycleService.derive` + top-10 doses → cycle day, phase, last dose, next due; scope=all: `MedicationService.getDay` → name, active ingredient, cadence, default dose, cycle position (once a dose is on record) + recent doses, generic (no drug-specific naming) | `Medication`/name |
+| `get_medication(scope)` (mezo-xixu; `scope ∈ {cycle, all}`, default `cycle`, renamed from the drug-specific original scope names in `mezo-lwmq`) | scope=cycle (default): `MedicationCycleService.deriveToday` + top-10 doses → cycle day, phase, last dose, next due; scope=all: `MedicationService.getDay` → name, active ingredient, cadence, default dose, cycle position (once a dose is on record) + recent doses, generic (no drug-specific naming). Both scopes' "today" now derive off the SAME `MedicationCycleService.MEDICATION_ZONE` (`Europe/Budapest`, mezo-8h2s) — before this fix `renderCycle` used the JVM's system-default zone while `getDay` used UTC, so scope=cycle and scope=all could disagree on the cycle day by one near either midnight | `Medication`/name |
 | `get_exercise_records(exercise)` (mezo-xixu) | `ExerciseRecordService.list` (compute-on-read over working sets, read-only) → no/blank `exercise`: top-5 lifts by best e1RM; with `exercise`: case-insensitive name-contains match(es) → bestSet, bestE1rm (Epley), repRecords, recentTopSets | `ExerciseRecord`/exercise name (≤5) |
 | `get_recipes(filter)` (mezo-xixu, scored match mezo-sxe) | `RecipeService.list` (read-only) → no/blank `filter`: name/category/whole-recipe kcal+protein/mezo-fit score list; with `filter`: accent-folded token match scored over name (4) > ingredient name (3) > slot/category/role/tag/fitsFor/starred (2), all-token hits winning over partial — the best scorer renders full macros + ingredient lines (the detail comes from the same `.list` response, not a separate `.get` call) | `Recipe`/recipe name (≤5) |
 | `get_pantry(kind)` (mezo-xixu) | `PantryService.getPantry` (read-only) → `kind ∈ {food, supplement, stim, med}` (default: all kinds); food from `ingredients` (name + stock qty/unit + expiry), supplement/stim/med from `stash` filtered by `type` (name + stock qty/unit, no expiry in the contract) | `Pantry`/item name (≤5) |
@@ -4158,6 +4236,15 @@ touching the response; NEW serves the unified block and falls back to OLD only a
 retriever outage has itself been audited. Sync and SSE consume the same payload. Briefing, memoir
 and prediction remain on their existing paths until their own staged rollout tasks.
 
+**Retrieval feedback seam (`mezo-6dii.7`).** `MemoryItemFeedbackService` links user judgement to
+the immutable, selected retrieval audit result, not directly to an arbitrary client-supplied
+memory ID. A pessimistic result-row lock makes the find/create upsert safe under concurrent first
+writes and also serializes terminal-state checks.
+Canonical suppression then reuses the shared `memory_item.state` lifecycle already enforced by
+dense and lexical retrieval. The FE consumes it through the standard `@/data/hooks` boundary;
+one page-level hook owns batching/cache/rollback, while `RecalledMemoriesRow` stays a handle-driven
+component and never issues per-card requests.
+
 ### 5.4 Companion ↔ API contract & backend platform (wired)
 Companion is now a backed feature on the contract-first pipeline
 ([`_platform-api-backend.md`](_platform-api-backend.md) §3–§4): `companion.yml` → merged
@@ -4649,6 +4736,29 @@ legacy fact/graph blocks), stable run/result/item disclosure IDs, cross-owner is
 provider failure degrading to lexical context. `MemoryContextServiceIT` separately forces every
 retriever to fail and proves the serving variant persists the explicit fallback error before chat
 uses OLD.
+
+**Retrieval feedback and suppression (`mezo-6dii.7`).**
+`MemoryRetrievalFeedbackApiIT` pins authentication, owner-only batch reads, idempotent action
+switching, concurrent first writes, foreign/mismatched/unselected run-result 404s, request bounds,
+invalid-action validation, non-canonical suppression 400, terminal suppression and the real
+retrieval consequence of canonical suppression. Frontend hook tests pin one
+deduplicated batch GET, network-free mock state, optimistic rollback and the suppression toast;
+`RecalledMemoriesRow.test.tsx` pins non-nested article/button semantics, display-only legacy rows,
+selection state and the two-tap destructive guard. `ChatPage.test.tsx` proves two assistant rows
+still cause one feedback batch request.
+
+**Synthetic Hungarian memory eval (`mezo-6dii.8`).**
+`MemoryEvalMetricsTest` pins the metric arithmetic with hand-calculated graded examples.
+`SyntheticMemoryCorpusGenerator` deterministically validates and reproduces `memory-hu-v1`; writing
+artifacts and approving the exact reviewed holdout are separate explicit system-property entry
+points. Its normal CI path also re-runs the generator's uniqueness, near-duplicate, persona-shape and
+minimum-size validators against the committed artifacts. `MemoryRetrievalDeterministicEvalIT` seeds
+real PostgreSQL/pgvector rows for all three users, runs OLD and NEW with the profile fake, compares
+both paths at final selected-context stage, emits both metric sets, and gates split integrity, a
+competitive same-axis ownership counterfactual, a modest geometry-only smoke floor, empty routing
+and zero cross-owner leakage. The committed holdout has 324
+questions, but fake vectors cannot validate Hungarian semantic quality, latency or the 85% Recall@5
+release threshold; those remain the opt-in real-provider responsibilities of `mezo-6dii.9`.
 
 **Daily evaluation (`mezo-jcpt.4`, plan 2/2).**
 `feature/companion/service/DayEvaluationEngineTest.java` is the formula's unit-level pin — one test
@@ -5941,6 +6051,21 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   existing typed service boundary remains replaceable if later multi-step agent orchestration earns
   its operational cost.
 
+**Retrieval-feedback decisions (`mezo-6dii.7`).**
+
+- A feedback write is anchored to an audited owned run/result pair. The browser never submits a
+  canonical item ID as authority, and the server requires `selected=true`, preventing feedback or
+  suppression of a candidate that was not actually shown.
+- Suppression is a reversible lifecycle state, not physical deletion. It immediately affects all
+  active-item retrievers while retaining provenance and evaluation evidence. It is terminal on
+  this feedback endpoint; a future explicit restore flow may reactivate the canonical item, but a
+  later rating cannot do so implicitly.
+- Useful/irrelevant labels are collected but do not silently tune production ranking in this
+  slice. Offline evaluation and guarded weight proposals belong to `mezo-6dii.8`.
+- The PUT response is server truth and remains in the FE cache; an extra post-write refetch would
+  add latency and allow a fast stale read to erase the optimistic result. Failed writes restore the
+  exact pre-mutation cache snapshot.
+
 **Deferred (with bd ids):**
 - ~~**W3.3 recall tuning (`mezo-b3pp.14`, spec §7.3)**~~ — **shipped**: per-group
   `min-similarity`/τ/cap in config, the deterministic eval harness, and its follow-up
@@ -6022,6 +6147,29 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/RecalledMemoriesEnvelope.java` + `mapper/CompanionMapper.java` — backward-compatible JSONB plus optional retrieval run/result/item IDs and indicator on the wire.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{ChatMemoryRolloutIT,ChatMemoryShadowRolloutIT,ChatServiceAmbientRecallIT,ChatStreamServiceIT}.java` — NEW, SHADOW and frozen OLD behavior across synchronous and streamed turns.
 - `frontend/src/data/{types.ts,insights/chatApi.ts,insights/chatApi.test.ts,_client/api.gen.ts}` — optional disclosure provenance passthrough generated from the additive Companion contract.
+
+**Backend + FE — retrieval feedback (`mezo-6dii.7` — §2–§5/§8–§9)**
+
+- `api/feature/memory-retrieval/memory-retrieval.yml` — batch feedback read and audited
+  run/result feedback PUT contract.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/{controller/MemoryRetrievalController,service/MemoryItemFeedbackService}.java`
+  — current-user boundary, feedback upsert and canonical suppression transaction.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/repository/MemoryRetrievalFeedbackRepository.java`
+  + `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/MemoryRetrievalFeedbackApiIT.java`
+  — owned batch finder and HTTP/integration gate.
+- `frontend/src/data/insights/{memoryFeedbackApi,memoryFeedbackHooks}.ts` — generated-contract API
+  mapper plus single-page batch query and optimistic action handle.
+- `frontend/src/features/insights/components/{RecalledMemoriesRow,ChatMessage}.tsx` +
+  `frontend/src/features/insights/pages/ChatPage.tsx` — disclosure controls and one hook per thread.
+
+**Backend — synthetic Hungarian memory eval (`mezo-6dii.8` — §8)**
+
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/eval/{MemoryEvalCorpus,MemoryEvalMetrics,SyntheticMemoryCorpusGenerator,MemoryRetrievalDeterministicEvalIT,MemoryEvalMetricsTest}.java`
+  — immutable corpus/review shapes, metric arithmetic, deterministic generation plus approval entry
+  point, and network-free OLD-vs-NEW PostgreSQL regression runner.
+- `backend/src/test/resources/eval/memory/v1/{personas,development,tuning,holdout,review}.json`
+  — versioned three-persona corpus and SHA-bound human review metadata. `review.json` exists only
+  after the explicit holdout review/approval command; changing the holdout invalidates it.
 
 **Backend — feedback (W4.1, `mezo-b3pp.15` — §4/§5.7)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/controller/CompanionFeedbackController.java` — `implements CompanionFeedbackApi`, `COMPANION_SWITCH`-gated, ownership from `CurrentUserId`, thin delegation.

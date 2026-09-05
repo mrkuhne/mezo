@@ -6715,7 +6715,9 @@ paths:
       tags:
         - Habit
       operationId: checkHabit
-      summary: Manually check a MANUAL habit for today (Habits)
+      summary: >-
+        Manually check a MANUAL habit for today or yesterday (max 1 day back)
+        (Habits)
       parameters:
         - name: key
           in: path
@@ -6742,7 +6744,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
-          description: HABIT_NOT_MANUAL | HABIT_NOT_TODAY | HABIT_ALREADY_DONE
+          description: HABIT_NOT_MANUAL | HABIT_TOO_OLD | HABIT_ALREADY_DONE
           content:
             application/json:
               schema:
@@ -6751,7 +6753,9 @@ paths:
       tags:
         - Habit
       operationId: uncheckHabit
-      summary: Same-day un-check of a MANUAL habit; reverses the XP (Habits)
+      summary: >-
+        Un-check of a MANUAL habit for today or yesterday; reverses the XP
+        (Habits)
       parameters:
         - name: key
           in: path
@@ -6778,7 +6782,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
         '409':
-          description: HABIT_NOT_MANUAL | HABIT_NOT_TODAY | HABIT_NOT_DONE
+          description: HABIT_NOT_MANUAL | HABIT_TOO_OLD | HABIT_NOT_DONE
           content:
             application/json:
               schema:
@@ -8382,6 +8386,103 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '401':
           description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/memory/retrieval-feedback:
+    get:
+      tags:
+        - MemoryRetrieval
+      operationId: listMemoryRetrievalFeedback
+      summary: Batch-read feedback for caller-owned retrieval results (MemoryRetrieval)
+      description: >-
+        Returns only feedback rows owned by the caller among the requested
+        result IDs. Unknown, foreign and never-rated IDs are omitted.
+      parameters:
+        - name: resultIds
+          in: query
+          required: true
+          style: form
+          explode: false
+          schema:
+            type: array
+            minItems: 1
+            maxItems: 100
+            items:
+              type: string
+              format: uuid
+      responses:
+        '200':
+          description: 'Existing feedback for the requested owned results, possibly empty'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MemoryRetrievalFeedbackResponse'
+        '400':
+          description: Validation error (empty or oversized result ID list)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/memory/retrieval/{runId}/result/{resultId}/feedback':
+    put:
+      tags:
+        - MemoryRetrieval
+      operationId: putMemoryRetrievalFeedback
+      summary: Upsert feedback for one caller-owned retrieval result (MemoryRetrieval)
+      parameters:
+        - name: runId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: resultId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutMemoryRetrievalFeedbackRequest'
+      responses:
+        '200':
+          description: Stored feedback
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryRetrievalFeedbackResponse'
+        '400':
+          description: >-
+            Validation error, including non-memory suppression or changing a
+            terminal suppression
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: >-
+            Retrieval run/result pair is not owned by the caller or does not
+            match
           content:
             application/json:
               schema:
@@ -19269,6 +19370,7 @@ components:
     SleepGoalResponse:
       type: object
       required:
+        - isSet
         - targetMinutes
         - anchor
         - anchorTime
@@ -19276,6 +19378,13 @@ components:
         - bedTime
         - regularityBandMin
       properties:
+        isSet:
+          type: boolean
+          description: >-
+            false when the numbers below are the config-default ghost (no
+            sleep_goal row) rather than the user's own goal. The endpoint never
+            404s, so this is the ONLY signal the unset state exists — surfaces
+            must not present a ghost as the user's goal (mezo-k0hp).
         targetMinutes:
           type: integer
           minimum: 1
@@ -20623,6 +20732,39 @@ components:
           description: >-
             'inaccurate' | 'too_much' | 'bad_timing' | 'not_about_me' — down
             verdicts only
+        updatedAt:
+          type: string
+          format: date-time
+    PutMemoryRetrievalFeedbackRequest:
+      type: object
+      required:
+        - action
+      properties:
+        action:
+          type: string
+          pattern: ^(useful|irrelevant|suppress)$
+          description: '''useful'' | ''irrelevant'' | ''suppress'''
+    MemoryRetrievalFeedbackResponse:
+      type: object
+      required:
+        - runId
+        - resultId
+        - action
+        - updatedAt
+      properties:
+        runId:
+          type: string
+          format: uuid
+        resultId:
+          type: string
+          format: uuid
+        action:
+          type: string
+          enum:
+            - useful
+            - irrelevant
+            - suppress
+          description: '''useful'' | ''irrelevant'' | ''suppress'''
         updatedAt:
           type: string
           format: date-time

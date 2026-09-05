@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.api.dto.HabitWriteResponse;
 import io.mrkuhne.mezo.feature.habit.entity.HabitDayEntity;
 import io.mrkuhne.mezo.feature.habit.repository.HabitDayRepository;
 import io.mrkuhne.mezo.feature.habit.service.HabitService;
+import io.mrkuhne.mezo.feature.progression.repository.LevelUpEventRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.HabitPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
@@ -47,6 +48,7 @@ class HabitServiceIT extends AbstractIntegrationTest {
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private HabitPopulator habitPopulator;
+    @Autowired private LevelUpEventRepository levelUpEventRepository;
 
     private UUID owner() {
         return userPopulator.createUser("habit-svc@test.hu").getId();
@@ -180,9 +182,12 @@ class HabitServiceIT extends AbstractIntegrationTest {
         assertThatThrownBy(() -> habitService.check(owner, "nope", today))
             .isInstanceOfSatisfying(SystemRuntimeErrorException.class,
                 ex -> assertHabitCode(ex, "HABIT_UNKNOWN"));
-        assertThatThrownBy(() -> habitService.check(owner, "wind_down", today.minusDays(1)))
+        assertThatThrownBy(() -> habitService.check(owner, "wind_down", today.minusDays(2)))
             .isInstanceOfSatisfying(SystemRuntimeErrorException.class,
-                ex -> assertHabitCode(ex, "HABIT_NOT_TODAY"));
+                ex -> assertHabitCode(ex, "HABIT_TOO_OLD"));
+        assertThatThrownBy(() -> habitService.check(owner, "wind_down", today.plusDays(1)))
+            .isInstanceOfSatisfying(SystemRuntimeErrorException.class,
+                ex -> assertHabitCode(ex, "HABIT_TOO_OLD"));
     }
 
     private static void assertHabitCode(SystemRuntimeErrorException ex, String code) {
@@ -200,6 +205,134 @@ class HabitServiceIT extends AbstractIntegrationTest {
 
         HabitWriteResponse again = habitService.check(owner, "morning_sunlight", today);
         assertThat(again.getLevelUps()).isNotEmpty(); // re-award works after revert
+    }
+
+    /**
+     * Backfill (mezo-x9c2): yesterday's cron-closed MISSED row flips to done on a backdated
+     * MANUAL check, and the XP's business date is YESTERDAY (occurredOn rides habit_date —
+     * mezo-huzd plumbing), so the gamification day aggregate heals retroactively.
+     */
+    @Test
+    void testCheck_shouldFlipMissedToDoneAndBackdateXp_whenYesterday() {
+        UUID owner = owner();
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        habitPopulator.row(owner, yesterday, "morning_sunlight", HabitDayEntity.STATUS_MISSED);
+
+        HabitWriteResponse res = habitService.check(owner, "morning_sunlight", yesterday);
+
+        assertThat(res.getHabit().getStatus().getValue()).isEqualTo("done");
+        assertThat(res.getLevelUps()).isNotEmpty();
+        assertThat(levelUpEventRepository.findByCreatedByAndOccurredOn(owner, yesterday))
+            .hasSize(1); // XP attributed to YESTERDAY, not today
+        // done rows guard unchanged for the past day too
+        assertThatThrownBy(() -> habitService.check(owner, "morning_sunlight", yesterday))
+            .isInstanceOfSatisfying(SystemRuntimeErrorException.class,
+                ex -> assertHabitCode(ex, "HABIT_ALREADY_DONE"));
+    }
+
+    /**
+     * Backfill (mezo-x9c2): a yesterday whose rows never materialized (the user never opened
+     * the app that day) must not 500 — check() materializes the checked key's row for the
+     * REQUEST date. Final review finding 1: for a PAST date this must be narrow — ONLY the
+     * checked habit's row, not the whole catalog (a full-catalog reconcile here would plant
+     * pending rows for every other habit too, which the next today-open's closeStaleRows would
+     * then silently DERIVED-complete for vacuously-satisfied metrics and award unearned XP).
+     */
+    @Test
+    void testCheck_shouldMaterializeAbsentRows_whenYesterdayNeverTouched() {
+        UUID owner = owner();
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        // no populator call — yesterday has zero rows
+
+        HabitWriteResponse res = habitService.check(owner, "morning_sunlight", yesterday);
+
+        assertThat(res.getHabit().getStatus().getValue()).isEqualTo("done");
+        assertThat(repository.findByCreatedByAndHabitDate(owner, yesterday)).hasSize(1);
+    }
+
+    /**
+     * Backfill (mezo-x9c2, final review finding 1 — critical): backfilling one MANUAL habit on a
+     * never-opened yesterday must not fabricate DERIVED awards for unrelated habits. Before the
+     * fix, check()'s full-catalog ensureRows planted pending rows for every def on that date, and
+     * the next today-open's closeStaleRows silently completed the vacuously-satisfied DERIVED
+     * ones (no data at all reads as "satisfied" for some metrics) and awarded them XP for a day
+     * the user never touched. Only the one manual award should exist for yesterday afterward.
+     */
+    @Test
+    void testCheck_shouldNotAwardUnrelatedDerivedHabits_whenYesterdayNeverTouched() {
+        UUID owner = owner();
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        // no populator call — yesterday has zero rows and zero signals of any kind
+
+        habitService.check(owner, "morning_sunlight", yesterday);
+        habitService.closePast(owner, LocalDate.now()); // simulates the next day's cron/open
+
+        assertThat(levelUpEventRepository.findByCreatedByAndOccurredOn(owner, yesterday))
+            .hasSize(1); // only the one manual award — no unrelated DERIVED habits got completed
+    }
+
+    /**
+     * Backfill (mezo-x9c2): yesterday-uncheck reverts the XP and resets to pending; the next
+     * closePast honestly re-closes it missed — intended semantics, pinned here.
+     */
+    @Test
+    void testUncheck_shouldRevertAndRecloseMissed_whenYesterday() {
+        UUID owner = owner();
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        habitPopulator.row(owner, yesterday, "morning_sunlight", HabitDayEntity.STATUS_MISSED);
+        habitService.check(owner, "morning_sunlight", yesterday);
+
+        var reverted = habitService.uncheck(owner, "morning_sunlight", yesterday);
+        assertThat(reverted.getStatus().getValue()).isEqualTo("pending");
+        assertThat(levelUpEventRepository.findByCreatedByAndOccurredOn(owner, yesterday)).isEmpty();
+
+        habitService.closePast(owner, LocalDate.now());
+        assertThat(byKey(repository.findByCreatedByAndHabitDate(owner, yesterday),
+            "morning_sunlight").getStatus()).isEqualTo("missed");
+    }
+
+    /**
+     * Midnight race, ordering A (mezo-x9c2): the user checks late, the close job runs after.
+     * closePast only closes PENDING rows, so it must skip the done row — no double-close,
+     * no second award for THIS habit. Since final review finding 1, check() on a past date only
+     * materializes the checked key's own row (not the whole catalog), so closePast afterward has
+     * no other pending rows to touch for yesterday here. The race assertion still scopes to
+     * morning_sunlight's own row via sourceRefId rather than the day's total award count, to stay
+     * robust to that scope.
+     */
+    @Test
+    void testClosePastAfterCheck_shouldKeepDoneAndSingleAward_whenCheckWonTheRace() {
+        UUID owner = owner();
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        habitPopulator.row(owner, yesterday, "morning_sunlight", HabitDayEntity.STATUS_PENDING);
+        habitService.check(owner, "morning_sunlight", yesterday); // pending -> done (backfill window)
+
+        habitService.closePast(owner, LocalDate.now()); // the "cron" arrives second
+
+        HabitDayEntity sunlight = byKey(repository.findByCreatedByAndHabitDate(owner, yesterday),
+            "morning_sunlight");
+        assertThat(sunlight.getStatus()).isEqualTo("done");
+        assertThat(levelUpEventRepository.findByCreatedByAndOccurredOn(owner, yesterday))
+            .filteredOn(e -> sunlight.getId().equals(e.getSourceRefId()))
+            .hasSize(1); // exactly one award for morning_sunlight — no double-close, no second award
+    }
+
+    /**
+     * Midnight race, ordering B (mezo-x9c2): the close job wins and closes the row missed;
+     * the user's late check then flips missed -> done. Both orderings converge on done + 1 award.
+     */
+    @Test
+    void testCheckAfterClosePast_shouldFlipMissedToDone_whenCronWonTheRace() {
+        UUID owner = owner();
+        LocalDate yesterday = LocalDate.now().minusDays(1);
+        habitPopulator.row(owner, yesterday, "morning_sunlight", HabitDayEntity.STATUS_PENDING);
+        habitService.closePast(owner, LocalDate.now()); // cron closes it missed first
+
+        HabitWriteResponse res = habitService.check(owner, "morning_sunlight", yesterday);
+
+        assertThat(res.getHabit().getStatus().getValue()).isEqualTo("done");
+        assertThat(levelUpEventRepository.findByCreatedByAndOccurredOn(owner, yesterday))
+            .hasSize(1);
     }
 
     @Test

@@ -1,8 +1,14 @@
 import '@testing-library/jest-dom/vitest'
+import { configure } from '@testing-library/react'
 import { afterAll, afterEach, beforeAll, beforeEach } from 'vitest'
 import { server } from '@/test/msw/server'
-import { resetTutorialProgressState } from '@/test/msw/handlers'
+import { resetMemoryRetrievalFeedbackState, resetTutorialProgressState } from '@/test/msw/handlers'
 import { setCurrentUserId } from '@/shared/lib/userScope'
+
+// The other half of the mezo-0121 load-flake policy (see vite.config.ts): findBy*/waitFor
+// default to 1s, which under whole-suite contention is the "Unable to find an element"
+// flake. 5s changes nothing on green runs — waits resolve as soon as the condition holds.
+configure({ asyncUtilTimeout: 5_000 })
 
 // Node 25 ships an experimental native `localStorage` global that lacks the
 // Web Storage methods (getItem/setItem/clear). It shadows jsdom's Storage, so
@@ -42,6 +48,7 @@ afterEach(() => server.resetHandlers())
 // in-memory state a handler closes over (e.g. the tutorial-progress seen-store), so that state
 // needs its own explicit reset or a PUT in one test leaks into the next test's GET.
 afterEach(() => resetTutorialProgressState())
+afterEach(() => resetMemoryRetrievalFeedbackState())
 // Sticky in-view tabs (useStickyTab) persist to sessionStorage; clear it between
 // tests so a remembered segment never leaks into the next test's default.
 afterEach(() => {
