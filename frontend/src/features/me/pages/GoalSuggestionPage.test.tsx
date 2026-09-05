@@ -56,10 +56,12 @@ test('shows loading without firing accept', () => {
 })
 
 test('shows the complete current/proposed diff and warning without applying on mount', () => {
-  renderPage()
+  const { container } = renderPage()
   expect(screen.getByText('2 780 kcal')).toBeInTheDocument()
   expect(screen.getByText('2 660 kcal')).toBeInTheDocument()
   expect(screen.getByText('Az alvás miatt a korrekció tompítva lett.')).toBeInTheDocument()
+  expect(screen.getByRole('status', { name: 'Figyelmeztetés' })).toBeInTheDocument()
+  for (const arrow of container.querySelectorAll('.gdiff-arrow')) expect(arrow).toHaveAttribute('aria-hidden', 'true')
   expect(screen.getByRole('button', { name: 'Módosítások alkalmazása' })).toBeEnabled()
   expect(mocks.accept).not.toHaveBeenCalled()
 })
@@ -68,7 +70,14 @@ test('blocks apply when the preview has a blocker', () => {
   mocks.preview.mockReturnValue({ preview: { ...base, blockers: ['GOAL_DIRECTION_TARGET_CONFLICT'], canApply: false, previewFingerprint: null }, pending: false, refetch: mocks.refetch })
   renderPage()
   expect(screen.getByText(/célsúly nem egyezik/i)).toBeInTheDocument()
+  expect(screen.getByRole('alert', { name: 'Alkalmazást blokkoló hiba' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: 'Módosítások alkalmazása' })).toBeDisabled()
+})
+
+test('keeps suggestion transitions inside one reduced-motion-safe entrance group', () => {
+  const { container } = renderPage()
+  expect(container.querySelectorAll('.mz-play')).toHaveLength(1)
+  for (const item of container.querySelectorAll('.rise')) expect(item.closest('.mz-play')).not.toBeNull()
 })
 
 test('offers preview refresh after a stale 409', async () => {

@@ -331,3 +331,83 @@ for (const [path, lastSelector] of STACK_DEPTH) {
     expect(reachable.bottom).toBeLessThanOrEqual(reachable.visibleBottom + 1)
   })
 }
+
+// Cél command centre (mezo-ricj.6): the approved artifact is a seven-screen system, not
+// one pretty hub. Pin the whole route family at the three widths in the handoff so a detail
+// card, plan lane or decision row can never quietly widen the document on a smaller phone.
+const GOAL_ROUTES: Array<[string, string]> = [
+  ['hub', '/me/goals/weight'],
+  ['diet', '/me/goals/weight/diet'],
+  ['segment', '/me/goals/weight/segment'],
+  ['plans', '/me/goals/weight/plans'],
+  ['guards', '/me/goals/weight/guards'],
+  ['settings', '/me/goals/weight/settings'],
+  ['suggestion', '/me/goals/weight/suggestions/sug-weekly-w17'],
+]
+
+for (const width of [320, 390, 430]) {
+  for (const [name, path] of GOAL_ROUTES) {
+    test(`Cél · ${name} stays inside the viewport @ ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 820 })
+      await page.clock.setFixedTime(new Date('2026-05-21T13:42:00'))
+      await page.goto(path)
+      await page.waitForLoadState('networkidle')
+      await page.evaluate(() => document.fonts.ready)
+
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true)
+    })
+  }
+}
+
+test('Cél suggestion keeps every before/after value on one baseline', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 820 })
+  await page.goto('/me/goals/weight/suggestions/sug-weekly-w17')
+  await page.waitForLoadState('networkidle')
+  const offsets = await page.locator('.gdiff-row').evaluateAll(rows => rows.map(row => {
+    const current = row.querySelector('.gdiff-current strong')!.getBoundingClientRect()
+    const proposed = row.querySelector('.gdiff-proposed strong')!.getBoundingClientRect()
+    return Math.abs(current.top - proposed.top)
+  }))
+  expect(offsets.length).toBeGreaterThan(0)
+  for (const offset of offsets) expect(offset).toBeLessThanOrEqual(1)
+})
+
+test('Cél suggestion primary decision stays clear of the shell tabbar', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 820 })
+  await page.goto('/me/goals/weight/suggestions/sug-weekly-w17')
+  await page.waitForLoadState('networkidle')
+  const apply = page.locator('.gs-apply')
+  await apply.scrollIntoViewIfNeeded()
+  const spacing = await page.evaluate(() => {
+    const cta = document.querySelector('.gs-apply')!.getBoundingClientRect()
+    const tabbar = document.querySelector('.tab-bar')!.getBoundingClientRect()
+    return { ctaBottom: cta.bottom, tabbarTop: tabbar.top }
+  })
+  expect(spacing.ctaBottom).toBeLessThanOrEqual(spacing.tabbarTop - 1)
+})
+
+test('Cél diet kcal values remain readable at 200% text size', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 820 })
+  await page.goto('/me/goals/weight/diet')
+  await page.waitForLoadState('networkidle')
+  // Browser text-only zoom scales glyphs without enlarging the containing cards. Chromium
+  // does not expose that user preference directly, so reproduce its relevant pressure on
+  // every kcal datum and assert both wrapping/reflow and clipping explicitly.
+  await page.addStyleTag({ content: `
+    .mz-bignum, .goal-diet-comparison strong, .goal-diet-uniform strong {
+      font-size: 200% !important;
+    }
+  ` })
+  const kcal = page.getByText(/kcal$/)
+  expect(await kcal.count()).toBeGreaterThan(0)
+  const clipped = await kcal.evaluateAll(values => values.map(value => {
+    const element = value as HTMLElement
+    const box = element.getBoundingClientRect()
+    const parent = element.parentElement!.getBoundingClientRect()
+    const style = getComputedStyle(element)
+    return style.overflow === 'hidden'
+      || box.left < parent.left - 1
+      || box.right > parent.right + 1
+  }))
+  expect(clipped).not.toContain(true)
+})

@@ -96,6 +96,17 @@ test('renders the on-track course hero and six actionable tiles when a suggestio
   expect(screen.getByRole('heading', { name: 'Jó úton haladsz' })).toBeInTheDocument()
   expect(screen.getByRole('button', { name: /Mai étrendi keret/ })).toBeEnabled()
   expect(container.querySelectorAll('.goal-hub-mosaic .mz-tile')).toHaveLength(6)
+  for (const tile of container.querySelectorAll('.goal-hub-mosaic .mz-tile')) {
+    expect(tile.tagName).toBe('BUTTON')
+    expect(tile).not.toHaveAttribute('tabindex', '-1')
+  }
+})
+
+test('keeps every entrance tile inside the reduced-motion-safe choreography wrapper', () => {
+  const { container } = render(<GoalsPage />, { wrapper: Wrapper })
+  for (const tile of container.querySelectorAll('.goal-hub-mosaic .rise')) {
+    expect(tile.closest('.mz-play')).not.toBeNull()
+  }
 })
 
 test('renders five tiles without leaving a suggestion gap', () => {

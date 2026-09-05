@@ -139,3 +139,8 @@ test('minden --mzh-* fejléc-token deklarált light-ban ÉS dark-ban', () => {
     expect(dark.has(token), `${token} hiányzik a dark blokkból`).toBe(true)
   }
 })
+
+test('reduced motion settles every Goal entrance immediately without transform or duration', () => {
+  expect(rawCss).toMatch(/\.mz-play \.rise\s*\{[^}]*transform:\s*none;[^}]*animation:\s*none/)
+  expect(rawCss).toMatch(/\.goal-detail-page \.rise,[^{]*\{[^}]*animation:\s*none;[^}]*transform:\s*none;[^}]*transition-duration:\s*0s/)
+})
