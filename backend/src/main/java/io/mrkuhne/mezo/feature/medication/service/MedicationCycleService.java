@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.medication.repository.MedicationDoseRepository;
 import io.mrkuhne.mezo.feature.medication.service.dto.MedicationCycle;
 import io.mrkuhne.mezo.feature.medication.service.dto.MedicationCycle.Cell;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,12 +24,26 @@ import org.springframework.stereotype.Service;
  * dose older than one full cycle simply holds at the last cycle day (no separate "too old" state). With
  * no dose at all the result is an honest zero ({@code cycleDay 0}, null {@code lastDoseAt}, ghost week) —
  * never a fabricated day.
+ *
+ * <p>{@link #MEDICATION_ZONE} is the zone in which the medication "today" is derived. One zone for
+ * EVERY caller (service, companion tool) — mezo-8h2s was a UTC-vs-default-zone split that shifted
+ * the rendered cycle day by one between the two midnights. Owner-local like
+ * {@code TrainingStreakCalculator.TZ}; if per-user timezones ever become real
+ * ({@code AppUserEntity.timezone}), both move together.
  */
 @Service
 @RequiredArgsConstructor
 public class MedicationCycleService {
 
+    /** The single zone every "today" derivation of the medication cycle uses — see class javadoc. */
+    public static final ZoneId MEDICATION_ZONE = ZoneId.of("Europe/Budapest");
+
     private final MedicationDoseRepository doseRepo;
+
+    /** The cycle derived for today in {@link #MEDICATION_ZONE} — the only "today" callers may use. */
+    public MedicationCycle deriveToday(UUID userId, MedicationEntity med) {
+        return derive(userId, med, LocalDate.now(MEDICATION_ZONE));
+    }
 
     public MedicationCycle derive(UUID userId, MedicationEntity med, LocalDate onDate) {
         MedicationCycleJson cfg = med.getCycle();
