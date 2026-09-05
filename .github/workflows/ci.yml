@@ -31,6 +31,12 @@ jobs:
         run: node scripts/lint-docs.mjs --errors-only
       - name: Liquibase conventions lint (filenames, constraint prefixes, seed-SQL ban)
         run: node scripts/lint-liquibase.mjs
+      - name: Generator toolchains are pinned to exact versions
+        # api/openapi.yml and api.gen.ts are generated AND committed, and contract-drift
+        # fails on any byte difference — so the generator version is part of their
+        # identity. A caret range let a plain install float it; a stale node_modules once
+        # put a divergent openapi.yml on main and turned every open PR red (mezo-a5m2).
+        run: node scripts/check-generator-toolchain.mjs --manifests
       - name: Codemap generator tests (fixture trees)
         run: node --test scripts/gen-codemap.test.mjs
       - name: Codemap freshness (docs/CODEMAP.md must regenerate identically)
