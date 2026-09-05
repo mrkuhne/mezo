@@ -360,4 +360,35 @@ class FlagEvaluatorMomentumRecoveryIT extends AbstractIntegrationTest {
         assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
         assertThat(verdict.reason()).isEqualTo(UnavailableReason.NO_DATA_IN_WINDOW);
     }
+
+    @Test
+    void evaluate_returns_exactly_thirteen_verdicts() {
+        UUID owner = ownerId();
+
+        assertThat(evaluator.evaluate(owner)).hasSize(13);
+    }
+
+    /**
+     * Pins {@code FlagEvaluator}'s own forced-CLEAR override (evaluate() lines ~80-87): on a
+     * fresh user with no flag_log rows at all, {@code AllHealthyRule} would independently RAISE
+     * off its own quiet-window data (the checkin/sleep rows this fixture seeds satisfy its
+     * honesty gate) — but with {@code recovery_needed} also genuinely raising from the same
+     * fixture, the composite must not report both a problem AND "all healthy" in the same pass,
+     * so the evaluator forces {@code all_healthy} to CLEAR with metric {@code other_flags_raised}.
+     */
+    @Test
+    void all_healthy_is_forced_clear_when_another_rule_raises_on_a_fresh_user() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        sleepLogPopulator.createSleepLog(owner, today, new BigDecimal("5.5"), 2);
+        checkInPopulator.createCheckIn(owner, today, "08:00", 3, 7, null);
+        trainPopulator.createSportSessionWithRpe(owner, today.minusDays(1), 8);
+
+        List<FlagVerdict> verdicts = evaluator.evaluate(owner);
+
+        assertThat(raisedKeys(verdicts)).contains(FlagKey.RECOVERY_NEEDED);
+        FlagVerdict allHealthy = verdictFor(verdicts, FlagKey.ALL_HEALTHY);
+        assertThat(allHealthy.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(allHealthy.clear().metric()).isEqualTo("other_flags_raised");
+    }
 }

@@ -306,6 +306,27 @@ class FlagEvaluatorLateEatingIT extends AbstractIntegrationTest {
         assertThat(verdict.reason()).isEqualTo(UnavailableReason.NO_MEAL_DATA);
     }
 
+    /** REGRESSION: distinguishes "no meal data at all" from "meal data on every day but none of
+     *  it is late enough." All three days have a logged meal, but none qualifies (none clears
+     *  either arm), so {@code qualifying == 0} — the same as the no-data case if the verdict were
+     *  built off {@code hourByDay} (which is empty in both), but the underlying meal series is
+     *  NOT empty here, so the correct verdict is CLEAR, not UNAVAILABLE. */
+    @Test
+    void is_clear_not_unavailable_when_every_day_is_logged_but_none_qualifies_as_late() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        meal(owner, today.minusDays(2), 18, 0);
+        meal(owner, today.minusDays(1), 18, 0);
+        meal(owner, today, 18, 0);
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.LATE_EATING);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("late_meal_days");
+        assertThat(verdict.clear().observed()).isEqualTo(0.0);
+        assertThat(verdict.clear().threshold()).isEqualTo(2.0);
+    }
+
     @Test
     void is_clear_when_only_one_of_three_days_is_after_the_absolute_hour() {
         UUID owner = ownerId();

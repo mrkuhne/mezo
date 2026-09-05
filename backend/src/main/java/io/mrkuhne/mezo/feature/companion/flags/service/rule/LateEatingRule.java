@@ -117,7 +117,7 @@ public class LateEatingRule implements FlagRule {
         }
 
         if (qualifying < cfg.minDaysOfLastThree()) {
-            if (hourByDay.isEmpty()) {
+            if (mealHours.isEmpty()) {
                 return FlagVerdict.unavailable(FlagKey.LATE_EATING, UnavailableReason.NO_MEAL_DATA);
             }
             return FlagVerdict.clear(FlagKey.LATE_EATING, new FlagVerdict.ClearEvidence(

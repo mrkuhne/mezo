@@ -68,14 +68,14 @@ public class FlagEvaluator {
         verdicts.add(loadFuelMismatchRule.evaluate(userId, today));
         verdicts.add(rapidWeightLossRule.evaluate(userId, today));
         verdicts.add(jointOveruseRule.evaluate(userId, today));
+        verdicts.add(missedWorkoutsRule.evaluate(userId, today));
+        verdicts.add(sleepDebtRule.evaluate(userId, today));
+        verdicts.add(loggingGapRule.evaluate(userId, today));
         verdicts.add(ignoredNudgeRule.evaluate(userId, today));
         verdicts.add(lateEatingRule.evaluate(userId, today));
-        verdicts.add(sustainedStressRule.evaluate(userId, today));
-        verdicts.add(sleepDebtRule.evaluate(userId, today));
-        verdicts.add(momentumAtRiskRule.evaluate(userId, today));
         verdicts.add(recoveryNeededRule.evaluate(userId, today));
-        verdicts.add(loggingGapRule.evaluate(userId, today));
-        verdicts.add(missedWorkoutsRule.evaluate(userId, today));
+        verdicts.add(sustainedStressRule.evaluate(userId, today));
+        verdicts.add(momentumAtRiskRule.evaluate(userId, today));
 
         boolean anyRaised = verdicts.stream().anyMatch(v -> v.outcome() == FlagOutcome.RAISED);
         FlagVerdict healthy = allHealthyRule.evaluate(userId, today);
