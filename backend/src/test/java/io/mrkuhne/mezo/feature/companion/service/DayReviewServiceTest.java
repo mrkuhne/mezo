@@ -366,11 +366,9 @@ class DayReviewServiceTest {
             {"narrative":["Régi."],"dimensionNotes":{},"highlights":[],"adjustment":null}""");
         UUID before = service.assemble(USER, DAY).getReviewId();
 
-        inputs = new DayInputs(DAY, true, inputs.kcal(), inputs.proteinG(), inputs.carbsG(),
-            inputs.fatG(), inputs.kcalTarget(), inputs.proteinTargetG(), inputs.carbsTargetG(),
-            inputs.fatTargetG(), inputs.workoutDay(), inputs.plannedWorkouts(),
-            inputs.doneWorkouts(), 4.0, 3, inputs.meals(), inputs.waterLogged(),
-            inputs.checkinCount(), inputs.priorBaseScores());
+        // A builderen keresztül (mezo-jcpt.8): a DayInputs pozicionális rekord, és a
+        // weightKg/xp felvétele óta egy nyers `new DayInputs(...)` másolat csendben elcsúszna.
+        inputs = DayInputsBuilder.from(inputs).closed(true).sleepH(4.0).sleepQuality1to10(3).build();
         fakeLlm.answer = answer("""
             {"narrative":["Új."],"dimensionNotes":{},"highlights":[],"adjustment":null}""");
 
