@@ -329,12 +329,15 @@
   --mz-wka-revshadow: 0 24px 40px -17px rgba(93, 79, 160, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.85);
   --mz-wka-cardshadow: 0 21px 38px -19px rgba(43, 33, 24, 0.32), 0 2px 7px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.85);
   --mz-wka-hlshadow: 0 5px 12px -7px rgba(43, 33, 24, 0.3);
-  /* Heti nap-mozaik + nap-oldal (mezo-d20.6.10) — the four sub-score hues
-     (en-body.html `SUBC`) and the day tile's dashed/thin surfaces. */
-  --mz-wk-sub-sleep: #4E8FB8;
-  --mz-wk-sub-fuel: #8FAF7E;
-  --mz-wk-sub-checkin: #C46FA0;
-  --mz-wk-sub-activity: #FF6B4A;
+  /* Heti nap-mozaik — a hat sub-jel hue-ja (mezo-jcpt.5). SZÁNDÉKOSAN azonos szemantika a
+     nap-oldal domain-színeivel (.dayev-dim), hogy egy átkattintás után ne kelljen újratanulni:
+     tápanyag=sage · minőség=gold · edzés=coral · alvás=lavender · logolás=rose · ritmus=sky. */
+  --mz-wk-sub-nutrition: #8FAF7E;
+  --mz-wk-sub-quality: var(--mz-hl-gold);
+  --mz-wk-sub-training: #FF6B4A;
+  --mz-wk-sub-sleep: #9B8FC4;
+  --mz-wk-sub-logging: #C46FA0;
+  --mz-wk-sub-rhythm: #4E8FB8;
   --mz-wk-bar-sage: linear-gradient(90deg, #A9C69A, #8FAF7E);
   --mz-wk-thin-bg: rgba(255, 255, 255, 0.5);
   --mz-wk-navt-bg: rgba(255, 255, 255, 0.7);
@@ -720,10 +723,12 @@
   --mz-wka-revshadow: var(--mz-shadow);
   --mz-wka-cardshadow: var(--mz-shadow);
   --mz-wka-hlshadow: none;
-  --mz-wk-sub-sleep: var(--dv-sky);
-  --mz-wk-sub-fuel: var(--dv-sage);
-  --mz-wk-sub-checkin: var(--dv-rose);
-  --mz-wk-sub-activity: var(--primary-base);
+  --mz-wk-sub-nutrition: var(--dv-sage);
+  --mz-wk-sub-quality: var(--mz-hl-gold);
+  --mz-wk-sub-training: var(--primary-base);
+  --mz-wk-sub-sleep: var(--dv-lav);
+  --mz-wk-sub-logging: var(--dv-rose);
+  --mz-wk-sub-rhythm: var(--dv-sky);
   --mz-wk-bar-sage: linear-gradient(90deg, color-mix(in srgb, var(--dv-sage) 55%, var(--surface-card)), var(--dv-sage));
   --mz-wk-thin-bg: color-mix(in srgb, var(--surface-card) 50%, transparent);
   --mz-wk-navt-bg: color-mix(in srgb, var(--surface-card) 70%, transparent);
@@ -7742,6 +7747,28 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; }
 .sb-legend b { width: 8px; height: 8px; border-radius: 3px; flex: none; }
 
+/* ── Időzítés-sáv a `context` csempén (mezo-jcpt.3) ──────────────────────────
+   Few bullet-graph: track + KITÖLTÖTT ablak-band + egy pont. A band nem körvonal,
+   mert egy 1px-es stroke megbukná a WCAG 1.4.11 3:1-es nem-szöveges kontrasztját. */
+.sb-tline { position: relative; height: 34px; margin: 8px 0 2px; }
+.sb-tline .trk { position: absolute; left: 0; right: 0; top: 19px; height: 5px;
+  border-radius: 3px; background: var(--mz-sc-track); }
+.sb-tline .band { position: absolute; top: 17px; height: 9px; border-radius: 5px;
+  background: color-mix(in srgb, var(--mz-cell-sky-ink) 30%, transparent); }
+.sb-tline .band.is-any { background: color-mix(in srgb, var(--mz-cell-sky-ink) 13%, transparent); }
+.sb-tline .dot { position: absolute; top: 14.5px; width: 14px; height: 14px; margin-left: -7px;
+  border-radius: 50%; background: var(--mz-cell-sky-ink);
+  box-shadow: 0 0 0 3px var(--mz-wash-white), 0 3px 7px -3px rgba(43, 33, 24, 0.5); }
+.sb-tline .dot.is-miss { background: var(--mz-cell-coral-ink); }
+.sb-tline .miss-lnk { position: absolute; top: 20.5px; height: 2px;
+  background: repeating-linear-gradient(90deg, var(--mz-cell-coral-ink) 0 3px, transparent 3px 6px); }
+.sb-tline .tlab { position: absolute; top: 0; font-size: 9.5px; font-weight: 800;
+  color: var(--mz-cell-sky-ink); transform: translateX(-50%); white-space: nowrap;
+  font-variant-numeric: tabular-nums; }
+.sb-tline .tlab.is-miss { color: var(--mz-cell-coral-ink); }
+.sb-tline .ax { position: absolute; top: 27px; font-size: 7.5px; font-weight: 800;
+  letter-spacing: 0.08em; color: var(--mz-ink-mut); transform: translateX(-50%); }
+
 /* tény-chipek (prototype `.hlch`) — a ContextRow-k csempén belüli formája */
 .sb-fchips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 8px; }
 .sb-fchip { display: inline-flex; flex-direction: column; border-radius: 11px; padding: 5px 9px;
@@ -8223,12 +8250,22 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .wkd-scnum small { font-size: 9.5px; font-weight: 700; color: var(--mz-ink-mut); }
 .wkd-scnum.is-dash { font-size: 20px; color: var(--mz-ink-mut); }
 
-.wkd-sparks { display: flex; gap: 3.5px; align-items: flex-end; height: 28px; margin-left: auto; }
+/* mezo-jcpt.5 runtime check: a 100/100 nap (3 jegyű szám + a szélesebb 3+3 csoportos sáv)
+   0.4px-cel túlfolyt a .wkd-scnum oszlopból és két sorra tört. A brief 1. lépésű
+   javaslatát alkalmaztam — a belső rés 3 → 2.5px —, ami visszaadja a hiányzó helyet;
+   a pálcikák szélessége (6px, remedy #2) és a csoportrés (5px) érintetlen marad, így
+   a WCAG nem-szöveges 3 CSS px-es padlója (a pálcikaszélességre vonatkozik) nem sérül. */
+.wkd-sparks { display: flex; gap: 2.5px; align-items: flex-end; height: 28px; margin-left: auto; flex: none; }
 .wkd-sparks i { width: 6px; border-radius: 2px; min-height: 3.5px; transform: scaleY(0); transform-origin: bottom; }
+/* A hat sub-jel két hármas csoportra bomlik — „amit tettél" | „ahogy állsz" (mezo-jcpt.5).
+   A szélesebb rés adja az olvasási fogódzót legend nélkül is: a szín SOHA nem az egyetlen jel. */
+.wkd-sparks i.is-gsep { margin-right: 5px; }
+.wkd-sparks i.is-nutrition { background: var(--mz-wk-sub-nutrition); }
+.wkd-sparks i.is-quality { background: var(--mz-wk-sub-quality); }
+.wkd-sparks i.is-training { background: var(--mz-wk-sub-training); }
 .wkd-sparks i.is-sleep { background: var(--mz-wk-sub-sleep); }
-.wkd-sparks i.is-fuel { background: var(--mz-wk-sub-fuel); }
-.wkd-sparks i.is-checkin { background: var(--mz-wk-sub-checkin); }
-.wkd-sparks i.is-activity { background: var(--mz-wk-sub-activity); }
+.wkd-sparks i.is-logging { background: var(--mz-wk-sub-logging); }
+.wkd-sparks i.is-rhythm { background: var(--mz-wk-sub-rhythm); }
 .wkd-sparks i.is-none { background: var(--mz-sc-track); }
 .mz-play .wkd-sparks i {
   animation: wk-trendup 0.5s cubic-bezier(0.25, 0.8, 0.35, 1) forwards; animation-delay: var(--d, 300ms);
@@ -8252,10 +8289,14 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   display: inline-block; width: 9.5px; height: 9.5px; border-radius: 3.5px; margin-right: 3.5px;
   vertical-align: -1px;
 }
+.wkd-legend i.is-nutrition { background: var(--mz-wk-sub-nutrition); }
+.wkd-legend i.is-quality { background: var(--mz-wk-sub-quality); }
+.wkd-legend i.is-training { background: var(--mz-wk-sub-training); }
 .wkd-legend i.is-sleep { background: var(--mz-wk-sub-sleep); }
-.wkd-legend i.is-fuel { background: var(--mz-wk-sub-fuel); }
-.wkd-legend i.is-checkin { background: var(--mz-wk-sub-checkin); }
-.wkd-legend i.is-activity { background: var(--mz-wk-sub-activity); }
+.wkd-legend i.is-logging { background: var(--mz-wk-sub-logging); }
+.wkd-legend i.is-rhythm { background: var(--mz-wk-sub-rhythm); }
+.wkd-legsep { display: inline-block; width: 1px; height: 9px; background: var(--mz-ink-mut);
+  opacity: 0.3; vertical-align: -1px; }
 .wkd-foot { font-size: 10px; font-weight: 300; color: var(--mz-ink-mut); padding: 7px 2px 0; }
 .wkd-empty { font-size: 11px; color: var(--mz-ink-soft); padding: 14px 2px; text-align: center; }
 
@@ -8386,11 +8427,13 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
    `.hlch` / `.adj`, scaled ×1.18 (330 → 390px frame).
 
    SCOPING — every dimension modifier (`is-nutrition` … `is-rhythm`) is written
-   under `.dayev-dim`, NEVER bare: the weekly mosaic already owns a differently
-   coloured `.wkd-sparks i.is-sleep` / `.wkd-legend i.is-sleep`, and the two must
-   never see each other's rules. The six domain colours come from the shared
-   --mz-wash-* / --mz-shadow-* / --mz-cell-*-ink token families, so both themes
-   follow without a parallel palette.
+   under `.dayev-dim`, NEVER bare: the weekly mosaic owns its OWN identically-named
+   `.wkd-sparks i.is-sleep` / `.wkd-legend i.is-sleep` rules (same six domain hues,
+   `mezo-jcpt.5` unified the palette on purpose), and the two rule families must
+   still never see each other's selectors — scoping, not colour, is what keeps
+   them apart. The six domain colours come from the shared --mz-wash-* /
+   --mz-shadow-* / --mz-cell-*-ink token families, so both themes follow without
+   a parallel palette.
    ═══════════════════════════════════════════════════════════════════════════ */
 
 /* ── hero: szaggatott „este zárom" gyűrű + alap/kontextus chip-pár ────────── */
@@ -9210,7 +9253,9 @@ button.mz-wtile:active { transform: scale(0.96); }
        `.daily-quests-card .td-quest-list` felülírás).
    Minden vízszintes él továbbra is a globális `--sp-4` DS-tokenből jön,
    elemenként — nincs feature-scope-olt custom property (a `--td-gut` csapdája
-   miatt, lásd `todayCssTokens.test.ts`, ami pontosan ezt az invariánst őrzi).
+   miatt). A `todayCssTokens.test.ts`, ami ezt az invariánst őrizte, a Today
+   view-réteggel együtt megszűnt; a `--mz-*` tokenekre a `mozaikCssTokens.test.ts`
+   stíluslap-szintű ellenőrzése maradt (mezo-sm21).
    ============================================================ */
 
 .td-av { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; position: relative;

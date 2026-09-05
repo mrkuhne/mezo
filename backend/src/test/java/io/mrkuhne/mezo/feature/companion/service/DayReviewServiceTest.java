@@ -388,6 +388,36 @@ class DayReviewServiceTest {
         assertThat(fakeLlm.calls).isZero();
     }
 
+    /**
+     * mezo-jcpt.8: a nap EGYETLEN rekordja egy mérlegelés. A {@link DayInputs} nem hordoz
+     * súlyt, ezért a state korábban {@code empty}-t mondott, miközben a FE ugyanerre a napra
+     * {@code thin}-t vezet le — a két oldal ugyanarról a napról mást állított. A súlyt a
+     * {@link io.mrkuhne.mezo.techcore.query.WeightTrendQuery} cross-feature seamjén kérdezzük,
+     * tehát a DayInputs (és a motor 27 rögzített tesztje) ÉRINTETLEN marad.
+     */
+    @Test
+    void testAssemble_shouldReportThin_whenTheOnlyRecordForTheDayIsAWeighIn() {
+        inputs = new DayInputs(DAY, true, null, null, null, null, 2600.0, 160.0, 300.0, 80.0,
+            false, null, null, null, null, List.of(), false, 0, List.of(70, 78, 80));
+        when(weightTrendService.hasEntryOn(USER, DAY)).thenReturn(true);
+
+        DayEvaluationResponse response = service.assemble(USER, DAY);
+
+        assertThat(response.getState()).isEqualTo("thin");
+        assertThat(response.getScore()).isNull();
+        assertThat(fakeLlm.calls).isZero();
+    }
+
+    /** A mérlegelés hiánya nem billentheti át: e nélkül az üres nap MARAD üres. */
+    @Test
+    void testAssemble_shouldStayEmpty_whenThereIsNoWeighInEither() {
+        inputs = new DayInputs(DAY, true, null, null, null, null, 2600.0, 160.0, 300.0, 80.0,
+            false, null, null, null, null, List.of(), false, 0, List.of(70, 78, 80));
+        when(weightTrendService.hasEntryOn(USER, DAY)).thenReturn(false);
+
+        assertThat(service.assemble(USER, DAY).getState()).isEqualTo("empty");
+    }
+
     // --- context signals ----------------------------------------------------------------------
 
     @Test

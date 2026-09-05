@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.api.dto.MealNovaDetail;
 import io.mrkuhne.mezo.api.dto.MealNovaItemRow;
 import io.mrkuhne.mezo.api.dto.MealNovaStackRow;
 import io.mrkuhne.mezo.api.dto.MealScoreDimension;
+import io.mrkuhne.mezo.api.dto.MealTimingDetail;
 import io.mrkuhne.mezo.api.dto.MealToolRow;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import java.util.List;
@@ -75,6 +76,12 @@ public final class BreakdownDtoMapper {
             .context(d.context() == null ? null : d.context().stream()
                 .map(c -> MealContextRow.builder().label(c.label()).value(c.value()).build())
                 .toList())
+            .timing(d.timing() == null ? null : MealTimingDetail.builder()
+                .eatenAt(d.timing().eatenAt())
+                .windowFrom(d.timing().windowFrom())
+                .windowTo(d.timing().windowTo())
+                .slotLabel(d.timing().slotLabel())
+                .build())
             .build();
     }
 }

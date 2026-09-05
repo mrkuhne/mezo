@@ -27,13 +27,13 @@ class MealCoachServiceTest {
 
     private static Dimension dim(String id, String note) {
         return new Dimension(id, "Label", BigDecimal.ONE, new BigDecimal("0.5"), "detail",
-            null, null, null, null, note);
+            null, null, null, null, null, note);
     }
 
     /** A degraded, weight-0 ("Nincs adat") dimension — must never receive a coach note. */
     private static Dimension degradedDim(String id, String note) {
         return new Dimension(id, "Label", BigDecimal.ZERO, BigDecimal.ZERO, "Nincs adat",
-            null, null, null, null, note);
+            null, null, null, null, null, note);
     }
 
     @Test

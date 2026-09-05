@@ -22,6 +22,7 @@ import { MacroPanel } from '@/features/fuel/components/MacroPanel'
 import { MicroPanel } from '@/features/fuel/components/MicroPanel'
 import { NovaPanel } from '@/features/fuel/components/NovaPanel'
 import { ContextPanel } from '@/features/fuel/components/ContextPanel'
+import { MealTimingStrip } from '@/features/fuel/components/MealTimingStrip'
 
 export function DimensionCard({ dim, defaultOpen = false, delayMs }: {
   dim: MealDimension
@@ -73,6 +74,15 @@ export function DimensionCard({ dim, defaultOpen = false, delayMs }: {
           {dim.id === 'macro' && 'macroRatio' in dim && <MacroPanel dim={dim} />}
           {dim.id === 'micro' && 'micros' in dim && <MicroPanel dim={dim} />}
           {dim.id === 'nova' && 'nova' in dim && <NovaPanel dim={dim} />}
+          {/* Az időzítés-sáv KIZÁRÓLAG a logolt étkezés `context` dimenzióján jelenik meg — nem a
+              generikus ContextPanelben, amit hat dimenzió oszt. A VALÓS backend recept-sablon
+              breakdownjában nincs `context` dimenzió (RecipeBreakdownService sosem csatolja).
+              Mock módban viszont egy linkelt recept (rec-1/rec-2) a saját meal-je breakdownját
+              tükrözi vissza — `context`-tel, `timing`-gal együtt —, ezért ott a mock-adatréteg
+              (`stripMealOnlyTiming`, `frontend/src/data/fuel/pantry.ts`) vágja ki a `timing`
+              mezőt a tükrözött dimenzióból, mielőtt ez a gate egyáltalán látná. */}
+          {dim.id === 'context' && 'timing' in dim && dim.timing != null
+            && <MealTimingStrip timing={dim.timing} />}
           {(dim.id === 'context' || dim.id === 'who' || dim.id === 'fat_quality'
             || dim.id === 'plant_diversity' || dim.id === 'energy_density' || dim.id === 'portion')
             && 'context' in dim && <ContextPanel dim={dim} />}

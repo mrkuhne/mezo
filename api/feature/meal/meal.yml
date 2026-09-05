@@ -195,7 +195,7 @@ components:
         tools: { type: array, items: { $ref: '#/components/schemas/MealToolRow' } }
     MealScoreDimension:
       type: object
-      description: One weighted dimension; exactly one payload field is populated, matching id — macro/micros/nova for their ids, `context` carries the generic label/value rows for context, who, fat_quality, plant_diversity, energy_density and portion.
+      description: 'One weighted dimension; exactly one payload field is populated, matching id — macro/micros/nova for their ids, `context` carries the generic label/value rows for context, who, fat_quality, plant_diversity, energy_density and portion. Dimension `context` additionally carries `timing` when it comes from a logged meal.'
       required: [id, label, weight, score, detail]
       properties:
         id: { type: string, pattern: '^(macro|micro|nova|context|who|fat_quality|plant_diversity|energy_density|portion)$' }
@@ -207,6 +207,9 @@ components:
         micros: { type: array, nullable: true, items: { $ref: '#/components/schemas/MealMicroRow' } }
         nova: { allOf: [ { $ref: '#/components/schemas/MealNovaDetail' } ], nullable: true }
         context: { type: array, nullable: true, items: { $ref: '#/components/schemas/MealContextRow' } }
+        timing:
+          allOf: [ { $ref: '#/components/schemas/MealTimingDetail' } ]
+          nullable: true
         note:
           type: string
           nullable: true
@@ -258,6 +261,19 @@ components:
       properties:
         label: { type: string }
         value: { type: string }
+    MealTimingDetail:
+      type: object
+      description: >-
+        A `context` dimenzió időzítés-tényei rajzolható alakban (mezo-jcpt.3). UGYANABBÓL a
+        szerver-oldali slot-ablak configból származik, ami a timing-részpontszámot adta, ezért a
+        rajzolt sáv és a pontszám nem tud eltérni. Csak logolt étkezésen van jelen; a
+        recept-sablon breakdownjában nincs `context` dimenzió, tehát ott soha.
+      required: [eatenAt, slotLabel]
+      properties:
+        eatenAt: { type: string, description: 'Helyi idő "HH:mm" alakban' }
+        windowFrom: { type: string, nullable: true, description: 'Az ablak kezdete "HH:mm"; null = nasi, bármikor jó' }
+        windowTo: { type: string, nullable: true, description: 'Az ablak vége "HH:mm"; null = nasi, bármikor jó' }
+        slotLabel: { type: string, description: 'Magyar slot-név, pl. "vacsora"' }
     MealCoachResponse:
       type: object
       description: Coach verdicts (mezo-mr4n). An empty list means nothing generated/cached — never an error.

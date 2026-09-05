@@ -45,15 +45,12 @@ import org.springframework.transaction.annotation.Transactional;
  * bit-for-bit, verified in Task 4). The legacy formula's tuning record {@code MeWeekProperties}
  * lost its last reader here and was deleted with its yml block (mezo-jcpt.7).
  *
- * <p><b>Legacy wire mapping (binding).</b> {@link DaySubscores} stays on {@link DayScore} for the
- * weekly trend ({@code WeeklyScoreService}'s persisted per-domain averages and the {@code me-week}
- * contract's {@code MeWeekSubscores}, which this task deliberately does NOT change). Its four
- * fields are now projections of the closest successor dimension:
+ * <p><b>Wire mapping (binding, mezo-jcpt.5).</b> {@link DaySubscores} stays on {@link DayScore} for
+ * the weekly trend ({@code WeeklyScoreService}'s persisted per-domain averages and the
+ * {@code me-week} contract's {@code MeWeekSubscores}). Its six fields are the evaluation's six
+ * dimensions under their own dimension-ids — a straight 1:1 projection, not a mapping table:
  * <pre>
- *   sleep    &lt;- dimension "sleep"
- *   fuel     &lt;- dimension "nutrition"
- *   checkin  &lt;- dimension "logging"
- *   activity &lt;- dimension "training"
+ *   nutrition, quality, training, sleep, logging, rhythm
  * </pre>
  * and {@code score} is {@link DayEvaluation#base()}. A degraded (NO_DATA/IN_PROGRESS) dimension
  * projects to {@code null}, which is the same "tanulom" signal the legacy sub-scores carried. The
@@ -103,9 +100,11 @@ import org.springframework.transaction.annotation.Transactional;
 public class DayScoreService {
 
     private static final String DIM_NUTRITION = "nutrition";
+    private static final String DIM_QUALITY = "quality";
     private static final String DIM_TRAINING = "training";
     private static final String DIM_SLEEP = "sleep";
     private static final String DIM_LOGGING = "logging";
+    private static final String DIM_RHYTHM = "rhythm";
     /** The meal-score envelope dimensions the day's quality dimension aggregates (mezo-yta). */
     private static final String MEAL_DIM_NOVA = "nova";
     private static final String MEAL_DIM_MICRO = "micro";
@@ -119,8 +118,10 @@ public class DayScoreService {
     private final DayEvaluationEngine dayEvaluationEngine;
     private final DayEvaluationProperties properties;
 
-    /** Legacy four-domain projection of the evaluation — see the class javadoc's mapping table. */
-    public record DaySubscores(Integer sleep, Integer fuel, Integer checkin, Integer activity) {
+    /** The evaluation's six dimensions under their wire names — see the class javadoc's
+     *  dimension table. A degraded dimension projects to null, never 0. */
+    public record DaySubscores(Integer nutrition, Integer quality, Integer training,
+                               Integer sleep, Integer logging, Integer rhythm) {
     }
 
     public record DayScore(LocalDate date, Integer score, DaySubscores subscores,
@@ -342,14 +343,16 @@ public class DayScoreService {
                 .orElse(null);
     }
 
-    // --- Legacy projection -----------------------------------------------------------------
+    // --- Dimension-vector projection ---------------------------------------------------------
 
     private static DaySubscores toSubscores(DayEvaluation evaluation) {
         return new DaySubscores(
-                dimScore(evaluation, DIM_SLEEP),
                 dimScore(evaluation, DIM_NUTRITION),
+                dimScore(evaluation, DIM_QUALITY),
+                dimScore(evaluation, DIM_TRAINING),
+                dimScore(evaluation, DIM_SLEEP),
                 dimScore(evaluation, DIM_LOGGING),
-                dimScore(evaluation, DIM_TRAINING));
+                dimScore(evaluation, DIM_RHYTHM));
     }
 
     private static Integer dimScore(DayEvaluation evaluation, String dimensionId) {

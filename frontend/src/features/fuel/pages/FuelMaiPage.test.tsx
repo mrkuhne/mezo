@@ -105,8 +105,9 @@ test('the hub is the Mozaik face: hero → Logolás hero tile → mosaic → ban
 
 test('the hero is ONE number — the kcal CONSUMED today; no eyebrow, no "eddig x / y" of-line', () => {
   const { container } = renderView()
-  // The mock demo day's real consumed kcal (breakfast 580 + lunch 720 = 1300).
-  expect(container.querySelector('.khero-n')?.getAttribute('aria-label')).toBe('1 300 kcal ma')
+  // The mock demo day's real consumed kcal (breakfast 580 + lunch 720 + a coherent late-miss
+  // dinner 760, fix-round-1 F1 mezo-jcpt.3, = 2060).
+  expect(container.querySelector('.khero-n')?.getAttribute('aria-label')).toBe('2 060 kcal ma')
   expect(container.querySelector('.khero-of')).toBeNull()
   const hero = container.querySelector('.fh-hero') as HTMLElement
   expect(hero.textContent).not.toContain('eddig')
@@ -118,7 +119,10 @@ test('the day-bar draws one segment per done window and carries the gold now-mar
   vi.setSystemTime(new Date('2026-07-02T13:30:00'))
   try {
     const { container } = renderView()
-    expect(container.querySelectorAll('.khero-seg')).toHaveLength(2) // breakfast + lunch done
+    // breakfast + lunch + the fix-round-1 F1 (mezo-jcpt.3) late-miss dinner — a logged meal fills
+    // its window purely off its presence (buildDayPlan.ts step 3), never off the clock, so the
+    // 23:35 dinner is `done` even though this test's frozen `now` is 13:30.
+    expect(container.querySelectorAll('.khero-seg')).toHaveLength(3)
     expect(container.querySelector('.khero-mark')).toBeInTheDocument()
   } finally {
     vi.useRealTimers()
