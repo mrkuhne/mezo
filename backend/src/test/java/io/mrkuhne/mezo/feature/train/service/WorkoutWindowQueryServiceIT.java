@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Map;
 import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -330,5 +331,82 @@ class WorkoutWindowQueryServiceIT extends AbstractIntegrationTest {
         train.createSportEvent(owner, wed, "19:30", 120);
 
         assertThat(service.hasScheduledTrainingOn(owner, wed)).isTrue();
+    }
+
+    /**
+     * mezo-jcpt.6 F2: a sport session with NO clock time must sort LAST among the day's sessions —
+     * matching Postgres's {@code ORDER BY time ASC} default ({@code NULLS LAST}) that the old
+     * single-date finder relied on. With one plan (a 09:00 slot) and two sessions — one AT 09:00,
+     * one with no time — the timed session must be resolved first and consume the only plan; the
+     * timeless one, processed after, has nothing left to borrow a time from and contributes no
+     * window (never a fabricated one). Sorting nulls FIRST instead (the bug this pins) would let
+     * the timeless session consume the plan instead, changing both the window count and which
+     * session's label survives — silently, since no populator ever left {@code time} null before
+     * this test, so nothing else in this suite could catch it.
+     */
+    @Test
+    void testWindowsFor_shouldResolveTheTimedSessionBeforeTheTimelessOne_whenBothCouldConsumeTheSamePlan() {
+        UUID owner = owner();
+        LocalDate wed = LocalDate.of(2026, 6, 24);          // Wednesday → dayOfWeek index 2
+        train.createScheduleSlot(owner, 2, "09:00", 60, "training");
+        train.createSportSessionAt(owner, wed, "09:00", 60);   // timed: must consume the plan
+        train.createSportSessionNoTime(owner, wed, 45);        // timeless: sorts after, finds nothing
+
+        List<WorkoutWindowQueryService.Window> windows = service.windowsFor(owner, wed);
+
+        assertThat(windows).hasSize(1);
+        assertThat(windows.getFirst().start()).isEqualTo(LocalTime.of(9, 0));
+        assertThat(windows.getFirst().done()).isTrue();
+    }
+
+    /**
+     * mezo-jcpt.6: the ranged {@code windowsFor(userId, from, to)} must return EXACTLY what calling
+     * the single-date overload once per date would — same windows, same {@code done}. Now a
+     * tautology at the code level (F1: the single-date overload delegates straight into this one),
+     * but kept as a BEHAVIORAL pin: it still fixes the observable contract (one window set per date
+     * in range, matching the day-by-day reading) against any future change that reintroduces two
+     * diverging resolution paths. One user seeded with every kind of window this class exercises
+     * elsewhere (gym w/ a partially-done multi-slot day, a sport session consuming a one-off event,
+     * an untouched recurring sport slot, a skipped occurrence on one date but not the next, and a
+     * prescribed run) over a week that spans two running-block weeks, so the range genuinely
+     * exercises multiple distinct days' worth of every branch.
+     */
+    @Test
+    void testWindowsFor_ranged_shouldMatchCallingTheSingleDateOverloadForEveryDayInTheRange() {
+        UUID owner = owner();
+        LocalDate monday = LocalDate.of(2026, 6, 22);       // Mon → dayOfWeek index 0
+        LocalDate wed = LocalDate.of(2026, 6, 24);          // Wed → dayOfWeek index 2
+        LocalDate sunday = monday.plusDays(6);
+
+        // Gym: two Wednesday slots, only one completed → neither reads done.
+        train.createGymSlot(owner, 2, "09:00");
+        train.createGymSlot(owner, 2, "18:00");
+        var meso = train.createActiveMeso(owner);
+        train.createWorkoutInstance(owner,
+            train.createTemplateDay(owner, meso.getId(), "Sze reggel"), wed, "completed");
+
+        // Sport: a recurring Wednesday slot the session doesn't touch, plus a one-off event the
+        // logged session consumes.
+        train.createScheduleSlot(owner, 2, "09:00", 60, "training");
+        train.createSportEvent(owner, wed, "18:00", 90);
+        train.createSportSession(owner, wed);               // played 18:15/90 min, consumes the event
+
+        // Skip: only this week's Thursday occurrence — the recurring slot still applies on other
+        // Thursdays (a range read must not smear one date's skip across the whole week).
+        train.createScheduleSlot(owner, 3, "17:00", 45, "match");
+        skips.createSkip(owner, 3, "17:00", wed.plusDays(1));
+
+        // Run: prescribed session anchored so it lands within this range.
+        running.createBlockAnchored(owner, monday.minusDays(7), 8, 3, 2, 2, "06:30");
+
+        Map<LocalDate, List<WorkoutWindowQueryService.Window>> ranged =
+            service.windowsFor(owner, monday, sunday);
+
+        assertThat(ranged.keySet()).hasSize(7);
+        for (LocalDate day = monday; !day.isAfter(sunday); day = day.plusDays(1)) {
+            assertThat(ranged.getOrDefault(day, List.of()))
+                .as("windows on %s", day)
+                .containsExactlyInAnyOrderElementsOf(service.windowsFor(owner, day));
+        }
     }
 }

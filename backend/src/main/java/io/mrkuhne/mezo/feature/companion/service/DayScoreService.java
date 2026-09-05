@@ -208,6 +208,11 @@ public class DayScoreService {
         Map<LocalDate, Long> checkinCounts = checkinCounts(userId, from, to);
         Set<LocalDate> wateredDays = wateredDays(userId, from, to);
         Map<UUID, Instant> mealWrittenAt = mealWrittenAt(userId, from, to);
+        // Ranged fetch (mezo-jcpt.6, fixing the review round 1 / Important 3 finding filed here):
+        // one call for the whole [from, to] window instead of once per date — the per-date
+        // overload's user-global gym-slot/running-block queries used to repeat 7 (rendered) + 7
+        // (rhythm-window priors) = 14 times on a week read.
+        Map<LocalDate, List<Window>> windowsByDate = workoutWindowQueryService.windowsFor(userId, from, to);
 
         Map<LocalDate, DayInputs> inputs = new LinkedHashMap<>();
         for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
@@ -218,12 +223,7 @@ public class DayScoreService {
             boolean loggedFuel = !fuelDay.getMeals().isEmpty();
             MacroSet consumed = fuelDay.getConsumed();
             MacroSet targets = fuelDay.getTargets();
-            // KNOWN AMPLIFICATION (review round 1, Important 3 — filed, deliberately not fixed
-            // here): windowsFor is a per-DATE query costing ~5 statements, so a week read pays it
-            // 14 times (7 rendered days + the 7 rhythm-window priors). The fix is a ranged
-            // windowsFor(userId, from, to) in the train feature — a cross-feature change that does
-            // not belong in this slice. Correct and bounded meanwhile, just chatty.
-            List<Window> windows = workoutWindowQueryService.windowsFor(userId, day);
+            List<Window> windows = windowsByDate.getOrDefault(day, List.of());
             int planned = windows.size();
             int done = (int) windows.stream().filter(Window::done).count();
             Double quality = sleepQuality.get(day);

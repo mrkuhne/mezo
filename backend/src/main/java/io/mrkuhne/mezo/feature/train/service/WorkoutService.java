@@ -312,23 +312,36 @@ public class WorkoutService {
      * (present → GYM day, absent → REST day), sharing getToday's resolution logic.
      */
     public Optional<WorkoutSessionEntity> findPlannedTemplateForDate(UUID createdBy, LocalDate date) {
+        return findPlannedTemplateForDate(activeMesoSessions(createdBy), date);
+    }
+
+    /**
+     * The active mesocycle's planned session rows, unbounded — the fetch {@link
+     * #findPlannedTemplateForDate(UUID, LocalDate)} performs per date, extracted so a RANGE caller
+     * (mezo-jcpt.6: {@code WorkoutWindowQueryService}'s ranged {@code windowsFor}) can fetch it ONCE
+     * for a whole date span instead of once per date — this list is user-global, not date-scoped.
+     * Empty (never null) when there is no active mesocycle, matching {@link
+     * #findPlannedTemplateForDate(List, LocalDate)}'s no-match resolution over an empty list.
+     */
+    List<WorkoutSessionEntity> activeMesoSessions(UUID createdBy) {
         MesocycleEntity activeMeso = mesocycleRepository
             .findByCreatedByAndStatusAndDeletedFalse(createdBy, "active")
             .stream().findFirst().orElse(null);
         if (activeMeso == null) {
-            return Optional.empty();
+            return List.of();
         }
-        List<WorkoutSessionEntity> mesoSessions = workoutSessionRepository
+        return workoutSessionRepository
             .findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(createdBy, List.of(activeMeso.getId()));
-        return findPlannedTemplateForDate(mesoSessions, date);
     }
 
     /**
      * Same resolution as {@link #findPlannedTemplateForDate(UUID, LocalDate)}, reusing a
-     * caller-supplied meso session list — {@code getToday}'s shared-fetch path (mezo-dz9c item 4),
-     * avoiding a second query for rows it already has.
+     * caller-supplied meso session list — {@code getToday}'s shared-fetch path (mezo-dz9c item 4)
+     * and the ranged {@code windowsFor} path above, avoiding a second query for rows already held.
+     * Package-private (not {@code private}): {@code WorkoutWindowQueryService} (same package)
+     * calls it directly per day over a pre-fetched list (mezo-jcpt.6).
      */
-    private Optional<WorkoutSessionEntity> findPlannedTemplateForDate(
+    Optional<WorkoutSessionEntity> findPlannedTemplateForDate(
             List<WorkoutSessionEntity> mesoSessions, LocalDate date) {
         String dayLabel = HU_DAY_LABELS.get(date.getDayOfWeek().getValue() - 1);
         return mesoSessions.stream()

@@ -97,8 +97,8 @@ class DayScoreServiceTest {
             .thenAnswer(inv -> slice(sleepQuality, inv.getArgument(2), inv.getArgument(3)));
         when(fuelDayService.getDay(eq(USER), any()))
             .thenAnswer(inv -> fuelDays.getOrDefault(inv.getArgument(1), emptyFuelDay(inv.getArgument(1))));
-        when(workoutWindowQueryService.windowsFor(eq(USER), any()))
-            .thenAnswer(inv -> windows.getOrDefault(inv.getArgument(1), List.of()));
+        when(workoutWindowQueryService.windowsFor(eq(USER), any(), any()))
+            .thenAnswer(inv -> slice(windows, inv.getArgument(1), inv.getArgument(2)));
         when(waterLogRepository.sumsBetween(eq(USER), any(), any())).thenAnswer(inv ->
             slice(waterMl, inv.getArgument(1), inv.getArgument(2)).entrySet().stream()
                 .map(e -> new Object[] {e.getKey(), (long) (int) e.getValue()}).toList());
