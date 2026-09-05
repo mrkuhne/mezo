@@ -36,6 +36,11 @@ export interface NormalizedDayEvaluation {
   state: DayEvalState
   score: number | null
   base: number | null
+  /** The `day_review` feedback artifact id (mezo-jcpt.9) — present only on a scored day that
+   *  actually has LLM prose, `null` otherwise (the backend makes that unreachable by
+   *  construction). `DayReviewCard` uses its presence, not `state`, to decide whether to mount
+   *  the feedback chips — no id, no chips. */
+  reviewId: string | null
   adjustment: { delta: number; reason: string } | null
   narrative: string[]
   highlights: { kind: HighlightKind; label: string }[]
@@ -57,6 +62,7 @@ export function normalizeDayEvaluation(raw: DayEvaluationResponse): NormalizedDa
     state: raw.state as DayEvalState,
     score: raw.score ?? null,
     base: raw.base ?? null,
+    reviewId: raw.reviewId ?? null,
     adjustment: raw.adjustment ?? null,
     narrative: raw.narrative ?? [],
     highlights: (raw.highlights ?? []).map((h) => ({ kind: h.kind as HighlightKind, label: h.label })),
@@ -145,6 +151,10 @@ const SCORED_SEED: DayEvaluationResponse = {
   state: 'scored',
   score: 78,
   base: 75,
+  // Stable, invented UUID (mezo-jcpt.9) — NOT `crypto.randomUUID()`. The mock feedback seed is
+  // deliberately empty, so a scored day's vote lives only in the query cache; a `reviewId` that
+  // changed between renders would silently drop it.
+  reviewId: '4c9e6b1a-9f2d-4b7e-8a3c-1d2e3f4a5b6c',
   adjustment: { delta: 3, reason: 'Következetes napi ritmus és jó regeneráció miatt +3 korrekció.' },
   narrative: [
     'Hétfőn erős napot zártál: a fehérjecélt majdnem elérted, és az edzésed is jó intenzitással ment.',

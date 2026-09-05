@@ -53,6 +53,8 @@ public class DayEvaluationEngine {
         Double sleepH, Integer sleepQuality1to10,      // null = nincs alvás-log
         List<MealLogFact> meals,                       // logolási dimenzióhoz
         boolean waterLogged, int checkinCount,
+        Double weightKg,                               // null = aznap nem mérlegelt (mezo-jcpt.8)
+        Integer xp,                                    // null/0 = aznap nem gyűlt XP
         List<Integer> priorBaseScores                  // az előző rhythmWindowDays nap base-scoreja (ami van)
     ) { }
 
@@ -82,6 +84,40 @@ public class DayEvaluationEngine {
     /** A dimension before weight renormalisation — carries the raw config weight. */
     private record RawDim(String id, String label, double configWeight, Integer score,
                           String status, List<DimFact> facts) { }
+
+    /**
+     * Logolt-e a felhasználó EZEN A NAPON bármit egyáltalán — a nap „becsületes állapot"
+     * modelljének egyetlen igazságforrása (mezo-el0t). SZÁNDÉKOSAN a teljes loghalmaz felett
+     * kérdez, nem a logolás-dimenzió saját bemenetei felett: egy nap, amelyen a felhasználó
+     * edzett vagy aludt, de étkezést/vizet/check-int nem logolt, LOGOLT napnak számít — így a
+     * {@code loggingDim} ott továbbra is mérhető marad és őszinte 0-val bünteti a napot,
+     * ahogy azt a {@code loggingDim} javadoc-jában rögzített korábbi review-döntés megköveteli.
+     *
+     * <p>{@code kcal != null} és a nem-üres {@code meals} részben átfedő diszjunkt: produkcióban
+     * ({@code DayScoreService}) {@code kcal} csak akkor nem null, ha volt legalább egy meal, tehát
+     * a két feltétel gyakorlatban együtt mozog. Szándékosan mindkettő szerepel itt: ez a metódus
+     * bármilyen kézzel épített {@link DayInputs}-ra (tesztek, jövőbeli hívók) is védekezik, nem
+     * csak a jelenlegi egyetlen élő betöltőre — a redundancia ártalmatlan defenzív fedezet, nem
+     * két külön eset.
+     *
+     * <p>{@code sleepH} ÉS {@code sleepQuality1to10} is szerepel, nem csak {@code sleepH}: az
+     * alvás-napló API-ja ({@code LogSleepRequest}, {@code api/feature/sleep/sleep.yml}) csak a
+     * {@code date}-et követeli meg — {@code durationH} és {@code quality} egymástól függetlenül
+     * opcionális, és az entitáson ({@code SleepLogEntity}) sincs őket összekötő megszorítás. Egy
+     * „csak minőséget adtam meg, időtartamot nem" bejegyzés tehát valós eset (nem csak elméleti),
+     * és e nélkül a diszjunkt nélkül tévesen érintetlennek olvasódna.
+     */
+    public static boolean anyLogPresent(DayInputs in) {
+        return in.kcal() != null
+            || (in.meals() != null && !in.meals().isEmpty())
+            || in.waterLogged()
+            || in.checkinCount() > 0
+            || in.sleepH() != null
+            || in.sleepQuality1to10() != null
+            || (in.doneWorkouts() != null && in.doneWorkouts() > 0)
+            || in.weightKg() != null
+            || (in.xp() != null && in.xp() > 0);
+    }
 
     public DayEvaluation evaluate(DayInputs in) {
         List<RawDim> raw = List.of(nutritionDim(in), qualityDim(in), trainingDim(in),
@@ -357,6 +393,15 @@ public class DayEvaluationEngine {
     // component can be genuinely missing (0 meals, or none carrying timing data): it then drops
     // out and the remaining two renormalize over their combined 0.5 share (0.2/0.5=0.4,
     // 0.3/0.5=0.6).
+    //
+    // Narrowed (mezo-el0t): the escape hatch above still does not exist for THIS dimension's own
+    // inputs (meals/water/check-ins) -- a day with those all empty but SOME other log elsewhere
+    // (workout done, sleep logged, weighed in, XP earned) is still a LOGGED day, and `logging`
+    // stays DONE and still scores its honest 0, exactly as the round-1 decision requires. What
+    // changed is the day with NO log of ANY kind: {@link #anyLogPresent} is checked first, and
+    // only that fully-untouched day degrades to NO_DATA -- safely, because such a day has zero
+    // intrinsic DONE dimensions anyway, so the data-sufficiency gate in {@link #evaluate} is
+    // already closed and there is no score left for dropping this weight to soften.
 
     private RawDim loggingDim(DayInputs in) {
         String id = "logging";
@@ -369,6 +414,13 @@ public class DayEvaluationEngine {
 
         if (!in.closed()) {
             return new RawDim(id, label, configWeight, null, IN_PROGRESS, loggingFacts(in, mealPart));
+        }
+
+        if (!anyLogPresent(in)) {
+            // No log of any kind -- nothing to measure. Dropping the weight here does NOT let a
+            // penalty slip away: on such a day the gate is closed anyway (zero intrinsic DONE
+            // dimensions), so there is no score for this weight to have softened.
+            return new RawDim(id, label, configWeight, null, NO_DATA, loggingFacts(in, mealPart));
         }
 
         double waterComponent = in.waterLogged() ? 1.0 : 0.0;

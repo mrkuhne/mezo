@@ -13,7 +13,7 @@ import type { PantryItemInput, Recipe } from '@/data/types'
  * from mezo-uavr).
  */
 export interface ScoredPantryFacts {
-  category?: string
+  category?: string | null
   per?: number
   nova?: number | null
   fiberG?: number | null

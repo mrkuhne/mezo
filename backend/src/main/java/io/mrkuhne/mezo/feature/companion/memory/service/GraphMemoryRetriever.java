@@ -44,7 +44,7 @@ public class GraphMemoryRetriever implements MemoryRetriever {
                         "knowledge_edge", edge.kind(),
                         edge.fromTitle() + " --" + edge.kind() + "--> " + edge.toTitle(),
                         null, edge.weight().doubleValue(), false,
-                        GraphEdgeEntity.KIND_CONFLICTS.equals(edge.kind()), 0.5))
+                        GraphEdgeEntity.KIND_CONFLICTS.equals(edge.kind()), 0.5, null, null))
                 .toList();
     }
 }

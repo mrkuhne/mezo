@@ -50,6 +50,13 @@ class MeWeekServiceRenderDayLineTest {
 
         String line = MeWeekService.renderDayLine(day);
 
+        // The "checkin –" segment below is DELIBERATE, not a regression (mezo-el0t): a fully
+        // untouched day's logging subscore is now null (not-measurable), so renderDayLine's
+        // existing orDash prints "–", where it used to print "checkin 0" back when the day
+        // engine fabricated a 0 for a day nothing was logged on. Unlike the byte-identical
+        // pin from the preceding slice (mezo-jcpt.5/.3), where "unchanged" WAS the proof,
+        // here the changed output IS the proof: "–" tells the truth, "0" asserted a
+        // measurement that never happened. Do not "restore" checkin 0 here.
         assertThat(line).isEqualTo("- 2026-06-16 (K): score – [alvás – · fuel – · checkin – · aktivitás –], "
                 + "– kcal / cél –, fehérje –g, súly –, alvás –, "
                 + "0 check-in, 0 edzés, – XP");

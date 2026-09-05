@@ -21,7 +21,7 @@ import org.hibernate.annotations.UpdateTimestamp;
 /**
  * One updatable 👍/👎 verdict per AI artifact (Phase 5 W4.1, bd mezo-b3pp.15, spec §4.4).
  *
- * <p>Artifact existence is deliberately NOT enforced by FK — the five kinds span five tables
+ * <p>Artifact existence is deliberately NOT enforced by FK — the seven kinds span seven tables
  * and a dangling id is harmless in a single-user app (spec §8.1).
  *
  * <p>{@code uq_message_feedback_artifact} spans soft-deleted rows too, so the write path
@@ -43,6 +43,7 @@ public class MessageFeedbackEntity extends OwnedEntity {
     public static final String KIND_WEEKLY_REVIEW = "weekly_review";
     public static final String KIND_MEMOIR = "memoir";
     public static final String KIND_PREDICTION = "prediction";
+    public static final String KIND_DAY_REVIEW = "day_review";
 
     public static final String VERDICT_UP = "up";
     public static final String VERDICT_DOWN = "down";
@@ -64,7 +65,7 @@ public class MessageFeedbackEntity extends OwnedEntity {
     /** Mirrors ck_message_feedback_artifact_kind. */
     @NotNull
     @Size(max = 20)
-    @Pattern(regexp = "chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction")
+    @Pattern(regexp = "chat_message|feed_message|weekly_suggestion|weekly_review|memoir|prediction|day_review")
     @Column(name = "artifact_kind", nullable = false, length = 20)
     private String artifactKind;
 

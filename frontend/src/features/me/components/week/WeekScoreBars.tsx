@@ -11,7 +11,7 @@ import type { CSSProperties } from 'react'
 import { cn } from '@/shared/lib/cn'
 import { huDow, huMonthDay, huWeekdayFullIso } from '@/shared/lib/dates'
 import { scoreBandClass } from '@/features/me/logic/scoreBand'
-import { DAY_STATE_LABEL, dayScoreState } from '@/features/me/logic/dayScoreState'
+import { DAY_STATE_LABEL, dayState } from '@/features/me/logic/weekDay'
 import type { MeWeekDay } from '@/data/me/meWeek'
 
 /** Prototype: `Math.max(5, round(sc / 100 * 58))` over a 78px well, null ⇒ 4. ×1.18. */
@@ -32,7 +32,7 @@ export function WeekScoreBars({ days, todayIso, currentWeek, onSelect }: WeekSco
   return (
     <div className="wka-dcols">
       {days.map((day, i) => {
-        const state = dayScoreState(day, todayIso)
+        const state = dayState(day, todayIso)
         const isToday = currentWeek && day.date === todayIso
         const height = day.score == null
           ? NULL_BAR_PX

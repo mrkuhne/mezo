@@ -246,13 +246,15 @@ export interface FuelDay {
 }
 export type SupplementType = 'supplement' | 'stimulant' | 'medication'
 export interface SupplementStashItem {
-  id: string; name: string; brand: string; type: SupplementType; category: string
-  dose: string; form: string; stock: number | null; stockUnit: string | null
+  id: string; name: string;
+  /** Honest nulls since mezo-xaq5 — the definition simply may not carry these. */
+  brand: string | null; type: SupplementType; category: string | null
+  dose: string; form: string | null; stock: number | null; stockUnit: string | null
   protocol: string; timing: string; taken: boolean; caffeine?: boolean
   // Nutrition + commerce facts (mezo-1za9) — supplements carry macros/nutrients/price too;
   // optional because pure dose/protocol items (many stim/med) have none. Mirrors Ingredient.
   source?: PantrySourceKey; per?: number; unit?: string
-  macros?: PantryMacrosVM
+  macros: PantryMacrosVM
   price?: number; priceUnit?: string; pkg?: string
   micros?: { name: string; pct: number }[]; nova?: NovaGroup
   fiberG?: number | null; sugarG?: number | null; saltG?: number | null; saturatedFatG?: number | null
@@ -353,11 +355,13 @@ export interface Ingredient {
    * echoed back on save rewrote the shared definition's kind for every other user.
    */
   kind: PantryItemKind
-  name: string; brand: string; source: PantrySourceKey; category: string
+  name: string;
+  /** Honest nulls since mezo-xaq5 — the definition simply may not carry these. */
+  brand: string | null; source: PantrySourceKey; category: string | null
   per: number; unit: string
   macros: PantryMacrosVM
   fiberG?: number | null; sugarG?: number | null; saltG?: number | null; saturatedFatG?: number | null
-  price: number; priceUnit: string; pkg: string
+  price: number | null; priceUnit: string | null; pkg: string | null
   micros: { name: string; pct: number }[]
   nova: NovaGroup
   stock: IngredientStock | null
@@ -500,17 +504,19 @@ export interface PantryMacrosVM { kcal: number | null; p: number | null; c: numb
 // Merges scraped Ingredient (food) + SupplementStashItem (supplement/stim/med) into one card model.
 export type PantryItemKind = 'food' | 'supplement' | 'stim' | 'med'
 export interface PantryItem {
-  id: string; name: string; brand: string; source: PantrySourceKey; category: string
+  id: string; name: string;
+  /** Honest nulls since mezo-xaq5 — the definition simply may not carry these. */
+  brand: string | null; source: PantrySourceKey; category: string | null
   kind: PantryItemKind
   per?: number; unit?: string
   macros?: PantryMacrosVM
   fiberG?: number | null; sugarG?: number | null; saltG?: number | null; saturatedFatG?: number | null
-  price?: number; priceUnit?: string; pkg?: string
+  price?: number | null; priceUnit?: string | null; pkg?: string | null
   micros?: { name: string; pct: number }[]
   nova?: NovaGroup
   stock?: IngredientStock | { qty: number; unit: string } | null
   lastUsed?: string; usedInRecipes?: number; scrapedAt?: string
-  isStashOnly?: boolean; dose?: string; protocol?: string; caffeine?: boolean; form?: string
+  isStashOnly?: boolean; dose?: string; protocol?: string; caffeine?: boolean; form?: string | null
   stashRefId?: string
   // S4 (mezo-qw37.4): shared-catalog provenance — absent means own/editable.
   catalogId?: string; sharedFrom?: PantrySharedFrom | null; catalogEditable?: boolean

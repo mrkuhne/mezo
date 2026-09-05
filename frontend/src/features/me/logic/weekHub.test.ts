@@ -2,8 +2,8 @@
 // hub decides lives in `weekHub.ts`, so the contracts are pinned here without rendering.
 import { describe, expect, test } from 'vitest'
 import {
-  analysisSnippet, dayHasAnyLog, dayScoreState, DAY_STATE_COPY, discoverySummary, firstSentence,
-  generationStamp, huDec, loggedDayCount, measuredSubscores, resolveWeekStart, weekPhase,
+  analysisSnippet, dayHasAnyLog, weekHubState, DAY_STATE_COPY, discoverySummary, firstSentence,
+  generationStamp, huDec, loggedDayCount, subscoreCount, resolveWeekStart, weekPhase,
   weekStatCells, weekSubline,
 } from '@/features/me/logic/weekHub'
 import { mondayIso } from '@/data/fuel/fuelWeekHooks'
@@ -32,25 +32,25 @@ describe('resolveWeekStart', () => {
 describe('a day with fewer than 2 sub-scores is „tanulom", a day with nothing logged is „nincs adat"', () => {
   const today = '2026-05-24'
 
-  test('nothing logged at all → nodata (a DIFFERENT state, not tanulom)', () => {
+  test('nothing logged at all → empty (a DIFFERENT state, not thin) — same states the mosaic uses', () => {
     const d = day({ date: '2026-05-23' })
     expect(dayHasAnyLog(d)).toBe(false)
-    expect(dayScoreState(d, today)).toBe('nodata')
-    expect(DAY_STATE_COPY.nodata).toBe('ezen a napon nem logoltál — a hét pontszámába nem számít bele')
+    expect(weekHubState(d, today)).toBe('empty')
+    expect(DAY_STATE_COPY.empty).toBe('ezen a napon nem logoltál — a hét pontszámába nem számít bele')
   })
 
-  test('something logged but only one measured area → learning („tanulom")', () => {
+  test('something logged but only one measured area → thin („tanulom")', () => {
     const d = day({ date: '2026-05-21', subscores: { nutrition: null, quality: null, training: null, sleep: null, logging: 65, rhythm: null }, checkinCount: 2, xp: 20 })
-    expect(measuredSubscores(d)).toBe(1)
+    expect(subscoreCount(d)).toBe(1)
     expect(dayHasAnyLog(d)).toBe(true)
-    expect(dayScoreState(d, today)).toBe('learning')
-    expect(DAY_STATE_COPY.learning)
+    expect(weekHubState(d, today)).toBe('thin')
+    expect(DAY_STATE_COPY.thin)
       .toBe('Kettőnél kevesebb területről van adat, ezért a Mezo nem ad pontszámot: kitalálni nem fog.')
   })
 
   test('a scored day is scored, and a day after today is future', () => {
-    expect(dayScoreState(day({ date: '2026-05-20', score: 85, subscores: { nutrition: 82, quality: 85, training: 90, sleep: 90, logging: 80, rhythm: 88 } }), today)).toBe('scored')
-    expect(dayScoreState(day({ date: '2026-05-25' }), today)).toBe('future')
+    expect(weekHubState(day({ date: '2026-05-20', score: 85, subscores: { nutrition: 82, quality: 85, training: 90, sleep: 90, logging: 80, rhythm: 88 } }), today)).toBe('scored')
+    expect(weekHubState(day({ date: '2026-05-25' }), today)).toBe('future')
     expect(DAY_STATE_COPY.future).toBe('még előtted — ide majd a nap adatai jönnek')
   })
 

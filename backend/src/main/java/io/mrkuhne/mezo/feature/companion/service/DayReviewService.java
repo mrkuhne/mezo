@@ -124,6 +124,13 @@ public class DayReviewService {
                            List<ExtractedHighlight> highlights, ExtractedAdjustment adjustment) {
     }
 
+    /** {@link #prose}'s return shape — the envelope AND the row it lives on, so the response
+     *  builder can put the row's own id on the wire as {@code reviewId} (mezo-jcpt.9): the
+     *  feedback chips need something to vote on, and the artifact id is always the artifact's
+     *  own row id (the house rule every other kind already follows). */
+    record ProseResult(UUID id, DayReviewJson envelope) {
+    }
+
     private final DayScoreService dayScoreService;
     private final DayEvaluationEngine dayEvaluationEngine;
     private final DayReviewRepository dayReviewRepository;
@@ -143,7 +150,7 @@ public class DayReviewService {
         LocalDate today = LocalDate.now();
         DayInputs inputs = dayScoreService.inputsFor(userId, date, today);
         DayEvaluation evaluation = dayEvaluationEngine.evaluate(inputs);
-        String state = state(inputs, evaluation, today, weightTrendService.hasEntryOn(userId, date));
+        String state = state(inputs, evaluation, today);
 
         // A future day has no signals to report: its energy/sleep series are empty by definition
         // and the user-level weight trend would be the only thing shown, which would read as a
@@ -153,10 +160,10 @@ public class DayReviewService {
 
         // Prose exists ONLY for a closed, scored day (the brief): an open, thin or empty day has
         // nothing stable to narrate, and asking anyway would burn a call per page view.
-        DayReviewJson envelope = STATE_SCORED.equals(state)
+        ProseResult prose = STATE_SCORED.equals(state)
             ? prose(userId, date, evaluation, signals, inputs.priorBaseScores()) : null;
 
-        return response(date, state, evaluation, signals, envelope);
+        return response(date, state, evaluation, signals, prose);
     }
 
     // --- State -----------------------------------------------------------------------------
@@ -176,8 +183,7 @@ public class DayReviewService {
      * design) and {@code rhythm} is computed from PRIOR days, so "all dimensions degraded" would
      * never fire and every untouched day would read as {@code thin}.
      */
-    private static String state(DayInputs inputs, DayEvaluation evaluation, LocalDate today,
-                                boolean weighedIn) {
+    private static String state(DayInputs inputs, DayEvaluation evaluation, LocalDate today) {
         LocalDate date = inputs.date();
         if (date.isAfter(today)) {
             return STATE_FUTURE;
@@ -188,19 +194,7 @@ public class DayReviewService {
         if (evaluation.base() != null) {
             return STATE_SCORED;
         }
-        return (hasAnyLog(inputs) || weighedIn) ? STATE_THIN : STATE_EMPTY;
-    }
-
-    /** Did the user write ANYTHING down for this day, of what {@link DayInputs} carries? A weigh-in
-     *  lives OUTSIDE DayInputs, so it comes in as the caller's {@code weighedIn} flag (mezo-jcpt.8)
-     *  — that is why the record (and the engine's 27 pinned tests) stayed untouched. */
-    private static boolean hasAnyLog(DayInputs in) {
-        return in.kcal() != null
-            || in.sleepH() != null
-            || in.checkinCount() > 0
-            || in.waterLogged()
-            || (in.meals() != null && !in.meals().isEmpty())
-            || (in.doneWorkouts() != null && in.doneWorkouts() > 0);
+        return DayEvaluationEngine.anyLogPresent(inputs) ? STATE_THIN : STATE_EMPTY;
     }
 
     // --- Context signals (deterministic, never the model's) ----------------------------------
@@ -280,18 +274,19 @@ public class DayReviewService {
     // --- Prose (lazy, hash-keyed, one call at most) -------------------------------------------
 
     /**
-     * The cached envelope when {@link #inputsHash} still matches the row; otherwise exactly ONE
-     * generation, upserted. {@code null} when there is no prose to be had — which is always a
-     * legitimate outcome, not an error.
+     * The cached envelope (plus its row's id, for the feedback chips) when {@link #inputsHash}
+     * still matches the row; otherwise exactly ONE generation, upserted. {@code null} when there
+     * is no prose to be had — which is always a legitimate outcome, not an error.
      */
-    private DayReviewJson prose(UUID userId, LocalDate date, DayEvaluation evaluation,
+    private ProseResult prose(UUID userId, LocalDate date, DayEvaluation evaluation,
         List<DayReviewJson.ContextSignal> signals, List<Integer> priorBaseScores) {
         try {
             String hash = inputsHash(evaluation);
             Optional<DayReviewEntity> cached =
                 dayReviewRepository.findByCreatedByAndDate(userId, date);
             if (cached.isPresent() && hash.equals(cached.get().getInputsHash())) {
-                return cached.get().getEnvelope();
+                DayReviewEntity row = cached.get();
+                return new ProseResult(row.getId(), row.getEnvelope());
             }
             DayReviewLlm port = llm.getIfAvailable();
             if (port == null) {
@@ -307,8 +302,8 @@ public class DayReviewService {
                     + "deterministic evaluation is served un-narrated", userId, date);
                 return null;
             }
-            upsert(userId, date, cached.orElse(null), envelope, hash);
-            return envelope;
+            DayReviewEntity row = upsert(userId, date, cached.orElse(null), envelope, hash);
+            return new ProseResult(row.getId(), envelope);
         } catch (Exception e) {
             log.warn("Day review failed for {} on {} — serving the deterministic evaluation",
                 userId, date, e);
@@ -490,8 +485,9 @@ public class DayReviewService {
         return new DayReviewJson.Adjustment(delta, raw.reason().trim());
     }
 
-    /** One live row per user+day (partial unique index) — rewritten in place on a hash change. */
-    private void upsert(UUID userId, LocalDate date, DayReviewEntity existing,
+    /** One live row per user+day (partial unique index) — rewritten in place on a hash change.
+     *  Returns the saved row so the caller can read back its id (mezo-jcpt.9). */
+    private DayReviewEntity upsert(UUID userId, LocalDate date, DayReviewEntity existing,
         DayReviewJson envelope, String hash) {
         DayReviewEntity row = existing != null ? existing : new DayReviewEntity();
         row.setCreatedBy(userId);
@@ -499,19 +495,21 @@ public class DayReviewService {
         row.setEnvelope(envelope);
         row.setInputsHash(hash);
         row.setComputedAt(Instant.now());
-        dayReviewRepository.save(row);
+        return dayReviewRepository.save(row);
     }
 
     // --- Wire assembly -------------------------------------------------------------------------
 
     private static DayEvaluationResponse response(LocalDate date, String state,
         DayEvaluation evaluation, List<DayReviewJson.ContextSignal> signals,
-        DayReviewJson envelope) {
+        ProseResult prose) {
+        DayReviewJson envelope = prose == null ? null : prose.envelope();
         DayReviewJson.Adjustment adjustment = envelope == null ? null : envelope.adjustment();
         Integer base = evaluation.base();
         return DayEvaluationResponse.builder()
             .date(date)
             .state(state)
+            .reviewId(prose == null ? null : prose.id())
             .base(base)
             .score(score(base, adjustment))
             .adjustment(adjustment == null ? null : DayEvaluationResponseAdjustment.builder()

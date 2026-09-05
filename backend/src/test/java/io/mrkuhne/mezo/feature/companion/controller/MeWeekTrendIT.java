@@ -150,12 +150,18 @@ class MeWeekTrendIT extends ApiIntegrationTest {
         assertThat(persisted.getScore()).isEqualTo(89);
         assertThat(persisted.getSleepAvg()).isEqualByComparingTo("100.00");
         assertThat(persisted.getFuelAvg()).isEqualByComparingTo("80.00");
-        // checkin←logging is the one legacy field whose ABSENCE semantics changed with the engine
-        // (mezo-jcpt.4): the old check-in subscore was null on a day with no check-in, whereas the
-        // logging dimension treats "nothing logged" as a real, measured 0 — a process dimension
-        // that refused to score an untouched day would be exactly the free pass it exists to catch.
-        // So the week averages 80, 80 and five honest 0s: 160/7 = 22.86.
-        assertThat(persisted.getCheckinAvg()).isEqualByComparingTo("22.86");
+        // checkin←logging's ABSENCE semantics changed twice now. mezo-jcpt.4 first made a
+        // wholly-untouched day's logging dimension a real, measured 0 (unlike the old check-in
+        // subscore's null) — a process dimension that refused to score an untouched day would be
+        // exactly the free pass it exists to catch. mezo-el0t (Task 2 of this branch) narrowed
+        // that: a day with genuinely NO log activity at all (no meals/water/checkin/sleep/
+        // workouts/weight/xp) is not-measurable (null again), because "0" there asserted a
+        // measurement that never happened; a day that logged SOMETHING but skipped check-ins
+        // specifically still gets an honest 0. This fixture's five unseeded days of the week are
+        // wholly untouched, so they now DROP OUT of the average instead of dragging it toward 0:
+        // the week averages just the two dense days, 80 and 80 → 80.00 (mezo-el0t, deliberate —
+        // do not "restore" 22.86; see WeeklyScoreService.aggregate's javadoc).
+        assertThat(persisted.getCheckinAvg()).isEqualByComparingTo("80.00");
         assertThat(persisted.getActivityAvg()).isEqualByComparingTo("100.00");
         assertThat(persisted.getComputedAt()).isNotNull();
 
