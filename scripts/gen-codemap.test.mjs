@@ -15,7 +15,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { buildBody } from './gen-codemap.mjs';
+import { buildBody, codemapIssue, renderHeader } from './gen-codemap.mjs';
 
 // ── Fixture helpers ─────────────────────────────────────────────────────────
 function write(root, rel, content) {
@@ -208,4 +208,47 @@ test('the body is deterministic — the same tree renders byte-identical output'
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+// ── Whole-file validation (mezo-ag1b) ───────────────────────────────────────
+// `--check` used to compare only the generated BODY, so unresolved merge-conflict
+// markers in the HEADER passed both the local regeneration and CI — twice, onto main.
+
+const BODY = 'generated body\n';
+const good = () => renderHeader() + BODY;
+
+test('a byte-identical file is accepted', () => {
+  assert.equal(codemapIssue(good(), BODY), null);
+});
+
+test('conflict markers in the header are rejected — the case that shipped to main', () => {
+  const conflicted = good().replace(
+    '# mezo — Codebase Map',
+    '<<<<<<< HEAD\n# mezo — Codebase Map\n=======\n# mezo — Codebase Map\n>>>>>>> origin/main',
+  );
+  assert.notEqual(codemapIssue(conflicted, BODY), null);
+  assert.match(codemapIssue(conflicted, BODY), /conflict markers/);
+});
+
+test('conflict markers in the body are rejected too', () => {
+  const conflicted = renderHeader() + '<<<<<<< HEAD\ngenerated body\n=======\nother\n>>>>>>> origin/main\n';
+  assert.match(codemapIssue(conflicted, BODY), /conflict markers/);
+});
+
+test('a hand-edited header is rejected even when the body is current', () => {
+  const edited = good().replace('# mezo — Codebase Map', '# mezo — Codebase Map (edited by hand)');
+  assert.match(codemapIssue(edited, BODY), /header/);
+});
+
+test('a missing header block is rejected rather than silently accepted', () => {
+  assert.match(codemapIssue(BODY, BODY), /CODEMAP:BODY marker/);
+});
+
+test('a stale body is still reported as stale, not as a header problem', () => {
+  assert.match(codemapIssue(renderHeader() + 'old body\n', BODY), /stale/);
+});
+
+test('a setext heading underline is not mistaken for a conflict marker', () => {
+  const body = 'Title\n=======\n';
+  assert.equal(codemapIssue(renderHeader() + body, body), null);
 });

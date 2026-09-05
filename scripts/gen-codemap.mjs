@@ -26,8 +26,11 @@
 // ── Determinism ──────────────────────────────────────────────────────────────
 // Everything below the `<!-- CODEMAP:BODY -->` marker is a pure function of the
 // tree (sorted lists throughout); the header is deterministic too (mezo-hnkd).
-// `--check` compares the BODY only, so an unrelated commit never trips the gate,
-// and a normal run leaves the file untouched when the body did not change.
+// `--check` validates the WHOLE file against `renderHeader() + body`, and a normal
+// run rewrites whenever the whole file differs. It used to compare the BODY only —
+// which made both gates blind to a corrupted header: unresolved merge-conflict
+// markers in the header line reached main twice (PR #287, commit 6ecb76fa2) while
+// `--check` and a plain regeneration both reported "up to date" (mezo-ag1b).
 //
 // Dependencies: NONE. Node 18+ ESM, only node:fs / node:path / node:child_process.
 // =============================================================================
@@ -445,7 +448,7 @@ export function buildBody(root = REPO_ROOT) {
   return `${L.join('\n').replace(/\n{3,}/g, '\n\n').trimEnd()}\n`;
 }
 
-function renderHeader() {
+export function renderHeader() {
   // DETERMINISTIC on purpose (mezo-hnkd): the header used to stamp the date + short commit,
   // which made every regeneration differ — so two branches whose codemap BODIES were identical
   // still merge-conflicted on the header line, and a CONFLICTING PR runs no CI at all. Identity
@@ -466,24 +469,45 @@ const bodyOf = (text) => {
   return i === -1 ? null : text.slice(i + BODY_MARKER.length).replace(/^\n+/, '');
 };
 
+/** Git's own conflict markers. `=======` is anchored to a bare line so a setext
+ *  heading underline (`====` under a title) cannot false-positive. */
+export const CONFLICT_MARKER = /^(?:<{7}|>{7})[ \t]|^={7}$/m;
+
+/**
+ * Why the committed file is not acceptable, or null when it is.
+ * Deliberately validates the ENTIRE file: the header is generated too, so anything
+ * that is not byte-identical to `renderHeader() + body` is either stale, hand-edited,
+ * or — the case that shipped to main twice — a half-resolved merge (mezo-ag1b).
+ */
+export function codemapIssue(text, body) {
+  if (text === renderHeader() + body) return null;
+  if (CONFLICT_MARKER.test(text)) return 'contains git merge-conflict markers — an unresolved merge was committed';
+  if (bodyOf(text) === null) return 'has no CODEMAP:BODY marker — its generated header block is missing or mangled';
+  if (bodyOf(text) !== body) return 'is stale — the tree changed but the map was not regenerated';
+  return 'has a hand-edited or corrupted header block above the CODEMAP:BODY marker';
+}
+
 // ── CLI ─────────────────────────────────────────────────────────────────────
 if (process.argv[1] && path.resolve(process.argv[1]) === path.resolve(new URL(import.meta.url).pathname)) {
   const outPath = abs(REPO_ROOT, OUT_FILE);
   const body = buildBody(REPO_ROOT);
-  const current = bodyOf(read(outPath));
+  const text = read(outPath);
+  const issue = codemapIssue(text, body);
 
   if (process.argv.includes('--check')) {
-    if (current === body) {
+    if (!issue) {
       console.log(`✅ ${OUT_FILE} is up to date.`);
     } else {
-      console.error(`✗ ${OUT_FILE} is stale — the tree changed but the map was not regenerated.`);
+      console.error(`✗ ${OUT_FILE} ${issue}.`);
       console.error('  Run: node scripts/gen-codemap.mjs   (then commit the result)');
       process.exit(1);
     }
-  } else if (current === body) {
+  } else if (!issue) {
     console.log(`✅ ${OUT_FILE} already current — left untouched.`);
   } else {
+    // Rewrite the header unconditionally: leaving it alone is what let a conflicted
+    // header survive a regeneration that reported success (mezo-ag1b).
     writeFileSync(outPath, renderHeader() + body);
-    console.log(`✅ wrote ${OUT_FILE} (${body.split('\n').length} body lines).`);
+    console.log(`✅ wrote ${OUT_FILE} (${body.split('\n').length} body lines) — was: ${issue}.`);
   }
 }
