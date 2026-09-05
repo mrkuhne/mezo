@@ -90,6 +90,9 @@ public class ChatService {
             és hogyan áll most (e heti említés, hangulat-irány). Ennyit mondhatsz róluk, mást nem: \
             harmadik félről eseményt, tulajdonságot, véleményt nem találsz ki. Magadtól ne hozd szóba \
             őket — csak ha {{NÉV}} említi, vagy a téma egyértelműen róluk szól.
+            A [Célok] blokk {{NÉV}} életcéljainak háttér-állása a személyre szabáshoz. Emlékeztetőt \
+            a ha–akkor tervekről külön értesítés visz — te ne ismételd; a célokat akkor hozd szóba, \
+            ha {{NÉV}} üzenete relevánssá teszi őket.
 
             [Példa a hangnemre]
             Kérdés: „hogy állok a súllyal?"
@@ -135,7 +138,8 @@ public class ChatService {
             - recept, mit főzzek → get_recipes | mi van a kamrában → get_pantry
             - napi/heti étkezés, makró, víz → get_fuel_log
             - supplement, protokoll → get_protocol
-            - cél, kalóriacél, heti ütem → get_goal
+            - számszerű cél: súlycél, kalóriacél, heti ütem → get_goal
+            - életcél, életterület (PERMAH), pillér, ha–akkor terv → get_life_goals
             - XP, szint, skill, streak → get_growth | napi rutin, küldetés, szokás → get_daily_practice
             - minták, „mit vettél észre rólam" → get_insights (csak megerősített minták; predikció/kísérlet még nem elérhető)
             - hasonló korábbi nap → find_similar_past_days

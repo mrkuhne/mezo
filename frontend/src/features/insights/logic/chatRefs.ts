@@ -39,6 +39,7 @@ const KIND_LABELS: Record<string, string> = {
   Pantry: 'Kamra',
   Protocol: 'Stack',
   Goal: 'Cél',
+  LifeGoal: 'Életcél',
   Growth: 'Growth',
   Practice: 'Gyakorlat',
   TrainingPlan: 'Edzésterv',

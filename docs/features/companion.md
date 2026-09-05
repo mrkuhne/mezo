@@ -6,6 +6,10 @@ updated: 2026-09-05
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
+  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/LifeGoalSource.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/LifeGoalSnapshotBlock.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/LifeGoalText.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/LifeGoalTools.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/llmlog
   - api/feature/companion/companion.yml
   - api/feature/memory-retrieval/memory-retrieval.yml
@@ -63,10 +67,11 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   prescription current-week segment + day-planner, active meso + schedules + last-7d digest,
   account level/coins/streak + top skills + weekly XP rollup, today's quest count + habit chains +
   creed/foci/reflection + napzárás state, the active people circle (`[Emberek]`, **mezo-x6oa**,
-  chat variant only), FuelDay rollup + protocol + intakes, cycleDay/phase, last sleep + latest
-  check-in), rendered as nine Hungarian-labelled blocks under `AKTUÁLIS ÁLLAPOT (pillanatkép —
-  {dátum}):` and inserted into the `ChatService` system prompt **between the static voice and the
-  history transcript**.
+  chat variant only), a background snapshot of active life goals (`[Célok]`, **mezo-iizd.10**,
+  BOTH variants), FuelDay rollup + protocol + intakes, cycleDay/phase, last sleep + latest
+  check-in), rendered as ten Hungarian-labelled blocks (chat variant) under `AKTUÁLIS ÁLLAPOT
+  (pillanatkép — {dátum}):` and inserted into the `ChatService` system prompt **between the
+  static voice and the history transcript**.
   Missing data renders as explicit `nincs adat`, never invented; no LLM anywhere in the path.
 
 **V0.4 (`mezo-fnnq.4`) shipped streaming + the real FE:**
@@ -1273,8 +1278,9 @@ construction. Window args are model-optional (`@ToolParam(required = false)`) wi
 defaults (7 days / 4 weeks).
 
 **The context snapshot (V0.3).** `ContextSnapshotAssembler.render(userId, today)`
-(`service/ContextSnapshotAssembler.java`) returns the `AKTUÁLIS ÁLLAPOT` block with eight lines in
-render() order — `[Profil]` (biometric profile + the latest actual weigh-in beside the
+(`service/ContextSnapshotAssembler.java`) returns the `AKTUÁLIS ÁLLAPOT` block with nine lines
+common to BOTH variants in render() order (`[Emberek]` — see below — rides on top of these, chat
+only) — `[Profil]` (biometric profile + the latest actual weigh-in beside the
 `WeightTrendService` EWMA trend — `WeightLogRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDescCreatedAtDesc`
 renders `mérés: {weight} kg ({date})`, or `mérés: nincs adat` with no weigh-in row; an empty
 EWMA series renders `súlytrend: nincs adat`, and rates are omitted while `dataSufficiency = NONE`
@@ -1283,7 +1289,9 @@ EWMA series renders `súlytrend: nincs adat`, and rates are omitted while `dataS
 goal's `mealsPerDay`, and the day's `ébredés`/`lefekvés` anchor resolved via `SleepAnchorPort`
 from the sleep goal — never the retired goal wake/bed columns; the resolver always returns an
 anchor, so both lines always render, falling back to the config ghost when no sleep goal exists),
-`[Edzés]` (active meso with the week
+`[Célok]` (**mezo-iizd.10** — the life-goal background snapshot; see "Célok a chat pillanatképben"
+below for the full write-up — deliberately in BOTH `render` and `renderWithoutBiometrics`, unlike
+`[Emberek]`), `[Edzés]` (active meso with the week
 DERIVED from `startDate` — the stored `currentWeek` can lag; **`Ma:`/`Holnap:` dated resolution
 (mezo-xixu, the flagship fix)** — both render through ONE `dayLine` method (mezo-ajp): that day's
 gym day + exercises via `WorkoutService.findPlannedTemplateForDate` (deliberately never
@@ -1352,8 +1360,10 @@ features; ArchUnit's cycle rule guards the reverse).
 
 **The biometrics-free variant (companion-feed, `mezo-gst9`).** `renderWithoutBiometrics(userId,
 today)` is a second entry point alongside `render`, used ONLY by
-`feature/proactive/service/CompanionMessageGenerator.generateMorning`. It composes the SAME eight
-blocks in the SAME order, but `profileBlock`/`recoveryBlock` each take a `withWeight`/`withSleep`
+`feature/proactive/service/CompanionMessageGenerator.generateMorning`. It composes the SAME nine
+blocks in the SAME order (including `[Célok]`, **mezo-iizd.10** — user decision: the morning
+message MAY reference life goals supportively, unlike the `[Emberek]` chat-only precedent it
+otherwise mirrors), but `profileBlock`/`recoveryBlock` each take a `withWeight`/`withSleep`
 boolean: `render` passes `true` (the full `[Profil]` mérés+trend line, the full `[Regeneráció]`
 sleep line); `renderWithoutBiometrics` passes `false`, so `[Profil]` stops after the height/age/sex
 clause (no `mérés:`/`súlytrend:` at all) and `[Regeneráció]` renders only the latest check-in (no
@@ -2930,6 +2940,55 @@ weekly direction. Now every CHAT turn's snapshot carries an **`[Emberek]`** bloc
 - Tests: `PeopleChatContextIT`, `PeopleSnapshotBlockTest`, `ContextSnapshotAssemblerIT`
   (+2: block present in `render`, absent in `renderWithoutBiometrics`), `CompanionPropertiesIT`.
 
+### Célok a chat pillanatképben (✅ `mezo-iizd.10`)
+
+Spec: [`2026-09-05-lifegoal-companion-block-design.md`](../superpowers/specs/2026-09-05-lifegoal-companion-block-design.md).
+Until this slice the companion knew nothing of Daniel's `feature/lifegoal` life goals — the Nap
+"Célok · ma" tile and the Célok hub were entirely outside the chat's view. Now BOTH the chat turn
+AND the morning message carry a **`[Célok]`** block:
+
+- **`LifeGoalSource`** (`feature/companion/LifeGoalSource.java`) — a companion-owned port, the
+  `TodayQuestSource` pattern applied to life goals: `summary(userId, today)` (the compact
+  `[Célok]` snapshot line data — title/dimension/arrow/today's pillar count per active goal, the
+  weakest pillar across goals, and which ha–akkor plans are "live today") and `details(userId,
+  today)` (the rich per-goal view behind `get_life_goals`, below). The direction stays
+  lifegoal → companion (the reverse already exists: `MetricSignalSource`, `LifeGoalProposePort`)
+  — a companion → lifegoal import would close a 2-slice cycle, so the port is the seam.
+- **`LifeGoalCompanionAdapter`** (`feature/lifegoal/service/LifeGoalCompanionAdapter.java`,
+  `LIFEGOAL_SWITCH`-gated) implements it — see [`lifegoal.md`](lifegoal.md) §3/§9 for the
+  read-only "ma él" (live today) re-evaluation this adapter does for ha–akkor plans, including
+  the `ritual_missed` last-closed-day + adoption-window gate.
+- **`LifeGoalSnapshotBlock`** (`feature/companion/service/LifeGoalSnapshotBlock.java`,
+  `COMPANION_SWITCH`) renders it: header `[Célok] (aktív életcélok, max N)`, one line per active
+  goal `<cím> [<dimenzió>] · <heti nyíl szóként> · ma X/Y pillér`, capped at
+  `snapshot.lifegoal-max-goals`; then `Leggyengébb pillér: …` when one exists; then one `Ma él: <ha>,
+  <akkor>` line per live ha–akkor plan. `LIFEGOAL_SWITCH` is independent of `COMPANION_SWITCH`, so
+  the port is read through `ObjectProvider` (the `PeopleSnapshotBlock`/`TodayQuestSource`
+  precedent) — absent bean, no active goals, or any `RuntimeException` all render an honest
+  `[Célok] nincs adat` / `[Célok] nincs aktív életcél`. `lifegoal-max-goals = 0` omits the block
+  entirely. IDENT-3, the `PeopleSnapshotBlock` caveat verbatim: the catch degrades gracefully, but
+  a `DataAccessException` still leaves the surrounding `ChatService.prepareTurn` transaction
+  rollback-only regardless — accepted precedent, not savepointed.
+- **`LifeGoalText`** (`feature/companion/tools/LifeGoalText.java`) — the shared
+  dimension/arrow-word Hungarian renderers used by BOTH the snapshot block and the
+  `get_life_goals` tool, so the two surfaces can never disagree on vocabulary.
+- **In BOTH variants, unlike `[Emberek]`:** `ContextSnapshotAssembler` inserts `[Célok]` right
+  after `[Cél]`/before `[Edzés]` in `render` AND `renderWithoutBiometrics`. This is a deliberate
+  user decision (2026-09-05), not an oversight — the morning message MAY reference life goals as
+  a supportive nudge, whereas `[Emberek]` staying chat-only was about not raising people
+  unprompted. The `[Célok]` content itself is a fact statement ("ma él: …"), not a second nudge
+  channel: the actual reminder push still rides `LifeGoalTriggerService`'s feed notification
+  (`dedupKey`), and a `CompanionMessageGenerator.MORNING_PROMPT` point (6) tells the model it may
+  reference goals supportively but must not repeat that separate reminder.
+- **`get_life_goals` chat tool** (`feature/companion/tools/LifeGoalTools.java`, §5 below) — the
+  rich per-goal view (pillars + ha–akkor plans + weekly %) for when Daniel actually asks; the
+  `[Célok]` snapshot block stays the terse background summary.
+- No new port on the companion side beyond `LifeGoalSource` itself; no reverse import.
+- Tests: `LifeGoalCompanionAdapterIT` (incl. the documented `ritual_missed`/delayed-plan
+  simplifications), `LifeGoalSnapshotBlockTest`, `ContextSnapshotAssemblerIT` (block present in
+  BOTH `render` and `renderWithoutBiometrics`), `CompanionToolsRenderIT` (`get_life_goals`),
+  `CompanionPropertiesIT`.
+
 ### Backend tables (W3.2 consolidation ladder, ✅ `mezo-b3pp.13`)
 
 Migration `202608231400_mezo-b3pp.13_create_period_summary.sql` (in `1.0.0_master.yml`) — the
@@ -3617,6 +3676,7 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
 | `get_recovery(scope, days, date, from, to)` (mezo-xixu, merged from `get_sleep`, adds sleep-goal + check-ins; **mezo-ohce: on-demand full sleep-log detail** via `date` (≤3 guidance, ISO dates) / `from` / `to`) | scope=sleep: compact last-N-days via `SleepLogRepository` since-date finder → duration, quality, awakenings; **when any of `date`/`from`/`to` is present**, full detail per requested day via the between-finder → bedtime, wakeup, duration, in-bed/awake/könnyű/REM/mély minutes, quality, awakenings, source + source quality, hypnogram (`bucketMin` + raw stages), notes; fields are null-guarded, missing day → `nincs rögzített alvás`, and the window is clamped to `tools().maxWindowDays()` with a `visszavágva N napra` header when trimmed. scope=sleep-goal: `SleepGoalService.getGoal` (target minutes, regularity band; `SLEEP_GOAL_SWITCH`-gated, read via `ObjectProvider`) + `SleepAnchorPort.resolve` (bed/wake anchor, ungated) → target hours/min, bed/wake, regularity band; scope=checkins: `CheckInService.listForDay` per day across the window → energy/stress/body/mental (1–10) per slot | scope=sleep: `Sleep`/date (≤5; detail mode emits one per rendered day, including missing days); scope=sleep-goal: `SleepGoal`/wake-time; scope=checkins: `CheckIn`/date (≤5) |
 | `get_protocol(scope, days)` (mezo-xixu, merged from `get_protocol_adherence`) | scope=adherence: `ProtocolService.getView().getActive()` + intake since-date finder → per-day taken/expected + total %; scope=intake: `IntakeService.listForDay` (today, protocol-independent) → item names (via the pantry stash) + known dose; scope=supplements: the active protocol's distinct `items[].pantryItemId` (mezo-vx9v living protocol, zone-sorted) → item names | `Protocol`/`v{n}` (adherence/supplements always; intake only when a protocol happens to be active) |
 | `get_goal(scope)` (mezo-xixu, merged from `get_goal_progress`) | scope=progress (default): active goal + `computeTrend` + `GoalPrescriptionJson.currentSegment` → week N, start→target, actual vs plan rate, e heti recept; scope=recept: the goal's `prescription.segments` (≤3) → per-segment kcal/protein/sleep/rest-days/rate/rationale; scope=guards: `prescription.guardStatus` → strength e1RM trend + breach, muscle weekly-set floor + below-maintenance list; scope=feasibility: `prescription.feasibility` → verdict + notes (≤3); scope=timeline: `GoalTimelineService.getTimeline` (pure read) → mapped plan links + uncovered gym-lane week gaps (≤3 each). recept/guards/feasibility render "még nincs kiértékelve" until the goal's first `evaluate` (never called from the tool) | `Goal`/title |
+| `get_life_goals()` (mezo-iizd.10) | `LifeGoalSource.details` (port → `LifeGoalCompanionAdapter`, see "Célok a chat pillanatképben" above) → per active life goal: title, dimension (PERMAH), frame, weekly arrow + weekly %, per-pillar today-hit + weekly arrow, and ha–akkor plans with a `(MA ÉL)` marker on the live ones. The rich view behind the terse `[Célok]` snapshot block — NOT for the numeric weight/kcal goal, which is `get_goal` | `LifeGoal`/goal title (one per rendered goal) |
 | `get_medication(scope)` (mezo-xixu; `scope ∈ {cycle, all}`, default `cycle`, renamed from the drug-specific original scope names in `mezo-lwmq`) | scope=cycle (default): `MedicationCycleService.deriveToday` + top-10 doses → cycle day, phase, last dose, next due; scope=all: `MedicationService.getDay` → name, active ingredient, cadence, default dose, cycle position (once a dose is on record) + recent doses, generic (no drug-specific naming). Both scopes' "today" now derive off the SAME `MedicationCycleService.MEDICATION_ZONE` (`Europe/Budapest`, mezo-8h2s) — before this fix `renderCycle` used the JVM's system-default zone while `getDay` used UTC, so scope=cycle and scope=all could disagree on the cycle day by one near either midnight | `Medication`/name |
 | `get_exercise_records(exercise)` (mezo-xixu) | `ExerciseRecordService.list` (compute-on-read over working sets, read-only) → no/blank `exercise`: top-5 lifts by best e1RM; with `exercise`: case-insensitive name-contains match(es) → bestSet, bestE1rm (Epley), repRecords, recentTopSets | `ExerciseRecord`/exercise name (≤5) |
 | `get_recipes(filter)` (mezo-xixu, scored match mezo-sxe) | `RecipeService.list` (read-only) → no/blank `filter`: name/category/whole-recipe kcal+protein/mezo-fit score list; with `filter`: accent-folded token match scored over name (4) > ingredient name (3) > slot/category/role/tag/fitsFor/starred (2), all-token hits winning over partial — the best scorer renders full macros + ingredient lines (the detail comes from the same `.list` response, not a separate `.get` call) | `Recipe`/recipe name (≤5) |
@@ -3645,6 +3705,9 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
   1000 chars and the snapshot rides EVERY turn, so this clip is load-bearing, not cosmetic.
 - `mezo.companion.snapshot.people-max-persons` = **12** (`@Min(0) @Max(30)`) — how many ACTIVE
   people the `[Emberek]` chat-snapshot block lists (newest mention first). `0` omits the block.
+- `mezo.companion.snapshot.lifegoal-max-goals` = **3** (`@Min(0) @Max(10)`) — how many active life
+  goals the `[Célok]` snapshot block lists, in BOTH the chat and morning variants (mezo-iizd.10).
+  `0` omits the block entirely.
 - `mezo.companion.tools.max-calls-per-turn` = **15** (`@Min(1) @Max(20)`, raised from 6 at
   mezo-xixu alongside the 8→15 tool expansion) — recorded tool calls per
   turn; past it every tool soft-fails with honest in-band text (V0.5).
@@ -4804,7 +4867,7 @@ test surface that would fail if the history were ever accidentally reglued into 
 (see also the dedicated history-separation IT below).
 
 **`ContextSnapshotAssemblerIT` (V0.3, 24 tests)** — the snapshot is fully assertable without any
-LLM: empty-user render (all eight blocks in order, every absence an explicit `nincs adat`, config
+LLM: empty-user render (all ten blocks in order, every absence an explicit `nincs adat`, config
 targets still render), profile+trend, latest weigh-in beside the trend (`mérés:` — populated vs.
 `nincs adat` with no weigh-in row vs. two same-day weigh-ins, where only `created_at` breaks the
 tie), current-week segment + planner selection, train digest +
@@ -6349,6 +6412,18 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - New plain finders in the owning features: `SleepLogRepository` (since-date), `WorkoutSessionRepository.findDoneInstancesBetween`, `SupplementIntakeRepository` (since-date); shared `GoalPrescriptionJson.currentSegment`.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase (`@Tag("eval")`, opt-in, real `GeminiCompanionLlm`, 40-case Hungarian question set, baseline 37/40 = 92.5%).
 - `docs/references/companion_tool_conventions.md` — the mezo-xixu `@Tool` description house rule (the `[Eszköz-útmutató]` routing hint's model-facing mirror).
+
+**Backend — `[Célok]` life-goal snapshot block + `get_life_goals` tool (`mezo-iizd.10`)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/LifeGoalSource.java` — the companion-owned port (`summary`/`details`), the `TodayQuestSource` pattern applied to life goals; lifegoal → companion stays the import direction.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/service/LifeGoalCompanionAdapter.java` — the `LIFEGOAL_SWITCH`-gated implementation; see [`lifegoal.md`](lifegoal.md) §3/§9 for the read-only "ma él" re-evaluation (incl. `ritual_missed`'s last-closed-day + adoption-window gate).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/LifeGoalSnapshotBlock.java` — renders `[Célok]`, `COMPANION_SWITCH`-gated, read through `ObjectProvider<LifeGoalSource>`; spliced into `ContextSnapshotAssembler.render` AND `renderWithoutBiometrics` right after `[Cél]`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/LifeGoalText.java` — shared dimension/arrow-word Hungarian renderers used by both the snapshot block and the tool.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/LifeGoalTools.java` — the `get_life_goals` `@Tool`, bringing the tool count to 18; the only tool bean that reads a port instead of its own feature's services (companion → lifegoal would close a 2-slice cycle).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Snapshot.lifegoalMaxGoals` (`mezo.companion.snapshot.lifegoal-max-goals`, default 3, `@Min(0) @Max(10)`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `[Eszköz-útmutató]` gained the `get_life_goals` routing line; the `[Mit szabad állítani]`-adjacent system-prompt prose gained the `[Célok]` block's meaning (background, not a nudge to repeat).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageGenerator.java` — `MORNING_PROMPT` point (6): the model may reference life goals supportively but must not repeat the separate ha–akkor plan reminder (that ships through `LifeGoalTriggerService`'s feed notification).
+- `frontend/src/features/insights/logic/{toolDomains.ts,chatRefs.ts}` — `get_life_goals` tool chip (label "Életcélok") + `LifeGoal` ref kind (label "Életcél", gold wash, `i-cel` icon).
+- Tests: `LifeGoalCompanionAdapterIT` (incl. `testSummary_shouldMarkDelayedPlanLiveOnToday_asADocumentedSimplification`), `LifeGoalSnapshotBlockTest`, `ContextSnapshotAssemblerIT` (block present in both variants), `CompanionToolsRenderIT` (`get_life_goals`), `CompanionPropertiesIT`.
 
 **Backend — journal embedding seam (`mezo-b3pp.1`, Phase 5 W1.1, post-epic — full detail in [`journal.md`](journal.md))**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/JournalEmbeddingListener.java` — the AFTER_COMMIT/`@Async` trigger on `feature/journal`'s two events, gated on `COMPANION_SWITCH` + `JournalService`'s own switch (`FeaturesConfiguration.JOURNAL_SWITCH`).

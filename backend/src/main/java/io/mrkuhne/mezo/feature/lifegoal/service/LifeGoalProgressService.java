@@ -126,7 +126,13 @@ public class LifeGoalProgressService {
     /** Aktív célonként: nyíl + 7 napi cél-pont-pötty + mai pillér-számláló. */
     @Transactional(readOnly = true)
     public LifeGoalTodayResponse today(UUID userId) {
-        LocalDate today = LocalDate.now();
+        return today(userId, LocalDate.now());
+    }
+
+    /** Dátum-paraméteres változat (mezo-iizd.10): a companion-snapshot determinizmusa miatt a
+     *  hívó mondja meg, mi a „ma" — a HTTP-út a fenti overloadon át változatlan. */
+    @Transactional(readOnly = true)
+    public LifeGoalTodayResponse today(UUID userId, LocalDate today) {
         LocalDate from = today.minusDays(PROGRESS_WINDOW_DAYS - 1);
         List<LifeGoalEntity> activeGoals = goalRepository.findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(userId)
             .stream().filter(g -> "active".equals(g.getStatus())).toList();

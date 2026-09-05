@@ -30,6 +30,7 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.snapshot().digestDays()).isEqualTo(7);
         assertThat(properties.snapshot().checkinNoteMaxChars()).isEqualTo(200);
         assertThat(properties.snapshot().peopleMaxPersons()).isEqualTo(12);
+        assertThat(properties.snapshot().lifegoalMaxGoals()).isEqualTo(3);
     }
 
     @Test

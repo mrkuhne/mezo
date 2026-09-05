@@ -81,6 +81,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     @Autowired private HabitPopulator habitPopulator;
     @Autowired private PersonPopulator personPopulator;
     @Autowired private MentionPopulator mentionPopulator;
+    @Autowired private io.mrkuhne.mezo.support.populator.LifeGoalPopulator lifeGoalPopulator;
 
     @Test
     void testRender_shouldRenderAllBlocksWithNincsAdat_whenUserHasNoData() {
@@ -90,9 +91,10 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         String block = assembler.render(owner, today);
 
         assertThat(block).startsWith("\n\nAKTUÁLIS ÁLLAPOT (pillanatkép — " + today + "):");
-        // all nine blocks present, in render() order
+        // all ten blocks present, in render() order
         int profil = block.indexOf("[Profil]");
         int cel = block.indexOf("[Cél]");
+        int celok = block.indexOf("[Célok]");
         int edzes = block.indexOf("[Edzés]");
         int novekedes = block.indexOf("[Növekedés]");
         int gyakorlat = block.indexOf("[Napi gyakorlat]");
@@ -102,7 +104,8 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
         int rege = block.indexOf("[Regeneráció]");
         assertThat(profil).isPositive();
         assertThat(cel).isGreaterThan(profil);
-        assertThat(edzes).isGreaterThan(cel);
+        assertThat(celok).isGreaterThan(cel);
+        assertThat(edzes).isGreaterThan(celok);
         assertThat(novekedes).isGreaterThan(edzes);
         assertThat(gyakorlat).isGreaterThan(novekedes);
         assertThat(emberek).isGreaterThan(gyakorlat);
@@ -114,6 +117,7 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
             .contains("[Profil] nincs adat")
             .contains("súlytrend: nincs adat")
             .contains("[Cél] nincs adat")
+            .contains("[Célok] nincs aktív életcél")
             .contains("mezociklus: nincs adat")
             .contains("gym-rend: nincs adat")
             .contains("sport-rend: nincs adat")
@@ -676,8 +680,35 @@ class ContextSnapshotAssemblerIT extends AbstractIntegrationTest {
     void testRender_shouldBeDeterministic_whenCalledTwice() {
         UUID owner = userPopulator.createUser().getId();
         LocalDate today = LocalDate.now();
+        var goal = lifeGoalPopulator.goal(owner, "active");
+        lifeGoalPopulator.sleepPillar(goal);
 
         assertThat(assembler.render(owner, today)).isEqualTo(assembler.render(owner, today));
+    }
+
+    @Test
+    void testRender_shouldRenderCelokBlock_whenActiveLifeGoalExists() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        var goal = lifeGoalPopulator.goal(owner, "active");
+        var pillar = lifeGoalPopulator.sleepPillar(goal);
+        lifeGoalPopulator.pillarDay(pillar, today.minusDays(1), "hit");
+
+        String block = assembler.render(owner, today);
+
+        assertThat(block).contains("Kockahas [Egészség]").contains("Leggyengébb pillér: Alvás");
+    }
+
+    @Test
+    void testRenderWithoutBiometrics_shouldIncludeCelokBlock_whenActiveLifeGoalExists() {
+        // user-döntés (2026-09-05): a reggeli variáns IS látja a célokat — pozitív nudge
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate today = LocalDate.now();
+        lifeGoalPopulator.goal(owner, "active");
+
+        String block = assembler.renderWithoutBiometrics(owner, today);
+
+        assertThat(block).contains("Kockahas [Egészség]");
     }
 
     @Test
