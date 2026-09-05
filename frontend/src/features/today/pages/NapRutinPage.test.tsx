@@ -55,6 +55,11 @@ vi.mock('@/data/hooks', async (importOriginal) => {
           { id: 'c-e', chainKey: 'EVENING', title: 'Esti rutin', daypart: 'EVENING', position: 2, isActive: true,
             defs: [{ habitKey: 'kitchen_close', framework: null, celebration: null }],
           },
+          // A user-created DAY chain (mezo-025v). Its group only renders when the day view
+          // actually carries rows for it, so every other test in this file is unaffected.
+          { id: 'c-d', chainKey: 'MIDDAY', title: 'Napközbeni rutin', daypart: 'DAY', position: 3, isActive: true,
+            defs: [{ habitKey: 'midday_walk', framework: null, celebration: null }],
+          },
         ] as HabitCatalog['chains'],
       },
       isPending: false, isError: false, refetch: vi.fn(),
@@ -284,6 +289,25 @@ test('the lánc-erő bars carry a staggered --d so the .mz-play fill animates', 
 
 // ── logging as reward (mezo-3zue.5) ─────────────────────────────────────────────
 
+// ── the daypart milestone rides the closing tick (mezo-sqe3) ────────────────────
+
+test('a napszakot lezáró pipa toastja viszi a „Tökéletes este" mérföldkövet', async () => {
+  const user = userEvent.setup()
+  // egyetlen nyitott esti sor: ez a pipa zárja a napszakot
+  habitStore.seed([{ ...eveningHabits[0] }])
+  renderPage('/nap/rutin?dp=este')
+  await user.click(await screen.findByRole('button', { name: 'Konyha zárva' }))
+  expect(await screen.findByText(/Tökéletes este/)).toBeInTheDocument()
+})
+
+test('nyitva maradó napszaknál nincs mérföldkő', async () => {
+  const user = userEvent.setup()
+  renderPage('/nap/rutin?dp=este') // kitchen_close + bed_on_time, utóbbi nyitva marad
+  await user.click(await screen.findByRole('button', { name: 'Konyha zárva' }))
+  expect(await screen.findByText('Szokás · 1 / 2')).toBeInTheDocument()
+  expect(screen.queryByText(/Tökéletes este/)).toBeNull()
+})
+
 test('ünnepléses szokás pipálása visszajátssza a saját mondatot', async () => {
   const user = userEvent.setup()
   renderPage()
@@ -300,4 +324,29 @@ test('ünneplés nélküli szokásnál a toast a régi marad', async () => {
   // chainProgress = { done: 0, total: 2 } → az eyebrow „Szokás · 1 / 2".
   expect(await screen.findByText('Szokás · 1 / 2')).toBeInTheDocument()
   expect(screen.queryByText('ökölbe szorított kéz + „ez az”')).not.toBeInTheDocument()
+})
+
+// ---- mezo-025v: a user-created DAY chain was editable under Én but unreachable from the day ----
+
+const middayWalk: Partial<HabitItem> = {
+  key: 'midday_walk', chain: 'MIDDAY', position: 1, title: 'Ebéd utáni séta', why: '',
+  anchorCopy: 'ebéd után', mode: 'MANUAL', status: 'pending', xp: 5, strengthPct: 40,
+}
+
+test('a DAY-daypart chain renders its own group and its rows are tickable', async () => {
+  habitStore.seed([...morningHabits, middayWalk])
+  renderPage()
+  expect(await screen.findByText('Napközbeni rutin')).toBeInTheDocument()
+  await userEvent.click(screen.getByRole('button', { name: 'Ebéd utáni séta' }))
+  expect(habitStore.checked).toContain('midday_walk')
+})
+
+test('the DAY group carries no perfect-day cell — the summary has no such counter', async () => {
+  habitStore.seed([middayWalk])
+  renderPage('/nap/rutin?dp=napkozben')
+  expect(await screen.findByText('Napközbeni rutin')).toBeInTheDocument()
+  // honesty rule: no fabricated "tökéletes nap" counter, while the real cells stay
+  expect(screen.queryByText(/tökéletes/)).toBeNull()
+  expect(screen.getByText('lánc-erő · 28 nap')).toBeInTheDocument()
+  expect(screen.getByText('XP ma')).toBeInTheDocument()
 })

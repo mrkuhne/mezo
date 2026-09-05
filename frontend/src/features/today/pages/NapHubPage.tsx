@@ -39,6 +39,7 @@ import { needRingGradient } from '@/features/today/logic/needs'
 import { minsToBed } from '@/features/today/logic/windDown'
 import { habitAction } from '@/features/today/logic/habitAction'
 import { celebrationFor } from '@/features/today/logic/habitCelebration'
+import { daypartMilestone } from '@/features/today/logic/chainMilestone'
 import { habitClayIcon, DAYPART_CLAY } from '@/features/today/logic/habitClayIcon'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
 import { LifeGoalTodayTile } from '@/features/today/components/LifeGoalTodayTile'
@@ -160,6 +161,9 @@ export function NapHubPage() {
     if (h.status !== 'pending' || habitAction(h).kind !== 'check') return null
     const chainSteps = habits.filter((x) => x.chain === h.chain)
     const celebration = celebrationFor(habitCatalog, h.key)
+    // a napszak mérföldköve a pipa ELŐTTI állapotból dől el (mezo-sqe3) — ugyanaz a szabály,
+    // mint a rutin-oldalon, hogy a csempéről és a listáról pipálva ugyanaz a pillanat járjon
+    const chainLabel = daypartMilestone(habitCatalog, habits, h.chain)
     return () => {
       check(h.key)
         .then((lu) => emitToast(buildHabitRewardToast({
@@ -169,6 +173,7 @@ export function NapHubPage() {
           xp: h.xp,
           levelUp: lu?.[0],
           celebration,
+          chainLabel,
         })))
         .catch(() => {})
     }

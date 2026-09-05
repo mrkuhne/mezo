@@ -154,11 +154,14 @@ class DayScoreServiceIT extends AbstractIntegrationTest {
         assertThat(day.score()).isEqualTo(81).isEqualTo(day.evaluation().base());
     }
 
-    /** A day with nothing logged measures nothing: only the always-measurable logging dimension
-     *  is DONE (0 meals, no water, no check-in IS the measurement), which is one short of the
-     *  engine's 2-dimension honesty gate — so there is no overall score. */
+    /** A day with nothing logged at all measures nothing: every dimension, including
+     *  {@code logging}, degrades to {@code NO_DATA} — {@code logging} is DONE only when the day
+     *  carries a log of SOME kind (mezo-el0t; {@link DayEvaluationEngine#anyLogPresent}). Before
+     *  this fix the engine sent an honest-looking 0 for {@code logging} regardless, so "no data"
+     *  could never actually surface for this dimension in production. Either way this day is one
+     *  short (now zero) of the engine's 2-dimension honesty gate — so there is no overall score. */
     @Test
-    void emptyDayYieldsNullEverything() {
+    void emptyDayYieldsNullEverything_loggingNowNullNotZero_mezo_el0t() {
         UUID owner = userPopulator.createUser().getId();
 
         DayScoreService.DayScore day = dayFor(owner, DAY);
@@ -166,7 +169,7 @@ class DayScoreServiceIT extends AbstractIntegrationTest {
         assertThat(day.subscores().sleep()).isNull();
         assertThat(day.subscores().nutrition()).isNull();
         assertThat(day.subscores().training()).isNull();
-        assertThat(day.subscores().logging()).isZero();
+        assertThat(day.subscores().logging()).isNull();
         assertThat(day.score()).isNull();
     }
 

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { renderHook, waitFor } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
@@ -49,8 +49,6 @@ const stashFixture = [
   { id: 'magnez', name: 'Magnézium-glicinát', brand: 'PE', type: 'supplement', category: 'sleep', dose: '300mg', form: 'kapszula', stock: 58, stockUnit: 'db', protocol: '', timing: 'evening', taken: false },
 ]
 
-afterEach(() => vi.unstubAllEnvs())
-
 // deriveBlocks must carry the session's sport identity into the planner block label so the
 // Fuel "Mai" timeline (and the energy-breakdown sheet) name a cross/TRX session correctly
 // instead of the old hardcoded 'Volleyball' (mezo-rhe5).
@@ -99,21 +97,19 @@ describe('deriveBlocks — every today-session becomes a block (mezo-e1sp)', () 
   })
 })
 
-describe('useFuelTimeline / useFuelPreview (mock mode)', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
-
+describe.skipIf(import.meta.env.VITE_USE_MOCK === 'false')('useFuelTimeline / useFuelPreview (mock mode)', () => {
   it('mock: composes a deterministic COMPUTED plan (no static seed) — slots, one now-slot, settings + sleep-goal anchors', () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(() => useFuelTimeline(), { wrapper: Wrapper })
     const plan = result.current.plan
     // Same buildDayPlan composition as real mode, fed the mock seeds → a live-computed plan.
     expect(plan.slots.length).toBeGreaterThan(0)
-    // Fixed-plan state (mezo-1oy5): the partial mock day (breakfast + lunch logged, midday/evening
-    // open) has exactly one `now` slot at 13:30 — the next open MEAL window, not a supplement/block.
+    // Fixed-plan state: breakfast/lunch and the future dinner fixture are logged, so the sole
+    // unfilled meal window is `now` at 13:30; there is no later meal window left pending.
     const nowSlots = plan.slots.filter(s => s.state === 'now')
     expect(nowSlots).toHaveLength(1)
     expect(nowSlots[0].slotKey).toBeDefined()                          // a meal window carries the `now`
-    expect(plan.slots.some(s => s.slotKey && s.state === 'pending')).toBe(true) // later windows stay pending
+    expect(plan.slots.some(s => s.slotKey && s.state === 'pending')).toBe(false)
     expect(plan.caffeineCutoff).toBe('14:00')                          // fuel-settings ghost cutoff
     expect(plan.bedtime).toBe('23:15')                                 // mock sleep goal (wake 06:45 − 450m)
     expect(plan.kitchenClose).toBe('21:45')                            // bed 23:15 − 90m
@@ -168,9 +164,7 @@ describe('useFuelTimeline / useFuelPreview (mock mode)', () => {
   })
 })
 
-describe('useFuelTimeline (real mode)', () => {
-  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
-
+describe.skipIf(import.meta.env.VITE_USE_MOCK !== 'false')('useFuelTimeline (real mode)', () => {
   it('composes goal settings + a logged meal + gym schedule + intakes into the planner', async () => {
     // Pin a Thursday (Csü) so the meso fixture's only gym day is "today". Fake ONLY Date so
     // waitFor's real timers keep working.

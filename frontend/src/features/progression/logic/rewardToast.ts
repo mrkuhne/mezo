@@ -47,14 +47,21 @@ export function buildHabitRewardToast(input: {
   /** a szokás saját ünneplés-mondata a katalógusból; hiányában a toast a régi marad —
    *  generikus fallback szándékosan nincs (mezo-3zue.5) */
   celebration?: string | null
+  /** a lánc mérföldkő-címkéje („Tökéletes reggel" / „Tökéletes este" / „{lánc} kész").
+   *  CSAK akkor kerül a toastba, ha ez a pipa zárja le a láncot — a mérföldkő így egy
+   *  felhasználói cselekvés következménye, nem egy állapot-figyelőé, tehát szerkezetileg
+   *  nem tud újra elsülni felület-mountoláskor (mezo-sqe3). */
+  chainLabel?: string | null
 }): RewardToast {
-  const { title, chainDone, chainTotal, xp, levelUp, celebration } = input
+  const { title, chainDone, chainTotal, xp, levelUp, celebration, chainLabel } = input
   const fromServer = fromLevelUp(levelUp)
   const meter = fromServer.meter ?? (xp > 0 ? { label: 'XP', delta: xp } : undefined)
+  const completesChain = chainTotal > 0 && chainDone + 1 >= chainTotal
   return {
     kind: 'reward',
     eyebrow: chainTotal > 0 ? `Szokás · ${chainDone + 1} / ${chainTotal}` : 'Szokás',
     title,
+    ...(completesChain && chainLabel ? { meta: chainLabel } : {}),
     ...(celebration ? { celebration } : {}),
     ...(meter ? { meter } : {}),
     ...(fromServer.levelUp ? { levelUp: fromServer.levelUp } : {}),

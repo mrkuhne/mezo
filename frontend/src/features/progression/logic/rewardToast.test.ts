@@ -96,3 +96,27 @@ test('ünneplés nélkül a mező ki sem kerül a payloadba', () => {
   })
   expect('celebration' in omitted).toBe(false)
 })
+
+// ---- mezo-sqe3: the chain-completion milestone rides the completing tick's own toast ----
+
+test('a láncot lezáró pipa toastja viszi a mérföldkövet', () => {
+  const t = buildHabitRewardToast({
+    title: 'Ágyban időben', chainDone: 4, chainTotal: 5, xp: 10, chainLabel: 'Tökéletes este',
+  })
+  expect(t.eyebrow).toBe('Szokás · 5 / 5')
+  expect(t.meta).toBe('Tökéletes este')
+})
+
+test('a láncot NEM lezáró pipa toastja nem visz mérföldkövet', () => {
+  const t = buildHabitRewardToast({
+    title: 'Konyha zárva', chainDone: 2, chainTotal: 5, xp: 10, chainLabel: 'Tökéletes este',
+  })
+  expect('meta' in t).toBe(false)
+})
+
+test('lánc-kontextus nélkül nincs mérföldkő (chainTotal 0)', () => {
+  const t = buildHabitRewardToast({
+    title: 'Leállás', chainDone: 0, chainTotal: 0, xp: 5, chainLabel: 'Tökéletes este',
+  })
+  expect('meta' in t).toBe(false)
+})

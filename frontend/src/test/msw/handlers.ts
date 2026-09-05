@@ -1543,7 +1543,11 @@ export const handlers = [
   // still carries a fact) override with `server.use()`.
   http.get(`${API_BASE}/api/me/day/:date/evaluation`, ({ params }) => HttpResponse.json({
     date: params.date as string,
-    state: 'scored', score: 66, base: 66, adjustment: null,
+    state: 'scored', score: 66, base: 66,
+    // Stable UUID, distinct from the mock seed's — real-mode tests must see a non-null id too
+    // (mezo-jcpt.9), or the feedback chips never mount against this handler's response.
+    reviewId: '7a1b2c3d-4e5f-4678-9abc-def012345678',
+    adjustment: null,
     narrative: ['A napot a szerver értékelte ki — ez a valós módú válasz.'],
     highlights: [{ kind: 'key', label: 'A szerverről jött értékelés' }],
     context: [{ label: 'nap típusa', value: 'pihenőnap' }],

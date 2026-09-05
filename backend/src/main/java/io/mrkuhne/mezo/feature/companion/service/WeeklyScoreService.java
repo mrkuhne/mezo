@@ -215,7 +215,16 @@ public class WeeklyScoreService {
      *  per-domain averages (null when the week has none). A négy cache-oszlop a hat dimenzióból
      *  négyet vesz — {@code sleepAvg←sleep, fuelAvg←nutrition, checkinAvg←logging,
      *  activityAvg←training}; a {@code quality} és a {@code rhythm} szándékosan nem kap oszlopot
-     *  (mezo-jcpt.5, spec D3: a FE egyiket sem fogyasztja, így nincs migráció). */
+     *  (mezo-jcpt.5, spec D3: a FE egyiket sem fogyasztja, így nincs migráció).
+     *
+     *  <p><b>{@code checkinAvg} jelentése megváltozott (mezo-el0t).</b> {@code
+     *  subscoreAverage} csak a nem-null {@code logging} értékeket átlagolja — ez a képlet nem
+     *  változott. Ami változott: mit jelent egy nem-null {@code logging}. Egy teljesen érintetlen
+     *  nap {@code logging}-ja most null (nem mérhető), nem kitalált 0, tehát ezek a napok
+     *  mostantól KIESNEK az átlagból, ahelyett hogy 0-val lefelé húznák. A {@code checkin_avg}
+     *  oszlop ugyanazt a képletet futtatja, de más napkört átlagol — a már cache-elt heti sorok a
+     *  régi szabály szerint számoltak, ezért egyszeri purge kell rájuk (lásd
+     *  202609051200_mezo-el0t_weekly_score_cache_invalidation.sql). */
     static WeekAverages aggregate(List<DayScoreService.DayScore> dayScores) {
         if (dayScores == null || dayScores.isEmpty()) {
             return WeekAverages.EMPTY;

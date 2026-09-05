@@ -190,15 +190,20 @@ components:
         # never re-derive it from `category` ('supplement' is a legal category on a FOOD row).
         kind: { type: string, enum: [food, supplement, stim, med] }
         name: { type: string }
-        brand: { type: string }
+        # Honest nulls (mezo-xaq5): the read model must not fabricate "" / 0 for a value the
+        # definition simply does not carry. A fabricated "" echoed back by any client reads as a
+        # definition CHANGE in PantryMapper#definitionDiffers — a 403 for a non-author and a
+        # silent rewrite of the SHARED row for the author. `price` is per-user state, so it never
+        # 403s, but a fabricated 0 is indistinguishable from a genuinely free item.
+        brand: { type: string, nullable: true }
         source: { $ref: '#/components/schemas/PantrySource' }
-        category: { type: string }
+        category: { type: string, nullable: true }
         per: { type: number }
         unit: { type: string }
         macros: { $ref: '#/components/schemas/PantryMacros' }
-        price: { type: number }
-        priceUnit: { type: string }
-        pkg: { type: string }
+        price: { type: number, nullable: true }
+        priceUnit: { type: string, nullable: true }
+        pkg: { type: string, nullable: true }
         micros: { type: array, items: { $ref: '#/components/schemas/PantryMicro' } }
         nova: { type: integer, minimum: 1, maximum: 4, nullable: true }
         stock: { allOf: [ { $ref: '#/components/schemas/PantryStock' } ], nullable: true }
@@ -215,15 +220,15 @@ components:
         catalogEditable: { type: boolean }
     SupplementStashResponse:
       type: object
-      required: [id, name, brand, type, category, dose, form, protocol, timing, taken, catalogId, catalogEditable]
+      required: [id, name, brand, type, category, dose, form, protocol, timing, taken, macros, catalogId, catalogEditable]
       properties:
         id: { type: string, format: uuid }
         name: { type: string }
-        brand: { type: string }
+        brand: { type: string, nullable: true }
         type: { type: string, enum: [supplement, stimulant, medication] }
-        category: { type: string }
+        category: { type: string, nullable: true }
         dose: { type: string }
-        form: { type: string }
+        form: { type: string, nullable: true }
         stock: { type: number, nullable: true }
         stockUnit: { type: string, nullable: true }
         protocol: { type: string }
@@ -231,12 +236,15 @@ components:
         taken: { type: boolean }
         caffeine: { type: boolean, nullable: true }
         # Nutrition + commerce facts — mirror IngredientResponse so supplement detail/cards
-        # show macros/nutrients/price too (mezo-1za9). Nullable: pure dose/protocol items
-        # (many stim/med) carry no nutrition; macros is null when kcal is unset.
+        # show macros/nutrients/price too (mezo-1za9).
         source: { allOf: [ { $ref: '#/components/schemas/PantrySource' } ], nullable: true }
         per: { type: number, nullable: true }
         unit: { type: string, nullable: true }
-        macros: { allOf: [ { $ref: '#/components/schemas/PantryMacros' } ], nullable: true }
+        # ONE representation since mezo-qjwy: the object is ALWAYS present and its four fields are
+        # individually nullable (mezo-6omv). The old object-level null said the same thing as an
+        # all-null object, and that redundancy is exactly what made a truthiness gate on the detail
+        # page show the "log this meal" CTA for pure dose/protocol items.
+        macros: { $ref: '#/components/schemas/PantryMacros' }
         price: { type: number, nullable: true }
         priceUnit: { type: string, nullable: true }
         pkg: { type: string, nullable: true }

@@ -115,9 +115,21 @@ describe('RutinHubPage', () => {
     expect(screen.getByText('tökéletes reggel · 30 n')).toBeInTheDocument()
     expect(screen.getByText('tökéletes este · 30 n')).toBeInTheDocument()
     expect(screen.getByText('aktív szokás')).toBeInTheDocument()
-    expect(screen.getByText('6')).toBeInTheDocument() // perfectMorningDays30
+    // each value is bound to ITS cell — a bare getByText('6') would also pass if the two
+    // 30-day counters were swapped (mezo-j6hg)
+    const cellFor = (label: string) => screen.getByText(label).closest('.mz-statcell') as HTMLElement
+    expect(within(cellFor('tökéletes reggel · 30 n')).getByText('6')).toBeInTheDocument()
+    expect(within(cellFor('tökéletes este · 30 n')).getByText('4')).toBeInTheDocument()
+    expect(within(cellFor('aktív szokás')).getByText('3')).toBeInTheDocument()
     expect(container.querySelector('.gr-covtile')).toBeNull()
     expect(container.querySelector('.gr-cells')).toBeNull()
+  })
+
+  test('the habit list asks SortableList to hide its chevrons until focus', () => {
+    // without this, deleting `chevrons="focus"` would only fail the visual goldens — with a
+    // pixel diff nobody can read as "the prototype row grew two buttons" (mezo-j6hg)
+    const { container } = renderPage()
+    expect(container.querySelector('.srt-chev-focus')).not.toBeNull()
   })
 
   test('keeps the day navigator — the accepted extension over the prototype', () => {
@@ -168,6 +180,24 @@ describe('RutinHubPage', () => {
   test('a chain with no strength data shows no chip at all (honesty rule)', () => {
     renderPage()
     const evening = screen.getByText('Esti rutin').closest('.gr-chain') as HTMLElement
+    expect(evening.querySelector('.gr-band-chip')).toBeNull()
+  })
+
+  test('the honesty rule holds for a chain that HAS rows but no strength yet', () => {
+    // the case above has an empty chain, so it would pass even if the chip fabricated a zero
+    // for a real-but-unmeasured chain — this is that case (mezo-j6hg)
+    useHabitCatalog.mockReturnValue({
+      catalog: {
+        chains: [MORNING, { ...EVENING, defs: [def('tea', 'Esti tea', null, { chainKey: 'EVENING', position: 1 })] }],
+      },
+      isPending: false, isError: false, refetch: vi.fn(),
+    })
+    useHabitDay.mockReturnValue({
+      habits: [...habitsToday, { key: 'tea', chain: 'EVENING', title: 'Esti tea', status: 'pending', xp: 5 }],
+    })
+    renderPage()
+    const evening = screen.getByText('Esti rutin').closest('.gr-chain') as HTMLElement
+    expect(within(evening).getByText('Esti tea')).toBeInTheDocument()
     expect(evening.querySelector('.gr-band-chip')).toBeNull()
   })
 

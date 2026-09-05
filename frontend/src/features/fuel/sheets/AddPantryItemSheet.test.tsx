@@ -340,6 +340,25 @@ describe('AddPantryItemSheet · update payload (real mode)', () => {
     expect(sent.carbsG).toBeUndefined()
   })
 
+  // Important-1 (mezo-xaq5 final review): a `pantry_catalog.category IS NULL` row, edited by its
+  // owner with ONLY the price touched, must not fabricate a category on the wire. Before the fix,
+  // `useState(initial?.category ?? 'protein')` turned the missing prefill into a live default —
+  // `put()` then saw it differ from `initial?.category` (undefined) and sent it. FAILS on the
+  // pre-fix code with `sent.category === 'protein'`.
+  it('a null-category row saved with only price touched sends no category (mezo-xaq5)', async () => {
+    const read = renderEdit({
+      initial: { kind: 'food', name: 'Kategória nélküli tétel', per: 100, unit: 'g', kcal: 50 },
+    })
+
+    fireEvent.change(screen.getByLabelText(/ár \(ft\)/i), { target: { value: '1234' } })
+    fireEvent.click(screen.getByRole('button', { name: /mentés/i }))
+
+    await waitFor(() => expect(read()).not.toBeNull())
+    const sent = read()!
+    expect(sent.price).toBe(1234)
+    expect(sent.category).toBeUndefined()
+  })
+
   it('a genuinely typed 0 over an empty macro is still sent (the echo fix must not swallow it)', async () => {
     const read = renderEdit({
       initial: { kind: 'food', name: 'Hiányos makrójú étel', per: 100, unit: 'g', kcal: 884 },

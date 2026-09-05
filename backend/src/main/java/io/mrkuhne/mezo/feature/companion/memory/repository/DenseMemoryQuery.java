@@ -21,16 +21,20 @@ import org.springframework.stereotype.Repository;
 public class DenseMemoryQuery {
 
     public record Hit(UUID itemId, UUID sourceId, String sourceKind, String label, String content,
-                      LocalDate occurredOn, BigDecimal salience, double distance) {
+                      LocalDate occurredOn, BigDecimal salience, double distance, UUID diversityGroupId) {
     }
 
     private static final String SAVEPOINT_NAME = "memory_dense_retrieval";
     private static final String SQL_HEAD = """
         select i.id as item_id, i.source_id, i.source_kind,
                coalesce(i.title, i.source_kind) as label, i.content, i.occurred_on, i.salience,
-               (v.embedding <=> cast(:queryVector as vector)) as distance
+               (v.embedding <=> cast(:queryVector as vector)) as distance,
+               source_message.conversation_id as diversity_group_id
         from memory_vector v
         join memory_item i on i.id = v.memory_item_id and i.created_by = :userId
+        left join ai_message source_message
+          on i.source_kind = 'chat_turn' and source_message.id = i.source_id
+         and source_message.created_by = :userId and source_message.is_deleted = false
         where v.created_by = :userId
           and v.is_deleted = false and v.status = 'ready' and v.embedding is not null
           and v.embedding_version = :embeddingVersion
@@ -59,7 +63,8 @@ public class DenseMemoryQuery {
             rs.getString("content"),
             rs.getObject("occurred_on", LocalDate.class),
             rs.getBigDecimal("salience"),
-            rs.getDouble("distance"));
+            rs.getDouble("distance"),
+            rs.getObject("diversity_group_id", UUID.class));
 
     private final NamedParameterJdbcTemplate jdbc;
 

@@ -83,6 +83,174 @@ class DayReviewServiceTest {
         }
     }
 
+    /** Fluent {@link DayInputs} fixture (same pattern as {@code DayEvaluationEngineTest}'s
+     *  {@code DayInputsBuilder}), introduced to retire the 6 raw positional {@code new
+     *  DayInputs(...)} call sites this file used to carry — a 19-component positional record is
+     *  exactly where an argument-order bug hides (mezo-jcpt.8). {@link #from} seeds every field
+     *  from an existing instance so a test that only changes one or two fields (e.g. a
+     *  retroactive sleep correction) states just that delta instead of repeating the whole row. */
+    private static final class DayInputsBuilder {
+        private LocalDate date;
+        private boolean closed;
+        private Double kcal;
+        private Double proteinG;
+        private Double carbsG;
+        private Double fatG;
+        private Double kcalTarget;
+        private Double proteinTargetG;
+        private Double carbsTargetG;
+        private Double fatTargetG;
+        private boolean workoutDay;
+        private Integer plannedWorkouts;
+        private Integer doneWorkouts;
+        private Double sleepH;
+        private Integer sleepQuality1to10;
+        private List<DayEvaluationEngine.MealLogFact> meals = List.of();
+        private boolean waterLogged;
+        private int checkinCount;
+        private Double weightKg;
+        private Integer xp;
+        private List<Integer> priorBaseScores = List.of();
+
+        static DayInputsBuilder from(DayInputs in) {
+            DayInputsBuilder b = new DayInputsBuilder();
+            b.date = in.date();
+            b.closed = in.closed();
+            b.kcal = in.kcal();
+            b.proteinG = in.proteinG();
+            b.carbsG = in.carbsG();
+            b.fatG = in.fatG();
+            b.kcalTarget = in.kcalTarget();
+            b.proteinTargetG = in.proteinTargetG();
+            b.carbsTargetG = in.carbsTargetG();
+            b.fatTargetG = in.fatTargetG();
+            b.workoutDay = in.workoutDay();
+            b.plannedWorkouts = in.plannedWorkouts();
+            b.doneWorkouts = in.doneWorkouts();
+            b.sleepH = in.sleepH();
+            b.sleepQuality1to10 = in.sleepQuality1to10();
+            b.meals = in.meals();
+            b.waterLogged = in.waterLogged();
+            b.checkinCount = in.checkinCount();
+            b.weightKg = in.weightKg();
+            b.xp = in.xp();
+            b.priorBaseScores = in.priorBaseScores();
+            return b;
+        }
+
+        DayInputsBuilder date(LocalDate v) {
+            this.date = v;
+            return this;
+        }
+
+        DayInputsBuilder closed(boolean v) {
+            this.closed = v;
+            return this;
+        }
+
+        DayInputsBuilder kcal(Double v) {
+            this.kcal = v;
+            return this;
+        }
+
+        DayInputsBuilder proteinG(Double v) {
+            this.proteinG = v;
+            return this;
+        }
+
+        DayInputsBuilder carbsG(Double v) {
+            this.carbsG = v;
+            return this;
+        }
+
+        DayInputsBuilder fatG(Double v) {
+            this.fatG = v;
+            return this;
+        }
+
+        DayInputsBuilder kcalTarget(Double v) {
+            this.kcalTarget = v;
+            return this;
+        }
+
+        DayInputsBuilder proteinTargetG(Double v) {
+            this.proteinTargetG = v;
+            return this;
+        }
+
+        DayInputsBuilder carbsTargetG(Double v) {
+            this.carbsTargetG = v;
+            return this;
+        }
+
+        DayInputsBuilder fatTargetG(Double v) {
+            this.fatTargetG = v;
+            return this;
+        }
+
+        DayInputsBuilder workoutDay(boolean v) {
+            this.workoutDay = v;
+            return this;
+        }
+
+        DayInputsBuilder plannedWorkouts(Integer v) {
+            this.plannedWorkouts = v;
+            return this;
+        }
+
+        DayInputsBuilder doneWorkouts(Integer v) {
+            this.doneWorkouts = v;
+            return this;
+        }
+
+        DayInputsBuilder sleepH(Double v) {
+            this.sleepH = v;
+            return this;
+        }
+
+        DayInputsBuilder sleepQuality1to10(Integer v) {
+            this.sleepQuality1to10 = v;
+            return this;
+        }
+
+        DayInputsBuilder meals(List<DayEvaluationEngine.MealLogFact> v) {
+            this.meals = v;
+            return this;
+        }
+
+        DayInputsBuilder waterLogged(boolean v) {
+            this.waterLogged = v;
+            return this;
+        }
+
+        DayInputsBuilder checkinCount(int v) {
+            this.checkinCount = v;
+            return this;
+        }
+
+        DayInputsBuilder priorBaseScores(List<Integer> v) {
+            this.priorBaseScores = v;
+            return this;
+        }
+
+        DayInputsBuilder weightKg(Double v) {
+            this.weightKg = v;
+            return this;
+        }
+
+        DayInputsBuilder xp(Integer v) {
+            this.xp = v;
+            return this;
+        }
+
+        DayInputs build() {
+            return new DayInputs(date, closed, kcal, proteinG, carbsG, fatG,
+                kcalTarget, proteinTargetG, carbsTargetG, fatTargetG, workoutDay,
+                plannedWorkouts, doneWorkouts, sleepH, sleepQuality1to10, meals,
+                waterLogged, checkinCount, weightKg, xp, priorBaseScores);
+        }
+    }
+
     private final FakeDayReviewLlm fakeLlm = new FakeDayReviewLlm();
     /** The single in-memory day_review row — the repository mock reads and writes through it. */
     private final AtomicReference<DayReviewEntity> stored = new AtomicReference<>();
@@ -99,6 +267,11 @@ class DayReviewServiceTest {
             .thenAnswer(i -> Optional.ofNullable(stored.get()));
         when(dayReviewRepository.save(any(DayReviewEntity.class))).thenAnswer(i -> {
             DayReviewEntity e = i.getArgument(0);
+            // The real repository assigns the row's id on first insert (@GeneratedValue) — this
+            // mock mirrors that so reviewId tests can observe a real, stable id (mezo-jcpt.9).
+            if (e.getId() == null) {
+                e.setId(UUID.randomUUID());
+            }
             stored.set(e);
             return e;
         });
@@ -156,6 +329,81 @@ class DayReviewServiceTest {
             org.assertj.core.groups.Tuple.tuple("key", "Üres fajta"));
     }
 
+    // --- reviewId (mezo-jcpt.9): the feedback chips' artifact id -----------------------------
+
+    /** The house pattern: the artifact id IS the artifact's own row id — never a natural key. */
+    @Test
+    void testAssemble_shouldCarryTheRowIdAsReviewId_afterFirstGeneration() {
+        fakeLlm.answer = answer("""
+            {"narrative":["Első."],"dimensionNotes":{},"highlights":[],"adjustment":null}""");
+
+        DayEvaluationResponse response = service.assemble(USER, DAY);
+
+        assertThat(response.getReviewId()).isNotNull();
+        assertThat(response.getReviewId()).isEqualTo(stored.get().getId());
+    }
+
+    /** A cache hit must serve the SAME row's id, not a fresh one — voting on a cached narrative
+     *  must not move the target out from under an already-cast vote. */
+    @Test
+    void testAssemble_shouldServeTheSameReviewId_whenServedFromCache() {
+        fakeLlm.answer = answer("""
+            {"narrative":["Első."],"dimensionNotes":{},"highlights":[],"adjustment":null}""");
+
+        UUID first = service.assemble(USER, DAY).getReviewId();
+        UUID second = service.assemble(USER, DAY).getReviewId();
+
+        assertThat(second).isEqualTo(first);
+        assertThat(fakeLlm.calls).isEqualTo(1);
+    }
+
+    /** The row is rewritten IN PLACE on a hash change (the {@code existing} branch of upsert) —
+     *  so the id stays stable even across a regenerate, exactly like the real one-row-per-day
+     *  partial unique index guarantees. */
+    @Test
+    void testAssemble_shouldKeepTheSameReviewId_acrossARegenerate() {
+        fakeLlm.answer = answer("""
+            {"narrative":["Régi."],"dimensionNotes":{},"highlights":[],"adjustment":null}""");
+        UUID before = service.assemble(USER, DAY).getReviewId();
+
+        // A builderen keresztül (mezo-jcpt.8): a DayInputs pozicionális rekord, és a
+        // weightKg/xp felvétele óta egy nyers `new DayInputs(...)` másolat csendben elcsúszna.
+        inputs = DayInputsBuilder.from(inputs).closed(true).sleepH(4.0).sleepQuality1to10(3).build();
+        fakeLlm.answer = answer("""
+            {"narrative":["Új."],"dimensionNotes":{},"highlights":[],"adjustment":null}""");
+
+        UUID after = service.assemble(USER, DAY).getReviewId();
+
+        assertThat(after).isEqualTo(before);
+    }
+
+    /** No prose, no artifact, no chips — the house rule: an absent narrative means an absent id,
+     *  never a dangling one the FE could try to vote on. */
+    @Test
+    void testAssemble_shouldHaveNoReviewId_whenAnswerIsGarbage() {
+        fakeLlm.answer = "ez nem json egyáltalán";
+
+        assertThat(service.assemble(USER, DAY).getReviewId()).isNull();
+    }
+
+    @Test
+    void testAssemble_shouldHaveNoReviewId_whenPortAbsent() {
+        service = new DayReviewService(dayScoreService, new DayEvaluationEngine(props),
+            dayReviewRepository, metricSeriesService, weightTrendService, props,
+            provider(null), new ObjectMapper(), new LlmCallContextHolder());
+
+        assertThat(service.assemble(USER, DAY).getReviewId()).isNull();
+    }
+
+    @Test
+    void testAssemble_shouldHaveNoReviewId_whenDayIsNotScored() {
+        LocalDate today = LocalDate.now();
+        DayInputs open = openDay(today);
+        when(dayScoreService.inputsFor(eq(USER), eq(today), any())).thenReturn(open);
+
+        assertThat(service.assemble(USER, today).getReviewId()).isNull();
+    }
+
     // --- (b) an inputs change regenerates -----------------------------------------------------
 
     @Test
@@ -167,11 +415,7 @@ class DayReviewServiceTest {
         String hashBefore = stored.get().getInputsHash();
 
         // The day's numbers moved (a retroactively logged sleep) -> the cached prose is stale.
-        inputs = new DayInputs(DAY, true, inputs.kcal(), inputs.proteinG(), inputs.carbsG(),
-            inputs.fatG(), inputs.kcalTarget(), inputs.proteinTargetG(), inputs.carbsTargetG(),
-            inputs.fatTargetG(), inputs.workoutDay(), inputs.plannedWorkouts(),
-            inputs.doneWorkouts(), 4.0, 3, inputs.meals(), inputs.waterLogged(),
-            inputs.checkinCount(), inputs.priorBaseScores());
+        inputs = DayInputsBuilder.from(inputs).sleepH(4.0).sleepQuality1to10(3).build();
         fakeLlm.answer = answer("""
             {"narrative":["Új."],"dimensionNotes":{},"highlights":[],"adjustment":null}""");
 
@@ -199,11 +443,7 @@ class DayReviewServiceTest {
 
         // carbs 300 -> 320 g against a 300 g target: still inside the .15 carb/fat band, so
         // carbFatFit stays 1.0 and nutrition stays 100 -- only the "c · f" FACT moved.
-        inputs = new DayInputs(DAY, true, inputs.kcal(), inputs.proteinG(), 320.0,
-            inputs.fatG(), inputs.kcalTarget(), inputs.proteinTargetG(), inputs.carbsTargetG(),
-            inputs.fatTargetG(), inputs.workoutDay(), inputs.plannedWorkouts(),
-            inputs.doneWorkouts(), inputs.sleepH(), inputs.sleepQuality1to10(), inputs.meals(),
-            inputs.waterLogged(), inputs.checkinCount(), inputs.priorBaseScores());
+        inputs = DayInputsBuilder.from(inputs).carbsG(320.0).build();
         fakeLlm.answer = answer("""
             {"narrative":["320 g szenhidrat."],"dimensionNotes":{},"highlights":[],
              "adjustment":null}""");
@@ -362,8 +602,11 @@ class DayReviewServiceTest {
      */
     @Test
     void testAssemble_shouldReportEmpty_andAskNothing_whenNothingWasLogged() {
-        inputs = new DayInputs(DAY, true, null, null, null, null, 2600.0, 160.0, 300.0, 80.0,
-            false, null, null, null, null, List.of(), false, 0, List.of(70, 78, 80));
+        inputs = new DayInputsBuilder()
+            .date(DAY).closed(true)
+            .kcalTarget(2600.0).proteinTargetG(160.0).carbsTargetG(300.0).fatTargetG(80.0)
+            .priorBaseScores(List.of(70, 78, 80))
+            .build();
 
         DayEvaluationResponse response = service.assemble(USER, DAY);
 
@@ -378,8 +621,51 @@ class DayReviewServiceTest {
         // and sleep is DONE -> two dimensions, so this day IS scoreable; drop the sleep log to a
         // lone check-in instead, which leaves only logging DONE -> base null, but something WAS
         // logged, so the honest state is "thin", not "empty".
-        inputs = new DayInputs(DAY, true, null, null, null, null, 2600.0, 160.0, 300.0, 80.0,
-            false, null, null, null, null, List.of(), false, 1, List.of());
+        inputs = new DayInputsBuilder()
+            .date(DAY).closed(true)
+            .kcalTarget(2600.0).proteinTargetG(160.0).carbsTargetG(300.0).fatTargetG(80.0)
+            .checkinCount(1)
+            .build();
+
+        DayEvaluationResponse response = service.assemble(USER, DAY);
+
+        assertThat(response.getState()).isEqualTo("thin");
+        assertThat(response.getScore()).isNull();
+        assertThat(fakeLlm.calls).isZero();
+    }
+
+    /**
+     * The headline user-visible fix this task (`mezo-jcpt.8`) closes: before it, a day with
+     * ONLY a morning weigh-in and nothing else looked exactly like a fully untouched day --
+     * both read "empty". A logged weight IS a log, so this must read "thin" (something was
+     * measured, just not enough dimensions for a base score), never "empty".
+     */
+    @Test
+    void testAssemble_shouldReportThin_whenOnlyAWeighInWasLogged() {
+        inputs = new DayInputsBuilder()
+            .date(DAY).closed(true)
+            .kcalTarget(2600.0).proteinTargetG(160.0).carbsTargetG(300.0).fatTargetG(80.0)
+            .weightKg(74.2)
+            .build();
+
+        DayEvaluationResponse response = service.assemble(USER, DAY);
+
+        assertThat(response.getState()).isEqualTo("thin");
+        assertThat(response.getScore()).isNull();
+        assertThat(fakeLlm.calls).isZero();
+    }
+
+    /**
+     * The XP half of the same `mezo-jcpt.8` fix: a day with ONLY an XP grant and nothing else
+     * logged must also read "thin", not "empty" -- an XP grant is a real, measured signal.
+     */
+    @Test
+    void testAssemble_shouldReportThin_whenOnlyXpWasLogged() {
+        inputs = new DayInputsBuilder()
+            .date(DAY).closed(true)
+            .kcalTarget(2600.0).proteinTargetG(160.0).carbsTargetG(300.0).fatTargetG(80.0)
+            .xp(120)
+            .build();
 
         DayEvaluationResponse response = service.assemble(USER, DAY);
 
@@ -437,17 +723,21 @@ class DayReviewServiceTest {
             java.time.LocalTime.of(12, 30), java.time.LocalTime.of(12, 0), 0.9, 0.8, 1200));
         meals.add(new DayEvaluationEngine.MealLogFact("dinner",
             java.time.LocalTime.of(19, 10), java.time.LocalTime.of(19, 0), 0.8, 0.7, 1400));
-        return new DayInputs(DAY, true,
-            2600.0, 160.0, 300.0, 80.0,
-            2600.0, 160.0, 300.0, 80.0,
-            true, 1, 1,
-            7.5, 8,
-            meals, true, 4,
-            List.of(70, 75, 80, 78));
+        return new DayInputsBuilder()
+            .date(DAY).closed(true)
+            .kcal(2600.0).proteinG(160.0).carbsG(300.0).fatG(80.0)
+            .kcalTarget(2600.0).proteinTargetG(160.0).carbsTargetG(300.0).fatTargetG(80.0)
+            .workoutDay(true).plannedWorkouts(1).doneWorkouts(1)
+            .sleepH(7.5).sleepQuality1to10(8)
+            .meals(meals).waterLogged(true).checkinCount(4)
+            .priorBaseScores(List.of(70, 75, 80, 78))
+            .build();
     }
 
     private static DayInputs openDay(LocalDate date) {
-        return new DayInputs(date, false, null, null, null, null, 2600.0, 160.0, 300.0, 80.0,
-            false, null, null, null, null, List.of(), false, 0, List.of());
+        return new DayInputsBuilder()
+            .date(date).closed(false)
+            .kcalTarget(2600.0).proteinTargetG(160.0).carbsTargetG(300.0).fatTargetG(80.0)
+            .build();
     }
 }

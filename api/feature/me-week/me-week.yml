@@ -202,6 +202,14 @@ components:
       properties:
         date: { type: string, format: date }
         state: { type: string, description: scored|in_progress|thin|empty|future }
+        reviewId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            A naphoz tartozó LLM-próza (day_review) sor-azonosítója — a visszajelzés-gombok
+            artifact-id-je (mezo-jcpt.9). CSAK prózás (pontozott) napon van jelen: nincs próza
+            → nincs id → nincs gomb, mert artifact nélkül nincs mire szavazni.
         score: { type: integer, nullable: true, description: 'base + adjustment.delta, clamped 0..100' }
         base: { type: integer, nullable: true }
         adjustment:

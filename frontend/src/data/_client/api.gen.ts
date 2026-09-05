@@ -5723,15 +5723,15 @@ export interface components {
             /** @enum {string} */
             kind: "food" | "supplement" | "stim" | "med";
             name: string;
-            brand: string;
+            brand: string | null;
             source: components["schemas"]["PantrySource"];
-            category: string;
+            category: string | null;
             per: number;
             unit: string;
             macros: components["schemas"]["PantryMacros"];
-            price: number;
-            priceUnit: string;
-            pkg: string;
+            price: number | null;
+            priceUnit: string | null;
+            pkg: string | null;
             micros: components["schemas"]["PantryMicro"][];
             nova?: number | null;
             stock?: components["schemas"]["PantryStock"] | null;
@@ -5750,12 +5750,12 @@ export interface components {
             /** Format: uuid */
             id: string;
             name: string;
-            brand: string;
+            brand: string | null;
             /** @enum {string} */
             type: "supplement" | "stimulant" | "medication";
-            category: string;
+            category: string | null;
             dose: string;
-            form: string;
+            form: string | null;
             stock?: number | null;
             stockUnit?: string | null;
             protocol: string;
@@ -5765,7 +5765,7 @@ export interface components {
             source?: components["schemas"]["PantrySource"] | null;
             per?: number | null;
             unit?: string | null;
-            macros?: components["schemas"]["PantryMacros"] | null;
+            macros: components["schemas"]["PantryMacros"];
             price?: number | null;
             priceUnit?: string | null;
             pkg?: string | null;
@@ -8399,7 +8399,7 @@ export interface components {
             reason?: string | null;
         };
         MessageFeedbackResponse: {
-            /** @description 'chat_message' | 'feed_message' | 'weekly_suggestion' | 'weekly_review' | 'memoir' | 'prediction' */
+            /** @description 'chat_message' | 'feed_message' | 'weekly_suggestion' | 'weekly_review' | 'memoir' | 'prediction' | 'day_review' */
             artifactKind: string;
             /** Format: uuid */
             artifactId: string;
@@ -8548,6 +8548,11 @@ export interface components {
             date: string;
             /** @description scored|in_progress|thin|empty|future */
             state: string;
+            /**
+             * Format: uuid
+             * @description A naphoz tartozó LLM-próza (day_review) sor-azonosítója — a visszajelzés-gombok artifact-id-je (mezo-jcpt.9). CSAK prózás (pontozott) napon van jelen: nincs próza → nincs id → nincs gomb, mert artifact nélkül nincs mire szavazni.
+             */
+            reviewId?: string | null;
             /** @description base + adjustment.delta, clamped 0..100 */
             score?: number | null;
             base?: number | null;

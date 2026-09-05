@@ -588,8 +588,39 @@ mezo:
       audit:
         # Retrieval audit rows older than this many days become retention candidates.
         retention-days: 30
-        # Daily retrieval-audit retention slot; the retention job lands in a later task.
+        # Daily physical purge slot for expired retrieval audit runs and their cascade children.
         retention-cron: "0 50 3 * * *"
+      fusion:
+        # Reciprocal-rank denominator constant used by weighted RRF.
+        rrf-constant: 60
+        # Per-retriever RRF weights; all candidate sources start equally weighted.
+        retriever-weights:
+          dense: 1.0
+          lexical: 1.0
+          facts: 1.0
+          graph: 1.0
+        # Bounded deterministic score components retained in every retrieval trace.
+        pinned-boost: 0.005
+        source-reliability-max-boost: 0.004
+        temporal-max-boost: 0.004
+        salience-max-adjustment: 0.002
+        recency-max-boost: 0.003
+      execution:
+        # Independent deadline for each parallel retriever; one timeout never cancels its peers.
+        retriever-timeout-ms: 200
+      reranker:
+        # Off by default: normal chat never requires an LLM reranker.
+        enabled: false
+        # Top-two score gap below which retrieval is considered uncertain.
+        uncertainty-delta: 0.002
+        # Maximum candidates and per-candidate text exposed to an enabled reranker.
+        max-candidates: 20
+        max-content-chars: 600
+        # Hard deadline; timeout always falls back to deterministic fused order.
+        timeout-ms: 200
+      indicators:
+        # Active memories older than this are explicitly labelled old in rendered context.
+        old-after-days: 365
     recall:
       # V2.3 find_similar_past_days — episodic recall ranking: similarity × exp(-age/decay-days)
       # τ: how fast an old day's relevance fades (days)

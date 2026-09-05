@@ -296,6 +296,21 @@ class PantryImportApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testImport_shouldReplacePriceTogetherWithTheUnit_whenReimportOmitsThePrice() {
+        // The mirror of testImport_shouldReplacePriceUnitTogetherWithPrice: the pair moves as ONE
+        // unit in BOTH directions, so a re-import carrying only a unit must not leave the old
+        // amount standing next to the new unit (mezo-uhe5).
+        RegisteredUser user = registerUser("Egység Ár");
+
+        importOnce(user.headers(), "Zabpehely", 1490, "/kg");
+        importOnce(user.headers(), "Zabpehely", null, "/db");
+
+        PantryItemEntity shelf = itemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(user.id()).getFirst();
+        assertThat(shelf.getPriceHuf()).isNull();
+        assertThat(shelf.getPriceUnit()).isEqualTo("/db");
+    }
+
+    @Test
     void testImport_shouldPersistPhotoSource_whenOriginPhoto() {
         HttpHeaders auth = ownerAuthHeaders();
 

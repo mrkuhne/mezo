@@ -12,7 +12,8 @@ const food = (over: Partial<Ingredient> = {}): Ingredient => ({
 const supp = (over: Partial<SupplementStashItem> = {}): SupplementStashItem => ({
   id: 's1', name: 'Magnézium-glicinát', brand: 'Pure', type: 'supplement', category: 'sleep',
   dose: '300mg', form: 'kapszula', stock: 10, stockUnit: 'db',
-  protocol: '', timing: 'evening', taken: false, ...over,
+  protocol: '', timing: 'evening', taken: false,
+  macros: { kcal: null, p: null, c: null, f: null }, ...over,
 })
 
 test('buildPickables maps a food ingredient to kind food and keeps its id', () => {

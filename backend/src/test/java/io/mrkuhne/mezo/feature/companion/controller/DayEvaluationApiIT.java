@@ -2,10 +2,15 @@ package io.mrkuhne.mezo.feature.companion.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.DayDimension;
+import io.mrkuhne.mezo.api.dto.DayDimensionFactsInner;
 import io.mrkuhne.mezo.api.dto.DayEvaluationResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
+import io.mrkuhne.mezo.feature.companion.entity.DayReviewEntity;
+import io.mrkuhne.mezo.feature.companion.entity.DayReviewJson;
+import io.mrkuhne.mezo.feature.companion.repository.DayReviewRepository;
 import io.mrkuhne.mezo.feature.companion.service.DayReviewLlm;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
@@ -18,10 +23,15 @@ import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +64,7 @@ class DayEvaluationApiIT extends ApiIntegrationTest {
     @Autowired private FuelDayService fuelDayService;
     @Autowired private AppUserRepository appUserRepository;
     @Autowired private OwnerProperties ownerProperties;
+    @Autowired private DayReviewRepository dayReviewRepository;
 
     private UUID ownerId() {
         return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
@@ -87,6 +98,11 @@ class DayEvaluationApiIT extends ApiIntegrationTest {
             .mapToDouble(d -> d.getWeight().doubleValue())
             .sum();
         assertThat(doneWeights).isCloseTo(1.0, org.assertj.core.data.Offset.offset(0.001));
+        // the fake LLM echoes the prompt rather than answering JSON (class javadoc) -> no
+        // parseable prose is ever produced here, so a scored day with no cached row still has
+        // no reviewId — see aDayWithoutProse_carriesNoReviewId below for the honest-null half,
+        // and scoredDay_carriesTheReviewId_soTheUserHasSomethingToVoteOn for the seeded-cache half.
+        assertThat(response.getReviewId()).isNull();
     }
 
     @Test
@@ -98,6 +114,7 @@ class DayEvaluationApiIT extends ApiIntegrationTest {
         assertThat(response.getBase()).isNull();
         assertThat(response.getDimensions()).hasSize(6);
         assertThat(response.getNarrative()).isEmpty();
+        assertThat(response.getReviewId()).isNull();
     }
 
     @Test
@@ -108,6 +125,76 @@ class DayEvaluationApiIT extends ApiIntegrationTest {
         assertThat(response.getScore()).isNull();
         assertThat(response.getDimensions()).hasSize(6);
         assertThat(response.getContext()).isEmpty();
+        assertThat(response.getReviewId()).isNull();
+    }
+
+    /**
+     * The house pattern (mezo-jcpt.9): the artifact the feedback chips vote on is the artifact's
+     * OWN row id — {@code FeedMessageResponse}, {@code WeeklySuggestionResponse} and
+     * {@code MemoirResponse} all gained one for exactly this reason. {@code DayReviewService}
+     * only ever serves a non-null {@code reviewId} from a CACHE HIT (the fake companion LLM never
+     * answers parseable JSON, so no row is ever freshly generated in this test process) — so this
+     * test seeds the {@code day_review} row itself, with an {@code inputsHash} it derives from a
+     * first, un-cached read's own wire response, using the exact algorithm
+     * {@code DayReviewService#inputsHash} hashes over (dimension id|score|status + facts, then
+     * base). A second read then must hit that row.
+     */
+    @Test
+    void scoredDay_carriesTheReviewId_soTheUserHasSomethingToVoteOn() throws NoSuchAlgorithmException {
+        UUID owner = ownerId();
+        LocalDate date = LocalDate.of(2026, 6, 20);
+        seedDenseDay(owner, date);
+
+        DayEvaluationResponse uncached = evaluation(date);
+        assertThat(uncached.getState()).isEqualTo("scored");
+        assertThat(uncached.getReviewId()).isNull();
+
+        String hash = inputsHash(uncached);
+        DayReviewEntity row = new DayReviewEntity();
+        row.setCreatedBy(owner);
+        row.setDate(date);
+        row.setEnvelope(new DayReviewJson(List.of("Szemből a rendszer."), java.util.Map.of(),
+            List.of(), null, List.of()));
+        row.setInputsHash(hash);
+        row.setComputedAt(Instant.now());
+        UUID seededId = dayReviewRepository.saveAndFlush(row).getId();
+
+        DayEvaluationResponse cached = evaluation(date);
+
+        assertThat(cached.getReviewId()).isNotNull().isEqualTo(seededId);
+        assertThat(cached.getNarrative()).containsExactly("Szemből a rendszer.");
+    }
+
+    @Test
+    void aDayWithoutProse_carriesNoReviewId_soNoChipsCanAppear() {
+        DayEvaluationResponse thin = evaluation(LocalDate.now().minusDays(30));
+
+        assertThat(thin.getState()).isIn("empty", "thin");
+        assertThat(thin.getReviewId()).isNull();
+    }
+
+    /** Mirrors {@code DayReviewService#inputsHash} exactly, over the PUBLIC wire response —
+     *  dimension order and fact order are preserved end to end, so this is a faithful black-box
+     *  reconstruction, not a guess. */
+    private static String inputsHash(DayEvaluationResponse response) throws NoSuchAlgorithmException {
+        StringBuilder sb = new StringBuilder();
+        for (DayDimension d : response.getDimensions()) {
+            sb.append(d.getId()).append('|')
+                .append(d.getScore() == null ? "" : d.getScore()).append('|')
+                .append(d.getStatus()).append('\n');
+            for (DayDimensionFactsInner f : d.getFacts()) {
+                sb.append("  fact|").append(f.getLabel()).append('|').append(f.getValue()).append('\n');
+            }
+        }
+        sb.append("base|").append(response.getBase() == null ? "" : response.getBase());
+        byte[] digest = MessageDigest.getInstance("SHA-256")
+            .digest(sb.toString().getBytes(StandardCharsets.UTF_8));
+        StringBuilder hex = new StringBuilder(digest.length * 2);
+        for (byte b : digest) {
+            hex.append(Character.forDigit((b >> 4) & 0xF, 16))
+                .append(Character.forDigit(b & 0xF, 16));
+        }
+        return hex.toString();
     }
 
     /** The switch-ON half of the pair {@code DayEvaluationSwitchOffApiIT} completes: with
