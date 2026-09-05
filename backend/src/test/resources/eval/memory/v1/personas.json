@@ -1,0 +1,16 @@
+[ {
+  "id" : "rich",
+  "displayName" : "Dóra",
+  "loggingStyle" : "Naponta több részletes bejegyzés",
+  "lifeContext" : "Budapesti terméktervező, fut, túrázik és rendszeresen reflektál."
+}, {
+  "id" : "sparse",
+  "displayName" : "Áron",
+  "loggingStyle" : "Hetente néhány rövid bejegyzés",
+  "lifeContext" : "Szegedi fejlesztő, falat mászik; csak fontos eseményeket rögzít."
+}, {
+  "id" : "changing",
+  "displayName" : "Eszter",
+  "loggingStyle" : "Rendszeres, de változó állapotokat rögzít",
+  "lifeContext" : "Pécsi tanár, költözés és munkahelyváltás közben régi terveket ír felül."
+} ]

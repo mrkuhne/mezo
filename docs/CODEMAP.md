@@ -343,7 +343,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 167 IT + 26 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 168 IT + 30 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatServiceAmbientRecallIT`, `ChatServiceGraphBlockFailureIT`, `ChatServiceGraphBlockIT`,
@@ -377,19 +377,19 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MeWeekTrendIT`, `MemoryContextServiceIT`, `MemoryEmbeddingAnnQueryIT`, `MemoryEmbeddingRepositoryIT`,
     `MemoryEmbeddingWriterIT`, `MemoryLlmUsageIsolationIT`, `MemoryPlatformPersistenceIT`,
     `MemoryPlatformPropertiesIT`, `MemoryProjectionFailureIsolationIT`, `MemoryProjectionWriterIT`,
-    `MemoryQueryPreparerIT`, `MemoryRecallServiceIT`, `MemoryReembeddingIT`, `MemoryRetrievalFeedbackApiIT`,
-    `MemoryRetrievalRetentionIT`, `MemoryToolsRenderIT`, `MesoReviewGeneratorIT`, `MessageFeedbackPersistenceIT`,
-    `MetricSeriesCoachingIT`, `MetricSeriesDerivedIT`, `MetricSeriesExpansionIT`, `MetricSeriesServiceIT`,
-    `NoteEmbeddingBudgetIT`, `NoteEmbeddingCatchUpIT`, `NoteEmbeddingSwitchOffIT`, `NoteEmbeddingWriterIT`,
-    `NoteMentionCatchUpIT`, `NoteVectorLifecycleBudgetIT`, `NoteVectorLifecycleIT`, `PatternDetectionJobSwitchOffIT`,
-    `PatternDetectionServiceIT`, `PeriodSummaryPersistenceIT`, `PeriodSummaryServiceIT`, `PersonExtractionServiceIT`,
-    `PersonGraphEdgeAdapterIT`, `ProfileAssemblerIT`, `ProfileAssemblerJobIT`, `ProfileAssemblerJobSwitchOffIT`,
-    `ProfileAssemblerWindowHeaderIT`, `ProfilePromptAssemblerFailureIT`, `ProfilePromptAssemblerIT`,
-    `ProfilePropertiesIT`, `ProfileSourceFindersIT`, `PromptMemoryAssemblerIT`, `PromptMemoryAssemblerShadowIT`,
-    `PromptMemoryAssemblerSwitchOffIT`, `QuarterlyPropertiesIT`, `QuarterlyReviewJobIT`,
-    `QuarterlyReviewJobProfileSwitchOffIT`, `QuarterlyReviewJobSwitchOffIT`, `QuarterlyReviewPayloadIT`,
-    `QuarterlyReviewServiceIT`, `SleepLogDetailRenderIT`, `ToolSelectionEvalIT`, `TurnEmbeddingListenerIT`,
-    `TurnEmbeddingSwitchOffIT`, `TurnVerdictCheckIT`
+    `MemoryQueryPreparerIT`, `MemoryRecallServiceIT`, `MemoryReembeddingIT`, `MemoryRetrievalDeterministicEvalIT`,
+    `MemoryRetrievalFeedbackApiIT`, `MemoryRetrievalRetentionIT`, `MemoryToolsRenderIT`, `MesoReviewGeneratorIT`,
+    `MessageFeedbackPersistenceIT`, `MetricSeriesCoachingIT`, `MetricSeriesDerivedIT`, `MetricSeriesExpansionIT`,
+    `MetricSeriesServiceIT`, `NoteEmbeddingBudgetIT`, `NoteEmbeddingCatchUpIT`, `NoteEmbeddingSwitchOffIT`,
+    `NoteEmbeddingWriterIT`, `NoteMentionCatchUpIT`, `NoteVectorLifecycleBudgetIT`, `NoteVectorLifecycleIT`,
+    `PatternDetectionJobSwitchOffIT`, `PatternDetectionServiceIT`, `PeriodSummaryPersistenceIT`,
+    `PeriodSummaryServiceIT`, `PersonExtractionServiceIT`, `PersonGraphEdgeAdapterIT`, `ProfileAssemblerIT`,
+    `ProfileAssemblerJobIT`, `ProfileAssemblerJobSwitchOffIT`, `ProfileAssemblerWindowHeaderIT`,
+    `ProfilePromptAssemblerFailureIT`, `ProfilePromptAssemblerIT`, `ProfilePropertiesIT`, `ProfileSourceFindersIT`,
+    `PromptMemoryAssemblerIT`, `PromptMemoryAssemblerShadowIT`, `PromptMemoryAssemblerSwitchOffIT`,
+    `QuarterlyPropertiesIT`, `QuarterlyReviewJobIT`, `QuarterlyReviewJobProfileSwitchOffIT`,
+    `QuarterlyReviewJobSwitchOffIT`, `QuarterlyReviewPayloadIT`, `QuarterlyReviewServiceIT`, `SleepLogDetailRenderIT`,
+    `ToolSelectionEvalIT`, `TurnEmbeddingListenerIT`, `TurnEmbeddingSwitchOffIT`, `TurnVerdictCheckIT`
   - **populators:** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`, `BiometricProfilePopulator`,
     `CheckInPopulator`, `CompanionMessagePopulator`, `DailySummaryPopulator`, `DatabasePopulator`,
     `DayReviewPopulator`, `FeedbackPopulator`, `FlagLogPopulator`, `GamificationPopulator`, `GoalPlanLinkPopulator`,
