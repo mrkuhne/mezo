@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,6 +29,12 @@ import java.util.regex.Pattern;
 @Profile("companion-fake")
 @ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
 public class FakeEmbeddingAdapter implements EmbeddingPort {
+
+    private final AtomicInteger queryCallCount = new AtomicInteger();
+
+    public int queryCallCount() {
+        return queryCallCount.get();
+    }
 
     /** Scripted vector: {@code [fake-embed:0.6 0.8]} → [0.6, 0.8, 0, …] normalized. */
     public static final Pattern EMBED_SENTINEL =
@@ -55,6 +62,7 @@ public class FakeEmbeddingAdapter implements EmbeddingPort {
 
     @Override
     public float[] embedQuery(String text) {
+        queryCallCount.incrementAndGet();
         return vectorFor(text);
     }
 

@@ -21,5 +21,9 @@ public record MemoryCandidate(
         double localScore,
         boolean pinned,
         boolean conflicting,
-        double salience) {
+        double salience,
+        /** Conversation-level diversity key; populated for chat-turn projections. */
+        UUID diversityGroupId,
+        /** Exact unresolved fact counterpart; absent for standalone graph conflict edges. */
+        UUID conflictingWithId) {
 }
