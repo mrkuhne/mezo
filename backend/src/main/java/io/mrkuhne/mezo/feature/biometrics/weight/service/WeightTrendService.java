@@ -187,4 +187,16 @@ public class WeightTrendService implements WeightTrendQuery {
     private static BigDecimal scaled(double value) {
         return BigDecimal.valueOf(value).setScale(SCALE, RoundingMode.HALF_UP);
     }
+
+    /**
+     * Rögzített-e mérlegelés erre a napra (mezo-jcpt.8)? A napi értékelés state-döntése kérdezi a
+     * {@link io.mrkuhne.mezo.techcore.query.WeightTrendQuery} seamen keresztül. A repository már
+     * hordoz pont-lekérdezést erre a napra, tehát ez egyetlen indexelt olvasás.
+     */
+    @Override
+    public boolean hasEntryOn(UUID userId, LocalDate date) {
+        return repository
+            .findFirstByCreatedByAndDeletedFalseAndDateOrderByCreatedAtDesc(userId, date)
+            .isPresent();
+    }
 }
