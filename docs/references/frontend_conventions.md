@@ -64,6 +64,9 @@ Only folders with content exist. A non-routed full-screen overlay provider (e.g.
   condition-based, so a slower global ceiling only ever costs time on a genuinely broken test. A
   per-test explicit timeout override is a smell: it usually means the test is compensating for a
   slow condition rather than fixing it, so keep it only when its own comment documents a specific incident.
+  Raising the ceiling gives up the old 5s default's job of tripping on a runaway render or retry
+  storm sitting in the 6-19s band; `vite.config.ts`'s `slowTestThreshold: 8_000` is the replacement
+  tripwire — it lists such tests in the reporter without failing the run.
 
 ## 7. Recipes
 

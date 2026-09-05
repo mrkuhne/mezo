@@ -77,5 +77,8 @@ export default defineConfig({
     // 20s drops 3 fails to 1, the last one being testing-library's own 1s ceiling — see setup.ts).
     testTimeout: 20_000,
     hookTimeout: 20_000,
+    // The reporter now flags tests living in the band the 20s ceiling newly permits (6-19s,
+    // mezo-0121), so a runtime perf regression there stays visible without being a hard gate.
+    slowTestThreshold: 8_000,
   },
 })
