@@ -29,7 +29,7 @@ function ruleLine(p: LifeGoalPillarResponse): string {
 // is appended when the pillar's source resolves to one.
 function valueLine(pillar: LifeGoalPillarResponse, progress: PillarProgress, unit?: string): string {
   if (progress.arrow === 'down' && pillar.kind === 'habit' && progress.missingHitDays !== undefined) {
-    return `még ${progress.missingHitDays} hit-nap a fordulásig`
+    return `még ${progress.missingHitDays} hit-nap a héten a fordulásig`
   }
   const suffix = unit ? ` ${unit}` : ''
   const ref = progress.referenceValue !== undefined ? ` · cél ${hu1(progress.referenceValue)}${suffix}` : ''

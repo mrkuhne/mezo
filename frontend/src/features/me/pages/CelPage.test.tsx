@@ -59,12 +59,12 @@ describe('live progress (Task 9, mezo-iizd.5)', () => {
     expect(screen.getAllByText('még nincs adat · az első nyíl 5 adat-nap után')).toHaveLength(goal.pillars.length)
   })
 
-  test('a down-arrow habit pillar shows "még N hit-nap a fordulásig" instead of the rule line (lg-hustle)', async () => {
+  test('a down-arrow habit pillar shows "még N hit-nap a héten a fordulásig" instead of the rule line (lg-hustle)', async () => {
     renderGoal('lg-hustle')
     await screen.findByText('Side hustle')
     // 'Tanulás' is the only habit-kind pillar on lg-hustle (goalIndex 1, arrow 'down',
     // missingHitDays=2 per lifegoalMock.buildPillarProgress).
-    expect(screen.getByText('még 2 hit-nap a fordulásig')).toBeInTheDocument()
+    expect(screen.getByText('még 2 hit-nap a héten a fordulásig')).toBeInTheDocument()
   })
 
   /**
