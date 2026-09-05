@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { defineConfig, devices } from '@playwright/test'
@@ -10,14 +11,30 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
  * TWO-PLATFORM goldens under `visual.spec.ts-snapshots/`: darwin (local runs,
  * `pnpm test:visual:update`) + linux (the CI `test-visual` gate; regenerate via
  * `gh workflow run update-visual-baselines.yml -r <branch>`, mezo-uz4g).
- * Runs against mock mode on a dedicated port (4318) so no backend is needed and
- * the seeds are static/deterministic. Uses the Chromium already cached by the
+ * Runs against mock mode on a PER-WORKTREE port so no backend is needed and the
+ * seeds are static/deterministic. The port used to be a hardcoded 4318 with
+ * `reuseExistingServer: true`, which meant a vite dev server left running by ANOTHER
+ * git worktree (or another agent session) was silently reused — Playwright then
+ * screenshotted the other tree's UI with no warning at all. Measured: 93% of pixels
+ * differed when a foreign server held the port, and in the `--update-snapshots`
+ * direction it would have written that foreign UI straight into the goldens. It
+ * happened twice in the mezo-iizd.9 round (mezo-sdbm). Uses the Chromium already cached by the
  * pinned Playwright version — do NOT `playwright install` new browsers.
  *
  * Determinism (see visual.spec.ts): the clock is frozen before navigation so the
  * daypart-derived sky tint + greeting stay fixed, animations are disabled, and we
  * wait for `document.fonts.ready` before every screenshot.
  */
+// Derived from this worktree's own path, so two checkouts of the repo can never land
+// on the same dev server. Override with VISUAL_PORT when you need a known port.
+const WORKTREE_ROOT = path.resolve(__dirname, '../../..')
+const PORT = Number(
+  process.env.VISUAL_PORT ??
+    43000 + (parseInt(createHash('sha1').update(WORKTREE_ROOT).digest('hex').slice(0, 6), 16) % 1000),
+)
+// eslint-disable-next-line no-console
+console.log(`[visual] worktree ${WORKTREE_ROOT} -> dev server port ${PORT}`)
+
 export default defineConfig({
   testDir: '.',
   timeout: 30_000,
@@ -57,12 +74,18 @@ export default defineConfig({
     // `@media (prefers-reduced-motion: reduce)` rules take effect (they set
     // `animation: none`), so the static end-state matches what we baseline.
     contextOptions: { reducedMotion: 'reduce' },
-    baseURL: 'http://localhost:4318',
+    baseURL: `http://localhost:${PORT}`,
   },
   webServer: {
-    command: 'VITE_USE_MOCK=true pnpm dev --port 4318',
-    url: 'http://localhost:4318',
-    reuseExistingServer: true,
+    command: `VITE_USE_MOCK=true pnpm dev --port ${PORT} --strictPort`,
+    url: `http://localhost:${PORT}`,
+    // NEVER reuse. With reuse on, ANY process already holding the port is adopted in
+    // silence — there is no identity check a dev server can offer cheaply, and the
+    // failure is invisible (see the header comment). Starting our own costs ~2s and
+    // turns "screenshotted the wrong app" into "port in use", which is loud and
+    // actionable. `--strictPort` makes vite fail instead of hopping to a free port,
+    // which would silently break the baseURL match.
+    reuseExistingServer: false,
     // Resolved relative to this config file's directory (frontend/tests/visual/),
     // so `../..` points at the frontend root where `pnpm dev` must run.
     cwd: '../..',
