@@ -9,7 +9,8 @@ public record MemoryContext(
         List<MemoryContextItem> items,
         String promptBlock,
         List<RefsEnvelope.Ref> refs,
+        UUID retrievalRunId,
         UUID traceId) {
 
-    public static final MemoryContext EMPTY = new MemoryContext(List.of(), "", List.of(), null);
+    public static final MemoryContext EMPTY = new MemoryContext(List.of(), "", List.of(), null, null);
 }

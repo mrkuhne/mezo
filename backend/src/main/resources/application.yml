@@ -569,6 +569,8 @@ mezo:
       embedding-model: gemini-embedding-001
       # Version of the canonical memory_item projection shape.
       schema-version: 1
+      # Safe beta rollout: legacy context serves while unified retrieval is audited in the background.
+      serving-mode: ${MEZO_MEMORY_SERVING_MODE:SHADOW}
       serving:
         # Candidates requested from each retriever before fusion.
         candidate-limit: 30

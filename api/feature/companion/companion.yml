@@ -716,20 +716,36 @@ components:
         recalled:
           type: array
           description: >-
-            W3.1b (mezo-b3pp.28): the memories ambient recall injected into this answer's prompt
-            (the [Emlékek] block), in prompt order — date + source + one-line gist + raw cosine
-            similarity. Empty on user rows, on pre-W3.1 rows, and when recall found nothing or
-            failed (the turn is never degraded by a failed recall).
+            The memory context injected into this answer's prompt, in prompt order. OLD/SHADOW
+            rows disclose the legacy [Emlékek] recall; NEW rows disclose selected shared-platform
+            context with optional audit identities. Empty on user rows, on pre-W3.1 rows, and when
+            the serving path supplied no recalled context (retrieval failure never degrades a turn).
           items: { $ref: '#/components/schemas/RecalledMemory' }
     RecalledMemory:
       type: object
-      required: [occurredOn, kind, label, gist, similarity]
+      required: [kind, label, gist, similarity]
       properties:
-        occurredOn: { type: string, format: date, description: "The day the remembered episode happened" }
-        kind: { type: string, description: "memory_embedding.kind (journal_entry | daily_summary | chat_turn | …)" }
+        occurredOn: { type: string, format: date, nullable: true, description: "The day the remembered episode happened; absent for timeless fact or graph context" }
+        kind: { type: string, description: "Context source kind (journal_entry | daily_summary | chat_turn | knowledge_fact | knowledge_edge | …)" }
         label: { type: string, description: "Hungarian source tag as rendered in the prompt (napló, napi összefoglaló, …)" }
-        gist: { type: string, description: "The one-line excerpt that was injected (first line, capped)" }
-        similarity: { type: number, format: double, minimum: 0, maximum: 1, description: "Raw cosine similarity to the user message" }
+        gist: { type: string, description: "The content injected for this item; legacy OLD/SHADOW rows remain first-line capped excerpts" }
+        similarity: { type: number, format: double, minimum: 0, maximum: 1, description: "OLD/SHADOW: raw cosine similarity; NEW: normalized final fused relevance score" }
+        retrievalRunId:
+          type: string
+          format: uuid
+          description: "Shared retrieval audit run identifier for memories served by the unified platform; absent on OLD rows"
+        retrievalResultId:
+          type: string
+          format: uuid
+          description: "Stable audit result id for this selected memory; absent on OLD rows"
+        memoryItemId:
+          type: string
+          format: uuid
+          nullable: true
+          description: "Canonical memory item id when this result came from memory_item; absent or null for direct fact/graph results and OLD rows"
+        indicator:
+          type: string
+          description: "Human-readable selection indicator such as old, summary or conflict; absent on OLD rows"
     MessageTool:
       type: object
       required: [type, name]

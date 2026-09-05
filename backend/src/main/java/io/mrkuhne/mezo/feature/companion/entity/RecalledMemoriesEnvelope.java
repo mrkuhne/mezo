@@ -11,7 +11,22 @@ import java.util.UUID;
  */
 public record RecalledMemoriesEnvelope(List<Item> items) {
 
-    public record Item(String kind, UUID refId, LocalDate occurredOn, String label, String gist, double similarity) {
+    public record Item(
+            String kind,
+            UUID refId,
+            LocalDate occurredOn,
+            String label,
+            String gist,
+            double similarity,
+            UUID retrievalRunId,
+            UUID retrievalResultId,
+            UUID memoryItemId,
+            String indicator) {
+
+        /** Legacy JSON and callers keep the exact pre-platform shape; new keys remain absent/null. */
+        public Item(String kind, UUID refId, LocalDate occurredOn, String label, String gist, double similarity) {
+            this(kind, refId, occurredOn, label, gist, similarity, null, null, null, null);
+        }
     }
 
     /** Null (not an empty envelope) when nothing was recalled — a jsonb column is either a

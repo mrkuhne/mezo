@@ -1103,14 +1103,22 @@ export type ChatRole = 'user' | 'assistant'
  *  undefined for producers that never set it. `chatRefDisplay` prefers it and falls back to
  *  the id-derived label (see chatRefs.ts). */
 export interface ChatRef { kind: string; id: string; label?: string | null }
-/** W3.1b (mezo-b3pp.28): one memory ambient recall injected into the answer's prompt —
- *  `similarity` is the raw cosine 0..1 (the row renders `Math.round(s * 100)%`). */
+/** One memory context item injected into the answer's prompt. Similarity is raw cosine for
+ *  OLD/SHADOW and normalized final hybrid relevance for NEW. */
 export interface ChatRecalledMemory {
-  occurredOn: string
+  occurredOn?: string | null
   kind: string
   label: string
   gist: string
   similarity: number
+  /** Persisted retrieval run id; absent on legacy OLD/SHADOW disclosures. */
+  retrievalRunId?: string
+  /** Stable selected-result id used by item-level memory feedback. */
+  retrievalResultId?: string
+  /** Canonical memory item id; null/absent for direct fact and graph candidates. */
+  memoryItemId?: string | null
+  /** Human-readable retrieval marker such as old, summary or conflict. */
+  indicator?: string
 }
 export interface ChatMessage {
   /**

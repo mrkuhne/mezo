@@ -30,7 +30,9 @@ related: [insights, proactive, today, me, _platform-api-backend, _platform-auth-
 > V2.1 (spine + snapshot + SSE + tools/audit + facts + extraction/decision + advisors +
 > pgvector/EmbeddingPort infra + narrative-memory pipeline + episodic recall tool); FE ✅ V1.3
 > (ChatPage + KnowledgeListPage real + degraded badge)
-> — v0 „lát engem" + v1 „megjegyez" + **v2 „emlékszik" complete**.**
+> — v0 „lát engem" + v1 „megjegyez" + **v2 „emlékszik" complete**. The shared hybrid
+> memory platform now shadows every chat turn by default and can serve it behind one
+> `OLD`/`SHADOW`/`NEW` switch (`mezo-6dii.6`).**
 > Cross-cutting Phase-3 domain with no route/tab of its own — the surfaces are the Insights
 > ChatPage + KnowledgeListPage ([`insights.md`](insights.md) §2.4–2.5). Nem-technikai
 > működés-magyarázó: [`docs/guides/companion-hogyan-mukodik.md`](../guides/companion-hogyan-mukodik.md).
@@ -359,7 +361,7 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   output falls back to the untouched raw query. `PreparedMemoryQuery` retains raw and dense forms
   separately so later retrieval and audit can compare them.
 
-**Shared memory context pipeline (`mezo-6dii.5`) — production-shaped retrieval, still no chat cutover:**
+**Shared memory context pipeline (`mezo-6dii.5`, chat rollout `mezo-6dii.6`):**
 
 - `MemoryContextService` prepares the query, runs the four named retrievers concurrently with an
   independent 200 ms deadline, cancels timed-out work, isolates every failure,
@@ -375,8 +377,8 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   or deep/weekly policy. It can reorder only the IDs actually exposed to it; its own configured
   deadline, malformed output or provider failure returns the deterministic fused order.
 - The result is one provenance-carrying `MemoryContext` (`items`, `[Hosszú távú memória]` block,
-  refs, trace ID). Task 6 owns the deliberate OLD/SHADOW/NEW chat wiring; this slice does not change
-  the current user-facing recall path.
+  refs, persisted run ID and diagnostic trace ID). Chat now consumes it in SHADOW by default and
+  can switch to NEW without a second assembly path; OLD remains frozen for rollback.
 
 **V2.2 (`mezo-fnnq.10`) shipped daily summaries + the embed pipeline — the memory fills itself:**
 
@@ -698,6 +700,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Vector infra (pgvector + EmbeddingPort) | ✅ V2.1 | `memory_embedding` (`vector(768)`, HNSW, cosine) + `EmbeddingPort` (real Gemini SDK adapter / fake); image `pgvector/pgvector:pg16` in compose + k3s + Testcontainers. |
 | Narrative memory (summaries + embed pipeline) | ✅ V2.2 | Nightly `DailySummaryJob` (first cron; catch-up = backfill) → `daily_summary` + embeddings; post-turn `TurnEmbeddingListener` embeds every chat turn; `mezo.companion.summary.*` + `embedding.*` tunables. |
 | Canonical dual-write + vector generations | ✅ `mezo-6dii.2` | Every OLD memory write projects AFTER_COMMIT into source-addressable `memory_item` + versioned `memory_vector`; isolated failure preserves OLD. Optional resumable re-embedding builds a target generation without switching serving. |
+| Shared chat retrieval rollout | ✅ `mezo-6dii.6` (SHADOW default) | One adapter feeds sync and SSE. `OLD` serves the frozen facts + ambient + graph path; `SHADOW` serves the identical payload and audits unified retrieval asynchronously; `NEW` serves the hybrid `MemoryContext` and falls back to OLD only on an audited total retriever outage. |
 | Journal embedding seam | ✅ `mezo-b3pp.1` | `memory_embedding` kind-CHECK widened to 10 (only `journal_entry` populated); `JournalEmbeddingListener` (AFTER_COMMIT, `COMPANION_SWITCH`+journal-switch gated) → `MemoryEmbeddingWriter.writeJournal`/`.deleteJournalEmbedding` (edit = update-in-place, not delete+insert). Full detail: [`journal.md`](journal.md). |
 | Decision embedding seam | ✅ `mezo-b3pp.4` | A FOURTH `memory_embedding` kind, `decision`, joins `chat_turn`/`daily_summary`/`journal_entry`; `DecisionEmbeddingListener` (same AFTER_COMMIT/`@Async`, `COMPANION_SWITCH`+journal-switch gated idiom) → `MemoryEmbeddingWriter.writeDecision` — embeds the decision text on create, then **re-embeds the SAME row in place on review** with the outcome folded in (`"…\n\nKimenet (N/5): …"`), because the outcome is the half worth recalling. No delete path (decisions aren't deletable), so no orphaned-vector race to handle. Full detail: [`journal.md`](journal.md). |
 | Reflection embedding seam | ✅ `mezo-b3pp.2` | A FIFTH `memory_embedding` kind, `reflection`: the Napzárás evening prose (`ritual_day.reflection_text`, [`ritual.md`](ritual.md) §4). `ReflectionEmbeddingListener` reuses the AFTER_COMMIT/`@Async` idiom but is gated on `COMPANION_SWITCH` + **`RITUAL_SWITCH`** — the first seam whose second switch isn't journal's — and consumes `feature/ritual`'s `RitualClosedEvent` → `MemoryEmbeddingWriter.writeReflection`, embedding **on close** rather than per keystroke-save; a post-close edit re-publishes the event and re-embeds the same `(kind, ref_id)` row in place, and clearing the prose soft-deletes the vector so an erased evening stops being recallable. No migration — `reflection` was already legal in the W1.1 kind CHECK. Full detail: [`ritual.md`](ritual.md) §5. |
@@ -898,15 +901,19 @@ companion surface since V0.4, dual-mode:
   the timestamp (tooltip: „Ez a válasz nem ment át az önellenőrzésen — kezeld fenntartással.").
   On a streamed turn a rejected attempt-1 may briefly be visible while streaming; the `done`
   swap replaces it with the corrected answer (or flags it). Mock mode never shows the badge.
-- **„Emlékek · N" — the recall disclosure (W3.1b, `mezo-b3pp.28`)** — an assistant bubble whose
-  answer was written with ambient recall in its prompt carries a small **collapsed** row under the
+- **„Emlékek · N" — the recall disclosure (W3.1b, `mezo-b3pp.28`; shared rollout
+  `mezo-6dii.6`)** — an assistant bubble whose answer was written with recalled context in its
+  prompt carries a small **collapsed** row under the
   card (above the 👍/👎 chips): the eyebrow „Emlékek · N" plus a chevron (tooltip: „Ezekre
   emlékezett a társ a válasz előtt (W3.1 ambient recall)"). Tapping it expands one line per
   recalled memory — `<YYYY-MM-DD> · <forrás> · <NN>%` with the injected one-line gist under it, in
   **prompt order**. What it is NOT: it is not the answer, and not a citation list the model chose —
   it is the answer's **provenance**, the raw material ambient recall put in front of the model
-  before it wrote anything (the model may well have ignored all of it). The percentage is the raw
-  cosine similarity to the user's message, not a confidence in the answer. A turn that recalled
+  before it wrote anything (the model may well have ignored all of it). For an OLD/SHADOW row the
+  percentage remains raw cosine similarity; for a NEW row it is the normalized final hybrid score.
+  Neither is confidence in the answer. NEW rows additionally carry stable audit run/result IDs,
+  the canonical memory ID when one exists, and a selection indicator. Timeless fact/graph context
+  has no event date. A turn that recalled
   nothing — and every user bubble, and every pre-W3.1b answer — renders **no row at all**, not an
   empty one. Both modes show it (mock seeds two items on the first assistant message, one on the
   canned reply); refs collapse a day into one chip, the disclosure lists every episode.
@@ -965,7 +972,7 @@ only leaves a repairable projection gap. Re-offering an unchanged OLD row also r
 which heals a previously missed canonical row without another provider call. The re-embedding path
 selects a named target version and never mutates `servingEmbeddingVersion`.
 
-**Adaptive memory-query preparation (`mezo-6dii.3`; no retrieval yet):**
+**Adaptive memory-query preparation (`mezo-6dii.3`; consumed by shared retrieval):**
 
 ```text
 MemoryRequest
@@ -984,7 +991,7 @@ self-contained questions free of rewrite latency/cost, bounds conversational pro
 makes failure behavior deterministic. The four-value `ConsumerPolicy` is already part of the core
 request contract; later tasks apply its retrieval/ranking differences.
 
-**Shared hybrid candidate retrieval (`mezo-6dii.4`; implemented, not serving chat yet):**
+**Shared hybrid candidate retrieval (`mezo-6dii.4`; SHADOW by default, NEW-capable):**
 
 ```text
 RetrievalInput(request, prepared query, serving embedding version, per-retriever limit)
@@ -1006,9 +1013,9 @@ retrieval adds `asOf`-aware seed/neighborhood overloads to the existing traversa
 future-dated nodes, keeps the configured hop/top-K bounds, and maps each edge under its stable ID.
 All three new JDBC queries use the existing same-connection savepoint pattern and deliberately
 rethrow failures; per-retriever catch/timeout/audit belongs to the Task-5 coordinator, so a genuine
-empty result cannot be mistaken for an outage. The old chat recall path still serves unchanged.
+empty result cannot be mistaken for an outage.
 
-**Shared memory context orchestration (`mezo-6dii.5`; implemented, chat cutover remains Task 6):**
+**Shared memory context orchestration (`mezo-6dii.5`; chat-integrated by `mezo-6dii.6`):**
 
 ```text
 MemoryRequest → prepare query
@@ -1027,7 +1034,28 @@ desc → stableId` ordering. The selector and renderer share the same line-lengt
 Every successful or degraded execution is therefore attributable by trace ID, including raw versus
 rewritten query, serving generation, retriever duration/count/error details, rank sources, selected
 IDs and all score components. When every retriever fails the service returns an audited empty
-context instead of failing the caller.
+context instead of failing the caller. The chat-serving variant converts this audited total outage
+into an OLD fallback signal; partial failures still serve every successful retriever's context.
+
+**Chat rollout boundary (`mezo-6dii.6`):**
+
+```text
+sync send / SSE prepare → load the same bounded history → ChatMemoryContextAdapter
+  OLD    → confirmed facts + PromptMemoryAssembler + GraphPromptAssembler
+  SHADOW → return the exact OLD payload; immutable MemoryRequest runs asynchronously → audit only
+  NEW    → MemoryContextService.retrieveForServing
+             ├─ success/partial failure → one [Hosszú távú memória] block + refs + stable IDs
+             └─ audited total outage   → exact OLD fallback
+       ↓
+one ChatMemoryPayload → identical prompt ordering and recalled_memories persistence in both paths
+```
+
+`mezo.companion.memory-platform.serving-mode` is environment-overridable and defaults to
+`SHADOW`, so beta traffic creates realistic comparison/audit data without changing answers.
+`NEW` never appends the legacy fact/ambient/graph blocks beside the unified block, preventing
+duplicate evidence. Pattern acknowledgement, character/profile context and tone retain their old
+positions. The opening turn has no user query and intentionally keeps the legacy confirmed-fact
+block rather than manufacturing a retrieval request.
 
 **The streamed turn (V0.4 + V0.5 tools — what the FE uses):**
 
@@ -1825,7 +1853,11 @@ Migration `202607031400_mezo-fnnq.2_create_ai_conversation_message.sql` (registe
   `mezo-b3pp.28`) — the `[Emlékek]` items ambient recall injected into THIS answer's prompt, in
   prompt order (`RecalledMemoriesEnvelope`); **null** on user rows, on every pre-W3.1b answer, and
   whenever the turn recalled nothing (the `refs`/`tool_calls` null-not-empty precedent). Additive,
-  no backfill, no index — it is read only alongside its own row.
+  no backfill, no index — it is read only alongside its own row. `mezo-6dii.6` extends each JSON
+  item additively with optional `retrievalRunId`, `retrievalResultId`, `memoryItemId` and
+  `indicator`. OLD/pre-platform JSON remains readable because absent keys deserialize to null;
+  NEW selected items carry the audit run/result identities and may omit `occurredOn` for a
+  timeless fact or graph edge.
 
 ### Backend tables (V1.1, ✅)
 
@@ -1908,6 +1940,7 @@ This avoids Hibernate/PostgreSQL `bpchar` schema-validation drift while retainin
 fixed SHA-256 invariant.
 
 Runtime population (`mezo-6dii.2`) is configured under `mezo.companion.memory-platform`:
+`serving-mode` (`OLD|SHADOW|NEW`, default/environment fallback `SHADOW` since `mezo-6dii.6`),
 `serving-embedding-version`, provider/model/schema metadata, future retrieval limits, an explicit
 re-embedding target/batch/cron switch, and audit-retention settings. `MemoryProjectionWriter`
 normalizes `search_text` with `ToolText.fold`, writes deterministic empty topics/people and default
@@ -4106,20 +4139,24 @@ spends writing vectors — nothing else. An untagged site records `feature = 'un
 `mezo.feature.llm-log.enabled` off ⇒ the injected recorder is the no-op ⇒ nothing happens; the
 adapters never branch on the switch.
 
-**Shared RAG retriever seam (`mezo-6dii.4`, staged).** The new `MemoryRetriever` contract has four
+**Shared RAG retriever seam (`mezo-6dii.4`, wired to chat by `mezo-6dii.6`).** The
+`MemoryRetriever` contract has four
 named implementations (`dense`, `lexical`, `facts`, `graph`). Dense is the only adapter that crosses
 the `EmbeddingPort` provider seam and embeds `PreparedMemoryQuery.denseQuery`; lexical and facts are
 local PostgreSQL reads, while graph delegates to the existing deterministic
 `GraphTraversalService`. Every adapter receives the same owner/as-of/policy envelope and returns
 `MemoryCandidate` source identity, label/content, local score and selection signals. The shared
-Task-5 coordinator now calls them, but no user turn does yet; OLD/SHADOW/NEW chat wiring remains the
-next rollout slice.
+coordinator calls them for every SHADOW audit and every NEW served turn; OLD never invokes them.
 
-**Shared RAG context seam (`mezo-6dii.5`, staged).** `MemoryContextService.retrieve` is now the
+**Shared RAG context seam (`mezo-6dii.5`, chat rollout `mezo-6dii.6`).**
+`MemoryContextService.retrieve` is the
 single consumer-neutral entrypoint above all four retrievers. It returns rendered context and
 structured provenance together, while `MemoryReranker` keeps optional ordering replaceable without
-coupling the coordinator to an orchestration framework. Chat, briefing, memoir and prediction do
-not consume it yet; the next rollout slice connects them incrementally behind OLD/SHADOW/NEW modes.
+coupling the coordinator to an orchestration framework. `ChatMemoryContextAdapter` is the first
+consumer: OLD preserves the frozen path; SHADOW asynchronously writes comparison audits without
+touching the response; NEW serves the unified block and falls back to OLD only after a total
+retriever outage has itself been audited. Sync and SSE consume the same payload. Briefing, memoir
+and prediction remain on their existing paths until their own staged rollout tasks.
 
 ### 5.4 Companion ↔ API contract & backend platform (wired)
 Companion is now a backed feature on the contract-first pipeline
@@ -4602,6 +4639,16 @@ additionally proves conversation identity and exact conflict counterparts surviv
 candidate seam. `MemoryPlatformPropertiesIT` proves valid binding and startup
 rejection for invalid positive bounds. `MemoryRetrievalRetentionIT` proves the active-user purge
 hard-deletes an expired run and cascade children while preserving a recent run.
+
+**Chat rollout (`mezo-6dii.6`).**
+`ChatServiceAmbientRecallIT` and `ChatStreamServiceIT` are pinned explicitly to OLD so their frozen
+prompt/envelope assertions remain a compatibility gate. `ChatMemoryShadowRolloutIT` proves both
+sync and SSE return that legacy payload while an audit run eventually appears off-thread.
+`ChatMemoryRolloutIT` runs NEW through both delivery paths and proves one unified block (no duplicate
+legacy fact/graph blocks), stable run/result/item disclosure IDs, cross-owner isolation and dense
+provider failure degrading to lexical context. `MemoryContextServiceIT` separately forces every
+retriever to fail and proves the serving variant persists the explicit fallback error before chat
+uses OLD.
 
 **Daily evaluation (`mezo-jcpt.4`, plan 2/2).**
 `feature/companion/service/DayEvaluationEngineTest.java` is the formula's unit-level pin — one test
@@ -5881,6 +5928,19 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
   exists only so FK cascade can purge expired audit/result/feedback rows; canonical memories retain
   normal lifecycle/soft-delete semantics.
 
+**Shared RAG chat rollout decisions (`mezo-6dii.6`).**
+
+- SHADOW is the safe default: the model still sees and returns exactly the frozen OLD context while
+  the platform collects beta-shaped latency, failure and ranking evidence in the audit tables.
+- Sync and SSE do not own separate retrieval logic. Both load history first and call one adapter,
+  then persist the same disclosure envelope; this prevents rollout drift between delivery modes.
+- NEW composes only the unified rendered block. It never double-injects legacy facts, ambient
+  memories or graph context. A partial retriever failure serves successful peers; only an audited
+  total outage falls back to OLD.
+- No LangGraph dependency is introduced for this deterministic fan-out/fusion pipeline. The
+  existing typed service boundary remains replaceable if later multi-step agent orchestration earns
+  its operational cost.
+
 **Deferred (with bd ids):**
 - ~~**W3.3 recall tuning (`mezo-b3pp.14`, spec §7.3)**~~ — **shipped**: per-group
   `min-similarity`/τ/cap in config, the deterministic eval harness, and its follow-up
@@ -5954,6 +6014,14 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryRetrievalAuditWriter,MemoryRetrievalRetentionJob}.java` — independent run/result persistence and active-user 30-day physical audit purge.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/dto/{MemoryContext,MemoryContextItem,ScoreBreakdown,RetrievalServingMode}.java` — structured context/provenance/score and staged rollout contracts.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/{MemoryCandidateFusionTest,MemoryContextSelectorTest,LlmMemoryRerankerTest,MemoryContextServiceIT,MemoryPlatformPropertiesIT,MemoryRetrievalRetentionIT}.java` — pure ranking/rendering and PostgreSQL orchestration/config/retention gates.
+
+**Backend + contract — chat rollout (`mezo-6dii.6` — §2–§5/§8–§9)**
+
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{ChatMemoryContextAdapter,MemoryShadowRunner}.java` — the single OLD/SHADOW/NEW boundary and its fire-and-forget, exception-isolated audit runner.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — sync/SSE preparation loads bounded history before resolving one shared memory payload; NEW never assembles duplicate legacy blocks.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/entity/RecalledMemoriesEnvelope.java` + `mapper/CompanionMapper.java` — backward-compatible JSONB plus optional retrieval run/result/item IDs and indicator on the wire.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{ChatMemoryRolloutIT,ChatMemoryShadowRolloutIT,ChatServiceAmbientRecallIT,ChatStreamServiceIT}.java` — NEW, SHADOW and frozen OLD behavior across synchronous and streamed turns.
+- `frontend/src/data/{types.ts,insights/chatApi.ts,insights/chatApi.test.ts,_client/api.gen.ts}` — optional disclosure provenance passthrough generated from the additive Companion contract.
 
 **Backend — feedback (W4.1, `mezo-b3pp.15` — §4/§5.7)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/controller/CompanionFeedbackController.java` — `implements CompanionFeedbackApi`, `COMPANION_SWITCH`-gated, ownership from `CurrentUserId`, thin delegation.

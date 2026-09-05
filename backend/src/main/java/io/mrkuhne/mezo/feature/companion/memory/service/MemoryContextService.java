@@ -14,6 +14,8 @@ import io.mrkuhne.mezo.feature.companion.memory.service.MemoryCandidateFusion.Fu
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryRetrievalAuditWriter.AuditCommand;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryRetrievalAuditWriter.AuditResult;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.exception.SystemMessage;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -28,6 +30,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.task.AsyncTaskExecutor;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 /** Coordinates query preparation, isolated retrievers, fusion, selection, rendering and audit. */
@@ -54,13 +57,23 @@ public class MemoryContextService {
     }
 
     public MemoryContext retrieve(MemoryRequest request, RetrievalServingMode servingMode) {
+        return retrieve(request, servingMode, false);
+    }
+
+    /** NEW chat serving variant: an audited total retriever outage signals the legacy fallback. */
+    public MemoryContext retrieveForServing(MemoryRequest request) {
+        return retrieve(request, RetrievalServingMode.NEW, true);
+    }
+
+    private MemoryContext retrieve(
+            MemoryRequest request, RetrievalServingMode servingMode, boolean fallbackOnTotalFailure) {
         long started = System.nanoTime();
         PreparedMemoryQuery query = queryPreparer.prepare(request);
         if (query.mode() == QueryMode.NO_MEMORY_NEEDED) {
             AuditResult audit = auditWriter.write(new AuditCommand(
                     request, query, properties.servingEmbeddingVersion(), null, servingMode,
                     elapsedMillis(started), Map.of(), null, List.of(), List.of(), false));
-            return new MemoryContext(List.of(), "", List.of(), audit.traceId());
+            return new MemoryContext(List.of(), "", List.of(), audit.runId(), audit.traceId());
         }
 
         RetrievalBatch batch = retrieveCandidates(request, query);
@@ -73,14 +86,22 @@ public class MemoryContextService {
             selected = selector.select(ranked, tokenBudget, request.asOf());
         }
 
-        String errorCode = batch.successCount() == 0 && !retrievers.isEmpty()
-                ? ALL_RETRIEVERS_FAILED : null;
+        boolean totalFailure = batch.successCount() == 0 && !retrievers.isEmpty();
+        String errorCode = totalFailure
+                ? ALL_RETRIEVERS_FAILED + (fallbackOnTotalFailure ? "_FALLBACK_OLD" : "") : null;
         List<MemoryRetrievalAuditWriter.CandidateIdentity> selectedIds = selected.stream()
                 .map(item -> MemoryRetrievalAuditWriter.identity(item.candidate()))
                 .toList();
         AuditResult audit = auditWriter.write(new AuditCommand(
                 request, query, properties.servingEmbeddingVersion(), null, servingMode,
                 elapsedMillis(started), batch.trace(), errorCode, ranked, selectedIds, reranked));
+        if (totalFailure && fallbackOnTotalFailure) {
+            throw new SystemRuntimeErrorException(
+                    SystemMessage.error("INTERNAL_ERROR")
+                            .exceptionTraceId(audit.traceId().toString())
+                            .build(),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
         List<MemoryContextItem> items = selected.stream()
                 .map(item -> contextItem(item, audit, request))
                 .toList();
@@ -89,7 +110,7 @@ public class MemoryContextService {
                 .map(item -> new RefsEnvelope.Ref(
                         item.sourceKind(), item.sourceId().toString(), item.label()))
                 .toList();
-        return new MemoryContext(items, promptBlock, refs, audit.traceId());
+        return new MemoryContext(items, promptBlock, refs, audit.runId(), audit.traceId());
     }
 
     private RetrievalBatch retrieveCandidates(MemoryRequest request, PreparedMemoryQuery query) {
@@ -211,4 +232,5 @@ public class MemoryContextService {
             Map<String, Object> trace,
             int successCount) {
     }
+
 }

@@ -79,7 +79,7 @@ public class MemoryRetrievalAuditWriter {
         Map<CandidateIdentity, UUID> resultIds = new HashMap<>();
         persisted.forEach(row -> resultIds.put(
                 new CandidateIdentity(row.getCandidateKind(), row.getCandidateRefId()), row.getId()));
-        return new AuditResult(traceId, Map.copyOf(resultIds));
+        return new AuditResult(run.getId(), traceId, Map.copyOf(resultIds));
     }
 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
@@ -116,7 +116,7 @@ public class MemoryRetrievalAuditWriter {
             boolean reranked) {
     }
 
-    public record AuditResult(UUID traceId, Map<CandidateIdentity, UUID> resultIds) {
+    public record AuditResult(UUID runId, UUID traceId, Map<CandidateIdentity, UUID> resultIds) {
     }
 
     public record CandidateIdentity(String candidateKind, UUID stableId) {

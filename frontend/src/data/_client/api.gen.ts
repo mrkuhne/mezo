@@ -6710,26 +6710,43 @@ export interface components {
             tools: components["schemas"]["MessageTool"][];
             /** @description Data references backing this answer (V0.5): entity refs contributed by the executed tools (deduped, capped). Empty when the turn used no tools. */
             refs: components["schemas"]["MessageRef"][];
-            /** @description W3.1b (mezo-b3pp.28): the memories ambient recall injected into this answer's prompt (the [Emlékek] block), in prompt order — date + source + one-line gist + raw cosine similarity. Empty on user rows, on pre-W3.1 rows, and when recall found nothing or failed (the turn is never degraded by a failed recall). */
+            /** @description The memory context injected into this answer's prompt, in prompt order. OLD/SHADOW rows disclose the legacy [Emlékek] recall; NEW rows disclose selected shared-platform context with optional audit identities. Empty on user rows, on pre-W3.1 rows, and when the serving path supplied no recalled context (retrieval failure never degrades a turn). */
             recalled: components["schemas"]["RecalledMemory"][];
         };
         RecalledMemory: {
             /**
              * Format: date
-             * @description The day the remembered episode happened
+             * @description The day the remembered episode happened; absent for timeless fact or graph context
              */
-            occurredOn: string;
-            /** @description memory_embedding.kind (journal_entry | daily_summary | chat_turn | …) */
+            occurredOn?: string | null;
+            /** @description Context source kind (journal_entry | daily_summary | chat_turn | knowledge_fact | knowledge_edge | …) */
             kind: string;
             /** @description Hungarian source tag as rendered in the prompt (napló, napi összefoglaló, …) */
             label: string;
-            /** @description The one-line excerpt that was injected (first line, capped) */
+            /** @description The content injected for this item; legacy OLD/SHADOW rows remain first-line capped excerpts */
             gist: string;
             /**
              * Format: double
-             * @description Raw cosine similarity to the user message
+             * @description OLD/SHADOW: raw cosine similarity; NEW: normalized final fused relevance score
              */
             similarity: number;
+            /**
+             * Format: uuid
+             * @description Shared retrieval audit run identifier for memories served by the unified platform; absent on OLD rows
+             */
+            retrievalRunId?: string;
+            /**
+             * Format: uuid
+             * @description Stable audit result id for this selected memory; absent on OLD rows
+             */
+            retrievalResultId?: string;
+            /**
+             * Format: uuid
+             * @description Canonical memory item id when this result came from memory_item; absent or null for direct fact/graph results and OLD rows
+             */
+            memoryItemId?: string | null;
+            /** @description Human-readable selection indicator such as old, summary or conflict; absent on OLD rows */
+            indicator?: string;
         };
         MessageTool: {
             /** @description 'read' | 'compute' (mirrors the FE ToolType) — V0.5 emits only 'read' */

@@ -177,7 +177,12 @@ public interface CompanionMapper {
         return envelope.items().stream()
                 .map(item -> RecalledMemory.builder()
                         .occurredOn(item.occurredOn()).kind(item.kind()).label(item.label())
-                        .gist(item.gist()).similarity(item.similarity()).build())
+                        .gist(item.gist()).similarity(item.similarity())
+                        .retrievalRunId(item.retrievalRunId())
+                        .retrievalResultId(item.retrievalResultId())
+                        .memoryItemId(item.memoryItemId())
+                        .indicator(item.indicator())
+                        .build())
                 .toList();
     }
 
