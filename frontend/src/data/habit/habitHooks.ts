@@ -6,11 +6,26 @@ import { mockHabitDay, mockHabitSummary } from '@/data/habit/habitMock'
 import type { HabitItem, HabitSummary } from '@/data/types'
 import type { LevelUpResult } from '@/data/train/trainApi'
 import { useDualQuery } from '@/data/useDualQuery'
+import { addDays, localDateString } from '@/shared/lib/dates'
 
 const key = (d: string) => ['habitDay', d]
 
 const MOCK_DAY: HabitDay = { habits: mockHabitDay, levelUps: [] }
 const EMPTY_DAY: HabitDay = { habits: [], levelUps: [] }
+
+/**
+ * Past-day mock seed (mezo-x9c2): the nightly close already ran for any past date, so open
+ * seeds read `missed` — the static MOCK_DAY leaking into yesterday made the mock arm lie.
+ * MANUAL missed rows are exactly the backfill targets the yesterday surface offers.
+ */
+const mockDayFor = (date: string): HabitDay =>
+  date >= localDateString()
+    ? MOCK_DAY
+    : {
+        habits: mockHabitDay.map((h) =>
+          h.status === 'pending' ? { ...h, status: 'missed' as const } : h),
+        levelUps: [],
+      }
 
 export interface HabitDayView extends HabitDay {
   mode: 'mock' | 'live'
@@ -50,12 +65,12 @@ export function useHabitDay(date: string): HabitDayView {
   const mock = isMockMode()
   const q = useQuery<HabitDay>({
     queryKey: key(date),
-    queryFn: mock ? async () => MOCK_DAY : () => habitApi.day(date),
-    initialData: mock ? MOCK_DAY : undefined,
+    queryFn: mock ? async () => mockDayFor(date) : () => habitApi.day(date),
+    initialData: mock ? mockDayFor(date) : undefined,
     staleTime: mock ? Infinity : 0, // real mode re-reads every mount (READ-triggered server eval)
     retry: false,
   })
-  const data = q.data ?? (mock ? MOCK_DAY : EMPTY_DAY)
+  const data = q.data ?? (mock ? mockDayFor(date) : EMPTY_DAY)
   return { ...data, mode: mock ? 'mock' : 'live' }
 }
 
@@ -120,11 +135,14 @@ export function useHabitActions(date: string) {
   const checkM = useMutation({
     mutationFn: async (habitKey: string) => {
       if (mock) {
+        if (date < addDays(localDateString(), -1)) throw new Error('HABIT_TOO_OLD')
         patchMock(habitKey, 'done')
         const xp = mockHabitDay.find((h) => h.key === habitKey)?.xp ?? 0
         // The call site emits its own DS reward toast for the check (mezo-k5sa), so the
         // generic „+N XP" line would be a duplicate — the level/streak notices still fire.
-        awardGamificationEvent(qc, { type: 'HABIT', xpOverride: xp, silentXp: true })
+        // A backfill credits the REQUEST date's ledger (mezo-x9c2), same as the backend's
+        // occurredOn = habit_date attribution.
+        awardGamificationEvent(qc, { type: 'HABIT', xpOverride: xp, silentXp: true, date })
         return undefined
       }
       return habitApi.check(habitKey, date).then((r) => r.levelUps)
@@ -146,6 +164,7 @@ export function useHabitActions(date: string) {
   const uncheckM = useMutation({
     mutationFn: async (habitKey: string) => {
       if (mock) {
+        if (date < addDays(localDateString(), -1)) throw new Error('HABIT_TOO_OLD')
         patchMock(habitKey, 'pending')
         return undefined
       }
