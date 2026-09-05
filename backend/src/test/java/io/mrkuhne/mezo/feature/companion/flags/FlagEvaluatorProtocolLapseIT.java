@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagEvaluator;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagOutcome;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.feature.fuel.repository.ProtocolRepository;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
@@ -49,13 +51,26 @@ class FlagEvaluatorProtocolLapseIT extends AbstractIntegrationTest {
     private record Fixture(UUID owner, UUID pantryItemId) {}
 
     private List<String> keys(UUID owner) {
-        return evaluator.evaluate(owner).stream().map(FlagRaise::flagKey).toList();
+        return raisedKeys(evaluator.evaluate(owner));
+    }
+
+    /** The keys that actually RAISED — the old evaluate() return, reconstructed. */
+    private static List<String> raisedKeys(List<FlagVerdict> verdicts) {
+        return verdicts.stream()
+            .filter(v -> v.outcome() == FlagOutcome.RAISED)
+            .map(FlagVerdict::flagKey)
+            .toList();
+    }
+
+    private static FlagVerdict verdictFor(List<FlagVerdict> verdicts, String flagKey) {
+        return verdicts.stream().filter(v -> flagKey.equals(v.flagKey())).findFirst().orElseThrow();
     }
 
     private Optional<FlagPayloadEnvelope.ProtocolLapse> payload(UUID owner) {
         return evaluator.evaluate(owner).stream()
-            .filter(r -> FlagKey.PROTOCOL_LAPSE.equals(r.flagKey()))
-            .map(r -> r.payload().protocolLapse())
+            .filter(v -> FlagKey.PROTOCOL_LAPSE.equals(v.flagKey()))
+            .filter(v -> v.outcome() == FlagOutcome.RAISED)
+            .map(v -> v.payload().protocolLapse())
             .findFirst();
     }
 

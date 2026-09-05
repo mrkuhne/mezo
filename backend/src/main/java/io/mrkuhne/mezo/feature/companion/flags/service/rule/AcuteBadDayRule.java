@@ -5,13 +5,13 @@ import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -38,14 +38,15 @@ public class AcuteBadDayRule implements FlagRule {
     private final FlagProperties properties;
 
     @Override
-    public Optional<FlagRaise> evaluate(UUID userId, LocalDate today) {
+    public FlagVerdict evaluate(UUID userId, LocalDate today) {
         FlagProperties.AcuteBadDay cfg = properties.acuteBadDay();
         List<CheckInEntity> checkIns =
             checkInRepository.findByCreatedByAndDateOrderBySlotTime(userId, today);
 
         // Honest gate: one bad check-in is a moment, not a day — the spec asks for a PATTERN.
         if (checkIns.size() < cfg.minCheckIns()) {
-            return Optional.empty();
+            return FlagVerdict.unavailable(FlagKey.ACUTE_BAD_DAY,
+                UnavailableReason.NOT_ENOUGH_CHECKINS);
         }
 
         List<FlagPayloadEnvelope.QualifyingCheckIn> qualifying = new ArrayList<>();
@@ -58,13 +59,14 @@ public class AcuteBadDayRule implements FlagRule {
         }
 
         if (qualifying.size() < cfg.minCheckIns()) {
-            return Optional.empty();
+            return FlagVerdict.clear(FlagKey.ACUTE_BAD_DAY, new FlagVerdict.ClearEvidence(
+                "bad_checkins", (double) qualifying.size(), (double) cfg.minCheckIns(), null));
         }
 
-        return Optional.of(new FlagRaise(FlagKey.ACUTE_BAD_DAY,
+        return FlagVerdict.raised(FlagKey.ACUTE_BAD_DAY,
             FlagPayloadEnvelope.acuteBadDay(new FlagPayloadEnvelope.AcuteBadDay(
                 cfg.minCheckIns(), cfg.bodyOrEnergyAtMost(), qualifying.size(),
-                List.copyOf(qualifying)))));
+                List.copyOf(qualifying))));
     }
 
     /** A null score is an unanswered question, never a low one. */

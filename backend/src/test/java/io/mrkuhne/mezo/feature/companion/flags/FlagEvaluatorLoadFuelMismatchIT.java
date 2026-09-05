@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagEvaluator;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagOutcome;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
@@ -41,7 +43,19 @@ class FlagEvaluatorLoadFuelMismatchIT extends AbstractIntegrationTest {
     }
 
     private List<String> keys(UUID owner) {
-        return evaluator.evaluate(owner).stream().map(FlagRaise::flagKey).toList();
+        return raisedKeys(evaluator.evaluate(owner));
+    }
+
+    /** The keys that actually RAISED — the old evaluate() return, reconstructed. */
+    private static List<String> raisedKeys(List<FlagVerdict> verdicts) {
+        return verdicts.stream()
+            .filter(v -> v.outcome() == FlagOutcome.RAISED)
+            .map(FlagVerdict::flagKey)
+            .toList();
+    }
+
+    private static FlagVerdict verdictFor(List<FlagVerdict> verdicts, String flagKey) {
+        return verdicts.stream().filter(v -> flagKey.equals(v.flagKey())).findFirst().orElseThrow();
     }
 
     /** 100 min/day sport for all 7 days ⇒ load avg 100.0, well above the 50.0 threshold. */
@@ -142,10 +156,9 @@ class FlagEvaluatorLoadFuelMismatchIT extends AbstractIntegrationTest {
                 new BigDecimal("80.0").subtract(new BigDecimal("0.1").multiply(new BigDecimal(6 - i))));
         }
 
-        FlagRaise raise = evaluator.evaluate(owner).stream()
-            .filter(r -> FlagKey.LOAD_FUEL_MISMATCH.equals(r.flagKey())).findFirst().orElseThrow();
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.LOAD_FUEL_MISMATCH);
 
-        assertThat(raise.payload().loadFuelMismatch().weightTrendPctWk()).isNotNull();
+        assertThat(verdict.payload().loadFuelMismatch().weightTrendPctWk()).isNotNull();
     }
 
     @Test
@@ -156,10 +169,9 @@ class FlagEvaluatorLoadFuelMismatchIT extends AbstractIntegrationTest {
         lowKcalDays(owner, today, 7);
         adequateSleepDays(owner, today, 7);
 
-        FlagRaise raise = evaluator.evaluate(owner).stream()
-            .filter(r -> FlagKey.LOAD_FUEL_MISMATCH.equals(r.flagKey())).findFirst().orElseThrow();
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.LOAD_FUEL_MISMATCH);
 
-        assertThat(raise.payload().loadFuelMismatch().weightTrendPctWk()).isNull();
+        assertThat(verdict.payload().loadFuelMismatch().weightTrendPctWk()).isNull();
     }
 
     // ── boundary pairs ─────────────────────────────────────────────────────────
@@ -284,14 +296,62 @@ class FlagEvaluatorLoadFuelMismatchIT extends AbstractIntegrationTest {
         lowKcalDays(owner, today, 7);
         adequateSleepDays(owner, today, 7);
 
-        FlagRaise raise = evaluator.evaluate(owner).stream()
-            .filter(r -> FlagKey.LOAD_FUEL_MISMATCH.equals(r.flagKey())).findFirst().orElseThrow();
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.LOAD_FUEL_MISMATCH);
 
-        var p = raise.payload().loadFuelMismatch();
+        var p = verdict.payload().loadFuelMismatch();
         assertThat(p.loadThreshold()).isEqualTo(50.0);
         assertThat(p.loadAvg()).isGreaterThanOrEqualTo(50.0);
         assertThat(p.kcalLoggedDays()).isEqualTo(7);
         assertThat(p.sleepLoggedDays()).isEqualTo(7);
         assertThat(p.firedArm()).isEqualTo("kcal");
+    }
+
+    @Test
+    void is_clear_when_load_is_high_but_fuel_and_sleep_are_adequate() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        highLoadWeek(owner, today);
+        adequateSleepDays(owner, today, 7);
+        for (int i = 0; i < 7; i++) {
+            mealPopulator.createMealWithItems(owner, today.minusDays(i), "lunch",
+                List.of(new MealPopulator.Line("big-meal", "3000", "150", "300", "80", (short) 1)));
+        }
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.LOAD_FUEL_MISMATCH);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("fuel_arms_fired");
+    }
+
+    @Test
+    void is_clear_when_the_load_average_sits_just_below_the_threshold() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        for (int i = 0; i < 6; i++) {
+            trainPopulator.createSportSession(owner, today.minusDays(i), 50);
+        }
+        trainPopulator.createSportSession(owner, today.minusDays(6), 49);
+        lowKcalDays(owner, today, 7);
+        adequateSleepDays(owner, today, 7);
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.LOAD_FUEL_MISMATCH);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("load_avg_min");
+        assertThat(verdict.clear().observed()).isLessThan(verdict.clear().threshold());
+    }
+
+    @Test
+    void is_unavailable_when_only_three_kcal_days_are_logged_despite_a_full_load_week() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        highLoadWeek(owner, today);
+        lowKcalDays(owner, today, 3);
+        // no sleep logged at all
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.LOAD_FUEL_MISMATCH);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
+        assertThat(verdict.reason()).isEqualTo(UnavailableReason.NOT_ENOUGH_LOGGED_DAYS);
     }
 }

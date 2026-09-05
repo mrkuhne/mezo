@@ -5,8 +5,9 @@ import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepAnchorPort;
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -14,7 +15,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -78,7 +78,7 @@ public class LateEatingRule implements FlagRule {
     private final FlagProperties properties;
 
     @Override
-    public Optional<FlagRaise> evaluate(UUID userId, LocalDate today) {
+    public FlagVerdict evaluate(UUID userId, LocalDate today) {
         FlagProperties.LateEating cfg = properties.lateEating();
         LocalDate from = today.minusDays(cfg.windowDays() - 1L);
         Map<LocalDate, Double> mealHours =
@@ -117,13 +117,17 @@ public class LateEatingRule implements FlagRule {
         }
 
         if (qualifying < cfg.minDaysOfLastThree()) {
-            return Optional.empty();
+            if (mealHours.isEmpty()) {
+                return FlagVerdict.unavailable(FlagKey.LATE_EATING, UnavailableReason.NO_MEAL_DATA);
+            }
+            return FlagVerdict.clear(FlagKey.LATE_EATING, new FlagVerdict.ClearEvidence(
+                "late_meal_days", (double) qualifying, (double) cfg.minDaysOfLastThree(), null));
         }
 
-        return Optional.of(new FlagRaise(FlagKey.LATE_EATING,
+        return FlagVerdict.raised(FlagKey.LATE_EATING,
             FlagPayloadEnvelope.lateEating(new FlagPayloadEnvelope.LateEating(
                 cfg.minutesBeforeBed(), cfg.absoluteHour(), cfg.minDaysOfLastThree(), cfg.windowDays(),
-                anchorShiftedHour, qualifying, hourByDay, armByDay))));
+                anchorShiftedHour, qualifying, hourByDay, armByDay)));
     }
 
     /** The same +24-below-noon shift {@code MetricSeriesService.clockHour} applies to observed

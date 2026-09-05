@@ -43,7 +43,16 @@ Rules:
 
 ## Database Reset — every test starts clean
 
-`ResetDatabase.resetExceptMasterData()` runs in `@BeforeEach` of `AbstractIntegrationTest`:
+Before the reset, `@BeforeEach` drains any leftover `@Async` AFTER_COMMIT work (fact extraction,
+embedding/graph writers, the LLM-log audit write) from the previous test — a still-running task
+holds a transaction that would deadlock against the TRUNCATE below (a real incident, PR #306,
+mezo-oou9). The drain polls both `applicationTaskExecutor` (the default `@Async` pool) and the
+LLM-log audit writer's separate `llmLogExecutor` pool for up to 30 s, and throws
+`IllegalStateException` naming the stuck pool(s) rather than silently proceeding into a likely
+deadlock — a deterministic failure beats a flaky `PessimisticLockException`. If this ever fires,
+the fix is almost always in the listener (why is it still running after 30 s?), not in the drain.
+
+`ResetDatabase.resetExceptMasterData()` runs next, in the same `@BeforeEach`:
 
 - `TRUNCATE TABLE <owned domain tables> CASCADE` — fast, FK-safe.
 - Deletes all users/profiles EXCEPT master data (the demodata-seeded owner) — mirrors the

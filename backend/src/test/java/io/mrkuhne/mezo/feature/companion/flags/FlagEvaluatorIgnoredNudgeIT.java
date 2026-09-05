@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagEvaluator;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagOutcome;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.NotificationPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
@@ -49,13 +51,26 @@ class FlagEvaluatorIgnoredNudgeIT extends AbstractIntegrationTest {
     }
 
     private List<String> keys(UUID owner) {
-        return evaluator.evaluate(owner).stream().map(FlagRaise::flagKey).toList();
+        return raisedKeys(evaluator.evaluate(owner));
+    }
+
+    /** The keys that actually RAISED — the old evaluate() return, reconstructed. */
+    private static List<String> raisedKeys(List<FlagVerdict> verdicts) {
+        return verdicts.stream()
+            .filter(v -> v.outcome() == FlagOutcome.RAISED)
+            .map(FlagVerdict::flagKey)
+            .toList();
+    }
+
+    private static FlagVerdict verdictFor(List<FlagVerdict> verdicts, String flagKey) {
+        return verdicts.stream().filter(v -> flagKey.equals(v.flagKey())).findFirst().orElseThrow();
     }
 
     private Optional<FlagPayloadEnvelope.IgnoredNudge> payload(UUID owner) {
         return evaluator.evaluate(owner).stream()
-            .filter(r -> FlagKey.IGNORED_NUDGE.equals(r.flagKey()))
-            .map(r -> r.payload().ignoredNudge())
+            .filter(v -> FlagKey.IGNORED_NUDGE.equals(v.flagKey()))
+            .filter(v -> v.outcome() == FlagOutcome.RAISED)
+            .map(v -> v.payload().ignoredNudge())
             .findFirst();
     }
 
@@ -195,5 +210,63 @@ class FlagEvaluatorIgnoredNudgeIT extends AbstractIntegrationTest {
         assertThat(p.nonComplianceMinutes()).isEqualTo(60);
         assertThat(p.bedtimeHourByNight()).hasSize(5);
         assertThat(p.bedtimeHourByNight().values()).allSatisfy(v -> assertThat(v).isEqualTo(24.5));
+    }
+
+    @Test
+    void is_unavailable_when_there_is_no_sleep_goal_row() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        nudgedNights(owner, today, "00:30", "00:30", "00:30", "00:30", "00:30");
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.IGNORED_NUDGE);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
+        assertThat(verdict.reason()).isEqualTo(UnavailableReason.NO_SLEEP_GOAL_ROW);
+    }
+
+    @Test
+    void is_unavailable_when_one_of_the_five_nights_is_unlogged() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        sleepGoalPopulator.goal(owner);
+        nudgedNights(owner, today, "00:30", "00:30", "00:30", null, "00:30");
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.IGNORED_NUDGE);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
+        assertThat(verdict.reason()).isEqualTo(UnavailableReason.UNLOGGED_NIGHT);
+    }
+
+    @Test
+    void is_clear_when_one_of_the_five_nights_actually_complied() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        sleepGoalPopulator.goal(owner);
+        nudgedNights(owner, today, "00:30", "00:30", "22:00", "00:30", "00:30");
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.IGNORED_NUDGE);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("nudge_run_nights");
+        assertThat(verdict.clear().detail()).startsWith("complied:");
+    }
+
+    @Test
+    void is_clear_when_a_required_night_has_no_nudge_sent() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        sleepGoalPopulator.goal(owner);
+        LocalDate fourNightsStart = today.minusDays(3);
+        for (LocalDate sleepDate = fourNightsStart; !sleepDate.isAfter(today); sleepDate = sleepDate.plusDays(1)) {
+            LocalDate pushDate = sleepDate.minusDays(1);
+            notificationPopulator.pushLog(owner, pushDate, "lights_out:" + pushDate, CATEGORY);
+            sleepLogPopulator.createSleepLog(owner, sleepDate, "00:30", "07:00", new BigDecimal("7.0"));
+        }
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.IGNORED_NUDGE);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("nudge_run_nights");
+        assertThat(verdict.clear().detail()).startsWith("no_push:");
     }
 }

@@ -1121,9 +1121,23 @@ databaseChangeLog:
             relativeToChangelogFile: true
             path: script/202609051200_mezo-el0t_weekly_score_cache_invalidation.sql
   - changeSet:
+      id: "1.0.0:202609051200_mezo-6269.1_companion_flag_trace"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609051200_mezo-6269.1_companion_flag_trace.sql
+  - changeSet:
       id: "1.0.0:202609051600_mezo-d58h.7.1_flag_key_protocol_lapse"
       author: daniel.kuhne
       changes:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609051600_mezo-d58h.7.1_flag_key_protocol_lapse.sql
+  - changeSet:
+      id: "1.0.0:202609051700_mezo-d58h.7.1_flag_key_trace_protocol_lapse"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609051700_mezo-d58h.7.1_flag_key_trace_protocol_lapse.sql

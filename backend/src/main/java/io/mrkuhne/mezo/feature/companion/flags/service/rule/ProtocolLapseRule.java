@@ -5,8 +5,9 @@ import io.mrkuhne.mezo.feature.companion.flags.entity.CompanionFlagLogEntity;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.repository.CompanionFlagLogRepository;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.feature.fuel.entity.ProtocolEntity;
 import io.mrkuhne.mezo.feature.fuel.entity.ProtocolItemEntity;
 import io.mrkuhne.mezo.feature.fuel.entity.SupplementIntakeEntity;
@@ -99,18 +100,18 @@ public class ProtocolLapseRule implements FlagRule {
     private final FlagProperties properties;
 
     @Override
-    public Optional<FlagRaise> evaluate(UUID userId, LocalDate today) {
+    public FlagVerdict evaluate(UUID userId, LocalDate today) {
         FlagProperties.ProtocolLapse cfg = properties.protocolLapse();
 
         Optional<ProtocolEntity> protocolOpt =
             protocolRepository.findByCreatedByAndStatusAndDeletedFalse(userId, "active");
         if (protocolOpt.isEmpty()) {
-            return Optional.empty();
+            return FlagVerdict.unavailable(FlagKey.PROTOCOL_LAPSE, UnavailableReason.NO_ACTIVE_PROTOCOL);
         }
         List<ProtocolItemEntity> items = protocolItemRepository
             .findByProtocolIdAndDeletedFalseOrderByItemOrderAsc(protocolOpt.get().getId());
         if (items.isEmpty()) {
-            return Optional.empty();
+            return FlagVerdict.unavailable(FlagKey.PROTOCOL_LAPSE, UnavailableReason.NO_PROTOCOL_ITEMS);
         }
 
         // The window ends YESTERDAY, not today — today is still in progress (Trap 3).
@@ -143,6 +144,8 @@ public class ProtocolLapseRule implements FlagRule {
         Set<String> suppressedItemIds = suppressedItemIds(userId, cfg.perItemCooldownDays());
 
         Offender best = null;
+        int longestMissRunSeen = 0;
+        boolean anyItemLackedHistory = false;
         for (ProtocolItemEntity item : items) {
             if (suppressedItemIds.contains(item.getPantryItemId().toString())) {
                 continue;
@@ -177,6 +180,7 @@ public class ProtocolLapseRule implements FlagRule {
                 earliestMissedDay = d;
             }
             int consecutiveMissed = missedDueDates.size();
+            longestMissRunSeen = Math.max(longestMissRunSeen, consecutiveMissed);
             if (consecutiveMissed < cfg.consecutiveMissedDays()) {
                 continue;
             }
@@ -192,6 +196,9 @@ public class ProtocolLapseRule implements FlagRule {
                 }
             }
             if (historyEnd == null) {
+                // Too new / never due before the run — an honesty gate, not a judgement: there is
+                // simply not enough history behind this item to say whether a habit existed.
+                anyItemLackedHistory = true;
                 continue;
             }
             LocalDate historyStart = historyEnd.minusDays((long) cfg.historyWindowDays() - 1);
@@ -210,10 +217,15 @@ public class ProtocolLapseRule implements FlagRule {
                 }
             }
             if (historyDue < cfg.minHistoryDueDays()) {
+                // Same honesty gate as above, reached via too few DUE days rather than none at all
+                // (e.g. an item added recently, clamped to startedOn before the window filled up).
+                anyItemLackedHistory = true;
                 continue;
             }
             double adherence = (double) historyTaken / historyDue;
             if (adherence < cfg.minHistoryAdherence()) {
+                // Enough history existed, and it was judged: adherence before the miss run was
+                // already too low for a real habit to have existed — genuinely CLEAR, not a gate.
                 continue;
             }
 
@@ -225,23 +237,34 @@ public class ProtocolLapseRule implements FlagRule {
             }
         }
 
-        if (best == null) {
-            return Optional.empty();
+        if (best != null) {
+            Map<UUID, String> names = new HashMap<>();
+            for (PantryItemEntity p : pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(userId)) {
+                names.put(p.getId(), p.getCatalog().getName());
+            }
+            String itemName = names.getOrDefault(best.item().getPantryItemId(), DEFAULT_NAME);
+
+            return FlagVerdict.raised(FlagKey.PROTOCOL_LAPSE,
+                FlagPayloadEnvelope.protocolLapse(new FlagPayloadEnvelope.ProtocolLapse(
+                    best.item().getPantryItemId().toString(), itemName, best.item().getSlotKey(),
+                    best.consecutiveMissed(), cfg.consecutiveMissedDays(),
+                    best.missedDueDates().stream().map(LocalDate::toString).toList(),
+                    best.lastTaken() == null ? null : best.lastTaken().toString(),
+                    best.historyDue(), best.historyTaken(), best.adherence(), cfg.minHistoryAdherence())));
         }
 
-        Map<UUID, String> names = new HashMap<>();
-        for (PantryItemEntity p : pantryItemRepository.findByCreatedByAndDeletedFalseOrderByNameAsc(userId)) {
-            names.put(p.getId(), p.getCatalog().getName());
+        // No offender: either no item's miss run reached the threshold at all (the ordinary quiet
+        // case), or at least one did but there was not enough due-day history behind it to judge —
+        // an honesty gate, since "no genuine habit" and "cannot tell if there was one" are different
+        // claims (adherence-below-threshold items above are already folded into this same CLEAR,
+        // since that gate genuinely judged and found insufficient signal, unlike this one).
+        if (anyItemLackedHistory) {
+            return FlagVerdict.unavailable(FlagKey.PROTOCOL_LAPSE,
+                UnavailableReason.NOT_ENOUGH_PROTOCOL_HISTORY);
         }
-        String itemName = names.getOrDefault(best.item().getPantryItemId(), DEFAULT_NAME);
-
-        return Optional.of(new FlagRaise(FlagKey.PROTOCOL_LAPSE,
-            FlagPayloadEnvelope.protocolLapse(new FlagPayloadEnvelope.ProtocolLapse(
-                best.item().getPantryItemId().toString(), itemName, best.item().getSlotKey(),
-                best.consecutiveMissed(), cfg.consecutiveMissedDays(),
-                best.missedDueDates().stream().map(LocalDate::toString).toList(),
-                best.lastTaken() == null ? null : best.lastTaken().toString(),
-                best.historyDue(), best.historyTaken(), best.adherence(), cfg.minHistoryAdherence()))));
+        return FlagVerdict.clear(FlagKey.PROTOCOL_LAPSE, new FlagVerdict.ClearEvidence(
+            "consecutive_missed", (double) longestMissRunSeen, (double) cfg.consecutiveMissedDays(),
+            null));
     }
 
     /** The offending pantry item ids already announced inside the per-item cooldown — read from

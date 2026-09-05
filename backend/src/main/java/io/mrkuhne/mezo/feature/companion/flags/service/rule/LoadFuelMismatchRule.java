@@ -5,8 +5,9 @@ import io.mrkuhne.mezo.api.dto.MacroSet;
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
@@ -14,7 +15,6 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -56,7 +56,7 @@ public class LoadFuelMismatchRule implements FlagRule {
     private final FlagProperties properties;
 
     @Override
-    public Optional<FlagRaise> evaluate(UUID userId, LocalDate today) {
+    public FlagVerdict evaluate(UUID userId, LocalDate today) {
         FlagProperties.LoadFuelMismatch cfg = properties.loadFuelMismatch();
         LocalDate from = today.minusDays(cfg.windowDays() - 1L);
 
@@ -69,7 +69,8 @@ public class LoadFuelMismatchRule implements FlagRule {
         }
         double loadAvg = loadSum / cfg.windowDays();
         if (loadAvg < cfg.loadThreshold()) {
-            return Optional.empty();
+            return FlagVerdict.clear(FlagKey.LOAD_FUEL_MISMATCH, new FlagVerdict.ClearEvidence(
+                "load_avg_min", loadAvg, cfg.loadThreshold(), null));
         }
 
         // Sparse series: a missing day is a genuine absence, so the logged-day count MUST come
@@ -85,7 +86,8 @@ public class LoadFuelMismatchRule implements FlagRule {
         boolean kcalRawGateOk = kcalLoggedDaysRaw >= cfg.minLoggedDaysPerSide();
         boolean sleepGateOk = sleepLoggedDays >= cfg.minLoggedDaysPerSide();
         if (!kcalRawGateOk && !sleepGateOk) {
-            return Optional.empty();
+            return FlagVerdict.unavailable(FlagKey.LOAD_FUEL_MISMATCH,
+                UnavailableReason.NOT_ENOUGH_LOGGED_DAYS);
         }
 
         // Frozen and gated on the SAME count. kcalLoggedDaysRaw only screens whether pairing is
@@ -139,7 +141,8 @@ public class LoadFuelMismatchRule implements FlagRule {
         }
 
         if (!kcalArmFires && !sleepArmFires) {
-            return Optional.empty();
+            return FlagVerdict.clear(FlagKey.LOAD_FUEL_MISMATCH, new FlagVerdict.ClearEvidence(
+                "fuel_arms_fired", 0.0, 1.0, null));
         }
         String firedArm = kcalArmFires && sleepArmFires ? ARM_BOTH
             : kcalArmFires ? ARM_KCAL : ARM_SLEEP;
@@ -148,14 +151,14 @@ public class LoadFuelMismatchRule implements FlagRule {
             .series(userId, MetricKey.WEIGHT_TREND_PCT_WK, today, today)
             .get(today);
 
-        return Optional.of(new FlagRaise(FlagKey.LOAD_FUEL_MISMATCH,
+        return FlagVerdict.raised(FlagKey.LOAD_FUEL_MISMATCH,
             FlagPayloadEnvelope.loadFuelMismatch(new FlagPayloadEnvelope.LoadFuelMismatch(
                 cfg.windowDays(), loadAvg, cfg.loadThreshold(),
                 kcalAvg, kcalTargetAvg, kcalFraction, cfg.kcalFractionOfTarget(), kcalLoggedDays,
                 sleepAvg, cfg.sleepFloorHours(), sleepLoggedDays,
                 cfg.minLoggedDaysPerSide(),
                 firedArm,
-                weightTrendPctWk))));
+                weightTrendPctWk)));
     }
 
     private static int countInWindow(Map<LocalDate, Double> series, LocalDate from, LocalDate to) {

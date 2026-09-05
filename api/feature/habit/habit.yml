@@ -23,7 +23,7 @@ paths:
     post:
       tags: [Habit]
       operationId: checkHabit
-      summary: Manually check a MANUAL habit for today (Habits)
+      summary: Manually check a MANUAL habit for today or yesterday (max 1 day back) (Habits)
       parameters:
         - { name: key, in: path, required: true, schema: { type: string } }
       requestBody:
@@ -43,14 +43,14 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
         '409':
-          description: HABIT_NOT_MANUAL | HABIT_NOT_TODAY | HABIT_ALREADY_DONE
+          description: HABIT_NOT_MANUAL | HABIT_TOO_OLD | HABIT_ALREADY_DONE
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
     delete:
       tags: [Habit]
       operationId: uncheckHabit
-      summary: Same-day un-check of a MANUAL habit; reverses the XP (Habits)
+      summary: Un-check of a MANUAL habit for today or yesterday; reverses the XP (Habits)
       parameters:
         - { name: key, in: path, required: true, schema: { type: string } }
         - { name: date, in: query, required: true, schema: { type: string, format: date } }
@@ -66,7 +66,7 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
         '409':
-          description: HABIT_NOT_MANUAL | HABIT_NOT_TODAY | HABIT_NOT_DONE
+          description: HABIT_NOT_MANUAL | HABIT_TOO_OLD | HABIT_NOT_DONE
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
