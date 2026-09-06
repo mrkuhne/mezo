@@ -28,6 +28,9 @@ export function WeekGoalsCard() {
             <div className="grow">
               <div className="nm">
                 {g.title}
+                {/* .lg-goalchip: a sor által NEM hordozott felét nevezi meg — itt DIMENZIÓ, mert
+                    a `nm` már kiírja a cél címét. Szabály a prototype.css-ben, a token
+                    definíciójánál (mezo-9r85). */}
                 <span className="lg-goalchip"><i />{dim.label}</span>
               </div>
               <div className="x">{goalWeekSentence(g)}</div>

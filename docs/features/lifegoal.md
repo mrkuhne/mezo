@@ -2,7 +2,7 @@
 title: Life goals
 type: feature-domain
 status: in-progress
-updated: 2026-09-05
+updated: 2026-09-06
 tags: [me, growth, companion, backend, data-layer, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal
@@ -957,6 +957,23 @@ correctly in every golden while being invisible in the app (§9).
   unused or abandoned ritual is never nagged about. A sleeping signal (no `SignalSource` bean
   supports it) drops the plan out rather than guessing.
 - **Still deferred** (spec §5–§7): the knowledge-graph `GOAL` node (blocked on `mezo-06o0.5`).
+- **`.lg-goalchip` payload rule** (`mezo-9r85`): the three consumers (`WeekGoalsCard`,
+  `SkillBandCard`, `EnHubPage`) print two different payloads — a dimension label in the Heti
+  row, a goal title everywhere else — and this is a deliberate rule, not an inconsistency: the
+  chip names **the half of the (goal, dimension) pair that the surrounding row does not already
+  carry**. The Heti row's `nm` already prints the goal title, so its chip adds the dimension; a
+  skill row and the Én-hub hero carry no goal identity, so their chip adds the title. A fourth
+  consumer should apply this rule rather than pick a payload by inspection. Recorded at the
+  rule's definition (`frontend/src/styles/prototype.css`, the `.lg-goalchip` comment) and
+  pointed to from each render site.
+- **No `isPending` gate on the Growth skill-row chip layer** (`mezo-9r85`, `GrowthSkillsPage`):
+  deliberately absent, not an oversight. While `useLifeGoals()` is pending, `goals` is the `[]`
+  fallback, so `goalSkillChips([])` already returns an empty map and no chip renders — an
+  `isPending` gate would render byte-for-byte the same thing (nothing, then chips once the goals
+  arrive) at the cost of one more branch. The visible pop-in comes from the secondary async
+  source (life goals) resolving after the primary one (the progression profile), which is an
+  existing, accepted convention on this page, not something a gate on this one chip layer would
+  fix.
 
 ## 10. Key files
 

@@ -39,6 +39,13 @@ export function GrowthSkillsPage() {
   // A goalchip (mezo-iizd.12) mindhárom sávra megy: a pillér `skillKey`-e a LIFE-taxonómián
   // KÍVÜLRE is mutathat (a jel-katalógus `weight_goal`/`gym_volume` bejegyzései például
   // `max_strength`/`aerobic_capacity` atlétikai skillt adnak).
+  //
+  // SZÁNDÉKOSAN NINCS `isPending`-kapu a chip-rétegen (mezo-9r85, 3. tétel). Feloldatlan
+  // lekérésnél a `goals` az üres tömb, tehát `goalSkillChips([])` üres mapet ad és chip nem
+  // renderel — egy `isPending`-kapu BETŰRE ugyanazt rajzolná (semmi, majd chipek), csak egy
+  // ággal többől. A beugrás magából a másodlagos aszinkron forrásból jön; elgondolkodtató
+  // orvosság (chip-szélesség fenntartása vagy skeleton-chip) csak ÚJ, nem specifikált UI-t
+  // találna ki. A lap amúgy is az elsődleges tartalmat kapuzatlanul rendereli.
   const { goals: lifeGoals } = useLifeGoals()
   const chips = goalSkillChips(lifeGoals)
 

@@ -9337,7 +9337,12 @@ button.mz-wtile:active { transform: scale(0.96); }
 .lg-conflict svg { flex: none; margin-top: 1px; }
 
 /* Heti hub cél-kártya + goalchip (mezo-iizd.9, prototípus celok-body.html #page-heti .qcard/
-   .wgrow/.goalchip). A `.lg-goalchip` a Growth skill-sorban is ezt a nyelvet viseli (mezo-iizd.12). */
+   .wgrow/.goalchip). A `.lg-goalchip` a Growth skill-sorban is ezt a nyelvet viseli (mezo-iizd.12).
+   SZABÁLY a chip TARTALMÁRA (mezo-9r85, 4. tétel): a chip a (cél, dimenzió) pár azon felét
+   nevezi meg, amit a KÖRNYEZŐ SOR nem hordoz. A Heti sor `nm`-je már kiírja a cél címét → ott
+   a chip a DIMENZIÓ-címke (WeekGoalsCard). Egy skill-sor és az Én-hub heroja nem hordoz
+   cél-identitást → ott a chip a CÉL CÍME (SkillBandCard, EnHubPage). Egységesítés a Heti sorban
+   duplán íratná ki a címet. Negyedik fogyasztó: ezt a szabályt alkalmazd, ne érmét dobj. */
 .lg-wcard { border-radius: 18px; padding: 4px 12px 10px; margin-bottom: 10px; background: var(--mz-stripbg);
   border: 0.5px solid var(--lg-hairline); box-shadow: 0 14px 26px -16px rgba(43,33,24,0.3); }
 .lg-wcard-top { display: flex; align-items: baseline; gap: 8px; padding: 10px 2px 4px; }
