@@ -8,7 +8,7 @@ import { API_BASE } from '@/test/msw/handlers'
 import { server } from '@/test/msw/server'
 import { CoachingObserverPage } from '@/features/insights/pages/CoachingObserverPage'
 import { mockCoachingDay } from '@/data/insights/coachingTraceMock'
-import { localDateString } from '@/shared/lib/dates'
+import { addDays, localDateString } from '@/shared/lib/dates'
 
 const renderPage = (entry = '/mezo/coaching/megfigyelo') =>
   render(<MemoryRouter initialEntries={[entry]}><CoachingObserverPage /></MemoryRouter>,
@@ -108,5 +108,24 @@ describe('CoachingObserverPage (real mode)', () => {
     await waitFor(() =>
       expect(screen.getByText('Ezen a napon még nem futott kiértékelés.')).toBeInTheDocument())
     expect(screen.queryByText('A nap változásai')).not.toBeInTheDocument()
+  })
+
+  test('a quiet PAST day never claims "ma" — the copy is day-neutral', async () => {
+    const yesterday = addDays(localDateString(), -1)
+    // A day where every rule ran and none of them flagged (split.total > 0, nothing raised or
+    // suppressed) — the "quiet" branch, distinct from the "no evaluation ran yet" empty state.
+    server.use(http.get(`${API_BASE}/api/companion/flags/trace`, () => HttpResponse.json({
+      date: yesterday,
+      rules: [{
+        flagKey: 'acute_bad_day', label: 'Rossz nap', domain: 'recovery', rank: 1,
+        outcome: 'clear', reasonText: 'Rendben.', facts: [],
+      }],
+      transitions: [],
+    })))
+    renderPage(`/mezo/coaching/megfigyelo?d=${yesterday}`)
+    expect(screen.getByText('tegnap')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByText(/egy szabály sem jelzett — mind a 1 rendben\./)).toBeInTheDocument())
+    expect(screen.queryByText(/^Ma /)).not.toBeInTheDocument()
   })
 })

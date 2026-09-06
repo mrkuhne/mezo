@@ -85,7 +85,7 @@ export function CoachingObserverPage() {
           )}
           {split.total > 0 && split.raised + split.suppressed === 0 && (
             <p style={{ fontSize: 11, color: 'var(--mz-ink-soft)', textAlign: 'center' }}>
-              Ma egy szabály sem jelzett — mind a {split.total} rendben.
+              Ezen a napon egy szabály sem jelzett — mind a {split.total} rendben.
             </p>
           )}
 
