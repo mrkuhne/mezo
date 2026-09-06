@@ -68,6 +68,33 @@ Rules:
 - Service-level tests still use `@Transactional` rollback for their own writes; the reset is a
   belt-and-braces floor under both styles.
 
+## No Scheduler in Tests — the second TRUNCATE deadlock source
+
+`SchedulingConfiguration`'s `@EnableScheduling` is `@ConditionalOnProperty` on
+**`mezo.techcore.scheduling.enabled`** (`true` in `application.yml`, **`false` in
+`src/test/resources/application.properties`**). The test profile therefore has **no scheduler
+thread in any context**, and no `@Scheduled` method can fire.
+
+Why the master switch exists on top of the ~28 per-job `mezo.techcore.cron.*.enabled` switches:
+those gate whether the job **bean** exists, and ~25 ITs re-enable their own job with
+`@TestPropertySource("<key>=true")` because they call `run()`/`runOnce()` directly. Each such class
+forks its **own** `ApplicationContext` (the TestContext cache keys on the merged property set), and
+that context — scheduler thread included — stays alive in the cache for the rest of the surefire
+JVM, ticking against the **same** database. A job re-enabled by class A could still fire at its real
+wall-clock cron minute during class Z's `@BeforeEach` TRUNCATE and deadlock it, which is the
+mezo-peh4 flake: `resetDatabaseState » PessimisticLock … [ERROR: deadlock detected]`, in random
+victim classes, on changes that touched nothing (~10 % of runs; ~15 daily fire-minutes fall inside a
+CI-length window).
+
+Rules:
+- **Never re-enable scheduling in a test.** A test that needs a job's behavior calls the job bean's
+  method directly; the per-job `@TestPropertySource` re-enables stay, because they gate the bean.
+- **Never depend on a real tick.** Nothing in the suite waits for a cron minute.
+- `SchedulingInertInTestProfileIT` guards both facts (no `ScheduledAnnotationBeanPostProcessor`, no
+  armed scheduled task) and goes red the moment the switch is flipped back on.
+- Trade-off accepted: cron **wiring** (a bad cron expression, a missing `@Scheduled`) is no longer
+  exercised by any IT.
+
 ## Populators — Java test data factories
 
 One `<Aggregate>Populator` per aggregate in `support/populator/`, annotated `@TestComponent`
@@ -177,3 +204,5 @@ From the company original (`IntegrationTestBase`), intentionally left out until 
 - [ ] HTTP calls via verb helpers with explicit expected status; auth via `ownerAuthHeaders()`
 - [ ] Error responses asserted by SystemMessage code/field via `assertHas*Error` helpers
 - [ ] Missing helper (PATCH, multipart, WireMock…) → extend the `support/` base, don't inline
+- [ ] New `@Scheduled` job → per-job `mezo.techcore.cron.*` switch off in the test properties; drive
+      the job by calling its method, never by waiting for a tick (scheduling is off suite-wide)

@@ -15,6 +15,7 @@
 // literals — the same trio MacroCells uses.
 // ============================================================
 import type { MacroDimension } from '@/data/types'
+import { hu1 } from '@/shared/lib/huNum'
 
 const ROWS = [
   { key: 'p', nm: 'fehérje', color: 'var(--coral)' },
@@ -34,8 +35,18 @@ export function MacroPanel({ dim }: { dim: MacroDimension }) {
         </div>
       ))}
       <div className="col gap-xs" style={{ marginTop: 6 }}>
-        <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)' }}>
-          Az étel makró-felépítése
+        {/* Honnan a cél (mezo-mxmh). Az 1. körben ez a `detail` mondat végén állt, ahol az
+            összecsukott kártya kétsoros vágása pont ezt ette meg — saját mezőként mindig látszik. */}
+        {dim.targetOrigin && (
+          <div className="sb-fchips" style={{ marginTop: 2 }}>
+            <span className="sb-fchip" style={{ maxWidth: '100%' }}>
+              <em>Honnan a cél</em>
+              <span style={{ whiteSpace: 'normal' }}>{dim.targetOrigin}</span>
+            </span>
+          </div>
+        )}
+        <span className="label-mono" style={{ fontSize: 9, color: 'var(--text-tertiary)', marginTop: 4 }}>
+          Az étel makró-felépítése · a napi keret {hu1(dim.kcalShareOfDay)}%-a
         </span>
         {dim.notes && (
           <span style={{ fontSize: 10, lineHeight: 1.4, color: 'var(--warning)', letterSpacing: '0.04em' }}>

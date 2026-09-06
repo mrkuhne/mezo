@@ -57,6 +57,11 @@ public final class FlagCatalog {
         // observation, hence the nutrition domain. Insertion order again mirrors
         // AdvicePriority.ORDER, where it sits directly after protocol_lapse.
         ENTRIES.put(FlagKey.MEAL_RHYTHM_DRIFT, new Entry("Étkezési ritmus", DOMAIN_NUTRITION));
+        // Round 2 S6 (bd mezo-d58h.7.7): afternoon energy vs. meal timing — a Meal/Fuel-side
+        // observation, hence the nutrition domain (the actionable half of the correlation is WHEN
+        // the user eats). Insertion order again mirrors AdvicePriority.ORDER, where it sits
+        // directly after meal_rhythm_drift.
+        ENTRIES.put(FlagKey.ENERGY_DIP_MEAL_TIMING, new Entry("Délutáni energia", DOMAIN_NUTRITION));
         ENTRIES.put(FlagKey.RECOVERY_NEEDED, new Entry("Regeneráció kell", DOMAIN_RECOVERY));
         ENTRIES.put(FlagKey.SUSTAINED_STRESS, new Entry("Tartós stressz", DOMAIN_RECOVERY));
         ENTRIES.put(FlagKey.MOMENTUM_AT_RISK, new Entry("Lendület veszélyben", DOMAIN_HABITS));

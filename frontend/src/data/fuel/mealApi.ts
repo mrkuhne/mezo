@@ -51,6 +51,7 @@ function fromDimension(d: MealScoreDimensionResponse): MealDimension | null {
     score: d.score,
     color: DIMENSION_COLOR[d.id as MealDimension['id']],
     detail: d.detail,
+    coverage: d.coverage ?? null,
     note: d.note ?? null,
   }
   if (d.id === 'macro' && d.macro) {
@@ -59,6 +60,7 @@ function fromDimension(d: MealScoreDimensionResponse): MealDimension | null {
       macroRatio: { p: d.macro.ratioP, c: d.macro.ratioC, f: d.macro.ratioF },
       macroTargets: { p: d.macro.targetP, c: d.macro.targetC, f: d.macro.targetF },
       kcalShareOfDay: d.macro.kcalShareOfDay,
+      targetOrigin: d.macro.targetOrigin ?? null,
       notes: d.macro.notes ?? undefined,
     }
   }

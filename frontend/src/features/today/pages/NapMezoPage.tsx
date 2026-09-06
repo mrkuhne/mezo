@@ -27,7 +27,7 @@ import { FeedbackChips } from '@/features/insights/components/FeedbackChips'
 import { RefChips } from '@/features/insights/components/RefChips'
 import { EletjelStrip } from '@/features/today/components/EletjelStrip'
 import { useAdviceActions, useCompanionFeed, useFeedback } from '@/data/hooks'
-import { feedToMessageItem, partitionMezoThread, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
+import { feedToMessageItem, isQuestionCard, partitionMezoThread, questionAnswers, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
 import { useMezoThread } from '@/features/today/MezoThreadProvider'
 import { useNeeds } from '@/features/today/logic/useNeeds'
 import { useMinuteTick } from '@/features/today/logic/useMinuteTick'
@@ -221,7 +221,9 @@ export function NapMezoPage() {
         <p key={j} className="txt"><SafeMarkdown text={p} /></p>
       ))}
       {m.refs.length > 0 && <RefChips refs={m.refs} eyebrow="Amire épült" />}
-      {m.suggestions && m.suggestions.length > 0 && (
+      {/* A question card's two suggestions ARE its two answer chips below (mezo-d58h.7.6) —
+          listing them here too would say the same thing twice, one of them unclickable. */}
+      {m.suggestions && m.suggestions.length > 0 && !questionAnswers(m) && (
         <ul className="nap-mzmsg-sug">
           {m.suggestions.map((s, j) => (
             <li key={j}><SafeMarkdown text={s} /></li>
@@ -272,15 +274,22 @@ export function NapMezoPage() {
       )}
       {/* Chips CSAK perzisztált AI-artifactre (mezo-kr9v); a „Segített?" felirat a
           W5.2 intervention-változat (mezo-b3pp.19) ÉS az S4 advice-kártya (mezo-d58h.4) —
-          a sheet szerződése változatlanul. */}
+          a sheet szerződése változatlanul. KIVÉTEL a round-2 S5 kérdés-kártya
+          (mezo-d58h.7.6): ott a 👍/👎 maga a VÁLASZ, nem a kártya értékelése, ezért „A
+          válaszod" felirat, a kérdés saját szavai a chipeken, és nincs indok-sor. */}
       {m.artifactId != null && (
         <div className="mt-sm">
-          {(m.kind === 'intervention' || m.kind === 'advice') && <div className="nap-mzmsg-meta">Segített?</div>}
+          {isQuestionCard(m)
+            ? <div className="nap-mzmsg-meta">A válaszod</div>
+            : (m.kind === 'intervention' || m.kind === 'advice') && <div className="nap-mzmsg-meta">Segített?</div>}
           <FeedbackChips
             key={m.artifactId}
             value={feedback.get(m.artifactId)}
             onVote={(verdict, reason) => feedback.vote(m.artifactId!, verdict, reason)}
-            label={m.kind === 'intervention' || m.kind === 'advice' ? 'a közbelépésről' : 'az üzenetről'}
+            answers={questionAnswers(m)}
+            label={isQuestionCard(m)
+              ? 'a kérdésre'
+              : m.kind === 'intervention' || m.kind === 'advice' ? 'a közbelépésről' : 'az üzenetről'}
           />
         </div>
       )}

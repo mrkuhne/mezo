@@ -753,7 +753,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Knowledge-graph promotion pipelines | ✅ `mezo-b3pp.7`, retraction `mezo-b3pp.31`, fact opt-out `mezo-b3pp.30` | Phase 5 W2.2 — confirmed patterns, active AND prompt-included non-pattern-sourced knowledge facts, and goal saves flow into `knowledge_node` via `GraphPromotionService`, idempotent on `(createdBy, sourceKind, sourceId)`; a cheap-LLM `GraphEdgeStructurer` proposes typed edges for newly created nodes only (confidence floor, top-K cap, IDENT-3 degrade to no edges). `GraphPromotionListener` wires it to `PatternConfirmedEvent`/`KnowledgeFactPromotedEvent`/`GoalSavedEvent`/`KnowledgeFactChangedEvent` AFTER_COMMIT + `@Async`, gated on both `COMPANION_SWITCH` and `KNOWLEDGE_GRAPH_SWITCH`. `reconcile(userId)` (the nightly catch-up sweep) exists but is not scheduled until W2.5. **Promotion is two-way (`mezo-b3pp.31`)**: `retractPattern`/`retractGoal`/`retractFact` archive the mirror node when a pattern is un-confirmed, a goal is soft-deleted, or a fact is soft-deleted or opted out of the prompt (`include_in_prompt=false`) — see the W2.2 section below for the event wiring, `syncFact`, and the honest gap that remains around `knowledge_fact` hard/soft deletes. |
 | Life-event extraction + confirm inbox | ✅ `mezo-b3pp.8` | Phase 5 W2.3 — `LifeEventExtractionService` turns one day's own words (`journal_entry` + `ritual_day.reflection_text` + `daily_summary`) into 0..N `LIFE_EVENT` **candidate** nodes with edges parked in `meta.proposedEdges`; `LifeEventCandidateService` is the only path from a proposal to durable structure (accept → `active` + real edges at `confidence × 0.5`, reject → soft delete, no residue). Two pre-spend gates: the day already processed (soft-delete-blind probe, so a rejected night never returns) and an empty narrative (no LLM call at all). Nothing schedules it — W2.5's `GraphMaintenanceJob` calls `extractFor(...)` like it calls W2.2's `reconcile(...)`. |
 | Graph traversal + [Összefüggések] prompt block | ✅ `mezo-b3pp.9` | Phase 5 W2.4 — every chat turn (both paths) gets a deterministic `[Összefüggések]` block: `GraphTraversalService.seedsFor` matches the folded user-message tokens (`ToolText.searchTokens`, punctuation stripped, ≥3 chars, not a Hungarian stopword, no LLM) against active node titles/summaries at a WORD START (`startsAWordInFolded`, mezo-b3pp.34), ranks matches (title hit, then distinct token hits, ties left to the query's own TOTAL `created_at desc, id` row order) and caps them at `graph.max-seeds` (default 8); `GraphTraversalQuery` (both reads raw JDBC under one savepoint: the seed-candidate read + the recursive CTE — undirected, cycle-safe path array, `graph.max-hops`, weight-desc `graph.top-k`, active + non-deleted + owner-scoped nodes only) returns the neighborhood; `GraphPromptAssembler` renders `- A → kiváltja → B · erős` lines (`PRECEDED_BY` swapped so the line stays cause-first) under `graph.render-max-tokens` between `[Emlékek]` and `TONE_REMINDER` and adds one `GraphNode` ref per rendered node — carrying the traversal's own `fromTitle`/`toTitle` as its `label` (`mezo-b3pp.33`), capped at `graph.max-refs` (default 6) — after the Memory refs. Bean exists only under `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` (`ChatService` holds it via `ObjectProvider`) — off ⇒ block absent. IDENT-3: failures log + omit, `degraded` untouched, savepoint keeps the turn's transaction alive. |
-| Graph maintenance job (decay + reinforcement) | ✅ `mezo-b3pp.10`, retraction sweep `mezo-b3pp.31`, person-extraction phase `mezo-06o0.3` | Phase 5 W2.5 — nightly `GraphMaintenanceJob` (`mezo.companion.graph.cron`, dawn slot, `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` ∧ its own job switch): per-user, four phase-isolated steps — `GraphMaintenanceService.runMaintenance` (edge weight ×= `decayFactor` daily, edges under `pruneFloor` soft-deleted in the same pass, candidate nodes older than `candidateMaxAgeDays` soft-deleted, fresh same-night `pattern_event` snapshot evidence bumps a promoted pattern's touching edges by `reinforcementBump` capped at 1.0), then W2.2's `GraphPromotionService.reconcile` (now per-row isolated, mezo-b3pp.32 fixed alongside) — **its phase-2 promotion loops now run BOTH directions (`mezo-b3pp.31`)**: the original three promoter loops UPSERT forward from a still-qualifying source row, and a fourth complement-set sweep runs after them, walking every active node back to its source row and archiving any whose source stopped qualifying — the backstop for a retraction missed while the switch was off, and (for the still-untriggered delete half of `retractFact`) the ONLY trigger it gets, since nothing in main source soft-deletes a `knowledge_fact`; the opt-out half reaches `retractFact` on the same turn via `syncFact` (`mezo-b3pp.30`) — then W2.3's `LifeEventExtractionService.extractFor(yesterday)` — then, since **Emberek S4** (`mezo-06o0.3`), `feature/people`'s `PersonExtractionService.extractFor(userId, yesterday)`: gated on its own `COMPANION_SWITCH ∧ PEOPLE_SWITCH` pair (not the job's trio), so it's wired via `ObjectProvider<PersonExtractionService>.getIfAvailable()` — the bean can legitimately be absent. It enriches the day's toneless mentions with `tone`/`intensity`/`contextLabel` and proposes `candidate` persons for unknown names recurring often enough (see [me.md §5.4](me.md)). A failure in any phase for any user never skips the rest. |
+| Graph maintenance job (decay + reinforcement) | ✅ `mezo-b3pp.10`, retraction sweep `mezo-b3pp.31`, person-extraction phase `mezo-06o0.3` | Phase 5 W2.5 — nightly `GraphMaintenanceJob` (`mezo.companion.graph.cron`, dawn slot, `COMPANION_SWITCH` ∧ `KNOWLEDGE_GRAPH_SWITCH` ∧ its own job switch): per-user, four phase-isolated steps — `GraphMaintenanceService.runMaintenance` (edge weight ×= `decayFactor` daily, edges under `pruneFloor` soft-deleted in the same pass, candidate nodes older than `candidateMaxAgeDays` soft-deleted, fresh same-night `pattern_event` snapshot evidence bumps a promoted pattern's touching edges by `reinforcementBump` capped at 1.0), then W2.2's `GraphPromotionService.reconcile` (now per-row isolated, mezo-b3pp.32 fixed alongside) — **its phase-2 promotion loops now run BOTH directions (`mezo-b3pp.31`)**: the original three promoter loops UPSERT forward from a still-qualifying source row, and a fourth complement-set sweep runs after them, walking every active node back to its source row and archiving any whose source stopped qualifying — the backstop for a retraction missed while the switch was off, and (for the still-untriggered delete half of `retractFact`) the ONLY trigger it gets, since nothing in main source soft-deletes a `knowledge_fact`; the opt-out half reaches `retractFact` on the same turn via `syncFact` (`mezo-b3pp.30`) — then W2.3's `LifeEventExtractionService.extractFor(yesterday)` — then, since **Emberek S4** (`mezo-06o0.3`), `feature/people`'s `PersonExtractionService.extractFor(userId, yesterday)`: gated on its own `COMPANION_SWITCH ∧ PEOPLE_SWITCH` pair (not the job's trio), so it's wired via `ObjectProvider<PersonExtractionService>.getIfAvailable()` — the bean can legitimately be absent. It enriches the day's toneless mentions with `tone`/`intensity`/`contextLabel` and proposes `candidate` persons for unknown names that appear in the day's own text (`mezo-06o0.9` turned that gate from "must recur" into "must be grounded"; `mezo-06o0.10` widened the day narrative to every free-text source the user writes into — see [me.md §5.4](me.md)). A failure in any phase for any user never skips the rest. |
 | Episodic recall in chat | ✅ V2.3 | `find_similar_past_days` tool + `MemoryRecallService` (similarity × exp(-age/τ), similarity floor, daily-summary scope); `Memory` ref chips; `mezo.companion.recall.*` tunables. |
 | Ambient recall in chat (W3.1) | ✅ `mezo-b3pp.12` | `service/PromptMemoryAssembler` — every turn embeds the user message ONCE (`LlmCallContext("companion_recall","recall_embed","conversation",id)`), then runs the kind-group ANN queries through `repository/MemoryEmbeddingAnnQuery` (four here, five since W3.2 added the rungs) (raw JDBC under a savepoint, §9 — NOT a JPA finder): daily_summary · journal family (journal_entry/reflection/gratitude/decision) · chat_turn · notes (activity_note/checkin_note). Per group: the V2.3 `similarity × exp(-age/τ)` re-rank over `recall.candidate-pool` candidates, the stricter ambient floor, today-and-later dates skipped (the snapshot already carries the day), the group's cap of items kept (a cap of 0 skips the query entirely) — **since W3.3 (`mezo-b3pp.14`) the floor, τ and cap are all per kind-group, `ambient-recall.<group>.{min-similarity,decay-days,cap}`**. Survivors dedupe by `(kind, ref_id)`, sort by score and render the **`[Emlékek]`** block (`- <ISO date> (<HU forrás>): <first line, cut at recall.render-max-chars and suffixed with …>`) under `ambient-recall.max-tokens` (≈3 chars/token; the loop STOPS at the first overflowing item — relevance order is never reshuffled). Position: pattern-ack → **[Emlékek]** → **[Összefüggések]** (W2.4) → `TONE_REMINDER`, assembled ONCE for both paths (`ChatService.assembleSystemPrompt`). Every rendered **day** adds one `Memory`/date ref (same-day items collapse; tool refs keep priority under `tools.max-refs-per-turn`) **after** the LLM round. IDENT-3: an embed/ANN failure logs + omits the block; `degraded` stays `false` and the turn's transaction survives. Runtime kill-switch `ambient-recall.enabled`. **W3.1b (`mezo-b3pp.28`) made it visible:** the rendered items are persisted per answer as the `ai_message.recalled_memories` jsonb envelope and returned as `MessageResponse.recalled`, which the chat UI shows as the collapsible „Emlékek · N" disclosure (§2). |
 | Consolidation ladder (W3.2) | ✅ `mezo-b3pp.13` | Phase 5 W3.2 — `period_summary` (`week`/`month` rungs, uq `(created_by, granularity, period_start)`) generated by `service/PeriodSummaryService`: pure-code gather (the week's `daily_summary` narratives → the week rung; the month's week rungs → the month rung) + ONE cheap-tier condensation call (`LlmCallContext("companion_consolidation", "weekly"|"monthly", …)`), idempotent per period (an existing rung is returned, the model is NOT called) and honest (no source rows or a blank answer ⇒ no row). `service/ConsolidationJob` (Monday 03:30 weekly + 1st-of-month 03:50 monthly, switch `mezo.techcore.cron.consolidation-job.enabled`) fills and embeds every missing rung of its backfill window per user, so the catch-up doubles as the history backfill; each rung is embedded through `MemoryEmbeddingWriter.writePeriodSummary` as `weekly_summary`/`monthly_summary` at `occurred_on = period_start` (unchanged text short-circuits before the provider call). Recall SHADOWING: `PromptMemoryAssembler` asks for `daily_summary` hits only inside `ambient-recall.weekly-shadow-days` and queries the rung group unfiltered — beyond the cutoff a stretch is remembered through its rung. **Nothing is ever deleted** (spec §12). |
@@ -903,6 +903,85 @@ journal) is implemented by `feature/companion/service/DecisionContextAssemblerAd
 consumed by `DecisionService` via `ObjectProvider<DecisionContextPort>`. The cross-feature edge this
 creates is `companion → journal` — the SAME direction the rest of the seam already runs — so the
 architecture stays acyclic with no frozen exception.
+
+**Reflexió S1 — text signals (`mezo-eq85.1`) — the first structured reading of the user's own prose.**
+Everything the pattern engine could correlate until now came from a *form*: a slider, a logged set, a
+weighed meal. The prose surfaces (journal, gratitude, the chat itself) were embedded for recall but
+carried **zero** per-day numbers. S1 closes that: one **`text_signal`** row per source-row *version*
+holds an LLM-extracted `mood`/`energy`/`stress` (1..5), a `confidence`, and the `people` / `topics` /
+`keywords` the text mentions — turning free writing into series the correlation engine can align on.
+
+- **What a signal is, and what it is not.** `TextSignalExtractor` (`reflection/service/`) is the ONE
+  LLM stage, and the only thing the model is allowed to produce is extracted-signal JSON. Everything
+  the answer claims is re-validated in code before a row exists: `confidence != "sure"` ⇒ the three
+  numbers are **dropped to null** (a neutral two-line entry must never become a 3/3/3 data point),
+  values are clamped to 1..5, topics are intersected with a **closed 12-word vocabulary**
+  (`munka|család|kapcsolatok|sport|egészség|pihenés|alvás|evés|pénz|alkotás|tanulás|otthon`) so an
+  invented topic is dropped rather than stored, and people/keywords are trimmed, de-duplicated and
+  capped (5 / 3). A broken, non-JSON or absent answer — and a failing provider call — yields
+  `Optional.empty()`: no row, never an exception escaping the stage.
+- **Versions, not updates.** `TextSignalService.record` is idempotent on `(source, sha256(text))`:
+  an unchanged text returns the existing newest row and costs **no LLM call**, while a changed text
+  APPENDS `version + 1`. Nothing is ever updated in place, so an edit leaves yesterday's extraction
+  auditable; every series reads the newest version per `(source_kind, source_id)`, which is also why
+  an edited entry replaces rather than doubles its own day's contribution.
+- **Three sources.** `journal_entry` and `gratitude` arrive through **`TextSignalListener`** — the
+  `JournalEmbeddingListener` idiom verbatim (`@Async @TransactionalEventListener(AFTER_COMMIT)`,
+  gated on `COMPANION_SWITCH` + `JOURNAL_SWITCH` + `REFLECTION_SWITCH`, failures logged and
+  swallowed), consuming the same four events (`JournalEntrySaved/Deleted`,
+  `GratitudeEntrySaved/Deleted`) the embedding seam already uses. It reads the rows through the
+  journal **repositories**, not a journal service, deliberately staying inside the dependency
+  envelope `companion/embedding` established. The third source is **`chat_day`**: the day's own
+  `role=user` turns joined into one text by `ChatDaySignalService`, keyed by a stable
+  `UUID.nameUUIDFromBytes(userId + ":" + day)` so a day that gains turns re-versions instead of
+  duplicating.
+- **The four new metrics.** `MetricKey.TEXT_MOOD` / `TEXT_ENERGY` / `TEXT_STRESS` (NUMBER) and
+  `TEXT_SOCIAL_CONTACT` (BINARY), all `MetricDomain.MIND`, served by `TextSignalSeriesService`
+  through `MetricSeriesService`'s existing switch. The numeric three are the **mean of the day's
+  `sure` values**; a day whose every signal is `unsure` is **absent**, not zero — the correlation
+  aligns on presence and must never see an invented value. `TEXT_SOCIAL_CONTACT` is 1.0 on a day that
+  names anyone, 0.0 on a day with signals but no name, absent on a day with no signal; it is
+  deliberately NOT gated on `sure`, because whether a name appears in the text is an observation
+  about the text rather than a judgement the model could be uncertain about. `MetricSeriesService`
+  reaches the series bean through an `ObjectProvider` (the `TodayActivitySource` idiom), so with the
+  reflection switch off the four metrics honestly report **no data** instead of failing to construct.
+- **Open-ended derived series.** `DerivedSeriesService` answers "give me this key's series / value
+  kind / label" and "is this key real for this user" over BOTH the fixed `MetricKey` catalog and the
+  user-specific `people:<név>` / `topic:<téma>` presence keys the signals make possible — the seam
+  slices 2–6 correlate arbitrary pairs through. `isKnown` only accepts a person/topic key when a
+  signal of the last 180 days actually carries it, so a pattern can never be proposed about a person
+  the user never wrote about; an unresolvable key yields an **empty** series, never an exception.
+- **The one memory-platform write, and the race it loses.** After a signal lands,
+  `memory_item.people` / `.topics` for the SAME `(created_by, source_kind, source_id)` are refreshed
+  from it — `memory_item.source_kind` equals the signal's `source_kind` for both prose kinds, because
+  `MemoryEmbeddingWriter` uses the same `journal_entry` / `gratitude` strings. **`salience` is never
+  written from a model answer** (RAG spec §12) and stays whatever the deterministic projector set.
+  **Two unordered AFTER_COMMIT listeners fire on the same journal save** — this one and the embedding
+  seam's memory projection — and `MemoryProjectionWriter` unconditionally RESETS `people`/`topics` to
+  its command's empty lists, so a projection that lands last silently wipes the enrichment. Rather
+  than ordering the two listeners (which would couple the seams), the enrichment is made
+  **re-appliable**: `record`'s unchanged-hash short-circuit re-applies it from the STORED signal at
+  zero LLM cost, which is exactly what the nightly catch-up's re-offer triggers. So the enrichment is
+  eventually-correct within a night, not guaranteed on the first write — and a missing `memory_item`
+  row (the projection has not run yet) is the same story: no enrichment this round, healed by the
+  next catch-up. That heal is only real because the catch-up offers **every** source unconditionally
+  (see below); a staleness gate in front of the re-offer would have made the race state — row
+  present, hash unchanged, `people`/`topics` wiped — the one input it filtered out, and since
+  `MemoryProjectionWriter` also short-circuits on an unchanged hash, nothing else would ever restore
+  it (review finding).
+- **Catch-up — everything is re-offered, the hash decides.**
+  `TextSignalCatchUpService.catchUp(userId, today)` walks the last `catch-up-days` finished days and
+  offers **every** journal row, gratitude row and day to `record` / `ChatDaySignalService.extractDay`
+  **without any "is it already up to date?" gate**, because `record` is hash-idempotent: an unchanged
+  text costs no LLM call and writes no row, but it DOES re-apply the `memory_item` enrichment, and an
+  unconditionally-offered `chat_day` is what lets a day whose conversation continued after the first
+  extraction re-version instead of keeping a stale signal forever. `isUpToDate` survives only to
+  decide whether an offer COUNTED as a write, so the returned number is real writes and an
+  all-unchanged night returns 0. An entry written while the LLM was down, or edited while the
+  listener was off, heals itself; a failing source is caught and logged per source, so one bad row
+  never aborts the night. `TextSignalCatchUpIT` pins all four legs (missing ⇒ extracted, stale hash
+  ⇒ new version, unchanged hash ⇒ enrichment restored with no new version, continued chat day ⇒
+  re-versioned). Task 2's nightly job is the only production caller.
 
 ## 2. User-facing behavior
 
@@ -1655,6 +1734,42 @@ gate, the same discipline as the original seven:
   days (`cooldown-hours.meal-rhythm-drift`, 336h), and the `meal_rhythm_adjust` library entry's own
   `cooldown-hours` MUST match it (the `protocol_lapse` review lesson: `deliverForFlag` applies the
   LIBRARY entry's cooldown).
+- **`EnergyDipMealTimingRule`** (rank 12, Round 2 S6, bd `mezo-d58h.7.7`, spec 2026-09-05 §(15),
+  `energy_dip_meal_timing`) — does the user's EARLY-AFTERNOON energy track WHEN, or whether, they
+  ate that morning? The most cautious rule in the set, and the only one that reports a
+  CORRELATION rather than a state. Over a `windowDays` (30) window ending YESTERDAY, a day
+  QUALIFIES when it carries both a check-in with an energy value inside the
+  `[afternoonFromHour, afternoonToHour]` band (11–16, INCLUSIVE, matched on the `slot_time` wall
+  clock — a 16:00 check-in counts, 16:15 does not) and at least one logged meal of any kind; the
+  day's afternoon energy is the MEDIAN of its in-band check-ins, and fewer than
+  `minQualifyingDays` (10) such days ⇒ silence. Those days are then split in two and the groups'
+  median energies compared: **`lunch_time`** (primary) — the days carrying a lunch row, halved at
+  their own median lunch minute, usable only when both halves reach `minGroupDays` (4) AND their
+  own median lunch times are `minLunchSplitSeparationMinutes` (45) apart; **`breakfast_presence`**
+  (fallback, reached ONLY when the lunch split is unusable — the spec's "when lunch times don't
+  vary") — days with a logged `breakfast` row against days without one. It raises only when the two
+  medians are at least `minEnergyDelta` (1.0) apart AND the separation is CONSISTENT: the
+  Mann–Whitney probability of superiority (the share of cross-group day pairs running the higher
+  group's way, ties counting half, oriented to that higher group so it lands in `[0.5, 1.0]`) must
+  reach `minSuperiority` (0.70). Two medians differing with n≈5 a side is a coincidence — this is
+  the direct analogue of `meal_rhythm_drift`'s same-direction share. Four bounds carry it:
+  **(1)** the card may only REPORT, never explain — no causal word appears anywhere in the
+  intervention copy or in `FlagFactRenderer`'s three lines, and both group sizes are always shown
+  so the reader can see how thin the sample is; **(2)** the day gate is "the day has meal data",
+  NOT "the day has a morning meal" — the spec's §(15) wording says the latter, but taken literally
+  it empties the spec's OWN breakfast-present/absent fallback (a day without breakfast could never
+  enter the sample), and the gate's real job is adherence neutrality: proving the day's meal log is
+  not simply missing, so "no breakfast row" can honestly be read as "did not eat breakfast" rather
+  than "did not log"; **(3)** a median split can be DEGENERATE — with every lunch at 13:00 the
+  "before the median" side is empty and a naive delta would read a 0-vs-N split as an enormous
+  finding, which is what the per-group minimum and the separation gate exist for (and failing
+  either is exactly what unlocks the fallback); **(4)** nothing here crosses midnight, so both
+  `MealRhythmDriftRule`'s circular difference and `LateEatingRule`'s +24 shift are deliberately
+  absent — an early-afternoon check-in and a lunch are plain minutes-of-day, wall clock in the
+  system zone. A usable split that simply does not separate is a CLEAR (with the observed delta),
+  not an unavailable: the rule genuinely looked. Cooldown is KEY-level 30 days
+  (`cooldown-hours.energy-dip-meal-timing`, 720h) — effectively a one-off insight card — and the
+  `energy_dip_timing_insight` library entry's own `cooldown-hours` MUST match it.
 
 Two prerequisite fixes underpin the rules above: `MetricSeriesService.weightTrendPctWk` and
 `.lateMealHour` used to load a user's ENTIRE history and filter in Java; both are now bounded reads
@@ -1837,17 +1952,39 @@ freshness the numbers don't have. The fix is not to date the numbers (that's the
 and it doesn't apply here) but to present them as "unchanged since `changedAt`", which is exactly
 what the contract's `facts`/`reasonText`/`changedAt` descriptions now spell out.
 
-**`cardOutcome` is derived at read time and never stored.** A rule's trace row only says RAISED;
-whether that raise WON the day's card is decided later in the cycle — after the raise is logged,
-`InterventionService` ranks every raise still standing and delivers exactly one — and
-`companion_flag_trace` is append-only, so there is nowhere to retrofit that answer onto the row
-even if the design wanted to. So the read side compares each RAISED-and-`logged` rule's key against
-the day's `DailyCardPort.forDay` winner every time the endpoint is called: `won`, `lost`, or null
-when the rule did not raise-and-log, or when the day's card was not flag-sourced at all (a setup
-check won that day, which is none of the 13 keys). Consequently, even a raised-and-logged rule reads
-`cardOutcome: null` when the day's delivered card came from a setup check — no winner exists among
-the 13 flag rules that day. A `suppressed_by_cooldown` raise can never be `won`/`lost` for the same
-reason it has no evidence of its own below — it was never a competitor for that day's card.
+**`winner` is a fact about the day; `cardOutcome` is a fact about a rule at the delivery instant —
+these are two different questions, settled as such by `mezo-y43v` (S3 P1 blocker; design spec
+`docs/superpowers/specs/2026-09-05-coaching-observer-design.md` §4.3, resolved in
+`docs/superpowers/plans/2026-09-06-coaching-observer-s3-surfaces.md` Task 1).** `winner` names the rule whose raise the day's delivered card actually was — read straight
+off `DailyCardPort.forDay`, so it never moves even if that rule later goes CLEAR — and it is the
+**ONLY** source of a „Nyertes" badge; a client that infers the badge from `cardOutcome` instead gets
+it wrong the moment the winning rule's state changes after delivery. `cardOutcome` asks a narrower
+question: was THIS rule, in the state it held **at the instant the card was chosen**, a competitor
+that won or lost? It is derived at read time and never stored — a rule's trace row only says RAISED;
+whether that raise won the day's card is decided later in the cycle, after the raise is logged,
+when `InterventionService` ranks every raise still standing and delivers exactly one, and
+`companion_flag_trace` is append-only, so there is nowhere to retrofit that answer onto the row even
+if the design wanted to. So the read side compares each RAISED-and-`logged` rule's key against the
+day's `DailyCardPort.forDay` winner every time the endpoint is called: `won`, `lost`, or null when
+the rule did not raise-and-log, or when the day's card was not flag-sourced at all (a setup check
+won that day, which is none of the 14 keys).
+
+**The `DailyCardPort.deliveredAt` seam (`mezo-y43v`) is what makes "at the delivery instant"
+checkable.** `DailyCardPort.DeliveredCard` gained a third field, `deliveredAt` — the instant the
+ranking actually wrote the card (`backend/…/companion/flags/service/DailyCardPort.java:20,25`,
+impl `proactive/service/DailyCardAdapter.java:27-30`, from `companion_message.created_at`).
+`FlagTraceReadService.stateOf` (`backend/…/companion/flags/service/FlagTraceReadService.java:161-172`)
+guards `cardOutcome` on `!row.getOccurredAt().isAfter(deliveredAt)` — the rule's closing row must
+already have existed when the card was delivered. Without that guard, before `mezo-y43v`, the same
+day could report both „Nyertes: X" and „X — Rendben" (a rule that won at 10:00 and cleared by
+20:00), and a rule that first raised in the evening — after the card was already chosen — could be
+stamped `lost` for a competition it was never part of. The fix reports `cardOutcome: null` in both
+cases: for the winner itself once it has changed since delivery (`winner` above still names it
+correctly), and for a rule whose first raise postdates `deliveredAt`. Consequently, even a
+raised-and-logged rule whose closing row predates delivery reads `cardOutcome: null` when the day's
+delivered card came from a setup check — no winner exists among the 14 flag rules that day. A
+`suppressed_by_cooldown` raise can never be `won`/`lost` for the same reason it has no evidence of
+its own below — it was never a competitor for that day's card.
 
 **The honest consequence for a cooldown-suppressed raise.** `FlagService` only writes a
 `companion_flag_log` row on the LOGGED branch — a raise the cooldown swallows leaves no log row of
@@ -2238,6 +2375,42 @@ users at 03:50 and physically deletes expired runs so database cascades remove t
 feedback children. This is an explicit audit-retention exception to normal domain soft deletion;
 source memories and vectors are never touched by the purge.
 
+### Backend tables (Reflexió S1 text signals, ✅ `mezo-eq85.1`)
+
+Migration `202609071000_mezo-eq85.1_text_signal.sql` (in `1.0.0_master.yml`) — the per-day structured
+reading of the user's own prose (§1 above). Driving spec:
+[`docs/superpowers/specs/2026-09-06-reflection-self-discovered-patterns-design.md`](../superpowers/specs/2026-09-06-reflection-self-discovered-patterns-design.md).
+
+- **`text_signal`** — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id) ON DELETE
+  CASCADE`, `is_deleted`, `created_at`, `source_kind varchar(16)`, `source_id uuid`, `occurred_on
+  date`, `content_hash varchar(64)`, `version integer default 1`, `mood`/`energy`/`stress smallint`
+  (nullable), `confidence varchar(8)`, `people`/`topics`/`keywords text[] default '{}'`,
+  `provenance jsonb` (typed `TextSignalProvenanceEnvelope` — model, extraction instant, source text
+  length; audit only). Constraints: `pk_text_signal_id`,
+  `fk_text_signal_created_by_app_user_id`, `ck_text_signal_source_kind`
+  (`journal_entry|gratitude|chat_day`), `ck_text_signal_confidence` (`sure|unsure`) and three
+  `ck_text_signal_{mood,energy,stress}` range CHECKs (`null or between 1 and 5`). Indexes:
+  **`uq_text_signal_source_version (created_by, source_kind, source_id, version) where is_deleted =
+  false`** — the versioning invariant — and `idx_text_signal_created_by_occurred_on` (the series
+  read's key).
+- **`source_id` carries NO foreign key**, deliberately: it points at `journal_entry`, `gratitude`
+  **or** a synthetic `chat_day` UUID that references no table at all, and three conditional FKs
+  cannot be expressed. A dangling id is harmless — the delete listeners soft-delete the signals of a
+  deleted entry, and an unmatched id is simply never read back.
+- **Rows are appended, never updated** (§1): the newest `version` per `(source_kind, source_id)` is
+  what every series reads; older versions stay for audit. `unsure` rows persist too and are
+  deliberately excluded from the numeric series rather than deleted.
+- **The scores are `smallint` in SQL but `Integer` in Java** — a 1..5 CHECK needs no more storage,
+  while the extractor, the series maps and every consumer speak `Integer`. The entity's explicit
+  `@JdbcTypeCode(SqlTypes.SMALLINT)` on the three fields is what reconciles the two; without it
+  Hibernate's schema validation rejects `int2` against an `Integer` attribute.
+- **No own feature switch on the table** — every bean over it is gated on `COMPANION_SWITCH` +
+  `REFLECTION_SWITCH` (`mezo.companion.reflection.enabled`), and the listener additionally on
+  `JOURNAL_SWITCH`. Switch reflection off ⇒ none of `TextSignalExtractor` / `TextSignalService` /
+  `TextSignalListener` / `TextSignalSeriesService` / `DerivedSeriesService` /
+  `ChatDaySignalService` / `TextSignalCatchUpService` exists (`TextSignalListenerSwitchOffIT`), and
+  the four `TEXT_*` metrics report no data.
+
 ### Backend tables (LLM audit log, ✅ `mezo-2zyu`)
 
 Migration `202607281200_mezo-2zyu_create_llm_log_history.sql` (in `1.0.0_master.yml`). The table is
@@ -2437,8 +2610,13 @@ build was chosen after living with W3.1's always-on recall.
   precedent).
 - **`GraphService`** (`feature/companion/graph/service/`, W2.1) — `upsertNode`/`upsertEdge` are the
   ONLY write paths later slices use (never a direct `repository.save`); both UPSERT by their unique
-  index so re-promoting the same source row never duplicates. `archive(userId, nodeId)` flips
-  `status` only.
+  index so re-promoting the same source row never duplicates. **`archive(userId, nodeId)`
+  (`mezo-06o0.5`)** flips `status` to `archived` AND stamps `userArchivedAt` — the durable
+  user-intent marker (see W2.2 § below) that keeps the promotion sync from silently raising the
+  node back to `active`. **`restore(userId, nodeId)`** clears the marker and re-derives `status`
+  from the node's source via `GraphPromotionService.resyncNode`, exposed at
+  `POST /api/companion/graph/node/{id}/restore`; `listUserArchived` backs
+  `GET /api/companion/graph/node/archived`.
 - **Switch** `mezo.feature.knowledge-graph.enabled` (`FeaturesConfiguration.KNOWLEDGE_GRAPH_SWITCH`)
   — off ⇒ no graph beans exist, `/api/companion/graph/*` 404s, and every graph hook elsewhere (W2.4
   `[Összefüggések]` block, W4.2 reinforcement, RECOVERY profile input) stays silently absent.
@@ -2458,9 +2636,10 @@ build was chosen after living with W3.1's always-on recall.
 Existing knowledge starts flowing INTO the graph (spec §6.2) — still no REST surface; promotion is
 internal, driven by async event hooks and (from W2.5) a nightly reconciler.
 
-- **`GraphPromotionService`** (`graph/service/GraphPromotionService.java`) — four promotion
-  entries (a fourth, `syncPerson`, joined the original three in **Emberek S5**, `mezo-06o0.4` —
-  see below), each `@Transactional` and idempotent on `GraphNodeEntity`'s
+- **`GraphPromotionService`** (`graph/service/GraphPromotionService.java`) — five promotion
+  entries (a fourth, `syncPerson`, joined the original three in **Emberek S5**, `mezo-06o0.4`,
+  and a fifth, `syncLifeGoal`, joined in the graph/user-archive round, `mezo-iizd.11` — see
+  below), each `@Transactional` and idempotent on `GraphNodeEntity`'s
   `(createdBy, sourceKind, sourceId)` unique index (re-promoting the same row UPSERTs, never
   duplicates):
   - `promotePattern(userId, patternId)` — a `confirmed` pattern (own, not deleted) → a
@@ -2508,11 +2687,33 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     soft-deleted person is invisible to `syncPerson`'s `...AndDeletedFalse` finder, so deletion
     needs its own retraction, same as a soft-deleted goal. A rejected candidate (reject = soft
     delete) also routes here and is typically a no-op — a candidate rarely had a node to archive.
-  - All four titles go through `truncateTitle` — pattern titles (LLM hypotheses, up to 200 chars),
-    fact texts, and goal titles can all exceed `knowledge_node.title varchar(120)`; person names
-    cannot (`people.yml` pins `maxLength: 120` and `PersonExtractionService.validCandidates` drops
-    longer names, so `truncateTitle` is unreachable on the person branch). Truncation cuts to 117
-    chars + `…`.
+  - **`syncLifeGoal(userId, goalId)` / `retractLifeGoal(userId, goalId)`** (graph/user-archive
+    round, `mezo-iizd.11`, spec §7) — the fifth promotion entry, `syncGoal`'s shape applied to a
+    life goal: active → `KIND_GOAL` node, `sourceKind="life_goal"` — deliberately a SEPARATE
+    source kind from `syncGoal`'s `SOURCE_GOAL = "goal"` (the weight goal from `feature/goal`),
+    not a shared one, so the two lifecycles never collide on the same node. Anything else
+    (parked/done/archived/draft) archives the node, same demotion as `syncGoal`/`syncPerson`; a
+    goal that was never promoted and is not active is a no-op. **The source arrives through a
+    port, `LifeGoalGraphSource` (`feature/companion/LifeGoalGraphSource.java`,
+    `all(userId)`/`find(userId, goalId)`, record `GraphGoal(id, title, status)`), implemented by
+    `lifegoal`'s `LifeGoalCompanionAdapter` — the same idiom as `LifeGoalSource`/
+    `LifeGoalProposePort`, and for the same reason: `lifegoal` already imports `companion`, so a
+    reverse `companion → lifegoal` import would close a 2-slice cycle that ArchUnit's frozen
+    `feature_slices_are_cycle_free` rule forbids. The port is `ObjectProvider`-consumed and only
+    beans when `LIFEGOAL_SWITCH` is on; with the bean absent, BOTH the promotion loop below and
+    `retractLifeGoal` are no-ops — a missing port means "the graph cannot currently see life
+    goals", not "archive every life-goal node", so it deliberately does not fall through to mass
+    archival.** Triggered by the nightly `reconcile` and, live, by `LifeGoalService.changeStatus`
+    publishing a `LifeGoalStatusChangedEvent` (placed in `companion` for the same cycle reason as
+    the port) that `GraphPromotionListener.onLifeGoalStatusChanged` consumes AFTER_COMMIT +
+    `@Async` + try/catch, so a graph failure can never break the user's status change. Only
+    `changeStatus` is hooked — a life-goal delete or a title edit still waits for the nightly
+    sweep to catch up, same honest gap as `retractFact`'s delete half.
+  - All five titles go through `truncateTitle` — pattern titles (LLM hypotheses, up to 200 chars),
+    fact texts, and goal titles (both weight-goal and life-goal) can all exceed
+    `knowledge_node.title varchar(120)`; person names cannot (`people.yml` pins `maxLength: 120`
+    and `PersonExtractionService.validCandidates` drops longer names, so `truncateTitle` is
+    unreachable on the person branch). Truncation cuts to 117 chars + `…`.
   - **Retraction (`mezo-b3pp.31`) — promotion's mirror.** `retractPattern(userId, patternId)`,
     `retractGoal(userId, goalId)` and `retractFact(userId, factId)` each re-check their own
     source row's qualifying condition rather than trusting the caller (a pattern no longer
@@ -2545,14 +2746,45 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     hand from the Tudástár UI had it resurrected by the next dawn's reconcile. The filter added
     here (both in `promoteFact` and, via the same condition, in `retractFact`'s qualifying check)
     closes that: an opted-out fact's node either never gets promoted or gets archived on the next
-    `syncFact`/`reconcile` pass, and stays archived. **This durability is specific to opted-out
-    facts.** For a fact left `include_in_prompt=true`, `promoteFact` still unconditionally
-    re-asserts `status='active'` on UPSERT (the `mezo-b3pp.31` revive half, unchanged) — a
-    hand-archived node for such a fact is still resurrected, and this slice actually SHORTENS
-    that undo window from a night to a turn, since any `PATCH` on the fact now routes through
-    `syncFact` → `promoteFact` within the async hop. `include_in_prompt` is the intended lever
-    for keeping a fact out of the prompt; hand-archiving its graph node from the Tudástár UI is
-    not a substitute for it.
+    `syncFact`/`reconcile` pass, and stays archived. **That fix was still source-specific — it only
+    covered opted-out facts.** For a fact left `include_in_prompt=true` (or any pattern/goal/person
+    node), `promoteFact`/`promotePattern`/`syncGoal`/`syncPerson` still unconditionally re-asserted
+    `status='active'` on UPSERT, so a node the user hand-archived from the Tudástár UI was
+    resurrected the moment its source next synced — a night, or since `mezo-b3pp.30`, the same
+    turn as a `PATCH`.
+  - **Hand-archiving is now a durable user intent, for every source kind (`mezo-06o0.5`).**
+    `GraphService.archive` stamps `GraphNodeEntity.userArchivedAt` alongside the `status` flip —
+    a marker the promotion sync itself cannot see past. FIVE writers raise status through one
+    choke point, `GraphPromotionService.raiseStatus(node, target)` (`public`, code review finding
+    mezo-06o0.5): the four promoters (`promotePattern`/`syncFact`/`syncGoal`/`syncPerson`, plus
+    `syncLifeGoal`) and, since the final-review fix, `ProfileAssembler.rebuild` for the singleton
+    profile node — it refuses to raise a user-archived node to `active` no matter how many times
+    any of them, or `reconcile`, touch it afterwards. The ARCHIVING direction stays unguarded on
+    purpose: a source that stops qualifying still archives the node even if the user had already
+    hidden it — same outcome either way, so there is nothing to guard. Title/summary/meta keep
+    refreshing on a user-archived node (the graph keeps shadowing its source), only the `status`
+    raise is skipped, so the node stops leaking back into `[Összefüggések]` without going stale
+    underneath. The archive now holds until the user explicitly reverses it via
+    `GraphService.restore` (`POST /api/companion/graph/node/{id}/restore`), which clears
+    `userArchivedAt` and re-derives `status` from the source through
+    `GraphPromotionService.resyncNode` — not a blind `active`, since the source may have stopped
+    qualifying while the node sat archived, and lying `active` until the next nightly `reconcile`
+    corrects it would just reopen the old leak in miniature. `restore` only acts on a node the user
+    actually hand-archived (`userArchivedAt != null`) — otherwise 409
+    `GRAPH_NODE_NOT_USER_ARCHIVED` (code review finding, mezo-06o0.5): without this a `candidate`
+    node (its id public via `GET .../node/candidate`, `sourceId` null) would resync straight to
+    `active` through `resyncNode`'s source-less branch, promoting an AI-proposed candidate while
+    bypassing `LifeEventCandidateService.decide` — the already-decided gate, the refined
+    title/summary, and the `proposedEdges` materialisation. Nothing the AI derives becomes durable
+    without an explicit user decision; restore is a REVERSAL of a user decision, not a substitute
+    for one.
+    `GET /api/companion/graph/node/archived` lists the hand-archived set. `include_in_prompt`
+    remains the fact-side kill-switch, and the two levers still don't compete: `include_in_prompt`
+    mutes the SOURCE fact from every injection channel (V1.1, V3.3, the graph); `userArchivedAt`
+    mutes the graph NODE alone, independent of what the source is doing. They are no longer a
+    race — a hand-archived node stays archived regardless of `include_in_prompt`, and flipping
+    `include_in_prompt` back on no longer resurrects a hand-archived node — but they still are not
+    interchangeable: one silences the source, the other hides its graph shadow.
   - **The node survives archiving; its edges don't, necessarily.** `status='archived'` keeps the
     row and its `(createdBy, sourceKind, sourceId)` anchor, so a later re-confirm/re-save
     UPSERTs the SAME node back to `active` rather than building a second one — but
@@ -2570,29 +2802,36 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     `summary` only once a week — so content retracted mid-week can still be quoted inside
     `[Rólad tanultam]` until the next weekly regeneration. Self-healing (the next `rebuild` drops
     it), not fixed here.
-  - `reconcile(userId)` — the nightly sweep (patterns/facts/goals/**people** the write-path hooks
-    could have missed: pre-graph confirmations, manually created facts, drifted titles, a person
-    whose status changed while the graph switch was off). Pure UPSERT, so running it twice in a
-    row is a no-op on the second pass. **Exists in this slice but nothing schedules it yet** — no
-    cron, no REST trigger; W2.5's `GraphMaintenanceJob` wires it in.
+  - `reconcile(userId)` — the nightly sweep (patterns/facts/goals/people/**life goals** the
+    write-path hooks could have missed: pre-graph confirmations, manually created facts, drifted
+    titles, a person or life goal whose status changed while the graph switch was off). Pure
+    UPSERT, so running it twice in a row is a no-op on the second pass. **Exists in this slice but
+    nothing schedules it yet** — no cron, no REST trigger; W2.5's `GraphMaintenanceJob` wires it
+    in.
     **Since `mezo-b3pp.31` it returns `GraphReconcileResult(int upserted, int retracted)`** (a
     new record, replacing a bare `int`) and runs a promotion loop per source kind — pattern, fact,
-    goal, and (**Emberek S5**, `mezo-06o0.4`) **person**, in that order — followed by a FIFTH,
-    complement-set sweep: walking every one of the user's active nodes back to its source row and
-    archiving any whose source stopped qualifying (a pattern no longer confirmed, a soft-deleted
-    goal, fact, or person) — per-row isolated through the same `self`/`proxy`
-    per-item-transaction idiom as the promotion loops, and skipping `sourceKind`s it does not own
-    (`sourceId == null` for extractor/quarterly nodes; the `switch`'s `default -> false` branch for
-    the profile node, which DOES carry a `sourceId` — see the code comment). This is the
-    complement loop's whole reason to exist: the four promotion loops above only ever see rows
-    that STILL qualify, so a row that LEAVES its qualifying set (un-confirmed, soft-deleted) is
-    invisible to them and its node would otherwise stay active forever; the sweep is what heals a
-    retraction missed while the switch was off (no listener existed to hear the event). For a
-    `knowledge_fact` specifically it remains the ONLY path that ever retracts one for the *delete*
-    half (nothing in main source soft-deletes a `knowledge_fact`) — the *opt-out* half now also
-    reaches `retractFact` on the next turn via `syncFact` (`mezo-b3pp.30`), with the sweep as its
-    backstop, same as every other source kind. The `person` branch of the complement switch calls
-    `retractPerson`, the same backstop role.
+    goal, (**Emberek S5**, `mezo-06o0.4`) **person**, and (`mezo-iizd.11`) **life goal**, in that
+    order (the life-goal loop iterates `LifeGoalGraphSource.all(userId)` — EVERY goal, not just
+    active ones, since the loop itself is what archives the non-active ones — and is skipped
+    entirely when the port bean is absent) — followed by a SIXTH, complement-set sweep: walking
+    every one of the user's active nodes back to its source row and archiving any whose source
+    stopped qualifying (a pattern no longer confirmed, a soft-deleted goal, fact, or person, or a
+    life goal the port no longer reports as active) — per-row isolated through the same
+    `self`/`proxy` per-item-transaction idiom as the promotion loops, and skipping `sourceKind`s
+    it does not own (`sourceId == null` for extractor/quarterly nodes; the `switch`'s
+    `default -> false` branch for the profile node, which DOES carry a `sourceId` — see the code
+    comment). This is the complement loop's whole reason to exist: the five promotion loops above
+    only ever see rows that STILL qualify, so a row that LEAVES its qualifying set (un-confirmed,
+    soft-deleted) is invisible to them and its node would otherwise stay active forever; the
+    sweep is what heals a retraction missed while the switch was off (no listener existed to hear
+    the event). For a `knowledge_fact` specifically it remains the ONLY path that ever retracts
+    one for the *delete* half (nothing in main source soft-deletes a `knowledge_fact`) — the
+    *opt-out* half now also reaches `retractFact` on the next turn via `syncFact`
+    (`mezo-b3pp.30`), with the sweep as its backstop, same as every other source kind. The
+    `person` branch of the complement switch calls `retractPerson`, and the `life_goal` branch
+    calls `retractLifeGoal` — same backstop role; `retractLifeGoal` itself no-ops when the port
+    bean is absent, so a missing port is invisible to this sweep rather than triggering a mass
+    archival (see `syncLifeGoal`'s javadoc for why).
   - **Deliberate transaction shape**: `promotePattern`/`promoteFact`/`syncGoal` are each
     all-or-nothing (node + any structured edges commit or roll back together, one DB transaction).
     A failure mid-promotion loses that one promotion, but promotion is idempotent, so the next
@@ -3325,9 +3564,14 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   violation of anything today, but zero headroom for the header to grow by even one clause. 200
   leaves over 150 tokens of prose room at the floor, still well under the shipped 400 default.
 - **`upsertNode` does not touch status** (W2.2 owns its own status rules), so the assembler
-  explicitly re-activates the node after the upsert: an archived profile is revived by the very
-  next weekly run — the "reset what you think of me" recovery path spec §8.3 promises, without a
-  dedicated endpoint.
+  explicitly re-activates the node after the upsert, through the shared
+  `GraphPromotionService.raiseStatus` choke point (mezo-06o0.5, code review finding) rather than a
+  bare `setStatus`: a MACHINE-archived profile is revived by the very next weekly run — the
+  "reset what you think of me" recovery path spec §8.3 promises, without a dedicated endpoint —
+  but a profile the user hand-archived from the Tudástár UI (`userArchivedAt` set) stays archived,
+  same as every other source kind (see "Hand-archiving is now a durable user intent" above). The
+  profile node is a fifth writer of this status alongside the four promoters, which is why
+  `raiseStatus` is `public`.
 - **`ProfileAssemblerJob`** (`profile/service/`) — one `@Scheduled` method, weekly **Monday 03:45**
   (`0 45 3 * * MON`), deliberately AFTER the 03:10 feedback rollups and the 03:30 weekly
   consolidation rung — it reads both, so it must run last in that dawn window. Gated on
@@ -3582,9 +3826,11 @@ a future caller would re-acquire the bug by omission.
 `mezo.techcore.cron.profile-assembler-job.enabled=false` is a documented kill switch for the
 profile — no weekly rebuild, no smart-tier spend on it, and an archived *Rólad tanultam* node
 stays archived. Calling `ProfileAssembler.rebuild` unconditionally from here made it leaky: four
-times a year the quarterly cron would spend a smart-tier call per user anyway AND force the
-non-ACTIVE node back to ACTIVE (the assembler's deliberate "reset what you think of me" revival),
-resurrecting a profile the operator or the user had switched off. `@Value` is banned in this repo,
+times a year the quarterly cron would spend a smart-tier call per user anyway AND force a
+MACHINE-archived node back to ACTIVE (the assembler's deliberate "reset what you think of me"
+revival, itself routed through `GraphPromotionService.raiseStatus` since `mezo-06o0.5` and so
+never reviving a node the user hand-archived — see "Hand-archiving is now a durable user intent"
+above), resurrecting a profile the operator had switched off. `@Value` is banned in this repo,
 so the switch is read the house way — **by bean presence**: `QuarterlyReviewJob` holds
 `ObjectProvider<ProfileAssemblerJob>`, and that bean's existence IS the switch (its own
 `@ConditionalOnProperty` says so). Absent ⇒ phase 2 is skipped, with an honest log line (IDENT-3),
@@ -4244,6 +4490,7 @@ are whole days computed from `LocalDate.now()`; missing days stay absent, never 
 | `late_eating` | on ≥ `min-days-of-last-three` of the last `window-days` days, `LATE_MEAL_HOUR` is within `minutes-before-bed` of the (shifted) sleep anchor **or** ≥ `absolute-hour`; the bed arm needs a `sleep_goal` row, the absolute arm does not | `MetricKey.LATE_MEAL_HOUR`, `SleepAnchorPort` (bed arm only) |
 | `protocol_lapse` | one active protocol item missed on ≥ `consecutive-missed-days` consecutive DUE days, **and** ≥ `min-history-due-days` due days of adherence-≥`min-history-adherence` history immediately before the miss run; "due" is DERIVED, never stored — a `pre_workout`/`post_workout` item is due only on a day with a completed gym instance (a rest day is not a miss), every other item is due every day; the scan is bounded BELOW by the item's own `created_at` (a freshly added item cannot have "missed" a habit that never had room to exist), and the window ends YESTERDAY, never today (today is still in progress); the per-item 7-day re-announce cooldown lives inside the rule itself, separate from the 24h key-level cooldown below | `protocol_item`, `supplement_intake`, `WorkoutSessionRepository.findDoneInstanceDates` |
 | `meal_rhythm_drift` | over a `window-days` rolling window ending YESTERDAY, with at least `min-days-with-meals` days carrying a logged meal: **slot drift** — a planned slot's actual logged time (earliest row of that `slotKind` that day) deviates from its planned time by a median of more than `drift-minutes`, with at least `min-same-direction-share` of the observed days drifting the same way — OR **dead slot** — a slot planned on ≥ `min-slot-planned-days` days carries a meal on ≤ `dead-slot-max-presence` of them while the other tracked slots average ≥ `other-slots-min-presence`. Only `fixed`-anchor slots can drift (relative anchors are resolved in the FRONTEND only); `snack` and any duplicated `slotKind` are excluded as ambiguous; the day's template is chosen by a DERIVED day type (`resolveDayType.ts` ported: no completed instance ⇒ rest, earliest start before noon ⇒ training_am, else training_pm), and a training day with no `started_at` is skipped entirely; deviations use a SIGNED CIRCULAR minute difference in `(-720, 720]`, never `LateEatingRule`'s +24 shift | `meal_slot_template`, `meal`, `WorkoutSessionRepository.findDoneInstancesBetween` |
+| `energy_dip_meal_timing` | over a `window-days` rolling window ending YESTERDAY: a day QUALIFIES when it carries a check-in with an energy value inside the INCLUSIVE `[afternoon-from-hour, afternoon-to-hour]` band (matched on the `slot_time` wall clock; the day's value is the MEDIAN of its in-band check-ins) AND at least one logged meal of any kind — fewer than `min-qualifying-days` such days ⇒ silence. Those days are split in two: **lunch time** (primary) — the days with a lunch row, halved at their own median lunch minute, usable only when both halves reach `min-group-days` AND their own median lunch times are `min-lunch-split-separation-minutes` apart — or, ONLY when that split is unusable, **breakfast presence** (fallback) — days with a logged `breakfast` row vs days without. Raises when the two groups' median afternoon energies differ by ≥ `min-energy-delta` AND the Mann–Whitney probability of superiority (oriented to the higher group) reaches `min-superiority`. Reports a CORRELATION, never a cause; a usable split that does not separate is a CLEAR, not an unavailable | `check_in` (`findByCreatedByAndDeletedFalseAndDateBetween`), `meal` |
 | `all_healthy` | none of the other thirteen fire now, **and** no problem row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
 
 `all_healthy`'s "no problem row" check (`existsProblemRaiseSince`) excludes `all_healthy` itself,
@@ -4259,7 +4506,7 @@ intervention copy calls it a training tip, not an injury alert, and it fires on 
 weekly shoulder split it is true roughly weekly, so counting it here would keep the seven-day quiet
 window from ever opening. The other ten flags — `missed_workouts`, the remaining four S6 keys
 (`acute_bad_day`, `load_fuel_mismatch`, `rapid_weight_loss`, `late_eating`), and Round 2 S1's
-`protocol_lapse` and S4's `meal_rhythm_drift` included — stay counted as problems, since each IS a genuine behavior/health
+`protocol_lapse`, S4's `meal_rhythm_drift` and S6's `energy_dip_meal_timing` included — stay counted as problems, since each IS a genuine behavior/health
 signal, unlike a data gap, a failed nudge, or a forward-looking training advisory. `protocol_lapse`
 stays counted rather than joining the exclusion list: a missed dose on its own due day is a real
 behavior lapse, not a data-availability gap (`logging_gap`'s argument) or the app's own delivery
@@ -4322,6 +4569,32 @@ NOT another `CompanionProperties` nested component), picked up by `@Configuratio
 
 Prose gate: `mezo.feature.day-review.enabled` (`DAY_REVIEW_SWITCH`) = **true** by default — see the
 `DayReviewService`/`DayReviewLlmAdapter` writeup above for what it gates and does not.
+
+### Config keys (`mezo.companion.reflection.*` — `ReflectionProperties`, `@Validated`)
+
+The whole Reflexió epic's config surface lands in one validated record (picked up by
+`MezoApplication`'s `@ConfigurationPropertiesScan`, the `MemoryPlatformProperties` idiom). S1 uses
+`enabled` and `catch-up-days`; the rest is bound and range-validated here so slices 2–6 consume it
+without a second properties class.
+
+- `mezo.companion.reflection.enabled` = **true** (`FeaturesConfiguration.REFLECTION_SWITCH`) —
+  the master switch for every Reflexió bean; off ⇒ no extraction call is reachable and the four
+  `TEXT_*` metrics report no data.
+- `mezo.techcore.cron.reflection-job.enabled` = **true** (`REFLECTION_JOB_SWITCH`) — off ⇒ the
+  nightly job bean does not exist; `TextSignalCatchUpService` stays callable (the
+  `FlagSweepJob`-vs-`FlagService` idiom).
+- `mezo.companion.reflection.cron` = **`0 40 3 * * *`** — 03:40. It **shares that minute with the
+  llm-log payload-retention purge** (`mezo.llm-log.retention.cron`), which is a single bounded UPDATE
+  on an unrelated table; every other dawn slot is taken (02:20 summary, 02:40 patterns, 02:50
+  character, 03:00 SUN hypotheses, 03:10 feedback-learning, 03:20 graph, 03:30 MON weekly rung, 03:45
+  MON profile, 03:50 monthly rung + audit retention, 04:00 quarterly).
+- `mezo.companion.reflection.catch-up-days` = **7** (`@Min(1) @Max(30)`) — finished days the nightly
+  catch-up re-checks for missing/stale signals.
+- `mezo.companion.reflection.notice.{max-per-day, min-gap-hours, quiet-from, quiet-to}` =
+  **2 / 4 / 22:00 / 07:00** — quick-notice rate limits and quiet hours (consumed from S2 on).
+- `mezo.companion.reflection.propose.max-per-night` = **2** — cap on newly proposed patterns per run.
+- `mezo.companion.reflection.lifecycle.{confirm-streak, refute-streak, dormant-after-days, strong-r,
+  strong-p}` = **3 / 3 / 30 / 0.3 / 0.15** — pattern lifecycle thresholds.
 
 ### Config keys (`mezo.llm-log.*` — the audit log, `LlmLogProperties`/`LlmPricingProperties`)
 
@@ -5812,6 +6085,35 @@ Carried over from V0.1 (`mezo-fnnq.1`): `CompanionLlmFakeIT` (fake picked + echo
 (**no `CompanionLlm` bean when the switch is off** — `ObjectProvider.getIfAvailable() == null`),
 `CompanionPropertiesIT` (llm tiers + the V0.2 `chat.*` window/title bindings).
 
+**Reflexió S1 — text signals (`mezo-eq85.1`).** Five tests, one per seam.
+`feature/companion/reflection/TextSignalExtractorTest` is a pure unit test over a hand-written
+`CompanionLlm` stub: valid JSON parses, `unsure` drops the numbers, an unknown topic is dropped, an
+overshooting number is clamped to 1..5, a non-JSON answer and a throwing provider both yield an
+empty `Optional`, and a blank text never reaches the model at all.
+`TextSignalListenerIT` drives the REAL `JournalService`/`GratitudeService` write paths (a populator
+would bypass the events) under `@ActiveProfiles("companion-fake")` and awaits the AFTER_COMMIT
+listener: a save writes the signal and refreshes `memory_item.people`/`.topics`, an edit writes
+`version 2` alongside — not over — `version 1`, a delete soft-deletes every signal of the source,
+and `FakeCompanionLlm.SIGNAL_FAIL` proves a failing extraction leaves the entry intact and writes
+nothing. The enrichment half is asserted through `TextSignalCatchUpService.catchUp` — the seam
+production actually runs — and every assertion after it sits INSIDE the awaited block, so a late
+projection re-wipe is polled through instead of failing the test (review finding).
+`TextSignalCatchUpIT` owns the catch-up itself, with sources made by the POPULATORS so no listener
+has already written the signal: a missing signal is extracted, an edited source re-versions, an
+UNCHANGED source restores a wiped `memory_item.people`/`.topics` while writing no new version and
+returning 0, a chat day that gains later turns re-versions (and a third unchanged run writes
+nothing), and a `SIGNAL_FAIL` source does not stop the same night's gratitude row from landing.
+`TextSignalListenerSwitchOffIT` pins the structural half (the `PatternDetectionJobSwitchOffIT`
+shape): reflection off ⇒ listener, service AND extractor beans are all absent.
+`TextSignalSeriesIT` covers the series rules against real Postgres — the per-day mean over `sure`
+rows only, an all-unsure day being absent rather than zero, `TEXT_SOCIAL_CONTACT`'s binary presence,
+newest-version-wins per source (including its effect on the derived people series), the
+`people:`/`topic:` presence series, `MetricKey` delegation for a plain wire key, and
+`valueKindOf`/`labelOf`/`isKnown` for all three key shapes.
+`FakeCompanionLlm` dispatches on `TextSignalExtractor.SIGNAL_MARKER`: `[[SIGNAL:{…}]]` in the entry
+text returns that JSON verbatim, `SIGNAL_FAIL` throws, and the un-scripted default is a `sure`,
+mildly positive signal mentioning Anna.
+
 ## 9. Decisions, gotchas & deferred
 
 **Plan decisions (locked in the V0.2 plan §"Decisions locked"):**
@@ -6001,14 +6303,11 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
     — the graph is one more channel, not a carve-out. Before this fix, `mezo-b3pp.31`'s revive
     half made the nightly `reconcile` re-assert `status='active'` on an opted-out fact's node, so
     a user who archived that node by hand from the Tudástár UI had it silently resurrected by
-    dawn; the filter (mirrored into `retractFact`'s qualifying check) closes that. **This
-    durability is specific to opted-out facts** — a fact left `include_in_prompt=true` is
-    unaffected: `promoteFact` still unconditionally re-asserts `status='active'` for it, so a
-    hand-archive of THAT node is undone by the very next write that touches the fact (even a
-    category-only edit now routes through `syncFact` → `promoteFact` within the async hop, an
-    even shorter undo window than the old nightly sweep). `include_in_prompt` is the intended
-    lever for a fact the user wants out of the prompt — hand-archiving the graph node is not a
-    substitute for it. `syncFact` (promote-or-archive in one transaction, the `syncGoal` shape)
+    dawn; the filter (mirrored into `retractFact`'s qualifying check) closes that. **This closed
+    the opted-out-fact leak specifically; the general hand-archive leak (any node, regardless of
+    `include_in_prompt`) is a separate fix — `mezo-06o0.5`'s `GraphPromotionService.raiseStatus`
+    choke point, see the W2.2 "Hand-archiving is now a durable user intent" note above.**
+    `syncFact` (promote-or-archive in one transaction, the `syncGoal` shape)
     and the unconditionally published `KnowledgeFactChangedEvent` route the toggle to the
     traversal channel (`[Összefüggések]`, the injected fact block) on the user's next turn
     instead of waiting for the sweep, with an edited fact's node title kept fresh as a side
@@ -6550,6 +6849,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/MissedWorkoutsRule.java` — S2 (bd `mezo-d58h.2`): the `missed_workouts` rule; consecutive-in-planned-days-not-calendar-days logic (§3).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/{AcuteBadDayRule,LoadFuelMismatchRule,RapidWeightLossRule,JointOveruseRule,IgnoredNudgeRule,LateEatingRule}.java` — S6 batch B (bd `mezo-d58h.6`): six rules, in severity order (§3 above has each one's own honesty gate).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/ProtocolLapseRule.java` — Round 2 S1 (bd `mezo-d58h.7.1`, spec 2026-09-05 §(11)): the epic's next new detection, `protocol_lapse` — derived due-days, the `created_at` lower bound, the yesterday-ending window, and the rule-internal per-item cooldown (§3 above has the full honesty-gate writeup).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/EnergyDipMealTimingRule.java` — Round 2 S6 (bd `mezo-d58h.7.7`, spec 2026-09-05 §(15)): `energy_dip_meal_timing` — the qualifying-day gate, the lunch-time split with its anti-degeneracy separation guard, the breakfast-presence fallback and the Mann–Whitney superiority check (§3 above has the full writeup, including why the spec's "logged morning meal" gate is implemented as "any logged meal").
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/MealRhythmDriftRule.java` — Round 2 S4 (bd `mezo-d58h.7.4`, spec 2026-09-05 §(13)): `meal_rhythm_drift` — the fixed-anchor-only drift arm, the derived day type (`resolveDayType.ts` ported), the dead-slot presence arm and the signed circular clock difference (§3 above has the full writeup).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagService.java` — the cooldown gate + append (`evaluateAndLog`), the ONLY write path into `companion_flag_log`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluationListener.java` — the on-write trigger, `@Async @TransactionalEventListener(AFTER_COMMIT)` on `CheckInSavedEvent`/`SleepLogSavedEvent`.
@@ -6561,6 +6861,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609041200_mezo-d58h.6_flag_key_batch_b.sql` — S6: widens `ck_companion_flag_log_flag_key` to thirteen keys.
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609051600_mezo-d58h.7.1_flag_key_protocol_lapse.sql` — Round 2 S1: widens `ck_companion_flag_log_flag_key` to the fourteen keys (`protocol_lapse`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609061600_mezo-d58h.7.4_flag_key_meal_rhythm_drift.sql` + `202609061700_mezo-d58h.7.4_flag_key_trace_meal_rhythm_drift.sql` — Round 2 S4: widen `ck_companion_flag_log_flag_key` AND `ck_companion_flag_trace_flag_key` to the fifteen keys (`meal_rhythm_drift`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609062000_mezo-d58h.7.7_flag_key_energy_dip.sql` + `202609062100_mezo-d58h.7.7_flag_key_trace_energy_dip.sql` — Round 2 S6: widen both CHECKs again, to the sixteen keys (`energy_dip_meal_timing`).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT,FlagEvaluatorLoggingGapIT,FlagEvaluatorMissedWorkoutsIT,FlagEvaluatorAcuteBadDayIT,FlagEvaluatorLoadFuelMismatchIT,FlagEvaluatorRapidWeightLossIT,FlagEvaluatorJointOveruseIT,FlagEvaluatorIgnoredNudgeIT,FlagEvaluatorLateEatingIT,FlagEvaluatorProtocolLapseIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. **Since W5.2 (`mezo-b3pp.19`), `FlagRaisedEvent` (below) is the consumer** — see the next block.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaisedEvent.java` — W5.2 (bd `mezo-b3pp.19`): the `{userId, flagKey, source}` event `FlagService.evaluateAndLog` publishes for every WRITTEN raise, inside the logging transaction (§3/§4 above).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagTracePersistenceIT,FlagServiceTraceIT}.java` + `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagVerdictTest.java` — `mezo-6269.1`, §8.

@@ -169,10 +169,18 @@ class GraphRetractionIT extends AbstractIntegrationTest {
         GraphNodeEntity node = promotionService.promoteFact(owner, fact.getId()).orElseThrow();
         assertThat(node.getStatus()).isEqualTo(GraphNodeEntity.STATUS_ACTIVE);
 
-        graphService.archive(owner, node.getId());
+        // Machine-archive via the source's own qualifying condition (opt-out), not
+        // graphService.archive() — that call now stamps the user-intent marker (mezo-06o0.5)
+        // and would make this revival impossible by design. retractFact mirrors how
+        // testPromotePattern_shouldReviveTheNode... drives promotePattern above.
+        fact.setIncludeInPrompt(false);
+        knowledgeFactRepository.saveAndFlush(fact);
+        promotionService.retractFact(owner, fact.getId()).orElseThrow();
         assertThat(nodeRepository.findById(node.getId()).orElseThrow().getStatus())
             .isEqualTo(GraphNodeEntity.STATUS_ARCHIVED);
 
+        fact.setIncludeInPrompt(true);
+        knowledgeFactRepository.saveAndFlush(fact);
         GraphNodeEntity revived = promotionService.promoteFact(owner, fact.getId()).orElseThrow();
 
         assertThat(revived.getId()).isEqualTo(node.getId());

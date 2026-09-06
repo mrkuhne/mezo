@@ -7,7 +7,7 @@ tags: [platform, backend, data-layer, frontend]
 key_files:
   - api/openapi.yml
   - api/generate
-  - backend/src/main/java/io/mrkuhne/mezo
+  - backend/src/main/java/io/mrkuhne/mezo/techcore
   - backend/pom.xml
   - backend/src/main/resources/messages.properties
   - frontend/src/data/_client/api.ts

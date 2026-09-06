@@ -262,7 +262,13 @@ this redesign and remain as shipped.
   `bestSet.date` fell in-week via `ExerciseRecordService` — a new cycle-safe `proactive → train`
   read; `PR` anchor candidates), the week's **predictions with status**, and the
   **`WeeklyReviewContextSources` wider context verbatim** (journal, decisions, experiments,
-  mention counts, medication-cycle position, week narrative — no anchor candidates). The JSON
+  mention counts, medication-cycle position, week narrative — no anchor candidates) — since
+  `mezo-a9os` windowed `LifeGoalProgressService.summary(userId, from, to)`, this silently pulls
+  in the seventh source too, the **`ÉLETCÉLOK · A HÉT IRÁNYA`** block (§ below), scoped to the
+  memoir's own `[weekStart, weekStart+6]` rather than `LocalDate.now()`'s week — correct (the
+  memoir narrates the week ENDING, same window as everything else it gathers), undocumented until
+  now, and covered by no dedicated `MemoirGeneratorIT` case, only inherited via
+  `WeeklyReviewContextSources.render`'s own tests. The JSON
   contract is now `{title, body, anchors:[{index, note}]}` (legacy `anchorIndexes` still parsed
   as fallback); **Memory anchor labels are composed server-side** into human HU day labels
   (`MemoirGenerator.memoryLabel`: `aug. 29., szombat — <note≤60>`) so the FE chips stop showing
@@ -603,14 +609,16 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   position on the week's first and last day (one line, derived via `MedicationCycleService`), and
   the week's consolidated **`period_summary(week)`** narrative (clipped to 600 — its `03:30 MON`
   consolidation cron runs three hours before the `06:50` review cron on the SAME `weekStart`).
-  **The seventh source (`mezo-iizd.9`): `ÉLETCÉLOK · AZ ELMÚLT 7 NAP`** — the life-goal engine's
-  ALREADY-COMPUTED per-goal trend off `LifeGoalProgressService#today` (max 5 ACTIVE goals;
+  **The seventh source (`mezo-iizd.9`, windowed by `mezo-a9os`): `ÉLETCÉLOK · A HÉT IRÁNYA`** —
+  the life-goal engine's ALREADY-COMPUTED per-goal trend off
+  `LifeGoalProgressService#summary(userId, weekStart, weekEnd)` (max 5 ACTIVE goals;
   `title [dimension] <arrow-word> · N találat-nap a 7-ből`). Three honesty rules shape it, all
-  pinned by `WeeklyReviewContextSourcesIT`: the header names the **trailing-7-day** window it
-  actually measures, NOT the reviewed week (`today()`'s `[now-6, now]` sits one day off the
-  Monday-06:50 cron's `[D-7, D-1]`; a windowed `today(from, to)` variant is a separate, later
-  issue); today's `pillarsHitToday / pillarsTotal` snapshot is dropped as meaningless in a
-  retrospective; and a goal with **no data-day at all** renders `ezen a héten még nincs adata`
+  pinned by `WeeklyReviewContextSourcesIT`: the header names the **reviewed week** it actually
+  measures — `summary` takes the SAME `[weekStart, weekEnd]` every sibling source above uses,
+  so the Monday-06:50 cron's `[D-7, D-1]` is what feeds `days7`, not a trailing-7-day window off
+  render time (that was the previous shape, before the windowed `summary` variant existed); today's
+  `pillarsHitToday / pillarsTotal` snapshot is dropped as meaningless in a retrospective regardless
+  of which day it lands on; and a goal with **no data-day at all** renders `ezen a héten még nincs adata`
   instead of a `0 találat-nap` tally — a zero there means "we measured nothing", and a
   measured-looking zero would invite the model to explain a week nobody measured. That last rule
   mirrors the frontend's `goalWeekSentence.ts` verbatim, so one week can never read as a miss in
@@ -952,7 +960,11 @@ still outranks (and can displace) the two setup checks and the round-0 tail belo
 only every OTHER flag sits ahead of it. **Round 2 S4 (bd `mezo-d58h.7.4`) then adds
 `FlagKey.MEAL_RHYTHM_DRIFT` immediately AFTER `protocol_lapse`**, still ahead of the two setup
 checks: it is an offer to edit a plan rather than a health signal, so it must never displace a card
-ranked above it — and the round-1 order is again untouched. `AdviceCardService` is deliberately NOT conditioned on
+ranked above it — and the round-1 order is again untouched. **Round 2 S6 (bd `mezo-d58h.7.7`) adds
+`FlagKey.ENERGY_DIP_MEAL_TIMING` immediately after that** — the least urgent FLAG in the table (an
+insight about a correlation in the user's own log, not a signal about a state), but still a
+statement about the user's own body, so it stays inside the flag block rather than dropping below
+the setup checks. `AdviceCardService` is deliberately NOT conditioned on
 `INTERVENTION_SWITCH` —
 `SetupCheckService` (which runs without that switch) is one of its two callers, so gating this bean
 on the intervention switch would fail the Spring context whenever that switch is off.
@@ -2179,6 +2191,20 @@ card, no day gate, no migration, no new feed kind, no FE change.
   import `proactive` to learn what a question key is.
 - **Nothing else follows from an answer** (spec §c): no feature hidden, no data excluded, no rule
   input changed. The fact rides the top-N prompt injection like any other, and that is all.
+- **The frontend renders it as a QUESTION, not as a rated card** (`mezo-d58h.7.6`, the S5 follow-up).
+  A question card is an `advice` row, so the thread's generic advice rendering would have put
+  „Segített?" over it and offered the negative reason row („pontatlan"/„túl sok"/…) on the 👎 — but
+  here the 👍/👎 IS the answer and those reasons are complaints about a card. `NapMezoPage` (the live
+  thread; `MezoMessagesSheet` is the dead, half-migrated twin — `mezo-1esk`) now keys off
+  `FeedMessage.flagKey`, which already reached the FE from `mezo-6269.2` and only had to survive
+  `feedToMessageItem`: `isQuestionCard` is a PREFIX match on `question_`, so a future question key
+  behaves correctly the day the backend starts asking it, with no frontend change. The card then
+  reads „A válaszod", the two chips wear the question's own answers (parsed off its `suggestions`,
+  which are therefore no longer also listed as bullets — the button says what tapping it means), and
+  `FeedbackChips`' new `answers` mode records a 👎 straight away instead of opening the reason row.
+  A malformed suggestion pair falls back to the default „Segített"/„Nem talált" wording rather than
+  rendering a guess. Mock mode is untouched by design: `useCompanionFeed` returns `[]` there
+  (Phase-1 byte parity), so no advice or question card exists on the mock surface at all.
 
 ## 6. How to use it (consume)
 
@@ -3085,6 +3111,18 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
   branch (rendered from the raise's own frozen payload), never from this text. Like
   `protocol_lapse_resume` it offers no `AdviceActionCatalog` mutation — editing a slot template is a
   deliberate act in Fuel, not something a card should automate.
+- **(pp) Round 2 S6 (bd `mezo-d58h.7.7`, spec 2026-09-05 §(15)) adds `energy_dip_timing_insight`,
+  the `energy_dip_meal_timing` intervention-library entry.** `channel: feed` (an observation never
+  earns a push) and `cooldown-hours: 720`, which MUST stay equal to
+  `mezo.companion.flags.cooldown-hours.energy-dip-meal-timing` — the same `deliverForFlag`
+  lesson as `meal_rhythm_adjust` one slice earlier, here guarding the spec's "effectively a one-off
+  insight card" 30-day cadence. The copy states a CORRELATION and nothing more: no causal word
+  appears in it, it explicitly names the alternative reading ("lehet, hogy mindkettő ugyanannak a
+  napnak a következménye"), and it prescribes nothing. The two groups, their sizes, their median
+  afternoon energies and the superiority share come from `FlagFactRenderer`'s
+  `energy_dip_meal_timing` branch (rendered from the raise's own frozen payload) — the group SIZES
+  are on the card on purpose, so the reader can see how thin the sample is. Like the two entries
+  before it, it offers no `AdviceActionCatalog` mutation: there is nothing here to automate.
 - **(oo) Round 2 S5 (bd `mezo-d58h.7.5`, spec 2026-09-05 §c) — the once-ever questions, and the four
   things that shape them.**
   1. **The dedupe is native and sees soft-deleted rows.** `CompanionMessageRepository

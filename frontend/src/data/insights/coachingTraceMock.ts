@@ -1,3 +1,4 @@
+import { addDays, localDateString } from '@/shared/lib/dates'
 import type { CoachingRule, CoachingTraceDay } from '@/data/types'
 
 /**
@@ -61,7 +62,14 @@ const RULES: Omit<CoachingRule, 'changedAt'>[] = [
 export function mockCoachingDay(date: string): CoachingTraceDay {
   return {
     date,
-    earliestDate: '2026-08-28',
+    // Anchored to TODAY, not to `date` (the day being viewed): the floor must be a fixed point
+    // in time so paging back can actually reach it. Anchoring to `date` made `canBack = date >
+    // earliestDate` (= `date > date-13`) always true — the floor was unreachable, in every
+    // golden and in `pnpm dev` alike. It also can't be a fixed calendar literal, because the
+    // visual harness freezes the clock in a different month (MAY) — a fixed August floor was
+    // dead there too. `localDateString()` (today, at call time) is neither: a real 13-day-back
+    // boundary that moves with the clock the harness actually runs under.
+    earliestDate: addDays(localDateString(), -13),
     winner: { flagKey: 'load_fuel_mismatch', rank: 2, cardId: 'mock-card-1' },
     rules: RULES.map((rule) => ({ ...rule, changedAt: `${date}T07:00:00Z` })),
     transitions: [
