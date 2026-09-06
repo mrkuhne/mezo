@@ -20,7 +20,9 @@ import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useHabitCatalog, useHabitCatalogActions, useHabitSummary } from '@/data/hooks'
 import type { HabitDefUpdateInput } from '@/data/habit/habitAdminApi'
 import type { HabitFramework, HabitMode } from '@/data/types'
+import { EffortGrid } from '@/features/me/components/EffortGrid'
 import { MEZO_EVENT_ANCHORS } from '@/features/me/logic/habitAnchors'
+import { EMPTY_EFFORT, effortRated, effortXp, type EffortState } from '@/features/me/logic/habitEffort'
 import { HABIT_METRIC_PALETTE } from '@/features/me/logic/habitMetricPalette'
 import { routineSentenceParts, titlePlaceholder } from '@/features/me/logic/routineSentence'
 import { recipeFromDef } from '@/features/me/logic/routineSentence'
@@ -32,7 +34,6 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 
 const XP_MIN = 5
 const XP_MAX = 15
-const XP_STEP = 5
 
 const PRINCIPLE = 'A recept a tiéd: minden mező a te szavaiddal él. A keretváltás előre megmondja, '
   + 'mi vész el — semmi nem tűnik el némán.'
@@ -102,7 +103,9 @@ export function HabitEditPage() {
   const [mode, setMode] = useState<HabitMode>('MANUAL')
   const [metric, setMetric] = useState('')
   const [chainKey, setChainKey] = useState('MORNING')
-  const [xp, setXp] = useState(XP_MIN)
+  // XP is not a field (mezo-9k99): the effort grid derives it. An untouched grid keeps the
+  // stored value — re-rating is an explicit act, not a side effect of opening the editor.
+  const [eff, setEff] = useState<EffortState>(EMPTY_EFFORT)
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   // Every controlled field seeds ONCE from the definition (the HabitPage idiom): a background
@@ -123,7 +126,7 @@ export function HabitEditPage() {
     setMode(def.mode)
     setMetric(def.metric !== 'manual' ? def.metric : (HABIT_METRIC_PALETTE[0]?.metric ?? ''))
     setChainKey(def.chainKey)
-    setXp(def.xp)
+    setEff(EMPTY_EFFORT)
     setConfirmDelete(false)
     return null
   }
@@ -183,7 +186,10 @@ export function HabitEditPage() {
     // Blank string CLEARS an optional field (mezo-pero, the anchorHabitKey sentinel
     // generalized) — the old "omit an emptied key" rule is gone with the contract gap it
     // papered over. `chainKey` still goes only on an actual move (a re-send would re-order).
-    const patch: HabitDefUpdateInput = { title: title.trim(), xp: Math.min(XP_MAX, Math.max(XP_MIN, xp)) }
+    // XP: derived from the effort grid once the user re-rated; an untouched grid re-sends the
+    // stored value (clamped — an out-of-band legacy value must not survive a save unclamped).
+    const xp = effortRated(eff) ? effortXp(eff) : Math.min(XP_MAX, Math.max(XP_MIN, def.xp))
+    const patch: HabitDefUpdateInput = { title: title.trim(), xp }
     if (chainKey !== def.chainKey) patch.chainKey = chainKey
     if (framework !== def.framework && framework != null) patch.framework = framework
     if (framework === 'FOGG') {
@@ -397,12 +403,19 @@ export function HabitEditPage() {
                 </button>
               ))}
             </div>
-            <span className="rt-flabel" style={{ marginTop: 10 }}>XP</span>
-            <span className="rt-stepin">
-              <button type="button" aria-label="XP csökkentése" onClick={() => setXp(Math.max(XP_MIN, xp - XP_STEP))}>−</button>
-              <b>{xp} XP</b>
-              <button type="button" aria-label="XP növelése" onClick={() => setXp(Math.min(XP_MAX, xp + XP_STEP))}>＋</button>
-            </span>
+          </FieldCard>
+
+          <FieldCard delayMs={175}>
+            <span className="rt-flabel">Mennyibe kerül? <span className="rt-opt">újraértékelhető</span></span>
+            <EffortGrid
+              value={eff}
+              onChange={setEff}
+              xpOverride={effortRated(eff) ? undefined : Math.min(XP_MAX, Math.max(XP_MIN, def.xp))}
+            />
+            <div className="rt-lockline">
+              <span aria-hidden="true">ⓘ</span>
+              <span>A nehézség <b>változik</b>, ahogy a szokás automatizálódik — érdemes újraértékelni, ha már könnyebben megy. Az XP a nehézségből számolódik (6–14).</span>
+            </div>
           </FieldCard>
 
           <button type="button" className="rt-danger rise" style={rise(190)} disabled={pending} onClick={togglePause}>
