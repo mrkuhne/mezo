@@ -7801,6 +7801,12 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .sb-dim-lb i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
 .sb-dim-w { font-size: 10.5px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
 .sb-dim-w b { color: var(--mz-ink-soft); font-weight: 700; }
+/* Részleges lefedettség jelvénye a súly-soron (mezo-mxmh) — halk, de mindig látszik, szemben a
+   `detail` végére tűzött záradékkal, amit a kétsoros clamp levágott. Teljes lefedettségnél nem
+   jelenik meg: a hiánya a jel. */
+.sb-dim-cov { display: inline-block; margin-left: 7px; padding: 1px 6px; border-radius: 999px;
+  font-size: 9px; font-weight: 800; letter-spacing: 0.04em; vertical-align: 1px;
+  color: var(--mz-cell-amber-ink); background: var(--mz-cell-amber-bg); }
 .sb-dim-one { font-size: 12px; color: var(--mz-ink-soft); line-height: 1.35; margin-top: 3px;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .sb-dim-arr { font-size: 16px; color: var(--mz-ink-mut); transition: transform 0.25s; }

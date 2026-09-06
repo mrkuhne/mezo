@@ -102,7 +102,7 @@ class MealCoachStore {
     }
 
     private static MealBreakdownJson.Dimension withNote(MealBreakdownJson.Dimension d, String note) {
-        return new MealBreakdownJson.Dimension(d.id(), d.label(), d.weight(), d.score(), d.detail(),
+        return new MealBreakdownJson.Dimension(d.id(), d.label(), d.weight(), d.score(), d.coverage(), d.detail(),
             d.macro(), d.micros(), d.nova(), d.context(), d.timing(), note);
     }
 

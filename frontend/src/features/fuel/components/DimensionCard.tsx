@@ -51,6 +51,15 @@ export function DimensionCard({ dim, defaultOpen = false, delayMs }: {
           <span className="sb-dim-w">
             súly <b>{Math.round(dim.weight * 100)}%</b> → <b>{contribution}</b> pont
             {ghost && ' · nincs adat, nem számít bele'}
+            {/* Partial coverage is a fact about the SCORE, so it rides the weight line where the
+                other arithmetic lives — not the end of `detail`, which the two-line clamp below
+                would cut off exactly when there is most to say (mezo-mxmh). Full coverage stays
+                silent: a "100% adat" badge on every tile is noise, and its absence is the signal. */}
+            {!ghost && dim.coverage != null && dim.coverage < 0.995 && (
+              <b className="sb-dim-cov" title="Ennyi étel-energiára volt adat ehhez a dimenzióhoz">
+                {Math.round(dim.coverage * 100)}% adat
+              </b>
+            )}
           </span>
           {!open && <span className="sb-dim-one"><SafeMarkdown text={dim.detail} /></span>}
         </span>

@@ -310,21 +310,24 @@ public class MealScoringService {
         double significance = Math.min(1.0, kcalShare / props.macroSignificanceRefShare());
         double score = Math.max(0, 1 - deviation * props.macroDeviationSlope() * significance);
 
+        // A cél EREDETE saját mező, nem a mondat farka (mezo-mxmh): az összecsukott kártya két
+        // sorra vágja a `detail`-t, és az 1. körben pont a provenance — az egész átírás értelme —
+        // esett a vágás alá. A mondat most rövid és teljes; az eredet a kinyitott panelben áll.
+        String origin = String.format(
+            "%s · %d g fehérje / %d g szénhidrát / %d g zsír egy %d kcal-s napra",
+            targetOrigin(base, role), targetP, targetC, targetF, base.kcal());
         MacroDetail detail = new MacroDetail(
             round0(sp * 100), round0(sc * 100), round0(sf * 100),
             "~" + Math.round(tp * 100) + "%", "~" + Math.round(tc * 100) + "%", "~" + Math.round(tf * 100) + "%",
             round1(kcalShare * 100),
+            origin,
             null); // P8 prose
-        // Egész mondat, a cél EREDETÉVEL együtt (mezo-1f7b): a puszta „24/15/61% a 27/47/26%
-        // célhoz képest" nem mondja meg, mit néz (kcal-arány, nem gramm) és honnan jön a cél.
+        // Rövid, de teljes: a lényeg (mit néz — kcal-arányt, nem grammot — és mihez képest) elfér
+        // a kártya két sorában. Az eredet és a napi részesedés a panelben (mezo-mxmh).
         String text = String.format(
-            "Ennek az ételnek az energiája %d%% fehérje · %d%% szénhidrát · %d%% zsír. "
-                + "A cél %d/%d/%d%% — %s (%d g F / %d g Sz / %d g Zs egy %d kcal-s napra). "
-                + "Ez az étel a napi keret %s-a.",
+            "Az energia %d%% fehérje · %d%% szénhidrát · %d%% zsír — a cél %d/%d/%d%%.",
             Math.round(sp * 100), Math.round(sc * 100), Math.round(sf * 100),
-            Math.round(tp * 100), Math.round(tc * 100), Math.round(tf * 100),
-            targetOrigin(base, role), targetP, targetC, targetF, base.kcal(),
-            pct(kcalShare) + "%");
+            Math.round(tp * 100), Math.round(tc * 100), Math.round(tf * 100));
         return new Dim("macro", "Kcal & makró arány", props.weights().macro(), score, 1.0, text,
             detail, null, null, null, null);
     }
@@ -374,9 +377,8 @@ public class MealScoringService {
         double score = Math.min(1, fiberRatio);
         List<MicroRow> rows = List.of(
             new MicroRow("Rost", grams(fiber), pct(fiberRatio), fiberStatus(fiberRatio)));
-        String text = String.format("Rost %s a(z) %s allotmenthez (%d%%).%s",
-            grams(fiber), grams(props.micro().fiberG() * kcalShare), pct(fiberRatio),
-            coverageNote(coverage));
+        String text = String.format("Rost %s a(z) %s allotmenthez (%d%%).",
+            grams(fiber), grams(props.micro().fiberG() * kcalShare), pct(fiberRatio));
         return new Dim("micro", "Rost & mikro", props.weights().micro(), score, coverage, text,
             null, rows, null, null, null);
     }
@@ -419,13 +421,12 @@ public class MealScoringService {
             new ContextRow("Só", saltCov > 0
                 ? String.format("%s / %s keret", grams(salt), grams(saltBudget))
                 : "nincs adat"));
-        String text = String.format("%s · %s%s",
+        String text = String.format("%s · %s",
             sugarCov > 0
                 ? String.format("Cukor az energia %.0f%%-a (WHO ≤%.0f%%)", sugarShare * 100,
                     who.sugarEnergyShareLimit() * 100)
                 : "Cukor: nincs adat",
-            saltCov > 0 ? String.format("só a keret %d%%-án", pct(saltRatio)) : "só: nincs adat",
-            coverageNote(coverage));
+            saltCov > 0 ? String.format("só a keret %d%%-án", pct(saltRatio)) : "só: nincs adat");
         return new Dim("who", "Ajánlások · WHO", props.weights().who(), score, coverage, text,
             null, null, null, rows, null);
     }
@@ -462,20 +463,10 @@ public class MealScoringService {
         // Locale.ROOT: a fractional %f otherwise renders "66,0" on a hu_HU JVM and "66.0" on the
         // server's default — the same stored envelope must not read differently per host.
         String text = String.format(Locale.ROOT,
-            "Telített zsír %s — az energia %.1f%%-a · az összzsír %.0f%%-a.%s",
-            grams(satFat), satEnergyShare * 100, satShare * 100, coverageNote(coverage));
+            "Telített zsír %s — az energia %.1f%%-a · az összzsír %.0f%%-a.",
+            grams(satFat), satEnergyShare * 100, satShare * 100);
         return new Dim("fat_quality", "Zsírminőség", props.weights().fatQuality(), score, coverage,
             text, null, null, null, rows, null);
-    }
-
-    /**
-     * The "…, a tételek X%-ára" tail every coverage-gated dimension appends when it could NOT see
-     * the whole meal — the number the score is really about, said in the sentence rather than only
-     * in a confidence bar three elements away. Empty at (rounded) full coverage.
-     */
-    private static String coverageNote(double coverage) {
-        int p = (int) Math.round(coverage * 100);
-        return p >= 100 ? "" : String.format(" Csak a tételek %d%%-ára van adat.", p);
     }
 
     // --- Plant diversity (.08): distinct plant categories ---------------------------------------
@@ -523,9 +514,8 @@ public class MealScoringService {
         // Csak a GRAMM-alapú tételeken mérhető: a darabos (db/adag) tételek se a tömegbe, se a
         // kcal-ba nem számítanak — ezért mondja ki a mondat, mennyi a mért rész (mezo-1f7b).
         String text = String.format(
-            "%.0f g étel %.0f kcal-t hoz — %.0f kcal/100g. %.0f alatt teljes pont, %.0f felett "
-                + "nulla (a hígabb, több rostot/vizet hozó étel telítőbb).%s",
-            grams, gramKcal, density, good, bad, coverageNote(coverage));
+            "%.0f g étel %.0f kcal-t hoz — %.0f kcal/100g (%.0f alatt teljes pont, %.0f felett nulla).",
+            grams, gramKcal, density, good, bad);
         return new Dim("energy_density", "Energia-sűrűség", props.weights().energyDensity(),
             score, coverage, text, null, null, null, rows, null);
     }
@@ -729,7 +719,7 @@ public class MealScoringService {
         }
 
         Dimension toJson() {
-            return new Dimension(id, label, round2(effectiveWeight), round2(score), detail,
+            return new Dimension(id, label, round2(effectiveWeight), round2(score), round2(coverage), detail,
                 macro, micros, nova, context, timing, null);
         }
     }

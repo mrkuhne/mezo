@@ -53,6 +53,15 @@ public record MealBreakdownJson(
         String label,
         BigDecimal weight,
         BigDecimal score,
+        /**
+         * The share of the meal's energy this dimension could actually SEE, 0..1 (mezo-mxmh).
+         * It always existed in the scorer — it feeds {@code confidence} — but used to stop there,
+         * so a dimension scoring 30% of a meal looked exactly like one scoring all of it. The
+         * scorer briefly said so in the detail sentence instead, which the collapsed card's
+         * two-line clamp then ate. It is a number; it belongs on the wire as a number.
+         * {@code null} on envelopes written before this field existed — render nothing, never 0.
+         */
+        BigDecimal coverage,
         String detail,
         MacroDetail macro,
         List<MicroRow> micros,
@@ -72,7 +81,10 @@ public record MealBreakdownJson(
     public record MacroDetail(
         BigDecimal ratioP, BigDecimal ratioC, BigDecimal ratioF,
         String targetP, String targetC, String targetF,
-        BigDecimal kcalShareOfDay, @Deprecated String notes
+        BigDecimal kcalShareOfDay,
+        /** Where the target comes from — goal prescription, config fallback, or a role rubric. */
+        String targetOrigin,
+        @Deprecated String notes
     ) {
     }
 

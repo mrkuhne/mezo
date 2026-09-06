@@ -15569,6 +15569,15 @@ components:
           type: string
           pattern: >-
             ^(macro|micro|nova|context|who|fat_quality|plant_diversity|energy_density|portion)$
+        coverage:
+          type: number
+          nullable: true
+          description: >-
+            Share of the meal's energy this dimension could actually SEE, 0..1
+            (mezo-mxmh). It always existed in the scorer (it feeds `confidence`)
+            but used to stop there, so a dimension scoring 30% of a meal looked
+            identical to one scoring all of it. null on envelopes written before
+            the field existed — render nothing, never 0.
         label:
           type: string
         weight:
@@ -15635,6 +15644,16 @@ components:
           type: string
         kcalShareOfDay:
           type: number
+        targetOrigin:
+          type: string
+          nullable: true
+          description: >-
+            Where the macro target comes from, as a display clause (mezo-mxmh) —
+            the active goal's prescription, the static fallback, or a
+            pre/post-workout rubric. It rode inside `detail` first, but that
+            sentence is clamped to two lines on a collapsed card, so the origin
+            — the whole point of naming it — was the part that got cut. null on
+            older envelopes.
         notes:
           type: string
           nullable: true
