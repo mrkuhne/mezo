@@ -29,8 +29,9 @@ import org.springframework.test.context.TestPropertySource;
 
 /**
  * Reflexió S2 (mezo-eq85.2): the nightly pass end to end over the REAL fan-out — the catch-up
- * writes the missing signal, the evaluation appends the evidence event, and a user whose text
- * extraction blows up does not cost the next user their night.
+ * writes the missing signal, the evaluation appends the evidence event, and a source whose
+ * extraction blows up costs nobody their night. The step boundary itself lives in
+ * {@code ReflectionJobStepIsolationIT}, which is the only place a whole step can be made to fail.
  */
 @ActiveProfiles("companion-fake")
 @TestPropertySource(properties = {
@@ -81,30 +82,55 @@ class ReflectionJobIT extends AbstractIntegrationTest {
                 .contains(PatternEventEntity.KIND_EVIDENCE);
     }
 
+    /**
+     * A source whose extraction blows up is swallowed INSIDE {@code TextSignalCatchUpService.offer}
+     * (per-source isolation), so the night continues: that source simply produces no signal, while
+     * the same user's remaining steps and every other user's night run untouched. This case does
+     * NOT exercise {@code ReflectionJob.step}'s own try/catch — nothing here ever reaches it, which
+     * is why the old name ("shouldIsolateAFailingUser") over-claimed. {@code
+     * ReflectionJobStepIsolationIT} owns the step boundary; {@code UserFanOut} owns the per-user one.
+     */
     @Test
-    void testRunFor_shouldIsolateAFailingUser_andStillEvaluateTheNext() {
-        // user 1's only source makes the extractor blow up — the whole first user's night is broken
+    void testRunFor_shouldSurviveAPoisonedSource_andStillEvaluateEveryHypothesis() {
+        // user 1's only journal source makes the extractor blow up — but they also have an open
+        // hypothesis over history that was already extracted on earlier nights
         UUID first = userPopulator.createUser().getId();
-        journalPopulator.createEntry(first, YESTERDAY, "Nehéz nap. " + FakeCompanionLlm.SIGNAL_FAIL,
-                JournalEntryEntity.SOURCE_QUICKINPUT);
+        JournalEntryEntity poisoned = journalPopulator.createEntry(first, YESTERDAY,
+                "Nehéz nap. " + FakeCompanionLlm.SIGNAL_FAIL, JournalEntryEntity.SOURCE_QUICKINPUT);
+        PatternEntity firstRow = patternPopulator.reflection(first, PLAN, PatternEntity.STATUS_PROPOSED);
+        seedAnnaSleepDays(first, 1); // history stops the day before yesterday — no clash with the entry
         UUID second = userPopulator.createUser().getId();
         PatternEntity row = patternPopulator.reflection(second, PLAN, PatternEntity.STATUS_PROPOSED);
         seedAnnaSleepDays(second);
 
         reflectionJob.runFor(TODAY);
 
+        // the poisoned source really did fail: it produced no signal
         assertThat(textSignalRepository
-                .findByCreatedByAndOccurredOnBetweenAndDeletedFalseOrderByOccurredOnAscVersionDesc(
-                        first, YESTERDAY, YESTERDAY)).isEmpty();
-        // user 2's evaluation ran anyway — the fan-out isolates per user
+                .findFirstByCreatedByAndSourceKindAndSourceIdAndDeletedFalseOrderByVersionDesc(
+                        first, TextSignalEntity.SOURCE_JOURNAL, poisoned.getId()))
+                .isEmpty();
+        // …yet the SAME user's night continued past it
+        assertThat(patternRepository.findById(firstRow.getId()).orElseThrow().getStatus())
+                .isEqualTo(PatternEntity.STATUS_MONITORING);
+        assertThat(patternEventRepository
+                .findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(first, firstRow.getId()))
+                .extracting(PatternEventEntity::getKind)
+                .contains(PatternEventEntity.KIND_EVIDENCE);
+        // …and so did the next user's
         assertThat(patternRepository.findById(row.getId()).orElseThrow().getStatus())
                 .isEqualTo(PatternEntity.STATUS_MONITORING);
     }
 
-    /** Ten finished days: Anna-days are followed by long nights, the others by short ones. */
     private void seedAnnaSleepDays(UUID owner) {
+        seedAnnaSleepDays(owner, 0);
+    }
+
+    /** Ten finished days ending {@code skipRecentDays} before yesterday: Anna-days are followed by
+     *  long nights, the others by short ones. */
+    private void seedAnnaSleepDays(UUID owner, int skipRecentDays) {
         for (int i = 0; i < 10; i++) {
-            LocalDate day = TODAY.minusDays(10L - i);
+            LocalDate day = TODAY.minusDays(10L + skipRecentDays - i);
             boolean anna = i % 2 == 0;
             textSignalPopulator.signal(owner, TextSignalEntity.SOURCE_JOURNAL, UUID.randomUUID(), day,
                     3, 3, 3, anna ? List.of("Anna") : List.of(), List.of());

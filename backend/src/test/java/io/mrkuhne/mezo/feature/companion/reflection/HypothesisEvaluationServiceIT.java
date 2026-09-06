@@ -127,18 +127,56 @@ class HypothesisEvaluationServiceIT extends AbstractIntegrationTest {
                 .containsExactly(false, false, false);
     }
 
+    /**
+     * BOTH user verdicts are frozen for the engine — the work-list query must not even read them.
+     * (The lifecycle's own frozen branch, i.e. what would happen if such a row DID reach
+     * {@code decide}, is owned by {@code HypothesisLifecycleTest.userFrozenNeverMoves}.)
+     */
     @Test
     void testEvaluate_shouldSkipUserFrozenRows() {
         UUID owner = userPopulator.createUser().getId();
         PatternEntity rejected = patternPopulator.reflection(owner, PLAN, PatternEntity.STATUS_REJECTED);
+        PatternEntity confirmed = patternPopulator.reflection(owner,
+                new TestPlanEnvelope("people:anna", "sleep-duration-h", 2,
+                        TestPlanEnvelope.DIRECTION_POSITIVE, 8, 3, 60),
+                PatternEntity.STATUS_CONFIRMED);
         seedAnnaSleepDays(owner, 10);
 
         assertThat(evaluationService.evaluate(owner, TODAY)).isZero();
 
-        PatternEntity after = patternRepository.findById(rejected.getId()).orElseThrow();
-        assertThat(after.getStatus()).isEqualTo(PatternEntity.STATUS_REJECTED);
+        for (PatternEntity frozen : List.of(rejected, confirmed)) {
+            PatternEntity after = patternRepository.findById(frozen.getId()).orElseThrow();
+            assertThat(after.getStatus()).isEqualTo(frozen.getStatus());
+            assertThat(after.getBelief()).isNull();
+            assertThat(after.getEvidenceHits()).isZero();
+            assertThat(after.getEvidenceMisses()).isZero();
+            assertThat(events(owner, frozen.getId())).isEmpty();
+        }
+    }
+
+    /**
+     * A {@code statistical} row carries a test plan too (Task 2 stamps the catalog pair onto it),
+     * but the nightly Pearson job owns those rows — the plan there is display metadata. The
+     * evaluation must walk past it even though it is open AND has a plan.
+     */
+    @Test
+    void testEvaluate_shouldSkipStatisticalRows_evenWhenTheyCarryATestPlan() {
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity statistical = patternPopulator.statistical(owner,
+                "checkin-stress~sleep-quality", PatternEntity.STATUS_PROPOSED);
+        statistical.setTestPlan(PLAN);
+        statistical.setHypothesisKey("pair:checkin-stress~sleep-quality");
+        statistical.setOrigin(PatternEntity.ORIGIN_PAIR_CATALOG);
+        patternPopulator.save(statistical);
+        seedAnnaSleepDays(owner, 10);
+
+        assertThat(evaluationService.evaluate(owner, TODAY)).isZero();
+
+        PatternEntity after = patternRepository.findById(statistical.getId()).orElseThrow();
+        assertThat(after.getStatus()).isEqualTo(PatternEntity.STATUS_PROPOSED);
         assertThat(after.getBelief()).isNull();
-        assertThat(events(owner, rejected.getId())).isEmpty();
+        assertThat(after.getEvidenceHits()).isZero();
+        assertThat(events(owner, statistical.getId())).isEmpty();
     }
 
     @Test

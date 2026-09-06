@@ -85,6 +85,21 @@ describe('bucketize', () => {
     expect(buckets.get('decide')!.map((e) => e.key)).toEqual(['k1'])
   })
 
+  // Reflexió S2 (mezo-eq85.2): a motor két saját státusza. A `refuted` valódi „nincs
+  // összefüggés" válasz; a `dormant` az, hogy „nincs elég adat kimondani" — vagyis még gyűjtünk.
+  // Mindkettő a szerver ítélete: a pár élő, erős r/p-je sem írhatja felül.
+  test.each([
+    ['refuted', 'noRelationship'],
+    ['dormant', 'gathering'],
+  ] as const)('engine status %s → %s bucket, even on a strong live pair', (status, bucket) => {
+    const monitor: PatternMonitor = { ...patternMonitor, pairs: [
+      pair({ key: 'k1', verdict: 'live', r: -0.55, n: 20, p: 0.01 }),
+    ] }
+    const buckets = bucketize([pattern({ pairKey: 'k1', status })], monitor)
+    expect(buckets.get(bucket)!.map((e) => e.key)).toEqual(['k1'])
+    expect(buckets.get('decide')).toHaveLength(0)
+  })
+
   test('decide sorts by |r| desc (strongest asks first)', () => {
     const monitor: PatternMonitor = { ...patternMonitor, pairs: [
       pair({ key: 'k1', verdict: 'live', r: -0.35, n: 20, p: 0.05 }),
