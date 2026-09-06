@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.habit.repository;
 
 import io.mrkuhne.mezo.feature.habit.entity.HabitDayEntity;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -28,4 +29,13 @@ public interface HabitDayRepository extends JpaRepository<HabitDayEntity, UUID> 
      */
     List<HabitDayEntity> findByCreatedByAndHabitKeyOrderByHabitDateAsc(
         UUID createdBy, String habitKey);
+
+    /** Feature-abandonment usage reads (round 2 S5, bd mezo-d58h.7.5, spec 2026-09-05 §(17)) —
+     *  STATUS-SCOPED on purpose. {@code habit_day} rows are written by the APP
+     *  ({@code HabitService} materializes a {@code pending} row per active def on any read; the
+     *  stale-close pass writes {@code missed}), so only {@code done} rows are evidence that the
+     *  USER touched the surface. */
+    long countByCreatedByAndStatus(UUID createdBy, String status);
+
+    boolean existsByCreatedByAndStatusAndCreatedAtAfter(UUID createdBy, String status, Instant createdAt);
 }

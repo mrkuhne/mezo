@@ -251,6 +251,8 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Modify: `backend/src/test/java/io/mrkuhne/mezo/support/populator/TrainPopulator.java`
 - Test: `backend/src/test/java/io/mrkuhne/mezo/support/populator/UsageSeamIT.java` (create)
 
+**Fixture facts discovered while executing (they bite every later task too):** `journal_entry.source` is CHECK-constrained to `quickinput|ritual` (not `manual`); `exercise_feedback` carries FKs to BOTH `workout_session` and `exercise`, so a debrief fixture needs a real mesocycle → template day → exercise → instance chain (one template exercise is enough — uniqueness is per (instance, exercise)); and a populator method that runs a native update needs its own `@Transactional`.
+
 **Why:** item (17) is entirely a statement about `created_at`, and `@CreationTimestamp` writes `now()` on every insert — without a backdating seam every abandonment test would be vacuous (nothing can be older than 30 days). Item (18) needs feedback rows in a **known** order, which `createFeedback` cannot give either.
 
 **Interfaces:**
@@ -468,6 +470,7 @@ public class CreatedAtBackdater {
      *  flat-feedback detector groups the NEWEST rows into workouts, so a fixture needs the order
      *  to be a fact rather than an insertion-time accident. Written, then backdated natively —
      *  {@code created_at} is {@code updatable = false}. */
+    @Transactional
     public ExerciseFeedbackEntity createFeedbackAt(UUID createdBy, UUID workoutSessionId,
         UUID exerciseId, int pump, int jointPain, int workload, Instant createdAt) {
         ExerciseFeedbackEntity f = createFeedback(createdBy, workoutSessionId, exerciseId, pump,
@@ -1742,6 +1745,8 @@ class QuestionAnswerIT extends AbstractIntegrationTest {
     }
 }
 ```
+
+> **Register `CreatedAtBackdater` in `AbstractIntegrationTest`'s `@Import` list** — populators are imported explicitly there, not component-scanned.
 
 > **Implementer's call:** if this two-step "write, then rewrite the envelope" fixture reads badly to you, add a `createQuestion(owner, date, questionKey, eyebrow, text, facts, answers, generatedAt)` factory to `CompanionMessagePopulator` (the `createSetup` idiom, `setupKey` AND `adviceKey` both set to the question key) and use it in all four tests. Either is fine; do not leave both.
 

@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.ChallengePopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.CompanionMessagePopulator;
+import io.mrkuhne.mezo.support.populator.CreatedAtBackdater;
 import io.mrkuhne.mezo.support.populator.FuelSettingsPopulator;
 import io.mrkuhne.mezo.support.populator.GamificationPopulator;
 import io.mrkuhne.mezo.support.populator.QuestPopulator;
@@ -96,6 +97,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
     MemoryItemPopulator.class,
     DailySummaryPopulator.class, PeriodSummaryPopulator.class, PatternPopulator.class, PatternEventPopulator.class,
     CompanionMessagePopulator.class, FeedbackPopulator.class, FlagLogPopulator.class,
+    CreatedAtBackdater.class,
     WeeklySuggestionPopulator.class, MemoirPopulator.class, WeeklyReviewPopulator.class,
     DiagnosisPopulator.class, WeeklyScorePopulator.class, DayReviewPopulator.class,
     PredictionPopulator.class, ExperimentPopulator.class, ChallengePopulator.class,
