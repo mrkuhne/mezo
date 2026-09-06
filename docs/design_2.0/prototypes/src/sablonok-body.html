@@ -1,0 +1,646 @@
+<style>
+  /* ============ SABLONOK · oldal-króm ============ */
+  .shelfhead {
+    padding: 12px 13px 11px; border-radius: 20px;
+    background: linear-gradient(150deg, #FDF0DA, #FFFCF5 72%);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 16px 30px -16px rgba(201, 150, 46, 0.45), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  }
+  .shelfhead .ttl { font-size: 21px; font-weight: 200; letter-spacing: -0.02em; }
+  .shelfhead .sub { font-size: 9.5px; color: #6E6257; font-weight: 300; margin-top: 1px; }
+  .shelfstats { display: flex; gap: 7px; margin-top: 10px; }
+  .shelfstats .c {
+    flex: 1; text-align: center; padding: 7px 2px 6px; border-radius: 13px;
+    background: rgba(255, 255, 255, 0.75); border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .shelfstats b { display: block; font-size: 15px; font-weight: 200; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+  .shelfstats small { font-size: 7.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #A2958A; }
+
+  /* ============ SABLON-POSZTER ============ */
+  .tplcard {
+    position: relative; border-radius: 20px; padding: 12px 13px 11px; cursor: pointer;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    background: linear-gradient(150deg, #FFE7DC, #FFF9F6 68%);
+    box-shadow: 0 18px 32px -16px rgba(216, 72, 31, 0.38), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+    --wash: #D8481F;
+  }
+  .tplcard:active { transform: scale(0.975); }
+  .tplcard.gold {
+    background: linear-gradient(150deg, #FDF0DA, #FFFDF6 68%); --wash: #A8801F;
+    box-shadow: 0 18px 32px -16px rgba(201, 150, 46, 0.45), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+  .tplcard.sage {
+    background: linear-gradient(150deg, #E9F1E2, #F9FCF6 68%); --wash: #55703F;
+    box-shadow: 0 18px 32px -16px rgba(85, 112, 63, 0.4), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+  .tplcard .tplttl { font-size: 15.5px; font-weight: 600; letter-spacing: -0.01em; line-height: 1.15; margin-top: 1px; }
+  .tplcard .goal {
+    font-size: 9.5px; font-weight: 300; color: #6E6257; margin-top: 3px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .disc {
+    width: 40px; height: 40px; border-radius: 50%; flex: none; display: grid; place-items: center;
+    background: rgba(255, 255, 255, 0.78);
+    box-shadow: 0 8px 16px -8px rgba(43, 33, 24, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  /* volumen-ív: a blokk hetei mini-oszlopokként */
+  .arcwrap { display: flex; align-items: flex-end; gap: 9px; margin-top: 10px; }
+  .arc { display: flex; align-items: flex-end; gap: 3px; height: 26px; flex: none; }
+  .arc i {
+    width: 7px; border-radius: 3px 3px 1.5px 1.5px; background: var(--wash); opacity: 0.85;
+    height: var(--h); transform: scaleY(0); transform-origin: bottom;
+  }
+  .arc i.dl { background: repeating-linear-gradient(135deg, var(--wash) 0 2px, rgba(255, 255, 255, 0.65) 2px 4px); opacity: 0.55; }
+  .play .arc i { animation: arcgrow 0.45s cubic-bezier(0.25, 0.9, 0.35, 1.2) forwards; animation-delay: var(--d); }
+  @keyframes arcgrow { to { transform: scaleY(1); } }
+  .arclab { font-size: 8.5px; font-weight: 300; color: #6E6257; line-height: 1.3; padding-bottom: 1px; }
+  .arclab b { display: block; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--wash); }
+
+  /* nap-szalag: a hét 7 napja, az edzésnapok kitöltve a nap típusának betűjével */
+  .dayline { display: flex; gap: 4px; margin-top: 9px; }
+  .dayline i {
+    flex: 1; height: 21px; border-radius: 7px; display: grid; place-items: center;
+    font-size: 8px; font-weight: 700; letter-spacing: 0.04em; font-style: normal;
+    background: rgba(255, 255, 255, 0.55); color: #B3A79B;
+    border: 0.5px solid rgba(43, 33, 24, 0.05);
+  }
+  .dayline i.on { background: rgba(255, 255, 255, 0.95); color: var(--wash); box-shadow: 0 5px 10px -6px rgba(43, 33, 24, 0.35); }
+
+  .chips2 { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 8px; }
+  .tplchip {
+    background: rgba(255, 255, 255, 0.72); border-radius: 999px; padding: 3px 9px;
+    font-size: 8.5px; font-weight: 600; color: #6E6257; border: 0.5px solid rgba(43, 33, 24, 0.05);
+  }
+  .tplchip.star { color: var(--wash); font-weight: 700; }
+  .tplchip.legacy { border: 1px dashed rgba(43, 33, 24, 0.22); background: transparent; color: #A2958A; }
+
+  .tplfoot { display: flex; align-items: center; gap: 7px; margin-top: 11px; }
+  .runs { font-size: 8.5px; font-weight: 300; color: #6E6257; flex: 1; min-width: 0; line-height: 1.25; }
+  .runs b { font-weight: 700; color: #2B2118; }
+  .morebtn {
+    width: 28px; height: 28px; border-radius: 50%; flex: none; padding: 0; cursor: pointer;
+    border: 0.5px solid rgba(43, 33, 24, 0.08); background: rgba(255, 255, 255, 0.8);
+    font-family: inherit; font-size: 13px; font-weight: 700; color: #6E6257; line-height: 1;
+    box-shadow: 0 6px 12px -8px rgba(43, 33, 24, 0.35);
+  }
+  .morebtn:focus-visible, .cta:focus-visible, .ghost:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+
+  /* felugró akció-menü a ⋯ alatt */
+  .popwrap { position: relative; flex: none; }
+  .popmenu {
+    position: absolute; right: 0; bottom: 34px; z-index: 9; width: 152px; padding: 4px;
+    background: rgba(255, 255, 255, 0.97); border: 0.5px solid rgba(43, 33, 24, 0.09);
+    border-radius: 15px; backdrop-filter: blur(10px);
+    box-shadow: 0 18px 34px -12px rgba(43, 33, 24, 0.42);
+    opacity: 0; transform: translateY(6px) scale(0.94); transform-origin: bottom right;
+    pointer-events: none; transition: opacity 0.18s ease, transform 0.2s cubic-bezier(0.3, 0.9, 0.4, 1.2);
+  }
+  .popwrap.open .popmenu { opacity: 1; transform: none; pointer-events: auto; }
+  .popmenu button {
+    width: 100%; display: flex; align-items: center; gap: 8px; padding: 8px 9px;
+    border: none; background: none; font-family: inherit; font-size: 10.5px; font-weight: 600;
+    color: #2B2118; cursor: pointer; border-radius: 11px; text-align: left;
+  }
+  .popmenu button:active { background: rgba(43, 33, 24, 0.05); }
+  .popmenu button + button { border-top: 0.5px solid rgba(43, 33, 24, 0.07); }
+  .popmenu button.warn { color: #A84A26; }
+  .popmenu .gl { width: 15px; text-align: center; flex: none; font-size: 11px; }
+
+  .dashcta {
+    width: 100%; padding: 12px 0; border-radius: 18px; cursor: pointer; font-family: inherit;
+    border: 1.5px dashed rgba(255, 107, 74, 0.45); background: rgba(255, 255, 255, 0.35);
+    color: #A84A26; font-size: 11px; font-weight: 600;
+  }
+
+  /* üres állapot */
+  .ghoststate {
+    border-radius: 20px; padding: 20px 16px; text-align: center;
+    background: rgba(255, 255, 255, 0.55); border: 1px dashed rgba(43, 33, 24, 0.14);
+  }
+
+  /* ============ SABLON-ELŐNÉZET OLDAL ============ */
+  .prevhero { display: grid; justify-items: center; text-align: center; gap: 2px; padding: 6px 14px 10px; }
+  .prevhero .bignum { font-weight: 200; font-size: 38px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1; }
+  .prevhero .nm { font-size: 15px; font-weight: 700; }
+  .prevhero .sb { font-size: 9.5px; color: #6E6257; font-weight: 300; }
+  .pcard {
+    background: #FFFFFF; border-radius: 17px; padding: 11px 12px; margin-bottom: 9px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  }
+  .daymosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-top: 8px; }
+  .dtile {
+    border-radius: 14px; padding: 8px 10px;
+    background: linear-gradient(150deg, #FFE7DC, #FFF9F6); border: 0.5px solid rgba(43, 33, 24, 0.05);
+    box-shadow: 0 10px 20px -14px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  }
+  .dtile.lower { background: linear-gradient(150deg, #E9F1E2, #F9FCF6); }
+  .dtile.push { background: linear-gradient(150deg, #FAE3ED, #FEF8FB); }
+  .dtile.pull { background: linear-gradient(150deg, #EBE6F8, #F9F6FE); }
+  .dtile .dl { font-size: 13px; font-weight: 700; line-height: 1; }
+  .dtile .tt { font-size: 7.5px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #A84A26; margin-top: 3px; }
+  .dtile .sets { font-size: 8.5px; color: #6E6257; margin-top: 2px; font-weight: 300; }
+  .mbar { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+  .mbar + .mbar { border-top: 0.5px solid rgba(43, 33, 24, 0.07); }
+  .mbar .nm2 { font-size: 10px; font-weight: 600; width: 52px; flex: none; }
+  .mbar .track { flex: 1; height: 6px; border-radius: 3px; background: rgba(43, 33, 24, 0.08); overflow: hidden; }
+  .mbar .track b { display: block; height: 100%; border-radius: 3px; width: 0; background: linear-gradient(90deg, #FF9B7A, #FF5B36); transition: width 0.9s cubic-bezier(0.25, 0.8, 0.35, 1) 0.35s; }
+  .open .mbar .track b { width: var(--w); }
+  .mbar .val { font-size: 9px; font-weight: 700; font-variant-numeric: tabular-nums; width: 44px; text-align: right; flex: none; color: #6E6257; }
+  .mbar.star .nm2 { color: #A84A26; }
+  .prevfoot {
+    position: sticky; bottom: 0; display: flex; gap: 7px; padding: 9px 0 2px;
+    background: linear-gradient(180deg, rgba(253, 250, 244, 0) 0%, #FDFAF4 34%);
+  }
+
+  /* ============ BOTTOM SHEET ============ */
+  .bsheet-back {
+    position: absolute; inset: 0; z-index: 18; background: rgba(29, 23, 18, 0.32);
+    opacity: 0; pointer-events: none; transition: opacity 0.25s ease;
+  }
+  .bsheet-back.open { opacity: 1; pointer-events: auto; }
+  .bsheet {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 19;
+    background: #FDFAF4; border-radius: 24px 24px 0 0; padding: 14px 14px 18px;
+    transform: translateY(105%); transition: transform 0.32s cubic-bezier(0.25, 0.85, 0.35, 1);
+    box-shadow: 0 -20px 40px -18px rgba(29, 23, 18, 0.45);
+  }
+  .bsheet.open { transform: none; }
+  .bsheet .grip { width: 38px; height: 4px; border-radius: 999px; background: rgba(43, 33, 24, 0.16); margin: 0 auto 10px; }
+  .segtab { display: flex; gap: 5px; margin-top: 6px; }
+  .segtab button {
+    flex: 1; border: 1px solid rgba(43, 33, 24, 0.12); background: #fff; border-radius: 11px;
+    padding: 7px 0; font-family: inherit; font-size: 10px; font-weight: 600; color: #6E6257; cursor: pointer;
+  }
+  .segtab button.on { background: #FFEDE5; border-color: #FF6B4A; color: #A84A26; font-weight: 700; }
+
+  .toast {
+    position: absolute; left: 14px; right: 14px; bottom: 96px; z-index: 20;
+    background: rgba(43, 33, 24, 0.93); color: #FDFAF4; border-radius: 14px;
+    padding: 9px 12px; font-size: 10px; font-weight: 500;
+    display: flex; align-items: center; gap: 8px;
+    opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity 0.2s ease, transform 0.25s ease;
+  }
+  .toast.on { opacity: 1; transform: none; }
+  .toast button { margin-left: auto; border: none; background: none; font-family: inherit; color: #FFB49B; font-size: 10px; font-weight: 700; cursor: pointer; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .arc i, .play .arc i { transform: none; animation: none; }
+    .tplcard, .popmenu, .bsheet, .bsheet-back, .toast, .mbar .track b { transition: none; }
+  }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Mezo · oldalépítés · Edzés / Sablonok · design 2.0</p>
+  <h1>Sablonok</h1>
+  <p class="lede">A <strong>Sablonok</strong> lap eddig egy sima lista volt: fehér doboz, két sor chip,
+  négy egyforma gomb — semmi, ami megmutatta volna, <em>milyen</em> az a blokk, amit el akarsz indítani.
+  Ez a kör poszterré alakítja: <strong>washolt csempe-kártya</strong> a cél színével, a blokk
+  <strong>volumen-íve mini-oszlopokban</strong>, a hét <strong>nap-szalagja</strong> a nap típusaival,
+  egyetlen <strong>Indítás</strong> CTA — a többi akció a <strong>⋯</strong> alá költözött. A kártya maga
+  <strong>előnézeti oldalra</strong> visz (Huawei-minta: csempe → saját oldal), ahol a nap-mozaik és az
+  izmonkénti <span style="white-space:nowrap;">most → plafon</span> sávok mutatják, mit indítasz.</p>
+
+  <div class="stage">
+    <div class="phone"><div class="screen" id="scr">
+      <div class="isl"></div>
+      <div class="p-status"><span>13:42</span><span>ᯤ ▮▮▮</span></div>
+      <div class="p-body">
+
+        <div class="mrow">
+          <button class="backbtn" style="box-shadow:none;background:rgba(43,33,24,0.05);">‹ Edzés</button>
+          <div class="grow"></div>
+          <div class="avatar-ring"><div class="in"><svg width="19" height="19" viewBox="0 0 100 100"><use href="#i-mezo"/></svg></div></div>
+        </div>
+
+        <div class="dp-panel on" id="panel">
+
+          <!-- POLC-FEJLÉC — a lap nem címsorral, hanem egy washolt csempével nyit -->
+          <div class="shelfhead rise" style="--d:0ms;">
+            <div class="mrow">
+              <div class="disc" style="width:44px;height:44px;"><svg width="28" height="28" viewBox="0 0 100 100"><use href="#i-polc"/></svg></div>
+              <div class="grow">
+                <div class="p-eyebrow" style="color:#A8801F;">Edzés · Polc</div>
+                <div class="ttl">Sablonok</div>
+                <div class="sub">Időtlen receptek — az indítás pecsételi futammá.</div>
+              </div>
+            </div>
+            <div class="shelfstats">
+              <div class="c"><b>3</b><small>Sablon</small></div>
+              <div class="c"><b>6</b><small>Futam</small></div>
+              <div class="c"><b>4 hete</b><small>Legutóbb</small></div>
+            </div>
+          </div>
+
+          <!-- SABLON · 1 — coral (hipertrófia), a legtöbbet futtatott -->
+          <div class="tplcard rise" style="--d:70ms;" data-page="page-prev" role="button" tabindex="0" aria-label="Shoulder &amp; Back Mezo #1 előnézete">
+            <div class="mrow">
+              <div class="grow">
+                <div class="p-eyebrow" style="color:#A84A26;">Sablon · Hipertrófia</div>
+                <div class="tplttl">Shoulder &amp; Back Mezo #1</div>
+                <div class="goal">Volumen-driven · MAV/MRV progresszió · klasszikus RP blokk</div>
+              </div>
+              <div class="disc"><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-meso"/></svg></div>
+            </div>
+            <div class="arcwrap">
+              <div class="arc">
+                <i style="--h:44%;--d:260ms;"></i><i style="--h:58%;--d:300ms;"></i><i style="--h:72%;--d:340ms;"></i>
+                <i style="--h:86%;--d:380ms;"></i><i style="--h:100%;--d:420ms;"></i><i class="dl" style="--h:38%;--d:460ms;"></i>
+              </div>
+              <div class="arclab"><b>5 + 1 deload</b>+2 szett/hét · csúcs a W5-ön</div>
+            </div>
+            <div class="dayline">
+              <i class="on">U</i><i class="on">L</i><i>·</i><i class="on">P</i><i class="on">P</i><i class="on">L</i><i>·</i>
+            </div>
+            <div class="chips2">
+              <span class="tplchip">5 nap · U / L / P / P / L</span>
+              <span class="tplchip star">★ Hát 16→22</span>
+              <span class="tplchip star">★ Váll 14→22</span>
+            </div>
+            <div class="tplfoot">
+              <span class="runs"><b>3×</b> futtatva · legutóbb 4 hete<br>átlag adherencia 91%</span>
+              <div class="popwrap">
+                <button class="morebtn" data-pop="pop1" aria-label="További műveletek" aria-haspopup="true">···</button>
+                <div class="popmenu" id="pop1">
+                  <button data-page="page-edit"><span class="gl">✎</span>Szerkesztés</button>
+                  <button data-act="dup"><span class="gl">⧉</span>Duplikálás</button>
+                  <button class="warn" data-act="del"><span class="gl">🗑</span>Törlés</button>
+                </div>
+              </div>
+              <button class="cta open-start" style="padding:8px 18px;font-size:11px;">Indítás</button>
+            </div>
+          </div>
+
+          <!-- SABLON · 2 — arany (erő-hangsúly), még nem futott -->
+          <div class="tplcard gold rise" style="--d:130ms;" data-page="page-prev" role="button" tabindex="0" aria-label="Hypertrophy · Ősz előnézete">
+            <div class="mrow">
+              <div class="grow">
+                <div class="p-eyebrow" style="color:#A8801F;">Sablon · Erő-hangsúly</div>
+                <div class="tplttl">Hypertrophy · Ősz</div>
+                <div class="goal">Izomtömeg építés, alacsonyabb frekvenciával</div>
+              </div>
+              <div class="disc"><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-suly"/></svg></div>
+            </div>
+            <div class="arcwrap">
+              <div class="arc">
+                <i style="--h:50%;--d:320ms;"></i><i style="--h:66%;--d:360ms;"></i><i style="--h:82%;--d:400ms;"></i>
+                <i style="--h:100%;--d:440ms;"></i><i class="dl" style="--h:40%;--d:480ms;"></i>
+              </div>
+              <div class="arclab"><b>4 + 1 deload</b>+3 szett/hét · csúcs a W4-en</div>
+            </div>
+            <div class="dayline">
+              <i class="on">U</i><i>·</i><i class="on">L</i><i>·</i><i class="on">U</i><i class="on">L</i><i>·</i>
+            </div>
+            <div class="chips2">
+              <span class="tplchip">4 nap · Upper / Lower</span>
+              <span class="tplchip star">★ Comb 12→18</span>
+            </div>
+            <div class="tplfoot">
+              <span class="runs">Még nem futott · <b>friss recept</b></span>
+              <div class="popwrap">
+                <button class="morebtn" data-pop="pop2" aria-label="További műveletek" aria-haspopup="true">···</button>
+                <div class="popmenu" id="pop2">
+                  <button data-page="page-edit"><span class="gl">✎</span>Szerkesztés</button>
+                  <button data-act="dup"><span class="gl">⧉</span>Duplikálás</button>
+                  <button class="warn" data-act="del"><span class="gl">🗑</span>Törlés</button>
+                </div>
+              </div>
+              <button class="cta open-start" style="padding:8px 18px;font-size:11px;">Indítás</button>
+            </div>
+          </div>
+
+          <!-- SABLON · 3 — zsálya, régi modell -->
+          <div class="tplcard sage rise" style="--d:190ms;" data-page="page-prev" role="button" tabindex="0" aria-label="Erő blokk előnézete">
+            <div class="mrow">
+              <div class="grow">
+                <div class="p-eyebrow" style="color:#55703F;">Sablon · Régi modell</div>
+                <div class="tplttl">Erő blokk</div>
+                <div class="goal">7 hetes, még a sávmodell előttről</div>
+              </div>
+              <div class="disc"><svg width="26" height="26" viewBox="0 0 100 100"><use href="#i-polc"/></svg></div>
+            </div>
+            <div class="dayline" style="margin-top:10px;">
+              <i class="on">F</i><i>·</i><i class="on">F</i><i>·</i><i class="on">F</i><i>·</i><i>·</i>
+            </div>
+            <div class="chips2">
+              <span class="tplchip">3 nap · Full body</span>
+              <span class="tplchip legacy">indításkor az új modellre konvertálódik</span>
+            </div>
+            <div class="tplfoot">
+              <span class="runs"><b>3×</b> futtatva · legutóbb 8 hónapja</span>
+              <div class="popwrap">
+                <button class="morebtn" data-pop="pop3" aria-label="További műveletek" aria-haspopup="true">···</button>
+                <div class="popmenu" id="pop3">
+                  <button data-page="page-edit"><span class="gl">✎</span>Szerkesztés</button>
+                  <button data-act="dup"><span class="gl">⧉</span>Duplikálás</button>
+                  <button class="warn" data-act="del"><span class="gl">🗑</span>Törlés</button>
+                </div>
+              </div>
+              <button class="cta open-start" style="padding:8px 18px;font-size:11px;">Indítás</button>
+            </div>
+          </div>
+
+          <!-- ÜRES ÁLLAPOT — a demó gombbal váltható -->
+          <div class="ghoststate rise" id="ghost" style="--d:70ms;display:none;">
+            <svg width="46" height="46" viewBox="0 0 100 100" style="opacity:0.75;"><use href="#i-polc"/></svg>
+            <div style="font-size:12px;font-weight:700;margin-top:6px;">Üres a polc</div>
+            <div class="mut" style="font-size:9.5px;font-weight:300;margin-top:3px;">
+              A sablon egy időtlen recept: egyszer megtervezed, aztán bármikor újraindítod.
+            </div>
+            <button class="cta" style="margin-top:10px;padding:8px 16px;font-size:10.5px;">Első sablon tervezése</button>
+          </div>
+
+          <button class="dashcta rise" id="newtpl" style="--d:250ms;">＋ Új sablon tervezése</button>
+          <p class="habnote">A kártya washja a cél színe · az ív a heti volumen · a szalag a hét napjai.
+          A törlés soft: a lefutott futamok és riportjaik érintetlenek maradnak.</p>
+        </div>
+      </div>
+
+      <!-- ============ SABLON-ELŐNÉZET · saját oldal ============ -->
+      <div class="page p-coral" id="page-prev">
+        <div class="page-head"><button class="backbtn" data-back="page-prev">‹ Sablonok</button></div>
+        <div class="prevhero">
+          <svg width="46" height="46" viewBox="0 0 100 100"><use href="#i-meso"/></svg>
+          <div class="bignum">5<span style="font-size:16px;font-weight:400;">+1</span></div>
+          <div class="nm">Shoulder &amp; Back Mezo #1</div>
+          <div class="sb">5 nap · U / L / P / P / L · 3× futtatva</div>
+        </div>
+        <div class="page-body">
+          <div class="pcard">
+            <div class="p-eyebrow">A hét ritmusa</div>
+            <div class="daymosaic">
+              <div class="dtile"><div class="dl">H</div><div class="tt">Upper</div><div class="sets">11 szett · ~62 perc</div></div>
+              <div class="dtile lower"><div class="dl">K</div><div class="tt">Lower</div><div class="sets">10 szett · ~58 perc</div></div>
+              <div class="dtile push"><div class="dl">Cs</div><div class="tt">Push</div><div class="sets">9 szett · ~52 perc</div></div>
+              <div class="dtile pull"><div class="dl">P</div><div class="tt">Pull</div><div class="sets">12 szett · ~66 perc</div></div>
+              <div class="dtile lower" style="grid-column:span 2;"><div class="dl">Szo</div><div class="tt">Legs</div><div class="sets">10 szett · ~55 perc</div></div>
+            </div>
+          </div>
+          <div class="pcard">
+            <div class="p-eyebrow">Izmonként · W1 → plafon</div>
+            <div style="margin-top:4px;">
+              <div class="mbar star"><span class="nm2">Hát ★</span><span class="track"><b style="--w:88%;"></b></span><span class="val">16→22</span></div>
+              <div class="mbar star"><span class="nm2">Váll ★</span><span class="track"><b style="--w:82%;"></b></span><span class="val">14→22</span></div>
+              <div class="mbar"><span class="nm2">Mell</span><span class="track"><b style="--w:48%;"></b></span><span class="val">10→14</span></div>
+              <div class="mbar"><span class="nm2">Comb</span><span class="track"><b style="--w:56%;"></b></span><span class="val">12→16</span></div>
+              <div class="mbar"><span class="nm2">Bicepsz</span><span class="track"><b style="--w:38%;"></b></span><span class="val">8→12</span></div>
+            </div>
+            <p class="habnote" style="margin-top:8px;">Az Emphasize izmok kapják a legtöbbet: MEV+2 → MRV.</p>
+          </div>
+          <div class="prevfoot">
+            <button class="ghost" style="flex:1;padding:10px 0;" data-page="page-edit">Szerkesztés</button>
+            <button class="cta open-start" style="flex:1.3;padding:10px 0;">Indítás</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ SZERKESZTŐ · placeholder-oldal ============ -->
+      <div class="page p-gold" id="page-edit">
+        <div class="page-head"><button class="backbtn" data-back="page-edit">‹ Vissza</button></div>
+        <div class="prevhero">
+          <svg width="44" height="44" viewBox="0 0 100 100"><use href="#i-muhely"/></svg>
+          <div class="nm" style="margin-top:6px;">Sablon-szerkesztő</div>
+          <div class="sb">A meglévő wizard 03 · Program lépése — változatlan.</div>
+        </div>
+        <div class="page-body">
+          <div class="pcard">
+            <div class="p-eyebrow">Ez a kör nem nyúlt hozzá</div>
+            <p class="mut" style="font-size:10px;font-weight:300;margin-top:6px;">
+              A szerkesztő a mezociklus-prototípusban él (nap-mozaik, gyakorlat-akkordeon, picker).
+              A Sablonok lap csak az <em>oda vezető utat</em> tette rendbe: a ⋯ menüből és az
+              előnézet lábából érhető el, nem egy negyedik egyenrangú gombként a kártyán.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ INDÍTÁS · bottom sheet ============ -->
+      <div class="bsheet-back" id="startback"></div>
+      <div class="bsheet" id="startsheet">
+        <div class="grip"></div>
+        <div class="mrow">
+          <div class="disc" style="width:36px;height:36px;"><svg width="22" height="22" viewBox="0 0 100 100"><use href="#i-meso"/></svg></div>
+          <div class="grow">
+            <div style="font-size:12.5px;font-weight:700;">Blokk indítása</div>
+            <div class="mut" style="font-size:9px;">Shoulder &amp; Back Mezo #1 · 5 + 1 hét</div>
+          </div>
+        </div>
+        <div class="p-eyebrow" style="margin-top:12px;">Állapot</div>
+        <div class="segtab" id="startstate">
+          <button class="on">Aktív</button>
+          <button>Ütemezett</button>
+        </div>
+        <p class="mut" id="starthint" style="font-size:9px;margin-top:7px;">Most kezdem — a hét ettől fut.</p>
+        <p class="habnote" style="margin-top:4px;">Az indítás lepecsételi a receptet: a futam már a saját életét éli, a sablon érintetlen marad.</p>
+        <div class="mrow" style="gap:7px;margin-top:12px;">
+          <button class="ghost" style="flex:1;padding:10px 0;" data-sheet-close="start">Mégse</button>
+          <button class="cta" style="flex:1.3;padding:10px 0;" data-sheet-close="start">Indítás</button>
+        </div>
+      </div>
+
+      <div class="toast" id="toast"><span id="toasttxt">Törölve</span><button id="undo">Vissza</button></div>
+
+      <div class="tabbar">
+        <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-nap"/></svg>Nap</div>
+        <div class="mtab on"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>Edzés</div>
+        <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-fuel"/></svg>Fuel</div>
+        <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-mezo"/></svg>Mezo</div>
+        <div class="mtab off"><svg width="23" height="23" viewBox="0 0 100 100"><use href="#i-emberek"/></svg>Én</div>
+      </div>
+      <div class="homebar"></div>
+    </div></div>
+
+    <aside>
+      <div>
+        <h2>Mi a baj a mostanival</h2>
+        <ul>
+          <li><strong>Négy egyenrangú gomb kártyánként</strong> — Szerkesztés, Indítás, Duplikálás, Törlés két sorban. A Törlés ugyanakkora súlyt kap, mint az Indítás, és a kártya fele gombokból áll.</li>
+          <li><strong>Semmi nem mutatja, milyen a blokk</strong> — „5 nap · U/L/P/P/L" és „5 + 1 deload" szöveges chipek. Nincs ív, nincs ritmus, nincs izom-súlyozás: a sablonokat csak a nevükről lehet megkülönböztetni.</li>
+          <li><strong>Fehér doboz fehér háttéren</strong> — a domain-wash, a clay ikon és a kétrétegű árnyék hiányzik; a lap kilóg a design 2.0 mozaikjából.</li>
+          <li><strong>A kártya nem visz sehova</strong> — nincs előnézet, csak a szerkesztő. Indítás előtt nem látod, mit indítasz.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Mit csinál helyette</h2>
+        <ul>
+          <li><strong>Poszter-anatómia</strong> — eyebrow (a cél típusa) → cím → cél-mondat → <em>grafika</em> → chipek → láb. A clay ikon fehér korongon ül a jobb felső sarokban.</li>
+          <li><strong>Volumen-ív mini-oszlopokban</strong> — a blokk hetei rámpaként, a deload csíkozva. Egy pillantás: 5 + 1, +2 szett/hét, csúcs a W5-ön.</li>
+          <li><strong>Nap-szalag</strong> — a hét 7 napja; az edzésnapok kitöltve a nap típusának betűjével (U/L/P/P/L), a pihenők halvány pötty. Ez a split, olvashatóan.</li>
+          <li><strong>Egy CTA + ⋯</strong> — csak az <em>Indítás</em> marad gomb; a Szerkesztés / Duplikálás / Törlés a felugró menübe költözött. A törlés nem kétkoppintós szöveg-csere, hanem <strong>toast + Vissza</strong> (ez amúgy is soft delete).</li>
+          <li><strong>Cél-szerinti wash</strong> — hipertrófia coral · erő-hangsúly arany · régi modell zsálya. A polc így mozaikként olvas, nem listaként.</li>
+          <li><strong>Csempe → saját oldal</strong> — a kártya koppintva előnézetre visz: nap-mozaik a hét ritmusával és izmonkénti <span style="white-space:nowrap;">W1 → plafon</span> sávok, a lábban Szerkesztés + Indítás.</li>
+          <li><strong>Polc-fejléc</strong> — a sima „Sablonok · 2" eyebrow helyett washolt fejléc-csempe három stat-cellával (sablon · futam · legutóbb).</li>
+          <li><strong>Üres állapot</strong> — clay polc-ikon + a sablon definíciója egy mondatban + egyetlen CTA (a jobb alsó gomb váltja demóban).</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Ami maradt</h2>
+        <ul>
+          <li><strong>Soft delete</strong> — a lefutott futamok és a befagyasztott riportjaik érintetlenek.</li>
+          <li><strong>Duplikálás → a másolat szerkesztőjében landol</strong> — a duplikátum azért van, hogy változzon.</li>
+          <li><strong>Régi modell jelölés</strong> — szaggatott chip + „indításkor az új modellre konvertálódik".</li>
+          <li><strong>Egy indítási felület</strong> — ugyanaz a start sheet, ami a futam-újraindításnál is nyílik.</li>
+        </ul>
+      </div>
+      <p class="note">A sablon időtlen: nincs dátuma, nincs státusza, nincs haladása. Ezért kap
+      <em>íveket és ritmust</em> a kártyáján — azt mutatja, milyen lesz, nem azt, hogy hol tart.</p>
+      <div>
+        <h2>Demó</h2>
+        <ul>
+          <li>Kártya koppintás → előnézet-oldal (a ⋯ és az Indítás nem nyitja meg).</li>
+          <li>⋯ → menü; Törlés → a kártya eltűnik, toast + Vissza.</li>
+          <li>Indítás → bottom sheet Aktív / Ütemezett kapcsolóval.</li>
+          <li>„＋ Új sablon tervezése" → üres állapot ↔ lista váltás.</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  var scr = document.getElementById('scr');
+  setTimeout(function () { scr.classList.add('play'); }, 120);
+
+  /* ---- csempe → saját oldal ---- */
+  function openPage(id) {
+    var p = document.getElementById(id);
+    if (p) p.classList.add('open');
+  }
+  document.querySelectorAll('[data-page]').forEach(function (el) {
+    el.addEventListener('click', function (e) {
+      if (e.target.closest('.popwrap') || e.target.closest('.cta')) return;
+      closePops();
+      openPage(el.getAttribute('data-page'));
+    });
+    el.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); el.click(); }
+    });
+  });
+  document.querySelectorAll('[data-back]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      document.getElementById(b.getAttribute('data-back')).classList.remove('open');
+    });
+  });
+
+  /* ---- ⋯ felugró menü ---- */
+  function closePops() {
+    document.querySelectorAll('.popwrap.open').forEach(function (w) { w.classList.remove('open'); });
+  }
+  document.querySelectorAll('[data-pop]').forEach(function (b) {
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var w = b.closest('.popwrap');
+      var was = w.classList.contains('open');
+      closePops();
+      if (!was) w.classList.add('open');
+    });
+  });
+  scr.addEventListener('click', function (e) {
+    if (!e.target.closest('.popwrap')) closePops();
+  });
+
+  /* ---- akciók: duplikálás / törlés toasttal ---- */
+  var toast = document.getElementById('toast');
+  var toasttxt = document.getElementById('toasttxt');
+  var undo = document.getElementById('undo');
+  var lastRemoved = null, lastAnchor = null, tmr = null;
+  function showToast(txt, undoable) {
+    toasttxt.textContent = txt;
+    undo.style.display = undoable ? '' : 'none';
+    toast.classList.add('on');
+    clearTimeout(tmr);
+    tmr = setTimeout(function () { toast.classList.remove('on'); }, 3200);
+  }
+  document.querySelectorAll('[data-act]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var card = b.closest('.tplcard');
+      closePops();
+      if (b.getAttribute('data-act') === 'del') {
+        lastRemoved = card;
+        lastAnchor = card.nextSibling;
+        card.parentNode.removeChild(card);
+        showToast('Sablon törölve — a lefutott futamok megmaradtak.', true);
+      } else {
+        var copy = card.cloneNode(true);
+        copy.querySelector('.tplttl').textContent = card.querySelector('.tplttl').textContent + ' (másolat)';
+        copy.querySelector('.runs').innerHTML = 'Még nem futott · <b>friss másolat</b>';
+        copy.querySelectorAll('.popmenu').forEach(function (m) { m.removeAttribute('id'); });
+        card.parentNode.insertBefore(copy, card.nextSibling);
+        bind(copy);
+        showToast('Duplikálva — a másolat szerkesztője nyílik.', false);
+      }
+    });
+  });
+  undo.addEventListener('click', function () {
+    if (!lastRemoved) return;
+    document.getElementById('panel').insertBefore(lastRemoved, lastAnchor);
+    lastRemoved = null;
+    toast.classList.remove('on');
+  });
+
+  /* frissen klónozott kártya újrakötése (a demó kedvéért minimálisan) */
+  function bind(card) {
+    card.addEventListener('click', function (e) {
+      if (e.target.closest('.popwrap') || e.target.closest('.cta')) return;
+      openPage('page-prev');
+    });
+    var mb = card.querySelector('.morebtn');
+    mb.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var w = mb.closest('.popwrap');
+      var was = w.classList.contains('open');
+      closePops();
+      if (!was) w.classList.add('open');
+    });
+    card.querySelectorAll('[data-act]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        closePops();
+        if (b.getAttribute('data-act') === 'del') {
+          lastRemoved = card; lastAnchor = card.nextSibling;
+          card.parentNode.removeChild(card);
+          showToast('Sablon törölve — a lefutott futamok megmaradtak.', true);
+        }
+      });
+    });
+    card.querySelectorAll('.open-start').forEach(function (b) {
+      b.addEventListener('click', function (e) { e.stopPropagation(); openSheet(); });
+    });
+  }
+
+  /* ---- indítás sheet ---- */
+  var sback = document.getElementById('startback');
+  var ssheet = document.getElementById('startsheet');
+  function openSheet() { sback.classList.add('open'); ssheet.classList.add('open'); }
+  function closeSheet() { sback.classList.remove('open'); ssheet.classList.remove('open'); }
+  sback.addEventListener('click', closeSheet);
+  document.querySelectorAll('[data-sheet-close]').forEach(function (b) {
+    b.addEventListener('click', closeSheet);
+  });
+  document.querySelectorAll('.open-start').forEach(function (b) {
+    b.addEventListener('click', function (e) { e.stopPropagation(); openSheet(); });
+  });
+  var ss = document.getElementById('startstate');
+  ss.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      ss.querySelectorAll('button').forEach(function (x) { x.classList.remove('on'); });
+      b.classList.add('on');
+      document.getElementById('starthint').textContent = b.textContent === 'Aktív'
+        ? 'Most kezdem — a hét ettől fut.'
+        : 'Csak beütemezem — később aktiválom.';
+    });
+  });
+
+  /* ---- üres állapot demó-váltó ---- */
+  var empty = false;
+  document.getElementById('newtpl').addEventListener('click', function () {
+    empty = !empty;
+    document.getElementById('ghost').style.display = empty ? '' : 'none';
+    document.querySelectorAll('.tplcard').forEach(function (c) { c.style.display = empty ? 'none' : ''; });
+    this.textContent = empty ? '↩ Vissza a listához (demó)' : '＋ Új sablon tervezése';
+  });
+})();
+</script>
