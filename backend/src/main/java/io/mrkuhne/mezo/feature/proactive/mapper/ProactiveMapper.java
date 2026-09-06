@@ -97,6 +97,7 @@ public interface ProactiveMapper {
     @Mapping(target = "refs", source = "content.refs")
     @Mapping(target = "facts", source = "content.facts")
     @Mapping(target = "suggestions", source = "content.suggestions")
+    @Mapping(target = "flagKey", source = "content.adviceKey")
     @Mapping(target = "actions", source = "content.actions")
     @Mapping(target = "applied", source = "content.applied")
     FeedMessageResponse toFeedResponse(CompanionMessageEntity entity);
