@@ -54,6 +54,29 @@ describe('CoachingCardPage (real mode)', () => {
     await waitFor(() => expect(screen.getByText('Ma nem érkezett kártya.')).toBeInTheDocument())
   })
 
+  test('no card today means the hero names no rule either, even if the trace has a winner', async () => {
+    const date = localDateString()
+    // The feed genuinely has no card, but the trace still names a winner (as it would once the
+    // day's decision has run but before the card itself is delivered) — the hero must not borrow
+    // that winner's name for a card that is not there.
+    server.use(
+      http.get(`${API_BASE}/api/proactive/feed`, () => HttpResponse.json([])),
+      http.get(`${API_BASE}/api/companion/flags/trace`, () => HttpResponse.json({
+        date, winner: { flagKey: 'sleep_debt', rank: 1, cardId: 'trace-card-only' },
+        rules: [{
+          flagKey: 'sleep_debt', label: 'Alvásadósság', domain: 'sleep', rank: 1,
+          outcome: 'raised', disposition: 'logged', cardOutcome: 'won',
+          reasonText: 'Alvásadósság magas.', facts: [],
+        }],
+        transitions: [],
+      })),
+    )
+    const { container } = renderPage()
+    await waitFor(() => expect(screen.getByText('Ma nem érkezett kártya.')).toBeInTheDocument())
+    expect(container.querySelector('.mz-hero-sb')).toBeNull()
+    expect(screen.queryByText('Alvásadósság')).not.toBeInTheDocument()
+  })
+
   test('a card and a trace winner from different decisions never share a screen', async () => {
     const date = localDateString()
     // Two independent queries, deliberately made to disagree: the feed's card is `feed-card-x`,
@@ -79,11 +102,14 @@ describe('CoachingCardPage (real mode)', () => {
       })),
     )
     const { container } = renderPage()
-    // "Terhelés–táplálás" appears both as the PageHero subtitle and the card's own eyebrow, so
-    // scope to the card itself (`.propcard`) rather than weakening the assertion.
+    // The card's own eyebrow ("Terhelés–táplálás") comes from the FEED, so it still renders —
+    // but the hero subtitle is trace-winner-derived and the two disagree on cardId, so the hero
+    // must stay quiet rather than also naming "Terhelés–táplálás" (which here would happen to
+    // read the same string as the card, for the wrong reason).
     await waitFor(() =>
       expect(within(container.querySelector('.propcard') as HTMLElement)
         .getByText('Terhelés–táplálás')).toBeInTheDocument())
+    expect(container.querySelector('.mz-hero-sb')).toBeNull()
     expect(screen.queryByText('Miért ez nyert')).not.toBeInTheDocument()
     expect(screen.queryByText('Alvásadósság')).not.toBeInTheDocument()
   })

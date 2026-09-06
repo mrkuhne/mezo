@@ -24,11 +24,16 @@ export function CoachingCardPage() {
   const advice = useAdviceActions()
   const winner = winnerRuleOf(day)
   const losers = losersOf(day)
+  // card and day come from two independent queries about (allegedly) one decision; if their ids
+  // disagree — or there is no card at all — they describe different decisions (or nothing), so
+  // every trace-winner-derived bit of copy (hero subtitle, card icon, losers strip) stays quiet
+  // rather than naming a rule the visible card does not actually confirm.
+  const coherent = card != null && day.winner?.cardId === card.id
 
   return (
     <MozaikPage tone="gold">
       <PageHead onBack={() => navigate('/mezo/coaching')} label="‹ Coaching" />
-      <PageHero name="A napi kártya" sub={winner?.label} />
+      <PageHero name="A napi kártya" sub={coherent ? winner?.label : undefined} />
       <PageBody principle="Egy kártya naponta — itt az is látszik, mi ellen nyert.">
         <EntranceGroup className="col gap-md">
           {isPending && <div className="card" style={{ padding: 18 }} aria-busy="true" />}
@@ -50,7 +55,7 @@ export function CoachingCardPage() {
           {card != null && (
             <div className="mzp-pred propcard rise" style={{ '--d': '0ms' } as React.CSSProperties}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <ClayIcon name={visualOf(winner?.domain ?? 'general').icon} size={26} />
+                <ClayIcon name={visualOf(coherent ? winner?.domain ?? 'general' : 'general').icon} size={26} />
                 <span style={{ fontSize: 13, fontWeight: 700 }}>{card.eyebrow}</span>
               </div>
               {card.body.map((p, i) => (
@@ -94,9 +99,7 @@ export function CoachingCardPage() {
             </div>
           )}
 
-          {/* card and day come from two independent queries about (allegedly) one decision;
-              if their ids disagree they describe different decisions, so the strip stays quiet. */}
-          {losers.length > 0 && day.winner?.cardId === card?.id && (
+          {losers.length > 0 && coherent && (
             <div className="mzp-pred lav rise" style={{ '--d': '70ms' } as React.CSSProperties}>
               <span className="mz-eyebrow" style={{ color: 'var(--mz-ink-soft)' }}>Miért ez nyert</span>
               <div style={{ marginTop: 6 }}>
