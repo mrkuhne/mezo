@@ -1998,7 +1998,18 @@ mezo:
       - { slug: dead-hang, working-sets: 2, rep-min: 45, rep-max: 60, target-rir: 0 }         # 2×45–60 mp függés
       - { slug: back-extension-45, working-sets: 2, rep-min: 12, rep-max: 15, target-rir: 2 }
 management:
+  server:
+    # mezo-ibxy: actuator on its OWN port — cluster-internal only (not routed by the public
+    # Ingress, not on the Tailscale ingress). vmagent scrapes /actuator/prometheus here.
+    port: ${MEZO_MANAGEMENT_PORT:8081}
   endpoints:
     web:
       exposure:
-        include: health
+        include: health,prometheus
+  metrics:
+    tags:
+      application: mezo-backend
+  prometheus:
+    metrics:
+      export:
+        enabled: true
