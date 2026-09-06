@@ -12,7 +12,7 @@ import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { ClaySpot } from '@/shared/ui/clay'
 import { formatImpact } from '@/features/fuel/logic/formatImpact'
 import { ScoreHero } from '@/features/fuel/components/ScoreHero'
-import { ScoreBreakdownBody } from '@/features/fuel/components/ScoreBreakdownBody'
+import { ScoreBreakdownBody, ScoreLedgerSection } from '@/features/fuel/components/ScoreBreakdownBody'
 import { mealDisplayName } from '@/features/fuel/logic/mealDisplayName'
 import { mealContextOf, MEAL_CONTEXT_LABEL } from '@/features/fuel/logic/mealContext'
 import { useMealCoachFor } from '@/data/hooks'
@@ -68,6 +68,10 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
           {/* Score hero */}
           <ScoreHero meal={meal} scorePct={scorePct} confidence={b.confidence} />
 
+          {/* Miből áll össze — a ledger a hero ALATT és a Mezo-kártya FÖLÖTT (mezo-1f7b): előbb
+              lássuk, honnan jön a szám, csak utána a prózát, ami értelmezi. */}
+          <ScoreLedgerSection breakdown={breakdown} scorePct={Math.round(scorePct)} />
+
           {/* Mezo summary — the coach's verdict (mezo-mr4n); a skeleton while it is being
               generated, and nothing at all when the coach is off/unavailable. */}
           {!summary && coachPending && (
@@ -100,7 +104,9 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
                         return (
                           <span key={i} className="sb-impch">
                             <span><SafeMarkdown text={it.text} /></span>
-                            {m ? <><b>{m[1]}</b><em>pont</em></> : <b>{gain}</b>}
+                            <span className="gain">
+                              {m ? <><b>{m[1]}</b><em>pont</em></> : <b>{gain}</b>}
+                            </span>
                           </span>
                         )
                       })}
@@ -111,8 +117,9 @@ export function MealScoreSheet({ meal, onClose }: { meal: FuelMeal; onClose: () 
             </div>
           )}
 
-          {/* Ledger + dimension cards + improve — shared with the recipe Pontszám (mezo-bw3y) */}
-          <ScoreBreakdownBody breakdown={breakdown} scorePct={Math.round(scorePct)} />
+          {/* Dimension cards + improve — shared with the recipe Pontszám (mezo-bw3y). `ledger`
+              is off: this surface already rendered it above the coach card. */}
+          <ScoreBreakdownBody breakdown={breakdown} scorePct={Math.round(scorePct)} ledger={false} />
 
           <div style={{ height: 12 }} />
         </>

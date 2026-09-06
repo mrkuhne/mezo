@@ -24,6 +24,18 @@ import tools.jackson.databind.ObjectMapper;
  * as master (a migrated owner row, or a user who typed the same food) and only its NULL definition
  * fields are filled — a curated value is never overwritten. It never creates a {@code pantry_item}:
  * a user's shelf starts empty and grows from the catalog ("Hozzáadás a közösből").
+ *
+ * <p><b>Saturated fat is MODELLED, not measured (mezo-1f7b).</b> The catalog shipped
+ * {@code saturatedFatG} on 2 of its 147 rows while carrying {@code fiberG} on 144, which — once
+ * per-fact coverage landed — would have left the Zsírminőség dimension permanently degraded on
+ * almost every meal. The column is now seeded from standard food-composition values (the typical
+ * saturated share of each food's fat), so it is a MODEL of the food, not a reading off this exact
+ * package's label: treat it as an estimate good to roughly the nearest gram, and let a real label
+ * (OFF import, URL scrape, photo import) overwrite it — those write the row directly and this
+ * loader's NULL-only backfill never touches a value that is already there. Every seeded value is
+ * bounded by the row's own {@code fatG}, and the two rows nobody can classify ("Jenny Kaja", an
+ * unidentifiable leftover, and a non-food row) stay {@code null} on purpose, exactly as they do
+ * for NOVA — an honest "nincs adat" beats a fabricated number.
  */
 @Slf4j
 @Component

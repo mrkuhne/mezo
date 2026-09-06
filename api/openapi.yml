@@ -15901,6 +15901,18 @@ components:
           minimum: 1
           maximum: 4
           nullable: true
+        fiberG:
+          type: number
+          nullable: true
+        sugarG:
+          type: number
+          nullable: true
+        saltG:
+          type: number
+          nullable: true
+        saturatedFatG:
+          type: number
+          nullable: true
         ingredientOverrides:
           type: array
           nullable: true
@@ -16074,6 +16086,18 @@ components:
           type: integer
           minimum: 1
           maximum: 4
+          nullable: true
+        fiberG:
+          type: number
+          nullable: true
+        sugarG:
+          type: number
+          nullable: true
+        saltG:
+          type: number
+          nullable: true
+        saturatedFatG:
+          type: number
           nullable: true
         confidence:
           type: number

@@ -7760,12 +7760,29 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .sb-ledger { border-radius: 21px; background: var(--mz-wash-white); border: 0.5px solid var(--border-subtle);
   padding: 13px 15px; box-shadow: var(--mz-shadow); }
 .sb-ledger-mut { font: 500 10px/1.4 var(--ff-body); color: var(--text-muted); margin-top: 4px; }
-.sb-ledger-bar { display: flex; height: 14px; border-radius: 999px; overflow: hidden; gap: 2px; }
-.sb-ledger-seg { position: relative; display: block; height: 100%; background: var(--mz-gbar-bg); }
-.sb-ledger-seg i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0 3px 3px 0; display: block; }
-.sb-ledger-sum { display: flex; justify-content: space-between; margin-top: 8px; font-size: 10.5px;
-  color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
-.sb-ledger-sum b { font-weight: 800; color: var(--text-primary); }
+.sb-ledger-bar { display: flex; height: 18px; border-radius: 999px; overflow: hidden; gap: 2px; }
+.sb-ledger-seg { position: relative; display: block; height: 100%; background: var(--mz-gbar-bg);
+  border-radius: 4px; overflow: hidden; }
+.sb-ledger-seg i { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 0; display: block; }
+/* A régi sáv alatt egy vessző-listányi „22% · 10% · 14%…" állt: nyolc szám, mindegyik a SÚLYT
+   mondta, egyik sem azt, hogy a szegmens miért van félig tele — és a színen kívül semmi nem kötötte
+   őket a sávhoz. Helyette dimenziónként egy sor: színpötty + név + a MEGSZERZETT / ELÉRHETŐ pont
+   (mezo-1f7b). Ugyanaz az adat, csak kimondva. */
+/* ONE column, not two: at 375px a two-column legend left ~90px for the label and truncated six
+   of the eight dimension names to „Ajánlások · W…" — the exact unreadability this list was added
+   to fix. Eight full-width rows cost ~150px on a sheet the user is already scrolling. */
+.sb-ledger-rows { display: flex; flex-direction: column; gap: 1px; margin-top: 11px; }
+.sb-ledger-row { display: flex; align-items: baseline; gap: 8px; font-size: 11.5px; padding: 2px 0;
+  color: var(--mz-ink-soft); font-variant-numeric: tabular-nums; min-width: 0; }
+.sb-ledger-row i { width: 8px; height: 8px; border-radius: 3px; flex: none; background: var(--c);
+  align-self: center; }
+.sb-ledger-row span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-ledger-row b { font-weight: 800; color: var(--text-primary); flex: none; }
+.sb-ledger-row em { font-style: normal; font-size: 10.5px; color: var(--mz-ink-mut); flex: none; }
+.sb-ledger-sum { display: flex; justify-content: space-between; align-items: baseline;
+  margin-top: 11px; padding-top: 9px; border-top: 0.5px solid var(--border-subtle);
+  font-size: 11px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
+.sb-ledger-sum b { font-weight: 800; color: var(--text-primary); font-size: 15px; }
 .sb-ledger-sum em { font-style: normal; }
 
 .sb-dim { border-radius: 21px; background: var(--surface-card); border: 0.5px solid var(--border-subtle);
@@ -7895,13 +7912,22 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
    overrides just the face. */
 .sb-rev, .card.sb-rev { border: 1px solid var(--mz-wka-revbd); border-radius: 22px; padding: 14px 15px;
   background: var(--mz-wka-revbg); box-shadow: var(--mz-wka-revshadow); filter: none; }
-.sb-improw { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 11px; }
-.sb-impch { display: inline-flex; align-items: center; gap: 6px; border-radius: 999px; padding: 6px 12px;
-  font-size: 10.5px; font-weight: 700; line-height: 1.35; text-align: left;
+/* A javaslatok teljes szélességű, lélegző sorok (mezo-1f7b): a 999px-es pirulaforma két-három
+   soros mondatokra tört, a 6px-es rács pedig egymáshoz tapasztotta őket. A nyereség jobbra,
+   saját oszlopban ül, hogy a szöveg ne kerülje meg. */
+.sb-improw { display: flex; flex-direction: column; gap: 9px; margin-top: 13px; }
+.sb-impch { display: flex; align-items: center; gap: 12px;
+  border-radius: 16px; padding: 11px 13px;
+  font-size: 11.5px; font-weight: 700; line-height: 1.5; text-align: left;
   color: var(--mz-cell-sage-ink); background: var(--mz-cell-sage-bg); border: 0.5px solid var(--border-subtle); }
-.sb-impch b { font-weight: 800; font-variant-numeric: tabular-nums; flex: none; }
+.sb-impch > span { flex: 1; min-width: 0; }
+/* A nyereség egy jobbra igazított OSZLOP: szám fölött a „pont" felirat. Rácsban a `b` és az `em`
+   két külön cella volt, ezért a felirat saját sorba, a szöveg alá csúszott (mezo-1f7b). */
+.sb-impch .gain { display: flex; flex-direction: column; align-items: center; gap: 1px; flex: none;
+  line-height: 1; }
+.sb-impch b { font-weight: 800; font-variant-numeric: tabular-nums; font-size: 15px; }
 .sb-impch em { font-style: normal; font-size: 7.5px; font-weight: 800; letter-spacing: 0.12em;
-  text-transform: uppercase; opacity: 0.75; flex: none; }
+  text-transform: uppercase; opacity: 0.75; }
 
 .sb-hero { display: grid; grid-template-columns: auto 1fr; gap: 14px; align-items: center; padding: 16px; border-radius: 22px;
   border: 0.5px solid var(--border-subtle);
@@ -7913,15 +7939,33 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .sb-hero-ring svg { transform: rotate(-90deg); display: block; }
 .sb-hero-t { fill: none; stroke: var(--mz-gbar-bg); }
 .sb-hero-f { fill: none; stroke: var(--sc); stroke-linecap: round; }
-.sb-hero-n { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; line-height: 1; }
-.sb-hero-n b { display: block; font-size: 40px; font-weight: 200; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
-.sb-hero-n small { display: block; font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
-  color: var(--mz-ink-mut); margin-top: 4px; }
+/* `place-items: center` on a 2-child grid centres each child in its OWN stretched row, so the
+   numeral drifted to the ring's top half and „/ 100" sat on its bottom rim — the score read as two
+   unrelated things (mezo-1f7b). `place-content` packs the rows and centres the PAIR; the gap now
+   sets the spacing instead of a margin fighting the stretch. */
+.sb-hero-n { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center;
+  gap: 1px; text-align: center; line-height: 1; }
+.sb-hero-n b { display: block; font-size: 40px; font-weight: 300; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.sb-hero-n small { display: block; font-size: 8.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--mz-ink-mut); }
 .sb-hero-word { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; text-transform: capitalize; }
-.sb-hero-facts { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; font-variant-numeric: tabular-nums; }
-.sb-hero-facts span { font-size: 10.5px; font-weight: 700; padding: 4px 8px; border-radius: 999px;
-  background: var(--surface-card); color: var(--mz-ink-soft); }
-.sb-hero-facts i { font-style: normal; color: var(--mz-ink-mut); font-weight: 600; margin-right: 3px; }
+/* Mozaik 2.0 tény-csempék a hero-ban (mezo-1f7b): a kcal és a három makró a saját domain-
+   színét viseli (a MacroPanel/MacroCells trióját: fehérje korall, szénhidrát arany, zsír lila),
+   a rost pedig az égszínkék mikro-hangot — a szürke pirulasor helyett, ami a hero egyetlen
+   szín nélküli sávja volt. Az érték ÉS a címke egy oszlopban, hogy 4-5 csempe kiférjen. */
+.sb-hero-facts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 11px; font-variant-numeric: tabular-nums; }
+.sb-hero-facts span { display: inline-flex; flex-direction: column; align-items: center; gap: 2px;
+  min-width: 46px; padding: 5px 9px 6px; border-radius: 13px; line-height: 1.1;
+  font-size: 13px; font-weight: 700; letter-spacing: -0.01em;
+  background: var(--fc-bg, var(--surface-card)); color: var(--fc-ink, var(--mz-ink-soft));
+  box-shadow: var(--mz-wka-hlshadow); }
+.sb-hero-facts i { font-style: normal; font-size: 7.5px; font-weight: 800; letter-spacing: 0.1em;
+  text-transform: uppercase; opacity: 0.72; }
+.sb-hero-facts .is-kcal  { --fc-bg: var(--mz-cell-coral-bg); --fc-ink: var(--mz-cell-coral-ink); }
+.sb-hero-facts .is-p     { --fc-bg: var(--mz-cell-sage-bg);  --fc-ink: var(--mz-cell-sage-ink); }
+.sb-hero-facts .is-c     { --fc-bg: var(--mz-cell-gold-bg);  --fc-ink: var(--mz-cell-gold-ink); }
+.sb-hero-facts .is-f     { --fc-bg: var(--mz-cell-lav-bg);   --fc-ink: var(--mz-cell-lav-ink); }
+.sb-hero-facts .is-fiber { --fc-bg: var(--mz-cell-sky-bg);   --fc-ink: var(--mz-cell-sky-ink); }
 .sb-hero-conf { margin-top: 10px; display: flex; align-items: center; gap: 8px; font-size: 9.5px; font-weight: 800;
   letter-spacing: 0.12em; text-transform: uppercase; color: var(--mz-ink-mut); }
 .sb-hero-conf .bar { flex: 1; max-width: 90px; height: 4px; border-radius: 999px; background: var(--mz-gbar-bg); overflow: hidden; }
@@ -8055,8 +8099,11 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
    reduced motion needs no CSS branch here — useCountUp jumps to the target. */
 .wk-ring { width: 97px; height: 97px; border-radius: 50%; display: grid; place-items: center; flex: none;
   background: conic-gradient(var(--c, var(--mz-sc-non-ink)) calc(var(--v, 0) * 1%), var(--mz-sc-track) 0); }
+/* Same stretched-rows trap as `.sb-hero-n` (mezo-1f7b): the fixed 78px hole spread `b` and
+   `small` to its top and bottom edges. Pack the pair, then centre it. */
 .wk-ring .in { width: 78px; height: 78px; border-radius: 50%; background: var(--mz-fh-ringhole);
-  display: grid; place-items: center; box-shadow: inset 0 1px 3px rgba(43, 33, 24, 0.08); }
+  display: grid; place-content: center; justify-items: center; gap: 1px;
+  box-shadow: inset 0 1px 3px rgba(43, 33, 24, 0.08); }
 .wk-ring b { font-size: 32px; font-weight: 200; letter-spacing: -0.03em; line-height: 1;
   font-variant-numeric: tabular-nums; }
 .wk-ring b.is-learning { font-size: 15px; font-weight: 600; color: var(--mz-sc-non-ink); }

@@ -384,13 +384,20 @@ export const MOCK_AI_MEAL_DRAFT: MealAiDraft = {
       source: 'pantry', pantryItemId: _aiSeed.id, recipeId: null, name: _aiSeed.name,
       amount: 60, unit: _aiSeed.unit, per: _aiSeed.per, basisUnit: _aiSeed.unit,
       kcal: _aiSeed.macros.kcal ?? 0, proteinG: _aiSeed.macros.p ?? 0, carbsG: _aiSeed.macros.c ?? 0, fatG: _aiSeed.macros.f ?? 0,
-      nova: _aiSeed.nova, confidence: 1, needsReview: true,
+      nova: _aiSeed.nova,
+      fiberG: _aiSeed.fiberG ?? null, sugarG: _aiSeed.sugarG ?? null,
+      saltG: _aiSeed.saltG ?? null, saturatedFatG: _aiSeed.saturatedFatG ?? null,
+      confidence: 1, needsReview: true,
     },
     {
       source: 'estimate', pantryItemId: null, recipeId: null, name: 'Csirkés wrap',
       amount: 1, unit: 'db', per: 1, basisUnit: 'db',
       kcal: 450, proteinG: 28, carbsG: 40, fatG: 18,
-      nova: null, confidence: 0.6, needsReview: true,
+      nova: null,
+      // The AI estimate now names the quality facts too (mezo-1f7b) — saturatedFatG especially,
+      // whose absence used to read as a flawless Zsírminőség rather than as "nincs adat".
+      fiberG: 4, sugarG: 5, saltG: 1.4, saturatedFatG: 5.5,
+      confidence: 0.6, needsReview: true,
     },
   ],
 }

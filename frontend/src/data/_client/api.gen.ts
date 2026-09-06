@@ -6330,6 +6330,10 @@ export interface components {
             carbsG?: number | null;
             fatG?: number | null;
             nova?: number | null;
+            fiberG?: number | null;
+            sugarG?: number | null;
+            saltG?: number | null;
+            saturatedFatG?: number | null;
             ingredientOverrides?: components["schemas"]["MealIngredientOverrideRequest"][] | null;
         };
         MealItemResponse: {
@@ -6391,6 +6395,10 @@ export interface components {
             carbsG: number;
             fatG: number;
             nova?: number | null;
+            fiberG?: number | null;
+            sugarG?: number | null;
+            saltG?: number | null;
+            saturatedFatG?: number | null;
             confidence: number;
             needsReview: boolean;
         };

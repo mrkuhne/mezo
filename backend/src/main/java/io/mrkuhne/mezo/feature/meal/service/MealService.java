@@ -236,8 +236,9 @@ public class MealService {
         BigDecimal factor = item.getAmount().divide(per, 6, RoundingMode.HALF_UP);
         // Frozen facts (mezo-m6uv): the item's OWN snapshot, scaled by the same factor as the
         // macros. A pantry row that drifted after the log can no longer rewrite this meal's score.
-        boolean hasFacts = item.getSnapshotFiberG() != null || item.getSnapshotSugarG() != null
-            || item.getSnapshotSaltG() != null || item.getSnapshotSaturatedFatG() != null;
+        // Each fact travels as its own nullable value — the old single `hasFacts` OR-flag let a
+        // fiber-only line claim coverage for saturated fat, which scored every such meal a perfect
+        // 100 on Zsírminőség (mezo-1f7b).
         // `category` is a plant-diversity input, not a nutrition fact — it stays a live pantry read
         // (freezing it belongs with the NOVA sibling, mezo-4tzf). A recipe line is a composite:
         // honest null, exactly as before.
@@ -252,7 +253,7 @@ public class MealService {
             scaleFact(item.getSnapshotFiberG(), factor), scaleFact(item.getSnapshotSugarG(), factor),
             scaleFact(item.getSnapshotSaltG(), factor),
             scaleFact(item.getSnapshotSaturatedFatG(), factor),
-            hasFacts, category, gramAmount(item.getAmount(), item.getUnit()));
+            category, gramAmount(item.getAmount(), item.getUnit()));
     }
 
     /** The live pantry category of a pantry-arm line (plant-diversity input); null when the row is gone. */
@@ -374,6 +375,14 @@ public class MealService {
             item.setSnapshotProteinG(req.getProteinG());
             item.setSnapshotCarbsG(req.getCarbsG());
             item.setSnapshotFatG(req.getFatG());
+            // Nutrition-quality facts on the estimate arm (mezo-1f7b): nullable end-to-end, so an
+            // AI estimate that could not name a value degrades the dimension instead of scoring a
+            // fabricated 0 g. Before this the four columns could ONLY be filled by a pantry/recipe
+            // line, which is why every AI-logged meal read as flawless on Zsírminőség.
+            item.setSnapshotFiberG(req.getFiberG());
+            item.setSnapshotSugarG(req.getSugarG());
+            item.setSnapshotSaltG(req.getSaltG());
+            item.setSnapshotSaturatedFatG(req.getSaturatedFatG());
             item.setSnapshotNova(req.getNova() == null ? null : req.getNova().shortValue());
         } else {
             throw invalidItems(); // unknown source — the contract pattern should have caught it
@@ -514,7 +523,7 @@ public class MealService {
      * concern the frontend formatter owns. Matches the migrations' {@code round(…, 3)} backfill.
      * Null stays null so a fact-less recipe does not turn into a fake 0 g (mezo-m6uv).
      */
-    private static BigDecimal perServingGram(BigDecimal whole, BigDecimal servings) {
+    static BigDecimal perServingGram(BigDecimal whole, BigDecimal servings) {
         return whole == null ? null : whole.divide(servings, 3, RoundingMode.HALF_UP);
     }
 
