@@ -220,12 +220,27 @@ public class GraphPromotionService {
 
     /** A {@link #syncLifeGoal} tükre a komplementer-söpréshez: egy törölt (vagy a port számára
      *  eltűnt) életcél node-ja nem maradhat aktív. A nem-aktív, de LÉTEZŐ célt a syncLifeGoal
-     *  maga archiválja — ide csak az kerül, amit a forrás már nem is ismer. */
+     *  maga archiválja — ide csak az kerül, amit a forrás már nem is ismer.
+     *
+     * <p><b>Hiányzó port = no-op, NEM tömeges archiválás.</b> A {@link #lifeGoalGraphSource} mező
+     * javadocja szerint egy hiányzó bean azt jelenti, hogy „nincs életcél-node, sosem kitalált
+     * cél" — vagyis a gráf pillanatnyilag nem LÁTJA az életcélokat, nem azt, hogy a felhasználónak
+     * nincsenek aktív életcéljai. Pontosan ezért ugorja át a {@link #reconcile} negyedik (most
+     * ötödik) promóciós hurkja is a teljes ciklust, amikor a bean hiányzik. Ha ez a metódus a
+     * hiányzó bean esetén {@code stillQualifies = false}-t adna, MINDEN life_goal forrású node-ot
+     * archiválna, holott a mögöttes célok simán léteznek és aktívak lehetnek — csak a
+     * LIFEGOAL_SWITCH van kikapcsolva. Az eredmény kettős kár lenne: a node kiesne az
+     * {@code [Összefüggések]} prompt-blokkból, ÉS {@link GraphMaintenanceService}'s nightly
+     * decay elkezdené felőrölni az éleit (lásd {@link #retractPattern} javadocja), amit a
+     * switch visszakapcsolása után sem hozna vissza automatikusan. Ezért hiányzó bean esetén ez a
+     * metódus is — a promóciós hurokhoz hasonlóan — egyszerűen semmit sem csinál. */
     @Transactional
     public Optional<GraphNodeEntity> retractLifeGoal(UUID userId, UUID goalId) {
         LifeGoalGraphSource source = lifeGoalGraphSource.getIfAvailable();
-        boolean stillQualifies = source != null
-            && source.find(userId, goalId).filter(g -> "active".equals(g.status())).isPresent();
+        if (source == null) {
+            return Optional.empty();
+        }
+        boolean stillQualifies = source.find(userId, goalId).filter(g -> "active".equals(g.status())).isPresent();
         return stillQualifies ? Optional.empty() : archiveBySource(userId, SOURCE_LIFE_GOAL, goalId);
     }
 
