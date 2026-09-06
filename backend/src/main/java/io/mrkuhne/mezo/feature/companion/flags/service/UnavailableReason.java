@@ -47,5 +47,15 @@ public enum UnavailableReason {
     /** protocol_lapse: an item's miss run qualified, but not enough due-day history existed
      *  behind it (either the item is too new, or too few historical due days survived the
      *  {@code startedOn} clamp) to judge whether a real habit existed before the miss. */
-    NOT_ENOUGH_PROTOCOL_HISTORY
+    NOT_ENOUGH_PROTOCOL_HISTORY,
+    /** meal_rhythm_drift: the user has no meal_slot_template row at all — there is no plan for
+     *  reality to drift away from (that is slot-template setup territory, not this rule's). */
+    NO_SLOT_TEMPLATE,
+    /** meal_rhythm_drift: fewer days with ANY logged meal inside the window than
+     *  {@code min-days-with-meals}. A logging holiday is not a rhythm change. */
+    NOT_ENOUGH_MEAL_DAYS,
+    /** meal_rhythm_drift: no slot survived the trackability gates (every day unresolvable or
+     *  without a matching template, every slot a snack, or an ambiguous duplicate slotKind), so
+     *  nothing could be measured — as opposed to measuring and finding no drift. */
+    NO_COMPARABLE_SLOTS
 }
