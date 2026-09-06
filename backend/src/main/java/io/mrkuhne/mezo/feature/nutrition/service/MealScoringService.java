@@ -680,6 +680,16 @@ public class MealScoringService {
      * A még HÁTRALÉVŐ slotok arányösszege — ez osztja fel a maradék keretet. Az étkezés SAJÁT
      * slotja mindig hátravan (egy 22:30-kor logolt vacsora továbbra is a vacsora kerete), a
      * snacknek pedig nincs ablaka, tehát az is mindig. Így az eredmény sosem 0.
+     *
+     * <p>Ismert korlát: a snack a nevezőben AKKOR IS mindig hátralévőnek számít, ha már megette a
+     * felhasználó — a kcal-ja viszont már benne van a {@code consumedBefore}-ban. Emiatt a §4.3
+     * nulla-regresszió invariáns nem pontosan igaz, ha a névleges pályán VAN elfogyasztott snack:
+     * pl. reggeli .25 + ebéd .35 + snack .10 elfogyasztva egy 19:00-s vacsora előtt →
+     * {@code remaining = 0.30·T}, {@code remainingSlotShare = dinner .30 + snack .10 = 0.40}, tehát
+     * {@code expected = 0.30·T × 0.30/0.40 = 0.225·T} — egy pontosan a saját .30 részét evő vacsora
+     * {@code rel = 0.30·T / 0.225·T ≈ 1.33}-at kap az elvárt 1.0 helyett. Ez ma még belefér a
+     * {@code slotShareTolerance}-ba (0.4), de csak ~0.07 tartalékkal — egy jövőbeli szigorítás ezt
+     * regresszióvá tenné. Szándékosan NEM javítva ebben a körben (dokumentált, ismert korlát).
      */
     private double remainingSlotShare(String slot, LocalTime t) {
         MealScoringProperties.SlotShares shares = props.slotShares();

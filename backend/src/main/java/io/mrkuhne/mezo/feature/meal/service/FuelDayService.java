@@ -249,6 +249,13 @@ public class FuelDayService {
      * {@link #getDay} / coach {@code loadDay} által is használt sima finderrel) — így ez a
      * hot write-path hívás (minden {@code applyScore} create/update/rescore-kor lefut) EGY
      * lekérdezésből kapja a napot ÉS a tételeket, nem egy N+1 lazy-load sorozatból.
+     *
+     * <p>Ismert, gyakorlatban elérhetetlen szélső eset: a {@code !isBefore(loggedAt)} feltétel miatt
+     * két AZONOS {@code loggedAt} pillanatú étkezés kölcsönösen kizárja egymást, tehát mindkettő
+     * ugyanazt a {@code kcalBefore}-t látja. {@code MealCoachService}'s blokk-összeállítása ezzel
+     * szemben lista-sorrendben fut kumulatív összeggel, tehát ott a második a listában MÁR látja az
+     * elsőt — ugyanarra a napra a score és a coach-próza így (mikroszekundumos pontosságú egyezés
+     * esetén) eltérő napi állapotot mondana. Nincs viselkedésbeli javítás tervezve.
      */
     @Transactional(readOnly = true)
     public DayContext dayContext(UUID userId, LocalDate date, Instant loggedAt, UUID excludeMealId) {

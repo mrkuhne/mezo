@@ -322,6 +322,7 @@ megy, nem a fókuszált IT-kkel. A teljes backend suite a CI dolga
 | Dupla büntetés a napi score-ral | A napi score csak a `nova`/`micro` dim-pontokat fogyasztja, a `context`-et nem — **nincs visszacsatolási hurok** (ellenőrizve). A padló (§4.2) kezeli a szakadék-jelleget |
 | Két versengő napi keret (BE `DailyTargets` vs FE `deriveDailyBudget`) | Ebben a körben a maradék keret **nem** válik látható számmá — a 3. darab kérdése |
 | Extra lekérdezés meal-írásonként | Egy indexelt nap-lekérdezés; az `applyScore` amúgy is több hívást tesz |
+| Az envelope íráskor fagy, egy TESTVÉR étkezés utólagos módosítása (pótlás/mozgatás/törlés) nem forgatja újra a nála később logolt aznapi sorokat, azok elavult `kcalBefore`/`pBefore` mellett maradnak | Dokumentálva (`docs/features/fuel.md`); követő issue `mezo-jcpt.20`. Az elmozdulás mindig PERMISSZÍV a v2-höz képest, tehát semmi nem pontoz rosszabbul, mint korábban — a 3. darab (élő keret) kérdése tudná csak strukturálisan megoldani |
 
 ## 9. Prior art
 

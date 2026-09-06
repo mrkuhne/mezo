@@ -123,6 +123,13 @@ public class MealService {
      * gyógyultak volna). A konvenció korlátja a SZERVER zónája, nem a felhasználóé — amíg a kettő
      * egyezik, pontos.
      *
+     * <p>A blast radius mezo-jcpt.19 óta nagyobb: a levezetett helyi idő nemcsak a {@code timingSub}-ot
+     * és a szerepet befolyásolja, hanem a context dimenzió NEVEZŐJÉT is ({@code windowPassed} egy
+     * slot ablakát a helyi órához méri) — egy zóna-eltérés így már nem csak eltolja az elvárt keretet,
+     * hanem MEGVÁLTOZTATHATJA, hogy egy slot lejártnak számít-e. Legrosszabb eset: egy 23:00-kor
+     * lokálisan logolt snacket 21:00-nak olvasva a vacsora ablaka még nem járt le, a nevező 0.40 lesz
+     * 0.10 helyett — 4×-es kilengés az elvárt keretben, ami PERZISZTENSEN beleíródik az envelope-ba.
+     *
      * <p>Az envelope ÜRES próza-fészkekkel íródik újra, betartva a coach-invariánst: egy elavult
      * verdikt nem élheti túl a számokat, amiket magyarázott ({@code MealCoachService} javadoc). A
      * coach a következő score-sheet-nyitáskor újragenerálja.

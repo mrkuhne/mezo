@@ -5,14 +5,18 @@
 -- újraszámolásba kerül a hét következő olvasásakor.
 --
 -- Miért most: a FORMULA_VERSION 2 -> 3 (nap-tudatos context dimenzió) miatt a MealRescoreRunner
--- újrapontozza a történelmi meal-envelope-okat, ami a napok pontszámát és így a heti átlagokat is
--- elmozdítja. A frissesség-próba viszont created_at-et olvas
--- (WeeklyScoreRepository.latestScoreInputWrittenAt: "an EDIT of an existing row ... is not
--- detected"), a re-score pedig UPDATE — e nélkül a törlés nélkül minden cache-elt hét
--- határozatlan ideig a backfill ELŐTTI számokat szolgálná ki. Ugyanaz, amit a mezo-jcpt.2 és a
--- mezo-jcpt.4 changesetje kezelt.
+-- újrapontozza a történelmi meal-envelope-okat. Ez ÖNMAGÁBAN nem mozdítja el a heti átlagot: a
+-- weekly_score a DayEvaluationEngine napi base-scoreiból épül (WeeklyScoreService.aggregate),
+-- a DayEvaluationEngine pedig a meal oldalról kizárólag a MealLogFact.novaDimScore/microDimScore
+-- (nova/micro dimenzió) + kcal hármast fogyasztja (DayScoreService.mealFacts) — a context dimenzió
+-- score-ját sosem olvassa. A purge tehát öv-és-nadrágtartó: olcsó (egy újraszámolás hetenként a
+-- következő olvasáskor), és azért marad benn, mert az envelope-ok, amikből a heti sor levezethető
+-- lenne, újraíródtak — ugyanúgy, ahogy a mezo-jcpt.2 és a mezo-jcpt.4 changesetje is tette a saját
+-- (akkor valóban ható) módosításaikhoz.
 --
--- day_review NEM szerepel itt: annak kulcsa az inputsHash, ami tartalmazza a dimenzió-score-okat,
--- tehát magától cache-misst okoz. Kitörölni csak fölösleges LLM-hívásokba kerülne.
+-- day_review NEM szerepel itt: annak kulcsa az inputsHash, ami tartalmazza a dimenzió-score-okat.
+-- Ez ITT SEM azért öninvalidálódik, mert a bemenetei elmozdultak (nem mozdultak — lásd fent), hanem
+-- mert a hash a bemenet AZONOSSÁGÁT, nem a tényleges elmozdulást figyeli. Kitörölni csak fölösleges
+-- LLM-hívásokba kerülne.
 
 delete from weekly_score;
