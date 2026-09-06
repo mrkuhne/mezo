@@ -577,6 +577,14 @@ permissive than the real API:
   and onto its **id** (`arrowFor(goalId)`) — an index-keyed assignment would have silently
   reshuffled which goal gets the 'up'/'down'/'insufficient' story the moment the seed order changed
   for an unrelated reason, which is exactly what motivated the id-keyed rewrite in the first place.
+- **`mockProgress` now seeds one conflict sentence, on `lg-kockahas` specifically** (`MOCK_CONFLICTS`,
+  a `goalId`-keyed map defaulting to `[]`): every other goal still returns `conflicts: []`. Before
+  this, `mockProgress` hardcoded `conflicts: []` unconditionally, so the `me-cel-reszlet` visual
+  golden — which opens `/me/goals/lg-kockahas` — had never once rendered the `.lg-conflict` style
+  (mezo-9r85). `lg-kockahas` is the specific id because that's the goal the golden opens; seeding
+  any other goal would leave the rule unguarded. The "no conflict ⇒ no section remnant" invariant
+  is still measured, just moved to `lg-hustle` (conflict-free, active, three pillars) so it stays a
+  real assertion rather than one the seed itself has quietly falsified.
 
 ## 5. Integrations
 
@@ -819,7 +827,13 @@ resolving the goal by id (`test/msw/handlers.ts`) — `setup.ts` runs MSW with
 `onUnhandledRequest: 'bypass'`, so a missing handler would let a real-mode write escape to the
 network and pass silently. Run both `pnpm test` (real, MSW-backed) and `VITE_USE_MOCK=true pnpm
 test` (mock) — see [`_platform-data-layer.md`](_platform-data-layer.md) §8 for the dual-mode test
-convention. **CSS guards.** `shared/ui/mozaik/prototypeCssStructure.test.ts` covers the `lg-*` rules'
+convention. **`CelPage.test.tsx`'s conflict-sentence coverage (mezo-9r85):** a mock-mode test
+renders `lg-kockahas` and asserts `.lg-conflict` actually draws with the seeded sentence (the
+positive case the `me-cel-reszlet` golden now also exercises); the pre-existing "no conflict ⇒ no
+section remnant" test moved to `lg-hustle` so it keeps measuring a real conflict-free goal instead
+of one the mock seed just started seeding a conflict onto. The real-mode conflict test
+(`:229`) is independent — it stubs `/api/life-goals/:id/progress` directly and doesn't touch the
+mock seed. **CSS guards.** `shared/ui/mozaik/prototypeCssStructure.test.ts` covers the `lg-*` rules'
 placement. `mozaikCssTokens.test.ts` does **not** cover them — it pins `--mz-*` only, and this
 doc previously claimed otherwise; that false claim is precisely how two bugs shipped
 (`mezo-hhdo`: the family hardcoded light hexes and read white-on-white in dark mode;
