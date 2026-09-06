@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEvidenceEnvelope;
+import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
@@ -137,6 +138,7 @@ public class PatternDetectionService {
         pattern.setN(result.n());
         pattern.setP(BigDecimal.valueOf(result.p()).setScale(6, RoundingMode.HALF_UP));
         pattern.setConfidence(null); // honest small-n — V3.2's critique fills it for hypotheses
+        stampTestPlan(pattern, pair);
         pattern.setLastDetectedAt(Instant.now().truncatedTo(ChronoUnit.MICROS)); // timestamptz stores micros — truncate so the persisted row equals the in-memory one (mezo-mfmb)
         patternRepository.saveAndFlush(pattern);
         recordSnapshot(pattern, result);
@@ -147,6 +149,25 @@ public class PatternDetectionService {
                     AppNotificationKind.PATTERN_INBOX.deeplink() + pair.key(),
                     pattern.getId(), "pattern_inbox:" + pair.key());
         }
+    }
+
+    /**
+     * S2 (mezo-eq85.2): the catalog pair IS a test plan — spelling it out on the row makes every
+     * pattern kind describable the same way on the wire ("what would falsify this?"). Display
+     * only: the nightly Pearson job keeps owning these rows, and
+     * {@code HypothesisEvaluationService} skips {@code statistical} for exactly that reason.
+     * Written once — an existing plan is left alone so a config re-lag never rewrites history.
+     */
+    private void stampTestPlan(PatternEntity pattern, CompanionProperties.PatternPair pair) {
+        if (pattern.getTestPlan() != null) {
+            return;
+        }
+        CompanionProperties.Patterns config = properties.patterns();
+        pattern.setTestPlan(new TestPlanEnvelope(pair.metricA().wireKey(), pair.metricB().wireKey(),
+                pair.lagDays(), pair.expectedDirection(), config.minN(), config.minGroupN(),
+                config.lookbackDays()));
+        pattern.setHypothesisKey("pair:" + pair.key());
+        pattern.setOrigin(PatternEntity.ORIGIN_PAIR_CATALOG);
     }
 
     /** S1 (mezo-tk88.1): one history snapshot per LIVE evaluation — the detail chart's raw data.

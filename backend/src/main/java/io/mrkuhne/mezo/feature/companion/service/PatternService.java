@@ -92,24 +92,13 @@ public class PatternService {
             throw new SystemRuntimeErrorException(
                     SystemMessage.field("VALIDATION_INVALID_VALUE", "decision").build());
         }
-        pattern.setStatus(status);
-        // S1 (mezo-tk88.1): every transition is part of the pattern's durable story — the
-        // decision-status event fires on EVERY decide(), not just the first confirm.
-        recordEvent(pattern, status, PatternEventPayloadEnvelope.empty());
-        // V3.3: the learning loop closes — a FIRST confirm promotes the pattern into a durable
-        // knowledge fact (source=pattern, linked back); later un-confirms leave the fact alone
-        // (it is Daniel's knowledge now — the Knowledge tab owns its lifecycle). The `promoted`
-        // event fires AFTER the decision event — the promotion happens BECAUSE of the decision.
-        if (PatternEntity.STATUS_CONFIRMED.equals(status) && pattern.getPromotedFactId() == null) {
-            pattern.setPromotedFactId(promote(userId, pattern));
-            recordEvent(pattern, PatternEventEntity.KIND_PROMOTED,
-                    PatternEventPayloadEnvelope.promoted(pattern.getPromotedFactId()));
-        }
         if (PatternEntity.STATUS_CONFIRMED.equals(status)) {
-            // W2.2 (mezo-b3pp.7): every confirm re-syncs the graph node; the promotion itself is
-            // an idempotent UPSERT, so a re-confirm costs nothing and never duplicates.
-            eventPublisher.publishEvent(new PatternConfirmedEvent(userId, pattern.getId()));
+            applyEngineConfirm(userId, pattern);
         } else {
+            pattern.setStatus(status);
+            // S1 (mezo-tk88.1): every transition is part of the pattern's durable story — the
+            // decision-status event fires on EVERY decide(), not just the first confirm.
+            recordEvent(pattern, status, PatternEventPayloadEnvelope.empty());
             // mezo-b3pp.31: the mirror. An un-confirmed pattern must stop asserting itself in the
             // graph — the consumer re-reads the status, so publishing on every non-confirm branch
             // (including a reject that was never confirmed) is safe and keeps the rule simple.
@@ -117,6 +106,30 @@ public class PatternService {
         }
         PatternEntity saved = patternRepository.saveAndFlush(pattern);
         return mapper.toPatternResponse(saved, citedWeeksOf(citedWeeks(userId), saved.getId()));
+    }
+
+    /**
+     * S2 (mezo-eq85.2): the confirm branch of {@link #decide}, extracted so the nightly engine can
+     * confirm a hypothesis through the EXACT same body — one confirm, one meaning. The caller owns
+     * the {@code saveAndFlush} of the pattern itself (both callers do it right after).
+     *
+     * <p>V3.3: the learning loop closes — a FIRST confirm promotes the pattern into a durable
+     * knowledge fact (source=pattern, linked back); later un-confirms leave the fact alone (it is
+     * Daniel's knowledge now — the Knowledge tab owns its lifecycle). The {@code promoted} event
+     * fires AFTER the decision event — the promotion happens BECAUSE of the decision.
+     */
+    @Transactional
+    public void applyEngineConfirm(UUID userId, PatternEntity pattern) {
+        pattern.setStatus(PatternEntity.STATUS_CONFIRMED);
+        recordEvent(pattern, PatternEntity.STATUS_CONFIRMED, PatternEventPayloadEnvelope.empty());
+        if (pattern.getPromotedFactId() == null) {
+            pattern.setPromotedFactId(promote(userId, pattern));
+            recordEvent(pattern, PatternEventEntity.KIND_PROMOTED,
+                    PatternEventPayloadEnvelope.promoted(pattern.getPromotedFactId()));
+        }
+        // W2.2 (mezo-b3pp.7): every confirm re-syncs the graph node; the promotion itself is
+        // an idempotent UPSERT, so a re-confirm costs nothing and never duplicates.
+        eventPublisher.publishEvent(new PatternConfirmedEvent(userId, pattern.getId()));
     }
 
     /** v1 category heuristic: physiology/trigger → health, response → train (documented). */
