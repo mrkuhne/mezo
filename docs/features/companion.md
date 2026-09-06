@@ -1033,10 +1033,20 @@ the nightly **`ReflectionJob`** at 03:40.
   **shared** `PatternGate` (made `public` for exactly this, together with `PearsonCorrelation`, so a
   second copy of the math cannot give a second answer), and appends one `evidence` event carrying
   `r`/`n`/`p`, the verdict name and `hit`. **A non-LIVE night is not a miss**: `hit` is null, both
-  tallies stay put, and both streaks BREAK on it — silence is not counter-evidence. Deliberately not
-  `@Transactional` (the `PatternDetectionService` precedent): each repository call owns its
-  transaction, so one row's DB failure cannot roll back every other row's evaluation, and the
-  per-row try/catch then isolates for real.
+  tallies stay put, and both streaks BREAK on it — silence is not counter-evidence. **One
+  transaction per row, never one per run.** The private `evaluateOne` opens a `TransactionTemplate`
+  at `REQUIRES_NEW` (the `PantryCatalogService` `insertOrBind` idiom, not `@Transactional` — `evaluate`
+  calls it on the SAME bean, so Spring's proxy would never see the call) around an extracted
+  `evaluateRow`, so every write for one row — the `evidence` event, the tally bumps, `belief`,
+  `lastDetectedAt`, the status transition, and on a confirm `PatternService.applyEngineConfirm`'s
+  `knowledge_fact` plus its `confirmed`/`promoted` events (default `REQUIRED` propagation, so they
+  join the same transaction) — commits or rolls back together. Without that boundary, a failure at
+  the final save left a durable `knowledge_fact` and `confirmed`/`promoted` events behind a row still
+  `monitoring`, so the next night promoted the same fact again and the tallies (hence `belief`)
+  diverged permanently from the event log. `evaluate`'s own per-row try/catch still isolates one
+  row's failure from the rest — `REQUIRES_NEW` is what keeps that isolation honest, since a plain
+  rollback-only would otherwise poison the caller's transaction too. The class itself is still NOT
+  class-level `@Transactional`.
 - **One confirm, one meaning.** `PatternService.decide`'s confirm branch is extracted into
   `applyEngineConfirm(userId, pattern)` and called from **both** the user path and the engine path,
   so the fact promotion (`knowledge_fact`, `source=pattern`, the `promoted` event) and the
@@ -6234,7 +6244,7 @@ newest-version-wins per source (including its effect on the derived people serie
 text returns that JSON verbatim, `SIGNAL_FAIL` throws, and the un-scripted default is a `sure`,
 mildly positive signal mentioning Anna.
 
-**Reflexió S2 — lifecycle (`mezo-eq85.2`).** Four test classes, split by what they can prove.
+**Reflexió S2 — lifecycle (`mezo-eq85.2`).** Six test classes, split by what they can prove.
 `feature/companion/reflection/HypothesisLifecycleTest` is a **pure unit test** — no Spring, no DB —
 because `HypothesisLifecycle.decide`/`belief` are pure functions: every arrow of the state machine
 gets one case (proposed→monitoring on a strong hit, monitoring→confirmed only WITH a positive reply,
@@ -6248,16 +6258,33 @@ finished days of the plan `people:anna → sleep-duration-h` (lag 1, positive) a
 outcomes: a strong hit appends `evidence` + `monitoring` and fills `belief`; three hits plus a seeded
 `user_reply(chip, watch)` confirm the row AND promote it into a `knowledge_fact` with
 `source=pattern`; a deliberately **uncorrelated** seeding (identical group means, so the gate stays
-LIVE and `r ≈ 0`) refutes after three misses with three `hit=false` evidence rows; a `rejected` row
-is not even read (`evaluate` returns 0, no events, `belief` still null); and a row backdated 31 days
-with no data at all goes `dormant` with a `NO_DATA`/`hit=null` evidence row and both tallies at zero.
-`CreatedAtBackdater`'s allow-list gained `pattern` for that last case — `created_at` is
-`@CreationTimestamp updatable = false`, so a dormancy clock cannot be seeded any other way.
+LIVE and `r ≈ 0`) refutes after three misses with three `hit=false` evidence rows; both user-frozen
+statuses (`rejected` AND `confirmed`) are skipped without even being read (`evaluate` returns 0, no
+events, `belief` still null on either); a `statistical` row that carries a test plan too (the catalog
+pair's display metadata) is walked past even though it is open and has a plan — the nightly Pearson
+job still owns it; and a row backdated 31 days with no data at all goes `dormant` with a
+`NO_DATA`/`hit=null` evidence row and both tallies at zero. `CreatedAtBackdater`'s allow-list gained
+`pattern` for that last case — `created_at` is `@CreationTimestamp updatable = false`, so a dormancy
+clock cannot be seeded any other way.
+`HypothesisEvaluationRollbackIT` (own context — its `@MockitoSpyBean` forks it) proves the per-row
+rollback boundary: two clean confirming nights, then `PatternRepository.saveAndFlush` is made to
+throw on the third (confirming) night, and nothing from that night survives — status stays
+`monitoring`, `promotedFactId` stays null, the tallies stay at their pre-failure count, the failed
+night's `evidence`/`confirmed`/`promoted` events are all gone, and no `knowledge_fact` was created.
 `ReflectionJobIT` (own cached context, `mezo.techcore.cron.reflection-job.enabled=true`, the
 `DailySummaryJobIT` idiom) drives `runFor(today)` over the REAL fan-out with two users: one whose
 un-extracted journal entry the catch-up step heals, one whose open hypothesis the evaluate step
-moves — and a second case where user 1's only source is a `SIGNAL_FAIL` and user 2's evaluation
-still runs, which is the whole point of per-step isolation on top of `UserFanOut`.
+moves — and a second case,
+`testRunFor_shouldSurviveAPoisonedSource_andStillEvaluateEveryHypothesis`, where user 1's only
+journal source is a `SIGNAL_FAIL`. That source is swallowed INSIDE
+`TextSignalCatchUpService.offer`'s own per-source isolation and never reaches `ReflectionJob.step`'s
+catch — the case proves the SAME user's remaining steps (and every other user's night) run
+untouched, not the step boundary itself (the test was renamed off `shouldIsolateAFailingUser`, which
+over-claimed that).
+`ReflectionJobStepIsolationIT` (own context, same `@MockitoSpyBean` reason) owns the step boundary
+that the poisoned-source case does not reach: a spy makes the WHOLE catch-up step throw for every
+user, and both users' hypotheses are still evaluated afterwards — the last isolation layer, below
+`UserFanOut`'s per-user one and above `TextSignalCatchUpService`'s per-source one.
 `ReflectionJobSwitchOffIT` pins the structural half: job switch off ⇒ no `ReflectionJob` bean.
 `PatternPopulator.reflection(owner, plan, status)` and `PatternEventPopulator.userReply(...)` are the
 new fixtures. **Regression coverage:** `PatternDetectionServiceIT` still passes with the test plan

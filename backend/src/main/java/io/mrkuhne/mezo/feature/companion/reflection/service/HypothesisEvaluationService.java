@@ -101,7 +101,7 @@ public class HypothesisEvaluationService {
      * {@code knowledge_fact} and its two events) commits together or not at all.
      * {@code REQUIRES_NEW} so a rollback here can never poison a caller's transaction.
      */
-    void evaluateOne(UUID userId, UUID patternId, LocalDate today) {
+    private void evaluateOne(UUID userId, UUID patternId, LocalDate today) {
         TransactionTemplate own = new TransactionTemplate(transactionManager);
         own.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         own.executeWithoutResult(status -> evaluateRow(userId, patternId, today));
