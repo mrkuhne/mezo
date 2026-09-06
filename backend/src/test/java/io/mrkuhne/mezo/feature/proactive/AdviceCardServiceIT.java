@@ -247,6 +247,29 @@ class AdviceCardServiceIT extends AbstractIntegrationTest {
         }
     }
 
+    /** S5 round 2 (mezo-d58h.7.5): a verbatim candidate's body is its own text, character for
+     *  character. The fake LLM answers any prompt with its own sentence, so an unchanged body is
+     *  proof the generator was never called — not merely that it happened to agree. */
+    @Test
+    void testDeliver_shouldUseTheCandidateTextVerbatim_whenTheCandidateIsVerbatim() {
+        UUID owner = userPopulator.createUser().getId();
+        String question = "Tudatosan tetted félre, vagy csak kikopott? 👍 / 👎";
+
+        Optional<CompanionMessageEntity> card = adviceCardService.deliver(owner,
+            AdviceCandidate.fromQuestion("question_feature_abandonment", "Mezo · kérdés",
+                List.of("Az elmúlt 30 napban nem volt bejegyzés."), List.of("👍 — igen", "👎 — nem"),
+                question));
+
+        assertThat(card).isPresent();
+        assertThat(card.orElseThrow().getContent().body()).containsExactly(question);
+        assertThat(card.orElseThrow().getContent().setupKey()).isEqualTo("question_feature_abandonment");
+        assertThat(card.orElseThrow().getContent().adviceKey()).isEqualTo("question_feature_abandonment");
+        assertThat(card.orElseThrow().getContent().suggestions())
+            .containsExactly("👍 — igen", "👎 — nem");
+        assertThat(card.orElseThrow().getContent().facts())
+            .containsExactly("Az elmúlt 30 napban nem volt bejegyzés.");
+    }
+
     private CompanionMessageEntity todaysCard(UUID owner) {
         return companionMessageRepository.findByCreatedByAndMessageDateAndKind(
             owner, LocalDate.now(), CompanionMessageEntity.KIND_ADVICE).orElseThrow();

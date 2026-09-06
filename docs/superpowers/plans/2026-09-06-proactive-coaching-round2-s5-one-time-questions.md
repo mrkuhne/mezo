@@ -47,7 +47,7 @@
 - **Switches:** every new bean is `@ConditionalOnProperty(name = {COMPANION_SWITCH, PROACTIVE_SWITCH}, havingValue = "true")` — the `SetupCheckService` layout. `FeedMessageKindService` (Task 7) keeps its COMPANION-only condition; do not add the proactive switch to it, the nightly rollup must still resolve it.
 - **ArchUnit (CI):** services in `..service..`, entities in `..entity..`, repositories in `..repository..`, constructor DI only, no class-level `@Transactional`, no Spring `@Value`. Directions used here — `proactive → {journal, habit, ritual, needs, train, companion}` — are all pre-existing and one-way; **`companion` must never import `proactive`** (that is why Task 7 goes through `FeedMessageKindSource`). Run the ArchUnit test, do not take this on trust.
 - **Liquibase changesets are immutable**; the new file is timestamped after the newest existing one (`202609061700_mezo-d58h.7.4_flag_key_trace_meal_rhythm_drift.sql`) and registered in `1.0.0_master.yml`. CI's `lint` job runs `node scripts/lint-liquibase.mjs`.
-- **Backend runs REQUIRE** `-Dmezo.test.use-testcontainers=true`, and Maven's OWN exit code — never a pipeline's. "Tests run: 0", or a `-Dtest` filter matching nothing, is a FAILURE to report, not a pass.
+- **Backend runs REQUIRE** `-Dmezo.test.use-testcontainers=true`, and Maven's OWN exit code — never a pipeline's. "Tests run: 0", or a `-Dtest` filter matching nothing, is a FAILURE to report, not a pass. **ITs run under Surefire in this repo** (`docs/infrastructure/local-dev-testing.md`): the focused command is `backend/mvnw -f backend/pom.xml test -Dtest='…'` from the worktree root — `-Dit.test=… verify` silently runs the WHOLE suite, which OOM-dies on this machine.
 - Run everything from **this worktree root**; never `cd` to the primary repo. Commit subjects carry `(mezo-d58h.7.5)` plus the `Co-Authored-By:` trailer. Regenerate `docs/CODEMAP.md` (`node scripts/gen-codemap.mjs`) in the same change as any new file, and AFTER any docs edit.
 
 ---
@@ -154,7 +154,7 @@ bd update mezo-d58h.7.5 --claim
 - [ ] **Step 2: Run it and watch it fail.**
 
 ```bash
-./mvnw -pl backend -Dmezo.test.use-testcontainers=true -Dit.test=AdviceCardServiceIT verify -DfailIfNoTests=true
+backend/mvnw -f backend/pom.xml test -Dtest='AdviceCardServiceIT' -Dmezo.test.use-testcontainers=true
 ```
 
 Expected: compilation failure — `fromQuestion` does not exist.
@@ -221,7 +221,7 @@ Add to the class javadoc, after the "Lock hold time" paragraph:
 - [ ] **Step 5: Run the test.**
 
 ```bash
-./mvnw -pl backend -Dmezo.test.use-testcontainers=true -Dit.test=AdviceCardServiceIT verify -DfailIfNoTests=true
+backend/mvnw -f backend/pom.xml test -Dtest='AdviceCardServiceIT' -Dmezo.test.use-testcontainers=true
 ```
 
 Expected: PASS, every pre-existing test in the class included.
@@ -348,7 +348,7 @@ class UsageSeamIT extends AbstractIntegrationTest {
 - [ ] **Step 2: Run it and watch it fail.**
 
 ```bash
-./mvnw -pl backend -Dmezo.test.use-testcontainers=true -Dit.test=UsageSeamIT verify -DfailIfNoTests=true
+backend/mvnw -f backend/pom.xml test -Dtest='UsageSeamIT' -Dmezo.test.use-testcontainers=true
 ```
 
 Expected: compilation failure — none of the three seams exist.
@@ -492,7 +492,7 @@ If `TrainPopulator` has no `EntityManager` yet, add the field with the same hous
 - [ ] **Step 6: Run the seam IT.**
 
 ```bash
-./mvnw -pl backend -Dmezo.test.use-testcontainers=true -Dit.test=UsageSeamIT verify -DfailIfNoTests=true
+backend/mvnw -f backend/pom.xml test -Dtest='UsageSeamIT' -Dmezo.test.use-testcontainers=true
 ```
 
 Expected: PASS (3 tests).
@@ -658,7 +658,7 @@ class FeatureAbandonmentDetectorIT extends AbstractIntegrationTest {
 - [ ] **Step 2: Run it and watch it fail.**
 
 ```bash
-./mvnw -pl backend -Dmezo.test.use-testcontainers=true -Dit.test=FeatureAbandonmentDetectorIT verify -DfailIfNoTests=true
+backend/mvnw -f backend/pom.xml test -Dtest='FeatureAbandonmentDetectorIT' -Dmezo.test.use-testcontainers=true
 ```
 
 Expected: compilation failure — `FeatureAbandonmentDetector` does not exist.
@@ -887,7 +887,7 @@ class QuestionPropertiesIT extends AbstractIntegrationTest {
 - [ ] **Step 7: Run both ITs.**
 
 ```bash
-./mvnw -pl backend -Dmezo.test.use-testcontainers=true -Dit.test='FeatureAbandonmentDetectorIT,QuestionPropertiesIT' verify -DfailIfNoTests=true
+backend/mvnw -f backend/pom.xml test -Dtest='FeatureAbandonmentDetectorIT,QuestionPropertiesIT' -Dmezo.test.use-testcontainers=true
 ```
 
 Expected: PASS (7 tests). A failure in `testDetect_shouldFindTheChatFamily…` that says the MIND family fired instead means the fixture's fresh journal row was backdated too — check that `seedJournal` is not called in that test.
@@ -1012,7 +1012,7 @@ class FlatFeedbackDetectorIT extends AbstractIntegrationTest {
 - [ ] **Step 2: Run it and watch it fail.**
 
 ```bash
-./mvnw -pl backend -Dmezo.test.use-testcontainers=true -Dit.test=FlatFeedbackDetectorIT verify -DfailIfNoTests=true
+backend/mvnw -f backend/pom.xml test -Dtest='FlatFeedbackDetectorIT' -Dmezo.test.use-testcontainers=true
 ```
 
 Expected: compilation failure — `FlatFeedbackDetector` does not exist.
@@ -1106,7 +1106,7 @@ public class FlatFeedbackDetector {
 - [ ] **Step 4: Run the IT.**
 
 ```bash
-./mvnw -pl backend -Dmezo.test.use-testcontainers=true -Dit.test=FlatFeedbackDetectorIT verify -DfailIfNoTests=true
+backend/mvnw -f backend/pom.xml test -Dtest='FlatFeedbackDetectorIT' -Dmezo.test.use-testcontainers=true
 ```
 
 Expected: PASS (5 tests).
@@ -1268,7 +1268,7 @@ class OneTimeQuestionServiceIT extends AbstractIntegrationTest {
 - [ ] **Step 2: Run it and watch it fail.**
 
 ```bash
-./mvnw -pl backend -Dmezo.test.use-testcontainers=true -Dit.test=OneTimeQuestionServiceIT verify -DfailIfNoTests=true
+backend/mvnw -f backend/pom.xml test -Dtest='OneTimeQuestionServiceIT' -Dmezo.test.use-testcontainers=true
 ```
 
 Expected: compilation failure — `OneTimeQuestionService` does not exist.
@@ -1581,7 +1581,7 @@ class OneTimeQuestionSwitchOffIT extends AbstractIntegrationTest {
 - [ ] **Step 9: Run the whole question set.**
 
 ```bash
-./mvnw -pl backend -Dmezo.test.use-testcontainers=true -Dtest=AdvicePriorityTest -Dit.test='OneTimeQuestionServiceIT,OneTimeQuestionSwitchOffIT' verify -DfailIfNoTests=true
+backend/mvnw -f backend/pom.xml test -Dtest='AdvicePriorityTest,OneTimeQuestionServiceIT,OneTimeQuestionSwitchOffIT' -Dmezo.test.use-testcontainers=true
 ```
 
 Expected: PASS. `testRunFor_shouldNeverAskAgain_whenTheQuestionCardWasSuperseded` failing means the dedupe read went through JPA — re-check that `questionAlreadyAsked` is `nativeQuery = true` and has no `is_deleted` clause.
@@ -1748,7 +1748,7 @@ class QuestionAnswerIT extends AbstractIntegrationTest {
 - [ ] **Step 2: Run it and watch it fail.**
 
 ```bash
-./mvnw -pl backend -Dmezo.test.use-testcontainers=true -Dit.test=QuestionAnswerIT verify -DfailIfNoTests=true
+backend/mvnw -f backend/pom.xml test -Dtest='QuestionAnswerIT' -Dmezo.test.use-testcontainers=true
 ```
 
 Expected: compilation failure — `QuestionAnswerService` does not exist.
@@ -1979,7 +1979,7 @@ public class QuestionAnswerListener {
 - [ ] **Step 9: Run the IT.**
 
 ```bash
-./mvnw -pl backend -Dmezo.test.use-testcontainers=true -Dit.test=QuestionAnswerIT verify -DfailIfNoTests=true
+backend/mvnw -f backend/pom.xml test -Dtest='QuestionAnswerIT' -Dmezo.test.use-testcontainers=true
 ```
 
 Expected: PASS (4 tests). A CHECK-violation failure means the Liquibase changeset was not registered in `1.0.0_master.yml` — the entity `@Pattern` alone does not change the database.
@@ -2044,7 +2044,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - [ ] **Step 2: Run it and watch it fail.**
 
 ```bash
-./mvnw -pl backend -Dmezo.test.use-testcontainers=true -Dit.test=FeedbackLearningServiceIT verify -DfailIfNoTests=true
+backend/mvnw -f backend/pom.xml test -Dtest='FeedbackLearningServiceIT' -Dmezo.test.use-testcontainers=true
 ```
 
 Expected: FAIL — `up` is 1, because nothing excludes the answer yet.
@@ -2109,7 +2109,7 @@ Add to the class javadoc:
 - [ ] **Step 6: Run the IT (the whole class, so the pre-existing rollup tests re-run).**
 
 ```bash
-./mvnw -pl backend -Dmezo.test.use-testcontainers=true -Dit.test=FeedbackLearningServiceIT verify -DfailIfNoTests=true
+backend/mvnw -f backend/pom.xml test -Dtest='FeedbackLearningServiceIT' -Dmezo.test.use-testcontainers=true
 ```
 
 Expected: PASS.
@@ -2155,7 +2155,7 @@ node scripts/gen-codemap.mjs
 - [ ] **Step 5: Run the focused gate.** Everything this slice touched, plus the two enumeration guards and ArchUnit:
 
 ```bash
-./mvnw -pl backend -Dmezo.test.use-testcontainers=true -Dtest='AdvicePriorityTest,ArchitectureTest' -Dit.test='UsageSeamIT,QuestionPropertiesIT,FeatureAbandonmentDetectorIT,FlatFeedbackDetectorIT,OneTimeQuestionServiceIT,OneTimeQuestionSwitchOffIT,QuestionAnswerIT,AdviceCardServiceIT,SetupCheckServiceIT,FeedbackLearningServiceIT,InterventionServiceIT' verify -DfailIfNoTests=true
+backend/mvnw -f backend/pom.xml test -Dmezo.test.use-testcontainers=true -Dtest='AdvicePriorityTest,ArchitectureTest,UsageSeamIT,QuestionPropertiesIT,FeatureAbandonmentDetectorIT,FlatFeedbackDetectorIT,OneTimeQuestionServiceIT,OneTimeQuestionSwitchOffIT,QuestionAnswerIT,AdviceCardServiceIT,SetupCheckServiceIT,FeedbackLearningServiceIT,InterventionServiceIT'
 ```
 
 Read Maven's own exit code and its "Tests run:" lines. A filter that matched nothing is a FAILURE to report, not a pass. **Do not run the full backend suite locally** — it OOM-dies on this machine; CI is the authoritative gate (CLAUDE.md).
