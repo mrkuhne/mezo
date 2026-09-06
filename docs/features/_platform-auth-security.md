@@ -9,7 +9,6 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/security
   - backend/src/main/java/io/mrkuhne/mezo/techcore/exception
   - api/feature/auth/auth.yml
-  - backend/src/main/resources/application.yml
   - frontend/src/app/auth
   - frontend/src/features/auth
   - frontend/src/shared/lib/userScope.ts
