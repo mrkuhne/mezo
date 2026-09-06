@@ -1305,9 +1305,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     growthForecast.ts, gymDayTarget.ts, medalLabels.ts, mesoBands.ts, mesoCompare.ts, mesoDates.ts, mesoDays.ts,
     mesoPlan.ts, mesoWeek.ts, morningWindow.ts, muscleColors.ts, muscleFilters.ts, musclePriorities.ts, muscleWeek.ts,
     offDay.ts, peakWeekFit.ts, prepBriefing.ts, restTimer.ts, runToTemplate.ts, sessionLength.ts, sessionState.ts,
-    setBudget.ts, sportKinds.ts, sportMuscleLoad.ts, structureLint.ts, summaryStats.ts, useEditableNumber.ts,
-    useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts, weekZone.ts, weeklyBands.ts, weeklyLoad.ts, workoutCardMeta.ts,
-    workoutComparison.ts, workoutState.ts
+    setBudget.ts, sportKinds.ts, sportMuscleLoad.ts, structureLint.ts, summaryStats.ts, templatePoster.ts,
+    useEditableNumber.ts, useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts, weekZone.ts, weeklyBands.ts, weeklyLoad.ts,
+    workoutCardMeta.ts, workoutComparison.ts, workoutState.ts
   - **root:** DayTile.tsx, ProgramDayView.tsx, StepFocus.tsx, StepProgram.tsx, StepWhen.tsx, dayTiles.ts,
     wizardState.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 77 IT + 13 unit
