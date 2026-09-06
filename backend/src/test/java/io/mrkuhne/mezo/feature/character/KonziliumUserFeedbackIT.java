@@ -79,6 +79,25 @@ class KonziliumUserFeedbackIT extends ApiIntegrationTest {
         return observationRepository.save(entity);
     }
 
+    /** Seeds a user-feedback observation whose signal carries a REAL claim id in refIds — the
+     *  shape {@link CharacterFeedbackService#apply} writes for an actual answer, as opposed to
+     *  {@link #seedUserObservation} which always seeds an empty refIds list. */
+    private CharacterObservationEntity seedUserObservationAnsweringClaim(UUID owner, LocalDate day, String text,
+                                                                          short salience, List<String> dimensionKeys,
+                                                                          UUID claimId) {
+        CharacterObservationEntity entity = new CharacterObservationEntity();
+        entity.setCreatedBy(owner);
+        entity.setExpertKey(CharacterFeedbackService.USER_EXPERT_KEY);
+        entity.setDimensionKeys(new ObservationDimensionKeysEnvelope(dimensionKeys));
+        entity.setDay(day);
+        entity.setText(text);
+        entity.setSalience(salience);
+        entity.setSignals(new ObservationSignalsEnvelope(List.of(
+                new ObservationSignalsEnvelope.Signal(CharacterFeedbackService.SIGNAL_KEY, text,
+                        List.of(claimId.toString())))));
+        return observationRepository.save(entity);
+    }
+
     private CharacterDimensionEntity seedChapterDimension(UUID owner, String key) {
         CharacterDimensionEntity entity = new CharacterDimensionEntity();
         entity.setCreatedBy(owner);
@@ -190,6 +209,41 @@ class KonziliumUserFeedbackIT extends ApiIntegrationTest {
         assertThat(conference).isNotNull();
         CharacterObservationEntity after = observationRepository.findById(before.get(0).getId()).orElseThrow();
         assertThat(after.getConsumedByConferenceId()).isEqualTo(conference.getId());
+    }
+
+    @Test
+    void userObservation_withARealClaimIdInRefIds_evidenceLineCarriesTheBracketedClaimId() {
+        UUID owner = ownerId();
+        UUID claimId = UUID.randomUUID();
+        String text = "Cáfolat: rendszeresen kihagyja a naplózást. " + FakeCompanionLlm.CHAR_PROPOSALS_ECHO;
+        seedUserObservationAnsweringClaim(owner, WEEK_START.plusDays(1), text, (short) 5,
+                List.of("discipline"), claimId);
+
+        KonziliumProposalRound.Result result = proposalRound.run(owner, WEEK_START, weekObservations(owner));
+
+        // the echoed rationale is the FULL assembled evidence line — proves the [claimId] marker
+        // the prompt contract describes is actually rebuilt from the observation's signal refIds,
+        // immediately after the "FELHASZNÁLÓ VÁLASZA — " authorship prefix.
+        assertThat(result.proposals()).singleElement()
+                .satisfies(p -> assertThat(p.rationale())
+                        .contains("FELHASZNÁLÓ VÁLASZA — [" + claimId + "] Cáfolat: rendszeresen kihagyja a naplózást."));
+    }
+
+    @Test
+    void userObservation_withEmptyRefIds_evidenceLineHasThePrefixButNoBracket() {
+        UUID owner = ownerId();
+        String text = "Cáfolat: rendszeresen kihagyja a naplózást. " + FakeCompanionLlm.CHAR_PROPOSALS_ECHO;
+        seedUserObservation(owner, WEEK_START.plusDays(1), text, (short) 5, List.of("discipline"));
+
+        KonziliumProposalRound.Result result = proposalRound.run(owner, WEEK_START, weekObservations(owner));
+
+        // no claim id to restore (empty refIds) — the degrade path must be honest: the prefix is
+        // there, but with no bracket and no dangling "[" left over from a half-built marker.
+        assertThat(result.proposals()).singleElement()
+                .satisfies(p -> assertThat(p.rationale())
+                        .contains("FELHASZNÁLÓ VÁLASZA — Cáfolat: rendszeresen kihagyja a naplózást.")
+                        .doesNotContain("FELHASZNÁLÓ VÁLASZA — [")
+                        .doesNotContain("FELHASZNÁLÓ VÁLASZA — ]"));
     }
 
     // proves the fake's proposal-branch marker constants haven't drifted from the real ones — the
