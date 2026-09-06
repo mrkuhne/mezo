@@ -310,6 +310,26 @@ for (const theme of ['light', 'dark'] as const) {
       await expect(page).toHaveScreenshot(`insights-tudastar-eletesemenyek-${theme}.png`)
     })
 
+    // mezo-9r85: a Cél-ütközés blokk (`.lg-conflict`, CelPage.tsx) a 440x956-os viewport ALATT
+    // van, tehát a me-cel-reszlet shot sosem látta — a mock konfliktus-mondatot (lifegoalMock.ts,
+    // lg-kockahas) semmi sem őrizte pixel-szinten. Saját, odagörgetett felvétel — ugyanaz a
+    // minta, mint az insights-tudastar-eletesemenyek-nél / train-review-lane-nél.
+    test('me-cel-reszlet-konfliktus', async ({ page }) => {
+      await page.clock.setFixedTime(new Date(DEFAULT_FROZEN))
+      await seedThemeAndKalauz(page, theme)
+      await page.goto('/me/goals/lg-kockahas')
+      await page.waitForLoadState('networkidle')
+      const conflict = page.locator('.lg-conflict').first()
+      await conflict.waitFor()
+      // `scrollIntoViewIfNeeded()` no-ops here: a sliver of the block's first line is already
+      // inside the 440x956 viewport (that sliver is the very gap this shot exists to close),
+      // so Playwright treats it as "already in view" and never scrolls further. Force it to
+      // the vertical center instead so the whole block — wash, icon, text — lands in frame.
+      await conflict.evaluate((el) => el.scrollIntoView({ block: 'center' }))
+      await page.evaluate(() => document.fonts.ready)
+      await expect(page).toHaveScreenshot(`me-cel-reszlet-konfliktus-${theme}.png`)
+    })
+
     // F7.3 (mezo-d20.8.3.1): the recipe Pontszám tile opens the score sheet — the shot that
     // proves the full breakdown moved OFF the page into the shared ScoreBreakdownBody sheet.
     test('fuel-recept-score', async ({ page }) => {
