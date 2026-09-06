@@ -160,14 +160,19 @@ class CharacterRunLogIT extends ApiIntegrationTest {
         UUID owner = owner();
         dailySummaryPopulator.summary(owner, LocalDate.of(2026, 7, 1), "Jó hónap volt, sokat fejlődtem.");
 
+        // the run row's day is stamped by the SERVER's clock: capture the day AROUND the call, query
+        // the whole {before, after} span and accept either side — a midnight between the two reads
+        // would otherwise search (and assert) a day the row was never written on
+        LocalDate dayBefore = LocalDate.now();
         CharacterConferenceEntity conference = bootstrapService.run(owner);
+        LocalDate dayAfter = LocalDate.now();
         assertThat(conference).isNotNull();
 
         List<CharacterRunEntity> rows = runRepository.findByCreatedByAndDayBetweenOrderByDayDescGeneratedAtDesc(
-                owner, LocalDate.now(), LocalDate.now());
+                owner, dayBefore, dayAfter);
         assertThat(rows).filteredOn(r -> "BOOTSTRAP".equals(r.getKind())).singleElement().satisfies(row -> {
             assertThat(row.getConferenceId()).isEqualTo(conference.getId());
-            assertThat(row.getDay()).isEqualTo(LocalDate.now());
+            assertThat(row.getDay()).isIn(dayBefore, dayAfter);
         });
     }
 

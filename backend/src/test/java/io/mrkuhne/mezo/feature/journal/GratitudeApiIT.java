@@ -32,10 +32,14 @@ class GratitudeApiIT extends ApiIntegrationTest {
         req.setText("Jó kávé");
         req.setLifeArea("cooking");
 
+        // occurredOn is stamped by the SERVER's clock: capture the day AROUND the call and accept
+        // either side of it, so a midnight between the two reads cannot flip the assert.
+        LocalDate dayBefore = LocalDate.now();
         var resp = postForBody("/api/journal/gratitude", req, ownerAuthHeaders(),
                 HttpStatus.CREATED, GratitudeEntryResponse.class);
+        LocalDate dayAfter = LocalDate.now();
 
-        assertThat(resp.getOccurredOn()).isEqualTo(LocalDate.now());
+        assertThat(resp.getOccurredOn()).isIn(dayBefore, dayAfter);
         assertThat(resp.getLifeArea()).isEqualTo("cooking");
         assertThat(resp.getId()).isNotNull();
         assertThat(resp.getText()).isEqualTo("Jó kávé");
@@ -107,8 +111,10 @@ class GratitudeApiIT extends ApiIntegrationTest {
 
         deleteAndExpect("/api/journal/gratitude/" + created.getId(), ownerAuthHeaders(), HttpStatus.NO_CONTENT);
 
+        // both bounds are test-owned: read the day ONCE so the window cannot straddle a midnight
+        LocalDate today = LocalDate.now();
         List<GratitudeEntryResponse> entries = getForList(
-                "/api/journal/gratitude?from=" + LocalDate.now().minusDays(1) + "&to=" + LocalDate.now(),
+                "/api/journal/gratitude?from=" + today.minusDays(1) + "&to=" + today,
                 ownerAuthHeaders(), HttpStatus.OK, GratitudeEntryResponse.class);
         assertThat(entries).extracting(GratitudeEntryResponse::getId).doesNotContain(created.getId());
     }
