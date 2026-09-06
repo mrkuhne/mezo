@@ -559,7 +559,8 @@ endpoint's `events[]` — see below.
 - **The smart-tier pipeline** — `HypothesisPipelineService` (**since Reflexió S2, `mezo-eq85.2`,
   driven nightly by `ReflectionJob`'s propose step at 03:40, switch
   `mezo.techcore.cron.reflection-job.enabled`; the weekly Sunday-03:00 `HypothesisJob` and its own
-  switch are retired**): gather (last-7 daily-summary
+  switch are retired — so this loop now also stands down with `mezo.companion.reflection.enabled`,
+  its only remaining kill switch**): gather (last-7 daily-summary
   narratives + confirmed-facts block + the live statistical patterns' r/n/p — grounded
   statistical support; **since V3.4 also** the weekly raw metric table + the non-live pairs'
   gate diagnostics, see the V3.4 block) → **propose** (strict-JSON, `llm.smart-model` — the Pro tier's debut) →
@@ -1049,6 +1050,11 @@ the nightly **`ReflectionJob`** at 03:40.
   `reflection.propose.max-per-night` instead of the retired `hypotheses.max-per-run`;
   `hypotheses.cron`, `HYPOTHESIS_JOB_SWITCH` and the `hypothesis-job` yml block are gone, and the
   memory observatory's `hypothesisCron` reports the reflection cron — that IS the loop's schedule now.
+  **The honest cost of the retirement: V3.2 lost its own switch.** `HypothesisPipelineService` is
+  now reachable only through `ReflectionJob`, which is gated on `REFLECTION_SWITCH`, so
+  `mezo.companion.reflection.enabled=false` silently disables the pre-existing hypothesis loop as
+  well as Reflexió itself. Intended, but not obvious — spelled out on both yml blocks
+  (`mezo.companion.reflection` and `mezo.companion.hypotheses`) and in §3's config keys.
 - **Six new `pattern_event` kinds** — `observation`, `evidence`, `user_reply`, `revised`, `refuted`,
   `dormant` — and `PatternEventPayloadEnvelope` grows at the END (`hit`, `verdict`, `channel`,
   `choice`, `text`, `evidenceRefs`, `surfaced`) so Jackson reads every pre-S2 row with the new
@@ -4421,7 +4427,9 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
   `mezo.companion.hypotheses.max-per-run` and `HYPOTHESIS_JOB_SWITCH`. The loop's schedule is now
   `mezo.companion.reflection.cron` (03:40, `REFLECTION_JOB_SWITCH`) and its cap
   `mezo.companion.reflection.propose.max-per-night`; only the two critique thresholds — which define
-  what SURVIVES, not when it runs — stayed on the `hypotheses` block.
+  what SURVIVES, not when it runs — stayed on the `hypotheses` block. **The `hypotheses` block
+  therefore has no kill switch left:** V3.2 runs iff `mezo.companion.reflection.enabled` (plus the
+  companion and `reflection-job` switches) are true — see the `reflection.enabled` entry below.
 - `mezo.companion.hypotheses.keep-threshold` = **0.75** / `revise-threshold` = **0.50** (0..1) —
   the arch §4.7 routing thresholds; the four WEIGHTS are code constants (they define the score).
 - `mezo.companion.graph.max-hops` = **2** (`@Min(1) @Max(3)`) — W2.1: neighborhood traversal depth
@@ -4678,7 +4686,12 @@ without a second properties class.
 
 - `mezo.companion.reflection.enabled` = **true** (`FeaturesConfiguration.REFLECTION_SWITCH`) —
   the master switch for every Reflexió bean; off ⇒ no extraction call is reachable and the four
-  `TEXT_*` metrics report no data.
+  `TEXT_*` metrics report no data. **Since S2 this switch is WIDER than Reflexió, and that is a
+  deliberate consequence of retiring `HypothesisJob`:** the pre-existing V3.2 hypothesis-proposal
+  loop (`HypothesisPipelineService`, `mezo.companion.hypotheses.*`) is now reachable ONLY from
+  `ReflectionJob`'s propose step, and `ReflectionJob` is gated on this switch — so
+  `mezo.companion.reflection.enabled=false` also stands V3.2 down. V3.2 no longer has a kill switch
+  of its own, and nothing else proposes hypotheses.
 - `mezo.techcore.cron.reflection-job.enabled` = **true** (`REFLECTION_JOB_SWITCH`) — off ⇒ the
   `ReflectionJob` bean does not exist (`ReflectionJobSwitchOffIT`); `TextSignalCatchUpService` and
   `HypothesisEvaluationService` stay callable (the `FlagSweepJob`-vs-`FlagService` idiom). The job
