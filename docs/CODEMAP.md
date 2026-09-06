@@ -892,7 +892,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **modules:** feedApi.ts, feedHooks.ts, feedMock.ts, notificationApi.ts, notificationHooks.ts, notificationMock.ts,
     notificationPrefHooks.ts, notificationScheduleWriter.ts
 - **FE ui** `frontend/src/features/notification`
-  - **logic:** groupByDay.ts
+  - **logic:** groupByDay.ts, stamp.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/notification` — 14 IT + 5 unit
   - **ITs:** `AnchorResolverDecisionIT`, `AnchorResolverFeedIT`, `AnchorResolverIT`, `AnchorResolverInterventionIT`,
     `AnchorResolverRitualSwitchOffIT`, `NotificationApiIT`, `NotificationDispatchJobIT`, `NotificationPrefApiIT`,

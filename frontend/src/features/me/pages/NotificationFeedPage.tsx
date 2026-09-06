@@ -11,6 +11,7 @@ import { useNavigate } from 'react-router-dom'
 import { notificationKindMeta } from '@/data/types'
 import { useNotificationFeed, useNotificationFeedActions } from '@/data/notification/feedHooks'
 import { groupByDay } from '@/features/notification/logic/groupByDay'
+import { timeLabel } from '@/features/notification/logic/stamp'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { ClayIcon } from '@/shared/ui/clay'
@@ -18,9 +19,6 @@ import { GhostState } from '@/shared/ui/GhostState'
 import { Skeleton } from '@/shared/ui/Skeleton'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
-
-const timeLabel = (occurredAt: string) =>
-  new Date(occurredAt).toLocaleTimeString('hu-HU', { hour: '2-digit', minute: '2-digit' })
 
 // Stable fallback identity for `wasUnread` before the snapshot is captured — a fresh `new Set()`
 // on every render would change the `useEffect` dependency each time and re-run its (no-op) body
