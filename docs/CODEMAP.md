@@ -242,7 +242,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### companion
 
 *BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-02, shipped) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-09-05, mixed) ·
+  [docs/features/companion.md](features/companion.md) (updated 2026-09-06, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-05, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-05, mixed)
@@ -267,13 +267,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MemoryRetrievalFeedbackRepository`, `MemoryRetrievalResultRepository`, `MemoryRetrievalRunRepository`,
     `MemoryVectorRepository`, `MessageFeedbackRepository`, `PatternEventRepository`, `PatternRepository`,
     `PeriodSummaryRepository`, `WeeklyScoreRepository`
-  - **services:** `ChatMemoryContextAdapter`, `ChatMentionListener`, `ChatService`, `ChatStreamService`,
-    `ChatTurnCompleted`, `ConsolidationJob`, `ContextSnapshotAssembler`, `ConversationService`, `DailySummaryJob`,
-    `DailySummaryService`, `DayEvaluationEngine`, `DayReviewLlm`, `DayReviewService`, `DayScoreService`,
-    `DecisionContextAssemblerAdapter`, `DenseMemoryRetriever`, `FactCandidateService`, `FactExtractionListener`,
-    `FactExtractionService`, `FactMemoryRetriever`, `FeedMessageKindSource`, `FeedbackLearningJob`,
-    `FeedbackLearningService`, `FlagEvaluationListener`, `FlagEvaluator`, `FlagKey`, `FlagOutcome`, `FlagRaisedEvent`,
-    `FlagRule`, `FlagService`, `FlagSweepJob`, `FlagTraceWriter`, `FlagVerdict`, `GraphEdgeLineRenderer`,
+  - **services:** `AdviceRankPort`, `ChatMemoryContextAdapter`, `ChatMentionListener`, `ChatService`,
+    `ChatStreamService`, `ChatTurnCompleted`, `ConsolidationJob`, `ContextSnapshotAssembler`, `ConversationService`,
+    `DailyCardPort`, `DailySummaryJob`, `DailySummaryService`, `DayEvaluationEngine`, `DayReviewLlm`,
+    `DayReviewService`, `DayScoreService`, `DecisionContextAssemblerAdapter`, `DenseMemoryRetriever`,
+    `FactCandidateService`, `FactExtractionListener`, `FactExtractionService`, `FactMemoryRetriever`,
+    `FeedMessageKindSource`, `FeedbackLearningJob`, `FeedbackLearningService`, `FlagCatalog`, `FlagEvaluationListener`,
+    `FlagEvaluator`, `FlagFactRenderer`, `FlagKey`, `FlagOutcome`, `FlagRaisedEvent`, `FlagRule`, `FlagService`,
+    `FlagSweepJob`, `FlagTraceCopy`, `FlagTraceReadService`, `FlagTraceWriter`, `FlagVerdict`, `GraphEdgeLineRenderer`,
     `GraphEdgeStructurer`, `GraphEdgeSuggestion`, `GraphMaintenanceJob`, `GraphMaintenanceResult`,
     `GraphMaintenanceService`, `GraphMemoryRetriever`, `GraphPromotionListener`, `GraphPromotionService`,
     `GraphPromptAssembler`, `GraphReconcileResult`, `GraphService`, `GraphTraversalService`, `HypothesisJob`,
@@ -294,10 +295,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `SeasonSuggestion`, `TraceDisposition`, `TranscriptionService`, `UnavailableReason`, `WeekContextRenderer`,
     `WeeklyScoreService`, `WeightByDateSupport`
   - **controllers→contract:** `CompanionController`→`CompanionApi`,
-    `CompanionFeedbackController`→`CompanionFeedbackApi`, `CompanionStreamController`,
-    `CompanionVoiceController`→`CompanionVoiceApi`, `GraphController`→`KnowledgeGraphApi`,
+    `CompanionFeedbackController`→`CompanionFeedbackApi`, `CompanionFlagTraceController`→`CompanionFlagsApi`,
+    `CompanionStreamController`, `CompanionVoiceController`→`CompanionVoiceApi`, `GraphController`→`KnowledgeGraphApi`,
     `MeWeekController`→`MeWeekApi`, `MemoryRetrievalController`→`MemoryRetrievalApi`
-  - **mappers:** `CompanionMapper`, `GraphMapper`, `MessageFeedbackMapper`
+  - **mappers:** `CompanionFlagMapper`, `CompanionMapper`, `GraphMapper`, `MessageFeedbackMapper`
   - **config:** `CompanionProperties`, `DayEvaluationProperties`, `FeedbackLearningProperties`, `FlagProperties`,
     `MemoryPlatformProperties`, `ProfileProperties`, `QuarterlyProperties`
   - **events/listeners:** `DecisionEmbeddingListener`, `GratitudeEmbeddingListener`, `JournalEmbeddingListener`,
@@ -325,8 +326,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/companion-feedback/companion-feedback.yml` — 3 operations
   - **endpoints:** GET /api/companion/feedback · PUT /api/companion/feedback ·
     DELETE /api/companion/feedback/{artifactKind}/{artifactId}
-- **Contract** `api/feature/companion/companion.yml` — 21 operations
-  - **endpoints:** GET /api/companion/conversation · POST /api/companion/conversation ·
+- **Contract** `api/feature/companion/companion.yml` — 22 operations
+  - **endpoints:** GET /api/companion/flags/trace · GET /api/companion/conversation · POST /api/companion/conversation ·
     PATCH /api/companion/conversation/{conversationId} · DELETE /api/companion/conversation/{conversationId} ·
     GET /api/companion/conversation/{conversationId}/messages ·
     POST /api/companion/conversation/{conversationId}/message · GET /api/companion/fact · POST /api/companion/fact ·
@@ -345,20 +346,21 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 174 IT + 32 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 177 IT + 35 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatServiceAmbientRecallIT`, `ChatServiceGraphBlockFailureIT`, `ChatServiceGraphBlockIT`,
     `ChatServiceGraphBlockSwitchOffIT`, `ChatServiceIT`, `ChatStreamAdvisorIT`, `ChatStreamServiceIT`,
     `CompanionAdvisorChainIT`, `CompanionAdvisorsSwitchOffIT`, `CompanionApiIT`, `CompanionApiSwitchOffIT`,
     `CompanionFactApiIT`, `CompanionFactCandidateApiIT`, `CompanionFeedbackApiIT`, `CompanionFeedbackSwitchOffIT`,
-    `CompanionFlagLogPersistenceIT`, `CompanionFlagTracePersistenceIT`, `CompanionLlmFakeIT`,
-    `CompanionMemoryLlmUsageApiIT`, `CompanionMemoryLlmUsageDisabledIT`, `CompanionMemoryOverviewApiIT`,
-    `CompanionMemorySimilarDaysApiIT`, `CompanionMemorySummaryApiIT`, `CompanionMemorySwitchOffIT`,
-    `CompanionPatternApiIT`, `CompanionPatternMonitorApiIT`, `CompanionPatternMonitorSwitchOffIT`,
-    `CompanionPatternPairDetailApiIT`, `CompanionPropertiesIT`, `CompanionRealWiringIT`, `CompanionStreamApiIT`,
-    `CompanionSwitchOffIT`, `CompanionToolRegistryIT`, `CompanionToolsRenderIT`, `CompanionTranscribeApiIT`,
-    `ConsolidationJobIT`, `ConsolidationJobSwitchOffIT`, `ConsolidationPropertiesIT`, `ContextSnapshotAssemblerIT`,
+    `CompanionFlagLogPersistenceIT`, `CompanionFlagTraceApiIT`, `CompanionFlagTracePersistenceIT`,
+    `CompanionFlagTraceReadQueriesIT`, `CompanionLlmFakeIT`, `CompanionMemoryLlmUsageApiIT`,
+    `CompanionMemoryLlmUsageDisabledIT`, `CompanionMemoryOverviewApiIT`, `CompanionMemorySimilarDaysApiIT`,
+    `CompanionMemorySummaryApiIT`, `CompanionMemorySwitchOffIT`, `CompanionPatternApiIT`,
+    `CompanionPatternMonitorApiIT`, `CompanionPatternMonitorSwitchOffIT`, `CompanionPatternPairDetailApiIT`,
+    `CompanionPropertiesIT`, `CompanionRealWiringIT`, `CompanionStreamApiIT`, `CompanionSwitchOffIT`,
+    `CompanionToolRegistryIT`, `CompanionToolsRenderIT`, `CompanionTranscribeApiIT`, `ConsolidationJobIT`,
+    `ConsolidationJobSwitchOffIT`, `ConsolidationPropertiesIT`, `ContextSnapshotAssemblerIT`,
     `ContextSnapshotAssemblerLifeGoalOffIT`, `ContextSnapshotAssemblerLifeGoalSwitchOffIT`,
     `ContextSnapshotAssemblerPeopleOffIT`, `ConversationServiceIT`, `DailySummaryJobIT`, `DailySummaryJobSwitchOffIT`,
     `DailySummaryServiceIT`, `DayEvaluationApiIT`, `DayEvaluationSwitchOffApiIT`, `DayReviewRepositoryIT`,
@@ -369,9 +371,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `FlagEvaluatorLateEatingIT`, `FlagEvaluatorLoadFuelMismatchIT`, `FlagEvaluatorLoggingGapIT`,
     `FlagEvaluatorMissedWorkoutsIT`, `FlagEvaluatorMomentumRecoveryIT`, `FlagEvaluatorProtocolLapseIT`,
     `FlagEvaluatorRapidWeightLossIT`, `FlagEvaluatorStressSleepIT`, `FlagPropertiesIT`, `FlagServiceIT`,
-    `FlagServiceTraceIT`, `FlagSweepJobSwitchOffIT`, `GraphApiIT`, `GraphCandidateApiIT`, `GraphEntityPersistenceIT`,
-    `GraphFactOptOutEventIT`, `GraphFactOptOutIT`, `GraphMaintenanceJobSwitchOffIT`, `GraphMaintenanceServiceIT`,
-    `GraphPromotionEventIT`, `GraphPromotionPersonIT`, `GraphPromotionServiceIT`,
+    `FlagServiceTraceIT`, `FlagSweepJobSwitchOffIT`, `FlagTraceReadServiceIT`, `GraphApiIT`, `GraphCandidateApiIT`,
+    `GraphEntityPersistenceIT`, `GraphFactOptOutEventIT`, `GraphFactOptOutIT`, `GraphMaintenanceJobSwitchOffIT`,
+    `GraphMaintenanceServiceIT`, `GraphPromotionEventIT`, `GraphPromotionPersonIT`, `GraphPromotionServiceIT`,
     `GraphPromotionServiceReconcileIsolationIT`, `GraphPromotionSwitchOffIT`, `GraphPromptAssemblerIT`,
     `GraphPromptAssemblerRefsCapIT`, `GraphRetractionEventIT`, `GraphRetractionIT`, `GraphSeedSelectionCapIT`,
     `GraphSeedSelectionIT`, `GraphSeedSelectionRankingIT`, `GraphServiceIT`, `GraphSwitchOffIT`,
@@ -588,7 +590,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### insights
 
-*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-05, mixed) ·
+*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-06, mixed) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-09-04, mixed)
 
 - **FE data** `frontend/src/data/insights`
@@ -599,12 +601,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `useKnowledgeGraphNodes`, `useLifeEventActions`, `useLifeEventCandidates`, `useLlmUsage`, `useMemoir`,
     `useMemoirArchive`, `useMemoryOverview`, `useMemoryRetrievalFeedback`, `useMemorySummaries`, `usePatternActions`,
     `usePatternMonitor`, `usePatternPairDetail`, `usePatterns`, `usePredictions`, `useSimilarDays`, `useTranscribe`
-  - **modules:** chat.ts, chatApi.ts, chatHooks.ts, diagnosisApi.ts, diagnosisHooks.ts, diagnosisMock.ts,
-    experimentsApi.ts, experimentsHooks.ts, graph.ts, graphApi.ts, graphHooks.ts, insights.ts, knowledge.ts,
-    knowledgeApi.ts, knowledgeHooks.ts, memoirApi.ts, memoirHooks.ts, memory.ts, memoryApi.ts, memoryFeedbackApi.ts,
-    memoryFeedbackHooks.ts, memoryHooks.ts, monitorApi.ts, monitorHooks.ts, patternDetailApi.ts, patternDetailHooks.ts,
-    patternPairMapper.ts, patternsApi.ts, patternsHooks.ts, predictionsApi.ts, predictionsHooks.ts, weeklyHooks.ts,
-    weeklySuggestionApi.ts
+  - **modules:** chat.ts, chatApi.ts, chatHooks.ts, coachingTraceApi.ts, coachingTraceHooks.ts, coachingTraceMock.ts,
+    diagnosisApi.ts, diagnosisHooks.ts, diagnosisMock.ts, experimentsApi.ts, experimentsHooks.ts, graph.ts,
+    graphApi.ts, graphHooks.ts, insights.ts, knowledge.ts, knowledgeApi.ts, knowledgeHooks.ts, memoirApi.ts,
+    memoirHooks.ts, memory.ts, memoryApi.ts, memoryFeedbackApi.ts, memoryFeedbackHooks.ts, memoryHooks.ts,
+    monitorApi.ts, monitorHooks.ts, patternDetailApi.ts, patternDetailHooks.ts, patternPairMapper.ts, patternsApi.ts,
+    patternsHooks.ts, predictionsApi.ts, predictionsHooks.ts, weeklyHooks.ts, weeklySuggestionApi.ts
 - **FE ui** `frontend/src/features/insights`
   - **pages:** ChatPage.tsx, DiagnosisDetailPage.tsx, DiagnosisListPage.tsx, ExperimentsPage.tsx,
     KnowledgeListPage.tsx, MemoirArchivePage.tsx, MemoirChapterPage.tsx, MemoirPage.tsx, MemoryPage.tsx,
@@ -714,7 +716,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### llmlog
 
-*BE + API* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-05, mixed)
+*BE + API* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-06, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
@@ -984,20 +986,20 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ExperimentRepository`, `MemoirRepository`, `PredictionRepository`, `WeeklyReviewRepository`,
     `WeeklySuggestionRepository`
   - **services:** `AdviceActionCatalog`, `AdviceApplyService`, `AdviceCandidate`, `AdviceCardService`,
-    `AdviceFactRenderer`, `AdviceMutationPort`, `AdvicePriority`, `AdviceProseGenerator`, `ChallengeGenerator`,
+    `AdviceMutationPort`, `AdvicePriority`, `AdviceProseGenerator`, `AdviceRankAdapter`, `ChallengeGenerator`,
     `ChallengeJob`, `ChallengeOutcomeEvaluator`, `CompanionMessageEventListener`, `CompanionMessageGenerator`,
-    `CompanionMessageJob`, `DiagnosisGenerator`, `DiagnosisRecipe`, `DiagnosisService`, `ExperimentJob`,
-    `ExperimentOutcomeService`, `ExperimentProposalGenerator`, `FatigueEvidenceCollector`, `FeedMessageKindService`,
-    `GrowthDigestBlock`, `HighlightCitationSourceAdapter`, `HydrationShortfallProbe`, `InterventionEventListener`,
-    `InterventionService`, `LightenTomorrowAdapter`, `LogFreshnessProbe`, `MemoirGenerator`, `MemoirJob`,
-    `MetricWindowEvaluator`, `OverloadChallengeGenerator`, `PatternImpactService`, `PeopleMezoNoteAdapter`,
-    `PlanFeasibilityCalculator`, `PredictionGenerator`, `PredictionJob`, `PredictionValidationService`,
-    `ProactiveChallengeService`, `ProactiveExperimentService`, `ProactiveFeedService`, `ProactiveMemoirService`,
-    `ProactivePredictionService`, `ProactiveWeeklySuggestionService`, `ProseNumberGuard`, `RetroLoggingProbe`,
-    `SetupCheckJob`, `SetupCheckService`, `SleepAnchorShiftAdapter`, `SportSlotSkipAdapter`, `WeekReviewSourceAdapter`,
-    `WeeklyLessonService`, `WeeklyReviewContextSources`, `WeeklyReviewDigestService`, `WeeklyReviewGenerator`,
-    `WeeklyReviewJob`, `WeeklyReviewService`, `WeeklyReviewWeekWindow`, `WeeklySuggestionGenerator`,
-    `WeeklySuggestionJob`
+    `CompanionMessageJob`, `DailyCardAdapter`, `DiagnosisGenerator`, `DiagnosisRecipe`, `DiagnosisService`,
+    `ExperimentJob`, `ExperimentOutcomeService`, `ExperimentProposalGenerator`, `FatigueEvidenceCollector`,
+    `FeedMessageKindService`, `GrowthDigestBlock`, `HighlightCitationSourceAdapter`, `HydrationShortfallProbe`,
+    `InterventionEventListener`, `InterventionService`, `LightenTomorrowAdapter`, `LogFreshnessProbe`,
+    `MemoirGenerator`, `MemoirJob`, `MetricWindowEvaluator`, `OverloadChallengeGenerator`, `PatternImpactService`,
+    `PeopleMezoNoteAdapter`, `PlanFeasibilityCalculator`, `PredictionGenerator`, `PredictionJob`,
+    `PredictionValidationService`, `ProactiveChallengeService`, `ProactiveExperimentService`, `ProactiveFeedService`,
+    `ProactiveMemoirService`, `ProactivePredictionService`, `ProactiveWeeklySuggestionService`, `ProseNumberGuard`,
+    `RetroLoggingProbe`, `SetupCheckJob`, `SetupCheckService`, `SleepAnchorShiftAdapter`, `SportSlotSkipAdapter`,
+    `WeekReviewSourceAdapter`, `WeeklyLessonService`, `WeeklyReviewContextSources`, `WeeklyReviewDigestService`,
+    `WeeklyReviewGenerator`, `WeeklyReviewJob`, `WeeklyReviewService`, `WeeklyReviewWeekWindow`,
+    `WeeklySuggestionGenerator`, `WeeklySuggestionJob`
   - **controllers→contract:** `DiagnosisController`→`DiagnosisApi`, `ProactiveController`→`ProactiveApi`
   - **mappers:** `ChallengeDisplay`, `ProactiveMapper`
   - **config:** `DiagnosisProperties`, `ProactiveProperties`, `SetupCheckProperties`
@@ -1015,27 +1017,27 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/proactive/challenge/{id}/decision · GET /api/proactive/weekly-review/{start} ·
     POST /api/proactive/weekly-review/{start}/regenerate · GET /api/proactive/weekly-review/{start}/lessons ·
     GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 74 IT + 5 unit
-  - **ITs:** `AdviceApplyServiceIT`, `AdviceCardServiceIT`, `AdviceProseGeneratorIT`, `ChallengeGeneratorIT`,
-    `ChallengeJobIT`, `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`, `ChallengePersistenceIT`,
-    `CompanionMessageAdvicePersistenceIT`, `CompanionMessageEventIT`, `CompanionMessageGeneratorIT`,
-    `CompanionMessageHydrationIT`, `CompanionMessageInterventionPersistenceIT`, `CompanionMessageJobIT`,
-    `CompanionMessageJobSwitchOffIT`, `CompanionMessageMissedWorkoutsIT`, `CompanionMessagePersistenceIT`,
-    `CompanionMessageRetroLoggingIT`, `CompanionMessageSetupPersistenceIT`, `ContextSnapshotOwnerZoneIT`,
-    `DiagnosisControllerIT`, `DiagnosisExperimentIT`, `DiagnosisGeneratorIT`, `ExperimentJobIT`,
-    `ExperimentJobSwitchOffIT`, `ExperimentOutcomeIT`, `ExperimentPersistenceIT`, `ExperimentProposalGeneratorIT`,
-    `FatigueEvidenceCollectorIT`, `GrowthDigestBlockIT`, `HighlightCitationIT`, `HydrationPropertiesIT`,
-    `HydrationShortfallProbeIT`, `InterventionConfigIT`, `InterventionServiceIT`, `InterventionSwitchOffIT`,
-    `LogFreshnessProbeIT`, `MemoirGeneratorIT`, `MemoirJobIT`, `MemoirJobSwitchOffIT`, `MemoirPersistenceIT`,
-    `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`, `PredictionGeneratorIT`, `PredictionJobIT`,
-    `PredictionJobSwitchOffIT`, `PredictionPersistenceIT`, `PredictionValidationIT`, `ProactiveApiAdviceApplyIT`,
-    `ProactiveApiChallengeIT`, `ProactiveApiCompanionOffIT`, `ProactiveApiExperimentIT`, `ProactiveApiFeedIT`,
-    `ProactiveApiIT`, `ProactiveApiSwitchOffIT`, `ProactiveMemoirArchiveIT`, `ProactiveMemoirArchiveSwitchOffIT`,
-    `RetroLoggingProbeIT`, `RetroLoggingPropertiesIT`, `SetupCheckJobSwitchOffIT`, `SetupCheckPropertiesIT`,
-    `SetupCheckServiceIT`, `SleepAnchorShiftAdapterIT`, `SleepDiagnosisIT`, `SportSlotSkipAdapterIT`,
-    `WeeklyLessonServiceIT`, `WeeklyReviewContextSourcesIT`, `WeeklyReviewControllerIT`, `WeeklyReviewGeneratorIT`,
-    `WeeklySuggestionGeneratorIT`, `WeeklySuggestionJobIT`, `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionNameIT`,
-    `WeeklySuggestionPersistenceIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 75 IT + 4 unit
+  - **ITs:** `AdviceApplyServiceIT`, `AdviceCardServiceIT`, `AdviceObserverPortsIT`, `AdviceProseGeneratorIT`,
+    `ChallengeGeneratorIT`, `ChallengeJobIT`, `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`,
+    `ChallengePersistenceIT`, `CompanionMessageAdvicePersistenceIT`, `CompanionMessageEventIT`,
+    `CompanionMessageGeneratorIT`, `CompanionMessageHydrationIT`, `CompanionMessageInterventionPersistenceIT`,
+    `CompanionMessageJobIT`, `CompanionMessageJobSwitchOffIT`, `CompanionMessageMissedWorkoutsIT`,
+    `CompanionMessagePersistenceIT`, `CompanionMessageRetroLoggingIT`, `CompanionMessageSetupPersistenceIT`,
+    `ContextSnapshotOwnerZoneIT`, `DiagnosisControllerIT`, `DiagnosisExperimentIT`, `DiagnosisGeneratorIT`,
+    `ExperimentJobIT`, `ExperimentJobSwitchOffIT`, `ExperimentOutcomeIT`, `ExperimentPersistenceIT`,
+    `ExperimentProposalGeneratorIT`, `FatigueEvidenceCollectorIT`, `GrowthDigestBlockIT`, `HighlightCitationIT`,
+    `HydrationPropertiesIT`, `HydrationShortfallProbeIT`, `InterventionConfigIT`, `InterventionServiceIT`,
+    `InterventionSwitchOffIT`, `LogFreshnessProbeIT`, `MemoirGeneratorIT`, `MemoirJobIT`, `MemoirJobSwitchOffIT`,
+    `MemoirPersistenceIT`, `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`, `PredictionGeneratorIT`,
+    `PredictionJobIT`, `PredictionJobSwitchOffIT`, `PredictionPersistenceIT`, `PredictionValidationIT`,
+    `ProactiveApiAdviceApplyIT`, `ProactiveApiChallengeIT`, `ProactiveApiCompanionOffIT`, `ProactiveApiExperimentIT`,
+    `ProactiveApiFeedIT`, `ProactiveApiIT`, `ProactiveApiSwitchOffIT`, `ProactiveMemoirArchiveIT`,
+    `ProactiveMemoirArchiveSwitchOffIT`, `RetroLoggingProbeIT`, `RetroLoggingPropertiesIT`, `SetupCheckJobSwitchOffIT`,
+    `SetupCheckPropertiesIT`, `SetupCheckServiceIT`, `SleepAnchorShiftAdapterIT`, `SleepDiagnosisIT`,
+    `SportSlotSkipAdapterIT`, `WeeklyLessonServiceIT`, `WeeklyReviewContextSourcesIT`, `WeeklyReviewControllerIT`,
+    `WeeklyReviewGeneratorIT`, `WeeklySuggestionGeneratorIT`, `WeeklySuggestionJobIT`,
+    `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionNameIT`, `WeeklySuggestionPersistenceIT`
   - **populators:** `ActivityPopulator`, `ChallengePopulator`, `CheckInPopulator`, `CompanionMessagePopulator`,
     `DailySummaryPopulator`, `DatabasePopulator`, `DiagnosisPopulator`, `ExperimentPopulator`, `FlagLogPopulator`,
     `GoalPopulator`, `GraphPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`,
