@@ -12,7 +12,7 @@
     "test:watch": "vitest",
     "test:visual": "playwright test --config tests/visual/playwright.config.ts",
     "test:visual:update": "playwright test --config tests/visual/playwright.config.ts --update-snapshots",
-    "generate:api": "openapi-typescript ../api/openapi.yml -o src/data/_client/api.gen.ts"
+    "generate:api": "node ../scripts/check-generator-toolchain.mjs frontend && openapi-typescript ../api/openapi.yml -o src/data/_client/api.gen.ts"
   },
   "keywords": [],
   "author": "",
@@ -39,7 +39,7 @@
     "@vitejs/plugin-react": "^6.0.2",
     "jsdom": "^29.1.1",
     "msw": "^2.14.6",
-    "openapi-typescript": "^7.13.0",
+    "openapi-typescript": "7.13.0",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
     "vite": "^8.0.16",
