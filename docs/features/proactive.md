@@ -957,7 +957,10 @@ FLAG signals (grace-window copy, "the streak lives, just continue it," never bla
 [companion.md](companion.md) §3), so it must never be able to outrank and displace any of the other
 thirteen flags' cards. Since `outranks` is index order and lower ranks harder, `protocol_lapse`
 still outranks (and can displace) the two setup checks and the round-0 tail below it in the list —
-only every OTHER flag sits ahead of it. `AdviceCardService` is deliberately NOT conditioned on
+only every OTHER flag sits ahead of it. **Round 2 S4 (bd `mezo-d58h.7.4`) then adds
+`FlagKey.MEAL_RHYTHM_DRIFT` immediately AFTER `protocol_lapse`**, still ahead of the two setup
+checks: it is an offer to edit a plan rather than a health signal, so it must never displace a card
+ranked above it — and the round-1 order is again untouched. `AdviceCardService` is deliberately NOT conditioned on
 `INTERVENTION_SWITCH` —
 `SetupCheckService` (which runs without that switch) is one of its two callers, so gating this bean
 on the intervention switch would fail the Spring context whenever that switch is off.
@@ -3016,6 +3019,17 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
   `shift_sleep_anchor` or `joint_overuse`'s `lighten_tomorrow`, (ll) above) — the card's own copy asks
   the user to either take the dose today or drop the item from the stack themselves; there is
   nothing here for a button to safely automate.
+- **(nn) Round 2 S4 (bd `mezo-d58h.7.4`, spec 2026-09-05 §(13)) adds `meal_rhythm_adjust`, the
+  `meal_rhythm_drift` intervention-library entry.** `channel: feed` (an offer to edit a plan never
+  earns a push) and `cooldown-hours: 336`, which MUST stay equal to
+  `mezo.companion.flags.cooldown-hours.meal-rhythm-drift` — `InterventionService.deliverForFlag`
+  applies the LIBRARY entry's own per-key cooldown, so a mismatch would silently override the
+  spec's 14-day cadence (the `protocol_lapse_resume` review lesson, one slice earlier). The copy is
+  a NEUTRAL observation offering to rewrite the slot plan, never an adherence remark; the specific
+  slot, both clock times and the presence ratios come from `AdviceFactRenderer`'s `meal_rhythm_drift`
+  branch (rendered from the raise's own frozen payload), never from this text. Like
+  `protocol_lapse_resume` it offers no `AdviceActionCatalog` mutation — editing a slot template is a
+  deliberate act in Fuel, not something a card should automate.
 - **Epic complete, H2 Web Push shipped with it, and `mezo-gst9` then redesigned the B/H stages.**
   All eight original slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2), **H2 (`mezo-h4wp.6`) shipped** — N1
   (delivery spine) + N2 (dispatcher + `notification_pref`/`push_log` + categories 1-9) + N3

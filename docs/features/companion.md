@@ -1628,6 +1628,37 @@ gate, the same discipline as the original seven:
   already in that set before it is ever evaluated, so a suppressed item can never even become the
   offender while a DIFFERENT item lapsing the next day still gets a delivery window through the
   short key-level cooldown.
+- **`MealRhythmDriftRule`** (rank 11, Round 2 S4, bd `mezo-d58h.7.4`, spec 2026-09-05 §(13),
+  `meal_rhythm_drift`) — the meal-slot PLAN and the logged REALITY have drifted apart, over a
+  `windowDays` (14) rolling window ending YESTERDAY, and only once at least `minDaysWithMeals` (10)
+  of those days carry a logged meal. Two sub-triggers under ONE key, distinguished in the payload by
+  `subType`: **`slot_drift`** — a planned slot's actual time (the EARLIEST `meal` row of that
+  `slotKind` that day, `logged_at` in wall clock) is a median of more than `driftMinutes` (90) away
+  from its planned time, with at least `minSameDirectionShare` (70%) of the observed days drifting
+  the same way; and **`dead_slot`** — a slot planned on ≥ `minSlotPlannedDays` days carries a meal
+  on ≤ `deadSlotMaxPresence` (30%) of them while the OTHER tracked slots average ≥
+  `otherSlotsMinPresence` (70%), i.e. the user logs, just not that slot. The card is a NEUTRAL
+  observation offering to edit the plan — this rule never speaks about adherence, because a plan
+  that stopped matching a life is the plan's problem. Three bounds carry it: **(1)** only a `fixed`
+  anchor has a backend-readable time — `wake`/`bed`/`training_start`/`training_end` slots are
+  resolved in the FRONTEND (`compileTemplate.ts`) against that day's wake/bed/training blocks, so the
+  drift arm reads fixed-anchor slots exclusively while the dead-slot arm (needing no time) covers
+  every non-snack slot; **(2)** the day's template is chosen by a DERIVED day type — the
+  `resolveDayType.ts` convention ported to the backend (no completed gym instance ⇒ `rest`, else the
+  earliest `started_at` before noon ⇒ `training_am`, at/after noon ⇒ `training_pm`), and a training
+  day whose instances all lack `started_at`, or a day whose resolved type has no template row, is
+  SKIPPED entirely rather than bucketed by guess; **(3)** deviation is a SIGNED CIRCULAR minute
+  difference in `(-720, 720]`, so a 19:00-planned dinner logged at 00:30 is +330 late (not −1110)
+  and a 07:00 breakfast logged at 13:00 is +360 (not −1080) — `LateEatingRule`'s +24-below-noon shift
+  is deliberately NOT reused, since that shift is for several values against one anchor, not for a
+  per-slot difference. Ambiguity is silence: `snack` is excluded (a template may hold several snack
+  slots that all collapse onto the same `meal.slot='snack'` rows) and any day whose template holds
+  two slots of the same non-snack kind contributes nothing for that kind. An unlogged day is neither
+  compliant nor violating — presence ratios only count days that carried at least one logged meal of
+  ANY kind, so a logging holiday can never read as "your dinner slot died". Cooldown is KEY-level 14
+  days (`cooldown-hours.meal-rhythm-drift`, 336h), and the `meal_rhythm_adjust` library entry's own
+  `cooldown-hours` MUST match it (the `protocol_lapse` review lesson: `deliverForFlag` applies the
+  LIBRARY entry's cooldown).
 
 Two prerequisite fixes underpin the rules above: `MetricSeriesService.weightTrendPctWk` and
 `.lateMealHour` used to load a user's ENTIRE history and filter in Java; both are now bounded reads
@@ -4127,6 +4158,7 @@ are whole days computed from `LocalDate.now()`; missing days stay absent, never 
 | `ignored_nudge` | the `category` push sent on `min-consecutive-days` consecutive evenings **and** every one of those nights' `BEDTIME_HOUR` missed the sleep anchor by more than `non-compliance-minutes`; requires a `sleep_goal` row; any unlogged/unsent/compliant night breaks the run | `push_log` (via `NudgeSendPort`), `MetricKey.BEDTIME_HOUR`, `SleepAnchorPort` |
 | `late_eating` | on ≥ `min-days-of-last-three` of the last `window-days` days, `LATE_MEAL_HOUR` is within `minutes-before-bed` of the (shifted) sleep anchor **or** ≥ `absolute-hour`; the bed arm needs a `sleep_goal` row, the absolute arm does not | `MetricKey.LATE_MEAL_HOUR`, `SleepAnchorPort` (bed arm only) |
 | `protocol_lapse` | one active protocol item missed on ≥ `consecutive-missed-days` consecutive DUE days, **and** ≥ `min-history-due-days` due days of adherence-≥`min-history-adherence` history immediately before the miss run; "due" is DERIVED, never stored — a `pre_workout`/`post_workout` item is due only on a day with a completed gym instance (a rest day is not a miss), every other item is due every day; the scan is bounded BELOW by the item's own `created_at` (a freshly added item cannot have "missed" a habit that never had room to exist), and the window ends YESTERDAY, never today (today is still in progress); the per-item 7-day re-announce cooldown lives inside the rule itself, separate from the 24h key-level cooldown below | `protocol_item`, `supplement_intake`, `WorkoutSessionRepository.findDoneInstanceDates` |
+| `meal_rhythm_drift` | over a `window-days` rolling window ending YESTERDAY, with at least `min-days-with-meals` days carrying a logged meal: **slot drift** — a planned slot's actual logged time (earliest row of that `slotKind` that day) deviates from its planned time by a median of more than `drift-minutes`, with at least `min-same-direction-share` of the observed days drifting the same way — OR **dead slot** — a slot planned on ≥ `min-slot-planned-days` days carries a meal on ≤ `dead-slot-max-presence` of them while the other tracked slots average ≥ `other-slots-min-presence`. Only `fixed`-anchor slots can drift (relative anchors are resolved in the FRONTEND only); `snack` and any duplicated `slotKind` are excluded as ambiguous; the day's template is chosen by a DERIVED day type (`resolveDayType.ts` ported: no completed instance ⇒ rest, earliest start before noon ⇒ training_am, else training_pm), and a training day with no `started_at` is skipped entirely; deviations use a SIGNED CIRCULAR minute difference in `(-720, 720]`, never `LateEatingRule`'s +24 shift | `meal_slot_template`, `meal`, `WorkoutSessionRepository.findDoneInstancesBetween` |
 | `all_healthy` | none of the other thirteen fire now, **and** no problem row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
 
 `all_healthy`'s "no problem row" check (`existsProblemRaiseSince`) excludes `all_healthy` itself,
@@ -4142,7 +4174,7 @@ intervention copy calls it a training tip, not an injury alert, and it fires on 
 weekly shoulder split it is true roughly weekly, so counting it here would keep the seven-day quiet
 window from ever opening. The other ten flags — `missed_workouts`, the remaining four S6 keys
 (`acute_bad_day`, `load_fuel_mismatch`, `rapid_weight_loss`, `late_eating`), and Round 2 S1's
-`protocol_lapse` included — stay counted as problems, since each IS a genuine behavior/health
+`protocol_lapse` and S4's `meal_rhythm_drift` included — stay counted as problems, since each IS a genuine behavior/health
 signal, unlike a data gap, a failed nudge, or a forward-looking training advisory. `protocol_lapse`
 stays counted rather than joining the exclusion list: a missed dose on its own due day is a real
 behavior lapse, not a data-availability gap (`logging_gap`'s argument) or the app's own delivery
@@ -6415,6 +6447,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/MissedWorkoutsRule.java` — S2 (bd `mezo-d58h.2`): the `missed_workouts` rule; consecutive-in-planned-days-not-calendar-days logic (§3).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/{AcuteBadDayRule,LoadFuelMismatchRule,RapidWeightLossRule,JointOveruseRule,IgnoredNudgeRule,LateEatingRule}.java` — S6 batch B (bd `mezo-d58h.6`): six rules, in severity order (§3 above has each one's own honesty gate).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/ProtocolLapseRule.java` — Round 2 S1 (bd `mezo-d58h.7.1`, spec 2026-09-05 §(11)): the epic's next new detection, `protocol_lapse` — derived due-days, the `created_at` lower bound, the yesterday-ending window, and the rule-internal per-item cooldown (§3 above has the full honesty-gate writeup).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/MealRhythmDriftRule.java` — Round 2 S4 (bd `mezo-d58h.7.4`, spec 2026-09-05 §(13)): `meal_rhythm_drift` — the fixed-anchor-only drift arm, the derived day type (`resolveDayType.ts` ported), the dead-slot presence arm and the signed circular clock difference (§3 above has the full writeup).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagService.java` — the cooldown gate + append (`evaluateAndLog`), the ONLY write path into `companion_flag_log`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluationListener.java` — the on-write trigger, `@Async @TransactionalEventListener(AFTER_COMMIT)` on `CheckInSavedEvent`/`SleepLogSavedEvent`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagSweepJob.java` — the hourly sweep (`mezo.companion.flags.sweep-cron`), own job switch, per-user try/catch — the caller whose per-user, hourly cadence is what made the S6 bounded-read prerequisite fixes (§3 above) actually matter.
@@ -6424,6 +6457,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609031200_mezo-d58h.2_flag_key_logging_gap_missed_workouts.sql` — S2: widens `ck_companion_flag_log_flag_key` to seven keys.
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609041200_mezo-d58h.6_flag_key_batch_b.sql` — S6: widens `ck_companion_flag_log_flag_key` to thirteen keys.
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609051600_mezo-d58h.7.1_flag_key_protocol_lapse.sql` — Round 2 S1: widens `ck_companion_flag_log_flag_key` to the fourteen keys (`protocol_lapse`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609061600_mezo-d58h.7.4_flag_key_meal_rhythm_drift.sql` + `202609061700_mezo-d58h.7.4_flag_key_trace_meal_rhythm_drift.sql` — Round 2 S4: widen `ck_companion_flag_log_flag_key` AND `ck_companion_flag_trace_flag_key` to the fifteen keys (`meal_rhythm_drift`).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT,FlagEvaluatorLoggingGapIT,FlagEvaluatorMissedWorkoutsIT,FlagEvaluatorAcuteBadDayIT,FlagEvaluatorLoadFuelMismatchIT,FlagEvaluatorRapidWeightLossIT,FlagEvaluatorJointOveruseIT,FlagEvaluatorIgnoredNudgeIT,FlagEvaluatorLateEatingIT,FlagEvaluatorProtocolLapseIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. **Since W5.2 (`mezo-b3pp.19`), `FlagRaisedEvent` (below) is the consumer** — see the next block.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaisedEvent.java` — W5.2 (bd `mezo-b3pp.19`): the `{userId, flagKey, source}` event `FlagService.evaluateAndLog` publishes for every WRITTEN raise, inside the logging transaction (§3/§4 above).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagTracePersistenceIT,FlagServiceTraceIT}.java` + `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagVerdictTest.java` — `mezo-6269.1`, §8.
