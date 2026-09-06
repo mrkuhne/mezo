@@ -7446,6 +7446,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  /api/diet/settings/preview:
+    post:
+      tags:
+        - DietSettings
+      operationId: previewDietSettings
+      summary: >-
+        Project today's macro targets for an UNSAVED diet-settings draft
+        (DietSettings)
+      description: >-
+        Read-only projection: runs the goal engine's prescription calculation
+        with the posted draft preferences instead of the saved row and returns
+        the targets today WOULD serve. Nothing is persisted and the active goal
+        is not re-evaluated. Feeds the Fuel settings macro preview so switching
+        the split preset / protein tier updates the numbers before Mentés.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetDietSettingsRequest'
+      responses:
+        '200':
+          description: The projected targets for today under the draft
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DietSettingsPreviewResponse'
+        '400':
+          description: Validation failure (incl. custom split not summing to 100.0%)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/tutorial/progress:
     get:
       tags:
@@ -20035,6 +20074,38 @@ components:
           description: >-
             Kcal moved off each rest day onto training days (weekly budget
             unchanged); 0 = uniform days
+    DietSettingsPreviewResponse:
+      type: object
+      required:
+        - kcal
+        - proteinG
+        - carbsG
+        - fatG
+        - source
+      properties:
+        kcal:
+          type: integer
+          description: >-
+            Projected kcal for today under the draft (day-type adjusted, as the
+            Fuel day serves it)
+        proteinG:
+          type: integer
+          description: Projected protein target (g)
+        carbsG:
+          type: integer
+          description: Projected carbs target (g) — absorbs the day-type kcal delta
+        fatG:
+          type: integer
+          description: Projected fat target (g)
+        source:
+          type: string
+          enum:
+            - goal
+            - config
+          description: >-
+            goal = projected from the owner's ACTIVE goal recept under the
+            draft; config = the static nutrition fallback (no active/coherent
+            goal, or no biometric profile to project from)
     SetDietSettingsRequest:
       type: object
       required:

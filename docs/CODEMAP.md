@@ -444,12 +444,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     DELETE /api/fuel/intake/entry/{id} · GET /api/fuel/slot-templates · PUT /api/fuel/slot-templates/{dayType} ·
     DELETE /api/fuel/slot-templates/{dayType} · POST /api/fuel/slot-templates/evaluate
 - **FE data** `frontend/src/data/fuel`
-  - **hooks (via `@/data/hooks`):** `DIET_SETTINGS_GHOST`, `useDietSettings`, `useDietSettingsActions`, `useFuelDay`,
-    `useFuelSettings`, `useFuelSettingsActions`, `useFuelTimeline`, `useFuelWeek`, `useIntakes`, `useMealActions`,
-    `useMealCoach`, `useMealCoachFor`, `useMedication`, `useMedicationActions`, `usePantry`, `usePantryActions`,
-    `useProtocol`, `useProtocolActions`, `useRecipeActions`, `useRecipeBreakdown`, `useRecipeLogs`, `useRecipes`,
-    `useReplanScenarios`, `useSlotTemplateActions`, `useSlotTemplateEvaluation`, `useSlotTemplates`, `useStack`,
-    `useStackActions`, `useStackDay`, `useWaterActions`, `useWorkshop`
+  - **hooks (via `@/data/hooks`):** `DIET_SETTINGS_GHOST`, `useDietSettings`, `useDietSettingsActions`,
+    `useDietSettingsPreview`, `useFuelDay`, `useFuelSettings`, `useFuelSettingsActions`, `useFuelTimeline`,
+    `useFuelWeek`, `useIntakes`, `useMealActions`, `useMealCoach`, `useMealCoachFor`, `useMedication`,
+    `useMedicationActions`, `usePantry`, `usePantryActions`, `useProtocol`, `useProtocolActions`, `useRecipeActions`,
+    `useRecipeBreakdown`, `useRecipeLogs`, `useRecipes`, `useReplanScenarios`, `useSlotTemplateActions`,
+    `useSlotTemplateEvaluation`, `useSlotTemplates`, `useStack`, `useStackActions`, `useStackDay`, `useWaterActions`,
+    `useWorkshop`
   - **modules:** coachApi.ts, coachHooks.ts, dietSettingsApi.ts, dietSettingsHooks.ts, fuel.ts, fuelApi.ts,
     fuelConfig.ts, fuelHooks.ts, fuelReadHooks.ts, fuelSettingsApi.ts, fuelSettingsHooks.ts, fuelWeek.ts,
     fuelWeekHooks.ts, mealApi.ts, medication.ts, medicationApi.ts, medicationHooks.ts, pantry.ts, pantryApi.ts,
@@ -907,14 +908,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/nutrition`
   - **entities→tables:** `DietSettingsEntity`→`diet_settings`
   - **repositories:** `DietSettingsRepository`
-  - **services:** `DailyTargets`, `DietPreferencesResolver`, `DietSettingsService`, `MealRole`, `MealScoringService`
+  - **services:** `DailyTargets`, `DayTargetProjector`, `DietPreferencesResolver`, `DietSettingsService`, `MealRole`,
+    `MealScoringService`
   - **controllers→contract:** `DietSettingsController`→`DietSettingsApi`
   - **mappers:** `BreakdownDtoMapper`
   - **config:** `DietSettingsProperties`, `MealScoringProperties`, `NutritionTargetsProperties`
   - **other:** `MealBreakdownJson`
-- **Contract** `api/feature/diet-settings/diet-settings.yml` — 2 operations
-  - **endpoints:** GET /api/diet/settings · PUT /api/diet/settings
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 3 IT + 1 unit
+- **Contract** `api/feature/diet-settings/diet-settings.yml` — 3 operations
+  - **endpoints:** GET /api/diet/settings · PUT /api/diet/settings · POST /api/diet/settings/preview
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 3 IT + 2 unit
   - **ITs:** `DietPreferencesResolverIT`, `DietSettingsApiIT`, `DietSettingsDayTypeShiftIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`
 
