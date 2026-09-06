@@ -5,9 +5,9 @@ import {
   type AppNotificationKindKey,
 } from '@/data/types'
 
-// A backend `AppNotificationKind` enum 13 fajtát ismer (AppNotificationKind.java); ez a
-// leképezés 12-t tartalmazott, és a `weekly_review_ready` hiánya az egész feed-oldalt az
-// ErrorBoundary-ra dobta egy élő felhasználónál (mezo-ntf8). A két oldal külön nyelven él,
+// A backend `AppNotificationKind` enum 19 fajtát ismer (AppNotificationKind.java); ez a
+// leképezés egyszer 12-t tartalmazott, és a `weekly_review_ready` hiánya az egész feed-oldalt
+// az ErrorBoundary-ra dobta egy élő felhasználónál (mezo-ntf8). A két oldal külön nyelven él,
 // tehát megint el fog csúszni — ezért a leképezés teljes ÉS a hozzáférés totális.
 const BACKEND_KINDS = [
   'pattern_inbox', 'pattern_signal', 'hypothesis_new',
@@ -16,6 +16,8 @@ const BACKEND_KINDS = [
   'experiment_proposed', 'experiment_closed',
   'challenge_event', 'memory_note', 'weekly_review_ready',
   'life_goal_plan', 'goal_suggestion',
+  // mezo-0cbh
+  'person_candidate', 'graph_candidate', 'habit_formation', 'character_portrait',
 ] as const
 
 describe('APP_NOTIFICATION_KIND_META', () => {
@@ -36,6 +38,16 @@ describe('APP_NOTIFICATION_KIND_META', () => {
 
   it('a céljavaslat a cél clay ikonját és goal tintet viszi', () => {
     expect(APP_NOTIFICATION_KIND_META.goal_suggestion).toMatchObject({ clay: 'i-cel', tint: 'goal' })
+  })
+
+  // mezo-0cbh: a négy új fajta a saját ikonkészletünkből kap ikont, és a három új tintnek
+  // (`people`/`habit`/`character`) VAN CSS-szabálya — egy tint-név elgépelése némán
+  // hátterrel nem rendelkező ikon-tokot adna.
+  it('a négy új fajta a saját clay ikonját és tintjét viszi', () => {
+    expect(APP_NOTIFICATION_KIND_META.person_candidate).toMatchObject({ clay: 'i-emberek', tint: 'people' })
+    expect(APP_NOTIFICATION_KIND_META.graph_candidate).toMatchObject({ clay: 'i-retegek', tint: 'people' })
+    expect(APP_NOTIFICATION_KIND_META.habit_formation).toMatchObject({ clay: 'i-termes', tint: 'habit' })
+    expect(APP_NOTIFICATION_KIND_META.character_portrait).toMatchObject({ clay: 'i-eletjel', tint: 'character' })
   })
 })
 
