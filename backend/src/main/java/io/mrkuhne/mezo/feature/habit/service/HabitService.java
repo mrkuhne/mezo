@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.habit.service;
 
 import io.mrkuhne.mezo.api.dto.HabitDayResponse;
+import io.mrkuhne.mezo.api.dto.HabitFormationDay;
+import io.mrkuhne.mezo.api.dto.HabitFormationResponse;
 import io.mrkuhne.mezo.api.dto.HabitResponse;
 import io.mrkuhne.mezo.api.dto.HabitStrength;
 import io.mrkuhne.mezo.api.dto.HabitSummaryResponse;
@@ -23,6 +25,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -229,6 +232,93 @@ public class HabitService {
                     .build();
             }).toList())
             .build();
+    }
+
+    /**
+     * Full-lifetime formation estimate for ONE habit (mezo-08zl, spec
+     * {@code docs/superpowers/specs/2026-09-06-habit-formation-design.md}).
+     *
+     * <p>Deliberately its own endpoint rather than a fattened {@link #summary(UUID)}: this scans a
+     * habit's whole history, while {@code summary} runs on every companion chat turn and must stay
+     * cheap. The arithmetic itself lives in the pure {@link HabitFormationEstimator}; all this
+     * method does is gather honest inputs — the lifetime rows, the completion hours in the user's
+     * zone, and the anchor habit's done dates when (and only when) the def is stacked onto one.
+     */
+    @Transactional(readOnly = true)
+    public HabitFormationResponse formation(UUID userId, String habitKey) {
+        // requireDef's ensureCatalog bootstrap is deliberately NOT reused here: this transaction is
+        // readOnly (Spring sets FlushMode.MANUAL), so a bootstrap write would silently never land.
+        // The formation page is only ever reachable from a habit the user already has, and getDay
+        // is the one bootstrap point — an unknown key 404s with the same HABIT_UNKNOWN code.
+        HabitDefEntity def = catalogService.byKey(userId, habitKey)
+            .orElseThrow(() -> new SystemRuntimeErrorException(
+                SystemMessage.error("HABIT_UNKNOWN").build(), HttpStatus.NOT_FOUND));
+        List<HabitDayEntity> rows =
+            repository.findByCreatedByAndHabitKeyOrderByHabitDateAsc(userId, habitKey);
+        Set<LocalDate> anchorDoneDates = anchorDoneDates(userId, def.getAnchorHabitKey());
+        HabitFormationEstimator.Result result = HabitFormationEstimator.estimate(
+            rows.stream().map(HabitService::toEstimatorDay).toList(),
+            anchorDoneDates, LocalDate.now(), formationSettings());
+        return HabitFormationResponse.builder()
+            .key(habitKey)
+            .firstDate(result.firstDate())
+            .reps(result.reps())
+            .missed(result.missed())
+            .automaticityPct(result.automaticityPct())
+            .curveK(result.curveK())
+            .thresholdPct(properties.formation().thresholdPct())
+            .minReps(properties.formation().minReps())
+            .repsToThresholdLo(result.repsToThresholdLo())
+            .repsToThresholdHi(result.repsToThresholdHi())
+            .weeksToThresholdLo(result.weeksToThresholdLo())
+            .weeksToThresholdHi(result.weeksToThresholdHi())
+            .repsPerWeek(result.repsPerWeek())
+            .consistencyPct(result.consistencyPct())
+            .timeConstancyPct(result.timeConstancyPct())
+            .anchorConstancyPct(result.anchorConstancyPct())
+            .days(rows.stream()
+                .map(r -> HabitFormationDay.builder()
+                    .date(r.getHabitDate())
+                    .status(HabitFormationDay.StatusEnum.fromValue(r.getStatus()))
+                    .build())
+                .toList())
+            .build();
+    }
+
+    /** Null (signal absent) unless the def is FOGG-stacked onto another of the user's habits. */
+    private Set<LocalDate> anchorDoneDates(UUID userId, String anchorHabitKey) {
+        if (anchorHabitKey == null || anchorHabitKey.isBlank()) {
+            return null;
+        }
+        return repository.findByCreatedByAndHabitKeyOrderByHabitDateAsc(userId, anchorHabitKey)
+            .stream()
+            .filter(r -> HabitDayEntity.STATUS_DONE.equals(r.getStatus()))
+            .map(HabitDayEntity::getHabitDate)
+            .collect(Collectors.toSet());
+    }
+
+    private HabitFormationEstimator.Settings formationSettings() {
+        HabitProperties.Formation f = properties.formation();
+        return new HabitFormationEstimator.Settings(f.kBase(), f.thresholdPct(), f.minReps(),
+            f.kBand(), f.consistencyRise(), f.consistencyDecay(),
+            properties.strengthWindowDays(), properties.minSample());
+    }
+
+    /**
+     * The entity → pure-input hop. The clock hour is resolved HERE (system zone, as everywhere
+     * else in this codebase) so the estimator itself stays time-zone-free and testable.
+     */
+    private static HabitFormationEstimator.Day toEstimatorDay(HabitDayEntity row) {
+        Integer doneHour = row.getDoneAt() == null
+            ? null
+            : row.getDoneAt().atZone(ZoneId.systemDefault()).getHour();
+        return new HabitFormationEstimator.Day(row.getHabitDate(),
+            switch (row.getStatus()) {
+                case HabitDayEntity.STATUS_DONE -> HabitFormationEstimator.Status.DONE;
+                case HabitDayEntity.STATUS_MISSED -> HabitFormationEstimator.Status.MISSED;
+                default -> HabitFormationEstimator.Status.PENDING;
+            },
+            doneHour);
     }
 
     /**

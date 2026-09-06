@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.api.dto.HabitDayResponse;
 import io.mrkuhne.mezo.api.dto.HabitDefAdmin;
 import io.mrkuhne.mezo.api.dto.HabitDefCreateRequest;
 import io.mrkuhne.mezo.api.dto.HabitDefUpdateRequest;
+import io.mrkuhne.mezo.api.dto.HabitFormationResponse;
 import io.mrkuhne.mezo.api.dto.HabitReorderRequest;
 import io.mrkuhne.mezo.api.dto.HabitResponse;
 import io.mrkuhne.mezo.api.dto.HabitSuggestRequest;
@@ -58,6 +59,11 @@ public class HabitController implements HabitApi {
     @Override
     public HabitSummaryResponse getHabitSummary() {
         return habitService.summary(currentUserId.get());
+    }
+
+    @Override
+    public HabitFormationResponse getHabitFormation(String key) {
+        return habitService.formation(currentUserId.get(), key);
     }
 
     @Override

@@ -14,9 +14,12 @@
 // ============================================================
 import { useState, type CSSProperties, type ReactNode } from 'react'
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
-import { useHabitCatalog, useHabitCatalogActions, useHabitSummary } from '@/data/hooks'
+import { useHabitCatalog, useHabitCatalogActions, useHabitFormation, useHabitSummary } from '@/data/hooks'
 import type { HabitDefUpdateInput } from '@/data/habit/habitAdminApi'
 import type { HabitDaypart, HabitFramework } from '@/data/types'
+import { HabitContextRings } from '@/features/me/components/HabitContextRings'
+import { HabitFormationCard } from '@/features/me/components/HabitFormationCard'
+import { HabitFormationHistory } from '@/features/me/components/HabitFormationHistory'
 import { recipeFromDef, routineSentenceParts, titlePlaceholder } from '@/features/me/logic/routineSentence'
 import { cn } from '@/shared/lib/cn'
 import { GhostState } from '@/shared/ui/GhostState'
@@ -24,7 +27,6 @@ import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import type { ClayIconName } from '@/shared/ui/clay'
 
-const HIST_DAYS = 28
 // The hero icon follows the OWNING CHAIN's daypart (RutinHubPage's DAYPART_ICON map) — a
 // hardcoded dawn spot lied on every evening habit.
 const DAYPART_ICON: Record<HabitDaypart, ClayIconName> = { MORNING: 'i-hajnal', DAY: 'i-nap', EVENING: 'i-alvas' }
@@ -50,8 +52,6 @@ const FW: Record<'FOGG' | 'CLEAR' | 'NONE', { sign: string; title: string; sub: 
   },
 }
 
-const HIST_NOTE = 'zöld = pipa · szürke = kihagyás · üres = még nem volt. A csík a 28 nap '
-  + 'arányát mutatja, nem naptár — egy kihagyás halványít, nem nulláz.'
 const PRINCIPLE = 'Szüneteltetve a sor tompul és nem jelenik meg a Nap tabon, de az erő-történet '
   + 'nem vész el. A törlés végleges — két koppintás.'
 
@@ -95,6 +95,7 @@ export function HabitPage() {
   const { habitKey = '' } = useParams<{ habitKey: string }>()
   const { catalog, isPending, isError, refetch } = useHabitCatalog()
   const { data: summary } = useHabitSummary()
+  const { data: formation } = useHabitFormation(habitKey)
   const { updateDef, deleteDef, pending } = useHabitCatalogActions()
 
   const defs = (catalog?.chains ?? []).flatMap((c) => c.defs)
@@ -295,16 +296,26 @@ export function HabitPage() {
             </p>
           </div>
 
-          <FieldCard delayMs={110}>
-            <span className="rt-flabel">Elmúlt 28 nap</span>
-            <div className="rt-hist" aria-hidden="true">
-              {Array.from({ length: HIST_DAYS }, (_, i) => {
-                const state = i < done28 ? 'done' : i < done28 + missed28 ? 'miss' : 'none'
-                return <i key={i} data-state={state} className={cn(state !== 'none' && `is-${state}`)} />
-              })}
-            </div>
-            <div className="rt-hint">{HIST_NOTE}</div>
-          </FieldCard>
+          {/* The 28-day PROPORTION strip is gone (mezo-08zl): it answered "how much of the last
+              four weeks" when the question is "how far along am I". Everything below is the
+              habit's whole lifetime, and it renders only once the server's numbers are in —
+              `realEmpty` carries thresholdPct 0, and a card drawn from that would print a
+              confident zero during the loading window. */}
+          {formation.thresholdPct > 0 && (
+            <>
+              <div className="rise" style={rise(110)}>
+                <HabitFormationCard f={formation} />
+              </div>
+              <div className="rise" style={rise(125)}>
+                <span className="rt-flabel">Kontextus <span className="rt-opt">a legerősebb jel</span></span>
+                <HabitContextRings f={formation} anchored={def.anchorHabitKey != null} />
+              </div>
+              <FieldCard delayMs={135}>
+                <span className="rt-flabel">Előzmény <span className="rt-opt">az első naptól</span></span>
+                <HabitFormationHistory f={formation} />
+              </FieldCard>
+            </>
+          )}
 
           <FieldCard delayMs={140}>
             {/* The title IS the behaviour slot of both frameworks — the label names it the way

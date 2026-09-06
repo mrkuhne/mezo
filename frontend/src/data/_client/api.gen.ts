@@ -2715,6 +2715,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/habit/formation/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Full-lifetime formation estimate for one habit (mezo-08zl)
+         * @description Where this habit stands on the way to automaticity, estimated from the user's OWN history over the definition's whole lifetime (NOT the 28-day strength window). Page-triggered and deliberately separate from getHabitSummary, which is read on every companion chat turn and must stay cheap. Under `minReps` repetitions every estimate field is null - the honesty rule, mirroring `strengthPct` under `min-sample`.
+         */
+        get: operations["getHabitFormation"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/habit/catalog": {
         parameters: {
             query?: never;
@@ -7715,6 +7735,45 @@ export interface components {
             strengthPct?: number | null;
             done28: number;
             missed28: number;
+        };
+        HabitFormationDay: {
+            /** Format: date */
+            date: string;
+            /** @enum {string} */
+            status: "pending" | "done" | "missed";
+        };
+        HabitFormationResponse: {
+            key: string;
+            /** Format: date */
+            firstDate?: string | null;
+            /** @description successful repetitions over the whole lifetime */
+            reps: number;
+            missed: number;
+            /** @description 0-100, null under minReps */
+            automaticityPct?: number | null;
+            /**
+             * Format: double
+             * @description growth rate of 1-e^(-k*n), so the FE can draw the same curve
+             */
+            curveK?: number | null;
+            /** @description where "runs by itself" sits on the curve */
+            thresholdPct: number;
+            /** @description repetitions needed before any estimate is made */
+            minReps: number;
+            repsToThresholdLo?: number | null;
+            repsToThresholdHi?: number | null;
+            /** Format: double */
+            weeksToThresholdLo?: number | null;
+            /** Format: double */
+            weeksToThresholdHi?: number | null;
+            /** Format: double */
+            repsPerWeek?: number | null;
+            consistencyPct?: number | null;
+            /** @description clock-hour constancy of completions, null without enough timed rows */
+            timeConstancyPct?: number | null;
+            /** @description share of done days on which the anchor habit was also done, null without an anchor */
+            anchorConstancyPct?: number | null;
+            days: components["schemas"]["HabitFormationDay"][];
         };
         HabitSummaryResponse: {
             perfectMorningDays30: number;
@@ -17097,6 +17156,46 @@ export interface operations {
             };
             /** @description Missing/invalid token */
             401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getHabitFormation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Formation estimate */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HabitFormationResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Unknown habit key */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

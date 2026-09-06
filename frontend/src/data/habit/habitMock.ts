@@ -1,4 +1,6 @@
-import type { HabitCatalog, HabitDefInfo, HabitItem, HabitSuggestion, HabitSummary } from '@/data/types'
+import type {
+  HabitCatalog, HabitDefInfo, HabitFormation, HabitFormationDay, HabitItem, HabitSuggestion, HabitSummary,
+} from '@/data/types'
 
 /**
  * Static seed mirroring content/habit-catalog.json; demo state: 3 morning items done.
@@ -207,3 +209,187 @@ export const mockHabitCatalog: HabitCatalog = {
     },
   ],
 }
+
+// ── Formation fixture (mezo-08zl) ───────────────────────────────────────────────────────────
+//
+// EVERY number below is DERIVED from the generated day rows, never hand-typed, so the fixture
+// cannot drift into an internally inconsistent state (`automaticityPct` that does not match
+// `curveK`/`reps`, a Lo above its Hi, a `days[]` whose done count disagrees with `reps`).
+// `habitMock.test.ts` re-derives all of it and fails if that ever stops holding.
+//
+// The knobs are the ones a designer actually wants to move — how long the habit has existed,
+// how often it lands, and where on the curve it should sit for the demo — and `curveK` is
+// solved BACKWARDS from the target automaticity, so the curve drawn on screen and the numeral
+// printed next to it are the same number by construction.
+
+/** Fixed "today" for the seed — the mock must be byte-stable for the visual baselines. */
+const MOCK_FORMATION_TODAY = '2026-09-06'
+/** Mirrors `mezo.habit.formation.threshold-pct` / `min-reps` / `k-band` server-side defaults. */
+const MOCK_THRESHOLD_PCT = 90
+const MOCK_MIN_REPS = 5 // mirrors mezo.habit.formation.min-reps
+const MOCK_K_BAND = 0.3
+/** Loop-style EMA constants (`consistency-rise` / `consistency-decay`). */
+const MOCK_EMA_RISE = 0.12
+const MOCK_EMA_DECAY = 0.09
+/** `k-base` — the curve's growth before the consistency/context weighting. */
+const MOCK_K_BASE = 0.03
+/** The strength window the server derives `repsPerWeek` from (`strength-window-days`). */
+const MOCK_RATE_WINDOW_DAYS = 28
+
+interface FormationSeed {
+  /** Calendar days from the first row to MOCK_FORMATION_TODAY (inclusive). */
+  lifetimeDays: number
+  /** Share of the rows that land as `done`. */
+  doneRate: number
+  timeConstancyPct: number | null
+  anchorConstancyPct: number | null
+}
+
+const FORMATION_SEEDS: Record<string, FormationSeed> = {
+  // Mid-curve: the headline demo — "kezd magától menni" still ahead, a wide honest ETA band.
+  morning_sunlight: { lifetimeDays: 78, doneRate: 0.74, timeConstancyPct: 81, anchorConstancyPct: 74 },
+  // Well along: nearly at the threshold, the optimistic edge of the band already reached.
+  wake_on_time: { lifetimeDays: 210, doneRate: 0.82, timeConstancyPct: 88, anchorConstancyPct: null },
+  // Honest null state: too few repetitions for ANY estimate (see `formationOf`).
+  wind_down: { lifetimeDays: 5, doneRate: 0.6, timeConstancyPct: null, anchorConstancyPct: null },
+}
+
+function addDays(iso: string, n: number): string {
+  const d = new Date(`${iso}T00:00:00Z`)
+  d.setUTCDate(d.getUTCDate() + n)
+  return d.toISOString().slice(0, 10)
+}
+
+/** Deterministic 32-bit hash so an unseeded key still gets a stable, plausible fixture. */
+function hashKey(key: string): number {
+  let h = 2166136261
+  for (let i = 0; i < key.length; i += 1) {
+    h = Math.imul(h ^ key.charCodeAt(i), 16777619)
+  }
+  return h >>> 0
+}
+
+/** Tiny LCG — the mock needs *reproducible* jitter, not randomness. */
+function lcg(seed: number): () => number {
+  let s = seed >>> 0
+  return () => {
+    s = (Math.imul(s, 1664525) + 1013904223) >>> 0
+    return s / 4294967296
+  }
+}
+
+function seedFor(key: string): FormationSeed {
+  const explicit = FORMATION_SEEDS[key]
+  if (explicit) return explicit
+  const h = hashKey(key)
+  return {
+    lifetimeDays: 40 + (h % 120),
+    doneRate: 0.55 + ((h >>> 8) % 35) / 100,
+    timeConstancyPct: 45 + ((h >>> 20) % 50),
+    anchorConstancyPct: (h >>> 5) % 3 === 0 ? null : 40 + ((h >>> 12) % 55),
+  }
+}
+
+function round1(v: number): number {
+  return Math.round(v * 10) / 10
+}
+
+/**
+ * The lifetime formation estimate for one habit, mock mode (mezo-08zl).
+ *
+ * Day rows are generated first; the estimate is then computed FROM them, exactly the way the
+ * backend estimator does — including the honesty rule: under `minReps` repetitions every
+ * estimate field is `null` (`wind_down` is seeded short on purpose so mock mode can demo that
+ * branch). A handful of days are dropped outright: rows only exist for days the user opened the
+ * app, and the history surface must render a real gap, not a fabricated "missed".
+ */
+export function mockHabitFormation(key: string): HabitFormation {
+  const seed = seedFor(key)
+  const rnd = lcg(hashKey(key))
+  const firstDate = addDays(MOCK_FORMATION_TODAY, -(seed.lifetimeDays - 1))
+
+  const days: HabitFormationDay[] = []
+  for (let i = 0; i < seed.lifetimeDays; i += 1) {
+    const date = addDays(firstDate, i)
+    const roll = rnd()
+    if (date === MOCK_FORMATION_TODAY) {
+      days.push({ date, status: 'pending' })
+      continue
+    }
+    // ~6% of days have no row at all (the app was never opened) — absent, never "missed".
+    if (roll > 0.94) continue
+    days.push({ date, status: roll < seed.doneRate ? 'done' : 'missed' })
+  }
+
+  const reps = days.filter((d) => d.status === 'done').length
+  const missed = days.filter((d) => d.status === 'missed').length
+
+  // Loop-style EMA over the CLOSED rows, seeded 0.5: a miss decays, it never resets.
+  let ema = 0.5
+  for (const d of days) {
+    if (d.status === 'done') ema += MOCK_EMA_RISE * (1 - ema)
+    else if (d.status === 'missed') ema *= 1 - MOCK_EMA_DECAY
+  }
+
+  const base: HabitFormation = {
+    key,
+    firstDate: days.length > 0 ? days[0].date : null,
+    reps,
+    missed,
+    automaticityPct: null,
+    curveK: null,
+    thresholdPct: MOCK_THRESHOLD_PCT,
+    minReps: MOCK_MIN_REPS,
+    repsToThresholdLo: null,
+    repsToThresholdHi: null,
+    weeksToThresholdLo: null,
+    weeksToThresholdHi: null,
+    repsPerWeek: null,
+    consistencyPct: null,
+    timeConstancyPct: null,
+    anchorConstancyPct: null,
+    days,
+  }
+  // The honesty rule: no estimate at all under `minReps` — not a small number, NOTHING.
+  if (reps < MOCK_MIN_REPS) return base
+
+  // k the way the ESTIMATOR derives it, not backwards from a target: the mock arm has to
+  // demonstrate the real model's dynamics, or demo mode teaches the wrong thing (a habit with
+  // 80 repetitions and 4 misses cannot honestly sit at 56%). Mirrors
+  // `HabitFormationEstimator`: k = kBase * (0.6 + 0.4*consistency) * (0.7 + 0.5*context),
+  // where an ABSENT context signal is omitted from the mean, never counted as zero.
+  const ctxSignals = [seed.timeConstancyPct, seed.anchorConstancyPct]
+    .filter((v): v is number => v != null).map((v) => v / 100)
+  const context = ctxSignals.length > 0
+    ? ctxSignals.reduce((a, b) => a + b, 0) / ctxSignals.length
+    : 0.5
+  const curveK = MOCK_K_BASE * (0.6 + 0.4 * ema) * (0.7 + 0.5 * context)
+  const automaticityPct = Math.round(100 * (1 - Math.exp(-curveK * reps)))
+  const nT = (k: number) => Math.ceil(Math.log(1 / (1 - MOCK_THRESHOLD_PCT / 100)) / k)
+  const repsToThresholdLo = nT(curveK * (1 + MOCK_K_BAND))
+  const repsToThresholdHi = nT(curveK * (1 - MOCK_K_BAND))
+
+  const windowStart = addDays(MOCK_FORMATION_TODAY, -(MOCK_RATE_WINDOW_DAYS - 1))
+  const recentDones = days.filter((d) => d.date >= windowStart && d.status === 'done').length
+  const repsPerWeek = round1(recentDones / (MOCK_RATE_WINDOW_DAYS / 7))
+  const weeksFor = (target: number) =>
+    repsPerWeek > 0 ? round1(Math.max(0, target - reps) / repsPerWeek) : null
+
+  return {
+    ...base,
+    automaticityPct,
+    curveK: Math.round(curveK * 1e6) / 1e6,
+    repsToThresholdLo,
+    repsToThresholdHi,
+    weeksToThresholdLo: weeksFor(repsToThresholdLo),
+    weeksToThresholdHi: weeksFor(repsToThresholdHi),
+    repsPerWeek,
+    consistencyPct: Math.round(ema * 100),
+    timeConstancyPct: seed.timeConstancyPct,
+    anchorConstancyPct: seed.anchorConstancyPct,
+  }
+}
+
+/** The keys with a hand-tuned formation seed — the three demo shapes (mid-curve, well along,
+ *  and the honest null state). Every other key still resolves, deterministically. */
+export const MOCK_FORMATION_KEYS = Object.keys(FORMATION_SEEDS)
