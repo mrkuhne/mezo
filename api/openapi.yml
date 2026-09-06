@@ -18328,6 +18328,13 @@ components:
             advice rows.
           items:
             type: string
+        flagKey:
+          type: string
+          description: >-
+            The SEVERITY key this card came from (spec 2026-09-05 §4.4) — a flag
+            key for a flag-sourced card, or a setup-check key for a
+            setup-sourced one. Present only on advice rows. Lets the coaching
+            observer correlate the day's winner against the raised rules.
         actions:
           type: array
           description: >-

@@ -34,6 +34,8 @@ export interface FeedMessage {
   facts?: string[]
   /** Advice-card suggestion texts (config-provided); only advice rows. */
   suggestions?: string[]
+  /** The severity key the card came from (mezo-6269.2) — flag key or setup-check key; advice rows only. */
+  flagKey?: string
   /** Advice-card action buttons (S5, mezo-d58h.5) — rule-provided; only advice rows. */
   actions?: FeedAction[]
   /** Advice-card applied stamp (S5, mezo-d58h.5) — set once an action has been applied; only advice rows. */

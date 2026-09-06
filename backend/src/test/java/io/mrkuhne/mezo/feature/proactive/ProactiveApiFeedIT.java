@@ -151,6 +151,7 @@ class ProactiveApiFeedIT extends ApiIntegrationTest {
         assertThat(feed.get(0).getKind()).isEqualTo(FeedMessageResponse.KindEnum.ADVICE);
         assertThat(feed.get(0).getFacts()).containsExactly("Alvásadósság: 1,6 óra/éjszaka");
         assertThat(feed.get(0).getSuggestions()).containsExactly("Told előre a villanyoltást.");
+        assertThat(feed.get(0).getFlagKey()).isEqualTo("sleep_debt");
     }
 
     @Test

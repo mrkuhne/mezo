@@ -48,6 +48,19 @@ describe('useCompanionFeed (real mode default)', () => {
     expect(result.current[0].generatedAt).toBe('2026-07-06T05:45:00Z')
   })
 
+  it('carries the card flagKey through to the FE model', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/proactive/feed`, () => HttpResponse.json([{
+        id: 'c1', date: '2026-09-03', kind: 'advice', eyebrow: 'Alvás',
+        body: ['Aludj többet.'], refs: [], flagKey: 'sleep_debt',
+        generatedAt: '2026-09-03T06:00:00Z',
+      }])),
+    )
+    const { result } = renderHook(() => useCompanionFeed('2026-09-03'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current).toHaveLength(1))
+    expect(result.current[0].flagKey).toBe('sleep_debt')
+  })
+
   it('returns [] on the default honest-empty handler', async () => {
     const { result } = renderHook(() => useCompanionFeed(), { wrapper: makeHookWrapper() })
     await waitFor(() => expect(result.current).toEqual([]))

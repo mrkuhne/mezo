@@ -7450,6 +7450,8 @@ export interface components {
             facts?: string[];
             /** @description Advice-card suggestion texts (config-provided). Present only on advice rows. */
             suggestions?: string[];
+            /** @description The SEVERITY key this card came from (spec 2026-09-05 §4.4) — a flag key for a flag-sourced card, or a setup-check key for a setup-sourced one. Present only on advice rows. Lets the coaching observer correlate the day's winner against the raised rules. */
+            flagKey?: string;
             /** @description Up to two action buttons offered by this advice card (S5, mezo-d58h.5). Present only on advice rows. */
             actions?: components["schemas"]["FeedAction"][];
             applied?: components["schemas"]["FeedApplied"];
