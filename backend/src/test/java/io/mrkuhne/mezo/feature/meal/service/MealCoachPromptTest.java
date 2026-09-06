@@ -2,8 +2,8 @@ package io.mrkuhne.mezo.feature.meal.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
+import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
@@ -22,8 +22,7 @@ import org.junit.jupiter.api.Test;
 class MealCoachPromptTest {
 
     private static final LocalDate DATE = LocalDate.of(2026, 6, 24);
-    private static final NutritionTargetsProperties TARGETS =
-        new NutritionTargetsProperties(3100, 220, 380, 95, 4000);
+    private static final DailyTargets TARGETS = new DailyTargets(1500, 150, 150, 50, "goal");
 
     private static MealBreakdownJson breakdown() {
         return new MealBreakdownJson(new BigDecimal("0.62"), new BigDecimal("0.80"), null, null,
@@ -88,6 +87,21 @@ class MealCoachPromptTest {
         String msg = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
             List.of(block("Zabkása", 1, BigDecimal.ZERO)));
 
-        assertThat(msg).contains("3100").contains("220");
+        assertThat(msg).contains("1500").contains("150");
+    }
+
+    @Test
+    void thePromptQuotesTheResolvedGoalTargets_notTheStaticConfig() {
+        String prompt = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
+            List.of(block("Vacsora", 1, BigDecimal.ZERO)));
+        assertThat(prompt).contains("NAPI CÉLOK: 1500 kcal");
+        assertThat(prompt).doesNotContain("3100");
+    }
+
+    @Test
+    void theRemainingLine_isComputedFromTheResolvedTargets() {
+        String prompt = MealCoachPrompt.userMessage(DATE, TARGETS, List.of(),
+            List.of(block("Vacsora", 2, new BigDecimal("400"))));
+        assertThat(prompt).contains("marad: 1100 kcal");
     }
 }

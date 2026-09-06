@@ -128,4 +128,20 @@ class MealRescoreRunnerIT extends AbstractIntegrationTest {
 
         assertThat(runner.run()).isZero();
     }
+
+    @Test
+    void aStaleV2Envelope_isRescoredToV3() {
+        UUID owner = owner();
+        PantryItemEntity item = pantryItemPopulator.createFoodWithNutrients(owner, "csirkemell");
+        UUID mealId = mealPopulator.createMealWithEnvelopeVersion(owner, item, DAY, "v2 envelope", NOON, 2)
+            .getId();
+
+        int healed = runner.run();
+
+        assertThat(healed).isEqualTo(1);
+        assertThat(mealRepository.findById(mealId).orElseThrow().getBreakdown().formulaVersion())
+            .isEqualTo(MealScoringService.FORMULA_VERSION);
+        // Idempotens: a második futás szerkezetileg 0 sort érint
+        assertThat(runner.run()).isZero();
+    }
 }

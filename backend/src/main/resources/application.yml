@@ -1817,6 +1817,10 @@ mezo:
         dinner-to: 22
       # Relative tolerance around the slot share within which the kcal-fit is perfect
       slot-share-tolerance: 0.4
+      # Padló az elvárt slot-keretre a napi_cél × slot_arány hányadaként (mezo-jcpt.19): ha a
+      # maradék keret elfogyott, az elvárt érték nem eshet ez alá — arányos, nem szakadékos
+      # büntetés a napi keret túllépése után.
+      min-expected-slot-share-factor: 0.25
       # Training-aware role windows (mezo-ta8p): a meal is pre-workout fuel within pre-lead-min
       # before a workout start, post-workout recovery within post-trail-min after its end.
       pre-lead-min: 120
