@@ -52,6 +52,6 @@ data:
         { "id": 9, "type": "logs", "title": "Backend ERROR logs",
           "gridPos": { "x": 0, "y": 24, "w": 24, "h": 10 },
           "datasource": { "type": "victoriametrics-logs-datasource" },
-          "targets": [ { "expr": "kubernetes.container_name:backend AND log.level:ERROR" } ] }
+          "targets": [ { "expr": "kubernetes.container_name:backend | unpack_json | filter log.level:ERROR" } ] }
       ]
     }
