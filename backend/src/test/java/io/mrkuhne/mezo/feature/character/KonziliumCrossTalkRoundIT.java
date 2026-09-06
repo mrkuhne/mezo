@@ -139,8 +139,11 @@ class KonziliumCrossTalkRoundIT extends ApiIntegrationTest {
         // proposal only in pszichologus's call (an expert never sees its own proposal) — so it is
         // pszichologus's answer that comes back unparseable, dropping only pszichologus's reaction;
         // szomnologus's own call still succeeds normally.
-        assertThat(result.reactions()).allSatisfy(reaction ->
-                assertThat(reaction.expertKey()).isNotEqualTo("pszichologus"));
+        assertThat(result.reactions()).hasSize(1);
+        assertThat(result.reactions()).allSatisfy(reaction -> {
+            assertThat(reaction.expertKey()).isEqualTo("szomnologus");
+            assertThat(reaction.index()).isEqualTo(1);
+        });
     }
 
     @Test
@@ -158,7 +161,9 @@ class KonziliumCrossTalkRoundIT extends ApiIntegrationTest {
                 newProposal("antropologus", "life", "G."),
                 newProposal("szkeptikus", "life", "H.")));
 
+        // 4 contested chapters x 2 experts = 8 available calls against the cap: the round must
+        // stop exactly at the cap, not merely at or below it.
         assertThat(fakeCompanionLlm.completeCallCount() - before)
-                .isLessThanOrEqualTo(KonziliumCrossTalkRound.MAX_CROSS_TALK_CALLS);
+                .isEqualTo(KonziliumCrossTalkRound.MAX_CROSS_TALK_CALLS);
     }
 }
