@@ -18173,9 +18173,13 @@ components:
         - rank
         - cardId
       description: >-
-        The rule whose raise became the day's card. Null when no card was
-        delivered, or when the card came from a setup check rather than a flag —
-        that key is none of the flag rules.
+        The rule whose raise became the day's card — a fact about the DAY, read
+        back from the delivered card. This is the ONLY source of a „Nyertes"
+        badge; a client must never infer the winner from `cardOutcome`, which
+        describes a rule's state at decision time and is null once that rule has
+        changed since (mezo-y43v). Null when no card was delivered, or when the
+        card came from a setup check rather than a flag — that key is none of
+        the flag rules.
       properties:
         flagKey:
           type: string
@@ -18257,11 +18261,14 @@ components:
             - won
             - lost
           description: >-
-            Derived at read time against the day's delivered card; null unless
-            the rule raised AND was logged AND the day's card was flag-sourced.
-            A day whose card came from a setup check instead (its severity key
-            matches none of the flag rules) has no winner among the flags at
-            all, so a raised-and-logged rule still reads null that day.
+            The rule's correlation to the day's card AT THE MOMENT THE CARD WAS
+            CHOSEN, derived at read time and never stored. Non-null only when
+            the rule raised, was logged, the day's card was flag-sourced, and
+            the rule's closing row already existed when the card was delivered.
+            A rule that has changed state since — including the winner itself,
+            if it later went clear — reports null here while `winner` above
+            still names it; a rule that first raised after the card reports null
+            because it never competed (mezo-y43v).
         changedAt:
           type: string
           format: date-time

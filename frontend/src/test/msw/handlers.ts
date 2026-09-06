@@ -5,7 +5,7 @@ import { facts as knowledgeSeed, candidateSeed } from '@/data/insights/knowledge
 import { patterns as patternSeed } from '@/data/insights/insights'
 import { notificationPrefSeed } from '@/data/notification/notificationMock'
 import { ADMIN_INVITES_MOCK, ADMIN_USERS_MOCK } from '@/data/admin/adminMock'
-import { addDays } from '@/shared/lib/dates'
+import { addDays, localDateString } from '@/shared/lib/dates'
 import { MOCK_DIMENSIONS, MOCK_EXPERTS, MOCK_OVERVIEW_EMPTY, MOCK_RUNS, MOCK_RUN_DETAIL } from '@/data/character/characterMock'
 import { MOCK_LIFE_GOALS, MOCK_SIGNAL_CATALOG, mockPropose, mockProgress, mockToday } from '@/data/lifegoal/lifegoalMock'
 import type { LifeGoalProposeRequest } from '@/data/lifegoal/lifegoalApi'
@@ -1434,6 +1434,14 @@ export const handlers = [
     return new HttpResponse(stream, { headers: { 'Content-Type': 'text/event-stream' } })
   }),
 
+  // Coaching trace (mezo-6269.3) — a DEFAULT so real-mode COMPONENT tests that render the Mező
+  // hub or any /mezo/coaching page (which now all call useCoachingTrace) never fall through to
+  // the real network: an honest empty day for whatever date was asked. Coaching-specific tests
+  // override with server.use() to exercise a populated day, a mismatched winner, etc.
+  http.get(`${API_BASE}/api/companion/flags/trace`, ({ request }) => {
+    const date = new URL(request.url).searchParams.get('date') ?? localDateString()
+    return HttpResponse.json({ date, earliestDate: null, rules: [], transitions: [] })
+  }),
   http.get(`${API_BASE}/api/companion/memory/overview`, () =>
     HttpResponse.json({
       l0: { daysWithAnyData: 0, windowDays: 60 },

@@ -1952,17 +1952,39 @@ freshness the numbers don't have. The fix is not to date the numbers (that's the
 and it doesn't apply here) but to present them as "unchanged since `changedAt`", which is exactly
 what the contract's `facts`/`reasonText`/`changedAt` descriptions now spell out.
 
-**`cardOutcome` is derived at read time and never stored.** A rule's trace row only says RAISED;
-whether that raise WON the day's card is decided later in the cycle — after the raise is logged,
-`InterventionService` ranks every raise still standing and delivers exactly one — and
-`companion_flag_trace` is append-only, so there is nowhere to retrofit that answer onto the row
-even if the design wanted to. So the read side compares each RAISED-and-`logged` rule's key against
-the day's `DailyCardPort.forDay` winner every time the endpoint is called: `won`, `lost`, or null
-when the rule did not raise-and-log, or when the day's card was not flag-sourced at all (a setup
-check won that day, which is none of the 13 keys). Consequently, even a raised-and-logged rule reads
-`cardOutcome: null` when the day's delivered card came from a setup check — no winner exists among
-the 13 flag rules that day. A `suppressed_by_cooldown` raise can never be `won`/`lost` for the same
-reason it has no evidence of its own below — it was never a competitor for that day's card.
+**`winner` is a fact about the day; `cardOutcome` is a fact about a rule at the delivery instant —
+these are two different questions, settled as such by `mezo-y43v` (S3 P1 blocker; design spec
+`docs/superpowers/specs/2026-09-05-coaching-observer-design.md` §4.3, resolved in
+`docs/superpowers/plans/2026-09-06-coaching-observer-s3-surfaces.md` Task 1).** `winner` names the rule whose raise the day's delivered card actually was — read straight
+off `DailyCardPort.forDay`, so it never moves even if that rule later goes CLEAR — and it is the
+**ONLY** source of a „Nyertes" badge; a client that infers the badge from `cardOutcome` instead gets
+it wrong the moment the winning rule's state changes after delivery. `cardOutcome` asks a narrower
+question: was THIS rule, in the state it held **at the instant the card was chosen**, a competitor
+that won or lost? It is derived at read time and never stored — a rule's trace row only says RAISED;
+whether that raise won the day's card is decided later in the cycle, after the raise is logged,
+when `InterventionService` ranks every raise still standing and delivers exactly one, and
+`companion_flag_trace` is append-only, so there is nowhere to retrofit that answer onto the row even
+if the design wanted to. So the read side compares each RAISED-and-`logged` rule's key against the
+day's `DailyCardPort.forDay` winner every time the endpoint is called: `won`, `lost`, or null when
+the rule did not raise-and-log, or when the day's card was not flag-sourced at all (a setup check
+won that day, which is none of the 14 keys).
+
+**The `DailyCardPort.deliveredAt` seam (`mezo-y43v`) is what makes "at the delivery instant"
+checkable.** `DailyCardPort.DeliveredCard` gained a third field, `deliveredAt` — the instant the
+ranking actually wrote the card (`backend/…/companion/flags/service/DailyCardPort.java:20,25`,
+impl `proactive/service/DailyCardAdapter.java:27-30`, from `companion_message.created_at`).
+`FlagTraceReadService.stateOf` (`backend/…/companion/flags/service/FlagTraceReadService.java:161-172`)
+guards `cardOutcome` on `!row.getOccurredAt().isAfter(deliveredAt)` — the rule's closing row must
+already have existed when the card was delivered. Without that guard, before `mezo-y43v`, the same
+day could report both „Nyertes: X" and „X — Rendben" (a rule that won at 10:00 and cleared by
+20:00), and a rule that first raised in the evening — after the card was already chosen — could be
+stamped `lost` for a competition it was never part of. The fix reports `cardOutcome: null` in both
+cases: for the winner itself once it has changed since delivery (`winner` above still names it
+correctly), and for a rule whose first raise postdates `deliveredAt`. Consequently, even a
+raised-and-logged rule whose closing row predates delivery reads `cardOutcome: null` when the day's
+delivered card came from a setup check — no winner exists among the 14 flag rules that day. A
+`suppressed_by_cooldown` raise can never be `won`/`lost` for the same reason it has no evidence of
+its own below — it was never a competitor for that day's card.
 
 **The honest consequence for a cooldown-suppressed raise.** `FlagService` only writes a
 `companion_flag_log` row on the LOGGED branch — a raise the cooldown swallows leaves no log row of
