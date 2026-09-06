@@ -37,6 +37,26 @@ export function DimensionCard({ dim, defaultOpen = false, delayMs }: {
   const face = dimensionFace(dim)
   const ghost = face.tone === 'ghost'
 
+  // A GHOST csempe nem kártya, hanem egy sor (mezo-mxmh S4). Egy degradált dimenziónak nincs
+  // panelje — a DimensionCard alább egyet sem renderel neki —, tehát a gomb egy üres testet
+  // nyitogatna, a gyűrű egy nem létező pontszámot mutatna, a „súly 0% → 0 pont" pedig nullát
+  // szoroz nullával. Ráadásul a „nem számít bele" kétszer szerepelt: a súly-soron és a
+  // mondatban. Amíg a kamra-adat hiányos, ezekből EGYSZERRE több is lesz a sheeten, tehát
+  // pont ezeknek kell a legkevesebb helyet és a legkevesebb szót elvinniük — jelen vannak,
+  // megnevezve, de nem játsszák el, hogy pontoznak.
+  if (ghost) {
+    return (
+      <div
+        className={cn('sb-dim', 'sb-t-ghost', 'sb-dim-ghostrow', delayMs !== undefined && 'rise')}
+        style={{ ...(delayMs !== undefined && { '--d': `${delayMs}ms` }) } as React.CSSProperties}
+      >
+        <span className="sb-dim-pic"><ClayIcon name={face.icon} size={18} /></span>
+        <span className="sb-dim-lb">{dim.label}</span>
+        <span className="sb-dim-ghostwhy"><SafeMarkdown text={dim.detail} /></span>
+      </div>
+    )
+  }
+
   return (
     <div
       className={cn('sb-dim', `sb-t-${face.tone}`, delayMs !== undefined && 'rise')}
@@ -46,27 +66,27 @@ export function DimensionCard({ dim, defaultOpen = false, delayMs }: {
         <span className="sb-dim-pic"><ClayIcon name={face.icon} size={24} /></span>
         <span className="sb-dim-txt">
           <span className="sb-dim-lb">{dim.label}</span>
-          {/* The weight line stays literal even on a ghost tile — „súly 0% → 0 pont" is the
-              honest arithmetic; the appended clause says what that means in words. */}
           <span className="sb-dim-w">
             súly <b>{Math.round(dim.weight * 100)}%</b> → <b>{contribution}</b> pont
-            {ghost && ' · nincs adat, nem számít bele'}
             {/* Partial coverage is a fact about the SCORE, so it rides the weight line where the
                 other arithmetic lives — not the end of `detail`, which the two-line clamp below
                 would cut off exactly when there is most to say (mezo-mxmh). Full coverage stays
                 silent: a "100% adat" badge on every tile is noise, and its absence is the signal. */}
-            {!ghost && dim.coverage != null && dim.coverage < 0.995 && (
+            {dim.coverage != null && dim.coverage < 0.995 && (
               <b className="sb-dim-cov" title="Ennyi étel-energiára volt adat ehhez a dimenzióhoz">
                 {Math.round(dim.coverage * 100)}% adat
               </b>
             )}
           </span>
-          {!open && <span className="sb-dim-one"><SafeMarkdown text={dim.detail} /></span>}
         </span>
-        <span className={cn('sb-sring', ghost && 'is-dash')} aria-hidden={ghost || undefined}>
-          <i>{ghost ? '—' : sub}</i>
-        </span>
+        <span className="sb-sring"><i>{sub}</i></span>
         <span className="sb-dim-arr" aria-hidden="true">›</span>
+        {/* A mondat SAJÁT SORT kap a fejléc alatt, teljes kártyaszélességben (mezo-mxmh S4).
+            Amíg a `sb-dim-txt` oszlopában ült, 192px jutott neki az ikon, a gyűrű és a nyíl
+            között — ott a kétsoros clamp ~60 karakternél vág, tehát MINDEN determinisztikus
+            mondat csonkolódott, a lerövidítettek is. Nem a szöveg volt hosszú, hanem az oszlop
+            keskeny; a rövidítés csak a tünetet kergette. */}
+        {!open && <span className="sb-dim-one"><SafeMarkdown text={dim.detail} /></span>}
       </button>
       {open && (
         <div id={id} className="sb-dim-body">
@@ -76,10 +96,9 @@ export function DimensionCard({ dim, defaultOpen = false, delayMs }: {
               <Icon name="sparkle" size={10} color="var(--lav-deep)" /> <SafeMarkdown text={dim.note} />
             </p>
           )}
-          {/* A degraded dim (weight 0, mezo-jcpt.1) shares its `id` with its live sibling but
-              carries none of the per-kind payload, so the panel choice below is guarded by the
-              payload field itself (`in`), not just `id` — a degraded dim renders no panel at
-              all, only the ghost tile's two paragraphs. */}
+          {/* A degraded dim never reaches here (it returns the compact ghost row above), but the
+              panel choice stays guarded by the payload field itself (`in`), not just `id`: a
+              cached older envelope can carry a known id with none of its payload. */}
           {dim.id === 'macro' && 'macroRatio' in dim && <MacroPanel dim={dim} />}
           {dim.id === 'micro' && 'micros' in dim && <MicroPanel dim={dim} />}
           {dim.id === 'nova' && 'nova' in dim && <NovaPanel dim={dim} />}
