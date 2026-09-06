@@ -7272,7 +7272,7 @@ export interface components {
              */
             disposition?: "logged" | "suppressed_by_cooldown" | null;
             /**
-             * @description Derived at read time against the day's delivered card; null unless the rule raised AND was logged.
+             * @description Derived at read time against the day's delivered card; null unless the rule raised AND was logged AND the day's card was flag-sourced. A day whose card came from a setup check instead (its severity key matches none of the 13 rules) has no winner among the flags at all, so a raised-and-logged rule still reads null that day.
              * @enum {string|null}
              */
             cardOutcome?: "won" | "lost" | null;

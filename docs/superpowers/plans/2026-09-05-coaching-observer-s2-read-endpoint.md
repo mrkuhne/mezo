@@ -1349,12 +1349,20 @@ public class FlagTraceReadService {
         Map<String, String> previous = new HashMap<>();
         for (CompanionFlagTraceEntity row : rows) {
             // The row BEFORE the day's first change for this rule — so a day's first transition
-            // reads "from yesterday's state", not "from nothing".
-            previous.computeIfAbsent(row.getFlagKey(), key -> traceRepository
-                .findFirstByCreatedByAndFlagKeyAndOccurredAtLessThanEqualOrderByOccurredAtDesc(
-                    userId, key, row.getOccurredAt().minusMillis(1))
-                .map(FlagTraceReadService::stateOf)
-                .orElse(null));
+            // reads "from yesterday's state", not "from nothing". A plain containsKey/put (rather
+            // than computeIfAbsent) is deliberate: computeIfAbsent does NOT record a mapping when
+            // the function returns null, so a rule whose very first-ever row falls on THIS day
+            // would be re-queried on its second row of the day too — and that second lookup's
+            // cutoff (just before the SECOND row) would find the first row and wrongly report it
+            // as the antecedent of itself.
+            if (!previous.containsKey(row.getFlagKey())) {
+                String state = traceRepository
+                    .findFirstByCreatedByAndFlagKeyAndOccurredAtLessThanEqualOrderByOccurredAtDesc(
+                        userId, row.getFlagKey(), row.getOccurredAt().minusMillis(1))
+                    .map(FlagTraceReadService::stateOf)
+                    .orElse(null);
+                previous.put(row.getFlagKey(), state);
+            }
         }
         List<Transition> transitions = new ArrayList<>();
         for (CompanionFlagTraceEntity row : rows) {
@@ -1388,7 +1396,14 @@ public class FlagTraceReadService {
 }
 ```
 
-> `previous.computeIfAbsent(...)` must map through the STATIC `stateOf(CompanionFlagTraceEntity)`, not the instance `stateOf(userId, …)` — they are distinct overloads. If the compiler complains about the method reference, spell the lambda out.
+> Corrected post-ship: the block above originally used `previous.computeIfAbsent(...)`, which is a
+> real bug — `Map.computeIfAbsent` does not record a mapping when the mapping function returns
+> `null`, so a rule whose very first-ever trace row fell on THIS day would have its lookup re-run
+> on its second row of the same day, and that second lookup would find the first row and wrongly
+> attach it as the antecedent of ITSELF. The shipped code (`FlagTraceReadService.transitions`) uses
+> the explicit `containsKey`/`put` shown above instead. The lookup itself must still map through the
+> STATIC `stateOf(CompanionFlagTraceEntity)`, not the instance `stateOf(userId, …)` — they are
+> distinct overloads; if the compiler complains about the method reference, spell the lambda out.
 
 - [ ] **Step 4: Run the test and make sure it passes**
 
