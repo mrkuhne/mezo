@@ -24,6 +24,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * Reflexió S2 (bd mezo-eq85.2, spec 2026-09-06 §4.3): every night, re-run each open hypothesis's
@@ -32,10 +35,18 @@ import org.springframework.stereotype.Service;
  * row moves. Nothing here talks to a language model: the statistic, the tallies, the belief and the
  * status are all code — Gemini phrases, code decides (plan Global Constraints).
  *
- * <p>Deliberately NOT {@code @Transactional} (the {@code PatternDetectionService} precedent): each
- * repository call runs its own transaction, so one row's DB failure cannot mark a shared
- * transaction rollback-only and silently discard every other row's evaluation — the per-row
- * try/catch below then isolates for real.
+ * <p><b>One transaction per ROW, never one per run.</b> A single row's evaluation writes an
+ * {@code evidence} event, mutates the tallies/belief/status and — on a confirm — a
+ * {@code knowledge_fact} plus two more events; all of that has to commit or roll back together, or
+ * a failure at the final save leaves a durable fact behind a row that is still {@code monitoring},
+ * and the next night promotes it AGAIN. The boundary is opened explicitly with a
+ * {@link TransactionTemplate} at {@code REQUIRES_NEW} (the {@code PantryCatalogService}
+ * {@code insertOrBind} idiom) rather than with {@code @Transactional} on {@link #evaluateOne},
+ * because {@link #evaluate} calls it on the SAME bean — Spring's proxy would never see the call and
+ * the annotation would be decorative. {@code REQUIRES_NEW} also keeps the per-row try/catch in
+ * {@link #evaluate} honest: one row's rollback can never mark a caller's transaction rollback-only
+ * and so discard every other row's work. The service itself is NOT class-level
+ * {@code @Transactional} (house rule).
  */
 @Slf4j
 @Service
@@ -54,6 +65,7 @@ public class HypothesisEvaluationService {
     private final DerivedSeriesService derivedSeriesService;
     private final PatternService patternService;
     private final ReflectionProperties properties;
+    private final PlatformTransactionManager transactionManager;
 
     /**
      * Evaluates every open row that carries a test plan.
@@ -83,9 +95,21 @@ public class HypothesisEvaluationService {
         return evaluated;
     }
 
-    /** Package-visible for {@code HypothesisEvaluationServiceIT}; re-reads the row by id so a
-     *  stale copy from the work-list read can never be written back. */
+    /**
+     * One row, one transaction: every write below (the evidence event, the tallies, the belief, the
+     * status transition and — via {@link PatternService#applyEngineConfirm} — the promoted
+     * {@code knowledge_fact} and its two events) commits together or not at all.
+     * {@code REQUIRES_NEW} so a rollback here can never poison a caller's transaction.
+     */
     void evaluateOne(UUID userId, UUID patternId, LocalDate today) {
+        TransactionTemplate own = new TransactionTemplate(transactionManager);
+        own.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
+        own.executeWithoutResult(status -> evaluateRow(userId, patternId, today));
+    }
+
+    /** The row body itself — always runs inside {@link #evaluateOne}'s transaction. Re-reads the
+     *  row by id so a stale copy from the work-list read can never be written back. */
+    private void evaluateRow(UUID userId, UUID patternId, LocalDate today) {
         PatternEntity row = patternRepository.findByIdAndCreatedByAndDeletedFalse(patternId, userId)
                 .orElseThrow();
         TestPlanEnvelope plan = row.getTestPlan();
