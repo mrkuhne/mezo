@@ -25,6 +25,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ByteArrayResource;
@@ -63,7 +64,14 @@ public class GeminiCompanionLlm implements CompanionLlm {
     private final LlmCallContextHolder llmCallContextHolder;
     private final GeminiUsageExtractor geminiUsageExtractor;
 
-    public GeminiCompanionLlm(ChatModel chatModel, CompanionProperties companionProperties,
+    /**
+     * @param chatModel the GOOGLE ChatModel, qualified by bean name on purpose (mezo-ozri.1):
+     *                  each Spring AI starter contributes its own {@code ChatModel}, so an
+     *                  unqualified injection point turns every context ambiguous as soon as a
+     *                  second provider is on the classpath. Guarded by {@code ChatModelQualifierIT}.
+     */
+    public GeminiCompanionLlm(@Qualifier("googleGenAiChatModel") ChatModel chatModel,
+                              CompanionProperties companionProperties,
                               LlmCallRecorder llmCallRecorder, LlmCallContextHolder llmCallContextHolder,
                               GeminiUsageExtractor geminiUsageExtractor) {
         this.companionProperties = companionProperties;
