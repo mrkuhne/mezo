@@ -26,8 +26,8 @@ import org.springframework.http.HttpStatus;
  * from a PR body, and the ordinary suite (which almost never spans a real midnight) cannot show it.
  *
  * <p><b>How the crossing is forced.</b> {@code LocalDate.now()} resolves {@code
- * TimeZone.getDefault()} on EVERY call, so moving the JVM default zone forward by 60 seconds while
- * local wall time sits at 23:59:30 advances "now" past midnight without touching the server's clock
+ * TimeZone.getDefault()} on EVERY call, so moving the JVM default zone forward by 10 minutes while
+ * local wall time sits at 23:55:00 advances "now" past midnight without touching the server's clock
  * (spec §5: no {@code Clock} bean). Each test first asserts that the crossing really happened —
  * otherwise the assertions after it would be vacuously green.
  *
@@ -36,9 +36,17 @@ import org.springframework.http.HttpStatus;
  */
 class JournalMidnightCrossingIT extends ApiIntegrationTest {
 
-    /** Local wall time to hold just before the simulated rollover, and the shift that crosses it. */
-    private static final LocalTime JUST_BEFORE_MIDNIGHT = LocalTime.of(23, 59, 30);
-    private static final int CROSSING_SHIFT_SECONDS = 60;
+    /**
+     * Local wall time to hold just before the simulated rollover, and the shift that crosses it.
+     *
+     * <p>Parked 5 minutes shy of midnight rather than seconds away: the real wall clock keeps
+     * advancing under the synthetic offset too, so a slow first request (cold Spring context) could
+     * otherwise cross midnight on its own before the test explicitly shifts the zone, making the
+     * later "did it really cross" assertion false for the wrong reason. A multi-minute margin costs
+     * nothing here — the crossing is forced by re-pinning the offset, never by waiting for it.
+     */
+    private static final LocalTime JUST_BEFORE_MIDNIGHT = LocalTime.of(23, 55, 0);
+    private static final int CROSSING_SHIFT_SECONDS = 10 * 60;
 
     @Autowired private JournalPopulator journalPopulator;
     @Autowired private OwnerProperties ownerProperties;
@@ -53,17 +61,26 @@ class JournalMidnightCrossingIT extends ApiIntegrationTest {
     /** The offset that puts the JVM's default-zone wall clock at {@code JUST_BEFORE_MIDNIGHT}. */
     private static int offsetJustBeforeMidnight() {
         int offset = JUST_BEFORE_MIDNIGHT.toSecondOfDay() - LocalTime.now(ZoneOffset.UTC).toSecondOfDay();
-        if (offset < -18 * 3600) {
-            offset += 24 * 3600;
+        return wrapToValidOffset(offset);
+    }
+
+    /**
+     * {@code ZoneOffset} only supports ±18h; wraps by a day either way so any offset arithmetic
+     * (here, {@code base + CROSSING_SHIFT_SECONDS}) always resolves instead of throwing
+     * {@code DateTimeException} when it lands exactly on, or just past, the ±64800s boundary.
+     */
+    private static int wrapToValidOffset(int offsetSeconds) {
+        if (offsetSeconds < -18 * 3600) {
+            offsetSeconds += 24 * 3600;
         }
-        if (offset > 18 * 3600) {
-            offset -= 24 * 3600;
+        if (offsetSeconds > 18 * 3600) {
+            offsetSeconds -= 24 * 3600;
         }
-        return offset;
+        return offsetSeconds;
     }
 
     private static void setDefaultZone(int offsetSeconds) {
-        TimeZone.setDefault(TimeZone.getTimeZone(ZoneOffset.ofTotalSeconds(offsetSeconds)));
+        TimeZone.setDefault(TimeZone.getTimeZone(ZoneOffset.ofTotalSeconds(wrapToValidOffset(offsetSeconds))));
     }
 
     @Test
