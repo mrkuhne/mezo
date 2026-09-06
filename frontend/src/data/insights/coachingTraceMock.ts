@@ -1,3 +1,4 @@
+import { addDays } from '@/shared/lib/dates'
 import type { CoachingRule, CoachingTraceDay } from '@/data/types'
 
 /**
@@ -61,7 +62,10 @@ const RULES: Omit<CoachingRule, 'changedAt'>[] = [
 export function mockCoachingDay(date: string): CoachingTraceDay {
   return {
     date,
-    earliestDate: '2026-08-28',
+    // Derived, not a literal: the visual harness freezes the clock in MAY, so a fixed August
+    // floor made the day pager's „vissza" dead in every golden — and dead in `pnpm dev` on any
+    // day outside that window. Thirteen days is enough to page through and still hit a floor.
+    earliestDate: addDays(date, -13),
     winner: { flagKey: 'load_fuel_mismatch', rank: 2, cardId: 'mock-card-1' },
     rules: RULES.map((rule) => ({ ...rule, changedAt: `${date}T07:00:00Z` })),
     transitions: [
