@@ -134,8 +134,9 @@ const SCREENS: Array<[string, string, string?]> = [
   ['ritual-arrival', '/ritual'],
   // Proaktív coaching (mezo-6269.3): the hub, the Megfigyelő with all rules + the day's
   // timeline, and the winning card with its beaten candidates. All three read the deterministic
-  // mock day (`coachingTraceMock` / `coachingCardMock`), whose timestamps and `earliestDate`
-  // derive from the requested day — so the frozen clock alone pins them.
+  // mock day (`coachingTraceMock` / `coachingCardMock`), whose timestamps derive from the
+  // requested day and whose `earliestDate` derives from TODAY (deliberate) — so the frozen
+  // clock alone pins them.
   ['mezo-coaching', '/mezo/coaching'],
   ['mezo-coaching-megfigyelo', '/mezo/coaching/megfigyelo'],
   ['mezo-coaching-kartya', '/mezo/coaching/kartya'],

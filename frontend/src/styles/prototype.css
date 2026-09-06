@@ -6129,7 +6129,10 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
    domén-szín, rendben = nyugodt, nem mérhető = tompa) — a színt arra költjük,
    aminek mondanivalója van. Csak tokenek, így a sötét mód magától követi. ===== */
 .mzo-rule { border-radius: 21px; padding: 11px 13px;
-  /* .mz-w-* only SETS --mz-wash (see .mz-tile) — the background is the consumer's job. */
+  /* .mz-w-* sets --mz-wash for every wash (see .mz-tile) and ALSO a box-shadow for five of the
+     seven — sage/sky/gold/lav/rose (coral and white opt out) — so .mzo-rule tiles pick up that
+     shadow for those washes and go without for coral/white; the background is still this
+     consumer's own job. */
   background: var(--mz-wash, var(--mz-wash-white)); }
 .mzo-rule.is-winner { border: 1px solid var(--mz-decring); box-shadow: var(--mz-shadow-dec); }
 .mzo-rule-head { display: flex; align-items: center; gap: 8px; width: 100%;

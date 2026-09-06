@@ -714,7 +714,7 @@ It is **purely presentational and controlled**: `{ value, onVote, label }`, no h
 ### 5.8 Proaktív coaching ↔ Companion flag trace (✅ `mezo-6269.3` wired)
 
 `useCoachingTrace`/`useCoachingCard` (§2.10) read the companion-owned `GET
-/api/companion/flags/trace` and the existing companion feed (`GET /api/today/feed`, filtered to
+/api/companion/flags/trace` and the existing companion feed (`GET /api/proactive/feed`, filtered to
 `kind === 'advice'`) — Insights owns no table or endpoint of its own here, exactly as with
 Weekly/Memoir/Predictions/Memory. **Crossing contract:** `CoachingTraceDay { date, earliestDate,
 winner, rules[], transitions[] }` and its per-rule `CoachingRule { flagKey, label, domain, rank,
