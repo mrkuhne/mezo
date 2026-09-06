@@ -953,17 +953,17 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **mappers:** `PantryMapper`
   - **config:** `PantryImportProperties`, `PantryPhotoProperties`, `PantryScrapeProperties`,
     `PantrySuggestionProperties`
-  - **other:** `MicroFact`, `PantryCatalogLoader`
+  - **other:** `MicroFact`, `PantryCatalogLoader`, `PantryTwinSaturatedFatRunner`
 - **Contract** `api/feature/pantry/pantry.yml` — 10 operations
   - **endpoints:** GET /api/pantry · POST /api/pantry · PUT /api/pantry/{id} · DELETE /api/pantry/{id} ·
     GET /api/pantry/catalog · POST /api/pantry/items/from-catalog · GET /api/pantry-import/lookup ·
     POST /api/pantry-import · POST /api/pantry-import/scrape · POST /api/pantry-import/photo
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/pantry` — 17 IT + 6 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/pantry` — 18 IT + 6 unit
   - **ITs:** `PantryApiIT`, `PantryCatalogApiIT`, `PantryCatalogLoaderIT`, `PantryCatalogMigrationIT`,
     `PantryCatalogServiceIT`, `PantryImportApiIT`, `PantryImportDisabledApiIT`, `PantryItemRepositoryIT`,
     `PantryPhotoApiIT`, `PantryPhotoDisabledApiIT`, `PantryPhotoLlmUnavailableApiIT`, `PantryPhotoScrapeOffApiIT`,
     `PantryScrapeApiIT`, `PantryScrapeDisabledApiIT`, `PantryScrapeLlmUnavailableApiIT`, `PantryServiceIT`,
-    `WebPageClientIT`
+    `PantryTwinSaturatedFatRunnerIT`, `WebPageClientIT`
   - **populators:** `DatabasePopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
     `UserPopulator`
 
