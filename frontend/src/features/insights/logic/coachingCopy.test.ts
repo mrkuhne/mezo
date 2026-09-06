@@ -3,6 +3,7 @@ import {
   STATE_LABEL, WINNER_LABEL, dayLabel, hhmm, losersOf, splitOf, stateOf, visualOf, washOf,
   winnerRuleOf,
 } from '@/features/insights/logic/coachingCopy'
+import { huMonthDay } from '@/shared/lib/dates'
 import { mockCoachingDay } from '@/data/insights/coachingTraceMock'
 import type { CoachingRule } from '@/data/types'
 
@@ -93,6 +94,6 @@ describe('the small copy', () => {
   test('the day label says ma / tegnap, then the date', () => {
     expect(dayLabel('2026-09-06', '2026-09-06')).toBe('ma')
     expect(dayLabel('2026-09-05', '2026-09-06')).toBe('tegnap')
-    expect(dayLabel('2026-09-01', '2026-09-06')).toContain('szept')
+    expect(dayLabel('2026-09-01', '2026-09-06')).toBe(huMonthDay('2026-09-01').toLowerCase())
   })
 })

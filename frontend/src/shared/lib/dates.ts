@@ -35,7 +35,7 @@ export function addDays(iso: string, n: number): string {
 // Hungarian month abbreviations + day-of-week labels, matching the Phase-1
 // mock display strings. Used to format backend ISO dates (`2026-05-01`) into
 // the HU display labels the UI expects (`Máj 1`, `Máj 20 · Sze`).
-const HU_MONTHS = ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szept', 'Okt', 'Nov', 'Dec']
+const HU_MONTHS = ['Jan', 'Feb', 'Már', 'Ápr', 'Máj', 'Jún', 'Júl', 'Aug', 'Szep', 'Okt', 'Nov', 'Dec']
 const HU_DOW = ['Vas', 'Hét', 'Kedd', 'Sze', 'Csü', 'Pén', 'Szo']
 const HU_DOW_FULL = ['Vasárnap', 'Hétfő', 'Kedd', 'Szerda', 'Csütörtök', 'Péntek', 'Szombat']
 
