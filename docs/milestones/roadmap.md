@@ -34,7 +34,7 @@ day-to-day slices. Authoritative status is always `bd show <id>`; this table is 
 | `mezo-b3pp` — **Phase 5 deep memory** | ◐ 37/41 (90%) | See the Phase 5 bullet above. |
 | `mezo-1gim` — **Karakter (character dossier)** | ◐ 15/18 (83%) | 7-dimension user profile + the AI profiling „konzílium". [`character.md`](../features/character.md). |
 | `mezo-6dii` — **Shared RAG memory platform** | ◐ 8/9 (88%) | The canonical `memory_item`/`memory_vector` retrieval projection every AI consumer will read, plus the chat pilot behind an `OLD`/`SHADOW`/`NEW` switch. [ADR 0036](../decisions/0036-shared-memory-platform-with-gradual-consumer-adoption.md), [`companion.md`](../features/companion.md) §4. |
-| `mezo-6269` — **Proactive coaching observer** | ◐ 1/16 (6%) | Making the coaching decision process visible (`companion_flag_trace`). Just started — S1 shipped 2026-09-05. |
+| `mezo-6269` — **Proactive coaching observer** | ◐ 3/16 (18%) | Making the coaching decision process visible. S1 (`companion_flag_trace` — one row per verdict CHANGE) shipped 2026-09-05; S2 (`GET /api/companion/flags/trace`, the observer's day read + its two ports so the observer never imports proactive, and the FE data layer) 2026-09-06. |
 | `mezo-gb1s` — **Mezo-kalauz (in-app tutorial)** | ◐ 6/10 (60%) | Per-page guided tour for beta onboarding. [`tutorial.md`](../features/tutorial.md). |
 | `mezo-iizd` — **Életcél-rendszer (life goals)** | 🔄 open | PERMAH life areas + pillar-based progress. [`lifegoal.md`](../features/lifegoal.md). |
 | `mezo-jcpt` — **Napi értékelés (daily score) redesign** | 🔄 open | C-hybrid score + Mozaik 2.0 UI; spec `2026-09-03-daily-score-redesign`. |
