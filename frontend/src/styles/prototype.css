@@ -5454,18 +5454,14 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .nr-pct { font-size: 10.5px; font-weight: 700; color: #A8801F; flex: none; width: 35px; text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ── Mezo hub (mezo-d20.5.1) — prototype mezo-body.html hub section ×1.18:
-      breathing orb hero (NO number — one companion sentence + quiet status line),
-      composer-shaped chat opener, the motor's single decision card in a gold
-      ring, 6-tile mosaic, and the full-width L0→L3 memory band. ── */
+      breathing orb hero (the SPOT alone since tile-header-layout — no name, no
+      companion sentence, no status line), composer-shaped chat opener, the
+      motor's single decision card in a gold ring, and a mosaic where every tile
+      (Memória included) is the same 2-per-row cell. ── */
 .mzh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
 
-.mzh-orbhero { display: grid; justify-items: center; text-align: center; gap: 2px; padding: 12px 14px 14px; }
+.mzh-orbhero { display: grid; justify-items: center; text-align: center; padding: 10px 14px 4px; }
 .mzh-orbhero svg:first-child { animation: mz-orbbreathe 4.5s ease-in-out infinite; }
-.mzh-nm { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; margin-top: 2px; }
-.mzh-ln { font-size: 12.5px; font-weight: 300; color: var(--text-primary); max-width: 271px;
-  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.mzh-lv { font-size: 9.5px; font-weight: 700; color: var(--mz-ink-mut); margin-top: 4px; }
-.mzh-lv b { color: var(--mz-cell-lav-ink); }
 
 .mzh-chatopen { display: flex; align-items: center; gap: 11px; cursor: pointer; width: 100%;
   border-radius: 999px; padding: 11px 11px 11px 19px; font-family: inherit;
@@ -5511,18 +5507,14 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   box-shadow: var(--mz-shadow-sage); font-size: 12px; font-weight: 600; color: var(--mz-cell-sage-ink);
   text-align: left; }
 
-.mzh-membnd { display: flex; align-items: center; gap: 5px; width: 100%; cursor: pointer;
-  border-radius: 20px; padding: 12px 14px; font-family: inherit; color: var(--text-primary);
-  background: var(--mz-wash-lav); border: 0.5px solid rgba(43, 33, 24, 0.06);
-  box-shadow: var(--mz-shadow-lav);
-  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
-.mzh-membnd:active { transform: scale(0.97); }
-.mzh-lyr { flex: 1; text-align: center; }
-.mzh-lyr b { display: block; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+/* Memória (tile-header-layout): the L0→L3 layers inside a normal mosaic cell — a
+   2×2 grid of counts instead of the old full-width band's single row. */
+.mzh-memlyrs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; width: 100%; margin-top: 4px; }
+.mzh-lyr { text-align: center; }
+.mzh-lyr b { display: block; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .mzh-lyr small { font-size: 7px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
   color: var(--mz-ink-soft); }
-.mzh-arr { color: var(--mz-ink-mut); font-size: 12px; flex: none; }
-.mzh-membnd-ph { flex: 1; text-align: left; font-size: 12px; font-weight: 600; }
+.mzh-membnd-ph { font-size: 11px; font-weight: 600; margin-top: 4px; }
 
 @media (prefers-reduced-motion: reduce) {
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
@@ -5530,7 +5522,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   .nr-str div, .mz-play .nr-str div { animation: none; transform: scaleX(1); transition: none; }
   .nck-fill { transition: none; }
   .mzh-orbhero svg:first-child { animation: none; }
-  .mzh-chatopen, .mzh-membnd { transition: none; }
+  .mzh-chatopen { transition: none; }
 }
 
 /* ── Chat face (mezo-d20.5.2) — prototype mezo-body.html #page-chat, px ×1.18.
@@ -6133,7 +6125,63 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   border: 1.2px dashed var(--mz-chat-refch-bd); }
 .mzp-dgq .qq { font-size: 11px; font-weight: 700; line-height: 1.35; color: var(--mz-ink-soft); }
 .mzp-dgq .qs { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; color: var(--mz-ink-mut); margin-top: 4px; }
-.mzh-t-diag, .mzh-t-karakter { grid-column: 1 / -1; align-items: flex-start; text-align: left; }
+/* tile-header-layout: Diagnózis / Karakter / Proaktív coaching used to span both
+   columns; they are plain 2-per-row cells now, so only their in-cell extras stay. */
+.mzh-diagq { font-size: 12px; font-weight: 700; line-height: 1.3; margin-top: 4px; }
+.mzo-hubposter { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 6px; }
+
+/* ===== Proaktív coaching megfigyelő (mezo-6269.3) — a döntés mint felület.
+   Anatómia: rangjelvény + clay ikon + állapotcsip egy sorban, alatta EGY
+   bizonyítéksor, kinyitva a fagyasztott számok. A mosás a VERDIKTÉ (jelzett =
+   domén-szín, rendben = nyugodt, nem mérhető = tompa) — a színt arra költjük,
+   aminek mondanivalója van. Csak tokenek, így a sötét mód magától követi. ===== */
+.mzo-rule { border-radius: 21px; padding: 11px 13px;
+  /* .mz-w-* sets --mz-wash for every wash (see .mz-tile) and ALSO a box-shadow for five of the
+     seven — sage/sky/gold/lav/rose (coral and white opt out) — so .mzo-rule tiles pick up that
+     shadow for those washes and go without for coral/white; the background is still this
+     consumer's own job. */
+  background: var(--mz-wash, var(--mz-wash-white)); }
+.mzo-rule.is-winner { border: 1px solid var(--mz-decring); box-shadow: var(--mz-shadow-dec); }
+.mzo-rule-head { display: flex; align-items: center; gap: 8px; width: 100%;
+  background: none; border: 0; padding: 0; text-align: left; color: inherit; }
+.mzo-rule-nm { font-size: 13px; font-weight: 700; }
+.mzo-rule-head .mzp-stch { margin-left: auto; }
+.mzo-rule-head .mzp-stch + .mzp-stch { margin-left: 0; }
+.mzo-rule-head .mz-chev { transition: transform 0.18s ease; }
+.mzo-rule.open .mzo-rule-head .mz-chev { transform: rotate(180deg); }
+.mzo-rule-why { font-size: 11px; font-weight: 300; line-height: 1.45; margin-top: 6px;
+  color: var(--mz-ink-soft); }
+.mzo-rule-body { margin-top: 6px; }
+
+/* A nap váltója — a Fuel napléptető (.flog-daysw) idiómája, coaching hangnemben. */
+.mzo-daysw { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.mzo-daysw button { width: 30px; height: 30px; border-radius: 11px; border: 0;
+  background: var(--mz-wash-white); box-shadow: var(--mz-shadow-lav); font-size: 15px;
+  color: var(--mz-ink-soft); }
+.mzo-daysw button:disabled { opacity: 0.35; box-shadow: none; }
+.mzo-dlbl { display: flex; flex-direction: column; align-items: center; min-width: 108px; }
+.mzo-dlbl b { font-size: 14px; font-weight: 800; }
+.mzo-dlbl small { font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--mz-ink-mut); }
+
+/* A nap idővonala — csak akkor, ha VOLT változás (üres doboz helyett semmi). */
+.mzo-tl { display: flex; flex-direction: column; gap: 7px; }
+.mzo-tlrow { display: flex; align-items: baseline; gap: 8px; font-size: 11px; font-weight: 300; }
+.mzo-tlrow .tm { font-size: 10px; font-weight: 800; font-variant-numeric: tabular-nums;
+  color: var(--mz-ink-mut); flex: none; }
+.mzo-tlrow .nm { font-weight: 700; flex: none; }
+
+/* A verdikt-gyűrű: szabályonként egy szegmens. */
+.mzo-arc { display: block; }
+.mzo-arcseg { fill: none; stroke-width: 7; stroke-linecap: round; }
+
+/* „Miért ez nyert" — a legyőzött jelöltek rangsora (ez sehol máshol nincs az appban). */
+.mzo-loser { display: flex; align-items: center; gap: 8px; font-size: 11px; padding: 6px 0;
+  border-bottom: 0.5px dashed var(--mz-chat-refch-bd); }
+.mzo-loser:last-of-type { border-bottom: none; }
+.mzo-loser .nm { font-weight: 700; }
+.mzo-loser .rk { margin-left: auto; font-size: 10px; color: var(--mz-ink-mut);
+  font-variant-numeric: tabular-nums; }
 
 /* Chat quick-question chips (mezo-dz3y) — empty-state only, one tap sends. */
 .mzc-qq { border: 0.5px solid var(--mz-chat-refch-bd); border-radius: 999px; padding: 8px 13px;
@@ -7787,7 +7835,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 
 .sb-dim { border-radius: 21px; background: var(--surface-card); border: 0.5px solid var(--border-subtle);
   overflow: hidden; box-shadow: var(--sb-tone-shadow, none); }
-.sb-dim-head { display: grid; grid-template-columns: auto 1fr auto auto; gap: 11px; align-items: center; width: 100%;
+.sb-dim-head { display: grid; grid-template-columns: auto 1fr auto auto; gap: 0 11px; align-items: center; width: 100%;
   padding: 13px 15px; border: none; background: none; font-family: inherit; text-align: left;
   color: var(--text-primary); cursor: pointer; }
 .sb-dim-ring { position: relative; width: 52px; height: 52px; }
@@ -7801,7 +7849,15 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .sb-dim-lb i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); flex: none; }
 .sb-dim-w { font-size: 10.5px; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
 .sb-dim-w b { color: var(--mz-ink-soft); font-weight: 700; }
-.sb-dim-one { font-size: 12px; color: var(--mz-ink-soft); line-height: 1.35; margin-top: 3px;
+/* Részleges lefedettség jelvénye a súly-soron (mezo-mxmh) — halk, de mindig látszik, szemben a
+   `detail` végére tűzött záradékkal, amit a kétsoros clamp levágott. Teljes lefedettségnél nem
+   jelenik meg: a hiánya a jel. */
+.sb-dim-cov { display: inline-block; margin-left: 7px; padding: 1px 6px; border-radius: 999px;
+  font-size: 9px; font-weight: 800; letter-spacing: 0.04em; vertical-align: 1px;
+  color: var(--mz-cell-amber-ink); background: var(--mz-cell-amber-bg); }
+/* Teljes kártyaszélesség a fejléc-rács ALATT (mezo-mxmh S4) — lásd DimensionCard. */
+.sb-dim-one { grid-column: 1 / -1; font-size: 12.5px; color: var(--mz-ink-soft); line-height: 1.4;
+  margin-top: 9px;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .sb-dim-arr { font-size: 16px; color: var(--mz-ink-mut); transition: transform 0.25s; }
 .sb-dim-head[aria-expanded="true"] .sb-dim-arr { transform: rotate(90deg); }
@@ -7831,6 +7887,16 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .sb-dim.sb-t-ghost { background: none; border: 1px dashed var(--border-subtle); --sb-tone-shadow: none; }
 .sb-t-ghost .sb-dim-lb, .sb-t-ghost .sb-dim-one, .sb-t-ghost .sb-dim-body > p { color: var(--mz-ink-mut); }
 .sb-t-ghost .sb-dim-pic { opacity: 0.55; }
+/* A ghost EGY SOR, nem kártya (mezo-mxmh S4): ikon · név · miért nincs adat. Se gyűrű, se
+   „súly 0% → 0 pont", se lenyitó nyíl — nincs mit lenyitni, és nulla szorozva nullával nem
+   hír. A hiányos kamra-adat miatt egyszerre több is állhat itt, ezért ezek visznek el a
+   legkevesebb helyet: 126px-ből ~52px lett. */
+.sb-dim-ghostrow { display: grid; grid-template-columns: auto auto 1fr; align-items: center;
+  gap: 4px 9px; padding: 9px 13px; }
+.sb-dim-ghostrow .sb-dim-pic { width: 26px; height: 26px; border-radius: 9px; box-shadow: none;
+  background: none; }
+.sb-dim-ghostrow .sb-dim-lb { font-size: 12.5px; font-weight: 700; color: var(--mz-ink-mut); }
+.sb-dim-ghostwhy { grid-column: 2 / -1; font-size: 11px; line-height: 1.4; color: var(--text-muted); }
 
 /* A csempe-mozaik függőleges ritmusa (a `.mz-panel-stack` 11px-e a tabok sajátja; a
    sheet szűkebb, 10px). */

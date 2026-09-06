@@ -45,8 +45,11 @@ const ACTION_INVALIDATES: Partial<Record<AdviceActionKey, readonly QueryKey[]>> 
  * a reload would lose. Any query the action's own effect touches beyond the card (see
  * `ACTION_INVALIDATES`) is invalidated in the SAME success handler, unconditionally alongside the
  * feed — a half-applied skip (card done, week agenda stale) is exactly the bug this closes. A
- * no-op in mock mode (`useExperimentActions`'s shape, copied verbatim): the mock companion feed
- * is always `[]`, so there is no advice card to apply anything to, and nothing to invalidate.
+ * no-op in mock mode (`useExperimentActions`'s shape, copied verbatim): the mock companion FEED
+ * is always `[]`, so there is nothing there to apply an action to — but the coaching card page
+ * (mezo-6269.3) has its own scoped seed (`coachingCardMock`) carrying a `lighten_tomorrow`
+ * action, so in mock mode that button DOES render there; this handler still no-ops on it, so
+ * the tap is inert (no error, no applied state, nothing invalidated).
  */
 export function useAdviceActions() {
   const queryClient = useQueryClient()

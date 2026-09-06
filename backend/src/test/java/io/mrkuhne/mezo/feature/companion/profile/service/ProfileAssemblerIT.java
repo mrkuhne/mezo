@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.companion.feedback.repository.FeedbackRollupRepos
 import io.mrkuhne.mezo.feature.companion.feedback.service.FeedbackLearningService;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
+import io.mrkuhne.mezo.feature.companion.graph.service.GraphService;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.companion.profile.entity.ProfileMetaEnvelope;
 import io.mrkuhne.mezo.feature.companion.quarterly.service.Quarters;
@@ -46,6 +47,8 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
     private ProfileAssembler assembler;
     @Autowired
     private GraphNodeRepository nodeRepository;
+    @Autowired
+    private GraphService graphService;
     @Autowired
     private FeedbackRollupRepository rollupRepository;
     @Autowired
@@ -151,6 +154,37 @@ class ProfileAssemblerIT extends AbstractIntegrationTest {
 
         assertThat(nodeRepository.findById(nodeId).orElseThrow().getStatus())
                 .isEqualTo(GraphNodeEntity.STATUS_ACTIVE);
+    }
+
+    /**
+     * Code review finding (mezo-06o0.5, final whole-branch review): before this fix, {@code
+     * ProfileAssembler.rebuild} unconditionally set {@code status=ACTIVE} after every UPSERT, a
+     * fifth writer of node status never routed through {@link
+     * io.mrkuhne.mezo.feature.companion.graph.service.GraphPromotionService#raiseStatus}. A user
+     * who hand-archived the "Rólad tanultam" card from the Tudástár UI (which stamps {@code
+     * userArchivedAt}, not just {@code status}, via {@link GraphService#archive}) had it silently
+     * re-activated by the very next {@code ProfileAssemblerJob} run (Monday 03:45) — the exact P2
+     * bug this branch exists to fix, still live on this one node. The FE now promises
+     * ("Archiválás után nem kerül a beszélgetésbe... csak te hozhatod vissza.") that this cannot
+     * happen; this test proves the backend keeps that promise.
+     */
+    @Test
+    void a_hand_archived_profile_survives_the_next_run() {
+        UUID owner = seedOwner();
+        seedSignal(owner);
+        UUID nodeId = assembler.rebuild(owner, currentQuarter()).orElseThrow();
+        graphService.archive(owner, nodeId);
+        assertThat(nodeRepository.findById(nodeId).orElseThrow().getStatus())
+                .isEqualTo(GraphNodeEntity.STATUS_ARCHIVED);
+
+        assembler.rebuild(owner, currentQuarter());
+
+        GraphNodeEntity node = nodeRepository.findById(nodeId).orElseThrow();
+        assertThat(node.getStatus()).isEqualTo(GraphNodeEntity.STATUS_ARCHIVED);
+        assertThat(node.isUserArchived()).isTrue();
+        // Title/summary/meta still refresh — only the status raise is skipped (the graph keeps
+        // shadowing its source, per GraphPromotionService.raiseStatus's javadoc).
+        assertThat(node.getSummary()).isNotBlank();
     }
 
     @Test

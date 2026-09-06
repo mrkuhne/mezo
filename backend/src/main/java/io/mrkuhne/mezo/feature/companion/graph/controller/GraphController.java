@@ -44,6 +44,18 @@ public class GraphController implements KnowledgeGraphApi {
     }
 
     @Override
+    public GraphNodeResponse restoreGraphNode(UUID id) {
+        return graphMapper.toResponse(graphService.restore(currentUserId.get(), id));
+    }
+
+    @Override
+    public List<GraphNodeResponse> listArchivedGraphNodes() {
+        return graphService.listUserArchived(currentUserId.get()).stream()
+            .map(graphMapper::toResponse)
+            .toList();
+    }
+
+    @Override
     public List<GraphNodeResponse> listGraphCandidates() {
         return candidateService.listPending(currentUserId.get());
     }

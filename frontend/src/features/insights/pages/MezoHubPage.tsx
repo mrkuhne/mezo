@@ -3,12 +3,14 @@
 // Source of truth: docs/design_2.0/prototypes/src/mezo-body.html hub section
 // (values ×1.18). The Insights shell (AppHero + SubNavDropdown) dissolves:
 // this page IS the /mezo index, the former sub-tabs are full-page siblings.
-// Anatomy: the shell fejléc (app/AppHeader.tsx, mezo-atry) → breathing orb hero (NO
-// number — one companion sentence + the quiet status line) → composer-shaped
+// Anatomy: the shell fejléc (app/AppHeader.tsx, mezo-atry) → breathing orb hero (the
+// spot ALONE — tile-header-layout dropped the name, the companion sentence and the
+// status line so the composer sits right under the icon) → composer-shaped
 // chat opener → the motor's SINGLE decision card in a gold ring (the same
 // decide mutation PatternsPage uses; deciding flips it to the sage
-// acknowledgement) → 6+2-tile mosaic (a széles Diagnózis + Karakter csempékkel) with live
-// bottom lines from the pages' own hooks → the full-width L0→L3 memory band.
+// acknowledgement) → a 10-cell mosaic, every tile the SAME classic 2-per-row size
+// (the three former full-row tiles and the L0→L3 memory band joined the grid) with
+// live bottom lines from the pages' own hooks.
 // Honest states: no fabricated numbers — tile lines vanish (or say
 // „tanulom", the pages' own vocabulary) while their source is unresolved.
 // ============================================================
@@ -18,20 +20,19 @@ import { useNavigate } from 'react-router-dom'
 import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
 import { Mosaic, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import {
-  useTodayScenario, resolveBriefing, useCompanionFeed, useConversations,
   usePatterns, usePatternMonitor, usePatternActions, useMemoryOverview,
   useMeWeek, useMemoir, useKnowledge, usePredictions, useExperiments, useDiagnoses,
-  useCharacterOverview,
+  useCharacterOverview, useCoachingTrace,
 } from '@/data/hooks'
 import { isDossierEmpty } from '@/features/character/dossierState'
 import { mondayIso } from '@/data/fuel/fuelWeekHooks'
-import { buildMezoMessages } from '@/features/today/logic/mezoMessages'
 import { bucketize } from '@/features/insights/logic/lifecycle'
 import { confidenceMeta, findingSentence, pairLine } from '@/features/insights/logic/findings'
 import { verdictSentence } from '@/features/insights/logic/verdicts'
 import { bucketFacts } from '@/features/insights/logic/factCopy'
+import { VerdictArc } from '@/features/insights/components/VerdictArc'
+import { splitOf, winnerRuleOf } from '@/features/insights/logic/coachingCopy'
 import type { PatternStatus } from '@/data/types'
 
 /** A prototípus döntés-visszaigazolásai — a sage decdone kártya szövege döntésenként. */
@@ -45,28 +46,9 @@ const DECIDED_MSG: Record<PatternStatus, ReactNode> = {
 
 export function MezoHubPage() {
   const navigate = useNavigate()
-  const scenario = useTodayScenario()
 
-  // ── orb hero: companion voice + status line ─────────────────────────
-  const feed = useCompanionFeed()
-  const conversations = useConversations()
-  const chatMode = conversations.data.mode
-  const chatDegraded = conversations.data.degraded
+  // ── the memory overview feeds the Memória tile (the hero carries no data) ──
   const { overview } = useMemoryOverview()
-  const messages = useMemo(
-    () => buildMezoMessages({ feed, demoBriefing: resolveBriefing(scenario.dayState) }),
-    [feed, scenario.dayState],
-  )
-  // The ONE proactive sentence (MezoChip precedent: the latest message's first paragraph).
-  // A real feed row speaks in both modes; the labelled demo briefing only in mock mode —
-  // a live user never gets demo prose presented as the companion's live voice.
-  const latestReal = [...messages].reverse().find((m) => m.artifactId != null)
-  const latest = latestReal ?? (chatMode === 'mock' ? messages[messages.length - 1] : undefined)
-  const sentence = latest?.paragraphs[0]
-  const statusBase = chatDegraded
-    ? 'a társ most nem elérhető'
-    : chatMode === 'mock' ? 'demo beszélgetés' : 'Gemini · élő'
-  const togetherDays = overview != null && overview.l0.daysWithAnyData > 0 ? overview.l0.daysWithAnyData : null
 
   // ── the motor's single decision card (PatternsPage's data + mutation) ──
   const { patterns, degraded: patternsDegraded, isPending: patternsPending } = usePatterns()
@@ -141,6 +123,15 @@ export function MezoHubPage() {
     ? undefined
     : `${Math.round(coreDims.reduce((sum, d) => sum + d.maturity, 0) / coreDims.length)}% átlag érettség`
 
+  // Proaktív coaching (mezo-6269.3): the engine's own decision, one tap away. Honest while
+  // unresolved — no arc, no winner name, no fabricated zero (the hub's rule for every tile line).
+  const { day: coachingDay, isPending: coachingPending } = useCoachingTrace()
+  const coachingSplit = splitOf(coachingDay)
+  const coachingWinner = winnerRuleOf(coachingDay)
+  const coachingLine = coachingPending || coachingSplit.total === 0
+    ? undefined
+    : `${coachingSplit.raised + coachingSplit.suppressed} jelzett · ${coachingSplit.total} szabály`
+
   // ── memory band counts — the real L0→L3 overview, no numbers without it ──
   const l2Count = overview?.l2.patterns.reduce((s, p) => s + p.count, 0) ?? null
   const l3Count = overview?.l3.facts.reduce((s, f) => s + f.count, 0) ?? null
@@ -148,15 +139,10 @@ export function MezoHubPage() {
   return (
     <div className="mzh-hub">
       <EntranceGroup className="mz-panel-stack">
-        {/* ===== orb hero — no number, one sentence, quiet status ===== */}
+        {/* ===== orb hero — the breathing spot alone (tile-header-layout): no name,
+             no companion sentence, no status line; the composer follows immediately ===== */}
         <div className="mzh-orbhero rise" style={{ '--d': '0ms' } as React.CSSProperties}>
           <ClaySpot name="s-orb" size={109} />
-          <div className="mzh-nm">Mezo</div>
-          {sentence != null && <div className="mzh-ln"><SafeMarkdown text={sentence} /></div>}
-          <div className="mzh-lv">
-            {statusBase}
-            {togetherDays != null && <> · együtt <b>{togetherDays} napja</b></>}
-          </div>
         </div>
 
         {/* ===== composer-shaped chat opener ===== */}
@@ -202,7 +188,8 @@ export function MezoHubPage() {
           </div>
         )}
 
-        {/* ===== 6-tile mosaic — live bottom lines from the pages' own hooks ===== */}
+        {/* ===== the mosaic — every tile the same 2-per-row cell (tile-header-layout);
+             live bottom lines from the pages' own hooks ===== */}
         <Mosaic>
           <Tile wash="lav" icon="i-minta" eyebrow="Minták" delayMs={160} className="mzh-t-minta"
             line={mintaLine} onClick={() => navigate('/mezo/patterns')} aria-label="Minták" />
@@ -216,39 +203,44 @@ export function MezoHubPage() {
             line={predLine} onClick={() => navigate('/mezo/predictions')} aria-label="Előrejelzések" />
           <Tile wash="gold" icon="i-lombik" eyebrow="Kísérletek" delayMs={360} className="mzh-eb-gold"
             line={kisLine} onClick={() => navigate('/mezo/experiments')} aria-label="Kísérletek" />
-          {/* Diagnózis (mezo-hqfi.4, design round 2): the wide question tile — a full-width
-              catalog entry, not a 7th cell that would break the 2-col pairing. */}
-          <Tile wash="gold" eyebrow="Diagnózis" delayMs={400} aria-label="Diagnózis"
+          {/* Diagnózis (mezo-hqfi.4) — a normál cellába a kérdés a spot alá kerül. */}
+          <Tile wash="gold" icon="i-muhely" eyebrow="Diagnózis" delayMs={400} aria-label="Diagnózis"
             className="mzh-eb-gold mzh-t-diag" line={diagLine} onClick={() => navigate('/mezo/diagnozis')}>
-            <div className="mz-icin" style={{ fontSize: 13, fontWeight: 700, marginTop: 4 }}>Miért vagyok fáradt? <Icon name="sparkle" size={13} color="var(--mz-decring)" /></div>
+            <div className="mzh-diagq mz-icin">Miért vagyok fáradt? <Icon name="sparkle" size={12} color="var(--mz-decring)" /></div>
           </Tile>
-          {/* Karakter (hub-tile-reorg): AI-domain dossier — wide like Diagnózis, so the
-              6-cell 2-col pairing stays intact. */}
+          {/* Karakter (hub-tile-reorg): AI-domain dossier. */}
           <Tile wash="lav" icon="i-kristaly" eyebrow="Karakter" delayMs={440} aria-label="Karakter"
             className="mzh-eb-sage mzh-t-karakter" line={karakterLine} onClick={() => navigate('/me/karakter')} />
+          {/* Proaktív coaching (mezo-6269.3) — a split arc + the winner's name, sized for the cell. */}
+          <Tile wash="sky" icon="i-eletjel" eyebrow="Proaktív coaching" delayMs={480}
+            aria-label="Proaktív coaching" className="mzh-eb-sky mzh-t-coaching"
+            line={coachingLine} onClick={() => navigate('/mezo/coaching')}>
+            {coachingWinner != null && (
+              <div className="mzo-hubposter">
+                <VerdictArc split={coachingSplit} size={44} />
+                <div style={{ fontSize: 11, fontWeight: 700 }}>{coachingWinner.label}</div>
+              </div>
+            )}
+          </Tile>
+          {/* Memória (tile-header-layout): the former full-width L0→L3 band, now a cell —
+              the same four layer counts, stacked two-by-two, and the same honest absence. */}
+          <Tile wash="lav" icon="i-retegek" eyebrow="Memória" delayMs={520} aria-label="Memória-rétegek"
+            className="mzh-t-memoria" onClick={() => navigate('/mezo/memoria')}>
+            {overview != null ? (
+              <div className="mzh-memlyrs">
+                <span className="mzh-lyr"><b>{overview.l0.daysWithAnyData}</b><small>nyers nap</small></span>
+                <span className="mzh-lyr"><b>{overview.l1.summaryCount}</b><small>napló</small></span>
+                <span className="mzh-lyr"><b>{l2Count}</b><small>ítélet</small></span>
+                <span className="mzh-lyr"><b>{l3Count}</b><small>tény</small></span>
+              </div>
+            ) : (
+              /* honest absence: no overview yet (cold load / switched off) — the tile stays a
+                 door to the Memória page, without fabricated layer counts */
+              <div className="mzh-membnd-ph">Memória-rétegek</div>
+            )}
+          </Tile>
         </Mosaic>
 
-        {/* ===== L0→L3 memory band ===== */}
-        <button type="button" className="mzh-membnd rise" style={{ '--d': '400ms' } as React.CSSProperties}
-          aria-label="Memória-rétegek" onClick={() => navigate('/mezo/memoria')}>
-          <ClayIcon name="i-retegek" size={31} />
-          {overview != null ? (
-            <>
-              <span className="mzh-lyr"><b>{overview.l0.daysWithAnyData}</b><small>nyers nap</small></span>
-              <span className="mzh-arr" aria-hidden="true">›</span>
-              <span className="mzh-lyr"><b>{overview.l1.summaryCount}</b><small>napló</small></span>
-              <span className="mzh-arr" aria-hidden="true">›</span>
-              <span className="mzh-lyr"><b>{l2Count}</b><small>ítélet</small></span>
-              <span className="mzh-arr" aria-hidden="true">›</span>
-              <span className="mzh-lyr"><b>{l3Count}</b><small>tény</small></span>
-            </>
-          ) : (
-            /* honest absence: no overview yet (cold load / switched off) — the band stays a
-               door to the Memória page, without fabricated layer counts */
-            <span className="mzh-membnd-ph">Memória-rétegek</span>
-          )}
-          <span className="mzh-arr" aria-hidden="true">›</span>
-        </button>
       </EntranceGroup>
     </div>
   )

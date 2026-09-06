@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.companion.graph.service.LifeEventExtractionServic
 import io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryQueryRewriter;
 import io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryReranker;
 import io.mrkuhne.mezo.feature.companion.quarterly.service.QuarterlyReviewService;
+import io.mrkuhne.mezo.feature.companion.reflection.service.TextSignalExtractor;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
 import io.mrkuhne.mezo.feature.companion.service.PeriodSummaryService;
@@ -262,6 +263,14 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** Scripted revision (V3.2): {@code [fake-revise:{…}]} planted in the hypothesis title. */
     public static final Pattern REVISE_SENTINEL =
             Pattern.compile("\\[fake-revise:(\\{.*?\\})]", Pattern.DOTALL);
+
+    /** Scripted text signal (Reflexió S1, mezo-eq85.1): {@code [[SIGNAL:{…}]]} in the entry text
+     *  returns that JSON verbatim; without it the default below is a sure, mildly positive signal. */
+    public static final Pattern SIGNAL_SENTINEL = Pattern.compile("\\[\\[SIGNAL:(.*?)]]", Pattern.DOTALL);
+
+    /** Reflexió S1: an entry carrying this string makes the extraction CALL blow up — the IT anchor
+     *  for "a failing extraction never touches the journal entry it was triggered by". */
+    public static final String SIGNAL_FAIL = "SIGNAL_FAIL";
 
     /** Mirror of CompanionMessageGenerator.MORNING_MARKER (feature/proactive) — a LITERAL, not an
      *  import: companion→proactive would be a NEW package cycle (feature_slices_are_cycle_free).
@@ -791,6 +800,16 @@ public class FakeCompanionLlm implements CompanionLlm {
             Matcher m = MESO_REVIEW_SENTINEL.matcher(userMessage);
             // default = the canned narrative, so the un-scripted happy path still persists 'ready'
             return m.find() ? m.group(1) : MESO_REVIEW_ANSWER;
+        }
+        if (systemPrompt.startsWith(TextSignalExtractor.SIGNAL_MARKER)) {
+            if (userMessage.contains(SIGNAL_FAIL)) {
+                throw new IllegalStateException("FAKE-LLM forced signal-extraction failure");
+            }
+            Matcher signal = SIGNAL_SENTINEL.matcher(userMessage);
+            // default: a sure, mildly positive signal mentioning Anna — the e2e happy path
+            return signal.find() ? signal.group(1)
+                    : "{\"mood\":4,\"energy\":3,\"stress\":2,\"confidence\":\"sure\","
+                            + "\"people\":[\"Anna\"],\"topics\":[\"kapcsolatok\"],\"keywords\":[]}";
         }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
             Matcher m = HYPOTHESES_SENTINEL.matcher(userMessage);

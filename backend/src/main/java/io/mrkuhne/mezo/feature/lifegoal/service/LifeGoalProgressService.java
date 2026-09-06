@@ -29,6 +29,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -139,11 +140,34 @@ public class LifeGoalProgressService {
      *  hívó mondja meg, mi a „ma" — a HTTP-út a fenti overloadon át változatlan. */
     @Transactional(readOnly = true)
     public LifeGoalTodayResponse today(UUID userId, LocalDate today) {
-        LocalDate from = today.minusDays(PROGRESS_WINDOW_DAYS - 1);
+        return summary(userId, today.minusDays(RECENT_WINDOW_DAYS - 1), today);
+    }
+
+    /**
+     * A {@link #today} ablakos általánosítása (mezo-a9os): a 7 napos ablakot a HÍVÓ adja meg,
+     * nem a mai nap rögzíti.
+     *
+     * <p>A heti visszatekintés a {@code [D-7, D-1]} hetet nézi, a {@code today()} viszont a
+     * {@code [most-6, most]} ablakot — a kettő egy nappal el van tolva, így a reviewed hétfő
+     * kiesett, a mai (~7 órás) hétfő pedig bekerült. A blokk ezt eddig CÍMKÉZÉSSEL kezelte
+     * („AZ ELMÚLT 7 NAP"); innentől valóban a lezárt hetet méri.
+     *
+     * <p>A {@code pillarsHitToday} az ablak UTOLSÓ napjára értendő — egy lezárt héten ez a hét
+     * utolsó napja, nem a mai. A heti prompt-blokk amúgy sem rendereli.
+     *
+     * <p>Az ablak KÖTELEZŐEN 7 napos: a válasz {@code days7} mezője hét elemet ígér, és egy
+     * más hosszúságú ablak csendben hazudna a fogyasztóinak.
+     */
+    @Transactional(readOnly = true)
+    public LifeGoalTodayResponse summary(UUID userId, LocalDate from, LocalDate to) {
+        if (ChronoUnit.DAYS.between(from, to) != RECENT_WINDOW_DAYS - 1) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.field("VALIDATION_INVALID_VALUE", "to").build(), HttpStatus.BAD_REQUEST);
+        }
         List<LifeGoalEntity> activeGoals = goalRepository.findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(userId)
             .stream().filter(g -> LifeGoalEntity.STATUS_ACTIVE.equals(g.getStatus())).toList();
         List<LifeGoalTodaySummary> summaries = activeGoals.stream()
-            .map(goal -> buildTodaySummary(userId, goal, from, today)).toList();
+            .map(goal -> buildTodaySummary(userId, goal, from, to)).toList();
         return LifeGoalTodayResponse.builder().goals(summaries).build();
     }
 
@@ -171,17 +195,19 @@ public class LifeGoalProgressService {
             .build();
     }
 
-    private LifeGoalTodaySummary buildTodaySummary(UUID userId, LifeGoalEntity goal, LocalDate from, LocalDate today) {
+    private LifeGoalTodaySummary buildTodaySummary(UUID userId, LifeGoalEntity goal,
+            LocalDate windowStart, LocalDate windowEnd) {
+        LocalDate computeFrom = windowEnd.minusDays(PROGRESS_WINDOW_DAYS - 1);
         List<LifeGoalPillarEntity> activePillars = activePillars(goal.getId());
-        GoalComputation computation = compute(userId, activePillars, from, today);
-        String arrow = LifeGoalScorer.arrow(computation.goalPoints(), today);
+        GoalComputation computation = compute(userId, activePillars, computeFrom, windowEnd);
+        String arrow = LifeGoalScorer.arrow(computation.goalPoints(), windowEnd);
         List<PillarDayStatus> days7 = new ArrayList<>();
-        for (LocalDate day = today.minusDays(RECENT_WINDOW_DAYS - 1); !day.isAfter(today); day = day.plusDays(1)) {
+        for (LocalDate day = windowStart; !day.isAfter(windowEnd); day = day.plusDays(1)) {
             days7.add(dotStatus(computation.goalPoints().get(day)));
         }
-        int pillarsHitToday = (int) activePillars.stream()
+        int pillarsHit = (int) activePillars.stream()
             .filter(p -> {
-                PillarDayScore score = computation.byPillar().get(p.getId()).get(today);
+                PillarDayScore score = computation.byPillar().get(p.getId()).get(windowEnd);
                 return score != null && "hit".equals(score.status());
             }).count();
         return LifeGoalTodaySummary.builder()
@@ -190,7 +216,7 @@ public class LifeGoalProgressService {
             .arrow(TrendArrow.fromValue(arrow))
             .days7(days7)
             .pillarsTotal(activePillars.size())
-            .pillarsHitToday(pillarsHitToday)
+            .pillarsHitToday(pillarsHit)
             .build();
     }
 

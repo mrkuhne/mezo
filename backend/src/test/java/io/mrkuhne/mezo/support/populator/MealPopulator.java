@@ -145,7 +145,7 @@ public class MealPopulator {
         meal.setBreakdown(new MealBreakdownJson(new BigDecimal("0.62"), new BigDecimal("0.80"),
             null, null,
             List.of(new MealBreakdownJson.Dimension("macro", "Kcal & makró", new BigDecimal("0.22"),
-                new BigDecimal("0.50"), "P/C/F 17/71/11 vs 27/47/26", null, null, null, null, null,
+                new BigDecimal("0.50"), BigDecimal.ONE, "P/C/F 17/71/11 vs 27/47/26", null, null, null, null, null,
                 null)),
             List.of(), List.of(new MealBreakdownJson.ToolRow("compute", "score(deterministic)")),
             null));
@@ -166,11 +166,20 @@ public class MealPopulator {
         meal.setBreakdown(new MealBreakdownJson(stale.value(), stale.confidence(),
             "Kiegyensúlyozott reggeli.", "Jó start",
             List.of(new MealBreakdownJson.Dimension("macro", "Kcal & makró", new BigDecimal("0.22"),
-                new BigDecimal("0.50"), "P/C/F 17/71/11 vs 27/47/26", null, null, null, null, null,
+                new BigDecimal("0.50"), BigDecimal.ONE, "P/C/F 17/71/11 vs 27/47/26", null, null, null, null, null,
                 "A fehérje aránya elmarad a céltól.")),
             List.of(new MealBreakdownJson.ImproveRow("Tegyél mellé egy tojást.", "+8")),
             stale.tools(), null));
         return repository.saveAndFlush(meal);
+    }
+
+    /** Re-stamps a meal's envelope as current — what a rescore leaves behind (mezo-mxmh IT seam). */
+    public void restampCurrent(UUID mealId) {
+        MealEntity meal = repository.findById(mealId).orElseThrow();
+        MealBreakdownJson b = meal.getBreakdown();
+        meal.setBreakdown(new MealBreakdownJson(b.value(), b.confidence(), b.summary(), b.tagline(),
+            b.dimensions(), b.improve(), b.tools(), MealScoringService.FORMULA_VERSION));
+        repository.saveAndFlush(meal);
     }
 
     /** Ugyanaz az étkezés, de MÁR a jelenlegi formula-generáció bélyegével — a backfill nem nyúlhat hozzá. */
@@ -180,6 +189,16 @@ public class MealPopulator {
         MealBreakdownJson b = meal.getBreakdown();
         meal.setBreakdown(new MealBreakdownJson(b.value(), b.confidence(), b.summary(), b.tagline(),
             b.dimensions(), b.improve(), b.tools(), MealScoringService.FORMULA_VERSION));
+        return repository.saveAndFlush(meal);
+    }
+
+    /** Az étkezés egy adott formula-verzióval bélyegezve. */
+    public MealEntity createMealWithEnvelopeVersion(UUID owner, PantryItemEntity pantryItem,
+        LocalDate mealDate, String title, Instant loggedAt, int formulaVersion) {
+        MealEntity meal = createScoredMeal(owner, pantryItem, mealDate, title, loggedAt);
+        MealBreakdownJson b = meal.getBreakdown();
+        meal.setBreakdown(new MealBreakdownJson(b.value(), b.confidence(), b.summary(), b.tagline(),
+            b.dimensions(), b.improve(), b.tools(), formulaVersion));
         return repository.saveAndFlush(meal);
     }
 

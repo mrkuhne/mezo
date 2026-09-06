@@ -1,0 +1,22 @@
+-- mezo-jcpt.19 — CACHE INVALIDATION, NOT DATA LOSS.
+--
+-- weekly_score a hét logjai feletti determinisztikus számítás write-through CACHE-e (lásd
+-- WeeklyScoreService): semmi nincs itt, ami ne lenne újraszármaztatható, egy sor törlése egyetlen
+-- újraszámolásba kerül a hét következő olvasásakor.
+--
+-- Miért most: a FORMULA_VERSION 2 -> 3 (nap-tudatos context dimenzió) miatt a MealRescoreRunner
+-- újrapontozza a történelmi meal-envelope-okat. Ez ÖNMAGÁBAN nem mozdítja el a heti átlagot: a
+-- weekly_score a DayEvaluationEngine napi base-scoreiból épül (WeeklyScoreService.aggregate),
+-- a DayEvaluationEngine pedig a meal oldalról kizárólag a MealLogFact.novaDimScore/microDimScore
+-- (nova/micro dimenzió) + kcal hármast fogyasztja (DayScoreService.mealFacts) — a context dimenzió
+-- score-ját sosem olvassa. A purge tehát öv-és-nadrágtartó: olcsó (egy újraszámolás hetenként a
+-- következő olvasáskor), és azért marad benn, mert az envelope-ok, amikből a heti sor levezethető
+-- lenne, újraíródtak — ugyanúgy, ahogy a mezo-jcpt.2 és a mezo-jcpt.4 changesetje is tette a saját
+-- (akkor valóban ható) módosításaikhoz.
+--
+-- day_review NEM szerepel itt: annak kulcsa az inputsHash, ami tartalmazza a dimenzió-score-okat.
+-- Ez ITT SEM azért öninvalidálódik, mert a bemenetei elmozdultak (nem mozdultak — lásd fent), hanem
+-- mert a hash a bemenet AZONOSSÁGÁT, nem a tényleges elmozdulást figyeli. Kitörölni csak fölösleges
+-- LLM-hívásokba kerülne.
+
+delete from weekly_score;

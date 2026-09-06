@@ -39,6 +39,11 @@ public record MealScoringProperties(
     @NotNull @Valid SlotWindows slotWindows,
     /** Relative tolerance around the slot kcal-share within which the fit is perfect (0..1). */
     @DecimalMin("0.0") @DecimalMax("1.0") double slotShareTolerance,
+    /** Padló az elvárt slot-keretre a {@code napi cél × slot-arány} hányadaként (mezo-jcpt.19):
+     *  ha a maradék napi keret elfogyott, az elvárt kcal/fehérje nem eshet ez alá, így a
+     *  túllépés arányosan büntet, nem szakadékkal. A napi score {@code nutritionDim}-je a
+     *  túllépést amúgy is bünteti sávokkal — nem akarunk kétszer, szakadékkal büntetni. */
+    @DecimalMin("0.0") @DecimalMax("1.0") double minExpectedSlotShareFactor,
     /** Minutes BEFORE a workout start within which a meal is pre-workout fuel. */
     @Min(0) @Max(360) int preLeadMin,
     /** Minutes AFTER a workout end within which a meal is post-workout recovery. */
@@ -113,10 +118,15 @@ public record MealScoringProperties(
     ) {
     }
 
-    /** Energy density band: kcal/100g at (or below) which the score is 1.0, and at (or above) which it is 0. */
+    /**
+     * Energy density band: kcal/100g at (or below) which the score is 1.0, and at (or above) which
+     * it is 0, plus the smallest gram-mass the ratio is meaningful over ({@code minMassG},
+     * mezo-mxmh) — below it the dimension degrades instead of judging a dose as if it were a meal.
+     */
     public record EnergyDensityRefs(
         @DecimalMin("50.0") double goodKcalPer100g,
-        @DecimalMin("100.0") double badKcalPer100g
+        @DecimalMin("100.0") double badKcalPer100g,
+        @DecimalMin("1.0") double minMassG
     ) {
         @AssertTrue(message = "mezo.fuel.scoring.energy-density: bad must exceed good")
         public boolean isOrdered() {

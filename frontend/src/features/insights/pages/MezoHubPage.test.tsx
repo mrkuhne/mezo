@@ -46,15 +46,19 @@ describe('MezoHubPage (mock mode)', () => {
   })
   afterEach(() => vi.unstubAllEnvs())
 
-  test('orb hero: name, companion sentence and the honest status line', () => {
-    renderHub()
-    expect(screen.getByText('Mezo')).toBeInTheDocument()
-    // NO number in the hero — the sentence is the demo briefing's latest voice (MezoChip precedent).
-    expect(screen.getByText(/Jó reggelt — Week 3, Day 4/)).toBeInTheDocument()
-    // Mock mode says `demo beszélgetés` (the ChatPage subtitle contract), never a fabricated
-    // "Gemini · élő"; the togetherness count comes from the real L0 overview (47 raw days).
-    expect(screen.getByText(/demo beszélgetés · együtt/)).toHaveTextContent('demo beszélgetés · együtt 47 napja')
+  // tile-header-layout: the hero is the breathing spot ALONE — no name, no companion
+  // sentence, no status line; the composer opener sits directly under the icon.
+  test('orb hero: the spot alone, no name / sentence / status line', () => {
+    const { container } = renderHub()
+    const hero = container.querySelector('.mzh-orbhero') as HTMLElement
+    expect(hero.querySelector('svg')).toBeTruthy()
+    expect(hero.textContent).toBe('')
+    expect(screen.queryByText('Mezo')).not.toBeInTheDocument()
+    expect(screen.queryByText(/Jó reggelt — Week 3, Day 4/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/demo beszélgetés/)).not.toBeInTheDocument()
     expect(screen.queryByText(/Gemini · élő/)).not.toBeInTheDocument()
+    // the composer is the hero's immediate sibling
+    expect(hero.nextElementSibling).toHaveClass('mzh-chatopen')
   })
 
   test('the chat opener is composer-shaped and navigates to /mezo/chat', async () => {
@@ -114,7 +118,7 @@ describe('MezoHubPage (mock mode)', () => {
     expect(screen.getByTestId('location')).toHaveTextContent('/me/week')
   })
 
-  test('the memory band shows the real L0→L3 counts and opens /mezo/memoria', async () => {
+  test('the Memória tile shows the real L0→L3 counts and opens /mezo/memoria', async () => {
     renderHub()
     const band = screen.getByRole('button', { name: 'Memória-rétegek' })
     expect(band).toHaveTextContent('47')
@@ -129,10 +133,12 @@ describe('MezoHubPage (mock mode)', () => {
     expect(screen.getByTestId('location')).toHaveTextContent('/mezo/memoria')
   })
 
-  test('a Karakter széles csempe a Mezo hubon él és a dossziéra navigál (hub-tile-reorg)', async () => {
+  test('a Karakter csempe a Mezo hubon él és a dossziéra navigál (hub-tile-reorg)', async () => {
     renderHub()
     const karakter = screen.getByRole('button', { name: 'Karakter' })
     expect(karakter.classList.contains('mzh-t-karakter')).toBe(true)
+    // tile-header-layout: normál, 2-per-sor cella — nincs többé teljes soros csempe
+    expect(karakter.classList.contains('mz-tile-wide')).toBe(false)
     await userEvent.click(karakter)
     expect(screen.getByTestId('location')).toHaveTextContent('/me/karakter')
   })
@@ -167,15 +173,13 @@ describe('MezoHubPage (real mode)', () => {
 
   test('renders the hub from MSW fixtures — live status line, tiles, no fabricated zeros while loading', async () => {
     renderHub()
-    // the shell is honest immediately: name + chat opener + the six tiles
-    expect(screen.getByText('Mezo')).toBeInTheDocument()
+    // the shell is honest immediately: chat opener + the tiles
     expect(screen.getByRole('button', { name: 'Beszélgetés a társsal' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Minták' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Karakter' })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Memória-rétegek' })).toBeInTheDocument()
-    // live fixtures resolve → the real status line
-    expect(await screen.findByText(/Gemini · élő/)).toBeInTheDocument()
-    expect(screen.queryByText(/demo beszélgetés/)).not.toBeInTheDocument()
+    // live fixtures resolve → the Memória tile's real counts (the hero carries no status line)
+    expect(await screen.findByText('nyers nap')).toBeInTheDocument()
   })
 })
 
@@ -224,5 +228,29 @@ describe('MezoHubPage — emoji→ikon (mezo-hq44)', () => {
     expect(done.querySelector('svg')).toBeTruthy()
     expect(done.textContent).not.toMatch(/👁/)
     expect(done.textContent).toMatch(/Rendben, figyeljük tovább — szólok, ha erősödik\./)
+  })
+})
+
+describe('MezoHubPage — the Proaktív coaching tile (mezo-6269.3)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('carries the day’s flagged count, the winner and the split arc', async () => {
+    renderHub()
+    const tile = await screen.findByRole('button', { name: 'Proaktív coaching' })
+    expect(tile).toHaveTextContent('Terhelés–táplálás')
+    expect(tile.querySelectorAll('.mzo-arcseg')).toHaveLength(14)
+  })
+})
+
+describe('MezoHubPage — the coaching tile is honest while unresolved', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('no arc and no winner line before the day resolves', () => {
+    renderHub()
+    const tile = screen.getByRole('button', { name: 'Proaktív coaching' })
+    expect(tile.querySelectorAll('.mzo-arcseg')).toHaveLength(0)
+    expect(tile).not.toHaveTextContent('Terhelés–táplálás')
   })
 })

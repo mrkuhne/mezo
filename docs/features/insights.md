@@ -12,6 +12,8 @@ key_files:
   - frontend/src/data/insights/chatHooks.ts
   - frontend/src/data/feedback
   - frontend/src/shared/lib/markdown.tsx
+  - frontend/src/features/insights/logic/coachingCopy.ts
+  - frontend/src/data/insights/coachingTraceHooks.ts
 related: [_platform-data-layer, _platform-design-system, today, me, character, companion, proactive]
 ---
 
@@ -35,7 +37,7 @@ Insights is the user-facing window onto mezo's N=1 self-model: it presents the b
 | Layer | Status | Notes |
 |---|---|---|
 | FE mock | ✅ done | the hub + 7 sibling pages, all views + tests present |
-| FE real-mode | ✅ all 7 tabs (Chat + Patterns + Knowledge + Memoir + Predictions + Experiments + **Memória**) | **Chat** real since companion V0.4 (`chatHooks.ts` + `chatApi.ts`, SSE — [`companion.md`](companion.md) §5.1); **Patterns** (V3.1) + **Knowledge** (V1.2) real over the companion backend — Patterns' dashboard also reads `GET /api/companion/pattern/monitor` directly since **`mezo-tk88.4`** (the retired Motor tab's diagnostics, §2.1); **Memoir** real since **proactive W2 (`mezo-h4wp.4`)** — `data/insights/memoirHooks.ts` reads `GET /api/proactive/memoir` (404→null→honest „készül" state), anniversary/archive mock-only, the demo reaction row retired at W4.1 for real feedback chips (§2.3); **Predictions** real since **proactive P1 (`mezo-h4wp.7`)** — `data/insights/predictionsHooks.ts` reads `GET /api/proactive/prediction` (list; `[]`→honest still-learning state, „tanulom" on null confidence); **Experiments** real since **proactive P2 (`mezo-h4wp.8`)** — `data/insights/experimentsHooks.ts` reads `GET /api/proactive/experiment` + `useExperimentActions` writes L2 decisions/propose; **Memória** real (both modes) since **`mezo-al1i`** (post-epic) — `data/insights/memoryHooks.ts` reads the 4 `GET /api/companion/memory/*` endpoints off `MemoryObservatoryService`, §2.9. **No mock-only Insights tab remains** — all 7 are real (§2). **Motor (was the 8th tab) is RETIRED (`mezo-tk88.4`)** — `/mezo/motor` redirects to `/mezo/patterns`. **Weekly (was the 2nd tab) is RETIRED (`mezo-p2tr`)** — `/mezo/weekly` redirects to `/me/week` ([`me.md`](me.md)). **All seven surfaces survived the Design 2.0 rename unchanged in data terms** — they are now full pages under `/mezo/*` instead of sub-tabs under `/insights/*` (§2). |
+| FE real-mode | ✅ all 7 tabs (Chat + Patterns + Knowledge + Memoir + Predictions + Experiments + **Memória**) | **Chat** real since companion V0.4 (`chatHooks.ts` + `chatApi.ts`, SSE — [`companion.md`](companion.md) §5.1); **Patterns** (V3.1) + **Knowledge** (V1.2) real over the companion backend — Patterns' dashboard also reads `GET /api/companion/pattern/monitor` directly since **`mezo-tk88.4`** (the retired Motor tab's diagnostics, §2.1); **Memoir** real since **proactive W2 (`mezo-h4wp.4`)** — `data/insights/memoirHooks.ts` reads `GET /api/proactive/memoir` (404→null→honest „készül" state), anniversary/archive mock-only, the demo reaction row retired at W4.1 for real feedback chips (§2.3); **Predictions** real since **proactive P1 (`mezo-h4wp.7`)** — `data/insights/predictionsHooks.ts` reads `GET /api/proactive/prediction` (list; `[]`→honest still-learning state, „tanulom" on null confidence); **Experiments** real since **proactive P2 (`mezo-h4wp.8`)** — `data/insights/experimentsHooks.ts` reads `GET /api/proactive/experiment` + `useExperimentActions` writes L2 decisions/propose; **Memória** real (both modes) since **`mezo-al1i`** (post-epic) — `data/insights/memoryHooks.ts` reads the 4 `GET /api/companion/memory/*` endpoints off `MemoryObservatoryService`, §2.9. **No mock-only Insights tab remains** — all 7 are real (§2). **Proaktív coaching** (3 routes under `/mezo/coaching`, not a tab, since **`mezo-6269.3`**) is real (both modes) over the companion flag-trace read — `useCoachingTrace`/`useCoachingCard`, §2.10, §5.8. **Motor (was the 8th tab) is RETIRED (`mezo-tk88.4`)** — `/mezo/motor` redirects to `/mezo/patterns`. **Weekly (was the 2nd tab) is RETIRED (`mezo-p2tr`)** — `/mezo/weekly` redirects to `/me/week` ([`me.md`](me.md)). **All seven surfaces survived the Design 2.0 rename unchanged in data terms** — they are now full pages under `/mezo/*` instead of sub-tabs under `/insights/*` (§2). |
 | Backend (Java) | 🔶 companion only | `feature/companion` backs the chat (`ai_conversation`/`ai_message`); no `pattern`/`knowledge_fact` backend yet. |
 
 This is **intentional**. Insights is the Phase-3 "AI brain" surface; the single FE↔data boundary (`frontend/src/data/hooks.ts`) is pre-built so the real-mode swap is mechanical, exactly as already proven for biometrics/Train (the barrel is app-wide shared — unrelated domains' re-export additions, e.g. the `mezo-53su` `useFuelSettings` export, move this key_file without touching Insights' own data path). There are **two distinct roadmap stages** the doc keeps separate:
@@ -79,14 +81,14 @@ Driving specs: `docs/superpowers/specs/2026-06-10-phase2-backend-design.md` (Sli
 Source of truth: `docs/design_2.0/prototypes/src/mezo-body.html` hub section (prototype px ×1.18). The hub is deliberately **the companion's face first and a directory second** — it leads with the orb and the chat, not with the tiles. Top to bottom:
 
 1. **Header — the shell's, not the hub's.** Since `mezo-atry` this page renders no header of its own: the app shell's single `AppHeader` (`frontend/src/app/AppHeader.tsx`, mounted by `AppLayout` above every tab-root and sub-page, [today.md](today.md#the-header-is-the-shells-not-the-hubs)) sits above it — section label + clay spot · daypart switch (always jumps to `/nap`) · Mezo-messages circle → `/nap/uzenetek` · notification bell (unread badge, three-row „Értesítések · ma" popover, `useNotificationFeed`) · profile orb → `/me`. Before `mezo-atry` this hub, like the other four, carried its own copy of the recipe; that per-hub duplication is gone.
-2. **Breathing orb hero — and deliberately NO number.** A `ClaySpot name="s-orb"`, the name „Mezo", **one** companion sentence, and a quiet status line. The sentence is the `MezoChip` precedent applied verbatim: the first paragraph of the latest `buildMezoMessages()` entry, preferring a row with a real `artifactId`; **the labelled demo briefing is used only in mock mode** (`chatMode === 'mock'`), so a live user never sees demo prose presented as the companion's live voice. The status line reads `a társ most nem elérhető` / `demo beszélgetés` / `Gemini · élő` off `useConversations()`, plus „együtt **N napja**" when `useMemoryOverview()`'s `l0.daysWithAnyData > 0` — omitted entirely when it is not.
+2. **Breathing orb hero — the spot ALONE (`mezo-e3zg`, 2026-09-06).** A `ClaySpot name="s-orb"` and nothing else: the name „Mezo", the one companion sentence and the quiet status line are **gone**, and the composer opener sits directly under the icon. The header is now a mark, not a readout — the shell's `AppHeader` already says „Mezo" one row above, the companion's voice belongs in the chat the opener leads to, and the status/togetherness line was the only place on the hub where the hero itself carried data. Consequences: `useTodayScenario`/`useCompanionFeed`/`useConversations`/`buildMezoMessages` and the `SafeMarkdown` render left `MezoHubPage.tsx` entirely (the mode/degraded contract still lives on `ChatPage`), and `useMemoryOverview()` stays only because the `Memória` tile (item 7) reads it.
 3. **Composer-shaped chat opener** — a button styled as the chat composer („Mondj valamit…" + mic + send glyph) navigating to `/mezo/chat`. It is an opener, not a composer: it captures nothing, so it cannot lose a typed message on navigation.
 4. **The motor's ONE decision card** — the top entry of `bucketize()`'s `decide` bucket, in a gold ring: the `🔔 Döntésre vár · N` eyebrow, the `confidenceMeta` chip, the pair's `questionHu` (falling back to the pattern's own title), the pair line + `N közös nap`, the `📈 Amit eddig látunk` finding block (`findingSentence`, falling back to `verdictSentence` or the pattern's `mechanism`), and **Megerősítem / Figyeljük / Elvetem** over the **same `usePatternActions().decide` mutation `PatternsPage` uses**. Deciding flips the card in place to a sage acknowledgement (`✓ Beépítettem a tudásba…` / `👁 Rendben, figyeljük tovább…` / `✕ Elvetve — nem hozom fel újra.`). It renders only once both pattern reads have resolved — no card is shown over an unresolved window, and the full inbox stays on `/mezo/patterns`.
-5. **The 6-tile mosaic** — `Minták` · `Heti` · `Memoár` · `Tudástár` · `Előrejelzések` · `Kísérletek`, each with a bottom line from that page's own hook: `{confirmed} él a tudásban · {N} döntés`, `{score} pont · {±Δ} ↗`, `{hét} · új fejezet`, `{N} tény · {M} a chatben`, `{N} aktív · {P}% bevált`, `{N} aktív · {d}/{total} nap`. **A line is absent while its source is pending/degraded/empty**; where a page has its own honest word for "not yet", the tile borrows it rather than inventing one — `Heti`, `Előrejelzések` and `Kísérletek` read **„tanulom"**, exactly as those pages do. Note that **`Heti` navigates out of the tab**, to `/me/week`: the weekly review lives in Me and is *linked* from here, not duplicated ([me.md](me.md)).
-6. **`Karakter` — a wide tile, full-width like `Diagnózis` (hub-tile-reorg, `mezo-o486`, 2026-09-01)**, moved here from the Én hub. **In markup it is the last child of the same `<Mosaic>` as the 6 small tiles above** (right after `Diagnózis`, still inside the mosaic, before it closes) — it only *reads* as its own numbered item here because it is visually wide, not because it sits outside the mosaic; the memory band below is a true sibling, outside the `<Mosaic>` entirely. Bottom line = the **average CORE-band maturity**, gated by the shared `isDossierEmpty` predicate (absent when the dossier has nothing yet — the same honest-line contract every other tile carries). Tapping it opens the existing `/me/karakter` (`KarakterHubPage`) — the route did not move, only the tile did; this is a second precedent for a cross-hub tile alongside `Heti`. The `useCharacterOverview()` call + the line-deriving logic moved with it, from `EnHubPage.tsx` into `MezoHubPage.tsx`. Rationale: the guiding principle behind the reorg is **Mezo = everything AI-derived, Én = personal data** — the character dossier is companion-derived, so it belongs here now ([me.md](me.md) §2, ADR 0032's 2026-09-01 amendment; [character.md](character.md)).
-7. **The L0→L3 memory band** — a full-width row off `useMemoryOverview()`, **the first element after the `<Mosaic>` closes** (so it follows `Karakter` in DOM order even though its own stagger delay fires first — see below): `{daysWithAnyData} nyers nap › {summaryCount} napló › {Σ l2} ítélet › {Σ l3} tény`, tapping into `/mezo/memoria`. **With no overview** (cold load, companion switched off) it renders as a plain labelled door — „Memória-rétegek" — with **no fabricated layer counts**.
+5. **The mosaic — 10 cells, every one the same 2-per-row size (`mezo-e3zg`).** The six below plus `Diagnózis`, `Karakter`, `Proaktív coaching` and `Memória` (items 6–7): since `mezo-e3zg` **no tile spans both columns** — the `grid-column: 1 / -1` rule on `.mzh-t-diag, .mzh-t-karakter, .mzh-t-coaching` is deleted, so the hub reads as one uniform 5×2 mosaic instead of a 3×2 grid with a full-row tail. The six original tiles are unchanged: — `Minták` · `Heti` · `Memoár` · `Tudástár` · `Előrejelzések` · `Kísérletek`, each with a bottom line from that page's own hook: `{confirmed} él a tudásban · {N} döntés`, `{score} pont · {±Δ} ↗`, `{hét} · új fejezet`, `{N} tény · {M} a chatben`, `{N} aktív · {P}% bevált`, `{N} aktív · {d}/{total} nap`. **A line is absent while its source is pending/degraded/empty**; where a page has its own honest word for "not yet", the tile borrows it rather than inventing one — `Heti`, `Előrejelzések` and `Kísérletek` read **„tanulom"**, exactly as those pages do. Note that **`Heti` navigates out of the tab**, to `/me/week`: the weekly review lives in Me and is *linked* from here, not duplicated ([me.md](me.md)).
+6. **`Karakter` — a normal cell since `mezo-e3zg` (was a wide tile; hub-tile-reorg, `mezo-o486`, 2026-09-01)**, moved here from the Én hub. It is one of the mosaic's ten children, no longer visually distinguished from the six above. Bottom line = the **average CORE-band maturity**, gated by the shared `isDossierEmpty` predicate (absent when the dossier has nothing yet — the same honest-line contract every other tile carries). Tapping it opens the existing `/me/karakter` (`KarakterHubPage`) — the route did not move, only the tile did; this is a second precedent for a cross-hub tile alongside `Heti`. The `useCharacterOverview()` call + the line-deriving logic moved with it, from `EnHubPage.tsx` into `MezoHubPage.tsx`. Rationale: the guiding principle behind the reorg is **Mezo = everything AI-derived, Én = personal data** — the character dossier is companion-derived, so it belongs here now ([me.md](me.md) §2, ADR 0032's 2026-09-01 amendment; [character.md](character.md)).
+7. **`Memória` — the L0→L3 layers, now the mosaic's last CELL (`mezo-e3zg`; was a full-width band).** Same `useMemoryOverview()` source and the same four counts, laid out 2×2 inside the tile (`.mzh-memlyrs`) instead of one `›`-chained row: `{daysWithAnyData} nyers nap`, `{summaryCount} napló`, `{Σ l2} ítélet`, `{Σ l3} tény`, tapping into `/mezo/memoria`. Its accessible name stays **„Memória-rétegek"** (the eyebrow reads `Memória`), so every reference to the band's door still resolves. **With no overview** (cold load, companion switched off) it renders as a plain labelled door — „Memória-rétegek" — with **no fabricated layer counts**.
 
-The whole panel rides an `EntranceGroup` (orb 0 ms → chat opener 70 ms → decision card 110 ms → the 6 small tiles 160–360 ms → memory band 400 ms → `Karakter` 440 ms), one-shot, reduced-motion-guarded. **DOM order and stagger order disagree on purpose, not by accident:** `Karakter` sits earlier in the markup than the memory band (item 6 before item 7 above, both inside/after the same `<Mosaic>`), but its `delayMs={440}` was appended after the band's pre-existing `--d: 400ms`, so on screen the band's entrance completes 40 ms before `Karakter`'s does — a cosmetic ordering only, with no honesty-contract or navigation implication.
+The whole panel rides an `EntranceGroup` (orb 0 ms → chat opener 70 ms → decision card 110 ms → the ten tiles 160–520 ms in DOM order), one-shot, reduced-motion-guarded. `mezo-e3zg` also fixed the old wrinkle where DOM order and stagger order disagreed (the band's `400 ms` fired before `Karakter`'s `440 ms` although it came later in the markup): now that `Memória` is the mosaic's last child at `520 ms`, the two orders match.
 
 ### 2.1 Minták (`pages/PatternsPage.tsx`) — **the lifecycle dashboard, `mezo-tk88.4`; Mozaik re-face `mezo-d20.5.3`**
 The hub's first tile, at **`/mezo/patterns`** (it used to be the `/insights` index; the hub took that slot). Not a flat inbox list but a full **pattern-lifecycle dashboard**: the old
@@ -376,7 +378,7 @@ lifecycle rows never render raw `r`/`p`/`n`, only the human
 (`logic/findings.ts`/`logic/verdicts.ts`, unchanged, still exercised by the dashboard).
 
 ### 2.9 Memória (`pages/MemoryPage.tsx`) — read-only memory-layer observatory since `mezo-al1i`
-At `/mezo/memoria`. **Not a tile either — the hub's full-width L0→L3 memory band is its door** (§2.0), which mirrors on the hub exactly the four-layer stack this page unfolds. Its four page-local segments and every panel below are unchanged by Design 2.0; only the cross-links moved onto `/mezo`.
+At `/mezo/memoria`. **Its door is the hub's `Memória` tile** (§2.0 item 7 — a full-width L0→L3 band until `mezo-e3zg`), which mirrors on the hub exactly the four-layer stack this page unfolds. Its four page-local segments and every panel below are unchanged by Design 2.0; only the cross-links moved onto `/mezo`.
 The companion's own memory pipeline made legible: not another results tab, but a transparency page
 onto the **L0→L3 memory stack itself** (raw daily metrics → the L1 episodic journal + vectors → the
 L2 judgement inbox → L3 durable knowledge) — the spine [`companion.md`](companion.md) documents by
@@ -454,6 +456,87 @@ cross-link, so today the link is **one-way** (Memória → `/mezo/motor`, redire
 `/mezo/patterns`); a reverse link back to Memória from the dashboard's „Adat-egészség" section is a
 small filed follow-up, not yet done. (Design 2.0 repointed both ends onto `/mezo` without
 changing the asymmetry.)
+
+### 2.10 Proaktív coaching (`pages/CoachingHubPage.tsx` + `CoachingObserverPage.tsx` + `CoachingCardPage.tsx`) — the decision made visible, since `mezo-6269.3`
+
+Three routes under `/mezo/coaching`, all reading the SAME per-day trace and rendering only what it
+already says — none of the three re-ranks, re-scores, or invents a verdict.
+
+- **`/mezo/coaching` (`CoachingHubPage.tsx`)** answers *„melyik szabály nyert, és hogy oszlott meg a
+  nap?"*. A `PageHero` with a `VerdictArc` ring over `splitOf(day)`, the winner's poster (rank
+  badge + label + reason, badged „Nyertes") when `day.winner` exists, a `StatStrip` of the four
+  state counts, and two wide tiles as doors onto the other two routes — one line each
+  (`"mind a N szabály, súlyossági sorrendben"` / `"{winner.label} nyerte a napot"`).
+- **`/mezo/coaching/megfigyelo` (`CoachingObserverPage.tsx`, "Megfigyelő")** answers *„mit gondolt a
+  motor MINDEN szabályról, és miért ezt választotta?"* — every rule in the wire's own order (rank 1
+  = most severe first; the page never sorts), each as a `CoachingRuleTile` with a rank badge, the
+  domain's clay icon + wash, the closing state, one evidence line and a tap-to-expand `facts` list;
+  a validated `?d=` day pager (`isValidIsoDate`, `CoachingObserverPage.tsx:21-26` — round-trips
+  through `Date` so both malformed and calendrically-invalid strings, e.g. `2026-02-30`, fall back
+  to today rather than silently rolling over); paging back is floored by the server's own
+  `day.earliestDate` (`null` while unresolved leaves paging open rather than pretending there is no
+  history); and, only when `day.transitions` is non-empty, the day's own timeline (`hh:mm` + label +
+  reason, chronological) — an empty day renders no timeline box at all, never an empty one.
+- **`/mezo/coaching/kartya` (`CoachingCardPage.tsx`, "A napi kártya")** answers *„mit üzent a motor
+  ma, és mit vertem meg vele?"* — the SAME card anatomy the Nap-thread advice message uses (facts +
+  suggestions + actions), plus a **„Miért ez nyert"** strip unique to this page: `losersOf(day)`,
+  the raises that were on the table and lost, most severe first. That strip is gated on
+  `day.winner?.cardId === card?.id` (`CoachingCardPage.tsx:99`) — `card` and `day` are two
+  independent queries about (allegedly) the same decision, and if their card ids disagree they
+  describe different decisions, so the strip stays silent rather than pairing mismatched data.
+  Actions run on the **existing** `useAdviceActions` path (same `ACTION_INVALIDATES` key prefix as
+  the Nap-thread advice card) — there is no second write path, and the applied state is
+  server-driven exactly as on that card.
+
+**The order is information.** All three pages render `day.rules` in the array's own order and never
+call `.sort()` on it — the severity ranking (`AdviceRankPort.rankOf`, [`companion.md`](companion.md)
+§3 "Proactive coaching observer S2 — the read endpoint") is a backend concern precisely so there is exactly one ranking in the
+codebase. A frontend re-sort would be a second, potentially-drifting ranking.
+
+**The one map: `coachingCopy.visualOf` (`frontend/src/features/insights/logic/coachingCopy.ts:42-59`).**
+The server sends `domain` (a string) per rule; this is the ONLY place the frontend turns a domain
+into a look — a `Record<string, {wash, icon}>` (`sleep`→lav/`i-alvas`, `training`→coral/`i-edzes`,
+`nutrition`→sage/`i-fuel`, `recovery`→sky/`i-hold`, `habits`→gold/`i-lang`, `logging`→white/`i-naplo`,
+`body`→rose/`i-suly`) with a `general` fallback (white/`i-mezo`) that also covers any domain string
+the frontend does not recognize yet. There is deliberately **no per-`flagKey` map anywhere** in this
+feature — `FlagCatalog` on the backend ([`companion.md`](companion.md) §3) already owns the
+per-rule `label`/`domain`, precisely so a round-2 flag rule needs zero frontend changes to render
+correctly: it just falls into `general` until (and unless) someone bothers giving its domain a
+bespoke wash.
+
+**The state vocabulary (`coachingCopy.ts:14-40`).** `stateOf(rule)` collapses the wire's
+`outcome`/`disposition` pair into four screen states: `Jelzett` (raised), `Rendben` (clear),
+`Nem mérhető` (unavailable), and `Pihenőn` — **not a wire outcome**: it is `outcome: 'raised'` +
+`disposition: 'suppressed_by_cooldown'`, i.e. "true, but it spoke recently," the exact case round 1
+of this feature discarded silently (a cooldown-suppressed raise used to be invisible; now it renders
+with its own state, its own wash, and (via `FlagTraceCopy` server-side) evidence dated to when it
+last actually spoke). `Nyertes` is a fifth, independent label — never a `CoachingState` — applied
+only via `day.winner`, never derived from a rule's `stateOf`.
+
+**`useCoachingCard` and why it is not `useCompanionFeed`
+(`frontend/src/data/insights/coachingCardHooks.ts`).** `useCompanionFeed` degrades a failed fetch to
+`[]`, which is indistinguishable from "the feed is genuinely empty today" — fine for a feed, wrong
+here: the card page must tell "no card today" (`card === null`, honest) apart from "couldn't load"
+(`isError`). So `useCoachingCard(date)` goes through `useDualQuery` directly rather than reusing the
+feed hook, filtering the SAME `feedApi.get(date)` response down to the one `kind === 'advice'`
+message and keeping `isPending`/`isError` honest. Its query key shares the feed's own prefix
+(`['companionFeed', date, 'advice']`), so `useAdviceActions`' existing `['companionFeed']`
+invalidation refreshes this card too with no second action path. The mock seed
+(`coachingCardMock.ts`) is **derived from** `mockCoachingDay` (§ below) rather than hand-typed beside
+it — two independently-authored seeds would eventually name two different winners on the hub and the
+card page for the same day, which is precisely the incoherence this feature exists to remove. The
+real companion-feed mock stays `[]` deliberately (Phase-1 byte parity; the Nap thread's own goldens
+depend on it) — this seed is scoped to the coaching surface only.
+
+**The winner rule: badged from `day.winner` only, never `cardOutcome`.** `winnerRuleOf(day)`
+(`coachingCopy.ts:89-92`) resolves `day.winner.flagKey` against `day.rules` — `day.winner` is a fact
+about the DAY (the delivered card), so it is the **ONLY** source of the „Nyertes" badge on all three
+pages. `cardOutcome` describes a rule's state AT THE MOMENT the card was chosen and is deliberately
+null once that rule has changed since (including the winner itself, if it later went CLEAR) — a
+client that inferred the badge from `cardOutcome` would render „Nyertes" on nothing at all on a day
+where the winning rule cleared up before the observer was opened. See
+[`companion.md`](companion.md) §3 "Proactive coaching observer S2 — the read endpoint" for the full settled semantics
+(`mezo-y43v`) this badge rule rests on.
 
 ---
 
@@ -628,6 +711,19 @@ It is **purely presentational and controlled**: `{ value, onVote, label }`, no h
   [`_platform-data-layer.md` §4](_platform-data-layer.md)** — that doc owns `useDualQuery`; don't
   restate it here.
 
+### 5.8 Proaktív coaching ↔ Companion flag trace (✅ `mezo-6269.3` wired)
+
+`useCoachingTrace`/`useCoachingCard` (§2.10) read the companion-owned `GET
+/api/companion/flags/trace` and the existing companion feed (`GET /api/proactive/feed`, filtered to
+`kind === 'advice'`) — Insights owns no table or endpoint of its own here, exactly as with
+Weekly/Memoir/Predictions/Memory. **Crossing contract:** `CoachingTraceDay { date, earliestDate,
+winner, rules[], transitions[] }` and its per-rule `CoachingRule { flagKey, label, domain, rank,
+outcome, reasonCode, reasonText, facts[], disposition, cardOutcome, changedAt }` — both server-sent
+shapes, unchanged by this frontend (the server owns ranking, labelling and domain assignment; see
+[`companion.md`](companion.md) §3 "Proactive coaching observer S2 — the read endpoint" for the backend seam this read rests
+on, `AdviceRankPort`/`DailyCardPort`). The hub tile on `MezoHubPage.tsx:146-151,240-252` reads the
+SAME `useCoachingTrace()` the hub page itself reads — no separate teaser/copy.
+
 ---
 
 ## 6. How to use it (consume)
@@ -735,7 +831,7 @@ All tests are **frontend Vitest** (no backend tests exist). They assert **verbat
   too), and a non-404 monitor failure still renders the honest retry card the old `MotorPage.test.tsx`
   proved (`isError`/`refetch`, review fix wave `mezo-viqs`, unchanged). **`domains.test.ts`** still
   covers `groupPairsByDomain` pure (the module survives the retirement, §2.8).
-- **The Mezo hub (`mezo-d20.5.1`):** `pages/MezoHubPage.test.tsx` — the orb hero's name/companion sentence/honest status line, the composer-shaped opener navigating to `/mezo/chat`, the decision card carrying the strongest decide-bucket question **in human words only** (raw `r`/`p` asserted absent), deciding flipping it to the sage acknowledgement **through the same mutation `PatternsPage` uses**, the six tile lines coming from the pages' own hooks, every tile navigating to its full-page sibling (with `Heti` crossing out to `/me/week`), **plus the wide `Karakter` tile** (hub-tile-reorg, `mezo-o486` — the `isDossierEmpty`-gated maturity line, navigation to `/me/karakter`), the memory band's real L0→L3 counts opening `/mezo/memoria`, and a real-mode describe over MSW fixtures asserting the live status line and **no fabricated zeros during the unresolved window** — the `mezo-yew`/`mezo-0xl` bug class, now guarded on the hub as well as the pages.
+- **The Mezo hub (`mezo-d20.5.1`):** `pages/MezoHubPage.test.tsx` — the orb hero being the spot ALONE (`mezo-e3zg`: no name, no companion sentence, no status line, the composer as its immediate sibling), the composer-shaped opener navigating to `/mezo/chat`, the decision card carrying the strongest decide-bucket question **in human words only** (raw `r`/`p` asserted absent), deciding flipping it to the sage acknowledgement **through the same mutation `PatternsPage` uses**, the six tile lines coming from the pages' own hooks, every tile navigating to its full-page sibling (with `Heti` crossing out to `/me/week`), **plus the `Karakter` tile** (hub-tile-reorg, `mezo-o486` — the `isDossierEmpty`-gated maturity line, navigation to `/me/karakter`, and since `mezo-e3zg` an assertion that it carries no `mz-tile-wide`), the `Memória` tile's real L0→L3 counts opening `/mezo/memoria`, and a real-mode describe over MSW fixtures asserting **no fabricated zeros during the unresolved window** — the `mezo-yew`/`mezo-0xl` bug class, now guarded on the hub as well as the pages.
 - **Pattern-pair detail (§2.1b, `mezo-tk88.5`):** `data/insights/patternDetailHooks.test.tsx` (dual-mode —
   the showcase pair's full snapshot/decision/reinforcement history + days + impact; a gathering
   catalog pair synthesizes to `pattern: null`; an unknown key → `notFound`; real mode maps the wire
@@ -793,8 +889,8 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - **The visual language is the tile mosaic — [ADR 0033](../decisions/0033-mozaik-2-tile-language.md), superseding ADR 0026.** Clay SVG replaced emoji as the icon vocabulary; the lifecycle states, prediction statuses and experiment statuses became **washed tiles** whose colour carries the state. On the Minták catalogue the lifecycle controls and headings use `Icon`/`ClayIcon` consistently; emoji no longer carries domain or status meaning there.
 - **Two localizations rode in with the re-face and are DESIGNED fixes, not data changes.** `PredictionsPage`'s status chips shipped English off the wire (`✓ Validated` / `✗ Missed` / `◐ Pending`) and its accuracy header with them — the view now localizes both. `ExperimentsPage`'s dismissed branch gained the label it was missing (audit §6). The wire is unchanged in both cases; if a future slice makes the backend emit Hungarian, delete the view-side mapping rather than doubling it.
 - **The hub shows ONE decision, not the inbox.** `MezoHubPage` renders `decide[0]` only, over the shared `usePatternActions().decide` mutation, and states the bucket size in its eyebrow (`Döntésre vár · N`). The full inbox stays on `/mezo/patterns`. A hub that carried the whole inbox would have made the Minták tile a duplicate of the page above it.
-- **The orb hero carries no number, deliberately.** One companion sentence and a quiet status line — and the sentence prefers a feed row with a real `artifactId`, falling back to the labelled demo briefing **only in mock mode**. A live user never sees demo prose presented as the companion's live voice; that rule is inherited verbatim from `MezoChip` and is the reason the hero looks emptier in live mode than in the prototype.
-- **Tile lines are absent, not zero, while unresolved** — and where a page owns an honest word for "not yet", the tile borrows it (`Heti`/`Előrejelzések`/`Kísérletek` read **„tanulom"**) rather than inventing one. The memory band drops its four counts entirely with no `overview`.
+- **The orb hero carries nothing at all.** Since `mezo-e3zg` it is the breathing spot and then the composer — no number, no name, no companion sentence, no status line. The live/demo-voice rule that used to govern that sentence (prefer a feed row with a real `artifactId`, fall back to the labelled demo briefing **only in mock mode**) now lives solely where the prose does, on `ChatPage`/`MezoChip`.
+- **Tile lines are absent, not zero, while unresolved** — and where a page owns an honest word for "not yet", the tile borrows it (`Heti`/`Előrejelzések`/`Kísérletek` read **„tanulom"**) rather than inventing one. The `Memória` tile drops its four counts entirely with no `overview`.
 
 **Deferred / known gaps after Design 2.0** (recorded honestly, not fixed):
 
@@ -810,7 +906,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 ## 10. Key files
 
 **Feature (`frontend/src/features/insights/`):** — the directory keeps its `insights` name; the tab is called `Mezo` (§2)
-- `pages/MezoHubPage.tsx` — **`mezo-d20.5.1`, the `/mezo` index and the tab's face:** the shell's `AppHeader` (own header since `mezo-atry`) → the numberless breathing orb hero (`ClaySpot s-orb` + one companion sentence + the honest status line) → the composer-shaped chat opener → the motor's **single** gold-ringed decision card over the shared `usePatternActions().decide` → the 6-tile `Mosaic` with per-page live lines → **the wide `Karakter` tile** (hub-tile-reorg, `mezo-o486` — moved from `EnHubPage.tsx`, `useCharacterOverview()` + line derivation moved with it) → the full-width L0→L3 memory band. Reads the pages' own hooks; owns no data (§2.0)
+- `pages/MezoHubPage.tsx` — **`mezo-d20.5.1`, the `/mezo` index and the tab's face:** the shell's `AppHeader` (own header since `mezo-atry`) → the bare breathing orb hero (`ClaySpot s-orb` alone since `mezo-e3zg`) → the composer-shaped chat opener → the motor's **single** gold-ringed decision card over the shared `usePatternActions().decide` → a 10-cell `Mosaic` of uniformly sized tiles with per-page live lines, including **`Karakter`** (hub-tile-reorg, `mezo-o486` — moved from `EnHubPage.tsx`, `useCharacterOverview()` + line derivation moved with it) and **`Memória`** (the former full-width L0→L3 band). Reads the pages' own hooks; owns no data (§2.0)
 - **`InsightsSection.tsx` and `pages/tabs.ts` are DELETED (`mezo-d20.5.1`)** — the shell, `INSIGHTS_TABS`, `visibleInsightsTabs()` and the (already-empty) `PHASE3_TAB_IDS` are gone, along with the app-wide `features/progression/components/AppHero.tsx` and `shared/ui/SubNavDropdown.tsx` they depended on. `InsightsSubNav.tsx` had already been superseded by the dropdown in `mezo-ugqb`; `components/PhaseTeaserCard.tsx` by the empty gate set in `mezo-mifi`
 - `frontend/src/shared/ui/mozaik/{index.tsx,motion.tsx}` + `frontend/src/shared/ui/clay/index.tsx` — the primitives the re-faced pages compose (`Tile`/`Mosaic`/`PageHero`; `EntranceGroup`/`useCountUp`; `ClayIcon`/`ClaySpot`). **Not Insights-owned** — [`_platform-design-system.md`](_platform-design-system.md)
 - `pages/PatternsPage.tsx` — lifecycle catalogue (§2.1): hero + clickable 3×2 status selector + one active bucket + `PatternFilterSheet` + five-item pager + „Adat-egészség" coverage strip; owns selection/filter/sort/page state, while `patternCatalog.ts` owns pure derivations
@@ -878,6 +974,7 @@ When Phase 3 makes the hooks real, add backend ITs (`AbstractIntegrationTest`/`A
 - `hooks.ts` — barrel: re-exports `useKnowledge`, `useInsights`, `useChat`, **`useMemoir`**, **`usePatternMonitor`**, **`usePatternPairDetail`** (`mezo-tk88.5`), **`useLlmUsage`/`useMemoryOverview`/`useMemorySummaries`/`useSimilarDays`** (the boundary / Phase-3 swap point; **the `useWeekly` line was REMOVED, `mezo-p2tr`**). It is a **shared, app-wide barrel** — every domain lands its re-export line here (most recently the ritual/recap hooks, `mezo-ilsj`; before that the account-progression hooks, `mezo-k7rn`), so a change to this file is not by itself evidence of an Insights-relevant change; check which exported names moved.
 - `types.ts:599-743` — all Insights/Knowledge/Chat types (`PatternMonitor`/`PatternMonitorPair`/`PatternMetricCoverage` at `types.ts:644-683`; `MemoryOverview`/`MemorySummaryItem`/`SimilarDay`/`MemoryLlmUsage`/`FactSource` added `mezo-al1i`; `PatternEventKind`/`PatternEvent`/`AlignedDay`/`PatternImpactRef`/`PatternImpact`/`PatternPairDetail` at `types.ts:768-795`, added `mezo-tk88.5`)
 - Tests: `insightsData.test.tsx`, `chatData.test.tsx`, `memoryHooks.test.tsx` (**`mezo-al1i`**, dual-mode + the lazy-search enabled-gate + the `enabled:false` audit branch), `pages/MemoryPage.test.tsx` (**`mezo-al1i`**, all 4 segments + degraded + the Napló focus-scroll), `patternDetailHooks.test.tsx` (**`mezo-tk88.5`**, dual-mode — see §8 for the full case list)
+- **Proaktív coaching (§2.10, `mezo-6269.3`):** `pages/{CoachingHubPage,CoachingObserverPage,CoachingCardPage}.tsx` (+ tests) — the three routes; `components/{VerdictArc,CoachingRuleTile}.tsx` (+ tests) — the segmented-ring SVG and the bespoke rule tile (not `CollapsibleStrip`: that shared strip's header takes a `string` eyebrow and has no rank/icon slot, so the interaction contract — `aria-expanded`/`aria-controls`/hidden body — is copied exactly rather than widening a domain-free primitive for one caller); `logic/coachingCopy.ts` (+ test) — `CoachingState`/`stateOf`/`STATE_LABEL`/`STATE_CHIP`/`visualOf`/`washOf`/`splitOf`/`CoachingSplit`/`winnerRuleOf`/`losersOf`/`hhmm`/`dayLabel`, all defined once here (§2.10); `frontend/src/data/insights/{coachingTraceApi,coachingTraceHooks,coachingTraceMock,coachingCardHooks,coachingCardMock}.ts` (+ tests) — `useCoachingTrace`/`useCoachingCard` over `GET /api/companion/flags/trace` and the existing feed read, the demo day (`earliestDate` anchored 13 days before today) and the card mock derived from it (§2.10); `frontend/src/data/types.ts` — `CoachingTraceDay`/`CoachingRule`/`CoachingWinner`/`CoachingTransition`; re-exported from `hooks.ts:28-29`
 
 **Cross-feature seams:**
 - `frontend/src/app/router.tsx` — the flat `/mezo` + `/mezo/*` routes (hub, patterns, `patterns/:pairKey`, memoir, knowledge, chat, predictions, experiments, memoria) + the two intra-tab redirects (`mezo/weekly` → `/me/week`, `mezo/motor` → `/mezo/patterns`) + **`LegacyPathRedirect`**, the `insights/*` → `/mezo` rewrite that preserves subpath and query (§2) + **`MeKnowledgeRedirect`** (`mezo-ms9a`) — `me/knowledge` → `/mezo/knowledge?view=kategoriak(&kind=…)`, the cross-tab redirect that replaced the deleted `KnowledgePage.tsx` route

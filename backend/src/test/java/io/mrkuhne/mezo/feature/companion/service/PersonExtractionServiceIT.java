@@ -16,11 +16,14 @@ import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
 import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
 import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
+import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.JournalPopulator;
 import io.mrkuhne.mezo.support.populator.MentionPopulator;
 import io.mrkuhne.mezo.support.populator.PersonPopulator;
+import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -34,8 +37,9 @@ import org.springframework.test.context.ActiveProfiles;
 
 /** Emberek S4 (bd mezo-06o0.3): the nightly people-extraction round — the {@code
  *  LifeEventExtractionService} twin. Two write paths, both guarded: toneless-mention enrichment,
- *  and recurring-name candidate proposal — never a graph write here, and never a guess that only
- *  showed up once. */
+ *  and candidate proposal for an unknown name — never a graph write here, and never a name the
+ *  day's own text does not actually contain (mezo-06o0.9 turned that gate from "must recur" into
+ *  "must be grounded"; mezo-06o0.10 widened which texts count as the day's own). */
 @ActiveProfiles("companion-fake")
 class PersonExtractionServiceIT extends AbstractIntegrationTest {
 
@@ -47,6 +51,8 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
     @Autowired private PersonPopulator personPopulator;
     @Autowired private MentionPopulator mentionPopulator;
     @Autowired private JournalPopulator journalPopulator;
+    @Autowired private TrainPopulator trainPopulator;
+    @Autowired private SportSessionRepository sportSessionRepository;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private FakeCompanionLlm fakeCompanionLlm;
@@ -130,19 +136,43 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testExtractFor_shouldDropCandidate_whenTheNameDoesNotRecur() {
-        // The sentinel JSON itself lands in the narrative text (same channel the fake reads), so
-        // its own "name" field already contributes one occurrence — the prose must add none, and
-        // the quote must not repeat the name, so the day tally stays at 1 (below the ≥2 gate).
+    void testExtractFor_shouldDropCandidate_whenTheNameIsNowhereInTheDayText() {
+        // The grounding gate (mezo-06o0.9): the threshold is one occurrence, not two, but a name
+        // the day's own text never contains is still a model invention and must be dropped.
+        //
+        // Scripting that needs a trick, because the sentinel JSON travels INSIDE the narrative the
+        // fake reads back — a plainly spelled "name" would ground itself. So the name is written
+        // as a JSON unicode escape: the narrative literally carries `\u0150rs` (folds to "u0150rs",
+        // which contains no "ors"), while Jackson hands the service the parsed name "Őrs".
         UUID owner = ownerId();
         plantEntry(owner, DAY, "Csendes nap volt, nem történt semmi különös. "
-            + "[fake-people:{\"mentions\":[],\"candidates\":[{\"name\":\"Ottó\","
+            + "[fake-people:{\"mentions\":[],\"candidates\":[{\"name\":\"\\u0150rs\","
             + "\"quotes\":[\"valaki régen erről mesélt\"]}]}]");
 
         PersonExtractionResult result = extractionService.extractFor(owner, DAY);
 
         assertThat(result).isEqualTo(PersonExtractionResult.ZERO);
         assertThat(personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(owner)).isEmpty();
+    }
+
+    @Test
+    void testExtractFor_shouldSeeTrainingNoteText_whenTheNameLivesOnlyThere() {
+        // mezo-06o0.13: the sport note is free text the user writes, so a face first named there
+        // has to be able to become a candidate. Same seam proof as the gratitude case — the
+        // sentinel's name is unicode-escaped, so only the sport row can ground "Nóri".
+        UUID owner = ownerId();
+        plantEntry(owner, DAY, "Semmi különös a mai napban. "
+            + "[fake-people:{\"mentions\":[],\"candidates\":[{\"name\":\"\\u004E\\u00F3ri\","
+            + "\"quotes\":[\"jó meccs volt\"]}]}]");
+        SportSessionEntity sport = trainPopulator.createSportSession(owner, DAY);
+        sport.setNotes("Nórival röpiztünk, jó meccs volt.");
+        sportSessionRepository.saveAndFlush(sport);
+
+        PersonExtractionResult result = extractionService.extractFor(owner, DAY);
+
+        assertThat(result.candidates()).isEqualTo(1);
+        assertThat(personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(owner))
+            .extracting(PersonEntity::getName).containsExactly("Nóri");
     }
 
     @Test
@@ -165,21 +195,43 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testExtractFor_shouldCountWeekWindow_whenDayIsBelowThreshold() {
-        // The sentinel's own "name" field contributes 1 day-occurrence on its own (see the
-        // does-not-recur test's note) — kept below the day gate (≥2) by naming Berci nowhere else
-        // on DAY, so only the week tally (day's 1 + the two prior days' 2 = 3) clears the gate.
+    void testExtractFor_shouldCreateCandidate_whenTheNameIsNamedExactlyOnce() {
+        // THE regression for mezo-06o0.9. The old gate wanted two occurrences in the day (or three
+        // across the week), and real writing does not repeat a name — "eljöttünk strandröpizni
+        // Ancsival" names her once and never again. Live, that gate returned zero candidates on
+        // three consecutive nights while five real names sat in the reflections. One is enough now.
+        //
+        // The JSON unicode escape keeps the sentinel from grounding the name by itself (see the
+        // nowhere-in-the-day test): "Ancsi" reaches the gate ONLY through the prose below.
         UUID owner = ownerId();
-        plantEntry(owner, DAY.minusDays(1), "Berci ma is beszólt, Berci este is írt.");
-        plantEntry(owner, DAY, "Csendes nap volt, nem történt semmi különös. "
-            + "[fake-people:{\"mentions\":[],\"candidates\":[{\"name\":\"Berci\","
-            + "\"quotes\":[\"valaki ma is beszólt\"]}]}]");
+        plantEntry(owner, DAY, "Ma eljöttünk strandröpizni Ancsival, semmi extra. "
+            + "[fake-people:{\"mentions\":[],\"candidates\":[{\"name\":\"\\u0041ncsi\","
+            + "\"quotes\":[\"eljöttünk strandröpizni\"]}]}]");
 
         PersonExtractionResult result = extractionService.extractFor(owner, DAY);
 
         assertThat(result.candidates()).isEqualTo(1);
         assertThat(personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(owner))
-            .extracting(PersonEntity::getName).contains("Berci");
+            .extracting(PersonEntity::getName).containsExactly("Ancsi");
+    }
+
+    @Test
+    void testExtractFor_shouldSeeGratitudeText_whenTheNameLivesOnlyThere() {
+        // mezo-06o0.10: the day's narrative used to be journal + evening reflection + daily
+        // summary only, so a face first named in a gratitude entry could never become a candidate.
+        // The name is unicode-escaped in the sentinel, so the ONLY thing that can ground "Kriszti" is
+        // the gratitude row — if gratitude dropped out of the narrative, this test fails.
+        UUID owner = ownerId();
+        plantEntry(owner, DAY, "Semmi különös a mai napban. "
+            + "[fake-people:{\"mentions\":[],\"candidates\":[{\"name\":\"\\u004Briszti\","
+            + "\"quotes\":[\"hálás vagyok a délutánért\"]}]}]");
+        journalPopulator.createGratitude(owner, DAY, "Hálás vagyok, hogy Krisztivel beszélgettünk.", "connection");
+
+        PersonExtractionResult result = extractionService.extractFor(owner, DAY);
+
+        assertThat(result.candidates()).isEqualTo(1);
+        assertThat(personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(owner))
+            .extracting(PersonEntity::getName).containsExactly("Kriszti");
     }
 
     @Test

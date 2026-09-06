@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -56,8 +57,23 @@ public class MealScoringService {
      * Mostantól minden lefedettség-kapuzott dimenzió a SAJÁT tényét nézi, és a saját FEDETT
      * energiáján belül mér (a nevező a fedett kcal, nem a teljes) — a nem látott rész a
      * `coverage`-ben jelenik meg, nem hígított számként.
+     *
+     * <p>`3` (mezo-mxmh): a bélyeg NEM csak akkor mozdul, ha a SZÁMOK mennek el. Az S1 egy új
+     * mezőt (`coverage`) és rövidebb `detail` mondatokat hozott — a tárolt envelope-ok számai
+     * változatlanok, de a szövegük elavult, a mezőjük pedig `null`, tehát a jelvény a MEGLÉVŐ
+     * étkezéseken sosem jelenne meg. Egy csak-új-írásokra ható megjelenítés nem javítás.
+     * Emellett az energia-sűrűség kapott egy minimális tömeg-küszöböt, ami már számot is mozdít.
+     *
+     * <p>`4` (mezo-jcpt.19): a context dimenzió nap-tudatos lett. A statikus slot-arány
+     * (`napi_cél × slot_arány`) helyett a MARADÉK keret a még hátralévő slotok között felosztva —
+     * a régi képlet nem tudta, evett-e a felhasználó aznap, ezért egy egész napi koplalás utáni
+     * nagy étkezés kcal-komponensét nullázta. A névleges pályán a két képlet azonos, tehát a
+     * történelmi „szabályos" napok pontszáma nem mozdul. Mivel a mezo-mxmh kör PÁRHUZAMOSAN, a
+     * `3`-as bélyeg alatt futott a fő ágon, ez a generáció a KÖVETKEZŐ bélyeget veszi fel — a
+     * backfill runner minden `4` ALATTI envelope-ot újrapontoz, tehát a 2-es és 3-as sorok egy
+     * menetben gyógyulnak.
      */
-    public static final int FORMULA_VERSION = 2;
+    public static final int FORMULA_VERSION = 4;
 
     private final MealScoringProperties props;
     private final NutritionTargetsProperties targets;
@@ -129,6 +145,21 @@ public class MealScoringService {
      * replaces every former {@code mezo.nutrition} read: the STANDARD macro targets and all
      * day-share denominators (kcalShareOfDay, slot kcal budgets, slot protein references).
      *
+     * <p>Napi kontextus nélküli belépő (mezo-jcpt.19): a NÉVLEGES pályát feltételezi
+     * ({@link DayContext#unknown()}), ami bitre a v2 rubrika. A produkciós írásút mindig a
+     * 6-argumentumos alakot hívja.
+     */
+    public MealBreakdownJson scoreMeal(String slot, List<ScoredLine> lines, LocalTime localTime,
+                                       MealRole role, DailyTargets base) {
+        return scoreMeal(slot, lines, localTime, role, base, DayContext.unknown());
+    }
+
+    /**
+     * Nap-tudatos pontozás (mezo-jcpt.19): a context dimenzió az étkezés kcal-ját és fehérjéjét a
+     * MARADÉK napi kerethez méri, a még hátralévő slotok között felosztva — a statikus slot-arány
+     * helyett, ami nem tudta, hogy a felhasználó aznap evett-e egyáltalán. A többi hét dimenzió
+     * érintetlen: az energiasűrűség és a makró-arányok nem napi mennyiségek.
+     *
      * <p>Confidence is weight-RENORMALIZED over the live dimensions (÷ the live weight sum,
      * consistent with {@code value}) — a degraded dimension carries weight 0 and drops out of
      * both. This differs from the old un-normalized {@code Σ(configWeight·coverage)}: it
@@ -136,7 +167,7 @@ public class MealScoringService {
      * dimensions we could actually score", not "of the full weight budget").
      */
     public MealBreakdownJson scoreMeal(String slot, List<ScoredLine> lines, LocalTime localTime,
-                                       MealRole role, DailyTargets base) {
+                                       MealRole role, DailyTargets base, DayContext day) {
         double kcal = sum(lines, ScoredLine::kcal);
 
         Rubric rubric = rubricFor(role, base);
@@ -146,10 +177,11 @@ public class MealScoringService {
         MealScoringProperties.WhoRefs who = rubric.who();
         MealScoringProperties.NovaGroupScores nova = rubric.nova();
 
-        List<Dim> dims = List.of(
+        List<Dim> dims = Stream.of(
             macroDim(lines, kcal, tp, tc, tf, base, role), microDim(lines, kcal, base), whoDim(lines, kcal, who, base),
             fatQualityDim(lines, kcal), novaDim(lines, kcal, nova), plantDiversityDim(lines, kcal),
-            energyDensityDim(lines, kcal), contextDim(slot, lines, kcal, localTime, role, base));
+            energyDensityDim(lines, kcal), contextDim(slot, lines, kcal, localTime, role, base, day))
+            .map(Dim::coverageWeighted).toList();
 
         double weightSum = dims.stream().mapToDouble(d -> d.effectiveWeight).sum();
         double value = weightSum == 0 ? 0
@@ -219,12 +251,13 @@ public class MealScoringService {
         }
         DailyTargets base = DailyTargets.fromConfig(targets);
         Rubric rubric = rubricFor(role, base);
-        List<Dim> live = List.of(
+        List<Dim> live = Stream.of(
             macroDim(perServingLines, kcal, rubric.p(), rubric.c(), rubric.f(), base, role),
             microDim(perServingLines, kcal, base), whoDim(perServingLines, kcal, rubric.who(), base),
             fatQualityDim(perServingLines, kcal),
             novaDim(perServingLines, kcal, rubric.nova()), plantDiversityDim(perServingLines, kcal),
-            energyDensityDim(perServingLines, kcal), portionDim(slot, kcal, base));
+            energyDensityDim(perServingLines, kcal), portionDim(slot, kcal, base))
+            .map(Dim::coverageWeighted).toList();
         double weightSum = live.stream().mapToDouble(d -> d.effectiveWeight).sum();
         if (weightSum == 0) {
             return null;
@@ -310,21 +343,24 @@ public class MealScoringService {
         double significance = Math.min(1.0, kcalShare / props.macroSignificanceRefShare());
         double score = Math.max(0, 1 - deviation * props.macroDeviationSlope() * significance);
 
+        // A cél EREDETE saját mező, nem a mondat farka (mezo-mxmh): az összecsukott kártya két
+        // sorra vágja a `detail`-t, és az 1. körben pont a provenance — az egész átírás értelme —
+        // esett a vágás alá. A mondat most rövid és teljes; az eredet a kinyitott panelben áll.
+        String origin = String.format(
+            "%s · %d g fehérje / %d g szénhidrát / %d g zsír egy %d kcal-s napra",
+            targetOrigin(base, role), targetP, targetC, targetF, base.kcal());
         MacroDetail detail = new MacroDetail(
             round0(sp * 100), round0(sc * 100), round0(sf * 100),
             "~" + Math.round(tp * 100) + "%", "~" + Math.round(tc * 100) + "%", "~" + Math.round(tf * 100) + "%",
             round1(kcalShare * 100),
+            origin,
             null); // P8 prose
-        // Egész mondat, a cél EREDETÉVEL együtt (mezo-1f7b): a puszta „24/15/61% a 27/47/26%
-        // célhoz képest" nem mondja meg, mit néz (kcal-arány, nem gramm) és honnan jön a cél.
+        // Rövid, de teljes: a lényeg (mit néz — kcal-arányt, nem grammot — és mihez képest) elfér
+        // a kártya két sorában. Az eredet és a napi részesedés a panelben (mezo-mxmh).
         String text = String.format(
-            "Ennek az ételnek az energiája %d%% fehérje · %d%% szénhidrát · %d%% zsír. "
-                + "A cél %d/%d/%d%% — %s (%d g F / %d g Sz / %d g Zs egy %d kcal-s napra). "
-                + "Ez az étel a napi keret %s-a.",
+            "Az energia %d%% fehérje · %d%% szénhidrát · %d%% zsír — a cél %d/%d/%d%%.",
             Math.round(sp * 100), Math.round(sc * 100), Math.round(sf * 100),
-            Math.round(tp * 100), Math.round(tc * 100), Math.round(tf * 100),
-            targetOrigin(base, role), targetP, targetC, targetF, base.kcal(),
-            pct(kcalShare) + "%");
+            Math.round(tp * 100), Math.round(tc * 100), Math.round(tf * 100));
         return new Dim("macro", "Kcal & makró arány", props.weights().macro(), score, 1.0, text,
             detail, null, null, null, null);
     }
@@ -374,9 +410,8 @@ public class MealScoringService {
         double score = Math.min(1, fiberRatio);
         List<MicroRow> rows = List.of(
             new MicroRow("Rost", grams(fiber), pct(fiberRatio), fiberStatus(fiberRatio)));
-        String text = String.format("Rost %s a(z) %s allotmenthez (%d%%).%s",
-            grams(fiber), grams(props.micro().fiberG() * kcalShare), pct(fiberRatio),
-            coverageNote(coverage));
+        String text = String.format("Rost %s a(z) %s allotmenthez (%d%%).",
+            grams(fiber), grams(props.micro().fiberG() * kcalShare), pct(fiberRatio));
         return new Dim("micro", "Rost & mikro", props.weights().micro(), score, coverage, text,
             null, rows, null, null, null);
     }
@@ -419,13 +454,12 @@ public class MealScoringService {
             new ContextRow("Só", saltCov > 0
                 ? String.format("%s / %s keret", grams(salt), grams(saltBudget))
                 : "nincs adat"));
-        String text = String.format("%s · %s%s",
+        String text = String.format("%s · %s",
             sugarCov > 0
                 ? String.format("Cukor az energia %.0f%%-a (WHO ≤%.0f%%)", sugarShare * 100,
                     who.sugarEnergyShareLimit() * 100)
                 : "Cukor: nincs adat",
-            saltCov > 0 ? String.format("só a keret %d%%-án", pct(saltRatio)) : "só: nincs adat",
-            coverageNote(coverage));
+            saltCov > 0 ? String.format("só a keret %d%%-án", pct(saltRatio)) : "só: nincs adat");
         return new Dim("who", "Ajánlások · WHO", props.weights().who(), score, coverage, text,
             null, null, null, rows, null);
     }
@@ -462,20 +496,10 @@ public class MealScoringService {
         // Locale.ROOT: a fractional %f otherwise renders "66,0" on a hu_HU JVM and "66.0" on the
         // server's default — the same stored envelope must not read differently per host.
         String text = String.format(Locale.ROOT,
-            "Telített zsír %s — az energia %.1f%%-a · az összzsír %.0f%%-a.%s",
-            grams(satFat), satEnergyShare * 100, satShare * 100, coverageNote(coverage));
+            "Telített zsír %s — az energia %.1f%%-a · az összzsír %.0f%%-a.",
+            grams(satFat), satEnergyShare * 100, satShare * 100);
         return new Dim("fat_quality", "Zsírminőség", props.weights().fatQuality(), score, coverage,
             text, null, null, null, rows, null);
-    }
-
-    /**
-     * The "…, a tételek X%-ára" tail every coverage-gated dimension appends when it could NOT see
-     * the whole meal — the number the score is really about, said in the sentence rather than only
-     * in a confidence bar three elements away. Empty at (rounded) full coverage.
-     */
-    private static String coverageNote(double coverage) {
-        int p = (int) Math.round(coverage * 100);
-        return p >= 100 ? "" : String.format(" Csak a tételek %d%%-ára van adat.", p);
     }
 
     // --- Plant diversity (.08): distinct plant categories ---------------------------------------
@@ -512,6 +536,16 @@ public class MealScoringService {
             return Dim.degraded("energy_density", "Energia-sűrűség", props.weights().energyDensity(),
                 "Nincs gramm-alapú mennyiség a tételekhez.");
         }
+        // kcal/100g a TELÍTŐDÉST méri — mennyi energiát hoz egy adagnyi étel tömege —, és ennek
+        // csak étkezés-méretű tömegen van értelme. Egy 30 g-os fehérjepor 390 kcal/100g-mal
+        // 0,04 pontot kapott, holott az a 30 g egy ~300 ml-es italként kerül a gyomorba: a por
+        // száraz tömege nem az a mennyiség, amiről a dimenzió állítást tesz (mezo-mxmh).
+        if (grams < props.energyDensity().minMassG()) {
+            return Dim.degraded("energy_density", "Energia-sűrűség", props.weights().energyDensity(),
+                String.format(Locale.ROOT,
+                    "Csak %.0f g gramm-alapú tétel — %.0f g alatt a kcal/100g nem telítődést mér.",
+                    grams, props.energyDensity().minMassG()));
+        }
         double density = gramKcal / grams * 100;
         double good = props.energyDensity().goodKcalPer100g();
         double bad = props.energyDensity().badKcalPer100g();
@@ -523,9 +557,8 @@ public class MealScoringService {
         // Csak a GRAMM-alapú tételeken mérhető: a darabos (db/adag) tételek se a tömegbe, se a
         // kcal-ba nem számítanak — ezért mondja ki a mondat, mennyi a mért rész (mezo-1f7b).
         String text = String.format(
-            "%.0f g étel %.0f kcal-t hoz — %.0f kcal/100g. %.0f alatt teljes pont, %.0f felett "
-                + "nulla (a hígabb, több rostot/vizet hozó étel telítőbb).%s",
-            grams, gramKcal, density, good, bad, coverageNote(coverage));
+            "%.0f g étel %.0f kcal-t hoz — %.0f kcal/100g (%.0f alatt teljes pont, %.0f felett nulla).",
+            grams, gramKcal, density, good, bad);
         return new Dim("energy_density", "Energia-sűrűség", props.weights().energyDensity(),
             score, coverage, text, null, null, null, rows, null);
     }
@@ -557,7 +590,7 @@ public class MealScoringService {
         return ratio >= 0.8 ? "good" : ratio >= 0.5 ? "ok" : "low";
     }
 
-    // --- NOVA (.25): kcal-weighted processing-class distribution -------------------------------
+    // --- NOVA (.18): kcal-weighted processing-class distribution -------------------------------
 
     private Dim novaDim(List<ScoredLine> lines, double kcal, MealScoringProperties.NovaGroupScores nova) {
         List<ScoredLine> covered = lines.stream().filter(l -> l.nova() != null).toList();
@@ -595,16 +628,20 @@ public class MealScoringService {
             null, null, new NovaDetail(dominant, stack, items), null, null);
     }
 
-    // --- Context (.20): deterministic slot/timing fit -------------------------------------------
+    // --- Context (.12): deterministic slot/timing fit -------------------------------------------
 
     private Dim contextDim(String slot, List<ScoredLine> lines, double kcal, LocalTime localTime,
-                           MealRole role, DailyTargets base) {
+                           MealRole role, DailyTargets base, DayContext day) {
         double slotShare = props.slotShares().of(slot);
         double timingSub = timingSub(slot, localTime);
-        double rel = kcal / (base.kcal() * slotShare);
+        double kcalRef = expectedRef(base.kcal(), day.known() ? day.kcalBefore().doubleValue() : 0,
+            slot, slotShare, localTime, day.known());
+        double proteinRef = expectedRef(base.p(), day.known() ? day.pBefore().doubleValue() : 0,
+            slot, slotShare, localTime, day.known());
+
+        double rel = kcal / kcalRef;
         double shareDev = Math.max(0, Math.abs(rel - 1) - props.slotShareTolerance());
         double shareSub = Math.max(0, 1 - shareDev);
-        double proteinRef = base.p() * slotShare;
         double protein = sum(lines, ScoredLine::p);
         double proteinSub = Math.min(1, protein / proteinRef);
 
@@ -615,8 +652,9 @@ public class MealScoringService {
         }
         rows.add(new ContextRow("Időzítés", String.format("%s · %s", localTime.format(HHMM), timingSub >= 1
             ? slotLabel(slot) + " ablakban" : "a " + slotLabel(slot) + " ablakon kívül")));
-        rows.add(new ContextRow("Slot-arány", String.format("%d%% vs ~%d%% cél",
-            (int) Math.round(kcal / base.kcal() * 100), (int) Math.round(slotShare * 100))));
+        rows.add(new ContextRow("Adag vs keret", String.format("%d kcal / ~%d kcal %s",
+            Math.round(kcal), Math.round(kcalRef),
+            day.known() ? "a maradék keretből" : "névleges slot-keret")));
         rows.add(new ContextRow("Fehérje", String.format("%d g / %d g slot-cél",
             Math.round(protein), Math.round(proteinRef))));
         String text = String.format("Időzítés %.0f%% · kcal-keret %.0f%% · fehérje %.0f%%.",
@@ -630,6 +668,56 @@ public class MealScoringService {
             slotLabel(slot));
         return new Dim("context", "Időzítés & kontextus", props.weights().context(), score, 1.0, text,
             null, null, null, rows, timing);
+    }
+
+    /** A négy pontozott slot — a hátralévő-arány nevezőjének tartománya. */
+    private static final List<String> SLOTS = List.of("breakfast", "lunch", "dinner", "snack");
+
+    /**
+     * Egy tápanyag viszonyítási kerete ehhez az étkezéshez. Ismeretlen nap esetén a NÉVLEGES pálya
+     * ({@code napi cél × slot-arány} — a v2 képlet); ismert nap esetén a MARADÉK keret a még
+     * hátralévő slotok között felosztva, soha nem a konfigurált padló alatt.
+     */
+    private double expectedRef(double dayTarget, double consumedBefore, String slot,
+                               double slotShare, LocalTime t, boolean known) {
+        if (!known) {
+            return dayTarget * slotShare;
+        }
+        double remaining = Math.max(0, dayTarget - consumedBefore);
+        double floor = dayTarget * slotShare * props.minExpectedSlotShareFactor();
+        return Math.max(remaining * slotShare / remainingSlotShare(slot, t), floor);
+    }
+
+    /**
+     * A még HÁTRALÉVŐ slotok arányösszege — ez osztja fel a maradék keretet. Az étkezés SAJÁT
+     * slotja mindig hátravan (egy 22:30-kor logolt vacsora továbbra is a vacsora kerete), a
+     * snacknek pedig nincs ablaka, tehát az is mindig. Így az eredmény sosem 0.
+     *
+     * <p>Ismert korlát: a snack a nevezőben AKKOR IS mindig hátralévőnek számít, ha már megette a
+     * felhasználó — a kcal-ja viszont már benne van a {@code consumedBefore}-ban. Emiatt a §4.3
+     * nulla-regresszió invariáns nem pontosan igaz, ha a névleges pályán VAN elfogyasztott snack:
+     * pl. reggeli .25 + ebéd .35 + snack .10 elfogyasztva egy 19:00-s vacsora előtt →
+     * {@code remaining = 0.30·T}, {@code remainingSlotShare = dinner .30 + snack .10 = 0.40}, tehát
+     * {@code expected = 0.30·T × 0.30/0.40 = 0.225·T} — egy pontosan a saját .30 részét evő vacsora
+     * {@code rel = 0.30·T / 0.225·T ≈ 1.33}-at kap az elvárt 1.0 helyett. Ez ma még belefér a
+     * {@code slotShareTolerance}-ba (0.4), de csak ~0.07 tartalékkal — egy jövőbeli szigorítás ezt
+     * regresszióvá tenné. Szándékosan NEM javítva ebben a körben (dokumentált, ismert korlát).
+     */
+    private double remainingSlotShare(String slot, LocalTime t) {
+        MealScoringProperties.SlotShares shares = props.slotShares();
+        double sum = 0;
+        for (String candidate : SLOTS) {
+            if (candidate.equals(slot) || !windowPassed(candidate, t)) {
+                sum += shares.of(candidate);
+            }
+        }
+        return sum;
+    }
+
+    /** Egy slot ablaka lejárt, ha az óra a záró órája UTÁN jár; a snacknek nincs ablaka. */
+    private boolean windowPassed(String slot, LocalTime t) {
+        int[] window = windowOf(props.slotWindows(), slot);
+        return window != null && t.getHour() + t.getMinute() / 60.0 > window[1];
     }
 
     private static final DateTimeFormatter HHMM = DateTimeFormatter.ofPattern("HH:mm").withLocale(Locale.ROOT);
@@ -722,6 +810,21 @@ public class MealScoringService {
             return new Dim(id, label, 0, 0, 0, detail, null, null, null, null, null);
         }
 
+        /**
+         * A dimension gets as much say as it can SEE (mezo-mxmh): its config weight scaled by
+         * coverage, before the renormalization spreads the remainder over the rest. A dimension
+         * that knows a quarter of the meal used to speak with the same authority as one that knew
+         * all of it — a live envelope claimed a 38.4% saturated-fat share off 30% of the food, at
+         * full weight. Continuous on purpose: a threshold ("degrade below 50%") puts a cliff
+         * between two near-identical meals, and today's "coverage 0 → weight 0" rule is just this
+         * function's endpoint. Applied exactly ONCE, at the two list-building sites — never inside
+         * the record's constructor, which {@link #renormalized} also calls.
+         */
+        Dim coverageWeighted() {
+            return new Dim(id, label, effectiveWeight * coverage, score, coverage, detail,
+                macro, micros, nova, context, timing);
+        }
+
         /** The same dimension with its weight renormalized over the present dimensions (mezo-bw3y). */
         Dim renormalized(double weightSum) {
             return new Dim(id, label, effectiveWeight / weightSum, score, coverage, detail,
@@ -729,7 +832,7 @@ public class MealScoringService {
         }
 
         Dimension toJson() {
-            return new Dimension(id, label, round2(effectiveWeight), round2(score), detail,
+            return new Dimension(id, label, round2(effectiveWeight), round2(score), round2(coverage), detail,
                 macro, micros, nova, context, timing, null);
         }
     }

@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
+import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
@@ -43,6 +44,7 @@ class MealSaturatedFatBackfillRunnerIT extends AbstractIntegrationTest {
     @Autowired private EntityManager entityManager;
 
     private static final LocalDate DAY = LocalDate.of(2026, 6, 10);
+    private static final java.time.Instant NOON = java.time.Instant.parse("2026-06-10T10:00:00Z");
 
     private UUID owner() {
         return appUserRepository.findByEmail(ownerProperties.ownerEmail()).orElseThrow().getId();
@@ -81,6 +83,47 @@ class MealSaturatedFatBackfillRunnerIT extends AbstractIntegrationTest {
         entityManager.clear();
 
         assertThat(reload(meal).getSnapshotSaturatedFatG()).isEqualByComparingTo("9.100");
+    }
+
+    /**
+     * The defect this test exists for (mezo-mxmh): healing the snapshot is not healing the SCORE.
+     * The stored envelope was computed from the old null, and only MealRescoreRunner can recompute
+     * it — off a work list of "envelopes stamped below FORMULA_VERSION". On the live boot where the
+     * catalog finally filled, that stamp was already current, so 37 snapshots healed and not one
+     * score moved. Relying on some other change's version bump is coincidence, not a mechanism; the
+     * backfill must invalidate what it invalidated.
+     */
+    @Test
+    void backfill_shouldInvalidateTheEnvelopeStamp_soTheRescoreRunnerPicksTheMealUp() {
+        UUID owner = owner();
+        PantryItemEntity item = pantryItemPopulator.createFoodWithNutrients(owner, "vaj");
+        MealEntity meal = mealPopulator.createCurrentScoredMeal(owner, item, DAY, "friss", NOON);
+        // precondition: stamped current, so the rescore runner would NOT look at it
+        assertThat(mealRepository.findStaleEnvelopes(MealScoringService.FORMULA_VERSION))
+            .extracting(MealEntity::getId).doesNotContain(meal.getId());
+
+        runner.backfill();
+        entityManager.clear();
+
+        assertThat(mealRepository.findStaleEnvelopes(MealScoringService.FORMULA_VERSION))
+            .extracting(MealEntity::getId).contains(meal.getId());
+    }
+
+    /** Nothing to heal → nothing to invalidate: a second boot must not re-score the world. */
+    @Test
+    void backfill_shouldNotInvalidateAnything_whenThereIsNothingToHeal() {
+        UUID owner = owner();
+        PantryItemEntity item = pantryItemPopulator.createFoodWithNutrients(owner, "sajt2");
+        MealEntity meal = mealPopulator.createCurrentScoredMeal(owner, item, DAY, "friss", NOON);
+        runner.backfill();          // heals + invalidates
+        entityManager.clear();
+        mealPopulator.restampCurrent(meal.getId());   // as the rescore would leave it
+
+        runner.backfill();          // second boot: nothing null any more
+        entityManager.clear();
+
+        assertThat(mealRepository.findStaleEnvelopes(MealScoringService.FORMULA_VERSION))
+            .extracting(MealEntity::getId).doesNotContain(meal.getId());
     }
 
     private MealItemEntity line(MealEntity meal) {

@@ -2,12 +2,20 @@ package io.mrkuhne.mezo.feature.companion.service;
 
 import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.companion.NarrativeNoteSource;
+import io.mrkuhne.mezo.feature.companion.embedding.TrainingNoteMentionSweep;
+import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphEdgeStructurer;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromotionService;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphService;
+import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
+import io.mrkuhne.mezo.feature.journal.entity.DecisionEntryEntity;
+import io.mrkuhne.mezo.feature.journal.entity.GratitudeEntryEntity;
 import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
+import io.mrkuhne.mezo.feature.journal.repository.DecisionEntryRepository;
+import io.mrkuhne.mezo.feature.journal.repository.GratitudeEntryRepository;
 import io.mrkuhne.mezo.feature.journal.repository.JournalEntryRepository;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -16,6 +24,10 @@ import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
 import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
 import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
 import io.mrkuhne.mezo.feature.ritual.repository.RitualDayRepository;
+import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
+import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.text.SafeTruncate;
 import io.mrkuhne.mezo.techcore.text.TextFold;
@@ -52,9 +64,9 @@ import tools.jackson.databind.ObjectMapper;
  *
  * <p><b>Bizonytalan utalás SOHA nem ír.</b> A modell javaslata csak jelölt: a szerviz maga
  * validál — a név foldja nem eshet egybe egyetlen ismert névvel/aliasszal sem (a soft-deleted,
- * azaz elvetett jelölt sorokat IS beleértve — reject-lista), és a névnek ténylegesen vissza kell
- * térnie a saját szövegekben: a nap narratívájában legalább {@value #DAY_MIN_OCCURRENCES}, vagy a
- * záró 7 nap narratívájában legalább {@value #WEEK_MIN_OCCURRENCES} szó-eleji előfordulás.
+ * azaz elvetett jelölt sorokat IS beleértve — reject-lista), és a névnek szó szerint szerepelnie
+ * kell a nap saját szövegében ({@value #DAY_MIN_OCCURRENCES} szó-eleji előfordulás; a küszöb
+ * indoklása a {@link #DAY_MIN_OCCURRENCES} javadocjában).
  *
  * <p><b>Pre-spend kapu:</b> ha a napnak se tone-nélküli mentionje, se narratívája — nincs hívás.
  * Nap-kapu nem kell a LifeEvent-féle {@code countExtractorNodesOnDay} formában: az újrafutás
@@ -79,10 +91,27 @@ public class PersonExtractionService {
     /** person.source_kind for extractor-born candidates. */
     public static final String SOURCE_EXTRACTOR = "extractor";
 
-    static final int DAY_MIN_OCCURRENCES = 2;
-    static final int WEEK_MIN_OCCURRENCES = 3;
-    private static final int MAX_CANDIDATES = 3;
+    /**
+     * Hány szó-eleji előfordulást követelünk a nap narratívájában ahhoz, hogy egy javasolt név
+     * jelöltté váljon (mezo-06o0.9).
+     *
+     * <p>Ez EGY, és szándékosan: ez már nem „visszatérés"-küszöb, hanem FÖLDELÉS. A régi
+     * 2-a-napon / 3-a-héten kapu abból a feltevésből élt, hogy egy fontos ember neve ismétlődik
+     * a saját szövegben. Élesben ez nem igaz — egy naplóbejegyzés vagy esti reflexió jellemzően
+     * egyszer nevez meg valakit („eljöttünk strandröpizni Ancsival") —, és a kapu emiatt HÁROM
+     * egymás utáni éjjelen NULLA jelöltet engedett át öt valódi név mellett. Amit meg akarunk
+     * tartani, az csak annyi, hogy a modell ne találjon ki nevet: a javaslatnak szó szerint
+     * szerepelnie kell a nap saját szövegében. A zajt nem ez a küszöb kezeli, hanem a jelölt-doboz
+     * maga (egy koppintás az elvetés, és az elvetett név a reject-listára kerül).
+     */
+    static final int DAY_MIN_OCCURRENCES = 1;
+    private static final int MAX_CANDIDATES = 5;
     private static final int MAX_QUOTES = 3;
+    /** Egy forrás-darab plafonja a nap narratívájában (mezo-06o0.10) — egy hosszú chat-üzenet
+     *  vagy naplóbejegyzés önmagában ne szorítsa ki az összes többi forrást. */
+    private static final int NARRATIVE_PIECE_MAX_CHARS = 1500;
+    /** A teljes napi narratíva plafonja — a hívás egy olcsó-tier LLM-kör, nem korlátlan. */
+    private static final int NARRATIVE_MAX_CHARS = 12000;
     private static final int QUOTE_MAX_CHARS = 200;
     private static final int MIN_NAME_FOLD_LENGTH = 3;
     /** person.notes VARCHAR(500) (202607041030) — a join(quotes) sosem lépheti túl, különben a
@@ -114,8 +143,8 @@ public class PersonExtractionService {
 
         1. GAZDAGÍTÁS: minden számozott említéshez döntsd el a szöveg alapján a tónust,
            az intenzitást és a kontextust.
-        2. ÚJ ARCOK: ha a nap szövegeiben VISSZATÉRŐ, az ismert listán NEM szereplő
-           személynév bukkan fel, javasold jelöltnek, szó szerinti idézetekkel.
+        2. ÚJ ARCOK: ha a nap szövegeiben olyan személynév bukkan fel, ami az ismert
+           listán NEM szerepel, javasold jelöltnek, szó szerinti idézetekkel.
 
         Válasz KIZÁRÓLAG JSON objektum, magyarázat nélkül:
         {"mentions": [{"index": 0, "tone": "positive", "intensity": 2, "context": "munka"}],
@@ -123,17 +152,27 @@ public class PersonExtractionService {
 
         - tone ∈ positive | neutral | mixed | negative; intensity ∈ 1 | 2 | 3
         - context ∈ munka | csalad | baratok | edzes | konfliktus | kozos_program | segitseg | egyeb
-        - Bizonytalan utalást ("a főnököm", vezetéknév nélkül több emberre illő név) HAGYJ KI
+        - Meg nem nevezett utalást ("a főnököm", "egy barátom", "a szomszéd") HAGYJ KI
           mindkét listából. Ha nincs mit írni, a mező üres tömb.
-        - Jelöltet csak ténylegesen visszatérő névre javasolj, legfeljebb 3-at.
+        - Jelöltnek MINDEN megnevezett, az ismert listán nem szereplő személy számít, akkor is,
+          ha csak egyszer kerül szóba — nem kell, hogy a név visszatérjen. Legfeljebb 5-öt.
         """;
 
     private final CompanionLlm companionLlm;
     private final PersonRepository personRepository;
     private final MentionRepository mentionRepository;
     private final JournalEntryRepository journalEntryRepository;
+    private final GratitudeEntryRepository gratitudeEntryRepository;
+    private final DecisionEntryRepository decisionEntryRepository;
     private final RitualDayRepository ritualDayRepository;
     private final DailySummaryRepository dailySummaryRepository;
+    private final AiMessageRepository aiMessageRepository;
+    private final WorkoutSessionRepository workoutSessionRepository;
+    private final SportSessionRepository sportSessionRepository;
+    // A jegyzet-források (aktivitás, check-in) a NarrativeNoteSource porton át jönnek, nem
+    // közvetlen repository-importtal: a companion → activity irány ÚJ szelet-ciklust zárna
+    // (activity → companion már létezik), lásd a port javadocját.
+    private final ObjectProvider<NarrativeNoteSource> noteSources;
     private final LlmCallContextHolder llmCallContextHolder;
     private final ObjectMapper objectMapper;
     private final PromptPersona promptPersona;
@@ -178,7 +217,7 @@ public class PersonExtractionService {
             return PersonExtractionResult.ZERO;
         }
         List<Enrichment> enrichments = validEnrichments(answer, toneless);
-        List<CandidateProposal> candidates = validCandidates(answer, userId, day, narrative);
+        List<CandidateProposal> candidates = validCandidates(answer, userId, narrative);
         if (enrichments.isEmpty() && candidates.isEmpty()) {
             // Nincs mit gazdagítani/jelölni ebből a válaszból — de az él-passz ettől független: ha
             // van aznapi említés, akkor is lefut (S5, mezo-06o0.4). Ez a gate akkor is igaz tud
@@ -334,24 +373,85 @@ public class PersonExtractionService {
         return new PersonExtractionResult(enriched, created, 0);
     }
 
-    /** Ugyanaz a nap-narratíva, mint a LifeEvent-extraktoré: napló + esti reflexió + napi összefoglaló. */
+    /**
+     * A nap MINDEN saját szövege, amibe a felhasználó embert írhat (mezo-06o0.10).
+     *
+     * <p>Korábban ez csak napló + esti reflexió + napi összefoglaló volt — a determinisztikus
+     * név-match ennél már régen szélesebb ({@code MentionDetectionListener}: napló/hála/döntés,
+     * {@code ReflectionMentionListener}: napzárás, {@code NoteMentionCatchUp}: aktivitás- és
+     * check-in-jegyzet, {@code ChatMentionListener}: chat, {@code TrainingNoteMentionSweep}:
+     * edzés- és sport-jegyzet), de az csak MÁR ISMERT embert talál meg. Új arc kizárólag ebből a narratívából születhet, tehát ami nincs benne, abból soha
+     * nem lesz jelölt: egy hálabejegyzésben vagy chatben először felbukkanó ember láthatatlan
+     * maradt. A két útnak ugyanazt a szöveghalmazt kell látnia.
+     *
+     * <p>A {@code NAPI ÖSSZEFOGLALÓ} a kakukktojás: nem a user szava, hanem generált próza az
+     * aznapi adatokból. Benne marad (a S4 óta itt van, és néven nevezhet valakit, akit a nyers
+     * szövegek csak érintenek), de forrásnak nem tekintjük — a földelés-ellenőrzés szempontjából
+     * ugyanúgy „a nap szövege", ahogy eddig is.
+     *
+     * <p>Költség-korlát: a chat egyetlen nap alatt is hosszabb lehet minden másnál együttvéve,
+     * ezért darabonként {@value #NARRATIVE_PIECE_MAX_CHARS}, összesen
+     * {@value #NARRATIVE_MAX_CHARS} karakter a plafon. Ez egyben azt is jelenti, hogy egy nagyon
+     * beszédes napon a legvégén elhangzó név kimaradhat — a következő nap narratívája (vagy egy
+     * másik forrás) hozza vissza.
+     */
     private String gatherNarrative(UUID userId, LocalDate day) {
         StringBuilder sb = new StringBuilder();
         for (JournalEntryEntity entry : journalEntryRepository
                 .findByCreatedByAndOccurredOnBetweenAndDeletedFalseOrderByOccurredOnDescCreatedAtDesc(userId, day, day)) {
             append(sb, "NAPLÓ", entry.getText());
         }
+        for (GratitudeEntryEntity entry : gratitudeEntryRepository
+                .findByCreatedByAndOccurredOnBetweenAndDeletedFalseOrderByOccurredOnDescCreatedAtDesc(userId, day, day)) {
+            append(sb, "HÁLA", entry.getText());
+        }
+        for (DecisionEntryEntity decision : decisionEntryRepository
+                .findByCreatedByAndDecidedOnBetweenAndDeletedFalseOrderByDecidedOnAsc(userId, day, day)) {
+            append(sb, "DÖNTÉS", decision.getOutcomeText() == null
+                ? decision.getDecisionText()
+                : decision.getDecisionText() + "\n" + decision.getOutcomeText());
+        }
         ritualDayRepository.findByCreatedByAndRitualDate(userId, day)
             .ifPresent(r -> append(sb, "ESTI REFLEXIÓ", r.getReflectionText()));
+        for (NarrativeNoteSource source : noteSources.orderedStream().toList()) {
+            String label = NarrativeNoteSource.CHECKIN_NOTE.equals(source.kind())
+                ? "CHECK-IN JEGYZET" : "AKTIVITÁS";
+            for (NarrativeNoteSource.Note note : source.notesOn(userId, day)) {
+                append(sb, label, note.text());
+            }
+        }
+        for (WorkoutSessionEntity workout
+                : workoutSessionRepository.findByCreatedByAndDateOrderByCreatedAtAsc(userId, day)) {
+            append(sb, "EDZÉS-JEGYZET", TrainingNoteMentionSweep.workoutText(workout));
+        }
+        for (SportSessionEntity sport
+                : sportSessionRepository.findByCreatedByAndDeletedFalseAndDateOrderByTimeAsc(userId, day)) {
+            append(sb, "SPORT-JEGYZET", sport.getNotes());
+        }
+        for (AiMessageEntity message : aiMessageRepository
+                .findByCreatedByAndRoleAndDeletedFalseAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(
+                    userId, AiMessageEntity.ROLE_USER,
+                    day.atStartOfDay(ZoneOffset.UTC).toInstant(),
+                    day.plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant())) {
+            append(sb, "CHAT", message.getContent());
+        }
         dailySummaryRepository.findByCreatedByAndSummaryDate(userId, day)
             .ifPresent(s -> append(sb, "NAPI ÖSSZEFOGLALÓ", s.getNarrative()));
-        return sb.toString().trim();
+        String narrative = sb.toString().trim();
+        return narrative.length() <= NARRATIVE_MAX_CHARS
+            ? narrative
+            : SafeTruncate.truncate(narrative, NARRATIVE_MAX_CHARS);
     }
 
     private static void append(StringBuilder sb, String label, String text) {
-        if (text != null && !text.isBlank()) {
-            sb.append(label).append(": ").append(text.trim()).append('\n');
+        if (text == null || text.isBlank() || sb.length() >= NARRATIVE_MAX_CHARS) {
+            return;
         }
+        String trimmed = text.trim();
+        sb.append(label).append(": ")
+            .append(trimmed.length() <= NARRATIVE_PIECE_MAX_CHARS
+                ? trimmed : SafeTruncate.truncate(trimmed, NARRATIVE_PIECE_MAX_CHARS))
+            .append('\n');
     }
 
     private String buildUserMessage(String narrative, List<MentionEntity> toneless,
@@ -397,9 +497,9 @@ public class PersonExtractionService {
     }
 
     /** A jelölt-kapu: ismert/elvetett név ki (fold-egyenlőség a nevek+aliasok ellen, soft-deleted
-     *  sorokkal együtt), és csak ténylegesen visszatérő név marad (nap ≥2 vagy 7 nap ≥3 szó-eleji
-     *  előfordulás a narratívában). */
-    private List<CandidateProposal> validCandidates(NightAnswer answer, UUID userId, LocalDate day,
+     *  sorokkal együtt), és csak olyan név marad, ami a nap saját szövegében szó-eleji helyzetben
+     *  ténylegesen szerepel — ez a HALLUCINÁCIÓ-őr, nem visszatérés-küszöb (mezo-06o0.9). */
+    private List<CandidateProposal> validCandidates(NightAnswer answer, UUID userId,
             String dayNarrative) {
         List<CandidateProposal> raw = answer.candidates() == null ? List.of() : answer.candidates();
         if (raw.isEmpty()) {
@@ -410,7 +510,6 @@ public class PersonExtractionService {
             knownFolds.add(TextFold.fold(known));
         }
         String dayFold = TextFold.fold(dayNarrative);
-        String weekFold = null;   // lustán: csak ha a nap-küszöb nem elég
         List<CandidateProposal> valid = new ArrayList<>();
         Set<String> proposedFolds = new HashSet<>();
         for (CandidateProposal c : raw) {
@@ -423,19 +522,8 @@ public class PersonExtractionService {
                 || knownFolds.contains(fold) || !proposedFolds.add(fold)) {
                 continue;
             }
-            boolean recurring = countAtWordStart(dayFold, fold) >= DAY_MIN_OCCURRENCES;
-            if (!recurring) {
-                if (weekFold == null) {
-                    StringBuilder week = new StringBuilder();
-                    for (int i = 6; i >= 0; i--) {
-                        week.append(gatherNarrative(userId, day.minusDays(i))).append('\n');
-                    }
-                    weekFold = TextFold.fold(week.toString());
-                }
-                recurring = countAtWordStart(weekFold, fold) >= WEEK_MIN_OCCURRENCES;
-            }
-            if (!recurring) {
-                continue;
+            if (countAtWordStart(dayFold, fold) < DAY_MIN_OCCURRENCES) {
+                continue;   // nem szerepel a nap saját szövegében — kitalált név, nem jelölt
             }
             valid.add(new CandidateProposal(name, cleanQuotes(c.quotes())));
         }
