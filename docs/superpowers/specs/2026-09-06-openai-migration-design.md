@@ -70,8 +70,19 @@ per-call-kind routing, reasoning effort, a cap és a küszöbei. A repo ArchUnit
   Ez nem blokkoló (a GPT-5.6 mind megy Chat Completions-ön, a state/tool-orchestrációt a Mezo
   amúgy is maga kezeli). Ismert buktatók: reasoning modellen a `temperature` hibát dob;
   `maxCompletionTokens`, nem `maxTokens`; streaming usage csak `stream-usage=true` mellett.
-  **Nem igazolt:** van-e first-class `reasoningEffort` az `OpenAiChatOptions`-ben a 2.0.x-ben →
-  S4 spike.
+  **Igazolt (2026-09-06):** a `reasoningEffort` **first-class opció**, és a 2.0-s SDK-úton
+  helyesen megy ki. `OpenAiChatOptions` (main): `private final @Nullable String reasoningEffort;`
+  + `builder.reasoningEffort(String)`; `OpenAiChatModel.createRequest` a **v2.0.1 tagen**:
+  `if (requestOptions.getReasoningEffort() != null) { builder.reasoningEffort(ReasoningEffort.of(
+  requestOptions.getReasoningEffort().toLowerCase(Locale.ROOT))); }` — a hivatalos `openai-java`
+  SDK `ChatCompletionCreateParams`-ára képezve, `com.openai.models.ReasoningEffort` enummal.
+  A régi [#4804](https://github.com/spring-projects/spring-ai/issues/4804) szerializációs bug
+  (`"reasoning"` a `"reasoning_effort"` helyett) az 1.1.0-M4 saját Jackson-alapú request-recordját
+  érintette, **nem ezt az utat**. Egyetlen maradék apróság: a `ReasoningEffort.of(...)` ismeretlen
+  értéket is átenged, de ha az SDK enumja régebbi a GPT-5.6 `none`/`xhigh`/`max` szintjeinél, azt
+  az S4 első hívása méri ki.
+- **Spring AI 2.0.1** ([releases](https://github.com/spring-projects/spring-ai/releases), 2026-08-21)
+  — a projekt 2.0.0-n van (`pom.xml:32`). Patch release, bugfixekkel; a verzióemelés S2 része.
 - **Adatkezelés** — [data controls](https://developers.openai.com/api/docs/guides/your-data):
   API-adat alapból nem tanít; abuse-log max 30 nap; Modified Abuse Monitoring és ZDR egyaránt
   **előzetes OpenAI-jóváhagyáshoz kötött**, ahogy az EU data residency is. Beta előtt, valós
@@ -229,8 +240,10 @@ maradnak (embedding, audio, fallback).
 11. **A legacy `memory_embedding` táblának nincs verzió-oszlopa**, és minden író azt célozza;
     a `memory_vector` verziózott, de csak projekció. Amíg az embedding Geminin marad, ez nem
     aktív kockázat — de bármely jövőbeli embedding-csere előfeltétele.
-12. **Promóciós árazás 2026-11-21-ig.** A költségmodellt ekkor újra kell futtatni.
-13. Standard kapuk: CODEMAP-frissesség, contract-drift, ArchUnit (`feature_slices_are_cycle_free`
+12. **`spring-ai` 2.0.0 → 2.0.1** (S2). Ellenőrizni kell, hogy a `GeminiRoundUsageAdvisor.ORDER = 0`
+    kalibrációja és a "usage csak az utolsó chunkon" streaming-feltevés a patch után is áll.
+13. **Promóciós árazás 2026-11-21-ig.** A költségmodellt ekkor újra kell futtatni.
+14. Standard kapuk: CODEMAP-frissesség, contract-drift, ArchUnit (`feature_slices_are_cycle_free`
     frozen rule, `no_spring_value_annotation`), Testcontainers a backend-suite-hoz.
 
 ## 9. Beolvadó és kapcsolódó bd issue-k
@@ -244,8 +257,9 @@ maradnak (embedding, audio, fallback).
 
 ## 10. Nyitott kérdések
 
-1. **Reasoning effort** átadható-e a Spring AI 2.0.0 `OpenAiChatOptions`-ből? (S4 első lépése.)
-   Ez a migráció legvalószínűbb technikai kockázata és egyben a legolcsóbb minőség-kar.
+1. ~~Reasoning effort átadható-e a Spring AI 2.0.0 `OpenAiChatOptions`-ből?~~ **Eldöntve
+   (2026-09-06): igen**, first-class opció, a v2.0.1 forrásában ellenőrizve (§3). A spike elmarad,
+   S4 ennyivel kisebb: a reasoning effort egy config-kulcs, nem adapter-réteg.
 2. ~~Fail-closed vagy bypass, ha az `llm-log` ki van kapcsolva?~~ **Eldöntve (L1):** a kapcsoló alapértelmezése `true` lesz S1-ben, tehát a cap mindig lát. Aki kikapcsolja, a capet is kikapcsolja — ez explicit, dokumentált következmény.
 3. **Vision A/B**: a `meal_draft`/`sleep_shot`/`pantry_photo` képi útvonalak Lunán vagy Geminin?
    Amíg nincs mérés, a config Geminin hagyja. A `meal_draft` prompt közben szélesebb JSON-t kér

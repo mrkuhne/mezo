@@ -13,7 +13,7 @@ Olvasd el ebben a sorrendben, mielőtt bármit csinálsz:
 1. `bd prime`, majd `bd show mezo-ozri` és a hat gyerek (`mezo-ozri.1` … `.6`) — a leírásuk
    tartalmazza a konkrét fájl:sor horgonyokat és a csapdákat.
 2. `docs/superpowers/specs/2026-09-06-openai-migration-design.md` — a teljes design: döntési
-   tábla (P1/M1/M2/E1/A1/R1/C1/C2/Q1/L1), unit economics, config-vázlat, 13 pontos csapdalista.
+   tábla (P1/M1/M2/E1/A1/R1/C1/C2/Q1/L1), unit economics, config-vázlat, 14 pontos csapdalista.
 3. `AGENTS.md` és `CLAUDE.md` — házirend: beads, git-flow, docs-mandátum, teszt-fegyelem.
 
 Válaszd ki a következő nyitott szeletet `bd ready` alapján (a sorrend: .1 → .2 → .3 → .4/.5 → .6;
