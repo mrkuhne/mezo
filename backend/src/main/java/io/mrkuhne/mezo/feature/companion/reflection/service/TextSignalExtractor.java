@@ -109,7 +109,11 @@ public class TextSignalExtractor {
         try {
             return objectMapper.readValue(raw.substring(start, end + 1), Raw.class);
         } catch (Exception e) {
-            log.warn("Signal answer was not parseable JSON — dropping: {}", raw, e);
+            // NEVER log `raw` in full: the model's answer mirrors the user's own entry, names
+            // included. Length + a short prefix is enough to tell "empty", "prose" and "truncated
+            // JSON" apart, which is all this branch has to diagnose.
+            log.warn("Signal answer was not parseable JSON — dropping ({} chars, starts with '{}')",
+                    raw.length(), raw.substring(0, Math.min(40, raw.length())), e);
             return null;
         }
     }

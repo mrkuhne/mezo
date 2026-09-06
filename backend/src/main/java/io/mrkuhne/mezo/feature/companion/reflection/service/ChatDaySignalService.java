@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -24,7 +23,9 @@ import org.springframework.transaction.annotation.Transactional;
  * day, which is what every series is keyed on.
  *
  * <p>The synthetic source id is a stable name-based UUID of {@code userId + ":" + day}, so a day
- * that gains turns later re-versions its own signal instead of creating a second row.
+ * that gains turns later re-versions its own signal instead of creating a second row. That only
+ * holds because {@code TextSignalCatchUpService} offers every day UNCONDITIONALLY — a "skip days
+ * that already have a chat_day signal" gate would freeze the first extraction forever.
  */
 @Service
 @RequiredArgsConstructor
@@ -59,10 +60,5 @@ public class ChatDaySignalService {
     /** Stable per (user, day) — the identity that makes a re-extraction a NEW VERSION, not a new row. */
     public static UUID chatDaySourceId(UUID userId, LocalDate day) {
         return UUID.nameUUIDFromBytes((userId + ":" + day).getBytes(StandardCharsets.UTF_8));
-    }
-
-    /** Kept for the catch-up's convenience — the days it should offer, newest finished day first. */
-    public static List<LocalDate> finishedDays(LocalDate today, int days) {
-        return java.util.stream.IntStream.rangeClosed(1, days).mapToObj(today::minusDays).toList();
     }
 }

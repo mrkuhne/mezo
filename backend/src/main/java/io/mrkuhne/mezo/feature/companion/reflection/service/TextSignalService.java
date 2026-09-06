@@ -14,6 +14,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -93,7 +94,11 @@ public class TextSignalService {
         return Optional.of(saved);
     }
 
-    /** Owner-scoped suppression — used by the catch-up and by callers that already know the owner. */
+    /**
+     * Owner-scoped suppression, for callers that already know the owner. No production caller yet —
+     * the delete listeners cannot resolve an owner and go through {@link #suppressBySource}; this is
+     * the safe, filtered variant slices 2–6 (and any user-initiated purge) should reach for.
+     */
     @Transactional
     public void suppress(UUID userId, String sourceKind, UUID sourceId) {
         textSignalRepository
@@ -128,7 +133,7 @@ public class TextSignalService {
     }
 
     private void enrich(UUID userId, String sourceKind, UUID sourceId,
-                        java.util.List<String> people, java.util.List<String> topics) {
+                        List<String> people, List<String> topics) {
         memoryItemRepository.findByCreatedByAndSourceKindAndSourceId(userId, sourceKind, sourceId)
                 .ifPresent(item -> {
                     if (item.getPeople().equals(people) && item.getTopics().equals(topics)) {
@@ -151,7 +156,11 @@ public class TextSignalService {
         }
     }
 
-    /** Package-visible read for the catch-up: does this source already have an up-to-date signal? */
+    /**
+     * Read for the catch-up: does this source already have an up-to-date signal? It decides whether
+     * a re-offer COUNTS as a write — never whether the source is offered at all (an up-to-date
+     * source is still re-offered, which is what re-applies a wiped enrichment).
+     */
     @Transactional(readOnly = true)
     public boolean isUpToDate(UUID userId, String sourceKind, UUID sourceId, String text) {
         if (text == null || text.isBlank()) {

@@ -11,7 +11,7 @@ import io.mrkuhne.mezo.feature.companion.memory.entity.MemoryItemEntity;
 import io.mrkuhne.mezo.feature.companion.memory.repository.MemoryItemRepository;
 import io.mrkuhne.mezo.feature.companion.reflection.entity.TextSignalEntity;
 import io.mrkuhne.mezo.feature.companion.reflection.repository.TextSignalRepository;
-import io.mrkuhne.mezo.feature.companion.reflection.service.TextSignalService;
+import io.mrkuhne.mezo.feature.companion.reflection.service.TextSignalCatchUpService;
 import io.mrkuhne.mezo.feature.journal.entity.JournalEntryEntity;
 import io.mrkuhne.mezo.feature.journal.repository.JournalEntryRepository;
 import io.mrkuhne.mezo.feature.journal.service.GratitudeService;
@@ -37,7 +37,7 @@ class TextSignalListenerIT extends AbstractIntegrationTest {
     @Autowired private GratitudeService gratitudeService;
     @Autowired private JournalEntryRepository journalEntryRepository;
     @Autowired private TextSignalRepository textSignalRepository;
-    @Autowired private TextSignalService textSignalService;
+    @Autowired private TextSignalCatchUpService catchUpService;
     @Autowired private MemoryItemRepository memoryItemRepository;
     @Autowired private UserPopulator userPopulator;
 
@@ -75,18 +75,24 @@ class TextSignalListenerIT extends AbstractIntegrationTest {
         // projection listener races this one and its writer RESETS people/topics
         // (MemoryProjectionWriter:75-76), so whichever lands last wins. What the design actually
         // guarantees is that the heal path restores it — a re-offer of an UNCHANGED text costs no
-        // LLM call and re-applies the enrichment. That is exactly what the nightly catch-up does,
-        // and it is what is asserted here, once the projection row itself exists.
+        // LLM call and re-applies the enrichment. The heal is driven here through the REAL
+        // production seam, TextSignalCatchUpService.catchUp (Task 2's job calls exactly this) —
+        // calling TextSignalService.record directly would assert the heal through a path production
+        // never takes. Everything after the catch-up sits INSIDE the awaited block, so a projection
+        // landing late re-wipes into the next poll instead of failing the test.
         await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(memoryItemRepository
                 .findByCreatedByAndSourceKindAndSourceId(owner, TextSignalEntity.SOURCE_JOURNAL, entryId))
                 .isPresent());
-        assertThat(textSignalService.record(owner, TextSignalEntity.SOURCE_JOURNAL, entryId, day, text))
-                .get().extracting(TextSignalEntity::getVersion).isEqualTo(1); // no new version
-        MemoryItemEntity item = memoryItemRepository
-                .findByCreatedByAndSourceKindAndSourceId(owner, TextSignalEntity.SOURCE_JOURNAL, entryId)
-                .orElseThrow();
-        assertThat(item.getPeople()).containsExactly("Anna");
-        assertThat(item.getTopics()).containsExactly("kapcsolatok");
+        await().atMost(Duration.ofSeconds(10)).untilAsserted(() -> {
+            assertThat(catchUpService.catchUp(owner, LocalDate.now())).isZero(); // no new version
+            assertThat(textSignalRepository.findByCreatedByAndSourceKindAndSourceIdAndDeletedFalse(
+                    owner, TextSignalEntity.SOURCE_JOURNAL, entryId)).hasSize(1);
+            MemoryItemEntity item = memoryItemRepository
+                    .findByCreatedByAndSourceKindAndSourceId(owner, TextSignalEntity.SOURCE_JOURNAL, entryId)
+                    .orElseThrow();
+            assertThat(item.getPeople()).containsExactly("Anna");
+            assertThat(item.getTopics()).containsExactly("kapcsolatok");
+        });
     }
 
     @Test

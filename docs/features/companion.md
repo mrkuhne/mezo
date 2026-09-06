@@ -964,13 +964,24 @@ holds an LLM-extracted `mood`/`energy`/`stress` (1..5), a `confidence`, and the 
   zero LLM cost, which is exactly what the nightly catch-up's re-offer triggers. So the enrichment is
   eventually-correct within a night, not guaranteed on the first write — and a missing `memory_item`
   row (the projection has not run yet) is the same story: no enrichment this round, healed by the
-  next catch-up.
-- **Catch-up.** `TextSignalCatchUpService.catchUp(userId, today)` re-offers the last
-  `catch-up-days` finished days — every journal/gratitude row whose newest signal is missing or whose
-  hash no longer matches, plus every day without a `chat_day` signal — and returns how many rows it
-  wrote. An entry written while the LLM was down, or edited while the listener was off, heals itself;
-  a second run of the same night costs nothing because `record` short-circuits on an unchanged hash.
-  Task 2's nightly job is the only production caller.
+  next catch-up. That heal is only real because the catch-up offers **every** source unconditionally
+  (see below); a staleness gate in front of the re-offer would have made the race state — row
+  present, hash unchanged, `people`/`topics` wiped — the one input it filtered out, and since
+  `MemoryProjectionWriter` also short-circuits on an unchanged hash, nothing else would ever restore
+  it (review finding).
+- **Catch-up — everything is re-offered, the hash decides.**
+  `TextSignalCatchUpService.catchUp(userId, today)` walks the last `catch-up-days` finished days and
+  offers **every** journal row, gratitude row and day to `record` / `ChatDaySignalService.extractDay`
+  **without any "is it already up to date?" gate**, because `record` is hash-idempotent: an unchanged
+  text costs no LLM call and writes no row, but it DOES re-apply the `memory_item` enrichment, and an
+  unconditionally-offered `chat_day` is what lets a day whose conversation continued after the first
+  extraction re-version instead of keeping a stale signal forever. `isUpToDate` survives only to
+  decide whether an offer COUNTED as a write, so the returned number is real writes and an
+  all-unchanged night returns 0. An entry written while the LLM was down, or edited while the
+  listener was off, heals itself; a failing source is caught and logged per source, so one bad row
+  never aborts the night. `TextSignalCatchUpIT` pins all four legs (missing ⇒ extracted, stale hash
+  ⇒ new version, unchanged hash ⇒ enrichment restored with no new version, continued chat day ⇒
+  re-versioned). Task 2's nightly job is the only production caller.
 
 ## 2. User-facing behavior
 
@@ -5979,7 +5990,7 @@ Carried over from V0.1 (`mezo-fnnq.1`): `CompanionLlmFakeIT` (fake picked + echo
 (**no `CompanionLlm` bean when the switch is off** — `ObjectProvider.getIfAvailable() == null`),
 `CompanionPropertiesIT` (llm tiers + the V0.2 `chat.*` window/title bindings).
 
-**Reflexió S1 — text signals (`mezo-eq85.1`).** Four tests, one per seam.
+**Reflexió S1 — text signals (`mezo-eq85.1`).** Five tests, one per seam.
 `feature/companion/reflection/TextSignalExtractorTest` is a pure unit test over a hand-written
 `CompanionLlm` stub: valid JSON parses, `unsure` drops the numbers, an unknown topic is dropped, an
 overshooting number is clamped to 1..5, a non-JSON answer and a throwing provider both yield an
@@ -5989,7 +6000,15 @@ would bypass the events) under `@ActiveProfiles("companion-fake")` and awaits th
 listener: a save writes the signal and refreshes `memory_item.people`/`.topics`, an edit writes
 `version 2` alongside — not over — `version 1`, a delete soft-deletes every signal of the source,
 and `FakeCompanionLlm.SIGNAL_FAIL` proves a failing extraction leaves the entry intact and writes
-nothing. `TextSignalListenerSwitchOffIT` pins the structural half (the `PatternDetectionJobSwitchOffIT`
+nothing. The enrichment half is asserted through `TextSignalCatchUpService.catchUp` — the seam
+production actually runs — and every assertion after it sits INSIDE the awaited block, so a late
+projection re-wipe is polled through instead of failing the test (review finding).
+`TextSignalCatchUpIT` owns the catch-up itself, with sources made by the POPULATORS so no listener
+has already written the signal: a missing signal is extracted, an edited source re-versions, an
+UNCHANGED source restores a wiped `memory_item.people`/`.topics` while writing no new version and
+returning 0, a chat day that gains later turns re-versions (and a third unchanged run writes
+nothing), and a `SIGNAL_FAIL` source does not stop the same night's gratitude row from landing.
+`TextSignalListenerSwitchOffIT` pins the structural half (the `PatternDetectionJobSwitchOffIT`
 shape): reflection off ⇒ listener, service AND extractor beans are all absent.
 `TextSignalSeriesIT` covers the series rules against real Postgres — the per-day mean over `sure`
 rows only, an all-unsure day being absent rather than zero, `TEXT_SOCIAL_CONTACT`'s binary presence,
