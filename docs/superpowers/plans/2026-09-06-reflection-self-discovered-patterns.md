@@ -1722,7 +1722,166 @@ git add -A && git commit -m "feat(fe): laborfüzet — hypothesis state card, te
 
 ---
 
-## Final integration gate
+---
+
+## Part B — the memory platform everywhere AI speaks (`mezo-eq85.7` … `mezo-eq85.12`)
+
+**Product-owner decision (2026-09-06):** every AI surface whose answer should reflect the
+user's history adopts the memory platform now, before the `mezo-6dii.9` real-Gemini gate has
+run. Recorded on `mezo-6dii` and `mezo-eq85`; spec §8b/§9.
+
+**Inventory basis:** 57 LLM call sites on `main` at `725cf84a0`. Only chat touches the platform
+(SHADOW). Three groups: (A) surfaces that run the OLD pgvector path — real swaps; (B) surfaces
+that read "the last N daily summaries" straight from tables — the platform block is ADDED
+beside `KnowledgeFactService.renderPromptBlock`; (D) surfaces with no memory today where an
+emlék makes the answer personal. Surfaces deliberately left alone: daily summary, period
+consolidation (they are memory SOURCES — feeding them memory is circular), activity classify,
+transcription, sleep shot, pantry photo/scrape, turn verdict, hello smoke.
+
+### Shared seam for Part B (built in Task 7, reused by 8–12)
+
+`companion/memory/service/MemoryContextBlock.java`:
+
+```java
+@Slf4j @Service @RequiredArgsConstructor
+@ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
+public class MemoryContextBlock {
+    private final MemoryContextService memoryContextService;
+    private final MemoryPlatformProperties properties;
+    private final LlmCallContextHolder llmCallContextHolder;
+
+    /** Rendered `[Emlékek]` block for a non-chat consumer — "" on any failure, never throws.
+     *  Wraps the retrieval in an LlmCallContext so the embedding/rewrite/rerank calls are billed
+     *  to the CALLING surface, not to "memory". */
+    public Rendered render(UUID userId, ConsumerPolicy policy, String query, LocalDate asOf, boolean deep,
+                           String feature, String operation, UUID entityId) {
+        MemoryPlatformProperties.PolicyLimits limits = properties.policies().limitsFor(policy);
+        if (query == null || query.isBlank() || !limits.enabled()) { return Rendered.EMPTY; }
+        try {
+            MemoryRequest request = new MemoryRequest(userId, policy, query, List.of(), asOf, limits.maxTokens(), null, deep);
+            MemoryContext context = llmCallContextHolder.runWith(
+                new LlmCallContext(feature, operation + "_memory", "policy", entityId), () -> memoryContextService.retrieve(request));
+            return new Rendered(context.promptBlock() == null ? "" : context.promptBlock(), context.refs(), context.retrievalRunId());
+        } catch (RuntimeException e) {
+            log.warn("Memory context for {}/{} failed — surface continues without [Emlékek]", feature, policy, e);
+            return Rendered.EMPTY;
+        }
+    }
+    public record Rendered(String block, List<RefsEnvelope.Ref> refs, UUID retrievalRunId) {
+        public static final Rendered EMPTY = new Rendered("", List.of(), null);
+    }
+}
+```
+
+`MemoryPlatformProperties.Policies` grows one `PolicyLimits(boolean enabled, int candidateLimit, int maxTokens, boolean rerank, boolean deep)` per policy
+(`reflection` from Task 3 keeps its shape; add `morningBriefing`, `weeklyMemoir`, `predictionEvidence`, `similarDays`, `characterEvidence`, `extraction`, `personalContext`) and `limitsFor(ConsumerPolicy)`.
+`ConsumerPolicy` grows `SIMILAR_DAYS`, `CHARACTER_EVIDENCE`, `EXTRACTION`, `PERSONAL_CONTEXT`.
+Each policy is individually switchable (`enabled`), so a surface can be rolled back by config
+without code. Every surface that adds the block also adds the returned `refs` to its
+`HIVATKOZÁS-JELÖLTEK` list (where the surface has one) so the model can cite an emlék and the
+FE ref chips show it.
+
+Task 3's `ReflectionMemoryGateway` is refactored in Task 7 into a thin caller of
+`MemoryContextBlock` (same public signature), so reflection and Part B share one seam.
+
+Tests common to every Part-B task: (1) the surface's existing generator IT gains a case where a
+`memory_item` + `memory_vector` seeded by `MemoryItemPopulator` appears in the fake's recorded
+payload as an `[Emlékek]` line; (2) `FakeEmbeddingAdapter.FAIL_EMBED` in the query ⇒ the
+surface still produces its row; (3) a `memory_retrieval_run` row with the surface's policy
+exists after generation; (4) the policy's `enabled: false` ⇒ no run row, payload unchanged.
+
+### Task 7: `MemoryContextBlock` + morning, midday/evening, sleep and weight messages (`mezo-eq85.7`)
+
+**Files:** create `companion/memory/service/MemoryContextBlock.java`; modify
+`companion/memory/config/MemoryPlatformProperties.java`, `dto/ConsumerPolicy.java`,
+`service/MemoryContextService.java` (candidate limit + token budget via `limitsFor`),
+`service/LlmMemoryReranker.java` (rerank when `limitsFor(policy).rerank()`), `application.yml`;
+refactor `companion/reflection/service/ReflectionMemoryGateway.java`; modify
+`proactive/service/CompanionMessageGenerator.java` (`generateMorning:217`, `generateSleepReaction:~329`,
+`generateWeightReaction:~382`, `generateWindow:~438`); tests `MemoryContextBlockIT`,
+`CompanionMessageGeneratorMemoryIT`, existing `ProactiveFeed*IT` still green.
+
+**Steps:**
+- [ ] Failing `MemoryContextBlockIT`: seeded item ⇒ non-empty block + run row with policy `MORNING_BRIEFING`; `FAIL_EMBED` ⇒ `Rendered.EMPTY`; policy disabled ⇒ `EMPTY` and no run row.
+- [ ] Implement the block, the properties (`policies.morning-briefing: {enabled: true, candidate-limit: 20, max-tokens: 600, rerank: false, deep: false}` and the other six with their spec values: memoir 30/1200/rerank true/deep true; prediction 30/800/rerank true; similar-days 30/600; character-evidence 30/1200/rerank true/deep true; extraction 10/300; personal-context 15/400), the `limitsFor` switch, and wire `MemoryContextService` + reranker to it. Refactor `ReflectionMemoryGateway` to delegate.
+- [ ] Failing `CompanionMessageGeneratorMemoryIT`: morning payload contains `[Emlékek]` and the ref candidates include the memory ref; sleep/weight/window likewise.
+- [ ] In each generator, after `knowledgeFactService.renderPromptBlock(userId)`: `MemoryContextBlock.Rendered mem = memoryContextBlock.render(userId, ConsumerPolicy.MORNING_BRIEFING, query, date, false, "proactive_feed", "<kind>", null)`, append `mem.block()`, add `mem.refs()` to `candidates`. Query per kind: morning = `contextSnapshotAssembler.renderWithoutBiometrics(...)` first 400 chars + "ma: " + today's plan line; sleep = "alvás " + last sleep log line; weight = "súly " + trend line; window = the latest daily-summary narrative first 300 chars. (`ObjectProvider<MemoryContextBlock>` — the bean is absent when companion is off.)
+- [ ] Verify (`CompanionMessageGeneratorMemoryIT`, `ProactiveFeedApiIT`, `MemoryContextServiceIT`, `ReflectionMemoryGatewayIT`, `ArchitectureTest`), docs (companion.md "Memória mindenhol S7", proactive.md gathers), CODEMAP, commit `feat(proactive): morning/window/sleep/weight messages read the memory platform (mezo-eq85.7)`, PR, merge.
+
+### Task 8: memoir, weekly review, weekly suggestion (`mezo-eq85.8`)
+
+**Files:** modify `proactive/service/MemoirGenerator.java` (`gather:167`, after `:260`), `WeeklyReviewGenerator.java` (`:145`, after `:248`), `WeeklySuggestionGenerator.java` (`:78`, after the facts block); tests `MemoirGeneratorMemoryIT`, `WeeklyReviewGeneratorMemoryIT`, `WeeklySuggestionGeneratorMemoryIT`.
+
+**Steps:**
+- [ ] Failing ITs (the four common cases each; policy `WEEKLY_MEMOIR`, `deep=true`).
+- [ ] Query = the week's daily-summary narratives joined (first 800 chars) + `"a hét: " + weekStart`; `asOf` = the week's Sunday; append block after the facts block; refs into the memoir/weekly anchor candidates (both generators number their refs — extend the list, keep indexes stable).
+- [ ] Verify (`MemoirGeneratorIT`, `WeeklyReviewGeneratorIT`, `WeeklySuggestionIT` + the three new), docs, commit `feat(proactive): memoir, weekly review and suggestion read the memory platform (mezo-eq85.8)`, PR, merge.
+
+### Task 9: prediction, experiment, challenge, diagnosis (`mezo-eq85.9`)
+
+**Files:** modify `proactive/service/PredictionGenerator.java` (`gather:108`, after `:160`), `ExperimentProposalGenerator.java` (`:108`), `ChallengeGenerator.java` (`:127`), `DiagnosisGenerator.java` / `FatigueEvidenceCollector.gather:104`; tests one `*MemoryIT` per generator.
+
+**Steps:**
+- [ ] Failing ITs (policy `PREDICTION_EVIDENCE`; diagnosis uses `deep=true`).
+- [ ] Query = the candidate patterns' titles joined (prediction/experiment/challenge) or the fatigue evidence summary line (diagnosis); block appended after the facts block (diagnosis: after the `knowledge_fact` raw block — replace that raw read with `renderPromptBlock` while there, one fewer bespoke fact renderer). Refs into each generator's candidate list.
+- [ ] Verify, docs, commit `feat(proactive): prediction, experiment, challenge, diagnosis read the memory platform (mezo-eq85.9)`, PR, merge.
+
+### Task 10: similar days (tool + Memória tab), character bootstrap/monthly, quarterly, profile, extraction, audit tags (`mezo-eq85.10`)
+
+**Files:** modify `companion/tools/MemoryTools.java` (`findSimilarPastDays:52`), `companion/service/MemoryObservatoryService.java` (`similarDays:187`, `overview:71`, `summaries:165`), `character/service/CharacterHistoryReads.java` (`gatherHistory:191`), `character/service/CharacterMonthlyService.java` (`:126`), `companion/quarterly/service/QuarterlyReviewService.java` (`:128`), `companion/profile/service/ProfileAssembler.java` (`:143`), `companion/graph/service/LifeEventExtractionService.java` (`:139`), `companion/service/PersonExtractionService.java` (`:173`), `companion/memory/service/LlmMemoryQueryRewriter.java:28` + `LlmMemoryReranker.java:83` (wrap in `LlmCallContext("companion_memory", "rewrite"|"rerank", …)`); contract `api/feature/companion/companion.yml` `MemorySimilarDayResponse` (add `retrievalRunId`, `memoryItemId` nullable) — regenerate; FE `data/insights/memoryApi.ts` passes the new fields through; tests `MemoryToolsSimilarDaysIT`, `MemoryObservatorySimilarDaysIT`, `CharacterBootstrapMemoryIT`, `QuarterlyReviewMemoryIT`, `ProfileAssemblerMemoryIT`, `LifeEventExtractionMemoryIT`, `LlmMemoryCallContextIT`.
+
+**Steps:**
+- [ ] Failing `MemoryToolsSimilarDaysIT` + `MemoryObservatorySimilarDaysIT`: with only `memory_item`/`memory_vector` seeded (no `memory_embedding`), the tool and the endpoint return the seeded days; `memory_retrieval_run` has policy `SIMILAR_DAYS`.
+- [ ] `MemoryTools.findSimilarPastDays` and `MemoryObservatoryService.similarDays` build a `MemoryRequest(SIMILAR_DAYS, query, deep=false)` through `MemoryContextService.retrieve` and map `MemoryContextItem`s (source kind `daily_summary` only — filter in the mapping; the policy's forbidden kinds list is the second guard) to the existing `SimilarDay` shape. `MemoryRecallService` stays for Task 11's retirement, unused after this step.
+- [ ] Observatory `overview`/`summaries` count `memory_item`/`memory_vector` (serving version) instead of `memory_embedding`; the FE copy on the Memória tab says "vetítés" where it said "beágyazás" (insights.md §2.9).
+- [ ] Failing `CharacterBootstrapMemoryIT`, `QuarterlyReviewMemoryIT`, `ProfileAssemblerMemoryIT`: policy `CHARACTER_EVIDENCE`, `deep=true`; character bootstrap's `gatherHistory` gains the block after the daily-summary narratives; monthly deep read passes the dimension's claims text as the query; quarterly passes the quarter's period-summary text; profile passes the rollup digest. Character and quarterly reach the block through the existing `CharacterPromptSource`-style port direction (character → companion is allowed; inject `MemoryContextBlock` directly).
+- [ ] Failing `LifeEventExtractionMemoryIT`: policy `EXTRACTION`, query = the day's narrative; the block is appended as `KORÁBBI KAPCSOLÓDÓ EMLÉKEK` so the extractor can tell a recurring event from a new one; same for `PersonExtractionService`.
+- [ ] `LlmMemoryCallContextIT`: a chat turn in `NEW` mode leaves `llm_log_history` rows for rewrite/rerank tagged `companion_memory`, not `UNKNOWN`.
+- [ ] Verify, docs (companion.md tool + observatory notes, character.md bootstrap gather, insights.md §2.9), CODEMAP, commit `feat(companion): similar days, character, quarterly, profile and extraction read the memory platform; memory calls tagged (mezo-eq85.10)`, PR, merge.
+
+### Task 11: retire the OLD path (`mezo-eq85.11`)
+
+**Precondition:** Tasks 3, 7–10 merged; chat served in `NEW` for at least 7 days with the
+audit showing zero `MEMORY_RETRIEVAL_ALL_FAILED_FALLBACK_OLD` rows (query
+`memory_retrieval_run` by `error_code`). If the audit shows fallbacks, stop and report.
+
+**Files:** delete `companion/service/PromptMemoryAssembler.java`, `MemoryRecallService.java`,
+`companion/repository/MemoryEmbeddingAnnQuery.java` (and the `MemoryEmbeddingRepository` ANN
+methods), the `OLD`/`SHADOW` branches of `ChatMemoryContextAdapter` + `MemoryShadowRunner`
+(keep `RetrievalServingMode` with `NEW` only and a startup warning when the env still says
+`OLD`/`SHADOW`); `MemoryEmbeddingWriter` keeps producing the `memory_item` projection but stops
+writing `memory_embedding` (rename to `MemoryProjectionSource` if the name misleads);
+`memory_embedding` table: NOT dropped in this slice — a follow-up migration after one release
+(`mezo-eq85.11` notes the ticket); `AmbientRecallEvalIT`, `PromptMemoryAssemblerIT` deleted;
+`MemoryRetrievalGeminiEvalIT` (PR #499) adjusted if its OLD baseline is needed — **coordinate:
+merge #499 first or rebase it**; the `mezo.companion.ambient-recall.*` and `recall.*` config
+blocks removed; docs: RAG spec §9/§11.D rewritten to the delivered state, companion.md
+"OLD path retired", CODEMAP.
+
+**Steps:**
+- [ ] Audit query + report (stop condition above).
+- [ ] Failing `ChatMemoryContextAdapterIT`: `NEW` serves from the platform; an env `SHADOW` value logs the warning and still serves `NEW`.
+- [ ] Deletions + config removal; `ArchitectureTest`; full focused set (`ChatServiceIT`, `CompanionStreamApiIT`, `MemoryContextServiceIT`, `MemoryToolsSimilarDaysIT`, `NoteVectorLifecycleIT` adjusted to `memory_item`).
+- [ ] Verify, docs, commit `refactor(companion): retire the OLD pgvector recall path; chat and tools serve from the memory platform only (mezo-eq85.11)`, PR, merge.
+
+### Task 12: personal context for the domain assistants (`mezo-eq85.12`)
+
+**Files:** modify `companion/service/MesoReviewGenerator.java` (`:132`) and `companion/llm/MesoPlanLlmAdapter.java` (`:56`), `companion/llm/HabitSuggestLlmAdapter.java` (`:130`), `companion/llm/LifeGoalProposeLlmAdapter.java` (`:87`), `companion/service/DayReviewService.prose` (`:297`), `meal/service/MealCoachService.java` (`:165`), `recipe/service/RecipeWorkshopService.java` (`:84`), `proactive/service/AdviceProseGenerator.java` (`:56`), `proactive/service/CompanionMessageGenerator.generatePeopleObservation` (`:638`), `quest/service/QuestFlavor.java` (`:71`); a companion-owned port `companion/service/PersonalContextSource.java` (`String render(UUID userId, String query)`) implemented by `MemoryContextBlock`-backed `PersonalContextAssembler` in companion so `meal`, `recipe`, `quest` (which must not import `companion.memory` internals — check `ArchitectureTest`'s allow-list for those slices) reach it through `ObjectProvider<PersonalContextSource>`; tests one `*PersonalContextIT` per surface.
+
+**Steps:**
+- [ ] Failing ITs (policy `PERSONAL_CONTEXT`, `deep=false`, `rerank=false`, 400 tokens): each surface's payload gains a `[Rólad — emlékek]` block when an item matches the query; the deterministic outputs (day-review numbers, meal targets, quest XP) are byte-identical with and without the block (assert on the parsed structures, not only the prose).
+- [ ] Queries: meso review/plan = the cycle's focus + muscle groups + the last review's headline; habit suggest = the chain names + "szokás, amit már próbáltam"; life goal = the goal title + why; day review = the day's evaluation headline; meal coach = the meal's items + window; recipe workshop = the ingredient list; advice prose = the `adviceKey` label + facts; people = the person names of the day; quest flavor = the quest titles. Cheap-tier surfaces keep the block under 400 tokens; the interactive ones (meal coach, recipe workshop) run the retrieval with the policy's `candidate-limit: 15` and no rewrite (`MemoryRequest.shortConversationHistory = List.of()` already skips the rewrite).
+- [ ] Verify, docs (each surface's feature doc: one line "olvassa a memória-platformot (`PERSONAL_CONTEXT`)"), CODEMAP, commit `feat: personal memory context for meso, habit, life-goal, day review, meal, recipe, advice, people and quest prose (mezo-eq85.12)`, PR, merge.
+
+### Part B final gate
+
+- Every policy has a `memory_retrieval_run` row in the last 24 h after one day of normal use; no policy shows more than 5% `error_code` rows.
+- The Memória tab's overview counts come from `memory_item`/`memory_vector`.
+- Spec §8b and RAG spec §9/§11.D reflect the delivered order; PR #499's eval either ran or its blocker is still the API key, stated on `mezo-6dii.9`.
+
+---
+
+## Final integration gate (Part A, `mezo-eq85.1`–`.6`)
 
 Before closing `mezo-eq85`:
 

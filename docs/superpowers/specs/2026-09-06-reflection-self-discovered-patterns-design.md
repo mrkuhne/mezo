@@ -418,14 +418,37 @@ Each is one bd issue under `mezo-eq85`, one `feat/` branch, one self-PR.
 6. **FE laborfüzet** — `PatternDetailPage` sections per the prototype; pair-detail contract
    widening; `lifecycle.ts` buckets for `refuted`/`dormant`; Minták catalogue status filter.
 
+## 8b. Part B — the memory platform on every AI surface that should remember
+
+**Product-owner decision (2026-09-06, after the Part-A plan was merged):** "szeretném az új RAG
+Memory rendszert bevezetni MINDENHOVA, ahol AI van." Inventory of the 57 LLM call sites on
+`main` (`725cf84a0`): only chat touches the platform, in SHADOW. Three groups adopt it; one is
+deliberately left alone.
+
+| Group | Surfaces | Policy | Slice |
+|---|---|---|---|
+| A — OLD pgvector path, real swap | chat (`NEW`), `find_similar_past_days` tool, Memória tab similar-days/overview/summary, OLD embedding writer | `CHAT_AMBIENT`, `SIMILAR_DAYS` | .3, .10, .11 |
+| B — narrative context read straight from tables, block ADDED | morning, midday/evening, sleep, weight messages; memoir, weekly review, weekly suggestion; prediction, experiment, challenge, diagnosis; hypothesis/quick notice; character bootstrap + monthly, quarterly season candidates, profile assembler; life-event and person extraction | `MORNING_BRIEFING`, `WEEKLY_MEMOIR`, `PREDICTION_EVIDENCE`, `REFLECTION`, `CHARACTER_EVIDENCE`, `EXTRACTION` | .7, .8, .9, .3/.4, .10 |
+| D — no memory today, an emlék makes it personal | meso review + plan, habit suggest, life-goal propose, day-review prose, meal coach, recipe workshop, advice-card prose, people message, quest flavour | `PERSONAL_CONTEXT` | .12 |
+| — left alone (memory SOURCES or machine tasks) | daily summary, period consolidation, activity classify, transcription, sleep shot, pantry photo/scrape, turn verdict, hello smoke | — | — |
+
+Rules for every adopting surface: the block is appended beside the confirmed-facts block; the
+surface's deterministic outputs are unchanged with or without the block; retrieval failure
+degrades to an empty block; each policy is switchable in config; every retrieval is audited
+with the calling surface's `LlmCallContext`; the returned refs join the surface's citation
+candidates. The OLD path (`PromptMemoryAssembler`, `MemoryRecallService`, `memory_embedding`
+writes) is retired in slice .11 only after chat has served `NEW` for a week without audited
+fallbacks. Details and per-surface queries: the plan's Part B.
+
 ## 9. Amendment to the RAG platform spec
 
 `2026-09-04-shared-rag-memory-platform-design.md` §11.D gains: *"Reflection (`REFLECTION`
 policy, `mezo-eq85`) is an offline consumer whose output passes its own hypothesis gate and never
 serves a user-facing latency path; it may adopt the platform before the chat gate, behind
 `mezo.companion.reflection.enabled`."* §9's promotion order is unchanged for briefing, memoir
-and prediction. The product-owner decision to serve chat in `NEW` before `mezo-6dii.9` is
-recorded on `mezo-6dii` and `mezo-eq85`.
+and prediction. The product-owner decisions to serve chat in `NEW` before `mezo-6dii.9` and to adopt the
+platform on every remembering surface (§8b) before the gate are recorded on `mezo-6dii` and
+`mezo-eq85`; the §9 rollout order of the RAG spec is superseded by §8b's slice order.
 
 ## 10. Explicitly deferred
 
