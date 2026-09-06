@@ -286,9 +286,57 @@ class FlagFactRendererTest {
                 new FlagPayloadEnvelope.MealRhythmDrift("slot_drift", "dinner", "Vacsora",
                     14, 13, 10, 13, 12, "19:00", "21:00", 120, 90, 0.92,
                     null, null, null, null));
+            case FlagKey.ENERGY_DIP_MEAL_TIMING -> FlagPayloadEnvelope.energyDipMealTiming(
+                new FlagPayloadEnvelope.EnergyDipMealTiming("lunch_time",
+                    "earlier_lunch", "later_lunch", 30, 12, 10, 6, 6, 4,
+                    8.0, 5.0, 3.0, 1.0, 1.0, 0.70, "A", "12:00", "14:30"));
             default -> throw new AssertionError(
                 "no FlagFactRendererTest fixture for live flag key '" + flagKey + "' — "
                     + "add both a fixture here and a render() branch in FlagFactRenderer");
         };
+    }
+
+    /** Round 2 S6 (mezo-d58h.7.7): the lines name BOTH group sizes on purpose — the reader has to
+     *  be able to see how thin the sample is — and never use a causal word. */
+    @Test
+    void testRender_shouldRenderTheEnergyDipCorrelationWithBothGroupSizes() {
+        FlagPayloadEnvelope payload = FlagPayloadEnvelope.energyDipMealTiming(
+            new FlagPayloadEnvelope.EnergyDipMealTiming(
+                "lunch_time", "earlier_lunch", "later_lunch",
+                30, 12, 10,
+                6, 6, 4,
+                8.0, 5.0,
+                3.0, 1.0,
+                1.0, 0.70,
+                "A",
+                "12:00", "14:30"));
+
+        List<String> facts = FlagFactRenderer.render(FlagKey.ENERGY_DIP_MEAL_TIMING, payload);
+
+        assertThat(facts).hasSize(3);
+        assertThat(facts.get(0)).contains("12:00").contains("14:30").contains("6 nap");
+        assertThat(facts.get(1)).contains("8,0").contains("5,0");
+        assertThat(facts).noneMatch(f -> f.contains(" mert ") || f.contains("ezért"));
+    }
+
+    /** The fallback mode has no lunch times to name — the line must still be a whole sentence. */
+    @Test
+    void testRender_shouldRenderTheBreakfastPresenceModeWithoutLunchTimes() {
+        FlagPayloadEnvelope payload = FlagPayloadEnvelope.energyDipMealTiming(
+            new FlagPayloadEnvelope.EnergyDipMealTiming(
+                "breakfast_presence", "with_breakfast", "without_breakfast",
+                30, 14, 10,
+                7, 7, 4,
+                7.0, 5.0,
+                2.0, 1.0,
+                0.86, 0.70,
+                "A",
+                null, null));
+
+        List<String> facts = FlagFactRenderer.render(FlagKey.ENERGY_DIP_MEAL_TIMING, payload);
+
+        assertThat(facts).hasSize(3);
+        assertThat(facts.get(0)).contains("reggeli");
+        assertThat(facts).noneMatch(f -> f.contains("null"));
     }
 }

@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.flags;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.flags.entity.CompanionFlagTraceEntity;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagCatalog;
 import io.mrkuhne.mezo.feature.companion.flags.repository.CompanionFlagTraceRepository;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagService;
@@ -36,11 +37,14 @@ class FlagServiceTraceIT extends AbstractIntegrationTest {
 
         flagService.evaluateAndLog(user, "sweep");
 
-        // 14 rules, all traced — the point of the feature is that the quiet ones leave a mark.
+        // ONE trace per rule, all of them — the point of the feature is that the quiet ones leave
+        // a mark too. Counted against FlagCatalog.KEYS rather than a literal (Round 2 S6,
+        // mezo-d58h.7.7): every round-2 slice had to bump this number by hand, which is the
+        // hand-maintained-enumeration defect class this epic keeps hitting.
         assertThat(traceRepository.findAll().stream()
             .filter(r -> r.getCreatedBy().equals(user))
             .map(CompanionFlagTraceEntity::getFlagKey))
-            .hasSize(15).doesNotHaveDuplicates();
+            .hasSize(FlagCatalog.KEYS.size()).doesNotHaveDuplicates();
     }
 
     @Test
