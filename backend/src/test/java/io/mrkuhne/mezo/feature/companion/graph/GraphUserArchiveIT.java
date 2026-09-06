@@ -183,10 +183,16 @@ class GraphUserArchiveIT extends AbstractIntegrationTest {
 
         assertThat(restored.getUserArchivedAt()).isNull();
         assertThat(restored.getStatus()).isEqualTo(GraphNodeEntity.STATUS_ACTIVE);
+
+        GraphNodeEntity reread = nodeRepository.findById(node.getId()).orElseThrow();
+        assertThat(reread.getUserArchivedAt()).isNull();
+        assertThat(reread.getStatus()).isEqualTo(GraphNodeEntity.STATUS_ACTIVE);
     }
 
     /** D5: a visszaállítás a FORRÁSBÓL származtat, nem vakon aktivál — különben a felhasználó
-     *  „visszaállítottam, másnap eltűnt" élményt kapna a hajnali reconcile után. */
+     *  „visszaállítottam, másnap eltűnt" élményt kapna a hajnali reconcile után. Emellett a
+     *  re-derive-nek ténylegesen le is kell futnia: a címet is frissítenie kell a forrásból,
+     *  különben egy semmit sem tevő resyncNode is zöldre futtatná ezt a tesztet. */
     @Test
     void restore_shouldStayArchived_whenTheSourceWentInactiveMeanwhile() {
         UUID userId = ownerId();
@@ -195,10 +201,20 @@ class GraphUserArchiveIT extends AbstractIntegrationTest {
         graphService.archive(userId, node.getId());
         archivePerson(personId);
 
+        PersonEntity person = personRepository.findById(personId).orElseThrow();
+        person.setName("Anna Kovács");
+        personRepository.saveAndFlush(person);
+
         GraphNodeEntity restored = graphService.restore(userId, node.getId());
 
         assertThat(restored.getUserArchivedAt()).isNull();
         assertThat(restored.getStatus()).isEqualTo(GraphNodeEntity.STATUS_ARCHIVED);
+        assertThat(restored.getTitle()).isEqualTo("Anna Kovács");
+
+        GraphNodeEntity reread = nodeRepository.findById(node.getId()).orElseThrow();
+        assertThat(reread.getUserArchivedAt()).isNull();
+        assertThat(reread.getStatus()).isEqualTo(GraphNodeEntity.STATUS_ARCHIVED);
+        assertThat(reread.getTitle()).isEqualTo("Anna Kovács");
     }
 
     @Test
