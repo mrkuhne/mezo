@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.api.dto.WeeklySuggestionResponse;
+import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.feature.proactive.entity.WeeklySuggestionEntity;
 import io.mrkuhne.mezo.feature.proactive.mapper.ProactiveMapper;
 import io.mrkuhne.mezo.feature.proactive.repository.WeeklySuggestionRepository;
@@ -32,7 +33,9 @@ public class ProactiveWeeklySuggestionService {
     /** date = null ⇒ server today; the week identity is the ISO Monday of that day. */
     @Transactional
     public WeeklySuggestionResponse getWeeklySuggestion(UUID userId, LocalDate date) {
-        LocalDate weekStart = (date != null ? date : LocalDate.now())
+        // mezo-ned9: the null-date fallback is owner-local, the SAME derivation the gathered
+        // snapshot day uses (an explicit `date` is the FE's own device day, already owner-local).
+        LocalDate weekStart = (date != null ? date : LocalDate.now(MedicationCycleService.MEDICATION_ZONE))
                 .with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         WeeklySuggestionEntity suggestion = weeklySuggestionRepository
                 .findByCreatedByAndWeekStart(userId, weekStart)

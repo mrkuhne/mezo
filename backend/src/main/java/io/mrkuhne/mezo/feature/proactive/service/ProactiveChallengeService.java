@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.proactive.service;
 
 import io.mrkuhne.mezo.api.dto.ChallengeDecisionRequest;
 import io.mrkuhne.mezo.api.dto.ChallengeResponse;
+import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeEntity;
 import io.mrkuhne.mezo.feature.proactive.mapper.ProactiveMapper;
 import io.mrkuhne.mezo.feature.proactive.repository.ChallengeRepository;
@@ -47,7 +48,10 @@ public class ProactiveChallengeService {
         List<ChallengeEntity> rows = challengeRepository
                 .findByCreatedByAndTemplateSessionIdAndWorkoutDateOrderByGeneratedAtAsc(
                         userId, templateSessionId, date);
-        if (rows.isEmpty() && date.equals(LocalDate.now())
+        // mezo-ned9: owner-local, matching both generators' gates AND the FE's own local date
+        // (the FE sends its device day) — a default-zone comparison here silently refused to
+        // lazily generate between the two midnights.
+        if (rows.isEmpty() && date.equals(LocalDate.now(MedicationCycleService.MEDICATION_ZONE))
                 && !instanceCompleted(userId, templateSessionId, date)) {
             List<ChallengeEntity> generated = new java.util.ArrayList<>(
                     generator.generate(userId, templateSessionId, date));            // LLM (capped)
