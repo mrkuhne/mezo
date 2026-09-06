@@ -158,7 +158,7 @@ public class RecipeBreakdownProseService {
         List<Dimension> dims = det.dimensions().stream().map(d -> {
             String text = details.get(d.id()); // keyed by dimension id — narrates all 8
             return text == null || text.isBlank() ? d
-                : new Dimension(d.id(), d.label(), d.weight(), d.score(), text,
+                : new Dimension(d.id(), d.label(), d.weight(), d.score(), d.coverage(), text,
                     d.macro(), d.micros(), d.nova(), d.context(), d.timing(), d.note());
         }).toList();
         List<ImproveRow> improve = prose.improve() == null ? List.<ImproveRow>of() : prose.improve().stream()

@@ -342,7 +342,10 @@ class MealScoringServiceTest {
         // 22 g satFat · 9 = 198 kcal of the 300 SEEN kcal = 66 E% — not the 33 E% the whole-meal
         // denominator used to report. Half the meal is unseen, and the detail says so.
         assertThat(fat.score()).isEqualByComparingTo("0.00");
-        assertThat(fat.detail()).contains("66.0%").contains("Csak a tételek 50%-ára van adat.");
+        // coverage is now a first-class wire field (mezo-mxmh), asserted as the number it is
+        // rather than as a sentence tail the collapsed card would clamp away
+        assertThat(fat.detail()).contains("66.0%");
+        assertThat(fat.coverage()).isEqualByComparingTo("0.50");
     }
 
     /** Sugar and salt are populated independently; one present must not vouch for the other. */
@@ -358,8 +361,41 @@ class MealScoringServiceTest {
         assertThat(who.context().getFirst().label()).isEqualTo("Cukor");
         assertThat(who.context().getFirst().value()).isEqualTo("nincs adat");
         assertThat(who.context().get(1).value()).contains("0.2 g /");
-        assertThat(who.detail()).startsWith("Cukor: nincs adat")
-            .contains("Csak a tételek 50%-ára van adat.");
+        assertThat(who.detail()).startsWith("Cukor: nincs adat");
+        assertThat(who.coverage()).isEqualByComparingTo("0.50");
+    }
+
+    /**
+     * The collapsed dimension card clamps `detail` to TWO LINES (`.sb-dim-one`), so a sentence that
+     * saves its payload for the end loses exactly that payload. mezo-1f7b shipped two such
+     * sentences: the macro detail buried the target and its origin behind 120 characters of lead-in,
+     * and every coverage-gated dimension appended "Csak a tételek X%-ára van adat." after the
+     * numbers. Both moved into structured fields (`macroTargets`/`targetOrigin`, `coverage`); this
+     * budget keeps the prose from creeping back over the clamp.
+     *
+     * <p>~110 chars is roughly two lines at the sheet's 13px/1.35 in a 390px frame. It is a
+     * guardrail, not a measurement — a failure here means "check it renders", not "off by one".
+     */
+    @Test
+    void testScoreMeal_shouldKeepEveryDetailWithinTheCollapsedCardsTwoLineBudget() {
+        var b = service.scoreMeal("breakfast", preWorkoutLines(), LocalTime.of(8, 0));
+
+        assertThat(b.dimensions())
+            .allSatisfy(d -> assertThat(d.detail())
+                .as("%s detail is clamped to 2 lines on the collapsed card", d.id())
+                .hasSizeLessThanOrEqualTo(110));
+    }
+
+    /** The macro target's ORIGIN is a field, so naming it costs the sentence nothing. */
+    @Test
+    void testScoreMeal_shouldNameWhereTheMacroTargetCameFrom_asAField() {
+        var macro = dimension(service.scoreMeal("lunch", lunchLines(), LocalTime.of(13, 0)), "macro");
+
+        assertThat(macro.macro().targetOrigin())
+            .contains("alapértelmezett napi keret")   // no goal prescription in this fixture
+            .contains("g fehérje")
+            .contains("kcal-s napra");
+        assertThat(macro.detail()).doesNotContain("napi keret"); // it is NOT duplicated in the prose
     }
 
     @Test

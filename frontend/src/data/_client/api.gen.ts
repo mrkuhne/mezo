@@ -6240,6 +6240,8 @@ export interface components {
         /** @description One weighted dimension; exactly one payload field is populated, matching id — macro/micros/nova for their ids, `context` carries the generic label/value rows for context, who, fat_quality, plant_diversity, energy_density and portion. Dimension `context` additionally carries `timing` when it comes from a logged meal. */
         MealScoreDimension: {
             id: string;
+            /** @description Share of the meal's energy this dimension could actually SEE, 0..1 (mezo-mxmh). It always existed in the scorer (it feeds `confidence`) but used to stop there, so a dimension scoring 30% of a meal looked identical to one scoring all of it. null on envelopes written before the field existed — render nothing, never 0. */
+            coverage?: number | null;
             label: string;
             /** @description 0 when the dimension degraded (no input coverage) — total renormalizes */
             weight: number;
@@ -6263,6 +6265,8 @@ export interface components {
             targetC: string;
             targetF: string;
             kcalShareOfDay: number;
+            /** @description Where the macro target comes from, as a display clause (mezo-mxmh) — the active goal's prescription, the static fallback, or a pre/post-workout rubric. It rode inside `detail` first, but that sentence is clamped to two lines on a collapsed card, so the origin — the whole point of naming it — was the part that got cut. null on older envelopes. */
+            targetOrigin?: string | null;
             /** @description P8 prose — null in v0 */
             notes?: string | null;
         };
