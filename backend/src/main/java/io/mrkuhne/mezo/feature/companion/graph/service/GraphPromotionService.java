@@ -566,7 +566,15 @@ public class GraphPromotionService {
     }
 
     /**
-     * A négy promoter KÖZÖS státusz-emelése, a felhasználói szándékra őrizve (mezo-06o0.5).
+     * A gráfba író összes state-emelő KÖZÖS csomópontja, a felhasználói szándékra őrizve
+     * (mezo-06o0.5). Öt hívási hely emel: a négy promoter itt ({@link #promotePattern}, {@link
+     * #promoteFact}, {@link #syncGoal}, {@link #syncPerson} — {@link #syncLifeGoal} is idejár),
+     * plusz {@link io.mrkuhne.mezo.feature.companion.profile.service.ProfileAssembler#rebuild},
+     * amely a singleton profil-node-ot élesíti újra minden heti futáson. Ezért {@code public}, nem
+     * {@code private}: a profil szelet nem importálhatja a gráf szeletet visszafelé, de az emelés
+     * FELTÉTELE (kézzel archivált node nem emelhető) csak EGY helyen dőlhet el — a feltétel
+     * duplikálása két osztályban pont azt a hibát nyitná vissza, amit ez a metódus zár (lásd
+     * lent).
      *
      * <p>A promóció addig feltétel nélkül visszaírta a státuszt a forrás állapotából, így a
      * Tudástárban kézzel archivált node-ot a következő éjszakai {@link #reconcile} némán
@@ -578,7 +586,7 @@ public class GraphPromotionService {
      * node akkor is archiválódik, ha a felhasználó már elrejtette — az eredmény ugyanaz, és a
      * marker a szándékot így is megőrzi a későbbi visszaállításhoz.
      */
-    private static void raiseStatus(GraphNodeEntity node, String target) {
+    public static void raiseStatus(GraphNodeEntity node, String target) {
         if (GraphNodeEntity.STATUS_ACTIVE.equals(target) && node.isUserArchived()) {
             return;
         }

@@ -198,13 +198,30 @@ public class GraphService {
      * A kézi archiválás visszavonása (mezo-06o0.5): a szándék-marker törlődik, és a státusz
      * AZONNAL a forrásból származik újra — nem vakon `active`, mert a forrás közben inaktívvá
      * válhatott, és akkor a hajnali reconcile csendben visszaarchiválná (spec D5).
+     *
+     * <p><b>Csak KÉZZEL archivált node-on hívható (code review finding, mezo-06o0.5).</b> Enélkül
+     * egy {@code candidate} node — aminek az id-je publikus a {@code GET
+     * .../node/candidate} listán, és aminek {@code sourceId}-je null — {@link #resyncNode}
+     * forrás-nélküli ágán keresztül egyenesen {@code active}-ra emelkedne, megkerülve {@code
+     * LifeEventCandidateService.decide}-ot: a már eldöntött-e kaput, a finomított
+     * címet/összefoglalót és a proposedEdges materializációt. Ugyanígy egy GÉPI úton (pl.
+     * {@code retractPattern}) archivált node sem "visszaállítandó" ezen az úton — annak a
+     * forrásnak kell újra kvalifikálnia, nem egy explicit felhasználói kattintásnak. A ház elve:
+     * amit az AI derivál, felhasználói döntés nélkül soha nem válik tartóssá.
      */
     @Transactional
     public GraphNodeEntity restore(UUID userId, UUID nodeId) {
         GraphNodeEntity node = findOwnedNode(userId, nodeId);
+        if (!node.isUserArchived()) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("GRAPH_NODE_NOT_USER_ARCHIVED").build(), HttpStatus.CONFLICT);
+        }
         node.setUserArchivedAt(null);
         GraphPromotionService promoter = promotionService.getIfAvailable();
         if (promoter == null) {
+            // Defensive only: GraphService and GraphPromotionService share the same
+            // @ConditionalOnProperty gate (KNOWLEDGE_GRAPH_SWITCH), so whenever this bean exists
+            // to be called, the promoter bean exists too — this branch is unreachable in practice.
             node.setStatus(GraphNodeEntity.STATUS_ACTIVE);
         } else {
             promoter.resyncNode(userId, node);

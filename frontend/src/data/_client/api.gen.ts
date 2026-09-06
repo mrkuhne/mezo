@@ -19910,6 +19910,15 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description The node was not hand-archived — a candidate or machine-archived node cannot be restored (GRAPH_NODE_NOT_USER_ARCHIVED) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     listArchivedGraphNodes: {

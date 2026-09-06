@@ -8918,6 +8918,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            The node was not hand-archived — a candidate or machine-archived
+            node cannot be restored (GRAPH_NODE_NOT_USER_ARCHIVED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/companion/graph/node/archived:
     get:
       tags:

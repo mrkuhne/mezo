@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.GraphPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -85,6 +86,21 @@ class GraphApiIT extends ApiIntegrationTest {
             ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
 
         assertHasRequestError(body, "GRAPH_NODE_NOT_FOUND");
+    }
+
+    /** Code review finding (mezo-06o0.5): restore must reject a node the user never hand-archived
+     *  by themselves — an owned but undecided candidate's id is publicly listable via {@code GET
+     *  .../node/candidate}, and restoring it would bypass the L2 decision gate entirely. */
+    @Test
+    void testRestoreGraphNode_shouldReturn409_whenNodeWasNeverHandArchived() {
+        UUID owner = ownerId();
+        GraphNodeEntity candidate = graphPopulator.createCandidateNode(owner, GraphNodeEntity.KIND_LIFE_EVENT,
+            "Költözés", null, Map.of());
+
+        String body = postForBody("/api/companion/graph/node/" + candidate.getId() + "/restore", null,
+            ownerAuthHeaders(), HttpStatus.CONFLICT, String.class);
+
+        assertHasRequestError(body, "GRAPH_NODE_NOT_USER_ARCHIVED");
     }
 
     @Test

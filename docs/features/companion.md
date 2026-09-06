@@ -2581,10 +2581,12 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     turn as a `PATCH`.
   - **Hand-archiving is now a durable user intent, for every source kind (`mezo-06o0.5`).**
     `GraphService.archive` stamps `GraphNodeEntity.userArchivedAt` alongside the `status` flip —
-    a marker the promotion sync itself cannot see past. All four promoters raise status through
-    one choke point, `GraphPromotionService.raiseStatus(node, target)`; it refuses to raise a
-    user-archived node to `active` no matter how many times `promotePattern`/`syncFact`/`syncGoal`/
-    `syncPerson`/`reconcile` touch it afterwards. The ARCHIVING direction stays unguarded on
+    a marker the promotion sync itself cannot see past. FIVE writers raise status through one
+    choke point, `GraphPromotionService.raiseStatus(node, target)` (`public`, code review finding
+    mezo-06o0.5): the four promoters (`promotePattern`/`syncFact`/`syncGoal`/`syncPerson`, plus
+    `syncLifeGoal`) and, since the final-review fix, `ProfileAssembler.rebuild` for the singleton
+    profile node — it refuses to raise a user-archived node to `active` no matter how many times
+    any of them, or `reconcile`, touch it afterwards. The ARCHIVING direction stays unguarded on
     purpose: a source that stops qualifying still archives the node even if the user had already
     hidden it — same outcome either way, so there is nothing to guard. Title/summary/meta keep
     refreshing on a user-archived node (the graph keeps shadowing its source), only the `status`
@@ -2594,7 +2596,15 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     `userArchivedAt` and re-derives `status` from the source through
     `GraphPromotionService.resyncNode` — not a blind `active`, since the source may have stopped
     qualifying while the node sat archived, and lying `active` until the next nightly `reconcile`
-    corrects it would just reopen the old leak in miniature.
+    corrects it would just reopen the old leak in miniature. `restore` only acts on a node the user
+    actually hand-archived (`userArchivedAt != null`) — otherwise 409
+    `GRAPH_NODE_NOT_USER_ARCHIVED` (code review finding, mezo-06o0.5): without this a `candidate`
+    node (its id public via `GET .../node/candidate`, `sourceId` null) would resync straight to
+    `active` through `resyncNode`'s source-less branch, promoting an AI-proposed candidate while
+    bypassing `LifeEventCandidateService.decide` — the already-decided gate, the refined
+    title/summary, and the `proposedEdges` materialisation. Nothing the AI derives becomes durable
+    without an explicit user decision; restore is a REVERSAL of a user decision, not a substitute
+    for one.
     `GET /api/companion/graph/node/archived` lists the hand-archived set. `include_in_prompt`
     remains the fact-side kill-switch, and the two levers still don't compete: `include_in_prompt`
     mutes the SOURCE fact from every injection channel (V1.1, V3.3, the graph); `userArchivedAt`
@@ -3381,9 +3391,14 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   violation of anything today, but zero headroom for the header to grow by even one clause. 200
   leaves over 150 tokens of prose room at the floor, still well under the shipped 400 default.
 - **`upsertNode` does not touch status** (W2.2 owns its own status rules), so the assembler
-  explicitly re-activates the node after the upsert: an archived profile is revived by the very
-  next weekly run — the "reset what you think of me" recovery path spec §8.3 promises, without a
-  dedicated endpoint.
+  explicitly re-activates the node after the upsert, through the shared
+  `GraphPromotionService.raiseStatus` choke point (mezo-06o0.5, code review finding) rather than a
+  bare `setStatus`: a MACHINE-archived profile is revived by the very next weekly run — the
+  "reset what you think of me" recovery path spec §8.3 promises, without a dedicated endpoint —
+  but a profile the user hand-archived from the Tudástár UI (`userArchivedAt` set) stays archived,
+  same as every other source kind (see "Hand-archiving is now a durable user intent" above). The
+  profile node is a fifth writer of this status alongside the four promoters, which is why
+  `raiseStatus` is `public`.
 - **`ProfileAssemblerJob`** (`profile/service/`) — one `@Scheduled` method, weekly **Monday 03:45**
   (`0 45 3 * * MON`), deliberately AFTER the 03:10 feedback rollups and the 03:30 weekly
   consolidation rung — it reads both, so it must run last in that dawn window. Gated on
@@ -3638,9 +3653,11 @@ a future caller would re-acquire the bug by omission.
 `mezo.techcore.cron.profile-assembler-job.enabled=false` is a documented kill switch for the
 profile — no weekly rebuild, no smart-tier spend on it, and an archived *Rólad tanultam* node
 stays archived. Calling `ProfileAssembler.rebuild` unconditionally from here made it leaky: four
-times a year the quarterly cron would spend a smart-tier call per user anyway AND force the
-non-ACTIVE node back to ACTIVE (the assembler's deliberate "reset what you think of me" revival),
-resurrecting a profile the operator or the user had switched off. `@Value` is banned in this repo,
+times a year the quarterly cron would spend a smart-tier call per user anyway AND force a
+MACHINE-archived node back to ACTIVE (the assembler's deliberate "reset what you think of me"
+revival, itself routed through `GraphPromotionService.raiseStatus` since `mezo-06o0.5` and so
+never reviving a node the user hand-archived — see "Hand-archiving is now a durable user intent"
+above), resurrecting a profile the operator had switched off. `@Value` is banned in this repo,
 so the switch is read the house way — **by bean presence**: `QuarterlyReviewJob` holds
 `ObjectProvider<ProfileAssemblerJob>`, and that bean's existence IS the switch (its own
 `@ConditionalOnProperty` says so). Absent ⇒ phase 2 is skipped, with an honest log line (IDENT-3),

@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.graph;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
@@ -18,9 +19,12 @@ import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
+import io.mrkuhne.mezo.support.populator.GraphPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.PersonPopulator;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -53,6 +57,7 @@ class GraphUserArchiveIT extends AbstractIntegrationTest {
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private GoalPopulator goalPopulator;
     @Autowired private PersonPopulator personPopulator;
+    @Autowired private GraphPopulator graphPopulator;
 
     private UUID ownerId() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -226,6 +231,53 @@ class GraphUserArchiveIT extends AbstractIntegrationTest {
 
         assertThat(graphService.restore(userId, node.getId()).getStatus())
             .isEqualTo(GraphNodeEntity.STATUS_ACTIVE);
+    }
+
+    /**
+     * Code review finding (mezo-06o0.5, final whole-branch review): {@code restore} had no
+     * precondition beyond ownership. A {@code candidate} node's id is public via {@code GET
+     * /api/companion/graph/node/candidate}, and it carries {@code sourceId = null}, so {@code
+     * resyncNode}'s source-less branch would raise it straight to {@code active} — promoting an
+     * AI-proposed candidate while bypassing {@code LifeEventCandidateService.decide} entirely
+     * (the already-decided gate, the refined title/summary, the {@code proposedEdges}
+     * materialisation). The house principle: nothing the AI derives becomes durable without an
+     * explicit user decision. {@code restore} is now rejected on any node the user did not
+     * actually hand-archive.
+     */
+    @Test
+    void restore_shouldReject_whenTheNodeIsAnUndecidedCandidate() {
+        UUID userId = ownerId();
+        GraphNodeEntity candidate = graphPopulator.createCandidateNode(userId, GraphNodeEntity.KIND_LIFE_EVENT,
+            "Költözés", LocalDate.of(2026, 6, 1), Map.of());
+        assertThat(candidate.isUserArchived()).isFalse();
+
+        assertThatThrownBy(() -> graphService.restore(userId, candidate.getId()))
+            .isInstanceOf(SystemRuntimeErrorException.class);
+
+        GraphNodeEntity reread = nodeRepository.findById(candidate.getId()).orElseThrow();
+        assertThat(reread.getStatus()).isEqualTo(GraphNodeEntity.STATUS_CANDIDATE);
+        assertThat(reread.isUserArchived()).isFalse();
+    }
+
+    /** The mirror case: a node the SOURCE archived (via a promoter/retract path), never the
+     *  user by hand — {@code userArchivedAt} stays null, so {@code restore} must reject it too,
+     *  the same as the candidate case above. */
+    @Test
+    void restore_shouldReject_whenTheNodeWasMachineArchivedNotHandArchived() {
+        UUID userId = ownerId();
+        PersonEntity person = personPopulator.createPerson(userId, "Anna");
+        GraphNodeEntity node = promotionService.syncPerson(userId, person.getId()).orElseThrow();
+        archivePerson(person.getId());
+        promotionService.syncPerson(userId, person.getId());
+        GraphNodeEntity machineArchived = nodeRepository.findById(node.getId()).orElseThrow();
+        assertThat(machineArchived.getStatus()).isEqualTo(GraphNodeEntity.STATUS_ARCHIVED);
+        assertThat(machineArchived.isUserArchived()).isFalse();
+
+        assertThatThrownBy(() -> graphService.restore(userId, node.getId()))
+            .isInstanceOf(SystemRuntimeErrorException.class);
+
+        assertThat(nodeRepository.findById(node.getId()).orElseThrow().getStatus())
+            .isEqualTo(GraphNodeEntity.STATUS_ARCHIVED);
     }
 
     @Test
