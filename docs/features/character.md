@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-09-06
+updated: 2026-09-07
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character
@@ -278,12 +278,24 @@ nightly:  domain reads (14-day window) → DetectorRegistry → per-expert cheap
 
 weekly:   unconsumed character_observation rows (grouped by expert)
           → KonziliumProposalRound (per-expert cheap-tier call, ≤3 proposals each)
-          → KonziliumVerdictRound: Szkeptikus (smart-tier, KEEP|KILL) → Mezo/Integrátor
-             (smart-tier, accept/confidence/reason + optional chapter proposal)
+          → KonziliumCrossTalkRound (mezo-xlvr): for chapters ≥2 experts touched, one
+             cheap-tier call per involved expert reacting to its PEERS' proposals in that
+             chapter (never its own) — support/challenge/nuance + one-sentence argument;
+             capped at KonziliumCrossTalkRound.MAX_CROSS_TALK_CALLS (6) calls per conference,
+             most-contested chapters first; a call an expert never reaches (cap hit) or a
+             single failed/unparsed call just drops that expert's reactions, never the round
+          → KonziliumVerdictRound: Szkeptikus (smart-tier, KEEP|KILL, unchanged by cross-talk —
+             it never sees peer reactions) → Mezo/Integrátor (smart-tier, accept/confidence/
+             reason + optional chapter proposal; its prompt now also renders the peers'
+             cross-talk stances per proposal, when any exist)
+          → DeliberationAssembler assembles the three rounds' output into a
+             ConferenceDeliberationEnvelope (chapter-grouped threads: proposal → peer
+             reactions → Szkeptikus verdict → Mezo ruling per claim)
           → ClaimLifecycle.apply (NEW/UP/DOWN/RETIRE → character_claim rows)
           → PortraitWriter.rewrite (one smart-tier call per touched dimension)
-          → character_conference (transcript + outcome diff) persisted; observations marked
-             consumed — ALL of the above in ONE @Transactional method (all-or-nothing)
+          → character_conference (transcript + outcome diff + deliberation) persisted;
+             observations marked consumed — ALL of the above in ONE @Transactional method
+             (all-or-nothing)
 
 monthly:  same proposal/verdict/portrait tail, but reads ACTIVE claims (not fresh observations)
           and steers toward UP/DOWN/RETIRE; then a separate stale-CHAPTER-retirement pass
@@ -308,6 +320,17 @@ Gépterem sub-hub reads from: a day the pipeline genuinely never ran has NO row 
 `(0, 0, [], [])` row (renders the proud "csendes éjszaka" face) — the two are structurally
 different facts, not styling choices. The nightly pass's early-return-on-quiet-day path was
 moved to run AFTER the record call specifically so a quiet night still gets logged.
+
+**Thread view + legacy derivation** ([ADR 0037](../decisions/0037-konzilium-cross-talk-round.md),
+`mezo-xlvr`): a conference written by this pipeline carries a structured `deliberation`
+column beside the prose `transcript` (§4) — a real record of the tanácskozás, not a
+re-dramatization of it. A conference persisted BEFORE this column existed has `deliberation
+== null`; `CharacterService.conference()` derives its threads at READ time instead, via
+`LegacyTranscriptParser.parse(transcript.turns())`, walking the prose turns in order. Those
+derived threads group by EXPERT, not by chapter — the prose transcript never carried chapter
+membership, only expert voice — so a legacy thread's `dimensionKey` is `null` and its title is
+the expert's display name. No migration ever backfills `deliberation`; the derivation is
+computed fresh on every read of an old row, never written back.
 
 Every LLM call in this pipeline flows through the same `CompanionLlm` port
 ([companion.md](companion.md)) and is audited under the `character` feature tag
@@ -348,7 +371,13 @@ Migration: `db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_
   (nullable for BOOTSTRAP; **MONTHLY reuses this column for the month's first day** —
   `CharacterMonthlyService`), `transcript jsonb` (`ConferenceTranscriptEnvelope` — ordered
   `{persona,text,refIds}` turns), `outcome jsonb` (`ConferenceOutcomeEnvelope` — a list of
-  `{kind,dimensionKey,claimId,summary}` changes; the feed's diff source), `generated_at`.
+  `{kind,dimensionKey,claimId,summary}` changes; the feed's diff source), `deliberation jsonb`
+  (nullable; `ConferenceDeliberationEnvelope` — chapter-grouped threads of
+  `{index,expertKey,text,kind,claimId,sensitive,reactions,skeptic,chair}` items; added by
+  [ADR 0037](../decisions/0037-konzilium-cross-talk-round.md), migration
+  `202609070900_mezo-xlvr_conference_deliberation.sql`, a plain nullable `add column` with no
+  default and no backfill — unlike `transcript`/`outcome` it carries neither `@NotNull` nor
+  `nullable = false` on the entity, genuinely optional on old rows), `generated_at`.
   Partial unique indexes: one LIVE row per user+week (WEEKLY) and per user (BOOTSTRAP).
 - **`character_portrait_revision`** — `dimension_id` FK, `version int`, `portrait text`,
   `conference_id` FK, `created_at`. Every successful portrait rewrite appends one; a blank/failed
@@ -402,7 +431,7 @@ bean, never a silent 200).
 | `GET /api/character/dimension/{key}` | `CharacterDimensionResponse` | Portrait + ACTIVE claims + recent revisions; 404 unknown key |
 | `GET /api/character/feed?limit=` (1–100, default 30) | `CharacterFeedItem[]` | Observations + latest conference outcome diff, merged/sorted desc; `[]` honest empty, never 404 |
 | `GET /api/character/conference` | `CharacterConferenceSummary[]` | Summaries only |
-| `GET /api/character/conference/{id}` | `CharacterConferenceResponse` | Full persisted transcript + outcome; 404 unknown |
+| `GET /api/character/conference/{id}` | `CharacterConferenceResponse` | Full persisted transcript + outcome + `deliberation` (nullable on the wire — old conferences derive it at read time, see §3/§9); 404 unknown |
 | `POST /api/character/claim/{id}/feedback` | `CharacterClaimDto` | `{kind: TALAL\|NEM_IGAZ\|PONTOSITOM, text?}`; 400 malformed, 404 unknown, 409 already-retired |
 | `POST /api/character/bootstrap` | `CharacterConferenceResponse` \| 204 | 409 if a live BOOTSTRAP conference already exists; 204 if there is no history to read |
 
@@ -871,6 +900,29 @@ investigating.
   Szkeptikus/proposal prompts, not a separately enforced code gate — there is no automated test
   asserting the mirror/question phrasing; it rides the same trust-the-persona-prompt model the
   rest of the companion stack uses.
+- **The claim id lives on the observation's signal reference, never in its user-facing text**
+  ([ADR 0037](../decisions/0037-konzilium-cross-talk-round.md), `mezo-xlvr`).
+  `CharacterFeedbackService` used to prepend `"[<claimId>] "` directly onto the feedback
+  observation's `text`; that prefix is gone — `text` now carries only the user's own words. The
+  claim id instead lives where it already had a home, the observation's `signals` envelope
+  (`refIds[0]` on the `user-feedback` signal). Two places rebuild the bracketed evidence marker
+  from THAT reference rather than from text: `KonziliumProposalRound`'s per-observation
+  evidence-line builder reads it back off `observation.getSignals()` to reconstruct the
+  `[<claimId>] ` prefix for the proposal prompt, and `CharacterService` strips any leftover
+  legacy prefix from OLD rows at read time via `ObservationText.stripClaimIdPrefix` (a
+  read-time cleanup, not a migration — nothing is rewritten in the database).
+- **A round whose answer failed to parse produces no verdict — never a fabricated default**
+  ([ADR 0037](../decisions/0037-konzilium-cross-talk-round.md)). In the structured
+  `ConferenceDeliberationEnvelope`, an item's `skeptic`/`chair` field is nullable on purpose:
+  the Integrátor's `toRuling` still returns a `ClaimRuling` shell even on a failed call (so
+  `chair` in practice is essentially never null for a freshly-run conference — its
+  `confidence` is simply left `null` rather than defaulted), but an unparsed Szkeptikus
+  response yields an empty verdicts list, leaving every item's `skeptic` null for that
+  conference; a legacy-derived thread (§3) can leave either null wherever
+  `LegacyTranscriptParser` never matched a verdict/ruling line for that claim index. The FE's
+  `ConferenceThreadCard` renders a plain "Ez a kör nem adott választ erre az állításra." for a
+  null `skeptic`/`chair` instead of inventing a verdict, and the collapsed-thread summary shows
+  "Nincs döntés" rather than defaulting to accepted/rejected.
 
 ## 10. Key files
 
@@ -883,6 +935,7 @@ investigating.
   the typed-jsonb envelope records used by their jsonb columns (`ClaimEvidenceEnvelope`,
   `ClaimFeedbackEnvelope`, `ClaimConfidenceHistoryEnvelope`, `ObservationDimensionKeysEnvelope`,
   `ObservationSignalsEnvelope`, `ConferenceTranscriptEnvelope`, `ConferenceOutcomeEnvelope`,
+  `ConferenceDeliberationEnvelope` (mezo-xlvr — nullable, chapter-grouped threads),
   `RunDetectorKeysEnvelope`, `RunExpertKeysEnvelope`)
 - `repository/CharacterRunRepository.java` (S9) — `findByCreatedByAndKindAndDay` (the
   idempotency check), the day-range and single-run-by-owner reads the controller/service use
@@ -923,8 +976,14 @@ investigating.
   (writes the NIGHTLY run row, S9)
 - `service/CharacterConferenceJob.java` / `CharacterConferenceService.java` — weekly konzílium
   (writes the WEEKLY run row, S9)
-- `service/KonziliumProposalRound.java` / `KonziliumVerdictRound.java` / `ClaimLifecycle.java` /
+- `service/KonziliumProposalRound.java` / `KonziliumCrossTalkRound.java` (mezo-xlvr —
+  `MAX_CROSS_TALK_CALLS = 6`) / `KonziliumVerdictRound.java` / `ClaimLifecycle.java` /
   `ClaimProposal.java` / `ClaimRuling.java` / `ExpertEvidence.java` — the choreography
+- `service/DeliberationAssembler.java` (mezo-xlvr) — assembles the three rounds' output into
+  `ConferenceDeliberationEnvelope`; `service/LegacyTranscriptParser.java` (mezo-xlvr) — derives
+  expert-grouped threads from a pre-`deliberation` conference's prose transcript at read time;
+  `service/ObservationText.java` (mezo-xlvr) — strips a legacy `[<claimId>] ` prefix from an
+  observation's text at read time
 - `service/PortraitWriter.java` — per-dimension portrait rewrite + maturity roll-up
 - `service/CharacterMonthlyJob.java` / `CharacterMonthlyService.java` — monthly deep read +
   stale-chapter retirement (writes the MONTHLY run row, S9)
@@ -943,13 +1002,21 @@ investigating.
 
 **API contract**: `api/feature/character/character.yml`
 
+**Frontend** (mezo-xlvr): `frontend/src/features/character/components/ConferenceThreadCard.tsx`
+— the thread-view card (collapsed by default; expands to proposal → peer stances →
+Szkeptikus verdict → Mezo ruling); rendered per thread from `KonziliumPage.tsx` when
+`conference.deliberation` is non-empty, falling back to the existing prose-block rendering
+otherwise.
+
 **Migrations**: `backend/src/main/resources/db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_tables.sql`,
 `202608311000_mezo-1gim.6_character_conference_monthly_unique.sql`,
 `202608311100_mezo-1gim.6_character_conference_bootstrap_unique.sql`,
 `202608311600_mezo-1gim.14_create_character_run.sql` (S9 — `character_run` +
 `uq_character_run_created_by_kind_day`),
 `202609011600_mezo-1gim.15_character_dimension_meta_kind.sql` (round 4 — widens
-`ck_character_dimension_kind` to `CORE|CHAPTER|META`)
+`ck_character_dimension_kind` to `CORE|CHAPTER|META`),
+`202609070900_mezo-xlvr_conference_deliberation.sql` (adds the nullable
+`character_conference.deliberation jsonb` column, [ADR 0037](../decisions/0037-konzilium-cross-talk-round.md))
 
 **Switches/crons** (`backend/src/main/resources/application.yml`):
 - `mezo.feature.character.enabled: true` — the feature switch (`CHARACTER_SWITCH`); LLM-calling
