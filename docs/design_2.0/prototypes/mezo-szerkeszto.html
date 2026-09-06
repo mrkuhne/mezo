@@ -1270,14 +1270,17 @@
   .goalnote { font-size: 8.5px; color: #A8801F; font-weight: 600; }
   .exdrag { cursor: grab; color: #A2958A; font-size: 14px; padding: 2px 5px; flex: none; touch-action: none; user-select: none; }
   .exdel2 { background: none; border: none; color: #A84A26; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; padding: 2px 5px; flex: none; }
-  .inrow { display: grid; grid-template-columns: 1fr 1.55fr 1.15fr 0.85fr; gap: 6px; margin-top: 8px; }
-  .inbox { background: rgba(255, 255, 255, 0.72); border-radius: 11px; padding: 5px 6px 6px; }
+  .inrow { display: grid; grid-template-columns: 0.9fr 1.7fr 1.1fr 0.8fr; gap: 5px; margin-top: 8px; }
+  .inrow > * { min-width: 0; }
+  .inbox { background: rgba(255, 255, 255, 0.72); border-radius: 11px; padding: 5px 5px 6px; }
   .inbox label { display: block; font-size: 6.8px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #A2958A; margin-bottom: 3px; white-space: nowrap; }
   .numin {
-    width: 100%; border: 1px solid rgba(43, 33, 24, 0.14); border-radius: 8px; padding: 4px 0;
-    text-align: center; font-family: inherit; font-size: 11px; font-weight: 700;
+    width: 100%; min-width: 0; border: 1px solid rgba(43, 33, 24, 0.14); border-radius: 8px; padding: 4px 1px;
+    text-align: center; font-family: inherit; font-size: 10.5px; font-weight: 700;
     background: #fff; font-variant-numeric: tabular-nums; color: inherit;
+    -moz-appearance: textfield; appearance: textfield;
   }
+  .numin::-webkit-outer-spin-button, .numin::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
   .numin:focus { outline: none; border-color: #FF6B4A; box-shadow: 0 0 0 2.5px rgba(255, 107, 74, 0.18); }
   .numin::placeholder { color: #B8ACA0; font-weight: 600; }
   .reppair { display: flex; align-items: center; gap: 3px; }
@@ -1292,12 +1295,45 @@
   .wubox .numin { width: 30px; padding: 3px 0; font-size: 10px; }
   .exctx { font-size: 8.5px; color: #6E6257; margin-top: 7px; font-variant-numeric: tabular-nums; }
 
+  /* élő elemek — felfutó sávok, lélegzés, pulzus */
+  .mg1 .bar div, .capbar div, .dbfill div { width: 0; transition: width 0.7s cubic-bezier(0.25, 0.8, 0.35, 1); }
+  .drail i { transform: scaleX(0); transform-origin: left; }
+  .play .drail i { animation: railf 0.5s ease-out forwards; animation-delay: var(--d, 200ms); }
+  @keyframes railf { to { transform: scaleX(1); } }
+  .wspark { display: flex; gap: 3px; align-items: flex-end; height: 34px; margin-top: 8px; }
+  .wspark b { flex: 1; border-radius: 3px 3px 1px 1px; transform: scaleY(0); transform-origin: bottom; }
+  .play .wspark b { animation: growy 0.45s ease-out forwards; animation-delay: var(--d); }
+  @keyframes growy { to { transform: scaleY(1); } }
+  .wspark b.fut { opacity: 0.32; }
+  .wspark b.dl { background: repeating-linear-gradient(135deg, #E5C46B 0 3px, #F3E3B5 3px 6px) !important; opacity: 0.9; }
+  .arclbl { display: flex; gap: 3px; margin-top: 4px; }
+  .arclbl span { flex: 1; text-align: center; font-size: 6.5px; font-weight: 700; color: #A2958A; }
+
+  /* heti / napi terhelés — teljes oldalak, izom-washed kártyák */
+  .wcard {
+    border-radius: 17px; padding: 10px 12px; margin-bottom: 9px; cursor: pointer;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -14px rgba(43, 33, 24, 0.28), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .wcard:active { transform: scale(0.98); }
+  .wcard .wnums { font-size: 19px; font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .wcard .wnums .arr { font-size: 12px; margin: 0 2px; }
+  .wcard .wrowbody { display: none; margin-top: 7px; border-top: 0.5px solid rgba(43, 33, 24, 0.1); padding-top: 6px; }
+  .wcard.open .wrowbody { display: block; }
+  .dbfill { height: 9px; border-radius: 5px; background: rgba(43, 33, 24, 0.07); overflow: hidden; margin-top: 6px; }
+  .dbfill div { height: 100%; border-radius: 5px; }
+
   /* zóna-sáv (MV → MEV → MAV → MRV) */
   .vb { position: relative; height: 14px; border-radius: 7px; overflow: hidden; margin-top: 6px; background: rgba(43, 33, 24, 0.05); }
   .vb .z2 { position: absolute; top: 0; bottom: 0; background: rgba(255, 107, 74, 0.16); }
   .vb .z3 { position: absolute; top: 0; bottom: 0; background: rgba(255, 107, 74, 0.32); }
   .vb .hl { position: absolute; top: 0; bottom: 0; width: 1px; background: rgba(43, 33, 24, 0.25); }
-  .vb .mk { position: absolute; top: -2px; bottom: -2px; width: 4px; border-radius: 2px; background: #C9962E; box-shadow: 0 0 8px rgba(201, 150, 46, 0.8); }
+  .vb .mk { position: absolute; top: -2px; bottom: -2px; width: 4px; border-radius: 2px; background: #C9962E; box-shadow: 0 0 8px rgba(201, 150, 46, 0.8); animation: mkpulse 2.6s ease-in-out 1.2s infinite; }
+  @keyframes mkpulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(201, 150, 46, 0.5); }
+    50% { box-shadow: 0 0 12px rgba(201, 150, 46, 0.95); }
+  }
   .vb .tg { position: absolute; top: 0; bottom: 0; width: 2px; background: rgba(43, 33, 24, 0.35); }
   .vcap { display: flex; justify-content: space-between; font-size: 7px; font-weight: 700; color: #A2958A; margin-top: 3px; }
 
@@ -1379,6 +1415,10 @@
     .genwait .orb { animation: none; }
     .bsheet, .bsheet-back, .snack { transition: none; }
     .dtile2, .loadtile, .dct, .daypick button { transition: none; }
+    .drail i, .play .drail i { transform: scaleX(1); animation: none; }
+    .wspark b, .play .wspark b { transform: none; animation: none; }
+    .mg1 .bar div, .capbar div, .dbfill div { transition: none; }
+    .vb .mk { animation: none; }
   }
 </style>
 
@@ -1387,10 +1427,10 @@
   <h1>Mezo-szerkesztő</h1>
   <p class="lede">A wizard 3. lépése és a sablon-szerkesztő <strong>egyetlen közös szerkesztővé</strong> olvad:
   a wizard vékony, egyképernyős interjú lett, a kimenete ugyanabban a szerkesztőben nyílik meg, mint a
-  sablon-szerkesztés. Napok <strong>1 sorban scrollozható csempéken</strong>, a Mai / Heti terhelés kompakt
-  csempe + drawer mögött, a gyakorlatok <strong>mindig nyitott, inline inputos kártyák</strong> — accordion
-  és stepper-gombok nélkül. A zöld/sárga/piros helyett <strong>zóna-sáv</strong>: hol állsz, hova tartasz,
-  mi adja a volument.</p>
+  sablon-szerkesztés. Napok <strong>1 sorban scrollozható csempéken</strong>; a Heti terhelés a szerkesztőn,
+  a Napi a nap-oldalon él kompakt csempeként, és koppintásra <strong>teljes Huawei-oldal</strong> nyílik.
+  A gyakorlatok <strong>mindig nyitott, inline inputos kártyák</strong> — accordion és stepper-gombok
+  nélkül. A zöld/sárga/piros helyett <strong>zóna-sáv</strong>: hol állsz, hova tartasz, mi adja a volument.</p>
 
   <div class="stage">
     <div class="phone"><div class="screen" id="scr">
@@ -1541,16 +1581,11 @@
             <div class="p-eyebrow rise" style="--d:60ms;padding:9px 2px 5px;">A heted · koppints egy napra</div>
             <div class="dayrow rise" style="--d:90ms;" id="dayrow"></div>
 
-            <div class="mosaic rise" style="--d:140ms;">
-              <div class="loadtile day" id="tile-daily" role="button" tabindex="0" aria-label="Napi terhelés részletei">
-                <div class="mrow"><div class="p-eyebrow grow" style="color:#A84A26;" id="dailyeb">Napi terhelés · H</div><span class="mut" style="font-size:11px;">›</span></div>
-                <div class="bign" id="dailybig">—</div>
-                <div class="minigauges" id="dailymini"></div>
-              </div>
-              <div class="loadtile week" id="tile-weekly" role="button" tabindex="0" aria-label="Heti terhelés részletei">
-                <div class="mrow"><div class="p-eyebrow grow" style="color:#A8801F;">Heti terhelés</div><span class="mut" style="font-size:11px;">›</span></div>
+            <div class="loadtile week rise" style="--d:140ms;" id="tile-weekly" role="button" tabindex="0" aria-label="Heti terhelés részletei">
+              <div class="mrow"><div class="p-eyebrow grow" style="color:#A8801F;">Heti terhelés · izmonként</div><span class="mut" style="font-size:11px;">›</span></div>
+              <div class="mrow" style="align-items:flex-end;gap:12px;">
                 <div class="bign" id="weekbig">—</div>
-                <div class="minigauges" id="weekmini"></div>
+                <div class="minigauges grow" id="weekmini" style="margin-top:0;"></div>
               </div>
             </div>
 
@@ -1568,13 +1603,21 @@
         <div class="page-body" id="daybody"></div>
       </div>
 
+      <!-- ============ HETI TERHELÉS · teljes oldal ============ -->
+      <div class="page p-gold" id="page-week">
+        <div class="page-head"><button class="backbtn" data-back="page-week">‹ A blokkod</button></div>
+        <div class="page-hero orb" id="weekhero"></div>
+        <div class="page-body" id="weekpage"></div>
+      </div>
+
+      <!-- ============ NAPI TERHELÉS · teljes oldal ============ -->
+      <div class="page p-coral" id="page-daily">
+        <div class="page-head"><button class="backbtn" data-back="page-daily" id="dailyback">‹ A nap</button></div>
+        <div class="page-hero orb" id="dailyhero"></div>
+        <div class="page-body" id="dailypage"></div>
+      </div>
+
       <!-- ============ SHEETEK ============ -->
-      <div class="bsheet-back" id="sb-daily"></div>
-      <div class="bsheet" id="sh-daily"><div id="dailysheet"></div></div>
-
-      <div class="bsheet-back" id="sb-week"></div>
-      <div class="bsheet" id="sh-week"><div id="weeksheet"></div></div>
-
       <div class="bsheet-back" id="sb-pick"></div>
       <div class="bsheet" id="sh-pick">
         <div class="mrow" style="margin-bottom:8px;">
@@ -1611,9 +1654,13 @@
           összesítővel), „ami magától megy". Nincs többé 3 lépés + progress-sáv.</li>
           <li><strong>Nap-csempesor</strong> — 1 sorban, balról jobbra scrollozható; szett · perc, izom-sáv,
           borostyán pötty a lint-es napokon. Koppintás → nap-szerkesztő slide-in.</li>
-          <li><strong>Mai + Heti terhelés</strong> — kompakt csempe a fő nézeten, teljes bontás alsó
-          drawerben. A heti drawer zóna-sávos (MV→MEV→MAV→MRV), irány-nyíllal a tier-cél felé, koppintásra
-          gyakorlat-szintű lebontással + frekvenciával.</li>
+          <li><strong>Heti terhelés a szerkesztőn, Napi a nap-oldalon</strong> — mindkettő kompakt
+          csempe, koppintásra <em>teljes Huawei-oldal</em> nyílik (2. kör: a drawer megszűnt). A heti
+          oldalon izom-washed poszter-kártyák: zóna-sáv pulzáló markerrel, irány-nyíl a tier-cél felé,
+          W1→deload rámpa-spark, koppintásra gyakorlat-lebontás + frekvencia. A napin session-cap
+          sávok felfutó töltéssel.</li>
+          <li><strong>Élő mozgás mindenhol</strong> — count-up hero-számok, felfutó izom-sávok a
+          nap-csempéken és a gauge-okon, staggerelt belépés, lélegző hero-spot, pulzáló zóna-marker.</li>
           <li><strong>Gyakorlat-kártyák accordion nélkül</strong> — minden mindig látszik: szett · rep
           min–max · kg · RIR inline számmezőkben, 🔥/🌿 jelleg, bemelegítő, izom-hozzájárulás sor. Törlés ×
           + Visszavonás snackbar, átrendezés a ☰ fogantyú húzásával.</li>
@@ -1869,8 +1916,8 @@
     document.getElementById('dayrow').innerHTML = DAYS.map(function (d, i) {
       var dm = dayMuscle(d), tot = dayTotal(d);
       var sum = 0; GKEYS.forEach(function (k) { sum += dm[k] || 0; });
-      var rail = GKEYS.filter(function (k) { return (dm[k] || 0) > 0; }).map(function (k) {
-        return '<i style="flex:' + dm[k] + ';background:' + GROUPS[k].deep + ';"></i>';
+      var rail = GKEYS.filter(function (k) { return (dm[k] || 0) > 0; }).map(function (k, j) {
+        return '<i style="flex:' + dm[k] + ';background:' + GROUPS[k].deep + ';--d:' + (250 + i * 70 + j * 60) + 'ms;"></i>';
       }).join('');
       return '<div class="dtile2 ' + (TYPEW[d.type] || '') + '" data-di="' + i + '" role="button" tabindex="0" aria-label="' + d.key + ' · ' + d.label + '">' +
         (cdk[d.key] ? '<span class="adot"></span>' : '') +
@@ -1899,28 +1946,41 @@
     }).join('');
     document.getElementById('edlints').innerHTML = lints;
   }
+  /* ---------- élő elemek: count-up + felfutó sávok ---------- */
+  function countUp(el, target, suffixHtml) {
+    if (!el) return;
+    if (reduced) { el.innerHTML = fmt(target) + (suffixHtml || ''); return; }
+    var t0 = null, dur = 700, from = 0;
+    function tick(ts) {
+      if (!t0) t0 = ts;
+      var p = Math.min(1, (ts - t0) / dur);
+      var e = 1 - Math.pow(1 - p, 3);
+      el.innerHTML = fmt(Math.round((from + (target - from) * e) * 10) / 10) + (suffixHtml || '');
+      if (p < 1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+  function fillBars(root) {
+    var els = root.querySelectorAll('[data-w]');
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        els.forEach(function (el) { el.style.width = el.getAttribute('data-w') + '%'; });
+      });
+    });
+  }
   function renderCompactTiles() {
-    var d = DAYS[activeDay];
-    var dm = dayMuscle(d);
-    document.getElementById('dailyeb').textContent = 'Napi terhelés · ' + d.key;
-    document.getElementById('dailybig').innerHTML = dayTotal(d) + '<small>szett · ~' + dayMins(d) + '′</small>';
-    document.getElementById('dailymini').innerHTML = GKEYS.filter(function (k) { return (dm[k] || 0) > 0; })
-      .sort(function (a, b) { return dm[b] - dm[a]; }).slice(0, 3).map(function (k) {
-        var g = GROUPS[k], v = dm[k];
-        var warn = v >= SESSION_CAP - 1;
-        return '<div class="mg1"><span style="color:' + g.deep + ';">' + g.name + '</span>' +
-          '<span class="bar"><div style="width:' + Math.min(100, Math.round(v / SESSION_CAP * 100)) + '%;background:' + (warn ? '#C9962E' : g.deep) + ';"></div></span>' +
-          '<span class="n">' + fmt(v) + '</span></div>';
-      }).join('');
     var wm = weekMuscle();
-    document.getElementById('weekbig').innerHTML = weekTotal() + '<small>szett · W1</small>';
-    document.getElementById('weekmini').innerHTML = GKEYS.slice().sort(function (a, b) { return (wm[b] || 0) - (wm[a] || 0); })
+    countUp(document.getElementById('weekbig'), weekTotal(), '<small>szett · W1</small>');
+    countUp(document.getElementById('stw1'), weekTotal());
+    var wmini = document.getElementById('weekmini');
+    wmini.innerHTML = GKEYS.slice().sort(function (a, b) { return (wm[b] || 0) - (wm[a] || 0); })
       .slice(0, 3).map(function (k) {
-        var g = GROUPS[k], v = wm[k] || 0, t = targetOf(g);
+        var g = GROUPS[k], v = wm[k] || 0;
         return '<div class="mg1"><span style="color:' + g.deep + ';">' + g.name + '</span>' +
-          '<span class="bar"><div style="width:' + Math.min(100, Math.round(v / g.mrv * 100)) + '%;background:' + g.deep + ';"></div></span>' +
+          '<span class="bar"><div data-w="' + Math.min(100, Math.round(v / g.mrv * 100)) + '" style="background:' + g.deep + ';"></div></span>' +
           '<span class="n">' + fmt(v) + '</span></div>';
       }).join('');
+    fillBars(wmini);
   }
 
   /* ---------- nap-szerkesztő ---------- */
@@ -1938,11 +1998,31 @@
       d.label = this.value;
     });
     document.getElementById('dayname').addEventListener('blur', function () { renderEditorDerived(); });
+    var dm = dayMuscle(d);
+    var dailyMini = GKEYS.filter(function (k) { return (dm[k] || 0) > 0; })
+      .sort(function (a, b) { return dm[b] - dm[a]; }).slice(0, 3).map(function (k) {
+        var g = GROUPS[k], v = dm[k];
+        var warn = v >= SESSION_CAP - 1;
+        return '<div class="mg1"><span style="color:' + g.deep + ';">' + g.name + '</span>' +
+          '<span class="bar"><div data-w="' + Math.min(100, Math.round(v / SESSION_CAP * 100)) + '" style="background:' + (warn ? '#C9962E' : g.deep) + ';"></div></span>' +
+          '<span class="n">' + fmt(v) + '</span></div>';
+      }).join('');
     document.getElementById('daybody').innerHTML =
+      '<div class="loadtile day rise" style="--d:20ms;" id="tile-daily" role="button" tabindex="0" aria-label="Napi terhelés részletei">' +
+        '<div class="mrow"><div class="p-eyebrow grow" style="color:#A84A26;">Napi terhelés · ' + d.key + '</div><span class="mut" style="font-size:11px;">›</span></div>' +
+        '<div class="mrow" style="align-items:flex-end;gap:12px;">' +
+          '<div class="bign" id="dailybig">' + dayTotal(d) + '<small>szett · ~' + dayMins(d) + '′</small></div>' +
+          '<div class="minigauges grow" style="margin-top:0;">' + dailyMini + '</div>' +
+        '</div></div>' +
       '<div id="excards">' + d.ex.map(function (e, i) { return exCard(d, e, i); }).join('') + '</div>' +
       '<button class="ghost rise" id="addex" style="--d:' + (120 + d.ex.length * 50) + 'ms;width:100%;padding:9px 0;margin-top:2px;border:1.5px dashed rgba(255,107,74,0.5);background:transparent;color:#A84A26;">＋ Gyakorlat hozzáadása</button>' +
       '<p class="habnote">Minden mező közvetlenül írható — nincs accordion, nincs stepper. Átrendezés a ☰ fogantyúval, törlés az ×-szel (Visszavonás a snackbaron).</p>';
     document.getElementById('daybody').querySelectorAll('.excard').forEach(function (c) { bindCard(c); });
+    fillBars(document.getElementById('tile-daily'));
+    document.getElementById('tile-daily').addEventListener('click', function () {
+      renderDailyPage();
+      openPage('page-daily');
+    });
     document.getElementById('addex').addEventListener('click', function () { openSheet('pick'); });
     document.getElementById('pickday').textContent = d.key + ' · ' + d.label;
   }
@@ -2026,7 +2106,6 @@
     var h = card.querySelector('.exdrag');
     h.addEventListener('pointerdown', function (e) {
       e.preventDefault();
-      h.setPointerCapture(e.pointerId);
       card.classList.add('dragging');
       function move(ev) {
         var prev = card.previousElementSibling, next = card.nextElementSibling;
@@ -2041,8 +2120,9 @@
       }
       function up() {
         card.classList.remove('dragging');
-        h.removeEventListener('pointermove', move);
-        h.removeEventListener('pointerup', up);
+        document.removeEventListener('pointermove', move);
+        document.removeEventListener('pointerup', up);
+        document.removeEventListener('pointercancel', up);
         var d = DAYS[activeDay];
         var order = Array.prototype.map.call(document.querySelectorAll('#excards .excard'), function (c) {
           return d.ex[parseInt(c.getAttribute('data-ei'), 10)];
@@ -2050,8 +2130,9 @@
         d.ex = order;
         renderDay(); refreshDayStats();
       }
-      h.addEventListener('pointermove', move);
-      h.addEventListener('pointerup', up);
+      document.addEventListener('pointermove', move);
+      document.addEventListener('pointerup', up);
+      document.addEventListener('pointercancel', up);
     });
   }
 
@@ -2071,7 +2152,7 @@
   });
 
   /* ---------- sheetek ---------- */
-  var SHEETS = { daily: ['sb-daily', 'sh-daily'], week: ['sb-week', 'sh-week'], pick: ['sb-pick', 'sh-pick'] };
+  var SHEETS = { pick: ['sb-pick', 'sh-pick'] };
   function openSheet(n) {
     document.getElementById(SHEETS[n][0]).classList.add('open');
     document.getElementById(SHEETS[n][1]).classList.add('open');
@@ -2084,49 +2165,100 @@
     document.getElementById(SHEETS[n][0]).addEventListener('click', function () { closeSheet(n); });
   });
 
-  document.getElementById('tile-daily').addEventListener('click', function () { renderDailySheet(); openSheet('daily'); });
-  document.getElementById('tile-weekly').addEventListener('click', function () { renderWeekSheet(); openSheet('week'); });
+  document.getElementById('tile-weekly').addEventListener('click', function () { renderWeekPage(); openPage('page-week'); });
 
-  /* napi drawer — session-cap ellen */
-  function renderDailySheet() {
+  /* ---------- NAPI TERHELÉS · teljes oldal ---------- */
+  function renderDailyPage() {
     var d = DAYS[activeDay];
     var dm = dayMuscle(d);
-    var rows = GKEYS.filter(function (k) { return (dm[k] || 0) > 0; })
-      .sort(function (a, b) { return dm[b] - dm[a]; }).map(function (k) {
-        var g = GROUPS[k], v = dm[k];
-        var warn = v >= SESSION_CAP - 1;
-        var chips = d.ex.filter(function (e) {
-          return e.prim === k || e.syn.indexOf(k) > -1;
-        }).map(function (e) {
+    var pg = document.getElementById('page-daily');
+    ['p-coral', 'p-sage', 'p-rose', 'p-gold', 'p-lav'].forEach(function (c) { pg.classList.remove(c); });
+    pg.classList.add(TYPEPG[d.type] || 'p-coral');
+    document.getElementById('dailyback').textContent = '‹ ' + d.label;
+    document.getElementById('dailyhero').innerHTML =
+      '<svg width="46" height="46" viewBox="0 0 100 100"><use href="#i-edzes"/></svg>' +
+      '<div class="bignum" id="dphb">' + dayTotal(d) + '</div>' +
+      '<div class="nm">Napi terhelés · ' + d.key + ' · ' + d.label + '</div>' +
+      '<div class="sb">szett · ~' + dayMins(d) + ' perc · ' + d.ex.length + ' gyakorlat</div>';
+    countUp(document.getElementById('dphb'), dayTotal(d));
+    var keys = GKEYS.filter(function (k) { return (dm[k] || 0) > 0; })
+      .sort(function (a, b) { return dm[b] - dm[a]; });
+    var warned = keys.filter(function (k) { return dm[k] >= SESSION_CAP - 1; }).length;
+    var cards = keys.map(function (k, idx) {
+      var g = GROUPS[k], v = dm[k];
+      var warn = v >= SESSION_CAP - 1;
+      var chips = d.ex.filter(function (e) { return e.prim === k || e.syn.indexOf(k) > -1; })
+        .map(function (e) {
           var c = e.prim === k ? e.sets : e.sets * 0.5;
           return '<span class="tplchip">' + e.n + ' +' + fmt(c) + '</span>';
         }).join('');
-        return '<div class="caprow"><div class="mrow">' +
+      return '<div class="wcard rise" style="--d:' + (90 + idx * 60) + 'ms;background:linear-gradient(150deg,' + g.wash[0] + ',' + g.wash[1] + ');cursor:default;">' +
+        '<div class="mrow">' +
           '<span class="mpill" style="' + g.pill + '">' + g.name + '</span>' +
-          '<span class="grow"></span>' +
           (warn ? '<span class="tchip" style="background:rgba(201,150,46,0.16);color:#A8801F;">közel a plafonhoz</span>' : '') +
-          '<span class="nums" style="font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;">' + fmt(v) + ' / ~' + SESSION_CAP + '</span></div>' +
-          '<div class="capbar"><div style="width:' + Math.min(100, Math.round(v / SESSION_CAP * 100)) + '%;background:' + (warn ? '#C9962E' : g.deep) + ';"></div></div>' +
-          '<div class="chips2" style="margin-top:5px;gap:4px;">' + chips + '</div></div>';
-      }).join('');
-    document.getElementById('dailysheet').innerHTML =
-      '<div class="p-eyebrow">Napi terhelés · ' + d.key + ' · ' + d.label + '</div>' +
-      '<div style="font-size:14px;font-weight:700;margin:2px 0 2px;">' + dayTotal(d) + ' szett · ~' + dayMins(d) + ' perc</div>' +
-      '<div class="mut" style="font-size:9px;margin-bottom:6px;">izmonként a ~' + SESSION_CAP + ' szett/edzés plafon ellen · szinergista fél szettel számít</div>' +
-      rows +
-      '<p class="habnote">A plafon nem tiltás — ha átléped, a modell javasol átosztást egy másik napra.</p>';
+          '<span class="grow"></span>' +
+          '<span class="wnums" style="color:' + g.deep + ';">' + fmt(v) + '<small style="font-size:9px;font-weight:600;color:#6E6257;"> / ~' + SESSION_CAP + '</small></span></div>' +
+        '<div class="dbfill"><div data-w="' + Math.min(100, Math.round(v / SESSION_CAP * 100)) + '" style="background:' + (warn ? 'linear-gradient(90deg,#E5C46B,#C9962E)' : g.deep) + ';"></div></div>' +
+        '<div class="chips2" style="margin-top:7px;gap:4px;">' + chips + '</div></div>';
+    }).join('');
+    document.getElementById('dailypage').innerHTML =
+      '<div class="statstrip rise" style="--d:30ms;margin-bottom:10px;">' +
+        '<div class="statcell"><b>' + dayTotal(d) + '</b><small>szett</small></div>' +
+        '<div class="statcell"><b>~' + dayMins(d) + '</b><small>perc</small></div>' +
+        '<div class="statcell"><b>' + keys.length + '</b><small>izomcsoport</small></div>' +
+        '<div class="statcell"><b>' + (warned ? warned + ' ⚠' : '✓') + '</b><small>plafon-közel</small></div>' +
+      '</div>' +
+      '<div class="p-eyebrow rise" style="--d:60ms;padding:0 2px 6px;">Izmonként · a ~' + SESSION_CAP + ' szett/edzés plafon ellen</div>' +
+      cards +
+      '<div class="coach rise" style="--d:' + (120 + keys.length * 60) + 'ms;margin-top:2px;"><span class="dot"></span><span>A plafon nem tiltás — ha átléped, a modell átosztást javasol egy másik napra. Szinergista fél szettel számít.</span></div>';
+    fillBars(document.getElementById('dailypage'));
   }
 
-  /* heti drawer — zóna-sávok, csökkenő sorrend, lebontás */
-  function renderWeekSheet() {
+  /* ---------- HETI TERHELÉS · teljes oldal ---------- */
+  function rampSeries(v, t, isM) {
+    var out = [], cur = v;
+    for (var k = 0; k < 5; k++) {
+      out.push(cur);
+      if (!isM) {
+        if (cur < t) cur = Math.min(t, cur + 2);
+        else if (cur > t) cur = Math.max(t, cur - 2);
+      }
+    }
+    out.push(Math.max(1, Math.round(out[4] / 2)));
+    return out;
+  }
+  function renderWeekPage() {
     var wm = weekMuscle();
     var sorted = GKEYS.slice().sort(function (a, b) { return (wm[b] || 0) - (wm[a] || 0); });
-    var rows = sorted.map(function (k) {
+    var total = weekTotal();
+    var peak = 0, ramping = 0;
+    sorted.forEach(function (k) {
+      var g = GROUPS[k], v = wm[k] || 0, t = targetOf(g);
+      peak += Math.max(v, t);
+      if (Math.abs(v - t) >= 0.5) ramping++;
+    });
+    document.getElementById('weekhero').innerHTML =
+      '<svg width="46" height="46" viewBox="0 0 100 100"><use href="#i-meso"/></svg>' +
+      '<div class="bignum" id="wphb">' + total + '</div>' +
+      '<div class="nm">Heti terhelés · izmonként</div>' +
+      '<div class="sb">szett · 1. hét · ' + DAYS.length + ' edzésnap</div>';
+    countUp(document.getElementById('wphb'), total);
+    var cards = sorted.map(function (k, idx) {
       var g = GROUPS[k], v = wm[k] || 0, t = targetOf(g);
       var max = g.mrv + 2;
       var pct = function (x) { return Math.round(x / max * 100); };
       var arr = Math.abs(v - t) < 0.5 ? '<span class="arr eq">=</span>'
         : v < t ? '<span class="arr up">▲</span>' : '<span class="arr dn">▼</span>';
+      var ser = rampSeries(v, t, g.tier === 'M');
+      var smax = Math.max.apply(null, ser.concat([g.mrv]));
+      var spark = ser.map(function (x, j) {
+        var bg = j === 0 ? 'linear-gradient(180deg,#FFD979,#C9962E)' : g.deep;
+        return '<b class="' + (j === 5 ? 'dl' : j > 0 ? 'fut' : '') + '" style="--d:' + (260 + idx * 70 + j * 45) + 'ms;height:' + Math.max(12, Math.round(x / smax * 100)) + '%;background:' + bg + ';"></b>';
+      }).join('');
+      var stat = g.tier === 'M'
+        ? (v > t ? '▼ a Maintain-cél ' + t + ' — most e fölött vagy' : 'MV-n tart · nem rámpázik')
+        : v < t ? '▲ +2 / hét · ' + fmt(t - v) + ' a ' + (g.tier === 'E' ? 'MRV' : 'MAV') + '-célig' : v > t ? '▼ a cél fölött indulsz' : 'a célon';
+      var statColor = g.tier === 'M' && v <= t ? '#8B7E6F' : v < t ? '#4E6B42' : v > t ? '#A8801F' : '#4E6B42';
       var chips = DAYS.map(function (d) {
         var hits = d.ex.filter(function (e) { return e.prim === k || e.syn.indexOf(k) > -1; });
         if (!hits.length) return '';
@@ -2136,11 +2268,13 @@
         }).join('');
         return '<div class="cline"><span class="dk">' + d.key + '</span><div class="chips2">' + c + '</div></div>';
       }).join('');
-      return '<div class="wrow" data-wk="' + k + '">' +
+      return '<div class="wcard rise" style="--d:' + (90 + idx * 70) + 'ms;background:linear-gradient(150deg,' + g.wash[0] + ',' + g.wash[1] + ');" role="button" tabindex="0" aria-label="' + g.name + ' lebontás">' +
         '<div class="mrow">' +
           '<span class="mpill" style="' + g.pill + '">' + g.name + '</span>' + tchipOf(g.tier) +
-          '<span class="grow"></span><span class="freq">' + freqOf(k) + ' nap / hét</span>' +
-          '<span class="nums">' + fmt(v) + ' ' + arr + ' ' + t + '</span></div>' +
+          '<span class="grow"></span><span class="freq">' + freqOf(k) + ' nap / hét</span></div>' +
+        '<div class="mrow" style="margin-top:2px;">' +
+          '<span class="wnums" style="color:' + g.deep + ';">' + fmt(v) + ' ' + arr + ' ' + t + '<small style="font-size:9px;font-weight:600;color:#6E6257;"> cél</small></span>' +
+          '<span class="grow"></span><span style="font-size:8.5px;font-weight:700;color:' + statColor + ';">' + stat + '</span></div>' +
         '<div class="vb">' +
           '<span class="z2" style="left:' + pct(g.mev) + '%;width:' + (pct(g.mav) - pct(g.mev)) + '%;"></span>' +
           '<span class="z3" style="left:' + pct(g.mav) + '%;width:' + (pct(g.mrv) - pct(g.mav)) + '%;"></span>' +
@@ -2148,29 +2282,36 @@
           '<span class="hl" style="left:' + pct(g.mav) + '%;"></span>' +
           '<span class="hl" style="left:' + pct(g.mrv) + '%;"></span>' +
           '<span class="tg" style="left:' + pct(t) + '%;"></span>' +
-          '<span class="mk" style="left:' + Math.min(98, pct(v)) + '%;background:' + g.deep + ';box-shadow:0 0 8px ' + g.deep + '66;"></span>' +
+          '<span class="mk" style="left:' + Math.min(98, pct(v)) + '%;background:' + g.deep + ';"></span>' +
         '</div>' +
         '<div class="vcap"><span>MV ' + g.mv + '</span><span>MEV ' + g.mev + '</span><span>MAV ' + g.mav + '</span><span>MRV ' + g.mrv + '</span></div>' +
+        '<div class="wspark">' + spark + '</div>' +
+        '<div class="arclbl"><span>W1 · most</span><span>W2</span><span>W3</span><span>W4</span><span>W5 · csúcs</span><span>deload</span></div>' +
         '<div class="wrowbody">' + chips + '</div></div>';
     }).join('');
     var lints = conflicts().map(function (c) {
-      return '<div class="lintrow"><span class="ic">⚠️</span><span><b>' +
+      return '<div class="lintrow rise" style="--d:' + (140 + sorted.length * 70) + 'ms;"><span class="ic">⚠️</span><span><b>' +
         c.muscles.map(function (k) { return GROUPS[k].name; }).join(' + ') + '</b> egymást követő napokon (' +
         c.a.key + ' ' + c.a.label + ' → ' + c.b.key + ' ' + c.b.label + ') — pihenőnap ajánlott közéjük.</span></div>';
     }).join('');
     var pk = peakIssues();
     var pkRow = pk.length
-      ? '<div class="lintrow"><span class="ic">⚠️</span><span>Csúcshéten a <b>' + pk.map(function (k) { return GROUPS[k].name; }).join(' + ') + '</b> átlépné a ~' + SESSION_CAP + ' szett/edzés plafont — a modell plusz modullal teríti szét.</span></div>'
-      : '<div class="lintrow ok"><span class="ic">✓</span><span><b>Csúcshét rendben</b> — minden izom a session-plafon alatt marad.</span></div>';
-    document.getElementById('weeksheet').innerHTML =
-      '<div class="p-eyebrow">Heti terhelés · izmonként</div>' +
-      '<div style="font-size:14px;font-weight:700;margin:2px 0 2px;">' + weekTotal() + ' szett · 1. hét</div>' +
-      '<div class="mut" style="font-size:9px;margin-bottom:4px;">csökkenő sorrendben · a nyíl a tier-cél felé mutat (Emphasize→MRV · Grow→MAV · Maintain→MV) · koppints egy sorra a lebontásért</div>' +
-      rows + lints + pkRow +
-      '<p class="habnote">Százalék nincs — a sáv mutatja, hol állsz a zónákban. A jelzés borostyán és sosem blokkol.</p>';
-    document.getElementById('weeksheet').querySelectorAll('.wrow').forEach(function (r) {
+      ? '<div class="lintrow rise" style="--d:' + (200 + sorted.length * 70) + 'ms;"><span class="ic">⚠️</span><span>Csúcshéten a <b>' + pk.map(function (k) { return GROUPS[k].name; }).join(' + ') + '</b> átlépné a ~' + SESSION_CAP + ' szett/edzés plafont — a modell plusz modullal teríti szét.</span></div>'
+      : '<div class="lintrow ok rise" style="--d:' + (200 + sorted.length * 70) + 'ms;"><span class="ic">✓</span><span><b>Csúcshét rendben</b> — minden izom a session-plafon alatt marad.</span></div>';
+    document.getElementById('weekpage').innerHTML =
+      '<div class="statstrip rise" style="--d:30ms;margin-bottom:10px;">' +
+        '<div class="statcell"><b>' + total + '</b><small>szett · W1</small></div>' +
+        '<div class="statcell"><b>' + peak + '</b><small>szett · csúcs</small></div>' +
+        '<div class="statcell"><b>' + ramping + '</b><small>rámpázik</small></div>' +
+        '<div class="statcell"><b>' + (sorted.length - ramping) + '</b><small>célon</small></div>' +
+      '</div>' +
+      '<div class="p-eyebrow rise" style="--d:60ms;padding:0 2px 6px;">Csökkenő sorrendben · a nyíl a tier-cél felé · koppints a lebontásért</div>' +
+      cards + lints + pkRow +
+      '<p class="habnote">Emphasize→MRV · Grow→MAV · Maintain→MV. Százalék nincs — a sáv mutatja, hol állsz a zónákban; az arany oszlop a mostani hét, a csíkos a deload. A jelzés borostyán és sosem blokkol.</p>';
+    document.getElementById('weekpage').querySelectorAll('.wcard[role]').forEach(function (r) {
       r.addEventListener('click', function () { r.classList.toggle('open'); });
     });
+    fillBars(document.getElementById('weekpage'));
   }
 
   /* ---------- gyakorlat-picker ---------- */
