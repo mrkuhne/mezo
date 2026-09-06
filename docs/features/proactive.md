@@ -262,7 +262,13 @@ this redesign and remain as shipped.
   `bestSet.date` fell in-week via `ExerciseRecordService` — a new cycle-safe `proactive → train`
   read; `PR` anchor candidates), the week's **predictions with status**, and the
   **`WeeklyReviewContextSources` wider context verbatim** (journal, decisions, experiments,
-  mention counts, medication-cycle position, week narrative — no anchor candidates). The JSON
+  mention counts, medication-cycle position, week narrative — no anchor candidates) — since
+  `mezo-a9os` windowed `LifeGoalProgressService.summary(userId, from, to)`, this silently pulls
+  in the seventh source too, the **`ÉLETCÉLOK · A HÉT IRÁNYA`** block (§ below), scoped to the
+  memoir's own `[weekStart, weekStart+6]` rather than `LocalDate.now()`'s week — correct (the
+  memoir narrates the week ENDING, same window as everything else it gathers), undocumented until
+  now, and covered by no dedicated `MemoirGeneratorIT` case, only inherited via
+  `WeeklyReviewContextSources.render`'s own tests. The JSON
   contract is now `{title, body, anchors:[{index, note}]}` (legacy `anchorIndexes` still parsed
   as fallback); **Memory anchor labels are composed server-side** into human HU day labels
   (`MemoirGenerator.memoryLabel`: `aug. 29., szombat — <note≤60>`) so the FE chips stop showing
