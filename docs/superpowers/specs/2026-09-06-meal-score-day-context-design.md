@@ -184,11 +184,29 @@ amikor a mai téved. Ezt property-teszt őrzi (§7).
 
 ```java
 package io.mrkuhne.mezo.feature.nutrition.service;
-public record DayContext(BigDecimal kcalBefore, BigDecimal pBefore) {}
+public record DayContext(BigDecimal kcalBefore, BigDecimal pBefore) {
+    public static DayContext unknown() { return new DayContext(null, null); }
+    public boolean known() { return kcalBefore != null && pBefore != null; }
+}
 ```
 
 Csak kcal + fehérje: a `context` dimenzió mást nem használ (YAGNI). Ugyanaz a fogalom,
 amit a `MealCoachPrompt.MealBlock` már hordoz `kcalBefore`/`pBefore` néven.
+
+**A `unknown()` állapot nem díszlet.** A `scoreMeal` rövid overloadjait (3 és 4 argumentum)
+a produkció nem hívja — egyedül a `MealService.applyScore` pontoz ételt —, de 40+ meglévő
+unit-teszt igen. Ha ezek "üres nap"-ként viselkednének, minden délutáni/esti eset elvárt
+kerete megnőne, és a teszt-fájl fele elcsúszna anélkül, hogy bármit bizonyítanánk.
+
+Ezért: **ismeretlen nap → a névleges pálya feltételezése, azaz pontosan a mai statikus
+képlet** (`elvárt = napi_cél × slot_arány`). Ez nem külön formula, hanem a §4.3
+azonosságának a másik olvasata: a statikus képlet *az* a nap, amelyik a névleges pályán
+halad. Így a rövid overloadok viselkedése **bitre változatlan**, és a dinamikus ág csak ott
+él, ahol tényleg tudjuk, mit evett a felhasználó.
+
+A "nem tudjuk" ág a dimenzió `detail` szövegében is megjelenik (nem hallgatunk róla), de a
+súlyt **nem** degradáljuk 0-ra: van értelmes viszonyítási alapunk, csak nem személyre
+szabott.
 
 **A scorer pure marad, a caller old fel** — a ház mintája:
 
@@ -232,6 +250,25 @@ nem függ a coach-tól).
 
 Ezzel a `NAPI CÉLOK` és a belőle számolt `marad: …` sor ugyanazt a napot idézi, amihez a
 szám mért.
+
+### S2b — a prompt napi összegei skálázatlanok (a terv írása közben talált hiba)
+
+`MealCoachStore.toLoaded` a nap addigi makróit a tételek `snapshotKcal` /
+`snapshotProteinG` / `snapshotCarbsG` / `snapshotFatG` mezőinek **közvetlen** összegeként
+képzi. A kanonikus tétel-hozzájárulás viszont skálázott: `factor = amount / snapshotPer`
+(`MealMapper.contribution`, ugyanezt használja `MealService.toScoredLine` is).
+
+Következmény: minden olyan tételnél, ahol `amount ≠ snapshotPer` — tehát a 100 g-ra tárolt
+kamra-sorok tipikus esetében — a coach-prompt `A NAP ÁLLAPOTA EDDIG A PONTIG` és a belőle
+számolt `marad:` sora **téves**. 250 g logolása egy per-100 g soron a 100 g-os értéket
+számolja.
+
+Javítás: `toLoaded` a `MealMapper.contribution(...)` képletét használja (ne duplikáljuk —
+a mapper `contribution` metódusa `default` a MapStruct interfészen, tehát hívható).
+Ugyanabba a PR-be tartozik, mert pontosan azt a mondatot tesszük igazzá, amit az S2 is.
+
+**Nem** érinti a score-t: a `MealService.applyScore` mindig a helyes, skálázott képletet
+használta.
 
 **Ezért tartozik egy PR-be az S1-gyel**: az S1 verzióbumpja újraírja a borítékokat, ami a
 ház invariánsa szerint kinullázza a próza-fészkeket → a verdiktek újragenerálódnak, immár
