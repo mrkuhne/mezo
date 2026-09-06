@@ -1,8 +1,12 @@
 import { render, screen, waitFor, within } from '@testing-library/react'
+import { http, HttpResponse } from 'msw'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { QueryWrapper } from '@/test/queryWrapper'
+import { API_BASE } from '@/test/msw/handlers'
+import { server } from '@/test/msw/server'
 import { CoachingCardPage } from '@/features/insights/pages/CoachingCardPage'
+import { localDateString } from '@/shared/lib/dates'
 
 const renderPage = () =>
   render(<MemoryRouter><CoachingCardPage /></MemoryRouter>, { wrapper: QueryWrapper })
@@ -48,5 +52,39 @@ describe('CoachingCardPage (real mode)', () => {
   test('no card today says exactly that, rather than inventing one', async () => {
     renderPage()
     await waitFor(() => expect(screen.getByText('Ma nem érkezett kártya.')).toBeInTheDocument())
+  })
+
+  test('a card and a trace winner from different decisions never share a screen', async () => {
+    const date = localDateString()
+    // Two independent queries, deliberately made to disagree: the feed's card is `feed-card-x`,
+    // but the trace's winner points at `trace-card-y` — as if a decision re-ran between the two
+    // fetches. The trace still carries a `lost` rule, so there IS a loser list to suppress.
+    server.use(
+      http.get(`${API_BASE}/api/proactive/feed`, () => HttpResponse.json([{
+        id: 'feed-card-x', date, kind: 'advice', eyebrow: 'Terhelés–táplálás',
+        body: ['Egy plusz szénhidrátos fogás ebédre.'], refs: [], flagKey: 'load_fuel_mismatch',
+        generatedAt: `${date}T08:00:00Z`,
+      }])),
+      http.get(`${API_BASE}/api/companion/flags/trace`, () => HttpResponse.json({
+        date, winner: { flagKey: 'load_fuel_mismatch', rank: 2, cardId: 'trace-card-y' },
+        rules: [
+          { flagKey: 'load_fuel_mismatch', label: 'Terhelés–táplálás', domain: 'nutrition', rank: 2,
+            outcome: 'raised', disposition: 'logged', cardOutcome: 'won',
+            reasonText: '7 napos terhelés magas.', facts: [] },
+          { flagKey: 'sleep_debt', label: 'Alvásadósság', domain: 'sleep', rank: 6,
+            outcome: 'raised', disposition: 'logged', cardOutcome: 'lost',
+            reasonText: 'Alvásadósság magas.', facts: [] },
+        ],
+        transitions: [],
+      })),
+    )
+    const { container } = renderPage()
+    // "Terhelés–táplálás" appears both as the PageHero subtitle and the card's own eyebrow, so
+    // scope to the card itself (`.propcard`) rather than weakening the assertion.
+    await waitFor(() =>
+      expect(within(container.querySelector('.propcard') as HTMLElement)
+        .getByText('Terhelés–táplálás')).toBeInTheDocument())
+    expect(screen.queryByText('Miért ez nyert')).not.toBeInTheDocument()
+    expect(screen.queryByText('Alvásadósság')).not.toBeInTheDocument()
   })
 })

@@ -94,7 +94,9 @@ export function CoachingCardPage() {
             </div>
           )}
 
-          {losers.length > 0 && (
+          {/* card and day come from two independent queries about (allegedly) one decision;
+              if their ids disagree they describe different decisions, so the strip stays quiet. */}
+          {losers.length > 0 && day.winner?.cardId === card?.id && (
             <div className="mzp-pred lav rise" style={{ '--d': '70ms' } as React.CSSProperties}>
               <span className="mz-eyebrow" style={{ color: 'var(--mz-ink-soft)' }}>Miért ez nyert</span>
               <div style={{ marginTop: 6 }}>
