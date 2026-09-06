@@ -69,8 +69,10 @@ The article is explicit that the **weighting/combination formula is not disclose
 what each contributor measures and why, but gives no formula, weights, or aggregation method for
 turning nine 0–100 numbers into one Readiness Score. mezo adopted the **normalize-then-combine**
 shape — each pillar's daily status folds into a single weighted point (`LifeGoalScorer.dailyPoint`)
-— but **rejected the opaque weighting**: a pillar's `weight` is an integer **1..3**, set by the user
-and visible on the goal, not a hidden proprietary constant. Oura's documented opacity is precisely
+— but **rejected the opaque weighting**: a pillar's `weight` is an explicit, bounded value on the
+pillar contract (`@Min(1) @Max(3)`, `LifeGoalPillarEntity`), not a hidden proprietary constant —
+though today it is set only by the seed/catalog default and not yet surfaced in any UI render or
+user input. Oura's documented opacity is precisely
 what justifies that choice — mezo can point to Oura for how to normalize a heterogeneous signal
 before combining it, but not for how to hide the combination step, because Oura itself treats that
 as the one part of the mechanism it will not show.

@@ -6274,8 +6274,9 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 }
 
 /* ── Cél page re-face (mezo-d20.6.2) — prototype en-body #page-cel ×1.18:
-   the guard-chip goal card (coral wash, shared .track vocabulary + the identity
-   quote), the engine's recept as amber/sage segment tiles (white mcells + a
+   the guard-chip goal card (coral wash + the identity quote — the .track/.track-l
+   vocabulary this comment once shared with was later deleted from this branch),
+   the engine's recept as amber/sage segment tiles (white mcells + a
    rationale footer), the gym/futás/röplabda timeline lanes + the ⚠ fedezetlen
    gap chip, and the dashed Mesociklus/Futóblokk plan slots. Lane/bar accents
    reuse the pre-existing --tag- and --wash- domain tokens (the GoalTimeline prior

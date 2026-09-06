@@ -22,7 +22,7 @@ ingest because it is the sole product cited in **both** of mezo's life-goal desi
 §2 and the engine spec's §2), and because those two citations pull in **three separable positions** —
 one mezo adopted faithfully, one the specs misattribute outright, and one mezo deliberately left on
 the table. A single page, not a mention inside a concept page, is the only way to keep those three
-straight (SDD's anti-stub rule in [`SCHEMA.md`](../SCHEMA.md) §2 permits this because Exist is
+straight (SCHEMA's anti-stub rule in [`SCHEMA.md`](../SCHEMA.md) §2 permits this because Exist is
 central to the goal-engine research, not a passing reference).
 
 ## The structural idea: no goal object at all

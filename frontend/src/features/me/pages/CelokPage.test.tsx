@@ -128,7 +128,7 @@ describe('real mode', () => {
    * mezo-9r85, 2. tétel: a sor NEGYEDIK állapota — üres cél-lista. Mock módban a `useGoal`
    * populált célt és hardcode-olt `isError: false`-t ad (goalHooks.ts), tehát ez az ág CSAK
    * valós módban, üres listával mérhető — enélkül a „present" és az „error" ág futott, a
-   * „nincs célod" pedig sosem.
+   * „nincs aktív súlycél" pedig sosem.
    */
   test('a Súlycél sor „nincs aktív súlycél"-t mond üres cél-listára — nem hibát, nem töltést', async () => {
     server.use(http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])))
