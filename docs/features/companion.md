@@ -6027,14 +6027,11 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
     — the graph is one more channel, not a carve-out. Before this fix, `mezo-b3pp.31`'s revive
     half made the nightly `reconcile` re-assert `status='active'` on an opted-out fact's node, so
     a user who archived that node by hand from the Tudástár UI had it silently resurrected by
-    dawn; the filter (mirrored into `retractFact`'s qualifying check) closes that. **This
-    durability is specific to opted-out facts** — a fact left `include_in_prompt=true` is
-    unaffected: `promoteFact` still unconditionally re-asserts `status='active'` for it, so a
-    hand-archive of THAT node is undone by the very next write that touches the fact (even a
-    category-only edit now routes through `syncFact` → `promoteFact` within the async hop, an
-    even shorter undo window than the old nightly sweep). `include_in_prompt` is the intended
-    lever for a fact the user wants out of the prompt — hand-archiving the graph node is not a
-    substitute for it. `syncFact` (promote-or-archive in one transaction, the `syncGoal` shape)
+    dawn; the filter (mirrored into `retractFact`'s qualifying check) closes that. **This closed
+    the opted-out-fact leak specifically; the general hand-archive leak (any node, regardless of
+    `include_in_prompt`) is a separate fix — `mezo-06o0.5`'s `GraphPromotionService.raiseStatus`
+    choke point, see the W2.2 "Hand-archiving is now a durable user intent" note above.**
+    `syncFact` (promote-or-archive in one transaction, the `syncGoal` shape)
     and the unconditionally published `KnowledgeFactChangedEvent` route the toggle to the
     traversal channel (`[Összefüggések]`, the injected fact block) on the user's next turn
     instead of waiting for the sweep, with an edited fact's node title kept fresh as a side
