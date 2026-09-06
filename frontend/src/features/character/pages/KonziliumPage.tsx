@@ -22,6 +22,7 @@ import '@/features/character/character.css'
 import { PageHead } from '@/shared/ui/mozaik'
 import { useCharacterConference, useCharacterConferences, useCharacterExperts } from '@/data/hooks'
 import { TranscriptTurn } from '@/features/character/components/TranscriptTurn'
+import { ConferenceThreadCard } from '@/features/character/components/ConferenceThreadCard'
 import { expertColor } from '@/features/character/expertColors'
 import type { CharacterConferenceSummary, CharacterExpertDto, ConferenceTurn } from '@/data/character/characterApi'
 
@@ -170,35 +171,39 @@ export function KonziliumPage() {
               </div>
             )
           })()}
-          {buildBlocks(conference.transcript, experts).map((b, i) => {
-            if (b.block === 'phase') return <div className="kr-phaselbl" key={i}>{b.label}</div>
-            if (b.block === 'ruling') {
-              return (
-                <TranscriptTurn
-                  key={i}
-                  turn={b.turn}
-                  kind="CHAIR"
-                  displayName={experts.find((e) => e.key === b.turn.persona)?.displayName ?? 'Mezo'}
-                  color={expertColor(b.turn.persona)}
-                  delayMs={i * 90}
-                />
-              )
-            }
-            return (
-              <div className="kr-turnsgroup" key={i}>
-                {b.turns.map((turn, ti) => (
-                  <TranscriptTurn
-                    key={ti}
-                    turn={turn}
-                    kind={b.kinds[ti]}
-                    displayName={experts.find((e) => e.key === turn.persona)?.displayName ?? turn.persona}
-                    color={expertColor(turn.persona)}
-                    delayMs={(i + ti) * 90}
-                  />
-                ))}
-              </div>
-            )
-          })}
+          {conference.deliberation != null && conference.deliberation.length > 0
+            ? conference.deliberation.map((thread, i) => (
+                <ConferenceThreadCard key={`${thread.title}-${i}`} thread={thread} experts={experts} />
+              ))
+            : buildBlocks(conference.transcript, experts).map((b, i) => {
+                if (b.block === 'phase') return <div className="kr-phaselbl" key={i}>{b.label}</div>
+                if (b.block === 'ruling') {
+                  return (
+                    <TranscriptTurn
+                      key={i}
+                      turn={b.turn}
+                      kind="CHAIR"
+                      displayName={experts.find((e) => e.key === b.turn.persona)?.displayName ?? 'Mezo'}
+                      color={expertColor(b.turn.persona)}
+                      delayMs={i * 90}
+                    />
+                  )
+                }
+                return (
+                  <div className="kr-turnsgroup" key={i}>
+                    {b.turns.map((turn, ti) => (
+                      <TranscriptTurn
+                        key={ti}
+                        turn={turn}
+                        kind={b.kinds[ti]}
+                        displayName={experts.find((e) => e.key === turn.persona)?.displayName ?? turn.persona}
+                        color={expertColor(turn.persona)}
+                        delayMs={(i + ti) * 90}
+                      />
+                    ))}
+                  </div>
+                )
+              })}
           <p className="kr-honestynote">{HONESTY_NOTE}</p>
         </div>
       )}

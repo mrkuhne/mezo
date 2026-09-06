@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { KonziliumPage } from './KonziliumPage'
-import { MOCK_CONFERENCES, MOCK_CONFERENCE_DETAIL, MOCK_EXPERTS } from '@/data/character/characterMock'
+import { MOCK_BOOTSTRAP_CONFERENCE, MOCK_CONFERENCES, MOCK_CONFERENCE_DETAIL, MOCK_EXPERTS } from '@/data/character/characterMock'
 import type { CharacterConferenceResponse, CharacterConferenceSummary, CharacterExpertDto } from '@/data/character/characterApi'
 
 const mockNavigate = vi.fn()
@@ -73,6 +73,10 @@ describe('KonziliumPage — list', () => {
 
 describe('KonziliumPage — transcript (?id=)', () => {
   test('opens the transcript for ?id=w2: outcome cells, phase labels, persona-railed turns, honesty note', () => {
+    hoisted.detail = {
+      ...MOCK_CONFERENCE_DETAIL,
+      w2: { ...MOCK_CONFERENCE_DETAIL.w2, deliberation: null } as unknown as CharacterConferenceResponse,
+    }
     renderAt('/me/karakter/konzilium?id=w2')
     expect(screen.getByText('Kimenet')).toBeInTheDocument()
     expect(screen.getByText('elfogadva')).toBeInTheDocument()
@@ -95,5 +99,23 @@ describe('KonziliumPage — transcript (?id=)', () => {
     renderAt('/me/karakter/konzilium?id=w2')
     await userEvent.click(screen.getByRole('button', { name: /vissza a listához/ }))
     expect(screen.getByText('BOOTSTRAP')).toBeInTheDocument()
+  })
+
+  test('a conference with a deliberation renders threads, collapsed', async () => {
+    hoisted.detail = { w2: MOCK_CONFERENCE_DETAIL.w2 }
+    renderAt('/me/karakter/konzilium?id=w2')
+
+    expect(screen.getByText('Fizikai állapot')).toBeInTheDocument()
+    expect(screen.queryByText(/Három adatpont kevés/)).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /Fizikai állapot/ }))
+    expect(screen.getByText(/Három adatpont kevés/)).toBeInTheDocument()
+  })
+
+  test('a conference without a deliberation still renders the prose transcript', () => {
+    hoisted.detail = { b0: MOCK_BOOTSTRAP_CONFERENCE }
+    renderAt('/me/karakter/konzilium?id=b0')
+
+    expect(screen.getByText(/A teljes eddigi történet beolvasva/)).toBeInTheDocument()
   })
 })

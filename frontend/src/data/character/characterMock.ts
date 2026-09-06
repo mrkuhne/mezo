@@ -15,6 +15,7 @@ import type {
   CharacterRunObservation,
   CharacterRunResponse,
   CharacterRunSummary,
+  ConferenceThread,
   ConferenceTurn,
 } from '@/data/character/characterApi'
 
@@ -453,6 +454,48 @@ const TRANSCRIPT_TURNS: ConferenceTurn[] = [
   },
 ]
 
+// The same four claims as TRANSCRIPT_TURNS, as a structured deliberation — two threads
+// (`physical` "Fizikai állapot", `discipline` "Fegyelem"), the first carrying one `pszichologus`
+// reaction, every item carrying both a `skeptic` and a `chair` verdict (mezo-xlvr, Task 8).
+const DELIBERATION_W2: ConferenceThread[] = [
+  {
+    dimensionKey: 'physical',
+    title: 'Fizikai állapot',
+    items: [
+      {
+        index: 0,
+        expertKey: 'doki',
+        text: 'A testzsír-trend és a stagnáló testsúly rekompozícióra utal.',
+        kind: 'NEW',
+        claimId: null,
+        sensitive: false,
+        reactions: [
+          { expertKey: 'edzo', stance: 'SUPPORT', argument: 'Az edzésterhelés is ezt támasztja alá.' },
+        ],
+        skeptic: { verdict: 'KEEP', argument: 'Három adatpont kevés a "biztos" szinthez.' },
+        chair: { accepted: true, confidence: 0.6, reason: 'Elfogadom, a Szkeptikus érve helytálló.' },
+      },
+    ],
+  },
+  {
+    dimensionKey: 'discipline',
+    title: 'Fegyelem',
+    items: [
+      {
+        index: 1,
+        expertKey: 'drill',
+        text: 'A heti fókuszok teljesítési aránya négy hete 80% felett.',
+        kind: 'NEW',
+        claimId: null,
+        sensitive: false,
+        reactions: [],
+        skeptic: { verdict: 'KEEP', argument: 'A mintaidőszak rövid, de a jel egyértelmű.' },
+        chair: { accepted: true, confidence: 0.8, reason: 'Négy egymást követő hét konzisztens jel.' },
+      },
+    ],
+  },
+]
+
 export const MOCK_CONFERENCE_DETAIL: Record<string, CharacterConferenceResponse> = {
   w2: {
     id: 'w2',
@@ -460,6 +503,7 @@ export const MOCK_CONFERENCE_DETAIL: Record<string, CharacterConferenceResponse>
     weekStart: '2026-08-24',
     generatedAt: '2026-08-30T07:00:00Z',
     transcript: TRANSCRIPT_TURNS,
+    deliberation: DELIBERATION_W2,
     changes: [
       { kind: 'CLAIM_ACCEPTED', dimensionKey: 'physical', summary: 'Doki állítása elfogadva "valószínű" szinttel.' },
       { kind: 'CLAIM_ACCEPTED', dimensionKey: 'discipline', summary: 'Drill állítása elfogadva "biztos" szinttel.' },
