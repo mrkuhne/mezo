@@ -129,7 +129,8 @@ plus a 1.8 GiB journal; the kubelet evicts pods at 85 %. Two guards now exist:
    `image-gc-high-threshold=70`, `image-gc-low-threshold=60`,
    `eviction-hard=nodefs.available<10%,imagefs.available<10%`). Host-side, NOT in git —
    re-apply on a rebuild. Verify with the kubelet `configz` call below.
-2. **journald** capped at 500 M (`/etc/systemd/journald.conf.d/mezo.conf`).
+2. **journald** capped at 500 M (`/etc/systemd/journald.conf.d/mezo.conf`). Host-side, NOT in git —
+   re-apply on a rebuild.
 
 Check disk (no SSH needed):
 ```bash
