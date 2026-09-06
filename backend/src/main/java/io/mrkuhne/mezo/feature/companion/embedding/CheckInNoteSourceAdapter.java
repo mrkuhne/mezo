@@ -47,6 +47,13 @@ public class CheckInNoteSourceAdapter implements NarrativeNoteSource {
     }
 
     @Override
+    public List<Note> notesOn(UUID userId, LocalDate day) {
+        return checkInRepository.findByCreatedByAndDateOrderBySlotTime(userId, day).stream()
+                .map(x -> new Note(x.getId(), x.getCreatedBy(), x.getNote(), x.getDate()))
+                .toList();
+    }
+
+    @Override
     public List<Note> liveNotes(UUID userId, Collection<UUID> ids) {
         if (ids.isEmpty()) {
             return List.of();

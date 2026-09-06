@@ -32,11 +32,10 @@ const NOW = new Date('2026-05-24T12:00:00')
 
 // Flattens every person's `direction` so nobody trends down/up — exercises the honest
 // '—' fallback (statstrip down-cell), which the always-has-a-down-person mock seed can
-// never reach on its own. `emptyMezoNote` separately blanks `mezoNote` (real mode before
-// any data) to exercise the band's own honest "omit the whole band" empty state — the two
-// are independent knobs because `mezoNote` is a server-computed field the hub just
-// displays verbatim, not something the FE derives from `direction` any more.
-const hoisted = vi.hoisted(() => ({ flattenTrends: false, empty: false, noCandidates: false, emptyMezoNote: false }))
+// never reach on its own. There is no `mezoNote` knob any more (mezo-06o0.11): the hub
+// stopped rendering the Mezo-band, so the field's value cannot change what this page shows —
+// the guard test asserts exactly that, against the NON-empty seed.
+const hoisted = vi.hoisted(() => ({ flattenTrends: false, empty: false, noCandidates: false }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
   return {
@@ -45,7 +44,6 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       const real = actual.usePeople()
       if (hoisted.empty) return { ...real, people: [], mentions: [], candidates: [], mezoNote: '' }
       if (hoisted.noCandidates) return { ...real, candidates: [] }
-      if (hoisted.emptyMezoNote) return { ...real, mezoNote: '' }
       if (!hoisted.flattenTrends) return real
       return { ...real, people: real.people.map((p) => ({ ...p, direction: 'flat' as const, directionReason: null })) }
     },
@@ -63,7 +61,6 @@ afterEach(() => {
   hoisted.flattenTrends = false
   hoisted.empty = false
   hoisted.noCandidates = false
-  hoisted.emptyMezoNote = false
 })
 
 /** Renders anything the whereabouts of `location.pathname`/`.search` — the catch-all target
@@ -117,16 +114,13 @@ test('CONTRACT: the down-cell reads em dash — never a fabricated name — when
   expect(cells[2].querySelector('b')?.textContent).toBe('—')
 })
 
-test('CONTRACT: the Mezo-band renders usePeople().mezoNote verbatim (mock seed), never an FE-templated sentence', () => {
-  renderPage()
-  expect(screen.getByText(mezoNoteSeed)).toBeInTheDocument()
-})
-
-test('the Mezo-band is OMITTED entirely when mezoNote is empty (real mode before any data) — never an empty snippet', () => {
-  hoisted.emptyMezoNote = true
-  renderPage()
+test('CONTRACT (mezo-06o0.11): the Mezo-band is gone from the hub — even with a non-empty mezoNote', () => {
+  // The seed mezoNote is deliberately NOT blanked here: the point is that the hub omits the
+  // band because it no longer renders one, not because this fixture happens to have no note.
+  const { container } = renderPage()
+  expect(screen.queryByText(mezoNoteSeed)).toBeNull()
   expect(screen.queryByText(/Mezo · észrevétel/)).toBeNull()
-  expect(document.querySelector('.ppl-hub-wide')).toBeNull()
+  expect(container.querySelector('.ppl-hub-wide')).toBeNull()
 })
 
 test('the Jelöltek tile navigates, through the REAL app router, to the real empty-state page (one continuous flow)', async () => {
@@ -167,7 +161,7 @@ test('Jelöltek carries the candidate-count badge and names the candidate on the
   renderPage()
   const tile = screen.getByRole('button', { name: 'Jelöltek' })
   expect(tile.querySelector('.ppl-hub-badge')?.textContent).toBe('1')
-  expect(screen.getByText('Marci · visszatérő név')).toBeInTheDocument()
+  expect(screen.getByText('Marci · új arc a szövegeidben')).toBeInTheDocument()
 })
 
 test('Jelöltek carries no badge and reads the honest quiet line when there is no candidate', () => {
@@ -191,12 +185,10 @@ test('Említések carries the flagCount badge when > 0', () => {
   expect(tile.querySelector('.ppl-hub-badge')?.textContent).toBe('2')
 })
 
-test('Mezo-sáv renders mezoNote and hands off to a person-anchored conversation', () => {
+test('the hub has no chat handoff left — the Mezo-band was its only one (mezo-06o0.11)', () => {
   const { router } = renderPage()
-  expect(screen.getByText(mezoNoteSeed)).toBeInTheDocument()
-  fireEvent.click(screen.getByRole('button', { name: /Mezo · észrevétel/ }))
-  expect(router.state.location.pathname).toBe('/mezo/chat')
-  expect(router.state.location.search).toMatch(/^\?c=/)
+  expect(screen.queryByRole('button', { name: /Mezo · észrevétel/ })).toBeNull()
+  expect(router.state.location.pathname).toBe('/me/people')
 })
 
 test('the filter row and mention feed are gone from the hub (owned by the sibling pages now)', () => {
@@ -204,6 +196,16 @@ test('the filter row and mention feed are gone from the hub (owned by the siblin
   expect(container.querySelector('.ppl-chiprow')).toBeNull()
   expect(container.querySelector('.ppl-mrowt')).toBeNull()
   expect(container.querySelector('.ppl-grid')).toBeNull()
+})
+
+test('the header keeps the back chip left and both actions right, Log first (mezo-06o0.12)', () => {
+  const { container } = renderPage()
+  const head = container.querySelector('.mz-page-head')!
+  const labels = [...head.children].map((el) => el.textContent?.replace(/\s+/g, ' ').trim())
+  expect(labels).toEqual(['‹ Én', 'Log', '＋ Új személy'])
+  // The right-hand group starts at the first action — without this the three chips read as
+  // one crowded left-packed row (the prototype pins the pair to the right edge).
+  expect((head.children[1] as HTMLElement).style.marginLeft).toBe('auto')
 })
 
 test('header actions still open Log and Új személy (the existing PeoplePage sheets)', () => {
