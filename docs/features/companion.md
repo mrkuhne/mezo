@@ -2357,7 +2357,7 @@ source memories and vectors are never touched by the purge.
 
 Migration `202609071000_mezo-eq85.1_text_signal.sql` (in `1.0.0_master.yml`) — the per-day structured
 reading of the user's own prose (§1 above). Driving spec:
-`.superpowers/sdd/2026-09-06-reflection-self-discovered-patterns/`.
+[`docs/superpowers/specs/2026-09-06-reflection-self-discovered-patterns-design.md`](../superpowers/specs/2026-09-06-reflection-self-discovered-patterns-design.md).
 
 - **`text_signal`** — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id) ON DELETE
   CASCADE`, `is_deleted`, `created_at`, `source_kind varchar(16)`, `source_id uuid`, `occurred_on
