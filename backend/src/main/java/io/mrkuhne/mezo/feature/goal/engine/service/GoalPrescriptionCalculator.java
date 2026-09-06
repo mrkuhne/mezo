@@ -47,6 +47,19 @@ public class GoalPrescriptionCalculator {
     private final SleepTargetPort sleepTargetPort;
 
     public Calculation calculate(UUID userId, GoalEntity goal) {
+        return calculate(userId, goal, null);
+    }
+
+    /**
+     * The same read-only calculation against an UNSAVED diet draft: {@code draftPreferences}, when
+     * non-null, replaces what {@link DietPreferencesPort#resolve} would return, so a caller can
+     * project what a settings change WOULD prescribe without writing the preference row or the
+     * goal. Nothing else differs — one calculation path, so a preview can never drift from what
+     * the save actually produces.
+     *
+     * @param draftPreferences the draft to project with, or {@code null} for the owner's saved/ghost ones
+     */
+    public Calculation calculate(UUID userId, GoalEntity goal, DietPreferences draftPreferences) {
         WeightTrendResponse trend = weightTrendService.computeTrend(userId);
         GuardStatus guards = guardService.evaluate(goal, linkedMesoIds(goal, userId), trend);
         BiometricProfileEntity profile =
@@ -58,7 +71,8 @@ public class GoalPrescriptionCalculator {
         BigDecimal currentWeightKg = currentWeightKg(userId, goal);
         BigDecimal weeklyEat = weeklyActivity.totalWeeklyEatKcalPerDay(userId, currentWeightKg);
         TdeeBootstrapJson bootstrap = bootstrapService.compute(profile, currentWeightKg, weeklyEat);
-        DietPreferences preferences = dietPreferences.resolve(userId);
+        DietPreferences preferences =
+            draftPreferences != null ? draftPreferences : dietPreferences.resolve(userId);
         List<ProjectionSegment> segments = projectionService.project(
             goal, userId, bootstrap, trend, preferences.dayTypeShiftKcal());
         BigDecimal sleepTargetH = sleepTargetPort.targetHours(userId);

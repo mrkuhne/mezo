@@ -133,13 +133,37 @@ describe('FuelSettingsPage', () => {
     expect(screen.getByText('26% · 95 g')).toBeInTheDocument()
   })
 
-  test('keeps the active preview honest when a different profile is selected', async () => {
+  // mezo-u2pd: the preview used to be pinned to the SAVED targets, so flipping the profile moved
+  // nothing until Mentés. It now projects the draft (mock mode locally, real mode server-side).
+  test('re-projects the preview when a different macro profile is selected', async () => {
     renderPage()
 
     await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Makróprofil' }), 'low_carb')
 
-    expect(screen.getByText('Mentés után frissül')).toBeInTheDocument()
-    expect(screen.getByText('27% · 220 g')).toBeInTheDocument()
+    // low_carb = 0.40 fat energy share of the unchanged 3100 kcal; carbs absorb the remainder.
+    expect(screen.getByText('3 100 kcal')).toBeInTheDocument()
+    expect(screen.getByText('40% · 138 g')).toBeInTheDocument()
+    expect(screen.queryByText('26% · 95 g')).not.toBeInTheDocument()
+    expect(screen.getByText('Előnézet — mentésre válik élessé')).toBeInTheDocument()
+  })
+
+  test('re-projects the preview when the protein tier changes', async () => {
+    renderPage()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Magas' }))
+
+    // moderate 2.0 → high 2.2 g/kg BW: the 220 g protein target scales by 1.1.
+    expect(screen.getByText(/· 242 g/)).toBeInTheDocument()
+  })
+
+  test('holds the last valid projection while a custom split does not sum to 100%', async () => {
+    renderPage()
+
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Makróprofil' }), 'custom')
+    fireEvent.change(screen.getByLabelText('Zsír %'), { target: { value: '10' } })
+
+    // 30/40/10 is not 100 — the draft is unprojectable, so the saved split stays on screen.
+    expect(screen.getByText('26% · 95 g')).toBeInTheDocument()
   })
 
   test('updates the accessible hero summary and decorative meal dots from the draft', async () => {
@@ -208,5 +232,25 @@ describe('FuelSettingsPage — real-mode cold-open prefill', () => {
     expect(screen.getByLabelText('Víz-cél')).toHaveValue(3200)
     expect(screen.getByLabelText('Rost-cél')).toHaveValue(35)
     expect(screen.getByLabelText('Edzőnap-shift')).toHaveTextContent('200')
+  })
+})
+
+describe('FuelSettingsPage — real-mode draft preview', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+
+  test('posts the draft to the engine preview and renders what it prescribes', async () => {
+    const seen: unknown[] = []
+    server.use(
+      http.post(`${API_BASE}/api/diet/settings/preview`, async ({ request }) => {
+        seen.push(await request.json())
+        return HttpResponse.json({ kcal: 2600, proteinG: 200, carbsG: 250, fatG: 100, source: 'goal' })
+      }),
+    )
+    renderPage()
+
+    await userEvent.selectOptions(screen.getByRole('combobox', { name: 'Makróprofil' }), 'low_fat')
+
+    await waitFor(() => expect(screen.getByText('2 600 kcal')).toBeInTheDocument())
+    expect(seen.at(-1)).toMatchObject({ splitPreset: 'low_fat', proteinTier: 'moderate' })
   })
 })

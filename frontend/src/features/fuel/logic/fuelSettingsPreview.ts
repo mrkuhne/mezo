@@ -1,3 +1,6 @@
+import { DIET_SPLIT_PRESETS, PROTEIN_TIER_G_PER_KG_BW } from '@/data/fuel/fuelConfig'
+import type { DietSettings } from '@/data/types'
+
 export interface FuelSettingsTargetInput {
   kcal: number
   p: number
@@ -21,9 +24,10 @@ interface WeightedMacro {
 }
 
 /**
- * Formats the already active goal-engine target for the settings preview. It deliberately does
- * not project a diet draft: new gram targets only become truthful after the server saves and
- * recomputes them.
+ * Formats a target set for the settings preview donut: energy shares as whole percents that sum
+ * to exactly 100 (largest-remainder), plus the grams as-is. The input is either the active
+ * goal-engine target or a draft projection (`projectDraftTargets` / the server preview) — this
+ * function only presents numbers, it never derives them.
  */
 export function buildFuelSettingsMacroPreview(
   targets: FuelSettingsTargetInput,
@@ -58,4 +62,36 @@ export function buildFuelSettingsMacroPreview(
     carbs: { grams: targets.c, pct: macros[1].pct },
     fat: { grams: targets.f, pct: macros[2].pct },
   }
+}
+
+/**
+ * MOCK-MODE ONLY draft projection (mezo-u2pd). Real mode gets its numbers from
+ * `POST /api/diet/settings/preview`, which runs the actual goal engine; mock mode has no engine,
+ * so it re-derives the draft's macros from the currently served targets using the same SHAPE the
+ * engine uses — fat = split share of kcal, protein = the tier's g/kg band endpoint (scaled off
+ * the base, whose grams were produced under `savedTier`), carbs = the energy remainder:
+ *
+ * - kcal is carried over unchanged. The engine's `dayTypeShiftKcal` redistribution is NOT modelled
+ *   here — mock mode has no prescription to re-segment, and the weekly frame is unchanged anyway.
+ * - the ISSN fat floor (0.5 g/kg BW) is NOT applied: mock mode has no body weight. A very low
+ *   kcal + low_fat draft can therefore show a slightly lower fat than the engine would prescribe.
+ *
+ * Both deviations are mock fictions by construction, matching the rest of the mock seed; the
+ * constants it does use are drift-guarded against application.yml (dietSplitDriftGuard.test.ts).
+ */
+export function projectDraftTargets(
+  base: FuelSettingsTargetInput,
+  draft: Pick<DietSettings, 'splitPreset' | 'fatPctX10' | 'proteinTier'>,
+  savedTier: DietSettings['proteinTier'],
+): FuelSettingsTargetInput {
+  // A custom split with no fat% yet falls back to balanced — the engine's `fatShareFor` default.
+  const customShare = draft.fatPctX10 == null ? DIET_SPLIT_PRESETS.balanced : draft.fatPctX10 / 1000
+  const share = draft.splitPreset === 'custom'
+    ? customShare
+    : DIET_SPLIT_PRESETS[draft.splitPreset]
+  const proteinScale =
+    PROTEIN_TIER_G_PER_KG_BW[draft.proteinTier] / PROTEIN_TIER_G_PER_KG_BW[savedTier]
+  const p = Math.round(base.p * proteinScale)
+  const f = Math.round(base.kcal * share / 9)
+  return { kcal: base.kcal, p, f, c: Math.max(0, Math.round((base.kcal - 4 * p - 9 * f) / 4)) }
 }
