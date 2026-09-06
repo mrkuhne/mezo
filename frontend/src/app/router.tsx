@@ -64,6 +64,7 @@ import { ExperimentsPage } from '@/features/insights/pages/ExperimentsPage'
 import { DiagnosisListPage } from '@/features/insights/pages/DiagnosisListPage'
 import { DiagnosisDetailPage } from '@/features/insights/pages/DiagnosisDetailPage'
 import { CoachingHubPage } from '@/features/insights/pages/CoachingHubPage'
+import { CoachingObserverPage } from '@/features/insights/pages/CoachingObserverPage'
 import { MemoryPage } from '@/features/insights/pages/MemoryPage'
 import { EnHubPage } from '@/features/me/pages/EnHubPage'
 import { GoalPlannerPage } from '@/features/me/pages/GoalPlannerPage'
@@ -288,6 +289,7 @@ export const routes: RouteObject[] = [
       // kártya. Flat `/mezo/*` siblings, the `mezo/diagnozis` idiom; static segments only, so
       // no ordering hazard with a param route.
       { path: 'mezo/coaching', element: <CoachingHubPage /> },
+      { path: 'mezo/coaching/megfigyelo', element: <CoachingObserverPage /> },
       // Motor retired (mezo-tk88.4) — the diagnostics moved into the Minták dashboard +
       // the pattern-pair detail page above (mezo-tk88.5); the route survives as an honest
       // redirect so any old bookmark/link (`?pair=` cross-links included) still lands
