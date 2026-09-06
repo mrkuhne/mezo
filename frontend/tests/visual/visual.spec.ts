@@ -14,8 +14,8 @@ import { seedThemeAndKalauz } from './kalauzSeed'
  * insights-heti shot for me-heti, the new /me/week weekly-review page; mezo-d20.8.2.1 added
  * train-review + its lane and exercise-view click-throughs; mezo-hqfi.4 added the two
  * Diagnózis shots; mezo-6269.3 added the three /mezo/coaching surfaces — the hub, the
- * Megfigyelő and the winning card — and legitimately moved insights-mintak, the /mezo hub
- * shot the new coaching tile lands on).
+ * Megfigyelő and the winning card; insights-mintak unchanged (new hub tile below the
+ * 440×956 viewport fold).
  *
  * Determinism levers (all must hold or the shots flake):
  *  - clock frozen BEFORE goto → the daypart-derived sky tint (PhoneFrame) + greeting
