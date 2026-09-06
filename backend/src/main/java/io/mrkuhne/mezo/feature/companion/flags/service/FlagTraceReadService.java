@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.flags.service;
 
+import io.mrkuhne.mezo.feature.companion.flags.entity.CompanionFlagLogEntity;
 import io.mrkuhne.mezo.feature.companion.flags.entity.CompanionFlagTraceEntity;
 import io.mrkuhne.mezo.feature.companion.flags.repository.CompanionFlagLogRepository;
 import io.mrkuhne.mezo.feature.companion.flags.repository.CompanionFlagTraceRepository;
@@ -125,12 +126,29 @@ public class FlagTraceReadService {
         List<String> facts;
         String reasonText;
         if (OUTCOME_RAISED.equals(row.getOutcome())) {
-            facts = logRepository
+            CompanionFlagLogEntity log = logRepository
                 .findFirstByCreatedByAndFlagKeyAndDeletedFalseAndCreatedAtLessThanEqualOrderByCreatedAtDesc(
                     userId, flagKey, cutoff)
-                .map(log -> FlagFactRenderer.render(flagKey, log.getPayload()))
-                .orElse(List.of());
-            reasonText = facts.isEmpty() ? label : facts.get(0);
+                .orElse(null);
+            List<String> rendered = log == null
+                ? List.of() : FlagFactRenderer.render(flagKey, log.getPayload());
+            if (log != null && DISPOSITION_SUPPRESSED.equals(row.getDisposition())) {
+                // A cooldown-suppressed raise writes NO log row (FlagService logs only on the
+                // LOGGED branch), so this payload belongs to a PREVIOUS raise — genuinely the
+                // rule's freshest frozen evidence, but NOT today's measurement. Keep it (it is the
+                // only real evidence there is) and DATE it: `changedAt` points at today's row, so
+                // undated numbers here would read as measured today. That is the dishonesty the
+                // observer exists to prevent, hence the date is part of the copy, not a garnish.
+                LocalDate frozenOn = LocalDate.ofInstant(log.getCreatedAt(), ZoneId.systemDefault());
+                List<String> dated = new ArrayList<>(rendered);
+                dated.add(FlagTraceCopy.frozenNumbersFact(frozenOn));
+                facts = List.copyOf(dated);
+                reasonText = FlagTraceCopy.suppressedRaiseText(frozenOn);
+            } else {
+                // A LOGGED raise's log row IS the raise being explained — nothing to qualify.
+                facts = rendered;
+                reasonText = rendered.isEmpty() ? label : rendered.get(0);
+            }
         } else if (OUTCOME_UNAVAILABLE.equals(row.getOutcome())) {
             reasonText = FlagTraceCopy.unavailableText(row.getReasonCode());
             facts = List.of();
@@ -194,9 +212,12 @@ public class FlagTraceReadService {
             return FlagTraceCopy.unavailableText(row.getReasonCode());
         }
         if (OUTCOME_RAISED.equals(row.getOutcome())) {
+            // Timeline text, not closing-state text: a transition states WHAT changed and carries
+            // no frozen payload of its own, so there are no numbers here to date. The sentences
+            // live in FlagTraceCopy — the one place a verdict's user-facing wording is produced.
             return DISPOSITION_SUPPRESSED.equals(row.getDisposition())
-                ? "A szabály igaz, de nemrég szólt már — most csendben maradt."
-                : "A szabály jelzett.";
+                ? FlagTraceCopy.suppressedRaiseText()
+                : FlagTraceCopy.raisedText();
         }
         return FlagTraceCopy.clearText(row.getEvidence());
     }

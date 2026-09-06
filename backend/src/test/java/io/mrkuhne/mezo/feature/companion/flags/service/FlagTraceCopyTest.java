@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.flags.service;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict.ClearEvidence;
+import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -59,6 +60,26 @@ class FlagTraceCopyTest {
     void every_unavailable_reason_has_its_own_sentence(UnavailableReason reason) {
         String code = reason.name().toLowerCase();
         assertThat(FlagTraceCopy.unavailableText(code)).as(code).isNotBlank().doesNotContain(code);
+    }
+
+    @Test
+    void a_suppressed_raise_with_a_frozen_payload_says_when_the_numbers_are_from() {
+        String text = FlagTraceCopy.suppressedRaiseText(LocalDate.of(2026, 9, 3));
+        assertThat(text).startsWith(FlagTraceCopy.suppressedRaiseText());
+        assertThat(text).contains("2026. 09. 03-i");
+    }
+
+    @Test
+    void the_frozen_numbers_row_dates_the_evidence_and_denies_it_is_todays() {
+        String fact = FlagTraceCopy.frozenNumbersFact(LocalDate.of(2026, 1, 9));
+        assertThat(fact).contains("2026. 01. 09-i").contains("nem mai mérés");
+    }
+
+    @Test
+    void the_two_raised_sentences_are_distinct_and_hungarian() {
+        assertThat(FlagTraceCopy.raisedText()).isNotBlank()
+            .isNotEqualTo(FlagTraceCopy.suppressedRaiseText());
+        assertThat(FlagTraceCopy.suppressedRaiseText()).contains("csendben maradt");
     }
 
     @Test

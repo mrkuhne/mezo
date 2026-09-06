@@ -16,6 +16,7 @@ import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEnvelope;
 import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.support.populator.FlagLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -50,9 +51,19 @@ class FlagTraceReadServiceIT extends AbstractIntegrationTest {
     private CompanionMessageRepository companionMessageRepository;
     @Autowired
     private UserPopulator userPopulator;
+    /** The house seam for a controlled {@code companion_flag_log.created_at}: the column is
+     *  {@code @CreationTimestamp} + non-updatable on {@code OwnedEntity}, so only a native UPDATE
+     *  can backdate it — {@code FlagLogPopulator.raiseAt} already does exactly that. */
+    @Autowired
+    private FlagLogPopulator flagLogPopulator;
 
     private UUID createUser() {
         return userPopulator.createUser().getId();
+    }
+
+    private static FlagPayloadEnvelope sleepDebt(double deficitHours) {
+        return FlagPayloadEnvelope.sleepDebt(
+            new FlagPayloadEnvelope.SleepDebt(8.0, 7, 6, 1.0, deficitHours, Map.of()));
     }
 
     private static Instant at(int hour) {
@@ -207,6 +218,95 @@ class FlagTraceReadServiceIT extends AbstractIntegrationTest {
         assertThat(day.rules().stream()
             .filter(r -> r.flagKey().equals(FlagKey.SLEEP_DEBT)).findFirst().orElseThrow()
             .outcome()).isEqualTo("raised");
+    }
+
+    /**
+     * A cooldown-suppressed raise writes NO log row, so the only frozen payload the read side can
+     * find belongs to an EARLIER raise. The evidence stays (it is the rule's freshest real
+     * measurement) but must be DATED, or old numbers would sit under today's {@code changedAt} and
+     * read as today's measurement.
+     */
+    @Test
+    void a_cooldown_suppressed_raise_dates_its_frozen_numbers_instead_of_passing_them_off_as_today() {
+        UUID userId = createUser();
+        LocalDate frozenOn = DAY.minusDays(4);
+        flagLogPopulator.raiseAt(userId, FlagKey.SLEEP_DEBT, FlagKey.SOURCE_SWEEP,
+            sleepDebt(1.4), frozenOn.atTime(9, 0).atZone(ZoneId.systemDefault()).toInstant());
+        trace(userId, FlagKey.SLEEP_DEBT, "raised", null, "suppressed_by_cooldown", null, at(11));
+        // a LOGGED raise on another rule: its log row IS the raise being explained, so no dating
+        flagLogPopulator.raiseAt(userId, FlagKey.LATE_EATING, FlagKey.SOURCE_SWEEP,
+            FlagPayloadEnvelope.lateEating(new FlagPayloadEnvelope.LateEating(
+                120, 22.0, 2, 3, null, 2, Map.of(), Map.of())),
+            at(9));
+        trace(userId, FlagKey.LATE_EATING, "raised", null, "logged", null, at(10));
+
+        Map<String, FlagTraceReadService.RuleState> byKey = service.read(userId, DAY).rules().stream()
+            .collect(java.util.stream.Collectors.toMap(
+                FlagTraceReadService.RuleState::flagKey, r -> r));
+
+        FlagTraceReadService.RuleState suppressed = byKey.get(FlagKey.SLEEP_DEBT);
+        assertThat(suppressed.facts()).hasSize(2);
+        assertThat(suppressed.facts().get(0)).contains("1,4");
+        assertThat(suppressed.facts().get(1))
+            .isEqualTo(FlagTraceCopy.frozenNumbersFact(frozenOn));
+        assertThat(suppressed.reasonText())
+            .isEqualTo(FlagTraceCopy.suppressedRaiseText(frozenOn));
+        assertThat(suppressed.changedAt()).isEqualTo(at(11));
+
+        FlagTraceReadService.RuleState logged = byKey.get(FlagKey.LATE_EATING);
+        assertThat(logged.facts()).isNotEmpty()
+            .noneMatch(f -> f.contains("nem mai mérés"));
+        assertThat(logged.reasonText()).isEqualTo(logged.facts().get(0));
+    }
+
+    /**
+     * The design's stated property: a day's FIRST transition for a rule reads from YESTERDAY's
+     * state, not from nothing. Only the antecedent query can supply that {@code from}.
+     */
+    @Test
+    void the_days_first_transition_reads_from_yesterdays_state_not_from_nothing() {
+        UUID userId = createUser();
+        trace(userId, FlagKey.LOAD_FUEL_MISMATCH, "clear", null, null,
+            new FlagVerdict.ClearEvidence("load_avg_min", 200.0, 400.0, null),
+            DAY.minusDays(1).atTime(9, 0).atZone(ZoneId.systemDefault()).toInstant());
+        trace(userId, FlagKey.LOAD_FUEL_MISMATCH, "raised", null, "logged", null, at(10));
+
+        FlagTraceReadService.TraceDay day = service.read(userId, DAY);
+
+        assertThat(day.transitions()).singleElement().satisfies(t -> {
+            assertThat(t.from()).isEqualTo("clear");
+            assertThat(t.to()).isEqualTo("raised");
+        });
+    }
+
+    /**
+     * The whole point of the frozen payload: a PAST day renders what was frozen THEN, not the
+     * newest numbers. Both halves matter — the cutoff bound excludes the later row, and the
+     * {@code OrderByCreatedAtDesc} picks the newest of the rows that survive the bound.
+     */
+    @Test
+    void a_past_day_renders_the_payload_frozen_then_rather_than_todays_numbers() {
+        UUID userId = createUser();
+        LocalDate pastDay = DAY.minusDays(2);
+        // oldest — inside the bound, but NOT the newest that survives it
+        flagLogPopulator.raiseAt(userId, FlagKey.SLEEP_DEBT, FlagKey.SOURCE_SWEEP, sleepDebt(0.9),
+            pastDay.minusDays(1).atTime(9, 0).atZone(ZoneId.systemDefault()).toInstant());
+        // the raise that the past day is about
+        flagLogPopulator.raiseAt(userId, FlagKey.SLEEP_DEBT, FlagKey.SOURCE_SWEEP, sleepDebt(1.4),
+            pastDay.atTime(8, 0).atZone(ZoneId.systemDefault()).toInstant());
+        // today's numbers — must be excluded by the cutoff
+        flagLogPopulator.raiseAt(userId, FlagKey.SLEEP_DEBT, FlagKey.SOURCE_SWEEP, sleepDebt(2.7),
+            DAY.atTime(8, 0).atZone(ZoneId.systemDefault()).toInstant());
+        trace(userId, FlagKey.SLEEP_DEBT, "raised", null, "logged", null,
+            pastDay.atTime(9, 0).atZone(ZoneId.systemDefault()).toInstant());
+
+        FlagTraceReadService.RuleState state = service.read(userId, pastDay).rules().stream()
+            .filter(r -> r.flagKey().equals(FlagKey.SLEEP_DEBT)).findFirst().orElseThrow();
+
+        assertThat(state.outcome()).isEqualTo("raised");
+        assertThat(state.facts()).singleElement().asString()
+            .contains("1,4").doesNotContain("2,7").doesNotContain("0,9");
+        assertThat(state.reasonText()).contains("1,4");
     }
 
     @Test

@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.companion.flags.service;
 
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict.ClearEvidence;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,7 +25,46 @@ public final class FlagTraceCopy {
      *  {@link UnavailableReason} — no rule ever produces it; {@code FlagTraceReadService} does. */
     public static final String NOT_EVALUATED_YET = "not_evaluated_yet";
 
+    /** Hungarian date without the trailing period, so the {@code -i} suffix below reads as
+     *  orthography wants it ("2026. 09. 03-i"), not as "2026. 09. 03.-i". */
+    private static final DateTimeFormatter FROZEN_ON = DateTimeFormatter.ofPattern("yyyy. MM. dd");
+
     private FlagTraceCopy() {
+    }
+
+    /**
+     * The RAISED sentence, in the two shapes a raise can take.
+     *
+     * <p>A {@code logged} raise is the one the day's log row belongs to, so its numbers ARE the
+     * numbers of this raise — nothing to qualify. A {@code suppressed_by_cooldown} raise writes no
+     * log row at all ({@code FlagService} logs only on the LOGGED branch), so the freshest frozen
+     * payload the read side can find belongs to an EARLIER raise. Those numbers are still the
+     * rule's most recent real evidence and are worth showing — but they must be shown AS earlier
+     * numbers. Presenting them under today's {@code changedAt} without saying when they were
+     * measured is exactly the "old figures dressed up as today's measurement" dishonesty the
+     * observer exists to avoid, so the date is part of the sentence, not an optional garnish.
+     */
+    public static String raisedText() {
+        return "A szabály jelzett.";
+    }
+
+    /** The suppressed raise with no frozen payload behind it — nothing to date. */
+    public static String suppressedRaiseText() {
+        return "A szabály igaz, de nemrég szólt már — most csendben maradt.";
+    }
+
+    /** The suppressed raise WITH a frozen payload: same sentence, plus when the numbers are from.
+     *  See {@link #raisedText()} for why the date is mandatory here. */
+    public static String suppressedRaiseText(LocalDate frozenOn) {
+        return suppressedRaiseText()
+            + " Az alábbi számok a %s-i jelzésből valók.".formatted(FROZEN_ON.format(frozenOn));
+    }
+
+    /** The extra evidence row appended to a suppressed raise's facts, naming the day the numbers
+     *  were frozen. One line, same voice as {@code FlagFactRenderer}'s rows. */
+    public static String frozenNumbersFact(LocalDate frozenOn) {
+        return "Ezek a számok a %s-i jelzésből valók, nem mai mérés."
+            .formatted(FROZEN_ON.format(frozenOn));
     }
 
     /** One sentence saying why the rule is quiet, in the rule's own numbers. */
