@@ -80,16 +80,22 @@ public class TextSignalEntity extends OwnedEntity {
     @Column(nullable = false)
     private Integer version = 1;
 
+    // The three scores are smallint in the DB (a 1..5 CHECK needs no more) but Integer in Java —
+    // the extractor, the series map and every consumer speak Integer. The explicit SMALLINT jdbc
+    // type is what reconciles the two; without it Hibernate's schema validation rejects int2.
     @Min(1)
     @Max(5)
+    @JdbcTypeCode(SqlTypes.SMALLINT)
     private Integer mood;
 
     @Min(1)
     @Max(5)
+    @JdbcTypeCode(SqlTypes.SMALLINT)
     private Integer energy;
 
     @Min(1)
     @Max(5)
+    @JdbcTypeCode(SqlTypes.SMALLINT)
     private Integer stress;
 
     @NotNull
