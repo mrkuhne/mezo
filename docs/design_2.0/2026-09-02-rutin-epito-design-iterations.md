@@ -141,3 +141,24 @@ szűkítette.
    listája vizuálisan gomb nélküli; a shipped verzió az új `chevrons="focus"` móddal old fel —
    a gombok az a11y fában maradnak, de csak `:focus-within`-re látszanak. Lásd
    [_platform-design-system.md §2 item 5](../features/_platform-design-system.md).
+
+## 2026-09-07 — a szerkesztés saját oldalra költözött (mezo-bk26, S3)
+
+A formálódás-kör (mezo-08zl) IA-választása — `prototypes/rutin-szerkeszto-valasztas.html` —
+eredetileg az **A** (helyben) változatot ajánlotta, de az A megépítve elbukott használatban: a
+formálódás-nézet olyan hosszúra nyújtotta a szokás-oldalt, hogy a helyben nyíló űrlap a
+látótér alá került, és a fejléc-gomb „nem csinál semmit" érzést keltett. A shipped megoldás a
+**B**: `HabitPage` tisztán részletek-oldal (poszter + kontextus + előzmény + read-only
+mondat), a teljes írófelület a `/me/rutin/szokas/{key}/szerkesztes` saját oldalán él
+(`HabitEditPage`, prototípus `rutin-formalodas.html` `pg-edit`).
+
+Amit a szétválasztás közben terméklogikában is javítottunk:
+
+1. **A horgony választó, nem tiltott mező.** A chip-kötött horgony readOnly zárolása technikai
+   kényszer volt (a PATCH-ben a null = „hagyd békén", az üres string = „oldd le”); a választó
+   (szokásaid + mezo-események + saját szavakkal + „Leoldom") fedi le a konvenciót, gépelés
+   helyett.
+2. **A keretváltás előre kimondja az adatvesztést** — a backend `clearForeignFields`-e némán
+   nulláz, az oldal a tárolt értékekkel nevesíti, mi vész el, még a Mentés előtt.
+3. **A mode/metric itt szerkeszthető** (mezo-pero kontraktus-szelet), és az ürített opcionális
+   mezők tényleg ürülnek (üres string a dróton, a régi „hagyd ki a kulcsot" szabály helyett).
