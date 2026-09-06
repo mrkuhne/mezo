@@ -14,13 +14,25 @@ import { CoachingRuleTile } from '@/features/insights/components/CoachingRuleTil
 import { dayLabel, hhmm, splitOf } from '@/features/insights/logic/coachingCopy'
 import { addDays, huWeekdayFullIso, localDateString } from '@/shared/lib/dates'
 
+// The observer's own URL contract: `?d=` must be a real YYYY-MM-DD calendar date, not just a
+// string that happens to compare cleanly. Round-tripping through Date rejects both malformed
+// shapes (`''`, `'abc'`) and calendrically invalid ones (`2026-02-30`, which JS would otherwise
+// silently roll over to March 2) — anything that fails this falls back to today.
+function isValidIsoDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const [y, m, d] = value.split('-').map(Number)
+  const dt = new Date(y, m - 1, d)
+  return localDateString(dt) === value
+}
+
 export function CoachingObserverPage() {
   const navigate = useNavigate()
   const [params, setParams] = useSearchParams()
   const today = localDateString()
   const asked = params.get('d')
-  // A future ?d= is not an error worth a screen — it clamps to today, the FuelLogPage idiom.
-  const date = asked != null && asked <= today ? asked : today
+  // A future or malformed ?d= is not an error worth a screen — it clamps to today, the
+  // FuelLogPage idiom.
+  const date = asked != null && isValidIsoDate(asked) && asked <= today ? asked : today
 
   const { day, isPending, isError } = useCoachingTrace(date)
   const split = splitOf(day)

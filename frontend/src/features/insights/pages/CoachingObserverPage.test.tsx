@@ -64,6 +64,31 @@ describe('CoachingObserverPage (mock mode)', () => {
     expect(screen.getByRole('button', { name: 'Következő nap' })).toBeDisabled()
     expect(screen.getByText('ma')).toBeInTheDocument()
   })
+
+  test('an empty ?d= does not crash the page — it clamps to today', () => {
+    renderPage('/mezo/coaching/megfigyelo?d=')
+    expect(screen.getByText('ma')).toBeInTheDocument()
+  })
+
+  test('a garbage ?d= does not crash the page — it clamps to today', () => {
+    renderPage('/mezo/coaching/megfigyelo?d=abc')
+    expect(screen.getByText('ma')).toBeInTheDocument()
+  })
+
+  test('a calendrically invalid ?d= (Feb 30) clamps to today rather than rolling over', () => {
+    renderPage('/mezo/coaching/megfigyelo?d=2026-02-30')
+    expect(screen.getByText('ma')).toBeInTheDocument()
+  })
+
+  test('paging back to the floor disables further back-paging but keeps forward live', async () => {
+    renderPage()
+    const back = screen.getByRole('button', { name: 'Előző nap' })
+    for (let i = 0; i < 13; i++) {
+      await userEvent.click(back)
+    }
+    expect(screen.getByRole('button', { name: 'Előző nap' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Következő nap' })).toBeEnabled()
+  })
 })
 
 describe('CoachingObserverPage (real mode)', () => {
