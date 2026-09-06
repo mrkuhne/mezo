@@ -27,7 +27,10 @@ beforeEach(() => {
   mockNavigate.mockReset()
   localStorage.removeItem(snoozeKey()) // the morning-training card state must not leak between tests
 })
-afterEach(() => vi.unstubAllEnvs())
+afterEach(() => {
+  vi.unstubAllEnvs()
+  vi.useRealTimers() // no-op unless a test pinned the clock (mezo-vvxo)
+})
 
 const renderView = () => render(<QueryWrapper><MemoryRouter><LevelUpProvider><TrainTodayPage /></LevelUpProvider></MemoryRouter></QueryWrapper>)
 
@@ -98,7 +101,13 @@ test('day strip: selecting another day swaps the rendered sessions, no refetch',
   expect(screen.getByRole('heading', { name: 'Mai nap' })).toBeInTheDocument()
 })
 
+// Pinned clock (mezo-vvxo): which day is "today" comes from the fixture flag (Csü), but the
+// card's done-state is date-driven — mock `gymDoneDates` is `[localDateString()]`, so on a real
+// Wednesday the Sze card renders as logged (DoneBar, no CTA) and the "Kezdjük el" query fails.
+// Pinning to a Thursday parks the done-date on Csü, where the fixture already says today is.
 test('a non-today gym day renders a read-only-capable card with a direct-start CTA', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-16T12:00:00')) // Thursday = the fixture's Csü
   renderView()
   // Sze (Wed) carries a not-yet-done gym slot in the mock week.
   fireEvent.click(screen.getByRole('tab', { name: /Szerda|Sze/ }))

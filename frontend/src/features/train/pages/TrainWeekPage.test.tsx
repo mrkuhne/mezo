@@ -39,6 +39,7 @@ beforeEach(() => {
 })
 afterEach(() => {
   vi.unstubAllEnvs()
+  vi.useRealTimers() // no-op unless a test pinned the clock (mezo-vvxo)
   daysOverride = null
 })
 
@@ -124,9 +125,17 @@ test('renders a Pihenőnap rest row for the empty Vasárnap slot', () => {
   expect(screen.getByText('Pihenőnap')).toBeInTheDocument()
 })
 
+// Pinned clock (mezo-vvxo): `isToday` comes from the fixture flag (mock today = Csü), but
+// `gymLogged` is date-driven — mock `gymDoneDates` is `[localDateString()]`, so on the REAL
+// current weekday that row renders as "kész" and its tap goes to onReviewGym (undefined in
+// mock) instead of onOpenGymDay. On a real Monday that swallowed the Hét row's tap entirely.
+// Pinning to a Thursday puts the done-date on Csü — where the fixture already says today is —
+// so the Hét row is honestly non-today AND not-done on every weekday the suite runs.
 test('a non-today weekly gym row navigates straight to the session (mezo-j3x0 / mezo-bxpg)', () => {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  vi.setSystemTime(new Date('2026-07-16T12:00:00')) // Thursday = the fixture's Csü
   renderPage()
-  // Mock today = Csü (fixture flag); the Hét row shows the Push Day slot → non-today gym row.
+  // The Hét row shows the Push Day slot → a non-today, not-done gym row.
   fireEvent.click(screen.getByRole('button', { name: /Push Day/ }))
   // Mock MesoDay fixtures carry no `id` (real mode only), so the `!day.id` branch wins
   // regardless of the non-today `?day=` rule — plain /train/session, not /train/session?day=.
