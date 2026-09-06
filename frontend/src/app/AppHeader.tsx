@@ -11,13 +11,14 @@
 // fix-hullám). Fókuszkezelés (focus trap / roving tabindex) tudatosan NINCS — a
 // `docs/features/today.md` külön halasztott tételként tartja számon.
 // ============================================================
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
 import { DayOrb } from '@/shared/ui/DayOrb'
 import { cn } from '@/shared/lib/cn'
 import { localDateString } from '@/shared/lib/dates'
 import { useNotificationFeed } from '@/data/notification/feedHooks'
+import { notificationStamp } from '@/features/notification/logic/stamp'
 import { DAY_FACES, FACE_LABEL, type DayFace } from '@/features/today/logic/dayFace'
 import { useDayFace } from '@/features/today/logic/useDayFace'
 import { useDayOrbFill } from '@/features/today/logic/useDayOrbFill'
@@ -45,6 +46,14 @@ export function AppHeader() {
 
   const { items: notifications } = useNotificationFeed()
   const unreadNtf = notifications.filter((n) => n.readAt === null).length
+  // A peek a LEGÚJABB hármat mutatja. A nyers `slice(0, 3)` a feed érkezési sorrendjét vette,
+  // ami se a backendben, se a mock seedben nem garantáltan csökkenő — a mock seed épp növekvő,
+  // tehát a csengő a mai LEGRÉGEBBI három sort rajzolta (mezo-tdzy). A rendezés a felbontott
+  // időpontra épül, nem az ISO-string lexikografikus sorrendjére (`groupByDay` ugyanígy).
+  const peek = useMemo(
+    () => [...notifications].sort((a, b) => Date.parse(b.occurredAt) - Date.parse(a.occurredAt)).slice(0, 3),
+    [notifications],
+  )
   const { unread: unreadMsgs } = useMezoThread()
   const dayOrb = useDayOrbFill()
   const kalauz = useTutorial()
@@ -148,13 +157,31 @@ export function AppHeader() {
         {ntfOpen && (
           // A menü fejléc-sora nem menüelem: `presentation`-ként kikerül a kisegítő fából,
           // a felirat pedig a menü `aria-label`-jeként marad meg.
-          <div className="nap-ntfmenu" role="menu" aria-label="Értesítések · ma">
-            <span className="mz-eyebrow" role="presentation">Értesítések · ma</span>
-            {notifications.slice(0, 3).map((n) => (
-              <button key={n.id} type="button" role="menuitem" className="nap-ntfrow"
+          // A felirat nem „· ma": a peek a legutóbbi hármat mutatja, akármilyen napról valók —
+          // a régi cím a tegnapi és régebbi sorokra is azt állította, hogy maiak (mezo-tdzy).
+          <div className="nap-ntfmenu" role="menu" aria-label="Legutóbbi értesítések">
+            <span className="mz-eyebrow" role="presentation">Legutóbbi értesítések</span>
+            {peek.map((n) => (
+              // Az olvasottság ITT az ÉLŐ `readAt` (nem nyitáskori pillanatkép, mint a teljes
+              // feed oldalon): a peek nem tesz olvasottá semmit, tehát nincs mit megőriznie egy
+              // pillanatképnek — a `markAllRead` a feed oldalé.
+              <button key={n.id} type="button" role="menuitem"
+                className={cn('nap-ntfrow', n.readAt === null && 'unread')}
                 onClick={() => { setNtfOpen(false); if (n.deeplink) navigate(n.deeplink) }}>
-                <span className="nap-ntf-t">{n.title}</span>
-                <span className="nap-ntf-x">{n.body}</span>
+                <span className="nap-ntf-hd">
+                  <span className="nap-ntf-t">{n.title}</span>
+                  {/* Dátum ÉS időpont egy bélyegben: a teljes feed oldalon a napot a `<h2>`
+                      csoportcímke hordozza, itt nincs csoportfejléc, tehát a puszta óra:perc
+                      nem mondaná meg, melyik napról van szó (mezo-tdzy). */}
+                  <span className="nap-ntf-when">{notificationStamp(n.occurredAt)}</span>
+                </span>
+                {n.body && <span className="nap-ntf-x">{n.body}</span>}
+                {n.readAt === null && <>
+                  <span className="nap-ntf-dot" aria-hidden="true" />
+                  {/* Az osztály és a pötty csak látó felhasználónak létezik — a repó `sr-only`
+                      helperje viszi hangba is (a feed sorok ugyanezt teszik). */}
+                  <span className="sr-only">Olvasatlan</span>
+                </>}
               </button>
             ))}
             <button type="button" role="menuitem" className="nap-ntffoot"

@@ -4979,7 +4979,20 @@ button.mz-tile:active { transform: scale(0.96); }
 .nap-ntfmenu { width: 264px; flex-direction: column; align-items: stretch; gap: 7px; padding: 11px; }
 .nap-ntfrow { display: grid; gap: 1px; text-align: left; border: none; background: none; font-family: inherit;
   cursor: pointer; padding: 5px 4px; border-radius: 10px; }
-.nap-ntf-t { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+/* Olvasatlan sor: ugyanaz a halvány primer-mosás + bal oldali pötty, mint a teljes feed
+   `.nf-row.unread`/`.nf-dot` párosa (mezo-tdzy) — a két felület egy nyelvet beszél. A bal
+   `padding` a pötty helye, ezért MINDEN soron ott van, nem csak az olvasatlanon: különben a
+   lista sorai vízszintesen ugrálnának egymáshoz képest. */
+.nap-ntfrow { position: relative; padding-left: 14px; }
+.nap-ntfrow.unread { background: color-mix(in srgb, var(--primary-base) 8%, transparent); }
+.nap-ntf-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--primary-base);
+  position: absolute; left: 4px; top: 12px; }
+/* A cím és az időbélyeg EGY soron: a bélyeg jobbra tapad és nem törik (`nowrap`), a cím
+   viszi el a maradékot. */
+.nap-ntf-hd { display: flex; align-items: baseline; gap: 6px; }
+.nap-ntf-t { font-size: 12px; font-weight: 700; color: var(--text-primary); flex: 1; min-width: 0; }
+.nap-ntf-when { font: 600 10px/1 var(--ff-body); color: var(--text-muted); flex-shrink: 0;
+  white-space: nowrap; }
 .nap-ntf-x { font-size: 11px; color: var(--mz-ink-soft); }
 .nap-ntffoot { border: none; background: none; font-family: inherit; cursor: pointer;
   font-size: 12px; font-weight: 700; color: var(--primary-deep); padding: 5px 4px 2px; text-align: left; }
