@@ -174,10 +174,12 @@ for the build-out steps.
 3. **`build-backend`** (only if BE changed) — `./mvnw -B clean package -DskipTests` (no
    Testcontainers/Docker needed since tests are skipped) → docker build/push
    `ghcr.io/mrkuhne/mezo-backend:<ver>`.
-4. **`release`** (if nothing failed and ≥1 component shipped) — `sed`-rewrites the changed
-   `k8s/<comp>/deployment.yaml` image tag to `<ver>`, commits it back as
-   `chore(release): v<ver> [skip ci]`, `git pull --rebase origin main` (non-fast-forward guard),
-   tags `v<ver>`, and pushes. **ArgoCD then syncs that commit and deploys it.**
+4. **`release`** (if nothing failed and ≥1 component shipped) — runs
+   `.github/scripts/release-commit.sh`: rewrites the changed `k8s/<comp>/deployment.yaml` image
+   tag to `<ver>`, commits it back as `chore(release): v<ver> [skip ci]`,
+   `git pull --rebase origin main` (non-fast-forward guard), tags **`v<ver>` on the commit the
+   images were built from** (`github.sha`, *not* the rebased manifest commit — see the
+   concurrency invariant below), and pushes. **ArgoCD then syncs that commit and deploys it.**
 
 **Loop guard:** the release commit carries `[skip ci]`, and the `version` job is gated
 `if: !contains(head_commit.message, '[skip ci]')`, so the release commit does not re-trigger the
@@ -214,6 +216,37 @@ existing `ghcr-pull` secret (unchanged).
 
 **Caveat:** if `main` ever gains PR-required branch protection, the default `GITHUB_TOKEN`
 commit-back push is rejected — it would then need a PAT / GitHub App token or a protection bypass.
+
+### Concurrency invariant — the tag names what was BUILT, never what main has become (mezo-pl7d)
+
+`concurrency: deploy-main` queues deploys, so a run can finish long after its own merge. That
+opens a race:
+
+1. merge **M1** lands; its run builds images from M1;
+2. merge **M2** lands while those images build (GitHub cancels the *pending* run for any
+   intermediate merge, so only the newest queued run survives);
+3. M1's `release` job rebases its manifest commit onto the new main — which now contains M2 —
+   and *used to tag there*.
+
+Tag `vX` therefore described **M2's** `frontend`/`backend`/`api` trees, which were never in any
+image. The next run takes `vX` as its base, compares tree hashes, sees no difference, reports
+`fe=false/be=false` and **skips the build entirely**. M2 ships never, and nothing goes red.
+Observed 2026-09-04 (run 33920695717 built `ca82135`, released `v2.163.0` rebased onto
+`58608d47` which already contained PRs #436 and #435).
+
+**Invariant:** the manifest commit *must* rebase (main moves), but the **tag must stay on
+`github.sha`** — the commit the images were built from. `release-commit.sh` tags
+`git tag -a "v$VERSION" "$BUILT_SHA"`, so tag provenance matches image provenance by
+construction, and the queued run for M2 correctly still sees M2 as unbuilt.
+
+`release-commit.test.sh` (run by `ci.yml`) replays exactly this two-merge sequence against a
+throwaway repo with a local bare origin, and asserts both halves: the tag's per-directory tree
+hashes equal the built commit's, *and* the next `compute-release.sh` run still reports
+`backend_changed=true`. Against the pre-fix logic it fails on both.
+
+**Recovery**, if a component was skipped this way: re-run `deploy.yml` via
+`workflow_dispatch` with `force_frontend` / `force_backend`, which ORs past the tree-hash
+detection. Then hard-refresh ArgoCD and confirm the pod's image tag.
 
 ### Gotcha — SIGPIPE in `compute-release.sh` silently stopped every deploy (mezo-0j9n)
 
