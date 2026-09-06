@@ -34,7 +34,7 @@ class MealScoringServiceTest {
         new MealScoringProperties.FatQualityRefs(0.10, 0.33),
         new MealScoringProperties.PlantDiversityRefs(3,
             List.of("vegetables", "fruits", "grains", "legumes", "nuts_seeds")),
-        new MealScoringProperties.EnergyDensityRefs(150, 400),
+        new MealScoringProperties.EnergyDensityRefs(150, 400, 100),
         new MealScoringProperties.PortionRefs(0.30),
         new MealScoringProperties.SlotShares(0.25, 0.35, 0.30, 0.10),
         new MealScoringProperties.SlotWindows(5, 10, 11, 15, 17, 22),
@@ -79,10 +79,15 @@ class MealScoringServiceTest {
         assertThat(b.dimensions()).extracting(MealBreakdownJson.Dimension::id)
             .containsExactly("macro", "micro", "who", "fat_quality", "nova",
                 "plant_diversity", "energy_density", "context");
-        // weights renormalized over the live dims (mezo-jcpt.1): configured 0.22/0.10/0.14/0.10/
-        // 0.18/0.12 ÷ live sum 0.86 (plant_diversity 0.08 + energy_density 0.06 degraded out)
+        // Weight = config × coverage, then renormalized over the live dims (mezo-mxmh on top of
+        // mezo-jcpt.1). Only the 800 kcal Zabkása carries nutrient facts, so micro/who/fat_quality
+        // see 800/1085 = 0.737 of the meal and are discounted to that:
+        //   macro .22·1 = .220 | micro .10·.737 = .0737 | who .14·.737 = .1032
+        //   fat_quality .10·.737 = .0737 | nova .18·1 = .180 | context .12·1 = .120  → Σ .7706
+        // ÷ .7706 → .29 / .10 / .13 / .10 / .23 / — / — / .16
+        // (plant_diversity .08 + energy_density .06 have zero coverage and drop out entirely).
         assertThat(b.dimensions()).extracting(d -> d.weight().doubleValue())
-            .containsExactly(0.26, 0.12, 0.16, 0.12, 0.21, 0.0, 0.0, 0.14);
+            .containsExactly(0.29, 0.1, 0.13, 0.1, 0.23, 0.0, 0.0, 0.16);
         // total = Σ w·s / Σ w recomputed from the emitted dimensions (self-consistency)
         double weightSum = b.dimensions().stream().mapToDouble(d -> d.weight().doubleValue()).sum();
         double expected = b.dimensions().stream()
@@ -211,8 +216,9 @@ class MealScoringServiceTest {
         assertThat(fiber.name()).isEqualTo("Rost");
         assertThat(fiber.pct()).isEqualTo(102);
         assertThat(fiber.status()).isEqualTo("good"); // ≥100% of the seen-energy allotment
-        // confidence = Σ(effWeight·coverage)/Σ effWeight over the live set = 0.90
-        assertThat(b.confidence()).isEqualByComparingTo("0.90");
+        // confidence = Σ(effWeight·coverage)/Σ effWeight over the live set. Since effWeight now
+        // already carries one factor of coverage, this reads Σ(w·cov²)/Σ(w·cov) = 0.91 (mezo-mxmh).
+        assertThat(b.confidence()).isEqualByComparingTo("0.91");
     }
 
     @Test
@@ -398,6 +404,33 @@ class MealScoringServiceTest {
         assertThat(macro.detail()).doesNotContain("napi keret"); // it is NOT duplicated in the prose
     }
 
+    /**
+     * The principle behind the weights (mezo-mxmh): a dimension gets as much say as it can SEE.
+     * The same meal scored twice — once with saturated fat known on every line, once on half the
+     * energy — must give fat quality half the weight in the second case, and hand the difference
+     * to the dimensions that still see everything. Before this, a dimension that knew a quarter of
+     * a meal spoke with the same authority as one that knew all of it.
+     */
+    @Test
+    void testScoreMeal_shouldGiveADimensionOnlyAsMuchWeightAsItCanSee() {
+        var fullyKnown = List.of(
+            line("Vaj", 300, 0, 0, 33, 2, 0, 0, 0.1, 22),
+            line("Rizs", 300, 5, 60, 2, 1, 1, 0, 0.1, 0.4));
+        var halfKnown = List.of(
+            line("Vaj", 300, 0, 0, 33, 2, 0, 0, 0.1, 22),
+            lineNoFacts("Ismeretlen köret", 300, 5, 60, 2, 1));
+
+        var full = dimension(service.scoreMeal("lunch", fullyKnown, LocalTime.NOON), "fat_quality");
+        var half = dimension(service.scoreMeal("lunch", halfKnown, LocalTime.NOON), "fat_quality");
+
+        assertThat(half.coverage()).isEqualByComparingTo("0.50");
+        assertThat(half.weight()).isLessThan(full.weight());
+        // …and the say it gave up went to a dimension that still sees the whole meal, not nowhere:
+        var fullMacro = dimension(service.scoreMeal("lunch", fullyKnown, LocalTime.NOON), "macro");
+        var halfMacro = dimension(service.scoreMeal("lunch", halfKnown, LocalTime.NOON), "macro");
+        assertThat(halfMacro.weight()).isGreaterThan(fullMacro.weight());
+    }
+
     @Test
     void testScoreMeal_shouldDegradeFatQuality_whenNoFatFacts() {
         var lines = List.of(lineNoFacts("Rejtély", 620, 40, 20, 20, 1));
@@ -439,13 +472,31 @@ class MealScoringServiceTest {
 
     @Test
     void testScoreMeal_shouldScoreEnergyDensity_forRealisticPerServingLine() {
-        // pins the density arithmetic the composers must feed: 300 kcal over 80 g → 375 kcal/100g;
+        // pins the density arithmetic the composers must feed: 600 kcal over 160 g → 375 kcal/100g;
         // between good(150) and bad(400) → score = (400-375)/(400-150) = 0.10 (NOT amount/per-scaled).
         // The recipe fitLines per-serving gram scaling that produces this is pinned by the Task 3 IT.
-        var lines = List.of(lineWithGrams("Zabkása adag", 300, new BigDecimal("80")));
+        // The mass is meal-sized on purpose: below minMassG the dimension degrades (test below),
+        // and the ratio being pinned here is the same at 160 g as it was at the original 80 g.
+        var lines = List.of(lineWithGrams("Zabkása adag", 600, new BigDecimal("160")));
         var dim = dimension(service.scoreMeal("lunch", lines, LocalTime.NOON), "energy_density");
         assertThat(dim.score()).isEqualByComparingTo("0.10");
         assertThat(dim.context().getFirst().value()).isEqualTo("375 kcal/100g");
+    }
+
+    /**
+     * Live regression (mezo-mxmh): four logged meals scored 0.04 on energy density for being a
+     * 30 g protein shake — "30 g étel 117 kcal-t hoz — 390 kcal/100g". kcal/100g is a SATIETY
+     * ratio, and 30 g of dry powder that becomes a ~300 ml drink is not the quantity the dimension
+     * makes a claim about. Below a meal-sized mass it must degrade, not judge.
+     */
+    @Test
+    void testScoreMeal_shouldDegradeEnergyDensity_whenTheGramMassIsBelowAMealSizedFloor() {
+        var lines = List.of(lineWithGrams("Protein Shake", 117, new BigDecimal("30")));
+
+        var dim = dimension(service.scoreMeal("snack", lines, LocalTime.of(16, 0)), "energy_density");
+
+        assertThat(dim.weight()).isEqualByComparingTo("0.00");
+        assertThat(dim.detail()).contains("30 g").contains("100 g alatt");
     }
 
     @Test
