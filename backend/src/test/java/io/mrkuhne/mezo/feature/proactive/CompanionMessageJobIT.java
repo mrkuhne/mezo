@@ -15,6 +15,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Companion-feed crons (spec §3): three window methods (morning/midday/evening), one switch.
@@ -23,6 +24,11 @@ import org.springframework.test.context.ActiveProfiles;
  * only — the sleep reaction is event-kind (mezo-qn3z), asserted absent here.
  */
 @ActiveProfiles("companion-fake")
+@TestPropertySource(properties = {
+    // mezo-c9k4: the shared test profile now disables this cron by default (kill-switch
+    // completeness) — this IT drives the job directly, so it re-enables it on its own context.
+    "mezo.techcore.cron.feed-job.enabled=true"
+})
 class CompanionMessageJobIT extends AbstractIntegrationTest {
 
     @Autowired private CompanionMessageJob companionMessageJob;

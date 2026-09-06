@@ -12,8 +12,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
 /** mezo-1y3p: the nightly job end-to-end — 90-day window from live config, scrub through the bean. */
+@TestPropertySource(properties = {
+    // mezo-c9k4: the shared test profile now disables this cron by default (kill-switch
+    // completeness) — this IT drives the job directly, so it re-enables it on its own context.
+    "mezo.techcore.cron.llm-log-retention-job.enabled=true"
+})
 class LlmLogRetentionJobIT extends AbstractIntegrationTest {
 
     @Autowired private LlmLogRetentionJob llmLogRetentionJob;

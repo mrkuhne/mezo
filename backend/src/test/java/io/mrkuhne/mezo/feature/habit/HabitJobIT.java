@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Nightly close cron (bd mezo-d1jb): the job iterates every user and delegates to
@@ -19,6 +20,11 @@ import org.springframework.beans.factory.annotation.Autowired;
  * (end-of-day metrics evaluate, the rest quietly miss) is exercised in depth by HabitServiceIT; here
  * we assert the cron entry point wires the per-user loop end-to-end against a real user + rows.
  */
+@TestPropertySource(properties = {
+    // mezo-c9k4: the shared test profile now disables this cron by default (kill-switch
+    // completeness) — this IT drives the job directly, so it re-enables it on its own context.
+    "mezo.techcore.cron.habit-job.enabled=true"
+})
 class HabitJobIT extends AbstractIntegrationTest {
 
     @Autowired private HabitJob job;
