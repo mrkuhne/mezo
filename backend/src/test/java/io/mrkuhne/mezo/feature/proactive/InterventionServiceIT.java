@@ -279,7 +279,7 @@ class InterventionServiceIT extends AbstractIntegrationTest {
 
     /** Round 2 S4 (mezo-d58h.7.4): the flag really becomes a card through the ordinary library
      *  path, and the card's facts carry the frozen payload's slot label — the whole point of
-     *  freezing it (AdviceFactRenderer has no repositories). */
+     *  freezing it (FlagFactRenderer has no repositories). */
     @Test
     void mealRhythmDriftRaiseBecomesACardWithItsSlotInTheFacts() {
         UUID owner = ownerId();

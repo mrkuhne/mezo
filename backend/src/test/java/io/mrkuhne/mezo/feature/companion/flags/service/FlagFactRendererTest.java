@@ -1,9 +1,8 @@
-package io.mrkuhne.mezo.feature.proactive.service;
+package io.mrkuhne.mezo.feature.companion.flags.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -15,14 +14,14 @@ import org.junit.jupiter.api.Test;
  * S4 (bd mezo-d58h.4, spec §5): the card's facts are DETERMINISTIC and rule-provided — rendered
  * from the raise's own frozen payload, never re-derived and never model-written.
  */
-class AdviceFactRendererTest {
+class FlagFactRendererTest {
 
     @Test
     void testRender_shouldDescribeASleepDebtRaise() {
         FlagPayloadEnvelope payload = FlagPayloadEnvelope.sleepDebt(
             new FlagPayloadEnvelope.SleepDebt(8.0, 7, 5, 1.0, 1.6, Map.of()));
 
-        List<String> facts = AdviceFactRenderer.render(FlagKey.SLEEP_DEBT, payload);
+        List<String> facts = FlagFactRenderer.render(FlagKey.SLEEP_DEBT, payload);
 
         assertThat(facts).hasSize(1);
         assertThat(facts.get(0)).contains("1,6").contains("8,0").contains("5");
@@ -35,7 +34,7 @@ class AdviceFactRendererTest {
                 List.of("2026-09-01", "2026-09-02", "2026-09-03"),
                 List.of("2026-09-01", "2026-09-02", "2026-09-03", "2026-09-04")));
 
-        List<String> facts = AdviceFactRenderer.render(FlagKey.MISSED_WORKOUTS, payload);
+        List<String> facts = FlagFactRenderer.render(FlagKey.MISSED_WORKOUTS, payload);
 
         assertThat(facts).hasSize(2);
         assertThat(facts.get(0)).contains("3");
@@ -48,7 +47,7 @@ class AdviceFactRendererTest {
             new FlagPayloadEnvelope.LoggingGap(List.of("meal", "checkin"), 36, 52, 48, 60,
                 null, null, null, null, null));
 
-        List<String> facts = AdviceFactRenderer.render(FlagKey.LOGGING_GAP, payload);
+        List<String> facts = FlagFactRenderer.render(FlagKey.LOGGING_GAP, payload);
 
         assertThat(facts).isNotEmpty();
         assertThat(String.join(" ", facts)).contains("étkezés").contains("52");
@@ -61,7 +60,7 @@ class AdviceFactRendererTest {
             new FlagPayloadEnvelope.LoggingGap(List.of("sleep"), null, null, null, null,
                 2, 3, 1.0, 1.4, 3));
 
-        List<String> facts = AdviceFactRenderer.render(FlagKey.LOGGING_GAP, payload);
+        List<String> facts = FlagFactRenderer.render(FlagKey.LOGGING_GAP, payload);
 
         assertThat(String.join(" ", facts)).contains("1,4");
     }
@@ -74,7 +73,7 @@ class AdviceFactRendererTest {
         FlagPayloadEnvelope payload = FlagPayloadEnvelope.jointOveruse(
             new FlagPayloadEnvelope.JointOveruse(8.0, 5.0, 7, 7, "2026-09-05", "back"));
 
-        List<String> facts = AdviceFactRenderer.render(FlagKey.JOINT_OVERUSE, payload);
+        List<String> facts = FlagFactRenderer.render(FlagKey.JOINT_OVERUSE, payload);
 
         assertThat(facts).hasSize(1);
         assertThat(facts.get(0)).contains("hát-fókuszú").doesNotContain("váll-fókuszú");
@@ -88,7 +87,7 @@ class AdviceFactRendererTest {
             new FlagPayloadEnvelope.IgnoredNudge("lights_out", 5, 5, 23.25, 60,
                 Map.of("2026-09-01", 24.5)));
 
-        List<String> facts = AdviceFactRenderer.render(FlagKey.IGNORED_NUDGE, payload);
+        List<String> facts = FlagFactRenderer.render(FlagKey.IGNORED_NUDGE, payload);
 
         assertThat(facts).hasSize(2);
         assertThat(facts.get(0)).contains("5").contains("60").contains("23:15");
@@ -104,7 +103,7 @@ class AdviceFactRendererTest {
                 Map.of("2026-09-01", 22.5, "2026-09-02", 24.5),
                 Map.of("2026-09-01", "both", "2026-09-02", "absolute")));
 
-        List<String> facts = AdviceFactRenderer.render(FlagKey.LATE_EATING, payload);
+        List<String> facts = FlagFactRenderer.render(FlagKey.LATE_EATING, payload);
 
         assertThat(facts).hasSize(4);
         assertThat(facts.get(0)).contains("3").contains("2").contains("2");
@@ -122,7 +121,7 @@ class AdviceFactRendererTest {
                 Map.of("2026-09-01", 22.5, "2026-09-02", 23.0),
                 Map.of("2026-09-01", "absolute", "2026-09-02", "absolute")));
 
-        List<String> facts = AdviceFactRenderer.render(FlagKey.LATE_EATING, payload);
+        List<String> facts = FlagFactRenderer.render(FlagKey.LATE_EATING, payload);
 
         assertThat(facts.get(1)).contains("Nincs").contains("22:30");
     }
@@ -136,7 +135,7 @@ class AdviceFactRendererTest {
                 "Magnézium", "evening", 2, 2,
                 List.of("2026-09-03", "2026-09-04"), "2026-09-02", 14, 12, 0.857, 0.60));
 
-        List<String> facts = AdviceFactRenderer.render(FlagKey.PROTOCOL_LAPSE, payload);
+        List<String> facts = FlagFactRenderer.render(FlagKey.PROTOCOL_LAPSE, payload);
 
         assertThat(facts).anySatisfy(f -> assertThat(f).contains("Magnézium"));
         assertThat(facts).anySatisfy(f -> assertThat(f).contains("2026-09-04"));
@@ -154,7 +153,7 @@ class AdviceFactRendererTest {
             new FlagPayloadEnvelope.ProtocolLapse("11111111-1111-1111-1111-111111111111",
                 null, "evening", 2, 2, null, "2026-09-02", 14, 12, 0.857, 0.60));
 
-        List<String> facts = AdviceFactRenderer.render(FlagKey.PROTOCOL_LAPSE, payload);
+        List<String> facts = FlagFactRenderer.render(FlagKey.PROTOCOL_LAPSE, payload);
 
         assertThat(facts).anySatisfy(f -> assertThat(f).contains("ismeretlen kiegészítő"));
     }
@@ -164,12 +163,12 @@ class AdviceFactRendererTest {
      *  falls back to the template, which needs no facts. */
     @Test
     void testRender_shouldReturnNoFacts_whenThePayloadIsMissingOrUnmapped() {
-        assertThat(AdviceFactRenderer.render(FlagKey.SLEEP_DEBT, null)).isEmpty();
-        assertThat(AdviceFactRenderer.render("brand_new_rule",
+        assertThat(FlagFactRenderer.render(FlagKey.SLEEP_DEBT, null)).isEmpty();
+        assertThat(FlagFactRenderer.render("brand_new_rule",
             FlagPayloadEnvelope.allHealthy(new FlagPayloadEnvelope.AllHealthy(7, 7)))).isEmpty();
     }
 
-    /** Guards against the {@code AdviceFactRenderer.render} switch's silent {@code default}: a
+    /** Guards against the {@code FlagFactRenderer.render} switch's silent {@code default}: a
      *  {@link FlagKey} constant added without a matching renderer branch would fall through to
      *  the unmapped-key path and silently ship a card with an EMPTY evidence block — the same bug
      *  class {@code AdvicePriorityTest.testOrder_shouldCoverEveryLiveFlagKey} guards for the
@@ -194,21 +193,21 @@ class AdviceFactRendererTest {
         assertThat(flagKeys).isNotEmpty();
 
         for (String key : flagKeys) {
-            List<String> facts = AdviceFactRenderer.render(key, fixtureFor(key));
+            List<String> facts = FlagFactRenderer.render(key, fixtureFor(key));
             assertThat(facts)
-                .as("flag key '%s' must have a non-default AdviceFactRenderer branch", key)
+                .as("flag key '%s' must have a non-default FlagFactRenderer branch", key)
                 .isNotEmpty();
         }
     }
 
     /** One minimally-populated {@link FlagPayloadEnvelope} per live {@link FlagKey}, matched to
-     *  the shape {@code AdviceFactRenderer.render} expects for that key. An unrecognised key fails
+     *  the shape {@code FlagFactRenderer.render} expects for that key. An unrecognised key fails
      *  the test explicitly instead of silently reusing another key's fixture. */
     /** Round 2 S4 (mezo-d58h.7.4): the drift facts name the slot, both times and the direction —
      *  the copy is a neutral observation, so the numbers must carry the whole claim. */
     @Test
     void testRender_shouldRenderMealRhythmDriftFacts() {
-        List<String> facts = AdviceFactRenderer.render(FlagKey.MEAL_RHYTHM_DRIFT,
+        List<String> facts = FlagFactRenderer.render(FlagKey.MEAL_RHYTHM_DRIFT,
             FlagPayloadEnvelope.mealRhythmDrift(new FlagPayloadEnvelope.MealRhythmDrift(
                 "slot_drift", "dinner", "Vacsora", 14, 13, 10, 13, 12,
                 "19:00", "21:00", 120, 90, 0.92, null, null, null, null)));
@@ -221,7 +220,7 @@ class AdviceFactRendererTest {
     /** The dead-slot arm renders the two presence ratios instead of the two clock times. */
     @Test
     void testRender_shouldRenderMealRhythmDeadSlotFacts() {
-        List<String> facts = AdviceFactRenderer.render(FlagKey.MEAL_RHYTHM_DRIFT,
+        List<String> facts = FlagFactRenderer.render(FlagKey.MEAL_RHYTHM_DRIFT,
             FlagPayloadEnvelope.mealRhythmDrift(new FlagPayloadEnvelope.MealRhythmDrift(
                 "dead_slot", "dinner", "Vacsora", 14, 13, 10, 13, 1,
                 "19:00", null, null, null, null, 0.077, 0.30, 0.95, 0.70)));
@@ -235,7 +234,7 @@ class AdviceFactRendererTest {
      *  log row and the delivery listener's catch. */
     @Test
     void testRender_shouldReturnNoFacts_whenTheMealRhythmPayloadIsEmpty() {
-        assertThat(AdviceFactRenderer.render(FlagKey.MEAL_RHYTHM_DRIFT,
+        assertThat(FlagFactRenderer.render(FlagKey.MEAL_RHYTHM_DRIFT,
             FlagPayloadEnvelope.mealRhythmDrift(null))).isEmpty();
     }
 
@@ -288,8 +287,8 @@ class AdviceFactRendererTest {
                     14, 13, 10, 13, 12, "19:00", "21:00", 120, 90, 0.92,
                     null, null, null, null));
             default -> throw new AssertionError(
-                "no AdviceFactRendererTest fixture for live flag key '" + flagKey + "' — "
-                    + "add both a fixture here and a render() branch in AdviceFactRenderer");
+                "no FlagFactRendererTest fixture for live flag key '" + flagKey + "' — "
+                    + "add both a fixture here and a render() branch in FlagFactRenderer");
         };
     }
 }

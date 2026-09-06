@@ -157,7 +157,7 @@ public record FlagPayloadEnvelope(
 
     /** Round 2 S1 (mezo-d58h.7.1, spec 2026-09-05 §(11)). {@code pantryItemId} is the offending
      *  item's id as a STRING (jsonb keys and values are text, and the per-item cooldown compares
-     *  it as text); {@code itemName} is frozen at raise time so {@code AdviceFactRenderer} — a
+     *  it as text); {@code itemName} is frozen at raise time so {@code FlagFactRenderer} — a
      *  pure static renderer with no repositories — can name the supplement. Dates are ISO-8601
      *  strings. {@code lastTakenDate} is null when the item was never taken inside the history
      *  window (which the prior-habit gate makes impossible in practice, but the payload does not

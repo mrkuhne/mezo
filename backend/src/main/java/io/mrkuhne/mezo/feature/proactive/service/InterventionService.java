@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.companion.feedback.repository.FeedbackRollupRepos
 import io.mrkuhne.mezo.feature.companion.flags.entity.CompanionFlagLogEntity;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.repository.CompanionFlagLogRepository;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagFactRenderer;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -103,7 +104,7 @@ public class InterventionService {
             .orElse(null);
         return adviceCardService.deliver(userId, AdviceCandidate.fromFlag(
             flagKey, picked.key(), EYEBROW,
-            AdviceFactRenderer.render(flagKey, payload),
+            FlagFactRenderer.render(flagKey, payload),
             List.of(picked.textHu()), picked.textHu()));
     }
 
