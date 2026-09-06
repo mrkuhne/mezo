@@ -151,6 +151,29 @@ class CharacterApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void feed_legacyObservationWithAClaimIdPrefix_servesItStripped() {
+        UUID owner = ownerId();
+        UUID claimId = UUID.randomUUID();
+        CharacterObservationEntity obs = new CharacterObservationEntity();
+        obs.setCreatedBy(owner);
+        obs.setExpertKey("user");
+        obs.setDimensionKeys(new ObservationDimensionKeysEnvelope(List.of("discipline")));
+        obs.setDay(LocalDate.now());
+        obs.setText("[" + claimId + "] A felhasználó megerősítette: \"Alszol eleget.\"");
+        obs.setSalience((short) 2);
+        obs.setSignals(new ObservationSignalsEnvelope(List.of(
+                new ObservationSignalsEnvelope.Signal("user-feedback", "megerősítés", List.of(claimId.toString())))));
+        observationRepository.save(obs);
+
+        CharacterFeedItem[] items = getForBody("/api/character/feed", ownerAuthHeaders(),
+                HttpStatus.OK, CharacterFeedItem[].class);
+
+        assertThat(items).hasSize(1);
+        assertThat(items[0].getText()).doesNotContain(claimId.toString());
+        assertThat(items[0].getText()).startsWith("A felhasználó megerősítette:");
+    }
+
+    @Test
     void experts_returnsNineInCatalogOrder_withCsapatCopy() {
         CharacterExpertsResponse res = getForBody("/api/character/experts", ownerAuthHeaders(),
                 HttpStatus.OK, CharacterExpertsResponse.class);

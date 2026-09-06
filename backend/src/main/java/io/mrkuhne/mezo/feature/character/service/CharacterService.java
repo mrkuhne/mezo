@@ -228,7 +228,7 @@ public class CharacterService {
                     .at(toOffset(obs.getCreatedAt()))
                     .expertKey(obs.getExpertKey())
                     .dimensionKeys(obs.getDimensionKeys().keys())
-                    .text(obs.getText())
+                    .text(ObservationText.stripClaimIdPrefix(obs.getText()))
                     .build());
         }
 
@@ -413,7 +413,7 @@ public class CharacterService {
                 .id(obs.getId())
                 .expertKey(obs.getExpertKey())
                 .dimensionKeys(obs.getDimensionKeys().keys())
-                .text(obs.getText())
+                .text(ObservationText.stripClaimIdPrefix(obs.getText()))
                 .salience(obs.getSalience().intValue())
                 .signals(signals)
                 .build();
