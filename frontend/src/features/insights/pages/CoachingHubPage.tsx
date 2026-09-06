@@ -11,7 +11,7 @@ import { Mosaic, MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip, 
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { useCoachingTrace } from '@/data/hooks'
 import { VerdictArc } from '@/features/insights/components/VerdictArc'
-import { STATE_LABEL, splitOf, winnerRuleOf } from '@/features/insights/logic/coachingCopy'
+import { STATE_LABEL, WINNER_LABEL, splitOf, winnerRuleOf } from '@/features/insights/logic/coachingCopy'
 
 export function CoachingHubPage() {
   const navigate = useNavigate()
@@ -54,7 +54,7 @@ export function CoachingHubPage() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span className="mzp-rankb">{`${day.winner.rank}/${split.total}`}</span>
                 <span style={{ fontSize: 13, fontWeight: 700 }}>{winner.label}</span>
-                <span className="mzp-stch prop" style={{ marginLeft: 'auto' }}>Nyertes</span>
+                <span className="mzp-stch prop" style={{ marginLeft: 'auto' }}>{WINNER_LABEL}</span>
               </div>
               <p style={{ fontSize: 11, fontWeight: 300, lineHeight: 1.55, marginTop: 7 }}>
                 {winner.reasonText}
