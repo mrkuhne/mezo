@@ -1,0 +1,118 @@
+name: premerge
+# Re-runs the MERGE-SENSITIVE gates against the pull request's merge result AS IT IS
+# RIGHT NOW — immediately before you merge.
+#
+# Why this exists (mezo-mxrc, mezo-l4am): ci.yml already builds the merge ref
+# (`HEAD is now at … Merge <pr head> into <main>`), so it does test the merge result.
+# What it cannot do is stay current: GitHub recomputes refs/pull/<n>/merge when main
+# moves but does NOT re-run the workflow. A PR's green check can therefore describe a
+# merge with a main that no longer exists, and the real merge lands red on main —
+# blocking every other open PR until someone notices. It happened twice: the mezo-atry
+# AppHeader wave (stale visual goldens) and PR #393 (docs/CODEMAP.md stale on main for
+# three commits, because two branches each regenerated it against their own base).
+#
+# A full ci.yml re-run costs ~21.5 min wall clock / ~42 runner-minutes, dominated by
+# the backend and frontend suites — which are the LEAST likely to break this way. This
+# workflow runs only what a merge can actually break: the convention/generator gates
+# (~30 s), contract-drift (~25 s) and the visual goldens (~5 min). ~7 minutes total.
+#
+#   gh workflow run premerge.yml -f pr=<number>
+on:
+  workflow_dispatch:
+    inputs:
+      pr:
+        description: 'PR number to re-check against the CURRENT main'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  pull-requests: read
+
+concurrency:
+  group: premerge-${{ inputs.pr }}
+  cancel-in-progress: true
+
+jobs:
+  recheck:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Preflight — the merge ref must exist and target main
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ inputs.pr }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${{ github.repository }}/pulls/${PR}" > /tmp/pr.json
+          base=$(jq -r .base.ref /tmp/pr.json)
+          mergeable=$(jq -r .mergeable /tmp/pr.json)
+          state=$(jq -r .mergeable_state /tmp/pr.json)
+          echo "PR #${PR} base=${base} mergeable=${mergeable} state=${state}"
+          [ "$base" = "main" ] || { echo "::error::PR #${PR} targets '${base}', not main."; exit 1; }
+          if [ "$mergeable" = "false" ]; then
+            echo "::error::PR #${PR} CONFLICTS with main. GitHub cannot build refs/pull/${PR}/merge, so this PR runs NO pull_request checks at all — 'gh pr checks' reports none, which reads as 'nothing failed'. Merge origin/main into the branch and push, then re-run this."
+            exit 1
+          fi
+          jq -r .head.sha /tmp/pr.json | sed 's/^/head_sha=/' >> "$GITHUB_ENV"
+
+      - uses: actions/checkout@v4
+        with:
+          ref: refs/pull/${{ inputs.pr }}/merge
+          fetch-depth: 0
+
+      - name: The merge ref must be against the CURRENT main
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          base_parent=$(git rev-parse HEAD^1)
+          main_tip=$(gh api "repos/${{ github.repository }}/git/ref/heads/main" -q .object.sha)
+          echo "merge ref parent: ${base_parent}"
+          echo "main tip:         ${main_tip}"
+          if [ "$base_parent" != "$main_tip" ]; then
+            echo "::error::GitHub has not yet recomputed refs/pull/${{ inputs.pr }}/merge against the current main (it is built on ${base_parent}, main is ${main_tip}). Wait a moment and re-run — a result against an older main is exactly what this workflow exists to avoid."
+            exit 1
+          fi
+          {
+            echo "### premerge — PR #${{ inputs.pr }}"
+            echo ""
+            echo "Merge result \`$(git rev-parse HEAD)\` = PR head \`${head_sha}\` into main \`${main_tip}\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Convention + generator gates (shared with ci.yml's lint job)
+        run: bash .github/scripts/cheap-gates.sh
+
+      - name: Contract drift on the merge result
+        run: |
+          set -euo pipefail
+          (cd api/generate && npm ci && npm run generate:api)
+          (cd frontend && pnpm install --frozen-lockfile && pnpm generate:api)
+          git diff --exit-code -- api/openapi.yml frontend/src/data/_client/api.gen.ts \
+            || { echo '::error::Merging this PR makes the committed contract artifacts stale — two branches each regenerated them against their own base. Merge main into the branch, regenerate, commit.'; exit 1; }
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+      - run: pnpm exec playwright install chromium --with-deps
+        working-directory: frontend
+      - name: Visual goldens on the merge result
+        working-directory: frontend
+        run: pnpm test:visual
+      - name: Upload visual diffs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: premerge-visual-diffs
+          path: frontend/test-results/
+          retention-days: 7

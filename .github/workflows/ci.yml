@@ -21,38 +21,17 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0    # lint-docs staleness compares per-file git commit dates
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Docs lint (errors block; staleness advisory — known false positives)
-        run: node scripts/lint-docs.mjs --errors-only
-      - name: Liquibase conventions lint (filenames, constraint prefixes, seed-SQL ban)
-        run: node scripts/lint-liquibase.mjs
-      - name: Generator toolchains are pinned to exact versions
-        # api/openapi.yml and api.gen.ts are generated AND committed, and contract-drift
-        # fails on any byte difference — so the generator version is part of their
-        # identity. A caret range let a plain install float it; a stale node_modules once
-        # put a divergent openapi.yml on main and turned every open PR red (mezo-a5m2).
-        run: node scripts/check-generator-toolchain.mjs --manifests
-      - name: Release-version script tests (pure fns + SIGPIPE regression)
-        # These existed but NOTHING ran them: compute-release.test.sh was referenced by
-        # no workflow, so the deploy path's only script had an unexecuted test suite
-        # while main deploys died of SIGPIPE for a day (mezo-0j9n).
-        run: |
-          bash .github/scripts/compute-release.test.sh
-          bash .github/scripts/compute-release.sigpipe.test.sh
-          bash .github/scripts/release-commit.test.sh
-      - name: Codemap generator tests (fixture trees)
-        run: node --test scripts/gen-codemap.test.mjs
-      - name: Codemap freshness (whole file — header included — must regenerate identically)
-        run: node scripts/gen-codemap.mjs --check
-      - name: No merge-conflict markers in any tracked file
-        # Repo-wide net for the failure mode that reached main twice via CODEMAP.md's
-        # header, where the only gate compared the generated body (mezo-ag1b).
-        run: node scripts/lint-conflict-markers.mjs
+      - name: Convention + generator gates (shared with premerge.yml)
+        # Defined ONCE in .github/scripts/cheap-gates.sh so the pre-merge re-check and
+        # the PR run can never drift apart. All of these are merge-sensitive: two PRs
+        # can each be green and their merge still red (mezo-l4am, mezo-mxrc).
+        run: bash .github/scripts/cheap-gates.sh
 
   contract-drift:
     # Fails when api/openapi.yml is a stale merge of the api/feature/* fragments,
@@ -61,11 +40,11 @@ jobs:
     # build) — this closes the FE half and the fragments->merge half.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
           version: 9
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
@@ -97,11 +76,11 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
           version: 9
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: pnpm
@@ -132,47 +111,6 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v4
-        with:
-          version: 9
-      - uses: actions/setup-node@v7
-        with:
-          node-version: 20
-          cache: pnpm
-          cache-dependency-path: frontend/pnpm-lock.yaml
-      - run: pnpm install --frozen-lockfile
-      - name: Cache Playwright browsers
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: pw-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
-      - run: pnpm exec playwright install chromium --with-deps
-      - name: Visual goldens (compare vs committed linux baselines)
-        run: pnpm test:visual
-      - name: Upload visual diffs on failure
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: visual-diffs
-          path: frontend/test-results/
-          retention-days: 7
-
-  test-visual-darwin:
-    # The darwin half of the two-platform golden set had NO machine gate at all: CI ran
-    # only on ubuntu-latest, so the 118 committed *-darwin.png files were guarded solely
-    # by whether a developer happened to run `pnpm test:visual` locally. They rotted
-    # silently — on feat/orb-seed-and-provider the me-rutinok darwin goldens were ~39 000
-    # pixels off main, because a branch regenerated darwin, THEN merged a main that moved
-    # the page vertically, and only the linux half was refreshed by the workflow. CI
-    # stayed green and the PR stayed mergeable (mezo-in3h, mezo-a3tr).
-    # Actions minutes are free on this public repo and this job runs in parallel with the
-    # others, so the coverage costs no wall clock.
-    runs-on: macos-latest
-    defaults:
-      run:
-        working-directory: frontend
-    steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
         with:
@@ -186,16 +124,16 @@ jobs:
       - name: Cache Playwright browsers
         uses: actions/cache@v4
         with:
-          path: ~/Library/Caches/ms-playwright
+          path: ~/.cache/ms-playwright
           key: pw-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
-      - run: pnpm exec playwright install chromium
-      - name: Visual goldens (compare vs committed darwin baselines)
+      - run: pnpm exec playwright install chromium --with-deps
+      - name: Visual goldens (compare vs committed linux baselines)
         run: pnpm test:visual
       - name: Upload visual diffs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: visual-diffs-darwin
+          name: visual-diffs
           path: frontend/test-results/
           retention-days: 7
 
@@ -208,8 +146,8 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v7    # full repo so ../api contract is present
-      - uses: actions/setup-java@v6
+      - uses: actions/checkout@v4    # full repo so ../api contract is present
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 21

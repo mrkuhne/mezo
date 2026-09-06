@@ -64,6 +64,62 @@ Consequences, each of which has already burned us:
   renders a page gated on a pending read (e.g. Today's `sleepGoalPending` skeleton) must use
   `findBy*`, not `getBy*` — a `getBy*` there passes in mock mode and fails in real mode.
 
+## The pre-merge re-check (`premerge.yml`) — why a green PR can still redden main
+
+`ci.yml` **does** test the merge result, not the PR head. Measured on a real run:
+
+```
+[command] git checkout --progress --force refs/remotes/pull/475/merge
+HEAD is now at 348e818 Merge af0c2a5e8… into 1975c50af…
+```
+
+(so mezo-mxrc's premise — "the visual gate measures the PR head" — is false, and its
+proposed fix (a) would have been a no-op.)
+
+The real gap is **time**. GitHub recomputes `refs/pull/<n>/merge` when the base moves, but it
+does **not** re-run the workflow. A green tick can therefore describe a merge into a `main` that
+no longer exists. Two incidents came from exactly that:
+
+- the mezo-atry `AppHeader` wave merged green and broke main's visual goldens; main stayed red
+  and PR #279 inherited a byte-identical 32-screenshot failure (mezo-mxrc);
+- PR #393 merged green and left `docs/CODEMAP.md` stale on main for three commits, because two
+  branches had each regenerated it correctly against their own base (mezo-l4am).
+
+Closing this by construction (branch protection's *"Require branches to be up to date"*, or a
+merge queue) costs a **full CI cycle immediately before every merge**. Measured cost of one
+`ci.yml` run:
+
+| job | duration |
+|---|---|
+| `test-backend` | 21m30s |
+| `test-frontend` | 14m31s |
+| `test-visual` | 4m58s |
+| `contract-drift` | 24s |
+| `lint` | 21s |
+| **wall clock** | **~21m30s** (≈42 runner-minutes) |
+
+At this repo's merge cadence that is hours of added wall clock a day, and it serialises merges —
+for a class of failure the two expensive suites are the *least* likely to cause.
+
+So the chosen trade-off is `premerge.yml`: run **only the merge-sensitive gates** against the
+merge ref as it is right now, on demand, in **~7 minutes**.
+
+```bash
+gh workflow run premerge.yml -f pr=<number>    # then merge once it is green
+```
+
+It runs `.github/scripts/cheap-gates.sh` (the same script `ci.yml`'s `lint` job runs, so the two
+cannot drift), contract-drift, and the visual goldens. It also refuses to proceed when
+
+- the PR **conflicts** with main — the state in which GitHub builds no merge ref and therefore
+  runs **no** `pull_request` checks at all, so `gh pr checks` reports none, which reads as
+  "nothing failed"; or
+- GitHub has not yet recomputed the merge ref against the current `main` — a result against an
+  older main is the very thing this workflow exists to avoid.
+
+This is a *narrowing*, not a proof: main can still move between the green premerge run and the
+merge. It shrinks the window from "whenever CI last happened to run" to "the last few minutes".
+
 ## Visual regression gate (two-platform Playwright goldens)
 
 The frontend has a **self-baselined visual harness** at `frontend/tests/visual/` (`visual.spec.ts` +
