@@ -93,7 +93,7 @@ public class CharacterBootstrapService {
         transcriptTurns.addAll(verdictResult.turns());
 
         CharacterConferenceEntity conference = conferenceService.persistConferenceAndApplyOutcome(owner, BOOTSTRAP,
-                null, transcriptTurns, verdictResult.chapters(), verdictResult.rulings());
+                null, transcriptTurns, verdictResult.chapters(), verdictResult.rulings(), null);
 
         // BOOTSTRAP run-row (Karakter S9 Gépterem, mezo-1gim.14) — day is the run date (bootstrap
         // is one-time-EVER per owner, not period-keyed like WEEKLY/MONTHLY, so there is no anchor

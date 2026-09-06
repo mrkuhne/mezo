@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterObservationEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterPortraitRevisionEntity;
+import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ObservationDimensionKeysEnvelope;
@@ -285,6 +286,30 @@ class CharacterConferenceServiceIT extends ApiIntegrationTest {
         } finally {
             logger.detachAppender(appender);
         }
+    }
+
+    @Test
+    void runWeekly_persistsAStructuredDeliberation_threadedByChapter() {
+        UUID owner = ownerId();
+        seedDimension(owner, "discipline", "drill");
+        seedDimension(owner, "mental", "pszichologus");
+        seedObservation(owner, "drill", WEEK_START.plusDays(1), "3 napja nincs kaja-log.", (short) 4);
+        seedObservation(owner, "pszichologus", WEEK_START.plusDays(2), "Feszült napló.", (short) 3);
+
+        CharacterConferenceEntity conference = conferenceService.runWeekly(owner, WEEK_START);
+
+        assertThat(conference).isNotNull();
+        ConferenceDeliberationEnvelope deliberation = conference.getDeliberation();
+        assertThat(deliberation).isNotNull();
+        assertThat(deliberation.threads()).isNotEmpty();
+        assertThat(deliberation.threads())
+                .allSatisfy(thread -> assertThat(thread.items()).isNotEmpty());
+        assertThat(deliberation.threads().stream()
+                .flatMap(thread -> thread.items().stream()))
+                .allSatisfy(item -> {
+                    assertThat(item.expertKey()).isNotBlank();
+                    assertThat(item.chair()).isNotNull();
+                });
     }
 
     /** Escapes a JSON string value's double quotes/backslashes so it can be nested as another

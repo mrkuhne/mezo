@@ -136,7 +136,7 @@ public class CharacterMonthlyService {
         transcriptTurns.addAll(verdictResult.turns());
 
         CharacterConferenceEntity conference = conferenceService.persistConferenceAndApplyOutcome(owner, MONTHLY,
-                monthStart, transcriptTurns, verdictResult.chapters(), verdictResult.rulings());
+                monthStart, transcriptTurns, verdictResult.chapters(), verdictResult.rulings(), null);
 
         List<ConferenceOutcomeEnvelope.Change> retirementChanges = retireStaleChapters(owner);
         if (!retirementChanges.isEmpty()) {

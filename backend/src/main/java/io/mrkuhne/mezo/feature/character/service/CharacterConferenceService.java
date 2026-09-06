@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterObservationEntity;
+import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ObservationSignalsEnvelope;
@@ -16,8 +17,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -55,6 +58,7 @@ public class CharacterConferenceService {
     private final CharacterDimensionRepository dimensionRepository;
     private final CharacterClaimRepository claimRepository;
     private final KonziliumProposalRound proposalRound;
+    private final KonziliumCrossTalkRound crossTalkRound;
     private final KonziliumVerdictRound verdictRound;
     private final ClaimLifecycle claimLifecycle;
     private final PortraitWriter portraitWriter;
@@ -90,15 +94,37 @@ public class CharacterConferenceService {
         }
 
         KonziliumProposalRound.Result proposalResult = proposalRound.run(owner, weekStart, weekObservations);
-        KonziliumVerdictRound.Result verdictResult = verdictRound.run(owner, weekStart, proposalResult.proposals(), List.of());
+        KonziliumCrossTalkRound.Result crossTalkResult =
+                crossTalkRound.run(owner, weekStart, proposalResult.proposals());
+        KonziliumVerdictRound.Result verdictResult =
+                verdictRound.run(owner, weekStart, proposalResult.proposals(), crossTalkResult.reactions());
 
         warnUnaddressedUserFeedback(owner, weekObservations, proposalResult.proposals());
 
         List<ConferenceTranscriptEnvelope.Turn> transcriptTurns = new ArrayList<>(proposalResult.turns());
         transcriptTurns.addAll(verdictResult.turns());
 
+        Map<String, String> chapterTitles = new LinkedHashMap<>();
+        Map<UUID, String> claimChapters = new LinkedHashMap<>();
+        Map<UUID, String> dimensionKeyById = new LinkedHashMap<>();
+        for (CharacterDimensionEntity dimension : dimensionRepository.findByCreatedBy(owner)) {
+            chapterTitles.put(dimension.getKey(), dimension.getTitle());
+            dimensionKeyById.put(dimension.getId(), dimension.getKey());
+        }
+        for (ClaimProposal proposal : proposalResult.proposals()) {
+            if (proposal.claimId() != null) {
+                claimRepository.findByIdAndCreatedBy(proposal.claimId(), owner)
+                        .map(CharacterClaimEntity::getDimensionId)
+                        .map(dimensionKeyById::get)
+                        .ifPresent(chapterKey -> claimChapters.put(proposal.claimId(), chapterKey));
+            }
+        }
+        ConferenceDeliberationEnvelope deliberation = DeliberationAssembler.assemble(
+                proposalResult.proposals(), crossTalkResult.reactions(), verdictResult.verdicts(),
+                verdictResult.rulings(), chapterTitles, claimChapters);
+
         CharacterConferenceEntity conference = persistConferenceAndApplyOutcome(owner, WEEKLY, weekStart,
-                transcriptTurns, verdictResult.chapters(), verdictResult.rulings());
+                transcriptTurns, verdictResult.chapters(), verdictResult.rulings(), deliberation);
 
         for (CharacterObservationEntity observation : weekObservations) {
             observation.setConsumedByConferenceId(conference.getId());
@@ -202,13 +228,15 @@ public class CharacterConferenceService {
     @Transactional
     CharacterConferenceEntity persistConferenceAndApplyOutcome(UUID owner, String kind, LocalDate weekStart,
             List<ConferenceTranscriptEnvelope.Turn> transcriptTurns,
-            List<KonziliumVerdictRound.ChapterProposal> chapters, List<ClaimRuling> rulings) {
+            List<KonziliumVerdictRound.ChapterProposal> chapters, List<ClaimRuling> rulings,
+            ConferenceDeliberationEnvelope deliberation) {
         CharacterConferenceEntity conference = new CharacterConferenceEntity();
         conference.setCreatedBy(owner);
         conference.setKind(kind);
         conference.setWeekStart(weekStart);
         conference.setGeneratedAt(Instant.now());
         conference.setTranscript(new ConferenceTranscriptEnvelope(transcriptTurns));
+        conference.setDeliberation(deliberation);
         conference.setOutcome(new ConferenceOutcomeEnvelope(List.of()));
         conference = conferenceRepository.save(conference);
 
