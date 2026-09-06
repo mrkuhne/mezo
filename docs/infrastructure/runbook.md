@@ -26,7 +26,7 @@ running **k3s** `v1.35.5+k3s1` (single node, control-plane + workload). k3s bund
 | `cert-manager` | cert-manager (Let's Encrypt certs) | public HTTPS |
 | `argocd` | ArgoCD (GitOps controller + UI) | deploys `k8s/` from git |
 | `tailscale` | Tailscale operator + per-service proxy pods | private admin access |
-| `monitoring` | VictoriaMetrics k8s-stack: vmsingle/vmagent (metrics), vlsingle/vlagent (logs), vmalert + alertmanager (→ Telegram), Grafana | observability, ADR 0037 |
+| `monitoring` | VictoriaMetrics k8s-stack: vmsingle/vmagent (metrics), vlsingle/vlagent (logs), vmalert + alertmanager (→ Telegram, **pending** — blackhole until the token is sealed, §4), Grafana | observability, ADR 0037 |
 
 **Images** (private, on GitHub Container Registry, pulled with the `ghcr-pull` secret):
 `ghcr.io/mrkuhne/mezo-backend`, `ghcr.io/mrkuhne/mezo-frontend` — tags in `k8s/*/deployment.yaml`.

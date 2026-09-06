@@ -26,7 +26,7 @@ troubleshooting, and recovery, see the **[operational runbook](runbook.md)**.
               │   ├ backend   Deployment + Service (Spring Boot :8090, profile=demodata)
               │   ├ postgres  StatefulSet + PVC + Secret (local-path storage)
               │   ├ postgres-exporter  Deployment + Service (Postgres metrics for Grafana)
-              │   └ pgadmin   Deployment + Service  ← PRIVATE (no ingress)
+              │   └ pgadmin   Deployment + Service  ← PRIVATE (Tailscale ingress only)
               │                                   │
               │  namespace: argocd                │
               │   └ ArgoCD  → watches git repo k8s/ dir (GitOps)
@@ -50,7 +50,7 @@ troubleshooting, and recovery, see the **[operational runbook](runbook.md)**.
 | **pgAdmin** | `Deployment` + `Service` | DB GUI. Private: reachable only over the Tailscale ingress (`k8s/pgadmin/ingress-tailscale.yaml`). |
 | **DB backup** | `CronJob` + `PVC` | Nightly `pg_dump -Fc` → `postgres-backup` PVC (14-day rotation) + daily offsite pull to the admin Mac (`scripts/backup-live-db.sh`, launchd). [ADR 0009](../decisions/0009-postgres-backup-cronjob-plus-mac-pull.md), runbook §6. |
 | **ArgoCD** | install + `Application` | GitOps controller in `argocd` namespace; `Application` points at the repo's `k8s/` directory. |
-| **Observability** | Helm release via `argocd/monitoring-application.yaml` + `k8s/monitoring/` | VictoriaMetrics + VictoriaLogs + Grafana (tailnet), Alertmanager → Telegram. [ADR 0037](../decisions/0037-observability-stack-victoriametrics.md). |
+| **Observability** | Helm release via `argocd/monitoring-application.yaml` + `k8s/monitoring/` | VictoriaMetrics + VictoriaLogs + Grafana (tailnet), Alertmanager → Telegram (**pending**: blackhole receiver until the bot token is sealed, see runbook §4 Observability). [ADR 0037](../decisions/0037-observability-stack-victoriametrics.md). |
 
 ## Repository layout (target)
 
