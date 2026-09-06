@@ -2079,7 +2079,10 @@ Expected: FAIL — `up` is 1, because nothing excludes the answer yet.
             OneTimeQuestionService.QUESTION_FLAT_FEEDBACK);
         return companionMessageRepository.findAllById(feedMessageIds).stream()
             .filter(m -> userId.equals(m.getCreatedBy()))
-            .filter(m -> questionKeys.contains(m.getContent().setupKey()))
+            // Null-check BEFORE the set lookup: Set.of(...).contains(null) THROWS, and most advice
+            // rows (every flag-sourced one) carry a null setupKey.
+            .filter(m -> m.getContent().setupKey() != null
+                && questionKeys.contains(m.getContent().setupKey()))
             .map(CompanionMessageEntity::getId)
             .collect(Collectors.toSet());
     }

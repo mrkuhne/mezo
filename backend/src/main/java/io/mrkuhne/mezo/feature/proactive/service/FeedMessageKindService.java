@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -58,5 +59,27 @@ public class FeedMessageKindService implements FeedMessageKindSource {
                 || CompanionMessageEntity.KIND_ADVICE.equals(m.getKind()))
             .filter(m -> m.getContent().interventionKey() != null)
             .collect(Collectors.toMap(CompanionMessageEntity::getId, m -> m.getContent().interventionKey()));
+    }
+
+    /** Round 2 S5 (bd mezo-d58h.7.5). The question keys are plain constants on
+     *  {@link OneTimeQuestionService} — referencing them creates no bean dependency, so this class
+     *  keeps its COMPANION-only condition and still resolves with the proactive switch off (it then
+     *  honestly finds no question cards, because none were ever written). */
+    @Override
+    @Transactional(readOnly = true)
+    public Set<UUID> answerArtifactIds(UUID userId, Collection<UUID> feedMessageIds) {
+        if (feedMessageIds.isEmpty()) {
+            return Set.of();
+        }
+        Set<String> questionKeys = Set.of(OneTimeQuestionService.QUESTION_FEATURE_ABANDONMENT,
+            OneTimeQuestionService.QUESTION_FLAT_FEEDBACK);
+        return companionMessageRepository.findAllById(feedMessageIds).stream()
+            .filter(m -> userId.equals(m.getCreatedBy()))
+            // Null-check BEFORE the set lookup: Set.of(...).contains(null) throws, and most
+            // advice rows (every flag-sourced one) carry a null setupKey.
+            .filter(m -> m.getContent().setupKey() != null
+                && questionKeys.contains(m.getContent().setupKey()))
+            .map(CompanionMessageEntity::getId)
+            .collect(Collectors.toSet());
     }
 }

@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,10 @@ import org.springframework.transaction.annotation.Transactional;
  * (down-reason) histogram row. NOT the reinforcement layer (graph-node edge weighting) — that
  * activates only once W2 is live and is a separate, later, switch-guarded slice (spec §10).
  * Single-user data volumes throughout (spec §12): windowed rows are grouped in memory, not SQL.
+ *
+ * <p>Round 2 S5 (bd mezo-d58h.7.5): verdicts on once-ever QUESTION cards are removed from the
+ * window before any scope is computed — they are answers to a survey question, and counting them as
+ * effectiveness would teach the rollup a lie the system told itself.
  *
  * <p>W5.2 (bd mezo-b3pp.19) rides the same nightly pass: one additional {@code intervention:<key>}
  * scope per configured library entry ({@link CompanionProperties#interventions()}), joined through
@@ -71,6 +76,16 @@ public class FeedbackLearningService {
         Instant since = Instant.now().minus(windowDays, ChronoUnit.DAYS);
         List<MessageFeedbackEntity> window = messageFeedbackRepository
             .findByCreatedByAndUpdatedAtAfterAndDeletedFalse(userId, since);
+
+        // Round 2 S5 (bd mezo-d58h.7.5): a verdict on a once-ever question card is the user's
+        // ANSWER, not a rating of the card — dropped here, ONCE, so it stays out of every scope
+        // below (surface, feed kind, intervention key AND the down-reason style histogram).
+        Set<UUID> answers = feedMessageKindSource.answerArtifactIds(userId, window.stream()
+            .filter(byArtifactKind(MessageFeedbackEntity.KIND_FEED_MESSAGE))
+            .map(MessageFeedbackEntity::getArtifactId).toList());
+        if (!answers.isEmpty()) {
+            window = window.stream().filter(f -> !answers.contains(f.getArtifactId())).toList();
+        }
 
         int upserted = 0;
         for (String kind : SURFACE_KINDS) {

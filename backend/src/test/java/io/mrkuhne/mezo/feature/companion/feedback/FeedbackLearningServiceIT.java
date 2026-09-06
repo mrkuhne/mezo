@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.companion.feedback.entity.MessageFeedbackEntity;
 import io.mrkuhne.mezo.feature.companion.feedback.repository.FeedbackRollupRepository;
 import io.mrkuhne.mezo.feature.companion.feedback.service.FeedbackLearningService;
 import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
+import io.mrkuhne.mezo.feature.proactive.service.OneTimeQuestionService;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CompanionMessagePopulator;
 import io.mrkuhne.mezo.support.populator.FeedbackPopulator;
@@ -241,5 +242,27 @@ class FeedbackLearningServiceIT extends AbstractIntegrationTest {
             .findByCreatedByAndScopeAndWindowDaysAndDeletedFalse(owner,
                 FeedbackRollupEntity.SCOPE_INTERVENTION_PREFIX + "sleep_recover_tonight", 30)
             .orElseThrow().getStats().up()).isEqualTo(1);
+    }
+
+    /** Round 2 S5 (bd mezo-d58h.7.5): a verdict on a once-ever QUESTION card is an ANSWER, not a
+     *  rating — it must not move any effectiveness scope. Without the exclusion the up-count below
+     *  would be 1, and the rollup would be learning from the system's own survey. */
+    @Test
+    void testComputeRollups_shouldIgnoreVerdictsOnQuestionCards() {
+        UUID owner = userPopulator.createUser().getId();
+        CompanionMessageEntity question = companionMessagePopulator.createQuestion(owner,
+            LocalDate.now(), OneTimeQuestionService.QUESTION_FLAT_FEEDBACK,
+            OneTimeQuestionService.EYEBROW, "Kérdés?", java.util.List.of(),
+            java.util.List.of("👍", "👎"), Instant.now());
+        feedbackPopulator.createVerdict(owner, MessageFeedbackEntity.KIND_FEED_MESSAGE,
+            question.getId(), MessageFeedbackEntity.VERDICT_UP, null);
+
+        feedbackLearningService.computeRollups(owner);
+
+        FeedbackRollupEntity surface = feedbackRollupRepository
+            .findByCreatedByAndScopeAndWindowDaysAndDeletedFalse(owner, "surface:feed_message", 30)
+            .orElseThrow();
+        assertThat(surface.getStats().up()).isZero();
+        assertThat(surface.getStats().total()).isZero();
     }
 }
