@@ -412,7 +412,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### feedback
 
-*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-04, mixed)
+*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-06, mixed)
 
 - **FE data** `frontend/src/data/feedback`
   - **hooks (via `@/data/hooks`):** `useFeedback`
@@ -591,38 +591,42 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### insights
 
 *FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-06, mixed) ·
-  [docs/features/insights.md](features/insights.md) (updated 2026-09-04, mixed)
+  [docs/features/insights.md](features/insights.md) (updated 2026-09-06, mixed)
 
 - **FE data** `frontend/src/data/insights`
   - **hooks (via `@/data/hooks`):** `MemoryRetrievalFeedback`, `MemoryRetrievalFeedbackAction`,
-    `MemoryRetrievalFeedbackHandle`, `NEW_CHAT`, `useChat`, `useChatActions`, `useConversationActions`,
-    `useConversations`, `useDiagnoses`, `useDiagnosis`, `useDiagnosisActions`, `useExperimentActions`,
-    `useExperiments`, `useGraphEdgeCount`, `useKnowledge`, `useKnowledgeActions`, `useKnowledgeGraphActions`,
-    `useKnowledgeGraphNodes`, `useLifeEventActions`, `useLifeEventCandidates`, `useLlmUsage`, `useMemoir`,
-    `useMemoirArchive`, `useMemoryOverview`, `useMemoryRetrievalFeedback`, `useMemorySummaries`, `usePatternActions`,
-    `usePatternMonitor`, `usePatternPairDetail`, `usePatterns`, `usePredictions`, `useSimilarDays`, `useTranscribe`
-  - **modules:** chat.ts, chatApi.ts, chatHooks.ts, coachingTraceApi.ts, coachingTraceHooks.ts, coachingTraceMock.ts,
-    diagnosisApi.ts, diagnosisHooks.ts, diagnosisMock.ts, experimentsApi.ts, experimentsHooks.ts, graph.ts,
-    graphApi.ts, graphHooks.ts, insights.ts, knowledge.ts, knowledgeApi.ts, knowledgeHooks.ts, memoirApi.ts,
-    memoirHooks.ts, memory.ts, memoryApi.ts, memoryFeedbackApi.ts, memoryFeedbackHooks.ts, memoryHooks.ts,
-    monitorApi.ts, monitorHooks.ts, patternDetailApi.ts, patternDetailHooks.ts, patternPairMapper.ts, patternsApi.ts,
-    patternsHooks.ts, predictionsApi.ts, predictionsHooks.ts, weeklyHooks.ts, weeklySuggestionApi.ts
+    `MemoryRetrievalFeedbackHandle`, `NEW_CHAT`, `useChat`, `useChatActions`, `useCoachingCard`, `useCoachingTrace`,
+    `useConversationActions`, `useConversations`, `useDiagnoses`, `useDiagnosis`, `useDiagnosisActions`,
+    `useExperimentActions`, `useExperiments`, `useGraphEdgeCount`, `useKnowledge`, `useKnowledgeActions`,
+    `useKnowledgeGraphActions`, `useKnowledgeGraphNodes`, `useLifeEventActions`, `useLifeEventCandidates`,
+    `useLlmUsage`, `useMemoir`, `useMemoirArchive`, `useMemoryOverview`, `useMemoryRetrievalFeedback`,
+    `useMemorySummaries`, `usePatternActions`, `usePatternMonitor`, `usePatternPairDetail`, `usePatterns`,
+    `usePredictions`, `useSimilarDays`, `useTranscribe`
+  - **modules:** chat.ts, chatApi.ts, chatHooks.ts, coachingCardHooks.ts, coachingCardMock.ts, coachingTraceApi.ts,
+    coachingTraceHooks.ts, coachingTraceMock.ts, diagnosisApi.ts, diagnosisHooks.ts, diagnosisMock.ts,
+    experimentsApi.ts, experimentsHooks.ts, graph.ts, graphApi.ts, graphHooks.ts, insights.ts, knowledge.ts,
+    knowledgeApi.ts, knowledgeHooks.ts, memoirApi.ts, memoirHooks.ts, memory.ts, memoryApi.ts, memoryFeedbackApi.ts,
+    memoryFeedbackHooks.ts, memoryHooks.ts, monitorApi.ts, monitorHooks.ts, patternDetailApi.ts, patternDetailHooks.ts,
+    patternPairMapper.ts, patternsApi.ts, patternsHooks.ts, predictionsApi.ts, predictionsHooks.ts, weeklyHooks.ts,
+    weeklySuggestionApi.ts
 - **FE ui** `frontend/src/features/insights`
-  - **pages:** ChatPage.tsx, DiagnosisDetailPage.tsx, DiagnosisListPage.tsx, ExperimentsPage.tsx,
-    KnowledgeListPage.tsx, MemoirArchivePage.tsx, MemoirChapterPage.tsx, MemoirPage.tsx, MemoryPage.tsx,
-    MezoHubPage.tsx, PatternDetailPage.tsx, PatternsPage.tsx, PredictionsPage.tsx
+  - **pages:** ChatPage.tsx, CoachingCardPage.tsx, CoachingHubPage.tsx, CoachingObserverPage.tsx,
+    DiagnosisDetailPage.tsx, DiagnosisListPage.tsx, ExperimentsPage.tsx, KnowledgeListPage.tsx, MemoirArchivePage.tsx,
+    MemoirChapterPage.tsx, MemoirPage.tsx, MemoryPage.tsx, MezoHubPage.tsx, PatternDetailPage.tsx, PatternsPage.tsx,
+    PredictionsPage.tsx
   - **sheets:** ConversationActionsSheet.tsx, ConversationPickerSheet.tsx, NodeDetailSheet.tsx
-  - **components:** CategoryHeader.tsx, ChatMessage.tsx, FactCandidateCard.tsx, FactsView.tsx, FeedbackChips.tsx,
-    HowItWorksView.tsx, KategoriakView.tsx, KindNodeList.tsx, KindTileGrid.tsx, KnowledgeBaseView.tsx,
-    KnowledgeFactRow.tsx, LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx, LifecycleSection.tsx,
-    MemoryAuditPanel.tsx, MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx,
-    PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDetailHero.tsx, PatternDomainMark.tsx,
-    PatternEvidenceChart.tsx, PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx,
+  - **components:** CategoryHeader.tsx, ChatMessage.tsx, CoachingRuleTile.tsx, FactCandidateCard.tsx, FactsView.tsx,
+    FeedbackChips.tsx, HowItWorksView.tsx, KategoriakView.tsx, KindNodeList.tsx, KindTileGrid.tsx,
+    KnowledgeBaseView.tsx, KnowledgeFactRow.tsx, LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx,
+    LifecycleSection.tsx, MemoryAuditPanel.tsx, MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx,
+    MemorySearchPanel.tsx, PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDetailHero.tsx,
+    PatternDomainMark.tsx, PatternEvidenceChart.tsx, PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx,
     PatternStrengthChart.tsx, ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx,
-    SimilarDayCard.tsx, TokenColumns.tsx, ToolWorkStrip.tsx
-  - **logic:** chatRefs.ts, diagnosisCatalog.ts, diagnosisCopy.ts, domains.ts, factCopy.ts, findings.ts,
-    humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternCatalog.ts, patternEvidence.ts,
-    patternHistory.ts, quickQuestions.ts, toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
+    SimilarDayCard.tsx, TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx
+  - **logic:** chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts, domains.ts, factCopy.ts,
+    findings.ts, humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternCatalog.ts,
+    patternEvidence.ts, patternHistory.ts, quickQuestions.ts, toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts,
+    verdicts.ts
 
 ### intention
 
