@@ -244,13 +244,18 @@ public class FuelDayService {
      * <p>A tétel-hozzájárulás a KANONIKUS képlettel megy ({@link MealMapper#contribution}:
      * {@code factor = amount / snapshotPer}), nem a nyers snapshot-összeggel — különben egy
      * per-100 g kamra-sorból logolt 250 g a 100 g-os értékkel számolna.
+     *
+     * <p>A napi sorokat a {@code findWithItems...} fetch-join-os finderrel olvassa (NEM a
+     * {@link #getDay} / coach {@code loadDay} által is használt sima finderrel) — így ez a
+     * hot write-path hívás (minden {@code applyScore} create/update/rescore-kor lefut) EGY
+     * lekérdezésből kapja a napot ÉS a tételeket, nem egy N+1 lazy-load sorozatból.
      */
     @Transactional(readOnly = true)
     public DayContext dayContext(UUID userId, LocalDate date, Instant loggedAt, UUID excludeMealId) {
         BigDecimal kcal = BigDecimal.ZERO;
         BigDecimal p = BigDecimal.ZERO;
         for (MealEntity meal : mealRepository
-                .findByCreatedByAndMealDateAndDeletedFalseOrderByLoggedAtAsc(userId, date)) {
+                .findWithItemsByCreatedByAndMealDateAndDeletedFalseOrderByLoggedAtAsc(userId, date)) {
             if (meal.getId() != null && meal.getId().equals(excludeMealId)) {
                 continue;
             }

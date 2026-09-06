@@ -404,4 +404,37 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
         assertThat(beforeBreakfast.known()).isTrue();
         assertThat(beforeBreakfast.kcalBefore()).isEqualByComparingTo("0");
     }
+
+    /**
+     * Discriminates the id-exclusion (mezo-jcpt.19 review, finding 1) from the strict
+     * {@code isBefore} time filter — a scenario the first test cannot pin because there
+     * {@code excludeMealId}'s {@code loggedAt} always EQUALS the query instant, so the time
+     * filter alone already excludes it and the id-check is a no-op there.
+     *
+     * <p>Here the query instant is strictly AFTER {@code moved}'s STORED {@code loggedAt} — the
+     * shape {@code applyScore} produces on UPDATE when a meal is edited to a LATER time: the row
+     * still carries its old (earlier) {@code loggedAt} while the query instant is the new,
+     * later one. The time filter alone would count {@code moved} into its own day-context; only
+     * the id-check keeps it out. {@code other}, a DIFFERENT meal sharing that exact same
+     * {@code loggedAt}, stays IN — pinning that the id-check excludes by identity, not by
+     * "anything at this instant".
+     */
+    @Test
+    void dayContext_excludesByIdEvenWhenTheStrictTimeFilterWouldAlreadyIncludeIt() {
+        LocalDate date = LocalDate.of(2026, 6, 25);
+        Instant sharedLoggedAt = Instant.parse("2026-06-25T09:00:00Z");
+        // moved: stored loggedAt is 09:00, but is about to be queried as if re-scored after
+        // being edited to a later time (e.g. 09:00 -> 15:00) -- the query instant below.
+        UUID moved = createMeal(owner, date, "breakfast", sharedLoggedAt, 220, 46);
+        // other: a DIFFERENT meal, same exact loggedAt as moved.
+        createMeal(owner, date, "lunch", sharedLoggedAt, 330, 69);
+
+        DayContext afterMove = fuelDayService.dayContext(owner, date,
+            Instant.parse("2026-06-25T15:00:00Z"), moved);
+
+        // Without the id-check, the strict isBefore filter alone (09:00 < 15:00) would count
+        // BOTH moved and other, giving kcalBefore = 550. With the id-check, only other counts.
+        assertThat(afterMove.kcalBefore()).isEqualByComparingTo("330");
+        assertThat(afterMove.pBefore()).isEqualByComparingTo("69");
+    }
 }
