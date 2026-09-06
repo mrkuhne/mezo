@@ -36,6 +36,10 @@ public class KnowledgeFactEntity extends OwnedEntity {
     public static final String SOURCE_MANUAL = "manual";
     /** A weekly-review candidate the user accepted (mezo-d20.7.6) — promoted via FactCandidateService. */
     public static final String SOURCE_WEEKLY_REVIEW = "weekly_review";
+    /** A once-ever question's answer (round 2 S5, mezo-d58h.7.5) — the user answered a direct
+     *  question with one tap, which is a confirmation in its own right and needs no Tudástár
+     *  accept step. */
+    public static final String SOURCE_QUESTION = "question";
 
     @Id
     @GeneratedValue
@@ -54,10 +58,11 @@ public class KnowledgeFactEntity extends OwnedEntity {
     private String category;
 
     /** Mirrors ck_knowledge_fact_source — V1.1 creates only 'manual'; 'chat' = V1.2 extraction,
-     *  'pattern' = V3.3 promotion, 'weekly_review' = an accepted weekly lesson (mezo-d20.7.6). */
+     *  'pattern' = V3.3 promotion, 'weekly_review' = an accepted weekly lesson (mezo-d20.7.6),
+     *  'question' = a once-ever question's answer (mezo-d58h.7.5). */
     @NotNull
     @Size(max = 16)
-    @Pattern(regexp = "chat|pattern|manual|weekly_review")
+    @Pattern(regexp = "chat|pattern|manual|weekly_review|question")
     @Column(nullable = false, length = 16)
     private String source;
 

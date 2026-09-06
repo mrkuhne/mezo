@@ -20,23 +20,40 @@ import java.util.List;
  * @param suggestions     config-provided suggestion texts; at least one.
  * @param fallbackProse   the exact text that would have shipped pre-S4 — used verbatim whenever the
  *                        LLM fails, answers blank, or invents a number.
+ * @param verbatim        true when the card's body must be {@code fallbackProse} EXACTLY — the
+ *                        once-ever questions (round 2 S5, bd mezo-d58h.7.5, spec 2026-09-05 §c).
+ *                        The advice prompt orders the model to write coaching advice and forbids
+ *                        numerals; a QUESTION run through it comes back as advice with the 👍/👎
+ *                        answer key dissolved out of it. False for every flag- and setup-sourced
+ *                        candidate: those ARE advice, and their wording is the model's job.
  */
 public record AdviceCandidate(String adviceKey, String interventionKey, String setupKey,
                               String eyebrow, List<String> facts, List<String> suggestions,
-                              String fallbackProse) {
+                              String fallbackProse, boolean verbatim) {
 
     /** A flag-sourced candidate: the library entry key rides along for cooldown/rollup/push. */
     public static AdviceCandidate fromFlag(String flagKey, String interventionKey, String eyebrow,
                                            List<String> facts, List<String> suggestions,
                                            String fallbackProse) {
         return new AdviceCandidate(flagKey, interventionKey, null, eyebrow, facts, suggestions,
-            fallbackProse);
+            fallbackProse, false);
     }
 
     /** A setup-sourced candidate: no library entry, so no push anchor and no per-entry rollup. */
     public static AdviceCandidate fromSetupCheck(String checkKey, String eyebrow,
                                                  List<String> suggestions, String fallbackProse) {
         return new AdviceCandidate(checkKey, null, checkKey, eyebrow, List.of(), suggestions,
-            fallbackProse);
+            fallbackProse, false);
+    }
+
+    /** A once-ever QUESTION (round 2 S5, bd mezo-d58h.7.5): setup-tier identity — it rides the
+     *  same {@code setupKey} envelope slot, which is what the once-ever dedupe reads — plus its
+     *  own evidence list, the two one-tap answers as suggestions, and a body the LLM never
+     *  touches. */
+    public static AdviceCandidate fromQuestion(String questionKey, String eyebrow,
+                                               List<String> facts, List<String> answers,
+                                               String questionText) {
+        return new AdviceCandidate(questionKey, null, questionKey, eyebrow, facts, answers,
+            questionText, true);
     }
 }

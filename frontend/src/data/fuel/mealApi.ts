@@ -51,6 +51,7 @@ function fromDimension(d: MealScoreDimensionResponse): MealDimension | null {
     score: d.score,
     color: DIMENSION_COLOR[d.id as MealDimension['id']],
     detail: d.detail,
+    coverage: d.coverage ?? null,
     note: d.note ?? null,
   }
   if (d.id === 'macro' && d.macro) {
@@ -59,6 +60,7 @@ function fromDimension(d: MealScoreDimensionResponse): MealDimension | null {
       macroRatio: { p: d.macro.ratioP, c: d.macro.ratioC, f: d.macro.ratioF },
       macroTargets: { p: d.macro.targetP, c: d.macro.targetC, f: d.macro.targetF },
       kcalShareOfDay: d.macro.kcalShareOfDay,
+      targetOrigin: d.macro.targetOrigin ?? null,
       notes: d.macro.notes ?? undefined,
     }
   }
@@ -148,7 +150,9 @@ export function toRequest(input: MealInput): MealRequest {
         ? ({ source: 'estimate', recipeId: null, pantryItemId: null,
             amount: it.amount, unit: it.unit, name: it.name, per: it.per,
             basisUnit: it.basisUnit, kcal: it.kcal, proteinG: it.proteinG,
-            carbsG: it.carbsG, fatG: it.fatG, nova: it.nova ?? null } satisfies MealItemRequest)
+            carbsG: it.carbsG, fatG: it.fatG, nova: it.nova ?? null,
+            fiberG: it.fiberG ?? null, sugarG: it.sugarG ?? null,
+            saltG: it.saltG ?? null, saturatedFatG: it.saturatedFatG ?? null } satisfies MealItemRequest)
         : ({ source: it.source,
             recipeId: it.source === 'recipe' ? it.refId : null,
             pantryItemId: it.source === 'pantry' ? it.refId : null,
@@ -228,6 +232,10 @@ export function fromAiDraftResponse(r: MealAiDraftResponse): MealAiDraft {
       carbsG: it.carbsG,
       fatG: it.fatG,
       nova: it.nova ?? null,
+      fiberG: it.fiberG ?? null,
+      sugarG: it.sugarG ?? null,
+      saltG: it.saltG ?? null,
+      saturatedFatG: it.saturatedFatG ?? null,
       confidence: it.confidence,
       needsReview: it.needsReview,
     })),

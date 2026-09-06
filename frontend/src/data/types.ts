@@ -34,6 +34,8 @@ export interface FeedMessage {
   facts?: string[]
   /** Advice-card suggestion texts (config-provided); only advice rows. */
   suggestions?: string[]
+  /** The severity key the card came from (mezo-6269.2) — flag key or setup-check key; advice rows only. */
+  flagKey?: string
   /** Advice-card action buttons (S5, mezo-d58h.5) — rule-provided; only advice rows. */
   actions?: FeedAction[]
   /** Advice-card applied stamp (S5, mezo-d58h.5) — set once an action has been applied; only advice rows. */
@@ -109,8 +111,10 @@ export interface SlotTemplate {
 }
 export interface MacroSet { kcal: number; p: number; c: number; f: number; water: number }
 export type ToolType = 'read' | 'compute' | 'write'
-export interface MealDimensionBase { id: 'macro' | 'micro' | 'nova' | 'context' | 'who' | 'fat_quality' | 'plant_diversity' | 'energy_density' | 'portion'; label: string; weight: number; score: number; color: string; detail: string; note?: string | null }
-export interface MacroDimension extends MealDimensionBase { id: 'macro'; macroRatio: { p: number; c: number; f: number }; macroTargets: { p: string; c: string; f: string }; kcalShareOfDay: number; notes?: string }
+/** `coverage` (mezo-mxmh): the share of the meal's energy this dimension could actually SEE, 0..1.
+ *  `null`/absent on envelopes written before the field existed — render nothing, never 0%. */
+export interface MealDimensionBase { id: 'macro' | 'micro' | 'nova' | 'context' | 'who' | 'fat_quality' | 'plant_diversity' | 'energy_density' | 'portion'; label: string; weight: number; score: number; color: string; detail: string; coverage?: number | null; note?: string | null }
+export interface MacroDimension extends MealDimensionBase { id: 'macro'; macroRatio: { p: number; c: number; f: number }; macroTargets: { p: string; c: string; f: string }; kcalShareOfDay: number; targetOrigin?: string | null; notes?: string }
 export type MicroStatus = 'good' | 'ok' | 'low'
 export interface MicroDimension extends MealDimensionBase { id: 'micro'; micros: { name: string; value: string; pct: number; status: MicroStatus }[] }
 export interface NovaDimension extends MealDimensionBase { id: 'nova'; nova: { dominant: NovaGroup; stack: { nova: NovaGroup; pct: number; label: string }[]; items: { name: string; nova: NovaGroup; warning?: boolean }[] } }
@@ -189,6 +193,9 @@ export interface MealEstimateInputItem {
   basisUnit: string
   kcal: number; proteinG: number; carbsG: number; fatG: number
   nova?: number | null
+  /** Nutrition-quality facts (mezo-1f7b). `null` = the estimate carried no value — NOT 0 g: the
+   *  scorer degrades the fiber/WHO/fat-quality dimension instead of scoring a fabricated zero. */
+  fiberG?: number | null; sugarG?: number | null; saltG?: number | null; saturatedFatG?: number | null
 }
 /** Editor line — discriminated on source: a recipe/pantry ref, or a free-form estimate. */
 export type MealItemInput = MealRefInputItem | MealEstimateInputItem
@@ -224,6 +231,12 @@ export interface MealAiDraftLine {
   carbsG: number
   fatG: number
   nova: number | null
+  /** Nutrition-quality facts on the draft basis (mezo-1f7b): copied from the catalog/recipe on a
+   *  match, estimated by the model on an estimate line. `null` = unknown, never 0. */
+  fiberG: number | null
+  sugarG: number | null
+  saltG: number | null
+  saturatedFatG: number | null
   confidence: number
   needsReview: boolean
 }
@@ -1847,4 +1860,46 @@ export function notificationKindMeta(
   kind: string,
 ): typeof FALLBACK_KIND_META | (typeof APP_NOTIFICATION_KIND_META)[AppNotificationKindKey] {
   return APP_NOTIFICATION_KIND_META[kind as AppNotificationKindKey] ?? FALLBACK_KIND_META
+}
+
+/**
+ * The coaching observer's day (mezo-6269.2, spec 2026-09-05 §5). `label` and `domain` are
+ * SERVER-SENT on purpose: a per-flagKey map here would mean every round-2 rule needs a frontend
+ * change. `domain` drives the wash and the clay icon and the surface MUST fall back safely on one
+ * it does not know.
+ */
+export type FlagOutcome = 'raised' | 'clear' | 'unavailable'
+export type FlagState = FlagOutcome | 'suppressed'
+export interface CoachingRule {
+  flagKey: string
+  label: string
+  domain: string
+  rank: number
+  outcome: FlagOutcome
+  reasonCode?: string
+  reasonText: string
+  facts: string[]
+  disposition?: 'logged' | 'suppressed_by_cooldown'
+  cardOutcome?: 'won' | 'lost'
+  changedAt?: string
+}
+export interface CoachingTransition {
+  at: string
+  flagKey: string
+  label: string
+  from?: FlagState
+  to: FlagState
+  reasonText: string
+}
+export interface CoachingWinner {
+  flagKey: string
+  rank: number
+  cardId: string
+}
+export interface CoachingTraceDay {
+  date: string
+  earliestDate?: string
+  winner?: CoachingWinner
+  rules: CoachingRule[]
+  transitions: CoachingTransition[]
 }

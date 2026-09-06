@@ -107,8 +107,9 @@ public class RecipeService {
      * a GONE pantry row now only lowers the coverage of the dimensions still fed live — {@code nova}
      * and {@code plant_diversity} — while the fact-driven {@code micro}/{@code who}/
      * {@code fat_quality} keep scoring off the line's own snapshot; conversely a line whose snapshot
-     * carries none of the four facts ({@code hasFacts == false}) lowers exactly those three and
-     * leaves NOVA alone. Package-private since mezo-bw3y: RecipeBreakdownService scores the same lines.
+     * carries none of the four facts lowers exactly those three and leaves NOVA alone. Since
+     * mezo-1f7b each of those three reads its OWN fact for coverage, so a fiber-only line degrades
+     * {@code who}/{@code fat_quality} rather than silently claiming to cover them. Package-private since mezo-bw3y: RecipeBreakdownService scores the same lines.
      */
     List<ScoredLine> fitLines(RecipeEntity e, Map<UUID, PantryItemEntity> pantryById) {
         BigDecimal servings = BigDecimal.valueOf(
@@ -126,8 +127,8 @@ public class RecipeService {
             PantryItemEntity p = pantryById.get(line.getPantryItemId());
             // Frozen facts (mezo-m6uv): same snapshot, same factor as the macros — the separate
             // live-pantry factFactor is gone. NOVA + category stay live reads (cf. mezo-4tzf).
-            boolean hasFacts = line.getSnapshotFiberG() != null || line.getSnapshotSugarG() != null
-                || line.getSnapshotSaltG() != null || line.getSnapshotSaturatedFatG() != null;
+            // A null fact stays null all the way into the scorer: each dimension derives its own
+            // coverage from its own fact (mezo-1f7b), so it must not be flattened to a flag here.
             return new ScoredLine(
                 line.getSnapshotName(),
                 line.getAmount().stripTrailingZeros().toPlainString() + line.getUnit(),
@@ -138,7 +139,6 @@ public class RecipeService {
                 mulOrNull(line.getSnapshotSugarG(), factor),
                 mulOrNull(line.getSnapshotSaltG(), factor),
                 mulOrNull(line.getSnapshotSaturatedFatG(), factor),
-                hasFacts,
                 p == null ? null : p.getCatalog().getCategory(),
                 mulOrNull(gramAmount(line.getAmount(), line.getUnit()), servingScale));
         }).toList();

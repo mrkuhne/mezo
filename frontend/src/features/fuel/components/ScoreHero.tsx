@@ -29,12 +29,16 @@ export function ScoreHero({ meal, scorePct, confidence }: { meal: FuelMeal; scor
       </div>
       <div className="sb-hero-meta">
         <div className="sb-hero-word">{tone.word}</div>
+        {/* Mozaik 2.0 tény-csempék (mezo-1f7b): érték fölül, címke alatta, mindegyik a saját
+            domain-színében — a makró-trió ugyanaz a korall/arany/lila, amit a MacroPanel sávjai
+            és a MacroCells használ, a rost pedig a mikro-dimenzió égszínkékje. Korábban öt
+            egyforma szürke pirula volt: a hero egyetlen szín nélküli sávja. */}
         <div className="sb-hero-facts">
-          <span><i>kcal</i>{meal.kcal}</span>
-          <span><i>P</i>{meal.p} g</span>
-          <span><i>C</i>{meal.c} g</span>
-          <span><i>F</i>{meal.f} g</span>
-          {meal.fiberG != null && <span><i>Rost</i>{meal.fiberG} g</span>}
+          <span className="is-kcal">{meal.kcal}<i>kcal</i></span>
+          <span className="is-p">{meal.p} g<i>fehérje</i></span>
+          <span className="is-c">{meal.c} g<i>szénh.</i></span>
+          <span className="is-f">{meal.f} g<i>zsír</i></span>
+          {meal.fiberG != null && <span className="is-fiber">{meal.fiberG} g<i>rost</i></span>}
         </div>
         <div className="sb-hero-conf">
           Konfidencia

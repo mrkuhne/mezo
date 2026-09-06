@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.support.populator.BiometricProfilePopulator;
 import io.mrkuhne.mezo.support.populator.ChallengePopulator;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.CompanionMessagePopulator;
+import io.mrkuhne.mezo.support.populator.CreatedAtBackdater;
 import io.mrkuhne.mezo.support.populator.FuelSettingsPopulator;
 import io.mrkuhne.mezo.support.populator.GamificationPopulator;
 import io.mrkuhne.mezo.support.populator.QuestPopulator;
@@ -57,6 +58,7 @@ import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
 import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
+import io.mrkuhne.mezo.support.populator.TextSignalPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.WorkoutDayAdjustmentPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -96,6 +98,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
     MemoryItemPopulator.class,
     DailySummaryPopulator.class, PeriodSummaryPopulator.class, PatternPopulator.class, PatternEventPopulator.class,
     CompanionMessagePopulator.class, FeedbackPopulator.class, FlagLogPopulator.class,
+    CreatedAtBackdater.class,
     WeeklySuggestionPopulator.class, MemoirPopulator.class, WeeklyReviewPopulator.class,
     DiagnosisPopulator.class, WeeklyScorePopulator.class, DayReviewPopulator.class,
     PredictionPopulator.class, ExperimentPopulator.class, ChallengePopulator.class,
@@ -113,6 +116,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
     ProtocolPopulator.class, SupplementIntakePopulator.class,
     SkillProgressPopulator.class, LevelUpEventPopulator.class,
     PersonPopulator.class, MentionPopulator.class, GamificationPopulator.class,
+    TextSignalPopulator.class,
     LlmLogPopulator.class, NotificationPopulator.class, AppNotificationPopulator.class, LifeGoalPopulator.class,
     ResetDatabase.class})
 public abstract class AbstractIntegrationTest {

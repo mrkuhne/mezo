@@ -20,6 +20,14 @@ export const DIET_SPLIT_PRESETS: Record<'balanced' | 'low_fat' | 'low_carb' | 'h
   balanced: 0.275, low_fat: 0.2, low_carb: 0.4, high_carb: 0.22,
 }
 
+// Protein-tier g/kg BW band endpoints mirroring backend `mezo.goal.protein`
+// (g-per-kg-bw-default / g-per-kg-bw-ceil) — dietSplitDriftGuard.test.ts is the tripwire. Used
+// ONLY by the mock-mode diet-settings preview projection; real mode gets the engine's own number
+// from POST /api/diet/settings/preview.
+export const PROTEIN_TIER_G_PER_KG_BW: Record<'moderate' | 'high', number> = {
+  moderate: 2.0, high: 2.2,
+}
+
 // Keret-hero rost-gyűrű (mezo-c9t5, frontend-only rost-bővítés). Static default target — no
 // settings-field yet (scope-on-kívül a designban); consumed rost = the day's logged meals' summed
 // `fiberG` (missing per-meal field counts as 0, keretHero.ts).

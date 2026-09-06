@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,6 +30,7 @@ public class MessageFeedbackService {
 
     private final MessageFeedbackRepository repository;
     private final MessageFeedbackMapper mapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public MessageFeedbackResponse put(UUID userId, PutFeedbackRequest request) {
@@ -39,7 +41,7 @@ public class MessageFeedbackService {
         }
         repository.upsertVerdict(userId, request.getArtifactKind(), request.getArtifactId(),
             request.getVerdict(), request.getReason());
-        return mapper.toResponse(repository
+        MessageFeedbackResponse response = mapper.toResponse(repository
             .findByCreatedByAndArtifactKindAndArtifactIdAndDeletedFalse(
                 userId, request.getArtifactKind(), request.getArtifactId())
             // Can't-happen: the upsert above ran in this same transaction. If the row is gone
@@ -47,6 +49,12 @@ public class MessageFeedbackService {
             .orElseThrow(() -> new SystemRuntimeErrorException(
                 SystemMessage.error("FEEDBACK_UPSERT_READBACK_FAILED").build(),
                 HttpStatus.INTERNAL_SERVER_ERROR)));
+        // Round 2 S5 (bd mezo-d58h.7.5): a verdict on a QUESTION card is an ANSWER, not a rating.
+        // This layer cannot tell the difference (and must not learn to — companion never imports
+        // proactive), so it announces every verdict and lets the consumer decide.
+        eventPublisher.publishEvent(new MessageFeedbackRecordedEvent(userId,
+            request.getArtifactKind(), request.getArtifactId(), request.getVerdict()));
+        return response;
     }
 
     /** Retraction (spec §4.4: re-tapping the same verdict removes it) — soft delete via @SQLDelete;

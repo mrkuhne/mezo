@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.flags;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagCatalog;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagEvaluator;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagOutcome;
@@ -361,11 +362,16 @@ class FlagEvaluatorMomentumRecoveryIT extends AbstractIntegrationTest {
         assertThat(verdict.reason()).isEqualTo(UnavailableReason.NO_DATA_IN_WINDOW);
     }
 
+    /** One verdict per live rule, counted against {@code FlagCatalog.KEYS} rather than a literal
+     *  (Round 2 S6, mezo-d58h.7.7): every round-2 slice had to bump the hardcoded number by hand,
+     *  and a stale literal here reports the same failure the enumeration guards already report. */
     @Test
-    void evaluate_returns_exactly_fourteen_verdicts() {
+    void evaluate_returns_one_verdict_per_live_flag_key() {
         UUID owner = ownerId();
 
-        assertThat(evaluator.evaluate(owner)).hasSize(14);
+        assertThat(evaluator.evaluate(owner)).hasSize(FlagCatalog.KEYS.size())
+            .extracting(FlagVerdict::flagKey)
+            .containsExactlyInAnyOrderElementsOf(FlagCatalog.KEYS);
     }
 
     /**

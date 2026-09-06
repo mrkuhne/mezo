@@ -47,5 +47,24 @@ public enum UnavailableReason {
     /** protocol_lapse: an item's miss run qualified, but not enough due-day history existed
      *  behind it (either the item is too new, or too few historical due days survived the
      *  {@code startedOn} clamp) to judge whether a real habit existed before the miss. */
-    NOT_ENOUGH_PROTOCOL_HISTORY
+    NOT_ENOUGH_PROTOCOL_HISTORY,
+    /** meal_rhythm_drift: the user has no meal_slot_template row at all — there is no plan for
+     *  reality to drift away from (that is slot-template setup territory, not this rule's). */
+    NO_SLOT_TEMPLATE,
+    /** meal_rhythm_drift: fewer days with ANY logged meal inside the window than
+     *  {@code min-days-with-meals}. A logging holiday is not a rhythm change. */
+    NOT_ENOUGH_MEAL_DAYS,
+    /** meal_rhythm_drift: no slot survived the trackability gates (every day unresolvable or
+     *  without a matching template, every slot a snack, or an ambiguous duplicate slotKind), so
+     *  nothing could be measured — as opposed to measuring and finding no drift. */
+    NO_COMPARABLE_SLOTS,
+    /** energy_dip_meal_timing: fewer days carrying BOTH an early-afternoon check-in energy value
+     *  and any logged meal than {@code min-qualifying-days}. A day with an afternoon check-in but
+     *  no meal data at all is neither "ate late" nor "skipped breakfast" — it is unknown. */
+    NOT_ENOUGH_ENERGY_MEAL_DAYS,
+    /** energy_dip_meal_timing: neither split produced two groups of at least {@code min-group-days}
+     *  (the lunch arm additionally needs the two groups' median lunch times to be
+     *  {@code min-lunch-split-separation-minutes} apart) — nothing could be compared, as opposed to
+     *  comparing and finding no difference. */
+    NO_USABLE_SPLIT
 }

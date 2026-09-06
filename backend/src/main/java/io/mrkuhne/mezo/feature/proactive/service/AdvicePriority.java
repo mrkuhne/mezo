@@ -21,6 +21,20 @@ import lombok.extern.slf4j.Slf4j;
  * <p>Round 2 S1 (bd mezo-d58h.7.1): {@link FlagKey#PROTOCOL_LAPSE} sits at the very tail of the
  * flag block — it is the gentlest signal in the system (grace-window copy, never blame), so it
  * must never displace a health card ranked ahead of it.
+ *
+ * <p>Round 2 S4 (bd mezo-d58h.7.4): {@link FlagKey#MEAL_RHYTHM_DRIFT} sits immediately after
+ * {@code protocol_lapse}, still ahead of the setup checks — it is an offer to edit a plan, not a
+ * health signal, so it must never displace a card ranked above it.
+ *
+ * <p>Round 2 S6 (bd mezo-d58h.7.7): {@link FlagKey#ENERGY_DIP_MEAL_TIMING} sits immediately after
+ * {@code meal_rhythm_drift} — the least urgent FLAG in the table (an insight about a correlation,
+ * not a signal about a state), but still a statement about the user's own body, so it stays inside
+ * the flag block rather than dropping below the setup checks.
+ *
+ * <p>Round 2 S5 (bd mezo-d58h.7.5): the two once-ever QUESTION keys sit at the very tail, above only
+ * {@code all_healthy} — a survey question must never displace a health signal, a setup card, or even
+ * a momentum nudge. {@code OneTimeQuestionService} also refuses to speak at all on a day that
+ * already has a card, so in practice a question only ever fills an otherwise empty day.
  */
 @Slf4j
 public final class AdvicePriority {
@@ -45,11 +59,15 @@ public final class AdvicePriority {
         FlagKey.IGNORED_NUDGE,
         FlagKey.LATE_EATING,
         FlagKey.PROTOCOL_LAPSE,
+        FlagKey.MEAL_RHYTHM_DRIFT,
+        FlagKey.ENERGY_DIP_MEAL_TIMING,
         SetupCheckService.CHECK_MISSING_SLEEP_GOAL,
         SetupCheckService.CHECK_PLAN_FEASIBILITY,
         FlagKey.RECOVERY_NEEDED,
         FlagKey.SUSTAINED_STRESS,
         FlagKey.MOMENTUM_AT_RISK,
+        OneTimeQuestionService.QUESTION_FEATURE_ABANDONMENT,
+        OneTimeQuestionService.QUESTION_FLAT_FEEDBACK,
         FlagKey.ALL_HEALTHY);
 
     private AdvicePriority() {

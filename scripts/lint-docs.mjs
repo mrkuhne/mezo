@@ -12,6 +12,11 @@
 //     (3–8 load-bearing paths from its §10). When ANY tracked path has a git
 //     commit NEWER than the doc file's own last git commit, the code moved on
 //     while the prose stood still — the doc is flagged 🔶 STALE.
+//     "Commit" here means a SUBSTANTIVE one (see gitLastSubstantiveCommit):
+//     merge commits are skipped (they author nothing, they only re-date what
+//     they carry across), and so are commits that touched nothing but tests,
+//     generated artifacts or visual goldens beneath the tracked path. Each
+//     flagged key_file prints the subject of the commit that moved it.
 //   • docs/research/  — source-ingested wiki (external articles are the raw
 //     layer). Structure/staleness-by-key_files do not apply; we still lint
 //     frontmatter and links.
@@ -117,6 +122,79 @@ function gitLastCommitISO(absPath) {
   } catch {
     return null;
   }
+}
+
+// ── Paths whose movement never changes what a feature doc describes. ─────────
+// A commit that touches ONLY these under a key_file is not "the code moving on":
+//   • tests — the house rule is that behavior changes carry a doc update, so a
+//     test-only commit by construction describes no new behavior;
+//   • generated artifacts — regenerated FROM the sources the doc already tracks
+//     (api/openapi.yml, api.gen.ts, CODEMAP.md), so they add no signal;
+//   • visual-regression goldens and the beads export — pure build/tracker output.
+const NOISE_PATTERNS = [
+  /(^|\/)src\/test\//,
+  /(^|\/)__tests__\//,
+  /(^|\/)__screenshots__\//,
+  /\.(test|spec)\.[cm]?[jt]sx?$/,
+  /(IT|Test|Tests)\.java$/,
+  /^api\/openapi\.yml$/,
+  /(^|\/)_client\/api\.gen\.ts$/,
+  /^docs\/CODEMAP\.md$/,
+  /^\.beads\//,
+];
+const isNoisePath = (p) => NOISE_PATTERNS.some((re) => re.test(p));
+
+/**
+ * The last commit that *substantively* moved a key_file, as
+ * `{ iso, subject } | null`.
+ *
+ * Two corrections over a plain `git log -1 -- <path>`, both measured against
+ * real false positives on this repo (mezo-uejx):
+ *
+ *   1. `--no-merges` — a merge commit authors nothing; it only re-dates every
+ *      file it carries across. A plain `Merge origin/main` was being reported
+ *      as the "last change" of files it never edited, dragging their date past
+ *      the doc's and flagging the doc stale. The change a merge brings in is
+ *      still found, at its own real commit.
+ *   2. Noise-only commits are skipped — see NOISE_PATTERNS. For a *directory*
+ *      key_file (a feature package) this is what keeps a test-seam or a
+ *      generated-file refresh from flagging every doc under it. Only paths
+ *      BENEATH the key_file are considered, so a commit that also touched
+ *      unrelated files still counts if it touched real source here.
+ *
+ * Scans at most SCAN_DEPTH commits; if all of them are noise the path is
+ * treated as having no comparable date (null) rather than guessed at.
+ */
+const SCAN_DEPTH = 40;
+
+function gitLastSubstantiveCommit(absPath) {
+  const rel = path.relative(REPO_ROOT, absPath);
+  let out;
+  try {
+    out = execSync(
+      `git log --no-merges -n ${SCAN_DEPTH} --format="%x00%cI%x1f%s" --name-only -- "${rel.replace(/"/g, '\\"')}"`,
+      { cwd: REPO_ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], maxBuffer: 32 * 1024 * 1024 },
+    );
+  } catch {
+    return null;
+  }
+
+  // Records are separated by the NUL we printed before each %cI.
+  for (const chunk of out.split('\0').slice(1)) {
+    // chunk === "<iso>\x1f<subject>\n\n<file>\n<file>…"
+    const us = chunk.indexOf('\x1f');
+    if (us === -1) continue;
+    const iso = chunk.slice(0, us);
+    const restLines = chunk.slice(us + 1).split('\n');
+    const subject = restLines[0] ?? '';
+    const files = restLines.slice(1).map((l) => l.trim()).filter(Boolean);
+    // Only the files inside this key_file speak for it.
+    const under = files.filter((f) => f === rel || f.startsWith(`${rel}/`));
+    if (under.length === 0) continue; // rename/edge case — no evidence here
+    if (under.every(isNoisePath)) continue; // tests / generated only → not drift
+    return { iso, subject };
+  }
+  return null;
 }
 
 /** Parse an ISO date string to epoch ms, or null if unparseable. */
@@ -272,7 +350,8 @@ function lintDoc(absPath, { isFeature }) {
   // ── Staleness (the core check) — feature docs only ────────────────────────
   let stale = false;
   if (isFeature) {
-    const docMs = isoToMs(gitLastCommitISO(absPath));
+    const docCommit = gitLastSubstantiveCommit(absPath);
+    const docMs = isoToMs(docCommit?.iso);
     if (docMs === null) {
       add(SEV.WARN, 'uncommitted — commit then re-run (no doc commit date to compare against)');
     } else if (keyFiles.length > 0) {
@@ -280,10 +359,11 @@ function lintDoc(absPath, { isFeature }) {
       for (const kf of keyFiles) {
         const abs = path.resolve(REPO_ROOT, kf);
         if (!existsSync(abs)) continue; // already reported as a key_files error
-        const kfMs = isoToMs(gitLastCommitISO(abs));
-        if (kfMs === null) continue; // path has no commits — skip
+        const kfCommit = gitLastSubstantiveCommit(abs);
+        const kfMs = isoToMs(kfCommit?.iso);
+        if (kfMs === null) continue; // no substantive commit — nothing to compare
         if (kfMs > docMs) {
-          moved.push({ kf, iso: new Date(kfMs).toISOString().slice(0, 10) });
+          moved.push({ kf, iso: new Date(kfMs).toISOString().slice(0, 10), subject: kfCommit.subject });
         }
       }
       if (moved.length) {
@@ -292,7 +372,9 @@ function lintDoc(absPath, { isFeature }) {
           SEV.STALE,
           `STALE — ${moved.length} key_file(s) committed after the doc (doc: ${new Date(docMs).toISOString().slice(0, 10)}):`,
         );
-        for (const m of moved) add(SEV.STALE, `    ↳ ${m.kf}  (last change ${m.iso})`);
+        // The commit subject is printed so a reviewer can judge in one glance
+        // whether that change altered what the doc describes.
+        for (const m of moved) add(SEV.STALE, `    ↳ ${m.kf}  (${m.iso} — ${m.subject})`);
       }
     }
   }

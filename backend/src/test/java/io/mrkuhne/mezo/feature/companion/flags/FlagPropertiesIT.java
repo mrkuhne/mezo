@@ -133,4 +133,40 @@ class FlagPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.protocolLapse().minHistoryAdherence()).isEqualTo(0.60);
         assertThat(properties.protocolLapse().perItemCooldownDays()).isEqualTo(7);
     }
+
+    /** Round 2 S4 (mezo-d58h.7.4): the spec's 14-day cadence is a KEY-level cooldown here (unlike
+     *  protocol_lapse's per-item one) — and application.yml's protocol_lapse lesson applies: the
+     *  intervention-library entry's own cooldown-hours must match it, or InterventionService's
+     *  per-key gate silently overrides the design. */
+    @Test
+    void binds_the_meal_rhythm_drift_thresholds_and_cooldown() {
+        assertThat(properties.mealRhythmDrift().windowDays()).isEqualTo(14);
+        assertThat(properties.mealRhythmDrift().minDaysWithMeals()).isEqualTo(10);
+        assertThat(properties.mealRhythmDrift().driftMinutes()).isEqualTo(90);
+        assertThat(properties.mealRhythmDrift().minSlotDays()).isEqualTo(8);
+        assertThat(properties.mealRhythmDrift().minSameDirectionShare()).isEqualTo(0.70);
+        assertThat(properties.mealRhythmDrift().deadSlotMaxPresence()).isEqualTo(0.30);
+        assertThat(properties.mealRhythmDrift().otherSlotsMinPresence()).isEqualTo(0.70);
+        assertThat(properties.mealRhythmDrift().minSlotPlannedDays()).isEqualTo(10);
+        assertThat(properties.cooldownHours().mealRhythmDrift()).isEqualTo(336);
+        assertThat(properties.cooldownHours().forFlag(FlagKey.MEAL_RHYTHM_DRIFT)).isEqualTo(336);
+    }
+
+    /** Round 2 S6 (mezo-d58h.7.7): the 30-day insight cadence lives in TWO places that must agree —
+     *  this key-level cooldown and the energy_dip_timing_insight library entry's own cooldown-hours
+     *  (InterventionService.deliverForFlag applies the LIBRARY value, so a mismatch silently
+     *  overrides the design — the protocol_lapse review lesson, repeated in S4). */
+    @Test
+    void binds_the_energy_dip_meal_timing_thresholds_and_cooldown() {
+        assertThat(properties.energyDipMealTiming().windowDays()).isEqualTo(30);
+        assertThat(properties.energyDipMealTiming().minQualifyingDays()).isEqualTo(10);
+        assertThat(properties.energyDipMealTiming().afternoonFromHour()).isEqualTo(11);
+        assertThat(properties.energyDipMealTiming().afternoonToHour()).isEqualTo(16);
+        assertThat(properties.energyDipMealTiming().minGroupDays()).isEqualTo(4);
+        assertThat(properties.energyDipMealTiming().minEnergyDelta()).isEqualTo(1.0);
+        assertThat(properties.energyDipMealTiming().minSuperiority()).isEqualTo(0.70);
+        assertThat(properties.energyDipMealTiming().minLunchSplitSeparationMinutes()).isEqualTo(45);
+        assertThat(properties.cooldownHours().energyDipMealTiming()).isEqualTo(720);
+        assertThat(properties.cooldownHours().forFlag(FlagKey.ENERGY_DIP_MEAL_TIMING)).isEqualTo(720);
+    }
 }

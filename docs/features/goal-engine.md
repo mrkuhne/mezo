@@ -5,25 +5,9 @@ status: done
 updated: 2026-09-05
 tags: [goal, engine, backend, tdee, projection, guards, adaptive]
 key_files:
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/GoalEngineProperties.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/goal
   - backend/src/main/java/io/mrkuhne/mezo/feature/train/service/WeeklyScheduledActivityService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/GoalEngineService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/GoalProjectionService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/DayTypeShiftCalculator.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/GuardEvaluationService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/GoalEvaluationService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/GoalFeasibilityService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/TdeeBootstrapService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/DietPreferencesPort.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/AdaptiveCorrectionService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/AdaptiveReviewService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/AdaptiveReviewJob.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalInvariantValidator.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalOverviewService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalOverviewCourseService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalPlanLinkService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalTimelineService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/mapper/GoalPlanLinkMapper.java
+  - api/feature/goal/goal.yml
 related: [me, fuel, lifegoal, _platform-api-backend, _platform-data-layer]
 ---
 
@@ -109,6 +93,7 @@ trainingDayKcal  = kcal + round(effectiveShift × R / T)
 | **Weigh-in logged** | `WeightLogService.log` → `GoalEngineService.recomputeActiveGoal` (`feature/biometrics/weight/service/WeightLogService.java:40`) | the owner's single **active** goal (no-op when none) |
 | **Biometric profile changed** (G6, `mezo-06n`) | `BiometricProfileService.upsertProfile` → its own private `recomputeActiveGoal` (`feature/biometrics/profile/service/BiometricProfileService.java:95,122`) — a separate copy that still calls `GoalEngineService.evaluate` directly, **not** the shared helper | the owner's single **active** goal (no-op when none) — the profile feeds BMR + the NEAT band, so a change must refresh the prescription |
 | **Diet settings saved** (Diet Plan slice 1, `mezo-xwgb`) | `DietSettingsService.setSettings` → `GoalEngineService.recomputeActiveGoal` (`feature/nutrition/service/DietSettingsService.java:61`) | the owner's single **active** goal (no-op when none) — the split preset/custom %s/protein tier changed, so the segments' `carbsG`/`fatG` (§4 `diet.*`) need fresh values; this is the **7th** recompute trigger |
+| **Diet settings PREVIEWED** (mezo-u2pd) | `DietSettingsService.previewSettings` → `GoalEngineService.previewActiveGoalSegment` (`feature/nutrition/service/DietSettingsService.java`) | **not a trigger — the read-only twin.** Runs the same `GoalPrescriptionCalculator` with a draft `DietPreferences` and returns only the segment covering *today*; nothing is persisted, the goal keeps its stored prescription, and no suggestion probe runs. Exists so the Fuel settings macro preview shows the draft's real numbers before Mentés instead of the last saved ones (see [`fuel.md`](fuel.md) §5) — routing it through the calculator is what makes preview-vs-save drift impossible |
 | **Sport schedule replaced** (`mezo-3g5w`) | `SportService.replaceSchedule` (`feature/train/service/SportService.java:87`) → `GoalRecomputePort` (`feature/train/service/GoalRecomputePort.java`, train-owned) → `TrainGoalRecomputeAdapter` (`feature/goal/engine/service/TrainGoalRecomputeAdapter.java`) → `GoalEngineService.recomputeActiveGoal` | the owner's single **active** goal (no-op when none) — the weekly EAT is schedule-derived (§5), so a schedule edit otherwise leaves a stale prescription |
 | **Gym schedule replaced** (`mezo-3g5w`) | `GymScheduleService.replaceSchedule` (`feature/train/service/GymScheduleService.java:37`) → same `GoalRecomputePort` → `TrainGoalRecomputeAdapter` chain | same |
 | **Running block activated** (`mezo-3g5w`) | `RunningService.activateBlock` (`feature/train/service/RunningService.java:72`) → same chain | same |
@@ -158,7 +143,7 @@ Worked examples (`kcalPerKg = 7700` ⇒ ×1100 per kg/week of gap; from `Adaptiv
 
 **Intake-adherence port** (`engine/port/IntakeAdherencePort.java`, impl `feature/meal/service/GoalIntakeAdherenceAdapter.java`) — context only, it never gates the correction: averages kcal intake/target over **logged days only** off `FuelDayService.getWeek` (a day counts as logged when its consumed kcal is `> 0`; `kcal ≤ 0` means absence — missing data, not a zero-kcal day — and is skipped rather than dragging the average toward zero).
 
-**Preview-gated accept and `basis="adaptive"`** — every suggestion is reviewed through `GoalSuggestionPreviewService` before it can be applied. The service copies the goal field-by-field into a transient draft, uses the I/O-free `GoalSuggestionDraftApplier` on that draft, and calculates both sides with the shared `GoalPrescriptionCalculator`; the calculator is also the engine's persisted evaluation core but itself never saves, emits events, or proposes. The resulting typed projection exposes trajectory, target/window, kcal/day-type split, macros, segment and guards in deterministic changed/unchanged order. A direction conflict remains inspectable as a blocker and cannot be applied; historical accepted/dismissed/superseded rows remain inspectable without an apply token. For an accepted row the applier reverses the one persisted effect on a transient copy before calculating the historical `current` side, while the live goal is the `proposed` side—so reopening an accepted weekly correction never displays a fictitious second calorie reduction.
+**Preview-gated accept and `basis="adaptive"`** — every suggestion is reviewed through `GoalSuggestionPreviewService` before it can be applied. The service copies the goal field-by-field into a transient draft, uses the I/O-free `GoalSuggestionDraftApplier` on that draft, and calculates both sides with the shared `GoalPrescriptionCalculator`; the calculator is also the engine's persisted evaluation core but itself never saves, emits events, or proposes. Its `calculate(userId, goal, draftPreferences)` overload (mezo-u2pd) lets a caller substitute UNSAVED diet preferences for what `DietPreferencesPort.resolve` would return — the one calculation path, now shared by the persisted evaluation, the suggestion preview and the diet-settings draft preview. The resulting typed projection exposes trajectory, target/window, kcal/day-type split, macros, segment and guards in deterministic changed/unchanged order. A direction conflict remains inspectable as a blocker and cannot be applied; historical accepted/dismissed/superseded rows remain inspectable without an apply token. For an accepted row the applier reverses the one persisted effect on a transient copy before calculating the historical `current` side, while the live goal is the `proposed` side—so reopening an accepted weekly correction never displays a fictitious second calorie reduction.
 
 The apply token is a lowercase SHA-256 semantic fingerprint over the suggestion payload/status, goal inputs and overrides, resolved diet preferences, linked plan metadata (including meso phase structure), and the recurring gym/sport schedule. It deliberately excludes generated and audit timestamps, including `prescription.generatedAt`, so a timestamp-only recompute does not create a false stale state. Accept recomputes the preview and compares the submitted token in constant time; any semantic drift supersedes the proposal in `GoalSuggestionSupersedeWriter`'s independent transaction and returns `GOAL_SUGGESTION_STALE` (409). On a match, the same draft applier updates the managed goal; `weekly_correction` accumulates `deltaKcal` onto `balance_adjustment_kcal`, then the engine re-evaluates and `GoalEvaluationService.assemble` sets `basis="adaptive"` iff that running adjustment is non-zero.
 

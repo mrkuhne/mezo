@@ -36,6 +36,20 @@ public interface NarrativeNoteSource {
     /** Which kind this source's notes become (one of the constants above). */
     String kind();
 
+    /**
+     * The user's live notes from THIS source ON a single day, in a stable order (mezo-06o0.10).
+     *
+     * <p>A second reader joined the sweep: the nightly people round
+     * ({@code companion.service.PersonExtractionService}) builds the day's narrative from every
+     * free-text source the user writes into, and an activity note or a check-in note is exactly
+     * that. It needs one day, not the whole backlog, so it gets its own day-scoped method rather
+     * than filtering {@link #notesToEmbed}'s full history in memory every night.
+     *
+     * <p>Deliberately NOT length-gated, unlike {@link #notesToEmbed}: a two-word note can still
+     * name a person, and the reader that cares about substance can measure it itself.
+     */
+    List<Note> notesOn(UUID userId, LocalDate day);
+
     /** Live notes up to and including {@code through} whose text is at least {@code minChars}
      *  long, oldest first. */
     List<Note> notesToEmbed(UUID userId, LocalDate through, int minChars);

@@ -47,7 +47,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [quickinput](#quickinput) | · | · | · | ✓ | · |
 | [recipe](#recipe) | ✓ | 1 | · | · | [recipe](features/recipe.md) |
 | [ritual](#ritual) | ✓ | 1 | ✓ | ✓ | [ritual](features/ritual.md) |
-| [today](#today) | · | · | ✓ | ✓ | [habit](features/habit.md), [intention](features/intention.md), [lifegoal](features/lifegoal.md), [needs](features/needs.md), [ritual](features/ritual.md), [today](features/today.md) |
+| [today](#today) | · | · | ✓ | ✓ | [habit](features/habit.md), [intention](features/intention.md), [lifegoal](features/lifegoal.md), [needs](features/needs.md), [proactive](features/proactive.md), [ritual](features/ritual.md), [today](features/today.md) |
 | [train](#train) | ✓ | 1 | ✓ | ✓ | [fuel](features/fuel.md), [goal-engine](features/goal-engine.md), [train](features/train.md), [_platform-data-layer](features/_platform-data-layer.md) |
 | [tutorial](#tutorial) | ✓ | 1 | ✓ | ✓ | [tutorial](features/tutorial.md) |
 
@@ -78,7 +78,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### admin
 
-*FE-data* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-02, done)
+*FE-data* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-06, done)
 
 - **FE data** `frontend/src/data/admin`
   - **hooks (via `@/data/hooks`):** `useAdminActions`, `useAdminInvites`, `useAdminUsers`
@@ -106,8 +106,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### auth
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-02, done) ·
-  [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-09-04, done)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-06, done) ·
+  [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
   - **entities→tables:** `AppUserEntity`→`app_user`, `InviteEntity`→`invite`
@@ -137,8 +137,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### biometrics
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-05, mixed) ·
-  [docs/features/today.md](features/today.md) (updated 2026-09-04, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-06, mixed) ·
+  [docs/features/today.md](features/today.md) (updated 2026-09-06, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
   - **sub-features:** `checkin`, `profile`, `sleep`, `weight`
@@ -178,7 +178,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### character
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-02, shipped)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-06, shipped)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
   - **sub-features:** `detector`
@@ -241,15 +241,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### companion
 
-*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-02, shipped) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-09-05, mixed) ·
-  [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
+*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-06, shipped) ·
+  [docs/features/companion.md](features/companion.md) (updated 2026-09-06, mixed) ·
+  [docs/features/journal.md](features/journal.md) (updated 2026-09-06, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-05, in-progress) ·
-  [docs/features/me.md](features/me.md) (updated 2026-09-05, mixed)
+  [docs/features/me.md](features/me.md) (updated 2026-09-06, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
   - **sub-features:** `advisor`, `embedding`, `feedback`, `flags`, `graph`, `llm`, `memory`, `profile`, `quarterly`,
-    `tools`
+    `reflection`, `tools`
   - **entities→tables:** `AiConversationEntity`→`ai_conversation`, `AiMessageEntity`→`ai_message`,
     `CompanionFlagLogEntity`→`companion_flag_log`, `CompanionFlagTraceEntity`→`companion_flag_trace`,
     `DailySummaryEntity`→`daily_summary`, `DayReviewEntity`→`day_review`, `FeedbackRollupEntity`→`feedback_rollup`,
@@ -258,7 +258,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MemoryRetrievalFeedbackEntity`→`memory_retrieval_feedback`,
     `MemoryRetrievalResultEntity`→`memory_retrieval_result`, `MemoryRetrievalRunEntity`→`memory_retrieval_run`,
     `MemoryVectorEntity`→`memory_vector`, `MessageFeedbackEntity`→`message_feedback`, `PatternEntity`→`pattern`,
-    `PatternEventEntity`→`pattern_event`, `PeriodSummaryEntity`→`period_summary`, `WeeklyScoreEntity`→`weekly_score`
+    `PatternEventEntity`→`pattern_event`, `PeriodSummaryEntity`→`period_summary`, `TextSignalEntity`→`text_signal`,
+    `WeeklyScoreEntity`→`weekly_score`
   - **repositories:** `AiConversationRepository`, `AiMessageRepository`, `CompanionFlagLogRepository`,
     `CompanionFlagTraceRepository`, `DailySummaryRepository`, `DayReviewRepository`, `DenseMemoryQuery`,
     `FeedbackRollupRepository`, `GraphEdgeRepository`, `GraphNodeRepository`, `GraphTraversalQuery`,
@@ -266,67 +267,71 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MemoryEmbeddingAnnQuery`, `MemoryEmbeddingRepository`, `MemoryItemRepository`,
     `MemoryRetrievalFeedbackRepository`, `MemoryRetrievalResultRepository`, `MemoryRetrievalRunRepository`,
     `MemoryVectorRepository`, `MessageFeedbackRepository`, `PatternEventRepository`, `PatternRepository`,
-    `PeriodSummaryRepository`, `WeeklyScoreRepository`
-  - **services:** `ChatMemoryContextAdapter`, `ChatMentionListener`, `ChatService`, `ChatStreamService`,
-    `ChatTurnCompleted`, `ConsolidationJob`, `ContextSnapshotAssembler`, `ConversationService`, `DailySummaryJob`,
-    `DailySummaryService`, `DayEvaluationEngine`, `DayReviewLlm`, `DayReviewService`, `DayScoreService`,
-    `DecisionContextAssemblerAdapter`, `DenseMemoryRetriever`, `FactCandidateService`, `FactExtractionListener`,
-    `FactExtractionService`, `FactMemoryRetriever`, `FeedMessageKindSource`, `FeedbackLearningJob`,
-    `FeedbackLearningService`, `FlagEvaluationListener`, `FlagEvaluator`, `FlagKey`, `FlagOutcome`, `FlagRaisedEvent`,
-    `FlagRule`, `FlagService`, `FlagSweepJob`, `FlagTraceWriter`, `FlagVerdict`, `GraphEdgeLineRenderer`,
-    `GraphEdgeStructurer`, `GraphEdgeSuggestion`, `GraphMaintenanceJob`, `GraphMaintenanceResult`,
-    `GraphMaintenanceService`, `GraphMemoryRetriever`, `GraphPromotionListener`, `GraphPromotionService`,
-    `GraphPromptAssembler`, `GraphReconcileResult`, `GraphService`, `GraphTraversalService`, `HypothesisJob`,
-    `HypothesisPipelineService`, `KnowledgeFactChangedEvent`, `KnowledgeFactPromotedEvent`, `KnowledgeFactService`,
-    `LexicalMemoryRetriever`, `LifeEventCandidateService`, `LifeEventExtractionService`, `LifeEventSuggestion`,
-    `LifeGoalSnapshotBlock`, `LlmMemoryQueryRewriter`, `LlmMemoryReranker`, `MeWeekService`, `MemoryCandidateFusion`,
-    `MemoryContextRenderer`, `MemoryContextSelector`, `MemoryContextService`, `MemoryItemFeedbackService`,
-    `MemoryObservatoryService`, `MemoryProjectionEvent`, `MemoryProjectionListener`, `MemoryProjectionWriter`,
-    `MemoryQueryAnalyzer`, `MemoryQueryPreparer`, `MemoryQueryRewriter`, `MemoryRecallService`, `MemoryReembeddingJob`,
-    `MemoryReembeddingService`, `MemoryReranker`, `MemoryRetrievalAuditWriter`, `MemoryRetrievalRetentionJob`,
-    `MemoryRetriever`, `MemoryShadowRunner`, `MesoContextAssembler`, `MesoReviewGenerator`, `MesoReviewListener`,
+    `PeriodSummaryRepository`, `TextSignalRepository`, `WeeklyScoreRepository`
+  - **services:** `AdviceRankPort`, `ChatDaySignalService`, `ChatMemoryContextAdapter`, `ChatMentionListener`,
+    `ChatService`, `ChatStreamService`, `ChatTurnCompleted`, `ConsolidationJob`, `ContextSnapshotAssembler`,
+    `ConversationService`, `DailyCardPort`, `DailySummaryJob`, `DailySummaryService`, `DayEvaluationEngine`,
+    `DayReviewLlm`, `DayReviewService`, `DayScoreService`, `DecisionContextAssemblerAdapter`, `DenseMemoryRetriever`,
+    `DerivedSeriesService`, `FactCandidateService`, `FactExtractionListener`, `FactExtractionService`,
+    `FactMemoryRetriever`, `FeedMessageKindSource`, `FeedbackLearningJob`, `FeedbackLearningService`, `FlagCatalog`,
+    `FlagEvaluationListener`, `FlagEvaluator`, `FlagFactRenderer`, `FlagKey`, `FlagOutcome`, `FlagRaisedEvent`,
+    `FlagRule`, `FlagService`, `FlagSweepJob`, `FlagTraceCopy`, `FlagTraceReadService`, `FlagTraceWriter`,
+    `FlagVerdict`, `GraphEdgeLineRenderer`, `GraphEdgeStructurer`, `GraphEdgeSuggestion`, `GraphMaintenanceJob`,
+    `GraphMaintenanceResult`, `GraphMaintenanceService`, `GraphMemoryRetriever`, `GraphPromotionListener`,
+    `GraphPromotionService`, `GraphPromptAssembler`, `GraphReconcileResult`, `GraphService`, `GraphTraversalService`,
+    `HypothesisJob`, `HypothesisPipelineService`, `KnowledgeFactChangedEvent`, `KnowledgeFactPromotedEvent`,
+    `KnowledgeFactService`, `LexicalMemoryRetriever`, `LifeEventCandidateService`, `LifeEventExtractionService`,
+    `LifeEventSuggestion`, `LifeGoalSnapshotBlock`, `LlmMemoryQueryRewriter`, `LlmMemoryReranker`, `MeWeekService`,
+    `MemoryCandidateFusion`, `MemoryContextRenderer`, `MemoryContextSelector`, `MemoryContextService`,
+    `MemoryItemFeedbackService`, `MemoryObservatoryService`, `MemoryProjectionEvent`, `MemoryProjectionListener`,
+    `MemoryProjectionWriter`, `MemoryQueryAnalyzer`, `MemoryQueryPreparer`, `MemoryQueryRewriter`,
+    `MemoryRecallService`, `MemoryReembeddingJob`, `MemoryReembeddingService`, `MemoryReranker`,
+    `MemoryRetrievalAuditWriter`, `MemoryRetrievalRetentionJob`, `MemoryRetriever`, `MemoryShadowRunner`,
+    `MesoContextAssembler`, `MesoReviewGenerator`, `MesoReviewListener`, `MessageFeedbackRecordedEvent`,
     `MessageFeedbackService`, `MetricDomain`, `MetricKey`, `MetricSeriesService`, `MetricValueKind`, `NudgeSendPort`,
     `PatternConfirmedEvent`, `PatternDetectionJob`, `PatternDetectionService`, `PatternGate`, `PatternImpactSource`,
     `PatternMonitorService`, `PatternPairDetailService`, `PatternRetractedEvent`, `PatternService`,
     `PearsonCorrelation`, `PeopleSnapshotBlock`, `PeriodSummaryService`, `PersonExtractionResult`,
     `PersonExtractionService`, `PersonGraphEdgeAdapter`, `ProfileAssembler`, `ProfileAssemblerJob`,
     `ProfilePromptAssembler`, `PromptMemoryAssembler`, `QuarterlyReviewJob`, `QuarterlyReviewService`, `Quarters`,
-    `SeasonSuggestion`, `TraceDisposition`, `TranscriptionService`, `UnavailableReason`, `WeekContextRenderer`,
-    `WeeklyScoreService`, `WeightByDateSupport`
+    `SeasonSuggestion`, `TextSignalCatchUpService`, `TextSignalExtractor`, `TextSignalListener`,
+    `TextSignalSeriesService`, `TextSignalService`, `TraceDisposition`, `TranscriptionService`, `UnavailableReason`,
+    `WeekContextRenderer`, `WeeklyScoreService`, `WeightByDateSupport`
   - **controllers→contract:** `CompanionController`→`CompanionApi`,
-    `CompanionFeedbackController`→`CompanionFeedbackApi`, `CompanionStreamController`,
-    `CompanionVoiceController`→`CompanionVoiceApi`, `GraphController`→`KnowledgeGraphApi`,
+    `CompanionFeedbackController`→`CompanionFeedbackApi`, `CompanionFlagTraceController`→`CompanionFlagsApi`,
+    `CompanionStreamController`, `CompanionVoiceController`→`CompanionVoiceApi`, `GraphController`→`KnowledgeGraphApi`,
     `MeWeekController`→`MeWeekApi`, `MemoryRetrievalController`→`MemoryRetrievalApi`
-  - **mappers:** `CompanionMapper`, `GraphMapper`, `MessageFeedbackMapper`
+  - **mappers:** `CompanionFlagMapper`, `CompanionMapper`, `GraphMapper`, `MessageFeedbackMapper`
   - **config:** `CompanionProperties`, `DayEvaluationProperties`, `FeedbackLearningProperties`, `FlagProperties`,
-    `MemoryPlatformProperties`, `ProfileProperties`, `QuarterlyProperties`
+    `MemoryPlatformProperties`, `ProfileProperties`, `QuarterlyProperties`, `ReflectionProperties`
   - **events/listeners:** `DecisionEmbeddingListener`, `GratitudeEmbeddingListener`, `JournalEmbeddingListener`,
-    `ReflectionEmbeddingListener`, `TurnEmbeddingListener`
+    `LifeGoalStatusChangedEvent`, `ReflectionEmbeddingListener`, `TurnEmbeddingListener`
   - **other:** `AcuteBadDayRule`, `AdvisedAnswer`, `AdvisorRetry`, `AdvisorViolation`, `AllHealthyRule`,
     `BiometricsTools`, `CharacterPromptSource`, `ChatHistory`, `CheckInNoteSourceAdapter`, `ClinicalOutputCheck`,
     `CompanionAdvisorChain`, `CompanionHelloRunner`, `CompanionLlm`, `CompanionToolRegistry`, `ConsumerPolicy`,
-    `DayReviewJson`, `DayReviewLlmAdapter`, `EmbeddingPort`, `FakeCompanionLlm`, `FakeEmbeddingAdapter`,
-    `FeedbackRollupStatsEnvelope`, `FlagPayloadEnvelope`, `FuelTools`, `GeminiCompanionLlm`, `GeminiEmbeddingAdapter`,
-    `GeminiRoundUsage`, `GeminiRoundUsageAdvisor`, `GeminiUsageExtractor`, `GoalTools`, `GraphEdgeEvidence`,
-    `GraphProposedEdge`, `GrowthTools`, `HabitSuggestLlmAdapter`, `HighlightCitationSource`, `IgnoredNudgeRule`,
-    `InsightsTools`, `JointOveruseRule`, `LateEatingRule`, `LifeGoalProposeLlmAdapter`, `LifeGoalProposePort`,
-    `LifeGoalSource`, `LifeGoalText`, `LifeGoalTools`, `LoadFuelMismatchRule`, `LoggingGapRule`, `MealCoachLlmAdapter`,
-    `MealDraftLlmAdapter`, `MedicationTools`, `MemoryCandidate`, `MemoryContext`, `MemoryContextItem`,
-    `MemoryEmbeddingWriter`, `MemoryProvenanceEnvelope`, `MemoryRequest`, `MemoryTools`, `MesoPlanLlmAdapter`,
-    `MissedWorkoutsRule`, `MomentumAtRiskRule`, `NarrativeNoteSource`, `NoteEmbeddingCatchUp`, `NoteMentionCatchUp`,
-    `PantryPhotoLlmAdapter`, `PantryScrapeLlmAdapter`, `PatternCritiqueEnvelope`, `PatternEventPayloadEnvelope`,
-    `PatternEvidenceEnvelope`, `PracticeTools`, `PreparedMemoryQuery`, `ProfileMetaEnvelope`, `ProtocolLapseRule`,
-    `QueryMode`, `RapidWeightLossRule`, `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`,
-    `RecipeWorkshopLlmAdapter`, `RecordingToolCallback`, `RecoveryNeededRule`, `RefsEnvelope`, `RetrievalInput`,
-    `RetrievalServingMode`, `ScoreBreakdown`, `ScoreBreakdownEnvelope`, `SleepDebtRule`, `SleepDeficitCalculator`,
-    `SleepShotLlmAdapter`, `SlotPlanLlmAdapter`, `StackPlacementLlmAdapter`, `SustainedStressRule`,
+    `DayReviewJson`, `DayReviewLlmAdapter`, `EmbeddingPort`, `EnergyDipMealTimingRule`, `FakeCompanionLlm`,
+    `FakeEmbeddingAdapter`, `FeedbackRollupStatsEnvelope`, `FlagPayloadEnvelope`, `FuelTools`, `GeminiCompanionLlm`,
+    `GeminiEmbeddingAdapter`, `GeminiRoundUsage`, `GeminiRoundUsageAdvisor`, `GeminiUsageExtractor`, `GoalTools`,
+    `GraphEdgeEvidence`, `GraphProposedEdge`, `GrowthTools`, `HabitSuggestLlmAdapter`, `HighlightCitationSource`,
+    `IgnoredNudgeRule`, `InsightsTools`, `JointOveruseRule`, `LateEatingRule`, `LifeGoalGraphSource`,
+    `LifeGoalProposeLlmAdapter`, `LifeGoalProposePort`, `LifeGoalSource`, `LifeGoalText`, `LifeGoalTools`,
+    `LoadFuelMismatchRule`, `LoggingGapRule`, `MealCoachLlmAdapter`, `MealDraftLlmAdapter`, `MealRhythmDriftRule`,
+    `MedicationTools`, `MemoryCandidate`, `MemoryContext`, `MemoryContextItem`, `MemoryEmbeddingWriter`,
+    `MemoryProvenanceEnvelope`, `MemoryRequest`, `MemoryTools`, `MesoPlanLlmAdapter`, `MissedWorkoutsRule`,
+    `MomentumAtRiskRule`, `NarrativeNoteSource`, `NoteEmbeddingCatchUp`, `NoteMentionCatchUp`, `PantryPhotoLlmAdapter`,
+    `PantryScrapeLlmAdapter`, `PatternCritiqueEnvelope`, `PatternEventPayloadEnvelope`, `PatternEvidenceEnvelope`,
+    `PracticeTools`, `PreparedMemoryQuery`, `ProfileMetaEnvelope`, `ProtocolLapseRule`, `QueryMode`,
+    `RapidWeightLossRule`, `RecalledMemoriesEnvelope`, `RecipeBreakdownLlmAdapter`, `RecipeWorkshopLlmAdapter`,
+    `RecordingToolCallback`, `RecoveryNeededRule`, `RefsEnvelope`, `RetrievalInput`, `RetrievalServingMode`,
+    `ScoreBreakdown`, `ScoreBreakdownEnvelope`, `SleepDebtRule`, `SleepDeficitCalculator`, `SleepShotLlmAdapter`,
+    `SlotPlanLlmAdapter`, `StackPlacementLlmAdapter`, `SustainedStressRule`, `TextSignalProvenanceEnvelope`,
     `TodayActivitySource`, `TodayQuestSource`, `ToolCallAudit`, `ToolCallsEnvelope`, `ToolContexts`, `ToolText`,
     `TrainTools`, `TurnVerdictCheck`, `WeekReviewSource`
 - **Contract** `api/feature/companion-feedback/companion-feedback.yml` — 3 operations
   - **endpoints:** GET /api/companion/feedback · PUT /api/companion/feedback ·
     DELETE /api/companion/feedback/{artifactKind}/{artifactId}
-- **Contract** `api/feature/companion/companion.yml` — 21 operations
-  - **endpoints:** GET /api/companion/conversation · POST /api/companion/conversation ·
+- **Contract** `api/feature/companion/companion.yml` — 22 operations
+  - **endpoints:** GET /api/companion/flags/trace · GET /api/companion/conversation · POST /api/companion/conversation ·
     PATCH /api/companion/conversation/{conversationId} · DELETE /api/companion/conversation/{conversationId} ·
     GET /api/companion/conversation/{conversationId}/messages ·
     POST /api/companion/conversation/{conversationId}/message · GET /api/companion/fact · POST /api/companion/fact ·
@@ -336,8 +341,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     GET /api/companion/pattern/pair/{pairKey} · POST /api/companion/conversation/{conversationId}/message/stream ·
     POST /api/companion/transcribe · GET /api/companion/memory/overview · GET /api/companion/memory/summary ·
     GET /api/companion/memory/similar-days · GET /api/companion/memory/llm-usage
-- **Contract** `api/feature/knowledge-graph/knowledge-graph.yml` — 5 operations
+- **Contract** `api/feature/knowledge-graph/knowledge-graph.yml` — 7 operations
   - **endpoints:** GET /api/companion/graph/node · POST /api/companion/graph/node/{id}/archive ·
+    POST /api/companion/graph/node/{id}/restore · GET /api/companion/graph/node/archived ·
     GET /api/companion/graph/node/candidate · POST /api/companion/graph/node/{id}/decision ·
     GET /api/companion/graph/edge/count
 - **Contract** `api/feature/me-week/me-week.yml` — 3 operations
@@ -345,72 +351,76 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 174 IT + 32 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 188 IT + 36 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatServiceAmbientRecallIT`, `ChatServiceGraphBlockFailureIT`, `ChatServiceGraphBlockIT`,
     `ChatServiceGraphBlockSwitchOffIT`, `ChatServiceIT`, `ChatStreamAdvisorIT`, `ChatStreamServiceIT`,
     `CompanionAdvisorChainIT`, `CompanionAdvisorsSwitchOffIT`, `CompanionApiIT`, `CompanionApiSwitchOffIT`,
     `CompanionFactApiIT`, `CompanionFactCandidateApiIT`, `CompanionFeedbackApiIT`, `CompanionFeedbackSwitchOffIT`,
-    `CompanionFlagLogPersistenceIT`, `CompanionFlagTracePersistenceIT`, `CompanionLlmFakeIT`,
-    `CompanionMemoryLlmUsageApiIT`, `CompanionMemoryLlmUsageDisabledIT`, `CompanionMemoryOverviewApiIT`,
-    `CompanionMemorySimilarDaysApiIT`, `CompanionMemorySummaryApiIT`, `CompanionMemorySwitchOffIT`,
-    `CompanionPatternApiIT`, `CompanionPatternMonitorApiIT`, `CompanionPatternMonitorSwitchOffIT`,
-    `CompanionPatternPairDetailApiIT`, `CompanionPropertiesIT`, `CompanionRealWiringIT`, `CompanionStreamApiIT`,
-    `CompanionSwitchOffIT`, `CompanionToolRegistryIT`, `CompanionToolsRenderIT`, `CompanionTranscribeApiIT`,
-    `ConsolidationJobIT`, `ConsolidationJobSwitchOffIT`, `ConsolidationPropertiesIT`, `ContextSnapshotAssemblerIT`,
+    `CompanionFlagLogPersistenceIT`, `CompanionFlagTraceApiIT`, `CompanionFlagTracePersistenceIT`,
+    `CompanionFlagTraceReadQueriesIT`, `CompanionLlmFakeIT`, `CompanionMemoryLlmUsageApiIT`,
+    `CompanionMemoryLlmUsageDisabledIT`, `CompanionMemoryOverviewApiIT`, `CompanionMemorySimilarDaysApiIT`,
+    `CompanionMemorySummaryApiIT`, `CompanionMemorySwitchOffIT`, `CompanionPatternApiIT`,
+    `CompanionPatternMonitorApiIT`, `CompanionPatternMonitorSwitchOffIT`, `CompanionPatternPairDetailApiIT`,
+    `CompanionPropertiesIT`, `CompanionRealWiringIT`, `CompanionStreamApiIT`, `CompanionSwitchOffIT`,
+    `CompanionToolRegistryIT`, `CompanionToolsRenderIT`, `CompanionTranscribeApiIT`, `ConsolidationJobIT`,
+    `ConsolidationJobSwitchOffIT`, `ConsolidationPropertiesIT`, `ContextSnapshotAssemblerIT`,
     `ContextSnapshotAssemblerLifeGoalOffIT`, `ContextSnapshotAssemblerLifeGoalSwitchOffIT`,
     `ContextSnapshotAssemblerPeopleOffIT`, `ConversationServiceIT`, `DailySummaryJobIT`, `DailySummaryJobSwitchOffIT`,
     `DailySummaryServiceIT`, `DayEvaluationApiIT`, `DayEvaluationSwitchOffApiIT`, `DayReviewRepositoryIT`,
-    `DayScoreServiceIT`, `DayScoreServiceWindowFetchCountIT`, `FactCandidateServiceIT`, `FactExtractionServiceIT`,
-    `FakeEmbeddingAdapterIT`, `FeedbackLearningJobSwitchOffIT`, `FeedbackLearningPropertiesIT`,
-    `FeedbackLearningServiceIT`, `FeedbackRollupPersistenceIT`, `FlagEvaluationListenerIT`,
-    `FlagEvaluatorAcuteBadDayIT`, `FlagEvaluatorIgnoredNudgeIT`, `FlagEvaluatorJointOveruseIT`,
-    `FlagEvaluatorLateEatingIT`, `FlagEvaluatorLoadFuelMismatchIT`, `FlagEvaluatorLoggingGapIT`,
+    `DayScoreServiceIT`, `DayScoreServiceWindowFetchCountIT`, `EnergyDipMealTimingRuleSwitchOffIT`,
+    `FactCandidateServiceIT`, `FactExtractionServiceIT`, `FakeEmbeddingAdapterIT`, `FeedbackLearningJobSwitchOffIT`,
+    `FeedbackLearningPropertiesIT`, `FeedbackLearningServiceIT`, `FeedbackRollupPersistenceIT`,
+    `FlagEvaluationListenerIT`, `FlagEvaluatorAcuteBadDayIT`, `FlagEvaluatorEnergyDipIT`,
+    `FlagEvaluatorIgnoredNudgeIT`, `FlagEvaluatorJointOveruseIT`, `FlagEvaluatorLateEatingIT`,
+    `FlagEvaluatorLoadFuelMismatchIT`, `FlagEvaluatorLoggingGapIT`, `FlagEvaluatorMealRhythmDriftIT`,
     `FlagEvaluatorMissedWorkoutsIT`, `FlagEvaluatorMomentumRecoveryIT`, `FlagEvaluatorProtocolLapseIT`,
     `FlagEvaluatorRapidWeightLossIT`, `FlagEvaluatorStressSleepIT`, `FlagPropertiesIT`, `FlagServiceIT`,
-    `FlagServiceTraceIT`, `FlagSweepJobSwitchOffIT`, `GraphApiIT`, `GraphCandidateApiIT`, `GraphEntityPersistenceIT`,
-    `GraphFactOptOutEventIT`, `GraphFactOptOutIT`, `GraphMaintenanceJobSwitchOffIT`, `GraphMaintenanceServiceIT`,
-    `GraphPromotionEventIT`, `GraphPromotionPersonIT`, `GraphPromotionServiceIT`,
+    `FlagServiceTraceIT`, `FlagSweepJobSwitchOffIT`, `FlagTraceReadServiceIT`, `GraphApiIT`, `GraphCandidateApiIT`,
+    `GraphEntityPersistenceIT`, `GraphFactOptOutEventIT`, `GraphFactOptOutIT`, `GraphMaintenanceJobSwitchOffIT`,
+    `GraphMaintenanceServiceIT`, `GraphPromotionEventIT`, `GraphPromotionLifeGoalIT`,
+    `GraphPromotionLifeGoalSwitchOffIT`, `GraphPromotionPersonIT`, `GraphPromotionServiceIT`,
     `GraphPromotionServiceReconcileIsolationIT`, `GraphPromotionSwitchOffIT`, `GraphPromptAssemblerIT`,
     `GraphPromptAssemblerRefsCapIT`, `GraphRetractionEventIT`, `GraphRetractionIT`, `GraphSeedSelectionCapIT`,
     `GraphSeedSelectionIT`, `GraphSeedSelectionRankingIT`, `GraphServiceIT`, `GraphSwitchOffIT`,
-    `GraphTraversalQueryIT`, `HybridMemoryRetrieverIT`, `HypothesisGatherContextIT`, `HypothesisJobSwitchOffIT`,
-    `HypothesisPipelineServiceIT`, `KnowledgeFactServiceIT`, `LearnedFactPersistenceIT`,
+    `GraphTraversalQueryIT`, `GraphUserArchiveIT`, `HybridMemoryRetrieverIT`, `HypothesisGatherContextIT`,
+    `HypothesisJobSwitchOffIT`, `HypothesisPipelineServiceIT`, `KnowledgeFactServiceIT`, `LearnedFactPersistenceIT`,
     `LifeEventExtractionServiceIT`, `LifeGoalProposeNameIT`, `MeWeekControllerIT`, `MeWeekServiceFuelFetchCountIT`,
-    `MeWeekTrendIT`, `MemoryContextServiceIT`, `MemoryEmbeddingAnnQueryIT`, `MemoryEmbeddingRepositoryIT`,
-    `MemoryEmbeddingWriterIT`, `MemoryLlmUsageIsolationIT`, `MemoryPlatformPersistenceIT`,
-    `MemoryPlatformPropertiesIT`, `MemoryProjectionFailureIsolationIT`, `MemoryProjectionWriterIT`,
-    `MemoryQueryPreparerIT`, `MemoryRecallServiceIT`, `MemoryReembeddingIT`, `MemoryRetrievalDeterministicEvalIT`,
-    `MemoryRetrievalFeedbackApiIT`, `MemoryRetrievalRetentionIT`, `MemoryToolsRenderIT`, `MesoReviewGeneratorIT`,
-    `MessageFeedbackPersistenceIT`, `MetricSeriesCoachingIT`, `MetricSeriesDerivedIT`, `MetricSeriesExpansionIT`,
-    `MetricSeriesServiceIT`, `NoteEmbeddingBudgetIT`, `NoteEmbeddingCatchUpIT`, `NoteEmbeddingSwitchOffIT`,
-    `NoteEmbeddingWriterIT`, `NoteMentionCatchUpIT`, `NoteVectorLifecycleBudgetIT`, `NoteVectorLifecycleIT`,
-    `PatternDetectionJobSwitchOffIT`, `PatternDetectionServiceIT`, `PeriodSummaryPersistenceIT`,
-    `PeriodSummaryServiceIT`, `PersonExtractionServiceIT`, `PersonGraphEdgeAdapterIT`, `ProfileAssemblerIT`,
-    `ProfileAssemblerJobIT`, `ProfileAssemblerJobSwitchOffIT`, `ProfileAssemblerWindowHeaderIT`,
-    `ProfilePromptAssemblerFailureIT`, `ProfilePromptAssemblerIT`, `ProfilePropertiesIT`, `ProfileSourceFindersIT`,
-    `PromptMemoryAssemblerIT`, `PromptMemoryAssemblerShadowIT`, `PromptMemoryAssemblerSwitchOffIT`,
-    `ProtocolLapseRuleSwitchOffIT`, `QuarterlyPropertiesIT`, `QuarterlyReviewJobIT`,
-    `QuarterlyReviewJobProfileSwitchOffIT`, `QuarterlyReviewJobSwitchOffIT`, `QuarterlyReviewPayloadIT`,
-    `QuarterlyReviewServiceIT`, `SleepLogDetailRenderIT`, `ToolSelectionEvalIT`, `TurnEmbeddingListenerIT`,
-    `TurnEmbeddingSwitchOffIT`, `TurnVerdictCheckIT`
+    `MeWeekTrendIT`, `MealRhythmDriftRuleSwitchOffIT`, `MemoryContextServiceIT`, `MemoryEmbeddingAnnQueryIT`,
+    `MemoryEmbeddingRepositoryIT`, `MemoryEmbeddingWriterIT`, `MemoryLlmUsageIsolationIT`,
+    `MemoryPlatformPersistenceIT`, `MemoryPlatformPropertiesIT`, `MemoryProjectionFailureIsolationIT`,
+    `MemoryProjectionWriterIT`, `MemoryQueryPreparerIT`, `MemoryRecallServiceIT`, `MemoryReembeddingIT`,
+    `MemoryRetrievalDeterministicEvalIT`, `MemoryRetrievalFeedbackApiIT`, `MemoryRetrievalRetentionIT`,
+    `MemoryToolsRenderIT`, `MesoReviewGeneratorIT`, `MessageFeedbackPersistenceIT`, `MetricSeriesCoachingIT`,
+    `MetricSeriesDerivedIT`, `MetricSeriesExpansionIT`, `MetricSeriesServiceIT`, `NoteEmbeddingBudgetIT`,
+    `NoteEmbeddingCatchUpIT`, `NoteEmbeddingSwitchOffIT`, `NoteEmbeddingWriterIT`, `NoteMentionCatchUpIT`,
+    `NoteVectorLifecycleBudgetIT`, `NoteVectorLifecycleIT`, `PatternDetectionJobSwitchOffIT`,
+    `PatternDetectionServiceIT`, `PeriodSummaryPersistenceIT`, `PeriodSummaryServiceIT`, `PersonExtractionServiceIT`,
+    `PersonGraphEdgeAdapterIT`, `ProfileAssemblerIT`, `ProfileAssemblerJobIT`, `ProfileAssemblerJobSwitchOffIT`,
+    `ProfileAssemblerWindowHeaderIT`, `ProfilePromptAssemblerFailureIT`, `ProfilePromptAssemblerIT`,
+    `ProfilePropertiesIT`, `ProfileSourceFindersIT`, `PromptMemoryAssemblerIT`, `PromptMemoryAssemblerShadowIT`,
+    `PromptMemoryAssemblerSwitchOffIT`, `ProtocolLapseRuleSwitchOffIT`, `QuarterlyPropertiesIT`,
+    `QuarterlyReviewJobIT`, `QuarterlyReviewJobProfileSwitchOffIT`, `QuarterlyReviewJobSwitchOffIT`,
+    `QuarterlyReviewPayloadIT`, `QuarterlyReviewServiceIT`, `SleepLogDetailRenderIT`, `TextSignalCatchUpIT`,
+    `TextSignalListenerIT`, `TextSignalListenerSwitchOffIT`, `TextSignalSeriesIT`, `ToolSelectionEvalIT`,
+    `TurnEmbeddingListenerIT`, `TurnEmbeddingSwitchOffIT`, `TurnVerdictCheckIT`
   - **populators:** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`, `BiometricProfilePopulator`,
     `CheckInPopulator`, `CompanionMessagePopulator`, `DailySummaryPopulator`, `DatabasePopulator`,
     `DayReviewPopulator`, `FeedbackPopulator`, `FlagLogPopulator`, `GamificationPopulator`, `GoalPlanLinkPopulator`,
     `GoalPopulator`, `GraphPopulator`, `HabitPopulator`, `IntentionPopulator`, `JournalPopulator`,
     `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LevelUpEventPopulator`, `LifeGoalPopulator`, `LlmLogPopulator`,
-    `MealPopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `MemoryEmbeddingPopulator`,
-    `MemoryItemPopulator`, `MentionPopulator`, `NotificationPopulator`, `PantryItemPopulator`, `PatternEventPopulator`,
-    `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`, `ProtocolPopulator`,
-    `QuestPopulator`, `RecipePopulator`, `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`,
-    `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `SupplementIntakePopulator`, `TrainPopulator`,
-    `UserPopulator`, `WaterLogPopulator`, `WeeklyScorePopulator`, `WeightLogPopulator`,
-    `WorkoutDayAdjustmentPopulator`
+    `MealPopulator`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`, `MedicationPopulator`,
+    `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`, `NotificationPopulator`,
+    `PantryItemPopulator`, `PatternEventPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`,
+    `PredictionPopulator`, `ProtocolPopulator`, `QuestPopulator`, `RecipePopulator`, `RitualPopulator`,
+    `RunningPopulator`, `SkillProgressPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`,
+    `SupplementIntakePopulator`, `TextSignalPopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`,
+    `WeeklyScorePopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
 
 ### feedback
 
-*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-04, mixed)
+*FE-data* · read next: [docs/features/insights.md](features/insights.md) (updated 2026-09-06, mixed)
 
 - **FE data** `frontend/src/data/feedback`
   - **hooks (via `@/data/hooks`):** `useFeedback`
@@ -418,11 +428,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### fuel
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-05, done) ·
-  [docs/features/pantry.md](features/pantry.md) (updated 2026-09-05, done) ·
-  [docs/features/recipe.md](features/recipe.md) (updated 2026-09-02, done) ·
-  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-04, done) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-02, done)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-06, done) ·
+  [docs/features/pantry.md](features/pantry.md) (updated 2026-09-06, done) ·
+  [docs/features/recipe.md](features/recipe.md) (updated 2026-09-06, done) ·
+  [docs/features/_platform-api-backend.md](features/_platform-api-backend.md) (updated 2026-09-06, done) ·
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/fuel`
   - **entities→tables:** `FuelSettingsEntity`→`fuel_settings`, `MealSlotTemplateEntity`→`meal_slot_template`,
@@ -444,12 +454,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     DELETE /api/fuel/intake/entry/{id} · GET /api/fuel/slot-templates · PUT /api/fuel/slot-templates/{dayType} ·
     DELETE /api/fuel/slot-templates/{dayType} · POST /api/fuel/slot-templates/evaluate
 - **FE data** `frontend/src/data/fuel`
-  - **hooks (via `@/data/hooks`):** `DIET_SETTINGS_GHOST`, `useDietSettings`, `useDietSettingsActions`, `useFuelDay`,
-    `useFuelSettings`, `useFuelSettingsActions`, `useFuelTimeline`, `useFuelWeek`, `useIntakes`, `useMealActions`,
-    `useMealCoach`, `useMealCoachFor`, `useMedication`, `useMedicationActions`, `usePantry`, `usePantryActions`,
-    `useProtocol`, `useProtocolActions`, `useRecipeActions`, `useRecipeBreakdown`, `useRecipeLogs`, `useRecipes`,
-    `useReplanScenarios`, `useSlotTemplateActions`, `useSlotTemplateEvaluation`, `useSlotTemplates`, `useStack`,
-    `useStackActions`, `useStackDay`, `useWaterActions`, `useWorkshop`
+  - **hooks (via `@/data/hooks`):** `DIET_SETTINGS_GHOST`, `useDietSettings`, `useDietSettingsActions`,
+    `useDietSettingsPreview`, `useFuelDay`, `useFuelSettings`, `useFuelSettingsActions`, `useFuelTimeline`,
+    `useFuelWeek`, `useIntakes`, `useMealActions`, `useMealCoach`, `useMealCoachFor`, `useMedication`,
+    `useMedicationActions`, `usePantry`, `usePantryActions`, `useProtocol`, `useProtocolActions`, `useRecipeActions`,
+    `useRecipeBreakdown`, `useRecipeLogs`, `useRecipes`, `useReplanScenarios`, `useSlotTemplateActions`,
+    `useSlotTemplateEvaluation`, `useSlotTemplates`, `useStack`, `useStackActions`, `useStackDay`, `useWaterActions`,
+    `useWorkshop`
   - **modules:** coachApi.ts, coachHooks.ts, dietSettingsApi.ts, dietSettingsHooks.ts, fuel.ts, fuelApi.ts,
     fuelConfig.ts, fuelHooks.ts, fuelReadHooks.ts, fuelSettingsApi.ts, fuelSettingsHooks.ts, fuelWeek.ts,
     fuelWeekHooks.ts, mealApi.ts, medication.ts, medicationApi.ts, medicationHooks.ts, pantry.ts, pantryApi.ts,
@@ -491,7 +502,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### gamification
 
 *BE + API + FE-data* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-09-04, done) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-02, done)
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/gamification`
   - **entities→tables:** `CoinEventEntity`→`coin_event`, `GamificationProfileEntity`→`gamification_profile`,
@@ -517,7 +528,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### goal
 
 *BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-05, done) ·
-  [docs/features/me.md](features/me.md) (updated 2026-09-05, mixed) ·
+  [docs/features/me.md](features/me.md) (updated 2026-09-06, mixed) ·
   [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-05, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
@@ -588,43 +599,47 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### insights
 
-*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-05, mixed) ·
-  [docs/features/insights.md](features/insights.md) (updated 2026-09-04, mixed)
+*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-06, mixed) ·
+  [docs/features/insights.md](features/insights.md) (updated 2026-09-06, mixed)
 
 - **FE data** `frontend/src/data/insights`
   - **hooks (via `@/data/hooks`):** `MemoryRetrievalFeedback`, `MemoryRetrievalFeedbackAction`,
-    `MemoryRetrievalFeedbackHandle`, `NEW_CHAT`, `useChat`, `useChatActions`, `useConversationActions`,
-    `useConversations`, `useDiagnoses`, `useDiagnosis`, `useDiagnosisActions`, `useExperimentActions`,
-    `useExperiments`, `useGraphEdgeCount`, `useKnowledge`, `useKnowledgeActions`, `useKnowledgeGraphActions`,
-    `useKnowledgeGraphNodes`, `useLifeEventActions`, `useLifeEventCandidates`, `useLlmUsage`, `useMemoir`,
-    `useMemoirArchive`, `useMemoryOverview`, `useMemoryRetrievalFeedback`, `useMemorySummaries`, `usePatternActions`,
-    `usePatternMonitor`, `usePatternPairDetail`, `usePatterns`, `usePredictions`, `useSimilarDays`, `useTranscribe`
-  - **modules:** chat.ts, chatApi.ts, chatHooks.ts, diagnosisApi.ts, diagnosisHooks.ts, diagnosisMock.ts,
+    `MemoryRetrievalFeedbackHandle`, `NEW_CHAT`, `useChat`, `useChatActions`, `useCoachingCard`, `useCoachingTrace`,
+    `useConversationActions`, `useConversations`, `useDiagnoses`, `useDiagnosis`, `useDiagnosisActions`,
+    `useExperimentActions`, `useExperiments`, `useGraphEdgeCount`, `useKnowledge`, `useKnowledgeActions`,
+    `useKnowledgeGraphActions`, `useKnowledgeGraphNodes`, `useLifeEventActions`, `useLifeEventCandidates`,
+    `useLlmUsage`, `useMemoir`, `useMemoirArchive`, `useMemoryOverview`, `useMemoryRetrievalFeedback`,
+    `useMemorySummaries`, `usePatternActions`, `usePatternMonitor`, `usePatternPairDetail`, `usePatterns`,
+    `usePredictions`, `useSimilarDays`, `useTranscribe`
+  - **modules:** chat.ts, chatApi.ts, chatHooks.ts, coachingCardHooks.ts, coachingCardMock.ts, coachingTraceApi.ts,
+    coachingTraceHooks.ts, coachingTraceMock.ts, diagnosisApi.ts, diagnosisHooks.ts, diagnosisMock.ts,
     experimentsApi.ts, experimentsHooks.ts, graph.ts, graphApi.ts, graphHooks.ts, insights.ts, knowledge.ts,
     knowledgeApi.ts, knowledgeHooks.ts, memoirApi.ts, memoirHooks.ts, memory.ts, memoryApi.ts, memoryFeedbackApi.ts,
     memoryFeedbackHooks.ts, memoryHooks.ts, monitorApi.ts, monitorHooks.ts, patternDetailApi.ts, patternDetailHooks.ts,
     patternPairMapper.ts, patternsApi.ts, patternsHooks.ts, predictionsApi.ts, predictionsHooks.ts, weeklyHooks.ts,
     weeklySuggestionApi.ts
 - **FE ui** `frontend/src/features/insights`
-  - **pages:** ChatPage.tsx, DiagnosisDetailPage.tsx, DiagnosisListPage.tsx, ExperimentsPage.tsx,
-    KnowledgeListPage.tsx, MemoirArchivePage.tsx, MemoirChapterPage.tsx, MemoirPage.tsx, MemoryPage.tsx,
-    MezoHubPage.tsx, PatternDetailPage.tsx, PatternsPage.tsx, PredictionsPage.tsx
+  - **pages:** ChatPage.tsx, CoachingCardPage.tsx, CoachingHubPage.tsx, CoachingObserverPage.tsx,
+    DiagnosisDetailPage.tsx, DiagnosisListPage.tsx, ExperimentsPage.tsx, KnowledgeListPage.tsx, MemoirArchivePage.tsx,
+    MemoirChapterPage.tsx, MemoirPage.tsx, MemoryPage.tsx, MezoHubPage.tsx, PatternDetailPage.tsx, PatternsPage.tsx,
+    PredictionsPage.tsx
   - **sheets:** ConversationActionsSheet.tsx, ConversationPickerSheet.tsx, NodeDetailSheet.tsx
-  - **components:** CategoryHeader.tsx, ChatMessage.tsx, FactCandidateCard.tsx, FactsView.tsx, FeedbackChips.tsx,
-    HowItWorksView.tsx, KategoriakView.tsx, KindNodeList.tsx, KindTileGrid.tsx, KnowledgeBaseView.tsx,
-    KnowledgeFactRow.tsx, LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx, LifecycleSection.tsx,
-    MemoryAuditPanel.tsx, MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx, MemorySearchPanel.tsx,
-    PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDetailHero.tsx, PatternDomainMark.tsx,
-    PatternEvidenceChart.tsx, PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx,
+  - **components:** CategoryHeader.tsx, ChatMessage.tsx, CoachingRuleTile.tsx, FactCandidateCard.tsx, FactsView.tsx,
+    FeedbackChips.tsx, HowItWorksView.tsx, KategoriakView.tsx, KindNodeList.tsx, KindTileGrid.tsx,
+    KnowledgeBaseView.tsx, KnowledgeFactRow.tsx, LifeEventAcceptedCard.tsx, LifeEventCandidateCard.tsx,
+    LifecycleSection.tsx, MemoryAuditPanel.tsx, MemoryJournalPanel.tsx, MemoryLayerCard.tsx, MemoryLayersPanel.tsx,
+    MemorySearchPanel.tsx, PatternArtifactDetail.tsx, PatternDecisionCard.tsx, PatternDetailHero.tsx,
+    PatternDomainMark.tsx, PatternEvidenceChart.tsx, PatternFilterSheet.tsx, PatternImpactCard.tsx, PatternJournal.tsx,
     PatternStrengthChart.tsx, ProfileNodeCard.tsx, ProfileView.tsx, RecalledMemoriesRow.tsx, RefChips.tsx,
-    SimilarDayCard.tsx, TokenColumns.tsx, ToolWorkStrip.tsx
-  - **logic:** chatRefs.ts, diagnosisCatalog.ts, diagnosisCopy.ts, domains.ts, factCopy.ts, findings.ts,
-    humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternCatalog.ts, patternEvidence.ts,
-    patternHistory.ts, quickQuestions.ts, toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts, verdicts.ts
+    SimilarDayCard.tsx, TokenColumns.tsx, ToolWorkStrip.tsx, VerdictArc.tsx
+  - **logic:** chatRefs.ts, coachingCopy.ts, diagnosisCatalog.ts, diagnosisCopy.ts, domains.ts, factCopy.ts,
+    findings.ts, humanizeCron.ts, lifecycle.ts, memoirArchive.ts, metricFormat.ts, patternCatalog.ts,
+    patternEvidence.ts, patternHistory.ts, quickQuestions.ts, toolDomains.ts, useStickToBottom.ts, useVoiceInput.ts,
+    verdicts.ts
 
 ### intention
 
-*BE + API + FE-data* · read next: [docs/features/intention.md](features/intention.md) (updated 2026-08-30, done)
+*BE + API + FE-data* · read next: [docs/features/intention.md](features/intention.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/intention`
   - **entities→tables:** `DailyIntentionEntity`→`daily_intention`, `IntentionCreedEntity`→`intention_creed`,
@@ -646,7 +661,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### journal
 
-*BE + API + FE-data* · read next: [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done)
+*BE + API + FE-data* · read next: [docs/features/journal.md](features/journal.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/journal`
   - **entities→tables:** `DecisionEntryEntity`→`decision_entry`, `GratitudeEntryEntity`→`gratitude_entry`,
@@ -703,18 +718,18 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **hooks (via `@/data/hooks`):** `useLifeGoal`, `useLifeGoalMutations`, `useLifeGoalProgress`, `useLifeGoalPropose`,
     `useLifeGoalToday`, `useLifeGoals`, `useSignalCatalog`
   - **modules:** lifegoalApi.ts, lifegoalHooks.ts, lifegoalMock.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal` — 17 IT + 2 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/lifegoal` — 18 IT + 2 unit
   - **ITs:** `LifeGoalApiIT`, `LifeGoalCompanionAdapterCompanionOffIT`, `LifeGoalCompanionAdapterIT`,
     `LifeGoalEntityIT`, `LifeGoalEvalJobIT`, `LifeGoalEvalJobSwitchOffIT`, `LifeGoalEvaluateApiIT`,
-    `LifeGoalPillarApiIT`, `LifeGoalProgressApiIT`, `LifeGoalProposeIT`, `LifeGoalSeedDataIT`,
-    `LifeGoalSignalsLivenessIT`, `LifeGoalTodayApiIT`, `LifeGoalTriggerIT`, `LifeGoalXpIT`, `SignalSourceIT`,
-    `WeightGoalSignalSourceIT`
+    `LifeGoalPillarApiIT`, `LifeGoalProgressApiIT`, `LifeGoalProgressServiceSummaryIT`, `LifeGoalProposeIT`,
+    `LifeGoalSeedDataIT`, `LifeGoalSignalsLivenessIT`, `LifeGoalTodayApiIT`, `LifeGoalTriggerIT`, `LifeGoalXpIT`,
+    `SignalSourceIT`, `WeightGoalSignalSourceIT`
   - **populators:** `CheckInPopulator`, `DatabasePopulator`, `HabitPopulator`, `LifeGoalPopulator`, `RitualPopulator`,
     `TrainPopulator`, `UserPopulator`
 
 ### llmlog
 
-*BE + API* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-05, mixed)
+*BE + API* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-06, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
@@ -742,13 +757,13 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### me
 
-*FE-data + FE-ui* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-02, done) ·
+*FE-data + FE-ui* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-06, done) ·
   [docs/features/growth.md](features/growth.md) (updated 2026-09-04, done) ·
   [docs/features/habit.md](features/habit.md) (updated 2026-09-06, done) ·
-  [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
+  [docs/features/journal.md](features/journal.md) (updated 2026-09-06, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-05, in-progress) ·
-  [docs/features/me.md](features/me.md) (updated 2026-09-05, mixed) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-02, done) ·
+  [docs/features/me.md](features/me.md) (updated 2026-09-06, mixed) ·
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-06, done) ·
   [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-05, mixed)
 
 - **FE data** `frontend/src/data/me`
@@ -800,7 +815,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### meal
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-05, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/meal`
   - **entities→tables:** `MealEntity`→`meal`, `MealItemEntity`→`meal_item`, `WaterLogEntity`→`water_log`
@@ -811,17 +826,19 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **controllers→contract:** `MealAiDraftController`→`MealAiLogApi`, `MealController`→`MealApi`
   - **mappers:** `MealMapper`
   - **config:** `MealAiLogProperties`
-  - **other:** `MealItemRecipeOverrideJson`, `MealProvenanceJson`, `MealRescoreRunner`
+  - **other:** `MealItemRecipeOverrideJson`, `MealProvenanceJson`, `MealRescoreRunner`,
+    `MealSaturatedFatBackfillRunner`
 - **Contract** `api/feature/meal/meal.yml` — 11 operations
   - **endpoints:** GET /api/fuel/day/{date} · GET /api/fuel/week/{start} · POST /api/meal · PUT /api/meal/{id} ·
     DELETE /api/meal/{id} · POST /api/meal/ai-draft · GET /api/recipe/{id}/logs · GET /api/meal/coach ·
     GET /api/meal/{id}/coach · POST /api/water-log · DELETE /api/water-log/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 22 IT + 5 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/meal` — 23 IT + 5 unit
   - **ITs:** `FuelDayDayTypeIT`, `FuelDayServiceIT`, `GoalIntakeAdherenceAdapterIT`, `MealAiDraftApiIT`,
     `MealAiDraftServiceIT`, `MealAiDraftSwitchOffApiIT`, `MealAiLlmUnavailableApiIT`, `MealAiUploadLimitApiIT`,
     `MealApiIT`, `MealCoachApiIT`, `MealCoachServiceIT`, `MealCoachSwitchOffApiIT`, `MealItemRecipeOverridesIT`,
     `MealOverridesIT`, `MealOverridesScoringIT`, `MealOverridesServiceIT`, `MealRepositoryIT`, `MealRescoreRunnerIT`,
-    `MealServiceIT`, `NutritionTargetsPropertiesIT`, `RecipeLogsServiceIT`, `WaterLogApiIT`
+    `MealSaturatedFatBackfillRunnerIT`, `MealServiceIT`, `NutritionTargetsPropertiesIT`, `RecipeLogsServiceIT`,
+    `WaterLogApiIT`
   - **populators:** `DatabasePopulator`, `GoalPopulator`, `MealPopulator`, `PantryCatalogPopulator`,
     `PantryItemPopulator`, `RecipePopulator`, `TrainPopulator`, `WaterLogPopulator`, `WeightLogPopulator`
 
@@ -845,7 +862,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### needs
 
-*BE + API + FE-data* · read next: [docs/features/needs.md](features/needs.md) (updated 2026-08-30, done)
+*BE + API + FE-data* · read next: [docs/features/needs.md](features/needs.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/needs`
   - **entities→tables:** `NeedsDayEntity`→`needs_day`
@@ -890,7 +907,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **modules:** feedApi.ts, feedHooks.ts, feedMock.ts, notificationApi.ts, notificationHooks.ts, notificationMock.ts,
     notificationPrefHooks.ts, notificationScheduleWriter.ts
 - **FE ui** `frontend/src/features/notification`
-  - **logic:** groupByDay.ts
+  - **logic:** groupByDay.ts, stamp.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/notification` — 14 IT + 5 unit
   - **ITs:** `AnchorResolverDecisionIT`, `AnchorResolverFeedIT`, `AnchorResolverIT`, `AnchorResolverInterventionIT`,
     `AnchorResolverRitualSwitchOffIT`, `NotificationApiIT`, `NotificationDispatchJobIT`, `NotificationPrefApiIT`,
@@ -902,26 +919,27 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### nutrition
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-05, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/nutrition`
   - **entities→tables:** `DietSettingsEntity`→`diet_settings`
   - **repositories:** `DietSettingsRepository`
-  - **services:** `DailyTargets`, `DietPreferencesResolver`, `DietSettingsService`, `MealRole`, `MealScoringService`
+  - **services:** `DailyTargets`, `DayTargetProjector`, `DietPreferencesResolver`, `DietSettingsService`, `MealRole`,
+    `MealScoringService`
   - **controllers→contract:** `DietSettingsController`→`DietSettingsApi`
   - **mappers:** `BreakdownDtoMapper`
   - **config:** `DietSettingsProperties`, `MealScoringProperties`, `NutritionTargetsProperties`
   - **other:** `MealBreakdownJson`
-- **Contract** `api/feature/diet-settings/diet-settings.yml` — 2 operations
-  - **endpoints:** GET /api/diet/settings · PUT /api/diet/settings
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 3 IT + 1 unit
+- **Contract** `api/feature/diet-settings/diet-settings.yml` — 3 operations
+  - **endpoints:** GET /api/diet/settings · PUT /api/diet/settings · POST /api/diet/settings/preview
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/nutrition` — 3 IT + 2 unit
   - **ITs:** `DietPreferencesResolverIT`, `DietSettingsApiIT`, `DietSettingsDayTypeShiftIT`
   - **populators:** `BiometricProfilePopulator`, `DatabasePopulator`, `GoalPopulator`
 
 ### pantry
 
-*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-05, done) ·
-  [docs/features/pantry.md](features/pantry.md) (updated 2026-09-05, done)
+*BE + API* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-06, done) ·
+  [docs/features/pantry.md](features/pantry.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/pantry`
   - **entities→tables:** `PantryCatalogEntity`→`pantry_catalog`, `PantryImportEntity`→`pantry_import`,
@@ -940,7 +958,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/pantry · POST /api/pantry · PUT /api/pantry/{id} · DELETE /api/pantry/{id} ·
     GET /api/pantry/catalog · POST /api/pantry/items/from-catalog · GET /api/pantry-import/lookup ·
     POST /api/pantry-import · POST /api/pantry-import/scrape · POST /api/pantry-import/photo
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/pantry` — 17 IT + 5 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/pantry` — 17 IT + 6 unit
   - **ITs:** `PantryApiIT`, `PantryCatalogApiIT`, `PantryCatalogLoaderIT`, `PantryCatalogMigrationIT`,
     `PantryCatalogServiceIT`, `PantryImportApiIT`, `PantryImportDisabledApiIT`, `PantryItemRepositoryIT`,
     `PantryPhotoApiIT`, `PantryPhotoDisabledApiIT`, `PantryPhotoLlmUnavailableApiIT`, `PantryPhotoScrapeOffApiIT`,
@@ -951,7 +969,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### people
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-05, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-06, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/people`
   - **entities→tables:** `MentionEntity`→`mention`, `PersonEntity`→`person`
@@ -984,23 +1002,24 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ExperimentRepository`, `MemoirRepository`, `PredictionRepository`, `WeeklyReviewRepository`,
     `WeeklySuggestionRepository`
   - **services:** `AdviceActionCatalog`, `AdviceApplyService`, `AdviceCandidate`, `AdviceCardService`,
-    `AdviceFactRenderer`, `AdviceMutationPort`, `AdvicePriority`, `AdviceProseGenerator`, `ChallengeGenerator`,
+    `AdviceMutationPort`, `AdvicePriority`, `AdviceProseGenerator`, `AdviceRankAdapter`, `ChallengeGenerator`,
     `ChallengeJob`, `ChallengeOutcomeEvaluator`, `CompanionMessageEventListener`, `CompanionMessageGenerator`,
-    `CompanionMessageJob`, `DiagnosisGenerator`, `DiagnosisRecipe`, `DiagnosisService`, `ExperimentJob`,
-    `ExperimentOutcomeService`, `ExperimentProposalGenerator`, `FatigueEvidenceCollector`, `FeedMessageKindService`,
-    `GrowthDigestBlock`, `HighlightCitationSourceAdapter`, `HydrationShortfallProbe`, `InterventionEventListener`,
-    `InterventionService`, `LightenTomorrowAdapter`, `LogFreshnessProbe`, `MemoirGenerator`, `MemoirJob`,
-    `MetricWindowEvaluator`, `OverloadChallengeGenerator`, `PatternImpactService`, `PeopleMezoNoteAdapter`,
+    `CompanionMessageJob`, `DailyCardAdapter`, `DiagnosisGenerator`, `DiagnosisRecipe`, `DiagnosisService`,
+    `ExperimentJob`, `ExperimentOutcomeService`, `ExperimentProposalGenerator`, `FatigueEvidenceCollector`,
+    `FeatureAbandonmentDetector`, `FeedMessageKindService`, `FlatFeedbackDetector`, `GrowthDigestBlock`,
+    `HighlightCitationSourceAdapter`, `HydrationShortfallProbe`, `InterventionEventListener`, `InterventionService`,
+    `LightenTomorrowAdapter`, `LogFreshnessProbe`, `MemoirGenerator`, `MemoirJob`, `MetricWindowEvaluator`,
+    `OneTimeQuestionService`, `OverloadChallengeGenerator`, `PatternImpactService`, `PeopleMezoNoteAdapter`,
     `PlanFeasibilityCalculator`, `PredictionGenerator`, `PredictionJob`, `PredictionValidationService`,
     `ProactiveChallengeService`, `ProactiveExperimentService`, `ProactiveFeedService`, `ProactiveMemoirService`,
-    `ProactivePredictionService`, `ProactiveWeeklySuggestionService`, `ProseNumberGuard`, `RetroLoggingProbe`,
-    `SetupCheckJob`, `SetupCheckService`, `SleepAnchorShiftAdapter`, `SportSlotSkipAdapter`, `WeekReviewSourceAdapter`,
-    `WeeklyLessonService`, `WeeklyReviewContextSources`, `WeeklyReviewDigestService`, `WeeklyReviewGenerator`,
-    `WeeklyReviewJob`, `WeeklyReviewService`, `WeeklyReviewWeekWindow`, `WeeklySuggestionGenerator`,
-    `WeeklySuggestionJob`
+    `ProactivePredictionService`, `ProactiveWeeklySuggestionService`, `ProseNumberGuard`, `QuestionAnswerListener`,
+    `QuestionAnswerService`, `RetroLoggingProbe`, `SetupCheckJob`, `SetupCheckService`, `SleepAnchorShiftAdapter`,
+    `SportSlotSkipAdapter`, `WeekReviewSourceAdapter`, `WeeklyLessonService`, `WeeklyReviewContextSources`,
+    `WeeklyReviewDigestService`, `WeeklyReviewGenerator`, `WeeklyReviewJob`, `WeeklyReviewService`,
+    `WeeklyReviewWeekWindow`, `WeeklySuggestionGenerator`, `WeeklySuggestionJob`
   - **controllers→contract:** `DiagnosisController`→`DiagnosisApi`, `ProactiveController`→`ProactiveApi`
   - **mappers:** `ChallengeDisplay`, `ProactiveMapper`
-  - **config:** `DiagnosisProperties`, `ProactiveProperties`, `SetupCheckProperties`
+  - **config:** `DiagnosisProperties`, `ProactiveProperties`, `QuestionProperties`, `SetupCheckProperties`
   - **other:** `AdviceActionKey`, `ChallengeRefsEnvelope`, `CompanionMessageEnvelope`, `DiagnosisEvidenceEnvelope`,
     `DiagnosisSuspectsEnvelope`, `MemoirAnchorsEnvelope`, `WeeklyReviewDayNotesEnvelope`,
     `WeeklyReviewHighlightsEnvelope`
@@ -1015,34 +1034,37 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/proactive/challenge/{id}/decision · GET /api/proactive/weekly-review/{start} ·
     POST /api/proactive/weekly-review/{start}/regenerate · GET /api/proactive/weekly-review/{start}/lessons ·
     GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 74 IT + 5 unit
-  - **ITs:** `AdviceApplyServiceIT`, `AdviceCardServiceIT`, `AdviceProseGeneratorIT`, `ChallengeGeneratorIT`,
-    `ChallengeJobIT`, `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`, `ChallengePersistenceIT`,
-    `CompanionMessageAdvicePersistenceIT`, `CompanionMessageEventIT`, `CompanionMessageGeneratorIT`,
-    `CompanionMessageHydrationIT`, `CompanionMessageInterventionPersistenceIT`, `CompanionMessageJobIT`,
-    `CompanionMessageJobSwitchOffIT`, `CompanionMessageMissedWorkoutsIT`, `CompanionMessagePersistenceIT`,
-    `CompanionMessageRetroLoggingIT`, `CompanionMessageSetupPersistenceIT`, `ContextSnapshotOwnerZoneIT`,
-    `DiagnosisControllerIT`, `DiagnosisExperimentIT`, `DiagnosisGeneratorIT`, `ExperimentJobIT`,
-    `ExperimentJobSwitchOffIT`, `ExperimentOutcomeIT`, `ExperimentPersistenceIT`, `ExperimentProposalGeneratorIT`,
-    `FatigueEvidenceCollectorIT`, `GrowthDigestBlockIT`, `HighlightCitationIT`, `HydrationPropertiesIT`,
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 81 IT + 4 unit
+  - **ITs:** `AdviceApplyServiceIT`, `AdviceCardServiceIT`, `AdviceObserverPortsIT`, `AdviceProseGeneratorIT`,
+    `ChallengeGeneratorIT`, `ChallengeJobIT`, `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`,
+    `ChallengePersistenceIT`, `CompanionMessageAdvicePersistenceIT`, `CompanionMessageEventIT`,
+    `CompanionMessageGeneratorIT`, `CompanionMessageHydrationIT`, `CompanionMessageInterventionPersistenceIT`,
+    `CompanionMessageJobIT`, `CompanionMessageJobSwitchOffIT`, `CompanionMessageMissedWorkoutsIT`,
+    `CompanionMessagePersistenceIT`, `CompanionMessageRetroLoggingIT`, `CompanionMessageSetupPersistenceIT`,
+    `ContextSnapshotOwnerZoneIT`, `DiagnosisControllerIT`, `DiagnosisExperimentIT`, `DiagnosisGeneratorIT`,
+    `ExperimentJobIT`, `ExperimentJobSwitchOffIT`, `ExperimentOutcomeIT`, `ExperimentPersistenceIT`,
+    `ExperimentProposalGeneratorIT`, `FatigueEvidenceCollectorIT`, `FeatureAbandonmentDetectorIT`,
+    `FlatFeedbackDetectorIT`, `GrowthDigestBlockIT`, `HighlightCitationIT`, `HydrationPropertiesIT`,
     `HydrationShortfallProbeIT`, `InterventionConfigIT`, `InterventionServiceIT`, `InterventionSwitchOffIT`,
     `LogFreshnessProbeIT`, `MemoirGeneratorIT`, `MemoirJobIT`, `MemoirJobSwitchOffIT`, `MemoirPersistenceIT`,
-    `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`, `PredictionGeneratorIT`, `PredictionJobIT`,
-    `PredictionJobSwitchOffIT`, `PredictionPersistenceIT`, `PredictionValidationIT`, `ProactiveApiAdviceApplyIT`,
-    `ProactiveApiChallengeIT`, `ProactiveApiCompanionOffIT`, `ProactiveApiExperimentIT`, `ProactiveApiFeedIT`,
-    `ProactiveApiIT`, `ProactiveApiSwitchOffIT`, `ProactiveMemoirArchiveIT`, `ProactiveMemoirArchiveSwitchOffIT`,
+    `OneTimeQuestionServiceIT`, `OneTimeQuestionSwitchOffIT`, `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`,
+    `PredictionGeneratorIT`, `PredictionJobIT`, `PredictionJobSwitchOffIT`, `PredictionPersistenceIT`,
+    `PredictionValidationIT`, `ProactiveApiAdviceApplyIT`, `ProactiveApiChallengeIT`, `ProactiveApiCompanionOffIT`,
+    `ProactiveApiExperimentIT`, `ProactiveApiFeedIT`, `ProactiveApiIT`, `ProactiveApiSwitchOffIT`,
+    `ProactiveMemoirArchiveIT`, `ProactiveMemoirArchiveSwitchOffIT`, `QuestionAnswerIT`, `QuestionPropertiesIT`,
     `RetroLoggingProbeIT`, `RetroLoggingPropertiesIT`, `SetupCheckJobSwitchOffIT`, `SetupCheckPropertiesIT`,
     `SetupCheckServiceIT`, `SleepAnchorShiftAdapterIT`, `SleepDiagnosisIT`, `SportSlotSkipAdapterIT`,
     `WeeklyLessonServiceIT`, `WeeklyReviewContextSourcesIT`, `WeeklyReviewControllerIT`, `WeeklyReviewGeneratorIT`,
     `WeeklySuggestionGeneratorIT`, `WeeklySuggestionJobIT`, `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionNameIT`,
     `WeeklySuggestionPersistenceIT`
-  - **populators:** `ActivityPopulator`, `ChallengePopulator`, `CheckInPopulator`, `CompanionMessagePopulator`,
-    `DailySummaryPopulator`, `DatabasePopulator`, `DiagnosisPopulator`, `ExperimentPopulator`, `FlagLogPopulator`,
-    `GoalPopulator`, `GraphPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`,
-    `LifeGoalPopulator`, `MealPopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`,
-    `MentionPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`,
-    `QuestPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`,
-    `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`
+  - **populators:** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`,
+    `CheckInPopulator`, `CompanionMessagePopulator`, `DailySummaryPopulator`, `DatabasePopulator`,
+    `DiagnosisPopulator`, `ExperimentPopulator`, `FlagLogPopulator`, `GoalPopulator`, `GraphPopulator`,
+    `HabitPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LifeGoalPopulator`,
+    `MealPopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`, `MentionPopulator`,
+    `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`, `QuestPopulator`,
+    `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`, `UserPopulator`,
+    `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`
 
 ### progression
 
@@ -1112,7 +1134,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### recipe
 
-*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-09-02, done)
+*BE + API* · read next: [docs/features/recipe.md](features/recipe.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/recipe`
   - **entities→tables:** `RecipeEntity`→`recipe`, `RecipeIngredientEntity`→`recipe_ingredient`
@@ -1132,7 +1154,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### ritual
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/ritual.md](features/ritual.md) (updated 2026-08-30, done)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/ritual.md](features/ritual.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/ritual`
   - **entities→tables:** `RitualDayEntity`→`ritual_day`
@@ -1158,11 +1180,12 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### today
 
 *FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-06, done) ·
-  [docs/features/intention.md](features/intention.md) (updated 2026-08-30, done) ·
+  [docs/features/intention.md](features/intention.md) (updated 2026-09-06, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-05, in-progress) ·
-  [docs/features/needs.md](features/needs.md) (updated 2026-08-30, done) ·
-  [docs/features/ritual.md](features/ritual.md) (updated 2026-08-30, done) ·
-  [docs/features/today.md](features/today.md) (updated 2026-09-04, mixed)
+  [docs/features/needs.md](features/needs.md) (updated 2026-09-06, done) ·
+  [docs/features/proactive.md](features/proactive.md) (updated 2026-09-06, complete) ·
+  [docs/features/ritual.md](features/ritual.md) (updated 2026-09-06, done) ·
+  [docs/features/today.md](features/today.md) (updated 2026-09-06, mixed)
 
 - **FE data** `frontend/src/data/today`
   - **hooks (via `@/data/hooks`):** `resolveBriefing`, `useAdviceActions`, `useCheckins`, `useCompanionFeed`,
@@ -1183,10 +1206,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### train
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-05, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/fuel.md](features/fuel.md) (updated 2026-09-06, done) ·
   [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-05, done) ·
-  [docs/features/train.md](features/train.md) (updated 2026-09-04, done) ·
-  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-02, done)
+  [docs/features/train.md](features/train.md) (updated 2026-09-06, done) ·
+  [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/train`
   - **sub-features:** `signal`
@@ -1364,20 +1387,21 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Backend base classes:** `AbstractIntegrationTest.java` (service-level) · `ApiIntegrationTest.java` (HTTP-level, verb helpers + `ownerAuthHeaders()`)
 - **populators (`support/populator/`):** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`,
   `AppNotificationPopulator`, `BiometricProfilePopulator`, `ChallengePopulator`, `CheckInPopulator`,
-  `CompanionMessagePopulator`, `DailySummaryPopulator`, `DayReviewPopulator`, `DiagnosisPopulator`,
-  `ExperimentPopulator`, `FeedbackPopulator`, `FlagLogPopulator`, `FuelSettingsPopulator`, `GamificationPopulator`,
-  `GoalPlanLinkPopulator`, `GoalPopulator`, `GoalSuggestionPopulator`, `GraphPopulator`, `HabitPopulator`,
-  `IntentionPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LevelUpEventPopulator`,
-  `LifeGoalPopulator`, `LlmLogPopulator`, `MealPopulator`, `MealSlotTemplatePopulator`, `MedicationDosePopulator`,
-  `MedicationPopulator`, `MemoirPopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`,
-  `MesoTemplatePopulator`, `NeedsPopulator`, `NotificationPopulator`, `PantryCatalogPopulator`,
-  `PantryImportPopulator`, `PantryItemPopulator`, `PatternEventPopulator`, `PatternPopulator`,
-  `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`, `ProtocolPopulator`, `ProtocolPopulatorIT`,
-  `QuestPopulator`, `RecipePopulator`, `RitualPopulator`, `RunningPopulator`, `SkillProgressPopulator`,
-  `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `SupplementIntakePopulator`, `TrainPopulator`,
-  `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`,
+  `CompanionMessagePopulator`, `CreatedAtBackdater`, `DailySummaryPopulator`, `DayReviewPopulator`,
+  `DiagnosisPopulator`, `ExperimentPopulator`, `FeedbackPopulator`, `FlagLogPopulator`, `FuelSettingsPopulator`,
+  `GamificationPopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`, `GoalSuggestionPopulator`, `GraphPopulator`,
+  `HabitPopulator`, `IntentionPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`,
+  `LevelUpEventPopulator`, `LifeGoalPopulator`, `LlmLogPopulator`, `MealPopulator`, `MealRhythmFixtureIT`,
+  `MealSlotTemplatePopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`,
+  `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`, `MesoTemplatePopulator`, `NeedsPopulator`,
+  `NotificationPopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
+  `PatternEventPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`,
+  `ProtocolPopulator`, `ProtocolPopulatorIT`, `QuestPopulator`, `RecipePopulator`, `RitualPopulator`,
+  `RunningPopulator`, `SkillProgressPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`,
+  `SupplementIntakePopulator`, `TextSignalPopulator`, `TrainPopulator`, `UsageSeamIT`, `UserPopulator`,
+  `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`,
   `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
-- **`ResetDatabase` TRUNCATE list** — 107 tables; a new owned domain table MUST be added here in the same change:
+- **`ResetDatabase` TRUNCATE list** — 108 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `activity_log`, `ai_conversation`, `ai_message`, `app_notification`, `biometric_profile`, `challenge`,
     `character_claim`, `character_conference`, `character_dimension`, `character_observation`,
     `character_portrait_revision`, `character_run`, `check_in`, `coin_event`, `companion_flag_log`,
@@ -1394,8 +1418,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `pattern_event`, `period_summary`, `perk_unlock`, `person`, `prediction`, `protocol`, `protocol_item`, `push_log`,
     `push_subscription`, `recipe`, `recipe_ingredient`, `ritual_day`, `run_session_log`, `running_block`,
     `skill_progress`, `sleep_goal`, `sleep_log`, `sport_event`, `sport_schedule_slot`, `sport_session`,
-    `sport_slot_skip`, `supplement_intake`, `tutorial_progress`, `water_log`, `weekly_review`, `weekly_score`,
-    `weekly_suggestion`, `weight_log`, `workout_day_adjustment`, `workout_session`
+    `sport_slot_skip`, `supplement_intake`, `text_signal`, `tutorial_progress`, `water_log`, `weekly_review`,
+    `weekly_score`, `weekly_suggestion`, `weight_log`, `workout_day_adjustment`, `workout_session`
 - **Frontend:** `frontend/src/test/msw/handlers.ts` (mock-mode HTTP fixtures) · `msw/server.ts` · `queryWrapper.tsx` (TanStack Query test wrapper) · `setup.ts`
 
 ### scripts

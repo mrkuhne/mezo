@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.graph.service;
 
+import io.mrkuhne.mezo.feature.companion.LifeGoalGraphSource;
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
@@ -47,6 +48,12 @@ public class GraphPromotionService {
      *  (PersonExtractionService); a fordított irány TILOS, ezért a people oldal nem tud
      *  a gráfról, és nem is kell tudnia: minden itt dől el. */
     public static final String SOURCE_PERSON = "person";
+    /** Életcél-rendszer (mezo-iizd.11). KÜLÖN a {@link #SOURCE_GOAL}-tól: az a SÚLYCÉL
+     *  ({@code feature/goal}), ez a PERMAH-életcél ({@code feature/lifegoal}). A
+     *  {@code uq_knowledge_node_source} a (created_by, source_kind, source_id) hármason ül, így a
+     *  kettő sosem ütközik — de minden {@code findBySource} hívási helynek meg kell
+     *  különböztetnie őket. */
+    public static final String SOURCE_LIFE_GOAL = "life_goal";
 
     private final GraphService graphService;
     private final PatternRepository patternRepository;
@@ -56,6 +63,9 @@ public class GraphPromotionService {
     // ObjectProvider, not a direct dependency: the companion switch can be off while the graph
     // switch is on, so GraphEdgeStructurer's bean may not exist (see its @ConditionalOnProperty).
     private final ObjectProvider<GraphEdgeStructurer> edgeStructurer;
+    // ObjectProvider: az életcél-rendszer külön switch mögött van (LIFEGOAL_SWITCH), a gráf
+    // futhat nélküle. Hiányzó bean = nincs életcél-node, sosem kitalált cél.
+    private final ObjectProvider<LifeGoalGraphSource> lifeGoalGraphSource;
     // Self-injected proxy (ObjectProvider defers resolution, so this is safe despite the
     // apparent circularity). See reconcile()'s javadoc for why it is called through this proxy
     // instead of `this`.
@@ -86,9 +96,7 @@ public class GraphPromotionService {
         // a re-confirmed pattern would upsert into a node that stays `archived` forever and
         // never returns to the traversal — archiving would be a one-way trip. syncGoal has
         // always asserted its own status this way; the other two promoters now match it.
-        if (!GraphNodeEntity.STATUS_ACTIVE.equals(node.getStatus())) {
-            node.setStatus(GraphNodeEntity.STATUS_ACTIVE);
-        }
+        raiseStatus(node, GraphNodeEntity.STATUS_ACTIVE);
         if (isNew) {
             GraphEdgeStructurer structurer = edgeStructurer.getIfAvailable();
             if (structurer != null) {
@@ -116,9 +124,7 @@ public class GraphPromotionService {
                 GraphNodeEntity node = graphService.upsertNode(userId, GraphNodeEntity.KIND_PREFERENCE,
                     truncateTitle(f.getFactText()), f.getFactText(), SOURCE_FACT, f.getId(), null,
                     Map.of("category", f.getCategory(), "source", f.getSource()));
-                if (!GraphNodeEntity.STATUS_ACTIVE.equals(node.getStatus())) {
-                    node.setStatus(GraphNodeEntity.STATUS_ACTIVE);
-                }
+                raiseStatus(node, GraphNodeEntity.STATUS_ACTIVE);
                 return node;
             });
     }
@@ -138,10 +144,7 @@ public class GraphPromotionService {
         GraphNodeEntity node = graphService.upsertNode(userId, GraphNodeEntity.KIND_GOAL,
             truncateTitle(goal.getTitle()), goal.getTitle(), SOURCE_GOAL, goal.getId(), null,
             Map.of("status", goal.getStatus()));
-        String status = active ? GraphNodeEntity.STATUS_ACTIVE : GraphNodeEntity.STATUS_ARCHIVED;
-        if (!status.equals(node.getStatus())) {
-            node.setStatus(status);
-        }
+        raiseStatus(node, active ? GraphNodeEntity.STATUS_ACTIVE : GraphNodeEntity.STATUS_ARCHIVED);
         return Optional.of(node);
     }
 
@@ -180,11 +183,65 @@ public class GraphPromotionService {
         GraphNodeEntity node = graphService.upsertNode(userId, GraphNodeEntity.KIND_PERSON,
             truncateTitle(person.getName()), personSummary(person), SOURCE_PERSON, person.getId(),
             null, meta);
-        String status = active ? GraphNodeEntity.STATUS_ACTIVE : GraphNodeEntity.STATUS_ARCHIVED;
-        if (!status.equals(node.getStatus())) {
-            node.setStatus(status);
-        }
+        raiseStatus(node, active ? GraphNodeEntity.STATUS_ACTIVE : GraphNodeEntity.STATUS_ARCHIVED);
         return Optional.of(node);
+    }
+
+    /**
+     * Aktív életcél -> GOAL node (mezo-iizd.11, spec §7) — a {@link #syncGoal} alakja, azzal a
+     * különbséggel, hogy a forrás egy PORTON át érkezik ({@link LifeGoalGraphSource}), mert a
+     * companion nem importálhatja a lifegoal szeletet (ArchUnit ciklus-szabály).
+     *
+     * <p>Aktív ⇒ {@code active}, minden más állapot (parkolt, lezárt, draft) ⇒ {@code archived}:
+     * a gráf árnyékol, sosem felejt. Egy soha nem promótált, nem aktív cél no-op — a parkolás a
+     * felhasználó eszköze, egy sosem élt cél nem kerül be csak azért, hogy rögtön archiváljuk.
+     */
+    @Transactional
+    public Optional<GraphNodeEntity> syncLifeGoal(UUID userId, UUID goalId) {
+        LifeGoalGraphSource source = lifeGoalGraphSource.getIfAvailable();
+        if (source == null) {
+            return Optional.empty();
+        }
+        Optional<LifeGoalGraphSource.GraphGoal> found = source.find(userId, goalId);
+        if (found.isEmpty()) {
+            return Optional.empty();
+        }
+        LifeGoalGraphSource.GraphGoal goal = found.get();
+        boolean active = "active".equals(goal.status());
+        if (!active && graphService.findBySource(userId, SOURCE_LIFE_GOAL, goalId).isEmpty()) {
+            return Optional.empty();   // sosem volt node — nincs mit árnyékolni
+        }
+        GraphNodeEntity node = graphService.upsertNode(userId, GraphNodeEntity.KIND_GOAL,
+            truncateTitle(goal.title()), goal.title(), SOURCE_LIFE_GOAL, goal.id(), null,
+            Map.of("status", goal.status()));
+        raiseStatus(node, active ? GraphNodeEntity.STATUS_ACTIVE : GraphNodeEntity.STATUS_ARCHIVED);
+        return Optional.of(node);
+    }
+
+    /** A {@link #syncLifeGoal} tükre a komplementer-söpréshez: egy törölt (vagy a port számára
+     *  eltűnt) életcél node-ja nem maradhat aktív. A nem-aktív, de LÉTEZŐ célt a syncLifeGoal
+     *  maga archiválja — ide csak az kerül, amit a forrás már nem is ismer.
+     *
+     * <p><b>Hiányzó port = no-op, NEM tömeges archiválás.</b> A {@link #lifeGoalGraphSource} mező
+     * javadocja szerint egy hiányzó bean azt jelenti, hogy „nincs életcél-node, sosem kitalált
+     * cél" — vagyis a gráf pillanatnyilag nem LÁTJA az életcélokat, nem azt, hogy a felhasználónak
+     * nincsenek aktív életcéljai. Pontosan ezért ugorja át a {@link #reconcile} negyedik (most
+     * ötödik) promóciós hurkja is a teljes ciklust, amikor a bean hiányzik. Ha ez a metódus a
+     * hiányzó bean esetén {@code stillQualifies = false}-t adna, MINDEN life_goal forrású node-ot
+     * archiválna, holott a mögöttes célok simán léteznek és aktívak lehetnek — csak a
+     * LIFEGOAL_SWITCH van kikapcsolva. Az eredmény kettős kár lenne: a node kiesne az
+     * {@code [Összefüggések]} prompt-blokkból, ÉS {@link GraphMaintenanceService}'s nightly
+     * decay elkezdené felőrölni az éleit (lásd {@link #retractPattern} javadocja), amit a
+     * switch visszakapcsolása után sem hozna vissza automatikusan. Ezért hiányzó bean esetén ez a
+     * metódus is — a promóciós hurokhoz hasonlóan — egyszerűen semmit sem csinál. */
+    @Transactional
+    public Optional<GraphNodeEntity> retractLifeGoal(UUID userId, UUID goalId) {
+        LifeGoalGraphSource source = lifeGoalGraphSource.getIfAvailable();
+        if (source == null) {
+            return Optional.empty();
+        }
+        boolean stillQualifies = source.find(userId, goalId).filter(g -> "active".equals(g.status())).isPresent();
+        return stillQualifies ? Optional.empty() : archiveBySource(userId, SOURCE_LIFE_GOAL, goalId);
     }
 
     /**
@@ -403,6 +460,17 @@ public class GraphPromotionService {
                 log.warn("Reconcile: person {} sync failed for user {}", person.getId(), userId, e);
             }
         }
+        LifeGoalGraphSource goalSource = lifeGoalGraphSource.getIfAvailable();
+        if (goalSource != null) {
+            for (LifeGoalGraphSource.GraphGoal goal : goalSource.all(userId)) {
+                try {
+                    count += proxy.syncLifeGoal(userId, goal.id()).isPresent() ? 1 : 0;
+                } catch (Exception e) {
+                    skipped++;
+                    log.warn("Reconcile: life goal {} sync failed for user {}", goal.id(), userId, e);
+                }
+            }
+        }
         // The COMPLEMENT sweep (mezo-b3pp.31). The four loops above only ever see rows that
         // still qualify — confirmed patterns, non-deleted facts, non-deleted goals, non-deleted
         // people — so a row that LEAVES those sets is invisible to them and its node would stay
@@ -432,6 +500,7 @@ public class GraphPromotionService {
                     case SOURCE_FACT -> proxy.retractFact(userId, sourceId).isPresent();
                     case SOURCE_GOAL -> proxy.retractGoal(userId, sourceId).isPresent();
                     case SOURCE_PERSON -> proxy.retractPerson(userId, sourceId).isPresent();
+                    case SOURCE_LIFE_GOAL -> proxy.retractLifeGoal(userId, sourceId).isPresent();
                     default -> false;
                 };
                 retracted += archived ? 1 : 0;
@@ -444,6 +513,32 @@ public class GraphPromotionService {
             log.warn("Reconcile skipped {} row(s) for user {} due to per-row failures", skipped, userId);
         }
         return new GraphReconcileResult(count, retracted);
+    }
+
+    /**
+     * Egy node státuszának újraszármaztatása a forrásából (mezo-06o0.5) — a
+     * {@link GraphService#restore} fogyasztója. A meglévő promóciós metódusokat futtatja,
+     * nem duplikálja a kvalifikációs szabályaikat: a visszaállított node pontosan azt a
+     * státuszt kapja, amit a következő éjszakai {@link #reconcile} adna neki, csak azonnal.
+     *
+     * <p>Forrás nélküli node (kézi/extractor eredetű) nem tartozik egyetlen promoterhez sem —
+     * ott a visszaállítás maga az aktiválás.
+     */
+    @Transactional
+    public void resyncNode(UUID userId, GraphNodeEntity node) {
+        UUID sourceId = node.getSourceId();
+        if (sourceId == null) {
+            raiseStatus(node, GraphNodeEntity.STATUS_ACTIVE);
+            return;
+        }
+        switch (node.getSourceKind() == null ? "" : node.getSourceKind()) {
+            case SOURCE_PATTERN -> promotePattern(userId, sourceId);
+            case SOURCE_FACT -> syncFact(userId, sourceId);
+            case SOURCE_GOAL -> syncGoal(userId, sourceId);
+            case SOURCE_PERSON -> syncPerson(userId, sourceId);
+            case SOURCE_LIFE_GOAL -> syncLifeGoal(userId, sourceId);
+            default -> raiseStatus(node, GraphNodeEntity.STATUS_ACTIVE);
+        }
     }
 
     /** {r, n, direction} — the spec's PATTERN meta envelope; direction is the sign of r, prompt-renderable. */
@@ -468,5 +563,35 @@ public class GraphPromotionService {
      *  fact texts, and goal titles can all be longer. */
     private static String truncateTitle(String text) {
         return text.length() <= 120 ? text : text.substring(0, 117) + "…";
+    }
+
+    /**
+     * A gráfba író összes state-emelő KÖZÖS csomópontja, a felhasználói szándékra őrizve
+     * (mezo-06o0.5). Öt hívási hely emel: a négy promoter itt ({@link #promotePattern}, {@link
+     * #promoteFact}, {@link #syncGoal}, {@link #syncPerson} — {@link #syncLifeGoal} is idejár),
+     * plusz {@link io.mrkuhne.mezo.feature.companion.profile.service.ProfileAssembler#rebuild},
+     * amely a singleton profil-node-ot élesíti újra minden heti futáson. Ezért {@code public}, nem
+     * {@code private}: a profil szelet nem importálhatja a gráf szeletet visszafelé, de az emelés
+     * FELTÉTELE (kézzel archivált node nem emelhető) csak EGY helyen dőlhet el — a feltétel
+     * duplikálása két osztályban pont azt a hibát nyitná vissza, amit ez a metódus zár (lásd
+     * lent).
+     *
+     * <p>A promóció addig feltétel nélkül visszaírta a státuszt a forrás állapotából, így a
+     * Tudástárban kézzel archivált node-ot a következő éjszakai {@link #reconcile} némán
+     * visszakapcsolta — és a címe értesítés nélkül visszakerült a {@code [Összefüggések]}
+     * rendszerpromptba. A kézi archiválás felhasználói SZÁNDÉK: a szinkron nem írhatja felül,
+     * csak {@link GraphService#restore} oldhatja.
+     *
+     * <p>Az ARCHIVÁLÁS iránya szándékosan NEM őrzött: ha a forrás megszűnik kvalifikálni, a
+     * node akkor is archiválódik, ha a felhasználó már elrejtette — az eredmény ugyanaz, és a
+     * marker a szándékot így is megőrzi a későbbi visszaállításhoz.
+     */
+    public static void raiseStatus(GraphNodeEntity node, String target) {
+        if (GraphNodeEntity.STATUS_ACTIVE.equals(target) && node.isUserArchived()) {
+            return;
+        }
+        if (!target.equals(node.getStatus())) {
+            node.setStatus(target);
+        }
     }
 }

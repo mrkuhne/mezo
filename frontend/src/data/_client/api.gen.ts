@@ -1842,6 +1842,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/flags/trace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One day of the coaching engine's decision — every rule's verdict, the day's transitions and the winning card
+         * @description Renders what the engine concluded; it never re-evaluates a rule. `rules` always holds every flag rule in SEVERITY order (the order is itself information — it is the ranking that chose the day's card), each with its closing state for that day, which may have been unchanged since before the day. `cardOutcome` is DERIVED here by comparing the day's delivered card against the raised+logged rules, never stored. A rule the engine has never judged comes back `unavailable` / `not_evaluated_yet` rather than a fabricated `clear`.
+         */
+        get: operations["getFlagTrace"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/conversation": {
         parameters: {
             query?: never;
@@ -3006,6 +3026,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/diet/settings/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Project today's macro targets for an UNSAVED diet-settings draft (DietSettings)
+         * @description Read-only projection: runs the goal engine's prescription calculation with the posted draft preferences instead of the saved row and returns the targets today WOULD serve. Nothing is persisted and the active goal is not re-evaluated. Feeds the Fuel settings macro preview so switching the split preset / protein tier updates the numbers before Mentés.
+         */
+        post: operations["previewDietSettings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tutorial/progress": {
         parameters: {
             query?: never;
@@ -3579,6 +3619,40 @@ export interface paths {
         put?: never;
         /** Archive a node — hides it from active listing and traversal (KnowledgeGraph) */
         post: operations["archiveGraphNode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/graph/node/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Undo a hand-archive — clears the user's intent marker and re-derives the status from the node's source row (KnowledgeGraph) */
+        post: operations["restoreGraphNode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/graph/node/archived": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Hand-archived nodes, most recently hidden first (KnowledgeGraph) */
+        get: operations["listArchivedGraphNodes"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -6166,6 +6240,8 @@ export interface components {
         /** @description One weighted dimension; exactly one payload field is populated, matching id — macro/micros/nova for their ids, `context` carries the generic label/value rows for context, who, fat_quality, plant_diversity, energy_density and portion. Dimension `context` additionally carries `timing` when it comes from a logged meal. */
         MealScoreDimension: {
             id: string;
+            /** @description Share of the meal's energy this dimension could actually SEE, 0..1 (mezo-mxmh). It always existed in the scorer (it feeds `confidence`) but used to stop there, so a dimension scoring 30% of a meal looked identical to one scoring all of it. null on envelopes written before the field existed — render nothing, never 0. */
+            coverage?: number | null;
             label: string;
             /** @description 0 when the dimension degraded (no input coverage) — total renormalizes */
             weight: number;
@@ -6189,6 +6265,8 @@ export interface components {
             targetC: string;
             targetF: string;
             kcalShareOfDay: number;
+            /** @description Where the macro target comes from, as a display clause (mezo-mxmh) — the active goal's prescription, the static fallback, or a pre/post-workout rubric. It rode inside `detail` first, but that sentence is clamped to two lines on a collapsed card, so the origin — the whole point of naming it — was the part that got cut. null on older envelopes. */
+            targetOrigin?: string | null;
             /** @description P8 prose — null in v0 */
             notes?: string | null;
         };
@@ -6290,6 +6368,10 @@ export interface components {
             carbsG?: number | null;
             fatG?: number | null;
             nova?: number | null;
+            fiberG?: number | null;
+            sugarG?: number | null;
+            saltG?: number | null;
+            saturatedFatG?: number | null;
             ingredientOverrides?: components["schemas"]["MealIngredientOverrideRequest"][] | null;
         };
         MealItemResponse: {
@@ -6351,6 +6433,10 @@ export interface components {
             carbsG: number;
             fatG: number;
             nova?: number | null;
+            fiberG?: number | null;
+            sugarG?: number | null;
+            saltG?: number | null;
+            saturatedFatG?: number | null;
             confidence: number;
             needsReview: boolean;
         };
@@ -7226,6 +7312,76 @@ export interface components {
             /** Format: double */
             costUsd?: number | null;
         };
+        FlagTraceDayResponse: {
+            /** Format: date */
+            date: string;
+            /**
+             * Format: date
+             * @description The oldest traced day for this user — the day pager's floor. Null when nothing has ever been traced.
+             */
+            earliestDate?: string | null;
+            winner?: components["schemas"]["FlagTraceWinnerResponse"];
+            /** @description All the flag rules, in severity order (rank 1 = most severe). */
+            rules: components["schemas"]["FlagTraceRuleResponse"][];
+            /** @description What changed inside this day, chronologically. Empty on a day where nothing changed. */
+            transitions: components["schemas"]["FlagTraceTransitionResponse"][];
+        };
+        /** @description The rule whose raise became the day's card — a fact about the DAY, read back from the delivered card. This is the ONLY source of a „Nyertes" badge; a client must never infer the winner from `cardOutcome`, which describes a rule's state at decision time and is null once that rule has changed since (mezo-y43v). Null when no card was delivered, or when the card came from a setup check rather than a flag — that key is none of the flag rules. */
+        FlagTraceWinnerResponse: {
+            flagKey: string;
+            /** @description 1-based position in the severity order. */
+            rank: number;
+            /**
+             * Format: uuid
+             * @description The companion_message row id.
+             */
+            cardId: string;
+        } | null;
+        FlagTraceRuleResponse: {
+            flagKey: string;
+            /** @description The Hungarian name, server-sent so a round-2 rule appears without a frontend change. Falls back to the raw key for an unmapped rule. */
+            label: string;
+            /** @description Drives the surface's colour wash and clay icon — sleep, training, nutrition, recovery, habits, logging, body, or general for an unmapped rule. The client MUST fall back safely on a domain it does not know. */
+            domain: string;
+            rank: number;
+            /** @enum {string} */
+            outcome: "raised" | "clear" | "unavailable";
+            /** @description Set when outcome is unavailable — the gate that stopped the rule, or the read-side not_evaluated_yet when the engine has never judged this rule. */
+            reasonCode?: string | null;
+            /** @description The one-line Hungarian explanation, describing the rule's state as of changedAt, not necessarily as of the requested day. */
+            reasonText: string;
+            /** @description The expandable evidence rows — thresholds and observed values — as of changedAt below. The trace records only changes, so a rule sitting unchanged for weeks carries the numbers observed when it last changed, not today's. Empty when there is nothing honest to show. */
+            facts: string[];
+            /**
+             * @description What the service did with a raise. suppressed_by_cooldown means "true, but it spoke recently".
+             * @enum {string|null}
+             */
+            disposition?: "logged" | "suppressed_by_cooldown" | null;
+            /**
+             * @description The rule's correlation to the day's card AT THE MOMENT THE CARD WAS CHOSEN, derived at read time and never stored. Non-null only when the rule raised, was logged, the day's card was flag-sourced, and the rule's closing row already existed when the card was delivered. A rule that has changed state since — including the winner itself, if it later went clear — reports null here while `winner` above still names it; a rule that first raised after the card reports null because it never competed (mezo-y43v).
+             * @enum {string|null}
+             */
+            cardOutcome?: "won" | "lost" | null;
+            /**
+             * Format: date-time
+             * @description When this state last changed — may predate the day; reasonText and facts above describe the rule as of this moment, not as of the requested day. Null when the rule has never been evaluated.
+             */
+            changedAt?: string | null;
+        };
+        FlagTraceTransitionResponse: {
+            /** Format: date-time */
+            at: string;
+            flagKey: string;
+            label: string;
+            /**
+             * @description The state before this change; null on a rule's very first row.
+             * @enum {string|null}
+             */
+            from?: "raised" | "clear" | "unavailable" | "suppressed" | null;
+            /** @enum {string} */
+            to: "raised" | "clear" | "unavailable" | "suppressed";
+            reasonText: string;
+        };
         LogMentionRequest: {
             tone: string;
             text?: string;
@@ -7380,6 +7536,8 @@ export interface components {
             facts?: string[];
             /** @description Advice-card suggestion texts (config-provided). Present only on advice rows. */
             suggestions?: string[];
+            /** @description The SEVERITY key this card came from (spec 2026-09-05 §4.4) — a flag key for a flag-sourced card, or a setup-check key for a setup-sourced one. Present only on advice rows. Lets the coaching observer correlate the day's winner against the raised rules. */
+            flagKey?: string;
             /** @description Up to two action buttons offered by this advice card (S5, mezo-d58h.5). Present only on advice rows. */
             actions?: components["schemas"]["FeedAction"][];
             applied?: components["schemas"]["FeedApplied"];
@@ -8011,6 +8169,21 @@ export interface components {
             fiberG: number;
             /** @description Kcal moved off each rest day onto training days (weekly budget unchanged); 0 = uniform days */
             dayTypeShiftKcal: number;
+        };
+        DietSettingsPreviewResponse: {
+            /** @description Projected kcal for today under the draft (day-type adjusted, as the Fuel day serves it) */
+            kcal: number;
+            /** @description Projected protein target (g) */
+            proteinG: number;
+            /** @description Projected carbs target (g) — absorbs the day-type kcal delta */
+            carbsG: number;
+            /** @description Projected fat target (g) */
+            fatG: number;
+            /**
+             * @description goal = projected from the owner's ACTIVE goal recept under the draft; config = the static nutrition fallback (no active/coherent goal, or no biometric profile to project from)
+             * @enum {string}
+             */
+            source: "goal" | "config";
         };
         SetDietSettingsRequest: {
             /** @enum {string} */
@@ -14874,6 +15047,38 @@ export interface operations {
             };
         };
     };
+    getFlagTrace: {
+        parameters: {
+            query?: {
+                /** @description The day to read (the FE sends its LOCAL date); defaults to the server's today. */
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The day's trace — an honest empty-ish day still returns every rule */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlagTraceDayResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     listConversations: {
         parameters: {
             query?: never;
@@ -17986,6 +18191,48 @@ export interface operations {
             };
         };
     };
+    previewDietSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetDietSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description The projected targets for today under the draft */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DietSettingsPreviewResponse"];
+                };
+            };
+            /** @description Validation failure (incl. custom split not summing to 100.0%) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
     getTutorialProgress: {
         parameters: {
             query?: never;
@@ -19620,6 +19867,84 @@ export interface operations {
             };
             /** @description GRAPH_NODE_NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    restoreGraphNode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Restored node — active when its source still qualifies, archived otherwise */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphNodeResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description GRAPH_NODE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The node was not hand-archived — a candidate or machine-archived node cannot be restored (GRAPH_NODE_NOT_USER_ARCHIVED) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listArchivedGraphNodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Nodes the user archived by hand */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphNodeResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

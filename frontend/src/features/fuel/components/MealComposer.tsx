@@ -65,6 +65,9 @@ const SLOT_DEFAULT_TIME: Record<MealSlot, string> = {
 interface EstimateSnapshot {
   per: number; basisUnit: string
   kcal: number; proteinG: number; carbsG: number; fatG: number; nova: number | null
+  // Nutrition-quality facts the AI estimated for this portion (mezo-1f7b). They must survive the
+  // draft → editor → save hop, or the logged meal is blind on fiber/WHO/fat-quality.
+  fiberG: number | null; sugarG: number | null; saltG: number | null; saturatedFatG: number | null
 }
 interface DraftLine {
   key: string
@@ -271,7 +274,11 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
           return {
             key, source: 'estimate', name: it.name, amount: it.amount, unit: it.unit,
             fromAi: true, needsReview: it.needsReview,
-            estimate: { per: it.per, basisUnit: it.basisUnit, kcal: it.kcal, proteinG: it.proteinG, carbsG: it.carbsG, fatG: it.fatG, nova: it.nova },
+            estimate: {
+              per: it.per, basisUnit: it.basisUnit,
+              kcal: it.kcal, proteinG: it.proteinG, carbsG: it.carbsG, fatG: it.fatG, nova: it.nova,
+              fiberG: it.fiberG, sugarG: it.sugarG, saltG: it.saltG, saturatedFatG: it.saturatedFatG,
+            },
           }
         }
         if (it.source === 'pantry') {
@@ -298,7 +305,12 @@ export function MealComposer({ fixedSlot, initialSlot, prefill, aiPanelOpenOnMou
     const items: MealItemInput[] = lines.map((l): MealItemInput => {
       if (l.source === 'estimate') {
         const est = l.estimate!
-        return { source: 'estimate', name: l.name, amount: l.amount, unit: l.unit, per: est.per, basisUnit: est.basisUnit, kcal: est.kcal, proteinG: est.proteinG, carbsG: est.carbsG, fatG: est.fatG, nova: est.nova }
+        return {
+          source: 'estimate', name: l.name, amount: l.amount, unit: l.unit,
+          per: est.per, basisUnit: est.basisUnit,
+          kcal: est.kcal, proteinG: est.proteinG, carbsG: est.carbsG, fatG: est.fatG, nova: est.nova,
+          fiberG: est.fiberG, sugarG: est.sugarG, saltG: est.saltG, saturatedFatG: est.saturatedFatG,
+        }
       }
       const recipe = l.source === 'recipe' ? recipes.find(r => r.id === l.refId) : undefined
       // A concurrent recipe edit (useRecipes refetches on window focus) can shrink `ingredients`

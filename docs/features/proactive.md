@@ -7,16 +7,8 @@ tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
   - api/feature/proactive/proactive.yml
-  - backend/src/main/resources/db/changelog/1.0.0/script/202608151200_mezo-gst9_create_companion_message.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202608151230_mezo-gst9_drop_briefing_heartbeat_note.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607071500_mezo-h4wp.4_create_memoir.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607071900_mezo-h4wp.7_create_prediction.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607072000_mezo-h4wp.8_create_experiment.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607072100_mezo-hbwi_create_challenge.sql
-  - backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/OverloadChallengeGenerator.java
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607280641_mezo-gj42_challenge_overload_type.sql
-  - backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewGenerator.java
-  - backend/src/main/resources/db/changelog/1.0.0/script/202608271200_mezo-p2tr_create_weekly_review.sql
+  - frontend/src/data/today
+  - frontend/src/features/today/pages/NapMezoPage.tsx
 related: [companion, today, insights, train, me, _platform-api-backend, _platform-notifications]
 ---
 
@@ -270,7 +262,13 @@ this redesign and remain as shipped.
   `bestSet.date` fell in-week via `ExerciseRecordService` — a new cycle-safe `proactive → train`
   read; `PR` anchor candidates), the week's **predictions with status**, and the
   **`WeeklyReviewContextSources` wider context verbatim** (journal, decisions, experiments,
-  mention counts, medication-cycle position, week narrative — no anchor candidates). The JSON
+  mention counts, medication-cycle position, week narrative — no anchor candidates) — since
+  `mezo-a9os` windowed `LifeGoalProgressService.summary(userId, from, to)`, this silently pulls
+  in the seventh source too, the **`ÉLETCÉLOK · A HÉT IRÁNYA`** block (§ below), scoped to the
+  memoir's own `[weekStart, weekStart+6]` rather than `LocalDate.now()`'s week — correct (the
+  memoir narrates the week ENDING, same window as everything else it gathers), undocumented until
+  now, and covered by no dedicated `MemoirGeneratorIT` case, only inherited via
+  `WeeklyReviewContextSources.render`'s own tests. The JSON
   contract is now `{title, body, anchors:[{index, note}]}` (legacy `anchorIndexes` still parsed
   as fallback); **Memory anchor labels are composed server-side** into human HU day labels
   (`MemoirGenerator.memoryLabel`: `aug. 29., szombat — <note≤60>`) so the FE chips stop showing
@@ -611,14 +609,16 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   position on the week's first and last day (one line, derived via `MedicationCycleService`), and
   the week's consolidated **`period_summary(week)`** narrative (clipped to 600 — its `03:30 MON`
   consolidation cron runs three hours before the `06:50` review cron on the SAME `weekStart`).
-  **The seventh source (`mezo-iizd.9`): `ÉLETCÉLOK · AZ ELMÚLT 7 NAP`** — the life-goal engine's
-  ALREADY-COMPUTED per-goal trend off `LifeGoalProgressService#today` (max 5 ACTIVE goals;
+  **The seventh source (`mezo-iizd.9`, windowed by `mezo-a9os`): `ÉLETCÉLOK · A HÉT IRÁNYA`** —
+  the life-goal engine's ALREADY-COMPUTED per-goal trend off
+  `LifeGoalProgressService#summary(userId, weekStart, weekEnd)` (max 5 ACTIVE goals;
   `title [dimension] <arrow-word> · N találat-nap a 7-ből`). Three honesty rules shape it, all
-  pinned by `WeeklyReviewContextSourcesIT`: the header names the **trailing-7-day** window it
-  actually measures, NOT the reviewed week (`today()`'s `[now-6, now]` sits one day off the
-  Monday-06:50 cron's `[D-7, D-1]`; a windowed `today(from, to)` variant is a separate, later
-  issue); today's `pillarsHitToday / pillarsTotal` snapshot is dropped as meaningless in a
-  retrospective; and a goal with **no data-day at all** renders `ezen a héten még nincs adata`
+  pinned by `WeeklyReviewContextSourcesIT`: the header names the **reviewed week** it actually
+  measures — `summary` takes the SAME `[weekStart, weekEnd]` every sibling source above uses,
+  so the Monday-06:50 cron's `[D-7, D-1]` is what feeds `days7`, not a trailing-7-day window off
+  render time (that was the previous shape, before the windowed `summary` variant existed); today's
+  `pillarsHitToday / pillarsTotal` snapshot is dropped as meaningless in a retrospective regardless
+  of which day it lands on; and a goal with **no data-day at all** renders `ezen a héten még nincs adata`
   instead of a `0 találat-nap` tally — a zero there means "we measured nothing", and a
   measured-looking zero would invite the model to explain a week nobody measured. That last rule
   mirrors the frontend's `goalWeekSentence.ts` verbatim, so one week can never read as a miss in
@@ -957,7 +957,14 @@ FLAG signals (grace-window copy, "the streak lives, just continue it," never bla
 [companion.md](companion.md) §3), so it must never be able to outrank and displace any of the other
 thirteen flags' cards. Since `outranks` is index order and lower ranks harder, `protocol_lapse`
 still outranks (and can displace) the two setup checks and the round-0 tail below it in the list —
-only every OTHER flag sits ahead of it. `AdviceCardService` is deliberately NOT conditioned on
+only every OTHER flag sits ahead of it. **Round 2 S4 (bd `mezo-d58h.7.4`) then adds
+`FlagKey.MEAL_RHYTHM_DRIFT` immediately AFTER `protocol_lapse`**, still ahead of the two setup
+checks: it is an offer to edit a plan rather than a health signal, so it must never displace a card
+ranked above it — and the round-1 order is again untouched. **Round 2 S6 (bd `mezo-d58h.7.7`) adds
+`FlagKey.ENERGY_DIP_MEAL_TIMING` immediately after that** — the least urgent FLAG in the table (an
+insight about a correlation in the user's own log, not a signal about a state), but still a
+statement about the user's own body, so it stays inside the flag block rather than dropping below
+the setup checks. `AdviceCardService` is deliberately NOT conditioned on
 `INTERVENTION_SWITCH` —
 `SetupCheckService` (which runs without that switch) is one of its two callers, so gating this bean
 on the intervention switch would fail the Spring context whenever that switch is off.
@@ -1500,9 +1507,13 @@ Every non-2xx returns `SystemMessageList`. The paths are protected (401 without 
 | `POST /api/proactive/challenge/{id}/decision` | `ChallengeResponse` | 200 · 400 · 401 · 404 · 409 | HBWI. **L2 accept/dismiss** (`{decision: accept\|dismiss}`, `@Pattern ^(accept\|dismiss)$`). `accept` ⇒ `accepted`; `dismiss` ⇒ `dismissed`. 404 `PROACTIVE_CHALLENGE_NOT_FOUND` = not-found/foreign; **409 `PROACTIVE_CHALLENGE_NOT_PROPOSED`** = already decided; 400 = invalid decision value. **No `propose` endpoint** (generation is implicit on the prep-read). |
 
 Schemas: `FeedMessageResponse{id, date, kind, eyebrow, body[], refs[], generatedAt, facts?,
-suggestions?, actions?, applied?}`
+suggestions?, actions?, applied?, flagKey?}`
 (replaces `BriefingResponse` + `HeartbeatNoteResponse`) + `FeedRef{kind, label}` — **no `confidence`,
-no `tone`** on the wire (§9 gotcha c, unchanged). `kind` is the **9-value** companion-feed enum
+no `tone`** on the wire (§9 gotcha c, unchanged). `flagKey` (companion coaching observer, bd
+`mezo-6269.2`) names the card's own severity key, mapped straight from `content.adviceKey` —
+present only on `advice` rows, a `FlagKey` for a flag-sourced card or a setup-check key for a
+setup-sourced one. It is what lets `companion.md`'s coaching observer correlate the day's card
+against its own trace rows to decide which rule won. `kind` is the **9-value** companion-feed enum
 (`morning|sleep|weight|midday|evening|intervention|people|setup|advice` — the sixth, `intervention`,
 W5.2 bd `mezo-b3pp.19`, added 2026-08-25; the seventh, `people`, Emberek S6 bd `mezo-06o0.8`, added
 2026-09-01; the eighth, `setup`, S3 bd `mezo-d58h.3`, added 2026-09-03; the ninth, `advice`, S4 bd
@@ -1710,6 +1721,23 @@ is `ProactiveProperties`, so a standalone record avoids growing it further):
   - **`minBedtimeSamples`** (`@Min(2) @Max(30)`, default **4**): fewer logged bedtimes than this in
     the window ⇒ the observed-bedtime half of the check stays silent (the schedule half can still
     speak).
+
+**`config/QuestionProperties.java` (round 2 S5, bd `mezo-d58h.7.5`) — a THIRD standalone
+`@ConfigurationProperties` record, prefix `mezo.proactive.questions`** (same reasoning as
+`SetupCheckProperties`: one record per genre). It has **no cron and no re-emit window**, deliberately
+— the pass rides `SetupCheckJob`'s existing schedule (the spec forbids a new cron near the dawn
+cluster), and "once ever" is enforced by an envelope-key dedupe in code, not by a window a config
+edit could re-open:
+
+- **`featureAbandonment.idleDays`** (`@Min(7) @Max(365)`, default **30**): nothing new anywhere in a
+  feature family for this many days ⇒ the family reads as shelved (spec §(17)).
+- **`featureAbandonment.minPriorRows`** (`@Min(1) @Max(1000)`, default **10**): the honesty gate —
+  fewer rows than this EVER means the family was never really used, and never-used is not abandoned.
+- **`flatFeedback.windowWorkouts`** (`@Min(3) @Max(50)`, default **8**): how many of the most recent
+  feedback-carrying WORKOUTS (not rows) must carry an identical `(workload, jointPain)` pair.
+- **`flatFeedback.maxFeedbackRows`** (`@Min(50) @Max(2000)`, default **400**): read cap for the
+  newest-first debrief scan; the OLDEST workout inside a hit cap is discarded, because the cap may
+  have cut it in half.
 
 Plus the **seven** techcore job switches (up from six — S3 adds `setup-check-job` alongside the
 `mezo-gst9` `feed-job` merge), each the THIRD `@ConditionalOnProperty` on its job bean (on
@@ -2131,6 +2159,53 @@ card, no day gate, no migration, no new feed kind, no FE change.
   `MealPopulator.createBareMealCreatedAt`, which force-updates `created_at` natively
   (the `ProtocolPopulator.createProtocolItemAt` precedent).
 
+### 5.16 Proactive → Journal / Habit / Ritual / Needs / Train / Companion, the once-ever questions (✅ round 2 S5, `mezo-d58h.7.5`)
+
+- **`OneTimeQuestionService.runFor(userId)`** is the whole surface: a `SetupCheckService`-shaped,
+  ordered first-wins pass that asks at most ONE question per day and each question **exactly once per
+  user, ever**. `SetupCheckJob` calls it right after the setup checks, in the same per-user loop with
+  its own `catch` — no new cron (spec §c).
+- **Usage reads (item 17), one-way and predicate-scoped.** `FeatureAbandonmentDetector` counts two
+  families off the domain tables' own `created_at` (there is no usage-events table): `mind` =
+  `journal_entry` + `gratitude_entry` + `decision_entry` + `habit_day` + `ritual_day` + `needs_day`,
+  and `chat` = `ai_message`. **`habit_day` counts `status = 'done'` ONLY** — `HabitService`
+  materializes a `pending` row per active def on any read and a cron closes stale ones to `missed`,
+  so a naive count would report an untouched surface as heavily used and would let the app's own
+  writes revive an abandoned family. **`ai_message` counts `role = 'user'` ONLY** — the assistant's
+  replies are not the user using the chat.
+- **Debrief read (item 18).** `FlatFeedbackDetector` groups the newest `exercise_feedback` rows by
+  `workout_session_id` and asks whether the last `windowWorkouts` groups all carry one
+  `(workload, jointPain)` pair. One differing exercise inside an otherwise flat workout is variance,
+  and variance is an answer.
+- **Delivery is the ordinary advice path with ONE new bypass.** `AdviceCandidate.fromQuestion` marks
+  the candidate `verbatim`, and `AdviceCardService` then skips `AdviceProseGenerator` entirely: the
+  advice prompt orders 2–3 sentences of coaching advice and forbids numerals, so an LLM pass would
+  return the question as advice with the 👍/👎 answer key dissolved out of it. (It is also why a
+  question card's facts may carry numbers — `ProseNumberGuard` never runs on it.)
+- **Two ports back into companion.** IN: `MessageFeedbackService` publishes
+  `MessageFeedbackRecordedEvent` on every verdict; `QuestionAnswerListener` (`@Async`, AFTER_COMMIT —
+  the `CompanionMessageEventListener` precedent) turns a verdict on a question card into ONE
+  `knowledge_fact` (`source='question'`), rewritten in place when the user flips the answer. OUT:
+  `FeedMessageKindSource.answerArtifactIds` (the fifth port inversion) lets
+  `FeedbackLearningService` drop those verdicts from EVERY rollup scope — `companion` may never
+  import `proactive` to learn what a question key is.
+- **Nothing else follows from an answer** (spec §c): no feature hidden, no data excluded, no rule
+  input changed. The fact rides the top-N prompt injection like any other, and that is all.
+- **The frontend renders it as a QUESTION, not as a rated card** (`mezo-d58h.7.6`, the S5 follow-up).
+  A question card is an `advice` row, so the thread's generic advice rendering would have put
+  „Segített?" over it and offered the negative reason row („pontatlan"/„túl sok"/…) on the 👎 — but
+  here the 👍/👎 IS the answer and those reasons are complaints about a card. `NapMezoPage` (the live
+  thread; `MezoMessagesSheet` is the dead, half-migrated twin — `mezo-1esk`) now keys off
+  `FeedMessage.flagKey`, which already reached the FE from `mezo-6269.2` and only had to survive
+  `feedToMessageItem`: `isQuestionCard` is a PREFIX match on `question_`, so a future question key
+  behaves correctly the day the backend starts asking it, with no frontend change. The card then
+  reads „A válaszod", the two chips wear the question's own answers (parsed off its `suggestions`,
+  which are therefore no longer also listed as bullets — the button says what tapping it means), and
+  `FeedbackChips`' new `answers` mode records a 👎 straight away instead of opening the reason row.
+  A malformed suggestion pair falls back to the default „Segített"/„Nem talált" wording rather than
+  rendering a guess. Mock mode is untouched by design: `useCompanionFeed` returns `[]` there
+  (Phase-1 byte parity), so no advice or question card exists on the mock surface at all.
+
 ## 6. How to use it (consume)
 
 **Over HTTP** (bearer token from `POST /api/auth/login`; the backend must run with `demodata` so
@@ -2271,6 +2346,15 @@ dual-mode.
   (mezo-106s — the retired-heartbeat no-refs precedent is superseded); the prediction/experiment
   carry pattern candidates — the prediction resolves them to CONFIDENCE, the experiment only
   uses them for grounding.
+- **To add a new once-ever QUESTION (round 2 S5, `mezo-d58h.7.5`)**, in this order: (1) a detector in
+  `proactive/service` returning `Optional<…>` with its own honesty gate ("too little data" is
+  silence, never a finding); (2) a `QUESTION_*` constant + its two answer texts + its `answerFact`
+  arm + its `categoryOf` arm in `OneTimeQuestionService`; (3) an entry in `AdvicePriority.ORDER`
+  **before `all_healthy`** — `AdvicePriorityTest`'s reflection guard fails otherwise; (4) the key in
+  `FeedMessageKindService.answerArtifactIds`' set, or its answers pollute the effectiveness rollups;
+  (5) thresholds in `QuestionProperties` + `application.yml`; (6) a detector IT and a once-ever IT.
+  **No DB change is needed** — `setupKey` lives in the `content` jsonb and is unconstrained; there is
+  no setup-key CHECK anywhere in the schema.
 - **Never add `confidence`/`tone`** back to the envelope without a real computed source (§9 gotcha c).
 
 ## 8. Testing
@@ -3016,6 +3100,64 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
   `shift_sleep_anchor` or `joint_overuse`'s `lighten_tomorrow`, (ll) above) — the card's own copy asks
   the user to either take the dose today or drop the item from the stack themselves; there is
   nothing here for a button to safely automate.
+- **(nn) Round 2 S4 (bd `mezo-d58h.7.4`, spec 2026-09-05 §(13)) adds `meal_rhythm_adjust`, the
+  `meal_rhythm_drift` intervention-library entry.** `channel: feed` (an offer to edit a plan never
+  earns a push) and `cooldown-hours: 336`, which MUST stay equal to
+  `mezo.companion.flags.cooldown-hours.meal-rhythm-drift` — `InterventionService.deliverForFlag`
+  applies the LIBRARY entry's own per-key cooldown, so a mismatch would silently override the
+  spec's 14-day cadence (the `protocol_lapse_resume` review lesson, one slice earlier). The copy is
+  a NEUTRAL observation offering to rewrite the slot plan, never an adherence remark; the specific
+  slot, both clock times and the presence ratios come from `FlagFactRenderer`'s `meal_rhythm_drift`
+  branch (rendered from the raise's own frozen payload), never from this text. Like
+  `protocol_lapse_resume` it offers no `AdviceActionCatalog` mutation — editing a slot template is a
+  deliberate act in Fuel, not something a card should automate.
+- **(pp) Round 2 S6 (bd `mezo-d58h.7.7`, spec 2026-09-05 §(15)) adds `energy_dip_timing_insight`,
+  the `energy_dip_meal_timing` intervention-library entry.** `channel: feed` (an observation never
+  earns a push) and `cooldown-hours: 720`, which MUST stay equal to
+  `mezo.companion.flags.cooldown-hours.energy-dip-meal-timing` — the same `deliverForFlag`
+  lesson as `meal_rhythm_adjust` one slice earlier, here guarding the spec's "effectively a one-off
+  insight card" 30-day cadence. The copy states a CORRELATION and nothing more: no causal word
+  appears in it, it explicitly names the alternative reading ("lehet, hogy mindkettő ugyanannak a
+  napnak a következménye"), and it prescribes nothing. The two groups, their sizes, their median
+  afternoon energies and the superiority share come from `FlagFactRenderer`'s
+  `energy_dip_meal_timing` branch (rendered from the raise's own frozen payload) — the group SIZES
+  are on the card on purpose, so the reader can see how thin the sample is. Like the two entries
+  before it, it offers no `AdviceActionCatalog` mutation: there is nothing here to automate.
+- **(oo) Round 2 S5 (bd `mezo-d58h.7.5`, spec 2026-09-05 §c) — the once-ever questions, and the four
+  things that shape them.**
+  1. **The dedupe is native and sees soft-deleted rows.** `CompanionMessageRepository
+     .questionAlreadyAsked` queries `content ->> 'setupKey'` WITHOUT `is_deleted = false`, because a
+     question card that a later flag SUPERSEDED is soft-deleted by `AdviceCardService` — a JPA read
+     would forget the question and re-ask it the next day, and the day after. The accepted mirror
+     cost is that a question displaced before the user ever saw it is burned for good; nothing
+     follows from an answer, so an unasked question costs nothing, while a repeating one is exactly
+     the pestering the spec forbids. The spec's "enormous re-emit window" wording cannot deliver
+     "once, ever" for this reason, and was dropped: there is no window property at all.
+  2. **The card bypasses the LLM (`AdviceCandidate.verbatim`).** The advice prompt orders coaching
+     advice and forbids numerals; a question run through it comes back as advice with the 👍/👎
+     answer key dissolved out. Verbatim is the only new behaviour in `AdviceCardService`, and it also
+     means `ProseNumberGuard` never runs on a question card — which is why its facts may carry
+     numbers.
+  3. **Not every row is a user action.** `habit_day` rows are materialized `pending` by
+     `HabitService` on any read (and closed to `missed` by a cron), so item (17) counts
+     `status = 'done'` only; `ai_message` counts `role = 'user'` only. Counting either naively would
+     make an untouched surface look heavily used and would let the app's own writes revive an
+     abandoned family.
+  4. **An answer is not a rating.** A verdict on a question card would otherwise land in
+     `surface:feed_message` and the down-reason histogram, teaching the rollup that the companion's
+     cards are unhelpful — from its own survey. `FeedbackLearningService` now drops them via
+     `FeedMessageKindSource.answerArtifactIds` (the fifth port inversion).
+  **Accepted UI limitation + follow-up:** `MezoMessagesSheet.tsx` prints the generic „Segített?"
+  label above the chips for every `kind=advice` row, question cards included; the answer mapping is
+  spelled out in the card's own suggestion lines instead. Fixing the label needs the advice key on
+  the feed contract and both `VITE_USE_MOCK` modes — filed as bd `mezo-d58h.7.6`, deliberately out of
+  this backend-only slice.
+  **No DB change for the keys themselves:** `setupKey` is unconstrained jsonb and this slice adds no
+  flag key, so neither the flag-key CHECK nor any "setup-key set" was touched (the spec's
+  §error-handling sentence assumed both; there is no setup-key CHECK in the schema). The one
+  migration S5 does need is `ck_knowledge_fact_source` gaining `'question'` — see
+  [companion.md](companion.md).
+
 - **Epic complete, H2 Web Push shipped with it, and `mezo-gst9` then redesigned the B/H stages.**
   All eight original slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2), **H2 (`mezo-h4wp.6`) shipped** — N1
   (delivery spine) + N2 (dispatcher + `notification_pref`/`push_log` + categories 1-9) + N3

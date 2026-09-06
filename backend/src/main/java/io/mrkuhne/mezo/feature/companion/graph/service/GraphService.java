@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -19,6 +20,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -37,6 +39,9 @@ public class GraphService {
 
     private final GraphNodeRepository nodeRepository;
     private final GraphEdgeRepository edgeRepository;
+    // ObjectProvider, nem közvetlen függés: a promóter @ConditionalOnProperty mögött van, és a
+    // közvetlen injektálás kör-függést zárna (GraphPromotionService -> GraphService).
+    private final ObjectProvider<GraphPromotionService> promotionService;
 
     /** UPSERT by (createdBy, sourceKind, sourceId) — re-promotion updates title/summary/meta, never duplicates. */
     @Transactional
@@ -178,11 +183,57 @@ public class GraphService {
             userId, GraphNodeEntity.STATUS_CANDIDATE);
     }
 
+    /** A felhasználó kézi archiválása (mezo-06o0.5): a státusz mellé a SZÁNDÉK is rögzül, és
+     *  ettől kezdve a promóciós szinkron nem emelheti vissza aktívra — a rejtés csak
+     *  {@link #restore} útján oldható. */
     @Transactional
     public GraphNodeEntity archive(UUID userId, UUID nodeId) {
         GraphNodeEntity node = findOwnedNode(userId, nodeId);
         node.setStatus(GraphNodeEntity.STATUS_ARCHIVED);
+        node.setUserArchivedAt(OffsetDateTime.now());
         return nodeRepository.saveAndFlush(node);
+    }
+
+    /**
+     * A kézi archiválás visszavonása (mezo-06o0.5): a szándék-marker törlődik, és a státusz
+     * AZONNAL a forrásból származik újra — nem vakon `active`, mert a forrás közben inaktívvá
+     * válhatott, és akkor a hajnali reconcile csendben visszaarchiválná (spec D5).
+     *
+     * <p><b>Csak KÉZZEL archivált node-on hívható (code review finding, mezo-06o0.5).</b> Enélkül
+     * egy {@code candidate} node — aminek az id-je publikus a {@code GET
+     * .../node/candidate} listán, és aminek {@code sourceId}-je null — {@link #resyncNode}
+     * forrás-nélküli ágán keresztül egyenesen {@code active}-ra emelkedne, megkerülve {@code
+     * LifeEventCandidateService.decide}-ot: a már eldöntött-e kaput, a finomított
+     * címet/összefoglalót és a proposedEdges materializációt. Ugyanígy egy GÉPI úton (pl.
+     * {@code retractPattern}) archivált node sem "visszaállítandó" ezen az úton — annak a
+     * forrásnak kell újra kvalifikálnia, nem egy explicit felhasználói kattintásnak. A ház elve:
+     * amit az AI derivál, felhasználói döntés nélkül soha nem válik tartóssá.
+     */
+    @Transactional
+    public GraphNodeEntity restore(UUID userId, UUID nodeId) {
+        GraphNodeEntity node = findOwnedNode(userId, nodeId);
+        if (!node.isUserArchived()) {
+            throw new SystemRuntimeErrorException(
+                SystemMessage.error("GRAPH_NODE_NOT_USER_ARCHIVED").build(), HttpStatus.CONFLICT);
+        }
+        node.setUserArchivedAt(null);
+        GraphPromotionService promoter = promotionService.getIfAvailable();
+        if (promoter == null) {
+            // Defensive only: GraphService and GraphPromotionService share the same
+            // @ConditionalOnProperty gate (KNOWLEDGE_GRAPH_SWITCH), so whenever this bean exists
+            // to be called, the promoter bean exists too — this branch is unreachable in practice.
+            node.setStatus(GraphNodeEntity.STATUS_ACTIVE);
+        } else {
+            promoter.resyncNode(userId, node);
+        }
+        return nodeRepository.saveAndFlush(node);
+    }
+
+    /** A kézzel archivált node-ok, legutóbb elrejtett elöl. */
+    @Transactional(readOnly = true)
+    public List<GraphNodeEntity> listUserArchived(UUID userId) {
+        return nodeRepository
+            .findByCreatedByAndUserArchivedAtIsNotNullAndDeletedFalseOrderByUserArchivedAtDesc(userId);
     }
 
     /** UPSERT by (createdBy, fromNodeId, toNodeId, kind) — re-proposing the same edge updates weight/evidence. */

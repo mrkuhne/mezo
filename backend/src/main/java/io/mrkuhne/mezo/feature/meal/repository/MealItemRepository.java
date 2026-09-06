@@ -33,4 +33,33 @@ public interface MealItemRepository extends JpaRepository<MealItemEntity, UUID> 
     /** Cooking-quest derived signal (E2): did an own-recipe meal item land on this day? */
     boolean existsByCreatedByAndDeletedFalseAndSourceAndMeal_MealDate(
         UUID createdBy, String source, LocalDate mealDate);
+
+    /**
+     * One-time heal of the saturated-fat snapshot on pantry-arm lines (mezo-1f7b). The mezo-m6uv
+     * migration froze all four nutrient facts from the pantry row, but the catalog carried
+     * {@code saturated_fat_g} on only 2 of 147 rows, so this column landed NULL almost everywhere;
+     * the seed now fills it, and these lines can take it — the same "honest approximation" the
+     * m6uv backfill already made for the other three (ADR 0026), on a column whose NULL means
+     * "we never knew", not "the source said none".
+     *
+     * <p>Strictly {@code IS NULL}-guarded, so it is idempotent AND cannot rewrite a value a real
+     * label (OFF/scrape/photo import) has since supplied. Rescaled to the item's own frozen
+     * {@code snapshot_per} and rounded to 3 decimals, exactly like the migration it continues.
+     * Native because it is set-based over the pantry_item → pantry_catalog join the split
+     * (mezo-qw37.4) introduced; the recipe arm heals through the recipe's own line snapshots.
+     */
+    @Modifying
+    @Query(value = """
+        update meal_item mi
+           set snapshot_saturated_fat_g =
+                   round(c.saturated_fat_g
+                         * (mi.snapshot_per / coalesce(nullif(c.serving_amount, 0), 1)), 3)
+          from pantry_item p
+          join pantry_catalog c on c.id = p.catalog_id
+         where mi.source = 'pantry'
+           and mi.snapshot_saturated_fat_g is null
+           and p.id = mi.pantry_item_id
+           and c.saturated_fat_g is not null
+        """, nativeQuery = true)
+    int backfillPantrySaturatedFat();
 }

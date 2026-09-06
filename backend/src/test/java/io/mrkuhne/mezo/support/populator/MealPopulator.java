@@ -15,6 +15,8 @@ import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
@@ -63,6 +65,15 @@ public class MealPopulator {
             .setParameter("at", createdAt).setParameter("id", meal.getId()).executeUpdate();
         em.clear();
         return repository.findById(meal.getId()).orElseThrow();
+    }
+
+    /** A bare meal on a past day at an explicit WALL-CLOCK time — the meal_rhythm_drift fixture
+     *  (mezo-d58h.7.4). The rule reads {@code loggedAt} in the system zone, so the fixture must
+     *  mint the instant from a local time, never from a UTC literal. */
+    public MealEntity createBareMealAt(UUID owner, LocalDate mealDate, String slot, LocalTime localTime) {
+        MealEntity meal = createBareMeal(owner, mealDate, slot);
+        meal.setLoggedAt(mealDate.atTime(localTime).atZone(ZoneId.systemDefault()).toInstant());
+        return repository.saveAndFlush(meal);
     }
 
     /** A lunch meal with one recipe-arm line referencing the given (real, persisted) recipe. */
@@ -134,7 +145,7 @@ public class MealPopulator {
         meal.setBreakdown(new MealBreakdownJson(new BigDecimal("0.62"), new BigDecimal("0.80"),
             null, null,
             List.of(new MealBreakdownJson.Dimension("macro", "Kcal & makró", new BigDecimal("0.22"),
-                new BigDecimal("0.50"), "P/C/F 17/71/11 vs 27/47/26", null, null, null, null, null,
+                new BigDecimal("0.50"), BigDecimal.ONE, "P/C/F 17/71/11 vs 27/47/26", null, null, null, null, null,
                 null)),
             List.of(), List.of(new MealBreakdownJson.ToolRow("compute", "score(deterministic)")),
             null));
@@ -155,7 +166,7 @@ public class MealPopulator {
         meal.setBreakdown(new MealBreakdownJson(stale.value(), stale.confidence(),
             "Kiegyensúlyozott reggeli.", "Jó start",
             List.of(new MealBreakdownJson.Dimension("macro", "Kcal & makró", new BigDecimal("0.22"),
-                new BigDecimal("0.50"), "P/C/F 17/71/11 vs 27/47/26", null, null, null, null, null,
+                new BigDecimal("0.50"), BigDecimal.ONE, "P/C/F 17/71/11 vs 27/47/26", null, null, null, null, null,
                 "A fehérje aránya elmarad a céltól.")),
             List.of(new MealBreakdownJson.ImproveRow("Tegyél mellé egy tojást.", "+8")),
             stale.tools(), null));

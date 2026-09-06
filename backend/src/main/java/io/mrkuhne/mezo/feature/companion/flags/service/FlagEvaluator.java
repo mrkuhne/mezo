@@ -3,11 +3,13 @@ package io.mrkuhne.mezo.feature.companion.flags.service;
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.AcuteBadDayRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.AllHealthyRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.rule.EnergyDipMealTimingRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.IgnoredNudgeRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.JointOveruseRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.LateEatingRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.LoadFuelMismatchRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.LoggingGapRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.rule.MealRhythmDriftRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.MissedWorkoutsRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.MomentumAtRiskRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.ProtocolLapseRule;
@@ -52,6 +54,8 @@ public class FlagEvaluator {
     private final IgnoredNudgeRule ignoredNudgeRule;
     private final LateEatingRule lateEatingRule;
     private final ProtocolLapseRule protocolLapseRule;
+    private final MealRhythmDriftRule mealRhythmDriftRule;
+    private final EnergyDipMealTimingRule energyDipMealTimingRule;
     private final SustainedStressRule sustainedStressRule;
     private final SleepDebtRule sleepDebtRule;
     private final MomentumAtRiskRule momentumAtRiskRule;
@@ -60,7 +64,7 @@ public class FlagEvaluator {
     private final MissedWorkoutsRule missedWorkoutsRule;
     private final AllHealthyRule allHealthyRule;
 
-    /** Every rule's verdict for {@code userId} right now, cooldowns NOT yet applied — 14 entries,
+    /** Every rule's verdict for {@code userId} right now, cooldowns NOT yet applied — 16 entries,
      *  one per rule, in AdvicePriority order. */
     @Transactional(readOnly = true)
     public List<FlagVerdict> evaluate(UUID userId) {
@@ -76,6 +80,8 @@ public class FlagEvaluator {
         verdicts.add(ignoredNudgeRule.evaluate(userId, today));
         verdicts.add(lateEatingRule.evaluate(userId, today));
         verdicts.add(protocolLapseRule.evaluate(userId, today));
+        verdicts.add(mealRhythmDriftRule.evaluate(userId, today));
+        verdicts.add(energyDipMealTimingRule.evaluate(userId, today));
         verdicts.add(recoveryNeededRule.evaluate(userId, today));
         verdicts.add(sustainedStressRule.evaluate(userId, today));
         verdicts.add(momentumAtRiskRule.evaluate(userId, today));

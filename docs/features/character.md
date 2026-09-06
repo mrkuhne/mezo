@@ -2,7 +2,7 @@
 title: Karakter (user character dossier)
 type: feature-domain
 status: shipped
-updated: 2026-09-02
+updated: 2026-09-06
 tags: [character, karakter, ai, llm, backend, frontend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/character

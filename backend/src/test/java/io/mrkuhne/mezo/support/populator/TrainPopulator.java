@@ -29,6 +29,8 @@ import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -388,6 +390,17 @@ public class TrainPopulator {
         return workoutSessionRepository.saveAndFlush(s);
     }
 
+    /** A COMPLETED instance carrying a real {@code startedAt} — day-type resolution
+     *  (mezo-d58h.7.4) has no other input: {@code createWorkoutInstance} leaves it null, and a
+     *  training day with no start time is deliberately unresolvable (rest / training_am /
+     *  training_pm follows the earliest start, the {@code resolveDayType.ts} convention). */
+    public WorkoutSessionEntity createCompletedInstanceStartedAt(UUID createdBy,
+        WorkoutSessionEntity template, LocalDate date, LocalTime localStart) {
+        WorkoutSessionEntity s = createWorkoutInstance(createdBy, template, date, "completed");
+        s.setStartedAt(date.atTime(localStart).atZone(ZoneId.systemDefault()).toInstant());
+        return workoutSessionRepository.saveAndFlush(s);
+    }
+
     /** Logged set inside an instance (T2 path — workoutSessionId set, side/note carried). */
     public ExerciseSetEntity createLoggedSet(UUID createdBy, UUID exerciseId, UUID workoutSessionId,
         int setIndex, String weightKg, int reps, int rir) {
@@ -493,6 +506,22 @@ public class TrainPopulator {
         f.setJointPain(jointPain);
         f.setWorkload(workload);
         return exerciseFeedbackRepository.saveAndFlush(f);
+    }
+
+    /** A debrief row with an explicit {@code created_at} (round 2 S5, bd mezo-d58h.7.5): the
+     *  flat-feedback detector groups the NEWEST rows into workouts, so a fixture needs the order to
+     *  be a fact rather than an insertion-time accident. Written, then backdated natively —
+     *  {@code created_at} is {@code updatable = false}. */
+    @Transactional
+    public ExerciseFeedbackEntity createFeedbackAt(UUID createdBy, UUID workoutSessionId,
+        UUID exerciseId, int pump, int jointPain, int workload, Instant createdAt) {
+        ExerciseFeedbackEntity f = createFeedback(createdBy, workoutSessionId, exerciseId, pump,
+            jointPain, workload);
+        em.createNativeQuery("update exercise_feedback set created_at = :at where id = :id")
+            .setParameter("at", createdAt).setParameter("id", f.getId()).executeUpdate();
+        em.flush();
+        em.clear();
+        return exerciseFeedbackRepository.findById(f.getId()).orElseThrow();
     }
 
     public SportSessionEntity createSportSession(UUID createdBy, LocalDate date) {
