@@ -40,7 +40,7 @@ class FlagServiceTraceIT extends AbstractIntegrationTest {
         assertThat(traceRepository.findAll().stream()
             .filter(r -> r.getCreatedBy().equals(user))
             .map(CompanionFlagTraceEntity::getFlagKey))
-            .hasSize(14).doesNotHaveDuplicates();
+            .hasSize(15).doesNotHaveDuplicates();
     }
 
     @Test
