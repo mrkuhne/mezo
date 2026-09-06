@@ -355,6 +355,13 @@ mezo:
     lifegoal-ai-propose:
       enabled: true
   techcore:
+    # Master switch for Spring's scheduling INFRASTRUCTURE (@EnableScheduling) — one level above
+    # the per-job mezo.techcore.cron.* switches below. Those decide whether a job BEAN exists;
+    # this decides whether a scheduler thread exists at all to fire the beans that do. True in
+    # production (every cron must run); the test profile sets it false — see the comment in
+    # backend/src/test/resources/application.properties (mezo-peh4 / mezo-v73w).
+    scheduling:
+      enabled: true
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
       # off = the DailySummaryJob bean does not exist

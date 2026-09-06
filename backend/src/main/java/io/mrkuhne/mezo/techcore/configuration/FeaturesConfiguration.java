@@ -7,6 +7,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FeaturesConfiguration {
 
+    /**
+     * Spring's scheduling INFRASTRUCTURE ({@code @EnableScheduling}) — one level above the
+     * per-job {@code mezo.techcore.cron.*} switches: those gate whether a job BEAN exists, this
+     * gates whether a scheduler thread exists to fire it. True in production; false in the test
+     * profile, where a real tick racing {@code ResetDatabase}'s TRUNCATE deadlocks Postgres
+     * (mezo-peh4 / mezo-v73w).
+     */
+    public static final String SCHEDULING_SWITCH = "mezo.techcore.scheduling.enabled";
+
     /** Gamified progression (post-workout level-up + XP). First production feature switch. */
     public static final String PROGRESSION_SWITCH = "mezo.feature.progression.enabled";
 
