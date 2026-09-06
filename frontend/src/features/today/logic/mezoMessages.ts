@@ -35,6 +35,11 @@ export interface MezoMessageItem {
   /** Advice-card suggestions — rendered as the card's action-less bullet list until S5 turns the
    *  actionable ones into buttons. */
   suggestions?: string[]
+  /** The SEVERITY key the card came from (mezo-6269.2) — a flag key, a setup-check key, or a
+   *  once-ever QUESTION key (round 2 S5, mezo-d58h.7.5). Feed advice rows only. Carried through
+   *  because a question card is an advice row that must NOT be labelled „Segített?" — the 👍/👎
+   *  on it IS the answer (mezo-d58h.7.6); see {@link isQuestionCard}. */
+  flagKey?: string
   /** Advice-card action buttons (S5, mezo-d58h.5) — rendering is a later task; carried through
    *  here so it reaches the thread item. Feed advice rows only; demo/nudge items never have it. */
   actions?: FeedAction[]
@@ -69,6 +74,7 @@ export function feedToMessageItem(m: FeedMessage): MezoMessageItem {
     id: m.kind,
     artifactId: m.id,
     kind: m.kind,
+    flagKey: m.flagKey,
     eyebrow: m.eyebrow,
     time: hhmm(m.generatedAt),
     paragraphs: m.body.map((p) => p.text),
@@ -113,4 +119,32 @@ export function partitionMezoThread(messages: MezoMessageItem[]): {
     uzenetek: messages.filter((m) => m.source !== 'eletjel'),
     eletjelek: messages.filter((m) => m.source === 'eletjel'),
   }
+}
+
+/** A once-ever QUESTION card (round 2 S5, `OneTimeQuestionService`) — an `advice` row whose
+ *  severity key is one of the `question_*` keys. It looks like an advice card and is delivered
+ *  by the same machinery, but the 👍/👎 on it is the ANSWER, not a rating of the card, so it must
+ *  never wear the „Segített?" label or open the negative reason row (mezo-d58h.7.6). Prefix match
+ *  on purpose: every future question key starts the same way, and a new one must behave right on
+ *  the day the backend starts asking it, with no frontend change. */
+export function isQuestionCard(m: MezoMessageItem): boolean {
+  return m.kind === 'advice' && (m.flagKey?.startsWith('question_') ?? false)
+}
+
+/** The two answers a question card offers, taken from its own `suggestions` — the backend writes
+ *  them as „👍 — …" / „👎 — …" (`OneTimeQuestionService`), and they belong ON the two chips rather
+ *  than in a bullet list above them: the button should say what tapping it means. Returns
+ *  `undefined` for anything that is not exactly that shape, so the chips fall back to their
+ *  default wording instead of rendering a guess. */
+export function questionAnswers(m: MezoMessageItem): { up: string; down: string } | undefined {
+  const s = m.suggestions
+  if (!isQuestionCard(m) || !s || s.length !== 2) return undefined
+  const up = stripThumb(s[0], '\u{1F44D}')
+  const down = stripThumb(s[1], '\u{1F44E}')
+  return up && down ? { up, down } : undefined
+}
+
+function stripThumb(line: string, thumb: string): string | null {
+  if (!line.startsWith(thumb)) return null
+  return line.slice(thumb.length).replace(/^\s*[—–-]\s*/, '').trim() || null
 }

@@ -28,6 +28,7 @@ on:
 permissions:
   contents: read
   pull-requests: read
+  checks: read        # require-checks.sh reads the head's check runs (mezo-x57b)
 
 concurrency:
   group: premerge-${{ inputs.pr }}
@@ -78,6 +79,20 @@ jobs:
             echo ""
             echo "Merge result \`$(git rev-parse HEAD)\` = PR head \`${head_sha}\` into main \`${main_tip}\`."
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Every ci.yml job must have actually RUN and passed on this head
+        # mezo-x57b: a head with ZERO check runs is displayed exactly like a head where
+        # nothing failed — by the PR page and by `gh pr checks` alike. Two measured
+        # causes: a GITHUB_TOKEN bot push (GitHub deliberately starts no workflow) and,
+        # on PR #504, GitHub simply not creating a run for a MERGEABLE/CLEAN PR. Until
+        # now the only protection was remembering to push an empty commit. This says it
+        # out loud instead. It also catches the partially-run head: PR #512 was merged
+        # on 2026-09-06 while test-frontend and test-backend were still in_progress.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SHA: ${{ env.head_sha }}
+        run: bash .github/scripts/require-checks.sh
 
       - uses: pnpm/action-setup@v4
         with:

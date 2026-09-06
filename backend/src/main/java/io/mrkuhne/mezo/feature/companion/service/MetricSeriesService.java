@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.biometrics.checkin.entity.CheckInEntity;
 import io.mrkuhne.mezo.feature.companion.TodayActivitySource;
 import io.mrkuhne.mezo.feature.companion.TodayQuestSource;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.reflection.service.TextSignalSeriesService;
 import io.mrkuhne.mezo.feature.biometrics.checkin.repository.CheckInRepository;
 import io.mrkuhne.mezo.feature.biometrics.sleep.entity.SleepLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
@@ -88,6 +89,10 @@ public class MetricSeriesService {
     // (TodayActivitySource/TodayQuestSource minta), különben szelet-ciklus zárulna.
     private final ObjectProvider<TodayActivitySource> todayActivitySource;
     private final ObjectProvider<TodayQuestSource> todayQuestSource;
+    // Reflexió (mezo-eq85.1): the TEXT_* series live behind the reflection switch, so the bean can
+    // legitimately be absent. ObjectProvider (the TodayActivitySource idiom) keeps this service
+    // constructible either way — switch off ⇒ the four metrics report no data, honestly.
+    private final ObjectProvider<TextSignalSeriesService> textSignalSeriesService;
 
     /**
      * The metric's per-day values inside {@code [from, to]} (inclusive). Reads traverse LAZY
@@ -133,7 +138,24 @@ public class MetricSeriesService {
             case SHOULDER_STRAIN -> shoulderStrain(userId, from, to);
             case WEIGHT_TREND_PCT_WK -> weightTrendPctWk(userId, from, to);
             case COMBINED_LOAD_MIN -> combinedLoad(userId, from, to);
+            case TEXT_MOOD -> textSignal(TextSignalSeriesService.Field.MOOD, userId, from, to);
+            case TEXT_ENERGY -> textSignal(TextSignalSeriesService.Field.ENERGY, userId, from, to);
+            case TEXT_STRESS -> textSignal(TextSignalSeriesService.Field.STRESS, userId, from, to);
+            case TEXT_SOCIAL_CONTACT -> textSocialContact(userId, from, to);
         };
+    }
+
+    /** Reflexió S1: the mean of a day's `sure` text signals — empty when the switch is off. */
+    private Map<LocalDate, Double> textSignal(TextSignalSeriesService.Field field, UUID userId,
+                                              LocalDate from, LocalDate to) {
+        TextSignalSeriesService service = textSignalSeriesService.getIfAvailable();
+        return service == null ? Map.of() : service.numeric(userId, field, from, to);
+    }
+
+    /** Reflexió S1: was anyone named in the day's text — empty when the switch is off. */
+    private Map<LocalDate, Double> textSocialContact(UUID userId, LocalDate from, LocalDate to) {
+        TextSignalSeriesService service = textSignalSeriesService.getIfAvailable();
+        return service == null ? Map.of() : service.socialContact(userId, from, to);
     }
 
     private interface SleepValue {

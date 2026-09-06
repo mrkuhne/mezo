@@ -28,6 +28,6 @@ describe('ProfileNodeCard', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Archivál' }))
 
     expect(onArchive).toHaveBeenCalledOnce()
-    expect(screen.getByText(/következő heti/i)).toBeInTheDocument()
+    expect(screen.getByText(/Ez tartós — csak te hozhatod vissza/)).toBeInTheDocument()
   })
 })

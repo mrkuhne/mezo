@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { buildMezoMessages, partitionMezoThread, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
+import { buildMezoMessages, feedToMessageItem, isQuestionCard, partitionMezoThread, questionAnswers, type MezoMessageItem } from '@/features/today/logic/mezoMessages'
 import type { Briefing, FeedMessage } from '@/data/types'
 
 const demoBriefing: Briefing = {
@@ -213,3 +213,48 @@ describe('partitionMezoThread (mezo-ho9k)', () => {
     expect(eletjelek.map((m) => m.id)).toEqual([nudgeItem.id, 'nudge-mozgas-x'])
   })
 })
+
+// Round 2 S6 follow-up (mezo-d58h.7.6): the severity key has to survive the feed → thread-item
+// mapping, or the card cannot tell the sheet it is a QUESTION rather than a piece of advice.
+describe('question cards (mezo-d58h.7.6)', () => {
+  const question = (over: Partial<MezoMessageItem> = {}): MezoMessageItem => ({
+    id: 'advice', kind: 'advice', flagKey: 'question_feature_abandonment',
+    eyebrow: 'Mezo · kérdés', time: '15:00', paragraphs: ['…'], refs: [], meta: null,
+    suggestions: ['\u{1F44D} — tudatosan tettem félre', '\u{1F44E} — csak kikopott'],
+    ...over,
+  })
+
+  test('feedToMessageItem carries the flagKey through', () => {
+    const item = feedToMessageItem({
+      id: 'fm-1', kind: 'advice', eyebrow: 'Mezo · kérdés',
+      body: [{ type: 'p', text: '…' }], refs: [], flagKey: 'question_flat_feedback',
+      generatedAt: '2026-05-22T15:00:00',
+    } as never)
+    expect(item.flagKey).toBe('question_flat_feedback')
+    expect(isQuestionCard(item)).toBe(true)
+  })
+
+  test('a flag-sourced advice card is not a question card', () => {
+    expect(isQuestionCard(question({ flagKey: 'sleep_debt' }))).toBe(false)
+  })
+
+  test('a non-advice row is never a question card, whatever its key', () => {
+    expect(isQuestionCard(question({ kind: 'morning' }))).toBe(false)
+  })
+
+  test('questionAnswers strips the thumb prefix off the two suggestions', () => {
+    expect(questionAnswers(question())).toEqual({
+      up: 'tudatosan tettem félre', down: 'csak kikopott',
+    })
+  })
+
+  test('questionAnswers falls back to undefined on any other suggestion shape', () => {
+    // Not two lines, no thumbs, or empty after the prefix — the chips must keep their own
+    // default wording rather than render a guess.
+    expect(questionAnswers(question({ suggestions: ['\u{1F44D} — csak egy'] }))).toBeUndefined()
+    expect(questionAnswers(question({ suggestions: ['igen', 'nem'] }))).toBeUndefined()
+    expect(questionAnswers(question({ suggestions: ['\u{1F44D} — ', '\u{1F44E} — nem'] }))).toBeUndefined()
+    expect(questionAnswers(question({ suggestions: undefined }))).toBeUndefined()
+  })
+})
+

@@ -185,3 +185,39 @@ test('mezo-z4h4: the up/down chips render the thumb-up/thumb-down icons, not emo
   expect(up.textContent).not.toMatch(/👍/)
   expect(down.textContent).not.toMatch(/👎/)
 })
+
+// Round 2 S6 follow-up (mezo-d58h.7.6): ANSWER mode — on a once-ever question card the chips
+// carry the question's own two answers and a thumb-down IS the answer, so it records straight
+// away instead of opening the reason row (those reasons complain about a card, not answer it).
+const ANSWERS = { up: 'tudatosan tettem félre', down: 'csak kikopott' }
+
+test('answer mode puts the question\'s own wording on the two chips', () => {
+  render(<FeedbackChips value={undefined} onVote={() => {}} label="a kérdésre" answers={ANSWERS} />)
+  expect(screen.getByRole('button', { name: /tudatosan tettem félre/ })).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /csak kikopott/ })).toBeInTheDocument()
+  expect(screen.queryByRole('button', { name: /Segített/ })).not.toBeInTheDocument()
+})
+
+test('answer mode votes down immediately and never shows the reason row', () => {
+  const vote = vi.fn()
+  render(<FeedbackChips value={undefined} onVote={vote} label="a kérdésre" answers={ANSWERS} />)
+
+  fireEvent.click(screen.getByRole('button', { name: /csak kikopott/ }))
+
+  expect(vote).toHaveBeenCalledWith('down')
+  expect(screen.queryByRole('button', { name: 'pontatlan' })).not.toBeInTheDocument()
+})
+
+test('answer mode keeps the reason row hidden even on a stored down verdict', () => {
+  render(
+    <FeedbackChips
+      value={{ verdict: 'down', reason: 'inaccurate' } as never}
+      onVote={() => {}}
+      label="a kérdésre"
+      answers={ANSWERS}
+    />,
+  )
+  expect(screen.getByRole('button', { name: /csak kikopott/ })).toHaveAttribute('aria-pressed', 'true')
+  expect(screen.queryByRole('button', { name: 'pontatlan' })).not.toBeInTheDocument()
+})
+

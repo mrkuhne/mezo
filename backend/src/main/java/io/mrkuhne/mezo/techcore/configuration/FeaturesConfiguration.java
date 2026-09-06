@@ -7,6 +7,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class FeaturesConfiguration {
 
+    /**
+     * Spring's scheduling INFRASTRUCTURE ({@code @EnableScheduling}) — one level above the
+     * per-job {@code mezo.techcore.cron.*} switches: those gate whether a job BEAN exists, this
+     * gates whether a scheduler thread exists to fire it. True in production; false in the test
+     * profile, where a real tick racing {@code ResetDatabase}'s TRUNCATE deadlocks Postgres
+     * (mezo-peh4 / mezo-v73w).
+     */
+    public static final String SCHEDULING_SWITCH = "mezo.techcore.scheduling.enabled";
+
     /** Gamified progression (post-workout level-up + XP). First production feature switch. */
     public static final String PROGRESSION_SWITCH = "mezo.feature.progression.enabled";
 
@@ -59,6 +68,14 @@ public class FeaturesConfiguration {
 
     /** V3.2 weekly hypothesis pipeline — techcore cron zone. */
     public static final String HYPOTHESIS_JOB_SWITCH = "mezo.techcore.cron.hypothesis-job.enabled";
+
+    /** Reflexió (bd mezo-eq85) — sub-switch of companion; off ⇒ no text-signal extraction, no
+     *  TEXT_* series data, none of the epic's later beans exist. */
+    public static final String REFLECTION_SWITCH = "mezo.companion.reflection.enabled";
+
+    /** Reflexió nightly pass (bd mezo-eq85, schedule: mezo.companion.reflection.cron) — techcore
+     *  cron zone; off ⇒ the ReflectionJob bean does not exist (the services stay callable). */
+    public static final String REFLECTION_JOB_SWITCH = "mezo.techcore.cron.reflection-job.enabled";
 
     /** Fuel P6 pantry import (OpenFoodFacts lookup + import endpoints). Gates OffClient + PantryImportController. */
     public static final String PANTRY_IMPORT_SWITCH = "mezo.feature.pantry-import.enabled";

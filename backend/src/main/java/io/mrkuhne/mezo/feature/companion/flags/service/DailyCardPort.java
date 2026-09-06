@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.flags.service;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.UUID;
@@ -14,10 +15,14 @@ import java.util.UUID;
 public interface DailyCardPort {
 
     /**
-     * @param adviceKey the card's SEVERITY key — a {@link FlagKey} for a flag-sourced card, or a
-     *                  setup-check key for a setup-sourced one, which matches none of the 13.
+     * @param adviceKey  the card's SEVERITY key — a {@link FlagKey} for a flag-sourced card, or a
+     *                   setup-check key for a setup-sourced one, which matches none of the flags.
+     * @param deliveredAt when the card was written, i.e. the instant the ranking actually chose it.
+     *                   The observer needs it to answer "was this rule's state PART of that
+     *                   decision" — a trace row written after this instant says nothing about the
+     *                   card, in either direction (bd mezo-y43v).
      */
-    record DeliveredCard(UUID cardId, String adviceKey) {
+    record DeliveredCard(UUID cardId, String adviceKey, Instant deliveredAt) {
     }
 
     /** The live {@code advice} card for that day, if one was delivered. */

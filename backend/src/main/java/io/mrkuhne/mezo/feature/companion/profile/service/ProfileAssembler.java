@@ -7,6 +7,7 @@ import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupEntity;
 import io.mrkuhne.mezo.feature.companion.feedback.entity.FeedbackRollupStatsEnvelope;
 import io.mrkuhne.mezo.feature.companion.feedback.repository.FeedbackRollupRepository;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
+import io.mrkuhne.mezo.feature.companion.graph.service.GraphPromotionService;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphService;
 import io.mrkuhne.mezo.feature.companion.profile.config.ProfileProperties;
 import io.mrkuhne.mezo.feature.companion.profile.entity.ProfileMetaEnvelope;
@@ -151,11 +152,15 @@ public class ProfileAssembler {
                 new ProfileMetaEnvelope(Instant.now().truncatedTo(ChronoUnit.MICROS),
                         signals, decisions.size(), nodes.size()).toMeta());
         // upsertNode deliberately does not touch status (W2.2 owns its own status rules); the
-        // weekly run is exactly the "reset what you think of me" recovery path spec §8.3 promises,
-        // so an archived profile comes back ACTIVE here.
-        if (!GraphNodeEntity.STATUS_ACTIVE.equals(node.getStatus())) {
-            node.setStatus(GraphNodeEntity.STATUS_ACTIVE);
-        }
+        // weekly run is exactly the "reset what you think of me" recovery path spec §8.3
+        // promises, so a MACHINE-archived profile comes back ACTIVE here. Routed through the
+        // shared choke point (mezo-06o0.5, code review finding) rather than a bare
+        // node.setStatus(ACTIVE): the profile singleton is a fifth writer of this node's status,
+        // and GraphPromotionService.raiseStatus is the one place that knows a user-archived node
+        // (GraphService.archive's userArchivedAt marker) must NOT be raised back to active — a
+        // bare set here would have silently un-done a hand-archive of "Rólad tanultam" on every
+        // Monday 03:45 run, exactly the bug this branch exists to fix.
+        GraphPromotionService.raiseStatus(node, GraphNodeEntity.STATUS_ACTIVE);
         return Optional.of(node.getId());
     }
 
