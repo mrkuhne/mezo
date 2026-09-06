@@ -150,7 +150,14 @@ export function RutinHubPage() {
           )}
           <Toggle on={chain.isActive} onToggle={() => updateChain(chain.id, { isActive: !chain.isActive })}
             ariaLabel={`${chain.title} aktív`} disabled={pending} />
-          <button type="button" className="chip" aria-label={`${chain.title} szerkesztése`} onClick={() => setChainSheet({ chain })}>
+          {/* The chain's own page (mezo-vxd8): rename, daypart, order — and the stacking
+              drawn. ChainEditSheet stays create-only (the „＋ Új lánc" row below). */}
+          <button
+            type="button"
+            className="chip"
+            aria-label={`${chain.title} lánc-oldala`}
+            onClick={() => navigate(`/me/rutin/lanc/${encodeURIComponent(chain.chainKey)}`)}
+          >
             <span aria-hidden="true">✎</span>
           </button>
         </div>

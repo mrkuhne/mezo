@@ -105,6 +105,8 @@ const SCREENS: Array<[string, string, string?]> = [
   // mezo-bk26: the recipe editor split onto its own page (choice board option B) — a new
   // visual surface the details page's shot cannot see.
   ['me-rutin-szokas-szerkesztes', '/me/rutin/szokas/daily_intention/szerkesztes'],
+  // mezo-vxd8: one chain's own page — the stacking rope is a new visual surface.
+  ['me-rutin-lanc', '/me/rutin/lanc/MORNING'],
   ['me-growth', '/me/growth'],
   // mezo-iizd.12: a Growth skill-sorok goalchipje (aktív cél pillére → skill) saját felület,
   // amit a /me/growth hub shotja nem lát — a chip enélkül pixel-szinten őrizetlen maradna.

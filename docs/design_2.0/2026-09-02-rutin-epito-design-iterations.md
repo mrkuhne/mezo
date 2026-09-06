@@ -176,3 +176,12 @@ A wizard lett minden új szokás egyetlen ajtaja (`rutin-formalodas.html` `pg-wi
    beleillik) összege adja a szűk 6–14 sávot; a legmagasabb fokozatú faktorra „vedd kisebbre"
    tanács jön — tanácsban él, nem az aritmetikában, és sosem blokkol. A faktorok nem
    tárolódnak; konverziónál az érintetlen rács a tárolt XP-t viszi tovább.
+
+## 2026-09-07 — a lánc-oldal és a kirajzolt stacking (mezo-vxd8, S4)
+
+Új oldal: `/me/rutin/lanc/{chainKey}` (`pg-lanc`). A lánc-szerkesztés (átnevezés, napszak,
+sorrend, szüneteltetés, törlés) a sheetből saját oldalra költözött; a `ChainEditSheet` csak
+létrehozásra maradt. A lényeg a stacking: a függőleges kötél a lánc SORRENDJE, a soronkénti
+jelvény a VALÓDI horgony — ahol a kettő nem ugyanazt mondja (nem az előzőhöz, vagy másik
+lánc szokásához kötve), a kötél szaggatott, szerkesztő módban magyarázó kártyával. A csomópont
+read-only állapot-pötty — a pipálás otthona a /nap/rutin marad (Daniel S2-válasza).
