@@ -68,9 +68,18 @@ Consequences, each of which has already burned us:
 
 The frontend has a **self-baselined visual harness** at `frontend/tests/visual/` (`visual.spec.ts` +
 `playwright.config.ts`) — **14 key screens × 2 themes = 28 `toHaveScreenshot` goldens**. It boots the
-app in **mock mode** on a dedicated port (4318, no backend needed) so the seeds are static, and
+app in **mock mode** on a **per-worktree port** (no backend needed) so the seeds are static, and
 pixel-compares each screen against a committed golden. This is a fast, JVM-less gate (unlike the
 backend suite above) — it runs fine locally.
+
+> **The port is derived from the worktree path** (`43000 + sha1(worktree) % 1000`; override with
+> `VISUAL_PORT`), and `reuseExistingServer` is **off**. It used to be a hardcoded `4318` with reuse
+> **on**, which meant a vite dev server left running by *another* worktree or agent session was
+> adopted in silence — Playwright then screenshotted the other tree's UI with no warning. Measured
+> with a foreign server on the port: **93% of pixels differed**, and in the `--update-snapshots`
+> direction that foreign UI would have been written straight into the goldens. It bit twice in the
+> mezo-iizd.9 round (mezo-sdbm). With the fix, an occupied port now fails loudly:
+> `Error: http://localhost:43338 is already used…`. Starting our own server costs ~2s.
 
 **Two-platform golden model.** Playwright names goldens per-platform, and darwin vs linux font
 rendering differs by a few sub-pixels, so the harness commits **both** sets under
