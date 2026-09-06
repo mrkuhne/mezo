@@ -11,7 +11,7 @@ import { Mosaic, MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip, 
 import { EntranceGroup, useCountUp } from '@/shared/ui/mozaik/motion'
 import { useCoachingTrace } from '@/data/hooks'
 import { VerdictArc } from '@/features/insights/components/VerdictArc'
-import { STATE_LABEL, WINNER_LABEL, splitOf, winnerRuleOf } from '@/features/insights/logic/coachingCopy'
+import { STATE_LABEL, splitOf, winnerRuleOf } from '@/features/insights/logic/coachingCopy'
 
 export function CoachingHubPage() {
   const navigate = useNavigate()
@@ -78,10 +78,11 @@ export function CoachingHubPage() {
               onClick={() => navigate('/mezo/coaching/megfigyelo')} />
             <Tile wash="gold" icon="i-level" eyebrow="A napi kártya" delayMs={200} wide
               aria-label="A napi kártya"
-              // The propcard above already spells out the winner's name in full — repeating
-              // that exact string here would just be noise (and an ambiguous a11y match), so
-              // the tile previews the OUTCOME instead of restating the label.
-              line={winner != null ? WINNER_LABEL : undefined}
+              // The propcard above spells out the winner's name and shows a "Nyertes" chip;
+              // the tile line restores specificity by phrasing it as a sentence (which rule
+              // decided the day) rather than a bare label. This keeps the tile informative
+              // without duplicating the exact text the poster's chip already shows.
+              line={winner != null ? `${winner.label} nyerte a napot` : undefined}
               onClick={() => navigate('/mezo/coaching/kartya')} />
           </Mosaic>
         </EntranceGroup>

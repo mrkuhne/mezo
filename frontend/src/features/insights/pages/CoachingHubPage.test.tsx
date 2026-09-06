@@ -18,7 +18,9 @@ describe('CoachingHubPage (mock mode)', () => {
     renderPage()
     expect(screen.getByText('Proaktív coaching')).toBeInTheDocument()
     // The winner is named from day.winner — the demo day's rank-2 rule.
+    // The propcard above shows it as a bare label; the tile line restores specificity.
     expect(await screen.findByText('Terhelés–táplálás')).toBeInTheDocument()
+    expect(screen.getByText('Terhelés–táplálás nyerte a napot')).toBeInTheDocument()
     expect(screen.getByText('2/14')).toBeInTheDocument()
     // The split, as cells: 2 jelzett + 1 pihenőn + 8 rendben + 3 nem mérhető in the demo day.
     expect(screen.getByText('Jelzett')).toBeInTheDocument()
