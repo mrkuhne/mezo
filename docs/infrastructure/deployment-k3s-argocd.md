@@ -14,7 +14,7 @@ troubleshooting, and recovery, see the **[operational runbook](runbook.md)**.
                             │  (443/80, mezo.<domain>)
                             ▼
               ┌─────────────────────────────────┐
-              │  Hetzner VPS (CX32, ~8GB, Ubuntu │
+              │  Hetzner VPS (CX33, ~8GB, Ubuntu │
               │  24.04)  —  k3s single node       │
               │                                   │
               │  Traefik ingress (bundled in k3s) │
@@ -25,10 +25,14 @@ troubleshooting, and recovery, see the **[operational runbook](runbook.md)**.
               │   ├ frontend  Deployment + Service (nginx, static build)
               │   ├ backend   Deployment + Service (Spring Boot :8090, profile=demodata)
               │   ├ postgres  StatefulSet + PVC + Secret (local-path storage)
+              │   ├ postgres-exporter  Deployment + Service (Postgres metrics for Grafana)
               │   └ pgadmin   Deployment + Service  ← PRIVATE (no ingress)
               │                                   │
               │  namespace: argocd                │
               │   └ ArgoCD  → watches git repo k8s/ dir (GitOps)
+              │                                   │
+              │  namespace: monitoring — VictoriaMetrics k8s-stack (vmsingle, vmagent,
+              │   vlsingle, vlagent, vmalert, alertmanager, grafana) ← Tailscale only
               └─────────────────────────────────┘
                             ▲
               Tailscale / kubectl port-forward (admin: pgAdmin, ArgoCD UI)
@@ -43,22 +47,31 @@ troubleshooting, and recovery, see the **[operational runbook](runbook.md)**.
 | **frontend** | `Deployment` + `Service` | `pnpm build` output served by nginx. Image in GHCR. REAL mode (targets `/api`). |
 | **backend** | `Deployment` + `Service` | Spring Boot, container on :8090. Profile `demodata` (owner seed). Env/secrets from `Secret`/`ConfigMap`. Image in GHCR. |
 | **postgres** | `StatefulSet` + `PVC` + `Secret` | Postgres 16 — image `pgvector/pgvector:pg16` since 2026-07-03 (companion V2.1 vector layer; same PG16 major, data kept on the PVC). `local-path` PVC for data. Credentials in a `Secret`. Not exposed outside the cluster. |
-| **pgAdmin** | `Deployment` + `Service` | DB GUI. **No Ingress** — reach via `kubectl port-forward` or Tailscale only. |
+| **pgAdmin** | `Deployment` + `Service` | DB GUI. Private: reachable only over the Tailscale ingress (`k8s/pgadmin/ingress-tailscale.yaml`). |
 | **DB backup** | `CronJob` + `PVC` | Nightly `pg_dump -Fc` → `postgres-backup` PVC (14-day rotation) + daily offsite pull to the admin Mac (`scripts/backup-live-db.sh`, launchd). [ADR 0009](../decisions/0009-postgres-backup-cronjob-plus-mac-pull.md), runbook §6. |
 | **ArgoCD** | install + `Application` | GitOps controller in `argocd` namespace; `Application` points at the repo's `k8s/` directory. |
+| **Observability** | Helm release via `argocd/monitoring-application.yaml` + `k8s/monitoring/` | VictoriaMetrics + VictoriaLogs + Grafana (tailnet), Alertmanager → Telegram. [ADR 0037](../decisions/0037-observability-stack-victoriametrics.md). |
 
 ## Repository layout (target)
 
 ```
 k8s/
 ├── namespace.yaml
-├── postgres/        statefulset.yaml, service.yaml, secret.yaml, pvc.yaml
+├── postgres/        statefulset.yaml, service.yaml, secret.yaml, pvc.yaml,
+│                    exporter-deployment.yaml, exporter-service.yaml (postgres_exporter),
+│                    backup-cronjob.yaml, backup-pvc.yaml
 ├── backend/         deployment.yaml, service.yaml, configmap.yaml
 ├── frontend/        deployment.yaml, service.yaml
 ├── ingress.yaml
-└── pgadmin/         deployment.yaml, service.yaml
+├── cert-manager/    clusterissuer.yaml
+├── pgadmin/         deployment.yaml, service.yaml, ingress-tailscale.yaml
+├── monitoring/      namespace.yaml, values.yaml, sealedsecret-*.yaml, vmservicescrape-*.yaml,
+│                    vmpodscrape-traefik.yaml, vmrule-*.yaml, vmalert-logs.yaml,
+│                    grafana-dashboard-mezo.yaml, ingress-tailscale-grafana.yaml
+└── **/sealedsecret*.yaml   (per-namespace, RSA-encrypted, committed)
 argocd/
-└── application.yaml   # ArgoCD Application pointing at k8s/
+├── application.yaml              # ArgoCD Application pointing at k8s/
+└── monitoring-application.yaml   # second Application: the VictoriaMetrics k8s-stack Helm release
 ```
 
 ## Security baseline (mandatory)
@@ -105,7 +118,8 @@ Tip: steps 1–3 can be rehearsed locally on **k3d/minikube** with zero VPS cost
 | Tailscale (private admin) | server `mezo-k3s` = `100.75.51.113`; admin Mac = `100.68.26.113` |
 | k3s | `v1.35.5+k3s1` (Traefik ingress + local-path storage bundled) |
 | Public URL | `https://46.225.112.172.sslip.io/` (Let's Encrypt via cert-manager) |
-| Images | `ghcr.io/mrkuhne/mezo-backend:0.0.1`, `ghcr.io/mrkuhne/mezo-frontend:0.0.1` (private; pulled with `ghcr-pull` secret) |
+| Images | `ghcr.io/mrkuhne/mezo-backend`, `ghcr.io/mrkuhne/mezo-frontend` (private; pulled with `ghcr-pull` secret) — tags live in `k8s/*/deployment.yaml`, bumped by the release pipeline on every deploy |
+| Grafana (private) | `https://grafana.tail8ce56d.ts.net` |
 | Owner login | `owner@mezo.local` / `MEZO_OWNER_PASSWORD` (demodata seed; entered through the app's own login screen — no longer baked into the frontend build, since `mezo-qw37` S1) |
 | Backend timezone | `TZ=Europe/Budapest` on the backend Deployment env (`k8s/backend/deployment.yaml:34`) — pins the JVM default zone so business-date columns (`level_up_event.occurred_on`, gamification streak/coin rollover) and every `@Scheduled` cron run on Budapest wall-clock, not the eclipse-temurin UTC default. Without it, a 00:00–02:00 log lands on the previous business date (mezo-k0t2) and the crons fire 1–2 h off their intended local time. Matches `k8s/postgres/backup-cronjob.yaml`'s `timeZone`. **Now also load-bearing for push-notification timing** ([`_platform-notifications.md`](../features/_platform-notifications.md) §8) — mezo has no per-user `Profile.timezone`, so the (not-yet-built, N2) per-minute notification dispatcher will resolve every anchor (gym start, sleep wind-down, Napzárás window, check-ins) off this same server zone; changing or unsetting `TZ` would silently shift every notification's send time, not just date bucketing. |
 | Secrets (NOT in git) | `mezo-db` (DB creds), `mezo-app` (JWT + owner), `ghcr-pull` (registry), `mezo-tls` (cert, cert-manager-managed). Planned: `GEMINI_API_KEY` joins `mezo-app` + the backend Deployment env when the Phase-3 companion first deploys (ADR 0008) — until then the backend boots on its dummy-key default. **Same pattern for push notifications:** `VAPID_PUBLIC`/`VAPID_PRIVATE` (the Web Push VAPID keypair — [`_platform-notifications.md`](../features/_platform-notifications.md), [ADR 0014](../decisions/0014-own-webpush-implementation.md)) join the existing `mezo-app` SealedSecret + the backend Deployment env once a real keypair is generated; until then the backend boots on `application.yml`'s `dummy-vapid-public`/`dummy-vapid-private` defaults, which now **fail loudly** on the first real send (`VapidSigner.decodePrivateKey` rejects a malformed scalar) rather than silently minting a well-formed-but-useless token. **DONE 2026-07-29** (`mezo-7kr3`): a real P-256 pair is sealed into `mezo-app` and wired into the backend env; the public half is also the `VITE_VAPID_PUBLIC` repo variable (see the gotcha below). |
@@ -151,7 +165,7 @@ Still TODO: HTTP→HTTPS redirect (optional).
 ## CI/CD pipeline (`git push` → live)
 
 A `git push` to `main` now builds, tags, and rolls out the changed component automatically —
-no manual `docker buildx` / tag bookkeeping. **Tests are intentionally NOT run in CI** (mezo-oa3):
+no manual `docker buildx` / tag bookkeeping. **Tests are intentionally NOT run in `deploy.yml`** (mezo-oa3):
 the suite is a **local pre-push gate** (see CLAUDE.md "Session Completion"), so the deploy path goes
 straight to build → push → release for speed. The build half lives in
 **`.github/workflows/deploy.yml`** (GitHub Actions); the deploy half is the **unchanged** ArgoCD
@@ -192,7 +206,10 @@ runs on every push to `main` and on PRs, parallel to `deploy.yml` and **not bloc
 `node scripts/lint-liquibase.mjs` — migration filename/constraint-prefix/seed-SQL rules),
 `contract-drift` (regenerates the OpenAPI fragment merge + FE `api.gen.ts` and fails on
 `git diff` vs the committed artifacts), `test-frontend` (vitest in real AND mock mode) and
-`test-backend` (full IT suite on Testcontainers Postgres). Rationale and the phased plan
+`test-backend` (full IT suite on Testcontainers Postgres). A fifth job, `lint-k8s`
+(mezo-ibxy), schema-checks the plain manifests under `k8s/`/`argocd/` with kubeconform
+0.8.0 and helm-templates the monitoring chart against `k8s/monitoring/values.yaml`.
+Rationale and the phased plan
 (→ ESLint → ArchUnit next) in [ADR 0007](../decisions/0007-machine-enforcement-of-conventions.md).
 
 **Workflow permissions:** `contents: write` (commit + tag back) and `packages: write` (push to
@@ -329,5 +346,6 @@ curl -sk "https://<host>$B" | grep -c '<the expected public key>'   # must print
 
 - Multi-node cluster / real HA.
 - Postgres operator (CloudNativePG) instead of a hand-rolled StatefulSet.
-- Sealed Secrets / SOPS for git-committed secrets.
-- Observability (Prometheus + Grafana), log aggregation. (Backups automation DONE 2026-07-05 — ADR 0009; a CloudNativePG move would supersede it.)
+- ~~Observability~~ — DONE 2026-09-06, ADR 0037.
+
+(Backups automation DONE 2026-07-05 — ADR 0009; a CloudNativePG move would supersede it.)

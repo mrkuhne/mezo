@@ -21,14 +21,15 @@ running **k3s** `v1.35.5+k3s1` (single node, control-plane + workload). k3s bund
 
 | Namespace | What | Notes |
 |---|---|---|
-| `mezo` | the app: `postgres` (StatefulSet, image `pgvector/pgvector:pg16` since 2026-07-03 — companion V2.1), `backend` (Deployment — **Phase-3 companion LIVE since 2026-07-04**: `GEMINI_API_KEY` in the `mezo-app` SealedSecret, nightly crons 02:20/02:40 + Sun 03:00), `frontend` (Deployment), `pgadmin` (Deployment) | the product |
+| `mezo` | the app: `postgres` (StatefulSet, image `pgvector/pgvector:pg16` since 2026-07-03 — companion V2.1), `backend` (Deployment — **Phase-3 companion LIVE since 2026-07-04**: `GEMINI_API_KEY` in the `mezo-app` SealedSecret, nightly crons 02:20/02:40 + Sun 03:00), `frontend` (Deployment), `pgadmin` (Deployment), `postgres-exporter` (Deployment) | the product |
 | `kube-system` | k3s core (Traefik, CoreDNS, metrics-server, local-path) + **sealed-secrets controller** | platform |
 | `cert-manager` | cert-manager (Let's Encrypt certs) | public HTTPS |
 | `argocd` | ArgoCD (GitOps controller + UI) | deploys `k8s/` from git |
 | `tailscale` | Tailscale operator + per-service proxy pods | private admin access |
+| `monitoring` | VictoriaMetrics k8s-stack: vmsingle/vmagent (metrics), vlsingle/vlagent (logs), vmalert + alertmanager (→ Telegram), Grafana | observability, ADR 0037 |
 
 **Images** (private, on GitHub Container Registry, pulled with the `ghcr-pull` secret):
-`ghcr.io/mrkuhne/mezo-backend:0.0.1`, `ghcr.io/mrkuhne/mezo-frontend:0.0.1`.
+`ghcr.io/mrkuhne/mezo-backend`, `ghcr.io/mrkuhne/mezo-frontend` — tags in `k8s/*/deployment.yaml`.
 
 ---
 
@@ -69,6 +70,7 @@ edit k8s/ in git → git push → ArgoCD (auto-sync: prune + selfHeal) → clust
 | mezo app | https://46.225.112.172.sslip.io/ | public |
 | pgAdmin | https://pgadmin.tail8ce56d.ts.net | tailnet only |
 | ArgoCD | https://argocd.tail8ce56d.ts.net | tailnet only |
+| Grafana | https://grafana.tail8ce56d.ts.net | tailnet only |
 
 To use the tailnet URLs from a new device: install Tailscale, log in as `dkmusicscore@gmail.com`.
 
@@ -80,6 +82,7 @@ To use the tailnet URLs from a new device: install Tailscale, log in as `dkmusic
 | pgAdmin UI | `dkmusicscore@gmail.com` | `kubectl get secret pgadmin-auth -n mezo -o jsonpath='{.data.PGADMIN_DEFAULT_PASSWORD}' \| base64 -d` |
 | pgAdmin → DB server "mezo (k8s)" | `mezo` | `kubectl get secret mezo-db -n mezo -o jsonpath='{.data.POSTGRES_PASSWORD}' \| base64 -d` |
 | ArgoCD UI | `admin` | `kubectl get secret argocd-initial-admin-secret -n argocd -o jsonpath='{.data.password}' \| base64 -d` |
+| Grafana | `admin` | `kubectl get secret -n monitoring grafana-admin -o jsonpath='{.data.admin-password}' \| base64 -d` |
 
 (Always `export KUBECONFIG=~/.kube/mezo-k3s.yaml` first.)
 
@@ -149,10 +152,57 @@ fires below 15 % free.
 
 ### Observability (mezo-ibxy)
 
+VictoriaMetrics k8s-stack (`monitoring` namespace, [ADR 0037](../decisions/0037-observability-stack-victoriametrics.md)):
+`vmsingle-vm` (metrics, :8428), `vlsingle-vm` (logs, :9428), `vmagent-vm` (:8429, metrics scrape),
+`vlagent` (log shipping), `vmalert-vm` (:8080, metric rules) + a second VMAlert `logs`
+(LogsQL rules, `k8s/monitoring/vmalert-logs.yaml`), `vmalertmanager-vm` (:9093), `vm-grafana`.
+
 Host-side pieces (NOT in git, re-apply on a rebuild): `/etc/rancher/k3s/config.yaml` kubelet
 GC args (see *Disk & image GC*) and `/var/lib/rancher/k3s/server/manifests/traefik-config.yaml`
 (HelmChartConfig turning on Traefik's Prometheus port 9100; contents in the plan
 `docs/superpowers/plans/2026-09-06-infra-observability.md` Task 6).
+
+**Check scrape targets:**
+```bash
+kubectl port-forward -n monitoring svc/vmagent-vm 8429:8429
+# open http://localhost:8429/targets
+```
+
+**Check alert rules:**
+```bash
+kubectl port-forward -n monitoring svc/vmalert-vm 8080:8080
+curl -s http://localhost:8080/api/v1/rules | jq .
+```
+
+**Query logs (Grafana Explore, datasource "VictoriaLogs (DS)"):** vlagent ships the ECS
+JSON body as `_msg`, so every LogsQL query needs `| unpack_json` before filtering on a JSON
+field, e.g.:
+```
+kubernetes.container_name:backend | unpack_json | filter log.level:ERROR
+```
+
+**Silence an alert (Alertmanager UI):**
+```bash
+kubectl port-forward -n monitoring svc/vmalertmanager-vm 9093:9093
+# open http://localhost:9093 → Silences → New Silence
+```
+
+**Rotate/enable the Telegram token:** `alertmanager-config` currently seals a `blackhole`
+receiver — no alert has ever left the cluster. To wire real delivery: create a bot with
+@BotFather, get the chat id, fill `bot_token`/`chat_id` into a copy of
+`k8s/monitoring/secret.example-alertmanager.yaml`, then
+```bash
+kubectl create secret generic alertmanager-config -n monitoring \
+  --from-file=alertmanager.yaml=<filled-in-file> --dry-run=client -o yaml \
+  | kubeseal --controller-name sealed-secrets-controller --controller-namespace kube-system \
+      --format yaml > k8s/monitoring/sealedsecret-alertmanager.yaml
+git add k8s/monitoring/sealedsecret-alertmanager.yaml && git commit && git push   # ArgoCD applies it
+```
+
+**Memory budget:** `kubectl top pods -n monitoring` — expected ≤ 1.3 GiB total across the stack
+(see the per-component limits in `k8s/monitoring/values.yaml`).
+
+See also *Disk & image GC* above — the `NodeDiskPressure` alert is fed by this stack.
 
 ### Deploy a manifest change (the normal path)
 Edit a file under `k8s/`, then:
@@ -208,6 +258,9 @@ Or directly: `kubectl exec -n mezo postgres-0 -it -- psql -U mezo -d mezo`.
 | ArgoCD shows OutOfSync/Degraded | open ArgoCD UI; `kubectl get application mezo -n argocd -o yaml`; hard-refresh |
 | Sealed secret not applying | `kubectl get sealedsecret -n mezo` (STATUS column); controller logs in kube-system |
 | DB connection errors from backend | `SPRING_DATASOURCE_URL` points to `postgres:5432`; `kubectl exec postgres-0 -- pg_isready` |
+| Telegram alert "BackendDown" | `kubectl get pods -n mezo`; management port probe: `kubectl exec deploy/backend -- wget -qO- localhost:8081/actuator/health` |
+| No data in Grafana | vmagent targets page; `kubectl get vmservicescrape -A`; operator logs `kubectl logs -n monitoring deploy/vm-victoria-metrics-operator` |
+| `monitoring` app OutOfSync on CRDs | must be ServerSideApply (never Replace); hard-refresh the app |
 
 ---
 
@@ -246,7 +299,9 @@ changes again and the warning reappears.
 
 **Rebuild outline:** new VPS → harden + Tailscale (step 0) → k3s (step 1) → install
 sealed-secrets controller + restore its key → cert-manager + ArgoCD + Tailscale operator
-→ apply `argocd/application.yaml` → ArgoCD reconciles everything → restore Postgres dump.
+→ apply `argocd/application.yaml` → apply `argocd/monitoring-application.yaml` →
+re-create host files (kubelet GC, Traefik HelmChartConfig) → ArgoCD reconciles everything →
+restore Postgres dump.
 
 ---
 
