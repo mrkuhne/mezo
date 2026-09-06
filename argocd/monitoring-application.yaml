@@ -1,0 +1,45 @@
+# Second ArgoCD Application (mezo-ibxy): the VictoriaMetrics k8s-stack Helm release.
+# Multi-source: the chart from the VM Helm repo, the values file from THIS repo.
+# Applied once by hand like application.yaml:
+#   kubectl apply -f argocd/monitoring-application.yaml
+# ServerSideApply: the operator CRDs + bundled dashboards exceed the 262144-byte
+# last-applied annotation. Never combine with Replace=true.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring
+  namespace: argocd
+spec:
+  project: default
+  sources:
+    - repoURL: https://victoriametrics.github.io/helm-charts/
+      chart: victoria-metrics-k8s-stack
+      targetRevision: 0.91.2
+      helm:
+        releaseName: vm
+        valueFiles:
+          - $values/k8s/monitoring/values.yaml
+    - repoURL: https://github.com/mrkuhne/mezo
+      targetRevision: main
+      ref: values
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+      - RespectIgnoreDifferences=true
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jqPathExpressions:
+        - .webhooks[].clientConfig.caBundle
+    - group: ""
+      kind: Secret
+      name: vm-victoria-metrics-operator-validation
+      jsonPointers:
+        - /data

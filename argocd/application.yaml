@@ -17,7 +17,7 @@ spec:
     directory:
       recurse: true
       # Never sync the secret templates — real secrets live only in the cluster.
-      exclude: "**/secret.example.yaml"
+      exclude: "{**/secret.example.yaml,**/secret.example-*.yaml}"
   destination:
     server: https://kubernetes.default.svc
     namespace: mezo
