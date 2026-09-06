@@ -67,4 +67,43 @@ out2="$tmp/o2"; GITHUB_OUTPUT="$out2" bash "$DIR/compute-release.sh" >/dev/null 
 assert_eq "$(sed -n 's/^backend_changed=//p' "$out2")" "true" \
   "run 2 still builds M2's backend change (it was never in an image)"
 
+# ── mezo-hocr: a second deploy lands its manifest bump while this one is running ──────
+# The release job commits the k8s image-tag bump and then had to reconcile with main. If a
+# PARALLEL deploy already pushed its own `chore(release): v… [skip ci]` touching the SAME
+# manifest line, a rebase conflicts and the whole release job dies: the image is built and
+# in GHCR, but the manifest never moves, so ArgoCD keeps serving the old version. Observed
+# 2026-09-06 (run 34003265197). The bump is an idempotent read-modify-write, so the correct
+# reconciliation is retry-on-reject against the current main, never a rebase.
+tmp2="$(mktemp -d)"; trap 'rm -rf "${shim:-}" "${tmp:-}" "${tmp2:-}"' EXIT
+git init -q --bare "$tmp2/origin.git"
+git clone -q "$tmp2/origin.git" "$tmp2/work"
+cd "$tmp2/work"
+mkdir -p frontend backend api k8s/frontend k8s/backend
+echo 1 > frontend/app.txt; echo 1 > backend/app.txt; echo 1 > api/spec.txt
+echo "image: ghcr.io/mrkuhne/mezo-frontend:1.0.0" > k8s/frontend/deployment.yaml
+echo "image: ghcr.io/mrkuhne/mezo-backend:1.0.0"  > k8s/backend/deployment.yaml
+git add -A && git commit -qm "chore: seed"
+git tag -a v1.0.0 -m "release v1.0.0"
+git push -q origin main --tags
+
+echo 2 > frontend/app.txt; git commit -aqm "feat: fe change"; git push -q origin main
+BUILT="$(git rev-parse HEAD)"
+
+# A parallel deploy wins the race and pushes ITS bump to the same line first.
+git clone -q "$tmp2/origin.git" "$tmp2/other"
+( cd "$tmp2/other"
+  sed -E 's|(ghcr\.io/mrkuhne/mezo-frontend:).*|\11.0.9|' k8s/frontend/deployment.yaml > t && mv -f t k8s/frontend/deployment.yaml
+  git commit -aqm "chore(release): v1.0.9 [skip ci]" && git push -q origin main )
+
+git checkout -q "$BUILT"
+VERSION=1.1.0 FE=true BE=false BUILT_SHA="$BUILT" bash "$DIR/release-commit.sh" >/dev/null 2>&1
+assert_eq "$?" "0" "release-commit.sh survives a parallel release landing on the same manifest line"
+
+git fetch -q origin 'refs/tags/*:refs/tags/*' --force
+git checkout -q main && git fetch -q origin && git reset -q --hard origin/main
+assert_eq "$(sed -n 's|^image: ghcr.io/mrkuhne/mezo-frontend:||p' k8s/frontend/deployment.yaml)" "1.1.0" \
+  "the manifest on main really carries this run's version (the image is not stranded)"
+assert_eq "$(git rev-parse -q --verify "v1.1.0^{commit}" || echo MISSING)" "$BUILT" \
+  "the tag still points at the BUILT commit, not at the reconciled manifest commit"
+
 exit $fail

@@ -217,6 +217,25 @@ existing `ghcr-pull` secret (unchanged).
 **Caveat:** if `main` ever gains PR-required branch protection, the default `GITHUB_TOKEN`
 commit-back push is rejected — it would then need a PAT / GitHub App token or a protection bypass.
 
+### The manifest bump reconciles by RETRY, never by rebase (mezo-hocr)
+
+Two queued deploys both rewrite the *same* line of `k8s/<comp>/deployment.yaml`. The release
+step used to `git commit` its bump and then `git pull --rebase origin main` — which **conflicts**
+when a parallel deploy has already pushed its own `chore(release): v… [skip ci]`. The job then
+dies with the image already built and pushed to GHCR while the manifest never moves, so **ArgoCD
+keeps serving the old version**. Observed 2026-09-06, run 34003265197 (v2.171.0).
+
+The bump is an idempotent read-modify-write of one line, so the correct reconciliation is
+retry-on-reject: fetch main, re-apply the `sed` on top of it, commit, push; on rejection, repeat
+(five attempts). That always converges; a rebase cannot.
+
+This failure predates the extraction into `release-commit.sh` — the same `git pull --rebase` was
+in the inline YAML. What changed is that it is now **visible**: the script's `ERR` trap printed
+`::error::release-commit.sh aborted (rc=1) at: git pull --rebase origin main`, naming the exact
+command instead of a bare "Process completed with exit code 1" buried under git's rebase hints.
+`release-commit.test.sh` replays the race and asserts all three halves: the script survives, the
+manifest on main really carries this run's version, and the tag still points at the built commit.
+
 ### Concurrency invariant — the tag names what was BUILT, never what main has become (mezo-pl7d)
 
 `concurrency: deploy-main` queues deploys, so a run can finish long after its own merge. That
