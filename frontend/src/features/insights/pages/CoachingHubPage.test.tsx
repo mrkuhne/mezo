@@ -47,9 +47,9 @@ describe('CoachingHubPage (real mode)', () => {
   })
 
   test('a genuinely empty day says so instead of showing a blank', async () => {
-    // No shared default MSW handler exists for this endpoint (coachingTraceHooks.test.tsx's own
-    // "real mode" describe block scopes its handlers per-test the same way) — a genuinely empty
-    // day is the server answering 200 with no rules yet, not an unresolved/erroring fetch.
+    // The shared default handler already answers an empty day for today's date; overriding here
+    // pins a specific (non-today) date so this test's intent — a genuinely empty day is the
+    // server answering 200 with no rules yet, not an unresolved/erroring fetch — is explicit.
     server.use(http.get(`${API_BASE}/api/companion/flags/trace`, () =>
       HttpResponse.json({ date: '2026-09-06', rules: [], transitions: [] })))
     renderPage()
