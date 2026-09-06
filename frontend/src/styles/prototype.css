@@ -5461,18 +5461,14 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .nr-pct { font-size: 10.5px; font-weight: 700; color: #A8801F; flex: none; width: 35px; text-align: right; font-variant-numeric: tabular-nums; }
 
 /* ── Mezo hub (mezo-d20.5.1) — prototype mezo-body.html hub section ×1.18:
-      breathing orb hero (NO number — one companion sentence + quiet status line),
-      composer-shaped chat opener, the motor's single decision card in a gold
-      ring, 6-tile mosaic, and the full-width L0→L3 memory band. ── */
+      breathing orb hero (the SPOT alone since tile-header-layout — no name, no
+      companion sentence, no status line), composer-shaped chat opener, the
+      motor's single decision card in a gold ring, and a mosaic where every tile
+      (Memória included) is the same 2-per-row cell. ── */
 .mzh-hub { display: flex; flex-direction: column; gap: 11px; padding: 6px 0 8px; }
 
-.mzh-orbhero { display: grid; justify-items: center; text-align: center; gap: 2px; padding: 12px 14px 14px; }
+.mzh-orbhero { display: grid; justify-items: center; text-align: center; padding: 10px 14px 4px; }
 .mzh-orbhero svg:first-child { animation: mz-orbbreathe 4.5s ease-in-out infinite; }
-.mzh-nm { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; margin-top: 2px; }
-.mzh-ln { font-size: 12.5px; font-weight: 300; color: var(--text-primary); max-width: 271px;
-  display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-.mzh-lv { font-size: 9.5px; font-weight: 700; color: var(--mz-ink-mut); margin-top: 4px; }
-.mzh-lv b { color: var(--mz-cell-lav-ink); }
 
 .mzh-chatopen { display: flex; align-items: center; gap: 11px; cursor: pointer; width: 100%;
   border-radius: 999px; padding: 11px 11px 11px 19px; font-family: inherit;
@@ -5518,18 +5514,14 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   box-shadow: var(--mz-shadow-sage); font-size: 12px; font-weight: 600; color: var(--mz-cell-sage-ink);
   text-align: left; }
 
-.mzh-membnd { display: flex; align-items: center; gap: 5px; width: 100%; cursor: pointer;
-  border-radius: 20px; padding: 12px 14px; font-family: inherit; color: var(--text-primary);
-  background: var(--mz-wash-lav); border: 0.5px solid rgba(43, 33, 24, 0.06);
-  box-shadow: var(--mz-shadow-lav);
-  transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
-.mzh-membnd:active { transform: scale(0.97); }
-.mzh-lyr { flex: 1; text-align: center; }
-.mzh-lyr b { display: block; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+/* Memória (tile-header-layout): the L0→L3 layers inside a normal mosaic cell — a
+   2×2 grid of counts instead of the old full-width band's single row. */
+.mzh-memlyrs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 8px; width: 100%; margin-top: 4px; }
+.mzh-lyr { text-align: center; }
+.mzh-lyr b { display: block; font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .mzh-lyr small { font-size: 7px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
   color: var(--mz-ink-soft); }
-.mzh-arr { color: var(--mz-ink-mut); font-size: 12px; flex: none; }
-.mzh-membnd-ph { flex: 1; text-align: left; font-size: 12px; font-weight: 600; }
+.mzh-membnd-ph { font-size: 11px; font-weight: 600; margin-top: 4px; }
 
 @media (prefers-reduced-motion: reduce) {
   .mz-play .rise { opacity: 1; transform: none; animation: none; }
@@ -5537,7 +5529,7 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   .nr-str div, .mz-play .nr-str div { animation: none; transform: scaleX(1); transition: none; }
   .nck-fill { transition: none; }
   .mzh-orbhero svg:first-child { animation: none; }
-  .mzh-chatopen, .mzh-membnd { transition: none; }
+  .mzh-chatopen { transition: none; }
 }
 
 /* ── Chat face (mezo-d20.5.2) — prototype mezo-body.html #page-chat, px ×1.18.
@@ -6140,8 +6132,10 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   border: 1.2px dashed var(--mz-chat-refch-bd); }
 .mzp-dgq .qq { font-size: 11px; font-weight: 700; line-height: 1.35; color: var(--mz-ink-soft); }
 .mzp-dgq .qs { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; color: var(--mz-ink-mut); margin-top: 4px; }
-.mzh-t-diag, .mzh-t-karakter, .mzh-t-coaching { grid-column: 1 / -1; align-items: flex-start; text-align: left; }
-.mzo-hubposter { display: flex; align-items: center; gap: 11px; margin-top: 6px; }
+/* tile-header-layout: Diagnózis / Karakter / Proaktív coaching used to span both
+   columns; they are plain 2-per-row cells now, so only their in-cell extras stay. */
+.mzh-diagq { font-size: 12px; font-weight: 700; line-height: 1.3; margin-top: 4px; }
+.mzo-hubposter { display: flex; flex-direction: column; align-items: center; gap: 4px; margin-top: 6px; }
 
 /* ===== Proaktív coaching megfigyelő (mezo-6269.3) — a döntés mint felület.
    Anatómia: rangjelvény + clay ikon + állapotcsip egy sorban, alatta EGY
