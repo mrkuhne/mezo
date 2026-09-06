@@ -72,7 +72,12 @@ public record CompanionProperties(
          * snapshot lists — name, relationship, this week's mention count and mood direction, one
          * line each, never quotes. 0 turns the block off entirely (it is omitted, not "nincs adat").
          */
-        @Min(0) @Max(30) int peopleMaxPersons
+        @Min(0) @Max(30) int peopleMaxPersons,
+        /**
+         * mezo-iizd.10: hány aktív életcél-sort mutat a [Célok] blokk (chat ÉS reggeli variáns).
+         * 0 = a blokk teljesen elmarad (omit, nem "nincs adat").
+         */
+        @Min(0) @Max(10) int lifegoalMaxGoals
     ) {}
 
     /** V1.1 knowledge-fact injection — how much confirmed memory rides in every system prompt. */
@@ -221,7 +226,7 @@ public record CompanionProperties(
     public record Intervention(
         @NotBlank @Pattern(regexp = "[a-z0-9_]{1,27}") String key,
         @NotBlank @Pattern(regexp = "sustained_stress|sleep_debt|momentum_at_risk|recovery_needed|all_healthy|logging_gap|missed_workouts"
-            + "|acute_bad_day|load_fuel_mismatch|rapid_weight_loss|joint_overuse|ignored_nudge|late_eating") String flag,
+            + "|acute_bad_day|load_fuel_mismatch|rapid_weight_loss|joint_overuse|ignored_nudge|late_eating|protocol_lapse") String flag,
         @NotBlank @Pattern(regexp = "feed|push|both") String channel,
         @NotBlank @Size(max = 500) String textHu,
         @Min(1) @Max(8760) int cooldownHours,

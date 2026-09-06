@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.goal.entity.GoalEntity;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.habit.entity.HabitDayEntity;
 import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
+import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.progression.entity.LevelUpResult;
 import io.mrkuhne.mezo.feature.quest.entity.DailyQuestEntity;
@@ -27,6 +28,7 @@ import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.HabitPopulator;
 import io.mrkuhne.mezo.support.populator.IntentionPopulator;
 import io.mrkuhne.mezo.support.populator.LevelUpEventPopulator;
+import io.mrkuhne.mezo.support.populator.LifeGoalPopulator;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.MedicationDosePopulator;
 import io.mrkuhne.mezo.support.populator.MedicationPopulator;
@@ -78,6 +80,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private GrowthTools growthTools;
     @Autowired private PracticeTools practiceTools;
     @Autowired private InsightsTools insightsTools;
+    @Autowired private LifeGoalTools lifeGoalTools;
     @Autowired private QuestPopulator questPopulator;
     @Autowired private HabitPopulator habitPopulator;
     @Autowired private IntentionPopulator intentionPopulator;
@@ -106,6 +109,7 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     @Autowired private LevelUpEventPopulator levelUpEventPopulator;
     @Autowired private GamificationPopulator gamificationPopulator;
     @Autowired private PatternPopulator patternPopulator;
+    @Autowired private LifeGoalPopulator lifeGoalPopulator;
 
     private ToolCallAudit audit;
 
@@ -1022,13 +1026,17 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     void testGetMedication_shouldRenderCyclePhaseAndDoses_whenScopeCycleAndDoseAnchored() {
         UUID owner = userPopulator.createUser().getId();
         MedicationEntity med = medicationPopulator.createMedication(owner);
-        medicationDosePopulator.createDose(owner, med.getId(), LocalDate.now().minusDays(3), new BigDecimal("4"));
+        // seed and render both anchor on MedicationCycleService.MEDICATION_ZONE (mezo-8h2s) — the
+        // only residual race is a midnight flip between this seed and the render call below,
+        // microseconds wide, acceptable.
+        LocalDate seedDay = LocalDate.now(MedicationCycleService.MEDICATION_ZONE).minusDays(3);
+        medicationDosePopulator.createDose(owner, med.getId(), seedDay, new BigDecimal("4"));
 
         String out = medicationTools.getMedication("cycle", ctx(owner));
 
         assertThat(out).startsWith("Gyógyszer-ciklus: Teszt gyógyszer — 4. nap (Stabil)")
-                .contains("utolsó dózis: " + LocalDate.now().minusDays(3) + " (4 mg)")
-                .contains("következő esedékes: " + LocalDate.now().minusDays(3).plusDays(7));
+                .contains("utolsó dózis: " + seedDay + " (4 mg)")
+                .contains("következő esedékes: " + seedDay.plusDays(7));
         assertThat(audit.toRefsEnvelope().refs())
                 .containsExactly(new RefsEnvelope.Ref("Medication", "Teszt gyógyszer"));
     }
@@ -1053,13 +1061,17 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
     void testGetMedication_shouldRenderGeneralOverview_whenScopeAll() {
         UUID owner = userPopulator.createUser().getId();
         MedicationEntity med = medicationPopulator.createMedication(owner);
-        medicationDosePopulator.createDose(owner, med.getId(), LocalDate.now().minusDays(3), new BigDecimal("4"));
+        // seed and render both anchor on MedicationCycleService.MEDICATION_ZONE (mezo-8h2s) — the
+        // only residual race is a midnight flip between this seed and the render call below,
+        // microseconds wide, acceptable.
+        LocalDate seedDay = LocalDate.now(MedicationCycleService.MEDICATION_ZONE).minusDays(3);
+        medicationDosePopulator.createDose(owner, med.getId(), seedDay, new BigDecimal("4"));
 
         String out = medicationTools.getMedication("all", ctx(owner));
 
         assertThat(out).startsWith("Gyógyszer: Teszt gyógyszer (teszthatoanyag) — weekly, 6 mg")
                 .contains("ciklus: 4. nap (Stabil)")
-                .contains("Utolsó dózisok: " + LocalDate.now().minusDays(3) + ": 4 mg");
+                .contains("Utolsó dózisok: " + seedDay + ": 4 mg");
         assertThat(audit.toRefsEnvelope().refs())
                 .containsExactly(new RefsEnvelope.Ref("Medication", "Teszt gyógyszer"));
     }
@@ -1516,5 +1528,22 @@ class CompanionToolsRenderIT extends AbstractIntegrationTest {
         assertThat(insightsTools.getInsights("experiments", ctx(owner)))
                 .isEqualTo("Kísérletek: még nem elérhető");
         assertThat(audit.toRefsEnvelope()).isNull();
+    }
+
+    @Test
+    void testGetLifeGoals_shouldRenderGoalPillarsAndPlans_whenActiveGoalSeeded() {
+        UUID owner = userPopulator.createUser().getId();
+        var goal = lifeGoalPopulator.goal(owner, "active");
+        lifeGoalPopulator.sleepPillar(goal);
+
+        String out = lifeGoalTools.getLifeGoals(ctx(owner));
+
+        assertThat(out).contains("Kockahas").contains("Egészség").contains("Alvás");
+    }
+
+    @Test
+    void testGetLifeGoals_shouldSayNincsAktivEletcel_whenNoGoals() {
+        UUID owner = userPopulator.createUser().getId();
+        assertThat(lifeGoalTools.getLifeGoals(ctx(owner))).isEqualTo("Életcél: nincs aktív életcél");
     }
 }

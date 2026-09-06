@@ -5,7 +5,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagEvaluator;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagOutcome;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
@@ -42,13 +44,26 @@ class FlagEvaluatorJointOveruseIT extends AbstractIntegrationTest {
     }
 
     private List<String> keys(UUID owner) {
-        return evaluator.evaluate(owner).stream().map(FlagRaise::flagKey).toList();
+        return raisedKeys(evaluator.evaluate(owner));
+    }
+
+    /** The keys that actually RAISED — the old evaluate() return, reconstructed. */
+    private static List<String> raisedKeys(List<FlagVerdict> verdicts) {
+        return verdicts.stream()
+            .filter(v -> v.outcome() == FlagOutcome.RAISED)
+            .map(FlagVerdict::flagKey)
+            .toList();
+    }
+
+    private static FlagVerdict verdictFor(List<FlagVerdict> verdicts, String flagKey) {
+        return verdicts.stream().filter(v -> flagKey.equals(v.flagKey())).findFirst().orElseThrow();
     }
 
     private Optional<FlagPayloadEnvelope.JointOveruse> payload(UUID owner) {
         return evaluator.evaluate(owner).stream()
-            .filter(r -> FlagKey.JOINT_OVERUSE.equals(r.flagKey()))
-            .map(r -> r.payload().jointOveruse())
+            .filter(v -> FlagKey.JOINT_OVERUSE.equals(v.flagKey()))
+            .filter(v -> v.outcome() == FlagOutcome.RAISED)
+            .map(v -> v.payload().jointOveruse())
             .findFirst();
     }
 
@@ -187,5 +202,57 @@ class FlagEvaluatorJointOveruseIT extends AbstractIntegrationTest {
         assertThat(p.dataPoints()).isEqualTo(7);
         assertThat(p.tomorrowDate()).isEqualTo(today.plusDays(1).toString());
         assertThat(p.tomorrowMuscle()).isEqualTo("shoulder");
+    }
+
+    @Test
+    void is_unavailable_when_there_is_no_strain_data_in_the_window_at_all() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        plannedTomorrow(owner, today, SHOULDER);
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.JOINT_OVERUSE);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
+        assertThat(verdict.reason()).isEqualTo(UnavailableReason.NO_STRAIN_DATA);
+    }
+
+    @Test
+    void is_clear_when_the_strain_average_sits_just_below_the_threshold() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        strainDays(owner, today, 5, 5, 5, 5, 5, 5, 4);
+        plannedTomorrow(owner, today, SHOULDER);
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.JOINT_OVERUSE);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("shoulder_strain_avg");
+        assertThat(verdict.clear().observed()).isLessThan(verdict.clear().threshold());
+    }
+
+    @Test
+    void is_unavailable_when_nothing_is_planned_for_tomorrow() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        strainDays(owner, today, 8, 8, 8, 8, 8, 8, 8);
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.JOINT_OVERUSE);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
+        assertThat(verdict.reason()).isEqualTo(UnavailableReason.NO_PLANNED_SESSION);
+    }
+
+    @Test
+    void is_clear_when_tomorrow_is_a_leg_day() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        strainDays(owner, today, 8, 8, 8, 8, 8, 8, 8);
+        plannedTomorrow(owner, today, LEG);
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.JOINT_OVERUSE);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("tomorrow_muscle");
+        assertThat(verdict.clear().detail()).isEqualTo("quad");
     }
 }

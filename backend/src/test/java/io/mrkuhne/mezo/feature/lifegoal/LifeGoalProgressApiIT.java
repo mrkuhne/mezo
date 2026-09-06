@@ -19,9 +19,11 @@ import io.mrkuhne.mezo.feature.lifegoal.entity.LifeGoalEntity;
 import io.mrkuhne.mezo.feature.lifegoal.entity.LifeGoalPillarEntity;
 import io.mrkuhne.mezo.feature.lifegoal.entity.PillarRuleJson;
 import io.mrkuhne.mezo.feature.lifegoal.entity.PillarSourceJson;
+import io.mrkuhne.mezo.feature.lifegoal.repository.LifeGoalPillarDayRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.populator.LifeGoalPopulator;
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -37,6 +39,7 @@ class LifeGoalProgressApiIT extends ApiIntegrationTest {
     @Autowired private ActivityLogRepository activityLogRepository;
     @Autowired private GoalRepository goalRepository;
     @Autowired private WeightLogRepository weightLogRepository;
+    @Autowired private LifeGoalPillarDayRepository pillarDayRepository;
 
     private final LocalDate today = LocalDate.now();
     private final LocalDate d0 = today;
@@ -189,5 +192,41 @@ class LifeGoalProgressApiIT extends ApiIntegrationTest {
         LifeGoalEntity goal = lifeGoalPopulator.goal(other.id(), "active");
         getForBody("/api/life-goals/" + goal.getId() + "/progress?from=" + today.minusDays(6) + "&to=" + today,
             ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+    }
+
+    /**
+     * Response-shape gap (mezo-iizd.8): the stored {@code life_goal_pillar_day} row's
+     * {@code computedAt} must be stamped by the evaluate write itself, not left at some earlier
+     * default/zero value.
+     */
+    @Test
+    void testEvaluate_shouldStampComputedAt_whenWritingAPillarDayRow() {
+        UUID owner = ownerId();
+        LifeGoalEntity goal = lifeGoalPopulator.goal(owner, "active");
+        LifeGoalPillarEntity pillar = activityPillar(goal);
+        activity(owner, d1, 40);
+        Instant testStart = Instant.now();
+
+        postForBody("/api/life-goals/" + goal.getId() + "/evaluate", null,
+            ownerAuthHeaders(), HttpStatus.OK, LifeGoalProgressResponse.class);
+
+        assertThat(pillarDayRepository.findByPillarIdAndDayAndDeletedFalse(pillar.getId(), d1))
+            .hasValueSatisfying(row -> {
+                assertThat(row.getComputedAt()).isNotNull();
+                assertThat(row.getComputedAt()).isAfter(testStart);
+            });
+    }
+
+    /** Contract (mezo-iizd.8): from > to → 400 VALIDATION_INVALID_VALUE on field "to". */
+    @Test
+    void testGetProgress_shouldReturn400_whenFromIsAfterTo() {
+        UUID owner = ownerId();
+        LifeGoalEntity goal = lifeGoalPopulator.goal(owner, "active");
+
+        String body = getForBody(
+            "/api/life-goals/" + goal.getId() + "/progress?from=" + today + "&to=" + today.minusDays(1),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+
+        assertHasFieldError(body, "to", "VALIDATION_INVALID_VALUE");
     }
 }

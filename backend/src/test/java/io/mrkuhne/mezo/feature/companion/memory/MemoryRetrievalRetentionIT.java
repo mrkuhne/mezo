@@ -24,7 +24,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.TestPropertySource;
 
-@TestPropertySource(properties = "mezo.feature.companion.enabled=true")
+@TestPropertySource(properties = {
+    "mezo.feature.companion.enabled=true",
+    // mezo-oou9: the shared test profile now disables this cron by default (kill-switch
+    // completeness) — this IT drives the job directly, so it re-enables it on its own context.
+    "mezo.techcore.cron.memory-retrieval-retention-job.enabled=true"
+})
 class MemoryRetrievalRetentionIT extends AbstractIntegrationTest {
 
     @Autowired private MemoryRetrievalRetentionJob job;

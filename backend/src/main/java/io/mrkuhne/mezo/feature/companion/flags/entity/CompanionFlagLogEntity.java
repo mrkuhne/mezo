@@ -39,7 +39,7 @@ public class CompanionFlagLogEntity extends OwnedEntity {
     @NotNull
     @Pattern(regexp = "sustained_stress|sleep_debt|momentum_at_risk|recovery_needed|all_healthy"
         + "|logging_gap|missed_workouts|acute_bad_day|load_fuel_mismatch|rapid_weight_loss"
-        + "|joint_overuse|ignored_nudge|late_eating")
+        + "|joint_overuse|ignored_nudge|late_eating|protocol_lapse")
     @Column(name = "flag_key", nullable = false, length = 24)
     private String flagKey;
 

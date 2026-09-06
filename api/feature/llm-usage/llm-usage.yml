@@ -15,6 +15,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/LlmUsageSummaryResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '403':
           description: Not the owner (AUTH_FORBIDDEN)
           content:
@@ -39,6 +44,11 @@ paths:
               schema: { $ref: '#/components/schemas/LlmUsageBreakdownResponse' }
         '400':
           description: Unknown period
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
@@ -91,6 +101,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '403':
           description: Not the owner (AUTH_FORBIDDEN)
           content:
@@ -112,6 +127,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/LlmCallDetailResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '403':
           description: Not the owner (AUTH_FORBIDDEN)
           content:

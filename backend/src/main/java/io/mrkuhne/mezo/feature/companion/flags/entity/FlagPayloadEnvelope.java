@@ -24,7 +24,8 @@ public record FlagPayloadEnvelope(
     RapidWeightLoss rapidWeightLoss,
     JointOveruse jointOveruse,
     IgnoredNudge ignoredNudge,
-    LateEating lateEating
+    LateEating lateEating,
+    ProtocolLapse protocolLapse
 ) {
 
     public record SustainedStress(
@@ -153,55 +154,74 @@ public record FlagPayloadEnvelope(
         Map<String, Double> lastMealHourByDay, Map<String, String> qualifyingArmByDay) {
     }
 
+    /** Round 2 S1 (mezo-d58h.7.1, spec 2026-09-05 §(11)). {@code pantryItemId} is the offending
+     *  item's id as a STRING (jsonb keys and values are text, and the per-item cooldown compares
+     *  it as text); {@code itemName} is frozen at raise time so {@code AdviceFactRenderer} — a
+     *  pure static renderer with no repositories — can name the supplement. Dates are ISO-8601
+     *  strings. {@code lastTakenDate} is null when the item was never taken inside the history
+     *  window (which the prior-habit gate makes impossible in practice, but the payload does not
+     *  assume the gate). */
+    public record ProtocolLapse(
+        String pantryItemId, String itemName, String slotKey,
+        int consecutiveMissedDueDays, int threshold,
+        List<String> missedDueDates, String lastTakenDate,
+        int historyDueDays, int historyTakenDays,
+        double historyAdherence, double minHistoryAdherence) {
+    }
+
     public static FlagPayloadEnvelope sustainedStress(SustainedStress p) {
-        return new FlagPayloadEnvelope(p, null, null, null, null, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(p, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope sleepDebt(SleepDebt p) {
-        return new FlagPayloadEnvelope(null, p, null, null, null, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, p, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope momentumAtRisk(MomentumAtRisk p) {
-        return new FlagPayloadEnvelope(null, null, p, null, null, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, p, null, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope recoveryNeeded(RecoveryNeeded p) {
-        return new FlagPayloadEnvelope(null, null, null, p, null, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, p, null, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope allHealthy(AllHealthy p) {
-        return new FlagPayloadEnvelope(null, null, null, null, p, null, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, p, null, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope loggingGap(LoggingGap p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, p, null, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, p, null, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope missedWorkouts(MissedWorkouts p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, p, null, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, p, null, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope acuteBadDay(AcuteBadDay p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, p, null, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, p, null, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope loadFuelMismatch(LoadFuelMismatch p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, p, null, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, p, null, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope rapidWeightLoss(RapidWeightLoss p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, p, null, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, p, null, null, null, null);
     }
 
     public static FlagPayloadEnvelope jointOveruse(JointOveruse p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, p, null, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, p, null, null, null);
     }
 
     public static FlagPayloadEnvelope ignoredNudge(IgnoredNudge p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, null, p, null);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, null, p, null, null);
     }
 
     public static FlagPayloadEnvelope lateEating(LateEating p) {
-        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, null, null, p);
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, null, null, p, null);
+    }
+
+    public static FlagPayloadEnvelope protocolLapse(ProtocolLapse p) {
+        return new FlagPayloadEnvelope(null, null, null, null, null, null, null, null, null, null, null, null, null, p);
     }
 }

@@ -15,7 +15,12 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@ConditionalOnProperty(name = FeaturesConfiguration.COMPANION_SWITCH, havingValue = "true")
+@ConditionalOnProperty(
+        name = {
+            FeaturesConfiguration.COMPANION_SWITCH,
+            FeaturesConfiguration.MEMORY_RETRIEVAL_RETENTION_JOB_SWITCH
+        },
+        havingValue = "true")
 public class MemoryRetrievalRetentionJob {
 
     private final UserFanOut userFanOut;

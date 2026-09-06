@@ -17,6 +17,10 @@ import lombok.extern.slf4j.Slf4j;
  * failure mode {@code FlagProperties.CooldownHours.forFlag}'s throwing default produces.
  * {@code AdvicePriorityTest} asserts every live {@link FlagKey} constant is present, so the
  * warning path is a genuine last resort rather than the normal way a new key behaves.
+ *
+ * <p>Round 2 S1 (bd mezo-d58h.7.1): {@link FlagKey#PROTOCOL_LAPSE} sits at the very tail of the
+ * flag block — it is the gentlest signal in the system (grace-window copy, never blame), so it
+ * must never displace a health card ranked ahead of it.
  */
 @Slf4j
 public final class AdvicePriority {
@@ -40,6 +44,7 @@ public final class AdvicePriority {
         FlagKey.LOGGING_GAP,
         FlagKey.IGNORED_NUDGE,
         FlagKey.LATE_EATING,
+        FlagKey.PROTOCOL_LAPSE,
         SetupCheckService.CHECK_MISSING_SLEEP_GOAL,
         SetupCheckService.CHECK_PLAN_FEASIBILITY,
         FlagKey.RECOVERY_NEEDED,

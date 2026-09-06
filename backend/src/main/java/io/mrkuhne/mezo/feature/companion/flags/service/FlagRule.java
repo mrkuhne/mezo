@@ -1,7 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.flags.service;
 
 import java.time.LocalDate;
-import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -13,5 +12,5 @@ import java.util.UUID;
 public interface FlagRule {
 
     /** The rule's verdict for {@code userId} on {@code today}, cooldowns NOT applied. */
-    Optional<FlagRaise> evaluate(UUID userId, LocalDate today);
+    FlagVerdict evaluate(UUID userId, LocalDate today);
 }

@@ -10,8 +10,10 @@ export interface DayNavigatorProps {
 }
 
 /**
- * Prev/next day arrows flanking a tappable calendar date label — read-only date navigation for
- * the Rutin tab. Wraps the domain-free `DatePicker` primitive: arrows step ±1 day via `addDays`,
+ * Prev/next day arrows flanking a tappable calendar date label — date navigation for the Rutin
+ * tab, fronting either a read-only history view or an interactive logging surface (the
+ * yesterday-backfill checkboxes, mezo-x9c2) depending on the page that mounts it. Wraps the
+ * domain-free `DatePicker` primitive: arrows step ±1 day via `addDays`,
  * the centre label opens the calendar popover. `next` is disabled at `maxDate` (no future) and the
  * label reads "Ma" when the day is today (== maxDate); `prev` is disabled at `minDate`. ISO
  * `YYYY-MM-DD` strings compare lexicographically == chronologically, so bounds are string compares.

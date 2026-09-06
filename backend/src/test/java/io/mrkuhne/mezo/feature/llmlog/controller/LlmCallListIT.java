@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.api.dto.LlmCallListItem;
 import io.mrkuhne.mezo.api.dto.LlmCallListResponse;
+import io.mrkuhne.mezo.feature.llmlog.config.LlmLogProperties;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
@@ -11,6 +12,7 @@ import io.mrkuhne.mezo.support.populator.LlmLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
@@ -28,6 +30,7 @@ class LlmCallListIT extends ApiIntegrationTest {
 
     @Autowired private LlmLogPopulator llmLogPopulator;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private LlmLogProperties llmLogProperties;
 
     @Test
     void testListCalls_shouldReturnUnauthorized_whenNoToken() {
@@ -36,11 +39,10 @@ class LlmCallListIT extends ApiIntegrationTest {
 
     @Test
     void testListCalls_shouldReturnNewestFirst_whenSeveralCallsLogged() {
-        Instant now = Instant.now();
         UUID owner = ownerId();
-        llmLogPopulator.logCall(now.minus(3, ChronoUnit.MINUTES), owner, CallKind.CHAT,
+        llmLogPopulator.logCall(todayAt(60), owner, CallKind.CHAT,
             CallStatus.SUCCESS, "meal_coach", "verdict", "gemini-2.5-flash", new BigDecimal("0.001"));
-        llmLogPopulator.logCall(now.minus(1, ChronoUnit.MINUTES), owner, CallKind.CHAT_STREAM,
+        llmLogPopulator.logCall(todayAt(180), owner, CallKind.CHAT_STREAM,
             CallStatus.SUCCESS, "companion_chat", "stream", "gemini-2.5-flash", new BigDecimal("0.002"));
 
         LlmCallListResponse body = list("period=DAY");
@@ -53,7 +55,7 @@ class LlmCallListIT extends ApiIntegrationTest {
     /** The payload columns exist on the row but must not travel with the list. */
     @Test
     void testListCalls_shouldOmitPayloadFields_whenRowHasThem() {
-        llmLogPopulator.logCall(Instant.now(), ownerId(), CallKind.CHAT, CallStatus.SUCCESS,
+        llmLogPopulator.logCall(todayAt(0), ownerId(), CallKind.CHAT, CallStatus.SUCCESS,
             "companion_chat", "send", "gemini-2.5-flash", new BigDecimal("0.002"));
 
         ResponseEntity<String> response = exchangeForResponse(HttpMethod.GET,
@@ -72,9 +74,9 @@ class LlmCallListIT extends ApiIntegrationTest {
     @Test
     void testListCalls_shouldKeepCostNull_whenRowIsUnpriced() {
         UUID owner = ownerId();
-        llmLogPopulator.logCall(Instant.now(), owner, CallKind.CHAT, CallStatus.SUCCESS,
+        llmLogPopulator.logCall(todayAt(120), owner, CallKind.CHAT, CallStatus.SUCCESS,
             "quest_flavor", "flavor", "unpriced-model", null);
-        llmLogPopulator.logCall(Instant.now().minus(1, ChronoUnit.MINUTES), owner, CallKind.CHAT,
+        llmLogPopulator.logCall(todayAt(60), owner, CallKind.CHAT,
             CallStatus.SUCCESS, "companion_chat", "send", "gemini-2.5-flash", new BigDecimal("0.002"));
 
         LlmCallListResponse body = list("period=DAY");
@@ -95,9 +97,9 @@ class LlmCallListIT extends ApiIntegrationTest {
      */
     @Test
     void testListCalls_shouldIncludeOwnerlessRows_whenLoggedByBackgroundJob() {
-        llmLogPopulator.logCall(Instant.now(), null, CallKind.CHAT, CallStatus.SUCCESS,
+        llmLogPopulator.logCall(todayAt(120), null, CallKind.CHAT, CallStatus.SUCCESS,
             "proactive_briefing", "generate", "gemini-2.5-flash", new BigDecimal("0.030"));
-        llmLogPopulator.logCall(Instant.now().minus(1, ChronoUnit.MINUTES), ownerId(),
+        llmLogPopulator.logCall(todayAt(60), ownerId(),
             CallKind.CHAT, CallStatus.SUCCESS, "companion_chat", "send", "gemini-2.5-flash", null);
 
         LlmCallListResponse body = list("period=DAY");
@@ -109,9 +111,9 @@ class LlmCallListIT extends ApiIntegrationTest {
     @Test
     void testListCalls_shouldNarrowToOneFeature_whenFeatureFilterGiven() {
         UUID owner = ownerId();
-        llmLogPopulator.logCall(Instant.now(), owner, CallKind.CHAT, CallStatus.SUCCESS,
+        llmLogPopulator.logCall(todayAt(0), owner, CallKind.CHAT, CallStatus.SUCCESS,
             "companion_chat", "send", "gemini-2.5-flash", null);
-        llmLogPopulator.logCall(Instant.now(), owner, CallKind.CHAT, CallStatus.SUCCESS,
+        llmLogPopulator.logCall(todayAt(0), owner, CallKind.CHAT, CallStatus.SUCCESS,
             "meal_coach", "verdict", "gemini-2.5-flash", null);
 
         assertThat(list("period=DAY&feature=meal_coach").getItems())
@@ -122,9 +124,9 @@ class LlmCallListIT extends ApiIntegrationTest {
     @Test
     void testListCalls_shouldNarrowToErrors_whenStatusFilterGiven() {
         UUID owner = ownerId();
-        llmLogPopulator.logCall(Instant.now(), owner, CallKind.CHAT, CallStatus.SUCCESS,
+        llmLogPopulator.logCall(todayAt(0), owner, CallKind.CHAT, CallStatus.SUCCESS,
             "companion_chat", "send", "gemini-2.5-flash", null);
-        llmLogPopulator.logCall(Instant.now(), owner, CallKind.VISION, CallStatus.ERROR,
+        llmLogPopulator.logCall(todayAt(0), owner, CallKind.VISION, CallStatus.ERROR,
             "meal_draft", "photo", null, null);
 
         assertThat(list("period=DAY&status=ERROR").getItems())
@@ -138,9 +140,9 @@ class LlmCallListIT extends ApiIntegrationTest {
     @Test
     void testListCalls_shouldCombineFilters_whenFeatureAndKindGiven() {
         UUID owner = ownerId();
-        llmLogPopulator.logCall(Instant.now(), owner, CallKind.CHAT, CallStatus.SUCCESS,
+        llmLogPopulator.logCall(todayAt(0), owner, CallKind.CHAT, CallStatus.SUCCESS,
             "companion_chat", "send", "gemini-2.5-flash", null);
-        llmLogPopulator.logCall(Instant.now(), owner, CallKind.CHAT_STREAM, CallStatus.SUCCESS,
+        llmLogPopulator.logCall(todayAt(0), owner, CallKind.CHAT_STREAM, CallStatus.SUCCESS,
             "companion_chat", "stream", "gemini-2.5-flash", null);
 
         assertThat(list("period=DAY&feature=companion_chat&callKind=CHAT_STREAM").getItems())
@@ -153,7 +155,7 @@ class LlmCallListIT extends ApiIntegrationTest {
     void testListCalls_shouldFlagMoreRows_whenWindowSmallerThanThePeriod() {
         UUID owner = ownerId();
         for (int i = 0; i < 12; i++) {
-            llmLogPopulator.logCall(Instant.now().minus(i, ChronoUnit.MINUTES), owner,
+            llmLogPopulator.logCall(todayAt(i), owner,
                 CallKind.CHAT, CallStatus.SUCCESS, "companion_chat", "send", "gemini-2.5-flash", null);
         }
 
@@ -181,6 +183,20 @@ class LlmCallListIT extends ApiIntegrationTest {
             HttpStatus.BAD_REQUEST, String.class);
     }
 
+    /** The DAY window's lower edge: start-of-day is IN, one second before it is OUT (mezo-7qpy). */
+    @Test
+    void testListCalls_shouldCutAtLocalDayStart_whenRowStraddlesTheBoundary() {
+        UUID owner = ownerId();
+        llmLogPopulator.logCall(todayAt(0), owner, CallKind.CHAT, CallStatus.SUCCESS,
+            "companion_chat", "send", "gemini-2.5-flash", null);
+        llmLogPopulator.logCall(todayAt(0).minusSeconds(1), owner, CallKind.CHAT, CallStatus.SUCCESS,
+            "meal_coach", "verdict", "gemini-2.5-flash", null);
+
+        assertThat(list("period=DAY").getItems())
+            .singleElement()
+            .satisfies(i -> assertThat(i.getFeature()).isEqualTo("companion_chat"));
+    }
+
     private LlmCallListResponse list(String query) {
         return getForBody("/api/llm-usage/calls?" + query, ownerAuthHeaders(),
             HttpStatus.OK, LlmCallListResponse.class);
@@ -188,5 +204,11 @@ class LlmCallListIT extends ApiIntegrationTest {
 
     private UUID ownerId() {
         return userPopulator.createUser("llm-call-list@test.hu").getId();
+    }
+
+    /** Second {@code i} of the current report-zone day — always inside the period=DAY window (mezo-7qpy). */
+    private Instant todayAt(int i) {
+        var zone = llmLogProperties.reportZone();
+        return LocalDate.now(zone).atStartOfDay(zone).toInstant().plusSeconds(i);
     }
 }

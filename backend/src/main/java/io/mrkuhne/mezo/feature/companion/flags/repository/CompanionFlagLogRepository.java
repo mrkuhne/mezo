@@ -51,6 +51,11 @@ public interface CompanionFlagLogRepository extends JpaRepository<CompanionFlagL
      * permanently blocked by a signal that isn't a user problem" failure {@code logging_gap} and
      * {@code ignored_nudge} were carved out to avoid. {@code AllHealthyRule}'s same-evaluation gate
      * still keeps {@code joint_overuse} and {@code all_healthy} off the same day regardless.
+     *
+     * <p>Round 2 S1 (mezo-d58h.7.1): {@code protocol_lapse} stays counted, like
+     * {@code missed_workouts} — it is a genuine behavior signal (a protocol item actually missed
+     * on its due day), not a data gap or a delivery-channel failure, so it must still be able to
+     * block the quiet window.
      */
     @Query("""
         SELECT count(f) > 0 FROM CompanionFlagLogEntity f
@@ -59,4 +64,10 @@ public interface CompanionFlagLogRepository extends JpaRepository<CompanionFlagL
         AND f.createdAt >= :since
         """)
     boolean existsProblemRaiseSince(@Param("createdBy") UUID createdBy, @Param("since") Instant since);
+
+    /** Round 2 S1 (mezo-d58h.7.1): the raises of one flag since {@code since}, newest first — the
+     *  seam ProtocolLapseRule uses to enforce a PER-ITEM cooldown out of its own frozen payloads,
+     *  which FlagService's per-KEY gate cannot express. */
+    List<CompanionFlagLogEntity> findByCreatedByAndFlagKeyAndDeletedFalseAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(
+        UUID createdBy, String flagKey, Instant since);
 }

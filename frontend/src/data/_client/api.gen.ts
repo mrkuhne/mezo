@@ -2689,9 +2689,9 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Manually check a MANUAL habit for today (Habits) */
+        /** Manually check a MANUAL habit for today or yesterday (max 1 day back) (Habits) */
         post: operations["checkHabit"];
-        /** Same-day un-check of a MANUAL habit; reverses the XP (Habits) */
+        /** Un-check of a MANUAL habit for today or yesterday; reverses the XP (Habits) */
         delete: operations["uncheckHabit"];
         options?: never;
         head?: never;
@@ -17056,6 +17056,15 @@ export interface operations {
                     "application/json": components["schemas"]["HabitWriteResponse"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description HABIT_UNKNOWN */
             404: {
                 headers: {
@@ -17065,7 +17074,7 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
-            /** @description HABIT_NOT_MANUAL | HABIT_NOT_TODAY | HABIT_ALREADY_DONE */
+            /** @description HABIT_NOT_MANUAL | HABIT_TOO_OLD | HABIT_ALREADY_DONE */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -17098,6 +17107,15 @@ export interface operations {
                     "application/json": components["schemas"]["HabitResponse"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description HABIT_UNKNOWN */
             404: {
                 headers: {
@@ -17107,7 +17125,7 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
-            /** @description HABIT_NOT_MANUAL | HABIT_NOT_TODAY | HABIT_NOT_DONE */
+            /** @description HABIT_NOT_MANUAL | HABIT_TOO_OLD | HABIT_NOT_DONE */
             409: {
                 headers: {
                     [name: string]: unknown;
@@ -17205,6 +17223,15 @@ export interface operations {
                     "application/json": components["schemas"]["HabitCatalogResponse"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     createHabitChain: {
@@ -17229,6 +17256,15 @@ export interface operations {
                     "application/json": components["schemas"]["HabitChainAdmin"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     deleteHabitChain: {
@@ -17248,6 +17284,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
             };
         };
     };
@@ -17273,6 +17318,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HabitChainAdmin"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
         };
@@ -17301,6 +17355,15 @@ export interface operations {
                     "application/json": components["schemas"]["HabitChainAdmin"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     createHabitDef: {
@@ -17325,6 +17388,15 @@ export interface operations {
                     "application/json": components["schemas"]["HabitDefAdmin"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     deleteHabitDef: {
@@ -17344,6 +17416,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
             };
         };
     };
@@ -17371,6 +17452,15 @@ export interface operations {
                     "application/json": components["schemas"]["HabitDefAdmin"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     suggestHabits: {
@@ -17393,6 +17483,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HabitSuggestResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Suggester unavailable (switch off / companion off) */
@@ -17466,6 +17565,15 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     addFocus: {
@@ -17492,6 +17600,15 @@ export interface operations {
             };
             /** @description INTENTION_TEXT_REQUIRED */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -17528,6 +17645,15 @@ export interface operations {
                 };
                 content?: never;
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description INTENTION_FOCUS_NOT_FOUND */
             404: {
                 headers: {
@@ -17563,6 +17689,15 @@ export interface operations {
             };
             /** @description INTENTION_REFLECTION_INVALID */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18002,6 +18137,15 @@ export interface operations {
                     "application/json": components["schemas"]["RitualDayResponse"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description RITUAL_NOT_TODAY */
             409: {
                 headers: {
@@ -18035,6 +18179,15 @@ export interface operations {
                     "application/json": components["schemas"]["RitualDayResponse"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description RITUAL_NOT_TODAY */
             409: {
                 headers: {
@@ -18064,6 +18217,15 @@ export interface operations {
                     "application/json": components["schemas"]["GamificationProfileResponse"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     getGamificationDay: {
@@ -18086,6 +18248,15 @@ export interface operations {
                     "application/json": components["schemas"]["GamificationDayResponse"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     buyTitle: {
@@ -18106,6 +18277,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GamificationProfileResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description GAMIFICATION_TITLE_UNKNOWN */
@@ -18148,6 +18328,15 @@ export interface operations {
                     "application/json": components["schemas"]["GamificationProfileResponse"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description GAMIFICATION_TITLE_UNKNOWN */
             404: {
                 headers: {
@@ -18184,6 +18373,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GamificationProfileResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description GAMIFICATION_COINS_INSUFFICIENT / GAMIFICATION_SAVER_LIMIT */
@@ -18480,6 +18678,15 @@ export interface operations {
                     "application/json": components["schemas"]["LlmUsageSummaryResponse"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description Not the owner (AUTH_FORBIDDEN) */
             403: {
                 headers: {
@@ -18514,6 +18721,15 @@ export interface operations {
             };
             /** @description Unknown period */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18569,6 +18785,15 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description Not the owner (AUTH_FORBIDDEN) */
             403: {
                 headers: {
@@ -18598,6 +18823,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LlmCallDetailResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Not the owner (AUTH_FORBIDDEN) */
@@ -18651,6 +18885,15 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description Not today (NEEDS_NOT_TODAY) */
             409: {
                 headers: {
@@ -18678,6 +18921,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NeedsSummaryResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
         };
@@ -18745,6 +18997,15 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     updateJournalEntry: {
@@ -18780,6 +19041,15 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description JOURNAL_ENTRY_NOT_FOUND */
             404: {
                 headers: {
@@ -18808,6 +19078,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
             };
             /** @description JOURNAL_ENTRY_NOT_FOUND */
             404: {
@@ -18880,6 +19159,15 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     reviewDecisionEntry: {
@@ -18908,6 +19196,15 @@ export interface operations {
             };
             /** @description Validation error (rating out of 1..5) */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -18956,6 +19253,15 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     createGratitudeEntry: {
@@ -18989,6 +19295,15 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     deleteGratitudeEntry: {
@@ -19008,6 +19323,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
             };
             /** @description Not found */
             404: {
@@ -20109,6 +20433,15 @@ export interface operations {
                     "application/json": components["schemas"]["InviteResponse"][];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description Not the owner (AUTH_FORBIDDEN) */
             403: {
                 headers: {
@@ -20151,6 +20484,15 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description Not the owner (AUTH_FORBIDDEN) */
             403: {
                 headers: {
@@ -20179,6 +20521,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
             };
             /** @description Not the owner (AUTH_FORBIDDEN) */
             403: {
@@ -20227,6 +20578,15 @@ export interface operations {
                     "application/json": components["schemas"]["AdminUserResponse"][];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description Not the owner (AUTH_FORBIDDEN) */
             403: {
                 headers: {
@@ -20256,6 +20616,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ResetPasswordResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Not the owner (AUTH_FORBIDDEN) */
@@ -20302,6 +20671,15 @@ export interface operations {
             };
             /** @description Validation failure */
             400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
@@ -20356,6 +20734,15 @@ export interface operations {
                     "application/json": components["schemas"]["LifeGoalResponse"][];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     createLifeGoal: {
@@ -20389,6 +20776,15 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     listLifeGoalSignals: {
@@ -20407,6 +20803,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SignalCatalogResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
         };
@@ -20433,6 +20838,15 @@ export interface operations {
                     "application/json": components["schemas"]["LifeGoalProposeResponse"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     getLifeGoal: {
@@ -20453,6 +20867,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LifeGoalResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Not found / not owned */
@@ -20490,6 +20913,15 @@ export interface operations {
                     "application/json": components["schemas"]["LifeGoalResponse"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
             /** @description Not found */
             404: {
                 headers: {
@@ -20518,6 +20950,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
             };
             /** @description Not found */
             404: {
@@ -20552,6 +20993,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LifeGoalResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Illegal transition (LIFE_GOAL_INVALID_STATUS_TRANSITION) */
@@ -20598,6 +21048,15 @@ export interface operations {
                     "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
         };
     };
     getLifeGoalsToday: {
@@ -20616,6 +21075,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LifeGoalTodayResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
         };
@@ -20641,6 +21109,24 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LifeGoalProgressResponse"];
+                };
+            };
+            /** @description from after to (VALIDATION_INVALID_VALUE) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Not found / not owned */
@@ -20672,6 +21158,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LifeGoalProgressResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
                 };
             };
             /** @description Not found / not owned */

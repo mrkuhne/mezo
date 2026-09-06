@@ -31,6 +31,7 @@ const habitStore = vi.hoisted(() => {
     { key: 'morning_sunlight', chain: 'MORNING', position: 1, title: 'Napfény · 10 perc', why: '', anchorCopy: 'ébredés után', mode: 'MANUAL', status: 'done', xp: 10, strengthPct: 76, linkUrl: null },
     { key: 'morning_video', chain: 'MORNING', position: 2, title: 'Reggeli videó', why: '', anchorCopy: 'kávé mellé', mode: 'MANUAL', status: 'pending', xp: 5, strengthPct: 54, linkUrl: 'https://example.com/v' },
     { key: 'morning_pushups', chain: 'MORNING', position: 3, title: '50 fekvőtámasz', why: '', anchorCopy: 'videó után', mode: 'MANUAL', status: 'pending', xp: 10, strengthPct: 88, linkUrl: null },
+    { key: 'morning_journal', chain: 'MORNING', position: 4, title: 'Reggeli napló', why: '', anchorCopy: 'videó után', mode: 'MANUAL', status: 'pending', xp: 5, strengthPct: 41, linkUrl: null },
     { key: 'bed_on_time', chain: 'EVENING', position: 1, title: 'Időben ágyban', why: '', anchorCopy: '', mode: 'MANUAL', status: 'pending', xp: 10, strengthPct: 71, linkUrl: null },
   ]
   return {
@@ -47,7 +48,11 @@ const CATALOG = {
   chains: [
     {
       id: 'c-m', chainKey: 'MORNING', title: 'Reggeli rutin', daypart: 'MORNING', position: 0, isActive: true,
-      defs: [{ habitKey: 'morning_video', framework: null, celebration: 'ez a rutin első lépése' }],
+      defs: [
+        { habitKey: 'morning_video', framework: null, celebration: 'ez a rutin első lépése', anchorHabitKey: null },
+        // mezo-3zue.6: a napló a videóra van kötve — a sorrend szerint a fekvőtámasz jönne
+        { habitKey: 'morning_journal', framework: 'FOGG', celebration: 'becsukom a füzetet', anchorHabitKey: 'morning_video' },
+      ],
     },
     { id: 'c-e', chainKey: 'EVENING', title: 'Esti rutin', daypart: 'EVENING', position: 1, isActive: true, defs: [] },
   ],
@@ -326,4 +331,26 @@ test.each(['reggel', 'nap', 'este'])('a(z) %s panel mozaikjában nincs Mezo-üze
 test('a nap-panel mozaikja viszi a Célok · ma csempét (mezo-iizd.9)', async () => {
   renderHub('/nap?dp=nap')
   expect(await screen.findByRole('button', { name: /Célok · ma/ })).toBeInTheDocument()
+})
+
+// ── mezo-3zue.6: a csempe a lánc következő szemét mutatja, nem a sorrendét ──
+
+test('pipa után a csempe a horgonyra kötött szokásra vált, nem a sorrend szerinti következőre', async () => {
+  const user = userEvent.setup()
+  renderHub('/nap?dp=reggel')
+  await user.click(await screen.findByRole('button', { name: 'Kipipálás — Reggeli videó' }))
+  // sorrend szerint az 50 fekvőtámasz (position 3) jönne, a lánc szerint a napló (position 4)
+  expect(await screen.findByText('Reggeli napló')).toBeInTheDocument()
+  expect(screen.getByText('Most jön')).toBeInTheDocument()
+  expect(screen.queryByText('50 fekvőtámasz')).toBeNull()
+})
+
+test('lánc nélküli pipa után a csempe a sorrend szerinti következőt mutatja', async () => {
+  const user = userEvent.setup()
+  renderHub('/nap?dp=reggel')
+  // a naplóra semmi nincs kötve → a pipa után a sorrend dönt, prompt nélkül
+  await user.click(await screen.findByRole('button', { name: 'Kipipálás — Reggeli videó' }))
+  await user.click(await screen.findByRole('button', { name: 'Kipipálás — Reggeli napló' }))
+  expect(await screen.findByText('50 fekvőtámasz')).toBeInTheDocument()
+  expect(screen.queryByText('Most jön')).toBeNull()
 })

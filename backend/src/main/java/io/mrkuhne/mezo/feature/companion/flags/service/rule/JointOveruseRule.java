@@ -3,8 +3,9 @@ package io.mrkuhne.mezo.feature.companion.flags.service.rule;
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
@@ -13,7 +14,6 @@ import io.mrkuhne.mezo.feature.train.service.WorkoutService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -51,7 +51,7 @@ public class JointOveruseRule implements FlagRule {
     private final FlagProperties properties;
 
     @Override
-    public Optional<FlagRaise> evaluate(UUID userId, LocalDate today) {
+    public FlagVerdict evaluate(UUID userId, LocalDate today) {
         FlagProperties.JointOveruse cfg = properties.jointOveruse();
         LocalDate from = today.minusDays(cfg.windowDays() - 1L);
 
@@ -69,11 +69,12 @@ public class JointOveruseRule implements FlagRule {
         }
         // Honest gate: never average over an empty set.
         if (dataPoints == 0) {
-            return Optional.empty();
+            return FlagVerdict.unavailable(FlagKey.JOINT_OVERUSE, UnavailableReason.NO_STRAIN_DATA);
         }
         double strainAvg = sum / dataPoints;
         if (strainAvg < cfg.strainAvgAtLeast()) {
-            return Optional.empty();
+            return FlagVerdict.clear(FlagKey.JOINT_OVERUSE, new FlagVerdict.ClearEvidence(
+                "shoulder_strain_avg", strainAvg, cfg.strainAvgAtLeast(), null));
         }
 
         LocalDate tomorrow = today.plusDays(1);
@@ -81,16 +82,18 @@ public class JointOveruseRule implements FlagRule {
         WorkoutSessionEntity planned =
             workoutService.findPlannedTemplateForDate(userId, tomorrow).orElse(null);
         if (planned == null) {
-            return Optional.empty();
+            return FlagVerdict.unavailable(FlagKey.JOINT_OVERUSE,
+                UnavailableReason.NO_PLANNED_SESSION);
         }
         String tomorrowMuscle = MuscleGroup.of(planned.getMuscle());
         if (!cfg.muscleNeedle().equals(tomorrowMuscle)) {
-            return Optional.empty();
+            return FlagVerdict.clear(FlagKey.JOINT_OVERUSE, new FlagVerdict.ClearEvidence(
+                "tomorrow_muscle", null, null, tomorrowMuscle));
         }
 
-        return Optional.of(new FlagRaise(FlagKey.JOINT_OVERUSE,
+        return FlagVerdict.raised(FlagKey.JOINT_OVERUSE,
             FlagPayloadEnvelope.jointOveruse(new FlagPayloadEnvelope.JointOveruse(
                 strainAvg, cfg.strainAvgAtLeast(), dataPoints, cfg.windowDays(),
-                tomorrow.toString(), tomorrowMuscle))));
+                tomorrow.toString(), tomorrowMuscle)));
     }
 }

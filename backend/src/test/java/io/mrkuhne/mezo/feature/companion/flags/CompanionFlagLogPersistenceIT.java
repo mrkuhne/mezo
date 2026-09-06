@@ -192,4 +192,14 @@ class CompanionFlagLogPersistenceIT extends AbstractIntegrationTest {
         flagLogPopulator.raise(owner, FlagKey.ACUTE_BAD_DAY, FlagKey.SOURCE_WRITE, null);
         assertThat(repository.existsProblemRaiseSince(owner, since)).isTrue();
     }
+
+    /** Round 2 S1 (mezo-d58h.7.1): the widened CHECK accepts protocol_lapse. */
+    @Test
+    void testRawInsert_shouldAcceptProtocolLapse() {
+        UUID owner = userPopulator.createUser().getId();
+        flagLogPopulator.rawInsert(owner, FlagKey.PROTOCOL_LAPSE, FlagKey.SOURCE_SWEEP);
+        assertThat(repository.findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(owner))
+            .extracting(CompanionFlagLogEntity::getFlagKey)
+            .contains(FlagKey.PROTOCOL_LAPSE);
+    }
 }

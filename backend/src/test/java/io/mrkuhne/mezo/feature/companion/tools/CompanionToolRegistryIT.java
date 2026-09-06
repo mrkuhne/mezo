@@ -27,7 +27,7 @@ class CompanionToolRegistryIT extends AbstractIntegrationTest {
                         "get_training_log", "get_training_plan", "get_exercise_records", "get_weight_trend", "get_weight_log",
                         "get_fuel_log", "get_recovery", "get_protocol", "get_goal",
                         "get_medication", "find_similar_past_days", "compare_periods", "get_recipes", "get_pantry", "get_growth",
-                        "get_daily_practice", "get_insights");
+                        "get_daily_practice", "get_insights", "get_life_goals");
     }
 
     @Test

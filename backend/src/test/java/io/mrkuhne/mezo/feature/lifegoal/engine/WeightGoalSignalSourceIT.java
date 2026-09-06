@@ -86,4 +86,40 @@ class WeightGoalSignalSourceIT extends AbstractIntegrationTest {
 
         assertThat(w.values()).isEmpty();
     }
+
+    @Test
+    void testWindow_shouldReturnEmptyWindow_whenActiveGoalHasNoTargetWeight() {
+        UUID userId = ownerId();
+        GoalEntity g = new GoalEntity();
+        g.setCreatedBy(userId);
+        g.setTitle("Csak kitartás");
+        g.setTrajectory("maintain");
+        g.setGuards(List.of("strength", "muscle"));
+        g.setStatus("active");
+        g.setStartDate(today.minusDays(20));
+        g.setTargetDate(today.plusDays(50));
+        g.setStartWeightKg(new BigDecimal("92.00"));
+        g.setTargetWeightKg(null); // no numeric target -> honest absence, not a computed pace line
+        g.setRateTargetPctPerWeek(new BigDecimal("0.70"));
+        goalRepository.saveAndFlush(g);
+        weighIn(userId, today, 90.0);
+
+        PillarSourceJson src = new PillarSourceJson("weight_goal", null, null, null, null, null);
+        SignalWindow w = source.window(userId, src, today.minusDays(6), today);
+
+        assertThat(w.values()).isEmpty();
+        assertThat(w.targets()).isEmpty();
+    }
+
+    @Test
+    void testWindow_shouldReturnEmptyWindow_whenActiveGoalHasNoWeighIns() {
+        UUID userId = ownerId();
+        activeGoal(userId); // target set, but no WeightLogEntity rows at all -> EWMA series is empty
+
+        PillarSourceJson src = new PillarSourceJson("weight_goal", null, null, null, null, null);
+        SignalWindow w = source.window(userId, src, today.minusDays(6), today);
+
+        assertThat(w.values()).isEmpty();
+        assertThat(w.targets()).isEmpty();
+    }
 }
