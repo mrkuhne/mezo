@@ -2,7 +2,7 @@
 title: Pantry (Kamra)
 type: feature-domain
 status: done
-updated: 2026-09-05
+updated: 2026-09-06
 tags: [fuel, pantry, frontend, data-layer, backend, multi-user]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/pantry

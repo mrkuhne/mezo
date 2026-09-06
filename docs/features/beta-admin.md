@@ -2,7 +2,7 @@
 title: Beta admin — invite codes, accounts, LLM-usage gate
 type: feature-domain
 status: done
-updated: 2026-09-02
+updated: 2026-09-06
 tags: [me, auth, admin, llmlog, backend, frontend, data-layer]
 key_files:
   - api/feature/admin/admin.yml

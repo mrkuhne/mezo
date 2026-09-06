@@ -5,25 +5,9 @@ status: done
 updated: 2026-09-05
 tags: [goal, engine, backend, tdee, projection, guards, adaptive]
 key_files:
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/GoalEngineProperties.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/goal
   - backend/src/main/java/io/mrkuhne/mezo/feature/train/service/WeeklyScheduledActivityService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/GoalEngineService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/GoalProjectionService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/DayTypeShiftCalculator.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/GuardEvaluationService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/GoalEvaluationService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/GoalFeasibilityService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/TdeeBootstrapService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/DietPreferencesPort.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/AdaptiveCorrectionService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/AdaptiveReviewService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/engine/service/AdaptiveReviewJob.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalInvariantValidator.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalOverviewService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalOverviewCourseService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalPlanLinkService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalTimelineService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/mapper/GoalPlanLinkMapper.java
+  - api/feature/goal/goal.yml
 related: [me, fuel, lifegoal, _platform-api-backend, _platform-data-layer]
 ---
 

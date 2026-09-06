@@ -7,16 +7,8 @@ tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
   - api/feature/proactive/proactive.yml
-  - backend/src/main/resources/db/changelog/1.0.0/script/202608151200_mezo-gst9_create_companion_message.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202608151230_mezo-gst9_drop_briefing_heartbeat_note.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607071500_mezo-h4wp.4_create_memoir.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607071900_mezo-h4wp.7_create_prediction.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607072000_mezo-h4wp.8_create_experiment.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607072100_mezo-hbwi_create_challenge.sql
-  - backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/OverloadChallengeGenerator.java
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607280641_mezo-gj42_challenge_overload_type.sql
-  - backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewGenerator.java
-  - backend/src/main/resources/db/changelog/1.0.0/script/202608271200_mezo-p2tr_create_weekly_review.sql
+  - frontend/src/data/today
+  - frontend/src/features/today/pages/NapMezoPage.tsx
 related: [companion, today, insights, train, me, _platform-api-backend, _platform-notifications]
 ---
 

@@ -2,27 +2,18 @@
 title: Fuel (Nutrition)
 type: feature-domain
 status: done
-updated: 2026-09-05
+updated: 2026-09-06
 tags: [fuel, frontend, data-layer]
 key_files:
-  - frontend/src/features/fuel/pages/FuelMaiPage.tsx
-  - frontend/src/features/fuel/pages/FuelSettingsPage.tsx
-  - frontend/src/features/fuel/logic/fuelSettingsPreview.ts
-  - frontend/src/features/fuel/pages/FuelLogPage.tsx
-  - frontend/src/features/fuel/components/MealComposer.tsx
-  - frontend/src/features/fuel/pages/FuelStackPage.tsx
-  - frontend/src/features/fuel/logic/stackPresentation.ts
-  - frontend/src/features/fuel/logic/useStackIntakeToggle.ts
-  - frontend/src/features/fuel/pages/LogFlowPage.tsx
+  - frontend/src/features/fuel
   - frontend/src/data/fuel
   - api/feature/fuel/fuel.yml
   - api/feature/meal/meal.yml
-  - api/feature/pantry/pantry.yml
   - backend/src/main/java/io/mrkuhne/mezo/feature/fuel
-  - backend/src/main/java/io/mrkuhne/mezo/feature/train/service/WorkoutWindowQueryService.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/meal
   - backend/src/main/java/io/mrkuhne/mezo/feature/nutrition
-  - backend/src/main/java/io/mrkuhne/mezo/feature/meal/service/MealCoachService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/meal/service/MealCoachStore.java
+  - api/feature/pantry/pantry.yml
+  - backend/src/main/java/io/mrkuhne/mezo/feature/train/service/WorkoutWindowQueryService.java
 related: [_platform-data-layer, _platform-design-system, train, today, _platform-notifications, goal-engine]
 ---
 
