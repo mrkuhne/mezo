@@ -7,6 +7,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -103,4 +104,19 @@ public interface MealRepository extends OwnedRepository<MealEntity> {
              order by created_by, meal_date, logged_at
             """, nativeQuery = true)
     List<MealEntity> findStaleEnvelopes(@Param("version") int version);
+
+    /**
+     * Drops the formula stamp from the named envelopes so {@link #findStaleEnvelopes} picks them up
+     * on this same boot (mezo-mxmh). The stamp answers "was this scored by the current formula?",
+     * and after a backfill rewrites a scoring INPUT the honest answer is no, even though the formula
+     * itself did not change — the stored numbers were computed from data that has since been
+     * corrected. Removing the key (rather than writing 0) reuses the exact
+     * {@code coalesce(…, 0) < :version} predicate the pre-stamp generation already relies on.
+     */
+    @Modifying
+    @Query(value = """
+        update meal set breakdown = breakdown - 'formulaVersion'
+         where id in (:ids) and breakdown is not null
+        """, nativeQuery = true)
+    int invalidateEnvelopeStamp(@Param("ids") List<UUID> ids);
 }

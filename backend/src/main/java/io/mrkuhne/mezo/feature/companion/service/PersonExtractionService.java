@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.companion.service;
 import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.NarrativeNoteSource;
+import io.mrkuhne.mezo.feature.companion.embedding.TrainingNoteMentionSweep;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.service.GraphEdgeStructurer;
@@ -23,6 +24,10 @@ import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
 import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
 import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
 import io.mrkuhne.mezo.feature.ritual.repository.RitualDayRepository;
+import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
+import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
+import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.text.SafeTruncate;
 import io.mrkuhne.mezo.techcore.text.TextFold;
@@ -162,6 +167,8 @@ public class PersonExtractionService {
     private final RitualDayRepository ritualDayRepository;
     private final DailySummaryRepository dailySummaryRepository;
     private final AiMessageRepository aiMessageRepository;
+    private final WorkoutSessionRepository workoutSessionRepository;
+    private final SportSessionRepository sportSessionRepository;
     // A jegyzet-források (aktivitás, check-in) a NarrativeNoteSource porton át jönnek, nem
     // közvetlen repository-importtal: a companion → activity irány ÚJ szelet-ciklust zárna
     // (activity → companion már létezik), lásd a port javadocját.
@@ -372,8 +379,8 @@ public class PersonExtractionService {
      * <p>Korábban ez csak napló + esti reflexió + napi összefoglaló volt — a determinisztikus
      * név-match ennél már régen szélesebb ({@code MentionDetectionListener}: napló/hála/döntés,
      * {@code ReflectionMentionListener}: napzárás, {@code NoteMentionCatchUp}: aktivitás- és
-     * check-in-jegyzet, {@code ChatMentionListener}: chat), de az csak MÁR ISMERT embert talál
-     * meg. Új arc kizárólag ebből a narratívából születhet, tehát ami nincs benne, abból soha
+     * check-in-jegyzet, {@code ChatMentionListener}: chat, {@code TrainingNoteMentionSweep}:
+     * edzés- és sport-jegyzet), de az csak MÁR ISMERT embert talál meg. Új arc kizárólag ebből a narratívából születhet, tehát ami nincs benne, abból soha
      * nem lesz jelölt: egy hálabejegyzésben vagy chatben először felbukkanó ember láthatatlan
      * maradt. A két útnak ugyanazt a szöveghalmazt kell látnia.
      *
@@ -412,6 +419,14 @@ public class PersonExtractionService {
             for (NarrativeNoteSource.Note note : source.notesOn(userId, day)) {
                 append(sb, label, note.text());
             }
+        }
+        for (WorkoutSessionEntity workout
+                : workoutSessionRepository.findByCreatedByAndDateOrderByCreatedAtAsc(userId, day)) {
+            append(sb, "EDZÉS-JEGYZET", TrainingNoteMentionSweep.workoutText(workout));
+        }
+        for (SportSessionEntity sport
+                : sportSessionRepository.findByCreatedByAndDeletedFalseAndDateOrderByTimeAsc(userId, day)) {
+            append(sb, "SPORT-JEGYZET", sport.getNotes());
         }
         for (AiMessageEntity message : aiMessageRepository
                 .findByCreatedByAndRoleAndDeletedFalseAndCreatedAtGreaterThanEqualAndCreatedAtLessThanOrderByCreatedAtAsc(

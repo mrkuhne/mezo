@@ -1,6 +1,9 @@
 package io.mrkuhne.mezo.feature.meal;
 
 import io.mrkuhne.mezo.feature.meal.repository.MealItemRepository;
+import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
+import java.util.List;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -29,9 +32,17 @@ import org.springframework.transaction.annotation.Transactional;
  * azóta beolvasott VALÓDI címkeértéket (OFF/scrape/foto import).
  *
  * <p>{@code @Order(205)}: a {@code PantryCatalogLoader} (50) UTÁN fut — különben még nem lenne mit
- * másolni —, és a {@link MealRescoreRunner} (210) ELŐTT, amely a
- * {@code FORMULA_VERSION} bump miatt úgyis újrapontoz minden envelope-ot, immár a feltöltött
- * pillanatképekkel. A sorrend a lényeg: fordítva egy teljes deploy-ciklussal késne a gyógyulás.
+ * másolni —, és a {@link MealRescoreRunner} (210) ELŐTT, amely utána újrapontozza az érintett
+ * envelope-okat. A sorrend a lényeg: fordítva egy teljes deploy-ciklussal késne a gyógyulás.
+ *
+ * <p><b>És a sorrend önmagában KEVÉS volt (mezo-mxmh).</b> Ez a runner eredetileg arra épített,
+ * hogy „a rescore úgyis lefut a FORMULA_VERSION bump miatt" — csakhogy a rescore munkalistája
+ * „a bélyeg kisebb, mint a jelenlegi verzió", és azon az induláson, amikor a katalógus végre
+ * feltöltődött, a bélyeg éppen naprakész volt. Eredmény: 37 pillanatkép gyógyult, és EGYETLEN
+ * pontszám sem mozdult — a javítás eljutott az adatig és ott megállt. Egy másik változás
+ * verziószámára támaszkodni nem mechanizmus, hanem véletlen. Ezért a runner most maga ÉRVÉNYTELENÍTI
+ * az érintett envelope-ok bélyegét: aminek a bemenete megváltozott, arról a bélyeg állítása
+ * („ez a jelenlegi formulával készült") már nem igaz, akkor sem, ha maga a formula nem mozdult.
  * {@code @Profile("demodata")} — a prodban aktív profil (ugyanaz az őr, mint a testvérrunneren:
  * idegen IT-fixture-öket ne írjon át).
  */
@@ -43,6 +54,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class MealSaturatedFatBackfillRunner implements CommandLineRunner {
 
     private final MealItemRepository mealItemRepository;
+    private final MealRepository mealRepository;
 
     // @Transactional a BELÉPÉSI ponton is (a PantryCatalogLoader mintája): a `backfill()` innen
     // self-invocation, ami megkerüli a proxyt — a @Modifying query enélkül indulásnál
@@ -56,10 +68,14 @@ public class MealSaturatedFatBackfillRunner implements CommandLineRunner {
     /** No-arg, transactional overload — az integrációs teszt belépési pontja. */
     @Transactional
     public int backfill() {
+        // A munkalistát a MÓDOSÍTÁS ELŐTT kell összeszedni: utána a „null volt" bizonyíték eltűnik.
+        List<UUID> affected = mealItemRepository.mealIdsAwaitingSaturatedFatBackfill();
         int healed = mealItemRepository.backfillPantrySaturatedFat();
+        int invalidated = affected.isEmpty() ? 0 : mealRepository.invalidateEnvelopeStamp(affected);
         if (healed > 0) {
-            log.info("meal_item: {} pantry-sor kapott telítettzsír-pillanatképet a katalógusból "
-                + "(mezo-1f7b); a MealRescoreRunner ezután pontoz újra", healed);
+            log.info("meal_item: {} pantry-sor kapott telítettzsír-pillanatképet a katalógusból; "
+                + "{} envelope bélyege érvénytelenítve, ezeket a MealRescoreRunner pontozza újra "
+                + "(mezo-1f7b, mezo-mxmh)", healed, invalidated);
         }
         return healed;
     }
