@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -178,10 +179,14 @@ public class GraphService {
             userId, GraphNodeEntity.STATUS_CANDIDATE);
     }
 
+    /** A felhasználó kézi archiválása (mezo-06o0.5): a státusz mellé a SZÁNDÉK is rögzül, és
+     *  ettől kezdve a promóciós szinkron nem emelheti vissza aktívra — a rejtés csak
+     *  {@link #restore} útján oldható. */
     @Transactional
     public GraphNodeEntity archive(UUID userId, UUID nodeId) {
         GraphNodeEntity node = findOwnedNode(userId, nodeId);
         node.setStatus(GraphNodeEntity.STATUS_ARCHIVED);
+        node.setUserArchivedAt(OffsetDateTime.now());
         return nodeRepository.saveAndFlush(node);
     }
 

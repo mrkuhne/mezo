@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.Map;
 import java.util.UUID;
 import lombok.Getter;
@@ -94,9 +95,20 @@ public class GraphNodeEntity extends OwnedEntity {
     @Column(name = "occurred_on")
     private LocalDate occurredOn;
 
+    /** mezo-06o0.5: a kézzel archiválás időbélyege — felhasználói SZÁNDÉK, amit a promóciós
+     *  szinkron soha nem ír felül (lásd GraphPromotionService státusz-guardjait). Null = a node
+     *  státusza tisztán gép-származtatott. */
+    @Column(name = "user_archived_at")
+    private OffsetDateTime userArchivedAt;
+
     /** Kind-specific payload — typed envelopes per kind arrive with the slices that write them
      *  (W2.2 PATTERN meta, W2.3 LIFE_EVENT meta); a generic map until then. */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> meta;
+
+    /** A felhasználó rejtette el ezt a node-ot — a promoterek nem emelhetik vissza aktívra. */
+    public boolean isUserArchived() {
+        return userArchivedAt != null;
+    }
 }

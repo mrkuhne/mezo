@@ -1169,3 +1169,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609061800_mezo-d58h.7.5_knowledge_fact_source_question.sql
+  - changeSet:
+      id: "1.0.0:202609062042_mezo-06o0.5_knowledge_node_user_archived"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609062042_mezo-06o0.5_knowledge_node_user_archived.sql
