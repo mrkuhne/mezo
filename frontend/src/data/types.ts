@@ -907,8 +907,27 @@ export interface KnowledgeGraphNode {
 export type PatternCategory = 'physiology' | 'trigger' | 'response'
 /** The decision verbs of the L2 surface (wire PatternDecisionRequest). */
 export type PatternStatus = 'confirm' | 'monitor' | 'reject'
-/** A pattern row's persisted judgement state (wire PatternResponse.status). */
-export type PatternRowStatus = 'proposed' | 'monitoring' | 'confirmed' | 'rejected'
+/** A pattern row's persisted judgement state (wire PatternResponse.status).
+ *  `confirmed`/`rejected` are the USER's verdicts; `refuted`/`dormant` are the Reflexió S2
+ *  engine's own (mezo-eq85.2) — disproved, and parked for lack of data. */
+export type PatternRowStatus =
+  | 'proposed'
+  | 'monitoring'
+  | 'confirmed'
+  | 'rejected'
+  | 'refuted'
+  | 'dormant'
+/** A minta mögötti falszifikálható teszt (Reflexió S2, mezo-eq85.2). */
+export interface PatternTestPlan {
+  seriesA: string
+  seriesB: string
+  seriesALabel: string
+  seriesBLabel: string
+  lagDays: number
+  expectedDirection: 'positive' | 'negative'
+  minN: number
+  windowDays: number
+}
 export interface PatternCritique {
   statistical: number
   confounders: number
@@ -930,7 +949,15 @@ export interface Pattern {
   critique?: PatternCritique
   thinking?: string
   status?: PatternRowStatus
-  kind?: 'statistical' | 'ai_hypothesis'
+  kind?: 'statistical' | 'ai_hypothesis' | 'reflection'
+  /** Stabil identitás (ref-… / pair:<key>) — Reflexió S2. */
+  hypothesisKey?: string
+  testPlan?: PatternTestPlan
+  /** Determinisztikus bizonyosság 0..1 — sosem LLM-becslés. */
+  belief?: number
+  evidenceHits: number
+  evidenceMisses: number
+  origin?: 'pair_catalog' | 'weekly_hypothesis' | 'quick_notice' | 'nightly_reflection'
 }
 
 export type PatternMetricValueKind = 'number' | 'clock_hour' | 'binary'
@@ -1007,13 +1034,32 @@ export interface PatternMonitor {
 
 // --- Pattern pair detail (mezo-tk88.5) — /insights/patterns/:pairKey ---
 /** Az append-only pattern_event történet sor-fajtái (mirrors the backend CHECK constraint). */
-export type PatternEventKind = 'snapshot' | 'confirmed' | 'monitoring' | 'rejected' | 'reinforced' | 'promoted'
+export type PatternEventKind =
+  | 'snapshot'
+  | 'confirmed'
+  | 'monitoring'
+  | 'rejected'
+  | 'reinforced'
+  | 'promoted'
+  // Reflexió S2 (mezo-eq85.2)
+  | 'observation'
+  | 'evidence'
+  | 'user_reply'
+  | 'revised'
+  | 'refuted'
+  | 'dormant'
 export interface PatternEvent {
   kind: PatternEventKind
   occurredAt: string          // ISO datetime
   r?: number; n?: number; p?: number
   reinforcementCount?: number
   factId?: string
+  /** evidence: igazolta-e az éjszaka a jóslatot; undefined = a kapu nem volt élő. */
+  hit?: boolean
+  verdict?: string
+  channel?: string
+  choice?: string
+  text?: string
 }
 /** Egy illesztett nap a szórásdiagramhoz — élőben számolva, sosem tárolt. */
 export interface AlignedDay { date: string; a: number; b: number }

@@ -182,6 +182,12 @@ public class PatternEntity extends OwnedEntity {
      * the engine's nightly pass reads them and stops, whatever the statistics say.
      */
     public boolean isUserFrozen() {
+        return isUserFrozen(status);
+    }
+
+    /** The same question about a bare status string — the pure {@code HypothesisLifecycle} asks it
+     *  that way, and "what counts as the user's verdict" must have exactly one definition. */
+    public static boolean isUserFrozen(String status) {
         return STATUS_CONFIRMED.equals(status) || STATUS_REJECTED.equals(status);
     }
 }

@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.api.dto.MessageTool;
 import io.mrkuhne.mezo.api.dto.PatternCritique;
 import io.mrkuhne.mezo.api.dto.PatternEventResponse;
 import io.mrkuhne.mezo.api.dto.PatternResponse;
+import io.mrkuhne.mezo.api.dto.PatternTestPlan;
 import io.mrkuhne.mezo.api.dto.RecalledMemory;
 import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.entity.AiMessageEntity;
@@ -53,13 +54,22 @@ public interface CompanionMapper {
     }
 
     default PatternResponse toPatternResponse(PatternEntity entity) {
-        return toPatternResponse(entity, null);
+        return toPatternResponse(entity, null, null);
+    }
+
+    default PatternResponse toPatternResponse(PatternEntity entity, Integer citedWeeks) {
+        return toPatternResponse(entity, citedWeeks, null);
     }
 
     /** mezo-d20.7.7: {@code citedWeeks} rides BESIDE the statistic, never inside it — a weekly
      *  citation cannot move {@code confidence} or {@code status} (see
-     *  {@code HighlightCitationSource}); {@code null} = not measurable, never a stand-in zero. */
-    default PatternResponse toPatternResponse(PatternEntity entity, Integer citedWeeks) {
+     *  {@code HighlightCitationSource}); {@code null} = not measurable, never a stand-in zero.
+     *
+     *  <p>S2 (mezo-eq85.2): {@code testPlan} arrives PRE-MAPPED from {@code PatternTestPlanMapper}
+     *  — its series labels need a Spring bean, and these are hand-written {@code default} methods
+     *  a MapStruct {@code uses=} component cannot reach. */
+    default PatternResponse toPatternResponse(PatternEntity entity, Integer citedWeeks,
+                                              PatternTestPlan testPlan) {
         return PatternResponse.builder()
                 .citedWeeks(citedWeeks)
                 .id(entity.getId())
@@ -75,6 +85,12 @@ public interface CompanionMapper {
                 .status(entity.getStatus())
                 .lastDetectedAt(toOffset(entity.getLastDetectedAt()))
                 .thinking(entity.getCritique() == null ? null : entity.getCritique().reasoning())
+                .hypothesisKey(entity.getHypothesisKey())
+                .testPlan(testPlan)
+                .belief(entity.getBelief() == null ? null : entity.getBelief().doubleValue())
+                .evidenceHits(entity.getEvidenceHits())
+                .evidenceMisses(entity.getEvidenceMisses())
+                .origin(entity.getOrigin())
                 .build();
     }
 
@@ -88,6 +104,11 @@ public interface CompanionMapper {
                 .p(entity.getPayload().p())
                 .reinforcementCount(entity.getPayload().reinforcementCount())
                 .factId(entity.getPayload().factId())
+                .hit(entity.getPayload().hit())
+                .verdict(entity.getPayload().verdict())
+                .channel(entity.getPayload().channel())
+                .choice(entity.getPayload().choice())
+                .text(entity.getPayload().text())
                 .build();
     }
 

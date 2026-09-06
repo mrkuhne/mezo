@@ -7,7 +7,8 @@ const pair = (over: Partial<PatternMonitorPair>): PatternMonitorPair => ({
 })
 const pattern = (over: Partial<Pattern>): Pattern => ({
   id: 'p1', pairKey: 'k1', category: 'physiology', categoryLabel: 'Fiziológia',
-  title: 't', mechanism: 'm', evidence: [], kind: 'statistical', status: 'proposed', ...over,
+  title: 't', mechanism: 'm', evidence: [], kind: 'statistical', status: 'proposed',
+  evidenceHits: 0, evidenceMisses: 0, ...over,
 })
 
 describe('isStrongSignal', () => {

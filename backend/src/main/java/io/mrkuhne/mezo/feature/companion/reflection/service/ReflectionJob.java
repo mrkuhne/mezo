@@ -24,6 +24,10 @@ import org.springframework.stereotype.Component;
  *   <li>propose — the smart-tier hypothesis loop, capped by {@code reflection.propose.max-per-night}.</li>
  * </ol>
  *
+ * <p>Gated on the master {@code REFLECTION_SWITCH} as well as its own cron switch: three of its
+ * four collaborators only exist while Reflexió is on, so a job bean that survived the master
+ * switch would fail the context on startup instead of standing down (TextSignalListenerSwitchOffIT).
+ *
  * <p>Per-user isolation via {@link UserFanOut} (the V2.2/V3.1 idiom) AND per-step isolation inside
  * it: a failing LLM extraction must not cost the user tonight's evaluation, which needs no LLM at
  * all. The steps are ordered, not independent — evaluation reads what the catch-up just wrote.
@@ -32,7 +36,8 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(
-        name = {FeaturesConfiguration.COMPANION_SWITCH, FeaturesConfiguration.REFLECTION_JOB_SWITCH},
+        name = {FeaturesConfiguration.COMPANION_SWITCH, FeaturesConfiguration.REFLECTION_SWITCH,
+                FeaturesConfiguration.REFLECTION_JOB_SWITCH},
         havingValue = "true")
 public class ReflectionJob {
 

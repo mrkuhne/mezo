@@ -49,7 +49,7 @@ public final class HypothesisLifecycle {
                                   ReflectionProperties.Lifecycle cfg) {
         // The user's own verdict outranks every statistic — this branch is the whole reason the
         // engine is allowed to move rows at all (spec §4.3: it never overrides a judged row).
-        if (PatternEntity.STATUS_CONFIRMED.equals(status) || PatternEntity.STATUS_REJECTED.equals(status)) {
+        if (PatternEntity.isUserFrozen(status)) {
             return Decision.NONE;
         }
         if (negativeReplies >= NEGATIVE_REPLIES_TO_REFUTE) {

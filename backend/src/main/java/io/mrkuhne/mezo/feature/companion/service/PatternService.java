@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
+import io.mrkuhne.mezo.feature.companion.mapper.PatternTestPlanMapper;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -47,6 +48,8 @@ public class PatternService {
     private final KnowledgeFactRepository knowledgeFactRepository;
     private final PatternEventRepository patternEventRepository;
     private final CompanionMapper mapper;
+    /** S2 (mezo-eq85.2): the test plan's series labels need a bean — see PatternTestPlanMapper. */
+    private final PatternTestPlanMapper testPlanMapper;
     private final ApplicationEventPublisher eventPublisher;
     /** mezo-d20.7.7 — absent when the proactive switch is off; then the signal is null, not 0. */
     private final ObjectProvider<HighlightCitationSource> citationSource;
@@ -55,7 +58,8 @@ public class PatternService {
         Map<UUID, Integer> cited = citedWeeks(userId);
         return patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(userId)
                 .stream()
-                .map(pattern -> mapper.toPatternResponse(pattern, citedWeeksOf(cited, pattern.getId())))
+                .map(pattern -> mapper.toPatternResponse(pattern, citedWeeksOf(cited, pattern.getId()),
+                        testPlanMapper.toWire(pattern.getTestPlan())))
                 .toList();
     }
 
@@ -105,7 +109,8 @@ public class PatternService {
             eventPublisher.publishEvent(new PatternRetractedEvent(userId, pattern.getId()));
         }
         PatternEntity saved = patternRepository.saveAndFlush(pattern);
-        return mapper.toPatternResponse(saved, citedWeeksOf(citedWeeks(userId), saved.getId()));
+        return mapper.toPatternResponse(saved, citedWeeksOf(citedWeeks(userId), saved.getId()),
+                testPlanMapper.toWire(saved.getTestPlan()));
     }
 
     /**

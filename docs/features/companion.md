@@ -547,13 +547,19 @@ frozen `confirmed` rows) and `.reinforcePromotedFact` (`PatternDetectionService.
 one `reinforced` row per cooled-down recurrence); `PatternService.decide`
 (`PatternService.java:66-79`, helper at `PatternService.java:92-101`) appends a
 `confirmed`/`monitoring`/`rejected` row on **every** decision, plus — on the FIRST confirm only —
-a `promoted` row (payload = the new `factId`) written **after** the decision row. **First reader
-(S1 close, `mezo-tk88.3`):** the pattern-pair-detail endpoint's `events[]` — see below.
+a `promoted` row (payload = the new `factId`) written **after** the decision row — since
+Reflexió S2 (`mezo-eq85.2`) that confirm branch lives in `PatternService.applyEngineConfirm`, shared
+with the nightly engine. **A fourth writer since S2:** `HypothesisEvaluationService` appends one
+`evidence` row per evaluated night plus the lifecycle's `monitoring`/`refuted`/`dormant` transition
+rows (§3 Reflexió S2 above). **First reader (S1 close, `mezo-tk88.3`):** the pattern-pair-detail
+endpoint's `events[]` — see below.
 
 **V3.2 (`mezo-fnnq.13`) shipped the AI hypothesis loop — propose → critique → revise:**
 
-- **The weekly smart-tier pipeline** — `HypothesisPipelineService` (cron `HypothesisJob`, Sunday
-  03:00, switch `mezo.techcore.cron.hypothesis-job.enabled`): gather (last-7 daily-summary
+- **The smart-tier pipeline** — `HypothesisPipelineService` (**since Reflexió S2, `mezo-eq85.2`,
+  driven nightly by `ReflectionJob`'s propose step at 03:40, switch
+  `mezo.techcore.cron.reflection-job.enabled`; the weekly Sunday-03:00 `HypothesisJob` and its own
+  switch are retired**): gather (last-7 daily-summary
   narratives + confirmed-facts block + the live statistical patterns' r/n/p — grounded
   statistical support; **since V3.4 also** the weekly raw metric table + the non-live pairs'
   gate diagnostics, see the V3.4 block) → **propose** (strict-JSON, `llm.smart-model` — the Pro tier's debut) →
@@ -982,6 +988,72 @@ holds an LLM-extracted `mood`/`energy`/`stress` (1..5), a `confidence`, and the 
   never aborts the night. `TextSignalCatchUpIT` pins all four legs (missing ⇒ extracted, stale hash
   ⇒ new version, unchanged hash ⇒ enrichment restored with no new version, continued chat day ⇒
   re-versioned). Task 2's nightly job is the only production caller.
+
+**Reflexió S2 — lifecycle (`mezo-eq85.2`) — one falsifiable life-cycle for every pattern kind.**
+S1 made the prose measurable; S2 makes a hunch *testable*. Until now a `pattern` row was a statistic
+waiting for Daniel's verdict and nothing else: it could not say what would disprove it, it could not
+change its own mind, and the AI half of the engine ran **once a week**. S2 puts a state machine on
+the same table, gives every row a stored **test plan**, and replaces the weekly `HypothesisJob` with
+the nightly **`ReflectionJob`** at 03:40.
+
+- **The test plan is the hypothesis.** `TestPlanEnvelope` (typed jsonb on `pattern.test_plan`) names
+  the two series, the day lag, the expected direction and the gates (`minN`, `minGroupN`,
+  `windowDays`). `TestPlanEnvelope.key(plan)` = `"ref-" + 8 hex of SHA-256(canonical())`, where
+  `canonical()` lower-cases both series keys — so **rewording never changes the identity, and
+  swapping a series makes it a different hypothesis**, which is exactly the property that lets a
+  partial unique index (`uq_pattern_created_by_hypothesis_key`) stop the same guess being proposed
+  twice. Catalog rows get the same treatment for display (`hypothesis_key = "pair:<key>"`, origin
+  `pair_catalog`) — every kind can now answer "what would falsify this?".
+- **The state machine is a pure function.** `HypothesisLifecycle.decide(...)`
+  (`reflection/service/`) is static, Spring-free and DB-free (the `PearsonCorrelation`/`PatternGate`
+  precedent), so every transition is testable as arithmetic:
+
+  ```
+  proposed ──strong hit──▶ monitoring ──hit streak + ≥1 positive user reply──▶ confirmed (frozen)
+     │                          │
+     ├── miss streak ≥ refute-streak, or 2 negative user replies ──▶ refuted (terminal)
+     └── NO_DATA for > dormant-after-days ──▶ dormant ──any data──▶ proposed
+  ```
+
+  `confirmed` and `rejected` are **the user's** verdicts and the engine reads them and stops
+  (`PatternEntity.isUserFrozen`) — the one thing the loop must never do on its own is overrule
+  Daniel. Confirming is likewise a **joint** act: a hit streak alone never promotes a hypothesis to
+  durable knowledge, a positive user reply has to exist too.
+- **`belief` is arithmetic, never a model's estimate.** `HypothesisLifecycle.belief` =
+  `0.5·gate + 0.3·replies + 0.2·streak`, each term in [0,1]: the gate term blends `|r|/(2·strong-r)`
+  with a p-value ramp off `strong-p`; the reply and streak terms use `+1` denominators so a single
+  data point cannot read as certainty. The three weights DEFINE what the number means, so they are
+  code constants rather than config. Nothing in the S2 path calls an LLM — **Gemini phrases, code
+  decides**: no `status`, `belief`, `knowledge_fact` row or `memory_item.salience` is ever written
+  from a model answer.
+- **The nightly evaluation.** `HypothesisEvaluationService.evaluate(userId, today)` reads every
+  `proposed`/`monitoring`/`dormant` row with a test plan (never a `confirmed`/`rejected` one, and
+  never a `statistical` one — the Pearson job still owns those), re-runs the plan through the
+  **shared** `PatternGate` (made `public` for exactly this, together with `PearsonCorrelation`, so a
+  second copy of the math cannot give a second answer), and appends one `evidence` event carrying
+  `r`/`n`/`p`, the verdict name and `hit`. **A non-LIVE night is not a miss**: `hit` is null, both
+  tallies stay put, and both streaks BREAK on it — silence is not counter-evidence. Deliberately not
+  `@Transactional` (the `PatternDetectionService` precedent): each repository call owns its
+  transaction, so one row's DB failure cannot roll back every other row's evaluation, and the
+  per-row try/catch then isolates for real.
+- **One confirm, one meaning.** `PatternService.decide`'s confirm branch is extracted into
+  `applyEngineConfirm(userId, pattern)` and called from **both** the user path and the engine path,
+  so the fact promotion (`knowledge_fact`, `source=pattern`, the `promoted` event) and the
+  `PatternConfirmedEvent` graph sync can never drift between the two.
+- **`ReflectionJob` (03:40) replaces `HypothesisJob` (Sunday 03:00).** Four ordered steps per user —
+  catch-up → chat-day → evaluate → propose — each wrapped in its own try/catch on top of
+  `UserFanOut`'s per-user isolation, because a failing LLM extraction must not cost that user
+  tonight's evaluation, which needs no LLM at all. The steps are ordered, not independent: the
+  evaluation reads the series the catch-up just healed. `HypothesisPipelineService.run` gains an
+  `extraContext` parameter (the seam S3 fills) and now reads
+  `reflection.propose.max-per-night` instead of the retired `hypotheses.max-per-run`;
+  `hypotheses.cron`, `HYPOTHESIS_JOB_SWITCH` and the `hypothesis-job` yml block are gone, and the
+  memory observatory's `hypothesisCron` reports the reflection cron — that IS the loop's schedule now.
+- **Six new `pattern_event` kinds** — `observation`, `evidence`, `user_reply`, `revised`, `refuted`,
+  `dormant` — and `PatternEventPayloadEnvelope` grows at the END (`hit`, `verdict`, `channel`,
+  `choice`, `text`, `evidenceRefs`, `surfaced`) so Jackson reads every pre-S2 row with the new
+  components null (the `CompanionMessageEnvelope` precedent). `user_reply.choice` is the ONLY
+  user-authored input the lifecycle reads (`watch`/`confirm` positive, `reject` negative).
 
 ## 2. User-facing behavior
 
@@ -2410,6 +2482,30 @@ reading of the user's own prose (§1 above). Driving spec:
   `TextSignalListener` / `TextSignalSeriesService` / `DerivedSeriesService` /
   `ChatDaySignalService` / `TextSignalCatchUpService` exists (`TextSignalListenerSwitchOffIT`), and
   the four `TEXT_*` metrics report no data.
+
+### Backend tables (Reflexió S2 pattern lifecycle, ✅ `mezo-eq85.2`)
+
+Migration `202609071100_mezo-eq85.2_pattern_reflection_lifecycle.sql` (in `1.0.0_master.yml`) — no
+new table: the hypothesis lifecycle lands **on `pattern`/`pattern_event`**, because a self-proposed
+hunch and a catalog correlation are the same kind of claim and a second table would have meant two
+inboxes, two lifecycles and two truths.
+
+- **`pattern` gains six columns** — `hypothesis_key varchar(80)` (stable identity: `ref-<hash>` from
+  the test plan, `pair:<key>` on catalog rows), `test_plan jsonb` (typed `TestPlanEnvelope`),
+  `belief numeric(4,3)` (deterministic 0..1, §3 above — never an LLM estimate), `evidence_hits
+  integer not null default 0`, `evidence_misses integer not null default 0`, `origin varchar(24)`.
+- **Three CHECKs are re-issued** (drop + add, the constraint names unchanged): `ck_pattern_kind`
+  `+ reflection`, `ck_pattern_status` `+ refuted, dormant`, `ck_pattern_event_kind` `+ observation,
+  evidence, user_reply, revised, refuted, dormant`. One new CHECK, `ck_pattern_origin`
+  (`null or pair_catalog|weekly_hypothesis|quick_notice|nightly_reflection`). Every value is mirrored
+  by a `@Pattern` regex on the entity, by the OpenAPI `pattern:` and by the FE union — one commit.
+- **`uq_pattern_created_by_hypothesis_key (created_by, hypothesis_key) where hypothesis_key is not
+  null and is_deleted = false`** — the "never propose the same guess twice" invariant. Partial on
+  both counts: a soft-deleted row must not block a re-proposal, and every pre-S2 row (key null) is
+  untouched by it.
+- **`evidence_hits`/`evidence_misses` are `not null default 0`**, so existing rows migrate to an
+  honest "no evidence nights yet" rather than to null; `belief`, `test_plan`, `hypothesis_key` and
+  `origin` are nullable because a pre-S2 row genuinely has none of them.
 
 ### Backend tables (LLM audit log, ✅ `mezo-2zyu`)
 
@@ -4321,9 +4417,11 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
 - `mezo.companion.consolidation.backfill-weeks` / `backfill-months` = **8** / **3**
   (`@Min(1) @Max(520)` / `@Min(1) @Max(120)`) — finished periods each run re-offers; an existing rung
   is returned untouched, so the window is a self-heal and a history backfill in one.
-- `mezo.companion.hypotheses.cron` = `"0 0 3 * * SUN"` — the V3.2 weekly loop; switch
-  `mezo.techcore.cron.hypothesis-job.enabled` (`HYPOTHESIS_JOB_SWITCH`).
-- `mezo.companion.hypotheses.max-per-run` = **3** (`@Min(1) @Max(10)`) — hypotheses judged per run.
+- **Retired in Reflexió S2 (`mezo-eq85.2`):** `mezo.companion.hypotheses.cron`,
+  `mezo.companion.hypotheses.max-per-run` and `HYPOTHESIS_JOB_SWITCH`. The loop's schedule is now
+  `mezo.companion.reflection.cron` (03:40, `REFLECTION_JOB_SWITCH`) and its cap
+  `mezo.companion.reflection.propose.max-per-night`; only the two critique thresholds — which define
+  what SURVIVES, not when it runs — stayed on the `hypotheses` block.
 - `mezo.companion.hypotheses.keep-threshold` = **0.75** / `revise-threshold` = **0.50** (0..1) —
   the arch §4.7 routing thresholds; the four WEIGHTS are code constants (they define the score).
 - `mezo.companion.graph.max-hops` = **2** (`@Min(1) @Max(3)`) — W2.1: neighborhood traversal depth
@@ -4574,15 +4672,20 @@ Prose gate: `mezo.feature.day-review.enabled` (`DAY_REVIEW_SWITCH`) = **true** b
 
 The whole Reflexió epic's config surface lands in one validated record (picked up by
 `MezoApplication`'s `@ConfigurationPropertiesScan`, the `MemoryPlatformProperties` idiom). S1 uses
-`enabled` and `catch-up-days`; the rest is bound and range-validated here so slices 2–6 consume it
+`enabled` and `catch-up-days`; S2 (`mezo-eq85.2`) consumes `cron`, `propose.max-per-night` and the
+whole `lifecycle` block. The rest is bound and range-validated here so the later slices consume it
 without a second properties class.
 
 - `mezo.companion.reflection.enabled` = **true** (`FeaturesConfiguration.REFLECTION_SWITCH`) —
   the master switch for every Reflexió bean; off ⇒ no extraction call is reachable and the four
   `TEXT_*` metrics report no data.
 - `mezo.techcore.cron.reflection-job.enabled` = **true** (`REFLECTION_JOB_SWITCH`) — off ⇒ the
-  nightly job bean does not exist; `TextSignalCatchUpService` stays callable (the
-  `FlagSweepJob`-vs-`FlagService` idiom).
+  `ReflectionJob` bean does not exist (`ReflectionJobSwitchOffIT`); `TextSignalCatchUpService` and
+  `HypothesisEvaluationService` stay callable (the `FlagSweepJob`-vs-`FlagService` idiom). The job
+  is gated on the **master** `REFLECTION_SWITCH` too, not only on its own cron switch: three of its
+  four collaborators disappear with the master switch, so a job bean that outlived it would fail the
+  context on startup instead of standing down (`TextSignalListenerSwitchOffIT` asserts exactly that
+  combination — master off, cron on).
 - `mezo.companion.reflection.cron` = **`0 40 3 * * *`** — 03:40. It **shares that minute with the
   llm-log payload-retention purge** (`mezo.llm-log.retention.cron`), which is a single bounded UPDATE
   on an unrelated table; every other dawn slot is taken (02:20 summary, 02:40 patterns, 02:50
@@ -4592,9 +4695,13 @@ without a second properties class.
   catch-up re-checks for missing/stale signals.
 - `mezo.companion.reflection.notice.{max-per-day, min-gap-hours, quiet-from, quiet-to}` =
   **2 / 4 / 22:00 / 07:00** — quick-notice rate limits and quiet hours (consumed from S2 on).
-- `mezo.companion.reflection.propose.max-per-night` = **2** — cap on newly proposed patterns per run.
+- `mezo.companion.reflection.propose.max-per-night` = **2** — cap on newly proposed patterns per
+  run; since S2 this is what `HypothesisPipelineService` reads (it replaced `hypotheses.max-per-run`).
 - `mezo.companion.reflection.lifecycle.{confirm-streak, refute-streak, dormant-after-days, strong-r,
-  strong-p}` = **3 / 3 / 30 / 0.3 / 0.15** — pattern lifecycle thresholds.
+  strong-p}` = **3 / 3 / 30 / 0.3 / 0.15** — the lifecycle thresholds `HypothesisLifecycle` reads:
+  consecutive hits before a monitored row may be confirmed, consecutive misses before it is refuted,
+  no-data days before it goes dormant, and the `|r|` / `p` pair a night must clear to count as a hit.
+  The `belief` formula's three WEIGHTS are deliberately NOT here — they define what the number means.
 
 ### Config keys (`mezo.llm-log.*` — the audit log, `LlmLogProperties`/`LlmPricingProperties`)
 
@@ -6113,6 +6220,37 @@ newest-version-wins per source (including its effect on the derived people serie
 `FakeCompanionLlm` dispatches on `TextSignalExtractor.SIGNAL_MARKER`: `[[SIGNAL:{…}]]` in the entry
 text returns that JSON verbatim, `SIGNAL_FAIL` throws, and the un-scripted default is a `sure`,
 mildly positive signal mentioning Anna.
+
+**Reflexió S2 — lifecycle (`mezo-eq85.2`).** Four test classes, split by what they can prove.
+`feature/companion/reflection/HypothesisLifecycleTest` is a **pure unit test** — no Spring, no DB —
+because `HypothesisLifecycle.decide`/`belief` are pure functions: every arrow of the state machine
+gets one case (proposed→monitoring on a strong hit, monitoring→confirmed only WITH a positive reply,
+monitoring staying put on a streak without one, refuted by miss streak and by two negative replies,
+dormant after the configured no-data window, dormant reviving on data, and both user-frozen statuses
+refusing to move under maximal pressure), plus `belief`'s bounds/monotonicity/null case and
+`TestPlanEnvelope.key`'s stability across a re-cased series key.
+`HypothesisEvaluationServiceIT` drives the real gate over real `text_signal` + `sleep_log` rows —
+stubbing the statistic would have tested nothing, since falsifiability IS the feature. It seeds ten
+finished days of the plan `people:anna → sleep-duration-h` (lag 1, positive) and pins all five
+outcomes: a strong hit appends `evidence` + `monitoring` and fills `belief`; three hits plus a seeded
+`user_reply(chip, watch)` confirm the row AND promote it into a `knowledge_fact` with
+`source=pattern`; a deliberately **uncorrelated** seeding (identical group means, so the gate stays
+LIVE and `r ≈ 0`) refutes after three misses with three `hit=false` evidence rows; a `rejected` row
+is not even read (`evaluate` returns 0, no events, `belief` still null); and a row backdated 31 days
+with no data at all goes `dormant` with a `NO_DATA`/`hit=null` evidence row and both tallies at zero.
+`CreatedAtBackdater`'s allow-list gained `pattern` for that last case — `created_at` is
+`@CreationTimestamp updatable = false`, so a dormancy clock cannot be seeded any other way.
+`ReflectionJobIT` (own cached context, `mezo.techcore.cron.reflection-job.enabled=true`, the
+`DailySummaryJobIT` idiom) drives `runFor(today)` over the REAL fan-out with two users: one whose
+un-extracted journal entry the catch-up step heals, one whose open hypothesis the evaluate step
+moves — and a second case where user 1's only source is a `SIGNAL_FAIL` and user 2's evaluation
+still runs, which is the whole point of per-step isolation on top of `UserFanOut`.
+`ReflectionJobSwitchOffIT` pins the structural half: job switch off ⇒ no `ReflectionJob` bean.
+`PatternPopulator.reflection(owner, plan, status)` and `PatternEventPopulator.userReply(...)` are the
+new fixtures. **Regression coverage:** `PatternDetectionServiceIT` still passes with the test plan
+stamped on statistical rows, `CompanionPatternApiIT`/`CompanionPatternPairDetailApiIT` with the
+widened `PatternResponse`/`PatternEventResponse`, and `CompanionMemoryOverviewApiIT` now asserts the
+observatory's `hypothesisCron` is the 03:40 reflection cron.
 
 ## 9. Decisions, gotchas & deferred
 
