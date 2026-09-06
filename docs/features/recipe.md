@@ -2,7 +2,7 @@
 title: Recipes (Receptek)
 type: feature-domain
 status: done
-updated: 2026-09-02
+updated: 2026-09-06
 tags: [fuel, recipe, frontend, data-layer, backend, llm]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/recipe
@@ -63,7 +63,7 @@ Error codes: `RECIPE_WORKSHOP_LLM_UNAVAILABLE` (503, companion off), `RECIPE_WOR
 
 ## 5. Integrations
 
-- **Pantry** — every line FK's `pantry_item`; definition reads (name/macros/NOVA/category at score time) go through `item.getCatalog()`. Deleting a pantry item is RESTRICTed by the FK (a live recipe line blocks a hard delete); soft-delete only hides the item from new line resolution — an existing line's frozen snapshot survives, but the fit score degrades honestly once the item can no longer be re-resolved. See [`pantry.md`](pantry.md) §5.
+- **Pantry** — every line FK's `pantry_item`; definition reads (name/macros/NOVA/category at score time) go through `item.getCatalog()`. Deleting a pantry item is RESTRICTed by the FK (a live recipe line blocks a hard delete); soft-delete only hides the item from new line resolution — an existing line's frozen snapshot survives, but the fit score degrades honestly once the item can no longer be re-resolved. See [`pantry.md`](pantry.md) §5. **Macros are honestly nullable (`mezo-6omv`, `mezo-xaq5`)** — `PantryMacros`' fields are nullable on the wire and the read model no longer fabricates `""`/`0` defaults for a definition that simply has no value, so a recipe line built on an unmeasured item renders „nincs adat" instead of a plausible-looking zero. Consumers (including `RecipeEditorPage`) must null-guard rather than arithmetic on a missing macro.
 - **Meal** — `MealService`'s recipe arm computes the per-serving rollup (`MealService.perServing`), applies `recipe_overrides` keyed by `lineOrder` with a `pantryItemId` consistency check, and drives `RecipeLogs`.
 - **Nutrition** — `MealScoringService.recipeFit`/`ScoredLine` (shared with the logged-meal scorer, see [`fuel.md`](fuel.md) §9).
 - **Companion** — every LLM call is behind a consumer-owned port ([ADR 0012](../decisions/0012-consumer-owned-llm-ports.md)); `LlmCallContextHolder` feeds the llm-usage audit log.

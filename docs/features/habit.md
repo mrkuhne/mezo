@@ -7,17 +7,11 @@ tags: [today, nap, me, growth, fuel, train, backend, frontend, data-layer, progr
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/habit
   - frontend/src/data/habit
-  - frontend/src/data/habit/habitFrameworkRules.ts
   - frontend/src/features/today/logic/habitAction.ts
   - frontend/src/features/today/pages/NapRutinPage.tsx
   - frontend/src/features/me/pages/RutinHubPage.tsx
-  - frontend/src/features/me/pages/RoutineWizardPage.tsx
   - frontend/src/features/me/pages/HabitPage.tsx
-  - frontend/src/features/me/logic/routineSentence.ts
   - frontend/src/features/me/logic/habitFormation.ts
-  - frontend/src/features/me/components/HabitFormationCard.tsx
-  - backend/src/main/java/io/mrkuhne/mezo/feature/habit/service/HabitFormationEstimator.java
-  - frontend/src/features/me/sheets/HabitEditSheet.tsx
   - api/feature/habit/habit.yml
 related: [today, growth, me, fuel, train, intention, _platform-data-layer, _platform-api-backend]
 ---

@@ -8,20 +8,12 @@ key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
   - backend/src/main/java/io/mrkuhne/mezo/feature/notification
   - backend/src/main/java/io/mrkuhne/mezo/feature/appnotification
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalSuggestionNotificationListener.java
   - api/feature/notification/notification.yml
   - frontend/public/push-sw.js
   - frontend/src/data/notification
-  - frontend/src/features/notification
-  - frontend/src/data/notification/feedHooks.ts
-  - frontend/src/features/me/pages/NotificationFeedPage.tsx
+  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalSuggestionNotificationListener.java
   - frontend/src/features/me/pages/NotificationsPage.tsx
-  - frontend/src/shared/lib/toastBus.ts
-  - frontend/src/shared/ui/ToastProvider.tsx
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607291000_mezo-h4wp.6.1_create_push_subscription.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607291400_mezo-h4wp.6.2_create_notification_pref_and_push_log.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607291500_mezo-h4wp.6.3_create_notification_schedule.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202608181400_mezo-gzhp.1_create_app_notification.sql
+  - frontend/src/features/me/pages/NotificationFeedPage.tsx
 related: [proactive, today, ritual, me, fuel, insights, journal, companion, _platform-api-backend]
 ---
 

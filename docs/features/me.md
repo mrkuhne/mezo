@@ -2,13 +2,9 @@
 title: Me Area
 type: feature-domain
 status: mixed
-updated: 2026-09-05
+updated: 2026-09-06
 tags: [me, biometrics, progression, frontend, backend, data-layer, notification]
 key_files:
-  - frontend/src/features/me/pages/EnHubPage.tsx
-  - frontend/src/features/me/pages/RutinHubPage.tsx
-  - frontend/src/features/me/pages/RoutineWizardPage.tsx
-  - frontend/src/features/me/pages/HabitPage.tsx
   - frontend/src/features/me
   - frontend/src/data/me
   - api/feature/goal/goal.yml
@@ -702,6 +698,7 @@ cd frontend && VITE_USE_MOCK=true pnpm test     # mock
 - `frontend/src/features/me/logic/routineSentence.ts` — the **one** renderer of a recipe's Hungarian sentence, shared by the wizard and the recipe page so the two cannot drift ([habit.md §6](habit.md)); `frontend/src/features/me/logic/habitAnchors.ts` — the wizard's catalog-resolved FOGG anchor chips.
 - `frontend/src/features/me/pages/BeallitasokPage.tsx` — **the `/me/beallitasok` settings page** (hub-tile-reorg, `mezo-o486`): grouped-list scaffold (`MozaikPage`/`PageHead`/`PageHero`/`PageBody`, no design_2.0 prototype) — a Téma section (the `SettingsSheet` picker, inlined) + an Értesítések row (`useNotificationPrefs` → `/me/ertesitesek/beallitasok`) + an AI-napló row (`useLlmUsageSummary` → `/me/ai-usage`). Opened from the hub's Beállítások tile.
 - **`MeSection.tsx` and `ProfilePage.tsx` are DELETED (`mezo-d20.6.1` / `mezo-d20.9.1`)** — the shell dissolved and its index page was absorbed by `EnHubPage`; `pages/tabs.ts` (`ME_TABS`) went with them, as did the shared `features/progression/components/AppHero.tsx` and `shared/ui/SubNavDropdown.tsx` (whole-app deletions, not Me-local). `MeHead.tsx` had already been superseded by `AppHero` in `mezo-k7rn`.
+- `frontend/src/features/me/pages/HabitPage.tsx` + `components/{FormationCurve,HabitFormationCard,HabitFormationHistory,HabitContextRings}.tsx` + `logic/habitFormation.ts` — the `mezo-08zl` **formation view** on `/me/rutin/szokas/:habitKey`: where the habit stands on the way to automaticity, replacing the old 28-day proportion strip. The backend (`useHabitFormation`) returns **numbers only**; every stage label, range phrase and caption is owned by the pure `logic/habitFormation.ts`, so the copy changes without a backend release. Absent context signals are **omitted, not zeroed**. Full narrative in [`habit.md`](habit.md) §2/§3.
 - `frontend/src/features/me/pages/GoalsPage.tsx` + `components/GoalCourseHero.tsx` + `logic/goalOverviewCopy.ts` — the `mezo-ricj.2` status-led goal hub: backend-owned course state in the hero, five stable overview tiles plus the conditional suggestion tile, invalid-state calorie fail-safe and active-goal empty state.
 - `frontend/src/features/me/pages/GoalSuggestionPage.tsx` + `components/GoalSuggestionDiffGrid.tsx` + `logic/goalSuggestionDiff.ts` — the `mezo-ricj.3` review flow, visually locked by `mezo-ricj.6`: a colorful reason summary above a pure fixed-order formatter and a presentational five-cell, fixed-baseline grid; warnings/blockers, stale refresh, confirmed dismiss and historical states surround the fingerprint-gated apply action.
 - `frontend/src/features/me/pages/Goal{Diet,Segment,Plans,Guards,Settings}Page.tsx` + `components/Goal{DetailHero,DietWeekCard,SegmentRail,ConnectionTimeline,GuardCard}.tsx` — the five colorful Cél siblings and their presentational cards. `GoalDetailHero` gives each concern the same app-native asymmetric hero and three-pod information rhythm; all visible facts use `useGoalOverview`. The plan page reuses `AttachPlanSheet` and the settings page reuses `EditGoalSheet` for writes.

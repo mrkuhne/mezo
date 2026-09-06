@@ -2,7 +2,7 @@
 title: Needs
 type: feature-domain
 status: done
-updated: 2026-08-30
+updated: 2026-09-06
 tags: [today, ritual, growth, gamification, frontend, data-layer, backend]
 key_files:
   - frontend/src/features/today/logic/needs.ts
@@ -207,6 +207,8 @@ mirrors `NEEDS_TUNING.bands.green` / the mock award constants; keep the three in
 tuning changes (§7).
 
 ## 5. Integrations
+
+- **→ Karakter (`mezo-1gim.15`)** — the character dossier's trend window reads Életjel/needs alongside intention, the decision journal and gratitude. A **pure outbound read**: nothing on the needs side changed for it. See [`character.md`](character.md).
 
 - **← Fuel** — meal logs (`FuelDay.meals`, both today + yesterday) refill Energia (`mainMeal`
   `+40` / `snack` `+15`, classified off the fuel slot kinds, `fuelConfig.ts:13`); water volume

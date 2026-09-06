@@ -6,16 +6,11 @@ updated: 2026-09-06
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
-  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/LifeGoalSource.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/LifeGoalSnapshotBlock.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/LifeGoalText.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/LifeGoalTools.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/llmlog
   - api/feature/companion/companion.yml
   - api/feature/memory-retrieval/memory-retrieval.yml
   - frontend/src/data/insights/chatHooks.ts
   - frontend/src/data/insights/memoryFeedbackHooks.ts
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607031400_mezo-fnnq.2_create_ai_conversation_message.sql
   - docs/decisions/0008-companion-llm-spring-ai-2-gemini.md
 related: [insights, proactive, today, me, _platform-api-backend, _platform-auth-security, _platform-notifications, journal, ritual]
 ---
