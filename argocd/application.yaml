@@ -17,7 +17,8 @@ spec:
     directory:
       recurse: true
       # Never sync the secret templates — real secrets live only in the cluster.
-      exclude: "{**/secret.example.yaml,**/secret.example-*.yaml}"
+      # values.yaml is Helm input for the monitoring Application, never a manifest for this one.
+      exclude: "{**/secret.example.yaml,**/secret.example-*.yaml,**/values.yaml}"
   destination:
     server: https://kubernetes.default.svc
     namespace: mezo

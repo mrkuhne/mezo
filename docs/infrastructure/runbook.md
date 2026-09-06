@@ -126,7 +126,7 @@ Or open the ArgoCD UI for a live topology + health view.
 The node has ONE disk (74.8 GiB) shared by the OS, containerd image layers and every
 `local-path` PVC. On 2026-09-06 it sat at **82 % used (59 GiB) with 599 images / ~50 GiB of
 orphaned containerd layers** from 170+ release tags (content store 24 GiB + overlayfs 30 GiB)
-plus a 1.8 GiB journal; the kubelet evicts pods at 85 %. Two guards now exist:
+plus a 1.8 GiB journal; the kubelet now evicts at 10 % free (`eviction-hard`), i.e. 90 % used. Two guards now exist:
 
 1. **Kubelet GC thresholds** in `/etc/rancher/k3s/config.yaml` (`kubelet-arg`:
    `image-gc-high-threshold=70`, `image-gc-low-threshold=60`,
@@ -159,8 +159,34 @@ VictoriaMetrics k8s-stack (`monitoring` namespace, [ADR 0037](../decisions/0037-
 
 Host-side pieces (NOT in git, re-apply on a rebuild): `/etc/rancher/k3s/config.yaml` kubelet
 GC args (see *Disk & image GC*) and `/var/lib/rancher/k3s/server/manifests/traefik-config.yaml`
-(HelmChartConfig turning on Traefik's Prometheus port 9100; contents in the plan
-`docs/superpowers/plans/2026-09-06-infra-observability.md` Task 6).
+(HelmChartConfig turning on Traefik's Prometheus port 9100):
+
+```yaml
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    metrics:
+      prometheus:
+        entryPoint: metrics
+        addRoutersLabels: true
+        addServicesLabels: true
+        addEntryPointsLabels: true
+    ports:
+      metrics:
+        port: 9100
+        expose:
+          default: false
+```
+
+**Merge/branch note:** The `monitoring` Application is hand-applied and its values source
+tracks a git ref. After any branch work on `k8s/monitoring/values.yaml`: merge to main, then
+`kubectl apply -f argocd/monitoring-application.yaml` and confirm `kubectl get app monitoring -n
+argocd` is Synced/Healthy **before** deleting the branch — otherwise repo-server cannot resolve
+the ref and the stack becomes unmanaged.
 
 **Check scrape targets:**
 ```bash

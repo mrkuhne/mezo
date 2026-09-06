@@ -51,7 +51,7 @@ data:
           "targets": [ { "expr": "node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"} / node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"}" } ] },
         { "id": 9, "type": "logs", "title": "Backend ERROR logs",
           "gridPos": { "x": 0, "y": 24, "w": 24, "h": 10 },
-          "datasource": { "type": "victoriametrics-logs-datasource" },
+          "datasource": { "type": "victoriametrics-logs-datasource", "uid": "VictoriaLogs" },
           "targets": [ { "expr": "kubernetes.container_name:backend | unpack_json | filter log.level:ERROR" } ] }
       ]
     }
