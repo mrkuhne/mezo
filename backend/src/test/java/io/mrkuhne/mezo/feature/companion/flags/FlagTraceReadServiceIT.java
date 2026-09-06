@@ -18,6 +18,8 @@ import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.FlagLogPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -26,6 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.support.TransactionTemplate;
 
 /**
  * The observer's read side (spec 2026-09-05 §5, §7). Content, not coverage: the closing state and
@@ -56,6 +59,16 @@ class FlagTraceReadServiceIT extends AbstractIntegrationTest {
      *  can backdate it — {@code FlagLogPopulator.raiseAt} already does exactly that. */
     @Autowired
     private FlagLogPopulator flagLogPopulator;
+    /** The card's created_at is @CreationTimestamp + non-updatable (OwnedEntity), so a controlled
+     *  delivery instant needs a native UPDATE — the FlagLogPopulator.raiseAt seam's own idiom. */
+    @PersistenceContext
+    private EntityManager em;
+    /** This class is deliberately NOT {@code @Transactional} (see the DAY field's javadoc), so the
+     *  native UPDATE below has no ambient transaction of its own — the
+     *  {@code GoalSuggestionNotificationIT}/{@code MemoryEmbeddingAnnQueryIT} house idiom for the
+     *  same situation. */
+    @Autowired
+    private TransactionTemplate transactionTemplate;
 
     private UUID createUser() {
         return userPopulator.createUser().getId();
@@ -92,6 +105,15 @@ class FlagTraceReadServiceIT extends AbstractIntegrationTest {
             null, null, List.of(), List.of()));
         row.setGeneratedAt(Instant.now());
         return companionMessageRepository.saveAndFlush(row).getId();
+    }
+
+    private UUID cardAt(UUID userId, String adviceKey, Instant deliveredAt) {
+        UUID id = card(userId, adviceKey);
+        transactionTemplate.executeWithoutResult(status -> em
+            .createNativeQuery("update companion_message set created_at = :at where id = :id")
+            .setParameter("at", deliveredAt).setParameter("id", id).executeUpdate());
+        em.clear();
+        return id;
     }
 
     @Test
@@ -324,5 +346,54 @@ class FlagTraceReadServiceIT extends AbstractIntegrationTest {
         assertThat(day.rules().stream()
             .filter(r -> r.flagKey().equals(FlagKey.SLEEP_DEBT)).findFirst().orElseThrow()
             .cardOutcome()).isNull();
+    }
+
+    @Test
+    void a_rule_that_went_clear_after_winning_is_not_stamped_with_a_card_outcome() {
+        UUID userId = createUser();
+        // Won the card at 10:00 …
+        flagLogPopulator.raiseAt(userId, FlagKey.SLEEP_DEBT, FlagKey.SOURCE_SWEEP, sleepDebt(1.4), at(10));
+        trace(userId, FlagKey.SLEEP_DEBT, "raised", null, "logged", null, at(10));
+        UUID cardId = cardAt(userId, FlagKey.SLEEP_DEBT, at(11));
+        // … and turned clear by 20:00, which is the row the day CLOSES on.
+        trace(userId, FlagKey.SLEEP_DEBT, "clear", null, null,
+            new FlagVerdict.ClearEvidence("deficit_hours", 0.4, 1.0, null), at(20));
+
+        FlagTraceReadService.TraceDay day = service.read(userId, DAY);
+        FlagTraceReadService.RuleState sleep = day.rules().stream()
+            .filter(r -> r.flagKey().equals(FlagKey.SLEEP_DEBT)).findFirst().orElseThrow();
+
+        // The card is still the day's card — that is a fact about the DAY, not about the rule's
+        // closing state, so the winner keeps naming it (the surface badges „Nyertes" from here).
+        assertThat(day.winner()).isNotNull();
+        assertThat(day.winner().flagKey()).isEqualTo(FlagKey.SLEEP_DEBT);
+        assertThat(day.winner().cardId()).isEqualTo(cardId);
+        // But the closing row is a LATER state than the decision, so it carries no card outcome:
+        // „Rendben" plus a „Nyertes" stamp on the same tile is the contradiction this closes.
+        assertThat(sleep.outcome()).isEqualTo("clear");
+        assertThat(sleep.cardOutcome()).isNull();
+    }
+
+    @Test
+    void a_rule_that_first_raised_after_the_card_never_competed_and_is_not_lost() {
+        UUID userId = createUser();
+        flagLogPopulator.raiseAt(userId, FlagKey.SLEEP_DEBT, FlagKey.SOURCE_SWEEP, sleepDebt(1.4), at(7));
+        trace(userId, FlagKey.SLEEP_DEBT, "raised", null, "logged", null, at(7));
+        cardAt(userId, FlagKey.SLEEP_DEBT, at(8));
+        // Late-eating only becomes true in the evening — hours after the card was chosen.
+        flagLogPopulator.raiseAt(userId, FlagKey.LATE_EATING, FlagKey.SOURCE_SWEEP,
+            FlagPayloadEnvelope.lateEating(new FlagPayloadEnvelope.LateEating(
+                120, 22.0, 2, 3, 22.0, 2, Map.of(), Map.of())),
+            at(20));
+        trace(userId, FlagKey.LATE_EATING, "raised", null, "logged", null, at(20));
+
+        FlagTraceReadService.TraceDay day = service.read(userId, DAY);
+        Map<String, FlagTraceReadService.RuleState> byKey = day.rules().stream()
+            .collect(java.util.stream.Collectors.toMap(
+                FlagTraceReadService.RuleState::flagKey, r -> r));
+
+        assertThat(byKey.get(FlagKey.SLEEP_DEBT).cardOutcome()).isEqualTo("won");
+        assertThat(byKey.get(FlagKey.LATE_EATING).outcome()).isEqualTo("raised");
+        assertThat(byKey.get(FlagKey.LATE_EATING).cardOutcome()).isNull();
     }
 }
