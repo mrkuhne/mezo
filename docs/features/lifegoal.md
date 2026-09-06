@@ -81,8 +81,9 @@ ADR: [`0034-measurable-life-goals.md`](../decisions/0034-measurable-life-goals.m
   the `CelPage` conflict sentence, the Heti hub's `WeekGoalsCard` + `goalWeekSentence`, the Célok
   hub's closed-goals section + Súlycél row, the `EnHubPage` life-goal hero, and the Growth
   skill-row `goalchip` (`goalSkillChips`) — all dual-mode, all with their own tests + visual
-  goldens. **Backend, same slice:** the weekly-review prompt's `ÉLETCÉLOK · AZ ELMÚLT 7 NAP`
-  block in `WeeklyReviewContextSources` (see [`proactive.md`](proactive.md) §3).
+  goldens. **Backend, same slice:** the weekly-review prompt's `ÉLETCÉLOK · A HÉT IRÁNYA`
+  block in `WeeklyReviewContextSources`, windowed to the reviewed week by `mezo-a9os` (see
+  [`proactive.md`](proactive.md) §3).
 - **Companion embedding (`mezo-iizd.10`, ✅ shipped):** `LifeGoalCompanionAdapter` implements the
   companion-owned `LifeGoalSource` port; the `[Célok]` block rides both `ContextSnapshotAssembler
   .render` (chat) and `.renderWithoutBiometrics` (morning message), and `get_life_goals` is a new
@@ -181,7 +182,7 @@ every one of them renders NOTHING rather than a fabricated number when its sourc
   the **RUNNING week only** — `useLifeGoalToday`'s window is the 7 days trailing NOW, so on a
   browsed-back week it would show this week's arrows under the header „Célok · a hét iránya"; the
   gate is `WeekHubPage`'s existing `running` boolean, the same one `WeekNextCard` uses.
-- **Weekly-review prompt · `ÉLETCÉLOK · AZ ELMÚLT 7 NAP`** — backend, see §5 and
+- **Weekly-review prompt · `ÉLETCÉLOK · A HÉT IRÁNYA`** — backend, see §5 and
   [`proactive.md`](proactive.md) §3.
 - **Célok hub · closed goals + Súlycél row** (`CelokPage`, `mezo-iizd.4`) — a `done` goal used to
   vanish from every surface even though `GET /api/life-goals` returns it; it now gets its own
@@ -638,15 +639,16 @@ permissive than the real API:
   deeplink `/me/goals/{goalId}`, `dedupKey = <goalId>:<planKey>:<day>`, where `planKey` is the
   first 12 hex chars of `SHA-256(ha + " " + akkor + " " + trigger.source)`
   (`LifeGoalTriggerRules.planKey`) — see §3 and §9.
-- **→ Proactive (weekly review)** (`mezo-iizd.9`, new): `WeeklyReviewContextSources` reads
-  `LifeGoalProgressService#today(userId)` directly (an acyclic `proactive → lifegoal` read, the
-  `CheckInNoteSourceAdapter` precedent — no port minted) and renders the `ÉLETCÉLOK · AZ ELMÚLT
-  7 NAP` prompt block: max 5 ACTIVE goals, `title [dimension] <arrow-word> · N találat-nap a
-  7-ből`. *Contract:* the block is FACTS the model must explain, never recompute; the header names
-  the trailing-7-day window it actually measures (one day off the Monday-06:50 cron's reviewed
-  week — a windowed `today(from, to)` variant is a separate, later issue); and a goal with **no
-  data-day** renders `ezen a héten még nincs adata` rather than a `0 találat-nap` tally, the same
-  rule `goalWeekSentence.ts` enforces on the Heti hub. See [`proactive.md`](proactive.md) §3.
+- **→ Proactive (weekly review)** (`mezo-iizd.9`, windowed by `mezo-a9os`): `WeeklyReviewContextSources`
+  reads `LifeGoalProgressService#summary(userId, weekStart, weekEnd)` directly (an acyclic
+  `proactive → lifegoal` read, the `CheckInNoteSourceAdapter` precedent — no port minted) and
+  renders the `ÉLETCÉLOK · A HÉT IRÁNYA` prompt block: max 5 ACTIVE goals, `title [dimension]
+  <arrow-word> · N találat-nap a 7-ből`. *Contract:* the block is FACTS the model must explain,
+  never recompute; the header names the **reviewed week** it actually measures — `summary` takes
+  the SAME `[weekStart, weekEnd]` the Monday-06:50 cron passes to every other source, not a
+  trailing-7-day window off render time; and a goal with **no data-day** renders `ezen a héten
+  még nincs adata` rather than a `0 találat-nap` tally, the same rule `goalWeekSentence.ts`
+  enforces on the Heti hub. See [`proactive.md`](proactive.md) §3.
 - **→ Today (Nap mosaic)** (`mezo-iizd.9`): `LifeGoalTodayTile` reads `useLifeGoalToday()` and
   renders ONE fact — today's pillar tally over the goals that report counts — plus the leading
   goal's 7 dots. It renders `null` (never a fabricated `0 / 0`) when there is no active goal, when
