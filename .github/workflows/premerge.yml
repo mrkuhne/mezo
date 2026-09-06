@@ -55,7 +55,7 @@ jobs:
           fi
           jq -r .head.sha /tmp/pr.json | sed 's/^/head_sha=/' >> "$GITHUB_ENV"
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           ref: refs/pull/${{ inputs.pr }}/merge
           fetch-depth: 0
@@ -81,10 +81,12 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
-      - uses: actions/setup-node@v4
+          # No `version:` — the pin lives in frontend/package.json's `packageManager`
+          # field, so CI and every local shell resolve the SAME pnpm (mezo-q8oy).
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
 
@@ -100,7 +102,7 @@ jobs:
             || { echo '::error::Merging this PR makes the committed contract artifacts stale — two branches each regenerated them against their own base. Merge main into the branch, regenerate, commit.'; exit 1; }
 
       - name: Cache Playwright browsers
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: pw-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
@@ -111,7 +113,7 @@ jobs:
         run: pnpm test:visual
       - name: Upload visual diffs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: premerge-visual-diffs
           path: frontend/test-results/

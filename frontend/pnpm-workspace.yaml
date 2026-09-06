@@ -1,0 +1,15 @@
+# pnpm settings. pnpm 10+ stopped reading the `pnpm` field in package.json (it warns
+# and ignores it) and pnpm 11 renamed the build allowlist to `allowBuilds`. This file
+# is NOT declaring a monorepo — `packages: ['.']` just marks frontend/ as the settings
+# root for this single project.
+#
+# pnpm 10+ blocks dependency build scripts by default, and pnpm 11 makes an ignored
+# build an ERROR (ERR_PNPM_IGNORED_BUILDS), so this list is load-bearing: without it
+# `pnpm install` fails outright, and under an older pnpm it would "succeed" with no
+# msw service worker and no sharp native binary (mezo-q8oy).
+packages:
+  - '.'
+
+allowBuilds:
+  msw: true
+  sharp: true

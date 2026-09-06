@@ -67,11 +67,13 @@ jobs:
       - uses: pnpm/action-setup@v4
         if: steps.gate.outputs.run == 'true'
         with:
-          version: 9
+          # No `version:` — the pin lives in frontend/package.json's `packageManager`
+          # field, so CI and every local shell resolve the SAME pnpm (mezo-q8oy).
+          package_json_file: frontend/package.json
       - uses: actions/setup-node@v7
         if: steps.gate.outputs.run == 'true'
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
