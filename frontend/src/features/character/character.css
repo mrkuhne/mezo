@@ -163,7 +163,10 @@
 .kr-chathand .kr-chev { color: var(--text-muted); font-size: 13px; }
 
 /* ── feed (.feedday / .feedtile / .feedrow / .feeddiff) ── */
-.kr-feedday { font-size: 8px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); padding: 8px 14px 2px; }
+.kr-feedday { display: flex; align-items: center; gap: 8px; width: calc(100% - 24px); margin: 0 12px; padding: 10px 2px 6px; border: none; background: none; font-family: inherit; color: inherit; cursor: pointer; }
+.kr-feedday .kr-fdlbl { font-size: 8px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
+.kr-feedday .kr-fdcount { font-size: 8.5px; font-weight: 600; color: var(--text-secondary); margin-left: auto; }
+.kr-feedday .kr-fdchev { font-size: 12px; color: var(--text-muted); }
 .kr-feedtile { border-radius: 18px; padding: 11px 12px; margin: 0 12px 4px; background: var(--surface-card); border: 0.5px solid var(--divider); }
 .kr-feedrow { display: flex; gap: 8px; padding: 7px 0; align-items: flex-start; }
 .kr-feedrow + .kr-feedrow { border-top: 0.5px solid var(--divider); }

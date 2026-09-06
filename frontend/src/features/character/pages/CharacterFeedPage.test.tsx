@@ -66,7 +66,9 @@ describe('CharacterFeedPage', () => {
 
   test('CONFERENCE_CHANGE items render as a coral diff row that navigates to the konzílium', () => {
     render(<CharacterFeedPage />)
-    const diffRow = screen.getByText(/Vasárnapi konzílium/).closest('button')
+    // The konzílium item lives in the TEGNAP group (Task 9: only the newest day starts open).
+    fireEvent.click(screen.getByRole('button', { name: /TEGNAP/ }))
+    const diffRow = screen.getByText(/Vasárnapi konzílium/).closest('button.kr-feeddiff')
     expect(diffRow).toHaveClass('kr-feeddiff')
     fireEvent.click(diffRow!)
     expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/konzilium')
@@ -129,7 +131,28 @@ describe('CharacterFeedPage', () => {
 
   test('CONFERENCE_CHANGE rows never get a ⚙ — they keep linking to the transcript', () => {
     render(<CharacterFeedPage />)
+    // The konzílium item lives in the TEGNAP group (Task 9: only the newest day starts open).
+    fireEvent.click(screen.getByRole('button', { name: /TEGNAP/ }))
     const diffRow = screen.getByText(/Vasárnapi konzílium/).closest('.kr-feeddiff')
     expect(diffRow!.querySelector('.kr-gepq')).toBeNull()
+  })
+
+  test('only the newest day is open; older days collapse behind a header with a count', () => {
+    hoisted.items = [
+      { kind: 'OBSERVATION', at: '2026-08-30T06:00:00Z', expertKey: 'drill', text: 'Mai megfigyelés.' },
+      { kind: 'OBSERVATION', at: '2026-08-29T06:00:00Z', expertKey: 'drill', text: 'Tegnapi megfigyelés.' },
+    ]
+    render(<CharacterFeedPage />)
+
+    expect(screen.getByText('Mai megfigyelés.')).toBeInTheDocument()
+    expect(screen.queryByText('Tegnapi megfigyelés.')).not.toBeInTheDocument()
+
+    // Both days carry exactly one item, so both headers read "1 megfigyelés" — disambiguate by
+    // collapsed state (aria-expanded="false") rather than the (ambiguous) accessible name alone.
+    const collapsedHeaders = screen.getAllByRole('button', { name: /1 megfigyelés/ })
+      .filter((btn) => btn.getAttribute('aria-expanded') === 'false')
+    expect(collapsedHeaders).toHaveLength(1)
+    fireEvent.click(collapsedHeaders[0])
+    expect(screen.getByText('Tegnapi megfigyelés.')).toBeInTheDocument()
   })
 })
