@@ -116,6 +116,17 @@ describe('mezo nav (real mode default)', () => {
     const router = renderApp('/mezo/weekly')
     await waitFor(() => expect(router.state.location.pathname).toBe('/me/week'))
   })
+
+  test('the coaching tile opens the hub, and the hub opens both surfaces', async () => {
+    const router = renderApp('/mezo')
+    await userEvent.click(await screen.findByRole('button', { name: 'Proaktív coaching' }))
+    expect(router.state.location.pathname).toBe('/mezo/coaching')
+    await userEvent.click(await screen.findByRole('button', { name: 'Megfigyelő' }))
+    expect(router.state.location.pathname).toBe('/mezo/coaching/megfigyelo')
+    router.navigate('/mezo/coaching')
+    await userEvent.click(await screen.findByRole('button', { name: 'A napi kártya' }))
+    expect(router.state.location.pathname).toBe('/mezo/coaching/kartya')
+  })
 })
 
 describe('mezo nav (mock mode)', () => {

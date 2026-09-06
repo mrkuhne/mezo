@@ -25,6 +25,8 @@ export { useLifeEventCandidates, useLifeEventActions, useKnowledgeGraphNodes, us
 export { usePatterns, usePatternActions } from '@/data/insights/patternsHooks'
 export { usePatternMonitor } from '@/data/insights/monitorHooks'
 export { usePatternPairDetail } from '@/data/insights/patternDetailHooks'
+export { useCoachingTrace } from '@/data/insights/coachingTraceHooks'
+export { useCoachingCard } from '@/data/insights/coachingCardHooks'
 export { useChat, useChatActions, useConversations, useConversationActions, useTranscribe, NEW_CHAT } from '@/data/insights/chatHooks'
 export { useLlmUsage, useMemoryOverview, useMemorySummaries, useSimilarDays } from '@/data/insights/memoryHooks'
 export { useMemoryRetrievalFeedback } from '@/data/insights/memoryFeedbackHooks'

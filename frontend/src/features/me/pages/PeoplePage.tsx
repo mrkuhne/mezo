@@ -15,11 +15,13 @@
 // `usePeople().candidates` count as its `.ppl-hub-badge` and names the first candidate on
 // the tile-line — the honest quiet copy only when there is truly no candidate.
 //
-// S6 (mezo-06o0.8): the Mezo-band no longer derives its own sentence from `hubLines` —
-// it renders `usePeople().mezoNote` verbatim (today's real `people` companion message,
-// or the server's own deterministic fallback). An empty `mezoNote` (real mode before any
-// data) omits the whole band instead of rendering an empty snippet — the rest of the hub
-// is unchanged. The chat handoff (ADR 0032) stays wired to the band regardless.
+// mezo-06o0.11: the Mezo-band is GONE from this hub. It was the one cell here that was
+// neither a stat nor a route — a companion sentence about a person, on the page whose whole
+// job is "pick where to go next", and the only cell that could talk about someone while the
+// four tiles below it said the circle was quiet. `usePeople().mezoNote` is still produced
+// server-side and still rendered where it belongs (the sub-pages and the companion feed);
+// only this hub stops showing it. With the band went the page's chat handoff (ADR 0032) —
+// nothing else on the hub opened chat.
 // ============================================================
 import { useState, type CSSProperties } from 'react'
 import { useNavigate } from 'react-router-dom'
@@ -27,9 +29,7 @@ import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip } from '@
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { ClayIcon } from '@/shared/ui/clay'
 import { usePeople } from '@/data/hooks'
-import { localDateString } from '@/shared/lib/dates'
 import { hubLines } from '@/features/me/logic/peopleDerive'
-import { useChatHandoff } from '@/features/me/logic/useChatHandoff'
 import { PersonLogSheet } from '@/features/me/sheets/PersonLogSheet'
 import { PersonEditSheet } from '@/features/me/sheets/PersonEditSheet'
 
@@ -37,8 +37,7 @@ const d = (ms: number) => ({ '--d': `${ms}ms` } as CSSProperties)
 
 export function PeoplePage() {
   const navigate = useNavigate()
-  const { people, mentions, candidates, mezoNote, logMention } = usePeople()
-  const chat = useChatHandoff()
+  const { people, mentions, candidates, logMention } = usePeople()
   const [logOpen, setLogOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
 
@@ -48,6 +47,18 @@ export function PeoplePage() {
   return (
     <MozaikPage tone="rose">
       <PageHead onBack={() => navigate('/me')} label="‹ Én">
+        {/* mezo-06o0.12 — the prototype (emberek-body.html renderHub) puts the back chip alone
+            on the left and BOTH actions against the right edge, Log first. Shipped left-packed,
+            which reads as one crowded three-button row with the page title right under it. The
+            `margin-left: auto` on the first action is the `.goal-hub-page .pgact` precedent. */}
+        <button
+          type="button"
+          className="pgact"
+          onClick={() => setLogOpen(true)}
+          style={{ marginLeft: 'auto', background: 'var(--mz-cell-rose-bg)', color: 'var(--mz-cell-rose-ink)' }}
+        >
+          <ClayIcon name="i-mikrofon" size={12} /> Log
+        </button>
         <button
           type="button"
           className="pgact"
@@ -55,14 +66,6 @@ export function PeoplePage() {
           style={{ background: 'var(--mz-cell-rose-bg)', color: 'var(--mz-cell-rose-ink)' }}
         >
           ＋ Új személy
-        </button>
-        <button
-          type="button"
-          className="pgact"
-          onClick={() => setLogOpen(true)}
-          style={{ background: 'var(--mz-cell-rose-bg)', color: 'var(--mz-cell-rose-ink)' }}
-        >
-          <ClayIcon name="i-mikrofon" size={12} /> Log
         </button>
       </PageHead>
 
@@ -101,7 +104,7 @@ export function PeoplePage() {
               </div>
               <div className="ppl-hub-line">
                 {candidates.length > 0
-                  ? `${candidates[0].name} · visszatérő név`
+                  ? `${candidates[0].name} · új arc a szövegeidben`
                   : 'nincs új arc — az éjszakai kör figyel'}
               </div>
             </button>
@@ -166,24 +169,6 @@ export function PeoplePage() {
             </button>
           </div>
 
-          {mezoNote && (
-            <button
-              type="button"
-              className="ppl-hub-wide rise"
-              style={d(190)}
-              onClick={() => chat.open({ kind: 'day', date: localDateString() })}
-              disabled={chat.pending}
-            >
-              <div className="mz-tile-top">
-                <ClayIcon name="i-mezo" size={24} />
-                <span className="mz-eyebrow" style={{ color: 'var(--mz-cell-coral-ink)', marginLeft: 8 }}>
-                  Mezo · észrevétel
-                </span>
-                <span style={{ marginLeft: 'auto', color: 'var(--mz-ink-mut)' }} aria-hidden="true">›</span>
-              </div>
-              <div className="ppl-hub-snip">{mezoNote}</div>
-            </button>
-          )}
         </EntranceGroup>
       </PageBody>
 

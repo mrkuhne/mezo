@@ -40,6 +40,14 @@ public class ActivityNoteSourceAdapter implements NarrativeNoteSource {
     }
 
     @Override
+    public List<Note> notesOn(UUID userId, LocalDate day) {
+        return activityLogRepository.findByCreatedByAndOccurredOnOrderByCreatedAtDesc(userId, day)
+                .stream()
+                .map(e -> new Note(e.getId(), e.getCreatedBy(), e.getText(), e.getOccurredOn()))
+                .toList();
+    }
+
+    @Override
     public List<Note> liveNotes(UUID userId, Collection<UUID> ids) {
         if (ids.isEmpty()) {
             return List.of();

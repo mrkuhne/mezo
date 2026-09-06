@@ -113,10 +113,15 @@ public record MealScoringProperties(
     ) {
     }
 
-    /** Energy density band: kcal/100g at (or below) which the score is 1.0, and at (or above) which it is 0. */
+    /**
+     * Energy density band: kcal/100g at (or below) which the score is 1.0, and at (or above) which
+     * it is 0, plus the smallest gram-mass the ratio is meaningful over ({@code minMassG},
+     * mezo-mxmh) — below it the dimension degrades instead of judging a dose as if it were a meal.
+     */
     public record EnergyDensityRefs(
         @DecimalMin("50.0") double goodKcalPer100g,
-        @DecimalMin("100.0") double badKcalPer100g
+        @DecimalMin("100.0") double badKcalPer100g,
+        @DecimalMin("1.0") double minMassG
     ) {
         @AssertTrue(message = "mezo.fuel.scoring.energy-density: bad must exceed good")
         public boolean isOrdered() {

@@ -1,0 +1,57 @@
+name: deploy-watch
+# Turns a FAILED deploy into something visible (mezo-82m6).
+#
+# deploy.yml is deliberately NOT gated on ci.yml and this workflow does not change
+# that (ADR 0007, mezo-oa3). It closes a different hole: a deploy that FAILS says
+# nothing at all — no check on the main commit, no notification. Measured 2026-09-05:
+# 20 consecutive main deploys failed over roughly a day while ci.yml was green
+# throughout and nobody noticed. The bug took 20 minutes to fix; the delay was a day.
+#
+# On failure this posts a `deploy` commit status on the deployed SHA (so the ❌ sits
+# next to the commit on main) and opens ONE deduplicated `deploy-failure` issue, which
+# GitHub's watch settings turn into a notification. On the next successful deploy it
+# posts a green status and closes that issue, so recovery is as loud as breakage.
+#
+# It runs as a SEPARATE workflow_run rather than a job inside deploy.yml on purpose: a
+# notifier that lives inside the thing it watches goes down with it (a failure in
+# deploy.yml's `version` job would skip a downstream notify job that `needs:` it).
+#
+# Manual escape hatch (also how this was verified against real historical runs):
+#   gh workflow run deploy-watch.yml -f run_id=<a deploy run id> [-f dry_run=true]
+on:
+  workflow_run:
+    workflows: [deploy]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'deploy.yml run id to evaluate'
+        required: true
+        type: string
+      dry_run:
+        description: 'Print the actions instead of performing them'
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  statuses: write     # the `deploy` commit status on the deployed SHA
+  issues: write       # the single deduplicated alert issue
+  actions: read       # read the watched run's conclusion
+
+concurrency:
+  group: deploy-watch
+  cancel-in-progress: false   # never drop an alert to a newer run
+
+jobs:
+  alert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Evaluate the deploy run and alert if it failed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ inputs.run_id || github.event.workflow_run.id }}
+          DRY_RUN: ${{ inputs.dry_run == true && '1' || '0' }}
+        run: bash .github/scripts/deploy-alert.sh

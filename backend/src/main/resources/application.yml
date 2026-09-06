@@ -355,6 +355,13 @@ mezo:
     lifegoal-ai-propose:
       enabled: true
   techcore:
+    # Master switch for Spring's scheduling INFRASTRUCTURE (@EnableScheduling) — one level above
+    # the per-job mezo.techcore.cron.* switches below. Those decide whether a job BEAN exists;
+    # this decides whether a scheduler thread exists at all to fire the beans that do. True in
+    # production (every cron must run); the test profile sets it false — see the comment in
+    # backend/src/test/resources/application.properties (mezo-peh4 / mezo-v73w).
+    scheduling:
+      enabled: true
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
       # off = the DailySummaryJob bean does not exist
@@ -410,6 +417,11 @@ mezo:
       # V3.2 weekly hypothesis pipeline (schedule: mezo.companion.hypotheses.cron);
       # off = the HypothesisJob bean does not exist
       hypothesis-job:
+        enabled: true
+      # Reflexió (mezo-eq85) nightly reflection pass (schedule: mezo.companion.reflection.cron);
+      # off = the ReflectionJob bean does not exist (TextSignalService / the catch-up stay callable,
+      # the FlagSweepJob-vs-FlagService idiom)
+      reflection-job:
         enabled: true
       # Companion-feed morning/midday/evening crons (schedules: mezo.proactive.feed.*-cron);
       # off = the CompanionMessageJob bean does not exist (the lazy GET still serves)
@@ -569,6 +581,32 @@ mezo:
       note-min-chars: 80
       # Per-user, per-run cap on note embeddings — the one-time history backfill spreads over nights
       note-batch-size: 200
+    reflection:
+      # Reflexió (mezo-eq85): text signals, quick notices, the 03:40 nightly reflection.
+      # Off = no TextSignal* bean exists — no extraction call, and the four TEXT_* metrics report
+      # no data (the series helper returns an empty map, so the monitor shows them as no_data).
+      enabled: true
+      # 03:40 — the dawn cluster's remaining free-ish slot; it shares the minute with the llm-log
+      # payload-retention purge (mezo.llm-log.retention.cron), which is a single bounded UPDATE on
+      # an unrelated table, so there is no contention. Everything else is taken: 02:20 summary,
+      # 02:40 patterns, 02:50 character, 03:00 SUN hypotheses, 03:10 feedback-learning, 03:20 graph,
+      # 03:30 MON weekly rung, 03:45 MON profile, 03:50 monthly rung + audit retention, 04:00 quarterly.
+      cron: "0 40 3 * * *"
+      # Missing/stale text signals are re-extracted for this many finished days each night.
+      catch-up-days: 7
+      notice:
+        max-per-day: 2
+        min-gap-hours: 4
+        quiet-from: "22:00"
+        quiet-to: "07:00"
+      propose:
+        max-per-night: 2
+      lifecycle:
+        confirm-streak: 3
+        refute-streak: 3
+        dormant-after-days: 30
+        strong-r: 0.3
+        strong-p: 0.15
     memory-platform:
       # Vector generation served by the new retrieval path; re-embedding never flips this value.
       serving-embedding-version: gemini-embedding-001-768-v1
@@ -1757,6 +1795,12 @@ mezo:
       energy-density:
         good-kcal-per-100g: 150          # at/below → score 1.0
         bad-kcal-per-100g: 400           # at/above → score 0 (linear between)
+        # Az energia-sűrűség egy TELÍTŐDÉSI arány (mennyi kalóriát hoz egy adag étel tömege), és
+        # ennek csak étkezés-méretű tömegen van értelme. Egy 30 g-os fehérjepor 390 kcal/100g-ot
+        # "mér" — és 0,04 pontot kapott —, holott az a 30 g egy ~300 ml-es italként landol; a por
+        # száraz tömegére vetített sűrűség egyszerűen nem az a mennyiség, amit a dimenzió állít.
+        # Ez alatt a tömeg alatt a dimenzió őszintén degradál (mezo-mxmh).
+        min-mass-g: 100
       portion:
         default-share: 0.30              # slot-less recipe: assumed kcal-share of the day
       slot-shares:                # expected kcal-share of the day per meal slot

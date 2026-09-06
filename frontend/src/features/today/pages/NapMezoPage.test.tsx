@@ -222,6 +222,70 @@ test('an advice feed message renders its suggestions, its facts, and the „Seg�
   expect(screen.getByText('Segített?')).toBeInTheDocument()
 })
 
+// Round 2 S6 follow-up (mezo-d58h.7.6): a once-ever QUESTION card is an advice row, but the
+// 👍/👎 on it is the ANSWER — so it must say „A válaszod", wear the question's own two answers on
+// the chips, list them ONCE (on the chips, not also as bullets), and never open the negative
+// reason row, which asks how the CARD was wrong.
+test('a question card labels the chips as answers instead of „Segített?"', async () => {
+  const questionMsg: FeedMessage = {
+    id: 'fm-q1', kind: 'advice', eyebrow: 'Mezo · kérdés',
+    body: [{ type: 'p', text: 'Feltűnt, hogy a napló mostanában érintetlen maradt.' }],
+    refs: [],
+    flagKey: 'question_feature_abandonment',
+    facts: ['Az elmúlt 30 napban semmi új nem került ide.'],
+    suggestions: ['\u{1F44D} — tudatosan tettem félre', '\u{1F44E} — csak kikopott, visszatérnék hozzá'],
+    generatedAt: '2026-05-22T15:00:00',
+  }
+  feedMock.useCompanionFeed.mockReturnValue([questionMsg])
+  renderPage()
+
+  expect(await screen.findByText('A válaszod')).toBeInTheDocument()
+  expect(screen.queryByText('Segített?')).not.toBeInTheDocument()
+  const up = screen.getByRole('button', { name: /tudatosan tettem félre/ })
+  expect(screen.getByRole('button', { name: /csak kikopott/ })).toBeInTheDocument()
+  // The two answers live on the chips only — not repeated as an unclickable bullet list.
+  expect(screen.getAllByText(/tudatosan tettem félre/)).toHaveLength(1)
+  expect(up).toBeInTheDocument()
+})
+
+// The reason row („pontatlan"/„túl sok"/…) is a complaint about a CARD; on a question the
+// thumb-down IS an answer and must be recorded straight away.
+test('a question card records the thumb-down answer without offering reasons', async () => {
+  const questionMsg: FeedMessage = {
+    id: 'fm-q2', kind: 'advice', eyebrow: 'Mezo · kérdés',
+    body: [{ type: 'p', text: 'Az utolsó edzéseidnél a visszajelzés mindig ugyanaz volt.' }],
+    refs: [],
+    flagKey: 'question_flat_feedback',
+    suggestions: ['\u{1F44D} — tényleg ennyire egyforma', '\u{1F44E} — inkább reflexből koppintom'],
+    generatedAt: '2026-05-22T15:00:00',
+  }
+  feedMock.useCompanionFeed.mockReturnValue([questionMsg])
+  renderPage()
+
+  await userEvent.click(await screen.findByRole('button', { name: /reflexből koppintom/ }))
+
+  expect(voteMock.vote).toHaveBeenCalledWith('fm-q2', 'down', undefined)
+  expect(screen.queryByRole('button', { name: 'pontatlan' })).not.toBeInTheDocument()
+})
+
+// A NON-question advice card is untouched by the above: it still rates the card.
+test('a flag-sourced advice card still says „Segített?"', async () => {
+  const adviceMsg: FeedMessage = {
+    id: 'fm-12', kind: 'advice', eyebrow: 'Mezo · észrevétel',
+    body: [{ type: 'p', text: 'Ma este feküdj le korábban.' }],
+    refs: [],
+    flagKey: 'sleep_debt',
+    suggestions: ['Told előre a villanyoltást.'],
+    generatedAt: '2026-05-22T15:00:00',
+  }
+  feedMock.useCompanionFeed.mockReturnValue([adviceMsg])
+  renderPage()
+
+  expect(await screen.findByText('Segített?')).toBeInTheDocument()
+  expect(screen.getByRole('button', { name: /Segített$/ })).toBeInTheDocument()
+  expect(screen.getByText('Told előre a villanyoltást.')).toBeInTheDocument()
+})
+
 // S5 (mezo-d58h.5): the advice card's offered action renders as a button; tapping it calls
 // the mutation hook with the card's artifactId and the action's own key.
 test('an advice card offering an action renders its button, and tapping it applies that action', async () => {

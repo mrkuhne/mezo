@@ -3625,6 +3625,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/graph/node/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Undo a hand-archive — clears the user's intent marker and re-derives the status from the node's source row (KnowledgeGraph) */
+        post: operations["restoreGraphNode"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/graph/node/archived": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Hand-archived nodes, most recently hidden first (KnowledgeGraph) */
+        get: operations["listArchivedGraphNodes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/graph/node/candidate": {
         parameters: {
             query?: never;
@@ -6206,6 +6240,8 @@ export interface components {
         /** @description One weighted dimension; exactly one payload field is populated, matching id — macro/micros/nova for their ids, `context` carries the generic label/value rows for context, who, fat_quality, plant_diversity, energy_density and portion. Dimension `context` additionally carries `timing` when it comes from a logged meal. */
         MealScoreDimension: {
             id: string;
+            /** @description Share of the meal's energy this dimension could actually SEE, 0..1 (mezo-mxmh). It always existed in the scorer (it feeds `confidence`) but used to stop there, so a dimension scoring 30% of a meal looked identical to one scoring all of it. null on envelopes written before the field existed — render nothing, never 0. */
+            coverage?: number | null;
             label: string;
             /** @description 0 when the dimension degraded (no input coverage) — total renormalizes */
             weight: number;
@@ -6229,6 +6265,8 @@ export interface components {
             targetC: string;
             targetF: string;
             kcalShareOfDay: number;
+            /** @description Where the macro target comes from, as a display clause (mezo-mxmh) — the active goal's prescription, the static fallback, or a pre/post-workout rubric. It rode inside `detail` first, but that sentence is clamped to two lines on a collapsed card, so the origin — the whole point of naming it — was the part that got cut. null on older envelopes. */
+            targetOrigin?: string | null;
             /** @description P8 prose — null in v0 */
             notes?: string | null;
         };
@@ -7288,7 +7326,7 @@ export interface components {
             /** @description What changed inside this day, chronologically. Empty on a day where nothing changed. */
             transitions: components["schemas"]["FlagTraceTransitionResponse"][];
         };
-        /** @description The rule whose raise became the day's card. Null when no card was delivered, or when the card came from a setup check rather than a flag — that key is none of the flag rules. */
+        /** @description The rule whose raise became the day's card — a fact about the DAY, read back from the delivered card. This is the ONLY source of a „Nyertes" badge; a client must never infer the winner from `cardOutcome`, which describes a rule's state at decision time and is null once that rule has changed since (mezo-y43v). Null when no card was delivered, or when the card came from a setup check rather than a flag — that key is none of the flag rules. */
         FlagTraceWinnerResponse: {
             flagKey: string;
             /** @description 1-based position in the severity order. */
@@ -7320,7 +7358,7 @@ export interface components {
              */
             disposition?: "logged" | "suppressed_by_cooldown" | null;
             /**
-             * @description Derived at read time against the day's delivered card; null unless the rule raised AND was logged AND the day's card was flag-sourced. A day whose card came from a setup check instead (its severity key matches none of the flag rules) has no winner among the flags at all, so a raised-and-logged rule still reads null that day.
+             * @description The rule's correlation to the day's card AT THE MOMENT THE CARD WAS CHOSEN, derived at read time and never stored. Non-null only when the rule raised, was logged, the day's card was flag-sourced, and the rule's closing row already existed when the card was delivered. A rule that has changed state since — including the winner itself, if it later went clear — reports null here while `winner` above still names it; a rule that first raised after the card reports null because it never competed (mezo-y43v).
              * @enum {string|null}
              */
             cardOutcome?: "won" | "lost" | null;
@@ -19829,6 +19867,84 @@ export interface operations {
             };
             /** @description GRAPH_NODE_NOT_FOUND */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    restoreGraphNode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Restored node — active when its source still qualifies, archived otherwise */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphNodeResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description GRAPH_NODE_NOT_FOUND */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description The node was not hand-archived — a candidate or machine-archived node cannot be restored (GRAPH_NODE_NOT_USER_ARCHIVED) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listArchivedGraphNodes: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Nodes the user archived by hand */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GraphNodeResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };
