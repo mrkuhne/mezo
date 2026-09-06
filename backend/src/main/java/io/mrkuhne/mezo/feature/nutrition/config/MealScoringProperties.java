@@ -39,6 +39,11 @@ public record MealScoringProperties(
     @NotNull @Valid SlotWindows slotWindows,
     /** Relative tolerance around the slot kcal-share within which the fit is perfect (0..1). */
     @DecimalMin("0.0") @DecimalMax("1.0") double slotShareTolerance,
+    /** Padló az elvárt slot-keretre a {@code napi cél × slot-arány} hányadaként (mezo-jcpt.19):
+     *  ha a maradék napi keret elfogyott, az elvárt kcal/fehérje nem eshet ez alá, így a
+     *  túllépés arányosan büntet, nem szakadékkal. A napi score {@code nutritionDim}-je a
+     *  túllépést amúgy is bünteti sávokkal — nem akarunk kétszer, szakadékkal büntetni. */
+    @DecimalMin("0.0") @DecimalMax("1.0") double minExpectedSlotShareFactor,
     /** Minutes BEFORE a workout start within which a meal is pre-workout fuel. */
     @Min(0) @Max(360) int preLeadMin,
     /** Minutes AFTER a workout end within which a meal is post-workout recovery. */

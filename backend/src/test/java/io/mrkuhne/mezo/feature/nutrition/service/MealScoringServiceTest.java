@@ -39,6 +39,7 @@ class MealScoringServiceTest {
         new MealScoringProperties.SlotShares(0.25, 0.35, 0.30, 0.10),
         new MealScoringProperties.SlotWindows(5, 10, 11, 15, 17, 22),
         0.4,
+        0.25,  // minExpectedSlotShareFactor
         120,   // preLeadMin
         90,    // postTrailMin
         new MealScoringProperties.Roles(
@@ -175,7 +176,7 @@ class MealScoringServiceTest {
             props.macroSignificanceRefShare(), props.micro(),
             props.who(), props.fatQuality(), props.plantDiversity(), props.energyDensity(),
             props.portion(), props.slotShares(), props.slotWindows(), props.slotShareTolerance(),
-            props.preLeadMin(), props.postTrailMin(), props.roles());
+            props.minExpectedSlotShareFactor(), props.preLeadMin(), props.postTrailMin(), props.roles());
         MealScoringService symmetricService = new MealScoringService(symmetric, targets);
 
         var lines = List.of(line("Csirkés tál", 620, 60, 40, 10, 1, 5.0, 8.0, 0.5, 3.0));
@@ -790,5 +791,110 @@ class MealScoringServiceTest {
 
     private static BigDecimal bd(double v) {
         return BigDecimal.valueOf(v);
+    }
+
+    // ── Nap-tudatos context dimenzió (mezo-jcpt.19) ────────────────────────────────
+
+    /** 1500 kcal-os cut-cél, a spec §4.4 példáinak alapja. */
+    private static final DailyTargets CUT = new DailyTargets(1500, 150, 150, 50, "goal");
+
+    /** Egyetlen, tény nélküli sor a megadott kcal/fehérje értékkel — csak a context dim érdekel. */
+    private static List<ScoredLine> line(int kcal, int protein) {
+        return List.of(new ScoredLine("Teszt", "1 adag",
+            bd(kcal), bd(protein), bd(0), bd(0), (short) 1,
+            null, null, null, null, null, null));
+    }
+
+    private static double contextScore(MealBreakdownJson b) {
+        return dimension(b, "context").score().doubleValue();
+    }
+
+    @Test
+    void emptyDay_dinnerFillingTheWholeBudget_isNoLongerPenalised() {
+        // 20:00, egész nap semmi: hátralévő slotok = vacsora .30 + snack .10 = .40
+        // elvárt = 1500 × .30/.40 = 1125; rel = 1500/1125 = 1.33 → a 0.4-es toleranciába fér
+        MealBreakdownJson dayAware = service.scoreMeal("dinner", line(1500, 120),
+            LocalTime.of(20, 0), MealRole.STANDARD, CUT, DayContext.of(bd(0), bd(0)));
+        assertThat(contextScore(dayAware)).isCloseTo(1.0, within(0.01));
+    }
+
+    @Test
+    void unknownDay_keepsTheNominalTrajectoryRubric() {
+        // ugyanaz az étkezés napi kontextus NÉLKÜL: elvárt = 1500 × .30 = 450 → shareSub 0
+        // → (timing 1 + share 0 + protein 1) / 3
+        MealBreakdownJson blind = service.scoreMeal("dinner", line(1500, 120),
+            LocalTime.of(20, 0), MealRole.STANDARD, CUT);
+        assertThat(contextScore(blind)).isCloseTo(2.0 / 3, within(0.01));
+    }
+
+    @Test
+    void wholeBudgetAtBreakfast_isStillPenalised() {
+        // 08:00: minden slot hátravan → nevező 1.0 → elvárt = 1500 × .25 = 375; rel = 4
+        MealBreakdownJson b = service.scoreMeal("breakfast", line(1500, 120),
+            LocalTime.of(8, 0), MealRole.STANDARD, CUT, DayContext.of(bd(0), bd(0)));
+        assertThat(contextScore(b)).isCloseTo(2.0 / 3, within(0.01));
+    }
+
+    @Test
+    void lateOmadSnack_afterTheDinnerWindowClosed_takesTheWholeBudget() {
+        // 22:30: a vacsora-ablak (…22:00) lejárt → nevező = snack .10 → elvárt = 1500 kcal / 150 g
+        // (OMAD: a teljes napi kcal- ÉS fehérje-keret egyetlen étkezésben — 120 g fehérje csak
+        // 80%-át fedné az elvárt 150 g-nak, és 0.93-ra hígítaná a dimenziót).
+        MealBreakdownJson b = service.scoreMeal("snack", line(1500, 150),
+            LocalTime.of(22, 30), MealRole.STANDARD, CUT, DayContext.of(bd(0), bd(0)));
+        assertThat(contextScore(b)).isCloseTo(1.0, within(0.01));
+    }
+
+    @Test
+    void skippedBreakfast_widensTheDinnerBudget() {
+        // 19:00, csak egy 525 kcal-os ebéd volt: maradék kcal 975, maradék fehérje 113 g,
+        // nevező .40 → elvárt kcal 731, elvárt fehérje 84.75 g. A 100 g fehérje fedezi az
+        // elvárt fehérjét is (60 g csak 71%-ot fedne, és 0.90-re hígítaná a dimenziót).
+        MealBreakdownJson b = service.scoreMeal("dinner", line(731, 100),
+            LocalTime.of(19, 0), MealRole.STANDARD, CUT, DayContext.of(bd(525), bd(37)));
+        assertThat(contextScore(b)).isCloseTo(1.0, within(0.01));
+    }
+
+    @Test
+    void overspentBudget_fallsBackToTheSoftFloor_notZero() {
+        // a keret már 100 kcal-lal túllépve → maradék 0 → padló = 1500 × .30 × .25 = 112.5
+        MealBreakdownJson atFloor = service.scoreMeal("dinner", line(112, 12),
+            LocalTime.of(20, 0), MealRole.STANDARD, CUT, DayContext.of(bd(1600), bd(160)));
+        assertThat(contextScore(atFloor)).isCloseTo(1.0, within(0.02));
+
+        // A kcal-keret durva túllépése a shareSub-ot 0-ra viszi, de az időzítés és a fehérje
+        // (aminek plafonja van, túllépésért nem büntet) változatlanul 1 marad — a padló tehát
+        // ARÁNYOSAN, nem SZAKADÉKKAL büntet: a dimenzió (1+0+1)/3 ≈ 0.67-re esik, nem 0-ra, de
+        // érdemben az atFloor-alatti szint alá kerül.
+        MealBreakdownJson wayOver = service.scoreMeal("dinner", line(900, 60),
+            LocalTime.of(20, 0), MealRole.STANDARD, CUT, DayContext.of(bd(1600), bd(160)));
+        assertThat(contextScore(wayOver)).isLessThan(contextScore(atFloor));
+        assertThat(contextScore(wayOver)).isLessThan(0.7);
+    }
+
+    /**
+     * A TERV FŐ REGRESSZIÓS ŐRE (spec §4.3): ha a felhasználó a névleges pályán halad, az új
+     * képlet értéke azonos a statikus slot-arányossal. Algebrailag:
+     * maradék = cél × (1 − Σ eltelt arányok) = cél × nevező, tehát elvárt = cél × slot_arány.
+     */
+    @Test
+    void onTheNominalTrajectory_theDayAwareFormulaEqualsTheStaticOne() {
+        // 13:00 ebéd, a reggeli pont a névleges .25 volt: 1500×.25 = 375 kcal, 150×.25 = 37.5 g
+        DayContext nominal = DayContext.of(bd(375), new BigDecimal("37.5"));
+        MealBreakdownJson dayAware = service.scoreMeal("lunch", line(525, 52),
+            LocalTime.of(13, 0), MealRole.STANDARD, CUT, nominal);
+        MealBreakdownJson blind = service.scoreMeal("lunch", line(525, 52),
+            LocalTime.of(13, 0), MealRole.STANDARD, CUT);
+        assertThat(dayAware.value()).isEqualByComparingTo(blind.value());
+        assertThat(contextScore(dayAware)).isCloseTo(contextScore(blind), within(1e-9));
+    }
+
+    @Test
+    void theRoleRowSurvivesTheDayAwareRewrite() {
+        // A frontend a role-t EBBŐL a sorból olvassa vissza (mealContext.ts) — nincs típusvédelem.
+        MealBreakdownJson b = service.scoreMeal("lunch", line(525, 52),
+            LocalTime.of(13, 0), MealRole.POST_WORKOUT, CUT, DayContext.of(bd(375), bd(38)));
+        assertThat(dimension(b, "context").context())
+            .anySatisfy(row -> assertThat(row.label()).isEqualTo("Szerep"));
     }
 }
