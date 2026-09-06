@@ -556,28 +556,29 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### habit
 
-*BE + API + FE-data* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-05, done)
+*BE + API + FE-data* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/habit`
   - **entities→tables:** `HabitChainEntity`→`habit_chain`, `HabitDayEntity`→`habit_day`, `HabitDefEntity`→`habit_def`
   - **repositories:** `HabitChainRepository`, `HabitDayRepository`, `HabitDefRepository`
   - **services:** `HabitAdminService`, `HabitAiService`, `HabitCatalogService`, `HabitEvaluator`,
-    `HabitFrameworkValidator`, `HabitJob`, `HabitService`, `HabitSuggestPort`, `HabitTargets`
+    `HabitFormationEstimator`, `HabitFrameworkValidator`, `HabitJob`, `HabitService`, `HabitSuggestPort`,
+    `HabitTargets`
   - **controllers→contract:** `HabitController`→`HabitApi`
   - **mappers:** `HabitMapper`
   - **config:** `HabitProperties`
   - **other:** `HabitCatalog`
-- **Contract** `api/feature/habit/habit.yml` — 13 operations
+- **Contract** `api/feature/habit/habit.yml` — 14 operations
   - **endpoints:** GET /api/habit/day/{date} · POST /api/habit/{key}/check · DELETE /api/habit/{key}/check ·
-    GET /api/habit/summary · GET /api/habit/catalog · POST /api/habit/chain · PATCH /api/habit/chain/{id} ·
-    DELETE /api/habit/chain/{id} · PUT /api/habit/chain/{id}/order · POST /api/habit/def · PATCH /api/habit/def/{id} ·
-    DELETE /api/habit/def/{id} · POST /api/habit/ai/suggest
+    GET /api/habit/summary · GET /api/habit/formation/{key} · GET /api/habit/catalog · POST /api/habit/chain ·
+    PATCH /api/habit/chain/{id} · DELETE /api/habit/chain/{id} · PUT /api/habit/chain/{id}/order · POST /api/habit/def ·
+    PATCH /api/habit/def/{id} · DELETE /api/habit/def/{id} · POST /api/habit/ai/suggest
 - **FE data** `frontend/src/data/habit`
   - **hooks (via `@/data/hooks`):** `useHabitActions`, `useHabitAiSuggest`, `useHabitCatalog`,
-    `useHabitCatalogActions`, `useHabitDay`, `useHabitSummary`
+    `useHabitCatalogActions`, `useHabitDay`, `useHabitFormation`, `useHabitSummary`
   - **modules:** habitAdminApi.ts, habitAdminHooks.ts, habitApi.ts, habitFrameworkRules.ts, habitHooks.ts,
     habitMock.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/habit` — 12 IT + 0 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/habit` — 12 IT + 1 unit
   - **ITs:** `HabitAdminApiIT`, `HabitAiSuggestApiIT`, `HabitAiSuggestSwitchOffIT`, `HabitApiIT`,
     `HabitCatalogBootstrapIT`, `HabitCatalogIT`, `HabitChainDefEntityIT`, `HabitDayEntityIT`, `HabitEvaluatorIT`,
     `HabitJobIT`, `HabitServiceIT`, `HabitTargetsSleepIT`
@@ -742,7 +743,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 *FE-data + FE-ui* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-02, done) ·
   [docs/features/growth.md](features/growth.md) (updated 2026-09-04, done) ·
-  [docs/features/habit.md](features/habit.md) (updated 2026-09-05, done) ·
+  [docs/features/habit.md](features/habit.md) (updated 2026-09-06, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-08-29, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-05, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-05, mixed) ·
@@ -777,10 +778,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **components:** AdminInviteRow.tsx, AdminUserRow.tsx, AiCallFilters.tsx, AiCallRow.tsx, AiCallUsage.tsx,
     AiFeatureBreakdown.tsx, AiModelBreakdown.tsx, AiPayloadBlock.tsx, AiPriceSnapshot.tsx, AiTokenBar.tsx,
     AiUsageHero.tsx, AiUserFilter.tsx, BadgesCard.tsx, DayDimensionTile.tsx, DayNavTiles.tsx, DayReviewCard.tsx,
-    DetailStat.tsx, FieldRow.tsx, GoalConnectionTimeline.tsx, GoalCourseHero.tsx, GoalDetailHero.tsx,
-    GoalDietWeekCard.tsx, GoalGate.tsx, GoalGuardCard.tsx, GoalMiniCard.tsx, GoalRecept.tsx, GoalSegmentRail.tsx,
-    GoalSuggestionCard.tsx, GoalSuggestionDiffGrid.tsx, GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthHero.tsx,
-    GrowthJournalCard.tsx, LifeGoalTile.tsx, MaStrip.tsx, MentionRow.tsx, NightArcCard.tsx, NightBodyScan.tsx,
+    DetailStat.tsx, FieldRow.tsx, FormationCurve.tsx, GoalConnectionTimeline.tsx, GoalCourseHero.tsx,
+    GoalDetailHero.tsx, GoalDietWeekCard.tsx, GoalGate.tsx, GoalGuardCard.tsx, GoalMiniCard.tsx, GoalRecept.tsx,
+    GoalSegmentRail.tsx, GoalSuggestionCard.tsx, GoalSuggestionDiffGrid.tsx, GratitudeRows.tsx,
+    GratitudeStreakCard.tsx, GrowthHero.tsx, GrowthJournalCard.tsx, HabitContextRings.tsx, HabitFormationCard.tsx,
+    HabitFormationHistory.tsx, LifeGoalTile.tsx, MaStrip.tsx, MentionRow.tsx, NightArcCard.tsx, NightBodyScan.tsx,
     NightBreathing.tsx, NightWalk.tsx, NotificationCategoryRow.tsx, NotificationPreviewHeader.tsx, PerksCard.tsx,
     PermahRing.tsx, PersonCard.tsx, PhaseAverageCard.tsx, PhaseRail.tsx, PhaseReferenceRow.tsx, PillarCard.tsx,
     PushInstallGate.tsx, RemDurationCard.tsx, SkillBandCard.tsx, SleepChart.tsx, SleepEscalationCard.tsx,
@@ -789,11 +791,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     WeekScoreRing.tsx, WeekTrendSpark.tsx, WeeklyWeightCard.tsx, WeightHero.tsx, WeightTrendChart.tsx
   - **logic:** biometricFields.ts, buildTdeeBreakdown.ts, goalLabels.ts, goalOverviewCopy.ts, goalSkillChips.ts,
     goalSuggestionDiff.ts, goalWeekSentence.ts, gratitudeStreak.ts, growthJournal.ts, growthStats.ts, habitAnchors.ts,
-    habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, lifegoalLabels.ts, llmCallFormat.ts,
-    nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts, peopleVisuals.ts,
-    perkMilestones.ts, pillarFromCatalog.ts, routineSentence.ts, scoreBand.ts, sleepEducation.ts, sleepEscalation.ts,
-    sleepPhases.ts, sleepStats.ts, useChatHandoff.ts, weekDay.ts, weekHighlight.ts, weekHub.ts, weekNav.ts,
-    weightStats.ts
+    habitFormation.ts, habitMetricPalette.ts, humanGeneratedAt.ts, knowledgeNodeVisuals.ts, lifegoalLabels.ts,
+    llmCallFormat.ts, nightContent.ts, nightFlow.ts, nightTrace.ts, notificationForecast.ts, peopleDerive.ts,
+    peopleVisuals.ts, perkMilestones.ts, pillarFromCatalog.ts, routineSentence.ts, scoreBand.ts, sleepEducation.ts,
+    sleepEscalation.ts, sleepPhases.ts, sleepStats.ts, useChatHandoff.ts, weekDay.ts, weekHighlight.ts, weekHub.ts,
+    weekNav.ts, weightStats.ts
 
 ### meal
 
@@ -1153,7 +1155,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### today
 
-*FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-05, done) ·
+*FE-data + FE-ui* · read next: [docs/features/habit.md](features/habit.md) (updated 2026-09-06, done) ·
   [docs/features/intention.md](features/intention.md) (updated 2026-08-30, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-05, in-progress) ·
   [docs/features/needs.md](features/needs.md) (updated 2026-08-30, done) ·
