@@ -173,6 +173,15 @@ public class MealPopulator {
         return repository.saveAndFlush(meal);
     }
 
+    /** Re-stamps a meal's envelope as current — what a rescore leaves behind (mezo-mxmh IT seam). */
+    public void restampCurrent(UUID mealId) {
+        MealEntity meal = repository.findById(mealId).orElseThrow();
+        MealBreakdownJson b = meal.getBreakdown();
+        meal.setBreakdown(new MealBreakdownJson(b.value(), b.confidence(), b.summary(), b.tagline(),
+            b.dimensions(), b.improve(), b.tools(), MealScoringService.FORMULA_VERSION));
+        repository.saveAndFlush(meal);
+    }
+
     /** Ugyanaz az étkezés, de MÁR a jelenlegi formula-generáció bélyegével — a backfill nem nyúlhat hozzá. */
     public MealEntity createCurrentScoredMeal(UUID owner, PantryItemEntity pantryItem,
         LocalDate mealDate, String title, Instant loggedAt) {
