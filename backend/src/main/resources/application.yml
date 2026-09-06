@@ -1658,6 +1658,22 @@ mezo:
         bedtime-window-days: 14
         # Fewer than 4 logged bedtimes ⇒ the observed-bedtime half stays silent.
         min-bedtime-samples: 4
+    questions:
+      # Round 2 S5 (mezo-d58h.7.5, spec 2026-09-05 §c): once-ever questions. No cron of their own —
+      # SetupCheckJob runs them right after the setup checks, inside the same per-user loop — and no
+      # re-emit window: each question fires exactly once per user, ever.
+      feature-abandonment:
+        # Spec §(17): "zero new rows in the last 30 days".
+        idle-days: 30
+        # Spec §(17): "genuinely used before (≥10 domain rows total)". Below this the family was
+        # never really used, and never-used is not abandoned.
+        min-prior-rows: 10
+      flat-feedback:
+        # Spec §(18): "across the last 8 logged workouts".
+        window-workouts: 8
+        # ~25 debrief rows per workout would still cover 16 workouts; the oldest workout inside the
+        # cap is discarded as possibly truncated.
+        max-feedback-rows: 400
   fuel:
     protocol:
       # Deterministic-era protocol confidence (the Stack page 'conf' badge). P8 replaces this
