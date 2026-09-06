@@ -118,6 +118,34 @@ kubectl top pods -n mezo                        # CPU/RAM
 ```
 Or open the ArgoCD UI for a live topology + health view.
 
+### Disk & image GC (mezo-ibxy)
+
+The node has ONE disk (74.8 GiB) shared by the OS, containerd image layers and every
+`local-path` PVC. On 2026-09-06 it sat at **82 % used (59 GiB) with 599 images / ~50 GiB of
+orphaned containerd layers** from 170+ release tags (content store 24 GiB + overlayfs 30 GiB)
+plus a 1.8 GiB journal; the kubelet evicts pods at 85 %. Two guards now exist:
+
+1. **Kubelet GC thresholds** in `/etc/rancher/k3s/config.yaml` (`kubelet-arg`:
+   `image-gc-high-threshold=70`, `image-gc-low-threshold=60`,
+   `eviction-hard=nodefs.available<10%,imagefs.available<10%`). Host-side, NOT in git —
+   re-apply on a rebuild. Verify with the kubelet `configz` call below.
+2. **journald** capped at 500 M (`/etc/systemd/journald.conf.d/mezo.conf`).
+
+Check disk (no SSH needed):
+```bash
+NODE=$(kubectl get node -o name | cut -d/ -f2)
+kubectl get --raw "/api/v1/nodes/$NODE/proxy/stats/summary" | python3 -c "
+import sys,json;s=json.load(sys.stdin)['node'];f=s['fs'];i=s['runtime']['imageFs']
+print('nodefs %.1f/%.1f GiB, imagefs %.1f GiB' % (f['usedBytes']/2**30,f['capacityBytes']/2**30,i['usedBytes']/2**30))"
+kubectl get --raw "/api/v1/nodes/$NODE/proxy/configz" | python3 -c "
+import sys,json;k=json.load(sys.stdin)['kubeletconfig'];print(k['imageGCHighThresholdPercent'],k['imageGCLowThresholdPercent'],k['evictionHard'])"
+```
+Manual prune: `ssh … 'sudo crictl rmi --prune'` (run it twice — the first pass times out on
+some layers and finishes asynchronously; `overlayfs` shrinks a minute later).
+Baseline after cleanup (2026-09-06): **nodefs 9.1/74.8 GiB, imagefs 3.5 GiB, 19 images**
+(before: 58.2/74.8 GiB, imagefs 29.1 GiB). The `NodeDiskPressure` alert (§Observability)
+fires below 15 % free.
+
 ### Deploy a manifest change (the normal path)
 Edit a file under `k8s/`, then:
 ```bash
