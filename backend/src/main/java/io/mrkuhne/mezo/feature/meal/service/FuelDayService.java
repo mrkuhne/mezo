@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.FuelDayRollup;
 import io.mrkuhne.mezo.api.dto.FuelWeekResponse;
 import io.mrkuhne.mezo.api.dto.MacroSet;
+import io.mrkuhne.mezo.api.dto.Macros;
 import io.mrkuhne.mezo.api.dto.MealResponse;
 import io.mrkuhne.mezo.feature.biometrics.weight.entity.WeightLogEntity;
 import io.mrkuhne.mezo.feature.biometrics.weight.repository.WeightLogRepository;
@@ -12,13 +13,17 @@ import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.goal.repository.GoalRepository;
 import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
 import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
+import io.mrkuhne.mezo.feature.nutrition.service.DayContext;
 import io.mrkuhne.mezo.feature.nutrition.service.DayTargetProjector;
 import io.mrkuhne.mezo.feature.nutrition.service.DietPreferencesResolver;
+import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
+import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
 import io.mrkuhne.mezo.feature.meal.mapper.MealMapper;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.LinkedHashMap;
@@ -225,6 +230,52 @@ public class FuelDayService {
     @Transactional(readOnly = true)
     public DailyTargets dailyTargets(UUID userId, LocalDate date) {
         return project(segmentFor(activeGoal(userId), date), userId, date);
+    }
+
+    /**
+     * A nap állapota EGY adott étkezés ELŐTT (mezo-jcpt.19) — a meal-score context dimenziójának
+     * napi bemenete, a {@link #dailyTargets} párja: a hívó old fel, a scorer pure marad.
+     *
+     * <p>A nap logolt étkezései közül a {@code loggedAt}-nál KORÁBBIAK Σ kcal/fehérjéje, a saját
+     * sor id alapján kizárva — az {@code applyScore} update-kor és re-score-kor is fut, amikor az
+     * étkezés MÁR benne van a napban, és azonos {@code loggedAt} esetén az id-kizárás az egyetlen
+     * biztos szűrő.
+     *
+     * <p>A tétel-hozzájárulás a KANONIKUS képlettel megy ({@link MealMapper#contribution}:
+     * {@code factor = amount / snapshotPer}), nem a nyers snapshot-összeggel — különben egy
+     * per-100 g kamra-sorból logolt 250 g a 100 g-os értékkel számolna.
+     *
+     * <p>A napi sorokat a {@code findWithItems...} fetch-join-os finderrel olvassa (NEM a
+     * {@link #getDay} / coach {@code loadDay} által is használt sima finderrel) — így ez a
+     * hot write-path hívás (minden {@code applyScore} create/update/rescore-kor lefut) EGY
+     * lekérdezésből kapja a napot ÉS a tételeket, nem egy N+1 lazy-load sorozatból.
+     *
+     * <p>Ismert, gyakorlatban elérhetetlen szélső eset: a {@code !isBefore(loggedAt)} feltétel miatt
+     * két AZONOS {@code loggedAt} pillanatú étkezés kölcsönösen kizárja egymást, tehát mindkettő
+     * ugyanazt a {@code kcalBefore}-t látja. {@code MealCoachService}'s blokk-összeállítása ezzel
+     * szemben lista-sorrendben fut kumulatív összeggel, tehát ott a második a listában MÁR látja az
+     * elsőt — ugyanarra a napra a score és a coach-próza így (mikroszekundumos pontosságú egyezés
+     * esetén) eltérő napi állapotot mondana. Nincs viselkedésbeli javítás tervezve.
+     */
+    @Transactional(readOnly = true)
+    public DayContext dayContext(UUID userId, LocalDate date, Instant loggedAt, UUID excludeMealId) {
+        BigDecimal kcal = BigDecimal.ZERO;
+        BigDecimal p = BigDecimal.ZERO;
+        for (MealEntity meal : mealRepository
+                .findWithItemsByCreatedByAndMealDateAndDeletedFalseOrderByLoggedAtAsc(userId, date)) {
+            if (meal.getId() != null && meal.getId().equals(excludeMealId)) {
+                continue;
+            }
+            if (meal.getLoggedAt() == null || !meal.getLoggedAt().isBefore(loggedAt)) {
+                continue;
+            }
+            for (MealItemEntity item : meal.getItems()) {
+                Macros contribution = mapper.contribution(item);
+                kcal = kcal.add(contribution.getKcal());
+                p = p.add(contribution.getP());
+            }
+        }
+        return DayContext.of(kcal, p);
     }
 
     /** consumed = Σ meal macros; water = Σ the day's water-log entries. */
