@@ -7936,7 +7936,7 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 
 .sb-dim { border-radius: 21px; background: var(--surface-card); border: 0.5px solid var(--border-subtle);
   overflow: hidden; box-shadow: var(--sb-tone-shadow, none); }
-.sb-dim-head { display: grid; grid-template-columns: auto 1fr auto auto; gap: 11px; align-items: center; width: 100%;
+.sb-dim-head { display: grid; grid-template-columns: auto 1fr auto auto; gap: 0 11px; align-items: center; width: 100%;
   padding: 13px 15px; border: none; background: none; font-family: inherit; text-align: left;
   color: var(--text-primary); cursor: pointer; }
 .sb-dim-ring { position: relative; width: 52px; height: 52px; }
@@ -7956,7 +7956,9 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .sb-dim-cov { display: inline-block; margin-left: 7px; padding: 1px 6px; border-radius: 999px;
   font-size: 9px; font-weight: 800; letter-spacing: 0.04em; vertical-align: 1px;
   color: var(--mz-cell-amber-ink); background: var(--mz-cell-amber-bg); }
-.sb-dim-one { font-size: 12px; color: var(--mz-ink-soft); line-height: 1.35; margin-top: 3px;
+/* Teljes kártyaszélesség a fejléc-rács ALATT (mezo-mxmh S4) — lásd DimensionCard. */
+.sb-dim-one { grid-column: 1 / -1; font-size: 12.5px; color: var(--mz-ink-soft); line-height: 1.4;
+  margin-top: 9px;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .sb-dim-arr { font-size: 16px; color: var(--mz-ink-mut); transition: transform 0.25s; }
 .sb-dim-head[aria-expanded="true"] .sb-dim-arr { transform: rotate(90deg); }
@@ -7986,6 +7988,16 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .sb-dim.sb-t-ghost { background: none; border: 1px dashed var(--border-subtle); --sb-tone-shadow: none; }
 .sb-t-ghost .sb-dim-lb, .sb-t-ghost .sb-dim-one, .sb-t-ghost .sb-dim-body > p { color: var(--mz-ink-mut); }
 .sb-t-ghost .sb-dim-pic { opacity: 0.55; }
+/* A ghost EGY SOR, nem kártya (mezo-mxmh S4): ikon · név · miért nincs adat. Se gyűrű, se
+   „súly 0% → 0 pont", se lenyitó nyíl — nincs mit lenyitni, és nulla szorozva nullával nem
+   hír. A hiányos kamra-adat miatt egyszerre több is állhat itt, ezért ezek visznek el a
+   legkevesebb helyet: 126px-ből ~52px lett. */
+.sb-dim-ghostrow { display: grid; grid-template-columns: auto auto 1fr; align-items: center;
+  gap: 4px 9px; padding: 9px 13px; }
+.sb-dim-ghostrow .sb-dim-pic { width: 26px; height: 26px; border-radius: 9px; box-shadow: none;
+  background: none; }
+.sb-dim-ghostrow .sb-dim-lb { font-size: 12.5px; font-weight: 700; color: var(--mz-ink-mut); }
+.sb-dim-ghostwhy { grid-column: 2 / -1; font-size: 11px; line-height: 1.4; color: var(--text-muted); }
 
 /* A csempe-mozaik függőleges ritmusa (a `.mz-panel-stack` 11px-e a tabok sajátja; a
    sheet szűkebb, 10px). */
