@@ -1810,6 +1810,9 @@ export type AppNotificationKindKey =
   | 'experiment_proposed' | 'experiment_closed'
   | 'challenge_event' | 'memory_note' | 'weekly_review_ready'
   | 'life_goal_plan' | 'goal_suggestion'
+  // mezo-0cbh — az elmúlt hét feature-ei. Mind feed-only (nincs push): amit legközelebb
+  // megnyitva megtalálsz, nem amiért rezegjen a telefon.
+  | 'person_candidate' | 'graph_candidate' | 'habit_formation' | 'character_portrait'
 
 export interface AppNotificationView {
   id: string
@@ -1847,6 +1850,10 @@ export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, {
   weekly_review_ready: { emoji: '🗓', tint: 'memoir', clay: 'i-heti' },
   life_goal_plan: { emoji: '🎯', tint: 'experiment', clay: 'i-cel' },
   goal_suggestion: { emoji: '🎯', tint: 'goal', clay: 'i-cel' },
+  person_candidate: { emoji: '🧑', tint: 'people', clay: 'i-emberek' },
+  graph_candidate: { emoji: '🕸', tint: 'people', clay: 'i-retegek' },
+  habit_formation: { emoji: '🌱', tint: 'habit', clay: 'i-termes' },
+  character_portrait: { emoji: '🪞', tint: 'character', clay: 'i-eletjel' },
 }
 
 /** Semleges bejegyzés egy olyan fajtára, amit ez a build még nem ismer. */

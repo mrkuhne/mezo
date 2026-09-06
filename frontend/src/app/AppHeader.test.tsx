@@ -169,8 +169,10 @@ test('az Üzenetek karika badge-e a szál TELJES hosszát viseli, a nudge-okkal 
 test('az értesítés-karika badge-e az olvasatlan értesítések számát viseli', async () => {
   renderAt('/nap')
   const btn = await screen.findByRole('button', { name: /^Értesítések/ })
-  expect(btn.getAttribute('aria-label')).toBe('Értesítések, 3 olvasatlan')
-  expect(btn.querySelector('.nap-badge')).toHaveTextContent('3')
+  // 4 az `notificationFeedSeed` olvasatlan sorainak száma (mezo-0cbh adta a negyediket) —
+  // a szám a seedből SZÁRMAZIK, nem önálló tény.
+  expect(btn.getAttribute('aria-label')).toBe('Értesítések, 4 olvasatlan')
+  expect(btn.querySelector('.nap-badge')).toHaveTextContent('4')
 })
 
 test('az értesítés-dropdown a /me/ertesitesek oldalra visz a lábléceről', async () => {

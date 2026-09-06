@@ -11,6 +11,7 @@ import type { ClayIconName } from '@/shared/ui/clay'
 
 export type NotificationCategoryId =
   | 'minta' | 'tudas' | 'kiserlet' | 'joslat' | 'cel' | 'osszegzes'
+  | 'emberek' | 'karakter'
 
 export interface NotificationCategory {
   id: NotificationCategoryId
@@ -33,6 +34,14 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
     kinds: ['life_goal_plan', 'goal_suggestion'] },
   { id: 'osszegzes', label: 'Összegzés', icon: 'i-memoar',
     kinds: ['memoir_ready', 'weekly_review_ready'] },
+  /* mezo-0cbh. A két jelölt-fajta EGY kategóriában: mindkettő ugyanaz a mozdulat — egy sor,
+   *  ami a döntésedre vár —, csak az egyik emberről, a másik eseményről/szezonról szól. */
+  { id: 'emberek', label: 'Emberek', icon: 'i-emberek',
+    kinds: ['person_candidate', 'graph_candidate'] },
+  /* A szokás-formálódás és a havi portré is „valami rólad beért" — de a Karakter a dosszié
+   *  saját neve, és a szokás oda tartozik hangulatilag: mindkettő ritka, kimondott mérföldkő. */
+  { id: 'karakter', label: 'Karakter', icon: 'i-eletjel',
+    kinds: ['habit_formation', 'character_portrait'] },
 ]
 
 const BY_KIND = new Map<string, NotificationCategoryId>(
