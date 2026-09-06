@@ -692,15 +692,44 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 
 A fájl többi hívásában a `TARGETS` típusa átvált — a meglévő assertek közül azok, amelyek a 3100-as számokra hivatkoznak, a fenti értékekre igazítandók.
 
-Új teszt a skálázásra — `MealCoachServiceTest` VAGY `MealCoachStore` szintjén, aszerint, hogy a fájl hogyan épít fixture-t (nézd meg, mielőtt írsz):
+Új teszt a skálázásra (S2b). A `MealCoachStore` **package-private**, ezért az új IT-t
+ugyanabba a csomagba kell tenni:
+`backend/src/test/java/io/mrkuhne/mezo/feature/meal/service/MealCoachStoreIT.java`.
+
+Az osztály-vázat a `backend/src/test/java/io/mrkuhne/mezo/feature/meal/MealCoachServiceIT.java`
+mintájára írd (ugyanaz a base class / `@Autowired MealPopulator` + `PantryItemPopulator` +
+`DatabasePopulator` + `OwnerProperties` készlet, ugyanaz az `owner()` helper) — a csomag
+más, a fixture-építés nem.
 
 ```java
+    /**
+     * mezo-jcpt.19 S2b: a nap addigi makrói a KANONIKUS tétel-hozzájárulásból jönnek
+     * (factor = amount / snapshotPer), nem a nyers snapshot-összegből. Egy per-100 g kamra-soron
+     * logolt 250 g korábban a 100 g-os értékkel számolt.
+     */
     @Test
-    void theDayStateScalesItemsByAmountOverSnapshotPer() {
-        // per-100 g kamra-sor, 250 g-ot logolva: 250 kcal, nem 100
-        // (a nyers snapshot-összeg a régi, HIBÁS viselkedés volt — mezo-jcpt.19 S2b)
+    void loadDay_scalesItemsByAmountOverSnapshotPer() {
+        UUID owner = owner();
+        LocalDate date = LocalDate.of(2026, 6, 24);
+        // per-100 g sor: 100 kcal / 10 g fehérje per 100 g, ebből 250 g logolva
+        MealEntity meal = mealPopulator.createWithItem(owner, date, "lunch",
+            /* snapshotPer */ new BigDecimal("100"),
+            /* amount */      new BigDecimal("250"),
+            /* kcal */        new BigDecimal("100"),
+            /* proteinG */    new BigDecimal("10"));
+
+        var loaded = store.loadDay(owner, date);
+
+        assertThat(loaded).hasSize(1);
+        assertThat(loaded.get(0).kcal()).isEqualByComparingTo("250");
+        assertThat(loaded.get(0).p()).isEqualByComparingTo("25");
     }
 ```
+
+Ha a `MealPopulator`-nak nincs ilyen szignatúrájú metódusa, **ne bővítsd a populátort** —
+építsd a fixture-t a fájlban, a `MealCoachServiceIT.scriptedMeal(...)` mintáját követve,
+`snapshotPer = 100` és `amount = 250` beállítással. A lényeg az asszertáció: 250 kcal és
+25 g, nem 100 kcal és 10 g.
 
 - [ ] **Step 2: Futtasd, hogy lásd a bukást**
 
