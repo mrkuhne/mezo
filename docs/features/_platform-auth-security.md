@@ -174,7 +174,7 @@ Entity: `…/feature/auth/entity/InviteEntity.java` (`isUsed()`/`isExpired(now)`
 
 `RegisterRequest.password`/`ChangePasswordRequest.newPassword` are `minLength: 8, maxLength: 72` (chars) — enforced again server-side in bytes (`AuthService.assertBcryptSafe`, since BCrypt throws past 72 *bytes* and multi-byte Hungarian UTF-8 can blow the char-length check without blowing the byte one). DTOs are **generated** into `io.mrkuhne.mezo.api.dto` (BE) and `components['schemas']` in `frontend/src/data/_client/api.gen.ts` (FE) — never hand-written.
 
-**Public allowlist** (`SecurityConfig.java`): `/api/auth/login`, `/api/auth/register`, `/actuator/health`. **Everything else** `authenticated()`.
+**Public allowlist** (`SecurityConfig.java`): `/api/auth/login`, `/api/auth/register`, `/actuator/health` and `/actuator/prometheus` — **on the management port only** (`management.server.port`, 8081, cluster-internal; `EndpointRequest.to("health","prometheus")`; on the app port `/actuator/*` is not mapped and answers 401). **Everything else** `authenticated()`.
 
 **Admin endpoints** (S3, `mezo-qw37.3`) — contract source: [`api/feature/admin/admin.yml`](../../api/feature/admin/admin.yml). Every method on `AdminController` opens with `currentUser.requireOwner()` (403 `AUTH_FORBIDDEN` for a non-owner caller) before `AdminService` runs the domain rule.
 | Verb | Path | Body → Response | Domain rule / errors |
@@ -422,7 +422,7 @@ The full multi-user epic (`mezo-qw37`, S1–S6) is now complete; see [ADR 0035](
 - `service/UserFanOut.java` (S6) — `forEachActiveUser`, the cron replacement for `appUserRepository.findAll()`.
 
 **Backend — security / ownership** (`backend/src/main/java/io/mrkuhne/mezo/techcore/`):
-- `security/SecurityConfig.java` — filter chain, CORS, JwtEncoder/Decoder, PasswordEncoder, public allowlist (`login`, `register`, `/actuator/health`).
+- `security/SecurityConfig.java` — filter chain, CORS, JwtEncoder/Decoder, PasswordEncoder, public allowlist (`login`, `register`, actuator `health`+`prometheus` on the management port).
 - `security/CurrentUserId.java` — thin delegate onto `CurrentUser.id()` — the `created_by` source every existing controller already used.
 - `security/CorsProperties.java` — `mezo.cors.allowed-origins`.
 - `security/LlmActorContext.java` (S3/S6) — `ThreadLocal<UUID>` acting-account for cron LLM calls; `runAs`.
@@ -435,7 +435,7 @@ The full multi-user epic (`mezo-qw37`, S1–S6) is now complete; see [ADR 0035](
 - `backend/src/main/resources/db/changelog/1.0.0/script/202606101200_mezo-v67_create_auth.sql` — original `app_user` + `user_profiles` DDL.
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609021200_mezo-qw37.1_multi_user_accounts.sql` — S1: role/status/timezone/onboarding columns, `invite` table, `user_profiles` drop, owner backfill.
 - `backend/src/main/resources/messages.properties` — `AUTH_LOGIN_INVALID_CREDENTIALS`, `AUTH_TOKEN_MISSING`, `AUTH_ACCOUNT_DISABLED`, `AUTH_FORBIDDEN`, `AUTH_INVITE_INVALID`, `AUTH_EMAIL_TAKEN`, `ADMIN_*`, validation codes.
-- `backend/src/main/resources/application.yml` — `mezo.auth.*` + `mezo.cors.*` defaults/env overrides; `/actuator` health exposure.
+- `backend/src/main/resources/application.yml` — `mezo.auth.*` + `mezo.cors.*` defaults/env overrides; `management.server.port` + `health,prometheus` exposure (mezo-ibxy).
 
 **Frontend:**
 - `frontend/src/data/_client/api.ts` — `apiFetch`/`apiSse`, `setToken`, Bearer injection, `ApiError`, `handleAuthFailure` (401/403-disabled session-death detection).

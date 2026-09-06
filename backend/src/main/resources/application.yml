@@ -2013,3 +2013,9 @@ management:
     metrics:
       export:
         enabled: true
+logging:
+  structured:
+    format:
+      # mezo-ibxy: empty = Boot's plain console pattern (local dev). k8s sets
+      # MEZO_LOG_FORMAT=ecs so VictoriaLogs gets message / log.level / service.name fields.
+      console: ${MEZO_LOG_FORMAT:}

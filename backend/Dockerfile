@@ -20,4 +20,6 @@ EXPOSE 8090
 
 # DB URL, credentials, JWT secret and active profile are injected at runtime
 # via env/Secret in the Kubernetes Deployment — nothing baked into the image.
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+# mezo-ibxy: the 1Gi container limit gave the JVM only ~256Mi heap by ergonomics; 60 %
+# leaves room for metaspace + the metrics registry while keeping the limit.
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=60", "-jar", "/app/app.jar"]
