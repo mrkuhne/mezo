@@ -35,6 +35,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/RitualDayResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '409':
           description: RITUAL_NOT_TODAY
           content:
@@ -56,6 +61,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/RitualDayResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '409':
           description: RITUAL_NOT_TODAY
           content:

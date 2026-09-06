@@ -3,8 +3,9 @@ package io.mrkuhne.mezo.feature.companion.flags.service.rule;
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.feature.train.entity.GymScheduleSlotEntity;
 import io.mrkuhne.mezo.feature.train.repository.GymScheduleSlotRepository;
 import io.mrkuhne.mezo.feature.train.repository.WorkoutSessionRepository;
@@ -14,7 +15,6 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -52,7 +52,7 @@ public class MissedWorkoutsRule implements FlagRule {
     private final FlagProperties properties;
 
     @Override
-    public Optional<FlagRaise> evaluate(UUID userId, LocalDate today) {
+    public FlagVerdict evaluate(UUID userId, LocalDate today) {
         FlagProperties.MissedWorkouts cfg = properties.missedWorkouts();
         LocalDate to = today.minusDays(1);
         LocalDate from = to.minusDays(cfg.windowDays() - 1L);
@@ -60,7 +60,7 @@ public class MissedWorkoutsRule implements FlagRule {
         List<GymScheduleSlotEntity> slots =
             gymScheduleSlotRepository.findByCreatedByAndDeletedFalseOrderByDayOfWeekAscTimeAsc(userId);
         if (slots.isEmpty()) {
-            return Optional.empty();
+            return FlagVerdict.unavailable(FlagKey.MISSED_WORKOUTS, UnavailableReason.NO_GYM_SCHEDULE);
         }
         Set<Integer> plannedDows =
             slots.stream().map(GymScheduleSlotEntity::getDayOfWeek).collect(Collectors.toSet());
@@ -75,7 +75,8 @@ public class MissedWorkoutsRule implements FlagRule {
             from = earliestSlotDate;
         }
         if (from.isAfter(to)) {
-            return Optional.empty();
+            return FlagVerdict.unavailable(FlagKey.MISSED_WORKOUTS,
+                UnavailableReason.SCHEDULE_YOUNGER_THAN_WINDOW);
         }
 
         Set<LocalDate> trained =
@@ -101,11 +102,13 @@ public class MissedWorkoutsRule implements FlagRule {
             longestRun = Math.max(longestRun, run);
         }
         if (longestRun < cfg.minConsecutiveMissed()) {
-            return Optional.empty();
+            return FlagVerdict.clear(FlagKey.MISSED_WORKOUTS, new FlagVerdict.ClearEvidence(
+                "longest_missed_run", (double) longestRun, (double) cfg.minConsecutiveMissed(),
+                null));
         }
-        return Optional.of(new FlagRaise(FlagKey.MISSED_WORKOUTS,
+        return FlagVerdict.raised(FlagKey.MISSED_WORKOUTS,
             FlagPayloadEnvelope.missedWorkouts(new FlagPayloadEnvelope.MissedWorkouts(
                 cfg.windowDays(), cfg.minConsecutiveMissed(), longestRun,
-                missedDays, plannedDays))));
+                missedDays, plannedDays)));
     }
 }

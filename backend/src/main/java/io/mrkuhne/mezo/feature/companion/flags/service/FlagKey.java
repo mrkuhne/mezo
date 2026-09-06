@@ -26,6 +26,10 @@ public final class FlagKey {
     public static final String IGNORED_NUDGE = "ignored_nudge";
     public static final String LATE_EATING = "late_eating";
 
+    /** Round 2 S1 (bd mezo-d58h.7.1, spec 2026-09-05 §(11)): a protocol item missed on two
+     *  consecutive due days after a real habit existed. */
+    public static final String PROTOCOL_LAPSE = "protocol_lapse";
+
     public static final String SOURCE_WRITE = "write";
     public static final String SOURCE_SWEEP = "sweep";
 

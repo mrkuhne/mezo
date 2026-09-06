@@ -529,6 +529,10 @@ mezo:
       # names a block that is not actually rendered (deliberate: the prompt is not made
       # conditional on this value).
       people-max-persons: 12
+      # mezo-iizd.10: how many active life goals the [Célok] snapshot block lists (chat AND the
+      # morning variant — user decision: the morning reminder is a wanted, supportive nudge).
+      # 0 = the block is omitted entirely.
+      lifegoal-max-goals: 3
     tools:
       # V0.5 tool calling — per-turn call budget + result-window clamps (spec §5 discipline)
       max-calls-per-turn: 15
@@ -852,6 +856,19 @@ mezo:
         absolute-hour: 22.5
         min-days-of-last-three: 2
         window-days: 3
+      protocol-lapse:
+        # Round 2 S1 (mezo-d58h.7.1, spec 2026-09-05 §(11)). The FIRST missed due day is an
+        # implicit grace day and never speaks — Duolingo's streak-freeze pattern, adopted
+        # deliberately: this card's job is "resume today and the streak lives", not "you broke it".
+        consecutive-missed-days: 2
+        # A habit must have EXISTED before it can lapse: >=7 due days of history at >=60%
+        # adherence inside the 30 days before the miss run. A brand-new item is silent by
+        # construction, and so is an item that was never really taken.
+        history-window-days: 30
+        min-history-due-days: 7
+        min-history-adherence: 0.60
+        # Per-ITEM re-announce guard, enforced in the rule (see the cooldown-hours comment).
+        per-item-cooldown-days: 7
       cooldown-hours:
         # A raised flag stays raised for its cooldown: the evaluator re-runs constantly (every
         # write + hourly), and without this the log would fill with the same day's state.
@@ -889,6 +906,11 @@ mezo:
         joint-overuse: 60
         ignored-nudge: 120
         late-eating: 48
+        # Round 2 S1 (mezo-d58h.7.1): deliberately SHORT. The spec's "7 days per item" cooldown is
+        # enforced inside ProtocolLapseRule against its own past raises' payloads; this key-level
+        # value only stops the same evaluation repeating within a day, so a DIFFERENT item lapsing
+        # tomorrow still gets a delivery window.
+        protocol-lapse: 24
     # W5.2 (bd mezo-b3pp.19, spec §9.2): the intervention library — config, not DB. Selection per
     # raised flag: highest W4.2 effectiveness (feedback_rollup intervention:<key>), unseen keys
     # optimistic; per-key cooldown-hours below; ONE card per day (first raise wins). channel:
@@ -1008,6 +1030,24 @@ mezo:
         channel: both
         text-hu: "Az utóbbi napok jó részén az utolsó étkezésed vagy nagyon közel esett a lefekvéshez, vagy egyszerűen nagyon későn volt. Ez nem hiba, csak egy szokás — viszont hosszabb távon rontja az alvásminőséget. Nem kell egy fix időpontot betartanod, csak érdemes hagyni egy kis levegőt a nap utolsó étkezése és a lefekvés között."
         cooldown-hours: 48
+        quiet-hours-exempt: false
+      # Round 2 S1 (mezo-d58h.7.1, spec 2026-09-05 §(11)): a kiegészítő két egymás utáni tervezett
+      # napon kimaradt, de előtte valódi szokás volt. A hangnem szándékosan grace-window (Duolingo
+      # streak-freeze): a sorozat ÉL, csak folytatni kell. channel: feed — egy kimaradt kiegészítő
+      # nem érdemel pusht. A konkrét készítmény nevét a tények blokk mondja meg, nem ez a szöveg.
+      # Whole-branch review fix (bd mezo-d58h.7.1): cooldown-hours here is scoped PER INTERVENTION
+      # KEY PER USER (InterventionService.deliverForFlag), NOT per item — unlike ProtocolLapseRule's
+      # own 7-day PER-ITEM cooldown. Setting this to 168 would have silently defeated the whole
+      # point of that per-item design: item A's card being delivered would block item B's card for
+      # a full week even though the rule itself is happy to raise for B the next day. This MUST
+      # match cooldown-hours.protocol-lapse (24h) so the library entry's cadence never falls behind
+      # the key-level cooldown the rest of the design assumes — the rule's own per-item cooldown is
+      # what actually enforces the spec's 7-day-per-item cadence.
+      - key: protocol_lapse_resume
+        flag: protocol_lapse
+        channel: feed
+        text-hu: "Az egyik kiegészítőd két egymás utáni tervezett napon kimaradt — pedig előtte hetekig stabilan ment. A sorozat nem veszett el: vedd be ma, és onnantól ott folytatod, ahol abbahagytad. Ha viszont szándékosan hagytad el, nyugodtan vedd ki a stackből, és nem szólok érte többet."
+        cooldown-hours: 24
         quiet-hours-exempt: false
     # W4.3 (mezo-b3pp.17): the pragmatic profile — "hogyan érdemes Daniellel beszélni"
     profile:
@@ -1544,6 +1584,17 @@ mezo:
       # How many finished days of narrative memory (daily_summary) the feed gather reads;
       # doubles as the emptiness gate: zero summaries in the window -> no message
       past-days: 7
+    hydration:
+      # Round 2 S2 (mezo-d58h.7.2, spec §12): training-day hydration. The 15:00 checkpoint is the
+      # ONE intraday signal in round 2 — water cannot be caught up at 22:00 — and it speaks only
+      # when the shortfall holds AND the user has already logged something today.
+      checkpoint-cron: "0 0 15 * * *"
+      # Fire below 60% of the pro-rated (waking-day-fraction) target.
+      shortfall-pct: 60
+      # Below this pro-rated target there is nothing meaningful to be behind on yet.
+      min-pro-rated-ml: 500
+      checkpoint-eyebrow: "Hidratáció"
+      checkpoint-template: "Edzésnap van, és eddig {logged} ml víz van naplózva — ilyenkorra a mai {target} ml-ből arányosan kb. {prorated} ml jönne ki. Egy pohárral most könnyebb, mint hárommal este."
     setup-checks:
       # S3 (mezo-d58h.3, spec 2026-09-03 §4 setup table): checks against CONFIGURATION, not
       # against a day's data — so they run once daily and re-emit at most weekly until the
@@ -1731,6 +1782,18 @@ mezo:
     strength-window-days: 28
     min-sample: 5
     summary-days: 30
+    # Formation curve (mezo-08zl) — automaticity(n) = 1 − e^(−k·n) over successful REPETITIONS.
+    # Calibration, not physics: k-base is set so a maximally consistent, context-stable user
+    # crosses the threshold near the literature median (~66 reps) and the least consistent one
+    # near ~180, spanning Lally's 18–254 spread. Binds HabitProperties.Formation.
+    formation:
+      k-base: 0.03            # curve growth before the consistency/context weighting
+      threshold-pct: 90       # where "runs by itself" sits on the curve; echoed to the FE
+      min-reps: 5             # under this there is NO estimate at all (the honesty rule)
+      k-band: 0.30            # ±band on k → the low/high pair; we report a range, never a point
+      consistency-rise: 0.12  # EMA step on a done day  (Loop-style smoothing)
+      consistency-decay: 0.09 # EMA decay on a missed day — slows the curve, never resets it
+    backfill-days: 1              # MANUAL check/uncheck window: today - N .. today (mezo-x9c2)
   # Daily intention tuning (mezo-a686): focus cap + text limits are config, never code.
   # Binds onto IntentionProperties.
   intention:

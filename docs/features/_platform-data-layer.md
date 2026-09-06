@@ -244,7 +244,7 @@ This layer is the hub; every feature is a spoke. Concrete, bidirectional seams:
 
 1. `import { useX } from '@/data/hooks'` — *always* this path, even for Train/Running (re-exported from `trainHooks`/`runningHooks` at `hooks.ts:202-203` precisely so consumers' import path stays stable).
 2. Destructure the documented return shape. For wired domains, **ghost-guard**: render `GhostState` when the relevant field is `null`/empty, and check the `*Pending` flag before deciding "empty" (real mode loads async).
-3. Call the returned mutators (`logWeight`, `startWorkout`, `saveRunningBlock`, …); several accept an `opts?: { onSuccess }` callback for post-write navigation. **Never call `apiFetch` or a `*Api` client directly from a view** — the hook is the only boundary. Don't call `isMockMode()` in views except for the rare affordance-gating case (`SportPage`).
+3. Call the returned mutators (`logWeight`, `startWorkout`, `saveRunningBlock`, …); several accept an `opts?: { onSuccess }` callback for post-write navigation, and a per-call `onError` is starting to show up alongside it where a caller needs to render its own failure state instead of relying on the global toast (`useLifeGoalMutations().create`/`changeStatus`, `mezo-iwoc` — `CelWizardPage`'s inline error card, and its activation-failure branch still navigating to the created goal since the record already exists). **Never call `apiFetch` or a `*Api` client directly from a view** — the hook is the only boundary. Don't call `isMockMode()` in views except for the rare affordance-gating case (`SportPage`).
 
 ### Wire a currently-mock domain to real (the recipe — mirror the Running slice)
 

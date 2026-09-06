@@ -1,0 +1,1612 @@
+<meta charset="utf-8">
+<title>Rutin 2.0 — szokás-formálódás</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@200;300;400;500;600;700&family=Fraunces:ital,opsz,wght@1,9..144,500&display=swap">
+<style>
+  :root {
+    --ground: #EFE8DD; --ground-2: #E7DFD2; --card: #FFFFFF;
+    --ink: #2B2118; --ink-2: #6E6257; --accent: #A84A26;
+    --line: rgba(43, 33, 24, 0.12);
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --ground: #191614; --ground-2: #211D19; --card: #262119;
+      --ink: #F0E9E1; --ink-2: #BCAFA1; --accent: #FF8A66;
+      --line: rgba(240, 233, 225, 0.12);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #191614; --ground-2: #211D19; --card: #262119;
+    --ink: #F0E9E1; --ink-2: #BCAFA1; --accent: #FF8A66;
+    --line: rgba(240, 233, 225, 0.12);
+  }
+  * { box-sizing: border-box; margin: 0; }
+  body {
+    background: var(--ground); color: var(--ink);
+    font-family: "Geist", system-ui, -apple-system, sans-serif;
+    line-height: 1.5; padding: 48px 24px 64px;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; }
+  .eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase; color: var(--accent); }
+  h1 { font-size: clamp(30px, 4vw, 42px); font-weight: 700; letter-spacing: -0.02em; margin: 8px 0 10px; text-wrap: balance; }
+  .lede { max-width: 62ch; color: var(--ink-2); font-size: 16px; }
+  .lede strong { color: var(--ink); font-weight: 600; }
+  .stage { margin-top: 40px; display: flex; gap: 56px; flex-wrap: wrap; align-items: flex-start; }
+  aside { max-width: 400px; display: grid; gap: 24px; }
+  aside h2 { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 10px; }
+  aside ul, aside ol { margin: 0; padding-left: 20px; display: grid; gap: 8px; font-size: 14.5px; color: var(--ink-2); }
+  aside li strong { color: var(--ink); font-weight: 600; }
+  .note { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 14.5px; color: var(--ink-2); border-left: 2px solid var(--accent); padding-left: 14px; }
+  .recipe { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 15px; color: var(--ink); background: var(--card); border-radius: 14px; padding: 12px 16px; border: 1px solid var(--line); }
+  .recipe small { display: block; font-family: "Geist", system-ui, sans-serif; font-style: normal; font-size: 10.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 4px; }
+
+  /* ============ PHONE ============ */
+  .phone {
+    width: 330px; height: 694px; flex: none;
+    background: #1D1712; border-radius: 52px; padding: 11px;
+    box-shadow: 0 30px 60px -22px rgba(29, 23, 18, 0.5);
+  }
+  .screen {
+    position: relative; width: 100%; height: 100%; border-radius: 42px; overflow: hidden;
+    display: flex; flex-direction: column; font-size: 11.5px; line-height: 1.4;
+    color: #2B2118; background: #FDFAF4;
+  }
+  .isl { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); width: 82px; height: 22px; border-radius: 999px; background: #1D1712; z-index: 14; }
+  .p-status { display: flex; justify-content: space-between; align-items: center; padding: 14px 24px 2px; font-size: 11px; font-weight: 600; position: relative; z-index: 14; }
+  .p-eyebrow { font-size: 8.5px; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: #A2958A; }
+  .grow { flex: 1; min-width: 0; }
+  .mrow { display: flex; align-items: center; gap: 8px; }
+  .mut { color: #6E6257; }
+  .homebar { width: 118px; height: 4px; border-radius: 999px; background: #2B2118; margin: 2px auto 9px; flex: none; opacity: 0.85; position: relative; z-index: 14; }
+
+  .rise { opacity: 0; transform: translateY(16px) scale(0.98); }
+  .play .rise { animation: rise 0.5s cubic-bezier(0.22, 0.9, 0.32, 1.15) forwards; animation-delay: var(--d); }
+  @keyframes rise { to { opacity: 1; transform: none; } }
+
+  .cta {
+    background: linear-gradient(135deg, #FF7A55, #FF5B36); color: #fff;
+    border-radius: 999px; padding: 6px 14px; font-size: 10.5px; font-weight: 600; flex: none;
+    box-shadow: 0 8px 16px -6px rgba(255, 91, 54, 0.55); border: none; font-family: inherit; cursor: pointer;
+  }
+  .cta[disabled] { opacity: 0.45; box-shadow: none; cursor: default; }
+  .ghost { background: rgba(43, 33, 24, 0.06); color: #6E6257; border: none; font-family: inherit; border-radius: 999px; padding: 6px 12px; font-size: 10.5px; font-weight: 600; flex: none; cursor: pointer; }
+  button:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+
+  /* ============ OLDAL-HÉJ ============ */
+  .page { position: absolute; inset: 0; z-index: 10; display: none; flex-direction: column; padding-top: 34px; background: #FDFAF4; }
+  .page.on { display: flex; }
+  .page.p-gold { background: linear-gradient(180deg, #FBEBCB 0%, #FDFAF4 36%); }
+  .page.p-sage { background: linear-gradient(180deg, #E4EDDC 0%, #FDFAF4 36%); }
+  .page.p-lav  { background: linear-gradient(180deg, #E9E3F7 0%, #FDFAF4 36%); }
+  .page.p-sky  { background: linear-gradient(180deg, #DCEAF4 0%, #FDFAF4 36%); }
+  .page.p-coral { background: linear-gradient(180deg, #FDE4D6 0%, #FDFAF4 36%); }
+  .page-head { display: flex; align-items: center; gap: 8px; padding: 8px 12px 0; }
+  .backbtn {
+    border: none; background: rgba(255, 255, 255, 0.7); font-family: inherit; cursor: pointer;
+    border-radius: 999px; padding: 6px 13px 6px 9px; font-size: 11px; font-weight: 600; color: #2B2118;
+    display: flex; align-items: center; gap: 4px; box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.3);
+  }
+  .pgact { border: none; background: rgba(255, 255, 255, 0.7); font-family: inherit; cursor: pointer;
+    border-radius: 999px; padding: 6px 13px; font-size: 11px; font-weight: 600; color: #A84A26; margin-left: auto;
+    box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.3); }
+  .page-hero { display: grid; justify-items: center; text-align: center; gap: 1px; padding: 8px 14px 12px; }
+  .page-hero .bignum { font-weight: 200; font-size: 40px; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; line-height: 1.05; }
+  .page-hero .nm { font-size: 15px; font-weight: 700; }
+  .page-hero .sb { font-size: 10px; color: #6E6257; }
+  .page-body { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; padding: 2px 14px 16px; }
+  .page-body::-webkit-scrollbar { display: none; }
+
+  .statstrip { display: flex; gap: 9px; margin-bottom: 10px; }
+  .statcell {
+    flex: 1; text-align: center; padding: 9px 4px; border-radius: 15px;
+    background: rgba(255, 255, 255, 0.72); border: 0.5px solid rgba(43, 33, 24, 0.07);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 8px 16px -10px rgba(43, 33, 24, 0.25);
+  }
+  .statcell b { font-size: 13px; font-weight: 600; display: block; font-variant-numeric: tabular-nums; }
+  .statcell small { font-size: 8.5px; color: #6E6257; }
+  .habnote { font-size: 9.5px; color: #A2958A; margin-top: 12px; font-weight: 300; }
+
+  /* ============ ÉN HUB (csempék) ============ */
+  .idhero { display: grid; justify-items: center; text-align: center; gap: 2px; padding: 4px 14px 10px; }
+  .idring { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center;
+    background: conic-gradient(#C9962E calc(var(--xp) * 1%), rgba(43, 33, 24, 0.08) 0); }
+  .idring i { width: 42px; height: 42px; border-radius: 50%; background: #fff; display: grid; place-items: center; font-style: normal; font-weight: 700; font-size: 15px; color: #A84A26; }
+  .idhero .nm { font-size: 14px; font-weight: 700; margin-top: 3px; }
+  .idhero .stats { display: flex; gap: 8px; font-size: 8.5px; color: #6E6257; font-weight: 600; }
+  .mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin: 0 14px; }
+  .tile {
+    border-radius: 17px; padding: 10px 11px; min-height: 88px; display: flex; flex-direction: column;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); cursor: pointer;
+    box-shadow: 0 14px 26px -14px rgba(43, 33, 24, 0.28), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
+  }
+  .tile:active { transform: scale(0.96); }
+  .t-water { background: linear-gradient(150deg, #DFEDF5, #F5FAFD); }
+  .t-habe { background: linear-gradient(150deg, #EBE6F8, #F9F6FE); box-shadow: 0 14px 26px -14px rgba(93, 79, 160, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .t-minta { background: #F0EDF8; }
+  .t-kreed { background: linear-gradient(150deg, #FFF2EA, #FFFFFF); }
+  .t-check { background: linear-gradient(150deg, #FAE3ED, #FEF8FB); }
+  .t-stack { background: linear-gradient(150deg, #E9F1E2, #F7FBF3); }
+  .spotwrap { flex: 1; display: grid; place-items: center; padding: 4px 0; }
+  .tline { font-size: 9.5px; font-weight: 600; text-align: center; color: #6E6257; }
+  /* a széles Rutin csempe — a Mezo hub Diagnózis/Karakter precedense */
+  .tile.wide { grid-column: 1 / -1; flex-direction: row; align-items: center; gap: 11px; min-height: 0; padding: 11px 13px;
+    background: linear-gradient(150deg, #FFF1D6, #FFFAF0);
+    box-shadow: 0 14px 26px -14px rgba(181, 126, 20, 0.4), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
+  .tile.wide .txt { flex: 1; min-width: 0; }
+  .tile.wide .dg { font-size: 13px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .tile.wide .dg small { font-size: 9px; font-weight: 300; color: #6E6257; margin-left: 5px; }
+  .tile.wide .chev { color: #A8801F; font-size: 14px; flex: none; }
+
+  /* ============ RUTIN HUB ============ */
+  .chaincard { border-radius: 16px; padding: 10px 12px 11px; margin-bottom: 9px; background: #fff;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 14px 26px -16px rgba(43, 33, 24, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .chaincard.off { opacity: 0.55; }
+  .chainhead { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .chainhead .t { font-size: 8.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; }
+  .chainhead .pw { font-size: 8px; font-weight: 700; color: #6E6257; font-variant-numeric: tabular-nums; }
+  .togg { width: 34px; height: 20px; border-radius: 999px; background: rgba(43, 33, 24, 0.14); position: relative; flex: none; cursor: pointer; border: none; }
+  .togg::after { content: ''; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left 0.15s ease; }
+  .togg.on { background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+  .togg.on::after { left: 16px; }
+  .hrow { display: grid; grid-template-columns: 12px 1fr auto; grid-template-areas: "g n f" "g b b"; column-gap: 7px; row-gap: 3px;
+    padding: 7px 2px; cursor: pointer; border: none; background: none; width: 100%; text-align: left; font-family: inherit; color: #2B2118; align-items: center; }
+  .hrow + .hrow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .hrow.new { background: linear-gradient(90deg, rgba(255, 237, 229, 0.9), transparent); border-radius: 10px; }
+  .hrow .grip { grid-area: g; color: #C9BCAD; font-size: 11px; cursor: grab; }
+  .hrow .nm { grid-area: n; font-size: 11px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .hrow .fw { grid-area: f; font-size: 6.5px; font-weight: 800; letter-spacing: 0.08em; border-radius: 5px; padding: 2px 6px; flex: none; }
+  .fw.fogg { color: #4E6B42; background: rgba(143, 175, 126, 0.18); }
+  .fw.clear { color: #5D4FA0; background: rgba(138, 118, 204, 0.16); }
+  .fw.none { color: #A2958A; background: rgba(43, 33, 24, 0.05); }
+  .hrow .bar { grid-area: b; display: flex; align-items: center; gap: 6px; }
+  .strength { flex: 1; height: 4px; border-radius: 2px; background: rgba(43, 33, 24, 0.07); overflow: hidden; }
+  .strength div { height: 100%; border-radius: 2px; background: linear-gradient(90deg, #E8C97A, #C9962E); transition: width 0.6s cubic-bezier(0.22, 0.9, 0.32, 1); }
+  .strength.done div { background: linear-gradient(90deg, #A9C69A, #7FA06C); }
+  .hrow .pct { font-size: 8px; font-weight: 700; color: #6E6257; font-variant-numeric: tabular-nums; min-width: 26px; text-align: right; }
+  .hrow .tick { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid rgba(43, 33, 24, 0.18); display: grid; place-items: center; font-size: 8px; color: #fff; flex: none; }
+  .hrow .tick.on { border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+  .shrow { display: flex; gap: 8px; margin-top: 10px; }
+  .shrow .ghost, .shrow .cta { flex: 1; padding: 9px 0; text-align: center; }
+
+  /* ============ WIZARD ============ */
+  .stepper { display: flex; align-items: center; gap: 8px; padding: 2px 2px 6px; }
+  .stepper .title { font-size: 8px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #A2958A; flex: 1; }
+  .stepper .cnt { font-size: 8px; font-weight: 800; letter-spacing: 0.1em; color: #A2958A; font-variant-numeric: tabular-nums; }
+  .dots { display: flex; gap: 5px; align-items: center; }
+  .dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(43, 33, 24, 0.12); }
+  .dots i.done { background: #7FA06C; }
+  .dots i.active { background: #fff; box-shadow: 0 0 0 2px #C9962E; }
+  .wtitle { font-size: 15px; font-weight: 700; text-align: center; padding: 0 14px 2px; }
+  .wsub { font-size: 9.5px; color: #6E6257; text-align: center; padding: 0 22px 8px; }
+  /* élő mondat-kártya — a wizard tézise */
+  .sentence { border-radius: 16px; padding: 10px 13px 11px; margin-bottom: 10px;
+    background: linear-gradient(140deg, #FFF6E5, #FFFDF8 78%);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 12px 24px -14px rgba(181, 126, 20, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .sentence .lb { font-size: 7px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #A8801F; margin-bottom: 4px; display: flex; gap: 6px; align-items: center; }
+  .sentence .tx { font-family: "Fraunces", Georgia, serif; font-style: italic; font-size: 12.5px; line-height: 1.45; color: #2B2118; }
+  .sentence .tx .b { display: inline; border-bottom: 1.5px dashed rgba(43, 33, 24, 0.25); color: #A2958A; padding: 0 2px; }
+  .sentence .tx .b.f { border-bottom-color: transparent; color: #2B2118; font-weight: 500; background: rgba(201, 150, 46, 0.14); border-radius: 4px; }
+  .sentence.fogg .tx .b.f { background: rgba(143, 175, 126, 0.2); }
+  .sentence.clear .tx .b.f { background: rgba(138, 118, 204, 0.16); }
+  .sentence.big .tx { font-size: 15px; line-height: 1.4; }
+  /* keret-kártyák */
+  .fwcard { display: flex; gap: 10px; align-items: flex-start; border-radius: 16px; padding: 11px 12px; margin-bottom: 8px; width: 100%; text-align: left;
+    background: #fff; border: 1.5px solid rgba(43, 33, 24, 0.08); cursor: pointer; font-family: inherit; color: #2B2118;
+    box-shadow: 0 10px 20px -14px rgba(43, 33, 24, 0.28); }
+  .fwcard .sgn { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; flex: none; font-size: 16px; font-weight: 300; background: rgba(43, 33, 24, 0.05); }
+  .fwcard b { font-size: 12px; display: block; }
+  .fwcard small { font-size: 9px; color: #6E6257; display: block; margin-top: 2px; line-height: 1.4; }
+  .fwcard .who { font-size: 7px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #A2958A; margin-top: 4px; display: block; }
+  .fwcard.on.fogg { border-color: #7FA06C; background: linear-gradient(140deg, #E9F1E2, #FFFDFA 70%); box-shadow: 0 14px 24px -14px rgba(110, 139, 94, 0.45); }
+  .fwcard.on.fogg .sgn { background: #fff; color: #4E6B42; }
+  .fwcard.on.clear { border-color: #8A76CC; background: linear-gradient(140deg, #EDE9F8, #FFFDFA 70%); box-shadow: 0 14px 24px -14px rgba(108, 95, 163, 0.45); }
+  .fwcard.on.clear .sgn { background: #fff; color: #5D4FA0; }
+  .fwloop { display: flex; gap: 4px; margin-top: 6px; flex-wrap: wrap; }
+  .fwloop span { font-size: 7px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #6E6257; background: rgba(43, 33, 24, 0.05); border-radius: 5px; padding: 2px 6px; }
+  .fwloop i { font-style: normal; color: #A2958A; font-size: 8px; }
+  /* tipp-sáv */
+  .tip { display: flex; gap: 7px; align-items: flex-start; border-radius: 12px; padding: 8px 10px; margin: 6px 0 8px; font-size: 9.5px; line-height: 1.45; color: #4E6B42; background: rgba(143, 175, 126, 0.13); font-weight: 500; }
+  .tip.lav { color: #5D4FA0; background: rgba(138, 118, 204, 0.12); }
+  .tip.warn { color: #A8801F; background: rgba(201, 150, 46, 0.14); }
+  .tip b { font-weight: 700; }
+  /* űrlap-nyelv */
+  .fcard { background: #fff; border-radius: 14px; padding: 9px 11px 10px; margin-bottom: 8px;
+    border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: 0 10px 20px -14px rgba(43, 33, 24, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .flabel { font-size: 7.5px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #A2958A; margin-bottom: 4px; display: flex; gap: 6px; align-items: baseline; }
+  .flabel .opt { font-weight: 600; letter-spacing: 0.04em; text-transform: none; color: #C9BCAD; }
+  .fin { width: 100%; border: 1px solid rgba(43, 33, 24, 0.12); border-radius: 10px; padding: 7px 10px; font-family: inherit; font-size: 11px; background: #FDFAF4; color: #2B2118; }
+  .fin::placeholder { color: #A2958A; }
+  .fin:focus { outline: 2px solid rgba(201, 150, 46, 0.55); outline-offset: 1px; border-color: transparent; }
+  .chips { display: flex; gap: 5px; flex-wrap: wrap; }
+  .chips button { border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; border-radius: 999px; padding: 4.5px 11px;
+    font-size: 9px; font-weight: 700; color: #6E6257; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+  .chips button.on { background: #EDE9F8; border-color: #8A76CC; color: #5D4FA0; }
+  .chips.sage button.on { background: #E9F1E2; border-color: #7FA06C; color: #4E6B42; }
+  .chips.gold button.on { background: #FBEBCB; border-color: #C9962E; color: #8A5E07; }
+  .chips button .src { font-size: 6.5px; font-weight: 800; letter-spacing: 0.08em; color: #A2958A; }
+  .chips button.on .src { color: inherit; opacity: 0.7; }
+  .stepin { display: inline-flex; align-items: center; gap: 4px; }
+  .stepin button { width: 24px; height: 24px; border-radius: 8px; border: 1px solid rgba(43, 33, 24, 0.14); background: #fff; font-size: 12px; color: #6E6257; cursor: pointer; font-family: inherit; padding: 0; }
+  .stepin b { min-width: 44px; text-align: center; font-size: 10.5px; font-variant-numeric: tabular-nums; }
+  .frow2 { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .lifegrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
+  .lifegrid button { border: 1px solid rgba(43, 33, 24, 0.12); background: #fff; border-radius: 11px; padding: 6px 2px 4px; display: grid; justify-items: center; gap: 2px; cursor: pointer; font-family: inherit; }
+  .lifegrid button small { font-size: 7px; font-weight: 700; color: #6E6257; }
+  .lifegrid button.on { background: #FBEBCB; border-color: #C9962E; }
+  .lifegrid button.on small { color: #8A5E07; }
+  /* vállalás */
+  .commit { display: flex; gap: 10px; align-items: center; border-radius: 14px; padding: 10px 12px; margin: 8px 0 4px; cursor: pointer;
+    background: #fff; border: 1.5px solid rgba(43, 33, 24, 0.1); font-family: inherit; width: 100%; text-align: left; color: #2B2118; }
+  .commit .box { width: 22px; height: 22px; border-radius: 7px; border: 1.5px solid rgba(43, 33, 24, 0.22); display: grid; place-items: center; flex: none; font-size: 12px; color: #fff; }
+  .commit.on { border-color: #7FA06C; background: linear-gradient(140deg, #E9F1E2, #FFFDFA 70%); }
+  .commit.on .box { border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+  .commit b { font-size: 11px; display: block; }
+  .commit small { font-size: 8.5px; color: #6E6257; }
+
+  /* ============ SZOKÁS SZERKESZTŐ ============ */
+  .fwband { display: flex; gap: 9px; align-items: center; border-radius: 15px; padding: 9px 12px; margin-bottom: 9px;
+    background: linear-gradient(140deg, var(--bw, #E9F1E2), #FFFDF8 78%); box-shadow: 0 10px 20px -13px var(--bs, rgba(127, 160, 108, 0.4)); }
+  .fwband .t { font-size: 11px; font-weight: 700; }
+  .fwband .s { font-size: 8.5px; color: #6E6257; }
+  .fwband .sw { margin-left: auto; font-size: 8.5px; font-weight: 700; color: #A84A26; background: rgba(255, 255, 255, 0.8); border: none; border-radius: 999px; padding: 4px 9px; cursor: pointer; font-family: inherit; flex: none; }
+  .hist { display: flex; gap: 3px; margin-top: 6px; }
+  .hist i { flex: 1; height: 14px; border-radius: 3px; background: rgba(43, 33, 24, 0.07); }
+  .hist i.d { background: #A9C69A; }
+  .hist i.s { background: rgba(43, 33, 24, 0.12); }
+  .danger { width: 100%; border: 1.2px dashed rgba(168, 74, 38, 0.4); background: none; border-radius: 11px; padding: 8px 0;
+    font-size: 9.5px; font-weight: 700; color: #A84A26; cursor: pointer; font-family: inherit; margin-top: 8px; }
+
+  /* ============ HUB — EGYSOROS "KÖVETKEZIK" ============ */
+  .nextcard { display: flex; align-items: center; gap: 10px; border-radius: 18px; padding: 11px 12px; margin-bottom: 9px;
+    background: linear-gradient(140deg, #FFEDD0, #FFFCF4 78%);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 16px 30px -16px rgba(181, 126, 20, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.9); }
+  .nextcard .txt { flex: 1; min-width: 0; }
+  .nextcard .eb { font-size: 7.5px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: #A8801F; }
+  .nextcard .nm { font-size: 12.5px; font-weight: 700; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nextcard .cue { font-size: 8.5px; color: #6E6257; }
+  .bigtick { width: 44px; height: 44px; border-radius: 50%; flex: none; border: none; cursor: pointer; font-size: 17px; color: #fff;
+    background: linear-gradient(135deg, #9DBB8B, #6E8B5E); box-shadow: 0 10px 20px -8px rgba(110, 139, 94, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    display: grid; place-items: center; transition: transform 0.18s cubic-bezier(0.3, 0.8, 0.4, 1.6); }
+  .bigtick:active { transform: scale(0.9); }
+  .bigtick.allon { background: linear-gradient(135deg, #E8C97A, #C9962E); box-shadow: 0 10px 20px -8px rgba(201, 150, 46, 0.6); }
+  @keyframes tickpop { 0% { transform: scale(0.6); } 70% { transform: scale(1.14); } 100% { transform: scale(1); } }
+  .bigtick.pop { animation: tickpop 0.34s cubic-bezier(0.3, 0.8, 0.4, 1.5); }
+
+  /* aktív lánc csempe */
+  .chaintile { display: flex; align-items: center; gap: 11px; width: 100%; border: none; font-family: inherit; text-align: left; cursor: pointer;
+    border-radius: 18px; padding: 11px 13px; margin-bottom: 9px; color: #2B2118;
+    background: linear-gradient(140deg, #E9E1F9, #FDFBFF 76%);
+    border: 0.5px solid rgba(43, 33, 24, 0.05);
+    box-shadow: 0 16px 30px -16px rgba(93, 79, 160, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .chaintile:active { transform: scale(0.975); }
+  .chaintile .eb { font-size: 7.5px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: #5D4FA0; }
+  .chaintile .dg { font-size: 13.5px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 1px; }
+  .chaintile .dg small { font-size: 9px; font-weight: 400; color: #6E6257; margin-left: 5px; }
+  .chdots { display: flex; gap: 4px; margin-top: 5px; }
+  .chdots i { width: 100%; height: 4px; border-radius: 2px; background: rgba(43, 33, 24, 0.1); flex: 1; }
+  .chdots i.d { background: linear-gradient(90deg, #A9C69A, #7FA06C); }
+  .chdots i.now { background: linear-gradient(90deg, #E8C97A, #C9962E); box-shadow: 0 0 0 2px rgba(201, 150, 46, 0.2); }
+  .chaintile .chev { color: #5D4FA0; font-size: 15px; flex: none; }
+
+  /* ============ RUTIN 2.0 — ÉLŐ "MA" CSEMPE ============ */
+  .macard { border-radius: 18px; padding: 11px 12px 10px; margin-bottom: 9px;
+    background: linear-gradient(150deg, #FFF3DA, #FFFDF8 72%);
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 16px 30px -16px rgba(181, 126, 20, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .macard .mahead { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+  .macard .mahead .t { font-size: 8.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #A8801F; }
+  .macard .mahead .c { margin-left: auto; font-size: 9px; font-weight: 700; color: #6E6257; font-variant-numeric: tabular-nums; }
+  .marow { display: grid; grid-template-columns: 22px 1fr auto; column-gap: 8px; align-items: center;
+    padding: 7px 2px; width: 100%; border: none; background: none; font-family: inherit; text-align: left; color: #2B2118; cursor: pointer; }
+  .marow + .marow { border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .marow .tick { width: 20px; height: 20px; border-radius: 50%; border: 1.5px solid rgba(43, 33, 24, 0.2);
+    display: grid; place-items: center; font-size: 10px; color: #fff; background: rgba(255, 255, 255, 0.6);
+    transition: transform 0.2s cubic-bezier(0.3, 0.8, 0.4, 1.5), background 0.2s ease; }
+  .marow.on .tick { border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); transform: scale(1.08); }
+  .marow .nm { font-size: 11px; font-weight: 600; display: block; }
+  .marow .cue { font-size: 8px; color: #A2958A; display: block; }
+  .marow.on .nm { color: #6E6257; }
+  .marow .mini { width: 34px; height: 4px; border-radius: 2px; background: rgba(43, 33, 24, 0.08); overflow: hidden; }
+  .marow .mini div { height: 100%; border-radius: 2px; background: linear-gradient(90deg, #E8C97A, #C9962E); transition: width 0.6s cubic-bezier(0.22, 0.9, 0.32, 1); }
+
+  /* szakasz-szűrő a Szokásaid oldalon: négy csempe, nem chip */
+  .fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 11px; }
+  .ftile { display: block; width: 100%; border-radius: 16px; padding: 9px 10px 10px; cursor: pointer;
+    font-family: inherit; text-align: left; color: #2B2118;
+    background: rgba(255, 255, 255, 0.72); border: 1px solid rgba(43, 33, 24, 0.07);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 10px 20px -14px rgba(43, 33, 24, 0.3);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4), background 0.2s ease, box-shadow 0.2s ease; }
+  .ftile:active { transform: scale(0.97); }
+  /* négyszakaszos jelölő: ez a csempe a görbe hányadik szakasza */
+  .fdots { display: flex; gap: 3px; margin-bottom: 7px; }
+  .fdots i { flex: 1; height: 3px; border-radius: 2px; background: rgba(43, 33, 24, 0.1); }
+  .fdots i.on { background: var(--fc); }
+  .ftile b { display: block; font-size: 20px; font-weight: 200; line-height: 1; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums; }
+  .ftile small { display: block; margin-top: 4px; font-size: 8px; font-weight: 700; line-height: 1.25; color: #6E6257; }
+  .ftile.on { background: linear-gradient(150deg, var(--fw), #FFFDF8 78%); border-color: var(--fc);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 14px 26px -14px var(--fs); }
+  .ftile.on small { color: var(--fc); }
+  .ftile.zero { opacity: 0.45; }
+
+  /* ============ SZOKÁSAID — EGY SOR, EGY CSEMPE ============ */
+  .hgrid { display: grid; gap: 10px; }
+  .htile { display: block; width: 100%; border-radius: 18px; padding: 12px 13px 11px; cursor: pointer;
+    background: linear-gradient(150deg, var(--hw, #F2EEE6), #FFFDF8 76%);
+    border: 0.5px solid rgba(43, 33, 24, 0.06); font-family: inherit; text-align: left; color: #2B2118;
+    box-shadow: 0 16px 30px -17px var(--hs, rgba(43, 33, 24, 0.32)), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .htile:active { transform: scale(0.98); }
+  /* felső sáv: bal oldalt a név, jobb oldalt a haladás-karika a saját feliratával */
+  .htile .htop { display: flex; align-items: flex-start; gap: 12px; }
+  .htile .hleft { flex: 1; min-width: 0; }
+  .htile .nm { font-size: 13px; font-weight: 700; line-height: 1.25; }
+  .htile .stage { display: block; margin-top: 4px; font-size: 7.5px; font-weight: 800; letter-spacing: 0.14em;
+    text-transform: uppercase; color: var(--hc, #A8801F); }
+  .htile .reps { display: block; margin-top: 6px; font-size: 22px; font-weight: 200; letter-spacing: -0.02em;
+    line-height: 1; font-variant-numeric: tabular-nums; }
+  .htile .reps small { font-size: 8.5px; font-weight: 600; color: #6E6257; margin-left: 5px; letter-spacing: 0; }
+  .htile .hright { flex: none; width: 62px; text-align: center; }
+  .htile .arc { width: 52px; height: 52px; display: block; margin: 0 auto; }
+  /* alsó sáv: mennyi van hátra, saját sorban, elválasztóval */
+  .htile .eta { display: flex; align-items: baseline; gap: 6px; margin-top: 10px; padding-top: 9px;
+    border-top: 0.5px solid rgba(43, 33, 24, 0.08); }
+  .htile .eta b { font-size: 12px; font-weight: 700; color: var(--hc, #A8801F); }
+  .htile .eta span { font-size: 8.5px; color: #6E6257; }
+  .sec { font-size: 8.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; margin: 12px 2px 7px; }
+
+  /* ============ SZOKÁS-OLDAL — POSZTER-ANATÓMIA ============ */
+  /* színes hero-zóna: wash + radiális fény + clay spot + nagy szám */
+  .hzone { position: relative; overflow: hidden; padding: 10px 14px 14px; text-align: center;
+    background: radial-gradient(120% 90% at 50% -10%, var(--hglow, rgba(201, 150, 46, 0.34)), transparent 62%); }
+  .hzone .spotring { position: relative; width: 60px; height: 60px; margin: 0 auto 2px; display: grid; place-items: center; }
+  .hzone .spotring::before { content: ''; position: absolute; inset: -6px; border-radius: 50%;
+    background: radial-gradient(circle, var(--hglow, rgba(201, 150, 46, 0.45)), transparent 68%); }
+  .hzone .spotring svg { position: relative; }
+  .hzone .bignum { font-weight: 200; font-size: 46px; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .hzone .bignum em { font-style: normal; font-size: 11px; font-weight: 700; color: #6E6257; margin-left: 5px; letter-spacing: 0.02em; }
+  .hzone .nm { font-size: 14px; font-weight: 700; margin-top: 3px; }
+  .stagepill { display: inline-flex; align-items: center; gap: 5px; margin-top: 6px; border-radius: 999px; padding: 4px 11px;
+    font-size: 9px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.78); box-shadow: 0 6px 14px -8px rgba(43, 33, 24, 0.4); }
+  .stagepill i { width: 7px; height: 7px; border-radius: 50%; display: block; }
+
+  /* poszter-kártya: nagy gyűrű + a görbe egy testben */
+  .poster { border-radius: 20px; padding: 12px 13px 11px; margin-bottom: 10px;
+    background: linear-gradient(150deg, #FFF3DB 0%, #FFFDF7 62%);
+    border: 0.5px solid rgba(43, 33, 24, 0.05);
+    box-shadow: 0 20px 38px -20px rgba(181, 126, 20, 0.6), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.9); }
+  .poster.sage { background: linear-gradient(150deg, #E9F2E1 0%, #FBFDF8 62%); box-shadow: 0 20px 38px -20px rgba(110, 139, 94, 0.55), 0 2px 6px rgba(43, 33, 24, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.9); }
+  .poster .ptop { display: flex; align-items: center; gap: 12px; }
+  .ringwrap { position: relative; width: 82px; height: 82px; flex: none; display: grid; place-items: center; }
+  .ringwrap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .ringwrap .inner { position: relative; text-align: center; }
+  .ringwrap .inner b { display: block; font-size: 21px; font-weight: 300; line-height: 1; font-variant-numeric: tabular-nums; }
+  .ringwrap .inner small { font-size: 6.5px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; }
+  .poster .pmeta { flex: 1; min-width: 0; }
+  .poster .peb { font-size: 7.5px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: #A8801F; }
+  .poster .pbig { font-size: 15px; font-weight: 700; line-height: 1.2; margin-top: 2px; }
+  .poster .psub { font-size: 9px; color: #6E6257; margin-top: 3px; line-height: 1.4; }
+
+  /* mérföldkő-sín: a négy szakasz mint út */
+  .msrail { position: relative; display: flex; margin: 12px 2px 2px; }
+  .msrail::before { content: ''; position: absolute; left: 8%; right: 8%; top: 5px; height: 2px; border-radius: 2px;
+    background: rgba(43, 33, 24, 0.1); }
+  .msrail .ms { flex: 1; display: grid; justify-items: center; gap: 5px; position: relative; }
+  .msrail .ms i { width: 12px; height: 12px; border-radius: 50%; background: #fff; box-shadow: inset 0 0 0 2px rgba(43, 33, 24, 0.13); z-index: 1; }
+  .msrail .ms.past i { background: linear-gradient(135deg, #A9C69A, #7FA06C); box-shadow: none; }
+  .msrail .ms.on i { background: #fff; box-shadow: 0 0 0 3px #C9962E, 0 0 0 7px rgba(201, 150, 46, 0.22); animation: mspulse 2.4s ease-in-out infinite; }
+  @keyframes mspulse { 0%, 100% { box-shadow: 0 0 0 3px #C9962E, 0 0 0 7px rgba(201, 150, 46, 0.22); } 50% { box-shadow: 0 0 0 3px #C9962E, 0 0 0 10px rgba(201, 150, 46, 0.08); } }
+  .msrail .ms span { font-size: 6.6px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: #A2958A; text-align: center; line-height: 1.25; }
+  .msrail .ms.on span { color: #8A5E07; }
+  .msrail .ms.past span { color: #6E8B5E; }
+
+  /* ETA-szalag */
+  .etaband { display: flex; align-items: center; gap: 9px; border-radius: 14px; padding: 9px 11px; margin-top: 11px;
+    background: rgba(255, 255, 255, 0.72); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 8px 18px -12px rgba(43, 33, 24, 0.3); }
+  .etaband .num { font-size: 17px; font-weight: 300; letter-spacing: -0.02em; color: #8A5E07; font-variant-numeric: tabular-nums; line-height: 1; flex: none; }
+  .etaband .lbl { font-size: 8.5px; color: #6E6257; line-height: 1.4; }
+  .etaband .lbl b { display: block; font-size: 9px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: #A8801F; }
+
+  /* kontextus-gyűrűk */
+  .ctxgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .ctxcell { border-radius: 15px; padding: 9px 5px 8px; text-align: center;
+    background: rgba(255, 255, 255, 0.7); border: 0.5px solid rgba(43, 33, 24, 0.05);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 10px 20px -14px rgba(43, 33, 24, 0.3); }
+  .cring { width: 42px; height: 42px; border-radius: 50%; margin: 0 auto 5px; display: grid; place-items: center;
+    background: conic-gradient(var(--c, #C9962E) calc(var(--v) * 1%), rgba(43, 33, 24, 0.09) 0); }
+  .cring i { width: 32px; height: 32px; border-radius: 50%; background: #fff; display: grid; place-items: center;
+    font-style: normal; font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .ctxcell b { display: block; font-size: 8px; font-weight: 700; }
+  .ctxcell small { font-size: 7px; color: #A2958A; }
+
+  /* szekció-fejléc a tagoláshoz */
+  .shead { display: flex; align-items: baseline; gap: 7px; margin: 13px 3px 7px; }
+  .shead .t { font-size: 8.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #A2958A; }
+  .shead .r { margin-left: auto; font-size: 8px; font-weight: 700; color: #C9BCAD; }
+
+  /* előzmény-csali csempe */
+  .histtile { display: block; width: 100%; border: none; font-family: inherit; text-align: left; cursor: pointer; color: #2B2118;
+    border-radius: 18px; padding: 11px 12px 10px;
+    background: linear-gradient(150deg, #E9F2E1, #FCFDFA 70%);
+    box-shadow: 0 16px 30px -18px rgba(110, 139, 94, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .histtile:active { transform: scale(0.98); }
+
+  /* ============ FORMÁLÓDÁS-KÁRTYA ============ */
+  .fmcard { border-radius: 18px; padding: 11px 12px 10px; margin-bottom: 9px; background: #fff;
+    border: 0.5px solid rgba(43, 33, 24, 0.06);
+    box-shadow: 0 16px 30px -18px rgba(43, 33, 24, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .fmcard .lb { font-size: 7.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #A2958A; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .fmcard .lb .r { margin-left: auto; letter-spacing: 0.04em; text-transform: none; font-weight: 700; color: #6E6257; }
+  .curvewrap { position: relative; }
+  .curvewrap svg { display: block; width: 100%; height: auto; }
+  .stagebar { display: flex; gap: 4px; margin-top: 8px; }
+  .stagebar span { flex: 1; text-align: center; font-size: 6.8px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+    color: #A2958A; background: rgba(43, 33, 24, 0.05); border-radius: 6px; padding: 3px 2px; }
+  .stagebar span.on { color: #8A5E07; background: rgba(201, 150, 46, 0.18); }
+  .etachip { display: inline-flex; align-items: baseline; gap: 5px; border-radius: 999px; padding: 5px 11px; margin-top: 8px;
+    background: rgba(201, 150, 46, 0.14); color: #8A5E07; font-size: 9.5px; font-weight: 700; }
+  .etachip b { font-size: 12px; font-variant-numeric: tabular-nums; }
+  .etachip small { font-weight: 600; color: #A8801F; }
+
+  /* kontextus-mérők */
+  .ctxrow { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+  .ctxrow + .ctxrow { border-top: 0.5px solid rgba(43, 33, 24, 0.07); }
+  .ctxrow .k { font-size: 9.5px; font-weight: 600; flex: 1; }
+  .ctxrow .k small { display: block; font-size: 8px; font-weight: 400; color: #A2958A; }
+  .meter { width: 66px; height: 5px; border-radius: 3px; background: rgba(43, 33, 24, 0.08); overflow: hidden; flex: none; }
+  .meter div { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #A9C69A, #7FA06C); }
+  .meter.lav div { background: linear-gradient(90deg, #B7A9E4, #8A76CC); }
+  .ctxrow .v { font-size: 9px; font-weight: 700; color: #6E6257; font-variant-numeric: tabular-nums; min-width: 26px; text-align: right; }
+
+  /* AI-visszajelzés (külön szelet — a hely itt van kimérve) */
+  .aicard { border-radius: 16px; padding: 10px 12px; margin-bottom: 9px; display: flex; gap: 9px; align-items: flex-start;
+    background: linear-gradient(140deg, #EDE9F8, #FFFDFA 76%); border: 0.5px solid rgba(138, 118, 204, 0.2);
+    box-shadow: 0 12px 24px -16px rgba(108, 95, 163, 0.5); }
+  .aicard .tx { font-size: 9.5px; line-height: 1.5; color: #2B2118; }
+  .aicard .tx b { font-weight: 700; }
+  .aicard .lb2 { font-size: 7px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #5D4FA0; margin-bottom: 3px; }
+  .aicard .soon { font-size: 7px; font-weight: 800; letter-spacing: 0.1em; color: #8A76CC; background: rgba(138, 118, 204, 0.16); border-radius: 5px; padding: 2px 6px; margin-left: 5px; }
+
+  /* ============ ELŐZMÉNY ============ */
+  .cal { display: grid; grid-template-columns: 16px repeat(7, 1fr); gap: 3px; align-items: center; }
+  .cal .wl { font-size: 6.5px; font-weight: 800; color: #C9BCAD; text-align: center; }
+  .cal i { aspect-ratio: 1; border-radius: 4px; background: rgba(43, 33, 24, 0.055); display: block; }
+  .cal i.d { background: linear-gradient(150deg, #B6D0A6, #8FAF7E); }
+  .cal i.m { background: rgba(43, 33, 24, 0.13); }
+  .cal i.n { background: transparent; box-shadow: inset 0 0 0 1px rgba(43, 33, 24, 0.05); }
+  .legend { display: flex; gap: 10px; margin-top: 8px; font-size: 8px; color: #6E6257; flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .legend em { width: 9px; height: 9px; border-radius: 3px; display: inline-block; font-style: normal; }
+  .wdbars { display: flex; gap: 5px; align-items: flex-end; height: 54px; margin-top: 4px; }
+  .wdbars div { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; height: 100%; justify-content: flex-end; }
+  .wdbars b { width: 100%; border-radius: 4px 4px 2px 2px; background: linear-gradient(180deg, #E8C97A, #C9962E); }
+  .wdbars b.low { background: linear-gradient(180deg, #E4DACA, #C9BCAD); }
+  .wdbars small { font-size: 6.5px; font-weight: 800; color: #A2958A; }
+
+  /* ============ HELYBEN SZERKESZTHETŐ RECEPT (A változat) ============ */
+  .shead .ed { margin-left: auto; border: none; background: rgba(255, 255, 255, 0.8); font-family: inherit; cursor: pointer;
+    border-radius: 999px; padding: 4px 11px; font-size: 8.5px; font-weight: 800; letter-spacing: 0.06em; color: #A84A26;
+    box-shadow: 0 6px 14px -9px rgba(43, 33, 24, 0.4); }
+  .swseg { display: flex; gap: 5px; }
+  .swseg button { flex: 1; border: 1.5px solid rgba(43, 33, 24, 0.1); background: #fff; border-radius: 11px; padding: 7px 4px;
+    font-family: inherit; font-size: 9px; font-weight: 700; color: #6E6257; cursor: pointer; display: grid; gap: 2px; justify-items: center; }
+  .swseg button .g { font-size: 13px; }
+  .swseg button.on { border-color: #7FA06C; background: linear-gradient(140deg, #E9F1E2, #FFFDFA 70%); color: #4E6B42; }
+  .swseg button.on.clear { border-color: #8A76CC; background: linear-gradient(140deg, #EDE9F8, #FFFDFA 70%); color: #5D4FA0; }
+  .pickrow { width: 100%; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(43, 33, 24, 0.12);
+    background: #FDFAF4; border-radius: 10px; padding: 8px 10px; font-family: inherit; font-size: 11px; color: #2B2118;
+    cursor: pointer; text-align: left; }
+  .pickrow .gr { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pickrow .cv { color: #A2958A; font-size: 12px; flex: none; }
+  .lockline { display: flex; gap: 5px; font-size: 8px; color: #A2958A; margin-top: 5px; line-height: 1.4; }
+  .lockline b { color: #6E6257; font-weight: 700; }
+  .warn { display: flex; gap: 7px; border-radius: 11px; padding: 8px 10px; margin-top: 8px; font-size: 8.5px; line-height: 1.45;
+    color: #A8801F; background: rgba(201, 150, 46, 0.16); font-weight: 500; }
+  .warn b { font-weight: 800; }
+  .warn[hidden] { display: none; }
+
+  /* ============ LÁNC — A STACKING KIRAJZOLVA ============ */
+  .stackrow { display: grid; grid-template-columns: 24px 1fr auto; column-gap: 9px; align-items: center; padding: 4px 0; }
+  .srail { position: relative; height: 46px; display: grid; place-items: center; }
+  /* a függőleges kötél: a lánc sorrendje */
+  .srail::before, .srail::after { content: ''; position: absolute; left: 50%; width: 2px; transform: translateX(-50%);
+    background: rgba(43, 33, 24, 0.12); }
+  .srail::before { top: 0; height: 13px; }
+  .srail::after { bottom: 0; height: 13px; }
+  .stackrow:first-child .srail::before, .stackrow:last-child .srail::after { display: none; }
+  .srail.linked::before { background: linear-gradient(180deg, rgba(143, 175, 126, 0.2), #8FAF7E); }
+  .srail.broken::before { background: repeating-linear-gradient(180deg, rgba(201, 150, 46, 0.7) 0 3px, transparent 3px 6px); }
+  .snode { width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-size: 9px; color: #fff;
+    border: 1.5px solid rgba(43, 33, 24, 0.18); background: #fff; position: relative; z-index: 1; cursor: pointer; }
+  .snode.on { border-color: transparent; background: linear-gradient(135deg, #8FAF7E, #6E8B5E); }
+  .snode.next { border-color: #C9962E; color: #A8801F; box-shadow: 0 0 0 3px rgba(201, 150, 46, 0.16); }
+  .sbody { min-width: 0; }
+  .sbody .nm { font-size: 11px; font-weight: 600; }
+  .sbody .achip { display: inline-flex; align-items: center; gap: 3px; margin-top: 3px; font-size: 6.8px; font-weight: 800;
+    letter-spacing: 0.08em; text-transform: uppercase; border-radius: 5px; padding: 2px 6px; }
+  .achip.linked { background: rgba(143, 175, 126, 0.18); color: #4E6B42; }
+  .achip.foreign { background: rgba(201, 150, 46, 0.2); color: #8A5E07; }
+  .achip.free { background: rgba(43, 33, 24, 0.06); color: #6E6257; }
+  .smove { display: flex; flex-direction: column; gap: 2px; }
+  .smove button { width: 22px; height: 18px; border-radius: 6px; border: 1px solid rgba(43, 33, 24, 0.12); background: #fff;
+    font-size: 9px; color: #6E6257; cursor: pointer; font-family: inherit; padding: 0; line-height: 1; }
+  .smove button[disabled] { opacity: 0.3; cursor: default; }
+
+  /* ============ ÉPÍTS — VÁLASZTÓ + WIZARD ============ */
+  .bigtiles { display: grid; gap: 10px; }
+  .bigtile { display: flex; align-items: center; gap: 12px; width: 100%; border: none; cursor: pointer;
+    border-radius: 20px; padding: 14px 14px; font-family: inherit; text-align: left; color: #2B2118;
+    background: linear-gradient(150deg, var(--bw), #FFFDF8 74%);
+    box-shadow: 0 18px 34px -18px var(--bs), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .bigtile:active { transform: scale(0.975); }
+  .bigtile .sp { display: grid; position: relative; width: 46px; height: 46px; flex: none; display: grid; place-items: center; }
+  .bigtile .sp::before { content: ''; position: absolute; inset: -4px; border-radius: 50%;
+    background: radial-gradient(circle, var(--bg2), transparent 68%); }
+  .bigtile .sp svg { position: relative; }
+  .bigtile .tx { display: block; flex: 1; min-width: 0; }
+  .bigtile .eb { display: block; font-size: 7.5px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: var(--bc); }
+  .bigtile .ti { display: block; font-size: 13.5px; font-weight: 700; margin-top: 1px; }
+  .bigtile .sb2 { display: block; font-size: 8.5px; color: #6E6257; margin-top: 2px; line-height: 1.4; }
+  .bigtile .cv { color: var(--bc); font-size: 16px; flex: none; }
+
+  /* wizard: szakasz-sáv + keret-poszterek */
+  .wbar { display: flex; gap: 4px; margin-bottom: 10px; }
+  .wbar i { flex: 1; height: 4px; border-radius: 2px; background: rgba(43, 33, 24, 0.1); overflow: hidden; }
+  .wbar i.done { background: linear-gradient(90deg, #A9C69A, #7FA06C); }
+  .wbar i.now { background: linear-gradient(90deg, #E8C97A, #C9962E); box-shadow: 0 0 0 2px rgba(201, 150, 46, 0.18); }
+  .fwposter { display: block; width: 100%; border: 1.5px solid rgba(43, 33, 24, 0.08); cursor: pointer; margin-bottom: 9px;
+    border-radius: 19px; padding: 12px 13px; font-family: inherit; text-align: left; color: #2B2118; background: #fff;
+    box-shadow: 0 14px 28px -18px rgba(43, 33, 24, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.85);
+    transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4); }
+  .fwposter:active { transform: scale(0.98); }
+  .fwposter .ph { display: flex; align-items: center; gap: 10px; }
+  .fwposter .ph > span:last-child { display: block; min-width: 0; }
+  .fwposter .sgn { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; flex: none;
+    font-size: 19px; background: rgba(43, 33, 24, 0.05); }
+  .fwposter .ti { display: block; font-size: 13px; font-weight: 700; }
+  .fwposter .who { display: block; font-size: 7px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; margin-top: 2px; }
+  .fwposter .ds { display: block; font-size: 9px; color: #6E6257; line-height: 1.45; margin-top: 7px; }
+  .fwloop2 { display: flex; align-items: center; gap: 5px; margin-top: 8px; flex-wrap: wrap; }
+  .fwloop2 span { font-size: 7px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; color: #6E6257;
+    background: rgba(43, 33, 24, 0.05); border-radius: 6px; padding: 3px 7px; }
+  .fwloop2 i { font-style: normal; color: #C9BCAD; font-size: 9px; }
+  .fwposter.on.fogg { border-color: #7FA06C; background: linear-gradient(145deg, #E9F1E2, #FFFDFA 68%);
+    box-shadow: 0 18px 32px -18px rgba(110, 139, 94, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.9); }
+  .fwposter.on.fogg .sgn { background: #fff; color: #4E6B42; }
+  .fwposter.on.clear { border-color: #8A76CC; background: linear-gradient(145deg, #EDE9F8, #FFFDFA 68%);
+    box-shadow: 0 18px 32px -18px rgba(108, 95, 163, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.9); }
+  .fwposter.on.clear .sgn { background: #fff; color: #5D4FA0; }
+
+  /* csempe-rács napszakhoz / élet-területhez */
+  .tgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+  .tgrid.four { grid-template-columns: repeat(4, 1fr); }
+  .tgrid button { border: 1.5px solid rgba(43, 33, 24, 0.09); background: #fff; border-radius: 14px; padding: 9px 3px 7px;
+    display: grid; justify-items: center; gap: 3px; cursor: pointer; font-family: inherit; color: #2B2118;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85), 0 8px 16px -12px rgba(43, 33, 24, 0.3); }
+  .tgrid button small { font-size: 7.5px; font-weight: 700; color: #6E6257; }
+  .tgrid button.on { border-color: var(--tc, #C9962E); background: linear-gradient(150deg, var(--tw, #FBEBCB), #FFFDF8 76%);
+    box-shadow: 0 12px 22px -14px var(--ts, rgba(181, 126, 20, 0.5)); }
+  .tgrid button.on small { color: var(--tc, #8A5E07); }
+
+  /* ============ NEHÉZSÉG — FOGG ABILITY-FAKTOROK ============ */
+  .effrow { padding: 8px 0; }
+  .effrow + .effrow { border-top: 0.5px solid rgba(43, 33, 24, 0.07); }
+  .effrow .eh { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .effrow .eh svg { flex: none; }
+  .effrow .eh b { font-size: 10px; font-weight: 700; }
+  .effrow .eh small { margin-left: auto; font-size: 8px; color: #A2958A; }
+  .seg3 { display: flex; gap: 4px; }
+  .seg3 button { flex: 1; border: 1px solid rgba(43, 33, 24, 0.1); background: #fff; border-radius: 9px; padding: 6px 3px;
+    font-family: inherit; font-size: 8.5px; font-weight: 600; color: #6E6257; cursor: pointer; line-height: 1.25; }
+  .seg3 button.on { border-color: var(--sc, #C9962E); background: var(--sw, #FBEBCB); color: var(--sc, #8A5E07); font-weight: 700; }
+  /* a kiszámolt nehézség + XP */
+  .effout { display: flex; align-items: center; gap: 10px; border-radius: 14px; padding: 10px 11px; margin-top: 9px;
+    background: linear-gradient(140deg, #FFF3DB, #FFFDF8 76%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9); }
+  .effout .lvl { font-size: 12px; font-weight: 700; }
+  .effout .lvl small { display: block; font-size: 8px; font-weight: 400; color: #6E6257; margin-top: 1px; }
+  .effout .xp { margin-left: auto; text-align: right; flex: none; }
+  .effout .xp b { display: block; font-size: 18px; font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .effout .xp small { font-size: 7px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; }
+
+  /* haladó blokk */
+  .adv { border-radius: 14px; overflow: hidden; margin-bottom: 8px; background: rgba(43, 33, 24, 0.035); }
+  .adv > button { width: 100%; display: flex; align-items: center; gap: 7px; border: none; background: none; cursor: pointer;
+    font-family: inherit; padding: 9px 11px; font-size: 9px; font-weight: 800; letter-spacing: 0.14em;
+    text-transform: uppercase; color: #A2958A; }
+  .adv > button .cv { margin-left: auto; font-size: 11px; }
+  .advbody { padding: 0 11px 10px; }
+
+  /* horgony-választó lap */
+  .sheet { position: absolute; inset: 0; z-index: 30; display: none; flex-direction: column; justify-content: flex-end;
+    background: rgba(29, 23, 18, 0.34); }
+  .sheet.on { display: flex; }
+  .sheetcard { background: #FDFAF4; border-radius: 22px 22px 42px 42px; padding: 12px 14px 18px; max-height: 76%;
+    display: flex; flex-direction: column; box-shadow: 0 -12px 30px -12px rgba(43, 33, 24, 0.4); }
+  .sheetcard .grab { width: 34px; height: 4px; border-radius: 999px; background: rgba(43, 33, 24, 0.16); margin: 0 auto 9px; flex: none; }
+  .sheetcard .st { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+  .sheetcard .ss { font-size: 8.5px; color: #6E6257; margin-bottom: 9px; }
+  .optlist { overflow-y: auto; scrollbar-width: none; margin: 0 -4px; padding: 0 4px; }
+  .optlist::-webkit-scrollbar { display: none; }
+  .optgrp { font-size: 7px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #A2958A; margin: 9px 2px 5px; }
+  .optrow { width: 100%; display: flex; align-items: center; gap: 9px; border: 1px solid rgba(43, 33, 24, 0.08);
+    background: #fff; border-radius: 12px; padding: 9px 11px; margin-bottom: 6px; font-family: inherit; text-align: left;
+    color: #2B2118; cursor: pointer; }
+  .optrow .nm { flex: 1; min-width: 0; font-size: 11px; font-weight: 600; }
+  .optrow .nm small { display: block; font-size: 8px; font-weight: 400; color: #A2958A; }
+  .optrow .rad { width: 15px; height: 15px; border-radius: 50%; border: 1.5px solid rgba(43, 33, 24, 0.2); flex: none; }
+  .optrow.on { border-color: #7FA06C; background: linear-gradient(140deg, #E9F1E2, #FFFDFA 72%); }
+  .optrow.on .rad { border-color: #7FA06C; background: radial-gradient(circle, #7FA06C 42%, transparent 46%); }
+  .optrow.unlink { border-style: dashed; border-color: rgba(168, 74, 38, 0.4); }
+  .optrow.unlink .nm { color: #A84A26; }
+
+  /* demó-kapcsoló a telefon alatt */
+  .demobar { display: flex; gap: 7px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+  .demobar button {
+    font-family: inherit; cursor: pointer; border-radius: 999px; padding: 7px 14px; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  }
+  .demobar button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .rise, .play .rise { opacity: 1; transform: none; animation: none; }
+    .strength div, .tile, .htile, .chaintile, .histtile, .bigtick { transition: none; }
+    .msrail .ms.on i, .bigtick.pop { animation: none; }
+  }
+  @media (max-width: 720px) { body { padding: 32px 14px 48px; } .stage { gap: 36px; } }
+</style>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="ig-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="ig-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <linearGradient id="ig-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.5" stop-color="#E05535"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
+    <radialGradient id="ig-bowl" cx="38%" cy="35%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="ig-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
+    <linearGradient id="ig-shelf" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#AE9F8E"/></linearGradient>
+    <radialGradient id="ig-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
+    <radialGradient id="ig-moonfull" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#F2EDFD"/><stop offset="0.45" stop-color="#B7A9E8"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-crater" cx="40%" cy="35%" r="80%"><stop offset="0" stop-color="#8F81C6"/><stop offset="1" stop-color="#6D5FB0"/></radialGradient>
+    <radialGradient id="ig-harvest" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFF3C9"/><stop offset="0.5" stop-color="#E8B93A"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-heart" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#F0B9D2"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
+    <radialGradient id="ig-spark" cx="38%" cy="32%" r="90%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-book" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
+    <radialGradient id="ig-targ" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#FF9A78"/><stop offset="0.6" stop-color="#E05535"/><stop offset="1" stop-color="#A83A1B"/></radialGradient>
+    <linearGradient id="ig-caps" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9FBF8E"/><stop offset="1" stop-color="#5B7A4C"/></linearGradient>
+    <linearGradient id="ig-scale" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#DCCFBE"/><stop offset="1" stop-color="#A79885"/></linearGradient>
+    <radialGradient id="ig-ball" cx="36%" cy="30%" r="82%"><stop offset="0" stop-color="#F5CBDE"/><stop offset="0.5" stop-color="#C46FA0"/><stop offset="1" stop-color="#8E3F6F"/></radialGradient>
+    <linearGradient id="ig-shoe" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9CC4E0"/><stop offset="1" stop-color="#33749C"/></linearGradient>
+    <linearGradient id="ig-arcbar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#B03E1E"/></linearGradient>
+    <radialGradient id="ig-p1" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFB597"/><stop offset="1" stop-color="#C44B26"/></radialGradient>
+    <radialGradient id="ig-p2" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#5B7A4C"/></radialGradient>
+    <radialGradient id="ig-ngold" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-nlav" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#D4CBF0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="ig-nsage" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C4DBB4"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="ig-bell" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.55" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <linearGradient id="ig-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#4E6B42"/></linearGradient>
+    <radialGradient id="ig-coin" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.5" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="ig-flame" cx="40%" cy="35%" r="85%"><stop offset="0" stop-color="#FFC69E"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C43D14"/></radialGradient>
+    <radialGradient id="ig-flin" cx="45%" cy="40%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="1" stop-color="#F0B429"/></radialGradient>
+    <linearGradient id="ig-gear" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
+    <linearGradient id="ig-mic" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B7A9E6"/><stop offset="1" stop-color="#5D4FA0"/></linearGradient>
+    <linearGradient id="ig-jar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#EDCF96"/><stop offset="1" stop-color="#B08A3E"/></linearGradient>
+    <linearGradient id="ig-wood" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#D89A6A"/><stop offset="1" stop-color="#9C5F33"/></linearGradient>
+    <radialGradient id="ig-face" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9C2"/><stop offset="0.6" stop-color="#F2C063"/><stop offset="1" stop-color="#C08A22"/></radialGradient>
+    <linearGradient id="ig-env" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#D8481F"/></linearGradient>
+    <linearGradient id="ig-stone1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#C4B6A5"/><stop offset="1" stop-color="#8C7F72"/></linearGradient>
+    <linearGradient id="ig-stone2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#D8CBBA"/><stop offset="1" stop-color="#A79885"/></linearGradient>
+    <radialGradient id="ig-stone3" cx="38%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.6" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+
+    <symbol id="i-nap" viewBox="0 0 100 100">
+      <g>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(45 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(90 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(135 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(180 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(225 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(270 50 50)"/>
+        <rect x="46" y="8" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="24" fill="url(#ig-sun)"/>
+      <ellipse cx="42" cy="41" rx="8.5" ry="6" fill="rgba(255,255,255,0.6)" transform="rotate(-22 42 41)"/>
+    </symbol>
+
+    <symbol id="i-edzes" viewBox="0 0 100 100">
+      <rect x="12" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
+      <rect x="73" y="26" width="15" height="48" rx="7.5" fill="url(#ig-plate)"/>
+      <rect x="25" y="45" width="50" height="10" rx="5" fill="#8C7F72"/>
+      <ellipse cx="18" cy="33" rx="3.5" ry="5" fill="rgba(255,255,255,0.45)"/>
+    </symbol>
+
+    <symbol id="i-fuel" viewBox="0 0 100 100">
+      <path d="M12 46a38 34 0 0 0 76 0Z" fill="url(#ig-bowl)"/>
+      <rect x="9" y="41" width="82" height="9" rx="4.5" fill="#A8C494"/>
+      <ellipse cx="30" cy="56" rx="8" ry="5" fill="rgba(255,255,255,0.35)" transform="rotate(-18 30 56)"/>
+      <path d="M38 30c0-6 5-6 5-12M57 30c0-6 5-6 5-12" fill="none" stroke="#A8C494" stroke-width="6" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-mezo" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="34" fill="url(#ig-orb)"/>
+      <ellipse cx="38" cy="35" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 38 35)"/>
+      <path d="M28 63a28 28 0 0 0 12 10" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-polc" viewBox="0 0 100 100">
+      <rect x="14" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="54" y="14" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="14" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <rect x="54" y="54" width="32" height="32" rx="10" fill="url(#ig-shelf)"/>
+      <ellipse cx="24" cy="22" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-20 24 22)"/>
+    </symbol>
+
+    <symbol id="i-viz" viewBox="0 0 100 100">
+      <path d="M50 8c13 18 24 29 24 43a24 24 0 0 1-48 0C26 37 37 26 50 8Z" fill="url(#ig-drop)"/>
+      <ellipse cx="41" cy="44" rx="7" ry="10" fill="rgba(255,255,255,0.5)" transform="rotate(18 41 44)"/>
+    </symbol>
+
+    <symbol id="i-alvas" viewBox="0 0 100 100">
+      <path d="M68 72A32 32 0 1 1 56 14a26 26 0 0 0 12 58Z" fill="url(#ig-moon)"/>
+      <ellipse cx="34" cy="32" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-28 34 32)"/>
+      <circle cx="76" cy="24" r="4" fill="#C9962E"/>
+    </symbol>
+
+    <symbol id="i-eletjel" viewBox="0 0 100 100">
+      <path d="M50 86C22 65 13 49 13 35a19 19 0 0 1 37-6 19 19 0 0 1 37 6c0 14-9 30-37 51Z" fill="url(#ig-heart)"/>
+      <ellipse cx="34" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 34 34)"/>
+    </symbol>
+
+    <symbol id="i-minta" viewBox="0 0 100 100">
+      <path d="M50 8 L59 41 L92 50 L59 59 L50 92 L41 59 L8 50 L41 41 Z" fill="url(#ig-spark)" stroke="url(#ig-spark)" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse cx="42" cy="38" rx="7" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 42 38)"/>
+      <circle cx="80" cy="20" r="5" fill="#9C8FD0"/>
+    </symbol>
+
+    <symbol id="i-naplo" viewBox="0 0 100 100">
+      <rect x="22" y="12" width="56" height="76" rx="9" fill="url(#ig-book)"/>
+      <rect x="22" y="12" width="12" height="76" rx="6" fill="#7E4A24"/>
+      <rect x="70" y="18" width="5" height="64" rx="2.5" fill="#F4E7D6"/>
+      <ellipse cx="46" cy="24" rx="10" ry="5.5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 46 24)"/>
+      <path d="M44 44h22M44 56h16" stroke="rgba(255,240,220,0.65)" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-cel" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="36" fill="url(#ig-targ)"/>
+      <circle cx="50" cy="50" r="24" fill="#FDF6EC"/>
+      <circle cx="50" cy="50" r="14" fill="url(#ig-targ)"/>
+      <circle cx="50" cy="50" r="5.5" fill="#C9962E"/>
+      <ellipse cx="37" cy="34" rx="10" ry="6.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 34)"/>
+    </symbol>
+
+    <symbol id="i-stack" viewBox="0 0 100 100">
+      <g transform="rotate(-32 50 50)">
+        <rect x="16" y="36" width="68" height="28" rx="14" fill="url(#ig-caps)"/>
+        <path d="M50 36h20a14 14 0 0 1 0 28H50Z" fill="#F0E7D4"/>
+        <ellipse cx="30" cy="43" rx="8" ry="4" fill="rgba(255,255,255,0.5)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-suly" viewBox="0 0 100 100">
+      <rect x="18" y="18" width="64" height="64" rx="16" fill="url(#ig-scale)"/>
+      <rect x="36" y="30" width="28" height="15" rx="5" fill="#4E4437"/>
+      <rect x="48.5" y="33" width="3" height="9" rx="1.5" fill="#FFD979"/>
+      <ellipse cx="30" cy="27" rx="7" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-20 30 27)"/>
+    </symbol>
+
+    <symbol id="i-sport" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="36" fill="url(#ig-ball)"/>
+      <path d="M18 34q32 14 66-2M26 76q26-24 56-8M48 14q-6 38 8 72" fill="none" stroke="#F5DCE9" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="36" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.5)" transform="rotate(-24 36 33)"/>
+    </symbol>
+
+    <symbol id="i-futas" viewBox="0 0 100 100">
+      <path d="M12 64c2-20 14-30 32-30 8 0 12 6 18 12s16 8 26 10v10a8 8 0 0 1-8 8H20a8 8 0 0 1-8-8Z" fill="url(#ig-shoe)"/>
+      <rect x="10" y="70" width="80" height="12" rx="6" fill="#DDEBF4"/>
+      <path d="M40 46l8 6M50 41l8 6" stroke="#E6F2FA" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="30" cy="44" rx="8" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-16 30 44)"/>
+    </symbol>
+
+    <symbol id="i-meso" viewBox="0 0 100 100">
+      <rect x="14" y="54" width="11" height="24" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="29" y="38" width="11" height="40" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="44" y="26" width="11" height="52" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="59" y="36" width="11" height="42" rx="5" fill="url(#ig-arcbar)"/>
+      <rect x="74" y="52" width="11" height="26" rx="5" fill="url(#ig-arcbar)"/>
+      <ellipse cx="48" cy="31" rx="4" ry="3" fill="rgba(255,255,255,0.5)"/>
+    </symbol>
+
+    <symbol id="i-emberek" viewBox="0 0 100 100">
+      <circle cx="64" cy="34" r="14" fill="url(#ig-p2)"/>
+      <path d="M42 84a22 21 0 0 1 44 0Z" fill="url(#ig-p2)"/>
+      <circle cx="36" cy="40" r="16" fill="url(#ig-p1)"/>
+      <path d="M12 88a24 22 0 0 1 48 0Z" fill="url(#ig-p1)"/>
+      <ellipse cx="30" cy="33" rx="6" ry="4" fill="rgba(255,255,255,0.5)" transform="rotate(-22 30 33)"/>
+    </symbol>
+
+    <symbol id="i-tudas" viewBox="0 0 100 100">
+      <path d="M32 32 L70 42 M36 36 L50 70 M68 44 L52 70" stroke="#C9BCAD" stroke-width="7" stroke-linecap="round"/>
+      <circle cx="30" cy="30" r="13" fill="url(#ig-ngold)"/>
+      <circle cx="72" cy="42" r="11" fill="url(#ig-nlav)"/>
+      <circle cx="50" cy="73" r="12" fill="url(#ig-nsage)"/>
+      <ellipse cx="26" cy="25" rx="4.5" ry="3" fill="rgba(255,255,255,0.55)" transform="rotate(-22 26 25)"/>
+    </symbol>
+
+    <symbol id="i-ertesites" viewBox="0 0 100 100">
+      <rect x="45" y="8" width="10" height="10" rx="5" fill="#B57E14"/>
+      <path d="M50 14a27 27 0 0 1 27 27v17l9 13H14l9-13V41a27 27 0 0 1 27-27Z" fill="url(#ig-bell)"/>
+      <circle cx="50" cy="80" r="8" fill="#B57E14"/>
+      <ellipse cx="37" cy="32" rx="8" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 37 32)"/>
+    </symbol>
+
+    <symbol id="i-growth" viewBox="0 0 100 100">
+      <path d="M50 90V50" stroke="#5B7A4C" stroke-width="7" stroke-linecap="round"/>
+      <path d="M50 56C34 52 26 40 28 24c16 2 24 14 22 32Z" fill="url(#ig-leaf)"/>
+      <path d="M50 66c14-4 22-14 20-28-14 2-22 14-20 28Z" fill="url(#ig-leaf)"/>
+      <ellipse cx="36" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-40 36 36)"/>
+    </symbol>
+
+    <symbol id="i-erme" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" fill="url(#ig-coin)"/>
+      <circle cx="50" cy="50" r="25" fill="none" stroke="rgba(255,240,200,0.55)" stroke-width="3.5"/>
+      <path d="M40 60V44l10 9 10-9v16" fill="none" stroke="#8A5E07" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="38" cy="34" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 38 34)"/>
+    </symbol>
+
+    <symbol id="i-lang" viewBox="0 0 100 100">
+      <path d="M50 8c4 14 22 20 22 40a22 22 0 0 1-44 0c0-11 6-16 9-24 5 6 9 7 13-16Z" fill="url(#ig-flame)"/>
+      <path d="M50 42c2 8 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-12 2 3 4 3 5-7Z" fill="url(#ig-flin)"/>
+    </symbol>
+
+    <symbol id="i-beallitas" viewBox="0 0 100 100">
+      <g>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(45 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(90 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(135 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(180 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(225 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(270 50 50)"/>
+        <rect x="44" y="6" width="12" height="16" rx="5" fill="url(#ig-gear)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="26" fill="url(#ig-gear)"/>
+      <circle cx="50" cy="50" r="11" fill="#FDF6EC"/>
+      <ellipse cx="38" cy="36" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 38 36)"/>
+    </symbol>
+
+    <symbol id="i-mikrofon" viewBox="0 0 100 100">
+      <rect x="36" y="10" width="28" height="46" rx="14" fill="url(#ig-mic)"/>
+      <path d="M26 44a24 24 0 0 0 48 0" fill="none" stroke="#8C7F72" stroke-width="7" stroke-linecap="round"/>
+      <rect x="46.5" y="70" width="7" height="12" rx="3.5" fill="#8C7F72"/>
+      <rect x="36" y="84" width="28" height="7" rx="3.5" fill="#8C7F72"/>
+      <ellipse cx="43" cy="20" rx="5" ry="7" fill="rgba(255,255,255,0.45)" transform="rotate(-14 43 20)"/>
+    </symbol>
+
+    <symbol id="i-kamra" viewBox="0 0 100 100">
+      <rect x="30" y="10" width="40" height="13" rx="6" fill="#8C7F72"/>
+      <rect x="26" y="24" width="48" height="64" rx="13" fill="url(#ig-jar)"/>
+      <rect x="26" y="42" width="48" height="7" fill="rgba(255,255,255,0.28)"/>
+      <ellipse cx="37" cy="34" rx="6" ry="8" fill="rgba(255,255,255,0.4)" transform="rotate(12 37 34)"/>
+    </symbol>
+
+    <symbol id="i-recept" viewBox="0 0 100 100">
+      <g transform="rotate(-30 50 50)">
+        <ellipse cx="50" cy="30" rx="17" ry="21" fill="url(#ig-wood)"/>
+        <ellipse cx="50" cy="28" rx="9.5" ry="12.5" fill="#8A5227"/>
+        <rect x="45" y="48" width="10" height="44" rx="5" fill="url(#ig-wood)"/>
+        <ellipse cx="41" cy="17" rx="6" ry="4" fill="rgba(255,255,255,0.4)" transform="rotate(-20 41 17)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-rend" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="76" rx="34" ry="16" fill="url(#ig-stone1)"/>
+      <ellipse cx="50" cy="52" rx="26" ry="13" fill="url(#ig-stone2)"/>
+      <ellipse cx="50" cy="31" rx="17" ry="10.5" fill="url(#ig-stone3)"/>
+      <ellipse cx="42" cy="26" rx="6" ry="3.5" fill="rgba(255,255,255,0.55)" transform="rotate(-14 42 26)"/>
+      <ellipse cx="38" cy="47" rx="8" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 38 47)"/>
+      <ellipse cx="34" cy="70" rx="10" ry="4.5" fill="rgba(255,255,255,0.28)" transform="rotate(-8 34 70)"/>
+    </symbol>
+
+    <symbol id="i-level" viewBox="0 0 100 100">
+      <rect x="12" y="25" width="76" height="53" rx="12" fill="url(#ig-env)"/>
+      <path d="M17 32 L50 58 L83 32" fill="none" stroke="#A83A1B" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="26" cy="34" rx="7" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-18 26 34)"/>
+    </symbol>
+
+    <symbol id="i-hajnal" viewBox="0 0 100 100">
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)"/>
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(-44 50 64)"/>
+      <rect x="46" y="16" width="8" height="14" rx="4" fill="url(#ig-ray)" transform="rotate(44 50 64)"/>
+      <path d="M27 64a23 23 0 0 1 46 0Z" fill="url(#ig-sun)"/>
+      <ellipse cx="41" cy="52" rx="8" ry="5" fill="rgba(255,255,255,0.6)" transform="rotate(-20 41 52)"/>
+      <rect x="14" y="64" width="72" height="8" rx="4" fill="#C4B6A5"/>
+    </symbol>
+
+    <symbol id="i-video" viewBox="0 0 100 100">
+      <rect x="12" y="22" width="76" height="56" rx="16" fill="url(#ig-drop)"/>
+      <path d="M44 38 L64 50 L44 62 Z" fill="#F4FAFD" stroke="#F4FAFD" stroke-width="7" stroke-linejoin="round"/>
+      <ellipse cx="27" cy="32" rx="9" ry="5.5" fill="rgba(255,255,255,0.5)" transform="rotate(-18 27 32)"/>
+    </symbol>
+
+    <symbol id="i-idozito" viewBox="0 0 100 100">
+      <rect x="43" y="8" width="14" height="10" rx="5" fill="#5B7A4C"/>
+      <rect x="47" y="16" width="6" height="8" fill="#5B7A4C"/>
+      <rect x="68" y="16" width="12" height="7" rx="3.5" fill="#5B7A4C" transform="rotate(42 74 20)"/>
+      <circle cx="50" cy="56" r="32" fill="url(#ig-nsage)"/>
+      <circle cx="50" cy="56" r="21" fill="#F2F7EC"/>
+      <path d="M50 56 L50 42" stroke="#4E6B42" stroke-width="6" stroke-linecap="round"/>
+      <path d="M50 56 L60 62" stroke="#4E6B42" stroke-width="6" stroke-linecap="round"/>
+      <ellipse cx="37" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 38)"/>
+    </symbol>
+
+    <symbol id="i-kihivas" viewBox="0 0 100 100">
+      <rect x="28" y="10" width="9" height="82" rx="4.5" fill="#8C7F72"/>
+      <path d="M37 14 L84 22 L66 34 L84 46 L37 54 Z" fill="url(#ig-plate)"/>
+      <ellipse cx="48" cy="23" rx="8" ry="4.5" fill="rgba(255,255,255,0.45)" transform="rotate(-10 48 23)"/>
+      <circle cx="32.5" cy="13" r="5.5" fill="#C9962E"/>
+    </symbol>
+
+    <symbol id="i-checkin" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="35" fill="url(#ig-face)"/>
+      <circle cx="38" cy="44" r="4.5" fill="#6E4B12"/>
+      <circle cx="62" cy="44" r="4.5" fill="#6E4B12"/>
+      <path d="M36 59q14 12 28 0" fill="none" stroke="#6E4B12" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="37" cy="33" rx="9" ry="6" fill="rgba(255,255,255,0.55)" transform="rotate(-24 37 33)"/>
+    </symbol>
+
+    <symbol id="i-injekcio" viewBox="0 0 100 100">
+      <g transform="rotate(-38 50 50)">
+        <rect x="20" y="40" width="44" height="20" rx="7" fill="#F0E7D4"/>
+        <rect x="24" y="44" width="26" height="12" rx="5" fill="url(#ig-nlav)"/>
+        <rect x="10" y="44" width="10" height="12" rx="4" fill="url(#ig-scale)"/>
+        <rect x="2" y="47" width="9" height="6" rx="3" fill="url(#ig-scale)"/>
+        <rect x="64" y="45" width="6" height="10" rx="2" fill="url(#ig-scale)"/>
+        <path d="M70 50h20" stroke="#8C7F72" stroke-width="4" stroke-linecap="round"/>
+        <ellipse cx="32" cy="46.5" rx="8" ry="3" fill="rgba(255,255,255,0.5)"/>
+      </g>
+    </symbol>
+
+    <symbol id="i-reggeli" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="56" rx="35" ry="26" fill="#F7F0E1"/>
+      <ellipse cx="44" cy="49" rx="10" ry="6" fill="rgba(255,255,255,0.7)" transform="rotate(-18 44 49)"/>
+      <circle cx="52" cy="56" r="13" fill="url(#ig-sun)"/>
+      <ellipse cx="48" cy="51" rx="4.5" ry="3" fill="rgba(255,255,255,0.6)"/>
+    </symbol>
+
+    <symbol id="i-ebed" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="66" rx="38" ry="13" fill="url(#ig-scale)"/>
+      <ellipse cx="50" cy="60" rx="25" ry="11" fill="url(#ig-bowl)"/>
+      <ellipse cx="42" cy="56" rx="8" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-16 42 56)"/>
+      <path d="M40 44q-3-6 0-12M52 46q-3-6 0-12M64 44q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="i-snack" viewBox="0 0 100 100">
+      <circle cx="50" cy="58" r="26" fill="url(#ig-p2)"/>
+      <path d="M50 33q-2-8 5-13" stroke="#9C5F33" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="63" cy="27" rx="10" ry="6" fill="url(#ig-leaf)" transform="rotate(-22 63 27)"/>
+      <ellipse cx="41" cy="49" rx="8" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-24 41 49)"/>
+    </symbol>
+
+    <symbol id="i-vacsora" viewBox="0 0 100 100">
+      <path d="M17 52h66v5a27 27 0 0 1-27 27H44a27 27 0 0 1-27-27Z" fill="url(#ig-moon)"/>
+      <ellipse cx="50" cy="52" rx="33" ry="7.5" fill="#E6DFF9"/>
+      <path d="M42 40q-3-6 0-12M58 40q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="33" cy="64" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 33 64)"/>
+    </symbol>
+    <symbol id="i-muhely" viewBox="0 0 100 100">
+      <path d="M20 56h60v4a25 25 0 0 1-25 25H45a25 25 0 0 1-25-25Z" fill="url(#ig-plate)"/>
+      <ellipse cx="50" cy="56" rx="30" ry="7" fill="#FFB597"/>
+      <path d="M17 60q-7 2-4 9M83 60q7 2 4 9" stroke="#B03E1E" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <path d="M40 46q-3-6 0-12" stroke="#C4B6A5" stroke-width="4.5" fill="none" stroke-linecap="round"/>
+      <path d="M67 14l4.5 11 11 4.5-11 4.5-4.5 11-4.5-11-11-4.5 11-4.5Z" fill="url(#ig-spark)"/>
+      <path d="M50 8l2.5 6 6 2.5-6 2.5-2.5 6-2.5-6-6-2.5 6-2.5Z" fill="url(#ig-spark)"/>
+      <ellipse cx="35" cy="67" rx="8" ry="4.5" fill="rgba(255,255,255,0.35)" transform="rotate(-14 35 67)"/>
+    </symbol>
+    <symbol id="i-memoar" viewBox="0 0 100 100">
+      <path d="M50 26 Q34 16 16 22 L16 74 Q34 68 50 78 Z" fill="url(#ig-book)"/>
+      <path d="M50 26 Q66 16 84 22 L84 74 Q66 68 50 78 Z" fill="#F0E7D4"/>
+      <path d="M60 24 v22 l6 -5 6 5 V22" fill="url(#ig-flame)"/>
+      <path d="M58 38h18M58 48h18M58 58h16" stroke="#D8CCBB" stroke-width="3.5" stroke-linecap="round" opacity="0"/>
+      <ellipse cx="30" cy="32" rx="9" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-12 30 32)"/>
+    </symbol>
+    <symbol id="i-lombik" viewBox="0 0 100 100">
+      <path d="M42 14h16v22l20 34a12 12 0 0 1-10 18H32a12 12 0 0 1-10-18l20-34Z" fill="#F0E7D4"/>
+      <path d="M35 58h30l13 12a12 12 0 0 1-10 18H32a12 12 0 0 1-10-18Z" fill="url(#ig-nsage)"/>
+      <rect x="38" y="10" width="24" height="9" rx="4.5" fill="url(#ig-leaf)"/>
+      <circle cx="46" cy="72" r="4.5" fill="rgba(255,255,255,0.5)"/>
+      <circle cx="58" cy="79" r="3" fill="rgba(255,255,255,0.4)"/>
+      <circle cx="72" cy="30" r="5" fill="#9C8FD0"/>
+      <ellipse cx="42" cy="30" rx="4" ry="9" fill="rgba(255,255,255,0.5)" transform="rotate(8 42 30)"/>
+    </symbol>
+    <symbol id="i-kristaly" viewBox="0 0 100 100">
+      <path d="M28 82h44l-6 10H34Z" fill="url(#ig-wood)"/>
+      <circle cx="50" cy="48" r="33" fill="url(#ig-nlav)"/>
+      <path d="M36 56q14 10 28 0" stroke="rgba(255,255,255,0.45)" stroke-width="5" fill="none" stroke-linecap="round"/>
+      <ellipse cx="38" cy="36" rx="10" ry="6.5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 38 36)"/>
+      <path d="M80 12 l3 8 8 3 -8 3 -3 8 -3 -8 -8 -3 8 -3 Z" fill="url(#ig-spark)"/>
+    </symbol>
+    <symbol id="i-retegek" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="72" rx="34" ry="13" fill="url(#ig-nsage)"/>
+      <ellipse cx="50" cy="54" rx="34" ry="13" fill="url(#ig-ngold)"/>
+      <ellipse cx="50" cy="36" rx="34" ry="13" fill="url(#ig-nlav)"/>
+      <ellipse cx="50" cy="33" rx="34" ry="13" fill="url(#ig-nlav)"/>
+      <ellipse cx="38" cy="28" rx="11" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-8 38 28)"/>
+    </symbol>
+    <symbol id="i-heti" viewBox="0 0 100 100">
+      <rect x="14" y="20" width="72" height="66" rx="12" fill="url(#ig-nlav)"/>
+      <rect x="14" y="20" width="72" height="16" rx="8" fill="#4A3E86"/>
+      <circle cx="32" cy="18" r="5" fill="#7E4A24"/><circle cx="68" cy="18" r="5" fill="#7E4A24"/>
+      <rect x="26" y="60" width="10" height="14" rx="4" fill="rgba(255,255,255,0.55)"/>
+      <rect x="42" y="50" width="10" height="24" rx="4" fill="rgba(255,255,255,0.8)"/>
+      <rect x="58" y="44" width="10" height="30" rx="4" fill="#FFE9A8"/>
+      <ellipse cx="36" cy="46" rx="10" ry="4" fill="rgba(255,255,255,0.35)" transform="rotate(-10 36 46)"/>
+    </symbol>
+    <symbol id="i-hold" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="40" fill="url(#ig-moonfull)"/>
+      <ellipse cx="36" cy="30" rx="10" ry="6.5" fill="rgba(255,255,255,0.55)" transform="rotate(-26 36 30)"/>
+      <circle cx="63" cy="42" r="7" fill="url(#ig-crater)" opacity="0.85"/>
+      <circle cx="44" cy="62" r="5" fill="url(#ig-crater)" opacity="0.7"/>
+      <circle cx="62" cy="66" r="3.5" fill="url(#ig-crater)" opacity="0.6"/>
+    </symbol>
+
+    <symbol id="i-termes" viewBox="0 0 100 100">
+      <path d="M50 6c5 20 12 27 32 32-20 5-27 12-32 32-5-20-12-27-32-32 20-5 27-12 32-32Z" fill="url(#ig-harvest)"/>
+      <ellipse cx="41" cy="30" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-30 41 30)"/>
+      <circle cx="81" cy="74" r="6" fill="url(#ig-harvest)"/>
+      <circle cx="18" cy="80" r="4" fill="url(#ig-harvest)" opacity="0.8"/>
+    </symbol>
+
+    <!-- ============ F7.4 · Életterület-ikonográfia (mezo-d20.8.4) ============
+         A 8 LIFE skill clay szimbóluma — a Growth-sorok, a hála-bejegyzések és a
+         Napzárás act-3 emoji-maradékának váltása. Nyelv: 100×100, közös ig-*
+         gradiensek, fehér spekuláris folt. -->
+    <radialGradient id="ig-life-eye" cx="38%" cy="32%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.55" stop-color="#4E8FB8"/><stop offset="1" stop-color="#25577A"/></radialGradient>
+    <linearGradient id="ig-life-pan" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8C7F72"/><stop offset="1" stop-color="#5E544A"/></linearGradient>
+    <radialGradient id="ig-life-pillow" cx="36%" cy="30%" r="90%"><stop offset="0" stop-color="#F2EDFD"/><stop offset="0.5" stop-color="#B7A9E8"/><stop offset="1" stop-color="#7A6BbD"/></radialGradient>
+
+    <symbol id="i-life-tudatossag" viewBox="0 0 100 100">
+      <path d="M28 92a55 40 0 0 1 44 0c2-16-4-26-10-32H38c-6 6-12 16-10 32Z" fill="url(#ig-nlav)"/>
+      <circle cx="50" cy="38" r="17" fill="url(#ig-moonfull)"/>
+      <path d="M24 22a30 30 0 0 1 52 0" fill="none" stroke="#C9962E" stroke-width="5" stroke-linecap="round"/>
+      <ellipse cx="44" cy="31" rx="6" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-22 44 31)"/>
+    </symbol>
+    <symbol id="i-life-szemlelet" viewBox="0 0 100 100">
+      <path d="M8 50C20 30 36 20 50 20s30 10 42 30C80 70 64 80 50 80S20 70 8 50Z" fill="url(#ig-stone2)"/>
+      <circle cx="50" cy="50" r="19" fill="url(#ig-life-eye)"/>
+      <circle cx="50" cy="50" r="8" fill="#1D3B52"/>
+      <ellipse cx="43" cy="42" rx="6" ry="4.5" fill="rgba(255,255,255,0.7)" transform="rotate(-24 43 42)"/>
+    </symbol>
+    <symbol id="i-life-konyha" viewBox="0 0 100 100">
+      <path d="M74 42 92 24" stroke="url(#ig-wood)" stroke-width="11" stroke-linecap="round"/>
+      <circle cx="44" cy="56" r="32" fill="url(#ig-life-pan)"/>
+      <circle cx="44" cy="56" r="24" fill="#F4E7D6"/>
+      <circle cx="40" cy="53" r="11" fill="url(#ig-sun)"/>
+      <ellipse cx="30" cy="38" rx="8" ry="5" fill="rgba(255,255,255,0.45)" transform="rotate(-24 30 38)"/>
+    </symbol>
+    <symbol id="i-life-penzugyek" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="74" rx="30" ry="13" fill="url(#ig-coin)"/>
+      <ellipse cx="50" cy="58" rx="30" ry="13" fill="url(#ig-coin)" stroke="#A9770F" stroke-width="2"/>
+      <ellipse cx="50" cy="42" rx="30" ry="13" fill="url(#ig-coin)" stroke="#A9770F" stroke-width="2"/>
+      <ellipse cx="50" cy="40" rx="20" ry="7.5" fill="none" stroke="rgba(255,240,200,0.6)" stroke-width="3"/>
+      <ellipse cx="38" cy="36" rx="8" ry="4" fill="rgba(255,255,255,0.55)" transform="rotate(-12 38 36)"/>
+    </symbol>
+    <symbol id="i-life-produktivitas" viewBox="0 0 100 100">
+      <rect x="16" y="16" width="68" height="68" rx="16" fill="url(#ig-stone1)"/>
+      <path d="M32 52l14 14 24-30" fill="none" stroke="url(#ig-leaf)" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="72" cy="26" r="6" fill="#C9962E"/>
+      <ellipse cx="32" cy="26" rx="9" ry="5" fill="rgba(255,255,255,0.4)" transform="rotate(-18 32 26)"/>
+    </symbol>
+    <symbol id="i-life-tanulas" viewBox="0 0 100 100">
+      <path d="M50 26C40 18 28 16 14 18v56c14-2 26 0 36 8V26Z" fill="url(#ig-book)"/>
+      <path d="M50 26c10-8 22-10 36-8v56c-14-2-26 0-36 8V26Z" fill="url(#ig-shelf)"/>
+      <path d="M50 26v56" stroke="#7E4A24" stroke-width="4" stroke-linecap="round"/>
+      <path d="M60 34c8-3 14-4 20-4M60 46c8-3 14-4 20-4" stroke="rgba(120,90,50,0.4)" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="28" cy="28" rx="8" ry="4.5" fill="rgba(255,255,255,0.5)" transform="rotate(-16 28 28)"/>
+    </symbol>
+    <symbol id="i-life-kapcsolatok" viewBox="0 0 100 100">
+      <circle cx="36" cy="50" r="22" fill="none" stroke="url(#ig-heart)" stroke-width="11"/>
+      <circle cx="64" cy="50" r="22" fill="none" stroke="url(#ig-drop)" stroke-width="11"/>
+      <path d="M50 33a22 22 0 0 1 0 34 22 22 0 0 1 0-34Z" fill="rgba(142,63,111,0.35)"/>
+      <ellipse cx="28" cy="36" rx="6" ry="4" fill="rgba(255,255,255,0.6)" transform="rotate(-30 28 36)"/>
+    </symbol>
+    <symbol id="i-life-regeneracio" viewBox="0 0 100 100">
+      <path d="M14 46c-4 14-2 24 4 30 8 8 56 8 64 0 6-6 8-16 4-30-10-8-62-8-72 0Z" fill="url(#ig-life-pillow)"/>
+      <path d="M30 60c12 6 28 6 40 0" fill="none" stroke="rgba(93,79,160,0.45)" stroke-width="5" stroke-linecap="round"/>
+      <circle cx="74" cy="26" r="5" fill="#C9962E"/>
+      <path d="M28 22h12l-12 12h12" fill="none" stroke="#9C8FD0" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="30" cy="50" rx="10" ry="5" fill="rgba(255,255,255,0.5)" transform="rotate(-10 30 50)"/>
+    </symbol>
+  </defs>
+</svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <radialGradient id="sg-sun" cx="36%" cy="30%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="0.5" stop-color="#F0B429"/><stop offset="1" stop-color="#B57E14"/></radialGradient>
+    <linearGradient id="sg-ray" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFD979"/><stop offset="1" stop-color="#DA9E22"/></linearGradient>
+    <radialGradient id="sg-moon" cx="34%" cy="28%" r="85%"><stop offset="0" stop-color="#E6DFF9"/><stop offset="0.5" stop-color="#9C8FD0"/><stop offset="1" stop-color="#5D4FA0"/></radialGradient>
+    <radialGradient id="sg-drop" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#C9E6F5"/><stop offset="0.5" stop-color="#5FA1C8"/><stop offset="1" stop-color="#2E6E96"/></radialGradient>
+    <radialGradient id="sg-flame" cx="40%" cy="35%" r="85%"><stop offset="0" stop-color="#FFC69E"/><stop offset="0.5" stop-color="#FF7A55"/><stop offset="1" stop-color="#C43D14"/></radialGradient>
+    <radialGradient id="sg-flin" cx="45%" cy="40%" r="80%"><stop offset="0" stop-color="#FFEDB8"/><stop offset="1" stop-color="#F0B429"/></radialGradient>
+    <linearGradient id="sg-plate" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#8A6BC9"/><stop offset="0.5" stop-color="#5D4FA0"/><stop offset="1" stop-color="#463583"/></linearGradient>
+    <linearGradient id="sg-bar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#B3A79A"/><stop offset="1" stop-color="#7C7065"/></linearGradient>
+    <radialGradient id="sg-medal" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFE9A8"/><stop offset="0.5" stop-color="#E0AC2F"/><stop offset="1" stop-color="#A9770F"/></radialGradient>
+    <radialGradient id="sg-orb" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#FFC3A8"/><stop offset="0.45" stop-color="#FF7A55"/><stop offset="1" stop-color="#D8481F"/></radialGradient>
+    <radialGradient id="sg-orbn" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#8A7FC0"/><stop offset="0.5" stop-color="#5D4FA0"/><stop offset="1" stop-color="#3A2E72"/></radialGradient>
+    <linearGradient id="sg-leaf" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#B9D3A8"/><stop offset="1" stop-color="#4E6B42"/></linearGradient>
+    <linearGradient id="sg-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FF9A78"/><stop offset="1" stop-color="#5D4FA0"/></linearGradient>
+    <radialGradient id="sg-mount" cx="40%" cy="25%" r="90%"><stop offset="0" stop-color="#C9BFE8"/><stop offset="1" stop-color="#4A3D85"/></radialGradient>
+
+    <symbol id="s-reggel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(181,126,20,0.25)"/>
+      <g>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(45 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(90 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(135 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(180 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(225 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(270 50 50)"/>
+        <rect x="46.5" y="6" width="7" height="13" rx="3.5" fill="url(#sg-ray)" transform="rotate(315 50 50)"/>
+      </g>
+      <circle cx="50" cy="50" r="22" fill="url(#sg-sun)"/>
+      <ellipse cx="42" cy="41" rx="8" ry="5.5" fill="rgba(255,255,255,0.65)" transform="rotate(-22 42 41)"/>
+    </symbol>
+
+    <symbol id="s-este" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(93,79,160,0.25)"/>
+      <path d="M66 71A30 30 0 1 1 55 17a25 25 0 0 0 11 54Z" fill="url(#sg-moon)"/>
+      <ellipse cx="35" cy="33" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-28 35 33)"/>
+      <circle cx="74" cy="24" r="3.5" fill="#C9962E"/>
+      <circle cx="83" cy="38" r="2" fill="rgba(201,150,46,0.6)"/>
+    </symbol>
+
+    <symbol id="s-viz" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="20" ry="5" fill="rgba(46,110,150,0.25)"/>
+      <path d="M50 8c13 18 24 29 24 43a24 24 0 0 1-48 0C26 37 37 26 50 8Z" fill="url(#sg-drop)"/>
+      <ellipse cx="41" cy="42" rx="7" ry="10" fill="rgba(255,255,255,0.55)" transform="rotate(18 41 42)"/>
+    </symbol>
+
+    <symbol id="s-energia" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="20" ry="5" fill="rgba(196,61,20,0.25)"/>
+      <path d="M50 8c4 14 22 20 22 40a22 22 0 0 1-44 0c0-11 6-16 9-24 5 6 9 7 13-16Z" fill="url(#sg-flame)"/>
+      <path d="M50 42c2 8 10 10 10 19a10 10 0 0 1-20 0c0-5 3-8 5-12 2 3 4 3 5-7Z" fill="url(#sg-flin)"/>
+    </symbol>
+
+    <symbol id="s-edzes" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="88" rx="30" ry="5.5" fill="rgba(70,53,131,0.22)"/>
+      <rect x="12" y="30" width="14" height="44" rx="7" fill="url(#sg-plate)"/>
+      <rect x="74" y="30" width="14" height="44" rx="7" fill="url(#sg-plate)"/>
+      <rect x="24" y="47" width="52" height="10" rx="5" fill="url(#sg-bar)"/>
+      <ellipse cx="17.5" cy="37" rx="3.5" ry="5" fill="rgba(255,255,255,0.4)"/>
+      <ellipse cx="79.5" cy="37" rx="3.5" ry="5" fill="rgba(255,255,255,0.4)"/>
+    </symbol>
+
+    <symbol id="s-medal" viewBox="0 0 100 100">
+      <path d="M36 8h12l-8 26h-14Z" fill="#D8481F"/>
+      <path d="M64 8H52l8 26h14Z" fill="#FF7A55"/>
+      <ellipse cx="50" cy="90" rx="22" ry="5" fill="rgba(169,119,15,0.28)"/>
+      <circle cx="50" cy="56" r="26" fill="url(#sg-medal)"/>
+      <circle cx="50" cy="56" r="19" fill="none" stroke="rgba(255,240,200,0.5)" stroke-width="2.5"/>
+      <path d="M50 45l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L50 61.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#8A5E07"/>
+      <path d="M49 44l3.2 6.6 7.3 1-5.3 5.1 1.3 7.2L49 60.5l-6.5 3.4 1.3-7.2-5.3-5.1 7.3-1Z" fill="#FFEDB8"/>
+      <ellipse cx="41" cy="46" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-24 41 46)"/>
+    </symbol>
+
+    <symbol id="s-orb" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,220,200,0.5)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-ejszaka" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(58,46,114,0.3)"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orbn)"/>
+      <ellipse cx="37" cy="32" rx="11" ry="7" fill="rgba(255,255,255,0.28)" transform="rotate(-24 37 32)"/>
+      <path d="M38 46q4 6 12 6t12-6" fill="none" stroke="rgba(230,223,249,0.7)" stroke-width="3.5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-figyel" viewBox="0 0 100 100">
+      <ellipse cx="46" cy="90" rx="26" ry="6" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="46" cy="48" r="32" fill="url(#sg-orb)"/>
+      <ellipse cx="34" cy="33" rx="11" ry="7.5" fill="rgba(255,255,255,0.6)" transform="rotate(-24 34 33)"/>
+      <path d="M84 36a20 20 0 0 1 0 24" fill="none" stroke="rgba(201,150,46,0.75)" stroke-width="5" stroke-linecap="round"/>
+      <path d="M92 28a32 32 0 0 1 0 40" fill="none" stroke="rgba(201,150,46,0.4)" stroke-width="5" stroke-linecap="round"/>
+    </symbol>
+
+    <symbol id="s-orb-unnepel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="26" ry="5.5" fill="rgba(168,74,38,0.28)"/>
+      <circle cx="50" cy="52" r="31" fill="url(#sg-orb)"/>
+      <ellipse cx="38" cy="38" rx="11" ry="7" fill="rgba(255,255,255,0.6)" transform="rotate(-24 38 38)"/>
+      <path d="M39 58q5 7 11 7t11-7" fill="none" stroke="rgba(255,230,210,0.8)" stroke-width="4" stroke-linecap="round"/>
+      <circle cx="20" cy="18" r="4.5" fill="#E0AC2F"/>
+      <rect x="72" y="8" width="6" height="11" rx="3" fill="#9C8FD0" transform="rotate(22 75 13)"/>
+      <circle cx="88" cy="30" r="3.5" fill="#7FA06C"/>
+      <rect x="8" y="38" width="5" height="10" rx="2.5" fill="#C46FA0" transform="rotate(-24 10 43)"/>
+      <circle cx="66" cy="6" r="3" fill="#FF7A55"/>
+    </symbol>
+
+    <symbol id="s-piheno" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="24" ry="5" fill="rgba(78,107,66,0.25)"/>
+      <path d="M50 88C24 72 14 46 24 16c30 8 42 36 32 66q-3 4-6 6Z" fill="url(#sg-leaf)"/>
+      <path d="M44 78C38 58 40 40 48 26" fill="none" stroke="#E2EFD9" stroke-width="4" stroke-linecap="round"/>
+      <ellipse cx="34" cy="34" rx="7" ry="10" fill="rgba(255,255,255,0.35)" transform="rotate(20 34 34)"/>
+    </symbol>
+
+    <symbol id="s-napzaras" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="93" rx="30" ry="5" fill="rgba(93,79,160,0.28)"/>
+      <circle cx="50" cy="48" r="38" fill="url(#sg-sky)"/>
+      <circle cx="50" cy="58" r="15" fill="url(#sg-sun)"/>
+      <path d="M14 62a38 38 0 0 0 72 0q-18-10-36-10t-36 10Z" fill="#584673"/>
+      <circle cx="70" cy="24" r="2.5" fill="rgba(255,240,220,0.8)"/>
+      <ellipse cx="34" cy="24" rx="10" ry="6" fill="rgba(255,255,255,0.35)" transform="rotate(-24 34 24)"/>
+    </symbol>
+
+    <symbol id="s-hajtas" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="rgba(78,107,66,0.22)"/>
+      <ellipse cx="50" cy="82" rx="24" ry="9" fill="#8A6B4A"/>
+      <path d="M50 80V46" stroke="#5B7A4C" stroke-width="7" stroke-linecap="round"/>
+      <path d="M50 52C32 48 22 34 24 16c18 2 28 16 26 36Z" fill="url(#sg-leaf)"/>
+      <path d="M50 64c16-4 26-16 24-32-16 2-26 16-24 32Z" fill="url(#sg-leaf)"/>
+      <ellipse cx="34" cy="28" rx="6" ry="4" fill="rgba(255,255,255,0.45)" transform="rotate(-40 34 28)"/>
+    </symbol>
+
+    <symbol id="s-hegycel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="32" ry="5.5" fill="rgba(74,61,133,0.25)"/>
+      <path d="M50 18q4 0 7 6l27 52q4 8-6 8H22q-10 0-6-8l27-52q3-6 7-6Z" fill="url(#sg-mount)"/>
+      <path d="M50 18q4 0 7 6l7 14c-6 5-10-2-14 3s-9-2-13 2l6-19q3-6 7-6Z" fill="#F1EDFB"/>
+      <rect x="48.5" y="4" width="3" height="16" rx="1.5" fill="#8C7F72"/>
+      <path d="M51.5 5h15l-4.5 5 4.5 5h-15Z" fill="#E0AC2F"/>
+      <ellipse cx="36" cy="42" rx="7" ry="10" fill="rgba(255,255,255,0.25)" transform="rotate(18 36 42)"/>
+    </symbol>
+
+    <!-- mezo-8az6 · Fuel szekció — az i-fuel tál-motívuma, gőzpárával -->
+    <symbol id="s-fuel" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="28" ry="5.5" fill="rgba(78,107,66,0.25)"/>
+      <path d="M37 27c0-7 6-7 6-14M57 27c0-7 6-7 6-14" fill="none" stroke="#A8C494" stroke-width="6" stroke-linecap="round" opacity="0.85"/>
+      <path d="M14 48a36 33 0 0 0 72 0Z" fill="url(#sg-bowl)"/>
+      <rect x="10" y="42" width="80" height="10" rx="5" fill="#A8C494"/>
+      <ellipse cx="32" cy="61" rx="9" ry="5.5" fill="rgba(255,255,255,0.4)" transform="rotate(-18 32 61)"/>
+    </symbol>
+
+    <!-- mezo-8az6 · Én szekció — az i-emberek alakja egy személyre sűrítve -->
+    <symbol id="s-en" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="91" rx="26" ry="5.5" fill="rgba(196,75,38,0.25)"/>
+      <circle cx="50" cy="33" r="19" fill="url(#sg-person)"/>
+      <path d="M18 88a32 27 0 0 1 64 0Z" fill="url(#sg-person)"/>
+      <ellipse cx="42" cy="25" rx="7" ry="4.5" fill="rgba(255,255,255,0.55)" transform="rotate(-22 42 25)"/>
+    </symbol>
+  <radialGradient id="sg-orb-doki" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#A8C0D0"/><stop offset="0.45" stop-color="#3E7396"/><stop offset="1" stop-color="#284B62"/></radialGradient><radialGradient id="sg-orb-edzo" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#D8AE9D"/><stop offset="0.45" stop-color="#A84A26"/><stop offset="1" stop-color="#6D3019"/></radialGradient><radialGradient id="sg-orb-taplalkozo" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#AFBCAA"/><stop offset="0.45" stop-color="#4E6B42"/><stop offset="1" stop-color="#33462B"/></radialGradient><radialGradient id="sg-orb-szomnologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#B6B0D4"/><stop offset="0.45" stop-color="#5D4FA0"/><stop offset="1" stop-color="#3C3368"/></radialGradient><radialGradient id="sg-orb-pszichologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#CCA9BE"/><stop offset="0.45" stop-color="#8E3F6F"/><stop offset="1" stop-color="#5C2948"/></radialGradient><radialGradient id="sg-orb-drill" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#D8C69A"/><stop offset="0.45" stop-color="#A8801F"/><stop offset="1" stop-color="#6D5314"/></radialGradient><radialGradient id="sg-orb-antropologus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#A1C5BC"/><stop offset="0.45" stop-color="#2E7D6B"/><stop offset="1" stop-color="#1E5146"/></radialGradient><radialGradient id="sg-orb-szkeptikus" cx="35%" cy="28%" r="80%"><stop offset="0" stop-color="#AEA9A5"/><stop offset="0.45" stop-color="#4A4038"/><stop offset="1" stop-color="#302A24"/></radialGradient>
+    <!-- mezo-8az6 · a fejléc szekció-spotjaihoz -->
+    <radialGradient id="sg-bowl" cx="38%" cy="35%" r="85%"><stop offset="0" stop-color="#B9D3A8"/><stop offset="0.5" stop-color="#7FA06C"/><stop offset="1" stop-color="#4E6B42"/></radialGradient>
+    <radialGradient id="sg-person" cx="36%" cy="30%" r="85%"><stop offset="0" stop-color="#FFB597"/><stop offset="0.5" stop-color="#E0704A"/><stop offset="1" stop-color="#C44B26"/></radialGradient>
+  </defs>
+    <symbol id="s-orb-doki" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#3E739647"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-doki)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(12 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-edzo" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#A84A2647"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-edzo)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(39 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-taplalkozo" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#4E6B4247"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-taplalkozo)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(66 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-szomnologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#5D4FA047"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-szomnologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(93 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-pszichologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#8E3F6F47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-pszichologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(120 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-drill" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#A8801F47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-drill)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(147 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-antropologus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#2E7D6B47"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-antropologus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(174 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+    <symbol id="s-orb-szkeptikus" viewBox="0 0 100 100">
+      <ellipse cx="50" cy="90" rx="26" ry="6" fill="#4A403847"/>
+      <circle cx="50" cy="48" r="34" fill="url(#sg-orb-szkeptikus)"/>
+      <circle cx="50" cy="48" r="24" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="3.5" stroke-dasharray="11 10" stroke-linecap="round" transform="rotate(201 50 48)"/>
+      <ellipse cx="37" cy="32" rx="12" ry="8" fill="rgba(255,255,255,0.6)" transform="rotate(-24 37 32)"/>
+      <path d="M27 61a28 28 0 0 0 13 11" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="4" stroke-linecap="round"/>
+    </symbol>
+</svg>
+<style>
+  .trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px; margin-top: 36px; align-items: start; }
+  @media (max-width: 1100px) { .trio { grid-template-columns: 1fr; justify-items: center; } }
+  .col > .lb { display: flex; align-items: baseline; gap: 9px; margin-bottom: 12px; }
+  .col > .lb b { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
+  .col > .lb .tag { font-size: 10px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+  .col .phone { width: 300px; height: 640px; }
+  .col .screen { font-size: 10.8px; }
+  .verdict { margin-top: 16px; display: grid; gap: 7px; max-width: 300px; }
+  .verdict div { display: flex; gap: 7px; font-size: 13px; line-height: 1.45; color: var(--ink-2); }
+  .verdict div b { color: var(--ink); font-weight: 600; }
+  .verdict .y::before { content: '＋'; color: #4E6B42; font-weight: 700; flex: none; }
+  .verdict .n::before { content: '−'; color: #A84A26; font-weight: 700; flex: none; }
+  .pick { display: inline-block; margin-top: 12px; border-radius: 999px; padding: 5px 13px; font-size: 11px; font-weight: 700;
+    background: var(--accent); color: #fff; }
+  .pick.off { background: rgba(43, 33, 24, 0.07); color: var(--ink-2); }
+  /* a három telefon belsejéhez */
+  .swseg { display: flex; gap: 5px; }
+  .swseg button { flex: 1; border: 1.5px solid rgba(43, 33, 24, 0.1); background: #fff; border-radius: 11px; padding: 7px 4px;
+    font-family: inherit; font-size: 9.5px; font-weight: 700; color: #6E6257; cursor: pointer; display: grid; gap: 2px; justify-items: center; }
+  .swseg button .g { font-size: 13px; }
+  .swseg button.on { border-color: #7FA06C; background: linear-gradient(140deg, #E9F1E2, #FFFDFA 70%); color: #4E6B42; }
+  .swseg button.on.clear { border-color: #8A76CC; background: linear-gradient(140deg, #EDE9F8, #FFFDFA 70%); color: #5D4FA0; }
+  .pickrow { width: 100%; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(43, 33, 24, 0.12);
+    background: #FDFAF4; border-radius: 10px; padding: 8px 10px; font-family: inherit; font-size: 11px; color: #2B2118; cursor: pointer; text-align: left; }
+  .pickrow .gr { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pickrow .cv { color: #A2958A; font-size: 12px; flex: none; }
+  .pickrow.lock { background: rgba(43, 33, 24, 0.045); color: #A2958A; cursor: default; }
+  .lockline { display: flex; gap: 5px; font-size: 8px; color: #A2958A; margin-top: 5px; line-height: 1.4; }
+  .warn { display: flex; gap: 7px; border-radius: 11px; padding: 8px 10px; margin-top: 8px; font-size: 9px; line-height: 1.45;
+    color: #A8801F; background: rgba(201, 150, 46, 0.16); font-weight: 500; }
+  .warn b { font-weight: 800; }
+  .warn[hidden] { display: none; }
+  .rowlink { width: 100%; display: flex; align-items: center; gap: 9px; border: none; border-radius: 15px; padding: 11px 12px;
+    background: #fff; font-family: inherit; text-align: left; color: #2B2118; cursor: pointer; margin-bottom: 8px;
+    box-shadow: 0 12px 24px -16px rgba(43, 33, 24, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .rowlink .t { flex: 1; min-width: 0; }
+  .rowlink .t b { display: block; font-size: 11.5px; font-weight: 700; }
+  .rowlink .t small { display: block; font-size: 8.5px; color: #6E6257; margin-top: 1px; }
+  .rowlink .cv { color: #A84A26; font-size: 15px; flex: none; }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Design 2.0 · Rutin-szerkesztő · IA-választás · mezo-08zl</p>
+  <h1>Hol lakjon a recept szerkesztése? Három ajtó ugyanahhoz a szobához</h1>
+  <p class="lede">
+    A kérdés konkrétan ez: ha meg akarod változtatni, hogy egy szokás <strong>mihez van horgonyozva</strong> (a stacking),
+    vagy át akarsz váltani Fogg-ról Clear-re, <strong>hol csinálod</strong>? Ma egyik felületen sem: a szokás oldalán a horgony
+    mező le van tiltva, amint valódi szokáshoz kötötted, és a „Keret váltása" gomb visszadob a négylépéses wizardba.
+    Alább a három lehetőség — ugyanaz a szokás, ugyanaz a művelet, három felületen.
+  </p>
+
+  <div class="trio">
+    <!-- ============ A · HELYBEN ============ -->
+    <div class="col">
+      <div class="lb"><span class="tag">A</span><b>Helyben</b></div>
+      <div class="phone"><div class="screen play">
+        <div class="isl"></div>
+        <div class="p-status"><span>9:41</span><span>▮▮▮ 82%</span></div>
+        <div class="page p-gold on">
+          <div class="page-head">
+            <button class="backbtn">‹ Rutin</button>
+            <button class="pgact">Mentés</button>
+          </div>
+          <div class="hzone rise" style="--d:20ms;--hglow:rgba(201,150,46,.34);">
+            <div class="spotring"><svg width="46" height="46" viewBox="0 0 100 100"><use href="#i-hajnal"/></svg></div>
+            <div class="bignum" style="font-size:38px;">55<em>ismétlés</em></div>
+            <div class="nm">Reggeli fény · 10 perc kint</div>
+          </div>
+          <div class="page-body">
+            <div class="shead rise" style="--d:50ms;"><span class="t">A recepted</span><span class="r">itt szerkeszted</span></div>
+            <div class="fcard rise" style="--d:60ms;">
+              <label class="flabel">Keret</label>
+              <div class="swseg" id="aSeg">
+                <button class="on" data-fw="FOGG"><span class="g">⚓</span>Szokás-láncolás</button>
+                <button data-fw="CLEAR"><span class="g">◈</span>Négy törvény</button>
+              </div>
+              <div class="warn" id="aWarn" hidden><span>⚠</span><span><b>Váltásnál elveszik:</b> a horgony és az ünneplés. A Clear-mezők üresen indulnak.</span></div>
+            </div>
+            <div class="fcard rise" style="--d:80ms;">
+              <label class="flabel">Miután… <span class="opt">horgony</span></label>
+              <button class="pickrow" id="aPick"><span class="gr">megittam a reggeli kávét</span><span class="cv">▾</span></button>
+              <div class="lockline"><span>⚓</span><span>A <strong>Reggeli kávé</strong> szokásodhoz kötve — koppints a cseréhez.</span></div>
+            </div>
+            <div class="fcard rise" style="--d:100ms;">
+              <label class="flabel">…én <span class="opt">pici tett</span></label>
+              <input class="fin" value="kimegyek 10 percre a fényre">
+            </div>
+            <div class="fcard rise" style="--d:120ms;">
+              <label class="flabel">Ünneplésül</label>
+              <input class="fin" value="ez az én napom">
+            </div>
+            <div class="shead rise" style="--d:140ms;"><span class="t">Beállítások</span></div>
+            <div class="fcard rise" style="--d:150ms;">
+              <div class="frow2">
+                <div><label class="flabel">Lánc</label><div class="chips gold"><button class="on">Reggeli</button><button>Esti</button></div></div>
+                <div><label class="flabel">XP</label><span class="stepin"><button>−</button><b>10 XP</b><button>＋</button></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="homebar"></div>
+      </div></div>
+      <div class="verdict">
+        <div class="y"><span><b>Egy hely, egy modell.</b> A recept ott van, ahol a szokás — nem kell megjegyezni, melyik ajtón kell bemenni.</span></div>
+        <div class="y"><span><b>A horgony végre cserélhető.</b> A választó ugyanazokat a chipeket kínálja, mint a wizard 2. lépése.</span></div>
+        <div class="y"><span><b>A keretváltás figyelmeztet</b> — ma némán töröl mezőket.</span></div>
+        <div class="n"><span>A szokás oldala <b>hosszabb lesz</b>: a formálódás-nézet fölé/alá még egy űrlap-blokk kerül.</span></div>
+        <div class="n"><span>Két állapot egy lapon: „nézem" és „szerkesztem" — a Mentés gomb messze kerülhet.</span></div>
+        <span class="pick">Ezt ajánlom</span>
+      </div>
+    </div>
+
+    <!-- ============ B · KÜLÖN ALOLDAL ============ -->
+    <div class="col">
+      <div class="lb"><span class="tag">B</span><b>Külön recept-aloldal</b></div>
+      <div class="phone"><div class="screen play">
+        <div class="isl"></div>
+        <div class="p-status"><span>9:41</span><span>▮▮▮ 82%</span></div>
+        <div class="page p-gold on">
+          <div class="page-head">
+            <button class="backbtn">‹ Szokás</button>
+            <button class="pgact">Mentés</button>
+          </div>
+          <div class="page-hero rise" style="--d:20ms;">
+            <span style="font-size:26px;">⚓</span>
+            <div class="bignum" style="font-size:20px;font-weight:700;">A recept</div>
+            <div class="sb">Reggeli fény · 10 perc kint</div>
+          </div>
+          <div class="page-body">
+            <div class="sentence rise" style="--d:40ms;">
+              <div class="lb"><span>Élő mondat</span><span style="color:#C9BCAD;">· együtt változik</span></div>
+              <div class="tx">Miután <span class="b f">megittam a reggeli kávét</span>, <span class="b f">kimegyek 10 percre a fényre</span> — és logolom.</div>
+            </div>
+            <div class="fcard rise" style="--d:60ms;">
+              <label class="flabel">Keret</label>
+              <div class="swseg">
+                <button class="on"><span class="g">⚓</span>Szokás-láncolás</button>
+                <button><span class="g">◈</span>Négy törvény</button>
+              </div>
+            </div>
+            <div class="fcard rise" style="--d:80ms;">
+              <label class="flabel">Horgony</label>
+              <button class="pickrow"><span class="gr">megittam a reggeli kávét</span><span class="cv">▾</span></button>
+            </div>
+            <div class="fcard rise" style="--d:100ms;">
+              <label class="flabel">Pici tett</label>
+              <input class="fin" value="kimegyek 10 percre a fényre">
+            </div>
+            <div class="fcard rise" style="--d:120ms;">
+              <label class="flabel">Ünneplés</label>
+              <input class="fin" value="ez az én napom">
+            </div>
+            <p class="habnote">A szokás oldalán ez a blokk egyetlen sorrá zsugorodik: „A recepted · Miután megittam a kávét… ›"</p>
+          </div>
+        </div>
+        <div class="homebar"></div>
+      </div></div>
+      <div class="verdict">
+        <div class="y"><span><b>A szokás oldala tiszta marad</b> — a formálódás-nézet nem verseng egy űrlappal.</span></div>
+        <div class="y"><span><b>A szerkesztés önálló művelet</b>: saját Mentés, saját Mégse, világos ki- és belépés.</span></div>
+        <div class="y"><span>Az élő mondat-kártya <b>egyben mutatja</b>, mit épp átírsz.</span></div>
+        <div class="n"><span><b>Egy koppintással messzebb</b> van minden apró javítás is (egy elgépelt ünneplés miatt is oldalt váltasz).</span></div>
+        <div class="n"><span>Új route, új oldal — <b>több felület</b> karbantartani, és a lánc-szerkesztés még mindig máshol van.</span></div>
+        <span class="pick off">Második</span>
+      </div>
+    </div>
+
+    <!-- ============ C · MARAD A WIZARD ============ -->
+    <div class="col">
+      <div class="lb"><span class="tag">C</span><b>Marad a wizard</b></div>
+      <div class="phone"><div class="screen play">
+        <div class="isl"></div>
+        <div class="p-status"><span>9:41</span><span>▮▮▮ 82%</span></div>
+        <div class="page p-gold on">
+          <div class="page-head">
+            <button class="backbtn">‹ Vissza</button>
+            <button class="pgact" style="color:#6E6257;">Mégse</button>
+          </div>
+          <div class="page-body" style="padding-top:6px;">
+            <div class="stepper rise" style="--d:10ms;">
+              <span class="title">Recept szerkesztése</span>
+              <span class="dots"><i class="done"></i><i class="active"></i><i></i><i></i></span>
+              <span class="cnt">2 / 4</span>
+            </div>
+            <div class="wtitle rise" style="--d:30ms;">Mihez kötöd?</div>
+            <div class="wsub rise" style="--d:40ms;">Egy szokás, ami már megy magától — az lesz a horgony.</div>
+            <div class="sentence rise" style="--d:60ms;">
+              <div class="lb"><span>Recept</span><span style="color:#C9BCAD;">· épül, ahogy töltöd</span></div>
+              <div class="tx">Miután <span class="b f">megittam a reggeli kávét</span>, <span class="b f">kimegyek 10 percre a fényre</span>.</div>
+            </div>
+            <div class="fcard rise" style="--d:80ms;">
+              <label class="flabel">Horgony <span class="opt">a szokásaidból</span></label>
+              <div class="chips sage">
+                <button class="on">reggeli kávé</button><button>felkelés</button><button>fogmosás</button><button>ebéd</button>
+              </div>
+            </div>
+            <div class="fcard rise" style="--d:100ms;">
+              <label class="flabel">…vagy saját szavakkal</label>
+              <input class="fin" placeholder="pl. miután leültem az asztalhoz">
+            </div>
+            <div class="tip warn rise" style="--d:120ms;"><span>⚠</span><span>A 3. és 4. lépésen is át kell menned, hogy elmenthesd a változást.</span></div>
+            <div class="shrow rise" style="--d:140ms;"><button class="ghost">Vissza</button><button class="cta">Tovább</button></div>
+          </div>
+        </div>
+        <div class="homebar"></div>
+      </div></div>
+      <div class="verdict">
+        <div class="y"><span><b>Nincs új felület</b> — ez a mai viselkedés, csak érthetőbb belépővel.</span></div>
+        <div class="y"><span>A wizard <b>tanít</b>: a keret logikáját lépésenként magyarázza.</span></div>
+        <div class="n"><span><b>Négy lépés egy mező átírásáért.</b> A horgony cseréje ma is ezt jelenti — ez a fő panasz forrása.</span></div>
+        <div class="n"><span>A wizard <b>létrehozásra</b> van szabva; szerkesztésként a „Vállalom" pipa és a lépés-logika idegen.</span></div>
+        <div class="n"><span>A keretváltás <b>némán töröl</b> mezőket, mert a wizard nem tudja, mi volt előtte.</span></div>
+        <span class="pick off">Harmadik</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage" style="margin-top:44px;">
+    <aside style="max-width:none;">
+      <div>
+        <h2>Miért A-t ajánlom</h2>
+        <ul>
+          <li><strong>A művelet mérete és az ajtó mérete nem stimmel.</strong> A horgony cseréje egyetlen mező átírása. Ma
+            négylépéses varázsló felel érte, ami létrehozásra készült. A B már jobb — egy oldal, egy Mentés —, de még mindig
+            oldalváltás egy elgépelt szó miatt.</li>
+          <li><strong>A tiltott mező technikai ok miatt tiltott, nem termékdöntésből.</strong> A PATCH-ben a <code>null</code>
+            azt jelenti „hagyd békén", az üres string azt, hogy „oldd le" — egy naiv beviteli mező csendben eldobná a gépelést.
+            Ezt egy <em>választó</em> oldja meg (chip-lista + „leoldom" opció), nem egy másik oldal.</li>
+          <li><strong>A keretváltás adatvesztése így válik láthatóvá.</strong> Helyben, a régi értékek mellett tudjuk megmutatni,
+            mi vész el; a wizardba kilépve ez az információ elveszik.</li>
+          <li><strong>A hosszúság-ellenvetés kezelhető.</strong> A recept-blokk alapból <em>összecsukott</em> („A recepted ·
+            Miután megittam a kávét… ✎"), és csak koppintásra nyílik ki — a B előnye megmarad, az ajtó mégis egy koppintás.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Amit ez a kör nem old meg</h2>
+        <ul>
+          <li>A <strong>lánc-szerkesztés</strong> külön kérdés (ma egy sheet: név + napszak; a láncok sorrendje sehol nem
+            állítható). A stacking vizualizálása — a horgony-kapcsolatok kirajzolása a láncon belül — a lánc oldalára való.</li>
+          <li>A <strong>write-once mezők</strong> (<code>mode</code>, <code>metric</code>, <code>skillKey</code>) egyik ajtón sem
+            szerkeszthetők, mert nincsenek az update-kontraktusban. Ha kellenek, az kontraktus-bővítés.</li>
+          <li>Az <strong>opcionális mezők ürítése</strong> (link, identitás) ma sehol nem lehetséges — az „üres kulcsot ne küldj"
+            szabály miatt.</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // csak annyi élet, hogy az A oszlop figyelmeztetése látszódjon
+  var seg = document.getElementById('aSeg'), warn = document.getElementById('aWarn');
+  seg.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      seg.querySelectorAll('button').forEach(function (x) { x.classList.remove('on', 'clear'); });
+      b.classList.add('on');
+      if (b.dataset.fw === 'CLEAR') b.classList.add('clear');
+      warn.hidden = b.dataset.fw !== 'CLEAR';
+    });
+  });
+  document.getElementById('aPick').addEventListener('click', function () {
+    alert('Itt nyílna a horgony-választó: a meglévő szokásaid + mezo-események + „saját szavakkal" + „leoldom".');
+  });
+})();
+</script>

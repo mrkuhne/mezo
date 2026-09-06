@@ -13,6 +13,7 @@ paths:
         '200':
           description: Goals with their pillars
           content: { application/json: { schema: { type: array, items: { $ref: '#/components/schemas/LifeGoalResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
     post:
       tags: [LifeGoal]
       operationId: createLifeGoal
@@ -24,8 +25,9 @@ paths:
         '201':
           description: Created (status draft)
           content: { application/json: { schema: { $ref: '#/components/schemas/LifeGoalResponse' } } }
-        '400':
-          description: Validation error — unknown signal/skill, >5 pillars, target before start (LIFE_GOAL_*)
+        '400': { description: 'Validation error — unknown signal/skill, >5 pillars, target before start (LIFE_GOAL_*)', content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401':
+          description: Missing/invalid token
           content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
   /api/life-goals/signals:
     get:
@@ -36,6 +38,7 @@ paths:
         '200':
           description: Catalog entries
           content: { application/json: { schema: { $ref: '#/components/schemas/SignalCatalogResponse' } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/life-goals/propose:
     post:
       tags: [LifeGoal]
@@ -48,6 +51,7 @@ paths:
         '200':
           description: Proposal (template fallback when the AI is off or fails — never empty)
           content: { application/json: { schema: { $ref: '#/components/schemas/LifeGoalProposeResponse' } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/life-goals/{id}:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
@@ -57,6 +61,7 @@ paths:
       summary: One life goal with pillars (LifeGoal)
       responses:
         '200': { description: Goal, content: { application/json: { schema: { $ref: '#/components/schemas/LifeGoalResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found / not owned, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
     put:
       tags: [LifeGoal]
@@ -67,6 +72,7 @@ paths:
         content: { application/json: { schema: { $ref: '#/components/schemas/LifeGoalUpsertRequest' } } }
       responses:
         '200': { description: Updated, content: { application/json: { schema: { $ref: '#/components/schemas/LifeGoalResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
     delete:
       tags: [LifeGoal]
@@ -74,6 +80,7 @@ paths:
       summary: Soft-delete the goal and its pillars (LifeGoal)
       responses:
         '204': { description: Deleted }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/life-goals/{id}/status:
     parameters:
@@ -87,6 +94,7 @@ paths:
         content: { application/json: { schema: { $ref: '#/components/schemas/LifeGoalStatusRequest' } } }
       responses:
         '200': { description: New state, content: { application/json: { schema: { $ref: '#/components/schemas/LifeGoalResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '409': { description: Illegal transition (LIFE_GOAL_INVALID_STATUS_TRANSITION), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/life-goals/{id}/pillars:
     parameters:
@@ -101,6 +109,7 @@ paths:
       responses:
         '200': { description: Goal with the new pillars, content: { application/json: { schema: { $ref: '#/components/schemas/LifeGoalResponse' } } } }
         '400': { description: Validation error, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/life-goals/today:
     get:
       tags: [LifeGoal]
@@ -110,6 +119,7 @@ paths:
         '200':
           description: Summary for the hub tiles and the Nap tile
           content: { application/json: { schema: { $ref: '#/components/schemas/LifeGoalTodayResponse' } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/life-goals/{id}/progress:
     parameters:
       - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
@@ -122,6 +132,8 @@ paths:
         - { name: to, in: query, required: true, schema: { type: string, format: date } }
       responses:
         '200': { description: Progress, content: { application/json: { schema: { $ref: '#/components/schemas/LifeGoalProgressResponse' } } } }
+        '400': { description: from after to (VALIDATION_INVALID_VALUE), content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found / not owned, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/life-goals/{id}/evaluate:
     parameters:
@@ -132,6 +144,7 @@ paths:
       summary: Manual evaluation — upserts the last 3 closed days' pillar rows, returns fresh 28-day progress (LifeGoal)
       responses:
         '200': { description: Fresh progress after the upsert, content: { application/json: { schema: { $ref: '#/components/schemas/LifeGoalProgressResponse' } } } }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: Not found / not owned, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
 components:
   schemas:

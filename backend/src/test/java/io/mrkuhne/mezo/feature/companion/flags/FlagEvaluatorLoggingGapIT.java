@@ -5,7 +5,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagEvaluator;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagOutcome;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
@@ -40,13 +41,26 @@ class FlagEvaluatorLoggingGapIT extends AbstractIntegrationTest {
     }
 
     private List<String> keys(UUID owner) {
-        return evaluator.evaluate(owner).stream().map(FlagRaise::flagKey).toList();
+        return raisedKeys(evaluator.evaluate(owner));
+    }
+
+    /** The keys that actually RAISED — the old evaluate() return, reconstructed. */
+    private static List<String> raisedKeys(List<FlagVerdict> verdicts) {
+        return verdicts.stream()
+            .filter(v -> v.outcome() == FlagOutcome.RAISED)
+            .map(FlagVerdict::flagKey)
+            .toList();
+    }
+
+    private static FlagVerdict verdictFor(List<FlagVerdict> verdicts, String flagKey) {
+        return verdicts.stream().filter(v -> flagKey.equals(v.flagKey())).findFirst().orElseThrow();
     }
 
     private Optional<FlagPayloadEnvelope.LoggingGap> gapPayload(UUID owner) {
         return evaluator.evaluate(owner).stream()
-            .filter(r -> FlagKey.LOGGING_GAP.equals(r.flagKey()))
-            .map(r -> r.payload().loggingGap())
+            .filter(v -> FlagKey.LOGGING_GAP.equals(v.flagKey()))
+            .filter(v -> v.outcome() == FlagOutcome.RAISED)
+            .map(v -> v.payload().loggingGap())
             .findFirst();
     }
 
@@ -160,5 +174,20 @@ class FlagEvaluatorLoggingGapIT extends AbstractIntegrationTest {
     private void freshMeal(UUID owner, LocalDate date) {
         PantryItemEntity item = pantryItemPopulator.createFoodWithNutrients(owner, "csirke");
         mealPopulator.createPantryMeal(owner, item, date, Instant.now());
+    }
+
+    @Test
+    void logging_gap_is_clear_when_every_domain_is_fresh() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today, "08:00", 6, 3, null);
+        sleepLogPopulator.createSleepLog(owner, today, BigDecimal.valueOf(8.0), 4);
+        freshMeal(owner, today);
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.LOGGING_GAP);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("stale_domains");
+        assertThat(verdict.clear().observed()).isLessThan(verdict.clear().threshold());
     }
 }

@@ -16,7 +16,7 @@ export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: Briefin
  *  whose card body comes straight from `mezo.companion.interventions[].textHu`, and `setup` (S3,
  *  mezo-d58h.3), whose card body is composed in `SetupCheckService` from a check verdict's own
  *  numbers. */
-export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening' | 'intervention' | 'people' | 'setup' | 'advice'
+export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening' | 'intervention' | 'people' | 'setup' | 'advice' | 'hydration'
 export type AdviceActionKey = 'lighten_tomorrow' | 'skip_sport_slot' | 'shift_sleep_anchor'
 /** One offered action button on an advice card (S5, mezo-d58h.5) — `params` is ALWAYS rule-provided. */
 export interface FeedAction { key: AdviceActionKey; label: string; params?: Record<string, unknown> }
@@ -1449,6 +1449,49 @@ export interface HabitItem {
 }
 export interface HabitStrengthRow { key: string; strengthPct: number | null; done28: number; missed28: number }
 export interface HabitSummary { perfectMorningDays30: number; perfectEveningDays30: number; habits: HabitStrengthRow[] }
+
+// ── Habit formation (mezo-08zl) — the full-lifetime automaticity estimate for ONE habit.
+// Deliberately separate from HabitSummary/HabitStrengthRow: that one is the 28-day window read
+// on every companion chat turn, this one is the page-triggered lifetime scan.
+//
+// Every estimate field is `number | null` — NOT optional-undefined — on purpose: under `minReps`
+// repetitions the backend returns NO estimate at all (the honesty rule), and a required-but-
+// nullable field makes that state unmissable at the call site instead of something a `?.` can
+// silently swallow. `thresholdPct` and `minReps` are always present: the copy and the curve are
+// drawn from the SERVER's numbers so they cannot drift apart.
+export type HabitFormationStatus = 'pending' | 'done' | 'missed'
+export interface HabitFormationDay {
+  date: string
+  status: HabitFormationStatus
+}
+export interface HabitFormation {
+  key: string
+  /** First day this habit has a row for; null when it has no history at all. */
+  firstDate: string | null
+  /** Successful repetitions over the whole lifetime (NOT calendar days). */
+  reps: number
+  missed: number
+  /** 0-100, `round(100 * (1 - e^(-curveK * reps)))`; null under `minReps`. */
+  automaticityPct: number | null
+  /** Growth rate of the saturating curve; null under `minReps`. */
+  curveK: number | null
+  /** Where "runs by itself" sits on the curve — always present. */
+  thresholdPct: number
+  /** Repetitions needed before ANY estimate is made — always present. */
+  minReps: number
+  repsToThresholdLo: number | null
+  repsToThresholdHi: number | null
+  weeksToThresholdLo: number | null
+  weeksToThresholdHi: number | null
+  repsPerWeek: number | null
+  consistencyPct: number | null
+  /** Clock-hour constancy of completions; null when too few timed completions. */
+  timeConstancyPct: number | null
+  /** Share of done days on which the anchor habit was also done; null when there is no anchor. */
+  anchorConstancyPct: number | null
+  /** Lifetime rows, for the history surface. */
+  days: HabitFormationDay[]
+}
 
 // ── Habit admin catalog (routine editor, mezo-n5e9.2) — mirrors HabitChainAdmin/HabitDefAdmin.
 // The editor's full CRUD view of the catalog (config), independent of any day's evaluation.

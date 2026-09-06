@@ -114,4 +114,23 @@ class FlagPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.lateEating().minDaysOfLastThree()).isEqualTo(2);
         assertThat(properties.lateEating().windowDays()).isEqualTo(3);
     }
+
+    /** Round 2 S1 (mezo-d58h.7.1): key-level cooldown is deliberately SHORT (24h) — the 7-day
+     *  "per item" cooldown the spec asks for lives inside ProtocolLapseRule, so a DIFFERENT item
+     *  lapsing tomorrow is not starved by the first one's raise. */
+    @Test
+    void binds_the_protocol_lapse_cooldown() {
+        assertThat(properties.cooldownHours().protocolLapse()).isEqualTo(24);
+        assertThat(properties.cooldownHours().forFlag(FlagKey.PROTOCOL_LAPSE)).isEqualTo(24);
+    }
+
+    /** Round 2 S1 (mezo-d58h.7.1, spec 2026-09-05 §(11)). */
+    @Test
+    void binds_the_protocol_lapse_thresholds() {
+        assertThat(properties.protocolLapse().consecutiveMissedDays()).isEqualTo(2);
+        assertThat(properties.protocolLapse().historyWindowDays()).isEqualTo(30);
+        assertThat(properties.protocolLapse().minHistoryDueDays()).isEqualTo(7);
+        assertThat(properties.protocolLapse().minHistoryAdherence()).isEqualTo(0.60);
+        assertThat(properties.protocolLapse().perItemCooldownDays()).isEqualTo(7);
+    }
 }

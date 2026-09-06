@@ -2,15 +2,35 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { isMockMode } from '@/data/_client/mode'
 import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import { habitApi, type HabitDay } from '@/data/habit/habitApi'
-import { mockHabitDay, mockHabitSummary } from '@/data/habit/habitMock'
-import type { HabitItem, HabitSummary } from '@/data/types'
+import { mockHabitDay, mockHabitFormation, mockHabitSummary } from '@/data/habit/habitMock'
+import type { HabitFormation, HabitItem, HabitSummary } from '@/data/types'
 import type { LevelUpResult } from '@/data/train/trainApi'
-import { useDualQuery } from '@/data/useDualQuery'
+import { DEFAULT_QUERY_STALE_TIME_MS, useDualQuery } from '@/data/useDualQuery'
+import { addDays, localDateString } from '@/shared/lib/dates'
 
 const key = (d: string) => ['habitDay', d]
 
+// Backfill window (mezo-x9c2): mirrors `mezo.habit.backfill-days` in application.yml, the
+// backend's source of truth (HabitProperties.backfillDays, gated by HabitService's
+// requireManualWithinBackfillWindow). Keep in sync if that config value ever changes.
+const MOCK_BACKFILL_DAYS = 1
+
 const MOCK_DAY: HabitDay = { habits: mockHabitDay, levelUps: [] }
 const EMPTY_DAY: HabitDay = { habits: [], levelUps: [] }
+
+/**
+ * Past-day mock seed (mezo-x9c2): the nightly close already ran for any past date, so open
+ * seeds read `missed` — the static MOCK_DAY leaking into yesterday made the mock arm lie.
+ * MANUAL missed rows are exactly the backfill targets the yesterday surface offers.
+ */
+const mockDayFor = (date: string): HabitDay =>
+  date >= localDateString()
+    ? MOCK_DAY
+    : {
+        habits: mockHabitDay.map((h) =>
+          h.status === 'pending' ? { ...h, status: 'missed' as const } : h),
+        levelUps: [],
+      }
 
 export interface HabitDayView extends HabitDay {
   mode: 'mock' | 'live'
@@ -50,12 +70,12 @@ export function useHabitDay(date: string): HabitDayView {
   const mock = isMockMode()
   const q = useQuery<HabitDay>({
     queryKey: key(date),
-    queryFn: mock ? async () => MOCK_DAY : () => habitApi.day(date),
-    initialData: mock ? MOCK_DAY : undefined,
+    queryFn: mock ? async () => mockDayFor(date) : () => habitApi.day(date),
+    initialData: mock ? mockDayFor(date) : undefined,
     staleTime: mock ? Infinity : 0, // real mode re-reads every mount (READ-triggered server eval)
     retry: false,
   })
-  const data = q.data ?? (mock ? MOCK_DAY : EMPTY_DAY)
+  const data = q.data ?? (mock ? mockDayFor(date) : EMPTY_DAY)
   return { ...data, mode: mock ? 'mock' : 'live' }
 }
 
@@ -120,11 +140,16 @@ export function useHabitActions(date: string) {
   const checkM = useMutation({
     mutationFn: async (habitKey: string) => {
       if (mock) {
+        if (date < addDays(localDateString(), -MOCK_BACKFILL_DAYS) || date > localDateString()) {
+          throw new Error('HABIT_TOO_OLD')
+        }
         patchMock(habitKey, 'done')
         const xp = mockHabitDay.find((h) => h.key === habitKey)?.xp ?? 0
         // The call site emits its own DS reward toast for the check (mezo-k5sa), so the
         // generic „+N XP" line would be a duplicate — the level/streak notices still fire.
-        awardGamificationEvent(qc, { type: 'HABIT', xpOverride: xp, silentXp: true })
+        // A backfill credits the REQUEST date's ledger (mezo-x9c2), same as the backend's
+        // occurredOn = habit_date attribution.
+        awardGamificationEvent(qc, { type: 'HABIT', xpOverride: xp, silentXp: true, date })
         return undefined
       }
       return habitApi.check(habitKey, date).then((r) => r.levelUps)
@@ -139,13 +164,16 @@ export function useHabitActions(date: string) {
   })
   // NOTE: check() resolves the write's levelUps — the caller builds a reward toast via
   // @/features/progression/logic/rewardToast and emits it on the toastBus (mezo-k5sa).
-  // Callers today: TodayPage's `act()` dispatcher (every habit row on all three daypart
-  // faces) and WindDownBanner (the `wind_down` Pipa). RoutineCard, the original caller,
-  // was retired by the daypart-faces re-composition (mezo-j7u4).
+  // Callers today: NapRutinPage.tickAction and NapHubPage.tileTick (every habit row on all
+  // three daypart faces). RoutineCard, the original caller, was retired by the daypart-faces
+  // re-composition (mezo-j7u4).
 
   const uncheckM = useMutation({
     mutationFn: async (habitKey: string) => {
       if (mock) {
+        if (date < addDays(localDateString(), -MOCK_BACKFILL_DAYS) || date > localDateString()) {
+          throw new Error('HABIT_TOO_OLD')
+        }
         patchMock(habitKey, 'pending')
         return undefined
       }
@@ -175,5 +203,46 @@ export function useHabitSummary() {
     mockData: mockHabitSummary,
     realFetch: habitApi.summary,
     realEmpty: { perfectMorningDays30: 0, perfectEveningDays30: 0, habits: [] },
+  })
+}
+
+/**
+ * Az egy szokás teljes élettartamra számolt formálódás-becslése (mezo-08zl).
+ *
+ * Page-triggered read — NEM a chat forró útja (az a `useHabitSummary`), ezért az app-szintű
+ * `DEFAULT_QUERY_STALE_TIME_MS`-t KIFEJEZETTEN átadjuk: a `realStaleTime` elhagyása
+ * `staleTime: undefined`-ot küld, ami felülírja a QueryClient alapértékét és mindig-avultat
+ * (0) csinál a lekérdezésből — lásd a `useDualQuery` javadocját (mezo-5cmq).
+ *
+ * A `realEmpty` az ŐSZINTE üres alak: nulla ismétlés, MINDEN becslés `null`, üres naptár — a
+ * betöltési ablakban tehát pontosan a „még nincs becslés" ág rajzolódik ki, sosem a mock görbe
+ * (no-static-fallback szabály). A `thresholdPct`/`minReps` a szerver száma, így üresen sem
+ * hazudunk küszöböt: amíg nem érkezett válasz, 0 áll bennük.
+ */
+export function useHabitFormation(habitKey: string) {
+  return useDualQuery<HabitFormation>({
+    queryKey: ['habitFormation', habitKey],
+    mockData: mockHabitFormation(habitKey),
+    realFetch: () => habitApi.formation(habitKey),
+    realEmpty: {
+      key: habitKey,
+      firstDate: null,
+      reps: 0,
+      missed: 0,
+      automaticityPct: null,
+      curveK: null,
+      thresholdPct: 0,
+      minReps: 0,
+      repsToThresholdLo: null,
+      repsToThresholdHi: null,
+      weeksToThresholdLo: null,
+      weeksToThresholdHi: null,
+      repsPerWeek: null,
+      consistencyPct: null,
+      timeConstancyPct: null,
+      anchorConstancyPct: null,
+      days: [],
+    },
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
 }

@@ -2,17 +2,21 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { HttpResponse, http } from 'msw'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
-import { completeMockDerivedHabit, useHabitDay, useHabitActions, useHabitSummary } from '@/data/habit/habitHooks'
+import { completeMockDerivedHabit, useHabitDay, useHabitActions, useHabitFormation, useHabitSummary } from '@/data/habit/habitHooks'
 import { API_BASE } from '@/data/_client/api'
 import { gamificationProfileMock } from '@/data/gamification/gamificationMock'
 import { GAMIFICATION_KEY } from '@/data/gamification/gamificationStore'
-import { mockHabitDay } from '@/data/habit/habitMock'
+import { mockHabitDay, mockHabitFormation } from '@/data/habit/habitMock'
+import { addDays, localDateString } from '@/shared/lib/dates'
 import { server } from '@/test/msw/server'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import type { GamificationProfile } from '@/data/gamification/gamificationTypes'
 import type { ReactNode } from 'react'
 
-const DATE = '2026-07-19'
+// Relative to the real clock (mezo-x9c2): a fixed past literal would drift out of the
+// backend-mirrored HABIT_TOO_OLD window as real time passes, breaking every "today" fixture
+// below — the backend's own IT suite computes fixtures off `LocalDate.now()` for the same reason.
+const DATE = localDateString()
 
 describe('useHabitDay (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
@@ -106,6 +110,42 @@ describe('useHabitDay (mock mode)', () => {
   })
 })
 
+describe('useHabitDay past-day mock projection (mezo-x9c2)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('yesterday reads as a closed day: pending seeds become missed, done stays done', () => {
+    const yesterday = addDays(localDateString(), -1)
+    const { result } = renderHook(() => useHabitDay(yesterday), { wrapper: makeHookWrapper() })
+    const byKey = Object.fromEntries(result.current.habits.map((h) => [h.key, h.status]))
+    expect(byKey.morning_sunlight).toBe('done')     // seeded done — untouched
+    expect(byKey.morning_pushups).toBe('missed')    // seeded pending — the night closed it
+    expect(byKey.wind_down).toBe('missed')
+  })
+})
+
+describe('mock check window parity (mezo-x9c2)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('check for two days ago rejects with HABIT_TOO_OLD, like the backend', async () => {
+    const twoDaysAgo = addDays(localDateString(), -2)
+    const { result } = renderHook(() => useHabitActions(twoDaysAgo), { wrapper: makeHookWrapper() })
+    await expect(result.current.check('morning_pushups')).rejects.toThrow('HABIT_TOO_OLD')
+  })
+
+  test('yesterday check flips the missed row to done in the day cache', async () => {
+    const yesterday = addDays(localDateString(), -1)
+    const wrapper = makeHookWrapper()
+    const day = renderHook(() => useHabitDay(yesterday), { wrapper })
+    const actions = renderHook(() => useHabitActions(yesterday), { wrapper })
+    expect(day.result.current.habits.find((h) => h.key === 'morning_pushups')?.status).toBe('missed')
+    await act(() => actions.result.current.check('morning_pushups'))
+    await waitFor(() =>
+      expect(day.result.current.habits.find((h) => h.key === 'morning_pushups')?.status).toBe('done'))
+  })
+})
+
 describe('useHabitDay (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
   afterEach(() => vi.unstubAllEnvs())
@@ -183,5 +223,52 @@ describe('check() is not idempotent in mock mode — a second tap awards the XP 
     await act(() => result.current.check('wind_down'))
     await act(() => result.current.check('wind_down'))
     expect(totalXp()).toBe(before + WIND_DOWN_XP * 2)
+  })
+})
+
+describe('useHabitFormation', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('mock módban szinkronban adja a fixtúrát', () => {
+    vi.stubEnv('VITE_USE_MOCK', 'true')
+    const { result } = renderHook(() => useHabitFormation('morning_sunlight'), { wrapper: makeHookWrapper() })
+    expect(result.current.data).toEqual(mockHabitFormation('morning_sunlight'))
+    // a fixtúra a modellből esik ki, ezért nem varázsszámot rögzítünk: legyen becslés, és
+    // legyen összhangban a saját görbéjével
+    expect(result.current.data.automaticityPct).not.toBeNull()
+    expect(result.current.data.curveK).not.toBeNull()
+  })
+
+  test('real módban a feloldás ELŐTT az őszinte üres alakot adja — sosem a mock görbét', () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    const { result } = renderHook(() => useHabitFormation('morning_sunlight'), { wrapper: makeHookWrapper() })
+    const d = result.current.data
+    expect(d.key).toBe('morning_sunlight')
+    expect([d.reps, d.missed]).toEqual([0, 0])
+    expect(d.days).toEqual([])
+    expect([
+      d.firstDate, d.automaticityPct, d.curveK, d.repsToThresholdLo, d.repsToThresholdHi,
+      d.weeksToThresholdLo, d.weeksToThresholdHi, d.repsPerWeek, d.consistencyPct,
+      d.timeConstancyPct, d.anchorConstancyPct,
+    ]).toEqual([null, null, null, null, null, null, null, null, null, null, null])
+  })
+
+  test('real módban a drótválaszt képezi le', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    server.use(http.get(`${API_BASE}/api/habit/formation/morning_sunlight`, () =>
+      HttpResponse.json({
+        key: 'morning_sunlight', firstDate: '2026-06-21', reps: 48, missed: 12,
+        automaticityPct: 63, curveK: 0.020714, thresholdPct: 90, minReps: 10,
+        repsToThresholdLo: 86, repsToThresholdHi: 159,
+        weeksToThresholdLo: 6.9, weeksToThresholdHi: 20.2, repsPerWeek: 5.5,
+        consistencyPct: 71, timeConstancyPct: 81,
+        days: [{ date: '2026-06-21', status: 'done' }],
+      })))
+    const { result } = renderHook(() => useHabitFormation('morning_sunlight'), { wrapper: makeHookWrapper() })
+    await waitFor(() => expect(result.current.data.reps).toBe(48))
+    expect(result.current.data.automaticityPct).toBe(63)
+    // a drótról hiányzó horgony-jelzés null lesz, nem undefined
+    expect(result.current.data.anchorConstancyPct).toBeNull()
+    expect(result.current.data.days).toHaveLength(1)
   })
 })

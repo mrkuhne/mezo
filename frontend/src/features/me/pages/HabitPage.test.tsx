@@ -3,7 +3,7 @@ import rawCss from '@/styles/prototype.css?raw'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { HabitPage } from '@/features/me/pages/HabitPage'
-import type { HabitChainInfo } from '@/data/types'
+import type { HabitChainInfo, HabitFormation } from '@/data/types'
 
 const navigate = vi.fn()
 vi.mock('react-router-dom', async () => {
@@ -42,6 +42,29 @@ const EVENING: HabitChainInfo = {
   defs: [def('bed', 'Időben ágyban', null, { chainKey: 'EVENING', position: 1 })],
 }
 
+
+/**
+ * A formation payload the page can actually draw. `days` is the lifetime, so the calendar has
+ * something to lay out; the estimate fields are internally consistent with `curveK`/`reps` —
+ * a fixture that disagreed with itself would let a real inconsistency pass unnoticed.
+ */
+function formation(over: Partial<HabitFormation> = {}): HabitFormation {
+  const days: HabitFormation['days'] = []
+  for (let i = 0; i < 40; i += 1) {
+    const d = new Date(2026, 6, 1 + i)
+    const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    days.push({ date: iso, status: i % 5 === 4 ? 'missed' : 'done' })
+  }
+  return {
+    key: 'intent', firstDate: days[0].date, reps: 32, missed: 8,
+    automaticityPct: 62, curveK: 0.03, thresholdPct: 90, minReps: 5,
+    repsToThresholdLo: 30, repsToThresholdHi: 80,
+    weeksToThresholdLo: 5, weeksToThresholdHi: 11,
+    repsPerWeek: 6, consistencyPct: 71, timeConstancyPct: 84, anchorConstancyPct: null,
+    days, ...over,
+  }
+}
+
 const mockHabitSummary = {
   perfectMorningDays30: 6,
   perfectEveningDays30: 4,
@@ -49,9 +72,10 @@ const mockHabitSummary = {
 }
 
 const {
-  useHabitSummary, useHabitCatalog, useHabitCatalogActions, updateDef, deleteDef,
+  useHabitSummary, useHabitCatalog, useHabitCatalogActions, useHabitFormation, updateDef, deleteDef,
 } = vi.hoisted(() => ({
   useHabitSummary: vi.fn(),
+  useHabitFormation: vi.fn(),
   useHabitCatalog: vi.fn(),
   useHabitCatalogActions: vi.fn(),
   updateDef: vi.fn((_id: string, _patch: Record<string, unknown>) => Promise.resolve()),
@@ -59,6 +83,7 @@ const {
 }))
 vi.mock('@/data/hooks', () => ({
   useHabitSummary: () => useHabitSummary(),
+  useHabitFormation: (k: string) => useHabitFormation(k),
   useHabitCatalog: () => useHabitCatalog(),
   useHabitCatalogActions: () => useHabitCatalogActions(),
 }))
@@ -80,6 +105,8 @@ beforeEach(() => {
   deleteDef.mockClear()
   useHabitSummary.mockReset()
   useHabitSummary.mockReturnValue({ data: mockHabitSummary })
+  useHabitFormation.mockReset()
+  useHabitFormation.mockReturnValue({ data: formation() })
   useHabitCatalog.mockReset()
   useHabitCatalog.mockReturnValue({
     catalog: { chains: [MORNING, EVENING] }, isPending: false, isError: false, refetch: vi.fn(),
@@ -273,33 +300,63 @@ describe('HabitPage', () => {
     expect(screen.getByText(/Szokás betöltése/)).toBeInTheDocument()
   })
 
-  test('the 28-day strip is captioned as counts, never as a calendar', () => {
-    const { container } = renderPage('intent')
-    const cells = [...container.querySelectorAll('.rt-hist i')]
-    expect(cells).toHaveLength(28)
-    // three states, in order, partitioning the 28 cells — never two states wearing one look
-    expect(cells.map((c) => c.getAttribute('data-state'))).toEqual([
-      ...Array(23).fill('done'), ...Array(5).fill('miss'),
-    ])
-    expect(screen.getByText(/nem naptár/)).toBeInTheDocument()
-  })
+  // ---- formálódás-nézet (mezo-08zl) ----
 
-  test('a partly-empty strip keeps the three states visually ordered (miss darker than empty)', () => {
-    useHabitSummary.mockReturnValue({
-      data: { ...mockHabitSummary, habits: [{ key: 'intent', strengthPct: 40, done28: 8, missed28: 4 }] },
-    })
+  test('the lifetime calendar keeps the three states visually distinct (a miss is not an empty day)', () => {
     const { container } = renderPage('intent')
-    const states = [...container.querySelectorAll('.rt-hist i')].map((c) => c.getAttribute('data-state'))
-    expect(states.filter((s) => s === 'done')).toHaveLength(8)
-    expect(states.filter((s) => s === 'miss')).toHaveLength(4)
-    expect(states.filter((s) => s === 'none')).toHaveLength(16)
-    // the legend must not invert: a missed cell may not reuse the empty cell's own fill
-    const emptyFill = rawCss.match(/\.rt-hist i \{[^}]*background:\s*([^;]+);/)?.[1]?.trim()
-    const missFill = rawCss.match(/\.rt-hist i\.is-miss \{[^}]*background:\s*([^;]+);/)?.[1]?.trim()
+    const cells = [...container.querySelectorAll('.rt-cal i')]
+    // 40 lifetime days, padded to whole weeks — so at least the lifetime, and a multiple of 7
+    expect(cells.length).toBeGreaterThanOrEqual(40)
+    expect(cells.length % 7).toBe(0)
+    expect(container.querySelectorAll('.rt-cal i.is-done').length).toBe(32)
+    expect(container.querySelectorAll('.rt-cal i.is-miss').length).toBe(8)
+    // A day with NO row is not a miss: rows only exist for days the app was opened, so the two
+    // must not share a fill — otherwise absence reads as failure, which ADR 0010 forbids.
+    const emptyFill = rawCss.match(/\.rt-cal i \{[^}]*background:\s*([^;]+);/)?.[1]?.trim()
+    const missFill = rawCss.match(/\.rt-cal i\.is-miss \{[^}]*background:\s*([^;]+);/)?.[1]?.trim()
     expect(emptyFill).toBeTruthy()
     expect(missFill).toBeTruthy()
     expect(missFill).not.toEqual(emptyFill)
-    expect(missFill).not.toContain('--surface-recess')
+  })
+
+  test('the estimate is shown as a RANGE, never as a single date', () => {
+    renderPage('intent')
+    expect(screen.getByTestId('formation-eta')).toHaveTextContent('5–11 hét')
+    expect(screen.getByTestId('formation-eta')).toHaveTextContent(/van hátra/)
+  })
+
+  test('under minReps it shows no percentage and no deadline, only what is missing', () => {
+    useHabitFormation.mockReturnValue({
+      data: formation({
+        reps: 2, missed: 1, automaticityPct: null, curveK: null,
+        repsToThresholdLo: null, repsToThresholdHi: null,
+        weeksToThresholdLo: null, weeksToThresholdHi: null, consistencyPct: null,
+      }),
+    })
+    const { container } = renderPage('intent')
+    expect(screen.getByTestId('formation-card')).toHaveTextContent('Még gyűlik az adat')
+    expect(screen.getByTestId('formation-eta')).toHaveTextContent('3')
+    expect(screen.getByTestId('formation-eta')).toHaveTextContent(/még ennyi ismétlés/)
+    // no fabricated curve and no fabricated percentage
+    expect(container.querySelector('.rt-curve')).toBeNull()
+    expect(screen.getByTestId('formation-card').textContent).not.toMatch(/\d+%/)
+  })
+
+  test('a context signal we cannot measure renders as a dash, not as 0%', () => {
+    const ctx = screen.queryByTestId
+    void ctx
+    renderPage('intent')
+    // anchorConstancyPct is null in the fixture (no anchor on `intent`)
+    expect(screen.getByTestId('formation-context')).toHaveTextContent('—')
+    expect(screen.getByTestId('formation-context')).toHaveTextContent('nincs horgony')
+  })
+
+  test('nothing is drawn from the unresolved empty payload (thresholdPct 0)', () => {
+    useHabitFormation.mockReturnValue({
+      data: formation({ reps: 0, missed: 0, thresholdPct: 0, minReps: 0, automaticityPct: null, curveK: null, days: [] }),
+    })
+    renderPage('intent')
+    expect(screen.queryByTestId('formation-card')).toBeNull()
   })
 
   // ---- fix wave (mezo-3zue.4): the two fields that lost their only editor ----

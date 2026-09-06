@@ -23,7 +23,7 @@ paths:
     post:
       tags: [Habit]
       operationId: checkHabit
-      summary: Manually check a MANUAL habit for today (Habits)
+      summary: Manually check a MANUAL habit for today or yesterday (max 1 day back) (Habits)
       parameters:
         - { name: key, in: path, required: true, schema: { type: string } }
       requestBody:
@@ -37,20 +37,25 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/HabitWriteResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '404':
           description: HABIT_UNKNOWN
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
         '409':
-          description: HABIT_NOT_MANUAL | HABIT_NOT_TODAY | HABIT_ALREADY_DONE
+          description: HABIT_NOT_MANUAL | HABIT_TOO_OLD | HABIT_ALREADY_DONE
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
     delete:
       tags: [Habit]
       operationId: uncheckHabit
-      summary: Same-day un-check of a MANUAL habit; reverses the XP (Habits)
+      summary: Un-check of a MANUAL habit for today or yesterday; reverses the XP (Habits)
       parameters:
         - { name: key, in: path, required: true, schema: { type: string } }
         - { name: date, in: query, required: true, schema: { type: string, format: date } }
@@ -60,13 +65,18 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/HabitResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '404':
           description: HABIT_UNKNOWN
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
         '409':
-          description: HABIT_NOT_MANUAL | HABIT_NOT_TODAY | HABIT_NOT_DONE
+          description: HABIT_NOT_MANUAL | HABIT_TOO_OLD | HABIT_NOT_DONE
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
@@ -86,6 +96,38 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/habit/formation/{key}:
+    get:
+      tags: [Habit]
+      operationId: getHabitFormation
+      summary: Full-lifetime formation estimate for one habit (mezo-08zl)
+      description: >
+        Where this habit stands on the way to automaticity, estimated from the user's OWN
+        history over the definition's whole lifetime (NOT the 28-day strength window).
+        Page-triggered and deliberately separate from getHabitSummary, which is read on every
+        companion chat turn and must stay cheap. Under `minReps` repetitions every estimate
+        field is null - the honesty rule, mirroring `strengthPct` under `min-sample`.
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Formation estimate
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HabitFormationResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Unknown habit key
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/habit/catalog:
     get:
       tags: [Habit]
@@ -97,6 +139,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HabitCatalogResponse" }
+        "401":
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemMessageList" }
   /api/habit/chain:
     post:
       tags: [Habit]
@@ -112,6 +159,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HabitChainAdmin" }
+        "401":
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemMessageList" }
   /api/habit/chain/{id}:
     patch:
       tags: [Habit]
@@ -129,6 +181,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HabitChainAdmin" }
+        "401":
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemMessageList" }
     delete:
       tags: [Habit]
       operationId: deleteHabitChain
@@ -136,6 +193,7 @@ paths:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         "204": { description: Soft-deleted }
+        "401": { description: Missing/invalid token, content: { application/json: { schema: { $ref: "#/components/schemas/SystemMessageList" } } } }
   /api/habit/chain/{id}/order:
     put:
       tags: [Habit]
@@ -154,6 +212,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HabitChainAdmin" }
+        "401":
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemMessageList" }
   /api/habit/def:
     post:
       tags: [Habit]
@@ -169,6 +232,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HabitDefAdmin" }
+        "401":
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemMessageList" }
   /api/habit/def/{id}:
     patch:
       tags: [Habit]
@@ -186,6 +254,11 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HabitDefAdmin" }
+        "401":
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SystemMessageList" }
     delete:
       tags: [Habit]
       operationId: deleteHabitDef
@@ -193,6 +266,7 @@ paths:
         - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
       responses:
         "204": { description: Soft-deleted }
+        "401": { description: Missing/invalid token, content: { application/json: { schema: { $ref: "#/components/schemas/SystemMessageList" } } } }
   /api/habit/ai/suggest:
     post:
       tags: [Habit]
@@ -209,6 +283,7 @@ paths:
           content:
             application/json:
               schema: { $ref: "#/components/schemas/HabitSuggestResponse" }
+        "401": { description: Missing/invalid token, content: { application/json: { schema: { $ref: "#/components/schemas/SystemMessageList" } } } }
         "503": { description: Suggester unavailable (switch off / companion off) }
 components:
   schemas:
@@ -262,6 +337,35 @@ components:
         strengthPct: { type: integer, nullable: true }
         done28: { type: integer }
         missed28: { type: integer }
+    HabitFormationDay:
+      type: object
+      required: [date, status]
+      properties:
+        date: { type: string, format: date }
+        status: { type: string, enum: [pending, done, missed] }
+    HabitFormationResponse:
+      type: object
+      required: [key, reps, missed, thresholdPct, minReps, days]
+      properties:
+        key: { type: string }
+        firstDate: { type: string, format: date, nullable: true }
+        reps: { type: integer, description: successful repetitions over the whole lifetime }
+        missed: { type: integer }
+        automaticityPct: { type: integer, nullable: true, description: '0-100, null under minReps' }
+        curveK: { type: number, format: double, nullable: true, description: 'growth rate of 1-e^(-k*n), so the FE can draw the same curve' }
+        thresholdPct: { type: integer, description: where "runs by itself" sits on the curve }
+        minReps: { type: integer, description: repetitions needed before any estimate is made }
+        repsToThresholdLo: { type: integer, nullable: true }
+        repsToThresholdHi: { type: integer, nullable: true }
+        weeksToThresholdLo: { type: number, format: double, nullable: true }
+        weeksToThresholdHi: { type: number, format: double, nullable: true }
+        repsPerWeek: { type: number, format: double, nullable: true }
+        consistencyPct: { type: integer, nullable: true }
+        timeConstancyPct: { type: integer, nullable: true, description: 'clock-hour constancy of completions, null without enough timed rows' }
+        anchorConstancyPct: { type: integer, nullable: true, description: 'share of done days on which the anchor habit was also done, null without an anchor' }
+        days:
+          type: array
+          items: { $ref: '#/components/schemas/HabitFormationDay' }
     HabitSummaryResponse:
       type: object
       required: [perfectMorningDays30, perfectEveningDays30, habits]

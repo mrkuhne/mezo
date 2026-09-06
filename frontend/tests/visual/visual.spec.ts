@@ -19,7 +19,8 @@ import { seedThemeAndKalauz } from './kalauzSeed'
  *  - clock frozen BEFORE goto → the daypart-derived sky tint (PhoneFrame) + greeting
  *    (GreetingHeader) stay fixed even as the 60s re-derive interval keeps firing
  *    (setFixedTime keeps timers running but pins `new Date()`). The default is
- *    2026-05-21T13:42 (délután), which matches the StatusBar's hardcoded 13:42; a screen
+ *    2026-05-21T13:42+02:00 (délután), which matches the StatusBar's hardcoded 13:42 — the
+ *    offset is load-bearing, see DEFAULT_FROZEN; a screen
  *    may override it via the third `SCREENS` tuple slot. The /ritual flow is reachable any
  *    time (ADR 0010 D2 — the window nudges, never locks), so it renders at 13:42.
  *  - the three `/today` shots pin BOTH levers, and both are load-bearing (mezo-1khu):
@@ -43,9 +44,9 @@ import { seedThemeAndKalauz } from './kalauzSeed'
  */
 /** `[name, path, frozenTime?]` — the third slot overrides the default frozen clock. */
 const SCREENS: Array<[string, string, string?]> = [
-  ['today-reggel', '/today?dp=reggel', '2026-05-21T09:12:00'],
-  ['today-nap', '/today?dp=nap', '2026-05-21T13:42:00'],
-  ['today-este', '/today?dp=este', '2026-05-21T21:05:00'],
+  ['today-reggel', '/today?dp=reggel', '2026-05-21T09:12:00+02:00'],
+  ['today-nap', '/today?dp=nap', '2026-05-21T13:42:00+02:00'],
+  ['today-este', '/today?dp=este', '2026-05-21T21:05:00+02:00'],
   ['train', '/train'],
   ['train-heti', '/train/week'],
   ['train-gym', '/train/gym'],
@@ -106,6 +107,10 @@ const SCREENS: Array<[string, string, string?]> = [
   ['me-growth-awards', '/me/growth/kituntetesek'],
   ['me-ai-call', '/me/ai-usage/22222222-2222-4222-8222-222222222222'],
   ['insights-mintak', '/insights'],
+  // mezo-nn6o: a Minták/Motor oldal maga (PatternsPage) sosem került a kapu alá. Az issue
+  // a régi `/insights/motor` útvonalat nevezi meg; a Design 2.0 átnevezés óta az
+  // `/mezo/motor` -> `/mezo/patterns` redirect a valódi cím, ezért ARRA mutat ez a shot.
+  ['mezo-minta', '/mezo/patterns'],
   ['insights-memoar', '/insights/memoir'],
   // F7.5 Mezo deep (mezo-d20.8.5.1): the memoir archive shelf + one chapter page.
   ['mezo-memoar-archiv', '/mezo/memoir/archivum'],
@@ -127,8 +132,50 @@ const SCREENS: Array<[string, string, string?]> = [
   ['ritual-arrival', '/ritual'],
 ]
 
-/** The clock every screen freezes to unless its `SCREENS` tuple overrides it. */
-const DEFAULT_FROZEN = '2026-05-21T13:42:00'
+/**
+ * The clock every screen freezes to unless its `SCREENS` tuple overrides it.
+ *
+ * The `+02:00` is LOAD-BEARING (mezo-in3h). `new Date('2026-05-21T13:42:00')` — no offset —
+ * is parsed in the MACHINE's local timezone, so the "frozen" clock was not frozen at all: it
+ * meant 13:42 CEST on the developer's Mac and 13:42 UTC on a CI runner. `timezoneId:
+ * 'Europe/Budapest'` then rendered that instant as 15:42 in CI. The two golden sets therefore
+ * encoded DIFFERENT APPLICATION STATES, and nobody could see it because each platform was
+ * self-consistent and only linux had a gate. Caught the moment a macOS runner met the darwin
+ * goldens: today-este rendered "VILLANYOLTÁSIG 0:10" plus an ÉJSZAKAI MÓD tile (23:05) instead
+ * of "2:10" (21:05) — 65 000 pixels, pure content. The committed linux golden still shows the
+ * 23:05 state, i.e. the authoritative gate was guarding the wrong moment, while the file's own
+ * comment says 13:42 "matches the StatusBar's hardcoded 13:42".
+ *
+ * All frozen times are on 2026-05-21, which is CEST, hence +02:00 throughout.
+ */
+const DEFAULT_FROZEN = '2026-05-21T13:42:00+02:00'
+
+/**
+ * Native date/time inputs are rendered by the OS, in the OS's language — `02:00 P` /
+ * `mm/dd/yyyy` on an en-US machine, `14:00` / `yyyy. mm. dd.` on a Hungarian one. On macOS
+ * Chromium ignores both Playwright's `locale` and `--lang` for these controls, so a golden
+ * containing one is machine-dependent BY CONSTRUCTION: it made 3 screens × 2 themes disagree
+ * between the developer's Mac and the macOS CI runner, with no way to pin either (mezo-in3h).
+ * Mask them. Their pixels are OS chrome we neither design nor can regress; everything around
+ * them stays under the gate.
+ */
+const OS_RENDERED_CONTROLS =
+  'input[type="time"], input[type="date"], input[type="datetime-local"], input[type="month"], input[type="week"]'
+
+/**
+ * Masking hides those controls' pixels but NOT their GEOMETRY: an en-US `<input type="time">`
+ * renders `02:00 PM` and is measurably wider than a Hungarian `14:00`, so the mask rectangle
+ * itself moves and everything laid out beside it shifts — fuel-slots-editor still differed by
+ * 3106 px across a column of them. Pinning the box makes the layout deterministic; the width
+ * is arbitrary but must fit the widest OS rendering. No single "true" width exists here anyway,
+ * since production width already varies per viewer's OS.
+ */
+const PIN_OS_CONTROL_BOX = `${OS_RENDERED_CONTROLS} { width: 120px !important; box-sizing: border-box !important; }`
+
+const shot = async (page: import('@playwright/test').Page, name: string) => {
+  await page.addStyleTag({ content: PIN_OS_CONTROL_BOX })
+  await expect(page).toHaveScreenshot(name, { mask: [page.locator(OS_RENDERED_CONTROLS)], maskColor: '#000000' })
+}
 
 for (const theme of ['light', 'dark'] as const) {
   test.describe(theme, () => {
@@ -142,7 +189,7 @@ for (const theme of ['light', 'dark'] as const) {
         await page.goto(path)
         await page.waitForLoadState('networkidle')
         await page.evaluate(() => document.fonts.ready)
-        await expect(page).toHaveScreenshot(`${name}-${theme}.png`)
+        await shot(page, `${name}-${theme}.png`)
       })
     }
 
@@ -177,7 +224,7 @@ for (const theme of ['light', 'dark'] as const) {
       await toasts.first().waitFor({ state: 'visible', timeout: 2000 }).catch(() => {})
       await expect(toasts).toHaveCount(0)
       await page.evaluate(() => document.fonts.ready)
-      await expect(page).toHaveScreenshot(`ritual-harvest-${theme}.png`)
+      await shot(page, `ritual-harvest-${theme}.png`)
     })
 
     // Napzárás act 6 (Elengedés) — the far end of the darkening arc (mezo-d20.8.1.1). Act 1 and
@@ -200,7 +247,7 @@ for (const theme of ['light', 'dark'] as const) {
       const toasts = page.locator('.toast')
       await expect(toasts).toHaveCount(0)
       await page.evaluate(() => document.fonts.ready)
-      await expect(page).toHaveScreenshot(`ritual-release-${theme}.png`)
+      await shot(page, `ritual-release-${theme}.png`)
     })
 
     // The exercise swimlane (mezo-d20.8.2.1). It sits below the fold on the `train-review`
@@ -216,7 +263,7 @@ for (const theme of ['light', 'dark'] as const) {
       await lane.waitFor()
       await lane.scrollIntoViewIfNeeded()
       await page.evaluate(() => document.fonts.ready)
-      await expect(page).toHaveScreenshot(`train-review-lane-${theme}.png`)
+      await shot(page, `train-review-lane-${theme}.png`)
     })
 
     // The exercise view behind a swimlane tile (mezo-d20.8.2.1). This is the shot the round
@@ -230,7 +277,37 @@ for (const theme of ['light', 'dark'] as const) {
       await page.getByRole('button', { name: /Chest Supported Row/ }).click()
       await page.locator('.wr-set').first().waitFor()
       await page.evaluate(() => document.fonts.ready)
-      await expect(page).toHaveScreenshot(`train-review-exercise-${theme}.png`)
+      await shot(page, `train-review-exercise-${theme}.png`)
+    })
+
+    // mezo-5z1j: a goldenek SOSEM érték el az aktív edzés fázist. Mock módban a
+    // todaySession null, így az ActiveWorkoutPage initialPhase-e mindig 'prep' — a
+    // sorozat-naplózó kártya, a progressziós sáv és a demó-videó chip pixel-szinten
+    // őrizetlen volt. A briefing CTA-ja a lap alján ül; a click görgeti oda.
+    test('train-session-active', async ({ page }) => {
+      await page.clock.setFixedTime(new Date(DEFAULT_FROZEN))
+      await seedThemeAndKalauz(page, theme)
+      await page.goto('/train/session')
+      await page.waitForLoadState('networkidle')
+      await page.getByRole('button', { name: /Kezdjük el/ }).click()
+      await page.getByRole('button', { name: /Kezdjük el/ }).waitFor({ state: 'detached' })
+      await page.evaluate(() => document.fonts.ready)
+      await expect(page).toHaveScreenshot(`train-session-active-${theme}.png`)
+    })
+
+    // mezo-v03q: a Tudástár Életesemény-jelöltek csoportja a 440x956-os viewport ALATT van,
+    // tehát az insights-tudastar shot sosem látta. Saját, odagörgetett felvétel — ugyanaz a
+    // minta, mint a train-review-lane-nél.
+    test('insights-tudastar-eletesemenyek', async ({ page }) => {
+      await page.clock.setFixedTime(new Date(DEFAULT_FROZEN))
+      await seedThemeAndKalauz(page, theme)
+      await page.goto('/insights/knowledge')
+      await page.waitForLoadState('networkidle')
+      const group = page.getByText(/Életesemény-jelöltek/).first()
+      await group.waitFor()
+      await group.scrollIntoViewIfNeeded()
+      await page.evaluate(() => document.fonts.ready)
+      await expect(page).toHaveScreenshot(`insights-tudastar-eletesemenyek-${theme}.png`)
     })
 
     // F7.3 (mezo-d20.8.3.1): the recipe Pontszám tile opens the score sheet — the shot that
@@ -243,7 +320,7 @@ for (const theme of ['light', 'dark'] as const) {
       await page.getByTestId('recipe-score-tile').click()
       await page.locator('.sheet').waitFor()
       await page.evaluate(() => document.fonts.ready)
-      await expect(page).toHaveScreenshot(`fuel-recept-score-${theme}.png`)
+      await shot(page, `fuel-recept-score-${theme}.png`)
     })
 
     // F7.3: the slots EDITOR (zcard rows + Σ BUDGET + the portaled save bar) — only reachable
@@ -256,7 +333,7 @@ for (const theme of ['light', 'dark'] as const) {
       await page.getByRole('button', { name: /Testreszabás/ }).click()
       await page.getByRole('button', { name: /Mezo értékelése/ }).waitFor()
       await page.evaluate(() => document.fonts.ready)
-      await expect(page).toHaveScreenshot(`fuel-slots-editor-${theme}.png`)
+      await shot(page, `fuel-slots-editor-${theme}.png`)
     })
   })
 }

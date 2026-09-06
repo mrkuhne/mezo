@@ -7,8 +7,8 @@ import io.mrkuhne.mezo.feature.biometrics.sleep.repository.SleepLogRepository;
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -18,7 +18,6 @@ import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -64,7 +63,7 @@ public class LoggingGapRule implements FlagRule {
     private final FlagProperties properties;
 
     @Override
-    public Optional<FlagRaise> evaluate(UUID userId, LocalDate today) {
+    public FlagVerdict evaluate(UUID userId, LocalDate today) {
         FlagProperties.LoggingGap cfg = properties.loggingGap();
         Instant now = Instant.now();
 
@@ -96,7 +95,9 @@ public class LoggingGapRule implements FlagRule {
             stale.add(DOMAIN_SLEEP);
         }
         if (stale.size() < cfg.minStaleDomains()) {
-            return Optional.empty();
+            return FlagVerdict.clear(FlagKey.LOGGING_GAP, new FlagVerdict.ClearEvidence(
+                "stale_domains", (double) stale.size(), (double) cfg.minStaleDomains(),
+                String.join(",", stale)));
         }
 
         // Spec §4 row 5: the suspicion is attached only when sleep_debt itself stayed silent for
@@ -108,14 +109,14 @@ public class LoggingGapRule implements FlagRule {
             && d.loggedNights() < sleepCfg.minNights()
             && d.deficitPerLoggedNight() >= cfg.sleepSuspicionDeficitHours();
 
-        return Optional.of(new FlagRaise(FlagKey.LOGGING_GAP,
+        return FlagVerdict.raised(FlagKey.LOGGING_GAP,
             FlagPayloadEnvelope.loggingGap(new FlagPayloadEnvelope.LoggingGap(
                 stale, cfg.mealStaleHours(), mealHoursSince,
                 cfg.checkinStaleHours(), checkinHoursSince,
                 cfg.sleepStaleMornings(), sleepMorningsSince,
                 suspicious ? cfg.sleepSuspicionDeficitHours() : null,
                 suspicious ? d.deficitPerLoggedNight() : null,
-                suspicious ? d.loggedNights() : null))));
+                suspicious ? d.loggedNights() : null)));
     }
 
     private static int hoursBetween(Instant from, Instant to) {

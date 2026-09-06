@@ -14,7 +14,7 @@ export interface ToolDomain { label: string; icon: ClayIconName; wash: DomainWas
 
 const NEUTRAL = (label: string): ToolDomain => ({ label, icon: 'i-mezo', wash: 'neutral' })
 
-/** The 17 real companion tools (backend CompanionToolRegistry inventory, 2026-08-31). */
+/** The 18 real companion tools (backend CompanionToolRegistry inventory, 2026-09-05). */
 const TOOLS: Record<string, ToolDomain> = {
   get_weight_log: { label: 'Súlynapló', icon: 'i-suly', wash: 'sky' },
   get_weight_trend: { label: 'Súlytrend', icon: 'i-suly', wash: 'sky' },
@@ -33,6 +33,7 @@ const TOOLS: Record<string, ToolDomain> = {
   get_daily_practice: { label: 'Napi gyakorlat', icon: 'i-nap', wash: 'gold' },
   find_similar_past_days: { label: 'Emlékek', icon: 'i-retegek', wash: 'lav' },
   compare_periods: { label: 'Időszak-összevetés', icon: 'i-idozito', wash: 'lav' },
+  get_life_goals: { label: 'Életcélok', icon: 'i-cel', wash: 'gold' },
 }
 
 /** mezo-vdf4: the wire bakes tool args into the name — `get_recovery(days=3)` —
@@ -85,6 +86,7 @@ const REF_KINDS: Record<string, ToolDomain> = {
   Pantry: { label: 'Kamra', icon: 'i-kamra', wash: 'sage' },
   Protocol: { label: 'Stack', icon: 'i-stack', wash: 'sage' },
   Goal: { label: 'Cél', icon: 'i-cel', wash: 'gold' },
+  LifeGoal: { label: 'Életcél', icon: 'i-cel', wash: 'gold' },
   Growth: { label: 'Growth', icon: 'i-growth', wash: 'gold' },
   Practice: { label: 'Gyakorlat', icon: 'i-nap', wash: 'gold' },
   TrainingPlan: { label: 'Edzésterv', icon: 'i-meso', wash: 'coral' },

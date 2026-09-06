@@ -6,6 +6,10 @@ updated: 2026-09-05
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
+  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/LifeGoalSource.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/LifeGoalSnapshotBlock.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/LifeGoalText.java
+  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/LifeGoalTools.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/llmlog
   - api/feature/companion/companion.yml
   - api/feature/memory-retrieval/memory-retrieval.yml
@@ -63,10 +67,11 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   prescription current-week segment + day-planner, active meso + schedules + last-7d digest,
   account level/coins/streak + top skills + weekly XP rollup, today's quest count + habit chains +
   creed/foci/reflection + napzárás state, the active people circle (`[Emberek]`, **mezo-x6oa**,
-  chat variant only), FuelDay rollup + protocol + intakes, cycleDay/phase, last sleep + latest
-  check-in), rendered as nine Hungarian-labelled blocks under `AKTUÁLIS ÁLLAPOT (pillanatkép —
-  {dátum}):` and inserted into the `ChatService` system prompt **between the static voice and the
-  history transcript**.
+  chat variant only), a background snapshot of active life goals (`[Célok]`, **mezo-iizd.10**,
+  BOTH variants), FuelDay rollup + protocol + intakes, cycleDay/phase, last sleep + latest
+  check-in), rendered as ten Hungarian-labelled blocks (chat variant) under `AKTUÁLIS ÁLLAPOT
+  (pillanatkép — {dátum}):` and inserted into the `ChatService` system prompt **between the
+  static voice and the history transcript**.
   Missing data renders as explicit `nincs adat`, never invented; no LLM anywhere in the path.
 
 **V0.4 (`mezo-fnnq.4`) shipped streaming + the real FE:**
@@ -390,6 +395,37 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   writes actions optimistically with rollback on failure, and keeps pre-rollout cards that have no
   retrieval IDs display-only. Fact and graph candidates have no canonical `memory_item`, so the UI
   keeps useful/irrelevant but does not offer suppression; the API also rejects such a request.
+
+**Synthetic Hungarian retrieval evaluation (`mezo-6dii.8`):**
+
+- `memory-hu-v1` is a fixed-seed (`20260904`) corpus of coherent synthetic timelines for exactly
+  three isolated personas: rich logging, sparse logging and changing/contradictory circumstances.
+  It contains 540 natural-language Hungarian queries split by whole scenario into 108 development,
+  108 tuning and 324 sealed holdout cases (108 per persona). These are different data shapes, not
+  renamed copies: the rich persona has dense background notes, the sparse persona omits most
+  supporting summaries and spreads events farther apart, while the changing persona carries many
+  high-salience superseded states.
+- Every split covers paraphrase, contextual follow-up, exact value, old-salient, adversarial
+  near-negative, negation, superseded, empty and cross-owner families. Relevance is graded
+  `0/1/2`; the generator rejects missing gold sources, split leakage, malformed empty cases,
+  missing foreign distractors and persona/family minimum failures. It also rejects duplicate source
+  text, duplicate query text and cross-split query pairs with token Jaccard similarity `>= 0.90`.
+  Even the no-memory phrases use disjoint semantic phrase pools per split; punctuation variation is
+  confined within a split. Ownership distractors deliberately share the gold vector axis and have
+  higher salience, so owner filtering—not an easy ranking mismatch—is what keeps them out.
+- The JSON contains no fake-adapter sentinels. Network-free CI adds scripted geometry only in the
+  deterministic runner with source-derived stable fixture UUIDs, then compares the frozen OLD
+  assembler with `MemoryContextService` and
+  calculates macro Recall@5, nDCG@5, MRR, context precision, empty false positives and ownership
+  leakage over each path's final selected prompt context (the same lifecycle stage on both sides).
+  The runner relaxes the retriever deadline to 5 seconds only in this test so host load cannot turn
+  ranking results into timeout results; latency remains a real-provider concern. This is a
+  wiring/regression smoke test, not evidence for the 85% semantic release gate.
+- The holdout runner refuses to start until `review.json` records an explicit human approval whose
+  non-blank reviewer, review date, corpus version, seed, query count and SHA-256 match the exact
+  holdout bytes and the caller-supplied corpus equals that artifact. Regeneration therefore
+  invalidates an earlier approval instead of silently reusing it. The real Gemini release gate and
+  versioned report belong to `mezo-6dii.9`.
 
 **V2.2 (`mezo-fnnq.10`) shipped daily summaries + the embed pipeline — the memory fills itself:**
 
@@ -1242,8 +1278,9 @@ construction. Window args are model-optional (`@ToolParam(required = false)`) wi
 defaults (7 days / 4 weeks).
 
 **The context snapshot (V0.3).** `ContextSnapshotAssembler.render(userId, today)`
-(`service/ContextSnapshotAssembler.java`) returns the `AKTUÁLIS ÁLLAPOT` block with eight lines in
-render() order — `[Profil]` (biometric profile + the latest actual weigh-in beside the
+(`service/ContextSnapshotAssembler.java`) returns the `AKTUÁLIS ÁLLAPOT` block with nine lines
+common to BOTH variants in render() order (`[Emberek]` — see below — rides on top of these, chat
+only) — `[Profil]` (biometric profile + the latest actual weigh-in beside the
 `WeightTrendService` EWMA trend — `WeightLogRepository.findFirstByCreatedByAndDeletedFalseOrderByDateDescCreatedAtDesc`
 renders `mérés: {weight} kg ({date})`, or `mérés: nincs adat` with no weigh-in row; an empty
 EWMA series renders `súlytrend: nincs adat`, and rates are omitted while `dataSufficiency = NONE`
@@ -1252,7 +1289,9 @@ EWMA series renders `súlytrend: nincs adat`, and rates are omitted while `dataS
 goal's `mealsPerDay`, and the day's `ébredés`/`lefekvés` anchor resolved via `SleepAnchorPort`
 from the sleep goal — never the retired goal wake/bed columns; the resolver always returns an
 anchor, so both lines always render, falling back to the config ghost when no sleep goal exists),
-`[Edzés]` (active meso with the week
+`[Célok]` (**mezo-iizd.10** — the life-goal background snapshot; see "Célok a chat pillanatképben"
+below for the full write-up — deliberately in BOTH `render` and `renderWithoutBiometrics`, unlike
+`[Emberek]`), `[Edzés]` (active meso with the week
 DERIVED from `startDate` — the stored `currentWeek` can lag; **`Ma:`/`Holnap:` dated resolution
 (mezo-xixu, the flagship fix)** — both render through ONE `dayLine` method (mezo-ajp): that day's
 gym day + exercises via `WorkoutService.findPlannedTemplateForDate` (deliberately never
@@ -1321,8 +1360,10 @@ features; ArchUnit's cycle rule guards the reverse).
 
 **The biometrics-free variant (companion-feed, `mezo-gst9`).** `renderWithoutBiometrics(userId,
 today)` is a second entry point alongside `render`, used ONLY by
-`feature/proactive/service/CompanionMessageGenerator.generateMorning`. It composes the SAME eight
-blocks in the SAME order, but `profileBlock`/`recoveryBlock` each take a `withWeight`/`withSleep`
+`feature/proactive/service/CompanionMessageGenerator.generateMorning`. It composes the SAME nine
+blocks in the SAME order (including `[Célok]`, **mezo-iizd.10** — user decision: the morning
+message MAY reference life goals supportively, unlike the `[Emberek]` chat-only precedent it
+otherwise mirrors), but `profileBlock`/`recoveryBlock` each take a `withWeight`/`withSleep`
 boolean: `render` passes `true` (the full `[Profil]` mérés+trend line, the full `[Regeneráció]`
 sleep line); `renderWithoutBiometrics` passes `false`, so `[Profil]` stops after the height/age/sex
 clause (no `mérés:`/`súlytrend:` at all) and `[Regeneráció]` renders only the latest check-in (no
@@ -1466,16 +1507,16 @@ order (`repository/AiConversationRepository.java:14`); `AiMessageRepository` is 
 arithmetic over `MetricSeriesService` series the owning features already compose READ-ONLY — there
 is **no `LlmCallContextHolder` call anywhere in this slice**, because there is no LLM/embed call to
 tag. **Rule spine (S1, bd `mezo-d58h.1`, spec 2026-09-03 §3.1) — one class per rule.** `FlagEvaluator`
-itself is now a thin orchestrator: it holds no rule logic, just thirteen injected `FlagRule` beans
+itself is now a thin orchestrator: it holds no rule logic, just fourteen injected `FlagRule` beans
 (`SustainedStressRule`, `SleepDebtRule`, `MomentumAtRiskRule`, `RecoveryNeededRule`,
 `LoggingGapRule`, `MissedWorkoutsRule`, `AcuteBadDayRule`, `LoadFuelMismatchRule`,
-`RapidWeightLossRule`, `JointOveruseRule`, `IgnoredNudgeRule`, `LateEatingRule`, `AllHealthyRule` —
-each `feature/companion/flags/service/rule/*.java`) called in that fixed order, `allHealthyRule`
-only when the other twelve raised nothing. The `FlagRule` interface
-(`flags/service/FlagRule.java`) is one method, `evaluate(userId, today) → Optional<FlagRaise>`,
-cooldowns NOT applied; each implementation carries its own reads and thresholds (still 100% from
-`FlagProperties` — no rule holds a number of its own) and stays reviewable in isolation. S1 was a
-pure refactor of the original five; **S2 (bd `mezo-d58h.2`) adds two more rules**:
+`RapidWeightLossRule`, `JointOveruseRule`, `IgnoredNudgeRule`, `LateEatingRule`, `ProtocolLapseRule`,
+`AllHealthyRule` — each `feature/companion/flags/service/rule/*.java`) called in that fixed order,
+`allHealthyRule` called EVERY evaluation. The `FlagRule` interface (`flags/service/FlagRule.java`)
+is one method, `evaluate(userId, today) → FlagVerdict`, cooldowns NOT applied; each implementation
+carries its own reads and thresholds (still 100% from `FlagProperties` — no rule holds a number of
+its own) and stays reviewable in isolation. S1 was a pure refactor of the original five; **S2 (bd
+`mezo-d58h.2`) adds two more rules**:
 
 - **`LoggingGapRule`** (spec §4 row 1) — the detector that must NOT go quiet when logging itself
   stops: every value-based rule above reads a `MetricSeriesService` series, and a series with no
@@ -1562,6 +1603,31 @@ gate, the same discipline as the original seven:
   the absolute comparison (an earlier version's bug, fixed same-slice) made every pre-noon last meal
   unconditionally clear the threshold — a false positive on every intermittent-fasting or
   simply-early eater. A day with no logged meal is skipped, not counted either way.
+- **`ProtocolLapseRule`** (rank 10, Round 2 S1's first new detection, bd `mezo-d58h.7.1`, spec
+  2026-09-05 §(11), `protocol_lapse`) — one active protocol item missed on ≥
+  `consecutiveMissedDays` consecutive DUE days, but only where a real habit existed first (≥
+  `minHistoryDueDays` due days of history immediately before the miss run, at ≥
+  `minHistoryAdherence` taken/due). "Due" is DERIVED, never stored — there is no protocol-item
+  schedule table: every item is due every day EXCEPT a `pre_workout`/`post_workout` item, which is
+  due only on a day with a completed gym instance (`WorkoutSessionRepository.findDoneInstanceDates`)
+  — on a rest day it is not a miss, it either displaces to its `restDayFallback` zone or is
+  deliberately dropped (the same `expectedOn` predicate `StackSkipPatternDetector` uses, copied on
+  purpose rather than shared across a third feature boundary — both copies name each other in their
+  javadoc). Both the miss-run walk and the prior-habit walk are bounded BELOW by the item's own
+  `created_at` (converted to the system-zone local date) — an item added to the protocol yesterday
+  cannot have "missed" a habit from last month, so a brand-new item is silent by construction. The
+  window ends YESTERDAY, never today — today is still in progress, so an evening supplement with
+  nothing logged yet today is not "missed" (same reasoning as `MissedWorkoutsRule`'s window). Of
+  multiple qualifying items, the one with the LONGEST miss run is the offender (tie-break: the
+  lower `item_order`, since iteration is already in that order). **Two cooldowns exist here and must
+  not be conflated:** `FlagService`'s usual key-level cooldown (`cooldown-hours.protocol-lapse`,
+  24h — config keys below) only stops the SAME evaluation from repeating within a day; the spec's
+  real cooldown is per ITEM, seven days, and only `ProtocolLapseRule` itself can enforce that — it
+  reads its OWN past raises off `CompanionFlagLogRepository` since `perItemCooldownDays` ago,
+  collects each row's frozen `payload().protocolLapse().pantryItemId()`, and skips any protocol item
+  already in that set before it is ever evaluated, so a suppressed item can never even become the
+  offender while a DIFFERENT item lapsing the next day still gets a delivery window through the
+  short key-level cooldown.
 
 Two prerequisite fixes underpin the rules above: `MetricSeriesService.weightTrendPctWk` and
 `.lateMealHour` used to load a user's ENTIRE history and filter in Java; both are now bounded reads
@@ -1627,6 +1693,57 @@ the same transaction), and `feature.proactive.service.InterventionEventListener`
 @TransactionalEventListener(AFTER_COMMIT)` — the `CompanionMessageEventListener` template) turns a
 committed raise into a `companion_message` feed card. See the W5.2 subsection below and
 [`proactive.md`](proactive.md) §3/§4 for the card mechanics.
+
+**Proactive coaching observer S1 — the verdict model and the evaluation trace (bd `mezo-6269.1`,
+spec 2026-09-05 §4).** Every `FlagRule.evaluate` returns a `FlagVerdict`
+(`flags/service/FlagVerdict.java`), not an `Optional<FlagRaise>` — the old empty case collapsed two
+different answers ("I checked and it's fine" and "I couldn't check") into one silence, discarding
+both. A verdict carries exactly one of three `FlagOutcome`s (`flags/service/FlagOutcome.java`):
+`RAISED` (`payload` — the same frozen-inputs envelope `companion_flag_log` always stored), `CLEAR`
+(`clear`, a `FlagVerdict.ClearEvidence(metric, observed, threshold, detail)` — the rule's own
+observed value and threshold when it ran and found them below the line; `observed`/`threshold` are
+null and `detail` carries the value for a non-numeric clear such as a goal trajectory or muscle
+group), or `UNAVAILABLE` (`reason`, an `UnavailableReason` — one member per honesty gate that
+already existed across the 13 rules, derived by reading every gate site in `service/rule/`, e.g.
+`NOT_ENOUGH_LOGGED_NIGHTS` for `sleep_debt`, `NO_ACTIVE_GOAL` for `rapid_weight_loss`,
+`NOTIFICATIONS_OFF` for `ignored_nudge`). `UnavailableReason` is the exhaustive list of ways a rule
+can decline to judge, as opposed to judging and finding nothing wrong — new gates without a member
+are impossible now that the verdict is a rule's only return type. The factories
+(`FlagVerdict.raised`/`clear`/`unavailable`) are the only way to build one and each validates its
+own required field is non-null.
+
+`all_healthy` is now evaluated on EVERY pass, not only when the other twelve raised nothing.
+`FlagEvaluator.evaluate` always calls `AllHealthyRule`; when it comes back RAISED but another rule
+also raised this same evaluation, `FlagEvaluator` overrides it to a synthetic CLEAR
+(`ClearEvidence("other_flags_raised", null, null, "another_rule_fired")`) before appending it —
+same externally-visible behavior as the old `if (raises.isEmpty())` gate (a quiet day still needs
+every other flag silent), but now the suppression itself leaves a trace entry instead of the rule
+never having run at all.
+
+**`companion_flag_trace`** (migration `202609051200_mezo-6269.1_companion_flag_trace.sql`,
+entity `flags/entity/CompanionFlagTraceEntity.java`, writer `flags/service/FlagTraceWriter.java`)
+is the observer's read of "what did the engine actually decide, and why" — a record of every
+rule's verdict, RAISED, CLEAR or UNAVAILABLE alike, which `companion_flag_log` (raises only) never
+gave a way to see. `FlagService.evaluateAndLog` calls `FlagTraceWriter.record` once per verdict,
+every evaluation, for all 13 rules — but the writer only INSERTs when the verdict actually CHANGED
+since that rule's last row: same `outcome` + `reasonCode` + `disposition` as the newest existing
+row for that `(createdBy, flagKey)` (`findFirstByCreatedByAndFlagKeyOrderByOccurredAtDesc`) is a
+no-op, which is what keeps an hourly sweep from writing 13 identical rows a day forever. The
+comparison deliberately includes `disposition`
+(`flags/service/TraceDisposition.java`: `LOGGED` or `SUPPRESSED_BY_COOLDOWN`, null unless the
+verdict is RAISED) — a rule that stays RAISED while flipping from `LOGGED` to
+`SUPPRESSED_BY_COOLDOWN` (or back) has genuinely changed state, and that flip is exactly the "why
+did it go quiet" moment the trace exists to answer. Before this slice, `FlagService` computed
+`SUPPRESSED_BY_COOLDOWN` internally to decide whether to skip the write, then discarded it — a
+raised-but-cooling-down flag left no record anywhere. Columns: `flag_key`, `outcome`
+(`raised|clear|unavailable`, lower-cased `FlagOutcome`), `reason_code` (lower-cased
+`UnavailableReason`, null unless `outcome = unavailable`), `disposition` (lower-cased
+`TraceDisposition`, null unless the rule raised), `evidence` (jsonb `FlagVerdict.ClearEvidence`,
+null unless `outcome = clear`), `occurred_at`. Two indexes: `(created_by, flag_key, occurred_at
+desc)` — the transition-comparison read above — and `(created_by, occurred_at)` — the observer's
+day-timeline read. Soft-deletable `OwnedEntity` like every other companion table; no FK from
+`evidence` to anything, same "frozen at the time" precedent as `companion_flag_log.payload` (§4
+above).
 
 **Weekly review data layer + anchored conversations (`mezo-p2tr`).** Two companion-owned pieces
 back the `/me/week` "Heti" tab ([me.md](me.md)) and its chat handoff — neither is the weekly-review
@@ -2899,6 +3016,55 @@ weekly direction. Now every CHAT turn's snapshot carries an **`[Emberek]`** bloc
 - Tests: `PeopleChatContextIT`, `PeopleSnapshotBlockTest`, `ContextSnapshotAssemblerIT`
   (+2: block present in `render`, absent in `renderWithoutBiometrics`), `CompanionPropertiesIT`.
 
+### Célok a chat pillanatképben (✅ `mezo-iizd.10`)
+
+Spec: [`2026-09-05-lifegoal-companion-block-design.md`](../superpowers/specs/2026-09-05-lifegoal-companion-block-design.md).
+Until this slice the companion knew nothing of Daniel's `feature/lifegoal` life goals — the Nap
+"Célok · ma" tile and the Célok hub were entirely outside the chat's view. Now BOTH the chat turn
+AND the morning message carry a **`[Célok]`** block:
+
+- **`LifeGoalSource`** (`feature/companion/LifeGoalSource.java`) — a companion-owned port, the
+  `TodayQuestSource` pattern applied to life goals: `summary(userId, today)` (the compact
+  `[Célok]` snapshot line data — title/dimension/arrow/today's pillar count per active goal, the
+  weakest pillar across goals, and which ha–akkor plans are "live today") and `details(userId,
+  today)` (the rich per-goal view behind `get_life_goals`, below). The direction stays
+  lifegoal → companion (the reverse already exists: `MetricSignalSource`, `LifeGoalProposePort`)
+  — a companion → lifegoal import would close a 2-slice cycle, so the port is the seam.
+- **`LifeGoalCompanionAdapter`** (`feature/lifegoal/service/LifeGoalCompanionAdapter.java`,
+  `LIFEGOAL_SWITCH`-gated) implements it — see [`lifegoal.md`](lifegoal.md) §3/§9 for the
+  read-only "ma él" (live today) re-evaluation this adapter does for ha–akkor plans, including
+  the `ritual_missed` last-closed-day + adoption-window gate.
+- **`LifeGoalSnapshotBlock`** (`feature/companion/service/LifeGoalSnapshotBlock.java`,
+  `COMPANION_SWITCH`) renders it: header `[Célok] (aktív életcélok, max N)`, one line per active
+  goal `<cím> [<dimenzió>] · <heti nyíl szóként> · ma X/Y pillér`, capped at
+  `snapshot.lifegoal-max-goals`; then `Leggyengébb pillér: …` when one exists; then one `Ma él: <ha>,
+  <akkor>` line per live ha–akkor plan. `LIFEGOAL_SWITCH` is independent of `COMPANION_SWITCH`, so
+  the port is read through `ObjectProvider` (the `PeopleSnapshotBlock`/`TodayQuestSource`
+  precedent) — absent bean, no active goals, or any `RuntimeException` all render an honest
+  `[Célok] nincs adat` / `[Célok] nincs aktív életcél`. `lifegoal-max-goals = 0` omits the block
+  entirely. IDENT-3, the `PeopleSnapshotBlock` caveat verbatim: the catch degrades gracefully, but
+  a `DataAccessException` still leaves the surrounding `ChatService.prepareTurn` transaction
+  rollback-only regardless — accepted precedent, not savepointed.
+- **`LifeGoalText`** (`feature/companion/tools/LifeGoalText.java`) — the shared
+  dimension/arrow-word Hungarian renderers used by BOTH the snapshot block and the
+  `get_life_goals` tool, so the two surfaces can never disagree on vocabulary.
+- **In BOTH variants, unlike `[Emberek]`:** `ContextSnapshotAssembler` inserts `[Célok]` right
+  after `[Cél]`/before `[Edzés]` in `render` AND `renderWithoutBiometrics`. This is a deliberate
+  user decision (2026-09-05), not an oversight — the morning message MAY reference life goals as
+  a supportive nudge, whereas `[Emberek]` staying chat-only was about not raising people
+  unprompted. The `[Célok]` content itself is a fact statement ("ma él: …"), not a second nudge
+  channel: the actual reminder push still rides `LifeGoalTriggerService`'s feed notification
+  (`dedupKey`), and a `CompanionMessageGenerator.MORNING_PROMPT` point (6) tells the model it may
+  reference goals supportively but must not repeat that separate reminder.
+- **`get_life_goals` chat tool** (`feature/companion/tools/LifeGoalTools.java`, §5 below) — the
+  rich per-goal view (pillars + ha–akkor plans + weekly %) for when Daniel actually asks; the
+  `[Célok]` snapshot block stays the terse background summary.
+- No new port on the companion side beyond `LifeGoalSource` itself; no reverse import.
+- Tests: `LifeGoalCompanionAdapterIT` (incl. the documented `ritual_missed`/delayed-plan
+  simplifications), `LifeGoalSnapshotBlockTest`, `ContextSnapshotAssemblerIT` (block present in
+  BOTH `render` and `renderWithoutBiometrics`), `CompanionToolsRenderIT` (`get_life_goals`),
+  `CompanionPropertiesIT`.
+
 ### Backend tables (W3.2 consolidation ladder, ✅ `mezo-b3pp.13`)
 
 Migration `202608231400_mezo-b3pp.13_create_period_summary.sql` (in `1.0.0_master.yml`) — the
@@ -3119,6 +3285,29 @@ append-only audit trail behind the composite-flag evaluator (spec §4.5/§9.1). 
 - **No FK from `payload` to anything** — it freezes values read from other features' tables at
   raise time; those source rows can later change or be deleted without touching this row (the
   `message_feedback`/`feedback_rollup` dangling-reference precedent, spec §8.1).
+
+### Backend tables (coaching observer S1 — the evaluation trace, ✅ `mezo-6269.1`, spec 2026-09-05 §4.3)
+
+Migration `202609051200_mezo-6269.1_companion_flag_trace.sql` (in `1.0.0_master.yml`).
+
+- **`companion_flag_trace`** — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id)
+  ON DELETE CASCADE`, `is_deleted`, `created_at timestamptz`, `flag_key varchar(24)` (same 13-key
+  CHECK as `companion_flag_log`), `outcome varchar(12)` (`raised|clear|unavailable`), `reason_code
+  varchar(32)` (nullable), `disposition varchar(24)` (nullable, `logged|suppressed_by_cooldown`),
+  `evidence jsonb` (nullable), `occurred_at timestamptz`. Indexes:
+  `idx_companion_flag_trace_owner_flag_time (created_by, flag_key, occurred_at desc)` — the
+  transition-comparison read — and `idx_companion_flag_trace_owner_time (created_by, occurred_at)`
+  — the observer's day-timeline read.
+- **One row per CHANGE of verdict, not per evaluation.** `FlagEvaluator` produces 13 verdicts every
+  time it runs (on-write or hourly sweep), but `FlagTraceWriter` only inserts when a rule's
+  `outcome`/`reason_code`/`disposition` differ from that rule's own most recent row — an unchanged
+  hourly sweep across all 13 rules writes nothing, which is what keeps this table small enough to
+  keep forever despite running far more often than `companion_flag_log` ever does.
+- **`evidence` is the typed jsonb `FlagVerdict.ClearEvidence`**, populated only when `outcome =
+  clear`; null for `raised` (the payload lives in `companion_flag_log` instead, written by the same
+  transaction) and for `unavailable` (`reason_code` already says why).
+- **No FK from `evidence` to anything** — same "frozen at read time" precedent as
+  `companion_flag_log.payload` above.
 
 ### W5.2 intervention delivery (✅ `mezo-b3pp.19`, spec §9.2) — JITAI-lite
 
@@ -3586,6 +3775,7 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
 | `get_recovery(scope, days, date, from, to)` (mezo-xixu, merged from `get_sleep`, adds sleep-goal + check-ins; **mezo-ohce: on-demand full sleep-log detail** via `date` (≤3 guidance, ISO dates) / `from` / `to`) | scope=sleep: compact last-N-days via `SleepLogRepository` since-date finder → duration, quality, awakenings; **when any of `date`/`from`/`to` is present**, full detail per requested day via the between-finder → bedtime, wakeup, duration, in-bed/awake/könnyű/REM/mély minutes, quality, awakenings, source + source quality, hypnogram (`bucketMin` + raw stages), notes; fields are null-guarded, missing day → `nincs rögzített alvás`, and the window is clamped to `tools().maxWindowDays()` with a `visszavágva N napra` header when trimmed. scope=sleep-goal: `SleepGoalService.getGoal` (target minutes, regularity band; `SLEEP_GOAL_SWITCH`-gated, read via `ObjectProvider`) + `SleepAnchorPort.resolve` (bed/wake anchor, ungated) → target hours/min, bed/wake, regularity band; scope=checkins: `CheckInService.listForDay` per day across the window → energy/stress/body/mental (1–10) per slot | scope=sleep: `Sleep`/date (≤5; detail mode emits one per rendered day, including missing days); scope=sleep-goal: `SleepGoal`/wake-time; scope=checkins: `CheckIn`/date (≤5) |
 | `get_protocol(scope, days)` (mezo-xixu, merged from `get_protocol_adherence`) | scope=adherence: `ProtocolService.getView().getActive()` + intake since-date finder → per-day taken/expected + total %; scope=intake: `IntakeService.listForDay` (today, protocol-independent) → item names (via the pantry stash) + known dose; scope=supplements: the active protocol's distinct `items[].pantryItemId` (mezo-vx9v living protocol, zone-sorted) → item names | `Protocol`/`v{n}` (adherence/supplements always; intake only when a protocol happens to be active) |
 | `get_goal(scope)` (mezo-xixu, merged from `get_goal_progress`) | scope=progress (default): active goal + `computeTrend` + `GoalPrescriptionJson.currentSegment` → week N, start→target, actual vs plan rate, e heti recept; scope=recept: the goal's `prescription.segments` (≤3) → per-segment kcal/protein/sleep/rest-days/rate/rationale; scope=guards: `prescription.guardStatus` → strength e1RM trend + breach, muscle weekly-set floor + below-maintenance list; scope=feasibility: `prescription.feasibility` → verdict + notes (≤3); scope=timeline: `GoalTimelineService.getTimeline` (pure read) → mapped plan links + uncovered gym-lane week gaps (≤3 each). recept/guards/feasibility render "még nincs kiértékelve" until the goal's first `evaluate` (never called from the tool) | `Goal`/title |
+| `get_life_goals()` (mezo-iizd.10) | `LifeGoalSource.details` (port → `LifeGoalCompanionAdapter`, see "Célok a chat pillanatképben" above) → per active life goal: title, dimension (PERMAH), frame, weekly arrow + weekly %, per-pillar today-hit + weekly arrow, and ha–akkor plans with a `(MA ÉL)` marker on the live ones. The rich view behind the terse `[Célok]` snapshot block — NOT for the numeric weight/kcal goal, which is `get_goal` | `LifeGoal`/goal title (one per rendered goal) |
 | `get_medication(scope)` (mezo-xixu; `scope ∈ {cycle, all}`, default `cycle`, renamed from the drug-specific original scope names in `mezo-lwmq`) | scope=cycle (default): `MedicationCycleService.deriveToday` + top-10 doses → cycle day, phase, last dose, next due; scope=all: `MedicationService.getDay` → name, active ingredient, cadence, default dose, cycle position (once a dose is on record) + recent doses, generic (no drug-specific naming). Both scopes' "today" now derive off the SAME `MedicationCycleService.MEDICATION_ZONE` (`Europe/Budapest`, mezo-8h2s) — before this fix `renderCycle` used the JVM's system-default zone while `getDay` used UTC, so scope=cycle and scope=all could disagree on the cycle day by one near either midnight | `Medication`/name |
 | `get_exercise_records(exercise)` (mezo-xixu) | `ExerciseRecordService.list` (compute-on-read over working sets, read-only) → no/blank `exercise`: top-5 lifts by best e1RM; with `exercise`: case-insensitive name-contains match(es) → bestSet, bestE1rm (Epley), repRecords, recentTopSets | `ExerciseRecord`/exercise name (≤5) |
 | `get_recipes(filter)` (mezo-xixu, scored match mezo-sxe) | `RecipeService.list` (read-only) → no/blank `filter`: name/category/whole-recipe kcal+protein/mezo-fit score list; with `filter`: accent-folded token match scored over name (4) > ingredient name (3) > slot/category/role/tag/fitsFor/starred (2), all-token hits winning over partial — the best scorer renders full macros + ingredient lines (the detail comes from the same `.list` response, not a separate `.get` call) | `Recipe`/recipe name (≤5) |
@@ -3614,6 +3804,9 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
   1000 chars and the snapshot rides EVERY turn, so this clip is load-bearing, not cosmetic.
 - `mezo.companion.snapshot.people-max-persons` = **12** (`@Min(0) @Max(30)`) — how many ACTIVE
   people the `[Emberek]` chat-snapshot block lists (newest mention first). `0` omits the block.
+- `mezo.companion.snapshot.lifegoal-max-goals` = **3** (`@Min(0) @Max(10)`) — how many active life
+  goals the `[Célok]` snapshot block lists, in BOTH the chat and morning variants (mezo-iizd.10).
+  `0` omits the block entirely.
 - `mezo.companion.tools.max-calls-per-turn` = **15** (`@Min(1) @Max(20)`, raised from 6 at
   mezo-xixu alongside the 8→15 tool expansion) — recorded tool calls per
   turn; past it every tool soft-fails with honest in-band text (V0.5).
@@ -3887,6 +4080,11 @@ and cooldown below is config, never code — `FlagEvaluator` holds no numbers of
 | `late-eating.absolute-hour` | `22.5` | fractional hour (`LATE_MEAL_HOUR`'s own unit) — a meal at/after this counts as late outright |
 | `late-eating.min-days-of-last-three` | `2` | qualifying days required inside the window to raise |
 | `late-eating.window-days` | `3` | the trailing window the qualifying-day count is taken over |
+| `protocol-lapse.consecutive-missed-days` | `2` | fire only on the Nth consecutive missed DUE day — N-1 misses are implicit grace days (Duolingo streak-freeze, deliberate) |
+| `protocol-lapse.history-window-days` | `30` | how far back the prior-habit adherence is measured, ending the day before the miss run |
+| `protocol-lapse.min-history-due-days` | `7` | honest small-n gate: fewer DUE days than this inside the history window ⇒ no habit to lose, so a brand-new item can never lapse |
+| `protocol-lapse.min-history-adherence` | `0.60` | taken/due ratio in the history window at/above which a live streak is credited |
+| `protocol-lapse.per-item-cooldown-days` | `7` | the spec's per-ITEM re-announce guard, enforced inside `ProtocolLapseRule` against its own past raises — NOT the same as `cooldown-hours.protocol-lapse` below (see the rule's entry above) |
 | `cooldown-hours.sustained-stress` | `24` | re-raise floor, per flag |
 | `cooldown-hours.sleep-debt` | `24` | ″ |
 | `cooldown-hours.momentum-at-risk` | `48` | ″ |
@@ -3900,13 +4098,15 @@ and cooldown below is config, never code — `FlagEvaluator` holds no numbers of
 | `cooldown-hours.joint-overuse` | `72` | ″ |
 | `cooldown-hours.ignored-nudge` | `72` | ″ |
 | `cooldown-hours.late-eating` | `48` | ″ — same-day/acute signal |
+| `cooldown-hours.protocol-lapse` | `24` | ″ — deliberately SHORT: the spec's real "7 days per item" cooldown lives inside `ProtocolLapseRule` itself (`protocol-lapse.per-item-cooldown-days` above); this key-level value only stops the SAME evaluation repeating within a day, so a DIFFERENT item lapsing tomorrow still gets a delivery window |
 
 Job switch `mezo.techcore.cron.flag-sweep-job.enabled`
 (`FeaturesConfiguration.FLAG_SWEEP_JOB_SWITCH`) — off ⇒ the `FlagSweepJob` bean does not exist;
 the on-write listener keeps running unaffected (it answers to `COMPANION_SWITCH` only).
 
-**The thirteen flags** (source of truth: the W5.1 plan's "The rules" table plus the S2 spec's §4
-rows 1/3 and the round-1 coaching spec 2026-09-03 §4's severity order for the S6 six — all windows
+**The fourteen flags** (source of truth: the W5.1 plan's "The rules" table plus the S2 spec's §4
+rows 1/3, the round-1 coaching spec 2026-09-03 §4's severity order for the S6 six, and the round-2
+S1 spec 2026-09-05 §(11) for `protocol_lapse` — all windows
 are whole days computed from `LocalDate.now()`; missing days stay absent, never invented — the
 `MetricSeriesService` rule — except `HABITS_DONE`/`COMBINED_LOAD_MIN` (calendar-complete), and
 `logging_gap`'s meal/check-in reads plus `acute_bad_day`'s check-in read, both of which bypass
@@ -3926,7 +4126,8 @@ are whole days computed from `LocalDate.now()`; missing days stay absent, never 
 | `joint_overuse` | 7-day `SHOULDER_STRAIN` avg ≥ `strain-avg-at-least` **and** tomorrow's planned gym session is `muscle-needle`-focused (via `findPlannedTemplateForDate`, never `getToday`) | `MetricKey.SHOULDER_STRAIN`, `WorkoutService.findPlannedTemplateForDate` |
 | `ignored_nudge` | the `category` push sent on `min-consecutive-days` consecutive evenings **and** every one of those nights' `BEDTIME_HOUR` missed the sleep anchor by more than `non-compliance-minutes`; requires a `sleep_goal` row; any unlogged/unsent/compliant night breaks the run | `push_log` (via `NudgeSendPort`), `MetricKey.BEDTIME_HOUR`, `SleepAnchorPort` |
 | `late_eating` | on ≥ `min-days-of-last-three` of the last `window-days` days, `LATE_MEAL_HOUR` is within `minutes-before-bed` of the (shifted) sleep anchor **or** ≥ `absolute-hour`; the bed arm needs a `sleep_goal` row, the absolute arm does not | `MetricKey.LATE_MEAL_HOUR`, `SleepAnchorPort` (bed arm only) |
-| `all_healthy` | none of the other twelve fire now, **and** no problem row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
+| `protocol_lapse` | one active protocol item missed on ≥ `consecutive-missed-days` consecutive DUE days, **and** ≥ `min-history-due-days` due days of adherence-≥`min-history-adherence` history immediately before the miss run; "due" is DERIVED, never stored — a `pre_workout`/`post_workout` item is due only on a day with a completed gym instance (a rest day is not a miss), every other item is due every day; the scan is bounded BELOW by the item's own `created_at` (a freshly added item cannot have "missed" a habit that never had room to exist), and the window ends YESTERDAY, never today (today is still in progress); the per-item 7-day re-announce cooldown lives inside the rule itself, separate from the 24h key-level cooldown below | `protocol_item`, `supplement_intake`, `WorkoutSessionRepository.findDoneInstanceDates` |
+| `all_healthy` | none of the other thirteen fire now, **and** no problem row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
 
 `all_healthy`'s "no problem row" check (`existsProblemRaiseSince`) excludes `all_healthy` itself,
 `logging_gap`, `ignored_nudge`, and (whole-branch review fix, bd `mezo-d58h.6`) `joint_overuse`:
@@ -3939,12 +4140,18 @@ health/behavior problem of the user's. `joint_overuse` joins by the same argumen
 intervention copy calls it a training tip, not an injury alert, and it fires on a conjunction (a
 7-day strain average plus tomorrow's schedule) the user did nothing to earn — for a user on a
 weekly shoulder split it is true roughly weekly, so counting it here would keep the seven-day quiet
-window from ever opening. The other nine flags — `missed_workouts` and the remaining four S6 keys
-(`acute_bad_day`, `load_fuel_mismatch`, `rapid_weight_loss`, `late_eating`) included — stay counted
-as problems, since each IS a genuine behavior/health signal, unlike a data gap, a failed nudge, or a
-forward-looking training advisory. The other suppression is unchanged: `FlagEvaluator` only runs
-`AllHealthyRule` when nothing else raised in that same evaluation, so `all_healthy` never appears
-alongside any other flag on the same day regardless of this query.
+window from ever opening. The other ten flags — `missed_workouts`, the remaining four S6 keys
+(`acute_bad_day`, `load_fuel_mismatch`, `rapid_weight_loss`, `late_eating`), and Round 2 S1's
+`protocol_lapse` included — stay counted as problems, since each IS a genuine behavior/health
+signal, unlike a data gap, a failed nudge, or a forward-looking training advisory. `protocol_lapse`
+stays counted rather than joining the exclusion list: a missed dose on its own due day is a real
+behavior lapse, not a data-availability gap (`logging_gap`'s argument) or the app's own delivery
+channel failing (`ignored_nudge`'s), so it must still be able to block the quiet window. The other
+suppression still holds the same outcome, but not the same mechanism since `mezo-6269.1`:
+`FlagEvaluator` now calls `AllHealthyRule` on every evaluation and overrides a RAISED verdict to
+CLEAR when another rule also raised, so `all_healthy` still never appears alongside any other flag
+on the same day, but the rule genuinely runs (and its suppression lands in `companion_flag_trace`)
+rather than never being invoked at all (see above).
 
 A flag is written only when `companion_flag_log` holds no row with that `flag_key` newer than
 `cooldown-hours.<flag>` — identical for both sources.
@@ -4716,6 +4923,19 @@ deduplicated batch GET, network-free mock state, optimistic rollback and the sup
 selection state and the two-tap destructive guard. `ChatPage.test.tsx` proves two assistant rows
 still cause one feedback batch request.
 
+**Synthetic Hungarian memory eval (`mezo-6dii.8`).**
+`MemoryEvalMetricsTest` pins the metric arithmetic with hand-calculated graded examples.
+`SyntheticMemoryCorpusGenerator` deterministically validates and reproduces `memory-hu-v1`; writing
+artifacts and approving the exact reviewed holdout are separate explicit system-property entry
+points. Its normal CI path also re-runs the generator's uniqueness, near-duplicate, persona-shape and
+minimum-size validators against the committed artifacts. `MemoryRetrievalDeterministicEvalIT` seeds
+real PostgreSQL/pgvector rows for all three users, runs OLD and NEW with the profile fake, compares
+both paths at final selected-context stage, emits both metric sets, and gates split integrity, a
+competitive same-axis ownership counterfactual, a modest geometry-only smoke floor, empty routing
+and zero cross-owner leakage. The committed holdout has 324
+questions, but fake vectors cannot validate Hungarian semantic quality, latency or the 85% Recall@5
+release threshold; those remain the opt-in real-provider responsibilities of `mezo-6dii.9`.
+
 **Daily evaluation (`mezo-jcpt.4`, plan 2/2).**
 `feature/companion/service/DayEvaluationEngineTest.java` is the formula's unit-level pin — one test
 per honesty rule, per dimension (asymmetric kcal bands, protein surplus forgiven/deficit counted,
@@ -4760,7 +4980,7 @@ test surface that would fail if the history were ever accidentally reglued into 
 (see also the dedicated history-separation IT below).
 
 **`ContextSnapshotAssemblerIT` (V0.3, 24 tests)** — the snapshot is fully assertable without any
-LLM: empty-user render (all eight blocks in order, every absence an explicit `nincs adat`, config
+LLM: empty-user render (all ten blocks in order, every absence an explicit `nincs adat`, config
 targets still render), profile+trend, latest weigh-in beside the trend (`mérés:` — populated vs.
 `nincs adat` with no weigh-in row vs. two same-day weigh-ins, where only `created_at` breaks the
 tie), current-week segment + planner selection, train digest +
@@ -5155,6 +5375,26 @@ IT):**
 - **`flags/FlagSweepJobSwitchOffIT`** — `mezo.techcore.cron.flag-sweep-job.enabled=false` ⇒ no
   `FlagSweepJob` bean (the house cron-switch idiom; the on-write listener is unaffected — a
   separate switch).
+
+**Coaching observer S1 test additions (`mezo-6269.1`, spec 2026-09-05 §4) — the verdict model and
+the evaluation trace:**
+
+- **`flags/service/FlagVerdictTest`** — the three factories build the right `FlagOutcome` and
+  reject a null `payload`/`clear`/`reason` for `raised`/`clear`/`unavailable` respectively;
+  `toRaise()` returns a `FlagRaise` for a RAISED verdict and `null` for the other two outcomes.
+- **`flags/CompanionFlagTracePersistenceIT`** — entity round-trip for all three `outcome` values
+  including the nullable `reason_code`/`disposition`/`evidence` combinations; an unknown
+  `flag_key`/`outcome`/`disposition` is rejected by the entity's `@Pattern`s AND, via a native
+  insert bypassing bean validation, by the DB CHECKs too;
+  `findFirstByCreatedByAndFlagKeyOrderByOccurredAtDesc` returns the newest row for that rule, and
+  `findByCreatedByAndOccurredAtBetweenOrderByOccurredAtAsc` returns a window's rows in time order.
+- **`flags/FlagServiceTraceIT`** — a RAISED-and-written verdict traces `outcome=raised,
+  disposition=logged`; a RAISED-but-cooling-down verdict traces `outcome=raised,
+  disposition=suppressed_by_cooldown` — the case `SUPPRESSED_BY_COOLDOWN` used to be computed and
+  then thrown away entirely, with no row anywhere recording it; a repeat of the identical verdict
+  (same outcome/reason/disposition) on a second evaluation writes no second trace row; a verdict
+  that genuinely changes (e.g. a flag's disposition flipping from `logged` to
+  `suppressed_by_cooldown` on the next cooldown-window evaluation) writes a new row.
 
 **W5.2 intervention delivery test additions (`mezo-b3pp.19`, spec §9.2) — no LLM anywhere in this
 path either (the `flags/` suite above already pins `FlagService`'s event publish; these are the
@@ -6118,6 +6358,15 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `frontend/src/features/insights/components/{RecalledMemoriesRow,ChatMessage}.tsx` +
   `frontend/src/features/insights/pages/ChatPage.tsx` — disclosure controls and one hook per thread.
 
+**Backend — synthetic Hungarian memory eval (`mezo-6dii.8` — §8)**
+
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/eval/{MemoryEvalCorpus,MemoryEvalMetrics,SyntheticMemoryCorpusGenerator,MemoryRetrievalDeterministicEvalIT,MemoryEvalMetricsTest}.java`
+  — immutable corpus/review shapes, metric arithmetic, deterministic generation plus approval entry
+  point, and network-free OLD-vs-NEW PostgreSQL regression runner.
+- `backend/src/test/resources/eval/memory/v1/{personas,development,tuning,holdout,review}.json`
+  — versioned three-persona corpus and SHA-bound human review metadata. `review.json` exists only
+  after the explicit holdout review/approval command; changing the holdout invalidates it.
+
 **Backend — feedback (W4.1, `mezo-b3pp.15` — §4/§5.7)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/controller/CompanionFeedbackController.java` — `implements CompanionFeedbackApi`, `COMPANION_SWITCH`-gated, ownership from `CurrentUserId`, thin delegation.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/feedback/service/MessageFeedbackService.java` — `put` (the honest `FEEDBACK_REASON_REQUIRES_DOWN` 400 before the upsert, then a re-read so the response is server truth — the can't-happen empty re-read raises `FEEDBACK_UPSERT_READBACK_FAILED` **500**: our fault, not the caller's) / `retract` (idempotent soft delete) / `list` (batch read).
@@ -6143,20 +6392,29 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 `missed_workouts` added S2, bd `mezo-d58h.2`; `acute_bad_day`/`load_fuel_mismatch`/
 `rapid_weight_loss`/`joint_overuse`/`ignored_nudge`/`late_eating` added S6 batch B, bd
 `mezo-d58h.6`, spec 2026-09-03 §4)**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/config/FlagProperties.java` — the `mezo.companion.flags.*` knobs (`sweepCron` + thirteen per-flag threshold records + `cooldownHours`), a feature-scoped `@Validated` record — the `FeedbackLearningProperties`/`ProfileProperties` precedent (§9).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/FlagPayloadEnvelope.java` — the typed jsonb payload, one nested record per rule + a static factory each (the `FeedbackRollupStatsEnvelope` precedent); thirteen variants since S6.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/CompanionFlagLogEntity.java` — `extends OwnedEntity`, append-only, soft-deletable, `flagKey`/`source` `@Pattern`-mirrored CHECKs — `flagKey`'s regex is the FOURTH mirror of the flag-key list (§3 above; `CompanionProperties.Intervention.flag` is the FIFTH), widened by S2 and again by S6.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/repository/CompanionFlagLogRepository.java` — `existsRaiseSince` (the cooldown gate) and `existsProblemRaiseSince` (the `all_healthy` quiet-window gate; its `NOT IN` exclusion list is a degrade-site the five formal mirrors do not cover — §3 above).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagKey.java` — the thirteen flag-key constants + `SOURCE_WRITE`/`SOURCE_SWEEP`, string constants mirroring the DB CHECKs (the `MessageFeedbackEntity` verdict/reason precedent).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaise.java` — one flag the evaluator says is TRUE right now, with its payload, before the cooldown gate is applied.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluator.java` — since S1 (`mezo-d58h.1`) a thin orchestrator calling thirteen `FlagRule` beans in a fixed order, LLM-free (§3).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRule.java` — S1 (`mezo-d58h.1`): the one-method rule contract, `evaluate(userId, today) → Optional<FlagRaise>`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/config/FlagProperties.java` — the `mezo.companion.flags.*` knobs (`sweepCron` + fourteen per-flag threshold records + `cooldownHours`), a feature-scoped `@Validated` record — the `FeedbackLearningProperties`/`ProfileProperties` precedent (§9).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/FlagPayloadEnvelope.java` — the typed jsonb payload, one nested record per rule + a static factory each (the `FeedbackRollupStatsEnvelope` precedent); fourteen variants since Round 2 S1.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/CompanionFlagLogEntity.java` — `extends OwnedEntity`, append-only, soft-deletable, `flagKey`/`source` `@Pattern`-mirrored CHECKs — `flagKey`'s regex is the FOURTH mirror of the flag-key list (§3 above; `CompanionProperties.Intervention.flag` is the FIFTH), widened by S2, again by S6, and again by Round 2 S1 (`protocol_lapse`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/repository/CompanionFlagLogRepository.java` — `existsRaiseSince` (the cooldown gate), `existsProblemRaiseSince` (the `all_healthy` quiet-window gate; its `NOT IN` exclusion list is a degrade-site the five formal mirrors do not cover — §3 above), and `findByCreatedByAndFlagKeyAndDeletedFalseAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc` (Round 2 S1: the seam `ProtocolLapseRule` reads its own past raises through, to enforce its per-item cooldown — §3 above).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagKey.java` — the fourteen flag-key constants + `SOURCE_WRITE`/`SOURCE_SWEEP`, string constants mirroring the DB CHECKs (the `MessageFeedbackEntity` verdict/reason precedent).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaise.java` — one flag the evaluator says is TRUE right now, with its payload; `FlagVerdict.toRaise()` (below) is the only way one gets built since `mezo-6269.1`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluator.java` — since S1 (`mezo-d58h.1`) a thin orchestrator calling fourteen `FlagRule` beans in a fixed order, LLM-free (§3); since `mezo-6269.1` also always calls `AllHealthyRule` and overrides it to CLEAR when another rule raised.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRule.java` — S1 (`mezo-d58h.1`): the one-method rule contract, `evaluate(userId, today) → FlagVerdict` (was `Optional<FlagRaise>` before `mezo-6269.1`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagVerdict.java` — `mezo-6269.1`, spec 2026-09-05 §4.1: the record replacing `Optional<FlagRaise>` — `RAISED`/`CLEAR`/`UNAVAILABLE`, one non-null payload field per outcome, factories only.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagOutcome.java` — `mezo-6269.1`: the three-value enum a verdict carries.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/UnavailableReason.java` — `mezo-6269.1`: one member per honesty gate across the 13 original rules, derived by reading every gate site in `service/rule/`; widened again by Round 2 S1 for `ProtocolLapseRule`'s own honesty gates.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/TraceDisposition.java` — `mezo-6269.1`: `LOGGED`/`SUPPRESSED_BY_COOLDOWN`, what `FlagService` did with a RAISED verdict; null when the rule did not fire.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagTraceWriter.java` — `mezo-6269.1`: appends to `companion_flag_trace` only when a rule's verdict changed since its own last row (the comparison includes `disposition`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/entity/CompanionFlagTraceEntity.java` — `mezo-6269.1`: `extends OwnedEntity`, soft-deletable, `@Pattern`-mirrored CHECKs on `flagKey`/`outcome`/`disposition`, jsonb `evidence`; `flagKey`'s regex widened again post-merge (bd `mezo-d58h.7.1`) for `protocol_lapse`, since the trace slice and the protocol_lapse slice were developed in parallel and neither knew about the other's flag key.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/repository/CompanionFlagTraceRepository.java` — `mezo-6269.1`: `findFirstByCreatedByAndFlagKeyOrderByOccurredAtDesc` (the transition comparison) and `findByCreatedByAndOccurredAtBetweenOrderByOccurredAtAsc` (the day-timeline read).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609051200_mezo-6269.1_companion_flag_trace.sql` — the table (in `1.0.0_master.yml`); `202609051700_mezo-d58h.7.1_flag_key_trace_protocol_lapse.sql` (immediately after, same file) widens `ck_companion_flag_trace_flag_key` for `protocol_lapse` rather than editing the already-shipped changeset above.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/NudgeSendPort.java` — S6 (bd `mezo-d58h.6`): the companion-owned port `IgnoredNudgeRule` reads sent `push_log` rows through, avoiding a `companion → notification` import that would close the existing `notification → companion` cycle.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/{SustainedStressRule,SleepDebtRule,MomentumAtRiskRule,RecoveryNeededRule,AllHealthyRule}.java` — S1 (`mezo-d58h.1`): the original five rules, one class each, pure arithmetic over `MetricSeriesService`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/SleepDeficitCalculator.java` — S2 (bd `c6c045082`): the shared sleep-deficit-vs-goal computation, extracted out of `SleepDebtRule` so `LoggingGapRule`'s suspicion variant can reuse it (§3).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/LoggingGapRule.java` — S2 (bd `mezo-d58h.2`): the `logging_gap` rule; reads `MealRepository`/`CheckInRepository`/`SleepLogRepository` directly, not `MetricSeriesService` (§3 recency-read exception).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/MissedWorkoutsRule.java` — S2 (bd `mezo-d58h.2`): the `missed_workouts` rule; consecutive-in-planned-days-not-calendar-days logic (§3).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/{AcuteBadDayRule,LoadFuelMismatchRule,RapidWeightLossRule,JointOveruseRule,IgnoredNudgeRule,LateEatingRule}.java` — S6 batch B (bd `mezo-d58h.6`): the epic's last six rules, in severity order (§3 above has each one's own honesty gate).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/{AcuteBadDayRule,LoadFuelMismatchRule,RapidWeightLossRule,JointOveruseRule,IgnoredNudgeRule,LateEatingRule}.java` — S6 batch B (bd `mezo-d58h.6`): six rules, in severity order (§3 above has each one's own honesty gate).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/ProtocolLapseRule.java` — Round 2 S1 (bd `mezo-d58h.7.1`, spec 2026-09-05 §(11)): the epic's next new detection, `protocol_lapse` — derived due-days, the `created_at` lower bound, the yesterday-ending window, and the rule-internal per-item cooldown (§3 above has the full honesty-gate writeup).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagService.java` — the cooldown gate + append (`evaluateAndLog`), the ONLY write path into `companion_flag_log`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluationListener.java` — the on-write trigger, `@Async @TransactionalEventListener(AFTER_COMMIT)` on `CheckInSavedEvent`/`SleepLogSavedEvent`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagSweepJob.java` — the hourly sweep (`mezo.companion.flags.sweep-cron`), own job switch, per-user try/catch — the caller whose per-user, hourly cadence is what made the S6 bounded-read prerequisite fixes (§3 above) actually matter.
@@ -6164,9 +6422,11 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/techcore/configuration/FeaturesConfiguration.java` — `FLAG_SWEEP_JOB_SWITCH` (`mezo.techcore.cron.flag-sweep-job.enabled`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608241200_mezo-b3pp.18_create_companion_flag_log.sql` — the table (in `1.0.0_master.yml`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609031200_mezo-d58h.2_flag_key_logging_gap_missed_workouts.sql` — S2: widens `ck_companion_flag_log_flag_key` to seven keys.
-- `backend/src/main/resources/db/changelog/1.0.0/script/202609041200_mezo-d58h.6_flag_key_batch_b.sql` — S6: widens `ck_companion_flag_log_flag_key` to the thirteen keys.
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT,FlagEvaluatorLoggingGapIT,FlagEvaluatorMissedWorkoutsIT,FlagEvaluatorAcuteBadDayIT,FlagEvaluatorLoadFuelMismatchIT,FlagEvaluatorRapidWeightLossIT,FlagEvaluatorJointOveruseIT,FlagEvaluatorIgnoredNudgeIT,FlagEvaluatorLateEatingIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. **Since W5.2 (`mezo-b3pp.19`), `FlagRaisedEvent` (below) is the consumer** — see the next block.
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609041200_mezo-d58h.6_flag_key_batch_b.sql` — S6: widens `ck_companion_flag_log_flag_key` to thirteen keys.
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609051600_mezo-d58h.7.1_flag_key_protocol_lapse.sql` — Round 2 S1: widens `ck_companion_flag_log_flag_key` to the fourteen keys (`protocol_lapse`).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT,FlagEvaluatorLoggingGapIT,FlagEvaluatorMissedWorkoutsIT,FlagEvaluatorAcuteBadDayIT,FlagEvaluatorLoadFuelMismatchIT,FlagEvaluatorRapidWeightLossIT,FlagEvaluatorJointOveruseIT,FlagEvaluatorIgnoredNudgeIT,FlagEvaluatorLateEatingIT,FlagEvaluatorProtocolLapseIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. **Since W5.2 (`mezo-b3pp.19`), `FlagRaisedEvent` (below) is the consumer** — see the next block.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaisedEvent.java` — W5.2 (bd `mezo-b3pp.19`): the `{userId, flagKey, source}` event `FlagService.evaluateAndLog` publishes for every WRITTEN raise, inside the logging transaction (§3/§4 above).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagTracePersistenceIT,FlagServiceTraceIT}.java` + `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagVerdictTest.java` — `mezo-6269.1`, §8.
 
 **Backend — intervention delivery (W5.2, `mezo-b3pp.19` — §4/§5.8/§9, spec §9.2; consumer side, lives in `feature.proactive` not `feature.companion`)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/InterventionEventListener.java` — `@Async @TransactionalEventListener(AFTER_COMMIT)` on `FlagRaisedEvent`, the `CompanionMessageEventListener` template; catches and warns rather than propagating.
@@ -6296,6 +6556,18 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - New plain finders in the owning features: `SleepLogRepository` (since-date), `WorkoutSessionRepository.findDoneInstancesBetween`, `SupplementIntakeRepository` (since-date); shared `GoalPrescriptionJson.currentSegment`.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase (`@Tag("eval")`, opt-in, real `GeminiCompanionLlm`, 40-case Hungarian question set, baseline 37/40 = 92.5%).
 - `docs/references/companion_tool_conventions.md` — the mezo-xixu `@Tool` description house rule (the `[Eszköz-útmutató]` routing hint's model-facing mirror).
+
+**Backend — `[Célok]` life-goal snapshot block + `get_life_goals` tool (`mezo-iizd.10`)**
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/LifeGoalSource.java` — the companion-owned port (`summary`/`details`), the `TodayQuestSource` pattern applied to life goals; lifegoal → companion stays the import direction.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/service/LifeGoalCompanionAdapter.java` — the `LIFEGOAL_SWITCH`-gated implementation; see [`lifegoal.md`](lifegoal.md) §3/§9 for the read-only "ma él" re-evaluation (incl. `ritual_missed`'s last-closed-day + adoption-window gate).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/LifeGoalSnapshotBlock.java` — renders `[Célok]`, `COMPANION_SWITCH`-gated, read through `ObjectProvider<LifeGoalSource>`; spliced into `ContextSnapshotAssembler.render` AND `renderWithoutBiometrics` right after `[Cél]`.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/LifeGoalText.java` — shared dimension/arrow-word Hungarian renderers used by both the snapshot block and the tool.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/LifeGoalTools.java` — the `get_life_goals` `@Tool`, bringing the tool count to 18; the only tool bean that reads a port instead of its own feature's services (companion → lifegoal would close a 2-slice cycle).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/config/CompanionProperties.java` — `Snapshot.lifegoalMaxGoals` (`mezo.companion.snapshot.lifegoal-max-goals`, default 3, `@Min(0) @Max(10)`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/ChatService.java` — `[Eszköz-útmutató]` gained the `get_life_goals` routing line; the `[Mit szabad állítani]`-adjacent system-prompt prose gained the `[Célok]` block's meaning (background, not a nudge to repeat).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/CompanionMessageGenerator.java` — `MORNING_PROMPT` point (6): the model may reference life goals supportively but must not repeat the separate ha–akkor plan reminder (that ships through `LifeGoalTriggerService`'s feed notification).
+- `frontend/src/features/insights/logic/{toolDomains.ts,chatRefs.ts}` — `get_life_goals` tool chip (label "Életcélok") + `LifeGoal` ref kind (label "Életcél", gold wash, `i-cel` icon).
+- Tests: `LifeGoalCompanionAdapterIT` (incl. `testSummary_shouldMarkDelayedPlanLiveOnToday_asADocumentedSimplification`), `LifeGoalSnapshotBlockTest`, `ContextSnapshotAssemblerIT` (block present in both variants), `CompanionToolsRenderIT` (`get_life_goals`), `CompanionPropertiesIT`.
 
 **Backend — journal embedding seam (`mezo-b3pp.1`, Phase 5 W1.1, post-epic — full detail in [`journal.md`](journal.md))**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/embedding/JournalEmbeddingListener.java` — the AFTER_COMMIT/`@Async` trigger on `feature/journal`'s two events, gated on `COMPANION_SWITCH` + `JournalService`'s own switch (`FeaturesConfiguration.JOURNAL_SWITCH`).

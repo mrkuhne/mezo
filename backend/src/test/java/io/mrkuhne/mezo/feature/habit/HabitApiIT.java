@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.HabitCheckRequest;
 import io.mrkuhne.mezo.api.dto.HabitDayResponse;
 import io.mrkuhne.mezo.api.dto.HabitDefAdmin;
 import io.mrkuhne.mezo.api.dto.HabitDefCreateRequest;
+import io.mrkuhne.mezo.api.dto.HabitFormationResponse;
 import io.mrkuhne.mezo.api.dto.HabitSummaryResponse;
 import io.mrkuhne.mezo.api.dto.HabitWriteResponse;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
@@ -48,6 +49,14 @@ class HabitApiIT extends ApiIntegrationTest {
         String unknown = postForBody("/api/habit/nope/check", body,
             ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
         assertHasRequestError(unknown, "HABIT_UNKNOWN");
+    }
+
+    @Test
+    void testCheckHabit_shouldReject_whenOutsideBackfillWindow() {
+        HabitCheckRequest body = HabitCheckRequest.builder().date(LocalDate.now().minusDays(2)).build();
+        String tooOld = postForBody("/api/habit/morning_sunlight/check", body,
+            ownerAuthHeaders(), HttpStatus.CONFLICT, String.class);
+        assertHasRequestError(tooOld, "HABIT_TOO_OLD");
     }
 
     @Test
@@ -99,5 +108,39 @@ class HabitApiIT extends ApiIntegrationTest {
         assertThat(res.getHabit().getStatus().getValue()).isEqualTo("done");
         assertThat(res.getHabit().getXp()).isEqualTo(10);
         assertThat(res.getLevelUps()).isNotEmpty();
+    }
+
+    @Test
+    void testGetHabitFormation_shouldReturnTheNullState_whenTheHabitIsFresh() {
+        // getDay is the one catalog bootstrap point (formation is readOnly and never bootstraps),
+        // so read the day first — the honest real-world order, same as the summary test above.
+        getForBody("/api/habit/day/" + LocalDate.now(), ownerAuthHeaders(), HttpStatus.OK, HabitDayResponse.class);
+
+        HabitFormationResponse f = getForBody("/api/habit/formation/morning_sunlight",
+            ownerAuthHeaders(), HttpStatus.OK, HabitFormationResponse.class);
+
+        assertThat(f.getKey()).isEqualTo("morning_sunlight");
+        assertThat(f.getReps()).isZero();
+        assertThat(f.getMissed()).isZero();
+        assertThat(f.getThresholdPct()).isEqualTo(90); // echoed config, so FE copy cannot drift
+        assertThat(f.getMinReps()).isEqualTo(5);
+        // The honesty rule: no repetitions yet -> no percentage and no ETA of any kind.
+        assertThat(f.getAutomaticityPct()).isNull();
+        assertThat(f.getCurveK()).isNull();
+        assertThat(f.getConsistencyPct()).isNull();
+        assertThat(f.getRepsToThresholdLo()).isNull();
+        assertThat(f.getWeeksToThresholdHi()).isNull();
+        assertThat(f.getRepsPerWeek()).isNull();
+        assertThat(f.getDays()).hasSize(1); // today's freshly materialized pending row
+        assertThat(f.getDays().getFirst().getStatus().getValue()).isEqualTo("pending");
+    }
+
+    @Test
+    void testGetHabitFormation_shouldReject_whenTheKeyIsUnknown() {
+        getForBody("/api/habit/day/" + LocalDate.now(), ownerAuthHeaders(), HttpStatus.OK, HabitDayResponse.class);
+
+        String err = getForBody("/api/habit/formation/nope",
+            ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+        assertHasRequestError(err, "HABIT_UNKNOWN");
     }
 }

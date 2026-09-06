@@ -125,6 +125,34 @@ class LifeGoalScorerTest {
         assertThat(LifeGoalScorer.scoreDay("average", empty, DAY, SignalWindow.of(vals)).status()).isEqualTo("no_data");
     }
 
+    @Test
+    void testScoreAverage_shouldReturnPlainMiss_whenThresholdIsZeroAndAverageIsOnTheBadSide() {
+        // threshold=0, comparator=lte, avg=0.5 (bad side of the threshold): the +-10% band around
+        // a zero threshold is degenerate (division by |threshold|=0), and this must resolve to a
+        // plain "miss", never a "partial" band-hit. NOTE: this assertion alone does not prove the
+        // scorer's `threshold != 0` guard clause is what enforces that — with double arithmetic,
+        // 0.5/0 -> Infinity, and Infinity <= 0.10 is already false by IEEE-754 semantics, so this
+        // case passes independently of the guard. The guard remains documented, load-bearing
+        // production intent (see LifeGoalScorer.scoreAverage); this test only pins the observable
+        // contract (zero threshold + miss-side average => "miss"), not the mechanism.
+        Map<LocalDate, BigDecimal> vals = new HashMap<>();
+        for (int i = 0; i < 7; i++) vals.put(DAY.minusDays(i), new BigDecimal("0.5"));
+        PillarRuleJson rule = new PillarRuleJson(BigDecimal.ZERO, "lte", null, 7, null, null, null, null, null, null);
+        assertThat(LifeGoalScorer.scoreDay("average", rule, DAY, SignalWindow.of(vals)).status()).isEqualTo("miss");
+    }
+
+    @Test
+    void testScoreAverage_shouldReturnPartial_whenAverageSitsExactlyOnTheTenPercentBoundary() {
+        // threshold=10, comparator=gte, avg=9.0 -> |9-10|/10 == 0.10 exactly -> the <= comparison
+        // must still call this partial, not miss.
+        Map<LocalDate, BigDecimal> vals = new HashMap<>();
+        for (int i = 0; i < 7; i++) vals.put(DAY.minusDays(i), new BigDecimal("9.0"));
+        PillarRuleJson rule = new PillarRuleJson(new BigDecimal("10"), "gte", null, 7, null, null, null, null, null, null);
+        PillarDayScore s = LifeGoalScorer.scoreDay("average", rule, DAY, SignalWindow.of(vals));
+        assertThat(s.value()).isEqualByComparingTo("9.000");
+        assertThat(s.status()).isEqualTo("partial");
+    }
+
     // ---- target ----
 
     @Test
@@ -175,6 +203,29 @@ class LifeGoalScorerTest {
         PillarRuleJson empty = new PillarRuleJson(null, null, null, null, null, null, null, null, null, null);
         SignalWindow w = SignalWindow.of(Map.of(DAY, new BigDecimal("55")));
         assertThat(LifeGoalScorer.scoreDay("target", empty, DAY, w).status()).isEqualTo("no_data");
+    }
+
+    @Test
+    void testScoreTarget_shouldClampExpectedAtTargetValue_whenDayIsPastTargetDate() {
+        // start 0 → target 100 over 10 days, direction up; day = startDate + 20 (targetDate + 10)
+        PillarRuleJson rule = new PillarRuleJson(null, null, null, null, new BigDecimal("0"),
+            new BigDecimal("100"), DAY.minusDays(20), DAY.minusDays(10), "up", null);
+        // value 100 on that day → expected must clamp to 100 (not extrapolate to 200) → hit
+        SignalWindow w = SignalWindow.of(Map.of(DAY, new BigDecimal("100")));
+        PillarDayScore s = LifeGoalScorer.scoreDay("target", rule, DAY, w);
+        assertThat(s.target()).isEqualByComparingTo("100");
+        assertThat(s.status()).isEqualTo("hit");
+    }
+
+    @Test
+    void testScoreTarget_shouldClampExpectedAtStartValue_whenDayIsBeforeStartDate() {
+        PillarRuleJson rule = new PillarRuleJson(null, null, null, null, new BigDecimal("0"),
+            new BigDecimal("100"), DAY, DAY.plusDays(10), "up", null);
+        // day = startDate - 5, value = startValue → expected must clamp to startValue → hit
+        SignalWindow w = SignalWindow.of(Map.of(DAY.minusDays(5), new BigDecimal("0")));
+        PillarDayScore s = LifeGoalScorer.scoreDay("target", rule, DAY.minusDays(5), w);
+        assertThat(s.target()).isEqualByComparingTo("0");
+        assertThat(s.status()).isEqualTo("hit");
     }
 
     // ---- baseline ----
@@ -304,6 +355,30 @@ class LifeGoalScorerTest {
         assertThat(s.status()).isEqualTo("partial");
     }
 
+    @Test
+    void testScoreLinked_shouldUseSymmetricBand_whenTargetLineIsFlat() {
+        // maintenance goal: target pace line is flat (both target days share the same value)
+        Map<LocalDate, BigDecimal> expected = Map.of(
+            DAY.minusDays(1), new BigDecimal("88.0"),
+            DAY, new BigDecimal("88.0"));
+
+        // trend = expected + 0.5 → outside ±0.3 symmetric band → partial
+        PillarDayScore above = LifeGoalScorer.scoreDay("linked", LINKED_RULE, DAY,
+            new SignalWindow(Map.of(DAY, new BigDecimal("88.5")), expected));
+        assertThat(above.status()).isEqualTo("partial");
+
+        // trend = expected + 0.2 → inside ±0.3 symmetric band → hit
+        PillarDayScore withinAbove = LifeGoalScorer.scoreDay("linked", LINKED_RULE, DAY,
+            new SignalWindow(Map.of(DAY, new BigDecimal("88.2")), expected));
+        assertThat(withinAbove.status()).isEqualTo("hit");
+
+        // trend = expected - 0.5 → outside ±0.3 symmetric band → partial (old one-sided
+        // "gaining" rule would have called this a hit since it only penalized drifting down)
+        PillarDayScore below = LifeGoalScorer.scoreDay("linked", LINKED_RULE, DAY,
+            new SignalWindow(Map.of(DAY, new BigDecimal("87.5")), expected));
+        assertThat(below.status()).isEqualTo("partial");
+    }
+
     // ---- unknown kind ----
 
     @Test
@@ -366,6 +441,19 @@ class LifeGoalScorerTest {
         for (int i = 7; i < 28; i++) series.put(DAY.minusDays(i), 0.5);
         for (int i = 0; i < 7; i++) series.put(DAY.minusDays(i), 0.55);
         assertThat(LifeGoalScorer.arrow(series, DAY)).isEqualTo("flat");
+    }
+
+    @Test
+    void testArrow_shouldReturnInsufficient_whenOnlyFourDataDaysInShortWindow() {
+        // Only 4 of the 7 short-window days have data (min is ARROW_MIN_DATA_DAYS=5); the long
+        // window is plentifully supplied, so a bug that only gated the long window would miss this.
+        Map<LocalDate, Double> series = new HashMap<>();
+        series.put(DAY, 0.6);
+        series.put(DAY.minusDays(1), 0.6);
+        series.put(DAY.minusDays(2), 0.6);
+        series.put(DAY.minusDays(3), 0.6);
+        for (int i = 7; i < 28; i++) series.put(DAY.minusDays(i), 0.5);
+        assertThat(LifeGoalScorer.arrow(series, DAY)).isEqualTo("insufficient");
     }
 
     @Test

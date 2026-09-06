@@ -129,10 +129,11 @@ public class ContextSnapshotAssembler {
     private final ObjectProvider<IntentionService> intentionService;
     private final ObjectProvider<RitualService> ritualService;
     private final PeopleSnapshotBlock peopleSnapshotBlock;
+    private final LifeGoalSnapshotBlock lifeGoalSnapshotBlock;
     private final CompanionProperties properties;
 
     /**
-     * The chat-turn variant — nine blocks, {@code [Emberek]} ({@link PeopleSnapshotBlock}) sitting
+     * The chat-turn variant — ten blocks, {@code [Emberek]} ({@link PeopleSnapshotBlock}) sitting
      * between {@code [Napi gyakorlat]} and {@code [Mai üzemanyag]}. Chat-only: see
      * {@link #renderWithoutBiometrics} for why the morning message never sees the circle.
      */
@@ -140,6 +141,7 @@ public class ContextSnapshotAssembler {
         return HEADER + today + "):\n"
                 + profileBlock(userId, today, true) + '\n'
                 + goalBlock(userId, today) + '\n'
+                + lifeGoalLine(userId, today)
                 + trainBlock(userId, today) + '\n'
                 + growthBlock(userId, today) + '\n'
                 + practiceBlock(userId, today) + '\n'
@@ -160,9 +162,16 @@ public class ContextSnapshotAssembler {
         return block.isEmpty() ? "" : block + '\n';
     }
 
+    /** mezo-iizd.10: [Célok] MINDKÉT variánsban — user-döntés: a reggeli cél-emlékeztető kívánt,
+     *  támogató nudge (eltérés az [Emberek] chat-only precedensétől). "" ha konfigurálva ki. */
+    private String lifeGoalLine(UUID userId, LocalDate today) {
+        String block = lifeGoalSnapshotBlock.render(userId, today);
+        return block.isEmpty() ? "" : block + '\n';
+    }
+
     /**
-     * The morning-message variant (companion-feed, spec §3): eight blocks — the same composition
-     * as {@link #render}'s nine minus the [Emberek] circle (mezo-x6oa: that would be the
+     * The morning-message variant (companion-feed, spec §3): nine blocks — the same composition
+     * as {@link #render}'s ten minus the [Emberek] circle (mezo-x6oa: that would be the
      * companion bringing people up unprompted) — and it strips weight/sleep entirely at the
      * source. The morning message is generated BEFORE those get logged for the day, and a prompt
      * prohibition alone is not enough (the model would still see and could still leak the
@@ -172,6 +181,7 @@ public class ContextSnapshotAssembler {
         return HEADER + today + "):\n"
                 + profileBlock(userId, today, false) + '\n'
                 + goalBlock(userId, today) + '\n'
+                + lifeGoalLine(userId, today)
                 + trainBlock(userId, today) + '\n'
                 + growthBlock(userId, today) + '\n'
                 + practiceBlock(userId, today) + '\n'

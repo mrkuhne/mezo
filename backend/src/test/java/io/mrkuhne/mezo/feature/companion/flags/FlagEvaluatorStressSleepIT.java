@@ -4,7 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagEvaluator;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagOutcome;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.CheckInPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
@@ -30,7 +31,15 @@ class FlagEvaluatorStressSleepIT extends AbstractIntegrationTest {
     }
 
     private List<String> keys(UUID owner) {
-        return evaluator.evaluate(owner).stream().map(FlagRaise::flagKey).toList();
+        return raisedKeys(evaluator.evaluate(owner));
+    }
+
+    /** The keys that actually RAISED — the old evaluate() return, reconstructed. */
+    private static List<String> raisedKeys(List<FlagVerdict> verdicts) {
+        return verdicts.stream()
+            .filter(v -> v.outcome() == FlagOutcome.RAISED)
+            .map(FlagVerdict::flagKey)
+            .toList();
     }
 
     @Test
@@ -202,13 +211,75 @@ class FlagEvaluatorStressSleepIT extends AbstractIntegrationTest {
         checkInPopulator.createCheckIn(owner, today.minusDays(1), "08:00", 4, 8, null);
         checkInPopulator.createCheckIn(owner, today.minusDays(2), "08:00", 4, 8, null);
 
-        FlagRaise raise = evaluator.evaluate(owner).stream()
-            .filter(r -> FlagKey.SUSTAINED_STRESS.equals(r.flagKey())).findFirst().orElseThrow();
+        FlagVerdict verdict = evaluator.evaluate(owner).stream()
+            .filter(v -> FlagKey.SUSTAINED_STRESS.equals(v.flagKey())).findFirst().orElseThrow();
 
-        assertThat(raise.payload().sustainedStress().threshold()).isEqualTo(7.0);
-        assertThat(raise.payload().sustainedStress().daysOverThreshold()).isEqualTo(3);
-        assertThat(raise.payload().sustainedStress().stressByDay())
+        assertThat(verdict.payload().sustainedStress().threshold()).isEqualTo(7.0);
+        assertThat(verdict.payload().sustainedStress().daysOverThreshold()).isEqualTo(3);
+        assertThat(verdict.payload().sustainedStress().stressByDay())
             .containsEntry(today.toString(), 8.0)
             .hasSize(3);
+    }
+
+    @Test
+    void sustained_stress_is_unavailable_with_no_checkin_data() {
+        UUID owner = ownerId();
+
+        FlagVerdict verdict = evaluator.evaluate(owner).stream()
+            .filter(v -> FlagKey.SUSTAINED_STRESS.equals(v.flagKey())).findFirst().orElseThrow();
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
+        assertThat(verdict.reason())
+            .isEqualTo(io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason.NO_CHECKIN_DATA);
+    }
+
+    @Test
+    void sustained_stress_is_clear_when_days_over_threshold_is_just_under_min_days() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        // minDays=3: only 2 days over threshold — clear, one below the boundary.
+        checkInPopulator.createCheckIn(owner, today, "08:00", 4, 9, null);
+        checkInPopulator.createCheckIn(owner, today.minusDays(1), "08:00", 4, 9, null);
+        checkInPopulator.createCheckIn(owner, today.minusDays(2), "08:00", 4, 3, null);
+
+        FlagVerdict verdict = evaluator.evaluate(owner).stream()
+            .filter(v -> FlagKey.SUSTAINED_STRESS.equals(v.flagKey())).findFirst().orElseThrow();
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("stress_days_over");
+        assertThat(verdict.clear().observed()).isLessThan(verdict.clear().threshold());
+    }
+
+    @Test
+    void sleep_debt_is_clear_when_deficit_is_just_under_threshold() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        sleepGoalPopulator.goal(owner, 480, "WAKE", "06:30", 15); // 8.0 h
+        sleepLogPopulator.createSleepLog(owner, today, new BigDecimal("7.1"), 3);
+        sleepLogPopulator.createSleepLog(owner, today.minusDays(1), new BigDecimal("7.1"), 3);
+        sleepLogPopulator.createSleepLog(owner, today.minusDays(2), new BigDecimal("7.1"), 3);
+        // deficit = 0.9 * 3 = 2.7, just under the 3.0 threshold.
+
+        FlagVerdict verdict = evaluator.evaluate(owner).stream()
+            .filter(v -> FlagKey.SLEEP_DEBT.equals(v.flagKey())).findFirst().orElseThrow();
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("deficit_hours");
+        assertThat(verdict.clear().observed()).isLessThan(verdict.clear().threshold());
+    }
+
+    @Test
+    void sleep_debt_is_unavailable_when_too_few_nights_logged() {
+        UUID owner = ownerId();
+        sleepGoalPopulator.goal(owner, 480, "WAKE", "06:30", 15);
+        sleepLogPopulator.createSleepLog(owner, LocalDate.now().minusDays(1), new BigDecimal("3.0"), 3);
+        // one logged night only, below min-nights.
+
+        FlagVerdict verdict = evaluator.evaluate(owner).stream()
+            .filter(v -> FlagKey.SLEEP_DEBT.equals(v.flagKey())).findFirst().orElseThrow();
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
+        assertThat(verdict.reason())
+            .isEqualTo(io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason.NOT_ENOUGH_LOGGED_NIGHTS);
     }
 }

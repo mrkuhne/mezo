@@ -23,5 +23,6 @@ public interface LifeGoalProposePort {
     record Proposal(String dimension, String secondaryDimension, String frame, String frameNote, String reframedWhy,
         List<PillarProposal> pillars, List<String> obstacles, List<PlanProposal> plans) {}
 
-    Optional<Proposal> propose(UUID userId, String title, String whyText, String catalogText, Set<String> skillKeys);
+    Optional<Proposal> propose(UUID userId, String title, String whyText, String catalogText,
+        Set<String> catalogIds, Set<String> skillKeys);
 }

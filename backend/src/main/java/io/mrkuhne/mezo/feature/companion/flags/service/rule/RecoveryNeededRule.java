@@ -3,14 +3,15 @@ package io.mrkuhne.mezo.feature.companion.flags.service.rule;
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.function.DoublePredicate;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,7 @@ public class RecoveryNeededRule implements FlagRule {
      * whole days with today included — the three signals rarely land on one calendar day).
      */
     @Override
-    public Optional<FlagRaise> evaluate(UUID userId, LocalDate today) {
+    public FlagVerdict evaluate(UUID userId, LocalDate today) {
         FlagProperties.Recovery cfg = properties.recovery();
         LocalDate from = today.minusDays(cfg.windowDays() - 1L);
 
@@ -45,14 +46,32 @@ public class RecoveryNeededRule implements FlagRule {
             v -> v >= cfg.stressThreshold());
 
         if (poorSleep == null || highRpe == null || highStress == null) {
-            return Optional.empty();
+            int matched = 0;
+            List<String> missing = new ArrayList<>();
+            if (poorSleep != null) {
+                matched++;
+            } else {
+                missing.add("sleep");
+            }
+            if (highRpe != null) {
+                matched++;
+            } else {
+                missing.add("rpe");
+            }
+            if (highStress != null) {
+                matched++;
+            } else {
+                missing.add("stress");
+            }
+            return FlagVerdict.clear(FlagKey.RECOVERY_NEEDED, new FlagVerdict.ClearEvidence(
+                "signals_matched", (double) matched, 3.0, String.join(",", missing)));
         }
-        return Optional.of(new FlagRaise(FlagKey.RECOVERY_NEEDED,
+        return FlagVerdict.raised(FlagKey.RECOVERY_NEEDED,
             FlagPayloadEnvelope.recoveryNeeded(new FlagPayloadEnvelope.RecoveryNeeded(
                 cfg.windowDays(), cfg.sleepFloorHours(), cfg.rpeThreshold(), cfg.stressThreshold(),
                 poorSleep.getValue(), poorSleep.getKey().toString(),
                 highRpe.getValue(), highRpe.getKey().toString(),
-                highStress.getValue(), highStress.getKey().toString()))));
+                highStress.getValue(), highStress.getKey().toString())));
     }
 
     /** The newest day in the series whose value satisfies {@code test}, or null. */

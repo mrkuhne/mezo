@@ -53,8 +53,6 @@ import org.springframework.transaction.annotation.Transactional;
 @ConditionalOnProperty(name = FeaturesConfiguration.LIFEGOAL_SWITCH, havingValue = "true")
 public class LifeGoalTriggerService {
 
-    private static final String STATUS_ACTIVE = "active";
-
     /** A késleltetett ág lezárt napjai — ugyanaz a hármas, amit az {@code evaluateDays} ír. */
     private static final int DELAYED_CLOSED_DAYS = 3;
 
@@ -66,7 +64,7 @@ public class LifeGoalTriggerService {
     @Transactional(readOnly = true)
     public void fireImmediate(UUID userId, String triggerSource, LocalDate day) {
         for (LifeGoalEntity goal : goalRepository.findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(userId)) {
-            if (!STATUS_ACTIVE.equals(goal.getStatus())) {
+            if (!LifeGoalEntity.STATUS_ACTIVE.equals(goal.getStatus())) {
                 continue;
             }
             evaluatePlans(userId, goal, day, triggerSource, false);
@@ -79,7 +77,7 @@ public class LifeGoalTriggerService {
      */
     @Transactional(readOnly = true)
     public void fireDelayed(UUID userId, LifeGoalEntity goal, LocalDate today) {
-        if (!STATUS_ACTIVE.equals(goal.getStatus())) {
+        if (!LifeGoalEntity.STATUS_ACTIVE.equals(goal.getStatus())) {
             return;
         }
         for (int back = 1; back <= DELAYED_CLOSED_DAYS; back++) {

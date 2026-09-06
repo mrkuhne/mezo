@@ -41,7 +41,7 @@ jobs:
       frontend_changed: ${{ steps.eff.outputs.frontend_changed }}
       backend_changed: ${{ steps.eff.outputs.backend_changed }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0        # full history + tags for semver + diff
       - id: calc
@@ -71,13 +71,15 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
-      - uses: actions/setup-node@v4
+          # No `version:` — the pin lives in frontend/package.json's `packageManager`
+          # field, so CI and every local shell resolve the SAME pnpm (mezo-q8oy).
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
@@ -91,12 +93,12 @@ jobs:
           # subscribe() rejects with InvalidAccessError on the real device.
           VITE_VAPID_PUBLIC: ${{ vars.VITE_VAPID_PUBLIC }}
         run: pnpm build
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: frontend
           platforms: linux/amd64
@@ -111,20 +113,20 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4    # full repo so ../api contract is present
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7    # full repo so ../api contract is present
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21
           cache: maven
       - name: Package (skip tests — local pre-push gate; mezo-oa3)
         run: ./mvnw -B clean package -DskipTests
-      - uses: docker/login-action@v3
+      - uses: docker/login-action@v4
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
+      - uses: docker/build-push-action@v7
         with:
           context: backend
           platforms: linux/amd64
@@ -141,35 +143,16 @@ jobs:
            needs.version.outputs.backend_changed == 'true') }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - name: Bump deployment image tags
+      - name: Bump image tags, commit back, tag the BUILT commit
         env:
           VERSION: ${{ needs.version.outputs.version }}
           FE: ${{ needs.version.outputs.frontend_changed }}
           BE: ${{ needs.version.outputs.backend_changed }}
-        run: |
-          if [ "$FE" = "true" ]; then
-            sed -i -E "s|(ghcr\.io/mrkuhne/mezo-frontend:).*|\1${VERSION}|" k8s/frontend/deployment.yaml
-          fi
-          if [ "$BE" = "true" ]; then
-            sed -i -E "s|(ghcr\.io/mrkuhne/mezo-backend:).*|\1${VERSION}|" k8s/backend/deployment.yaml
-          fi
-          git diff --stat
-      - name: Commit-back + tag
-        env:
-          VERSION: ${{ needs.version.outputs.version }}
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add k8s/frontend/deployment.yaml k8s/backend/deployment.yaml
-          if git diff --cached --quiet; then
-            echo "No tag change to commit (already at v${VERSION}); skipping."
-            exit 0
-          fi
-          git commit -m "chore(release): v${VERSION} [skip ci]"
-          git pull --rebase origin main
-          git tag -a "v${VERSION}" -m "release v${VERSION}"
-          git push origin HEAD:main
-          git push origin "v${VERSION}"
+          # The commit these images were built from. The manifest commit rebases onto
+          # whatever main is by now; the TAG must stay on this SHA or it claims trees that
+          # were never built and the next run skips their build (mezo-pl7d).
+          BUILT_SHA: ${{ github.sha }}
+        run: bash .github/scripts/release-commit.sh

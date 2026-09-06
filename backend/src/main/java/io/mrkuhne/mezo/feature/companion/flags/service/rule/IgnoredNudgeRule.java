@@ -5,9 +5,10 @@ import io.mrkuhne.mezo.feature.biometrics.sleep.service.SleepAnchorPort;
 import io.mrkuhne.mezo.feature.companion.flags.config.FlagProperties;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
 import io.mrkuhne.mezo.feature.companion.flags.service.NudgeSendPort;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -15,7 +16,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -74,17 +74,20 @@ public class IgnoredNudgeRule implements FlagRule {
     private final FlagProperties properties;
 
     @Override
-    public Optional<FlagRaise> evaluate(UUID userId, LocalDate today) {
+    public FlagVerdict evaluate(UUID userId, LocalDate today) {
         FlagProperties.IgnoredNudge cfg = properties.ignoredNudge();
 
         // Trap 3: gate on the goal row EXISTING — never let SleepAnchorPort's ghosted config
         // default stand in for a real target.
         if (sleepGoalRepository.findByCreatedByAndDeletedFalse(userId).isEmpty()) {
-            return Optional.empty();
+            return FlagVerdict.unavailable(FlagKey.IGNORED_NUDGE,
+                UnavailableReason.NO_SLEEP_GOAL_ROW);
         }
         NudgeSendPort pushPort = nudgeSendPort.getIfAvailable();
         if (pushPort == null) {
-            return Optional.empty(); // notification off: cannot know whether anything was sent
+            // notification off: cannot know whether anything was sent
+            return FlagVerdict.unavailable(FlagKey.IGNORED_NUDGE,
+                UnavailableReason.NOTIFICATIONS_OFF);
         }
 
         // Trap 2: convert the anchor into the SAME shifted-hour space BEDTIME_HOUR uses.
@@ -103,27 +106,32 @@ public class IgnoredNudgeRule implements FlagRule {
             metricSeriesService.series(userId, MetricKey.BEDTIME_HOUR, oldestSleepDate, newestSleepDate);
 
         Map<String, Double> bedtimeByNight = new LinkedHashMap<>();
+        int nightsSoFar = 0;
         for (LocalDate sleepDate = oldestSleepDate; !sleepDate.isAfter(newestSleepDate);
                 sleepDate = sleepDate.plusDays(1)) {
             LocalDate pushDate = sleepDate.minusDays(1);
             if (!sentDates.contains(pushDate)) {
-                return Optional.empty(); // no nudge that evening — the run breaks
+                return FlagVerdict.clear(FlagKey.IGNORED_NUDGE, new FlagVerdict.ClearEvidence(
+                    "nudge_run_nights", (double) nightsSoFar, (double) n, "no_push:" + pushDate));
             }
             Double observed = bedtimeSeries.get(sleepDate);
             if (observed == null) {
                 // Honesty gate: an unlogged night is neither compliant nor violating.
-                return Optional.empty();
+                return FlagVerdict.unavailable(FlagKey.IGNORED_NUDGE,
+                    UnavailableReason.UNLOGGED_NIGHT);
             }
             double lateByMinutes = (observed - anchorShiftedHour) * 60.0;
             if (lateByMinutes <= cfg.nonComplianceMinutes()) {
-                return Optional.empty(); // complied at least once — the streak is broken
+                return FlagVerdict.clear(FlagKey.IGNORED_NUDGE, new FlagVerdict.ClearEvidence(
+                    "nudge_run_nights", (double) nightsSoFar, (double) n, "complied:" + sleepDate));
             }
             bedtimeByNight.put(pushDate.toString(), observed);
+            nightsSoFar++;
         }
 
-        return Optional.of(new FlagRaise(FlagKey.IGNORED_NUDGE,
+        return FlagVerdict.raised(FlagKey.IGNORED_NUDGE,
             FlagPayloadEnvelope.ignoredNudge(new FlagPayloadEnvelope.IgnoredNudge(
-                cfg.category(), n, n, anchorShiftedHour, cfg.nonComplianceMinutes(), bedtimeByNight))));
+                cfg.category(), n, n, anchorShiftedHour, cfg.nonComplianceMinutes(), bedtimeByNight)));
     }
 
     /** The same +24-below-noon shift {@code MetricSeriesService.clockHour} applies to observed

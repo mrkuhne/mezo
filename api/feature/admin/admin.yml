@@ -25,6 +25,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '403':
           description: Not the owner (AUTH_FORBIDDEN)
           content:
@@ -42,6 +47,11 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/InviteResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '403':
           description: Not the owner (AUTH_FORBIDDEN)
           content:
@@ -60,6 +70,11 @@ paths:
       responses:
         '204':
           description: Revoked
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '403':
           description: Not the owner (AUTH_FORBIDDEN)
           content:
@@ -88,6 +103,11 @@ paths:
               schema:
                 type: array
                 items: { $ref: '#/components/schemas/AdminUserResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '403':
           description: Not the owner (AUTH_FORBIDDEN)
           content:
@@ -109,6 +129,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ResetPasswordResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
         '403':
           description: Not the owner (AUTH_FORBIDDEN)
           content:
@@ -139,6 +164,11 @@ paths:
           description: Status set
         '400':
           description: Validation failure
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401':
+          description: Missing/invalid token
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }

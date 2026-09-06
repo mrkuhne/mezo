@@ -6,7 +6,9 @@ import static org.assertj.core.api.Assertions.within;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagEvaluator;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagOutcome;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.MealPopulator;
 import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
@@ -45,13 +47,26 @@ class FlagEvaluatorLateEatingIT extends AbstractIntegrationTest {
     }
 
     private List<String> keys(UUID owner) {
-        return evaluator.evaluate(owner).stream().map(FlagRaise::flagKey).toList();
+        return raisedKeys(evaluator.evaluate(owner));
+    }
+
+    /** The keys that actually RAISED — the old evaluate() return, reconstructed. */
+    private static List<String> raisedKeys(List<FlagVerdict> verdicts) {
+        return verdicts.stream()
+            .filter(v -> v.outcome() == FlagOutcome.RAISED)
+            .map(FlagVerdict::flagKey)
+            .toList();
+    }
+
+    private static FlagVerdict verdictFor(List<FlagVerdict> verdicts, String flagKey) {
+        return verdicts.stream().filter(v -> flagKey.equals(v.flagKey())).findFirst().orElseThrow();
     }
 
     private Optional<FlagPayloadEnvelope.LateEating> payload(UUID owner) {
         return evaluator.evaluate(owner).stream()
-            .filter(r -> FlagKey.LATE_EATING.equals(r.flagKey()))
-            .map(r -> r.payload().lateEating())
+            .filter(v -> FlagKey.LATE_EATING.equals(v.flagKey()))
+            .filter(v -> v.outcome() == FlagOutcome.RAISED)
+            .map(v -> v.payload().lateEating())
             .findFirst();
     }
 
@@ -279,5 +294,51 @@ class FlagEvaluatorLateEatingIT extends AbstractIntegrationTest {
         assertThat(p.lastMealHourByDay().get(today.toString())).isCloseTo(22.0, within(1e-9));
         assertThat(p.qualifyingArmByDay().get(today.minusDays(2).toString())).isEqualTo("both");
         assertThat(p.qualifyingArmByDay().get(today.toString())).isEqualTo("bed");
+    }
+
+    @Test
+    void is_unavailable_with_no_meal_data_in_the_window_at_all() {
+        UUID owner = ownerId();
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.LATE_EATING);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
+        assertThat(verdict.reason()).isEqualTo(UnavailableReason.NO_MEAL_DATA);
+    }
+
+    /** REGRESSION: distinguishes "no meal data at all" from "meal data on every day but none of
+     *  it is late enough." All three days have a logged meal, but none qualifies (none clears
+     *  either arm), so {@code qualifying == 0} — the same as the no-data case if the verdict were
+     *  built off {@code hourByDay} (which is empty in both), but the underlying meal series is
+     *  NOT empty here, so the correct verdict is CLEAR, not UNAVAILABLE. */
+    @Test
+    void is_clear_not_unavailable_when_every_day_is_logged_but_none_qualifies_as_late() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        meal(owner, today.minusDays(2), 18, 0);
+        meal(owner, today.minusDays(1), 18, 0);
+        meal(owner, today, 18, 0);
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.LATE_EATING);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("late_meal_days");
+        assertThat(verdict.clear().observed()).isEqualTo(0.0);
+        assertThat(verdict.clear().threshold()).isEqualTo(2.0);
+    }
+
+    @Test
+    void is_clear_when_only_one_of_three_days_is_after_the_absolute_hour() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        meal(owner, today.minusDays(2), 22, 45);
+        meal(owner, today.minusDays(1), 18, 0);
+        meal(owner, today, 18, 0);
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.LATE_EATING);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("late_meal_days");
+        assertThat(verdict.clear().observed()).isLessThan(verdict.clear().threshold());
     }
 }

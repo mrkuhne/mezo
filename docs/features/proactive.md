@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-09-05
+updated: 2026-09-06
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -949,7 +949,16 @@ flag — equal rank — does NOT displace the incumbent and leaves its votes alo
 ranks one past the end of the table and logs a warning rather than throwing (an unmapped key must
 never blow up delivery inside `InterventionEventListener`'s catch); `AdvicePriorityTest` asserts
 every live `FlagKey` constant has a rank, so the warning path is a last resort, not the normal way a
-new key behaves. `AdviceCardService` is deliberately NOT conditioned on `INTERVENTION_SWITCH` —
+new key behaves. **Round 2 S1 (bd `mezo-d58h.7.1`) adds `FlagKey.PROTOCOL_LAPSE` at the very tail of
+the flag block in `ORDER`** — immediately after `late_eating`, immediately before the two
+`SetupCheckService.CHECK_*` entries (and well ahead of `outranks`'s round-0 tail —
+`recovery_needed`/`sustained_stress`/`momentum_at_risk`/`all_healthy`): it is the gentlest of the
+FLAG signals (grace-window copy, "the streak lives, just continue it," never blame —
+[companion.md](companion.md) §3), so it must never be able to outrank and displace any of the other
+thirteen flags' cards. Since `outranks` is index order and lower ranks harder, `protocol_lapse`
+still outranks (and can displace) the two setup checks and the round-0 tail below it in the list —
+only every OTHER flag sits ahead of it. `AdviceCardService` is deliberately NOT conditioned on
+`INTERVENTION_SWITCH` —
 `SetupCheckService` (which runs without that switch) is one of its two callers, so gating this bean
 on the intervention switch would fail the Spring context whenever that switch is off.
 
@@ -2032,6 +2041,54 @@ companion message and `PersonDetailPage`'s own arc).
   `feature_slices_are_cycle_free`: `people` itself only points outward to
   `auth`/`journal`/`ritual`/`goal`, so nothing closes a loop back through it.
 
+### 5.14 Proactive → Meal / Train / Nutrition / Sleep, the training-day hydration signal (✅ round 2 S2, `mezo-d58h.7.2`)
+
+Round 2's spec item (12) ([`specs/2026-09-05-proactive-coaching-round2-design.md`](../superpowers/specs/2026-09-05-proactive-coaching-round2-design.md)
+§b): hydration is the **one intraday exception** to round 2's adherence-neutral firing policy —
+water cannot be caught up at 22:00 — so it is allowed to speak from an incomplete day. It is
+**not** a flag and **not** an advice card: it never touches the one-card-per-day gate.
+
+- **One detection, two channels.** `HydrationShortfallProbe.evaluate(userId, date, now)` (the
+  `LogFreshnessProbe` idiom: deterministic, separately tested, rendered by others) answers "is this
+  user behind on water right now". Channel 1: `CompanionMessageGenerator.hydrationBlock` appends a
+  `HIDRATÁCIÓ` FACT block to the midday/evening window payload (the `missedWorkoutsBlock` shape),
+  plus one `WINDOW_PROMPT` rule line capping it at a single factual sentence. Channel 2: the
+  `hydration` message kind — a ~15:00 checkpoint written by `generateHydrationCheckpoint`.
+- **The checkpoint is DETERMINISTIC config text, never LLM prose** (the `intervention`/`setup`
+  precedent): three numbers and one sentence from `mezo.proactive.hydration.checkpoint-template`.
+  A model call would add a fake-LLM marker mirror, a `ProseNumberGuard` surface and a paid call on
+  a job that runs every day, for a line that must never drift in tone.
+- **Four silence gates, each with its own IT** (`HydrationShortfallProbeIT`): not a training day
+  (planned gym slot today, OR a completed instance today, OR `COMBINED_LOAD_MIN > 0` — the planned
+  arm is load-bearing, hydration matters *before* the session); the clock is at or before the wake
+  anchor (`SleepAnchorPort`, config-ghost when there is no sleep goal); the pro-rated target is
+  still under `min-pro-rated-ml` (just after wake it is a rounding artefact); and the
+  **batch-logger guard** — zero water AND zero other logs today means the day is *unobserved*, not
+  dry, so it stays silent (`LogFreshnessProbe.anyLoggedAfter` for today, OR'd with a water log,
+  which that probe does not cover). Otherwise it fires under `shortfall-pct` (60 %) of
+  `waterMl × (waking-day fraction elapsed)`, where the target is per-user via
+  `DietPreferencesPort` (water is never goal-prescribed).
+- **The clock is a parameter, never `LocalTime.now()` inside the probe or the block.** The whole
+  rule is "how much of the waking day has elapsed", so an implicit clock would make every test
+  depend on the hour CI runs at; only the public cron entry point reads the real clock, and the
+  ITs use the explicit overloads.
+- **The cron lives on `CompanionMessageJob`, not on the hourly flag sweep.** The spec sketched a
+  branch off `FlagSweepJob`, but that job is in `feature/companion` and this generator in
+  `feature/proactive`, where `proactive → companion` already exists in bulk — the call would close
+  a NEW slice cycle `ArchitectureTest.feature_slices_are_cycle_free` rejects (its freeze store
+  holds only `biometrics ↔ goal`). A 4th cron on the existing job keeps the spec's real constraints
+  (no new job class, nothing near the dawn cluster).
+- **No push, and no lazy GET miss-recovery.** `ensureTodayCronKinds` is deliberately not extended:
+  a checkpoint recovered at 22:00 would nag about a day that is over, and a plain feed `GET` must
+  never manufacture one. A missed 15:00 run is simply silence.
+- **Five mirrors for the new kind** (all four beyond the constant fail only at runtime):
+  `CompanionMessageEntity.KIND_HYDRATION`, the `ck_companion_message_kind` CHECK widening
+  (`202609061200_mezo-d58h.7.2_…`), the OpenAPI `FeedMessageResponse.kind` enum — from which
+  `KindEnum.fromValue` is generated, so a missing entry breaks the WHOLE day's feed read, which
+  `CompanionMessageHydrationIT` covers by reading back through `ProactiveFeedService` — and the FE
+  `FeedMessageKind` union. The kind stays OUT of `FeedbackLearningService`'s learned-kind list:
+  there is no prose here to learn from.
+
 ## 6. How to use it (consume)
 
 **Over HTTP** (bearer token from `POST /api/auth/login`; the backend must run with `demodata` so
@@ -2902,6 +2959,21 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
     `BigDecimal`** depending on how it was serialized — every adapter that reads a numeric param
     coerces via `instanceof Number` rather than assuming a fixed boxed type, or a legitimate `-30`
     written as one numeric subtype fails to parse when it round-trips as another.
+- **(mm) Round 2 S1 (bd `mezo-d58h.7.1`, spec 2026-09-05 §(11)) adds `protocol_lapse_resume`, the
+  `protocol_lapse` intervention-library entry — but the entry itself, its `channel: feed` (no
+  push — a missed supplement dose does not earn one), and its `cooldown-hours: 24` (whole-branch
+  review fix, bd `mezo-d58h.7.1`: matches `cooldown-hours.protocol-lapse`, NOT
+  `ProtocolLapseRule`'s own 7-day per-item cooldown — `InterventionService`'s cooldown is scoped
+  per intervention key per USER, not per item, so a 168h value here would have silently blocked a
+  DIFFERENT item's card for a week even while the rule itself was happy to raise for it the next
+  day, defeating the whole point of the rule's per-item design) all live in
+  [companion.md](companion.md) §4/§10 alongside the other thirteen entries
+  (`mezo.companion.interventions`, `CompanionProperties.Intervention`) — this feature only owns the
+  entry's SEVERITY RANK, `AdvicePriority.ORDER`'s tail-of-the-flag-block placement documented just
+  above. It offers no `AdviceActionCatalog` mutation (unlike `sleep_debt`/`ignored_nudge`'s
+  `shift_sleep_anchor` or `joint_overuse`'s `lighten_tomorrow`, (ll) above) — the card's own copy asks
+  the user to either take the dose today or drop the item from the stack themselves; there is
+  nothing here for a button to safely automate.
 - **Epic complete, H2 Web Push shipped with it, and `mezo-gst9` then redesigned the B/H stages.**
   All eight original slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2), **H2 (`mezo-h4wp.6`) shipped** — N1
   (delivery spine) + N2 (dispatcher + `notification_pref`/`push_log` + categories 1-9) + N3

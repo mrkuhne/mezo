@@ -4,7 +4,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagEvaluator;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagRaise;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagOutcome;
+import io.mrkuhne.mezo.feature.companion.flags.service.FlagVerdict;
+import io.mrkuhne.mezo.feature.companion.flags.service.UnavailableReason;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.train.entity.MesocycleEntity;
 import io.mrkuhne.mezo.feature.train.entity.WorkoutSessionEntity;
@@ -43,7 +45,19 @@ class FlagEvaluatorMomentumRecoveryIT extends AbstractIntegrationTest {
     }
 
     private List<String> keys(UUID owner) {
-        return evaluator.evaluate(owner).stream().map(FlagRaise::flagKey).toList();
+        return raisedKeys(evaluator.evaluate(owner));
+    }
+
+    /** The keys that actually RAISED — the old evaluate() return, reconstructed. */
+    private static List<String> raisedKeys(List<FlagVerdict> verdicts) {
+        return verdicts.stream()
+            .filter(v -> v.outcome() == FlagOutcome.RAISED)
+            .map(FlagVerdict::flagKey)
+            .toList();
+    }
+
+    private static FlagVerdict verdictFor(List<FlagVerdict> verdicts, String flagKey) {
+        return verdicts.stream().filter(v -> flagKey.equals(v.flagKey())).findFirst().orElseThrow();
     }
 
     /**
@@ -245,5 +259,136 @@ class FlagEvaluatorMomentumRecoveryIT extends AbstractIntegrationTest {
         // A genuine problem flag in the same window still blocks all_healthy — see
         // all_healthy_stays_quiet_while_a_problem_flag_is_inside_the_quiet_window above (sleep_debt),
         // which pins that the general suppression is unchanged.
+    }
+
+    @Test
+    void momentum_at_risk_is_unavailable_when_the_baseline_is_just_under_the_floor() {
+        UUID owner = ownerId();
+        gymPlannedEveryDay(owner);
+        LocalDate today = LocalDate.now();
+        // 13 of the 14 baseline days log one habit ⇒ avg ≈ 0.93, just under the 1.0 floor.
+        for (int back = 4; back <= 16; back++) {
+            habitPopulator.row(owner, today.minusDays(back), "water", "done");
+        }
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.MOMENTUM_AT_RISK);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
+        assertThat(verdict.reason()).isEqualTo(UnavailableReason.NO_HABIT_BASELINE);
+    }
+
+    @Test
+    void momentum_at_risk_is_clear_when_recent_average_is_just_above_the_drop_floor() {
+        UUID owner = ownerId();
+        gymPlannedEveryDay(owner);
+        LocalDate today = LocalDate.now();
+        // Baseline: 2 habits/day for 14 days ⇒ avg 2.0; drop-ratio 0.5 ⇒ floor 1.0.
+        for (int back = 4; back <= 17; back++) {
+            habitPopulator.row(owner, today.minusDays(back), "water", "done");
+            habitPopulator.row(owner, today.minusDays(back), "steps", "done");
+        }
+        // Recent (3 days): 4 completions total ⇒ avg 1.33, just above the 1.0 floor.
+        habitPopulator.row(owner, today.minusDays(1), "water", "done");
+        habitPopulator.row(owner, today.minusDays(1), "steps", "done");
+        habitPopulator.row(owner, today.minusDays(2), "water", "done");
+        habitPopulator.row(owner, today.minusDays(3), "water", "done");
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.MOMENTUM_AT_RISK);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("habits_recent_avg");
+        assertThat(verdict.clear().observed()).isGreaterThan(verdict.clear().threshold());
+    }
+
+    @Test
+    void momentum_at_risk_is_clear_when_every_planned_gym_day_was_trained() {
+        UUID owner = ownerId();
+        collapsedHabitMomentum(owner);
+        gymPlannedEveryDay(owner);
+        MesocycleEntity meso = trainPopulator.createActiveMeso(owner);
+        WorkoutSessionEntity template = trainPopulator.createTemplateDay(owner, meso.getId(), "Push");
+        LocalDate today = LocalDate.now();
+        for (int back = 1; back <= 3; back++) {
+            trainPopulator.createWorkoutInstance(owner, template, today.minusDays(back), "completed");
+        }
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.MOMENTUM_AT_RISK);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("missed_gym_days");
+    }
+
+    @Test
+    void recovery_needed_is_clear_when_one_leg_is_missing() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        sleepLogPopulator.createSleepLog(owner, today, new BigDecimal("5.5"), 2);
+        checkInPopulator.createCheckIn(owner, today, "08:00", 3, 7, null);
+        // no training load at all ⇒ the RPE leg is missing
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.RECOVERY_NEEDED);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("signals_matched");
+        assertThat(verdict.clear().observed()).isEqualTo(2.0);
+        assertThat(verdict.clear().detail()).isEqualTo("rpe");
+    }
+
+    @Test
+    void all_healthy_is_clear_while_a_problem_flag_is_inside_the_quiet_window() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        checkInPopulator.createCheckIn(owner, today, "08:00", 4, 2, null);
+        sleepLogPopulator.createSleepLog(owner, today.minusDays(1), new BigDecimal("8.0"), 4);
+        flagLogPopulator.raiseAt(owner, FlagKey.SLEEP_DEBT, FlagKey.SOURCE_SWEEP, null,
+            Instant.now().minus(48, ChronoUnit.HOURS));
+
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.ALL_HEALTHY);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(verdict.clear().metric()).isEqualTo("quiet_days");
+    }
+
+    @Test
+    void all_healthy_is_unavailable_with_no_data_in_window() {
+        UUID owner = ownerId();
+
+        // An empty account raises logging_gap, which forces all_healthy's outcome... but it is
+        // still evaluated on its own honesty gate: no observations in the quiet window at all.
+        FlagVerdict verdict = verdictFor(evaluator.evaluate(owner), FlagKey.ALL_HEALTHY);
+
+        assertThat(verdict.outcome()).isEqualTo(FlagOutcome.UNAVAILABLE);
+        assertThat(verdict.reason()).isEqualTo(UnavailableReason.NO_DATA_IN_WINDOW);
+    }
+
+    @Test
+    void evaluate_returns_exactly_fourteen_verdicts() {
+        UUID owner = ownerId();
+
+        assertThat(evaluator.evaluate(owner)).hasSize(14);
+    }
+
+    /**
+     * Pins {@code FlagEvaluator}'s own forced-CLEAR override (evaluate() lines ~80-87): on a
+     * fresh user with no flag_log rows at all, {@code AllHealthyRule} would independently RAISE
+     * off its own quiet-window data (the checkin/sleep rows this fixture seeds satisfy its
+     * honesty gate) — but with {@code recovery_needed} also genuinely raising from the same
+     * fixture, the composite must not report both a problem AND "all healthy" in the same pass,
+     * so the evaluator forces {@code all_healthy} to CLEAR with metric {@code other_flags_raised}.
+     */
+    @Test
+    void all_healthy_is_forced_clear_when_another_rule_raises_on_a_fresh_user() {
+        UUID owner = ownerId();
+        LocalDate today = LocalDate.now();
+        sleepLogPopulator.createSleepLog(owner, today, new BigDecimal("5.5"), 2);
+        checkInPopulator.createCheckIn(owner, today, "08:00", 3, 7, null);
+        trainPopulator.createSportSessionWithRpe(owner, today.minusDays(1), 8);
+
+        List<FlagVerdict> verdicts = evaluator.evaluate(owner);
+
+        assertThat(raisedKeys(verdicts)).contains(FlagKey.RECOVERY_NEEDED);
+        FlagVerdict allHealthy = verdictFor(verdicts, FlagKey.ALL_HEALTHY);
+        assertThat(allHealthy.outcome()).isEqualTo(FlagOutcome.CLEAR);
+        assertThat(allHealthy.clear().metric()).isEqualTo("other_flags_raised");
     }
 }
