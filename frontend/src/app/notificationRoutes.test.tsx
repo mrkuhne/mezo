@@ -40,7 +40,7 @@ test('/me/ertesitesek/beallitasok a kapcsolókat rendereli', async () => {
 test('a fejléc dropdown lábléce a feedre visz', async () => {
   renderAt('/nap')
   await userEvent.click(await screen.findByRole('button', { name: /^Értesítések/ }))
-  await userEvent.click(screen.getByRole('menuitem', { name: 'Összes értesítés ›' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Összes értesítés ›' }))
   expect(await screen.findByText('Ma')).toBeInTheDocument()
 })
 
@@ -52,7 +52,7 @@ test('a fejléc olvasatlan-badge-e eltűnik, miután megnyitottuk a feedet', asy
   expect(bell.querySelector('.nap-badge')).toHaveTextContent('3')
 
   await userEvent.click(bell)
-  await userEvent.click(screen.getByRole('menuitem', { name: 'Összes értesítés ›' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Összes értesítés ›' }))
   await screen.findByText('Ma')
 
   const after = await screen.findByRole('button', { name: 'Értesítések' })
