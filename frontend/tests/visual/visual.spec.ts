@@ -5,7 +5,7 @@ import { seedThemeAndKalauz } from './kalauzSeed'
  * Self-baselined visual goldens: 37 goto screens + the /ritual Harvest + Release and the
  * /train/review lane + exercise-view click-throughs, and the F7.3 Fuel deep surfaces (gyógyszer
  * empty state, recipe mosaic + score sheet, slots editor; F7.4 added the Én deep four)
- * = 90 snapshots per platform (mezo-d20.15 added meso-hub + meso-week; mezo-iizd.1 added
+ * = 96 snapshots per platform (mezo-d20.15 added meso-hub + meso-week; mezo-iizd.1 added
  * me-cel-suly / me-cel-reszlet / me-goal-wizard-suly and re-pointed me-cel + me-goal-wizard
  * at the new life-goal surfaces; mezo-mzbz added the two /ritual
  * shots: Arrival act 1 via the SCREENS list + the Harvest act 5 via the click-through test;
@@ -13,7 +13,9 @@ import { seedThemeAndKalauz } from './kalauzSeed'
  * `today` shot with one per daypart face — reggel/nap/este; mezo-p2tr swapped the retired
  * insights-heti shot for me-heti, the new /me/week weekly-review page; mezo-d20.8.2.1 added
  * train-review + its lane and exercise-view click-throughs; mezo-hqfi.4 added the two
- * Diagnózis shots).
+ * Diagnózis shots; mezo-6269.3 added the three /mezo/coaching surfaces — the hub, the
+ * Megfigyelő and the winning card — and legitimately moved insights-mintak, the /mezo hub
+ * shot the new coaching tile lands on).
  *
  * Determinism levers (all must hold or the shots flake):
  *  - clock frozen BEFORE goto → the daypart-derived sky tint (PhoneFrame) + greeting
@@ -130,6 +132,13 @@ const SCREENS: Array<[string, string, string?]> = [
   // Napzárás act 1 (Megérkezés): goto /ritual lands on the Arrival act directly. Harvest
   // (act 5) is a separate click-through test below (it can't be reached by a bare goto).
   ['ritual-arrival', '/ritual'],
+  // Proaktív coaching (mezo-6269.3): the hub, the Megfigyelő with all rules + the day's
+  // timeline, and the winning card with its beaten candidates. All three read the deterministic
+  // mock day (`coachingTraceMock` / `coachingCardMock`), whose timestamps and `earliestDate`
+  // derive from the requested day — so the frozen clock alone pins them.
+  ['mezo-coaching', '/mezo/coaching'],
+  ['mezo-coaching-megfigyelo', '/mezo/coaching/megfigyelo'],
+  ['mezo-coaching-kartya', '/mezo/coaching/kartya'],
 ]
 
 /**
