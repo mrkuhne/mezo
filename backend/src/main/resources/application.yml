@@ -1584,6 +1584,17 @@ mezo:
       # How many finished days of narrative memory (daily_summary) the feed gather reads;
       # doubles as the emptiness gate: zero summaries in the window -> no message
       past-days: 7
+    hydration:
+      # Round 2 S2 (mezo-d58h.7.2, spec §12): training-day hydration. The 15:00 checkpoint is the
+      # ONE intraday signal in round 2 — water cannot be caught up at 22:00 — and it speaks only
+      # when the shortfall holds AND the user has already logged something today.
+      checkpoint-cron: "0 0 15 * * *"
+      # Fire below 60% of the pro-rated (waking-day-fraction) target.
+      shortfall-pct: 60
+      # Below this pro-rated target there is nothing meaningful to be behind on yet.
+      min-pro-rated-ml: 500
+      checkpoint-eyebrow: "Hidratáció"
+      checkpoint-template: "Edzésnap van, és eddig {logged} ml víz van naplózva — ilyenkorra a mai {target} ml-ből arányosan kb. {prorated} ml jönne ki. Egy pohárral most könnyebb, mint hárommal este."
     setup-checks:
       # S3 (mezo-d58h.3, spec 2026-09-03 §4 setup table): checks against CONFIGURATION, not
       # against a day's data — so they run once daily and re-emit at most weekly until the
