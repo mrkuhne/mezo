@@ -512,9 +512,13 @@ mezo:
       currency: USD
       # Keys are bracket-quoted: a model id contains dots, and an unbracketed map key would be
       # split into separate property elements by the binder (the entry silently disappears).
+      # reasoning-billing (mezo-ozri.1): SEPARATE = the provider reports reasoning tokens BESIDE the
+      # output tokens (Gemini's thoughtsTokenCount) and they are billed as their own category;
+      # INCLUDED_IN_OUTPUT = they are already inside the completion count (OpenAI), so billing them
+      # again would charge the same tokens twice. Absent = SEPARATE.
       models:
-        "[gemini-2.5-flash]":     { input-per-million: 0.30, output-per-million: 2.50, thinking-per-million: 2.50, cached-per-million: 0.075 }
-        "[gemini-2.5-pro]":       { input-per-million: 1.25, output-per-million: 10.0, thinking-per-million: 10.0, cached-per-million: 0.31 }
+        "[gemini-2.5-flash]":     { input-per-million: 0.30, output-per-million: 2.50, thinking-per-million: 2.50, cached-per-million: 0.075, reasoning-billing: SEPARATE }
+        "[gemini-2.5-pro]":       { input-per-million: 1.25, output-per-million: 10.0, thinking-per-million: 10.0, cached-per-million: 0.31, reasoning-billing: SEPARATE }
         "[gemini-embedding-001]": { embed-per-million-chars: 0.15 }
   companion:
     # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
