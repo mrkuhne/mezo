@@ -6,6 +6,7 @@ tags: [goals, me, technique]
 related:
   - ../entities/exist-io.md
   - goal-pursuit-evidence.md
+  - trend-arrows-and-baselines.md
   - ../../features/lifegoal.md
 sources:
   - raw/articles/2026-09-06-lifegoal-prior-art-research.md
@@ -16,9 +17,11 @@ contradictions: []
 # Goal-Type Taxonomies
 
 How a goal-tracking product carves up "what kind of goal is this" into a small set of trackable
-shapes. mezo's life-goal pillar model (`docs/features/lifegoal.md`) borrows its four-way split from
-**Strides**, and rejects three competing shapes outright. This page corrects a naming error the
-project's own design spec made about its source.
+shapes. mezo's life-goal pillar model (`docs/features/lifegoal.md`) ships **five** pillar kinds
+(`habit | average | target | baseline | linked`); four of those correspond to **Strides**' four
+tracker archetypes, and the fifth (`baseline`) is Exist.io's rolling-median idea, not Strides' — see
+[Exist.io](../entities/exist-io.md). The page also rejects three competing shapes outright, and
+corrects a naming error the project's own design spec made about the Strides source.
 
 ## Strides' four tracker archetypes
 
@@ -40,9 +43,14 @@ judgement rather than by a user-entered number or checkbox. That substitution is
 naming slip: mezo never had a "Project" pillar to rename, so nothing about the shipped taxonomy
 changes — only the label attached to what Strides itself calls its fourth archetype.
 
-mezo's four pillar kinds line up with Strides as: habit ↔ habit, cél-érték-ütemvonallal ↔ Target,
-átlag ↔ Average, and kapcsolt ↔ Milestone (substituted, not copied — mezo's `kapcsolt` pillar reads
-its state from the weight-goal engine, not from a user-attached note).
+Four of mezo's five pillar kinds line up with Strides' four archetypes: habit ↔ habit,
+cél-érték-ütemvonallal ↔ Target, átlag ↔ Average, and kapcsolt ↔ Milestone (substituted, not
+copied — mezo's `kapcsolt` pillar reads its state from the weight-goal engine, not from a
+user-attached note). mezo's fifth kind, **`baseline`** (a 28-day rolling median with a
+minimum-14-data-day gate), has no Strides counterpart at all — it is Exist.io's rolling-median
+baseline idea, adopted separately; see [Exist.io](../entities/exist-io.md) and
+[Trend Arrows and Baselines](trend-arrows-and-baselines.md). Do not read this as a five-way
+correspondence with Strides — only four of the five kinds map onto it.
 
 ## Two Strides mechanics mezo did not harvest
 
@@ -50,19 +58,24 @@ its state from the weight-goal engine, not from a user-attached note).
 
 Strides documents a **"Bad Habit"** variant of the habit tracker: the progress bar starts **100%
 full and green**, and *shrinks* as the user logs occurrences, with the limit shown in **red** instead
-of green. This is a distinct rendering idea — "count down from full" rather than "count up from
-empty" — that mezo's habit pillar does not currently offer. It is recorded here as an un-harvested
-idea, not as a rejected one: nothing in the design specs considered and declined it.
+of green. This is specifically a **rendering** idea — "count down from full" rather than "count up
+from empty" — that mezo's habit pillar does not currently offer. It is not a gap in the underlying
+rule semantics: mezo's habit rule already carries a `comparator` (`{threshold, comparator,
+daysPerWeek}`, e.g. an `ACWR ≤` guard), so inverted-direction habit logic exists today — only the
+"start full, shrink toward the limit" progress-bar treatment is un-harvested. Recorded here as an
+un-harvested rendering idea, not as a rejected one: nothing in the design specs considered and
+declined it.
 
 ### Pace (expected-rate flagging)
 
 Strides' **Pace** system computes an expected progress rate from a goal's **start/end dates and
-target value**, and uses it to flag whether the user is running ahead of or behind schedule on a
-Target-type tracker. mezo's own ahead/behind signal (the 7-vs-21-day trend arrow, see
-[`goal-pursuit-evidence.md`](goal-pursuit-evidence.md) once written) is built on rolling-window
-comparison, not on a start/end/target pace line. Pace is a genuinely different mechanism — schedule
-math rather than trend comparison — and mezo has not harvested it. Worth flagging for any future
-Target-style pillar that has a hard deadline rather than an open-ended baseline.
+target value**, and uses it to flag whether the user is running ahead of or behind schedule. The
+source describes Pace generally, without scoping it to one tracker archetype. mezo's own ahead/behind
+signal (the 7-vs-21-day trend arrow, see
+[Trend Arrows and Baselines](trend-arrows-and-baselines.md)) is built on rolling-window comparison,
+not on a start/end/target pace line. Pace is a genuinely different mechanism — schedule math rather
+than trend comparison — and mezo has not harvested it. Worth flagging for any future pillar that has
+a hard deadline rather than an open-ended baseline.
 
 The source gives no exact day-window or streak-length constants for any of this — the FAQ text is
 qualitative on frequency/scheduling mechanics ("every X days," specific-weekday selection, skipped
@@ -85,8 +98,8 @@ own right, not a gap in the taxonomy:
 - **An arrow with no minimum-data gate** — a trend indicator that renders regardless of how much
   history exists behind it. Rejected because an ungated arrow can flip on a single noisy data point;
   mezo's own arrow requires a minimum data-day count before it renders (see
-  [Exist.io](../entities/exist-io.md) and `goal-pursuit-evidence.md` for the specific gates mezo
-  chose).
+  [Exist.io](../entities/exist-io.md) and
+  [Trend Arrows and Baselines](trend-arrows-and-baselines.md) for the specific gates mezo chose).
 
 ## See also
 

@@ -67,7 +67,7 @@ The conflict signal is a derived read-time check: when two active goals' pillars
 underlying signal in opposing directions (the system-design spec's own example: a `GYM_VOLUME_KG`
 habit pushing up against an `ACWR` guard pushing down), mezo renders a companion sentence under a
 "Cél-ütközés" ("Goal conflict") heading on the goal detail page. The concrete surface is the
-`.lg-conflict` line in `frontend/src/features/me/pages/CelPage.tsx:131` — each conflict renders as
+`.lg-conflict` line in `frontend/src/features/me/pages/CelPage.tsx:135` — each conflict renders as
 one `<p className="lg-conflict">` row with a layered-icon glyph and the warning text, never a
 blocking control. A sibling task in this same round put this render path under visual-golden guard
 by seeding a mock conflict, so the rendered sentence now has regression coverage.

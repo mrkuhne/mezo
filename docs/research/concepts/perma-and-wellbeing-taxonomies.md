@@ -26,7 +26,11 @@ a verdict on validity when it is really a verdict on fitness for a fitness-app l
 flourishing," *International Journal of Wellbeing*, 6(3), 1–48.
 
 **The five factors** (decision **D2** of `docs/superpowers/specs/2026-09-02-lifegoal-system-design.md`
-adopts these as mezo's PERMAH life-area split, with an added H for skills/practice):
+adopts these plus a sixth, **Health**, as mezo's six-dimension **PERMAH** life-area split — the H is
+Health, "PERMA's practical extension," not an added skills/practice dimension. D2 keeps skill/practice
+as a separate hybrid axis — `skill = gyakorlat-réteg` — pillars point at a Growth
+LIFE/athletic/muscle skill for XP, alongside, not inside, the PERMAH life-area tag; see
+`docs/features/lifegoal.md`):
 
 - **P**ositive emotion
 - **E**ngagement

@@ -40,6 +40,12 @@ metrics with months to spare before it says anything at all. The contrast is the
 7-vs-21/min-5 gate is a deliberate shortening of Apple's idea, not an attempt to be Apple at a
 smaller scale.
 
+**Unsupported spec claim:** the system-design spec also credits Apple Fitness Trends with "one
+suggested next step" and a "how many weeks until it turns around" line. The raw capture documents
+only the "Keep it Going" / "Worth a Look" headings and the six-month recommendation threshold — it
+says nothing about a suggested next step or a weeks-to-turnaround figure. This page omits both
+claims rather than repeating them; recorded here as the sixth spec-vs-source gap in this ingest.
+
 ## Exist.io's 60-day rolling median baseline
 
 Exist computes a weekly-recomputed personal baseline — a day-of-week median over a **60-day**
