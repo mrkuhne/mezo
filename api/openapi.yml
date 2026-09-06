@@ -22322,6 +22322,7 @@ components:
             the row is neither stored structured nor derivable from its prose
             transcript; the client then renders `transcript`.
           type: array
+          nullable: true
           items:
             $ref: '#/components/schemas/ConferenceThread'
         changes:

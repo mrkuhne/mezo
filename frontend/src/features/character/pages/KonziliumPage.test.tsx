@@ -75,7 +75,7 @@ describe('KonziliumPage — transcript (?id=)', () => {
   test('opens the transcript for ?id=w2: outcome cells, phase labels, persona-railed turns, honesty note', () => {
     hoisted.detail = {
       ...MOCK_CONFERENCE_DETAIL,
-      w2: { ...MOCK_CONFERENCE_DETAIL.w2, deliberation: null } as unknown as CharacterConferenceResponse,
+      w2: { ...MOCK_CONFERENCE_DETAIL.w2, deliberation: null } satisfies CharacterConferenceResponse,
     }
     renderAt('/me/karakter/konzilium?id=w2')
     expect(screen.getByText('Kimenet')).toBeInTheDocument()

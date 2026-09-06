@@ -8979,7 +8979,7 @@ export interface components {
             generatedAt: string;
             transcript: components["schemas"]["ConferenceTurn"][];
             /** @description The same meeting as a STRUCTURE — one thread per dossier chapter, each item carrying the chain that happened to it. Absent only when the row is neither stored structured nor derivable from its prose transcript; the client then renders `transcript`. */
-            deliberation?: components["schemas"]["ConferenceThread"][];
+            deliberation?: components["schemas"]["ConferenceThread"][] | null;
             changes: {
                 kind: string;
                 dimensionKey?: string | null;
