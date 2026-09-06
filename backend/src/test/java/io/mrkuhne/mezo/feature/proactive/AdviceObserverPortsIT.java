@@ -54,7 +54,8 @@ class AdviceObserverPortsIT extends AbstractIntegrationTest {
         CompanionMessageEntity saved = companionMessageRepository.saveAndFlush(row);
 
         assertThat(cardPort.forDay(userId, day))
-            .contains(new DailyCardPort.DeliveredCard(saved.getId(), FlagKey.SLEEP_DEBT));
+            .contains(new DailyCardPort.DeliveredCard(
+                saved.getId(), FlagKey.SLEEP_DEBT, saved.getCreatedAt()));
     }
 
     @Test

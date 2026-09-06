@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.api.dto.LifeGoalPillarInput;
 import io.mrkuhne.mezo.api.dto.LifeGoalResponse;
 import io.mrkuhne.mezo.api.dto.LifeGoalStatus;
 import io.mrkuhne.mezo.api.dto.LifeGoalUpsertRequest;
+import io.mrkuhne.mezo.feature.companion.LifeGoalStatusChangedEvent;
 import io.mrkuhne.mezo.feature.lifegoal.entity.LifeGoalEntity;
 import io.mrkuhne.mezo.feature.lifegoal.entity.LifeGoalPillarEntity;
 import io.mrkuhne.mezo.feature.lifegoal.mapper.LifeGoalMapper;
@@ -20,6 +21,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +46,7 @@ public class LifeGoalService {
     private final LifeGoalPillarRepository pillarRepository;
     private final LifeGoalPillarService pillarService;
     private final LifeGoalMapper mapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public List<LifeGoalResponse> list(UUID userId) {
@@ -104,6 +107,14 @@ public class LifeGoalService {
         if (LifeGoalEntity.STATUS_ACTIVE.equals(to) && g.getActivatedAt() == null) g.setActivatedAt(Instant.now());
         // done→archived keeps the completion date: closedAt is when the goal ENDED, not when it was tidied away.
         if (("done".equals(to) || "archived".equals(to)) && g.getClosedAt() == null) g.setClosedAt(Instant.now());
+        // mezo-iizd.11 (final review Finding 2): egy frissen aktivált (vagy parkolt) cél ne csak
+        // a hajnali reconcile után jelenjen meg/tűnjön el a gráfban. AFTER_COMMIT + @Async esemény,
+        // a GraphPromotionListener idiómája — NEM közvetlen hívás ebben a tranzakcióban, mert egy
+        // gráf-hiba (vagy a mögötte futó LLM-alapú él-strukturálás) így sosem buktathatja el, és
+        // nem 500-azhatja el a felhasználó saját státuszváltását. Az irány lifegoal -> companion:
+        // az esemény osztálya a companion csomagban lakik (mint a LifeGoalGraphSource port), így a
+        // lifegoal csak azt importálja, amit már eddig is legálisan importált.
+        eventPublisher.publishEvent(new LifeGoalStatusChangedEvent(userId, id));
         return mapper.toResponse(g, pillarRepository.findByGoalIdAndDeletedFalseOrderByPositionAsc(id));
     }
 

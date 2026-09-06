@@ -27,6 +27,6 @@ public class DailyCardAdapter implements DailyCardPort {
     public Optional<DeliveredCard> forDay(UUID userId, LocalDate date) {
         return companionMessageRepository
             .findByCreatedByAndMessageDateAndKind(userId, date, CompanionMessageEntity.KIND_ADVICE)
-            .map(row -> new DeliveredCard(row.getId(), row.getContent().adviceKey()));
+            .map(row -> new DeliveredCard(row.getId(), row.getContent().adviceKey(), row.getCreatedAt()));
     }
 }
