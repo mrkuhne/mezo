@@ -2463,9 +2463,10 @@ build was chosen after living with W3.1's always-on recall.
 Existing knowledge starts flowing INTO the graph (spec §6.2) — still no REST surface; promotion is
 internal, driven by async event hooks and (from W2.5) a nightly reconciler.
 
-- **`GraphPromotionService`** (`graph/service/GraphPromotionService.java`) — four promotion
-  entries (a fourth, `syncPerson`, joined the original three in **Emberek S5**, `mezo-06o0.4` —
-  see below), each `@Transactional` and idempotent on `GraphNodeEntity`'s
+- **`GraphPromotionService`** (`graph/service/GraphPromotionService.java`) — five promotion
+  entries (a fourth, `syncPerson`, joined the original three in **Emberek S5**, `mezo-06o0.4`,
+  and a fifth, `syncLifeGoal`, joined in the graph/user-archive round, `mezo-iizd.11` — see
+  below), each `@Transactional` and idempotent on `GraphNodeEntity`'s
   `(createdBy, sourceKind, sourceId)` unique index (re-promoting the same row UPSERTs, never
   duplicates):
   - `promotePattern(userId, patternId)` — a `confirmed` pattern (own, not deleted) → a
@@ -2513,11 +2514,33 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     soft-deleted person is invisible to `syncPerson`'s `...AndDeletedFalse` finder, so deletion
     needs its own retraction, same as a soft-deleted goal. A rejected candidate (reject = soft
     delete) also routes here and is typically a no-op — a candidate rarely had a node to archive.
-  - All four titles go through `truncateTitle` — pattern titles (LLM hypotheses, up to 200 chars),
-    fact texts, and goal titles can all exceed `knowledge_node.title varchar(120)`; person names
-    cannot (`people.yml` pins `maxLength: 120` and `PersonExtractionService.validCandidates` drops
-    longer names, so `truncateTitle` is unreachable on the person branch). Truncation cuts to 117
-    chars + `…`.
+  - **`syncLifeGoal(userId, goalId)` / `retractLifeGoal(userId, goalId)`** (graph/user-archive
+    round, `mezo-iizd.11`, spec §7) — the fifth promotion entry, `syncGoal`'s shape applied to a
+    life goal: active → `KIND_GOAL` node, `sourceKind="life_goal"` — deliberately a SEPARATE
+    source kind from `syncGoal`'s `SOURCE_GOAL = "goal"` (the weight goal from `feature/goal`),
+    not a shared one, so the two lifecycles never collide on the same node. Anything else
+    (parked/done/archived/draft) archives the node, same demotion as `syncGoal`/`syncPerson`; a
+    goal that was never promoted and is not active is a no-op. **The source arrives through a
+    port, `LifeGoalGraphSource` (`feature/companion/LifeGoalGraphSource.java`,
+    `all(userId)`/`find(userId, goalId)`, record `GraphGoal(id, title, status)`), implemented by
+    `lifegoal`'s `LifeGoalCompanionAdapter` — the same idiom as `LifeGoalSource`/
+    `LifeGoalProposePort`, and for the same reason: `lifegoal` already imports `companion`, so a
+    reverse `companion → lifegoal` import would close a 2-slice cycle that ArchUnit's frozen
+    `feature_slices_are_cycle_free` rule forbids. The port is `ObjectProvider`-consumed and only
+    beans when `LIFEGOAL_SWITCH` is on; with the bean absent, BOTH the promotion loop below and
+    `retractLifeGoal` are no-ops — a missing port means "the graph cannot currently see life
+    goals", not "archive every life-goal node", so it deliberately does not fall through to mass
+    archival.** Triggered by the nightly `reconcile` and, live, by `LifeGoalService.changeStatus`
+    publishing a `LifeGoalStatusChangedEvent` (placed in `companion` for the same cycle reason as
+    the port) that `GraphPromotionListener.onLifeGoalStatusChanged` consumes AFTER_COMMIT +
+    `@Async` + try/catch, so a graph failure can never break the user's status change. Only
+    `changeStatus` is hooked — a life-goal delete or a title edit still waits for the nightly
+    sweep to catch up, same honest gap as `retractFact`'s delete half.
+  - All five titles go through `truncateTitle` — pattern titles (LLM hypotheses, up to 200 chars),
+    fact texts, and goal titles (both weight-goal and life-goal) can all exceed
+    `knowledge_node.title varchar(120)`; person names cannot (`people.yml` pins `maxLength: 120`
+    and `PersonExtractionService.validCandidates` drops longer names, so `truncateTitle` is
+    unreachable on the person branch). Truncation cuts to 117 chars + `…`.
   - **Retraction (`mezo-b3pp.31`) — promotion's mirror.** `retractPattern(userId, patternId)`,
     `retractGoal(userId, goalId)` and `retractFact(userId, factId)` each re-check their own
     source row's qualifying condition rather than trusting the caller (a pattern no longer
@@ -2596,29 +2619,36 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     `summary` only once a week — so content retracted mid-week can still be quoted inside
     `[Rólad tanultam]` until the next weekly regeneration. Self-healing (the next `rebuild` drops
     it), not fixed here.
-  - `reconcile(userId)` — the nightly sweep (patterns/facts/goals/**people** the write-path hooks
-    could have missed: pre-graph confirmations, manually created facts, drifted titles, a person
-    whose status changed while the graph switch was off). Pure UPSERT, so running it twice in a
-    row is a no-op on the second pass. **Exists in this slice but nothing schedules it yet** — no
-    cron, no REST trigger; W2.5's `GraphMaintenanceJob` wires it in.
+  - `reconcile(userId)` — the nightly sweep (patterns/facts/goals/people/**life goals** the
+    write-path hooks could have missed: pre-graph confirmations, manually created facts, drifted
+    titles, a person or life goal whose status changed while the graph switch was off). Pure
+    UPSERT, so running it twice in a row is a no-op on the second pass. **Exists in this slice but
+    nothing schedules it yet** — no cron, no REST trigger; W2.5's `GraphMaintenanceJob` wires it
+    in.
     **Since `mezo-b3pp.31` it returns `GraphReconcileResult(int upserted, int retracted)`** (a
     new record, replacing a bare `int`) and runs a promotion loop per source kind — pattern, fact,
-    goal, and (**Emberek S5**, `mezo-06o0.4`) **person**, in that order — followed by a FIFTH,
-    complement-set sweep: walking every one of the user's active nodes back to its source row and
-    archiving any whose source stopped qualifying (a pattern no longer confirmed, a soft-deleted
-    goal, fact, or person) — per-row isolated through the same `self`/`proxy`
-    per-item-transaction idiom as the promotion loops, and skipping `sourceKind`s it does not own
-    (`sourceId == null` for extractor/quarterly nodes; the `switch`'s `default -> false` branch for
-    the profile node, which DOES carry a `sourceId` — see the code comment). This is the
-    complement loop's whole reason to exist: the four promotion loops above only ever see rows
-    that STILL qualify, so a row that LEAVES its qualifying set (un-confirmed, soft-deleted) is
-    invisible to them and its node would otherwise stay active forever; the sweep is what heals a
-    retraction missed while the switch was off (no listener existed to hear the event). For a
-    `knowledge_fact` specifically it remains the ONLY path that ever retracts one for the *delete*
-    half (nothing in main source soft-deletes a `knowledge_fact`) — the *opt-out* half now also
-    reaches `retractFact` on the next turn via `syncFact` (`mezo-b3pp.30`), with the sweep as its
-    backstop, same as every other source kind. The `person` branch of the complement switch calls
-    `retractPerson`, the same backstop role.
+    goal, (**Emberek S5**, `mezo-06o0.4`) **person**, and (`mezo-iizd.11`) **life goal**, in that
+    order (the life-goal loop iterates `LifeGoalGraphSource.all(userId)` — EVERY goal, not just
+    active ones, since the loop itself is what archives the non-active ones — and is skipped
+    entirely when the port bean is absent) — followed by a SIXTH, complement-set sweep: walking
+    every one of the user's active nodes back to its source row and archiving any whose source
+    stopped qualifying (a pattern no longer confirmed, a soft-deleted goal, fact, or person, or a
+    life goal the port no longer reports as active) — per-row isolated through the same
+    `self`/`proxy` per-item-transaction idiom as the promotion loops, and skipping `sourceKind`s
+    it does not own (`sourceId == null` for extractor/quarterly nodes; the `switch`'s
+    `default -> false` branch for the profile node, which DOES carry a `sourceId` — see the code
+    comment). This is the complement loop's whole reason to exist: the five promotion loops above
+    only ever see rows that STILL qualify, so a row that LEAVES its qualifying set (un-confirmed,
+    soft-deleted) is invisible to them and its node would otherwise stay active forever; the
+    sweep is what heals a retraction missed while the switch was off (no listener existed to hear
+    the event). For a `knowledge_fact` specifically it remains the ONLY path that ever retracts
+    one for the *delete* half (nothing in main source soft-deletes a `knowledge_fact`) — the
+    *opt-out* half now also reaches `retractFact` on the next turn via `syncFact`
+    (`mezo-b3pp.30`), with the sweep as its backstop, same as every other source kind. The
+    `person` branch of the complement switch calls `retractPerson`, and the `life_goal` branch
+    calls `retractLifeGoal` — same backstop role; `retractLifeGoal` itself no-ops when the port
+    bean is absent, so a missing port is invisible to this sweep rather than triggering a mass
+    archival (see `syncLifeGoal`'s javadoc for why).
   - **Deliberate transaction shape**: `promotePattern`/`promoteFact`/`syncGoal` are each
     all-or-nothing (node + any structured edges commit or roll back together, one DB transaction).
     A failure mid-promotion loses that one promotion, but promotion is idempotent, so the next

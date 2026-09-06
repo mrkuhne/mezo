@@ -87,7 +87,12 @@ ADR: [`0034-measurable-life-goals.md`](../decisions/0034-measurable-life-goals.m
   companion-owned `LifeGoalSource` port; the `[Célok]` block rides both `ContextSnapshotAssembler
   .render` (chat) and `.renderWithoutBiometrics` (morning message), and `get_life_goals` is a new
   chat tool — see §5.
-- **Still deferred** (§9): the knowledge-graph `GOAL` node (blocked on `mezo-06o0.5`).
+- **Knowledge-graph `GOAL` node (`mezo-iizd.11`, ✅ shipped):** an active life goal promotes to a
+  `KIND_GOAL` node, `source_kind = life_goal` — separate from the weight-goal's `source_kind =
+  goal` — via the `LifeGoalGraphSource` port (companion-owned, `lifegoal`-implemented) and
+  `GraphPromotionService.syncLifeGoal`; a parked/done/archived/draft goal's node archives, and a
+  hand-archived node stays hidden. See §9 and [`companion.md`](companion.md)'s promotion section
+  for the full write-up.
 
 ## 2. User-facing behavior
 
@@ -670,8 +675,14 @@ permissive than the real API:
   than guessing. The real reminder push (and its `dedupKey` dedup) still rides
   `LifeGoalTriggerService`'s feed notification — this surface states a fact ("ma él: …") for the
   model, never a second nudge channel.
-- **🟣 Still deferred (spec §5–§7):** the knowledge-graph `GOAL` node (`GraphPromotionService`,
-  blocked on `mezo-06o0.5`). Reads nor writes anything today.
+- **🟢 Knowledge-graph `GOAL` node (spec §7, `mezo-iizd.11`, ✅ shipped):** `GraphPromotionService
+  .syncLifeGoal` promotes an active life goal to a `KIND_GOAL` node (`source_kind = life_goal`)
+  through the `LifeGoalGraphSource` port; a parked/done/archived/draft goal's node archives
+  instead. Triggered by the nightly reconcile and, live, by `LifeGoalService.changeStatus`
+  publishing `LifeGoalStatusChangedEvent` (AFTER_COMMIT + `@Async`, try/catch — a graph failure
+  never breaks the status change). Only `changeStatus` is hooked — a life-goal delete or a title
+  edit still waits for the nightly sweep. See [`companion.md`](companion.md)'s promotion section
+  for the full write-up.
 
 ## 6. How to use it (consume)
 
@@ -956,7 +967,10 @@ correctly in every golden while being invisible in the app (§9).
   eval day — mirroring `LifeGoalTriggerService`'s own private adoption gate (its "F4 kapu"), so an
   unused or abandoned ritual is never nagged about. A sleeping signal (no `SignalSource` bean
   supports it) drops the plan out rather than guessing.
-- **Still deferred** (spec §5–§7): the knowledge-graph `GOAL` node (blocked on `mezo-06o0.5`).
+- **Knowledge-graph `GOAL` node** (spec §5–§7, `mezo-iizd.11`, ✅ shipped): see §1 and
+  [`companion.md`](companion.md)'s promotion section — a fifth `source_kind = life_goal`
+  promotion entry alongside `syncGoal`'s weight-goal `source_kind = goal`, delivered through a
+  companion-owned port the `lifegoal` slice implements.
 
 ## 10. Key files
 
