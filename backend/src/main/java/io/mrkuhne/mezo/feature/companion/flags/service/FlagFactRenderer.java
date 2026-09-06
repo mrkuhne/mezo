@@ -36,6 +36,9 @@ public final class FlagFactRenderer {
     /** {@code MealRhythmDriftRule}'s frozen sub-type discriminator — the presence arm. */
     private static final String MEAL_RHYTHM_DEAD_SLOT = "dead_slot";
 
+    /** {@code EnergyDipMealTimingRule}'s frozen fallback split mode. */
+    private static final String ENERGY_DIP_BREAKFAST_PRESENCE = "breakfast_presence";
+
     private FlagFactRenderer() {
     }
 
@@ -59,6 +62,7 @@ public final class FlagFactRenderer {
             case FlagKey.LATE_EATING -> lateEating(payload.lateEating());
             case FlagKey.PROTOCOL_LAPSE -> protocolLapse(payload.protocolLapse());
             case FlagKey.MEAL_RHYTHM_DRIFT -> mealRhythmDrift(payload.mealRhythmDrift());
+            case FlagKey.ENERGY_DIP_MEAL_TIMING -> energyDipMealTiming(payload.energyDipMealTiming());
             default -> List.of();
         };
     }
@@ -293,6 +297,30 @@ public final class FlagFactRenderer {
         }
         facts.add("Ablak: %d nap, ebből %d napon volt rögzített étkezés (minimum %d)"
             .formatted(p.windowDays(), p.daysWithMeals(), p.minDaysWithMeals()));
+        return List.copyOf(facts);
+    }
+
+    /** Round 2 S6 (mezo-d58h.7.7): a CORRELATION, stated as one. Three lines: how the two groups
+     *  were formed, what each one's median afternoon energy was, and how big the sample is. No
+     *  causal word appears — the whole card's honesty rests on that. */
+    private static List<String> energyDipMealTiming(FlagPayloadEnvelope.EnergyDipMealTiming p) {
+        if (p == null) {
+            return List.of();
+        }
+        List<String> facts = new ArrayList<>();
+        if (ENERGY_DIP_BREAKFAST_PRESENCE.equals(p.splitMode())) {
+            facts.add("Két csoport: %d nap rögzített reggelivel, %d nap anélkül"
+                .formatted(p.groupADays(), p.groupBDays()));
+        } else {
+            facts.add("Két csoport: korábbi ebéd (jellemzően %s, %d nap) és későbbi ebéd (%s, %d nap)"
+                .formatted(p.groupAMedianLunchTime(), p.groupADays(),
+                    p.groupBMedianLunchTime(), p.groupBDays()));
+        }
+        facts.add("Délutáni energia mediánja: %s, illetve %s (különbség %s pont, küszöb %s)"
+            .formatted(num(p.groupAMedianEnergy()), num(p.groupBMedianEnergy()),
+                num(p.energyDelta()), num(p.minEnergyDelta())));
+        facts.add("Ablak: %d nap, ebből %d nap volt értékelhető; a napok %s%%-ában áll fenn ez a sorrend"
+            .formatted(p.windowDays(), p.qualifyingDays(), pct(p.superiority())));
         return List.copyOf(facts);
     }
 

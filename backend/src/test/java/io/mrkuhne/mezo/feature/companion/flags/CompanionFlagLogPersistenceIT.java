@@ -151,12 +151,14 @@ class CompanionFlagLogPersistenceIT extends AbstractIntegrationTest {
         flagLogPopulator.rawInsert(owner, FlagKey.LATE_EATING, FlagKey.SOURCE_WRITE);
         // Round 2 S4 (mezo-d58h.7.4): the widened CHECK accepts meal_rhythm_drift too.
         flagLogPopulator.rawInsert(owner, FlagKey.MEAL_RHYTHM_DRIFT, FlagKey.SOURCE_SWEEP);
+        // Round 2 S6 (mezo-d58h.7.7): and energy_dip_meal_timing.
+        flagLogPopulator.rawInsert(owner, FlagKey.ENERGY_DIP_MEAL_TIMING, FlagKey.SOURCE_SWEEP);
 
         assertThat(repository.findAll())
             .extracting(CompanionFlagLogEntity::getFlagKey)
             .contains(FlagKey.ACUTE_BAD_DAY, FlagKey.LOAD_FUEL_MISMATCH, FlagKey.RAPID_WEIGHT_LOSS,
                 FlagKey.JOINT_OVERUSE, FlagKey.IGNORED_NUDGE, FlagKey.LATE_EATING,
-                FlagKey.MEAL_RHYTHM_DRIFT);
+                FlagKey.MEAL_RHYTHM_DRIFT, FlagKey.ENERGY_DIP_MEAL_TIMING);
 
         assertThatThrownBy(() -> flagLogPopulator.rawInsert(owner, "vibes_off_s6", FlagKey.SOURCE_SWEEP))
             .hasStackTraceContaining("ck_companion_flag_log_flag_key");
