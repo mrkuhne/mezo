@@ -1,7 +1,16 @@
 # victoria-metrics-k8s-stack values (mezo-ibxy). Read by argocd/monitoring-application.yaml.
 # Budget on the 8 GB single node: memory limits ≈ 1.3 GiB, PVCs 5 + 5 + 1 Gi.
 fullnameOverride: vm
-argocdReleaseOverride: $ARGOCD_APP_NAME
+# The chart's own comment recommends `argocdReleaseOverride=$ARGOCD_APP_NAME` so
+# VMServiceScrapes select the right release when ArgoCD's Helm release name differs from
+# the Application name. That relies on ArgoCD substituting $ARGOCD_APP_NAME, which only
+# happens in `helm.parameters[].value` — NOT in a `valueFiles` entry (verified against
+# ArgoCD v3.4.3: the literal string "$ARGOCD_APP_NAME" landed in generated labels and
+# failed apiserver label validation on `vmsingle`, `vlagent`, `vmalert`, RBAC objects, etc.).
+# Since `helm.releaseName` is already pinned to `vm` (argocd/monitoring-application.yaml),
+# hardcoding the matching literal here is simpler and correct regardless of the Application's
+# own name.
+argocdReleaseOverride: vm
 
 victoria-metrics-operator:
   enabled: true

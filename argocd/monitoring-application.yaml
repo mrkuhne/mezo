@@ -4,6 +4,13 @@
 #   kubectl apply -f argocd/monitoring-application.yaml
 # ServerSideApply: the operator CRDs + bundled dashboards exceed the 262144-byte
 # last-applied annotation. Never combine with Replace=true.
+#
+# NOTE (mezo-ibxy.4): the Helm release name is pinned below (`releaseName: vm`) rather than
+# left to default to the Application name, so k8s/monitoring/values.yaml's
+# `argocdReleaseOverride` is hardcoded to the matching literal "vm" instead of the chart's
+# suggested `$ARGOCD_APP_NAME` — that substitution only applies inside
+# `helm.parameters[].value`, not a `valueFiles` entry, and putting the literal string there
+# broke apiserver label validation on first sync (verified against ArgoCD v3.4.3).
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
