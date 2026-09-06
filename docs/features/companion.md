@@ -2610,8 +2610,13 @@ build was chosen after living with W3.1's always-on recall.
   precedent).
 - **`GraphService`** (`feature/companion/graph/service/`, W2.1) — `upsertNode`/`upsertEdge` are the
   ONLY write paths later slices use (never a direct `repository.save`); both UPSERT by their unique
-  index so re-promoting the same source row never duplicates. `archive(userId, nodeId)` flips
-  `status` only.
+  index so re-promoting the same source row never duplicates. **`archive(userId, nodeId)`
+  (`mezo-06o0.5`)** flips `status` to `archived` AND stamps `userArchivedAt` — the durable
+  user-intent marker (see W2.2 § below) that keeps the promotion sync from silently raising the
+  node back to `active`. **`restore(userId, nodeId)`** clears the marker and re-derives `status`
+  from the node's source via `GraphPromotionService.resyncNode`, exposed at
+  `POST /api/companion/graph/node/{id}/restore`; `listUserArchived` backs
+  `GET /api/companion/graph/node/archived`.
 - **Switch** `mezo.feature.knowledge-graph.enabled` (`FeaturesConfiguration.KNOWLEDGE_GRAPH_SWITCH`)
   — off ⇒ no graph beans exist, `/api/companion/graph/*` 404s, and every graph hook elsewhere (W2.4
   `[Összefüggések]` block, W4.2 reinforcement, RECOVERY profile input) stays silently absent.
@@ -2631,9 +2636,10 @@ build was chosen after living with W3.1's always-on recall.
 Existing knowledge starts flowing INTO the graph (spec §6.2) — still no REST surface; promotion is
 internal, driven by async event hooks and (from W2.5) a nightly reconciler.
 
-- **`GraphPromotionService`** (`graph/service/GraphPromotionService.java`) — four promotion
-  entries (a fourth, `syncPerson`, joined the original three in **Emberek S5**, `mezo-06o0.4` —
-  see below), each `@Transactional` and idempotent on `GraphNodeEntity`'s
+- **`GraphPromotionService`** (`graph/service/GraphPromotionService.java`) — five promotion
+  entries (a fourth, `syncPerson`, joined the original three in **Emberek S5**, `mezo-06o0.4`,
+  and a fifth, `syncLifeGoal`, joined in the graph/user-archive round, `mezo-iizd.11` — see
+  below), each `@Transactional` and idempotent on `GraphNodeEntity`'s
   `(createdBy, sourceKind, sourceId)` unique index (re-promoting the same row UPSERTs, never
   duplicates):
   - `promotePattern(userId, patternId)` — a `confirmed` pattern (own, not deleted) → a
@@ -2681,11 +2687,33 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     soft-deleted person is invisible to `syncPerson`'s `...AndDeletedFalse` finder, so deletion
     needs its own retraction, same as a soft-deleted goal. A rejected candidate (reject = soft
     delete) also routes here and is typically a no-op — a candidate rarely had a node to archive.
-  - All four titles go through `truncateTitle` — pattern titles (LLM hypotheses, up to 200 chars),
-    fact texts, and goal titles can all exceed `knowledge_node.title varchar(120)`; person names
-    cannot (`people.yml` pins `maxLength: 120` and `PersonExtractionService.validCandidates` drops
-    longer names, so `truncateTitle` is unreachable on the person branch). Truncation cuts to 117
-    chars + `…`.
+  - **`syncLifeGoal(userId, goalId)` / `retractLifeGoal(userId, goalId)`** (graph/user-archive
+    round, `mezo-iizd.11`, spec §7) — the fifth promotion entry, `syncGoal`'s shape applied to a
+    life goal: active → `KIND_GOAL` node, `sourceKind="life_goal"` — deliberately a SEPARATE
+    source kind from `syncGoal`'s `SOURCE_GOAL = "goal"` (the weight goal from `feature/goal`),
+    not a shared one, so the two lifecycles never collide on the same node. Anything else
+    (parked/done/archived/draft) archives the node, same demotion as `syncGoal`/`syncPerson`; a
+    goal that was never promoted and is not active is a no-op. **The source arrives through a
+    port, `LifeGoalGraphSource` (`feature/companion/LifeGoalGraphSource.java`,
+    `all(userId)`/`find(userId, goalId)`, record `GraphGoal(id, title, status)`), implemented by
+    `lifegoal`'s `LifeGoalCompanionAdapter` — the same idiom as `LifeGoalSource`/
+    `LifeGoalProposePort`, and for the same reason: `lifegoal` already imports `companion`, so a
+    reverse `companion → lifegoal` import would close a 2-slice cycle that ArchUnit's frozen
+    `feature_slices_are_cycle_free` rule forbids. The port is `ObjectProvider`-consumed and only
+    beans when `LIFEGOAL_SWITCH` is on; with the bean absent, BOTH the promotion loop below and
+    `retractLifeGoal` are no-ops — a missing port means "the graph cannot currently see life
+    goals", not "archive every life-goal node", so it deliberately does not fall through to mass
+    archival.** Triggered by the nightly `reconcile` and, live, by `LifeGoalService.changeStatus`
+    publishing a `LifeGoalStatusChangedEvent` (placed in `companion` for the same cycle reason as
+    the port) that `GraphPromotionListener.onLifeGoalStatusChanged` consumes AFTER_COMMIT +
+    `@Async` + try/catch, so a graph failure can never break the user's status change. Only
+    `changeStatus` is hooked — a life-goal delete or a title edit still waits for the nightly
+    sweep to catch up, same honest gap as `retractFact`'s delete half.
+  - All five titles go through `truncateTitle` — pattern titles (LLM hypotheses, up to 200 chars),
+    fact texts, and goal titles (both weight-goal and life-goal) can all exceed
+    `knowledge_node.title varchar(120)`; person names cannot (`people.yml` pins `maxLength: 120`
+    and `PersonExtractionService.validCandidates` drops longer names, so `truncateTitle` is
+    unreachable on the person branch). Truncation cuts to 117 chars + `…`.
   - **Retraction (`mezo-b3pp.31`) — promotion's mirror.** `retractPattern(userId, patternId)`,
     `retractGoal(userId, goalId)` and `retractFact(userId, factId)` each re-check their own
     source row's qualifying condition rather than trusting the caller (a pattern no longer
@@ -2718,14 +2746,45 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     hand from the Tudástár UI had it resurrected by the next dawn's reconcile. The filter added
     here (both in `promoteFact` and, via the same condition, in `retractFact`'s qualifying check)
     closes that: an opted-out fact's node either never gets promoted or gets archived on the next
-    `syncFact`/`reconcile` pass, and stays archived. **This durability is specific to opted-out
-    facts.** For a fact left `include_in_prompt=true`, `promoteFact` still unconditionally
-    re-asserts `status='active'` on UPSERT (the `mezo-b3pp.31` revive half, unchanged) — a
-    hand-archived node for such a fact is still resurrected, and this slice actually SHORTENS
-    that undo window from a night to a turn, since any `PATCH` on the fact now routes through
-    `syncFact` → `promoteFact` within the async hop. `include_in_prompt` is the intended lever
-    for keeping a fact out of the prompt; hand-archiving its graph node from the Tudástár UI is
-    not a substitute for it.
+    `syncFact`/`reconcile` pass, and stays archived. **That fix was still source-specific — it only
+    covered opted-out facts.** For a fact left `include_in_prompt=true` (or any pattern/goal/person
+    node), `promoteFact`/`promotePattern`/`syncGoal`/`syncPerson` still unconditionally re-asserted
+    `status='active'` on UPSERT, so a node the user hand-archived from the Tudástár UI was
+    resurrected the moment its source next synced — a night, or since `mezo-b3pp.30`, the same
+    turn as a `PATCH`.
+  - **Hand-archiving is now a durable user intent, for every source kind (`mezo-06o0.5`).**
+    `GraphService.archive` stamps `GraphNodeEntity.userArchivedAt` alongside the `status` flip —
+    a marker the promotion sync itself cannot see past. FIVE writers raise status through one
+    choke point, `GraphPromotionService.raiseStatus(node, target)` (`public`, code review finding
+    mezo-06o0.5): the four promoters (`promotePattern`/`syncFact`/`syncGoal`/`syncPerson`, plus
+    `syncLifeGoal`) and, since the final-review fix, `ProfileAssembler.rebuild` for the singleton
+    profile node — it refuses to raise a user-archived node to `active` no matter how many times
+    any of them, or `reconcile`, touch it afterwards. The ARCHIVING direction stays unguarded on
+    purpose: a source that stops qualifying still archives the node even if the user had already
+    hidden it — same outcome either way, so there is nothing to guard. Title/summary/meta keep
+    refreshing on a user-archived node (the graph keeps shadowing its source), only the `status`
+    raise is skipped, so the node stops leaking back into `[Összefüggések]` without going stale
+    underneath. The archive now holds until the user explicitly reverses it via
+    `GraphService.restore` (`POST /api/companion/graph/node/{id}/restore`), which clears
+    `userArchivedAt` and re-derives `status` from the source through
+    `GraphPromotionService.resyncNode` — not a blind `active`, since the source may have stopped
+    qualifying while the node sat archived, and lying `active` until the next nightly `reconcile`
+    corrects it would just reopen the old leak in miniature. `restore` only acts on a node the user
+    actually hand-archived (`userArchivedAt != null`) — otherwise 409
+    `GRAPH_NODE_NOT_USER_ARCHIVED` (code review finding, mezo-06o0.5): without this a `candidate`
+    node (its id public via `GET .../node/candidate`, `sourceId` null) would resync straight to
+    `active` through `resyncNode`'s source-less branch, promoting an AI-proposed candidate while
+    bypassing `LifeEventCandidateService.decide` — the already-decided gate, the refined
+    title/summary, and the `proposedEdges` materialisation. Nothing the AI derives becomes durable
+    without an explicit user decision; restore is a REVERSAL of a user decision, not a substitute
+    for one.
+    `GET /api/companion/graph/node/archived` lists the hand-archived set. `include_in_prompt`
+    remains the fact-side kill-switch, and the two levers still don't compete: `include_in_prompt`
+    mutes the SOURCE fact from every injection channel (V1.1, V3.3, the graph); `userArchivedAt`
+    mutes the graph NODE alone, independent of what the source is doing. They are no longer a
+    race — a hand-archived node stays archived regardless of `include_in_prompt`, and flipping
+    `include_in_prompt` back on no longer resurrects a hand-archived node — but they still are not
+    interchangeable: one silences the source, the other hides its graph shadow.
   - **The node survives archiving; its edges don't, necessarily.** `status='archived'` keeps the
     row and its `(createdBy, sourceKind, sourceId)` anchor, so a later re-confirm/re-save
     UPSERTs the SAME node back to `active` rather than building a second one — but
@@ -2743,29 +2802,36 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     `summary` only once a week — so content retracted mid-week can still be quoted inside
     `[Rólad tanultam]` until the next weekly regeneration. Self-healing (the next `rebuild` drops
     it), not fixed here.
-  - `reconcile(userId)` — the nightly sweep (patterns/facts/goals/**people** the write-path hooks
-    could have missed: pre-graph confirmations, manually created facts, drifted titles, a person
-    whose status changed while the graph switch was off). Pure UPSERT, so running it twice in a
-    row is a no-op on the second pass. **Exists in this slice but nothing schedules it yet** — no
-    cron, no REST trigger; W2.5's `GraphMaintenanceJob` wires it in.
+  - `reconcile(userId)` — the nightly sweep (patterns/facts/goals/people/**life goals** the
+    write-path hooks could have missed: pre-graph confirmations, manually created facts, drifted
+    titles, a person or life goal whose status changed while the graph switch was off). Pure
+    UPSERT, so running it twice in a row is a no-op on the second pass. **Exists in this slice but
+    nothing schedules it yet** — no cron, no REST trigger; W2.5's `GraphMaintenanceJob` wires it
+    in.
     **Since `mezo-b3pp.31` it returns `GraphReconcileResult(int upserted, int retracted)`** (a
     new record, replacing a bare `int`) and runs a promotion loop per source kind — pattern, fact,
-    goal, and (**Emberek S5**, `mezo-06o0.4`) **person**, in that order — followed by a FIFTH,
-    complement-set sweep: walking every one of the user's active nodes back to its source row and
-    archiving any whose source stopped qualifying (a pattern no longer confirmed, a soft-deleted
-    goal, fact, or person) — per-row isolated through the same `self`/`proxy`
-    per-item-transaction idiom as the promotion loops, and skipping `sourceKind`s it does not own
-    (`sourceId == null` for extractor/quarterly nodes; the `switch`'s `default -> false` branch for
-    the profile node, which DOES carry a `sourceId` — see the code comment). This is the
-    complement loop's whole reason to exist: the four promotion loops above only ever see rows
-    that STILL qualify, so a row that LEAVES its qualifying set (un-confirmed, soft-deleted) is
-    invisible to them and its node would otherwise stay active forever; the sweep is what heals a
-    retraction missed while the switch was off (no listener existed to hear the event). For a
-    `knowledge_fact` specifically it remains the ONLY path that ever retracts one for the *delete*
-    half (nothing in main source soft-deletes a `knowledge_fact`) — the *opt-out* half now also
-    reaches `retractFact` on the next turn via `syncFact` (`mezo-b3pp.30`), with the sweep as its
-    backstop, same as every other source kind. The `person` branch of the complement switch calls
-    `retractPerson`, the same backstop role.
+    goal, (**Emberek S5**, `mezo-06o0.4`) **person**, and (`mezo-iizd.11`) **life goal**, in that
+    order (the life-goal loop iterates `LifeGoalGraphSource.all(userId)` — EVERY goal, not just
+    active ones, since the loop itself is what archives the non-active ones — and is skipped
+    entirely when the port bean is absent) — followed by a SIXTH, complement-set sweep: walking
+    every one of the user's active nodes back to its source row and archiving any whose source
+    stopped qualifying (a pattern no longer confirmed, a soft-deleted goal, fact, or person, or a
+    life goal the port no longer reports as active) — per-row isolated through the same
+    `self`/`proxy` per-item-transaction idiom as the promotion loops, and skipping `sourceKind`s
+    it does not own (`sourceId == null` for extractor/quarterly nodes; the `switch`'s
+    `default -> false` branch for the profile node, which DOES carry a `sourceId` — see the code
+    comment). This is the complement loop's whole reason to exist: the five promotion loops above
+    only ever see rows that STILL qualify, so a row that LEAVES its qualifying set (un-confirmed,
+    soft-deleted) is invisible to them and its node would otherwise stay active forever; the
+    sweep is what heals a retraction missed while the switch was off (no listener existed to hear
+    the event). For a `knowledge_fact` specifically it remains the ONLY path that ever retracts
+    one for the *delete* half (nothing in main source soft-deletes a `knowledge_fact`) — the
+    *opt-out* half now also reaches `retractFact` on the next turn via `syncFact`
+    (`mezo-b3pp.30`), with the sweep as its backstop, same as every other source kind. The
+    `person` branch of the complement switch calls `retractPerson`, and the `life_goal` branch
+    calls `retractLifeGoal` — same backstop role; `retractLifeGoal` itself no-ops when the port
+    bean is absent, so a missing port is invisible to this sweep rather than triggering a mass
+    archival (see `syncLifeGoal`'s javadoc for why).
   - **Deliberate transaction shape**: `promotePattern`/`promoteFact`/`syncGoal` are each
     all-or-nothing (node + any structured edges commit or roll back together, one DB transaction).
     A failure mid-promotion loses that one promotion, but promotion is idempotent, so the next
@@ -3498,9 +3564,14 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   violation of anything today, but zero headroom for the header to grow by even one clause. 200
   leaves over 150 tokens of prose room at the floor, still well under the shipped 400 default.
 - **`upsertNode` does not touch status** (W2.2 owns its own status rules), so the assembler
-  explicitly re-activates the node after the upsert: an archived profile is revived by the very
-  next weekly run — the "reset what you think of me" recovery path spec §8.3 promises, without a
-  dedicated endpoint.
+  explicitly re-activates the node after the upsert, through the shared
+  `GraphPromotionService.raiseStatus` choke point (mezo-06o0.5, code review finding) rather than a
+  bare `setStatus`: a MACHINE-archived profile is revived by the very next weekly run — the
+  "reset what you think of me" recovery path spec §8.3 promises, without a dedicated endpoint —
+  but a profile the user hand-archived from the Tudástár UI (`userArchivedAt` set) stays archived,
+  same as every other source kind (see "Hand-archiving is now a durable user intent" above). The
+  profile node is a fifth writer of this status alongside the four promoters, which is why
+  `raiseStatus` is `public`.
 - **`ProfileAssemblerJob`** (`profile/service/`) — one `@Scheduled` method, weekly **Monday 03:45**
   (`0 45 3 * * MON`), deliberately AFTER the 03:10 feedback rollups and the 03:30 weekly
   consolidation rung — it reads both, so it must run last in that dawn window. Gated on
@@ -3755,9 +3826,11 @@ a future caller would re-acquire the bug by omission.
 `mezo.techcore.cron.profile-assembler-job.enabled=false` is a documented kill switch for the
 profile — no weekly rebuild, no smart-tier spend on it, and an archived *Rólad tanultam* node
 stays archived. Calling `ProfileAssembler.rebuild` unconditionally from here made it leaky: four
-times a year the quarterly cron would spend a smart-tier call per user anyway AND force the
-non-ACTIVE node back to ACTIVE (the assembler's deliberate "reset what you think of me" revival),
-resurrecting a profile the operator or the user had switched off. `@Value` is banned in this repo,
+times a year the quarterly cron would spend a smart-tier call per user anyway AND force a
+MACHINE-archived node back to ACTIVE (the assembler's deliberate "reset what you think of me"
+revival, itself routed through `GraphPromotionService.raiseStatus` since `mezo-06o0.5` and so
+never reviving a node the user hand-archived — see "Hand-archiving is now a durable user intent"
+above), resurrecting a profile the operator had switched off. `@Value` is banned in this repo,
 so the switch is read the house way — **by bean presence**: `QuarterlyReviewJob` holds
 `ObjectProvider<ProfileAssemblerJob>`, and that bean's existence IS the switch (its own
 `@ConditionalOnProperty` says so). Absent ⇒ phase 2 is skipped, with an honest log line (IDENT-3),
@@ -6230,14 +6303,11 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
     — the graph is one more channel, not a carve-out. Before this fix, `mezo-b3pp.31`'s revive
     half made the nightly `reconcile` re-assert `status='active'` on an opted-out fact's node, so
     a user who archived that node by hand from the Tudástár UI had it silently resurrected by
-    dawn; the filter (mirrored into `retractFact`'s qualifying check) closes that. **This
-    durability is specific to opted-out facts** — a fact left `include_in_prompt=true` is
-    unaffected: `promoteFact` still unconditionally re-asserts `status='active'` for it, so a
-    hand-archive of THAT node is undone by the very next write that touches the fact (even a
-    category-only edit now routes through `syncFact` → `promoteFact` within the async hop, an
-    even shorter undo window than the old nightly sweep). `include_in_prompt` is the intended
-    lever for a fact the user wants out of the prompt — hand-archiving the graph node is not a
-    substitute for it. `syncFact` (promote-or-archive in one transaction, the `syncGoal` shape)
+    dawn; the filter (mirrored into `retractFact`'s qualifying check) closes that. **This closed
+    the opted-out-fact leak specifically; the general hand-archive leak (any node, regardless of
+    `include_in_prompt`) is a separate fix — `mezo-06o0.5`'s `GraphPromotionService.raiseStatus`
+    choke point, see the W2.2 "Hand-archiving is now a durable user intent" note above.**
+    `syncFact` (promote-or-archive in one transaction, the `syncGoal` shape)
     and the unconditionally published `KnowledgeFactChangedEvent` route the toggle to the
     traversal channel (`[Összefüggések]`, the injected fact block) on the user's next turn
     instead of waiting for the sweep, with an edited fact's node title kept fresh as a side

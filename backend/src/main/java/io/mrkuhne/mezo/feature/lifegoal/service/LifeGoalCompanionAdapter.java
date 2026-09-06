@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.api.dto.LifeGoalTodaySummary;
 import io.mrkuhne.mezo.api.dto.PillarDayEntry;
 import io.mrkuhne.mezo.api.dto.PillarDayStatus;
 import io.mrkuhne.mezo.api.dto.PillarProgress;
+import io.mrkuhne.mezo.feature.companion.LifeGoalGraphSource;
 import io.mrkuhne.mezo.feature.companion.LifeGoalSource;
 import io.mrkuhne.mezo.feature.lifegoal.engine.SignalSource;
 import io.mrkuhne.mezo.feature.lifegoal.entity.IfThenPlanJson;
@@ -22,6 +23,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +45,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = FeaturesConfiguration.LIFEGOAL_SWITCH, havingValue = "true")
-public class LifeGoalCompanionAdapter implements LifeGoalSource {
+public class LifeGoalCompanionAdapter implements LifeGoalSource, LifeGoalGraphSource {
 
     private static final String STATUS_ACTIVE = "active";
     private static final int WEEK_DAYS = 7;
@@ -88,6 +90,25 @@ public class LifeGoalCompanionAdapter implements LifeGoalSource {
                 progress.getWeeklyPct(), pillars, plans));
         }
         return new Details(details);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<GraphGoal> all(UUID userId) {
+        return goalRepository.findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(userId).stream()
+            .map(LifeGoalCompanionAdapter::toGraphGoal)
+            .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<GraphGoal> find(UUID userId, UUID goalId) {
+        return goalRepository.findByIdAndCreatedByAndDeletedFalse(goalId, userId)
+            .map(LifeGoalCompanionAdapter::toGraphGoal);
+    }
+
+    private static GraphGoal toGraphGoal(LifeGoalEntity goal) {
+        return new GraphGoal(goal.getId(), goal.getTitle(), goal.getStatus());
     }
 
     private PillarLine pillarLine(PillarProgress p, LifeGoalPillarEntity entity, LocalDate today) {

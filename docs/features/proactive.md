@@ -262,7 +262,13 @@ this redesign and remain as shipped.
   `bestSet.date` fell in-week via `ExerciseRecordService` — a new cycle-safe `proactive → train`
   read; `PR` anchor candidates), the week's **predictions with status**, and the
   **`WeeklyReviewContextSources` wider context verbatim** (journal, decisions, experiments,
-  mention counts, medication-cycle position, week narrative — no anchor candidates). The JSON
+  mention counts, medication-cycle position, week narrative — no anchor candidates) — since
+  `mezo-a9os` windowed `LifeGoalProgressService.summary(userId, from, to)`, this silently pulls
+  in the seventh source too, the **`ÉLETCÉLOK · A HÉT IRÁNYA`** block (§ below), scoped to the
+  memoir's own `[weekStart, weekStart+6]` rather than `LocalDate.now()`'s week — correct (the
+  memoir narrates the week ENDING, same window as everything else it gathers), undocumented until
+  now, and covered by no dedicated `MemoirGeneratorIT` case, only inherited via
+  `WeeklyReviewContextSources.render`'s own tests. The JSON
   contract is now `{title, body, anchors:[{index, note}]}` (legacy `anchorIndexes` still parsed
   as fallback); **Memory anchor labels are composed server-side** into human HU day labels
   (`MemoirGenerator.memoryLabel`: `aug. 29., szombat — <note≤60>`) so the FE chips stop showing
@@ -603,14 +609,16 @@ Design of record: `.superpowers/sdd/2026-08-27-weekly-review/`. Companion, not p
   position on the week's first and last day (one line, derived via `MedicationCycleService`), and
   the week's consolidated **`period_summary(week)`** narrative (clipped to 600 — its `03:30 MON`
   consolidation cron runs three hours before the `06:50` review cron on the SAME `weekStart`).
-  **The seventh source (`mezo-iizd.9`): `ÉLETCÉLOK · AZ ELMÚLT 7 NAP`** — the life-goal engine's
-  ALREADY-COMPUTED per-goal trend off `LifeGoalProgressService#today` (max 5 ACTIVE goals;
+  **The seventh source (`mezo-iizd.9`, windowed by `mezo-a9os`): `ÉLETCÉLOK · A HÉT IRÁNYA`** —
+  the life-goal engine's ALREADY-COMPUTED per-goal trend off
+  `LifeGoalProgressService#summary(userId, weekStart, weekEnd)` (max 5 ACTIVE goals;
   `title [dimension] <arrow-word> · N találat-nap a 7-ből`). Three honesty rules shape it, all
-  pinned by `WeeklyReviewContextSourcesIT`: the header names the **trailing-7-day** window it
-  actually measures, NOT the reviewed week (`today()`'s `[now-6, now]` sits one day off the
-  Monday-06:50 cron's `[D-7, D-1]`; a windowed `today(from, to)` variant is a separate, later
-  issue); today's `pillarsHitToday / pillarsTotal` snapshot is dropped as meaningless in a
-  retrospective; and a goal with **no data-day at all** renders `ezen a héten még nincs adata`
+  pinned by `WeeklyReviewContextSourcesIT`: the header names the **reviewed week** it actually
+  measures — `summary` takes the SAME `[weekStart, weekEnd]` every sibling source above uses,
+  so the Monday-06:50 cron's `[D-7, D-1]` is what feeds `days7`, not a trailing-7-day window off
+  render time (that was the previous shape, before the windowed `summary` variant existed); today's
+  `pillarsHitToday / pillarsTotal` snapshot is dropped as meaningless in a retrospective regardless
+  of which day it lands on; and a goal with **no data-day at all** renders `ezen a héten még nincs adata`
   instead of a `0 találat-nap` tally — a zero there means "we measured nothing", and a
   measured-looking zero would invite the model to explain a week nobody measured. That last rule
   mirrors the frontend's `goalWeekSentence.ts` verbatim, so one week can never read as a miss in

@@ -81,4 +81,10 @@ public interface GraphNodeRepository extends JpaRepository<GraphNodeEntity, UUID
         """, nativeQuery = true)
     long countQuarterlyNodesOnQuarter(@Param("createdBy") UUID createdBy,
         @Param("occurredOn") LocalDate occurredOn);
+
+    /** mezo-06o0.5: a KÉZZEL archivált node-ok — a visszaállító felület adatforrása. A
+     *  gép-archivált node-ok (a forrásuk megszűnt kvalifikálni) szándékosan kimaradnak: azokat
+     *  nem a felhasználó rejtette el, és nincs mit visszavonnia rajtuk. */
+    List<GraphNodeEntity> findByCreatedByAndUserArchivedAtIsNotNullAndDeletedFalseOrderByUserArchivedAtDesc(
+        UUID createdBy);
 }
