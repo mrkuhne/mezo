@@ -5,6 +5,8 @@ kind: Service
 metadata:
   name: backend
   namespace: mezo
+  labels:
+    app: backend    # mezo-ibxy: VMServiceScrape "backend" selects the Service by this label
 spec:
   selector:
     app: backend
