@@ -21,6 +21,16 @@ import java.util.regex.Pattern;
  * carries no chapter membership, and inventing one would misreport the meeting. Returns
  * {@code null} when the transcript has no expert turn to number — the caller then shows the
  * original prose view.
+ *
+ * <p><b>Persona keys collide.</b> {@code CharacterCoreCatalog} seeds the self-audit dimension with
+ * expertKey {@code "szkeptikus"}, so a real transcript can carry TWO turns keyed that way: the
+ * self-audit expert's own proposal turn, and {@code KonziliumVerdictRound}'s verdict turn. The
+ * chair persona {@code "mezo"} similarly appears on a bootstrap turn that carries no ruling.
+ * A turn is therefore classified by its CONTENT, not its persona key alone — a "szkeptikus" turn
+ * is the verdict turn only if at least one line matches the verdict pattern, and a "mezo" turn is
+ * the chair turn only if at least one line matches the ruling pattern. Both the verdict/ruling
+ * collection pass and the threading pass use the same classification, so a turn is never counted
+ * twice nor skipped by one pass and consumed by the other.
  */
 public final class LegacyTranscriptParser {
 
@@ -44,9 +54,9 @@ public final class LegacyTranscriptParser {
         Map<Integer, ConferenceDeliberationEnvelope.SkepticVerdict> verdicts = new LinkedHashMap<>();
         Map<Integer, ConferenceDeliberationEnvelope.ChairRuling> rulings = new LinkedHashMap<>();
         for (ConferenceTranscriptEnvelope.Turn turn : turns) {
-            if (SKEPTIC_PERSONA.equals(turn.persona())) {
+            if (isVerdictTurn(turn)) {
                 collectVerdicts(turn.text(), verdicts);
-            } else if (CHAIR_PERSONA.equals(turn.persona())) {
+            } else if (isChairTurn(turn)) {
                 collectRulings(turn.text(), rulings);
             }
         }
@@ -54,7 +64,7 @@ public final class LegacyTranscriptParser {
         List<ConferenceDeliberationEnvelope.Thread> threads = new ArrayList<>();
         int index = 0;
         for (ConferenceTranscriptEnvelope.Turn turn : turns) {
-            if (SKEPTIC_PERSONA.equals(turn.persona()) || CHAIR_PERSONA.equals(turn.persona())) {
+            if (isVerdictTurn(turn) || isChairTurn(turn)) {
                 continue;
             }
             List<String> claimLines = claimLines(turn.text());
@@ -72,6 +82,31 @@ public final class LegacyTranscriptParser {
         }
 
         return threads.isEmpty() ? null : new ConferenceDeliberationEnvelope(List.copyOf(threads));
+    }
+
+    /** A "szkeptikus"-keyed turn is the verdict turn only if it actually carries a verdict line —
+     *  otherwise it is the self-audit expert's own proposal turn and must thread like any other
+     *  expert's. */
+    private static boolean isVerdictTurn(ConferenceTranscriptEnvelope.Turn turn) {
+        return SKEPTIC_PERSONA.equals(turn.persona()) && anyLineMatches(turn.text(), SKEPTIC_LINE);
+    }
+
+    /** A "mezo"-keyed turn is the chair turn only if it actually carries a ruling line — the
+     *  bootstrap council writes a "mezo" turn with only a header line and no rulings. */
+    private static boolean isChairTurn(ConferenceTranscriptEnvelope.Turn turn) {
+        return CHAIR_PERSONA.equals(turn.persona()) && anyLineMatches(turn.text(), CHAIR_LINE);
+    }
+
+    private static boolean anyLineMatches(String text, Pattern pattern) {
+        if (text == null) {
+            return false;
+        }
+        for (String line : text.split("\n")) {
+            if (pattern.matcher(line.strip()).matches()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /** An expert turn's first line is its own header ("Drill: 2 javaslat …"); every further

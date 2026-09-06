@@ -76,6 +76,59 @@ class LegacyTranscriptParserTest {
     }
 
     @Test
+    void parse_selfAuditExpertKeyedSzkeptikus_threadsSeparately_fromTheVerdictTurn() {
+        List<ConferenceTranscriptEnvelope.Turn> turns = List.of(
+                turn("szkeptikus", "Szkeptikus: 2 javaslat a hét 5 megfigyeléséből.\n"
+                        + "Az önreflexió szerint a heti célok túl agresszívak voltak.\n"
+                        + "A visszajelzések figyelmen kívül hagyása ismétlődő minta."),
+                turn("drill", "Drill: 1 javaslat a hét 4 megfigyeléséből.\n"
+                        + "A pihenőnapok kihagyása fáradtsághoz vezetett."),
+                turn("szkeptikus", "Szkeptikus: 3 javaslat véleményezve.\n"
+                        + "P0: KILL — Az önértékelés torzított, nincs külső mérce.\n"
+                        + "P1: KEEP — A visszajelzés-mintázat adatokkal alátámasztott.\n"
+                        + "P2: KEEP — A pihenőnap-kihagyás a naplóban dokumentált."),
+                turn("mezo", "Mezo: 2/3 javaslat elfogadva.\n"
+                        + "P0: ELUTASÍTVA (0.85) — Nincs külső mérce.\n"
+                        + "P1: ELFOGADVA (0.80) — Alátámasztott mintázat.\n"
+                        + "P2: ELFOGADVA (0.75) — Dokumentált kihagyás."));
+
+        ConferenceDeliberationEnvelope envelope = LegacyTranscriptParser.parse(turns);
+
+        assertThat(envelope).isNotNull();
+        assertThat(envelope.threads()).hasSize(2);
+
+        ConferenceDeliberationEnvelope.Thread selfAudit = envelope.threads().get(0);
+        assertThat(selfAudit.items()).hasSize(2);
+
+        ConferenceDeliberationEnvelope.Item first = selfAudit.items().get(0);
+        assertThat(first.index()).isZero();
+        assertThat(first.expertKey()).isEqualTo("szkeptikus");
+        assertThat(first.text()).isEqualTo("Az önreflexió szerint a heti célok túl agresszívak voltak.");
+        assertThat(first.skeptic().verdict()).isEqualTo("KILL");
+        assertThat(first.chair().accepted()).isFalse();
+
+        ConferenceDeliberationEnvelope.Item second = selfAudit.items().get(1);
+        assertThat(second.index()).isEqualTo(1);
+        assertThat(second.text()).isEqualTo("A visszajelzések figyelmen kívül hagyása ismétlődő minta.");
+        assertThat(second.skeptic().verdict()).isEqualTo("KEEP");
+        assertThat(second.chair().accepted()).isTrue();
+
+        ConferenceDeliberationEnvelope.Item third = envelope.threads().get(1).items().get(0);
+        assertThat(third.index()).isEqualTo(2);
+        assertThat(third.expertKey()).isEqualTo("drill");
+        assertThat(third.skeptic().verdict()).isEqualTo("KEEP");
+        assertThat(third.chair().accepted()).isTrue();
+    }
+
+    @Test
+    void parse_bootstrapChairTurnWithoutRulingLines_doesNotBecomeAnExpertThread() {
+        List<ConferenceTranscriptEnvelope.Turn> turns = List.of(
+                turn("mezo", "A teljes eddigi történet beolvasva — 9 kezdő állítás felvéve."));
+
+        assertThat(LegacyTranscriptParser.parse(turns)).isNull();
+    }
+
+    @Test
     void parse_noExpertTurns_returnsNull() {
         List<ConferenceTranscriptEnvelope.Turn> turns = List.of(
                 turn("mezo", "A teljes eddigi történet beolvasva — 9 kezdő állítás felvéve."));
