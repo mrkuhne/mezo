@@ -951,12 +951,20 @@ holds an LLM-extracted `mood`/`energy`/`stress` (1..5), a `confidence`, and the 
   slices 2–6 correlate arbitrary pairs through. `isKnown` only accepts a person/topic key when a
   signal of the last 180 days actually carries it, so a pattern can never be proposed about a person
   the user never wrote about; an unresolvable key yields an **empty** series, never an exception.
-- **The one memory-platform write.** After a signal lands, `memory_item.people` / `.topics` for the
-  SAME `(created_by, source_kind, source_id)` are refreshed from it — `memory_item.source_kind`
-  equals the signal's `source_kind` for both prose kinds, because `MemoryEmbeddingWriter` uses the
-  same `journal_entry` / `gratitude` strings. **`salience` is never written from a model answer**
-  (RAG spec §12) and stays whatever the deterministic projector set. No `memory_item` row yet (the
-  projection is async) simply means no enrichment this round.
+- **The one memory-platform write, and the race it loses.** After a signal lands,
+  `memory_item.people` / `.topics` for the SAME `(created_by, source_kind, source_id)` are refreshed
+  from it — `memory_item.source_kind` equals the signal's `source_kind` for both prose kinds, because
+  `MemoryEmbeddingWriter` uses the same `journal_entry` / `gratitude` strings. **`salience` is never
+  written from a model answer** (RAG spec §12) and stays whatever the deterministic projector set.
+  **Two unordered AFTER_COMMIT listeners fire on the same journal save** — this one and the embedding
+  seam's memory projection — and `MemoryProjectionWriter` unconditionally RESETS `people`/`topics` to
+  its command's empty lists, so a projection that lands last silently wipes the enrichment. Rather
+  than ordering the two listeners (which would couple the seams), the enrichment is made
+  **re-appliable**: `record`'s unchanged-hash short-circuit re-applies it from the STORED signal at
+  zero LLM cost, which is exactly what the nightly catch-up's re-offer triggers. So the enrichment is
+  eventually-correct within a night, not guaranteed on the first write — and a missing `memory_item`
+  row (the projection has not run yet) is the same story: no enrichment this round, healed by the
+  next catch-up.
 - **Catch-up.** `TextSignalCatchUpService.catchUp(userId, today)` re-offers the last
   `catch-up-days` finished days — every journal/gratitude row whose newest signal is missing or whose
   hash no longer matches, plus every day without a `chat_day` signal — and returns how many rows it

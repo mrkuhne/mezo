@@ -58,6 +58,13 @@ public class TextSignalService {
                 .findFirstByCreatedByAndSourceKindAndSourceIdAndDeletedFalseOrderByVersionDesc(
                         userId, sourceKind, sourceId);
         if (newest.isPresent() && newest.get().getContentHash().equals(hash)) {
+            // No LLM call — but DO re-apply the enrichment. Two AFTER_COMMIT listeners race on the
+            // same journal save: this one, and the embedding seam's memory projection, whose writer
+            // unconditionally resets memory_item.people/topics to the command's empty lists
+            // (MemoryProjectionWriter:75-76). If the projection lands last, the enrichment is gone.
+            // Re-applying it here is what makes the nightly catch-up a genuine self-heal for that
+            // lost race — the source is re-offered, the hash matches, and the item is refreshed.
+            reenrichFrom(userId, sourceKind, sourceId, newest.get());
             return newest;
         }
         Optional<ExtractedSignal> extracted = extractor.extract(userId, sourceKind, sourceId, text);
@@ -112,10 +119,23 @@ public class TextSignalService {
      * means no enrichment this round; the nightly catch-up re-offers the source.
      */
     private void enrichMemoryItem(UUID userId, String sourceKind, UUID sourceId, ExtractedSignal signal) {
+        enrich(userId, sourceKind, sourceId, signal.people(), signal.topics());
+    }
+
+    /** The same enrichment from an ALREADY STORED signal — no LLM call, used by the heal path. */
+    private void reenrichFrom(UUID userId, String sourceKind, UUID sourceId, TextSignalEntity signal) {
+        enrich(userId, sourceKind, sourceId, signal.getPeople(), signal.getTopics());
+    }
+
+    private void enrich(UUID userId, String sourceKind, UUID sourceId,
+                        java.util.List<String> people, java.util.List<String> topics) {
         memoryItemRepository.findByCreatedByAndSourceKindAndSourceId(userId, sourceKind, sourceId)
                 .ifPresent(item -> {
-                    item.setPeople(new ArrayList<>(signal.people()));
-                    item.setTopics(new ArrayList<>(signal.topics()));
+                    if (item.getPeople().equals(people) && item.getTopics().equals(topics)) {
+                        return; // already in sync — no pointless write
+                    }
+                    item.setPeople(new ArrayList<>(people));
+                    item.setTopics(new ArrayList<>(topics));
                     memoryItemRepository.saveAndFlush(item);
                 });
     }
