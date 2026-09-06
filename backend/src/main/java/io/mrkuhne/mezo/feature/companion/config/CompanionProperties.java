@@ -227,7 +227,7 @@ public record CompanionProperties(
         @NotBlank @Pattern(regexp = "[a-z0-9_]{1,27}") String key,
         @NotBlank @Pattern(regexp = "sustained_stress|sleep_debt|momentum_at_risk|recovery_needed|all_healthy|logging_gap|missed_workouts"
             + "|acute_bad_day|load_fuel_mismatch|rapid_weight_loss|joint_overuse|ignored_nudge|late_eating|protocol_lapse"
-            + "|meal_rhythm_drift") String flag,
+            + "|meal_rhythm_drift|energy_dip_meal_timing") String flag,
         @NotBlank @Pattern(regexp = "feed|push|both") String channel,
         @NotBlank @Size(max = 500) String textHu,
         @Min(1) @Max(8760) int cooldownHours,

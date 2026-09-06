@@ -44,7 +44,9 @@ public record FlagProperties(
 
     @NotNull @Valid ProtocolLapse protocolLapse,
 
-    @NotNull @Valid MealRhythmDrift mealRhythmDrift
+    @NotNull @Valid MealRhythmDrift mealRhythmDrift,
+
+    @NotNull @Valid EnergyDipMealTiming energyDipMealTiming
 ) {
 
     /** Check-in stress is a 1–10 scale (the contract's SaveCheckInRequest bounds). */
@@ -256,6 +258,34 @@ public record FlagProperties(
     ) {
     }
 
+    /** Spec 2026-09-05 §(15): does the user's early-afternoon energy track WHEN (or whether) they
+     *  ate that morning? A correlation report, never a causal claim — see
+     *  {@code EnergyDipMealTimingRule}. The most cautious rule in the set: every gate here exists
+     *  to keep a coincidence from becoming a card. */
+    public record EnergyDipMealTiming(
+        /** Rolling window (days, ending YESTERDAY — today's afternoon may not have happened). */
+        @Min(14) @Max(120) int windowDays,
+        /** Honest small-n gate: days carrying BOTH an afternoon energy value and any logged meal. */
+        @Min(5) @Max(120) int minQualifyingDays,
+        /** The "early afternoon" band, INCLUSIVE on both ends, matched against the check-in's
+         *  {@code slot_time} wall clock: 11 and 16 mean a 16:00 check-in counts and 16:15 does not.
+         *  Hours rather than HH:mm strings so Bean Validation can range-check them. */
+        @Min(0) @Max(23) int afternoonFromHour,
+        @Min(1) @Max(23) int afternoonToHour,
+        /** Minimum days on EACH side of the split. Below this the two medians are anecdote. */
+        @Min(3) @Max(60) int minGroupDays,
+        /** The spec's "at least 1 full point": the required |median − median| on the 1–10 energy scale. */
+        @DecimalMin("0.5") @DecimalMax("5.0") double minEnergyDelta,
+        /** The spec's "consistently": the common-language effect size (Mann–Whitney probability of
+         *  superiority, ties counting half), oriented to the higher group so it lands in [0.5, 1.0]. */
+        @DecimalMin("0.5") @DecimalMax("1.0") double minSuperiority,
+        /** The lunch arm's anti-degeneracy gate: the two groups' own median lunch times must be at
+         *  least this far apart, or the "split" is noise and the breakfast fallback takes over —
+         *  this IS the spec's "when lunch times don't vary". */
+        @Min(15) @Max(240) int minLunchSplitSeparationMinutes
+    ) {
+    }
+
     /** Per-flag re-raise cooldown; a flag re-raises only once its own window has passed. */
     public record CooldownHours(
         @Min(1) @Max(8760) int sustainedStress,
@@ -272,7 +302,8 @@ public record FlagProperties(
         @Min(1) @Max(8760) int ignoredNudge,
         @Min(1) @Max(8760) int lateEating,
         @Min(1) @Max(8760) int protocolLapse,
-        @Min(1) @Max(8760) int mealRhythmDrift
+        @Min(1) @Max(8760) int mealRhythmDrift,
+        @Min(1) @Max(8760) int energyDipMealTiming
     ) {
 
         /** The cooldown for {@code flagKey} — keeps the switch out of the service. */
@@ -293,6 +324,7 @@ public record FlagProperties(
                 case "late_eating" -> lateEating;
                 case "protocol_lapse" -> protocolLapse;
                 case "meal_rhythm_drift" -> mealRhythmDrift;
+                case "energy_dip_meal_timing" -> energyDipMealTiming;
                 default -> throw new SystemRuntimeErrorException(
                     SystemMessage.error("COMPANION_FLAG_UNKNOWN_KEY").params(List.of(flagKey)).build());
             };

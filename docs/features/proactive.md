@@ -960,7 +960,11 @@ still outranks (and can displace) the two setup checks and the round-0 tail belo
 only every OTHER flag sits ahead of it. **Round 2 S4 (bd `mezo-d58h.7.4`) then adds
 `FlagKey.MEAL_RHYTHM_DRIFT` immediately AFTER `protocol_lapse`**, still ahead of the two setup
 checks: it is an offer to edit a plan rather than a health signal, so it must never displace a card
-ranked above it — and the round-1 order is again untouched. `AdviceCardService` is deliberately NOT conditioned on
+ranked above it — and the round-1 order is again untouched. **Round 2 S6 (bd `mezo-d58h.7.7`) adds
+`FlagKey.ENERGY_DIP_MEAL_TIMING` immediately after that** — the least urgent FLAG in the table (an
+insight about a correlation in the user's own log, not a signal about a state), but still a
+statement about the user's own body, so it stays inside the flag block rather than dropping below
+the setup checks. `AdviceCardService` is deliberately NOT conditioned on
 `INTERVENTION_SWITCH` —
 `SetupCheckService` (which runs without that switch) is one of its two callers, so gating this bean
 on the intervention switch would fail the Spring context whenever that switch is off.
@@ -3093,6 +3097,18 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
   branch (rendered from the raise's own frozen payload), never from this text. Like
   `protocol_lapse_resume` it offers no `AdviceActionCatalog` mutation — editing a slot template is a
   deliberate act in Fuel, not something a card should automate.
+- **(pp) Round 2 S6 (bd `mezo-d58h.7.7`, spec 2026-09-05 §(15)) adds `energy_dip_timing_insight`,
+  the `energy_dip_meal_timing` intervention-library entry.** `channel: feed` (an observation never
+  earns a push) and `cooldown-hours: 720`, which MUST stay equal to
+  `mezo.companion.flags.cooldown-hours.energy-dip-meal-timing` — the same `deliverForFlag`
+  lesson as `meal_rhythm_adjust` one slice earlier, here guarding the spec's "effectively a one-off
+  insight card" 30-day cadence. The copy states a CORRELATION and nothing more: no causal word
+  appears in it, it explicitly names the alternative reading ("lehet, hogy mindkettő ugyanannak a
+  napnak a következménye"), and it prescribes nothing. The two groups, their sizes, their median
+  afternoon energies and the superiority share come from `FlagFactRenderer`'s
+  `energy_dip_meal_timing` branch (rendered from the raise's own frozen payload) — the group SIZES
+  are on the card on purpose, so the reader can see how thin the sample is. Like the two entries
+  before it, it offers no `AdviceActionCatalog` mutation: there is nothing here to automate.
 - **(oo) Round 2 S5 (bd `mezo-d58h.7.5`, spec 2026-09-05 §c) — the once-ever questions, and the four
   things that shape them.**
   1. **The dedupe is native and sees soft-deleted rows.** `CompanionMessageRepository

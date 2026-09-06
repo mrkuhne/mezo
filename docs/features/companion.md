@@ -904,6 +904,85 @@ consumed by `DecisionService` via `ObjectProvider<DecisionContextPort>`. The cro
 creates is `companion → journal` — the SAME direction the rest of the seam already runs — so the
 architecture stays acyclic with no frozen exception.
 
+**Reflexió S1 — text signals (`mezo-eq85.1`) — the first structured reading of the user's own prose.**
+Everything the pattern engine could correlate until now came from a *form*: a slider, a logged set, a
+weighed meal. The prose surfaces (journal, gratitude, the chat itself) were embedded for recall but
+carried **zero** per-day numbers. S1 closes that: one **`text_signal`** row per source-row *version*
+holds an LLM-extracted `mood`/`energy`/`stress` (1..5), a `confidence`, and the `people` / `topics` /
+`keywords` the text mentions — turning free writing into series the correlation engine can align on.
+
+- **What a signal is, and what it is not.** `TextSignalExtractor` (`reflection/service/`) is the ONE
+  LLM stage, and the only thing the model is allowed to produce is extracted-signal JSON. Everything
+  the answer claims is re-validated in code before a row exists: `confidence != "sure"` ⇒ the three
+  numbers are **dropped to null** (a neutral two-line entry must never become a 3/3/3 data point),
+  values are clamped to 1..5, topics are intersected with a **closed 12-word vocabulary**
+  (`munka|család|kapcsolatok|sport|egészség|pihenés|alvás|evés|pénz|alkotás|tanulás|otthon`) so an
+  invented topic is dropped rather than stored, and people/keywords are trimmed, de-duplicated and
+  capped (5 / 3). A broken, non-JSON or absent answer — and a failing provider call — yields
+  `Optional.empty()`: no row, never an exception escaping the stage.
+- **Versions, not updates.** `TextSignalService.record` is idempotent on `(source, sha256(text))`:
+  an unchanged text returns the existing newest row and costs **no LLM call**, while a changed text
+  APPENDS `version + 1`. Nothing is ever updated in place, so an edit leaves yesterday's extraction
+  auditable; every series reads the newest version per `(source_kind, source_id)`, which is also why
+  an edited entry replaces rather than doubles its own day's contribution.
+- **Three sources.** `journal_entry` and `gratitude` arrive through **`TextSignalListener`** — the
+  `JournalEmbeddingListener` idiom verbatim (`@Async @TransactionalEventListener(AFTER_COMMIT)`,
+  gated on `COMPANION_SWITCH` + `JOURNAL_SWITCH` + `REFLECTION_SWITCH`, failures logged and
+  swallowed), consuming the same four events (`JournalEntrySaved/Deleted`,
+  `GratitudeEntrySaved/Deleted`) the embedding seam already uses. It reads the rows through the
+  journal **repositories**, not a journal service, deliberately staying inside the dependency
+  envelope `companion/embedding` established. The third source is **`chat_day`**: the day's own
+  `role=user` turns joined into one text by `ChatDaySignalService`, keyed by a stable
+  `UUID.nameUUIDFromBytes(userId + ":" + day)` so a day that gains turns re-versions instead of
+  duplicating.
+- **The four new metrics.** `MetricKey.TEXT_MOOD` / `TEXT_ENERGY` / `TEXT_STRESS` (NUMBER) and
+  `TEXT_SOCIAL_CONTACT` (BINARY), all `MetricDomain.MIND`, served by `TextSignalSeriesService`
+  through `MetricSeriesService`'s existing switch. The numeric three are the **mean of the day's
+  `sure` values**; a day whose every signal is `unsure` is **absent**, not zero — the correlation
+  aligns on presence and must never see an invented value. `TEXT_SOCIAL_CONTACT` is 1.0 on a day that
+  names anyone, 0.0 on a day with signals but no name, absent on a day with no signal; it is
+  deliberately NOT gated on `sure`, because whether a name appears in the text is an observation
+  about the text rather than a judgement the model could be uncertain about. `MetricSeriesService`
+  reaches the series bean through an `ObjectProvider` (the `TodayActivitySource` idiom), so with the
+  reflection switch off the four metrics honestly report **no data** instead of failing to construct.
+- **Open-ended derived series.** `DerivedSeriesService` answers "give me this key's series / value
+  kind / label" and "is this key real for this user" over BOTH the fixed `MetricKey` catalog and the
+  user-specific `people:<név>` / `topic:<téma>` presence keys the signals make possible — the seam
+  slices 2–6 correlate arbitrary pairs through. `isKnown` only accepts a person/topic key when a
+  signal of the last 180 days actually carries it, so a pattern can never be proposed about a person
+  the user never wrote about; an unresolvable key yields an **empty** series, never an exception.
+- **The one memory-platform write, and the race it loses.** After a signal lands,
+  `memory_item.people` / `.topics` for the SAME `(created_by, source_kind, source_id)` are refreshed
+  from it — `memory_item.source_kind` equals the signal's `source_kind` for both prose kinds, because
+  `MemoryEmbeddingWriter` uses the same `journal_entry` / `gratitude` strings. **`salience` is never
+  written from a model answer** (RAG spec §12) and stays whatever the deterministic projector set.
+  **Two unordered AFTER_COMMIT listeners fire on the same journal save** — this one and the embedding
+  seam's memory projection — and `MemoryProjectionWriter` unconditionally RESETS `people`/`topics` to
+  its command's empty lists, so a projection that lands last silently wipes the enrichment. Rather
+  than ordering the two listeners (which would couple the seams), the enrichment is made
+  **re-appliable**: `record`'s unchanged-hash short-circuit re-applies it from the STORED signal at
+  zero LLM cost, which is exactly what the nightly catch-up's re-offer triggers. So the enrichment is
+  eventually-correct within a night, not guaranteed on the first write — and a missing `memory_item`
+  row (the projection has not run yet) is the same story: no enrichment this round, healed by the
+  next catch-up. That heal is only real because the catch-up offers **every** source unconditionally
+  (see below); a staleness gate in front of the re-offer would have made the race state — row
+  present, hash unchanged, `people`/`topics` wiped — the one input it filtered out, and since
+  `MemoryProjectionWriter` also short-circuits on an unchanged hash, nothing else would ever restore
+  it (review finding).
+- **Catch-up — everything is re-offered, the hash decides.**
+  `TextSignalCatchUpService.catchUp(userId, today)` walks the last `catch-up-days` finished days and
+  offers **every** journal row, gratitude row and day to `record` / `ChatDaySignalService.extractDay`
+  **without any "is it already up to date?" gate**, because `record` is hash-idempotent: an unchanged
+  text costs no LLM call and writes no row, but it DOES re-apply the `memory_item` enrichment, and an
+  unconditionally-offered `chat_day` is what lets a day whose conversation continued after the first
+  extraction re-version instead of keeping a stale signal forever. `isUpToDate` survives only to
+  decide whether an offer COUNTED as a write, so the returned number is real writes and an
+  all-unchanged night returns 0. An entry written while the LLM was down, or edited while the
+  listener was off, heals itself; a failing source is caught and logged per source, so one bad row
+  never aborts the night. `TextSignalCatchUpIT` pins all four legs (missing ⇒ extracted, stale hash
+  ⇒ new version, unchanged hash ⇒ enrichment restored with no new version, continued chat day ⇒
+  re-versioned). Task 2's nightly job is the only production caller.
+
 ## 2. User-facing behavior
 
 The ChatPage under Insights (`/insights/chat`, [`insights.md`](insights.md) §2.5) is the real
@@ -1655,6 +1734,42 @@ gate, the same discipline as the original seven:
   days (`cooldown-hours.meal-rhythm-drift`, 336h), and the `meal_rhythm_adjust` library entry's own
   `cooldown-hours` MUST match it (the `protocol_lapse` review lesson: `deliverForFlag` applies the
   LIBRARY entry's cooldown).
+- **`EnergyDipMealTimingRule`** (rank 12, Round 2 S6, bd `mezo-d58h.7.7`, spec 2026-09-05 §(15),
+  `energy_dip_meal_timing`) — does the user's EARLY-AFTERNOON energy track WHEN, or whether, they
+  ate that morning? The most cautious rule in the set, and the only one that reports a
+  CORRELATION rather than a state. Over a `windowDays` (30) window ending YESTERDAY, a day
+  QUALIFIES when it carries both a check-in with an energy value inside the
+  `[afternoonFromHour, afternoonToHour]` band (11–16, INCLUSIVE, matched on the `slot_time` wall
+  clock — a 16:00 check-in counts, 16:15 does not) and at least one logged meal of any kind; the
+  day's afternoon energy is the MEDIAN of its in-band check-ins, and fewer than
+  `minQualifyingDays` (10) such days ⇒ silence. Those days are then split in two and the groups'
+  median energies compared: **`lunch_time`** (primary) — the days carrying a lunch row, halved at
+  their own median lunch minute, usable only when both halves reach `minGroupDays` (4) AND their
+  own median lunch times are `minLunchSplitSeparationMinutes` (45) apart; **`breakfast_presence`**
+  (fallback, reached ONLY when the lunch split is unusable — the spec's "when lunch times don't
+  vary") — days with a logged `breakfast` row against days without one. It raises only when the two
+  medians are at least `minEnergyDelta` (1.0) apart AND the separation is CONSISTENT: the
+  Mann–Whitney probability of superiority (the share of cross-group day pairs running the higher
+  group's way, ties counting half, oriented to that higher group so it lands in `[0.5, 1.0]`) must
+  reach `minSuperiority` (0.70). Two medians differing with n≈5 a side is a coincidence — this is
+  the direct analogue of `meal_rhythm_drift`'s same-direction share. Four bounds carry it:
+  **(1)** the card may only REPORT, never explain — no causal word appears anywhere in the
+  intervention copy or in `FlagFactRenderer`'s three lines, and both group sizes are always shown
+  so the reader can see how thin the sample is; **(2)** the day gate is "the day has meal data",
+  NOT "the day has a morning meal" — the spec's §(15) wording says the latter, but taken literally
+  it empties the spec's OWN breakfast-present/absent fallback (a day without breakfast could never
+  enter the sample), and the gate's real job is adherence neutrality: proving the day's meal log is
+  not simply missing, so "no breakfast row" can honestly be read as "did not eat breakfast" rather
+  than "did not log"; **(3)** a median split can be DEGENERATE — with every lunch at 13:00 the
+  "before the median" side is empty and a naive delta would read a 0-vs-N split as an enormous
+  finding, which is what the per-group minimum and the separation gate exist for (and failing
+  either is exactly what unlocks the fallback); **(4)** nothing here crosses midnight, so both
+  `MealRhythmDriftRule`'s circular difference and `LateEatingRule`'s +24 shift are deliberately
+  absent — an early-afternoon check-in and a lunch are plain minutes-of-day, wall clock in the
+  system zone. A usable split that simply does not separate is a CLEAR (with the observed delta),
+  not an unavailable: the rule genuinely looked. Cooldown is KEY-level 30 days
+  (`cooldown-hours.energy-dip-meal-timing`, 720h) — effectively a one-off insight card — and the
+  `energy_dip_timing_insight` library entry's own `cooldown-hours` MUST match it.
 
 Two prerequisite fixes underpin the rules above: `MetricSeriesService.weightTrendPctWk` and
 `.lateMealHour` used to load a user's ENTIRE history and filter in Java; both are now bounded reads
@@ -2237,6 +2352,42 @@ Audit runs are retained for 30 days by default; `MemoryRetrievalRetentionJob` fa
 users at 03:50 and physically deletes expired runs so database cascades remove their result and
 feedback children. This is an explicit audit-retention exception to normal domain soft deletion;
 source memories and vectors are never touched by the purge.
+
+### Backend tables (Reflexió S1 text signals, ✅ `mezo-eq85.1`)
+
+Migration `202609071000_mezo-eq85.1_text_signal.sql` (in `1.0.0_master.yml`) — the per-day structured
+reading of the user's own prose (§1 above). Driving spec:
+[`docs/superpowers/specs/2026-09-06-reflection-self-discovered-patterns-design.md`](../superpowers/specs/2026-09-06-reflection-self-discovered-patterns-design.md).
+
+- **`text_signal`** — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id) ON DELETE
+  CASCADE`, `is_deleted`, `created_at`, `source_kind varchar(16)`, `source_id uuid`, `occurred_on
+  date`, `content_hash varchar(64)`, `version integer default 1`, `mood`/`energy`/`stress smallint`
+  (nullable), `confidence varchar(8)`, `people`/`topics`/`keywords text[] default '{}'`,
+  `provenance jsonb` (typed `TextSignalProvenanceEnvelope` — model, extraction instant, source text
+  length; audit only). Constraints: `pk_text_signal_id`,
+  `fk_text_signal_created_by_app_user_id`, `ck_text_signal_source_kind`
+  (`journal_entry|gratitude|chat_day`), `ck_text_signal_confidence` (`sure|unsure`) and three
+  `ck_text_signal_{mood,energy,stress}` range CHECKs (`null or between 1 and 5`). Indexes:
+  **`uq_text_signal_source_version (created_by, source_kind, source_id, version) where is_deleted =
+  false`** — the versioning invariant — and `idx_text_signal_created_by_occurred_on` (the series
+  read's key).
+- **`source_id` carries NO foreign key**, deliberately: it points at `journal_entry`, `gratitude`
+  **or** a synthetic `chat_day` UUID that references no table at all, and three conditional FKs
+  cannot be expressed. A dangling id is harmless — the delete listeners soft-delete the signals of a
+  deleted entry, and an unmatched id is simply never read back.
+- **Rows are appended, never updated** (§1): the newest `version` per `(source_kind, source_id)` is
+  what every series reads; older versions stay for audit. `unsure` rows persist too and are
+  deliberately excluded from the numeric series rather than deleted.
+- **The scores are `smallint` in SQL but `Integer` in Java** — a 1..5 CHECK needs no more storage,
+  while the extractor, the series maps and every consumer speak `Integer`. The entity's explicit
+  `@JdbcTypeCode(SqlTypes.SMALLINT)` on the three fields is what reconciles the two; without it
+  Hibernate's schema validation rejects `int2` against an `Integer` attribute.
+- **No own feature switch on the table** — every bean over it is gated on `COMPANION_SWITCH` +
+  `REFLECTION_SWITCH` (`mezo.companion.reflection.enabled`), and the listener additionally on
+  `JOURNAL_SWITCH`. Switch reflection off ⇒ none of `TextSignalExtractor` / `TextSignalService` /
+  `TextSignalListener` / `TextSignalSeriesService` / `DerivedSeriesService` /
+  `ChatDaySignalService` / `TextSignalCatchUpService` exists (`TextSignalListenerSwitchOffIT`), and
+  the four `TEXT_*` metrics report no data.
 
 ### Backend tables (LLM audit log, ✅ `mezo-2zyu`)
 
@@ -4317,6 +4468,7 @@ are whole days computed from `LocalDate.now()`; missing days stay absent, never 
 | `late_eating` | on ≥ `min-days-of-last-three` of the last `window-days` days, `LATE_MEAL_HOUR` is within `minutes-before-bed` of the (shifted) sleep anchor **or** ≥ `absolute-hour`; the bed arm needs a `sleep_goal` row, the absolute arm does not | `MetricKey.LATE_MEAL_HOUR`, `SleepAnchorPort` (bed arm only) |
 | `protocol_lapse` | one active protocol item missed on ≥ `consecutive-missed-days` consecutive DUE days, **and** ≥ `min-history-due-days` due days of adherence-≥`min-history-adherence` history immediately before the miss run; "due" is DERIVED, never stored — a `pre_workout`/`post_workout` item is due only on a day with a completed gym instance (a rest day is not a miss), every other item is due every day; the scan is bounded BELOW by the item's own `created_at` (a freshly added item cannot have "missed" a habit that never had room to exist), and the window ends YESTERDAY, never today (today is still in progress); the per-item 7-day re-announce cooldown lives inside the rule itself, separate from the 24h key-level cooldown below | `protocol_item`, `supplement_intake`, `WorkoutSessionRepository.findDoneInstanceDates` |
 | `meal_rhythm_drift` | over a `window-days` rolling window ending YESTERDAY, with at least `min-days-with-meals` days carrying a logged meal: **slot drift** — a planned slot's actual logged time (earliest row of that `slotKind` that day) deviates from its planned time by a median of more than `drift-minutes`, with at least `min-same-direction-share` of the observed days drifting the same way — OR **dead slot** — a slot planned on ≥ `min-slot-planned-days` days carries a meal on ≤ `dead-slot-max-presence` of them while the other tracked slots average ≥ `other-slots-min-presence`. Only `fixed`-anchor slots can drift (relative anchors are resolved in the FRONTEND only); `snack` and any duplicated `slotKind` are excluded as ambiguous; the day's template is chosen by a DERIVED day type (`resolveDayType.ts` ported: no completed instance ⇒ rest, earliest start before noon ⇒ training_am, else training_pm), and a training day with no `started_at` is skipped entirely; deviations use a SIGNED CIRCULAR minute difference in `(-720, 720]`, never `LateEatingRule`'s +24 shift | `meal_slot_template`, `meal`, `WorkoutSessionRepository.findDoneInstancesBetween` |
+| `energy_dip_meal_timing` | over a `window-days` rolling window ending YESTERDAY: a day QUALIFIES when it carries a check-in with an energy value inside the INCLUSIVE `[afternoon-from-hour, afternoon-to-hour]` band (matched on the `slot_time` wall clock; the day's value is the MEDIAN of its in-band check-ins) AND at least one logged meal of any kind — fewer than `min-qualifying-days` such days ⇒ silence. Those days are split in two: **lunch time** (primary) — the days with a lunch row, halved at their own median lunch minute, usable only when both halves reach `min-group-days` AND their own median lunch times are `min-lunch-split-separation-minutes` apart — or, ONLY when that split is unusable, **breakfast presence** (fallback) — days with a logged `breakfast` row vs days without. Raises when the two groups' median afternoon energies differ by ≥ `min-energy-delta` AND the Mann–Whitney probability of superiority (oriented to the higher group) reaches `min-superiority`. Reports a CORRELATION, never a cause; a usable split that does not separate is a CLEAR, not an unavailable | `check_in` (`findByCreatedByAndDeletedFalseAndDateBetween`), `meal` |
 | `all_healthy` | none of the other thirteen fire now, **and** no problem row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
 
 `all_healthy`'s "no problem row" check (`existsProblemRaiseSince`) excludes `all_healthy` itself,
@@ -4332,7 +4484,7 @@ intervention copy calls it a training tip, not an injury alert, and it fires on 
 weekly shoulder split it is true roughly weekly, so counting it here would keep the seven-day quiet
 window from ever opening. The other ten flags — `missed_workouts`, the remaining four S6 keys
 (`acute_bad_day`, `load_fuel_mismatch`, `rapid_weight_loss`, `late_eating`), and Round 2 S1's
-`protocol_lapse` and S4's `meal_rhythm_drift` included — stay counted as problems, since each IS a genuine behavior/health
+`protocol_lapse`, S4's `meal_rhythm_drift` and S6's `energy_dip_meal_timing` included — stay counted as problems, since each IS a genuine behavior/health
 signal, unlike a data gap, a failed nudge, or a forward-looking training advisory. `protocol_lapse`
 stays counted rather than joining the exclusion list: a missed dose on its own due day is a real
 behavior lapse, not a data-availability gap (`logging_gap`'s argument) or the app's own delivery
@@ -4395,6 +4547,32 @@ NOT another `CompanionProperties` nested component), picked up by `@Configuratio
 
 Prose gate: `mezo.feature.day-review.enabled` (`DAY_REVIEW_SWITCH`) = **true** by default — see the
 `DayReviewService`/`DayReviewLlmAdapter` writeup above for what it gates and does not.
+
+### Config keys (`mezo.companion.reflection.*` — `ReflectionProperties`, `@Validated`)
+
+The whole Reflexió epic's config surface lands in one validated record (picked up by
+`MezoApplication`'s `@ConfigurationPropertiesScan`, the `MemoryPlatformProperties` idiom). S1 uses
+`enabled` and `catch-up-days`; the rest is bound and range-validated here so slices 2–6 consume it
+without a second properties class.
+
+- `mezo.companion.reflection.enabled` = **true** (`FeaturesConfiguration.REFLECTION_SWITCH`) —
+  the master switch for every Reflexió bean; off ⇒ no extraction call is reachable and the four
+  `TEXT_*` metrics report no data.
+- `mezo.techcore.cron.reflection-job.enabled` = **true** (`REFLECTION_JOB_SWITCH`) — off ⇒ the
+  nightly job bean does not exist; `TextSignalCatchUpService` stays callable (the
+  `FlagSweepJob`-vs-`FlagService` idiom).
+- `mezo.companion.reflection.cron` = **`0 40 3 * * *`** — 03:40. It **shares that minute with the
+  llm-log payload-retention purge** (`mezo.llm-log.retention.cron`), which is a single bounded UPDATE
+  on an unrelated table; every other dawn slot is taken (02:20 summary, 02:40 patterns, 02:50
+  character, 03:00 SUN hypotheses, 03:10 feedback-learning, 03:20 graph, 03:30 MON weekly rung, 03:45
+  MON profile, 03:50 monthly rung + audit retention, 04:00 quarterly).
+- `mezo.companion.reflection.catch-up-days` = **7** (`@Min(1) @Max(30)`) — finished days the nightly
+  catch-up re-checks for missing/stale signals.
+- `mezo.companion.reflection.notice.{max-per-day, min-gap-hours, quiet-from, quiet-to}` =
+  **2 / 4 / 22:00 / 07:00** — quick-notice rate limits and quiet hours (consumed from S2 on).
+- `mezo.companion.reflection.propose.max-per-night` = **2** — cap on newly proposed patterns per run.
+- `mezo.companion.reflection.lifecycle.{confirm-streak, refute-streak, dormant-after-days, strong-r,
+  strong-p}` = **3 / 3 / 30 / 0.3 / 0.15** — pattern lifecycle thresholds.
 
 ### Config keys (`mezo.llm-log.*` — the audit log, `LlmLogProperties`/`LlmPricingProperties`)
 
@@ -5885,6 +6063,35 @@ Carried over from V0.1 (`mezo-fnnq.1`): `CompanionLlmFakeIT` (fake picked + echo
 (**no `CompanionLlm` bean when the switch is off** — `ObjectProvider.getIfAvailable() == null`),
 `CompanionPropertiesIT` (llm tiers + the V0.2 `chat.*` window/title bindings).
 
+**Reflexió S1 — text signals (`mezo-eq85.1`).** Five tests, one per seam.
+`feature/companion/reflection/TextSignalExtractorTest` is a pure unit test over a hand-written
+`CompanionLlm` stub: valid JSON parses, `unsure` drops the numbers, an unknown topic is dropped, an
+overshooting number is clamped to 1..5, a non-JSON answer and a throwing provider both yield an
+empty `Optional`, and a blank text never reaches the model at all.
+`TextSignalListenerIT` drives the REAL `JournalService`/`GratitudeService` write paths (a populator
+would bypass the events) under `@ActiveProfiles("companion-fake")` and awaits the AFTER_COMMIT
+listener: a save writes the signal and refreshes `memory_item.people`/`.topics`, an edit writes
+`version 2` alongside — not over — `version 1`, a delete soft-deletes every signal of the source,
+and `FakeCompanionLlm.SIGNAL_FAIL` proves a failing extraction leaves the entry intact and writes
+nothing. The enrichment half is asserted through `TextSignalCatchUpService.catchUp` — the seam
+production actually runs — and every assertion after it sits INSIDE the awaited block, so a late
+projection re-wipe is polled through instead of failing the test (review finding).
+`TextSignalCatchUpIT` owns the catch-up itself, with sources made by the POPULATORS so no listener
+has already written the signal: a missing signal is extracted, an edited source re-versions, an
+UNCHANGED source restores a wiped `memory_item.people`/`.topics` while writing no new version and
+returning 0, a chat day that gains later turns re-versions (and a third unchanged run writes
+nothing), and a `SIGNAL_FAIL` source does not stop the same night's gratitude row from landing.
+`TextSignalListenerSwitchOffIT` pins the structural half (the `PatternDetectionJobSwitchOffIT`
+shape): reflection off ⇒ listener, service AND extractor beans are all absent.
+`TextSignalSeriesIT` covers the series rules against real Postgres — the per-day mean over `sure`
+rows only, an all-unsure day being absent rather than zero, `TEXT_SOCIAL_CONTACT`'s binary presence,
+newest-version-wins per source (including its effect on the derived people series), the
+`people:`/`topic:` presence series, `MetricKey` delegation for a plain wire key, and
+`valueKindOf`/`labelOf`/`isKnown` for all three key shapes.
+`FakeCompanionLlm` dispatches on `TextSignalExtractor.SIGNAL_MARKER`: `[[SIGNAL:{…}]]` in the entry
+text returns that JSON verbatim, `SIGNAL_FAIL` throws, and the un-scripted default is a `sure`,
+mildly positive signal mentioning Anna.
+
 ## 9. Decisions, gotchas & deferred
 
 **Plan decisions (locked in the V0.2 plan §"Decisions locked"):**
@@ -6620,6 +6827,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/MissedWorkoutsRule.java` — S2 (bd `mezo-d58h.2`): the `missed_workouts` rule; consecutive-in-planned-days-not-calendar-days logic (§3).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/{AcuteBadDayRule,LoadFuelMismatchRule,RapidWeightLossRule,JointOveruseRule,IgnoredNudgeRule,LateEatingRule}.java` — S6 batch B (bd `mezo-d58h.6`): six rules, in severity order (§3 above has each one's own honesty gate).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/ProtocolLapseRule.java` — Round 2 S1 (bd `mezo-d58h.7.1`, spec 2026-09-05 §(11)): the epic's next new detection, `protocol_lapse` — derived due-days, the `created_at` lower bound, the yesterday-ending window, and the rule-internal per-item cooldown (§3 above has the full honesty-gate writeup).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/EnergyDipMealTimingRule.java` — Round 2 S6 (bd `mezo-d58h.7.7`, spec 2026-09-05 §(15)): `energy_dip_meal_timing` — the qualifying-day gate, the lunch-time split with its anti-degeneracy separation guard, the breakfast-presence fallback and the Mann–Whitney superiority check (§3 above has the full writeup, including why the spec's "logged morning meal" gate is implemented as "any logged meal").
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/MealRhythmDriftRule.java` — Round 2 S4 (bd `mezo-d58h.7.4`, spec 2026-09-05 §(13)): `meal_rhythm_drift` — the fixed-anchor-only drift arm, the derived day type (`resolveDayType.ts` ported), the dead-slot presence arm and the signed circular clock difference (§3 above has the full writeup).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagService.java` — the cooldown gate + append (`evaluateAndLog`), the ONLY write path into `companion_flag_log`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluationListener.java` — the on-write trigger, `@Async @TransactionalEventListener(AFTER_COMMIT)` on `CheckInSavedEvent`/`SleepLogSavedEvent`.
@@ -6631,6 +6839,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609041200_mezo-d58h.6_flag_key_batch_b.sql` — S6: widens `ck_companion_flag_log_flag_key` to thirteen keys.
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609051600_mezo-d58h.7.1_flag_key_protocol_lapse.sql` — Round 2 S1: widens `ck_companion_flag_log_flag_key` to the fourteen keys (`protocol_lapse`).
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609061600_mezo-d58h.7.4_flag_key_meal_rhythm_drift.sql` + `202609061700_mezo-d58h.7.4_flag_key_trace_meal_rhythm_drift.sql` — Round 2 S4: widen `ck_companion_flag_log_flag_key` AND `ck_companion_flag_trace_flag_key` to the fifteen keys (`meal_rhythm_drift`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609062000_mezo-d58h.7.7_flag_key_energy_dip.sql` + `202609062100_mezo-d58h.7.7_flag_key_trace_energy_dip.sql` — Round 2 S6: widen both CHECKs again, to the sixteen keys (`energy_dip_meal_timing`).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT,FlagEvaluatorLoggingGapIT,FlagEvaluatorMissedWorkoutsIT,FlagEvaluatorAcuteBadDayIT,FlagEvaluatorLoadFuelMismatchIT,FlagEvaluatorRapidWeightLossIT,FlagEvaluatorJointOveruseIT,FlagEvaluatorIgnoredNudgeIT,FlagEvaluatorLateEatingIT,FlagEvaluatorProtocolLapseIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. **Since W5.2 (`mezo-b3pp.19`), `FlagRaisedEvent` (below) is the consumer** — see the next block.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaisedEvent.java` — W5.2 (bd `mezo-b3pp.19`): the `{userId, flagKey, source}` event `FlagService.evaluateAndLog` publishes for every WRITTEN raise, inside the logging transaction (§3/§4 above).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagTracePersistenceIT,FlagServiceTraceIT}.java` + `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagVerdictTest.java` — `mezo-6269.1`, §8.
