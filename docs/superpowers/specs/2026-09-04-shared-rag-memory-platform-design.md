@@ -425,6 +425,13 @@ The first implementation plan covers slices A–C: platform foundation, chat pil
 gate. Slice D is deliberately outside that plan because its work may start only after measured gate
 results exist. Each additional consumer receives its own bounded design/plan based on those results.
 
+**Amendment (2026-09-06, `mezo-eq85`):** Reflection (`REFLECTION` policy) is an offline consumer
+whose output passes its own hypothesis gate and never serves a user-facing latency path; it may
+adopt the platform before the chat gate, behind `mezo.companion.reflection.enabled`. See
+[`2026-09-06-reflection-self-discovered-patterns-design.md`](2026-09-06-reflection-self-discovered-patterns-design.md).
+The product owner also decided on 2026-09-06 to serve chat in `NEW` mode before the `mezo-6dii.9`
+real-Gemini evaluation has run; that decision is recorded on `mezo-6dii` and `mezo-eq85`.
+
 ## 12. Explicitly deferred
 
 - LangGraph or a separate Python orchestration service;

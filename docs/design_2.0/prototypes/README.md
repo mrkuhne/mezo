@@ -39,6 +39,7 @@ they inline come from `../assets/`.
 | `minta-reszlet.html` | — (emberi következtetés + bináris összevetés + rétegzett diagnosztika — mezo-0469) |
 | `rutin-szerkeszto-valasztas.html` | — (not yet published; hol lakjon a recept/stacking szerkesztése — három IA-lehetőség egymás mellett — mezo-08zl) |
 | `rutin-formalodas.html` | — (not yet published; Rutin 2.0 — csempés /me/rutin hub élő „Ma" listával, szokás-rács formálódás-ívekkel, formálódás-oldal telítődő görbével + tartomány-becsléssel, előzmény-felület — mezo-08zl) |
+| `eszrevetelek.html` | https://claude.ai/code/artifact/2f5e64be-de78-481a-9320-35e84706bf52 (Észrevételek — a Nap→Mezo oldal harmadik füle (feltűnt / visszatérés / figyelem / beépült kártyák, chipek) + a Minták laborfüzet egy reflexió-hipotézisre (teszt-terv, bizonyíték-napló, bizonyosság) — patterns-rag-intelligence) |
 
 ## Workflow
 
