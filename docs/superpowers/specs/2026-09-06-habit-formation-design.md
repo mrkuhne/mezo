@@ -152,21 +152,28 @@ Data: `useHabitFormation(habitKey)` via `useDualQuery` with a `realEmpty`, mock 
 - Visual golden `me-rutin-szokas` covers this page: darwin **and** linux baselines must be
   regenerated.
 
-## Follow-ups (filed as separate bd issues)
+## Delivery — slices
 
-1. Rutin hub redesign — one-screen hub, single "Következik" tick row, active-chain tile,
-   Szokásaid list page with the four stage filter tiles.
-2. Habit editing as its own page + the anchor **picker** (today the anchor field is `readOnly`
-   whenever it is linked, and "Keret váltása" throws the user into the 4-step wizard), plus the
-   framework-switch data-loss warning.
-3. Chain page: rename/daypart/reorder with the **stacking drawn** — the rope plus per-row anchor
-   badges, since chain position and anchor are two independent orderings today (cycles are even
-   accepted server-side).
-4. One creation flow: the wizard gains a "Keret nélkül" branch (replacing the frameworkless
-   sheet), the Clear branch becomes the four laws (craving + identity), and XP is derived from
-   Fogg's ability factors instead of a hand-set stepper.
-5. Contract extension so `mode` / `metric` become patchable (they are create-only today), and a
-   way to clear optional strings (the "omit an emptied key" rule makes them one-way now).
-6. mezo-mgpr (hub), mezo-bk26 (editor page + anchor picker), mezo-vxd8 (chain page + stacking),
-   mezo-9k99 (one creation flow + Fogg ability XP), mezo-pero (contract: patchable mode/metric).
-7. `/me/rutin/szokas/:key/elozmeny` as its own page if the inline history outgrows the page.
+The design round covered more than one issue's worth of work: the estimate itself, plus the
+Rutin surfaces the prototype redesigned around it. It ships in **seven slices**, each its own bd
+issue, so a red slice never blocks a green one. Only S1 is a prerequisite for anything (the
+others read the formation data it adds); S2–S6 are independent of each other and can land in any
+order.
+
+| # | bd | Status | Scope |
+|---|----|--------|-------|
+| **S1** | `mezo-08zl` | **DONE** — PR #503, merged `43667e3fe` (2026-09-06) | The formation view itself: the pure `HabitFormationEstimator`, `GET /api/habit/formation/{key}`, and the habit page's poster card + context rings + inline lifetime history (replacing the 28-day proportion strip). |
+| **S2** | `mezo-mgpr` | OPEN | **Rutin hub 2.0** — one screen, no scrolling: hero + statstrip, a single „Következik" tick row (the daily logging home stays `/nap/rutin`), an active-chain tile, and the Szokásaid list on its own page with the four stage filter tiles, one full-width tile per row. |
+| **S3** | `mezo-bk26` | OPEN | **Editing on its own page + the anchor picker.** Today the anchor field is `readOnly` whenever it is linked (`HabitPage.tsx:324`) and „Keret váltása" throws the user into the 4-step wizard. The picker (your habits + mezo moments + free text + „Leoldom") is what makes the contract's empty-string unlink convention safe; the framework switch must name the fields it will destroy *before* it does. |
+| **S4** | `mezo-vxd8` | OPEN | **Chain page: rename, daypart, reorder — with the stacking drawn.** A rope down the chain plus a per-row badge for what each habit is *actually* anchored to; the rope goes dashed where anchor and position disagree. Chain position and anchor are two independent orderings today, and nothing surfaces it (cycles are even storable). |
+| **S5** | `mezo-9k99` | OPEN | **One creation flow.** The wizard gains a „Keret nélkül" branch (retiring the frameworkless sheet, today the only place `mode`/`metric`/`skillKey` can be set); the Clear branch becomes the four laws (craving + identity, which it does not collect today); XP stops being a hand-set stepper and is derived from four **Fogg ability factors** (time · physical effort · brain cycles · non-routine) in a deliberately narrow band, with a „make it tiny" nudge on the weakest link. |
+| **S6** | `mezo-pero` | OPEN | **Contract gaps.** `mode`/`metric` are absent from `HabitDefUpdateRequest`, so tick mode is create-only and the user cannot change it; and the „omit an emptied optional key" rule means no optional string (`why`, `linkUrl`, `identity`, `anchorCopy`) can ever be cleared back to null. S3 and S5 both promise UI that S6 has to make real. |
+| **S7** | `mezo-q18h` | OPEN (conditional) | **`/me/rutin/szokas/{key}/elozmeny` as its own page** — only if the inline history from S1 outgrows the habit page. Filed so the decision is tracked rather than remembered. |
+
+### What S1 actually settled
+
+Two decisions the later slices inherit rather than re-litigate: **editing lives on its own page**
+(option B of `docs/design_2.0/prototypes/rutin-szerkeszto-valasztas.html` — option A was built
+first and rejected in use, because the formation page grew long enough that an in-place editor
+opened below the fold), and **the mock arm derives `k` with the estimator's own formula**, so
+demo mode cannot teach dynamics the server does not have.
