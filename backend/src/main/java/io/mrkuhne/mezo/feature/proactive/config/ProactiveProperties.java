@@ -20,7 +20,8 @@ public record ProactiveProperties(
         @NotNull @Valid Prediction prediction,
         @NotNull @Valid Experiment experiment,
         @NotNull @Valid Challenge challenge,
-        @NotNull @Valid Feed feed) {
+        @NotNull @Valid Feed feed,
+        @NotNull @Valid Hydration hydration) {
 
     /** W1 weekly plan-suggestion generation. */
     public record Weekly(
@@ -95,5 +96,24 @@ public record ProactiveProperties(
         /** How many finished days of narrative memory (daily_summary) the gather reads;
          *  doubles as the emptiness gate: zero summaries in the window -> no message. */
         @Min(1) @Max(14) int pastDays
+    ) {}
+
+    /** Round 2 S2 (bd mezo-d58h.7.2, spec §12) — training-day hydration. Two channels, one
+     *  detection: the midday/evening window prompts get a FACT block, and a 15:00 checkpoint
+     *  emits a deterministic message when (and only when) the shortfall holds. */
+    public record Hydration(
+        /** ~15:00 checkpoint schedule (server zone) — you cannot catch up on water at day's end,
+         *  so this is the one intraday exception to the "no incomplete-data signals" policy. */
+        @NotBlank String checkpointCron,
+        /** Fire below this percentage of the PRO-RATED target (spec §12: 60%). */
+        @Min(10) @Max(100) int shortfallPct,
+        /** Floor on the pro-rated target: right after wake the pro-rated number is a rounding
+         *  artefact, and "you are behind on 120 ml" is noise, not a signal. */
+        @Min(0) @Max(3000) int minProRatedMl,
+        /** Feed eyebrow of the checkpoint row. */
+        @NotBlank String checkpointEyebrow,
+        /** Checkpoint body template; {logged}/{prorated}/{target} are replaced with millilitres.
+         *  Config text, never LLM prose — the intervention/setup card precedent. */
+        @NotBlank String checkpointTemplate
     ) {}
 }

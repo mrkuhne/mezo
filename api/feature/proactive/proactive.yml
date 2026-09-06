@@ -498,8 +498,8 @@ components:
         date: { type: string, format: date }
         kind:
           type: string
-          description: Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; advice is the single daily coaching card (S4, mezo-d58h.4) whose prose is LLM-written over deterministic facts; intervention and setup are the pre-S4 config-text cards, kept for existing rows only.
-          enum: [morning, sleep, weight, midday, evening, intervention, people, setup, advice]
+          description: Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; advice is the single daily coaching card (S4, mezo-d58h.4) whose prose is LLM-written over deterministic facts; hydration is the round-2 training-day water checkpoint (S2, mezo-d58h.7.2) — deterministic config text, present only on a day whose shortfall held; intervention and setup are the pre-S4 config-text cards, kept for existing rows only.
+          enum: [morning, sleep, weight, midday, evening, intervention, people, setup, advice, hydration]
         eyebrow: { type: string }
         body:
           type: array
