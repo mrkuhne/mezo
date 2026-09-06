@@ -18,6 +18,7 @@ import io.mrkuhne.mezo.feature.meal.repository.MealItemRepository;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
+import io.mrkuhne.mezo.feature.nutrition.service.DayContext;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService.ScoredLine;
@@ -212,6 +213,10 @@ public class MealService {
      * active goal's prescribed day when one covers {@code meal.mealDate}, else the config
      * fallback — the SAME resolution the FuelDay MacroHero reads, so the score and the hero never
      * judge the day against different numbers.
+     *
+     * <p>A context dimenzió a nap addigi állapotát is megkapja (mezo-jcpt.19): a napi keret
+     * maradékához mér, nem a statikus slot-arányhoz. A saját sor id alapján ki van zárva, mert ez
+     * a metódus update-kor és re-score-kor is fut, amikor az étkezés már a napban van.
      */
     private void applyScore(UUID userId, MealEntity meal, OffsetDateTime loggedAt) {
         List<ScoredLine> lines = meal.getItems().stream()
@@ -224,8 +229,10 @@ public class MealService {
         MealRole role = MealScoringService.classifyRole(loggedAt.toLocalTime(), windows,
             scoringProperties.preLeadMin(), scoringProperties.postTrailMin());
         DailyTargets base = fuelDayService.dailyTargets(userId, meal.getMealDate());
+        DayContext day = fuelDayService.dayContext(userId, meal.getMealDate(),
+            loggedAt.toInstant(), meal.getId());
         MealBreakdownJson breakdown =
-            scoringService.scoreMeal(meal.getSlot(), lines, loggedAt.toLocalTime(), role, base);
+            scoringService.scoreMeal(meal.getSlot(), lines, loggedAt.toLocalTime(), role, base, day);
         meal.setBreakdown(breakdown);
         meal.setScore(breakdown.value());
     }

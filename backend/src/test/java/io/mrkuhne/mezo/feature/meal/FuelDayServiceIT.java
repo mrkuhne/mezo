@@ -6,11 +6,13 @@ import io.mrkuhne.mezo.api.dto.FuelDayResponse;
 import io.mrkuhne.mezo.api.dto.FuelWeekResponse;
 import io.mrkuhne.mezo.api.dto.MealItemRequest;
 import io.mrkuhne.mezo.api.dto.MealRequest;
+import io.mrkuhne.mezo.api.dto.MealResponse;
 import io.mrkuhne.mezo.feature.goal.entity.GoalPrescriptionJson;
 import io.mrkuhne.mezo.feature.meal.service.FuelDayService;
 import io.mrkuhne.mezo.feature.meal.service.MealService;
 import io.mrkuhne.mezo.feature.nutrition.entity.DietSettingsEntity;
 import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
+import io.mrkuhne.mezo.feature.nutrition.service.DayContext;
 import io.mrkuhne.mezo.feature.nutrition.repository.DietSettingsRepository;
 import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -18,6 +20,8 @@ import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.GoalPopulator;
 import io.mrkuhne.mezo.support.populator.PantryItemPopulator;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -60,6 +64,36 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
         r.setLoggedAt(OffsetDateTime.of(2026, 6, 24, hour, 0, 0, 0, ZoneOffset.UTC));
         r.setItems(List.of(i));
         return r;
+    }
+
+    /**
+     * A meal logged at an exact {@code loggedAt} with an expected total kcal/protein, for
+     * {@link FuelDayService#dayContext} proof (mezo-jcpt.19). Reuses the existing
+     * {@link #food(String)} fixture (110 kcal / 23 g protein per 100 g snapshotPer, per
+     * {@link io.mrkuhne.mezo.support.populator.PantryItemPopulator#createFood}) — no new
+     * populator needed. The amount is derived from {@code kcal} at that ratio and therefore lands
+     * != 100 g (the item's {@code snapshotPer}) for every non-trivial total, proving the canonical
+     * {@code amount / snapshotPer} scaling rather than a raw snapshot sum. {@code p} is asserted
+     * against the created meal's own macros, so a wrong ratio fails loudly at fixture time rather
+     * than silently mis-seeding the day sum.
+     */
+    private UUID createMeal(UUID userId, LocalDate date, String slot, Instant loggedAt, int kcal, int p) {
+        PantryItemEntity fixtureFood = food("ContextFixture");
+        // 110 kcal / 100 g snapshotPer -> amount = kcal * 100 / 110, exact for the kcal values used below.
+        BigDecimal amount = BigDecimal.valueOf(kcal).multiply(new BigDecimal("100"))
+            .divide(new BigDecimal("110"), 6, RoundingMode.UNNECESSARY);
+        MealItemRequest i = new MealItemRequest();
+        i.setSource("pantry");
+        i.setPantryItemId(fixtureFood.getId());
+        i.setAmount(amount);
+        i.setUnit("g");
+        MealRequest r = new MealRequest();
+        r.setSlot(slot);
+        r.setLoggedAt(loggedAt.atOffset(ZoneOffset.UTC));
+        r.setItems(List.of(i));
+        MealResponse response = service.create(userId, r);
+        assertThat(response.getMacros().getP()).isEqualByComparingTo(BigDecimal.valueOf(p));
+        return response.getId();
     }
 
     @Test
@@ -334,5 +368,40 @@ class FuelDayServiceIT extends AbstractIntegrationTest {
         assertThat(t.c()).isEqualTo(380);
         assertThat(t.f()).isEqualTo(95);
         assertThat(t.source()).isEqualTo("config");
+    }
+
+    // -- FuelDayService.dayContext (mezo-jcpt.19): the meal scorer's day-so-far resolver, sibling
+    // of dailyTargets above -- the scorer's context dimension measures against the remaining
+    // budget, not a static slot share, and the sum must use the canonical
+    // amount/snapshotPer contribution, not a raw snapshot sum.
+
+    @Test
+    void dayContext_sumsOnlyTheMealsLoggedBefore_andExcludesItself() {
+        LocalDate date = LocalDate.of(2026, 6, 24);
+        // fixture food: 110 kcal / 23 g protein per 100 g snapshotPer.
+        // breakfast: 200 g (!= 100 g snapshotPer) -> 220 kcal / 46 g protein
+        UUID breakfast = createMeal(owner, date, "breakfast",
+            Instant.parse("2026-06-24T06:00:00Z"), 220, 46);
+        // lunch: 300 g (!= 100 g snapshotPer) -> 330 kcal / 69 g protein
+        UUID lunch = createMeal(owner, date, "lunch",
+            Instant.parse("2026-06-24T11:00:00Z"), 330, 69);
+
+        // The state right before dinner: breakfast + lunch.
+        DayContext beforeDinner = fuelDayService.dayContext(owner, date,
+            Instant.parse("2026-06-24T18:00:00Z"), null);
+        assertThat(beforeDinner.known()).isTrue();
+        assertThat(beforeDinner.kcalBefore()).isEqualByComparingTo("550");
+        assertThat(beforeDinner.pBefore()).isEqualByComparingTo("115");
+
+        // Lunch's OWN re-score excludes both itself and anything logged after it.
+        DayContext beforeLunch = fuelDayService.dayContext(owner, date,
+            Instant.parse("2026-06-24T11:00:00Z"), lunch);
+        assertThat(beforeLunch.kcalBefore()).isEqualByComparingTo("220");
+
+        // Before the day's first meal: empty, but a KNOWN day.
+        DayContext beforeBreakfast = fuelDayService.dayContext(owner, date,
+            Instant.parse("2026-06-24T06:00:00Z"), breakfast);
+        assertThat(beforeBreakfast.known()).isTrue();
+        assertThat(beforeBreakfast.kcalBefore()).isEqualByComparingTo("0");
     }
 }
