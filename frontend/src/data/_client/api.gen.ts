@@ -1842,6 +1842,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/flags/trace": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One day of the coaching engine's decision — every rule's verdict, the day's transitions and the winning card
+         * @description Renders what the engine concluded; it never re-evaluates a rule. `rules` always holds every flag rule in SEVERITY order (the order is itself information — it is the ranking that chose the day's card), each with its closing state for that day, which may have been unchanged since before the day. `cardOutcome` is DERIVED here by comparing the day's delivered card against the raised+logged rules, never stored. A rule the engine has never judged comes back `unavailable` / `not_evaluated_yet` rather than a fabricated `clear`.
+         */
+        get: operations["getFlagTrace"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/conversation": {
         parameters: {
             query?: never;
@@ -7226,6 +7246,76 @@ export interface components {
             /** Format: double */
             costUsd?: number | null;
         };
+        FlagTraceDayResponse: {
+            /** Format: date */
+            date: string;
+            /**
+             * Format: date
+             * @description The oldest traced day for this user — the day pager's floor. Null when nothing has ever been traced.
+             */
+            earliestDate?: string | null;
+            winner?: components["schemas"]["FlagTraceWinnerResponse"];
+            /** @description All the flag rules, in severity order (rank 1 = most severe). */
+            rules: components["schemas"]["FlagTraceRuleResponse"][];
+            /** @description What changed inside this day, chronologically. Empty on a day where nothing changed. */
+            transitions: components["schemas"]["FlagTraceTransitionResponse"][];
+        };
+        /** @description The rule whose raise became the day's card. Null when no card was delivered, or when the card came from a setup check rather than a flag — that key is none of the flag rules. */
+        FlagTraceWinnerResponse: {
+            flagKey: string;
+            /** @description 1-based position in the severity order. */
+            rank: number;
+            /**
+             * Format: uuid
+             * @description The companion_message row id.
+             */
+            cardId: string;
+        } | null;
+        FlagTraceRuleResponse: {
+            flagKey: string;
+            /** @description The Hungarian name, server-sent so a round-2 rule appears without a frontend change. Falls back to the raw key for an unmapped rule. */
+            label: string;
+            /** @description Drives the surface's colour wash and clay icon — sleep, training, nutrition, recovery, habits, logging, body, or general for an unmapped rule. The client MUST fall back safely on a domain it does not know. */
+            domain: string;
+            rank: number;
+            /** @enum {string} */
+            outcome: "raised" | "clear" | "unavailable";
+            /** @description Set when outcome is unavailable — the gate that stopped the rule, or the read-side not_evaluated_yet when the engine has never judged this rule. */
+            reasonCode?: string | null;
+            /** @description The one-line Hungarian explanation, describing the rule's state as of changedAt, not necessarily as of the requested day. */
+            reasonText: string;
+            /** @description The expandable evidence rows — thresholds and observed values — as of changedAt below. The trace records only changes, so a rule sitting unchanged for weeks carries the numbers observed when it last changed, not today's. Empty when there is nothing honest to show. */
+            facts: string[];
+            /**
+             * @description What the service did with a raise. suppressed_by_cooldown means "true, but it spoke recently".
+             * @enum {string|null}
+             */
+            disposition?: "logged" | "suppressed_by_cooldown" | null;
+            /**
+             * @description Derived at read time against the day's delivered card; null unless the rule raised AND was logged AND the day's card was flag-sourced. A day whose card came from a setup check instead (its severity key matches none of the flag rules) has no winner among the flags at all, so a raised-and-logged rule still reads null that day.
+             * @enum {string|null}
+             */
+            cardOutcome?: "won" | "lost" | null;
+            /**
+             * Format: date-time
+             * @description When this state last changed — may predate the day; reasonText and facts above describe the rule as of this moment, not as of the requested day. Null when the rule has never been evaluated.
+             */
+            changedAt?: string | null;
+        };
+        FlagTraceTransitionResponse: {
+            /** Format: date-time */
+            at: string;
+            flagKey: string;
+            label: string;
+            /**
+             * @description The state before this change; null on a rule's very first row.
+             * @enum {string|null}
+             */
+            from?: "raised" | "clear" | "unavailable" | "suppressed" | null;
+            /** @enum {string} */
+            to: "raised" | "clear" | "unavailable" | "suppressed";
+            reasonText: string;
+        };
         LogMentionRequest: {
             tone: string;
             text?: string;
@@ -7380,6 +7470,8 @@ export interface components {
             facts?: string[];
             /** @description Advice-card suggestion texts (config-provided). Present only on advice rows. */
             suggestions?: string[];
+            /** @description The SEVERITY key this card came from (spec 2026-09-05 §4.4) — a flag key for a flag-sourced card, or a setup-check key for a setup-sourced one. Present only on advice rows. Lets the coaching observer correlate the day's winner against the raised rules. */
+            flagKey?: string;
             /** @description Up to two action buttons offered by this advice card (S5, mezo-d58h.5). Present only on advice rows. */
             actions?: components["schemas"]["FeedAction"][];
             applied?: components["schemas"]["FeedApplied"];
@@ -14865,6 +14957,38 @@ export interface operations {
             };
             /** @description AI evaluation unavailable (slot-template-ai/companion switch off) */
             503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getFlagTrace: {
+        parameters: {
+            query?: {
+                /** @description The day to read (the FE sends its LOCAL date); defaults to the server's today. */
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The day's trace — an honest empty-ish day still returns every rule */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FlagTraceDayResponse"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
                 headers: {
                     [name: string]: unknown;
                 };

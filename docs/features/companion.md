@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-05
+updated: 2026-09-06
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -1744,6 +1744,93 @@ desc)` — the transition-comparison read above — and `(created_by, occurred_a
 day-timeline read. Soft-deletable `OwnedEntity` like every other companion table; no FK from
 `evidence` to anything, same "frozen at the time" precedent as `companion_flag_log.payload` (§4
 above).
+
+**Proactive coaching observer S2 — the read endpoint (bd `mezo-6269.2`, spec 2026-09-05 §5).**
+`GET /api/companion/flags/trace?date=` (`CompanionFlagTraceController`, `FlagTraceReadService`)
+is the observer's one read: every flag rule for a day in severity order, each with its CLOSING state, plus
+the day's transitions. It obeys exactly one rule, load-bearing enough to be the class-level
+javadoc on `FlagTraceReadService`: it RENDERS, it NEVER RECOMPUTES. Every verdict on the wire was
+already concluded by the engine at evaluation time and sits in `companion_flag_trace`; the read
+side only looks the row up, formats it, and orders it. `date` is optional — omitted, it defaults
+to the server's today (the FE sends its own local date otherwise), same idiom as the feed read.
+
+**Why this lives in `companion.flags` and not in `proactive`.** The endpoint needs two things only
+`proactive` knows — the editorial severity order (`AdvicePriority.ORDER`) and which card, if any,
+the day actually delivered (`companion_message`) — and `AdvicePriority` already imports `FlagKey`,
+so a controller here reaching straight into `proactive` would close a `companion ↔ proactive`
+feature-slice cycle that `ArchitectureTest.feature_slices_are_cycle_free` rejects. The fix is the
+same one `NudgeSendPort` set as precedent: companion declares the seam it needs and proactive
+implements it, never the other way round. `AdviceRankPort.rankOf` (impl:
+`proactive.service.AdviceRankAdapter`) is the ranking — the observer orders its rules by this
+and never by a list of its own, so there is exactly one ranking in the codebase, not two that can
+drift. `DailyCardPort.forDay` is the day's delivered card, if any — its `adviceKey` is the day's
+severity key, matched against `FlagCatalog.KEYS` to decide whether the card was flag-sourced (a
+key in the catalog) or setup-check-sourced (none of them); the latter yields no winner at all.
+
+**`FlagCatalog`** is now the single place a rule is NAMED: the Hungarian `label` and the `domain`
+that becomes a colour wash and a clay icon on the tile (S3's job, not this one's). Both are
+server-sent rather than kept in a frontend per-key map, because a per-key map means every round-2
+rule needs a frontend change to appear correctly — the same "round-2 promise" `FlagCatalog`'s own
+javadoc names. An unmapped key falls back rather than throwing (`label` to the raw key, `domain`
+to `"general"`) — an unknown key must degrade, never break the read surface — and the client is
+expected to fall back the same safe way on a `domain` it does not recognize (the contract says so
+explicitly). Deliberately holds no ranking of its own; that stays `AdvicePriority`'s, reached
+through `AdviceRankPort` — duplicating it here is exactly the five-mirrors defect class documented
+above.
+
+**`FlagFactRenderer` moved out of `proactive.service`** (where it lived as `AdviceFactRenderer`)
+into `companion.flags.service`, because it renders companion's own `FlagPayloadEnvelope` and
+companion may not import proactive — the same cycle argument as the ports above. It now has TWO
+consumers: the advice card's facts (still `InterventionService`, in `proactive`) and this read
+service's RAISED evidence. `FlagTraceCopy` is the rest of the same renderer family, covering the
+two outcomes `FlagFactRenderer` does not: one Hungarian sentence for CLEAR (the rule's own metric,
+observed value and threshold, read straight off `FlagVerdict.ClearEvidence` — never a fabricated
+number) and one for UNAVAILABLE (one sentence per `UnavailableReason` gate). Both fall back safely
+on an unmapped code, same argument as `FlagCatalog`.
+
+**Closing state and the day's transitions fall out of the same rows.** A rule's closing state is
+simply its newest trace row at or before the day's cutoff — which may predate the day entirely,
+and that IS what "unchanged since" means: a rule that has not fired in a week still has an honest
+closing state, just an old `changedAt`. A rule with no trace row at all — never evaluated, ever —
+reads as `unavailable`/`not_evaluated_yet`, a read-side-only reason code that no rule itself ever
+produces (`FlagVerdict`'s factories don't know it exists); the alternative, a fabricated `clear`,
+is exactly the dishonesty the whole observer exists to rule out. The day's transitions are the
+SAME trace rows, just windowed to `[dayStart, cutoff]` and paired with each rule's antecedent — the
+state immediately before the day's first change for that rule, so a day's first transition reads
+"from yesterday's state" rather than "from nothing".
+
+**CLEAR's evidence is honest but not fresh, and the surface must say so (`mezo-6269.10`).** The
+transition-only write rule above deliberately excludes evidence from the change comparison, so a
+rule sitting CLEAR for two weeks stores the numbers observed the day it BECAME CLEAR, not today's —
+the same trace-row reuse `changedAt` already names. That is not a defect: unlike the
+cooldown-suppressed case below, where the evidence and `changedAt` describe two different events, a
+CLEAR row's evidence and `changedAt` describe the SAME event, so the two stay self-consistent. The
+trap is presentation, not data — a client rendering CLEAR's facts as today's measurement borrows a
+freshness the numbers don't have. The fix is not to date the numbers (that's the cooldown fix below,
+and it doesn't apply here) but to present them as "unchanged since `changedAt`", which is exactly
+what the contract's `facts`/`reasonText`/`changedAt` descriptions now spell out.
+
+**`cardOutcome` is derived at read time and never stored.** A rule's trace row only says RAISED;
+whether that raise WON the day's card is decided later in the cycle — after the raise is logged,
+`InterventionService` ranks every raise still standing and delivers exactly one — and
+`companion_flag_trace` is append-only, so there is nowhere to retrofit that answer onto the row
+even if the design wanted to. So the read side compares each RAISED-and-`logged` rule's key against
+the day's `DailyCardPort.forDay` winner every time the endpoint is called: `won`, `lost`, or null
+when the rule did not raise-and-log, or when the day's card was not flag-sourced at all (a setup
+check won that day, which is none of the 13 keys). Consequently, even a raised-and-logged rule reads
+`cardOutcome: null` when the day's delivered card came from a setup check — no winner exists among
+the 13 flag rules that day. A `suppressed_by_cooldown` raise can never be `won`/`lost` for the same
+reason it has no evidence of its own below — it was never a competitor for that day's card.
+
+**The honest consequence for a cooldown-suppressed raise.** `FlagService` only writes a
+`companion_flag_log` row on the LOGGED branch — a raise the cooldown swallows leaves no log row of
+its own, so there is no frozen payload to read back for it. The read side does not fabricate one:
+it reads the rule's last row that DID get logged and shows that evidence instead, because it is
+still the rule's freshest real numbers and worth showing. But those numbers are from an earlier
+raise, and presenting them under today's `changedAt` with no qualifier would be exactly the "stale
+figures dressed up as today's measurement" dishonesty this endpoint exists to avoid — so
+`FlagTraceCopy` dates them: the closing-state facts get an extra line naming the day the numbers
+were frozen, and the reason text says so in the same sentence.
 
 **Weekly review data layer + anchored conversations (`mezo-p2tr`).** Two companion-owned pieces
 back the `/me/week` "Heti" tab ([me.md](me.md)) and its chat handoff — neither is the weekly-review
