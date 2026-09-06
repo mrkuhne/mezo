@@ -91,8 +91,8 @@ spec:
               value: "true"
             # LLM call audit log (mezo-2zyu): every Gemini call lands in llm_log_history with
             # its token/cost breakdown and its caller attribution (feature/operation/entity).
-            # Default-off in application.yml — deliberately switched ON only where the real
-            # adapter runs, so local/test runs never accumulate audit rows.
+            # Default-on in application.yml since mezo-ozri.1 — this explicit pin is now
+            # redundant with that default, kept deliberately as a production safeguard.
             - name: MEZO_FEATURE_LLM_LOG_ENABLED
               value: "true"
             # H2 Web Push N1 (mezo-h4wp.6.1): the VAPID keypair backing every push we
