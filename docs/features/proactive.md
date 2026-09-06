@@ -2183,6 +2183,20 @@ card, no day gate, no migration, no new feed kind, no FE change.
   import `proactive` to learn what a question key is.
 - **Nothing else follows from an answer** (spec §c): no feature hidden, no data excluded, no rule
   input changed. The fact rides the top-N prompt injection like any other, and that is all.
+- **The frontend renders it as a QUESTION, not as a rated card** (`mezo-d58h.7.6`, the S5 follow-up).
+  A question card is an `advice` row, so the thread's generic advice rendering would have put
+  „Segített?" over it and offered the negative reason row („pontatlan"/„túl sok"/…) on the 👎 — but
+  here the 👍/👎 IS the answer and those reasons are complaints about a card. `NapMezoPage` (the live
+  thread; `MezoMessagesSheet` is the dead, half-migrated twin — `mezo-1esk`) now keys off
+  `FeedMessage.flagKey`, which already reached the FE from `mezo-6269.2` and only had to survive
+  `feedToMessageItem`: `isQuestionCard` is a PREFIX match on `question_`, so a future question key
+  behaves correctly the day the backend starts asking it, with no frontend change. The card then
+  reads „A válaszod", the two chips wear the question's own answers (parsed off its `suggestions`,
+  which are therefore no longer also listed as bullets — the button says what tapping it means), and
+  `FeedbackChips`' new `answers` mode records a 👎 straight away instead of opening the reason row.
+  A malformed suggestion pair falls back to the default „Segített"/„Nem talált" wording rather than
+  rendering a guess. Mock mode is untouched by design: `useCompanionFeed` returns `[]` there
+  (Phase-1 byte parity), so no advice or question card exists on the mock surface at all.
 
 ## 6. How to use it (consume)
 
