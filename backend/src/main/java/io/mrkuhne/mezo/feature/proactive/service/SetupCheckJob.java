@@ -24,6 +24,10 @@ public class SetupCheckJob {
 
     private final UserFanOut userFanOut;
     private final SetupCheckService setupCheckService;
+    /** Round 2 S5 (bd mezo-d58h.7.5): the once-ever questions ride THIS cron — the spec forbids a
+     *  new one near the dawn cluster, and this pass is already the daily "is there anything to say
+     *  that no write announces" loop. Same bean conditions, so the injection is safe. */
+    private final OneTimeQuestionService oneTimeQuestionService;
 
     @Scheduled(cron = "${mezo.proactive.setup-checks.cron}")
     public void run() {
@@ -33,6 +37,14 @@ public class SetupCheckJob {
                 setupCheckService.runFor(user.getId());
             } catch (Exception e) {
                 log.warn("Setup check failed for user {}", user.getId(), e);
+            }
+            try {
+                // AFTER the setup checks, and with its own catch: a question is the least important
+                // thing in this loop and must never cost a setup card. It stays quiet by itself
+                // whenever the setup check just spent the day's card budget.
+                oneTimeQuestionService.runFor(user.getId());
+            } catch (Exception e) {
+                log.warn("One-time question failed for user {}", user.getId(), e);
             }
         });
     }
