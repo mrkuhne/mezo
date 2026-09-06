@@ -1748,7 +1748,7 @@ class QuestionAnswerIT extends AbstractIntegrationTest {
 
 > **Register `CreatedAtBackdater` in `AbstractIntegrationTest`'s `@Import` list** — populators are imported explicitly there, not component-scanned.
 
-> **Implementer's call:** if this two-step "write, then rewrite the envelope" fixture reads badly to you, add a `createQuestion(owner, date, questionKey, eyebrow, text, facts, answers, generatedAt)` factory to `CompanionMessagePopulator` (the `createSetup` idiom, `setupKey` AND `adviceKey` both set to the question key) and use it in all four tests. Either is fine; do not leave both.
+> **Resolved while executing:** the two-step "write, then rewrite the envelope" fixture was dropped in favour of a `createQuestion(owner, date, questionKey, eyebrow, text, facts, answers, generatedAt)` factory on `CompanionMessagePopulator` (the `createSetup` idiom, with `setupKey` AND `adviceKey` both set to the question key). Task 7's test uses the same factory.
 
 - [ ] **Step 2: Run it and watch it fail.**
 
@@ -1900,8 +1900,10 @@ public class QuestionAnswerService {
     /** The fact this answer left behind, or empty when the verdict was not an answer at all. */
     @Transactional
     public Optional<KnowledgeFactEntity> record(UUID userId, UUID artifactId, String verdict) {
-        Optional<CompanionMessageEntity> card = companionMessageRepository.findById(artifactId)
-            .filter(row -> userId.equals(row.getCreatedBy()));
+        // findByIdAndCreatedBy already exists (the S5 apply path's owner-scoped load) and is
+        // soft-delete filtered — someone else's card, or a superseded one, simply is not found.
+        Optional<CompanionMessageEntity> card =
+            companionMessageRepository.findByIdAndCreatedBy(artifactId, userId);
         if (card.isEmpty()) {
             return Optional.empty();
         }
