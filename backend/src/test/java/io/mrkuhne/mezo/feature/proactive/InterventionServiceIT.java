@@ -296,4 +296,24 @@ class InterventionServiceIT extends AbstractIntegrationTest {
         assertThat(card.get().getContent().adviceKey()).isEqualTo(FlagKey.MEAL_RHYTHM_DRIFT);
         assertThat(card.get().getContent().facts()).anySatisfy(f -> assertThat(f).contains("Vacsora"));
     }
+
+    /** Round 2 S6 (mezo-d58h.7.7): the correlation flag really becomes a card through the ordinary
+     *  library path, and the card's facts carry the frozen payload's own two group sizes — the
+     *  reader must be able to see how thin the sample is. */
+    @Test
+    void energyDipRaiseBecomesACardWithBothGroupsInTheFacts() {
+        UUID owner = ownerId();
+        flagLogPopulator.raise(owner, FlagKey.ENERGY_DIP_MEAL_TIMING, FlagKey.SOURCE_SWEEP,
+            FlagPayloadEnvelope.energyDipMealTiming(new FlagPayloadEnvelope.EnergyDipMealTiming(
+                "lunch_time", "earlier_lunch", "later_lunch", 30, 12, 10, 6, 6, 4,
+                8.0, 5.0, 3.0, 1.0, 1.0, 0.70, "A", "12:00", "14:30")));
+
+        Optional<CompanionMessageEntity> card =
+            interventionService.deliverForFlag(owner, FlagKey.ENERGY_DIP_MEAL_TIMING);
+
+        assertThat(card).isPresent();
+        assertThat(card.get().getContent().interventionKey()).isEqualTo("energy_dip_timing_insight");
+        assertThat(card.get().getContent().adviceKey()).isEqualTo(FlagKey.ENERGY_DIP_MEAL_TIMING);
+        assertThat(card.get().getContent().facts()).anySatisfy(f -> assertThat(f).contains("12:00"));
+    }
 }
