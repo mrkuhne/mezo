@@ -34,6 +34,8 @@ export interface FeedMessage {
   facts?: string[]
   /** Advice-card suggestion texts (config-provided); only advice rows. */
   suggestions?: string[]
+  /** The severity key the card came from (mezo-6269.2) — flag key or setup-check key; advice rows only. */
+  flagKey?: string
   /** Advice-card action buttons (S5, mezo-d58h.5) — rule-provided; only advice rows. */
   actions?: FeedAction[]
   /** Advice-card applied stamp (S5, mezo-d58h.5) — set once an action has been applied; only advice rows. */
@@ -1856,4 +1858,46 @@ export function notificationKindMeta(
   kind: string,
 ): typeof FALLBACK_KIND_META | (typeof APP_NOTIFICATION_KIND_META)[AppNotificationKindKey] {
   return APP_NOTIFICATION_KIND_META[kind as AppNotificationKindKey] ?? FALLBACK_KIND_META
+}
+
+/**
+ * The coaching observer's day (mezo-6269.2, spec 2026-09-05 §5). `label` and `domain` are
+ * SERVER-SENT on purpose: a per-flagKey map here would mean every round-2 rule needs a frontend
+ * change. `domain` drives the wash and the clay icon and the surface MUST fall back safely on one
+ * it does not know.
+ */
+export type FlagOutcome = 'raised' | 'clear' | 'unavailable'
+export type FlagState = FlagOutcome | 'suppressed'
+export interface CoachingRule {
+  flagKey: string
+  label: string
+  domain: string
+  rank: number
+  outcome: FlagOutcome
+  reasonCode?: string
+  reasonText: string
+  facts: string[]
+  disposition?: 'logged' | 'suppressed_by_cooldown'
+  cardOutcome?: 'won' | 'lost'
+  changedAt?: string
+}
+export interface CoachingTransition {
+  at: string
+  flagKey: string
+  label: string
+  from?: FlagState
+  to: FlagState
+  reasonText: string
+}
+export interface CoachingWinner {
+  flagKey: string
+  rank: number
+  cardId: string
+}
+export interface CoachingTraceDay {
+  date: string
+  earliestDate?: string
+  winner?: CoachingWinner
+  rules: CoachingRule[]
+  transitions: CoachingTransition[]
 }

@@ -7,16 +7,8 @@ tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
   - api/feature/proactive/proactive.yml
-  - backend/src/main/resources/db/changelog/1.0.0/script/202608151200_mezo-gst9_create_companion_message.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202608151230_mezo-gst9_drop_briefing_heartbeat_note.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607071500_mezo-h4wp.4_create_memoir.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607071900_mezo-h4wp.7_create_prediction.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607072000_mezo-h4wp.8_create_experiment.sql
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607072100_mezo-hbwi_create_challenge.sql
-  - backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/OverloadChallengeGenerator.java
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607280641_mezo-gj42_challenge_overload_type.sql
-  - backend/src/main/java/io/mrkuhne/mezo/feature/proactive/service/WeeklyReviewGenerator.java
-  - backend/src/main/resources/db/changelog/1.0.0/script/202608271200_mezo-p2tr_create_weekly_review.sql
+  - frontend/src/data/today
+  - frontend/src/features/today/pages/NapMezoPage.tsx
 related: [companion, today, insights, train, me, _platform-api-backend, _platform-notifications]
 ---
 
@@ -957,7 +949,10 @@ FLAG signals (grace-window copy, "the streak lives, just continue it," never bla
 [companion.md](companion.md) §3), so it must never be able to outrank and displace any of the other
 thirteen flags' cards. Since `outranks` is index order and lower ranks harder, `protocol_lapse`
 still outranks (and can displace) the two setup checks and the round-0 tail below it in the list —
-only every OTHER flag sits ahead of it. `AdviceCardService` is deliberately NOT conditioned on
+only every OTHER flag sits ahead of it. **Round 2 S4 (bd `mezo-d58h.7.4`) then adds
+`FlagKey.MEAL_RHYTHM_DRIFT` immediately AFTER `protocol_lapse`**, still ahead of the two setup
+checks: it is an offer to edit a plan rather than a health signal, so it must never displace a card
+ranked above it — and the round-1 order is again untouched. `AdviceCardService` is deliberately NOT conditioned on
 `INTERVENTION_SWITCH` —
 `SetupCheckService` (which runs without that switch) is one of its two callers, so gating this bean
 on the intervention switch would fail the Spring context whenever that switch is off.
@@ -1500,9 +1495,13 @@ Every non-2xx returns `SystemMessageList`. The paths are protected (401 without 
 | `POST /api/proactive/challenge/{id}/decision` | `ChallengeResponse` | 200 · 400 · 401 · 404 · 409 | HBWI. **L2 accept/dismiss** (`{decision: accept\|dismiss}`, `@Pattern ^(accept\|dismiss)$`). `accept` ⇒ `accepted`; `dismiss` ⇒ `dismissed`. 404 `PROACTIVE_CHALLENGE_NOT_FOUND` = not-found/foreign; **409 `PROACTIVE_CHALLENGE_NOT_PROPOSED`** = already decided; 400 = invalid decision value. **No `propose` endpoint** (generation is implicit on the prep-read). |
 
 Schemas: `FeedMessageResponse{id, date, kind, eyebrow, body[], refs[], generatedAt, facts?,
-suggestions?, actions?, applied?}`
+suggestions?, actions?, applied?, flagKey?}`
 (replaces `BriefingResponse` + `HeartbeatNoteResponse`) + `FeedRef{kind, label}` — **no `confidence`,
-no `tone`** on the wire (§9 gotcha c, unchanged). `kind` is the **9-value** companion-feed enum
+no `tone`** on the wire (§9 gotcha c, unchanged). `flagKey` (companion coaching observer, bd
+`mezo-6269.2`) names the card's own severity key, mapped straight from `content.adviceKey` —
+present only on `advice` rows, a `FlagKey` for a flag-sourced card or a setup-check key for a
+setup-sourced one. It is what lets `companion.md`'s coaching observer correlate the day's card
+against its own trace rows to decide which rule won. `kind` is the **9-value** companion-feed enum
 (`morning|sleep|weight|midday|evening|intervention|people|setup|advice` — the sixth, `intervention`,
 W5.2 bd `mezo-b3pp.19`, added 2026-08-25; the seventh, `people`, Emberek S6 bd `mezo-06o0.8`, added
 2026-09-01; the eighth, `setup`, S3 bd `mezo-d58h.3`, added 2026-09-03; the ninth, `advice`, S4 bd
@@ -3016,6 +3015,17 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
   `shift_sleep_anchor` or `joint_overuse`'s `lighten_tomorrow`, (ll) above) — the card's own copy asks
   the user to either take the dose today or drop the item from the stack themselves; there is
   nothing here for a button to safely automate.
+- **(nn) Round 2 S4 (bd `mezo-d58h.7.4`, spec 2026-09-05 §(13)) adds `meal_rhythm_adjust`, the
+  `meal_rhythm_drift` intervention-library entry.** `channel: feed` (an offer to edit a plan never
+  earns a push) and `cooldown-hours: 336`, which MUST stay equal to
+  `mezo.companion.flags.cooldown-hours.meal-rhythm-drift` — `InterventionService.deliverForFlag`
+  applies the LIBRARY entry's own per-key cooldown, so a mismatch would silently override the
+  spec's 14-day cadence (the `protocol_lapse_resume` review lesson, one slice earlier). The copy is
+  a NEUTRAL observation offering to rewrite the slot plan, never an adherence remark; the specific
+  slot, both clock times and the presence ratios come from `FlagFactRenderer`'s `meal_rhythm_drift`
+  branch (rendered from the raise's own frozen payload), never from this text. Like
+  `protocol_lapse_resume` it offers no `AdviceActionCatalog` mutation — editing a slot template is a
+  deliberate act in Fuel, not something a card should automate.
 - **Epic complete, H2 Web Push shipped with it, and `mezo-gst9` then redesigned the B/H stages.**
   All eight original slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2), **H2 (`mezo-h4wp.6`) shipped** — N1
   (delivery spine) + N2 (dispatcher + `notification_pref`/`push_log` + categories 1-9) + N3

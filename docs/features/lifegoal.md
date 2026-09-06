@@ -6,26 +6,13 @@ updated: 2026-09-05
 tags: [me, growth, companion, backend, data-layer, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal
-  - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/engine/LifeGoalScorer.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/engine/SignalSource.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/service/LifeGoalProgressService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/service/LifeGoalEvalJob.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/service/LifeGoalXpService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/service/LifeGoalTriggerService.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/service/LifeGoalTriggerRules.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/service/LifeGoalSignalService.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/LifeGoalProposePort.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/LifeGoalProposeLlmAdapter.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion/LifeGoalSource.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal/service/LifeGoalCompanionAdapter.java
   - api/feature/lifegoal/lifegoal.yml
   - frontend/src/data/lifegoal
   - frontend/src/features/me/pages/CelokPage.tsx
   - frontend/src/features/me/pages/CelPage.tsx
-  - frontend/src/features/me/pages/CelWizardPage.tsx
-  - frontend/src/features/me/pages/JelekPage.tsx
   - frontend/src/features/today/components/LifeGoalTodayTile.tsx
-  - frontend/src/features/me/components/WeekGoalsCard.tsx
 related: [goal-engine, growth, companion, me, today, train]
 ---
 

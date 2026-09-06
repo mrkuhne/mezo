@@ -276,4 +276,24 @@ class InterventionServiceIT extends AbstractIntegrationTest {
         assertThat(card.get().getContent().adviceKey()).isEqualTo(FlagKey.PROTOCOL_LAPSE);
         assertThat(card.get().getContent().facts()).anySatisfy(f -> assertThat(f).contains("D3-vitamin"));
     }
+
+    /** Round 2 S4 (mezo-d58h.7.4): the flag really becomes a card through the ordinary library
+     *  path, and the card's facts carry the frozen payload's slot label — the whole point of
+     *  freezing it (FlagFactRenderer has no repositories). */
+    @Test
+    void mealRhythmDriftRaiseBecomesACardWithItsSlotInTheFacts() {
+        UUID owner = ownerId();
+        flagLogPopulator.raise(owner, FlagKey.MEAL_RHYTHM_DRIFT, FlagKey.SOURCE_SWEEP,
+            FlagPayloadEnvelope.mealRhythmDrift(new FlagPayloadEnvelope.MealRhythmDrift(
+                "slot_drift", "dinner", "Vacsora", 14, 13, 10, 13, 12,
+                "19:00", "21:00", 120, 90, 0.92, null, null, null, null)));
+
+        Optional<CompanionMessageEntity> card =
+            interventionService.deliverForFlag(owner, FlagKey.MEAL_RHYTHM_DRIFT);
+
+        assertThat(card).isPresent();
+        assertThat(card.get().getContent().interventionKey()).isEqualTo("meal_rhythm_adjust");
+        assertThat(card.get().getContent().adviceKey()).isEqualTo(FlagKey.MEAL_RHYTHM_DRIFT);
+        assertThat(card.get().getContent().facts()).anySatisfy(f -> assertThat(f).contains("Vacsora"));
+    }
 }

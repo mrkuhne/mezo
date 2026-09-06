@@ -2,20 +2,15 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-05
+updated: 2026-09-06
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
-  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/LifeGoalSource.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/service/LifeGoalSnapshotBlock.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/LifeGoalText.java
-  - backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/LifeGoalTools.java
   - backend/src/main/java/io/mrkuhne/mezo/feature/llmlog
   - api/feature/companion/companion.yml
   - api/feature/memory-retrieval/memory-retrieval.yml
   - frontend/src/data/insights/chatHooks.ts
   - frontend/src/data/insights/memoryFeedbackHooks.ts
-  - backend/src/main/resources/db/changelog/1.0.0/script/202607031400_mezo-fnnq.2_create_ai_conversation_message.sql
   - docs/decisions/0008-companion-llm-spring-ai-2-gemini.md
 related: [insights, proactive, today, me, _platform-api-backend, _platform-auth-security, _platform-notifications, journal, ritual]
 ---
@@ -1628,6 +1623,37 @@ gate, the same discipline as the original seven:
   already in that set before it is ever evaluated, so a suppressed item can never even become the
   offender while a DIFFERENT item lapsing the next day still gets a delivery window through the
   short key-level cooldown.
+- **`MealRhythmDriftRule`** (rank 11, Round 2 S4, bd `mezo-d58h.7.4`, spec 2026-09-05 §(13),
+  `meal_rhythm_drift`) — the meal-slot PLAN and the logged REALITY have drifted apart, over a
+  `windowDays` (14) rolling window ending YESTERDAY, and only once at least `minDaysWithMeals` (10)
+  of those days carry a logged meal. Two sub-triggers under ONE key, distinguished in the payload by
+  `subType`: **`slot_drift`** — a planned slot's actual time (the EARLIEST `meal` row of that
+  `slotKind` that day, `logged_at` in wall clock) is a median of more than `driftMinutes` (90) away
+  from its planned time, with at least `minSameDirectionShare` (70%) of the observed days drifting
+  the same way; and **`dead_slot`** — a slot planned on ≥ `minSlotPlannedDays` days carries a meal
+  on ≤ `deadSlotMaxPresence` (30%) of them while the OTHER tracked slots average ≥
+  `otherSlotsMinPresence` (70%), i.e. the user logs, just not that slot. The card is a NEUTRAL
+  observation offering to edit the plan — this rule never speaks about adherence, because a plan
+  that stopped matching a life is the plan's problem. Three bounds carry it: **(1)** only a `fixed`
+  anchor has a backend-readable time — `wake`/`bed`/`training_start`/`training_end` slots are
+  resolved in the FRONTEND (`compileTemplate.ts`) against that day's wake/bed/training blocks, so the
+  drift arm reads fixed-anchor slots exclusively while the dead-slot arm (needing no time) covers
+  every non-snack slot; **(2)** the day's template is chosen by a DERIVED day type — the
+  `resolveDayType.ts` convention ported to the backend (no completed gym instance ⇒ `rest`, else the
+  earliest `started_at` before noon ⇒ `training_am`, at/after noon ⇒ `training_pm`), and a training
+  day whose instances all lack `started_at`, or a day whose resolved type has no template row, is
+  SKIPPED entirely rather than bucketed by guess; **(3)** deviation is a SIGNED CIRCULAR minute
+  difference in `(-720, 720]`, so a 19:00-planned dinner logged at 00:30 is +330 late (not −1110)
+  and a 07:00 breakfast logged at 13:00 is +360 (not −1080) — `LateEatingRule`'s +24-below-noon shift
+  is deliberately NOT reused, since that shift is for several values against one anchor, not for a
+  per-slot difference. Ambiguity is silence: `snack` is excluded (a template may hold several snack
+  slots that all collapse onto the same `meal.slot='snack'` rows) and any day whose template holds
+  two slots of the same non-snack kind contributes nothing for that kind. An unlogged day is neither
+  compliant nor violating — presence ratios only count days that carried at least one logged meal of
+  ANY kind, so a logging holiday can never read as "your dinner slot died". Cooldown is KEY-level 14
+  days (`cooldown-hours.meal-rhythm-drift`, 336h), and the `meal_rhythm_adjust` library entry's own
+  `cooldown-hours` MUST match it (the `protocol_lapse` review lesson: `deliverForFlag` applies the
+  LIBRARY entry's cooldown).
 
 Two prerequisite fixes underpin the rules above: `MetricSeriesService.weightTrendPctWk` and
 `.lateMealHour` used to load a user's ENTIRE history and filter in Java; both are now bounded reads
@@ -1744,6 +1770,93 @@ desc)` — the transition-comparison read above — and `(created_by, occurred_a
 day-timeline read. Soft-deletable `OwnedEntity` like every other companion table; no FK from
 `evidence` to anything, same "frozen at the time" precedent as `companion_flag_log.payload` (§4
 above).
+
+**Proactive coaching observer S2 — the read endpoint (bd `mezo-6269.2`, spec 2026-09-05 §5).**
+`GET /api/companion/flags/trace?date=` (`CompanionFlagTraceController`, `FlagTraceReadService`)
+is the observer's one read: every flag rule for a day in severity order, each with its CLOSING state, plus
+the day's transitions. It obeys exactly one rule, load-bearing enough to be the class-level
+javadoc on `FlagTraceReadService`: it RENDERS, it NEVER RECOMPUTES. Every verdict on the wire was
+already concluded by the engine at evaluation time and sits in `companion_flag_trace`; the read
+side only looks the row up, formats it, and orders it. `date` is optional — omitted, it defaults
+to the server's today (the FE sends its own local date otherwise), same idiom as the feed read.
+
+**Why this lives in `companion.flags` and not in `proactive`.** The endpoint needs two things only
+`proactive` knows — the editorial severity order (`AdvicePriority.ORDER`) and which card, if any,
+the day actually delivered (`companion_message`) — and `AdvicePriority` already imports `FlagKey`,
+so a controller here reaching straight into `proactive` would close a `companion ↔ proactive`
+feature-slice cycle that `ArchitectureTest.feature_slices_are_cycle_free` rejects. The fix is the
+same one `NudgeSendPort` set as precedent: companion declares the seam it needs and proactive
+implements it, never the other way round. `AdviceRankPort.rankOf` (impl:
+`proactive.service.AdviceRankAdapter`) is the ranking — the observer orders its rules by this
+and never by a list of its own, so there is exactly one ranking in the codebase, not two that can
+drift. `DailyCardPort.forDay` is the day's delivered card, if any — its `adviceKey` is the day's
+severity key, matched against `FlagCatalog.KEYS` to decide whether the card was flag-sourced (a
+key in the catalog) or setup-check-sourced (none of them); the latter yields no winner at all.
+
+**`FlagCatalog`** is now the single place a rule is NAMED: the Hungarian `label` and the `domain`
+that becomes a colour wash and a clay icon on the tile (S3's job, not this one's). Both are
+server-sent rather than kept in a frontend per-key map, because a per-key map means every round-2
+rule needs a frontend change to appear correctly — the same "round-2 promise" `FlagCatalog`'s own
+javadoc names. An unmapped key falls back rather than throwing (`label` to the raw key, `domain`
+to `"general"`) — an unknown key must degrade, never break the read surface — and the client is
+expected to fall back the same safe way on a `domain` it does not recognize (the contract says so
+explicitly). Deliberately holds no ranking of its own; that stays `AdvicePriority`'s, reached
+through `AdviceRankPort` — duplicating it here is exactly the five-mirrors defect class documented
+above.
+
+**`FlagFactRenderer` moved out of `proactive.service`** (where it lived as `AdviceFactRenderer`)
+into `companion.flags.service`, because it renders companion's own `FlagPayloadEnvelope` and
+companion may not import proactive — the same cycle argument as the ports above. It now has TWO
+consumers: the advice card's facts (still `InterventionService`, in `proactive`) and this read
+service's RAISED evidence. `FlagTraceCopy` is the rest of the same renderer family, covering the
+two outcomes `FlagFactRenderer` does not: one Hungarian sentence for CLEAR (the rule's own metric,
+observed value and threshold, read straight off `FlagVerdict.ClearEvidence` — never a fabricated
+number) and one for UNAVAILABLE (one sentence per `UnavailableReason` gate). Both fall back safely
+on an unmapped code, same argument as `FlagCatalog`.
+
+**Closing state and the day's transitions fall out of the same rows.** A rule's closing state is
+simply its newest trace row at or before the day's cutoff — which may predate the day entirely,
+and that IS what "unchanged since" means: a rule that has not fired in a week still has an honest
+closing state, just an old `changedAt`. A rule with no trace row at all — never evaluated, ever —
+reads as `unavailable`/`not_evaluated_yet`, a read-side-only reason code that no rule itself ever
+produces (`FlagVerdict`'s factories don't know it exists); the alternative, a fabricated `clear`,
+is exactly the dishonesty the whole observer exists to rule out. The day's transitions are the
+SAME trace rows, just windowed to `[dayStart, cutoff]` and paired with each rule's antecedent — the
+state immediately before the day's first change for that rule, so a day's first transition reads
+"from yesterday's state" rather than "from nothing".
+
+**CLEAR's evidence is honest but not fresh, and the surface must say so (`mezo-6269.10`).** The
+transition-only write rule above deliberately excludes evidence from the change comparison, so a
+rule sitting CLEAR for two weeks stores the numbers observed the day it BECAME CLEAR, not today's —
+the same trace-row reuse `changedAt` already names. That is not a defect: unlike the
+cooldown-suppressed case below, where the evidence and `changedAt` describe two different events, a
+CLEAR row's evidence and `changedAt` describe the SAME event, so the two stay self-consistent. The
+trap is presentation, not data — a client rendering CLEAR's facts as today's measurement borrows a
+freshness the numbers don't have. The fix is not to date the numbers (that's the cooldown fix below,
+and it doesn't apply here) but to present them as "unchanged since `changedAt`", which is exactly
+what the contract's `facts`/`reasonText`/`changedAt` descriptions now spell out.
+
+**`cardOutcome` is derived at read time and never stored.** A rule's trace row only says RAISED;
+whether that raise WON the day's card is decided later in the cycle — after the raise is logged,
+`InterventionService` ranks every raise still standing and delivers exactly one — and
+`companion_flag_trace` is append-only, so there is nowhere to retrofit that answer onto the row
+even if the design wanted to. So the read side compares each RAISED-and-`logged` rule's key against
+the day's `DailyCardPort.forDay` winner every time the endpoint is called: `won`, `lost`, or null
+when the rule did not raise-and-log, or when the day's card was not flag-sourced at all (a setup
+check won that day, which is none of the 13 keys). Consequently, even a raised-and-logged rule reads
+`cardOutcome: null` when the day's delivered card came from a setup check — no winner exists among
+the 13 flag rules that day. A `suppressed_by_cooldown` raise can never be `won`/`lost` for the same
+reason it has no evidence of its own below — it was never a competitor for that day's card.
+
+**The honest consequence for a cooldown-suppressed raise.** `FlagService` only writes a
+`companion_flag_log` row on the LOGGED branch — a raise the cooldown swallows leaves no log row of
+its own, so there is no frozen payload to read back for it. The read side does not fabricate one:
+it reads the rule's last row that DID get logged and shows that evidence instead, because it is
+still the rule's freshest real numbers and worth showing. But those numbers are from an earlier
+raise, and presenting them under today's `changedAt` with no qualifier would be exactly the "stale
+figures dressed up as today's measurement" dishonesty this endpoint exists to avoid — so
+`FlagTraceCopy` dates them: the closing-state facts get an extra line naming the day the numbers
+were frozen, and the reason text says so in the same sentence.
 
 **Weekly review data layer + anchored conversations (`mezo-p2tr`).** Two companion-owned pieces
 back the `/me/week` "Heti" tab ([me.md](me.md)) and its chat handoff — neither is the weekly-review
@@ -4127,6 +4240,7 @@ are whole days computed from `LocalDate.now()`; missing days stay absent, never 
 | `ignored_nudge` | the `category` push sent on `min-consecutive-days` consecutive evenings **and** every one of those nights' `BEDTIME_HOUR` missed the sleep anchor by more than `non-compliance-minutes`; requires a `sleep_goal` row; any unlogged/unsent/compliant night breaks the run | `push_log` (via `NudgeSendPort`), `MetricKey.BEDTIME_HOUR`, `SleepAnchorPort` |
 | `late_eating` | on ≥ `min-days-of-last-three` of the last `window-days` days, `LATE_MEAL_HOUR` is within `minutes-before-bed` of the (shifted) sleep anchor **or** ≥ `absolute-hour`; the bed arm needs a `sleep_goal` row, the absolute arm does not | `MetricKey.LATE_MEAL_HOUR`, `SleepAnchorPort` (bed arm only) |
 | `protocol_lapse` | one active protocol item missed on ≥ `consecutive-missed-days` consecutive DUE days, **and** ≥ `min-history-due-days` due days of adherence-≥`min-history-adherence` history immediately before the miss run; "due" is DERIVED, never stored — a `pre_workout`/`post_workout` item is due only on a day with a completed gym instance (a rest day is not a miss), every other item is due every day; the scan is bounded BELOW by the item's own `created_at` (a freshly added item cannot have "missed" a habit that never had room to exist), and the window ends YESTERDAY, never today (today is still in progress); the per-item 7-day re-announce cooldown lives inside the rule itself, separate from the 24h key-level cooldown below | `protocol_item`, `supplement_intake`, `WorkoutSessionRepository.findDoneInstanceDates` |
+| `meal_rhythm_drift` | over a `window-days` rolling window ending YESTERDAY, with at least `min-days-with-meals` days carrying a logged meal: **slot drift** — a planned slot's actual logged time (earliest row of that `slotKind` that day) deviates from its planned time by a median of more than `drift-minutes`, with at least `min-same-direction-share` of the observed days drifting the same way — OR **dead slot** — a slot planned on ≥ `min-slot-planned-days` days carries a meal on ≤ `dead-slot-max-presence` of them while the other tracked slots average ≥ `other-slots-min-presence`. Only `fixed`-anchor slots can drift (relative anchors are resolved in the FRONTEND only); `snack` and any duplicated `slotKind` are excluded as ambiguous; the day's template is chosen by a DERIVED day type (`resolveDayType.ts` ported: no completed instance ⇒ rest, earliest start before noon ⇒ training_am, else training_pm), and a training day with no `started_at` is skipped entirely; deviations use a SIGNED CIRCULAR minute difference in `(-720, 720]`, never `LateEatingRule`'s +24 shift | `meal_slot_template`, `meal`, `WorkoutSessionRepository.findDoneInstancesBetween` |
 | `all_healthy` | none of the other thirteen fire now, **and** no problem row in `companion_flag_log` in the last `quiet-days` days, **and** the window is not empty (≥1 check-in-stress or sleep value) | the log + the series |
 
 `all_healthy`'s "no problem row" check (`existsProblemRaiseSince`) excludes `all_healthy` itself,
@@ -4142,7 +4256,7 @@ intervention copy calls it a training tip, not an injury alert, and it fires on 
 weekly shoulder split it is true roughly weekly, so counting it here would keep the seven-day quiet
 window from ever opening. The other ten flags — `missed_workouts`, the remaining four S6 keys
 (`acute_bad_day`, `load_fuel_mismatch`, `rapid_weight_loss`, `late_eating`), and Round 2 S1's
-`protocol_lapse` included — stay counted as problems, since each IS a genuine behavior/health
+`protocol_lapse` and S4's `meal_rhythm_drift` included — stay counted as problems, since each IS a genuine behavior/health
 signal, unlike a data gap, a failed nudge, or a forward-looking training advisory. `protocol_lapse`
 stays counted rather than joining the exclusion list: a missed dose on its own due day is a real
 behavior lapse, not a data-availability gap (`logging_gap`'s argument) or the app's own delivery
@@ -6415,6 +6529,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/MissedWorkoutsRule.java` — S2 (bd `mezo-d58h.2`): the `missed_workouts` rule; consecutive-in-planned-days-not-calendar-days logic (§3).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/{AcuteBadDayRule,LoadFuelMismatchRule,RapidWeightLossRule,JointOveruseRule,IgnoredNudgeRule,LateEatingRule}.java` — S6 batch B (bd `mezo-d58h.6`): six rules, in severity order (§3 above has each one's own honesty gate).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/ProtocolLapseRule.java` — Round 2 S1 (bd `mezo-d58h.7.1`, spec 2026-09-05 §(11)): the epic's next new detection, `protocol_lapse` — derived due-days, the `created_at` lower bound, the yesterday-ending window, and the rule-internal per-item cooldown (§3 above has the full honesty-gate writeup).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/rule/MealRhythmDriftRule.java` — Round 2 S4 (bd `mezo-d58h.7.4`, spec 2026-09-05 §(13)): `meal_rhythm_drift` — the fixed-anchor-only drift arm, the derived day type (`resolveDayType.ts` ported), the dead-slot presence arm and the signed circular clock difference (§3 above has the full writeup).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagService.java` — the cooldown gate + append (`evaluateAndLog`), the ONLY write path into `companion_flag_log`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagEvaluationListener.java` — the on-write trigger, `@Async @TransactionalEventListener(AFTER_COMMIT)` on `CheckInSavedEvent`/`SleepLogSavedEvent`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagSweepJob.java` — the hourly sweep (`mezo.companion.flags.sweep-cron`), own job switch, per-user try/catch — the caller whose per-user, hourly cadence is what made the S6 bounded-read prerequisite fixes (§3 above) actually matter.
@@ -6424,6 +6539,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609031200_mezo-d58h.2_flag_key_logging_gap_missed_workouts.sql` — S2: widens `ck_companion_flag_log_flag_key` to seven keys.
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609041200_mezo-d58h.6_flag_key_batch_b.sql` — S6: widens `ck_companion_flag_log_flag_key` to thirteen keys.
 - `backend/src/main/resources/db/changelog/1.0.0/script/202609051600_mezo-d58h.7.1_flag_key_protocol_lapse.sql` — Round 2 S1: widens `ck_companion_flag_log_flag_key` to the fourteen keys (`protocol_lapse`).
+- `backend/src/main/resources/db/changelog/1.0.0/script/202609061600_mezo-d58h.7.4_flag_key_meal_rhythm_drift.sql` + `202609061700_mezo-d58h.7.4_flag_key_trace_meal_rhythm_drift.sql` — Round 2 S4: widen `ck_companion_flag_log_flag_key` AND `ck_companion_flag_trace_flag_key` to the fifteen keys (`meal_rhythm_drift`).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagLogPersistenceIT,FlagPropertiesIT,FlagEvaluatorStressSleepIT,FlagEvaluatorMomentumRecoveryIT,FlagServiceIT,FlagEvaluationListenerIT,FlagSweepJobSwitchOffIT,FlagEvaluatorLoggingGapIT,FlagEvaluatorMissedWorkoutsIT,FlagEvaluatorAcuteBadDayIT,FlagEvaluatorLoadFuelMismatchIT,FlagEvaluatorRapidWeightLossIT,FlagEvaluatorJointOveruseIT,FlagEvaluatorIgnoredNudgeIT,FlagEvaluatorLateEatingIT,FlagEvaluatorProtocolLapseIT}.java` + `support/populator/FlagLogPopulator.java` (+ `companion_flag_log` in `ResetDatabase`) — §8. **Since W5.2 (`mezo-b3pp.19`), `FlagRaisedEvent` (below) is the consumer** — see the next block.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagRaisedEvent.java` — W5.2 (bd `mezo-b3pp.19`): the `{userId, flagKey, source}` event `FlagService.evaluateAndLog` publishes for every WRITTEN raise, inside the logging transaction (§3/§4 above).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/{CompanionFlagTracePersistenceIT,FlagServiceTraceIT}.java` + `backend/src/test/java/io/mrkuhne/mezo/feature/companion/flags/service/FlagVerdictTest.java` — `mezo-6269.1`, §8.

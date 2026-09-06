@@ -2,7 +2,7 @@
 title: Journal — Free-Prose Notes + Narrative Memory Embedding
 type: feature-domain
 status: done
-updated: 2026-08-29
+updated: 2026-09-06
 tags: [me, companion, backend, frontend, data-layer, phase-5]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/journal
@@ -551,7 +551,12 @@ mock seed (`decisionMock.ts`) covers all three states — ripening, due, reviewe
 ## 5. Integrations
 
 - **→ Companion (embed pipeline, wired, one-way OUT — `journal_entry`):** every journal write feeds
-  `memory_embedding` through the seam in §3 above. **Contract crossing the seam:** the two event
+  `memory_embedding` through the seam in §3 above. **Since `mezo-6dii.2` that write ALSO dual-writes a canonical projection:** `MemoryEmbeddingWriter`
+  schedules an AFTER_COMMIT write into `memory_item` + the configured ready serving generation in
+  `memory_vector`, so a journal entry now populates both the legacy embedding store and the shared
+  retrieval platform. **Nothing on the journal side changed for it** and `memory_embedding` is still
+  the sole serving source — the canonical rows are population/migration infrastructure until the
+  retrieval cutover ([`companion.md`](companion.md) §4, [ADR 0036](../decisions/0036-shared-memory-platform-with-gradual-consumer-adoption.md)). **Contract crossing the seam:** the two event
   records `JournalEntrySavedEvent{entryId}` / `JournalEntryDeletedEvent{entryId}` (no `userId` —
   mezo is single-user, so an owner id on the event could never discriminate anything; the listener
   re-reads the entry by id anyway) (`feature/journal/service/`) — plain Spring `ApplicationEvent`s,

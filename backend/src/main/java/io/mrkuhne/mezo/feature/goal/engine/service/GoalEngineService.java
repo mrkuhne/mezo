@@ -7,6 +7,8 @@ import io.mrkuhne.mezo.feature.goal.service.GoalSuggestionTriggerService;
 import io.mrkuhne.mezo.feature.goal.service.GoalInvariantValidator;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -73,6 +75,37 @@ public class GoalEngineService {
         goal.setPrescription(calculation.prescription());
         triggerService.checkPhaseSuggestions(userId, goalId); // slice-4 probe — idempotent, deduped
         return calculation.prescription();
+    }
+
+    /**
+     * Project the owner's ACTIVE goal against an UNSAVED diet draft — <b>read-only</b>: nothing is
+     * persisted, no suggestion probe runs, the goal keeps its stored prescription. Feeds the diet
+     * settings preview (mezo-u2pd) so the FE can show what a split / protein-tier change WOULD
+     * prescribe before the user saves; it goes through the same {@link GoalPrescriptionCalculator}
+     * the save path uses, so the preview cannot drift from the eventual result.
+     *
+     * <p>Returns the segment covering {@code date}'s goal-week rather than the whole prescription so
+     * the goal-week derivation (the {@code ContextSnapshotAssembler#goalBlock} idiom) stays inside
+     * the goal slice; {@code null} when there is no active goal, the active goal is incoherent (the
+     * same condition under which {@link #evaluate} clears its prescription), the owner has no
+     * biometric profile to project from, or no segment covers the date.
+     */
+    @Transactional(readOnly = true)
+    public GoalPrescriptionJson.Segment previewActiveGoalSegment(
+        UUID userId, DietPreferences draftPreferences, LocalDate date) {
+
+        List<GoalEntity> active =
+            goalRepository.findByCreatedByAndStatusAndDeletedFalse(userId, STATUS_ACTIVE);
+        if (active.isEmpty()) {
+            return null;
+        }
+        GoalEntity goal = active.get(0);
+        if (!goalInvariantValidator.isCoherent(goal) || goal.getStartDate() == null) {
+            return null;
+        }
+        long week = ChronoUnit.DAYS.between(goal.getStartDate(), date) / 7 + 1;
+        return GoalPrescriptionJson.currentSegment(
+            calculator.calculate(userId, goal, draftPreferences).prescription(), week);
     }
 
     /**

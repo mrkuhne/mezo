@@ -1,7 +1,6 @@
-package io.mrkuhne.mezo.feature.proactive.service;
+package io.mrkuhne.mezo.feature.companion.flags.service;
 
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
-import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -9,10 +8,17 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * The advice card's FACTS (spec §5): deterministic, numeric, rule-provided lines rendered from the
+ * The deterministic, numeric, rule-provided evidence lines for a RAISED flag, rendered from the
  * raise's own frozen {@code companion_flag_log.payload}. Nothing here re-derives a rule — the
  * payload already froze both the thresholds and the observed values at raise time, which is the
  * whole point of {@code FlagPayloadEnvelope}.
+ *
+ * <p>TWO consumers (spec 2026-09-05 §5): the advice card's {@code facts} ({@code
+ * InterventionService}) and the coaching observer's RAISED evidence ({@code FlagTraceReadService}).
+ * It lives here rather than in {@code proactive} because it renders companion's own payload
+ * envelope AND because companion may not import proactive — see {@code AdviceRankPort}'s javadoc
+ * for the cycle that forbids it. {@link FlagTraceCopy} renders the other two outcomes, CLEAR and
+ * UNAVAILABLE, in the same family and the same locale.
  *
  * <p>An unmapped key or a null payload yields an EMPTY list, never a placeholder: the card is
  * still delivered (its prose falls back to the template text), it simply shows no evidence block.
@@ -23,11 +29,14 @@ import java.util.Objects;
  * {@code ProseNumberGuard} normalises the separator before comparing, so a model that answers
  * with a dot is not punished for it.
  */
-public final class AdviceFactRenderer {
+public final class FlagFactRenderer {
 
     private static final Locale HU = Locale.of("hu");
 
-    private AdviceFactRenderer() {
+    /** {@code MealRhythmDriftRule}'s frozen sub-type discriminator — the presence arm. */
+    private static final String MEAL_RHYTHM_DEAD_SLOT = "dead_slot";
+
+    private FlagFactRenderer() {
     }
 
     public static List<String> render(String flagKey, FlagPayloadEnvelope payload) {
@@ -49,6 +58,7 @@ public final class AdviceFactRenderer {
             case FlagKey.IGNORED_NUDGE -> ignoredNudge(payload.ignoredNudge());
             case FlagKey.LATE_EATING -> lateEating(payload.lateEating());
             case FlagKey.PROTOCOL_LAPSE -> protocolLapse(payload.protocolLapse());
+            case FlagKey.MEAL_RHYTHM_DRIFT -> mealRhythmDrift(payload.mealRhythmDrift());
             default -> List.of();
         };
     }
@@ -256,6 +266,42 @@ public final class AdviceFactRenderer {
         return facts;
     }
 
+    /** Round 2 S4 (mezo-d58h.7.4): a NEUTRAL observation — the facts state what the plan says,
+     *  what actually happened and over how many days, and never use an adherence verb. The two
+     *  sub-types render different halves of the payload (see the envelope record's javadoc). */
+    private static List<String> mealRhythmDrift(FlagPayloadEnvelope.MealRhythmDrift p) {
+        if (p == null) {
+            return List.of();
+        }
+        List<String> facts = new ArrayList<>();
+        facts.add("Étkezési slot: %s (%s)".formatted(
+            Objects.requireNonNullElse(p.slotLabel(), p.slotKind()), p.slotKind()));
+        if (MEAL_RHYTHM_DEAD_SLOT.equals(p.subType())) {
+            facts.add("A %d napból, amikorra be volt tervezve, %d napon volt rögzítve étkezés (%s%%)"
+                .formatted(p.plannedDays(), p.observedDays(), pct(p.presenceRatio())));
+            facts.add("A többi slot ugyanebben az ablakban átlagosan %s%%-on áll (küszöb: %s%%)"
+                .formatted(pct(p.otherSlotsPresenceRatio()), pct(p.otherSlotsMinPresence())));
+        } else {
+            facts.add("Terv szerint %s, a valóságban jellemzően %s (%d perc %s)".formatted(
+                p.plannedTime(), p.observedMedianTime(),
+                Math.abs(p.medianDeviationMinutes() == null ? 0 : p.medianDeviationMinutes()),
+                p.medianDeviationMinutes() != null && p.medianDeviationMinutes() < 0
+                    ? "korábban" : "később"));
+            facts.add("%d megfigyelt napból ennyi mozdult ugyanabba az irányba: %s%% (küszöb: %d perc)"
+                .formatted(p.observedDays(), pct(p.sameDirectionShare()),
+                    p.driftMinutes() == null ? 0 : p.driftMinutes()));
+        }
+        facts.add("Ablak: %d nap, ebből %d napon volt rögzített étkezés (minimum %d)"
+            .formatted(p.windowDays(), p.daysWithMeals(), p.minDaysWithMeals()));
+        return List.copyOf(facts);
+    }
+
+    /** A 0.0-1.0 arány egész százalékként — null-biztos, mert a fél-kitöltött payload a
+     *  sub-type szerinti normális állapot, nem hiba. */
+    private static String pct(Double ratio) {
+        return ratio == null ? "-" : String.format(HU, "%.0f", ratio * 100);
+    }
+
     /** {@code LateEatingRule}'s frozen arm token, in the Hungarian noun the per-day fact uses. */
     private static String lateEatingArmHu(String arm) {
         if (arm == null) {
@@ -335,7 +381,7 @@ public final class AdviceFactRenderer {
     }
 
     /** One decimal, Hungarian comma — the display form the model may echo verbatim. */
-    private static String num(double value) {
+    public static String num(double value) {
         return String.format(HU, "%.1f", value);
     }
 }

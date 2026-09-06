@@ -21,6 +21,10 @@ import lombok.extern.slf4j.Slf4j;
  * <p>Round 2 S1 (bd mezo-d58h.7.1): {@link FlagKey#PROTOCOL_LAPSE} sits at the very tail of the
  * flag block — it is the gentlest signal in the system (grace-window copy, never blame), so it
  * must never displace a health card ranked ahead of it.
+ *
+ * <p>Round 2 S4 (bd mezo-d58h.7.4): {@link FlagKey#MEAL_RHYTHM_DRIFT} sits immediately after
+ * {@code protocol_lapse}, still ahead of the setup checks — it is an offer to edit a plan, not a
+ * health signal, so it must never displace a card ranked above it.
  */
 @Slf4j
 public final class AdvicePriority {
@@ -45,6 +49,7 @@ public final class AdvicePriority {
         FlagKey.IGNORED_NUDGE,
         FlagKey.LATE_EATING,
         FlagKey.PROTOCOL_LAPSE,
+        FlagKey.MEAL_RHYTHM_DRIFT,
         SetupCheckService.CHECK_MISSING_SLEEP_GOAL,
         SetupCheckService.CHECK_PLAN_FEASIBILITY,
         FlagKey.RECOVERY_NEEDED,

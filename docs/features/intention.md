@@ -2,7 +2,7 @@
 title: Intention — Daily Creed, Foci & Evening Reflection
 type: feature-domain
 status: done
-updated: 2026-08-30
+updated: 2026-09-06
 tags: [today, habit, growth, backend, frontend, data-layer, progression]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/intention
@@ -123,6 +123,7 @@ All inbound edges are **pure reads** — habit/quest depend on intention; intent
 
 - **← Habit** (`HabitEvaluator`, `mezo-a686`): injects `IntentionFocusRepository` + `DailyIntentionRepository` directly (plain JPA beans, always present — the `MealItemRepository` cross-feature-read precedent) and gains two metrics, both in `INTRADAY_METRICS`: **`intention_focus_set`** (today's live focus count ≥ 1) and **`intention_reflected`** (today's `daily_intention.reflection` non-null). The `daily_intention` / `intention_reflect` catalog habits complete derived off these. `NapRutinPage`'s row action opens `IntentionSheet` / `ReflectSheet` from the habit's row (`TodayPage`'s `act()` until the Design 2.0 cleanup). Contract: the two metric signals + the `mindset` LIFE skill. See [habit.md §3/§5](habit.md).
 - **← Quest** (`QuestEvaluator`, `mezo-a686`): injects `IntentionFocusRepository` and gains the **`intention_focus_set`** case for the DERIVED `growth_intention` GROWTH quest. Contract: the focus signal + the `mindset` skill. See [growth.md §4](growth.md).
+- **→ Karakter (`mezo-1gim.15`):** the character dossier's trend window reads intention alongside needs, the decision journal and gratitude — one more **pure outbound read**, no write-back and no new intention-side code. See [`character.md`](character.md).
 - **→ Progression:** **none directly** — intention writes no `level_up_event`; XP lands only through the **HABIT** + **QUEST** award tails already in place (`ProgressionService.applyHabit` / `applyQuest`).
 - **→ Today:** both `IntentionBanner` variants read `useIntentionDay(localDateString())` themselves (the component owns its data; the faces pass only `variant`). The chip rides the Reggel + Nap faces, the reflection the Este face. `DayArc` no longer exists to sit above/below. See [today.md §2](today.md).
 - **↔ Account progression / `AppHero` (mock-mode side-effect):** the first-focus mock write calls `awardGamificationEvent({type:'HABIT', xpOverride:10})` so the account XP ledger moves in an offline demo (one more call site of the mock account-XP precedent, [growth.md §2](growth.md)); real mode never calls it (account XP is derived from the profile). Foci 2–3 award nothing in either mode.

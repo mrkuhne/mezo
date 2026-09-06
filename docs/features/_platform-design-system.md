@@ -2,7 +2,7 @@
 title: Design System & UI Primitives (Napív → Mezo Edition DS → Mozaik 2.0)
 type: feature-platform
 status: in-progress
-updated: 2026-09-05
+updated: 2026-09-06
 tags: [platform, design, frontend]
 key_files:
   - frontend/src/styles/prototype.css
@@ -543,6 +543,8 @@ Consumption/behavior detail lives in [fuel.md §2/§9](fuel.md) — not duplicat
 **Stack 3.0 application (`mezo-ubxd`).** The Stack hub follows the dissolved-shell contract literally: the common `AppHeader` is the only header and the content begins immediately with a full-width next-action hero, not another page title or local hero. Four own clay-icon tiles use sage, gold, coral and lavender washes and each opens a focused page instead of expanding the hub. Depth pages share the lightweight `StackPageScaffold`; protocol management branches once more into four task pages so reads and writes stay legible. Its feature-scoped `.stk-*` rules are theme-token driven, keep interactive controls at least 44px, carry an explicit reduced-motion override, and are regression-checked at 320/390/430px. The approved prototype-led direction is captured in [`2026-09-04-fuel-stack-redesign-design.md`](../superpowers/specs/2026-09-04-fuel-stack-redesign-design.md); behavior details live in [fuel.md](fuel.md).
 
 **Status-hub detail family (`mezo-ricj.2`, visually locked by `mezo-ricj.6`).** The Cél redesign is the reference pattern for a dense hub that opens several equally polished sibling pages: the hub uses one state-led hero and concern tiles, while each sibling uses the feature-local `GoalDetailHero` — an asymmetric live-fact composition with a clay emblem and three stat pods — then groups its details into large washed cards. The paired light/dark `--mz-goal-hero-{nutrition,segment,plans,guards,settings,emblem}-*` tokens preserve the concern colors without literal theme-specific CSS. The feature-local `.goal-detail-*`, `.goal-diet-*`, `.goal-segment-*`, `.goal-plan-*`, `.goal-guard-*`, `.goal-settings-*`, and `.gs-reason-*` families use those tokens plus `color-mix`; every `.rise` remains inside one `EntranceGroup`, and the family explicitly settles animations/transitions under reduced motion. Comparison rows align label/value baselines with CSS grid; below 360px, calorie, attach and settings grids collapse to one column instead of clipping numbers. This is a domain-owned application of Mozaik, not a new shared primitive.
+
+**Formation-curve family (`mezo-08zl`).** The habit detail page's automaticity view adds a feature-local `.fc-*` family to `prototype.css` for the curve, its history strip and the context rings — an inline SVG composition, not a chart library. It follows the same rules as the two families above: theme tokens rather than literal per-theme colors, one `EntranceGroup`, an explicit reduced-motion settle. The load-bearing split is that **every stage label, range phrase and caption lives in the FE** (`features/me/logic/habitFormation.ts`) while the backend returns numbers only, so the copy can change without a backend release — see [habit.md](habit.md) §2/§3. Goldens: `me-rutin-szokas` light + dark.
 
 **Three guards protect this family, and all three earned their place:**
 
