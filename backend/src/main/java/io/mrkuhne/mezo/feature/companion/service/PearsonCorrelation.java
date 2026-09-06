@@ -9,17 +9,20 @@ import java.util.Optional;
  * {@code p = I_{df/(df+t²)}(df/2, 1/2)} (the standard continued-fraction evaluation).
  * Degenerate inputs (n &lt; 3, zero variance) yield {@code Optional.empty()} — an honest
  * "no statistic", never a fabricated number.
+ *
+ * <p>S2 (mezo-eq85.2): public together with {@link PatternGate} — {@code PatternGate.Outcome}
+ * exposes a {@link Result}, so the reflection package cannot read the gate's answer without it.
  */
-final class PearsonCorrelation {
+public final class PearsonCorrelation {
 
     /** r ∈ [−1,1], n = sample size, p = two-sided significance. */
-    record Result(double r, int n, double p) {
+    public record Result(double r, int n, double p) {
     }
 
     private PearsonCorrelation() {
     }
 
-    static Optional<Result> correlate(double[] a, double[] b) {
+    public static Optional<Result> correlate(double[] a, double[] b) {
         int n = a.length;
         if (n != b.length || n < 3) {
             return Optional.empty();
