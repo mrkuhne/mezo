@@ -23,7 +23,7 @@ import {
   useTodayScenario, resolveBriefing, useCompanionFeed, useConversations,
   usePatterns, usePatternMonitor, usePatternActions, useMemoryOverview,
   useMeWeek, useMemoir, useKnowledge, usePredictions, useExperiments, useDiagnoses,
-  useCharacterOverview,
+  useCharacterOverview, useCoachingTrace,
 } from '@/data/hooks'
 import { isDossierEmpty } from '@/features/character/dossierState'
 import { mondayIso } from '@/data/fuel/fuelWeekHooks'
@@ -32,6 +32,8 @@ import { bucketize } from '@/features/insights/logic/lifecycle'
 import { confidenceMeta, findingSentence, pairLine } from '@/features/insights/logic/findings'
 import { verdictSentence } from '@/features/insights/logic/verdicts'
 import { bucketFacts } from '@/features/insights/logic/factCopy'
+import { VerdictArc } from '@/features/insights/components/VerdictArc'
+import { splitOf, winnerRuleOf } from '@/features/insights/logic/coachingCopy'
 import type { PatternStatus } from '@/data/types'
 
 /** A prototípus döntés-visszaigazolásai — a sage decdone kártya szövege döntésenként. */
@@ -141,6 +143,15 @@ export function MezoHubPage() {
     ? undefined
     : `${Math.round(coreDims.reduce((sum, d) => sum + d.maturity, 0) / coreDims.length)}% átlag érettség`
 
+  // Proaktív coaching (mezo-6269.3): the engine's own decision, one tap away. Honest while
+  // unresolved — no arc, no winner name, no fabricated zero (the hub's rule for every tile line).
+  const { day: coachingDay, isPending: coachingPending } = useCoachingTrace()
+  const coachingSplit = splitOf(coachingDay)
+  const coachingWinner = winnerRuleOf(coachingDay)
+  const coachingLine = coachingPending || coachingSplit.total === 0
+    ? undefined
+    : `${coachingSplit.raised + coachingSplit.suppressed} jelzett · ${coachingSplit.total} szabály`
+
   // ── memory band counts — the real L0→L3 overview, no numbers without it ──
   const l2Count = overview?.l2.patterns.reduce((s, p) => s + p.count, 0) ?? null
   const l3Count = overview?.l3.facts.reduce((s, f) => s + f.count, 0) ?? null
@@ -226,6 +237,22 @@ export function MezoHubPage() {
               6-cell 2-col pairing stays intact. */}
           <Tile wash="lav" icon="i-kristaly" eyebrow="Karakter" delayMs={440} aria-label="Karakter"
             className="mzh-eb-sage mzh-t-karakter" line={karakterLine} onClick={() => navigate('/me/karakter')} />
+          {/* Proaktív coaching (mezo-6269.3) — a full-row poster tile, the Diagnózis idiom:
+              a plain Tile with the span-both class, because a `wide` Tile drops its children
+              and this one carries graphics (the split arc + the winner's name). */}
+          <Tile wash="sky" icon="i-eletjel" eyebrow="Proaktív coaching" delayMs={480}
+            aria-label="Proaktív coaching" className="mzh-eb-sky mzh-t-coaching"
+            line={coachingLine} onClick={() => navigate('/mezo/coaching')}>
+            {coachingWinner != null && (
+              <div className="mzo-hubposter">
+                <VerdictArc split={coachingSplit} size={62} />
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700 }}>{coachingWinner.label}</div>
+                  <div style={{ fontSize: 10, color: 'var(--mz-ink-soft)' }}>a mai kártya</div>
+                </div>
+              </div>
+            )}
+          </Tile>
         </Mosaic>
 
         {/* ===== L0→L3 memory band ===== */}

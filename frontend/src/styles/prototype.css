@@ -6120,7 +6120,8 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
   border: 1.2px dashed var(--mz-chat-refch-bd); }
 .mzp-dgq .qq { font-size: 11px; font-weight: 700; line-height: 1.35; color: var(--mz-ink-soft); }
 .mzp-dgq .qs { font-size: 8px; font-weight: 800; letter-spacing: 0.08em; color: var(--mz-ink-mut); margin-top: 4px; }
-.mzh-t-diag, .mzh-t-karakter { grid-column: 1 / -1; align-items: flex-start; text-align: left; }
+.mzh-t-diag, .mzh-t-karakter, .mzh-t-coaching { grid-column: 1 / -1; align-items: flex-start; text-align: left; }
+.mzo-hubposter { display: flex; align-items: center; gap: 11px; margin-top: 6px; }
 
 /* ===== Proaktív coaching megfigyelő (mezo-6269.3) — a döntés mint felület.
    Anatómia: rangjelvény + clay ikon + állapotcsip egy sorban, alatta EGY
