@@ -2089,6 +2089,48 @@ water cannot be caught up at 22:00 — so it is allowed to speak from an incompl
   `FeedMessageKind` union. The kind stays OUT of `FeedbackLearningService`'s learned-kind list:
   there is no prose here to learn from.
 
+### 5.15 Proactive → Meal, the retro/batch-logging prompt fact (✅ round 2 S3, `mezo-d58h.7.3`)
+
+Round 2's spec item (9) ([`specs/2026-09-05-proactive-coaching-round2-design.md`](../superpowers/specs/2026-09-05-proactive-coaching-round2-design.md)
+§b): some users **write** the day, others **reconstruct** it later. For the second group "ma még
+nincs naplózva semmi" is evidence of nothing at all, and the midday note must stop reading an
+empty half-day as *nem evett*. Like S2 this is a **prompt fact, not a card** — no flag, no advice
+card, no day gate, no migration, no new feed kind, no FE change.
+
+- **`RetroLoggingProbe.evaluate(userId, date)`** (the `LogFreshnessProbe`/`HydrationShortfallProbe`
+  idiom) measures, over `mezo.proactive.retro-logging` (14 days / min 10 meals / 40 %), what share
+  of the window's meals have `created_at`'s calendar day ≠ `meal_date`, and reports
+  `mealsLoggedToday` alongside. `CompanionMessageGenerator.batchLoggerBlock` renders it as a
+  `NAPLÓZÁSI SZOKÁS` FACT block on the window payload (the `hydrationBlock` shape); `""` for
+  everyone else.
+- **The window ENDS YESTERDAY.** Today is half-finished by construction: a meal about today can
+  only ever look same-day *so far*, and every meal not yet written is simply absent — including
+  today would drag the ratio down for exactly the user the rule is about. Today is carried as
+  state (`mealsLoggedToday`), never as ratio input.
+- **The block constrains the model, it does not only inform it.** `WINDOW_PROMPT`'s midday rule
+  (3) tells the note to name a missing log; for a reconstructing user that instruction *is* the
+  harm. So the counter-instruction travels in both places — inside the block ("ez a RÖGZÍTÉS
+  állapota, nem az evésé"; at most one neutral sentence, no reprimand, no demand) and as one new
+  `WINDOW_PROMPT` rule line subordinating rule (3) to it. Shipping the fact without it would make
+  the prompt *worse*, by handing the model evidence to scold with.
+- **Deliberate widening of the spec's wording:** the spec scopes item (9) to the midday prompt;
+  the block is given to the **evening** window too. The closing note is asked for "miben maradt
+  el" from today's actual data, which on a batch logger's day is still empty at 19:00 — gating to
+  midday would knowingly leave the identical defect live four hours later.
+- **Silence gates** (`RetroLoggingProbeIT`): fewer than `min-meals` window meals, a ratio under
+  `retro-pct`, nothing logged at all, and rows outside the window. Too little data is not a habit;
+  a user who logs nothing is *unobserved*, not a batch logger. The generator additionally wraps
+  the probe in try/catch — a fact block must never take the window message down.
+- **Pre-logging counts as retro** (a meal written the evening before is also not "written in the
+  moment"), and the same-calendar-day convention is borrowed from `RetroLoggingRatioDetector`
+  (character) without reusing the class: that one splits event/reflection genres into a dossier
+  claim, whereas this slice needs one number for one prompt.
+- **Fixture note for anyone extending this:** `created_at` is `@CreationTimestamp` +
+  `updatable = false`, so a past-dated meal persisted by a test is retro *by construction*. A
+  "written on the day" row for a past date only exists via
+  `MealPopulator.createBareMealCreatedAt`, which force-updates `created_at` natively
+  (the `ProtocolPopulator.createProtocolItemAt` precedent).
+
 ## 6. How to use it (consume)
 
 **Over HTTP** (bearer token from `POST /api/auth/login`; the backend must run with `demodata` so

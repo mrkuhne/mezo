@@ -161,6 +161,10 @@ public class CompanionMessageGenerator {
             + "makró-maradék, alvási fázisok), hívd meg a megfelelő eszközt, mielőtt írsz. "
             + "- Ha van HIDRATÁCIÓ blokk, legfeljebb EGY tárgyilagos mondatot szánj rá a blokk "
             + "számaival; se szemrehányás, se felszólítás, és más blokk számait ne keverd bele. "
+            + "- Ha van NAPLÓZÁSI SZOKÁS blokk, a (3) pont NEM alkalmazható úgy, mintha a hiányzó "
+            + "napló elmaradt evést vagy tevékenységet jelentene: ez a felhasználó utólag "
+            + "rögzít. Legfeljebb EGY semleges mondat lehet róla, szemrehányás és "
+            + "felszólítás nélkül. "
             + "- Ha van MAI KORÁBBI ÜZENETEK blokk, annak tartalmát NE ismételd. "
             + "- Gyógyszer adagolására vonatkozó változtatást SOHA ne javasolj — az orvosi döntés. "
             + "- Sima folyószöveg, markdown és felsorolás nélkül.";
@@ -202,6 +206,7 @@ public class CompanionMessageGenerator {
     private final PromptPersona promptPersona;
     private final CompanionFlagLogRepository companionFlagLogRepository;
     private final HydrationShortfallProbe hydrationShortfallProbe;
+    private final RetroLoggingProbe retroLoggingProbe;
 
     /**
      * Generates (or returns the existing) morning message for one day. Returns null when there
@@ -425,6 +430,7 @@ public class CompanionMessageGenerator {
                 + "\n\nUTOLSÓ NAPI ÖSSZEFOGLALÓ:\n- " + latest.getSummaryDate() + ": " + latest.getNarrative()
                 + earlierMessagesBlock(userId, date)
                 + hydrationBlock(userId, date, LocalTime.now())
+                + batchLoggerBlock(userId, date)
                 + "\n\nABLAK: " + window;
 
         ToolCallAudit audit = toolRegistry.newTurnAudit();
@@ -469,6 +475,46 @@ public class CompanionMessageGenerator {
                         + "- ha szóba hozod, EGY tárgyilagos mondat legyen, szemrehányás és "
                         + "felszólítás nélkül\n")
                 .orElse("");
+    }
+
+    /**
+     * Round 2 S3 (bd mezo-d58h.7.3, spec §9): the batch-logging habit as a FACT block for the
+     * midday/evening window prompt — so an empty half-day stops reading as "nem evett". Numbers
+     * from {@link RetroLoggingProbe}; "" when the user writes the day as it happens, which is the
+     * normal case.
+     *
+     * <p>This block exists to CONSTRAIN the model, not only to inform it: {@code WINDOW_PROMPT}
+     * rule (3) tells the midday note to name a missing log, and for a reconstructing user that
+     * instruction is precisely the harm the spec names. The counter-instruction therefore travels
+     * with the fact, in both places.
+     *
+     * <p>The spec scopes item (9) to the midday prompt; it is deliberately given to the EVENING
+     * window too. The closing note is asked for "miben maradt el" from today's actual data, which
+     * on a batch logger's day is still empty at 19:00 — gating the fact to midday would knowingly
+     * leave the identical defect live four hours later.
+     *
+     * <p>Best-effort: a failing fact block must never take the window message down.
+     * Package-private, the {@link #hydrationBlock} precedent — the IT asserts it directly instead
+     * of reading prompt text back out of a scripted answer.
+     */
+    String batchLoggerBlock(UUID userId, LocalDate date) {
+        try {
+            return retroLoggingProbe.evaluate(userId, date)
+                    .map(b -> "\n\nNAPLÓZÁSI SZOKÁS (tény — NE olvasd ki belőle, hogy ma nem evett):\n"
+                            + "- az elmúlt " + b.windowDays() + " nap " + b.totalMeals()
+                            + " étkezéséből " + b.retroMeals() + " (" + b.retroPct()
+                            + "%) utólag, nem aznap került be\n"
+                            + "- ma eddig " + b.mealsLoggedToday()
+                            + " étkezés van rögzítve — ez a RÖGZÍTÉS állapota, nem az evésé\n"
+                            + "- a hiányzó mai naplót tehát NE vedd kimaradt étkezésnek vagy "
+                            + "elmaradt tevékenységnek; ha egyáltalán szóba hozod, EGY semleges "
+                            + "mondat legyen (amit naplózol, azt beszámolom), szemrehányás és "
+                            + "felszólítás nélkül\n")
+                    .orElse("");
+        } catch (Exception e) {
+            log.warn("Retro-logging probe failed for {} on {}: {}", userId, date, e.getMessage());
+            return "";
+        }
     }
 
     /**

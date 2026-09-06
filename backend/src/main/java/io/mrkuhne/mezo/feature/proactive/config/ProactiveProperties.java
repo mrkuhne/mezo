@@ -21,7 +21,8 @@ public record ProactiveProperties(
         @NotNull @Valid Experiment experiment,
         @NotNull @Valid Challenge challenge,
         @NotNull @Valid Feed feed,
-        @NotNull @Valid Hydration hydration) {
+        @NotNull @Valid Hydration hydration,
+        @NotNull @Valid RetroLogging retroLogging) {
 
     /** W1 weekly plan-suggestion generation. */
     public record Weekly(
@@ -115,5 +116,19 @@ public record ProactiveProperties(
         /** Checkpoint body template; {logged}/{prorated}/{target} are replaced with millilitres.
          *  Config text, never LLM prose — the intervention/setup card precedent. */
         @NotBlank String checkpointTemplate
+    ) {}
+
+    /** Round 2 S3 (mezo-d58h.7.3, spec §9) — retro/batch-logging awareness. Not a threshold on
+     *  behaviour but on OUR confidence: above this much reconstruction, "nothing logged yet" stops
+     *  being evidence of anything, and the companion has to be told so explicitly. */
+    public record RetroLogging(
+        /** Trailing days the ratio is measured over, TODAY EXCLUDED (spec §9: 14). A half-finished
+         *  day can only ever look same-day, so including it would drag the ratio down for exactly
+         *  the user this rule is about. */
+        @Min(7) @Max(60) int windowDays,
+        /** Fewer meals than this in the window ⇒ silence: too little data is not a habit. */
+        @Min(1) @Max(200) int minMeals,
+        /** Fire at or above this percentage of retro-written meals (spec §9: 40). */
+        @Min(1) @Max(100) int retroPct
     ) {}
 }
