@@ -12,7 +12,7 @@ Folytasd a Reflexió epik (mezo-eq85) implementálását a ház szabályai szeri
 
 Kontextus:
 - Spec: docs/superpowers/specs/2026-09-06-reflection-self-discovered-patterns-design.md (jóváhagyva)
-- Terv: docs/superpowers/plans/2026-09-06-reflection-self-discovered-patterns.md — hat task, mindegyik egy bd gyerek issue: mezo-eq85.1 … mezo-eq85.6, ebben a sorrendben, egymásra épülve
+- Terv: docs/superpowers/plans/2026-09-06-reflection-self-discovered-patterns.md — tizenkét task, mindegyik egy bd gyerek issue: mezo-eq85.1 … mezo-eq85.12, ebben a sorrendben, egymásra épülve (Part A: .1–.6 Reflexió; Part B: .7–.12 memória-platform minden emlékező AI-felületre). A .11-nek előfeltétele van (egy hét NEW chat visszaesés nélkül) — ha nem teljesül, ugord át a .12-re és jelezd.
 - Vizuális igazság: docs/design_2.0/prototypes/eszrevetelek.html (v1, változtatás nélkül jóváhagyva)
 - A tervnek van egy "Global Constraints" és egy "File and interface map" szakasza — mindkettő minden taskra érvényes
 
@@ -30,5 +30,5 @@ Mit csinálj:
 
 Ha a terv és a kód között ellentmondást találsz, a kód a valóság: igazítsd a megoldást, jegyezd fel a bd issue-n kommentként, és menj tovább. Ha egy döntés terméktulajdonosi (pl. a spec §1 döntéseinek megváltoztatása), ne dönts helyette — állj meg és kérdezz.
 
-Ha az összes gyerek issue closed, zárd le a mezo-eq85 epiket a spec §11 elfogadási kritériumainak végigjárásával, és ellenőrizd a terv "Final integration gate" szakaszát.
+Ha az összes gyerek issue closed, zárd le a mezo-eq85 epiket a spec §11 elfogadási kritériumainak végigjárásával, és ellenőrizd a terv két záró kapuját ("Final integration gate (Part A)" és "Part B final gate").
 ```
