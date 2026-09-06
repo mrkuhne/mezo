@@ -204,6 +204,29 @@ gives a lightweight **3-row peek** — the newest three notifications, each row 
 the noun and goes to `/me/ertesitesek`, the full-page feed (`NotificationFeedPage.tsx`, mezo-nol0).
 Settings live one level below, at `/me/ertesitesek/beallitasok` (`NotificationsPage.tsx`).
 
+**The peek carries the same three facts every feed row does: when, and read-or-not (mezo-tdzy).**
+It used to carry neither. Three bugs sat in the same five lines: it took `notifications.slice(0, 3)`
+off the *arrival* order (neither the backend nor the mock seed guarantees that order is descending —
+the seed is in fact ascending, so the bell drew today's OLDEST three), it printed no timestamp at
+all, and it drew no read/unread distinction even though the badge beside it counted exactly that.
+Now the peek sorts on `Date.parse(occurredAt)` descending before slicing; each row gets a
+`.nap-ntf-when` stamp from **`notificationStamp()`** (`features/notification/logic/stamp.ts`) and,
+when `readAt === null`, the `.nap-ntfrow.unread` wash + a `.nap-ntf-dot` + an `sr-only`
+„Olvasatlan" — the `.nf-row.unread`/`.nf-dot` pairing of the full feed, at peek scale. The popover's
+eyebrow went from `Értesítések · ma` to **`Legutóbbi értesítések`**: the old label asserted „ma" over
+rows that may be days old.
+
+**Why the peek needs a date and the feed page does not.** On the full page the calendar day is
+structure — an `<h2>` group label above the rows — so a row only needs `timeLabel()`. The peek has no
+group headers, so a bare `06:20` could not say *which* `06:20`; `notificationStamp()` joins the two
+(`Ma · 06:20`, `Tegnap · 21:40`, `aug. 15. · 19:05`). Both surfaces derive the day word from the ONE
+`dayLabel()` in `stamp.ts` — `groupByDay.ts` was refactored onto it rather than keeping its own copy,
+so the two surfaces cannot disagree about what „Tegnap" means.
+
+**Read state is read differently on the two surfaces, on purpose.** The peek renders the LIVE
+`readAt`, the feed page an open-time snapshot (next paragraph but one). The asymmetry is not an
+oversight: the snapshot exists only to survive `markAllRead()`, and the peek never calls it.
+
 **Opening the feed page is the app's only reachable `markAllRead()` call site.** Before mezo-nol0,
 no code path in the tree ever called it, so the header badge could light up but never clear
 (bd `mezo-61w0`, a real P2). `NotificationFeedPage` fires `markAllRead()` exactly once, in a `useEffect`
@@ -1058,6 +1081,11 @@ one of the 12 current producer IT classes had to have this annotation dropped).
 **In-app feed (F1/mezo-nol0) — frontend:**
 - `data/notification/feedHooks.test.tsx` (both mock/real modes) — the honest-empty real
   pre-resolve, the mapped view shape, `markAllRead`'s optimistic flip + rollback.
+- `features/notification/logic/stamp.test.ts` — `dayLabel` (Ma/Tegnap/dated, and a same-date
+  *different-year* day NOT counting as „Ma") and `notificationStamp`'s `nap · óra:perc` join
+- `app/AppHeader.ntfPeek.test.tsx` — the peek's newest-first ordering, its per-row date+time stamp
+  and its unread pötty + `sr-only` marker (the feed hook mocked, because the mock seed's three rows
+  are all today and all unread, so it can distinguish none of the three) (mezo-tdzy)
 - `features/notification/logic/groupByDay.test.ts` — Ma/Tegnap plus every older day getting its own
   dated label (no `Korábban` bucket any more), newest-first sorting, pure and deterministic (`today`
   injected, no `new Date()` inside).
@@ -1464,10 +1492,15 @@ cycle, §9)**
 **Frontend — in-app feed surface (F1 bd `mezo-gzhp.1`, feed page mezo-nol0, §2a)**
 - `frontend/src/features/me/pages/NotificationFeedPage.tsx` (route `/me/ertesitesek`) — the full feed
   page; the only `markAllRead()` call site
+- `frontend/src/features/notification/logic/stamp.ts` — the shared day/time labellers: `dayLabel`
+  (Ma/Tegnap/dated, keyed on the calendar day not the label), `timeLabel`, and the `notificationStamp`
+  join the header peek renders (mezo-tdzy). `groupByDay.ts` and `NotificationFeedPage.tsx` both read
+  from here, so no two surfaces can label the same day differently
 - `frontend/src/features/notification/logic/groupByDay.ts` — the pure day-bucketer (Ma/Tegnap, then
   one dated label per older day)
 - `frontend/src/app/AppHeader.tsx` — `.nap-ntfmenu`, the shell header's 3-row peek popover into the
-  same feed cache
+  same feed cache: newest-first, each row stamped `nap · óra:perc` and marked unread when
+  `readAt === null` (mezo-tdzy)
 - `frontend/src/styles/prototype.css` — the `.nf-*` feed-page CSS rules (the retired
   `NotificationBell`/`NotificationPanel` dropdown's `.nf-bell`/`.nf-panel` rules were removed with
   those components, mezo-h682)

@@ -15,6 +15,8 @@ import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
@@ -63,6 +65,15 @@ public class MealPopulator {
             .setParameter("at", createdAt).setParameter("id", meal.getId()).executeUpdate();
         em.clear();
         return repository.findById(meal.getId()).orElseThrow();
+    }
+
+    /** A bare meal on a past day at an explicit WALL-CLOCK time — the meal_rhythm_drift fixture
+     *  (mezo-d58h.7.4). The rule reads {@code loggedAt} in the system zone, so the fixture must
+     *  mint the instant from a local time, never from a UTC literal. */
+    public MealEntity createBareMealAt(UUID owner, LocalDate mealDate, String slot, LocalTime localTime) {
+        MealEntity meal = createBareMeal(owner, mealDate, slot);
+        meal.setLoggedAt(mealDate.atTime(localTime).atZone(ZoneId.systemDefault()).toInstant());
+        return repository.saveAndFlush(meal);
     }
 
     /** A lunch meal with one recipe-arm line referencing the given (real, persisted) recipe. */

@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.nutrition.controller;
 
 import io.mrkuhne.mezo.api.controller.DietSettingsApi;
+import io.mrkuhne.mezo.api.dto.DietSettingsPreviewResponse;
 import io.mrkuhne.mezo.api.dto.DietSettingsResponse;
 import io.mrkuhne.mezo.api.dto.SetDietSettingsRequest;
 import io.mrkuhne.mezo.feature.nutrition.service.DietSettingsService;
@@ -27,5 +28,10 @@ public class DietSettingsController implements DietSettingsApi {
     @Override
     public DietSettingsResponse setDietSettings(SetDietSettingsRequest setDietSettingsRequest) {
         return service.setSettings(currentUserId.get(), setDietSettingsRequest);
+    }
+
+    @Override
+    public DietSettingsPreviewResponse previewDietSettings(SetDietSettingsRequest setDietSettingsRequest) {
+        return service.previewSettings(currentUserId.get(), setDietSettingsRequest);
     }
 }

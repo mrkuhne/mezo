@@ -133,4 +133,22 @@ class FlagPropertiesIT extends AbstractIntegrationTest {
         assertThat(properties.protocolLapse().minHistoryAdherence()).isEqualTo(0.60);
         assertThat(properties.protocolLapse().perItemCooldownDays()).isEqualTo(7);
     }
+
+    /** Round 2 S4 (mezo-d58h.7.4): the spec's 14-day cadence is a KEY-level cooldown here (unlike
+     *  protocol_lapse's per-item one) — and application.yml's protocol_lapse lesson applies: the
+     *  intervention-library entry's own cooldown-hours must match it, or InterventionService's
+     *  per-key gate silently overrides the design. */
+    @Test
+    void binds_the_meal_rhythm_drift_thresholds_and_cooldown() {
+        assertThat(properties.mealRhythmDrift().windowDays()).isEqualTo(14);
+        assertThat(properties.mealRhythmDrift().minDaysWithMeals()).isEqualTo(10);
+        assertThat(properties.mealRhythmDrift().driftMinutes()).isEqualTo(90);
+        assertThat(properties.mealRhythmDrift().minSlotDays()).isEqualTo(8);
+        assertThat(properties.mealRhythmDrift().minSameDirectionShare()).isEqualTo(0.70);
+        assertThat(properties.mealRhythmDrift().deadSlotMaxPresence()).isEqualTo(0.30);
+        assertThat(properties.mealRhythmDrift().otherSlotsMinPresence()).isEqualTo(0.70);
+        assertThat(properties.mealRhythmDrift().minSlotPlannedDays()).isEqualTo(10);
+        assertThat(properties.cooldownHours().mealRhythmDrift()).isEqualTo(336);
+        assertThat(properties.cooldownHours().forFlag(FlagKey.MEAL_RHYTHM_DRIFT)).isEqualTo(336);
+    }
 }

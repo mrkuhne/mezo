@@ -5,6 +5,7 @@ import type { DietSettings } from '@/data/types'
 import {
   useDietSettings,
   useDietSettingsActions,
+  useDietSettingsPreview,
   useFuelDay,
   useFuelSettings,
   useFuelSettingsActions,
@@ -101,7 +102,22 @@ export function FuelSettingsPage() {
 
   const customSumOk = splitPreset !== 'custom' || Math.round((pPct + cPct + fPct) * 10) === 1000
   const busy = pending || isPending || dietSaving || dietPending || !customSumOk
-  const preview = useMemo(() => buildFuelSettingsMacroPreview(fuel.targets), [fuel.targets])
+  // The preview follows the DRAFT, not the saved row: the server projects the draft through the
+  // real goal engine (mock mode re-derives it locally), so flipping Makróprofil / protein tier
+  // moves the numbers immediately instead of only after Mentés (mezo-u2pd). A custom split that
+  // does not yet sum to 100% is not projectable — hold the last valid projection until it does.
+  const draft = useMemo(() => ({
+    splitPreset,
+    proteinPctX10: splitPreset === 'custom' ? Math.round(pPct * 10) : null,
+    carbsPctX10: splitPreset === 'custom' ? Math.round(cPct * 10) : null,
+    fatPctX10: splitPreset === 'custom' ? Math.round(fPct * 10) : null,
+    proteinTier, waterMl, fiberG, dayTypeShiftKcal,
+  }), [splitPreset, pPct, cPct, fPct, proteinTier, waterMl, fiberG, dayTypeShiftKcal])
+  const projectable = useMemo(
+    () => (customSumOk ? draft : { ...draft, splitPreset: diet.splitPreset, fatPctX10: diet.fatPctX10 }),
+    [customSumOk, draft, diet.splitPreset, diet.fatPctX10])
+  const { preview: draftTargets } = useDietSettingsPreview(projectable, diet, fuel.targets)
+  const preview = useMemo(() => buildFuelSettingsMacroPreview(draftTargets), [draftTargets])
   const dietDirty = splitPreset !== diet.splitPreset
     || proteinTier !== diet.proteinTier || waterMl !== diet.waterMl || fiberG !== diet.fiberG
     || dayTypeShiftKcal !== diet.dayTypeShiftKcal
@@ -119,13 +135,7 @@ export function FuelSettingsPage() {
   const save = async () => {
     await Promise.all([
       setSettings({ mealsPerDay, caffeineCutoff }),
-      setDiet({
-        splitPreset,
-        proteinPctX10: splitPreset === 'custom' ? Math.round(pPct * 10) : null,
-        carbsPctX10: splitPreset === 'custom' ? Math.round(cPct * 10) : null,
-        fatPctX10: splitPreset === 'custom' ? Math.round(fPct * 10) : null,
-        proteinTier, waterMl, fiberG, dayTypeShiftKcal,
-      }),
+      setDiet(draft),
     ])
     navigate('/fuel')
   }
@@ -206,7 +216,7 @@ export function FuelSettingsPage() {
 
           {preview ? (
             <div className="fset-target-preview">
-              <span className="fset-target-label">Mai cél alapján</span>
+              <span className="fset-target-label">{dietDirty ? 'Mai cél a beállítás szerint' : 'Mai cél alapján'}</span>
               <div className="fset-macro-preview-body">
                 <div className="fset-donut" style={{
                   '--protein-pct': `${preview.protein.pct}%`,
@@ -222,7 +232,7 @@ export function FuelSettingsPage() {
               </div>
             </div>
           ) : <p>A napi cél betöltése…</p>}
-          {dietDirty && <p className="fset-refresh-note">Mentés után frissül</p>}
+          {dietDirty && <p className="fset-refresh-note">Előnézet — mentésre válik élessé</p>}
 
           {splitPreset === 'custom' && (
             <div className="fset-custom">

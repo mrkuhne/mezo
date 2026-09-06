@@ -3026,6 +3026,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/diet/settings/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Project today's macro targets for an UNSAVED diet-settings draft (DietSettings)
+         * @description Read-only projection: runs the goal engine's prescription calculation with the posted draft preferences instead of the saved row and returns the targets today WOULD serve. Nothing is persisted and the active goal is not re-evaluated. Feeds the Fuel settings macro preview so switching the split preset / protein tier updates the numbers before Mentés.
+         */
+        post: operations["previewDietSettings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/tutorial/progress": {
         parameters: {
             query?: never;
@@ -8103,6 +8123,21 @@ export interface components {
             fiberG: number;
             /** @description Kcal moved off each rest day onto training days (weekly budget unchanged); 0 = uniform days */
             dayTypeShiftKcal: number;
+        };
+        DietSettingsPreviewResponse: {
+            /** @description Projected kcal for today under the draft (day-type adjusted, as the Fuel day serves it) */
+            kcal: number;
+            /** @description Projected protein target (g) */
+            proteinG: number;
+            /** @description Projected carbs target (g) — absorbs the day-type kcal delta */
+            carbsG: number;
+            /** @description Projected fat target (g) */
+            fatG: number;
+            /**
+             * @description goal = projected from the owner's ACTIVE goal recept under the draft; config = the static nutrition fallback (no active/coherent goal, or no biometric profile to project from)
+             * @enum {string}
+             */
+            source: "goal" | "config";
         };
         SetDietSettingsRequest: {
             /** @enum {string} */
@@ -18088,6 +18123,48 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DietSettingsResponse"];
+                };
+            };
+            /** @description Validation failure (incl. custom split not summing to 100.0%) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    previewDietSettings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetDietSettingsRequest"];
+            };
+        };
+        responses: {
+            /** @description The projected targets for today under the draft */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DietSettingsPreviewResponse"];
                 };
             };
             /** @description Validation failure (incl. custom split not summing to 100.0%) */
