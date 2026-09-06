@@ -183,6 +183,16 @@ public class MealPopulator {
         return repository.saveAndFlush(meal);
     }
 
+    /** Az étkezés egy adott formula-verzióval bélyegezve. */
+    public MealEntity createMealWithEnvelopeVersion(UUID owner, PantryItemEntity pantryItem,
+        LocalDate mealDate, String title, Instant loggedAt, int formulaVersion) {
+        MealEntity meal = createScoredMeal(owner, pantryItem, mealDate, title, loggedAt);
+        MealBreakdownJson b = meal.getBreakdown();
+        meal.setBreakdown(new MealBreakdownJson(b.value(), b.confidence(), b.summary(), b.tagline(),
+            b.dimensions(), b.improve(), b.tools(), formulaVersion));
+        return repository.saveAndFlush(meal);
+    }
+
     /**
      * A meal on an explicit date with N pantry-arm lines, each carrying its own macro/NOVA
      * snapshot — the Karakter round-2 read-layer fixture (mezo-1gim.15) needs multi-line days with
