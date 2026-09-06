@@ -7349,10 +7349,10 @@ export interface components {
             /** Format: date */
             date: string;
             /**
-             * @description Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; advice is the single daily coaching card (S4, mezo-d58h.4) whose prose is LLM-written over deterministic facts; intervention and setup are the pre-S4 config-text cards, kept for existing rows only.
+             * @description Feed message kind — morning, sleep, weight, midday, evening, or people LLM-generated messages; advice is the single daily coaching card (S4, mezo-d58h.4) whose prose is LLM-written over deterministic facts; hydration is the round-2 training-day water checkpoint (S2, mezo-d58h.7.2) — deterministic config text, present only on a day whose shortfall held; intervention and setup are the pre-S4 config-text cards, kept for existing rows only.
              * @enum {string}
              */
-            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention" | "people" | "setup" | "advice";
+            kind: "morning" | "sleep" | "weight" | "midday" | "evening" | "intervention" | "people" | "setup" | "advice" | "hydration";
             eyebrow: string;
             body: string[];
             refs: components["schemas"]["FeedRef"][];

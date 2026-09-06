@@ -16,7 +16,7 @@ export interface Briefing { eyebrow: string; body: BriefingPara[]; refs: Briefin
  *  whose card body comes straight from `mezo.companion.interventions[].textHu`, and `setup` (S3,
  *  mezo-d58h.3), whose card body is composed in `SetupCheckService` from a check verdict's own
  *  numbers. */
-export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening' | 'intervention' | 'people' | 'setup' | 'advice'
+export type FeedMessageKind = 'morning' | 'sleep' | 'weight' | 'midday' | 'evening' | 'intervention' | 'people' | 'setup' | 'advice' | 'hydration'
 export type AdviceActionKey = 'lighten_tomorrow' | 'skip_sport_slot' | 'shift_sleep_anchor'
 /** One offered action button on an advice card (S5, mezo-d58h.5) — `params` is ALWAYS rule-provided. */
 export interface FeedAction { key: AdviceActionKey; label: string; params?: Record<string, unknown> }
