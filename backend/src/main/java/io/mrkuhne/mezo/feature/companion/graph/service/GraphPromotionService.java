@@ -436,6 +436,31 @@ public class GraphPromotionService {
         return new GraphReconcileResult(count, retracted);
     }
 
+    /**
+     * Egy node státuszának újraszármaztatása a forrásából (mezo-06o0.5) — a
+     * {@link GraphService#restore} fogyasztója. A meglévő promóciós metódusokat futtatja,
+     * nem duplikálja a kvalifikációs szabályaikat: a visszaállított node pontosan azt a
+     * státuszt kapja, amit a következő éjszakai {@link #reconcile} adna neki, csak azonnal.
+     *
+     * <p>Forrás nélküli node (kézi/extractor eredetű) nem tartozik egyetlen promoterhez sem —
+     * ott a visszaállítás maga az aktiválás.
+     */
+    @Transactional
+    public void resyncNode(UUID userId, GraphNodeEntity node) {
+        UUID sourceId = node.getSourceId();
+        if (sourceId == null) {
+            raiseStatus(node, GraphNodeEntity.STATUS_ACTIVE);
+            return;
+        }
+        switch (node.getSourceKind() == null ? "" : node.getSourceKind()) {
+            case SOURCE_PATTERN -> promotePattern(userId, sourceId);
+            case SOURCE_FACT -> syncFact(userId, sourceId);
+            case SOURCE_GOAL -> syncGoal(userId, sourceId);
+            case SOURCE_PERSON -> syncPerson(userId, sourceId);
+            default -> raiseStatus(node, GraphNodeEntity.STATUS_ACTIVE);
+        }
+    }
+
     /** {r, n, direction} — the spec's PATTERN meta envelope; direction is the sign of r, prompt-renderable. */
     private static Map<String, Object> patternMeta(PatternEntity pattern) {
         Map<String, Object> meta = new HashMap<>();

@@ -75,6 +75,16 @@ class GraphUserArchiveIT extends AbstractIntegrationTest {
         return knowledgeFactRepository.saveAndFlush(fact);
     }
 
+    private UUID createActivePerson(UUID owner, String name) {
+        return personPopulator.createPerson(owner, name).getId();
+    }
+
+    private void archivePerson(UUID personId) {
+        PersonEntity person = personRepository.findById(personId).orElseThrow();
+        person.setStatus("archived");
+        personRepository.saveAndFlush(person);
+    }
+
     @Test
     void archive_shouldStampTheUserIntentMarker() {
         UUID userId = ownerId();
@@ -160,5 +170,61 @@ class GraphUserArchiveIT extends AbstractIntegrationTest {
         GraphNodeEntity after = nodeRepository.findById(node.getId()).orElseThrow();
         assertThat(after.getTitle()).isEqualTo("Anna Kovács");
         assertThat(after.getStatus()).isEqualTo(GraphNodeEntity.STATUS_ARCHIVED);
+    }
+
+    @Test
+    void restore_shouldReturnAnActiveNode_whenTheSourceIsStillActive() {
+        UUID userId = ownerId();
+        UUID personId = createActivePerson(userId, "Anna");
+        GraphNodeEntity node = promotionService.syncPerson(userId, personId).orElseThrow();
+        graphService.archive(userId, node.getId());
+
+        GraphNodeEntity restored = graphService.restore(userId, node.getId());
+
+        assertThat(restored.getUserArchivedAt()).isNull();
+        assertThat(restored.getStatus()).isEqualTo(GraphNodeEntity.STATUS_ACTIVE);
+    }
+
+    /** D5: a visszaállítás a FORRÁSBÓL származtat, nem vakon aktivál — különben a felhasználó
+     *  „visszaállítottam, másnap eltűnt" élményt kapna a hajnali reconcile után. */
+    @Test
+    void restore_shouldStayArchived_whenTheSourceWentInactiveMeanwhile() {
+        UUID userId = ownerId();
+        UUID personId = createActivePerson(userId, "Anna");
+        GraphNodeEntity node = promotionService.syncPerson(userId, personId).orElseThrow();
+        graphService.archive(userId, node.getId());
+        archivePerson(personId);
+
+        GraphNodeEntity restored = graphService.restore(userId, node.getId());
+
+        assertThat(restored.getUserArchivedAt()).isNull();
+        assertThat(restored.getStatus()).isEqualTo(GraphNodeEntity.STATUS_ARCHIVED);
+    }
+
+    @Test
+    void restore_shouldActivate_whenTheNodeHasNoSourceRow() {
+        UUID userId = ownerId();
+        GraphNodeEntity node = graphService.upsertNode(userId, GraphNodeEntity.KIND_INSIGHT,
+            "Kézi jegyzet", "Kézi jegyzet", null, null, null, Map.of());
+        graphService.archive(userId, node.getId());
+
+        assertThat(graphService.restore(userId, node.getId()).getStatus())
+            .isEqualTo(GraphNodeEntity.STATUS_ACTIVE);
+    }
+
+    @Test
+    void listUserArchived_shouldReturnOnlyTheHandArchivedNodes() {
+        UUID userId = ownerId();
+        UUID personId = createActivePerson(userId, "Anna");
+        GraphNodeEntity byUser = promotionService.syncPerson(userId, personId).orElseThrow();
+        graphService.archive(userId, byUser.getId());
+        UUID otherPersonId = createActivePerson(userId, "Béla");
+        GraphNodeEntity byMachine = promotionService.syncPerson(userId, otherPersonId).orElseThrow();
+        archivePerson(otherPersonId);
+        promotionService.syncPerson(userId, otherPersonId);
+
+        assertThat(graphService.listUserArchived(userId))
+            .extracting(GraphNodeEntity::getId)
+            .containsExactly(byUser.getId());
     }
 }

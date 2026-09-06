@@ -77,6 +77,17 @@ class GraphApiIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testRestoreGraphNode_shouldReturn404_whenNotOwnNode() {
+        UUID otherUser = userPopulator.createUser().getId();
+        GraphNodeEntity node = graphPopulator.createNode(otherUser, GraphNodeEntity.KIND_GOAL, "Nem az enyém.");
+
+        String body = postForBody("/api/companion/graph/node/" + node.getId() + "/restore", null,
+            ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+
+        assertHasRequestError(body, "GRAPH_NODE_NOT_FOUND");
+    }
+
+    @Test
     void testListGraphNodes_shouldIncludeTopEdges_forNodesWithEdges() {
         UUID owner = ownerId();
         GraphNodeEntity from = graphPopulator.createNode(owner, GraphNodeEntity.KIND_PATTERN, "Késői evés");

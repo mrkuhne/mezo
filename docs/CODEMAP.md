@@ -337,8 +337,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     GET /api/companion/pattern/pair/{pairKey} · POST /api/companion/conversation/{conversationId}/message/stream ·
     POST /api/companion/transcribe · GET /api/companion/memory/overview · GET /api/companion/memory/summary ·
     GET /api/companion/memory/similar-days · GET /api/companion/memory/llm-usage
-- **Contract** `api/feature/knowledge-graph/knowledge-graph.yml` — 5 operations
+- **Contract** `api/feature/knowledge-graph/knowledge-graph.yml` — 7 operations
   - **endpoints:** GET /api/companion/graph/node · POST /api/companion/graph/node/{id}/archive ·
+    POST /api/companion/graph/node/{id}/restore · GET /api/companion/graph/node/archived ·
     GET /api/companion/graph/node/candidate · POST /api/companion/graph/node/{id}/decision ·
     GET /api/companion/graph/edge/count
 - **Contract** `api/feature/me-week/me-week.yml` — 3 operations
@@ -346,7 +347,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 179 IT + 35 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 180 IT + 35 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatServiceAmbientRecallIT`, `ChatServiceGraphBlockFailureIT`, `ChatServiceGraphBlockIT`,
@@ -377,11 +378,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `GraphPromotionServiceIT`, `GraphPromotionServiceReconcileIsolationIT`, `GraphPromotionSwitchOffIT`,
     `GraphPromptAssemblerIT`, `GraphPromptAssemblerRefsCapIT`, `GraphRetractionEventIT`, `GraphRetractionIT`,
     `GraphSeedSelectionCapIT`, `GraphSeedSelectionIT`, `GraphSeedSelectionRankingIT`, `GraphServiceIT`,
-    `GraphSwitchOffIT`, `GraphTraversalQueryIT`, `HybridMemoryRetrieverIT`, `HypothesisGatherContextIT`,
-    `HypothesisJobSwitchOffIT`, `HypothesisPipelineServiceIT`, `KnowledgeFactServiceIT`, `LearnedFactPersistenceIT`,
-    `LifeEventExtractionServiceIT`, `LifeGoalProposeNameIT`, `MeWeekControllerIT`, `MeWeekServiceFuelFetchCountIT`,
-    `MeWeekTrendIT`, `MealRhythmDriftRuleSwitchOffIT`, `MemoryContextServiceIT`, `MemoryEmbeddingAnnQueryIT`,
-    `MemoryEmbeddingRepositoryIT`, `MemoryEmbeddingWriterIT`, `MemoryLlmUsageIsolationIT`,
+    `GraphSwitchOffIT`, `GraphTraversalQueryIT`, `GraphUserArchiveIT`, `HybridMemoryRetrieverIT`,
+    `HypothesisGatherContextIT`, `HypothesisJobSwitchOffIT`, `HypothesisPipelineServiceIT`, `KnowledgeFactServiceIT`,
+    `LearnedFactPersistenceIT`, `LifeEventExtractionServiceIT`, `LifeGoalProposeNameIT`, `MeWeekControllerIT`,
+    `MeWeekServiceFuelFetchCountIT`, `MeWeekTrendIT`, `MealRhythmDriftRuleSwitchOffIT`, `MemoryContextServiceIT`,
+    `MemoryEmbeddingAnnQueryIT`, `MemoryEmbeddingRepositoryIT`, `MemoryEmbeddingWriterIT`, `MemoryLlmUsageIsolationIT`,
     `MemoryPlatformPersistenceIT`, `MemoryPlatformPropertiesIT`, `MemoryProjectionFailureIsolationIT`,
     `MemoryProjectionWriterIT`, `MemoryQueryPreparerIT`, `MemoryRecallServiceIT`, `MemoryReembeddingIT`,
     `MemoryRetrievalDeterministicEvalIT`, `MemoryRetrievalFeedbackApiIT`, `MemoryRetrievalRetentionIT`,

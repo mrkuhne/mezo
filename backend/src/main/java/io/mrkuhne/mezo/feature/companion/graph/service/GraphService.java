@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -38,6 +39,9 @@ public class GraphService {
 
     private final GraphNodeRepository nodeRepository;
     private final GraphEdgeRepository edgeRepository;
+    // ObjectProvider, nem közvetlen függés: a promóter @ConditionalOnProperty mögött van, és a
+    // közvetlen injektálás kör-függést zárna (GraphPromotionService -> GraphService).
+    private final ObjectProvider<GraphPromotionService> promotionService;
 
     /** UPSERT by (createdBy, sourceKind, sourceId) — re-promotion updates title/summary/meta, never duplicates. */
     @Transactional
@@ -188,6 +192,31 @@ public class GraphService {
         node.setStatus(GraphNodeEntity.STATUS_ARCHIVED);
         node.setUserArchivedAt(OffsetDateTime.now());
         return nodeRepository.saveAndFlush(node);
+    }
+
+    /**
+     * A kézi archiválás visszavonása (mezo-06o0.5): a szándék-marker törlődik, és a státusz
+     * AZONNAL a forrásból származik újra — nem vakon `active`, mert a forrás közben inaktívvá
+     * válhatott, és akkor a hajnali reconcile csendben visszaarchiválná (spec D5).
+     */
+    @Transactional
+    public GraphNodeEntity restore(UUID userId, UUID nodeId) {
+        GraphNodeEntity node = findOwnedNode(userId, nodeId);
+        node.setUserArchivedAt(null);
+        GraphPromotionService promoter = promotionService.getIfAvailable();
+        if (promoter == null) {
+            node.setStatus(GraphNodeEntity.STATUS_ACTIVE);
+        } else {
+            promoter.resyncNode(userId, node);
+        }
+        return nodeRepository.saveAndFlush(node);
+    }
+
+    /** A kézzel archivált node-ok, legutóbb elrejtett elöl. */
+    @Transactional(readOnly = true)
+    public List<GraphNodeEntity> listUserArchived(UUID userId) {
+        return nodeRepository
+            .findByCreatedByAndUserArchivedAtIsNotNullAndDeletedFalseOrderByUserArchivedAtDesc(userId);
     }
 
     /** UPSERT by (createdBy, fromNodeId, toNodeId, kind) — re-proposing the same edge updates weight/evidence. */
