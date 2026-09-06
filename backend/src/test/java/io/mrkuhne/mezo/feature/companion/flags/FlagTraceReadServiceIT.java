@@ -175,7 +175,12 @@ class FlagTraceReadServiceIT extends AbstractIntegrationTest {
         logRepository.saveAndFlush(log);
         trace(userId, FlagKey.SLEEP_DEBT, "raised", null, "logged", null, at(9));
         trace(userId, FlagKey.LATE_EATING, "raised", null, "logged", null, at(10));
-        UUID cardId = card(userId, FlagKey.SLEEP_DEBT);
+        // A kártya a nyomok UTÁN kézbesül — determinisztikus időponttal, nem `Instant.now()`-val
+        // (mezo-al23). A korreláció helyesen köti ki, hogy egy a kártya kiválasztása után
+        // keletkezett sor nem volt része a döntésnek; `now()`-val viszont a teszt csak akkor zöld,
+        // ha a nap 10:00 helyi idő UTÁN fut. Ez UTC alatt is flake volt, csak más napszakban —
+        // a suite Europe/Budapest-re állítása (a prod zónája) hozta elő.
+        UUID cardId = cardAt(userId, FlagKey.SLEEP_DEBT, at(11));
 
         FlagTraceReadService.TraceDay day = service.read(userId, DAY);
 
