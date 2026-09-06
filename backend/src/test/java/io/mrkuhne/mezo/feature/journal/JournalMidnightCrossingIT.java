@@ -46,7 +46,9 @@ class JournalMidnightCrossingIT extends ApiIntegrationTest {
      * nothing here — the crossing is forced by re-pinning the offset, never by waiting for it.
      */
     private static final LocalTime JUST_BEFORE_MIDNIGHT = LocalTime.of(23, 55, 0);
-    private static final int CROSSING_SHIFT_SECONDS = 10 * 60;
+
+    /** Package-private (not {@code private}): shared with {@code JournalMidnightCrossingOffsetArithmeticTest}. */
+    static final int CROSSING_SHIFT_SECONDS = 10 * 60;
 
     @Autowired private JournalPopulator journalPopulator;
     @Autowired private OwnerProperties ownerProperties;
@@ -60,20 +62,57 @@ class JournalMidnightCrossingIT extends ApiIntegrationTest {
 
     /** The offset that puts the JVM's default-zone wall clock at {@code JUST_BEFORE_MIDNIGHT}. */
     private static int offsetJustBeforeMidnight() {
-        int offset = JUST_BEFORE_MIDNIGHT.toSecondOfDay() - LocalTime.now(ZoneOffset.UTC).toSecondOfDay();
-        return wrapToValidOffset(offset);
+        return computeParkedOffset(LocalTime.now(ZoneOffset.UTC).toSecondOfDay());
     }
 
     /**
-     * {@code ZoneOffset} only supports ±18h; wraps by a day either way so any offset arithmetic
-     * (here, {@code base + CROSSING_SHIFT_SECONDS}) always resolves instead of throwing
-     * {@code DateTimeException} when it lands exactly on, or just past, the ±64800s boundary.
+     * Pure arithmetic core of {@link #offsetJustBeforeMidnight()}, split out so
+     * {@code JournalMidnightCrossingOffsetArithmeticTest} can drive it with all 86400 possible UTC
+     * seconds-of-day instead of only whichever single second the wall clock happens to read.
+     */
+    static int computeParkedOffset(int utcNowSecondOfDay) {
+        int offset = JUST_BEFORE_MIDNIGHT.toSecondOfDay() - utcNowSecondOfDay;
+        return wrapParkedOffset(offset);
+    }
+
+    /**
+     * {@code ZoneOffset} only supports ±18h ({@code ±64800s}); wraps by a day either way so any
+     * offset value resolves instead of throwing {@code DateTimeException}.
+     *
+     * <p>Only {@link #setDefaultZone(int)} calls this now, for the already-shifted value, which is
+     * in range by construction (see {@link #wrapParkedOffset(int)}) so this branch never actually
+     * fires there — it stays as a defensive clamp rather than being removed.
      */
     private static int wrapToValidOffset(int offsetSeconds) {
         if (offsetSeconds < -18 * 3600) {
             offsetSeconds += 24 * 3600;
         }
         if (offsetSeconds > 18 * 3600) {
+            offsetSeconds -= 24 * 3600;
+        }
+        return offsetSeconds;
+    }
+
+    /**
+     * Wraps the raw parked offset the same way {@link #wrapToValidOffset} does, EXCEPT the top
+     * threshold is {@code 64800 - CROSSING_SHIFT_SECONDS}, not {@code 64800}. That guarantees
+     * {@code parked + CROSSING_SHIFT_SECONDS} lands at {@code 64800} at most — never past it — so
+     * the shifted call in {@link #setDefaultZone(int)} never itself needs the upper wrap.
+     *
+     * <p>That distinction is the fix. Wrapping the SHIFTED value (subtracting 86400 once it
+     * exceeds 64800) preserves local time-of-day but rewinds the local DATE by one day, silently
+     * cancelling the very midnight crossing this test exists to force. Fix round 2 hit exactly
+     * this: widening the shift to 600s meant any parked offset in {@code (64200, 64800]} pushed
+     * {@code base + shift} past 64800 into that cancelling wrap — a 10-minute-wide window of UTC
+     * "now" (05:55:00–06:05:00) where the test failed every day. Wrapping the park point 600s
+     * earlier removes that window instead of merely shrinking it; see
+     * {@code JournalMidnightCrossingOffsetArithmeticTest} for the exhaustive proof.
+     */
+    static int wrapParkedOffset(int offsetSeconds) {
+        if (offsetSeconds < -18 * 3600) {
+            offsetSeconds += 24 * 3600;
+        }
+        if (offsetSeconds > 18 * 3600 - CROSSING_SHIFT_SECONDS) {
             offsetSeconds -= 24 * 3600;
         }
         return offsetSeconds;

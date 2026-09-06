@@ -661,7 +661,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `useGratitudeEntries`, `useJournalActions`, `useJournalNotes`
   - **modules:** decisionApi.ts, decisionHooks.ts, decisionMock.ts, decisionTypes.ts, gratitudeApi.ts,
     gratitudeHooks.ts, gratitudeMock.ts, journalApi.ts, journalHooks.ts, journalMock.ts, journalTypes.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/journal` — 13 IT + 0 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/journal` — 13 IT + 1 unit
   - **ITs:** `DecisionApiCompanionOffIT`, `DecisionApiIT`, `DecisionEmbeddingEventIT`, `DecisionEntryPersistenceIT`,
     `GratitudeApiIT`, `GratitudeEmbeddingEventIT`, `GratitudeEntryPersistenceIT`, `JournalApiCompanionOffIT`,
     `JournalApiIT`, `JournalEmbeddingEventIT`, `JournalEntryPersistenceIT`, `JournalMidnightCrossingIT`,
