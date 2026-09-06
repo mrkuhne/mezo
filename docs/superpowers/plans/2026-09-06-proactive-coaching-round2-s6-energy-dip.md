@@ -153,7 +153,7 @@ And in `CompanionFlagLogPersistenceIT`, next to the S4 raw-insert assertion (aro
 - [ ] **Step 2: Run them — they must fail.**
 
 ```bash
-./mvnw -f backend/pom.xml -Dmezo.test.use-testcontainers=true -Dtest='FlagPropertiesIT+CompanionFlagLogPersistenceIT' test
+cd backend && ./mvnw -Dmezo.test.use-testcontainers=true -Dtest='FlagPropertiesIT,CompanionFlagLogPersistenceIT' test
 ```
 
 Expected: compilation failure on `FlagKey.ENERGY_DIP_MEAL_TIMING` / `energyDipMealTiming()`.
@@ -367,8 +367,8 @@ and in `cooldown-hours:`, after `meal-rhythm-drift: 336`:
 - [ ] **Step 11: Run the mirror tests and the three reflection guards.**
 
 ```bash
-./mvnw -f backend/pom.xml -Dmezo.test.use-testcontainers=true \
-  -Dtest='FlagPropertiesIT+CompanionFlagLogPersistenceIT+AdvicePriorityTest+FlagCatalogTest+InterventionConfigIT' test
+cd backend && ./mvnw -Dmezo.test.use-testcontainers=true \
+  -Dtest='FlagPropertiesIT,CompanionFlagLogPersistenceIT,AdvicePriorityTest,FlagCatalogTest,InterventionConfigIT' test
 ```
 
 Expected: PASS, with a non-zero "Tests run" count. A "Tests run: 0" line is a FAILURE — the filter matched nothing.
@@ -451,7 +451,7 @@ and the nested record after `MealRhythmDrift`:
 - [ ] **Step 4: Compile.**
 
 ```bash
-./mvnw -f backend/pom.xml -q -DskipTests compile
+cd backend && ./mvnw -q -DskipTests compile
 ```
 
 Expected: BUILD SUCCESS. (A missed `null` in one of the fifteen factories shows up here as an arity error.)
@@ -746,7 +746,7 @@ class FlagEvaluatorEnergyDipIT extends AbstractIntegrationTest {
 - [ ] **Step 2: Run it — it must fail.**
 
 ```bash
-./mvnw -f backend/pom.xml -Dmezo.test.use-testcontainers=true -Dtest=FlagEvaluatorEnergyDipIT test
+cd backend && ./mvnw -Dmezo.test.use-testcontainers=true -Dtest=FlagEvaluatorEnergyDipIT test
 ```
 
 Expected: FAIL — `verdictFor(...).orElseThrow()` finds no verdict for the key, because no rule produces one yet.
@@ -1080,7 +1080,7 @@ Update the `evaluate` javadoc's count from "15 entries" to "16 entries".
 - [ ] **Step 5: Run the IT until green.**
 
 ```bash
-./mvnw -f backend/pom.xml -Dmezo.test.use-testcontainers=true -Dtest=FlagEvaluatorEnergyDipIT test
+cd backend && ./mvnw -Dmezo.test.use-testcontainers=true -Dtest=FlagEvaluatorEnergyDipIT test
 ```
 
 Expected: PASS, 11 tests run. If `stays_clear_when_the_medians_differ_but_the_groups_overlap` raises instead, check the orientation of `orientedSuperiority` — with those samples the share must land between 0.5 and 0.7.
@@ -1107,13 +1107,25 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - Consumes: `FlagPayloadEnvelope.EnergyDipMealTiming` (Task 2), `FlagKey.ENERGY_DIP_MEAL_TIMING` (Task 1)
 - Produces: three Hungarian fact lines per raise, rendered from the frozen payload alone
 
-- [ ] **Step 1: Write the failing renderer test.** In `FlagFactRendererTest`, append (mirroring how the `protocol_lapse` case in that file is written):
+- [ ] **Step 1: Write the failing renderer test.** `FlagFactRendererTest` holds a REFLECTION-DRIVEN
+coverage test (`testRender_shouldCoverEveryLiveFlagKey`) whose fixture `switch` throws an
+`AssertionError` for any live `FlagKey` without a case — so the new key needs a fixture arm there
+FIRST, next to the `MEAL_RHYTHM_DRIFT` one:
+
+```java
+            case FlagKey.ENERGY_DIP_MEAL_TIMING -> FlagPayloadEnvelope.energyDipMealTiming(
+                new FlagPayloadEnvelope.EnergyDipMealTiming("lunch_time",
+                    "earlier_lunch", "later_lunch", 30, 12, 10, 6, 6, 4,
+                    8.0, 5.0, 3.0, 1.0, 1.0, 0.70, "A", "12:00", "14:30"));
+```
+
+Then append the two tests below (mirroring how the `protocol_lapse` cases in that file are written):
 
 ```java
     /** Round 2 S6 (mezo-d58h.7.7): the lines name BOTH group sizes on purpose — the reader has to
      *  be able to see how thin the sample is — and never use a causal word. */
     @Test
-    void rendersTheEnergyDipCorrelationWithBothGroupSizes() {
+    void testRender_shouldRenderTheEnergyDipCorrelationWithBothGroupSizes() {
         FlagPayloadEnvelope payload = FlagPayloadEnvelope.energyDipMealTiming(
             new FlagPayloadEnvelope.EnergyDipMealTiming(
                 "lunch_time", "earlier_lunch", "later_lunch",
@@ -1128,14 +1140,14 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
         List<String> facts = FlagFactRenderer.render(FlagKey.ENERGY_DIP_MEAL_TIMING, payload);
 
         assertThat(facts).hasSize(3);
-        assertThat(facts.get(0)).contains("12:00").contains("14:30");
-        assertThat(facts.get(1)).contains("8").contains("5");
-        assertThat(facts).noneMatch(f -> f.contains("mert") || f.contains("ezért"));
+        assertThat(facts.get(0)).contains("12:00").contains("14:30").contains("6 nap");
+        assertThat(facts.get(1)).contains("8,0").contains("5,0");
+        assertThat(facts).noneMatch(f -> f.contains(" mert ") || f.contains("ezért"));
     }
 
     /** The fallback mode has no lunch times to name — the line must still be a whole sentence. */
     @Test
-    void rendersTheBreakfastPresenceModeWithoutLunchTimes() {
+    void testRender_shouldRenderTheBreakfastPresenceModeWithoutLunchTimes() {
         FlagPayloadEnvelope payload = FlagPayloadEnvelope.energyDipMealTiming(
             new FlagPayloadEnvelope.EnergyDipMealTiming(
                 "breakfast_presence", "with_breakfast", "without_breakfast",
@@ -1158,7 +1170,7 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - [ ] **Step 2: Run it — it must fail** (`render` returns an empty list for the unmapped key).
 
 ```bash
-./mvnw -f backend/pom.xml -Dmezo.test.use-testcontainers=true -Dtest=FlagFactRendererTest test
+cd backend && ./mvnw -Dmezo.test.use-testcontainers=true -Dtest=FlagFactRendererTest test
 ```
 
 - [ ] **Step 3: Add the renderer arm.** In `FlagFactRenderer.render`'s switch, after the `MEAL_RHYTHM_DRIFT` case:
@@ -1235,8 +1247,8 @@ class EnergyDipMealTimingRuleSwitchOffIT extends AbstractIntegrationTest {
 - [ ] **Step 6: Run the whole flag + proactive surface.**
 
 ```bash
-./mvnw -f backend/pom.xml -Dmezo.test.use-testcontainers=true \
-  -Dtest='FlagFactRendererTest+InterventionServiceIT+EnergyDipMealTimingRuleSwitchOffIT+FlagEvaluatorEnergyDipIT' test
+cd backend && ./mvnw -Dmezo.test.use-testcontainers=true \
+  -Dtest='FlagFactRendererTest,InterventionServiceIT,EnergyDipMealTimingRuleSwitchOffIT,FlagEvaluatorEnergyDipIT' test
 ```
 
 Expected: PASS with a non-zero test count.
@@ -1258,17 +1270,17 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>"
 - [ ] **Step 1: ArchUnit + the companion/proactive suites.**
 
 ```bash
-./mvnw -f backend/pom.xml -Dmezo.test.use-testcontainers=true \
-  -Dtest='ArchitectureTest+LayerRulesTest' test
+cd backend && ./mvnw -Dmezo.test.use-testcontainers=true \
+  -Dtest='ArchitectureTest' test
 ```
 
-If those class names do not exist, find them first (`ls backend/src/test/java/io/mrkuhne/mezo/arch* backend/src/test/java/io/mrkuhne/mezo/architecture 2>/dev/null; grep -rl "ArchRule" backend/src/test | head`) and run what is actually there. `companion → biometrics` and `companion → meal` both already exist as accepted directions, so this should pass unchanged — but the point of the run is not to assume that.
+`backend/src/test/java/io/mrkuhne/mezo/ArchitectureTest.java` is the only ArchUnit holder in the repo. `companion → biometrics` and `companion → meal` both already exist as accepted directions, so this should pass unchanged — but the point of the run is not to assume that.
 
 - [ ] **Step 2: The whole companion-flags and proactive test packages.**
 
 ```bash
-./mvnw -f backend/pom.xml -Dmezo.test.use-testcontainers=true \
-  -Dtest='io.mrkuhne.mezo.feature.companion.flags.**,io.mrkuhne.mezo.feature.proactive.**' test
+cd backend && ./mvnw -Dmezo.test.use-testcontainers=true \
+  -Dtest='io.mrkuhne.mezo.feature.companion.**,io.mrkuhne.mezo.feature.proactive.**' test
 ```
 
 Expected: PASS. This is where an unmapped key, a stale enumeration or a broken CHECK surfaces.
@@ -1401,3 +1413,19 @@ bd show mezo-d58h.7
 **Deliberate deviation, recorded:** the spec's day gate says "AND a logged morning meal"; this plan implements "AND any logged meal that day" and documents why in the rule javadoc (Bound 2), in `docs/features/companion.md` (Task 6 Step 1), and here. Without it the spec's own breakfast fallback cannot exist.
 
 **Type consistency:** `FlagPayloadEnvelope.EnergyDipMealTiming` has the same 17 components everywhere it appears (Task 2's definition, Task 3's construction, Task 4's two test literals). `FlagProperties.EnergyDipMealTiming`'s eight accessors are used under the same names in Tasks 1, 3 and the `FlagPropertiesIT` assertions. `SPLIT_LUNCH_TIME` / `SPLIT_BREAKFAST_PRESENCE` in the rule and `ENERGY_DIP_BREAKFAST_PRESENCE` in the renderer are separate constants holding the same literals on purpose — companion's renderer must not import a rule class (the existing `MEAL_RHYTHM_DEAD_SLOT` precedent).
+
+---
+
+## Execution deltas (folded back after the slice shipped, mezo-d58h.7.7)
+
+- **The Maven wrapper lives in `backend/`, not at the repo root**, and Surefire's `-Dtest` filter
+  here takes a COMMA-separated list — `A+B` fails with "No tests matching pattern". Every command
+  above was corrected to `cd backend && ./mvnw …` with commas.
+- **`FlagFactRendererTest` has a reflection-driven fixture switch** that throws for any live
+  `FlagKey` without a case. That arm is now Task 4 Step 1's first edit; the plan originally missed
+  it and the test would have failed with a bare `AssertionError` naming the key.
+- **No new fixture seams were needed** — `CheckInPopulator.createCheckIn` and S4's
+  `MealPopulator.createBareMealAt` covered every case, as the File Structure section predicted.
+- **The rule passed all eleven ITs on its first green run**; no threshold or arithmetic needed
+  adjusting after the red run.
+
