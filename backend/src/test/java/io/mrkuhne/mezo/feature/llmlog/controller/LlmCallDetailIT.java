@@ -20,12 +20,18 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * GET /api/llm-usage/calls/{id} (mezo-uakh) — the debug view's source. This is the ONLY endpoint
  * that returns the verbatim prompt/response, and the only one that exposes the frozen price
  * snapshot the cost was derived from.
  */
+@TestPropertySource(properties = {
+    // mezo-c9k4: the shared test profile now disables this cron by default (kill-switch
+    // completeness) — this IT drives the job directly, so it re-enables it on its own context.
+    "mezo.techcore.cron.llm-log-retention-job.enabled=true"
+})
 class LlmCallDetailIT extends ApiIntegrationTest {
 
     @Autowired private LlmLogPopulator llmLogPopulator;

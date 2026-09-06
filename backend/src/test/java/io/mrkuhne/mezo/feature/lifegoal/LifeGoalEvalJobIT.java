@@ -21,12 +21,18 @@ import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * Nightly life-goal evaluation cron (mezo-iizd.6): every active goal of every user gets its last
  * 3 closed days rewritten and its hit-days awarded. Two runs must leave exactly the same rows and
  * the same XP (the Habitica double-cron lesson, spec §2); a closed/archived goal is skipped.
  */
+@TestPropertySource(properties = {
+    // mezo-c9k4: the shared test profile now disables this cron by default (kill-switch
+    // completeness) — this IT drives the job directly, so it re-enables it on its own context.
+    "mezo.techcore.cron.life-goal-eval-job.enabled=true"
+})
 class LifeGoalEvalJobIT extends AbstractIntegrationTest {
 
     private static final int XP_PER_HIT = 5;

@@ -19,8 +19,14 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 @ActiveProfiles("companion-fake")
+@TestPropertySource(properties = {
+    // mezo-c9k4: the shared test profile now disables this cron by default (kill-switch
+    // completeness) — this IT drives the job directly, so it re-enables it on its own context.
+    "mezo.techcore.cron.prediction-job.enabled=true"
+})
 class PredictionJobIT extends AbstractIntegrationTest {
 
     private static final LocalDate WEEK =
