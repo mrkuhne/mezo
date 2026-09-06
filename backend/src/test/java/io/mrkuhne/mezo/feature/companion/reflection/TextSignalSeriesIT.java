@@ -98,6 +98,23 @@ class TextSignalSeriesIT extends AbstractIntegrationTest {
         assertThat(derivedSeriesService.isKnown(owner, "nincs-ilyen")).isFalse();
     }
 
+    /** bd mezo-xih1: a kulcs és a tárolt név ÉKEZETE nem hasíthatja szét ugyanazt az embert. */
+    @Test
+    void testDerivedPeopleSeries_shouldMatchNameFolded_ignoringAccentAndCase() {
+        UUID owner = userPopulator.createUser().getId();
+        LocalDate day = LocalDate.now().minusDays(2);
+        textSignalPopulator.signal(owner, TextSignalEntity.SOURCE_JOURNAL, UUID.randomUUID(), day,
+                3, 3, 3, List.of("Réka"), List.of());
+
+        assertThat(derivedSeriesService.series(owner, "people:Reka", day, day)).containsEntry(day, 1.0);
+        assertThat(derivedSeriesService.series(owner, "people:réka", day, day)).containsEntry(day, 1.0);
+        assertThat(derivedSeriesService.isKnown(owner, "people:reka")).isTrue();
+        // a ragozott alak viszont NEM ugyanaz a kulcs — az írási idejű normalizálás dolga, hogy
+        // ilyen név ne is kerüljön a tömbbe (TextSignalNameNormalizationIT)
+        assertThat(derivedSeriesService.series(owner, "people:Rékának", day, day))
+                .containsEntry(day, 0.0);
+    }
+
     @Test
     void testNewerVersion_shouldWinPerSource() {
         UUID owner = userPopulator.createUser().getId();
