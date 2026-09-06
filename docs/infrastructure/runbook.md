@@ -147,6 +147,13 @@ Baseline after cleanup (2026-09-06): **nodefs 9.1/74.8 GiB, imagefs 3.5 GiB, 19 
 (before: 58.2/74.8 GiB, imagefs 29.1 GiB). The `NodeDiskPressure` alert (§Observability)
 fires below 15 % free.
 
+### Observability (mezo-ibxy)
+
+Host-side pieces (NOT in git, re-apply on a rebuild): `/etc/rancher/k3s/config.yaml` kubelet
+GC args (see *Disk & image GC*) and `/var/lib/rancher/k3s/server/manifests/traefik-config.yaml`
+(HelmChartConfig turning on Traefik's Prometheus port 9100; contents in the plan
+`docs/superpowers/plans/2026-09-06-infra-observability.md` Task 6).
+
 ### Deploy a manifest change (the normal path)
 Edit a file under `k8s/`, then:
 ```bash
