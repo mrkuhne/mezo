@@ -42,7 +42,7 @@ class PeopleSnapshotBlockTest {
     }
 
     private void withMax(int max) {
-        when(properties.snapshot()).thenReturn(new CompanionProperties.Snapshot(7, 200, 180, max));
+        when(properties.snapshot()).thenReturn(new CompanionProperties.Snapshot(7, 200, 180, max, 3));
     }
 
     private static PersonChatContext row(String name, String rel, int week, String dir, String reason) {

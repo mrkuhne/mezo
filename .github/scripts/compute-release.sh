@@ -4,14 +4,18 @@
 set -euo pipefail
 
 # stdin: conventional-commit lines (subjects + bodies). stdout: major | minor | patch.
+# NEVER return before stdin is drained: the caller pipes `git log` into this, and under
+# `set -o pipefail` an early return SIGPIPEs the writer, making the whole pipeline exit
+# 141 and killing the script (mezo-0j9n). Matching is done with bash's own =~ rather than
+# `printf | grep -q` — one less fork per line, and one less pipe to SIGPIPE on.
 compute_bump() {
   local level="patch" line
+  local re_breaking='^[a-z]+(\([^)]*\))?!:|^BREAKING[ -]CHANGE:'
+  local re_feat='^feat(\([^)]*\))?:'
   while IFS= read -r line || [ -n "$line" ]; do
-    if printf '%s' "$line" | grep -qE '^[a-z]+(\([^)]*\))?!:' \
-       || printf '%s' "$line" | grep -qE '^BREAKING[ -]CHANGE:'; then
-      echo "major"; return 0
-    fi
-    if printf '%s' "$line" | grep -qE '^feat(\([^)]*\))?:'; then
+    if [[ $line =~ $re_breaking ]]; then
+      level="major"                      # keep draining; do not return here
+    elif [ "$level" != "major" ] && [[ $line =~ $re_feat ]]; then
       level="minor"
     fi
   done
@@ -31,9 +35,17 @@ next_version() {
 }
 
 main() {
+  # Any failure from here on must be LOUD: the SIGPIPE bug below killed this script
+  # silently (exit 141, not one line on stderr) through 14 consecutive main deploys.
+  trap 'rc=$?; echo "::error::compute-release.sh aborted (rc=${rc}) at: ${BASH_COMMAND}" >&2' ERR
+
   git fetch --tags --quiet || true
   local last_tag base_ref base_ver
-  last_tag=$(git tag -l 'v*' --sort=-v:refname | head -n1)
+  # NOT `git tag -l ... | head -n1`: head exits after line 1 and closes the pipe, so once
+  # the tag list outgrew git's 4 KiB stdio buffer (500 tags = 4130 bytes) git's second
+  # write() took SIGPIPE -> 141 -> pipefail -> set -e -> silent death (mezo-0j9n).
+  # for-each-ref --count=1 does the limiting inside git; no pipe, no reader to race.
+  last_tag=$(git for-each-ref --count=1 --sort=-v:refname --format='%(refname:short)' 'refs/tags/v*')
   if [ -z "$last_tag" ]; then
     base_ref=$(git rev-list --max-parents=0 HEAD | tail -n1)   # root commit
     base_ver="0.0.0"

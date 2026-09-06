@@ -2,10 +2,10 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { isMockMode } from '@/data/_client/mode'
 import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import { habitApi, type HabitDay } from '@/data/habit/habitApi'
-import { mockHabitDay, mockHabitSummary } from '@/data/habit/habitMock'
-import type { HabitItem, HabitSummary } from '@/data/types'
+import { mockHabitDay, mockHabitFormation, mockHabitSummary } from '@/data/habit/habitMock'
+import type { HabitFormation, HabitItem, HabitSummary } from '@/data/types'
 import type { LevelUpResult } from '@/data/train/trainApi'
-import { useDualQuery } from '@/data/useDualQuery'
+import { DEFAULT_QUERY_STALE_TIME_MS, useDualQuery } from '@/data/useDualQuery'
 import { addDays, localDateString } from '@/shared/lib/dates'
 
 const key = (d: string) => ['habitDay', d]
@@ -164,9 +164,9 @@ export function useHabitActions(date: string) {
   })
   // NOTE: check() resolves the write's levelUps — the caller builds a reward toast via
   // @/features/progression/logic/rewardToast and emits it on the toastBus (mezo-k5sa).
-  // Callers today: TodayPage's `act()` dispatcher (every habit row on all three daypart
-  // faces) and WindDownBanner (the `wind_down` Pipa). RoutineCard, the original caller,
-  // was retired by the daypart-faces re-composition (mezo-j7u4).
+  // Callers today: NapRutinPage.tickAction and NapHubPage.tileTick (every habit row on all
+  // three daypart faces). RoutineCard, the original caller, was retired by the daypart-faces
+  // re-composition (mezo-j7u4).
 
   const uncheckM = useMutation({
     mutationFn: async (habitKey: string) => {
@@ -203,5 +203,46 @@ export function useHabitSummary() {
     mockData: mockHabitSummary,
     realFetch: habitApi.summary,
     realEmpty: { perfectMorningDays30: 0, perfectEveningDays30: 0, habits: [] },
+  })
+}
+
+/**
+ * Az egy szokás teljes élettartamra számolt formálódás-becslése (mezo-08zl).
+ *
+ * Page-triggered read — NEM a chat forró útja (az a `useHabitSummary`), ezért az app-szintű
+ * `DEFAULT_QUERY_STALE_TIME_MS`-t KIFEJEZETTEN átadjuk: a `realStaleTime` elhagyása
+ * `staleTime: undefined`-ot küld, ami felülírja a QueryClient alapértékét és mindig-avultat
+ * (0) csinál a lekérdezésből — lásd a `useDualQuery` javadocját (mezo-5cmq).
+ *
+ * A `realEmpty` az ŐSZINTE üres alak: nulla ismétlés, MINDEN becslés `null`, üres naptár — a
+ * betöltési ablakban tehát pontosan a „még nincs becslés" ág rajzolódik ki, sosem a mock görbe
+ * (no-static-fallback szabály). A `thresholdPct`/`minReps` a szerver száma, így üresen sem
+ * hazudunk küszöböt: amíg nem érkezett válasz, 0 áll bennük.
+ */
+export function useHabitFormation(habitKey: string) {
+  return useDualQuery<HabitFormation>({
+    queryKey: ['habitFormation', habitKey],
+    mockData: mockHabitFormation(habitKey),
+    realFetch: () => habitApi.formation(habitKey),
+    realEmpty: {
+      key: habitKey,
+      firstDate: null,
+      reps: 0,
+      missed: 0,
+      automaticityPct: null,
+      curveK: null,
+      thresholdPct: 0,
+      minReps: 0,
+      repsToThresholdLo: null,
+      repsToThresholdHi: null,
+      weeksToThresholdLo: null,
+      weeksToThresholdHi: null,
+      repsPerWeek: null,
+      consistencyPct: null,
+      timeConstancyPct: null,
+      anchorConstancyPct: null,
+      days: [],
+    },
+    realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
   })
 }

@@ -48,8 +48,10 @@ vi.mock('@/data/hooks', async (importOriginal) => {
           { id: 'c-m', chainKey: 'MORNING', title: 'Reggeli rutin', daypart: 'MORNING', position: 1, isActive: true,
             // a keret-mezők a katalógus-olvasásból jönnek, nem a napi sorból (mezo-3zue.5)
             defs: [
-              { habitKey: 'morning_pushups', framework: 'FOGG', celebration: 'ökölbe szorított kéz + „ez az”' },
-              { habitKey: 'morning_sunlight', framework: null, celebration: null },
+              { habitKey: 'morning_pushups', framework: 'FOGG', celebration: 'ökölbe szorított kéz + „ez az”', anchorHabitKey: null },
+              { habitKey: 'morning_sunlight', framework: null, celebration: null, anchorHabitKey: null },
+              // mezo-3zue.6: a videó a fekvőtámaszra van kötve — ettől szólal meg a „Most jön" prompt
+              { habitKey: 'morning_video', framework: 'FOGG', celebration: 'bólintok, hogy megvolt', anchorHabitKey: 'morning_pushups' },
             ],
           },
           { id: 'c-e', chainKey: 'EVENING', title: 'Esti rutin', daypart: 'EVENING', position: 2, isActive: true,
@@ -88,7 +90,13 @@ const eveningHabits: Partial<HabitItem>[] = [
   { key: 'bed_on_time', chain: 'EVENING', position: 2, title: 'Ágyban időben', why: '', anchorCopy: 'napzárás után', mode: 'DERIVED', status: 'pending', xp: 10, strengthPct: null },
 ]
 
-beforeEach(() => habitStore.seed([...morningHabits, ...eveningHabits]))
+/** A morning_pushups-ra KÖTÖTT sor (mezo-3zue.6) — MANUAL + pending, tehát valóban pipálható. */
+const chainedVideo: Partial<HabitItem> = {
+  key: 'morning_video', chain: 'MORNING', position: 5, title: 'Reggeli videó', why: '',
+  anchorCopy: 'napfény után', mode: 'MANUAL', status: 'pending', xp: 5, strengthPct: 39,
+}
+
+beforeEach(() => habitStore.seed([...morningHabits, chainedVideo, ...eveningHabits]))
 
 function LocationProbe() {
   const loc = useLocation()
@@ -117,10 +125,10 @@ test('gold page anatomy: back chip, hero with spot + done/total + chain name, pr
   renderPage()
   expect(await screen.findByRole('button', { name: 'Vissza' })).toBeInTheDocument()
   expect(document.querySelector('.mz-page.mz-p-gold')).not.toBeNull()
-  // morning group: 2 of 4 done
-  expect(screen.getByText('2/4')).toBeInTheDocument()
+  // morning group: 2 of 5 done
+  expect(screen.getByText('2/5')).toBeInTheDocument()
   expect(screen.getByText('Reggeli rutin')).toBeInTheDocument()
-  expect(screen.getByText('4 elem · lánc')).toBeInTheDocument()
+  expect(screen.getByText('5 elem · lánc')).toBeInTheDocument()
   expect(document.querySelector('.mz-page-hero use[href="#s-reggel"]')).not.toBeNull()
   expect(screen.getByText('A lánc-erő az elmúlt 28 nap konzisztenciája — egy kihagyás nem nullázza, csak halványítja.')).toBeInTheDocument()
 })
@@ -129,8 +137,8 @@ test('the stat strip carries perfect days, chain strength and today XP for the s
   renderPage()
   expect(await screen.findByText('6/30')).toBeInTheDocument()
   expect(screen.getByText('tökéletes reggel')).toBeInTheDocument()
-  // mean of 82/64/48/93 → 72%
-  expect(screen.getByText('72%')).toBeInTheDocument()
+  // mean of 82/64/48/93/39 → 65%
+  expect(screen.getByText('65%')).toBeInTheDocument()
   expect(screen.getByText('lánc-erő · 28 nap')).toBeInTheDocument()
   // done rows: 10 + 5 XP
   expect(screen.getByText('+15')).toBeInTheDocument()
@@ -324,6 +332,49 @@ test('ünneplés nélküli szokásnál a toast a régi marad', async () => {
   // chainProgress = { done: 0, total: 2 } → az eyebrow „Szokás · 1 / 2".
   expect(await screen.findByText('Szokás · 1 / 2')).toBeInTheDocument()
   expect(screen.queryByText('ökölbe szorított kéz + „ez az”')).not.toBeInTheDocument()
+})
+
+// ── a habit stacking kifizetődése: a pipa promptolja a láncolt szokást (mezo-3zue.6) ──
+
+test('a horgony pipálása kiemeli a rá kötött szokást a listán', async () => {
+  const user = userEvent.setup()
+  renderPage()
+  await user.click(screen.getByRole('button', { name: '50 fekvőtámasz' }))
+  const now = await screen.findByText('Most jön')
+  // a kiemelés a láncolt soron ül, nem a pipálton
+  const row = now.closest('.nr-row') as HTMLElement
+  expect(within(row).getByText('Reggeli videó')).toBeInTheDocument()
+  expect(row.classList.contains('now')).toBe(true)
+})
+
+test('a kiemelés eltűnik, amint a láncolt szokást is kipipálják', async () => {
+  const user = userEvent.setup()
+  renderPage()
+  await user.click(screen.getByRole('button', { name: '50 fekvőtámasz' }))
+  expect(await screen.findByText('Most jön')).toBeInTheDocument()
+  await user.click(screen.getByRole('button', { name: 'Reggeli videó' }))
+  expect(screen.queryByText('Most jön')).toBeNull()
+})
+
+test('már kész láncolt szokásnál a pipa csendet hagy', async () => {
+  const user = userEvent.setup()
+  habitStore.seed([
+    ...morningHabits,
+    { ...chainedVideo, status: 'done' },
+  ])
+  renderPage()
+  await user.click(screen.getByRole('button', { name: '50 fekvőtámasz' }))
+  // a jutalom-toast szól, a prompt nem
+  expect(await screen.findByText('ökölbe szorított kéz + „ez az”')).toBeInTheDocument()
+  expect(screen.queryByText('Most jön')).toBeNull()
+})
+
+test('a jutalom-toast változatlan marad a prompt mellett', async () => {
+  const user = userEvent.setup()
+  renderPage()
+  await user.click(screen.getByRole('button', { name: '50 fekvőtámasz' }))
+  expect(await screen.findByText('ökölbe szorított kéz + „ez az”')).toBeInTheDocument()
+  expect(screen.getByText('Most jön')).toBeInTheDocument()
 })
 
 // ---- mezo-025v: a user-created DAY chain was editable under Én but unreachable from the day ----

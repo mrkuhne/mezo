@@ -28,8 +28,8 @@ paths:
       operationId: getFlagTrace
       summary: One day of the coaching engine's decision — every rule's verdict, the day's transitions and the winning card
       description: >-
-        Renders what the engine concluded; it never re-evaluates a rule. `rules` always holds all
-        13 rules in SEVERITY order (the order is itself information — it is the ranking that chose
+        Renders what the engine concluded; it never re-evaluates a rule. `rules` always holds every
+        flag rule in SEVERITY order (the order is itself information — it is the ranking that chose
         the day's card), each with its closing state for that day, which may have been unchanged
         since before the day. `cardOutcome` is DERIVED here by comparing the day's delivered card
         against the raised+logged rules, never stored. A rule the engine has never judged comes
@@ -42,7 +42,7 @@ paths:
           schema: { type: string, format: date }
       responses:
         '200':
-          description: The day's trace — an honest empty-ish day still returns all 13 rules
+          description: The day's trace — an honest empty-ish day still returns every rule
           content:
             application/json:
               schema: { $ref: '#/components/schemas/FlagTraceDayResponse' }
@@ -1177,7 +1177,7 @@ components:
           $ref: '#/components/schemas/FlagTraceWinnerResponse'
         rules:
           type: array
-          description: All 13 rules, in severity order (rank 1 = most severe).
+          description: All the flag rules, in severity order (rank 1 = most severe).
           items: { $ref: '#/components/schemas/FlagTraceRuleResponse' }
         transitions:
           type: array
@@ -1189,7 +1189,7 @@ components:
       required: [flagKey, rank, cardId]
       description: >-
         The rule whose raise became the day's card. Null when no card was delivered, or when the
-        card came from a setup check rather than a flag — that key is none of the 13.
+        card came from a setup check rather than a flag — that key is none of the flag rules.
       properties:
         flagKey: { type: string }
         rank: { type: integer, description: 1-based position in the severity order. }
@@ -1245,7 +1245,7 @@ components:
           description: >-
             Derived at read time against the day's delivered card; null unless the rule raised AND
             was logged AND the day's card was flag-sourced. A day whose card came from a setup
-            check instead (its severity key matches none of the 13 rules) has no winner among the
+            check instead (its severity key matches none of the flag rules) has no winner among the
             flags at all, so a raised-and-logged rule still reads null that day.
         changedAt:
           type: string

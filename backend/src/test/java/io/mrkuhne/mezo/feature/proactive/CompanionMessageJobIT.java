@@ -7,8 +7,11 @@ import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
 import io.mrkuhne.mezo.feature.proactive.service.CompanionMessageJob;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
+import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
+import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import io.mrkuhne.mezo.support.populator.WaterLogPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -30,6 +33,9 @@ class CompanionMessageJobIT extends AbstractIntegrationTest {
     @Autowired private DailySummaryPopulator dailySummaryPopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private SleepGoalPopulator sleepGoalPopulator;
+    @Autowired private TrainPopulator trainPopulator;
+    @Autowired private WaterLogPopulator waterLogPopulator;
 
     @Test
     void testRunMorning_shouldGenerateTodaysMorningMessage_whenUserHasNarrativeMemory() {
@@ -110,5 +116,35 @@ class CompanionMessageJobIT extends AbstractIntegrationTest {
 
         assertThat(companionMessageRepository.findByCreatedByAndMessageDateAndKind(
                 user, LocalDate.now(), CompanionMessageEntity.KIND_EVENING)).isPresent();
+    }
+
+    /**
+     * Round 2 S2 (bd mezo-d58h.7.2): the 15:00 hydration checkpoint run. The job calls the
+     * {@code LocalTime.now()} entry point, so the assertions must hold at ANY hour CI runs at:
+     * a rest-day user NEVER gets a row (that gate is clock-independent), and a training-day row,
+     * when the run does fall inside the waking day, carries the config eyebrow.
+     */
+    @Test
+    void testRunHydrationCheckpoint_shouldNeverSpeakOnARestDay_andWriteAtMostOneRowOtherwise() {
+        LocalDate today = LocalDate.now();
+        UUID restDay = userPopulator.createUser("feedjob-hydration-rest@test.local").getId();
+        sleepGoalPopulator.goal(restDay);
+        waterLogPopulator.createWaterLog(restDay, today, 100);
+        UUID trainingDay = userPopulator.createUser("feedjob-hydration-train@test.local").getId();
+        sleepGoalPopulator.goal(trainingDay);
+        trainPopulator.createGymSlot(trainingDay, today.getDayOfWeek().getValue() - 1, "18:00");
+        waterLogPopulator.createWaterLog(trainingDay, today, 100);
+
+        companionMessageJob.runHydrationCheckpoint();
+
+        assertThat(companionMessageRepository.findByCreatedByAndMessageDateAndKind(
+                restDay, today, CompanionMessageEntity.KIND_HYDRATION)).isEmpty();
+        // Clock-dependent by nature: outside the waking day (a nightly CI run) the honest answer
+        // is no row at all. What the job must guarantee at every hour is that IF it speaks, it
+        // speaks correctly and exactly once — the fires-on-shortfall path itself is asserted with
+        // an explicit clock in CompanionMessageHydrationIT.
+        companionMessageRepository.findByCreatedByAndMessageDateAndKind(
+                trainingDay, today, CompanionMessageEntity.KIND_HYDRATION)
+                .ifPresent(m -> assertThat(m.getContent().eyebrow()).isEqualTo("Hidratáció"));
     }
 }

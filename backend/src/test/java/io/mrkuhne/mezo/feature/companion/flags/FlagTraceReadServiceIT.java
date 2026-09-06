@@ -95,18 +95,22 @@ class FlagTraceReadServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void a_day_reports_all_thirteen_rules_in_severity_order() {
+    void a_day_reports_every_rule_in_severity_order() {
         UUID userId = createUser();
         trace(userId, FlagKey.SLEEP_DEBT, "clear", null, null,
             new FlagVerdict.ClearEvidence("deficit_hours", 0.4, 1.0, null), at(9));
 
         FlagTraceReadService.TraceDay day = service.read(userId, DAY);
 
-        assertThat(day.rules()).hasSize(13);
+        // Derived, not a literal: a round-2 rule landing in the catalog must not fail THIS test —
+        // FlagCatalogTest is the one that guards the catalog's completeness.
+        int ruleCount = FlagCatalog.KEYS.size();
+        assertThat(day.rules()).hasSize(ruleCount);
         assertThat(day.rules()).extracting(FlagTraceReadService.RuleState::rank)
-            .containsExactlyElementsOf(java.util.stream.IntStream.rangeClosed(1, 13).boxed().toList());
+            .containsExactlyElementsOf(
+                java.util.stream.IntStream.rangeClosed(1, ruleCount).boxed().toList());
         assertThat(day.rules().get(0).flagKey()).isEqualTo(FlagKey.ACUTE_BAD_DAY);
-        assertThat(day.rules().get(12).flagKey()).isEqualTo(FlagKey.ALL_HEALTHY);
+        assertThat(day.rules().get(ruleCount - 1).flagKey()).isEqualTo(FlagKey.ALL_HEALTHY);
         assertThat(day.rules().stream()
             .filter(r -> r.flagKey().equals(FlagKey.LATE_EATING)).findFirst().orElseThrow().rank())
             .isEqualTo(9);

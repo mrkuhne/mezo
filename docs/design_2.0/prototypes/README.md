@@ -37,6 +37,8 @@ they inline come from `../assets/`.
 | `rutin-epito.html` | https://claude.ai/code/artifact/78c8f0f9-925f-44a9-93b4-3e9cc077e162 (Rutin-építő — széles Rutin csempe az Én hubon, /me/rutin hub erő-csíkokkal, 4 lépéses szokás-recept wizard Fogg / Clear keretre, szokás-szerkesztő — mezo-3zue) |
 | `celok.html` | https://claude.ai/code/artifact/e404d1d4-55c3-4e81-a8b4-716c6ba45f87 |
 | `minta-reszlet.html` | — (emberi következtetés + bináris összevetés + rétegzett diagnosztika — mezo-0469) |
+| `rutin-szerkeszto-valasztas.html` | — (not yet published; hol lakjon a recept/stacking szerkesztése — három IA-lehetőség egymás mellett — mezo-08zl) |
+| `rutin-formalodas.html` | — (not yet published; Rutin 2.0 — csempés /me/rutin hub élő „Ma" listával, szokás-rács formálódás-ívekkel, formálódás-oldal telítődő görbével + tartomány-becsléssel, előzmény-felület — mezo-08zl) |
 
 ## Workflow
 
@@ -632,6 +634,82 @@ are usable without a build step).
   the new row highlighted. **Habit page** (`/me/rutin/szokas/:id`): framework band, the recipe
   sentence large, 28-day history strip, framework fields, pause-without-losing-progress.
   Backend vision it mocks: spec `docs/superpowers/specs/2026-09-02-routine-builder-design.md`.
+- **rutin-szerkeszto-valasztas** — an IA choice board for `mezo-08zl`: where should editing the
+  recipe (framework + the Fogg anchor, i.e. the stacking) live? Three phones side by side —
+  **A in-place** on the habit page (anchor becomes a picker, framework switchable with an explicit
+  data-loss warning), **B a separate „A recept" subpage** (habit page shrinks the recipe to one
+  row), **C keep the wizard** (today's behavior). Each column carries its own +/− verdict list.
+  Written because today the anchor field is `readOnly` whenever it is linked to a real habit
+  (`HabitPage.tsx:324`) and „Keret váltása" throws the user back into the 4-step wizard — so
+  changing what a habit is anchored to costs four steps. **Outcome: B.** A was tried first and
+  failed in practice — the formation page is long enough that an in-place editor opens below the
+  fold — so the recipe editor became its own page, exactly B's argument.
+- **rutin-formalodas** — Rutin 2.0, the habit-formation view (`mezo-08zl`). **Rutin hub fits one
+  screen, no scrolling**: hero (today done / total + how many habits already run by themselves),
+  statstrip, a **single-row „Következik" card** whose big tick logs only the next pending habit
+  (`/nap/rutin` stays the canonical logging home — the hub deliberately does not become a second
+  logging surface), an **active-chain tile** (the chain that still has an open item; segment bars
+  green = done, gold = up next) leading to the chain page where the chain runs in order and can
+  also be ticked, plus two tiles: **Szokásaid** (the formation grid, moved off the hub onto its
+  own page, **one full-width tile per row**: name top-left, the progress ring at the right with the
+  percentage inside it, the repetition count under the name, and the remaining-time range on its
+  own divided line; above the list a 2×2 block of **four stage filter tiles**, each carrying a
+  four-segment progress glyph in the stage color, the count as a big numeral and the stage label,
+  tinting to its own wash + colored shadow when selected — none selected means everything, so no
+  fifth „Mind" tile is needed) and the builder. **Formation page** (`/me/rutin/szokas/:key`) is **poster anatomy**,
+  not a stack of flat cards: a domain-washed hero zone (clay spot with a radial halo, the
+  repetition count as the big numeral, a stage pill), then one **poster card** carrying the
+  automaticity ring, the curve, the four stages as a **milestone rail** (the current one pulsing)
+  and the ETA band; below it context **rings** rather than grey bars, the Mezo observation card,
+  and a sage history tile. The page's whole wash follows the habit's domain color (gold / sky /
+  lavender / coral), and a settled habit turns the poster sage. The curve itself: the
+  saturating curve `automaticity = 1 − e^(−k·n)` drawn over **repetitions** (not calendar days),
+  solid past + dashed projection + an uncertainty band from k ±30%, a dashed „MAGÁTÓL MEGY"
+  threshold at 90% of the asymptote, and a **range** ETA („1–12 hét", „3–6 hónap", „fél éven túl"
+  — never a point estimate; under 5 repetitions no estimate at all). The context rings measure
+  daypart stability, anchor stability and smoothed consistency (context stability is the strongest
+  predictor per PNAS 2023); the Mezo observation card is a placeholder (AI feedback is a separate
+  slice). The **weekday breakdown** („melyik napokon megy") and the **smoothed consistency line**
+  sit on the formation page under the Mezo observation, since they answer the same question the
+  curve does; the **Előzmény** page keeps the full-lifetime calendar (not the 28-day window).
+  **Editing follows option B of `rutin-szerkeszto-valasztas`.** Option A (in-place) was built
+  first and rejected in use: the formation page had grown so long that the recipe block sat
+  ~1200px below the fold, so pressing „Szerkesztés" looked like it did nothing. Editing now lives
+  on **its own page** (`pg-edit`) — details and editing stay separate; the formation page keeps
+  the recipe as a read-only sentence with a „✎ szerkesztem ›" link, and the editor page opens
+  with the live sentence card above the fields so you see what you are rewriting. The
+  framework is a segmented switch that names the fields the switch will destroy *before* it
+  happens; the anchor is a **picker sheet** (your other habits with their stage + repetition
+  count, the four mezo moments, free text, and an explicit „Leoldom") rather than the `readOnly`
+  field it is today — the picker is what makes the contract's „empty string = unlink" convention
+  safe. The **chain page** carries chain editing: rename, daypart, and a reorder list that draws
+  the **stacking** — a vertical rope down the chain, each row badged with what it is actually
+  anchored to (green = the previous item, gold = a different item or another chain, grey = free
+  text). Where a row's anchor is not its predecessor the rope turns dashed and a note explains
+  that chain position and anchor are two separate orderings. Delete honestly states the backend
+  rule (only an empty chain can go). **Építs** is one flow instead of today's two doors: a choice
+  board (Új szokás / Új lánc / Kérj javaslatot) opens a Mozaik-styled wizard whose step 1 offers
+  three **framework posters** — Fogg, Clear, and **„Keret nélkül"**, which is what replaces the
+  separate frameworkless `HabitEditSheet`. **The two frameworks now differ structurally, not just
+  in labels**: Fogg runs 4 steps (anchor → tiny action → celebration), Clear runs 5 named after
+  its laws (1. nyilvánvaló → 2. vonzó, which is the only branch asking for craving *and*
+  identity → 3. könnyű → 4. kielégítő), and the assembled sentence carries each branch's fields.
+  **XP is no longer set by hand.** It is derived from four **Fogg simplicity/ability factors**
+  (time · physical effort · brain cycles · non-routine — money and social deviance dropped as
+  non-binding here, see behaviormodel.org/ability), each a three-step ordinal, summing into a
+  deliberately narrow 6–14 XP band (Habitica's lesson: a wide band rewards inflating the rating).
+  Fogg's weakest-link rule lives in the coaching rather than the arithmetic — any factor at its
+  top step surfaces a tailored „make it tiny" nudge. The difficulty block is **re-rateable later**
+  on the habit page, since a habit gets cheaper as it automates. Tick mode (`mode`/`metric`) is a
+  plain, always-visible control in both the wizard and the editor — **which needs a contract
+  change**, as `mode`/`metric` are absent from `HabitDefUpdateRequest` today.
+  Anchor picking, chain and life-area are tile grids with clay icons, a live sentence card
+  assembles the recipe as the blanks fill (habit anchors phrased „megvolt a …", the same wording
+  the backend uses when it releases an anchor), the Fogg branch warns when the behavior looks too
+  big, and saving lands on the new habit's formation page in its honest null state — 0
+  repetitions, no estimate. Misses slow the curve and never reset it; no streak
+  counter, no red (design-iterations §3, ADR 0010). The estimator lives in the prototype JS as the
+  same pure function the backend will get.
 - **minta-reszlet** — the Pattern detail redesign visual iteration (`mezo-0469`): a Design 2.0
   story-flow over the live `weekend~late-meal-hour` example (8 weekday + 1 weekend day), with an
   honest gathering hero, per-group tiles, a binary-group dot plot without a premature regression

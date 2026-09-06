@@ -1,0 +1,268 @@
+<style>
+  .trio { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 30px; margin-top: 36px; align-items: start; }
+  @media (max-width: 1100px) { .trio { grid-template-columns: 1fr; justify-items: center; } }
+  .col > .lb { display: flex; align-items: baseline; gap: 9px; margin-bottom: 12px; }
+  .col > .lb b { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
+  .col > .lb .tag { font-size: 10px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: var(--accent); }
+  .col .phone { width: 300px; height: 640px; }
+  .col .screen { font-size: 10.8px; }
+  .verdict { margin-top: 16px; display: grid; gap: 7px; max-width: 300px; }
+  .verdict div { display: flex; gap: 7px; font-size: 13px; line-height: 1.45; color: var(--ink-2); }
+  .verdict div b { color: var(--ink); font-weight: 600; }
+  .verdict .y::before { content: '＋'; color: #4E6B42; font-weight: 700; flex: none; }
+  .verdict .n::before { content: '−'; color: #A84A26; font-weight: 700; flex: none; }
+  .pick { display: inline-block; margin-top: 12px; border-radius: 999px; padding: 5px 13px; font-size: 11px; font-weight: 700;
+    background: var(--accent); color: #fff; }
+  .pick.off { background: rgba(43, 33, 24, 0.07); color: var(--ink-2); }
+  /* a három telefon belsejéhez */
+  .swseg { display: flex; gap: 5px; }
+  .swseg button { flex: 1; border: 1.5px solid rgba(43, 33, 24, 0.1); background: #fff; border-radius: 11px; padding: 7px 4px;
+    font-family: inherit; font-size: 9.5px; font-weight: 700; color: #6E6257; cursor: pointer; display: grid; gap: 2px; justify-items: center; }
+  .swseg button .g { font-size: 13px; }
+  .swseg button.on { border-color: #7FA06C; background: linear-gradient(140deg, #E9F1E2, #FFFDFA 70%); color: #4E6B42; }
+  .swseg button.on.clear { border-color: #8A76CC; background: linear-gradient(140deg, #EDE9F8, #FFFDFA 70%); color: #5D4FA0; }
+  .pickrow { width: 100%; display: flex; align-items: center; gap: 8px; border: 1px solid rgba(43, 33, 24, 0.12);
+    background: #FDFAF4; border-radius: 10px; padding: 8px 10px; font-family: inherit; font-size: 11px; color: #2B2118; cursor: pointer; text-align: left; }
+  .pickrow .gr { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pickrow .cv { color: #A2958A; font-size: 12px; flex: none; }
+  .pickrow.lock { background: rgba(43, 33, 24, 0.045); color: #A2958A; cursor: default; }
+  .lockline { display: flex; gap: 5px; font-size: 8px; color: #A2958A; margin-top: 5px; line-height: 1.4; }
+  .warn { display: flex; gap: 7px; border-radius: 11px; padding: 8px 10px; margin-top: 8px; font-size: 9px; line-height: 1.45;
+    color: #A8801F; background: rgba(201, 150, 46, 0.16); font-weight: 500; }
+  .warn b { font-weight: 800; }
+  .warn[hidden] { display: none; }
+  .rowlink { width: 100%; display: flex; align-items: center; gap: 9px; border: none; border-radius: 15px; padding: 11px 12px;
+    background: #fff; font-family: inherit; text-align: left; color: #2B2118; cursor: pointer; margin-bottom: 8px;
+    box-shadow: 0 12px 24px -16px rgba(43, 33, 24, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.85); }
+  .rowlink .t { flex: 1; min-width: 0; }
+  .rowlink .t b { display: block; font-size: 11.5px; font-weight: 700; }
+  .rowlink .t small { display: block; font-size: 8.5px; color: #6E6257; margin-top: 1px; }
+  .rowlink .cv { color: #A84A26; font-size: 15px; flex: none; }
+</style>
+
+<div class="wrap">
+  <p class="eyebrow">Design 2.0 · Rutin-szerkesztő · IA-választás · mezo-08zl</p>
+  <h1>Hol lakjon a recept szerkesztése? Három ajtó ugyanahhoz a szobához</h1>
+  <p class="lede">
+    A kérdés konkrétan ez: ha meg akarod változtatni, hogy egy szokás <strong>mihez van horgonyozva</strong> (a stacking),
+    vagy át akarsz váltani Fogg-ról Clear-re, <strong>hol csinálod</strong>? Ma egyik felületen sem: a szokás oldalán a horgony
+    mező le van tiltva, amint valódi szokáshoz kötötted, és a „Keret váltása" gomb visszadob a négylépéses wizardba.
+    Alább a három lehetőség — ugyanaz a szokás, ugyanaz a művelet, három felületen.
+  </p>
+
+  <div class="trio">
+    <!-- ============ A · HELYBEN ============ -->
+    <div class="col">
+      <div class="lb"><span class="tag">A</span><b>Helyben</b></div>
+      <div class="phone"><div class="screen play">
+        <div class="isl"></div>
+        <div class="p-status"><span>9:41</span><span>▮▮▮ 82%</span></div>
+        <div class="page p-gold on">
+          <div class="page-head">
+            <button class="backbtn">‹ Rutin</button>
+            <button class="pgact">Mentés</button>
+          </div>
+          <div class="hzone rise" style="--d:20ms;--hglow:rgba(201,150,46,.34);">
+            <div class="spotring"><svg width="46" height="46" viewBox="0 0 100 100"><use href="#i-hajnal"/></svg></div>
+            <div class="bignum" style="font-size:38px;">55<em>ismétlés</em></div>
+            <div class="nm">Reggeli fény · 10 perc kint</div>
+          </div>
+          <div class="page-body">
+            <div class="shead rise" style="--d:50ms;"><span class="t">A recepted</span><span class="r">itt szerkeszted</span></div>
+            <div class="fcard rise" style="--d:60ms;">
+              <label class="flabel">Keret</label>
+              <div class="swseg" id="aSeg">
+                <button class="on" data-fw="FOGG"><span class="g">⚓</span>Szokás-láncolás</button>
+                <button data-fw="CLEAR"><span class="g">◈</span>Négy törvény</button>
+              </div>
+              <div class="warn" id="aWarn" hidden><span>⚠</span><span><b>Váltásnál elveszik:</b> a horgony és az ünneplés. A Clear-mezők üresen indulnak.</span></div>
+            </div>
+            <div class="fcard rise" style="--d:80ms;">
+              <label class="flabel">Miután… <span class="opt">horgony</span></label>
+              <button class="pickrow" id="aPick"><span class="gr">megittam a reggeli kávét</span><span class="cv">▾</span></button>
+              <div class="lockline"><span>⚓</span><span>A <strong>Reggeli kávé</strong> szokásodhoz kötve — koppints a cseréhez.</span></div>
+            </div>
+            <div class="fcard rise" style="--d:100ms;">
+              <label class="flabel">…én <span class="opt">pici tett</span></label>
+              <input class="fin" value="kimegyek 10 percre a fényre">
+            </div>
+            <div class="fcard rise" style="--d:120ms;">
+              <label class="flabel">Ünneplésül</label>
+              <input class="fin" value="ez az én napom">
+            </div>
+            <div class="shead rise" style="--d:140ms;"><span class="t">Beállítások</span></div>
+            <div class="fcard rise" style="--d:150ms;">
+              <div class="frow2">
+                <div><label class="flabel">Lánc</label><div class="chips gold"><button class="on">Reggeli</button><button>Esti</button></div></div>
+                <div><label class="flabel">XP</label><span class="stepin"><button>−</button><b>10 XP</b><button>＋</button></span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="homebar"></div>
+      </div></div>
+      <div class="verdict">
+        <div class="y"><span><b>Egy hely, egy modell.</b> A recept ott van, ahol a szokás — nem kell megjegyezni, melyik ajtón kell bemenni.</span></div>
+        <div class="y"><span><b>A horgony végre cserélhető.</b> A választó ugyanazokat a chipeket kínálja, mint a wizard 2. lépése.</span></div>
+        <div class="y"><span><b>A keretváltás figyelmeztet</b> — ma némán töröl mezőket.</span></div>
+        <div class="n"><span>A szokás oldala <b>hosszabb lesz</b>: a formálódás-nézet fölé/alá még egy űrlap-blokk kerül.</span></div>
+        <div class="n"><span>Két állapot egy lapon: „nézem" és „szerkesztem" — a Mentés gomb messze kerülhet.</span></div>
+        <span class="pick">Ezt ajánlom</span>
+      </div>
+    </div>
+
+    <!-- ============ B · KÜLÖN ALOLDAL ============ -->
+    <div class="col">
+      <div class="lb"><span class="tag">B</span><b>Külön recept-aloldal</b></div>
+      <div class="phone"><div class="screen play">
+        <div class="isl"></div>
+        <div class="p-status"><span>9:41</span><span>▮▮▮ 82%</span></div>
+        <div class="page p-gold on">
+          <div class="page-head">
+            <button class="backbtn">‹ Szokás</button>
+            <button class="pgact">Mentés</button>
+          </div>
+          <div class="page-hero rise" style="--d:20ms;">
+            <span style="font-size:26px;">⚓</span>
+            <div class="bignum" style="font-size:20px;font-weight:700;">A recept</div>
+            <div class="sb">Reggeli fény · 10 perc kint</div>
+          </div>
+          <div class="page-body">
+            <div class="sentence rise" style="--d:40ms;">
+              <div class="lb"><span>Élő mondat</span><span style="color:#C9BCAD;">· együtt változik</span></div>
+              <div class="tx">Miután <span class="b f">megittam a reggeli kávét</span>, <span class="b f">kimegyek 10 percre a fényre</span> — és logolom.</div>
+            </div>
+            <div class="fcard rise" style="--d:60ms;">
+              <label class="flabel">Keret</label>
+              <div class="swseg">
+                <button class="on"><span class="g">⚓</span>Szokás-láncolás</button>
+                <button><span class="g">◈</span>Négy törvény</button>
+              </div>
+            </div>
+            <div class="fcard rise" style="--d:80ms;">
+              <label class="flabel">Horgony</label>
+              <button class="pickrow"><span class="gr">megittam a reggeli kávét</span><span class="cv">▾</span></button>
+            </div>
+            <div class="fcard rise" style="--d:100ms;">
+              <label class="flabel">Pici tett</label>
+              <input class="fin" value="kimegyek 10 percre a fényre">
+            </div>
+            <div class="fcard rise" style="--d:120ms;">
+              <label class="flabel">Ünneplés</label>
+              <input class="fin" value="ez az én napom">
+            </div>
+            <p class="habnote">A szokás oldalán ez a blokk egyetlen sorrá zsugorodik: „A recepted · Miután megittam a kávét… ›"</p>
+          </div>
+        </div>
+        <div class="homebar"></div>
+      </div></div>
+      <div class="verdict">
+        <div class="y"><span><b>A szokás oldala tiszta marad</b> — a formálódás-nézet nem verseng egy űrlappal.</span></div>
+        <div class="y"><span><b>A szerkesztés önálló művelet</b>: saját Mentés, saját Mégse, világos ki- és belépés.</span></div>
+        <div class="y"><span>Az élő mondat-kártya <b>egyben mutatja</b>, mit épp átírsz.</span></div>
+        <div class="n"><span><b>Egy koppintással messzebb</b> van minden apró javítás is (egy elgépelt ünneplés miatt is oldalt váltasz).</span></div>
+        <div class="n"><span>Új route, új oldal — <b>több felület</b> karbantartani, és a lánc-szerkesztés még mindig máshol van.</span></div>
+        <span class="pick off">Második</span>
+      </div>
+    </div>
+
+    <!-- ============ C · MARAD A WIZARD ============ -->
+    <div class="col">
+      <div class="lb"><span class="tag">C</span><b>Marad a wizard</b></div>
+      <div class="phone"><div class="screen play">
+        <div class="isl"></div>
+        <div class="p-status"><span>9:41</span><span>▮▮▮ 82%</span></div>
+        <div class="page p-gold on">
+          <div class="page-head">
+            <button class="backbtn">‹ Vissza</button>
+            <button class="pgact" style="color:#6E6257;">Mégse</button>
+          </div>
+          <div class="page-body" style="padding-top:6px;">
+            <div class="stepper rise" style="--d:10ms;">
+              <span class="title">Recept szerkesztése</span>
+              <span class="dots"><i class="done"></i><i class="active"></i><i></i><i></i></span>
+              <span class="cnt">2 / 4</span>
+            </div>
+            <div class="wtitle rise" style="--d:30ms;">Mihez kötöd?</div>
+            <div class="wsub rise" style="--d:40ms;">Egy szokás, ami már megy magától — az lesz a horgony.</div>
+            <div class="sentence rise" style="--d:60ms;">
+              <div class="lb"><span>Recept</span><span style="color:#C9BCAD;">· épül, ahogy töltöd</span></div>
+              <div class="tx">Miután <span class="b f">megittam a reggeli kávét</span>, <span class="b f">kimegyek 10 percre a fényre</span>.</div>
+            </div>
+            <div class="fcard rise" style="--d:80ms;">
+              <label class="flabel">Horgony <span class="opt">a szokásaidból</span></label>
+              <div class="chips sage">
+                <button class="on">reggeli kávé</button><button>felkelés</button><button>fogmosás</button><button>ebéd</button>
+              </div>
+            </div>
+            <div class="fcard rise" style="--d:100ms;">
+              <label class="flabel">…vagy saját szavakkal</label>
+              <input class="fin" placeholder="pl. miután leültem az asztalhoz">
+            </div>
+            <div class="tip warn rise" style="--d:120ms;"><span>⚠</span><span>A 3. és 4. lépésen is át kell menned, hogy elmenthesd a változást.</span></div>
+            <div class="shrow rise" style="--d:140ms;"><button class="ghost">Vissza</button><button class="cta">Tovább</button></div>
+          </div>
+        </div>
+        <div class="homebar"></div>
+      </div></div>
+      <div class="verdict">
+        <div class="y"><span><b>Nincs új felület</b> — ez a mai viselkedés, csak érthetőbb belépővel.</span></div>
+        <div class="y"><span>A wizard <b>tanít</b>: a keret logikáját lépésenként magyarázza.</span></div>
+        <div class="n"><span><b>Négy lépés egy mező átírásáért.</b> A horgony cseréje ma is ezt jelenti — ez a fő panasz forrása.</span></div>
+        <div class="n"><span>A wizard <b>létrehozásra</b> van szabva; szerkesztésként a „Vállalom" pipa és a lépés-logika idegen.</span></div>
+        <div class="n"><span>A keretváltás <b>némán töröl</b> mezőket, mert a wizard nem tudja, mi volt előtte.</span></div>
+        <span class="pick off">Harmadik</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage" style="margin-top:44px;">
+    <aside style="max-width:none;">
+      <div>
+        <h2>Miért A-t ajánlom</h2>
+        <ul>
+          <li><strong>A művelet mérete és az ajtó mérete nem stimmel.</strong> A horgony cseréje egyetlen mező átírása. Ma
+            négylépéses varázsló felel érte, ami létrehozásra készült. A B már jobb — egy oldal, egy Mentés —, de még mindig
+            oldalváltás egy elgépelt szó miatt.</li>
+          <li><strong>A tiltott mező technikai ok miatt tiltott, nem termékdöntésből.</strong> A PATCH-ben a <code>null</code>
+            azt jelenti „hagyd békén", az üres string azt, hogy „oldd le" — egy naiv beviteli mező csendben eldobná a gépelést.
+            Ezt egy <em>választó</em> oldja meg (chip-lista + „leoldom" opció), nem egy másik oldal.</li>
+          <li><strong>A keretváltás adatvesztése így válik láthatóvá.</strong> Helyben, a régi értékek mellett tudjuk megmutatni,
+            mi vész el; a wizardba kilépve ez az információ elveszik.</li>
+          <li><strong>A hosszúság-ellenvetés kezelhető.</strong> A recept-blokk alapból <em>összecsukott</em> („A recepted ·
+            Miután megittam a kávét… ✎"), és csak koppintásra nyílik ki — a B előnye megmarad, az ajtó mégis egy koppintás.</li>
+        </ul>
+      </div>
+      <div>
+        <h2>Amit ez a kör nem old meg</h2>
+        <ul>
+          <li>A <strong>lánc-szerkesztés</strong> külön kérdés (ma egy sheet: név + napszak; a láncok sorrendje sehol nem
+            állítható). A stacking vizualizálása — a horgony-kapcsolatok kirajzolása a láncon belül — a lánc oldalára való.</li>
+          <li>A <strong>write-once mezők</strong> (<code>mode</code>, <code>metric</code>, <code>skillKey</code>) egyik ajtón sem
+            szerkeszthetők, mert nincsenek az update-kontraktusban. Ha kellenek, az kontraktus-bővítés.</li>
+          <li>Az <strong>opcionális mezők ürítése</strong> (link, identitás) ma sehol nem lehetséges — az „üres kulcsot ne küldj"
+            szabály miatt.</li>
+        </ul>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  // csak annyi élet, hogy az A oszlop figyelmeztetése látszódjon
+  var seg = document.getElementById('aSeg'), warn = document.getElementById('aWarn');
+  seg.querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      seg.querySelectorAll('button').forEach(function (x) { x.classList.remove('on', 'clear'); });
+      b.classList.add('on');
+      if (b.dataset.fw === 'CLEAR') b.classList.add('clear');
+      warn.hidden = b.dataset.fw !== 'CLEAR';
+    });
+  });
+  document.getElementById('aPick').addEventListener('click', function () {
+    alert('Itt nyílna a horgony-választó: a meglévő szokásaid + mezo-események + „saját szavakkal" + „leoldom".');
+  });
+})();
+</script>

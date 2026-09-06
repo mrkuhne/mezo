@@ -3,7 +3,7 @@ package io.mrkuhne.mezo.feature.character.detector;
 import java.util.Map;
 
 /**
- * The companion's 17 read tools → 7 topic domains (round-4 spec §5.4). A deterministic topic
+ * The companion's 18 read tools → 7 topic domains (round-4 spec §5.4). A deterministic topic
  * proxy: what the assistant had to LOOK UP says what the conversation was about, without any
  * detector-side reading of the message text. Mirrors {@code frontend/src/features/insights/logic/
  * toolDomains.ts}; keep the two in step when a tool is added. The wire bakes args into the name
@@ -20,6 +20,7 @@ final class ChatToolDomains {
             Map.entry("get_training_log", "edzes"), Map.entry("get_training_plan", "edzes"),
             Map.entry("get_exercise_records", "edzes"),
             Map.entry("get_goal", "cel"), Map.entry("get_growth", "cel"), Map.entry("get_daily_practice", "cel"),
+            Map.entry("get_life_goals", "cel"),
             Map.entry("get_insights", "mintak"), Map.entry("find_similar_past_days", "mintak"),
             Map.entry("compare_periods", "mintak"),
             Map.entry("get_medication", "gyogyszer"));

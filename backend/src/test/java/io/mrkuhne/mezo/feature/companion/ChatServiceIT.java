@@ -124,6 +124,7 @@ class ChatServiceIT extends AbstractIntegrationTest {
         // mezo-xixu: terse question-type -> tool routing hint, present in EVERY system prompt.
         assertThat(resp.getContent()).contains("[Eszköz-útmutató]");
         assertThat(resp.getContent()).contains("get_exercise_records");
+        assertThat(resp.getContent()).contains("get_life_goals");
     }
 
     @Test

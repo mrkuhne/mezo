@@ -21,20 +21,17 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0    # lint-docs staleness compares per-file git commit dates
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
-      - name: Docs lint (errors block; staleness advisory — known false positives)
-        run: node scripts/lint-docs.mjs --errors-only
-      - name: Liquibase conventions lint (filenames, constraint prefixes, seed-SQL ban)
-        run: node scripts/lint-liquibase.mjs
-      - name: Codemap generator tests (fixture trees)
-        run: node --test scripts/gen-codemap.test.mjs
-      - name: Codemap freshness (docs/CODEMAP.md must regenerate identically)
-        run: node scripts/gen-codemap.mjs --check
+          node-version: 22
+      - name: Convention + generator gates (shared with premerge.yml)
+        # Defined ONCE in .github/scripts/cheap-gates.sh so the pre-merge re-check and
+        # the PR run can never drift apart. All of these are merge-sensitive: two PRs
+        # can each be green and their merge still red (mezo-l4am, mezo-mxrc).
+        run: bash .github/scripts/cheap-gates.sh
 
   contract-drift:
     # Fails when api/openapi.yml is a stale merge of the api/feature/* fragments,
@@ -43,13 +40,15 @@ jobs:
     # build) — this closes the FE half and the fragments->merge half.
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
-      - uses: actions/setup-node@v4
+          # No `version:` — the pin lives in frontend/package.json's `packageManager`
+          # field, so CI and every local shell resolve the SAME pnpm (mezo-q8oy).
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - name: Regenerate merged OpenAPI spec from fragments
@@ -79,13 +78,15 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
-      - uses: actions/setup-node@v4
+          # No `version:` — the pin lives in frontend/package.json's `packageManager`
+          # field, so CI and every local shell resolve the SAME pnpm (mezo-q8oy).
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
@@ -114,18 +115,20 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v4
         with:
-          version: 9
-      - uses: actions/setup-node@v4
+          # No `version:` — the pin lives in frontend/package.json's `packageManager`
+          # field, so CI and every local shell resolve the SAME pnpm (mezo-q8oy).
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v7
         with:
-          node-version: 20
+          node-version: 22
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - name: Cache Playwright browsers
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: pw-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
@@ -134,9 +137,52 @@ jobs:
         run: pnpm test:visual
       - name: Upload visual diffs on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: visual-diffs
+          path: frontend/test-results/
+          retention-days: 7
+
+  test-visual-darwin:
+    # The darwin half of the two-platform golden set had NO machine gate at all: CI ran
+    # only on ubuntu-latest, so the 118 committed *-darwin.png files were guarded solely
+    # by whether a developer happened to run `pnpm test:visual` locally. They rotted
+    # silently — on feat/orb-seed-and-provider the me-rutinok darwin goldens were ~39 000
+    # pixels off main, because a branch regenerated darwin, THEN merged a main that moved
+    # the page vertically, and only the linux half was refreshed by the workflow. CI
+    # stayed green and the PR stayed mergeable (mezo-in3h, mezo-a3tr).
+    # Actions minutes are free on this public repo and this job runs in parallel with the
+    # others, so the coverage costs no wall clock.
+    runs-on: macos-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v4
+        with:
+          # No `version:` — the pin lives in frontend/package.json's `packageManager`
+          # field, so CI and every local shell resolve the SAME pnpm (mezo-q8oy).
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Cache Playwright browsers
+        uses: actions/cache@v6
+        with:
+          path: ~/Library/Caches/ms-playwright
+          key: pw-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
+      - run: pnpm exec playwright install chromium
+      - name: Visual goldens (compare vs committed darwin baselines)
+        run: pnpm test:visual
+      - name: Upload visual diffs on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-diffs-darwin
           path: frontend/test-results/
           retention-days: 7
 
@@ -149,8 +195,8 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4    # full repo so ../api contract is present
-      - uses: actions/setup-java@v4
+      - uses: actions/checkout@v7    # full repo so ../api contract is present
+      - uses: actions/setup-java@v6
         with:
           distribution: temurin
           java-version: 21

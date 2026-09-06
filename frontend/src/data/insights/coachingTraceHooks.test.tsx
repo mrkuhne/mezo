@@ -19,8 +19,11 @@ describe('mock mode', () => {
       { wrapper: makeHookWrapper() })
     const day = result.current.day
     expect(result.current.isPending).toBe(false)
-    expect(day.rules).toHaveLength(13)
-    expect(day.rules.map((r) => r.rank)).toEqual(Array.from({ length: 13 }, (_, i) => i + 1))
+    // Derived from the mock, not a literal: a round-2 rule joining the demo day must not fail
+    // this test — what it guards is that the hook serves the mock intact, with contiguous ranks.
+    const expected = mockCoachingDay('2026-09-03').rules.length
+    expect(day.rules).toHaveLength(expected)
+    expect(day.rules.map((r) => r.rank)).toEqual(Array.from({ length: expected }, (_, i) => i + 1))
     expect(day.rules.some((r) => r.outcome === 'raised' && r.disposition === 'logged')).toBe(true)
     expect(day.rules.some((r) => r.outcome === 'clear')).toBe(true)
     expect(day.rules.some((r) => r.outcome === 'unavailable')).toBe(true)

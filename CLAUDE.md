@@ -32,6 +32,7 @@ bd close <id>         # Complete work
 - One bd issue + one `feat/<topic>` branch per change. Flow: `git push` the branch → open a **self-PR** → wait for **CI green** → merge **locally with `--no-ff`** → `git push` main (the PR auto-closes when its commits land on main) → delete the branch. Single dev, but the PR exists purely as the **CI trigger + pre-merge green light**, not for review.
 - **Why the self-PR (the CI gate):** the 16 GB dev machine can't run the heavy backend integration suite locally (SpringBoot + Testcontainers OOM-dies under swap thrash). CI (`ci.yml`: full backend IT suite + FE both modes + lint + contract-drift, on a clean `ubuntu-latest`) is the **authoritative full-suite gate**; locally run only the **focused** tests for what you changed. Details + local recipes: [`docs/infrastructure/local-dev-testing.md`](docs/infrastructure/local-dev-testing.md).
 - Conventional commit subjects carrying the driving bd id: `feat(api): ... (mezo-ej0)`.
+- **Before merging, re-check the merge result against the CURRENT main:** `gh workflow run premerge.yml -f pr=<number>` (~7 min). The PR's own green tick can predate the base it will actually merge into — GitHub recomputes `refs/pull/<n>/merge` when main moves but does **not** re-run the workflow, so a green PR can land red on main and block every other open PR (mezo-mxrc, mezo-l4am). `premerge.yml` re-runs only what a merge can actually break — the convention/generator gates, contract-drift and the visual goldens — instead of the full ~21.5-minute `ci.yml`. It also fails loudly when the PR conflicts with main, the state in which GitHub silently runs **no** checks at all.
 - `git pull --rebase` on main **before** merging the feature branch — rebasing *after* the merge flattens the `--no-ff` merge commit; push directly after merging.
 
 ## Session Completion
@@ -40,12 +41,20 @@ bd close <id>         # Complete work
 
 1. File bd issues for remaining work; close/update finished ones
 2. Run quality gates if code changed (backend: `./mvnw clean test`; frontend: tests in both modes + build)
-3. Push everything (if push fails, resolve and retry until it succeeds):
+3. **Refresh the off-machine tracker backup** — `.beads/issues.jsonl` is the ONLY copy of the
+   tracker outside this machine (the Dolt DB is gitignored), and **nothing maintains it
+   automatically**: the beads pre-commit hook leaves it byte-identical. It silently drifted 429
+   records / 115 open issues behind the DB (mezo-m2au).
+   ```bash
+   node scripts/check-beads-backup.mjs --fix   # then commit the result
+   ```
+   It cannot be a CI gate — the runner has no Dolt DB — so it belongs here.
+4. Push everything (if push fails, resolve and retry until it succeeds):
    ```bash
    git pull --rebase && bd dolt push && git push
    git status  # MUST show "up to date with origin"
    ```
-4. Hand off: short context for the next session
+5. Hand off: short context for the next session
 <!-- END BEADS INTEGRATION -->
 
 ## Design direction (MANDATORY for any UI design/mockup work)

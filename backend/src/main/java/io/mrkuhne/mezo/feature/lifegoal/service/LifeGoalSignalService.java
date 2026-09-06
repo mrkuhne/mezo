@@ -76,7 +76,7 @@ public class LifeGoalSignalService {
 
     private Map<String, List<String>> fedPillarsBySignalId(UUID userId) {
         List<UUID> activeGoalIds = goalRepository.findByCreatedByAndDeletedFalseOrderByCreatedAtDesc(userId)
-            .stream().filter(g -> "active".equals(g.getStatus())).map(LifeGoalEntity::getId).toList();
+            .stream().filter(g -> LifeGoalEntity.STATUS_ACTIVE.equals(g.getStatus())).map(LifeGoalEntity::getId).toList();
         if (activeGoalIds.isEmpty()) {
             return Map.of();
         }

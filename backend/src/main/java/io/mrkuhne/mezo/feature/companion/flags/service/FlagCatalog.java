@@ -48,6 +48,11 @@ public final class FlagCatalog {
         ENTRIES.put(FlagKey.LOGGING_GAP, new Entry("Rögzítési hiány", DOMAIN_LOGGING));
         ENTRIES.put(FlagKey.IGNORED_NUDGE, new Entry("Elengedett emlékeztető", DOMAIN_SLEEP));
         ENTRIES.put(FlagKey.LATE_EATING, new Entry("Késői evés", DOMAIN_NUTRITION));
+        // Round 2 S1 (bd mezo-d58h.7.1): a Fuel protocol item (a supplement) missed on consecutive
+        // DUE days — hence the nutrition domain. Placed here, not at the file's tail, because
+        // AdvicePriority.ORDER ranks it directly after late_eating (above the setup checks and the
+        // round-0 tail); this map's insertion order is documentation of that rank, not behaviour.
+        ENTRIES.put(FlagKey.PROTOCOL_LAPSE, new Entry("Kihagyott protokoll", DOMAIN_NUTRITION));
         ENTRIES.put(FlagKey.RECOVERY_NEEDED, new Entry("Regeneráció kell", DOMAIN_RECOVERY));
         ENTRIES.put(FlagKey.SUSTAINED_STRESS, new Entry("Tartós stressz", DOMAIN_RECOVERY));
         ENTRIES.put(FlagKey.MOMENTUM_AT_RISK, new Entry("Lendület veszélyben", DOMAIN_HABITS));

@@ -15,6 +15,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/GamificationProfileResponse' }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/gamification/day/{date}:
     get:
       tags: [Gamification]
@@ -28,6 +29,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/GamificationDayResponse' }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/gamification/title/{key}/buy:
     post:
       tags: [Gamification]
@@ -41,6 +43,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/GamificationProfileResponse' }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: GAMIFICATION_TITLE_UNKNOWN, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '409': { description: GAMIFICATION_TITLE_OWNED / GAMIFICATION_COINS_INSUFFICIENT / GAMIFICATION_TITLE_NOT_SHOP, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/gamification/title/{key}/equip:
@@ -56,6 +59,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/GamificationProfileResponse' }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '404': { description: GAMIFICATION_TITLE_UNKNOWN, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '409': { description: GAMIFICATION_TITLE_LOCKED, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
   /api/gamification/saver/buy:
@@ -69,6 +73,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/GamificationProfileResponse' }
+        '401': { description: Missing/invalid token, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
         '409': { description: GAMIFICATION_COINS_INSUFFICIENT / GAMIFICATION_SAVER_LIMIT, content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } } }
 components:
   schemas:

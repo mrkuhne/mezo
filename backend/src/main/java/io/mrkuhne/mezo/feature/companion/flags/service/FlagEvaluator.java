@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.companion.flags.service.rule.LoadFuelMismatchRule
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.LoggingGapRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.MissedWorkoutsRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.MomentumAtRiskRule;
+import io.mrkuhne.mezo.feature.companion.flags.service.rule.ProtocolLapseRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.RapidWeightLossRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.RecoveryNeededRule;
 import io.mrkuhne.mezo.feature.companion.flags.service.rule.SleepDebtRule;
@@ -50,6 +51,7 @@ public class FlagEvaluator {
     private final JointOveruseRule jointOveruseRule;
     private final IgnoredNudgeRule ignoredNudgeRule;
     private final LateEatingRule lateEatingRule;
+    private final ProtocolLapseRule protocolLapseRule;
     private final SustainedStressRule sustainedStressRule;
     private final SleepDebtRule sleepDebtRule;
     private final MomentumAtRiskRule momentumAtRiskRule;
@@ -58,7 +60,7 @@ public class FlagEvaluator {
     private final MissedWorkoutsRule missedWorkoutsRule;
     private final AllHealthyRule allHealthyRule;
 
-    /** Every rule's verdict for {@code userId} right now, cooldowns NOT yet applied — 13 entries,
+    /** Every rule's verdict for {@code userId} right now, cooldowns NOT yet applied — 14 entries,
      *  one per rule, in AdvicePriority order. */
     @Transactional(readOnly = true)
     public List<FlagVerdict> evaluate(UUID userId) {
@@ -73,6 +75,7 @@ public class FlagEvaluator {
         verdicts.add(loggingGapRule.evaluate(userId, today));
         verdicts.add(ignoredNudgeRule.evaluate(userId, today));
         verdicts.add(lateEatingRule.evaluate(userId, today));
+        verdicts.add(protocolLapseRule.evaluate(userId, today));
         verdicts.add(recoveryNeededRule.evaluate(userId, today));
         verdicts.add(sustainedStressRule.evaluate(userId, today));
         verdicts.add(momentumAtRiskRule.evaluate(userId, today));

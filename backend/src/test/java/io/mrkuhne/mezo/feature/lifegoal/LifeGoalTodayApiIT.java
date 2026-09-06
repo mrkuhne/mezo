@@ -65,6 +65,7 @@ class LifeGoalTodayApiIT extends ApiIntegrationTest {
         assertThat(res.getGoals().get(0).getDays7()).hasSize(7);
         assertThat(res.getGoals().get(0).getDays7().get(6)).isEqualTo(PillarDayStatus.HIT);
         assertThat(res.getGoals().get(0).getPillarsHitToday()).isEqualTo(1);
+        assertThat(res.getGoals().get(0).getPillarsTotal()).isEqualTo(1); // one seeded active pillar
     }
 
     @Test

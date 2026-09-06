@@ -30,7 +30,7 @@ import org.springframework.http.ResponseEntity;
 
 /**
  * The coaching observer's HTTP contract (mezo-6269.2, spec 2026-09-05 §5): the day read
- * round-trips the read service's records — all 13 rules in severity order, the winner, the
+ * round-trips the read service's records — every flag rule in severity order, the winner, the
  * per-rule enums and the day's transitions — and it is token-gated.
  */
 class CompanionFlagTraceApiIT extends ApiIntegrationTest {
@@ -87,7 +87,7 @@ class CompanionFlagTraceApiIT extends ApiIntegrationTest {
     }
 
     @Test
-    void testGetFlagTrace_shouldReturnAllThirteenRulesInSeverityOrder_whenTheDayIsRequested() {
+    void testGetFlagTrace_shouldReturnEveryRuleInSeverityOrder_whenTheDayIsRequested() {
         UUID owner = ownerId();
         trace(owner, FlagKey.SLEEP_DEBT, "clear", null, null,
                 new FlagVerdict.ClearEvidence("deficit_hours", 0.4, 1.0, null), at(9));
@@ -95,9 +95,13 @@ class CompanionFlagTraceApiIT extends ApiIntegrationTest {
         FlagTraceDayResponse day = read("/api/companion/flags/trace?date=" + DAY);
 
         assertThat(day.getDate()).isEqualTo(DAY);
-        assertThat(day.getRules()).hasSize(13);
+        // Derived, not a literal — a round-2 rule must not fail the HTTP contract test;
+        // FlagCatalogTest is what guards the catalog being complete.
+        int ruleCount = FlagCatalog.KEYS.size();
+        assertThat(day.getRules()).hasSize(ruleCount);
         assertThat(day.getRules()).extracting(FlagTraceRuleResponse::getRank)
-                .containsExactlyElementsOf(java.util.stream.IntStream.rangeClosed(1, 13).boxed().toList());
+                .containsExactlyElementsOf(
+                        java.util.stream.IntStream.rangeClosed(1, ruleCount).boxed().toList());
         assertThat(day.getRules().get(0).getFlagKey()).isEqualTo(FlagKey.ACUTE_BAD_DAY);
         assertThat(day.getRules().get(0).getLabel())
                 .isEqualTo(FlagCatalog.labelOf(FlagKey.ACUTE_BAD_DAY));
@@ -166,7 +170,7 @@ class CompanionFlagTraceApiIT extends ApiIntegrationTest {
         FlagTraceDayResponse day = read("/api/companion/flags/trace");
 
         assertThat(day.getDate()).isEqualTo(LocalDate.now());
-        assertThat(day.getRules()).hasSize(13);
+        assertThat(day.getRules()).hasSize(FlagCatalog.KEYS.size());
         assertThat(day.getTransitions()).isEmpty();
         assertThat(day.getWinner()).isNull();
         assertThat(day.getEarliestDate()).isNull();

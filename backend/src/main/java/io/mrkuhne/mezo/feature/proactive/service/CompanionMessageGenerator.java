@@ -38,6 +38,7 @@ import java.math.BigDecimal;
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
@@ -82,7 +83,9 @@ public class CompanionMessageGenerator {
             + "külön üzenet szól majd, amint {{NÉV}} rögzítette őket; (2) fókusz: a mai terv "
             + "(edzés, kalóriakeret, gyógyszer) és a hét trendje; (3) zárd 2-3 konkrét, apró "
             + "fókuszponttal; (4) számot vagy adatot kitalálni tilos; (5) gyógyszer adagolására "
-            + "vonatkozó változtatást SOHA ne javasolj — az orvosi döntés. "
+            + "vonatkozó változtatást SOHA ne javasolj — az orvosi döntés; (6) a [Célok] blokk "
+            + "életcéljaira támogatóan utalhatsz, de a ha–akkor tervek emlékeztetőit külön "
+            + "értesítés viszi — azok szövegét NE ismételd. "
             + "Válaszolj KIZÁRÓLAG szigorú JSON-nal, markdown nélkül, pontosan ebben a formában: "
             + "{\"eyebrow\": \"egysoros fejléc\", \"body\": [\"bekezdés\", ...], "
             + "\"refIndexes\": [a felhasznált HIVATKOZÁS-JELÖLTEK sorszámai]}";
@@ -156,6 +159,8 @@ public class CompanionMessageGenerator {
             + "igazolja. Ha nincs igazolva, a nap hátralévő feladataként beszélj róla. "
             + "- Ha a pillanatkép egy adatpontot nem ad meg pontosan (pl. mai edzésterv, "
             + "makró-maradék, alvási fázisok), hívd meg a megfelelő eszközt, mielőtt írsz. "
+            + "- Ha van HIDRATÁCIÓ blokk, legfeljebb EGY tárgyilagos mondatot szánj rá a blokk "
+            + "számaival; se szemrehányás, se felszólítás, és más blokk számait ne keverd bele. "
             + "- Ha van MAI KORÁBBI ÜZENETEK blokk, annak tartalmát NE ismételd. "
             + "- Gyógyszer adagolására vonatkozó változtatást SOHA ne javasolj — az orvosi döntés. "
             + "- Sima folyószöveg, markdown és felsorolás nélkül.";
@@ -196,6 +201,7 @@ public class CompanionMessageGenerator {
     private final PersonAffectTrendCalculator affectTrendCalculator;
     private final PromptPersona promptPersona;
     private final CompanionFlagLogRepository companionFlagLogRepository;
+    private final HydrationShortfallProbe hydrationShortfallProbe;
 
     /**
      * Generates (or returns the existing) morning message for one day. Returns null when there
@@ -418,6 +424,7 @@ public class CompanionMessageGenerator {
                 + knowledgeFactService.renderPromptBlock(userId)
                 + "\n\nUTOLSÓ NAPI ÖSSZEFOGLALÓ:\n- " + latest.getSummaryDate() + ": " + latest.getNarrative()
                 + earlierMessagesBlock(userId, date)
+                + hydrationBlock(userId, date, LocalTime.now())
                 + "\n\nABLAK: " + window;
 
         ToolCallAudit audit = toolRegistry.newTurnAudit();
@@ -440,6 +447,75 @@ public class CompanionMessageGenerator {
         message.setMessageDate(date);
         message.setKind(kind);
         message.setContent(new CompanionMessageEnvelope(eyebrow, List.of(answer.strip()), refs));
+        message.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
+        return companionMessageRepository.saveAndFlush(message);
+    }
+
+    /**
+     * Round 2 S2 (bd mezo-d58h.7.2, spec §12): the training-day hydration shortfall as a FACT
+     * block for the midday/evening window prompt — so the note can mention water while it can
+     * still be drunk. Deterministic numbers from {@link HydrationShortfallProbe}; "" when there is
+     * no shortfall, which is the normal case. The clock is a parameter for the reason the probe
+     * documents. Package-private: the IT asserts it directly rather than reading prompt text back
+     * out of a scripted answer (the {@link #missedWorkoutsBlock} precedent).
+     */
+    String hydrationBlock(UUID userId, LocalDate date, LocalTime now) {
+        return hydrationShortfallProbe.evaluate(userId, date, now)
+                .map(s -> "\n\nHIDRATÁCIÓ (edzésnap, tény — ne szidj, csak tedd láthatóvá):\n"
+                        + "- ma eddig naplózva: " + s.loggedMl() + " ml (napi cél: "
+                        + s.dailyTargetMl() + " ml)\n"
+                        + "- a nap eddig eltelt részére arányosan kb. " + s.proRatedTargetMl()
+                        + " ml jönne ki\n"
+                        + "- ha szóba hozod, EGY tárgyilagos mondat legyen, szemrehányás és "
+                        + "felszólítás nélkül\n")
+                .orElse("");
+    }
+
+    /**
+     * Round 2 S2 (bd mezo-d58h.7.2, spec §12): the ~15:00 training-day hydration checkpoint —
+     * round 2's ONE intraday signal, because water cannot be caught up at 22:00. Emits a row ONLY
+     * when {@link HydrationShortfallProbe} reports a shortfall; no shortfall ⇒ null ⇒ no row, which
+     * is the normal case, not a failure.
+     *
+     * <p><b>Deliberately LLM-free</b> (the {@code intervention}/{@code setup} config-text
+     * precedent): the message is three numbers and one sentence, it must never drift in tone, and
+     * a per-hour-shaped job is the wrong place to spend a model call. The template lives in
+     * {@code mezo.proactive.hydration.checkpoint-template}.
+     *
+     * <p>Idempotent: an existing row for the day is returned untouched — the (created_by,
+     * message_date, kind) partial unique index means at most one checkpoint per user per day.
+     */
+    @Transactional
+    public CompanionMessageEntity generateHydrationCheckpoint(UUID userId, LocalDate date) {
+        return generateHydrationCheckpoint(userId, date, LocalTime.now());
+    }
+
+    /** Clock-explicit variant — the tested one (see {@link HydrationShortfallProbe}'s javadoc). */
+    @Transactional
+    CompanionMessageEntity generateHydrationCheckpoint(UUID userId, LocalDate date, LocalTime now) {
+        CompanionMessageEntity existing = companionMessageRepository
+                .findByCreatedByAndMessageDateAndKind(userId, date, CompanionMessageEntity.KIND_HYDRATION)
+                .orElse(null);
+        if (existing != null) {
+            return existing;
+        }
+        HydrationShortfallProbe.Shortfall shortfall =
+                hydrationShortfallProbe.evaluate(userId, date, now).orElse(null);
+        if (shortfall == null) {
+            log.debug("No hydration shortfall for {} on {} at {} — no checkpoint message",
+                    userId, date, now);
+            return null;
+        }
+        ProactiveProperties.Hydration cfg = properties.hydration();
+        String body = cfg.checkpointTemplate()
+                .replace("{logged}", String.valueOf(shortfall.loggedMl()))
+                .replace("{prorated}", String.valueOf(shortfall.proRatedTargetMl()))
+                .replace("{target}", String.valueOf(shortfall.dailyTargetMl()));
+        CompanionMessageEntity message = new CompanionMessageEntity();
+        message.setCreatedBy(userId);
+        message.setMessageDate(date);
+        message.setKind(CompanionMessageEntity.KIND_HYDRATION);
+        message.setContent(new CompanionMessageEnvelope(cfg.checkpointEyebrow(), List.of(body), List.of()));
         message.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         return companionMessageRepository.saveAndFlush(message);
     }

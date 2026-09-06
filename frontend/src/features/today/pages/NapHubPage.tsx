@@ -40,6 +40,7 @@ import { minsToBed } from '@/features/today/logic/windDown'
 import { habitAction } from '@/features/today/logic/habitAction'
 import { celebrationFor } from '@/features/today/logic/habitCelebration'
 import { daypartMilestone } from '@/features/today/logic/chainMilestone'
+import { nextInChain } from '@/features/today/logic/chainPrompt'
 import { habitClayIcon, DAYPART_CLAY } from '@/features/today/logic/habitClayIcon'
 import { IntentionSheet } from '@/features/today/sheets/IntentionSheet'
 import { LifeGoalTodayTile } from '@/features/today/components/LifeGoalTodayTile'
@@ -94,6 +95,9 @@ export function NapHubPage() {
   // ── the one sheet the hub still owns (Kreed) ─────────────────────────
   const [focusOpen, setFocusOpen] = useState(false)
   const [anchorsDone, setAnchorsDone] = useState<Set<number>>(() => new Set())
+  // mezo-3zue.6: a hubon nincs lista, amit ki lehetne emelni — a csempe „következő" választása
+  // lesz lánc-tudatos. Ugyanaz a pipa-következmény, mint a rutin-oldalon, oldal-lokálisan.
+  const [promptKey, setPromptKey] = useState<string | null>(null)
 
   // ── derived tile facts ──────────────────────────────────────────────
   const questXp = quests.reduce((s, q) => s + q.xp, 0)
@@ -164,17 +168,22 @@ export function NapHubPage() {
     // a napszak mérföldköve a pipa ELŐTTI állapotból dől el (mezo-sqe3) — ugyanaz a szabály,
     // mint a rutin-oldalon, hogy a csempéről és a listáról pipálva ugyanaz a pillanat járjon
     const chainLabel = daypartMilestone(habitCatalog, habits, h.chain)
+    // ugyanabból a pipa előtti állapotból (mezo-3zue.6)
+    const chained = nextInChain(habitCatalog, habits, h.key)
     return () => {
       check(h.key)
-        .then((lu) => emitToast(buildHabitRewardToast({
-          title: h.title,
-          chainDone: chainSteps.filter((x) => x.status === 'done').length,
-          chainTotal: chainSteps.length,
-          xp: h.xp,
-          levelUp: lu?.[0],
-          celebration,
-          chainLabel,
-        })))
+        .then((lu) => {
+          emitToast(buildHabitRewardToast({
+            title: h.title,
+            chainDone: chainSteps.filter((x) => x.status === 'done').length,
+            chainTotal: chainSteps.length,
+            xp: h.xp,
+            levelUp: lu?.[0],
+            celebration,
+            chainLabel,
+          }))
+          setPromptKey(chained?.key ?? null)
+        })
         .catch(() => {})
     }
   }
@@ -183,7 +192,10 @@ export function NapHubPage() {
     const items = habitsFor(f)
     if (items.length === 0) return null
     const done = items.filter((h) => h.status === 'done').length
-    const next = items.find((h) => h.status === 'pending') ?? null
+    // A lánc előzi a sorrendet: ha az imént pipált horgonyra kötött sor itt van és még
+    // nyitott, a csempe AZT mutatja — így a stacking a hubról pipálva is kifizetődik.
+    const chained = promptKey ? items.find((h) => h.key === promptKey && h.status === 'pending') : undefined
+    const next = chained ?? items.find((h) => h.status === 'pending') ?? null
     const chainOf = (h: HabitItem) => habitCatalog.chains.find((c) => c.chainKey === h.chain)
     const chain = next ? chainOf(next) : undefined
     const icon = next
@@ -201,7 +213,9 @@ export function NapHubPage() {
         style={{ '--d': `${delay}ms` } as React.CSSProperties}
         onClick={open}
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open() } }}>
-        <span className={cn('mz-eyebrow', f === 'este' ? 'nap-lav' : 'nap-gold')}>Rutin</span>
+        <span className={cn('mz-eyebrow', f === 'este' ? 'nap-lav' : 'nap-gold')}>
+          {chained ? 'Most jön' : 'Rutin'}
+        </span>
         <div className="mz-spotwrap"><ClayIcon name={icon} size={47} /></div>
         <div className="nap-habname">{name}</div>
         <div className="nap-habfoot">

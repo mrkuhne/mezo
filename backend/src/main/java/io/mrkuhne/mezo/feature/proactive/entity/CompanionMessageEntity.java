@@ -54,6 +54,12 @@ public class CompanionMessageEntity extends OwnedEntity {
      *  paragraph of LLM prose over those facts, or the template fallback. */
     public static final String KIND_ADVICE = "advice";
 
+    /** Round 2 S2 (bd mezo-d58h.7.2, spec §12): the ~15:00 training-day hydration checkpoint.
+     *  DETERMINISTIC config text (the {@code intervention}/{@code setup} precedent), never LLM
+     *  prose, and written ONLY when the pro-rated shortfall holds — so a missing row is the
+     *  normal, honest case, not a failure. */
+    public static final String KIND_HYDRATION = "hydration";
+
     @Id
     @GeneratedValue
     @Column(columnDefinition = "uuid")

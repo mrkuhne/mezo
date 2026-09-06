@@ -73,6 +73,36 @@ public class CompanionMessageJob {
         runWindow(CompanionMessageEntity.KIND_EVENING);
     }
 
+    /**
+     * Round 2 S2 (bd mezo-d58h.7.2, spec §12): the ~15:00 training-day hydration checkpoint.
+     *
+     * <p>The spec sketched this as a branch of the hourly flag sweep, but {@code FlagSweepJob}
+     * lives in {@code feature.companion} and the generator in {@code feature.proactive}, where
+     * {@code proactive -> companion} already exists in bulk — the call would close a NEW feature
+     * slice cycle that {@code ArchitectureTest.feature_slices_are_cycle_free} rejects. A 4th cron
+     * on THIS job satisfies the spec's real constraints (no new job class, nothing added to the
+     * dawn cluster) without a port inversion whose only purpose would be dodging a cron line.
+     *
+     * <p>Emits nothing on a day without a shortfall — this is not a fixed daily prompt, and unlike
+     * the window kinds it is deliberately NOT part of the feed GET's lazy miss-recovery: a
+     * checkpoint recovered at 22:00 would nag about a day that is already over.
+     */
+    @Scheduled(cron = "${mezo.proactive.hydration.checkpoint-cron}")
+    public void runHydrationCheckpoint() {
+        LocalDate today = LocalDate.now();
+        AtomicInteger generated = new AtomicInteger();
+        userFanOut.forEachActiveUser("Companion-feed hydration checkpoint", user -> {
+            try {
+                if (companionMessageGenerator.generateHydrationCheckpoint(user.getId(), today) != null) {
+                    generated.incrementAndGet();
+                }
+            } catch (Exception e) {
+                log.warn("Hydration-checkpoint generation failed for user {} on {}", user.getId(), today, e);
+            }
+        });
+        log.info("Hydration checkpoint run for {}: {} message(s) present", today, generated.get());
+    }
+
     private void runWindow(String kind) {
         LocalDate today = LocalDate.now();
         AtomicInteger generated = new AtomicInteger();

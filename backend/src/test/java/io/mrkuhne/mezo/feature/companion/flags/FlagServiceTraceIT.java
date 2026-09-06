@@ -36,11 +36,11 @@ class FlagServiceTraceIT extends AbstractIntegrationTest {
 
         flagService.evaluateAndLog(user, "sweep");
 
-        // 13 rules, all traced — the point of the feature is that the quiet ones leave a mark.
+        // 14 rules, all traced — the point of the feature is that the quiet ones leave a mark.
         assertThat(traceRepository.findAll().stream()
             .filter(r -> r.getCreatedBy().equals(user))
             .map(CompanionFlagTraceEntity::getFlagKey))
-            .hasSize(13).doesNotHaveDuplicates();
+            .hasSize(14).doesNotHaveDuplicates();
     }
 
     @Test

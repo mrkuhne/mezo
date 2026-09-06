@@ -27,6 +27,40 @@ a real Postgres (a Testcontainers container, or the docker-compose DB). This is 
 
 The **frontend** vitest suite has none of this (no Docker, light JVM-less runtime) — it stays green.
 
+## pnpm is pinned by `packageManager`, not by a CI input (mezo-q8oy)
+
+`frontend/package.json` carries `"packageManager": "pnpm@11.25.0"`, and `pnpm/action-setup`
+reads it (`package_json_file: frontend/package.json`, no `version:` input). One pin, so CI and
+every local shell resolve the same pnpm instead of two numbers that must be kept equal by hand.
+
+Two pnpm-10/11 behaviours are load-bearing here:
+
+- **Settings moved out of `package.json`.** The `pnpm` field is ignored (with a warning); the
+  settings root is `frontend/pnpm-workspace.yaml`. Its `packages: ['.']` marks frontend/ as that
+  root — it is *not* declaring a monorepo.
+- **Dependency build scripts are blocked by default, and pnpm 11 makes an ignored build an
+  error** (`ERR_PNPM_IGNORED_BUILDS`). `allowBuilds: {msw: true, sharp: true}` is therefore
+  required for `pnpm install` to succeed at all. (pnpm 11 renamed pnpm 10's
+  `onlyBuiltDependencies` to `allowBuilds` — it rewrites the file for you if you use the old
+  name.) Under an older pnpm the same gap would install "successfully" with no msw service
+  worker and no sharp binary.
+
+**pnpm 11 needs Node ≥ 22.13**, and the workflows pinned `node-version: 20` — so the first CI
+run failed inside `actions/setup-node`'s own pnpm cache probe:
+
+```
+Error [ERR_UNKNOWN_BUILTIN_MODULE]: No such built-in module: node:sqlite
+##[error]warn: This version of pnpm requires at least Node.js v22.13
+```
+
+That exposed a second, older divergence: the dev machine has been on **Node 22** while CI ran
+**Node 20**, and nothing declared or checked it. Both are now **22**, and
+`frontend/package.json` carries `"engines": { "node": ">=22.13" }` so the requirement is stated
+in the repo rather than discovered from a CI stack trace.
+
+The upgrade left `pnpm-lock.yaml` **byte-identical** (still `lockfileVersion: '9.0'`, same
+resolutions), so it does not churn every open branch.
+
 ## The gate model
 
 - **Full backend suite → CI.** `ci.yml`'s `test-backend` job runs `./mvnw -B clean test
@@ -64,13 +98,105 @@ Consequences, each of which has already burned us:
   renders a page gated on a pending read (e.g. Today's `sleepGoalPending` skeleton) must use
   `findBy*`, not `getBy*` — a `getBy*` there passes in mock mode and fails in real mode.
 
+## The pre-merge re-check (`premerge.yml`) — why a green PR can still redden main
+
+`ci.yml` **does** test the merge result, not the PR head. Measured on a real run:
+
+```
+[command] git checkout --progress --force refs/remotes/pull/475/merge
+HEAD is now at 348e818 Merge af0c2a5e8… into 1975c50af…
+```
+
+(so mezo-mxrc's premise — "the visual gate measures the PR head" — is false, and its
+proposed fix (a) would have been a no-op.)
+
+The real gap is **time**. GitHub recomputes `refs/pull/<n>/merge` when the base moves, but it
+does **not** re-run the workflow. A green tick can therefore describe a merge into a `main` that
+no longer exists. Two incidents came from exactly that:
+
+- the mezo-atry `AppHeader` wave merged green and broke main's visual goldens; main stayed red
+  and PR #279 inherited a byte-identical 32-screenshot failure (mezo-mxrc);
+- PR #393 merged green and left `docs/CODEMAP.md` stale on main for three commits, because two
+  branches had each regenerated it correctly against their own base (mezo-l4am).
+
+Closing this by construction (branch protection's *"Require branches to be up to date"*, or a
+merge queue) costs a **full CI cycle immediately before every merge**. Measured cost of one
+`ci.yml` run:
+
+| job | duration |
+|---|---|
+| `test-backend` | 21m30s |
+| `test-frontend` | 14m31s |
+| `test-visual` | 4m58s |
+| `contract-drift` | 24s |
+| `lint` | 21s |
+| **wall clock** | **~21m30s** (≈42 runner-minutes) |
+
+At this repo's merge cadence that is hours of added wall clock a day, and it serialises merges —
+for a class of failure the two expensive suites are the *least* likely to cause.
+
+So the chosen trade-off is `premerge.yml`: run **only the merge-sensitive gates** against the
+merge ref as it is right now, on demand, in **~7 minutes**.
+
+```bash
+gh workflow run premerge.yml -f pr=<number>    # then merge once it is green
+```
+
+It runs `.github/scripts/cheap-gates.sh` (the same script `ci.yml`'s `lint` job runs, so the two
+cannot drift), contract-drift, and the visual goldens. It also refuses to proceed when
+
+- the PR **conflicts** with main — the state in which GitHub builds no merge ref and therefore
+  runs **no** `pull_request` checks at all, so `gh pr checks` reports none, which reads as
+  "nothing failed"; or
+- GitHub has not yet recomputed the merge ref against the current `main` — a result against an
+  older main is the very thing this workflow exists to avoid.
+
+This is a *narrowing*, not a proof: main can still move between the green premerge run and the
+merge. It shrinks the window from "whenever CI last happened to run" to "the last few minutes".
+
 ## Visual regression gate (two-platform Playwright goldens)
 
 The frontend has a **self-baselined visual harness** at `frontend/tests/visual/` (`visual.spec.ts` +
 `playwright.config.ts`) — **14 key screens × 2 themes = 28 `toHaveScreenshot` goldens**. It boots the
-app in **mock mode** on a dedicated port (4318, no backend needed) so the seeds are static, and
+app in **mock mode** on a **per-worktree port** (no backend needed) so the seeds are static, and
 pixel-compares each screen against a committed golden. This is a fast, JVM-less gate (unlike the
 backend suite above) — it runs fine locally.
+
+> **The port is derived from the worktree path** (`43000 + sha1(worktree) % 1000`; override with
+> `VISUAL_PORT`), and `reuseExistingServer` is **off**. It used to be a hardcoded `4318` with reuse
+> **on**, which meant a vite dev server left running by *another* worktree or agent session was
+> adopted in silence — Playwright then screenshotted the other tree's UI with no warning. Measured
+> with a foreign server on the port: **93% of pixels differed**, and in the `--update-snapshots`
+> direction that foreign UI would have been written straight into the goldens. It bit twice in the
+> mezo-iizd.9 round (mezo-sdbm). With the fix, an occupied port now fails loudly:
+> `Error: http://localhost:43338 is already used…`. Starting our own server costs ~2s.
+
+**Both platforms are CI-gated (mezo-in3h).** `ci.yml` runs `test-visual` on `ubuntu-latest`
+*and* `test-visual-darwin` on `macos-latest`; `update-visual-baselines.yml` regenerates both
+sets (`platforms: both | linux | darwin`). Actions minutes are free on this public repo and the
+jobs run in parallel, so the second platform costs no wall clock.
+
+Before this, the darwin half had **no machine gate at all** — 118 committed `*-darwin.png` files
+guarded only by whether a developer happened to run `pnpm test:visual`. They rotted silently: on
+`feat/orb-seed-and-provider` the me-rutinok darwin goldens were ~39 000 pixels off main, because a
+branch regenerated darwin, *then* merged a main that shifted the page vertically, and only the
+linux half was refreshed by the workflow.
+
+**Two things the first macOS run exposed, both of which had been invisible:**
+
+1. **The frozen clock was not frozen.** `new Date('2026-05-21T13:42:00')` has no offset, so it is
+   parsed in the *machine's* local timezone; `timezoneId: 'Europe/Budapest'` then rendered that
+   instant as 15:42 in CI. The two golden sets encoded **different application states** —
+   `today-este` showed `VILLANYOLTÁSIG 2:10` on darwin and `0:10` plus an extra ÉJSZAKAI MÓD tile
+   on linux (23:05), 65 000 pixels of pure content. The authoritative linux gate was guarding a
+   moment the spec says it is not guarding. Fixed by pinning `+02:00`; the linux set was
+   regenerated, the darwin set was already right.
+2. **Native date/time inputs are rendered by the OS, in the OS's language** — `02:00 P` /
+   `mm/dd/yyyy` on the en-US runner, `14:00` / `yyyy. mm. dd.` on a Hungarian Mac. On macOS,
+   Chromium ignores both Playwright's `locale` and `--lang` for these controls (measured), so any
+   golden containing one is machine-dependent by construction. They are now masked
+   (`OS_RENDERED_CONTROLS` in `visual.spec.ts`): their pixels are OS chrome we neither design nor
+   can regress, and everything around them stays under the gate.
 
 **Two-platform golden model.** Playwright names goldens per-platform, and darwin vs linux font
 rendering differs by a few sub-pixels, so the harness commits **both** sets under

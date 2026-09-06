@@ -30,7 +30,12 @@ class FlagCatalogTest {
     @Test
     void every_live_flag_key_has_a_label_and_a_domain() throws IllegalAccessException {
         List<String> keys = liveFlagKeys();
-        assertThat(keys).hasSize(13);
+        // No literal count: the round-2 arrival of protocol_lapse showed a hardcoded 13 only
+        // reports the SAME failure this pair of assertions already reports, one round later. The
+        // agreement assertion is the real anchor — a reflection helper that silently stopped
+        // finding keys would make it fail against a non-empty FlagCatalog.KEYS, and isNotEmpty
+        // covers the degenerate case where both sides went empty at once.
+        assertThat(keys).isNotEmpty();
         assertThat(FlagCatalog.KEYS).containsExactlyInAnyOrderElementsOf(keys);
         for (String key : keys) {
             assertThat(FlagCatalog.labelOf(key)).as(key).isNotBlank().isNotEqualTo(key);
