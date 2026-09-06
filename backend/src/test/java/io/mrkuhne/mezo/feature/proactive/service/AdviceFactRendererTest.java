@@ -204,6 +204,41 @@ class AdviceFactRendererTest {
     /** One minimally-populated {@link FlagPayloadEnvelope} per live {@link FlagKey}, matched to
      *  the shape {@code AdviceFactRenderer.render} expects for that key. An unrecognised key fails
      *  the test explicitly instead of silently reusing another key's fixture. */
+    /** Round 2 S4 (mezo-d58h.7.4): the drift facts name the slot, both times and the direction —
+     *  the copy is a neutral observation, so the numbers must carry the whole claim. */
+    @Test
+    void testRender_shouldRenderMealRhythmDriftFacts() {
+        List<String> facts = AdviceFactRenderer.render(FlagKey.MEAL_RHYTHM_DRIFT,
+            FlagPayloadEnvelope.mealRhythmDrift(new FlagPayloadEnvelope.MealRhythmDrift(
+                "slot_drift", "dinner", "Vacsora", 14, 13, 10, 13, 12,
+                "19:00", "21:00", 120, 90, 0.92, null, null, null, null)));
+
+        assertThat(facts).anySatisfy(f -> assertThat(f).contains("Vacsora"));
+        assertThat(facts).anySatisfy(f -> assertThat(f).contains("19:00").contains("21:00"));
+        assertThat(facts).anySatisfy(f -> assertThat(f).contains("120"));
+    }
+
+    /** The dead-slot arm renders the two presence ratios instead of the two clock times. */
+    @Test
+    void testRender_shouldRenderMealRhythmDeadSlotFacts() {
+        List<String> facts = AdviceFactRenderer.render(FlagKey.MEAL_RHYTHM_DRIFT,
+            FlagPayloadEnvelope.mealRhythmDrift(new FlagPayloadEnvelope.MealRhythmDrift(
+                "dead_slot", "dinner", "Vacsora", 14, 13, 10, 13, 1,
+                "19:00", null, null, null, null, 0.077, 0.30, 0.95, 0.70)));
+
+        assertThat(facts).anySatisfy(f -> assertThat(f).contains("Vacsora"));
+        assertThat(facts).anySatisfy(f -> assertThat(f).contains("8%"));
+        assertThat(facts).anySatisfy(f -> assertThat(f).contains("95%"));
+    }
+
+    /** Null payload never throws — the renderer is the last thing standing between a malformed
+     *  log row and the delivery listener's catch. */
+    @Test
+    void testRender_shouldReturnNoFacts_whenTheMealRhythmPayloadIsEmpty() {
+        assertThat(AdviceFactRenderer.render(FlagKey.MEAL_RHYTHM_DRIFT,
+            FlagPayloadEnvelope.mealRhythmDrift(null))).isEmpty();
+    }
+
     private static FlagPayloadEnvelope fixtureFor(String flagKey) {
         return switch (flagKey) {
             case FlagKey.SLEEP_DEBT -> FlagPayloadEnvelope.sleepDebt(
@@ -248,6 +283,10 @@ class AdviceFactRendererTest {
                 new FlagPayloadEnvelope.ProtocolLapse("11111111-1111-1111-1111-111111111111",
                     "Magnézium", "evening", 2, 2,
                     List.of("2026-09-03", "2026-09-04"), "2026-09-02", 14, 12, 0.857, 0.60));
+            case FlagKey.MEAL_RHYTHM_DRIFT -> FlagPayloadEnvelope.mealRhythmDrift(
+                new FlagPayloadEnvelope.MealRhythmDrift("slot_drift", "dinner", "Vacsora",
+                    14, 13, 10, 13, 12, "19:00", "21:00", 120, 90, 0.92,
+                    null, null, null, null));
             default -> throw new AssertionError(
                 "no AdviceFactRendererTest fixture for live flag key '" + flagKey + "' — "
                     + "add both a fixture here and a render() branch in AdviceFactRenderer");

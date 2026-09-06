@@ -27,6 +27,9 @@ public final class AdviceFactRenderer {
 
     private static final Locale HU = Locale.of("hu");
 
+    /** {@code MealRhythmDriftRule}'s frozen sub-type discriminator — the presence arm. */
+    private static final String MEAL_RHYTHM_DEAD_SLOT = "dead_slot";
+
     private AdviceFactRenderer() {
     }
 
@@ -49,6 +52,7 @@ public final class AdviceFactRenderer {
             case FlagKey.IGNORED_NUDGE -> ignoredNudge(payload.ignoredNudge());
             case FlagKey.LATE_EATING -> lateEating(payload.lateEating());
             case FlagKey.PROTOCOL_LAPSE -> protocolLapse(payload.protocolLapse());
+            case FlagKey.MEAL_RHYTHM_DRIFT -> mealRhythmDrift(payload.mealRhythmDrift());
             default -> List.of();
         };
     }
@@ -254,6 +258,42 @@ public final class AdviceFactRenderer {
                 String.format(HU, "%.0f", p.historyAdherence() * 100),
                 String.format(HU, "%.0f", p.minHistoryAdherence() * 100)));
         return facts;
+    }
+
+    /** Round 2 S4 (mezo-d58h.7.4): a NEUTRAL observation — the facts state what the plan says,
+     *  what actually happened and over how many days, and never use an adherence verb. The two
+     *  sub-types render different halves of the payload (see the envelope record's javadoc). */
+    private static List<String> mealRhythmDrift(FlagPayloadEnvelope.MealRhythmDrift p) {
+        if (p == null) {
+            return List.of();
+        }
+        List<String> facts = new ArrayList<>();
+        facts.add("Étkezési slot: %s (%s)".formatted(
+            Objects.requireNonNullElse(p.slotLabel(), p.slotKind()), p.slotKind()));
+        if (MEAL_RHYTHM_DEAD_SLOT.equals(p.subType())) {
+            facts.add("A %d napból, amikorra be volt tervezve, %d napon volt rögzítve étkezés (%s%%)"
+                .formatted(p.plannedDays(), p.observedDays(), pct(p.presenceRatio())));
+            facts.add("A többi slot ugyanebben az ablakban átlagosan %s%%-on áll (küszöb: %s%%)"
+                .formatted(pct(p.otherSlotsPresenceRatio()), pct(p.otherSlotsMinPresence())));
+        } else {
+            facts.add("Terv szerint %s, a valóságban jellemzően %s (%d perc %s)".formatted(
+                p.plannedTime(), p.observedMedianTime(),
+                Math.abs(p.medianDeviationMinutes() == null ? 0 : p.medianDeviationMinutes()),
+                p.medianDeviationMinutes() != null && p.medianDeviationMinutes() < 0
+                    ? "korábban" : "később"));
+            facts.add("%d megfigyelt napból ennyi mozdult ugyanabba az irányba: %s%% (küszöb: %d perc)"
+                .formatted(p.observedDays(), pct(p.sameDirectionShare()),
+                    p.driftMinutes() == null ? 0 : p.driftMinutes()));
+        }
+        facts.add("Ablak: %d nap, ebből %d napon volt rögzített étkezés (minimum %d)"
+            .formatted(p.windowDays(), p.daysWithMeals(), p.minDaysWithMeals()));
+        return List.copyOf(facts);
+    }
+
+    /** A 0.0-1.0 arány egész százalékként — null-biztos, mert a fél-kitöltött payload a
+     *  sub-type szerinti normális állapot, nem hiba. */
+    private static String pct(Double ratio) {
+        return ratio == null ? "-" : String.format(HU, "%.0f", ratio * 100);
     }
 
     /** {@code LateEatingRule}'s frozen arm token, in the Hungarian noun the per-day fact uses. */
