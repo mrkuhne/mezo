@@ -1492,9 +1492,13 @@ Every non-2xx returns `SystemMessageList`. The paths are protected (401 without 
 | `POST /api/proactive/challenge/{id}/decision` | `ChallengeResponse` | 200 · 400 · 401 · 404 · 409 | HBWI. **L2 accept/dismiss** (`{decision: accept\|dismiss}`, `@Pattern ^(accept\|dismiss)$`). `accept` ⇒ `accepted`; `dismiss` ⇒ `dismissed`. 404 `PROACTIVE_CHALLENGE_NOT_FOUND` = not-found/foreign; **409 `PROACTIVE_CHALLENGE_NOT_PROPOSED`** = already decided; 400 = invalid decision value. **No `propose` endpoint** (generation is implicit on the prep-read). |
 
 Schemas: `FeedMessageResponse{id, date, kind, eyebrow, body[], refs[], generatedAt, facts?,
-suggestions?, actions?, applied?}`
+suggestions?, actions?, applied?, flagKey?}`
 (replaces `BriefingResponse` + `HeartbeatNoteResponse`) + `FeedRef{kind, label}` — **no `confidence`,
-no `tone`** on the wire (§9 gotcha c, unchanged). `kind` is the **9-value** companion-feed enum
+no `tone`** on the wire (§9 gotcha c, unchanged). `flagKey` (companion coaching observer, bd
+`mezo-6269.2`) names the card's own severity key, mapped straight from `content.adviceKey` —
+present only on `advice` rows, a `FlagKey` for a flag-sourced card or a setup-check key for a
+setup-sourced one. It is what lets `companion.md`'s coaching observer correlate the day's card
+against its own trace rows to decide which rule won. `kind` is the **9-value** companion-feed enum
 (`morning|sleep|weight|midday|evening|intervention|people|setup|advice` — the sixth, `intervention`,
 W5.2 bd `mezo-b3pp.19`, added 2026-08-25; the seventh, `people`, Emberek S6 bd `mezo-06o0.8`, added
 2026-09-01; the eighth, `setup`, S3 bd `mezo-d58h.3`, added 2026-09-03; the ninth, `advice`, S4 bd
