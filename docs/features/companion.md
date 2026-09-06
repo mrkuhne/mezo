@@ -2437,8 +2437,13 @@ build was chosen after living with W3.1's always-on recall.
   precedent).
 - **`GraphService`** (`feature/companion/graph/service/`, W2.1) — `upsertNode`/`upsertEdge` are the
   ONLY write paths later slices use (never a direct `repository.save`); both UPSERT by their unique
-  index so re-promoting the same source row never duplicates. `archive(userId, nodeId)` flips
-  `status` only.
+  index so re-promoting the same source row never duplicates. **`archive(userId, nodeId)`
+  (`mezo-06o0.5`)** flips `status` to `archived` AND stamps `userArchivedAt` — the durable
+  user-intent marker (see W2.2 § below) that keeps the promotion sync from silently raising the
+  node back to `active`. **`restore(userId, nodeId)`** clears the marker and re-derives `status`
+  from the node's source via `GraphPromotionService.resyncNode`, exposed at
+  `POST /api/companion/graph/node/{id}/restore`; `listUserArchived` backs
+  `GET /api/companion/graph/node/archived`.
 - **Switch** `mezo.feature.knowledge-graph.enabled` (`FeaturesConfiguration.KNOWLEDGE_GRAPH_SWITCH`)
   — off ⇒ no graph beans exist, `/api/companion/graph/*` 404s, and every graph hook elsewhere (W2.4
   `[Összefüggések]` block, W4.2 reinforcement, RECOVERY profile input) stays silently absent.
@@ -2545,14 +2550,35 @@ internal, driven by async event hooks and (from W2.5) a nightly reconciler.
     hand from the Tudástár UI had it resurrected by the next dawn's reconcile. The filter added
     here (both in `promoteFact` and, via the same condition, in `retractFact`'s qualifying check)
     closes that: an opted-out fact's node either never gets promoted or gets archived on the next
-    `syncFact`/`reconcile` pass, and stays archived. **This durability is specific to opted-out
-    facts.** For a fact left `include_in_prompt=true`, `promoteFact` still unconditionally
-    re-asserts `status='active'` on UPSERT (the `mezo-b3pp.31` revive half, unchanged) — a
-    hand-archived node for such a fact is still resurrected, and this slice actually SHORTENS
-    that undo window from a night to a turn, since any `PATCH` on the fact now routes through
-    `syncFact` → `promoteFact` within the async hop. `include_in_prompt` is the intended lever
-    for keeping a fact out of the prompt; hand-archiving its graph node from the Tudástár UI is
-    not a substitute for it.
+    `syncFact`/`reconcile` pass, and stays archived. **That fix was still source-specific — it only
+    covered opted-out facts.** For a fact left `include_in_prompt=true` (or any pattern/goal/person
+    node), `promoteFact`/`promotePattern`/`syncGoal`/`syncPerson` still unconditionally re-asserted
+    `status='active'` on UPSERT, so a node the user hand-archived from the Tudástár UI was
+    resurrected the moment its source next synced — a night, or since `mezo-b3pp.30`, the same
+    turn as a `PATCH`.
+  - **Hand-archiving is now a durable user intent, for every source kind (`mezo-06o0.5`).**
+    `GraphService.archive` stamps `GraphNodeEntity.userArchivedAt` alongside the `status` flip —
+    a marker the promotion sync itself cannot see past. All four promoters raise status through
+    one choke point, `GraphPromotionService.raiseStatus(node, target)`; it refuses to raise a
+    user-archived node to `active` no matter how many times `promotePattern`/`syncFact`/`syncGoal`/
+    `syncPerson`/`reconcile` touch it afterwards. The ARCHIVING direction stays unguarded on
+    purpose: a source that stops qualifying still archives the node even if the user had already
+    hidden it — same outcome either way, so there is nothing to guard. Title/summary/meta keep
+    refreshing on a user-archived node (the graph keeps shadowing its source), only the `status`
+    raise is skipped, so the node stops leaking back into `[Összefüggések]` without going stale
+    underneath. The archive now holds until the user explicitly reverses it via
+    `GraphService.restore` (`POST /api/companion/graph/node/{id}/restore`), which clears
+    `userArchivedAt` and re-derives `status` from the source through
+    `GraphPromotionService.resyncNode` — not a blind `active`, since the source may have stopped
+    qualifying while the node sat archived, and lying `active` until the next nightly `reconcile`
+    corrects it would just reopen the old leak in miniature.
+    `GET /api/companion/graph/node/archived` lists the hand-archived set. `include_in_prompt`
+    remains the fact-side kill-switch, and the two levers still don't compete: `include_in_prompt`
+    mutes the SOURCE fact from every injection channel (V1.1, V3.3, the graph); `userArchivedAt`
+    mutes the graph NODE alone, independent of what the source is doing. They are no longer a
+    race — a hand-archived node stays archived regardless of `include_in_prompt`, and flipping
+    `include_in_prompt` back on no longer resurrects a hand-archived node — but they still are not
+    interchangeable: one silences the source, the other hides its graph shadow.
   - **The node survives archiving; its edges don't, necessarily.** `status='archived'` keeps the
     row and its `(createdBy, sourceKind, sourceId)` anchor, so a later re-confirm/re-save
     UPSERTs the SAME node back to `active` rather than building a second one — but
