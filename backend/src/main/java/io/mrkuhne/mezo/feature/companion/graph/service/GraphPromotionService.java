@@ -86,9 +86,7 @@ public class GraphPromotionService {
         // a re-confirmed pattern would upsert into a node that stays `archived` forever and
         // never returns to the traversal — archiving would be a one-way trip. syncGoal has
         // always asserted its own status this way; the other two promoters now match it.
-        if (!GraphNodeEntity.STATUS_ACTIVE.equals(node.getStatus())) {
-            node.setStatus(GraphNodeEntity.STATUS_ACTIVE);
-        }
+        raiseStatus(node, GraphNodeEntity.STATUS_ACTIVE);
         if (isNew) {
             GraphEdgeStructurer structurer = edgeStructurer.getIfAvailable();
             if (structurer != null) {
@@ -116,9 +114,7 @@ public class GraphPromotionService {
                 GraphNodeEntity node = graphService.upsertNode(userId, GraphNodeEntity.KIND_PREFERENCE,
                     truncateTitle(f.getFactText()), f.getFactText(), SOURCE_FACT, f.getId(), null,
                     Map.of("category", f.getCategory(), "source", f.getSource()));
-                if (!GraphNodeEntity.STATUS_ACTIVE.equals(node.getStatus())) {
-                    node.setStatus(GraphNodeEntity.STATUS_ACTIVE);
-                }
+                raiseStatus(node, GraphNodeEntity.STATUS_ACTIVE);
                 return node;
             });
     }
@@ -138,10 +134,7 @@ public class GraphPromotionService {
         GraphNodeEntity node = graphService.upsertNode(userId, GraphNodeEntity.KIND_GOAL,
             truncateTitle(goal.getTitle()), goal.getTitle(), SOURCE_GOAL, goal.getId(), null,
             Map.of("status", goal.getStatus()));
-        String status = active ? GraphNodeEntity.STATUS_ACTIVE : GraphNodeEntity.STATUS_ARCHIVED;
-        if (!status.equals(node.getStatus())) {
-            node.setStatus(status);
-        }
+        raiseStatus(node, active ? GraphNodeEntity.STATUS_ACTIVE : GraphNodeEntity.STATUS_ARCHIVED);
         return Optional.of(node);
     }
 
@@ -180,10 +173,7 @@ public class GraphPromotionService {
         GraphNodeEntity node = graphService.upsertNode(userId, GraphNodeEntity.KIND_PERSON,
             truncateTitle(person.getName()), personSummary(person), SOURCE_PERSON, person.getId(),
             null, meta);
-        String status = active ? GraphNodeEntity.STATUS_ACTIVE : GraphNodeEntity.STATUS_ARCHIVED;
-        if (!status.equals(node.getStatus())) {
-            node.setStatus(status);
-        }
+        raiseStatus(node, active ? GraphNodeEntity.STATUS_ACTIVE : GraphNodeEntity.STATUS_ARCHIVED);
         return Optional.of(node);
     }
 
@@ -468,5 +458,27 @@ public class GraphPromotionService {
      *  fact texts, and goal titles can all be longer. */
     private static String truncateTitle(String text) {
         return text.length() <= 120 ? text : text.substring(0, 117) + "…";
+    }
+
+    /**
+     * A négy promoter KÖZÖS státusz-emelése, a felhasználói szándékra őrizve (mezo-06o0.5).
+     *
+     * <p>A promóció addig feltétel nélkül visszaírta a státuszt a forrás állapotából, így a
+     * Tudástárban kézzel archivált node-ot a következő éjszakai {@link #reconcile} némán
+     * visszakapcsolta — és a címe értesítés nélkül visszakerült a {@code [Összefüggések]}
+     * rendszerpromptba. A kézi archiválás felhasználói SZÁNDÉK: a szinkron nem írhatja felül,
+     * csak {@link GraphService#restore} oldhatja.
+     *
+     * <p>Az ARCHIVÁLÁS iránya szándékosan NEM őrzött: ha a forrás megszűnik kvalifikálni, a
+     * node akkor is archiválódik, ha a felhasználó már elrejtette — az eredmény ugyanaz, és a
+     * marker a szándékot így is megőrzi a későbbi visszaállításhoz.
+     */
+    private static void raiseStatus(GraphNodeEntity node, String target) {
+        if (GraphNodeEntity.STATUS_ACTIVE.equals(target) && node.isUserArchived()) {
+            return;
+        }
+        if (!target.equals(node.getStatus())) {
+            node.setStatus(target);
+        }
     }
 }
