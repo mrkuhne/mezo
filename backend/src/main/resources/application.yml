@@ -414,10 +414,6 @@ mezo:
       # (phase 1), profile rebuild skipped (phase 2)
       quarterly-review-job:
         enabled: true
-      # V3.2 weekly hypothesis pipeline (schedule: mezo.companion.hypotheses.cron);
-      # off = the HypothesisJob bean does not exist
-      hypothesis-job:
-        enabled: true
       # Reflexió (mezo-eq85) nightly reflection pass (schedule: mezo.companion.reflection.cron);
       # off = the ReflectionJob bean does not exist (TextSignalService / the catch-up stay callable,
       # the FlagSweepJob-vs-FlagService idiom)
@@ -780,10 +776,10 @@ mezo:
       backfill-weeks: 8
       backfill-months: 3
     hypotheses:
-      # V3.2 weekly hypothesis loop (smart tier) — Sunday 03:00, after the nightly jobs
-      cron: "0 0 3 * * SUN"
-      # Max hypotheses judged per run
-      max-per-run: 3
+      # V3.2 hypothesis loop (smart tier). Reflexió S2 (mezo-eq85.2) retired the weekly
+      # HypothesisJob: the nightly ReflectionJob (mezo.companion.reflection.cron, 03:40) drives
+      # the loop and caps it with mezo.companion.reflection.propose.max-per-night. Only the two
+      # critique thresholds — what SURVIVES, not when it runs — live here.
       # Weighted-critique keep threshold (arch §4.7)
       keep-threshold: 0.75
       # Borderline band floor — one revise + re-critique pass (arch §4.7)
