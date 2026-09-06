@@ -20,6 +20,7 @@ public final class DeliberationAssembler {
 
     private static final String NEW_KIND = "NEW";
     private static final String FALLBACK_CHAPTER_KEY = "egyeb";
+    private static final String FALLBACK_CHAPTER_TITLE = "Egyéb javaslatok";
 
     private DeliberationAssembler() {
     }
@@ -71,7 +72,9 @@ public final class DeliberationAssembler {
         List<ConferenceDeliberationEnvelope.Thread> threads = new ArrayList<>();
         for (Map.Entry<String, List<ConferenceDeliberationEnvelope.Item>> entry : itemsByChapter.entrySet()) {
             String chapterKey = entry.getKey();
-            String title = chapterKeyToTitle.getOrDefault(chapterKey, chapterKey);
+            String title = FALLBACK_CHAPTER_KEY.equals(chapterKey)
+                    ? FALLBACK_CHAPTER_TITLE
+                    : chapterKeyToTitle.getOrDefault(chapterKey, chapterKey);
             threads.add(new ConferenceDeliberationEnvelope.Thread(chapterKey, title, List.copyOf(entry.getValue())));
         }
         return new ConferenceDeliberationEnvelope(List.copyOf(threads));

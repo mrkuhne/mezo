@@ -96,4 +96,21 @@ class DeliberationAssemblerTest {
         assertThat(envelope.threads()).singleElement()
                 .satisfies(thread -> assertThat(thread.title()).isEqualTo("discipline"));
     }
+
+    @Test
+    void assemble_claimIdMissingFromChapterMap_fallsBackToHumanTitledBucket() {
+        UUID claimId = UUID.randomUUID();
+        ClaimProposal orphan = new ClaimProposal("drill", "DOWN", null, claimId, "Ez már nem áll.",
+                new BigDecimal("0.40"), false, "Az adatok mást mutatnak.");
+
+        ConferenceDeliberationEnvelope envelope = DeliberationAssembler.assemble(
+                List.of(orphan), List.of(), List.of(),
+                List.of(new ClaimRuling(orphan, true, new BigDecimal("0.40"), "Rendben.")),
+                Map.of(), Map.of());
+
+        assertThat(envelope.threads()).singleElement().satisfies(thread -> {
+            assertThat(thread.dimensionKey()).isEqualTo("egyeb");
+            assertThat(thread.title()).isEqualTo("Egyéb javaslatok");
+        });
+    }
 }

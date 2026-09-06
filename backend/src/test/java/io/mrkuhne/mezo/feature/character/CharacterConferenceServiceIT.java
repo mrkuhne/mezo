@@ -310,6 +310,28 @@ class CharacterConferenceServiceIT extends ApiIntegrationTest {
                     assertThat(item.expertKey()).isNotBlank();
                     assertThat(item.chair()).isNotNull();
                 });
+
+        // The two seeded experts' proposals must land in two DISTINCT threads, keyed by their
+        // two distinct dimension keys — proving grouping actually happened, not just that
+        // threads exist. This would fail if every proposal landed in one bucket.
+        assertThat(deliberation.threads())
+                .extracting(ConferenceDeliberationEnvelope.Thread::dimensionKey)
+                .contains("discipline", "mental")
+                .doesNotHaveDuplicates();
+
+        ConferenceDeliberationEnvelope.Thread disciplineThread = deliberation.threads().stream()
+                .filter(thread -> thread.dimensionKey().equals("discipline"))
+                .findFirst().orElseThrow();
+        ConferenceDeliberationEnvelope.Thread mentalThread = deliberation.threads().stream()
+                .filter(thread -> thread.dimensionKey().equals("mental"))
+                .findFirst().orElseThrow();
+
+        assertThat(disciplineThread.items())
+                .extracting(ConferenceDeliberationEnvelope.Item::expertKey)
+                .contains("drill");
+        assertThat(mentalThread.items())
+                .extracting(ConferenceDeliberationEnvelope.Item::expertKey)
+                .contains("pszichologus");
     }
 
     /** Escapes a JSON string value's double quotes/backslashes so it can be nested as another
