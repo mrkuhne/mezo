@@ -27,11 +27,13 @@ const m1Dimensions: MealDimension[] = [
     // Mirrors the sentence MealScoringService.macroDim now emits (mezo-1f7b): whole sentence,
     // and the target's ORIGIN named — the bare „24/15/61% a 27/47/26% célhoz képest" said neither
     // what was being measured (kcal-share, not grams) nor where the target came from.
-    detail:
-      'Ennek az ételnek az energiája 29% fehérje · 54% szénhidrát · 19% zsír. A cél 25/55/20% — az aktív célod napi előírása (155 g F / 316 g Sz / 73 g Zs egy 3 100 kcal-s napra). Ez az étel a napi keret 19%-a.',
+    // Rövid mondat + strukturált eredet (mezo-mxmh): a kártya két sorába a lényeg fér, a
+    // provenance saját mezőben utazik, ahol a clamp nem éri el.
+    detail: 'Az energia 29% fehérje · 54% szénhidrát · 19% zsír — a cél 25/55/20%.',
     macroRatio: { p: 29, c: 54, f: 19 },
     macroTargets: { p: '25–30%', c: '50–60%', f: '15–25%' },
     kcalShareOfDay: 18.7,
+    targetOrigin: 'az aktív célod napi előírása · 155 g fehérje / 316 g szénhidrát / 73 g zsír egy 3 100 kcal-s napra',
   },
   {
     id: 'micro',
@@ -66,7 +68,8 @@ const m1Dimensions: MealDimension[] = [
     // The gram figure leads (mezo-1f7b): „0%-a · 0%-a" was how a MISSING saturated-fat value used
     // to render, indistinguishable from a genuinely excellent one. A named gram amount cannot be
     // produced by absence — an uncovered meal degrades to a ghost tile instead.
-    detail: 'Telített zsír 3,4 g — az energia 5,3%-a · az összzsír 28%-a — a mandula és a túró egyensúlyt tart.',
+    detail: 'Telített zsír 3,4 g — az energia 5,3%-a · az összzsír 28%-a.',
+    coverage: 0.72, // részleges — a súly-soron jelvényként jelenik meg (mezo-mxmh)
     context: [
       { label: 'Telített zsír', value: '3,4 g' },
       { label: 'Telített E%', value: '5,3% / 10% limit' },
@@ -119,7 +122,7 @@ const m1Dimensions: MealDimension[] = [
     color: 'var(--lav)',
     // The measured mass is now named (mezo-1f7b): the dimension is computed ONLY over gram-based
     // lines, so „154 kcal/100g" alone hid which part of the meal it actually described.
-    detail: '377 g étel 580 kcal-t hoz — 154 kcal/100g. 150 alatt teljes pont, 400 felett nulla (a hígabb, több rostot/vizet hozó étel telítőbb).',
+    detail: '377 g étel 580 kcal-t hoz — 154 kcal/100g (150 alatt teljes pont, 400 felett nulla).',
     context: [
       { label: 'Sűrűség', value: '154 kcal/100g' },
       { label: 'Mért tömeg', value: '377 g · 580 kcal' },

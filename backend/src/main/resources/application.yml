@@ -355,6 +355,13 @@ mezo:
     lifegoal-ai-propose:
       enabled: true
   techcore:
+    # Master switch for Spring's scheduling INFRASTRUCTURE (@EnableScheduling) — one level above
+    # the per-job mezo.techcore.cron.* switches below. Those decide whether a job BEAN exists;
+    # this decides whether a scheduler thread exists at all to fire the beans that do. True in
+    # production (every cron must run); the test profile sets it false — see the comment in
+    # backend/src/test/resources/application.properties (mezo-peh4 / mezo-v73w).
+    scheduling:
+      enabled: true
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
       # off = the DailySummaryJob bean does not exist
@@ -1788,6 +1795,12 @@ mezo:
       energy-density:
         good-kcal-per-100g: 150          # at/below → score 1.0
         bad-kcal-per-100g: 400           # at/above → score 0 (linear between)
+        # Az energia-sűrűség egy TELÍTŐDÉSI arány (mennyi kalóriát hoz egy adag étel tömege), és
+        # ennek csak étkezés-méretű tömegen van értelme. Egy 30 g-os fehérjepor 390 kcal/100g-ot
+        # "mér" — és 0,04 pontot kapott —, holott az a 30 g egy ~300 ml-es italként landol; a por
+        # száraz tömegére vetített sűrűség egyszerűen nem az a mennyiség, amit a dimenzió állít.
+        # Ez alatt a tömeg alatt a dimenzió őszintén degradál (mezo-mxmh).
+        min-mass-g: 100
       portion:
         default-share: 0.30              # slot-less recipe: assumed kcal-share of the day
       slot-shares:                # expected kcal-share of the day per meal slot

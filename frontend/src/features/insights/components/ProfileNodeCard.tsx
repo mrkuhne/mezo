@@ -19,7 +19,7 @@ export function ProfileNodeCard({ node, onArchive }: {
           <button type="button" className="mz-decbtn" onClick={onArchive}>Archivál</button>
         </div>
         {node.summary && <p className="mz-fact-tx" style={{ marginTop: 6 }}>{node.summary}</p>}
-        <p className="mz-fact-origin">Archiválás után a következő heti összegzésig nem kerül a beszélgetésbe.</p>
+        <p className="mz-fact-origin">Archiválás után nem kerül a beszélgetésbe. Ez tartós — csak te hozhatod vissza.</p>
       </div>
     </div>
   )

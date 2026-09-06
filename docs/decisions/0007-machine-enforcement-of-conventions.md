@@ -68,3 +68,108 @@ mezo-oa3; `ci.yml` gates quality, not releases):
   phased issues keep each gate reviewable and revertable.
 - **Marketplace lint actions** instead of repo-local scripts — external dependency + config
   drift for checks that are ~200 lines of dependency-free Node; rejected.
+
+---
+
+## Amendment — 2026-09-06: what the gates do *not* say (mezo-z3ll, mezo-82m6, mezo-x57b)
+
+An audit of the gates themselves (round 2 of the "lying developer gates" program) found three
+things this ADR left unstated. Two are now enforced by machine; the third is written down here
+because it is a deliberate trade whose price nobody had ever put a number on.
+
+### 1. The deploy builds a commit that CI never tested (mezo-z3ll) — recorded, not changed
+
+`ci.yml` on a pull request checks out **`refs/pull/N/merge`** — an ephemeral merge commit that
+never exists on `main`. Measured on run 34048116823:
+
+```
+HEAD is now at b7fd214 Merge f90b82cea… into cd955849…
+```
+
+`deploy.yml` builds **`github.sha`** — the merge commit that actually landed on `main`. Two
+different commits, always. The honest reading is narrower than "untested code ships", and both
+halves matter:
+
+- **Usually the *tree* is identical.** When main has not moved between the CI run and the
+  merge, the tested merge ref and the landed `--no-ff` merge share the same tree; only the
+  commit metadata differs. Nothing untested ships.
+- **But main often *has* moved.** Measured over the six most recently merged PRs by comparing
+  the base CI actually tested (from the checkout log line above) with `merge_commit_sha^1`:
+
+  | PR | base CI tested | base it landed on | |
+  |---|---|---|---|
+  | #514 | `cd955849` | `cd955849` | same |
+  | #511 | `bd5ffd32` | `bd5ffd32` | same |
+  | #510 | `9ff77769` | `9ff77769` | same |
+  | #509 | `bd5ffd32` | `1a7a524d` | **moved** |
+  | #508 | `bd5ffd32` | `92316f43` | **moved** |
+  | #512 | *(CI never finished — merged while `test-backend` and `test-frontend` were still `in_progress`)* | `33bbe044` | **untested** |
+
+  So **3 of 6** recent releases deployed a tree no CI run had ever evaluated as such. The
+  push-triggered `ci.yml` on `main` does cover that tree — but it runs *after* the deploy and
+  the deploy does not wait for it, so the image is in GHCR and ArgoCD has rolled it out before
+  the answer arrives.
+
+**Therefore: the green tick on a PR is never about the byte sequence that goes into the
+container.** `premerge.yml` narrows this (it re-checks the *current* merge ref) but only for
+the cheap gates + visual goldens — not the backend or frontend suites, which are exactly the
+ones that would catch a semantic conflict between two branches.
+
+**Decision: unchanged — the deploy stays independent of `ci` (mezo-oa3, and the original
+consequence note above).** What would close it, and what it costs:
+
+| Option | What it buys | What it costs |
+|---|---|---|
+| Gate `deploy.yml`'s `release` job on the main `ci.yml` run for the same SHA (`workflow_run` or a wait-for-check step) | no image is ever tagged from a tree that main-CI has not passed | **every release waits for the full main CI (~21.5 min wall clock)** instead of ~4 min; deploy.yml has to be rebuilt around `workflow_run` semantics, which also breaks the `[skip ci]` loop-breaker and the `concurrency: deploy-main` queue |
+| Gate only the *tag bump* (build + push the image immediately, bump the k8s manifest only after main CI is green) | ArgoCD never rolls out an untested tree; the image build stays fast | same ~21.5 min before anything is user-visible, plus a second workflow to maintain |
+| Alert only: post a comment/issue when main CI goes red on an already-deployed SHA | zero slowdown | high false-alarm rate if evaluated at deploy time — deploy finishes in ~4 min and main CI takes ~21.5, so "CI not green yet" would be the normal state and the alert would be noise within a week |
+| Do nothing (status quo) | fastest possible release | the table above: ~half of releases ship a tree only main-CI-after-the-fact ever sees |
+
+This is a real speed/risk trade, not an oversight, and it is now **written down** rather than
+implicit. Filed as **mezo-2bme** for the owner to decide; nothing was changed unilaterally.
+
+### 2. A failed deploy is no longer silent (mezo-82m6) — new gate
+
+Measured 2026-09-05: **20 consecutive main deploys failed over roughly a day** (runs
+`33955077824` … `33969595641`, plus `34003265197` the next morning) while `ci.yml` was green
+throughout. Nothing surfaced it — deploy failure produced no check on `main` and no
+notification. The bug (mezo-0j9n, a SIGPIPE in `compute-release.sh`) took 20 minutes to fix;
+the *delay before anyone looked* was a day.
+
+`deploy-watch.yml` + `.github/scripts/deploy-alert.sh` now watch `deploy.yml` via
+`workflow_run` and, on failure, post a `deploy` **commit status** on the deployed SHA and open
+**one deduplicated `deploy-failure` issue**; a later successful deploy posts a green status and
+closes it. This does **not** gate anything — ADR 0007's original decision stands untouched.
+
+*False-alarm budget, asserted in `deploy-alert.test.sh`:* it fires only on a run conclusion of
+`failure`/`timed_out`/`startup_failure`/`action_required`. `cancelled` and `skipped` are
+ignored, because deploy.yml's concurrency queue cancels superseded runs and the `[skip ci]`
+release commit skips every job. Replayed over the last 60 real deploy runs: 32 alerts, 25
+clears, 3 ignores — **0 false alarms**.
+
+### 3. "Zero checks ran" no longer reads as green (mezo-x57b) — new gate
+
+A head with **no check runs at all** is displayed by the PR page and by `gh pr checks` exactly
+like a head where nothing failed. Measured on PR #504's head `28c33c23b`:
+
+```
+$ gh api repos/mrkuhne/mezo/commits/28c33c23b/check-runs -q .total_count   ->  0
+$ gh api repos/mrkuhne/mezo/commits/28c33c23b/status      -q .state        ->  pending   (0 statuses)
+```
+
+Two distinct causes are known — `update-visual-baselines.yml` pushing with `GITHUB_TOKEN`
+(GitHub deliberately starts no workflow, and `ci.yml` has no `workflow_dispatch` arm), and
+GitHub simply not creating a run for a `MERGEABLE`/`CLEAN` PR — so this is not one bounded
+case, and the only protection was human discipline.
+
+`premerge.yml` now runs `.github/scripts/require-checks.sh`, which parses the expected job set
+**out of `ci.yml`** (so a new job extends the gate for free) and requires each one to have a
+successful check run on the PR head. It distinguishes *absent* / *still running* / *failed*,
+and treats a `cancelled`+`success` pair for the same job as a pass, because `ci.yml`'s
+`cancel-in-progress` concurrency produces exactly that.
+
+*False-alarm budget:* replayed over the ten most recent PR heads — nine pass, and the one
+flagged is a **true** positive: PR #512 was merged on 2026-09-06 while `test-frontend` and
+`test-backend` were still `in_progress`. No `ci.yml` job carries an `if:`, so "missing" is
+never ambiguous. The gate's only "not yet" mode is being asked before CI has finished, which it
+reports as *still running*, not as a failure of the code.

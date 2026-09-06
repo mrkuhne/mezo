@@ -85,13 +85,14 @@ public class FlagTraceReadService {
         String winnerKey = card.map(DailyCardPort.DeliveredCard::adviceKey)
             .filter(FlagCatalog.KEYS::contains)
             .orElse(null);
+        Instant deliveredAt = card.map(DailyCardPort.DeliveredCard::deliveredAt).orElse(null);
 
         List<String> ordered = new ArrayList<>(FlagCatalog.KEYS);
         ordered.sort(Comparator.comparingInt(rankPort::rankOf));
 
         List<RuleState> rules = new ArrayList<>();
         for (int i = 0; i < ordered.size(); i++) {
-            rules.add(stateOf(userId, ordered.get(i), i + 1, cutoff, winnerKey));
+            rules.add(stateOf(userId, ordered.get(i), i + 1, cutoff, winnerKey, deliveredAt));
         }
 
         Winner winner = winnerKey == null ? null : new Winner(winnerKey,
@@ -107,7 +108,7 @@ public class FlagTraceReadService {
     }
 
     private RuleState stateOf(UUID userId, String flagKey, int rank, Instant cutoff,
-                              String winnerKey) {
+                              String winnerKey, Instant deliveredAt) {
         String label = FlagCatalog.labelOf(flagKey);
         String domain = FlagCatalog.domainOf(flagKey);
         CompanionFlagTraceEntity row = traceRepository
@@ -157,10 +158,16 @@ public class FlagTraceReadService {
             reasonText = FlagTraceCopy.clearText(row.getEvidence());
         }
 
+        // The correlation is to the DECISION, not to the day: a row that came into being after the
+        // card was chosen was not part of it. Without this guard the same day reports both
+        // „Nyertes: X" and „X — Rendben" (a rule that won at 10:00 and cleared by 20:00), and
+        // stamps `lost` on a rule that first raised in the evening and never competed (mezo-y43v).
         String cardOutcome = null;
         if (OUTCOME_RAISED.equals(row.getOutcome())
             && DISPOSITION_LOGGED.equals(row.getDisposition())
-            && winnerKey != null) {
+            && winnerKey != null
+            && deliveredAt != null
+            && !row.getOccurredAt().isAfter(deliveredAt)) {
             cardOutcome = flagKey.equals(winnerKey) ? CARD_WON : CARD_LOST;
         }
 

@@ -168,7 +168,7 @@ public class WeeklyReviewContextSources {
         appendMentions(out, userId, since, until);
         appendMedicationCycle(out, userId, weekStart, weekEnd);
         appendWeekNarrative(out, userId, weekStart);
-        appendLifeGoals(out, userId);
+        appendLifeGoals(out, userId, weekStart, weekEnd);
         return out.toString();
     }
 
@@ -318,34 +318,28 @@ public class WeeklyReviewContextSources {
     }
 
     /**
-     * {@code ÉLETCÉLOK · AZ ELMÚLT 7 NAP} — the life-goal engine's ALREADY-COMPUTED trend
-     * (mezo-iizd.9). Code collects, model explains: the arrow and the hit-day tally are both
-     * derived facts, and the prompt explicitly FORBIDS recomputing them
-     * ({@link WeeklyReviewGenerator}'s {@code PROMPT}).
+     * {@code ÉLETCÉLOK · A HÉT IRÁNYA} — the life-goal engine's ALREADY-COMPUTED trend
+     * (mezo-iizd.9), now measured over the REVIEWED week {@code [weekStart, weekEnd]} itself
+     * (mezo-a9os), via {@link LifeGoalProgressService#summary(UUID, LocalDate, LocalDate)}. Code
+     * collects, model explains: the arrow and the hit-day tally are both derived facts, and the
+     * prompt explicitly FORBIDS recomputing them ({@link WeeklyReviewGenerator}'s {@code PROMPT}).
      *
-     * <p><b>The window is the TRAILING 7 DAYS as of render time — deliberately NOT the reviewed
-     * week, and the header says so.</b> {@code LifeGoalProgressService#today(UUID)} builds its
-     * {@code days7} over {@code [now-6, now]}, while the weekly cron fires Monday 06:50 for
-     * {@code weekStart = previousOrSame(MONDAY).minusWeeks(1)}, i.e. {@code [D-7, D-1]}. The two
-     * windows are one day apart: the reviewed Monday falls out and today (~7 hours old, so
-     * essentially never a hit) falls in. Rather than let a "hét iránya" header quietly deflate the
-     * tally by that one day, the section is LABELLED for the window it actually measures. The
-     * arrow survives the shift intact — it is a 7-day vs 21-day mean comparison, to which one
-     * boundary day is immaterial.
+     * <p>{@code weekEnd = weekStart.plusDays(6)}, so {@code [weekStart, weekEnd]} is exactly the
+     * seven days {@code summary} requires — the same window every sibling appender above already
+     * uses, no longer a window borrowed from "now". A previous version of this block measured the
+     * TRAILING 7 days as of render time instead ({@code today(userId)}, over {@code [now-6, now]})
+     * and labelled the header for that instead of the reviewed week, because no windowed source
+     * existed yet; that gap is closed, so the header claims the week it actually measures again.
      *
-     * <p><b>Why not a windowed source.</b> Rendering the reviewed week exactly would need a
-     * {@code today(userId, from, to)} variant on the lifegoal service; that is a separate,
-     * later issue, NOT a silent widening of this one. Until it exists, the honest label is the
-     * fix — so the next reader does not rediscover the shift as a bug.
+     * <p>The {@code pillarsHitToday / pillarsTotal} ratio is still dropped from the rendered
+     * prose, unrelated to which window feeds {@code days7}: a snapshot of ONE morning — under this
+     * windowed call, the window's last day, not necessarily today — has no place in a
+     * retrospective about a whole week.
      *
-     * <p>The same reasoning drops today's {@code pillarsHitToday / pillarsTotal} ratio: a
-     * snapshot of THIS morning has no place in a retrospective about last week, and at 06:50 it
-     * would read {@code 0 / N} in nearly every real run.
-     *
-     * <p>Only ACTIVE goals arrive — {@code today()} yields exactly those, under the same "evaluable"
-     * definition the nightly engine uses, so a parked or closed goal can never leak into the prompt.
-     * No goal ⇒ NO header: an empty section would still cost context and would tempt the model to
-     * talk about the absence (the same rule every other source above follows).
+     * <p>Only ACTIVE goals arrive — {@code summary()} yields exactly those, under the same
+     * "evaluable" definition the nightly engine uses, so a parked or closed goal can never leak
+     * into the prompt. No goal ⇒ NO header: an empty section would still cost context and would
+     * tempt the model to talk about the absence (the same rule every other source above follows).
      *
      * <p>The arrow is rendered as a WORD, not the glyph: {@code →} and {@code ↑} are easy for a
      * model to misread inside prose, "tartja" is not.
@@ -357,16 +351,16 @@ public class WeeklyReviewContextSources {
      * goalWeekSentence.ts}, which refuses the same sentence and says "Ezen a héten még nincs
      * adata."), so the same week never reads as a miss on one surface and as silence on the other.
      */
-    private void appendLifeGoals(StringBuilder out, UUID userId) {
+    private void appendLifeGoals(StringBuilder out, UUID userId, LocalDate weekStart, LocalDate weekEnd) {
         LifeGoalProgressService progress = lifeGoalProgressService.getIfAvailable();
         if (progress == null) {
             return; // life goals switched off — nothing is known, so nothing is said
         }
-        List<LifeGoalTodaySummary> goals = progress.today(userId).getGoals();
+        List<LifeGoalTodaySummary> goals = progress.summary(userId, weekStart, weekEnd).getGoals();
         if (goals == null || goals.isEmpty()) {
             return;
         }
-        out.append("\nÉLETCÉLOK · AZ ELMÚLT 7 NAP (a motor számolta — magyarázd, ne számold újra):\n");
+        out.append("\nÉLETCÉLOK · A HÉT IRÁNYA (a motor számolta — magyarázd, ne számold újra):\n");
         for (LifeGoalTodaySummary goal : goals.subList(0, Math.min(goals.size(), MAX_LIFE_GOALS))) {
             List<PillarDayStatus> days = goal.getDays7() == null ? List.of() : goal.getDays7();
             long dataDays = days.stream().filter(status -> status != PillarDayStatus.NO_DATA).count();

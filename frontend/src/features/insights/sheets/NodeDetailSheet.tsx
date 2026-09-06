@@ -60,7 +60,7 @@ export function NodeDetailSheet({ node, onArchive, onClose }: {
             Archivál
           </button>
           <p className="mz-fact-origin" style={{ marginTop: 8 }}>
-            Archiválás után a következő heti összegzésig nem kerül a beszélgetésbe.
+            Archiválás után nem kerül a beszélgetésbe. Ez tartós — csak te hozhatod vissza.
           </p>
         </div>
       )}
