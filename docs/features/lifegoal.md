@@ -13,7 +13,7 @@ key_files:
   - frontend/src/features/me/pages/CelokPage.tsx
   - frontend/src/features/me/pages/CelPage.tsx
   - frontend/src/features/today/components/LifeGoalTodayTile.tsx
-related: [goal-engine, growth, companion, me, today, train]
+related: [goal-engine, growth, companion, me, today, train, ../research/entities/exist-io.md, ../research/concepts/goal-type-taxonomies.md, ../research/concepts/perma-and-wellbeing-taxonomies.md, ../research/concepts/goal-conflict.md, ../research/concepts/goal-pursuit-evidence.md]
 ---
 
 # Life goals — Feature Documentation
@@ -861,6 +861,17 @@ correctly in every golden while being invisible in the app (§9).
   plan *shape* shipped in slice 1, the *evaluation* (`LifeGoalTriggerRules`/`LifeGoalTriggerService`
   + `LIFE_GOAL_PLAN` notifications) ships this slice)**, **D10 (the five-kind pillar taxonomy —
   every kind now has a working `LifeGoalScorer` branch)**.
+- **Prior art, now in the research wiki:** the sources behind D1, D2, D7, D8 and D10 are recorded
+  as their own pages — [Goal-Pursuit Evidence](../research/concepts/goal-pursuit-evidence.md) (D1's
+  Harkin et al. 2016 monitoring-effect and D8's Gollwitzer/Niemiec-Ryan-Deci pair), [PERMA and
+  Wellbeing Taxonomies](../research/concepts/perma-and-wellbeing-taxonomies.md) (D2's PERMAH split),
+  [Goal Conflict](../research/concepts/goal-conflict.md) (D7's companion-warning-not-gate call),
+  [Goal-Type Taxonomies](../research/concepts/goal-type-taxonomies.md) (D10's Strides pillar kinds),
+  and the [Exist.io](../research/entities/exist-io.md) entity (the `baseline` pillar kind's source).
+  **Read those pages before citing a decision's source from memory:** this ingest found the design
+  spec misstates or overstates what its own cited source says in more than one place (a naming slip
+  on the Strides taxonomy, an overstated effect-size claim on goal conflict), and the corrections
+  live on the wiki pages, not repeated here.
 - **`docs/superpowers/specs/2026-09-03-lifegoal-slice2-motor-design.md`** carries this slice's
   own binding decisions (D-1..D-4 in that doc's numbering) on top of D1–D10: the scorer's
   per-kind rules, the arrow/gate thresholds, the read-computes/evaluate-writes split, and the
