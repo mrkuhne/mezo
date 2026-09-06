@@ -155,4 +155,49 @@ describe('CharacterFeedPage', () => {
     fireEvent.click(collapsedHeaders[0])
     expect(screen.getByText('Tegnapi megfigyelés.')).toBeInTheDocument()
   })
+
+  test('I2: the day header counts only observations, never conference-diff rows', () => {
+    // TEGNAP (Aug 30 local) carries 2 OBSERVATION rows plus 1 CONFERENCE_CHANGE row in
+    // MOCK_FEED — the header must read "2 megfigyelés", not 3: the word means observations,
+    // and the diff row is still rendered (once the day is open) without counting toward it.
+    render(<CharacterFeedPage />)
+    const tegnapHeader = screen.getByRole('button', { name: /TEGNAP/ })
+    expect(tegnapHeader).toHaveTextContent('2 megfigyelés')
+    fireEvent.click(tegnapHeader)
+    expect(screen.getByText(/Vasárnapi konzílium/)).toBeInTheDocument()
+  })
+
+  test('I2: a toggle follows the stable calendar day, not the relative "MA"/"TEGNAP" label', () => {
+    // beforeEach fixes "now" at 2026-08-31T20:00Z: this item is created today (Aug 31) and
+    // therefore labeled "MA" — open by default (newest day, index 0).
+    hoisted.items = [
+      { kind: 'OBSERVATION', at: '2026-08-31T06:00:00Z', expertKey: 'drill', text: 'Augusztus 31-i megfigyelés.' },
+    ]
+    const { rerender } = render(<CharacterFeedPage />)
+    expect(screen.getByText('Augusztus 31-i megfigyelés.')).toBeInTheDocument()
+
+    // Close it — this is the only day, so its header reads "MA".
+    fireEvent.click(screen.getByRole('button', { name: /MA/ }))
+    expect(screen.queryByText('Augusztus 31-i megfigyelés.')).not.toBeInTheDocument()
+
+    // Midnight passes and the feed refetches: a genuinely new "today" (Sep 1) observation
+    // arrives, pushing the Aug 31 item down to "TEGNAP". If open state were keyed by the
+    // human label "MA" (the bug under test), that stale `{ MA: false }` entry would now match
+    // the NEW Sep 1 group — which reuses the "MA" label — and silently keep the newest day
+    // collapsed, violating "the newest day starts open". Keyed by the stable calendar day
+    // instead, the Aug 31 entry (key '2026-08-31') stays correctly closed, and the Sep 1 group
+    // (key '2026-09-01', never seen before) falls through to its own newest-day default: open.
+    vi.setSystemTime(new Date('2026-09-01T20:00:00Z'))
+    hoisted.items = [
+      { kind: 'OBSERVATION', at: '2026-09-01T06:00:00Z', expertKey: 'drill', text: 'Szeptember 1-i megfigyelés.' },
+      { kind: 'OBSERVATION', at: '2026-08-31T06:00:00Z', expertKey: 'drill', text: 'Augusztus 31-i megfigyelés.' },
+    ]
+    rerender(<CharacterFeedPage />)
+
+    // The new newest day opens by default (this is the assertion a label-keyed state would fail).
+    expect(screen.getByText('Szeptember 1-i megfigyelés.')).toBeInTheDocument()
+    // The explicitly-closed Aug 31 day stays closed under its own calendar-day key, even though
+    // it now carries a different label ("TEGNAP" instead of "MA").
+    expect(screen.queryByText('Augusztus 31-i megfigyelés.')).not.toBeInTheDocument()
+  })
 })
