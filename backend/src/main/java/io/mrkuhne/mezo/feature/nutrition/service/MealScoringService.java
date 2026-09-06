@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -56,8 +57,14 @@ public class MealScoringService {
      * Mostantól minden lefedettség-kapuzott dimenzió a SAJÁT tényét nézi, és a saját FEDETT
      * energiáján belül mér (a nevező a fedett kcal, nem a teljes) — a nem látott rész a
      * `coverage`-ben jelenik meg, nem hígított számként.
+     *
+     * <p>`3` (mezo-mxmh): a bélyeg NEM csak akkor mozdul, ha a SZÁMOK mennek el. Az S1 egy új
+     * mezőt (`coverage`) és rövidebb `detail` mondatokat hozott — a tárolt envelope-ok számai
+     * változatlanok, de a szövegük elavult, a mezőjük pedig `null`, tehát a jelvény a MEGLÉVŐ
+     * étkezéseken sosem jelenne meg. Egy csak-új-írásokra ható megjelenítés nem javítás.
+     * Emellett az energia-sűrűség kapott egy minimális tömeg-küszöböt, ami már számot is mozdít.
      */
-    public static final int FORMULA_VERSION = 2;
+    public static final int FORMULA_VERSION = 3;
 
     private final MealScoringProperties props;
     private final NutritionTargetsProperties targets;
@@ -146,10 +153,11 @@ public class MealScoringService {
         MealScoringProperties.WhoRefs who = rubric.who();
         MealScoringProperties.NovaGroupScores nova = rubric.nova();
 
-        List<Dim> dims = List.of(
+        List<Dim> dims = Stream.of(
             macroDim(lines, kcal, tp, tc, tf, base, role), microDim(lines, kcal, base), whoDim(lines, kcal, who, base),
             fatQualityDim(lines, kcal), novaDim(lines, kcal, nova), plantDiversityDim(lines, kcal),
-            energyDensityDim(lines, kcal), contextDim(slot, lines, kcal, localTime, role, base));
+            energyDensityDim(lines, kcal), contextDim(slot, lines, kcal, localTime, role, base))
+            .map(Dim::coverageWeighted).toList();
 
         double weightSum = dims.stream().mapToDouble(d -> d.effectiveWeight).sum();
         double value = weightSum == 0 ? 0
@@ -219,12 +227,13 @@ public class MealScoringService {
         }
         DailyTargets base = DailyTargets.fromConfig(targets);
         Rubric rubric = rubricFor(role, base);
-        List<Dim> live = List.of(
+        List<Dim> live = Stream.of(
             macroDim(perServingLines, kcal, rubric.p(), rubric.c(), rubric.f(), base, role),
             microDim(perServingLines, kcal, base), whoDim(perServingLines, kcal, rubric.who(), base),
             fatQualityDim(perServingLines, kcal),
             novaDim(perServingLines, kcal, rubric.nova()), plantDiversityDim(perServingLines, kcal),
-            energyDensityDim(perServingLines, kcal), portionDim(slot, kcal, base));
+            energyDensityDim(perServingLines, kcal), portionDim(slot, kcal, base))
+            .map(Dim::coverageWeighted).toList();
         double weightSum = live.stream().mapToDouble(d -> d.effectiveWeight).sum();
         if (weightSum == 0) {
             return null;
@@ -503,6 +512,16 @@ public class MealScoringService {
             return Dim.degraded("energy_density", "Energia-sűrűség", props.weights().energyDensity(),
                 "Nincs gramm-alapú mennyiség a tételekhez.");
         }
+        // kcal/100g a TELÍTŐDÉST méri — mennyi energiát hoz egy adagnyi étel tömege —, és ennek
+        // csak étkezés-méretű tömegen van értelme. Egy 30 g-os fehérjepor 390 kcal/100g-mal
+        // 0,04 pontot kapott, holott az a 30 g egy ~300 ml-es italként kerül a gyomorba: a por
+        // száraz tömege nem az a mennyiség, amiről a dimenzió állítást tesz (mezo-mxmh).
+        if (grams < props.energyDensity().minMassG()) {
+            return Dim.degraded("energy_density", "Energia-sűrűség", props.weights().energyDensity(),
+                String.format(Locale.ROOT,
+                    "Csak %.0f g gramm-alapú tétel — %.0f g alatt a kcal/100g nem telítődést mér.",
+                    grams, props.energyDensity().minMassG()));
+        }
         double density = gramKcal / grams * 100;
         double good = props.energyDensity().goodKcalPer100g();
         double bad = props.energyDensity().badKcalPer100g();
@@ -710,6 +729,21 @@ public class MealScoringService {
             // configWeight intentionally unused: a no-coverage dimension carries weight 0 (honest),
             // the total renormalizes over the rest, and confidence drops via coverage 0.
             return new Dim(id, label, 0, 0, 0, detail, null, null, null, null, null);
+        }
+
+        /**
+         * A dimension gets as much say as it can SEE (mezo-mxmh): its config weight scaled by
+         * coverage, before the renormalization spreads the remainder over the rest. A dimension
+         * that knows a quarter of the meal used to speak with the same authority as one that knew
+         * all of it — a live envelope claimed a 38.4% saturated-fat share off 30% of the food, at
+         * full weight. Continuous on purpose: a threshold ("degrade below 50%") puts a cliff
+         * between two near-identical meals, and today's "coverage 0 → weight 0" rule is just this
+         * function's endpoint. Applied exactly ONCE, at the two list-building sites — never inside
+         * the record's constructor, which {@link #renormalized} also calls.
+         */
+        Dim coverageWeighted() {
+            return new Dim(id, label, effectiveWeight * coverage, score, coverage, detail,
+                macro, micros, nova, context, timing);
         }
 
         /** The same dimension with its weight renormalized over the present dimensions (mezo-bw3y). */
