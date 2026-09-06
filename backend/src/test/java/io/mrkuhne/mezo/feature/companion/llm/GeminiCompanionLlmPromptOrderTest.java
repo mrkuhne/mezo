@@ -72,7 +72,7 @@ class GeminiCompanionLlmPromptOrderTest {
                 minimalCompanionProperties(),
                 new NoOpLlmCallRecorder(),
                 new LlmCallContextHolder(),
-                new GeminiUsageExtractor());
+                new GoogleGenAiUsageExtractor());
 
         adapter.complete("RENDSZER", List.of(
                 new Turn(Role.USER, "korábbi kérdés"),
