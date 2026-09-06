@@ -36,6 +36,7 @@ per-call-kind routing, reasoning effort, a cap és a küszöbei. A repo ArchUnit
 | **C1** | Hard cap **$5/user/billing cycle**, minden küszöb configból. Fokozatok: 70% olcsóbb modell, 90% drága cronok ritkítása, 100% AI-szünet resetig. | A kutatás $4-os javaslata (a standard COGS $2,4–3,1, a $4 túl szűk sáv) |
 | **C2** | A cap beépülési pontja `LlmCallContextHolder.runWith` — az egyetlen pre-flight fojtópont. | Post-flight ellenőrzés a recorderben (a pénz már elment) |
 | **Q1** | A minőség-emelés első kara a **reasoning effort**, nem a tier-váltás. | 10% Terra-szórás a default forgalomra |
+| **L1** | `mezo.feature.llm-log.enabled` alapértelmezése **`true`** lesz (S1). A cap és a router mérésre épül, mérés nélkül mindkettő vak; az adapterek instrumentálása rég megvolt, élesben úgyis be van kapcsolva. | Fail-closed cap kikapcsolt log mellett; a kapcsoló meghagyása `false`-on |
 
 ## 3. Prior art
 
@@ -209,9 +210,13 @@ maradnak (embedding, audio, fallback).
    számolja — Geminire helyes, OpenAI-ra hibás (a reasoning a completion része).
 6. **Streaming usage.** `stream-usage=true` nélkül minden streamelt sor null tokennel és null
    költséggel íródik — csendben.
-7. **A cap vak, ha az `llm-log` ki van kapcsolva.** `mezo.feature.llm-log.enabled` alapértelmezése
-   `false` (`application.yml:330`); élesben a `deployment.yaml:96` kapcsolja be. **Nyitott döntés
-   S6 elején:** fail-closed, vagy a kapcsoló kötelezővé tétele ott, ahol a cap él.
+7. **Az `llm-log` alapértelmezés-flip (L1) egyetlen ITt tör el.** `application.yml:330` ma
+   `false`; a `deployment.yaml:96` kapcsolja be élesben. A flag-re négy teszt hivatkozik, mind
+   **explicit** property-vel — egy kivétellel: `CompanionMemoryLlmUsageDisabledIT` (`:16`) a
+   *hallgatólagos* defaultra épül ("a teszt-default"), tehát kapnia kell egy explicit
+   `mezo.feature.llm-log.enabled=false`-t. Stale javadoc két helyen: `LlmLogRecorderWiringIT:21`
+   ("the shipped default") és `application.yml:327-328` ("DEFAULT OFF until the adapters are
+   instrumented" — az instrumentálás 56 tagolt hívással rég kész).
 8. **Két tagolatlan LLM-hívás.** `LlmMemoryReranker:83` (smart tier!) és `LlmMemoryQueryRewriter:28`
    megkerüli a `runWith`-et → sem a router, sem a cap nem látja őket, és `unknown` feature-ként
    könyvelődnek. S1 betagolja őket.
@@ -241,7 +246,7 @@ maradnak (embedding, audio, fallback).
 
 1. **Reasoning effort** átadható-e a Spring AI 2.0.0 `OpenAiChatOptions`-ből? (S4 első lépése.)
    Ez a migráció legvalószínűbb technikai kockázata és egyben a legolcsóbb minőség-kar.
-2. **Fail-closed vagy bypass**, ha az `llm-log` ki van kapcsolva? (S6 első lépése.)
+2. ~~Fail-closed vagy bypass, ha az `llm-log` ki van kapcsolva?~~ **Eldöntve (L1):** a kapcsoló alapértelmezése `true` lesz S1-ben, tehát a cap mindig lát. Aki kikapcsolja, a capet is kikapcsolja — ez explicit, dokumentált következmény.
 3. **Vision A/B**: a `meal_draft`/`sleep_shot`/`pantry_photo` képi útvonalak Lunán vagy Geminin?
    Amíg nincs mérés, a config Geminin hagyja. A `meal_draft` prompt közben szélesebb JSON-t kér
    (rost/cukor/só/telített zsír) — ezt a szerződést újra kell validálni az új providernél.
