@@ -34,4 +34,5 @@ cat src/rutin-epito-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/rutin-
 cat src/mezo-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/minta-reszlet-body.html > minta-reszlet.html
 cat src/rutin-formalodas-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/rutin-formalodas-body.html > rutin-formalodas.html
 cat src/rutin-formalodas-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/rutin-szerk-body.html > rutin-szerkeszto-valasztas.html
-echo "OK — 29 prototype files assembled."
+cat src/mezo-head.html "$A/clay-icons.svg" "$A/clay-spots.svg" src/eszrevetelek-body.html > eszrevetelek.html
+echo "OK — 30 prototype files assembled."
