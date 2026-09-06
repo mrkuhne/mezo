@@ -1771,9 +1771,10 @@ whether that raise WON the day's card is decided later in the cycle — after th
 even if the design wanted to. So the read side compares each RAISED-and-`logged` rule's key against
 the day's `DailyCardPort.forDay` winner every time the endpoint is called: `won`, `lost`, or null
 when the rule did not raise-and-log, or when the day's card was not flag-sourced at all (a setup
-check won that day, which is none of the 13 keys). A `suppressed_by_cooldown` raise can never be
-`won`/`lost` for the same reason it has no evidence of its own below — it was never a competitor
-for that day's card.
+check won that day, which is none of the 13 keys). Consequently, even a raised-and-logged rule reads
+`cardOutcome: null` when the day's delivered card came from a setup check — no winner exists among
+the 13 flag rules that day. A `suppressed_by_cooldown` raise can never be `won`/`lost` for the same
+reason it has no evidence of its own below — it was never a competitor for that day's card.
 
 **The honest consequence for a cooldown-suppressed raise.** `FlagService` only writes a
 `companion_flag_log` row on the LOGGED branch — a raise the cooldown swallows leaves no log row of
