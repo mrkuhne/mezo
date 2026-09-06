@@ -1170,6 +1170,13 @@ databaseChangeLog:
             relativeToChangelogFile: true
             path: script/202609061800_mezo-d58h.7.5_knowledge_fact_source_question.sql
   - changeSet:
+      id: "1.0.0:202609062000_mezo-jcpt.19_weekly_score_cache_invalidation"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609062000_mezo-jcpt.19_weekly_score_cache_invalidation.sql
+  - changeSet:
       id: "1.0.0:202609062000_mezo-d58h.7.7_flag_key_energy_dip"
       author: daniel.kuhne
       changes:
