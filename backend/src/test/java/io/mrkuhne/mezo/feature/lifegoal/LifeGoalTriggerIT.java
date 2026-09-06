@@ -28,6 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * The ha-akkor trigger wiring end to end (mezo-iizd.7): the immediate branch through the real
@@ -47,6 +48,11 @@ import org.springframework.data.domain.Pageable;
  * which {@code LifeGoalSignalsLivenessIT} does exercise for the companion-off case. Faking a
  * {@code SignalSource} would be a mock, which the house rules forbid in integration tests.
  */
+@TestPropertySource(properties = {
+    // mezo-c9k4: the shared test profile now disables this cron by default (kill-switch
+    // completeness) — this IT drives the job directly, so it re-enables it on its own context.
+    "mezo.techcore.cron.life-goal-eval-job.enabled=true"
+})
 class LifeGoalTriggerIT extends AbstractIntegrationTest {
 
     @Autowired private LifeGoalEvalJob evalJob;

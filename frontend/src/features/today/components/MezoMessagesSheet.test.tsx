@@ -137,8 +137,13 @@ describe('MezoMessagesSheet', () => {
     const onClose = vi.fn()
     render(<MezoMessagesSheet messages={[briefing]} onClose={onClose} />)
     await userEvent.click(screen.getByRole('button', { name: 'Kész' }))
-    // A Sheet animálva zár; a tesztkörnyezetben a fallback időzítő hívja az onClose-t.
-    await vi.waitFor(() => expect(onClose).toHaveBeenCalled(), { timeout: 1000 })
+    // A Sheet animálva zár; jsdom-ban `transitionend` sosem jön, tehát a `Sheet.tsx`
+    // EXIT_MS + 80 = 380 ms-os fallback időzítője hívja az onClose-t. Az 1000 ms-os budget
+    // erre alig 2,6× tartalék — teljes-suite CPU-torlódás alatt (a nehéz fájlok 3× annyi
+    // ideig futnak) kifutott. 3000 ms ~8× tartalék, és a 20 s-os config-plafon (vite.config.ts)
+    // alatt marad; zöld futáson semmibe nem kerül, mert a wait a feltétel teljesülésekor
+    // azonnal visszatér. mezo-418z
+    await vi.waitFor(() => expect(onClose).toHaveBeenCalled(), { timeout: 3000 })
   })
 
   test('idő nélküli üzenet nem hagy üres időbélyeget', () => {

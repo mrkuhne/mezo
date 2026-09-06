@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
+import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.feature.proactive.config.ProactiveProperties;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeRefsEnvelope;
@@ -104,7 +105,11 @@ public class ChallengeGenerator {
 
     @Transactional
     public List<ChallengeEntity> generate(UUID userId, UUID templateSessionId, LocalDate date) {
-        if (!date.equals(LocalDate.now())) {
+        // mezo-ned9: ONE owner-local day for the whole path — the gate, the persisted workoutDate
+        // and the snapshot `date` threaded into gather() below are all this same day. A default-zone
+        // gate here (UTC on CI/containers) would let a challenge be stamped with a day the payload
+        // never described. ProactiveChallengeService + OverloadChallengeGenerator gate identically.
+        if (!date.equals(LocalDate.now(MedicationCycleService.MEDICATION_ZONE))) {
             return List.of();   // past/future never generate
         }
         List<ChallengeEntity> existing = challengeRepository
@@ -113,7 +118,7 @@ public class ChallengeGenerator {
         if (!existing.isEmpty()) {
             return existing;    // idempotent, NO LLM call
         }
-        Gather gather = gather(userId, templateSessionId);
+        Gather gather = gather(userId, templateSessionId, date);
         if (gather == null) {
             log.debug("No exercise history for {} / {} — no challenges", userId, templateSessionId);
             return List.of();   // grounding gate
@@ -145,8 +150,15 @@ public class ChallengeGenerator {
         return saved;
     }
 
-    /** null when no template exercise has logged-set history (the grounding gate). */
-    Gather gather(UUID userId, UUID templateSessionId) {
+    /**
+     * null when no template exercise has logged-set history (the grounding gate).
+     *
+     * <p>mezo-ned9: {@code date} is the workout day the challenge will be STAMPED with, and it is
+     * the day the snapshot is rendered for — one derivation, so the payload always describes the
+     * very session the challenge is written against. {@code generate} has already pinned it to
+     * the owner-local today.
+     */
+    Gather gather(UUID userId, UUID templateSessionId, LocalDate date) {
         List<ExerciseEntity> exercises = exerciseRepository
                 .findByCreatedByAndWorkoutSessionIdInOrderByOrderIndexAsc(userId, List.of(templateSessionId));
         // Identity-based history (mezo-q7o6): a fresh custom (saját) template's rows carry no
@@ -187,7 +199,9 @@ public class ChallengeGenerator {
                 .findByCreatedByAndStatusAndDeletedFalseOrderByLastDetectedAtDesc(
                         userId, PatternEntity.STATUS_CONFIRMED);
         List<ChallengeRefsEnvelope.Ref> refCandidates = new ArrayList<>();
-        StringBuilder payload = new StringBuilder(contextSnapshotAssembler.render(userId, LocalDate.now()));
+        // mezo-ned9: the caller's owner-local workout day — the SAME date the challenge is stamped
+        // with, so the snapshot describes exactly that session (see this method's javadoc).
+        StringBuilder payload = new StringBuilder(contextSnapshotAssembler.render(userId, date));
         payload.append(knowledgeFactService.renderPromptBlock(userId));
         payload.append("\n\nGYAKORLATOK (az exerciseIndex ezekre mutat):\n");
         for (int i = 0; i < candidates.size(); i++) {

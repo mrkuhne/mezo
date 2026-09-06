@@ -10,6 +10,7 @@ import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
+import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.feature.proactive.config.ProactiveProperties;
 import io.mrkuhne.mezo.feature.proactive.entity.ExperimentEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
@@ -151,7 +152,12 @@ public class ExperimentProposalGenerator {
         if (confirmed.isEmpty()) {
             return null;
         }
-        StringBuilder payload = new StringBuilder(contextSnapshotAssembler.render(userId, LocalDate.now()));
+        // mezo-ned9: the OWNER-local day, not the JVM default's — zero-arg LocalDate.now() is UTC on
+        // CI/containers and drifted the rendered medication cycle day by one against
+        // MedicationCycleService#deriveToday between the two midnights. This gather has no other date
+        // of its own, so there is nothing here for the snapshot day to disagree with.
+        LocalDate ownerToday = LocalDate.now(MedicationCycleService.MEDICATION_ZONE);
+        StringBuilder payload = new StringBuilder(contextSnapshotAssembler.render(userId, ownerToday));
         payload.append(knowledgeFactService.renderPromptBlock(userId));
         payload.append("\n\nMINTA-JELÖLTEK (a patternIndex ezekre mutat):\n");
         for (int i = 0; i < confirmed.size(); i++) {

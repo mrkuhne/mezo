@@ -38,7 +38,12 @@ import org.springframework.test.context.TestPropertySource;
  * under test.
  */
 @ActiveProfiles("companion-fake")
-@TestPropertySource(properties = "mezo.techcore.cron.profile-assembler-job.enabled=false")
+@TestPropertySource(properties = {
+    "mezo.techcore.cron.profile-assembler-job.enabled=false",
+    // mezo-c9k4: the shared test profile now disables this cron by default (kill-switch
+    // completeness) — this IT drives the job directly, so it re-enables it on its own context.
+    "mezo.techcore.cron.quarterly-review-job.enabled=true"
+})
 class QuarterlyReviewJobProfileSwitchOffIT extends AbstractIntegrationTest {
 
     @Autowired private QuarterlyReviewJob quarterlyReviewJob;

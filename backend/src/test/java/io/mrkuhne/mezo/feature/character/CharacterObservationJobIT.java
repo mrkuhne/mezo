@@ -28,6 +28,11 @@ class CharacterObservationJobIT {
 
     @Nested
     @ActiveProfiles("companion-fake")
+    @TestPropertySource(properties = {
+        // mezo-c9k4: the shared test profile now disables this cron by default (kill-switch
+        // completeness) — Case A drives the job directly, so it re-enables it on its own context.
+        "mezo.techcore.cron.character-observation-job.enabled=true"
+    })
     class Enabled extends AbstractIntegrationTest {
 
         @Autowired private CharacterObservationJob job;

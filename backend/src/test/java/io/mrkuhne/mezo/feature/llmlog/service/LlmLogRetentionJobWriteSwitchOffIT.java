@@ -13,7 +13,13 @@ import org.springframework.test.context.TestPropertySource;
  * keeps aging while recording is off, so turning off {@code mezo.feature.llm-log.enabled} must
  * NOT take the retention job bean down with it.
  */
-@TestPropertySource(properties = "mezo.feature.llm-log.enabled=false")
+@TestPropertySource(properties = {
+    "mezo.feature.llm-log.enabled=false",
+    // mezo-c9k4: the "RetentionSwitchOn" half of this test's name used to ride on the shared test
+    // profile leaving the cron switch at its production default; that profile now disables it, so
+    // the precondition is stated here explicitly instead of being inherited.
+    "mezo.techcore.cron.llm-log-retention-job.enabled=true"
+})
 class LlmLogRetentionJobWriteSwitchOffIT extends AbstractIntegrationTest {
 
     @Autowired private ApplicationContext context;

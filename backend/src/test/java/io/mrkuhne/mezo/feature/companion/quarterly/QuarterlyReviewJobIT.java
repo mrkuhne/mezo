@@ -18,12 +18,19 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * W5.3 (mezo-b3pp.20): the cron reviews the JUST-FINISHED quarter for every user, then re-runs
  * the profile — per-user AND per-phase isolated (the GraphMaintenanceJob idiom).
  */
 @ActiveProfiles("companion-fake")
+@TestPropertySource(properties = {
+    // mezo-c9k4: the shared test profile now disables this cron by default (kill-switch
+    // completeness) — this IT drives the job directly, so it re-enables it on its own context.
+    "mezo.techcore.cron.quarterly-review-job.enabled=true",
+    "mezo.techcore.cron.profile-assembler-job.enabled=true"
+})
 class QuarterlyReviewJobIT extends AbstractIntegrationTest {
 
     @Autowired private QuarterlyReviewJob quarterlyReviewJob;

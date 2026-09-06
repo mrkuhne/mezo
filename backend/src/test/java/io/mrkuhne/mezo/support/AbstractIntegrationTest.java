@@ -146,11 +146,16 @@ public abstract class AbstractIntegrationTest {
      * next test's TRUNCATE — PR #306 hit a real 'deadlock detected' when a reader outlived the old
      * silent 2 s cap. The drain now waits up to 30 s per pool and FAILS the test loudly instead of
      * proceeding into a likely deadlock: a deterministic failure naming the cause beats a flaky
-     * PessimisticLockException.
+     * PessimisticLockException. {@code LlmLogAsyncConfig}'s bean is unconditional (no
+     * {@code @ConditionalOnProperty}), so {@code llmLogExecutor} must never resolve to {@code null}
+     * in a test context — see {@link #drainAsyncWork()}'s guard below (mezo-ojpr).
      */
     private void drainAsyncWork() {
-        if (applicationTaskExecutor == null && llmLogExecutor == null) {
-            return;
+        if (llmLogExecutor == null) {
+            throw new IllegalStateException(
+                "llmLogExecutor did not inject — LlmLogAsyncConfig's bean name/type/defaultCandidate "
+                    + "changed and the LLM-log pool would silently stop draining before the TRUNCATE "
+                    + "(mezo-ojpr; the hole mezo-oou9/PR #473 closed)");
         }
         long deadline = System.currentTimeMillis() + 30_000;
         while (isBusy(applicationTaskExecutor) || isBusy(llmLogExecutor)) {

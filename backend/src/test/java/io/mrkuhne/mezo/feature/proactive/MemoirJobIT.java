@@ -14,9 +14,15 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 /** W2 Sunday cron: generates the memoir for the week ending this Sunday per user; idempotent. */
 @ActiveProfiles("companion-fake")
+@TestPropertySource(properties = {
+    // mezo-c9k4: the shared test profile now disables this cron by default (kill-switch
+    // completeness) — this IT drives the job directly, so it re-enables it on its own context.
+    "mezo.techcore.cron.memoir-job.enabled=true"
+})
 class MemoirJobIT extends AbstractIntegrationTest {
 
     private static final LocalDate WEEK_START =

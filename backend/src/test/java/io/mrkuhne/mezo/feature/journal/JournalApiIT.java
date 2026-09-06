@@ -40,12 +40,16 @@ class JournalApiIT extends ApiIntegrationTest {
 
     @Test
     void testCreateJournalEntry_shouldReturn201WithDefaultedDate_whenOccurredOnAbsent() {
+        // occurredOn is stamped by the SERVER's clock: capture the day AROUND the call and accept
+        // either side of it, so a midnight between the two reads cannot flip the assert.
+        LocalDate dayBefore = LocalDate.now();
         JournalEntryResponse created = postForBody("/api/journal",
             CreateJournalEntryRequest.builder().text("Ma jó napom volt.").source("quickinput").build(),
             ownerAuthHeaders(), HttpStatus.CREATED, JournalEntryResponse.class);
+        LocalDate dayAfter = LocalDate.now();
 
         assertThat(created.getId()).isNotNull();
-        assertThat(created.getOccurredOn()).isEqualTo(LocalDate.now());
+        assertThat(created.getOccurredOn()).isIn(dayBefore, dayAfter);
         assertThat(created.getText()).isEqualTo("Ma jó napom volt.");
         assertThat(created.getSource()).isEqualTo(JournalEntryResponse.SourceEnum.QUICKINPUT);
         assertThat(created.getCreatedAt()).isNotNull();
@@ -106,7 +110,7 @@ class JournalApiIT extends ApiIntegrationTest {
     void testUpdateJournalEntry_shouldReturn404_whenNotOwnEntry() {
         UUID otherUser = userPopulator.createUser().getId();
         JournalEntryEntity entry = journalPopulator.createEntry(otherUser, LocalDate.now(),
-            "Nem az enyém.", JournalEntryEntity.SOURCE_QUICKINPUT);
+            "Nem az enyém.", JournalEntryEntity.SOURCE_QUICKINPUT); // single read — never re-derived
 
         String body = putForBody("/api/journal/" + entry.getId(),
             UpdateJournalEntryRequest.builder().text("Próbálkozás.").build(),
@@ -118,14 +122,17 @@ class JournalApiIT extends ApiIntegrationTest {
     @Test
     void testDeleteJournalEntry_shouldSoftDeleteAndVanishFromList_whenExisting() {
         UUID owner = ownerId();
-        JournalEntryEntity entry = journalPopulator.createEntry(owner, LocalDate.now(),
+        // both the seeded row's day and the window bounds are test-owned: read the day ONCE so a
+        // midnight in the middle of the test cannot move the window off the row it was seeded on
+        LocalDate today = LocalDate.now();
+        JournalEntryEntity entry = journalPopulator.createEntry(owner, today,
             "Törlendő bejegyzés.", JournalEntryEntity.SOURCE_QUICKINPUT);
         HttpHeaders auth = ownerAuthHeaders();
 
         deleteAndExpect("/api/journal/" + entry.getId(), auth, HttpStatus.NO_CONTENT);
 
         List<JournalEntryResponse> entries = getForList(
-            "/api/journal?from=" + LocalDate.now() + "&to=" + LocalDate.now(), auth, HttpStatus.OK,
+            "/api/journal?from=" + today + "&to=" + today, auth, HttpStatus.OK,
             JournalEntryResponse.class);
         assertThat(entries).extracting(JournalEntryResponse::getId).doesNotContain(entry.getId());
     }
