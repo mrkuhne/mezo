@@ -411,6 +411,11 @@ mezo:
       # off = the HypothesisJob bean does not exist
       hypothesis-job:
         enabled: true
+      # Reflexió (mezo-eq85) nightly reflection pass (schedule: mezo.companion.reflection.cron);
+      # off = the ReflectionJob bean does not exist (TextSignalService / the catch-up stay callable,
+      # the FlagSweepJob-vs-FlagService idiom)
+      reflection-job:
+        enabled: true
       # Companion-feed morning/midday/evening crons (schedules: mezo.proactive.feed.*-cron);
       # off = the CompanionMessageJob bean does not exist (the lazy GET still serves)
       feed-job:
@@ -569,6 +574,32 @@ mezo:
       note-min-chars: 80
       # Per-user, per-run cap on note embeddings — the one-time history backfill spreads over nights
       note-batch-size: 200
+    reflection:
+      # Reflexió (mezo-eq85): text signals, quick notices, the 03:40 nightly reflection.
+      # Off = no TextSignal* bean exists — no extraction call, and the four TEXT_* metrics report
+      # no data (the series helper returns an empty map, so the monitor shows them as no_data).
+      enabled: true
+      # 03:40 — the dawn cluster's remaining free-ish slot; it shares the minute with the llm-log
+      # payload-retention purge (mezo.llm-log.retention.cron), which is a single bounded UPDATE on
+      # an unrelated table, so there is no contention. Everything else is taken: 02:20 summary,
+      # 02:40 patterns, 02:50 character, 03:00 SUN hypotheses, 03:10 feedback-learning, 03:20 graph,
+      # 03:30 MON weekly rung, 03:45 MON profile, 03:50 monthly rung + audit retention, 04:00 quarterly.
+      cron: "0 40 3 * * *"
+      # Missing/stale text signals are re-extracted for this many finished days each night.
+      catch-up-days: 7
+      notice:
+        max-per-day: 2
+        min-gap-hours: 4
+        quiet-from: "22:00"
+        quiet-to: "07:00"
+      propose:
+        max-per-night: 2
+      lifecycle:
+        confirm-streak: 3
+        refute-streak: 3
+        dormant-after-days: 30
+        strong-r: 0.3
+        strong-p: 0.15
     memory-platform:
       # Vector generation served by the new retrieval path; re-embedding never flips this value.
       serving-embedding-version: gemini-embedding-001-768-v1

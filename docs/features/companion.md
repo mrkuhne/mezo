@@ -904,6 +904,85 @@ consumed by `DecisionService` via `ObjectProvider<DecisionContextPort>`. The cro
 creates is `companion → journal` — the SAME direction the rest of the seam already runs — so the
 architecture stays acyclic with no frozen exception.
 
+**Reflexió S1 — text signals (`mezo-eq85.1`) — the first structured reading of the user's own prose.**
+Everything the pattern engine could correlate until now came from a *form*: a slider, a logged set, a
+weighed meal. The prose surfaces (journal, gratitude, the chat itself) were embedded for recall but
+carried **zero** per-day numbers. S1 closes that: one **`text_signal`** row per source-row *version*
+holds an LLM-extracted `mood`/`energy`/`stress` (1..5), a `confidence`, and the `people` / `topics` /
+`keywords` the text mentions — turning free writing into series the correlation engine can align on.
+
+- **What a signal is, and what it is not.** `TextSignalExtractor` (`reflection/service/`) is the ONE
+  LLM stage, and the only thing the model is allowed to produce is extracted-signal JSON. Everything
+  the answer claims is re-validated in code before a row exists: `confidence != "sure"` ⇒ the three
+  numbers are **dropped to null** (a neutral two-line entry must never become a 3/3/3 data point),
+  values are clamped to 1..5, topics are intersected with a **closed 12-word vocabulary**
+  (`munka|család|kapcsolatok|sport|egészség|pihenés|alvás|evés|pénz|alkotás|tanulás|otthon`) so an
+  invented topic is dropped rather than stored, and people/keywords are trimmed, de-duplicated and
+  capped (5 / 3). A broken, non-JSON or absent answer — and a failing provider call — yields
+  `Optional.empty()`: no row, never an exception escaping the stage.
+- **Versions, not updates.** `TextSignalService.record` is idempotent on `(source, sha256(text))`:
+  an unchanged text returns the existing newest row and costs **no LLM call**, while a changed text
+  APPENDS `version + 1`. Nothing is ever updated in place, so an edit leaves yesterday's extraction
+  auditable; every series reads the newest version per `(source_kind, source_id)`, which is also why
+  an edited entry replaces rather than doubles its own day's contribution.
+- **Three sources.** `journal_entry` and `gratitude` arrive through **`TextSignalListener`** — the
+  `JournalEmbeddingListener` idiom verbatim (`@Async @TransactionalEventListener(AFTER_COMMIT)`,
+  gated on `COMPANION_SWITCH` + `JOURNAL_SWITCH` + `REFLECTION_SWITCH`, failures logged and
+  swallowed), consuming the same four events (`JournalEntrySaved/Deleted`,
+  `GratitudeEntrySaved/Deleted`) the embedding seam already uses. It reads the rows through the
+  journal **repositories**, not a journal service, deliberately staying inside the dependency
+  envelope `companion/embedding` established. The third source is **`chat_day`**: the day's own
+  `role=user` turns joined into one text by `ChatDaySignalService`, keyed by a stable
+  `UUID.nameUUIDFromBytes(userId + ":" + day)` so a day that gains turns re-versions instead of
+  duplicating.
+- **The four new metrics.** `MetricKey.TEXT_MOOD` / `TEXT_ENERGY` / `TEXT_STRESS` (NUMBER) and
+  `TEXT_SOCIAL_CONTACT` (BINARY), all `MetricDomain.MIND`, served by `TextSignalSeriesService`
+  through `MetricSeriesService`'s existing switch. The numeric three are the **mean of the day's
+  `sure` values**; a day whose every signal is `unsure` is **absent**, not zero — the correlation
+  aligns on presence and must never see an invented value. `TEXT_SOCIAL_CONTACT` is 1.0 on a day that
+  names anyone, 0.0 on a day with signals but no name, absent on a day with no signal; it is
+  deliberately NOT gated on `sure`, because whether a name appears in the text is an observation
+  about the text rather than a judgement the model could be uncertain about. `MetricSeriesService`
+  reaches the series bean through an `ObjectProvider` (the `TodayActivitySource` idiom), so with the
+  reflection switch off the four metrics honestly report **no data** instead of failing to construct.
+- **Open-ended derived series.** `DerivedSeriesService` answers "give me this key's series / value
+  kind / label" and "is this key real for this user" over BOTH the fixed `MetricKey` catalog and the
+  user-specific `people:<név>` / `topic:<téma>` presence keys the signals make possible — the seam
+  slices 2–6 correlate arbitrary pairs through. `isKnown` only accepts a person/topic key when a
+  signal of the last 180 days actually carries it, so a pattern can never be proposed about a person
+  the user never wrote about; an unresolvable key yields an **empty** series, never an exception.
+- **The one memory-platform write, and the race it loses.** After a signal lands,
+  `memory_item.people` / `.topics` for the SAME `(created_by, source_kind, source_id)` are refreshed
+  from it — `memory_item.source_kind` equals the signal's `source_kind` for both prose kinds, because
+  `MemoryEmbeddingWriter` uses the same `journal_entry` / `gratitude` strings. **`salience` is never
+  written from a model answer** (RAG spec §12) and stays whatever the deterministic projector set.
+  **Two unordered AFTER_COMMIT listeners fire on the same journal save** — this one and the embedding
+  seam's memory projection — and `MemoryProjectionWriter` unconditionally RESETS `people`/`topics` to
+  its command's empty lists, so a projection that lands last silently wipes the enrichment. Rather
+  than ordering the two listeners (which would couple the seams), the enrichment is made
+  **re-appliable**: `record`'s unchanged-hash short-circuit re-applies it from the STORED signal at
+  zero LLM cost, which is exactly what the nightly catch-up's re-offer triggers. So the enrichment is
+  eventually-correct within a night, not guaranteed on the first write — and a missing `memory_item`
+  row (the projection has not run yet) is the same story: no enrichment this round, healed by the
+  next catch-up. That heal is only real because the catch-up offers **every** source unconditionally
+  (see below); a staleness gate in front of the re-offer would have made the race state — row
+  present, hash unchanged, `people`/`topics` wiped — the one input it filtered out, and since
+  `MemoryProjectionWriter` also short-circuits on an unchanged hash, nothing else would ever restore
+  it (review finding).
+- **Catch-up — everything is re-offered, the hash decides.**
+  `TextSignalCatchUpService.catchUp(userId, today)` walks the last `catch-up-days` finished days and
+  offers **every** journal row, gratitude row and day to `record` / `ChatDaySignalService.extractDay`
+  **without any "is it already up to date?" gate**, because `record` is hash-idempotent: an unchanged
+  text costs no LLM call and writes no row, but it DOES re-apply the `memory_item` enrichment, and an
+  unconditionally-offered `chat_day` is what lets a day whose conversation continued after the first
+  extraction re-version instead of keeping a stale signal forever. `isUpToDate` survives only to
+  decide whether an offer COUNTED as a write, so the returned number is real writes and an
+  all-unchanged night returns 0. An entry written while the LLM was down, or edited while the
+  listener was off, heals itself; a failing source is caught and logged per source, so one bad row
+  never aborts the night. `TextSignalCatchUpIT` pins all four legs (missing ⇒ extracted, stale hash
+  ⇒ new version, unchanged hash ⇒ enrichment restored with no new version, continued chat day ⇒
+  re-versioned). Task 2's nightly job is the only production caller.
+
 ## 2. User-facing behavior
 
 The ChatPage under Insights (`/insights/chat`, [`insights.md`](insights.md) §2.5) is the real
@@ -2273,6 +2352,42 @@ Audit runs are retained for 30 days by default; `MemoryRetrievalRetentionJob` fa
 users at 03:50 and physically deletes expired runs so database cascades remove their result and
 feedback children. This is an explicit audit-retention exception to normal domain soft deletion;
 source memories and vectors are never touched by the purge.
+
+### Backend tables (Reflexió S1 text signals, ✅ `mezo-eq85.1`)
+
+Migration `202609071000_mezo-eq85.1_text_signal.sql` (in `1.0.0_master.yml`) — the per-day structured
+reading of the user's own prose (§1 above). Driving spec:
+[`docs/superpowers/specs/2026-09-06-reflection-self-discovered-patterns-design.md`](../superpowers/specs/2026-09-06-reflection-self-discovered-patterns-design.md).
+
+- **`text_signal`** — `id uuid pk (gen_random_uuid())`, `created_by uuid fk→app_user(id) ON DELETE
+  CASCADE`, `is_deleted`, `created_at`, `source_kind varchar(16)`, `source_id uuid`, `occurred_on
+  date`, `content_hash varchar(64)`, `version integer default 1`, `mood`/`energy`/`stress smallint`
+  (nullable), `confidence varchar(8)`, `people`/`topics`/`keywords text[] default '{}'`,
+  `provenance jsonb` (typed `TextSignalProvenanceEnvelope` — model, extraction instant, source text
+  length; audit only). Constraints: `pk_text_signal_id`,
+  `fk_text_signal_created_by_app_user_id`, `ck_text_signal_source_kind`
+  (`journal_entry|gratitude|chat_day`), `ck_text_signal_confidence` (`sure|unsure`) and three
+  `ck_text_signal_{mood,energy,stress}` range CHECKs (`null or between 1 and 5`). Indexes:
+  **`uq_text_signal_source_version (created_by, source_kind, source_id, version) where is_deleted =
+  false`** — the versioning invariant — and `idx_text_signal_created_by_occurred_on` (the series
+  read's key).
+- **`source_id` carries NO foreign key**, deliberately: it points at `journal_entry`, `gratitude`
+  **or** a synthetic `chat_day` UUID that references no table at all, and three conditional FKs
+  cannot be expressed. A dangling id is harmless — the delete listeners soft-delete the signals of a
+  deleted entry, and an unmatched id is simply never read back.
+- **Rows are appended, never updated** (§1): the newest `version` per `(source_kind, source_id)` is
+  what every series reads; older versions stay for audit. `unsure` rows persist too and are
+  deliberately excluded from the numeric series rather than deleted.
+- **The scores are `smallint` in SQL but `Integer` in Java** — a 1..5 CHECK needs no more storage,
+  while the extractor, the series maps and every consumer speak `Integer`. The entity's explicit
+  `@JdbcTypeCode(SqlTypes.SMALLINT)` on the three fields is what reconciles the two; without it
+  Hibernate's schema validation rejects `int2` against an `Integer` attribute.
+- **No own feature switch on the table** — every bean over it is gated on `COMPANION_SWITCH` +
+  `REFLECTION_SWITCH` (`mezo.companion.reflection.enabled`), and the listener additionally on
+  `JOURNAL_SWITCH`. Switch reflection off ⇒ none of `TextSignalExtractor` / `TextSignalService` /
+  `TextSignalListener` / `TextSignalSeriesService` / `DerivedSeriesService` /
+  `ChatDaySignalService` / `TextSignalCatchUpService` exists (`TextSignalListenerSwitchOffIT`), and
+  the four `TEXT_*` metrics report no data.
 
 ### Backend tables (LLM audit log, ✅ `mezo-2zyu`)
 
@@ -4360,6 +4475,32 @@ NOT another `CompanionProperties` nested component), picked up by `@Configuratio
 Prose gate: `mezo.feature.day-review.enabled` (`DAY_REVIEW_SWITCH`) = **true** by default — see the
 `DayReviewService`/`DayReviewLlmAdapter` writeup above for what it gates and does not.
 
+### Config keys (`mezo.companion.reflection.*` — `ReflectionProperties`, `@Validated`)
+
+The whole Reflexió epic's config surface lands in one validated record (picked up by
+`MezoApplication`'s `@ConfigurationPropertiesScan`, the `MemoryPlatformProperties` idiom). S1 uses
+`enabled` and `catch-up-days`; the rest is bound and range-validated here so slices 2–6 consume it
+without a second properties class.
+
+- `mezo.companion.reflection.enabled` = **true** (`FeaturesConfiguration.REFLECTION_SWITCH`) —
+  the master switch for every Reflexió bean; off ⇒ no extraction call is reachable and the four
+  `TEXT_*` metrics report no data.
+- `mezo.techcore.cron.reflection-job.enabled` = **true** (`REFLECTION_JOB_SWITCH`) — off ⇒ the
+  nightly job bean does not exist; `TextSignalCatchUpService` stays callable (the
+  `FlagSweepJob`-vs-`FlagService` idiom).
+- `mezo.companion.reflection.cron` = **`0 40 3 * * *`** — 03:40. It **shares that minute with the
+  llm-log payload-retention purge** (`mezo.llm-log.retention.cron`), which is a single bounded UPDATE
+  on an unrelated table; every other dawn slot is taken (02:20 summary, 02:40 patterns, 02:50
+  character, 03:00 SUN hypotheses, 03:10 feedback-learning, 03:20 graph, 03:30 MON weekly rung, 03:45
+  MON profile, 03:50 monthly rung + audit retention, 04:00 quarterly).
+- `mezo.companion.reflection.catch-up-days` = **7** (`@Min(1) @Max(30)`) — finished days the nightly
+  catch-up re-checks for missing/stale signals.
+- `mezo.companion.reflection.notice.{max-per-day, min-gap-hours, quiet-from, quiet-to}` =
+  **2 / 4 / 22:00 / 07:00** — quick-notice rate limits and quiet hours (consumed from S2 on).
+- `mezo.companion.reflection.propose.max-per-night` = **2** — cap on newly proposed patterns per run.
+- `mezo.companion.reflection.lifecycle.{confirm-streak, refute-streak, dormant-after-days, strong-r,
+  strong-p}` = **3 / 3 / 30 / 0.3 / 0.15** — pattern lifecycle thresholds.
+
 ### Config keys (`mezo.llm-log.*` — the audit log, `LlmLogProperties`/`LlmPricingProperties`)
 
 - Feature switch `mezo.feature.llm-log.enabled` (`FeaturesConfiguration.LLM_LOG_SWITCH`) = **false**
@@ -5848,6 +5989,35 @@ Carried over from V0.1 (`mezo-fnnq.1`): `CompanionLlmFakeIT` (fake picked + echo
 `CompanionRealWiringIT` (Gemini adapter picked when the fake profile is absent), `CompanionSwitchOffIT`
 (**no `CompanionLlm` bean when the switch is off** — `ObjectProvider.getIfAvailable() == null`),
 `CompanionPropertiesIT` (llm tiers + the V0.2 `chat.*` window/title bindings).
+
+**Reflexió S1 — text signals (`mezo-eq85.1`).** Five tests, one per seam.
+`feature/companion/reflection/TextSignalExtractorTest` is a pure unit test over a hand-written
+`CompanionLlm` stub: valid JSON parses, `unsure` drops the numbers, an unknown topic is dropped, an
+overshooting number is clamped to 1..5, a non-JSON answer and a throwing provider both yield an
+empty `Optional`, and a blank text never reaches the model at all.
+`TextSignalListenerIT` drives the REAL `JournalService`/`GratitudeService` write paths (a populator
+would bypass the events) under `@ActiveProfiles("companion-fake")` and awaits the AFTER_COMMIT
+listener: a save writes the signal and refreshes `memory_item.people`/`.topics`, an edit writes
+`version 2` alongside — not over — `version 1`, a delete soft-deletes every signal of the source,
+and `FakeCompanionLlm.SIGNAL_FAIL` proves a failing extraction leaves the entry intact and writes
+nothing. The enrichment half is asserted through `TextSignalCatchUpService.catchUp` — the seam
+production actually runs — and every assertion after it sits INSIDE the awaited block, so a late
+projection re-wipe is polled through instead of failing the test (review finding).
+`TextSignalCatchUpIT` owns the catch-up itself, with sources made by the POPULATORS so no listener
+has already written the signal: a missing signal is extracted, an edited source re-versions, an
+UNCHANGED source restores a wiped `memory_item.people`/`.topics` while writing no new version and
+returning 0, a chat day that gains later turns re-versions (and a third unchanged run writes
+nothing), and a `SIGNAL_FAIL` source does not stop the same night's gratitude row from landing.
+`TextSignalListenerSwitchOffIT` pins the structural half (the `PatternDetectionJobSwitchOffIT`
+shape): reflection off ⇒ listener, service AND extractor beans are all absent.
+`TextSignalSeriesIT` covers the series rules against real Postgres — the per-day mean over `sure`
+rows only, an all-unsure day being absent rather than zero, `TEXT_SOCIAL_CONTACT`'s binary presence,
+newest-version-wins per source (including its effect on the derived people series), the
+`people:`/`topic:` presence series, `MetricKey` delegation for a plain wire key, and
+`valueKindOf`/`labelOf`/`isKnown` for all three key shapes.
+`FakeCompanionLlm` dispatches on `TextSignalExtractor.SIGNAL_MARKER`: `[[SIGNAL:{…}]]` in the entry
+text returns that JSON verbatim, `SIGNAL_FAIL` throws, and the un-scripted default is a `sure`,
+mildly positive signal mentioning Anna.
 
 ## 9. Decisions, gotchas & deferred
 

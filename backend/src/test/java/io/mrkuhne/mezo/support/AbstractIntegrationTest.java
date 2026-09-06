@@ -58,6 +58,7 @@ import io.mrkuhne.mezo.support.populator.SleepGoalPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
 import io.mrkuhne.mezo.support.populator.SportSlotSkipPopulator;
 import io.mrkuhne.mezo.support.populator.SupplementIntakePopulator;
+import io.mrkuhne.mezo.support.populator.TextSignalPopulator;
 import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import io.mrkuhne.mezo.support.populator.WorkoutDayAdjustmentPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
@@ -115,6 +116,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
     ProtocolPopulator.class, SupplementIntakePopulator.class,
     SkillProgressPopulator.class, LevelUpEventPopulator.class,
     PersonPopulator.class, MentionPopulator.class, GamificationPopulator.class,
+    TextSignalPopulator.class,
     LlmLogPopulator.class, NotificationPopulator.class, AppNotificationPopulator.class, LifeGoalPopulator.class,
     ResetDatabase.class})
 public abstract class AbstractIntegrationTest {
