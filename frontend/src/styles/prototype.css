@@ -302,7 +302,6 @@
   --mz-titlech-bg: rgba(201, 150, 46, 0.14);
   --mz-titlech-ink: #A8801F;
   --mz-goalfill: linear-gradient(90deg, #FF9A78, #FF5B36);
-  --mz-goaldot: #FF5B36;
   --mz-wash-band: linear-gradient(150deg, #FFEDE4, #FFF8F4);
   /* Edzés hub (mezo-d20.3.1) — prototype edzes-body hub hero + .coach hexes verbatim */
   --mz-wash-trainhero: linear-gradient(140deg, #FFE7DC, #FFFFFF 70%);
@@ -703,7 +702,6 @@
   --mz-titlech-bg: color-mix(in srgb, var(--dv-amber) 18%, var(--surface-card));
   --mz-titlech-ink: var(--dv-amber);
   --mz-goalfill: linear-gradient(90deg, #FF9A78, #FF5B36);
-  --mz-goaldot: #FF5B36;
   --mz-wash-band: linear-gradient(150deg, color-mix(in srgb, var(--dv-coral) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-coral) 5%, var(--surface-page)));
   /* Edzés hub (mezo-d20.3.1) — the hub hero wash + coach bubble on the dark dv ramp */
   --mz-wash-trainhero: linear-gradient(140deg, color-mix(in srgb, var(--dv-coral) 16%, var(--surface-card)), var(--surface-card) 70%);
@@ -6268,17 +6266,6 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .enh-goalhead .mz-eyebrow { color: var(--mz-cell-coral-ink); }
 .enh-stch { margin-left: auto; flex: none; font-size: 9px; font-weight: 800; letter-spacing: 0.08em;
   border-radius: 7px; padding: 3px 9px; background: var(--mz-stch-ok-bg); color: var(--mz-stch-ok-ink); }
-.enh-gtrack { position: relative; height: 8px; border-radius: 5px; background: var(--mz-gbar-bg); margin-top: 12px; }
-.enh-gtrack .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px;
-  width: var(--p); background: var(--mz-goalfill); }
-.mz-play .enh-gtrack .fill { animation: enh-gfill 0.9s cubic-bezier(0.25, 0.8, 0.35, 1) 0.4s backwards; }
-@keyframes enh-gfill { from { width: 0; } }
-.enh-gtrack .dot { position: absolute; top: 50%; left: var(--p); transform: translate(-50%, -50%);
-  width: 15px; height: 15px; border-radius: 50%; background: var(--mz-stripbg);
-  border: 3px solid var(--mz-goaldot); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.4); }
-.enh-gtlbl { display: flex; justify-content: space-between; margin-top: 6px; font-size: 8.5px;
-  font-weight: 700; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
-.enh-gtlbl b { color: var(--text-primary); }
 .enh-goalcard .mz-mcells { margin-top: 11px; }
 .enh-newgoal { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
   min-height: 44px; border: 1.4px dashed rgba(43, 33, 24, 0.22); background: none; border-radius: 20px;
@@ -6296,7 +6283,6 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .enh-eb-sage .mz-eyebrow  { color: var(--mz-cell-sage-ink); }
 
 @media (prefers-reduced-motion: reduce) {
-  .mz-play .enh-gtrack .fill { animation: none; }
   .enh-goalcard { transition: none; }
 }
 
