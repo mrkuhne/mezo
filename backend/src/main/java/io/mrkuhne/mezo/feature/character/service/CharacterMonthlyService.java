@@ -130,7 +130,7 @@ public class CharacterMonthlyService {
         // misleading for a whole-dossier monthly pass, so this rides the SAME null-weekStart path
         // CharacterBootstrapService uses ("Teljes eddigi történet"). The conference row's OWN
         // weekStart (monthStart) is set below, independently, by persistConferenceAndApplyOutcome.
-        KonziliumVerdictRound.Result verdictResult = verdictRound.run(owner, null, proposalResult.proposals());
+        KonziliumVerdictRound.Result verdictResult = verdictRound.run(owner, null, proposalResult.proposals(), List.of());
 
         List<ConferenceTranscriptEnvelope.Turn> transcriptTurns = new ArrayList<>(proposalResult.turns());
         transcriptTurns.addAll(verdictResult.turns());

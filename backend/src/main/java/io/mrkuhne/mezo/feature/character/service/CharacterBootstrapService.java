@@ -87,7 +87,7 @@ public class CharacterBootstrapService {
 
         KonziliumProposalRound.Result proposalResult = proposalRound.runOnEvidence(
                 owner, PERIOD_LABEL, BOOTSTRAP_MARKER, AUDIT_OP, evidence, BOOTSTRAP_EVIDENCE_PHRASE);
-        KonziliumVerdictRound.Result verdictResult = verdictRound.run(owner, null, proposalResult.proposals());
+        KonziliumVerdictRound.Result verdictResult = verdictRound.run(owner, null, proposalResult.proposals(), List.of());
 
         List<ConferenceTranscriptEnvelope.Turn> transcriptTurns = new ArrayList<>(proposalResult.turns());
         transcriptTurns.addAll(verdictResult.turns());

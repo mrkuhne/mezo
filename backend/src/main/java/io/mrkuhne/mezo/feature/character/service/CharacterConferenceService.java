@@ -90,7 +90,7 @@ public class CharacterConferenceService {
         }
 
         KonziliumProposalRound.Result proposalResult = proposalRound.run(owner, weekStart, weekObservations);
-        KonziliumVerdictRound.Result verdictResult = verdictRound.run(owner, weekStart, proposalResult.proposals());
+        KonziliumVerdictRound.Result verdictResult = verdictRound.run(owner, weekStart, proposalResult.proposals(), List.of());
 
         warnUnaddressedUserFeedback(owner, weekObservations, proposalResult.proposals());
 

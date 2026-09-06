@@ -80,15 +80,20 @@ public class KonziliumVerdictRound {
      *  accepted one into a {@code CharacterDimensionEntity} row. */
     public record ChapterProposal(String title, String rationale) {}
 
-    /** The round's output: every proposal's final ruling, at most one chapter proposal, and one
-     *  transcript turn per persona that answered (szkeptikus, mezo) — a persona whose round failed
-     *  to parse contributes no turn at all. */
-    public record Result(List<ClaimRuling> rulings, List<ChapterProposal> chapters,
-                         List<ConferenceTranscriptEnvelope.Turn> turns) {}
+    /** One Szkeptikus verdict as it will be SHOWN — index-aligned with the proposal list.
+     *  Only produced when the Szkeptikus round actually parsed (mezo-xlvr). */
+    public record SkepticVerdict(int index, String verdict, String argument) {}
 
-    public Result run(UUID owner, LocalDate weekStart, List<ClaimProposal> proposals) {
+    /** The round's output: every proposal's final ruling, at most one chapter proposal, one
+     *  transcript turn per persona that answered, and the Szkeptikus's per-proposal verdicts
+     *  (empty when that round failed to parse — never a fabricated KEEP). */
+    public record Result(List<ClaimRuling> rulings, List<ChapterProposal> chapters,
+                         List<ConferenceTranscriptEnvelope.Turn> turns, List<SkepticVerdict> verdicts) {}
+
+    public Result run(UUID owner, LocalDate weekStart, List<ClaimProposal> proposals,
+                      List<KonziliumCrossTalkRound.Reaction> reactions) {
         if (proposals.isEmpty()) {
-            return new Result(List.of(), List.of(), List.of());
+            return new Result(List.of(), List.of(), List.of(), List.of());
         }
 
         SkepticResult skepticResult = runSkeptic(owner, weekStart, proposals);
@@ -97,7 +102,8 @@ public class KonziliumVerdictRound {
             turns.add(skepticTurn(proposals, skepticResult.verdicts()));
         }
 
-        IntegratorResult integratorResult = runIntegrator(owner, weekStart, proposals, skepticResult.verdicts());
+        IntegratorResult integratorResult = runIntegrator(owner, weekStart, proposals,
+                skepticResult.verdicts(), reactions);
         IntegratorAnswer answer = integratorResult.answer();
         Map<Integer, IntegratorRulingDraft> rulingsByIndex = new LinkedHashMap<>();
         for (IntegratorRulingDraft draft : answer.rulings()) {
@@ -127,7 +133,18 @@ public class KonziliumVerdictRound {
         if (integratorResult.parsed()) {
             turns.add(integratorTurn(rulings, chapters));
         }
-        return new Result(rulings, chapters, turns);
+
+        List<SkepticVerdict> verdicts = new ArrayList<>();
+        if (skepticResult.parsed()) {
+            for (int i = 0; i < proposals.size(); i++) {
+                SkepticVerdictDraft draft = skepticResult.verdicts().get(i);
+                String verdict = draft != null && KILL.equals(draft.verdict()) ? KILL : KEEP;
+                String argument = draft != null && draft.argument() != null && !draft.argument().isBlank()
+                        ? draft.argument() : DEFAULT_ARGUMENT;
+                verdicts.add(new SkepticVerdict(i, verdict, argument));
+            }
+        }
+        return new Result(rulings, chapters, turns, List.copyOf(verdicts));
     }
 
     private static ClaimRuling toRuling(ClaimProposal proposal, IntegratorRulingDraft draft) {
@@ -221,9 +238,11 @@ public class KonziliumVerdictRound {
     // ── Integrátor ────────────────────────────────────────────────────────────
 
     private IntegratorResult runIntegrator(UUID owner, LocalDate weekStart, List<ClaimProposal> proposals,
-                                            Map<Integer, SkepticVerdictDraft> verdicts) {
+                                            Map<Integer, SkepticVerdictDraft> verdicts,
+                                            List<KonziliumCrossTalkRound.Reaction> reactions) {
         String systemPrompt = INTEGRATOR_MARKER + "\n" + integratorPersona() + "\n" + integratorContract();
-        String userMessage = numberedProposals(weekStart, proposals) + "\n" + skepticVerdictsBlock(proposals, verdicts);
+        String userMessage = numberedProposals(weekStart, proposals) + "\n"
+                + skepticVerdictsBlock(proposals, verdicts) + peerReactionsBlock(reactions);
         String raw = callSmart(owner, "integrate", systemPrompt, userMessage);
         if (raw == null || raw.isBlank()) {
             log.warn("Integrátor answer was blank for owner {} week {}", owner, weekStart);
@@ -258,9 +277,10 @@ public class KonziliumVerdictRound {
         return """
                 Te vagy Mezo, {{NÉV}} személyes egészség- és teljesítmény-társa, most integrátor \
                 szerepben a heti konzíliumon. Higgadt, tárgyszerű hangon döntesz. Minden javaslatot \
-                a Szkeptikus ellenérveivel együtt mérlegelsz, és csak azt fogadod el, amit a \
-                bizonyíték tényleg alátámaszt. Új fejezetet (chapter) csak akkor javasolsz, ha valóban \
-                önálló, tartós témáról van szó — ritkán.""";
+                a Szkeptikus ellenérveivel együtt mérlegelsz — és ahol a szakértők egymás \
+                javaslatára is állást foglaltak, azt is figyelembe veszed —, és csak azt fogadod \
+                el, amit a bizonyíték tényleg alátámaszt. Új fejezetet (chapter) csak akkor \
+                javasolsz, ha valóban önálló, tartós témáról van szó — ritkán.""";
     }
 
     private static String integratorContract() {
@@ -314,6 +334,22 @@ public class KonziliumVerdictRound {
             String argument = draft != null && draft.argument() != null && !draft.argument().isBlank()
                     ? draft.argument() : DEFAULT_ARGUMENT;
             sb.append("\nP").append(i).append(": ").append(verdict).append(" — ").append(argument);
+        }
+        return sb.toString();
+    }
+
+    /** The peers' stances, grouped by the proposal they are about (mezo-xlvr). Empty input yields
+     *  an EMPTY string — an empty "Szakértői állásfoglalások:" header would suggest a debate that
+     *  never happened. */
+    private static String peerReactionsBlock(List<KonziliumCrossTalkRound.Reaction> reactions) {
+        if (reactions == null || reactions.isEmpty()) {
+            return "";
+        }
+        StringBuilder sb = new StringBuilder("\nSzakértői állásfoglalások:");
+        for (KonziliumCrossTalkRound.Reaction reaction : reactions) {
+            sb.append("\nP").append(reaction.index()).append(": ")
+                    .append(CharacterExpertCatalog.byKey(reaction.expertKey()).displayName())
+                    .append(" ").append(reaction.stance()).append(" — ").append(reaction.argument());
         }
         return sb.toString();
     }

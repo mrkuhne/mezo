@@ -545,6 +545,10 @@ public class FakeCompanionLlm implements CompanionLlm {
     private final java.util.concurrent.atomic.AtomicInteger completeCallCount =
             new java.util.concurrent.atomic.AtomicInteger();
     private volatile List<Turn> lastMemoryRewriteHistory = List.of();
+    /** mezo-xlvr: the last user message that reached {@link #complete}, so an IT can assert a
+     *  prompt-assembly detail (e.g. that the cross-talk peer stances reached the prompt) without
+     *  needing a dedicated sentinel/echo for every such detail. */
+    private volatile String lastUserMessage;
 
     public int completeCallCount() {
         return completeCallCount.get();
@@ -554,10 +558,15 @@ public class FakeCompanionLlm implements CompanionLlm {
         return List.copyOf(lastMemoryRewriteHistory);
     }
 
+    public String lastUserMessage() {
+        return lastUserMessage;
+    }
+
     @Override
     public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
         completeCallCount.incrementAndGet();
+        lastUserMessage = userMessage;
         // mezo-p2tr: the opening turn's userMessage is the FIXED KICKOFF_PROMPT (no room to plant a
         // sentinel there), so an IT scripts the failure via the DYNAMIC [Heti adatok] block instead
         // (e.g. a seeded weekly-review summary) — checking the system prompt too is what lets that
