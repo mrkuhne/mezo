@@ -1710,6 +1710,23 @@ is `ProactiveProperties`, so a standalone record avoids growing it further):
     the window ⇒ the observed-bedtime half of the check stays silent (the schedule half can still
     speak).
 
+**`config/QuestionProperties.java` (round 2 S5, bd `mezo-d58h.7.5`) — a THIRD standalone
+`@ConfigurationProperties` record, prefix `mezo.proactive.questions`** (same reasoning as
+`SetupCheckProperties`: one record per genre). It has **no cron and no re-emit window**, deliberately
+— the pass rides `SetupCheckJob`'s existing schedule (the spec forbids a new cron near the dawn
+cluster), and "once ever" is enforced by an envelope-key dedupe in code, not by a window a config
+edit could re-open:
+
+- **`featureAbandonment.idleDays`** (`@Min(7) @Max(365)`, default **30**): nothing new anywhere in a
+  feature family for this many days ⇒ the family reads as shelved (spec §(17)).
+- **`featureAbandonment.minPriorRows`** (`@Min(1) @Max(1000)`, default **10**): the honesty gate —
+  fewer rows than this EVER means the family was never really used, and never-used is not abandoned.
+- **`flatFeedback.windowWorkouts`** (`@Min(3) @Max(50)`, default **8**): how many of the most recent
+  feedback-carrying WORKOUTS (not rows) must carry an identical `(workload, jointPain)` pair.
+- **`flatFeedback.maxFeedbackRows`** (`@Min(50) @Max(2000)`, default **400**): read cap for the
+  newest-first debrief scan; the OLDEST workout inside a hit cap is discarded, because the cap may
+  have cut it in half.
+
 Plus the **seven** techcore job switches (up from six — S3 adds `setup-check-job` alongside the
 `mezo-gst9` `feed-job` merge), each the THIRD `@ConditionalOnProperty` on its job bean (on
 top of the companion+proactive dual gate; off ⇒ the cron bean does not exist, the lazy GET still
@@ -2130,6 +2147,39 @@ card, no day gate, no migration, no new feed kind, no FE change.
   `MealPopulator.createBareMealCreatedAt`, which force-updates `created_at` natively
   (the `ProtocolPopulator.createProtocolItemAt` precedent).
 
+### 5.16 Proactive → Journal / Habit / Ritual / Needs / Train / Companion, the once-ever questions (✅ round 2 S5, `mezo-d58h.7.5`)
+
+- **`OneTimeQuestionService.runFor(userId)`** is the whole surface: a `SetupCheckService`-shaped,
+  ordered first-wins pass that asks at most ONE question per day and each question **exactly once per
+  user, ever**. `SetupCheckJob` calls it right after the setup checks, in the same per-user loop with
+  its own `catch` — no new cron (spec §c).
+- **Usage reads (item 17), one-way and predicate-scoped.** `FeatureAbandonmentDetector` counts two
+  families off the domain tables' own `created_at` (there is no usage-events table): `mind` =
+  `journal_entry` + `gratitude_entry` + `decision_entry` + `habit_day` + `ritual_day` + `needs_day`,
+  and `chat` = `ai_message`. **`habit_day` counts `status = 'done'` ONLY** — `HabitService`
+  materializes a `pending` row per active def on any read and a cron closes stale ones to `missed`,
+  so a naive count would report an untouched surface as heavily used and would let the app's own
+  writes revive an abandoned family. **`ai_message` counts `role = 'user'` ONLY** — the assistant's
+  replies are not the user using the chat.
+- **Debrief read (item 18).** `FlatFeedbackDetector` groups the newest `exercise_feedback` rows by
+  `workout_session_id` and asks whether the last `windowWorkouts` groups all carry one
+  `(workload, jointPain)` pair. One differing exercise inside an otherwise flat workout is variance,
+  and variance is an answer.
+- **Delivery is the ordinary advice path with ONE new bypass.** `AdviceCandidate.fromQuestion` marks
+  the candidate `verbatim`, and `AdviceCardService` then skips `AdviceProseGenerator` entirely: the
+  advice prompt orders 2–3 sentences of coaching advice and forbids numerals, so an LLM pass would
+  return the question as advice with the 👍/👎 answer key dissolved out of it. (It is also why a
+  question card's facts may carry numbers — `ProseNumberGuard` never runs on it.)
+- **Two ports back into companion.** IN: `MessageFeedbackService` publishes
+  `MessageFeedbackRecordedEvent` on every verdict; `QuestionAnswerListener` (`@Async`, AFTER_COMMIT —
+  the `CompanionMessageEventListener` precedent) turns a verdict on a question card into ONE
+  `knowledge_fact` (`source='question'`), rewritten in place when the user flips the answer. OUT:
+  `FeedMessageKindSource.answerArtifactIds` (the fifth port inversion) lets
+  `FeedbackLearningService` drop those verdicts from EVERY rollup scope — `companion` may never
+  import `proactive` to learn what a question key is.
+- **Nothing else follows from an answer** (spec §c): no feature hidden, no data excluded, no rule
+  input changed. The fact rides the top-N prompt injection like any other, and that is all.
+
 ## 6. How to use it (consume)
 
 **Over HTTP** (bearer token from `POST /api/auth/login`; the backend must run with `demodata` so
@@ -2270,6 +2320,15 @@ dual-mode.
   (mezo-106s — the retired-heartbeat no-refs precedent is superseded); the prediction/experiment
   carry pattern candidates — the prediction resolves them to CONFIDENCE, the experiment only
   uses them for grounding.
+- **To add a new once-ever QUESTION (round 2 S5, `mezo-d58h.7.5`)**, in this order: (1) a detector in
+  `proactive/service` returning `Optional<…>` with its own honesty gate ("too little data" is
+  silence, never a finding); (2) a `QUESTION_*` constant + its two answer texts + its `answerFact`
+  arm + its `categoryOf` arm in `OneTimeQuestionService`; (3) an entry in `AdvicePriority.ORDER`
+  **before `all_healthy`** — `AdvicePriorityTest`'s reflection guard fails otherwise; (4) the key in
+  `FeedMessageKindService.answerArtifactIds`' set, or its answers pollute the effectiveness rollups;
+  (5) thresholds in `QuestionProperties` + `application.yml`; (6) a detector IT and a once-ever IT.
+  **No DB change is needed** — `setupKey` lives in the `content` jsonb and is unconstrained; there is
+  no setup-key CHECK anywhere in the schema.
 - **Never add `confidence`/`tone`** back to the envelope without a real computed source (§9 gotcha c).
 
 ## 8. Testing
@@ -3026,6 +3085,41 @@ integration level), `frontend/src/app/router.weeklyRedirect.test.tsx` (the `/ins
   branch (rendered from the raise's own frozen payload), never from this text. Like
   `protocol_lapse_resume` it offers no `AdviceActionCatalog` mutation — editing a slot template is a
   deliberate act in Fuel, not something a card should automate.
+- **(oo) Round 2 S5 (bd `mezo-d58h.7.5`, spec 2026-09-05 §c) — the once-ever questions, and the four
+  things that shape them.**
+  1. **The dedupe is native and sees soft-deleted rows.** `CompanionMessageRepository
+     .questionAlreadyAsked` queries `content ->> 'setupKey'` WITHOUT `is_deleted = false`, because a
+     question card that a later flag SUPERSEDED is soft-deleted by `AdviceCardService` — a JPA read
+     would forget the question and re-ask it the next day, and the day after. The accepted mirror
+     cost is that a question displaced before the user ever saw it is burned for good; nothing
+     follows from an answer, so an unasked question costs nothing, while a repeating one is exactly
+     the pestering the spec forbids. The spec's "enormous re-emit window" wording cannot deliver
+     "once, ever" for this reason, and was dropped: there is no window property at all.
+  2. **The card bypasses the LLM (`AdviceCandidate.verbatim`).** The advice prompt orders coaching
+     advice and forbids numerals; a question run through it comes back as advice with the 👍/👎
+     answer key dissolved out. Verbatim is the only new behaviour in `AdviceCardService`, and it also
+     means `ProseNumberGuard` never runs on a question card — which is why its facts may carry
+     numbers.
+  3. **Not every row is a user action.** `habit_day` rows are materialized `pending` by
+     `HabitService` on any read (and closed to `missed` by a cron), so item (17) counts
+     `status = 'done'` only; `ai_message` counts `role = 'user'` only. Counting either naively would
+     make an untouched surface look heavily used and would let the app's own writes revive an
+     abandoned family.
+  4. **An answer is not a rating.** A verdict on a question card would otherwise land in
+     `surface:feed_message` and the down-reason histogram, teaching the rollup that the companion's
+     cards are unhelpful — from its own survey. `FeedbackLearningService` now drops them via
+     `FeedMessageKindSource.answerArtifactIds` (the fifth port inversion).
+  **Accepted UI limitation + follow-up:** `MezoMessagesSheet.tsx` prints the generic „Segített?"
+  label above the chips for every `kind=advice` row, question cards included; the answer mapping is
+  spelled out in the card's own suggestion lines instead. Fixing the label needs the advice key on
+  the feed contract and both `VITE_USE_MOCK` modes — filed as bd `mezo-d58h.7.6`, deliberately out of
+  this backend-only slice.
+  **No DB change for the keys themselves:** `setupKey` is unconstrained jsonb and this slice adds no
+  flag key, so neither the flag-key CHECK nor any "setup-key set" was touched (the spec's
+  §error-handling sentence assumed both; there is no setup-key CHECK in the schema). The one
+  migration S5 does need is `ck_knowledge_fact_source` gaining `'question'` — see
+  [companion.md](companion.md).
+
 - **Epic complete, H2 Web Push shipped with it, and `mezo-gst9` then redesigned the B/H stages.**
   All eight original slices shipped (B1.1→B1.2→W1→W2→H1→P1→P2), **H2 (`mezo-h4wp.6`) shipped** — N1
   (delivery spine) + N2 (dispatcher + `notification_pref`/`push_log` + categories 1-9) + N3

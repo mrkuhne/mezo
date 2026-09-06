@@ -236,7 +236,8 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
 **V1.1 (`mezo-fnnq.6`) shipped the L3 memory spine — knowledge facts + prompt injection:**
 
 - **Two new owned tables** — `knowledge_fact` (fact_text, category `train|fuel|health|life`,
-  source `chat|pattern|manual` — a fourth, `weekly_review`, joined in `mezo-d20.7.6`,
+  source `chat|pattern|manual` — a fourth, `weekly_review`, joined in `mezo-d20.7.6`, and a fifth,
+  `question`, in `mezo-d58h.7.5` (a once-ever question's answer — see the §5.7 note below),
   reinforcement_count, `include_in_prompt`, last_reinforced_at)
   + `learned_fact` (candidate → decision `accept|reject|refine` null-until-decided →
   promoted_fact_id; **table-only in V1.1** — the extraction/confirm flow is V1.2; `mezo-d20.7.6`
@@ -2133,7 +2134,9 @@ Migration `202607031707_mezo-fnnq.6_create_knowledge_learned_fact.sql` (in `1.0.
 - **`knowledge_fact`** — `id uuid pk`, `created_by fk→app_user ON DELETE CASCADE`, `is_deleted`,
   `created_at`, `fact_text text`, `category varchar(16)` (`ck_knowledge_fact_category IN
   (train,fuel,health,life)`), `source varchar(16)` (`ck_knowledge_fact_source IN
-  (chat,pattern,manual)`), `reinforcement_count int default 0`, `include_in_prompt boolean
+  (chat,pattern,manual)`, later widened with `weekly_review` by
+  `202608291100_mezo-d20.7.6_learned_fact_weekly_source.sql` and with `question` by
+  `202609061800_mezo-d58h.7.5_knowledge_fact_source_question.sql`), `reinforcement_count int default 0`, `include_in_prompt boolean
   default true`, `last_reinforced_at timestamptz`; index
   `idx_knowledge_fact_created_by_include_reinforcement (created_by, include_in_prompt,
   reinforcement_count desc)` — the injection query's key.
@@ -4782,6 +4785,24 @@ respectively — so their FE cards (`WeekReviewCard`, `DayReviewCard`) gate the 
 id's presence rather than on any scored/closed state: a scored day whose prose generation failed
 carries no `reviewId` and therefore no chips either (`DayReviewCard.tsx` — see
 [`me.md`](me.md) "Day page").
+
+**A verdict on a once-ever QUESTION card is an ANSWER, not a rating (round 2 S5, `mezo-d58h.7.5`).**
+Proactive's question cards are ordinary `feed_message` artifacts (`companion_message`, `kind=advice`,
+`setupKey = question_*`), so the user's one tap arrives on this very path. Two consequences live
+here rather than in proactive:
+
+- **`MessageFeedbackService.put` publishes `MessageFeedbackRecordedEvent`** on every upsert (a
+  retraction publishes nothing — taking a 👍 back is not a new answer). This layer cannot tell a
+  question from a card and must not learn to: `feature.companion` may never import
+  `feature.proactive`, so it announces every verdict and the consumer decides.
+  `QuestionAnswerListener` (proactive, `@Async` AFTER_COMMIT) turns a question verdict into ONE
+  `knowledge_fact` with the new `question` source, rewritten in place when the answer flips — one
+  opinion per question, never a history of them.
+- **`FeedbackLearningService` drops those verdicts from every rollup scope**, through the new
+  `FeedMessageKindSource.answerArtifactIds` port. Left in, a 👎 meaning "no, it just faded" would
+  count as evidence that the companion's cards are unhelpful — the rollup learning a lie from the
+  system's own survey. Note `Set.of(...).contains(null)` throws, and most advice rows carry a null
+  `setupKey`: the implementation null-checks before the lookup.
 
 **Accepted limitation — a vote survives a prose regeneration (`day_review`, `mezo-jcpt.9`).**
 `DayReviewService.upsert` rewrites the `day_review` row IN PLACE on an `inputsHash` change (a
