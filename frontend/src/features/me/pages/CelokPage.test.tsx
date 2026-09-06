@@ -124,6 +124,21 @@ describe('real mode', () => {
     expect(row).not.toHaveTextContent('nincs aktív súlycél')
   })
 
+  /**
+   * mezo-9r85, 2. tétel: a sor NEGYEDIK állapota — üres cél-lista. Mock módban a `useGoal`
+   * populált célt és hardcode-olt `isError: false`-t ad (goalHooks.ts), tehát ez az ág CSAK
+   * valós módban, üres listával mérhető — enélkül a „present" és az „error" ág futott, a
+   * „nincs célod" pedig sosem.
+   */
+  test('a Súlycél sor „nincs aktív súlycél"-t mond üres cél-listára — nem hibát, nem töltést', async () => {
+    server.use(http.get(`${API_BASE}/api/goals`, () => HttpResponse.json([])))
+    renderHub()
+    const row = await screen.findByRole('button', { name: /Súlycél/ })
+    await waitFor(() => expect(row).toHaveTextContent('nincs aktív súlycél'))
+    expect(row).not.toHaveTextContent('a súlycél most nem elérhető')
+    expect(row).not.toHaveTextContent('töltöm…')
+  })
+
   test('a failed list read renders a terminal error + retry, not the empty state', async () => {
     let calls = 0
     server.use(http.get(`${API_BASE}/api/life-goals`, () => { calls += 1; return new HttpResponse(null, { status: 500 }) }))
