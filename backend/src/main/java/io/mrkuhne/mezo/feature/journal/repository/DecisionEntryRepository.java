@@ -51,4 +51,12 @@ public interface DecisionEntryRepository extends JpaRepository<DecisionEntryEnti
      *  rating as the honest {@code –} rather than dropping the row. */
     List<DecisionEntryEntity> findByCreatedByAndReviewedAtGreaterThanEqualAndReviewedAtLessThanAndDeletedFalseOrderByReviewedAtAsc(
         UUID createdBy, Instant from, Instant to);
+
+    /** Feature-abandonment usage reads (round 2 S5, bd mezo-d58h.7.5, spec 2026-09-05 §(17)): how
+     *  much of this surface the user has EVER written, and whether anything landed inside the idle
+     *  window. {@code @SQLRestriction} on the entity already excludes soft-deleted rows, which is
+     *  why neither name carries an {@code AndDeletedFalse}. */
+    long countByCreatedBy(UUID createdBy);
+
+    boolean existsByCreatedByAndCreatedAtAfter(UUID createdBy, Instant createdAt);
 }

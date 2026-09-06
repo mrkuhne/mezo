@@ -51,6 +51,19 @@ class AdvicePriorityTest {
         assertThat(AdvicePriority.outranks(FlagKey.ALL_HEALTHY, "brand_new_rule")).isTrue();
     }
 
+    /** Round 2 S5 (bd mezo-d58h.7.5): a once-ever question is the least urgent thing the system can
+     *  say. It ranks below every flag AND below the setup checks — and still above
+     *  {@code all_healthy}, which must stay the tail. */
+    @Test
+    void testRankOf_shouldRankQuestionsBelowEverythingButAllHealthy() {
+        assertThat(AdvicePriority.rankOf(SetupCheckService.CHECK_PLAN_FEASIBILITY))
+            .isLessThan(AdvicePriority.rankOf(OneTimeQuestionService.QUESTION_FEATURE_ABANDONMENT));
+        assertThat(AdvicePriority.rankOf(FlagKey.MOMENTUM_AT_RISK))
+            .isLessThan(AdvicePriority.rankOf(OneTimeQuestionService.QUESTION_FEATURE_ABANDONMENT));
+        assertThat(AdvicePriority.rankOf(OneTimeQuestionService.QUESTION_FLAT_FEEDBACK))
+            .isLessThan(AdvicePriority.rankOf(FlagKey.ALL_HEALTHY));
+    }
+
     /** The enumeration guard this epic keeps needing: every LIVE flag key must have a rank, or a
      *  raise silently lands at the bottom of the order. Reads FlagKey by reflection so adding a
      *  constant there fails HERE rather than in production. */
@@ -92,6 +105,16 @@ class AdvicePriorityTest {
         for (Field f : SetupCheckService.class.getDeclaredFields()) {
             if (Modifier.isPublic(f.getModifiers()) && Modifier.isStatic(f.getModifiers())
                     && f.getType() == String.class && f.getName().startsWith("CHECK_")) {
+                try {
+                    liveKeys.add((String) f.get(null));
+                } catch (IllegalAccessException e) {
+                    throw new AssertionError(e);
+                }
+            }
+        }
+        for (Field f : OneTimeQuestionService.class.getDeclaredFields()) {
+            if (Modifier.isPublic(f.getModifiers()) && Modifier.isStatic(f.getModifiers())
+                    && f.getType() == String.class && f.getName().startsWith("QUESTION_")) {
                 try {
                     liveKeys.add((String) f.get(null));
                 } catch (IllegalAccessException e) {

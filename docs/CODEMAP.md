@@ -286,10 +286,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `MemoryQueryAnalyzer`, `MemoryQueryPreparer`, `MemoryQueryRewriter`, `MemoryRecallService`, `MemoryReembeddingJob`,
     `MemoryReembeddingService`, `MemoryReranker`, `MemoryRetrievalAuditWriter`, `MemoryRetrievalRetentionJob`,
     `MemoryRetriever`, `MemoryShadowRunner`, `MesoContextAssembler`, `MesoReviewGenerator`, `MesoReviewListener`,
-    `MessageFeedbackService`, `MetricDomain`, `MetricKey`, `MetricSeriesService`, `MetricValueKind`, `NudgeSendPort`,
-    `PatternConfirmedEvent`, `PatternDetectionJob`, `PatternDetectionService`, `PatternGate`, `PatternImpactSource`,
-    `PatternMonitorService`, `PatternPairDetailService`, `PatternRetractedEvent`, `PatternService`,
-    `PearsonCorrelation`, `PeopleSnapshotBlock`, `PeriodSummaryService`, `PersonExtractionResult`,
+    `MessageFeedbackRecordedEvent`, `MessageFeedbackService`, `MetricDomain`, `MetricKey`, `MetricSeriesService`,
+    `MetricValueKind`, `NudgeSendPort`, `PatternConfirmedEvent`, `PatternDetectionJob`, `PatternDetectionService`,
+    `PatternGate`, `PatternImpactSource`, `PatternMonitorService`, `PatternPairDetailService`, `PatternRetractedEvent`,
+    `PatternService`, `PearsonCorrelation`, `PeopleSnapshotBlock`, `PeriodSummaryService`, `PersonExtractionResult`,
     `PersonExtractionService`, `PersonGraphEdgeAdapter`, `ProfileAssembler`, `ProfileAssemblerJob`,
     `ProfilePromptAssembler`, `PromptMemoryAssembler`, `QuarterlyReviewJob`, `QuarterlyReviewService`, `Quarters`,
     `SeasonSuggestion`, `TraceDisposition`, `TranscriptionService`, `UnavailableReason`, `WeekContextRenderer`,
@@ -992,19 +992,20 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `ChallengeJob`, `ChallengeOutcomeEvaluator`, `CompanionMessageEventListener`, `CompanionMessageGenerator`,
     `CompanionMessageJob`, `DailyCardAdapter`, `DiagnosisGenerator`, `DiagnosisRecipe`, `DiagnosisService`,
     `ExperimentJob`, `ExperimentOutcomeService`, `ExperimentProposalGenerator`, `FatigueEvidenceCollector`,
-    `FeedMessageKindService`, `GrowthDigestBlock`, `HighlightCitationSourceAdapter`, `HydrationShortfallProbe`,
-    `InterventionEventListener`, `InterventionService`, `LightenTomorrowAdapter`, `LogFreshnessProbe`,
-    `MemoirGenerator`, `MemoirJob`, `MetricWindowEvaluator`, `OverloadChallengeGenerator`, `PatternImpactService`,
-    `PeopleMezoNoteAdapter`, `PlanFeasibilityCalculator`, `PredictionGenerator`, `PredictionJob`,
-    `PredictionValidationService`, `ProactiveChallengeService`, `ProactiveExperimentService`, `ProactiveFeedService`,
-    `ProactiveMemoirService`, `ProactivePredictionService`, `ProactiveWeeklySuggestionService`, `ProseNumberGuard`,
-    `RetroLoggingProbe`, `SetupCheckJob`, `SetupCheckService`, `SleepAnchorShiftAdapter`, `SportSlotSkipAdapter`,
-    `WeekReviewSourceAdapter`, `WeeklyLessonService`, `WeeklyReviewContextSources`, `WeeklyReviewDigestService`,
-    `WeeklyReviewGenerator`, `WeeklyReviewJob`, `WeeklyReviewService`, `WeeklyReviewWeekWindow`,
-    `WeeklySuggestionGenerator`, `WeeklySuggestionJob`
+    `FeatureAbandonmentDetector`, `FeedMessageKindService`, `FlatFeedbackDetector`, `GrowthDigestBlock`,
+    `HighlightCitationSourceAdapter`, `HydrationShortfallProbe`, `InterventionEventListener`, `InterventionService`,
+    `LightenTomorrowAdapter`, `LogFreshnessProbe`, `MemoirGenerator`, `MemoirJob`, `MetricWindowEvaluator`,
+    `OneTimeQuestionService`, `OverloadChallengeGenerator`, `PatternImpactService`, `PeopleMezoNoteAdapter`,
+    `PlanFeasibilityCalculator`, `PredictionGenerator`, `PredictionJob`, `PredictionValidationService`,
+    `ProactiveChallengeService`, `ProactiveExperimentService`, `ProactiveFeedService`, `ProactiveMemoirService`,
+    `ProactivePredictionService`, `ProactiveWeeklySuggestionService`, `ProseNumberGuard`, `QuestionAnswerListener`,
+    `QuestionAnswerService`, `RetroLoggingProbe`, `SetupCheckJob`, `SetupCheckService`, `SleepAnchorShiftAdapter`,
+    `SportSlotSkipAdapter`, `WeekReviewSourceAdapter`, `WeeklyLessonService`, `WeeklyReviewContextSources`,
+    `WeeklyReviewDigestService`, `WeeklyReviewGenerator`, `WeeklyReviewJob`, `WeeklyReviewService`,
+    `WeeklyReviewWeekWindow`, `WeeklySuggestionGenerator`, `WeeklySuggestionJob`
   - **controllers→contract:** `DiagnosisController`→`DiagnosisApi`, `ProactiveController`→`ProactiveApi`
   - **mappers:** `ChallengeDisplay`, `ProactiveMapper`
-  - **config:** `DiagnosisProperties`, `ProactiveProperties`, `SetupCheckProperties`
+  - **config:** `DiagnosisProperties`, `ProactiveProperties`, `QuestionProperties`, `SetupCheckProperties`
   - **other:** `AdviceActionKey`, `ChallengeRefsEnvelope`, `CompanionMessageEnvelope`, `DiagnosisEvidenceEnvelope`,
     `DiagnosisSuspectsEnvelope`, `MemoirAnchorsEnvelope`, `WeeklyReviewDayNotesEnvelope`,
     `WeeklyReviewHighlightsEnvelope`
@@ -1019,7 +1020,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/proactive/challenge/{id}/decision · GET /api/proactive/weekly-review/{start} ·
     POST /api/proactive/weekly-review/{start}/regenerate · GET /api/proactive/weekly-review/{start}/lessons ·
     GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 75 IT + 4 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 81 IT + 4 unit
   - **ITs:** `AdviceApplyServiceIT`, `AdviceCardServiceIT`, `AdviceObserverPortsIT`, `AdviceProseGeneratorIT`,
     `ChallengeGeneratorIT`, `ChallengeJobIT`, `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`,
     `ChallengePersistenceIT`, `CompanionMessageAdvicePersistenceIT`, `CompanionMessageEventIT`,
@@ -1028,25 +1029,28 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CompanionMessagePersistenceIT`, `CompanionMessageRetroLoggingIT`, `CompanionMessageSetupPersistenceIT`,
     `ContextSnapshotOwnerZoneIT`, `DiagnosisControllerIT`, `DiagnosisExperimentIT`, `DiagnosisGeneratorIT`,
     `ExperimentJobIT`, `ExperimentJobSwitchOffIT`, `ExperimentOutcomeIT`, `ExperimentPersistenceIT`,
-    `ExperimentProposalGeneratorIT`, `FatigueEvidenceCollectorIT`, `GrowthDigestBlockIT`, `HighlightCitationIT`,
-    `HydrationPropertiesIT`, `HydrationShortfallProbeIT`, `InterventionConfigIT`, `InterventionServiceIT`,
-    `InterventionSwitchOffIT`, `LogFreshnessProbeIT`, `MemoirGeneratorIT`, `MemoirJobIT`, `MemoirJobSwitchOffIT`,
-    `MemoirPersistenceIT`, `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`, `PredictionGeneratorIT`,
-    `PredictionJobIT`, `PredictionJobSwitchOffIT`, `PredictionPersistenceIT`, `PredictionValidationIT`,
-    `ProactiveApiAdviceApplyIT`, `ProactiveApiChallengeIT`, `ProactiveApiCompanionOffIT`, `ProactiveApiExperimentIT`,
-    `ProactiveApiFeedIT`, `ProactiveApiIT`, `ProactiveApiSwitchOffIT`, `ProactiveMemoirArchiveIT`,
-    `ProactiveMemoirArchiveSwitchOffIT`, `RetroLoggingProbeIT`, `RetroLoggingPropertiesIT`, `SetupCheckJobSwitchOffIT`,
-    `SetupCheckPropertiesIT`, `SetupCheckServiceIT`, `SleepAnchorShiftAdapterIT`, `SleepDiagnosisIT`,
-    `SportSlotSkipAdapterIT`, `WeeklyLessonServiceIT`, `WeeklyReviewContextSourcesIT`, `WeeklyReviewControllerIT`,
-    `WeeklyReviewGeneratorIT`, `WeeklySuggestionGeneratorIT`, `WeeklySuggestionJobIT`,
-    `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionNameIT`, `WeeklySuggestionPersistenceIT`
-  - **populators:** `ActivityPopulator`, `ChallengePopulator`, `CheckInPopulator`, `CompanionMessagePopulator`,
-    `DailySummaryPopulator`, `DatabasePopulator`, `DiagnosisPopulator`, `ExperimentPopulator`, `FlagLogPopulator`,
-    `GoalPopulator`, `GraphPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`,
-    `LifeGoalPopulator`, `MealPopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`,
-    `MentionPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`,
-    `QuestPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`,
-    `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`
+    `ExperimentProposalGeneratorIT`, `FatigueEvidenceCollectorIT`, `FeatureAbandonmentDetectorIT`,
+    `FlatFeedbackDetectorIT`, `GrowthDigestBlockIT`, `HighlightCitationIT`, `HydrationPropertiesIT`,
+    `HydrationShortfallProbeIT`, `InterventionConfigIT`, `InterventionServiceIT`, `InterventionSwitchOffIT`,
+    `LogFreshnessProbeIT`, `MemoirGeneratorIT`, `MemoirJobIT`, `MemoirJobSwitchOffIT`, `MemoirPersistenceIT`,
+    `OneTimeQuestionServiceIT`, `OneTimeQuestionSwitchOffIT`, `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`,
+    `PredictionGeneratorIT`, `PredictionJobIT`, `PredictionJobSwitchOffIT`, `PredictionPersistenceIT`,
+    `PredictionValidationIT`, `ProactiveApiAdviceApplyIT`, `ProactiveApiChallengeIT`, `ProactiveApiCompanionOffIT`,
+    `ProactiveApiExperimentIT`, `ProactiveApiFeedIT`, `ProactiveApiIT`, `ProactiveApiSwitchOffIT`,
+    `ProactiveMemoirArchiveIT`, `ProactiveMemoirArchiveSwitchOffIT`, `QuestionAnswerIT`, `QuestionPropertiesIT`,
+    `RetroLoggingProbeIT`, `RetroLoggingPropertiesIT`, `SetupCheckJobSwitchOffIT`, `SetupCheckPropertiesIT`,
+    `SetupCheckServiceIT`, `SleepAnchorShiftAdapterIT`, `SleepDiagnosisIT`, `SportSlotSkipAdapterIT`,
+    `WeeklyLessonServiceIT`, `WeeklyReviewContextSourcesIT`, `WeeklyReviewControllerIT`, `WeeklyReviewGeneratorIT`,
+    `WeeklySuggestionGeneratorIT`, `WeeklySuggestionJobIT`, `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionNameIT`,
+    `WeeklySuggestionPersistenceIT`
+  - **populators:** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`,
+    `CheckInPopulator`, `CompanionMessagePopulator`, `DailySummaryPopulator`, `DatabasePopulator`,
+    `DiagnosisPopulator`, `ExperimentPopulator`, `FlagLogPopulator`, `GoalPopulator`, `GraphPopulator`,
+    `HabitPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LifeGoalPopulator`,
+    `MealPopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`, `MentionPopulator`,
+    `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`, `QuestPopulator`,
+    `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`, `TrainPopulator`, `UserPopulator`,
+    `WaterLogPopulator`, `WeeklyReviewPopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`
 
 ### progression
 
@@ -1369,19 +1373,20 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Backend base classes:** `AbstractIntegrationTest.java` (service-level) · `ApiIntegrationTest.java` (HTTP-level, verb helpers + `ownerAuthHeaders()`)
 - **populators (`support/populator/`):** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`,
   `AppNotificationPopulator`, `BiometricProfilePopulator`, `ChallengePopulator`, `CheckInPopulator`,
-  `CompanionMessagePopulator`, `DailySummaryPopulator`, `DayReviewPopulator`, `DiagnosisPopulator`,
-  `ExperimentPopulator`, `FeedbackPopulator`, `FlagLogPopulator`, `FuelSettingsPopulator`, `GamificationPopulator`,
-  `GoalPlanLinkPopulator`, `GoalPopulator`, `GoalSuggestionPopulator`, `GraphPopulator`, `HabitPopulator`,
-  `IntentionPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LevelUpEventPopulator`,
-  `LifeGoalPopulator`, `LlmLogPopulator`, `MealPopulator`, `MealRhythmFixtureIT`, `MealSlotTemplatePopulator`,
-  `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`, `MemoryEmbeddingPopulator`,
-  `MemoryItemPopulator`, `MentionPopulator`, `MesoTemplatePopulator`, `NeedsPopulator`, `NotificationPopulator`,
-  `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`, `PatternEventPopulator`,
-  `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`, `ProtocolPopulator`,
-  `ProtocolPopulatorIT`, `QuestPopulator`, `RecipePopulator`, `RitualPopulator`, `RunningPopulator`,
-  `SkillProgressPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`,
-  `SupplementIntakePopulator`, `TrainPopulator`, `UserPopulator`, `WaterLogPopulator`, `WeeklyReviewPopulator`,
-  `WeeklyScorePopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`, `WorkoutDayAdjustmentPopulator`
+  `CompanionMessagePopulator`, `CreatedAtBackdater`, `DailySummaryPopulator`, `DayReviewPopulator`,
+  `DiagnosisPopulator`, `ExperimentPopulator`, `FeedbackPopulator`, `FlagLogPopulator`, `FuelSettingsPopulator`,
+  `GamificationPopulator`, `GoalPlanLinkPopulator`, `GoalPopulator`, `GoalSuggestionPopulator`, `GraphPopulator`,
+  `HabitPopulator`, `IntentionPopulator`, `JournalPopulator`, `KnowledgeFactPopulator`, `LearnedFactPopulator`,
+  `LevelUpEventPopulator`, `LifeGoalPopulator`, `LlmLogPopulator`, `MealPopulator`, `MealRhythmFixtureIT`,
+  `MealSlotTemplatePopulator`, `MedicationDosePopulator`, `MedicationPopulator`, `MemoirPopulator`,
+  `MemoryEmbeddingPopulator`, `MemoryItemPopulator`, `MentionPopulator`, `MesoTemplatePopulator`, `NeedsPopulator`,
+  `NotificationPopulator`, `PantryCatalogPopulator`, `PantryImportPopulator`, `PantryItemPopulator`,
+  `PatternEventPopulator`, `PatternPopulator`, `PeriodSummaryPopulator`, `PersonPopulator`, `PredictionPopulator`,
+  `ProtocolPopulator`, `ProtocolPopulatorIT`, `QuestPopulator`, `RecipePopulator`, `RitualPopulator`,
+  `RunningPopulator`, `SkillProgressPopulator`, `SleepGoalPopulator`, `SleepLogPopulator`, `SportSlotSkipPopulator`,
+  `SupplementIntakePopulator`, `TrainPopulator`, `UsageSeamIT`, `UserPopulator`, `WaterLogPopulator`,
+  `WeeklyReviewPopulator`, `WeeklyScorePopulator`, `WeeklySuggestionPopulator`, `WeightLogPopulator`,
+  `WorkoutDayAdjustmentPopulator`
 - **`ResetDatabase` TRUNCATE list** — 107 tables; a new owned domain table MUST be added here in the same change:
   - **tables:** `activity_log`, `ai_conversation`, `ai_message`, `app_notification`, `biometric_profile`, `challenge`,
     `character_claim`, `character_conference`, `character_dimension`, `character_observation`,

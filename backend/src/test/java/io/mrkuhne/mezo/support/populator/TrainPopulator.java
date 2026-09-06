@@ -508,6 +508,22 @@ public class TrainPopulator {
         return exerciseFeedbackRepository.saveAndFlush(f);
     }
 
+    /** A debrief row with an explicit {@code created_at} (round 2 S5, bd mezo-d58h.7.5): the
+     *  flat-feedback detector groups the NEWEST rows into workouts, so a fixture needs the order to
+     *  be a fact rather than an insertion-time accident. Written, then backdated natively —
+     *  {@code created_at} is {@code updatable = false}. */
+    @Transactional
+    public ExerciseFeedbackEntity createFeedbackAt(UUID createdBy, UUID workoutSessionId,
+        UUID exerciseId, int pump, int jointPain, int workload, Instant createdAt) {
+        ExerciseFeedbackEntity f = createFeedback(createdBy, workoutSessionId, exerciseId, pump,
+            jointPain, workload);
+        em.createNativeQuery("update exercise_feedback set created_at = :at where id = :id")
+            .setParameter("at", createdAt).setParameter("id", f.getId()).executeUpdate();
+        em.flush();
+        em.clear();
+        return exerciseFeedbackRepository.findById(f.getId()).orElseThrow();
+    }
+
     public SportSessionEntity createSportSession(UUID createdBy, LocalDate date) {
         SportSessionEntity s = new SportSessionEntity();
         s.setCreatedBy(createdBy);

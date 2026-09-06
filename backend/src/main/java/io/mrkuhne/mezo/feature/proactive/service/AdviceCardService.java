@@ -44,6 +44,9 @@ import org.springframework.transaction.annotation.Transactional;
  * before adding a retry loop around the LLM call here: a naive one would quietly turn a bounded
  * hold into a multi-minute per-user serialization.
  *
+ * <p><b>Verbatim candidates</b> (round 2 S5, bd mezo-d58h.7.5) skip the LLM call entirely, so for
+ * a question card the lock hold time above collapses to the two queries around it.
+ *
  * <p><b>Supersession and cooldowns/re-emit windows:</b> a superseded row is soft-deleted, and both
  * {@code InterventionService.inCooldown} and {@code SetupCheckService.inReEmitWindow} read
  * through {@code @SQLRestriction("is_deleted = false")} on this same table — so a superseded card
@@ -107,7 +110,12 @@ public class AdviceCardService {
             log.info("Advice {} supersedes today's card ({}) for user {}",
                 candidate.adviceKey(), incumbentKey, userId);
         }
-        String prose = adviceProseGenerator.write(userId, candidate);
+        // Round 2 S5 (bd mezo-d58h.7.5): a verbatim candidate (the once-ever questions) IS its own
+        // body — AdviceProseGenerator's prompt would turn a question into advice and drop the
+        // 👍/👎 answer key. Nothing else about delivery changes: same gate, same rank, same row.
+        String prose = candidate.verbatim()
+            ? candidate.fallbackProse()
+            : adviceProseGenerator.write(userId, candidate);
         CompanionMessageEntity row = new CompanionMessageEntity();
         row.setCreatedBy(userId);
         row.setMessageDate(today);

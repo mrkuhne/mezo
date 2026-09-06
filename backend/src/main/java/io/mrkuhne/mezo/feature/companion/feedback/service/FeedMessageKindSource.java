@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.feedback.service;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -48,4 +49,12 @@ public interface FeedMessageKindSource {
      *  (bd mezo-b3pp.19) per-intervention rollup join, same dangling-id contract as
      *  {@link #kindsByIds}. */
     Map<UUID, String> interventionKeysByIds(UUID userId, Collection<UUID> feedMessageIds);
+
+    /** Round 2 S5 (bd mezo-d58h.7.5): which of these feed messages are once-ever QUESTION cards,
+     *  whose 👍/👎 is the user's ANSWER rather than a verdict on the message's usefulness. The
+     *  rollup layer must drop them from every scope, and it cannot decide this itself — the question
+     *  keys live in {@code feature.proactive}, which {@code feature.companion} may never import (the
+     *  reason this interface exists at all). An implementation that knows of no questions returns an
+     *  empty set. */
+    Set<UUID> answerArtifactIds(UUID userId, Collection<UUID> feedMessageIds);
 }

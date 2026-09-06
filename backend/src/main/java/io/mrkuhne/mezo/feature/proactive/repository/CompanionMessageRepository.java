@@ -76,4 +76,22 @@ public interface CompanionMessageRepository extends JpaRepository<CompanionMessa
      *  belonging to someone else, or one superseded into {@code is_deleted = true}, simply is not
      *  found — the caller turns that into a 404 rather than leaking existence. */
     Optional<CompanionMessageEntity> findByIdAndCreatedBy(UUID id, UUID createdBy);
+
+    /** The ONCE-EVER dedupe (round 2 S5, bd mezo-d58h.7.5, spec §c): has this question EVER been
+     *  asked to this user?
+     *
+     *  <p>Native, and deliberately WITHOUT {@code is_deleted = false}. Every JPA read of this table
+     *  goes through {@code @SQLRestriction("is_deleted = false")}, and a question card that a later
+     *  flag SUPERSEDED is soft-deleted by exactly that path ({@code AdviceCardService}) — so a
+     *  JPA-based dedupe would forget the question and re-ask it the next day, and the day after.
+     *  Seeing the deleted rows is the whole point. The accepted cost is the mirror case: a question
+     *  displaced before the user ever saw it is burned for good, which costs nothing (no mutation
+     *  follows from an answer) and is far cheaper than pestering. */
+    @Query(value = """
+            select exists(
+                select 1 from companion_message
+                where created_by = :createdBy and content ->> 'setupKey' = :questionKey)
+            """, nativeQuery = true)
+    boolean questionAlreadyAsked(@Param("createdBy") UUID createdBy,
+                                 @Param("questionKey") String questionKey);
 }

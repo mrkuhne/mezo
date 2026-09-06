@@ -120,6 +120,23 @@ public class CompanionMessagePopulator {
         return companionMessageRepository.saveAndFlush(entity);
     }
 
+    /** Round 2 S5 (bd mezo-d58h.7.5) once-ever QUESTION card — an {@code advice} row whose
+     *  {@code setupKey} AND {@code adviceKey} are the question key (that is what the once-ever
+     *  dedupe and the answer path read), with the two one-tap answers as suggestions and no
+     *  intervention key. The {@link #createSetup} idiom, one kind up. */
+    public CompanionMessageEntity createQuestion(
+            UUID owner, LocalDate date, String questionKey, String eyebrow, String text,
+            List<String> facts, List<String> answers, Instant generatedAt) {
+        CompanionMessageEntity entity = new CompanionMessageEntity();
+        entity.setCreatedBy(owner);
+        entity.setMessageDate(date);
+        entity.setKind(CompanionMessageEntity.KIND_ADVICE);
+        entity.setContent(new CompanionMessageEnvelope(eyebrow, List.of(text), List.of(), null,
+            questionKey, questionKey, List.copyOf(facts), List.copyOf(answers), List.of(), null));
+        entity.setGeneratedAt(generatedAt);
+        return companionMessageRepository.saveAndFlush(entity);
+    }
+
     /** Inserts natively, so an unknown kind reaches the DB CHECK instead of being stopped by
      *  the entity's own {@code @NotNull}/length constraints — the {@code FlagLogPopulator.rawInsert}
      *  idiom, pinning that {@code ck_companion_message_kind} really lives in the schema. */

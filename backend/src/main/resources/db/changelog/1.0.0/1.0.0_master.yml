@@ -1162,3 +1162,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609061700_mezo-d58h.7.4_flag_key_trace_meal_rhythm_drift.sql
+  - changeSet:
+      id: "1.0.0:202609061800_mezo-d58h.7.5_knowledge_fact_source_question"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609061800_mezo-d58h.7.5_knowledge_fact_source_question.sql

@@ -35,4 +35,10 @@ public interface AiMessageRepository extends JpaRepository<AiMessageEntity, UUID
      */
     Optional<AiMessageEntity> findFirstByConversationIdAndRoleAndDeletedFalseAndCreatedAtLessThanEqualOrderByCreatedAtDesc(
             UUID conversationId, String role, Instant atOrBefore);
+
+    /** Feature-abandonment usage reads (round 2 S5, bd mezo-d58h.7.5, spec 2026-09-05 §(17)) —
+     *  ROLE-SCOPED: the assistant's own replies are not the user using the chat. */
+    long countByCreatedByAndRole(UUID createdBy, String role);
+
+    boolean existsByCreatedByAndRoleAndCreatedAtAfter(UUID createdBy, String role, Instant createdAt);
 }

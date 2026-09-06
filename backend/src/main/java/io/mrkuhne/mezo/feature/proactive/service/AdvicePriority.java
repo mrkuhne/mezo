@@ -25,6 +25,11 @@ import lombok.extern.slf4j.Slf4j;
  * <p>Round 2 S4 (bd mezo-d58h.7.4): {@link FlagKey#MEAL_RHYTHM_DRIFT} sits immediately after
  * {@code protocol_lapse}, still ahead of the setup checks — it is an offer to edit a plan, not a
  * health signal, so it must never displace a card ranked above it.
+ *
+ * <p>Round 2 S5 (bd mezo-d58h.7.5): the two once-ever QUESTION keys sit at the very tail, above only
+ * {@code all_healthy} — a survey question must never displace a health signal, a setup card, or even
+ * a momentum nudge. {@code OneTimeQuestionService} also refuses to speak at all on a day that
+ * already has a card, so in practice a question only ever fills an otherwise empty day.
  */
 @Slf4j
 public final class AdvicePriority {
@@ -55,6 +60,8 @@ public final class AdvicePriority {
         FlagKey.RECOVERY_NEEDED,
         FlagKey.SUSTAINED_STRESS,
         FlagKey.MOMENTUM_AT_RISK,
+        OneTimeQuestionService.QUESTION_FEATURE_ABANDONMENT,
+        OneTimeQuestionService.QUESTION_FLAT_FEEDBACK,
         FlagKey.ALL_HEALTHY);
 
     private AdvicePriority() {

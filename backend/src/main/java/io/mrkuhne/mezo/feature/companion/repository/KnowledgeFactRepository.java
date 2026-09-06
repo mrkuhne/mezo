@@ -29,4 +29,9 @@ public interface KnowledgeFactRepository extends JpaRepository<KnowledgeFactEnti
      *  section's candidate source. */
     List<KnowledgeFactEntity> findByCreatedByAndCreatedAtGreaterThanEqualAndCreatedAtLessThanAndDeletedFalse(
             UUID createdBy, Instant from, Instant to);
+
+    /** Round 2 S5 (bd mezo-d58h.7.5): every fact minted by a once-ever question's answer — the
+     *  flip-detection input. Single-user volumes: the caller matches the text in memory against the
+     *  two answers that question can produce, which needs no schema for the question key. */
+    List<KnowledgeFactEntity> findByCreatedByAndSourceAndDeletedFalse(UUID createdBy, String source);
 }
