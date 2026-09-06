@@ -14,9 +14,15 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 /** W1 Monday cron: generates the CURRENT week's suggestion per user; idempotent; isolated. */
 @ActiveProfiles("companion-fake")
+@TestPropertySource(properties = {
+    // mezo-c9k4: the shared test profile now disables this cron by default (kill-switch
+    // completeness) — this IT drives the job directly, so it re-enables it on its own context.
+    "mezo.techcore.cron.weekly-suggestion-job.enabled=true"
+})
 class WeeklySuggestionJobIT extends AbstractIntegrationTest {
 
     private static final LocalDate WEEK_START =

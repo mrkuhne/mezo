@@ -251,10 +251,15 @@ class MealServiceIT extends AbstractIntegrationTest {
         MealRequest r = req("snack", pantryItem(p.getId(), "100"));
         r.setLoggedAt(null);
 
+        // mealDate is derived from the SERVER's own clock (in UTC — the zone stays, only the second
+        // read goes): capture the day AROUND the call so a UTC midnight between the two reads
+        // cannot flip the assert.
+        LocalDate dayBefore = LocalDate.now(ZoneOffset.UTC);
         MealResponse meal = service.create(owner, r);
+        LocalDate dayAfter = LocalDate.now(ZoneOffset.UTC);
 
         assertThat(meal.getLoggedAt()).isNotNull();
-        assertThat(meal.getMealDate()).isEqualTo(LocalDate.now(ZoneOffset.UTC));
+        assertThat(meal.getMealDate()).isIn(dayBefore, dayAfter);
     }
 
     @Test

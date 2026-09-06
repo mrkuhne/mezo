@@ -24,7 +24,12 @@ import java.util.UUID;
  * respects the toggle (heals it, never bypasses it) — no chat turn is ever embedded.
  */
 @ActiveProfiles("companion-fake")
-@TestPropertySource(properties = "mezo.companion.embedding.embed-chat-turns=false")
+@TestPropertySource(properties = {
+    "mezo.companion.embedding.embed-chat-turns=false",
+    // mezo-c9k4: the shared test profile now disables this cron by default (kill-switch
+    // completeness) — this IT drives the job directly, so it re-enables it on its own context.
+    "mezo.techcore.cron.daily-summary-job.enabled=true"
+})
 class TurnEmbeddingSwitchOffIT extends AbstractIntegrationTest {
 
     @Autowired private ApplicationContext context;

@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.proactive.service;
 import io.mrkuhne.mezo.api.dto.ProgressionSignal;
 import io.mrkuhne.mezo.api.dto.TodayExercise;
 import io.mrkuhne.mezo.api.dto.WorkoutTodayResponse;
+import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
 import io.mrkuhne.mezo.feature.proactive.entity.ChallengeEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.ChallengeRepository;
 import io.mrkuhne.mezo.feature.train.service.WorkoutService;
@@ -43,7 +44,9 @@ public class OverloadChallengeGenerator {
 
     @Transactional
     public List<ChallengeEntity> generate(UUID userId, UUID templateSessionId, LocalDate date) {
-        if (!date.equals(LocalDate.now())) {
+        if (!date.equals(LocalDate.now(MedicationCycleService.MEDICATION_ZONE))) {
+            // mezo-ned9: owner-local, mirroring ChallengeGenerator's gate — the two must accept the
+            // SAME set of days or one challenge kind silently vanishes between the two midnights.
             return List.of();   // past/future never generate (mirror ChallengeGenerator)
         }
         List<ChallengeEntity> existing = challengeRepository

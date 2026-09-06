@@ -17,9 +17,15 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 /** Cron backstops: morning generation for users who never open Today; nightly quiet finalize. */
 @ActiveProfiles("companion-fake")
+@TestPropertySource(properties = {
+    // mezo-c9k4: the shared test profile now disables this cron by default (kill-switch
+    // completeness) — this IT drives the job directly, so it re-enables it on its own context.
+    "mezo.techcore.cron.quest-job.enabled=true"
+})
 class QuestJobIT extends AbstractIntegrationTest {
 
     @Autowired private QuestJob job;

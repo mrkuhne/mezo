@@ -60,9 +60,16 @@ class MeWeekTrendIT extends ApiIntegrationTest {
     @Autowired private WeeklyScorePopulator weeklyScorePopulator;
     @Autowired private UserPopulator userPopulator;
 
+    /**
+     * The test's own reading of "today", taken ONCE. {@link #weeksAgo(int)} is called several times
+     * per test; re-reading the clock each time would anchor the same fixture on two different weeks
+     * whenever a Sunday→Monday midnight fell between two calls.
+     */
+    private static final LocalDate TODAY = LocalDate.now();
+
     /** The Monday {@code n} completed weeks back — always a week that has already ended. */
     private static LocalDate weeksAgo(int n) {
-        return LocalDate.now().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(n);
+        return TODAY.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(n);
     }
 
     private UUID ownerId() {

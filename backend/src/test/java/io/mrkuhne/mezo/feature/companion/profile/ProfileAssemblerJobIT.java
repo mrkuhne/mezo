@@ -15,9 +15,15 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 
 /** W4.3 (mezo-b3pp.17): the weekly job sweeps every user and never lets one failure kill the run. */
 @ActiveProfiles("companion-fake")
+@TestPropertySource(properties = {
+    // mezo-c9k4: the shared test profile now disables this cron by default (kill-switch
+    // completeness) — this IT drives the job directly, so it re-enables it on its own context.
+    "mezo.techcore.cron.profile-assembler-job.enabled=true"
+})
 class ProfileAssemblerJobIT extends AbstractIntegrationTest {
 
     @Autowired

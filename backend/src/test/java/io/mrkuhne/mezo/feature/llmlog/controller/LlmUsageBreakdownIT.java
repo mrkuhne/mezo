@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.within;
 
 import io.mrkuhne.mezo.api.dto.LlmUsageBreakdownResponse;
 import io.mrkuhne.mezo.api.dto.LlmUsageGroup;
+import io.mrkuhne.mezo.feature.llmlog.config.LlmLogProperties;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
 import io.mrkuhne.mezo.feature.llmlog.entity.PricingSnapshot;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
@@ -27,6 +28,7 @@ class LlmUsageBreakdownIT extends ApiIntegrationTest {
     private static final String URI = "/api/llm-usage/breakdown?period=DAY";
 
     @Autowired private LlmLogPopulator llmLogPopulator;
+    @Autowired private LlmLogProperties llmLogProperties;
     @Autowired private UserPopulator userPopulator;
 
     @Test
@@ -36,9 +38,15 @@ class LlmUsageBreakdownIT extends ApiIntegrationTest {
 
     @Test
     void testGetBreakdown_shouldReturnEmptyRollupsAndNullCost_whenNothingLogged() {
+        // `from` is the SERVER's own today, cut on the CONFIGURED report zone (never a hardcoded
+        // one): capture the day AROUND the call and accept either side, so a midnight between the
+        // two reads cannot flip the assert. LlmUsageBreakdownMidnightIT drives this same window
+        // with a report zone whose "now" is always 00:0x.
+        LocalDate dayBefore = LocalDate.now(llmLogProperties.reportZone());
         LlmUsageBreakdownResponse body = breakdown("DAY");
+        LocalDate dayAfter = LocalDate.now(llmLogProperties.reportZone());
 
-        assertThat(body.getFrom()).isEqualTo(LocalDate.now(java.time.ZoneId.of("Europe/Budapest")));
+        assertThat(body.getFrom()).isIn(dayBefore, dayAfter);
         assertThat(body.getTotals().getCallCount()).isZero();
         assertThat(body.getTotals().getUnpricedCount()).isZero();
         assertThat(body.getTotals().getCostUsd()).isNull();
@@ -130,6 +138,8 @@ class LlmUsageBreakdownIT extends ApiIntegrationTest {
     private static PricingSnapshot snapshot() {
         return new PricingSnapshot("gemini-2.5-flash", "USD",
             new BigDecimal("0.30"), new BigDecimal("2.50"), new BigDecimal("2.50"),
-            new BigDecimal("0.075"), null, LocalDate.now());
+            // a FIXED effective-from date: the snapshot is inert fixture metadata, and re-reading
+            // the clock per call could stamp two rows of one test with two different days
+            new BigDecimal("0.075"), null, LocalDate.of(2026, 1, 1));
     }
 }

@@ -58,11 +58,15 @@ class SportContractIT extends ApiIntegrationTest {
     void testLogSportSession_shouldReturn201AndAppearInList_whenValid() {
         HttpHeaders auth = ownerAuthHeaders();
 
+        // the session's date is defaulted from the SERVER's clock: capture the day AROUND the call
+        // and accept either side, so a midnight between the two reads cannot flip the assert
+        LocalDate dayBefore = LocalDate.now();
         SportSessionResponse created = postForBody("/api/train/sport-sessions",
             sessionReq().notes("kontrakt teszt").build(), auth, HttpStatus.CREATED, SportSessionResponse.class);
+        LocalDate dayAfter = LocalDate.now();
 
         assertThat(created.getId()).isNotNull();
-        assertThat(created.getDate()).isEqualTo(LocalDate.now());
+        assertThat(created.getDate()).isIn(dayBefore, dayAfter);
         assertThat(created.getSport()).isEqualTo("volleyball");
         assertThat(created.getIntensity()).isNull();
         assertThat(created.getJumpCount()).isNull();
@@ -75,10 +79,13 @@ class SportContractIT extends ApiIntegrationTest {
     @Test
     void testListSportSessions_shouldNarrowToTheWindow_whenFromAndToGiven() {
         HttpHeaders auth = ownerAuthHeaders();
+        // today's session gets its date from the SERVER, so the window's upper bound is the day read
+        // AFTER the post — a midnight in between would otherwise push the row past "to"
         LocalDate today = LocalDate.now();
 
         SportSessionResponse todaySession = postForBody("/api/train/sport-sessions",
             sessionReq().notes("ma").build(), auth, HttpStatus.CREATED, SportSessionResponse.class);
+        LocalDate dayAfter = LocalDate.now();
         SportSessionResponse oldSession = postForBody("/api/train/sport-sessions",
             sessionReq().date(today.minusDays(90)).notes("regi").build(),
             auth, HttpStatus.CREATED, SportSessionResponse.class);
@@ -90,7 +97,7 @@ class SportContractIT extends ApiIntegrationTest {
 
         // A 4-week window -> only the recent one.
         List<SportSessionResponse> window = getForList(
-            "/api/train/sport-sessions?from=" + today.minusDays(27) + "&to=" + today,
+            "/api/train/sport-sessions?from=" + today.minusDays(27) + "&to=" + dayAfter,
             auth, HttpStatus.OK, SportSessionResponse.class);
         assertThat(window).extracting(SportSessionResponse::getId)
             .contains(todaySession.getId())

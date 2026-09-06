@@ -24,6 +24,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
+import org.springframework.test.context.TestPropertySource;
 
 /**
  * The nightly job's contract: fills every missing finished day in the catch-up window
@@ -31,6 +32,11 @@ import java.util.UUID;
  * {@code @Transactional} — the job/service manage their own transactions (real commits).
  */
 @ActiveProfiles("companion-fake")
+@TestPropertySource(properties = {
+    // mezo-c9k4: the shared test profile now disables this cron by default (kill-switch
+    // completeness) — this IT drives the job directly, so it re-enables it on its own context.
+    "mezo.techcore.cron.daily-summary-job.enabled=true"
+})
 class DailySummaryJobIT extends AbstractIntegrationTest {
 
     @Autowired private DailySummaryJob dailySummaryJob;
