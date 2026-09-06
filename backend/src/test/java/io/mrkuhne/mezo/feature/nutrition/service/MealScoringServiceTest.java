@@ -56,10 +56,10 @@ class MealScoringServiceTest {
         return List.of(
             new ScoredLine("Zabkása", "300g",
                 bd(800), bd(41), bd(70), bd(18), (short) 1,
-                bd(10), bd(5), bd(1), bd(3), true, null, null),
+                bd(10), bd(5), bd(1), bd(3), null, null),
             new ScoredLine("Whey shake", "1 adag",
                 bd(285), bd(14), bd(25), bd(6), (short) 4,
-                null, null, null, null, false, null, null));
+                null, null, null, null, null, null));
     }
 
     // A carb-heavy, high-sugar, NOVA-4 line — the "PB Banana Toast" shape.
@@ -68,8 +68,7 @@ class MealScoringServiceTest {
             "PB Banana Toast", "1 adag",
             new BigDecimal("237"), new BigDecimal("10"), new BigDecimal("42"), new BigDecimal("3"),
             (short) 4,
-            new BigDecimal("8"), new BigDecimal("20"), new BigDecimal("1.0"), new BigDecimal("0.5"),
-            true, null, null));
+            new BigDecimal("8"), new BigDecimal("20"), new BigDecimal("1.0"), new BigDecimal("0.5"), null, null));
     }
 
     @Test
@@ -205,10 +204,13 @@ class MealScoringServiceTest {
         MealBreakdownJson.Dimension micro = dimension(b, "micro");
         assertThat(micro.micros()).hasSize(1);
         MealBreakdownJson.MicroRow fiber = micro.micros().getFirst();
-        // 10 g fiber vs 38·0.35 = 13.3 g allotment → 75% · ok
+        // Per-fact coverage (mezo-1f7b): only the 800 kcal Zabkása carries fiberG, so the
+        // allotment follows the SEEN energy — 38 g · (800/3100) = 9.8 g — not the whole 1085 kcal
+        // meal's 13.3 g. 10 g / 9.8 g → 102%. Judging known fiber against unknown lines' energy
+        // was the same "absence reads as a number" error the fat-quality bug came from.
         assertThat(fiber.name()).isEqualTo("Rost");
-        assertThat(fiber.pct()).isEqualTo(75);
-        assertThat(fiber.status()).isEqualTo("ok");
+        assertThat(fiber.pct()).isEqualTo(102);
+        assertThat(fiber.status()).isEqualTo("good"); // ≥100% of the seen-energy allotment
         // confidence = Σ(effWeight·coverage)/Σ effWeight over the live set = 0.90
         assertThat(b.confidence()).isEqualByComparingTo("0.90");
     }
@@ -217,7 +219,7 @@ class MealScoringServiceTest {
     void testScoreMeal_shouldRenormalizeTotal_whenNovaCoverageZero() {
         List<ScoredLine> noNova = List.of(
             new ScoredLine("Házi étel", "400g", bd(800), bd(41), bd(70), bd(18), null,
-                bd(10), bd(5), bd(1), bd(3), true, null, null));
+                bd(10), bd(5), bd(1), bd(3), null, null));
 
         MealBreakdownJson b = service.scoreMeal("lunch", noNova, LocalTime.of(13, 0));
 
@@ -300,6 +302,64 @@ class MealScoringServiceTest {
         var lines = List.of(line("Hal", 620, 40, 20, 20, 1, 2.0, 3.0, 0.5, 3.0));
         var dim = dimension(service.scoreMeal("lunch", lines, LocalTime.NOON), "fat_quality");
         assertThat(dim.score()).isEqualByComparingTo("1.00");
+    }
+
+    /**
+     * The reported bug (mezo-1f7b): a tojás/avokádó/bacon breakfast scored a perfect 100 on
+     * Zsírminőség with the detail "Telített zsír az energia 0%-a". One bread line carrying fiber
+     * flipped the shared `hasMicroFacts` flag, the absent saturated fat summed to 0 g, and absence
+     * printed as virtue. Coverage now follows saturatedFatG alone, so the dimension degrades.
+     */
+    @Test
+    void testScoreMeal_shouldDegradeFatQuality_whenOnlyOtherNutrientFactsArePresent() {
+        var lines = List.of(
+            // fiber-only line (a pantry row like the seeded bread: fiberG set, saturatedFatG null)
+            new ScoredLine("Kenyér", "80g", bd(200), bd(7), bd(38), bd(2), (short) 3,
+                bd(4), null, null, null, "grains", bd(80)),
+            // the fatty part, with no saturated-fat fact at all
+            new ScoredLine("Bacon + tojás", "150g", bd(400), bd(20), bd(2), bd(35), (short) 3,
+                null, null, null, null, null, bd(150)));
+
+        var b = service.scoreMeal("breakfast", lines, LocalTime.of(8, 0));
+
+        var fat = dimension(b, "fat_quality");
+        assertThat(fat.weight()).isEqualByComparingTo("0.00");
+        assertThat(fat.score()).isEqualByComparingTo("0.00");
+        assertThat(fat.detail()).isEqualTo("Nincs telítettzsír-adat a tételekhez.");
+        // …while the fiber it DOES know about still scores, unaffected.
+        assertThat(dimension(b, "micro").weight()).isGreaterThan(BigDecimal.ZERO);
+    }
+
+    /** Partial coverage measures inside the SEEN energy and says so in the sentence. */
+    @Test
+    void testScoreMeal_shouldMeasureFatQualityWithinCoveredEnergy_whenPartiallyCovered() {
+        var lines = List.of(
+            line("Vaj", 300, 0, 0, 33, 2, 0, 0, 0.1, 22),          // satFat known
+            lineNoFacts("Ismeretlen köret", 300, 5, 60, 2, 1));    // satFat unknown
+
+        var fat = dimension(service.scoreMeal("lunch", lines, LocalTime.NOON), "fat_quality");
+
+        // 22 g satFat · 9 = 198 kcal of the 300 SEEN kcal = 66 E% — not the 33 E% the whole-meal
+        // denominator used to report. Half the meal is unseen, and the detail says so.
+        assertThat(fat.score()).isEqualByComparingTo("0.00");
+        assertThat(fat.detail()).contains("66.0%").contains("Csak a tételek 50%-ára van adat.");
+    }
+
+    /** Sugar and salt are populated independently; one present must not vouch for the other. */
+    @Test
+    void testScoreMeal_shouldScoreWhoOnTheKnownFactOnly_whenSugarIsMissing() {
+        var lines = List.of(new ScoredLine("Sós rágcsa", "50g",
+            bd(400), bd(5), bd(40), bd(25), (short) 4,
+            null, null, bd(0.2), null, null, bd(50)));
+
+        var who = dimension(service.scoreMeal("snack", lines, LocalTime.of(16, 0)), "who");
+
+        // salt seen, sugar not: the sugar row says so instead of printing a fabricated 0 E%
+        assertThat(who.context().getFirst().label()).isEqualTo("Cukor");
+        assertThat(who.context().getFirst().value()).isEqualTo("nincs adat");
+        assertThat(who.context().get(1).value()).contains("0.2 g /");
+        assertThat(who.detail()).startsWith("Cukor: nincs adat")
+            .contains("Csak a tételek 50%-ára van adat.");
     }
 
     @Test
@@ -420,8 +480,7 @@ class MealScoringServiceTest {
         // no micro-facts, no nova, no category, no amountG → micro/who/fat_quality/
         // nova/plant_diversity/energy_density degrade; only macro+context stay live.
         List<ScoredLine> lines = List.of(new ScoredLine("Rizs", "100 g",
-            bd(350), bd(7), bd(77), BigDecimal.ONE, null, null, null, null, null,
-            false, null, null));
+            bd(350), bd(7), bd(77), BigDecimal.ONE, null, null, null, null, null, null, null));
         MealBreakdownJson b = service.scoreMeal("lunch", lines, LocalTime.of(12, 30));
         double liveWeightSum = b.dimensions().stream()
             .mapToDouble(d -> d.weight().doubleValue()).sum();
@@ -436,7 +495,7 @@ class MealScoringServiceTest {
     void testRecipeFit_shouldReturnNull_whenNoLineHasKcal() {
         BigDecimal fit = service.recipeFit("lunch", List.of(
             new ScoredLine("Fűszer", "5g", bd(0), bd(0), bd(0), bd(0), null,
-                null, null, null, null, false, null, null)));
+                null, null, null, null, null, null)));
 
         assertThat(fit).isNull(); // honest: nothing to score → pending, never a fabricated number
     }
@@ -604,13 +663,13 @@ class MealScoringServiceTest {
         return List.of(
             new ScoredLine("Fehér toast", "80g",
                 bd(210), bd(7), bd(40), bd(2), (short) 4,
-                bd(2), bd(4), bd(1), bd(0.5), true, "grains", bd(80)),
+                bd(2), bd(4), bd(1), bd(0.5), "grains", bd(80)),
             new ScoredLine("Méz", "30g",
                 bd(90), bd(0), bd(24), bd(0), (short) 3,
-                bd(0), bd(23), bd(0), bd(0), true, null, bd(30)),
+                bd(0), bd(23), bd(0), bd(0), null, bd(30)),
             new ScoredLine("Banán", "120g",
                 bd(107), bd(1), bd(27), bd(0), (short) 1,
-                bd(3), bd(14), bd(0), bd(0), true, "fruits", bd(120)));
+                bd(3), bd(14), bd(0), bd(0), "fruits", bd(120)));
     }
 
 
@@ -626,38 +685,38 @@ class MealScoringServiceTest {
     private List<ScoredLine> proteinFatLines() {
         return List.of(new ScoredLine("Túró", "250g",
             bd(375), bd(16.25), bd(5), bd(5.625), null,
-            null, null, null, null, false, null, bd(125)));
+            null, null, null, null, null, bd(125)));
     }
 
     /** Fully-covered line: nutrition facts + a plant-neutral category + a gram amount (who/fat/micro). */
     private ScoredLine line(String name, double kcal, double p, double c, double f, int nova,
             double fiber, double sugar, double salt, double satFat) {
         return new ScoredLine(name, "adag", bd(kcal), bd(p), bd(c), bd(f), (short) nova,
-            bd(fiber), bd(sugar), bd(salt), bd(satFat), true, "other", bd(kcal));
+            bd(fiber), bd(sugar), bd(salt), bd(satFat), "other", bd(kcal));
     }
 
     /** kcal + pantry category only (plant-diversity input); no facts / grams. */
     private ScoredLine lineWithCategory(String name, double kcal, String category) {
         return new ScoredLine(name, "adag", bd(kcal), null, null, null, null,
-            null, null, null, null, false, category, null);
+            null, null, null, null, category, null);
     }
 
     /** kcal + a gram amount (energy-density input); no facts / category. */
     private ScoredLine lineWithGrams(String name, double kcal, BigDecimal amountG) {
         return new ScoredLine(name, "adag", bd(kcal), null, null, null, null,
-            null, null, null, null, false, null, amountG);
+            null, null, null, null, null, amountG);
     }
 
     /** kcal only, discrete unit (null amountG) — excluded from the energy-density mass. */
     private ScoredLine lineNoGrams(String name, double kcal) {
         return new ScoredLine(name, "adag", bd(kcal), null, null, null, null,
-            null, null, null, null, false, null, null);
+            null, null, null, null, null, null);
     }
 
     /** Macros only, no nutrition-quality facts (hasMicroFacts=false) — degrades who/fat/micro. */
     private ScoredLine lineNoFacts(String name, double kcal, double p, double c, double f, int nova) {
         return new ScoredLine(name, "adag", bd(kcal), bd(p), bd(c), bd(f), (short) nova,
-            null, null, null, null, false, null, null);
+            null, null, null, null, null, null);
     }
 
     /** Finds a dimension by id in the emitted envelope, or fails. */

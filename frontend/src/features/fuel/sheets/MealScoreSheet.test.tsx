@@ -32,7 +32,7 @@ test('renders the score hero, summary, the ledger and 8 collapsed dimension card
 test('the hero carries the tone word and the Rost fact, the header the context chip', () => {
   renderSheet() // mock m1: fiberG present, no Szerep row → Standard
   expect(screen.getByText(/^(jó|közepes|gyenge)$/)).toBeInTheDocument()
-  expect(screen.getByText('Rost')).toBeInTheDocument()
+  expect(screen.getByText('rost')).toBeInTheDocument() // hero fact tile label (mezo-1f7b)
   expect(screen.getByText('Standard')).toBeInTheDocument()
 })
 test('Lehetne jobb renders the gain as pont', () => {

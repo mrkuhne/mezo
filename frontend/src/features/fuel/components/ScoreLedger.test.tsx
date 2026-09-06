@@ -14,10 +14,16 @@ test('one segment per dimension, flex = weight, fill = score, Σ = weight×score
   const segs = container.querySelectorAll<HTMLElement>('.sb-ledger-seg')
   expect(segs).toHaveLength(2)
   expect(segs[0].style.flexGrow).toBe('0.35')
+  // unrounded fill: a 6%-weight segment is ~20px wide, where integer rounding is visible (mezo-1f7b)
   expect((segs[0].firstElementChild as HTMLElement).style.width).toBe('64%')
-  expect(screen.getByText('Σ')).toBeInTheDocument()
+  expect(screen.getByText('Súlyozott összeg')).toBeInTheDocument()
   expect(screen.getByText('32,8')).toBeInTheDocument() // 22.4 + 10.4
-  expect(screen.getByText('35%')).toBeInTheDocument()
+  // one NAMED row per live dimension: „megszerzett / elérhető" pont, not a bare weight %
+  const rows = container.querySelectorAll('.sb-ledger-row')
+  expect(rows).toHaveLength(2)
+  expect(rows[0]).toHaveTextContent('Makró')
+  expect(rows[0]).toHaveTextContent('22,4')
+  expect(rows[0]).toHaveTextContent('/ 35')
 })
 
 test('kihagyja a degraded dimenziót a sávból és Nincs adat sorként mutatja', () => {
@@ -32,7 +38,7 @@ test('kihagyja a degraded dimenziót a sávból és Nincs adat sorként mutatja'
   expect(container.querySelectorAll('.sb-ledger-seg')).toHaveLength(2)
   // the degraded dim is named in the "Nincs adat" line, not in the %-row
   expect(screen.getByText(/Nincs adat/)).toHaveTextContent('NOVA')
-  expect(screen.queryByText('0%')).not.toBeInTheDocument()
+  expect(container.querySelectorAll('.sb-ledger-row')).toHaveLength(2)
   // Σ still equals weight×score×100 over the LIVE dims only (weights already renormalized upstream)
   expect(screen.getByText('83,5')).toBeInTheDocument() // 0.65*0.8*100 + 0.35*0.9*100 = 52 + 31.5
 })

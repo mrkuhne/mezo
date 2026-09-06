@@ -189,6 +189,9 @@ export interface MealEstimateInputItem {
   basisUnit: string
   kcal: number; proteinG: number; carbsG: number; fatG: number
   nova?: number | null
+  /** Nutrition-quality facts (mezo-1f7b). `null` = the estimate carried no value — NOT 0 g: the
+   *  scorer degrades the fiber/WHO/fat-quality dimension instead of scoring a fabricated zero. */
+  fiberG?: number | null; sugarG?: number | null; saltG?: number | null; saturatedFatG?: number | null
 }
 /** Editor line — discriminated on source: a recipe/pantry ref, or a free-form estimate. */
 export type MealItemInput = MealRefInputItem | MealEstimateInputItem
@@ -224,6 +227,12 @@ export interface MealAiDraftLine {
   carbsG: number
   fatG: number
   nova: number | null
+  /** Nutrition-quality facts on the draft basis (mezo-1f7b): copied from the catalog/recipe on a
+   *  match, estimated by the model on an estimate line. `null` = unknown, never 0. */
+  fiberG: number | null
+  sugarG: number | null
+  saltG: number | null
+  saturatedFatG: number | null
   confidence: number
   needsReview: boolean
 }

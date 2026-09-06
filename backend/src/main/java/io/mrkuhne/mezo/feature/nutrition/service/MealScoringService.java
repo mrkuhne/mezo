@@ -48,8 +48,16 @@ public class MealScoringService {
      * tudja, melyik sort kell újrapontozni. A `1` az első bélyegzett generáció: a súly-
      * renormalizálás (`d51ec268b`) + a makró kcal-szignifikancia-skálázás (`01b194ac7`) UTÁNI
      * állapot. A bélyeg nélküli (`null`) envelope-ok az azok ELŐTTI, javítandó generáció.
+     *
+     * <p>`2` (mezo-1f7b): a PER-TÉNY lefedettség. Addig egyetlen `hasMicroFacts` OR-boolean
+     * fedte le mind a négy tápanyag-tényt, ezért egy CSAK rostot hordozó tétel teljes
+     * lefedettséget hazudott a telített zsírra is — a hiányzó satFat 0 g-ként összegződött, és a
+     * Zsírminőség rendre 100 pontot adott (a kamra-katalógus 147 sorából 2-ben van satFat).
+     * Mostantól minden lefedettség-kapuzott dimenzió a SAJÁT tényét nézi, és a saját FEDETT
+     * energiáján belül mér (a nevező a fedett kcal, nem a teljes) — a nem látott rész a
+     * `coverage`-ben jelenik meg, nem hígított számként.
      */
-    public static final int FORMULA_VERSION = 1;
+    public static final int FORMULA_VERSION = 2;
 
     private final MealScoringProperties props;
     private final NutritionTargetsProperties targets;
@@ -57,10 +65,11 @@ public class MealScoringService {
     /**
      * One meal/recipe line with its contribution + nutrition-quality facts ALREADY SCALED to the
      * line's amount (the caller owns the amount/per scaling — same formula as the macro snapshot).
-     * {@code hasMicroFacts} marks whether the source carried any of the quality facts
-     * (drives the micro/who/fat-quality dimensions' coverage → confidence). {@code category} feeds
-     * plant-diversity (null on estimate lines); {@code amountG} feeds energy-density (null for
-     * discrete units).
+     * A quality fact is {@code null} exactly when the SOURCE carried no value — never 0 — and each
+     * coverage-gated dimension reads its OWN fact ({@code fiberG} → micro, {@code sugarG}/
+     * {@code saltG} → who, {@code saturatedFatG} → fat quality), because they are populated
+     * independently (mezo-1f7b). {@code category} feeds plant-diversity (null on estimate lines);
+     * {@code amountG} feeds energy-density (null for discrete units).
      */
     public record ScoredLine(
         String name,
@@ -68,7 +77,6 @@ public class MealScoringService {
         BigDecimal kcal, BigDecimal p, BigDecimal c, BigDecimal f,
         Short nova,
         BigDecimal fiberG, BigDecimal sugarG, BigDecimal saltG, BigDecimal saturatedFatG,
-        boolean hasMicroFacts,
         String category,      // pantry category (plant-diversity input); null on estimate lines
         BigDecimal amountG    // line amount in grams (g/ml≈g); null for discrete units
     ) {
@@ -139,7 +147,7 @@ public class MealScoringService {
         MealScoringProperties.NovaGroupScores nova = rubric.nova();
 
         List<Dim> dims = List.of(
-            macroDim(lines, kcal, tp, tc, tf, base), microDim(lines, kcal, base), whoDim(lines, kcal, who, base),
+            macroDim(lines, kcal, tp, tc, tf, base, role), microDim(lines, kcal, base), whoDim(lines, kcal, who, base),
             fatQualityDim(lines, kcal), novaDim(lines, kcal, nova), plantDiversityDim(lines, kcal),
             energyDensityDim(lines, kcal), contextDim(slot, lines, kcal, localTime, role, base));
 
@@ -212,7 +220,7 @@ public class MealScoringService {
         DailyTargets base = DailyTargets.fromConfig(targets);
         Rubric rubric = rubricFor(role, base);
         List<Dim> live = List.of(
-            macroDim(perServingLines, kcal, rubric.p(), rubric.c(), rubric.f(), base),
+            macroDim(perServingLines, kcal, rubric.p(), rubric.c(), rubric.f(), base, role),
             microDim(perServingLines, kcal, base), whoDim(perServingLines, kcal, rubric.who(), base),
             fatQualityDim(perServingLines, kcal),
             novaDim(perServingLines, kcal, rubric.nova()), plantDiversityDim(perServingLines, kcal),
@@ -274,7 +282,7 @@ public class MealScoringService {
     // --- Macro (.30): kcal-share fit vs the mezo.nutrition targets -----------------------------
 
     private Dim macroDim(List<ScoredLine> lines, double kcal, int targetP, int targetC, int targetF,
-                        DailyTargets base) {
+                        DailyTargets base, MealRole role) {
         double p = sum(lines, ScoredLine::p);
         double c = sum(lines, ScoredLine::c);
         double f = sum(lines, ScoredLine::f);
@@ -307,31 +315,68 @@ public class MealScoringService {
             "~" + Math.round(tp * 100) + "%", "~" + Math.round(tc * 100) + "%", "~" + Math.round(tf * 100) + "%",
             round1(kcalShare * 100),
             null); // P8 prose
-        String text = String.format("P/C/F arány %d/%d/%d%% a %d/%d/%d%% célhoz képest.",
+        // Egész mondat, a cél EREDETÉVEL együtt (mezo-1f7b): a puszta „24/15/61% a 27/47/26%
+        // célhoz képest" nem mondja meg, mit néz (kcal-arány, nem gramm) és honnan jön a cél.
+        String text = String.format(
+            "Ennek az ételnek az energiája %d%% fehérje · %d%% szénhidrát · %d%% zsír. "
+                + "A cél %d/%d/%d%% — %s (%d g F / %d g Sz / %d g Zs egy %d kcal-s napra). "
+                + "Ez az étel a napi keret %s-a.",
             Math.round(sp * 100), Math.round(sc * 100), Math.round(sf * 100),
-            Math.round(tp * 100), Math.round(tc * 100), Math.round(tf * 100));
+            Math.round(tp * 100), Math.round(tc * 100), Math.round(tf * 100),
+            targetOrigin(base, role), targetP, targetC, targetF, base.kcal(),
+            pct(kcalShare) + "%");
         return new Dim("macro", "Kcal & makró arány", props.weights().macro(), score, 1.0, text,
             detail, null, null, null, null);
     }
 
+    /**
+     * Honnan jön a makró-cél, egy tagmondatban — a cél SOSEM „csak úgy annyi" (mezo-1f7b).
+     * A rubrika (edzés előtt/után) felülírja a napi arányokat, különben a nap forrása dönt:
+     * az aktív cél előírt szegmense ({@code "goal"}) vagy a statikus alapbeállítás.
+     */
+    private static String targetOrigin(DailyTargets base, MealRole role) {
+        if (role == MealRole.PRE_WORKOUT) {
+            return "az edzés előtti rubrika (gyors szénhidrát-hangsúly)";
+        }
+        if (role == MealRole.POST_WORKOUT) {
+            return "az edzés utáni regenerációs rubrika";
+        }
+        return "goal".equals(base.source())
+            ? "az aktív célod napi előírása"
+            : "az alapértelmezett napi keret (nincs aktív cél-előírás erre a napra)";
+    }
+
     // --- Micro (.10): fiber target (sugar/salt/satFat redistributed to who/fat-quality) ---------
 
-    private Dim microDim(List<ScoredLine> lines, double kcal, DailyTargets base) {
-        double coveredKcal = lines.stream().filter(ScoredLine::hasMicroFacts)
+    /**
+     * The kcal a fact is actually KNOWN over (mezo-1f7b). Every coverage-gated dimension measures
+     * inside this energy — the meal's unseen part shows up as {@code coverage}, never as a diluted
+     * (falsely flattering) number.
+     */
+    private static double coveredKcal(List<ScoredLine> lines,
+                                      java.util.function.Function<ScoredLine, BigDecimal> fact) {
+        return lines.stream().filter(l -> fact.apply(l) != null)
             .mapToDouble(l -> dbl(l.kcal())).sum();
-        double coverage = kcal > 0 ? coveredKcal / kcal : 0;
+    }
+
+    private Dim microDim(List<ScoredLine> lines, double kcal, DailyTargets base) {
+        double seen = coveredKcal(lines, ScoredLine::fiberG);
+        double coverage = kcal > 0 ? seen / kcal : 0;
         if (kcal <= 0 || coverage == 0) {
             return Dim.degraded("micro", "Rost & mikro", props.weights().micro(),
                 "Nincs rost-adat a tételekhez.");
         }
-        double kcalShare = kcal / base.kcal();
+        // The allotment follows the SEEN energy, not the whole meal: half a meal's fiber must not
+        // be judged against the whole meal's fiber budget.
+        double kcalShare = seen / base.kcal();
         double fiber = sum(lines, ScoredLine::fiberG);
         double fiberRatio = fiber / (props.micro().fiberG() * kcalShare);
         double score = Math.min(1, fiberRatio);
         List<MicroRow> rows = List.of(
             new MicroRow("Rost", grams(fiber), pct(fiberRatio), fiberStatus(fiberRatio)));
-        String text = String.format("Rost %s a(z) %s allotmenthez (%d%%).",
-            grams(fiber), grams(props.micro().fiberG() * kcalShare), pct(fiberRatio));
+        String text = String.format("Rost %s a(z) %s allotmenthez (%d%%).%s",
+            grams(fiber), grams(props.micro().fiberG() * kcalShare), pct(fiberRatio),
+            coverageNote(coverage));
         return new Dim("micro", "Rost & mikro", props.weights().micro(), score, coverage, text,
             null, rows, null, null, null);
     }
@@ -340,55 +385,97 @@ public class MealScoringService {
 
     private Dim whoDim(List<ScoredLine> lines, double kcal, MealScoringProperties.WhoRefs who,
                       DailyTargets base) {
-        double coveredKcal = lines.stream().filter(ScoredLine::hasMicroFacts)
-            .mapToDouble(l -> dbl(l.kcal())).sum();
-        double coverage = kcal > 0 ? coveredKcal / kcal : 0;
-        if (kcal <= 0 || coverage == 0) {
+        // Sugar and salt are populated INDEPENDENTLY on a source row, so each carries its own
+        // coverage; a meal that only knows its salt is scored on salt alone, not on a fabricated
+        // "0 g sugar" (mezo-1f7b).
+        double sugarKcal = coveredKcal(lines, ScoredLine::sugarG);
+        double saltKcal = coveredKcal(lines, ScoredLine::saltG);
+        double sugarCov = kcal > 0 ? sugarKcal / kcal : 0;
+        double saltCov = kcal > 0 ? saltKcal / kcal : 0;
+        if (kcal <= 0 || (sugarCov == 0 && saltCov == 0)) {
             return Dim.degraded("who", "Ajánlások · WHO", props.weights().who(),
                 "Nincs cukor/só-adat a tételekhez.");
         }
         double sugar = sum(lines, ScoredLine::sugarG);
         double salt = sum(lines, ScoredLine::saltG);
-        double sugarShare = sugar * 4 / kcal;
+        double sugarShare = sugarCov > 0 ? sugar * 4 / sugarKcal : 0;
+        double saltBudget = who.saltLimitG() * (saltKcal / base.kcal());
         double sugarRatio = sugarShare / who.sugarEnergyShareLimit();
-        double saltRatio = salt / (who.saltLimitG() * (kcal / base.kcal()));
-        double score = (limitSub(sugarRatio) + limitSub(saltRatio)) / 2;
+        double saltRatio = saltBudget > 0 ? salt / saltBudget : 0;
+        List<Double> subs = new ArrayList<>();
+        if (sugarCov > 0) {
+            subs.add(limitSub(sugarRatio));
+        }
+        if (saltCov > 0) {
+            subs.add(limitSub(saltRatio));
+        }
+        double score = subs.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+        double coverage = (sugarCov + saltCov) / 2;
         List<ContextRow> rows = List.of(
-            new ContextRow("Cukor", String.format("%.0f E%% / %.0f E%% limit", sugarShare * 100,
-                who.sugarEnergyShareLimit() * 100)),
-            new ContextRow("Só", String.format("%s / %s keret", grams(salt),
-                grams(who.saltLimitG() * (kcal / base.kcal())))));
-        String text = String.format("Cukor az energia %.0f%%-a (WHO ≤%.0f%%) · só a keret %d%%-án.",
-            sugarShare * 100, who.sugarEnergyShareLimit() * 100, pct(saltRatio));
+            new ContextRow("Cukor", sugarCov > 0
+                ? String.format("%.0f E%% / %.0f E%% limit", sugarShare * 100,
+                    who.sugarEnergyShareLimit() * 100)
+                : "nincs adat"),
+            new ContextRow("Só", saltCov > 0
+                ? String.format("%s / %s keret", grams(salt), grams(saltBudget))
+                : "nincs adat"));
+        String text = String.format("%s · %s%s",
+            sugarCov > 0
+                ? String.format("Cukor az energia %.0f%%-a (WHO ≤%.0f%%)", sugarShare * 100,
+                    who.sugarEnergyShareLimit() * 100)
+                : "Cukor: nincs adat",
+            saltCov > 0 ? String.format("só a keret %d%%-án", pct(saltRatio)) : "só: nincs adat",
+            coverageNote(coverage));
         return new Dim("who", "Ajánlások · WHO", props.weights().who(), score, coverage, text,
             null, null, null, rows, null);
     }
 
     // --- Fat quality (.10): satFat energy-share + saturated share of total fat -----------------
 
+    /**
+     * Reads ONLY {@code saturatedFatG} for its coverage (mezo-1f7b). Before this, the dimension
+     * shared one OR-ed "has any nutrient fact" flag with micro/who: a bread line carrying fiber
+     * made the whole meal count as covered, the absent saturated fat summed as 0 g, and every such
+     * meal scored a perfect 100 — the failure the user reported on a tojás/avokádó/bacon log.
+     * Both the energy and the total-fat denominators are now the SEEN lines' own.
+     */
     private Dim fatQualityDim(List<ScoredLine> lines, double kcal) {
-        double coveredKcal = lines.stream().filter(ScoredLine::hasMicroFacts)
-            .mapToDouble(l -> dbl(l.kcal())).sum();
-        double coverage = kcal > 0 ? coveredKcal / kcal : 0;
-        double fat = sum(lines, ScoredLine::f);
+        List<ScoredLine> seenLines = lines.stream().filter(l -> l.saturatedFatG() != null).toList();
+        double seen = seenLines.stream().mapToDouble(l -> dbl(l.kcal())).sum();
+        double coverage = kcal > 0 ? seen / kcal : 0;
+        double fat = sum(seenLines, ScoredLine::f);
         if (kcal <= 0 || coverage == 0 || fat <= 0) {
             return Dim.degraded("fat_quality", "Zsírminőség", props.weights().fatQuality(),
-                "Nincs zsír-összetétel adat a tételekhez.");
+                "Nincs telítettzsír-adat a tételekhez.");
         }
-        double satFat = sum(lines, ScoredLine::saturatedFatG);
+        double satFat = sum(seenLines, ScoredLine::saturatedFatG);
         double satShare = Math.min(1, satFat / fat);
-        double satEnergyShare = satFat * 9 / kcal;
+        double satEnergyShare = satFat * 9 / seen;
         double score = (limitSub(satEnergyShare / props.fatQuality().satFatEnergyShareLimit())
             + limitSub(satShare / props.fatQuality().satFatShareRef())) / 2;
         List<ContextRow> rows = List.of(
-            new ContextRow("Telített E%", String.format("%.0f%% / %.0f%% limit",
+            new ContextRow("Telített zsír", grams(satFat)),
+            new ContextRow("Telített E%", String.format(Locale.ROOT, "%.1f%% / %.0f%% limit",
                 satEnergyShare * 100, props.fatQuality().satFatEnergyShareLimit() * 100)),
             new ContextRow("Telített/összzsír", String.format("%.0f%% (ref. %.0f%%)",
                 satShare * 100, props.fatQuality().satFatShareRef() * 100)));
-        String text = String.format("Telített zsír az energia %.0f%%-a · az összzsír %.0f%%-a.",
-            satEnergyShare * 100, satShare * 100);
+        // Locale.ROOT: a fractional %f otherwise renders "66,0" on a hu_HU JVM and "66.0" on the
+        // server's default — the same stored envelope must not read differently per host.
+        String text = String.format(Locale.ROOT,
+            "Telített zsír %s — az energia %.1f%%-a · az összzsír %.0f%%-a.%s",
+            grams(satFat), satEnergyShare * 100, satShare * 100, coverageNote(coverage));
         return new Dim("fat_quality", "Zsírminőség", props.weights().fatQuality(), score, coverage,
             text, null, null, null, rows, null);
+    }
+
+    /**
+     * The "…, a tételek X%-ára" tail every coverage-gated dimension appends when it could NOT see
+     * the whole meal — the number the score is really about, said in the sentence rather than only
+     * in a confidence bar three elements away. Empty at (rounded) full coverage.
+     */
+    private static String coverageNote(double coverage) {
+        int p = (int) Math.round(coverage * 100);
+        return p >= 100 ? "" : String.format(" Csak a tételek %d%%-ára van adat.", p);
     }
 
     // --- Plant diversity (.08): distinct plant categories ---------------------------------------
@@ -431,9 +518,14 @@ public class MealScoringService {
         double score = density <= good ? 1 : density >= bad ? 0 : (bad - density) / (bad - good);
         List<ContextRow> rows = List.of(
             new ContextRow("Sűrűség", String.format("%.0f kcal/100g", density)),
+            new ContextRow("Mért tömeg", String.format("%.0f g · %.0f kcal", grams, gramKcal)),
             new ContextRow("Lefedettség", pct(coverage) + "% gramm-alapú"));
-        String text = String.format("%.0f kcal/100g (%.0f alatt teljes pont, %.0f felett nulla).",
-            density, good, bad);
+        // Csak a GRAMM-alapú tételeken mérhető: a darabos (db/adag) tételek se a tömegbe, se a
+        // kcal-ba nem számítanak — ezért mondja ki a mondat, mennyi a mért rész (mezo-1f7b).
+        String text = String.format(
+            "%.0f g étel %.0f kcal-t hoz — %.0f kcal/100g. %.0f alatt teljes pont, %.0f felett "
+                + "nulla (a hígabb, több rostot/vizet hozó étel telítőbb).%s",
+            grams, gramKcal, density, good, bad, coverageNote(coverage));
         return new Dim("energy_density", "Energia-sűrűség", props.weights().energyDensity(),
             score, coverage, text, null, null, null, rows, null);
     }
@@ -594,7 +686,10 @@ public class MealScoringService {
     /** Honest deterministic tool transparency — what the scorer actually read/computed. */
     private List<ToolRow> tools(String slot, List<ScoredLine> lines, List<Dim> dims, LocalTime t,
                                 DailyTargets base) {
-        long factLines = lines.stream().filter(ScoredLine::hasMicroFacts).count();
+        long factLines = lines.stream()
+            .filter(l -> l.fiberG() != null || l.sugarG() != null || l.saltG() != null
+                || l.saturatedFatG() != null)
+            .count();
         double microCoverage = dims.stream().filter(d -> d.id().equals("micro")).findFirst()
             .map(Dim::coverage).orElse(0.0);
         double novaCoverage = dims.stream().filter(d -> d.id().equals("nova")).findFirst()

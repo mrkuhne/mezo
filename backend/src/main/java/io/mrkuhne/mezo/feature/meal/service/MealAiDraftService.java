@@ -72,7 +72,8 @@ public class MealAiDraftService {
 
     /** LLM answer contract — ids as String so a malformed uuid demotes the line, not the call. */
     record ExtractedLine(String pantryItemId, String recipeId, String name, BigDecimal amount,
-            String unit, BigDecimal kcal, BigDecimal proteinG, BigDecimal carbsG, BigDecimal fatG) {
+            String unit, BigDecimal kcal, BigDecimal proteinG, BigDecimal carbsG, BigDecimal fatG,
+            BigDecimal fiberG, BigDecimal sugarG, BigDecimal saltG, BigDecimal saturatedFatG) {
     }
 
     record ExtractedMeal(String slot, String title, String note, List<ExtractedLine> items) {
@@ -159,13 +160,20 @@ public class MealAiDraftService {
             {"slot":"breakfast"|"lunch"|"dinner"|"snack","title":string|null,"note":string|null,
              "items":[{"pantryItemId":string|null,"recipeId":string|null,"name":string,
                        "amount":number,"unit":string,
-                       "kcal":number,"proteinG":number,"carbsG":number,"fatG":number}]}
+                       "kcal":number,"proteinG":number,"carbsG":number,"fatG":number,
+                       "fiberG":number|null,"sugarG":number|null,"saltG":number|null,
+                       "saturatedFatG":number|null}]}
             Rules:
             - Match a food against the CATALOG below only when it is clearly the same item; then copy
               the EXACT id into pantryItemId or recipeId. NEVER invent or alter an id.
             - For a pantry match give amount in the row's serving unit; for a recipe match amount = servings.
             - ALWAYS fill name + kcal/proteinG/carbsG/fatG as your estimate for the stated amount,
               matched lines included (they are a fallback only).
+            - ALSO estimate fiberG/sugarG/saltG/saturatedFatG in GRAMS for the stated amount — these
+              drive the fiber, WHO and fat-quality scores. saturatedFatG especially: for eggs, bacon,
+              cheese, butter, coconut and fatty meat it is a large share of fatG, and omitting it
+              made those meals score as if they had none. Use null ONLY when you genuinely cannot
+              estimate the value; never write 0 to mean "unknown".
             - Unknown / restaurant / street food: both ids null.
             - Nothing edible recognized: "items":[].
             - title: short Hungarian meal title; note: only genuinely useful remarks, else null.
@@ -294,6 +302,11 @@ public class MealAiDraftService {
         item.setCarbsG(zeroSafe(c.getCarbsG()));
         item.setFatG(zeroSafe(c.getFatG()));
         item.setNova(c.getNova() == null ? null : c.getNova().intValue());
+        // Quality facts from the catalog row, per basis — same nullable semantics as the macros.
+        item.setFiberG(c.getFiberG());
+        item.setSugarG(c.getSugarG());
+        item.setSaltG(c.getSaltG());
+        item.setSaturatedFatG(c.getSaturatedFatG());
         item.setConfidence(BigDecimal.ONE);
         item.setNeedsReview(needsReview);
         return item;
@@ -318,6 +331,12 @@ public class MealAiDraftService {
         item.setCarbsG(MealService.perServing(macros.getC(), servings));
         item.setFatG(MealService.perServing(macros.getF(), servings));
         item.setNova(r.getNovaDominant() == null ? null : r.getNovaDominant().intValue());
+        // Per-serving quality facts, same rollup + same divisor as the macros (mezo-1f7b).
+        var whole = recipeMapper.toResponse(r).getNutrients();
+        item.setFiberG(MealService.perServingGram(whole.getFiberG(), servings));
+        item.setSugarG(MealService.perServingGram(whole.getSugarG(), servings));
+        item.setSaltG(MealService.perServingGram(whole.getSaltG(), servings));
+        item.setSaturatedFatG(MealService.perServingGram(whole.getSaturatedFatG(), servings));
         item.setConfidence(BigDecimal.ONE);
         item.setNeedsReview(false);
         return item;
@@ -342,6 +361,13 @@ public class MealAiDraftService {
         item.setCarbsG(zeroSafe(line.carbsG()));
         item.setFatG(zeroSafe(line.fatG()));
         item.setNova(null);
+        // The model's own per-portion estimates (mezo-1f7b). `per` is the amount on this arm, so
+        // these are already on the snapshot basis, exactly like the macros above. A null stays
+        // null: the scorer degrades the dimension rather than reading it as 0 g.
+        item.setFiberG(line.fiberG());
+        item.setSugarG(line.sugarG());
+        item.setSaltG(line.saltG());
+        item.setSaturatedFatG(line.saturatedFatG());
         double confidence = validator.confidence(line.kcal(), line.proteinG(), line.carbsG(), line.fatG());
         item.setConfidence(BigDecimal.valueOf(confidence));
         // boundary-INCLUSIVE threshold (mezo-8vum deviation note); demotion always forces review

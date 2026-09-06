@@ -94,7 +94,8 @@ public class RecipeIngredientEntity extends OwnedEntity {
     private BigDecimal snapshotFatG;
 
     // Nutrition-quality facts frozen alongside the macros (mezo-m6uv). Nullable: "the source
-    // carried no value" is NOT zero — a fake 0 would lie to the scorer (cf. hasMicroFacts).
+    // carried no value" is NOT zero — a fake 0 would lie to the scorer (each scoring
+    // dimension derives its coverage from its own fact, mezo-1f7b).
     @Column(name = "snapshot_fiber_g")
     private BigDecimal snapshotFiberG;
 

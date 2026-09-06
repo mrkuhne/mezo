@@ -148,7 +148,9 @@ export function toRequest(input: MealInput): MealRequest {
         ? ({ source: 'estimate', recipeId: null, pantryItemId: null,
             amount: it.amount, unit: it.unit, name: it.name, per: it.per,
             basisUnit: it.basisUnit, kcal: it.kcal, proteinG: it.proteinG,
-            carbsG: it.carbsG, fatG: it.fatG, nova: it.nova ?? null } satisfies MealItemRequest)
+            carbsG: it.carbsG, fatG: it.fatG, nova: it.nova ?? null,
+            fiberG: it.fiberG ?? null, sugarG: it.sugarG ?? null,
+            saltG: it.saltG ?? null, saturatedFatG: it.saturatedFatG ?? null } satisfies MealItemRequest)
         : ({ source: it.source,
             recipeId: it.source === 'recipe' ? it.refId : null,
             pantryItemId: it.source === 'pantry' ? it.refId : null,
@@ -228,6 +230,10 @@ export function fromAiDraftResponse(r: MealAiDraftResponse): MealAiDraft {
       carbsG: it.carbsG,
       fatG: it.fatG,
       nova: it.nova ?? null,
+      fiberG: it.fiberG ?? null,
+      sugarG: it.sugarG ?? null,
+      saltG: it.saltG ?? null,
+      saturatedFatG: it.saturatedFatG ?? null,
       confidence: it.confidence,
       needsReview: it.needsReview,
     })),

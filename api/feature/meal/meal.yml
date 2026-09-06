@@ -347,6 +347,13 @@ components:
         carbsG: { type: number, nullable: true }
         fatG: { type: number, nullable: true }
         nova: { type: integer, minimum: 1, maximum: 4, nullable: true }
+        # estimate arm nutrition-quality facts (mezo-1f7b). Without these an AI-estimated line was
+        # blind on micro/who/fat_quality — and, before the per-fact coverage fix, that blindness
+        # read as a perfect score instead of "nincs adat". null = the estimate carried no value.
+        fiberG: { type: number, nullable: true }
+        sugarG: { type: number, nullable: true }
+        saltG: { type: number, nullable: true }
+        saturatedFatG: { type: number, nullable: true }
         # recipe arm only (mezo-ormb): per-ingredient amount overrides. Absent/null == the recipe as written.
         ingredientOverrides:
           type: array
@@ -452,6 +459,13 @@ components:
           minimum: 1
           maximum: 4
           nullable: true
+        # Nutrition-quality facts the draft carries into the log (mezo-1f7b): copied from the
+        # catalog row on a pantry/recipe match, estimated by the model on an estimate line.
+        # null = unknown — the scorer degrades the dimension instead of scoring a fabricated 0.
+        fiberG: { type: number, nullable: true }
+        sugarG: { type: number, nullable: true }
+        saltG: { type: number, nullable: true }
+        saturatedFatG: { type: number, nullable: true }
         confidence:
           type: number
           minimum: 0

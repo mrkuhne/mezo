@@ -19,25 +19,48 @@ import { ScoreLedger } from '@/features/fuel/components/ScoreLedger'
 
 const PONT_RE = /^([+−]\d+) pont$/
 
-export function ScoreBreakdownBody({ breakdown, scorePct }: {
-  breakdown: MealBreakdown
-  /** The headline score the head names; omitted → the weighted Σ of the dimensions (RecipeScoreSheet). */
-  scorePct?: number
-}) {
-  const b = breakdown
-  // Fallback total mirrors ScoreLedger's honest Σ: only live (weight > 0) dimensions count
-  // (a degraded dim's weight is already 0, so including it is a no-op mathematically — this
-  // filter documents the intent and matches the ledger's rendering, not just its arithmetic).
-  const total = scorePct ?? Math.round(
+/** Fallback total mirrors ScoreLedger's honest Σ: only live (weight > 0) dimensions count
+ *  (a degraded dim's weight is already 0, so including it is a no-op mathematically — this
+ *  filter documents the intent and matches the ledger's rendering, not just its arithmetic). */
+function totalOf(b: MealBreakdown, scorePct?: number) {
+  return scorePct ?? Math.round(
     b.dimensions.filter(d => d.weight > 0).reduce((s, d) => s + d.weight * d.score * 100, 0),
   )
+}
+
+/**
+ * „Miből áll össze" head + the Σ ledger tile, as its OWN section (mezo-1f7b).
+ * MealScoreSheet renders it directly under the hero — ABOVE the Mezo olvasat card — because the
+ * arithmetic is what the coach's prose then interprets; reading the verdict before ever seeing
+ * where the number came from was the wrong order. RecipeScoreSheet has no coach card, so it keeps
+ * getting it from ScoreBreakdownBody in place.
+ */
+export function ScoreLedgerSection({ breakdown, scorePct }: {
+  breakdown: MealBreakdown
+  scorePct?: number
+}) {
   return (
     <>
       <div className="sb-sec">
-        <Eyebrow>Miből áll össze a {total}</Eyebrow>
-        <span className="sb-sec-r">{b.dimensions.length} dimenzió · súlyozva</span>
+        <Eyebrow>Miből áll össze a {totalOf(breakdown, scorePct)}</Eyebrow>
+        <span className="sb-sec-r">{breakdown.dimensions.length} dimenzió · súlyozva</span>
       </div>
-      <ScoreLedger dimensions={b.dimensions} />
+      <ScoreLedger dimensions={breakdown.dimensions} />
+    </>
+  )
+}
+
+export function ScoreBreakdownBody({ breakdown, scorePct, ledger = true }: {
+  breakdown: MealBreakdown
+  /** The headline score the head names; omitted → the weighted Σ of the dimensions (RecipeScoreSheet). */
+  scorePct?: number
+  /** false when the caller already rendered {@link ScoreLedgerSection} higher up (MealScoreSheet). */
+  ledger?: boolean
+}) {
+  const b = breakdown
+  return (
+    <>
+      {ledger && <ScoreLedgerSection breakdown={b} scorePct={scorePct} />}
       {/* The mosaic: live dimensions first (rich, washed), the ghosts last — a degraded
           dimension is named, not hidden, but it never outranks a scoring one. The 40ms
           stagger is the prototype's entrance choreography, and it only RUNS inside an

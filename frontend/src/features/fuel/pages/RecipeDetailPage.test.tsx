@@ -216,8 +216,9 @@ test('a Pontszám csempe a teljes bontás-sheetet nyitja (a közös ScoreBreakdo
   await waitFor(() => expect(tile).not.toBeDisabled())
   expect(within(tile).getByText(/szempont/)).toBeInTheDocument()
   await userEvent.click(tile)
-  // the sheet renders the shared ScoreBreakdownBody's dimension cards
-  expect(await screen.findByText('Kcal & makró arány')).toBeInTheDocument()
+  // the sheet renders the shared ScoreBreakdownBody's dimension cards. Two hits since mezo-1f7b:
+  // the ledger's named legend row and the dimension tile itself both carry the label.
+  expect((await screen.findAllByText('Kcal & makró arány')).length).toBeGreaterThanOrEqual(1)
   expect(screen.getByText(/szempont · megbízh\./)).toBeInTheDocument()
 })
 
