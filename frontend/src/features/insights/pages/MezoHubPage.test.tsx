@@ -226,3 +226,27 @@ describe('MezoHubPage — emoji→ikon (mezo-hq44)', () => {
     expect(done.textContent).toMatch(/Rendben, figyeljük tovább — szólok, ha erősödik\./)
   })
 })
+
+describe('MezoHubPage — the Proaktív coaching tile (mezo-6269.3)', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('carries the day’s flagged count, the winner and the split arc', async () => {
+    renderHub()
+    const tile = await screen.findByRole('button', { name: 'Proaktív coaching' })
+    expect(tile).toHaveTextContent('Terhelés–táplálás')
+    expect(tile.querySelectorAll('.mzo-arcseg')).toHaveLength(14)
+  })
+})
+
+describe('MezoHubPage — the coaching tile is honest while unresolved', () => {
+  beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
+  afterEach(() => vi.unstubAllEnvs())
+
+  test('no arc and no winner line before the day resolves', () => {
+    renderHub()
+    const tile = screen.getByRole('button', { name: 'Proaktív coaching' })
+    expect(tile.querySelectorAll('.mzo-arcseg')).toHaveLength(0)
+    expect(tile).not.toHaveTextContent('Terhelés–táplálás')
+  })
+})

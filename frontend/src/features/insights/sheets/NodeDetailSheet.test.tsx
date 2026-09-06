@@ -17,7 +17,7 @@ test('renders title, summary, edge lines and the archive footnote', () => {
   expect(screen.getByText('Új munkahely első hete')).toBeInTheDocument()
   expect(screen.getByText(/Hétfőn kezdtél az új helyen/)).toBeInTheDocument()
   expect(screen.getByText(/Megnövekedett stressz · közepes/)).toBeInTheDocument()
-  expect(screen.getByText(/Archiválás után a következő heti összegzésig/)).toBeInTheDocument()
+  expect(screen.getByText(/Archiválás után nem kerül a beszélgetésbe\. Ez tartós/)).toBeInTheDocument()
 })
 
 test('summary and edges are optional', () => {

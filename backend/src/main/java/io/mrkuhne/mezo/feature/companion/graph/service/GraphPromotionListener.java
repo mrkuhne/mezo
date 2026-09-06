@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.graph.service;
 
+import io.mrkuhne.mezo.feature.companion.LifeGoalStatusChangedEvent;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactChangedEvent;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactPromotedEvent;
 import io.mrkuhne.mezo.feature.companion.service.PatternConfirmedEvent;
@@ -120,6 +121,19 @@ public class GraphPromotionListener {
             promotionService.retractPerson(event.userId(), event.personId());
         } catch (Exception e) {
             log.warn("Graph person retraction failed for person {}", event.personId(), e);
+        }
+    }
+
+    /** mezo-iizd.11 (final review Finding 2): {@code LifeGoalService.changeStatus} publishes this
+     *  unconditionally on every status transition. {@code syncLifeGoal} itself decides
+     *  promote-vs-archive from the goal's current status, exactly like {@link #onGoalSaved}. */
+    @Async
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    public void onLifeGoalStatusChanged(LifeGoalStatusChangedEvent event) {
+        try {
+            promotionService.syncLifeGoal(event.userId(), event.goalId());
+        } catch (Exception e) {
+            log.warn("Graph life goal sync failed for goal {}", event.goalId(), e);
         }
     }
 }
