@@ -1595,6 +1595,16 @@ mezo:
       min-pro-rated-ml: 500
       checkpoint-eyebrow: "Hidratáció"
       checkpoint-template: "Edzésnap van, és eddig {logged} ml víz van naplózva — ilyenkorra a mai {target} ml-ből arányosan kb. {prorated} ml jönne ki. Egy pohárral most könnyebb, mint hárommal este."
+    retro-logging:
+      # Round 2 S3 (mezo-d58h.7.3, spec §9): how much of what the user records is written on the
+      # day it is about. Above the threshold the window prompts get a FACT block and an explicit
+      # ban on reading "ma még nincs napló" as "nem evett".
+      # The window ENDS YESTERDAY — today is half-finished and can only ever look same-day.
+      window-days: 14
+      # Fewer meals than this in the window ⇒ silence: too little data is not a habit.
+      min-meals: 10
+      # Fire at or above 40% retro-written meals.
+      retro-pct: 40
     setup-checks:
       # S3 (mezo-d58h.3, spec 2026-09-03 §4 setup table): checks against CONFIGURATION, not
       # against a day's data — so they run once daily and re-emit at most weekly until the

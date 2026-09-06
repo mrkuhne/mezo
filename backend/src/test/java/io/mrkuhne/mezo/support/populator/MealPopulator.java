@@ -10,6 +10,8 @@ import io.mrkuhne.mezo.feature.pantry.entity.PantryItemEntity;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryCatalogRepository;
 import io.mrkuhne.mezo.feature.pantry.repository.PantryItemRepository;
 import io.mrkuhne.mezo.feature.recipe.entity.RecipeEntity;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -18,6 +20,7 @@ import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Test data factory for the Meal aggregate — persists via {@code saveAndFlush} so the DB CHECKs
@@ -32,6 +35,35 @@ public class MealPopulator {
     private final MealRepository repository;
     private final PantryItemRepository pantryItemRepository;
     private final PantryCatalogRepository pantryCatalogRepository;
+
+    /** JPA-managed shared EntityManager — the {@code created_at} backdate needs a native update
+     *  ({@code @CreationTimestamp} + {@code updatable = false} means JPA cannot write it);
+     *  field-injected {@code @PersistenceContext} is the house exception to constructor DI
+     *  (see {@code ProtocolPopulator}/{@code FlagLogPopulator}). */
+    @PersistenceContext
+    private EntityManager em;
+
+    /** A bare meal on an explicit date — no items, no pantry/recipe FK. The retro-logging probe
+     *  (mezo-d58h.7.3) counts ROWS by {@code (meal_date, created_at)} and never looks at lines, so
+     *  the multi-line builders below would only add pantry-catalog contention to its fixtures. */
+    public MealEntity createBareMeal(UUID owner, LocalDate mealDate, String slot) {
+        MealEntity meal = newMeal(owner, slot, slot);
+        meal.setMealDate(mealDate);
+        return repository.saveAndFlush(meal);
+    }
+
+    /** A bare meal whose {@code created_at} is forced — the ONLY way to mint a "written on the day
+     *  it is about" row for a PAST date, since {@code @CreationTimestamp} always stamps "now"
+     *  ({@code ProtocolPopulator.createProtocolItemAt} precedent). */
+    @Transactional
+    public MealEntity createBareMealCreatedAt(
+        UUID owner, LocalDate mealDate, String slot, Instant createdAt) {
+        MealEntity meal = createBareMeal(owner, mealDate, slot);
+        em.createNativeQuery("update meal set created_at = :at where id = :id")
+            .setParameter("at", createdAt).setParameter("id", meal.getId()).executeUpdate();
+        em.clear();
+        return repository.findById(meal.getId()).orElseThrow();
+    }
 
     /** A lunch meal with one recipe-arm line referencing the given (real, persisted) recipe. */
     public MealEntity createRecipeMeal(UUID owner, RecipeEntity recipe) {
