@@ -1726,6 +1726,17 @@ mezo:
     strength-window-days: 28
     min-sample: 5
     summary-days: 30
+    # Formation curve (mezo-08zl) — automaticity(n) = 1 − e^(−k·n) over successful REPETITIONS.
+    # Calibration, not physics: k-base is set so a maximally consistent, context-stable user
+    # crosses the threshold near the literature median (~66 reps) and the least consistent one
+    # near ~180, spanning Lally's 18–254 spread. Binds HabitProperties.Formation.
+    formation:
+      k-base: 0.03            # curve growth before the consistency/context weighting
+      threshold-pct: 90       # where "runs by itself" sits on the curve; echoed to the FE
+      min-reps: 5             # under this there is NO estimate at all (the honesty rule)
+      k-band: 0.30            # ±band on k → the low/high pair; we report a range, never a point
+      consistency-rise: 0.12  # EMA step on a done day  (Loop-style smoothing)
+      consistency-decay: 0.09 # EMA decay on a missed day — slows the curve, never resets it
   # Daily intention tuning (mezo-a686): focus cap + text limits are config, never code.
   # Binds onto IntentionProperties.
   intention:

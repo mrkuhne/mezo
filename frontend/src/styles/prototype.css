@@ -9735,6 +9735,116 @@ button.mz-wtile:active { transform: scale(0.96); }
 .rt-hist i.is-done { background: var(--gradient-sage); }
 .rt-hist i.is-miss { background: color-mix(in srgb, var(--text-primary) 20%, transparent); }
 
+/* ===== Formálódás-nézet (mezo-08zl) =====
+   docs/design_2.0/prototypes/rutin-formalodas.html `.poster` / `.msrail` / `.etaband` /
+   `.ctxgrid` / `.cal` / `.wdbars`, ×1.18 (330 -> 390px frame). Poster anatomy: one visual
+   anchor (the ring), one big line, one range. The gold wash turns sage once the habit is past
+   the threshold - the only state change on the card, and it is a reward, never a warning. */
+.rt-poster {
+  border-radius: 23.6px; padding: 14px 15.3px 13px; margin-bottom: 11.8px;
+  background: var(--mz-wash-sand); box-shadow: var(--mz-shadow-gold);
+}
+.rt-poster.is-settled { background: var(--mz-wash-sage); box-shadow: var(--mz-shadow-sage); }
+.rt-poster-top { display: flex; align-items: center; gap: 14px; }
+.rt-poster-meta { min-width: 0; }
+.rt-poster-eb {
+  font-size: 9px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+.rt-poster-big { font-size: 17.7px; font-weight: 700; line-height: 1.2; margin-top: 2px; color: var(--text-primary); }
+.rt-poster-sub { margin: 4px 0 0; font-size: 10.6px; color: var(--text-secondary); line-height: 1.4; }
+.rt-poster-note { margin: 9.5px 0 0; font-size: 9.5px; color: var(--text-tertiary); line-height: 1.45; }
+
+/* The curve: solid = done, dashed = projection, band = the uncertainty of k. */
+.rt-curve { display: block; width: 100%; height: auto; margin-top: 9.5px; }
+.rt-curve-band { fill: color-mix(in srgb, var(--amber) 16%, transparent); stroke: none; }
+.rt-curve-fill { fill: url(#rt-curve-fill); stroke: none; }
+.rt-curve-past { fill: none; stroke: var(--amber); stroke-width: 2.4; stroke-linecap: round; }
+.rt-curve-next { fill: none; stroke: var(--amber); stroke-width: 2; stroke-dasharray: 4 4; opacity: 0.7; }
+.rt-curve-thr { stroke: color-mix(in srgb, var(--sage-deep) 55%, transparent); stroke-width: 1.2; stroke-dasharray: 3 4; }
+.rt-curve-thrlb {
+  font-size: 7.5px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase;
+  fill: var(--sage-deep);
+}
+.rt-curve-dot { fill: var(--surface-card); stroke: var(--amber); stroke-width: 2.4; }
+.rt-curve-ax { font-size: 7.5px; fill: var(--text-tertiary); letter-spacing: 0.06em; }
+
+/* Milestone rail: the four stages as a path, the current one breathing. */
+.rt-msrail { display: flex; position: relative; margin: 14px 2px 2px; padding: 0; list-style: none; }
+.rt-msrail::before {
+  content: ''; position: absolute; left: 8%; right: 8%; top: 5.9px; height: 2.4px;
+  border-radius: 2px; background: var(--mz-line-soft);
+}
+.rt-msrail li { flex: 1; display: grid; justify-items: center; gap: 5.9px; position: relative; }
+.rt-msrail li i {
+  width: 14px; height: 14px; border-radius: 50%; background: var(--surface-card); z-index: 1;
+  box-shadow: inset 0 0 0 2.4px var(--mz-line-soft);
+}
+.rt-msrail li.is-past i { background: var(--gradient-sage); box-shadow: none; }
+.rt-msrail li.is-now i {
+  background: var(--surface-card);
+  box-shadow: 0 0 0 3.5px var(--amber), 0 0 0 8px color-mix(in srgb, var(--amber) 22%, transparent);
+  animation: rt-mspulse 2.4s ease-in-out infinite;
+}
+@keyframes rt-mspulse {
+  0%, 100% { box-shadow: 0 0 0 3.5px var(--amber), 0 0 0 8px color-mix(in srgb, var(--amber) 22%, transparent); }
+  50% { box-shadow: 0 0 0 3.5px var(--amber), 0 0 0 11.8px color-mix(in srgb, var(--amber) 8%, transparent); }
+}
+.rt-msrail li span {
+  font-size: 7.8px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--text-tertiary); text-align: center; line-height: 1.25;
+}
+.rt-msrail li.is-past span { color: var(--sage-deep); }
+.rt-msrail li.is-now span { color: var(--text-primary); }
+
+/* The estimate itself - a RANGE, never a point. */
+.rt-etaband {
+  display: flex; align-items: center; gap: 10.6px; border-radius: 16.5px;
+  padding: 10.6px 13px; margin-top: 13px; background: var(--surface-card);
+  box-shadow: var(--np-shadow-row);
+}
+.rt-etaband-n {
+  flex: none; font: 300 20px/1 var(--ff-display); letter-spacing: -0.02em;
+  color: var(--text-primary); font-variant-numeric: tabular-nums;
+}
+.rt-etaband-l { font-size: 10px; color: var(--text-secondary); line-height: 1.4; }
+.rt-etaband-l b {
+  display: block; font-size: 10.6px; font-weight: 800; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text-tertiary);
+}
+
+/* Context rings - a signal we cannot measure shows a dash, never a fabricated zero. */
+.rt-ctxgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 9.5px; }
+.rt-ctxcell {
+  border-radius: 17.7px; padding: 10.6px 5.9px 9.5px; text-align: center;
+  background: var(--surface-card); box-shadow: var(--np-shadow-row);
+  display: grid; justify-items: center; gap: 2px;
+}
+.rt-ctxcell b { font-size: 9.5px; font-weight: 700; color: var(--text-primary); margin-top: 4px; }
+.rt-ctxcell small { font-size: 8.3px; color: var(--text-tertiary); }
+
+/* Lifetime calendar: a column per week, so it scales instead of truncating at 28 days. */
+.rt-cal { display: flex; gap: 2.4px; overflow-x: auto; padding-bottom: 4px; }
+.rt-cal-col { display: grid; grid-template-rows: repeat(7, 1fr); gap: 2.4px; flex: none; }
+.rt-cal i { width: 11.8px; height: 11.8px; border-radius: 3.5px; background: var(--mz-line-soft); }
+.rt-cal i.is-done { background: var(--gradient-sage); }
+.rt-cal i.is-miss { background: color-mix(in srgb, var(--text-primary) 20%, transparent); }
+.rt-cal-lg { display: flex; gap: 11.8px; margin-top: 7px; font-size: 8.3px; color: var(--text-tertiary); }
+.rt-cal-lg span { display: flex; align-items: center; gap: 4.7px; }
+.rt-cal-lg em { width: 9.5px; height: 9.5px; border-radius: 3px; background: var(--mz-line-soft); }
+.rt-cal-lg em.is-done { background: var(--gradient-sage); }
+.rt-cal-lg em.is-miss { background: color-mix(in srgb, var(--text-primary) 20%, transparent); }
+
+/* "Melyik napokon megy" - the day-of-week regularity signal, made visible. */
+.rt-wdays { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5.9px; margin-top: 13px; }
+.rt-wday { display: grid; justify-items: center; gap: 4.7px; }
+.rt-wday-bar {
+  width: 100%; height: 41px; border-radius: 7px; background: var(--surface-recess);
+  display: flex; align-items: flex-end; overflow: hidden;
+}
+.rt-wday-bar i { width: 100%; border-radius: 7px; background: var(--gradient-sage); min-height: 2px; }
+.rt-wday span { font-size: 8.3px; font-weight: 700; color: var(--text-tertiary); }
+
 /* Pausing is the prominent way out; deleting (.is-hard) sits below it, quieter and two-tap. */
 .rt-danger {
   width: 100%; margin-top: 9.5px; cursor: pointer; font-family: inherit;

@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.mrkuhne.mezo.api.dto.HabitDayResponse;
+import io.mrkuhne.mezo.api.dto.HabitFormationResponse;
 import io.mrkuhne.mezo.api.dto.HabitStrength;
 import io.mrkuhne.mezo.api.dto.HabitSummaryResponse;
 import io.mrkuhne.mezo.api.dto.HabitWriteResponse;
@@ -314,6 +315,44 @@ class HabitServiceIT extends AbstractIntegrationTest {
 
         assertThat(summary.getPerfectMorningDays30()).isEqualTo(1);
         assertThat(summary.getPerfectEveningDays30()).isEqualTo(0);
+    }
+
+
+    @Test
+    void testFormation_shouldEstimateOverTheWholeLifetime_whenPastMinReps() {
+        // Ten dones + one miss spread over twelve days — deliberately older than nothing and
+        // wider than the 28-day strength window's granularity, to prove this read is lifetime-
+        // scoped rather than window-scoped (mezo-08zl).
+        UUID owner = owner();
+        LocalDate today = LocalDate.now();
+        for (int i = 12; i >= 2; i--) {
+            String status = i == 7 ? HabitDayEntity.STATUS_MISSED : HabitDayEntity.STATUS_DONE;
+            habitPopulator.row(owner, today.minusDays(i), "morning_sunlight", status);
+        }
+
+        HabitFormationResponse f = habitService.formation(owner, "morning_sunlight");
+
+        assertThat(f.getReps()).isEqualTo(10);
+        assertThat(f.getMissed()).isEqualTo(1);
+        assertThat(f.getFirstDate()).isEqualTo(today.minusDays(12));
+        assertThat(f.getDays()).hasSize(11);
+        assertThat(f.getThresholdPct()).isEqualTo(90);
+        assertThat(f.getAutomaticityPct()).isBetween(1, 99);
+        assertThat(f.getCurveK()).isGreaterThan(0.0);
+        assertThat(f.getRepsToThresholdLo()).isLessThanOrEqualTo(f.getRepsToThresholdHi());
+        // no done_at on populator rows and no anchor on this def -> neither signal is invented
+        assertThat(f.getTimeConstancyPct()).isNull();
+        assertThat(f.getAnchorConstancyPct()).isNull();
+    }
+
+    @Test
+    void testFormation_shouldReject_whenTheKeyIsUnknown() {
+        UUID owner = owner();
+        habitPopulator.row(owner, LocalDate.now(), "morning_sunlight", HabitDayEntity.STATUS_DONE);
+
+        assertThatThrownBy(() -> habitService.formation(owner, "nope"))
+            .isInstanceOfSatisfying(SystemRuntimeErrorException.class,
+                ex -> assertHabitCode(ex, "HABIT_UNKNOWN"));
     }
 
     private static HabitStrength strengthOf(List<HabitStrength> habits, String key) {

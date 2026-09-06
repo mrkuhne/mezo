@@ -86,6 +86,38 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/habit/formation/{key}:
+    get:
+      tags: [Habit]
+      operationId: getHabitFormation
+      summary: Full-lifetime formation estimate for one habit (mezo-08zl)
+      description: >
+        Where this habit stands on the way to automaticity, estimated from the user's OWN
+        history over the definition's whole lifetime (NOT the 28-day strength window).
+        Page-triggered and deliberately separate from getHabitSummary, which is read on every
+        companion chat turn and must stay cheap. Under `minReps` repetitions every estimate
+        field is null - the honesty rule, mirroring `strengthPct` under `min-sample`.
+      parameters:
+        - name: key
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Formation estimate
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/HabitFormationResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: Unknown habit key
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/habit/catalog:
     get:
       tags: [Habit]
@@ -262,6 +294,35 @@ components:
         strengthPct: { type: integer, nullable: true }
         done28: { type: integer }
         missed28: { type: integer }
+    HabitFormationDay:
+      type: object
+      required: [date, status]
+      properties:
+        date: { type: string, format: date }
+        status: { type: string, enum: [pending, done, missed] }
+    HabitFormationResponse:
+      type: object
+      required: [key, reps, missed, thresholdPct, minReps, days]
+      properties:
+        key: { type: string }
+        firstDate: { type: string, format: date, nullable: true }
+        reps: { type: integer, description: successful repetitions over the whole lifetime }
+        missed: { type: integer }
+        automaticityPct: { type: integer, nullable: true, description: '0-100, null under minReps' }
+        curveK: { type: number, format: double, nullable: true, description: 'growth rate of 1-e^(-k*n), so the FE can draw the same curve' }
+        thresholdPct: { type: integer, description: where "runs by itself" sits on the curve }
+        minReps: { type: integer, description: repetitions needed before any estimate is made }
+        repsToThresholdLo: { type: integer, nullable: true }
+        repsToThresholdHi: { type: integer, nullable: true }
+        weeksToThresholdLo: { type: number, format: double, nullable: true }
+        weeksToThresholdHi: { type: number, format: double, nullable: true }
+        repsPerWeek: { type: number, format: double, nullable: true }
+        consistencyPct: { type: integer, nullable: true }
+        timeConstancyPct: { type: integer, nullable: true, description: 'clock-hour constancy of completions, null without enough timed rows' }
+        anchorConstancyPct: { type: integer, nullable: true, description: 'share of done days on which the anchor habit was also done, null without an anchor' }
+        days:
+          type: array
+          items: { $ref: '#/components/schemas/HabitFormationDay' }
     HabitSummaryResponse:
       type: object
       required: [perfectMorningDays30, perfectEveningDays30, habits]

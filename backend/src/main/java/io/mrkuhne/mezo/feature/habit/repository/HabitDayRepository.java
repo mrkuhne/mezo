@@ -19,4 +19,13 @@ public interface HabitDayRepository extends JpaRepository<HabitDayEntity, UUID> 
 
     List<HabitDayEntity> findByCreatedByAndHabitDateBetween(
         UUID createdBy, LocalDate from, LocalDate to);
+
+    /**
+     * One habit's WHOLE lifetime, oldest first (mezo-08zl). Deliberately unbounded in time — the
+     * formation estimate is about the full arc, not the 28-day strength window — which is why it
+     * only ever runs behind the page-triggered {@code /api/habit/formation/{key}} and never on
+     * the chat-hot {@code summary()} path.
+     */
+    List<HabitDayEntity> findByCreatedByAndHabitKeyOrderByHabitDateAsc(
+        UUID createdBy, String habitKey);
 }
