@@ -668,10 +668,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `useGratitudeEntries`, `useJournalActions`, `useJournalNotes`
   - **modules:** decisionApi.ts, decisionHooks.ts, decisionMock.ts, decisionTypes.ts, gratitudeApi.ts,
     gratitudeHooks.ts, gratitudeMock.ts, journalApi.ts, journalHooks.ts, journalMock.ts, journalTypes.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/journal` — 12 IT + 0 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/journal` — 13 IT + 1 unit
   - **ITs:** `DecisionApiCompanionOffIT`, `DecisionApiIT`, `DecisionEmbeddingEventIT`, `DecisionEntryPersistenceIT`,
     `GratitudeApiIT`, `GratitudeEmbeddingEventIT`, `GratitudeEntryPersistenceIT`, `JournalApiCompanionOffIT`,
-    `JournalApiIT`, `JournalEmbeddingEventIT`, `JournalEntryPersistenceIT`, `JournalSwitchOffIT`
+    `JournalApiIT`, `JournalEmbeddingEventIT`, `JournalEntryPersistenceIT`, `JournalMidnightCrossingIT`,
+    `JournalSwitchOffIT`
   - **populators:** `JournalPopulator`, `UserPopulator`
 
 ### lifegoal
@@ -731,11 +732,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/llm-usage/llm-usage.yml` — 4 operations
   - **endpoints:** GET /api/llm-usage/summary · GET /api/llm-usage/breakdown · GET /api/llm-usage/calls ·
     GET /api/llm-usage/calls/{id}
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog` — 14 IT + 5 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog` — 15 IT + 5 unit
   - **ITs:** `LlmCallContextTaggingIT`, `LlmCallDetailIT`, `LlmCallListIT`, `LlmCallListMidnightIT`,
     `LlmLogRecorderWiringIT`, `LlmLogRepositoryIT`, `LlmLogRetentionJobIT`, `LlmLogRetentionJobSwitchOffIT`,
     `LlmLogRetentionJobWriteSwitchOffIT`, `LlmLogRetentionScrubIT`, `LlmLogWriterIT`, `LlmUsageBreakdownIT`,
-    `LlmUsageControllerIT`, `LlmUsageIT`
+    `LlmUsageBreakdownMidnightIT`, `LlmUsageControllerIT`, `LlmUsageIT`
   - **populators:** `DailySummaryPopulator`, `DatabasePopulator`, `LlmLogPopulator`, `MealPopulator`,
     `PantryItemPopulator`, `UserPopulator`
 
@@ -1014,25 +1015,25 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     POST /api/proactive/challenge/{id}/decision · GET /api/proactive/weekly-review/{start} ·
     POST /api/proactive/weekly-review/{start}/regenerate · GET /api/proactive/weekly-review/{start}/lessons ·
     GET /api/proactive/weekly-review/{start}/digest
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 73 IT + 5 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/proactive` — 74 IT + 5 unit
   - **ITs:** `AdviceApplyServiceIT`, `AdviceCardServiceIT`, `AdviceProseGeneratorIT`, `ChallengeGeneratorIT`,
     `ChallengeJobIT`, `ChallengeJobSwitchOffIT`, `ChallengeOutcomeIT`, `ChallengePersistenceIT`,
     `CompanionMessageAdvicePersistenceIT`, `CompanionMessageEventIT`, `CompanionMessageGeneratorIT`,
     `CompanionMessageHydrationIT`, `CompanionMessageInterventionPersistenceIT`, `CompanionMessageJobIT`,
     `CompanionMessageJobSwitchOffIT`, `CompanionMessageMissedWorkoutsIT`, `CompanionMessagePersistenceIT`,
-    `CompanionMessageRetroLoggingIT`, `CompanionMessageSetupPersistenceIT`, `DiagnosisControllerIT`,
-    `DiagnosisExperimentIT`, `DiagnosisGeneratorIT`, `ExperimentJobIT`, `ExperimentJobSwitchOffIT`,
-    `ExperimentOutcomeIT`, `ExperimentPersistenceIT`, `ExperimentProposalGeneratorIT`, `FatigueEvidenceCollectorIT`,
-    `GrowthDigestBlockIT`, `HighlightCitationIT`, `HydrationPropertiesIT`, `HydrationShortfallProbeIT`,
-    `InterventionConfigIT`, `InterventionServiceIT`, `InterventionSwitchOffIT`, `LogFreshnessProbeIT`,
-    `MemoirGeneratorIT`, `MemoirJobIT`, `MemoirJobSwitchOffIT`, `MemoirPersistenceIT`, `OverloadChallengeGeneratorIT`,
-    `PlanFeasibilityIT`, `PredictionGeneratorIT`, `PredictionJobIT`, `PredictionJobSwitchOffIT`,
-    `PredictionPersistenceIT`, `PredictionValidationIT`, `ProactiveApiAdviceApplyIT`, `ProactiveApiChallengeIT`,
-    `ProactiveApiCompanionOffIT`, `ProactiveApiExperimentIT`, `ProactiveApiFeedIT`, `ProactiveApiIT`,
-    `ProactiveApiSwitchOffIT`, `ProactiveMemoirArchiveIT`, `ProactiveMemoirArchiveSwitchOffIT`, `RetroLoggingProbeIT`,
-    `RetroLoggingPropertiesIT`, `SetupCheckJobSwitchOffIT`, `SetupCheckPropertiesIT`, `SetupCheckServiceIT`,
-    `SleepAnchorShiftAdapterIT`, `SleepDiagnosisIT`, `SportSlotSkipAdapterIT`, `WeeklyLessonServiceIT`,
-    `WeeklyReviewContextSourcesIT`, `WeeklyReviewControllerIT`, `WeeklyReviewGeneratorIT`,
+    `CompanionMessageRetroLoggingIT`, `CompanionMessageSetupPersistenceIT`, `ContextSnapshotOwnerZoneIT`,
+    `DiagnosisControllerIT`, `DiagnosisExperimentIT`, `DiagnosisGeneratorIT`, `ExperimentJobIT`,
+    `ExperimentJobSwitchOffIT`, `ExperimentOutcomeIT`, `ExperimentPersistenceIT`, `ExperimentProposalGeneratorIT`,
+    `FatigueEvidenceCollectorIT`, `GrowthDigestBlockIT`, `HighlightCitationIT`, `HydrationPropertiesIT`,
+    `HydrationShortfallProbeIT`, `InterventionConfigIT`, `InterventionServiceIT`, `InterventionSwitchOffIT`,
+    `LogFreshnessProbeIT`, `MemoirGeneratorIT`, `MemoirJobIT`, `MemoirJobSwitchOffIT`, `MemoirPersistenceIT`,
+    `OverloadChallengeGeneratorIT`, `PlanFeasibilityIT`, `PredictionGeneratorIT`, `PredictionJobIT`,
+    `PredictionJobSwitchOffIT`, `PredictionPersistenceIT`, `PredictionValidationIT`, `ProactiveApiAdviceApplyIT`,
+    `ProactiveApiChallengeIT`, `ProactiveApiCompanionOffIT`, `ProactiveApiExperimentIT`, `ProactiveApiFeedIT`,
+    `ProactiveApiIT`, `ProactiveApiSwitchOffIT`, `ProactiveMemoirArchiveIT`, `ProactiveMemoirArchiveSwitchOffIT`,
+    `RetroLoggingProbeIT`, `RetroLoggingPropertiesIT`, `SetupCheckJobSwitchOffIT`, `SetupCheckPropertiesIT`,
+    `SetupCheckServiceIT`, `SleepAnchorShiftAdapterIT`, `SleepDiagnosisIT`, `SportSlotSkipAdapterIT`,
+    `WeeklyLessonServiceIT`, `WeeklyReviewContextSourcesIT`, `WeeklyReviewControllerIT`, `WeeklyReviewGeneratorIT`,
     `WeeklySuggestionGeneratorIT`, `WeeklySuggestionJobIT`, `WeeklySuggestionJobSwitchOffIT`, `WeeklySuggestionNameIT`,
     `WeeklySuggestionPersistenceIT`
   - **populators:** `ActivityPopulator`, `ChallengePopulator`, `CheckInPopulator`, `CompanionMessagePopulator`,
