@@ -43,7 +43,12 @@ public enum MetricKey {
     BEDTIME_VARIABILITY("lefekvés-szórás", "származtatott: a lefekvési időkből", MetricDomain.SLEEP),
     SHOULDER_STRAIN("váll-terhelés", "Sport-napló (shoulder strain csúcs)", MetricDomain.TRAIN),
     WEIGHT_TREND_PCT_WK("súlytrend %/hét", "származtatott: 7 napos súly-regresszió", MetricDomain.BODY),
-    COMBINED_LOAD_MIN("kombinált terhelés", "származtatott: sport-perc + gym perc-ekvivalens", MetricDomain.TRAIN);
+    COMBINED_LOAD_MIN("kombinált terhelés", "származtatott: sport-perc + gym perc-ekvivalens", MetricDomain.TRAIN),
+    TEXT_MOOD("hangulat (szöveg)", "Napló- és hála-bejegyzések (LLM-jel)", MetricDomain.MIND),
+    TEXT_ENERGY("energia (szöveg)", "Napló- és hála-bejegyzések (LLM-jel)", MetricDomain.MIND),
+    TEXT_STRESS("feszültség (szöveg)", "Napló- és hála-bejegyzések (LLM-jel)", MetricDomain.MIND),
+    TEXT_SOCIAL_CONTACT("társas nap (szöveg)", "Napló- és hála-bejegyzések (LLM-jel)", MetricDomain.MIND,
+            MetricValueKind.BINARY);
 
     private final String labelHu;
     private final String sourceHu;

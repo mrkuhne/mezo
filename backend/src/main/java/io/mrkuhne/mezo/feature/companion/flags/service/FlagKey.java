@@ -35,6 +35,11 @@ public final class FlagKey {
      *  empty while the others are logged. */
     public static final String MEAL_RHYTHM_DRIFT = "meal_rhythm_drift";
 
+    /** Round 2 S6 (bd mezo-d58h.7.7, spec 2026-09-05 §(15)): the user's early-afternoon energy
+     *  tracks WHEN (or whether) they ate that morning — a correlation observed in the user's own
+     *  log, never a causal claim. 22 chars: inside the varchar(24) both CHECKed columns use. */
+    public static final String ENERGY_DIP_MEAL_TIMING = "energy_dip_meal_timing";
+
     public static final String SOURCE_WRITE = "write";
     public static final String SOURCE_SWEEP = "sweep";
 

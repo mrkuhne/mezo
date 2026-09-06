@@ -42,11 +42,18 @@ export function FeedbackChips({
   value,
   onVote,
   label,
+  answers,
 }: {
   value: ArtifactFeedback | undefined
   onVote: (verdict: FeedbackVerdict, reason?: FeedbackReason) => void
   /** Screen-reader context, e.g. 'a heti tervjavaslatról'. */
   label: string
+  /** ANSWER mode (round 2, mezo-d58h.7.6): on a once-ever question card the two chips are the
+   *  two answers, not a rating of the card — so they wear the question's own wording and a
+   *  thumb-down records the answer straight away instead of opening the negative reason row
+   *  („pontatlan"/„túl sok"/… are complaints about a card, and this card asked a question).
+   *  Re-tapping the recorded answer still retracts it, exactly as in rating mode. */
+  answers?: { up: string; down: string }
 }) {
   // Only the "opened by thumb-down before any vote exists" case needs state; a stored `down` speaks for
   // itself through `isDown` below.
@@ -54,7 +61,8 @@ export function FeedbackChips({
 
   const isUp = value?.verdict === 'up'
   const isDown = value?.verdict === 'down'
-  const showReasons = reasonsOpen || isDown
+  // Answer mode has no reasons at all — see the `answers` prop.
+  const showReasons = !answers && (reasonsOpen || isDown)
 
   function handleUp() {
     // Clearing the flag matters even though thumb-up never sets it: an `up` verdict must never
@@ -64,7 +72,7 @@ export function FeedbackChips({
   }
 
   function handleDown() {
-    if (isDown) {
+    if (isDown || answers) {
       onVote('down')
       setReasonsOpen(false)
     } else {
@@ -88,7 +96,7 @@ export function FeedbackChips({
           aria-pressed={isUp}
           style={{ padding: '6px 12px' }}
         >
-          <Icon name="thumb-up" size={13} /> Segített
+          <Icon name="thumb-up" size={13} /> {answers ? answers.up : 'Segített'}
         </button>
         <button
           type="button"
@@ -97,7 +105,7 @@ export function FeedbackChips({
           aria-pressed={isDown}
           style={{ padding: '6px 12px' }}
         >
-          <Icon name="thumb-down" size={13} /> Nem talált
+          <Icon name="thumb-down" size={13} /> {answers ? answers.down : 'Nem talált'}
         </button>
       </div>
       {showReasons && (

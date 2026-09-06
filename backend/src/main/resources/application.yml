@@ -355,6 +355,13 @@ mezo:
     lifegoal-ai-propose:
       enabled: true
   techcore:
+    # Master switch for Spring's scheduling INFRASTRUCTURE (@EnableScheduling) — one level above
+    # the per-job mezo.techcore.cron.* switches below. Those decide whether a job BEAN exists;
+    # this decides whether a scheduler thread exists at all to fire the beans that do. True in
+    # production (every cron must run); the test profile sets it false — see the comment in
+    # backend/src/test/resources/application.properties (mezo-peh4 / mezo-v73w).
+    scheduling:
+      enabled: true
     cron:
       # V2.2 nightly daily-summary generator (schedule itself: mezo.companion.summary.cron);
       # off = the DailySummaryJob bean does not exist
@@ -410,6 +417,11 @@ mezo:
       # V3.2 weekly hypothesis pipeline (schedule: mezo.companion.hypotheses.cron);
       # off = the HypothesisJob bean does not exist
       hypothesis-job:
+        enabled: true
+      # Reflexió (mezo-eq85) nightly reflection pass (schedule: mezo.companion.reflection.cron);
+      # off = the ReflectionJob bean does not exist (TextSignalService / the catch-up stay callable,
+      # the FlagSweepJob-vs-FlagService idiom)
+      reflection-job:
         enabled: true
       # Companion-feed morning/midday/evening crons (schedules: mezo.proactive.feed.*-cron);
       # off = the CompanionMessageJob bean does not exist (the lazy GET still serves)
@@ -569,6 +581,32 @@ mezo:
       note-min-chars: 80
       # Per-user, per-run cap on note embeddings — the one-time history backfill spreads over nights
       note-batch-size: 200
+    reflection:
+      # Reflexió (mezo-eq85): text signals, quick notices, the 03:40 nightly reflection.
+      # Off = no TextSignal* bean exists — no extraction call, and the four TEXT_* metrics report
+      # no data (the series helper returns an empty map, so the monitor shows them as no_data).
+      enabled: true
+      # 03:40 — the dawn cluster's remaining free-ish slot; it shares the minute with the llm-log
+      # payload-retention purge (mezo.llm-log.retention.cron), which is a single bounded UPDATE on
+      # an unrelated table, so there is no contention. Everything else is taken: 02:20 summary,
+      # 02:40 patterns, 02:50 character, 03:00 SUN hypotheses, 03:10 feedback-learning, 03:20 graph,
+      # 03:30 MON weekly rung, 03:45 MON profile, 03:50 monthly rung + audit retention, 04:00 quarterly.
+      cron: "0 40 3 * * *"
+      # Missing/stale text signals are re-extracted for this many finished days each night.
+      catch-up-days: 7
+      notice:
+        max-per-day: 2
+        min-gap-hours: 4
+        quiet-from: "22:00"
+        quiet-to: "07:00"
+      propose:
+        max-per-night: 2
+      lifecycle:
+        confirm-streak: 3
+        refute-streak: 3
+        dormant-after-days: 30
+        strong-r: 0.3
+        strong-p: 0.15
     memory-platform:
       # Vector generation served by the new retrieval path; re-embedding never flips this value.
       serving-embedding-version: gemini-embedding-001-768-v1
@@ -885,6 +923,26 @@ mezo:
         dead-slot-max-presence: 0.30
         other-slots-min-presence: 0.70
         min-slot-planned-days: 10
+      energy-dip-meal-timing:
+        # Round 2 S6 (mezo-d58h.7.7, spec 2026-09-05 §(15)). The most cautious rule in the set: it
+        # reports a CORRELATION in the user's own log and nothing else. 30 days of window because a
+        # day only qualifies when it carries BOTH an early-afternoon check-in and meal data — a
+        # 14-day window would almost never reach ten such days.
+        window-days: 30
+        min-qualifying-days: 10
+        # The "early afternoon" band, inclusive: a 16:00 check-in counts, 16:15 does not.
+        afternoon-from-hour: 11
+        afternoon-to-hour: 16
+        # Four days per side is the floor the spec names. Below it two medians are anecdote.
+        min-group-days: 4
+        # A full point apart on the 1-10 energy scale, AND consistently so: 70% of the cross-group
+        # day pairs must actually run that way (Mann-Whitney probability of superiority). The direct
+        # analogue of meal-rhythm-drift's min-same-direction-share.
+        min-energy-delta: 1.0
+        min-superiority: 0.70
+        # Anti-degeneracy: if the two lunch groups' own medians sit closer than this, lunch times
+        # "don't vary" in the spec's sense and the breakfast-presence fallback takes over.
+        min-lunch-split-separation-minutes: 45
       cooldown-hours:
         # A raised flag stays raised for its cooldown: the evaluator re-runs constantly (every
         # write + hourly), and without this the log would fill with the same day's state.
@@ -932,6 +990,11 @@ mezo:
         # own cooldown-hours (the protocol_lapse review lesson: InterventionService.deliverForFlag
         # applies the LIBRARY entry's cooldown, so a mismatch silently overrides this value).
         meal-rhythm-drift: 336
+        # Round 2 S6 (mezo-d58h.7.7): the spec's 30 days — "effectively a one-off insight card".
+        # MUST match the energy_dip_timing_insight library entry's own cooldown-hours (the
+        # protocol_lapse review lesson: InterventionService.deliverForFlag applies the LIBRARY
+        # entry's cooldown, so a mismatch silently overrides this value).
+        energy-dip-meal-timing: 720
     # W5.2 (bd mezo-b3pp.19, spec §9.2): the intervention library — config, not DB. Selection per
     # raised flag: highest W4.2 effectiveness (feedback_rollup intervention:<key>), unseen keys
     # optimistic; per-key cooldown-hours below; ONE card per day (first raise wins). channel:
@@ -1080,6 +1143,17 @@ mezo:
         channel: feed
         text-hu: "Az elmúlt két hét alapján az egyik étkezésed rendszeresen máskor történik, mint ahogy a tervben szerepel — vagy egyszerűen kimarad. Ez nem hiba: valószínűleg a napjaid néznek ki így, és a terv maradt le. Érdemes átírni a slot-tervet arra, ami tényleg megtörténik — onnantól a napi keret is pontosabb lesz."
         cooldown-hours: 336
+        quiet-hours-exempt: false
+      # Round 2 S6 (mezo-d58h.7.7, spec 2026-09-05 §(15)): a KORRELÁCIÓ a saját naplódban, nem ok-
+      # okozat. A szöveg szándékosan nem mond okot és nem ír elő semmit ("jellemzően", "azokon a
+      # napokon") — a csoportok mérete és a két medián a tények blokkban van, hogy látszódjon,
+      # milyen vékony a minta. channel: feed — egy megfigyelés sosem érdemel pusht.
+      # cooldown-hours 720 == cooldown-hours.energy-dip-meal-timing (lásd ott).
+      - key: energy_dip_timing_insight
+        flag: energy_dip_meal_timing
+        channel: feed
+        text-hu: "Végignéztem az elmúlt hetek délutáni bejelentkezéseit, és van egy együttjárás: az egyik fajta napodon jellemzően magasabb délutáni energiát rögzítettél, mint a másikon. Ez nem magyarázat, csak egy mintázat a saját naplódban — lehet mögötte az étkezés időzítése, de lehet, hogy mindkettő ugyanannak a napnak a következménye. Ha érdekel, figyeld meg pár napig tudatosan."
+        cooldown-hours: 720
         quiet-hours-exempt: false
     # W4.3 (mezo-b3pp.17): the pragmatic profile — "hogyan érdemes Daniellel beszélni"
     profile:

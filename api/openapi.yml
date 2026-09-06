@@ -8882,6 +8882,71 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/graph/node/{id}/restore':
+    post:
+      tags:
+        - KnowledgeGraph
+      operationId: restoreGraphNode
+      summary: >-
+        Undo a hand-archive — clears the user's intent marker and re-derives the
+        status from the node's source row (KnowledgeGraph)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: >-
+            Restored node — active when its source still qualifies, archived
+            otherwise
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GraphNodeResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: GRAPH_NODE_NOT_FOUND
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '409':
+          description: >-
+            The node was not hand-archived — a candidate or machine-archived
+            node cannot be restored (GRAPH_NODE_NOT_USER_ARCHIVED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/graph/node/archived:
+    get:
+      tags:
+        - KnowledgeGraph
+      operationId: listArchivedGraphNodes
+      summary: 'Hand-archived nodes, most recently hidden first (KnowledgeGraph)'
+      responses:
+        '200':
+          description: Nodes the user archived by hand
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GraphNodeResponse'
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
   /api/companion/graph/node/candidate:
     get:
       tags:
@@ -18192,9 +18257,13 @@ components:
         - rank
         - cardId
       description: >-
-        The rule whose raise became the day's card. Null when no card was
-        delivered, or when the card came from a setup check rather than a flag —
-        that key is none of the flag rules.
+        The rule whose raise became the day's card — a fact about the DAY, read
+        back from the delivered card. This is the ONLY source of a „Nyertes"
+        badge; a client must never infer the winner from `cardOutcome`, which
+        describes a rule's state at decision time and is null once that rule has
+        changed since (mezo-y43v). Null when no card was delivered, or when the
+        card came from a setup check rather than a flag — that key is none of
+        the flag rules.
       properties:
         flagKey:
           type: string
@@ -18276,11 +18345,14 @@ components:
             - won
             - lost
           description: >-
-            Derived at read time against the day's delivered card; null unless
-            the rule raised AND was logged AND the day's card was flag-sourced.
-            A day whose card came from a setup check instead (its severity key
-            matches none of the flag rules) has no winner among the flags at
-            all, so a raised-and-logged rule still reads null that day.
+            The rule's correlation to the day's card AT THE MOMENT THE CARD WAS
+            CHOSEN, derived at read time and never stored. Non-null only when
+            the rule raised, was logged, the day's card was flag-sourced, and
+            the rule's closing row already existed when the card was delivered.
+            A rule that has changed state since — including the winner itself,
+            if it later went clear — reports null here while `winner` above
+            still names it; a rule that first raised after the card reports null
+            because it never competed (mezo-y43v).
         changedAt:
           type: string
           format: date-time

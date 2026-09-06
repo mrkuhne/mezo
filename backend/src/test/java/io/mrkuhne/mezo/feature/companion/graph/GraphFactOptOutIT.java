@@ -165,9 +165,15 @@ class GraphFactOptOutIT extends AbstractIntegrationTest {
         KnowledgeFactEntity fact = manualFact(owner, "Kikapcsolva és archiválva, ne éledjen fel.", true);
         GraphNodeEntity node = promotionService.promoteFact(owner, fact.getId()).orElseThrow();
 
+        // Machine-archive via the source's own qualifying condition (opt-out), not
+        // graphService.archive() — that call now stamps the user-intent marker (mezo-06o0.5)
+        // and would make the resurrection guard pass for the wrong reason, defeating the
+        // discriminating power of this exact regression test. retractFact mirrors how
+        // GraphRetractionIT.testPromoteFact_shouldReviveTheNode_whenAnArchivedFactIsRepromoted
+        // drives the same source to "archived".
         fact.setIncludeInPrompt(false);
         knowledgeFactRepository.saveAndFlush(fact);
-        graphService.archive(owner, node.getId());
+        promotionService.retractFact(owner, fact.getId()).orElseThrow();
         assertThat(nodeRepository.findById(node.getId()).orElseThrow().getStatus())
             .isEqualTo(GraphNodeEntity.STATUS_ARCHIVED);
 

@@ -57,5 +57,14 @@ public enum UnavailableReason {
     /** meal_rhythm_drift: no slot survived the trackability gates (every day unresolvable or
      *  without a matching template, every slot a snack, or an ambiguous duplicate slotKind), so
      *  nothing could be measured — as opposed to measuring and finding no drift. */
-    NO_COMPARABLE_SLOTS
+    NO_COMPARABLE_SLOTS,
+    /** energy_dip_meal_timing: fewer days carrying BOTH an early-afternoon check-in energy value
+     *  and any logged meal than {@code min-qualifying-days}. A day with an afternoon check-in but
+     *  no meal data at all is neither "ate late" nor "skipped breakfast" — it is unknown. */
+    NOT_ENOUGH_ENERGY_MEAL_DAYS,
+    /** energy_dip_meal_timing: neither split produced two groups of at least {@code min-group-days}
+     *  (the lunch arm additionally needs the two groups' median lunch times to be
+     *  {@code min-lunch-split-separation-minutes} apart) — nothing could be compared, as opposed to
+     *  comparing and finding no difference. */
+    NO_USABLE_SPLIT
 }

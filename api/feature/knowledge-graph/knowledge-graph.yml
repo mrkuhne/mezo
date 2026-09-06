@@ -42,6 +42,56 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/companion/graph/node/{id}/restore:
+    post:
+      tags: [KnowledgeGraph]
+      operationId: restoreGraphNode
+      summary: >-
+        Undo a hand-archive — clears the user's intent marker and re-derives the status from the
+        node's source row (KnowledgeGraph)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Restored node — active when its source still qualifies, archived otherwise
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GraphNodeResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '404':
+          description: GRAPH_NODE_NOT_FOUND
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '409':
+          description: >-
+            The node was not hand-archived — a candidate or machine-archived node cannot be
+            restored (GRAPH_NODE_NOT_USER_ARCHIVED)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/companion/graph/node/archived:
+    get:
+      tags: [KnowledgeGraph]
+      operationId: listArchivedGraphNodes
+      summary: Hand-archived nodes, most recently hidden first (KnowledgeGraph)
+      responses:
+        '200':
+          description: Nodes the user archived by hand
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/GraphNodeResponse' }
+        '401':
+          description: Missing/invalid token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
   /api/companion/graph/node/candidate:
     get:
       tags: [KnowledgeGraph]
