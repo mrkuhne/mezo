@@ -6,7 +6,6 @@ import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.meal.service.MealCoachStore.LoadedMeal;
 import io.mrkuhne.mezo.feature.nutrition.config.MealScoringProperties;
-import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.feature.nutrition.service.MealScoringService;
@@ -98,7 +97,7 @@ public class MealCoachService {
 
     private final MealCoachStore store;
     private final WorkoutWindowQueryService workoutWindowQueryService;
-    private final NutritionTargetsProperties targets;
+    private final FuelDayService fuelDayService;
     private final MealScoringProperties scoringProperties;
     private final ObjectProvider<MealCoachLlm> llm;
     private final ObjectMapper objectMapper;
@@ -156,8 +155,8 @@ public class MealCoachService {
             if (blocks.isEmpty()) {
                 return List.of();
             }
-            String userMessage =
-                MealCoachPrompt.userMessage(date, targets, windows, List.copyOf(blocks.values()));
+            String userMessage = MealCoachPrompt.userMessage(date,
+                fuelDayService.dailyTargets(userId, date), windows, List.copyOf(blocks.values()));
             // The subject is a single meal only when exactly one is narrated (an opened score sheet);
             // a day batch is about the day, so it leaves the entity id honestly empty (mezo-2zyu).
             UUID subject = blocks.size() == 1 ? blocks.keySet().iterator().next() : null;

@@ -1,7 +1,9 @@
 package io.mrkuhne.mezo.feature.meal.service;
 
+import io.mrkuhne.mezo.api.dto.Macros;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.entity.MealItemEntity;
+import io.mrkuhne.mezo.feature.meal.mapper.MealMapper;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
@@ -13,7 +15,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -40,13 +41,14 @@ class MealCoachStore {
     }
 
     private final MealRepository mealRepository;
+    private final MealMapper mapper;
 
     /** The day's meals in log order, items already summed. */
     @Transactional(readOnly = true)
     List<LoadedMeal> loadDay(UUID userId, LocalDate date) {
         return mealRepository
             .findByCreatedByAndMealDateAndDeletedFalseOrderByLoggedAtAsc(userId, date).stream()
-            .map(MealCoachStore::toLoaded)
+            .map(this::toLoaded)
             .toList();
     }
 
@@ -74,7 +76,7 @@ class MealCoachStore {
                 meal.setBreakdown(new MealBreakdownJson(det.value(), det.confidence(), summary,
                     tagline, mergeDimensionNotes(det.dimensions(), dimensionNotes), improve,
                     det.tools(), det.formulaVersion()));
-                return toLoaded(mealRepository.saveAndFlush(meal));
+                return this.toLoaded(mealRepository.saveAndFlush(meal));
             });
     }
 
@@ -106,18 +108,25 @@ class MealCoachStore {
             d.macro(), d.micros(), d.nova(), d.context(), d.timing(), note);
     }
 
-    private static LoadedMeal toLoaded(MealEntity meal) {
+    /**
+     * A nap egy étkezése, a tételek KANONIKUS képlettel összegezve
+     * ({@link MealMapper#contribution}: {@code factor = amount / snapshotPer}). Korábban a nyers
+     * {@code snapshotKcal} összeg ment, ami minden {@code amount != snapshotPer} tételnél tévedett
+     * — egy per-100 g soron logolt 250 g a 100 g-os értéket adta (mezo-jcpt.19 S2b).
+     */
+    private LoadedMeal toLoaded(MealEntity meal) {
+        BigDecimal kcal = BigDecimal.ZERO;
+        BigDecimal p = BigDecimal.ZERO;
+        BigDecimal c = BigDecimal.ZERO;
+        BigDecimal f = BigDecimal.ZERO;
+        for (MealItemEntity item : meal.getItems()) {
+            Macros x = mapper.contribution(item);
+            kcal = kcal.add(x.getKcal());
+            p = p.add(x.getP());
+            c = c.add(x.getC());
+            f = f.add(x.getF());
+        }
         return new LoadedMeal(meal.getId(), meal.getTitle(), meal.getSlot(), meal.getLoggedAt(),
-            meal.getBreakdown(),
-            sum(meal, MealItemEntity::getSnapshotKcal), sum(meal, MealItemEntity::getSnapshotProteinG),
-            sum(meal, MealItemEntity::getSnapshotCarbsG), sum(meal, MealItemEntity::getSnapshotFatG));
-    }
-
-    /** Summed while the persistence context is open — the whole reason reads return records. */
-    private static BigDecimal sum(MealEntity meal, Function<MealItemEntity, BigDecimal> field) {
-        return meal.getItems().stream()
-            .map(field)
-            .filter(v -> v != null)
-            .reduce(BigDecimal.ZERO, BigDecimal::add);
+            meal.getBreakdown(), kcal, p, c, f);
     }
 }

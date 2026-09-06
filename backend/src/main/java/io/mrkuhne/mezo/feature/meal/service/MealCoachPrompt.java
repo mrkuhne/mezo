@@ -1,8 +1,8 @@
 package io.mrkuhne.mezo.feature.meal.service;
 
-import io.mrkuhne.mezo.feature.nutrition.config.NutritionTargetsProperties;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson;
 import io.mrkuhne.mezo.feature.nutrition.entity.MealBreakdownJson.Dimension;
+import io.mrkuhne.mezo.feature.nutrition.service.DailyTargets;
 import io.mrkuhne.mezo.feature.nutrition.service.MealRole;
 import io.mrkuhne.mezo.feature.train.service.WorkoutWindowQueryService.Window;
 import java.math.BigDecimal;
@@ -19,6 +19,10 @@ import java.util.UUID;
  * as of THAT meal's log time, never "now". That is what makes a verdict cacheable — the same meal
  * always produces the same prompt, so a breakfast read back in the evening is still judged against
  * the morning's numbers (spec §4).
+ *
+ * <p>A napi célok a GOAL-tudatos {@link DailyTargets}-ből jönnek (mezo-jcpt.19), nem a statikus
+ * mezo.nutrition configból: cut alatt a próza korábban 3100 kcal-t idézhetett, miközben a
+ * pontszám ~1500-hoz mért.
  */
 final class MealCoachPrompt {
 
@@ -35,7 +39,7 @@ final class MealCoachPrompt {
                      BigDecimal fBefore) {
     }
 
-    static String userMessage(LocalDate date, NutritionTargetsProperties targets,
+    static String userMessage(LocalDate date, DailyTargets targets,
                               List<Window> workouts, List<MealBlock> meals) {
         StringBuilder sb = new StringBuilder();
         sb.append("NAP: ").append(date).append('\n');
@@ -63,7 +67,7 @@ final class MealCoachPrompt {
         return sb.toString();
     }
 
-    private static void appendMeal(StringBuilder sb, NutritionTargetsProperties targets, MealBlock m) {
+    private static void appendMeal(StringBuilder sb, DailyTargets targets, MealBlock m) {
         sb.append("\n=== ÉTKEZÉS mealId=").append(m.mealId()).append(" ===\n");
         sb.append("Név: ").append(m.name() == null ? "-" : m.name())
           .append(" | slot: ").append(m.slot() == null ? "-" : m.slot())
