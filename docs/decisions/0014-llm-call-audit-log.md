@@ -169,8 +169,11 @@ and flipped the feature switch's shipped default, without changing any of the de
   `LlmUsageExtractor` — decision 1's "one pure mapper" is unchanged, it is now provider-swappable
   behind an interface.
 - `GeminiRoundUsage(Advisor)` → `LlmRoundUsage(Advisor)` — pure rename, same per-round tally.
-- Decision 4's tagged-call-site count is no longer tracked as a fixed number in this ADR or in
-  [`companion.md`](../features/companion.md); it grows with every slice — see
+- Decision 4's "29 call sites across 25 classes" is the count as of this ADR's original writing,
+  frozen in the text above like the rest of the original decision; it has already drifted (three
+  different counts were produced during this very slice under three different grep shapes) and grows
+  with every slice after. Treat it as a point-in-time snapshot, superseded going forward —
+  [`companion.md`](../features/companion.md) no longer states a number at all and instead points at
   `grep -rn '\.runWith(' backend/src/main/java` for the current count.
 - Decision 8's feature switch `mezo.feature.llm-log.enabled` now ships **`true`** by default (was
   `false`); the k8s env-var pin becomes a redundant, intentional production safeguard rather than the

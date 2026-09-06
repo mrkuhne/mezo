@@ -20,6 +20,11 @@ import reactor.core.publisher.Flux;
  * report from any thread (the streamed loop runs on Reactor schedulers). A request without a tally
  * (not one of ours) passes through untouched. On the stream path only usage-bearing chunks count —
  * Gemini closes each round with one usage-only chunk, so chunk-counting equals round-counting.
+ *
+ * <p><b>Provider-specific assumption (mezo-ozri.1).</b> That one-usage-chunk-per-round equivalence
+ * is Gemini's chunking shape, not a provider-neutral guarantee this type's name now implies — a
+ * future provider (e.g. OpenAI's {@code stream_options.include_usage}) must re-validate it against
+ * its own stream chunking before this class is trusted on that provider's stream path.
  */
 final class LlmRoundUsageAdvisor implements CallAdvisor, StreamAdvisor {
 

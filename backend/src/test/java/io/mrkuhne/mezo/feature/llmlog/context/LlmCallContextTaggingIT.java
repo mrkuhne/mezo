@@ -6,7 +6,9 @@ import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryCandidate;
 import io.mrkuhne.mezo.feature.companion.memory.dto.ScoreBreakdown;
+import io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryReranker;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryCandidateFusion.FusedCandidate;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryQueryRewriter;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.meal.service.MealCoachService;
@@ -128,8 +130,8 @@ class LlmCallContextTaggingIT extends AbstractIntegrationTest {
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private UserPopulator userPopulator;
     @Autowired private DailySummaryPopulator dailySummaryPopulator;
-    @Autowired private io.mrkuhne.mezo.feature.companion.memory.service.MemoryQueryRewriter memoryQueryRewriter;
-    @Autowired private io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryReranker llmMemoryReranker;
+    @Autowired private MemoryQueryRewriter memoryQueryRewriter;
+    @Autowired private LlmMemoryReranker llmMemoryReranker;
 
     @BeforeEach
     void resetCapture() {
@@ -190,7 +192,7 @@ class LlmCallContextTaggingIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void testRerank_shouldTagTheCallWithTheRecallContext_evenThoughItRunsOnAPooledThread() {
+    void testRerank_shouldTagTheCallWithTheRecallContext_whenTheRerankRunsOnAPooledThread() {
         // The context holder is thread-bound and the reranker submits to applicationTaskExecutor:
         // this asserts the runWith sits INSIDE the submitted task, where the call actually happens.
         FusedCandidate first = fusedCandidate(UUID.randomUUID());

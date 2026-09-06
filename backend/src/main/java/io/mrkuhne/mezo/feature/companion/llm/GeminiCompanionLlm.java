@@ -69,11 +69,17 @@ public class GeminiCompanionLlm implements CompanionLlm {
      *                  each Spring AI starter contributes its own {@code ChatModel}, so an
      *                  unqualified injection point turns every context ambiguous as soon as a
      *                  second provider is on the classpath. Guarded by {@code ChatModelQualifierIT}.
+     * @param llmUsageExtractor the GOOGLE usage extractor, qualified by bean name for the same
+     *                  reason (mezo-ozri.1): {@code LlmUsageExtractor} is a port with exactly one
+     *                  implementation today, {@code GoogleGenAiUsageExtractor}, and an unqualified
+     *                  injection point turns every context ambiguous the moment a second
+     *                  implementation (S2's {@code OpenAiUsageExtractor}) is added. Guarded by the
+     *                  same {@code ChatModelQualifierIT}.
      */
     public GeminiCompanionLlm(@Qualifier("googleGenAiChatModel") ChatModel chatModel,
                               CompanionProperties companionProperties,
                               LlmCallRecorder llmCallRecorder, LlmCallContextHolder llmCallContextHolder,
-                              LlmUsageExtractor llmUsageExtractor) {
+                              @Qualifier("googleGenAiUsageExtractor") LlmUsageExtractor llmUsageExtractor) {
         this.companionProperties = companionProperties;
         this.llmCallRecorder = llmCallRecorder;
         this.llmCallContextHolder = llmCallContextHolder;

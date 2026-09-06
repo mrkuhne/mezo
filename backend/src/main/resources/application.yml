@@ -325,10 +325,10 @@ mezo:
     # and the AccountProgressPort adapter is absent (progression awards fire no coin hook).
     gamification:
       enabled: true
-    # LLM call audit log (bd mezo-2zyu) — ON by default (mezo-ozri.1, spec §2 L1): the model router
-    # and the per-user USD cap are both built on this measurement, so with it off they are blind.
-    # Off ⇒ the no-op recorder is injected, so nothing is ever published or written — and the cap
-    # is off with it. The read API (/api/llm-usage) is deliberately NOT behind this switch.
+    # LLM call audit log (bd mezo-2zyu) — ON by default (mezo-ozri.1, spec §2 L1): a future model
+    # router and per-user USD cap would both be built on this measurement, so with it off they would
+    # have nothing to build on. Off ⇒ the no-op recorder is injected, so nothing is ever published or
+    # written. The read API (/api/llm-usage) is deliberately NOT behind this switch.
     llm-log:
       enabled: true
     # Életjel-ring day-close (mezo-dhzk) — off ⇒ the /api/needs surface 404s and no needs beans exist.
