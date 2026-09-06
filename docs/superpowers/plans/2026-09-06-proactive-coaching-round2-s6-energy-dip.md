@@ -1428,4 +1428,13 @@ bd show mezo-d58h.7
   `MealPopulator.createBareMealAt` covered every case, as the File Structure section predicted.
 - **The rule passed all eleven ITs on its first green run**; no threshold or arithmetic needed
   adjusting after the red run.
+- **Two hardcoded verdict counts had to move** — `FlagServiceTraceIT
+  .testEvaluate_shouldTraceEveryRuleOnTheFirstRun` and `FlagEvaluatorMomentumRecoveryIT
+  .evaluate_returns_exactly_fourteen_verdicts` both asserted a literal 15. Rather than bumping them
+  to 16 (every round-2 slice had done exactly that), both now count against `FlagCatalog.KEYS`, and
+  the momentum one additionally asserts the verdict keys MATCH that set and was renamed
+  `evaluate_returns_one_verdict_per_live_flag_key`. This is the last hand-maintained enumeration in
+  the flag suite.
+- **Full local surface run:** `io.mrkuhne.mezo.feature.companion.**` +
+  `io.mrkuhne.mezo.feature.proactive.**` — 1924 tests, green after the two count fixes.
 
