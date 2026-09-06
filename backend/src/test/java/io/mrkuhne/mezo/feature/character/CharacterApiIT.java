@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.character;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.CharacterConferenceResponse;
 import io.mrkuhne.mezo.api.dto.CharacterConferenceSummary;
 import io.mrkuhne.mezo.api.dto.CharacterDimensionResponse;
 import io.mrkuhne.mezo.api.dto.CharacterDimensionSummary;
@@ -11,10 +12,12 @@ import io.mrkuhne.mezo.api.dto.CharacterFeedItem;
 import io.mrkuhne.mezo.api.dto.CharacterOverviewResponse;
 import io.mrkuhne.mezo.api.dto.CharacterRunResponse;
 import io.mrkuhne.mezo.api.dto.CharacterRunSummary;
+import io.mrkuhne.mezo.api.dto.ConferenceSkepticVerdict;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterObservationEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterRunEntity;
+import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ObservationDimensionKeysEnvelope;
@@ -26,6 +29,7 @@ import io.mrkuhne.mezo.feature.character.repository.CharacterObservationReposito
 import io.mrkuhne.mezo.feature.character.repository.CharacterRunRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -345,5 +349,56 @@ class CharacterApiIT extends ApiIntegrationTest {
         String body = getForBody("/api/character/run/" + UUID.randomUUID(),
                 ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
         assertHasRequestError(body, "CHARACTER_RUN_NOT_FOUND");
+    }
+
+    private CharacterConferenceEntity seedConference(UUID owner, ConferenceTranscriptEnvelope transcript) {
+        CharacterConferenceEntity conf = new CharacterConferenceEntity();
+        conf.setCreatedBy(owner);
+        conf.setKind("WEEKLY");
+        conf.setWeekStart(LocalDate.of(2026, 8, 24));
+        conf.setTranscript(transcript);
+        conf.setOutcome(new ConferenceOutcomeEnvelope(List.of()));
+        conf.setGeneratedAt(Instant.now());
+        return conferenceRepository.save(conf);
+    }
+
+    @Test
+    void conference_storedDeliberation_isServedAsThreads() {
+        UUID owner = ownerId();
+        CharacterConferenceEntity conf = seedConference(owner, new ConferenceTranscriptEnvelope(List.of()));
+        conf.setDeliberation(new ConferenceDeliberationEnvelope(List.of(
+                new ConferenceDeliberationEnvelope.Thread("recovery", "Regeneráció", List.of(
+                        new ConferenceDeliberationEnvelope.Item(0, "szomnologus", "Romlik az alvás.", "NEW",
+                                null, false, List.of(),
+                                new ConferenceDeliberationEnvelope.SkepticVerdict("KEEP", "Rendben."),
+                                new ConferenceDeliberationEnvelope.ChairRuling(
+                                        true, new BigDecimal("0.60"), "Elfogadom.")))))));
+        conferenceRepository.save(conf);
+
+        CharacterConferenceResponse res = getForBody("/api/character/conference/" + conf.getId(),
+                ownerAuthHeaders(), HttpStatus.OK, CharacterConferenceResponse.class);
+
+        assertThat(res.getDeliberation()).hasSize(1);
+        assertThat(res.getDeliberation().get(0).getTitle()).isEqualTo("Regeneráció");
+        assertThat(res.getDeliberation().get(0).getItems().get(0).getSkeptic().getVerdict())
+                .isEqualTo(ConferenceSkepticVerdict.VerdictEnum.KEEP);
+    }
+
+    @Test
+    void conference_legacyRow_getsThreadsDerivedFromItsProse_transcriptStaysToo() {
+        UUID owner = ownerId();
+        CharacterConferenceEntity conf = seedConference(owner, new ConferenceTranscriptEnvelope(List.of(
+                new ConferenceTranscriptEnvelope.Turn("drill",
+                        "Drill: 1 javaslat a hét 3 megfigyeléséből.\nKimarad a napló.", List.of()),
+                new ConferenceTranscriptEnvelope.Turn("mezo",
+                        "Mezo: 1/1 javaslat elfogadva.\nP0: ELFOGADVA (0.70) — Rendben.", List.of()))));
+
+        CharacterConferenceResponse res = getForBody("/api/character/conference/" + conf.getId(),
+                ownerAuthHeaders(), HttpStatus.OK, CharacterConferenceResponse.class);
+
+        assertThat(res.getDeliberation()).hasSize(1);
+        assertThat(res.getDeliberation().get(0).getTitle()).isEqualTo("Drill");
+        assertThat(res.getDeliberation().get(0).getDimensionKey()).isNull();
+        assertThat(res.getTranscript()).hasSize(2);
     }
 }

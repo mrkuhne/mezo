@@ -15,6 +15,11 @@ import io.mrkuhne.mezo.api.dto.CharacterRunObservation;
 import io.mrkuhne.mezo.api.dto.CharacterRunObservationSignal;
 import io.mrkuhne.mezo.api.dto.CharacterRunResponse;
 import io.mrkuhne.mezo.api.dto.CharacterRunSummary;
+import io.mrkuhne.mezo.api.dto.ConferenceChairRuling;
+import io.mrkuhne.mezo.api.dto.ConferenceItem;
+import io.mrkuhne.mezo.api.dto.ConferencePeerReaction;
+import io.mrkuhne.mezo.api.dto.ConferenceSkepticVerdict;
+import io.mrkuhne.mezo.api.dto.ConferenceThread;
 import io.mrkuhne.mezo.api.dto.ConferenceTurn;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
@@ -22,6 +27,7 @@ import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterObservationEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterPortraitRevisionEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterRunEntity;
+import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ObservationSignalsEnvelope;
 import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
@@ -275,13 +281,57 @@ public class CharacterService {
                         .build())
                 .toList();
 
+        ConferenceDeliberationEnvelope deliberation = conf.getDeliberation() != null
+                ? conf.getDeliberation()
+                : LegacyTranscriptParser.parse(conf.getTranscript().turns());
+        List<ConferenceThread> threads = deliberation == null ? null : deliberation.threads().stream()
+                .map(CharacterService::toThreadDto)
+                .toList();
+
         return CharacterConferenceResponse.builder()
                 .id(conf.getId())
                 .kind(CharacterConferenceResponse.KindEnum.fromValue(conf.getKind()))
                 .weekStart(conf.getWeekStart())
                 .generatedAt(toOffset(conf.getGeneratedAt()))
                 .transcript(transcript)
+                .deliberation(threads)
                 .changes(changes)
+                .build();
+    }
+
+    private static ConferenceThread toThreadDto(ConferenceDeliberationEnvelope.Thread thread) {
+        return ConferenceThread.builder()
+                .dimensionKey(thread.dimensionKey())
+                .title(thread.title())
+                .items(thread.items().stream().map(CharacterService::toItemDto).toList())
+                .build();
+    }
+
+    private static ConferenceItem toItemDto(ConferenceDeliberationEnvelope.Item item) {
+        return ConferenceItem.builder()
+                .index(item.index())
+                .expertKey(item.expertKey())
+                .text(item.text())
+                .kind(item.kind())
+                .claimId(item.claimId())
+                .sensitive(item.sensitive())
+                .reactions(item.reactions().stream()
+                        .map(reaction -> ConferencePeerReaction.builder()
+                                .expertKey(reaction.expertKey())
+                                .stance(ConferencePeerReaction.StanceEnum.fromValue(reaction.stance()))
+                                .argument(reaction.argument())
+                                .build())
+                        .toList())
+                .skeptic(item.skeptic() == null ? null : ConferenceSkepticVerdict.builder()
+                        .verdict(ConferenceSkepticVerdict.VerdictEnum.fromValue(item.skeptic().verdict()))
+                        .argument(item.skeptic().argument())
+                        .build())
+                .chair(item.chair() == null ? null : ConferenceChairRuling.builder()
+                        .accepted(item.chair().accepted())
+                        .confidence(item.chair().confidence() == null
+                                ? null : item.chair().confidence().doubleValue())
+                        .reason(item.chair().reason())
+                        .build())
                 .build();
     }
 
