@@ -86,7 +86,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### appnotification
 
-*BE + API* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-06, mixed)
+*BE + API* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-07, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/appnotification`
   - **sub-features:** `domain`
@@ -763,7 +763,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-05, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-06, mixed) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-06, done) ·
-  [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-06, mixed)
+  [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-07, mixed)
 
 - **FE data** `frontend/src/data/me`
   - **hooks (via `@/data/hooks`):** `DayEvaluationResponse`, `NormalizedDayDimension`, `NormalizedDayEvaluation`,
@@ -881,7 +881,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### notification
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-06, mixed)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-07, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/notification`
   - **sub-features:** `domain`

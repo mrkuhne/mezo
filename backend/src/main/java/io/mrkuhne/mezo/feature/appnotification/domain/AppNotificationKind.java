@@ -48,7 +48,10 @@ public enum AppNotificationKind {
     HABIT_FORMATION("habit_formation", null, "/me/rutin/szokas"),
     /** The monthly deep-read konzílium wrote a new portrait — the {@code memoir_ready} /
      *  {@code weekly_review_ready} shape: "something about you is finished". */
-    CHARACTER_PORTRAIT("character_portrait", null, "/me/karakter");
+    CHARACTER_PORTRAIT("character_portrait", null, "/me/karakter"),
+    /** A heti konzílium ÉRDEMBEN változtatott a dossziédon (üres hét néma marad). Egy fejezet
+     *  nyitása ugyanennek a futásnak a része, ezért NEM külön fajta — a sor szövegét vezeti. */
+    KONZILIUM_VERDICT("konzilium_verdict", null, "/me/karakter/konzilium");
 
     private final String key;
     private final String familyKey;

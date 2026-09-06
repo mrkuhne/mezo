@@ -5,7 +5,7 @@ import {
   type AppNotificationKindKey,
 } from '@/data/types'
 
-// A backend `AppNotificationKind` enum 19 fajtát ismer (AppNotificationKind.java); ez a
+// A backend `AppNotificationKind` enum 20 fajtát ismer (AppNotificationKind.java); ez a
 // leképezés egyszer 12-t tartalmazott, és a `weekly_review_ready` hiánya az egész feed-oldalt
 // az ErrorBoundary-ra dobta egy élő felhasználónál (mezo-ntf8). A két oldal külön nyelven él,
 // tehát megint el fog csúszni — ezért a leképezés teljes ÉS a hozzáférés totális.
@@ -18,6 +18,7 @@ const BACKEND_KINDS = [
   'life_goal_plan', 'goal_suggestion',
   // mezo-0cbh
   'person_candidate', 'graph_candidate', 'habit_formation', 'character_portrait',
+  'konzilium_verdict',
 ] as const
 
 describe('APP_NOTIFICATION_KIND_META', () => {
@@ -48,6 +49,7 @@ describe('APP_NOTIFICATION_KIND_META', () => {
     expect(APP_NOTIFICATION_KIND_META.graph_candidate).toMatchObject({ clay: 'i-retegek', tint: 'people' })
     expect(APP_NOTIFICATION_KIND_META.habit_formation).toMatchObject({ clay: 'i-termes', tint: 'habit' })
     expect(APP_NOTIFICATION_KIND_META.character_portrait).toMatchObject({ clay: 'i-eletjel', tint: 'character' })
+    expect(APP_NOTIFICATION_KIND_META.konzilium_verdict).toMatchObject({ clay: 'i-muhely', tint: 'character' })
   })
 })
 

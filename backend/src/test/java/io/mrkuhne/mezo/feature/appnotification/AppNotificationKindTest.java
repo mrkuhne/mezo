@@ -9,7 +9,7 @@ class AppNotificationKindTest {
 
     @Test
     void testCatalog_shouldPinFifteenKindsWithFamiliesAndDeeplinks_perSpec() {
-        assertThat(AppNotificationKind.values()).hasSize(19);
+        assertThat(AppNotificationKind.values()).hasSize(20);
         assertThat(AppNotificationKind.PATTERN_INBOX.key()).isEqualTo("pattern_inbox");
         assertThat(AppNotificationKind.PATTERN_INBOX.familyKey()).isEqualTo("pattern");
         assertThat(AppNotificationKind.PATTERN_SIGNAL.familyKey()).isEqualTo("pattern");
@@ -49,6 +49,8 @@ class AppNotificationKindTest {
         assertThat(AppNotificationKind.HABIT_FORMATION.deeplink()).isEqualTo("/me/rutin/szokas");
         assertThat(AppNotificationKind.CHARACTER_PORTRAIT.familyKey()).isNull();
         assertThat(AppNotificationKind.CHARACTER_PORTRAIT.deeplink()).isEqualTo("/me/karakter");
+        assertThat(AppNotificationKind.KONZILIUM_VERDICT.familyKey()).isNull();
+        assertThat(AppNotificationKind.KONZILIUM_VERDICT.deeplink()).isEqualTo("/me/karakter/konzilium");
         assertThat(AppNotificationKind.fromKey("pattern_inbox")).contains(AppNotificationKind.PATTERN_INBOX);
         assertThat(AppNotificationKind.fromKey("nope")).isEmpty();
     }

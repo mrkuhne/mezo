@@ -41,7 +41,7 @@ export const NOTIFICATION_CATEGORIES: readonly NotificationCategory[] = [
   /* A szokás-formálódás és a havi portré is „valami rólad beért" — de a Karakter a dosszié
    *  saját neve, és a szokás oda tartozik hangulatilag: mindkettő ritka, kimondott mérföldkő. */
   { id: 'karakter', label: 'Karakter', icon: 'i-eletjel',
-    kinds: ['habit_formation', 'character_portrait'] },
+    kinds: ['habit_formation', 'character_portrait', 'konzilium_verdict'] },
 ]
 
 const BY_KIND = new Map<string, NotificationCategoryId>(

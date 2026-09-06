@@ -1813,6 +1813,7 @@ export type AppNotificationKindKey =
   // mezo-0cbh — az elmúlt hét feature-ei. Mind feed-only (nincs push): amit legközelebb
   // megnyitva megtalálsz, nem amiért rezegjen a telefon.
   | 'person_candidate' | 'graph_candidate' | 'habit_formation' | 'character_portrait'
+  | 'konzilium_verdict'
 
 export interface AppNotificationView {
   id: string
@@ -1854,6 +1855,7 @@ export const APP_NOTIFICATION_KIND_META: Record<AppNotificationKindKey, {
   graph_candidate: { emoji: '🕸', tint: 'people', clay: 'i-retegek' },
   habit_formation: { emoji: '🌱', tint: 'habit', clay: 'i-termes' },
   character_portrait: { emoji: '🪞', tint: 'character', clay: 'i-eletjel' },
+  konzilium_verdict: { emoji: '⚖️', tint: 'character', clay: 'i-muhely' },
 }
 
 /** Semleges bejegyzés egy olyan fajtára, amit ez a build még nem ismer. */
