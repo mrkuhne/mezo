@@ -7262,9 +7262,9 @@ export interface components {
             outcome: "raised" | "clear" | "unavailable";
             /** @description Set when outcome is unavailable — the gate that stopped the rule, or the read-side not_evaluated_yet when the engine has never judged this rule. */
             reasonCode?: string | null;
-            /** @description The one-line Hungarian explanation. */
+            /** @description The one-line Hungarian explanation, describing the rule's state as of changedAt, not necessarily as of the requested day. */
             reasonText: string;
-            /** @description The expandable evidence rows — thresholds and observed values. Empty when there is nothing honest to show. */
+            /** @description The expandable evidence rows — thresholds and observed values — as of changedAt below. The trace records only changes, so a rule sitting unchanged for weeks carries the numbers observed when it last changed, not today's. Empty when there is nothing honest to show. */
             facts: string[];
             /**
              * @description What the service did with a raise. suppressed_by_cooldown means "true, but it spoke recently".
@@ -7278,7 +7278,7 @@ export interface components {
             cardOutcome?: "won" | "lost" | null;
             /**
              * Format: date-time
-             * @description When this state last changed — may predate the day. Null when the rule has never been evaluated.
+             * @description When this state last changed — may predate the day; reasonText and facts above describe the rule as of this moment, not as of the requested day. Null when the rule has never been evaluated.
              */
             changedAt?: string | null;
         };

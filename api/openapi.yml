@@ -17797,12 +17797,17 @@ components:
             this rule.
         reasonText:
           type: string
-          description: The one-line Hungarian explanation.
+          description: >-
+            The one-line Hungarian explanation, describing the rule's state as
+            of changedAt, not necessarily as of the requested day.
         facts:
           type: array
           description: >-
-            The expandable evidence rows — thresholds and observed values. Empty
-            when there is nothing honest to show.
+            The expandable evidence rows — thresholds and observed values — as
+            of changedAt below. The trace records only changes, so a rule
+            sitting unchanged for weeks carries the numbers observed when it
+            last changed, not today's. Empty when there is nothing honest to
+            show.
           items:
             type: string
         disposition:
@@ -17831,8 +17836,9 @@ components:
           format: date-time
           nullable: true
           description: >-
-            When this state last changed — may predate the day. Null when the
-            rule has never been evaluated.
+            When this state last changed — may predate the day; reasonText and
+            facts above describe the rule as of this moment, not as of the
+            requested day. Null when the rule has never been evaluated.
     FlagTraceTransitionResponse:
       type: object
       required:

@@ -1764,6 +1764,17 @@ SAME trace rows, just windowed to `[dayStart, cutoff]` and paired with each rule
 state immediately before the day's first change for that rule, so a day's first transition reads
 "from yesterday's state" rather than "from nothing".
 
+**CLEAR's evidence is honest but not fresh, and the surface must say so (`mezo-6269.10`).** The
+transition-only write rule above deliberately excludes evidence from the change comparison, so a
+rule sitting CLEAR for two weeks stores the numbers observed the day it BECAME CLEAR, not today's —
+the same trace-row reuse `changedAt` already names. That is not a defect: unlike the
+cooldown-suppressed case below, where the evidence and `changedAt` describe two different events, a
+CLEAR row's evidence and `changedAt` describe the SAME event, so the two stay self-consistent. The
+trap is presentation, not data — a client rendering CLEAR's facts as today's measurement borrows a
+freshness the numbers don't have. The fix is not to date the numbers (that's the cooldown fix below,
+and it doesn't apply here) but to present them as "unchanged since `changedAt`", which is exactly
+what the contract's `facts`/`reasonText`/`changedAt` descriptions now spell out.
+
 **`cardOutcome` is derived at read time and never stored.** A rule's trace row only says RAISED;
 whether that raise WON the day's card is decided later in the cycle — after the raise is logged,
 `InterventionService` ranks every raise still standing and delivers exactly one — and
