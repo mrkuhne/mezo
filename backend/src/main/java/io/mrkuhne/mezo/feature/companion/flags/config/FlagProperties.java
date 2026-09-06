@@ -42,7 +42,9 @@ public record FlagProperties(
     @NotNull @Valid IgnoredNudge ignoredNudge,
     @NotNull @Valid LateEating lateEating,
 
-    @NotNull @Valid ProtocolLapse protocolLapse
+    @NotNull @Valid ProtocolLapse protocolLapse,
+
+    @NotNull @Valid MealRhythmDrift mealRhythmDrift
 ) {
 
     /** Check-in stress is a 1–10 scale (the contract's SaveCheckInRequest bounds). */
@@ -227,6 +229,33 @@ public record FlagProperties(
     ) {
     }
 
+    /** Spec 2026-09-05 §(13): the meal-slot plan and the logged reality have drifted apart. Two
+     *  sub-triggers under one key — see {@code MealRhythmDriftRule}. Every ratio is a fraction of
+     *  the days a slot was actually PLANNED (day-type-correct template), never of the raw window. */
+    public record MealRhythmDrift(
+        /** Rolling window (days, ending YESTERDAY — today is still in progress). */
+        @Min(7) @Max(60) int windowDays,
+        /** Honest small-n gate: fewer days with ANY logged meal than this inside the window ⇒
+         *  silence. A logging holiday is not a rhythm change. */
+        @Min(3) @Max(60) int minDaysWithMeals,
+        /** Slot drift fires only above this median |deviation| from the planned time. */
+        @Min(15) @Max(360) int driftMinutes,
+        /** Honest small-n gate for the drift arm: days where the slot was both planned (with a
+         *  FIXED anchor) and logged. */
+        @Min(3) @Max(60) int minSlotDays,
+        /** "Persistently": the share of those days that must deviate past {@code driftMinutes}
+         *  in the median's own direction. A week of chaos is not a drift. */
+        @DecimalMin("0.5") @DecimalMax("1.0") double minSameDirectionShare,
+        /** Dead slot: presence at or below this share of the days the slot was planned. */
+        @DecimalMin("0.0") @DecimalMax("1.0") double deadSlotMaxPresence,
+        /** …while the OTHER tracked slots average at least this presence — the proof that the
+         *  user logs, just not this slot. */
+        @DecimalMin("0.0") @DecimalMax("1.0") double otherSlotsMinPresence,
+        /** Honest small-n gate for the dead-slot arm: days the slot was planned at all. */
+        @Min(3) @Max(60) int minSlotPlannedDays
+    ) {
+    }
+
     /** Per-flag re-raise cooldown; a flag re-raises only once its own window has passed. */
     public record CooldownHours(
         @Min(1) @Max(8760) int sustainedStress,
@@ -242,7 +271,8 @@ public record FlagProperties(
         @Min(1) @Max(8760) int jointOveruse,
         @Min(1) @Max(8760) int ignoredNudge,
         @Min(1) @Max(8760) int lateEating,
-        @Min(1) @Max(8760) int protocolLapse
+        @Min(1) @Max(8760) int protocolLapse,
+        @Min(1) @Max(8760) int mealRhythmDrift
     ) {
 
         /** The cooldown for {@code flagKey} — keeps the switch out of the service. */
@@ -262,6 +292,7 @@ public record FlagProperties(
                 case "ignored_nudge" -> ignoredNudge;
                 case "late_eating" -> lateEating;
                 case "protocol_lapse" -> protocolLapse;
+                case "meal_rhythm_drift" -> mealRhythmDrift;
                 default -> throw new SystemRuntimeErrorException(
                     SystemMessage.error("COMPANION_FLAG_UNKNOWN_KEY").params(List.of(flagKey)).build());
             };

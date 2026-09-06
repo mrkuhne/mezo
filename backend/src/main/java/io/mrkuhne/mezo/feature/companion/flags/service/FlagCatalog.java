@@ -53,6 +53,10 @@ public final class FlagCatalog {
         // AdvicePriority.ORDER ranks it directly after late_eating (above the setup checks and the
         // round-0 tail); this map's insertion order is documentation of that rank, not behaviour.
         ENTRIES.put(FlagKey.PROTOCOL_LAPSE, new Entry("Kihagyott protokoll", DOMAIN_NUTRITION));
+        // Round 2 S4 (bd mezo-d58h.7.4): the meal-slot plan vs. the logged reality — a Fuel/meal
+        // observation, hence the nutrition domain. Insertion order again mirrors
+        // AdvicePriority.ORDER, where it sits directly after protocol_lapse.
+        ENTRIES.put(FlagKey.MEAL_RHYTHM_DRIFT, new Entry("Étkezési ritmus", DOMAIN_NUTRITION));
         ENTRIES.put(FlagKey.RECOVERY_NEEDED, new Entry("Regeneráció kell", DOMAIN_RECOVERY));
         ENTRIES.put(FlagKey.SUSTAINED_STRESS, new Entry("Tartós stressz", DOMAIN_RECOVERY));
         ENTRIES.put(FlagKey.MOMENTUM_AT_RISK, new Entry("Lendület veszélyben", DOMAIN_HABITS));

@@ -365,7 +365,7 @@ class FlagEvaluatorMomentumRecoveryIT extends AbstractIntegrationTest {
     void evaluate_returns_exactly_fourteen_verdicts() {
         UUID owner = ownerId();
 
-        assertThat(evaluator.evaluate(owner)).hasSize(14);
+        assertThat(evaluator.evaluate(owner)).hasSize(15);
     }
 
     /**

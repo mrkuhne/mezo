@@ -29,6 +29,8 @@ import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -385,6 +387,17 @@ public class TrainPopulator {
         s.setOrderIndex(template.getOrderIndex());
         s.setDate(date);
         s.setStatus(status);
+        return workoutSessionRepository.saveAndFlush(s);
+    }
+
+    /** A COMPLETED instance carrying a real {@code startedAt} — day-type resolution
+     *  (mezo-d58h.7.4) has no other input: {@code createWorkoutInstance} leaves it null, and a
+     *  training day with no start time is deliberately unresolvable (rest / training_am /
+     *  training_pm follows the earliest start, the {@code resolveDayType.ts} convention). */
+    public WorkoutSessionEntity createCompletedInstanceStartedAt(UUID createdBy,
+        WorkoutSessionEntity template, LocalDate date, LocalTime localStart) {
+        WorkoutSessionEntity s = createWorkoutInstance(createdBy, template, date, "completed");
+        s.setStartedAt(date.atTime(localStart).atZone(ZoneId.systemDefault()).toInstant());
         return workoutSessionRepository.saveAndFlush(s);
     }
 
