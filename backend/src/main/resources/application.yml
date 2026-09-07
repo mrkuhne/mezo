@@ -627,14 +627,23 @@ mezo:
         # level. mezo-9yqq class (1) — tool-derived numbers — is NOT fixable here: it failed 100% of
         # the time at every level including xhigh, because the judge never sees the tool OUTPUT.
         #
-        # smart: unset on purpose (the provider's own default stands, which measured at roughly
-        # `medium`: ~300 reasoning tokens on a mesocycle plan). Neither smart site showed a gain —
-        # the mesocycle plan was structurally perfect and honoured every injury constraint at EVERY
-        # level including `none`, and the konzílium skeptic's KEEP/KILL pattern did not move with
-        # effort — while xhigh cost 3-4x the output tokens on the most expensive model.
+        # smart: high. The first pass read this wrong. Scoring the mesocycle plan for STRUCTURAL
+        # validity found nothing to separate the levels (it is perfect even at `none`), and the
+        # konzílium skeptic's KEEP/KILL pattern looked like noise at n=2 — so the first draft left
+        # this unset. A blind read of the prose (the repo owner, labels hidden) then ranked
+        # high > provider-default > none on BOTH smart-tier tasks, and named the reason: at `none`
+        # the skeptic KEEPS a claim that generalises two weekends of data into a lasting trait
+        # ("hétvégén szisztematikusan"). That is a scoreable calibration error, not a taste
+        # difference, so it was re-run at n=8 per level. Over-permissive KEEPs, out of 40 possible:
+        #   none 13 (P3 6/8, P4 7/8) · low 0 (but missed the one true KEEP once) · default 3 ·
+        #   medium 2 · high 0 · xhigh 2
+        # `high` is the only level that is clean on both sides — it never waves through a
+        # thin-evidence trait claim and never rejects the well-supported one — for +2% output
+        # tokens over the provider default on this task. `none` is the level to stay away from on
+        # any judgement call: it is the cheapest and by far the most credulous.
         reasoning-effort:
           chat: high
-          smart:
+          smart: high
       # Per-CallKind exceptions to `provider`. Honoured only while provider is openai, and only for
       # these two kinds: no GPT-5.6 model has an audio endpoint at all, and the vision A/B is not
       # measured yet (spec §10.3), so both stay on Gemini. An absent key = the active provider.

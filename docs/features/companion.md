@@ -4688,7 +4688,7 @@ since S2.
   Both maps are per PROVIDER on purpose: a model id only means something to the vendor that can
   serve it, and the `gemini` block still answers the audio/vision calls the OpenAI adapter
   delegates to it, so one flat table could hand the Gemini client a GPT id.
-- `mezo.companion.llm.openai.reasoning-effort.chat` = **`high`**, `.smart` = **empty**
+- `mezo.companion.llm.openai.reasoning-effort.chat` = **`high`**, `.smart` = **`high`**
   (mezo-ozri.4 built the lever, mezo-641c measured it; the `gemini` block keeps both empty — the
   concept is OpenAI-only). Per-tier reasoning effort, the cheapest quality lever there is (same
   token price, more thinking). Empty = send no key at all, leaving the provider's own default in
@@ -4708,11 +4708,21 @@ since S2.
     a whole extra streamed chat turn (the advisor retry). `redundantQuestion` was already perfect at
     every level. mezo-9yqq class (1), tool-derived numbers, is **not fixable here** — it failed
     100% of the time at every level including `xhigh`, because the judge never sees the tool OUTPUT.
-  - **Why `smart` stays empty.** The provider's own default measured at roughly `medium`
-    (~300 reasoning tokens on a mesocycle plan), and neither smart-tier site moved with the lever:
-    the mesocycle plan was structurally perfect and honoured every injury constraint at EVERY level
-    including `none`, and the konzílium skeptic's KEEP/KILL pattern did not track effort. `xhigh`
-    cost 3-4x the output tokens on the most expensive model for that non-difference.
+  - **Why `smart: high`, and why the first pass got it wrong.** Scoring the mesocycle plan for
+    STRUCTURAL validity separates nothing — it is perfect even at `none` — and the konzílium
+    skeptic's KEEP/KILL pattern looks like noise at n=2, so the first draft left this unset. A
+    blind read of the prose (the repo owner, labels hidden) then ranked `high` >
+    provider-default > `none` on **both** smart-tier tasks and named the mechanism: at `none` the
+    skeptic KEEPs a claim that generalises two weekends of data into a lasting trait
+    ("hétvégén szisztematikusan"). That is a scoreable calibration error, so the round was re-run
+    at n=8 per level. Over-permissive KEEPs, out of 40 possible: `none` **13** (P3 6/8, P4 7/8),
+    `low` 0 (but missed the one true KEEP once), default 3, `medium` 2, `high` **0**, `xhigh` 2.
+    `high` is the only level clean on both sides — it never waves through a thin-evidence trait
+    claim and never rejects the well-supported one — for **+2% output tokens** over the provider
+    default on that task. The lesson is methodological and worth keeping: a structural pass over a
+    judgement call measures whether the answer is well-FORMED, not whether it is well-JUDGED, and
+    those two came apart here. `none` is the level to avoid on any judgement call — cheapest and by
+    far the most credulous.
 - `mezo.companion.llm.per-call-kind` = `{TRANSCRIBE: gemini, VISION: gemini}`
   (`Map<CallKind, LlmProvider>`) — per-`CallKind` exceptions to `provider`, honoured only by
   `OpenAiCompanionLlm`. An absent or unknown key means "the active provider", never a boot failure.
