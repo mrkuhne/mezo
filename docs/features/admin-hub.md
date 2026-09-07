@@ -202,6 +202,14 @@ SQLSTATE `57014` (statement-timeout cancellation) is translated to `QueryTimeout
 - **me**: the Beállítások admin row now links to `/admin` instead of opening a `/me/*` page; the
   two moved pages (`AdminAccountsPage`, `AdminCostPage`/`AdminCostDetailPage`) keep their
   original mobile-shaped bodies.
+- **companion / llmlog (`mezo-ozri.5`)**: `AiUsageHero` carries a THIRD figure beside the call
+  count and the estimated cost — the prompt-cache hit ratio, `N% gyorsítótárból`, computed as
+  `LlmUsageTotals.cachedTokens / promptTokens` (raw provider counts; cached is a SUBSET of prompt,
+  summed by `LlmLogRepository.aggregateByStatusSince`). Cached input bills at a tenth of the normal
+  rate, so this is the number that says whether the stable-prefix prompt order is paying off — see
+  [`companion.md`](companion.md) §3 "Prompt assembly" for the split it measures. A period whose rows
+  reported no prompt token HIDES the figure rather than showing 0%: no data and no hits are
+  different statements.
 - **design system**: `AdminLayout`/`AdminRail`/`MosaicDesktop` extend the shared
   `mozaik`/`clay` kit (`frontend/src/shared/ui/{mozaik,clay}`) for a wider, desktop 12-column
   canvas rather than forking it — see [`_platform-design-system.md`](_platform-design-system.md).
