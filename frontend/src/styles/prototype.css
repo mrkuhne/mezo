@@ -11558,6 +11558,9 @@ button.mz-wtile:active { transform: scale(0.96); }
 .am-validity .track { height: 8px; border-radius: 5px; background: rgba(43,33,24,.08); position: relative; overflow: hidden; }
 .am-validity .fill { position: absolute; inset: 0; border-radius: 5px; background: linear-gradient(90deg, #6E8B5E, #C9962E); }
 .am-validity .lbls { display: flex; justify-content: space-between; font-size: 9px; color: #A2958A; margin-top: 4px; font-weight: 600; }
+.am-graphwrap svg circle { transition: r .1s ease; }
+.am-graphwrap svg g:hover circle { filter: brightness(0.94); }
+.am-graphwrap svg line { transition: stroke-width .1s ease; }
 
 /* Térkép — SVG scatter (slice 5) */
 .am-mapwrap { background: #FFFFFF; border-radius: 14px; position: relative; }

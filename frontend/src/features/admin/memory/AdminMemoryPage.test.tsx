@@ -37,7 +37,7 @@ describe('AdminMemoryPage (mock mode)', () => {
     renderPage('?view=graph')
     await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)
     expect(screen.getByRole('tab', { name: 'Gráf' })).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getByText('Készül')).toBeInTheDocument()
+    expect(screen.getByText('Tudásgráf')).toBeInTheDocument()
   })
 
   it('an unknown view falls back to Futások', async () => {
