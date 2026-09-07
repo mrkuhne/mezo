@@ -56,6 +56,8 @@ public class KonziliumVerdictRound {
     private static final int MAX_CHAPTERS_PER_CONFERENCE = 1;
     private static final String NEW_KIND = "NEW";
     private static final String UP_KIND = "UP";
+    private static final String DOWN_KIND = "DOWN";
+    private static final String RETIRE_KIND = "RETIRE";
     private static final String KEEP = "KEEP";
     private static final String WEAKEN = "WEAKEN";
     private static final String KILL = "KILL";
@@ -73,8 +75,15 @@ public class KonziliumVerdictRound {
             "Érzékeny állítás, amit a Szkeptikus nem hagyott jóvá — a rendszer nem írja a dossziéba.";
     private static final String ACTIVE = "ACTIVE";
     private static final String CLAIM_NOT_FOUND = "a célzott állítás nem található";
+    /** Promoted to a constant (mezo-lghn fix round 2, item 4): this literal is also passed
+     *  directly to the blocked-accept {@link ClaimRuling}, so keeping it only inside
+     *  {@code VALID_NOTES} would let the two drift apart. */
+    private static final String NOTE_NOT_FOR_DOSSIER = "NOT_FOR_DOSSIER";
+    /** Promoted alongside {@link #NOTE_NOT_FOR_DOSSIER} — also compared directly against in the
+     *  REHOME gate below. */
+    private static final String NOTE_REHOME = "REHOME";
     private static final Set<String> VALID_NOTES =
-            Set.of("DUPLICATE", "CONTRADICTS", "NOT_FOR_DOSSIER", "REHOME");
+            Set.of("DUPLICATE", "CONTRADICTS", NOTE_NOT_FOR_DOSSIER, NOTE_REHOME);
 
     private final CharacterDimensionRepository dimensionRepository;
     private final CharacterClaimRepository claimRepository;
@@ -223,8 +232,9 @@ public class KonziliumVerdictRound {
         // Only the indexes the Szkeptikus ACTUALLY answered get a shown verdict (mezo-xlvr final
         // review, I2): an index it skipped had no verdict, and emitting a defaulted KEEP here
         // would put words in its mouth — the item's `skeptic` stays null and the UI says that
-        // round gave no answer for it. (The prompt-side skepticVerdictsBlock keeps its default:
-        // that is about what the chair is TOLD, not about what the user is shown.)
+        // round gave no answer for it. (The prompt-side skepticVerdictsBlock renders through the
+        // SAME skepticLine helper as the transcript, so it is equally honest — neither surface
+        // fabricates a grade for an index the Szkeptikus never answered; mezo-lghn fix round 1.)
         List<SkepticVerdict> verdicts = new ArrayList<>();
         if (skepticResult.parsed()) {
             for (int i = 0; i < proposals.size(); i++) {
@@ -249,9 +259,8 @@ public class KonziliumVerdictRound {
     /**
      * One proposal's ruling, with the chair's asymmetric right to overrule the Szkeptikus enforced
      * HERE rather than in the prompt (mezo-lghn): tightening is always allowed, but an accept that
-     * ADDS or STRENGTHENS a sensitive claim (kinds {@code NEW}/{@code UP} only — see the kind check
-     * below) requires the Szkeptikus's affirmative clearance. A prompt sentence alone would leave
-     * the guardrail to the model's goodwill.
+     * ADDS or STRENGTHENS a sensitive claim requires the Szkeptikus's affirmative clearance. A
+     * prompt sentence alone would leave the guardrail to the model's goodwill.
      */
     private static ClaimRuling toRuling(ClaimProposal proposal, IntegratorRulingDraft draft,
                                          SkepticVerdictDraft verdict) {
@@ -261,20 +270,22 @@ public class KonziliumVerdictRound {
         boolean accepted = draft.accept() != null && draft.accept();
         String reason = draft.reason() != null && !draft.reason().isBlank() ? draft.reason() : DEFAULT_REASON;
 
-        // The guardrail only concerns accepts that make a sensitive claim MORE present in the
-        // dossier: NEW writes a brand-new claim, UP raises an existing one's confidence. DOWN and
-        // RETIRE always move a claim toward being LESS in the dossier (or out of it entirely), so
-        // the brief's "tightening is always safe" principle applies to them even when sensitive and
-        // even over a KILL — blocking those would leave the sensitive claim sitting in the dossier,
-        // the opposite of what this guardrail exists to prevent (mezo-lghn fix round 1, item 3).
-        boolean sensitiveWriteBlocked = accepted
-                && (NEW_KIND.equals(proposal.kind()) || UP_KIND.equals(proposal.kind()))
-                && lacksSensitiveClearance(proposal, verdict);
+        // Fail CLOSED on the kind axis too (mezo-lghn fix round 2, item 4): the guardrail engages
+        // unless the change demonstrably WEAKENS the dossier. DOWN lowers a claim's confidence and
+        // RETIRE removes it, so both tighten and are always safe to accept even when sensitive and
+        // even over a KILL; anything else — including NEW, UP, and a null or unrecognised kind —
+        // is treated as strengthening and needs the Szkeptikus's clearance. Asking "is this kind
+        // NEW or UP?" (the round-1 shape) fails OPEN on anything unexpected; asking "does this kind
+        // demonstrably weaken?" fails CLOSED instead, so this safety boundary does not depend on
+        // KonziliumProposalRound's kind validation or ClaimLifecycle's default-switch staying
+        // correct forever.
+        boolean weakensDossier = DOWN_KIND.equals(proposal.kind()) || RETIRE_KIND.equals(proposal.kind());
+        boolean sensitiveWriteBlocked = accepted && !weakensDossier && lacksSensitiveClearance(proposal, verdict);
         if (sensitiveWriteBlocked) {
             log.warn("Chair accepted a sensitive proposal without Szkeptikus clearance — dropping the accept "
                     + "(kind {}, dimension {}, claim {})", proposal.kind(), proposal.dimensionKey(),
                     proposal.claimId());
-            return new ClaimRuling(proposal, false, null, SENSITIVE_BLOCKED_REASON, false, "NOT_FOR_DOSSIER", null);
+            return new ClaimRuling(proposal, false, null, SENSITIVE_BLOCKED_REASON, false, NOTE_NOT_FOR_DOSSIER, null);
         }
 
         BigDecimal confidence = draft.confidence();
@@ -291,7 +302,7 @@ public class KonziliumVerdictRound {
         boolean dissent = draft.dissent() != null && draft.dissent()
                 && verdict != null && contradicts(accepted, verdict.verdict());
         String note = draft.note() != null && VALID_NOTES.contains(draft.note()) ? draft.note() : null;
-        String rehome = "REHOME".equals(note) ? draft.suggestedDimensionKey() : null;
+        String rehome = NOTE_REHOME.equals(note) ? draft.suggestedDimensionKey() : null;
         return new ClaimRuling(proposal, accepted, confidence, reason, dissent, note, rehome);
     }
 
@@ -471,7 +482,10 @@ public class KonziliumVerdictRound {
                 tartós téma-e, ami külön fejezetet érdemel — ez ritka. \
                 Ahol a szakértők egymás javaslatára is állást foglaltak, azt is figyelembe veszed. \
                 A Szkeptikus KEEP vagy WEAKEN döntése ellenére elvethetsz. KILL ellenére csak \
-                akkor fogadhatsz el, ha a javaslat NEM érzékeny — érzékeny KILL végleges.""";
+                akkor fogadhatsz el, ha a javaslat NEM érzékeny — érzékeny KILL végleges. Új vagy \
+                erősödő érzékeny állítást (NEW, UP) csak akkor fogadhatsz el, ha a Szkeptikus \
+                kifejezetten KEEP-et vagy WEAKEN-t adott rá — ha egyáltalán nem válaszolt erre a \
+                javaslatra, az ugyanúgy nem elég az elfogadáshoz, mintha KILL-t mondott volna.""";
     }
 
     private static String integratorContract() {

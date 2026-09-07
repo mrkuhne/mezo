@@ -40,6 +40,12 @@ import org.springframework.test.context.ActiveProfiles;
 class KonziliumVerdictRoundIT extends ApiIntegrationTest {
 
     private static final LocalDate WEEK_START = LocalDate.of(2026, 8, 24); // ISO Monday
+    /** Mirror of {@code KonziliumVerdictRound.SENSITIVE_BLOCKED_REASON} (private, different
+     *  sub-package) — pins that a blocked sensitive accept's {@code reason} is ALWAYS this
+     *  system-authored text, never the chair's own accept rationale (mezo-lghn fix round 2,
+     *  item 3). */
+    private static final String SENSITIVE_BLOCKED_REASON =
+            "Érzékeny állítás, amit a Szkeptikus nem hagyott jóvá — a rendszer nem írja a dossziéba.";
 
     @Autowired private KonziliumVerdictRound verdictRound;
     @Autowired private ClaimLifecycle claimLifecycle;
@@ -491,6 +497,7 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
         assertThat(result.rulings()).singleElement().satisfies(ruling -> {
             assertThat(ruling.accepted()).isFalse();
             assertThat(ruling.dissent()).isFalse();
+            assertThat(ruling.reason()).isEqualTo(SENSITIVE_BLOCKED_REASON);
         });
         claimLifecycle.apply(owner, UUID.randomUUID(), result.rulings());
         assertThat(claimRepository.findByCreatedByAndDimensionIdAndStatusOrderByConfidenceDesc(
@@ -670,6 +677,7 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
         assertThat(result.rulings()).singleElement().satisfies(ruling -> {
             assertThat(ruling.accepted()).isFalse();
             assertThat(ruling.note()).isEqualTo("NOT_FOR_DOSSIER");
+            assertThat(ruling.reason()).isEqualTo(SENSITIVE_BLOCKED_REASON);
         });
         claimLifecycle.apply(owner, UUID.randomUUID(), result.rulings());
         assertThat(claimRepository.findByCreatedByAndDimensionIdAndStatusOrderByConfidenceDesc(
@@ -704,5 +712,86 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
         List<ConferenceOutcomeEnvelope.Change> changes =
                 claimLifecycle.apply(owner, UUID.randomUUID(), result.rulings());
         assertThat(changes).singleElement().satisfies(c -> assertThat(c.kind()).isEqualTo("CLAIM_RETIRED"));
+    }
+
+    /** mezo-lghn fix round 2, item 1: an {@code UP} is a STRENGTHENING kind (it raises an existing
+     *  claim's confidence), so — unlike the {@code RETIRE} sibling above — the guardrail must
+     *  engage for it exactly like it does for {@code NEW}. Before this round's fix, the kind check
+     *  only named {@code NEW} and {@code UP} explicitly but was never exercised for {@code UP} by
+     *  any test, so deleting the {@code UP} half silently reopened this hole. */
+    @Test
+    void aSensitiveUpAcceptIsBlockedOverAKill() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "mental", "pszichologus");
+        CharacterClaimEntity claim = seedClaim(owner, dimension.getId(), "Érzékeny állítás.", new BigDecimal("0.50"));
+        ClaimProposal proposal = new ClaimProposal("pszichologus", "UP", null, claim.getId(),
+                "Erősödik. "
+                        + "[fake-char-skeptic:[{\"index\":0,\"verdict\":\"KILL\","
+                        + "\"argument\":\"Túlinterpretálás.\"}]] "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":true,"
+                        + "\"confidence\":0.7,\"reason\":\"Mégis erősítem.\"}],\"chapters\":[]}]",
+                new BigDecimal("0.70"), true, "Indoklás.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.rulings()).singleElement().satisfies(ruling -> {
+            assertThat(ruling.accepted()).isFalse();
+            assertThat(ruling.note()).isEqualTo("NOT_FOR_DOSSIER");
+            assertThat(ruling.reason()).isEqualTo(SENSITIVE_BLOCKED_REASON);
+        });
+        claimLifecycle.apply(owner, UUID.randomUUID(), result.rulings());
+        CharacterClaimEntity unchanged = claimRepository.findById(claim.getId()).orElseThrow();
+        assertThat(unchanged.getConfidence()).isEqualByComparingTo(new BigDecimal("0.50"));
+    }
+
+    /** mezo-lghn fix round 2, item 2: {@code lacksSensitiveClearance} must be an ALLOWLIST
+     *  (only KEEP/WEAKEN clear a sensitive accept), not a denylist (only KILL blocks one) — a
+     *  denylist would treat any unrecognized grade as clearance. Neither the round-1 null-verdict
+     *  test nor the explicit-KILL test can catch a regression back to a denylist, since both of
+     *  those still block under EITHER shape. This is the test that actually pins the allowlist. */
+    @Test
+    void aSensitiveAcceptIsBlockedWhenTheSkepticGaveAnUnrecognizedGrade() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "mental", "pszichologus");
+        ClaimProposal proposal = new ClaimProposal("pszichologus", "NEW", dimension.getKey(), null,
+                "Belső feszültség. "
+                        + "[fake-char-skeptic:[{\"index\":0,\"verdict\":\"BOGUS\","
+                        + "\"argument\":\"Nem egyértelmű.\"}]] "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":true,"
+                        + "\"confidence\":0.6,\"reason\":\"Felveszem.\"}],\"chapters\":[]}]",
+                new BigDecimal("0.60"), true, "Egy megfigyelés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.rulings()).singleElement().satisfies(ruling -> {
+            assertThat(ruling.accepted()).isFalse();
+            assertThat(ruling.note()).isEqualTo("NOT_FOR_DOSSIER");
+        });
+    }
+
+    /** Sibling to {@link #aSensitiveAcceptIsBlockedWhenTheSkepticGaveAnUnrecognizedGrade}: a
+     *  lowercase {@code "kill"} must ALSO fail to clear (it is not a literal {@code KEEP}/
+     *  {@code WEAKEN} match either) — cheap extra coverage the re-review asked for. */
+    @Test
+    void aSensitiveAcceptIsBlockedWhenTheSkepticGaveALowercaseKill() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "mental", "pszichologus");
+        ClaimProposal proposal = new ClaimProposal("pszichologus", "NEW", dimension.getKey(), null,
+                "Belső feszültség. "
+                        + "[fake-char-skeptic:[{\"index\":0,\"verdict\":\"kill\","
+                        + "\"argument\":\"Túlinterpretálás.\"}]] "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":true,"
+                        + "\"confidence\":0.6,\"reason\":\"Felveszem.\"}],\"chapters\":[]}]",
+                new BigDecimal("0.60"), true, "Egy megfigyelés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.rulings()).singleElement().satisfies(ruling -> {
+            assertThat(ruling.accepted()).isFalse();
+            assertThat(ruling.note()).isEqualTo("NOT_FOR_DOSSIER");
+        });
     }
 }
