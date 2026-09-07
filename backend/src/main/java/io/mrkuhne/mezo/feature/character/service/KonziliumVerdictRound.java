@@ -354,7 +354,8 @@ public class KonziliumVerdictRound {
                                             DossierContext dossier) {
         String systemPrompt = INTEGRATOR_MARKER + "\n" + integratorPersona() + "\n" + integratorContract();
         String userMessage = numberedProposals(weekStart, proposals, dossier) + "\n"
-                + skepticVerdictsBlock(proposals, verdicts) + peerReactionsBlock(reactions);
+                + skepticVerdictsBlock(proposals, verdicts) + peerReactionsBlock(reactions)
+                + dossierBlock(proposals, dossier);
         String raw = callSmart(owner, "integrate", systemPrompt, userMessage);
         if (raw == null || raw.isBlank()) {
             log.warn("Integrátor answer was blank for owner {} week {}", owner, weekStart);
@@ -466,6 +467,74 @@ public class KonziliumVerdictRound {
             sb.append("\nP").append(reaction.index()).append(": ")
                     .append(CharacterExpertCatalog.byKey(reaction.expertKey()).displayName())
                     .append(" ").append(reaction.stance()).append(" — ").append(reaction.argument());
+        }
+        return sb.toString();
+    }
+
+    /** The dossier as the CHAIR sees it (never the Szkeptikus — spec §10): every ACTIVE claim
+     *  grouped by dimension, with the targeted claims' confidence history and user feedback so the
+     *  chair can judge how far a number may move and what {{NÉV}} has already said about it. */
+    private static String dossierBlock(List<ClaimProposal> proposals, DossierContext dossier) {
+        StringBuilder sb = new StringBuilder("\nDosszié:");
+        if (dossier.shownClaims().isEmpty()) {
+            sb.append("\n(még egyetlen aktív állítás sincs)");
+            return sb.toString();
+        }
+        Map<UUID, List<CharacterClaimEntity>> byDimension = new LinkedHashMap<>();
+        for (CharacterClaimEntity claim : dossier.shownClaims()) {
+            byDimension.computeIfAbsent(claim.getDimensionId(), key -> new ArrayList<>()).add(claim);
+        }
+        for (Map.Entry<UUID, List<CharacterClaimEntity>> entry : byDimension.entrySet()) {
+            CharacterDimensionEntity dimension = dossier.dimensionsById().get(entry.getKey());
+            sb.append("\n").append(dimension == null ? "(ismeretlen dimenzió)" : dimension.getTitle()).append(':');
+            for (CharacterClaimEntity claim : entry.getValue()) {
+                sb.append("\n- (").append(CharacterConfidenceWords.word(claim.getConfidence())).append(") ")
+                        .append(claim.getText());
+            }
+        }
+        if (dossier.truncated()) {
+            sb.append("\n(A lista a legfrissebb ").append(dossier.shownClaims().size())
+                    .append(" állításra van szűkítve — nem a teljes dosszié.)");
+        }
+        String targeted = targetedClaimDetails(proposals, dossier);
+        return sb.append(targeted).toString();
+    }
+
+    /** Confidence history and user feedback for the claims a proposal actually targets — the two
+     *  things that tell the chair how far the number may move and whether {{NÉV}} has already
+     *  pushed back on this exact claim. */
+    private static String targetedClaimDetails(List<ClaimProposal> proposals, DossierContext dossier) {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < proposals.size(); i++) {
+            ClaimProposal proposal = proposals.get(i);
+            if (proposal.claimId() == null) {
+                continue;
+            }
+            CharacterClaimEntity claim = dossier.claimsById().get(proposal.claimId());
+            if (claim == null) {
+                continue;
+            }
+            List<String> history = claim.getConfidenceHistory() == null
+                    ? List.of()
+                    : claim.getConfidenceHistory().points().stream()
+                            .map(point -> CharacterConfidenceWords.word(point.value()) + " (" + point.cause() + ")")
+                            .toList();
+            List<String> feedback = claim.getUserFeedback() == null
+                    ? List.of()
+                    : claim.getUserFeedback().events().stream()
+                            .map(event -> event.kind()
+                                    + (event.text() == null || event.text().isBlank() ? "" : ": " + event.text()))
+                            .toList();
+            if (history.isEmpty() && feedback.isEmpty()) {
+                continue;
+            }
+            sb.append("\nP").append(i).append(" célzott állításának előzményei:");
+            if (!history.isEmpty()) {
+                sb.append("\n  bizalom útja: ").append(String.join(" → ", history));
+            }
+            if (!feedback.isEmpty()) {
+                sb.append("\n  felhasználói visszajelzés: ").append(String.join(" | ", feedback));
+            }
         }
         return sb.toString();
     }

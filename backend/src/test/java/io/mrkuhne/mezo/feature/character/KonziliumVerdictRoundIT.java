@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.character;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
+import io.mrkuhne.mezo.feature.character.config.CharacterProperties;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.entity.ClaimConfidenceHistoryEnvelope;
@@ -46,6 +47,7 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
     @Autowired private FakeCompanionLlm fakeCompanionLlm;
     @Autowired private CharacterDimensionRepository dimensionRepository;
     @Autowired private CharacterClaimRepository claimRepository;
+    @Autowired private CharacterProperties characterProperties;
 
     private UUID ownerId() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
@@ -368,5 +370,51 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
                 .findFirst().orElseThrow();
         assertThat(skepticTurn.text()).contains("WEAKEN").contains("valószínű");
         assertThat(skepticTurn.text()).doesNotContain("0.55");
+    }
+
+    @Test
+    void theChairsPromptCarriesTheDossierAndTheSzkeptikusDoesNot() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        seedClaim(owner, dimension.getId(), "MARKER-DOSSZIE-ALLITAS", new BigDecimal("0.60"));
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Új állítás.", new BigDecimal("0.60"), false, "Indoklás.");
+
+        // userMessages() accumulates across the WHOLE shared Spring context for the life of the
+        // test JVM (same idiom as completeCallCount() above) — sibling tests in this class also
+        // call runIntegrator, which now ALWAYS appends a "Dosszié:" header even for an empty
+        // dossier, so a raw hasSize(1) over the full list is order-dependent and was observed to
+        // fail when run alongside anOversizedDossierIsCappedAndTheBlockSaysSo. Slice to just the
+        // messages THIS run produced, the same before/after idiom used elsewhere in this class.
+        int messagesBefore = fakeCompanionLlm.userMessages().size();
+        verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+        List<String> thisRunsMessages = fakeCompanionLlm.userMessages()
+                .subList(messagesBefore, fakeCompanionLlm.userMessages().size());
+
+        // The chair is called last, so lastUserMessage() is ITS prompt — it must carry the dossier.
+        assertThat(fakeCompanionLlm.lastUserMessage())
+                .contains("Dosszié:")
+                .contains("MARKER-DOSSZIE-ALLITAS");
+        // Exactly ONE of the round's prompts may carry it: the Szkeptikus judges the proposal
+        // against its own evidence and must not see the dossier (spec §10).
+        assertThat(thisRunsMessages)
+                .filteredOn(message -> message.contains("Dosszié:"))
+                .hasSize(1);
+    }
+
+    @Test
+    void anOversizedDossierIsCappedAndTheBlockSaysSo() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        int cap = characterProperties.conference().maxDossierClaims();
+        for (int i = 0; i <= cap; i++) {
+            seedClaim(owner, dimension.getId(), "Állítás " + i, new BigDecimal("0.60"));
+        }
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Új állítás.", new BigDecimal("0.60"), false, "Indoklás.");
+
+        verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(fakeCompanionLlm.lastUserMessage()).contains("van szűkítve");
     }
 }

@@ -574,6 +574,12 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  prompt-assembly detail (e.g. that the cross-talk peer stances reached the prompt) without
      *  needing a dedicated sentinel/echo for every such detail. */
     private volatile String lastUserMessage;
+    /** mezo-lghn: EVERY user message that reached {@link #complete}, in call order — the konzílium
+     *  rounds make several calls per run, so an IT that must assert about an EARLIER call's prompt
+     *  (e.g. that the chair's dossier block did NOT reach the Szkeptikus) cannot use
+     *  {@link #lastUserMessage}, which the next call overwrites. Same channel, same intent: no
+     *  per-detail sentinel. */
+    private final List<String> userMessages = new java.util.concurrent.CopyOnWriteArrayList<>();
 
     public int completeCallCount() {
         return completeCallCount.get();
@@ -587,11 +593,16 @@ public class FakeCompanionLlm implements CompanionLlm {
         return lastUserMessage;
     }
 
+    public List<String> userMessages() {
+        return List.copyOf(userMessages);
+    }
+
     @Override
     public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
         completeCallCount.incrementAndGet();
         lastUserMessage = userMessage;
+        userMessages.add(userMessage);
         // mezo-p2tr: the opening turn's userMessage is the FIXED KICKOFF_PROMPT (no room to plant a
         // sentinel there), so an IT scripts the failure via the DYNAMIC [Heti adatok] block instead
         // (e.g. a seeded weekly-review summary) — checking the system prompt too is what lets that
