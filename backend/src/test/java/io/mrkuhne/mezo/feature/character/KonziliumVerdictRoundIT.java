@@ -304,6 +304,45 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
     }
 
     @Test
+    void anUpProposalShowsTheTargetedClaimsTextAndWordNotItsUuid() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        CharacterClaimEntity claim = seedClaim(owner, dimension.getId(),
+                "Hétvégén lazul a logolási fegyelme.", new BigDecimal("0.60"));
+        ClaimProposal proposal = new ClaimProposal("doki", "UP", null, claim.getId(),
+                "Erősítsük meg. [fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":true,"
+                        + "\"confidence\":0.7,\"reason\":\"Negyedik hét is így jött.\"}],\"chapters\":[]}]",
+                new BigDecimal("0.70"), false, "Negyedik egymást követő hét.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.rulings()).singleElement()
+                .satisfies(ruling -> assertThat(ruling.accepted()).isTrue());
+        // The Szkeptikus's canned answer echoes nothing, so assert the prompt reached the model
+        // through the ONE observable channel: the round resolved the claim, so no UUID text can
+        // appear in any turn.
+        assertThat(result.turns()).allSatisfy(turn ->
+                assertThat(turn.text()).doesNotContain(claim.getId().toString()));
+    }
+
+    @Test
+    void anUnresolvableClaimIdRendersAnExplicitNotFoundInsteadOfAUuid() {
+        UUID owner = ownerId();
+        seedDimension(owner, "physical", "doki");
+        UUID missing = UUID.randomUUID();
+        ClaimProposal proposal = new ClaimProposal("doki", "UP", null, missing,
+                "Erősítsük meg.", new BigDecimal("0.70"), false, "Indoklás.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.rulings()).hasSize(1);
+        assertThat(result.turns()).allSatisfy(turn ->
+                assertThat(turn.text()).doesNotContain(missing.toString()));
+    }
+
+    @Test
     void skepticWeakenVerdictSurvivesIntoTheShownVerdictsAndTheTranscript() {
         UUID owner = ownerId();
         CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");

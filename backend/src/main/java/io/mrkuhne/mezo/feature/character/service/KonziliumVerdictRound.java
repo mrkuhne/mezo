@@ -1,7 +1,12 @@
 package io.mrkuhne.mezo.feature.character.service;
 
 import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
+import io.mrkuhne.mezo.feature.character.config.CharacterProperties;
+import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
+import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
+import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
+import io.mrkuhne.mezo.feature.character.repository.CharacterDimensionRepository;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -9,10 +14,13 @@ import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -51,11 +59,16 @@ public class KonziliumVerdictRound {
     private static final String KILL = "KILL";
     private static final String DEFAULT_ARGUMENT = "nincs ellenérv";
     private static final String DEFAULT_REASON = "nem került döntésre";
+    private static final String ACTIVE = "ACTIVE";
+    private static final String CLAIM_NOT_FOUND = "a célzott állítás nem található";
 
     private final CompanionLlm companionLlm;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
     private final PromptPersona promptPersona;
+    private final CharacterClaimRepository claimRepository;
+    private final CharacterDimensionRepository dimensionRepository;
+    private final CharacterProperties characterProperties;
 
     /** One Szkeptikus verdict, before defaulting. {@code suggestedConfidence} is the strength the
      *  Szkeptikus thinks the evidence carries — meaningful for KEEP and WEAKEN, ignored for KILL,
@@ -90,6 +103,39 @@ public class KonziliumVerdictRound {
     public record SkepticVerdict(int index, String verdict, String argument,
                                  BigDecimal suggestedConfidence) {}
 
+    /** The dossier as the round reads it once per run: every ACTIVE claim by id (so a proposal's
+     *  target resolves without a query per proposal), the owner's dimensions by id, the claims the
+     *  chair's dossier block may show, and whether that list was capped (mezo-lghn). */
+    private record DossierContext(Map<UUID, CharacterClaimEntity> claimsById,
+                                  Map<UUID, CharacterDimensionEntity> dimensionsById,
+                                  List<CharacterClaimEntity> shownClaims,
+                                  boolean truncated) {}
+
+    private DossierContext loadDossier(UUID owner) {
+        List<CharacterClaimEntity> active =
+                claimRepository.findByCreatedByAndStatusOrderByConfidenceDesc(owner, ACTIVE);
+        Map<UUID, CharacterClaimEntity> claimsById = active.stream()
+                .collect(Collectors.toMap(CharacterClaimEntity::getId, Function.identity(),
+                        (first, second) -> first, LinkedHashMap::new));
+        Map<UUID, CharacterDimensionEntity> dimensionsById = dimensionRepository.findByCreatedBy(owner).stream()
+                .collect(Collectors.toMap(CharacterDimensionEntity::getId, Function.identity(),
+                        (first, second) -> first, LinkedHashMap::new));
+
+        int cap = characterProperties.conference().maxDossierClaims();
+        boolean truncated = active.size() > cap;
+        // Freshest first when capping: a claim nobody has touched in a year is the least useful
+        // context for this week's decision. The kept slice is re-sorted by confidence so the block
+        // reads the way every other claim surface does.
+        List<CharacterClaimEntity> shown = truncated
+                ? active.stream()
+                        .sorted(Comparator.comparing(CharacterClaimEntity::getUpdatedAt).reversed())
+                        .limit(cap)
+                        .sorted(Comparator.comparing(CharacterClaimEntity::getConfidence).reversed())
+                        .toList()
+                : active;
+        return new DossierContext(claimsById, dimensionsById, shown, truncated);
+    }
+
     /**
      * The round's output: every proposal's final ruling, at most one chapter proposal, one
      * transcript turn per persona that answered, the Szkeptikus's per-proposal verdicts (only for
@@ -120,14 +166,15 @@ public class KonziliumVerdictRound {
             return new Result(List.of(), List.of(), List.of(), List.of(), false);
         }
 
-        SkepticResult skepticResult = runSkeptic(owner, weekStart, proposals);
+        DossierContext dossier = loadDossier(owner);
+        SkepticResult skepticResult = runSkeptic(owner, weekStart, proposals, dossier);
         List<ConferenceTranscriptEnvelope.Turn> turns = new ArrayList<>();
         if (skepticResult.parsed()) {
             turns.add(skepticTurn(proposals, skepticResult.verdicts()));
         }
 
         IntegratorResult integratorResult = runIntegrator(owner, weekStart, proposals,
-                skepticResult.verdicts(), reactions);
+                skepticResult.verdicts(), reactions, dossier);
         IntegratorAnswer answer = integratorResult.answer();
         Map<Integer, IntegratorRulingDraft> rulingsByIndex = new LinkedHashMap<>();
         for (IntegratorRulingDraft draft : answer.rulings()) {
@@ -216,9 +263,10 @@ public class KonziliumVerdictRound {
 
     // ── Szkeptikus ────────────────────────────────────────────────────────────
 
-    private SkepticResult runSkeptic(UUID owner, LocalDate weekStart, List<ClaimProposal> proposals) {
+    private SkepticResult runSkeptic(UUID owner, LocalDate weekStart, List<ClaimProposal> proposals,
+                                      DossierContext dossier) {
         String systemPrompt = SKEPTIC_MARKER + "\n" + skepticPersona() + "\n" + skepticContract();
-        String userMessage = numberedProposals(weekStart, proposals);
+        String userMessage = numberedProposals(weekStart, proposals, dossier);
         String raw = callSmart(owner, "skeptic", systemPrompt, userMessage);
         if (raw == null || raw.isBlank()) {
             log.warn("Szkeptikus answer was blank for owner {} week {}", owner, weekStart);
@@ -302,9 +350,10 @@ public class KonziliumVerdictRound {
 
     private IntegratorResult runIntegrator(UUID owner, LocalDate weekStart, List<ClaimProposal> proposals,
                                             Map<Integer, SkepticVerdictDraft> verdicts,
-                                            List<KonziliumCrossTalkRound.Reaction> reactions) {
+                                            List<KonziliumCrossTalkRound.Reaction> reactions,
+                                            DossierContext dossier) {
         String systemPrompt = INTEGRATOR_MARKER + "\n" + integratorPersona() + "\n" + integratorContract();
-        String userMessage = numberedProposals(weekStart, proposals) + "\n"
+        String userMessage = numberedProposals(weekStart, proposals, dossier) + "\n"
                 + skepticVerdictsBlock(proposals, verdicts) + peerReactionsBlock(reactions);
         String raw = callSmart(owner, "integrate", systemPrompt, userMessage);
         if (raw == null || raw.isBlank()) {
@@ -370,7 +419,8 @@ public class KonziliumVerdictRound {
         }
     }
 
-    private static String numberedProposals(LocalDate weekStart, List<ClaimProposal> proposals) {
+    private String numberedProposals(LocalDate weekStart, List<ClaimProposal> proposals,
+                                      DossierContext dossier) {
         // The monthly bootstrap konzílium (Karakter S4, mezo-1gim.6) has no week — CharacterBootstrapService
         // passes weekStart=null here. weekStart.plusDays(6) would NPE, so render a null-safe label instead
         // of a week range for that path.
@@ -381,12 +431,27 @@ public class KonziliumVerdictRound {
                 .append(" (a javaslatok korábbi, még fel nem dolgozott megfigyelésekből is származhatnak)");
         for (int i = 0; i < proposals.size(); i++) {
             ClaimProposal p = proposals.get(i);
-            String target = NEW_KIND.equals(p.kind()) ? p.dimensionKey() : String.valueOf(p.claimId());
-            sb.append("\nP").append(i).append(". ").append(p.kind()).append(' ').append(target)
+            sb.append("\nP").append(i).append(". ").append(p.kind()).append(' ').append(target(p, dossier))
                     .append(" — ").append(p.text()).append(" (biztonság ").append(p.confidence())
                     .append(p.sensitive() ? ", ÉRZÉKENY" : "").append(") indoklás: ").append(p.rationale());
         }
         return sb.toString();
+    }
+
+    /** What the proposal is ABOUT, in words a judge can rule on. A NEW proposal names its
+     *  dimension; anything else names the claim it moves — its current text and confidence WORD,
+     *  never its UUID, which told neither judge anything (mezo-lghn). */
+    private static String target(ClaimProposal proposal, DossierContext dossier) {
+        if (NEW_KIND.equals(proposal.kind())) {
+            return proposal.dimensionKey();
+        }
+        CharacterClaimEntity claim = proposal.claimId() == null
+                ? null : dossier.claimsById().get(proposal.claimId());
+        if (claim == null) {
+            return CLAIM_NOT_FOUND;
+        }
+        return "a jelenlegi állítás (" + CharacterConfidenceWords.word(claim.getConfidence()) + "): "
+                + claim.getText();
     }
 
     /** The peers' stances, grouped by the proposal they are about (mezo-xlvr). Empty input yields

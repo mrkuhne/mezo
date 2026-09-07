@@ -42,7 +42,11 @@ public record CharacterProperties(
             /** Weekly konzílium cron (server zone) — fires for the week that just finished. */
             @NotBlank String cron,
             /** How many finished weeks back the job heals (the observation catch-up idiom). */
-            @Min(1) @Max(8) int catchUpWeeks) {}
+            @Min(1) @Max(8) int catchUpWeeks,
+            /** How many ACTIVE claims the chair's dossier block may carry. Over this the block is
+             *  capped freshest-first AND says so — a silently trimmed dossier would let the chair
+             *  conclude "we hold nothing like this" from an absence we created (mezo-lghn). */
+            @Min(10) @Max(500) int maxDossierClaims) {}
 
     public record Monthly(
             /** Monthly deep-read konzílium cron (server zone) — fires on a plain Sunday schedule;

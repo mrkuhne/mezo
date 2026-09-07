@@ -1741,6 +1741,8 @@ mezo:
       cron: "0 30 19 * * SUN"
       # Finished weeks back the job checks and self-heals (the observation catch-up idiom)
       catch-up-weeks: 2
+      # ACTIVE claims the chair's dossier block may carry before it is capped freshest-first.
+      max-dossier-claims: 80
     monthly:
       # Sunday 20:00 — a plain Sunday cron; CharacterMonthlyJob#isDeepReadDay narrows it in code to
       # the month's FIRST Sunday only (Spring cron cannot AND day-of-month with day-of-week).
