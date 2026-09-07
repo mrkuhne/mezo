@@ -50,6 +50,18 @@ public class LlmLogPopulator {
         return llmLogRepository.saveAndFlush(entity);
     }
 
+    /**
+     * A successful call that reported a CACHE READ (mezo-ozri.5). {@code cachedTokens} is a SUBSET
+     * of {@code promptTokens}, exactly as the providers report it — the hit ratio the AI-napló shows
+     * is the quotient of the two sums.
+     */
+    public LlmLogEntity logCached(UUID createdBy, CallKind kind, String feature, String servedModel,
+            int promptTokens, int cachedTokens, int candidatesTokens) {
+        LlmLogEntity entity = log(createdBy, kind, feature, servedModel, promptTokens, candidatesTokens);
+        entity.setCachedTokens(cachedTokens);
+        return llmLogRepository.saveAndFlush(entity);
+    }
+
     /** A failed call: no served model, no usage, no cost — it still happened, so it still counts. */
     public LlmLogEntity logError(UUID createdBy, CallKind kind, String feature, String requestedModel,
             String errorCode) {
