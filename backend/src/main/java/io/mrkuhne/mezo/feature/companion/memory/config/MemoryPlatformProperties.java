@@ -41,7 +41,9 @@ public record MemoryPlatformProperties(
         /** Optional uncertainty reranking controls. */
         @NotNull @Valid Reranker reranker,
         /** Human-readable context indicator thresholds. */
-        @NotNull @Valid Indicators indicators) {
+        @NotNull @Valid Indicators indicators,
+        /** Per-consumer overrides of the online serving limits. */
+        @NotNull @Valid Policies policies) {
 
     public record Retrieval(
             /** Candidates requested from each retriever before fusion. */
@@ -103,6 +105,20 @@ public record MemoryPlatformProperties(
             @Min(1) @Max(2000) int maxContentChars,
             /** Hard deadline for the optional smart-tier model call. */
             @Min(1) @Max(10000) int timeoutMs) {
+    }
+
+    public record Policies(
+            /** Reflexió S3 (mezo-eq85.3): the offline nightly-reflection consumer. */
+            @NotNull @Valid ReflectionPolicy reflection) {
+    }
+
+    public record ReflectionPolicy(
+            /** Candidates requested from each retriever before fusion. */
+            @Min(1) @Max(100) int candidateLimit,
+            /** Maximum memory-context budget for one reflection call, in estimated tokens. */
+            @Min(60) @Max(6000) int maxTokens,
+            /** Allows the LLM reranker on every reflection retrieval (no latency gate offline). */
+            boolean rerank) {
     }
 
     public record Indicators(

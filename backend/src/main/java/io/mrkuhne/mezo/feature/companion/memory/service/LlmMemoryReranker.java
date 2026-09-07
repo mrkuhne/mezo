@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.feature.companion.memory.service;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryCandidate;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryRequest;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryCandidateFusion.FusedCandidate;
@@ -61,7 +62,11 @@ public class LlmMemoryReranker implements MemoryReranker {
         if (!properties.reranker().enabled() || selected.isEmpty()) {
             return false;
         }
-        if (request.deep() || request.consumerPolicy() == io.mrkuhne.mezo.feature.companion.memory.dto.ConsumerPolicy.WEEKLY_MEMOIR) {
+        if (request.deep()
+                || request.consumerPolicy() == ConsumerPolicy.WEEKLY_MEMOIR
+                // mezo-eq85.3: the offline reflection consumer reranks by policy, not by uncertainty
+                || (request.consumerPolicy() == ConsumerPolicy.REFLECTION
+                        && properties.policies().reflection().rerank())) {
             return true;
         }
         if (selected.stream().anyMatch(item -> item.candidate().conflicting())) {

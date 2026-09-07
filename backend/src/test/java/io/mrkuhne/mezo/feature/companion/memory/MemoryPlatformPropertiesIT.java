@@ -34,7 +34,9 @@ class MemoryPlatformPropertiesIT {
         PREFIX + "reranker.enabled=false", PREFIX + "reranker.uncertainty-delta=0.002",
         PREFIX + "reranker.max-candidates=20", PREFIX + "reranker.max-content-chars=600",
         PREFIX + "reranker.timeout-ms=200",
-        PREFIX + "indicators.old-after-days=365"
+        PREFIX + "indicators.old-after-days=365",
+        PREFIX + "policies.reflection.candidate-limit=30", PREFIX + "policies.reflection.max-tokens=800",
+        PREFIX + "policies.reflection.rerank=true"
     };
 
     private final ApplicationContextRunner runner =
@@ -52,6 +54,9 @@ class MemoryPlatformPropertiesIT {
             assertThat(properties.reranker().enabled()).isFalse();
             assertThat(properties.reranker().timeoutMs()).isEqualTo(200);
             assertThat(properties.indicators().oldAfterDays()).isEqualTo(365);
+            assertThat(properties.policies().reflection().candidateLimit()).isEqualTo(30);
+            assertThat(properties.policies().reflection().maxTokens()).isEqualTo(800);
+            assertThat(properties.policies().reflection().rerank()).isTrue();
         });
     }
 
@@ -63,6 +68,14 @@ class MemoryPlatformPropertiesIT {
         assertInvalid(PREFIX + "reranker.max-candidates=0");
         assertInvalid(PREFIX + "reranker.timeout-ms=0");
         assertInvalid(PREFIX + "indicators.old-after-days=0");
+        assertInvalid(PREFIX + "policies.reflection.candidate-limit=0");
+        assertInvalid(PREFIX + "policies.reflection.max-tokens=59");
+    }
+
+    @Test
+    void testBinding_shouldFailStartup_whenReflectionPolicyBoundsExceedTheirUpperLimit() {
+        assertInvalid(PREFIX + "policies.reflection.candidate-limit=101");
+        assertInvalid(PREFIX + "policies.reflection.max-tokens=6001");
     }
 
     private void assertInvalid(String property) {

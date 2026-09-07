@@ -677,6 +677,12 @@ mezo:
       indicators:
         # Active memories older than this are explicitly labelled old in rendered context.
         old-after-days: 365
+      policies:
+        reflection:
+          # Offline consumer (mezo-eq85): deeper, no latency gate, reranker allowed.
+          candidate-limit: 30
+          max-tokens: 800
+          rerank: true
     recall:
       # V2.3 find_similar_past_days — episodic recall ranking: similarity × exp(-age/decay-days)
       # τ: how fast an old day's relevance fades (days)

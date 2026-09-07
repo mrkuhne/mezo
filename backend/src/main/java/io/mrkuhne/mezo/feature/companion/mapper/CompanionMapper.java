@@ -37,6 +37,7 @@ public interface CompanionMapper {
                 .title(entity.getTitle())
                 .startedAt(toOffset(entity.getCreatedAt()))
                 .lastMessageAt(toOffset(entity.getLastMessageAt()))
+                .seedPatternId(entity.getSeedPatternId())
                 .build();
     }
 
