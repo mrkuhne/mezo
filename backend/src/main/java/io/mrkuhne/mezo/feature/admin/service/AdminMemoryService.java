@@ -61,6 +61,13 @@ public class AdminMemoryService {
 
     private static final String NOTE_RERANKER_SKIPPED = "reranker_skipped";
     private static final String NOTE_REWRITE_SKIPPED = "rewrite_skipped";
+    /**
+     * A replay carries no conversation history (inventing one would change what the rewriter sees),
+     * and {@code MemoryQueryAnalyzer} only reports CONTEXT_DEPENDENT when there IS usable history —
+     * so the rewrite toggle can never actually fire on a replay. Say so rather than offer a switch
+     * that quietly does nothing.
+     */
+    private static final String NOTE_REWRITE_UNREACHABLE = "rewrite_unreachable_no_history";
     private static final String NOTE_PCA_UNAVAILABLE = "pca_unavailable";
 
     private final ObjectProvider<MemoryRetrievalRunRepository> runRepository;
@@ -144,7 +151,9 @@ public class AdminMemoryService {
         if (!Boolean.TRUE.equals(request.getReranker())) {
             notes.add(NOTE_RERANKER_SKIPPED);
         }
-        if (!Boolean.TRUE.equals(request.getRewrite())) {
+        if (Boolean.TRUE.equals(request.getRewrite())) {
+            notes.add(NOTE_REWRITE_UNREACHABLE);
+        } else {
             notes.add(NOTE_REWRITE_SKIPPED);
         }
         // Slice 1 declares queryProjection but never fills it: the PCA basis arrives with the map

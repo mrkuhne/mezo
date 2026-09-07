@@ -74,15 +74,26 @@ public class MemoryItemPopulator {
     }
 
     public MemoryRetrievalRunEntity run(UUID createdBy, UUID traceId) {
+        return run(createdBy, traceId, "NEW", "Hogyan aludtam futás után?",
+                Map.of("denseCandidates", 1));
+    }
+
+    /**
+     * Full control over the two facts the admin explorer reads off a run (mezo-4qyt): the serving
+     * mode (a SHADOW run never reaches the model, so it can carry no prompt imprint) and the
+     * retriever trace (the per-retriever duration/candidate/error strip).
+     */
+    public MemoryRetrievalRunEntity run(UUID createdBy, UUID traceId, String servingMode,
+                                        String rawQuery, Map<String, Object> retrieverTrace) {
         MemoryRetrievalRunEntity entity = new MemoryRetrievalRunEntity();
         entity.setCreatedBy(createdBy);
         entity.setConsumerPolicy("CHAT_AMBIENT");
         entity.setQueryMode("RAW");
-        entity.setRawQuery("Hogyan aludtam futás után?");
+        entity.setRawQuery(rawQuery);
         entity.setEmbeddingVersion("gemini-embedding-001-768-v1");
-        entity.setServingMode("NEW");
+        entity.setServingMode(servingMode);
         entity.setDurationMs(12L);
-        entity.setRetrieverTrace(Map.of("denseCandidates", 1));
+        entity.setRetrieverTrace(retrieverTrace);
         entity.setTraceId(traceId);
         return runRepository.saveAndFlush(entity);
     }

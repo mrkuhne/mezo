@@ -14,9 +14,12 @@ import io.mrkuhne.mezo.feature.companion.memory.dto.RetrievalServingMode;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryCandidateFusion.FusedCandidate;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryRetrievalAuditWriter.AuditCommand;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryRetrievalAuditWriter.AuditResult;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import io.mrkuhne.mezo.techcore.security.LlmActorContext;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -29,6 +32,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -92,6 +96,7 @@ public class MemoryContextService {
     private final MemoryReranker reranker;
     private final MemoryRetrievalAuditWriter auditWriter;
     private final MemoryPlatformProperties properties;
+    private final LlmCallContextHolder llmCallContextHolder;
     private final AsyncTaskExecutor applicationTaskExecutor;
 
     public MemoryContext retrieve(MemoryRequest request) {
@@ -193,12 +198,22 @@ public class MemoryContextService {
                 request, query, properties.servingEmbeddingVersion(), candidateLimit);
         Map<String, RetrieverTask> tasks = new LinkedHashMap<>();
         long timeoutNanos = TimeUnit.MILLISECONDS.toNanos(properties.execution().retrieverTimeoutMs());
+        // mezo-4qyt: both LLM breadcrumb ThreadLocals are plain, so a retriever's embed call on a
+        // pool thread sees neither the actor nor the feature. Capture them HERE, on the calling
+        // thread, and re-bind them inside the task — but only the admin replay's, deliberately:
+        // for a chat turn the override is null and the ambient context is not the replay, so that
+        // path's rows keep exactly the (unattributed) shape they have today. Widening this to
+        // every caller would retroactively re-label all existing embed traffic.
+        UUID actorOverride = LlmActorContext.override();
+        LlmCallContext ambient = llmCallContextHolder.get();
+        LlmCallContext propagated = ambient.isAdminReplay() ? ambient : null;
         retrievers.values().stream()
                 .sorted(Comparator.comparing(MemoryRetriever::name))
                 .forEach(retriever -> {
                     long deadline = System.nanoTime() + timeoutNanos;
                     try {
-                        Future<RetrieverOutcome> future = applicationTaskExecutor.submit(() -> execute(retriever, input));
+                        Future<RetrieverOutcome> future = applicationTaskExecutor.submit(
+                                () -> executeInScope(retriever, input, actorOverride, propagated));
                         tasks.put(retriever.name(), new RetrieverTask(future, deadline, null));
                     } catch (RuntimeException exception) {
                         tasks.put(retriever.name(), new RetrieverTask(null, deadline,
@@ -259,6 +274,18 @@ public class MemoryContextService {
             trace.put(entry.getKey(), details);
         }
         return new RetrievalBatch(Map.copyOf(candidates), Map.copyOf(trace), successCount);
+    }
+
+    /** Re-binds the captured breadcrumbs (if any) around one retriever's work on the pool thread. */
+    private RetrieverOutcome executeInScope(MemoryRetriever retriever, RetrievalInput input,
+            UUID actorOverride, LlmCallContext context) {
+        Supplier<RetrieverOutcome> work = () -> execute(retriever, input);
+        Supplier<RetrieverOutcome> labelled = context == null
+                ? work
+                : () -> llmCallContextHolder.runWith(context, work);
+        return actorOverride == null
+                ? labelled.get()
+                : LlmActorContext.runAsOverride(actorOverride, labelled);
     }
 
     private static RetrieverOutcome execute(MemoryRetriever retriever, RetrievalInput input) {
