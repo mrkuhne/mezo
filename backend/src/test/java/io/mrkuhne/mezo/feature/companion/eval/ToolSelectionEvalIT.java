@@ -12,6 +12,7 @@ import io.mrkuhne.mezo.feature.companion.eval.ToolSelectionEvalMetrics.EvalRepor
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.service.ChatService;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
+import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
 import io.mrkuhne.mezo.feature.llmlog.entity.LlmLogEntity;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmLogRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
@@ -149,6 +150,13 @@ class ToolSelectionEvalIT extends AbstractIntegrationTest {
         log.info("\n{}", markdown);
         writeArtifacts(markdown, answers);
 
+        // A provider that rejects every call (no credit, wrong key, unknown model) would otherwise
+        // report a tidy 0% and look like a quality result. It is an infrastructure failure, and it
+        // says so — read the WARN above for the provider's own words.
+        assertThat(report.errors())
+            .as("every case failed against %s — the provider rejected the calls", TARGET.model())
+            .isLessThan(cases.size());
+
         // A REPORT, not a gate: the go/no-go decision is a human reading these numbers against the
         // incumbent's (spec §M2). What IS asserted is that the harness measured what it claims to.
         assertThat(outcomes).hasSameSizeAs(cases);
@@ -160,12 +168,15 @@ class ToolSelectionEvalIT extends AbstractIntegrationTest {
      * Every logged row of this run must come from the model under test — the trap the pre-S3 gate
      * hid: a provider switch that silently keeps answering from the incumbent still produces a
      * plausible-looking accuracy number, for the wrong model. Embedding and audio rows are already
-     * filtered out by the caller — those legitimately stay on Gemini (spec §A1, §E1).
+     * filtered out by the caller — those legitimately stay on Gemini (spec §A1, §E1). FAILED rows
+     * carry no served model at all (the provider never answered), so only successes are checked;
+     * a run where everything failed is caught by the error-count assertion instead, which can name
+     * the actual cause.
      */
     private void assertServedModel(List<LlmLogEntity> rows) {
         assertThat(rows).isNotEmpty();
-        assertThat(rows).allSatisfy(row ->
-            assertThat(row.getServedModel()).contains(TARGET.model()));
+        assertThat(rows).filteredOn(row -> row.getStatus() == CallStatus.SUCCESS)
+            .allSatisfy(row -> assertThat(row.getServedModel()).contains(TARGET.model()));
     }
 
     private List<LlmLogEntity> awaitLogRows() {
