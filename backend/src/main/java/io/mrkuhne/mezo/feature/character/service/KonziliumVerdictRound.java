@@ -18,6 +18,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -61,6 +62,8 @@ public class KonziliumVerdictRound {
     private static final String DEFAULT_REASON = "nem került döntésre";
     private static final String ACTIVE = "ACTIVE";
     private static final String CLAIM_NOT_FOUND = "a célzott állítás nem található";
+    private static final Set<String> VALID_NOTES =
+            Set.of("DUPLICATE", "CONTRADICTS", "NOT_FOR_DOSSIER", "REHOME");
 
     private final CharacterDimensionRepository dimensionRepository;
     private final CharacterClaimRepository claimRepository;
@@ -77,7 +80,8 @@ public class KonziliumVerdictRound {
                                BigDecimal suggestedConfidence) {}
 
     /** One Integrátor ruling, before defaulting/clamping. */
-    record IntegratorRulingDraft(Integer index, Boolean accept, BigDecimal confidence, String reason) {}
+    record IntegratorRulingDraft(Integer index, Boolean accept, BigDecimal confidence, String reason,
+                                 Boolean dissent, String note, String suggestedDimensionKey) {}
 
     /** One Integrátor chapter proposal, before the blank-title/cap filter. */
     record IntegratorChapterDraft(String title, String rationale) {}
@@ -187,7 +191,7 @@ public class KonziliumVerdictRound {
         for (int i = 0; i < proposals.size(); i++) {
             ClaimProposal proposal = proposals.get(i);
             IntegratorRulingDraft draft = rulingsByIndex.get(i);
-            rulings.add(toRuling(proposal, draft));
+            rulings.add(toRuling(proposal, draft, skepticResult.verdicts().get(i)));
         }
 
         List<ChapterProposal> chapters = new ArrayList<>();
@@ -231,11 +235,29 @@ public class KonziliumVerdictRound {
         return KEEP.equals(verdict) || WEAKEN.equals(verdict) || KILL.equals(verdict);
     }
 
-    private static ClaimRuling toRuling(ClaimProposal proposal, IntegratorRulingDraft draft) {
+    /**
+     * One proposal's ruling, with the chair's asymmetric right to overrule the Szkeptikus enforced
+     * HERE rather than in the prompt (mezo-lghn): tightening is always allowed, but an accept over
+     * a KILL is only allowed when the proposal is not sensitive. The Szkeptikus is the guardrail on
+     * over-interpreting a sensitive signal, so that one KILL is final — a prompt sentence alone
+     * would leave the guardrail to the model's goodwill.
+     */
+    private static ClaimRuling toRuling(ClaimProposal proposal, IntegratorRulingDraft draft,
+                                         SkepticVerdictDraft verdict) {
         if (draft == null) {
             return new ClaimRuling(proposal, false, null, DEFAULT_REASON);
         }
         boolean accepted = draft.accept() != null && draft.accept();
+        String reason = draft.reason() != null && !draft.reason().isBlank() ? draft.reason() : DEFAULT_REASON;
+
+        boolean sensitiveKill = proposal.sensitive() && verdict != null && KILL.equals(verdict.verdict());
+        if (accepted && sensitiveKill) {
+            log.warn("Chair accepted an ÉRZÉKENY proposal the Szkeptikus killed — dropping the accept "
+                    + "(kind {}, dimension {}, claim {})", proposal.kind(), proposal.dimensionKey(),
+                    proposal.claimId());
+            return new ClaimRuling(proposal, false, null, reason, false, "NOT_FOR_DOSSIER", null);
+        }
+
         BigDecimal confidence = draft.confidence();
         // The proposal-confidence fallback is a NEW-only concern (there is no "current value" to
         // move for a brand-new claim). For UP/DOWN an omitted confidence must stay null so
@@ -247,8 +269,18 @@ public class KonziliumVerdictRound {
         if (accepted && confidence != null) {
             confidence = clamp(confidence);
         }
-        String reason = draft.reason() != null && !draft.reason().isBlank() ? draft.reason() : DEFAULT_REASON;
-        return new ClaimRuling(proposal, accepted, confidence, reason);
+        boolean dissent = draft.dissent() != null && draft.dissent()
+                && verdict != null && contradicts(accepted, verdict.verdict());
+        String note = draft.note() != null && VALID_NOTES.contains(draft.note()) ? draft.note() : null;
+        String rehome = "REHOME".equals(note) ? draft.suggestedDimensionKey() : null;
+        return new ClaimRuling(proposal, accepted, confidence, reason, dissent, note, rehome);
+    }
+
+    /** Whether the chair's decision actually goes against the Szkeptikus — a self-declared
+     *  {@code dissent} on a ruling that agrees with the verdict is dropped, so the flag can be
+     *  trusted by every surface that renders it. */
+    private static boolean contradicts(boolean accepted, String verdict) {
+        return accepted ? KILL.equals(verdict) : KEEP.equals(verdict) || WEAKEN.equals(verdict);
     }
 
     private static BigDecimal clamp(BigDecimal value) {
@@ -389,20 +421,35 @@ public class KonziliumVerdictRound {
     private static String integratorPersona() {
         return """
                 Te vagy Mezo, {{NÉV}} személyes egészség- és teljesítmény-társa, most integrátor \
-                szerepben a heti konzíliumon. Higgadt, tárgyszerű hangon döntesz. Minden javaslatot \
-                a Szkeptikus ellenérveivel együtt mérlegelsz — és ahol a szakértők egymás \
-                javaslatára is állást foglaltak, azt is figyelembe veszed —, és csak azt fogadod \
-                el, amit a bizonyíték tényleg alátámaszt. Új fejezetet (chapter) csak akkor \
-                javasolsz, ha valóban önálló, tartós témáról van szó — ritkán.""";
+                szerepben a heti konzíliumon. Higgadt, tárgyszerű hangon döntesz. \
+                A bizonyíték elégségességét a Szkeptikus már megítélte — ne bíráld felül újra. \
+                Csak ott térj el tőle, ahol olyat látsz, amit ő nem láthatott: a dossziét. \
+                A te öt kérdésed: tartunk-e már ilyen állítást (duplikáció) · ellentmond-e \
+                valamelyik meglévő állításnak, és akkor melyik mozduljon · a bizalom eddigi útja \
+                alapján mennyit mozdulhat most a szint · beírjuk-e ezt egy emberről szóló állandó \
+                dossziéba, még ha igaz is (az érzékeny állításokat itt mérlegeld) · önálló, \
+                tartós téma-e, ami külön fejezetet érdemel — ez ritka. \
+                Ahol a szakértők egymás javaslatára is állást foglaltak, azt is figyelembe veszed. \
+                A Szkeptikus KEEP vagy WEAKEN döntése ellenére elvethetsz. KILL ellenére csak \
+                akkor fogadhatsz el, ha a javaslat NEM érzékeny — érzékeny KILL végleges.""";
     }
 
     private static String integratorContract() {
         return """
                 Válaszolj KIZÁRÓLAG egy JSON objektummal, magyarázat és formázás nélkül, pontosan \
                 ebben a formában: {"rulings":[{"index":0,"accept":true|false,"confidence":0.0-1.0,\
-                "reason":"..."}],"chapters":[{"title":"...","rationale":"..."}]}. A felsorolt \
-                javaslatok mindegyikéhez (P0, P1, …) adj egy rulings-bejegyzést. Legfeljebb 1 \
-                chapters-bejegyzést adj, és csak akkor, ha tényleg indokolt.""";
+                "reason":"...","dissent":true|false,"note":"DUPLICATE|CONTRADICTS|NOT_FOR_DOSSIER|\
+                REHOME","suggestedDimensionKey":"..."}],"chapters":[{"title":"...",\
+                "rationale":"..."}]}.
+                A "reason" CSAK azt tartalmazza, amit te teszel hozzá — a Szkeptikus érvét ne \
+                mondd el újra. Ha egyetértesz vele és nincs mit hozzátenned, a "reason" legyen \
+                rövid és mondja ezt ki.
+                A "dissent" akkor true, ha a döntésed szembemegy a Szkeptikus döntésével; ilyenkor \
+                a "reason" nevezze meg, mit nem láthatott a Szkeptikus.
+                A "note" csak akkor szerepeljen, ha tényleg találtál ilyet; a \
+                "suggestedDimensionKey" csak REHOME mellé.
+                A felsorolt javaslatok mindegyikéhez (P0, P1, …) adj egy rulings-bejegyzést. \
+                Legfeljebb 1 chapters-bejegyzést adj, és csak akkor, ha tényleg indokolt.""";
     }
 
     // ── shared rendering/parsing ──────────────────────────────────────────────

@@ -461,11 +461,81 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
         // The chair is called last, so lastUserMessage() is ITS prompt.
         assertThat(fakeCompanionLlm.lastUserMessage())
                 .contains("bizalom útja")
-                .contains("figyeljük (kezdet)") // 0.40 is below the 0.50 LIKELY threshold
-                .contains("valószínű (megerősítés)") // 0.60 is at/above it
+                // one joined-substring assertion, not two separate contains(): plain contains on
+                // each point alone would not pin their relative ORDER, so a pure reversal (which
+                // would tell the chair confidence is FALLING when it is actually rising) would
+                // still pass (mezo-lghn task 4 drive-by fix).
+                .contains("figyeljük (kezdet) → valószínű (megerősítés)")
                 .contains("felhasználói visszajelzés")
                 .contains("TALAL")
                 .contains("egyetértek")
                 .doesNotContainPattern("0\\.40|0\\.60");
+    }
+
+    @Test
+    void theChairMayNotAcceptOverASensitiveKill() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "mental", "pszichologus");
+        ClaimProposal proposal = new ClaimProposal("pszichologus", "NEW", dimension.getKey(), null,
+                "Belső feszültség a randizás körül. "
+                        + "[fake-char-skeptic:[{\"index\":0,\"verdict\":\"KILL\","
+                        + "\"argument\":\"Két megfigyelés egy napról — túlinterpretálás.\"}]] "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":true,"
+                        + "\"confidence\":0.6,\"reason\":\"Mégis felveszem.\",\"dissent\":true}],"
+                        + "\"chapters\":[]}]",
+                new BigDecimal("0.60"), true, "Két naplóbejegyzés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.rulings()).singleElement().satisfies(ruling -> {
+            assertThat(ruling.accepted()).isFalse();
+            assertThat(ruling.dissent()).isFalse();
+        });
+        claimLifecycle.apply(owner, UUID.randomUUID(), result.rulings());
+        assertThat(claimRepository.findByCreatedByAndDimensionIdAndStatusOrderByConfidenceDesc(
+                owner, dimension.getId(), "ACTIVE")).isEmpty();
+    }
+
+    @Test
+    void theChairMayAcceptOverANonSensitiveKillWithDissent() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Rekompozíció zajlik. "
+                        + "[fake-char-skeptic:[{\"index\":0,\"verdict\":\"KILL\","
+                        + "\"argument\":\"Három adatpont kevés.\"}]] "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":true,"
+                        + "\"confidence\":0.6,\"reason\":\"A dossziéban két korábbi mérés is ezt mutatja, "
+                        + "amit a Szkeptikus nem látott.\",\"dissent\":true}],\"chapters\":[]}]",
+                new BigDecimal("0.60"), false, "Három heti mérés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.rulings()).singleElement().satisfies(ruling -> {
+            assertThat(ruling.accepted()).isTrue();
+            assertThat(ruling.dissent()).isTrue();
+        });
+    }
+
+    @Test
+    void theChairsIntegrationNoteSurvivesOntoTheRuling() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Rekompozíció zajlik. "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":false,"
+                        + "\"reason\":\"Ezt már tartjuk a Fizikai dimenzióban.\",\"note\":\"DUPLICATE\"}],"
+                        + "\"chapters\":[]}]",
+                new BigDecimal("0.60"), false, "Három heti mérés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.rulings()).singleElement().satisfies(ruling -> {
+            assertThat(ruling.accepted()).isFalse();
+            assertThat(ruling.note()).isEqualTo("DUPLICATE");
+        });
     }
 }
