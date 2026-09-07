@@ -409,7 +409,7 @@ export const MOCK_CONFERENCES: CharacterConferenceSummary[] = [
   { id: 'w2', kind: 'WEEKLY', weekStart: '2026-08-24', generatedAt: '2026-08-30T07:00:00Z',
     outcome: { accepted: 2, retired: 1, portraitRewritten: 1, other: 0 } },
   { id: 'w1', kind: 'WEEKLY', weekStart: '2026-08-17', generatedAt: '2026-08-23T07:00:00Z',
-    outcome: { accepted: 2, retired: 0, portraitRewritten: 0, other: 1 } },
+    outcome: { accepted: 1, retired: 0, portraitRewritten: 0, other: 0 } },
   { id: 'w0', kind: 'WEEKLY', weekStart: '2026-08-10', generatedAt: '2026-08-16T07:00:00Z',
     outcome: { accepted: 0, retired: 0, portraitRewritten: 0, other: 0 } },
   { id: 'm1', kind: 'MONTHLY', weekStart: null, generatedAt: '2026-08-01T07:00:00Z',
@@ -422,7 +422,7 @@ export const MOCK_CONFERENCES: CharacterConferenceSummary[] = [
 
 // TRANSCRIPT (prototype's `var TRANSCRIPT`) — the latest weekly konzílium (w2), full turn-by-turn
 // exchange as it actually ran. `changes` synthesizes the Kimenet outcome (2 elfogadva · 1
-// nyugdíjazva · 3 portré átírva) into itemized entries the FE can list.
+// nyugdíjazva · 1 portré átírva) into itemized entries the FE can list.
 //
 // The pszichologus turn's second line carries the legacy "DANIEL VÁLASZA — " literal (pre-S6
 // conferences keep this forever in their stored transcript envelope), and the taplalkozo turn's
@@ -613,7 +613,25 @@ export const MOCK_BOOTSTRAP_CONFERENCE: CharacterConferenceResponse = {
     { persona: 'mezo', text: 'A teljes eddigi történet beolvasva — 9 kezdő állítás felvéve a dossziéba.' },
   ],
   deliberationSource: null,
-  changes: [{ kind: 'BOOTSTRAP', dimensionKey: null, summary: 'a teljes eddigi történet beolvasva · 9 kezdő állítás' }],
+  // Fix round 1 (mezo-sp9w, review finding I2): the backend never emits a `BOOTSTRAP`-kind
+  // change — `BOOTSTRAP` is a conference *kind*, not a change kind (there is no such change
+  // kind anywhere in ClaimLifecycle.java). Every accepted claim gets its own `CLAIM_ACCEPTED`
+  // change, exactly like every other conference; the bootstrap ceremony also writes the very
+  // first portrait for each dimension it touches, hence one `PORTRAIT_REWRITTEN`. Nine claims,
+  // spread across dimensions rather than piled on one, keeps the list-row outcome
+  // ({ accepted: 9, retired: 0, portraitRewritten: 1, other: 0 }) derivable from this array.
+  changes: [
+    { kind: 'CLAIM_ACCEPTED', dimensionKey: 'physical', summary: 'Kezdő állítás felvéve: a testzsírszázalék lassan csökken, a testsúly stagnál.' },
+    { kind: 'CLAIM_ACCEPTED', dimensionKey: 'athletic', summary: 'Kezdő állítás felvéve: a RIR-kalibráció megbízható.' },
+    { kind: 'CLAIM_ACCEPTED', dimensionKey: 'nutrition', summary: 'Kezdő állítás felvéve: hétköznap a fehérjecél szinte mindig teljesül.' },
+    { kind: 'CLAIM_ACCEPTED', dimensionKey: 'recovery', summary: 'Kezdő állítás felvéve: hétvégén átlag 40 perccel később fekszik le.' },
+    { kind: 'CLAIM_ACCEPTED', dimensionKey: 'mental', summary: 'Kezdő állítás felvéve: hét vége felé gyakrabban jelenik meg feszültség a naplóban.' },
+    { kind: 'CLAIM_ACCEPTED', dimensionKey: 'discipline', summary: 'Kezdő állítás felvéve: a logolási kihagyások ritkák és gyorsan helyreállnak.' },
+    { kind: 'CLAIM_ACCEPTED', dimensionKey: 'life', summary: 'Kezdő állítás felvéve: Petra a leggyakrabban említett személy.' },
+    { kind: 'CLAIM_ACCEPTED', dimensionKey: 'self-audit', summary: 'Kezdő állítás felvéve: a Szkeptikus saját találati arányának első mérése.' },
+    { kind: 'CLAIM_ACCEPTED', dimensionKey: 'chapter-work', summary: 'Kezdő állítás felvéve: sűrű munkahetek után együtt csúszik a logolás és a lefekvés.' },
+    { kind: 'PORTRAIT_REWRITTEN', dimensionKey: 'physical', summary: 'Portré megírva: a testösszetétel-fejezet első változata.' },
+  ],
 }
 
 // ---------------------------------------------------------------------------
