@@ -1,7 +1,8 @@
 // Layout-aware loading skeleton for MesoTemplatesPage (mezo-tlwa). Mirrors the real shape —
-// page-header → a section eyebrow line → ~2 template-card placeholders (title/goal/chip row
-// + the two action rows) — so the swap to real content does not reflow. Sizes track the DS
-// re-skin (36px h1, 44px header action) like MesocycleSkeleton.
+// page-header → the shelf stat strip → ~2 poster placeholders (head + disc, week arc, day
+// spine, chip row, foot) — so the swap to real content does not reflow. Sizes track the DS
+// re-skin (36px h1, 44px header action) like MesocycleSkeleton, and the poster anatomy of
+// MesoTemplateCard since mezo-3a9a.
 import { Skeleton, SkeletonCard } from '@/shared/ui/Skeleton'
 
 export default function MesoTemplatesSkeleton() {
@@ -12,11 +13,11 @@ export default function MesoTemplatesSkeleton() {
         <Skeleton width={64} height={44} radius={999} />
       </div>
       <div style={{ padding: '8px 24px 24px' }}>
-        <div style={{ marginBottom: 12 }}><Skeleton width={100} height={12} /></div>
-        <div className="col gap-sm">
+        <Skeleton height={62} radius={18} />
+        <div className="col gap-sm" style={{ marginTop: 12 }}>
           {Array.from({ length: 2 }, (_, i) => (
             <SkeletonCard key={i} style={{ padding: 16 }}>
-              <div className="col gap-sm">
+              <div className="col gap-sm" style={{ marginTop: 12 }}>
                 <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
                   <Skeleton width={56} height={12} /><Skeleton width={72} height={12} />
                 </div>
