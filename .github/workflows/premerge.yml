@@ -8,13 +8,14 @@ name: premerge
 # moves but does NOT re-run the workflow. A PR's green check can therefore describe a
 # merge with a main that no longer exists, and the real merge lands red on main —
 # blocking every other open PR until someone notices. It happened twice: the mezo-atry
-# AppHeader wave (stale visual goldens) and PR #393 (docs/CODEMAP.md stale on main for
-# three commits, because two branches each regenerated it against their own base).
+# AppHeader wave (stale visual goldens, a gate since retired in mezo-ryb6) and PR #393
+# (docs/CODEMAP.md stale on main for three commits, because two branches each
+# regenerated it against their own base).
 #
 # A full ci.yml re-run costs ~21.5 min wall clock / ~42 runner-minutes, dominated by
 # the backend and frontend suites — which are the LEAST likely to break this way. This
 # workflow runs only what a merge can actually break: the convention/generator gates
-# (~30 s), contract-drift (~25 s) and the visual goldens (~5 min). ~7 minutes total.
+# (~30 s) and contract-drift (~25 s). ~2 minutes total.
 #
 #   gh workflow run premerge.yml -f pr=<number>
 on:
@@ -115,21 +116,3 @@ jobs:
           (cd frontend && pnpm install --frozen-lockfile && pnpm generate:api)
           git diff --exit-code -- api/openapi.yml frontend/src/data/_client/api.gen.ts \
             || { echo '::error::Merging this PR makes the committed contract artifacts stale — two branches each regenerated them against their own base. Merge main into the branch, regenerate, commit.'; exit 1; }
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: pw-${{ runner.os }}-${{ hashFiles('frontend/pnpm-lock.yaml') }}
-      - run: pnpm exec playwright install chromium --with-deps
-        working-directory: frontend
-      - name: Visual goldens on the merge result
-        working-directory: frontend
-        run: pnpm test:visual
-      - name: Upload visual diffs on failure
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: premerge-visual-diffs
-          path: frontend/test-results/
-          retention-days: 7
