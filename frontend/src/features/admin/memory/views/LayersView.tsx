@@ -111,7 +111,7 @@ export function LayersView({ userId, isOwner }: { userId: string; isOwner: boole
 
   return (
     <MosaicDesktop>
-      <AdminTile query={health} wash="sky" eyebrow="memory_vector · státusz szerint" span={8}>
+      <AdminTile query={health} wash="sky" eyebrow="memory_vector · státusz szerint" span={6}>
         <div className="am-statgrid" style={{ marginTop: 8 }}>
           <Stat value={okCount} label="ok" />
           <Stat value={staleCount} label="elavult (stale)" to={dataBrowserLink(userId, 'memory_vector')} />
@@ -153,7 +153,7 @@ export function LayersView({ userId, isOwner }: { userId: string; isOwner: boole
         </div>
       </AdminTile>
 
-      <AdminTile query={health} wash="coral" eyebrow="memory_item · állapot szerint" span={4}>
+      <AdminTile query={health} wash="coral" eyebrow="memory_item · állapot szerint" span={6}>
         <div className="am-joblist" style={{ marginTop: 8 }}>
           {h.itemsByState.map((s) => (
             <JobRow
