@@ -398,6 +398,254 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
         assertThat(skepticTurn.text()).doesNotContain("0.55");
     }
 
+    /** mezo-lghn task 5: a ruling that merely RATIFIES the Szkeptikus — same accept, same
+     *  confidence WORD tier, no dissent, no note — must not paraphrase the Szkeptikus's own
+     *  argument into a per-proposal chair line; it collapses into the aggregate "nem teszek hozzá"
+     *  line instead. The canned Szkeptikus KEEPs with no {@code suggestedConfidence} of its own, so
+     *  the skeptic verdict here is SCRIPTED with one in the same word tier (0.6 → "valószínű") as
+     *  the chair's canned 0.6 — otherwise {@code addsSomething}'s word-comparison arm would
+     *  (correctly) treat a chair-set word nobody suggested as new information, which is not the
+     *  scenario this test is pinning. */
+    @Test
+    void aPlainRatificationRoundLeavesNoPerProposalEchoInTheChairsTurn() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Rekompozíció zajlik. [fake-char-skeptic:[{\"index\":0,\"verdict\":\"KEEP\","
+                        + "\"argument\":\"Fake ellenérv: elfogadható.\",\"suggestedConfidence\":0.6}]]",
+                new BigDecimal("0.60"), false, "Három heti mérés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        ConferenceTranscriptEnvelope.Turn chair = result.turns().stream()
+                .filter(turn -> turn.persona().equals("mezo"))
+                .findFirst().orElseThrow();
+        assertThat(chair.text()).contains("nem teszek hozzá");
+        assertThat(chair.text()).doesNotContain("Fake döntés.");
+    }
+
+    /** mezo-lghn task 5: confidence must reach the transcript as a WORD, never a raw decimal —
+     *  the old code appended {@code ruling.ruledConfidence()} directly. The header is asserted
+     *  first so the negative decimal-pattern check below cannot false-positive on the "1/1" count. */
+    @Test
+    void theChairsTurnNeverCarriesARawDecimal() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Rekompozíció zajlik. "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":true,"
+                        + "\"confidence\":0.8,\"reason\":\"A dosszié két korábbi mérése is ezt mutatja.\","
+                        + "\"note\":\"CONTRADICTS\"}],\"chapters\":[]}]",
+                new BigDecimal("0.60"), false, "Három heti mérés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        ConferenceTranscriptEnvelope.Turn chair = result.turns().stream()
+                .filter(turn -> turn.persona().equals("mezo"))
+                .findFirst().orElseThrow();
+        assertThat(chair.text()).contains("Mezo: 1/1 javaslat elfogadva.");
+        assertThat(chair.text()).containsPattern("biztos|valószínű|figyeljük");
+        assertThat(chair.text()).doesNotContainPattern("\\d\\.\\d");
+    }
+
+    /** mezo-lghn task 5, {@code addsSomething}'s DISSENT arm: a self-declared dissent must show a
+     *  per-proposal line even when the chair's confidence word matches what the Szkeptikus
+     *  suggested (which alone would ratify) — so deleting the {@code ruling.dissent() ||} disjunct
+     *  cannot hide behind the word-comparison arm returning the same answer. */
+    @Test
+    void aDissentingAcceptIsShownEvenWhenTheConfidenceWordWouldOtherwiseRatify() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Rekompozíció zajlik. "
+                        + "[fake-char-skeptic:[{\"index\":0,\"verdict\":\"KILL\","
+                        + "\"argument\":\"Túlinterpretálás.\",\"suggestedConfidence\":0.6}]] "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":true,"
+                        + "\"confidence\":0.6,\"reason\":\"A dossziéban két korábbi mérés is ezt mutatja, "
+                        + "amit a Szkeptikus nem látott.\",\"dissent\":true}],\"chapters\":[]}]",
+                new BigDecimal("0.60"), false, "Három heti mérés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        ConferenceTranscriptEnvelope.Turn chair = result.turns().stream()
+                .filter(turn -> turn.persona().equals("mezo"))
+                .findFirst().orElseThrow();
+        assertThat(chair.text()).contains("[a Szkeptikus döntése ellenében]");
+        assertThat(chair.text()).doesNotContain("nem teszek hozzá");
+    }
+
+    /** mezo-lghn task 5, {@code addsSomething}'s NOTE arm: an integration note must show a
+     *  per-proposal line even when the confidence word matches (no dissent either) — so deleting
+     *  the {@code || ruling.note() != null} disjunct cannot hide behind the word-comparison arm.
+     *  {@link #theChairsTurnNeverCarriesARawDecimal} also carries a note, but its Szkeptikus never
+     *  suggests a confidence, so the word-comparison arm's {@code suggested == null} short-circuit
+     *  would ALSO return true if the note check were deleted — it cannot isolate this branch on its
+     *  own; this test scripts a matching suggestion specifically to close that gap. */
+    @Test
+    void theNoteArmIsShownEvenWhenTheConfidenceWordWouldOtherwiseRatify() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Rekompozíció zajlik. "
+                        + "[fake-char-skeptic:[{\"index\":0,\"verdict\":\"KEEP\","
+                        + "\"argument\":\"Fake ellenérv: elfogadható.\",\"suggestedConfidence\":0.8}]] "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":true,"
+                        + "\"confidence\":0.8,\"reason\":\"Ezt már tartjuk.\",\"note\":\"DUPLICATE\"}],"
+                        + "\"chapters\":[]}]",
+                new BigDecimal("0.60"), false, "Három heti mérés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        ConferenceTranscriptEnvelope.Turn chair = result.turns().stream()
+                .filter(turn -> turn.persona().equals("mezo"))
+                .findFirst().orElseThrow();
+        assertThat(chair.text()).contains("már tartunk ilyet");
+        assertThat(chair.text()).doesNotContain("nem teszek hozzá");
+    }
+
+    /** mezo-lghn task 5, {@code addsSomething}'s REJECTION arm, KILL half: a plain rejection that
+     *  merely ratifies the Szkeptikus's own KILL adds nothing and collapses into the aggregate
+     *  line — it must NOT get a per-proposal echo of the chair's reason. */
+    @Test
+    void aRejectionThatRatifiesAKillCollapsesIntoTheAggregateLine() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Rekompozíció zajlik. "
+                        + "[fake-char-skeptic:[{\"index\":0,\"verdict\":\"KILL\","
+                        + "\"argument\":\"Túlinterpretálás.\"}]] "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":false,"
+                        + "\"reason\":\"Egyetértek, nincs elég bizonyíték.\"}],\"chapters\":[]}]",
+                new BigDecimal("0.60"), false, "Három heti mérés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        ConferenceTranscriptEnvelope.Turn chair = result.turns().stream()
+                .filter(turn -> turn.persona().equals("mezo"))
+                .findFirst().orElseThrow();
+        assertThat(chair.text()).contains("nem teszek hozzá");
+        assertThat(chair.text()).doesNotContain("Egyetértek, nincs elég bizonyíték.");
+    }
+
+    /** mezo-lghn task 5, {@code addsSomething}'s REJECTION arm, KEEP half: a rejection that goes
+     *  AGAINST the Szkeptikus's KEEP must be shown even when the model never bothers to set
+     *  {@code dissent} — a real disagreement must not be able to hide behind a forgetful model. */
+    @Test
+    void aRejectionOverAKeepIsShownEvenWithoutADissentFlag() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Rekompozíció zajlik. "
+                        + "[fake-char-skeptic:[{\"index\":0,\"verdict\":\"KEEP\","
+                        + "\"argument\":\"Fake ellenérv: elfogadható.\"}]] "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":false,"
+                        + "\"reason\":\"A dossziéban két ellentétes mérés is van.\"}],\"chapters\":[]}]",
+                new BigDecimal("0.60"), false, "Három heti mérés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        ConferenceTranscriptEnvelope.Turn chair = result.turns().stream()
+                .filter(turn -> turn.persona().equals("mezo"))
+                .findFirst().orElseThrow();
+        assertThat(chair.text()).contains("A dossziéban két ellentétes mérés is van.");
+        assertThat(chair.text()).doesNotContain("nem teszek hozzá");
+    }
+
+    /** Sibling to {@link #aRejectionOverAKeepIsShownEvenWithoutADissentFlag}: the OTHER half of the
+     *  rejection arm's {@code verdict == null} disjunct — a rejection where the Szkeptikus never
+     *  answered this index at all must also be shown, not ratified, since silence is not a KILL to
+     *  ratify. */
+    @Test
+    void aRejectionWithNoSkeptikusAnswerIsShown() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        // matching brackets so the sentinel regex matches, but invalid JSON syntax inside — forces
+        // the catch-and-log parse-failure path, so skepticResult.verdicts() is genuinely EMPTY
+        // (the canned fallback would otherwise answer KEEP for every P<n> it finds, which would
+        // never reach the verdict == null branch at all).
+        String brokenSkepticSentinel = "[fake-char-skeptic:[{\"index\":0,\"verdict\":}]]";
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Rekompozíció zajlik. " + brokenSkepticSentinel + " "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":false,"
+                        + "\"reason\":\"Önmagában nem elég erős a megfigyelés.\"}],\"chapters\":[]}]",
+                new BigDecimal("0.60"), false, "Három heti mérés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.verdicts()).isEmpty();
+        ConferenceTranscriptEnvelope.Turn chair = result.turns().stream()
+                .filter(turn -> turn.persona().equals("mezo"))
+                .findFirst().orElseThrow();
+        assertThat(chair.text()).contains("Önmagában nem elég erős a megfigyelés.");
+        assertThat(chair.text()).doesNotContain("nem teszek hozzá");
+    }
+
+    /** mezo-lghn task 5, {@code addsSomething}'s NULL-CONFIDENCE arm: an accepted UP/DOWN ruling
+     *  that omits its own confidence (the lifecycle then steps off the claim's CURRENT value) must
+     *  always be shown — there is no chair-set word to compare against a suggestion at all. The
+     *  Szkeptikus's suggestion is deliberately scripted here (rather than left absent) so that
+     *  deleting this arm does not silently fall through to the ALSO-true {@code suggested == null}
+     *  short-circuit: without this arm, {@code CharacterConfidenceWords.word(null)} on the chair's
+     *  own (missing) confidence throws instead, still turning the mutation red. */
+    @Test
+    void anAcceptedRulingWithNoRuledConfidenceIsAlwaysShown() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        CharacterClaimEntity claim = seedClaim(owner, dimension.getId(), "Fegyelmezett hét.", new BigDecimal("0.50"));
+        ClaimProposal proposal = new ClaimProposal("doki", "UP", null, claim.getId(),
+                "Erősödik. "
+                        + "[fake-char-skeptic:[{\"index\":0,\"verdict\":\"KEEP\",\"argument\":\"Rendben.\","
+                        + "\"suggestedConfidence\":0.6}]] "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":true,"
+                        + "\"reason\":\"A lifecycle lépteti a szintet.\"}],\"chapters\":[]}]",
+                new BigDecimal("0.70"), false, "Indoklás.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.rulings()).singleElement()
+                .satisfies(r -> assertThat(r.ruledConfidence()).isNull());
+        ConferenceTranscriptEnvelope.Turn chair = result.turns().stream()
+                .filter(turn -> turn.persona().equals("mezo"))
+                .findFirst().orElseThrow();
+        assertThat(chair.text()).contains("A lifecycle lépteti a szintet.");
+        assertThat(chair.text()).doesNotContain("nem teszek hozzá");
+    }
+
+    /** mezo-lghn task 5, {@code addsSomething}'s WORD-COMPARISON arm, the "different" half: a
+     *  chair-set confidence in a DIFFERENT word tier from what the Szkeptikus suggested is new
+     *  information and must be shown. {@link #aPlainRatificationRoundLeavesNoPerProposalEchoInTheChairsTurn}
+     *  pins the other half (same tier ⇒ ratified). */
+    @Test
+    void aChairSetWordDifferentFromTheSzkeptikusSuggestionIsShown() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Rekompozíció zajlik. "
+                        + "[fake-char-skeptic:[{\"index\":0,\"verdict\":\"KEEP\","
+                        + "\"argument\":\"Fake ellenérv: elfogadható.\",\"suggestedConfidence\":0.4}]] "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":true,"
+                        + "\"confidence\":0.8,\"reason\":\"Erősebbre teszem, mint amit a Szkeptikus javasolt.\"}],"
+                        + "\"chapters\":[]}]",
+                new BigDecimal("0.60"), false, "Három heti mérés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        ConferenceTranscriptEnvelope.Turn chair = result.turns().stream()
+                .filter(turn -> turn.persona().equals("mezo"))
+                .findFirst().orElseThrow();
+        assertThat(chair.text()).contains("Erősebbre teszem, mint amit a Szkeptikus javasolt.");
+        assertThat(chair.text()).doesNotContain("nem teszek hozzá");
+    }
+
     @Test
     void theChairsPromptCarriesTheDossierAndTheSzkeptikusDoesNot() {
         UUID owner = ownerId();

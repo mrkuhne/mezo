@@ -83,6 +83,18 @@ public class KonziliumVerdictRound {
     private static final String NOTE_REHOME = "REHOME";
     private static final Set<String> VALID_NOTES =
             Set.of("DUPLICATE", "CONTRADICTS", NOTE_NOT_FOR_DOSSIER, NOTE_REHOME);
+    /** The chair's turn, for a ruling that merely ratified the Szkeptikus with nothing added
+     *  (mezo-lghn): every such proposal collapses into one aggregate line carrying this text,
+     *  instead of a per-proposal paraphrase of what the Szkeptikus already said. */
+    private static final String NOTHING_TO_ADD = "a Szkeptikus érvét elfogadom, nem teszek hozzá.";
+    /** Human labels for {@link #VALID_NOTES}, for the chair's transcript line (mezo-lghn). Keyed by
+     *  the note constants where one exists, so the label can never drift from the value actually
+     *  compared against. */
+    private static final Map<String, String> NOTE_LABELS = Map.of(
+            "DUPLICATE", "már tartunk ilyet",
+            "CONTRADICTS", "ellentmond a dossziénak",
+            NOTE_NOT_FOR_DOSSIER, "nem dossziéba való",
+            NOTE_REHOME, "máshová tartozik");
 
     private final CharacterDimensionRepository dimensionRepository;
     private final CharacterClaimRepository claimRepository;
@@ -225,7 +237,7 @@ public class KonziliumVerdictRound {
         }
 
         if (integratorResult.parsed()) {
-            turns.add(integratorTurn(rulings, chapters));
+            turns.add(integratorTurn(rulings, chapters, skepticResult.verdicts()));
         }
 
         // Only the indexes the Szkeptikus ACTUALLY answered get a shown verdict (mezo-xlvr final
@@ -468,20 +480,74 @@ public class KonziliumVerdictRound {
         }
     }
 
+    /**
+     * The chair's turn, carrying a per-proposal line ONLY where the ruling added something to what
+     * the Szkeptikus already said (mezo-lghn). Everything the chair merely ratified collapses into
+     * one honest aggregate line instead of a paraphrase, and confidence is rendered as a WORD —
+     * this turn used to print a raw decimal into a user-facing surface, against the invariant
+     * {@link CharacterConfidenceWords} states.
+     */
     private static ConferenceTranscriptEnvelope.Turn integratorTurn(List<ClaimRuling> rulings,
-                                                                     List<ChapterProposal> chapters) {
+                                                                     List<ChapterProposal> chapters,
+                                                                     Map<Integer, SkepticVerdictDraft> verdicts) {
         long accepted = rulings.stream().filter(ClaimRuling::accepted).count();
         StringBuilder sb = new StringBuilder("Mezo: ").append(accepted).append('/').append(rulings.size())
                 .append(" javaslat elfogadva.");
+        List<String> ratified = new ArrayList<>();
         for (int i = 0; i < rulings.size(); i++) {
             ClaimRuling ruling = rulings.get(i);
-            sb.append("\nP").append(i).append(": ").append(ruling.accepted() ? "ELFOGADVA" : "ELUTASÍTVA")
-                    .append(" (").append(ruling.ruledConfidence()).append(") — ").append(ruling.reason());
+            if (!addsSomething(ruling, verdicts.get(i))) {
+                ratified.add("P" + i);
+                continue;
+            }
+            sb.append("\nP").append(i).append(": ").append(ruling.accepted() ? "ELFOGADVA" : "ELUTASÍTVA");
+            if (ruling.accepted() && ruling.ruledConfidence() != null) {
+                sb.append(" (").append(CharacterConfidenceWords.word(ruling.ruledConfidence())).append(')');
+            }
+            if (ruling.dissent()) {
+                sb.append(" [a Szkeptikus döntése ellenében]");
+            }
+            String label = ruling.note() == null ? null : NOTE_LABELS.get(ruling.note());
+            if (label != null) {
+                sb.append(" [").append(label);
+                if (ruling.suggestedDimensionKey() != null) {
+                    sb.append(": ").append(ruling.suggestedDimensionKey());
+                }
+                sb.append(']');
+            }
+            sb.append(" — ").append(ruling.reason());
+        }
+        if (!ratified.isEmpty()) {
+            sb.append('\n').append(String.join(", ", ratified)).append(": ").append(NOTHING_TO_ADD);
         }
         for (ChapterProposal chapter : chapters) {
             sb.append("\nÚj fejezet: ").append(chapter.title()).append(" — ").append(chapter.rationale());
         }
         return new ConferenceTranscriptEnvelope.Turn("mezo", sb.toString(), List.of());
+    }
+
+    /**
+     * Whether this ruling contributed anything the Szkeptikus had not already said. A rejection
+     * that ratifies a KILL adds nothing; a rejection over KEEP/WEAKEN or over no answer at all is
+     * always shown, so a real disagreement can never hide behind a model that forgot to set
+     * {@code dissent}.
+     */
+    private static boolean addsSomething(ClaimRuling ruling, SkepticVerdictDraft verdict) {
+        if (ruling.dissent() || ruling.note() != null) {
+            return true;
+        }
+        if (!ruling.accepted()) {
+            return verdict == null || !KILL.equals(verdict.verdict());
+        }
+        if (ruling.ruledConfidence() == null) {
+            return true;
+        }
+        BigDecimal suggested = verdict == null ? null : verdict.suggestedConfidence();
+        if (suggested == null) {
+            return true;
+        }
+        return !CharacterConfidenceWords.word(ruling.ruledConfidence())
+                .equals(CharacterConfidenceWords.word(suggested));
     }
 
     private static String integratorPersona() {
