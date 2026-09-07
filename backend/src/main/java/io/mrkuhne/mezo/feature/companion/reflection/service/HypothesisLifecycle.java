@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.reflection.config.ReflectionProperties;
 import io.mrkuhne.mezo.feature.companion.service.PatternGate;
+import java.util.Set;
 
 /**
  * Reflexió S2 (bd mezo-eq85.2, spec 2026-09-06 §4.3): the pattern lifecycle as PURE arithmetic —
@@ -27,8 +28,16 @@ public final class HypothesisLifecycle {
         public static final Decision NONE = new Decision(null, null);
     }
 
-    /** How many negative user replies it takes to refute a hypothesis outright. */
-    private static final int NEGATIVE_REPLIES_TO_REFUTE = 2;
+    /** How many negative user replies it takes to refute a hypothesis outright. Public since S4:
+     *  the chip reply applies the SAME rule the moment the user says it, so the row does not wait
+     *  a night to reflect a verdict the user already gave. One threshold, one meaning. */
+    public static final int NEGATIVE_REPLIES_TO_REFUTE = 2;
+
+    /** Chip/notice answers that count FOR a hypothesis, and the ones that count against it. S4
+     *  moved them here (from {@code HypothesisEvaluationService}) because the nightly pass and the
+     *  chip reply must never disagree about what the user's answer meant. */
+    public static final Set<String> POSITIVE_CHOICES = Set.of("watch", "confirm");
+    public static final Set<String> NEGATIVE_CHOICES = Set.of("reject");
 
     private HypothesisLifecycle() {
     }

@@ -57,9 +57,10 @@ import org.springframework.transaction.support.TransactionTemplate;
         havingValue = "true")
 public class HypothesisEvaluationService {
 
-    /** Chip/notice answers that count FOR the hypothesis; anything else counts against it. */
-    private static final Set<String> POSITIVE_CHOICES = Set.of("watch", "confirm");
-    private static final Set<String> NEGATIVE_CHOICES = Set.of("reject");
+    /** S4 (mezo-eq85.4): the choice vocabulary lives on the pure {@link HypothesisLifecycle} —
+     *  the nightly pass and the chip reply must read a user's answer the same way. */
+    private static final Set<String> POSITIVE_CHOICES = HypothesisLifecycle.POSITIVE_CHOICES;
+    private static final Set<String> NEGATIVE_CHOICES = HypothesisLifecycle.NEGATIVE_CHOICES;
 
     private final PatternRepository patternRepository;
     private final PatternEventRepository patternEventRepository;
