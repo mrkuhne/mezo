@@ -35,11 +35,14 @@ import org.springframework.transaction.annotation.Transactional;
  * actually said instead of a moving target (and so a test cannot desync from the code across
  * midnight).
  *
- * <p><b>What it looks for, in order:</b> the newest verdict ({@code confirmed} / {@code refuted})
- * on a reflection-owned row; failing that, the newest {@code evidence} of a {@code monitoring} row
- * the user has actually ANSWERED — a row nobody asked about is not "amit kértél". A {@code dormant}
- * verdict is deliberately silent: it is the engine giving up for lack of data, and the product has
- * written no sentence for it — inventing one here would be inventing user-visible copy.
+ * <p><b>What it looks for, in order:</b> the newest verdict ({@code confirmed} / {@code refuted} /
+ * {@code dormant}) on a reflection-owned row; failing that, the newest {@code evidence} of a
+ * {@code monitoring} row the user has actually ANSWERED — a row nobody asked about is not "amit
+ * kértél". {@code dormant} is a verdict like the other two and reports its own sentence (mezo-cuml):
+ * the hypothesis is not disproven, it simply went quiet for lack of fresh data, and saying so is
+ * this morning's real news. It used to carry no copy, so {@code verdictSentence} returned empty for
+ * it and the digest fell THROUGH to an older {@code confirmed}/{@code refuted} — reporting stale
+ * news in place of what the night actually decided. Ordering is by time alone, never by kind.
  *
  * <p><b>Only reflection-owned rows</b> ({@link PatternEntity#REFLECTION_OWNED_KINDS}): a
  * {@code statistical} catalog row's lifecycle belongs to the nightly Pearson job and the Minták
@@ -134,7 +137,8 @@ public class ReflectionDigestService {
         }
     }
 
-    /** The newest verdict of the night. {@code dormant} carries no sentence (see class javadoc). */
+    /** The newest verdict of the night — {@code confirmed}, {@code refuted} or {@code dormant},
+     *  whichever occurred LAST (see class javadoc). */
     private Optional<Digest> verdictDigest(UUID userId, LocalDate date) {
         return newestFirst(events(userId, date, VERDICT_KINDS)).stream()
                 .flatMap(event -> row(userId, event.getPatternId())
@@ -150,6 +154,9 @@ public class ReflectionDigestService {
                     "Ma éjjel megerősítettem: „" + row.getTitle() + "”. Beépítettem a tudásba."));
             case PatternEventEntity.KIND_REFUTED -> Optional.of(new Digest(row.getTitle(),
                     "Elengedtem: „" + row.getTitle() + "” — a számok nem támasztották alá."));
+            case PatternEventEntity.KIND_DORMANT -> Optional.of(new Digest(row.getTitle(),
+                    "Félretettem: „" + row.getTitle()
+                            + "” — rég nem jött hozzá új adat. Ha visszatér, újra ránézek."));
             default -> Optional.empty();
         };
     }
