@@ -142,6 +142,11 @@ export const ADMIN_FEATURE_USAGE_MOCK: AdminFeatureUsageResponse = {
   ],
 }
 
+// `period` here is unavoidably a real `AdminPeriod` value (the type is `'7d' | '30d' | '90d'`,
+// no neutral/unset member) — final review Finding 4 fixed the one place this was displayed
+// (AdminUsagePage) to render its own `period` state instead of this field, so the hardcoded
+// '30d' no longer reaches the screen; it survives here only as an unused placeholder to satisfy
+// the response shape while real-mode data is unresolved.
 export const ADMIN_FEATURE_USAGE_EMPTY: AdminFeatureUsageResponse = {
   period: '30d',
   days: [],
@@ -171,6 +176,8 @@ export const ADMIN_COST_MATRIX_MOCK: AdminCostMatrixResponse = {
   totalUsd: 10.0,
 }
 
+// Same caveat as ADMIN_FEATURE_USAGE_EMPTY above — no consumer currently renders this field
+// directly (the one cost-matrix caller, AdminOverviewPage, pins the period to '30d' itself).
 export const ADMIN_COST_MATRIX_EMPTY: AdminCostMatrixResponse = {
   period: '30d',
   users: [],

@@ -141,6 +141,35 @@ class AdminDataBrowserIT extends ApiIntegrationTest {
     }
 
     @Test
+    void testRows_shouldUnwrapArrayColumns_toRealJsonRatherThanAnOpaqueObject() {
+        // Final review Finding 2: mesocycle.phase_curve is TEXT[] (information_schema reports
+        // its data_type as the literal string "ARRAY", not a concrete element type — neither the
+        // json/jsonb branch nor the old USER-DEFINED/secret drop list caught it), and it sits on
+        // the FIRST convenience view (mezociklusok). Before the fix a PgArray survived unmapped
+        // past the read-only transaction's commit and either serialized as driver internals or
+        // 500'd on response write; this proves the request succeeds at all and the array comes
+        // back as a real, usable JSON list.
+        UUID owner = ownerId();
+        jdbcTemplate.update("""
+                insert into mesocycle (created_by, title, short_title, status, goal, start_date,
+                        end_date, weeks, split, style, phase_curve)
+                values (?, 'Array-browser test', 'Array test', 'planned', null,
+                        current_date, current_date + 28, 4, 'push-pull-legs', 'hypertrophy',
+                        array['accumulation','deload']::text[])
+                """, owner);
+
+        AdminRowPageResponse body = getForBody(ROWS_URI.formatted("mesocycle") + "?size=200",
+                ownerAuthHeaders(), HttpStatus.OK, AdminRowPageResponse.class);
+
+        assertThat(body.getRows())
+                .filteredOn(row -> "Array-browser test".equals(row.get("title")))
+                .singleElement()
+                .satisfies(row -> assertThat(row.get("phase_curve")).isInstanceOf(List.class)
+                        .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.LIST)
+                        .containsExactly("accumulation", "deload"));
+    }
+
+    @Test
     void testViews_shouldListTheV1ConvenienceViews_whenOwner() {
         List<AdminViewDescriptor> views = getForList(VIEWS_URI, ownerAuthHeaders(), HttpStatus.OK, AdminViewDescriptor.class);
 

@@ -59,19 +59,34 @@ export function useAdminUserInsights(
     realFetch: () => adminInsightsApi.listUsers(q, sort, dir),
     realEmpty: ADMIN_USER_INSIGHTS_EMPTY,
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
+    // Fix round: final review Finding 5 — `q` rides in the query key, so every keystroke is a
+    // new key. Without this, real mode drops to `realEmpty` between each request (hero flips to
+    // "0 fiók", table to "Nincs találat.") for the width of every round-trip; `useAdminRows`
+    // already had this (see its own doc comment) but this sibling hook didn't. AdminUsersPage
+    // also debounces the input itself so a keystroke burst is one request, not three.
+    keepPreviousRealData: true,
     enabled: isOwner,
   })
 }
 
 export function useAdminUserDetail(id: string, isOwner: boolean) {
-  return useDualQuery<AdminUserDetailResponse>({
+  // Fix round: final review Finding 3. A TanStack v5 query that is `enabled: false` with no
+  // cached data never leaves `status: 'pending'` — so a disabled `useAdminUserDetail` (no id,
+  // or a non-owner) would hand callers an `isPending` that is permanently `true`, the exact
+  // trap Task 11 already paid to fix once at the page (see AdminUserDetailPage's `notFound`
+  // comment). Following the established precedent at `goalOverviewHooks.ts` (`pending: goalId
+  // !== null && isPending`), fold the `enabled` condition into `isPending` itself here so every
+  // caller gets a correct value without re-deriving it.
+  const enabled = isOwner && id !== ''
+  const q = useDualQuery<AdminUserDetailResponse>({
     queryKey: [...ADMIN_USER_DETAIL_KEY, id],
     mockData: ADMIN_USER_DETAIL_MOCK,
     realFetch: () => adminInsightsApi.userDetail(id),
     realEmpty: ADMIN_USER_DETAIL_EMPTY,
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
-    enabled: isOwner && id !== '',
+    enabled,
   })
+  return { ...q, isPending: enabled && q.isPending }
 }
 
 export function useAdminFeatureUsage(period: AdminPeriod, isOwner: boolean) {

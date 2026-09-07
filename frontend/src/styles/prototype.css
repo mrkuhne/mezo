@@ -11149,10 +11149,14 @@ button.mz-wtile:active { transform: scale(0.96); }
 /* the 12-column mosaic — the desktop counterpart of .mz-mosaic */
 .mz-mosaic-desktop { display: grid; grid-template-columns: repeat(12, 1fr); gap: 13px; }
 .mz-mosaic-desktop > .mz-tile { grid-column: span 6; }
-.mz-span-3 { grid-column: span 3; }
-.mz-span-4 { grid-column: span 4; }
-.mz-span-6 { grid-column: span 6; }
-.mz-span-12 { grid-column: span 12; }
+/* .mz-tile is shared with .mz-mosaic (the 2-col mobile grid) and other mosaics, so the
+   span overrides below stay scoped to ".mz-mosaic-desktop > " — raising their specificity
+   to (0,3,0), which beats the (0,2,0) base rule above — rather than dropping the child
+   combinator (which would leak `grid-column: span N` onto .mz-tile everywhere). */
+.mz-mosaic-desktop > .mz-tile.mz-span-3 { grid-column: span 3; }
+.mz-mosaic-desktop > .mz-tile.mz-span-4 { grid-column: span 4; }
+.mz-mosaic-desktop > .mz-tile.mz-span-6 { grid-column: span 6; }
+.mz-mosaic-desktop > .mz-tile.mz-span-12 { grid-column: span 12; }
 
 /* ============================================================
    §Admin hub graphics (mezo-d5iy.11) — Áttekintés/Userek/User részlet/Feature-használat.

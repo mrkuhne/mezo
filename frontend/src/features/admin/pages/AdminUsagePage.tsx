@@ -26,7 +26,13 @@ export function AdminUsagePage() {
 
   return (
     <MozaikPage tone="lav">
-      <PageHero name="Feature-használat" sub={`${usage.data.period} · ${usage.data.features.length} feature · ${huInt(callTotal)} hívás`} />
+      {/* Fix round: final review Finding 4 — render the page's own `period` state, not
+          `usage.data.period`. The response field can be stale/wrong-looking: switching the
+          chip changes the query key immediately, but while real-mode data is unresolved
+          `usage.data` is `ADMIN_FEATURE_USAGE_EMPTY`, whose hardcoded `period: '30d'` would
+          flash under a "90 nap" chip. `period` (local state) is always the period the user
+          actually selected. */}
+      <PageHero name="Feature-használat" sub={`${period} · ${usage.data.features.length} feature · ${huInt(callTotal)} hívás`} />
       <PageBody>
         <div className="ad-chiprow" role="group" aria-label="Időszak">
           {PERIODS.map((p) => (

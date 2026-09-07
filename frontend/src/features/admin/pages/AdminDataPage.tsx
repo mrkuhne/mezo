@@ -19,11 +19,12 @@ import { huInt } from '@/shared/lib/huNum'
 // `patch`, which merges into the CURRENT search params rather than replacing them.
 //
 // No table selected is the page's initial state (every picker starts unselected — task brief).
-// That is checked directly against the `table` STRING, never against `rows.isPending`: Task 11's
-// bug (mezo-d5iy.11 fix round 1) was inferring a terminal state from `isPending` on a hook that
-// `useDualQuery` can leave permanently `pending` when `enabled: false` and nothing is cached —
-// `useAdminRows` is exactly such a hook here (`enabled: isOwner && table !== ''`). `table === ''`
-// is a local value the page already controls, so branching on it can never hang.
+// That is checked directly against the `table` STRING, not `rows.isPending`: Task 11's bug
+// (mezo-d5iy.11 fix round 1) was inferring a terminal state from `isPending` on a hook that
+// `useDualQuery` can leave permanently `pending` when `enabled: false` and nothing is cached.
+// `useAdminRows` now folds its own `enabled` into `isPending` (final review Finding 3), so that
+// class of hang is fixed at the hook boundary too — but `table === ''` is a local value the
+// page already controls, so branching on it directly stays the simplest correct check.
 export function AdminDataPage() {
   const me = useMe()
   const isOwner = me.data?.role === 'OWNER'

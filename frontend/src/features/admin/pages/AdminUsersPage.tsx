@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMe } from '@/data/hooks'
 import { useAdminUserInsights } from '@/data/admin/adminInsightsHooks'
@@ -21,7 +21,17 @@ export function AdminUsersPage() {
   const [q, setQ] = useState('')
   const [sort, setSort] = useState<AdminUserInsightSort>('lastActivityAt')
   const [dir, setDir] = useState<AdminSortDir>('desc')
-  const users = useAdminUserInsights(q || null, sort, dir, isOwner)
+  // Fix round: final review Finding 5 — `q` used to ride straight into the query key with no
+  // debounce, so a keystroke burst fired one GET per character. Debounce the value that reaches
+  // the network (~300ms, the repo's established debounce window — see
+  // `useFeasibilityPreview`/goalHooks.ts for the same setTimeout+useEffect pattern); the input's
+  // own `value`/`onChange` below stay bound to the immediate `q`, so typing never feels laggy.
+  const [debouncedQ, setDebouncedQ] = useState('')
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(q), 300)
+    return () => clearTimeout(t)
+  }, [q])
+  const users = useAdminUserInsights(debouncedQ || null, sort, dir, isOwner)
   // Client-side safety net on top of the server-side `q` filter: the mock queryFn always
   // serves the static seed regardless of the query key, and a real backend's own filtering
   // is out of this component's control either way — filtering the already-fetched rows here

@@ -35,8 +35,8 @@ export function AdminUserDetailPage() {
   // Embedded per-table row browser (Adatok tab). Local component state, not URL search params —
   // this is a sub-panel of a user's detail page, not its own navigable surface (that's
   // AdminDataPage). No table selected is the initial state, checked directly against the
-  // string (never `embeddedRows.isPending` — see AdminDataPage's doc comment on why that hook
-  // can stay pending forever when disabled).
+  // string — simplest and correct either way; `useAdminRows`'s `isPending` is also safe to
+  // branch on now (final review Finding 3 fixed it to report `false` while disabled).
   const [dataTable, setDataTable] = useState('')
   const [dataPage, setDataPage] = useState(0)
   const [dataSort, setDataSort] = useState<string | null>(null)
@@ -61,16 +61,14 @@ export function AdminUserDetailPage() {
   const dataCanNext = (dataPage + 1) * (embeddedRows.data.size || 1) < embeddedRows.data.total
 
   const user = detail.data.user
-  // Fix round 1 (Finding 1): `useAdminUserDetail` passes `enabled: isOwner && id !== ''` to
-  // useDualQuery/useQuery. In TanStack Query v5 a query with `enabled: false` and no cached
-  // data never leaves `status: 'pending'` — it simply never fetches. So when `userId === ''`,
-  // `detail.isPending` would stay `true` forever if we tried to infer "no id" from it, and the
-  // `!detail.isPending && ... && user.id === ''` form below could never fire for that case —
-  // the page would render the full hero indefinitely with blank/zero fields instead of the
-  // "not found" message. `userId === ''` is directly observable (it's a local value, not
-  // derived from query status), so check it up front; the genuine "query settled, no such
-  // user" case still falls out of the second half exactly as before.
-  const notFound = userId === '' || (!detail.isPending && !detail.isError && user.id === '')
+  // Fix round: final review Finding 3 fixed `useAdminUserDetail` itself — it now folds its
+  // `enabled` condition into `isPending`, so a disabled query (no id, or a non-owner) reports
+  // `isPending: false` immediately instead of hanging forever. That means `detail.isPending`
+  // is safe to branch on directly here again: when `userId === ''` the query never fetches,
+  // `isPending` is `false`, and `detail.data` is `ADMIN_USER_DETAIL_EMPTY` (`user.id === ''`),
+  // so `notFound` still comes out `true` for that case — no separate `userId === ''` check
+  // needed (that was the local compensation this fix removes; see the hook's own comment).
+  const notFound = !detail.isPending && !detail.isError && user.id === ''
 
   return (
     <MozaikPage tone="coral">

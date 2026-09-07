@@ -54,7 +54,12 @@ export function useAdminViews(isOwner: boolean) {
  * dir, includeDeleted — so switching any one of them never serves another combination's cache.
  */
 export function useAdminRows(params: AdminRowsParams, isOwner: boolean) {
-  return useDualQuery<AdminRowPageResponse>({
+  // Fix round: final review Finding 3 — same permanently-`pending`-while-disabled trap as
+  // `useAdminUserDetail` above (see that hook's comment). Fold `enabled` into `isPending` here
+  // too, so callers that still branch on `params.table !== ''` locally (AdminDataPage,
+  // AdminUserDetailPage's embedded browser) can rely on `isPending` instead.
+  const enabled = isOwner && params.table !== ''
+  const q = useDualQuery<AdminRowPageResponse>({
     queryKey: [
       ...ADMIN_ROWS_KEY,
       params.table,
@@ -70,6 +75,7 @@ export function useAdminRows(params: AdminRowsParams, isOwner: boolean) {
     realEmpty: ADMIN_ROWS_EMPTY,
     realStaleTime: DEFAULT_QUERY_STALE_TIME_MS,
     keepPreviousRealData: true,
-    enabled: isOwner && params.table !== '',
+    enabled,
   })
+  return { ...q, isPending: enabled && q.isPending }
 }
