@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationReposit
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
+import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.feature.companion.reflection.entity.TextSignalEntity;
 import io.mrkuhne.mezo.feature.companion.reflection.service.QuickNoticeService;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
@@ -140,5 +141,71 @@ class QuickNoticeServiceIT extends AbstractIntegrationTest {
         assertThat(events.getFirst().getKind()).isEqualTo(PatternEventEntity.KIND_OBSERVATION);
         assertThat(events.getFirst().getPayload().text())
                 .contains("Négy napja a munka viszi el a napjaidat.");
+    }
+
+    /**
+     * Fix round finding 1: a genuinely NULL answer (the real {@code CompanionLlm} contract for an
+     * empty/absent generation, mirrored here by {@link FakeCompanionLlm#NOTICE_NULL_ANSWER}) must
+     * never throw out of {@code onSignal} — the constraint the sibling
+     * {@code TextSignalExtractor.parse} already null-guards. Before the fix, {@code raw.indexOf('{')}
+     * sat outside the try/catch and NPE'd.
+     */
+    @Test
+    void testOnSignal_shouldReturnCleanlyAndPersistNothing_whenTheAnswerIsNull() {
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity row = patternPopulator.reflection(owner, ANNA_PLAN, PatternEntity.STATUS_PROPOSED);
+        JournalEntryEntity entry = journalPopulator.createEntry(owner, TODAY,
+                "Ma Annával sétáltunk a Duna-parton, jólesett. " + FakeCompanionLlm.NOTICE_NULL_ANSWER,
+                "quickinput");
+        TextSignalEntity signal = textSignalPopulator.signal(owner, TextSignalEntity.SOURCE_JOURNAL,
+                entry.getId(), TODAY, 4, 3, 2, List.of("Anna"), List.of("kapcsolatok"));
+
+        quickNoticeService.onSignal(owner, signal.getId());
+
+        assertThat(patternEventRepository.findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(
+                owner, row.getId()))
+                .isEmpty();
+        assertThat(appNotificationRepository.findByCreatedByAndDeletedFalseOrderByOccurredAtDesc(
+                owner, PageRequest.of(0, 10)))
+                .isEmpty();
+    }
+
+    /**
+     * Fix round finding 3: a model-supplied {@code hypothesisKey} naming a row the user already
+     * REJECTED the verdict on (here, {@code refuted}) must not resurface that judgement — the key
+     * must resolve ONLY against the user's OPEN rows ({@code proposed}/{@code monitoring}), the
+     * same set the pre-screen already loaded. The trigger here is EXTREME_MOOD, which needs no
+     * open row of its own, so the refuted row's key is the ONLY thing that could hang the notice
+     * anywhere; with no open row touched and no {@code newTestPlan}, the notice must be dropped
+     * entirely rather than land on the refuted row.
+     */
+    @Test
+    void testOnSignal_shouldNotHangNoticeOnARefutedRow_whenModelNamesItsHypothesisKey() {
+        UUID owner = userPopulator.createUser().getId();
+        TestPlanEnvelope refutedPlan = new TestPlanEnvelope(
+                "topic:futas", "sleep-duration-h", 1, TestPlanEnvelope.DIRECTION_POSITIVE, 8, 3, 60);
+        PatternEntity refuted = patternPopulator.reflection(owner, refutedPlan, PatternEntity.STATUS_REFUTED);
+        String scripted = "[[NOTICE:{\"text\":\"Nagyon leesett a hangulatod ma.\","
+                + "\"question\":\"Mi történt?\",\"hypothesisKey\":\"" + refuted.getHypothesisKey() + "\","
+                + "\"newTestPlan\":null,\"evidenceRefs\":[]}]]";
+        JournalEntryEntity entry = journalPopulator.createEntry(owner, TODAY,
+                "Ma minden szörnyű volt. " + scripted, "quickinput");
+        // mood=1, sure => EXTREME_MOOD, the only pre-screen rule that needs no open row at all
+        TextSignalEntity signal = textSignalPopulator.signal(owner, TextSignalEntity.SOURCE_JOURNAL,
+                entry.getId(), TODAY, 1, 2, 5, List.of(), List.of());
+
+        quickNoticeService.onSignal(owner, signal.getId());
+
+        assertThat(patternEventRepository.findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(
+                owner, refuted.getId()))
+                .isEmpty();
+        assertThat(appNotificationRepository.findByCreatedByAndDeletedFalseOrderByOccurredAtDesc(
+                owner, PageRequest.of(0, 10)))
+                .isEmpty();
+        // no pattern was created either (no valid newTestPlan, no touched open row)
+        assertThat(patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner))
+                .hasSize(1);
+        PatternEntity refutedAfter = patternRepository.findById(refuted.getId()).orElseThrow();
+        assertThat(refutedAfter.getStatus()).isEqualTo(PatternEntity.STATUS_REFUTED);
     }
 }

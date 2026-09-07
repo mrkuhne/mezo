@@ -203,6 +203,18 @@ public class QuickNoticeService {
             log.warn("Quick notice LLM call failed for user {}", userId, e);
             return null;
         }
+        return parse(raw);
+    }
+
+    /**
+     * Defensive parse, mirroring {@link TextSignalExtractor#parse}: {@code raw} may be {@code null}
+     * (an empty/absent generation — {@code CompanionLlm} implementations may return null for a
+     * zero-text candidate), blank, or garbage — none of those may ever throw out of this stage.
+     */
+    private NoticeAnswer parse(String raw) {
+        if (raw == null) {
+            return null;
+        }
         int start = raw.indexOf('{');
         int end = raw.lastIndexOf('}');
         if (start < 0 || end <= start) {
@@ -212,7 +224,11 @@ public class QuickNoticeService {
             return objectMapper.readValue(raw.substring(start, end + 1),
                     new TypeReference<NoticeAnswer>() {});
         } catch (Exception e) {
-            log.warn("Quick notice answer was not parseable JSON — dropping: {}", raw, e);
+            // NEVER log `raw` in full: the model's answer mirrors the user's own journal entry,
+            // names included. Length + a short prefix is enough to tell "empty", "prose" and
+            // "truncated JSON" apart, which is all this branch has to diagnose.
+            log.warn("Quick notice answer was not parseable JSON — dropping ({} chars, starts with '{}')",
+                    raw.length(), raw.substring(0, Math.min(40, raw.length())), e);
             return null;
         }
     }
@@ -291,8 +307,15 @@ public class QuickNoticeService {
     private PatternEntity resolveTarget(UUID userId, NoticeAnswer answer, Trigger trigger,
                                         List<PatternEntity> open, List<String> evidenceRefs) {
         if (answer.hypothesisKey() != null && !answer.hypothesisKey().isBlank()) {
-            Optional<PatternEntity> named = patternRepository
-                    .findByCreatedByAndHypothesisKeyAndDeletedFalse(userId, answer.hypothesisKey().trim());
+            // Restricted to the user's OPEN rows (the same `open` set the pre-screen already
+            // loaded: proposed|monitoring, non-statistical) — NOT intersected with
+            // trigger.patternIds(), so the model may still name a related-but-untouched open row.
+            // A key naming a `refuted`/`confirmed` row (a judgement already made) does not match
+            // here and falls through to the next resolution step instead of resurfacing it.
+            String key = answer.hypothesisKey().trim();
+            Optional<PatternEntity> named = open.stream()
+                    .filter(row -> key.equals(row.getHypothesisKey()))
+                    .findFirst();
             if (named.isPresent()) {
                 return named.get();
             }

@@ -277,6 +277,13 @@ public class FakeCompanionLlm implements CompanionLlm {
      *  the row the pre-screen already touched. */
     public static final Pattern NOTICE_SENTINEL = Pattern.compile("\\[\\[NOTICE:(.*?)]]", Pattern.DOTALL);
 
+    /** mezo-eq85.4 fix round: an "empty/absent generation" from a real provider surfaces as a
+     *  genuinely NULL answer (the {@code CompanionLlm} contract {@code SpringAiCompanionLlm.textOf}
+     *  actually returns for a zero-text candidate) — distinct from {@link #EMPTY_ANSWER}'s "" case.
+     *  Planted in the journal entry text, this lets an IT drive the quick-notice parser's null
+     *  guard without a model. */
+    public static final String NOTICE_NULL_ANSWER = "[fake-notice-null]";
+
     /** Reflexió S1: an entry carrying this string makes the extraction CALL blow up — the IT anchor
      *  for "a failing extraction never touches the journal entry it was triggered by". */
     public static final String SIGNAL_FAIL = "SIGNAL_FAIL";
@@ -821,6 +828,9 @@ public class FakeCompanionLlm implements CompanionLlm {
                             + "\"people\":[\"Anna\"],\"topics\":[\"kapcsolatok\"],\"keywords\":[]}";
         }
         if (systemPrompt.startsWith(QuickNoticeService.NOTICE_MARKER)) {
+            if (userMessage.contains(NOTICE_NULL_ANSWER)) {
+                return null;
+            }
             Matcher notice = NOTICE_SENTINEL.matcher(userMessage);
             // default: the e2e happy path — an observation on the touched row, no new test plan
             return notice.find() ? notice.group(1)
