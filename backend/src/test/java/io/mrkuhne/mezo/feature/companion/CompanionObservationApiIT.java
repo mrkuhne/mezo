@@ -202,6 +202,65 @@ class CompanionObservationApiIT extends ApiIntegrationTest {
     @Test
     void testObservationEndpoints_shouldReturn401_whenNoToken() {
         getForBody("/api/companion/observation", null, HttpStatus.UNAUTHORIZED, Void.class);
+        postForBody("/api/companion/pattern/" + UUID.randomUUID() + "/reply",
+                new PatternReplyRequest().choice("watch"), null,
+                HttpStatus.UNAUTHORIZED, Void.class);
+    }
+
+    /**
+     * A {@code statistical} catalog row can legitimately be {@code monitoring} with a stamped test
+     * plan (the Minták screen's "figyeld", plus {@code PatternDetectionService.stampTestPlan}) or
+     * be {@code confirmed} by the user — but the Pearson job owns its lifecycle, so it must never
+     * surface as an Észrevétel card, nor be answerable through the chip endpoint (S4 review).
+     */
+    @Test
+    void testObservationEndpoints_shouldIgnoreStatisticalRows_whenTheyAreMonitoringOrConfirmed() {
+        UUID owner = ownerId();
+        PatternEntity stat = patternPopulator.statistical(owner, "pair-monitored",
+                PatternEntity.STATUS_MONITORING);
+        stat.setTestPlan(plan("sleep-duration-h"));
+        patternPopulator.save(stat);
+
+        PatternEntity statConfirmed = patternPopulator.statistical(owner, "pair-confirmed",
+                PatternEntity.STATUS_CONFIRMED);
+        patternEventPopulator.decision(owner, statConfirmed.getId(),
+                PatternEventEntity.KIND_CONFIRMED, Instant.now().minus(1, ChronoUnit.HOURS));
+
+        assertThat(getForList("/api/companion/observation?date=" + TODAY, ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class)).isEmpty();
+
+        postForBody("/api/companion/pattern/" + stat.getId() + "/reply",
+                new PatternReplyRequest().choice("reject"),
+                ownerAuthHeaders(), HttpStatus.NOT_FOUND, String.class);
+        assertThat(patternRepository.findById(stat.getId()).orElseThrow().getStatus())
+                .isEqualTo(PatternEntity.STATUS_MONITORING);
+    }
+
+    /**
+     * {@code repliedChoice} on a {@code watching} card is the ROW's newest chip answer, not one
+     * anchored on {@code lastDetectedAt} — the nightly evaluation bumps that field, which used to
+     * silently drop the answer and re-arm the chips (and a re-armed „nem stimmel” is a verdict).
+     */
+    @Test
+    void testListObservations_shouldKeepTheChipAnswer_whenTheNightlyPassBumpedLastDetectedAt() {
+        UUID owner = ownerId();
+        Instant now = Instant.now();
+        PatternEntity row = patternPopulator.reflection(owner, plan("sleep-duration-h"),
+                PatternEntity.STATUS_MONITORING);
+        patternEventPopulator.userReply(owner, row.getId(), "chip", "watch", null,
+                now.minus(6, ChronoUnit.HOURS));
+        // the nightly pass ran AFTER the answer and moved the row's own timestamp forward
+        row.setLastDetectedAt(now.minus(1, ChronoUnit.HOURS));
+        patternPopulator.save(row);
+
+        List<ObservationResponse> cards = getForList(
+                "/api/companion/observation?date=" + TODAY, ownerAuthHeaders(),
+                HttpStatus.OK, ObservationResponse.class);
+
+        assertThat(cards).singleElement().satisfies(card -> {
+            assertThat(card.getCard()).isEqualTo("watching");
+            assertThat(card.getRepliedChoice()).isEqualTo("watch");
+        });
     }
 
     @Test

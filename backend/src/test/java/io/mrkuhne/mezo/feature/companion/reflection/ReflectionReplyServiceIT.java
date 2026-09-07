@@ -137,12 +137,33 @@ class ReflectionReplyServiceIT extends AbstractIntegrationTest {
     @Test
     void testReply_shouldThrowNotFound_whenTheRowBelongsToSomeoneElse() {
         UUID owner = userPopulator.createUser().getId();
-        PatternEntity foreign = row(userPopulator.createUser().getId(),
-                PatternEntity.STATUS_PROPOSED);
+        UUID stranger = userPopulator.createUser().getId();
+        PatternEntity foreign = row(stranger, PatternEntity.STATUS_PROPOSED);
 
         assertThatThrownBy(() -> replyService.reply(owner, foreign.getId(), "watch", null))
                 .isInstanceOf(SystemRuntimeErrorException.class);
-        assertThat(events(owner, foreign.getId())).isEmpty();
+        // read the stream as its OWNER: `owner`'s view of a foreign row is empty either way
+        assertThat(events(stranger, foreign.getId())).isEmpty();
+        assertThat(patternRepository.findById(foreign.getId()).orElseThrow().getStatus())
+                .isEqualTo(PatternEntity.STATUS_PROPOSED);
+    }
+
+    /**
+     * The Pearson job owns a {@code statistical} row's lifecycle and nothing maintains its
+     * {@code belief} — a chip answer must not be able to touch either (S4 review finding).
+     */
+    @Test
+    void testReply_shouldThrowNotFound_whenTheRowIsAStatisticalCatalogRow() {
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity statistical = patternPopulator.statistical(owner, "pair-stat-reply",
+                PatternEntity.STATUS_MONITORING);
+
+        assertThatThrownBy(() -> replyService.reply(owner, statistical.getId(), "watch", null))
+                .isInstanceOf(SystemRuntimeErrorException.class);
+        assertThat(events(owner, statistical.getId())).isEmpty();
+        PatternEntity reloaded = patternRepository.findById(statistical.getId()).orElseThrow();
+        assertThat(reloaded.getStatus()).isEqualTo(PatternEntity.STATUS_MONITORING);
+        assertThat(reloaded.getBelief()).isNull();
     }
 
     @Test

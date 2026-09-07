@@ -33,6 +33,23 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>Read-only by construction: it appends nothing and moves nothing. Everything it shows was
  * written by the nightly pass, the quick notice or {@link ReflectionReplyService}.
+ *
+ * <p><b>Only reflection-owned rows reach this surface.</b> The {@code watching} and
+ * {@code confirmed} groups are read from the ROW table, and a {@code statistical} catalog row can
+ * legitimately be {@code monitoring} with a stamped test plan (the Minták screen's "figyeld"
+ * button, plus {@code PatternDetectionService.stampTestPlan}) or {@code confirmed} by the user —
+ * so both groups filter on {@link PatternEntity#REFLECTION_OWNED_KINDS}. Otherwise a row whose
+ * lifecycle the Pearson job owns, and whose {@code belief} nothing maintains, would render as an
+ * Észrevétel and be chip-refutable.
+ *
+ * <p><b>{@code repliedChoice} — the rule.</b> An EVENT card ({@code fresh}/{@code return}) shows
+ * the newest {@code user_reply} at or after its own event, because that is the answer to THAT
+ * observation. A ROW card ({@code watching}/{@code confirmed}) shows the row's newest
+ * {@code user_reply} OUTRIGHT — it is a standing card about the row itself, and it has no moment
+ * of its own to anchor on. It deliberately does NOT anchor on {@code lastDetectedAt}, which the
+ * nightly evaluation bumps every night: that would silently drop the user's chip answer and re-arm
+ * the chips, and a re-armed „nem stimmel” is what turns a first doubt into a {@code refuted}
+ * verdict.
  */
 @Service
 @RequiredArgsConstructor
@@ -92,8 +109,8 @@ public class ObservationFeedService {
         }
 
         List<ObservationResponse> watching = patternRepository
-                .findByCreatedByAndStatusAndDeletedFalseOrderByLastDetectedAtDesc(
-                        userId, PatternEntity.STATUS_MONITORING)
+                .findByCreatedByAndKindInAndStatusAndDeletedFalseOrderByLastDetectedAtDesc(
+                        userId, PatternEntity.REFLECTION_OWNED_KINDS, PatternEntity.STATUS_MONITORING)
                 .stream()
                 .filter(row -> row.getTestPlan() != null)
                 .map(row -> rowCard(row, CARD_WATCHING, row.getLastDetectedAt(),
@@ -106,8 +123,11 @@ public class ObservationFeedService {
                 continue;
             }
             PatternEntity row = row(userId, rows, event.getPatternId());
+            if (row == null || !row.isReflectionOwned()) {
+                continue; // a statistical row the user confirmed belongs to Minták, not here
+            }
             // one card per row even if the day carries several confirmations — the newest wins
-            if (row != null && confirmed.stream().noneMatch(c -> c.getId().equals(row.getId()))) {
+            if (confirmed.stream().noneMatch(c -> c.getId().equals(row.getId()))) {
                 confirmed.add(rowCard(row, CARD_CONFIRMED, event.getOccurredAt(),
                         replies(userId, repliesByRow, row.getId())));
             }
@@ -167,7 +187,9 @@ public class ObservationFeedService {
                 .text("")
                 .question(null)
                 .evidence(row.getEvidence() == null ? List.of() : row.getEvidence().items())
-                .repliedChoice(choiceAfter(replies, occurredAt))
+                // the ROW's newest answer, NOT one anchored on `occurredAt`: `lastDetectedAt` is
+                // bumped by the nightly evaluation, which would re-arm the chips every night
+                .repliedChoice(newestChoice(replies))
                 .build();
     }
 
@@ -185,10 +207,17 @@ public class ObservationFeedService {
                 .sourceIcon(ObservationSourceIcon.of(row.getTestPlan()));
     }
 
-    /** The newest chip choice made AFTER this card's moment — what the FE greys the chips with. */
+    /** The newest chip choice made AFTER this card's moment — what the FE greys the chips with.
+     *  Only EVENT cards use it: an observation's chips answer that observation. */
     private static String choiceAfter(List<PatternEventEntity> replies, Instant moment) {
-        return replies.stream()
+        return newestChoice(replies.stream()
                 .filter(reply -> !reply.getOccurredAt().isBefore(moment))
+                .toList());
+    }
+
+    /** The row's newest chip choice, whenever it was made — what a standing ROW card shows. */
+    private static String newestChoice(List<PatternEventEntity> replies) {
+        return replies.stream()
                 .map(reply -> reply.getPayload().choice())
                 .filter(Objects::nonNull)
                 .findFirst()

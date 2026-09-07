@@ -18,6 +18,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -75,8 +76,11 @@ public class ReflectionReplyService {
 
     @Transactional
     public PatternReplyResponse reply(UUID userId, UUID patternId, String choice, String text) {
-        // 404 for missing OR foreign — the house idiom; a stranger's row must never answer at all
+        // 404 for missing, foreign OR statistical — the house idiom, plus the S4 review finding:
+        // a `statistical` catalog row belongs to the nightly Pearson job and the Minták screen, so
+        // a chip answer must never be able to move its status or rewrite its belief.
         PatternEntity row = patternRepository.findByIdAndCreatedByAndDeletedFalse(patternId, userId)
+                .filter(PatternEntity::isReflectionOwned)
                 .orElseThrow(() -> new SystemRuntimeErrorException(
                         SystemMessage.error("COMPANION_PATTERN_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
         if (choice == null || !CHOICES.contains(choice)) {
@@ -94,8 +98,10 @@ public class ReflectionReplyService {
                     PatternEventPayloadEnvelope.empty());
         }
 
-        int positive = replies(userId, row.getId(), HypothesisLifecycle.POSITIVE_CHOICES);
-        int negative = replies(userId, row.getId(), HypothesisLifecycle.NEGATIVE_CHOICES);
+        // ONE pass over the row's event stream feeds both buckets — it used to be loaded twice
+        List<String> choices = replyChoices(userId, row.getId());
+        int positive = tally(choices, HypothesisLifecycle.POSITIVE_CHOICES);
+        int negative = tally(choices, HypothesisLifecycle.NEGATIVE_CHOICES);
         if (CHOICE_REJECT.equals(choice)
                 && negative >= HypothesisLifecycle.NEGATIVE_REPLIES_TO_REFUTE
                 && !PatternEntity.isUserFrozen(row.getStatus())) {
@@ -138,15 +144,20 @@ public class ReflectionReplyService {
         return BigDecimal.valueOf(value).setScale(3, RoundingMode.HALF_UP);
     }
 
-    /** How many of the row's replies fall into one choice bucket — the same tally the nightly
-     *  {@code HypothesisEvaluationService} reads, from the same event stream. */
-    private int replies(UUID userId, UUID patternId, Set<String> choices) {
-        List<PatternEventEntity> events = patternEventRepository
-                .findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(userId, patternId);
-        return (int) events.stream()
+    /** Every chip/chat choice the row has ever carried — the same stream the nightly
+     *  {@code HypothesisEvaluationService} reads, loaded ONCE and bucketed by {@link #tally}. */
+    private List<String> replyChoices(UUID userId, UUID patternId) {
+        return patternEventRepository
+                .findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(userId, patternId)
+                .stream()
                 .filter(e -> PatternEventEntity.KIND_USER_REPLY.equals(e.getKind()))
-                .filter(e -> e.getPayload().choice() != null && choices.contains(e.getPayload().choice()))
-                .count();
+                .map(e -> e.getPayload().choice())
+                .filter(Objects::nonNull)
+                .toList();
+    }
+
+    private static int tally(List<String> choices, Set<String> bucket) {
+        return (int) choices.stream().filter(bucket::contains).count();
     }
 
     private static String truncate(String text) {
