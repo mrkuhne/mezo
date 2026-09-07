@@ -108,9 +108,9 @@ Design spec for Phase 2 (slice map, decisions): `docs/superpowers/specs/2026-06-
 ```bash
 # Frontend (under frontend/)
 cd frontend
-pnpm dev          # vite dev server on :5180 — REAL mode by default (backend on :8090 required); mock: VITE_USE_MOCK=true pnpm dev (no backend needed)
+pnpm dev          # vite dev server on :5180 — mode depends on frontend/.env: no .env (bare checkout) ⇒ MOCK by default; .env copied from .env.example sets VITE_USE_MOCK=false ⇒ REAL (backend on :8090 required); force either explicitly: VITE_USE_MOCK=true pnpm dev / VITE_USE_MOCK=false pnpm dev
 pnpm build        # tsc -b && vite build
-pnpm test         # vitest run — MOCK mode (VITE_USE_MOCK unset ⇒ mock, per data/_client/mode.ts); real-mode gate: VITE_USE_MOCK=false pnpm test (both modes must be green)
+pnpm test         # vitest run — mode depends on ambient frontend/.env (VITE_USE_MOCK unset ⇒ mock, per data/_client/mode.ts; a local .env copied from .env.example sets it to false ⇒ real) — never rely on a bare invocation, always pin the mode explicitly, see the Gate below
 
 # Backend (under backend/)
 cd backend
@@ -141,7 +141,7 @@ cd frontend && pnpm generate:api          # regenerate src/data/_client/api.gen.
 - **Data:** every feature imports hooks from **`@/data/hooks` only** (a thin re-export barrel); implementations live in `data/<domain>/<name>Hooks.ts`. Dual-mode reads use `useDualQuery` — never the mock seed as a real-mode fallback.
 - **Imports:** deep + absolute via the `@/*` alias; **no barrels** except `data/hooks.ts`; no relative `../`; tests colocated.
 - **`shared/ui` is domain-free** — a UI file that imports `@/data/*` or serves one feature belongs in `features/<domain>/components/`.
-- **Gate:** `cd frontend && pnpm build && pnpm test && VITE_USE_MOCK=false pnpm test` — both modes green (bare `pnpm test` is already mock, since `VITE_USE_MOCK` unset ⇒ mock; running it twice never exercises real mode); update the feature's `docs/features/<domain>.md` + run `node scripts/lint-docs.mjs`.
+- **Gate:** `cd frontend && pnpm build && VITE_USE_MOCK=true pnpm test && VITE_USE_MOCK=false pnpm test` — both modes green, both set **explicitly**: a bare `pnpm test` is environment-dependent either way (mock on an unset var, real if a local `frontend/.env` from `.env.example` sets `VITE_USE_MOCK=false`), so it can silently run the same mode twice and leave the other one vacuous — this is the same reasoning `ci.yml`'s `test-frontend` job comment gives for setting the var explicitly in both steps. Update the feature's `docs/features/<domain>.md` + run `node scripts/lint-docs.mjs`.
 
 ## Backend Development Conventions (Phase 2+) — MANDATORY
 
