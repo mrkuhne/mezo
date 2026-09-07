@@ -57,6 +57,33 @@ bd close <id>         # Complete work
 5. Hand off: short context for the next session
 <!-- END BEADS INTEGRATION -->
 
+## Communication with the user (MANDATORY, every session)
+
+The repo owner is a **non-engineer product owner**. He decides *what* the product should do,
+not *how* the code does it. Technically-phrased questions repeatedly forced him to ask
+"explain it like I'm a child" — so this is the default, not a fallback.
+
+**Whenever you ask him to decide something, or explain a trade-off, a blocker, a plan or a
+result:**
+
+- **Write in Hungarian.** He writes in Hungarian; answer and ask in Hungarian.
+- **Business language, zero jargon.** No identifiers, file paths, config keys, class names,
+  API names, or version strings in the question itself. Say "hangfelismerés" instead of
+  `SpeechRecognitionAdapter`, "olcsó modell" instead of `chat-model`. If a technical term is
+  genuinely unavoidable, translate it in the same sentence.
+- **Structure every decision the same way:**
+  1. **A helyzet** — one or two sentences of plain context.
+  2. **A gond** — what is actually wrong, in consequence terms ("ez nem fog működni, mert…").
+  3. **A lehetőségek** — a small table: option name in everyday words · *Amit csinálunk* ·
+     *Mi az ára* (cost/risk in user-visible terms: money, speed, effort, what breaks).
+  4. **Az ajánlásom** — say which one you would pick and why, in one sentence. Always
+     recommend; never leave him to weigh raw options alone.
+- **Two or three options maximum.** Cost must be expressed as impact he can feel (a feature
+  stops working, it takes longer, it costs more), not as "4 call sites must change".
+- **Short.** A decision fits on one screen. Detail belongs in the plan/spec, not in the question.
+- Keep full technical precision in **code, commits, PRs, bd issues and docs** — this rule
+  governs what you say *to him*, not what you write for the machine.
+
 ## Design direction (MANDATORY for any UI design/mockup work)
 
 Every UI design, mockup, and prototype MUST follow the **design 2.0 / "Mozaik 2.0"** visual
