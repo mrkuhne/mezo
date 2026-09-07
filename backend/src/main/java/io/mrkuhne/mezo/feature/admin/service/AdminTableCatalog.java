@@ -38,20 +38,24 @@ public class AdminTableCatalog {
      *
      * <p>{@code load()} is a pure {@code information_schema} read with no side effects, so a
      * benign race that runs it more than once under concurrent first access is harmless — every
-     * caller still converges on one cached, immutable map. Rather than the {@code updateAndGet}
-     * idiom (whose retry loop on CAS contention can re-invoke the lambda for the same reason,
-     * with no benefit here since there is nothing to merge), this reads the reference once,
-     * computes the replacement outside of any CAS retry loop, and installs it with a single
-     * {@code compareAndSet} — simpler to reason about and just as safe.
+     * caller still converges on one cached, immutable map. This never re-reads the shared
+     * reference to decide what to return: on a successful {@code compareAndSet} it returns the
+     * locally-held {@code loaded} value directly, and on a failed CAS (someone else installed a
+     * map first) it re-reads the reference to hand back what that thread installed. If a
+     * concurrent {@link #refresh()} clears the cache again in the gap between that failed CAS
+     * and the re-read — the one window where the re-read could itself observe {@code null} — the
+     * loop simply tries again instead of returning it, so this can never hand back {@code null}.
      */
     public Map<String, AdminTable> tables() {
         Map<String, AdminTable> cached = cache.get();
-        if (cached != null) {
-            return cached;
+        while (cached == null) {
+            Map<String, AdminTable> loaded = load();
+            if (cache.compareAndSet(null, loaded)) {
+                return loaded;
+            }
+            cached = cache.get();
         }
-        Map<String, AdminTable> loaded = load();
-        cache.compareAndSet(null, loaded);
-        return cache.get();
+        return cached;
     }
 
     /** Drops the cache; the next {@link #tables()} rebuilds it (after a migration). */

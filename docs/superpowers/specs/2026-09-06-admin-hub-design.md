@@ -93,9 +93,11 @@ New fragments `api/feature/admin-insights/admin-insights.yml` (tag `AdminInsight
 | `GET /api/admin/data/tables/{table}/rows?userId=&page=&size=&sort=&dir=&includeDeleted=` | paginated rows (`size` ≤ 200), jsonb returned as raw JSON, `total` count |
 | `GET /api/admin/data/views` | the convenience views: id, label, table, default sort, optional fixed filter |
 
-**Exclusions (never browsable):** `app_user.password_hash`, `invite.token` (and any column whose
-name matches `password|secret|token|hash`), plus all non-owned tables except `app_user` and
-`llm_log_history` (which have a userId filter path via `id` / `created_by` respectively).
+**Exclusions (never browsable):** `app_user.password_hash` (and any column whose name matches
+`password|secret|token|hash`), plus all non-owned tables except `app_user` and `llm_log_history`
+(which have a userId filter path via `id` / `created_by` respectively). `invite`'s secret column
+is `code`, not `token`; it is deliberately NOT excluded because the owner-facing Admin API already
+returns it (`InviteResponse.code`) so the owner can send it on to a beta tester.
 
 **Convenience views (v1):** mezociklusok (`mesocycle`), edzések (`workout_session`, by
 `started_at desc`), gyakorlatok (`exercise_set`, joined display of exercise name), minták
