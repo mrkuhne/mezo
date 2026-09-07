@@ -155,9 +155,9 @@ export function BeallitasokPage() {
           <div className="col gap-sm rise" style={{ '--d': '160ms' } as React.CSSProperties}>
             <span style={SECTION_LABEL}>Felületek</span>
             {row('i-ertesites', 'Értesítések', ertesitesLine, '/me/ertesitesek/beallitasok')}
-            {isOwner && row('i-erme', 'AI-napló', aiLine, '/me/ai-usage')}
+            {isOwner && row('i-erme', 'AI-napló', aiLine, '/admin/cost')}
             {kalauzRow}
-            {isOwner && row('i-emberek', 'Beta admin', 'meghívók · felhasználók', '/me/beallitasok/admin')}
+            {isOwner && row('i-emberek', 'Admin', 'meghívók · felhasználók', '/admin')}
           </div>
         </EntranceGroup>
       </PageBody>

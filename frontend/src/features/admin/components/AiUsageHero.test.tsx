@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
-import { AiUsageHero } from '@/features/me/components/AiUsageHero'
+import { AiUsageHero } from '@/features/admin/components/AiUsageHero'
 
 const TOTALS = {
   callCount: 412, successCount: 381, errorCount: 24, cancelledCount: 7,

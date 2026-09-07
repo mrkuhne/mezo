@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import { describe, it, expect } from 'vitest'
-import { AiModelBreakdown } from '@/features/me/components/AiModelBreakdown'
+import { AiModelBreakdown } from '@/features/admin/components/AiModelBreakdown'
 import { LLM_BREAKDOWN_MOCK } from '@/data/me/llmUsageHooks'
 
 describe('AiModelBreakdown', () => {

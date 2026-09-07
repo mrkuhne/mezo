@@ -121,10 +121,10 @@ describe('RunPage', () => {
     expect(screen.getByText(/kezdő állítás/)).toBeInTheDocument()
   })
 
-  test('the AI-napló row navigates to /me/ai-usage unfiltered (AiCallFilters is not URL-driven)', async () => {
+  test('the AI-napló row navigates to /admin/cost unfiltered (AiCallFilters is not URL-driven)', async () => {
     renderRun()
     await userEvent.click(screen.getByText('Ehhez a futáshoz tartozó nyers hívások az AI-naplóban'))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/ai-usage')
+    expect(mockNavigate).toHaveBeenCalledWith('/admin/cost')
   })
 
   test('‹ Futások back button navigates to the Futások list', async () => {

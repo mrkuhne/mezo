@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
-import { AiCallFilters } from '@/features/me/components/AiCallFilters'
+import { AiCallFilters } from '@/features/admin/components/AiCallFilters'
 
 const TOTALS = {
   callCount: 412, successCount: 381, errorCount: 24, cancelledCount: 7,

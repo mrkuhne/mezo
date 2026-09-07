@@ -20,7 +20,7 @@ const TABS: { key: Tab; label: string }[] = [
 const INPUT: React.CSSProperties = { flex: 1, minHeight: 40, borderRadius: 10, border: '1px solid var(--border-subtle)', background: 'var(--surface-1)', padding: '0 12px', fontSize: 13, color: 'var(--text-primary)' }
 const PRIMARY: React.CSSProperties = { minHeight: 40, borderRadius: 999, padding: '0 16px', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none', background: 'var(--text-primary)', color: 'var(--surface-1)' }
 
-export function BetaAdminPage() {
+export function AdminAccountsPage() {
   const navigate = useNavigate()
   const [tab, setTab] = useState<Tab>('invites')
   const [label, setLabel] = useState('')
@@ -44,7 +44,7 @@ export function BetaAdminPage() {
 
   return (
     <MozaikPage tone="lav">
-      <PageHead onBack={() => navigate('/me/beallitasok')} label="‹ Beállítások" />
+      <PageHead onBack={() => navigate('/admin')} label="‹ Admin" />
       <PageHero icon="i-emberek" name="Beta admin" sub="meghívók · felhasználók" />
       <PageBody>
         <EntranceGroup className="col gap-md">

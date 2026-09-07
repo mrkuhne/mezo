@@ -97,9 +97,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **modules:** adminApi.ts, adminDataApi.ts, adminDataHooks.ts, adminDataMock.ts, adminHooks.ts, adminInsightsApi.ts,
     adminInsightsHooks.ts, adminInsightsMock.ts, adminMock.ts
 - **FE ui** `frontend/src/features/admin`
-  - **pages:** AdminDataPage.tsx, AdminOverviewPage.tsx, AdminUsagePage.tsx, AdminUserDetailPage.tsx,
-    AdminUsersPage.tsx
-  - **components:** AdminTile.tsx, DataTable.tsx, JsonCell.tsx, MatrixGrid.tsx, Sparkline.tsx, TablePicker.tsx,
+  - **pages:** AdminAccountsPage.tsx, AdminCostDetailPage.tsx, AdminCostPage.tsx, AdminDataPage.tsx,
+    AdminOverviewPage.tsx, AdminUsagePage.tsx, AdminUserDetailPage.tsx, AdminUsersPage.tsx
+  - **components:** AdminTile.tsx, AiCallFilters.tsx, AiCallRow.tsx, AiFeatureBreakdown.tsx, AiModelBreakdown.tsx,
+    AiUsageHero.tsx, AiUserFilter.tsx, DataTable.tsx, JsonCell.tsx, MatrixGrid.tsx, Sparkline.tsx, TablePicker.tsx,
     UserPicker.tsx
   - **root:** AdminLayout.tsx, AdminRail.tsx, adminRoutes.tsx
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 6 IT + 1 unit
@@ -812,23 +813,21 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     sleep.ts, sleepGoal.ts, sleepHooks.ts, sleepShot.ts, weekLessons.ts, weekLessonsHooks.ts, weeklyReviewApi.ts,
     weeklyReviewHooks.ts, weeklyReviewMock.ts, weightHooks.ts
 - **FE ui** `frontend/src/features/me`
-  - **pages:** AiCallDetailPage.tsx, AiUsagePage.tsx, BeallitasokPage.tsx, BetaAdminPage.tsx, CelPage.tsx,
-    CelWizardPage.tsx, CelokPage.tsx, ChainPage.tsx, EnHubPage.tsx, GoalDietPage.tsx, GoalGuardsPage.tsx,
-    GoalPlannerPage.tsx, GoalPlansPage.tsx, GoalSegmentPage.tsx, GoalSettingsPage.tsx, GoalSuggestionPage.tsx,
-    GoalsPage.tsx, GoalsSkeleton.tsx, GrowthAwardsPage.tsx, GrowthHubPage.tsx, GrowthNaploPage.tsx,
-    GrowthSkillsPage.tsx, HabitEditPage.tsx, HabitPage.tsx, JelekPage.tsx, JournalPage.tsx, NightPage.tsx,
-    NotificationFeedPage.tsx, NotificationsPage.tsx, PeopleEmlitesekPage.tsx, PeopleHetiPage.tsx,
-    PeopleJeloltekPage.tsx, PeopleKorPage.tsx, PeoplePage.tsx, PersonDetailPage.tsx, RoutineWizardPage.tsx,
-    RutinHubPage.tsx, SleepPage.tsx, SzokasaidPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx, WeekDaysPage.tsx,
-    WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
+  - **pages:** BeallitasokPage.tsx, CelPage.tsx, CelWizardPage.tsx, CelokPage.tsx, ChainPage.tsx, EnHubPage.tsx,
+    GoalDietPage.tsx, GoalGuardsPage.tsx, GoalPlannerPage.tsx, GoalPlansPage.tsx, GoalSegmentPage.tsx,
+    GoalSettingsPage.tsx, GoalSuggestionPage.tsx, GoalsPage.tsx, GoalsSkeleton.tsx, GrowthAwardsPage.tsx,
+    GrowthHubPage.tsx, GrowthNaploPage.tsx, GrowthSkillsPage.tsx, HabitEditPage.tsx, HabitPage.tsx, JelekPage.tsx,
+    JournalPage.tsx, NightPage.tsx, NotificationFeedPage.tsx, NotificationsPage.tsx, PeopleEmlitesekPage.tsx,
+    PeopleHetiPage.tsx, PeopleJeloltekPage.tsx, PeopleKorPage.tsx, PeoplePage.tsx, PersonDetailPage.tsx,
+    RoutineWizardPage.tsx, RutinHubPage.tsx, SleepPage.tsx, SzokasaidPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx,
+    WeekDaysPage.tsx, WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
   - **sheets:** AiSuggestSheet.tsx, AttachPlanSheet.tsx, BiometricSheet.tsx, ChainEditSheet.tsx,
     DecisionReviewSheet.tsx, EditGoalSheet.tsx, JournalSheet.tsx, PersonEditSheet.tsx, PersonLogSheet.tsx,
     PillarCatalogSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx, SleepStatsSheet.tsx, TempPasswordSheet.tsx,
     WeightLogSheet.tsx
-  - **components:** AdminInviteRow.tsx, AdminUserRow.tsx, AiCallFilters.tsx, AiCallRow.tsx, AiCallUsage.tsx,
-    AiFeatureBreakdown.tsx, AiModelBreakdown.tsx, AiPayloadBlock.tsx, AiPriceSnapshot.tsx, AiTokenBar.tsx,
-    AiUsageHero.tsx, AiUserFilter.tsx, BadgesCard.tsx, DayDimensionTile.tsx, DayNavTiles.tsx, DayReviewCard.tsx,
-    DetailStat.tsx, EffortGrid.tsx, FieldRow.tsx, FormationCurve.tsx, GoalConnectionTimeline.tsx, GoalCourseHero.tsx,
+  - **components:** AdminInviteRow.tsx, AdminUserRow.tsx, AiCallUsage.tsx, AiPayloadBlock.tsx, AiPriceSnapshot.tsx,
+    AiTokenBar.tsx, BadgesCard.tsx, DayDimensionTile.tsx, DayNavTiles.tsx, DayReviewCard.tsx, DetailStat.tsx,
+    EffortGrid.tsx, FieldRow.tsx, FormationCurve.tsx, GoalConnectionTimeline.tsx, GoalCourseHero.tsx,
     GoalDetailHero.tsx, GoalDietWeekCard.tsx, GoalGate.tsx, GoalGuardCard.tsx, GoalRecept.tsx, GoalSegmentRail.tsx,
     GoalSuggestionCard.tsx, GoalSuggestionDiffGrid.tsx, GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthHero.tsx,
     GrowthJournalCard.tsx, HabitContextRings.tsx, HabitFormationCard.tsx, HabitFormationHistory.tsx, LifeGoalTile.tsx,

@@ -1,12 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLlmCalls, useLlmUsageBreakdown } from '@/data/hooks'
-import { AiCallFilters } from '@/features/me/components/AiCallFilters'
-import { AiCallRow } from '@/features/me/components/AiCallRow'
-import { AiFeatureBreakdown } from '@/features/me/components/AiFeatureBreakdown'
-import { AiModelBreakdown } from '@/features/me/components/AiModelBreakdown'
-import { AiUsageHero } from '@/features/me/components/AiUsageHero'
-import { AiUserFilter } from '@/features/me/components/AiUserFilter'
+import { AiCallFilters } from '@/features/admin/components/AiCallFilters'
+import { AiCallRow } from '@/features/admin/components/AiCallRow'
+import { AiFeatureBreakdown } from '@/features/admin/components/AiFeatureBreakdown'
+import { AiModelBreakdown } from '@/features/admin/components/AiModelBreakdown'
+import { AiUsageHero } from '@/features/admin/components/AiUsageHero'
+import { AiUserFilter } from '@/features/admin/components/AiUserFilter'
 import { GhostState } from '@/shared/ui/GhostState'
 import { MozaikPage, PageBody, PageHead, PageHero } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
@@ -34,7 +34,7 @@ const PERIODS = [
 const PAGE = 50
 const MAX_WINDOW = 500
 
-export function AiUsagePage() {
+export function AdminCostPage() {
   const navigate = useNavigate()
   const [period, setPeriod] = useState<LlmUsagePeriodKey>('WEEK')
   const [filters, setFilters] = useState<Filters>({})

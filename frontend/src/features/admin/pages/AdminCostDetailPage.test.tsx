@@ -5,23 +5,23 @@ import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { AiCallDetailPage } from '@/features/me/pages/AiCallDetailPage'
+import { AdminCostDetailPage } from '@/features/admin/pages/AdminCostDetailPage'
 import { LLM_CALL_DETAIL_MOCK } from '@/data/me/llmUsageHooks'
 
 afterEach(() => vi.unstubAllEnvs())
 
 function renderDetail(id: string = LLM_CALL_DETAIL_MOCK.id) {
   return render(
-    <MemoryRouter initialEntries={[`/me/ai-usage/${id}`]}>
+    <MemoryRouter initialEntries={[`/admin/cost/${id}`]}>
       <Routes>
-        <Route path="/me/ai-usage/:id" element={<AiCallDetailPage />} />
+        <Route path="/admin/cost/:id" element={<AdminCostDetailPage />} />
       </Routes>
     </MemoryRouter>,
     { wrapper: QueryWrapper },
   )
 }
 
-describe('AiCallDetailPage (mock mode)', () => {
+describe('AdminCostDetailPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 
   it('shows the call identity and the request/response models', () => {
@@ -85,7 +85,7 @@ describe('AiCallDetailPage (mock mode)', () => {
 
 // Two edge cases the mock seed can't exercise (mock mode always answers the same fixed
 // LLM_CALL_DETAIL_MOCK regardless of :id) — real mode + a per-test MSW override instead.
-describe('AiCallDetailPage (real mode edge cases)', () => {
+describe('AdminCostDetailPage (real mode edge cases)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
 
   it('reads a null createdBy as a background job, not blank', async () => {

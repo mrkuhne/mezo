@@ -1,6 +1,6 @@
 import { render, screen, fireEvent } from '@testing-library/react'
 import { describe, it, expect, vi } from 'vitest'
-import { AiFeatureBreakdown } from '@/features/me/components/AiFeatureBreakdown'
+import { AiFeatureBreakdown } from '@/features/admin/components/AiFeatureBreakdown'
 
 const GROUPS = [
   { key: 'companion_chat', callCount: 96, costUsd: 0.74 },

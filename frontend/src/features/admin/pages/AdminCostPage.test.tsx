@@ -5,7 +5,7 @@ import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
-import { AiUsagePage } from '@/features/me/pages/AiUsagePage'
+import { AdminCostPage } from '@/features/admin/pages/AdminCostPage'
 import { LLM_CALLS_MOCK } from '@/data/me/llmUsageHooks'
 
 afterEach(() => vi.unstubAllEnvs())
@@ -13,13 +13,13 @@ afterEach(() => vi.unstubAllEnvs())
 function renderPage() {
   return render(
     <MemoryRouter>
-      <AiUsagePage />
+      <AdminCostPage />
     </MemoryRouter>,
     { wrapper: QueryWrapper },
   )
 }
 
-describe('AiUsagePage (mock mode)', () => {
+describe('AdminCostPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 
   it('opens on the week period with the header numbers and the call list', () => {
@@ -91,7 +91,7 @@ describe('AiUsagePage (mock mode)', () => {
   })
 })
 
-describe('AiUsagePage (real mode)', () => {
+describe('AdminCostPage (real mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'false'))
 
   it('raises the requested window when more calls are loaded', async () => {

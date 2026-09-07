@@ -43,7 +43,7 @@ export function AiCallRow({ call }: { call: LlmCallListItem }) {
 
   return (
     <Link
-      to={`/me/ai-usage/${call.id}`}
+      to={`/admin/cost/${call.id}`}
       className="aiu-callt"
       style={{ display: 'block', color: 'inherit', '--rc': TONE_COLOR[tone] } as React.CSSProperties}
     >

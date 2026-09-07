@@ -1,5 +1,5 @@
 import { render, screen, fireEvent } from '@testing-library/react'
-import { AiUserFilter } from '@/features/me/components/AiUserFilter'
+import { AiUserFilter } from '@/features/admin/components/AiUserFilter'
 
 const groups = [
   { userId: 'u-1', name: 'Daniel', callCount: 300, totalTokens: 900000, costUsd: 1.31 },

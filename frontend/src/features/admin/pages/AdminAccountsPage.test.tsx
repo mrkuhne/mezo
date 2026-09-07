@@ -6,16 +6,16 @@ import { server } from '@/test/msw/server'
 import { API_BASE } from '@/test/msw/handlers'
 import { QueryWrapper } from '@/test/queryWrapper'
 import { setToken } from '@/data/_client/api'
-import { BetaAdminPage } from '@/features/me/pages/BetaAdminPage'
+import { AdminAccountsPage } from '@/features/admin/pages/AdminAccountsPage'
 import { ADMIN_INVITES_MOCK, MOCK_TEMP_PASSWORD } from '@/data/admin/adminMock'
 
 afterEach(() => { vi.unstubAllEnvs(); setToken(null) })
 
 function renderPage() {
-  return render(<MemoryRouter><BetaAdminPage /></MemoryRouter>, { wrapper: QueryWrapper })
+  return render(<MemoryRouter><AdminAccountsPage /></MemoryRouter>, { wrapper: QueryWrapper })
 }
 
-describe('BetaAdminPage (mock mode)', () => {
+describe('AdminAccountsPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 
   it('opens on Meghívók with both seeded codes, the used one labelled with its consumer', () => {
@@ -61,7 +61,7 @@ describe('BetaAdminPage (mock mode)', () => {
   })
 })
 
-describe('BetaAdminPage (real mode)', () => {
+describe('AdminAccountsPage (real mode)', () => {
   beforeEach(() => { vi.stubEnv('VITE_USE_MOCK', 'false'); setToken('t') })
 
   it('renders the MSW lists and POSTs a new code', async () => {

@@ -30,7 +30,7 @@ function Cell({ label, value, wide }: { label: string; value: string; wide?: boo
   )
 }
 
-export function AiCallDetailPage() {
+export function AdminCostDetailPage() {
   const { id = '' } = useParams()
   const navigate = useNavigate()
   const { data, isPending, isError, refetch } = useLlmCall(id)
@@ -52,7 +52,7 @@ export function AiCallDetailPage() {
     // F7.4 Mozaik re-face (mezo-d20.8.4.1, en-mely.html): sky shell, hero = feature·operation,
     // stat strip with the three headline numbers, then the existing cards on mz-qcard.
     <MozaikPage tone="sky">
-      <PageHead onBack={() => navigate('/me/ai-usage')} label="‹ AI-használat" />
+      <PageHead onBack={() => navigate('/admin/cost')} label="‹ AI-használat" />
       <EntranceGroup>
       <PageBody className="col gap-md">
       <div className="rise" style={{ padding: '2px 2px 0' }}>

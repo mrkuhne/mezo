@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import { describe, it, expect } from 'vitest'
-import { AiCallRow } from '@/features/me/components/AiCallRow'
+import { AiCallRow } from '@/features/admin/components/AiCallRow'
 import { LLM_CALLS_MOCK } from '@/data/me/llmUsageHooks'
 
 const [stream, tool, failed, cancelled, embed] = LLM_CALLS_MOCK.items
@@ -14,7 +14,7 @@ describe('AiCallRow', () => {
   it('links to the call detail page', () => {
     renderRow(tool)
     expect(screen.getByRole('link')).toHaveAttribute(
-      'href', `/me/ai-usage/${tool.id}`,
+      'href', `/admin/cost/${tool.id}`,
     )
   })
 
