@@ -144,11 +144,33 @@ argument.**
 `docs/features/character.md` already records that some konzílium constraints are prompt-only with
 no code gate, and this one guards a `sensitive` claim, so it gets a gate:
 
-- Mezo may reject over a `KEEP` or `WEAKEN` freely (tightening is always the safe direction).
-- Mezo may accept over a `KILL` **only when the proposal is not `sensitive`**, and the ruling must
-  carry `dissent: true`.
-- An accept over a `sensitive` `KILL` is **dropped** — the ruling becomes a rejection — and logged
-  at WARN, following the `CharacterConferenceService.warnUnaddressedUserFeedback` idiom.
+- Mezo may **reject** over any verdict, freely — tightening is always the safe direction.
+- Mezo may **accept** freely on a proposal that is not `sensitive`, and on any `sensitive` proposal
+  whose kind is `DOWN` or `RETIRE` — those weaken or remove a claim, so they tighten the dossier.
+- Accepting a `sensitive` **`NEW` or `UP`** proposal — the two kinds that add or strengthen a claim
+  about a person — requires an **affirmative `KEEP` or `WEAKEN`** from the Szkeptikus. A `KILL`
+  blocks it, and so does the **absence** of a verdict: a `null` verdict (the Szkeptikus round
+  returned blank or unparseable JSON, so no index has one) and an unrecognised grade both block.
+- A blocked accept becomes a rejection carrying a **system-authored** reason that says so, never
+  the chair's own accept text, plus `note = NOT_FOR_DOSSIER`, and is logged at WARN following the
+  `CharacterConferenceService.warnUnaddressedUserFeedback` idiom.
+
+**Why absence blocks (the correction that cost this design a review round).** The first version of
+this rule keyed on an explicit `KILL`, so a Szkeptikus round that failed to parse disabled the
+guardrail entirely — and the same failure made `skepticLine` synthesise `KEEP — nincs ellenérv`
+into the chair's prompt, actively telling the chair the Szkeptikus had approved. A parse failure
+does not mean approval; it means the adversary check never ran, which is weaker ground than an
+explicit `KEEP`. This pipeline's own failure rule is "an unusable LLM answer ⇒ no change + honest
+absence" (§8), and failing closed here does **not** require pretending the Szkeptikus said `KILL`:
+what the system *shows* and what it *writes* are already separate concerns (`shownRulings()` versus
+the index-complete `rulings`, and `Result.verdicts` omitting unanswered indexes), so the shown
+verdict stays honestly absent while the write is declined. Correspondingly, `skepticLine` renders
+an explicit "gave no answer" line for an unanswered index rather than a fabricated grade, on the
+transcript and in the chair's prompt block alike, from one shared helper so the two cannot diverge.
+
+The cost asymmetry is what settles it: failing closed defers a sensitive claim by one week when the
+Szkeptikus round breaks, while failing open writes a permanent, evidence-unchecked sensitive claim
+about a person.
 
 `toRuling` therefore takes the Szkeptikus's verdict for that index as a parameter. It stays a pure
 static function, which is where this rule gets its unit test.

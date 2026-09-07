@@ -1353,7 +1353,18 @@ Three edits, each in the section that already covers the topic:
 2. **The role description** (§ "Built by a visible AI team" and the Konzílium FE section) — state the split: the Szkeptikus owns "is it true", Mezo owns "do we write it down, and how". Note that the Szkeptikus deliberately sees neither the dossier nor the peer stances.
 3. **Gotchas** — add three entries next to the existing "Confidence ceilings differ by path" note:
    - the chair's dossier block is capped by `mezo.character.conference.max-dossier-claims` (80) and **says so when capped**;
-   - the asymmetric dissent rule is enforced in `KonziliumVerdictRound.toRuling`, not only in the prompt — an accept over a **sensitive** KILL is dropped to a rejection with `note=NOT_FOR_DOSSIER` and a WARN;
+   - the asymmetric dissent rule is enforced in `KonziliumVerdictRound.toRuling`, not only in the
+     prompt, and it **fails closed**: accepting a `sensitive` **`NEW`/`UP`** proposal requires an
+     affirmative `KEEP` or `WEAKEN` from the Szkeptikus, so a `KILL`, a `null` verdict (that round
+     failed to parse) and an unrecognised grade all block it; the blocked ruling becomes a
+     rejection with a **system-authored** reason (never the chair's own accept text),
+     `note=NOT_FOR_DOSSIER`, and a WARN. `DOWN`/`RETIRE` accepts are never blocked — they tighten
+     the dossier, and blocking them would leave a sensitive claim in place while stamping it
+     "not for the dossier";
+   - `skepticLine` renders an explicit "gave no answer" line for an index the Szkeptikus never
+     answered, on the transcript and in the chair's prompt block alike, from one shared helper. It
+     used to synthesise `KEEP — nincs ellenérv` there, which told the chair the Szkeptikus had
+     approved something it never saw;
    - the chair's transcript turn renders confidence as a WORD (it used to print a raw decimal, against `CharacterConfidenceWords`'s stated invariant) and carries a per-proposal line only where the ruling added something.
 
 - [ ] **Step 2: Verify the codemap is still fresh**
