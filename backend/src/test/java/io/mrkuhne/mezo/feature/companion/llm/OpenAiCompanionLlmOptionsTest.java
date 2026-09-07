@@ -28,6 +28,24 @@ class OpenAiCompanionLlmOptionsTest {
         assertThat(OpenAiCompanionLlm.options("gpt-5.6-terra").getModel()).isEqualTo("gpt-5.6-terra");
     }
 
+    /**
+     * mezo-ozri.3, measured against the live API: GPT-5.6 on {@code /v1/chat/completions} rejects a
+     * request that carries BOTH function tools and a reasoning effort —
+     * {@code 400: Function tools with reasoning_effort are not supported for gpt-5.6-luna … set
+     * reasoning_effort to 'none'}. Every single one of the 42 eval cases failed on it. The tool
+     * path therefore states {@code none} explicitly rather than letting the provider's default
+     * stand; the non-tool paths keep the tier defaults, so reasoning effort survives as a lever
+     * wherever it is actually allowed (spec §Q1).
+     */
+    @Test
+    void testToolOptions_shouldDisableReasoningEffort_becauseChatCompletionsRejectsItWithFunctionTools() {
+        OpenAiChatOptions options = OpenAiCompanionLlm.toolOptions("gpt-5.6-luna");
+
+        assertThat(options.getReasoningEffort()).isEqualTo("none");
+        assertThat(options.getModel()).isEqualTo("gpt-5.6-luna");
+        assertThat(options.getStreamOptions().includeUsage()).isTrue();
+    }
+
     /** The base reads the model id back off the options — a lossy mutate() would blank the tier. */
     @Test
     void testOptions_shouldSurviveMutateRoundTrip_becauseTheBaseRebuildsThemForTheChatClient() {

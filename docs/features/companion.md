@@ -216,9 +216,19 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   tool name, kept in sync with the `@Tool` descriptions); (3) the enriched **snapshot-first**
   context (Component A above) removes most tool calls before they'd ever be needed; (4) a
   **measurement phase** — `ToolSelectionEvalIT` (`feature/companion/eval/`, `@Tag("eval")`,
-  opt-in, real `GeminiCompanionLlm` over a 40-case representative Hungarian question set) reports
-  selection-accuracy from the `RecordingToolCallback` audit: baseline **37/40 = 92.5%**, printed
-  via `log.info`, not a CI pass/fail gate. (5) **Tool-RAG is a prepared-but-INACTIVE escape
+  opt-in, the REAL provider adapter over a 42-case representative Hungarian question set) reports
+  selection accuracy, critical wrong tools, JSON validity, latency p50/p95 and USD per successful
+  action (the money read back out of `llm_log_history`), printed via `log.info` and written to
+  `backend/target/eval/`, not a CI pass/fail gate. **Which model** it measures comes from one
+  property — `-Dmezo.eval.model=gpt-5.6-luna` also switches the provider, that provider's cheap
+  tier and the API key the gate demands (`EvalTarget`); a requested model whose key is missing
+  FAILS the run instead of skipping it (mezo-ozri.3). Re-baselined 2026-09-07 on all three
+  models: incumbent `gemini-2.5-flash` 88.1% exact match / p95 6268 ms / $0.0033 per successful
+  action, **`gpt-5.6-luna` 90.5% / 5591 ms / $0.00047** (the chosen default), `gpt-5.6-terra`
+  95.2% / 8092 ms / $0.0047 (stays the smart tier) — see
+  [the re-baseline comparison](../research/comparisons/companion-chat-model-rebaseline-2026-09.md)
+  for the six gates and the decision.
+  Run: `./mvnw test -Dtest=ToolSelectionEvalIT -Dmezo.excludedTestGroups= [-Dmezo.eval.model=…]`. (5) **Tool-RAG is a prepared-but-INACTIVE escape
   hatch** on the existing pgvector `EmbeddingPort` — deliberately not built (YAGNI): its trigger
   is selection-accuracy dropping below ~85% (this baseline is comfortably above) **or** the
   toolset growing past ~20–25 (e.g. when write-tools land). Re-run the eval whenever tools are
@@ -7637,7 +7647,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{GrowthTools,PracticeTools,InsightsTools}.java` — the mezo-xixu trio of new beans (`get_growth`/`get_daily_practice`/`get_insights`), bringing the total to 15 `@Tool` reads.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/{ToolCallAudit,RecordingToolCallback,ToolContexts,ToolText}.java` — audit/budget/context/render spine; `ToolCallAudit.onCall` is the mezo-280 live-progress listener seam.
 - New plain finders in the owning features: `SleepLogRepository` (since-date), `WorkoutSessionRepository.findDoneInstancesBetween`, `SupplementIntakeRepository` (since-date); shared `GoalPrescriptionJson.currentSegment`.
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase (`@Tag("eval")`, opt-in, real `GeminiCompanionLlm`, 40-case Hungarian question set, baseline 37/40 = 92.5%).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase, re-baselined in mezo-ozri.3 (`@Tag("eval")`, opt-in, model chosen by `-Dmezo.eval.model`, 42-case Hungarian question set, incumbent baseline 37/42 = 88.1% exact match). Support classes beside it: `EvalTarget`, `EvalApiKeyCondition`, `ToolDomains`, `ToolSelectionEvalMetrics`, `EvalReportWriter`, plus `ToneJudgeEvalIT`/`ToneJudgePairing` for the blind Hungarian tone A/B.
 - `docs/references/companion_tool_conventions.md` — the mezo-xixu `@Tool` description house rule (the `[Eszköz-útmutató]` routing hint's model-facing mirror).
 
 **Backend — `[Célok]` life-goal snapshot block + `get_life_goals` tool (`mezo-iizd.10`)**
@@ -7698,7 +7708,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{AiMessageJsonbRoundTripIT,ConversationServiceIT,ChatServiceIT,ChatStreamServiceIT,CompanionApiIT,CompanionStreamApiIT,CompanionApiSwitchOffIT,CompanionLlmFakeIT,CompanionRealWiringIT,CompanionSwitchOffIT,CompanionPropertiesIT}.java`
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/ContextSnapshotAssemblerIT.java` (V0.3, 24 tests) — incl. the mezo-xixu tomorrow-resolution regression guard (§3 above).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/tools/{CompanionToolsRenderIT,CompanionToolRegistryIT,ToolCallAuditTest,RecordingToolCallbackTest}.java` — the V0.5–mezo-xixu tool batch (77 render tests over 15 tools).
-- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase (`@Tag("eval")`, opt-in, 40-case set, baseline 37/40).
+- `backend/src/test/java/io/mrkuhne/mezo/feature/companion/eval/ToolSelectionEvalIT.java` — the mezo-xixu measurement phase, re-baselined in mezo-ozri.3 (`@Tag("eval")`, opt-in, 42-case set, incumbent baseline 37/42 exact match).
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{KnowledgeFactServiceIT,LearnedFactPersistenceIT,CompanionFactApiIT}.java` — the V1.1 fact batch.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{FactExtractionServiceIT,FactCandidateServiceIT,CompanionFactCandidateApiIT,ChatExtractionFlowIT,ChatExtractionSwitchOffIT}.java` — the V1.2 extraction/decision batch.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/{CompanionAdvisorChainIT,ChatStreamAdvisorIT,CompanionAdvisorsSwitchOffIT}.java` + `advisor/{ClinicalOutputCheckTest,TurnVerdictCheckIT}.java` — the V1.3 advisor batch.

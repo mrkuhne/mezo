@@ -324,8 +324,26 @@ public abstract class SpringAiCompanionLlm implements CompanionLlm {
         if (!tools.isEmpty()) {
             // tools(Object...) is the unified 2.0 registration API (toolCallbacks(..) is deprecated)
             spec = spec.tools((Object[]) tools.toArray(ToolCallback[]::new)).toolContext(toolContext);
+            ChatOptions.Builder<?> toolOptions = toolCallOptions();
+            if (toolOptions != null) {
+                spec = spec.options(toolOptions);
+            }
         }
         return spec;
+    }
+
+    /**
+     * Provider hook: options a TOOL-carrying request must use INSTEAD of the cheap tier's defaults.
+     * {@code null} (the default) means the tier defaults stand — which is right for Gemini, where
+     * nothing about attaching tools changes what the request may say.
+     *
+     * <p>OpenAI is the reason this exists: on {@code /v1/chat/completions} a GPT-5.6 request that
+     * carries both function tools and a reasoning effort is rejected outright (mezo-ozri.3), so
+     * that adapter returns tier options with the effort pinned to {@code none} here, and leaves
+     * every non-tool path alone. A BUILDER, because that is what the 2.0 request spec takes.
+     */
+    protected ChatOptions.Builder<?> toolCallOptions() {
+        return null;
     }
 
     /** A port provider-független Turn-jei -> spring-ai üzenetek. Üres history -> üres lista. */
