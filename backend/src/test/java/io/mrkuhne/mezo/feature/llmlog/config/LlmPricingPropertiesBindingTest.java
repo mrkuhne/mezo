@@ -58,6 +58,32 @@ class LlmPricingPropertiesBindingTest {
         assertThat(pricing.models().get("gemini-embedding-001").reasoningBilling()).isNull();
     }
 
+    /**
+     * mezo-ozri.2: the GPT-5.6 rows. {@code reasoning-billing: INCLUDED_IN_OUTPUT} is the whole
+     * point of them — OpenAI reports reasoning tokens INSIDE the completion count, so there is
+     * deliberately no {@code thinking-per-million}: billing one would charge the same tokens twice.
+     */
+    @Test
+    void testPricingBinding_shouldCarryTheGptRowsAsIncludedInOutput_whenBoundFromApplicationYml() throws IOException {
+        LlmPricingProperties pricing =
+            applicationYmlBinder().bind("mezo.llm-log.pricing", LlmPricingProperties.class).get();
+
+        assertThat(pricing.models()).containsKeys("gpt-5.6-luna", "gpt-5.6-terra");
+
+        ModelPrice luna = pricing.models().get("gpt-5.6-luna");
+        assertThat(luna.inputPerMillion()).isEqualByComparingTo("0.20");
+        assertThat(luna.outputPerMillion()).isEqualByComparingTo("1.20");
+        assertThat(luna.cachedPerMillion()).isEqualByComparingTo("0.02");
+        assertThat(luna.thinkingPerMillion()).isNull();
+        assertThat(luna.reasoningBilling()).isEqualTo(ReasoningBilling.INCLUDED_IN_OUTPUT);
+
+        ModelPrice terra = pricing.models().get("gpt-5.6-terra");
+        assertThat(terra.inputPerMillion()).isEqualByComparingTo("2.00");
+        assertThat(terra.outputPerMillion()).isEqualByComparingTo("12.0");
+        assertThat(terra.cachedPerMillion()).isEqualByComparingTo("0.20");
+        assertThat(terra.reasoningBilling()).isEqualTo(ReasoningBilling.INCLUDED_IN_OUTPUT);
+    }
+
     @Test
     void testLlmLogBinding_shouldReadPayloadCapAndExecutor_whenBoundFromApplicationYml() throws IOException {
         LlmLogProperties props = applicationYmlBinder().bind("mezo.llm-log", LlmLogProperties.class).get();

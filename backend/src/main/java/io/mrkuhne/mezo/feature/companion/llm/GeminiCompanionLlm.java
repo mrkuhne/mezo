@@ -89,13 +89,13 @@ public class GeminiCompanionLlm implements CompanionLlm {
         LlmRoundUsageAdvisor roundUsageAdvisor = new LlmRoundUsageAdvisor(llmUsageExtractor);
         this.chatClient = ChatClient.builder(chatModel)
             .defaultOptions(ChatOptions.builder()
-                .model(companionProperties.llm().chatModel()))
+                .model(companionProperties.llm().gemini().chatModel()))
             .defaultAdvisors(roundUsageAdvisor)
             .build();
-        // V3.2: the smart tier (llm.smart-model) — weekly pipelines only, never chat turns
+        // V3.2: the smart tier (llm.gemini.smart-model) — weekly pipelines only, never chat turns
         this.smartChatClient = ChatClient.builder(chatModel)
             .defaultOptions(ChatOptions.builder()
-                .model(companionProperties.llm().smartModel()))
+                .model(companionProperties.llm().gemini().smartModel()))
             .defaultAdvisors(roundUsageAdvisor)
             .build();
     }
@@ -336,11 +336,11 @@ public class GeminiCompanionLlm implements CompanionLlm {
     }
 
     private String chatModel() {
-        return companionProperties.llm().chatModel();
+        return companionProperties.llm().gemini().chatModel();
     }
 
     private String smartModel() {
-        return companionProperties.llm().smartModel();
+        return companionProperties.llm().gemini().smartModel();
     }
 
     /** An app-level failure carries its SystemMessage code; a provider/transport failure has none. */

@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Graph;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.HabitSuggest;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Hypotheses;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Llm;
+import io.mrkuhne.mezo.feature.companion.config.LlmProvider;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Patterns;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.PatternPair;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties.Recall;
@@ -90,7 +91,8 @@ class GeminiCompanionLlmPromptOrderTest {
     /** A legkisebb valid {@link CompanionProperties} — minden constraint kielégítve. */
     private static CompanionProperties minimalCompanionProperties() {
         return new CompanionProperties(
-                new Llm("gemini-2.5-flash", "gemini-2.5-pro"),
+                new Llm(LlmProvider.GEMINI, new Llm.Tier("gemini-2.5-flash", "gemini-2.5-pro"),
+                        new Llm.Tier("gpt-5.6-luna", "gpt-5.6-terra"), Map.of()),
                 new Chat(20, 80),
                 new Snapshot(7, 200, 180, 12, 3),
                 new Tools(15, 30, 26, 10),

@@ -541,11 +541,36 @@ mezo:
         "[gemini-2.5-flash]":     { input-per-million: 0.30, output-per-million: 2.50, thinking-per-million: 2.50, cached-per-million: 0.075, reasoning-billing: SEPARATE }
         "[gemini-2.5-pro]":       { input-per-million: 1.25, output-per-million: 10.0, thinking-per-million: 10.0, cached-per-million: 0.31, reasoning-billing: SEPARATE }
         "[gemini-embedding-001]": { embed-per-million-chars: 0.15 }
+        # GPT-5.6 (mezo-ozri.2). No thinking-per-million on purpose: OpenAI reports reasoning
+        # tokens INSIDE completion_tokens, so INCLUDED_IN_OUTPUT is what stops the same tokens
+        # being billed twice. WARNING (spec §8.13): these rates are PROMOTIONAL and guaranteed only
+        # until 2026-11-21 — re-run the cost model then.
+        "[gpt-5.6-luna]":         { input-per-million: 0.20, output-per-million: 1.20, cached-per-million: 0.02, reasoning-billing: INCLUDED_IN_OUTPUT }
+        "[gpt-5.6-terra]":        { input-per-million: 2.00, output-per-million: 12.0, cached-per-million: 0.20, reasoning-billing: INCLUDED_IN_OUTPUT }
   companion:
-    # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
+    # Companion LLM providers and model tiers (ADR 0008 + mezo-ozri spec §M1/§A1) — config, never
+    # code. Binds onto CompanionProperties.Llm.
     llm:
-      chat-model: gemini-2.5-flash   # cheap/fast tier: every conversational turn
-      smart-model: gemini-2.5-pro    # smart tier: heavy pipelines (V3.2 critique); unused until then
+      # Which adapter answers a chat turn: gemini | openai. GEMINI is the shipped default, and the
+      # OpenAI adapter bean does not even exist while this says gemini. Flipping it makes
+      # OpenAiCompanionLlm the @Primary CompanionLlm — the Gemini adapter stays a bean either way,
+      # because it is both the fallback and the only audio route. Do NOT flip it before a real
+      # OPENAI_API_KEY is in the environment: the dummy default would fail every call.
+      provider: gemini
+      # Tiers are per PROVIDER, not one flat pair: both providers are live at once, so the Gemini
+      # models must stay addressable even when OpenAI is answering the chat turns.
+      gemini:
+        chat-model: gemini-2.5-flash   # cheap/fast tier: every conversational turn
+        smart-model: gemini-2.5-pro    # smart tier: heavy pipelines (V3.2 critique)
+      openai:
+        chat-model: gpt-5.6-luna       # cheap/fast tier (spec §4: Terra as the default is -19% margin)
+        smart-model: gpt-5.6-terra     # smart tier: the 19 completeSmart call sites
+      # Per-CallKind exceptions to `provider`. Honoured only while provider is openai, and only for
+      # these two kinds: no GPT-5.6 model has an audio endpoint at all, and the vision A/B is not
+      # measured yet (spec §10.3), so both stay on Gemini. An absent key = the active provider.
+      per-call-kind:
+        TRANSCRIBE: gemini
+        VISION: gemini
     chat:
       # How many prior messages (user+assistant rows) are windowed into the system prompt (20 = ~10 turns)
       history-window: 20

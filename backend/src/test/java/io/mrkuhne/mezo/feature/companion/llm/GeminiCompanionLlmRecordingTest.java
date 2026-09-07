@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.google.genai.types.GenerateContentResponseUsageMetadata;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.config.LlmProvider;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
@@ -341,7 +342,9 @@ class GeminiCompanionLlmRecordingTest {
 
     private static CompanionProperties companionProperties() {
         return new CompanionProperties(
-            new CompanionProperties.Llm(CHAT_MODEL, SMART_MODEL),
+            new CompanionProperties.Llm(LlmProvider.GEMINI,
+                new CompanionProperties.Llm.Tier(CHAT_MODEL, SMART_MODEL),
+                new CompanionProperties.Llm.Tier("gpt-5.6-luna", "gpt-5.6-terra"), Map.of()),
             null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
