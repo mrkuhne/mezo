@@ -53,7 +53,7 @@ describe('KonziliumPage — list', () => {
   test('renders one row per conference, with a date and a HU kind badge — no fabricated outcome counts', () => {
     renderAt('/me/karakter/konzilium')
     expect(screen.getAllByRole('button', { name: /vasárnap|szept|aug|júl/i }).length).toBeGreaterThan(0)
-    expect(screen.getAllByText('HETI').length).toBe(2)
+    expect(screen.getAllByText('HETI').length).toBe(4)
     expect(screen.getByText('HAVI')).toBeInTheDocument()
     expect(screen.getByText('BOOTSTRAP')).toBeInTheDocument()
   })

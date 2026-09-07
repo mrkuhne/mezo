@@ -406,10 +406,18 @@ export const MOCK_FEED: CharacterFeedItem[] = [
 
 // KONZ (prototype's `var KONZ`) — conference summaries, newest first.
 export const MOCK_CONFERENCES: CharacterConferenceSummary[] = [
-  { id: 'w2', kind: 'WEEKLY', weekStart: '2026-08-24', generatedAt: '2026-08-30T07:00:00Z', outcome: { accepted: 0, retired: 0, portraitRewritten: 0, other: 0 } },
-  { id: 'w1', kind: 'WEEKLY', weekStart: '2026-08-17', generatedAt: '2026-08-23T07:00:00Z', outcome: { accepted: 0, retired: 0, portraitRewritten: 0, other: 0 } },
-  { id: 'm1', kind: 'MONTHLY', weekStart: null, generatedAt: '2026-08-01T07:00:00Z', outcome: { accepted: 0, retired: 0, portraitRewritten: 0, other: 0 } },
-  { id: 'b0', kind: 'BOOTSTRAP', weekStart: null, generatedAt: '2026-07-15T09:00:00Z', outcome: { accepted: 0, retired: 0, portraitRewritten: 0, other: 0 } },
+  { id: 'w2', kind: 'WEEKLY', weekStart: '2026-08-24', generatedAt: '2026-08-30T07:00:00Z',
+    outcome: { accepted: 2, retired: 1, portraitRewritten: 1, other: 0 } },
+  { id: 'w1', kind: 'WEEKLY', weekStart: '2026-08-17', generatedAt: '2026-08-23T07:00:00Z',
+    outcome: { accepted: 2, retired: 0, portraitRewritten: 0, other: 1 } },
+  { id: 'w0', kind: 'WEEKLY', weekStart: '2026-08-10', generatedAt: '2026-08-16T07:00:00Z',
+    outcome: { accepted: 0, retired: 0, portraitRewritten: 0, other: 0 } },
+  { id: 'm1', kind: 'MONTHLY', weekStart: null, generatedAt: '2026-08-01T07:00:00Z',
+    outcome: { accepted: 5, retired: 2, portraitRewritten: 1, other: 0 } },
+  { id: 'j1', kind: 'WEEKLY', weekStart: '2026-07-20', generatedAt: '2026-07-26T07:00:00Z',
+    outcome: { accepted: 1, retired: 0, portraitRewritten: 0, other: 0 } },
+  { id: 'b0', kind: 'BOOTSTRAP', weekStart: null, generatedAt: '2025-12-20T09:00:00Z',
+    outcome: { accepted: 9, retired: 0, portraitRewritten: 1, other: 0 } },
 ]
 
 // TRANSCRIPT (prototype's `var TRANSCRIPT`) — the latest weekly konzílium (w2), full turn-by-turn
@@ -454,20 +462,49 @@ const TRANSCRIPT_TURNS: ConferenceTurn[] = [
   },
 ]
 
-// The SAME four claims TRANSCRIPT_TURNS carries, as a structured deliberation — four threads,
-// one per dossier chapter the four proposals belong to (`physical`, `discipline`, `nutrition`,
-// `mental`), titled with those dimensions' own titles (DIM_SEEDS above), exactly the way the
-// backend's DeliberationAssembler titles a thread. The prose Szkeptikus turn takes a position on
-// the first three proposals only and never mentions the Pszichológus's — so that item's
-// `skeptic` is null here too: the mock must not invent a verdict the transcript does not
-// contain (mezo-xlvr final review, M7).
+// Four threads covering every deliberation state the redesigned screen must render: multiple
+// claims in one thread, a claim with three reactions spanning all three stances, a thread with
+// no debate at all, a KILL verdict the chair rejects, a RETIRE kind, and a claim neither the
+// Szkeptikus nor Mezo ever answered (spec §11 / task-4 brief).
 const DELIBERATION_W2: ConferenceThread[] = [
+  {
+    dimensionKey: 'recovery',
+    title: 'Regeneráció',
+    items: [
+      {
+        index: 0,
+        expertKey: 'szomnologus',
+        text: 'A hétvégi lefekvés két órával kitolódik, és ez hétfőn is meglátszik.',
+        kind: 'NEW',
+        claimId: null,
+        sensitive: false,
+        reactions: [
+          { expertKey: 'doki', stance: 'SUPPORT', argument: 'A pulzusvariancia is ezt a két napot mutatja gyengébbnek.' },
+          { expertKey: 'drill', stance: 'CHALLENGE', argument: 'Szerintem ez nem alvás, hanem hétvégi program — nem viselkedési minta.' },
+          { expertKey: 'pszichologus', stance: 'NUANCE', argument: 'A kettő nem zárja ki egymást: a program tolja ki, a hatása viszont alvás.' },
+        ],
+        skeptic: { verdict: 'KEEP', argument: 'Hat hét adat, konzisztens. Drill ellenvetése nem cáfolja a mintát.' },
+        chair: { accepted: true, confidence: BIZTOS, reason: 'Bekerül a dossziéba — a Szkeptikus érvét fogadom el.' },
+      },
+      {
+        index: 1,
+        expertKey: 'doki',
+        text: 'Egy korábbi regenerációs állítás már nem áll: a délutáni fáradtság megszűnt.',
+        kind: 'RETIRE',
+        claimId: 'c-recovery-old',
+        sensitive: false,
+        reactions: [],
+        skeptic: { verdict: 'KEEP', argument: 'Négy hete nincs rá jel, a nyugdíjazás indokolt.' },
+        chair: { accepted: true, confidence: VALOSZINU, reason: 'Nyugdíjazom, nem viszem tovább.' },
+      },
+    ],
+  },
   {
     dimensionKey: 'physical',
     title: 'Fizikai',
     items: [
       {
-        index: 0,
+        index: 2,
         expertKey: 'doki',
         text: 'A testzsír-trend és a stagnáló testsúly rekompozícióra utal.',
         kind: 'NEW',
@@ -482,57 +519,36 @@ const DELIBERATION_W2: ConferenceThread[] = [
     ],
   },
   {
-    dimensionKey: 'discipline',
-    title: 'Motiváció & fegyelem',
-    items: [
-      {
-        index: 1,
-        expertKey: 'drill',
-        text: 'A heti fókuszok teljesítési aránya négy hete 80% felett.',
-        kind: 'NEW',
-        claimId: null,
-        sensitive: false,
-        reactions: [],
-        skeptic: { verdict: 'KEEP', argument: 'A mintaidőszak rövid, de a jel egyértelmű.' },
-        chair: { accepted: true, confidence: BIZTOS, reason: 'Négy egymást követő hét konzisztens jel.' },
-      },
-    ],
-  },
-  {
     dimensionKey: 'nutrition',
     title: 'Táplálkozási',
     items: [
       {
-        index: 2,
+        index: 3,
         expertKey: 'taplalkozo',
         text: 'A hétvégi fehérje-elmaradás három hete következetes mintázat.',
         kind: 'NEW',
         claimId: null,
         sensitive: false,
         reactions: [],
-        skeptic: { verdict: 'KEEP', argument: 'Elfogadható, de három hét kevés egy erősebb szóhoz.' },
-        chair: { accepted: true, confidence: FIGYELJUK, reason: '"Figyeljük" szinten veszem fel.' },
+        skeptic: { verdict: 'KILL', argument: 'Három hét túl kevés, és két hétvége nyaralás volt.' },
+        chair: { accepted: false, confidence: null, reason: 'Elvetem — a Szkeptikus kifogása megalapozott.' },
       },
     ],
   },
   {
-    dimensionKey: 'mental',
-    title: 'Mentális & érzelmi',
+    dimensionKey: 'discipline',
+    title: 'Motiváció & fegyelem',
     items: [
       {
-        index: 3,
-        expertKey: 'pszichologus',
-        text: 'Néha halasztod a nehezebb érzelmi témák leírását a naplóban.',
+        index: 4,
+        expertKey: 'drill',
+        text: 'A heti fókuszok teljesítési aránya négy hete 80% felett.',
         kind: 'NEW',
         claimId: null,
         sensitive: false,
         reactions: [],
         skeptic: null,
-        chair: {
-          accepted: true,
-          confidence: FIGYELJUK,
-          reason: 'Tükröző fogalmazással veszem fel — nem ítélet, csak jelzés.',
-        },
+        chair: null,
       },
     ],
   },
@@ -546,11 +562,43 @@ export const MOCK_CONFERENCE_DETAIL: Record<string, CharacterConferenceResponse>
     generatedAt: '2026-08-30T07:00:00Z',
     transcript: TRANSCRIPT_TURNS,
     deliberation: DELIBERATION_W2,
+    deliberationSource: 'STORED',
     changes: [
+      { kind: 'CLAIM_ACCEPTED', dimensionKey: 'recovery', summary: 'Szomnológus állítása elfogadva "biztos" szinttel.' },
       { kind: 'CLAIM_ACCEPTED', dimensionKey: 'physical', summary: 'Doki állítása elfogadva "valószínű" szinttel.' },
-      { kind: 'CLAIM_ACCEPTED', dimensionKey: 'discipline', summary: 'Drill állítása elfogadva "biztos" szinttel.' },
+      { kind: 'CLAIM_RETIRED', dimensionKey: 'recovery', summary: 'Egy korábbi regenerációs állítás nyugdíjazva.' },
       { kind: 'PORTRAIT_REWRITTEN', dimensionKey: 'recovery', summary: 'Portré átírva: a hétvégi eltolódás mostantól „biztos” szintű állítás.' },
-      { kind: 'CLAIM_RETIRED', dimensionKey: 'nutrition', summary: 'Egy korábbi táplálkozási állítás nyugdíjazva — a csapat nem viszi tovább.' },
+    ],
+  },
+  w1: {
+    id: 'w1',
+    kind: 'WEEKLY',
+    weekStart: '2026-08-17',
+    generatedAt: '2026-08-23T07:00:00Z',
+    // Pre-cross-talk conference: this row predates the structured `deliberation` column, so the
+    // thread below is DERIVED back out of this prose transcript — no reactions round ever ran
+    // for it, which is exactly the "no such round happened" branch the fixture must render.
+    transcript: [
+      { persona: 'doki', text: 'Javaslat: a hétvégi lépésszám tartósan alacsonyabb — "valószínű" szinten javaslom felvenni.' },
+      { persona: 'mezo', text: 'Elfogadom Doki állítását "valószínű" szinttel — felveszem.', refIds: ['recovery-claim-0'] },
+    ],
+    deliberationSource: 'DERIVED',
+    deliberation: [
+      {
+        dimensionKey: null,
+        title: 'Doki felvetései',
+        items: [
+          {
+            index: 0, expertKey: 'doki', text: 'A hétvégi lépésszám tartósan alacsonyabb.',
+            kind: 'NEW', claimId: null, sensitive: false, reactions: [],
+            skeptic: { verdict: 'KEEP', argument: 'Elfogadható jel.' },
+            chair: { accepted: true, confidence: VALOSZINU, reason: 'Felveszem.' },
+          },
+        ],
+      },
+    ],
+    changes: [
+      { kind: 'CLAIM_ACCEPTED', dimensionKey: 'recovery', summary: 'Doki állítása elfogadva "valószínű" szinttel.' },
     ],
   },
 }
@@ -560,10 +608,11 @@ export const MOCK_BOOTSTRAP_CONFERENCE: CharacterConferenceResponse = {
   id: 'b0',
   kind: 'BOOTSTRAP',
   weekStart: null,
-  generatedAt: '2026-07-15T09:00:00Z',
+  generatedAt: '2025-12-20T09:00:00Z',
   transcript: [
     { persona: 'mezo', text: 'A teljes eddigi történet beolvasva — 9 kezdő állítás felvéve a dossziéba.' },
   ],
+  deliberationSource: null,
   changes: [{ kind: 'BOOTSTRAP', dimensionKey: null, summary: 'a teljes eddigi történet beolvasva · 9 kezdő állítás' }],
 }
 
