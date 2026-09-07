@@ -163,7 +163,10 @@
 .kr-chathand .kr-chev { color: var(--text-muted); font-size: 13px; }
 
 /* ── feed (.feedday / .feedtile / .feedrow / .feeddiff) ── */
-.kr-feedday { font-size: 8px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); padding: 8px 14px 2px; }
+.kr-feedday { display: flex; align-items: center; gap: 8px; width: calc(100% - 24px); margin: 0 12px; padding: 10px 2px 6px; border: none; background: none; font-family: inherit; color: inherit; cursor: pointer; }
+.kr-feedday .kr-fdlbl { font-size: 8px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-muted); }
+.kr-feedday .kr-fdcount { font-size: 8.5px; font-weight: 600; color: var(--text-secondary); margin-left: auto; }
+.kr-feedday .kr-fdchev { font-size: 12px; color: var(--text-muted); }
 .kr-feedtile { border-radius: 18px; padding: 11px 12px; margin: 0 12px 4px; background: var(--surface-card); border: 0.5px solid var(--divider); }
 .kr-feedrow { display: flex; gap: 8px; padding: 7px 0; align-items: flex-start; }
 .kr-feedrow + .kr-feedrow { border-top: 0.5px solid var(--divider); }
@@ -475,3 +478,32 @@
 @media (prefers-reduced-motion: reduce) {
   .kr-korindex:hover, .kr-gepq:hover { transform: none; }
 }
+
+/* ── konzílium szál-kártya (mezo-xlvr) ── */
+.kr-thread { background: var(--surface-card); border-radius: 22px; margin: 0 12px 11px; overflow: hidden; box-shadow: 0 12px 26px -20px rgba(43, 33, 24, 0.65), 0 1px 3px -2px rgba(43, 33, 24, 0.22); }
+.kr-thhead { display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 12px 14px 11px; border: none; background: none; font-family: inherit; text-align: left; cursor: pointer; color: inherit; }
+.kr-thfaces { display: flex; flex: none; padding-top: 2px; }
+.kr-thorb { width: 22px; height: 22px; border-radius: 50%; margin-left: -7px; display: grid; place-items: center; overflow: hidden; border: 1.5px solid var(--surface-card); box-shadow: 0 3px 7px -3px var(--c); }
+.kr-thorb:first-child { margin-left: 0; }
+.kr-thtitle { flex: 1; }
+.kr-thtt { display: block; font-size: 13px; font-weight: 700; letter-spacing: -0.01em; }
+.kr-thts { display: block; font-size: 9.5px; font-weight: 600; color: var(--text-secondary); margin-top: 2px; }
+.kr-thchev { font-size: 14px; color: var(--text-muted); padding-left: 4px; }
+.kr-thcollapsed { padding: 0 14px 12px; }
+.kr-throw { display: flex; align-items: center; gap: 8px; padding: 7px 0; }
+.kr-throw + .kr-throw { border-top: 0.5px solid var(--divider); }
+.kr-thb { font-size: 9px; font-weight: 800; padding: 4px 10px; border-radius: 20px; flex: none; }
+.kr-thb.acc { background: rgba(78, 107, 66, 0.9); color: #fff; }
+.kr-thb.rej { background: rgba(43, 33, 24, 0.08); color: var(--text-secondary); }
+/* No ruling is NOT a rejection (mezo-xlvr, M9): its own outlined, colourless look. */
+.kr-thb.non { background: transparent; box-shadow: inset 0 0 0 1px var(--divider); color: var(--text-secondary); }
+.kr-thtx { font-size: 11px; line-height: 1.45; font-weight: 300; }
+.kr-thtx.dim { color: var(--text-secondary); }
+.kr-thbody { padding: 0 14px 13px; }
+.kr-thitem + .kr-thitem { border-top: 0.5px solid var(--divider); margin-top: 10px; padding-top: 6px; }
+.kr-thstep { position: relative; padding: 9px 0 9px 20px; }
+.kr-thstep::before { content: ''; position: absolute; left: 5px; top: 15px; bottom: -9px; width: 1px; background: var(--divider); }
+.kr-thitem .kr-thstep:last-child::before { display: none; }
+.kr-thdot { position: absolute; left: 0; top: 12px; width: 11px; height: 11px; border-radius: 50%; background: var(--c); }
+.kr-thwho { font-size: 9.5px; font-weight: 800; color: var(--c); }
+.kr-thsaid { font-size: 11.5px; line-height: 1.55; font-weight: 300; margin-top: 2px; }

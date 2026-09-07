@@ -196,6 +196,9 @@ public class PatternMonitorService {
         }
         List<PatternMetricCoverage> out = new ArrayList<>();
         for (MetricKey metric : MetricKey.values()) {
+            if (!metric.correlatable()) {
+                continue; // bd mezo-dqzm: belső jel, nem katalógus-sor
+            }
             Map<LocalDate, Double> windowed = PatternGate.window(cache.get(metric), from, to);
             out.add(PatternMetricCoverage.builder()
                     .key(metric.wireKey())

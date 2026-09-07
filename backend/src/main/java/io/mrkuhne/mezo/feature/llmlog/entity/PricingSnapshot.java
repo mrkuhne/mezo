@@ -18,4 +18,5 @@ import java.time.LocalDate;
 public record PricingSnapshot(String sourceModel, String currency,
                               BigDecimal inputPerMillion, BigDecimal outputPerMillion,
                               BigDecimal thinkingPerMillion, BigDecimal cachedPerMillion,
-                              BigDecimal embedPerMillionChars, LocalDate pricedOn) {}
+                              BigDecimal embedPerMillionChars, ReasoningBilling reasoningBilling,
+                              LocalDate pricedOn) {}

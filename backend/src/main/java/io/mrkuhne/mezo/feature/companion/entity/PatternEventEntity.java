@@ -40,6 +40,18 @@ public class PatternEventEntity extends OwnedEntity {
     public static final String KIND_REJECTED = "rejected";
     public static final String KIND_REINFORCED = "reinforced";
     public static final String KIND_PROMOTED = "promoted";
+    /** S2 (mezo-eq85.2): the companion said something out loud about this pattern. */
+    public static final String KIND_OBSERVATION = "observation";
+    /** S2: one nightly re-run of the test plan — the payload carries r/n/p, the verdict and hit. */
+    public static final String KIND_EVIDENCE = "evidence";
+    /** S2: the user answered a chip/notice about this pattern. */
+    public static final String KIND_USER_REPLY = "user_reply";
+    /** S2: the hypothesis was reworded (same test plan, new prose). */
+    public static final String KIND_REVISED = "revised";
+    /** S2: the engine disproved it. */
+    public static final String KIND_REFUTED = "refuted";
+    /** S2: parked for lack of data. */
+    public static final String KIND_DORMANT = "dormant";
 
     @Id
     @GeneratedValue
@@ -53,7 +65,8 @@ public class PatternEventEntity extends OwnedEntity {
     /** Mirrors ck_pattern_event_kind. */
     @NotNull
     @Size(max = 16)
-    @Pattern(regexp = "snapshot|confirmed|monitoring|rejected|reinforced|promoted")
+    @Pattern(regexp = "snapshot|confirmed|monitoring|rejected|reinforced|promoted"
+            + "|observation|evidence|user_reply|revised|refuted|dormant")
     @Column(nullable = false, length = 16)
     private String kind;
 

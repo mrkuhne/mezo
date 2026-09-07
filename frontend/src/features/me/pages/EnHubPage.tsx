@@ -137,6 +137,9 @@ export function EnHubPage() {
           <span className="enh-stch">{activeGoals.length} aktív</span>
         </div>
         <div className="enh-lgdims">
+          {/* .lg-goalchip: a sor által NEM hordozott felét nevezi meg — itt CÉL CÍME, mert a
+              hero nem hordoz cél-identitást. Szabály a prototype.css-ben, a token
+              definíciójánál (mezo-9r85). */}
           {activeGoals.slice(0, 4).map((g) => (
             <span key={g.id} className={`lg-goalchip ${DIMENSIONS[g.dimension].cls}`}><i />{g.title}</span>
           ))}

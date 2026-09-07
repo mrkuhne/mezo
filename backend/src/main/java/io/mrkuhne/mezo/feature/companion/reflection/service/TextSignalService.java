@@ -5,16 +5,20 @@ import io.mrkuhne.mezo.feature.companion.reflection.entity.TextSignalEntity;
 import io.mrkuhne.mezo.feature.companion.reflection.entity.TextSignalProvenanceEnvelope;
 import io.mrkuhne.mezo.feature.companion.reflection.repository.TextSignalRepository;
 import io.mrkuhne.mezo.feature.companion.reflection.service.TextSignalExtractor.ExtractedSignal;
+import io.mrkuhne.mezo.feature.people.service.PersonNameCanonicalizer;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import io.mrkuhne.mezo.techcore.text.TextFold;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +46,7 @@ public class TextSignalService {
     private final TextSignalRepository textSignalRepository;
     private final TextSignalExtractor extractor;
     private final MemoryItemRepository memoryItemRepository;
+    private final PersonNameCanonicalizer personNameCanonicalizer;
 
     /**
      * Idempotent on (source, content hash): the SAME text yields the existing newest row and costs
@@ -84,13 +89,14 @@ public class TextSignalService {
         row.setEnergy(signal.energy());
         row.setStress(signal.stress());
         row.setConfidence(signal.confidence());
-        row.setPeople(new ArrayList<>(signal.people()));
+        List<String> people = normalizeNames(userId, signal.people());
+        row.setPeople(new ArrayList<>(people));
         row.setTopics(new ArrayList<>(signal.topics()));
         row.setKeywords(new ArrayList<>(signal.keywords()));
         row.setProvenance(new TextSignalProvenanceEnvelope(
                 PROVENANCE_MODEL, Instant.now().toString(), text.length()));
         TextSignalEntity saved = textSignalRepository.saveAndFlush(row);
-        enrichMemoryItem(userId, sourceKind, sourceId, signal);
+        enrich(userId, sourceKind, sourceId, people, signal.topics());
         return Optional.of(saved);
     }
 
@@ -118,16 +124,42 @@ public class TextSignalService {
     }
 
     /**
+     * Írási idejű név-normalizálás (bd mezo-xih1). Magyarul az LLM ragozott alakot ad vissza még
+     * alanyesetet kérő prompt mellett is („Lizával"), és a ragozott név MÁS kulcsra esne a
+     * {@code people:<név>} sorozatokban, mint ugyanaz az ember tegnap. Két lépés:
+     *
+     * <ol>
+     *   <li>ha a név egy AKTÍV Emberek-személy nevére/aliasára illik, a személy KANONIKUS nevét
+     *       tároljuk — így a {@code people:Liza} sorozat ugyanazt az embert jelenti, mint az
+     *       Emberek oldal „Liza"-ja;
+     *   <li>ismeretlen név változatlanul marad (kitalálni nem szabad), de a soron belüli dedup
+     *       HAJTOGATOTT kulcson megy: „Liza" és „liza" egy elem, nem kettő.
+     * </ol>
+     *
+     * <p>A sorrend megőrzött (LinkedHashMap): a modell fontossági sorrendje információ.
+     */
+    private List<String> normalizeNames(UUID userId, List<String> rawNames) {
+        if (rawNames.isEmpty()) {
+            return List.of();
+        }
+        Map<String, String> byNeedle = personNameCanonicalizer.canonicalNamesByNeedle(userId);
+        Map<String, String> byFoldedKey = new LinkedHashMap<>();
+        for (String raw : rawNames) {
+            String name = personNameCanonicalizer.canonicalize(raw, byNeedle).orElse(raw);
+            byFoldedKey.putIfAbsent(TextFold.fold(name).strip(), name);
+        }
+        return List.copyOf(byFoldedKey.values());
+    }
+
+    /**
      * The ONLY memory-platform field an LLM answer may touch: {@code people} / {@code topics}.
      * {@code salience} is never written from a model answer (RAG spec §12) — it stays whatever the
      * deterministic projector set. No {@code memory_item} row yet (the projection is async) simply
      * means no enrichment this round; the nightly catch-up re-offers the source.
+     *
+     * <p>The heal path feeds it from an ALREADY STORED signal — no LLM call, and the names are
+     * already normalized, so both paths write the SAME list {@code text_signal.people} carries.
      */
-    private void enrichMemoryItem(UUID userId, String sourceKind, UUID sourceId, ExtractedSignal signal) {
-        enrich(userId, sourceKind, sourceId, signal.people(), signal.topics());
-    }
-
-    /** The same enrichment from an ALREADY STORED signal — no LLM call, used by the heal path. */
     private void reenrichFrom(UUID userId, String sourceKind, UUID sourceId, TextSignalEntity signal) {
         enrich(userId, sourceKind, sourceId, signal.getPeople(), signal.getTopics());
     }

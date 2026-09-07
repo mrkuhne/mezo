@@ -29,6 +29,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -134,7 +135,13 @@ class CompanionPatternMonitorApiIT extends ApiIntegrationTest {
         assertThat(response.getWindowFrom()).isEqualTo(response.getWindowTo().minusDays(59));
         assertThat(response.getLastRunAt()).isNull();
         assertThat(response.getPairs()).hasSize(29); // V3.4 katalógus (8 eredeti + 21 új)
-        assertThat(response.getMetrics()).hasSize(MetricKey.values().length); // a teljes V3.4 katalógus
+        // A teljes V3.4 katalógus a NEM korrelálható kulcsok nélkül (mezo-dqzm: a TEXT_SOCIAL_CONTACT
+        // belső jellé lépett vissza, a „társas nap" sorra a SOCIAL_MENTIONS felel).
+        long correlatable = Arrays.stream(MetricKey.values()).filter(MetricKey::correlatable).count();
+        assertThat(response.getMetrics()).hasSize((int) correlatable);
+        assertThat(response.getMetrics()).extracting(m -> m.getKey())
+                .doesNotContain(MetricKey.TEXT_SOCIAL_CONTACT.wireKey())
+                .contains(MetricKey.SOCIAL_MENTIONS.wireKey());
         assertThat(response.getPairs()).allSatisfy(p -> assertThat(p.getVerdict()).isEqualTo("no_data"));
     }
 

@@ -51,11 +51,12 @@ public class TextSignalExtractor {
     private static final String PROMPT = SIGNAL_MARKER + """
             . Az alábbi rövid magyar bejegyzésből nyerj ki jeleket. Válaszolj KIZÁRÓLAG JSON-nal:
             {"mood":1-5|null,"energy":1-5|null,"stress":1-5|null,"confidence":"sure"|"unsure",
-             "people":["név ahogy a szövegben szerepel"],"topics":["""
+             "people":["keresztnév ALANYESETBEN, rag nélkül"],"topics":["""
             + String.join("|", TOPICS.stream().sorted().toList()) + """
             "],"keywords":["max 3 szabad kulcsszó"]}
             Semleges, kétsoros, érzelemmentes bejegyzésnél confidence="unsure" és a számok null.
-            Ne találj ki embert, aki nincs a szövegben.""";
+            A neveket RAG NÉLKÜL, szótári alakban add vissza: "Lizával" -> "Liza", "Rékának" ->
+            "Réka", "Ádámmal" -> "Ádám". Ne találj ki embert, aki nincs a szövegben.""";
 
     private final CompanionLlm companionLlm;
     private final ObjectMapper objectMapper;

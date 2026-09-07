@@ -32,7 +32,11 @@ describe('MesoTemplatesPage (mock mode · the two fixture templates)', () => {
     setup()
     expect(screen.getByText('Edzés · Sablonok')).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: 'Sablonok' })).toBeInTheDocument()
-    expect(screen.getByText(/Sablonok · 2/)).toBeInTheDocument()
+    // The counted eyebrow became the poster shelf strip (mezo-3a9a).
+    expect(screen.getByText('Sablon')).toBeInTheDocument()
+    expect(screen.getByText('Futam')).toBeInTheDocument()
+    expect(screen.getByTestId('shelf-templates')).toHaveTextContent('2')
+    expect(screen.getByTestId('shelf-runs')).toHaveTextContent('1')
     expect(screen.getByText('Upper/Lower Power')).toBeInTheDocument()
     expect(screen.getByText('Hypertrophy 04 · Tavasz')).toBeInTheDocument()
     expect(screen.getByText('1× futtatva')).toBeInTheDocument()
@@ -62,21 +66,53 @@ describe('MesoTemplatesPage (mock mode · the two fixture templates)', () => {
     expect(screen.getByText('5 + 1 deload')).toBeInTheDocument()
   })
 
-  test('every card carries the four template actions', () => {
+  test('Indítás is the only action on the face — the lifecycle pair hides behind ⋯', () => {
     setup()
-    expect(screen.getAllByRole('button', { name: /Szerkesztés/ })).toHaveLength(2)
     expect(screen.getAllByRole('button', { name: /Indítás/ })).toHaveLength(2)
-    expect(screen.getAllByRole('button', { name: /Duplikálás/ })).toHaveLength(2)
-    expect(screen.getAllByRole('button', { name: /Törlés/ })).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: 'További műveletek' })).toHaveLength(2)
+    expect(screen.queryByRole('button', { name: /Duplikálás/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Törlés/ })).toBeNull()
   })
 
-  test('Szerkesztés opens that template in the editor', async () => {
+  test('⋯ opens that card\'s lifecycle menu, and Escape closes it', async () => {
     const user = userEvent.setup()
     setup()
-    await user.click(screen.getAllByRole('button', { name: /Szerkesztés/ })[0])
+    await user.click(screen.getAllByRole('button', { name: 'További műveletek' })[0])
+    expect(screen.getByRole('button', { name: /Duplikálás/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Törlés/ })).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('button', { name: /Duplikálás/ })).toBeNull()
+  })
+
+  test('the poster itself opens that template in the editor', async () => {
+    const user = userEvent.setup()
+    setup()
+    await user.click(screen.getByRole('button', { name: /Hypertrophy 04 · Tavasz/ }))
     expect(screen.getByTestId('loc')).toHaveTextContent(
       '/train/mesocycles/templates/a10e0000-0000-4000-8000-000000000000',
     )
+  })
+
+  test('the block is drawn: a bar per phase-curve week and the seven-day spine', () => {
+    setup()
+    const poster = screen.getByRole('button', { name: /Hypertrophy 04 · Tavasz/ }).closest('.tpl-poster')!
+    // 'MEV','MEV','MAV','MAV','MRV','Deload' — six bars, the last one the deload step-down
+    expect(poster.querySelectorAll('.tpl-arc i')).toHaveLength(6)
+    expect(poster.querySelectorAll('.tpl-arc i.tpl-arc-deload')).toHaveLength(1)
+    // Hét Push · Kedd Legs A · Sze Legs · Csü Pull · Pén Push · Szo sport · Vas rest
+    const spine = [...poster.querySelectorAll('.tpl-spine i')].map(i => i.textContent)
+    expect(spine).toEqual(['P', 'L', 'L', 'P', 'P', '', ''])
+  })
+
+  // Coral (an emphasised muscle on a current plan) has no fixture — templatePoster.test.ts
+  // covers that arm; here the two shipped shapes are pinned.
+  test('the wash carries the block: legacy sage, current-without-emphasis gold', () => {
+    setup()
+    const legacy = screen.getByRole('button', { name: /Upper\/Lower Power/ }).closest('.tpl-poster')!
+    const current = screen.getByRole('button', { name: /Hypertrophy 04 · Tavasz/ }).closest('.tpl-poster')!
+    expect(legacy.className).toContain('mz-w-sage')
+    expect(current.className).toContain('mz-w-gold')
   })
 
   test('Indítás opens the shared start sheet', async () => {
@@ -89,12 +125,13 @@ describe('MesoTemplatesPage (mock mode · the two fixture templates)', () => {
   test('Duplikálás copies the template under a (másolat) title and opens the copy', async () => {
     const user = userEvent.setup()
     setup()
-    await user.click(screen.getAllByRole('button', { name: /Duplikálás/ })[1])
+    await user.click(screen.getAllByRole('button', { name: 'További műveletek' })[1])
+    await user.click(screen.getByRole('button', { name: /Duplikálás/ }))
 
     expect(await screen.findByText('Upper/Lower Power (másolat)')).toBeInTheDocument()
     // a copy has never been run
     expect(screen.getAllByText('0× futtatva')).toHaveLength(2)
-    expect(screen.getByText(/Sablonok · 3/)).toBeInTheDocument()
+    expect(screen.getByTestId('shelf-templates')).toHaveTextContent('3')
     // …and we land in its editor
     await waitFor(() =>
       expect(screen.getByTestId('loc').textContent).toMatch(/^\/train\/mesocycles\/templates\/.+/),
@@ -105,8 +142,8 @@ describe('MesoTemplatesPage (mock mode · the two fixture templates)', () => {
   test('Törlés is a two-tap confirm — the first tap only arms it', async () => {
     const user = userEvent.setup()
     setup()
-    const del = screen.getAllByRole('button', { name: /Törlés/ })[1]
-    await user.click(del)
+    await user.click(screen.getAllByRole('button', { name: 'További műveletek' })[1])
+    await user.click(screen.getByRole('button', { name: /^Törlés/ }))
 
     // armed, nothing deleted yet
     expect(screen.getByRole('button', { name: /Biztos\? Törlés/ })).toBeInTheDocument()
@@ -114,7 +151,7 @@ describe('MesoTemplatesPage (mock mode · the two fixture templates)', () => {
 
     await user.click(screen.getByRole('button', { name: /Biztos\? Törlés/ }))
     await waitFor(() => expect(screen.queryByText('Upper/Lower Power')).toBeNull())
-    expect(screen.getByText(/Sablonok · 1/)).toBeInTheDocument()
+    expect(screen.getByTestId('shelf-templates')).toHaveTextContent('1')
   })
 })
 
@@ -143,7 +180,7 @@ describe('MesoTemplatesPage (real mode)', () => {
 // standalone Sablonok page), but the list now staggers like every other one.
 test('the template list staggers inside an armed entrance group', async () => {
   setup()
-  await screen.findByText(/Sablonok · /)
+  await screen.findByTestId('shelf-templates')
   const play = document.body.querySelector('.mz-play')
   expect(play).not.toBeNull()
   const risen = [...play!.querySelectorAll('.rise')] as HTMLElement[]

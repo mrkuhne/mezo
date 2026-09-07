@@ -3,6 +3,7 @@ package io.mrkuhne.mezo.feature.llmlog.service;
 import io.mrkuhne.mezo.feature.llmlog.config.LlmPricingProperties;
 import io.mrkuhne.mezo.feature.llmlog.config.ModelPrice;
 import io.mrkuhne.mezo.feature.llmlog.entity.PricingSnapshot;
+import io.mrkuhne.mezo.feature.llmlog.entity.ReasoningBilling;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +32,12 @@ public class LlmPricingService {
         }
         return new PricingSnapshot(servedModel, pricing.currency(),
             p.inputPerMillion(), p.outputPerMillion(), p.thinkingPerMillion(), p.cachedPerMillion(),
-            p.embedPerMillionChars(), on);
+            p.embedPerMillionChars(), reasoningBillingOf(p), on);
+    }
+
+    /** Absent ⇒ SEPARATE: every price row written before mezo-ozri.1 was Gemini-shaped. */
+    private static ReasoningBilling reasoningBillingOf(ModelPrice price) {
+        return price.reasoningBilling() != null ? price.reasoningBilling() : ReasoningBilling.SEPARATE;
     }
 
     /**
@@ -40,15 +46,21 @@ public class LlmPricingService {
      * <p>{@code prompt} MUST already EXCLUDE {@code cached} (callers pass
      * {@code promptTokenCount - cachedContentTokenCount}); Gemini reports cached as a subset of
      * prompt, so charging prompt-full + cached-rate would 5x-overcharge the cached slice.
+     *
+     * <p>{@code thoughts} is billed as its OWN category only under
+     * {@link ReasoningBilling#SEPARATE} (Gemini reports it beside the output). Under
+     * {@link ReasoningBilling#INCLUDED_IN_OUTPUT} the reasoning tokens are already inside
+     * {@code candidates}, so charging them again would bill the same tokens twice (spec §8.5).
      */
     public BigDecimal computeGenerationCost(PricingSnapshot s, Integer prompt, Integer candidates,
                                             Integer thoughts, Integer cached) {
         if (s == null) {
             return null;
         }
+        Integer billableThoughts = s.reasoningBilling() == ReasoningBilling.INCLUDED_IN_OUTPUT ? null : thoughts;
         return perMillion(s.inputPerMillion(), prompt)
             .add(perMillion(s.outputPerMillion(), candidates))
-            .add(perMillion(s.thinkingPerMillion(), thoughts))
+            .add(perMillion(s.thinkingPerMillion(), billableThoughts))
             .add(perMillion(s.cachedPerMillion(), cached));
     }
 

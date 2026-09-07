@@ -2,7 +2,7 @@
 title: Push Notifications Platform
 type: feature-platform
 status: mixed
-updated: 2026-09-05
+updated: 2026-09-07
 tags: [platform, notification, backend, frontend, pwa, proactive, security]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/techcore/webpush
@@ -11,9 +11,8 @@ key_files:
   - api/feature/notification/notification.yml
   - frontend/public/push-sw.js
   - frontend/src/data/notification
-  - backend/src/main/java/io/mrkuhne/mezo/feature/goal/service/GoalSuggestionNotificationListener.java
-  - frontend/src/features/me/pages/NotificationsPage.tsx
   - frontend/src/features/me/pages/NotificationFeedPage.tsx
+  - frontend/src/features/notification/logic
 related: [proactive, today, ritual, me, fuel, insights, journal, companion, _platform-api-backend]
 ---
 
@@ -198,36 +197,110 @@ notification's XP total is tracked as a separate follow-up bd issue, not fabrica
 ### 2a. In-app feed: header peek + full feed page (F1, bd `mezo-gzhp.1`; feed page mezo-nol0)
 
 **Two surfaces share one `useNotificationFeed()` cache.** The shell header's bell
-(`app/AppHeader.tsx`, `.nap-ntfmenu`, [today.md](today.md#the-header-is-the-shells-not-the-hubs))
-gives a lightweight **3-row peek** — the newest three notifications, each row navigating to its
-`deeplink`, with an `Összes értesítés ›` foot. That foot is the only route the peek needs: it takes
-the noun and goes to `/me/ertesitesek`, the full-page feed (`NotificationFeedPage.tsx`, mezo-nol0).
-Settings live one level below, at `/me/ertesitesek/beallitasok` (`NotificationsPage.tsx`).
+(`app/AppHeader.tsx`, `.nap-ntfpanel`, [today.md](today.md#the-header-is-the-shells-not-the-hubs))
+opens a **scrollable, full-width panel** — the newest **30** notifications, day-grouped, filterable,
+each row navigating to its `deeplink`, with an `Összes értesítés ›` foot. That foot is the only route
+the panel needs: it takes the noun and goes to `/me/ertesitesek`, the full-page feed
+(`NotificationFeedPage.tsx`, mezo-nol0). Settings live one level below, at
+`/me/ertesitesek/beallitasok` (`NotificationsPage.tsx`).
 
-**The peek carries the same three facts every feed row does: when, and read-or-not (mezo-tdzy).**
+**The panel grew out of a 3-row peek (mezo-g9fz).** The peek was a 264px popover anchored under the
+bell, showing three ikon-less rows. Four things changed, all of them because a 3-row popover and a
+30-row panel are different objects:
+
+- **It is the `<header>`'s child, not the bell wrapper's.** The width is the whole point — a title
+  and two lines of body do not fit in 264px — so the panel is `position: absolute; left: 0; right: 0`
+  against `.app-head` rather than the `.nap-dpwrap` beside the bell. The CSS rule must be written
+  `.app-head > .nap-ntfpanel` (specificity 0,2,0): the shell's `.app-head > *:not(.app-head-bg)`
+  rule would otherwise pin it to `position: relative`. The same trap bites the scrim — see the
+  stacking-context gotcha in §9.
+- **Three regions, one scroller.** Header (eyebrow + unread count + `Mind olvasott`) and foot
+  (`Összes értesítés ›`) are `flex: none`; only `.nap-ntfscroll` scrolls, capped by
+  `max-height: min(600px, 74vh)` with `overscroll-behavior: contain` so the list's end does not
+  start scrolling the page behind it. The day labels (`.nap-ntfday`) are `position: sticky` INSIDE
+  that scroller and must be opaque — a gradient-to-transparent background lets the row sliding under
+  it show through.
+- **Filter chips** (`.nap-ntftabs`): `Mind` · `Olvasatlan` · six categories from
+  `features/notification/logic/category.ts`, each with its clay icon and a count. Only chips with
+  rows are drawn, and when the selected chip disappears (`Olvasatlan` after `Mind olvasott`) the
+  panel falls back to `Mind` BEFORE the list renders — see §9.
+- **`Mind olvasott` is the second `markAllRead()` call site**, and the first one reachable without
+  leaving the current page.
+
+### 2b. The five kinds the last week's features were missing (mezo-0cbh)
+
+Every one of the original 15 kinds came out of the pattern/companion/proactive era. A week of
+shipping (`mezo-06o0` people/graph, `mezo-08zl` habit formation, `mezo-1gim` Karakter,
+`mezo-b3pp.20` the quarterly pass) added surfaces that produce **decisions waiting on the user**
+and **rare, earned moments** — and not one of them emitted into the feed. Five kinds close that,
+all `familyKey = null` by request.
+
+**Two of them are decision queues** — a row that literally waits for an accept/reject, and until
+now only a hub tile ever said so. `person_candidate` fires once per nightly extraction pass,
+naming the first candidate (`Ancsi · egy említés…`) and counting the rest — the Jelöltek inbox is
+the list, this row just points at it. `graph_candidate` covers the undecided graph rows from BOTH
+producers: the nightly LIFE_EVENT pass and the quarterly SEASON deep read. Same kind, separate
+dedup keys, different words — the quarterly one speaks once a quarter and was the row most likely
+never to reach anyone.
+
+**Three are milestones.** `habit_formation` fires when a habit crosses the automaticity
+threshold. The four STAGE labels live in the frontend (`habitFormation.ts`), so the backend's
+honest event is the **threshold crossing**, not a "stage change" it has no vocabulary for — and
+the "already told them" state is NOT a new column but the dedup key
+(`habit_formation:{habitKey}`) on the feed's own partial-unique index: crossing happens once by
+construction, so the once-ever emit IS the fact. `character_portrait` is the `memoir_ready` shape
+for the monthly deep read. `konzilium_verdict` is the weekly konzílium — **but only when its
+`changes` list is non-empty**: "the konzílium ran and nothing happened" is exactly the row that
+devalues a bell.
+
+**A chapter opening is not its own kind, on purpose.** `CHAPTER_OPENED` — the rarest and
+narratively heaviest thing the dossier ever says — happens INSIDE a konzílium run, so a separate
+kind would put two rows on one event. Instead it leads the verdict row's copy
+(`Új fejezet nyílt rólad` / `„A visszatérés" — és 4 változás a dossziédban`) and the numbers take
+over when no chapter opened.
+
+**Two new filter categories** carry them on the header panel: `Emberek` (both candidate kinds —
+one gesture, a row waiting on your decision) and `Karakter` (formation, portrait, verdict — rare
+milestones), plus three new tints (`people`/`habit`/`character`) in both row families.
+
+**What deliberately stays silent: the coaching observer** (`mezo-6269`). Its daily card is a
+`CompanionMessageEntity` with `kind = advice`, so it already arrives on the header's *messages*
+badge; a feed row would say the same thing twice, on two badges, in one header. The observer page
+itself (`/mezo/coaching/megfigyelo`) is a diagnostic read — there is no event in it — and
+`cardOutcome` (won/lost) is DERIVED at read time, not stored, so there is nothing to emit.
+
+**The 30-row window is the source of everything the panel shows.** Sorting happens first, the
+`slice(0, 30)` second (the other order is the mezo-tdzy bug at larger scale), and the chip counts are
+computed from the SAME window — a chip promising more than the list can show would be its own lie.
+
+**The panel carries the same three facts every feed row does: when, and read-or-not (mezo-tdzy).**
 It used to carry neither. Three bugs sat in the same five lines: it took `notifications.slice(0, 3)`
 off the *arrival* order (neither the backend nor the mock seed guarantees that order is descending —
 the seed is in fact ascending, so the bell drew today's OLDEST three), it printed no timestamp at
 all, and it drew no read/unread distinction even though the badge beside it counted exactly that.
-Now the peek sorts on `Date.parse(occurredAt)` descending before slicing; each row gets a
-`.nap-ntf-when` stamp from **`notificationStamp()`** (`features/notification/logic/stamp.ts`) and,
-when `readAt === null`, the `.nap-ntfrow.unread` wash + a `.nap-ntf-dot` + an `sr-only`
-„Olvasatlan" — the `.nf-row.unread`/`.nf-dot` pairing of the full feed, at peek scale. The popover's
-eyebrow went from `Értesítések · ma` to **`Legutóbbi értesítések`**: the old label asserted „ma" over
-rows that may be days old.
+It sorts on `Date.parse(occurredAt)` descending before slicing, and when `readAt === null` a row
+gets the `.nap-ntfrow.unread` wash + a `.nap-ntf-dot` + an `sr-only` „Olvasatlan" — the
+`.nf-row.unread`/`.nf-dot` pairing of the full feed. The popover's eyebrow went from
+`Értesítések · ma` to **`Legutóbbi értesítések`** (the old label asserted „ma" over rows that may be
+days old), and with mezo-g9fz to plain **`Értesítések`** beside a live unread count.
 
-**Why the peek needs a date and the feed page does not.** On the full page the calendar day is
-structure — an `<h2>` group label above the rows — so a row only needs `timeLabel()`. The peek has no
-group headers, so a bare `06:20` could not say *which* `06:20`; `notificationStamp()` joins the two
-(`Ma · 06:20`, `Tegnap · 21:40`, `aug. 15. · 19:05`). Both surfaces derive the day word from the ONE
-`dayLabel()` in `stamp.ts` — `groupByDay.ts` was refactored onto it rather than keeping its own copy,
-so the two surfaces cannot disagree about what „Tegnap" means.
+**Both surfaces now let the group label carry the date, so a row shows only `timeLabel()`.** While
+the peek had no group headers, a bare `06:20` could not say *which* `06:20`, so it used
+`notificationStamp()` (`Ma · 06:20`). The panel groups by day exactly like the feed page — same
+`groupByDay.ts` — so the day word moved back up to the `<h2>` and the row kept the clock alone;
+printing both duplicated the label directly above it. `notificationStamp()` survives for surfaces
+without group headers. Both surfaces derive the day word from the ONE `dayLabel()` in `stamp.ts` —
+`groupByDay.ts` was refactored onto it rather than keeping its own copy, so the two surfaces cannot
+disagree about what „Tegnap" means.
 
-**Read state is read differently on the two surfaces, on purpose.** The peek renders the LIVE
-`readAt`, the feed page an open-time snapshot (next paragraph but one). The asymmetry is not an
-oversight: the snapshot exists only to survive `markAllRead()`, and the peek never calls it.
+**Read state is read differently on the two surfaces, on purpose.** The panel renders the LIVE
+`readAt`, the feed page an open-time snapshot (next paragraph but one). The asymmetry survived the
+panel gaining its own `Mind olvasott`: the feed page's snapshot exists so that *arriving* at the page
+does not erase what was new, but in the panel the un-highlighting IS the button's feedback — a
+snapshot there would make the press look like it did nothing.
 
-**Opening the feed page is the app's only reachable `markAllRead()` call site.** Before mezo-nol0,
+**Opening the feed page was the app's only reachable `markAllRead()` call site until mezo-g9fz
+added the panel's `Mind olvasott`.** Before mezo-nol0,
 no code path in the tree ever called it, so the header badge could light up but never clear
 (bd `mezo-61w0`, a real P2). `NotificationFeedPage` fires `markAllRead()` exactly once, in a `useEffect`
 gated by a `marked` ref, the moment it has a non-empty snapshot to act on — so the badge (shared
@@ -760,12 +833,14 @@ across the cron-vs-lazy-GET double-generation race a future producer may have (F
 today — the index is there because a later F2 producer will). `idx_app_notification_created_by_occurred_at`
 serves the feed read (`created_by, occurred_at desc`).
 
-### `AppNotificationKind` — the 15-kind catalog (`feature/appnotification/domain/AppNotificationKind.java`)
+### `AppNotificationKind` — the 20-kind catalog (`feature/appnotification/domain/AppNotificationKind.java`)
 
 The single source of truth for the in-app feed's kind key, its push `familyKey`, and its
-deeplink base — pinned by `AppNotificationKindTest`. **All 15 rows are wired to producers**
+deeplink base — pinned by `AppNotificationKindTest`. **All 20 rows are wired to producers**
 (the original 12 by F2, plus three later domain slices), and **every non-null `familyKey` now maps onto a live push category as of F3**
-(bd `mezo-gzhp.3`, §3b/§4) — the catalog is complete end to end.
+(bd `mezo-gzhp.3`, §3b/§4) — the catalog is complete end to end. **The five kinds added by
+`mezo-0cbh` are all deliberately `familyKey = null`**: they carry things you find when you next
+open the app, not things worth a phone buzz — see §9's "what deliberately stays silent".
 
 | Key | familyKey (→ push category, F3) | Deeplink base | Producer |
 |---|---|---|---|
@@ -784,6 +859,11 @@ deeplink base — pinned by `AppNotificationKindTest`. **All 15 rows are wired t
 | `weekly_review_ready` | **null** | `/me/week` | `mezo-p2tr` — `WeeklyReviewGenerator` |
 | `life_goal_plan` | **null** | `/me/goals/{goalId}` | `mezo-iizd.7` — `LifeGoalTriggerService` |
 | `goal_suggestion` | **null** | `/me/goals/weight/suggestions/{suggestionId}` | `mezo-ricj.4` — `GoalSuggestionNotificationListener`, after a committed `GoalSuggestionProposedEvent` |
+| `person_candidate` | **null** | `/me/people/jeloltek` | `mezo-0cbh` — `PersonExtractionService` (the nightly `GraphMaintenanceJob` 4th phase), ONE row per night's whole crop |
+| `graph_candidate` | **null** | `/mezo/knowledge` | `mezo-0cbh` — **two producers, one kind** (the `challenge_event` shape): `LifeEventExtractionService` (nightly LIFE_EVENT) and `QuarterlyReviewService` (quarterly SEASON), different dedup keys and different words |
+| `habit_formation` | **null** | `/me/rutin/szokas/{habitKey}` | `mezo-0cbh` — `HabitService.emitFormationIfCrossed`, swept nightly by `HabitJob`; once-ever per habit via the dedup key |
+| `character_portrait` | **null** | `/me/karakter` | `mezo-0cbh` — `CharacterMonthlyService` (the month's first Sunday deep read) |
+| `konzilium_verdict` | **null** | `/me/karakter/konzilium` | `mezo-0cbh` — `CharacterConferenceService` (weekly), **only when `changes` is non-empty** |
 
 ### API contract (`api/feature/notification/notification.yml`)
 
@@ -1083,9 +1163,27 @@ one of the 12 current producer IT classes had to have this annotation dropped).
   pre-resolve, the mapped view shape, `markAllRead`'s optimistic flip + rollback.
 - `features/notification/logic/stamp.test.ts` — `dayLabel` (Ma/Tegnap/dated, and a same-date
   *different-year* day NOT counting as „Ma") and `notificationStamp`'s `nap · óra:perc` join
-- `app/AppHeader.ntfPeek.test.tsx` — the peek's newest-first ordering, its per-row date+time stamp
-  and its unread pötty + `sr-only` marker (the feed hook mocked, because the mock seed's three rows
-  are all today and all unread, so it can distinguish none of the three) (mezo-tdzy)
+- `app/AppHeader.ntfPeek.test.tsx` — the panel's newest-first ordering, its day-group labels + bare
+  clock stamp, its unread pötty + `sr-only` marker (mezo-tdzy), and the mezo-g9fz behaviours: the
+  30-row cap biting AFTER the sort, the chip row drawing only present categories with their counts,
+  a category chip narrowing to its own kinds, `Mind olvasott` calling `markAllRead()`, an all-read
+  feed showing neither an `Olvasatlan` chip nor the button, and the panel being the `<header>`'s
+  direct child (the full width depends on it). Both hooks are mocked — the mock seed's rows cannot
+  distinguish read from unread, and `markAllRead` needs a spy
+- Backend emit pins for the mezo-0cbh kinds, each added to the PRODUCER's own IT rather than a
+  new class (the per-producer idiom above): `PersonExtractionServiceIT` (the row names the
+  candidate — plus the silent branch: a candidate-less night writes nothing),
+  `LifeEventExtractionServiceIT` + `QuarterlyReviewServiceIT` (the two `graph_candidate`
+  producers), `HabitServiceIT` (the threshold crossing writes ONE row, and calling again writes
+  no second one — the dedup key IS the "already told them" state), `CharacterMonthlyServiceIT`
+  (`refId` is the conference), `CharacterConferenceServiceIT` (a chapter leads the verdict copy;
+  an empty week stays silent).
+- `features/notification/logic/category.test.ts` — the totality pin: EVERY key of
+  `APP_NOTIFICATION_KIND_META` falls in exactly one category (a kind missing from the map would show
+  under `Mind` but be unreachable by any chip), and an unknown wire kind maps to `null` rather than
+  into a wrong category
+- `data/notificationKindMeta.test.ts` — the 20-key BACKEND_KINDS list and the per-kind clay
+  icon + tint (a mistyped tint name would silently render a token with no background)
 - `features/notification/logic/groupByDay.test.ts` — Ma/Tegnap plus every older day getting its own
   dated label (no `Korábban` bucket any more), newest-first sorting, pure and deterministic (`today`
   injected, no `new Date()` inside).
@@ -1100,6 +1198,28 @@ one of the 12 current producer IT classes had to have this annotation dropped).
   modes explicitly — an unset `VITE_USE_MOCK` silently means mock mode).
 
 ## 9. Decisions, gotchas & deferred
+
+- **The header panel's two CSS rules MUST stay `.app-head > …`-qualified, and the scrim's
+  `z-index` MUST stay low (mezo-g9fz).** Both are stacking/specificity traps in the shell header,
+  and both were hit while building the panel:
+  - `.app-head > *:not(.app-head-bg) { position: relative; z-index: 1 }` has specificity 0,2,0, so a
+    plain `.nap-ntfpanel { position: absolute }` (0,1,0) loses — the panel snaps back to
+    `position: relative` and stops spanning the header. The scrim degrades even more quietly: it
+    becomes a zero-size in-flow element that covers nothing at all.
+  - `.app-head` sets `isolation: isolate`, so its children's `z-index`es rank against EACH OTHER,
+    not against the page. A scrim at `z-index: 45` (a value chosen against the shell's global scale)
+    therefore paints ABOVE the panel it is supposed to sit behind. The fix is `z-index: 0`: below the
+    header buttons (1) and the panel (2), but still above the page, because the whole header (46)
+    already outranks the page content. Portalling the scrim to `<body>` is the WRONG fix — it lands
+    outside the header's context, above the header, and swallows the bell's own click.
+- **The chip fallback must run BEFORE the list renders (mezo-g9fz).** Press `Mind olvasott` while the
+  `Olvasatlan` filter is active and that chip disappears mid-render. `AppHeader` derives
+  `activeNtfFilter` from the chip list (falling back to `all` when the selected id is gone) and the
+  rows read `activeNtfFilter`, never the raw `ntfFilter` state — otherwise the panel would empty out
+  behind a filter that no longer has a chip to un-press.
+- **The panel's day labels must be opaque.** `.nap-ntfday` is `position: sticky` inside the
+  scroller; a `linear-gradient(card, transparent)` background (the first attempt) lets the row
+  sliding under it show through the label text.
 
 - **Real-world delivery is proven, not just unit-tested.** A real Web Push reached Daniel's iPhone
   from the k3s backend on 2026-07-29 (N1's exit criterion — bd `mezo-h4wp.6.1`: "confirmed by
@@ -1498,10 +1618,25 @@ cycle, §9)**
   from here, so no two surfaces can label the same day differently
 - `frontend/src/features/notification/logic/groupByDay.ts` — the pure day-bucketer (Ma/Tegnap, then
   one dated label per older day)
-- `frontend/src/app/AppHeader.tsx` — `.nap-ntfmenu`, the shell header's 3-row peek popover into the
-  same feed cache: newest-first, each row stamped `nap · óra:perc` and marked unread when
-  `readAt === null` (mezo-tdzy)
-- `frontend/src/styles/prototype.css` — the `.nf-*` feed-page CSS rules (the retired
+- Producers added by mezo-0cbh (all outside `feature/appnotification`, injecting
+  `AppNotificationEmitter` plainly — the facade holds the optionality, §3a/§5):
+  `feature/companion/service/PersonExtractionService.java` (`person_candidate`, emitted from
+  `extractFor`, OUTSIDE `persistNight`'s transaction), `feature/companion/graph/service/
+  LifeEventExtractionService.java` + `feature/companion/quarterly/service/QuarterlyReviewService.java`
+  (`graph_candidate`), `feature/habit/service/{HabitService,HabitJob}.java` (`habit_formation` —
+  the service holds the threshold check, the job sweeps every habit nightly),
+  `feature/character/service/{CharacterMonthlyService,CharacterConferenceService}.java`
+  (`character_portrait`, `konzilium_verdict`)
+- `frontend/src/features/notification/logic/category.ts` — the eight filter categories
+  (`Minták`/`Tudás`/`Kísérletek`/`Jóslatok`/`Célok`/`Összegzés`/`Emberek`/`Karakter`), each with
+  its clay icon, plus the
+  TOTAL `notificationCategory()` reader (unknown kind → `null`, never a wrong category) (mezo-g9fz)
+- `frontend/src/app/AppHeader.tsx` — `.nap-ntfpanel`, the shell header's scrollable full-width panel
+  into the same feed cache: newest 30, day-grouped, filter chips, `Mind olvasott`, each row carrying
+  its kind's clay icon + tint and marked unread when `readAt === null` (mezo-tdzy, mezo-g9fz)
+- `frontend/src/styles/prototype.css` — the `.nap-ntfpanel`/`.nap-ntfscrim`/`.nap-ntfhd`/
+  `.nap-ntftabs`/`.nap-ntfscroll`/`.nap-ntfday`/`.nap-ntfrow`/`.nap-ntfico`/`.nap-ntfft` panel family
+  (both `.app-head > …`-qualified rules are load-bearing, §9) and the `.nf-*` feed-page rules (the retired
   `NotificationBell`/`NotificationPanel` dropdown's `.nf-bell`/`.nf-panel` rules were removed with
   those components, mezo-h682)
 

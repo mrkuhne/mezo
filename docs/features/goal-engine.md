@@ -2,13 +2,13 @@
 title: Goal Engine (G5–G6)
 type: feature-domain
 status: done
-updated: 2026-09-05
+updated: 2026-09-06
 tags: [goal, engine, backend, tdee, projection, guards, adaptive]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/goal
   - backend/src/main/java/io/mrkuhne/mezo/feature/train/service/WeeklyScheduledActivityService.java
   - api/feature/goal/goal.yml
-related: [me, fuel, lifegoal, _platform-api-backend, _platform-data-layer]
+related: [me, fuel, lifegoal, _platform-api-backend, _platform-data-layer, ../research/entities/exist-io.md, ../research/concepts/trend-arrows-and-baselines.md, ../research/concepts/idempotent-daily-recompute.md]
 ---
 
 # Goal Engine (G5–G6) — Feature Documentation
@@ -287,6 +287,7 @@ Add a tunable, a guard leg, or a projection input — always config-first, contr
 - **Adaptive-correction sign convention is a deliberate spec deviation** (§3) — the Diet Plan spec (`docs/superpowers/specs/2026-09-02-diet-plan-design.md` §6.6) wrote `deltaKcal = clamp((observedRate − targetRate) × 7700 / 7, ±maxStep)`; `AdaptiveCorrectionService` uses `(target − observed)` instead, because the worked examples (a too-slow cut must deepen the deficit, i.e. a *negative* delta) only hold with that sign. If a future change to this math looks like it's "fixing" the sign back to match the spec prose, check the worked examples first — they are the source of truth, not the Diet Plan spec's §6.6.
 - **The sleep-debt guard is a second, independent implementation**, not a reuse of companion's `FlagEvaluator.sleepDebt` — same math, but its own window (7 nights vs the flag's 3) and its own config (`mezo.goal.adaptive.*`), so the adaptive review works even with the companion switch off. Don't conflate the two when changing sleep-debt math — a fix to one does not touch the other.
 - **A bounded transient overshoot after a correction is deliberate, not a bug** — the EWMA trend window lags a few days behind an accepted correction's effect, and once it catches up the dead-band stops the review from churning out another nudge chasing the last one; MacroFactor's own adaptive algorithm accepts the same bounded lag rather than over-correcting on noisy short-term feedback.
+- **Prior art, now in the research wiki:** [Trend Arrows and Baselines](../research/concepts/trend-arrows-and-baselines.md) (the rolling-window/arrow pattern this engine and `lifegoal.md`'s scorer both draw on), [Idempotent Daily Recompute](../research/concepts/idempotent-daily-recompute.md) (the one-raw-fact/re-derive/safe-to-rerun shape behind this engine's recompute jobs), and the [Exist.io](../research/entities/exist-io.md) entity (the baseline idea's origin). **Read those pages before citing a source from memory:** the ingest found one of the life-goal design specs' own citations does not support the claim it was attached to, and the correction lives on the wiki page, not repeated here.
 
 **Deferred to Phase 3** (post-G5):
 - **AI evaluator** (Spring AI) replacing the heuristic gate; a living-narrative recompute; a **weekly scheduled re-fit** (only event-driven recompute today — the adaptive review, above, is job-driven but suggestion-only, not a silent re-fit of the prescription itself).

@@ -1,0 +1,39 @@
+# postgres_exporter (mezo-ibxy): stat_database / stat_user_tables / locks / activity for Grafana
+# and the PostgresDown / PgConnectionsHigh alerts. Lives in `mezo` so it can use the mezo-db
+# Secret; scraped by k8s/monitoring/vmservicescrape-postgres.yaml.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres-exporter
+  namespace: mezo
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres-exporter
+  template:
+    metadata:
+      labels:
+        app: postgres-exporter
+    spec:
+      containers:
+        - name: exporter
+          image: quay.io/prometheuscommunity/postgres-exporter:v0.20.1
+          ports:
+            - name: metrics
+              containerPort: 9187
+          env:
+            - name: DATA_SOURCE_URI
+              value: postgres:5432/mezo?sslmode=disable
+            - name: DATA_SOURCE_USER
+              valueFrom:
+                secretKeyRef: { name: mezo-db, key: POSTGRES_USER }
+            - name: DATA_SOURCE_PASS
+              valueFrom:
+                secretKeyRef: { name: mezo-db, key: POSTGRES_PASSWORD }
+          readinessProbe:
+            httpGet: { path: /metrics, port: metrics }
+            periodSeconds: 30
+          resources:
+            requests: { cpu: "10m", memory: "32Mi" }
+            limits: { memory: "96Mi" }

@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ch.qos.logback.classic.Logger;
@@ -47,6 +48,7 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
 
     @Autowired private PersonExtractionService extractionService;
     @Autowired private PersonRepository personRepository;
+    @Autowired private AppNotificationRepository appNotificationRepository;
     @Autowired private MentionRepository mentionRepository;
     @Autowired private PersonPopulator personPopulator;
     @Autowired private MentionPopulator mentionPopulator;
@@ -133,6 +135,31 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
         assertThat(created.getRelationship()).isEqualTo("friend");
         assertThat(created.getRelationshipHu()).isEqualTo("Ismerős");
         assertThat(created.getNotes()).contains("délben futottam Marcival a gáton");
+        // mezo-0cbh: a jelölt a DÖNTÉSEDRE vár, és eddig csak az tudott róla, aki magától
+        // benyitott az Emberek hubra. A sor megnevezi, kiről kell dönteni.
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+            .filteredOn(n -> "person_candidate".equals(n.getKind()))
+            .singleElement()
+            .satisfies(n -> {
+                assertThat(n.getTitle()).isEqualTo("Új arc a szövegeidben");
+                assertThat(n.getBody()).startsWith("Marci ·");
+                assertThat(n.getDeeplink()).isEqualTo("/me/people/jeloltek");
+            });
+    }
+
+    // A néma ág ugyanolyan fontos: egy jelölt nélküli éjszaka nem írhat sort, különben a csengő
+    // minden reggel hazudna egy döntést, ami nem vár rád (mezo-0cbh).
+    @Test
+    void testExtractFor_shouldNotNotify_whenNoCandidateWasCreated() {
+        UUID owner = ownerId();
+        plantEntry(owner, DAY, "Csendes nap volt, nem történt semmi különös. "
+            + "[fake-people:{\"mentions\":[],\"candidates\":[]}]");
+
+        extractionService.extractFor(owner, DAY);
+
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+            .filteredOn(n -> "person_candidate".equals(n.getKind()))
+            .isEmpty();
     }
 
     @Test

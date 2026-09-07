@@ -27,6 +27,20 @@ const STATUS_META: Record<Exclude<PatternRowStatus, 'proposed'>, {
     icon: 'x',
     skin: 'pdt-artifact-rejected',
   },
+  // Reflexió S2 (mezo-eq85.2) — a motor saját két állapota. A végleges szövegezés/vizuál a Task 6;
+  // itt csak annyi áll, ami tényszerűen igaz, hogy a felület ne hallgasson el egy létező státuszt.
+  refuted: {
+    label: 'Megcáfolva',
+    copy: 'Az adat többször egymás után ellentmondott ennek a sejtésnek, ezért az app elengedte.',
+    icon: 'x',
+    skin: 'pdt-artifact-rejected',
+  },
+  dormant: {
+    label: 'Szünetel',
+    copy: 'Régóta nincs elég adat ahhoz, hogy ezt tesztelni lehessen. Ha újra lesz, magától felébred.',
+    icon: 'eye',
+    skin: 'pdt-artifact-monitoring',
+  },
 }
 
 export function PatternArtifactDetail({
