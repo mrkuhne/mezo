@@ -2,7 +2,7 @@
 title: Proactive layer (companion feed, weekly prose, predictions, experiments, workout challenges)
 type: feature-domain
 status: complete
-updated: 2026-09-06
+updated: 2026-09-07
 tags: [proactive, companion-feed, ai, llm, backend, phase-4]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/proactive
@@ -124,7 +124,17 @@ this redesign and remain as shipped.
     cannot stop the model from seeing and leaking numbers that are still in the payload (see
     [companion.md](companion.md) for the two-variant assembler). Ref candidates: `Goal`/`Workout`/
     `FuelDay`/`Medication` — deliberately **no** `WeightTrend`/`Sleep` candidate. Gate: empty
-    `daily_summary` window (`feed.past-days`) ⇒ no row.
+    `daily_summary` window (`feed.past-days`) ⇒ no row. **Since Reflexió S4 (`mezo-eq85.4`) the
+    gather also appends the `ÉSZREVÉTEL` block** — one deterministic Hungarian sentence about what
+    last night decided about the user's own hypotheses, built in code by
+    `ReflectionDigestService.digestEntryFor` (no LLM), plus a `Pattern` ref candidate for the row it
+    is about. Reached through an `ObjectProvider` (the digest bean is `REFLECTION_SWITCH`-gated,
+    this generator is not), so an absent bean or a quiet night simply means the pre-S4 payload. The
+    digest is a **garnish and the briefing is the product**: it runs in its own `REQUIRES_NEW`
+    read-only transaction with a 2-second timeout and swallows its own failures, and this generator
+    catches again around the call — a broken digest can never mark the morning transaction
+    rollback-only and cost the user their message. Details + the `@Transactional`-IT limitation:
+    [`companion.md`](companion.md) §1 "Reflexió S4".
   - **`generateSleepReaction`** — fired ONLY by a fresh sleep log's `SleepLogSavedEvent` — never by
     a cron (mezo-qn3z; see `CompanionMessageJob`). Gate: the user's latest sleep log must be dated
     `>= today - 1` (a backfilled/old log never triggers). Ref candidates: `Sleep`/`Goal`/`Workout`.
@@ -1033,6 +1043,12 @@ generateMorning(userId, date)                           @Transactional
        + missedWorkoutsBlock(userId, date) (S4, spec §4 row 3): a live `missed_workouts` raise's
          OWN frozen `companion_flag_log.payload`, inside the same feed.past-days lookback window —
          "no more blind cheering" — never re-derived, "" when no raise is in-window
+       + ReflectionDigestService.digestEntryFor(userId, date) (Reflexió S4, mezo-eq85.4):
+         "ÉSZREVÉTEL (egy mondatban utalj rá, ha illik a napba):" + ONE code-built Hungarian
+         sentence about last night's verdict, and one more Ref("Pattern", title) candidate —
+         appended BEFORE the numbered candidate list so the numbering stays complete.
+         ObjectProvider (bean absent with Reflexió off) + REQUIRES_NEW + 2s timeout + two
+         catches ⇒ null is always an acceptable answer; the morning message ships regardless
   3. companionLlm.complete(MORNING_PROMPT, payload)      ── ONE cheap-tier call
   4. parse(answer) → null/blank eyebrow/empty body ⇒ return null   (unusable answer, NO row)
   5. resolveRefs(refIndexes, candidates)                 bounds-checked, deduped, model-SELECTED only

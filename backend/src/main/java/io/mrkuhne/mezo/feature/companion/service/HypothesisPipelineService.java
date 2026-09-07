@@ -9,6 +9,8 @@ import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternCritiqueEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
+import io.mrkuhne.mezo.feature.companion.entity.PatternEventPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEvidenceEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
@@ -18,6 +20,7 @@ import io.mrkuhne.mezo.feature.companion.reflection.repository.TextSignalReposit
 import io.mrkuhne.mezo.feature.companion.reflection.service.ReflectionMemoryGateway;
 import io.mrkuhne.mezo.feature.companion.reflection.service.TestPlanValidator;
 import io.mrkuhne.mezo.feature.companion.reflection.service.TestPlanValidator.RawTestPlan;
+import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -85,11 +88,15 @@ public class HypothesisPipelineService {
             minták) alapján javasolj legfeljebb %d MECHANIZMUS-szintű hipotézist {{NÉV}} adatairól —
             olyan ok-okozati sejtést, amit a páronkénti statisztika önmagában nem lát. Csak a
             megadott adatokra építs. Válaszolj KIZÁRÓLAG JSON tömbbel, pontosan ebben a formában:
-            [{"title":"...","mechanism":"...","category":"physiology|trigger|response","testPlan":{"seriesA":"...","seriesB":"...","lagDays":0,"expectedDirection":"positive|negative"}}]
+            [{"title":"...","mechanism":"...","category":"physiology|trigger|response","testPlan":{"seriesA":"...","seriesB":"...","lagDays":0,"expectedDirection":"positive|negative"},"revisesHypothesisKey":null,"revisedTestPlan":null}]
             A testPlan az ELŐRE RÖGZÍTETT teszt, amivel a sejtés MEGCÁFOLHATÓ: két KÜLÖNBÖZŐ sorozat
             kizárólag az alábbi listáról (ne találj ki újat), a lag 0..3 nap, az irány pedig az,
             amit vársz. Ha nem tudsz mérhető tesztet adni, a testPlan legyen null — a sejtés akkor is
             érdekes lehet.
+            Ha egy NYITOTT hipotézis saját válasza (a „…” idézet) azt mutatja, hogy a TESZTET kell
+            megváltoztatni, akkor REVÍZIÓT javasolj: a revisesHypothesisKey a nyitott sor kulcsa
+            (kulcs: ref-…), a revisedTestPlan pedig az ÚJ teszt-terv ugyanabban a formában. A régi
+            sor ilyenkor is fut tovább — a revízió új, párhuzamos sejtés, nem felülírás.
             ELÉRHETŐ SOROZATOK: %s
             Ha nincs értelmes hipotézis: []""";
 
@@ -129,10 +136,22 @@ public class HypothesisPipelineService {
     private final ObjectProvider<ReflectionMemoryGateway> reflectionMemoryGateway;
     /** A Spring Data repository is never switch-gated, so yesterday's signal digest needs no provider. */
     private final TextSignalRepository textSignalRepository;
+    /** S4 (mezo-eq85.4): the open rows' newest user replies, and the {@code revised} audit event. */
+    private final PatternEventRepository patternEventRepository;
+    private final PatternEventAppender patternEventAppender;
 
-    /** One hypothesis as the LLM returns it — {@code testPlan} is a PROPOSAL, never a decision:
-     *  {@link TestPlanValidator} is what turns it into something the engine will test. */
-    record Hypothesis(String title, String mechanism, String category, RawTestPlan testPlan) {}
+    /**
+     * One hypothesis as the LLM returns it — {@code testPlan} is a PROPOSAL, never a decision:
+     * {@link TestPlanValidator} is what turns it into something the engine will test.
+     *
+     * <p>S4 (mezo-eq85.4) Step 5: {@code revisesHypothesisKey} + {@code revisedTestPlan} let the
+     * model answer the user's own chip/chat reply with a REVISION of an open row. It is still only
+     * a proposal: the referenced row gets one {@code revised} EVENT and keeps running, and the new
+     * plan lands as a fresh {@code proposed} row. An LLM answer never writes a row's
+     * {@code status} or {@code belief}.
+     */
+    record Hypothesis(String title, String mechanism, String category, RawTestPlan testPlan,
+                      String revisesHypothesisKey, RawTestPlan revisedTestPlan) {}
 
     /** The 4-factor critique as the LLM returns it. */
     record Critique(Double statistical, Double confounders, Double l3align, Double actionability,
@@ -216,7 +235,8 @@ public class HypothesisPipelineService {
             out.append("TEGNAPI JELZÉSEK (a szövegeidből):\n").append(digest);
         }
         if (!open.isBlank()) {
-            appendSection(out, "NYITOTT HIPOTÉZISEK (ezeket NE javasold újra):\n" + open);
+            appendSection(out, "NYITOTT HIPOTÉZISEK (ezeket NE javasold újra — de revíziót "
+                    + "javasolhatsz rájuk):\n" + open);
         }
         if (!memories.isBlank()) {
             appendSection(out, "EMLÉKEK (memória-platform):\n" + memories);
@@ -259,7 +279,12 @@ public class HypothesisPipelineService {
         return value == null ? "–" : value.toString();
     }
 
-    /** The rows the engine is still testing — title, state and the running tally. */
+    /**
+     * The rows the engine is still testing — title, state, the running tally, the row's own
+     * hypothesis key and (S4, mezo-eq85.4) the user's NEWEST answer about it in quotes. The key is
+     * there so a revision can name the row it revises; the quote is there because the user's own
+     * words are the single most informative thing the nightly pass has about a live hypothesis.
+     */
     private String openHypotheses(UUID userId) {
         return patternRepository
                 .findByCreatedByAndStatusInAndDeletedFalse(userId,
@@ -267,8 +292,22 @@ public class HypothesisPipelineService {
                 .stream()
                 .filter(p -> !PatternEntity.KIND_STATISTICAL.equals(p.getKind()))
                 .map(p -> "- " + p.getTitle() + " · " + p.getStatus()
-                        + " · " + p.getEvidenceHits() + " bejött / " + p.getEvidenceMisses() + " nem")
+                        + " · " + p.getEvidenceHits() + " bejött / " + p.getEvidenceMisses() + " nem"
+                        + (p.getHypothesisKey() == null ? "" : " · kulcs: " + p.getHypothesisKey())
+                        + newestReply(userId, p.getId()))
                 .collect(Collectors.joining("\n"));
+    }
+
+    /** The newest {@code user_reply} text of one row as {@code · „…”} — "" when there is none. */
+    private String newestReply(UUID userId, UUID patternId) {
+        return patternEventRepository
+                .findFirstByCreatedByAndPatternIdAndKindAndDeletedFalseOrderByOccurredAtDesc(
+                        userId, patternId, PatternEventEntity.KIND_USER_REPLY)
+                .map(PatternEventEntity::getPayload)
+                .map(PatternEventPayloadEnvelope::text)
+                .filter(text -> !text.isBlank())
+                .map(text -> " · „" + text + "”")
+                .orElse("");
     }
 
     /** One audited REFLECTION retrieval — "" when Reflexió is off or the platform could not answer. */
@@ -412,8 +451,11 @@ public class HypothesisPipelineService {
                 () -> companionLlm.completeSmart(REVISE_PROMPT, payload));
         Hypothesis revised = parseObject(raw, new TypeReference<Hypothesis>() {});
         // A revision is a REWORDING: the test — and therefore the identity — is the original's.
+        // The S4 revision fields ride along untouched: this stage never invents one, and must not
+        // drop one the proposal stage produced.
         return revised == null ? null : new Hypothesis(revised.title(), revised.mechanism(),
-                revised.category(), hypothesis.testPlan());
+                revised.category(), hypothesis.testPlan(),
+                hypothesis.revisesHypothesisKey(), hypothesis.revisedTestPlan());
     }
 
     private <T> T parseObject(String raw, TypeReference<T> type) {
@@ -454,7 +496,28 @@ public class HypothesisPipelineService {
     private boolean persist(UUID userId, Hypothesis hypothesis, Critique critique, double score) {
         String title = hypothesis.title().length() > 200
                 ? hypothesis.title().substring(0, 200) : hypothesis.title();
-        Optional<TestPlanEnvelope> plan = validatedPlan(userId, hypothesis);
+        PatternEntity revisedRow = null;
+        Optional<TestPlanEnvelope> plan;
+        if (hypothesis.revisesHypothesisKey() != null
+                && !hypothesis.revisesHypothesisKey().isBlank()) {
+            revisedRow = revisableRow(userId, hypothesis.revisesHypothesisKey());
+            plan = revisedRow == null
+                    ? Optional.empty()
+                    : validatedPlan(userId, hypothesis.revisedTestPlan());
+            if (revisedRow == null || plan.isEmpty()) {
+                // Defensive: a revision the code cannot verify is DROPPED whole rather than
+                // silently degrading into an unrelated qualitative row. The model said "change
+                // this test", not "here is a new hunch".
+                // log.warn, not debug: a model that systematically hallucinates keys would
+                // otherwise zero out the nightly output with no operational signal at all.
+                log.warn("Revision of '{}' by user {} is unusable (row {}, plan {}) — dropped",
+                        hypothesis.revisesHypothesisKey(), userId,
+                        revisedRow == null ? "unknown" : "ok", plan.isPresent() ? "ok" : "invalid");
+                return false;
+            }
+        } else {
+            plan = validatedPlan(userId, hypothesis.testPlan());
+        }
         String pairKey = plan.map(TestPlanEnvelope::key).orElseGet(() -> hypothesisKey(title));
         if (alreadyKnown(userId, plan, pairKey)) {
             log.debug("Hypothesis '{}' already known (any status) — skipping", title);
@@ -482,6 +545,12 @@ public class HypothesisPipelineService {
         pattern.setStatus(PatternEntity.STATUS_PROPOSED);
         pattern.setLastDetectedAt(Instant.now().truncatedTo(ChronoUnit.MICROS)); // timestamptz stores micros — truncate so the persisted row equals the in-memory one (mezo-mfmb)
         patternRepository.saveAndFlush(pattern);
+        if (revisedRow != null) {
+            // The ONLY thing a revision does to the old row: one audit event. Its status, belief
+            // and test plan are untouched — "az is fut" (spec §4.3).
+            patternEventAppender.append(userId, revisedRow.getId(), PatternEventEntity.KIND_REVISED,
+                    PatternEventPayloadEnvelope.revised(title));
+        }
         if (plan.isEmpty()) {
             appNotificationEmitter.emit(userId, AppNotificationKind.HYPOTHESIS_NEW,
                     "Új AI-hipotézis készült",
@@ -492,11 +561,23 @@ public class HypothesisPipelineService {
         return true;
     }
 
-    /** "" when Reflexió is off or the plan is unusable — the proposal then degrades, never fails. */
-    private Optional<TestPlanEnvelope> validatedPlan(UUID userId, Hypothesis hypothesis) {
+    /** Empty when Reflexió is off or the plan is unusable — the proposal then degrades, never fails. */
+    private Optional<TestPlanEnvelope> validatedPlan(UUID userId, RawTestPlan raw) {
         TestPlanValidator validator = testPlanValidator.getIfAvailable();
-        return validator == null
-                ? Optional.empty() : validator.validate(userId, hypothesis.testPlan());
+        return validator == null ? Optional.empty() : validator.validate(userId, raw);
+    }
+
+    /**
+     * S4 (mezo-eq85.4): the row a {@code revisesHypothesisKey} may point at — resolved through the
+     * OWNED finder (so a key can never reach another user's row) and only when the row is
+     * reflection-owned. A {@code statistical} catalog row belongs to the nightly Pearson job; the
+     * hypothesis loop must not be able to hang a {@code revised} event on it. Null = unusable.
+     */
+    private PatternEntity revisableRow(UUID userId, String hypothesisKey) {
+        return patternRepository
+                .findByCreatedByAndHypothesisKeyAndDeletedFalse(userId, hypothesisKey.trim())
+                .filter(PatternEntity::isReflectionOwned)
+                .orElse(null);
     }
 
     /** Identity probe: the hypothesis key for a planned row, the title hash for a qualitative one. */

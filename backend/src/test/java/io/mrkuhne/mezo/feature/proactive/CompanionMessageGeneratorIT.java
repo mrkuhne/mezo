@@ -24,6 +24,7 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -32,9 +33,17 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code [fake-feed-morning:{…}]} sentinel (planted via a check-in note, the {@code
  * [fake-briefing:…]} trick) scripts the strict-JSON answer; no summaries in the window or a
  * broken answer produce NO row (honest absence).
+ *
+ * <p>Reflexió is switched OFF here (this class asserts nothing about the digest): the class is
+ * itself {@code @Transactional}, so {@code ResetDatabase}'s fixture {@code TRUNCATE} never commits
+ * for the duration of a test method, and a {@code REQUIRES_NEW} digest read would then wait out its
+ * whole {@code DIGEST_TIMEOUT_SECONDS} on that lock before failing soft — 2 seconds burned per test
+ * for a digest nobody here checks. {@code ReflectionDigestMorningIT} is the class that covers the
+ * digest path (including the timeout/rollback behaviour) with a non-class-transactional fixture.
  */
 @Transactional
 @ActiveProfiles("companion-fake")
+@TestPropertySource(properties = "mezo.companion.reflection.enabled=false")
 class CompanionMessageGeneratorIT extends AbstractIntegrationTest {
 
     private static final LocalDate DAY = LocalDate.of(2026, 7, 6);

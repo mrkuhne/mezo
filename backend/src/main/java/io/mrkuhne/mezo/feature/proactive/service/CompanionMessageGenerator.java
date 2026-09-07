@@ -14,6 +14,7 @@ import io.mrkuhne.mezo.feature.companion.flags.entity.CompanionFlagLogEntity;
 import io.mrkuhne.mezo.feature.companion.flags.entity.FlagPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.flags.repository.CompanionFlagLogRepository;
 import io.mrkuhne.mezo.feature.companion.flags.service.FlagKey;
+import io.mrkuhne.mezo.feature.companion.reflection.service.ReflectionDigestService;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.service.ContextSnapshotAssembler;
 import io.mrkuhne.mezo.feature.companion.service.KnowledgeFactService;
@@ -50,6 +51,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -207,6 +209,11 @@ public class CompanionMessageGenerator {
     private final CompanionFlagLogRepository companionFlagLogRepository;
     private final HydrationShortfallProbe hydrationShortfallProbe;
     private final RetroLoggingProbe retroLoggingProbe;
+    /** Reflexió S4 (mezo-eq85.4): the reflection beans are {@code REFLECTION_SWITCH}-gated while
+     *  this generator is not, so the digest can only be reached lazily. Absent ⇒ the morning
+     *  message is exactly the pre-S4 one. The dependency runs proactive → companion, the direction
+     *  ArchUnit's {@code feature_slices_are_cycle_free} allows. */
+    private final ObjectProvider<ReflectionDigestService> reflectionDigestService;
 
     /**
      * Generates (or returns the existing) morning message for one day. Returns null when there
@@ -241,6 +248,12 @@ public class CompanionMessageGenerator {
                     "Memory", summary.getSummaryDate().toString()));
         }
         payload.append(missedWorkoutsBlock(userId, date));
+        ReflectionDigestService.Digest digest = reflectionDigest(userId, date);
+        if (digest != null) {
+            payload.append("\n\nÉSZREVÉTEL (egy mondatban utalj rá, ha illik a napba):\n")
+                    .append(digest.sentence());
+            candidates.add(new CompanionMessageEnvelope.Ref("Pattern", digest.title()));
+        }
         payload.append("\nHIVATKOZÁS-JELÖLTEK (a refIndexes ezekre mutat):\n");
         for (int i = 0; i < candidates.size(); i++) {
             CompanionMessageEnvelope.Ref ref = candidates.get(i);
@@ -265,6 +278,30 @@ public class CompanionMessageGenerator {
                 parsed.eyebrow(), parsed.body(), resolveRefs(parsed.refIndexes(), candidates)));
         message.setGeneratedAt(Instant.now().truncatedTo(ChronoUnit.MICROS));
         return companionMessageRepository.saveAndFlush(message);
+    }
+
+    /**
+     * Reflexió S4 (mezo-eq85.4, spec §6): what last night decided about the user's own hypotheses,
+     * as one deterministic sentence — or null when Reflexió is off, the night decided nothing, or
+     * the digest could not be built. Null is ALWAYS an acceptable answer here: the morning message
+     * is the product, the digest is a garnish, so a digest failure must never cost the user their
+     * briefing. {@link ReflectionDigestService#digestEntryFor} runs in its OWN {@code REQUIRES_NEW}
+     * transaction and swallows its own failures, so a broken digest can neither mark THIS method's
+     * transaction rollback-only nor poison its session; this catch is the second belt, for
+     * anything that still escapes (bean lookup, proxy creation, the inner commit).
+     */
+    private ReflectionDigestService.Digest reflectionDigest(UUID userId, LocalDate date) {
+        ReflectionDigestService service = reflectionDigestService.getIfAvailable();
+        if (service == null) {
+            return null;
+        }
+        try {
+            return service.digestEntryFor(userId, date).orElse(null);
+        } catch (Exception e) {
+            log.warn("Reflection digest unavailable for {} on {} — morning message ships without it",
+                    userId, date, e);
+            return null;
+        }
     }
 
     /**

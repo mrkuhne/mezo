@@ -47,6 +47,8 @@ public class PatternDetectionService {
     private final PatternRepository patternRepository;
     private final KnowledgeFactRepository knowledgeFactRepository;
     private final PatternEventRepository patternEventRepository;
+    /** S4 (mezo-eq85.4): the ONE way a pattern_event is written — see {@link PatternEventAppender}. */
+    private final PatternEventAppender patternEventAppender;
     private final CompanionProperties properties;
     private final AppNotificationEmitter appNotificationEmitter;
     private final NotificationFeedProperties feedProperties;
@@ -177,13 +179,9 @@ public class PatternDetectionService {
         var previous = patternEventRepository
                 .findFirstByCreatedByAndPatternIdAndKindAndDeletedFalseOrderByOccurredAtDesc(
                         pattern.getCreatedBy(), pattern.getId(), PatternEventEntity.KIND_SNAPSHOT);
-        PatternEventEntity event = new PatternEventEntity();
-        event.setCreatedBy(pattern.getCreatedBy());
-        event.setPatternId(pattern.getId());
-        event.setKind(PatternEventEntity.KIND_SNAPSHOT);
-        event.setOccurredAt(Instant.now());
-        event.setPayload(PatternEventPayloadEnvelope.snapshot(result.r(), result.n(), result.p()));
-        patternEventRepository.saveAndFlush(event);
+        patternEventAppender.append(pattern.getCreatedBy(), pattern.getId(),
+                PatternEventEntity.KIND_SNAPSHOT,
+                PatternEventPayloadEnvelope.snapshot(result.r(), result.n(), result.p()));
 
         boolean undecided = PatternEntity.STATUS_PROPOSED.equals(pattern.getStatus())
                 || PatternEntity.STATUS_MONITORING.equals(pattern.getStatus());
@@ -233,13 +231,9 @@ public class PatternDetectionService {
             fact.setReinforcementCount(fact.getReinforcementCount() + 1);
             fact.setLastReinforcedAt(Instant.now());
             knowledgeFactRepository.saveAndFlush(fact);
-            PatternEventEntity event = new PatternEventEntity();
-            event.setCreatedBy(pattern.getCreatedBy());
-            event.setPatternId(pattern.getId());
-            event.setKind(PatternEventEntity.KIND_REINFORCED);
-            event.setOccurredAt(Instant.now());
-            event.setPayload(PatternEventPayloadEnvelope.reinforced(fact.getReinforcementCount()));
-            patternEventRepository.saveAndFlush(event);
+            patternEventAppender.append(pattern.getCreatedBy(), pattern.getId(),
+                    PatternEventEntity.KIND_REINFORCED,
+                    PatternEventPayloadEnvelope.reinforced(fact.getReinforcementCount()));
             log.info("Confirmed pattern {} recurred — fact {} reinforced to {}",
                     pattern.getPairKey(), fact.getId(), fact.getReinforcementCount());
             appNotificationEmitter.emit(pattern.getCreatedBy(), AppNotificationKind.FACT_REINFORCED,
