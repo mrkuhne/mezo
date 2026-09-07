@@ -82,6 +82,17 @@ spec:
                 secretKeyRef:
                   name: mezo-app
                   key: GEMINI_API_KEY
+            # mezo-ozri.2: the OpenAI chat provider. Rides the SAME mezo-app secret, and the
+            # Gemini key above STAYS — embedding, audio-transcribe and the chat fallback are
+            # all still Gemini. optional: true so the pod keeps booting on the dummy
+            # application.yml default until the key is actually sealed in; until then
+            # mezo.companion.llm.provider must stay `gemini`.
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: mezo-app
+                  key: OPENAI_API_KEY
+                  optional: true
             - name: MEZO_FEATURE_COMPANION_ENABLED
               value: "true"
             # Phase-4 proactive layer LIVE (B1.2, mezo-h4wp.2): the generated morning
