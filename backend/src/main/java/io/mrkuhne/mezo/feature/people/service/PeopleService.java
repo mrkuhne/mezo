@@ -241,13 +241,14 @@ public class PeopleService {
             req.getContactCadenceLabel(), req.getNotes());
         PersonEntity saved = personRepository.save(p);
         eventPublisher.publishEvent(new PersonSavedEvent(userId, personId));
-        List<MentionEntity> own = mentionRepository
-            .findAllByCreatedByAndDeletedFalseOrderByTsDesc(userId).stream()
-            .filter(m -> m.getPersonId().equals(personId)).toList();
+        // Személyre szűkített PROJEKCIÓ (mezo-9x3g): a DB szűr, és csak a négy jel-mező jön át —
+        // a korábbi „teljes történet entitásként, aztán memóriában szűrünk" alak egy READ-WRITE
+        // tranzakcióban minden behúzott sort dirty-checkelt volna a flush-nál.
+        List<MentionSignal> own = mentionRepository.findSignalsByPerson(userId, personId);
         Instant weekAgo = Instant.now().minus(WEEK);
-        int thisWeek = (int) own.stream().filter(m -> !m.getTs().isBefore(weekAgo)).count();
+        int thisWeek = (int) own.stream().filter(m -> !m.ts().isBefore(weekAgo)).count();
         PersonResponse response = mapper.toPersonResponse(saved, own.size(), thisWeek,
-            own.isEmpty() ? null : own.getFirst().getTs());
+            own.isEmpty() ? null : own.getFirst().ts());
         response.setGraphEdges(List.of());
         response.setAffectTrend(List.of());
         response.setDirection(PersonResponse.DirectionEnum.FLAT);

@@ -13,6 +13,8 @@ import type { Pattern } from '@/data/types'
 // mirrors the mockup's first decision card exactly (mezo-tk88.4 Task 9).
 const pair = patternMonitor.pairs.find((p) => p.key === 'sleep-quality~next-day-training-rpe')!
 const statistical: Pattern = {
+  evidenceHits: 0,
+  evidenceMisses: 0,
   id: 's1',
   pairKey: pair.key,
   category: pair.category,

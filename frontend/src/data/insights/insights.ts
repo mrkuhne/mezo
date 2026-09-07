@@ -38,6 +38,8 @@ export const patterns: Pattern[] = [
     // row to render in the demo — this is the strongest-evidence seed, so it reads as the one
     // that's already been through the L2 decision.
     status: 'confirmed',
+    evidenceHits: 0,
+    evidenceMisses: 0,
   },
   {
     id: 'p2',
@@ -52,6 +54,8 @@ export const patterns: Pattern[] = [
     critique: { statistical: 0.78, confounders: 0.65, l3align: 0.82, actionability: 0.95 },
     thinking:
       'Az este 20:30 utáni szénhidrát-bevitel és a másnap reggeli RPE között robosztus a korreláció. A confounder: tegnap volt-e volleyball (extra glikogén-merítés ezt módosíthatja).',
+    evidenceHits: 0,
+    evidenceMisses: 0,
   },
   {
     id: 'p3',
@@ -63,6 +67,8 @@ export const patterns: Pattern[] = [
     mechanism: 'A 14:00 utáni koffein (>40mg) átlagosan 24 perccel kitolja az alvás kezdetét.',
     evidence: ['7 nap mérve', 'Stabil pattern, alacsony variancia'],
     critique: { statistical: 0.69, confounders: 0.78, l3align: 0.74, actionability: 0.91 },
+    evidenceHits: 0,
+    evidenceMisses: 0,
   },
 ]
 
@@ -425,6 +431,8 @@ const showcaseDetail: PatternPairDetail = {
     evidence: ['32 közös nap', 'r=-0.58', 'p=0.001'],
     status: 'confirmed',
     kind: 'statistical',
+    evidenceHits: 0,
+    evidenceMisses: 0,
   },
   events: [
     { kind: 'snapshot', occurredAt: '2026-06-03T02:40:00Z', r: -0.18, n: 14, p: 0.52 },

@@ -24,6 +24,15 @@ public interface PatternEventRepository extends JpaRepository<PatternEventEntity
     List<PatternEventEntity> findByCreatedByAndKindAndOccurredAtAfterAndDeletedFalse(
             UUID createdBy, String kind, Instant since);
 
+    /** S2 (mezo-eq85.2): the newest evidence events, freshest first — the hit/miss streak read.
+     *  Ten is deliberately more than any configured streak, so the streak can never be truncated. */
+    List<PatternEventEntity> findTop10ByCreatedByAndPatternIdAndKindAndDeletedFalseOrderByOccurredAtDesc(
+            UUID createdBy, UUID patternId, String kind);
+
+    /** S2: how many events of one kind a pattern carries (user replies, evidence nights). */
+    long countByCreatedByAndPatternIdAndKindAndDeletedFalse(
+            UUID createdBy, UUID patternId, String kind);
+
     /** Karakter round-4 read layer (CharacterMetaReads): window read, bounded above for catch-up honesty. */
     List<PatternEventEntity> findByCreatedByAndKindInAndOccurredAtGreaterThanEqualAndOccurredAtLessThanAndDeletedFalse(
             UUID createdBy, Collection<String> kinds, Instant from, Instant toExclusive);

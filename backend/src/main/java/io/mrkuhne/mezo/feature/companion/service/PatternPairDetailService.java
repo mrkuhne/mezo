@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.api.dto.PatternPairDetailResponse;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
+import io.mrkuhne.mezo.feature.companion.mapper.PatternTestPlanMapper;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -44,6 +45,8 @@ public class PatternPairDetailService {
     private final PatternImpactSource patternImpactSource;
     private final CompanionProperties properties;
     private final CompanionMapper mapper;
+    /** S2 (mezo-eq85.2): the test plan's series labels need a bean — see PatternTestPlanMapper. */
+    private final PatternTestPlanMapper testPlanMapper;
 
     @Transactional(readOnly = true)
     public PatternPairDetailResponse detail(UUID userId, String pairKey) {
@@ -71,7 +74,8 @@ public class PatternPairDetailService {
 
         return PatternPairDetailResponse.builder()
                 .pair(monitorPair)
-                .pattern(row == null ? null : mapper.toPatternResponse(row))
+                .pattern(row == null ? null
+                        : mapper.toPatternResponse(row, null, testPlanMapper.toWire(row.getTestPlan())))
                 .events(row == null ? List.of() : patternEventRepository
                         .findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(userId, row.getId())
                         .stream().map(mapper::toPatternEventResponse).toList())

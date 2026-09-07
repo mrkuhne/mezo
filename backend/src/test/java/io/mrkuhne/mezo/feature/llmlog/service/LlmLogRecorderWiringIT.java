@@ -18,7 +18,8 @@ import org.springframework.context.ApplicationContext;
 
 /**
  * The feature switch is the whole safety story of the audit log (mezo-2zyu): with
- * {@code mezo.feature.llm-log.enabled=false} (the shipped default) the injected
+ * {@code mezo.feature.llm-log.enabled=false} (an explicit opt-out; the shipped default is
+ * {@code true} since mezo-ozri.1) the injected
  * {@link LlmCallRecorder} is the no-op, so no call site can ever publish an audit event — the
  * switch removes the behavior structurally, not by an if-check at the call site.
  *

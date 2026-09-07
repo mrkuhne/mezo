@@ -33,6 +33,28 @@ jobs:
         # can each be green and their merge still red (mezo-l4am, mezo-mxrc).
         run: bash .github/scripts/cheap-gates.sh
 
+  lint-k8s:
+    # mezo-ibxy: first manifest gate. Plain YAML under k8s/ is schema-checked; the Helm values
+    # are proven renderable against the pinned chart. CRD kinds have no upstream schema in
+    # kubeconform's catalog → -ignore-missing-schemas (structure is still YAML-validated).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install kubeconform
+        run: |
+          curl -sSL https://github.com/yannh/kubeconform/releases/download/v0.8.0/kubeconform-linux-amd64.tar.gz \
+            | tar -xz -C /usr/local/bin kubeconform
+      - name: Validate plain manifests
+        run: |
+          find k8s argocd -name '*.yaml' ! -name 'values.yaml' ! -name 'secret.example*' -print0 \
+            | xargs -0 kubeconform -strict -ignore-missing-schemas -kubernetes-version 1.35.0 -summary
+      - name: Render the monitoring chart with our values
+        run: |
+          helm repo add vm https://victoriametrics.github.io/helm-charts/
+          helm template vm vm/victoria-metrics-k8s-stack --version 0.91.2 -n monitoring \
+            -f k8s/monitoring/values.yaml \
+            | kubeconform -strict -ignore-missing-schemas -kubernetes-version 1.35.0 -summary
+
   contract-drift:
     # Fails when api/openapi.yml is a stale merge of the api/feature/* fragments,
     # or frontend api.gen.ts was not regenerated after a contract change. The

@@ -336,7 +336,7 @@ class GeminiCompanionLlmRecordingTest {
 
     private GeminiCompanionLlm adapter(ChatModel chatModel) {
         return new GeminiCompanionLlm(
-            chatModel, companionProperties(), recorder, contextHolder, new GeminiUsageExtractor());
+            chatModel, companionProperties(), recorder, contextHolder, new GoogleGenAiUsageExtractor());
     }
 
     private static CompanionProperties companionProperties() {

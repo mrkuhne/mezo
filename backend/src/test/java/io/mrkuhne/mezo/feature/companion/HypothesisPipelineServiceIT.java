@@ -54,7 +54,7 @@ class HypothesisPipelineServiceIT extends AbstractIntegrationTest {
                 "mechanism":"A ciklus eleji étvágytalanság alváshiánnyal társulva csökkenti a heti volument.",\
                 "category":"physiology"}]""");
 
-        int persisted = pipeline.run(owner);
+        int persisted = pipeline.run(owner, null);
 
         assertThat(persisted).isEqualTo(1);
         List<PatternEntity> rows = patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner);
@@ -82,7 +82,7 @@ class HypothesisPipelineServiceIT extends AbstractIntegrationTest {
                 [{"title":"Gyenge sejtés [fake-critique:{\\"statistical\\":0.2,\\"confounders\\":0.2,\\"l3align\\":0.2,\\"actionability\\":0.2,\\"reasoning\\":\\"nincs alap\\"}]",\
                 "mechanism":"M","category":"trigger"}]""");
 
-        assertThat(pipeline.run(owner)).isZero();
+        assertThat(pipeline.run(owner, null)).isZero();
         assertThat(patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner)).isEmpty();
     }
 
@@ -95,7 +95,7 @@ class HypothesisPipelineServiceIT extends AbstractIntegrationTest {
                  [fake-revise:{\\"title\\":\\"Szukitett hipotezis\\",\\"mechanism\\":\\"M2\\",\\"category\\":\\"trigger\\"}]",\
                 "mechanism":"M","category":"trigger"}]""");
 
-        int persisted = pipeline.run(owner);
+        int persisted = pipeline.run(owner, null);
 
         assertThat(persisted).isEqualTo(1);
         List<PatternEntity> rows = patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner);
@@ -120,7 +120,7 @@ class HypothesisPipelineServiceIT extends AbstractIntegrationTest {
         seedContext(owner, """
                 [{"title":"Ismert hipotézis","mechanism":"M","category":"trigger"}]""");
 
-        assertThat(pipeline.run(owner)).isZero();
+        assertThat(pipeline.run(owner, null)).isZero();
         assertThat(patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner)).hasSize(1);
     }
 
@@ -132,7 +132,7 @@ class HypothesisPipelineServiceIT extends AbstractIntegrationTest {
                 [{"title":"Kategória nélküli","mechanism":"M"},\
                 {"title":"Ép hipotézis","mechanism":"M","category":"trigger"}]""");
 
-        assertThat(pipeline.run(owner)).isEqualTo(1);
+        assertThat(pipeline.run(owner, null)).isEqualTo(1);
         List<PatternEntity> rows = patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner);
         assertThat(rows).hasSize(1);
         assertThat(rows.getFirst().getTitle()).isEqualTo("Ép hipotézis");
@@ -143,12 +143,12 @@ class HypothesisPipelineServiceIT extends AbstractIntegrationTest {
         UUID owner = userPopulator.createUser().getId();
         dailySummaryPopulator.summary(owner, DAY, "Nap. [fake-hypotheses:[ez-nem-json]]");
 
-        assertThat(pipeline.run(owner)).isZero();
+        assertThat(pipeline.run(owner, null)).isZero();
         assertThat(patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner)).isEmpty();
     }
 
     @Test
-    void testRun_shouldCapProposals_whenMoreThanMaxPerRun() {
+    void testRun_shouldCapProposals_whenMoreThanMaxPerNight() {
         UUID owner = userPopulator.createUser().getId();
         seedContext(owner, """
                 [{"title":"H1","mechanism":"M","category":"trigger"},\
@@ -156,14 +156,14 @@ class HypothesisPipelineServiceIT extends AbstractIntegrationTest {
                 {"title":"H3","mechanism":"M","category":"trigger"},\
                 {"title":"H4","mechanism":"M","category":"trigger"}]""");
 
-        // max-per-run: 3 — the 4th proposal is never judged
-        assertThat(pipeline.run(owner)).isEqualTo(3);
+        // S2 (mezo-eq85.2): reflection.propose.max-per-night is 2 — the 3rd proposal is never judged
+        assertThat(pipeline.run(owner, null)).isEqualTo(2);
     }
 
     @Test
     void testRun_shouldDoNothing_whenNoNarrativeContext() {
         UUID owner = userPopulator.createUser().getId();
 
-        assertThat(pipeline.run(owner)).isZero();
+        assertThat(pipeline.run(owner, null)).isZero();
     }
 }

@@ -5,6 +5,8 @@ import io.mrkuhne.mezo.feature.companion.memory.config.MemoryPlatformProperties;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryCandidate;
 import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryRequest;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryCandidateFusion.FusedCandidate;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -41,9 +43,13 @@ public class LlmMemoryReranker implements MemoryReranker {
             + "Rendezd relevancia szerint a kapott memóriaazonosítókat. "
             + "Csak egy JSON UUID-tömböt adj vissza, új azonosítót ne találj ki.";
 
+    private static final LlmCallContext CALL_CONTEXT =
+            new LlmCallContext("companion_recall", "rerank", null, null);
+
     private final CompanionLlm llm;
     private final ObjectMapper objectMapper;
     private final MemoryPlatformProperties properties;
+    private final LlmCallContextHolder llmCallContextHolder;
     @Qualifier("applicationTaskExecutor")
     private final AsyncTaskExecutor applicationTaskExecutor;
 
@@ -80,7 +86,11 @@ public class LlmMemoryReranker implements MemoryReranker {
         List<FusedCandidate> exposed = fusedOrder.subList(0, limit);
         Future<String> call = null;
         try {
-            call = applicationTaskExecutor.submit(() -> llm.completeSmart(SYSTEM_PROMPT, render(exposed)));
+            // The holder is thread-bound and this runs on applicationTaskExecutor, so the context
+            // is bound INSIDE the task — binding it around submit() would tag the caller's thread,
+            // not the one that reaches the adapter (mezo-ozri.1).
+            call = applicationTaskExecutor.submit(() -> llmCallContextHolder.runWith(
+                    CALL_CONTEXT, () -> llm.completeSmart(SYSTEM_PROMPT, render(exposed))));
             String answer = call.get(properties.reranker().timeoutMs(), TimeUnit.MILLISECONDS);
             List<UUID> orderedIds = parseIds(answer);
             Map<UUID, FusedCandidate> supplied = new LinkedHashMap<>();

@@ -13,19 +13,23 @@ import java.util.Map;
  * job tenne. A teljes mintaméret után a bináris A metrikák mindkét csoportját külön is kapuzza,
  * mielőtt Pearsont számolna. A {@code FROZEN} szándékosan NEM verdikt: az a perzisztált sor
  * státuszának következménye, nem a matematikáé.
+ *
+ * <p>S2 (mezo-eq85.2): public, because {@code companion.reflection}'s nightly hypothesis
+ * evaluation must run the SAME gate as the job and the monitor — a third copy of the math would
+ * be a third answer. No behaviour change.
  */
-final class PatternGate {
+public final class PatternGate {
 
-    enum Verdict { LIVE, FEW_DAYS, NO_DATA, DEGENERATE, IMBALANCED_GROUPS }
+    public enum Verdict { LIVE, FEW_DAYS, NO_DATA, DEGENERATE, IMBALANCED_GROUPS }
 
     /** Melyik illesztett széria konstans — csak {@code DEGENERATE} esetén értelmezett. */
-    enum Side { A, B, BOTH }
+    public enum Side { A, B, BOTH }
 
     /**
      * {@code result} only exists for LIVE, {@code constantSide} only for DEGENERATE, while the
      * group counts exist only when metric A is binary and has reached the total-size gate.
      */
-    record Outcome(Verdict verdict, int alignedDays, PearsonCorrelation.Result result,
+    public record Outcome(Verdict verdict, int alignedDays, PearsonCorrelation.Result result,
                    Side constantSide, Integer groupZeroDays, Integer groupOneDays) {
     }
 
@@ -33,7 +37,7 @@ final class PatternGate {
     }
 
     /** [from,to] szűkítés — a futás-szintű cache uniós ablakából a pár PONTOS ablaka. */
-    static Map<LocalDate, Double> window(Map<LocalDate, Double> series, LocalDate from, LocalDate to) {
+    public static Map<LocalDate, Double> window(Map<LocalDate, Double> series, LocalDate from, LocalDate to) {
         Map<LocalDate, Double> out = new LinkedHashMap<>();
         series.forEach((day, value) -> {
             if (!day.isBefore(from) && !day.isAfter(to)) {
@@ -47,7 +51,7 @@ final class PatternGate {
      * {@code seriesB} a {@code seriesA} napjához képest {@code lagDays} nappal KÉSŐBB olvasódik.
      * A hívó felelőssége, hogy a két térképet a saját ablakára vágja (a job ezt teszi).
      */
-    static Outcome evaluate(Map<LocalDate, Double> seriesA, Map<LocalDate, Double> seriesB,
+    public static Outcome evaluate(Map<LocalDate, Double> seriesA, Map<LocalDate, Double> seriesB,
                             int lagDays, int minN, int minGroupN,
                             MetricValueKind metricAValueKind) {
         List<double[]> aligned = new ArrayList<>();
