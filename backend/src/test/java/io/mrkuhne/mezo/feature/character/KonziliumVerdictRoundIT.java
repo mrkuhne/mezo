@@ -79,6 +79,26 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
         return claimRepository.save(entity);
     }
 
+    /** Sibling to {@link #seedClaim} for tests that need a claim carrying REAL confidence-history
+     *  and user-feedback envelopes (mezo-lghn fix round 1) — {@code seedClaim}'s single-point
+     *  history and empty feedback are deliberately kept as-is for the tests that already rely on
+     *  that minimal shape. */
+    private CharacterClaimEntity seedClaimWithHistoryAndFeedback(UUID owner, UUID dimensionId, String text,
+            BigDecimal confidence, ClaimConfidenceHistoryEnvelope history, ClaimFeedbackEnvelope feedback) {
+        CharacterClaimEntity entity = new CharacterClaimEntity();
+        entity.setCreatedBy(owner);
+        entity.setDimensionId(dimensionId);
+        entity.setText(text);
+        entity.setConfidence(confidence);
+        entity.setStatus("ACTIVE");
+        entity.setProposedBy("drill");
+        entity.setEvidence(new ClaimEvidenceEnvelope(List.of()));
+        entity.setSensitive(false);
+        entity.setUserFeedback(feedback);
+        entity.setConfidenceHistory(history);
+        return claimRepository.save(entity);
+    }
+
     @Test
     void markers_mirroredInFakeLlm_stayInSync() {
         assertThat(FakeCompanionLlm.SKEPTIC_MARKER_MIRROR).isEqualTo(KonziliumVerdictRound.SKEPTIC_MARKER);
@@ -416,5 +436,36 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
         verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
 
         assertThat(fakeCompanionLlm.lastUserMessage()).contains("van szűkítve");
+    }
+
+    /** mezo-lghn fix round 1: the two tests above both use NEW proposals (claimId == null), so
+     *  {@code targetedClaimDetails}'s per-target loop never runs — this is the covering test for
+     *  that half of the dossier block: the targeted claim's confidence-history and user-feedback
+     *  lines, with confidence rendered ONLY as a word, never a raw decimal. */
+    @Test
+    void theChairsPromptCarriesTheTargetedClaimsHistoryAndFeedback() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        ClaimConfidenceHistoryEnvelope history = new ClaimConfidenceHistoryEnvelope(List.of(
+                new ClaimConfidenceHistoryEnvelope.Point(new BigDecimal("0.40"), "kezdet", Instant.now().minusSeconds(200)),
+                new ClaimConfidenceHistoryEnvelope.Point(new BigDecimal("0.60"), "megerősítés", Instant.now())));
+        ClaimFeedbackEnvelope feedback = new ClaimFeedbackEnvelope(
+                List.of(new ClaimFeedbackEnvelope.Event("TALAL", "egyetértek", Instant.now())));
+        CharacterClaimEntity claim = seedClaimWithHistoryAndFeedback(owner, dimension.getId(),
+                "Fegyelmezett hét.", new BigDecimal("0.60"), history, feedback);
+        ClaimProposal proposal = new ClaimProposal("doki", "UP", null, claim.getId(),
+                "Erősítsük meg.", new BigDecimal("0.70"), false, "Negyedik egymást követő hét.");
+
+        verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        // The chair is called last, so lastUserMessage() is ITS prompt.
+        assertThat(fakeCompanionLlm.lastUserMessage())
+                .contains("bizalom útja")
+                .contains("figyeljük (kezdet)") // 0.40 is below the 0.50 LIKELY threshold
+                .contains("valószínű (megerősítés)") // 0.60 is at/above it
+                .contains("felhasználói visszajelzés")
+                .contains("TALAL")
+                .contains("egyetértek")
+                .doesNotContainPattern("0\\.40|0\\.60");
     }
 }
