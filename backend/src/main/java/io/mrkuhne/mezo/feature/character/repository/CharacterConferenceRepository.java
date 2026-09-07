@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.feature.character.repository;
 
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
+import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
@@ -36,5 +37,7 @@ public interface CharacterConferenceRepository extends JpaRepository<CharacterCo
         LocalDate getWeekStart();
 
         Instant getGeneratedAt();
+
+        ConferenceOutcomeEnvelope getOutcome();
     }
 }
