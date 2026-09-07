@@ -856,7 +856,7 @@ itself (§3 below).
 accounts (`AppUserRepository.findByStatusAndOnboardedAtIsNotNull` — a disabled or half-onboarded
 account gets no generated content and burns no tokens), (b) runs each user's body inside
 `LlmActorContext.runAs(user.getId(), …)` so `llm_log_history.created_by` names the user the job ran
-for instead of the `Háttér` bucket ([`beta-admin.md`](beta-admin.md) §5), and (c) catches a
+for instead of the `Háttér` bucket ([`admin-hub.md`](admin-hub.md) §5), and (c) catches a
 `Throwable` per user so one bad account never aborts the run — the jobs keep their own finer-grained
 try/catch INSIDE the body on top of it. The pseudocode blocks below write the loop as
 `userFanOut.forEachActiveUser(…)`.

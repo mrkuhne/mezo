@@ -110,7 +110,7 @@ Design spec for Phase 2 (slice map, decisions): `docs/superpowers/specs/2026-06-
 cd frontend
 pnpm dev          # vite dev server on :5180 — REAL mode by default (backend on :8090 required); mock: VITE_USE_MOCK=true pnpm dev (no backend needed)
 pnpm build        # tsc -b && vite build
-pnpm test         # vitest run — REAL mode by default; also run VITE_USE_MOCK=true pnpm test (both modes must be green)
+pnpm test         # vitest run — MOCK mode (VITE_USE_MOCK unset ⇒ mock, per data/_client/mode.ts); real-mode gate: VITE_USE_MOCK=false pnpm test (both modes must be green)
 
 # Backend (under backend/)
 cd backend
@@ -141,7 +141,7 @@ cd frontend && pnpm generate:api          # regenerate src/data/_client/api.gen.
 - **Data:** every feature imports hooks from **`@/data/hooks` only** (a thin re-export barrel); implementations live in `data/<domain>/<name>Hooks.ts`. Dual-mode reads use `useDualQuery` — never the mock seed as a real-mode fallback.
 - **Imports:** deep + absolute via the `@/*` alias; **no barrels** except `data/hooks.ts`; no relative `../`; tests colocated.
 - **`shared/ui` is domain-free** — a UI file that imports `@/data/*` or serves one feature belongs in `features/<domain>/components/`.
-- **Gate:** `cd frontend && pnpm build && pnpm test && VITE_USE_MOCK=true pnpm test` — both modes green; update the feature's `docs/features/<domain>.md` + run `node scripts/lint-docs.mjs`.
+- **Gate:** `cd frontend && pnpm build && pnpm test && VITE_USE_MOCK=false pnpm test` — both modes green (bare `pnpm test` is already mock, since `VITE_USE_MOCK` unset ⇒ mock; running it twice never exercises real mode); update the feature's `docs/features/<domain>.md` + run `node scripts/lint-docs.mjs`.
 
 ## Backend Development Conventions (Phase 2+) — MANDATORY
 

@@ -106,4 +106,4 @@ Only folders with content exist. A non-routed full-screen overlay provider (e.g.
 
 ## 9. Verify before you're done
 
-`cd frontend && pnpm build && pnpm test && VITE_USE_MOCK=true pnpm test` — the build (`tsc -b`) catches broken imports; **both** test modes must stay green. Touched a feature? Update its `docs/features/<domain>.md` and run `node scripts/lint-docs.mjs`.
+`cd frontend && pnpm build && pnpm test && VITE_USE_MOCK=false pnpm test` — the build (`tsc -b`) catches broken imports; **both** test modes must stay green (bare `pnpm test` is already mock mode — `VITE_USE_MOCK` unset ⇒ mock, per `data/_client/mode.ts` — so `VITE_USE_MOCK=false` is what actually exercises real mode). Touched a feature? Update its `docs/features/<domain>.md` and run `node scripts/lint-docs.mjs`.
