@@ -10517,3 +10517,22 @@ button.mz-wtile:active { transform: scale(0.96); }
   .pdt-progress i { animation: none; }
   .pdt-fold summary::after { transition: none; }
 }
+
+/* ===== mezo-szerkesztő · zóna-sáv (mezo-yty6) ===== */
+.mz-zb { position: relative; height: 14px; border-radius: 7px; overflow: hidden;
+  margin-top: 6px; background: var(--mz-gbar-bg); }
+.mz-zb-z2 { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--coral) 16%, transparent); }
+.mz-zb-z3 { position: absolute; top: 0; bottom: 0; background: color-mix(in srgb, var(--coral) 32%, transparent); }
+.mz-zb-hl { position: absolute; top: 0; bottom: 0; width: 1px; background: color-mix(in srgb, var(--text-primary) 25%, transparent); }
+.mz-zb-tg { position: absolute; top: 0; bottom: 0; width: 2px; background: color-mix(in srgb, var(--text-primary) 45%, transparent); }
+.mz-zb-mk { position: absolute; top: -2px; bottom: -2px; width: 4px; border-radius: 2px;
+  animation: mz-zb-pulse 2.6s ease-in-out 1.2s infinite; }
+.mz-zb-cap { display: flex; justify-content: space-between; margin-top: 3px;
+  font-size: 8px; font-weight: 700; color: var(--mz-ink-mut); }
+@keyframes mz-zb-pulse {
+  0%, 100% { box-shadow: 0 0 5px color-mix(in srgb, var(--amber) 50%, transparent); }
+  50% { box-shadow: 0 0 11px color-mix(in srgb, var(--amber) 90%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mz-zb-mk { animation: none; }
+}
