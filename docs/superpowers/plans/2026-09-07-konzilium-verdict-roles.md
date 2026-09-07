@@ -1219,11 +1219,28 @@ In `CharacterService`, extend the two builders:
 
 Regenerate the client and confirm no drift:
 
+The contract workflow is **two steps, in this order** — the controller traced it, do not skip the first:
+
 ```bash
+cd api/generate && pnpm generate:api && cd ../..
 cd frontend && pnpm generate:api && cd ..
 ```
 
-The script is `generate:api` (`frontend/package.json:18`) — it runs a toolchain check and then `openapi-typescript ../api/openapi.yml -o src/data/_client/api.gen.ts`. Note it reads the **bundled** `api/openapi.yml`, so if that file does not pick up the fragment automatically, regenerate or update it as the repo's contract workflow requires, and say in your report which path you took.
+1. `api/generate`'s `generate:api` runs `openapi-merge-cli --config merge.yml`, which merges the
+   per-feature fragments — including the `api/feature/character/character.yml` you just edited —
+   into the bundled `api/openapi.yml`.
+2. `frontend`'s `generate:api` (`frontend/package.json:18`) then runs
+   `openapi-typescript ../api/openapi.yml -o src/data/_client/api.gen.ts`, reading that **bundled**
+   file.
+
+Skipping step 1 means step 2 regenerates from a stale bundle with none of the new fields: the
+frontend would not see them and CI's contract-drift job would fail. Both `api/openapi.yml` and
+`frontend/src/data/_client/api.gen.ts` are generated-but-committed, so both belong in the commit.
+
+Both scripts first run `scripts/check-generator-toolchain.mjs`, which requires exactly pinned
+generator versions and the matching `node_modules` present (`api/generate/node_modules` for step 1,
+`frontend/node_modules` for step 2). If it refuses, install in that directory rather than bypassing
+the check — it exists to stop a stale toolchain silently reformatting the whole generated file.
 
 - [ ] **Step 6: Write the failing frontend test**
 
@@ -1334,7 +1351,19 @@ Expected: PASS.
 - [ ] **Step 10: Commit**
 
 ```bash
-git add backend/src/main/java/io/mrkuhne/mezo/feature/character/entity/ConferenceDeliberationEnvelope.java backend/src/main/java/io/mrkuhne/mezo/feature/character/service/DeliberationAssembler.java backend/src/main/java/io/mrkuhne/mezo/feature/character/service/CharacterService.java backend/src/test/java/io/mrkuhne/mezo/feature/character/DeliberationAssemblerTest.java api/feature/character/character.yml frontend/src/data/_client/api.gen.ts frontend/src/features/character/components/ConferenceThreadCard.tsx frontend/src/features/character/components/ConferenceThreadCard.test.tsx
+git add \
+  backend/src/main/java/io/mrkuhne/mezo/feature/character/entity/ConferenceDeliberationEnvelope.java \
+  backend/src/main/java/io/mrkuhne/mezo/feature/character/service/DeliberationAssembler.java \
+  backend/src/main/java/io/mrkuhne/mezo/feature/character/service/LegacyTranscriptParser.java \
+  backend/src/main/java/io/mrkuhne/mezo/feature/character/service/CharacterService.java \
+  backend/src/test/java/io/mrkuhne/mezo/feature/character/DeliberationAssemblerTest.java \
+  backend/src/test/java/io/mrkuhne/mezo/feature/character/ConferenceDeliberationEnvelopeIT.java \
+  backend/src/test/java/io/mrkuhne/mezo/feature/character/CharacterApiIT.java \
+  api/feature/character/character.yml \
+  api/openapi.yml \
+  frontend/src/data/_client/api.gen.ts \
+  frontend/src/features/character/components/ConferenceThreadCard.tsx \
+  frontend/src/features/character/components/ConferenceThreadCard.test.tsx
 git commit --no-verify -m "feat(character): show what the konzílium chair added, not what it repeated (mezo-lghn)"
 ```
 
