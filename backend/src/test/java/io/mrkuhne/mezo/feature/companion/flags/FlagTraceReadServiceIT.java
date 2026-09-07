@@ -175,13 +175,11 @@ class FlagTraceReadServiceIT extends AbstractIntegrationTest {
         logRepository.saveAndFlush(log);
         trace(userId, FlagKey.SLEEP_DEBT, "raised", null, "logged", null, at(9));
         trace(userId, FlagKey.LATE_EATING, "raised", null, "logged", null, at(10));
-        // The plain card() helper stamps `generatedAt`/created_at with the REAL wall-clock
-        // Instant.now(), not a DAY-relative one. Before ~10:00 local time that real "now" sits
-        // BEFORE both traces above, so the decision-instant correlation in FlagTraceReadService
-        // (row.occurredAt <= deliveredAt) never matches either rule and cardOutcome comes back
-        // null for both — a time-of-day bomb, not a service defect (mezo-5zl1 / mezo-nrkk). Use
-        // cardAt to pin the card's delivery instant to the fixture's own clock, after the traces
-        // it must correlate against, so the test is honest at every hour.
+        // Deterministic delivery time (mezo-wv63): the plain card() helper stamps created_at =
+        // now(), and the mezo-y43v guard drops cardOutcome for a trace that occurred AFTER the
+        // delivery — so with traces planted at 9:00/10:00 this test failed on every run before
+        // 09:00 local (CI's 00:xx UTC runs included). cardAt pins the delivery after both raises,
+        // exactly as this file's other correlation tests already do.
         UUID cardId = cardAt(userId, FlagKey.SLEEP_DEBT, at(11));
 
         FlagTraceReadService.TraceDay day = service.read(userId, DAY);
