@@ -27,7 +27,11 @@ export function AdminOverviewPage() {
 
   const loggedTotal = Object.values(ov.data.loggedToday).reduce((a, b) => a + b, 0)
   const domainDailyTotals = sumSeriesByDay(ov.data.domainSeries)
-  const costQuery = { isError: ov.isError || cm.isError, refetch: () => { ov.refetch(); cm.refetch() } }
+  const costQuery = {
+    isError: ov.isError || cm.isError,
+    isPending: ov.isPending || cm.isPending,
+    refetch: () => { ov.refetch(); cm.refetch() },
+  }
 
   return (
     <MozaikPage tone="sky">
