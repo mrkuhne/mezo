@@ -244,7 +244,11 @@ components:
           items: { type: number, format: float }
         replayNotes:
           type: array
-          description: 'honesty flags, e.g. reranker_skipped, rewrite_skipped, projection_embed_extra_call, pca_unavailable'
+          description: >
+            honesty flags, e.g. reranker_skipped, rewrite_skipped,
+            rewrite_unreachable_no_history (a replay carries no conversation history, so the query
+            analyzer can never report CONTEXT_DEPENDENT and the rewrite toggle cannot fire),
+            projection_embed_extra_call, pca_unavailable
           items: { type: string }
     AdminMemoryReplayRequest:
       type: object
@@ -252,7 +256,14 @@ components:
       properties:
         query: { type: string, minLength: 1, maxLength: 500 }
         reranker: { type: boolean, default: false, description: 'ALLOW the LLM reranker (costs a smart-tier call); the pipeline still decides whether it is needed' }
-        rewrite: { type: boolean, default: false, description: 'ALLOW the LLM query rewrite (costs a call)' }
+        rewrite:
+          type: boolean
+          default: false
+          description: >
+            ALLOW the LLM query rewrite (costs a call). Currently inert for a replay: the rewrite
+            only runs for a CONTEXT_DEPENDENT query, which requires usable conversation history,
+            and a replay has none by design. Allowing it adds the
+            rewrite_unreachable_no_history note instead of silently doing nothing.
         consumerPolicy:
           type: string
           enum: [CHAT_AMBIENT, MORNING_BRIEFING, WEEKLY_MEMOIR, PREDICTION_EVIDENCE, REFLECTION]

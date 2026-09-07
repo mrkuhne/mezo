@@ -10029,7 +10029,7 @@ export interface components {
             dryRun: boolean;
             /** @description dry run only: the query vector in the PCA-50 space, for the map */
             queryProjection?: number[] | null;
-            /** @description honesty flags, e.g. reranker_skipped, rewrite_skipped, projection_embed_extra_call, pca_unavailable */
+            /** @description honesty flags, e.g. reranker_skipped, rewrite_skipped, rewrite_unreachable_no_history (a replay carries no conversation history, so the query analyzer can never report CONTEXT_DEPENDENT and the rewrite toggle cannot fire), projection_embed_extra_call, pca_unavailable */
             replayNotes: string[];
         };
         AdminMemoryReplayRequest: {
@@ -10040,7 +10040,7 @@ export interface components {
              */
             reranker: boolean;
             /**
-             * @description ALLOW the LLM query rewrite (costs a call)
+             * @description ALLOW the LLM query rewrite (costs a call). Currently inert for a replay: the rewrite only runs for a CONTEXT_DEPENDENT query, which requires usable conversation history, and a replay has none by design. Allowing it adds the rewrite_unreachable_no_history note instead of silently doing nothing.
              * @default false
              */
             rewrite: boolean;
