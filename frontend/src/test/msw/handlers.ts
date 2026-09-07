@@ -9,6 +9,7 @@ import {
   ADMIN_COST_MATRIX_MOCK,
   ADMIN_FEATURE_USAGE_MOCK,
   ADMIN_OVERVIEW_MOCK,
+  ADMIN_SCREEN_USAGE_MOCK,
   ADMIN_USER_DETAIL_MOCK,
   ADMIN_USER_INSIGHTS_MOCK,
 } from '@/data/admin/adminInsightsMock'
@@ -299,6 +300,10 @@ export const handlers = [
   http.get(`${API_BASE}/api/admin/users/:id/insight`, () => HttpResponse.json(ADMIN_USER_DETAIL_MOCK)),
   http.get(`${API_BASE}/api/admin/usage/features`, () => HttpResponse.json(ADMIN_FEATURE_USAGE_MOCK)),
   http.get(`${API_BASE}/api/admin/usage/cost-matrix`, () => HttpResponse.json(ADMIN_COST_MATRIX_MOCK)),
+  http.get(`${API_BASE}/api/admin/usage/screens`, () => HttpResponse.json(ADMIN_SCREEN_USAGE_MOCK)),
+  // Ingest is fire-and-forget: the handler exists so a real-mode test's telemetry POST does not
+  // surface as an unhandled request, and answers 202 with no body like the backend does.
+  http.post(`${API_BASE}/api/telemetry/screen-events`, () => new HttpResponse(null, { status: 202 })),
   // Admin data browser (mezo-d5iy.12) — populated defaults from the same mock seed, never a
   // 404 for an unknown table: an unrecognised `:table` falls back to the food_log fixture
   // rather than answering empty/error, matching "MSW handlers answer populated defaults".

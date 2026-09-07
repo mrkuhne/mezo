@@ -8,6 +8,8 @@ export type AdminUserInsightResponse = components['schemas']['AdminUserInsightRe
 export type AdminUserDetailResponse = components['schemas']['AdminUserDetailResponse']
 export type AdminFeatureUsageResponse = components['schemas']['AdminFeatureUsageResponse']
 export type AdminCostMatrixResponse = components['schemas']['AdminCostMatrixResponse']
+export type AdminScreenUsageResponse = components['schemas']['AdminScreenUsageResponse']
+export type AdminScreenUsageRow = components['schemas']['AdminScreenUsageRow']
 export type AdminDayCount = components['schemas']['AdminDayCount']
 export type AdminDaySeries = components['schemas']['AdminDaySeries']
 export type AdminDayAmount = components['schemas']['AdminDayAmount']
@@ -38,4 +40,8 @@ export const adminInsightsApi = {
     apiFetch<AdminFeatureUsageResponse>(`/api/admin/usage/features${qs({ period })}`),
   costMatrix: (period: AdminPeriod): Promise<AdminCostMatrixResponse> =>
     apiFetch<AdminCostMatrixResponse>(`/api/admin/usage/cost-matrix${qs({ period })}`),
+  // Screen usage (mezo-o5cz) — reads the lean screen_event log. Answers 200 with zero rows when
+  // the screen-telemetry switch is off, so the page never has to special-case a 404.
+  screenUsage: (period: AdminPeriod): Promise<AdminScreenUsageResponse> =>
+    apiFetch<AdminScreenUsageResponse>(`/api/admin/usage/screens${qs({ period })}`),
 }
