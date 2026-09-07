@@ -1383,6 +1383,12 @@ export const handlers = [
       lastDetectedAt: '2026-07-03T02:40:00Z',
     })
   }),
+  // Reflexió S5 (mezo-eq85.5) — az észrevétel-feed alapból ŐSZINTÉN ÜRES; a kártyákat
+  // a saját teszt írja felül `server.use(...)`-szal.
+  http.get(`${API_BASE}/api/companion/observation`, () => HttpResponse.json([])),
+  http.post(`${API_BASE}/api/companion/pattern/:id/reply`, () =>
+    HttpResponse.json({ pattern: null, conversationId: null }),
+  ),
   http.get(`${API_BASE}/api/companion/pattern/monitor`, () =>
     HttpResponse.json({
       windowFrom: '2026-06-13',
