@@ -14,27 +14,17 @@ import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { expertColor } from '@/features/character/expertColors'
 import { confidenceWord } from '@/data/character/characterApi'
 import type { CharacterExpertDto, ConferenceItem, ConferenceThread } from '@/data/character/characterApi'
-
-const STANCE_LABEL: Record<string, string> = {
-  SUPPORT: 'támogatja',
-  CHALLENGE: 'vitatja',
-  NUANCE: 'árnyalja',
-}
+import {
+  ACCEPTED_LABEL,
+  NOTE_LABEL,
+  SKEPTIC_LABEL,
+  STANCE_LABEL,
+  STANCE_TONE as SHARED_STANCE_TONE,
+  displayName,
+  type StanceTone,
+} from '@/features/character/deliberationLabels'
 
 const NO_ANSWER = 'Ez a kör nem adott választ erre az állításra.'
-
-const SKEPTIC_LABEL: Record<string, string> = {
-  KILL: 'Kukázta',
-  WEAKEN: 'Gyengítette',
-  KEEP: 'Meghagyta',
-}
-
-const NOTE_LABEL: Record<string, string> = {
-  DUPLICATE: 'már tartunk ilyet',
-  CONTRADICTS: 'ellentmond a dossziénak',
-  NOT_FOR_DOSSIER: 'nem dossziéba való',
-  REHOME: 'máshová tartozik',
-}
 
 const NOTHING_TO_ADD = 'A Szkeptikus érvét elfogadom, nem teszek hozzá.'
 
@@ -62,17 +52,20 @@ function chairAddedSomething(item: ConferenceItem): boolean {
   return confidenceWord(chair.confidence) !== confidenceWord(suggested)
 }
 
-// What an ACCEPTED item actually means depends on what was proposed (`item.kind`, on the wire
-// from the backend's ClaimProposal): a RETIRE the chair accepted retired a claim, it did not add
-// one. Labelling every accepted item "Bekerült" would tell the user the opposite of what
-// happened (mezo-xlvr final review, I3). An unknown/missing kind falls back to the neutral
-// "Elfogadva" — never to a guess about which way the dossier moved.
-const ACCEPTED_LABEL: Record<string, string> = {
-  NEW: 'Bekerült',
-  UP: 'Megerősítve',
-  DOWN: 'Gyengítve',
-  RETIRE: 'Nyugdíjazva',
+/** The dissent/note grounds that belong ahead of the chair's own reason, or '' when there are
+ *  none — kept separate from `chairAddedSomething` so a ruling that DID add something (a dissent,
+ *  a note, an overruled KILL, a differing confidence word) can still show plain `reason` alone
+ *  when neither `dissent` nor `note` fired (mezo-lghn). */
+function chairDetail(chair: NonNullable<ConferenceItem['chair']>): string {
+  const parts: string[] = []
+  if (chair.dissent === true) parts.push('a Szkeptikus döntése ellenében')
+  if (chair.note != null && NOTE_LABEL[chair.note] != null) {
+    const dimension = chair.suggestedDimensionKey != null ? `: ${chair.suggestedDimensionKey}` : ''
+    parts.push(`${NOTE_LABEL[chair.note]}${dimension}`)
+  }
+  return parts.length > 0 ? `${parts.join(' · ')} — ` : ''
 }
+
 const ACCEPTED_FALLBACK = 'Elfogadva'
 const REJECTED_LABEL = 'Elvetve'
 const NO_RULING_LABEL = 'Nincs döntés'
@@ -87,11 +80,10 @@ function outcomeBadge(item: ConferenceItem): { label: string; tone: 'acc' | 'rej
 export interface ConferenceThreadCardProps {
   thread: ConferenceThread
   experts: CharacterExpertDto[]
+  /** Lefutott-e egyáltalán a kereszt-vita kör ezen a konzíliumon (a szál TÁROLT, nem visszafejtett).
+   *  Ha nem, a fejléc nem mondhat "nem vitatták"-at — az azt sugallná, hogy volt kör és senki nem szólt. */
+  crossTalkRan: boolean
   defaultOpen?: boolean
-}
-
-function displayName(experts: CharacterExpertDto[], key: string): string {
-  return experts.find((e) => e.key === key)?.displayName ?? key
 }
 
 /** Every expert that spoke in this thread, proposers first, then anyone who only reacted. */
@@ -112,64 +104,98 @@ function acceptedCount(thread: ConferenceThread): number {
   return thread.items.filter((item) => item.chair?.accepted === true).length
 }
 
-function ChainStep({ who, color, children }: { who: string; color: string; children: React.ReactNode }) {
+function reactionCount(thread: ConferenceThread): number {
+  return thread.items.reduce((sum, item) => sum + item.reactions.length, 0)
+}
+
+type ChipTone = StanceTone | 'acc' | 'rej' | 'non'
+
+/** The Szkeptikus's chip tone by verdict grade: a KILL reads like a challenge, a WEAKEN like a
+ *  nuance, an unreserved KEEP like support — the same three-way vocabulary STANCE_TONE already
+ *  uses for peer reactions (mezo-lghn). */
+function skepticTone(verdict: string): ChipTone {
+  if (verdict === 'KILL') return 'cha'
+  if (verdict === 'WEAKEN') return 'nua'
+  return 'sup'
+}
+
+function ChainStep({ expertKey, who, chip, chipTone, children }: {
+  expertKey: string
+  who: string
+  chip?: string
+  chipTone?: ChipTone
+  children: React.ReactNode
+}) {
   return (
-    <div className="kr-thstep" style={{ '--c': color } as CSSProperties}>
-      <span className="kr-thdot" aria-hidden="true" />
-      <div className="kr-thwho">{who}</div>
+    <div className="kr-thstep" style={{ '--c': expertColor(expertKey) } as CSSProperties}>
+      <span className="kr-thorb" aria-hidden="true"><PersonaOrb expertKey={expertKey} size={22} /></span>
+      <div className="kr-thwho">
+        {who}
+        {chip != null && <span className={`kr-thchip ${chipTone ?? 'non'}`}>{chip}</span>}
+      </div>
       <div className="kr-thsaid">{children}</div>
     </div>
   )
 }
 
+const STANCE_TONE: Record<string, ChipTone> = SHARED_STANCE_TONE
+
 function ItemChain({ item, experts }: { item: ConferenceItem; experts: CharacterExpertDto[] }) {
+  const badge = outcomeBadge(item)
+  const confidence = item.chair?.accepted === true && item.chair.confidence != null
+    ? ` · ${confidenceWord(item.chair.confidence)}`
+    : ''
+  // A KILL carries no strength to suggest — a stray `suggestedConfidence` on one must never render
+  // as a confidence word (mirrors the backend's `skepticLine`, mezo-lghn fix round 4, item 2).
+  const skepticConfidence = item.skeptic != null
+    && item.skeptic.suggestedConfidence != null
+    && item.skeptic.verdict !== 'KILL'
+    ? ` · ${confidenceWord(item.skeptic.suggestedConfidence)}`
+    : ''
   return (
     <div className="kr-thitem">
-      <ChainStep who={`${displayName(experts, item.expertKey)} felvetette`} color={expertColor(item.expertKey)}>
+      <ChainStep expertKey={item.expertKey} who={displayName(experts, item.expertKey)} chip="felvetette">
         {item.text}
       </ChainStep>
       {item.reactions.map((reaction, i) => (
         <ChainStep
           key={i}
-          who={`${displayName(experts, reaction.expertKey)} ${STANCE_LABEL[reaction.stance] ?? 'hozzászólt'}`}
-          color={expertColor(reaction.expertKey)}
+          expertKey={reaction.expertKey}
+          who={displayName(experts, reaction.expertKey)}
+          chip={STANCE_LABEL[reaction.stance] ?? 'hozzászólt'}
+          chipTone={STANCE_TONE[reaction.stance]}
         >
           {reaction.argument}
         </ChainStep>
       ))}
-      <ChainStep who="Szkeptikus" color={expertColor('szkeptikus')}>
-        {item.skeptic == null
-          ? NO_ANSWER
-          : `${SKEPTIC_LABEL[item.skeptic.verdict] ?? 'Válaszolt'}${
-              item.skeptic.suggestedConfidence != null && item.skeptic.verdict !== 'KILL'
-                ? ` · ${confidenceWord(item.skeptic.suggestedConfidence)}`
-                : ''
-            } — ${item.skeptic.argument}`}
+      <ChainStep
+        expertKey="szkeptikus"
+        who="Szkeptikus"
+        chip={item.skeptic == null ? undefined : `${SKEPTIC_LABEL[item.skeptic.verdict] ?? 'Válaszolt'}${skepticConfidence}`}
+        chipTone={item.skeptic == null ? undefined : skepticTone(item.skeptic.verdict)}
+      >
+        {item.skeptic == null ? NO_ANSWER : item.skeptic.argument}
       </ChainStep>
-      <ChainStep who="Mezo" color={expertColor('mezo')}>
+      <ChainStep
+        expertKey="mezo"
+        who="Mezo"
+        chip={item.chair == null ? undefined : `${badge.label}${confidence}`}
+        chipTone={badge.tone}
+      >
         {item.chair == null
           ? NO_ANSWER
           : !chairAddedSomething(item)
             ? NOTHING_TO_ADD
-            : `${item.chair.accepted ? 'Elfogadva' : 'Elvetve'}${
-                item.chair.accepted && item.chair.confidence != null
-                  ? ` · ${confidenceWord(item.chair.confidence)}`
-                  : ''
-              }${item.chair.dissent === true ? ' · a Szkeptikus döntése ellenében' : ''}${
-                item.chair.note != null && NOTE_LABEL[item.chair.note] != null
-                  ? ` · ${NOTE_LABEL[item.chair.note]}${
-                      item.chair.suggestedDimensionKey != null ? `: ${item.chair.suggestedDimensionKey}` : ''
-                    }`
-                  : ''
-              } — ${item.chair.reason}`}
+            : `${chairDetail(item.chair)}${item.chair.reason}`}
       </ChainStep>
     </div>
   )
 }
 
-export function ConferenceThreadCard({ thread, experts, defaultOpen = false }: ConferenceThreadCardProps) {
+export function ConferenceThreadCard({ thread, experts, crossTalkRan, defaultOpen = false }: ConferenceThreadCardProps) {
   const [open, setOpen] = useState(defaultOpen)
   const accepted = acceptedCount(thread)
+  const reactions = reactionCount(thread)
 
   return (
     <div className="kr-thread">
@@ -188,7 +214,14 @@ export function ConferenceThreadCard({ thread, experts, defaultOpen = false }: C
         </span>
         <span className="kr-thtitle">
           <span className="kr-thtt">{thread.title}</span>
-          <span className="kr-thts">{`${thread.items.length} állítás · ${accepted} elfogadva`}</span>
+          <span className="kr-thts">
+            {`${thread.items.length} állítás`}
+            {reactions > 0
+              ? <> · <span className="kr-thdeb">{`${reactions} hozzászólás`}</span></>
+              : crossTalkRan
+                ? ' · nem vitatták'
+                : ` · ${accepted} elfogadva`}
+          </span>
         </span>
         <span className="kr-thchev" aria-hidden="true">{open ? '⌄' : '›'}</span>
       </button>

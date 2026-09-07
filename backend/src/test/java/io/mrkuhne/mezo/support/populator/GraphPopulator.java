@@ -1,6 +1,7 @@
 package io.mrkuhne.mezo.support.populator;
 
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEntity;
+import io.mrkuhne.mezo.feature.companion.graph.entity.GraphEdgeEvidence;
 import io.mrkuhne.mezo.feature.companion.graph.entity.GraphNodeEntity;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphEdgeRepository;
 import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
@@ -9,6 +10,7 @@ import jakarta.persistence.PersistenceContext;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -69,6 +71,38 @@ public class GraphPopulator {
         e.setKind(kind);
         e.setWeight(new BigDecimal(weight));
         return edgeRepository.saveAndFlush(e);
+    }
+
+    /**
+     * mezo-4qyt: an edge carrying explicit weight AND evidence — the admin explorer is the first
+     * surface to return the {@code evidence} jsonb structurally rather than as rendered text.
+     */
+    public GraphEdgeEntity createEdgeWithEvidence(UUID owner, UUID fromNodeId, UUID toNodeId,
+            String kind, String weight, List<GraphEdgeEvidence> evidence) {
+        GraphEdgeEntity e = new GraphEdgeEntity();
+        e.setCreatedBy(owner);
+        e.setFromNodeId(fromNodeId);
+        e.setToNodeId(toNodeId);
+        e.setKind(kind);
+        e.setWeight(new BigDecimal(weight));
+        e.setEvidence(evidence);
+        return edgeRepository.saveAndFlush(e);
+    }
+
+    /** mezo-4qyt: a node in an explicit lifecycle status — the {@code includeArchived} case. */
+    public GraphNodeEntity createNodeWithStatus(UUID owner, String kind, String title, String status) {
+        GraphNodeEntity n = new GraphNodeEntity();
+        n.setCreatedBy(owner);
+        n.setKind(kind);
+        n.setTitle(title);
+        n.setStatus(status);
+        return nodeRepository.saveAndFlush(n);
+    }
+
+    /** mezo-4qyt: soft-deletes through {@code @SQLDelete}, exactly as production does. */
+    public void softDeleteNode(GraphNodeEntity node) {
+        nodeRepository.delete(node);
+        nodeRepository.flush();
     }
 
     /** W2.3 (mezo-b3pp.8): a pending LIFE_EVENT candidate exactly as the extractor writes it —

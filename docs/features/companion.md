@@ -1311,11 +1311,15 @@ feeding back into the nightly revision, and a one-line morning digest of what th
   described the night BEFORE while saying „Ma éjjel…" (whole-branch review finding; every
   `ReflectionDigestServiceIT` case seeded at 23:00, which is inside both windows, so no test could
   see it — `testDigestFor_shouldReportTonightsRun_whenTheVerdictLandedAtTheNightlyJobHour` now
-  seeds at 03:45 and pins it). It returns the newest `confirmed`/`refuted` verdict on a reflection-owned row, or failing that the
+  seeds at 03:45 and pins it). It returns the newest `confirmed`/`refuted`/`dormant` verdict on a reflection-owned row, or failing that the
   newest `evidence` of a `monitoring` row the user has actually ANSWERED (a row nobody asked about is
   not "amit kértél"; an `evidence` event with a null `hit` is skipped, because "bejött / nem jött be"
-  would then be a claim the numbers never made). `dormant` is deliberately silent — the product has
-  written no sentence for "the engine gave up for lack of data".
+  would then be a claim the numbers never made). **`dormant` is a verdict like the other two**
+  (mezo-cuml): the hypothesis is not disproven, it just went quiet for lack of fresh data, and the
+  fourth sentence says so — „Félretettem: „…” — rég nem jött hozzá új adat. Ha visszatér, újra
+  ránézek." It used to carry no copy, so `verdictSentence` returned empty for it and the digest fell
+  THROUGH to an older `confirmed`/`refuted` — stale news reported in place of what the night actually
+  decided. Ordering among the three is by TIME alone, never by kind.
 - **The digest may never cost the user their morning message.** `CompanionMessageGenerator.generateMorning`
   reaches it through an `ObjectProvider` (the digest bean is `REFLECTION_SWITCH`-gated, the generator
   is not — absent bean ⇒ pre-S4 behaviour) and appends
@@ -4688,12 +4692,41 @@ since S2.
   Both maps are per PROVIDER on purpose: a model id only means something to the vendor that can
   serve it, and the `gemini` block still answers the audio/vision calls the OpenAI adapter
   delegates to it, so one flat table could hand the Gemini client a GPT id.
-- `mezo.companion.llm.<provider>.reasoning-effort.chat` / `.smart` = **empty** (mezo-ozri.4,
-  spec §Q1) — per-tier reasoning effort, the cheapest quality lever there is (same token price,
-  more thinking). Empty = send no key at all, leaving the provider's own default in place; the
-  measurement that would fill these in is `mezo-641c`. Only `OpenAiCompanionLlm` honours it, and
-  **never on a tool-carrying request**: `/v1/chat/completions` answers tools + effort with a `400`
-  (measured, mezo-ozri.3 — all 42 eval cases failed), so that path pins `none` regardless.
+- `mezo.companion.llm.openai.reasoning-effort.chat` = **`high`**, `.smart` = **`high`**
+  (mezo-ozri.4 built the lever, mezo-641c measured it; the `gemini` block keeps both empty — the
+  concept is OpenAI-only). Per-tier reasoning effort, the cheapest quality lever there is (same
+  token price, more thinking). Empty = send no key at all, leaving the provider's own default in
+  place. Only `OpenAiCompanionLlm` honours it, and **never on a tool-carrying request**:
+  `/v1/chat/completions` answers tools + effort with a `400` (measured, mezo-ozri.3 — all 42 eval
+  cases failed), so that path pins `none` regardless.
+  - **Accepted values are `none | low | medium | high | xhigh`**, probed live against both GPT-5.6
+    tiers (mezo-641c S0) and pinned by `ReasoningEffortValidationTest`. `minimal` and `max` were in
+    the first draft of the `@Pattern` on second-hand information and are answered with a `400`;
+    allowing them only moved a boot-time typo failure into a run-time outage.
+  - **Why `chat: high`.** The only measured accuracy gain in the whole sweep is the cheap-tier
+    advisor judge (`companion_advisor`/`verdict_check`). On a 12-case labelled set its
+    `unmarkedClaim` recall was `1.00` at every level, but precision went `0.50` (none) → `0.55`
+    (provider default) → `0.60` (high, unchanged at xhigh): `high` is the first level that reliably
+    stops reading a qualitative judgement as a fabricated number — the mezo-9yqq false-positive
+    class (2). Cost: ~+33% output tokens on the CHEAPEST model, against a false positive that costs
+    a whole extra streamed chat turn (the advisor retry). `redundantQuestion` was already perfect at
+    every level. mezo-9yqq class (1), tool-derived numbers, is **not fixable here** — it failed
+    100% of the time at every level including `xhigh`, because the judge never sees the tool OUTPUT.
+  - **Why `smart: high`, and why the first pass got it wrong.** Scoring the mesocycle plan for
+    STRUCTURAL validity separates nothing — it is perfect even at `none` — and the konzílium
+    skeptic's KEEP/KILL pattern looks like noise at n=2, so the first draft left this unset. A
+    blind read of the prose (the repo owner, labels hidden) then ranked `high` >
+    provider-default > `none` on **both** smart-tier tasks and named the mechanism: at `none` the
+    skeptic KEEPs a claim that generalises two weekends of data into a lasting trait
+    ("hétvégén szisztematikusan"). That is a scoreable calibration error, so the round was re-run
+    at n=8 per level. Over-permissive KEEPs, out of 40 possible: `none` **13** (P3 6/8, P4 7/8),
+    `low` 0 (but missed the one true KEEP once), default 3, `medium` 2, `high` **0**, `xhigh` 2.
+    `high` is the only level clean on both sides — it never waves through a thin-evidence trait
+    claim and never rejects the well-supported one — for **+2% output tokens** over the provider
+    default on that task. The lesson is methodological and worth keeping: a structural pass over a
+    judgement call measures whether the answer is well-FORMED, not whether it is well-JUDGED, and
+    those two came apart here. `none` is the level to avoid on any judgement call — cheapest and by
+    far the most credulous.
 - `mezo.companion.llm.per-call-kind` = `{TRANSCRIBE: gemini, VISION: gemini}`
   (`Map<CallKind, LlmProvider>`) — per-`CallKind` exceptions to `provider`, honoured only by
   `OpenAiCompanionLlm`. An absent or unknown key means "the active provider", never a boot failure.
@@ -6767,9 +6800,12 @@ whose `seedPatternId` is the row, a statistical `monitoring`/`confirmed` row app
 `HypothesisPipelineTestPlanIT` gained the Step 5 cases — a valid revision producing a NEW `proposed`
 row plus one `revised` event while the old row keeps its status, belief and original plan, and both
 unusable-revision shapes (an invalid plan, an unknown key) dropping the whole proposal.
-`ReflectionDigestServiceIT` asserts the three Hungarian sentences character for character and the
+`ReflectionDigestServiceIT` asserts the four Hungarian sentences character for character and the
 four ways the digest is honestly empty (no `user_reply` on the evaluated row, a verdict older than
-the window, a `statistical` row, a night that decided nothing).
+the window, a `statistical` row, a night that decided nothing). Two ordering cases pin mezo-cuml
+from both sides: a `dormant` NEWER than the night's `confirmed` wins (before the fix the older
+`confirmed` was reported), and an OLDER `dormant` loses to a later `confirmed` — proving the
+ordering is by time, not by kind.
 `ReflectionDigestMorningIT` is the one that matters most, and it is deliberately **not**
 class-`@Transactional`: it proves the digest reaches the morning payload (a `@Primary` capturing
 `CompanionLlm` records the user message — the `LlmCallContextTaggingIT` seam, since `FakeCompanionLlm`

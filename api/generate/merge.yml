@@ -44,4 +44,5 @@ inputs:
   - inputFile: ../feature/lifegoal/lifegoal.yml
   - inputFile: ../feature/admin-insights/admin-insights.yml
   - inputFile: ../feature/admin-data/admin-data.yml
+  - inputFile: ../feature/admin-memory/admin-memory.yml
 output: ../openapi.yml

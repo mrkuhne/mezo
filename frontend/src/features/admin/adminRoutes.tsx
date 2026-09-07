@@ -19,6 +19,8 @@ const AdminUsersPage = lazy(() =>
   import('@/features/admin/pages/AdminUsersPage').then((m) => ({ default: m.AdminUsersPage })))
 const AdminUserDetailPage = lazy(() =>
   import('@/features/admin/pages/AdminUserDetailPage').then((m) => ({ default: m.AdminUserDetailPage })))
+const AdminMemoryPage = lazy(() =>
+  import('@/features/admin/memory/AdminMemoryPage').then((m) => ({ default: m.AdminMemoryPage })))
 const AdminUsagePage = lazy(() =>
   import('@/features/admin/pages/AdminUsagePage').then((m) => ({ default: m.AdminUsagePage })))
 const AdminDataPage = lazy(() =>
@@ -38,6 +40,7 @@ export const adminRoutes: RouteObject[] = [
       { index: true, element: <AdminOverviewPage /> },
       { path: 'users', element: <AdminUsersPage /> },
       { path: 'users/:id', element: <AdminUserDetailPage /> },
+      { path: 'users/:id/memory', element: <AdminMemoryPage /> },
       { path: 'usage', element: <AdminUsagePage /> },
       { path: 'data', element: <AdminDataPage /> },
       { path: 'cost', element: <AdminCostPage /> },

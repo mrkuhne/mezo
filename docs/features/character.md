@@ -195,24 +195,96 @@ tile rather than in-page accordions.
   coral-gradient card with the real `s-orb`, no chip — `CharacterService.experts()` sets Mezo's
   `role` to the same string as its `voiceLine`, so the page prints that one subtitle line ONCE,
   never twice).
-- **Konzílium** (`/me/karakter/konzilium`, `KonziliumPage`): a list of conference summaries (date
-  + a HETI/HAVI/BOOTSTRAP badge — `?id=` opens one transcript, the WeekHub sibling idiom, not a
-  child route). The transcript view (`TranscriptTurn`) shows the Kimenet outcome as 3 stat cells
-  (elfogadva/nyugdíjazva/portré átírva, mapped off `changes[].kind`; any other change kind —
-  `CLAIM_CONFIDENCE_UP/DOWN`, `CHAPTER_OPENED`, `CHAPTER_RETIRED`, `BOOTSTRAP` — renders as an
-  extra text line, never a fabricated 4th cell), phase labels derived from each turn's persona
-  kind ("Javaslatok" for EXPERT turns, "A Szkeptikus" for the evidence-only verdict, "Döntés" for
-  Mezo's dossier-write ruling — the FE's own naming for the same is-it-true/do-we-write-it-down-
-  and-how split the backend enforces, §1), and
-  persona-railed bubbles (the Szkeptikus gets the graphite face, Mezo's ruling gets the
-  full-width coral tint). A line inside an expert's turn text that starts with the backend's own
-  `"FELHASZNÁLÓ VÁLASZA — "` marker (`KonziliumProposalRound.USER_FEEDBACK_PREFIX` — user-neutral
-  since S6, `mezo-qw37.6`; there is no structured "this is the user's own words" field on
-  `ConferenceTurn`) is detected and re-styled with the gold rail — `TranscriptTurn`'s
-  `USER_ANSWER_PREFIXES` also still matches the legacy `"DANIEL VÁLASZA — "` literal, since
-  conference transcripts written before S6 carry it verbatim and are never rewritten in place.
-  The closing honesty note ("A fenti a valódi beszélgetés...") makes explicit that the transcript
-  is the real exchange, never re-dramatized.
+- **Konzílium** (`/me/karakter/konzilium`, `KonziliumPage`, `mezo-sp9w`): one decision-first
+  page, no separate list route. Without an explicit `?id=` the page opens the most recent
+  conference (`conferences[0]` off the `generatedAt`-descending summary list); a header stepper
+  (`‹`/`›`) walks to the older/newer meeting, and tapping the date button opens
+  `ConferenceArchiveSheet` — a **bottom sheet, not a route** — grouped by month with a year
+  separator row inserted only when the year changes between adjacent rows. This collapses what
+  used to be a list-page-plus-transcript-view into a single screen with exactly one back
+  control, which was the defect the redesign set out to fix.
+  The page renders four layers in order:
+  1. **Mi ez** (`KonziliumWhatIs`, inside `KonziliumRoundMap.tsx`) — a fixed one-sentence card
+     with three hand-written variants keyed by meeting kind (`WEEKLY`/`MONTHLY`/`BOOTSTRAP`),
+     never generated text.
+  2. **Hogyan zajlott** (`KonziliumRoundMap`) — a round map showing the four rounds' real counts
+     (Javaslat/Kereszt-vita/Szkeptikus/Mezo dönt), computed by the single shared
+     `deliberationStats(threads)` function (`deliberationStats.ts`), itself derived from
+     `partitionDeliberation(threads)`'s four lists — the same partition
+     `KonziliumConversationView` consumes below, so the two can never disagree with each other.
+     The 4th cell (`Mezo dönt`) reads `N elfogadva · M elvetve` — it describes the meeting's
+     DECISIONS, not dossier effects, because an accepted item can be a retirement, and labelling
+     that "bekerült" would contradict the outcome card directly above it (I1, mezo-sp9w
+     branch-review).
+  3. **Mi változott a dossziédban** — reads the open conference's `changes[]` array directly
+     (`CharacterConferenceResponse.changes`), bucketed into elfogadva/nyugdíjazva/portré átírva
+     plus a catch-all "egyéb" line for any other change kind — never a fabricated 4th named
+     cell.
+  4. The discussion threads (`ConferenceThreadCard`, one per thread), each expandable into its
+     proposal → peer stances → Szkeptikus verdict → Mezo ruling chain. The expanded chain shows
+     the persona **clay orbs** (`PersonaOrb`), not plain dots, and every step carries a stance
+     chip (`.kr-thchip`, tones `sup`/`cha`/`nua`/`acc`/`rej`/`non`) — supports/challenges/
+     nuances/accepted/rejected/no-ruling — sharing its label/tone maps
+     (`deliberationLabels.ts`) with the conversation view. **The Szkeptikus and Mezo steps stay
+     honest about who said what** (mezo-lghn, the FE half of the §1 judgement split): the
+     Szkeptikus's chip names its verdict grade (`Kukázta`/`Gyengítette`/`Meghagyta`,
+     `SKEPTIC_LABEL` in `deliberationLabels.ts`) plus a confidence word when it suggested one —
+     never for a `KILL`, which has no strength to suggest. The Mezo step collapses into the fixed
+     short form "A Szkeptikus érvét elfogadom, nem teszek hozzá." whenever the chair's ruling
+     added nothing beyond ratifying that verdict (`chairAddedSomething`); otherwise it shows the
+     chair's own reason, prefixed with the dissent/integration-note grounds (`NOTE_LABEL`, same
+     module) when either fired — including a guardrail-blocked accept, which always renders in
+     full and never collapses into the short form.
+
+  A segmented control (`Áttekintés` / `Beszélgetés`) switches the thread list above for
+  `KonziliumConversationView` — a chronological, round-by-round replay of the same threads where
+  each cross-talk reaction quotes the exact claim it responds to
+  (`„{quoted text}" — {expert name}`), instead of only showing the reaction on its own.
+
+  **Two honesty rules govern this page, deliberately, and are not simplifications to "fix"
+  later:**
+  - The round map's numbers and the "Mi változott a dossziédban" card's numbers are two
+    different true things computed from two different sources — the round map counts the
+    meeting's own `deliberation` (how the discussion actually unfolded), the dossier card
+    counts the meeting's `changes[]` (what the discussion actually changed). They are
+    intentionally never merged and never recomputed from one another, and carry distinct
+    labels so a reader never mistakes one for the other.
+  - A conference held before the cross-talk round existed (`deliberationSource: DERIVED` or
+    `null` — see §4), OR one of a kind that never has a cross-talk round at all (`MONTHLY`,
+    `BOOTSTRAP` — only `WEEKLY` runs one), shows **"nem volt ilyen kör"** ("there was no such
+    round") for the cross-talk cell, never `0 hozzászólás`. A zero would tell the reader the
+    round ran and nobody spoke, which is false; the point is the round didn't exist for that
+    meeting at all.
+    `crossTalkRan = conference.kind === 'WEEKLY' && conference.deliberationSource === 'STORED'`
+    gates this in both `KonziliumRoundMap` and `KonziliumConversationView` — the two conditions
+    stay separate on purpose: one says "this kind of meeting has the round at all", the other
+    says "these threads are this meeting's own, not read back out of an old prose transcript".
+    A `STORED` `MONTHLY`/`BOOTSTRAP` conference is a real, reachable backend state (both
+    `CharacterMonthlyService` and `CharacterBootstrapService` persist their thread envelope with
+    an honestly empty reaction list, since neither kind runs cross-talk), and would otherwise
+    read as "0 hozzászólás" — a round that ran and produced silence, when in truth the round
+    never happened for that kind (C1, mezo-sp9w branch-review). Fed into
+    `KonziliumConversationView`, the same distinction picks between two different empty-state
+    sentences: **"Ebben a körben senki nem szólt hozzá más felvetéséhez."** when the round ran
+    and nobody spoke, vs. **"Ezen a tanácskozáson nem volt kereszt-vita kör."** when the round
+    never existed for this meeting — one neutral sentence that is true both for a pre-cross-talk
+    `WEEKLY` and for a `MONTHLY`/`BOOTSTRAP`, rather than a third code path per case.
+
+  A line inside a turn's text that starts with the backend's own `"FELHASZNÁLÓ VÁLASZA — "`
+  marker (`KonziliumProposalRound.USER_FEEDBACK_PREFIX` — user-neutral since S6, `mezo-qw37.6`;
+  there is no structured "this is the user's own words" field on `ConferenceTurn`) is detected
+  and re-styled with the gold rail — the legacy `"DANIEL VÁLASZA — "` literal is still matched
+  for conference transcripts written before S6, which are never rewritten in place. Conferences
+  with no stored `deliberation` at all fall back to the old prose transcript view
+  (`TranscriptTurn`): the Kimenet outcome as 3 stat cells (elfogadva/nyugdíjazva/portré átírva,
+  mapped off `changes[].kind`; any other change kind — `CLAIM_CONFIDENCE_UP/DOWN`,
+  `CHAPTER_OPENED`, `CHAPTER_RETIRED`, `BOOTSTRAP` — renders as an extra text line, never a
+  fabricated 4th cell), phase labels derived from each turn's persona kind ("Javaslatok" for
+  EXPERT turns, "A Szkeptikus" for the evidence-only verdict, "Döntés" for Mezo's dossier-write
+  ruling — the FE's own naming for the same is-it-true/do-we-write-it-down-and-how split the
+  backend enforces, §1), and persona-railed bubbles (the Szkeptikus gets the graphite face,
+  Mezo's ruling gets the full-width coral tint); its closing honesty note ("A fenti a valódi
+  beszélgetés...") makes explicit that the transcript is the real exchange, never re-dramatized.
 
 - **Gépterem** (`/me/karakter/gepterem`, `GeptermPage`) — the geek-transparency sub-hub, reached
   from a thin full-width row below the hub's 4-tile mosaic (v4.2, NOT a 5th grid tile — its own
@@ -276,10 +348,11 @@ still holds: claims that clear the prompt-injection threshold (§8 below) shape 
 chat, in the weekly Memoir, in Predictions, and in the weekly review.
 
 **Deliberately deferred / out of v1** (see §9): the "Történet" portrait-revision timeline, the
-hero's self-portrait bio line (no backend field to source it from), a konzílium
-read/unread notification beyond the hub tile's "newer than 3 days" heuristic, and outcome counts
-on the conference **list** row (`CharacterConferenceSummary` has no `changes` field — only the
-full per-id `CharacterConferenceResponse` does).
+hero's self-portrait bio line (no backend field to source it from), and a konzílium
+read/unread notification beyond the hub tile's "newer than 3 days" heuristic. Outcome counts on
+the conference **list** row shipped with the `mezo-sp9w` redesign — `CharacterConferenceSummary`
+now carries a pre-aggregated `outcome: ConferenceOutcomeCounts` field (§4) so the archive sheet
+never needs to fetch every conference's detail just to summarize it.
 
 ## 3. Architecture & data flow
 
@@ -447,10 +520,28 @@ bean, never a silent 200).
 | `GET /api/character` | `CharacterOverviewResponse` (all dimensions) | Lazily seeds the 7 CORE dimensions on first read |
 | `GET /api/character/dimension/{key}` | `CharacterDimensionResponse` | Portrait + ACTIVE claims + recent revisions; 404 unknown key |
 | `GET /api/character/feed?limit=` (1–100, default 30) | `CharacterFeedItem[]` | Observations + latest conference outcome diff, merged/sorted desc; `[]` honest empty, never 404 |
-| `GET /api/character/conference` | `CharacterConferenceSummary[]` | Summaries only |
-| `GET /api/character/conference/{id}` | `CharacterConferenceResponse` | Full persisted transcript + outcome + `deliberation` (nullable on the wire — old conferences derive it at read time, see §3/§9); 404 unknown |
+| `GET /api/character/conference` | `CharacterConferenceSummary[]` | Summaries + `outcome: ConferenceOutcomeCounts` per row (`mezo-sp9w`) |
+| `GET /api/character/conference/{id}` | `CharacterConferenceResponse` | Full persisted transcript + `changes[]` + `deliberation` + `deliberationSource`; 404 unknown |
 | `POST /api/character/claim/{id}/feedback` | `CharacterClaimDto` | `{kind: TALAL\|NEM_IGAZ\|PONTOSITOM, text?}`; 400 malformed, 404 unknown, 409 already-retired |
 | `POST /api/character/bootstrap` | `CharacterConferenceResponse` \| 204 | 409 if a live BOOTSTRAP conference already exists; 204 if there is no history to read |
+
+**`ConferenceOutcomeCounts`** (`CharacterConferenceSummary.outcome`, `mezo-sp9w`) — four
+required `int32` counters built server-side from that meeting's `changes[]`:
+`accepted`/`retired`/`portraitRewritten`/`other` (the last a catch-all so the archive sheet
+never implies the three named kinds are exhaustive). This is a **different count from the
+round map's numbers** on the detail page — see the honesty rule in §2; do not conflate them.
+
+**`deliberationSource`** (`CharacterConferenceResponse.deliberationSource`, `mezo-sp9w`) —
+nullable enum `STORED | DERIVED`. `STORED` means this meeting's `deliberation` (the
+chapter-grouped thread structure) was persisted at conference-write time; `DERIVED` means it
+was reconstructed at read time from the old prose transcript by `LegacyTranscriptParser`
+(§3/§9); `null` means neither is possible (nothing parseable at all — the FE treats `null` the
+same as `DERIVED` for the cross-talk gate, since both mean "don't trust this as a real
+cross-talk round"). The FE only shows Kereszt-vita counts when `conference.kind === 'WEEKLY' &&
+deliberationSource === 'STORED'` (see §2's second honesty rule) — `STORED` alone is not enough,
+since `MONTHLY`/`BOOTSTRAP` rows can also be `STORED` with an honestly empty reaction list
+(neither kind runs cross-talk); `deliberation` itself stays nullable on the wire independent of
+this field, per §9's null-means-no-thread-view rule.
 
 Confidence is **never** returned as a raw number for display purposes in prose (the FE, once
 built, is expected to render human words — the Minták precedent); the wire DTO does carry the
@@ -927,11 +1018,9 @@ investigating.
   client-side would violate the honest-states axiom; the "Történet" portrait-revision timeline
   is spec-stated out of scope (never v1, see below); a konzílium "unread" signal is only the
   hub tile's "generated in the last 3 days" heuristic, not a real read/unseen flag (none
-  exists on `CharacterConferenceSummary`); the conference **list** row shows date + kind badge
-  only, never an outcome count (`CharacterConferenceSummary` carries no `changes` field — only
-  the full per-id `CharacterConferenceResponse` does, and the list doesn't fetch every
-  conference's detail just to summarize it) — the same gap the hub's Konzílium tile already
-  documents inline.
+  exists on `CharacterConferenceSummary`). The conference list row's missing outcome count was
+  the one deferral from that list that later shipped — see the `mezo-sp9w` redesign in §2 and
+  the `ConferenceOutcomeCounts` contract addition in §4.
 - **Out of scope, spec-stated (never / not v1)**: the "Történet" (portrait-revision-timeline)
   view, the identity-hero live self-portrait bio line, any expert direct-messaging to the user
   (IDENT-1, never), any outward action from Karakter (IDENT-2).
@@ -1092,11 +1181,14 @@ investigating.
 
 **API contract**: `api/feature/character/character.yml`
 
-**Frontend** (mezo-xlvr): `frontend/src/features/character/components/ConferenceThreadCard.tsx`
+**Frontend** (mezo-xlvr, extended `mezo-sp9w`): `frontend/src/features/character/components/ConferenceThreadCard.tsx`
 — the thread-view card (collapsed by default; expands to proposal → peer stances →
-Szkeptikus verdict → Mezo ruling); rendered per thread from `KonziliumPage.tsx` when
-`conference.deliberation` is non-empty, falling back to the existing prose-block rendering
-otherwise.
+Szkeptikus verdict → Mezo ruling, persona `PersonaOrb`s + `.kr-thchip` stance chips in the
+expanded chain); rendered per thread from `KonziliumPage.tsx` when `conference.deliberation` is
+non-empty, falling back to the existing prose-block rendering otherwise. See §2 and §10 for the
+`mezo-sp9w` redesign's other new components (`KonziliumRoundMap.tsx`,
+`ConferenceArchiveSheet.tsx`, `KonziliumConversationView.tsx`, `deliberationStats.ts`,
+`deliberationLabels.ts`).
 
 **Migrations**: `backend/src/main/resources/db/changelog/1.0.0/script/202608272000_mezo-1gim.1_create_character_tables.sql`,
 `202608311000_mezo-1gim.6_character_conference_monthly_unique.sql`,
@@ -1149,7 +1241,9 @@ otherwise.
 - `pages/CharacterFeedPage.tsx` — the day-grouped observation feed (each observation row's ⚙
   retarget to its matching run page, S9)
 - `pages/CsapatPage.tsx` — the 9 persona cards
-- `pages/KonziliumPage.tsx` — the conference list + `?id=` transcript view
+- `pages/KonziliumPage.tsx` (`mezo-sp9w`) — the decision-first conference page: no separate
+  list route, `?id=` optional (defaults to the most recent conference), header stepper +
+  archive-sheet trigger, `Áttekintés`/`Beszélgetés` view toggle
 - `pages/GeptermPage.tsx` (S9) — the Gépterem sub-hub (hero last-run line + the 4-tile mosaic
   into Futások/Adatforrások/AI-napló/Detektorok)
 - `pages/FutasokPage.tsx` (S9) — the `?start=` week-stepped, day-grouped run timeline + Ritkább
@@ -1164,6 +1258,26 @@ otherwise.
   `[]` — round 4 was the last round); ALSO the `mezo-1gim.15` working checklist, now closed (see
   its own header comment and §9)
 - `components/PersonaOrb.tsx` — the domain-color orb-variant sprite wrapper (`s-orb-*`)
+- `components/KonziliumRoundMap.tsx` (`mezo-sp9w`) — houses both `KonziliumWhatIs` (the fixed
+  "Mi ez" card, three hand-written variants keyed by `WEEKLY`/`MONTHLY`/`BOOTSTRAP`) and
+  `KonziliumRoundMap` (the "Hogyan zajlott" round map, reading `deliberationStats.ts`; shows
+  "nem volt ilyen kör" instead of a zero when `crossTalkRan` is false)
+- `components/ConferenceArchiveSheet.tsx` (`mezo-sp9w`) — the conference-picker bottom sheet
+  (replaces the old list page), month-grouped with a year separator row
+- `components/KonziliumConversationView.tsx` (`mezo-sp9w`) — the chronological "Beszélgetés"
+  round-by-round replay; each cross-talk reaction quotes the claim it responds to
+- `deliberationStats.ts` (`mezo-sp9w`) — `partitionDeliberation(threads)`, the single function
+  splitting a conference's threads into the four lists both consumers need (every item; the
+  ones carrying reactions; the ones the Szkeptikus answered; the ones Mezo ruled on);
+  `deliberationStats(threads)` derives `{proposals, reactions, skepticVerdicts, accepted,
+  rejected}` from those same lists. `KonziliumRoundMap` uses `deliberationStats`,
+  `KonziliumConversationView` consumes `partitionDeliberation` directly for its own four
+  sections — both from the one partition, so their counts literally cannot drift apart (I2,
+  mezo-sp9w branch-review — this used to be a claim in a comment, not something either
+  consumer's code actually enforced)
+- `deliberationLabels.ts` (`mezo-sp9w`) — the shared `STANCE_LABEL`/`STANCE_TONE`/
+  `ACCEPTED_LABEL` maps and `displayName()` helper, used by `ConferenceThreadCard` and
+  `KonziliumConversationView` so stance wording/tone never drifts between the two views
 - `components/MaturityRing.tsx` — the 7-arc SVG ring
 - `components/ClaimTile.tsx` — one claim's confidence chip + feedback pills
 - `components/TranscriptTurn.tsx` — one konzílium transcript turn (persona rail, szkeptikus/

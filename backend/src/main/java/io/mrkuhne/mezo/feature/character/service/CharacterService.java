@@ -17,6 +17,7 @@ import io.mrkuhne.mezo.api.dto.CharacterRunResponse;
 import io.mrkuhne.mezo.api.dto.CharacterRunSummary;
 import io.mrkuhne.mezo.api.dto.ConferenceChairRuling;
 import io.mrkuhne.mezo.api.dto.ConferenceItem;
+import io.mrkuhne.mezo.api.dto.ConferenceOutcomeCounts;
 import io.mrkuhne.mezo.api.dto.ConferencePeerReaction;
 import io.mrkuhne.mezo.api.dto.ConferenceSkepticVerdict;
 import io.mrkuhne.mezo.api.dto.ConferenceThread;
@@ -256,8 +257,38 @@ public class CharacterService {
                         .kind(CharacterConferenceSummary.KindEnum.fromValue(summary.getKind()))
                         .weekStart(summary.getWeekStart())
                         .generatedAt(toOffset(summary.getGeneratedAt()))
+                        .outcome(outcomeCounts(summary.getOutcome()))
                         .build())
                 .toList();
+    }
+
+    private static final String CHANGE_ACCEPTED = "CLAIM_ACCEPTED";
+    private static final String CHANGE_RETIRED = "CLAIM_RETIRED";
+    private static final String CHANGE_PORTRAIT = "PORTRAIT_REWRITTEN";
+
+    /** The dossier effect of one konzílium, counted from its stored change list. `other` keeps the
+     *  surface honest: the three named kinds are not the whole set a konzílium can emit. */
+    private static ConferenceOutcomeCounts outcomeCounts(ConferenceOutcomeEnvelope outcome) {
+        List<ConferenceOutcomeEnvelope.Change> changes =
+                outcome == null || outcome.changes() == null ? List.of() : outcome.changes();
+        int accepted = 0;
+        int retired = 0;
+        int portrait = 0;
+        int other = 0;
+        for (ConferenceOutcomeEnvelope.Change change : changes) {
+            switch (change.kind() == null ? "" : change.kind()) {
+                case CHANGE_ACCEPTED -> accepted++;
+                case CHANGE_RETIRED -> retired++;
+                case CHANGE_PORTRAIT -> portrait++;
+                default -> other++;
+            }
+        }
+        return ConferenceOutcomeCounts.builder()
+                .accepted(accepted)
+                .retired(retired)
+                .portraitRewritten(portrait)
+                .other(other)
+                .build();
     }
 
     @Transactional(readOnly = true)
@@ -281,12 +312,18 @@ public class CharacterService {
                         .build())
                 .toList();
 
-        ConferenceDeliberationEnvelope deliberation = conf.getDeliberation() != null
+        boolean stored = conf.getDeliberation() != null;
+        ConferenceDeliberationEnvelope deliberation = stored
                 ? conf.getDeliberation()
                 : LegacyTranscriptParser.parse(conf.getTranscript().turns());
         List<ConferenceThread> threads = deliberation == null ? null : deliberation.threads().stream()
                 .map(CharacterService::toThreadDto)
                 .toList();
+        CharacterConferenceResponse.DeliberationSourceEnum source = threads == null
+                ? null
+                : stored
+                        ? CharacterConferenceResponse.DeliberationSourceEnum.STORED
+                        : CharacterConferenceResponse.DeliberationSourceEnum.DERIVED;
 
         return CharacterConferenceResponse.builder()
                 .id(conf.getId())
@@ -295,6 +332,7 @@ public class CharacterService {
                 .generatedAt(toOffset(conf.getGeneratedAt()))
                 .transcript(transcript)
                 .deliberation(threads)
+                .deliberationSource(source)
                 .changes(changes)
                 .build();
     }
