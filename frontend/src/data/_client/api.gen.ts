@@ -8012,12 +8012,20 @@ export interface components {
             /** @description Defaults to end of chain */
             position?: number;
         };
+        /** @description PATCH semantics — an OMITTED key leaves the field unchanged. For every optional text field (why, anchorCopy, linkUrl, anchorHabitKey, cue, craving, reward, celebration, identity) a BLANK string is the wire signal for "clear back to null" (mezo-pero) — generalizing the anchorHabitKey unlink convention, since a null here already means "leave unchanged". */
         HabitDefUpdateRequest: {
             title?: string;
             why?: string | null;
             anchorCopy?: string | null;
             chainKey?: string;
             position?: number;
+            /**
+             * @description Tick mode is editable after creation (mezo-pero). Switching to MANUAL forces metric to "manual"; switching to DERIVED requires a supported metric in the same request (or an already-derived stored one)
+             * @enum {string}
+             */
+            mode?: "DERIVED" | "MANUAL";
+            /** @description Only meaningful while mode is (or becomes) DERIVED; ignored for MANUAL (forced to "manual") */
+            metric?: string;
             xp?: number;
             linkUrl?: string | null;
             /** @enum {string|null} */

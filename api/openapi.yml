@@ -19987,6 +19987,13 @@ components:
           description: Defaults to end of chain
     HabitDefUpdateRequest:
       type: object
+      description: >
+        PATCH semantics — an OMITTED key leaves the field unchanged. For every
+        optional text field (why, anchorCopy, linkUrl, anchorHabitKey, cue,
+        craving, reward, celebration, identity) a BLANK string is the wire
+        signal for "clear back to null" (mezo-pero) — generalizing the
+        anchorHabitKey unlink convention, since a null here already means "leave
+        unchanged".
       properties:
         title:
           type: string
@@ -20004,6 +20011,21 @@ components:
         position:
           type: integer
           minimum: 1
+        mode:
+          type: string
+          enum:
+            - DERIVED
+            - MANUAL
+          description: >-
+            Tick mode is editable after creation (mezo-pero). Switching to
+            MANUAL forces metric to "manual"; switching to DERIVED requires a
+            supported metric in the same request (or an already-derived stored
+            one)
+        metric:
+          type: string
+          description: >-
+            Only meaningful while mode is (or becomes) DERIVED; ignored for
+            MANUAL (forced to "manual")
         xp:
           type: integer
           minimum: 5
