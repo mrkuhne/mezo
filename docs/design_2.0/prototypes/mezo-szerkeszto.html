@@ -1247,7 +1247,7 @@
     transition: transform 0.15s cubic-bezier(0.3, 0.8, 0.4, 1.4);
   }
   .loadtile:active { transform: scale(0.96); }
-  .loadtile.day { background: linear-gradient(150deg, #FFE7DC, #FFF7F2); }
+  .loadtile.day { background: linear-gradient(150deg, #FFE7DC, #FFF7F2); margin-bottom: 10px; }
   .loadtile.week { background: linear-gradient(150deg, #FDF0DA, #FFFCF5); box-shadow: 0 14px 26px -14px rgba(201, 150, 46, 0.45), 0 2px 5px rgba(43, 33, 24, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.7); }
   .loadtile .bign { font-size: 20px; font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; margin-top: 3px; }
   .loadtile .bign small { font-size: 9px; font-weight: 600; color: #6E6257; margin-left: 3px; }
@@ -1263,12 +1263,19 @@
     border: 0.5px solid rgba(43, 33, 24, 0.06); border-left: 5px solid #E05535;
     box-shadow: 0 12px 22px -14px rgba(43, 33, 24, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.7);
   }
-  .excard.dragging { opacity: 0.85; box-shadow: 0 20px 34px -12px rgba(43, 33, 24, 0.4); z-index: 5; }
   .exico { width: 30px; height: 30px; border-radius: 50%; background: rgba(255, 255, 255, 0.85); display: grid; place-items: center; flex: none; box-shadow: 0 4px 10px -6px rgba(43, 33, 24, 0.35); }
   .excard .nm2 { font-size: 11.5px; font-weight: 700; }
   .excard .sub { font-size: 8.5px; color: #6E6257; }
   .goalnote { font-size: 8.5px; color: #A8801F; font-weight: 600; }
-  .exdrag { cursor: grab; color: #A2958A; font-size: 14px; padding: 2px 5px; flex: none; touch-action: none; user-select: none; }
+  .exmv { display: flex; gap: 3px; flex: none; }
+  .exmv button {
+    width: 22px; height: 22px; border-radius: 7px; border: 1px solid rgba(43, 33, 24, 0.14);
+    background: rgba(255, 255, 255, 0.85); font-family: inherit; font-size: 9px; color: #6E6257;
+    cursor: pointer; padding: 0; line-height: 1;
+    transition: transform 0.12s ease;
+  }
+  .exmv button:active { transform: scale(0.88); }
+  .exmv button:disabled { opacity: 0.3; cursor: default; }
   .exdel2 { background: none; border: none; color: #A84A26; font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer; padding: 2px 5px; flex: none; }
   .inrow { display: grid; grid-template-columns: 0.9fr 1.7fr 1.1fr 0.8fr; gap: 5px; margin-top: 8px; }
   .inrow > * { min-width: 0; }
@@ -1663,7 +1670,7 @@
           nap-csempéken és a gauge-okon, staggerelt belépés, lélegző hero-spot, pulzáló zóna-marker.</li>
           <li><strong>Gyakorlat-kártyák accordion nélkül</strong> — minden mindig látszik: szett · rep
           min–max · kg · RIR inline számmezőkben, 🔥/🌿 jelleg, bemelegítő, izom-hozzájárulás sor. Törlés ×
-          + Visszavonás snackbar, átrendezés a ☰ fogantyú húzásával.</li>
+          + Visszavonás snackbar, átrendezés ▲▼ nyilakkal.</li>
           <li><strong>Nap-átnevezés</strong> — a nap-szerkesztő heroján a név inline írható.</li>
           <li><strong>Lint</strong> — a H–K Váll-ütközés élőben számolódik: töröld a K oldalemelést, és a
           figyelmeztetés eltűnik.</li>
@@ -2016,7 +2023,7 @@
         '</div></div>' +
       '<div id="excards">' + d.ex.map(function (e, i) { return exCard(d, e, i); }).join('') + '</div>' +
       '<button class="ghost rise" id="addex" style="--d:' + (120 + d.ex.length * 50) + 'ms;width:100%;padding:9px 0;margin-top:2px;border:1.5px dashed rgba(255,107,74,0.5);background:transparent;color:#A84A26;">＋ Gyakorlat hozzáadása</button>' +
-      '<p class="habnote">Minden mező közvetlenül írható — nincs accordion, nincs stepper. Átrendezés a ☰ fogantyúval, törlés az ×-szel (Visszavonás a snackbaron).</p>';
+      '<p class="habnote">Minden mező közvetlenül írható — nincs accordion, nincs stepper. Átrendezés a ▲▼ nyilakkal, törlés az ×-szel (Visszavonás a snackbaron).</p>';
     document.getElementById('daybody').querySelectorAll('.excard').forEach(function (c) { bindCard(c); });
     fillBars(document.getElementById('tile-daily'));
     document.getElementById('tile-daily').addEventListener('click', function () {
@@ -2034,7 +2041,10 @@
         '<div class="grow" style="min-width:0;"><div class="nm2">' + e.n + '</div>' +
           '<div class="sub">' + g.name + (e.syn.length ? ' · szinergista: ' + e.syn.map(function (k) { return GROUPS[k].name; }).join(', ') : '') + '</div>' +
           (e.note ? '<div class="goalnote">' + e.note + '</div>' : '') + '</div>' +
-        '<span class="exdrag" title="Átrendezés">☰</span>' +
+        '<div class="exmv">' +
+          '<button data-mv="-1" aria-label="Feljebb"' + (i === 0 ? ' disabled' : '') + '>▲</button>' +
+          '<button data-mv="1" aria-label="Lejjebb"' + (i === d.ex.length - 1 ? ' disabled' : '') + '>▼</button>' +
+        '</div>' +
         '<button class="exdel2" aria-label="Törlés">✕</button>' +
       '</div>' +
       '<div class="inrow">' +
@@ -2100,39 +2110,15 @@
       });
       renderDay(); refreshDayStats();
     });
-    bindDrag(card);
-  }
-  function bindDrag(card) {
-    var h = card.querySelector('.exdrag');
-    h.addEventListener('pointerdown', function (e) {
-      e.preventDefault();
-      card.classList.add('dragging');
-      function move(ev) {
-        var prev = card.previousElementSibling, next = card.nextElementSibling;
-        if (prev && prev.classList.contains('excard')) {
-          var r = prev.getBoundingClientRect();
-          if (ev.clientY < r.top + r.height / 2) { card.parentNode.insertBefore(card, prev); return; }
-        }
-        if (next && next.classList.contains('excard')) {
-          var r2 = next.getBoundingClientRect();
-          if (ev.clientY > r2.top + r2.height / 2) { next.after(card); }
-        }
-      }
-      function up() {
-        card.classList.remove('dragging');
-        document.removeEventListener('pointermove', move);
-        document.removeEventListener('pointerup', up);
-        document.removeEventListener('pointercancel', up);
-        var d = DAYS[activeDay];
-        var order = Array.prototype.map.call(document.querySelectorAll('#excards .excard'), function (c) {
-          return d.ex[parseInt(c.getAttribute('data-ei'), 10)];
-        });
-        d.ex = order;
+    card.querySelectorAll('[data-mv]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var i = parseInt(card.getAttribute('data-ei'), 10);
+        var dir = parseInt(b.getAttribute('data-mv'), 10);
+        var j = i + dir;
+        if (j < 0 || j >= d.ex.length) return;
+        var tmp = d.ex[i]; d.ex[i] = d.ex[j]; d.ex[j] = tmp;
         renderDay(); refreshDayStats();
-      }
-      document.addEventListener('pointermove', move);
-      document.addEventListener('pointerup', up);
-      document.addEventListener('pointercancel', up);
+      });
     });
   }
 

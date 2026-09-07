@@ -24,3 +24,10 @@ irány-nyíllal, snackbar-visszavonás, pointer-drag átrendezés.
 
 Nyitott: további körök a felhasználó vizuális visszajelzései szerint; megállapodás után
 a spec frissül és jön a writing-plans.
+
+## 3. kör (2026-09-07)
+
+| Visszajelzés | Döntés / megoldás |
+|---|---|
+| Nincs térköz a Napi terhelés csempe és a gyakorlat-kártyák között | `.loadtile.day` 10px alsó margót kapott. |
+| Drag&drop helyett fel/le nyilak | A ☰ fogantyú és a pointer-drag kikerült; a kártya fejlécében ▲▼ gombpár rendez (a szélső irány letiltva). Ez az app meglévő `SortableList`-viselkedéséhez is közelebb áll. |
