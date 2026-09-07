@@ -4465,6 +4465,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users/{userId}/memory/graph": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * One user's knowledge graph as STRUCTURED nodes and edges (AdminMemory)
+         * @description Needs mezo.feature.knowledge-graph.enabled as well; with the graph off the response is 404 ADMIN_MEMORY_DISABLED. includeDeleted reads past the entities' @SQLRestriction("is_deleted = false") — the only place in the graph slice that can.
+         */
+        get: operations["getAdminMemoryGraph"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{userId}/memory/vectors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The user's ready vectors as PCA coordinates plus item metadata (AdminMemory) */
+        get: operations["getAdminMemoryVectors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{userId}/memory/vectors/{itemId}/neighbors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Real pgvector cosine neighbours of one memory item (AdminMemory) */
+        get: operations["getAdminMemoryNeighbors"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{userId}/memory/health": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Per-status, per-version, staleness and graph rollups for one user (AdminMemory)
+         * @description Answers even with the knowledge graph switched off: the graph buckets come back empty and the vector half is still populated.
+         */
+        get: operations["getAdminMemoryHealth"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -10055,6 +10129,169 @@ export interface components {
              */
             asOf?: string | null;
         };
+        /** @description one GraphEdgeEvidence row — the source that justified creating or reinforcing the edge */
+        AdminMemoryEdgeEvidence: {
+            sourceKind: string;
+            /** Format: uuid */
+            sourceId: string;
+            note?: string | null;
+            /** Format: date-time */
+            at?: string | null;
+        };
+        AdminMemoryGraphNode: {
+            /** Format: uuid */
+            id: string;
+            /** @description PATTERN | PREFERENCE | GOAL | LIFE_EVENT | SEASON | INSIGHT | PERSON */
+            kind: string;
+            title: string;
+            summary?: string | null;
+            /** @description candidate | active | archived */
+            status: string;
+            sourceKind?: string | null;
+            /** Format: uuid */
+            sourceId?: string | null;
+            /** Format: date */
+            occurredOn?: string | null;
+            /**
+             * Format: date-time
+             * @description non-null = the USER hid it; promotion never overrides that
+             */
+            userArchivedAt?: string | null;
+            /** Format: date-time */
+            createdAt?: string;
+            /** Format: date-time */
+            updatedAt?: string | null;
+            deleted: boolean;
+            meta?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Format: int32
+             * @description in+out edge count inside THIS response, for the node radius
+             */
+            degree?: number;
+        };
+        /** @description The first STRUCTURED edge DTO in any mezo contract (GraphNodeResponse.topEdges is rendered text). `weight` is the LIVE value: the nightly GraphMaintenanceService decays every edge by x0.99 and prunes below 0.05, so this will NOT match a memory_retrieval_result score_breakdown captured on an earlier day. */
+        AdminMemoryGraphEdge: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            from: string;
+            /** Format: uuid */
+            to: string;
+            /** @description TRIGGERS | PRECEDED_BY | SUPPORTS | CONFLICTS | RELATES_TO */
+            kind: string;
+            /**
+             * Format: double
+             * @description 0..1, live (post-decay)
+             */
+            weight: number;
+            /** Format: date-time */
+            lastReinforcedAt?: string | null;
+            /** Format: date-time */
+            createdAt: string;
+            deleted: boolean;
+            evidence?: components["schemas"]["AdminMemoryEdgeEvidence"][];
+        };
+        AdminMemoryGraphResponse: {
+            nodes: components["schemas"]["AdminMemoryGraphNode"][];
+            edges: components["schemas"]["AdminMemoryGraphEdge"][];
+            /**
+             * Format: double
+             * @description read from the companion graph config; the nightly multiplier
+             */
+            decayFactor: number;
+            /**
+             * Format: double
+             * @description weight below which the nightly pass deletes the edge
+             */
+            pruneBelow: number;
+        };
+        AdminMemoryVectorItem: {
+            /** Format: uuid */
+            itemId: string;
+            sourceKind: string;
+            /** Format: uuid */
+            sourceId?: string;
+            /** Format: date */
+            occurredOn: string;
+            /** Format: double */
+            salience: number;
+            /** @description active | suppressed | superseded */
+            state: string;
+            snippet: string;
+        };
+        AdminMemoryVectorsResponse: {
+            embeddingVersion: string;
+            /**
+             * Format: int32
+             * @description PCA output dims (mezo.admin.memory.pca-target-dims)
+             */
+            dims: number;
+            /** @description true = the user has more ready vectors than the sample threshold and this is a newest+most-salient subset */
+            sampled: boolean;
+            /**
+             * Format: int64
+             * @description ready, hash-matching vectors of this generation BEFORE sampling
+             */
+            total: number;
+            items: components["schemas"]["AdminMemoryVectorItem"][];
+            /** @description base64 of a little-endian Float32 block of items.length x dims PCA coordinates, row major, in the same order as `items`. Base64 rather than a JSON number array to keep ~3000 x 50 floats around 0.6 MB instead of ~9 MB of decimal text. */
+            projection: string;
+        };
+        AdminMemoryNeighbor: {
+            /** Format: uuid */
+            itemId: string;
+            sourceKind: string;
+            /** Format: date */
+            occurredOn: string;
+            /**
+             * Format: double
+             * @description pgvector cosine distance (<=>), 0 = identical
+             */
+            distance: number;
+            /**
+             * Format: double
+             * @description 1 - distance; the app stores L2-normalised vectors, so this is a cosine similarity, not a dot product
+             */
+            similarity: number;
+            /** Format: double */
+            salience?: number;
+            state: string;
+            snippet: string;
+        };
+        AdminMemoryNeighborsResponse: {
+            /** Format: uuid */
+            itemId: string;
+            embeddingVersion: string;
+            neighbors: components["schemas"]["AdminMemoryNeighbor"][];
+        };
+        AdminMemoryCountBucket: {
+            key: string;
+            /** Format: int64 */
+            count: number;
+        };
+        AdminMemoryHealthResponse: {
+            servingEmbeddingVersion: string;
+            vectorsByStatus: components["schemas"]["AdminMemoryCountBucket"][];
+            /** @description failure_code -> count, over status = failed rows */
+            vectorFailures: components["schemas"]["AdminMemoryCountBucket"][];
+            vectorsByVersion: components["schemas"]["AdminMemoryCountBucket"][];
+            /**
+             * Format: int64
+             * @description embedded_content_hash <> content_hash — present but ANN-ineligible, the quiet failure mode
+             */
+            staleVectorCount: number;
+            itemsByState: components["schemas"]["AdminMemoryCountBucket"][];
+            nodesByStatus: components["schemas"]["AdminMemoryCountBucket"][];
+            nodesByKind: components["schemas"]["AdminMemoryCountBucket"][];
+            /** @description edgeWeightHistogramBuckets buckets over 0..1; key is the bucket range label */
+            edgeWeightHistogram: components["schemas"]["AdminMemoryCountBucket"][];
+            /** @description last observed run of each nightly pass, INFERRED from the newest row it writes (lastDailySummary, lastPatternDetection, lastEdgeReinforcement, lastRetrievalRun, lastVectorWrite) — there is no job-run table, and the surface says "inferred". */
+            jobs: {
+                [key: string]: string | null;
+            };
+        };
     };
     responses: {
         /** @description Missing/invalid token */
@@ -10077,6 +10314,15 @@ export interface components {
         };
         /** @description Feature or its companion dependency is off (ADMIN_MEMORY_DISABLED) */
         AdminMemoryDisabled: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["SystemMessageList"];
+            };
+        };
+        /** @description The read hit mezo.admin.memory.statement-timeout (ADMIN_MEMORY_QUERY_TIMEOUT) */
+        AdminMemoryQueryTimeout: {
             headers: {
                 [name: string]: unknown;
             };
@@ -22791,6 +23037,128 @@ export interface operations {
             401: components["responses"]["AdminMemoryUnauthorized"];
             403: components["responses"]["AdminMemoryForbidden"];
             404: components["responses"]["AdminMemoryDisabled"];
+        };
+    };
+    getAdminMemoryGraph: {
+        parameters: {
+            query?: {
+                includeArchived?: boolean;
+                includeDeleted?: boolean;
+            };
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The structured graph */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMemoryGraphResponse"];
+                };
+            };
+            401: components["responses"]["AdminMemoryUnauthorized"];
+            403: components["responses"]["AdminMemoryForbidden"];
+            404: components["responses"]["AdminMemoryDisabled"];
+            504: components["responses"]["AdminMemoryQueryTimeout"];
+        };
+    };
+    getAdminMemoryVectors: {
+        parameters: {
+            query?: {
+                /** @description embedding generation; defaults to mezo.companion.memory-platform.serving-embedding-version */
+                version?: string;
+            };
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The map payload */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMemoryVectorsResponse"];
+                };
+            };
+            401: components["responses"]["AdminMemoryUnauthorized"];
+            403: components["responses"]["AdminMemoryForbidden"];
+            404: components["responses"]["AdminMemoryDisabled"];
+            504: components["responses"]["AdminMemoryQueryTimeout"];
+        };
+    };
+    getAdminMemoryNeighbors: {
+        parameters: {
+            query?: {
+                /** @description defaults to mezo.admin.memory.neighbor-default-k */
+                k?: number;
+            };
+            header?: never;
+            path: {
+                userId: string;
+                itemId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The nearest neighbours, closest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMemoryNeighborsResponse"];
+                };
+            };
+            401: components["responses"]["AdminMemoryUnauthorized"];
+            403: components["responses"]["AdminMemoryForbidden"];
+            /** @description No such live item for this user (ADMIN_MEMORY_ITEM_NOT_FOUND), the item has no ready vector of the serving generation (ADMIN_MEMORY_NO_VECTOR), or the feature is off (ADMIN_MEMORY_DISABLED) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            504: components["responses"]["AdminMemoryQueryTimeout"];
+        };
+    };
+    getAdminMemoryHealth: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The health rollups */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMemoryHealthResponse"];
+                };
+            };
+            401: components["responses"]["AdminMemoryUnauthorized"];
+            403: components["responses"]["AdminMemoryForbidden"];
+            404: components["responses"]["AdminMemoryDisabled"];
+            504: components["responses"]["AdminMemoryQueryTimeout"];
         };
     };
 }
