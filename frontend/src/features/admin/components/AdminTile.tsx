@@ -8,6 +8,16 @@ import { Tile, type MozaikWash } from '@/shared/ui/mozaik'
 export interface AdminTileQuery {
   isError: boolean
   refetch: () => void
+  /**
+   * Real-mode cold-load flag (mezo-d5iy.16 fix). `useDualQuery`'s `data` deliberately falls
+   * back to a zeroed `realEmpty` while a real fetch is in flight (by design — see that hook's
+   * doc comment), which without this branch made every tile paint "0 fiók" / "$0.00" / an
+   * empty sparkline during the cold-load window instead of a loading state. Every synthetic
+   * tile-query object literal (a page combining >1 query into one tile, e.g.
+   * AdminOverviewPage's `costQuery`, AdminDataPage's `rowsTileQuery`) must OR its constituent
+   * queries' `isPending` in here the same way it already ORs `isError`.
+   */
+  isPending: boolean
 }
 
 export function AdminTile({
@@ -35,6 +45,16 @@ export function AdminTile({
           <button type="button" className="ad-retry" onClick={query.refetch}>
             Újra
           </button>
+        </div>
+      </Tile>
+    )
+  }
+  if (query.isPending) {
+    return (
+      <Tile wash={wash} eyebrow={eyebrow} span={span}>
+        <div className="ad-tile-pending" aria-label="Betöltés…">
+          <div className="sk" style={{ height: 14, width: '60%' }} />
+          <div className="sk" style={{ height: 28, width: '40%' }} />
         </div>
       </Tile>
     )
