@@ -20,6 +20,12 @@ public interface WorkoutSessionRepository extends JpaRepository<WorkoutSessionEn
     List<WorkoutSessionEntity> findByCreatedByAndMesocycleIdInOrderByOrderIndexAsc(
         UUID createdBy, Collection<UUID> mesocycleIds);
 
+    /** That day's session INSTANCES, oldest first (mezo-06o0.13) — the people sweep reads their
+     *  {@code note}/{@code closingNote} free text. Templates carry a null {@code date}, so a
+     *  date-equality finder excludes them without a second predicate, and {@code @SQLRestriction}
+     *  keeps soft-deleted rows out. */
+    List<WorkoutSessionEntity> findByCreatedByAndDateOrderByCreatedAtAsc(UUID createdBy, LocalDate date);
+
     Optional<WorkoutSessionEntity> findFirstByCreatedByAndTemplateSessionIdAndStatusOrderByDateDescCreatedAtDesc(
         UUID createdBy, UUID templateSessionId, String status);
 

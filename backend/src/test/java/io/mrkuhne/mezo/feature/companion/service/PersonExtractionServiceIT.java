@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import ch.qos.logback.classic.Logger;
@@ -16,11 +17,14 @@ import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import io.mrkuhne.mezo.feature.people.entity.PersonEntity;
 import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
 import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
+import io.mrkuhne.mezo.feature.train.entity.SportSessionEntity;
+import io.mrkuhne.mezo.feature.train.repository.SportSessionRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import io.mrkuhne.mezo.support.populator.JournalPopulator;
 import io.mrkuhne.mezo.support.populator.MentionPopulator;
 import io.mrkuhne.mezo.support.populator.PersonPopulator;
+import io.mrkuhne.mezo.support.populator.TrainPopulator;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -44,10 +48,13 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
 
     @Autowired private PersonExtractionService extractionService;
     @Autowired private PersonRepository personRepository;
+    @Autowired private AppNotificationRepository appNotificationRepository;
     @Autowired private MentionRepository mentionRepository;
     @Autowired private PersonPopulator personPopulator;
     @Autowired private MentionPopulator mentionPopulator;
     @Autowired private JournalPopulator journalPopulator;
+    @Autowired private TrainPopulator trainPopulator;
+    @Autowired private SportSessionRepository sportSessionRepository;
     @Autowired private DatabasePopulator databasePopulator;
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private FakeCompanionLlm fakeCompanionLlm;
@@ -128,6 +135,31 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
         assertThat(created.getRelationship()).isEqualTo("friend");
         assertThat(created.getRelationshipHu()).isEqualTo("Ismerős");
         assertThat(created.getNotes()).contains("délben futottam Marcival a gáton");
+        // mezo-0cbh: a jelölt a DÖNTÉSEDRE vár, és eddig csak az tudott róla, aki magától
+        // benyitott az Emberek hubra. A sor megnevezi, kiről kell dönteni.
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+            .filteredOn(n -> "person_candidate".equals(n.getKind()))
+            .singleElement()
+            .satisfies(n -> {
+                assertThat(n.getTitle()).isEqualTo("Új arc a szövegeidben");
+                assertThat(n.getBody()).startsWith("Marci ·");
+                assertThat(n.getDeeplink()).isEqualTo("/me/people/jeloltek");
+            });
+    }
+
+    // A néma ág ugyanolyan fontos: egy jelölt nélküli éjszaka nem írhat sort, különben a csengő
+    // minden reggel hazudna egy döntést, ami nem vár rád (mezo-0cbh).
+    @Test
+    void testExtractFor_shouldNotNotify_whenNoCandidateWasCreated() {
+        UUID owner = ownerId();
+        plantEntry(owner, DAY, "Csendes nap volt, nem történt semmi különös. "
+            + "[fake-people:{\"mentions\":[],\"candidates\":[]}]");
+
+        extractionService.extractFor(owner, DAY);
+
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+            .filteredOn(n -> "person_candidate".equals(n.getKind()))
+            .isEmpty();
     }
 
     @Test
@@ -148,6 +180,26 @@ class PersonExtractionServiceIT extends AbstractIntegrationTest {
 
         assertThat(result).isEqualTo(PersonExtractionResult.ZERO);
         assertThat(personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(owner)).isEmpty();
+    }
+
+    @Test
+    void testExtractFor_shouldSeeTrainingNoteText_whenTheNameLivesOnlyThere() {
+        // mezo-06o0.13: the sport note is free text the user writes, so a face first named there
+        // has to be able to become a candidate. Same seam proof as the gratitude case — the
+        // sentinel's name is unicode-escaped, so only the sport row can ground "Nóri".
+        UUID owner = ownerId();
+        plantEntry(owner, DAY, "Semmi különös a mai napban. "
+            + "[fake-people:{\"mentions\":[],\"candidates\":[{\"name\":\"\\u004E\\u00F3ri\","
+            + "\"quotes\":[\"jó meccs volt\"]}]}]");
+        SportSessionEntity sport = trainPopulator.createSportSession(owner, DAY);
+        sport.setNotes("Nórival röpiztünk, jó meccs volt.");
+        sportSessionRepository.saveAndFlush(sport);
+
+        PersonExtractionResult result = extractionService.extractFor(owner, DAY);
+
+        assertThat(result.candidates()).isEqualTo(1);
+        assertThat(personRepository.findAllByCreatedByAndDeletedFalseOrderByNameAsc(owner))
+            .extracting(PersonEntity::getName).containsExactly("Nóri");
     }
 
     @Test

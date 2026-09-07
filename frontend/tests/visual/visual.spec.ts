@@ -102,6 +102,9 @@ const SCREENS: Array<[string, string, string?]> = [
   // habit's own recipe page (`daily_intention` is a stable seeded mock habitKey).
   ['me-rutin-uj', '/me/rutin/uj'],
   ['me-rutin-szokas', '/me/rutin/szokas/daily_intention'],
+  // mezo-bk26: the recipe editor split onto its own page (choice board option B) — a new
+  // visual surface the details page's shot cannot see.
+  ['me-rutin-szokas-szerkesztes', '/me/rutin/szokas/daily_intention/szerkesztes'],
   ['me-growth', '/me/growth'],
   // mezo-iizd.12: a Growth skill-sorok goalchipje (aktív cél pillére → skill) saját felület,
   // amit a /me/growth hub shotja nem lát — a chip enélkül pixel-szinten őrizetlen maradna.

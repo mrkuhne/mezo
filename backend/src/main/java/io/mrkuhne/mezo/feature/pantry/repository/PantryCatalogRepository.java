@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -70,4 +71,50 @@ public interface PantryCatalogRepository extends JpaRepository<PantryCatalogEnti
      * (mezo-gmy0).
      */
     List<PantryCatalogEntity> findByCreatedByIsNull();
+
+    /**
+     * Fills {@code saturated_fat_g} from a MACRO-IDENTICAL sibling row that already carries it
+     * (mezo-mxmh S3). Not an estimate — a transfer.
+     *
+     * <p>The live catalog holds the same foods twice: the seeded English masters and the user's own
+     * Hungarian-named rows ("Olívaolaj"/"Olive oil", "Kacsazsír"/"Duck fat"), with byte-identical
+     * macros. 121 of the 134 gapped rows have exactly such a twin, and none has a conflicting one —
+     * so the value can be moved rather than guessed, which is strictly better than re-deriving it
+     * from a food-composition model.
+     *
+     * <p>Safety is in the {@code having count(distinct saturated_fat_g) = 1}: a macro signature
+     * that two rows disagree about is skipped entirely rather than resolved by picking one.
+     * {@code IS NULL} on the target makes it idempotent and keeps it off any value a real label
+     * already supplied.
+     */
+    @Modifying
+    @Query(value = """
+        update pantry_catalog c
+           set saturated_fat_g = t.sf
+          from (select kcal, protein_g, carbs_g, fat_g, min(saturated_fat_g) sf
+                  from pantry_catalog
+                 where is_deleted = false and saturated_fat_g is not null
+                   and kcal is not null and protein_g is not null
+                   and carbs_g is not null and fat_g is not null
+                 group by kcal, protein_g, carbs_g, fat_g
+                having count(distinct saturated_fat_g) = 1) t
+         where c.is_deleted = false
+           and c.saturated_fat_g is null
+           and c.kcal = t.kcal and c.protein_g = t.protein_g
+           and c.carbs_g = t.carbs_g and c.fat_g = t.fat_g
+        """, nativeQuery = true)
+    int backfillSaturatedFatFromMacroTwin();
+
+    /**
+     * A fat-free row's zero is a FACT, not an estimate (mezo-mxmh S3): nothing with no fat can carry
+     * saturated fat. Stating it turns 23 live rows from "nincs adat" — which degrades the
+     * Zsírminőség dimension for every meal that contains them — into a real, correct zero.
+     */
+    @Modifying
+    @Query(value = """
+        update pantry_catalog
+           set saturated_fat_g = 0
+         where is_deleted = false and saturated_fat_g is null and fat_g = 0
+        """, nativeQuery = true)
+    int backfillZeroSaturatedFatOnFatFreeRows();
 }

@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.graph;
 
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
@@ -31,6 +32,7 @@ class LifeEventExtractionServiceIT extends AbstractIntegrationTest {
 
     @Autowired private LifeEventExtractionService extractionService;
     @Autowired private GraphNodeRepository nodeRepository;
+    @Autowired private AppNotificationRepository appNotificationRepository;
     @Autowired private GraphEdgeRepository edgeRepository;
     @Autowired private GraphPopulator graphPopulator;
     @Autowired private JournalPopulator journalPopulator;
@@ -80,6 +82,17 @@ class LifeEventExtractionServiceIT extends AbstractIntegrationTest {
                 + "\"edges\":[{\"index\":0,\"kind\":\"TRIGGERS\",\"confidence\":0.8}]}]"));
 
         assertThat(extractionService.extractFor(owner, DAY)).isEqualTo(1);
+
+        // mezo-0cbh: a jelölt a döntésedre vár, és a Tudástár jelölt-listája volt az EGYETLEN
+        // hely, ahol kiderülhetett. A negyedéves SEASON-passz ugyanezt a fajtát emittálja a
+        // saját szavaival (két termelő, egy fajta).
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+            .filteredOn(n -> "graph_candidate".equals(n.getKind()))
+            .singleElement()
+            .satisfies(n -> {
+                assertThat(n.getTitle()).isEqualTo("Egy életesemény vár döntésre");
+                assertThat(n.getDeeplink()).isEqualTo("/mezo/knowledge");
+            });
 
         List<GraphNodeEntity> nodes = nodeRepository.findAll().stream()
             .filter(n -> GraphNodeEntity.KIND_LIFE_EVENT.equals(n.getKind())).toList();

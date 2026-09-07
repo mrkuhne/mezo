@@ -97,8 +97,11 @@ export function WeeklyDayRow({ agenda, gymLogged, isSportLogged, isRunLogged, gy
             // A completed (kész) gym day — today OR a past day — opens its review;
             // today's not-yet-logged row starts the session; any other day starts
             // it directly via onOpenGymDay (direct-start flow, mezo-j3x0 / mezo-bxpg).
+            // A done day can arrive WITHOUT a review target (mock marks the real-today
+            // date done with no workout instance behind it, mezo-e6xf) — fall back to
+            // the normal navigation rather than rendering a dead button.
             return (
-              <button key="gym" type="button" className="s" onClick={gymLogged ? onReviewGym : isToday ? onStartGym : onOpenGymDay}>
+              <button key="gym" type="button" className="s" onClick={(gymLogged && onReviewGym) || (isToday ? onStartGym : onOpenGymDay)}>
                 <span className="s-top">
                   <span className="stag stag-gym">GYM</span>
                   <span className="s-title">{gym.type}</span>

@@ -33,7 +33,6 @@ const MORNING: HabitChainInfo = {
       identity: 'figyel a saját gondolataira',
     }),
     def('water', 'Hidratálás', null, { position: 3, why: 'mert száraz a torkom' }),
-    // A CHIP-LINKED anchor (`anchorHabitKey`), the case the API cannot unlink.
     def('stretch', 'Nyújtás', 'FOGG', { position: 4, anchorHabitKey: 'sun', celebration: 'mosoly' }),
   ],
 }
@@ -72,20 +71,16 @@ const mockHabitSummary = {
 }
 
 const {
-  useHabitSummary, useHabitCatalog, useHabitCatalogActions, useHabitFormation, updateDef, deleteDef,
+  useHabitSummary, useHabitCatalog, useHabitFormation,
 } = vi.hoisted(() => ({
   useHabitSummary: vi.fn(),
   useHabitFormation: vi.fn(),
   useHabitCatalog: vi.fn(),
-  useHabitCatalogActions: vi.fn(),
-  updateDef: vi.fn((_id: string, _patch: Record<string, unknown>) => Promise.resolve()),
-  deleteDef: vi.fn(() => Promise.resolve()),
 }))
 vi.mock('@/data/hooks', () => ({
   useHabitSummary: () => useHabitSummary(),
   useHabitFormation: (k: string) => useHabitFormation(k),
   useHabitCatalog: () => useHabitCatalog(),
-  useHabitCatalogActions: () => useHabitCatalogActions(),
 }))
 
 function renderPage(habitKey: string) {
@@ -101,8 +96,6 @@ function renderPage(habitKey: string) {
 
 beforeEach(() => {
   navigate.mockClear()
-  updateDef.mockClear()
-  deleteDef.mockClear()
   useHabitSummary.mockReset()
   useHabitSummary.mockReturnValue({ data: mockHabitSummary })
   useHabitFormation.mockReset()
@@ -111,49 +104,39 @@ beforeEach(() => {
   useHabitCatalog.mockReturnValue({
     catalog: { chains: [MORNING, EVENING] }, isPending: false, isError: false, refetch: vi.fn(),
   })
-  useHabitCatalogActions.mockReset()
-  useHabitCatalogActions.mockReturnValue({
-    createChain: vi.fn(() => Promise.resolve()),
-    updateChain: vi.fn(() => Promise.resolve()),
-    deleteChain: vi.fn(() => Promise.resolve()),
-    reorderChain: vi.fn(() => Promise.resolve()),
-    createDef: vi.fn(() => Promise.resolve()),
-    updateDef,
-    deleteDef,
-    pending: false,
-  })
 })
 
-describe('HabitPage', () => {
-  test('shows the finished recipe sentence and the framework band', () => {
+describe('HabitPage — a részletek oldala (mezo-bk26 után)', () => {
+  test('shows the finished recipe sentence and the framework label', () => {
     renderPage('intent')
     expect(screen.getByTestId('recipe-sentence'))
       .toHaveTextContent('7:10-kor a konyhában leírom a napi szándékot, mert tisztább a fejem. Jutalmam: a pipa maga.')
-    expect(screen.getByText('Négy törvény')).toBeInTheDocument()
+    expect(screen.getByText(/Négy törvény/)).toBeInTheDocument()
   })
 
-  test('offers pausing, not deleting, as the primary destructive action', () => {
+  test('the recipe is READ-ONLY here — no field, no save, no destructive action', () => {
     renderPage('intent')
-    expect(screen.getByRole('button', { name: /Szüneteltetés/ })).toBeInTheDocument()
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Mentés' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Szüneteltetés/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /törlése/ })).not.toBeInTheDocument()
   })
 
-  test('pauses the habit through updateDef', () => {
+  test('the head button opens the editor page', () => {
     renderPage('intent')
-    fireEvent.click(screen.getByRole('button', { name: /Szüneteltetés/ }))
-    expect(updateDef).toHaveBeenCalledWith('d-intent', { isActive: false })
+    fireEvent.click(screen.getByRole('button', { name: 'Szerkesztés' }))
+    expect(navigate).toHaveBeenCalledWith('/me/rutin/szokas/intent/szerkesztes')
   })
 
-  test('labels a framework-less habit as legacy and offers re-framing', () => {
-    renderPage('water')
-    expect(screen.getByText('Keret nélkül')).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: /Keret választása/ }))
-    expect(navigate).toHaveBeenCalledWith('/me/rutin/uj?prefill=water')
-  })
-
-  test('a framework habit offers switching frames', () => {
+  test('the recipe row itself opens the editor too', () => {
     renderPage('intent')
-    fireEvent.click(screen.getByRole('button', { name: /Keret váltása/ }))
-    expect(navigate).toHaveBeenCalledWith('/me/rutin/uj?prefill=intent')
+    fireEvent.click(screen.getByRole('button', { name: /szerkesztem/ }))
+    expect(navigate).toHaveBeenCalledWith('/me/rutin/szokas/intent/szerkesztes')
+  })
+
+  test('a chip-linked FOGG recipe resolves the anchor title into the sentence', () => {
+    renderPage('stretch')
+    expect(screen.getByTestId('recipe-sentence')).toHaveTextContent('Miután kész a Reggeli fény')
   })
 
   test('the hero carries the 28-day strength and its pipa/kihagyás split', () => {
@@ -167,125 +150,12 @@ describe('HabitPage', () => {
     expect(screen.queryByText(/28 napos erő/)).not.toBeInTheDocument()
   })
 
-  test('saves the edited CLEAR fields', () => {
-    renderPage('intent')
-    fireEvent.change(screen.getByLabelText('Vágy'), { target: { value: 'tiszta fejjel indul a nap' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
-    expect(updateDef).toHaveBeenCalledWith('d-intent', {
-      title: 'leírom a napi szándékot',
-      xp: 5,
-      cue: '7:10-kor a konyhában',
-      craving: 'tiszta fejjel indul a nap',
-      reward: 'a pipa maga',
-      identity: 'figyel a saját gondolataira',
-    })
-  })
-
-  // ---- review finding 1: a non-move must never carry chainKey ----
-
-  test('an edit that does not change the chain sends no chainKey (it would re-order the chain)', () => {
-    renderPage('intent')
-    fireEvent.change(screen.getByLabelText('Jutalom'), { target: { value: 'egy fejezet' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
-    expect(updateDef.mock.calls[0][1]).not.toHaveProperty('chainKey')
-  })
-
-  test('an actual chain change does send chainKey', () => {
-    renderPage('intent')
-    fireEvent.click(screen.getByRole('button', { name: 'Esti rutin' }))
-    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
-    expect(updateDef.mock.calls[0][1]).toMatchObject({ chainKey: 'EVENING' })
-  })
-
-  // ---- review finding 3: an emptied optional key is OMITTED, never sent as '' ----
-
-  test('emptying an optional CLEAR field omits the key instead of sending an empty string', () => {
-    renderPage('intent')
-    fireEvent.change(screen.getByLabelText('Identitás'), { target: { value: '  ' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
-    expect(updateDef.mock.calls[0][1]).not.toHaveProperty('identity')
-  })
-
-  test('emptying the legacy Miért field omits `why` instead of sending an empty string', () => {
-    renderPage('water')
-    expect(screen.getByLabelText('Miért')).toHaveValue('mert száraz a torkom')
-    fireEvent.change(screen.getByLabelText('Miért'), { target: { value: '' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
-    expect(updateDef.mock.calls[0][1]).not.toHaveProperty('why')
-  })
-
-  // ---- review finding 2 + 4: the chip-linked anchor ----
-
-  test('an untouched chip-linked anchor is preserved as a link, never downgraded to free text', () => {
-    renderPage('stretch')
-    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
-    expect(updateDef).toHaveBeenCalledWith('d-stretch', {
-      title: 'Nyújtás', xp: 5, anchorHabitKey: 'sun', celebration: 'mosoly',
-    })
-  })
-
-  test('a chip-linked anchor is read-only and says why, since the API has no unlink', () => {
-    renderPage('stretch')
-    const anchor = screen.getByLabelText('Miután … · horgony')
-    expect(anchor).toHaveValue('kész a Reggeli fény')
-    expect(anchor).toHaveAttribute('readonly')
-    expect(screen.getByText(/nem írható át/)).toBeInTheDocument()
-  })
-
-  test('a free-text anchor stays editable and saves as anchorCopy', () => {
-    renderPage('sun')
-    const anchor = screen.getByLabelText('Miután … · horgony')
-    expect(anchor).not.toHaveAttribute('readonly')
-    fireEvent.change(anchor, { target: { value: 'letettem a fogkefét' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
-    expect(updateDef.mock.calls[0][1]).toMatchObject({ anchorCopy: 'letettem a fogkefét' })
-  })
-
-  // ---- review finding 7: xp is clamped on save, not only in the stepper ----
-
-  test('a stored xp outside 5-15 is clamped on save', () => {
-    useHabitCatalog.mockReturnValue({
-      catalog: { chains: [{ ...MORNING, defs: [{ ...MORNING.defs[1], xp: 40 }] }, EVENING] },
-      isPending: false, isError: false, refetch: vi.fn(),
-    })
-    renderPage('intent')
-    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
-    expect(updateDef.mock.calls[0][1]).toMatchObject({ xp: 15 })
-  })
-
-  // ---- review finding 6: the hero icon follows the owning chain's daypart ----
-
   test('an evening habit does not wear the dawn icon', () => {
     const { container } = renderPage('bed')
     expect(container.querySelector('.mz-page-hero use')).toHaveAttribute('href', '#i-alvas')
     // …and a morning habit still wears the dawn one
     expect(renderPage('intent').container.querySelector('.mz-page-hero use'))
       .toHaveAttribute('href', '#i-hajnal')
-  })
-
-  test('refuses to save a CLEAR recipe the backend would reject', () => {
-    renderPage('intent')
-    fireEvent.change(screen.getByLabelText('Vágy'), { target: { value: '   ' } })
-    expect(screen.getByRole('button', { name: 'Mentés' })).toBeDisabled()
-  })
-
-  test('saves a FOGG recipe with its anchor and celebration', () => {
-    renderPage('sun')
-    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
-    expect(updateDef).toHaveBeenCalledWith('d-sun', {
-      title: 'Reggeli fény',
-      xp: 5,
-      anchorCopy: 'kitöltöttem a kávét',
-      celebration: 'ökölrázás',
-    })
-  })
-
-  test('deletion takes two taps and is not the visually primary action', () => {
-    renderPage('intent')
-    fireEvent.click(screen.getByRole('button', { name: /Szokás törlése/ }))
-    expect(deleteDef).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: /Biztosan törlöd/ }))
-    expect(deleteDef).toHaveBeenCalledWith('d-intent')
   })
 
   test('an unknown habit key bounces back to the rutin hub', () => {
@@ -298,6 +168,36 @@ describe('HabitPage', () => {
     renderPage('intent')
     expect(screen.queryByText('RUTIN HUB')).not.toBeInTheDocument()
     expect(screen.getByText(/Szokás betöltése/)).toBeInTheDocument()
+  })
+
+  test('a failed catalog fetch shows the retry ghost instead of silently redirecting', () => {
+    const refetch = vi.fn()
+    useHabitCatalog.mockReturnValue({ catalog: { chains: [] }, isPending: false, isError: true, refetch })
+    renderPage('intent')
+    expect(screen.queryByText('RUTIN HUB')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Újra' }))
+    expect(refetch).toHaveBeenCalled()
+  })
+
+  // ---- a paused habit must SAY so; resuming lives on the editor page ----
+
+  test('a paused habit shows a paused note pointing at the editor', () => {
+    useHabitCatalog.mockReturnValue({
+      catalog: { chains: [{ ...MORNING, defs: [{ ...MORNING.defs[1], isActive: false }] }, EVENING] },
+      isPending: false, isError: false, refetch: vi.fn(),
+    })
+    renderPage('intent')
+    expect(screen.getByTestId('paused-note')).toBeInTheDocument()
+  })
+
+  test('an active habit shows no paused note', () => {
+    renderPage('intent')
+    expect(screen.queryByTestId('paused-note')).not.toBeInTheDocument()
+  })
+
+  test('never renders a tick control', () => {
+    renderPage('intent')
+    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
   })
 
   // ---- formálódás-nézet (mezo-08zl) ----
@@ -343,8 +243,6 @@ describe('HabitPage', () => {
   })
 
   test('a context signal we cannot measure renders as a dash, not as 0%', () => {
-    const ctx = screen.queryByTestId
-    void ctx
     renderPage('intent')
     // anchorConstancyPct is null in the fixture (no anchor on `intent`)
     expect(screen.getByTestId('formation-context')).toHaveTextContent('—')
@@ -357,97 +255,5 @@ describe('HabitPage', () => {
     })
     renderPage('intent')
     expect(screen.queryByTestId('formation-card')).toBeNull()
-  })
-
-  // ---- fix wave (mezo-3zue.4): the two fields that lost their only editor ----
-
-  test('linkUrl is editable on every definition and rides the patch', () => {
-    renderPage('intent')
-    const link = screen.getByLabelText('Link')
-    expect(link).toHaveValue('')
-    fireEvent.change(link, { target: { value: 'https://example.com/video' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
-    expect(updateDef.mock.calls[0][1]).toMatchObject({ linkUrl: 'https://example.com/video' })
-  })
-
-  test('an existing linkUrl seeds the field and survives an unrelated edit', () => {
-    useHabitCatalog.mockReturnValue({
-      catalog: { chains: [{ ...MORNING, defs: [{ ...MORNING.defs[2], linkUrl: 'https://example.com/a' }] }, EVENING] },
-      isPending: false, isError: false, refetch: vi.fn(),
-    })
-    renderPage('water')
-    expect(screen.getByLabelText('Link')).toHaveValue('https://example.com/a')
-    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
-    expect(updateDef.mock.calls[0][1]).toMatchObject({ linkUrl: 'https://example.com/a' })
-  })
-
-  test('an emptied linkUrl omits the key rather than sending an empty string', () => {
-    useHabitCatalog.mockReturnValue({
-      catalog: { chains: [{ ...MORNING, defs: [{ ...MORNING.defs[2], linkUrl: 'https://example.com/a' }] }, EVENING] },
-      isPending: false, isError: false, refetch: vi.fn(),
-    })
-    renderPage('water')
-    fireEvent.change(screen.getByLabelText('Link'), { target: { value: '' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
-    expect(updateDef.mock.calls[0][1]).not.toHaveProperty('linkUrl')
-  })
-
-  test('a framework-less definition can edit its anchorCopy — the Nap tab renders that line', () => {
-    renderPage('water')
-    const anchor = screen.getByLabelText('Horgony-szöveg')
-    fireEvent.change(anchor, { target: { value: 'fogmosás után' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
-    expect(updateDef.mock.calls[0][1]).toMatchObject({ anchorCopy: 'fogmosás után' })
-  })
-
-  test('the anchorCopy field is legacy-only — a framework habit has its own anchor slot instead', () => {
-    renderPage('intent')
-    expect(screen.queryByLabelText('Horgony-szöveg')).not.toBeInTheDocument()
-    renderPage('sun')
-    expect(screen.queryByLabelText('Horgony-szöveg')).not.toBeInTheDocument()
-  })
-
-  // ---- fix wave (mezo-3zue.4): a paused habit must SAY so, and must be resumable ----
-
-  test('a paused habit shows a paused note and offers Folytatás, not a second pause', () => {
-    useHabitCatalog.mockReturnValue({
-      catalog: { chains: [{ ...MORNING, defs: [{ ...MORNING.defs[1], isActive: false }] }, EVENING] },
-      isPending: false, isError: false, refetch: vi.fn(),
-    })
-    renderPage('intent')
-    expect(screen.getByTestId('paused-note')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /Folytatás/ })).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: /Szüneteltetés/ })).not.toBeInTheDocument()
-  })
-
-  test('resuming a paused habit sends isActive: true', () => {
-    useHabitCatalog.mockReturnValue({
-      catalog: { chains: [{ ...MORNING, defs: [{ ...MORNING.defs[1], isActive: false }] }, EVENING] },
-      isPending: false, isError: false, refetch: vi.fn(),
-    })
-    renderPage('intent')
-    fireEvent.click(screen.getByRole('button', { name: /Folytatás/ }))
-    expect(updateDef).toHaveBeenCalledWith('d-intent', { isActive: true })
-  })
-
-  test('an active habit shows no paused note', () => {
-    renderPage('intent')
-    expect(screen.queryByTestId('paused-note')).not.toBeInTheDocument()
-  })
-
-  // ---- fix wave (mezo-3zue.4): a FAILED fetch is not a resolved miss ----
-
-  test('a failed catalog fetch shows the retry ghost instead of silently redirecting', () => {
-    const refetch = vi.fn()
-    useHabitCatalog.mockReturnValue({ catalog: { chains: [] }, isPending: false, isError: true, refetch })
-    renderPage('intent')
-    expect(screen.queryByText('RUTIN HUB')).not.toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Újra' }))
-    expect(refetch).toHaveBeenCalled()
-  })
-
-  test('never renders a tick control', () => {
-    renderPage('intent')
-    expect(screen.queryByRole('checkbox')).not.toBeInTheDocument()
   })
 })

@@ -63,8 +63,24 @@ public class MealScoringService {
      * változatlanok, de a szövegük elavult, a mezőjük pedig `null`, tehát a jelvény a MEGLÉVŐ
      * étkezéseken sosem jelenne meg. Egy csak-új-írásokra ható megjelenítés nem javítás.
      * Emellett az energia-sűrűség kapott egy minimális tömeg-küszöböt, ami már számot is mozdít.
+     *
+     * <p>`4` (mezo-jcpt.19): a context dimenzió nap-tudatos lett. A statikus slot-arány
+     * (`napi_cél × slot_arány`) helyett a MARADÉK keret a még hátralévő slotok között felosztva —
+     * a régi képlet nem tudta, evett-e a felhasználó aznap, ezért egy egész napi koplalás utáni
+     * nagy étkezés kcal-komponensét nullázta. A névleges pályán a két képlet azonos, tehát a
+     * történelmi „szabályos" napok pontszáma nem mozdul. Mivel a mezo-mxmh kör PÁRHUZAMOSAN, a
+     * `3`-as bélyeg alatt futott a fő ágon, ez a generáció a KÖVETKEZŐ bélyeget veszi fel — a
+     * backfill runner minden `4` ALATTI envelope-ot újrapontoz, tehát a 2-es és 3-as sorok egy
+     * menetben gyógyulnak.
+     *
+     * <p>`5` (mezo-mxmh): NEM formula-változás — adat-változás, ami ugyanúgy elmozdítja a tárolt
+     * számokat, és a bélyeg pontosan erre való. A telítettzsír-backfill 37 pillanatképet gyógyított
+     * azon az induláson, amikor a bélyeg éppen naprakész volt, így a rescore nem nézett rájuk: 10
+     * étkezés máig „nincs adat"-ot mutat Zsírminőségre, pedig a tételei hordozzák a tényt. A
+     * mezo-mxmh fix ezt előre megakadályozza (a backfill maga érvényteleníti, amit érvénytelenít),
+     * de a két deploy közti ablakban keletkezett maradékot nem éri el — azt ez a bump viszi el.
      */
-    public static final int FORMULA_VERSION = 3;
+    public static final int FORMULA_VERSION = 5;
 
     private final MealScoringProperties props;
     private final NutritionTargetsProperties targets;
@@ -136,6 +152,21 @@ public class MealScoringService {
      * replaces every former {@code mezo.nutrition} read: the STANDARD macro targets and all
      * day-share denominators (kcalShareOfDay, slot kcal budgets, slot protein references).
      *
+     * <p>Napi kontextus nélküli belépő (mezo-jcpt.19): a NÉVLEGES pályát feltételezi
+     * ({@link DayContext#unknown()}), ami bitre a v2 rubrika. A produkciós írásút mindig a
+     * 6-argumentumos alakot hívja.
+     */
+    public MealBreakdownJson scoreMeal(String slot, List<ScoredLine> lines, LocalTime localTime,
+                                       MealRole role, DailyTargets base) {
+        return scoreMeal(slot, lines, localTime, role, base, DayContext.unknown());
+    }
+
+    /**
+     * Nap-tudatos pontozás (mezo-jcpt.19): a context dimenzió az étkezés kcal-ját és fehérjéjét a
+     * MARADÉK napi kerethez méri, a még hátralévő slotok között felosztva — a statikus slot-arány
+     * helyett, ami nem tudta, hogy a felhasználó aznap evett-e egyáltalán. A többi hét dimenzió
+     * érintetlen: az energiasűrűség és a makró-arányok nem napi mennyiségek.
+     *
      * <p>Confidence is weight-RENORMALIZED over the live dimensions (÷ the live weight sum,
      * consistent with {@code value}) — a degraded dimension carries weight 0 and drops out of
      * both. This differs from the old un-normalized {@code Σ(configWeight·coverage)}: it
@@ -143,7 +174,7 @@ public class MealScoringService {
      * dimensions we could actually score", not "of the full weight budget").
      */
     public MealBreakdownJson scoreMeal(String slot, List<ScoredLine> lines, LocalTime localTime,
-                                       MealRole role, DailyTargets base) {
+                                       MealRole role, DailyTargets base, DayContext day) {
         double kcal = sum(lines, ScoredLine::kcal);
 
         Rubric rubric = rubricFor(role, base);
@@ -156,7 +187,7 @@ public class MealScoringService {
         List<Dim> dims = Stream.of(
             macroDim(lines, kcal, tp, tc, tf, base, role), microDim(lines, kcal, base), whoDim(lines, kcal, who, base),
             fatQualityDim(lines, kcal), novaDim(lines, kcal, nova), plantDiversityDim(lines, kcal),
-            energyDensityDim(lines, kcal), contextDim(slot, lines, kcal, localTime, role, base))
+            energyDensityDim(lines, kcal), contextDim(slot, lines, kcal, localTime, role, base, day))
             .map(Dim::coverageWeighted).toList();
 
         double weightSum = dims.stream().mapToDouble(d -> d.effectiveWeight).sum();
@@ -566,7 +597,7 @@ public class MealScoringService {
         return ratio >= 0.8 ? "good" : ratio >= 0.5 ? "ok" : "low";
     }
 
-    // --- NOVA (.25): kcal-weighted processing-class distribution -------------------------------
+    // --- NOVA (.18): kcal-weighted processing-class distribution -------------------------------
 
     private Dim novaDim(List<ScoredLine> lines, double kcal, MealScoringProperties.NovaGroupScores nova) {
         List<ScoredLine> covered = lines.stream().filter(l -> l.nova() != null).toList();
@@ -604,16 +635,20 @@ public class MealScoringService {
             null, null, new NovaDetail(dominant, stack, items), null, null);
     }
 
-    // --- Context (.20): deterministic slot/timing fit -------------------------------------------
+    // --- Context (.12): deterministic slot/timing fit -------------------------------------------
 
     private Dim contextDim(String slot, List<ScoredLine> lines, double kcal, LocalTime localTime,
-                           MealRole role, DailyTargets base) {
+                           MealRole role, DailyTargets base, DayContext day) {
         double slotShare = props.slotShares().of(slot);
         double timingSub = timingSub(slot, localTime);
-        double rel = kcal / (base.kcal() * slotShare);
+        double kcalRef = expectedRef(base.kcal(), day.known() ? day.kcalBefore().doubleValue() : 0,
+            slot, slotShare, localTime, day.known());
+        double proteinRef = expectedRef(base.p(), day.known() ? day.pBefore().doubleValue() : 0,
+            slot, slotShare, localTime, day.known());
+
+        double rel = kcal / kcalRef;
         double shareDev = Math.max(0, Math.abs(rel - 1) - props.slotShareTolerance());
         double shareSub = Math.max(0, 1 - shareDev);
-        double proteinRef = base.p() * slotShare;
         double protein = sum(lines, ScoredLine::p);
         double proteinSub = Math.min(1, protein / proteinRef);
 
@@ -624,8 +659,9 @@ public class MealScoringService {
         }
         rows.add(new ContextRow("Időzítés", String.format("%s · %s", localTime.format(HHMM), timingSub >= 1
             ? slotLabel(slot) + " ablakban" : "a " + slotLabel(slot) + " ablakon kívül")));
-        rows.add(new ContextRow("Slot-arány", String.format("%d%% vs ~%d%% cél",
-            (int) Math.round(kcal / base.kcal() * 100), (int) Math.round(slotShare * 100))));
+        rows.add(new ContextRow("Adag vs keret", String.format("%d kcal / ~%d kcal %s",
+            Math.round(kcal), Math.round(kcalRef),
+            day.known() ? "a maradék keretből" : "névleges slot-keret")));
         rows.add(new ContextRow("Fehérje", String.format("%d g / %d g slot-cél",
             Math.round(protein), Math.round(proteinRef))));
         String text = String.format("Időzítés %.0f%% · kcal-keret %.0f%% · fehérje %.0f%%.",
@@ -639,6 +675,56 @@ public class MealScoringService {
             slotLabel(slot));
         return new Dim("context", "Időzítés & kontextus", props.weights().context(), score, 1.0, text,
             null, null, null, rows, timing);
+    }
+
+    /** A négy pontozott slot — a hátralévő-arány nevezőjének tartománya. */
+    private static final List<String> SLOTS = List.of("breakfast", "lunch", "dinner", "snack");
+
+    /**
+     * Egy tápanyag viszonyítási kerete ehhez az étkezéshez. Ismeretlen nap esetén a NÉVLEGES pálya
+     * ({@code napi cél × slot-arány} — a v2 képlet); ismert nap esetén a MARADÉK keret a még
+     * hátralévő slotok között felosztva, soha nem a konfigurált padló alatt.
+     */
+    private double expectedRef(double dayTarget, double consumedBefore, String slot,
+                               double slotShare, LocalTime t, boolean known) {
+        if (!known) {
+            return dayTarget * slotShare;
+        }
+        double remaining = Math.max(0, dayTarget - consumedBefore);
+        double floor = dayTarget * slotShare * props.minExpectedSlotShareFactor();
+        return Math.max(remaining * slotShare / remainingSlotShare(slot, t), floor);
+    }
+
+    /**
+     * A még HÁTRALÉVŐ slotok arányösszege — ez osztja fel a maradék keretet. Az étkezés SAJÁT
+     * slotja mindig hátravan (egy 22:30-kor logolt vacsora továbbra is a vacsora kerete), a
+     * snacknek pedig nincs ablaka, tehát az is mindig. Így az eredmény sosem 0.
+     *
+     * <p>Ismert korlát: a snack a nevezőben AKKOR IS mindig hátralévőnek számít, ha már megette a
+     * felhasználó — a kcal-ja viszont már benne van a {@code consumedBefore}-ban. Emiatt a §4.3
+     * nulla-regresszió invariáns nem pontosan igaz, ha a névleges pályán VAN elfogyasztott snack:
+     * pl. reggeli .25 + ebéd .35 + snack .10 elfogyasztva egy 19:00-s vacsora előtt →
+     * {@code remaining = 0.30·T}, {@code remainingSlotShare = dinner .30 + snack .10 = 0.40}, tehát
+     * {@code expected = 0.30·T × 0.30/0.40 = 0.225·T} — egy pontosan a saját .30 részét evő vacsora
+     * {@code rel = 0.30·T / 0.225·T ≈ 1.33}-at kap az elvárt 1.0 helyett. Ez ma még belefér a
+     * {@code slotShareTolerance}-ba (0.4), de csak ~0.07 tartalékkal — egy jövőbeli szigorítás ezt
+     * regresszióvá tenné. Szándékosan NEM javítva ebben a körben (dokumentált, ismert korlát).
+     */
+    private double remainingSlotShare(String slot, LocalTime t) {
+        MealScoringProperties.SlotShares shares = props.slotShares();
+        double sum = 0;
+        for (String candidate : SLOTS) {
+            if (candidate.equals(slot) || !windowPassed(candidate, t)) {
+                sum += shares.of(candidate);
+            }
+        }
+        return sum;
+    }
+
+    /** Egy slot ablaka lejárt, ha az óra a záró órája UTÁN jár; a snacknek nincs ablaka. */
+    private boolean windowPassed(String slot, LocalTime t) {
+        int[] window = windowOf(props.slotWindows(), slot);
+        return window != null && t.getHour() + t.getMinute() / 60.0 > window[1];
     }
 
     private static final DateTimeFormatter HHMM = DateTimeFormatter.ofPattern("HH:mm").withLocale(Locale.ROOT);

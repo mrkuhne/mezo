@@ -9,7 +9,7 @@ class AppNotificationKindTest {
 
     @Test
     void testCatalog_shouldPinFifteenKindsWithFamiliesAndDeeplinks_perSpec() {
-        assertThat(AppNotificationKind.values()).hasSize(15);
+        assertThat(AppNotificationKind.values()).hasSize(20);
         assertThat(AppNotificationKind.PATTERN_INBOX.key()).isEqualTo("pattern_inbox");
         assertThat(AppNotificationKind.PATTERN_INBOX.familyKey()).isEqualTo("pattern");
         assertThat(AppNotificationKind.PATTERN_SIGNAL.familyKey()).isEqualTo("pattern");
@@ -39,6 +39,18 @@ class AppNotificationKindTest {
         assertThat(AppNotificationKind.GOAL_SUGGESTION.familyKey()).isNull();
         assertThat(AppNotificationKind.GOAL_SUGGESTION.deeplink())
             .isEqualTo("/me/goals/weight/suggestions");
+        // mezo-0cbh — mind a négy FEED-ONLY (familyKey null): ezek olyan dolgok, amiket
+        // legközelebb megnyitva megtalálsz, nem amiért rezegjen a telefon.
+        assertThat(AppNotificationKind.PERSON_CANDIDATE.familyKey()).isNull();
+        assertThat(AppNotificationKind.PERSON_CANDIDATE.deeplink()).isEqualTo("/me/people/jeloltek");
+        assertThat(AppNotificationKind.GRAPH_CANDIDATE.familyKey()).isNull();
+        assertThat(AppNotificationKind.GRAPH_CANDIDATE.deeplink()).isEqualTo("/mezo/knowledge");
+        assertThat(AppNotificationKind.HABIT_FORMATION.familyKey()).isNull();
+        assertThat(AppNotificationKind.HABIT_FORMATION.deeplink()).isEqualTo("/me/rutin/szokas");
+        assertThat(AppNotificationKind.CHARACTER_PORTRAIT.familyKey()).isNull();
+        assertThat(AppNotificationKind.CHARACTER_PORTRAIT.deeplink()).isEqualTo("/me/karakter");
+        assertThat(AppNotificationKind.KONZILIUM_VERDICT.familyKey()).isNull();
+        assertThat(AppNotificationKind.KONZILIUM_VERDICT.deeplink()).isEqualTo("/me/karakter/konzilium");
         assertThat(AppNotificationKind.fromKey("pattern_inbox")).contains(AppNotificationKind.PATTERN_INBOX);
         assertThat(AppNotificationKind.fromKey("nope")).isEmpty();
     }

@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
 import io.mrkuhne.mezo.feature.companion.embedding.MemoryEmbeddingWriter;
 import io.mrkuhne.mezo.feature.companion.embedding.NoteEmbeddingCatchUp;
 import io.mrkuhne.mezo.feature.companion.embedding.NoteMentionCatchUp;
+import io.mrkuhne.mezo.feature.companion.embedding.TrainingNoteMentionSweep;
 import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import lombok.RequiredArgsConstructor;
@@ -29,8 +30,11 @@ import java.util.UUID;
  * its only writer (its own toggle, length gate and per-run budget live in the pass); and, since S2
  * (spec §3.2, bd mezo-06o0.1), (e) runs {@link NoteMentionCatchUp} right after it, same per-user
  * try-guard — the same journal-outside notes also carry name mentions, which have no listener
- * either. Injected via {@link ObjectProvider} because the bean only exists when BOTH
- * {@code PEOPLE_SWITCH} and {@code COMPANION_SWITCH} are on. Per-date failures are isolated: one
+ * either; and (f), since mezo-06o0.13, {@link TrainingNoteMentionSweep} for the two free-text
+ * training sources ({@code workout_session.note}/{@code closingNote}, {@code sport_session.notes})
+ * that deliberately stay OFF the {@code NarrativeNoteSource} port (see that class's javadoc).
+ * Both mention passes are injected via {@link ObjectProvider} because their beans only exist when
+ * BOTH {@code PEOPLE_SWITCH} and {@code COMPANION_SWITCH} are on. Per-date failures are isolated: one
  * bad day must never kill the run — the next night retries it via the same catch-up.
  */
 @Slf4j
@@ -47,6 +51,7 @@ public class DailySummaryJob {
     private final CompanionProperties properties;
     private final NoteEmbeddingCatchUp noteEmbeddingCatchUp;
     private final ObjectProvider<NoteMentionCatchUp> noteMentionCatchUp;
+    private final ObjectProvider<TrainingNoteMentionSweep> trainingNoteMentionSweep;
 
     @Scheduled(cron = "${mezo.companion.summary.cron}")
     public void run() {
@@ -102,6 +107,19 @@ public class DailySummaryJob {
                     }
                 } catch (Exception e) {
                     log.warn("Note-mention catch-up failed for user {}", user.getId(), e);
+                }
+            });
+            // mezo-06o0.13: az edzés- és sport-jegyzet ugyanígy listener nélküli szabadszöveg,
+            // csak nem fér rá a NarrativeNoteSource portra (ott a beágyazás is elvinné) — saját
+            // sweep, ugyanaz a per-user izoláció és ugyanaz az ObjectProvider-kapuzás.
+            trainingNoteMentionSweep.ifAvailable(sweep -> {
+                try {
+                    int mentions = sweep.run(user.getId(), yesterday);
+                    if (mentions > 0) {
+                        log.info("Training-note mention sweep wrote {} mentions for user {}", mentions, user.getId());
+                    }
+                } catch (Exception e) {
+                    log.warn("Training-note mention sweep failed for user {}", user.getId(), e);
                 }
             });
             log.info("Daily-summary run for user {}: {} day(s) processed, {} note(s) embedded in window {}..{}",

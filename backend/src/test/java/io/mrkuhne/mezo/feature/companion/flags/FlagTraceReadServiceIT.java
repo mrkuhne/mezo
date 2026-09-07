@@ -175,7 +175,14 @@ class FlagTraceReadServiceIT extends AbstractIntegrationTest {
         logRepository.saveAndFlush(log);
         trace(userId, FlagKey.SLEEP_DEBT, "raised", null, "logged", null, at(9));
         trace(userId, FlagKey.LATE_EATING, "raised", null, "logged", null, at(10));
-        UUID cardId = card(userId, FlagKey.SLEEP_DEBT);
+        // Deterministic delivery time (mezo-wv63): the plain card() helper stamps created_at =
+        // now(), and the mezo-y43v guard drops cardOutcome for a trace that occurred AFTER the
+        // delivery — so with traces planted at 9:00/10:00 this test failed on every run before
+        // 09:00 local (CI's 00:xx UTC runs included). cardAt pins the delivery after both raises,
+        // exactly as this file's other correlation tests already do.
+        // mezo-al23: a suite mostantól a prod zónájában (Europe/Budapest) fut, ezért ez a
+        // determinisztikus kézbesítés nem csak az UTC-s napszakokra igaz.
+        UUID cardId = cardAt(userId, FlagKey.SLEEP_DEBT, at(11));
 
         FlagTraceReadService.TraceDay day = service.read(userId, DAY);
 
