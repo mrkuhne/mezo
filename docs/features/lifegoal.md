@@ -2,7 +2,7 @@
 title: Life goals
 type: feature-domain
 status: in-progress
-updated: 2026-09-05
+updated: 2026-09-06
 tags: [me, growth, companion, backend, data-layer, frontend]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/lifegoal
@@ -13,7 +13,7 @@ key_files:
   - frontend/src/features/me/pages/CelokPage.tsx
   - frontend/src/features/me/pages/CelPage.tsx
   - frontend/src/features/today/components/LifeGoalTodayTile.tsx
-related: [goal-engine, growth, companion, me, today, train]
+related: [goal-engine, growth, companion, me, today, train, ../research/entities/exist-io.md, ../research/concepts/goal-type-taxonomies.md, ../research/concepts/perma-and-wellbeing-taxonomies.md, ../research/concepts/goal-conflict.md, ../research/concepts/goal-pursuit-evidence.md]
 ---
 
 # Life goals — Feature Documentation
@@ -583,6 +583,14 @@ permissive than the real API:
   and onto its **id** (`arrowFor(goalId)`) — an index-keyed assignment would have silently
   reshuffled which goal gets the 'up'/'down'/'insufficient' story the moment the seed order changed
   for an unrelated reason, which is exactly what motivated the id-keyed rewrite in the first place.
+- **`mockProgress` now seeds one conflict sentence, on `lg-kockahas` specifically** (`MOCK_CONFLICTS`,
+  a `goalId`-keyed map defaulting to `[]`): every other goal still returns `conflicts: []`. Before
+  this, `mockProgress` hardcoded `conflicts: []` unconditionally, so the `me-cel-reszlet` visual
+  golden — which opens `/me/goals/lg-kockahas` — had never once rendered the `.lg-conflict` style
+  (mezo-9r85). `lg-kockahas` is the specific id because that's the goal the golden opens; seeding
+  any other goal would leave the rule unguarded. The "no conflict ⇒ no section remnant" invariant
+  is still measured, just moved to `lg-hustle` (conflict-free, active, three pillars) so it stays a
+  real assertion rather than one the seed itself has quietly falsified.
 
 ## 5. Integrations
 
@@ -832,7 +840,13 @@ resolving the goal by id (`test/msw/handlers.ts`) — `setup.ts` runs MSW with
 `onUnhandledRequest: 'bypass'`, so a missing handler would let a real-mode write escape to the
 network and pass silently. Run both `pnpm test` (real, MSW-backed) and `VITE_USE_MOCK=true pnpm
 test` (mock) — see [`_platform-data-layer.md`](_platform-data-layer.md) §8 for the dual-mode test
-convention. **CSS guards.** `shared/ui/mozaik/prototypeCssStructure.test.ts` covers the `lg-*` rules'
+convention. **`CelPage.test.tsx`'s conflict-sentence coverage (mezo-9r85):** a mock-mode test
+renders `lg-kockahas` and asserts `.lg-conflict` actually draws with the seeded sentence (the
+positive case the `me-cel-reszlet` golden now also exercises); the pre-existing "no conflict ⇒ no
+section remnant" test moved to `lg-hustle` so it keeps measuring a real conflict-free goal instead
+of one the mock seed just started seeding a conflict onto. The real-mode conflict test
+(`:229`) is independent — it stubs `/api/life-goals/:id/progress` directly and doesn't touch the
+mock seed. **CSS guards.** `shared/ui/mozaik/prototypeCssStructure.test.ts` covers the `lg-*` rules'
 placement. `mozaikCssTokens.test.ts` does **not** cover them — it pins `--mz-*` only, and this
 doc previously claimed otherwise; that false claim is precisely how two bugs shipped
 (`mezo-hhdo`: the family hardcoded light hexes and read white-on-white in dark mode;
@@ -860,6 +874,17 @@ correctly in every golden while being invisible in the app (§9).
   plan *shape* shipped in slice 1, the *evaluation* (`LifeGoalTriggerRules`/`LifeGoalTriggerService`
   + `LIFE_GOAL_PLAN` notifications) ships this slice)**, **D10 (the five-kind pillar taxonomy —
   every kind now has a working `LifeGoalScorer` branch)**.
+- **Prior art, now in the research wiki:** the sources behind D1, D2, D7, D8 and D10 are recorded
+  as their own pages — [Goal-Pursuit Evidence](../research/concepts/goal-pursuit-evidence.md) (D1's
+  Harkin et al. 2016 monitoring-effect and D8's Gollwitzer/Niemiec-Ryan-Deci pair), [PERMA and
+  Wellbeing Taxonomies](../research/concepts/perma-and-wellbeing-taxonomies.md) (D2's PERMAH split),
+  [Goal Conflict](../research/concepts/goal-conflict.md) (D7's companion-warning-not-gate call),
+  [Goal-Type Taxonomies](../research/concepts/goal-type-taxonomies.md) (D10's Strides pillar kinds),
+  and the [Exist.io](../research/entities/exist-io.md) entity (the `baseline` pillar kind's source).
+  **Read those pages before citing a decision's source from memory:** this ingest found the design
+  spec misstates or overstates what its own cited source says in more than one place (a naming slip
+  on the Strides taxonomy, an overstated effect-size claim on goal conflict), and the corrections
+  live on the wiki pages, not repeated here.
 - **`docs/superpowers/specs/2026-09-03-lifegoal-slice2-motor-design.md`** carries this slice's
   own binding decisions (D-1..D-4 in that doc's numbering) on top of D1–D10: the scorer's
   per-kind rules, the arrow/gate thresholds, the read-computes/evaluate-writes split, and the
@@ -973,6 +998,23 @@ correctly in every golden while being invisible in the app (§9).
   [`companion.md`](companion.md)'s promotion section — a fifth `source_kind = life_goal`
   promotion entry alongside `syncGoal`'s weight-goal `source_kind = goal`, delivered through a
   companion-owned port the `lifegoal` slice implements.
+- **`.lg-goalchip` payload rule** (`mezo-9r85`): the three consumers (`WeekGoalsCard`,
+  `SkillBandCard`, `EnHubPage`) print two different payloads — a dimension label in the Heti
+  row, a goal title everywhere else — and this is a deliberate rule, not an inconsistency: the
+  chip names **the half of the (goal, dimension) pair that the surrounding row does not already
+  carry**. The Heti row's `nm` already prints the goal title, so its chip adds the dimension; a
+  skill row and the Én-hub hero carry no goal identity, so their chip adds the title. A fourth
+  consumer should apply this rule rather than pick a payload by inspection. Recorded at the
+  rule's definition (`frontend/src/styles/prototype.css`, the `.lg-goalchip` comment) and
+  pointed to from each render site.
+- **No `isPending` gate on the Growth skill-row chip layer** (`mezo-9r85`, `GrowthSkillsPage`):
+  deliberately absent, not an oversight. While `useLifeGoals()` is pending, `goals` is the `[]`
+  fallback, so `goalSkillChips([])` already returns an empty map and no chip renders — an
+  `isPending` gate would render byte-for-byte the same thing (nothing, then chips once the goals
+  arrive) at the cost of one more branch. The visible pop-in comes from the secondary async
+  source (life goals) resolving after the primary one (the progression profile), which is an
+  existing, accepted convention on this page, not something a gate on this one chip layer would
+  fix.
 
 ## 10. Key files
 

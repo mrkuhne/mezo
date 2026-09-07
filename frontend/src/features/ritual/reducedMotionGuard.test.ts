@@ -7,8 +7,7 @@ import rawCss from '@/styles/prototype.css?raw'
  * Reduced-motion guard audit (mezo-mzbz, R4 — spec §9). The Napzárás `/ritual` flow and its
  * Today entry card lean heavily on CSS animation (the `rz-*`, `.ritcard*`, and shared
  * `.np-anim` families in `prototype.css`). ADR-0010-tone accessibility requires every one of
- * those animations to be neutralised under `@media (prefers-reduced-motion: reduce)` — and the
- * visual goldens (`tests/visual/visual.spec.ts`) only stay deterministic BECAUSE they are.
+ * those animations to be neutralised under `@media (prefers-reduced-motion: reduce)`.
  *
  * This is the executable form of that audit: it parses `prototype.css`, finds every
  * ritual-family selector that declares an ACTIVE animation outside a reduced-motion media
@@ -23,7 +22,7 @@ import rawCss from '@/styles/prototype.css?raw'
  *       re-verified below so it cannot rot silently.
  *
  * A future dev adding an unguarded `rz-*`/`ritcard`/`np-anim` animation fails this test in the
- * normal `pnpm test` gate (both modes), before it ever reaches the visual job.
+ * normal `pnpm test` gate (both modes).
  *
  * Limitation (documented, not present in the current file): a ritual animation nested inside a
  * non-`@media` block at-rule (`@supports`, `@layer`) would be skipped by the parser. If that

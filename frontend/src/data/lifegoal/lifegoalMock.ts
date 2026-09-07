@@ -381,6 +381,15 @@ function last7StatusFromPoints(days: GoalDayEntry[]): PillarDayStatus[] {
   })
 }
 
+/** A cél-ütközés mondat (`.lg-conflict`, CelPage.tsx) mock-fedezete: a backend
+ *  `LifeGoalProgressService.findConflicts` számolja, a mock eddig mindig `[]`-t adott, tehát a
+ *  `me-cel-reszlet` golden SOSEM rajzolta a stílust (mezo-9r85, 5. tétel). Egyetlen célra
+ *  ültetjük — arra, amit a golden nyit —, hogy a „nincs konfliktus ⇒ nincs szekció-maradvány"
+ *  invariáns a többi célon mérhető maradjon. */
+const MOCK_CONFLICTS: Record<string, string[]> = {
+  'lg-kockahas': ['A Kockahas és a Side hustle ugyanazt az estét kéri — a napzárás mindkettőben pillér.'],
+}
+
 /** Determinisztikus 28 napos mock-progress a seed-célokhoz: a (goalId, pillarId, dayIndex) hash
  *  dönti a státuszt úgy, hogy legyen hit/partial/miss/no_data vegyesen, lg-kockahas nyila 'up',
  *  lg-hustle-é 'down' (missingHitDays=2), a többi 'insufficient'. */
@@ -394,7 +403,7 @@ export function mockProgress(goalId: string): LifeGoalProgressResponse {
   return {
     goalId, from, to, arrow: arrowFor(goalId),
     ...(weeklyPct === undefined ? {} : { weeklyPct }),
-    days, pillars, conflicts: [],
+    days, pillars, conflicts: MOCK_CONFLICTS[goalId] ?? [],
   }
 }
 

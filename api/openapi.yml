@@ -17509,16 +17509,19 @@ components:
         - evidence
         - status
         - lastDetectedAt
+        - evidenceHits
+        - evidenceMisses
       properties:
         id:
           type: string
           format: uuid
         kind:
           type: string
-          pattern: ^(statistical|ai_hypothesis)$
+          pattern: ^(statistical|ai_hypothesis|reflection)$
           description: >-
-            statistical = nightly Pearson job (V3.1); ai_hypothesis = weekly LLM
-            loop (V3.2).
+            statistical = nightly Pearson job (V3.1); ai_hypothesis = the LLM
+            proposal loop (V3.2); reflection = a self-proposed, falsifiable
+            hypothesis (Reflexió S2).
         pairKey:
           type: string
           description: >-
@@ -17555,7 +17558,11 @@ components:
           $ref: '#/components/schemas/PatternCritique'
         status:
           type: string
-          pattern: ^(proposed|monitoring|confirmed|rejected)$
+          pattern: ^(proposed|monitoring|confirmed|rejected|refuted|dormant)$
+          description: >-
+            proposed/monitoring are engine states, confirmed/rejected the USER's
+            verdict (the engine never overrides them); refuted = the engine
+            disproved it, dormant = parked for lack of data (Reflexió S2).
         lastDetectedAt:
           type: string
           format: date-time
@@ -17566,6 +17573,36 @@ components:
           description: >-
             The V3.2 critic's prose reasoning — the card's 'AI gondolatmenete';
             null on statistical rows.
+        hypothesisKey:
+          type: string
+          nullable: true
+          description: >-
+            Stabil identitás a teszt-tervből (ref-…), a statisztikai sorokon
+            pair:<key>.
+        testPlan:
+          allOf:
+            - $ref: '#/components/schemas/PatternTestPlan'
+          nullable: true
+        belief:
+          type: number
+          format: double
+          nullable: true
+          description: >-
+            Determinisztikus bizonyosság 0..1 (kapu + válaszok + sorozat) —
+            sosem LLM-becslés.
+        evidenceHits:
+          type: integer
+          description: Hány éjszaka igazolta a teszt-terv jóslatát.
+        evidenceMisses:
+          type: integer
+          description: >-
+            Hány ÉLŐ éjszaka mondott ellent neki (adat nélküli éjszaka egyik
+            sem).
+        origin:
+          type: string
+          nullable: true
+          pattern: ^(pair_catalog|weekly_hypothesis|quick_notice|nightly_reflection)$
+          description: 'Honnan származik a sor — megjelenítés, sosem vezérli az életciklust.'
         citedWeeks:
           type: integer
           nullable: true
@@ -17578,6 +17615,38 @@ components:
             inside it, and never moves status. Derived live from the non-deleted
             weekly_review rows. Null = not measurable (the proactive/weekly
             feature is off), never a stand-in zero.
+    PatternTestPlan:
+      type: object
+      description: >-
+        A falszifikálható teszt egy minta mögött (Reflexió S2, mezo-eq85.2) —
+        melyik két széria, mekkora eltolással, milyen irányban, milyen kapukkal.
+      required:
+        - seriesA
+        - seriesB
+        - seriesALabel
+        - seriesBLabel
+        - lagDays
+        - expectedDirection
+        - minN
+        - windowDays
+      properties:
+        seriesA:
+          type: string
+        seriesB:
+          type: string
+        seriesALabel:
+          type: string
+        seriesBLabel:
+          type: string
+        lagDays:
+          type: integer
+        expectedDirection:
+          type: string
+          pattern: ^(positive|negative)$
+        minN:
+          type: integer
+        windowDays:
+          type: integer
     PatternCritique:
       type: object
       nullable: true
@@ -17849,7 +17918,8 @@ components:
       properties:
         kind:
           type: string
-          pattern: ^(snapshot|confirmed|monitoring|rejected|reinforced|promoted)$
+          pattern: >-
+            ^(snapshot|confirmed|monitoring|rejected|reinforced|promoted|observation|evidence|user_reply|revised|refuted|dormant)$
         occurredAt:
           type: string
           format: date-time
@@ -17871,6 +17941,30 @@ components:
           type: string
           format: uuid
           nullable: true
+        hit:
+          type: boolean
+          nullable: true
+          description: >-
+            evidence: igazolta-e az éjszaka a jóslatot; null = a kapu nem volt
+            ÉLŐ (nem tudtuk megmondani).
+        verdict:
+          type: string
+          nullable: true
+          description: >-
+            evidence: a kapu verdiktje (LIVE / FEW_DAYS / NO_DATA / DEGENERATE /
+            IMBALANCED_GROUPS).
+        channel:
+          type: string
+          nullable: true
+          description: 'user_reply: hol válaszolt a felhasználó.'
+        choice:
+          type: string
+          nullable: true
+          description: 'user_reply: mit választott.'
+        text:
+          type: string
+          nullable: true
+          description: observation / user_reply / revised szövege.
     AlignedDayResponse:
       type: object
       required:
@@ -18036,10 +18130,14 @@ components:
       properties:
         kind:
           type: string
-          pattern: ^(statistical|ai_hypothesis)$
+          pattern: ^(statistical|ai_hypothesis|reflection)$
         status:
           type: string
-          pattern: ^(proposed|monitoring|confirmed|rejected)$
+          pattern: ^(proposed|monitoring|confirmed|rejected|refuted|dormant)$
+          description: >-
+            proposed/monitoring are engine states, confirmed/rejected the USER's
+            verdict (the engine never overrides them); refuted = the engine
+            disproved it, dormant = parked for lack of data (Reflexió S2).
         count:
           type: integer
     MemoryOverviewL3:
@@ -19987,6 +20085,13 @@ components:
           description: Defaults to end of chain
     HabitDefUpdateRequest:
       type: object
+      description: >
+        PATCH semantics — an OMITTED key leaves the field unchanged. For every
+        optional text field (why, anchorCopy, linkUrl, anchorHabitKey, cue,
+        craving, reward, celebration, identity) a BLANK string is the wire
+        signal for "clear back to null" (mezo-pero) — generalizing the
+        anchorHabitKey unlink convention, since a null here already means "leave
+        unchanged".
       properties:
         title:
           type: string
@@ -20004,6 +20109,21 @@ components:
         position:
           type: integer
           minimum: 1
+        mode:
+          type: string
+          enum:
+            - DERIVED
+            - MANUAL
+          description: >-
+            Tick mode is editable after creation (mezo-pero). Switching to
+            MANUAL forces metric to "manual"; switching to DERIVED requires a
+            supported metric in the same request (or an already-derived stored
+            one)
+        metric:
+          type: string
+          description: >-
+            Only meaningful while mode is (or becomes) DERIVED; ignored for
+            MANUAL (forced to "manual")
         xp:
           type: integer
           minimum: 5
@@ -22283,6 +22403,100 @@ components:
           type: array
           items:
             type: string
+    ConferencePeerReaction:
+      type: object
+      required:
+        - expertKey
+        - stance
+        - argument
+      properties:
+        expertKey:
+          type: string
+        stance:
+          type: string
+          enum:
+            - SUPPORT
+            - CHALLENGE
+            - NUANCE
+        argument:
+          type: string
+    ConferenceSkepticVerdict:
+      type: object
+      required:
+        - verdict
+        - argument
+      properties:
+        verdict:
+          type: string
+          enum:
+            - KEEP
+            - KILL
+        argument:
+          type: string
+    ConferenceChairRuling:
+      type: object
+      required:
+        - accepted
+        - reason
+      properties:
+        accepted:
+          type: boolean
+        confidence:
+          type: number
+          format: double
+          nullable: true
+        reason:
+          type: string
+    ConferenceItem:
+      type: object
+      required:
+        - index
+        - expertKey
+        - text
+        - sensitive
+        - reactions
+      properties:
+        index:
+          type: integer
+        expertKey:
+          type: string
+        text:
+          type: string
+        kind:
+          type: string
+          nullable: true
+        claimId:
+          type: string
+          nullable: true
+        sensitive:
+          type: boolean
+        reactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConferencePeerReaction'
+        skeptic:
+          allOf:
+            - $ref: '#/components/schemas/ConferenceSkepticVerdict'
+          nullable: true
+        chair:
+          allOf:
+            - $ref: '#/components/schemas/ConferenceChairRuling'
+          nullable: true
+    ConferenceThread:
+      type: object
+      required:
+        - title
+        - items
+      properties:
+        dimensionKey:
+          type: string
+          nullable: true
+        title:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConferenceItem'
     CharacterConferenceResponse:
       type: object
       required:
@@ -22312,6 +22526,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ConferenceTurn'
+        deliberation:
+          description: >-
+            The same meeting as a STRUCTURE — one thread per dossier chapter,
+            each item carrying the chain that happened to it. Absent only when
+            the row is neither stored structured nor derivable from its prose
+            transcript; the client then renders `transcript`.
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/ConferenceThread'
         changes:
           type: array
           items:

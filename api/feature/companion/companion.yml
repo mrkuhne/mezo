@@ -876,10 +876,10 @@ components:
         code: { type: string, description: "Stream failure code — 'COMPANION_STREAM_FAILED'." }
     PatternResponse:
       type: object
-      required: [id, kind, pairKey, category, categoryLabel, title, evidence, status, lastDetectedAt]
+      required: [id, kind, pairKey, category, categoryLabel, title, evidence, status, lastDetectedAt, evidenceHits, evidenceMisses]
       properties:
         id: { type: string, format: uuid }
-        kind: { type: string, pattern: '^(statistical|ai_hypothesis)$', description: 'statistical = nightly Pearson job (V3.1); ai_hypothesis = weekly LLM loop (V3.2).' }
+        kind: { type: string, pattern: '^(statistical|ai_hypothesis|reflection)$', description: 'statistical = nightly Pearson job (V3.1); ai_hypothesis = the LLM proposal loop (V3.2); reflection = a self-proposed, falsifiable hypothesis (Reflexió S2).' }
         pairKey: { type: string, description: 'A minta stabil pár-kulcsa (statistical: katalógus-kulcs, hypothesis: hyp-hash) — a Motor↔Patterns kereszt-link horgonya (mezo-18bx).' }
         category: { type: string, pattern: '^(physiology|trigger|response)$', description: 'The FE PatternCategory — assigned by the metric-pair catalog.' }
         categoryLabel: { type: string, description: 'Hungarian category chip label.' }
@@ -891,10 +891,31 @@ components:
           description: 'Deterministic evidence chips (r=…, n=… nap, p=…, window).'
         confidence: { type: number, format: double, nullable: true, description: 'NULL for statistical rows (honest small-n — the FE renders "tanulom"); the 4-factor critique score for V3.2 hypotheses.' }
         critique: { $ref: '#/components/schemas/PatternCritique' }
-        status: { type: string, pattern: '^(proposed|monitoring|confirmed|rejected)$' }
+        status: { type: string, pattern: '^(proposed|monitoring|confirmed|rejected|refuted|dormant)$', description: 'proposed/monitoring are engine states, confirmed/rejected the USER''s verdict (the engine never overrides them); refuted = the engine disproved it, dormant = parked for lack of data (Reflexió S2).' }
         lastDetectedAt: { type: string, format: date-time, description: 'When the nightly job last computed/refreshed the stats.' }
         thinking: { type: string, nullable: true, description: "The V3.2 critic's prose reasoning — the card's 'AI gondolatmenete'; null on statistical rows." }
+        hypothesisKey: { type: string, nullable: true, description: 'Stabil identitás a teszt-tervből (ref-…), a statisztikai sorokon pair:<key>.' }
+        testPlan:
+          allOf: [{ $ref: '#/components/schemas/PatternTestPlan' }]
+          nullable: true
+        belief: { type: number, format: double, nullable: true, description: 'Determinisztikus bizonyosság 0..1 (kapu + válaszok + sorozat) — sosem LLM-becslés.' }
+        evidenceHits: { type: integer, description: 'Hány éjszaka igazolta a teszt-terv jóslatát.' }
+        evidenceMisses: { type: integer, description: 'Hány ÉLŐ éjszaka mondott ellent neki (adat nélküli éjszaka egyik sem).' }
+        origin: { type: string, nullable: true, pattern: '^(pair_catalog|weekly_hypothesis|quick_notice|nightly_reflection)$', description: 'Honnan származik a sor — megjelenítés, sosem vezérli az életciklust.' }
         citedWeeks: { type: integer, nullable: true, description: 'In how many of the recent weekly reviews the companion cited this pattern as something the week was built on (mezo-d20.7.7). Deliberately NOT folded into confidence — confidence is a statistic (r/n/p, or the V3.2 critique score), a citation is the model selecting its own material; it is shown beside the statistic, never inside it, and never moves status. Derived live from the non-deleted weekly_review rows. Null = not measurable (the proactive/weekly feature is off), never a stand-in zero.' }
+    PatternTestPlan:
+      type: object
+      description: A falszifikálható teszt egy minta mögött (Reflexió S2, mezo-eq85.2) — melyik két széria, mekkora eltolással, milyen irányban, milyen kapukkal.
+      required: [seriesA, seriesB, seriesALabel, seriesBLabel, lagDays, expectedDirection, minN, windowDays]
+      properties:
+        seriesA: { type: string }
+        seriesB: { type: string }
+        seriesALabel: { type: string }
+        seriesBLabel: { type: string }
+        lagDays: { type: integer }
+        expectedDirection: { type: string, pattern: '^(positive|negative)$' }
+        minN: { type: integer }
+        windowDays: { type: integer }
     PatternCritique:
       type: object
       nullable: true
@@ -992,13 +1013,18 @@ components:
       type: object
       required: [kind, occurredAt]
       properties:
-        kind: { type: string, pattern: '^(snapshot|confirmed|monitoring|rejected|reinforced|promoted)$' }
+        kind: { type: string, pattern: '^(snapshot|confirmed|monitoring|rejected|reinforced|promoted|observation|evidence|user_reply|revised|refuted|dormant)$' }
         occurredAt: { type: string, format: date-time }
         r: { type: number, format: double, nullable: true }
         n: { type: integer, nullable: true }
         p: { type: number, format: double, nullable: true }
         reinforcementCount: { type: integer, nullable: true }
         factId: { type: string, format: uuid, nullable: true }
+        hit: { type: boolean, nullable: true, description: 'evidence: igazolta-e az éjszaka a jóslatot; null = a kapu nem volt ÉLŐ (nem tudtuk megmondani).' }
+        verdict: { type: string, nullable: true, description: 'evidence: a kapu verdiktje (LIVE / FEW_DAYS / NO_DATA / DEGENERATE / IMBALANCED_GROUPS).' }
+        channel: { type: string, nullable: true, description: 'user_reply: hol válaszolt a felhasználó.' }
+        choice: { type: string, nullable: true, description: 'user_reply: mit választott.' }
+        text: { type: string, nullable: true, description: 'observation / user_reply / revised szövege.' }
     AlignedDayResponse:
       type: object
       required: [date, a, b]
@@ -1081,8 +1107,8 @@ components:
       type: object
       required: [kind, status, count]
       properties:
-        kind: { type: string, pattern: '^(statistical|ai_hypothesis)$' }
-        status: { type: string, pattern: '^(proposed|monitoring|confirmed|rejected)$' }
+        kind: { type: string, pattern: '^(statistical|ai_hypothesis|reflection)$' }
+        status: { type: string, pattern: '^(proposed|monitoring|confirmed|rejected|refuted|dormant)$', description: 'proposed/monitoring are engine states, confirmed/rejected the USER''s verdict (the engine never overrides them); refuted = the engine disproved it, dormant = parked for lack of data (Reflexió S2).' }
         count: { type: integer }
     MemoryOverviewL3:
       type: object

@@ -40,7 +40,7 @@ test('/me/ertesitesek/beallitasok a kapcsolókat rendereli', async () => {
 test('a fejléc dropdown lábléce a feedre visz', async () => {
   renderAt('/nap')
   await userEvent.click(await screen.findByRole('button', { name: /^Értesítések/ }))
-  await userEvent.click(screen.getByRole('menuitem', { name: 'Összes értesítés ›' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Összes értesítés ›' }))
   expect(await screen.findByText('Ma')).toBeInTheDocument()
 })
 
@@ -48,11 +48,11 @@ test('a fejléc dropdown lábléce a feedre visz', async () => {
 // elérhető markAllRead hívó. Most a feed-oldal megnyitása az.
 test('a fejléc olvasatlan-badge-e eltűnik, miután megnyitottuk a feedet', async () => {
   renderAt('/nap')
-  const bell = await screen.findByRole('button', { name: 'Értesítések, 3 olvasatlan' })
-  expect(bell.querySelector('.nap-badge')).toHaveTextContent('3')
+  const bell = await screen.findByRole('button', { name: 'Értesítések, 4 olvasatlan' })
+  expect(bell.querySelector('.nap-badge')).toHaveTextContent('4')
 
   await userEvent.click(bell)
-  await userEvent.click(screen.getByRole('menuitem', { name: 'Összes értesítés ›' }))
+  await userEvent.click(screen.getByRole('button', { name: 'Összes értesítés ›' }))
   await screen.findByText('Ma')
 
   const after = await screen.findByRole('button', { name: 'Értesítések' })
@@ -102,8 +102,8 @@ test('a végig olvasott feed nem rajzol nulla bignumot', async () => {
   const { container } = renderAt('/me/ertesitesek')
   await screen.findByText('Ma')
   // az első nyitás a `markAllRead`-del mindent olvasottá tesz (a pillanatkép miatt a kiemelés
-  // marad, amíg itt vagyunk) — a bignum ilyenkor még a nyitáskori 3
-  expect(container.querySelector('.mz-bignum')).toHaveTextContent('3')
+  // marad, amíg itt vagyunk) — a bignum ilyenkor még a nyitáskori 4
+  expect(container.querySelector('.mz-bignum')).toHaveTextContent('4')
 
   // …kilépünk a beállításokba és vissza: a feed újramountol, nulla olvasatlannal
   await userEvent.click(screen.getByRole('button', { name: 'Beállítások' }))

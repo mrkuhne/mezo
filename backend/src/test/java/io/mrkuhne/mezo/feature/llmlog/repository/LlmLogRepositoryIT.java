@@ -46,7 +46,7 @@ class LlmLogRepositoryIT extends AbstractIntegrationTest {
         e.setPayloadBytes(11);
         e.setPricingSnapshot(new PricingSnapshot("gemini-2.5-flash", "USD",
             new BigDecimal("0.30"), new BigDecimal("2.50"), new BigDecimal("2.50"),
-            new BigDecimal("0.075"), null, LocalDate.of(2026, 7, 28)));
+            new BigDecimal("0.075"), null, null, LocalDate.of(2026, 7, 28)));
         e.setCostUsd(new BigDecimal("0.00550"));
 
         LlmLogEntity saved = llmLogRepository.saveAndFlush(e);

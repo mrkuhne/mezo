@@ -105,9 +105,11 @@ class CharacterFeedbackIT extends ApiIntegrationTest {
             // F1 (fix round 2): the TALAL evidence line names the priced-in cap so the konzílium
             // never treats a bare confirmation as fresh evidence for an UP.
             assertThat(obs.getText()).endsWith("(a bizalom már beszámítva)");
-            // F2 (fix round 2): the evidence line carries the claim id in a compact, unmistakable
-            // form so an expert can target it with a RETIRE/DOWN claimId.
-            assertThat(obs.getText()).startsWith("[" + claim.getId() + "]");
+            // mezo-xlvr: the claim id no longer lives in the user-facing text (it used to
+            // startWith("[" + claim.getId() + "]"), which is what let a raw uuid leak into the
+            // Karakter feed) — it lives on the signal's refIds (asserted above), which is where
+            // KonziliumProposalRound reads it back from.
+            assertThat(obs.getText()).doesNotContain(claim.getId().toString());
         });
     }
 

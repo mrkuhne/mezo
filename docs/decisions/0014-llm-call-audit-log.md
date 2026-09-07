@@ -159,3 +159,27 @@ cost was derived from.
   reproducible.
 - **`is_deleted` + soft delete like every other owned table** — rejected: mutable/soft-deletable
   audit rows defeat the audit goal. This ADR is the standing exception to that house default.
+
+## Amendment (2026-09-07, mezo-ozri.1)
+
+The OpenAI-migration provider-neutral seam slice renamed the Gemini-specific types this ADR names,
+and flipped the feature switch's shipped default, without changing any of the decisions above:
+
+- `GeminiUsageExtractor` → `GoogleGenAiUsageExtractor`, now implementing a new port,
+  `LlmUsageExtractor` — decision 1's "one pure mapper" is unchanged, it is now provider-swappable
+  behind an interface.
+- `GeminiRoundUsage(Advisor)` → `LlmRoundUsage(Advisor)` — pure rename, same per-round tally.
+- Decision 4's "29 call sites across 25 classes" is the count as of this ADR's original writing,
+  frozen in the text above like the rest of the original decision; it has already drifted (three
+  different counts were produced during this very slice under three different grep shapes) and grows
+  with every slice after. Treat it as a point-in-time snapshot, superseded going forward —
+  [`companion.md`](../features/companion.md) no longer states a number at all and instead points at
+  `grep -rn '\.runWith(' backend/src/main/java` for the current count.
+- Decision 8's feature switch `mezo.feature.llm-log.enabled` now ships **`true`** by default (was
+  `false`); the k8s env-var pin becomes a redundant, intentional production safeguard rather than the
+  switch that turns the audit on.
+
+Full design record: [`docs/superpowers/specs/2026-09-06-openai-migration-design.md`](../superpowers/specs/2026-09-06-openai-migration-design.md).
+This amendment intentionally leaves the ADR's original decision text untouched; a later slice in the
+same epic is already scheduled to amend [ADR 0008](0008-companion-llm-spring-ai-2-gemini.md) and
+[ADR 0035](0035-multi-user-account-model.md) for the provider question proper.

@@ -73,6 +73,7 @@ import { NightPage } from '@/features/me/pages/NightPage'
 import { GrowthHubPage } from '@/features/me/pages/GrowthHubPage'
 import { GrowthSkillsPage } from '@/features/me/pages/GrowthSkillsPage'
 import { HabitPage } from '@/features/me/pages/HabitPage'
+import { HabitEditPage } from '@/features/me/pages/HabitEditPage'
 import { RoutineWizardPage } from '@/features/me/pages/RoutineWizardPage'
 import { RutinHubPage } from '@/features/me/pages/RutinHubPage'
 import { GrowthNaploPage } from '@/features/me/pages/GrowthNaploPage'
@@ -341,6 +342,9 @@ export const routes: RouteObject[] = [
       // sibling is registered above it so none is swallowed as a habit key. The parameter is
       // the habitKey (what the hub's rows link with), not the definition id.
       { path: 'me/rutin/szokas/:habitKey', element: <HabitPage /> },
+      // The recipe editor on its own page (mezo-bk26, choice board option B): HabitPage is the
+      // details surface, every definition write lives here.
+      { path: 'me/rutin/szokas/:habitKey/szerkesztes', element: <HabitEditPage /> },
       // Both former homes keep working as redirects.
       { path: 'me/growth/rutin', element: <Navigate to="/me/rutin" replace /> },
       { path: 'me/routines/edit', element: <Navigate to="/me/rutin" replace /> },

@@ -5,7 +5,7 @@ import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm.Role;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm.Turn;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
-import io.mrkuhne.mezo.feature.companion.llm.GeminiUsageExtractor.UsageInfo;
+import io.mrkuhne.mezo.feature.companion.llm.LlmUsageExtractor.UsageInfo;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
@@ -25,6 +25,7 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.io.ByteArrayResource;
@@ -61,18 +62,31 @@ public class GeminiCompanionLlm implements CompanionLlm {
     private final CompanionProperties companionProperties;
     private final LlmCallRecorder llmCallRecorder;
     private final LlmCallContextHolder llmCallContextHolder;
-    private final GeminiUsageExtractor geminiUsageExtractor;
+    private final LlmUsageExtractor llmUsageExtractor;
 
-    public GeminiCompanionLlm(ChatModel chatModel, CompanionProperties companionProperties,
+    /**
+     * @param chatModel the GOOGLE ChatModel, qualified by bean name on purpose (mezo-ozri.1):
+     *                  each Spring AI starter contributes its own {@code ChatModel}, so an
+     *                  unqualified injection point turns every context ambiguous as soon as a
+     *                  second provider is on the classpath. Guarded by {@code ChatModelQualifierIT}.
+     * @param llmUsageExtractor the GOOGLE usage extractor, qualified by bean name for the same
+     *                  reason (mezo-ozri.1): {@code LlmUsageExtractor} is a port with exactly one
+     *                  implementation today, {@code GoogleGenAiUsageExtractor}, and an unqualified
+     *                  injection point turns every context ambiguous the moment a second
+     *                  implementation (S2's {@code OpenAiUsageExtractor}) is added. Guarded by the
+     *                  same {@code ChatModelQualifierIT}.
+     */
+    public GeminiCompanionLlm(@Qualifier("googleGenAiChatModel") ChatModel chatModel,
+                              CompanionProperties companionProperties,
                               LlmCallRecorder llmCallRecorder, LlmCallContextHolder llmCallContextHolder,
-                              GeminiUsageExtractor geminiUsageExtractor) {
+                              @Qualifier("googleGenAiUsageExtractor") LlmUsageExtractor llmUsageExtractor) {
         this.companionProperties = companionProperties;
         this.llmCallRecorder = llmCallRecorder;
         this.llmCallContextHolder = llmCallContextHolder;
-        this.geminiUsageExtractor = geminiUsageExtractor;
+        this.llmUsageExtractor = llmUsageExtractor;
         // mezo-58ig: the per-round usage observer — stateless, so one instance serves both clients;
-        // the per-call state is the GeminiRoundUsage tally each call plants in the request context.
-        GeminiRoundUsageAdvisor roundUsageAdvisor = new GeminiRoundUsageAdvisor(geminiUsageExtractor);
+        // the per-call state is the LlmRoundUsage tally each call plants in the request context.
+        LlmRoundUsageAdvisor roundUsageAdvisor = new LlmRoundUsageAdvisor(llmUsageExtractor);
         this.chatClient = ChatClient.builder(chatModel)
             .defaultOptions(ChatOptions.builder()
                 .model(companionProperties.llm().chatModel()))
@@ -89,10 +103,10 @@ public class GeminiCompanionLlm implements CompanionLlm {
     @Override
     public String completeSmart(String systemPrompt, String userMessage) {
         CallSpec spec = CallSpec.of(CallKind.SMART, smartModel(), systemPrompt, userMessage);
-        GeminiRoundUsage tally = new GeminiRoundUsage();
+        LlmRoundUsage tally = new LlmRoundUsage();
         return recorded(spec, tally,
             () -> smartChatClient.prompt().system(systemPrompt).user(userMessage)
-                .advisors(a -> a.param(GeminiRoundUsage.CONTEXT_KEY, tally))
+                .advisors(a -> a.param(LlmRoundUsage.CONTEXT_KEY, tally))
                 .call().chatResponse());
     }
 
@@ -100,11 +114,11 @@ public class GeminiCompanionLlm implements CompanionLlm {
     public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
         // TOOL vs CHAT is the only kind distinction observable at call time; the executed round
-        // count arrives per-call via the GeminiRoundUsage tally (mezo-58ig).
+        // count arrives per-call via the LlmRoundUsage tally (mezo-58ig).
         CallKind kind = tools.isEmpty() ? CallKind.CHAT : CallKind.TOOL;
         CallSpec spec = new CallSpec(kind, chatModel(), systemPrompt, userMessage,
             ChatHistory.render(history), null, null, null, false);
-        GeminiRoundUsage tally = new GeminiRoundUsage();
+        LlmRoundUsage tally = new LlmRoundUsage();
         return recorded(spec, tally,
             () -> request(systemPrompt, history, userMessage, tools, toolContext, tally)
                 .call().chatResponse());
@@ -115,7 +129,7 @@ public class GeminiCompanionLlm implements CompanionLlm {
         // Image MARKERS only — the bytes are ephemeral by contract and must never reach the log.
         CallSpec spec = new CallSpec(CallKind.VISION, chatModel(), systemPrompt, userMessage, null,
             images.size(), totalBytes(images), firstMimeType(images), false);
-        GeminiRoundUsage tally = new GeminiRoundUsage();
+        LlmRoundUsage tally = new LlmRoundUsage();
         return recorded(spec, tally, () -> chatClient.prompt()
             .system(systemPrompt)
             .user(u -> {
@@ -127,7 +141,7 @@ public class GeminiCompanionLlm implements CompanionLlm {
                         .build());
                 }
             })
-            .advisors(a -> a.param(GeminiRoundUsage.CONTEXT_KEY, tally))
+            .advisors(a -> a.param(LlmRoundUsage.CONTEXT_KEY, tally))
             .call()
             .chatResponse());
     }
@@ -138,7 +152,7 @@ public class GeminiCompanionLlm implements CompanionLlm {
         // They ride the same image_* columns (count/bytes/mime), which are the generic media block.
         CallSpec spec = new CallSpec(CallKind.TRANSCRIBE, chatModel(), systemPrompt, userMessage, null,
             1, (long) (audio.bytes() == null ? 0 : audio.bytes().length), audio.mimeType(), false);
-        GeminiRoundUsage tally = new GeminiRoundUsage();
+        LlmRoundUsage tally = new LlmRoundUsage();
         return recorded(spec, tally, () -> chatClient.prompt()
             .system(systemPrompt)
             .user(u -> {
@@ -148,7 +162,7 @@ public class GeminiCompanionLlm implements CompanionLlm {
                     .data(new ByteArrayResource(audio.bytes()))
                     .build());
             })
-            .advisors(a -> a.param(GeminiRoundUsage.CONTEXT_KEY, tally))
+            .advisors(a -> a.param(LlmRoundUsage.CONTEXT_KEY, tally))
             .call()
             .chatResponse());
     }
@@ -178,7 +192,7 @@ public class GeminiCompanionLlm implements CompanionLlm {
             long startedAt = System.nanoTime();
             AtomicReference<ChatResponse> lastChunk = new AtomicReference<>();
             AtomicBoolean recordedOnce = new AtomicBoolean(false);
-            GeminiRoundUsage tally = new GeminiRoundUsage();
+            LlmRoundUsage tally = new LlmRoundUsage();
             StringBuilder answer = new StringBuilder();
             return request(systemPrompt, history, userMessage, tools, toolContext, tally).stream().chatResponse()
                 .doOnNext(response -> {
@@ -216,7 +230,7 @@ public class GeminiCompanionLlm implements CompanionLlm {
     }
 
     /** Times one blocking call, reports it either way, and hands the caller exactly what it had before. */
-    private String recorded(CallSpec spec, GeminiRoundUsage tally, Supplier<ChatResponse> call) {
+    private String recorded(CallSpec spec, LlmRoundUsage tally, Supplier<ChatResponse> call) {
         long startedAt = System.nanoTime();
         LlmCallContext context = llmCallContextHolder.get();
         try {
@@ -231,7 +245,7 @@ public class GeminiCompanionLlm implements CompanionLlm {
     }
 
     private LlmCallRecord successRecord(CallSpec spec, ChatResponse response, String responseText,
-                                        long startedAt, LlmCallContext context, GeminiRoundUsage tally) {
+                                        long startedAt, LlmCallContext context, LlmRoundUsage tally) {
         return usageRecord(spec, response, startedAt, context, tally)
             .status(CallStatus.SUCCESS)
             .responseText(responseText)
@@ -244,7 +258,7 @@ public class GeminiCompanionLlm implements CompanionLlm {
      * those tokens were billed; what never arrived (usually the final usage chunk) stays null.
      */
     private LlmCallRecord cancelRecord(CallSpec spec, ChatResponse lastChunk, String partialAnswer,
-                                       long startedAt, LlmCallContext context, GeminiRoundUsage tally) {
+                                       long startedAt, LlmCallContext context, LlmRoundUsage tally) {
         return usageRecord(spec, lastChunk, startedAt, context, tally)
             .status(CallStatus.CANCELLED)
             .responseText(partialAnswer.isEmpty() ? null : partialAnswer)
@@ -260,15 +274,15 @@ public class GeminiCompanionLlm implements CompanionLlm {
      */
     private LlmCallRecord.LlmCallRecordBuilder usageRecord(CallSpec spec, ChatResponse response,
                                                            long startedAt, LlmCallContext context,
-                                                           GeminiRoundUsage tally) {
-        UsageInfo usage = geminiUsageExtractor.extract(response);
+                                                           LlmRoundUsage tally) {
+        UsageInfo usage = llmUsageExtractor.extract(response);
         boolean tallied = tally.hasRounds();
         return baseRecord(spec, startedAt, context)
             .servedModel(usage.servedModel())
             .serviceTier(usage.serviceTier())
             // mezo-8z79: read from the SAME response the usage came from — on a streamed call that
             // is the last chunk, which is where Gemini puts the finish reason.
-            .finishReason(geminiUsageExtractor.finishReason(response))
+            .finishReason(llmUsageExtractor.finishReason(response))
             .tokens(tallied ? tally.toTokenUsage() : usage.tokens())
             .toolRounds(tallied ? tally.rounds() - 1 : null);
     }
@@ -299,12 +313,12 @@ public class GeminiCompanionLlm implements CompanionLlm {
     private ChatClient.ChatClientRequestSpec request(String systemPrompt, List<Turn> history,
                                                      String userMessage, List<ToolCallback> tools,
                                                      Map<String, Object> toolContext,
-                                                     GeminiRoundUsage tally) {
+                                                     LlmRoundUsage tally) {
         ChatClient.ChatClientRequestSpec spec = chatClient.prompt()
             .system(systemPrompt)
             .messages(toMessages(history))
             .user(userMessage)
-            .advisors(a -> a.param(GeminiRoundUsage.CONTEXT_KEY, tally));
+            .advisors(a -> a.param(LlmRoundUsage.CONTEXT_KEY, tally));
         if (!tools.isEmpty()) {
             // tools(Object...) is the unified 2.0 registration API (toolCallbacks(..) is deprecated)
             spec = spec.tools((Object[]) tools.toArray(ToolCallback[]::new)).toolContext(toolContext);

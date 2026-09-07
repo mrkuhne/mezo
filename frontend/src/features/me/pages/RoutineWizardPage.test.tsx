@@ -94,7 +94,7 @@ describe('RoutineWizardPage', () => {
     // anchorHabitKey and anchorCopy, and objectContaining would happily pass that payload.
     expect(createDef).toHaveBeenCalledWith({
       chainKey: 'MORNING', title: 'leírok egy mondatot', mode: 'MANUAL',
-      skillKey: 'mindset', xp: 10,
+      skillKey: 'mindset', xp: 6,
       framework: 'FOGG', anchorHabitKey: 'sun', celebration: 'ökölrázás',
     })
     expect(createDef).toHaveBeenCalledWith(expect.not.objectContaining({ anchorCopy: expect.anything() }))
@@ -115,7 +115,7 @@ describe('RoutineWizardPage', () => {
 
     expect(createDef).toHaveBeenCalledWith({
       chainKey: 'MORNING', title: 'leírok egy mondatot', mode: 'MANUAL',
-      skillKey: 'mindset', xp: 10,
+      skillKey: 'mindset', xp: 6,
       framework: 'FOGG', anchorCopy: 'letettem a fogkefét', celebration: 'ökölrázás',
     })
   })
@@ -126,8 +126,10 @@ describe('RoutineWizardPage', () => {
     fireEvent.click(next())
     fireEvent.change(screen.getByLabelText('Jelzés'), { target: { value: '7:10-kor a konyhában' } })
     fireEvent.click(next())
-    fireEvent.change(screen.getByLabelText('Válasz'), { target: { value: 'leírom a szándékot' } })
+    // The craving is its OWN step now (mezo-9k99): the Clear branch walks the four laws.
     fireEvent.change(screen.getByLabelText('Vágy'), { target: { value: 'tisztább a fejem' } })
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Válasz'), { target: { value: 'leírom a szándékot' } })
     fireEvent.click(next())
     fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
     fireEvent.click(next())
@@ -136,7 +138,7 @@ describe('RoutineWizardPage', () => {
     // omitted outright rather than sent as ''.
     expect(createDef).toHaveBeenCalledWith({
       chainKey: 'MORNING', title: 'leírom a szándékot', mode: 'MANUAL',
-      skillKey: 'mindset', xp: 10, framework: 'CLEAR',
+      skillKey: 'mindset', xp: 6, framework: 'CLEAR',
       cue: '7:10-kor a konyhában', craving: 'tisztább a fejem', reward: 'a pipa maga',
     })
     const payload = createDef.mock.calls[0][0]
@@ -151,9 +153,10 @@ describe('RoutineWizardPage', () => {
     fireEvent.click(next())
     expect(screen.getByLabelText('Jelzés')).toHaveValue('7:10-kor a konyhaasztalnál')
     fireEvent.click(next())
-    expect(screen.getByLabelText('Válasz')).toHaveValue('Napi szándék leírása')
     expect(screen.getByLabelText('Vágy')).toHaveValue('tisztább fejjel indul a nap')
     expect(screen.getByLabelText('Identitás')).toHaveValue('figyel a saját gondolataira')
+    fireEvent.click(next())
+    expect(screen.getByLabelText('Válasz')).toHaveValue('Napi szándék leírása')
     expect(screen.getByRole('button', { name: 'Reggeli rutin' })).toHaveClass('on')
   })
 
@@ -180,7 +183,7 @@ describe('RoutineWizardPage', () => {
 
     expect(createDef).toHaveBeenCalledWith({
       chainKey: 'MORNING', title: 'leírok egy mondatot', mode: 'MANUAL',
-      skillKey: 'mindset', xp: 10,
+      skillKey: 'mindset', xp: 6,
       framework: 'FOGG', anchorHabitKey: 'sun', celebration: 'ökölrázás',
     })
     expect(createDef).toHaveBeenCalledWith(expect.not.objectContaining({ anchorCopy: expect.anything() }))
@@ -204,8 +207,9 @@ describe('RoutineWizardPage', () => {
     fireEvent.click(next())
     fireEvent.change(screen.getByLabelText('Jelzés'), { target: { value: '7:10-kor a konyhában' } })
     fireEvent.click(next())
-    fireEvent.change(screen.getByLabelText('Válasz'), { target: { value: 'leírom a szándékot' } })
     fireEvent.change(screen.getByLabelText('Vágy'), { target: { value: 'tisztább a fejem' } })
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Válasz'), { target: { value: 'leírom a szándékot' } })
     fireEvent.click(next())
     // reward defaults to "a pipa maga", so ONLY a carried-over tick could unlock this step
     expect(next()).toBeDisabled()
@@ -213,18 +217,20 @@ describe('RoutineWizardPage', () => {
     expect(next()).toBeEnabled()
   })
 
-  it('requires craving on the Clear branch before leaving step 3', () => {
+  it('the craving gates its OWN step on the Clear branch (the four laws are walked)', () => {
     renderWizard()
     fireEvent.click(screen.getByRole('button', { name: /Négy törvény/ }))
     fireEvent.click(next())
     fireEvent.change(screen.getByLabelText('Jelzés'), { target: { value: '7:10-kor a konyhában' } })
     fireEvent.click(next())
-    // The prototype's `titleLb` names the Clear slot "válasz", not the sentence module's "tett".
-    expect(screen.getByText('Én … · válasz')).toBeInTheDocument()
-    fireEvent.change(screen.getByLabelText('Válasz'), { target: { value: 'leírom a szándékot' } })
+    // 2. törvény — a vágy a saját lépése, az identitással együtt (mezo-9k99)
+    expect(screen.getByLabelText('Identitás')).toBeInTheDocument()
     expect(next()).toBeDisabled()
     fireEvent.change(screen.getByLabelText('Vágy'), { target: { value: 'tisztább a fejem' } })
     expect(next()).toBeEnabled()
+    fireEvent.click(next())
+    // The prototype's `titleLb` names the Clear slot "válasz", not the sentence module's "tett".
+    expect(screen.getByText('Én … · válasz')).toBeInTheDocument()
   })
 
   // --- A · re-framing CONVERTS the definition it was opened with (mezo-3zue.4) -------------
@@ -256,6 +262,7 @@ describe('RoutineWizardPage', () => {
     fireEvent.click(next())
     fireEvent.click(next())
     fireEvent.click(next())
+    fireEvent.click(next())
     fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
     fireEvent.click(next())
 
@@ -266,6 +273,7 @@ describe('RoutineWizardPage', () => {
 
   it('sends chainKey on the convert path when the habit really moved chain', () => {
     renderWizard('/me/rutin/uj?prefill=intent')
+    fireEvent.click(next())
     fireEvent.click(next())
     fireEvent.click(next())
     fireEvent.click(screen.getByRole('button', { name: 'Esti rutin' }))
@@ -370,6 +378,7 @@ describe('RoutineWizardPage', () => {
     fireEvent.click(next())
     expect(screen.getByLabelText('Jelzés')).toHaveValue('7:10-kor a konyhaasztalnál')
     fireEvent.click(next())
+    fireEvent.click(next())
     expect(screen.getByLabelText('Válasz')).toHaveValue('Napi szándék leírása')
   })
 
@@ -456,6 +465,76 @@ describe('RoutineWizardPage', () => {
     fireEvent.click(next())
     const chips = screen.getAllByRole('button').filter((b) => ['Reggeli rutin', 'Esti rutin', 'Napközbeni rutin'].includes(b.textContent ?? ''))
     expect(chips.map((b) => b.textContent)).toEqual(['Reggeli rutin', 'Esti rutin'])
+  })
+
+  // ---- mezo-9k99: egy létrehozó folyam ----
+
+  it('a „Keret nélkül" branch creates a frameworkless def in two steps, no commitment tick', async () => {
+    renderWizard()
+    fireEvent.click(screen.getByRole('button', { name: /Keret nélkül/ }))
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Pici tett'), { target: { value: 'Hidratálás' } })
+    fireEvent.click(next())
+
+    expect(createDef).toHaveBeenCalledWith({
+      chainKey: 'MORNING', title: 'Hidratálás', mode: 'MANUAL',
+      skillKey: 'mindset', xp: 6, framework: null,
+    })
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/me/rutin'))
+  })
+
+  it('a DERIVED pick on the act step requires and sends the metric', () => {
+    renderWizard()
+    fireEvent.click(screen.getByRole('button', { name: /Keret nélkül/ }))
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Pici tett'), { target: { value: 'Súlymérés' } })
+    fireEvent.click(screen.getByRole('button', { name: /Adatból/ }))
+    fireEvent.change(screen.getByLabelText('Metrika'), { target: { value: 'weight_logged_today' } })
+    fireEvent.click(next())
+
+    expect(createDef).toHaveBeenCalledWith(expect.objectContaining({
+      mode: 'DERIVED', metric: 'weight_logged_today',
+    }))
+  })
+
+  it('az XP a nehézségből számolódik, nem stepper: két faktor feljebb = magasabb XP', () => {
+    renderWizard()
+    fireEvent.click(screen.getByRole('button', { name: /Keret nélkül/ }))
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Pici tett'), { target: { value: 'Olvasás' } })
+    // no XP stepper anywhere
+    expect(screen.queryByRole('button', { name: /XP növelése/ })).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: '2–15 perc' }))
+    fireEvent.click(screen.getByRole('button', { name: 'kell rá figyelem' }))
+    expect(screen.getByTestId('effort-out')).toHaveTextContent('8')
+    fireEvent.click(next())
+    expect(createDef).toHaveBeenCalledWith(expect.objectContaining({ xp: 8 }))
+  })
+
+  it('a legmagasabb fokozatú faktorra „vedd kisebbre" tanács jön — tanács, nem blokk', () => {
+    renderWizard()
+    fireEvent.click(screen.getByRole('button', { name: /Keret nélkül/ }))
+    fireEvent.click(next())
+    fireEvent.change(screen.getByLabelText('Pici tett'), { target: { value: 'Futás' } })
+    fireEvent.click(screen.getByRole('button', { name: '15 percnél több' }))
+    expect(screen.getByTestId('effort-tiny')).toHaveTextContent(/két perces/)
+    expect(next()).toBeEnabled()
+  })
+
+  it('a Keret nélkül kártya conversion (?prefill) alatt nem elérhető — a keret nem nullázható a dróton', () => {
+    renderWizard('/me/rutin/uj?prefill=intent')
+    expect(screen.queryByRole('button', { name: /Keret nélkül/ })).toBeNull()
+  })
+
+  it('conversion érintetlen nehézség-ráccsal a tárolt XP-t küldi tovább, átárazás nélkül', () => {
+    renderWizard('/me/rutin/uj?prefill=intent')
+    fireEvent.click(next())
+    fireEvent.click(next())
+    fireEvent.click(next())
+    fireEvent.click(next())
+    fireEvent.click(screen.getByRole('button', { name: /Vállalom/ }))
+    fireEvent.click(next())
+    expect(updateDef.mock.calls[0][1]).toMatchObject({ xp: 10 }) // d2 stored xp
   })
 
   it('a failed catalog fetch shows the retry ghost, never a chain-less step 3', () => {

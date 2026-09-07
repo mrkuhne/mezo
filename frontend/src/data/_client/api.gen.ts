@@ -6986,7 +6986,7 @@ export interface components {
         PatternResponse: {
             /** Format: uuid */
             id: string;
-            /** @description statistical = nightly Pearson job (V3.1); ai_hypothesis = weekly LLM loop (V3.2). */
+            /** @description statistical = nightly Pearson job (V3.1); ai_hypothesis = the LLM proposal loop (V3.2); reflection = a self-proposed, falsifiable hypothesis (Reflexió S2). */
             kind: string;
             /** @description A minta stabil pár-kulcsa (statistical: katalógus-kulcs, hypothesis: hyp-hash) — a Motor↔Patterns kereszt-link horgonya (mezo-18bx). */
             pairKey: string;
@@ -7005,6 +7005,7 @@ export interface components {
              */
             confidence?: number | null;
             critique?: components["schemas"]["PatternCritique"];
+            /** @description proposed/monitoring are engine states, confirmed/rejected the USER's verdict (the engine never overrides them); refuted = the engine disproved it, dormant = parked for lack of data (Reflexió S2). */
             status: string;
             /**
              * Format: date-time
@@ -7013,8 +7014,33 @@ export interface components {
             lastDetectedAt: string;
             /** @description The V3.2 critic's prose reasoning — the card's 'AI gondolatmenete'; null on statistical rows. */
             thinking?: string | null;
+            /** @description Stabil identitás a teszt-tervből (ref-…), a statisztikai sorokon pair:<key>. */
+            hypothesisKey?: string | null;
+            testPlan?: components["schemas"]["PatternTestPlan"] | null;
+            /**
+             * Format: double
+             * @description Determinisztikus bizonyosság 0..1 (kapu + válaszok + sorozat) — sosem LLM-becslés.
+             */
+            belief?: number | null;
+            /** @description Hány éjszaka igazolta a teszt-terv jóslatát. */
+            evidenceHits: number;
+            /** @description Hány ÉLŐ éjszaka mondott ellent neki (adat nélküli éjszaka egyik sem). */
+            evidenceMisses: number;
+            /** @description Honnan származik a sor — megjelenítés, sosem vezérli az életciklust. */
+            origin?: string | null;
             /** @description In how many of the recent weekly reviews the companion cited this pattern as something the week was built on (mezo-d20.7.7). Deliberately NOT folded into confidence — confidence is a statistic (r/n/p, or the V3.2 critique score), a citation is the model selecting its own material; it is shown beside the statistic, never inside it, and never moves status. Derived live from the non-deleted weekly_review rows. Null = not measurable (the proactive/weekly feature is off), never a stand-in zero. */
             citedWeeks?: number | null;
+        };
+        /** @description A falszifikálható teszt egy minta mögött (Reflexió S2, mezo-eq85.2) — melyik két széria, mekkora eltolással, milyen irányban, milyen kapukkal. */
+        PatternTestPlan: {
+            seriesA: string;
+            seriesB: string;
+            seriesALabel: string;
+            seriesBLabel: string;
+            lagDays: number;
+            expectedDirection: string;
+            minN: number;
+            windowDays: number;
         };
         /** @description The V3.2 4-factor critique (0..1 each) — null until the hypothesis loop lands. */
         PatternCritique: {
@@ -7147,6 +7173,16 @@ export interface components {
             reinforcementCount?: number | null;
             /** Format: uuid */
             factId?: string | null;
+            /** @description evidence: igazolta-e az éjszaka a jóslatot; null = a kapu nem volt ÉLŐ (nem tudtuk megmondani). */
+            hit?: boolean | null;
+            /** @description evidence: a kapu verdiktje (LIVE / FEW_DAYS / NO_DATA / DEGENERATE / IMBALANCED_GROUPS). */
+            verdict?: string | null;
+            /** @description user_reply: hol válaszolt a felhasználó. */
+            channel?: string | null;
+            /** @description user_reply: mit választott. */
+            choice?: string | null;
+            /** @description observation / user_reply / revised szövege. */
+            text?: string | null;
         };
         AlignedDayResponse: {
             /**
@@ -7213,6 +7249,7 @@ export interface components {
         };
         MemoryPatternCount: {
             kind: string;
+            /** @description proposed/monitoring are engine states, confirmed/rejected the USER's verdict (the engine never overrides them); refuted = the engine disproved it, dormant = parked for lack of data (Reflexió S2). */
             status: string;
             count: number;
         };
@@ -8012,12 +8049,20 @@ export interface components {
             /** @description Defaults to end of chain */
             position?: number;
         };
+        /** @description PATCH semantics — an OMITTED key leaves the field unchanged. For every optional text field (why, anchorCopy, linkUrl, anchorHabitKey, cue, craving, reward, celebration, identity) a BLANK string is the wire signal for "clear back to null" (mezo-pero) — generalizing the anchorHabitKey unlink convention, since a null here already means "leave unchanged". */
         HabitDefUpdateRequest: {
             title?: string;
             why?: string | null;
             anchorCopy?: string | null;
             chainKey?: string;
             position?: number;
+            /**
+             * @description Tick mode is editable after creation (mezo-pero). Switching to MANUAL forces metric to "manual"; switching to DERIVED requires a supported metric in the same request (or an already-derived stored one)
+             * @enum {string}
+             */
+            mode?: "DERIVED" | "MANUAL";
+            /** @description Only meaningful while mode is (or becomes) DERIVED; ignored for MANUAL (forced to "manual") */
+            metric?: string;
             xp?: number;
             linkUrl?: string | null;
             /** @enum {string|null} */
@@ -8973,6 +9018,39 @@ export interface components {
             text: string;
             refIds?: string[];
         };
+        ConferencePeerReaction: {
+            expertKey: string;
+            /** @enum {string} */
+            stance: "SUPPORT" | "CHALLENGE" | "NUANCE";
+            argument: string;
+        };
+        ConferenceSkepticVerdict: {
+            /** @enum {string} */
+            verdict: "KEEP" | "KILL";
+            argument: string;
+        };
+        ConferenceChairRuling: {
+            accepted: boolean;
+            /** Format: double */
+            confidence?: number | null;
+            reason: string;
+        };
+        ConferenceItem: {
+            index: number;
+            expertKey: string;
+            text: string;
+            kind?: string | null;
+            claimId?: string | null;
+            sensitive: boolean;
+            reactions: components["schemas"]["ConferencePeerReaction"][];
+            skeptic?: components["schemas"]["ConferenceSkepticVerdict"] | null;
+            chair?: components["schemas"]["ConferenceChairRuling"] | null;
+        };
+        ConferenceThread: {
+            dimensionKey?: string | null;
+            title: string;
+            items: components["schemas"]["ConferenceItem"][];
+        };
         CharacterConferenceResponse: {
             /** Format: uuid */
             id: string;
@@ -8983,6 +9061,8 @@ export interface components {
             /** Format: date-time */
             generatedAt: string;
             transcript: components["schemas"]["ConferenceTurn"][];
+            /** @description The same meeting as a STRUCTURE — one thread per dossier chapter, each item carrying the chain that happened to it. Absent only when the row is neither stored structured nor derivable from its prose transcript; the client then renders `transcript`. */
+            deliberation?: components["schemas"]["ConferenceThread"][] | null;
             changes: {
                 kind: string;
                 dimensionKey?: string | null;

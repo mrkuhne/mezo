@@ -1,0 +1,24 @@
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: mezo-logs
+  namespace: monitoring
+  labels:
+    vmalert-target: logs
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  groups:
+    - name: mezo.logs
+      type: vlogs
+      # vmalert evaluates a vlogs group over its own interval window; the stats value is the
+      # alert value and the rule fires when the query returns a row → filter to > 20 / 5 min.
+      # unpack_json: vlagent ships the ECS JSON body as _msg; fields like log.level only exist
+      # after unpacking at query time (verified against live data, mezo-ibxy).
+      interval: 5m
+      rules:
+        - alert: LogErrorBurst
+          expr: 'kubernetes.container_name:backend | unpack_json | filter log.level:ERROR | stats count() as errors | filter errors:>20'
+          for: 0m
+          labels: { severity: warning }
+          annotations: { summary: "backend logged {{ $value }} ERROR lines in the last 5 minutes" }

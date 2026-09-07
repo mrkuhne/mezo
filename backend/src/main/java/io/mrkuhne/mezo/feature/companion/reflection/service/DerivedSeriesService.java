@@ -5,9 +5,11 @@ import io.mrkuhne.mezo.feature.companion.service.MetricKey;
 import io.mrkuhne.mezo.feature.companion.service.MetricSeriesService;
 import io.mrkuhne.mezo.feature.companion.service.MetricValueKind;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.text.TextFold;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -48,9 +50,8 @@ public class DerivedSeriesService {
     @Transactional(readOnly = true)
     public Map<LocalDate, Double> series(UUID userId, String key, LocalDate from, LocalDate to) {
         if (key.startsWith(PEOPLE_PREFIX)) {
-            String name = key.substring(PEOPLE_PREFIX.length());
-            return presence(userId, from, to,
-                    s -> s.getPeople().stream().anyMatch(p -> p.equalsIgnoreCase(name)));
+            String name = TextFold.fold(key.substring(PEOPLE_PREFIX.length())).strip();
+            return presence(userId, from, to, s -> namesAnyMatch(s.getPeople(), name));
         }
         if (key.startsWith(TOPIC_PREFIX)) {
             String topic = key.substring(TOPIC_PREFIX.length()).toLowerCase(Locale.ROOT);
@@ -87,9 +88,9 @@ public class DerivedSeriesService {
         LocalDate to = LocalDate.now();
         LocalDate from = to.minusDays(KNOWN_LOOKBACK_DAYS);
         if (key.startsWith(PEOPLE_PREFIX)) {
-            String name = key.substring(PEOPLE_PREFIX.length());
+            String name = TextFold.fold(key.substring(PEOPLE_PREFIX.length())).strip();
             return textSignalSeriesService.newestPerSource(userId, from, to).stream()
-                    .anyMatch(s -> s.getPeople().stream().anyMatch(p -> p.equalsIgnoreCase(name)));
+                    .anyMatch(s -> namesAnyMatch(s.getPeople(), name));
         }
         if (key.startsWith(TOPIC_PREFIX)) {
             String topic = key.substring(TOPIC_PREFIX.length()).toLowerCase(Locale.ROOT);
@@ -102,6 +103,15 @@ public class DerivedSeriesService {
     /** Wire key ({@code sleep-duration-h}) → enum; empty when nothing matches. */
     public static Optional<MetricKey> metricKey(String wireKey) {
         return Arrays.stream(MetricKey.values()).filter(k -> k.wireKey().equals(wireKey)).findFirst();
+    }
+
+    /**
+     * Név-egyezés HAJTOGATOTT alakon (bd mezo-xih1) — a korábbi {@code equalsIgnoreCase} az
+     * ékezeten hasadt („Réka" ≠ „Reka"), pedig a {@code text_signal.people} írási idejű
+     * normalizálása után is maradhat ékezet-variáns egy tárolt kulcs és egy régebbi sor között.
+     */
+    private static boolean namesAnyMatch(List<String> storedNames, String foldedName) {
+        return storedNames.stream().anyMatch(p -> TextFold.fold(p).strip().equals(foldedName));
     }
 
     private Map<LocalDate, Double> presence(UUID userId, LocalDate from, LocalDate to,

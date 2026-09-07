@@ -25,7 +25,9 @@ public class CreatedAtBackdater {
 
     private static final Set<String> TABLES = Set.of(
         "journal_entry", "gratitude_entry", "decision_entry",
-        "habit_day", "ritual_day", "needs_day", "ai_message", "exercise_feedback");
+        "habit_day", "ritual_day", "needs_day", "ai_message", "exercise_feedback",
+        // Reflexió S2 (mezo-eq85.2): a hypothesis's dormancy clock starts at its own birthday
+        "pattern");
 
     @PersistenceContext
     private EntityManager em;
