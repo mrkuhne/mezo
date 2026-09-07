@@ -208,4 +208,53 @@ class QuickNoticeServiceIT extends AbstractIntegrationTest {
         PatternEntity refutedAfter = patternRepository.findById(refuted.getId()).orElseThrow();
         assertThat(refutedAfter.getStatus()).isEqualTo(PatternEntity.STATUS_REFUTED);
     }
+
+    /**
+     * Whole-branch review finding: the OTHER door into a settled row. The model does not have to
+     * NAME the key — proposing the same test plan again derives the same {@code ref-…} key, and the
+     * {@code newTestPlan} branch resolved it with no status filter at all, so a {@code refuted} row
+     * got a fresh {@code observation} and the feed rendered it as a {@code fresh} card. The
+     * {@code hypothesisKey} branch was guarded against exactly this; this branch now is too.
+     *
+     * <p>Setup is the row-creating case's ({@code topic:munka} on four consecutive days ⇒
+     * TOPIC_STREAK, which carries no open row of its own), plus a {@code refuted} row already
+     * holding the key the scripted plan derives. Expected: nothing lands on the refuted row, no
+     * second row is created (the partial unique index on the key forbids one anyway), and the
+     * notice is dropped for want of a touched open row.
+     */
+    @Test
+    void testOnSignal_shouldNotHangNoticeOnARefutedRow_whenTheProposedPlanDerivesItsKey() {
+        UUID owner = userPopulator.createUser().getId();
+        // the SAME plan the scripted answer proposes below ⇒ the same ref-… key
+        TestPlanEnvelope samePlan = new TestPlanEnvelope(
+                "topic:munka", "text-mood", 0, TestPlanEnvelope.DIRECTION_NEGATIVE, 8, 3, 60);
+        PatternEntity refuted = patternPopulator.reflection(owner, samePlan, PatternEntity.STATUS_REFUTED);
+        String scripted = "[[NOTICE:{\"text\":\"Négy napja a munka viszi el a napjaidat.\","
+                + "\"question\":\"Figyeljem, hogy hat a hangulatodra?\",\"hypothesisKey\":null,"
+                + "\"newTestPlan\":{\"seriesA\":\"topic:munka\",\"seriesB\":\"text-mood\","
+                + "\"lagDays\":0,\"expectedDirection\":\"negative\"},\"evidenceRefs\":[]}]]";
+        for (int daysBack = 3; daysBack >= 1; daysBack--) {
+            LocalDate day = TODAY.minusDays(daysBack);
+            JournalEntryEntity past = journalPopulator.createEntry(owner, day, "Megint a munka.", "quickinput");
+            textSignalPopulator.signal(owner, TextSignalEntity.SOURCE_JOURNAL, past.getId(), day,
+                    3, 3, 3, List.of(), List.of("munka"));
+        }
+        JournalEntryEntity entry = journalPopulator.createEntry(owner, TODAY,
+                "Ma is csak a munka volt. " + scripted, "quickinput");
+        TextSignalEntity signal = textSignalPopulator.signal(owner, TextSignalEntity.SOURCE_JOURNAL,
+                entry.getId(), TODAY, 3, 3, 3, List.of(), List.of("munka"));
+
+        quickNoticeService.onSignal(owner, signal.getId());
+
+        assertThat(patternEventRepository.findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(
+                owner, refuted.getId()))
+                .isEmpty();
+        assertThat(patternRepository.findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner))
+                .hasSize(1);
+        assertThat(appNotificationRepository.findByCreatedByAndDeletedFalseOrderByOccurredAtDesc(
+                owner, PageRequest.of(0, 10)))
+                .isEmpty();
+        assertThat(patternRepository.findById(refuted.getId()).orElseThrow().getStatus())
+                .isEqualTo(PatternEntity.STATUS_REFUTED);
+    }
 }

@@ -323,21 +323,44 @@ public class QuickNoticeService {
         if (answer.newTestPlan() != null) {
             Optional<TestPlanEnvelope> plan = testPlanValidator.validate(userId, answer.newTestPlan());
             if (plan.isPresent()) {
-                return existingOrNewRow(userId, plan.get(), answer, evidenceRefs);
+                PatternEntity planned = existingOrNewRow(userId, plan.get(), answer, evidenceRefs);
+                if (planned != null) {
+                    return planned;
+                }
             }
         }
         return open.stream().filter(row -> trigger.patternIds().contains(row.getId())).findFirst()
                 .orElse(null);
     }
 
-    /** The plan's key IS the identity — a re-proposal of the same test reuses the existing row. */
+    /**
+     * The plan's key IS the identity — a re-proposal of the same test reuses the existing row.
+     *
+     * <p><b>But only an OPEN, reflection-owned one</b>, the same guard the {@code hypothesisKey}
+     * branch applies (whole-branch review finding): a re-proposed plan whose key happens to match a
+     * row the engine or the user already SETTLED ({@code refuted}/{@code rejected}/
+     * {@code confirmed}/{@code dormant}) must not get a fresh {@code observation} hung on it — the
+     * feed would render that settled row as a {@code fresh} card and quietly reopen a judgement
+     * nobody revisited. A {@code statistical} catalog row is excluded for the same reason it is
+     * excluded everywhere else in Reflexió: its lifecycle belongs to the nightly Pearson job.
+     *
+     * <p>Returns {@code null} in that case rather than creating a duplicate row, because
+     * {@code uq_pattern_created_by_hypothesis_key} (partial unique index on
+     * {@code (created_by, hypothesis_key) where is_deleted = false}) forbids a second LIVE row with
+     * the same key — creating one would be a constraint violation, not a fallback. The caller then
+     * continues down the brief's resolution order to the first touched open row, and drops the
+     * notice if there is none.
+     */
     private PatternEntity existingOrNewRow(UUID userId, TestPlanEnvelope plan, NoticeAnswer answer,
                                            List<String> evidenceRefs) {
         String key = TestPlanEnvelope.key(plan);
         Optional<PatternEntity> existing = patternRepository
                 .findByCreatedByAndHypothesisKeyAndDeletedFalse(userId, key);
         if (existing.isPresent()) {
-            return existing.get();
+            PatternEntity row = existing.get();
+            boolean stillOpen = PatternEntity.STATUS_PROPOSED.equals(row.getStatus())
+                    || PatternEntity.STATUS_MONITORING.equals(row.getStatus());
+            return stillOpen && row.isReflectionOwned() ? row : null;
         }
         PatternEntity row = new PatternEntity();
         row.setCreatedBy(userId);
