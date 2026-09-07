@@ -30,12 +30,18 @@ const TONE: Record<string, PageTone> = { coral: 'coral', sage: 'sage', rose: 'ro
  * component is presentational, so the parent's `day` prop only advances once it
  * re-renders with the renamed day, and a directly-controlled input would have React
  * restore the DOM to the stale prop right after each native input event.
+ *
+ * `key` is the day identity (`day.day`), passed in addition to `value` (`day.type`):
+ * a split can contain two days with the SAME type string (a 6-day Push/Pull/Legs ×2
+ * week has two 'Push' days), and Task 8 swaps the `day` prop on this same component
+ * instance without unmounting. Depending on `value` alone would miss that swap when
+ * the type strings coincide, leaving the old day's buffered text on screen.
  */
-function useBufferedText(value: string): [string, (t: string) => void] {
+function useBufferedText(value: string, key: string): [string, (t: string) => void] {
   const [text, setText] = useState(value)
   useEffect(() => {
     setText(value)
-  }, [value])
+  }, [value, key])
   return [text, setText]
 }
 
@@ -63,7 +69,7 @@ export function MesoDayEditor({
   const entrance = firstRender.current
   useEffect(() => { firstRender.current = false }, [])
 
-  const [nameText, setNameText] = useBufferedText(day.type)
+  const [nameText, setNameText] = useBufferedText(day.type, day.day)
 
   const rows = dayMuscleLoad(day)
   const sets = day.exercises.reduce((a, e) => a + e.workingSets, 0)

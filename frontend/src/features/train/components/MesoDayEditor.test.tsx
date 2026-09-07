@@ -25,8 +25,17 @@ function setup(overrides: Partial<Parameters<typeof MesoDayEditor>[0]> = {}) {
     onAdd: vi.fn(),
     ...overrides,
   }
-  render(<MesoDayEditor {...props} />)
-  return props
+  const { rerender } = render(<MesoDayEditor {...props} />)
+  return {
+    ...props,
+    /**
+     * Re-renders with a patched prop (typically `day`) — stands in for the parent
+     * re-rendering with an updated day, e.g. after a rename commits or the page
+     * swaps in a different day. Follows the ExerciseCard.test.tsx idiom.
+     */
+    rerender: (patch: Partial<Parameters<typeof MesoDayEditor>[0]> = {}) =>
+      rerender(<MesoDayEditor {...props} {...patch} />),
+  }
 }
 
 describe('MesoDayEditor', () => {
@@ -93,5 +102,41 @@ describe('MesoDayEditor', () => {
     rerender(<MesoDayEditor {...props} day={moved} />)
     expect(screen.getByTestId('exercise-list')).toHaveAttribute('data-entered', 'true')
     expect(container.querySelectorAll('[data-testid="exercise-list"] > .rise')).toHaveLength(0)
+  })
+
+  test('the back button reaches onBack', async () => {
+    const user = userEvent.setup()
+    const props = setup()
+    await user.click(screen.getByRole('button', { name: 'Vissza' }))
+    expect(props.onBack).toHaveBeenCalled()
+  })
+
+  // ---- Buffered-input contract (mezo-yty6 fix round 1) --------------------
+  // The day-name field buffers its text locally (useBufferedText), re-synced from
+  // the `day` prop via useEffect — same contract as ExerciseCard's number fields.
+  // These tests pin that an external `day` change reaches the field, including
+  // when two days share the same `type` string and only `day.day` differs.
+
+  test('an external value change reaches the field', () => {
+    const props = setup()
+    props.rerender({ day: { ...DAY, type: 'Húzónap' } })
+    expect(screen.getByRole('textbox', { name: 'Hét nap neve' })).toHaveValue('Húzónap')
+  })
+
+  test('switching to a different day with the same type re-seeds the buffer', async () => {
+    const user = userEvent.setup()
+    const props = setup()
+    // simulate the user having typed a local edit that never committed as `day.type`
+    const field = screen.getByRole('textbox', { name: 'Hét nap neve' })
+    await user.clear(field)
+    await user.type(field, 'Draft')
+    expect(field).toHaveValue('Draft')
+
+    // Task 8 swaps `day` on the same instance without unmounting — a different day
+    // (`day.day` changes) whose type string happens to coincide with the old one
+    // (e.g. a 6-day Push/Pull/Legs ×2 split has two 'Upper' days)
+    const otherDay: MesoDay = { ...DAY, day: 'Csüt', type: 'Upper' }
+    props.rerender({ day: otherDay })
+    expect(screen.getByRole('textbox', { name: 'Csüt nap neve' })).toHaveValue('Upper')
   })
 })
