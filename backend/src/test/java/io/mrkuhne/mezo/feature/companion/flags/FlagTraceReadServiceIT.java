@@ -175,7 +175,14 @@ class FlagTraceReadServiceIT extends AbstractIntegrationTest {
         logRepository.saveAndFlush(log);
         trace(userId, FlagKey.SLEEP_DEBT, "raised", null, "logged", null, at(9));
         trace(userId, FlagKey.LATE_EATING, "raised", null, "logged", null, at(10));
-        UUID cardId = card(userId, FlagKey.SLEEP_DEBT);
+        // The plain card() helper stamps `generatedAt`/created_at with the REAL wall-clock
+        // Instant.now(), not a DAY-relative one. Before ~10:00 local time that real "now" sits
+        // BEFORE both traces above, so the decision-instant correlation in FlagTraceReadService
+        // (row.occurredAt <= deliveredAt) never matches either rule and cardOutcome comes back
+        // null for both — a time-of-day bomb, not a service defect (mezo-5zl1 / mezo-nrkk). Use
+        // cardAt to pin the card's delivery instant to the fixture's own clock, after the traces
+        // it must correlate against, so the test is honest at every hour.
+        UUID cardId = cardAt(userId, FlagKey.SLEEP_DEBT, at(11));
 
         FlagTraceReadService.TraceDay day = service.read(userId, DAY);
 
