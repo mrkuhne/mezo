@@ -1,0 +1,218 @@
+<body>
+<h1>Mezo · értesítés-dropdown — görgethető, teljes szélességű panel</h1>
+<div class="ctl">
+  <div class="grp" id="gTh">
+    <button data-th="light" class="on">Világos</button>
+    <button data-th="dark">Sötét</button>
+  </div>
+  <div class="grp" id="gDp">
+    <button data-dp="reggel">Reggel</button>
+    <button data-dp="nap" class="on">Napközben</button>
+    <button data-dp="este">Este</button>
+  </div>
+  <div class="grp" id="gOp">
+    <button data-op="1" class="on">Panel nyitva</button>
+    <button data-op="0">Zárva</button>
+  </div>
+</div>
+<p class="hint">A panel a fejléc két széléhez tapad (nem a csengő alá), belül görgethető: a fejrész
+(cím + „Mind olvasott" + szűrő) és a lábléc kitapad, a lista görög. Minden sor a saját clay-ikonját
+viseli a típusához illő washban. Görgesd a listát — a napcímkék (MA · TEGNAP · dátum) kitapadnak.</p>
+
+<div class="ph" data-dp="nap" data-theme="light" id="phone">
+  <div class="scr" id="scr">
+    <header class="hero">
+      <div class="hero-bg">
+        <div class="grad"></div><span class="blob b1"></span><span class="blob b2"></span>
+      </div>
+      <div class="bar">
+        <div class="grow">
+          <svg width="30" height="30" aria-hidden="true"><use href="#s-orb-figyel"/></svg>
+          <span class="ptitle">Nap</span>
+        </div>
+        <button class="rbtn" aria-label="Napszak"><svg class="ic" width="22" height="22"><use href="#i-nap"/></svg></button>
+        <button class="rbtn" aria-label="Mezo üzenetei"><svg class="ic" width="21" height="21"><use href="#i-level"/></svg><span class="badge">2</span></button>
+        <button class="rbtn is-open" id="bell" aria-label="Értesítések"><svg class="ic" width="21" height="21"><use href="#i-ertesites"/></svg><span class="badge" id="bellBadge">7</span></button>
+        <button class="avatar" aria-label="A napod"><svg class="ic" width="40" height="40"><use href="#s-orb"/></svg></button>
+      </div>
+    </header>
+    <div class="cont">
+      <div class="card"><h3>Ma: Váll &amp; hát</h3><p>5 gyakorlat · kb. 55 perc · RP mezociklus 3. hét</p></div>
+      <div class="card"><h3>Heti volumen</h3><p>12 / 18 munkaszett — jó úton vagy.</p></div>
+      <div class="card"><h3>Alvás</h3><p>7 ó 20 p · nyugodt éjszaka</p></div>
+      <div class="card"><h3>Fuel</h3><p>Fehérje: 92 / 160 g</p></div>
+      <div class="card"><h3>Szokások</h3><p>Reggeli rutin ✓ · Víz 1,2 / 2,5 l</p></div>
+    </div>
+  </div>
+
+  <div class="scrim" id="scrim" hidden></div>
+  <div class="ntf" id="panel" role="menu" aria-label="Értesítések" hidden>
+    <div class="ntf-hd">
+      <span class="eyebrow">Értesítések</span>
+      <span class="cnt" id="hdCnt">7 új</span>
+      <button class="allread" id="allread">Mind olvasott</button>
+    </div>
+    <div class="ntf-tabs" id="tabs"></div>
+    <div class="ntf-scroll mask-b" id="list"></div>
+    <div class="ntf-ft"><button>Összes értesítés ›</button></div>
+  </div>
+</div>
+
+<script>
+/* kind → clay ikon + tint (a repó APP_NOTIFICATION_KIND_META-ja, immár a dropdownban is) */
+const META = {
+  pattern_inbox:{i:'i-minta',t:'pattern'},   pattern_signal:{i:'i-minta',t:'pattern'},
+  hypothesis_new:{i:'i-lombik',t:'pattern'},
+  fact_candidate:{i:'i-tudas',t:'knowledge'},fact_reinforced:{i:'i-tudas',t:'knowledge'},
+  memoir_ready:{i:'i-memoar',t:'memoir'},
+  prediction_new:{i:'i-kristaly',t:'prediction'}, prediction_outcome:{i:'i-kristaly',t:'prediction'},
+  experiment_proposed:{i:'i-lombik',t:'experiment'}, experiment_closed:{i:'i-lombik',t:'experiment'},
+  challenge_event:{i:'i-kihivas',t:'experiment'},
+  memory_note:{i:'i-rend',t:'memory'},
+  weekly_review_ready:{i:'i-heti',t:'memoir'},
+  life_goal_plan:{i:'i-cel',t:'goal'}, goal_suggestion:{i:'i-cel',t:'goal'},
+};
+const FB = {i:'i-ertesites',t:'memory'};
+
+/* KATEGÓRIÁK — a 15 wire-kind öt, a felhasználó nyelvén beszélő csoportba. A sorrend
+   fix; a chip csak akkor jelenik meg, ha VAN sor a kategóriában. */
+const CATS = [
+  {id:'minta',   label:'Minták',    icon:'i-minta',    kinds:['pattern_inbox','pattern_signal','hypothesis_new']},
+  {id:'tudas',   label:'Tudás',     icon:'i-tudas',    kinds:['fact_candidate','fact_reinforced','memory_note']},
+  {id:'kiserlet',label:'Kísérletek',icon:'i-lombik',   kinds:['experiment_proposed','experiment_closed','challenge_event']},
+  {id:'joslat',  label:'Jóslatok',  icon:'i-kristaly', kinds:['prediction_new','prediction_outcome']},
+  {id:'cel',     label:'Célok',     icon:'i-cel',      kinds:['life_goal_plan','goal_suggestion']},
+  {id:'osszegzes',label:'Összegzés',icon:'i-memoar',   kinds:['memoir_ready','weekly_review_ready']},
+];
+const CAT_OF = Object.fromEntries(CATS.flatMap(c => c.kinds.map(k => [k, c.id])));
+
+const DATA = [
+  {d:'Ma', rows:[
+    {k:'pattern_signal', u:1, w:'06:20', t:'Új minta a hét alvásában',
+     x:'Három egymást követő éjszakán 23:40 után feküdtél le, és mindhárom utáni edzésnap RPE-je egy fokkal magasabb lett.'},
+    {k:'weekly_review_ready', u:1, w:'06:05', t:'A heti áttekintésed elkészült',
+     x:'12 munkaszett, 4 nap logolva, 2 új rekord — nézd meg, mit érdemes vinni a jövő hétre.'},
+    {k:'goal_suggestion', u:1, w:'05:58', t:'Cél-javaslat: napi 2,5 l víz',
+     x:'Az elmúlt 14 napból 9-en 1,5 l alatt maradtál. Ez a cél kicsi, de a delelő utáni gödrödre hat.'},
+    {k:'prediction_outcome', u:1, w:'05:40', t:'Bejött az előrejelzés',
+     x:'„Szerdán jó nap lesz" — 82% magabiztossággal. A napzárásod 4/5 lett.'},
+  ]},
+  {d:'Tegnap', rows:[
+    {k:'experiment_proposed', u:1, w:'21:40', t:'Kísérlet-javaslat: kreatin este',
+     x:'Két hét, esti bevitel, alvásminőség-méréssel. Elfogadod?'},
+    {k:'fact_candidate', u:1, w:'19:12', t:'Új tény-jelölt rólad',
+     x:'„A hosszú séták után jobb a hangulatod" — 6 megfigyelés támasztja alá.'},
+    {k:'memoir_ready', u:1, w:'08:02', t:'Elkészült a havi memoárod',
+     x:'Augusztus: a kitartás hónapja. 3 200 szó, 4 fordulóponttal.'},
+    {k:'challenge_event', u:0, w:'07:30', t:'Kihívás: 5. nap teljesítve',
+     x:'A „Reggeli mozgás" kihívásban tartod a sorozatot.'},
+  ]},
+  {d:'szept. 4.', rows:[
+    {k:'memory_note', u:0, w:'22:10', t:'Emlék elmentve',
+     x:'„A hátfájás a nehéz húzások utáni napon jön elő" — hozzáadva az emléktárhoz.'},
+    {k:'fact_reinforced', u:0, w:'18:45', t:'Megerősödött egy tény',
+     x:'„Kávé 14:00 után → később alszol el" — most már 11 megfigyelés.'},
+    {k:'hypothesis_new', u:0, w:'11:20', t:'Új hipotézis',
+     x:'A magas szénhidrátos ebéd utáni délutáni edzések erősebbek. Még kevés adat.'},
+  ]},
+  {d:'szept. 2.', rows:[
+    {k:'experiment_closed', u:0, w:'20:00', t:'Lezárult a kísérlet',
+     x:'„Esti képernyő-stop 22:00-kor" — az elalvásod átlagosan 14 perccel gyorsult.'},
+    {k:'life_goal_plan', u:0, w:'15:35', t:'Élet-cél terv frissült',
+     x:'A „Nyugodtabb reggelek" célod három konkrét lépést kapott.'},
+    {k:'prediction_new', u:0, w:'09:15', t:'Új előrejelzés',
+     x:'„A csütörtöki edzés nehéz lesz" — 64% magabiztosság, az alvás- és lépésadatok alapján.'},
+    {k:'pattern_inbox', u:0, w:'08:40', t:'3 minta vár rád a postaládában',
+     x:'Erősítsd meg vagy vesd el őket — ettől tanul rólad a Mezo.'},
+  ]},
+];
+
+const list = document.getElementById('list');
+const tabs = document.getElementById('tabs');
+let filter = 'all';
+let read = new Set();
+
+/* Felső korlát: a panel a LEGFRISSEBB 30 sort viszi (a DATA csoportjai már csökkenő
+   sorrendben állnak) — a maradék a teljes /me/ertesitesek oldalé. */
+const CAP = 30;
+function match(r){
+  if (filter === 'all') return true;
+  if (filter === 'unread') return r.u && !read.has(r.t);
+  return CAT_OF[r.k] === filter;
+}
+function renderTabs(){
+  const all = DATA.flatMap(g => g.rows);
+  const unread = all.filter(r => r.u && !read.has(r.t)).length;
+  const chips = [{id:'all',label:'Mind',n:all.length}];
+  if (unread) chips.push({id:'unread',label:'Olvasatlan',n:unread});
+  for (const c of CATS){
+    const n = all.filter(r => CAT_OF[r.k] === c.id).length;
+    if (n) chips.push({id:c.id,label:c.label,icon:c.icon,n});
+  }
+  // Ha a KIVÁLASZTOTT szűrő eltűnt (pl. „Olvasatlan" a Mind olvasott után), a Mindre esünk vissza.
+  if (!chips.some(c => c.id === filter)) filter = 'all';
+  tabs.innerHTML = chips.map(c => `<button data-f="${c.id}"${c.id===filter?' class="on"':''}>
+    ${c.icon?`<svg width="17" height="17" aria-hidden="true"><use href="#${c.icon}"/></svg>`:''}
+    <span>${c.label}</span><span class="n">${c.n}</span></button>`).join('');
+}
+function render(){
+  // A chipek ELŐBB: ha a kiválasztott szűrő eltűnt, a `renderTabs` visszaejt `all`-ra,
+  // és a lista már a helyes szűrővel épül.
+  renderTabs();
+  let html = '';
+  let shown = 0;
+  let budget = CAP;
+  for (const g of DATA){
+    if (budget <= 0) break;
+    const rows = g.rows.filter(match).slice(0, budget);
+    budget -= rows.length;
+    if (!rows.length) continue;
+    html += `<div class="ntf-day">${g.d}</div>`;
+    for (const r of rows){
+      const m = META[r.k] || FB;
+      const unread = r.u && !read.has(r.t);
+      shown++;
+      html += `<button class="row${unread?' unread':''}" role="menuitem">
+        <span class="ico ${m.t}" aria-hidden="true"><svg width="24" height="24"><use href="#${m.i}"/></svg></span>
+        <span class="txt"><span class="t">${r.t}</span><span class="x">${r.x}</span>
+          <span class="when">${r.w}</span></span>
+        ${unread?'<span class="dot" aria-hidden="true"></span><span class="sr-only"></span>':''}
+      </button>`;
+    }
+  }
+  list.innerHTML = shown ? html
+    : `<p class="empty">${filter === 'unread' ? 'Minden értesítésedet elolvastad.' : 'Nincs ilyen értesítésed.'}</p>`;
+  const n = DATA.flatMap(g=>g.rows).filter(r=>r.u && !read.has(r.t)).length;
+  document.getElementById('hdCnt').textContent = n ? `${n} új` : 'nincs új';
+  document.getElementById('hdCnt').style.background = n ? '' : 'var(--surface-recess)';
+  document.getElementById('hdCnt').style.color = n ? '' : 'var(--text-muted)';
+  const b = document.getElementById('bellBadge');
+  b.textContent = n; b.style.display = n ? '' : 'none';
+}
+render();
+
+tabs.onclick = e => {
+  const b = e.target.closest('button'); if (!b) return;
+  filter = b.dataset.f;
+  render();
+};
+document.getElementById('allread').onclick = () => {
+  DATA.flatMap(g=>g.rows).forEach(r => read.add(r.t)); render();
+};
+const panel = document.getElementById('panel'), scrim = document.getElementById('scrim');
+function setOpen(o){ panel.hidden = !o; scrim.hidden = !o;
+  document.getElementById('bell').classList.toggle('is-open', o);
+  [...document.getElementById('gOp').children].forEach(c => c.classList.toggle('on', (c.dataset.op==='1')===o)); }
+setOpen(true);
+document.getElementById('bell').onclick = () => setOpen(panel.hidden);
+scrim.onclick = () => setOpen(false);
+document.getElementById('gOp').onclick = e => { const b = e.target.closest('button'); if (b) setOpen(b.dataset.op==='1'); };
+document.getElementById('gTh').onclick = e => { const b = e.target.closest('button'); if(!b) return;
+  document.getElementById('phone').dataset.theme = b.dataset.th;
+  [...e.currentTarget.children].forEach(c=>c.classList.toggle('on',c===b)); };
+document.getElementById('gDp').onclick = e => { const b = e.target.closest('button'); if(!b) return;
+  document.getElementById('phone').dataset.dp = b.dataset.dp;
+  [...e.currentTarget.children].forEach(c=>c.classList.toggle('on',c===b)); };
+</script>
+</body>
+</html>
