@@ -110,6 +110,79 @@ describe('KonziliumPage — döntés-első nézet', () => {
     expect(screen.getByText(/nem található/)).toBeInTheDocument()
   })
 
+  // Fix round 1 (mezo-sp9w, review finding 7): a bad deep link must not strand the reader — the
+  // archive has to stay reachable, and there must still be exactly one back control.
+  test('egy nem található konzíliumnál is elérhető marad az archívum, és marad pontosan egy vissza', async () => {
+    renderAt('/me/karakter/konzilium?id=nope')
+    expect(screen.getAllByRole('button', { name: 'Vissza' })).toHaveLength(1)
+    await userEvent.click(screen.getByRole('button', { name: 'Korábbi tanácskozások' }))
+    expect(await screen.findByText('6')).toBeInTheDocument() // kr-arccnt: all 6 mock conferences
+  })
+
+  // Fix round 1 (mezo-sp9w, review finding 6): the stepper's arrows were only ever tested for
+  // their disabled state, never for actually switching the shown council.
+  test('a korábbi nyílra kattintva az előző konzílium tartalma jelenik meg', async () => {
+    renderAt('/me/karakter/konzilium')
+    await userEvent.click(screen.getByRole('button', { name: 'Korábbi tanácskozás' }))
+    expect(await screen.findByRole('button', { name: /augusztus 23/ })).toBeInTheDocument()
+  })
+
+  // Fix round 1 (mezo-sp9w, review finding 6 + 3): picking a different council from the archive
+  // must both switch the shown council and reset a chronological view back to the overview —
+  // exercising the actual navigation path, not just its affordances.
+  test('az archívumban másik konzíliumot választva a nézet vált és visszaáll áttekintésre', async () => {
+    renderAt('/me/karakter/konzilium')
+    await userEvent.click(screen.getByRole('button', { name: 'Beszélgetés' }))
+    expect(screen.getByText('Javaslatok')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /augusztus 30/ }))
+    await userEvent.click(await screen.findByRole('button', { name: /augusztus 23/ }))
+
+    expect(await screen.findByRole('button', { name: /augusztus 23/ })).toBeInTheDocument()
+    expect(screen.getByText('Hogyan zajlott')).toBeInTheDocument()
+    expect(screen.queryByText('Javaslatok')).not.toBeInTheDocument()
+  })
+
+  // Fix round 1 (mezo-sp9w, review finding 1): an empty-but-present thread envelope (the
+  // council's proposal round yielded nothing) must fall back to the prose transcript exactly
+  // like a missing `deliberation`, not render a round map full of zeros and no content at all.
+  test('üres deliberation-tömbnél a próza-átirat jelenik meg, nem üres lap', () => {
+    hoisted.detail = {
+      ...hoisted.detail,
+      w1: { ...MOCK_CONFERENCE_DETAIL.w1, deliberation: [], deliberationSource: 'STORED' },
+    }
+    renderAt('/me/karakter/konzilium?id=w1')
+
+    expect(screen.getByText(/hétvégi lépésszám tartósan alacsonyabb/)).toBeInTheDocument()
+    expect(screen.queryByText('Hogyan zajlott')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Beszélgetés' })).not.toBeInTheDocument()
+  })
+
+  // Fix round 1 (mezo-sp9w, review finding 4): this coverage was deleted with the old list page
+  // even though the behaviour it asserted — the prose fallback's phase labels, the chair's
+  // display name, and the closing honesty line — was never retired. Only the neighbouring
+  // outcome card's label changed ("Kimenet" → "Mi változott a dossziédban").
+  test('nincs strukturált szál: próza-átirat fázis-címkékkel, az elnök nevével és az őszinteségi mondattal', () => {
+    hoisted.detail = {
+      ...hoisted.detail,
+      w2: { ...MOCK_CONFERENCE_DETAIL.w2, deliberation: null, deliberationSource: null },
+    }
+    renderAt('/me/karakter/konzilium?id=w2')
+
+    expect(screen.getByText('Mi változott a dossziédban')).toBeInTheDocument()
+    expect(screen.getByText('bekerült')).toBeInTheDocument()
+    expect(screen.getByText('nyugdíjazva')).toBeInTheDocument()
+    expect(screen.getByText('portré átírva')).toBeInTheDocument()
+    expect(screen.getByText('2')).toBeInTheDocument() // CLAIM_ACCEPTED count
+
+    expect(screen.getByText('Javaslatok')).toBeInTheDocument()
+    expect(screen.getByText('A Szkeptikus')).toBeInTheDocument()
+    expect(screen.getByText('Döntés')).toBeInTheDocument()
+    expect(screen.getByText('Mezo')).toBeInTheDocument() // the chair's display name
+
+    expect(screen.getByText(/A fenti a valódi beszélgetés/)).toBeInTheDocument()
+  })
+
   test('a conference with a deliberation renders threads, collapsed', async () => {
     hoisted.detail = { ...hoisted.detail, w2: MOCK_CONFERENCE_DETAIL.w2 }
     renderAt('/me/karakter/konzilium?id=w2')

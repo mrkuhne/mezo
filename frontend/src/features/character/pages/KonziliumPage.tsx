@@ -11,7 +11,7 @@
 // - "Mi változott a dossziédban" a `changes[]`-ből számol — ez a TARTÓS hatás;
 // - a kör-térkép 4. cellája a `deliberation`-ből — ezek a tanácskozás DÖNTÉSEI.
 // ============================================================
-import { useState, type CSSProperties } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import { useSearchParams, useNavigate } from 'react-router-dom'
 import '@/features/character/character.css'
 import { PageHead } from '@/shared/ui/mozaik'
@@ -101,6 +101,15 @@ export function KonziliumPage() {
   const currentId = requestedId ?? (conferences.length > 0 ? conferences[0].id : null)
   const { conference, isLoading: detailLoading } = useCharacterConference(currentId)
 
+  // Fix round 1 (mezo-sp9w, review finding 3): the reset must be a consequence of the council
+  // actually changing, not of the stepper's click handler — a browser back/forward that swaps
+  // `?id=` in the query string bypasses any click handler entirely, and previously left the
+  // reader stuck in the chronological view on a different council. Must run before the loading
+  // early-return below so it obeys the rules of hooks.
+  useEffect(() => {
+    setView('overview')
+  }, [currentId])
+
   // Folding expertsLoading in matters: without it the window between the conference settling and
   // the expert catalog arriving misclassifies every turn as a plain EXPERT (mezo-xlvr, I5).
   if (listLoading || (currentId != null && detailLoading) || expertsLoading) return null
@@ -112,7 +121,6 @@ export function KonziliumPage() {
   function go(id: string | null) {
     if (id == null) return
     setParams({ id })
-    setView('overview')
   }
 
   if (conferences.length === 0) {
@@ -129,7 +137,14 @@ export function KonziliumPage() {
 
   const summary = index >= 0 ? conferences[index] : null
   const crossTalkRan = conference?.deliberationSource === 'STORED'
-  const threads = conference?.deliberation ?? null
+  // Fix round 1 (mezo-sp9w, review finding 1): an empty-but-present thread envelope is a real,
+  // reachable backend state (a proposal round that yielded nothing) — treat it exactly like a
+  // missing one so the prose transcript fallback runs, instead of silently rendering a
+  // thread-less, transcript-less void. Every consumer below reads this same `threads` value, so
+  // the round map, the view switcher and the thread list all agree on whether this council has
+  // structured threads.
+  const rawThreads = conference?.deliberation ?? null
+  const threads = rawThreads != null && rawThreads.length > 0 ? rawThreads : null
 
   return (
     <div className="kr-hub">
@@ -168,13 +183,23 @@ export function KonziliumPage() {
       {conference == null && (
         <div className="mz-page-body">
           <div className="kr-konz-empty">Ez a konzílium nem található.</div>
+          {/* Fix round 1 (mezo-sp9w, review finding 7): without the stepper (no `summary` to
+              anchor it) a bad deep link stranded the reader with no way into the archive except
+              leaving the screen — reusing the date button's own affordance keeps this the only
+              non-PageHead exit, not a second back control. */}
+          <button
+            type="button"
+            className="kr-datebtn"
+            aria-haspopup="dialog"
+            onClick={() => setArchiveOpen(true)}
+          >Korábbi tanácskozások</button>
         </div>
       )}
 
       {conference != null && (
         <div className="mz-page-body">
           {threads != null && (
-            <div className="kr-seg" role="group" aria-label="Nézet">
+            <div className="kr-viewseg" role="group" aria-label="Nézet">
               <button
                 type="button"
                 className={view === 'overview' ? 'on' : ''}

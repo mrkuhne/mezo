@@ -110,7 +110,7 @@ test('/me/karakter/csapat is the 9-persona team page (mezo-1gim.13, Task 5)', as
   expect(screen.getByText('Elnök · Integrátor')).toBeInTheDocument()
 })
 
-test('/me/karakter/konzilium opens the latest council directly — a stable full-page sibling (mezo-sp9w, Task 9)', async () => {
+test('/me/karakter/konzilium renders as a stable full-page sibling (mezo-sp9w, Task 9)', async () => {
   // Mode-agnostic: real mode's MSW handler seeds an empty conference list (GET
   // /api/character/conference -> []), so this only asserts the page itself renders as a
   // stable full-page sibling — not the decision-first content, which KonziliumPage.test.tsx
