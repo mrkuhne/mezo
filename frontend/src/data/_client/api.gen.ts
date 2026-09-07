@@ -2072,6 +2072,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/companion/observation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Az Észrevételek fül kártyái egy napra (mezo-eq85.4)
+         * @description Négy kártyafajta, EBBEN a sorrendben: `fresh` (a nap felszínre engedett észrevételei, amikre még nem válaszoltál), `return` (a nap észrevételei egy KORÁBBI válaszod után — a szöveg már hivatkozik rá), `watching` (amit épp figyel a motor), `confirmed` (amit az elmúlt 24 órában megerősített). Csoporton belül a legfrissebb elöl. `date` nélkül a mai nap.
+         */
+        get: operations["listObservations"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companion/pattern/{patternId}/reply": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Chip-válasz egy észrevételre — figyeld / nem stimmel / mesélj (mezo-eq85.4)
+         * @description A válasz mindig append-only ESEMÉNY. `watch` egy `proposed` sort `monitoring`-ra állít; `reject` MÁSODJÁRA refutálja (egyetlen `reject` nem mozdít státuszt); `talk` egy a sejtésre magolt beszélgetést nyit és visszaadja az azonosítóját. A `belief` mindig kódból számolódik újra — sosem LLM-becslés.
+         */
+        post: operations["replyToPattern"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/companion/conversation/{conversationId}/message/stream": {
         parameters: {
             query?: never;
@@ -7065,6 +7105,67 @@ export interface components {
         } | null;
         PatternDecisionRequest: {
             decision: string;
+        };
+        /** @description Egy kártya az Észrevételek fülön (Reflexió S4, mezo-eq85.4). A `fresh`/`return` kártyák egy `observation` ESEMÉNYT jelenítenek meg (az `id` az esemény azonosítója), a `watching`/`confirmed` kártyák magát a sort (az `id` a minta azonosítója) — a `patternId` mindig a soré, mert a chip-válasz arra megy. */
+        ObservationResponse: {
+            /**
+             * Format: uuid
+             * @description Az esemény (fresh/return) vagy a minta (watching/confirmed) azonosítója — a lista stabil kulcsa.
+             */
+            id: string;
+            /**
+             * Format: uuid
+             * @description A sor, amire a chip-válasz megy.
+             */
+            patternId: string;
+            /** @description A sor stabil identitása (ref-…) — a statisztikai sorokon pair:<key>. */
+            hypothesisKey?: string | null;
+            /** @description fresh = még válasz nélküli mai észrevétel; return = mai észrevétel egy korábbi válaszod UTÁN; watching = épp figyelt sor; confirmed = az elmúlt 24 órában megerősített sor. */
+            card: string;
+            /**
+             * Format: date-time
+             * @description Az esemény ideje (fresh/return/confirmed), illetve a sor utolsó felismerése (watching).
+             */
+            occurredAt: string;
+            /** @description A sor címe. */
+            title: string;
+            /** @description Az észrevétel prózája; a watching kártyán üres — ott a számok beszélnek. */
+            text: string;
+            /** @description A kérdés, amire a chipek válaszolnak — az observation payload utolsó sora; null, ha nincs. */
+            question?: string | null;
+            /** @description Az észrevétel forrás-hivatkozásai (journal_entry:<uuid>, sleep:<date>) — watching/confirmed kártyán a sor saját bizonyíték-chipjei. */
+            evidence: string[];
+            /** @description A sor státusza a kártya kiadásának pillanatában. */
+            status: string;
+            /** @description Hány éjszaka igazolta a teszt-terv jóslatát. */
+            evidenceHits: number;
+            /** @description Hány ÉLŐ éjszaka mondott ellent neki. */
+            evidenceMisses: number;
+            /** @description A teszt-terv minimum-mintaszáma — null, ha a sor nem hordoz teszt-tervet. */
+            minN?: number | null;
+            /**
+             * Format: double
+             * @description Determinisztikus bizonyosság 0..1 — sosem LLM-becslés.
+             */
+            belief?: number | null;
+            /** @description A legfrissebb chip-válaszod erre a kártyára (a kártya eseménye UTÁN) — null, ha még nem válaszoltál. */
+            repliedChoice?: string | null;
+            /** @description Melyik felület ikonját mutassa a kártya — a teszt-terv seriesA előtagjából származtatva; terv nélkül mezo. */
+            sourceIcon: string;
+        };
+        /** @description A chip-válasz (Reflexió S4, mezo-eq85.4) — a `text` a „mesélj” ágon a saját szavaid. */
+        PatternReplyRequest: {
+            choice: string;
+            text?: string | null;
+        };
+        /** @description A sor a válasz után, plusz a `talk` ágon megnyitott beszélgetés azonosítója. */
+        PatternReplyResponse: {
+            pattern: components["schemas"]["PatternResponse"];
+            /**
+             * Format: uuid
+             * @description A `talk` ágon nyitott, a sorra magolt beszélgetés — a többi ágon null.
+             */
+            conversationId?: string | null;
         };
         PatternMonitorResponse: {
             /**
@@ -15762,6 +15863,90 @@ export interface operations {
                 };
             };
             /** @description Unknown pair key (not in the catalog) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listObservations: {
+        parameters: {
+            query?: {
+                date?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cards, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ObservationResponse"][];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    replyToPattern: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                patternId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatternReplyRequest"];
+            };
+        };
+        responses: {
+            /** @description The pattern after the reply (+ the seeded conversation for talk) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatternReplyResponse"];
+                };
+            };
+            /** @description Validation error */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing or invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Pattern not found (or owned by someone else) */
             404: {
                 headers: {
                     [name: string]: unknown;
