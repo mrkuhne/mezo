@@ -3021,8 +3021,11 @@ Behind the W2 graph gate ([ADR 0030](../decisions/0030-graph-gate-outcome-build.
 build was chosen after living with W3.1's always-on recall.
 
 - **`knowledge_node`** — `id uuid pk`, `created_by uuid fk→app_user(id) ON DELETE CASCADE`,
-  `updated_at timestamptz`, `kind varchar(12)` (`PATTERN|PREFERENCE|GOAL|LIFE_EVENT|SEASON|INSIGHT`),
-  `title varchar(120)`, `summary text`, `status varchar(10)` default `active`
+  `updated_at timestamptz`, `kind varchar(12)`
+  (`PATTERN|PREFERENCE|GOAL|LIFE_EVENT|SEASON|INSIGHT|PERSON` — `PERSON` added by
+  `202609011000_mezo-06o0.4_knowledge_node_person_kind.sql`, an active person's mirror in the
+  graph, `GraphNodeEntity.KIND_PERSON`), `title varchar(120)`, `summary text`,
+  `status varchar(10)` default `active`
   (`candidate|active|archived`), `source_kind varchar(20)`, `source_id uuid`, `occurred_on date`,
   `meta jsonb`. **`uq_knowledge_node_source (created_by, source_kind, source_id)`** (partial, where
   `source_id is not null and is_deleted = false`) is the idempotent promotion anchor W2.2/W2.3
@@ -3947,7 +3950,8 @@ worth talking to Daniel), injected into every turn as its own prompt block.
   null)`, prompt marker `ROLAD-TANULTAM` (`FakeCompanionLlm` dispatch key in tests).
 - **Spec interpretation (recorded explicitly, not a silent deviation):** §8.3 asks the assembler to
   distil "(+ RECOVERY-related graph nodes when W2 live)". There is **no `RECOVERY` node kind** in
-  the shipped graph (kinds: `PATTERN`/`PREFERENCE`/`GOAL`/`LIFE_EVENT`/`SEASON`/`INSIGHT` — W2.1).
+  the shipped graph (kinds: `PATTERN`/`PREFERENCE`/`GOAL`/`LIFE_EVENT`/`SEASON`/`INSIGHT`/`PERSON`
+  — W2.1; `PERSON` an active person's mirror in the graph, added later by `mezo-06o0.4`).
   The faithful reading taken here is "what the graph already knows about how he works" = the active
   PATTERN and PREFERENCE node titles, profile node excluded. Reasoning: PATTERN/PREFERENCE are the
   two kinds the graph promotes from repeated behavior and stated likes/dislikes — the closest thing
