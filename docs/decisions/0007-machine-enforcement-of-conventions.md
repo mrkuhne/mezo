@@ -112,7 +112,7 @@ halves matter:
 
 **Therefore: the green tick on a PR is never about the byte sequence that goes into the
 container.** `premerge.yml` narrows this (it re-checks the *current* merge ref) but only for
-the cheap gates + visual goldens — not the backend or frontend suites, which are exactly the
+the cheap gates — not the backend or frontend suites, which are exactly the
 ones that would catch a semantic conflict between two branches.
 
 **Decision: unchanged — the deploy stays independent of `ci` (mezo-oa3, and the original
@@ -157,10 +157,13 @@ $ gh api repos/mrkuhne/mezo/commits/28c33c23b/check-runs -q .total_count   ->  0
 $ gh api repos/mrkuhne/mezo/commits/28c33c23b/status      -q .state        ->  pending   (0 statuses)
 ```
 
-Two distinct causes are known — `update-visual-baselines.yml` pushing with `GITHUB_TOKEN`
-(GitHub deliberately starts no workflow, and `ci.yml` has no `workflow_dispatch` arm), and
-GitHub simply not creating a run for a `MERGEABLE`/`CLEAN` PR — so this is not one bounded
-case, and the only protection was human discipline.
+Three distinct causes are known — a bot push made with `GITHUB_TOKEN` (GitHub deliberately
+starts no workflow, and `ci.yml` has no `workflow_dispatch` arm; the original instance was
+`update-visual-baselines.yml`, retired with the golden gate in `mezo-ryb6`), GitHub simply not
+creating a run for a `MERGEABLE`/`CLEAN` PR, and a **CONFLICTING** PR, for which GitHub can
+build no merge ref and so runs no `pull_request` checks at all (PR #547 was merged in that
+state and put stale goldens on `main` — the incident that retired the gate). So this is not one
+bounded case, and the only protection was human discipline.
 
 `premerge.yml` now runs `.github/scripts/require-checks.sh`, which parses the expected job set
 **out of `ci.yml`** (so a new job extends the gate for free) and requires each one to have a

@@ -13,7 +13,7 @@ assert_eq() { # <actual> <expected> <name>
 
 # ── expected_jobs: the gate's expected set comes OUT of ci.yml, never hardcoded ──
 CI_JOBS=$(expected_jobs < "$DIR/../workflows/ci.yml")
-assert_eq "$(printf '%s\n' "$CI_JOBS" | wc -l | tr -d ' ')" "6" "ci.yml currently defines 6 jobs"
+assert_eq "$(printf '%s\n' "$CI_JOBS" | wc -l | tr -d ' ')" "5" "ci.yml currently defines 5 jobs"
 assert_eq "$(printf '%s\n' "$CI_JOBS" | grep -cx 'test-backend')" "1" "test-backend is in the expected set"
 assert_eq "$(printf '%s\n' "$CI_JOBS" | grep -cx 'runs-on')" "0" "step/key lines are not mistaken for jobs"
 
