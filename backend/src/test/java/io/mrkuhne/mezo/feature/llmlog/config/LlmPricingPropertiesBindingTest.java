@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.llmlog.config;
 
+import io.mrkuhne.mezo.feature.llmlog.entity.ReasoningBilling;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.bind.Binder;
 import org.springframework.boot.context.properties.source.ConfigurationPropertySources;
@@ -45,6 +46,16 @@ class LlmPricingPropertiesBindingTest {
         assertThat(flash.cachedPerMillion()).isEqualByComparingTo("0.075");
         assertThat(pricing.models().get("gemini-embedding-001").embedPerMillionChars())
             .isEqualByComparingTo("0.15");
+    }
+
+    @Test
+    void testBinding_shouldCarryReasoningBilling_whenTheYamlDeclaresIt() throws IOException {
+        LlmPricingProperties pricing =
+            applicationYmlBinder().bind("mezo.llm-log.pricing", LlmPricingProperties.class).get();
+
+        assertThat(pricing.models().get("gemini-2.5-flash").reasoningBilling())
+            .isEqualTo(ReasoningBilling.SEPARATE);
+        assertThat(pricing.models().get("gemini-embedding-001").reasoningBilling()).isNull();
     }
 
     @Test

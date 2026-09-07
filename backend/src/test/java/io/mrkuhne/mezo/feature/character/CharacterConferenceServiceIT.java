@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterObservationEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterPortraitRevisionEntity;
+import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ObservationDimensionKeysEnvelope;
@@ -304,6 +305,98 @@ class CharacterConferenceServiceIT extends ApiIntegrationTest {
         } finally {
             logger.detachAppender(appender);
         }
+    }
+
+    @Test
+    void runWeekly_persistsAStructuredDeliberation_threadedByChapter() {
+        UUID owner = ownerId();
+        seedDimension(owner, "discipline", "drill");
+        seedDimension(owner, "mental", "pszichologus");
+        seedObservation(owner, "drill", WEEK_START.plusDays(1), "3 napja nincs kaja-log.", (short) 4);
+        seedObservation(owner, "pszichologus", WEEK_START.plusDays(2), "Feszült napló.", (short) 3);
+
+        CharacterConferenceEntity conference = conferenceService.runWeekly(owner, WEEK_START);
+
+        assertThat(conference).isNotNull();
+        ConferenceDeliberationEnvelope deliberation = conference.getDeliberation();
+        assertThat(deliberation).isNotNull();
+        assertThat(deliberation.threads()).isNotEmpty();
+        assertThat(deliberation.threads())
+                .allSatisfy(thread -> assertThat(thread.items()).isNotEmpty());
+        assertThat(deliberation.threads().stream()
+                .flatMap(thread -> thread.items().stream()))
+                .allSatisfy(item -> {
+                    assertThat(item.expertKey()).isNotBlank();
+                    // The canned Integrátor answer genuinely parses here, so every item carries a
+                    // ruling the chair actually gave. A chair ruling is NOT unconditional: when
+                    // that round fails to parse, the stored item's chair stays null (final review,
+                    // I1 — see KonziliumVerdictRound.Result#shownRulings).
+                    assertThat(item.chair()).isNotNull();
+                    assertThat(item.chair().reason()).isNotEqualTo("nem került döntésre");
+                });
+
+        // The two seeded experts' proposals must land in two DISTINCT threads, keyed by their
+        // two distinct dimension keys — proving grouping actually happened, not just that
+        // threads exist. This would fail if every proposal landed in one bucket.
+        assertThat(deliberation.threads())
+                .extracting(ConferenceDeliberationEnvelope.Thread::dimensionKey)
+                .contains("discipline", "mental")
+                .doesNotHaveDuplicates();
+
+        ConferenceDeliberationEnvelope.Thread disciplineThread = deliberation.threads().stream()
+                .filter(thread -> thread.dimensionKey().equals("discipline"))
+                .findFirst().orElseThrow();
+        ConferenceDeliberationEnvelope.Thread mentalThread = deliberation.threads().stream()
+                .filter(thread -> thread.dimensionKey().equals("mental"))
+                .findFirst().orElseThrow();
+
+        assertThat(disciplineThread.items())
+                .extracting(ConferenceDeliberationEnvelope.Item::expertKey)
+                .contains("drill");
+        assertThat(mentalThread.items())
+                .extracting(ConferenceDeliberationEnvelope.Item::expertKey)
+                .contains("pszichologus");
+    }
+
+    /**
+     * I5a (mezo-xlvr final review): the sibling thread test seeds two experts on two DIFFERENT
+     * chapters, so the cross-talk round makes zero calls there. This one puts BOTH experts on the
+     * SAME chapter — the round really runs — and follows the stances all the way into the stored
+     * structure.
+     */
+    @Test
+    void runWeekly_twoExpertsOnOneChapter_crossTalkStancesReachTheStoredStructure() {
+        UUID owner = ownerId();
+        seedDimension(owner, "recovery", "szomnologus");
+        seedObservation(owner, "szomnologus", WEEK_START.plusDays(1), "Késői elalvás.", (short) 4);
+        // The canned fake proposes into the CALLING expert's own default dimension, which would
+        // put these two on different chapters again — so the pszichologus call is scripted to
+        // propose into `recovery` as well, the one configuration where cross-talk actually runs.
+        seedObservation(owner, "pszichologus", WEEK_START.plusDays(2),
+                "Feszült napló. [fake-char-proposals:[{\"kind\":\"NEW\",\"dimensionKey\":\"recovery\","
+                        + "\"text\":\"A feszültség rontja az elalvást.\",\"confidence\":0.5,"
+                        + "\"sensitive\":false,\"rationale\":\"A napló hangneme.\"}]]", (short) 3);
+
+        CharacterConferenceEntity conference = conferenceService.runWeekly(owner, WEEK_START);
+
+        assertThat(conference).isNotNull();
+        ConferenceDeliberationEnvelope deliberation = conference.getDeliberation();
+        assertThat(deliberation).isNotNull();
+        // Both experts propose into `recovery` (the pszichologus observation names the recovery
+        // dimension via its own seeded dimensionKeys), so ONE thread carries both items, and each
+        // item carries the PEER's stance — never the proposer's own.
+        ConferenceDeliberationEnvelope.Thread recovery = deliberation.threads().stream()
+                .filter(thread -> "recovery".equals(thread.dimensionKey()))
+                .findFirst().orElseThrow();
+        assertThat(recovery.items()).hasSize(2);
+        assertThat(recovery.items()).allSatisfy(item -> {
+            assertThat(item.reactions()).isNotEmpty();
+            assertThat(item.reactions()).allSatisfy(reaction -> {
+                assertThat(reaction.expertKey()).isNotEqualTo(item.expertKey());
+                assertThat(reaction.stance()).isIn("SUPPORT", "CHALLENGE", "NUANCE");
+                assertThat(reaction.argument()).isNotBlank();
+            });
+        });
     }
 
     /** Escapes a JSON string value's double quotes/backslashes so it can be nested as another

@@ -1,0 +1,133 @@
+# victoria-metrics-k8s-stack values (mezo-ibxy). Read by argocd/monitoring-application.yaml.
+# Budget on the 8 GB single node: memory limits ≈ 1.3 GiB, PVCs 5 + 5 + 1 Gi.
+fullnameOverride: vm
+# The chart's own comment recommends `argocdReleaseOverride=$ARGOCD_APP_NAME` so
+# VMServiceScrapes select the right release when ArgoCD's Helm release name differs from
+# the Application name. That relies on ArgoCD substituting $ARGOCD_APP_NAME, which only
+# happens in `helm.parameters[].value` — NOT in a `valueFiles` entry (verified against
+# ArgoCD v3.4.3: the literal string "$ARGOCD_APP_NAME" landed in generated labels and
+# failed apiserver label validation on `vmsingle`, `vlagent`, `vmalert`, RBAC objects, etc.).
+# Since `helm.releaseName` is already pinned to `vm` (argocd/monitoring-application.yaml),
+# hardcoding the matching literal here is simpler and correct regardless of the Application's
+# own name.
+argocdReleaseOverride: vm
+
+victoria-metrics-operator:
+  enabled: true
+  crds:
+    plain: true
+  resources:
+    requests: { memory: 96Mi }
+    limits: { memory: 192Mi }
+
+vmsingle:
+  enabled: true
+  spec:
+    retentionPeriod: 30d
+    storage:
+      resources:
+        requests:
+          storage: 5Gi
+    resources:
+      requests: { memory: 256Mi }
+      limits: { memory: 768Mi }
+
+vmagent:
+  enabled: true
+  spec:
+    scrapeInterval: 30s
+    selectAllByDefault: true
+    resources:
+      requests: { memory: 128Mi }
+      limits: { memory: 384Mi }
+    extraArgs:
+      promscrape.streamParse: "true"
+
+vlsingle:
+  enabled: true
+  spec:
+    retentionPeriod: 14d
+    storage:
+      resources:
+        requests:
+          storage: 5Gi
+    resources:
+      requests: { memory: 256Mi }
+      limits: { memory: 512Mi }
+
+vlagent:
+  enabled: true
+  spec:
+    k8sCollector:
+      enabled: true
+    resources:
+      requests: { memory: 64Mi }
+      limits: { memory: 192Mi }
+
+vmalert:
+  enabled: true
+  spec:
+    # Only metrics rules; the logs vmalert (k8s/monitoring/vmalert-logs.yaml) takes vmalert-target=logs.
+    ruleSelector:
+      matchExpressions:
+        - { key: vmalert-target, operator: NotIn, values: [logs] }
+    resources:
+      requests: { memory: 64Mi }
+      limits: { memory: 192Mi }
+
+alertmanager:
+  enabled: true
+  spec:
+    configSecret: alertmanager-config
+    resources:
+      requests: { memory: 32Mi }
+      limits: { memory: 128Mi }
+
+grafana:
+  enabled: true
+  admin:
+    existingSecret: grafana-admin
+    userKey: admin-user
+    passwordKey: admin-password
+  plugins:
+    - victoriametrics-logs-datasource
+  persistence:
+    enabled: true
+    size: 1Gi
+  resources:
+    requests: { memory: 128Mi }
+    limits: { memory: 256Mi }
+  grafana.ini:
+    server:
+      # Tailscale terminates TLS; Grafana serves plain HTTP behind it.
+      root_url: "%(protocol)s://%(domain)s/"
+
+defaultDashboards:
+  enabled: true
+  annotations:
+    argocd.argoproj.io/sync-options: ServerSideApply=true
+
+defaultRules:
+  enabled: true
+  groups:
+    etcd: { create: false }
+    kubeScheduler: { create: false }
+    kubernetesSystemScheduler: { create: false }
+    kubernetesSystemControllerManager: { create: false }
+
+kube-state-metrics:
+  enabled: true
+  resources:
+    requests: { memory: 48Mi }
+    limits: { memory: 128Mi }
+
+prometheus-node-exporter:
+  enabled: true
+  resources:
+    requests: { memory: 24Mi }
+    limits: { memory: 64Mi }
+
+# k3s runs these in-process — no scrapable targets, disable to avoid dead-target alerts.
+kubeEtcd: { enabled: false }
+kubeScheduler: { enabled: false }
+kubeControllerManager: { enabled: false }

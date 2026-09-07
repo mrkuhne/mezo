@@ -1,0 +1,17 @@
+# Grafana on the PRIVATE tailnet via the Tailscale operator (same pattern as
+# k8s/pgadmin/ingress-tailscale.yaml). https://grafana.<tailnet>.ts.net — never public.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-ts
+  namespace: monitoring
+spec:
+  ingressClassName: tailscale
+  defaultBackend:
+    service:
+      name: vm-grafana
+      port:
+        number: 80
+  tls:
+    - hosts:
+        - grafana        # → grafana.<tailnet>.ts.net

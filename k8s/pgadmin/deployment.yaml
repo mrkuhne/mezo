@@ -1,6 +1,6 @@
 # pgAdmin 4 — web UI for inspecting the Postgres database.
-# NOT exposed via Ingress: reachable only through `kubectl port-forward`
-# (which itself rides the Tailscale connection). DB admin never on the public net.
+# Private: reachable only over the Tailscale ingress (ingress-tailscale.yaml).
+# DB admin never on the public net.
 apiVersion: apps/v1
 kind: Deployment
 metadata:

@@ -11,6 +11,7 @@ import io.mrkuhne.mezo.feature.companion.entity.PatternCritiqueEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEvidenceEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
+import io.mrkuhne.mezo.feature.companion.reflection.config.ReflectionProperties;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -40,14 +41,16 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * V3.2 weekly hypothesis loop (spec §8, arch §4.7): gather → propose → critique → score →
+ * V3.2 hypothesis loop (spec §8, arch §4.7): gather → propose → critique → score →
  * route (keep / revise-once / discard) → persist. Every stage is pure-compute or pure-LLM,
  * never both (NFR-M-4); both LLM stages run on the SMART tier ({@code llm.smart-model} — its
  * debut). Survivors land as {@code kind=ai_hypothesis} {@code pattern} rows in the V3.1 Inbox:
  * {@code confidence} = the weighted critique score, critique jsonb attached (its
  * {@code reasoning} surfaces as the card's "AI gondolatmenete"), {@code r/n/p} stay null.
  * Identity = {@code "hyp-" + hash(normalized title)}; an existing row with the same key — ANY
- * status — is never re-proposed (a rejected hypothesis stays rejected). Defensive parsing all
+ * status — is never re-proposed (a rejected hypothesis stays rejected). S2 (mezo-eq85.2): the
+ * weekly {@code HypothesisJob} is retired — the nightly {@code ReflectionJob} drives this loop
+ * and caps it with {@code mezo.companion.reflection.propose.max-per-night}. Defensive parsing all
  * the way down: broken LLM JSON means zero survivors, never a broken run.
  */
 @Slf4j
@@ -97,6 +100,8 @@ public class HypothesisPipelineService {
     private final MetricSeriesService metricSeriesService;
     private final PatternMonitorService patternMonitorService;
     private final CompanionProperties properties;
+    /** S2 (mezo-eq85.2): the nightly pass owns the proposal cap now — the weekly cron is gone. */
+    private final ReflectionProperties reflectionProperties;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
     private final AppNotificationEmitter appNotificationEmitter;
@@ -109,14 +114,23 @@ public class HypothesisPipelineService {
     record Critique(Double statistical, Double confounders, Double l3align, Double actionability,
                     String reasoning) {}
 
-    /** Runs the whole weekly loop for one user; returns the number of persisted survivors. */
-    public int run(UUID userId) {
+    /**
+     * Runs the whole proposal loop for one user; returns the number of persisted survivors.
+     *
+     * <p>S2 (mezo-eq85.2): {@code extraContext} is appended to the gathered narrative when
+     * non-null — the seam the nightly {@code ReflectionJob} hands its own material through
+     * (Task 3 fills it). Null means "just the weekly narrative", i.e. the pre-S2 behaviour.
+     */
+    public int run(UUID userId, String extraContext) {
         String context = gather(userId);
         if (context == null) {
             log.debug("No narrative context for user {} — no hypothesis round", userId);
             return 0;
         }
-        int max = properties.hypotheses().maxPerRun();
+        if (extraContext != null && !extraContext.isBlank()) {
+            context = context + "\n\n" + extraContext;
+        }
+        int max = reflectionProperties.propose().maxPerNight();
         // null-safe end to end: JDK Set.of().contains(null) THROWS, and a category-less
         // proposal is valid-looking LLM output — it must skip one hypothesis, never the round
         List<Hypothesis> proposals = propose(userId, context).stream()
@@ -197,6 +211,9 @@ public class HypothesisPipelineService {
             table.append(" | ").append(day.getMonthValue()).append('.').append(day.getDayOfMonth()).append('.');
         }
         for (MetricKey metric : MetricKey.values()) {
+            if (!metric.correlatable()) {
+                continue; // bd mezo-dqzm: amit nem korrelálhat, arról ne is sejtsen a modell
+            }
             Map<LocalDate, Double> series = metricSeriesService.series(userId, metric, from, to);
             table.append('\n').append(metric.labelHu());
             for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
@@ -231,7 +248,7 @@ public class HypothesisPipelineService {
         String raw;
         try {
             String prompt = promptPersona.render(userId, String.format(Locale.ROOT, PROPOSE_PROMPT,
-                    properties.hypotheses().maxPerRun()));
+                    reflectionProperties.propose().maxPerNight()));
             raw = llmCallContextHolder.runWith(
                     new LlmCallContext("companion_hypothesis", "propose", null, null),
                     () -> companionLlm.completeSmart(prompt, context));
@@ -319,7 +336,7 @@ public class HypothesisPipelineService {
         pattern.setMechanism(hypothesis.mechanism());
         pattern.setEvidence(new PatternEvidenceEnvelope(List.of(
                 String.format(Locale.ROOT, "kritika-pontszám %.2f", score),
-                "heti hipotézis-kör", LocalDate.now().toString())));
+                "hipotézis-kör", LocalDate.now().toString())));
         pattern.setConfidence(BigDecimal.valueOf(score).setScale(3, RoundingMode.HALF_UP));
         pattern.setCritique(new PatternCritiqueEnvelope(critique.statistical(), critique.confounders(),
                 critique.l3align(), critique.actionability(), critique.reasoning()));
@@ -328,7 +345,7 @@ public class HypothesisPipelineService {
         patternRepository.saveAndFlush(pattern);
         appNotificationEmitter.emit(userId, AppNotificationKind.HYPOTHESIS_NEW,
                 "Új AI-hipotézis készült",
-                "„" + title + "” — a heti hipotézis-körből. Nézd meg a Minták között.",
+                "„" + title + "” — a hipotézis-körből. Nézd meg a Minták között.",
                 AppNotificationKind.HYPOTHESIS_NEW.deeplink(), pattern.getId(),
                 "hypothesis_new:" + pairKey);
         return true;

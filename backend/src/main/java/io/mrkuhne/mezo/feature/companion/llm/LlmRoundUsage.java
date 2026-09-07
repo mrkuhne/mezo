@@ -5,7 +5,7 @@ import io.mrkuhne.mezo.feature.llmlog.service.TokenUsage;
 /**
  * Per-call tally of the provider's PER-ROUND usage reports (mezo-58ig). One instance is created for
  * each {@link GeminiCompanionLlm} call and rides the ChatClient request context to
- * {@link GeminiRoundUsageAdvisor}, which adds every tool-loop round's own usage block into it.
+ * {@link LlmRoundUsageAdvisor}, which adds every tool-loop round's own usage block into it.
  *
  * <p>Why summing is the honest record: each tool round is a separately billed provider call (round
  * N's prompt re-sends the whole context and Google bills it again), and Spring AI 2.0's tool loop
@@ -18,10 +18,10 @@ import io.mrkuhne.mezo.feature.llmlog.service.TokenUsage;
  * actually reports it (a reported {@code 0} is a report — thinking off is not "unknown").
  * Synchronized because streamed rounds may report from Reactor threads.
  */
-final class GeminiRoundUsage {
+final class LlmRoundUsage {
 
     /** The ChatClient request-context key the tally travels under (adapter → advisor). */
-    static final String CONTEXT_KEY = GeminiRoundUsage.class.getName();
+    static final String CONTEXT_KEY = LlmRoundUsage.class.getName();
 
     private int rounds;
     private Integer prompt;

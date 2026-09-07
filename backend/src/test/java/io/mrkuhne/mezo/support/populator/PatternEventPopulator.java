@@ -26,4 +26,16 @@ public class PatternEventPopulator {
         entity.setPayload(PatternEventPayloadEnvelope.snapshot(r, n, p));
         return patternEventRepository.saveAndFlush(entity);
     }
+
+    /** Reflexió S2 (mezo-eq85.2): the user's own answer about a pattern — the only user-authored
+     *  input the lifecycle reads. */
+    public PatternEventEntity userReply(UUID createdBy, UUID patternId,
+                                        String channel, String choice, String text) {
+        PatternEventEntity entity = new PatternEventEntity();
+        entity.setCreatedBy(createdBy);
+        entity.setPatternId(patternId);
+        entity.setKind(PatternEventEntity.KIND_USER_REPLY);
+        entity.setPayload(PatternEventPayloadEnvelope.userReply(channel, choice, text));
+        return patternEventRepository.saveAndFlush(entity);
+    }
 }

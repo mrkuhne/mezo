@@ -51,11 +51,19 @@ export function PeoplePage() {
             on the left and BOTH actions against the right edge, Log first. Shipped left-packed,
             which reads as one crowded three-button row with the page title right under it. The
             `margin-left: auto` on the first action is the `.goal-hub-page .pgact` precedent. */}
+        {/* mezo-06o0.14 — these were tinted `--mz-cell-rose-bg`, which is the rose page's OWN
+            wash: on the light theme the pills vanished into the background and the actions read
+            as bare text, while the back chip beside them (`.mz-backbtn`, `--mz-chipbg`) read
+            correctly. The prototype gives the secondary action a translucent-white chip with
+            muted ink and the primary one a solid card-white chip with rose ink. On light these
+            tokens ARE those values to the byte (`--mz-chipbg` rgba(255,255,255,0.7),
+            `--mz-ink-soft` #6E6257, `--surface-card` #FFF, `--mz-cell-rose-ink` #8E3F6F), and all
+            four follow the dark theme too — which a literal hex would not. */}
         <button
           type="button"
           className="pgact"
           onClick={() => setLogOpen(true)}
-          style={{ marginLeft: 'auto', background: 'var(--mz-cell-rose-bg)', color: 'var(--mz-cell-rose-ink)' }}
+          style={{ marginLeft: 'auto', background: 'var(--mz-chipbg)', color: 'var(--mz-ink-soft)' }}
         >
           <ClayIcon name="i-mikrofon" size={12} /> Log
         </button>
@@ -63,7 +71,7 @@ export function PeoplePage() {
           type="button"
           className="pgact"
           onClick={() => setEditOpen(true)}
-          style={{ background: 'var(--mz-cell-rose-bg)', color: 'var(--mz-cell-rose-ink)' }}
+          style={{ background: 'var(--surface-card)', color: 'var(--mz-cell-rose-ink)' }}
         >
           ＋ Új személy
         </button>
@@ -87,7 +95,11 @@ export function PeoplePage() {
             />
           </StatStrip>
 
-          <div className="mz-mosaic">
+          {/* mezo-06o0.14 — the strip and the mosaic touched: `.mz-statstrip` carries no bottom
+              margin, and the house idiom is that the PAGE supplies the gap (the only other
+              StatStrip + mz-mosaic page, RecipeDetailPage, sets the same 11 inline). The
+              prototype's `.statstrip` has margin-bottom 10 on its 330px frame — 11.8 at ×1.18. */}
+          <div className="mz-mosaic" style={{ marginTop: 11 }}>
             <button
               type="button"
               className="ppl-hub-tile ppl-hub-gold rise"

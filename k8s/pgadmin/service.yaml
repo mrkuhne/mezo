@@ -1,5 +1,5 @@
-# ClusterIP only — internal. Reached via `kubectl port-forward svc/pgadmin ...`.
-# Intentionally NO Ingress: this admin UI must not be on the public internet.
+# ClusterIP only — internal. Private: reachable only over the Tailscale ingress
+# (ingress-tailscale.yaml). This admin UI must not be on the public internet.
 apiVersion: v1
 kind: Service
 metadata:

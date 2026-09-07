@@ -1,0 +1,67 @@
+# mezo alert rules (mezo-ibxy) — evaluated by the chart's vmalert, routed to Telegram.
+apiVersion: operator.victoriametrics.com/v1beta1
+kind: VMRule
+metadata:
+  name: mezo
+  namespace: monitoring
+  annotations:
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+spec:
+  groups:
+    - name: mezo.availability
+      interval: 30s
+      rules:
+        - alert: BackendDown
+          expr: absent(up{job=~".*backend.*"} == 1)
+          for: 3m
+          labels: { severity: critical }
+          annotations: { summary: "no mezo backend target has been up for 3 minutes" }
+        - alert: PodCrashLooping
+          expr: increase(kube_pod_container_status_restarts_total[15m]) > 3
+          for: 0m
+          labels: { severity: critical }
+          annotations: { summary: "{{ $labels.namespace }}/{{ $labels.pod }} restarted {{ $value | printf \"%.0f\" }}× in 15 min" }
+        - alert: PostgresDown
+          expr: pg_up == 0 or absent(pg_up)
+          for: 2m
+          labels: { severity: critical }
+          annotations: { summary: "postgres_exporter cannot reach Postgres" }
+        - alert: PgConnectionsHigh
+          expr: sum(pg_stat_activity_count) / max(pg_settings_max_connections) > 0.8
+          for: 5m
+          labels: { severity: warning }
+          annotations: { summary: "Postgres connections above 80% of max_connections" }
+    - name: mezo.node
+      interval: 60s
+      rules:
+        - alert: NodeDiskPressure
+          expr: node_filesystem_avail_bytes{mountpoint="/",fstype!="tmpfs"} / node_filesystem_size_bytes{mountpoint="/",fstype!="tmpfs"} < 0.15
+          for: 5m
+          labels: { severity: critical }
+          annotations: { summary: "Node root disk below 15% free ({{ $value | humanizePercentage }})" }
+        - alert: NodeMemoryHigh
+          expr: (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) > 0.90
+          for: 10m
+          labels: { severity: warning }
+          annotations: { summary: "Node memory above 90% for 10 minutes" }
+    - name: mezo.jobs
+      interval: 5m
+      rules:
+        - alert: BackupMissed
+          expr: (time() - kube_cronjob_status_last_successful_time{namespace="mezo",cronjob="postgres-backup"} > 26 * 3600) or absent(kube_cronjob_status_last_successful_time{namespace="mezo",cronjob="postgres-backup"})
+          for: 0m
+          labels: { severity: critical }
+          annotations: { summary: "postgres-backup has not succeeded in 26 hours" }
+    - name: mezo.traffic
+      interval: 60s
+      rules:
+        - alert: HttpErrorRate
+          expr: sum(rate(traefik_service_requests_total{code=~"5.."}[5m])) / sum(rate(traefik_service_requests_total[5m])) > 0.05
+          for: 5m
+          labels: { severity: warning }
+          annotations: { summary: "Traefik 5xx rate above 5% for 5 minutes" }
+        - alert: LlmTokenSpike
+          expr: sum(increase(gen_ai_client_token_usage_total[1d])) > 3 * avg_over_time(sum(increase(gen_ai_client_token_usage_total[1d]))[7d:1d])
+          for: 0m
+          labels: { severity: warning }
+          annotations: { summary: "LLM tokens today are more than 3× the 7-day daily average" }
