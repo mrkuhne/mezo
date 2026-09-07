@@ -32,6 +32,12 @@ class ReflectionDigestServiceIT extends AbstractIntegrationTest {
     private static final TestPlanEnvelope PLAN = new TestPlanEnvelope(
             "people:anna", "sleep-duration-h", 1, TestPlanEnvelope.DIRECTION_POSITIVE, 8, 3, 60);
 
+    /** A SECOND hypothesis for the two-row ordering cases — {@code uq_pattern_created_by_hypothesis_key}
+     *  forbids reusing {@link #PLAN} for the same owner, and a distinct title makes the assertions
+     *  name which row actually won. */
+    private static final TestPlanEnvelope PLAN_B = new TestPlanEnvelope(
+            "people:bea", "steps", 1, TestPlanEnvelope.DIRECTION_POSITIVE, 8, 3, 60);
+
     @Autowired private ReflectionDigestService reflectionDigestService;
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private PatternEventPopulator patternEventPopulator;
@@ -59,6 +65,63 @@ class ReflectionDigestServiceIT extends AbstractIntegrationTest {
 
         assertThat(reflectionDigestService.digestFor(owner, today))
                 .contains("Elengedtem: „" + row.getTitle() + "” — a számok nem támasztották alá.");
+    }
+
+    /** {@code dormant} is not a disproof — the hypothesis just went quiet — so it gets its own
+     *  sentence rather than being silently skipped (mezo-cuml). */
+    @Test
+    void testDigestFor_shouldAnnounceTheDormancy_whenLastNightSetARowAside() {
+        LocalDate today = LocalDate.now();
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity row = patternPopulator.reflection(owner, PLAN, PatternEntity.STATUS_DORMANT);
+        patternEventPopulator.decision(owner, row.getId(), PatternEventEntity.KIND_DORMANT,
+                lastNight(today));
+
+        assertThat(reflectionDigestService.digestFor(owner, today))
+                .contains("Félretettem: „" + row.getTitle()
+                        + "” — rég nem jött hozzá új adat. Ha visszatér, újra ránézek.");
+    }
+
+    /**
+     * THE regression mezo-cuml is about: with no sentence for {@code dormant}, the newest verdict
+     * of the night produced nothing and the digest silently fell through to an OLDER
+     * {@code confirmed} — this morning's actual news reported as stale news.
+     */
+    @Test
+    void testDigestFor_shouldPreferTheDormancy_whenItIsNewerThanTheNightsConfirmation() {
+        LocalDate today = LocalDate.now();
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity older = patternPopulator.reflection(owner, PLAN,
+                PatternEntity.STATUS_CONFIRMED);
+        PatternEntity newer = patternPopulator.reflection(owner, PLAN_B,
+                PatternEntity.STATUS_DORMANT);
+        patternEventPopulator.decision(owner, older.getId(), PatternEventEntity.KIND_CONFIRMED,
+                nightlyJobRun(today).minusSeconds(60));
+        patternEventPopulator.decision(owner, newer.getId(), PatternEventEntity.KIND_DORMANT,
+                nightlyJobRun(today));
+
+        assertThat(reflectionDigestService.digestFor(owner, today))
+                .contains("Félretettem: „" + newer.getTitle()
+                        + "” — rég nem jött hozzá új adat. Ha visszatér, újra ránézek.");
+    }
+
+    /** …and the ordering is genuinely by TIME, not by kind: an older dormancy loses to the
+     *  night's later confirmation. */
+    @Test
+    void testDigestFor_shouldPreferTheConfirmation_whenItIsNewerThanTheNightsDormancy() {
+        LocalDate today = LocalDate.now();
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity older = patternPopulator.reflection(owner, PLAN, PatternEntity.STATUS_DORMANT);
+        PatternEntity newer = patternPopulator.reflection(owner, PLAN_B,
+                PatternEntity.STATUS_CONFIRMED);
+        patternEventPopulator.decision(owner, older.getId(), PatternEventEntity.KIND_DORMANT,
+                nightlyJobRun(today).minusSeconds(60));
+        patternEventPopulator.decision(owner, newer.getId(), PatternEventEntity.KIND_CONFIRMED,
+                nightlyJobRun(today));
+
+        assertThat(reflectionDigestService.digestFor(owner, today))
+                .contains("Ma éjjel megerősítettem: „" + newer.getTitle()
+                        + "”. Beépítettem a tudásba.");
     }
 
     /** No verdict last night, but the user ASKED for this one to be watched — then the running
