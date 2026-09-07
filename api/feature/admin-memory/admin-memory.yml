@@ -1,0 +1,260 @@
+openapi: 3.0.3
+info:
+  title: mezo admin-memory fragment
+  version: 1.0.0
+tags:
+  - name: AdminMemory
+    description: >
+      OWNER-only RAG memory explorer for ONE inspected user (mezo-4qyt). Every operation
+      returns 403 AUTH_FORBIDDEN for a non-owner and 404 when
+      mezo.feature.admin-memory.enabled (or the companion/knowledge-graph switch a given
+      endpoint needs) is off. Read-only apart from POST /replay, which is itself
+      side-effect-free: it writes no memory_retrieval_* row and never touches the
+      inspected user's memory.
+paths:
+  /api/admin/users/{userId}/memory/runs:
+    get:
+      tags: [AdminMemory]
+      operationId: listAdminMemoryRuns
+      summary: One user's audited retrieval runs, newest first (AdminMemory)
+      parameters:
+        - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: page, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+        - { name: size, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, default: 25 } }
+      responses:
+        '200':
+          description: One page of runs
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminMemoryRunPageResponse' }
+        '401': { $ref: '#/components/responses/AdminMemoryUnauthorized' }
+        '403': { $ref: '#/components/responses/AdminMemoryForbidden' }
+        '404': { $ref: '#/components/responses/AdminMemoryDisabled' }
+  /api/admin/users/{userId}/memory/runs/{runId}:
+    get:
+      tags: [AdminMemory]
+      operationId: getAdminMemoryRun
+      summary: One run with its ranked candidates and score decomposition (AdminMemory)
+      parameters:
+        - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
+        - { name: runId, in: path, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200':
+          description: Run detail
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminMemoryRunDetailResponse' }
+        '401': { $ref: '#/components/responses/AdminMemoryUnauthorized' }
+        '403': { $ref: '#/components/responses/AdminMemoryForbidden' }
+        '404':
+          description: >
+            No such run for this user, or the feature is off
+            (ADMIN_MEMORY_RUN_NOT_FOUND / ADMIN_MEMORY_DISABLED)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+  /api/admin/users/{userId}/memory/replay:
+    post:
+      tags: [AdminMemory]
+      operationId: replayAdminMemory
+      summary: Side-effect-free NEW-mode dry run for one query (AdminMemory)
+      parameters:
+        - { name: userId, in: path, required: true, schema: { type: string, format: uuid } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AdminMemoryReplayRequest' }
+      responses:
+        '200':
+          description: Dry-run detail, same shape as a run detail
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminMemoryRunDetailResponse' }
+        '400':
+          description: Blank or over-long query (ADMIN_MEMORY_REPLAY_QUERY_INVALID)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SystemMessageList' }
+        '401': { $ref: '#/components/responses/AdminMemoryUnauthorized' }
+        '403': { $ref: '#/components/responses/AdminMemoryForbidden' }
+        '404': { $ref: '#/components/responses/AdminMemoryDisabled' }
+components:
+  responses:
+    AdminMemoryUnauthorized:
+      description: Missing/invalid token
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/SystemMessageList' }
+    AdminMemoryForbidden:
+      description: Not the owner (AUTH_FORBIDDEN)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/SystemMessageList' }
+    AdminMemoryDisabled:
+      description: Feature or its companion dependency is off (ADMIN_MEMORY_DISABLED)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/SystemMessageList' }
+  schemas:
+    AdminMemoryRetrieverTrace:
+      type: object
+      required: [retriever, durationMs, candidateCount]
+      properties:
+        retriever: { type: string, description: 'dense | lexical | graph | facts' }
+        durationMs: { type: integer, format: int64 }
+        candidateCount: { type: integer, format: int32 }
+        error: { type: string, nullable: true, description: 'TIMEOUT, INTERRUPTED, an exception simple name, or null' }
+    AdminMemoryRunSummary:
+      type: object
+      required:
+        [id, createdAt, consumerPolicy, servingMode, queryMode, rawQuery,
+         candidateCount, selectedCount, durationMs, embeddingVersion, retrieverTrace]
+      properties:
+        id: { type: string, format: uuid, nullable: true, description: 'null on a dry run' }
+        createdAt: { type: string, format: date-time }
+        consumerPolicy: { type: string, description: 'CHAT_AMBIENT | MORNING_BRIEFING | WEEKLY_MEMOIR | PREDICTION_EVIDENCE | REFLECTION' }
+        servingMode: { type: string, description: 'OLD | SHADOW | NEW' }
+        queryMode: { type: string, description: 'NONE | RAW | REWRITE' }
+        rawQuery: { type: string }
+        rewrittenQuery: { type: string, nullable: true }
+        candidateCount: { type: integer, format: int32 }
+        selectedCount: { type: integer, format: int32 }
+        durationMs: { type: integer, format: int64 }
+        embeddingVersion: { type: string }
+        shadowEmbeddingVersion: { type: string, nullable: true, description: 'always null today' }
+        errorCode: { type: string, nullable: true }
+        traceId: { type: string, format: uuid, nullable: true }
+        retrieverTrace:
+          type: array
+          items: { $ref: '#/components/schemas/AdminMemoryRetrieverTrace' }
+    AdminMemoryRunPageResponse:
+      type: object
+      required: [page, size, total, retentionDays, items]
+      properties:
+        page: { type: integer, format: int32 }
+        size: { type: integer, format: int32, description: 'the size actually used; clamped, never rejected' }
+        total: { type: integer, format: int64 }
+        retentionDays:
+          type: integer
+          format: int32
+          description: 'mezo.companion.memory-platform.audit.retention-days — runs older than this are hard-deleted'
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/AdminMemoryRunSummary' }
+    AdminMemoryScoreBreakdown:
+      type: object
+      required: [retrieverRanks, rrf, finalScore]
+      properties:
+        retrieverRanks:
+          type: object
+          additionalProperties: { type: integer, format: int32 }
+          description: 'retriever name -> 1-based rank inside that retriever; an ABSENT key means the retriever did not return this candidate'
+        rrf: { type: number, format: double }
+        pinnedBoost: { type: number, format: double, nullable: true }
+        sourceReliabilityBoost: { type: number, format: double, nullable: true }
+        temporalBoost: { type: number, format: double, nullable: true }
+        salienceBoost: { type: number, format: double, nullable: true }
+        recencyBoost: { type: number, format: double, nullable: true }
+        rerankerScore:
+          type: number
+          format: double
+          nullable: true
+          description: >
+            NOT a model relevance score. The pipeline stores 1/postRerankRank, i.e. a
+            restatement of `rank`. Render it as "ujrarangsorolt hely", never as a score.
+        finalScore: { type: number, format: double }
+    AdminMemoryCandidate:
+      type: object
+      required: [rank, selected, candidateKind, candidateRefId, contentSnapshot, scoreBreakdown]
+      properties:
+        resultId: { type: string, format: uuid, nullable: true, description: 'null on a dry run' }
+        rank: { type: integer, format: int32, description: 'final (post-rerank) rank as stored' }
+        fusionRank:
+          type: integer
+          format: int32
+          description: 'rank the deterministic fusion order alone would have given, derived from finalScore'
+        rerankDelta:
+          type: integer
+          format: int32
+          nullable: true
+          description: 'fusionRank - rank; null when the run was not reranked'
+        selected: { type: boolean, description: 'made it into the rendered context' }
+        candidateKind: { type: string }
+        candidateRefId: { type: string, format: uuid }
+        memoryItemId: { type: string, format: uuid, nullable: true }
+        contentSnapshot: { type: string }
+        occurredOn: { type: string, format: date, nullable: true }
+        scoreBreakdown: { $ref: '#/components/schemas/AdminMemoryScoreBreakdown' }
+    AdminMemoryFusionConfig:
+      type: object
+      required: [rrfK, retrieverWeights]
+      description: >
+        Read live from mezo.companion.memory-platform.fusion. Never duplicated in
+        mezo.admin.memory: the client draws contributions with the SAME constants the
+        pipeline fused with. A run stored before a weight change was fused with the OLD
+        weights, so a recomputed contribution can differ from the stored rrf — the surface
+        says so.
+      properties:
+        rrfK: { type: integer, format: int32 }
+        retrieverWeights:
+          type: object
+          additionalProperties: { type: number, format: double }
+        pinnedBoost: { type: number, format: double }
+        sourceReliabilityMaxBoost: { type: number, format: double }
+        temporalMaxBoost: { type: number, format: double }
+        salienceMaxAdjustment: { type: number, format: double }
+        recencyMaxBoost: { type: number, format: double }
+    AdminMemoryPromptTraceItem:
+      type: object
+      required: [kind, refId, label]
+      properties:
+        kind: { type: string }
+        refId: { type: string, format: uuid }
+        occurredOn: { type: string, format: date, nullable: true }
+        label: { type: string }
+        gist: { type: string, nullable: true }
+        similarity: { type: number, format: double }
+        retrievalResultId: { type: string, format: uuid, nullable: true }
+        memoryItemId: { type: string, format: uuid, nullable: true }
+        indicator: { type: string, nullable: true }
+    AdminMemoryRunDetailResponse:
+      type: object
+      required: [run, candidates, fusion, dryRun, replayNotes]
+      properties:
+        run: { $ref: '#/components/schemas/AdminMemoryRunSummary' }
+        candidates:
+          type: array
+          items: { $ref: '#/components/schemas/AdminMemoryCandidate' }
+        fusion: { $ref: '#/components/schemas/AdminMemoryFusionConfig' }
+        promptTrace:
+          type: array
+          nullable: true
+          description: 'ai_message.recalled_memories for this run; null when no prompt imprint exists'
+          items: { $ref: '#/components/schemas/AdminMemoryPromptTraceItem' }
+        promptTraceReason:
+          type: string
+          nullable: true
+          description: 'SHADOW_RUN | NO_PROMPT_IMPRINT | DRY_RUN — why promptTrace is null'
+        dryRun: { type: boolean }
+        queryProjection:
+          type: array
+          nullable: true
+          description: 'dry run only: the query vector in the PCA-50 space, for the map'
+          items: { type: number, format: float }
+        replayNotes:
+          type: array
+          description: 'honesty flags, e.g. reranker_skipped, rewrite_skipped, projection_embed_extra_call, pca_unavailable'
+          items: { type: string }
+    AdminMemoryReplayRequest:
+      type: object
+      required: [query]
+      properties:
+        query: { type: string, minLength: 1, maxLength: 500 }
+        reranker: { type: boolean, default: false, description: 'ALLOW the LLM reranker (costs a smart-tier call); the pipeline still decides whether it is needed' }
+        rewrite: { type: boolean, default: false, description: 'ALLOW the LLM query rewrite (costs a call)' }
+        consumerPolicy:
+          type: string
+          enum: [CHAT_AMBIENT, MORNING_BRIEFING, WEEKLY_MEMOIR, PREDICTION_EVIDENCE, REFLECTION]
+          default: CHAT_AMBIENT
+        asOf: { type: string, format: date, nullable: true, description: 'defaults to today in the server zone' }
