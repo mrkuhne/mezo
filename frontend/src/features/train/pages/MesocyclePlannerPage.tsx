@@ -109,13 +109,19 @@ export function MesocyclePlannerPage() {
           mode="draft"
           name={state.name}
           meta={`${state.weeks} hét · ${splitLine(state.daysOfWeek)}`}
+          note={state.proposal?.rationale}
           days={trainingDays}
           priorities={state.priorities}
           volumePerMuscle={state.proposal?.template.volumePerMuscle ?? null}
           timingProfile={timingProfile}
           timingProfilePending={timingProfilePending}
           activeDay={state.activeDay}
-          onOpenDay={(day) => dispatch({ type: 'openDay', day })}
+          onOpenDay={(day) => {
+            dispatch({ type: 'openDay', day })
+            // A closing day page must not leave the exercise picker able to reopen against a
+            // stale day (mezo-yty6 fix round 1).
+            if (day === null) setPickerDay(null)
+          }}
           onBack={goBack}
           onRename={(name) => dispatch({ type: 'setName', name })}
           onRenameDay={(day, name) => dispatch({ type: 'renameDay', day, name })}

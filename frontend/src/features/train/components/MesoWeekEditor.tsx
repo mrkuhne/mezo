@@ -27,6 +27,8 @@ interface MesoWeekEditorProps {
   name: string
   /** One-line meta under the name: weeks · split · run count. */
   meta: string
+  /** Mezo's coach-style rationale for the generated block (proposal.rationale). Optional. */
+  note?: string
   days: MesoDay[]
   priorities?: MusclePriorities | null
   volumePerMuscle?: Record<string, Landmark> | null
@@ -60,7 +62,7 @@ function useBufferedText(value: string): [string, (t: string) => void] {
 }
 
 export function MesoWeekEditor({
-  mode, name, meta, days, priorities, volumePerMuscle, timingProfile, timingProfilePending,
+  mode, name, meta, note, days, priorities, volumePerMuscle, timingProfile, timingProfilePending,
   activeDay, onOpenDay, onBack, onRename, onRenameDay,
   onChangeExercise, onMoveExercise, onRemoveExercise, onAddClick, footer,
 }: MesoWeekEditorProps) {
@@ -121,6 +123,12 @@ export function MesoWeekEditor({
               }}
             />
             <div className="mz-wbmeta">{meta}</div>
+            {note && (
+              <div className="mz-coach">
+                <span className="dot" aria-hidden="true" />
+                <span>{note}</span>
+              </div>
+            )}
           </div>
 
           <div className="mz-eyebrow rise" style={{ padding: '9px 2px 5px' }}>A heted · koppints egy napra</div>

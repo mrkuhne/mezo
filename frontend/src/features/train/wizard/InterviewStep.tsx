@@ -29,10 +29,13 @@ const COUNTS: { n: number; sub: string }[] = [
   { n: 5, sub: 'U/L + PPL' }, { n: 6, sub: 'PPL ×2' },
 ]
 
+/** The retired StepProgram's Hossz range (mezo-yty6 fix round 1) — 4-8 weeks. */
+const WEEK_CHOICES = [4, 5, 6, 7, 8]
+
 const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
 
 /** The split table only covers 2–6 training days — the generate CTA's gate. */
-export function canGenerate(state: WizardState): boolean {
+function canGenerate(state: WizardState): boolean {
   return state.daysOfWeek.length >= 2 && state.daysOfWeek.length <= 6
 }
 
@@ -97,6 +100,26 @@ export function InterviewStep({ state, dispatch, onGenerate, generating }: Inter
         <div className="mz-coach">
           <span className="dot" aria-hidden="true" />
           <span>{splitLine(days)}</span>
+        </div>
+        <div className="mz-stephead" style={{ marginTop: 11, marginBottom: 6 }}>
+          <span className="mz-eyebrow mz-eb-coral mz-grow">Hossz</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--mz-ink-soft)' }}>
+            {state.weeks} hét = {state.weeks - 1} rámpa + 1 deload
+          </span>
+        </div>
+        <div className="segtabs" role="group" aria-label="Hossz hetekben">
+          {WEEK_CHOICES.map((w) => (
+            <button
+              key={w}
+              type="button"
+              className="segtab"
+              aria-pressed={state.weeks === w}
+              aria-label={`${w} hét`}
+              onClick={() => dispatch({ type: 'setWeeks', weeks: w })}
+            >
+              {w}
+            </button>
+          ))}
         </div>
       </div>
 

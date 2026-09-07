@@ -125,28 +125,6 @@ export function generateInput(s: WizardState): MesoPlanGenerateRequest {
   }
 }
 
-/** Order-independent shape of the sparse tier map, so key order can't fake a change. */
-function priorityKey(p: Record<string, string> | null | undefined): string {
-  return JSON.stringify(Object.entries(p ?? {}).sort(([a], [b]) => a.localeCompare(b)))
-}
-
-/**
- * Have the generator's inputs moved since the proposal was made? Days, length and the sparse
- * tier map are exactly what `generateInput` sends, so anything that changes them makes the
- * standing program stale. Deliberately NOT auto-regenerating on true — that would throw away
- * the user's manual day edits; the Program step just says so and leaves ↺ to the user.
- */
-export function inputChanged(s: WizardState): boolean {
-  const prev = s.proposalInput
-  if (!prev) return false
-  const now = generateInput(s)
-  return (
-    now.daysOfWeek.join(',') !== prev.daysOfWeek.join(',')
-    || now.weeks !== prev.weeks
-    || priorityKey(now.priorities) !== priorityKey(prev.priorities)
-  )
-}
-
 /**
  * The saved template: the generator's own template metadata (split/style/landmarks) with
  * everything the user owns written over it — title, length, tiers, the edited program and the

@@ -10,11 +10,19 @@ import { ZoneBar } from '@/features/train/components/ZoneBar'
 import { adjacentDayConflicts, weekMuscleLoad, type Landmark } from '@/features/train/logic/mesoLoad'
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { TIER_LABELS } from '@/features/train/logic/musclePriorities'
+import { peakWeekFit } from '@/features/train/logic/peakWeekFit'
 import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useState } from 'react'
 
 const ARROW = { up: '▲', down: '▼', hold: '=' } as const
+
+/** Mirrors PeakFitCard's established copy for a peakWeekFit finding (mezo-yty6 fix round 1). */
+function peakFitLine(f: { day: string; minutes: number; direction: 'over' | 'under' }): string {
+  return f.direction === 'over'
+    ? `${f.day}: csúcshéten ~${f.minutes} perc — vegyél el, vagy tedd át.`
+    : `${f.day}: csúcshéten is csak ~${f.minutes} perc — férne még bele inger.`
+}
 
 interface WeekLoadPanelProps {
   days: MesoDay[]
@@ -26,6 +34,7 @@ interface WeekLoadPanelProps {
 export function WeekLoadPanel({ days, priorities, volumePerMuscle, onBack }: WeekLoadPanelProps) {
   const rows = weekMuscleLoad(days, priorities ?? null, volumePerMuscle ?? null)
   const conflicts = adjacentDayConflicts(days)
+  const peakFits = peakWeekFit(days, priorities ?? null, volumePerMuscle ?? null)
   const [open, setOpen] = useState<string | null>(null)
 
   const total = rows.reduce((a, r) => a + r.sets, 0)
@@ -123,6 +132,18 @@ export function WeekLoadPanel({ days, priorities, volumePerMuscle, onBack }: Wee
             <div className="mz-lint mz-lint-ok rise">
               <span aria-hidden="true">✓</span>
               <span><b>Nincs egymást követő napi átfedés</b> — minden izom kap pihenőt két edzés között.</span>
+            </div>
+          )}
+
+          {peakFits.length > 0 ? peakFits.map((f) => (
+            <div className="mz-lint rise" key={f.day}>
+              <span aria-hidden="true">⚠️</span>
+              <span>{peakFitLine(f)}</span>
+            </div>
+          )) : (
+            <div className="mz-lint mz-lint-ok rise">
+              <span aria-hidden="true">✓</span>
+              <span><b>A csúcshét is elfér</b> — az edzésidő minden napon a sávon belül marad.</span>
             </div>
           )}
         </PageBody>

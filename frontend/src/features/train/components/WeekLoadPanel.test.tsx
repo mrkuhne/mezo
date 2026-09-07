@@ -69,4 +69,34 @@ describe('WeekLoadPanel', () => {
     render(<WeekLoadPanel days={clean} onBack={vi.fn()} />)
     expect(screen.getByText(/Nincs egymást követő napi átfedés/i)).toBeInTheDocument()
   })
+
+  // mezo-yty6 fix round 1: spec §3 requires the peak-week check after the adjacency lint —
+  // amber when peakWeekFit flags out-of-band days, green .mz-lint-ok otherwise. Fixture is
+  // peakWeekFit.test.ts's own primary case (same hand-computed 109/29-minute projection).
+  test('a peak-week fit issue renders an amber lint row naming the day and the minutes', () => {
+    // Exact fixture from peakWeekFit.test.ts's primary case (109/29-minute projection) — the
+    // local `ex` helper above fixes warmupSets to 1, so these are built by hand instead.
+    const peakEx = (id: string, muscle: string, workingSets: number, warmupSets: number): GymExercise =>
+      ({ id, name: id, muscle, warmupSets, workingSets, repMin: 8, repMax: 10, targetRIR: 2, type: 'compound' })
+    const a1 = peakEx('a1', 'back-mid', 3, 2)
+    const a2 = peakEx('a2', 'back-wide', 2, 1)
+    const b1 = peakEx('b1', 'lats', 1, 1)
+    const peakDays = [day('Szo', 'Push', [a1, a2]), day('Sze', 'Push', [b1])]
+    render(
+      <WeekLoadPanel
+        days={peakDays}
+        priorities={{ back: 'emphasize' }}
+        volumePerMuscle={{ back: { mev: 5, mav: 20, mrv: 40 } }}
+        onBack={vi.fn()}
+      />,
+    )
+    expect(screen.getByText('Szo: csúcshéten ~109 perc — vegyél el, vagy tedd át.')).toBeInTheDocument()
+    expect(screen.getByText('Sze: csúcshéten is csak ~29 perc — férne még bele inger.')).toBeInTheDocument()
+  })
+
+  test('a peak-week that fits everywhere says so instead of staying silent', () => {
+    const clean = [day('Hét', 'Upper', [ex('a', 'Evezés', 'back', 6)])]
+    render(<WeekLoadPanel days={clean} onBack={vi.fn()} />)
+    expect(screen.getByText(/A csúcshét is elfér/i)).toBeInTheDocument()
+  })
 })

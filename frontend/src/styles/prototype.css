@@ -9129,16 +9129,6 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   background: var(--gradient-cta); }
 .mz-coachsub { font-size: 10px; color: var(--mz-ink-mut); margin-top: 6px; }
 
-/* 03 · generálás-várakozó */
-.mz-genwait { text-align: center; padding: 50px 0 35px; }
-.mz-genwait-orb { width: 61px; height: 61px; border-radius: 50%; margin: 0 auto 14px;
-  background: var(--gradient-cta); box-shadow: 0 17px 35px -9px rgba(255, 91, 54, 0.6);
-  animation: mz-genpulse 1.2s ease-in-out infinite; }
-@keyframes mz-genpulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
-.mz-genwait b { display: block; font-size: 13px; font-weight: 700; }
-.mz-genwait small { display: block; font-size: 11px; color: var(--mz-ink-soft); margin-top: 4px; }
-@media (prefers-reduced-motion: reduce) { .mz-genwait-orb { animation: none; } }
-
 /* 03 · kompakt hero */
 .mz-edhero { border-radius: 19px; padding: 12px 14px; background: var(--mz-wash-trainhero);
   border: 0.5px solid rgba(43, 33, 24, 0.06); box-shadow: var(--mz-shadow); }

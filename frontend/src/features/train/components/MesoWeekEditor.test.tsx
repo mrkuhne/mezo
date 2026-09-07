@@ -116,4 +116,14 @@ describe('MesoWeekEditor', () => {
     rerender({ name: 'Hypertrophy · Tél' })
     expect(field).toHaveValue('Hypertrophy · Tél')
   })
+
+  // mezo-yty6 fix round 1: the generator's rationale had no slot in the editor hero.
+  test('an optional coach note renders under the meta line when given, nothing when omitted', () => {
+    const { view } = setup()
+    expect(view.container.querySelector('.mz-coach')).not.toBeInTheDocument()
+    view.unmount()
+
+    setup({ note: 'A hátra tettem a hangsúlyt, a vállad kímélve.' })
+    expect(screen.getByText('A hátra tettem a hangsúlyt, a vállad kímélve.')).toBeInTheDocument()
+  })
 })

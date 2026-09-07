@@ -77,6 +77,18 @@ test('the tier picker on the same screen moves the weekly set totals', async () 
   expect(weekOne()).toBe(before + 2)
 })
 
+// mezo-yty6 fix round 1: the Hossz control was missing, pinning every block at 6 weeks.
+test('picking a block length dispatches setWeeks and updates the derived ramp/deload copy', async () => {
+  const user = userEvent.setup()
+  setup()
+  expect(screen.getByText('6 hét = 5 rámpa + 1 deload')).toBeInTheDocument()
+  expect(screen.getByText('5 + 1')).toBeInTheDocument()
+
+  await user.click(screen.getByRole('button', { name: '8 hét' }))
+  expect(screen.getByText('8 hét = 7 rámpa + 1 deload')).toBeInTheDocument()
+  expect(screen.getByText('7 + 1')).toBeInTheDocument()
+})
+
 test('fewer than two training days blocks the generate CTA', async () => {
   const user = userEvent.setup()
   setup()
@@ -236,6 +248,35 @@ describe('real mode', () => {
     await user.click(screen.getByRole('button', { name: 'Mégse' }))
     expect(screen.queryByText('Nem sikerült az újragenerálás — a korábbi program megmaradt.')).toBeNull()
     expect(tiles()).toHaveLength(before)
+  })
+
+  // mezo-yty6 fix round 1: picking a length before generating must reach the save payload.
+  test('a picked block length travels to the real-mode save payload', async () => {
+    let posted: { weeks?: number; phaseCurve?: unknown[] } | null = null
+    server.use(
+      http.post(`${API_BASE}/api/train/meso-templates`, async ({ request }) => {
+        posted = (await request.json()) as typeof posted
+        return HttpResponse.json({ id: 'e1f3a0e2-0000-4000-8000-00000000d00d', ...posted, runCount: 0 }, { status: 201 })
+      }),
+    )
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    const user = userEvent.setup()
+    render(
+      <QueryWrapper>
+        <MemoryRouter initialEntries={['/train/mesocycles/new']}>
+          <MesocyclePlannerPage />
+        </MemoryRouter>
+      </QueryWrapper>,
+    )
+    await user.click(screen.getByRole('button', { name: '8 hét' }))
+    await generate(user)
+    await screen.findByRole('textbox', { name: 'Mezociklus neve' })
+
+    await user.click(screen.getByRole('button', { name: 'Mentés sablonként' }))
+
+    await waitFor(() => expect(posted).not.toBeNull())
+    expect(posted!.weeks).toBe(8)
+    expect(posted!.phaseCurve).toHaveLength(8)
   })
 
   test('a failed FIRST generation renders a retry state, never a blank body', async () => {

@@ -3,7 +3,7 @@ import type { MesoDay, MesoPhase } from '@/data/types'
 import type { MesoTemplateUpsertRequest } from '@/data/train/trainApi'
 import type { MesoPlanProposal } from '@/data/train/mesoPlanHooks'
 import {
-  generateInput, initialWizardState, inputChanged, toUpsert, wizardReducer, type WizardState,
+  generateInput, initialWizardState, toUpsert, wizardReducer, type WizardState,
 } from './wizardState'
 
 const day = (d: string, type: string): MesoDay =>
@@ -74,36 +74,5 @@ describe('wizardReducer', () => {
     expect(saved.weeks).toBe(8)
     expect(saved.phaseCurve).toHaveLength(8)
     expect(saved.phaseCurve.at(-1)).toBe('Deload')
-  })
-
-  // I3: without proposalInput, a post-generation day/tier change was silent — toUpsert then
-  // wrote the NEW musclePriorities next to the OLD program.
-  describe('inputChanged', () => {
-    it('is false before a generation and right after one', () => {
-      expect(inputChanged(s0)).toBe(false)
-      expect(inputChanged(generate(s0))).toBe(false)
-    })
-    it('turns true when the days move after a generation', () => {
-      const g = generate(s0)
-      expect(inputChanged(wizardReducer(g, { type: 'setDayCount', n: 5 }))).toBe(true)
-      expect(inputChanged(wizardReducer(g, { type: 'setDays', days: ['Hét', 'Sze'] }))).toBe(true)
-    })
-    it('turns true when the tiers move after a generation, but ignores a grow-only no-op', () => {
-      const g = generate(s0)
-      expect(inputChanged(wizardReducer(g, { type: 'setPriorities', priorities: { back: 'emphasize' } }))).toBe(true)
-      // grow is the default tier — it never travels, so it is not a change
-      expect(inputChanged(wizardReducer(g, { type: 'setPriorities', priorities: { back: 'grow' } }))).toBe(false)
-    })
-    it('turns true when the length moves, and key ORDER alone never fakes a change', () => {
-      const withTiers = wizardReducer(s0, { type: 'setPriorities', priorities: { back: 'emphasize', chest: 'maintain' } })
-      const g = generate(withTiers)
-      expect(inputChanged(wizardReducer(g, { type: 'setWeeks', weeks: 8 }))).toBe(true)
-      expect(inputChanged(wizardReducer(g, { type: 'setPriorities', priorities: { chest: 'maintain', back: 'emphasize' } }))).toBe(false)
-    })
-    it('a re-generation re-baselines it', () => {
-      const changed = wizardReducer(generate(s0), { type: 'setDayCount', n: 3 })
-      expect(inputChanged(changed)).toBe(true)
-      expect(inputChanged(generate(changed))).toBe(false)
-    })
   })
 })
