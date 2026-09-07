@@ -12,8 +12,8 @@ import java.util.Set;
  *
  * <p>An unmapped name deliberately counts as critical: a tool this map has not heard of is either
  * a hallucinated name or a new tool nobody re-baselined against, and both deserve to show up red
- * rather than to be quietly averaged away. {@code ToolSelectionEvalIT} additionally asserts the
- * live tool registry is fully covered here, so the map cannot silently rot.
+ * rather than to be quietly averaged away. {@code ToolDomainsTest} reads the live {@code @Tool}
+ * names out of the sources and fails when this map drifts from them in either direction.
  */
 final class ToolDomains {
 
