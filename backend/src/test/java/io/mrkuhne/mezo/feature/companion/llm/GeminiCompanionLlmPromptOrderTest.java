@@ -68,11 +68,12 @@ class GeminiCompanionLlmPromptOrderTest {
     @Test
     void testComplete_shouldOrderSystemThenHistoryThenUser_whenHistoryIsGiven() {
         CapturingChatModel chatModel = new CapturingChatModel();
+        LlmCallContextHolder contextHolder = new LlmCallContextHolder();
         GeminiCompanionLlm adapter = new GeminiCompanionLlm(
                 chatModel,
-                minimalCompanionProperties(),
+                new LlmModelRouter(minimalCompanionProperties(), contextHolder),
                 new NoOpLlmCallRecorder(),
-                new LlmCallContextHolder(),
+                contextHolder,
                 new GoogleGenAiUsageExtractor());
 
         adapter.complete("RENDSZER", List.of(
@@ -88,11 +89,17 @@ class GeminiCompanionLlmPromptOrderTest {
         assertThat(sent.get(3).getText()).isEqualTo("mostani kérdés");
     }
 
+    /** Egy szolgáltató tiere, model-override nélkül (mezo-ozri.4). */
+    private static Llm.Tier tier(String chatModel, String smartModel) {
+        return new Llm.Tier(chatModel, smartModel, Map.of(), Map.of(),
+                new Llm.Tier.ReasoningEffort(null, null));
+    }
+
     /** A legkisebb valid {@link CompanionProperties} — minden constraint kielégítve. */
     private static CompanionProperties minimalCompanionProperties() {
         return new CompanionProperties(
-                new Llm(LlmProvider.GEMINI, new Llm.Tier("gemini-2.5-flash", "gemini-2.5-pro"),
-                        new Llm.Tier("gpt-5.6-luna", "gpt-5.6-terra"), Map.of()),
+                new Llm(LlmProvider.GEMINI, tier("gemini-2.5-flash", "gemini-2.5-pro"),
+                        tier("gpt-5.6-luna", "gpt-5.6-terra"), Map.of()),
                 new Chat(20, 80),
                 new Snapshot(7, 200, 180, 12, 3),
                 new Tools(15, 30, 26, 10),

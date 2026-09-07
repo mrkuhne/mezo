@@ -562,9 +562,30 @@ mezo:
       gemini:
         chat-model: gemini-2.5-flash   # cheap/fast tier: every conversational turn
         smart-model: gemini-2.5-pro    # smart tier: heavy pipelines (V3.2 critique)
+        # mezo-ozri.4 — per-call model overrides, resolved by LlmModelRouter at CALL time (until it
+        # existed the tiers were frozen at boot). Both maps are scoped to THIS provider: a model id
+        # only means something to the vendor that serves it, and this block still answers the
+        # audio/vision calls the OpenAI adapter delegates here. Precedence: call-kind-models, then
+        # feature-models, then the tier defaults above — anything unmatched or blank falls through,
+        # so config can never be why a call fails. Keys MUST be bracket-quoted ("[companion_chat]"):
+        # the binder splits map keys on dots and relaxed-binds the rest.
+        feature-models: {}             # LlmCallContext.feature() -> model id
+        call-kind-models: {}           # CallKind -> model id
+        reasoning-effort:              # OpenAI-only concept; this adapter ignores it
+          chat:
+          smart:
       openai:
         chat-model: gpt-5.6-luna       # cheap/fast tier (spec §4: Terra as the default is -19% margin)
         smart-model: gpt-5.6-terra     # smart tier: the 19 completeSmart call sites
+        feature-models: {}             # LlmCallContext.feature() -> model id (bracket-quote the key)
+        call-kind-models: {}           # CallKind -> model id; wins over feature-models
+        # The quality lever of spec §Q1 — same token price, more thinking. Left EMPTY (= send
+        # nothing, the provider's own default stands) until mezo-641c measures what each tier should
+        # carry; a tool-carrying request pins `none` regardless, because /v1/chat/completions
+        # rejects function tools + reasoning effort outright (measured, mezo-ozri.3).
+        reasoning-effort:
+          chat:
+          smart:
       # Per-CallKind exceptions to `provider`. Honoured only while provider is openai, and only for
       # these two kinds: no GPT-5.6 model has an audio endpoint at all, and the vision A/B is not
       # measured yet (spec §10.3), so both stay on Gemini. An absent key = the active provider.
