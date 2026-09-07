@@ -454,13 +454,17 @@ const TRANSCRIPT_TURNS: ConferenceTurn[] = [
   },
 ]
 
-// The same four claims as TRANSCRIPT_TURNS, as a structured deliberation — two threads
-// (`physical` "Fizikai állapot", `discipline` "Fegyelem"), the first carrying one `pszichologus`
-// reaction, every item carrying both a `skeptic` and a `chair` verdict (mezo-xlvr, Task 8).
+// The SAME four claims TRANSCRIPT_TURNS carries, as a structured deliberation — four threads,
+// one per dossier chapter the four proposals belong to (`physical`, `discipline`, `nutrition`,
+// `mental`), titled with those dimensions' own titles (DIM_SEEDS above), exactly the way the
+// backend's DeliberationAssembler titles a thread. The prose Szkeptikus turn takes a position on
+// the first three proposals only and never mentions the Pszichológus's — so that item's
+// `skeptic` is null here too: the mock must not invent a verdict the transcript does not
+// contain (mezo-xlvr final review, M7).
 const DELIBERATION_W2: ConferenceThread[] = [
   {
     dimensionKey: 'physical',
-    title: 'Fizikai állapot',
+    title: 'Fizikai',
     items: [
       {
         index: 0,
@@ -473,13 +477,13 @@ const DELIBERATION_W2: ConferenceThread[] = [
           { expertKey: 'edzo', stance: 'SUPPORT', argument: 'Az edzésterhelés is ezt támasztja alá.' },
         ],
         skeptic: { verdict: 'KEEP', argument: 'Három adatpont kevés a "biztos" szinthez.' },
-        chair: { accepted: true, confidence: 0.6, reason: 'Elfogadom, a Szkeptikus érve helytálló.' },
+        chair: { accepted: true, confidence: VALOSZINU, reason: 'Elfogadom, a Szkeptikus érve helytálló.' },
       },
     ],
   },
   {
     dimensionKey: 'discipline',
-    title: 'Fegyelem',
+    title: 'Motiváció & fegyelem',
     items: [
       {
         index: 1,
@@ -490,7 +494,45 @@ const DELIBERATION_W2: ConferenceThread[] = [
         sensitive: false,
         reactions: [],
         skeptic: { verdict: 'KEEP', argument: 'A mintaidőszak rövid, de a jel egyértelmű.' },
-        chair: { accepted: true, confidence: 0.8, reason: 'Négy egymást követő hét konzisztens jel.' },
+        chair: { accepted: true, confidence: BIZTOS, reason: 'Négy egymást követő hét konzisztens jel.' },
+      },
+    ],
+  },
+  {
+    dimensionKey: 'nutrition',
+    title: 'Táplálkozási',
+    items: [
+      {
+        index: 2,
+        expertKey: 'taplalkozo',
+        text: 'A hétvégi fehérje-elmaradás három hete következetes mintázat.',
+        kind: 'NEW',
+        claimId: null,
+        sensitive: false,
+        reactions: [],
+        skeptic: { verdict: 'KEEP', argument: 'Elfogadható, de három hét kevés egy erősebb szóhoz.' },
+        chair: { accepted: true, confidence: FIGYELJUK, reason: '"Figyeljük" szinten veszem fel.' },
+      },
+    ],
+  },
+  {
+    dimensionKey: 'mental',
+    title: 'Mentális & érzelmi',
+    items: [
+      {
+        index: 3,
+        expertKey: 'pszichologus',
+        text: 'Néha halasztod a nehezebb érzelmi témák leírását a naplóban.',
+        kind: 'NEW',
+        claimId: null,
+        sensitive: false,
+        reactions: [],
+        skeptic: null,
+        chair: {
+          accepted: true,
+          confidence: FIGYELJUK,
+          reason: 'Tükröző fogalmazással veszem fel — nem ítélet, csak jelzés.',
+        },
       },
     ],
   },

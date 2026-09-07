@@ -105,10 +105,10 @@ describe('KonziliumPage — transcript (?id=)', () => {
     hoisted.detail = { w2: MOCK_CONFERENCE_DETAIL.w2 }
     renderAt('/me/karakter/konzilium?id=w2')
 
-    expect(screen.getByText('Fizikai állapot')).toBeInTheDocument()
+    expect(screen.getByText('Fizikai')).toBeInTheDocument()
     expect(screen.queryByText(/Három adatpont kevés/)).not.toBeInTheDocument()
 
-    await userEvent.click(screen.getByRole('button', { name: /Fizikai állapot/ }))
+    await userEvent.click(screen.getByRole('button', { name: /Fizikai/ }))
     expect(screen.getByText(/Három adatpont kevés/)).toBeInTheDocument()
   })
 

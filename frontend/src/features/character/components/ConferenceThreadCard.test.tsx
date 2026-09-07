@@ -41,7 +41,7 @@ describe('ConferenceThreadCard', () => {
 
     expect(screen.getByText('Regeneráció')).toBeInTheDocument()
     expect(screen.getByText(/2 állítás/)).toBeInTheDocument()
-    expect(screen.getByText(/1 maradt meg/)).toBeInTheDocument()
+    expect(screen.getByText(/1 elfogadva/)).toBeInTheDocument()
     expect(screen.getByText('Romlik az alvásod.')).toBeInTheDocument()
     expect(screen.queryByText('Kevés adat.')).not.toBeInTheDocument()
   })
@@ -63,6 +63,65 @@ describe('ConferenceThreadCard', () => {
 
     expect(screen.getByText(/biztos/)).toBeInTheDocument()
     expect(screen.queryByText(/0\.8/)).not.toBeInTheDocument()
+  })
+
+  // I3 (mezo-xlvr final review): an accepted item's badge must say what actually happened to the
+  // dossier — an accepted RETIRE retired a claim, it did not add one.
+  test.each([
+    ['NEW', 'Bekerült'],
+    ['UP', 'Megerősítve'],
+    ['DOWN', 'Gyengítve'],
+    ['RETIRE', 'Nyugdíjazva'],
+  ])('an accepted %s item is labelled %s', (kind, label) => {
+    const thread: ConferenceThread = {
+      ...THREAD,
+      items: [{ ...THREAD.items[1], kind }],
+    }
+    render(<ConferenceThreadCard thread={thread} experts={MOCK_EXPERTS} />)
+
+    expect(screen.getByText(label)).toBeInTheDocument()
+  })
+
+  test('an accepted item with an unknown kind falls back to the neutral "Elfogadva"', () => {
+    const thread: ConferenceThread = {
+      ...THREAD,
+      items: [{ ...THREAD.items[1], kind: null }],
+    }
+    render(<ConferenceThreadCard thread={thread} experts={MOCK_EXPERTS} />)
+
+    expect(screen.getByText('Elfogadva')).toBeInTheDocument()
+  })
+
+  test('a rejected item is labelled "Elvetve"', () => {
+    const thread: ConferenceThread = { ...THREAD, items: [THREAD.items[0]] }
+    render(<ConferenceThreadCard thread={thread} experts={MOCK_EXPERTS} />)
+
+    expect(screen.getByText('Elvetve')).toBeInTheDocument()
+  })
+
+  test('an item the chair never ruled on says "Nincs döntés" — and is not styled as rejected', () => {
+    const thread: ConferenceThread = {
+      ...THREAD,
+      items: [{ ...THREAD.items[0], chair: null }],
+    }
+    render(<ConferenceThreadCard thread={thread} experts={MOCK_EXPERTS} />)
+
+    const badge = screen.getByText('Nincs döntés')
+    expect(badge).toBeInTheDocument()
+    expect(badge.className).toContain('non')
+    expect(badge.className).not.toContain('rej')
+  })
+
+  test('the header tally counts what it says it counts: accepted items', () => {
+    const thread: ConferenceThread = {
+      ...THREAD,
+      items: [THREAD.items[0], { ...THREAD.items[1], kind: 'RETIRE' }],
+    }
+    render(<ConferenceThreadCard thread={thread} experts={MOCK_EXPERTS} />)
+
+    // one accepted RETIRE: it is "elfogadva", and nothing "maradt meg"
+    expect(screen.getByText('2 állítás · 1 elfogadva')).toBeInTheDocument()
+    expect(screen.queryByText(/maradt meg/)).not.toBeInTheDocument()
   })
 
   test('an item with no skeptic verdict says the round gave no answer', async () => {

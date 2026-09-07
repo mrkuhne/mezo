@@ -23,6 +23,28 @@ const STANCE_LABEL: Record<string, string> = {
 
 const NO_ANSWER = 'Ez a kör nem adott választ erre az állításra.'
 
+// What an ACCEPTED item actually means depends on what was proposed (`item.kind`, on the wire
+// from the backend's ClaimProposal): a RETIRE the chair accepted retired a claim, it did not add
+// one. Labelling every accepted item "Bekerült" would tell the user the opposite of what
+// happened (mezo-xlvr final review, I3). An unknown/missing kind falls back to the neutral
+// "Elfogadva" — never to a guess about which way the dossier moved.
+const ACCEPTED_LABEL: Record<string, string> = {
+  NEW: 'Bekerült',
+  UP: 'Megerősítve',
+  DOWN: 'Gyengítve',
+  RETIRE: 'Nyugdíjazva',
+}
+const ACCEPTED_FALLBACK = 'Elfogadva'
+const REJECTED_LABEL = 'Elvetve'
+const NO_RULING_LABEL = 'Nincs döntés'
+
+/** The badge an item wears in the collapsed thread, and the styling class that goes with it. */
+function outcomeBadge(item: ConferenceItem): { label: string; tone: 'acc' | 'rej' | 'non' } {
+  if (item.chair == null) return { label: NO_RULING_LABEL, tone: 'non' }
+  if (!item.chair.accepted) return { label: REJECTED_LABEL, tone: 'rej' }
+  return { label: (item.kind != null && ACCEPTED_LABEL[item.kind]) || ACCEPTED_FALLBACK, tone: 'acc' }
+}
+
 export interface ConferenceThreadCardProps {
   thread: ConferenceThread
   experts: CharacterExpertDto[]
@@ -47,7 +69,7 @@ function speakers(thread: ConferenceThread): string[] {
   return keys
 }
 
-function keptCount(thread: ConferenceThread): number {
+function acceptedCount(thread: ConferenceThread): number {
   return thread.items.filter((item) => item.chair?.accepted === true).length
 }
 
@@ -96,7 +118,7 @@ function ItemChain({ item, experts }: { item: ConferenceItem; experts: Character
 
 export function ConferenceThreadCard({ thread, experts, defaultOpen = false }: ConferenceThreadCardProps) {
   const [open, setOpen] = useState(defaultOpen)
-  const kept = keptCount(thread)
+  const accepted = acceptedCount(thread)
 
   return (
     <div className="kr-thread">
@@ -115,7 +137,7 @@ export function ConferenceThreadCard({ thread, experts, defaultOpen = false }: C
         </span>
         <span className="kr-thtitle">
           <span className="kr-thtt">{thread.title}</span>
-          <span className="kr-thts">{`${thread.items.length} állítás · ${kept} maradt meg`}</span>
+          <span className="kr-thts">{`${thread.items.length} állítás · ${accepted} elfogadva`}</span>
         </span>
         <span className="kr-thchev" aria-hidden="true">{open ? '⌄' : '›'}</span>
       </button>
@@ -127,14 +149,15 @@ export function ConferenceThreadCard({ thread, experts, defaultOpen = false }: C
           )
         : (
             <div className="kr-thcollapsed">
-              {thread.items.map((item) => (
-                <div key={item.index} className="kr-throw">
-                  <span className={`kr-thb ${item.chair?.accepted === true ? 'acc' : 'rej'}`}>
-                    {item.chair == null ? 'Nincs döntés' : item.chair.accepted ? 'Bekerült' : 'Elvetve'}
-                  </span>
-                  <span className={`kr-thtx${item.chair?.accepted === true ? '' : ' dim'}`}>{item.text}</span>
-                </div>
-              ))}
+              {thread.items.map((item) => {
+                const badge = outcomeBadge(item)
+                return (
+                  <div key={item.index} className="kr-throw">
+                    <span className={`kr-thb ${badge.tone}`}>{badge.label}</span>
+                    <span className={`kr-thtx${badge.tone === 'acc' ? '' : ' dim'}`}>{item.text}</span>
+                  </div>
+                )
+              })}
             </div>
           )}
     </div>
