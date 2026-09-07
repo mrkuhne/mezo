@@ -39,11 +39,23 @@ public class PatternEntity extends OwnedEntity {
 
     public static final String KIND_STATISTICAL = "statistical";
     public static final String KIND_AI_HYPOTHESIS = "ai_hypothesis";
+    /** S2 (mezo-eq85.2): a self-proposed, falsifiable hypothesis carrying a {@link TestPlanEnvelope}. */
+    public static final String KIND_REFLECTION = "reflection";
 
     public static final String STATUS_PROPOSED = "proposed";
     public static final String STATUS_MONITORING = "monitoring";
     public static final String STATUS_CONFIRMED = "confirmed";
     public static final String STATUS_REJECTED = "rejected";
+    /** S2: the ENGINE disproved it (miss streak or two negative replies) — terminal. */
+    public static final String STATUS_REFUTED = "refuted";
+    /** S2: no data for long enough that testing it is meaningless — parked, revives on data. */
+    public static final String STATUS_DORMANT = "dormant";
+
+    /** {@code origin} — where the row came from; display only, it never drives the lifecycle. */
+    public static final String ORIGIN_PAIR_CATALOG = "pair_catalog";
+    public static final String ORIGIN_WEEKLY_HYPOTHESIS = "weekly_hypothesis";
+    public static final String ORIGIN_QUICK_NOTICE = "quick_notice";
+    public static final String ORIGIN_NIGHTLY_REFLECTION = "nightly_reflection";
 
     @Id
     @GeneratedValue
@@ -53,7 +65,7 @@ public class PatternEntity extends OwnedEntity {
     /** Mirrors ck_pattern_kind. */
     @NotNull
     @Size(max = 16)
-    @Pattern(regexp = "statistical|ai_hypothesis")
+    @Pattern(regexp = "statistical|ai_hypothesis|reflection")
     @Column(nullable = false, length = 16)
     private String kind;
 
@@ -115,9 +127,41 @@ public class PatternEntity extends OwnedEntity {
     /** Mirrors ck_pattern_status — proposed until Daniel judges it (L2 surface). */
     @NotNull
     @Size(max = 16)
-    @Pattern(regexp = "proposed|monitoring|confirmed|rejected")
+    @Pattern(regexp = "proposed|monitoring|confirmed|rejected|refuted|dormant")
     @Column(nullable = false, length = 16)
     private String status = STATUS_PROPOSED;
+
+    /** S2 (mezo-eq85.2): stable hypothesis identity — {@code ref-<hash>} from the test plan,
+     *  {@code pair:<key>} on catalog rows. Unique per user while the row lives. */
+    @Size(max = 80)
+    @Column(name = "hypothesis_key", length = 80)
+    private String hypothesisKey;
+
+    /** S2: the falsifiable test the nightly pass re-runs — null on rows that carry no test. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "test_plan", columnDefinition = "jsonb")
+    private TestPlanEnvelope testPlan;
+
+    /** S2: deterministic 0..1 certainty (gate + user replies + evidence streak) — spec §4.3.
+     *  Code computes it; an LLM must never write this column. */
+    @Column(precision = 4, scale = 3)
+    private BigDecimal belief;
+
+    /** S2: how many nightly evaluations confirmed the plan's prediction. */
+    @NotNull
+    @Column(name = "evidence_hits", nullable = false)
+    private Integer evidenceHits = 0;
+
+    /** S2: how many LIVE evaluations contradicted it (a no-data night counts as neither). */
+    @NotNull
+    @Column(name = "evidence_misses", nullable = false)
+    private Integer evidenceMisses = 0;
+
+    /** S2: provenance chip — mirrors ck_pattern_origin. */
+    @Size(max = 24)
+    @Pattern(regexp = "pair_catalog|weekly_hypothesis|quick_notice|nightly_reflection")
+    @Column(length = 24)
+    private String origin;
 
     /** V3.3: the knowledge fact a confirmed pattern was promoted into (loose ref, ON DELETE SET NULL). */
     @Column(name = "promoted_fact_id", columnDefinition = "uuid")
@@ -132,4 +176,18 @@ public class PatternEntity extends OwnedEntity {
     @NotNull
     @Column(name = "last_detected_at", nullable = false)
     private Instant lastDetectedAt = Instant.now().truncatedTo(ChronoUnit.MICROS);
+
+    /**
+     * S2: has the USER judged this row? {@code confirmed}/{@code rejected} are Daniel's verdicts —
+     * the engine's nightly pass reads them and stops, whatever the statistics say.
+     */
+    public boolean isUserFrozen() {
+        return isUserFrozen(status);
+    }
+
+    /** The same question about a bare status string — the pure {@code HypothesisLifecycle} asks it
+     *  that way, and "what counts as the user's verdict" must have exactly one definition. */
+    public static boolean isUserFrozen(String status) {
+        return STATUS_CONFIRMED.equals(status) || STATUS_REJECTED.equals(status);
+    }
 }

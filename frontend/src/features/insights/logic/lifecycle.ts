@@ -22,6 +22,11 @@ function bucketFor(pattern: Pattern, pair: PatternMonitorPair | null): Lifecycle
     case 'confirmed': return 'confirmed'
     case 'monitoring': return 'monitoring'
     case 'rejected': return 'rejected'
+    // Reflexió S2 (mezo-eq85.2): the engine's own two states. `refuted` is a real "no
+    // relationship" answer; `dormant` is "not enough data to say", i.e. still gathering.
+    // Rendering copy for both is Task 6 — the buckets are all that is claimed here.
+    case 'refuted': return 'noRelationship'
+    case 'dormant': return 'gathering'
     case 'proposed':
       if (pattern.kind === 'ai_hypothesis') {
         return pattern.confidence != null && pattern.confidence >= MIN_PATTERN_CONFIDENCE ? 'decide' : 'noRelationship'

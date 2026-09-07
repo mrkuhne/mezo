@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.companion.graph.repository.GraphNodeRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import jakarta.persistence.EntityManager;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
@@ -17,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * Knowledge-graph node/edge CRUD (Phase 5 W2.1, bd mezo-b3pp.6, spec §4.2/§6.1). {@link
@@ -39,11 +42,20 @@ public class GraphService {
 
     private final GraphNodeRepository nodeRepository;
     private final GraphEdgeRepository edgeRepository;
+    // A meta-patch jsonb szövegét írja — a natív MERGE UPDATE paramétere (mezo-06o0.7).
+    private final ObjectMapper objectMapper;
+    // Ugyanahhoz: a natív merge után a node-ot (és csak azt) újraolvassuk.
+    private final EntityManager entityManager;
     // ObjectProvider, nem közvetlen függés: a promóter @ConditionalOnProperty mögött van, és a
     // közvetlen injektálás kör-függést zárna (GraphPromotionService -> GraphService).
     private final ObjectProvider<GraphPromotionService> promotionService;
 
-    /** UPSERT by (createdBy, sourceKind, sourceId) — re-promotion updates title/summary/meta, never duplicates. */
+    /**
+     * UPSERT by (createdBy, sourceKind, sourceId) — re-promotion updates title/summary/meta, never
+     * duplicates. A {@code null} {@code meta} means LEAVE THE EXISTING META ALONE (bd mezo-06o0.7):
+     * a caller that owns only a few keys upserts with {@code null} and follows up with {@link
+     * #mergeMeta}, instead of reading-merging-writing the whole map across two statements.
+     */
     @Transactional
     public GraphNodeEntity upsertNode(UUID userId, String kind, String title, String summary,
             String sourceKind, UUID sourceId, LocalDate occurredOn, Map<String, Object> meta) {
@@ -58,7 +70,9 @@ public class GraphService {
         node.setSourceKind(sourceKind);
         node.setSourceId(sourceId);
         node.setOccurredOn(occurredOn);
-        node.setMeta(meta);
+        if (meta != null) {
+            node.setMeta(meta);
+        }
         return nodeRepository.saveAndFlush(node);
     }
 
@@ -76,11 +90,31 @@ public class GraphService {
      *  clobber keys another caller (e.g. {@code GraphPromotionService.syncPerson}) owns. */
     @Transactional
     public GraphNodeEntity putMeta(UUID userId, UUID nodeId, String key, Object value) {
+        return mergeMeta(userId, nodeId, Map.of(key, value));
+    }
+
+    /**
+     * MERGE több meta-kulcsot EGYETLEN atomi UPDATE-tel (bd mezo-06o0.7). A korábbi
+     * read-modify-write alak READ COMMITTED alatt lost-update ablakot nyitott: ha egy @Async
+     * {@code PersonSavedEvent} szinkron beleszaladt az éjszakai kör {@code putMeta}-jába ugyanazon
+     * a node-on, az egyik írás eldobta a másik kulcsát — és ha az elveszett kulcs az
+     * {@code edgeStructuredOn} volt, újranyílt a „legfeljebb egyszer" LLM-kapu. A {@code jsonb ||}
+     * a soron belül, a sor zárolása alatt olvassa a régi értéket, tehát nincs mit elveszíteni.
+     *
+     * <p>A {@code findOwnedNode} a tulajdonlás-kapu (idegen node ⇒ 404). A natív írás megkerüli a
+     * persistence contextet, ezért utána a node-ot — és CSAK azt — frissítjük: egy teljes
+     * {@code clear()} leválasztaná a hívó többi entitását is (a {@code restore} pont ezért mentett
+     * vissza elavult státuszt), a frissítés viszont ugyanazt a managed példányt adja tovább.
+     */
+    @Transactional
+    public GraphNodeEntity mergeMeta(UUID userId, UUID nodeId, Map<String, Object> patch) {
         GraphNodeEntity node = findOwnedNode(userId, nodeId);
-        Map<String, Object> meta = node.getMeta() == null ? new HashMap<>() : new HashMap<>(node.getMeta());
-        meta.put(key, value);
-        node.setMeta(meta);
-        return nodeRepository.saveAndFlush(node);
+        if (patch.isEmpty()) {
+            return node;
+        }
+        nodeRepository.mergeMeta(userId, nodeId, objectMapper.writeValueAsString(patch));
+        entityManager.refresh(node);
+        return node;
     }
 
     @Transactional(readOnly = true)
@@ -120,17 +154,37 @@ public class GraphService {
         }
         Map<UUID, String> titleById = nodes.stream()
             .collect(Collectors.toMap(GraphNodeEntity::getId, GraphNodeEntity::getTitle));
-        Map<UUID, List<GraphEdgeEntity>> touchingByNode = new HashMap<>();
-        for (GraphEdgeEntity edge : edgeRepository.findByCreatedByAndDeletedFalse(userId)) {
-            if (!titleById.containsKey(edge.getFromNodeId()) || !titleById.containsKey(edge.getToNodeId())) {
-                continue;
-            }
-            touchingByNode.computeIfAbsent(edge.getFromNodeId(), k -> new ArrayList<>()).add(edge);
-            touchingByNode.computeIfAbsent(edge.getToNodeId(), k -> new ArrayList<>()).add(edge);
-        }
+        Map<UUID, List<GraphEdgeEntity>> touchingByNode = touchingEdgesByNode(userId, titleById.keySet());
         return nodes.stream()
             .map(node -> new NodeWithTopEdges(node, topEdgeLines(node.getId(), touchingByNode, titleById)))
             .toList();
+    }
+
+    /**
+     * Minden BELSŐ él (mindkét végpontja a megadott node-halmazban) csomópontonként csoportosítva,
+     * EGY lekérdezésből (bd mezo-06o0.6). Ez a ház idiómája a „node-onként edgesFrom + edgesTo"
+     * N+1 helyett — a {@link #listActiveWithTopEdges} és a {@code PersonGraphEdgeAdapter} is
+     * ezen áll, hogy a két felület ugyanazt az „aktív él" szabályt lássa.
+     *
+     * <p>Egy önhurok (from == to) ugyanahhoz a node-hoz KÉTSZER kerülne be, ezért kiszűrjük — a
+     * korábbi {@code edgesFrom + edgesTo} összefűzés is duplán tartalmazta volna.
+     */
+    @Transactional(readOnly = true)
+    public Map<UUID, List<GraphEdgeEntity>> touchingEdgesByNode(UUID userId, Set<UUID> nodeIds) {
+        Map<UUID, List<GraphEdgeEntity>> touchingByNode = new HashMap<>();
+        if (nodeIds.isEmpty()) {
+            return touchingByNode;
+        }
+        for (GraphEdgeEntity edge : edgeRepository.findByCreatedByAndDeletedFalse(userId)) {
+            if (!nodeIds.contains(edge.getFromNodeId()) || !nodeIds.contains(edge.getToNodeId())) {
+                continue;
+            }
+            touchingByNode.computeIfAbsent(edge.getFromNodeId(), k -> new ArrayList<>()).add(edge);
+            if (!edge.getFromNodeId().equals(edge.getToNodeId())) {
+                touchingByNode.computeIfAbsent(edge.getToNodeId(), k -> new ArrayList<>()).add(edge);
+            }
+        }
+        return touchingByNode;
     }
 
     private List<String> topEdgeLines(UUID nodeId, Map<UUID, List<GraphEdgeEntity>> touchingByNode,
@@ -173,7 +227,9 @@ public class GraphService {
         node.setStatus(GraphNodeEntity.STATUS_CANDIDATE);
         node.setSourceKind(sourceKind);
         node.setOccurredOn(occurredOn);
-        node.setMeta(meta);
+        if (meta != null) {
+            node.setMeta(meta);
+        }
         return nodeRepository.saveAndFlush(node);
     }
 

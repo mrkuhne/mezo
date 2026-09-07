@@ -36,6 +36,8 @@ const pair: PatternMonitorPair = {
 
 function pattern(status: PatternRowStatus): Pattern {
   return {
+    evidenceHits: 0,
+    evidenceMisses: 0,
     id: `pattern-${status}`,
     pairKey: pair.key,
     category: 'physiology',

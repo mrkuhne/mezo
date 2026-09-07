@@ -10,6 +10,8 @@ import {
 } from '@/features/insights/logic/patternCatalog'
 
 const pattern = (pairKey: string, title: string): Pattern => ({
+  evidenceHits: 0,
+  evidenceMisses: 0,
   id: pairKey,
   pairKey,
   category: 'trigger',

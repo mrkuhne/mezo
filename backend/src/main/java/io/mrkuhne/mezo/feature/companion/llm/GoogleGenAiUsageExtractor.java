@@ -30,23 +30,18 @@ import org.springframework.stereotype.Component;
  * caller the LAST round's response as the final one, so extracting from it alone under-reports a
  * multi-round turn (and the cumulative {@code DefaultUsage} shapes it sometimes builds carry
  * {@code nativeUsage = null}, dropping thoughts/cached entirely). The fix lives one level up:
- * {@link GeminiRoundUsageAdvisor} calls this extractor once per round and
- * {@link GeminiRoundUsage} sums the per-round reports — the adapter prefers that tally over this
+ * {@link LlmRoundUsageAdvisor} calls this extractor once per round and
+ * {@link LlmRoundUsage} sums the per-round reports — the adapter prefers that tally over this
  * final-response read whenever a round was observed.
  */
 @Component
-public class GeminiUsageExtractor {
+public class GoogleGenAiUsageExtractor implements LlmUsageExtractor {
 
     /** Present on some provider responses as a plain metadata key — no typed getter exists for it. */
     private static final String SERVICE_TIER_KEY = "serviceTier";
 
-    /** What one response revealed about itself; every component is nullable by design. */
-    public record UsageInfo(String servedModel, String serviceTier, TokenUsage tokens) {
-
-        static final UsageInfo NOTHING = new UsageInfo(null, null, null);
-    }
-
     /** Null-safe end to end: a null response, metadata or usage block yields nulls, never zeros. */
+    @Override
     public UsageInfo extract(ChatResponse response) {
         if (response == null) {
             return UsageInfo.NOTHING;
@@ -64,6 +59,7 @@ public class GeminiUsageExtractor {
      * but it is still provider metadata, so it is unwrapped HERE like everything else. Blank is
      * normalised to null, same rule as the model id: "not reported" must never look like a value.
      */
+    @Override
     public String finishReason(ChatResponse response) {
         if (response == null || response.getResult() == null || response.getResult().getMetadata() == null) {
             return null;

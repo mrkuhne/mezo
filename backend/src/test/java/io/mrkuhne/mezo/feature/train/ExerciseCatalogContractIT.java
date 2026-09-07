@@ -34,7 +34,7 @@ class ExerciseCatalogContractIT extends ApiIntegrationTest {
     void testGetExerciseCatalog_shouldReturnCuratedItemsSorted_whenAuthenticated() {
         List<ExerciseCatalogItem> items =
             getForList("/api/train/exercises", ownerAuthHeaders(), HttpStatus.OK, ExerciseCatalogItem.class);
-        assertThat(items).hasSize(161);
+        assertThat(items).hasSize(166);
         assertThat(items).isSortedAccordingTo(
             Comparator.comparing(ExerciseCatalogItem::getMuscle).thenComparing(ExerciseCatalogItem::getName));
         assertThat(items).anySatisfy(i -> {
@@ -57,7 +57,7 @@ class ExerciseCatalogContractIT extends ApiIntegrationTest {
             assertThat(i.getImageStartUrl()).isEqualTo("/exercises/barbell-squat-a.jpg");
             assertThat(i.getImageEndUrl()).isEqualTo("/exercises/barbell-squat-b.jpg");
         });
-        // ...and an unmapped slug stays imageless: 37 of the 161 rows have no faithful counterpart
+        // ...and an unmapped slug stays imageless: 42 of the 166 rows have no faithful counterpart
         // in the dataset, which is a specced state rather than a gap (ADR 0020).
         assertThat(items).anySatisfy(i -> {
             assertThat(i.getSlug()).isEqualTo("kb-swing");

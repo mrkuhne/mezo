@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.llmlog.config;
 
+import io.mrkuhne.mezo.feature.llmlog.entity.ReasoningBilling;
+
 import java.math.BigDecimal;
 
 /**
@@ -8,7 +10,10 @@ import java.math.BigDecimal;
  * <p>Every component is nullable on purpose: a generation model carries no
  * {@code embedPerMillionChars}, an embedding model carries none of the token prices. A missing
  * component prices that category at zero (see {@code LlmPricingService.perMillion}).
+ *
+ * <p>{@code reasoningBilling} is the model's reasoning-token semantics (mezo-ozri.1); absent means
+ * {@link ReasoningBilling#SEPARATE}, i.e. today's Gemini-shaped math.
  */
 public record ModelPrice(BigDecimal inputPerMillion, BigDecimal outputPerMillion,
                          BigDecimal thinkingPerMillion, BigDecimal cachedPerMillion,
-                         BigDecimal embedPerMillionChars) {}
+                         BigDecimal embedPerMillionChars, ReasoningBilling reasoningBilling) {}

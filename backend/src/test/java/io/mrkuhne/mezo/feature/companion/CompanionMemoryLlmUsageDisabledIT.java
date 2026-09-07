@@ -11,8 +11,15 @@ import io.mrkuhne.mezo.support.populator.LlmLogPopulator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.TestPropertySource;
 
-/** llm-log switch OFF (a teszt-default) ⇒ enabled:false + üres sorok, akkor is, ha a tábla nem üres. */
+/**
+ * llm-log switch OFF ⇒ enabled:false + üres sorok, akkor is, ha a tábla nem üres.
+ *
+ * <p>A kapcsoló EXPLICIT: a mezo-ozri.1 (L1 döntés) óta a szállított alapértelmezés {@code true},
+ * tehát ez a teszt a kikapcsolt állapotot maga állítja be, nem a hallgatólagos defaultra épül.
+ */
+@TestPropertySource(properties = "mezo.feature.llm-log.enabled=false")
 class CompanionMemoryLlmUsageDisabledIT extends ApiIntegrationTest {
 
     @Autowired private LlmLogPopulator llmLogPopulator;

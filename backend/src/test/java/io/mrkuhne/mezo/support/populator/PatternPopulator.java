@@ -2,6 +2,7 @@ package io.mrkuhne.mezo.support.populator;
 
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEvidenceEnvelope;
+import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.test.context.TestComponent;
@@ -56,6 +57,26 @@ public class PatternPopulator {
         entity.setN(12);
         entity.setP(new BigDecimal("0.064000"));
         entity.setStatus(PatternEntity.STATUS_PROPOSED);
+        return patternRepository.saveAndFlush(entity);
+    }
+
+    /** Reflexió S2 (mezo-eq85.2): a self-proposed hypothesis row carrying a falsifiable test plan
+     *  — the shape {@code HypothesisEvaluationService} evaluates every night. */
+    public PatternEntity reflection(UUID createdBy, TestPlanEnvelope plan, String status) {
+        String key = TestPlanEnvelope.key(plan);
+        PatternEntity entity = new PatternEntity();
+        entity.setCreatedBy(createdBy);
+        entity.setKind(PatternEntity.KIND_REFLECTION);
+        entity.setPairKey(key);
+        entity.setHypothesisKey(key);
+        entity.setCategory("trigger");
+        entity.setCategoryLabel("Trigger");
+        entity.setTitle("Teszt: " + plan.seriesA() + " → " + plan.seriesB());
+        entity.setMechanism("Reflexió S2 teszt-terv.");
+        entity.setEvidence(new PatternEvidenceEnvelope(List.of("teszt-terv")));
+        entity.setTestPlan(plan);
+        entity.setOrigin(PatternEntity.ORIGIN_NIGHTLY_REFLECTION);
+        entity.setStatus(status);
         return patternRepository.saveAndFlush(entity);
     }
 

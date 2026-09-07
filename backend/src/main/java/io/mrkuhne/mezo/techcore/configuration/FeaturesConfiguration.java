@@ -66,9 +66,6 @@ public class FeaturesConfiguration {
      *  #QUARTERLY_REVIEW_JOB_SWITCH}), so an archived "Rólad tanultam" node stays archived. */
     public static final String PROFILE_ASSEMBLER_JOB_SWITCH = "mezo.techcore.cron.profile-assembler-job.enabled";
 
-    /** V3.2 weekly hypothesis pipeline — techcore cron zone. */
-    public static final String HYPOTHESIS_JOB_SWITCH = "mezo.techcore.cron.hypothesis-job.enabled";
-
     /** Reflexió (bd mezo-eq85) — sub-switch of companion; off ⇒ no text-signal extraction, no
      *  TEXT_* series data, none of the epic's later beans exist. */
     public static final String REFLECTION_SWITCH = "mezo.companion.reflection.enabled";

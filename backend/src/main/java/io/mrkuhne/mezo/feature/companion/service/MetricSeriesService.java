@@ -22,8 +22,8 @@ import io.mrkuhne.mezo.feature.medication.entity.MedicationEntity;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationDoseRepository;
 import io.mrkuhne.mezo.feature.medication.repository.MedicationRepository;
 import io.mrkuhne.mezo.feature.medication.service.MedicationCycleService;
-import io.mrkuhne.mezo.feature.people.entity.MentionEntity;
 import io.mrkuhne.mezo.feature.people.repository.MentionRepository;
+import io.mrkuhne.mezo.feature.people.repository.MentionSignal;
 import io.mrkuhne.mezo.feature.ritual.entity.RitualDayEntity;
 import io.mrkuhne.mezo.feature.ritual.repository.RitualDayRepository;
 import io.mrkuhne.mezo.feature.train.entity.ExerciseFeedbackEntity;
@@ -644,8 +644,11 @@ public class MetricSeriesService {
     /** People-említések napi darabszáma (ts rendszerzónás napja). */
     private Map<LocalDate, Double> socialMentions(UUID userId, LocalDate from, LocalDate to) {
         Map<LocalDate, Double> series = new HashMap<>();
-        for (MentionEntity mention : mentionRepository.findAllByCreatedByAndDeletedFalseOrderByTsDesc(userId)) {
-            LocalDate day = mention.getTs().atZone(ZoneId.systemDefault()).toLocalDate();
+        // PROJEKCIÓ, nem entitás (mezo-9x3g): ez a hurok csak a ts-t olvassa, az excerpt/tone/
+        // sourceRef oszlopok sosem kellenek — ingyenes csere, egy szabadszöveges oszloppal kevesebb
+        // a hálózaton és egy managed entitással kevesebb a hívó persistence contextjében.
+        for (MentionSignal mention : mentionRepository.findSignals(userId)) {
+            LocalDate day = mention.ts().atZone(ZoneId.systemDefault()).toLocalDate();
             if (!day.isBefore(from) && !day.isAfter(to)) {
                 series.merge(day, 1.0, Double::sum);
             }

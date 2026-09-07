@@ -140,6 +140,6 @@ class LlmUsageBreakdownIT extends ApiIntegrationTest {
             new BigDecimal("0.30"), new BigDecimal("2.50"), new BigDecimal("2.50"),
             // a FIXED effective-from date: the snapshot is inert fixture metadata, and re-reading
             // the clock per call could stamp two rows of one test with two different days
-            new BigDecimal("0.075"), null, LocalDate.of(2026, 1, 1));
+            new BigDecimal("0.075"), null, null, LocalDate.of(2026, 1, 1));
     }
 }

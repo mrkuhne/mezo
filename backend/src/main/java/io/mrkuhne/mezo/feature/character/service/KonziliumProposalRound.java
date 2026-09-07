@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterObservationEntity;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.ObservationSignalsEnvelope;
 import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
 import io.mrkuhne.mezo.feature.character.repository.CharacterDimensionRepository;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
@@ -120,9 +121,17 @@ public class KonziliumProposalRound {
             List<String> lines = new ArrayList<>();
             List<String> refIds = new ArrayList<>();
             for (CharacterObservationEntity observation : entry.getValue()) {
-                String text = CharacterFeedbackService.USER_EXPERT_KEY.equals(observation.getExpertKey())
-                        ? USER_FEEDBACK_PREFIX + observation.getText()
-                        : observation.getText();
+                String text = observation.getText();
+                if (CharacterFeedbackService.USER_EXPERT_KEY.equals(observation.getExpertKey())) {
+                    // The claim id is what makes the answer addressable for the expert (the prompt's
+                    // "[claimId]" contract) — it lives on the observation's own signal refIds since
+                    // mezo-xlvr, never in the user-facing text. A row written BEFORE that change
+                    // still carries the marker inside its text, so strip it first: prefixing an
+                    // unstripped one would show the expert the same id twice (final review, M5).
+                    String claimId = claimIdOf(observation);
+                    text = USER_FEEDBACK_PREFIX + (claimId == null ? "" : "[" + claimId + "] ")
+                            + ObservationText.stripClaimIdPrefix(text);
+                }
                 lines.add(observation.getDay() + " (súly " + observation.getSalience() + "): " + text);
                 refIds.add(observation.getId().toString());
             }
@@ -441,5 +450,19 @@ public class KonziliumProposalRound {
         int start = trimmed.indexOf('[');
         int end = trimmed.lastIndexOf(']');
         return start >= 0 && end > start ? trimmed.substring(start, end + 1) : trimmed.strip();
+    }
+
+    /** The claim a user-feedback observation answers — its {@code user-feedback} signal's first
+     *  refId. Null when the row carries no such signal (an older or hand-written row). */
+    private static String claimIdOf(CharacterObservationEntity observation) {
+        if (observation.getSignals() == null) {
+            return null;
+        }
+        for (ObservationSignalsEnvelope.Signal signal : observation.getSignals().signals()) {
+            if (CharacterFeedbackService.SIGNAL_KEY.equals(signal.detectorKey()) && !signal.refIds().isEmpty()) {
+                return signal.refIds().get(0);
+            }
+        }
+        return null;
     }
 }

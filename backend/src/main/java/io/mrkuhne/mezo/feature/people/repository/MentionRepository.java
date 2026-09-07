@@ -34,6 +34,22 @@ public interface MentionRepository extends JpaRepository<MentionEntity, UUID> {
         """)
     List<MentionSignal> findSignals(@Param("userId") UUID userId);
 
+    /**
+     * EGY személy jelei (bd mezo-9x3g) — a {@link #findSignals} személyre szűkített párja. A
+     * {@code PeopleService.updatePerson} eddig a felhasználó TELJES említés-történetét húzta be
+     * managed entitásként egy READ-WRITE tranzakcióba, hogy memóriában szűrjön personId-ra, és
+     * közben csak a {@code personId}-t meg a {@code ts}-t olvasta: a dirty-check költsége írási
+     * úton a rosszabbik eset. Itt a DB szűr, és projekció jön vissza.
+     */
+    @Query("""
+        select new io.mrkuhne.mezo.feature.people.repository.MentionSignal(
+            m.personId, m.ts, m.tone, m.intensity)
+        from MentionEntity m
+        where m.createdBy = :userId and m.personId = :personId and m.deleted = false
+        order by m.ts desc
+        """)
+    List<MentionSignal> findSignalsByPerson(@Param("userId") UUID userId, @Param("personId") UUID personId);
+
     /** Ownership gate for the mention itself; person-scope for the 404 is checked by the caller. */
     Optional<MentionEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
 
