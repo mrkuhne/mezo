@@ -20,6 +20,8 @@ vite.config.js
 vite.config.d.ts
 **/tests/layout/playwright.config.js
 **/tests/layout/playwright.config.d.ts
+**/tests/visual/playwright.config.js
+**/tests/visual/playwright.config.d.ts
 
 # Environment & secrets
 .env
