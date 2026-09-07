@@ -362,7 +362,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 207 IT + 42 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 208 IT + 54 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,
@@ -419,8 +419,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `QuickNoticeServiceIT`, `ReflectionDigestServiceIT`, `ReflectionJobIT`, `ReflectionJobStepIsolationIT`,
     `ReflectionJobSwitchOffIT`, `ReflectionMemoryGatewayIT`, `ReflectionReplyServiceIT`, `SleepLogDetailRenderIT`,
     `TextSignalCatchUpIT`, `TextSignalListenerIT`, `TextSignalListenerSwitchOffIT`, `TextSignalNameNormalizationIT`,
-    `TextSignalSeriesIT`, `ToolSelectionEvalIT`, `TrainingNoteMentionSweepIT`, `TurnEmbeddingListenerIT`,
-    `TurnEmbeddingSwitchOffIT`, `TurnVerdictCheckIT`
+    `TextSignalSeriesIT`, `ToneJudgeEvalIT`, `ToolSelectionEvalIT`, `TrainingNoteMentionSweepIT`,
+    `TurnEmbeddingListenerIT`, `TurnEmbeddingSwitchOffIT`, `TurnVerdictCheckIT`
   - **populators:** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`, `BiometricProfilePopulator`,
     `CheckInPopulator`, `CompanionMessagePopulator`, `DailySummaryPopulator`, `DatabasePopulator`,
     `DayReviewPopulator`, `FeedbackPopulator`, `FlagLogPopulator`, `GamificationPopulator`, `GoalPlanLinkPopulator`,
