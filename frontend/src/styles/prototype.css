@@ -10657,7 +10657,7 @@ button.mz-wtile:active { transform: scale(0.96); }
   text-align: left; font-family: inherit; color: inherit; cursor: pointer; }
 .mz-lcard-num b { font-weight: 200; }
 .mz-lcard-num i { font-style: normal; font-size: 12px; }
-.mz-tchip { flex: none; border-radius: 999px; padding: 2px 8px; font-size: 8px; font-weight: 700;
+.mz-lcard-tier { flex: none; border-radius: 999px; padding: 2px 8px; font-size: 8px; font-weight: 700;
   background: var(--surface-2); color: var(--text-secondary); }
 .mz-lint { display: flex; align-items: flex-start; gap: 8px; border-radius: 12px;
   padding: 8px 10px; margin-top: 6px; font-size: 9.5px; line-height: 1.45;

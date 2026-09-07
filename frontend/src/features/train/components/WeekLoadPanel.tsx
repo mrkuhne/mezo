@@ -84,7 +84,7 @@ export function WeekLoadPanel({ days, priorities, volumePerMuscle, onBack }: Wee
                 >
                   <span className="mz-lcard-head">
                     <span className="mz-lcard-pill" style={{ background: fam.wash, color: fam.deep }}>{r.label}</span>
-                    <span className="mz-tchip">{TIER_LABELS[r.tier]}</span>
+                    <span className="mz-lcard-tier">{TIER_LABELS[r.tier]}</span>
                     <span className="mz-grow" />
                     <span className="mz-lcard-freq">{r.frequency} nap / hét</span>
                   </span>
