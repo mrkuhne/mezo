@@ -196,17 +196,30 @@ public class HabitAdminService {
         if (request.getTitle() != null) {
             def.setTitle(request.getTitle());
         }
+        // Optional texts share the anchorHabitKey wire convention (mezo-pero): null = leave
+        // unchanged (the only thing an omitted JSON key can deserialize to), blank = clear back
+        // to null. blankToNull keeps a "cleared" def from storing "" that would READ as set.
         if (request.getWhy() != null) {
-            def.setWhy(request.getWhy());
+            def.setWhy(blankToNull(request.getWhy()));
         }
         if (request.getAnchorCopy() != null) {
-            def.setAnchorCopy(request.getAnchorCopy());
+            def.setAnchorCopy(blankToNull(request.getAnchorCopy()));
+        }
+        if (request.getMode() != null || request.getMetric() != null) {
+            // Tick mode is editable after creation (mezo-pero). The merged (request-over-stored)
+            // pair goes through the same resolveMetric as createDef: MANUAL forces "manual",
+            // DERIVED requires a supported metric — so a MANUAL→DERIVED switch without a metric
+            // falls back to the stored "manual" and is rejected, never silently kept.
+            String mode = request.getMode() != null ? request.getMode().getValue() : def.getMode();
+            String metric = request.getMetric() != null ? request.getMetric() : def.getMetric();
+            def.setMode(mode);
+            def.setMetric(resolveMetric(mode, metric));
         }
         if (request.getXp() != null) {
             def.setXp(request.getXp());
         }
         if (request.getLinkUrl() != null) {
-            def.setLinkUrl(request.getLinkUrl());
+            def.setLinkUrl(blankToNull(request.getLinkUrl()));
         }
         if (request.getIsActive() != null) {
             def.setActive(request.getIsActive());
@@ -227,19 +240,19 @@ public class HabitAdminService {
             def.setAnchorHabitKey(blankToNull(request.getAnchorHabitKey()));
         }
         if (request.getCue() != null) {
-            def.setCue(request.getCue());
+            def.setCue(blankToNull(request.getCue()));
         }
         if (request.getCraving() != null) {
-            def.setCraving(request.getCraving());
+            def.setCraving(blankToNull(request.getCraving()));
         }
         if (request.getReward() != null) {
-            def.setReward(request.getReward());
+            def.setReward(blankToNull(request.getReward()));
         }
         if (request.getCelebration() != null) {
-            def.setCelebration(request.getCelebration());
+            def.setCelebration(blankToNull(request.getCelebration()));
         }
         if (request.getIdentity() != null) {
-            def.setIdentity(request.getIdentity());
+            def.setIdentity(blankToNull(request.getIdentity()));
         }
         frameworkValidator.clearForeignFields(def);
         frameworkValidator.validate(def);
