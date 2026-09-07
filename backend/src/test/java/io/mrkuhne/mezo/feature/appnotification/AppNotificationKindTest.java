@@ -9,7 +9,7 @@ class AppNotificationKindTest {
 
     @Test
     void testCatalog_shouldPinFifteenKindsWithFamiliesAndDeeplinks_perSpec() {
-        assertThat(AppNotificationKind.values()).hasSize(20);
+        assertThat(AppNotificationKind.values()).hasSize(21);
         assertThat(AppNotificationKind.PATTERN_INBOX.key()).isEqualTo("pattern_inbox");
         assertThat(AppNotificationKind.PATTERN_INBOX.familyKey()).isEqualTo("pattern");
         assertThat(AppNotificationKind.PATTERN_SIGNAL.familyKey()).isEqualTo("pattern");
@@ -51,6 +51,11 @@ class AppNotificationKindTest {
         assertThat(AppNotificationKind.CHARACTER_PORTRAIT.deeplink()).isEqualTo("/me/karakter");
         assertThat(AppNotificationKind.KONZILIUM_VERDICT.familyKey()).isNull();
         assertThat(AppNotificationKind.KONZILIUM_VERDICT.deeplink()).isEqualTo("/me/karakter/konzilium");
+        // mezo-eq85.4 — a `pattern` push-családon utazik, a felülete viszont az Észrevételek fül.
+        assertThat(AppNotificationKind.OBSERVATION_NEW.key()).isEqualTo("observation_new");
+        assertThat(AppNotificationKind.OBSERVATION_NEW.familyKey()).isEqualTo("pattern");
+        assertThat(AppNotificationKind.OBSERVATION_NEW.deeplink())
+            .isEqualTo("/nap/uzenetek?tab=eszrevetelek");
         assertThat(AppNotificationKind.fromKey("pattern_inbox")).contains(AppNotificationKind.PATTERN_INBOX);
         assertThat(AppNotificationKind.fromKey("nope")).isEmpty();
     }
