@@ -1205,6 +1205,13 @@ databaseChangeLog:
             relativeToChangelogFile: true
             path: script/202609062200_mezo-06o0.13_mention_source_ref_kind_training.sql
   - changeSet:
+      id: "1.0.0:202609070900_mezo-xlvr_conference_deliberation"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609070900_mezo-xlvr_conference_deliberation.sql
+  - changeSet:
       id: "1.0.0:202609071000_mezo-eq85.1_text_signal"
       author: daniel.kuhne
       changes:

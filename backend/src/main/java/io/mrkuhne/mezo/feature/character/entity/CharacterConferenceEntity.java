@@ -55,6 +55,12 @@ public class CharacterConferenceEntity extends OwnedEntity {
     @Column(nullable = false, columnDefinition = "jsonb")
     private ConferenceOutcomeEnvelope outcome;
 
+    /** The structured exchange (mezo-xlvr) — null on rows written before the column existed;
+     *  the read path derives one from {@link #transcript} for those. */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(columnDefinition = "jsonb")
+    private ConferenceDeliberationEnvelope deliberation;
+
     @NotNull
     @Column(name = "generated_at", nullable = false)
     private Instant generatedAt;
