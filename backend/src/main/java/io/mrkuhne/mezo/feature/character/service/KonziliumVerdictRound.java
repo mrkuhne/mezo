@@ -47,6 +47,7 @@ public class KonziliumVerdictRound {
     private static final int MAX_CHAPTERS_PER_CONFERENCE = 1;
     private static final String NEW_KIND = "NEW";
     private static final String KEEP = "KEEP";
+    private static final String WEAKEN = "WEAKEN";
     private static final String KILL = "KILL";
     private static final String DEFAULT_ARGUMENT = "nincs ellenérv";
     private static final String DEFAULT_REASON = "nem került döntésre";
@@ -56,8 +57,11 @@ public class KonziliumVerdictRound {
     private final LlmCallContextHolder llmCallContextHolder;
     private final PromptPersona promptPersona;
 
-    /** One Szkeptikus verdict, before defaulting. */
-    record SkepticVerdictDraft(Integer index, String verdict, String argument) {}
+    /** One Szkeptikus verdict, before defaulting. {@code suggestedConfidence} is the strength the
+     *  Szkeptikus thinks the evidence carries — meaningful for KEEP and WEAKEN, ignored for KILL,
+     *  and null whenever the model omitted it (mezo-lghn). */
+    record SkepticVerdictDraft(Integer index, String verdict, String argument,
+                               BigDecimal suggestedConfidence) {}
 
     /** One Integrátor ruling, before defaulting/clamping. */
     record IntegratorRulingDraft(Integer index, Boolean accept, BigDecimal confidence, String reason) {}
@@ -83,7 +87,8 @@ public class KonziliumVerdictRound {
     /** One Szkeptikus verdict as it will be SHOWN — carrying the proposal index it answers.
      *  Produced only when the Szkeptikus round parsed AND only for the indexes it actually
      *  answered; an unanswered index simply has no entry here (mezo-xlvr). */
-    public record SkepticVerdict(int index, String verdict, String argument) {}
+    public record SkepticVerdict(int index, String verdict, String argument,
+                                 BigDecimal suggestedConfidence) {}
 
     /**
      * The round's output: every proposal's final ruling, at most one chapter proposal, one
@@ -162,15 +167,21 @@ public class KonziliumVerdictRound {
         if (skepticResult.parsed()) {
             for (int i = 0; i < proposals.size(); i++) {
                 SkepticVerdictDraft draft = skepticResult.verdicts().get(i);
-                if (draft == null || (!KEEP.equals(draft.verdict()) && !KILL.equals(draft.verdict()))) {
+                if (draft == null || !isShownVerdict(draft.verdict())) {
                     continue;
                 }
                 String argument = draft.argument() != null && !draft.argument().isBlank()
                         ? draft.argument() : DEFAULT_ARGUMENT;
-                verdicts.add(new SkepticVerdict(i, draft.verdict(), argument));
+                verdicts.add(new SkepticVerdict(i, draft.verdict(), argument, draft.suggestedConfidence()));
             }
         }
         return new Result(rulings, chapters, turns, List.copyOf(verdicts), integratorResult.parsed());
+    }
+
+    /** A verdict the Szkeptikus genuinely gave. Anything else (null, a typo, an unknown grade)
+     *  is NOT shown — emitting a defaulted verdict would put words in its mouth (mezo-xlvr I2). */
+    private static boolean isShownVerdict(String verdict) {
+        return KEEP.equals(verdict) || WEAKEN.equals(verdict) || KILL.equals(verdict);
     }
 
     private static ClaimRuling toRuling(ClaimProposal proposal, IntegratorRulingDraft draft) {
@@ -233,13 +244,31 @@ public class KonziliumVerdictRound {
                                                                   Map<Integer, SkepticVerdictDraft> verdicts) {
         StringBuilder sb = new StringBuilder("Szkeptikus: ").append(proposals.size()).append(" javaslat véleményezve.");
         for (int i = 0; i < proposals.size(); i++) {
-            SkepticVerdictDraft draft = verdicts.get(i);
-            String verdict = draft != null && KILL.equals(draft.verdict()) ? KILL : KEEP;
-            String argument = draft != null && draft.argument() != null && !draft.argument().isBlank()
-                    ? draft.argument() : DEFAULT_ARGUMENT;
-            sb.append("\nP").append(i).append(": ").append(verdict).append(" — ").append(argument);
+            sb.append("\nP").append(i).append(": ").append(skepticLine(verdicts.get(i)));
         }
         return new ConferenceTranscriptEnvelope.Turn("szkeptikus", sb.toString(), List.of());
+    }
+
+    private static String skepticVerdictsBlock(List<ClaimProposal> proposals,
+                                                Map<Integer, SkepticVerdictDraft> verdicts) {
+        StringBuilder sb = new StringBuilder("Szkeptikus döntések:");
+        for (int i = 0; i < proposals.size(); i++) {
+            sb.append("\nP").append(i).append(": ").append(skepticLine(verdicts.get(i)));
+        }
+        return sb.toString();
+    }
+
+    /** One verdict as text, for the transcript AND the chair's prompt block. An unanswered or
+     *  unknown grade defaults to KEEP here — this is about what the chair is TOLD and what the
+     *  meeting recorded, not about what the user is shown (see {@link #isShownVerdict}). The
+     *  suggested strength is rendered as a WORD, never a decimal. */
+    private static String skepticLine(SkepticVerdictDraft draft) {
+        String verdict = draft != null && isShownVerdict(draft.verdict()) ? draft.verdict() : KEEP;
+        String argument = draft != null && draft.argument() != null && !draft.argument().isBlank()
+                ? draft.argument() : DEFAULT_ARGUMENT;
+        String suggested = draft == null || draft.suggestedConfidence() == null || KILL.equals(verdict)
+                ? "" : " → " + CharacterConfidenceWords.word(draft.suggestedConfidence());
+        return verdict + suggested + " — " + argument;
     }
 
     private static String skepticPersona() {
@@ -247,7 +276,9 @@ public class KonziliumVerdictRound {
                 Te vagy a Szkeptikus, {{NÉV}} profilozó csapatának kritikus tagja. Száraz, tárgyilagos \
                 hangon írsz. A feladatod, hogy minden javaslatot megtámadj: kérdőjelezd meg a \
                 bizonyíték elégségességét, keress alternatív magyarázatot, és figyelj a \
-                túlinterpretálásra. Az érzékeny (sensitive=true) javaslatokat fokozott szigorral vizsgáld. \
+                túlinterpretálásra. Egyetlen kérdésre válaszolsz: alátámasztja-e a bizonyíték az \
+                állítást, és milyen erősségen? Hogy egy állítás bekerüljön-e a dossziéba, nem a te \
+                dolgod — azt az Integrátor dönti el. \
                 A "self-audit" dimenzió javaslatai a saját megfigyelő-szerepedből \
                 jöttek — ezeket ugyanezzel a szigorral bíráld, és külön ellenőrizd, hogy az alanyuk \
                 valóban a rendszer (Mezo teljesítménye), nem a felhasználó ({{NÉV}}) tulajdonsága.""";
@@ -255,10 +286,16 @@ public class KonziliumVerdictRound {
 
     private static String skepticContract() {
         return """
+                Minden javaslathoz pontosan egy fokozatot adj:
+                - KILL: a bizonyíték egyáltalán nem támasztja alá az állítást, vagy túlinterpretálás.
+                - WEAKEN: van benne valami, de nem ezen az erősségen.
+                - KEEP: a bizonyíték elbírja a javasolt erősséget.
+                A "suggestedConfidence" az az erősség, amit a bizonyíték szerinted elbír (0.0-1.0) — \
+                KEEP és WEAKEN esetén add meg, KILL esetén hagyd el.
                 Válaszolj KIZÁRÓLAG egy JSON tömbbel, magyarázat és formázás nélkül, pontosan ebben \
-                a formában: [{"index":0,"verdict":"KEEP|KILL","argument":"..."}]. A felsorolt \
-                javaslatok mindegyikéhez (P0, P1, …) pontosan egy bejegyzést adj, a sorszáma szerinti \
-                "index" mezővel.""";
+                a formában: [{"index":0,"verdict":"KEEP|WEAKEN|KILL","argument":"...",\
+                "suggestedConfidence":0.55}]. A felsorolt javaslatok mindegyikéhez (P0, P1, …) \
+                pontosan egy bejegyzést adj, a sorszáma szerinti "index" mezővel.""";
     }
 
     // ── Integrátor ────────────────────────────────────────────────────────────
@@ -348,18 +385,6 @@ public class KonziliumVerdictRound {
             sb.append("\nP").append(i).append(". ").append(p.kind()).append(' ').append(target)
                     .append(" — ").append(p.text()).append(" (biztonság ").append(p.confidence())
                     .append(p.sensitive() ? ", ÉRZÉKENY" : "").append(") indoklás: ").append(p.rationale());
-        }
-        return sb.toString();
-    }
-
-    private static String skepticVerdictsBlock(List<ClaimProposal> proposals, Map<Integer, SkepticVerdictDraft> verdicts) {
-        StringBuilder sb = new StringBuilder("Szkeptikus döntések:");
-        for (int i = 0; i < proposals.size(); i++) {
-            SkepticVerdictDraft draft = verdicts.get(i);
-            String verdict = draft != null && KILL.equals(draft.verdict()) ? KILL : KEEP;
-            String argument = draft != null && draft.argument() != null && !draft.argument().isBlank()
-                    ? draft.argument() : DEFAULT_ARGUMENT;
-            sb.append("\nP").append(i).append(": ").append(verdict).append(" — ").append(argument);
         }
         return sb.toString();
     }

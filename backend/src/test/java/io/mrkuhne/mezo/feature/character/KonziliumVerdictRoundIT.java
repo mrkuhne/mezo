@@ -302,4 +302,29 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
             assertThat(ruling.reason()).isEqualTo("nem került döntésre");
         });
     }
+
+    @Test
+    void skepticWeakenVerdictSurvivesIntoTheShownVerdictsAndTheTranscript() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Rekompozíció zajlik. [fake-char-skeptic:[{\"index\":0,\"verdict\":\"WEAKEN\","
+                        + "\"argument\":\"Három adatpont kevés a biztos szóhoz.\","
+                        + "\"suggestedConfidence\":0.55}]]",
+                new BigDecimal("0.80"), false, "Három heti mérés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.verdicts()).singleElement().satisfies(verdict -> {
+            assertThat(verdict.index()).isZero();
+            assertThat(verdict.verdict()).isEqualTo("WEAKEN");
+            assertThat(verdict.suggestedConfidence()).isEqualByComparingTo("0.55");
+        });
+        ConferenceTranscriptEnvelope.Turn skepticTurn = result.turns().stream()
+                .filter(turn -> turn.persona().equals("szkeptikus"))
+                .findFirst().orElseThrow();
+        assertThat(skepticTurn.text()).contains("WEAKEN").contains("valószínű");
+        assertThat(skepticTurn.text()).doesNotContain("0.55");
+    }
 }
