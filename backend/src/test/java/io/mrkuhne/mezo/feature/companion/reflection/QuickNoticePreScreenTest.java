@@ -78,6 +78,56 @@ class QuickNoticePreScreenTest {
         assertThat(result.get().topic()).isEqualTo("munka");
     }
 
+    /**
+     * Rule priority (brief order: TOUCHES_OPEN, NEW_PERSON, EXTREME_MOOD, TOPIC_STREAK; first
+     * hit wins). Each test below builds a signal/state pair where two adjacent rules would BOTH
+     * fire and pins that the earlier-ranked {@link Kind} is the one returned — so a future
+     * reorder of the {@code if} chain in {@link QuickNoticePreScreen#screen} fails a test instead
+     * of silently changing behaviour.
+     */
+    @Test
+    void priority_touchesOpenBeatsNewPerson() {
+        PatternEntity open = pattern("people:anna", "sleep-duration-h");
+        List<TextSignalEntity> lastSevenDays = List.of(
+                signal(TODAY.minusDays(4), List.of("Anna"), List.of(), null, null),
+                signal(TODAY.minusDays(2), List.of("Anna"), List.of(), null, null));
+        TextSignalEntity current = signal(TODAY, List.of("Anna"), List.of(), null, null);
+
+        Optional<Trigger> result = preScreen.screen(current, List.of(open), lastSevenDays);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().kind()).isEqualTo(Kind.TOUCHES_OPEN);
+    }
+
+    @Test
+    void priority_newPersonBeatsExtremeMood() {
+        List<TextSignalEntity> lastSevenDays = List.of(
+                signal(TODAY.minusDays(4), List.of("Anna"), List.of(), null, null),
+                signal(TODAY.minusDays(2), List.of("Anna"), List.of(), null, null));
+        TextSignalEntity current =
+                signal(TODAY, List.of("Anna"), List.of(), 5, TextSignalEntity.CONFIDENCE_SURE);
+
+        Optional<Trigger> result = preScreen.screen(current, List.of(), lastSevenDays);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().kind()).isEqualTo(Kind.NEW_PERSON);
+    }
+
+    @Test
+    void priority_extremeMoodBeatsTopicStreak() {
+        List<TextSignalEntity> lastSevenDays = List.of(
+                signal(TODAY.minusDays(3), List.of(), List.of("munka"), null, null),
+                signal(TODAY.minusDays(2), List.of(), List.of("munka"), null, null),
+                signal(TODAY.minusDays(1), List.of(), List.of("munka"), null, null));
+        TextSignalEntity current =
+                signal(TODAY, List.of(), List.of("munka"), 5, TextSignalEntity.CONFIDENCE_SURE);
+
+        Optional<Trigger> result = preScreen.screen(current, List.of(), lastSevenDays);
+
+        assertThat(result).isPresent();
+        assertThat(result.get().kind()).isEqualTo(Kind.EXTREME_MOOD);
+    }
+
     @Test
     void empty_whenNothingSalient() {
         TextSignalEntity current = signal(TODAY, List.of(), List.of(), 3, TextSignalEntity.CONFIDENCE_SURE);
