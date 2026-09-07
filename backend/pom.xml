@@ -317,6 +317,19 @@
 					<excludedGroups>${mezo.excludedTestGroups}</excludedGroups>
 					<systemPropertyVariables>
 						<api.version>${docker.api.version}</api.version>
+						<!--
+							A teszt-JVM ugyanabban a zónában fut, mint a prod (mezo-al23). A backend
+							Deployment TZ=Europe/Budapest-et állít, és ez teherhordó: a business-date
+							oszlopok, a streak-fordulók és minden @Scheduled cron erre a faliórára
+							számol (deployment-k3s-argocd.md). A CI-runner viszont UTC-ben futott,
+							így a suite egy olyan konfigurációt validált, ami élesben SOHA nem áll
+							fenn — és 22:00–24:00 UTC között (00:00–02:00 Budapest) minden nap 12
+							dátum-érzékeny IT elbukott: a kód `LocalDate.now(MEDICATION_ZONE)`-t néz,
+							a fixture nulla-argumentumú `LocalDate.now()`-ot, és a kettő ilyenkor
+							külön napra — `previousOrSame(MONDAY)` mellett külön HÉTRE — esik.
+							Nem a fixture-öket igazítjuk a runnerhez, hanem a runnert a prodhoz.
+						-->
+						<user.timezone>Europe/Budapest</user.timezone>
 					</systemPropertyVariables>
 				</configuration>
 			</plugin>

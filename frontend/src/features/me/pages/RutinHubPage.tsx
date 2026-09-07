@@ -20,7 +20,6 @@ import { useHabitCatalog, useHabitCatalogActions, useHabitDay, useHabitSummary }
 import type { HabitChainInfo, HabitDaypart, HabitDefInfo, HabitFramework, HabitItem } from '@/data/types'
 import { AiSuggestSheet } from '@/features/me/sheets/AiSuggestSheet'
 import { ChainEditSheet } from '@/features/me/sheets/ChainEditSheet'
-import { HabitEditSheet } from '@/features/me/sheets/HabitEditSheet'
 import { localDateString } from '@/shared/lib/dates'
 import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 import { DayNavigator } from '@/shared/ui/DayNavigator'
@@ -62,9 +61,6 @@ export function RutinHubPage() {
   const { catalog, isPending, isError, refetch } = useHabitCatalog()
   const { updateChain, reorderChain, pending } = useHabitCatalogActions()
   const [chainSheet, setChainSheet] = useState<{ chain?: HabitChainInfo } | null>(null)
-  // CREATE only — a habit ROW navigates to /me/rutin/szokas/{habitKey}, which is where a
-  // definition is edited and deleted. `HabitEditSheet` no longer has an edit branch at all.
-  const [habitSheet, setHabitSheet] = useState<{ chainKey: string } | null>(null)
   const [suggestSheet, setSuggestSheet] = useState(false)
 
   const strength = (key: string) => summary.habits.find((h) => h.key === key)?.strengthPct ?? null
@@ -172,7 +168,9 @@ export function RutinHubPage() {
           type="button"
           className="rad-12"
           style={ADD_HABIT_STYLE}
-          onClick={() => setHabitSheet({ chainKey: chain.chainKey })}
+          // One creation flow (mezo-9k99): the wizard's „Keret nélkül" branch replaced the
+          // retired HabitEditSheet, so a bare habit and a recipe start at the same door.
+          onClick={() => navigate(`/me/rutin/uj?chain=${encodeURIComponent(chain.chainKey)}`)}
         >
           <Icon name="plus" size={12} /> Új habit
         </button>
@@ -255,7 +253,6 @@ export function RutinHubPage() {
         </EntranceGroup>
       </PageBody>
       {chainSheet && <ChainEditSheet chain={chainSheet.chain} onClose={() => setChainSheet(null)} />}
-      {habitSheet && <HabitEditSheet chainKey={habitSheet.chainKey} onClose={() => setHabitSheet(null)} />}
       {suggestSheet && <AiSuggestSheet onClose={() => setSuggestSheet(false)} />}
     </MozaikPage>
   )

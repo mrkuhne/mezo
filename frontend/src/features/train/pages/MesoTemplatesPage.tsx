@@ -10,10 +10,13 @@
 // rather than the MozaikPage/PageHero scaffold its full-screen siblings
 // (MesoOverviewPage/MesoReportPage/MesoComparePage) use.
 //
-// Layout: DS page head (`Edzés · Sablonok` + `+ Új` → the planner) → a counted
-// section of `MesoTemplateCard`s → the shared dashed "plan one more" CTA. Each
-// card offers four actions: Szerkesztés (the template editor), Indítás (the one
-// shared MesoStartSheet), Duplikálás and Törlés.
+// Layout (redesigned into Mozaik 2.0 posters in mezo-3a9a — prototype
+// `docs/design_2.0/prototypes/sablonok.html`): DS page head (`Edzés · Sablonok` +
+// `+ Új` → the planner) → the SHELF STRIP (how many recipes · how many runs came
+// out of them — the bare "Sablonok · N" eyebrow said less and drew nothing) → the
+// `MesoTemplateCard` posters → the shared dashed "plan one more" CTA. The card's
+// face opens the editor, its foot keeps one action (Indítás → the one shared
+// MesoStartSheet) and hides Duplikálás + Törlés behind ⋯.
 //
 // Duplikálás re-sends the template's OWN document as a fresh create (days via the
 // shared `toDayInputs`, volume baselines passed through) under a `(másolat)`
@@ -27,6 +30,7 @@ import { useMesoTemplates } from '@/data/hooks'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import type { MesoTemplate } from '@/data/types'
 import { Eyebrow } from '@/shared/ui/Eyebrow'
+import { StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { PageTitle } from '@/shared/ui/PageTitle'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
@@ -85,21 +89,28 @@ export function MesoTemplatesPage() {
         </button>
       </div>
 
-      {/* One-shot entrance choreography (mezo-d20.11): the page had none. The
-          prototype does not draw a standalone Sablonok PAGE (it is a section on
-          Mesociklus), so the FACE stays as-is — F7 territory — but its list
-          speaks the same staggered `.rise` cadence as every other Edzés list. */}
+      {/* One-shot entrance choreography (mezo-d20.11): the page had none. The list
+          speaks the same staggered `.rise` cadence as every other Edzés list, and since
+          mezo-3a9a the shelf strip opens it in place of the bare counted eyebrow. */}
       <EntranceGroup>
       <div style={{ padding: '8px 24px 24px' }}>
-        <div className="rise" style={{ marginBottom: 12, '--d': '30ms' } as CSSProperties}>
-          <Eyebrow>Sablonok · {templates.length}</Eyebrow>
+        {/* The shelf, in numbers: how many recipes, and how much they have actually run.
+            Both come off the list itself — a template carries no date to count from. */}
+        <div className="rise" style={{ '--d': '30ms' } as CSSProperties}>
+          <StatStrip className="tpl-shelf">
+            <StatCell value={<span data-testid="shelf-templates">{templates.length}</span>} label="Sablon" />
+            <StatCell
+              value={<span data-testid="shelf-runs">{templates.reduce((n, t) => n + t.runCount, 0)}</span>}
+              label="Futam"
+            />
+          </StatStrip>
         </div>
         {templates.length === 0 && (
-          <div className="rise" style={{ marginBottom: 12, '--d': '60ms' } as CSSProperties}>
+          <div className="rise" style={{ marginTop: 12, '--d': '60ms' } as CSSProperties}>
             <GhostState lines={2} message="Még nincs sablonod." />
           </div>
         )}
-        <div className="col gap-sm">
+        <div className="col gap-sm" style={{ marginTop: 12 }}>
           {templates.map((t, i) => (
             <div key={t.id} className="rise" style={{ '--d': `${60 + i * 45}ms` } as CSSProperties}>
               <MesoTemplateCard

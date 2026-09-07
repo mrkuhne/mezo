@@ -141,3 +141,38 @@ szűkítette.
    listája vizuálisan gomb nélküli; a shipped verzió az új `chevrons="focus"` móddal old fel —
    a gombok az a11y fában maradnak, de csak `:focus-within`-re látszanak. Lásd
    [_platform-design-system.md §2 item 5](../features/_platform-design-system.md).
+
+## 2026-09-07 — a szerkesztés saját oldalra költözött (mezo-bk26, S3)
+
+A formálódás-kör (mezo-08zl) IA-választása — `prototypes/rutin-szerkeszto-valasztas.html` —
+eredetileg az **A** (helyben) változatot ajánlotta, de az A megépítve elbukott használatban: a
+formálódás-nézet olyan hosszúra nyújtotta a szokás-oldalt, hogy a helyben nyíló űrlap a
+látótér alá került, és a fejléc-gomb „nem csinál semmit" érzést keltett. A shipped megoldás a
+**B**: `HabitPage` tisztán részletek-oldal (poszter + kontextus + előzmény + read-only
+mondat), a teljes írófelület a `/me/rutin/szokas/{key}/szerkesztes` saját oldalán él
+(`HabitEditPage`, prototípus `rutin-formalodas.html` `pg-edit`).
+
+Amit a szétválasztás közben terméklogikában is javítottunk:
+
+1. **A horgony választó, nem tiltott mező.** A chip-kötött horgony readOnly zárolása technikai
+   kényszer volt (a PATCH-ben a null = „hagyd békén", az üres string = „oldd le”); a választó
+   (szokásaid + mezo-események + saját szavakkal + „Leoldom") fedi le a konvenciót, gépelés
+   helyett.
+2. **A keretváltás előre kimondja az adatvesztést** — a backend `clearForeignFields`-e némán
+   nulláz, az oldal a tárolt értékekkel nevesíti, mi vész el, még a Mentés előtt.
+3. **A mode/metric itt szerkeszthető** (mezo-pero kontraktus-szelet), és az ürített opcionális
+   mezők tényleg ürülnek (üres string a dróton, a régi „hagyd ki a kulcsot" szabály helyett).
+
+## 2026-09-07 — egy létrehozó folyam + számolt XP (mezo-9k99, S5)
+
+A wizard lett minden új szokás egyetlen ajtaja (`rutin-formalodas.html` `pg-wiz`):
+
+1. **„Keret nélkül" ág** (keret → tett, két lépés) — kiváltja a külön `HabitEditSheet`-et,
+   ami addig az egyetlen hely volt, ahol keret nélküli sor (és mode/metric) születhetett.
+2. **A Clear-ág végigmegy a négy törvényen** — a vágy + az opcionális identitás saját lépést
+   kapott (öt lépés), mert addig a két ág csak címkékben tért el, és Clear 2. törvénye egy
+   mellékmező volt a tett-lépésen.
+3. **Az XP számolt, nem állítható**: négy Fogg ability-faktor (idő · fizikai · fejmunka ·
+   beleillik) összege adja a szűk 6–14 sávot; a legmagasabb fokozatú faktorra „vedd kisebbre"
+   tanács jön — tanácsban él, nem az aritmetikában, és sosem blokkol. A faktorok nem
+   tárolódnak; konverziónál az érintetlen rács a tárolt XP-t viszi tovább.

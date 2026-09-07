@@ -176,13 +176,15 @@ public class GraphPromotionService {
         // Meta MERGE, nem overwrite (code review fix, mezo-06o0.4): az éjszakai él-passz
         // (PersonExtractionService.linkPersonEdges) a "edgeStructuredOn" kulcsot ugyanebbe a
         // jsonb mezőbe írja — egy sima névjavítás-szinkron nem törölheti azt egy Map.of() felülírással.
-        Map<String, Object> meta = existing.map(GraphNodeEntity::getMeta)
-            .map(HashMap::new).orElseGet(HashMap::new);
-        meta.put("relationship", person.getRelationship());
-        meta.put("status", person.getStatus());
+        // A merge ATOMI (mezo-06o0.7): a null meta érintetlenül hagyja a mezőt, és a rákövetkező
+        // mergeMeta egyetlen `jsonb ||` UPDATE-tel fűzi rá a két saját kulcsot — a korábbi
+        // olvas-összefésül-ír alak READ COMMITTED alatt eldobhatta a párhuzamos író kulcsát.
         GraphNodeEntity node = graphService.upsertNode(userId, GraphNodeEntity.KIND_PERSON,
             truncateTitle(person.getName()), personSummary(person), SOURCE_PERSON, person.getId(),
-            null, meta);
+            null, null);
+        node = graphService.mergeMeta(userId, node.getId(), Map.of(
+            "relationship", person.getRelationship(),
+            "status", person.getStatus()));
         raiseStatus(node, active ? GraphNodeEntity.STATUS_ACTIVE : GraphNodeEntity.STATUS_ARCHIVED);
         return Optional.of(node);
     }

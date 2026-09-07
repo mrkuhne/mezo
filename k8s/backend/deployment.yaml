@@ -28,7 +28,7 @@ spec:
         - name: ghcr-pull
       containers:
         - name: backend
-          image: ghcr.io/mrkuhne/mezo-backend:2.186.1
+          image: ghcr.io/mrkuhne/mezo-backend:2.195.0
           ports:
             - name: http
               containerPort: 8090
@@ -103,8 +103,8 @@ spec:
               value: "true"
             # LLM call audit log (mezo-2zyu): every Gemini call lands in llm_log_history with
             # its token/cost breakdown and its caller attribution (feature/operation/entity).
-            # Default-off in application.yml — deliberately switched ON only where the real
-            # adapter runs, so local/test runs never accumulate audit rows.
+            # Default-on in application.yml since mezo-ozri.1 — this explicit pin is now
+            # redundant with that default, kept deliberately as a production safeguard.
             - name: MEZO_FEATURE_LLM_LOG_ENABLED
               value: "true"
             # mezo-ibxy: observability. ECS JSON logs for VictoriaLogs; actuator on 8081.

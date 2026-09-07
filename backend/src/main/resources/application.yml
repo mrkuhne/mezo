@@ -325,10 +325,12 @@ mezo:
     # and the AccountProgressPort adapter is absent (progression awards fire no coin hook).
     gamification:
       enabled: true
-    # LLM call audit log (bd mezo-2zyu) — DEFAULT OFF until the adapters are instrumented and the
-    # rollout lands; off ⇒ the no-op recorder is injected, so nothing is ever published or written.
+    # LLM call audit log (bd mezo-2zyu) — ON by default (mezo-ozri.1, spec §2 L1): a future model
+    # router and per-user USD cap would both be built on this measurement, so with it off they would
+    # have nothing to build on. Off ⇒ the no-op recorder is injected, so nothing is ever published or
+    # written. The read API (/api/llm-usage) is deliberately NOT behind this switch.
     llm-log:
-      enabled: false
+      enabled: true
     # Életjel-ring day-close (mezo-dhzk) — off ⇒ the /api/needs surface 404s and no needs beans exist.
     needs:
       enabled: true
@@ -413,10 +415,6 @@ mezo:
       # The reverse is NOT symmetric: this on + profile-assembler-job off = seasons still proposed
       # (phase 1), profile rebuild skipped (phase 2)
       quarterly-review-job:
-        enabled: true
-      # V3.2 weekly hypothesis pipeline (schedule: mezo.companion.hypotheses.cron);
-      # off = the HypothesisJob bean does not exist
-      hypothesis-job:
         enabled: true
       # Reflexió (mezo-eq85) nightly reflection pass (schedule: mezo.companion.reflection.cron);
       # off = the ReflectionJob bean does not exist (TextSignalService / the catch-up stay callable,
@@ -512,9 +510,13 @@ mezo:
       currency: USD
       # Keys are bracket-quoted: a model id contains dots, and an unbracketed map key would be
       # split into separate property elements by the binder (the entry silently disappears).
+      # reasoning-billing (mezo-ozri.1): SEPARATE = the provider reports reasoning tokens BESIDE the
+      # output tokens (Gemini's thoughtsTokenCount) and they are billed as their own category;
+      # INCLUDED_IN_OUTPUT = they are already inside the completion count (OpenAI), so billing them
+      # again would charge the same tokens twice. Absent = SEPARATE.
       models:
-        "[gemini-2.5-flash]":     { input-per-million: 0.30, output-per-million: 2.50, thinking-per-million: 2.50, cached-per-million: 0.075 }
-        "[gemini-2.5-pro]":       { input-per-million: 1.25, output-per-million: 10.0, thinking-per-million: 10.0, cached-per-million: 0.31 }
+        "[gemini-2.5-flash]":     { input-per-million: 0.30, output-per-million: 2.50, thinking-per-million: 2.50, cached-per-million: 0.075, reasoning-billing: SEPARATE }
+        "[gemini-2.5-pro]":       { input-per-million: 1.25, output-per-million: 10.0, thinking-per-million: 10.0, cached-per-million: 0.31, reasoning-billing: SEPARATE }
         "[gemini-embedding-001]": { embed-per-million-chars: 0.15 }
   companion:
     # Companion LLM model tiers (ADR 0008) — config, never code. Binds onto CompanionProperties.
@@ -585,6 +587,11 @@ mezo:
       # Reflexió (mezo-eq85): text signals, quick notices, the 03:40 nightly reflection.
       # Off = no TextSignal* bean exists — no extraction call, and the four TEXT_* metrics report
       # no data (the series helper returns an empty map, so the monitor shows them as no_data).
+      # HONEST WARNING (mezo-eq85.2): this switch is now WIDER than Reflexió. S2 retired the weekly
+      # HypothesisJob, so the pre-existing V3.2 hypothesis-proposal loop (HypothesisPipelineService,
+      # mezo.companion.hypotheses) is reachable ONLY from ReflectionJob, which is gated on this
+      # switch. Turning Reflexió off therefore also stands the V3.2 proposal loop down — it no
+      # longer has a switch of its own. Nothing else proposes hypotheses.
       enabled: true
       # 03:40 — the dawn cluster's remaining free-ish slot; it shares the minute with the llm-log
       # payload-retention purge (mezo.llm-log.retention.cron), which is a single bounded UPDATE on
@@ -780,10 +787,13 @@ mezo:
       backfill-weeks: 8
       backfill-months: 3
     hypotheses:
-      # V3.2 weekly hypothesis loop (smart tier) — Sunday 03:00, after the nightly jobs
-      cron: "0 0 3 * * SUN"
-      # Max hypotheses judged per run
-      max-per-run: 3
+      # V3.2 hypothesis loop (smart tier). Reflexió S2 (mezo-eq85.2) retired the weekly
+      # HypothesisJob: the nightly ReflectionJob (mezo.companion.reflection.cron, 03:40) drives
+      # the loop and caps it with mezo.companion.reflection.propose.max-per-night. Only the two
+      # critique thresholds — what SURVIVES, not when it runs — live here.
+      # CONSEQUENCE: this block no longer has a kill switch of its own. The loop runs iff
+      # mezo.companion.reflection.enabled (and the companion + reflection-job switches) are true —
+      # mezo.companion.reflection.enabled=false silently disables hypothesis proposal too.
       # Weighted-critique keep threshold (arch §4.7)
       keep-threshold: 0.75
       # Borderline band floor — one revise + re-critique pass (arch §4.7)

@@ -235,12 +235,11 @@ public record CompanionProperties(
     ) {
     }
 
-    /** V3.2 weekly hypothesis loop — propose → critique → revise on the smart tier. */
+    /** V3.2 hypothesis loop — propose → critique → revise on the smart tier. Since Reflexió S2
+     *  (mezo-eq85.2) the nightly {@code ReflectionJob} drives it: the schedule and the per-run cap
+     *  moved to {@code mezo.companion.reflection} (cron + propose.max-per-night); only the two
+     *  critique thresholds — which define what SURVIVES, not when it runs — stay here. */
     public record Hypotheses(
-        /** Cron for the weekly pipeline (server zone) — after the nightly jobs by convention. */
-        @NotBlank String cron,
-        /** Max hypotheses judged per run (the proposer is asked for this many at most). */
-        @Min(1) @Max(10) int maxPerRun,
         /** Weighted-critique score at/above which a hypothesis persists (arch §4.7: 0.75). */
         @DecimalMin("0.0") @DecimalMax("1.0") double keepThreshold,
         /** Score at/above which a borderline hypothesis gets ONE revise+re-critique pass (§4.7: 0.50). */

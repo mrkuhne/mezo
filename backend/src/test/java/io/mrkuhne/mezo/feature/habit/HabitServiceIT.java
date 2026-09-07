@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.habit;
 
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -50,6 +51,7 @@ class HabitServiceIT extends AbstractIntegrationTest {
     @Autowired private WeightLogPopulator weightLogPopulator;
     @Autowired private HabitPopulator habitPopulator;
     @Autowired private LevelUpEventRepository levelUpEventRepository;
+    @Autowired private AppNotificationRepository appNotificationRepository;
 
     private UUID owner() {
         return userPopulator.createUser("habit-svc@test.hu").getId();
@@ -495,4 +497,45 @@ class HabitServiceIT extends AbstractIntegrationTest {
     private static HabitDayEntity byKey(java.util.List<HabitDayEntity> rows, String key) {
         return rows.stream().filter(r -> r.getHabitKey().equals(key)).findFirst().orElseThrow();
     }
+
+    // ── mezo-0cbh: az automatizmus-küszöb átlépése egy feed-sort ír ─────────────────────────
+    // A „már szóltunk" állapotot NEM oszlop őrzi, hanem a dedup-kulcs — ezért a másodszori
+    // hívásnak is le KELL futnia anélkül, hogy második sort írna.
+
+    @Test
+    void testEmitFormation_shouldWriteOneRow_whenThresholdCrossedAndStayOne_whenCalledAgain() {
+        UUID owner = owner();
+        LocalDate today = LocalDate.now();
+        // 90 % küszöb: bőven a telítődés fölé kell vinni a görbét, hiány nélkül.
+        for (int i = 120; i >= 1; i--) {
+            habitPopulator.row(owner, today.minusDays(i), "morning_sunlight", HabitDayEntity.STATUS_DONE);
+        }
+
+        assertThat(habitService.emitFormationIfCrossed(owner, "morning_sunlight")).isTrue();
+        // A második hívás ugyanazt a tényt látja — a dedup-kulcs miatt mégsem lesz második sor.
+        assertThat(habitService.emitFormationIfCrossed(owner, "morning_sunlight")).isTrue();
+
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+            .filteredOn(n -> "habit_formation".equals(n.getKind()))
+            .singleElement()
+            .satisfies(n -> {
+                assertThat(n.getDeeplink()).isEqualTo("/me/rutin/szokas/morning_sunlight");
+                assertThat(n.getTitle()).isEqualTo("Kezd magától menni");
+            });
+    }
+
+    @Test
+    void testEmitFormation_shouldStaySilent_whenUnderTheThreshold() {
+        UUID owner = owner();
+        LocalDate today = LocalDate.now();
+        for (int i = 12; i >= 2; i--) {
+            habitPopulator.row(owner, today.minusDays(i), "morning_sunlight", HabitDayEntity.STATUS_DONE);
+        }
+
+        assertThat(habitService.emitFormationIfCrossed(owner, "morning_sunlight")).isFalse();
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+            .filteredOn(n -> "habit_formation".equals(n.getKind()))
+            .isEmpty();
+    }
+
 }
