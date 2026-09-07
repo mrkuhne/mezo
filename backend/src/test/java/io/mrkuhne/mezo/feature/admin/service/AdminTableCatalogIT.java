@@ -1,0 +1,70 @@
+package io.mrkuhne.mezo.feature.admin.service;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
+import io.mrkuhne.mezo.feature.admin.config.AdminProperties;
+import io.mrkuhne.mezo.support.AbstractIntegrationTest;
+import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+
+/** information_schema-driven allowlist for the admin data browser (mezo-d5iy). */
+class AdminTableCatalogIT extends AbstractIntegrationTest {
+
+    @Autowired private AdminTableCatalog catalog;
+    @Autowired private AdminProperties properties;
+
+    @Test
+    void testTables_shouldIncludeOwnedTablesAndAppUser_whenBuiltFromInformationSchema() {
+        assertThat(catalog.tables()).containsKeys("workout_session", "meal", "memory_item", "app_user", "llm_log_history");
+    }
+
+    @Test
+    void testTables_shouldHideSecretColumns_always() {
+        assertThat(catalog.require("app_user").hasColumn("password_hash")).isFalse();
+        assertThat(catalog.require("app_user").hasColumn("email")).isTrue();
+        assertThat(catalog.require("invite").hasColumn("token")).isFalse();
+    }
+
+    @Test
+    void testRequire_shouldThrowTableUnknown_whenTableIsNotBrowsable() {
+        assertThatThrownBy(() -> catalog.require("databasechangelog"))
+                .isInstanceOf(SystemRuntimeErrorException.class)
+                .hasMessageContaining("ADMIN_TABLE_UNKNOWN");
+        assertThatThrownBy(() -> catalog.require("pg_class; drop table app_user"))
+                .isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testRequireColumn_shouldThrowColumnUnknown_whenColumnIsHiddenOrAbsent() {
+        var appUser = catalog.require("app_user");
+        assertThatThrownBy(() -> catalog.requireColumn(appUser, "password_hash"))
+                .isInstanceOf(SystemRuntimeErrorException.class)
+                .hasMessageContaining("ADMIN_COLUMN_UNKNOWN");
+        assertThatThrownBy(() -> catalog.requireColumn(appUser, "nope")).isInstanceOf(SystemRuntimeErrorException.class);
+    }
+
+    @Test
+    void testForeignKeys_shouldBeResolved_whenTableReferencesAnother() {
+        var set = catalog.require("exercise_set").column("workout_session_id").orElseThrow();
+        assertThat(set.foreignKey()).isTrue();
+        assertThat(set.referencesTable()).isEqualTo("workout_session");
+    }
+
+    @Test
+    void testFeatureMap_shouldNameColumnsThatExist_forEveryConfiguredFeature() {
+        properties.featureMap().forEach((key, source) -> {
+            var table = catalog.require(source.table());
+            assertThat(table.column(source.timestampColumn()))
+                    .as("feature %s -> %s.%s", key, source.table(), source.timestampColumn())
+                    .isPresent();
+        });
+    }
+
+    @Test
+    void testSoftDelete_shouldBeAbsent_forLlmLogHistory() {
+        assertThat(catalog.require("llm_log_history").hasColumn("is_deleted")).isFalse();
+        assertThat(catalog.require("workout_session").hasColumn("is_deleted")).isTrue();
+    }
+}

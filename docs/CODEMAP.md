@@ -81,11 +81,14 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + FE-data* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/admin`
+  - **repositories:** `AdminCatalogQuery`
+  - **services:** `AdminSqlDialect`, `AdminTableCatalog`
   - **config:** `AdminProperties`
 - **FE data** `frontend/src/data/admin`
   - **hooks (via `@/data/hooks`):** `useAdminActions`, `useAdminInvites`, `useAdminUsers`
   - **modules:** adminApi.ts, adminHooks.ts, adminMock.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 0 IT + 1 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 1 IT + 1 unit
+  - **ITs:** `AdminTableCatalogIT`
 
 ### appnotification
 
