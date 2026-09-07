@@ -32,3 +32,16 @@ a spec frissül és jön a writing-plans.
 | Nincs térköz a Napi terhelés csempe és a gyakorlat-kártyák között | `.loadtile.day` 10px alsó margót kapott. |
 | Drag&drop helyett fel/le nyilak | A ☰ fogantyú és a pointer-drag kikerült; a kártya fejlécében ▲▼ gombpár rendez (a szélső irány letiltva). Ez az app meglévő `SortableList`-viselkedéséhez is közelebb áll. |
 | Átrendezéskor az egész oldal „flashelt" és újratöltött | A nap-oldal már nem renderelődik újra szerkesztéskor: csak a kártyalista frissül, animáció nélkül (`renderCards(anim=false)`); a `rise` belépő-choreográfia csak a nap első megnyitásakor fut. A Napi terhelés csempe helyben, élőben frissül. |
+
+## Lezárás (Task 11, 2026-09-07)
+
+Az implementáció (Task 1–10) végigvitte mind a három körben rögzített döntést a kódba:
+`ZoneBar`/`LoadTile`/`DayStripTile`/`DayLoadPanel`/`WeekLoadPanel`/`MesoDayEditor`/
+`MesoWeekEditor` a `features/train/components/`-ben, a terhelés-derivációk egy helyen
+(`logic/mesoLoad.ts`), a varázsló egyetlen kérdező képernyőre olvadva (`wizard/InterviewStep.tsx`).
+Egy eltérés a tervhez képest: a sablon-szerkesztő elvesztette a `Fókusz` tier-picker `<details>`
+blokkját (a `MusclePriorityPicker` most kizárólag a varázsló interjújában él) — ez tudatos,
+saját bd-issue-val követett kompromisszum (`mezo-9kto`), nem hiba. A `docs/features/train.md`
+§2/§9/§10 és a CODEMAP frissült; négy további follow-up (`mezo-4neq`, `mezo-ntva`, `mezo-bhrm`,
+`mezo-ra9v`) tartja számon a kör tudatosan nyitva hagyott széleit. A spec §5 vizuális
+prototípus-igazodását a teljes gate (build + mindkét módú teszt-suite) zöld futása igazolja.
