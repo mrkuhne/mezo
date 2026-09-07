@@ -427,7 +427,7 @@ git commit --no-verify -m "feat(character): show both konzílium judges the clai
 - Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/character/config/CharacterProperties.java`
 - Modify: `backend/src/main/resources/application.yml:1738-1743`
 - Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/character/service/KonziliumVerdictRound.java`
-- Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` (two echo sentinels — Step 2)
+- Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` (one `userMessages()` accessor — Step 2)
 - Test: `backend/src/test/java/io/mrkuhne/mezo/feature/character/KonziliumVerdictRoundIT.java`
 
 **Interfaces:**
@@ -472,53 +472,40 @@ In `application.yml`, under `character: conference:`:
 
 </details>
 
-- [ ] **Step 2: Add the two echo sentinels to the test double**
+- [ ] **Step 2: Extend the test double's existing prompt recorder by one accessor**
 
-The audit-log channel the earlier draft of this plan offered is **provably unavailable** — the
-controller checked. `LlmLogEntity` does persist `system_prompt` / `user_message` (cap
-`mezo.llm-log.max-payload-chars: 64000`), but these ITs run under `@Profile("companion-fake")`
-with `FakeCompanionLlm`, which is deliberately **stateless with no prompt recorder** (its own
-javadoc says so twice) and writes no audit row at all; only `SpringAiCompanionLlm` records one.
-So use the echo idiom — and add **two** echoes, because the test asserts a positive about the
-chair's prompt and a negative about the Szkeptikus's, and a negative about a prompt is unprovable
-without a channel to read that prompt.
+`FakeCompanionLlm` already records prompts: `lastUserMessage` (field `:576`, accessor `:586`, set
+in `complete(...)` at `:594`), and its javadoc states the intent plainly — it exists so an IT can
+assert a prompt-assembly detail "without needing a dedicated sentinel/echo for every such detail".
+`KonziliumVerdictRoundIT.java:236` already uses it. **Use this channel, not a new echo sentinel.**
 
-In `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java`, next to
-the existing `CHAR_PROPOSALS_ECHO` constant:
-
-```java
-    /** Scripted ECHO of the assembled Szkeptikus user message (mezo-lghn): planted in a
-     *  proposal's TEXT, it comes back as the verdict's {@code argument}, so an IT can prove what
-     *  did — and did NOT — reach that prompt. Mirrors {@link #CHAR_PROPOSALS_ECHO}; the fake
-     *  stays stateless, no prompt recorder. */
-    public static final String CHAR_SKEPTIC_ECHO = "[fake-char-skeptic-echo]";
-    /** Same idiom for the Integrator: the assembled chair prompt comes back as the ruling's
-     *  {@code reason}. */
-    public static final String CHAR_INTEGRATOR_ECHO = "[fake-char-integrator-echo]";
-```
-
-Then in the marker dispatch (the `SKEPTIC_MARKER_MIRROR` / `INTEGRATOR_MARKER_MIRROR` branches),
-check the echo **before** the scripting sentinel, reusing the existing private `jsonEscape`
-helper. Escape the quotes as Java string literals:
+One gap: `lastUserMessage()` keeps only the LAST message, and this round makes two calls (Szkeptikus
+first, then Integrátor). This task's test needs a positive about the chair's prompt AND a negative
+about the Szkeptikus's, so record all of them. In
+`backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java`, beside the
+existing `lastUserMessage` field:
 
 ```java
-        if (systemPrompt.startsWith(SKEPTIC_MARKER_MIRROR)) {
-            if (userMessage.contains(CHAR_SKEPTIC_ECHO)) {
-                return "[{\"index\":0,\"verdict\":\"KEEP\",\"argument\":\""
-                        + jsonEscape(userMessage) + "\"}]";
-            }
-            Matcher m = CHAR_SKEPTIC_SENTINEL.matcher(userMessage);
-            return m.find() ? m.group(1) : skepticCannedAnswer(userMessage);
-        }
-        if (systemPrompt.startsWith(INTEGRATOR_MARKER_MIRROR)) {
-            if (userMessage.contains(CHAR_INTEGRATOR_ECHO)) {
-                return "{\"rulings\":[{\"index\":0,\"accept\":false,\"reason\":\""
-                        + jsonEscape(userMessage) + "\"}],\"chapters\":[]}";
-            }
-            Matcher m = CHAR_INTEGRATOR_SENTINEL.matcher(userMessage);
-            return m.find() ? m.group(1) : integratorCannedAnswer(userMessage);
-        }
+    /** mezo-lghn: EVERY user message that reached {@link #complete}, in call order — the konzílium
+     *  rounds make several calls per run, so an IT that must assert about an EARLIER call's prompt
+     *  (e.g. that the chair's dossier block did NOT reach the Szkeptikus) cannot use
+     *  {@link #lastUserMessage}, which the next call overwrites. Same channel, same intent: no
+     *  per-detail sentinel. */
+    private final List<String> userMessages = new java.util.concurrent.CopyOnWriteArrayList<>();
+
+    public List<String> userMessages() {
+        return List.copyOf(userMessages);
+    }
 ```
+
+and add one line next to the existing `lastUserMessage = userMessage;` in `complete(...)`:
+
+```java
+        userMessages.add(userMessage);
+```
+
+Do NOT add echo sentinels for this — the recorder is the established idiom and one channel beats
+three.
 
 - [ ] **Step 2b: Write the failing test**
 
@@ -529,22 +516,24 @@ helper. Escape the quotes as Java string literals:
         CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
         seedClaim(owner, dimension.getId(), "MARKER-DOSSZIE-ALLITAS", new BigDecimal("0.60"));
         ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
-                "Új állítás. " + FakeCompanionLlm.CHAR_SKEPTIC_ECHO + " "
-                        + FakeCompanionLlm.CHAR_INTEGRATOR_ECHO,
-                new BigDecimal("0.60"), false, "Indoklás.");
+                "Új állítás.", new BigDecimal("0.60"), false, "Indoklás.");
 
-        KonziliumVerdictRound.Result result =
-                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+        verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
 
-        // The chair's assembled prompt came back as its ruling reason.
-        assertThat(result.rulings()).singleElement().satisfies(ruling ->
-                assertThat(ruling.reason()).contains("Dosszié:").contains("MARKER-DOSSZIE-ALLITAS"));
-        // The Szkeptikus's assembled prompt came back as its verdict argument — and must NOT
-        // carry the dossier: its job is the proposal against its own evidence (spec §10).
-        assertThat(result.verdicts()).singleElement().satisfies(verdict ->
-                assertThat(verdict.argument()).doesNotContain("Dosszié:"));
+        // The chair is called last, so lastUserMessage() is ITS prompt — it must carry the dossier.
+        assertThat(fakeCompanionLlm.lastUserMessage())
+                .contains("Dosszié:")
+                .contains("MARKER-DOSSZIE-ALLITAS");
+        // Exactly ONE of the round's prompts may carry it: the Szkeptikus judges the proposal
+        // against its own evidence and must not see the dossier (spec §10).
+        assertThat(fakeCompanionLlm.userMessages())
+                .filteredOn(message -> message.contains("Dosszié:"))
+                .hasSize(1);
     }
 ```
+
+Add `@Autowired private FakeCompanionLlm fakeCompanionLlm;` to the IT only if it is not already
+there (the test at `:236` uses it, so it very likely is).
 
 - [ ] **Step 3: Run test to verify it fails**
 
@@ -643,14 +632,11 @@ Wire it into `runIntegrator`'s user message only:
             seedClaim(owner, dimension.getId(), "Állítás " + i, new BigDecimal("0.60"));
         }
         ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
-                "Új állítás. " + FakeCompanionLlm.CHAR_INTEGRATOR_ECHO,
-                new BigDecimal("0.60"), false, "Indoklás.");
+                "Új állítás.", new BigDecimal("0.60"), false, "Indoklás.");
 
-        KonziliumVerdictRound.Result result =
-                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+        verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
 
-        assertThat(result.rulings()).singleElement().satisfies(ruling ->
-                assertThat(ruling.reason()).contains("van szűkítve"));
+        assertThat(fakeCompanionLlm.lastUserMessage()).contains("van szűkítve");
     }
 ```
 
