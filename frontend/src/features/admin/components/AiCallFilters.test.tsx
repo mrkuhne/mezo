@@ -4,7 +4,7 @@ import { AiCallFilters } from '@/features/admin/components/AiCallFilters'
 
 const TOTALS = {
   callCount: 412, successCount: 381, errorCount: 24, cancelledCount: 7,
-  unpricedCount: 38, costUsd: 1.86, currency: 'USD',
+  unpricedCount: 38, promptTokens: 0, cachedTokens: 0, costUsd: 1.86, currency: 'USD',
 }
 
 describe('AiCallFilters', () => {

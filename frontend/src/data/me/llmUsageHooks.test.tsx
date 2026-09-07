@@ -99,7 +99,7 @@ describe('useLlmUsageBreakdown (real mode)', () => {
       http.get(`${API_BASE}/api/llm-usage/breakdown`, () =>
         HttpResponse.json({
           from: '2026-08-14',
-          totals: { callCount: 3, successCount: 3, errorCount: 0, cancelledCount: 0, unpricedCount: 1, costUsd: 0.5, currency: 'USD' },
+          totals: { callCount: 3, successCount: 3, errorCount: 0, cancelledCount: 0, unpricedCount: 1, promptTokens: 0, cachedTokens: 0, costUsd: 0.5, currency: 'USD' },
           features: [{ key: 'companion_chat', callCount: 3, costUsd: 0.5 }],
           models: [{ key: 'gemini-2.5-flash', callCount: 3, costUsd: 0.5 }],
           byUser: [],

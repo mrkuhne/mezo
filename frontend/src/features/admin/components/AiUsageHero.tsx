@@ -34,6 +34,19 @@ export function AiUsageHero({ totals, periodLabel }: { totals: Totals; periodLab
           </div>
           <div className="text-tertiary" style={{ fontSize: 10.5, fontWeight: 600 }}>becsült költség</div>
         </div>
+        {/* mezo-ozri.5: the prompt-cache meter. cachedTokens is a SUBSET of promptTokens, so the
+            ratio is the quotient — cached input bills at a tenth of the normal rate, which makes
+            this the one number that says whether the stable-prefix prompt order is paying off.
+            Hidden rather than shown as 0% when nothing reported a prompt token: "no data" and
+            "no hits" are different statements. */}
+        {totals.promptTokens > 0 && (
+          <div>
+            <div style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.05, fontVariantNumeric: 'tabular-nums' }}>
+              {Math.round((totals.cachedTokens / totals.promptTokens) * 100)}%
+            </div>
+            <div className="text-tertiary" style={{ fontSize: 10.5, fontWeight: 600 }}>gyorsítótárból</div>
+          </div>
+        )}
       </div>
 
       <div className="text-tertiary" style={{ fontSize: 11, marginTop: 9 }}>

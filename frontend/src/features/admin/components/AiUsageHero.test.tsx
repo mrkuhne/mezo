@@ -5,6 +5,7 @@ import { AiUsageHero } from '@/features/admin/components/AiUsageHero'
 const TOTALS = {
   callCount: 412, successCount: 381, errorCount: 24, cancelledCount: 7,
   unpricedCount: 38, costUsd: 1.86, currency: 'USD',
+  promptTokens: 0, cachedTokens: 0,
 }
 
 describe('AiUsageHero', () => {
@@ -27,5 +28,19 @@ describe('AiUsageHero', () => {
   it('dashes the cost when no row in the period is priced', () => {
     render(<AiUsageHero totals={{ ...TOTALS, costUsd: null }} periodLabel="Ma" />)
     expect(screen.getByText('—')).toBeInTheDocument()
+  })
+
+  // mezo-ozri.5: the prompt-cache meter. cachedTokens is a SUBSET of promptTokens, so the ratio is
+  // the quotient — the number that says whether the stable-prefix work is actually paying off.
+  it('shows the prompt-cache hit ratio when the period reported prompt tokens', () => {
+    render(<AiUsageHero totals={{ ...TOTALS, promptTokens: 1000, cachedTokens: 800 }} periodLabel="Ez a hét" />)
+
+    expect(screen.getByText('80%')).toBeInTheDocument()
+    expect(screen.getByText('gyorsítótárból')).toBeInTheDocument()
+  })
+
+  it('hides the cache ratio when no row in the period reported a prompt token', () => {
+    render(<AiUsageHero totals={TOTALS} periodLabel="Ez a hét" />)
+    expect(screen.queryByText('gyorsítótárból')).not.toBeInTheDocument()
   })
 })
