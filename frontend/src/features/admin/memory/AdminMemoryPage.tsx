@@ -103,7 +103,9 @@ export function AdminMemoryPage() {
                 onInspect={setInspector}
               />
             )}
-            {view === 'graph' && <GraphView />}
+            {view === 'graph' && (
+              <GraphView userId={userId} isOwner={isOwner} sel={sel} onSelect={select} onInspect={setInspector} />
+            )}
             {view === 'map' && <MapView />}
             {view === 'layers' && <LayersView />}
           </div>
