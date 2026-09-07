@@ -56,14 +56,19 @@ import org.springframework.transaction.annotation.Transactional;
  *       {@code UnexpectedRollbackException} no matter who caught what (the S3 finding). A separate
  *       physical transaction is the only thing that contains that damage, and one extra connection
  *       per morning message is cheap next to "no morning briefing at all".
- *   <li><b>A {@value #DIGEST_TIMEOUT_SECONDS}-second query timeout.</b> The price of a SECOND
- *       physical transaction is that it can WAIT on locks the caller's own transaction holds — and
- *       an unbounded wait would hang the morning message forever, which is worse than the failure
- *       {@code REQUIRES_NEW} was bought to prevent. (It is not hypothetical: an integration test
- *       that is itself {@code @Transactional} still holds the {@code TRUNCATE} locks of its
- *       fixture reset, so an un-timed digest read from inside it never returns.) Two seconds is
- *       ~40x the real cost of these two indexed reads; on expiry the read fails, the catch below
- *       turns it into no digest, and the briefing goes out on time.
+ *   <li><b>A {@value #DIGEST_TIMEOUT_SECONDS}-second query timeout.</b> This bounds a TEST
+ *       pathology, not a production one: under Postgres MVCC a plain {@code SELECT} never blocks
+ *       on row locks a concurrent transaction holds, so in production the digest's two indexed
+ *       reads have nothing to wait on except an {@code ACCESS EXCLUSIVE} holder — DDL, a Liquibase
+ *       migration, or {@code VACUUM FULL}, i.e. a deploy window, not ordinary traffic. The concrete
+ *       driver was found in this codebase's own integration tests: a class-level
+ *       {@code @Transactional} IT never commits its {@code ResetDatabase} fixture's
+ *       {@code TRUNCATE} for the duration of the test method, and {@code TRUNCATE} does take an
+ *       {@code ACCESS EXCLUSIVE} lock — so a {@code REQUIRES_NEW} digest read from inside such a
+ *       test genuinely waited forever. The timeout exists so that pathology (or any real deploy-
+ *       window collision) fails soft instead of hanging: two seconds is ~40x the real cost of
+ *       these two indexed reads, and on expiry the read fails, the catch below turns it into no
+ *       digest, and the briefing still goes out on time.
  *   <li><b>The in-body {@code catch}.</b> It keeps the ordinary failure quiet as well: the proxy
  *       never sees an exception, so the new transaction commits cleanly and the caller simply gets
  *       {@link Optional#empty()}.
