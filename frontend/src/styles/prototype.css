@@ -10686,3 +10686,12 @@ button.mz-wtile:active { transform: scale(0.96); }
   background: transparent; color: var(--coral-deep);
   font-family: inherit; font-size: 10px; font-weight: 700;
   letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
+
+/* ===== mezo-szerkesztő · a szerkesztő heroja (mezo-yty6) ===== */
+.mz-wbhero { border-radius: 18px; padding: 11px 13px; background: var(--mz-wash-coral);
+  border: 0.5px solid var(--border-subtle);
+  box-shadow: 0 14px 26px -14px rgba(43, 33, 24, 0.28); }
+.mz-wbname { width: 100%; padding: 2px 0; border: none; background: transparent;
+  font-family: inherit; font-size: 16px; font-weight: 700; color: inherit; }
+.mz-wbname:focus { outline: none; border-bottom: 1.5px solid var(--coral); }
+.mz-wbmeta { margin-top: 2px; font-size: 9.5px; color: var(--mz-ink-soft); }
