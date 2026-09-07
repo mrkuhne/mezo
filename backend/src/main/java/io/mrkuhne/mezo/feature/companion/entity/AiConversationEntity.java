@@ -44,4 +44,10 @@ public class AiConversationEntity extends OwnedEntity {
     /** ISO week-Monday for {@code contextKind='week'}; any date inside that week for {@code 'day'}. */
     @Column(name = "context_date")
     private LocalDate contextDate;
+
+    /** Reflexió S3 (mezo-eq85.3): the hypothesis this thread is ABOUT — every user turn in it is
+     *  recorded as a {@code user_reply} event on that pattern. Loose ref (ON DELETE SET NULL):
+     *  purging the pattern orphans the anchor, it never takes the conversation. */
+    @Column(name = "seed_pattern_id", columnDefinition = "uuid")
+    private UUID seedPatternId;
 }

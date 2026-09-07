@@ -6824,6 +6824,11 @@ export interface components {
                  */
                 date: string;
             } | null;
+            /**
+             * Format: uuid
+             * @description Reflexió S3 (mezo-eq85.3) — the hypothesis this conversation is about. Every user turn in the thread is recorded as a user_reply event on that pattern. 404 when the pattern is missing or owned by someone else.
+             */
+            seedPatternId?: string | null;
         };
         ConversationRenameRequest: {
             /** @description The new list label — same cap as the auto-title column. */
@@ -6838,6 +6843,11 @@ export interface components {
             startedAt: string;
             /** Format: date-time */
             lastMessageAt?: string | null;
+            /**
+             * Format: uuid
+             * @description Reflexió S3 (mezo-eq85.3) — the hypothesis this conversation is seeded with; null for a plain thread.
+             */
+            seedPatternId?: string | null;
         };
         MessageResponse: {
             /** Format: uuid */

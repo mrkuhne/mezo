@@ -1232,3 +1232,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609071150_mezo-eq85.3_memory_retrieval_run_reflection_policy.sql
+  - changeSet:
+      id: "1.0.0:202609071200_mezo-eq85.3_ai_conversation_seed_pattern"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609071200_mezo-eq85.3_ai_conversation_seed_pattern.sql

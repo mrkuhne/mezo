@@ -17118,6 +17118,15 @@ components:
               description: >-
                 ISO week-Monday for kind=week; any date inside the week for
                 kind=day
+        seedPatternId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            Reflexió S3 (mezo-eq85.3) — the hypothesis this conversation is
+            about. Every user turn in the thread is recorded as a user_reply
+            event on that pattern. 404 when the pattern is missing or owned by
+            someone else.
     ConversationRenameRequest:
       type: object
       required:
@@ -17149,6 +17158,13 @@ components:
           type: string
           format: date-time
           nullable: true
+        seedPatternId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            Reflexió S3 (mezo-eq85.3) — the hypothesis this conversation is
+            seeded with; null for a plain thread.
     MessageResponse:
       type: object
       required:

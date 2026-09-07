@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.companion.entity.AiConversationEntity;
 import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
+import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
@@ -36,6 +37,8 @@ public class ConversationService {
      * needs it, well after both beans exist).
      */
     private final ObjectProvider<ChatService> chatService;
+    /** mezo-eq85.3 — ownership gate for a seeded conversation's hypothesis. */
+    private final PatternRepository patternRepository;
 
     public List<ConversationResponse> list(UUID userId) {
         return conversationRepository.findAllOwned(userId).stream()
@@ -57,6 +60,18 @@ public class ConversationService {
         if (context != null) {
             conversation.setContextKind(context.getKind());
             conversation.setContextDate(context.getDate());
+        }
+        UUID seedPatternId = request == null ? null : request.getSeedPatternId();
+        if (seedPatternId != null) {
+            // Ownership gate BEFORE anything is written: 404 for missing OR foreign (house idiom).
+            var pattern = patternRepository
+                    .findByIdAndCreatedByAndDeletedFalse(seedPatternId, userId)
+                    .orElseThrow(() -> new SystemRuntimeErrorException(
+                            SystemMessage.error("RESOURCE_NOT_FOUND").build(), HttpStatus.NOT_FOUND));
+            conversation.setSeedPatternId(seedPatternId);
+            // The thread is ABOUT the hypothesis, so it is named after it — the first user message
+            // must not overwrite that (touchConversation only titles an untitled thread).
+            conversation.setTitle(truncateTitle(pattern.getTitle()));
         }
         // saveAndFlush so @CreationTimestamp (createdAt -> startedAt) is populated before mapping.
         AiConversationEntity saved = conversationRepository.saveAndFlush(conversation);
@@ -93,6 +108,11 @@ public class ConversationService {
                 .stream()
                 .map(mapper::toMessageResponse)
                 .toList();
+    }
+
+    /** The title column (and the contract) cap at 120; a pattern title may be up to 200. */
+    private static String truncateTitle(String title) {
+        return title.length() <= 120 ? title : title.substring(0, 120);
     }
 
     /** Loads an owned conversation or throws 404 — shared with ChatService. */
