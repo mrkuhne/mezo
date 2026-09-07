@@ -92,7 +92,27 @@ class ReflectionDigestServiceIT extends AbstractIntegrationTest {
         assertThat(reflectionDigestService.digestFor(owner, today)).isEmpty();
     }
 
-    /** The window is {@code [date−1 03:00, date 03:00)} — a verdict from two nights ago is old news. */
+    /**
+     * THE regression the whole-branch review caught: the nightly {@code ReflectionJob} runs at
+     * 03:40 of the REQUESTED morning, and the 05:45 morning message must report THAT run. With the
+     * old {@code [date−1 03:00, date 03:00)} window the verdict landed 40 minutes past the end and
+     * the digest silently described the night before while saying „Ma éjjel…". Every other case in
+     * this class seeds at 23:00, which is inside both windows — which is exactly why none of them
+     * could see it.
+     */
+    @Test
+    void testDigestFor_shouldReportTonightsRun_whenTheVerdictLandedAtTheNightlyJobHour() {
+        LocalDate today = LocalDate.now();
+        UUID owner = userPopulator.createUser().getId();
+        PatternEntity row = patternPopulator.reflection(owner, PLAN, PatternEntity.STATUS_CONFIRMED);
+        patternEventPopulator.decision(owner, row.getId(), PatternEventEntity.KIND_CONFIRMED,
+                nightlyJobRun(today));
+
+        assertThat(reflectionDigestService.digestFor(owner, today))
+                .contains("Ma éjjel megerősítettem: „" + row.getTitle() + "”. Beépítettem a tudásba.");
+    }
+
+    /** The window is {@code [date−1 05:00, date 05:00)} — a verdict from two nights ago is old news. */
     @Test
     void testDigestFor_shouldBeEmpty_whenTheVerdictIsOlderThanTheWindow() {
         LocalDate today = LocalDate.now();
@@ -126,10 +146,16 @@ class ReflectionDigestServiceIT extends AbstractIntegrationTest {
         assertThat(reflectionDigestService.digestFor(owner, today)).isEmpty();
     }
 
-    /** 23:00 of the previous evening — inside {@code [date−1 03:00, date 03:00)} whatever time of
+    /** 23:00 of the previous evening — inside {@code [date−1 05:00, date 05:00)} whatever time of
      *  day the suite happens to run. */
     private static Instant lastNight(LocalDate date) {
         return date.minusDays(1).atTime(LocalTime.of(23, 0))
                 .atZone(ZoneId.systemDefault()).toInstant();
+    }
+
+    /** 03:45 of {@code date} itself — five minutes into the nightly {@code ReflectionJob}'s 03:40
+     *  run, the moment the morning message is actually meant to be about. */
+    private static Instant nightlyJobRun(LocalDate date) {
+        return date.atTime(LocalTime.of(3, 45)).atZone(ZoneId.systemDefault()).toInstant();
     }
 }

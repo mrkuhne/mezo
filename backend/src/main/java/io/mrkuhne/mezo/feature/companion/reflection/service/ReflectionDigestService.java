@@ -27,8 +27,10 @@ import org.springframework.transaction.annotation.Transactional;
  * not say. The morning message's generator receives it as a FACT block to allude to, never as text
  * to repeat.
  *
- * <p><b>The window is {@code [date−1 03:00, date 03:00)}</b> in the server zone — "last night", the
- * hours the nightly {@code ReflectionJob} runs in. It is derived from the {@code date} ARGUMENT and
+ * <p><b>The window is {@code [date−1 05:00, date 05:00)}</b> in the server zone — "last night",
+ * bounded so that the 03:40 {@code ReflectionJob} run of the requested morning falls INSIDE it and
+ * the 05:45 morning message therefore reports the night that just ran (see
+ * {@link #NIGHT_BOUNDARY}). It is derived from the {@code date} ARGUMENT and
  * never from {@code LocalDate.now()}, so asking for a past day gives back what that morning
  * actually said instead of a moving target (and so a test cannot desync from the code across
  * midnight).
@@ -89,8 +91,16 @@ public class ReflectionDigestService {
     /** Ceiling on the digest's own transaction — see the class javadoc's REQUIRES_NEW note. */
     static final int DIGEST_TIMEOUT_SECONDS = 2;
 
-    /** The hour the nightly pass has finished by — both ends of the "last night" window. */
-    private static final LocalTime NIGHT_BOUNDARY = LocalTime.of(3, 0);
+    /**
+     * The hour the nightly pass has finished by — both ends of the "last night" window.
+     *
+     * <p><b>05:00, and the value is load-bearing.</b> It has to sit AFTER the nightly
+     * {@code ReflectionJob} (03:40, {@code mezo.companion.reflection.cron}) and BEFORE the morning
+     * message job (05:45, {@code mezo.proactive.feed.morning-cron}). At the original 03:00 the
+     * window ENDED 40 minutes before the run it was supposed to report, so the 05:45 message
+     * described the night BEFORE while saying „Ma éjjel…" (whole-branch review finding).
+     */
+    private static final LocalTime NIGHT_BOUNDARY = LocalTime.of(5, 0);
 
     private static final List<String> VERDICT_KINDS = List.of(
             PatternEventEntity.KIND_CONFIRMED, PatternEventEntity.KIND_REFUTED,
