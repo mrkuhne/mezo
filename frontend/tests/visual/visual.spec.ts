@@ -107,6 +107,8 @@ const SCREENS: Array<[string, string, string?]> = [
   ['me-rutin-szokas-szerkesztes', '/me/rutin/szokas/daily_intention/szerkesztes'],
   // mezo-vxd8: one chain's own page — the stacking rope is a new visual surface.
   ['me-rutin-lanc', '/me/rutin/lanc/MORNING'],
+  // mezo-mgpr: the habit list left the hub for its own page (stage filters + habit tiles).
+  ['me-rutin-szokasok', '/me/rutin/szokasok'],
   ['me-growth', '/me/growth'],
   // mezo-iizd.12: a Growth skill-sorok goalchipje (aktív cél pillére → skill) saját felület,
   // amit a /me/growth hub shotja nem lát — a chip enélkül pixel-szinten őrizetlen maradna.

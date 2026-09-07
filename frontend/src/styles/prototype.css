@@ -10050,6 +10050,81 @@ button.mz-wtile:active { transform: scale(0.96); }
 .rt-optrow.is-unlink { border-style: dashed; border-color: color-mix(in srgb, var(--coral-deep) 40%, transparent); }
 .rt-optrow.is-unlink .rt-optrow-nm { color: var(--coral-deep); }
 
+/* ===== Rutin hub 2.0 + Szokásaid (mezo-mgpr) =====
+   rutin-formalodas.html `.nextcard`/`.bigtick`/`.chaintile`/`.chdots` + `pg-lista`'s
+   `.fgrid`/`.ftile`/`.hgrid`/`.htile` ×1.18, on the app's tokens. */
+.rt-nextcard {
+  display: flex; align-items: center; gap: 11.8px; border-radius: 21px; padding: 13px 14px;
+  margin-bottom: 10.6px; background: var(--mz-wash-sand);
+  border: 0.5px solid var(--mz-line-soft); box-shadow: var(--mz-shadow-gold);
+}
+.rt-nextcard-tx { flex: 1; min-width: 0; }
+.rt-nextcard-eb { font-size: 8.8px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: var(--accent-deep); }
+.rt-nextcard-nm { font-size: 14.7px; font-weight: 700; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); }
+.rt-nextcard-cue { font-size: 10px; color: var(--text-secondary); }
+.rt-bigtick {
+  width: 52px; height: 52px; border-radius: 50%; flex: none; border: none; cursor: pointer;
+  font-size: 20px; color: var(--text-inverse); background: var(--gradient-sage);
+  box-shadow: 0 11.8px 23.6px -9.4px color-mix(in srgb, var(--mz-cell-sage-ink) 70%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--surface-card) 35%, transparent);
+  display: grid; place-items: center;
+}
+.rt-bigtick.is-allon { background: var(--gradient-gold); box-shadow: 0 11.8px 23.6px -9.4px color-mix(in srgb, var(--accent-base) 60%, transparent); }
+.rt-chaintile {
+  display: flex; align-items: center; gap: 13px; width: 100%; font-family: inherit; text-align: left;
+  cursor: pointer; border-radius: 21px; padding: 13px 15.3px; margin-bottom: 10.6px;
+  color: var(--text-primary); background: var(--mz-wash-lav);
+  border: 0.5px solid var(--mz-line-soft); box-shadow: var(--mz-shadow-lav);
+}
+.rt-chaintile-eb { display: block; font-size: 8.8px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: var(--mz-cell-lav-ink); }
+.rt-chaintile-dg { display: block; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums; margin-top: 1px; }
+.rt-chaintile-dg small { font-size: 10.6px; font-weight: 400; color: var(--text-secondary); margin-left: 6px; }
+.rt-chdots { display: flex; gap: 4.7px; margin-top: 6px; }
+.rt-chdots i { height: 4.7px; border-radius: 2.5px; background: color-mix(in srgb, var(--text-primary) 10%, transparent); flex: 1; }
+.rt-chdots i.is-d { background: var(--gradient-sage); }
+.rt-chdots i.is-now { background: var(--gradient-gold); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-base) 20%, transparent); }
+.rt-chaintile-cv { color: var(--mz-cell-lav-ink); font-size: 17.7px; flex: none; }
+.rt-fgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 9.5px; margin-bottom: 13px; }
+.rt-ftile {
+  display: block; width: 100%; border-radius: 19px; padding: 10.6px 11.8px; cursor: pointer;
+  font-family: inherit; text-align: left; color: var(--text-primary);
+  background: var(--surface-card); border: 1px solid var(--mz-line-soft);
+  box-shadow: var(--mz-shadow);
+}
+.rt-fdots { display: flex; gap: 3.5px; margin-bottom: 8px; }
+.rt-fdots i { flex: 1; height: 3.5px; border-radius: 2.5px; background: color-mix(in srgb, var(--text-primary) 10%, transparent); }
+.rt-fdots i.on { background: var(--fc); }
+.rt-ftile b { display: block; font-size: 23.6px; font-weight: 200; line-height: 1; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.rt-ftile small { display: block; margin-top: 4.7px; font-size: 9.4px; font-weight: 700; line-height: 1.25; color: var(--text-secondary); }
+.rt-ftile.on { background: linear-gradient(150deg, var(--fw), var(--surface-card) 78%); border-color: var(--fc); }
+.rt-ftile.on small { color: var(--fc); }
+.rt-ftile.is-zero { opacity: 0.45; }
+.rt-hgrid { display: grid; gap: 11.8px; }
+.rt-htile {
+  display: block; width: 100%; border-radius: 21px; padding: 14px 15.3px 13px; cursor: pointer;
+  background: linear-gradient(150deg, var(--hw, var(--surface-recess)), var(--surface-card) 76%);
+  border: 0.5px solid var(--mz-line-soft); font-family: inherit; text-align: left; color: var(--text-primary);
+  box-shadow: 0 18.9px 35.4px -20px var(--hs, rgba(0, 0, 0, 0.3)),
+    inset 0 1px 0 color-mix(in srgb, var(--surface-card) 80%, transparent);
+}
+.rt-htop { display: flex; align-items: flex-start; gap: 14px; }
+.rt-hleft { flex: 1; min-width: 0; display: block; }
+.rt-hnm { font-size: 15.3px; font-weight: 700; line-height: 1.25; display: block; }
+.rt-hstage {
+  display: block; margin-top: 4.7px; font-size: 8.8px; font-weight: 800; letter-spacing: 0.14em;
+  text-transform: uppercase; color: var(--hc, var(--accent-deep));
+}
+.rt-hreps { display: block; margin-top: 7px; font-size: 26px; font-weight: 200; letter-spacing: -0.02em; line-height: 1; font-variant-numeric: tabular-nums; }
+.rt-hreps small { font-size: 10px; font-weight: 600; color: var(--text-secondary); margin-left: 6px; letter-spacing: 0; }
+.rt-hright { flex: none; width: 73px; text-align: center; display: block; }
+.rt-harc { width: 61px; height: 61px; display: block; margin: 0 auto; }
+.rt-heta {
+  display: flex; align-items: baseline; gap: 7px; margin-top: 11.8px; padding-top: 10.6px;
+  border-top: 0.5px solid color-mix(in srgb, var(--text-primary) 8%, transparent);
+}
+.rt-heta b { font-size: 14px; font-weight: 700; color: var(--hc, var(--accent-deep)); }
+.rt-heta span { font-size: 10px; color: var(--text-secondary); }
+
 /* ===== Lánc-oldal — a stacking kirajzolva (mezo-vxd8) =====
    rutin-formalodas.html `pg-lanc` `.stackrow`/`.srail`/`.snode`/`.achip`/`.smove`/`.macard`
    ×1.18, on the app's tokens. The rope is the chain ORDER; the badge is the real anchor. */

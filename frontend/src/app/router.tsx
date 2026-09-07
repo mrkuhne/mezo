@@ -75,6 +75,7 @@ import { GrowthSkillsPage } from '@/features/me/pages/GrowthSkillsPage'
 import { HabitPage } from '@/features/me/pages/HabitPage'
 import { HabitEditPage } from '@/features/me/pages/HabitEditPage'
 import { ChainPage } from '@/features/me/pages/ChainPage'
+import { SzokasaidPage } from '@/features/me/pages/SzokasaidPage'
 import { RoutineWizardPage } from '@/features/me/pages/RoutineWizardPage'
 import { RutinHubPage } from '@/features/me/pages/RutinHubPage'
 import { GrowthNaploPage } from '@/features/me/pages/GrowthNaploPage'
@@ -341,6 +342,8 @@ export const routes: RouteObject[] = [
       { path: 'me/rutin/uj', element: <RoutineWizardPage /> },
       // One chain's own page (mezo-vxd8): rename, daypart, order + the stacking drawn.
       { path: 'me/rutin/lanc/:chainKey', element: <ChainPage /> },
+      // The habit list on its own page (mezo-mgpr): stage filters + one tile per habit.
+      { path: 'me/rutin/szokasok', element: <SzokasaidPage /> },
       // The single-recipe page (mezo-3zue.4). LAST of the `me/rutin/*` family: every static
       // sibling is registered above it so none is swallowed as a habit key. The parameter is
       // the habitKey (what the hub's rows link with), not the definition id.
