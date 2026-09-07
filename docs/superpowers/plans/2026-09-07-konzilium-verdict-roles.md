@@ -1135,7 +1135,7 @@ Add to `DeliberationAssemblerTest`:
                         new BigDecimal("0.55"))),
                 List.of(new ClaimRuling(proposal, true, new BigDecimal("0.60"), "A dosszié ezt erősíti.",
                         true, "CONTRADICTS", null)),
-                KonziliumChapters.of(List.of(), Map.of()));
+                new KonziliumChapters(Map.of("physical", "Fizikai"), Map.of()));
 
         ConferenceDeliberationEnvelope.Item item = envelope.threads().get(0).items().get(0);
         assertThat(item.skeptic().verdict()).isEqualTo("WEAKEN");
@@ -1145,7 +1145,7 @@ Add to `DeliberationAssemblerTest`:
     }
 ```
 
-**Read `DeliberationAssemblerTest`'s existing tests first** and copy their exact `KonziliumChapters` construction — the `KonziliumChapters.of(...)` call above is a guess at the factory's shape. Use whatever the neighbouring tests use verbatim.
+`KonziliumChapters` takes a plain two-arg constructor — `new KonziliumChapters(Map<String,String> titlesByKey, Map<UUID,String> chapterKeyByClaimId)` — as used at `DeliberationAssemblerTest.java:40,63,81`; there is also a `KonziliumChapters.empty()` (used at `:115,129`) for the no-chapters case. There is **no** `of(...)` factory: an earlier draft of this plan guessed one. Match the neighbouring tests.
 
 - [ ] **Step 3: Run test to verify it fails**
 
@@ -1220,10 +1220,10 @@ In `CharacterService`, extend the two builders:
 Regenerate the client and confirm no drift:
 
 ```bash
-cd frontend && pnpm run gen:api && cd ..
+cd frontend && pnpm generate:api && cd ..
 ```
 
-(Confirm the script name from `frontend/package.json` — use whatever the repo's OpenAPI generation script is actually called.)
+The script is `generate:api` (`frontend/package.json:18`) — it runs a toolchain check and then `openapi-typescript ../api/openapi.yml -o src/data/_client/api.gen.ts`. Note it reads the **bundled** `api/openapi.yml`, so if that file does not pick up the fragment automatically, regenerate or update it as the repo's contract workflow requires, and say in your report which path you took.
 
 - [ ] **Step 6: Write the failing frontend test**
 
@@ -1426,6 +1426,6 @@ Push the branch, open a self-PR as the CI gate, wait for green (re-run `gh pr ch
 
 **Known soft spots the executor must resolve by reading code, not guessing:**
 - Task 3 Step 2 — the prompt-assertion channel (audit-log prompt column vs. a new echo sentinel). The plan names both options and forbids inventing a third.
-- Task 6 Step 2 — `KonziliumChapters`'s factory signature.
+- ~~Task 6 Step 2 — `KonziliumChapters`'s factory signature.~~ RESOLVED by the controller: a plain two-arg constructor, plus `empty()`; there is no `of(...)`.
 - Task 6 Step 6 — the existing test file's render helper.
-- Task 6 Step 5 — the frontend's OpenAPI generation script name.
+- ~~Task 6 Step 5 — the frontend's OpenAPI generation script name.~~ RESOLVED by the controller: `pnpm generate:api`.
