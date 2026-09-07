@@ -146,6 +146,31 @@ class KonziliumCrossTalkRoundIT extends ApiIntegrationTest {
         });
     }
 
+    /** M1 (mezo-xlvr final review): one expert, one stance per proposal — a repeated index in the
+     *  same answer keeps the FIRST stance and drops the rest. */
+    @Test
+    void run_twoStancesOnTheSameIndexFromOneExpert_keepsOnlyTheFirst() {
+        UUID owner = ownerId();
+        // Planted in szomnologus's OWN proposal text, so it scripts the answer of the expert that
+        // SEES it as a peer proposal: pszichologus, whose only peer index is 0.
+        String duplicateStances = " [fake-char-crosstalk:["
+                + "{\"index\":0,\"stance\":\"SUPPORT\",\"argument\":\"Első állásfoglalás.\"},"
+                + "{\"index\":0,\"stance\":\"CHALLENGE\",\"argument\":\"Második állásfoglalás.\"}"
+                + "]]";
+
+        KonziliumCrossTalkRound.Result result = crossTalkRound.run(owner, WEEK_START, List.of(
+                newProposal("szomnologus", "recovery", "Romlik az alvás." + duplicateStances),
+                newProposal("pszichologus", "recovery", "Feszült hét áll mögötted.")));
+
+        assertThat(result.reactions()).filteredOn(reaction -> "pszichologus".equals(reaction.expertKey()))
+                .singleElement()
+                .satisfies(reaction -> {
+                    assertThat(reaction.index()).isZero();
+                    assertThat(reaction.stance()).isEqualTo("SUPPORT");
+                    assertThat(reaction.argument()).isEqualTo("Első állásfoglalás.");
+                });
+    }
+
     @Test
     void run_callCap_stopsAfterTheCappedNumberOfCalls() {
         UUID owner = ownerId();

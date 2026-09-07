@@ -1,10 +1,6 @@
 package io.mrkuhne.mezo.feature.character.service;
 
 import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
-import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
-import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
-import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
-import io.mrkuhne.mezo.feature.character.repository.CharacterDimensionRepository;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -51,11 +47,9 @@ public class KonziliumCrossTalkRound {
     /** Hard cap on cross-talk LLM calls per conference — the Sunday run must stay bounded. */
     public static final int MAX_CROSS_TALK_CALLS = 6;
 
-    private static final String NEW_KIND = "NEW";
     private static final Set<String> VALID_STANCES = Set.of("SUPPORT", "CHALLENGE", "NUANCE");
 
-    private final CharacterClaimRepository claimRepository;
-    private final CharacterDimensionRepository dimensionRepository;
+    private final KonziliumChapterResolver chapterResolver;
     private final CompanionLlm companionLlm;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
@@ -99,27 +93,15 @@ public class KonziliumCrossTalkRound {
         return new Result(List.copyOf(reactions));
     }
 
-    /** Chapter key -> the proposal indexes that belong to it. A NEW proposal carries its own
-     *  dimensionKey; UP/DOWN/RETIRE carry a claim id instead, so the claim's own dimension
-     *  decides — a proposal whose claim or dimension cannot be resolved joins no chapter at all
-     *  (it simply gets no cross-talk, never a wrong one). */
+    /** Chapter key -> the proposal indexes that belong to it, resolved by the SHARED
+     *  {@link KonziliumChapterResolver} the stored thread view uses (mezo-xlvr final review,
+     *  M11) — a proposal whose chapter cannot be resolved joins no chapter at all, so it simply
+     *  gets no cross-talk, never a wrong one. */
     private Map<String, List<Integer>> groupByChapter(UUID owner, List<ClaimProposal> proposals) {
-        Map<UUID, String> dimensionKeyById = new LinkedHashMap<>();
-        for (CharacterDimensionEntity dimension : dimensionRepository.findByCreatedBy(owner)) {
-            dimensionKeyById.put(dimension.getId(), dimension.getKey());
-        }
+        KonziliumChapters chapters = chapterResolver.resolve(owner, proposals);
         Map<String, List<Integer>> byChapter = new LinkedHashMap<>();
         for (int i = 0; i < proposals.size(); i++) {
-            ClaimProposal proposal = proposals.get(i);
-            String chapterKey;
-            if (NEW_KIND.equals(proposal.kind())) {
-                chapterKey = proposal.dimensionKey();
-            } else {
-                chapterKey = claimRepository.findByIdAndCreatedBy(proposal.claimId(), owner)
-                        .map(CharacterClaimEntity::getDimensionId)
-                        .map(dimensionKeyById::get)
-                        .orElse(null);
-            }
+            String chapterKey = chapters.chapterKeyOf(proposals.get(i));
             if (chapterKey != null) {
                 byChapter.computeIfAbsent(chapterKey, key -> new ArrayList<>()).add(i);
             }
@@ -175,6 +157,10 @@ public class KonziliumCrossTalkRound {
         }
 
         List<Reaction> reactions = new ArrayList<>();
+        // One stance per proposal, as the prompt asks for: a second answer on the same index from
+        // the same expert is not a second opinion, it is the model repeating itself — the first
+        // one is kept and the rest dropped (mezo-xlvr final review, M1).
+        Set<Integer> answered = new LinkedHashSet<>();
         for (Draft draft : drafts) {
             if (draft.index() == null || !peerIndexes.contains(draft.index())) {
                 continue;
@@ -183,6 +169,9 @@ public class KonziliumCrossTalkRound {
                 continue;
             }
             if (draft.argument() == null || draft.argument().isBlank()) {
+                continue;
+            }
+            if (!answered.add(draft.index())) {
                 continue;
             }
             reactions.add(new Reaction(draft.index(), expertKey, draft.stance(), draft.argument()));

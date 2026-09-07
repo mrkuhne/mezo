@@ -184,9 +184,11 @@ public class FakeCompanionLlm implements CompanionLlm {
 
     /** Scripted cross-talk answer: {@code [fake-char-crosstalk:<payload>]} planted in a proposal's
      *  TEXT (the user message renders every peer proposal's text) is returned verbatim — a
-     *  non-JSON payload drills the unparseable path. */
+     *  non-JSON payload drills the unparseable path. A payload that IS a JSON array is matched by
+     *  the same {@code [ … ]} shape the skeptic/integrator sentinels use, so a test can script the
+     *  exact stances an expert answers with (mezo-xlvr final review, M1). */
     public static final Pattern CHAR_CROSS_TALK_SENTINEL =
-            Pattern.compile("\\[fake-char-crosstalk:([^\\]]*)]", Pattern.DOTALL);
+            Pattern.compile("\\[fake-char-crosstalk:(\\[.*]|[^\\]]*)]", Pattern.DOTALL);
 
     public static final Pattern CHAR_SKEPTIC_SENTINEL =
             Pattern.compile("\\[fake-char-skeptic:(\\[.*])]", Pattern.DOTALL);

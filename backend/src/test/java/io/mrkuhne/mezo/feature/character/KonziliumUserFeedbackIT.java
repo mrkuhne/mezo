@@ -229,6 +229,27 @@ class KonziliumUserFeedbackIT extends ApiIntegrationTest {
                         .contains("FELHASZNÁLÓ VÁLASZA — [" + claimId + "] Cáfolat: rendszeresen kihagyja a naplózást."));
     }
 
+    /** M5 (mezo-xlvr final review): a row written BEFORE the claim id moved onto the signal still
+     *  carries the marker in its TEXT. Rebuilding the marker on top of it would show the expert
+     *  the same id twice — the legacy prefix is stripped first. */
+    @Test
+    void userObservation_withALegacyClaimIdPrefixInItsText_evidenceLineCarriesTheMarkerExactlyOnce() {
+        UUID owner = ownerId();
+        UUID claimId = UUID.randomUUID();
+        String text = "[" + claimId + "] Cáfolat: rendszeresen kihagyja a naplózást. "
+                + FakeCompanionLlm.CHAR_PROPOSALS_ECHO;
+        seedUserObservationAnsweringClaim(owner, WEEK_START.plusDays(1), text, (short) 5,
+                List.of("discipline"), claimId);
+
+        KonziliumProposalRound.Result result = proposalRound.run(owner, WEEK_START, weekObservations(owner));
+
+        assertThat(result.proposals()).singleElement().satisfies(p -> {
+            assertThat(p.rationale())
+                    .contains("FELHASZNÁLÓ VÁLASZA — [" + claimId + "] Cáfolat: rendszeresen kihagyja a naplózást.");
+            assertThat(p.rationale()).doesNotContain("[" + claimId + "] [" + claimId + "]");
+        });
+    }
+
     @Test
     void userObservation_withEmptyRefIds_evidenceLineHasThePrefixButNoBracket() {
         UUID owner = ownerId();

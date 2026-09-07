@@ -125,9 +125,12 @@ public class KonziliumProposalRound {
                 if (CharacterFeedbackService.USER_EXPERT_KEY.equals(observation.getExpertKey())) {
                     // The claim id is what makes the answer addressable for the expert (the prompt's
                     // "[claimId]" contract) — it lives on the observation's own signal refIds since
-                    // mezo-xlvr, never in the user-facing text.
+                    // mezo-xlvr, never in the user-facing text. A row written BEFORE that change
+                    // still carries the marker inside its text, so strip it first: prefixing an
+                    // unstripped one would show the expert the same id twice (final review, M5).
                     String claimId = claimIdOf(observation);
-                    text = USER_FEEDBACK_PREFIX + (claimId == null ? "" : "[" + claimId + "] ") + text;
+                    text = USER_FEEDBACK_PREFIX + (claimId == null ? "" : "[" + claimId + "] ")
+                            + ObservationText.stripClaimIdPrefix(text);
                 }
                 lines.add(observation.getDay() + " (súly " + observation.getSalience() + "): " + text);
                 refIds.add(observation.getId().toString());
