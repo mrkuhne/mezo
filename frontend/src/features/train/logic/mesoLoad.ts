@@ -54,7 +54,8 @@ export interface WeekLoadRow {
   landmark: Landmark
   /** Training days that hit the group at all. */
   frequency: number
-  /** Which way the block has to move to reach `target`. */
+  /** Which way the live sets count has to move to reach `target`: 'up' when
+   *  under, 'down' when over, 'hold' when exactly on it. */
   direction: 'up' | 'down' | 'hold'
   /** |target − sets|; 0 when on target. */
   toTarget: number
@@ -144,12 +145,8 @@ export function weekMuscleLoad(
     const tier = tierOf(priorities, group)
     const target = tierTargetOf(tier, landmark)
     const list = contributions.get(group) ?? []
-    // Direction is the TIER's prescriptive cue (does this priority ask for more or
-    // less than the group's own growth baseline, landmark.mav?), not a live
-    // sets-vs-target reading — that's what toTarget is for. 'hold' only fires when
-    // the plan already sits exactly on the target.
     const direction: WeekLoadRow['direction'] =
-      groupSets === target ? 'hold' : target >= landmark.mav ? 'up' : 'down'
+      groupSets < target ? 'up' : groupSets > target ? 'down' : 'hold'
     rows.push({
       group,
       label: labelOf(group),

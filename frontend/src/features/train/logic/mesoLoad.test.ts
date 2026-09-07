@@ -41,13 +41,29 @@ describe('weekMuscleLoad', () => {
   })
 
   test('direction points at the target and toTarget is the distance', () => {
+    // grow: 7 sets against the MAV target of 16 — still climbing
     const under = weekMuscleLoad(WEEK, null).find((r) => r.group === 'back')!
     expect(under.direction).toBe('up')
-    expect(under.toTarget).toBe(9) // 16 - 7
+    expect(under.toTarget).toBe(9)
 
-    const over = weekMuscleLoad(WEEK, { back: 'maintain' }).find((r) => r.group === 'back')!
+    // maintain lowers the target to MEV 10, but 7 sets is still short of it
+    const stillUnder = weekMuscleLoad(WEEK, { back: 'maintain' }).find((r) => r.group === 'back')!
+    expect(stillUnder.target).toBe(10)
+    expect(stillUnder.direction).toBe('up')
+    expect(stillUnder.toTarget).toBe(3)
+
+    // an explicit low landmark puts the same 7 sets ABOVE the target
+    const over = weekMuscleLoad(WEEK, null, { back: { mev: 2, mav: 4, mrv: 6 } })
+      .find((r) => r.group === 'back')!
+    expect(over.target).toBe(4)
     expect(over.direction).toBe('down')
-    expect(over.toTarget).toBe(3) // 7 - 10 -> |−3|
+    expect(over.toTarget).toBe(3)
+
+    // sitting exactly on the target holds
+    const onTarget = weekMuscleLoad(WEEK, null, { back: { mev: 5, mav: 7, mrv: 9 } })
+      .find((r) => r.group === 'back')!
+    expect(onTarget.direction).toBe('hold')
+    expect(onTarget.toTarget).toBe(0)
   })
 
   test('frequency counts the training days that hit the group', () => {
