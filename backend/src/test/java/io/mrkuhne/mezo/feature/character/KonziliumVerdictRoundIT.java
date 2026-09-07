@@ -646,6 +646,159 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
         assertThat(chair.text()).doesNotContain("nem teszek hozzá");
     }
 
+    /** mezo-lghn task 5 fix round 1, gap 1: the {@code ruling.accepted() &&} conjunct guarding
+     *  confidence rendering — a REJECTED ruling can carry a non-null {@code ruledConfidence}
+     *  (informational only, never applied — {@link ClaimRuling}'s javadoc), and it must never
+     *  render as a confidence word. This rejects over a Szkeptikus KEEP so {@code addsSomething}
+     *  shows the line at all (a plain KILL-ratified rejection would collapse into the aggregate
+     *  line and never reach the rendering branch under test). Confidence-word rendering is the
+     *  ONLY place this method emits a parenthesis, so a bare {@code doesNotContain("(")} pins it
+     *  precisely without needing to spell out every alternative word. */
+    @Test
+    void aShownRejectionNeverRendersAConfidenceWordEvenWithANonNullRuledConfidence() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Rekompozíció zajlik. "
+                        + "[fake-char-skeptic:[{\"index\":0,\"verdict\":\"KEEP\","
+                        + "\"argument\":\"Fake ellenérv: elfogadható.\"}]] "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":false,"
+                        + "\"confidence\":0.6,\"reason\":\"A dossziéban két ellentétes mérés is van.\"}],"
+                        + "\"chapters\":[]}]",
+                new BigDecimal("0.60"), false, "Három heti mérés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.rulings()).singleElement().satisfies(ruling -> {
+            assertThat(ruling.accepted()).isFalse();
+            assertThat(ruling.ruledConfidence()).isEqualByComparingTo(new BigDecimal("0.60"));
+        });
+        ConferenceTranscriptEnvelope.Turn chair = result.turns().stream()
+                .filter(turn -> turn.persona().equals("mezo"))
+                .findFirst().orElseThrow();
+        assertThat(chair.text()).contains("A dossziéban két ellentétes mérés is van.");
+        assertThat(chair.text()).doesNotContain("(");
+    }
+
+    /** mezo-lghn task 5 fix round 1, gap 2: a FIRED sensitive-write guardrail must be visible in
+     *  the chair's transcript, not just on {@code result.rulings()} — every existing guardrail
+     *  test asserts only the ruling, never {@code chair.text()}. Same proposal shape as
+     *  {@link #theChairMayNotAcceptOverASensitiveKill}, this time checking the transcript: the
+     *  {@code NOT_FOR_DOSSIER} note label and the system-authored reason must both surface, and
+     *  the event must NOT collapse into the aggregate "nothing added" line. */
+    @Test
+    void aFiredSensitiveGuardrailStaysVisibleInTheChairsTranscript() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "mental", "pszichologus");
+        ClaimProposal proposal = new ClaimProposal("pszichologus", "NEW", dimension.getKey(), null,
+                "Belső feszültség a randizás körül. "
+                        + "[fake-char-skeptic:[{\"index\":0,\"verdict\":\"KILL\","
+                        + "\"argument\":\"Két megfigyelés egy napról — túlinterpretálás.\"}]] "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":true,"
+                        + "\"confidence\":0.6,\"reason\":\"Mégis felveszem.\",\"dissent\":true}],"
+                        + "\"chapters\":[]}]",
+                new BigDecimal("0.60"), true, "Két naplóbejegyzés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        ConferenceTranscriptEnvelope.Turn chair = result.turns().stream()
+                .filter(turn -> turn.persona().equals("mezo"))
+                .findFirst().orElseThrow();
+        assertThat(chair.text()).contains("nem dossziéba való");
+        assertThat(chair.text()).contains(SENSITIVE_BLOCKED_REASON);
+        assertThat(chair.text()).doesNotContain("nem teszek hozzá");
+    }
+
+    /** mezo-lghn task 5 fix round 1, gap 3: every OTHER test in this file runs a single proposal,
+     *  so the aggregate line's {@code String.join(", ", ratified)} separator, index ordering, and
+     *  interleaving with a genuinely shown line were never exercised in their real multi-proposal
+     *  use case. Three proposals in one round: P0 is a dissenting accept (always shown), P1 and P2
+     *  both plainly ratify (matching confidence word, no dissent, no note) and must collapse
+     *  together into ONE aggregate line — not two, and not inline with P0's line. The {@code \n}
+     *  anchor in the negative patterns is deliberate: the aggregate line itself legitimately
+     *  contains the substring {@code "P2:"} (inside {@code "P1, P2: ..."} ), so a plain
+     *  {@code doesNotContain("P2:")} would be a false failure — only a NEWLINE-prefixed "P2: " is a
+     *  genuine standalone per-proposal line. */
+    @Test
+    void multipleProposalsCollapseTheRatifiedOnesIntoOneAggregateLineAndKeepTheShownOneSeparate() {
+        UUID owner = ownerId();
+        String skepticSentinel = "[fake-char-skeptic:["
+                + "{\"index\":0,\"verdict\":\"KILL\",\"argument\":\"Túlinterpretálás.\"},"
+                + "{\"index\":1,\"verdict\":\"KEEP\",\"argument\":\"Rendben.\",\"suggestedConfidence\":0.6},"
+                + "{\"index\":2,\"verdict\":\"KEEP\",\"argument\":\"Szintén rendben.\",\"suggestedConfidence\":0.6}"
+                + "]]";
+        String integratorSentinel = "[fake-char-integrator:{"
+                + "\"rulings\":["
+                + "{\"index\":0,\"accept\":true,\"confidence\":0.6,"
+                + "\"reason\":\"A dossziéban két korábbi mérés is ezt mutatja, amit a Szkeptikus nem látott.\","
+                + "\"dissent\":true},"
+                + "{\"index\":1,\"accept\":true,\"confidence\":0.6,\"reason\":\"Fake döntés P1.\"},"
+                + "{\"index\":2,\"accept\":true,\"confidence\":0.6,\"reason\":\"Fake döntés P2.\"}"
+                + "],"
+                + "\"chapters\":[]}]";
+        List<ClaimProposal> proposals = List.of(
+                new ClaimProposal("doki", "NEW", "physical", null, "P0 javaslat.",
+                        new BigDecimal("0.60"), false, skepticSentinel),
+                new ClaimProposal("doki", "NEW", "physical", null, "P1 javaslat.",
+                        new BigDecimal("0.60"), false, "Indoklás P1."),
+                new ClaimProposal("doki", "NEW", "physical", null, "P2 javaslat.",
+                        new BigDecimal("0.60"), false, integratorSentinel));
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, proposals, List.of());
+
+        ConferenceTranscriptEnvelope.Turn chair = result.turns().stream()
+                .filter(turn -> turn.persona().equals("mezo"))
+                .findFirst().orElseThrow();
+        assertThat(chair.text()).containsPattern("\\nP0: ");
+        assertThat(chair.text()).contains(
+                "A dossziéban két korábbi mérés is ezt mutatja, amit a Szkeptikus nem látott.");
+        assertThat(chair.text()).contains("[a Szkeptikus döntése ellenében]");
+        assertThat(chair.text()).contains("P1, P2: a Szkeptikus érvét elfogadom, nem teszek hozzá.");
+        assertThat(chair.text()).doesNotContainPattern("\\nP1: ");
+        assertThat(chair.text()).doesNotContainPattern("\\nP2: ");
+        assertThat(chair.text()).doesNotContain("Fake döntés P1.");
+        assertThat(chair.text()).doesNotContain("Fake döntés P2.");
+    }
+
+    /** Sibling to {@link #multipleProposalsCollapseTheRatifiedOnesIntoOneAggregateLineAndKeepTheShownOneSeparate}:
+     *  when EVERY proposal in a multi-proposal round ratifies, the whole turn is just the header
+     *  plus the ONE aggregate line — nothing else. */
+    @Test
+    void whenEveryProposalRatifiesTheTurnIsJustTheHeaderAndOneAggregateLine() {
+        UUID owner = ownerId();
+        String skepticSentinel = "[fake-char-skeptic:["
+                + "{\"index\":0,\"verdict\":\"KEEP\",\"argument\":\"Rendben.\",\"suggestedConfidence\":0.6},"
+                + "{\"index\":1,\"verdict\":\"KEEP\",\"argument\":\"Rendben.\",\"suggestedConfidence\":0.6},"
+                + "{\"index\":2,\"verdict\":\"KEEP\",\"argument\":\"Rendben.\",\"suggestedConfidence\":0.6}"
+                + "]]";
+        String integratorSentinel = "[fake-char-integrator:{"
+                + "\"rulings\":["
+                + "{\"index\":0,\"accept\":true,\"confidence\":0.6,\"reason\":\"Fake döntés P0.\"},"
+                + "{\"index\":1,\"accept\":true,\"confidence\":0.6,\"reason\":\"Fake döntés P1.\"},"
+                + "{\"index\":2,\"accept\":true,\"confidence\":0.6,\"reason\":\"Fake döntés P2.\"}"
+                + "],"
+                + "\"chapters\":[]}]";
+        List<ClaimProposal> proposals = List.of(
+                new ClaimProposal("doki", "NEW", "physical", null, "P0 javaslat.",
+                        new BigDecimal("0.60"), false, skepticSentinel),
+                new ClaimProposal("doki", "NEW", "physical", null, "P1 javaslat.",
+                        new BigDecimal("0.60"), false, "Indoklás P1."),
+                new ClaimProposal("doki", "NEW", "physical", null, "P2 javaslat.",
+                        new BigDecimal("0.60"), false, integratorSentinel));
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, proposals, List.of());
+
+        ConferenceTranscriptEnvelope.Turn chair = result.turns().stream()
+                .filter(turn -> turn.persona().equals("mezo"))
+                .findFirst().orElseThrow();
+        assertThat(chair.text()).isEqualTo(
+                "Mezo: 3/3 javaslat elfogadva.\nP0, P1, P2: a Szkeptikus érvét elfogadom, nem teszek hozzá.");
+    }
+
     @Test
     void theChairsPromptCarriesTheDossierAndTheSzkeptikusDoesNot() {
         UUID owner = ownerId();
