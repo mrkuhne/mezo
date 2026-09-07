@@ -115,4 +115,42 @@ describe('AdminDataPage (real mode)', () => {
     fireEvent.click(nextBtn)
     await waitFor(() => expect(seen).toContain('page=1'))
   })
+
+  // Fix round 1 (Finding 1): the mock-mode "picking a view..." test above only proves the
+  // `aria-sort` DOM attribute flips — mock fixture rows are static per table regardless of
+  // `sort`/`dir`, so that test would still pass even if `selectView` never threaded the view's
+  // default sort into the real fetch. This asserts the actual outgoing query string instead,
+  // in the same server.use() + `new URL(request.url).search` style as the other two real-mode
+  // assertions above.
+  it("applies a picked view's default sort/dir to the outgoing request", async () => {
+    let seen = ''
+    server.use(http.get(`${API_BASE}/api/admin/data/tables/:table/rows`, ({ request }) => {
+      seen = new URL(request.url).search
+      return HttpResponse.json(ADMIN_ROWS_MOCK.food_log)
+    }))
+    renderPage()
+    const view = ADMIN_VIEWS_MOCK[0]
+    fireEvent.click(await screen.findByRole('button', { name: view.label }))
+    await waitFor(() => expect(seen).toContain(`sort=${view.defaultSort}`))
+    expect(seen).toContain(`dir=${view.defaultDir}`)
+  })
+
+  // Fix round 1 (Finding 3): the FK jump lands on `/admin/data?table=...&rowId=...` — prove
+  // the destination page actually highlights the matching row within the loaded page, and
+  // that a `rowId` with no match on the loaded page renders normally (no fake highlight).
+  it('highlights the row matching ?rowId= once the destination page has loaded', async () => {
+    const targetId = ADMIN_ROWS_MOCK.food_log.rows[2].id as string
+    renderPage(`/admin/data?table=food_log&rowId=${targetId}`)
+    const targetCell = await screen.findByText(targetId)
+    const targetRow = targetCell.closest('tr')
+    expect(targetRow).toHaveClass('ad-row-hl')
+    const otherRow = screen.getByText(ADMIN_ROWS_MOCK.food_log.rows[0].id as string).closest('tr')
+    expect(otherRow).not.toHaveClass('ad-row-hl')
+  })
+
+  it('renders no highlight when ?rowId= matches nothing on the loaded page', async () => {
+    renderPage('/admin/data?table=food_log&rowId=no-such-id')
+    await screen.findAllByRole('button', { name: /↗/ })
+    expect(document.querySelector('.ad-row-hl')).toBeNull()
+  })
 })

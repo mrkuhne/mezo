@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
@@ -8,6 +8,7 @@ import { QueryWrapper } from '@/test/queryWrapper'
 import { setToken } from '@/data/_client/api'
 import { AdminUserDetailPage } from '@/features/admin/pages/AdminUserDetailPage'
 import { ADMIN_USER_DETAIL_MOCK } from '@/data/admin/adminInsightsMock'
+import { ADMIN_ROWS_MOCK } from '@/data/admin/adminDataMock'
 
 afterEach(() => { vi.unstubAllEnvs(); setToken(null) })
 
@@ -88,5 +89,35 @@ describe('AdminUserDetailPage (real mode)', () => {
   it('shows the not-found message when the route has no id, without waiting on a query that never resolves', async () => {
     renderPageWithoutId()
     expect(await screen.findByText('Ez a user nem található.')).toBeInTheDocument()
+  })
+
+  // Fix round 1 (Finding 2): the brief's Step 5 deliverable — the row browser embedded in the
+  // Adatok tab — was previously never mounted by any test. The prior "switches the rendered
+  // panel when a tab is clicked" test only clicks the Adatok TAB and asserts the inventory
+  // table renders; it never clicks an inventory ROW, so <DataTable>/useAdminRows inside this
+  // page were never exercised, and the report's "transitively covers it" claim was false (now
+  // corrected there too). This clicks a row and proves the embedded browser actually mounts,
+  // is bound to that table, and — the whole point of embedding it here rather than sending the
+  // owner to the standalone /admin/data — is scoped to the CURRENT route user's id.
+  it('clicking an inventory row mounts the embedded row browser scoped to this user', async () => {
+    let seen = ''
+    server.use(http.get(`${API_BASE}/api/admin/data/tables/:table/rows`, ({ request }) => {
+      seen = new URL(request.url).search
+      return HttpResponse.json(ADMIN_ROWS_MOCK.train_session)
+    }))
+    renderPage()
+    await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)
+    fireEvent.click(screen.getByRole('tab', { name: 'Adatok' }))
+
+    const tableName = ADMIN_USER_DETAIL_MOCK.inventory[0].table // 'train_session'
+    fireEvent.click(await screen.findByText(tableName))
+
+    // Bound to the selected table (eyebrow echoes `{table} · {total} sor`, DataTable renders
+    // that table's own columns) — not some other/unfiltered surface.
+    expect(await screen.findByText(`${tableName} · 2 sor`)).toBeInTheDocument()
+    expect(screen.getByRole('columnheader', { name: /created_by/ })).toBeInTheDocument()
+
+    // Scoped to the route's user, not the whole table.
+    await waitFor(() => expect(seen).toContain(`userId=${ADMIN_USER_DETAIL_MOCK.user.id}`))
   })
 })

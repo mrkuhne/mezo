@@ -37,6 +37,10 @@ export function AdminDataPage() {
   const sort = searchParams.get('sort')
   const dir: AdminRowSortDir = searchParams.get('dir') === 'asc' ? 'asc' : 'desc'
   const includeDeleted = searchParams.get('includeDeleted') === 'true'
+  // Fix round 1 (Finding 3): the FK jump's `?rowId=` — consumed client-side only (DataTable
+  // highlights the matching row within the page already loaded; see its own doc comment for
+  // why there's no backend param and no guarantee the row is on this page at all).
+  const rowId = searchParams.get('rowId')
 
   const tables = useAdminTables(isOwner)
   const views = useAdminViews(isOwner)
@@ -56,9 +60,11 @@ export function AdminDataPage() {
     })
   }
 
-  const selectTable = (name: string) => patch({ table: name, view: null, sort: null, dir: null, page: null, userId: null })
+  // `rowId` is cleared on any explicit table change — an FK jump's highlight target belongs to
+  // the table it pointed at, not to whatever table the owner picks next (Fix round 1, Finding 3).
+  const selectTable = (name: string) => patch({ table: name, view: null, sort: null, dir: null, page: null, userId: null, rowId: null })
   const selectView = (v: AdminViewDescriptor) =>
-    patch({ view: v.id, table: v.table, sort: v.defaultSort, dir: v.defaultDir, page: null })
+    patch({ view: v.id, table: v.table, sort: v.defaultSort, dir: v.defaultDir, page: null, rowId: null })
   const selectUser = (id: string | null) => patch({ userId: id, page: null })
   const toggleDeleted = () => patch({ includeDeleted: includeDeleted ? null : 'true', page: null })
   const toggleSort = (col: string) => {
@@ -124,7 +130,14 @@ export function AdminDataPage() {
                     </label>
                   </div>
                   <div className="ad-scroll" style={{ marginTop: 9 }}>
-                    <DataTable page={rows.data} sort={sort} dir={dir} onSort={toggleSort} onNavigateToRow={navigateToRow} />
+                    <DataTable
+                      page={rows.data}
+                      sort={sort}
+                      dir={dir}
+                      onSort={toggleSort}
+                      onNavigateToRow={navigateToRow}
+                      highlightRowId={rowId}
+                    />
                   </div>
                   <div className="ad-cell" style={{ marginTop: 9, justifyContent: 'space-between' }}>
                     <button type="button" className="ad-chip" disabled={!canPrev} onClick={prevPage}>‹ Előző</button>
