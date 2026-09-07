@@ -1,7 +1,11 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import { KonziliumConversationView } from './KonziliumConversationView'
 import { MOCK_CONFERENCE_DETAIL, MOCK_EXPERTS } from '@/data/character/characterMock'
+
+function expertName(key: string): string {
+  return MOCK_EXPERTS.find((e) => e.key === key)?.displayName ?? key
+}
 
 const THREADS = MOCK_CONFERENCE_DETAIL.w2.deliberation!
 
@@ -20,11 +24,20 @@ describe('KonziliumConversationView', () => {
     render(<KonziliumConversationView threads={THREADS} experts={MOCK_EXPERTS} crossTalkRan />)
     // Fix round 1 (mezo-sp9w, task-8 impl): the claim's own text also appears verbatim in the
     // Javaslatok section, so scope the match to the Kereszt-vita quote block specifically.
-    expect(screen.getByText(/A hétvégi lefekvés két órával kitolódik/, { selector: '.kr-cvquote' })).toBeInTheDocument()
-    // Fix round 1 (mezo-sp9w, task-8 impl): 'támogatja' also appears on the Fizikai thread's
-    // (item index 2) single SUPPORT reaction, so more than one chip is expected here.
-    expect(screen.getAllByText('támogatja').length).toBeGreaterThan(0)
-    expect(screen.getByText('vitatja')).toBeInTheDocument()
+    const quote = screen.getByText(/A hétvégi lefekvés két órával kitolódik/, { selector: '.kr-cvquote' })
+    // Fix round 1 (mezo-sp9w, task-8 review): 'támogatja' also renders on the Fizikai thread's
+    // (item index 2) unrelated SUPPORT reaction, so a bare getByText/getAllByText.length>0 check
+    // only proves *some* 'támogatja' chip exists somewhere on the page — it would still pass if a
+    // regression attached the stance to the wrong claim, or duplicated it. Narrow to the single
+    // cross-talk card that holds this quote, then assert speaker-plus-stance inside that scope:
+    // doki supports THIS claim, drill challenges THIS claim.
+    const card = quote.closest('.kr-cvcard')
+    expect(card).not.toBeNull()
+    const withinCard = within(card as HTMLElement)
+    expect(withinCard.getByText(expertName('doki'))).toBeInTheDocument()
+    expect(withinCard.getByText('támogatja')).toBeInTheDocument()
+    expect(withinCard.getByText(expertName('drill'))).toBeInTheDocument()
+    expect(withinCard.getByText('vitatja')).toBeInTheDocument()
   })
 
   test('üres kereszt-vita kör megmarad szekcióként és megmondja, hogy nem volt hozzászólás', () => {

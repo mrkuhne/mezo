@@ -12,30 +12,13 @@ import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { expertColor } from '@/features/character/expertColors'
 import { confidenceWord } from '@/data/character/characterApi'
 import type { CharacterExpertDto, ConferenceItem, ConferenceThread } from '@/data/character/characterApi'
-
-const STANCE_LABEL: Record<string, string> = {
-  SUPPORT: 'támogatja',
-  CHALLENGE: 'vitatja',
-  NUANCE: 'árnyalja',
-}
-const STANCE_TONE: Record<string, string> = { SUPPORT: 'sup', CHALLENGE: 'cha', NUANCE: 'nua' }
-
-const ACCEPTED_LABEL: Record<string, string> = {
-  NEW: 'Bekerült',
-  UP: 'Megerősítve',
-  DOWN: 'Gyengítve',
-  RETIRE: 'Nyugdíjazva',
-}
+import { ACCEPTED_LABEL, STANCE_LABEL, STANCE_TONE, displayName } from '@/features/character/deliberationLabels'
 
 const EMPTY_PROPOSALS = 'Ez a konzílium nem tartalmaz felvetést.'
 const EMPTY_CROSSTALK_RAN = 'Ebben a körben senki nem szólt hozzá más felvetéséhez.'
 const EMPTY_CROSSTALK_ABSENT = 'Ez a konzílium a kereszt-vita kör bevezetése előtt zajlott.'
 const EMPTY_SKEPTIC = 'A Szkeptikus ebben a körben nem adott választ.'
 const EMPTY_CHAIR = 'Ebben a körben nem született döntés.'
-
-function displayName(experts: CharacterExpertDto[], key: string): string {
-  return experts.find((e) => e.key === key)?.displayName ?? key
-}
 
 function Turn({ expertKey, name, chip, chipTone, children }: {
   expertKey: string
