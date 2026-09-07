@@ -12,13 +12,18 @@
 #   $ gh api repos/mrkuhne/mezo/commits/28c33c23b/status      -q .state
 #   pending          # <- and 0 statuses. Nothing red. Nothing at all.
 #
-# TWO known causes, and they are NOT one bounded case:
-#   (a) update-visual-baselines.yml pushes with GITHUB_TOKEN, on which GitHub
-#       deliberately starts no workflow, and ci.yml has no workflow_dispatch arm;
+# Known causes, and they are NOT one bounded case:
+#   (a) any bot push made with GITHUB_TOKEN, on which GitHub deliberately starts no
+#       workflow, while ci.yml has no workflow_dispatch arm. (The original instance
+#       was update-visual-baselines.yml, retired with the visual gate in mezo-ryb6 —
+#       the class remains for every future token-authored push.)
 #   (b) measured 2026-09-06 on PR #504 (head 28c33c23b): GitHub simply created no
 #       run for the PR at all — zero runs on the branch — with NO bot commit and
 #       the PR MERGEABLE/CLEAN, while other branches' pull_request runs started
 #       normally in the same window.
+#   (c) a CONFLICTING PR: GitHub cannot build the test-merge ref and runs no
+#       pull_request checks at all. PR #547 was merged this way and put stale visual
+#       goldens on main — the incident that retired that gate (mezo-ryb6).
 # Until this script existed the only protection was human discipline (empty
 # commit, or `gh pr close && gh pr reopen`) — needed four times in one session.
 #

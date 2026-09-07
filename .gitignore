@@ -18,8 +18,8 @@ target/
 # tsc -b composite emit artifacts (regenerated from *.ts configs)
 vite.config.js
 vite.config.d.ts
-**/tests/visual/playwright.config.js
-**/tests/visual/playwright.config.d.ts
+**/tests/layout/playwright.config.js
+**/tests/layout/playwright.config.d.ts
 
 # Environment & secrets
 .env
@@ -50,11 +50,7 @@ Thumbs.db
 coverage/
 .nyc_output/
 
-# Playwright visual harness — run artifacts only
-# (the self-baseline PNGs under tests/visual/visual.spec.ts-snapshots/ ARE committed)
-frontend/tests/visual/test-results/
 test-results/
-playwright-report/
 
 # Beads / Dolt files (added by bd init)
 .dolt/
