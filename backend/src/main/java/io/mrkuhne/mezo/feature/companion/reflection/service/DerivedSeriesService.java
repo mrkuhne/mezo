@@ -9,10 +9,12 @@ import io.mrkuhne.mezo.techcore.text.TextFold;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +44,9 @@ public class DerivedSeriesService {
 
     /** How far back {@link #isKnown} looks for evidence that a person/topic key is real. */
     private static final int KNOWN_LOOKBACK_DAYS = 180;
+
+    /** How far back {@link #availableSeries} looks for the person/topic keys worth offering. */
+    private static final int AVAILABLE_LOOKBACK_DAYS = 30;
 
     private final TextSignalSeriesService textSignalSeriesService;
     private final MetricSeriesService metricSeriesService;
@@ -98,6 +103,29 @@ public class DerivedSeriesService {
                     .anyMatch(s -> s.getTopics().contains(topic));
         }
         return metricKey(key).isPresent();
+    }
+
+    /**
+     * S3 (mezo-eq85.3): every series key that is real for this user RIGHT NOW — the correlatable
+     * {@link MetricKey} wire keys plus the {@code people:}/{@code topic:} keys the last
+     * {@value #AVAILABLE_LOOKBACK_DAYS} days of text signals actually carry. It is what the
+     * proposal prompt is allowed to offer the model: a plan can only name a series that exists,
+     * so the honest menu has to come from the same place {@link #isKnown} answers from.
+     */
+    @Transactional(readOnly = true)
+    public List<String> availableSeries(UUID userId) {
+        LocalDate to = LocalDate.now();
+        LocalDate from = to.minusDays(AVAILABLE_LOOKBACK_DAYS);
+        Set<String> keys = new LinkedHashSet<>();
+        Arrays.stream(MetricKey.values())
+                .filter(MetricKey::correlatable)
+                .map(MetricKey::wireKey)
+                .forEach(keys::add);
+        for (TextSignalEntity signal : textSignalSeriesService.newestPerSource(userId, from, to)) {
+            signal.getPeople().forEach(person -> keys.add(PEOPLE_PREFIX + person));
+            signal.getTopics().forEach(topic -> keys.add(TOPIC_PREFIX + topic));
+        }
+        return List.copyOf(keys);
     }
 
     /** Wire key ({@code sleep-duration-h}) → enum; empty when nothing matches. */

@@ -1098,6 +1098,82 @@ the nightly **`ReflectionJob`** at 03:40.
   components null (the `CompanionMessageEnvelope` precedent). `user_reply.choice` is the ONLY
   user-authored input the lifecycle reads (`watch`/`confirm` positive, `reject` negative).
 
+**Reflexió S3 — memory, chat and the seeded conversation (`mezo-eq85.3`) — the loop stops being
+private.** S2 could form and test a hypothesis but only ever talked to itself: the nightly pass saw
+one week of narrative, the chat turn had no idea an experiment was running, and the user had no way
+to answer one in their own words. S3 connects the loop to the memory platform on one side and to
+chat on the other.
+
+- **`REFLECTION` is its own memory-platform consumer.** The nightly pass is OFFLINE — nobody waits
+  for a 03:40 answer — so it must not inherit chat's latency gate. `ConsumerPolicy.REFLECTION` gets
+  its own candidate pool, token budget and reranker allowance under
+  `mezo.companion.memory-platform.policies.reflection` (30 / 800 / `rerank: true`), read by
+  `MemoryContextService.retrieveCandidates` + `boundedTokenBudget` and by
+  `LlmMemoryReranker.shouldRerank` next to the existing `deep || WEEKLY_MEMOIR` condition. The value
+  lands in `memory_retrieval_run.consumer_policy`, so **every reflection retrieval is separable from
+  a chat turn's in the audit** — which is the whole reason it is a policy and not a flag.
+- **`ReflectionMemoryGateway` is the single door, and it FAILS OPEN.** One audited request per call
+  (`LlmCallContext("companion_reflection", "memory", …)`), and any runtime blow-up below it becomes
+  `""` plus a warning. A memory platform that cannot answer must not cost the user tonight's
+  reflection — the whole nightly pass is best-effort by design.
+- **`TestPlanValidator` is where "Gemini phrases, code decides" bites hardest.** The model may name
+  two series, a lag and a direction (`RawTestPlan`); **everything that decides whether the resulting
+  hypothesis can ever be confirmed** — `minN`, `minGroupN`, `windowDays` — comes from
+  `mezo.companion.patterns`, never from the answer. A plan survives only when both series are real
+  FOR THIS USER (`DerivedSeriesService.isKnown`) and are not the same series: a hypothesis about a
+  person Daniel never wrote about, or about a series correlated with itself, is not falsifiable, it
+  is noise. The lag is clamped to 0..3 and the direction is `negative` only when the model said so
+  in as many words.
+- **The proposal loop becomes test-plan aware.** `PROPOSE_PROMPT` now offers the user's OWN series
+  menu (`DerivedSeriesService.availableSeries` = the correlatable `MetricKey` wire keys plus the
+  `people:`/`topic:` keys the last 30 days of text signals actually carry) and asks for a `testPlan`
+  object or `null`. A validated plan ⇒ `kind=reflection`, `hypothesis_key = TestPlanEnvelope.key`,
+  `origin=nightly_reflection`, `pair_key` = the same `ref-` key; **no plan or an unusable one ⇒ the
+  pre-S3 qualitative `ai_hypothesis` row with the title hash**, so a good hunch that happens not to
+  be measurable is degraded, never lost. Identity is the PLAN: a reworded title re-proposes nothing
+  (`findByCreatedByAndHypothesisKeyAndDeletedFalse`, the finder S2 left deliberately dead), and a
+  revision inherits the original's plan because a rewording is the same test. Reflection rows raise
+  **no** `HYPOTHESIS_NEW` notification — the observation feed (S4) is their surface.
+- **`run(userId, null)` now assembles the nightly context itself.** Yesterday's text signals (one
+  line per source, newest version wins), the rows already open (`title · status · hits/misses`, so
+  the model stops re-proposing what is already being tested), and the `REFLECTION` memory block
+  keyed on `"tegnap: " + digest`. `ReflectionJob` still passes `null`; the `extraContext` seam stays
+  for a caller that wants to substitute its own material.
+- **Every reflection collaborator is reached through an `ObjectProvider`.**
+  `HypothesisPipelineService` and `ChatService` are gated on `COMPANION_SWITCH` only, while
+  `ReflectionMemoryGateway`/`TestPlanValidator`/`ReflectionPromptBlock`/`ReflectionReplyRecorder`
+  are gated on `REFLECTION_SWITCH` too — a hard field would take the context down with Reflexió off
+  (`TextSignalListenerSwitchOffIT` keeps the context up in exactly that combination). Absent bean ⇒
+  the pre-S3 behaviour, never a failure. `TextSignalRepository` needs no provider: a Spring Data
+  repository is never switch-gated.
+- **The `[Észrevételek]` chat block.** `ReflectionPromptBlock.render(userId)` renders the five
+  freshest `proposed`/`monitoring` `reflection`/`ai_hypothesis` rows as
+  `- <cím> (figyeljük · 4 bejött / 1 nem · bizonyosság 38%)`, injected by
+  `ChatService.assembleSystemPrompt` right after the fresh-pattern-facts block. A companion that
+  runs a nightly experiment on you and cannot mention it when you ask is not a companion. It is
+  **strictly read-only** over the lifecycle: it renders what the engine computed, and nothing the
+  model says about the block can move a row. `belief` is omitted rather than guessed at when the
+  engine has not scored the row yet.
+- **Seeded conversations close the loop back to the user.** `ai_conversation.seed_pattern_id` (and
+  `CreateConversationRequest`/`ConversationResponse.seedPatternId`) makes a thread be ABOUT one
+  hypothesis — "beszéljünk erről" from an observation (S4) lands here. `ConversationService.create`
+  gates ownership (404 for missing OR foreign, before anything is written) and titles the thread
+  after the pattern, so the first user message cannot overwrite it. Every user turn in such a thread
+  is appended by `ReflectionReplyRecorder` as a `user_reply(channel="chat", choice=null, text)`
+  event — on **both** the synchronous and the streamed path, right after the user row is persisted.
+  It stays an EVENT: the user's words are evidence `HypothesisLifecycle` weighs, never a status that
+  skips it. The recorder re-checks ownership itself (the reference is nullable-on-delete, so a stale
+  anchor must write nothing), and the capture is swallow-and-log — reflection bookkeeping must never
+  cost the user their chat turn. That guarantee is carried by `@Transactional(REQUIRES_NEW)` on
+  `recordChatReply`, not by the caller's `try/catch` alone: under the default `REQUIRED` the write
+  would join the turn's own transaction, and a throw would mark it rollback-only so the *swallowed*
+  failure came back as an `UnexpectedRollbackException` at the outer commit — losing the whole turn
+  on both paths. The annotation suffices because `ChatService` calls the recorder cross-bean through
+  the Spring proxy (the `AppNotificationService.emit` idiom); a self-invocation would need
+  `HypothesisEvaluationService.evaluateOne`'s explicit `TransactionTemplate` instead. Consequence,
+  accepted on purpose: the reply commits on its own, so it survives even when the **synchronous**
+  turn later rolls back on an LLM failure.
+
 ## 2. User-facing behavior
 
 The ChatPage under Insights (`/insights/chat`, [`insights.md`](insights.md) §2.5) is the real
@@ -2523,6 +2599,10 @@ version, and no endpoint or FE DTO is added in this slice.
 Runtime retrieval (`mezo-6dii.5`) extends the same validated property tree with weighted-RRF and
 modifier bounds, per-retriever timeout, reranker eligibility/size/deadline limits
 and the old-item threshold.
+Reflexió S3 (`mezo-eq85.3`) adds `policies.reflection` (`candidate-limit: 30`, `max-tokens: 800`,
+`rerank: true`, bound to `MemoryPlatformProperties.Policies`/`ReflectionPolicy`): the per-consumer
+override the OFFLINE nightly pass retrieves under, deliberately deeper than chat's serving limits
+because no user is waiting on it.
 Audit runs are retained for 30 days by default; `MemoryRetrievalRetentionJob` fans out over active
 users at 03:50 and physically deletes expired runs so database cascades remove their result and
 feedback children. This is an explicit audit-retention exception to normal domain soft deletion;
@@ -2587,6 +2667,20 @@ inboxes, two lifecycles and two truths.
 - **`evidence_hits`/`evidence_misses` are `not null default 0`**, so existing rows migrate to an
   honest "no evidence nights yet" rather than to null; `belief`, `test_plan`, `hypothesis_key` and
   `origin` are nullable because a pre-S2 row genuinely has none of them.
+
+### Backend tables (Reflexió S3 memory policy + seeded conversations, ✅ `mezo-eq85.3`)
+
+Two migrations, both in `1.0.0_master.yml`, both column/CHECK-level — S3 adds no table.
+
+- `202609071150_mezo-eq85.3_memory_retrieval_run_reflection_policy.sql` re-issues
+  **`ck_memory_retrieval_run_policy`** (drop + add, name unchanged) with `REFLECTION` added to the
+  four serving policies. Mirrored by the `@Pattern` regex on `MemoryRetrievalRunEntity`; the value
+  is internal audit metadata and is exposed by no contract schema, so there is no FE union to widen.
+- `202609071200_mezo-eq85.3_ai_conversation_seed_pattern.sql` adds
+  **`ai_conversation.seed_pattern_id uuid references pattern (id) on delete set null`**. The loose
+  reference is deliberate: purging a pattern must orphan the anchor, never take the conversation
+  (the `pattern.promoted_fact_id` precedent).
+
 
 ### Backend tables (LLM audit log, ✅ `mezo-2zyu`)
 
@@ -6384,6 +6478,50 @@ new fixtures. **Regression coverage:** `PatternDetectionServiceIT` still passes 
 stamped on statistical rows, `CompanionPatternApiIT`/`CompanionPatternPairDetailApiIT` with the
 widened `PatternResponse`/`PatternEventResponse`, and `CompanionMemoryOverviewApiIT` now asserts the
 observatory's `hypothesisCron` is the 03:40 reflection cron.
+
+**Reflexió S3 — memory, chat and seeded conversations (`mezo-eq85.3`).** Five test classes, each
+pinned at the lowest level that can still prove the thing.
+`TestPlanValidatorTest` is a **pure unit test**: `DerivedSeriesService` is a hand-written stub with a
+fixed key set, so the whole "code decides" contract (unknown key dropped on either side, self-pair
+dropped case-insensitively, null/blank plan dropped, lag clamped both ways, direction defaulted to
+positive unless the model literally said `negative`, gates read from `CompanionProperties.patterns`)
+is arithmetic, not wiring. The heavy `CompanionProperties` record is built with nulls except
+`patterns` (the `GeminiEmbeddingAdapterRecordingTest` precedent).
+`ReflectionMemoryGatewayIT` runs **without a test transaction** — the parallel retriever connections
+must see committed fixtures (the `MemoryContextServiceIT` rule) — and asserts the audited run really
+carries `consumer_policy = REFLECTION`, which is the only proof the new policy reached the platform
+rather than being silently ignored. The fail-open case cannot be staged through a real outage
+(`MemoryContextService.retrieve` deliberately survives a partial one and only `retrieveForServing`
+throws), so it is staged by a `MemoryContextService` subclass whose `retrieve` explodes — the
+gateway's contract is about ANY runtime blow-up below it, not about one specific failure.
+`HypothesisPipelineTestPlanIT` drives the real loop over the `[fake-hypotheses:…]` sentinel with a
+`testPlan` inside it and pins all three outcomes: a usable plan ⇒ a `reflection` row keyed `ref-`
+with `origin=nightly_reflection`, the gates from config and **no** `hypothesis_new` notification; an
+unknown series ⇒ the qualitative `ai_hypothesis` row with a null `test_plan`; and a REWORDED title
+carrying the same plan ⇒ still one row. That last case is seeded on a LATER summary day on purpose —
+the gathered narrative is ordered date-desc, so the fake would otherwise be handed the FIRST run's
+sentinel again and the test would pass vacuously.
+`ChatReflectionBlockIT` uses the fake's system-prompt echo (the `ChatServiceIT` idiom) so the
+persisted answer IS the proof of assembly, and asserts both halves: an open row renders the exact
+`[Észrevételek — amit Mezo most figyel]` line with its tally and percentage, and a `refuted` row
+renders nothing at all.
+`ChatSeedReplyIT` proves the loop back: a seeded conversation is titled after its pattern and
+carries `seedPatternId`; one send appends exactly one `user_reply(channel=chat, choice=null)` event
+with the verbatim text **and leaves the row's status alone** (evidence, not a verdict); an unseeded
+conversation writes nothing; and a foreign `seedPatternId` is a 404 before anything is persisted.
+`ChatSeedReplyFailureIT` owns the other half of that promise — the "never fails the turn" guarantee
+— on **both** entry points (`sendMessage` and `prepareTurn`): a `@MockitoSpyBean`
+`PatternEventRepository` blows up INSIDE `recordChatReply`'s own transaction (spying the *recorder*
+would replace the transactional proxy and make the test pass either way), and the turn still
+commits its rows. Drop the `REQUIRES_NEW` and both cases fail with the exact
+`UnexpectedRollbackException` the boundary exists to prevent — its own IT class, because the spy
+forks the application context.
+**Regression coverage:** `MemoryContextServiceIT`, `LlmMemoryRerankerTest` and
+`MemoryCandidateFusionTest` (the properties record grew a component), `HypothesisPipelineServiceIT`
+and `HypothesisGatherContextIT` (the pre-S3 qualitative path is unchanged), `ChatServiceIT` /
+`ChatStreamServiceIT` / `ConversationServiceIT` / `CompanionApiIT`, and the switch-off trio
+(`TextSignalListenerSwitchOffIT`, `ReflectionJobSwitchOffIT`, `CompanionSwitchOffIT`) that keeps the
+`ObjectProvider` gating honest.
 
 ## 9. Decisions, gotchas & deferred
 
