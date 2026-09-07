@@ -148,10 +148,11 @@ public class QuickNoticeService {
         PatternEventEntity event = patternEventAppender.append(userId, target.getId(),
                 PatternEventEntity.KIND_OBSERVATION,
                 PatternEventPayloadEnvelope.observation(observationText(answer), evidenceRefs, surfaced));
-        // Silent launch (mezo-eq85.4): collecting is unconditional, PUSHING is not. The event
-        // above is written and marked `surfaced` either way — the feed has its content from day
-        // one — but `notice.push-enabled` stays false until the Észrevételek tab this notification
-        // deep-links into actually ships (mezo-eq85.5), so nobody is sent to an empty screen.
+        // Collecting is unconditional, PUSHING is switchable. The event above is written and
+        // marked `surfaced` either way — the feed has its content regardless. `notice.push-enabled`
+        // shipped false through S4's silent launch (mezo-eq85.4) because this notification
+        // deep-links into the Észrevételek tab; that tab landed in mezo-eq85.5 and the flag now
+        // ships TRUE. The switch stays, so the push can be turned off again without a code change.
         if (surfaced && reflectionProperties.notice().pushEnabled()) {
             appNotificationEmitter.emit(userId, AppNotificationKind.OBSERVATION_NEW,
                     "Mezo észrevett valamit", answer.text(),

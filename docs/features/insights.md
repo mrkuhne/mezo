@@ -724,6 +724,15 @@ shapes, unchanged by this frontend (the server owns ranking, labelling and domai
 on, `AdviceRankPort`/`DailyCardPort`). The hub tile on `MezoHubPage.tsx:146-151,240-252` reads the
 SAME `useCoachingTrace()` the hub page itself reads — no separate teaser/copy.
 
+### 5.9 Észrevételek — the observation feed Today mounts (✅ Reflexió S5, `mezo-eq85.5`)
+**Owned here, rendered there.** `data/insights/observationsHooks.ts` + `observationsApi.ts` are the FE half of slice 4's two endpoints, and the only consumer is Today's `NapMezoPage` third tab ([today.md](today.md) §2) via `features/today/components/ObservationCard.tsx` — the same "an Insights-owned hook that Today mounts" shape as `FeedbackChips` (§5.7).
+
+- **`useObservations(date?)`** → `{ observations, degraded, isPending, isError, refetch }`. `useDualQuery` on `['observations', date ?? 'today']`; mock mode serves the four-card prototype seed in `data/insights/observations.ts` (one per card kind), real mode `GET /api/companion/observation` mapped by `toObservation`. A **404 is `degraded`, not an error** (the companion switched off) — the standard `usePatterns` idiom. The server already orders the feed, so nothing sorts here.
+- **`useObservationReply()`** → `{ reply(patternId, choice, text?), pendingPatternId }`. Real mode POSTs `POST /api/companion/pattern/{patternId}/reply` and invalidates the `['observations']` prefix; mock mode writes `repliedChoice` straight into the cached cards and answers the `talk` branch with `{ conversationId: 'mock-conv' }`. `pendingPatternId` names the row whose reply is in flight — the card uses it to disable its chip group, because **the backend reply is not idempotent** and a double tap posts twice.
+- **`sourceIcon` mapping.** The wire sends bare surface names (`naplo`/`alvas`/`edzes`/`vacsora`/`hold`/`mezo`); the clay set is `i-` prefixed. `observationsApi.ts` holds the explicit `Record` — there is no shared domain→icon map to reuse — and falls back to `i-mezo` for anything it does not know, so a newer backend value can never blank a card's disc.
+
+Wire schemas, card semantics, the budget and the `OBSERVATION_NEW` push live in [`companion.md`](companion.md) §1.
+
 ---
 
 ## 6. How to use it (consume)
