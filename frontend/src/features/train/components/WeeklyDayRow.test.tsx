@@ -36,6 +36,24 @@ test('a PAST gym day with a logged workout shows the done chip (no isToday neede
   expect(screen.getByText('kész')).toBeInTheDocument()
 })
 
+test('a done gym row with NO review target still navigates — never a dead button (mezo-e6xf)', () => {
+  // Mock mode marks the real-today date done without any reviewable workout behind it
+  // (gymDoneDates carries localDateString while the fixture "ma" flag sits on Csü), so a
+  // gymLogged row can arrive with onReviewGym undefined. The tap must fall back to the
+  // normal target (today → start, otherwise → open), not go silent.
+  const onOpenGymDay = vi.fn()
+  render(<WeeklyDayRow
+    agenda={{
+      day: 'Hét', date: '2026-09-07', isToday: false,
+      gym: { day: 'Hét', active: true, time: '07:30', duration: 75, type: 'Push Day' } as never,
+      sport: [], running: [],
+    }}
+    gymLogged
+    onStartGym={() => {}} onLogSport={() => {}} onOpenGymDay={onOpenGymDay} />)
+  fireEvent.click(screen.getByRole('button', { name: /Push Day/ }))
+  expect(onOpenGymDay).toHaveBeenCalled()
+})
+
 test('today volleyball row shows the "log" chip, or the done chip once logged', () => {
   const agenda = {
     day: 'Hét', isToday: true,
