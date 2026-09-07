@@ -73,6 +73,28 @@ public class MemoryItemPopulator {
         return vectorRepository.saveAndFlush(entity);
     }
 
+    /**
+     * Full control over the three facts the explorer's map and health reads filter on (mezo-4qyt):
+     * the vector status, its failure code, and whether {@code embedded_content_hash} still matches
+     * the item's — a mismatch is the "present but ANN-ineligible" stale row the health view exists
+     * to expose.
+     */
+    public MemoryVectorEntity vector(MemoryItemEntity item, String embeddingVersion, float[] embedding,
+                                     String status, String failureCode, String embeddedContentHash) {
+        MemoryVectorEntity entity = new MemoryVectorEntity();
+        entity.setCreatedBy(item.getCreatedBy());
+        entity.setMemoryItemId(item.getId());
+        entity.setEmbeddingVersion(embeddingVersion);
+        entity.setProvider("google");
+        entity.setModel("gemini-embedding-001");
+        entity.setEmbedding(embedding);
+        entity.setEmbeddedContentHash(
+                embeddedContentHash == null ? item.getContentHash() : embeddedContentHash);
+        entity.setStatus(status);
+        entity.setFailureCode(failureCode);
+        return vectorRepository.saveAndFlush(entity);
+    }
+
     public MemoryRetrievalRunEntity run(UUID createdBy, UUID traceId) {
         return run(createdBy, traceId, "NEW", "Hogyan aludtam futás után?",
                 Map.of("denseCandidates", 1));
