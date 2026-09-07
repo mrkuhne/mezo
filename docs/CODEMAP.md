@@ -224,17 +224,18 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **pages:** AdatforrasokPage.tsx, CharacterFeedPage.tsx, CsapatPage.tsx, DetektorokPage.tsx, DimensionPage.tsx,
     DimensionsPage.tsx, FutasokPage.tsx, GeptermPage.tsx, KarakterHubPage.tsx, KonziliumPage.tsx, KorPage.tsx,
     RunPage.tsx
-  - **components:** ClaimTile.tsx, ConferenceThreadCard.tsx, MaturityRing.tsx, PersonaOrb.tsx, RunFlowStrip.tsx,
-    SignalChainCard.tsx, TranscriptTurn.tsx
-  - **root:** character.css, dossierState.ts, expertColors.ts, feedDayLabel.ts, inventory.ts, runLabels.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 25 IT + 8 unit
+  - **components:** ClaimTile.tsx, ConferenceArchiveSheet.tsx, ConferenceThreadCard.tsx, KonziliumConversationView.tsx,
+    KonziliumRoundMap.tsx, MaturityRing.tsx, PersonaOrb.tsx, RunFlowStrip.tsx, SignalChainCard.tsx, TranscriptTurn.tsx
+  - **root:** character.css, deliberationLabels.ts, deliberationStats.ts, dossierState.ts, expertColors.ts,
+    feedDayLabel.ts, inventory.ts, runLabels.ts
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 26 IT + 8 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
-    `CharacterConferenceJobIT`, `CharacterConferenceServiceIT`, `CharacterFeedbackIT`, `CharacterHistoryReadsIT`,
-    `CharacterMetaReadsIT`, `CharacterMonthlyServiceIT`, `CharacterObservationJobIT`, `CharacterObservationServiceIT`,
-    `CharacterPersistenceIT`, `CharacterPromptAssemblerIT`, `CharacterPromptAssemblerOversizedDimensionIT`,
-    `CharacterPromptWiringIT`, `CharacterRunLogIT`, `CharacterSignalReadsIT`, `ClaimLifecycleIT`,
-    `ConferenceDeliberationEnvelopeIT`, `KonziliumCrossTalkRoundIT`, `KonziliumProposalRoundIT`,
-    `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`, `PortraitWriterNameIT`
+    `CharacterConferenceJobIT`, `CharacterConferenceListIT`, `CharacterConferenceServiceIT`, `CharacterFeedbackIT`,
+    `CharacterHistoryReadsIT`, `CharacterMetaReadsIT`, `CharacterMonthlyServiceIT`, `CharacterObservationJobIT`,
+    `CharacterObservationServiceIT`, `CharacterPersistenceIT`, `CharacterPromptAssemblerIT`,
+    `CharacterPromptAssemblerOversizedDimensionIT`, `CharacterPromptWiringIT`, `CharacterRunLogIT`,
+    `CharacterSignalReadsIT`, `ClaimLifecycleIT`, `ConferenceDeliberationEnvelopeIT`, `KonziliumCrossTalkRoundIT`,
+    `KonziliumProposalRoundIT`, `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`, `PortraitWriterNameIT`
   - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`, `CheckInPopulator`,
     `DailySummaryPopulator`, `DatabasePopulator`, `ExperimentPopulator`, `GraphPopulator`, `JournalPopulator`,
     `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LlmLogPopulator`, `MealPopulator`, `MedicationDosePopulator`,
