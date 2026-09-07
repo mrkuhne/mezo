@@ -108,8 +108,9 @@ mirroring `KonziliumProposalRound`'s existing fields. Three changes to the Integ
   `confidence_history` and the `user_feedback` events on that claim.
 
 The dossier block is deterministically bounded by a new `CharacterProperties` value
-(`mezo.character.konzilium.max-dossier-claims`, default 80; least-recently-updated claims drop
-first), and **the block states when it was truncated** — a silently trimmed prompt would let the
+(`mezo.character.conference.max-dossier-claims`, default 80 — it joins the existing `Conference`
+record rather than a new config branch; least-recently-updated claims drop first), and **the block
+states when it was truncated** — a silently trimmed prompt would let the
 chair conclude "we hold nothing like this" from an absence we created.
 
 All three konzílium paths (weekly, monthly, bootstrap) call this round, so all three gain the
