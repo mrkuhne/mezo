@@ -17,7 +17,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | Feature | BE | API | FE data | FE ui | Docs |
 |---|---|---|---|---|---|
 | [activity](#activity) | ✓ | 1 | ✓ | · | [growth](features/growth.md) |
-| [admin](#admin) | ✓ | 2 | ✓ | · | [beta-admin](features/beta-admin.md) |
+| [admin](#admin) | ✓ | 2 | ✓ | ✓ | [beta-admin](features/beta-admin.md) |
 | [appnotification](#appnotification) | ✓ | 1 | · | · | [_platform-notifications](features/_platform-notifications.md) |
 | [auth](#auth) | ✓ | 2 | ✓ | ✓ | [beta-admin](features/beta-admin.md), [_platform-auth-security](features/_platform-auth-security.md) |
 | [biometrics](#biometrics) | ✓ | 6 | · | · | [me](features/me.md), [today](features/today.md) |
@@ -78,7 +78,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### admin
 
-*BE + API + FE-data* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-06, done)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/admin`
   - **repositories:** `AdminCatalogQuery`, `AdminInsightsQuery`, `AdminRowQuery`
@@ -94,6 +94,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **FE data** `frontend/src/data/admin`
   - **hooks (via `@/data/hooks`):** `useAdminActions`, `useAdminInvites`, `useAdminUsers`
   - **modules:** adminApi.ts, adminHooks.ts, adminMock.ts
+- **FE ui** `frontend/src/features/admin`
+  - **pages:** AdminOverviewPage.tsx
+  - **root:** AdminLayout.tsx, AdminRail.tsx, adminRoutes.tsx
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 6 IT + 1 unit
   - **ITs:** `AdminDataBrowserIT`, `AdminOverviewIT`, `AdminTableCatalogIT`, `AdminUsageIT`, `AdminUserDetailIT`,
     `AdminUserInsightIT`

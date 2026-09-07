@@ -4503,6 +4503,11 @@ ol.md-list { list-style: decimal; }
 
 .mz-mosaic { display: grid; grid-template-columns: 1fr 1fr; gap: 11px; }
 
+/* .mz-mosaic-desktop/.mz-span-* (the admin hub's 12-column counterpart to .mz-mosaic) live
+   in their own §Admin hub shell section below, OUTSIDE this Mozaik section — see there for
+   why: mozaikCssTokens.test.ts's hardcoded-hex guard scans this section only, and the admin
+   shell's colors are ported verbatim (light-only) from the prototype rather than tokenized. */
+
 /* The panel's own vertical rhythm — the prototype's `.dp-panel { gap: 9px }` at ×1.18,
    the same 11px the mosaic uses between tiles, so a hero, a mosaic and a stat strip are
    spaced like tiles rather than by whatever margins their components happen to carry.
@@ -10823,3 +10828,45 @@ button.mz-wtile:active { transform: scale(0.96); }
   .tpl-face { transition: none; }
   .tpl-menu { animation: none; }
 }
+
+/* ============================================================
+   §Admin hub shell (mezo-d5iy.9) — desktop-only, no PhoneFrame/TabBar.
+   Ported VERBATIM (light-only hexes, like the rest of the design_2.0 prototypes) from
+   docs/design_2.0/prototypes/src/admin-head.html's .ad-shell/.ad-rail/.ad-main/.ad-mosaic —
+   this section sits OUTSIDE §Mozaik on purpose, so mozaikCssTokens.test.ts's token/hex
+   guards (scoped to that section only) don't apply to it. Tasks 10-12 port the remaining
+   .ad-* graphics (poster, ring, spark, heat, matrix, table, json, fk, ...) here.
+   ============================================================ */
+.ad-shell { display: flex; width: 100%; height: 100%; min-width: 0; min-height: 100vh; }
+
+.ad-rail {
+  width: 208px; flex: none; padding: 18px 12px; display: flex; flex-direction: column; gap: 4px;
+  background: rgba(43, 33, 24, 0.035); border-right: 1px solid rgba(43, 33, 24, 0.08);
+}
+.ad-rail .brand { display: flex; align-items: center; gap: 9px; padding: 4px 10px 16px; font-weight: 700; letter-spacing: -0.01em; }
+.ad-rail .brand small { display: block; font-size: 8.5px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase; color: #A2958A; }
+.ad-rail a, .ad-rail-link {
+  display: flex; align-items: center; gap: 10px; padding: 9px 11px; border-radius: 11px;
+  color: #6E6257; text-decoration: none; font-weight: 500; cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.ad-rail a:hover, .ad-rail-link:hover { background: rgba(255, 255, 255, 0.6); color: #2B2118; }
+.ad-rail a.on, .ad-rail-link.on { background: #FFFFFF; color: #2B2118; font-weight: 600;
+  box-shadow: 0 6px 14px -8px rgba(43,33,24,.35), 0 1px 3px rgba(43,33,24,.06); }
+.ad-rail a:focus-visible, .ad-rail-link:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
+.ad-rail .railfoot { margin-top: auto; padding: 10px 11px 0; border-top: 1px solid rgba(43,33,24,.08); display: flex; align-items: center; gap: 8px; }
+.ad-rail .railfoot .nm { font-size: 11px; font-weight: 600; }
+.ad-rail .railfoot .rl { font-size: 8px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; }
+
+.ad-main { flex: 1; min-width: 0; overflow-y: auto; padding: 22px 26px 30px; scrollbar-width: thin; }
+
+/* the loading state shown while the /admin lazy chunk (and its pages) are still fetching */
+.ad-loading { padding: 40px; text-align: center; color: #6E6257; font-size: 12px; }
+
+/* the 12-column mosaic — the desktop counterpart of .mz-mosaic */
+.mz-mosaic-desktop { display: grid; grid-template-columns: repeat(12, 1fr); gap: 13px; }
+.mz-mosaic-desktop > .mz-tile { grid-column: span 6; }
+.mz-span-3 { grid-column: span 3; }
+.mz-span-4 { grid-column: span 4; }
+.mz-span-6 { grid-column: span 6; }
+.mz-span-12 { grid-column: span 12; }

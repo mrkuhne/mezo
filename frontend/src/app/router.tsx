@@ -1,5 +1,6 @@
 import { Navigate, type RouteObject, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { AppLayout } from '@/app/AppLayout'
+import { adminRoutes } from '@/features/admin/adminRoutes'
 import { NapHubPage } from '@/features/today/pages/NapHubPage'
 import { NapMezoPage } from '@/features/today/pages/NapMezoPage'
 import { NapRutinPage } from '@/features/today/pages/NapRutinPage'
@@ -161,6 +162,10 @@ function TrainIndex() {
 }
 
 export const routes: RouteObject[] = [
+  // Registered BEFORE the app root so `/admin` is matched by its own layout (desktop
+  // shell, no PhoneFrame/TabBar) rather than falling into AppLayout's `*` catch-all
+  // (mezo-d5iy.9). The two trees are otherwise disjoint — no path collides.
+  ...adminRoutes,
   {
     path: '/',
     element: <AppLayout />,
