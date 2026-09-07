@@ -11,10 +11,13 @@ import org.springframework.stereotype.Component;
 
 /**
  * The ONE way a {@code pattern_event} row is appended (Reflexió S4, mezo-eq85.4). Extracted
- * because by S4 there were three hand-rolled copies of the same six lines
+ * because by S4 there were five hand-rolled copies of the same six lines
  * ({@code PatternService.recordEvent}, {@code HypothesisEvaluationService.record},
- * {@code ReflectionReplyRecorder}) and S4 would have added two more — the quick notice and the
- * chip reply. A single collaborator also pins the one detail that is easy to get subtly wrong:
+ * {@code ReflectionReplyRecorder}, and {@code PatternDetectionService}'s {@code recordSnapshot} +
+ * {@code reinforcePromotedFact}) and S4 would have added two more — the quick notice and the
+ * chip reply. All five were migrated here (the last two in the S4 whole-branch fix wave, which is
+ * also where the two Pearson-job sites stopped writing an untruncated {@code occurred_at}). A
+ * single collaborator also pins the one detail that is easy to get subtly wrong:
  * {@code occurred_at} is truncated to MICROS, because {@code timestamptz} stores microseconds and
  * ROUNDS a nanosecond value, so an untruncated write no longer equals the row read back (the
  * {@code PatternEntity.lastDetectedAt} lesson, mezo-mfmb).
