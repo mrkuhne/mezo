@@ -100,10 +100,13 @@ opinion about the user, dimension by dimension, claim by claim.
   how* — duplication against the existing dossier, contradiction with an existing claim, how far a
   confidence number may move, whether a claim belongs in a person's permanent dossier at all
   (the sensitive-claim question), and whether a topic earns its own chapter. The Szkeptikus
-  deliberately sees neither the dossier nor the peers' cross-talk stances — its job is the
-  proposal judged purely against its own evidence, and widening its input would re-merge the two
-  roles the split exists to keep apart. IDENT-1 is preserved — experts never message
-  the user directly; the user only *reads* the team's work (feed, konzílium transcript).
+  deliberately sees no dossier block and no peers' cross-talk stances — its job is the proposal
+  judged purely against its own evidence, and widening its input would re-merge the two roles the
+  split exists to keep apart. (A proposal that moves an existing claim does name that one claim's
+  current text and confidence word — a verdict on an unnamed move would be meaningless — but that
+  is not the dossier: no other claim, no history, no user feedback.) IDENT-1 is preserved —
+  experts never message the user directly; the user only *reads* the team's work (feed, konzílium
+  transcript).
 - **Unit of truth**: the **claim** — confidence, evidence refs, a status
   (`ACTIVE`/`RETIRED`), a lifecycle. Dimension portrait prose is written FROM claims, never the
   other way around.
@@ -868,7 +871,8 @@ investigating.
 - **The sensitive-write guardrail is enforced in `KonziliumVerdictRound.toRuling`, in Java, not in
   the prompt — and it fails CLOSED.** Accepting a `sensitive` proposal requires an affirmative
   `KEEP` or `WEAKEN` from the Szkeptikus; a `KILL`, a **`null` verdict** (that round returned blank
-  or unparseable JSON, so no index has one) and an unrecognised grade all block it
+  or unparseable JSON, or parsed fine but skipped this index — both leave that index with no
+  verdict) and an unrecognised grade all block it
   (`lacksSensitiveClearance`). The rule is keyed as "every kind except `DOWN`/`RETIRE`" (those two
   demonstrably weaken the dossier and are always safe), **not** as "`NEW`/`UP`" — keyed the latter
   way, a null or misspelled `kind` would slip past the check unguarded, the same fail-open mistake
