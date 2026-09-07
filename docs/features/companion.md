@@ -1174,6 +1174,131 @@ chat on the other.
   accepted on purpose: the reply commits on its own, so it survives even when the **synchronous**
   turn later rolls back on an LLM failure.
 
+**Reflexió S4 — the same-day loop (`mezo-eq85.4`) — the engine finally speaks, and the user can
+answer with one tap.** S1–S3 could read prose, test a hypothesis nightly and mention it in chat, but
+the user still had to open a chat to hear about any of it, and had no way to say "nem stimmel"
+without writing a sentence. S4 adds the *same-day* half: a cheap notice the moment something salient
+is written, the **Észrevételek** feed those notices land on, three chips to answer them, the reply
+feeding back into the nightly revision, and a one-line morning digest of what the night decided.
+
+- **Nothing is spent on an ordinary day.** `QuickNoticePreScreen` (`reflection/service/`) is a PURE
+  `@Component` — no repository, no LLM, every input a method argument — that decides whether a fresh
+  `text_signal` is worth an LLM call at all. Four rules in a fixed order, **first hit wins**:
+  `TOUCHES_OPEN` (an open row's `people:`/`topic:` series is named in the signal — a plan keyed on a
+  bare `MetricKey` is the nightly pass's job, not this one), `NEW_PERSON` (exactly two prior
+  mentions in the seven-day window, i.e. this is the third), `EXTREME_MOOD` (mood 1 or 5 **and**
+  `confidence = sure` — an unsure extreme is not a fact), `TOPIC_STREAK` (the topic on each of the
+  three preceding calendar days plus today). No hit ⇒ return, no call, no cost.
+- **`ObservationBudget` is what keeps a companion from becoming a notification machine.** Cap
+  (`notice.max-per-day`), minimum gap (`notice.min-gap-hours`) and a quiet window
+  `[quiet-from, quiet-to)` that may wrap midnight — all three from the `mezo.companion.reflection.notice.*`
+  block S1 reserved for exactly this. Only events the user actually SAW count: the budget filters on
+  `payload.surfaced == true`, so an over-budget notice is stored (the reasoning is not lost) but is
+  invisible to both the cap and the gap. `now` arrives as a **parameter** — there is no `Clock` bean
+  in this app, and that is what keeps the class unit-testable without one.
+- **`QuickNoticeService.onSignal` is the one same-day LLM stage**, hooked from `TextSignalListener`
+  after a signal was actually produced. It loads the open non-`statistical` rows, the last seven days
+  of signals **minus the triggering source's own versions** (the third-mention rule counts PRIOR
+  mentions; leaving today's row in would make every second mention look like a third), pre-screens,
+  and only then spends ONE cheap-tier call tagged `LlmCallContext("companion_reflection",
+  "quick_notice", …)`. The entry text is read through the journal/gratitude **repositories** — the
+  companion slice may not import journal services (ArchUnit); a `chat_day` signal has no single
+  source row, so its text is `""` and the prompt runs on the trigger and the touched rows alone.
+  Parsing is defensive in the `TextSignalExtractor.parse` shape: a null, blank or non-JSON answer
+  ends the run silently, and the failure branch logs the answer's LENGTH and first 40 characters —
+  never the answer, which mirrors the user's own journal entry, names included.
+- **What the model may write here, and what only code writes.** The answer supplies an
+  `observation` EVENT's prose and, at most, ONE `proposed` row carrying a falsifiable plan
+  (`origin=quick_notice`, `kind=reflection`, `category=trigger`, title = the notice's first sentence
+  capped at 200 chars), and the plan still has to survive `TestPlanValidator`. `pattern.status` on an
+  existing row, `pattern.belief`, `evidence_hits/misses`, `knowledge_fact` and
+  `memory_item.salience` are **never** touched by this stage — that is the epic's hard rule, and here
+  it is structural, not a prompt instruction. Target resolution is `hypothesisKey` → `newTestPlan` →
+  the first touched row → drop; a model-named key is looked up **inside the already-loaded open set**
+  only, so it can never hang a fresh observation on a `refuted`/`confirmed` row the engine already
+  settled. `evidenceRefs` always START with the signal's own `<sourceKind>:<sourceId>` — provenance
+  is a fact the code knows, not something to leave to the model.
+- **The notification is the surfaced half.** `surfaced = observationBudget.allows(userId, now)` is
+  recorded ON the event; only a surfaced one emits `AppNotificationKind.OBSERVATION_NEW`
+  (`observation_new` · family `pattern` · `/nap/uzenetek?tab=eszrevetelek`), deduped on
+  `observation_new:<eventId>` ([`_platform-notifications.md`](_platform-notifications.md) §3b/§4).
+  No migration was needed: `app_notification.kind` is a bare `varchar(32)` with no CHECK constraint.
+- **One way to append a pattern event.** `companion/service/PatternEventAppender` (`@Component`,
+  deliberately neither `@Transactional` nor switch-gated — the caller's transaction and switch keep
+  deciding) replaced the three hand-rolled copies that had accumulated by S4
+  (`PatternService.recordEvent`, `HypothesisEvaluationService.record`, `ReflectionReplyRecorder`)
+  before S4 could add two more. It returns the event FLUSHED (the notice needs its id for the dedup
+  key) and pins the detail all three copies disagreed on: `occurred_at` truncated to MICROS, because
+  `timestamptz` ROUNDS nanos and the re-read row would otherwise differ by 1 µs (mezo-mfmb).
+- **`ObservationFeedService` is the Észrevételek tab's read model** — four card kinds in one fixed
+  order, newest first inside each group: `fresh` (today's surfaced observations), `return` (today's
+  observations on a row you had ALREADY answered before the event — the LLM text references that
+  reply because the prompt carried it), `watching` (every `monitoring` row with a test plan) and
+  `confirmed` (rows the day's window confirmed). An EVENT card's id is the event id, a ROW card's is
+  the pattern id; `text`/`question` are split on the payload's LAST `\n`, the exact inverse of what
+  the notice joined. Answering a card does not make it vanish — it fills `repliedChoice`, and the FE
+  decides what to do with an acknowledged card. `repliedChoice` on an event card is the newest reply
+  **at or after** its own moment; on a row card it is the row's newest reply outright — deliberately
+  NOT anchored on `lastDetectedAt`, which the nightly pass bumps, because that would silently drop
+  the user's answer and re-arm the chips, and a re-armed „nem stimmel” is what turns a first doubt
+  into a verdict.
+- **Only reflection-owned rows reach this surface, on the read AND the write side.**
+  `PatternEntity.REFLECTION_OWNED_KINDS = {reflection, ai_hypothesis}` + `isReflectionOwned()`: a
+  `statistical` catalog row can legitimately be `monitoring` with a stamped plan (`PatternDetectionService.stampTestPlan`,
+  the Minták "figyeld" button) or user-confirmed, but its lifecycle belongs to the nightly Pearson
+  job and nothing maintains its `belief` — so it never renders as an észrevétel, and a chip reply
+  aimed at it 404s exactly like a foreign row. `ObservationSourceIcon` (pure, static) maps the
+  plan's `seriesA` to the card's glyph (`people:`/`topic:` → `naplo`, `sleep*` → `alvas`,
+  `late-meal-hour` → `vacsora`, `train*`/`gym*` → `edzes`, no plan → `mezo`); `hold` is in the wire
+  vocabulary but has **no v1 producer**.
+- **`ReflectionReplyService` — three chips, and code owns every consequence.** The reply is always
+  appended as a `user_reply(channel="chip", choice, text≤500)` event; `watch` on a still-`proposed`
+  row starts `monitoring`; the **second** `reject` refutes it (one is a doubt, not a verdict — the
+  same `HypothesisLifecycle.NEGATIVE_REPLIES_TO_REFUTE` rule the nightly pass reads, moved there in
+  S4 together with the positive/negative choice vocabulary so the two can never disagree); `talk`
+  opens a `seedPatternId` conversation (S3) and returns its id. `belief` is recomputed by the pure
+  `HypothesisLifecycle` from the row's LAST `evidence` event plus the reply tallies. The service has
+  **no `CompanionLlm` dependency at all**, so no model answer can structurally reach `status` or
+  `belief`. Propagation is the default `REQUIRED` on purpose (the opposite call of
+  `ReflectionReplyRecorder`'s `REQUIRES_NEW`): the only caller is the controller, so there is no
+  caller transaction to poison, and the reply, the status move and the seeded conversation must
+  commit or fail as ONE act — a refuted row with no reply behind it is worse than an error.
+- **The user's own words feed the nightly revision (`HypothesisPipelineService`).** Each open row now
+  renders as `… · kulcs: <hypothesisKey> · „<the newest user_reply text>"` — the key so a revision can
+  NAME its row, the quote because the user's words are the most informative thing the nightly pass
+  has. The proposal JSON gained `revisesHypothesisKey` + `revisedTestPlan`; when both resolve (an
+  owned, reflection-owned row **and** a plan that survives `TestPlanValidator`) the run creates a NEW
+  `proposed` row with the new plan and appends ONE `revised` event to the old one. **The old row
+  keeps running** — its status, belief, tallies and plan are untouched; the revision's only effect on
+  it is that audit event. An unusable revision drops the WHOLE proposal (a model that answered
+  "change THIS test" did not offer a fresh hunch) and says so at `log.warn`.
+- **The morning digest, in code, in Hungarian, with no model in the loop.**
+  `ReflectionDigestService.digestFor(userId, date)` reads the `[date−1 03:00, date 03:00)` window —
+  the hours `ReflectionJob` runs in, derived from the ARGUMENT, never from `LocalDate.now()` — and
+  returns the newest `confirmed`/`refuted` verdict on a reflection-owned row, or failing that the
+  newest `evidence` of a `monitoring` row the user has actually ANSWERED (a row nobody asked about is
+  not "amit kértél"; an `evidence` event with a null `hit` is skipped, because "bejött / nem jött be"
+  would then be a claim the numbers never made). `dormant` is deliberately silent — the product has
+  written no sentence for "the engine gave up for lack of data".
+- **The digest may never cost the user their morning message.** `CompanionMessageGenerator.generateMorning`
+  reaches it through an `ObjectProvider` (the digest bean is `REFLECTION_SWITCH`-gated, the generator
+  is not — absent bean ⇒ pre-S4 behaviour) and appends
+  `ÉSZREVÉTEL (egy mondatban utalj rá, ha illik a napba):` plus a `Ref("Pattern", title)` candidate
+  BEFORE the numbered candidate list. The direction is `proactive → companion`, the established one
+  (`ArchitectureTest.feature_slices_are_cycle_free` allows only one), which is why the digest lives
+  in the companion slice and the generator depends on it. Three mechanisms make failure free:
+  `REQUIRES_NEW` (a REQUIRED read that throws would mark the generator's own transaction
+  rollback-only at the moment Hibernate converts the exception — before any `catch` of ours runs —
+  and the briefing's `saveAndFlush` would die with `UnexpectedRollbackException`), an in-body
+  `catch → Optional.empty()`, and the generator's own second `catch`. **Known limitation
+  (bd `mezo-8ssp`):** a class-level `@Transactional` integration test that calls `generateMorning`
+  never gets a digest and pays the full 2-second query timeout, because the shared `ResetDatabase`
+  fixture's `TRUNCATE` holds an `ACCESS EXCLUSIVE` lock that its own transaction has not committed;
+  the `REQUIRES_NEW` read waits on it. `CompanionMessageGeneratorIT` stands Reflexió down with
+  `mezo.companion.reflection.enabled=false` for that reason; `ReflectionDigestMorningIT` (not
+  class-`@Transactional`) is what actually covers the digest path. Production is unaffected: under
+  MVCC a plain `SELECT` never waits on row locks, only on DDL/`VACUUM FULL`.
+
 ## 2. User-facing behavior
 
 The ChatPage under Insights (`/insights/chat`, [`insights.md`](insights.md) §2.5) is the real
@@ -4405,6 +4530,30 @@ W2.3 (`mezo-b3pp.8`) — the L2 confirm inbox, gated the same as the rest of the
 - `GraphNodeResponse.proposedEdgeCount` — how many edges accepting this candidate would create
   (`0` for every non-candidate node).
 
+### REST endpoints — observation feed + chip reply (contract-first — tag `CompanionObservation` → `CompanionObservationApi`)
+
+Reflexió S4 (`mezo-eq85.4`), fragment `api/feature/companion/companion.yml`;
+`CompanionObservationController implements CompanionObservationApi`, gated on the companion **and**
+the reflection switch — with Reflexió off the surface honestly disappears (404) instead of returning
+an empty list that reads as "nothing happened today". Every non-2xx returns `SystemMessageList`.
+
+| Method + path | Returns | Status | Notes |
+|---|---|---|---|
+| `GET /api/companion/observation?date=` | `ObservationResponse[]` | 200 · 401 | The Észrevételek tab's cards for ONE day (`date` optional, default today) — `ObservationFeedService.forDay`, groups concatenated in the fixed order `fresh`, `return`, `watching`, `confirmed`, newest first inside each. Reflection-owned rows only (`reflection`/`ai_hypothesis`); a `statistical` catalog row never appears even when it is `monitoring` with a plan. |
+| `POST /api/companion/pattern/{patternId}/reply` | `PatternReplyResponse` | 200 · 400 · 401 · 404 | The chip answer — `PatternReplyRequest {choice: watch\|reject\|talk, text? ≤500}` (`ReflectionReplyService.reply`). `watch` on a `proposed` row ⇒ `monitoring`; the SECOND `reject` ⇒ `refuted`; `talk` ⇒ a `seedPatternId` conversation whose id rides back in `conversationId`. 404 `COMPANION_PATTERN_NOT_FOUND` for a missing, foreign **or** statistical row (no existence leak, no 403). |
+
+**Schemas:** `ObservationResponse {id, patternId, hypothesisKey, card fresh|return|watching|confirmed,
+occurredAt, title, text, question?, evidence[], status, evidenceHits, evidenceMisses, minN, belief?,
+repliedChoice watch|reject|talk?, sourceIcon naplo|alvas|edzes|vacsora|hold|mezo}` — `id` is the
+EVENT id on an event card (`fresh`/`return`) and the ROW id on a row card (`watching`/`confirmed`),
+while `patternId` is always the row the chip reply goes to; `text`/`question` are the observation
+payload split on its last newline (a row card carries `text: ""` and no question).
+`PatternReplyRequest {choice, text?}`, `PatternReplyResponse {pattern: PatternResponse,
+conversationId?}`. **No migration:** `card`/`choice`/`sourceIcon` are WIRE vocabularies — nothing
+stores them — and the two status moves (`monitoring`, `refuted`) plus the three event kinds
+(`user_reply`, `monitoring`, `refuted`) were already in `ck_pattern_status`/`ck_pattern_event_kind`
+since S2.
+
 ### The V0.5 tool catalog (all read-only, ownership-scoped, audited)
 
 | Tool (args) | Source (existing reads) | Ref |
@@ -4895,7 +5044,12 @@ without a second properties class.
 - `mezo.companion.reflection.catch-up-days` = **7** (`@Min(1) @Max(30)`) — finished days the nightly
   catch-up re-checks for missing/stale signals.
 - `mezo.companion.reflection.notice.{max-per-day, min-gap-hours, quiet-from, quiet-to}` =
-  **2 / 4 / 22:00 / 07:00** — quick-notice rate limits and quiet hours (consumed from S2 on).
+  **2 / 4 / 22:00 / 07:00** — the quick-notice rate limits and quiet hours, **consumed since S4
+  (`mezo-eq85.4`) by `ObservationBudget`** and by nothing else: at most `max-per-day` observations
+  may be SURFACED in a server-zone day, at least `min-gap-hours` apart, never inside the
+  `[quiet-from, quiet-to)` window (which may wrap midnight). An over-budget notice is still written,
+  with `payload.surfaced=false`, and is invisible to both the cap and the gap — the reasoning is
+  kept, only the interruption is dropped.
 - `mezo.companion.reflection.propose.max-per-night` = **2** — cap on newly proposed patterns per
   run; since S2 this is what `HypothesisPipelineService` reads (it replaced `hypotheses.max-per-run`).
 - `mezo.companion.reflection.lifecycle.{confirm-streak, refute-streak, dormant-after-days, strong-r,
@@ -6522,6 +6676,47 @@ and `HypothesisGatherContextIT` (the pre-S3 qualitative path is unchanged), `Cha
 `ChatStreamServiceIT` / `ConversationServiceIT` / `CompanionApiIT`, and the switch-off trio
 (`TextSignalListenerSwitchOffIT`, `ReflectionJobSwitchOffIT`, `CompanionSwitchOffIT`) that keeps the
 `ObjectProvider` gating honest.
+
+**Reflexió S4 — quick notice, observation feed, chip replies, morning digest (`mezo-eq85.4`).**
+Nine test classes, each at the lowest level that can still prove its claim.
+`QuickNoticePreScreenTest` and `ObservationBudgetTest` are **pure unit tests** (the pre-screen has no
+collaborators at all; the budget gets a Mockito `PatternEventRepository`): the four rules, the
+*first-hit-wins* order pinned once per adjacent pair, the "unsure extreme mood does not fire" case,
+and the budget's cap / gap / midnight-wrapping quiet window with an explicit exclusive-end boundary
+plus the "unsurfaced events count for neither" case.
+`QuickNoticeServiceIT` drives the real listener path over the fake's `[[NOTICE:…]]` sentinel and pins
+all of it: the surfaced observation with the journal entry among its `evidenceRefs` and one
+`observation_new` notification; a scripted `newTestPlan` creating a `reflection` row with
+`origin=quick_notice`; a **null** answer persisting nothing at all; and a model-named
+`hypothesisKey` pointing at a `refuted` row NOT resurfacing it. The budget's other half needs a
+different value of a bound property, so it is its own class (`QuickNoticeBudgetOffIT`,
+`max-per-day=0` ⇒ the event exists with `surfaced=false` and no notification) — this repo's
+`*SwitchOffIT` idiom, since there is no `@Nested`-plus-property-override precedent here.
+`CompanionObservationApiIT` proves the contract at HTTP level: the four card kinds in their fixed
+order, a replied card staying in the feed with `repliedChoice` set, `talk` returning a conversation
+whose `seedPatternId` is the row, a statistical `monitoring`/`confirmed` row appearing NOWHERE and
+404-ing on reply, and a stranger's observation being invisible while a reply to a stranger's row is
+404 rather than 403.
+`ReflectionReplyServiceIT` owns the same rules one layer down, where the belief arithmetic and the
+"first reject moves nothing, the second refutes" rule are readable.
+`HypothesisPipelineTestPlanIT` gained the Step 5 cases — a valid revision producing a NEW `proposed`
+row plus one `revised` event while the old row keeps its status, belief and original plan, and both
+unusable-revision shapes (an invalid plan, an unknown key) dropping the whole proposal.
+`ReflectionDigestServiceIT` asserts the three Hungarian sentences character for character and the
+four ways the digest is honestly empty (no `user_reply` on the evaluated row, a verdict older than
+the window, a `statistical` row, a night that decided nothing).
+`ReflectionDigestMorningIT` is the one that matters most, and it is deliberately **not**
+class-`@Transactional`: it proves the digest reaches the morning payload (a `@Primary` capturing
+`CompanionLlm` records the user message — the `LlmCallContextTaggingIT` seam, since `FakeCompanionLlm`
+answers and forgets), that a digest-less morning carries no `ÉSZREVÉTEL` block, and that a digest
+whose query marks its transaction rollback-only and throws still leaves the morning message
+generated AND saved. Revert the `REQUIRES_NEW` and that last case fails with exactly the
+`UnexpectedRollbackException` the boundary exists to prevent.
+**Regression coverage:** `AppNotificationKindTest` (the pinned catalog went 20 → 21),
+`TextSignalListenerIT` (the live AFTER_COMMIT path now also calls the notice),
+`HypothesisEvaluationServiceIT`/`HypothesisEvaluationRollbackIT`/`ChatSeedReplyIT`/`CompanionPatternApiIT`
+(the three event-writing sites migrated to `PatternEventAppender`), and
+`CompanionMessageGeneratorIT`/`CompanionMessageMissedWorkoutsIT` for the morning generator.
 
 ## 9. Decisions, gotchas & deferred
 

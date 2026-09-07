@@ -497,6 +497,16 @@ for each app_notification row occurring today:
 No new content is generated on the push path — the row's own copy is reused verbatim, the same
 "excerpt, never regenerate" discipline the prose anchors already follow (§9).
 
+**Reflexió S4 (`mezo-eq85.4`) adds `observation_new` to this path with no code change here.** Its
+`familyKey` is `pattern`, so a surfaced quick-notice row is resolved by the loop above like any other
+feed row and pushes on the `pattern` category. Two consequences worth naming: the rate limiting that
+matters happens **upstream** (`ObservationBudget` decides whether the `app_notification` row is
+written at all — daily cap, minimum gap, quiet hours from `mezo.companion.reflection.notice.*`;
+see [`companion.md`](companion.md) §1 "Reflexió S4"), and because each row carries its own event id
+in the dedup suffix, two observations on the same day are two pushes rather than one collapsed one.
+The deeplink is the Észrevételek tab (`/nap/uzenetek?tab=eszrevetelek`), whose backing read is
+`GET /api/companion/observation` ([`companion.md`](companion.md) §4).
+
 ### 3c. `decision_review` — a backend-native anchor over `decision_entry` (bd `mezo-b3pp.4`)
 
 **Not part of §3b's `feedAnchors(...)` pipeline, despite living in the same "Az agy eseményei" FE
@@ -833,11 +843,11 @@ across the cron-vs-lazy-GET double-generation race a future producer may have (F
 today — the index is there because a later F2 producer will). `idx_app_notification_created_by_occurred_at`
 serves the feed read (`created_by, occurred_at desc`).
 
-### `AppNotificationKind` — the 20-kind catalog (`feature/appnotification/domain/AppNotificationKind.java`)
+### `AppNotificationKind` — the 21-kind catalog (`feature/appnotification/domain/AppNotificationKind.java`)
 
 The single source of truth for the in-app feed's kind key, its push `familyKey`, and its
-deeplink base — pinned by `AppNotificationKindTest`. **All 20 rows are wired to producers**
-(the original 12 by F2, plus three later domain slices), and **every non-null `familyKey` now maps onto a live push category as of F3**
+deeplink base — pinned by `AppNotificationKindTest`. **All 21 rows are wired to producers**
+(the original 12 by F2, plus three later domain slices and Reflexió S4's `observation_new`), and **every non-null `familyKey` now maps onto a live push category as of F3**
 (bd `mezo-gzhp.3`, §3b/§4) — the catalog is complete end to end. **The five kinds added by
 `mezo-0cbh` are all deliberately `familyKey = null`**: they carry things you find when you next
 open the app, not things worth a phone buzz — see §9's "what deliberately stays silent".
@@ -864,6 +874,7 @@ open the app, not things worth a phone buzz — see §9's "what deliberately sta
 | `habit_formation` | **null** | `/me/rutin/szokas/{habitKey}` | `mezo-0cbh` — `HabitService.emitFormationIfCrossed`, swept nightly by `HabitJob`; once-ever per habit via the dedup key |
 | `character_portrait` | **null** | `/me/karakter` | `mezo-0cbh` — `CharacterMonthlyService` (the month's first Sunday deep read) |
 | `konzilium_verdict` | **null** | `/me/karakter/konzilium` | `mezo-0cbh` — `CharacterConferenceService` (weekly), **only when `changes` is non-empty** |
+| `observation_new` | `pattern` | `/nap/uzenetek?tab=eszrevetelek` | Reflexió S4 (`mezo-eq85.4`) — `QuickNoticeService`, **only when the observation was actually surfaced** (`ObservationBudget` allows it: within the daily cap, past the minimum gap, outside quiet hours). Dedup key `observation_new:<pattern_event id>`, so one notice = one row = one push. An over-budget notice is still stored as a `pattern_event` with `payload.surfaced=false` and notifies nothing. |
 
 ### API contract (`api/feature/notification/notification.yml`)
 
