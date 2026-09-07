@@ -538,4 +538,171 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
             assertThat(ruling.note()).isEqualTo("DUPLICATE");
         });
     }
+
+    /** mezo-lghn fix round 1, item 4: pins the 4-arg compatibility constructor's defaults directly
+     *  — mutating any of the three hardcoded defaults (dissent to true, note/suggestedDimensionKey
+     *  to a non-null literal) must fail this. No Spring context needed for this one, but the class
+     *  stays a single IT so every konzílium-verdict assertion lives together. */
+    @Test
+    void theFourArgClaimRulingConstructorDefaultsDissentNoteAndDimensionKey() {
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", "physical", null, "text",
+                new BigDecimal("0.50"), false, "rationale");
+
+        ClaimRuling ruling = new ClaimRuling(proposal, true, new BigDecimal("0.50"), "reason");
+
+        assertThat(ruling.dissent()).isFalse();
+        assertThat(ruling.note()).isNull();
+        assertThat(ruling.suggestedDimensionKey()).isNull();
+    }
+
+    /** mezo-lghn fix round 1, item 4: a self-declared {@code dissent:true} that actually AGREES
+     *  with the Szkeptikus (accept over its own KEEP) must be dropped by {@code contradicts(...)}
+     *  — deleting that conjunct in {@code toRuling} left this scenario asserting {@code true} and
+     *  passing, since the ONLY other test with {@code dissent:true} declared genuinely contradicts
+     *  the verdict, so it can never catch a broken {@code contradicts(...)} on its own. */
+    @Test
+    void aSelfDeclaredDissentThatActuallyAgreesWithKeepIsDropped() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Rekompozíció zajlik. "
+                        + "[fake-char-skeptic:[{\"index\":0,\"verdict\":\"KEEP\",\"argument\":\"Rendben.\"}]] "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":true,"
+                        + "\"confidence\":0.6,\"reason\":\"Egyetértek.\",\"dissent\":true}],\"chapters\":[]}]",
+                new BigDecimal("0.60"), false, "Három heti mérés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.rulings()).singleElement().satisfies(ruling -> {
+            assertThat(ruling.accepted()).isTrue();
+            assertThat(ruling.dissent()).isFalse();
+        });
+    }
+
+    /** mezo-lghn fix round 1, item 4: a model-invented note outside {@code VALID_NOTES} must not
+     *  reach {@code ClaimRuling.note()} — deleting the {@code VALID_NOTES.contains(...)} check
+     *  left this bogus value flowing straight through. */
+    @Test
+    void anUnknownNoteFromTheChairIsDropped() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Rekompozíció zajlik. "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":false,"
+                        + "\"reason\":\"Nem indokolt.\",\"note\":\"BOGUS_NOTE\"}],\"chapters\":[]}]",
+                new BigDecimal("0.60"), false, "Indoklás.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.rulings()).singleElement()
+                .satisfies(ruling -> assertThat(ruling.note()).isNull());
+    }
+
+    /** mezo-lghn fix round 1, item 4: a REHOME note's suggestedDimensionKey must survive onto the
+     *  ruling — the {@code "REHOME".equals(note)} gate was previously exercised by nothing at all. */
+    @Test
+    void aRehomeNoteCarriesItsSuggestedDimensionKey() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Rekompozíció zajlik. "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":false,"
+                        + "\"reason\":\"Inkább a mentális dimenzióba illik.\",\"note\":\"REHOME\","
+                        + "\"suggestedDimensionKey\":\"mental\"}],\"chapters\":[]}]",
+                new BigDecimal("0.60"), false, "Indoklás.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.rulings()).singleElement().satisfies(ruling -> {
+            assertThat(ruling.note()).isEqualTo("REHOME");
+            assertThat(ruling.suggestedDimensionKey()).isEqualTo("mental");
+        });
+    }
+
+    /** Sibling to {@link #aRehomeNoteCarriesItsSuggestedDimensionKey}: a suggestedDimensionKey
+     *  attached to a NON-REHOME note must be dropped — the model naming a dimension is only
+     *  meaningful alongside REHOME. */
+    @Test
+    void aSuggestedDimensionKeyIsDroppedWhenTheNoteIsNotRehome() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Rekompozíció zajlik. "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":false,"
+                        + "\"reason\":\"Ezt már tartjuk.\",\"note\":\"DUPLICATE\","
+                        + "\"suggestedDimensionKey\":\"mental\"}],\"chapters\":[]}]",
+                new BigDecimal("0.60"), false, "Indoklás.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.rulings()).singleElement().satisfies(ruling -> {
+            assertThat(ruling.note()).isEqualTo("DUPLICATE");
+            assertThat(ruling.suggestedDimensionKey()).isNull();
+        });
+    }
+
+    /** mezo-lghn fix round 1, item 1 (the critical one): a BROKEN Szkeptikus round (unparseable
+     *  JSON, not merely blank) leaves {@code verdicts} genuinely empty — {@code verdict == null}
+     *  for the sensitive proposal's index. Before the fix, {@code sensitiveKill} required a
+     *  non-null verdict AND a literal KILL, so silence sailed straight through as an accept; the
+     *  guardrail must now block it exactly as it blocks an explicit KILL. */
+    @Test
+    void aSensitiveAcceptIsBlockedWhenTheSkepticRoundNeverAnswered() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "mental", "pszichologus");
+        // matching brackets so the sentinel regex matches, but invalid JSON syntax inside — forces
+        // the catch-and-log parse-failure path, so skepticResult.verdicts() is genuinely EMPTY
+        // (not the canned fallback, which would answer KEEP for every P<n> it finds).
+        String brokenSkepticSentinel = "[fake-char-skeptic:[{\"index\":0,\"verdict\":}]]";
+        ClaimProposal proposal = new ClaimProposal("pszichologus", "NEW", dimension.getKey(), null,
+                "Belső feszültség. " + brokenSkepticSentinel + " "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":true,"
+                        + "\"confidence\":0.6,\"reason\":\"Felveszem.\"}],\"chapters\":[]}]",
+                new BigDecimal("0.60"), true, "Egy megfigyelés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.rulings()).singleElement().satisfies(ruling -> {
+            assertThat(ruling.accepted()).isFalse();
+            assertThat(ruling.note()).isEqualTo("NOT_FOR_DOSSIER");
+        });
+        claimLifecycle.apply(owner, UUID.randomUUID(), result.rulings());
+        assertThat(claimRepository.findByCreatedByAndDimensionIdAndStatusOrderByConfidenceDesc(
+                owner, dimension.getId(), "ACTIVE")).isEmpty();
+    }
+
+    /** mezo-lghn fix round 1, item 3: RETIRE always makes a claim LESS present in the dossier, so
+     *  the sensitive-write guardrail must never touch it — even sensitive, even over an explicit
+     *  KILL. Before the fix the guardrail keyed on accept/reject alone, so this accept was wrongly
+     *  dropped and stamped {@code NOT_FOR_DOSSIER} — a note whose plain meaning is the OPPOSITE of
+     *  what actually happens on a retire (the claim leaves the dossier either way). */
+    @Test
+    void aSensitiveRetireAcceptPassesThroughEvenOverAKill() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "mental", "pszichologus");
+        CharacterClaimEntity claim = seedClaim(owner, dimension.getId(), "Érzékeny állítás.", new BigDecimal("0.60"));
+        ClaimProposal proposal = new ClaimProposal("pszichologus", "RETIRE", null, claim.getId(),
+                "Már nem releváns. "
+                        + "[fake-char-skeptic:[{\"index\":0,\"verdict\":\"KILL\","
+                        + "\"argument\":\"Túlinterpretálás.\"}]] "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":true,"
+                        + "\"reason\":\"Nyugdíjazom.\"}],\"chapters\":[]}]",
+                new BigDecimal("0.60"), true, "Indoklás.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.rulings()).singleElement().satisfies(ruling -> {
+            assertThat(ruling.accepted()).isTrue();
+            assertThat(ruling.note()).isNotEqualTo("NOT_FOR_DOSSIER");
+        });
+        List<ConferenceOutcomeEnvelope.Change> changes =
+                claimLifecycle.apply(owner, UUID.randomUUID(), result.rulings());
+        assertThat(changes).singleElement().satisfies(c -> assertThat(c.kind()).isEqualTo("CLAIM_RETIRED"));
+    }
 }

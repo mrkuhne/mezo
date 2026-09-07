@@ -55,11 +55,22 @@ public class KonziliumVerdictRound {
     private static final BigDecimal MAX_RULED_CONFIDENCE = new BigDecimal("0.90");
     private static final int MAX_CHAPTERS_PER_CONFERENCE = 1;
     private static final String NEW_KIND = "NEW";
+    private static final String UP_KIND = "UP";
     private static final String KEEP = "KEEP";
     private static final String WEAKEN = "WEAKEN";
     private static final String KILL = "KILL";
     private static final String DEFAULT_ARGUMENT = "nincs ellenérv";
     private static final String DEFAULT_REASON = "nem került döntésre";
+    /** No verdict the chair's prompt/transcript can honestly render for this index — the
+     *  Szkeptikus either never answered it or answered with something {@link #isShownVerdict}
+     *  does not recognize. Carries NO grade token, unlike the old fabricated {@code KEEP} default
+     *  (mezo-lghn fix round 1): silence is not approval. */
+    private static final String SKEPTIC_NO_ANSWER = "nem adott választ erre a javaslatra";
+    /** System-authored — replaces the chair's own {@code reason} when an accept is dropped by
+     *  {@link #lacksSensitiveClearance}, so the rejection never reads as the chair contradicting
+     *  itself with its own acceptance text (mezo-lghn fix round 1). */
+    private static final String SENSITIVE_BLOCKED_REASON =
+            "Érzékeny állítás, amit a Szkeptikus nem hagyott jóvá — a rendszer nem írja a dossziéba.";
     private static final String ACTIVE = "ACTIVE";
     private static final String CLAIM_NOT_FOUND = "a célzott állítás nem található";
     private static final Set<String> VALID_NOTES =
@@ -237,10 +248,10 @@ public class KonziliumVerdictRound {
 
     /**
      * One proposal's ruling, with the chair's asymmetric right to overrule the Szkeptikus enforced
-     * HERE rather than in the prompt (mezo-lghn): tightening is always allowed, but an accept over
-     * a KILL is only allowed when the proposal is not sensitive. The Szkeptikus is the guardrail on
-     * over-interpreting a sensitive signal, so that one KILL is final — a prompt sentence alone
-     * would leave the guardrail to the model's goodwill.
+     * HERE rather than in the prompt (mezo-lghn): tightening is always allowed, but an accept that
+     * ADDS or STRENGTHENS a sensitive claim (kinds {@code NEW}/{@code UP} only — see the kind check
+     * below) requires the Szkeptikus's affirmative clearance. A prompt sentence alone would leave
+     * the guardrail to the model's goodwill.
      */
     private static ClaimRuling toRuling(ClaimProposal proposal, IntegratorRulingDraft draft,
                                          SkepticVerdictDraft verdict) {
@@ -250,12 +261,20 @@ public class KonziliumVerdictRound {
         boolean accepted = draft.accept() != null && draft.accept();
         String reason = draft.reason() != null && !draft.reason().isBlank() ? draft.reason() : DEFAULT_REASON;
 
-        boolean sensitiveKill = proposal.sensitive() && verdict != null && KILL.equals(verdict.verdict());
-        if (accepted && sensitiveKill) {
-            log.warn("Chair accepted an ÉRZÉKENY proposal the Szkeptikus killed — dropping the accept "
+        // The guardrail only concerns accepts that make a sensitive claim MORE present in the
+        // dossier: NEW writes a brand-new claim, UP raises an existing one's confidence. DOWN and
+        // RETIRE always move a claim toward being LESS in the dossier (or out of it entirely), so
+        // the brief's "tightening is always safe" principle applies to them even when sensitive and
+        // even over a KILL — blocking those would leave the sensitive claim sitting in the dossier,
+        // the opposite of what this guardrail exists to prevent (mezo-lghn fix round 1, item 3).
+        boolean sensitiveWriteBlocked = accepted
+                && (NEW_KIND.equals(proposal.kind()) || UP_KIND.equals(proposal.kind()))
+                && lacksSensitiveClearance(proposal, verdict);
+        if (sensitiveWriteBlocked) {
+            log.warn("Chair accepted a sensitive proposal without Szkeptikus clearance — dropping the accept "
                     + "(kind {}, dimension {}, claim {})", proposal.kind(), proposal.dimensionKey(),
                     proposal.claimId());
-            return new ClaimRuling(proposal, false, null, reason, false, "NOT_FOR_DOSSIER", null);
+            return new ClaimRuling(proposal, false, null, SENSITIVE_BLOCKED_REASON, false, "NOT_FOR_DOSSIER", null);
         }
 
         BigDecimal confidence = draft.confidence();
@@ -281,6 +300,22 @@ public class KonziliumVerdictRound {
      *  trusted by every surface that renders it. */
     private static boolean contradicts(boolean accepted, String verdict) {
         return accepted ? KILL.equals(verdict) : KEEP.equals(verdict) || WEAKEN.equals(verdict);
+    }
+
+    /** A sensitive proposal may be accepted only with an AFFIRMATIVE non-KILL verdict from the
+     *  Szkeptikus. A KILL blocks it — and so does the ABSENCE of a verdict: when that round failed
+     *  to parse, the adversary check did not happen, and this pipeline's failure rule is "an
+     *  unusable LLM answer ⇒ no change" (Karakter spec §6). Treating silence as clearance would
+     *  make a BROKEN Szkeptikus round the easiest path to writing exactly the claims this
+     *  guardrail exists to stop. This is NOT the same as pretending the Szkeptikus said KILL: the
+     *  SHOWN verdict stays honestly absent (Result.verdicts omits unanswered indexes) — only the
+     *  WRITE is declined (mezo-lghn). */
+    private static boolean lacksSensitiveClearance(ClaimProposal proposal, SkepticVerdictDraft verdict) {
+        if (!proposal.sensitive()) {
+            return false;
+        }
+        return verdict == null
+                || !(KEEP.equals(verdict.verdict()) || WEAKEN.equals(verdict.verdict()));
     }
 
     private static BigDecimal clamp(BigDecimal value) {
@@ -338,17 +373,22 @@ public class KonziliumVerdictRound {
         return sb.toString();
     }
 
-    /** One verdict as text, for the transcript AND the chair's prompt block. An unanswered or
-     *  unknown grade defaults to KEEP here — this is about what the chair is TOLD and what the
-     *  meeting recorded, not about what the user is shown (see {@link #isShownVerdict}). The
-     *  suggested strength is rendered as a WORD, never a decimal. */
+    /** One verdict as text, for the transcript AND the chair's prompt block — the SAME rendering
+     *  for both, so they can never disagree about what the Szkeptikus actually said. An unanswered
+     *  index (draft null) or one with a grade {@link #isShownVerdict} does not recognize renders an
+     *  honest "no answer" line with NO grade token (mezo-lghn fix round 1): the old KEEP default
+     *  put words in the Szkeptikus's mouth and, worse, told the chair a broken/blank Szkeptikus
+     *  round had approved — silence is not approval. The suggested strength is rendered as a WORD,
+     *  never a decimal. */
     private static String skepticLine(SkepticVerdictDraft draft) {
-        String verdict = draft != null && isShownVerdict(draft.verdict()) ? draft.verdict() : KEEP;
-        String argument = draft != null && draft.argument() != null && !draft.argument().isBlank()
+        if (draft == null || !isShownVerdict(draft.verdict())) {
+            return SKEPTIC_NO_ANSWER;
+        }
+        String argument = draft.argument() != null && !draft.argument().isBlank()
                 ? draft.argument() : DEFAULT_ARGUMENT;
-        String suggested = draft == null || draft.suggestedConfidence() == null || KILL.equals(verdict)
+        String suggested = draft.suggestedConfidence() == null || KILL.equals(draft.verdict())
                 ? "" : " → " + CharacterConfidenceWords.word(draft.suggestedConfidence());
-        return verdict + suggested + " — " + argument;
+        return draft.verdict() + suggested + " — " + argument;
     }
 
     private static String skepticPersona() {
