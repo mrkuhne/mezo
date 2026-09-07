@@ -42,6 +42,7 @@ they inline come from `../assets/`.
 | `rutin-formalodas.html` | — (not yet published; Rutin 2.0 — csempés /me/rutin hub élő „Ma" listával, szokás-rács formálódás-ívekkel, formálódás-oldal telítődő görbével + tartomány-becsléssel, előzmény-felület — mezo-08zl) |
 | `eszrevetelek.html` | https://claude.ai/code/artifact/2f5e64be-de78-481a-9320-35e84706bf52 (Észrevételek — a Nap→Mezo oldal harmadik füle (feltűnt / visszatérés / figyelem / beépült kártyák, chipek) + a Minták laborfüzet egy reflexió-hipotézisre (teszt-terv, bizonyíték-napló, bizonyosság) — patterns-rag-intelligence) |
 | `ertesites-dropdown.html` | — (not yet published; a fejléc csengőjének görgethető, teljes szélességű értesítés-panelje: kitapadó fejrész + kategória-szűrő chipek + kitapadó napcímkék, típusonkénti clay-ikon — mezo-g9fz) |
+| `admin-hub.html` | — (not yet published; /admin desktop hub — 12 oszlopos mozaik, user-lista + becsúszó részlet, feature × nap mátrix, LLM költség-mátrix Háttér-oszloppal, adatböngésző — mezo-d5iy) |
 
 ## Workflow
 
@@ -737,3 +738,20 @@ are usable without a build step).
   "Jelek" signals page, the Nap "Célok · ma" tile, the Heti goals card, the Growth skill-row
   chip, and the companion `[Célok]` prompt block — all scorer/job output the prototype narrates
   but the real engine has not yet computed.
+- **admin-hub** — the OWNER-only `/admin/*` family, and the **only desktop-first** prototype here:
+  the 330px phone frame is replaced by a 1180px `.desk`/`.deskscreen` with a 208px left rail (no
+  TabBar) and a 12-column `.ad-mosaic` (`sp3` poster cells, `sp6` arcs, `sp12` tables) — the
+  desktop counterpart of the mobile mosaic, in the same design 2.0 language: domain-wash tiles,
+  poster anatomy (eyebrow + clay spot + one big numeral), data drawn as graphics, two-layer
+  coloured shadows, one-shot entrance choreography, and the Huawei slide-in for the detail route.
+  Five screens: **Áttekintés** (four `sp3` posters + a 30-day active-user arc + a domain
+  breakdown + a cost arc + a store tile), **Userek** (one `sp12` dense table with a per-domain
+  footprint bar; a row click slides the detail in over the list), **User részlet** (ring gauge for
+  the 30-day active-day share, four tabs — Aktivitás · Adatok · Feature-ök · Költség — with the
+  activity drawn as a 90-day heat strip), **Feature-használat** (feature × day matrix shaded by
+  call count, plus the feature × user cost matrix), and **Adatböngésző** (view/table/user pickers
+  over raw rows with an in-place `jsonb` expand and FK links). Audited against
+  `api/feature/admin-insights` + `api/feature/admin-data`, including the two honest details the
+  API exposes: the cost matrix's **Háttér** column for ownerless cron rows, and `unknownCalls`
+  rendered as *unknown* cost rather than zero. The `.ad-*` classes here are the source for
+  `frontend/src/styles/prototype.css` in the admin pages (mezo-d5iy).
