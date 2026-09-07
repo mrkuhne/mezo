@@ -18,8 +18,6 @@ import org.junit.jupiter.api.Test;
  */
 class JournalMidnightCrossingOffsetArithmeticTest {
 
-    private static final int MAX_OFFSET_SECONDS = 18 * 3600;
-
     @Test
     void testComputeParkedOffset_shouldKeepBothOffsetsInRangeWithNoWrapOnTheShift_forEveryUtcSecondOfDay() {
         for (int utcNowSecondOfDay = 0; utcNowSecondOfDay < 86400; utcNowSecondOfDay++) {
@@ -27,12 +25,12 @@ class JournalMidnightCrossingOffsetArithmeticTest {
             int shifted = parked + JournalMidnightCrossingIT.CROSSING_SHIFT_SECONDS;
 
             assertThat(parked).as("parked offset for utcNowSecondOfDay=%d", utcNowSecondOfDay)
-                .isBetween(-MAX_OFFSET_SECONDS, MAX_OFFSET_SECONDS);
+                .isBetween(-JournalMidnightCrossingIT.MAX_OFFSET_SECONDS, JournalMidnightCrossingIT.MAX_OFFSET_SECONDS);
             // in range ⇒ ZoneOffset.ofTotalSeconds(shifted) needs no further ±86400 wrap at all,
             // which is the actual invariant: the shift never gets cancelled by a day-wrap
             assertThat(shifted).as("shifted offset for utcNowSecondOfDay=%d must stay in range with no wrap",
                     utcNowSecondOfDay)
-                .isBetween(-MAX_OFFSET_SECONDS, MAX_OFFSET_SECONDS);
+                .isBetween(-JournalMidnightCrossingIT.MAX_OFFSET_SECONDS, JournalMidnightCrossingIT.MAX_OFFSET_SECONDS);
         }
     }
 }
