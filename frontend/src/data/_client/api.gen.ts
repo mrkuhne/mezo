@@ -8981,6 +8981,39 @@ export interface components {
             text: string;
             refIds?: string[];
         };
+        ConferencePeerReaction: {
+            expertKey: string;
+            /** @enum {string} */
+            stance: "SUPPORT" | "CHALLENGE" | "NUANCE";
+            argument: string;
+        };
+        ConferenceSkepticVerdict: {
+            /** @enum {string} */
+            verdict: "KEEP" | "KILL";
+            argument: string;
+        };
+        ConferenceChairRuling: {
+            accepted: boolean;
+            /** Format: double */
+            confidence?: number | null;
+            reason: string;
+        };
+        ConferenceItem: {
+            index: number;
+            expertKey: string;
+            text: string;
+            kind?: string | null;
+            claimId?: string | null;
+            sensitive: boolean;
+            reactions: components["schemas"]["ConferencePeerReaction"][];
+            skeptic?: components["schemas"]["ConferenceSkepticVerdict"] | null;
+            chair?: components["schemas"]["ConferenceChairRuling"] | null;
+        };
+        ConferenceThread: {
+            dimensionKey?: string | null;
+            title: string;
+            items: components["schemas"]["ConferenceItem"][];
+        };
         CharacterConferenceResponse: {
             /** Format: uuid */
             id: string;
@@ -8991,6 +9024,8 @@ export interface components {
             /** Format: date-time */
             generatedAt: string;
             transcript: components["schemas"]["ConferenceTurn"][];
+            /** @description The same meeting as a STRUCTURE — one thread per dossier chapter, each item carrying the chain that happened to it. Absent only when the row is neither stored structured nor derivable from its prose transcript; the client then renders `transcript`. */
+            deliberation?: components["schemas"]["ConferenceThread"][] | null;
             changes: {
                 kind: string;
                 dimensionKey?: string | null;

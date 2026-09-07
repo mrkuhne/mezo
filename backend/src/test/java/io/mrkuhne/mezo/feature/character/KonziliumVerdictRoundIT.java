@@ -15,6 +15,7 @@ import io.mrkuhne.mezo.feature.character.repository.CharacterDimensionRepository
 import io.mrkuhne.mezo.feature.character.service.ClaimLifecycle;
 import io.mrkuhne.mezo.feature.character.service.ClaimProposal;
 import io.mrkuhne.mezo.feature.character.service.ClaimRuling;
+import io.mrkuhne.mezo.feature.character.service.KonziliumCrossTalkRound;
 import io.mrkuhne.mezo.feature.character.service.KonziliumVerdictRound;
 import io.mrkuhne.mezo.feature.companion.llm.FakeCompanionLlm;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
@@ -87,7 +88,7 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
         UUID owner = ownerId();
         int before = fakeCompanionLlm.completeCallCount();
 
-        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, List.of());
+        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, List.of(), List.of());
 
         assertThat(result.rulings()).isEmpty();
         assertThat(result.chapters()).isEmpty();
@@ -104,7 +105,7 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
                 new ClaimProposal("pszichologus", "NEW", "mental", null, "Feszült hét.",
                         new BigDecimal("0.40"), false, "Napló jelzi."));
 
-        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, proposals);
+        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, proposals, List.of());
 
         assertThat(result.rulings()).hasSize(2).allSatisfy(r -> {
             assertThat(r.accepted()).isTrue();
@@ -139,7 +140,7 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
                 new ClaimProposal("pszichologus", "NEW", "mental", null, "Elfogadott javaslat.",
                         new BigDecimal("0.50"), false, integratorSentinel));
 
-        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, proposals);
+        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, proposals, List.of());
 
         assertThat(result.rulings()).hasSize(2);
         ClaimRuling r0 = result.rulings().get(0);
@@ -165,7 +166,7 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
                 new ClaimProposal("drill", "NEW", "discipline", null, "Javaslat.",
                         new BigDecimal("0.50"), false, integratorSentinel));
 
-        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, proposals);
+        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, proposals, List.of());
 
         assertThat(result.chapters()).singleElement()
                 .satisfies(c -> assertThat(c.title()).isEqualTo("Első fejezet"));
@@ -181,7 +182,7 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
                 new ClaimProposal("drill", "NEW", "discipline", null, "Javaslat.",
                         new BigDecimal("0.50"), false, brokenSkepticSentinel));
 
-        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, proposals);
+        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, proposals, List.of());
 
         // the Integrátor still gets a canned fallback answer (no integrator sentinel here), so its
         // turn is genuinely parsed and honest — only the szkeptikus turn is suppressed
@@ -204,7 +205,7 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
         ClaimProposal proposal = new ClaimProposal("drill", "UP", null, claim.getId(),
                 "Fegyelmezett hét.", new BigDecimal("0.99"), false, integratorSentinel);
 
-        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, List.of(proposal));
+        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
 
         ClaimRuling ruling = result.rulings().get(0);
         assertThat(ruling.accepted()).isTrue();
@@ -215,5 +216,90 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
         assertThat(changes).singleElement().satisfies(c -> assertThat(c.kind()).isEqualTo("CLAIM_CONFIDENCE_UP"));
         CharacterClaimEntity updated = claimRepository.findById(claim.getId()).orElseThrow();
         assertThat(updated.getConfidence()).isEqualByComparingTo(new BigDecimal("0.60")); // 0.50 + 0.10 step
+    }
+
+    @Test
+    void run_peerReactions_reachTheIntegratorPrompt() {
+        UUID owner = ownerId();
+        List<ClaimProposal> proposals = List.of(
+                new ClaimProposal("szomnologus", "NEW", "recovery", null, "Romlik az alvás.",
+                        new BigDecimal("0.50"), false, "Három rossz éjszaka."),
+                new ClaimProposal("pszichologus", "NEW", "mental", null, "Feszült hét.",
+                        new BigDecimal("0.40"), false, "Napló jelzi."));
+        List<KonziliumCrossTalkRound.Reaction> reactions = List.of(
+                new KonziliumCrossTalkRound.Reaction(0, "pszichologus", "CHALLENGE",
+                        "A feszültség is okozhatta, nem csak az alvás."));
+
+        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, proposals, reactions);
+
+        assertThat(result.rulings()).hasSize(2);
+        assertThat(fakeCompanionLlm.lastUserMessage()).contains("A feszültség is okozhatta");
+    }
+
+    @Test
+    void run_parsedSkepticAnswer_exposesItsVerdictsPerProposalIndex() {
+        UUID owner = ownerId();
+        List<ClaimProposal> proposals = List.of(
+                new ClaimProposal("drill", "NEW", "discipline", null, "Elmarad a logolás.",
+                        new BigDecimal("0.50"), false, "3 nap kihagyás."));
+
+        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, proposals, List.of());
+
+        // isNotBlank() alone would also pass on the "nincs ellenérv" default a fabricated verdict
+        // would carry — assert the Szkeptikus's OWN answer instead (final review, I5c).
+        assertThat(result.verdicts()).singleElement().satisfies(verdict -> {
+            assertThat(verdict.index()).isZero();
+            assertThat(verdict.verdict()).isEqualTo("KEEP");
+            assertThat(verdict.argument()).isEqualTo("Fake ellenérv: elfogadható.");
+        });
+        assertThat(result.chairParsed()).isTrue();
+        assertThat(result.shownRulings()).hasSize(1);
+    }
+
+    /** I2 (mezo-xlvr final review): the Szkeptikus answered index 0 only — index 1 must carry NO
+     *  verdict at all rather than a fabricated KEEP / "nincs ellenérv". */
+    @Test
+    void run_skepticAnswersOnlySomeIndexes_theOthersGetNoVerdict() {
+        UUID owner = ownerId();
+        String skepticSentinel = "[fake-char-skeptic:["
+                + "{\"index\":0,\"verdict\":\"KILL\",\"argument\":\"Nincs elég bizonyíték.\"}"
+                + "]]";
+        List<ClaimProposal> proposals = List.of(
+                new ClaimProposal("drill", "NEW", "discipline", null, "Első javaslat.",
+                        new BigDecimal("0.50"), false, skepticSentinel),
+                new ClaimProposal("pszichologus", "NEW", "mental", null, "Második javaslat.",
+                        new BigDecimal("0.50"), false, "Napló jelzi."));
+
+        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, proposals, List.of());
+
+        assertThat(result.verdicts()).singleElement().satisfies(verdict -> {
+            assertThat(verdict.index()).isZero();
+            assertThat(verdict.verdict()).isEqualTo("KILL");
+            assertThat(verdict.argument()).isEqualTo("Nincs elég bizonyíték.");
+        });
+        // the lifecycle still gets an index-complete ruling list — only the SHOWN verdicts shrink
+        assertThat(result.rulings()).hasSize(2);
+    }
+
+    /** I1 (mezo-xlvr final review): an unparsed Integrátor answer still defaults every ruling for
+     *  the lifecycle, but must expose NOTHING as a ruling the chair gave. */
+    @Test
+    void run_integratorAnswerFailsToParse_rulingsStayDefaulted_butNothingIsShownAsARuling() {
+        UUID owner = ownerId();
+        String brokenIntegratorSentinel = "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":}]}]";
+        List<ClaimProposal> proposals = List.of(
+                new ClaimProposal("drill", "NEW", "discipline", null, "Javaslat.",
+                        new BigDecimal("0.50"), false, brokenIntegratorSentinel));
+
+        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, proposals, List.of());
+
+        assertThat(result.chairParsed()).isFalse();
+        assertThat(result.shownRulings()).isEmpty();
+        assertThat(result.turns()).extracting(ConferenceTranscriptEnvelope.Turn::persona)
+                .containsExactly("szkeptikus");
+        assertThat(result.rulings()).singleElement().satisfies(ruling -> {
+            assertThat(ruling.accepted()).isFalse();
+            assertThat(ruling.reason()).isEqualTo("nem került döntésre");
+        });
     }
 }

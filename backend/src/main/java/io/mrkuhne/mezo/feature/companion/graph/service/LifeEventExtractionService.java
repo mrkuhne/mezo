@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.companion.graph.service;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.auth.service.PromptPersona;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
@@ -104,6 +106,8 @@ public class LifeEventExtractionService {
         """;
 
     private final CompanionLlm companionLlm;
+    // Mindig létező emit-fasád: kikapcsolt feed mellett néma no-op (mezo-0cbh).
+    private final AppNotificationEmitter notificationEmitter;
     private final GraphService graphService;
     private final GraphNodeRepository nodeRepository;
     private final JournalEntryRepository journalEntryRepository;
@@ -150,7 +154,11 @@ public class LifeEventExtractionService {
             return 0;
         }
         try {
-            return self.getObject().persistCandidates(userId, day, suggestions, existing);
+            int created = self.getObject().persistCandidates(userId, day, suggestions, existing);
+            // mezo-0cbh: EGY sor az éj termésére. A jelöltek a Tudástár jelölt-listáján
+            // döntésre várnak — eddig csak az tudott róluk, aki magától benyitott.
+            emitCandidateNotification(userId, day, created, "életesemény", "az elmúlt napodból");
+            return created;
         } catch (Exception e) {
             log.warn("Life-event candidate persistence failed for {} on {} — degrading to zero "
                 + "candidates so the night stays reprocessable", userId, day, e);
@@ -246,4 +254,23 @@ public class LifeEventExtractionService {
     private static String truncateTitle(String text) {
         return text.length() <= 120 ? text : text.substring(0, 117) + "…";
     }
+
+    /**
+     * mezo-0cbh — a {@code graph_candidate} feed-sor. A negyedéves SEASON-passz
+     * ({@code QuarterlyReviewService}) UGYANEZT a fajtát emittálja a saját szavaival: két
+     * termelő, egy fajta (a {@code challenge_event} precedense). A dedup-kulcs a nap, tehát
+     * egy catch-up újrafutás sem duplázza.
+     */
+    void emitCandidateNotification(UUID userId, LocalDate day, int created, String noun, String origin) {
+        if (created == 0) {
+            return;
+        }
+        String title = created == 1
+            ? "Egy " + noun + " vár döntésre" : created + " " + noun + " vár döntésre";
+        notificationEmitter.emit(userId, AppNotificationKind.GRAPH_CANDIDATE, title,
+            "A gráf jelöltje " + origin + " — fogadd el vagy vesd el.",
+            AppNotificationKind.GRAPH_CANDIDATE.deeplink(), null,
+            "graph_candidate:life_event:" + day);
+    }
+
 }

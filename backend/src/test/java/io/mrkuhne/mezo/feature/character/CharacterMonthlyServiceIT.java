@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.character;
 
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
@@ -9,6 +10,7 @@ import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.entity.ClaimConfidenceHistoryEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ClaimEvidenceEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ClaimFeedbackEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
 import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
@@ -41,6 +43,7 @@ class CharacterMonthlyServiceIT extends ApiIntegrationTest {
 
     @Autowired private CharacterMonthlyService monthlyService;
     @Autowired private CharacterConferenceRepository conferenceRepository;
+    @Autowired private AppNotificationRepository appNotificationRepository;
     @Autowired private CharacterDimensionRepository dimensionRepository;
     @Autowired private CharacterClaimRepository claimRepository;
     @Autowired private OwnerProperties ownerProperties;
@@ -126,6 +129,33 @@ class CharacterMonthlyServiceIT extends ApiIntegrationTest {
 
         assertThat(conference.getOutcome().changes()).extracting(ConferenceOutcomeEnvelope.Change::kind)
                 .contains("CLAIM_ACCEPTED", "PORTRAIT_REWRITTEN");
+
+        // I4 (mezo-xlvr final review): the monthly konzílium STORES its structure too — without
+        // it the row would be re-derived from its own prose on every read, losing chapter
+        // membership, kind and claim id. It has no cross-talk round, so reactions stay empty.
+        ConferenceDeliberationEnvelope deliberation = conference.getDeliberation();
+        assertThat(deliberation).isNotNull();
+        assertThat(deliberation.threads()).isNotEmpty();
+        assertThat(deliberation.threads().stream().flatMap(thread -> thread.items().stream()))
+                .isNotEmpty()
+                .allSatisfy(item -> {
+                    assertThat(item.kind()).isNotBlank();
+                    assertThat(item.expertKey()).isNotBlank();
+                    assertThat(item.reactions()).isEmpty();
+                    assertThat(item.chair()).isNotNull();
+                });
+
+        // mezo-0cbh: a `memoir_ready`/`weekly_review_ready` alakja — „elkészült valami, ami
+        // rólad szól". Eddig csak az tudott a havi mélyolvasásról, aki magától benyitott a
+        // Konzílium oldalra.
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+                .filteredOn(n -> "character_portrait".equals(n.getKind()))
+                .singleElement()
+                .satisfies(n -> {
+                    assertThat(n.getTitle()).isEqualTo("Új portré készült rólad");
+                    assertThat(n.getDeeplink()).isEqualTo("/me/karakter");
+                    assertThat(n.getRefId()).isEqualTo(conference.getId());
+                });
     }
 
     @Test

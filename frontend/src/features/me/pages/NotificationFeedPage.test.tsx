@@ -28,7 +28,9 @@ const renderPage = () =>
 test('a hero a nyitáskori olvasatlan-számot viszi, nem nullát', async () => {
   const { container } = renderPage()
   expect(await screen.findByText('Értesítések')).toBeInTheDocument()
-  expect(container.querySelector('.mz-bignum')).toHaveTextContent('3')
+  // A szám a `notificationFeedSeed` olvasatlan sorainak száma — a seedből SZÁRMAZIK,
+  // nem önálló tény (mezo-0cbh vitte 3-ról 4-re).
+  expect(container.querySelector('.mz-bignum')).toHaveTextContent('4')
 })
 
 test('a mai elemek a Ma csoportba kerülnek, a régebbiek dátum-címke alá', async () => {
@@ -38,7 +40,7 @@ test('a mai elemek a Ma csoportba kerülnek, a régebbiek dátum-címke alá', a
   expect(labels[0]).toBe('Ma')
   expect(labels).not.toContain('Korábban')
   const maGroup = container.querySelector('.nf-group')!
-  expect(within(maGroup as HTMLElement).getAllByRole('button')).toHaveLength(3)
+  expect(within(maGroup as HTMLElement).getAllByRole('button')).toHaveLength(4)
 })
 
 test('egy sor koppintása a deeplinkre navigál', async () => {
@@ -53,8 +55,8 @@ test('egy sor koppintása a deeplinkre navigál', async () => {
 test('a nyitáskor olvasatlan sorok kiemelve maradnak az oldalon', async () => {
   const { container } = renderPage()
   await screen.findByText('Ma')
-  expect(container.querySelectorAll('.nf-row.unread')).toHaveLength(3)
-  expect(container.querySelectorAll('.nf-dot')).toHaveLength(3)
+  expect(container.querySelectorAll('.nf-row.unread')).toHaveLength(4)
+  expect(container.querySelectorAll('.nf-dot')).toHaveLength(4)
 })
 
 test('a Beállítások gomb a beállítások aloldalra visz', async () => {

@@ -26,7 +26,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [feedback](#feedback) | · | · | ✓ | · | [insights](features/insights.md) |
 | [fuel](#fuel) | ✓ | 2 | ✓ | ✓ | [fuel](features/fuel.md), [pantry](features/pantry.md), [recipe](features/recipe.md), [_platform-api-backend](features/_platform-api-backend.md), [_platform-data-layer](features/_platform-data-layer.md) |
 | [gamification](#gamification) | ✓ | 1 | ✓ | · | [growth](features/growth.md), [_platform-data-layer](features/_platform-data-layer.md) |
-| [goal](#goal) | ✓ | 1 | · | · | [goal-engine](features/goal-engine.md), [me](features/me.md), [_platform-notifications](features/_platform-notifications.md) |
+| [goal](#goal) | ✓ | 1 | · | · | [goal-engine](features/goal-engine.md), [me](features/me.md) |
 | [habit](#habit) | ✓ | 1 | ✓ | · | [habit](features/habit.md) |
 | [insights](#insights) | · | · | ✓ | ✓ | [companion](features/companion.md), [insights](features/insights.md) |
 | [intention](#intention) | ✓ | 1 | ✓ | · | [intention](features/intention.md) |
@@ -86,7 +86,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### appnotification
 
-*BE + API* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-05, mixed)
+*BE + API* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-07, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/appnotification`
   - **sub-features:** `domain`
@@ -137,7 +137,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### biometrics
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-06, mixed) ·
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-07, mixed) ·
   [docs/features/today.md](features/today.md) (updated 2026-09-06, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/biometrics`
@@ -178,7 +178,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### character
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-06, shipped)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-07, shipped)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/character`
   - **sub-features:** `detector`
@@ -191,16 +191,19 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CharacterConfidenceWords`, `CharacterCoreCatalog`, `CharacterExpertCatalog`, `CharacterFeedbackService`,
     `CharacterHistoryReads`, `CharacterMetaReads`, `CharacterMonthlyJob`, `CharacterMonthlyService`,
     `CharacterObservationJob`, `CharacterObservationService`, `CharacterPromptAssembler`, `CharacterRunLog`,
-    `CharacterService`, `CharacterSignalReads`, `ClaimLifecycle`, `ClaimProposal`, `ClaimRuling`, `ExpertEvidence`,
-    `KonziliumProposalRound`, `KonziliumVerdictRound`, `PortraitWriter`
+    `CharacterService`, `CharacterSignalReads`, `ClaimLifecycle`, `ClaimProposal`, `ClaimRuling`,
+    `DeliberationAssembler`, `ExpertEvidence`, `KonziliumChapterResolver`, `KonziliumChapters`,
+    `KonziliumCrossTalkRound`, `KonziliumProposalRound`, `KonziliumVerdictRound`, `LegacyTranscriptParser`,
+    `ObservationText`, `PortraitWriter`
   - **controllers→contract:** `CharacterController`→`CharacterApi`
   - **config:** `CharacterProperties`
   - **other:** `AvoidancePatternDetector`, `CharacterDetector`, `ChatToolDomains`, `ChatTopicShiftDetector`,
     `CheckinGapDetector`, `CheckinLatencyDetector`, `CheckinSlotDriftDetector`, `ClaimConfidenceHistoryEnvelope`,
-    `ClaimEvidenceEnvelope`, `ClaimFeedbackEnvelope`, `ComfortEatingDetector`, `ConferenceOutcomeEnvelope`,
-    `ConferenceTranscriptEnvelope`, `DecisionProfileDetector`, `DecisionReviewBacklogDetector`, `DetectorGates`,
-    `DetectorInput`, `DetectorRegistry`, `DetectorSignal`, `ExperimentOutcomeLedgerDetector`, `GratitudeFocusDetector`,
-    `HrRecoveryTrendDetector`, `HydrationConsistencyDetector`, `JournalNoteDetector`, `JournalSilenceDetector`,
+    `ClaimEvidenceEnvelope`, `ClaimFeedbackEnvelope`, `ComfortEatingDetector`, `ConferenceDeliberationEnvelope`,
+    `ConferenceOutcomeEnvelope`, `ConferenceTranscriptEnvelope`, `DecisionProfileDetector`,
+    `DecisionReviewBacklogDetector`, `DetectorGates`, `DetectorInput`, `DetectorRegistry`, `DetectorSignal`,
+    `ExperimentOutcomeLedgerDetector`, `GratitudeFocusDetector`, `HrRecoveryTrendDetector`,
+    `HydrationConsistencyDetector`, `JournalNoteDetector`, `JournalSilenceDetector`,
     `KnowledgeRejectionPatternDetector`, `LateEatingPatternDetector`, `LoggingGapDetector`, `MacroAdherenceDetector`,
     `MedCycleCovarianceDetector`, `MentionContextShiftDetector`, `MesoAdherenceDetector`,
     `NeedsDomainImbalanceDetector`, `NiggleMapDetector`, `NightActivityDetector`, `ObservationDimensionKeysEnvelope`,
@@ -221,16 +224,17 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **pages:** AdatforrasokPage.tsx, CharacterFeedPage.tsx, CsapatPage.tsx, DetektorokPage.tsx, DimensionPage.tsx,
     DimensionsPage.tsx, FutasokPage.tsx, GeptermPage.tsx, KarakterHubPage.tsx, KonziliumPage.tsx, KorPage.tsx,
     RunPage.tsx
-  - **components:** ClaimTile.tsx, MaturityRing.tsx, PersonaOrb.tsx, RunFlowStrip.tsx, SignalChainCard.tsx,
-    TranscriptTurn.tsx
+  - **components:** ClaimTile.tsx, ConferenceThreadCard.tsx, MaturityRing.tsx, PersonaOrb.tsx, RunFlowStrip.tsx,
+    SignalChainCard.tsx, TranscriptTurn.tsx
   - **root:** character.css, dossierState.ts, expertColors.ts, feedDayLabel.ts, inventory.ts, runLabels.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 23 IT + 5 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/character` — 25 IT + 8 unit
   - **ITs:** `CharacterApiCompanionOffIT`, `CharacterApiIT`, `CharacterApiSwitchOffIT`, `CharacterBootstrapIT`,
     `CharacterConferenceJobIT`, `CharacterConferenceServiceIT`, `CharacterFeedbackIT`, `CharacterHistoryReadsIT`,
     `CharacterMetaReadsIT`, `CharacterMonthlyServiceIT`, `CharacterObservationJobIT`, `CharacterObservationServiceIT`,
     `CharacterPersistenceIT`, `CharacterPromptAssemblerIT`, `CharacterPromptAssemblerOversizedDimensionIT`,
     `CharacterPromptWiringIT`, `CharacterRunLogIT`, `CharacterSignalReadsIT`, `ClaimLifecycleIT`,
-    `KonziliumProposalRoundIT`, `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`, `PortraitWriterNameIT`
+    `ConferenceDeliberationEnvelopeIT`, `KonziliumCrossTalkRoundIT`, `KonziliumProposalRoundIT`,
+    `KonziliumUserFeedbackIT`, `KonziliumVerdictRoundIT`, `PortraitWriterNameIT`
   - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `ChallengePopulator`, `CheckInPopulator`,
     `DailySummaryPopulator`, `DatabasePopulator`, `ExperimentPopulator`, `GraphPopulator`, `JournalPopulator`,
     `KnowledgeFactPopulator`, `LearnedFactPopulator`, `LlmLogPopulator`, `MealPopulator`, `MedicationDosePopulator`,
@@ -241,11 +245,11 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### companion
 
-*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-06, shipped) ·
+*BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-07, shipped) ·
   [docs/features/companion.md](features/companion.md) (updated 2026-09-06, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-06, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-05, in-progress) ·
-  [docs/features/me.md](features/me.md) (updated 2026-09-06, mixed)
+  [docs/features/me.md](features/me.md) (updated 2026-09-07, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/companion`
   - **sub-features:** `advisor`, `embedding`, `feedback`, `flags`, `graph`, `llm`, `memory`, `profile`, `quarterly`,
@@ -528,8 +532,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### goal
 
 *BE + API* · read next: [docs/features/goal-engine.md](features/goal-engine.md) (updated 2026-09-05, done) ·
-  [docs/features/me.md](features/me.md) (updated 2026-09-06, mixed) ·
-  [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-05, mixed)
+  [docs/features/me.md](features/me.md) (updated 2026-09-07, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/goal`
   - **sub-features:** `engine`
@@ -762,9 +765,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   [docs/features/habit.md](features/habit.md) (updated 2026-09-07, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-06, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-05, in-progress) ·
-  [docs/features/me.md](features/me.md) (updated 2026-09-06, mixed) ·
+  [docs/features/me.md](features/me.md) (updated 2026-09-07, mixed) ·
   [docs/features/_platform-data-layer.md](features/_platform-data-layer.md) (updated 2026-09-06, done) ·
-  [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-05, mixed)
+  [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-07, mixed)
 
 - **FE data** `frontend/src/data/me`
   - **hooks (via `@/data/hooks`):** `DayEvaluationResponse`, `NormalizedDayDimension`, `NormalizedDayEvaluation`,
@@ -882,7 +885,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### notification
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-05, mixed)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/_platform-notifications.md](features/_platform-notifications.md) (updated 2026-09-07, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/notification`
   - **sub-features:** `domain`
@@ -907,7 +910,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **modules:** feedApi.ts, feedHooks.ts, feedMock.ts, notificationApi.ts, notificationHooks.ts, notificationMock.ts,
     notificationPrefHooks.ts, notificationScheduleWriter.ts
 - **FE ui** `frontend/src/features/notification`
-  - **logic:** groupByDay.ts, stamp.ts
+  - **logic:** category.ts, groupByDay.ts, stamp.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/notification` — 14 IT + 5 unit
   - **ITs:** `AnchorResolverDecisionIT`, `AnchorResolverFeedIT`, `AnchorResolverIT`, `AnchorResolverInterventionIT`,
     `AnchorResolverRitualSwitchOffIT`, `NotificationApiIT`, `NotificationDispatchJobIT`, `NotificationPrefApiIT`,
@@ -969,7 +972,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### people
 
-*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-06, mixed)
+*BE + API* · read next: [docs/features/me.md](features/me.md) (updated 2026-09-07, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/people`
   - **entities→tables:** `MentionEntity`→`mention`, `PersonEntity`→`person`
@@ -1305,9 +1308,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     growthForecast.ts, gymDayTarget.ts, medalLabels.ts, mesoBands.ts, mesoCompare.ts, mesoDates.ts, mesoDays.ts,
     mesoPlan.ts, mesoWeek.ts, morningWindow.ts, muscleColors.ts, muscleFilters.ts, musclePriorities.ts, muscleWeek.ts,
     offDay.ts, peakWeekFit.ts, prepBriefing.ts, restTimer.ts, runToTemplate.ts, sessionLength.ts, sessionState.ts,
-    setBudget.ts, sportKinds.ts, sportMuscleLoad.ts, structureLint.ts, summaryStats.ts, useEditableNumber.ts,
-    useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts, weekZone.ts, weeklyBands.ts, weeklyLoad.ts, workoutCardMeta.ts,
-    workoutComparison.ts, workoutState.ts
+    setBudget.ts, sportKinds.ts, sportMuscleLoad.ts, structureLint.ts, summaryStats.ts, templatePoster.ts,
+    useEditableNumber.ts, useRestTimer.ts, warmupSuggest.ts, weekAgenda.ts, weekZone.ts, weeklyBands.ts, weeklyLoad.ts,
+    workoutCardMeta.ts, workoutComparison.ts, workoutState.ts
   - **root:** DayTile.tsx, ProgramDayView.tsx, StepFocus.tsx, StepProgram.tsx, StepWhen.tsx, dayTiles.ts,
     wizardState.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/train` — 77 IT + 13 unit

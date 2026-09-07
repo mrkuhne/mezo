@@ -1,5 +1,6 @@
 package io.mrkuhne.mezo.feature.companion.quarterly;
 
+import io.mrkuhne.mezo.feature.appnotification.repository.AppNotificationRepository;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.companion.entity.PeriodSummaryEntity;
@@ -30,6 +31,7 @@ class QuarterlyReviewServiceIT extends AbstractIntegrationTest {
 
     @Autowired private QuarterlyReviewService quarterlyReviewService;
     @Autowired private GraphNodeRepository nodeRepository;
+    @Autowired private AppNotificationRepository appNotificationRepository;
     @Autowired private PeriodSummaryPopulator periodSummaryPopulator;
     @Autowired private UserPopulator userPopulator;
     @Autowired private FakeCompanionLlm fakeCompanionLlm;
@@ -71,6 +73,16 @@ class QuarterlyReviewServiceIT extends AbstractIntegrationTest {
         });
         assertThat(nodeRepository.findByCreatedByAndStatusAndDeletedFalseOrderByCreatedAtDesc(
                 owner, GraphNodeEntity.STATUS_ACTIVE)).isEmpty();
+        // mezo-0cbh: negyedévente EGYSZER szólal meg — épp ezért ez az a sor, aminek a
+        // legnagyobb esélye volt sosem eljutni a felhasználóhoz. Ugyanaz a `graph_candidate`
+        // fajta, mint az éjszakai életesemény-köré, de a saját szavaival.
+        assertThat(appNotificationRepository.findByCreatedByAndReadAtIsNullAndDeletedFalse(owner))
+            .filteredOn(n -> "graph_candidate".equals(n.getKind()))
+            .singleElement()
+            .satisfies(n -> {
+                assertThat(n.getTitle()).isEqualTo("Egy szezon vár döntésre");
+                assertThat(n.getDeeplink()).isEqualTo("/mezo/knowledge");
+            });
     }
 
     @Test

@@ -178,6 +178,18 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** Mirror of KonziliumVerdictRound.INTEGRATOR_MARKER (feature/character) — LITERAL, cycle rule. */
     public static final String INTEGRATOR_MARKER_MIRROR = "KARAKTER-INTEGRATOR-FELADAT";
 
+    /** Mirror of KonziliumCrossTalkRound.CROSS_TALK_MARKER (feature/character) — LITERAL, cycle
+     *  rule (see OBSERVATION_MARKER_MIRROR). Drift is caught by KonziliumCrossTalkRoundIT. */
+    public static final String CROSS_TALK_MARKER_MIRROR = "KARAKTER-KERESZTVITA-FELADAT";
+
+    /** Scripted cross-talk answer: {@code [fake-char-crosstalk:<payload>]} planted in a proposal's
+     *  TEXT (the user message renders every peer proposal's text) is returned verbatim — a
+     *  non-JSON payload drills the unparseable path. A payload that IS a JSON array is matched by
+     *  the same {@code [ … ]} shape the skeptic/integrator sentinels use, so a test can script the
+     *  exact stances an expert answers with (mezo-xlvr final review, M1). */
+    public static final Pattern CHAR_CROSS_TALK_SENTINEL =
+            Pattern.compile("\\[fake-char-crosstalk:(\\[.*]|[^\\]]*)]", Pattern.DOTALL);
+
     public static final Pattern CHAR_SKEPTIC_SENTINEL =
             Pattern.compile("\\[fake-char-skeptic:(\\[.*])]", Pattern.DOTALL);
     public static final Pattern CHAR_INTEGRATOR_SENTINEL =
@@ -544,6 +556,10 @@ public class FakeCompanionLlm implements CompanionLlm {
     private final java.util.concurrent.atomic.AtomicInteger completeCallCount =
             new java.util.concurrent.atomic.AtomicInteger();
     private volatile List<Turn> lastMemoryRewriteHistory = List.of();
+    /** mezo-xlvr: the last user message that reached {@link #complete}, so an IT can assert a
+     *  prompt-assembly detail (e.g. that the cross-talk peer stances reached the prompt) without
+     *  needing a dedicated sentinel/echo for every such detail. */
+    private volatile String lastUserMessage;
 
     public int completeCallCount() {
         return completeCallCount.get();
@@ -553,10 +569,15 @@ public class FakeCompanionLlm implements CompanionLlm {
         return List.copyOf(lastMemoryRewriteHistory);
     }
 
+    public String lastUserMessage() {
+        return lastUserMessage;
+    }
+
     @Override
     public String complete(String systemPrompt, List<Turn> history, String userMessage,
                            List<ToolCallback> tools, Map<String, Object> toolContext) {
         completeCallCount.incrementAndGet();
+        lastUserMessage = userMessage;
         // mezo-p2tr: the opening turn's userMessage is the FIXED KICKOFF_PROMPT (no room to plant a
         // sentinel there), so an IT scripts the failure via the DYNAMIC [Heti adatok] block instead
         // (e.g. a seeded weekly-review summary) — checking the system prompt too is what lets that
@@ -609,6 +630,10 @@ public class FakeCompanionLlm implements CompanionLlm {
             }
             return "[{\"kind\":\"NEW\",\"dimensionKey\":\"" + dimensionKey + "\",\"text\":\"Fake javaslat.\","
                     + "\"confidence\":0.55,\"sensitive\":false,\"rationale\":\"Fake indoklás.\"}]";
+        }
+        if (systemPrompt.startsWith(CROSS_TALK_MARKER_MIRROR)) {
+            Matcher m = CHAR_CROSS_TALK_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : crossTalkCannedAnswer(userMessage);
         }
         if (systemPrompt.startsWith(SKEPTIC_MARKER_MIRROR)) {
             Matcher m = CHAR_SKEPTIC_SENTINEL.matcher(userMessage);
@@ -983,6 +1008,23 @@ public class FakeCompanionLlm implements CompanionLlm {
     private String factsAnswer(String userMessage) {
         Matcher m = FACTS_SENTINEL.matcher(userMessage);
         return m.find() ? m.group(1) : "[]";
+    }
+
+    /** Canned cross-talk answer: one SUPPORT stance per listed peer proposal. The CHALLENGE and
+     *  NUANCE paths are exercised only through {@link #CHAR_CROSS_TALK_SENTINEL}. */
+    private static String crossTalkCannedAnswer(String userMessage) {
+        Matcher idx = CHAR_PROPOSAL_INDEX.matcher(userMessage);
+        StringBuilder sb = new StringBuilder("[");
+        boolean first = true;
+        while (idx.find()) {
+            if (!first) {
+                sb.append(',');
+            }
+            first = false;
+            sb.append("{\"index\":").append(idx.group(1))
+                    .append(",\"stance\":\"SUPPORT\",\"argument\":\"Fake állásfoglalás: egyetértek.\"}");
+        }
+        return sb.append(']').toString();
     }
 
     /** Scripted konzílium verdict round (mezo-1gim.5): for every {@code P<n>} the user message

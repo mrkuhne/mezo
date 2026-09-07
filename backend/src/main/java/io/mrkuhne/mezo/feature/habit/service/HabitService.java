@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.habit.service;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.api.dto.HabitDayResponse;
 import io.mrkuhne.mezo.api.dto.HabitFormationDay;
 import io.mrkuhne.mezo.api.dto.HabitFormationResponse;
@@ -70,6 +72,8 @@ public class HabitService {
     private static final String WAKE_HINT_FORMAT = "%s — a célablakon kívül (%s ± %d′)";
     private static final DateTimeFormatter HH_MM = DateTimeFormatter.ofPattern("HH:mm");
 
+    // Mindig létező emit-fasád: kikapcsolt feed mellett néma no-op (mezo-0cbh).
+    private final AppNotificationEmitter notificationEmitter;
     private final HabitDayRepository repository;
     private final HabitCatalogService catalogService;
     private final HabitEvaluator evaluator;
@@ -536,4 +540,37 @@ public class HabitService {
     private SystemRuntimeErrorException conflict(String code) {
         return new SystemRuntimeErrorException(SystemMessage.error(code).build(), HttpStatus.CONFLICT);
     }
+
+    /**
+     * mezo-0cbh — az automatizmus-küszöb átlépése. Az ÉJSZAKAI kör hívja
+     * ({@code HabitJob.runFormationSweep}), szokásonként; a „már szóltunk" állapotot NEM új
+     * oszlop őrzi, hanem a dedup-kulcs ({@code habit_formation:{key}}) a feed partial-unique
+     * indexén — a küszöb átlépése természeténél fogva egyszer történik, tehát az egyszeri
+     * emit ugyanaz a tény, nem egy külön bejegyzés, amit szinkronban kellene tartani.
+     *
+     * <p>A négy FOKOZAT-címke szándékosan a frontendé ({@code habitFormation.ts}); a backend
+     * csak a százalékot és a küszöböt ismeri, ezért a becsületes esemény a KÜSZÖB átlépése, nem
+     * a „fokozatváltás". A sor szövege ezért is beszél küszöbről, nem fokozatnévről.
+     *
+     * @return true ha a szokás átlépte a küszöböt (akár most emittáltunk, akár már korábban)
+     */
+    @Transactional(readOnly = true)
+    public boolean emitFormationIfCrossed(UUID userId, String habitKey) {
+        HabitFormationResponse f = formation(userId, habitKey);
+        // A becslés a `minReps` alatt SZÁNDÉKOSAN null minden mezőben — ilyenkor nincs mit
+        // állítani, és épp ezt az őszinteséget nem szabad egy értesítéssel elrontani.
+        if (f.getAutomaticityPct() == null || f.getThresholdPct() == null
+                || f.getAutomaticityPct() < f.getThresholdPct()) {
+            return false;
+        }
+        String label = catalogService.byKey(userId, habitKey)
+            .map(HabitDefEntity::getTitle).orElse(habitKey);
+        notificationEmitter.emit(userId, AppNotificationKind.HABIT_FORMATION,
+            "Kezd magától menni",
+            "A \u201E" + label + "\u201D átlépte az automatizmus-küszöböt \u2014 " + f.getReps() + " ism\u00E9tl\u00E9s ut\u00E1n.",
+            AppNotificationKind.HABIT_FORMATION.deeplink() + "/" + habitKey, null,
+            "habit_formation:" + habitKey);
+        return true;
+    }
+
 }

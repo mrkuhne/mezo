@@ -1,9 +1,12 @@
 package io.mrkuhne.mezo.feature.character.service;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.character.config.CharacterProperties;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
+import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
 import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
@@ -75,11 +78,14 @@ public class CharacterMonthlyService {
      *  catalog has to a "no owner" catch-all for the monthly deep read. */
     private static final String CHAPTER_CLAIMS_EXPERT_KEY = "drill";
 
+    // Mindig létező emit-fasád: kikapcsolt feed mellett néma no-op (mezo-0cbh).
+    private final AppNotificationEmitter notificationEmitter;
     private final CharacterConferenceRepository conferenceRepository;
     private final CharacterDimensionRepository dimensionRepository;
     private final CharacterClaimRepository claimRepository;
     private final KonziliumProposalRound proposalRound;
     private final KonziliumVerdictRound verdictRound;
+    private final KonziliumChapterResolver chapterResolver;
     private final CharacterConferenceService conferenceService;
     private final CharacterService characterService;
     private final CharacterProperties properties;
@@ -130,13 +136,21 @@ public class CharacterMonthlyService {
         // misleading for a whole-dossier monthly pass, so this rides the SAME null-weekStart path
         // CharacterBootstrapService uses ("Teljes eddigi történet"). The conference row's OWN
         // weekStart (monthStart) is set below, independently, by persistConferenceAndApplyOutcome.
-        KonziliumVerdictRound.Result verdictResult = verdictRound.run(owner, null, proposalResult.proposals());
+        KonziliumVerdictRound.Result verdictResult = verdictRound.run(owner, null, proposalResult.proposals(), List.of());
 
         List<ConferenceTranscriptEnvelope.Turn> transcriptTurns = new ArrayList<>(proposalResult.turns());
         transcriptTurns.addAll(verdictResult.turns());
 
+        // The structure is assembled and STORED here too (mezo-xlvr final review, I4): without
+        // it a brand-new row would be re-derived from its own prose on every read, throwing away
+        // chapter membership, kind and claim id. This konzílium has no cross-talk round, so the
+        // reaction list is honestly empty.
+        ConferenceDeliberationEnvelope deliberation = DeliberationAssembler.assemble(
+                proposalResult.proposals(), List.of(), verdictResult.verdicts(),
+                verdictResult.shownRulings(), chapterResolver.resolve(owner, proposalResult.proposals()));
+
         CharacterConferenceEntity conference = conferenceService.persistConferenceAndApplyOutcome(owner, MONTHLY,
-                monthStart, transcriptTurns, verdictResult.chapters(), verdictResult.rulings());
+                monthStart, transcriptTurns, verdictResult.chapters(), verdictResult.rulings(), deliberation);
 
         List<ConferenceOutcomeEnvelope.Change> retirementChanges = retireStaleChapters(owner);
         if (!retirementChanges.isEmpty()) {
@@ -160,6 +174,7 @@ public class CharacterMonthlyService {
             log.warn("MONTHLY run-log record call failed for owner {} monthStart {}", owner, monthStart, e);
         }
 
+        emitPortraitNotification(owner, monthStart, conference);
         return conference;
     }
 
@@ -226,4 +241,26 @@ public class CharacterMonthlyService {
         }
         return changes;
     }
+
+    /**
+     * mezo-0cbh — a {@code memoir_ready} / {@code weekly_review_ready} alakja: „elkészült
+     * valami, ami rólad szól". A havi mélyolvasás eddig csak akkor derült ki, ha magadtól
+     * benyitottál a Karakter dosszié Konzílium oldalára.
+     *
+     * <p>A dedup-kulcs a HÓNAP, nem a konferencia id-je: a metódus eleji idempotencia-ág egy
+     * újrafutásnál a MEGLÉVŐ sort adja vissza (nem null-t), tehát id-alapú kulccsal minden
+     * catch-up futás új értesítést írna ugyanarra a hónapra.
+     */
+    private void emitPortraitNotification(UUID owner, LocalDate monthStart,
+                                          CharacterConferenceEntity conference) {
+        if (conference == null) {
+            return;   // üres hónap (nincs ACTIVE állítás) — nincs mit bejelenteni
+        }
+        notificationEmitter.emit(owner, AppNotificationKind.CHARACTER_PORTRAIT,
+            "\u00DAj portr\u00E9 k\u00E9sz\u00FClt r\u00F3lad",
+            "A havi m\u00E9lyolvas\u00E1s v\u00E9gigment a doszi\u00E9don \u2014 n\u00E9zd meg, mi v\u00E1ltozott.",
+            AppNotificationKind.CHARACTER_PORTRAIT.deeplink(), conference.getId(),
+            "character_portrait:" + monthStart);
+    }
+
 }

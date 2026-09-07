@@ -39,6 +39,7 @@
 // FE never has to infer it from `at` — is out of scope here; filed as a bd note (see final fix
 // report, mezo-1gim.14).
 // ============================================================
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import '@/features/character/character.css'
 import { PageHead } from '@/shared/ui/mozaik'
@@ -62,7 +63,13 @@ function localDayIso(atIso: string): string {
   return `${y}-${m}-${d}`
 }
 
-interface Group { day: string; items: CharacterFeedItem[] }
+/** `day` is the RELATIVE display label ("MA" / "TEGNAP" / a formatted date) — for rendering
+ *  only. `dayKey` is the STABLE absolute calendar day (`localDayIso` of the group's first item)
+ *  — open/closed state is keyed by this, never by `day` (finding 2): `day` is computed against
+ *  `new Date()` at render time, so a session crossing midnight (or a refetch against a fresh
+ *  "now") would silently reassign "MA" to a different calendar day and transfer that day's
+ *  toggle to whichever day inherits the label. */
+interface Group { day: string; dayKey: string; items: CharacterFeedItem[] }
 
 /** The feed is already newest-first (server + mock contract) — grouping just watches for the
  *  day label to change as it walks the list, never re-sorts. */
@@ -72,7 +79,7 @@ function groupByDay(items: CharacterFeedItem[]): Group[] {
     const day = feedDayLabel(item.at)
     const last = groups[groups.length - 1]
     if (last != null && last.day === day) last.items.push(item)
-    else groups.push({ day, items: [item] })
+    else groups.push({ day, dayKey: localDayIso(item.at), items: [item] })
   }
   return groups
 }
@@ -111,6 +118,14 @@ export function CharacterFeedPage() {
     return diffDays <= 1 ? best.id : undefined
   }
 
+  // Only the newest day starts open (spec §9): the page then fits one screen, and a dense day
+  // never swallows the rest. Per-day open state lives here — deliberately NOT persisted: the
+  // feed is a "what happened lately" surface, not a workspace with remembered state.
+  // NOTE: must run before the `isLoading` early return below — a hook cannot sit after a
+  // conditional return, or its call order would shift between the loading and loaded renders.
+  const [openDays, setOpenDays] = useState<Record<string, boolean>>({})
+  const isOpen = (dayKey: string, index: number) => openDays[dayKey] ?? index === 0
+
   if (isLoading) return null
 
   const groups = groupByDay(items)
@@ -127,9 +142,25 @@ export function CharacterFeedPage() {
         {groups.map((grp, gi) => {
           const observations = grp.items.filter((it) => it.kind === 'OBSERVATION')
           const diffs = grp.items.filter((it) => it.kind === 'CONFERENCE_CHANGE')
+          const open = isOpen(grp.dayKey, gi)
+          // Finding 1: the label reads "N megfigyelés" (N observations) — count only what the
+          // word means. A day's CONFERENCE_CHANGE rows are still rendered when the day is open;
+          // they simply aren't observations, so they don't inflate this number.
+          const count = observations.length
           return (
-            <div key={`${grp.day}-${gi}`}>
-              <div className="kr-feedday">{grp.day}</div>
+            <div key={`${grp.dayKey}-${gi}`}>
+              <button
+                type="button"
+                className="kr-feedday"
+                aria-expanded={open}
+                onClick={() => setOpenDays((was) => ({ ...was, [grp.dayKey]: !open }))}
+              >
+                <span className="kr-fdlbl">{grp.day}</span>
+                <span className="kr-fdcount">{`${count} megfigyelés`}</span>
+                <span className="kr-fdchev" aria-hidden="true">{open ? '⌄' : '›'}</span>
+              </button>
+              {open && (
+              <>
               {observations.length > 0 && (
                 <div className="kr-feedtile">
                   {observations.map((it, ii) => {
@@ -176,6 +207,8 @@ export function CharacterFeedPage() {
                   <span className="kr-chev" aria-hidden="true">›</span>
                 </button>
               ))}
+              </>
+              )}
             </div>
           )
         })}
