@@ -1,0 +1,176 @@
+name: ghcr-retention
+# Scheduled GHCR tag-retention (mezo-gloh).
+#
+# WHY THIS EXISTS: deploy.yml pushes a new ghcr.io/mrkuhne/mezo-backend and
+# ghcr.io/mrkuhne/mezo-frontend version on every release and NEVER deletes old
+# ones — the registry kept all 599 images before a manual cleanup
+# (mezo-ibxy slice 0). This workflow prunes old versions on a schedule, always
+# keeping: the newest 20 versions per package, AND any version whose tags
+# include a tag currently pinned in k8s/backend/deployment.yaml or
+# k8s/frontend/deployment.yaml (read at runtime, so a re-pin is picked up
+# automatically without editing this file).
+#
+# WHY THE GITHUB API DIRECTLY, NOT actions/delete-package-versions:
+#   - Its `ignore-versions` input is a regex tested against `version.name`,
+#     which for a GHCR *container* version is the immutable digest
+#     (sha256:...), NOT the image tag (verified against the action's source,
+#     src/version/get-versions.ts — the `name` field is what `ignore-versions`
+#     matches; the `metadata.container.tags` array is only consulted to
+#     compute the internal `tagged` boolean, never for the ignore filter).
+#     There is therefore no way to express "protect the version tagged
+#     2.205.0" through that action's inputs at all — it would have to be
+#     re-derived from a manifest-digest lookup done outside the action anyway,
+#     at which point calling the API ourselves is simpler and auditable.
+#   - Multi-arch safety was also checked and is a non-issue either way: both
+#     build-frontend and build-backend in deploy.yml call
+#     docker/build-push-action with `platforms: linux/amd64` only (a single
+#     platform, no matrix) — so every pushed version is a plain single-arch
+#     image, not a multi-arch manifest list, and there are no attestation/sig
+#     child manifests to worry about accidentally orphaning.
+#   - Deleting by explicit version ID via the REST API gives full control over
+#     which versions are protected (newest-20 union referenced-tags) with no
+#     dependency on an ignore-versions regex working the way we need.
+#
+# WHY THE PLAIN GITHUB_TOKEN: the repo owner (mrkuhne) is a personal GitHub
+# user account, not an org, and deploy.yml already pushes both packages using
+# `docker/login-action` with `password: secrets.GITHUB_TOKEN` — that only
+# succeeds because the packages are linked to this repo, and a repo-linked
+# package accepts the workflow's own GITHUB_TOKEN (with `packages: write`)
+# for both push and delete. If GHCR ever rejects a delete call with 403,
+# add a repo secret named GHCR_RETENTION_TOKEN (a classic PAT with the
+# `delete:packages` + `read:packages` scopes) — the workflow below already
+# prefers it over GITHUB_TOKEN when present, no further edits needed.
+#
+# DRY-RUN-FIRST DESIGN: workflow_dispatch defaults `dry_run` to true, so a
+# manual run only ever logs what it WOULD delete unless you explicitly flip
+# the input. The weekly scheduled run is also dry-run UNLESS the repo
+# variable GHCR_RETENTION_ENFORCE is set to the exact string 'true' — so the
+# very first scheduled runs stay safe (log-only) until that variable is
+# deliberately turned on once the logged plan has been reviewed.
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'   # every Monday 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Log what would be deleted without deleting anything'
+        type: boolean
+        default: true
+
+concurrency:
+  group: ghcr-retention
+  cancel-in-progress: false
+
+permissions:
+  contents: read     # checkout, to read the pinned tags out of k8s/*/deployment.yaml
+  packages: write     # required to list AND delete package versions
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      dry_run: ${{ steps.mode.outputs.dry_run }}
+      keep_tags: ${{ steps.keep-tags.outputs.tags }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Determine dry-run mode
+        id: mode
+        env:
+          EVENT: ${{ github.event_name }}
+          DISPATCH_DRY_RUN: ${{ inputs.dry_run }}
+          ENFORCE_VAR: ${{ vars.GHCR_RETENTION_ENFORCE }}
+        run: |
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            dry_run="$DISPATCH_DRY_RUN"
+          else
+            # scheduled run: only enforce if the repo var is exactly 'true'
+            if [ "$ENFORCE_VAR" = "true" ]; then
+              dry_run="false"
+            else
+              dry_run="true"
+            fi
+          fi
+          echo "dry_run=${dry_run}" >> "$GITHUB_OUTPUT"
+          echo "resolved dry_run=${dry_run} (event=${EVENT}, dispatch input=${DISPATCH_DRY_RUN:-n/a}, GHCR_RETENTION_ENFORCE=${ENFORCE_VAR:-unset})" >&2
+
+      - name: Extract currently-deployed tags from k8s manifests
+        id: keep-tags
+        run: |
+          tags=$(grep -hoE 'image:\s*ghcr\.io/[^:[:space:]]+:[^[:space:]]+' \
+                   k8s/backend/deployment.yaml k8s/frontend/deployment.yaml \
+                 | sed -E 's#.*:([^:]+)$#\1#' \
+                 | sort -u \
+                 | tr '\n' ' ')
+          echo "tags=${tags}" >> "$GITHUB_OUTPUT"
+          echo "protected tags (from k8s manifests): ${tags}" >&2
+
+  retention:
+    needs: plan
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [mezo-backend, mezo-frontend]
+    steps:
+      - name: Prune old GHCR versions for ${{ matrix.package }}
+        env:
+          OWNER: ${{ github.repository_owner }}
+          PACKAGE: ${{ matrix.package }}
+          DRY_RUN: ${{ needs.plan.outputs.dry_run }}
+          KEEP_TAGS: ${{ needs.plan.outputs.keep_tags }}
+          KEEP_NEWEST: 20
+          # Prefer a dedicated PAT if one has been configured (see header
+          # comment); otherwise fall back to the workflow's own token.
+          GH_TOKEN: ${{ secrets.GHCR_RETENTION_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          echo "== ${PACKAGE}: fetching all active container versions for user ${OWNER} =="
+          all_versions="[]"
+          page=1
+          while :; do
+            resp=$(gh api \
+              "/users/${OWNER}/packages/container/${PACKAGE}/versions?per_page=100&state=active&page=${page}")
+            len=$(echo "$resp" | jq 'length')
+            if [ "$len" -eq 0 ]; then break; fi
+            all_versions=$(jq -c -n --argjson a "$all_versions" --argjson b "$resp" '$a + $b')
+            page=$((page + 1))
+          done
+
+          total=$(echo "$all_versions" | jq 'length')
+          echo "${PACKAGE}: ${total} version(s) found"
+
+          keep_tags_json=$(printf '%s\n' $KEEP_TAGS | jq -R 'select(length > 0)' | jq -s '.')
+
+          # newest-first, then compute the protected id set:
+          #   - the newest KEEP_NEWEST versions
+          #   - any version whose container tags intersect the deployed tags
+          sorted=$(echo "$all_versions" | jq 'sort_by(.created_at) | reverse')
+
+          keep_ids=$(echo "$sorted" | jq --argjson tags "$keep_tags_json" --argjson n "$KEEP_NEWEST" '
+            [ .[0:$n][].id ] as $newest
+            | [ .[] | select((.metadata.container.tags // []) | any(. as $t | $tags | index($t) != null)) | .id ] as $deployed
+            | ($newest + $deployed) | unique
+          ')
+
+          delete_entries=$(echo "$sorted" | jq --argjson keep "$keep_ids" '
+            [ .[] | select(([.id] | inside($keep) | not)) ]
+          ')
+
+          delete_count=$(echo "$delete_entries" | jq 'length')
+          keep_count=$(echo "$keep_ids" | jq 'length')
+          echo "${PACKAGE}: keeping ${keep_count} version(s) (newest ${KEEP_NEWEST} + any tagged $KEEP_TAGS), deleting ${delete_count}"
+
+          echo "$delete_entries" | jq -r '.[] | "  id=\(.id) created_at=\(.created_at) tags=\((.metadata.container.tags // []) | join(","))"'
+
+          if [ "$DRY_RUN" = "true" ]; then
+            echo "${PACKAGE}: DRY RUN — no versions deleted. Set the workflow_dispatch dry_run input to false, or the repo variable GHCR_RETENTION_ENFORCE=true for scheduled runs, to actually delete."
+            exit 0
+          fi
+
+          echo "$delete_entries" | jq -r '.[].id' | while read -r id; do
+            echo "${PACKAGE}: deleting version id=${id}"
+            gh api --method DELETE "/users/${OWNER}/packages/container/${PACKAGE}/versions/${id}"
+          done
