@@ -46,6 +46,7 @@ public class OpenAiCompanionLlm extends SpringAiCompanionLlm {
 
     private final GeminiCompanionLlm geminiCompanionLlm;
     private final Map<CallKind, LlmProvider> perCallKind;
+    private final OpenAiChatOptions toolCallOptions;
 
     /**
      * @param chatModel the OPENAI ChatModel, qualified by bean name (mezo-ozri.1): google-genai
@@ -67,6 +68,7 @@ public class OpenAiCompanionLlm extends SpringAiCompanionLlm {
             llmCallRecorder, llmCallContextHolder);
         this.geminiCompanionLlm = geminiCompanionLlm;
         this.perCallKind = companionProperties.llm().perCallKind();
+        this.toolCallOptions = toolOptions(companionProperties.llm().openai().chatModel());
     }
 
     /**
@@ -82,6 +84,26 @@ public class OpenAiCompanionLlm extends SpringAiCompanionLlm {
             .model(model)
             .streamOptions(OpenAiChatOptions.StreamOptions.builder().includeUsage(true).build())
             .build();
+    }
+
+    /**
+     * The cheap tier's options for a request that carries function tools (mezo-ozri.3). Measured
+     * against the live API, not inferred: {@code /v1/chat/completions} answers a GPT-5.6 request
+     * carrying BOTH tools and a reasoning effort with {@code 400: Function tools with
+     * reasoning_effort are not supported for gpt-5.6-luna … To use function tools, use
+     * /v1/responses or set reasoning_effort to 'none'} — all 42 eval cases failed on it, which is
+     * every chat turn the companion has. Spring AI 2.0 speaks Chat Completions only (the Responses
+     * API is a 2.1.x issue), so {@code none} is the only shape available; it is stated ONLY here,
+     * leaving the smart tier and the structured-output paths free to use effort where the API
+     * allows it (spec §Q1).
+     */
+    static OpenAiChatOptions toolOptions(String model) {
+        return options(model).mutate().reasoningEffort("none").build();
+    }
+
+    @Override
+    protected OpenAiChatOptions.Builder toolCallOptions() {
+        return toolCallOptions.mutate();
     }
 
     /** Vision rides Gemini until the A/B decides otherwise (spec §10.3). */
