@@ -235,6 +235,29 @@ function lifeGoalEcho(g: Record<string, unknown>) {
   }
 }
 
+/** Minimális, de a szerződés szerint ÉRVÉNYES `PatternResponse` a chip-válasz feleletéhez
+ *  (Reflexió S5, mezo-eq85.5). A `PatternReplyResponse.pattern` kötelező és nem null a dróton,
+ *  ezért a `null` alapérték hazug szerződést örökített volna minden jövőbeli suite-ra. */
+export function replyPatternStub(patternId: string) {
+  return {
+    id: patternId,
+    kind: 'reflection',
+    pairKey: `ref-${patternId}`,
+    category: 'physiology',
+    categoryLabel: 'Alvás',
+    title: 'Teszt-minta',
+    mechanism: null,
+    evidence: [],
+    confidence: null,
+    status: 'monitoring',
+    lastDetectedAt: '2026-09-06T02:40:00Z',
+    hypothesisKey: `ref-${patternId}`,
+    belief: 0.5,
+    evidenceHits: 1,
+    evidenceMisses: 0,
+  }
+}
+
 export const handlers = [
   http.post(`${API_BASE}/api/auth/login`, () => HttpResponse.json({ token: 'test-token' })),
   http.post(`${API_BASE}/api/auth/register`, () => HttpResponse.json({ token: 'test-token' })),
@@ -1412,6 +1435,14 @@ export const handlers = [
       lastDetectedAt: '2026-07-03T02:40:00Z',
     })
   }),
+  // Reflexió S5 (mezo-eq85.5) — az észrevétel-feed alapból ŐSZINTÉN ÜRES; a kártyákat
+  // a saját teszt írja felül `server.use(...)`-szal.
+  http.get(`${API_BASE}/api/companion/observation`, () => HttpResponse.json([])),
+  // A `PatternReplyResponse.pattern` a dróton KÖTELEZŐ és nem null — ez a közös alapérték,
+  // amit minden jövőbeli suite örököl, ezért egy minimális, de ÉRVÉNYES `PatternResponse`.
+  http.post(`${API_BASE}/api/companion/pattern/:id/reply`, ({ params }) =>
+    HttpResponse.json({ pattern: replyPatternStub(String(params.id)), conversationId: null }),
+  ),
   http.get(`${API_BASE}/api/companion/pattern/monitor`, () =>
     HttpResponse.json({
       windowFrom: '2026-06-13',
