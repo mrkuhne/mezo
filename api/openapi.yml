@@ -90,6 +90,13 @@ tags:
       interface stays separate from the conversation CRUD surface, and because
       the surface is companion.flags-owned: a proactive controller reading
       companion_flag_log would cross a feature boundary.
+  - name: CompanionObservation
+    description: >-
+      Reflexió S4 (mezo-eq85.4, spec 2026-09-06 §5) — az Észrevételek fül: amit
+      Mezo észrevett a napodról, és a chip-válaszod rá. Saját tag, hogy a
+      generált interfész elkülönüljön a beszélgetés-CRUD felülettől; a
+      válasz-végpont ugyanezt a felületet zárja le (a /pattern/{id}/decision a
+      KATALÓGUS-kártyák külön, felhasználói ítélete marad).
   - name: People
     description: Inner-circle persons + mention logging (Emberek)
   - name: Proactive
@@ -5307,6 +5314,93 @@ paths:
                 $ref: '#/components/schemas/SystemMessageList'
         '404':
           description: Unknown pair key (not in the catalog)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  /api/companion/observation:
+    get:
+      tags:
+        - CompanionObservation
+      operationId: listObservations
+      summary: Az Észrevételek fül kártyái egy napra (mezo-eq85.4)
+      description: >-
+        Négy kártyafajta, EBBEN a sorrendben: `fresh` (a nap felszínre engedett
+        észrevételei, amikre még nem válaszoltál), `return` (a nap észrevételei
+        egy KORÁBBI válaszod után — a szöveg már hivatkozik rá), `watching`
+        (amit épp figyel a motor), `confirmed` (amit a KÉRT naptári napon
+        erősített meg). Csoporton belül a legfrissebb elöl. `date` nélkül a mai
+        nap.
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 'Cards, newest first'
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ObservationResponse'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+  '/api/companion/pattern/{patternId}/reply':
+    post:
+      tags:
+        - CompanionObservation
+      operationId: replyToPattern
+      summary: >-
+        Chip-válasz egy észrevételre — figyeld / nem stimmel / mesélj
+        (mezo-eq85.4)
+      description: >-
+        A válasz mindig append-only ESEMÉNY. `watch` egy `proposed` sort
+        `monitoring`-ra állít; `reject` MÁSODJÁRA refutálja (egyetlen `reject`
+        nem mozdít státuszt); `talk` egy a sejtésre magolt beszélgetést nyit és
+        visszaadja az azonosítóját. A `belief` mindig kódból számolódik újra —
+        sosem LLM-becslés.
+      parameters:
+        - name: patternId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatternReplyRequest'
+      responses:
+        '200':
+          description: The pattern after the reply (+ the seeded conversation for talk)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PatternReplyResponse'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '401':
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '404':
+          description: Pattern not found (or owned by someone else)
           content:
             application/json:
               schema:
@@ -18028,6 +18122,146 @@ components:
         decision:
           type: string
           pattern: ^(confirm|monitor|reject)$
+    ObservationResponse:
+      type: object
+      description: >-
+        Egy kártya az Észrevételek fülön (Reflexió S4, mezo-eq85.4). A
+        `fresh`/`return` kártyák egy `observation` ESEMÉNYT jelenítenek meg (az
+        `id` az esemény azonosítója), a `watching`/`confirmed` kártyák magát a
+        sort (az `id` a minta azonosítója) — a `patternId` mindig a soré, mert a
+        chip-válasz arra megy.
+      required:
+        - id
+        - patternId
+        - card
+        - occurredAt
+        - title
+        - text
+        - evidence
+        - status
+        - evidenceHits
+        - evidenceMisses
+        - sourceIcon
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: >-
+            Az esemény (fresh/return) vagy a minta (watching/confirmed)
+            azonosítója — a lista stabil kulcsa.
+        patternId:
+          type: string
+          format: uuid
+          description: 'A sor, amire a chip-válasz megy.'
+        hypothesisKey:
+          type: string
+          nullable: true
+          description: 'A sor stabil identitása (ref-…) — a statisztikai sorokon pair:<key>.'
+        card:
+          type: string
+          pattern: ^(fresh|return|watching|confirmed)$
+          description: >-
+            fresh = még válasz nélküli mai észrevétel; return = mai észrevétel
+            egy korábbi válaszod UTÁN; watching = épp figyelt sor; confirmed = a
+            KÉRT naptári napon megerősített sor (a nap saját [00:00, 24:00)
+            ablaka, nem egy mozgó 24 órás visszatekintés).
+        occurredAt:
+          type: string
+          format: date-time
+          description: >-
+            Az esemény ideje (fresh/return/confirmed), illetve a sor utolsó
+            felismerése (watching).
+        title:
+          type: string
+          description: A sor címe.
+        text:
+          type: string
+          description: >-
+            Az észrevétel prózája; a watching kártyán üres — ott a számok
+            beszélnek.
+        question:
+          type: string
+          nullable: true
+          description: >-
+            A kérdés, amire a chipek válaszolnak — az observation payload utolsó
+            sora; null, ha nincs.
+        evidence:
+          type: array
+          items:
+            type: string
+          description: >-
+            Az észrevétel forrás-hivatkozásai (journal_entry:<uuid>,
+            sleep:<date>) — watching/confirmed kártyán a sor saját
+            bizonyíték-chipjei.
+        status:
+          type: string
+          pattern: ^(proposed|monitoring|confirmed|rejected|refuted|dormant)$
+          description: A sor státusza a kártya kiadásának pillanatában.
+        evidenceHits:
+          type: integer
+          description: Hány éjszaka igazolta a teszt-terv jóslatát.
+        evidenceMisses:
+          type: integer
+          description: Hány ÉLŐ éjszaka mondott ellent neki.
+        minN:
+          type: integer
+          nullable: true
+          description: >-
+            A teszt-terv minimum-mintaszáma — null, ha a sor nem hordoz
+            teszt-tervet.
+        belief:
+          type: number
+          format: double
+          nullable: true
+          description: Determinisztikus bizonyosság 0..1 — sosem LLM-becslés.
+        repliedChoice:
+          type: string
+          nullable: true
+          pattern: ^(watch|reject|talk)$
+          description: >-
+            A legfrissebb chip-válaszod — null, ha még nem válaszoltál.
+            ESEMÉNY-kártyán (fresh/return) a saját eseménye idejétől kezdve
+            adott válasz, mert a chipek ARRA az észrevételre felelnek;
+            SOR-kártyán (watching/confirmed) a sor legfrissebb válasza,
+            időponthoz kötés nélkül, mert annak nincs saját pillanata.
+        sourceIcon:
+          type: string
+          pattern: ^(naplo|alvas|edzes|vacsora|hold|mezo)$
+          description: >-
+            Melyik felület ikonját mutassa a kártya — a teszt-terv seriesA
+            előtagjából származtatva; terv nélkül mezo.
+    PatternReplyRequest:
+      type: object
+      description: >-
+        A chip-válasz (Reflexió S4, mezo-eq85.4) — a `text` a „mesélj” ágon a
+        saját szavaid.
+      required:
+        - choice
+      properties:
+        choice:
+          type: string
+          pattern: ^(watch|reject|talk)$
+        text:
+          type: string
+          nullable: true
+          maxLength: 500
+    PatternReplyResponse:
+      type: object
+      description: >-
+        A sor a válasz után, plusz a `talk` ágon megnyitott beszélgetés
+        azonosítója.
+      required:
+        - pattern
+      properties:
+        pattern:
+          $ref: '#/components/schemas/PatternResponse'
+        conversationId:
+          type: string
+          format: uuid
+          nullable: true
+          description: >-
+            A `talk` ágon nyitott, a sorra magolt beszélgetés — a többi ágon
+            null.
     PatternMonitorResponse:
       type: object
       required:

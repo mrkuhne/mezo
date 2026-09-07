@@ -24,6 +24,11 @@ public interface PatternRepository extends JpaRepository<PatternEntity, UUID> {
     List<PatternEntity> findByCreatedByAndStatusAndDeletedFalseOrderByLastDetectedAtDesc(
             UUID createdBy, String status);
 
+    /** S4 (mezo-eq85.4): the Észrevételek feed's `watching` group — status-scoped AND kind-scoped
+     *  in SQL, so a statistical catalog row the Pearson job owns can never reach that surface. */
+    List<PatternEntity> findByCreatedByAndKindInAndStatusAndDeletedFalseOrderByLastDetectedAtDesc(
+            UUID createdBy, Collection<String> kinds, String status);
+
     /** S2 (mezo-eq85.2): the hypothesis-identity probe — one live row per (user, hypothesis key). */
     Optional<PatternEntity> findByCreatedByAndHypothesisKeyAndDeletedFalse(
             UUID createdBy, String hypothesisKey);

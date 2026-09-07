@@ -19,6 +19,7 @@ import org.hibernate.type.SqlTypes;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -41,6 +42,15 @@ public class PatternEntity extends OwnedEntity {
     public static final String KIND_AI_HYPOTHESIS = "ai_hypothesis";
     /** S2 (mezo-eq85.2): a self-proposed, falsifiable hypothesis carrying a {@link TestPlanEnvelope}. */
     public static final String KIND_REFLECTION = "reflection";
+
+    /**
+     * S4 (mezo-eq85.4): the kinds the Reflexió surface OWNS — the rows whose lifecycle the
+     * reflection engine and the user's chip answers drive together. A {@code statistical} row is
+     * the Pearson job's property: it lives on the Minták screen, the job rewrites its statistics,
+     * and nothing maintains its {@code belief}. It must therefore never appear as an Észrevétel
+     * card, and a chip reply must never move it (a review finding on the first S4 cut).
+     */
+    public static final Set<String> REFLECTION_OWNED_KINDS = Set.of(KIND_REFLECTION, KIND_AI_HYPOTHESIS);
 
     public static final String STATUS_PROPOSED = "proposed";
     public static final String STATUS_MONITORING = "monitoring";
@@ -189,5 +199,10 @@ public class PatternEntity extends OwnedEntity {
      *  that way, and "what counts as the user's verdict" must have exactly one definition. */
     public static boolean isUserFrozen(String status) {
         return STATUS_CONFIRMED.equals(status) || STATUS_REJECTED.equals(status);
+    }
+
+    /** S4: does the Reflexió surface own this row? See {@link #REFLECTION_OWNED_KINDS}. */
+    public boolean isReflectionOwned() {
+        return REFLECTION_OWNED_KINDS.contains(kind);
     }
 }

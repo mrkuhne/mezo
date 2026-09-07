@@ -8,6 +8,7 @@ import io.mrkuhne.mezo.feature.journal.service.GratitudeEntrySavedEvent;
 import io.mrkuhne.mezo.feature.journal.service.JournalEntryDeletedEvent;
 import io.mrkuhne.mezo.feature.journal.service.JournalEntrySavedEvent;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -42,6 +43,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 public class TextSignalListener {
 
     private final TextSignalService textSignalService;
+    private final QuickNoticeService quickNoticeService;
     private final JournalEntryRepository journalEntryRepository;
     private final GratitudeEntryRepository gratitudeEntryRepository;
 
@@ -53,7 +55,8 @@ public class TextSignalListener {
             // covers "a racing delete already committed" too — nothing to extract either way.
             journalEntryRepository.findById(event.entryId()).ifPresent(entry ->
                     textSignalService.record(entry.getCreatedBy(), TextSignalEntity.SOURCE_JOURNAL,
-                            entry.getId(), entry.getOccurredOn(), entry.getText()));
+                            entry.getId(), entry.getOccurredOn(), entry.getText())
+                            .ifPresent(saved -> quickNotice(entry.getCreatedBy(), saved.getId())));
         } catch (Exception e) {
             log.warn("Text signal extraction failed for journal entry {}", event.entryId(), e);
         }
@@ -65,9 +68,26 @@ public class TextSignalListener {
         try {
             gratitudeEntryRepository.findById(event.entryId()).ifPresent(entry ->
                     textSignalService.record(entry.getCreatedBy(), TextSignalEntity.SOURCE_GRATITUDE,
-                            entry.getId(), entry.getOccurredOn(), entry.getText()));
+                            entry.getId(), entry.getOccurredOn(), entry.getText())
+                            .ifPresent(saved -> quickNotice(entry.getCreatedBy(), saved.getId())));
         } catch (Exception e) {
             log.warn("Text signal extraction failed for gratitude entry {}", event.entryId(), e);
+        }
+    }
+
+    /**
+     * Reflexió S4 (mezo-eq85.4): the same-day notice, but ONLY when a signal was actually produced
+     * ({@code record} returns empty for blank text or a failed extraction — there is nothing to
+     * notice about a signal that does not exist). Its own {@code catch} sits inside the handler's,
+     * so a notice failure is logged as what it is instead of masquerading as an extraction
+     * failure; the signal itself is already committed by then either way (the notice runs in its
+     * own {@code REQUIRES_NEW} transaction — see {@link QuickNoticeService}).
+     */
+    private void quickNotice(UUID owner, UUID signalId) {
+        try {
+            quickNoticeService.onSignal(owner, signalId);
+        } catch (Exception e) {
+            log.warn("Quick notice failed for text signal {} — the signal stays", signalId, e);
         }
     }
 
