@@ -9076,14 +9076,9 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
   background: var(--mz-stripbg); border-radius: 999px; padding: 5px 13px; font-size: 11px; font-weight: 700;
   color: var(--mz-ink-soft); font-family: inherit; cursor: pointer; }
 
-/* ── Mezociklus varázsló v2 (mezo-d20.14) — meso-body.html #page-wizard +
-      #page-day, px ×1.18. Három lépés: szekció-kártyák (01), tier-sorok (02),
-      kompakt hero + nap-mozaik (03). Minden szín meglévő --mz-* tokenből. ── */
-.mz-wprog { display: flex; gap: 5px; padding: 5px 17px 0; }
-.mz-wprog button { flex: 1; height: 5px; min-height: 5px; padding: 0; border: none; border-radius: 3px;
-  background: var(--mz-gbar-bg); cursor: pointer; }
-.mz-wprog button.on { background: var(--gradient-cta); }
-.mz-wprog button:disabled { cursor: default; }
+/* ── Mezociklus varázsló v3 (mezo-yty6) — EGY interjú-képernyő szekció-
+      kártyákkal, aztán a közös MesoWeekEditor. A régi 3-lépéses progress-sáv
+      (.mz-wprog) ezzel megszűnt. Minden szín meglévő --mz-* tokenből. ── */
 .mz-stepct { margin-left: auto; font-size: 10px; font-weight: 700; letter-spacing: 0.16em;
   text-transform: uppercase; color: var(--mz-ink-mut); }
 .mz-steptitle { font-size: 18px; font-weight: 700; padding: 7px 0 2px; }
@@ -9095,10 +9090,13 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 .mz-stepcard-coral { background: var(--mz-wash-coral); }
 .mz-stepcard-lav { background: var(--mz-wash-lav); box-shadow: var(--mz-shadow-lav); }
 .mz-stepcard-gold { background: var(--mz-wash-gold); box-shadow: var(--mz-shadow-gold); }
+/* az interjú-képernyő fókusz-kártyája (mezo-yty6) */
+.mz-stepcard-rose { background: var(--mz-wash-rose); box-shadow: var(--mz-shadow-rose); }
 .mz-stephead { display: flex; align-items: center; gap: 9px; margin-bottom: 9px; }
 .mz-eb-coral { color: var(--mz-cell-coral-ink); }
 .mz-eb-lav { color: var(--mz-cell-lav-ink); }
 .mz-eb-gold { color: var(--mz-cell-gold-ink); }
+.mz-eb-rose { color: var(--mz-cell-rose-ink); }
 .mz-stepnote { font-size: 10px; color: var(--mz-ink-mut); margin-top: 8px; line-height: 1.45; }
 .mz-stepcard textarea { width: 100%; border: 1px solid rgba(43, 33, 24, 0.12); border-radius: 14px;
   padding: 11px 13px; font-family: inherit; font-size: 13px; background: var(--mz-chipbg);
@@ -9190,6 +9188,12 @@ button.fh-scorech { border: none; font-family: inherit; cursor: pointer; min-hei
 /* lépés-lábléc — egy elsődleges CTA, mellette a csendes társa */
 .mz-wfoot { display: flex; gap: 9px; margin-top: 14px; }
 .mz-wfoot > :first-child { flex: 1; }
+/* A vázlat-szerkesztő lábléce (mezo-yty6): a MesoWeekEditor `footer` slotja EGY
+   elemet kap, ami a hibacsíkot/megerősítést a CTA-sor FÖLÉ teszi — a .mz-wfoot
+   sorlayoutja különben egymás mellé sodorná őket. */
+.mz-draftfoot { display: grid; gap: 9px; }
+.mz-draftfoot-row { display: flex; gap: 9px; }
+.mz-draftfoot-row > :first-child { flex: 1; }
 
 /* ---- aktív futam oldala (#page-run, mezo-d20.15) ----
    A blokk íve kártya alsó sora, a „Heti vizsgálat" csempe mini sáv-fürtje

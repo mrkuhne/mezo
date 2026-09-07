@@ -1,9 +1,10 @@
 // ============================================================
-// Mezo · wizardState — the 3-step mesocycle wizard's whole state machine
-// (Mikor és miért → Fókusz → Program, mezo-d20.14). Pure reducer + the two
-// contract mappings the page needs: generateInput (what the plan generator is
-// asked) and toUpsert (what the save writes). Everything the wizard knows
-// lives here so the page is a dispatcher and the steps are views.
+// Mezo · wizardState — the mesocycle wizard's whole state machine. TWO phases
+// since mezo-yty6: a single interview screen → the shared MesoWeekEditor
+// (the old Mikor és miért → Fókusz → Program triple is gone). Pure reducer +
+// the two contract mappings the page needs: generateInput (what the plan
+// generator is asked) and toUpsert (what the save writes). Everything the
+// wizard knows lives here so the page is a dispatcher and the steps are views.
 // ============================================================
 import { DAY_ORDER } from '@/data/train/train'
 import type { MesoDay, MusclePriorities } from '@/data/types'
@@ -15,7 +16,8 @@ import { phaseCurve, recommendedDays } from '@/features/train/logic/mesoPlan'
 import { huMonthDay } from '@/shared/lib/dates'
 
 export interface WizardState {
-  step: 0 | 1 | 2
+  /** Two phases now (mezo-yty6): the single-screen interview, then the unified editor. */
+  step: 'interview' | 'editor'
   daysOfWeek: string[]
   weeks: number
   priorities: MusclePriorities
@@ -33,7 +35,7 @@ export interface WizardState {
   program: MesoDay[]
   /** A manual edit landed since the last generation (regeneration would overwrite it). */
   dirty: boolean
-  /** ProgramDayView is open for this day (page-state, not a route). */
+  /** The editor's day page is open for this day (page-state, not a route). */
   activeDay: string | null
 }
 
@@ -44,9 +46,10 @@ export type WizardAction =
   | { type: 'setPriorities'; priorities: MusclePriorities }
   | { type: 'setGoalText'; text: string }
   | { type: 'setName'; name: string }
-  | { type: 'step'; step: 0 | 1 | 2 }
+  | { type: 'step'; step: 'interview' | 'editor' }
   | { type: 'generated'; proposal: MesoPlanProposal; input: MesoPlanGenerateRequest }
   | { type: 'editProgram'; program: MesoDay[] }
+  | { type: 'renameDay'; day: string; name: string }
   | { type: 'openDay'; day: string | null }
 
 const dayIdx = (d: string) => DAY_ORDER.indexOf(d as (typeof DAY_ORDER)[number])
@@ -60,7 +63,7 @@ function sparse(p: MusclePriorities): MusclePriorities | null {
 
 export function initialWizardState(today: string): WizardState {
   return {
-    step: 0,
+    step: 'interview',
     daysOfWeek: recommendedDays(4),
     weeks: 6,
     priorities: {},
@@ -101,6 +104,12 @@ export function wizardReducer(s: WizardState, a: WizardAction): WizardState {
       }
     case 'editProgram':
       return { ...s, program: a.program, dirty: true }
+    case 'renameDay':
+      return {
+        ...s,
+        program: s.program.map((d) => (d.day === a.day ? { ...d, type: a.name } : d)),
+        dirty: true,
+      }
     case 'openDay':
       return { ...s, activeDay: a.day }
   }

@@ -48,6 +48,19 @@ describe('wizardReducer', () => {
     const s = wizardReducer(s0, { type: 'setPriorities', priorities: { back: 'emphasize', chest: 'grow' } })
     expect(generateInput(s)).toEqual({ daysOfWeek: ['Hét', 'Sze', 'Pén', 'Szo'], weeks: 6, priorities: { back: 'emphasize' }, goalText: null })
   })
+  // mezo-yty6: the 3 numeric steps collapsed into interview → editor.
+  it('the wizard starts on the interview and generation moves it to the editor', () => {
+    expect(s0.step).toBe('interview')
+    const s1 = wizardReducer(s0, { type: 'step', step: 'editor' })
+    expect(s1.step).toBe('editor')
+    expect(s1.activeDay).toBeNull()
+  })
+  it('renaming a day rewrites only that day and marks the draft dirty', () => {
+    const base: WizardState = { ...s0, program: [day('Hét', 'Upper'), day('Kedd', 'Push')] }
+    const next = wizardReducer(base, { type: 'renameDay', day: 'Kedd', name: 'Nyomónap' })
+    expect(next.program.map((d) => d.type)).toEqual(['Upper', 'Nyomónap'])
+    expect(next.dirty).toBe(true)
+  })
   it('editProgram marks dirty; generated resets it and copies the days', () => {
     const g = generate(s0)
     expect(g.dirty).toBe(false)

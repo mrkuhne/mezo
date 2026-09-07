@@ -1,16 +1,21 @@
 // ============================================================
-// Mezo · StepWhen — a varázsló 01 lépése: „Mikor edzel — és miért?"
-// (meso-body.html #page-wizard [data-step="0"], px ×1.18). Három
-// szekció-kártya rise-staggerrel: edzésnapok (napszám-csempék + 7 kerek
-// nap-chip + split-sor), a szabad szöveges cél, és „ami magától megy" —
-// a modell három állandója. Csak ezt a hármat kérdezzük.
+// Mezo · InterviewStep — a varázsló EGYETLEN kérdező képernyője (mezo-yty6).
+// A régi 01 „Mikor és miért" + 02 „Fókusz" lépés egy görgethető oldallá olvadt,
+// a 03 „Program" pedig megszűnt: a generálás kimenete a közös MesoWeekEditor-ban
+// nyílik (Alpha-Progression-minta — a wizard vékony interjú, nem második szerkesztő).
+//
+// A kártyák a StepWhen/StepFocus bevált .mz-stepcard anatómiáját öröklik (ikon +
+// eyebrow + tartalom), így a stíluslap sem duplikálódik: csak a rózsaszín wash és
+// a lábléc-rács új.
 // ============================================================
 import type { CSSProperties, Dispatch } from 'react'
+import { MusclePriorityPicker } from '@/features/train/components/MusclePriorityPicker'
+import { splitLine, weekTotals } from '@/features/train/logic/mesoPlan'
+import type { WizardAction, WizardState } from '@/features/train/wizard/wizardState'
+import { CtaPrimary } from '@/shared/ui/Cta'
 import { ClayIcon, ClaySpot } from '@/shared/ui/clay'
 import { StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { splitLine } from '@/features/train/logic/mesoPlan'
-import type { WizardAction, WizardState } from '@/features/train/wizard/wizardState'
 
 /** The prototype's 7 round chips — short label per DAY_ORDER token. */
 const DAY_CHIPS: { day: string; short: string }[] = [
@@ -26,15 +31,32 @@ const COUNTS: { n: number; sub: string }[] = [
 
 const delay = (ms: number) => ({ '--d': `${ms}ms` }) as CSSProperties
 
-export function StepWhen({ state, dispatch }: { state: WizardState; dispatch: Dispatch<WizardAction> }) {
+/** The split table only covers 2–6 training days — the generate CTA's gate. */
+export function canGenerate(state: WizardState): boolean {
+  return state.daysOfWeek.length >= 2 && state.daysOfWeek.length <= 6
+}
+
+interface InterviewStepProps {
+  state: WizardState
+  dispatch: Dispatch<WizardAction>
+  onGenerate: () => void
+  generating: boolean
+}
+
+export function InterviewStep({ state, dispatch, onGenerate, generating }: InterviewStepProps) {
   const days = state.daysOfWeek
-  const toggle = (day: string) =>
+  const { weekOne, peak } = weekTotals(state.priorities)
+  const toggleDay = (day: string) =>
     dispatch({ type: 'setDays', days: days.includes(day) ? days.filter((d) => d !== day) : [...days, day] })
+
+  const gateOpen = canGenerate(state)
 
   return (
     <EntranceGroup>
-      <div className="mz-steptitle">Mikor edzel — és miért?</div>
-      <p className="mz-steplead">Csak ennyit kérdezünk — a többit a modell és Mezo rakja össze.</p>
+      <div className="mz-steptitle">Mikor edzel — és mire gyúrsz?</div>
+      <p className="mz-steplead">
+        Csak ennyit kérdezünk — a többit a modell rakja össze, és a szerkesztőben bármit átírhatsz.
+      </p>
 
       <div className="mz-stepcard mz-stepcard-coral rise" style={delay(40)}>
         <div className="mz-stephead">
@@ -66,7 +88,7 @@ export function StepWhen({ state, dispatch }: { state: WizardState; dispatch: Di
               type="button"
               aria-label={short}
               aria-pressed={days.includes(day)}
-              onClick={() => toggle(day)}
+              onClick={() => toggleDay(day)}
             >
               {short}
             </button>
@@ -96,25 +118,44 @@ export function StepWhen({ state, dispatch }: { state: WizardState; dispatch: Di
         </div>
       </div>
 
-      <div className="mz-stepcard mz-stepcard-gold rise" style={delay(180)}>
+      <div className="mz-stepcard mz-stepcard-rose rise" style={delay(180)}>
+        <div className="mz-stephead">
+          <ClayIcon name="i-suly" size={28} />
+          <span className="mz-eyebrow mz-eb-rose mz-grow">Fókusz · max 2 hangsúly</span>
+        </div>
+        <MusclePriorityPicker
+          value={state.priorities}
+          onChange={(priorities) => dispatch({ type: 'setPriorities', priorities })}
+        />
+        <div style={{ marginTop: 11 }}>
+          <StatStrip>
+            <StatCell value={weekOne} label="szett · 1. hét" />
+            <StatCell value={peak} label="szett · csúcshét" />
+          </StatStrip>
+        </div>
+      </div>
+
+      <div className="mz-stepcard mz-stepcard-gold rise" style={delay(250)}>
         <div className="mz-stephead">
           <ClaySpot name="s-hajtas" size={28} />
           <span className="mz-eyebrow mz-eb-gold mz-grow">Ami magától megy</span>
         </div>
         <StatStrip>
-          <StatCell value="5 + 1" label="rámpa + deload hét" />
+          <StatCell value={`${state.weeks - 1} + 1`} label="rámpa + deload hét" />
           <StatCell value="+2" label="szett / hét / izom" />
           <StatCell value="~8" label="szett-plafon / edzés" />
         </StatStrip>
         <div className="mz-stepnote">
-          A Programban bármit átírhatsz — de e nélkül is kész, működő blokkot kapsz.
+          A szerkesztőben bármit átírhatsz — de e nélkül is kész, működő blokkot kapsz.
         </div>
+      </div>
+
+      {!gateOpen && <p className="mz-stepnote">Válassz 2–6 edzésnapot a folytatáshoz.</p>}
+      <div className="mz-wfoot">
+        <CtaPrimary disabled={!gateOpen || generating} onClick={onGenerate}>
+          {generating ? 'Mezo dolgozik…' : '✨ Program generálása'}
+        </CtaPrimary>
       </div>
     </EntranceGroup>
   )
-}
-
-/** The step's own gate: the split table only covers 2–6 training days. */
-export function canLeaveStepWhen(state: WizardState): boolean {
-  return state.daysOfWeek.length >= 2 && state.daysOfWeek.length <= 6
 }
