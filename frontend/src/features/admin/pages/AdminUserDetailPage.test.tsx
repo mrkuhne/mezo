@@ -18,6 +18,7 @@ function renderPage(id = ADMIN_USER_DETAIL_MOCK.user.id) {
       <Routes>
         <Route path="/admin/users/:id" element={<AdminUserDetailPage />} />
         <Route path="/admin/users" element={<div>USERS LIST PAGE</div>} />
+        <Route path="/admin/users/:id/memory" element={<div>MEMORY PAGE</div>} />
       </Routes>
     </MemoryRouter>,
     { wrapper: QueryWrapper },
@@ -42,13 +43,23 @@ function renderPageWithoutId() {
 describe('AdminUserDetailPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 
-  it('renders the four tabs, opening on Aktivitás', async () => {
+  it('renders the five tabs, opening on Aktivitás', async () => {
     renderPage()
     expect(await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)).toBeInTheDocument()
-    for (const t of ['Aktivitás', 'Adatok', 'Feature-ök', 'Költség']) {
+    for (const t of ['Aktivitás', 'Adatok', 'Feature-ök', 'Költség', 'Memória']) {
       expect(screen.getByRole('tab', { name: t })).toBeInTheDocument()
     }
     expect(screen.getByRole('tab', { name: 'Aktivitás' })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  // mezo-4qyt.3: "Memória" is a link dressed as a tab — it NAVIGATES to its own route rather
+  // than switching local tab state, so `aria-selected` is never true for it (asserted below).
+  it('Memória navigates to the memory sub-route instead of switching the local tab', async () => {
+    renderPage()
+    await screen.findByText(ADMIN_USER_DETAIL_MOCK.user.name)
+    expect(screen.getByRole('tab', { name: 'Memória' })).toHaveAttribute('aria-selected', 'false')
+    fireEvent.click(screen.getByRole('tab', { name: 'Memória' }))
+    expect(await screen.findByText('MEMORY PAGE')).toBeInTheDocument()
   })
 
   it('switches the rendered panel when a tab is clicked', async () => {
