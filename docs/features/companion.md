@@ -222,10 +222,12 @@ in 14 session-sized slices (epic `mezo-fnnq`); this doc tracks **what actually e
   `backend/target/eval/`, not a CI pass/fail gate. **Which model** it measures comes from one
   property — `-Dmezo.eval.model=gpt-5.6-luna` also switches the provider, that provider's cheap
   tier and the API key the gate demands (`EvalTarget`); a requested model whose key is missing
-  FAILS the run instead of skipping it (mezo-ozri.3). Current baseline on the incumbent
-  `gemini-2.5-flash`: **37/42 = 88.1% exact match**, 2 critical wrong tools, p95 6268 ms,
-  $0.0033/successful action — see
-  [the re-baseline comparison](../research/comparisons/companion-chat-model-rebaseline-2026-09.md).
+  FAILS the run instead of skipping it (mezo-ozri.3). Re-baselined 2026-09-07 on all three
+  models: incumbent `gemini-2.5-flash` 88.1% exact match / p95 6268 ms / $0.0033 per successful
+  action, **`gpt-5.6-luna` 90.5% / 5591 ms / $0.00047** (the chosen default), `gpt-5.6-terra`
+  95.2% / 8092 ms / $0.0047 (stays the smart tier) — see
+  [the re-baseline comparison](../research/comparisons/companion-chat-model-rebaseline-2026-09.md)
+  for the six gates and the decision.
   Run: `./mvnw test -Dtest=ToolSelectionEvalIT -Dmezo.excludedTestGroups= [-Dmezo.eval.model=…]`. (5) **Tool-RAG is a prepared-but-INACTIVE escape
   hatch** on the existing pgvector `EmbeddingPort` — deliberately not built (YAGNI): its trigger
   is selection-accuracy dropping below ~85% (this baseline is comfortably above) **or** the

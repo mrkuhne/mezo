@@ -21,6 +21,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import tools.jackson.core.type.TypeReference;
@@ -90,11 +92,18 @@ class ToneJudgeEvalIT extends AbstractIntegrationTest {
      * The judge model is named EXPLICITLY in the options rather than left to the starter's default,
      * which is the cheap tier: a judge silently downgraded to gemini-2.5-flash would still produce
      * confident-looking verdicts.
+     *
+     * <p>The options must be the PROVIDER's own type, not the portable {@code ChatOptions}:
+     * {@code GoogleGenAiChatModel.internalCall} casts them and throws {@link ClassCastException} on
+     * a {@code DefaultChatOptions}.
      */
     private String judge(Pair pair) {
         String prompt = RUBRIC + "\n\n[A]\n" + pair.optionA() + "\n\n[B]\n" + pair.optionB();
-        ChatModel model = JUDGE.provider() == LlmProvider.OPENAI ? openAiChatModel : geminiChatModel;
-        ChatOptions options = ChatOptions.builder().model(JUDGE.model()).build();
+        boolean openAi = JUDGE.provider() == LlmProvider.OPENAI;
+        ChatModel model = openAi ? openAiChatModel : geminiChatModel;
+        ChatOptions options = openAi
+            ? OpenAiChatOptions.builder().model(JUDGE.model()).build()
+            : GoogleGenAiChatOptions.builder().model(JUDGE.model()).build();
         return model.call(new Prompt(prompt, options)).getResult().getOutput().getText();
     }
 
