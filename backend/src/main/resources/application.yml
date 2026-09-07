@@ -112,6 +112,26 @@ mezo:
       weight:
         table: weight_log
         timestamp-column: date
+    # RAG memory explorer tunables (mezo-4qyt). NOTE the deliberate omissions: the RRF
+    # constant, the per-retriever fusion weights and the graph decay factor are the
+    # companion's (mezo.companion.memory-platform.fusion / mezo.companion.graph) and are
+    # READ from there, never mirrored here.
+    memory:
+      # Server-side PCA output dims handed to the client's UMAP (payload: ~0.6 MB / 3000 items).
+      pca-target-dims: 50
+      # Above this many ready vectors the map samples newest + most salient first and says so.
+      vector-sample-threshold: 5000
+      # Default k for the pgvector neighbour probe.
+      neighbor-default-k: 10
+      # SET LOCAL statement_timeout for every native/dynamic query in this slice, like the hub's 5s.
+      statement-timeout: PT5S
+      # Run-list page size clamp; an oversized request is clamped, never rejected.
+      runs-max-page-size: 100
+      # /health edge-weight histogram buckets over the 0..1 weight range.
+      edge-weight-histogram-buckets: 10
+      # llm_log_history.feature the dry-run replay bills under; must equal
+      # LlmCallContext.FEATURE_ADMIN_REPLAY (AdminMemoryPropertiesTest pins them together).
+      replay-feature-label: admin_replay
   cors:
     # Browser origins allowed to call the API. The Vite dev server (:5180) is the default;
     # add the deployed frontend origin per environment. Server-to-server callers send no Origin
@@ -411,6 +431,10 @@ mezo:
     # Admin hub insights + data browser (mezo-d5iy) — /api/admin/overview, /api/admin/data/**.
     # Off ⇒ those endpoints 404; the existing invite/account admin API is unaffected.
     admin-insights:
+      enabled: false
+    # RAG memory explorer (mezo-4qyt) — /api/admin/users/{id}/memory/**. Off ⇒ those endpoints
+    # 404; the admin hub's own endpoints are unaffected.
+    admin-memory:
       enabled: false
   techcore:
     # Master switch for Spring's scheduling INFRASTRUCTURE (@EnableScheduling) — one level above

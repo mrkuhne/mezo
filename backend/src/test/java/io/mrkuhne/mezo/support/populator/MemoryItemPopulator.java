@@ -73,16 +73,49 @@ public class MemoryItemPopulator {
         return vectorRepository.saveAndFlush(entity);
     }
 
+    /**
+     * Full control over the three facts the explorer's map and health reads filter on (mezo-4qyt):
+     * the vector status, its failure code, and whether {@code embedded_content_hash} still matches
+     * the item's — a mismatch is the "present but ANN-ineligible" stale row the health view exists
+     * to expose.
+     */
+    public MemoryVectorEntity vector(MemoryItemEntity item, String embeddingVersion, float[] embedding,
+                                     String status, String failureCode, String embeddedContentHash) {
+        MemoryVectorEntity entity = new MemoryVectorEntity();
+        entity.setCreatedBy(item.getCreatedBy());
+        entity.setMemoryItemId(item.getId());
+        entity.setEmbeddingVersion(embeddingVersion);
+        entity.setProvider("google");
+        entity.setModel("gemini-embedding-001");
+        entity.setEmbedding(embedding);
+        entity.setEmbeddedContentHash(
+                embeddedContentHash == null ? item.getContentHash() : embeddedContentHash);
+        entity.setStatus(status);
+        entity.setFailureCode(failureCode);
+        return vectorRepository.saveAndFlush(entity);
+    }
+
     public MemoryRetrievalRunEntity run(UUID createdBy, UUID traceId) {
+        return run(createdBy, traceId, "NEW", "Hogyan aludtam futás után?",
+                Map.of("denseCandidates", 1));
+    }
+
+    /**
+     * Full control over the two facts the admin explorer reads off a run (mezo-4qyt): the serving
+     * mode (a SHADOW run never reaches the model, so it can carry no prompt imprint) and the
+     * retriever trace (the per-retriever duration/candidate/error strip).
+     */
+    public MemoryRetrievalRunEntity run(UUID createdBy, UUID traceId, String servingMode,
+                                        String rawQuery, Map<String, Object> retrieverTrace) {
         MemoryRetrievalRunEntity entity = new MemoryRetrievalRunEntity();
         entity.setCreatedBy(createdBy);
         entity.setConsumerPolicy("CHAT_AMBIENT");
         entity.setQueryMode("RAW");
-        entity.setRawQuery("Hogyan aludtam futás után?");
+        entity.setRawQuery(rawQuery);
         entity.setEmbeddingVersion("gemini-embedding-001-768-v1");
-        entity.setServingMode("NEW");
+        entity.setServingMode(servingMode);
         entity.setDurationMs(12L);
-        entity.setRetrieverTrace(Map.of("denseCandidates", 1));
+        entity.setRetrieverTrace(retrieverTrace);
         entity.setTraceId(traceId);
         return runRepository.saveAndFlush(entity);
     }

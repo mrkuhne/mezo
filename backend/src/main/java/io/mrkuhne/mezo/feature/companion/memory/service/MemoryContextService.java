@@ -14,19 +14,25 @@ import io.mrkuhne.mezo.feature.companion.memory.dto.RetrievalServingMode;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryCandidateFusion.FusedCandidate;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryRetrievalAuditWriter.AuditCommand;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryRetrievalAuditWriter.AuditResult;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
+import io.mrkuhne.mezo.techcore.security.LlmActorContext;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Supplier;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -43,6 +49,45 @@ public class MemoryContextService {
 
     private static final String ALL_RETRIEVERS_FAILED = "MEMORY_RETRIEVAL_ALL_FAILED";
 
+    /**
+     * How ONE retrieval should behave (mezo-4qyt). The four pre-existing entry points pass
+     * {@link #audited}; only the admin explorer's dry run passes anything else.
+     *
+     * @param audit      false ⇒ {@link MemoryRetrievalAuditWriter} is skipped and NO
+     *                   {@code memory_retrieval_*} row is written. Deliberately a skip rather than
+     *                   a new {@code serving_mode}/{@code consumer_policy} value: both columns carry
+     *                   CHECK constraints, and a dry run has no business widening them (D1).
+     * @param servingMode the mode the audit row would record; a dry run passes NEW explicitly.
+     * @param reranker   ALLOW the LLM reranker. False short-circuits {@code shouldRerank}; true
+     *                   restores production behaviour — it does not FORCE a rerank.
+     * @param rewrite    ALLOW the LLM query rewrite (same allowance semantics).
+     */
+    public record RetrieveOptions(
+            boolean audit, RetrievalServingMode servingMode, boolean reranker, boolean rewrite) {
+
+        public static RetrieveOptions audited(RetrievalServingMode servingMode) {
+            return new RetrieveOptions(true, servingMode, true, true);
+        }
+    }
+
+    /**
+     * Everything one retrieval produced, including what {@link MemoryContext} does not carry
+     * (mezo-4qyt): the full ranked candidate list with its score breakdowns, the retriever trace
+     * and the prepared query. The explorer's run detail and its dry run are the same rendering of
+     * this record — one read for a stored run, one live for a replay.
+     */
+    public record RetrievalOutcome(
+            MemoryContext context,
+            PreparedMemoryQuery query,
+            List<FusedCandidate> ranked,
+            Set<MemoryRetrievalAuditWriter.CandidateIdentity> selected,
+            Map<String, Object> retrieverTrace,
+            String errorCode,
+            long durationMs,
+            boolean reranked,
+            UUID runId) {
+    }
+
     private final MemoryQueryPreparer queryPreparer;
     private final Map<String, MemoryRetriever> retrievers;
     private final MemoryCandidateFusion fusion;
@@ -51,6 +96,7 @@ public class MemoryContextService {
     private final MemoryReranker reranker;
     private final MemoryRetrievalAuditWriter auditWriter;
     private final MemoryPlatformProperties properties;
+    private final LlmCallContextHolder llmCallContextHolder;
     private final AsyncTaskExecutor applicationTaskExecutor;
 
     public MemoryContext retrieve(MemoryRequest request) {
@@ -58,30 +104,40 @@ public class MemoryContextService {
     }
 
     public MemoryContext retrieve(MemoryRequest request, RetrievalServingMode servingMode) {
-        return retrieve(request, servingMode, false);
+        return execute(request, RetrieveOptions.audited(servingMode), false).context();
     }
 
     /** NEW chat serving variant: an audited total retriever outage signals the legacy fallback. */
     public MemoryContext retrieveForServing(MemoryRequest request) {
-        return retrieve(request, RetrievalServingMode.NEW, true);
+        return execute(request, RetrieveOptions.audited(RetrievalServingMode.NEW), true).context();
     }
 
-    private MemoryContext retrieve(
-            MemoryRequest request, RetrievalServingMode servingMode, boolean fallbackOnTotalFailure) {
+    /** mezo-4qyt: the full-trace variant every other entry point now delegates to. */
+    public RetrievalOutcome retrieveDetailed(MemoryRequest request, RetrieveOptions options) {
+        return execute(request, options, false);
+    }
+
+    private RetrievalOutcome execute(
+            MemoryRequest request, RetrieveOptions options, boolean fallbackOnTotalFailure) {
+        RetrievalServingMode servingMode = options.servingMode();
         long started = System.nanoTime();
-        PreparedMemoryQuery query = queryPreparer.prepare(request);
+        PreparedMemoryQuery query = queryPreparer.prepare(request, options.rewrite());
         if (query.mode() == QueryMode.NO_MEMORY_NEEDED) {
-            AuditResult audit = auditWriter.write(new AuditCommand(
+            AuditResult audit = writeAudit(options, new AuditCommand(
                     request, query, properties.servingEmbeddingVersion(), null, servingMode,
                     elapsedMillis(started), Map.of(), null, List.of(), List.of(), false));
-            return new MemoryContext(List.of(), "", List.of(), audit.runId(), audit.traceId());
+            MemoryContext empty =
+                    new MemoryContext(List.of(), "", List.of(), audit.runId(), audit.traceId());
+            return new RetrievalOutcome(empty, query, List.of(), Set.of(), Map.of(), null,
+                    elapsedMillis(started), false, audit.runId());
         }
 
         RetrievalBatch batch = retrieveCandidates(request, query);
         List<FusedCandidate> ranked = fusion.fuse(batch.candidates(), query, request.asOf());
         int tokenBudget = boundedTokenBudget(request);
         List<FusedCandidate> selected = selector.select(ranked, tokenBudget, request.asOf());
-        boolean reranked = reranker.shouldRerank(request, batch.candidates(), selected);
+        boolean reranked = options.reranker()
+                && reranker.shouldRerank(request, batch.candidates(), selected);
         if (reranked) {
             ranked = reranker.rerank(ranked);
             selected = selector.select(ranked, tokenBudget, request.asOf());
@@ -90,12 +146,15 @@ public class MemoryContextService {
         boolean totalFailure = batch.successCount() == 0 && !retrievers.isEmpty();
         String errorCode = totalFailure
                 ? ALL_RETRIEVERS_FAILED + (fallbackOnTotalFailure ? "_FALLBACK_OLD" : "") : null;
+        // One source for both shapes: the audit command wants a List, the outcome a Set, and a
+        // candidate must never be "selected" in one and not the other (mezo-4qyt).
         List<MemoryRetrievalAuditWriter.CandidateIdentity> selectedIds = selected.stream()
                 .map(item -> MemoryRetrievalAuditWriter.identity(item.candidate()))
                 .toList();
-        AuditResult audit = auditWriter.write(new AuditCommand(
+        long durationMs = elapsedMillis(started);
+        AuditResult audit = writeAudit(options, new AuditCommand(
                 request, query, properties.servingEmbeddingVersion(), null, servingMode,
-                elapsedMillis(started), batch.trace(), errorCode, ranked, selectedIds, reranked));
+                durationMs, batch.trace(), errorCode, ranked, selectedIds, reranked));
         if (totalFailure && fallbackOnTotalFailure) {
             throw new SystemRuntimeErrorException(
                     SystemMessage.error("INTERNAL_ERROR")
@@ -111,7 +170,22 @@ public class MemoryContextService {
                 .map(item -> new RefsEnvelope.Ref(
                         item.sourceKind(), item.sourceId().toString(), item.label()))
                 .toList();
-        return new MemoryContext(items, promptBlock, refs, audit.runId(), audit.traceId());
+        MemoryContext context =
+                new MemoryContext(items, promptBlock, refs, audit.runId(), audit.traceId());
+        return new RetrievalOutcome(context, query, ranked, Set.copyOf(selectedIds), batch.trace(),
+                errorCode, durationMs, reranked, audit.runId());
+    }
+
+    /**
+     * D1: {@code audit = false} writes nothing. The stand-in still carries a trace id (the surface
+     * shows one so a support conversation has a handle) and an EMPTY {@code resultIds} map, so the
+     * {@link MemoryContextItem#retrievalResultId()} of a dry-run item is null — there is no row to
+     * point at, and inventing one would make the map's "open the audit row" link a dead end.
+     */
+    private AuditResult writeAudit(RetrieveOptions options, AuditCommand command) {
+        return options.audit()
+                ? auditWriter.write(command)
+                : new AuditResult(null, UUID.randomUUID(), Map.of());
     }
 
     private RetrievalBatch retrieveCandidates(MemoryRequest request, PreparedMemoryQuery query) {
@@ -124,12 +198,22 @@ public class MemoryContextService {
                 request, query, properties.servingEmbeddingVersion(), candidateLimit);
         Map<String, RetrieverTask> tasks = new LinkedHashMap<>();
         long timeoutNanos = TimeUnit.MILLISECONDS.toNanos(properties.execution().retrieverTimeoutMs());
+        // mezo-4qyt: both LLM breadcrumb ThreadLocals are plain, so a retriever's embed call on a
+        // pool thread sees neither the actor nor the feature. Capture them HERE, on the calling
+        // thread, and re-bind them inside the task — but only the admin replay's, deliberately:
+        // for a chat turn the override is null and the ambient context is not the replay, so that
+        // path's rows keep exactly the (unattributed) shape they have today. Widening this to
+        // every caller would retroactively re-label all existing embed traffic.
+        UUID actorOverride = LlmActorContext.override();
+        LlmCallContext ambient = llmCallContextHolder.get();
+        LlmCallContext propagated = ambient.isAdminReplay() ? ambient : null;
         retrievers.values().stream()
                 .sorted(Comparator.comparing(MemoryRetriever::name))
                 .forEach(retriever -> {
                     long deadline = System.nanoTime() + timeoutNanos;
                     try {
-                        Future<RetrieverOutcome> future = applicationTaskExecutor.submit(() -> execute(retriever, input));
+                        Future<RetrieverOutcome> future = applicationTaskExecutor.submit(
+                                () -> executeInScope(retriever, input, actorOverride, propagated));
                         tasks.put(retriever.name(), new RetrieverTask(future, deadline, null));
                     } catch (RuntimeException exception) {
                         tasks.put(retriever.name(), new RetrieverTask(null, deadline,
@@ -190,6 +274,18 @@ public class MemoryContextService {
             trace.put(entry.getKey(), details);
         }
         return new RetrievalBatch(Map.copyOf(candidates), Map.copyOf(trace), successCount);
+    }
+
+    /** Re-binds the captured breadcrumbs (if any) around one retriever's work on the pool thread. */
+    private RetrieverOutcome executeInScope(MemoryRetriever retriever, RetrievalInput input,
+            UUID actorOverride, LlmCallContext context) {
+        Supplier<RetrieverOutcome> work = () -> execute(retriever, input);
+        Supplier<RetrieverOutcome> labelled = context == null
+                ? work
+                : () -> llmCallContextHolder.runWith(context, work);
+        return actorOverride == null
+                ? labelled.get()
+                : LlmActorContext.runAsOverride(actorOverride, labelled);
     }
 
     private static RetrieverOutcome execute(MemoryRetriever retriever, RetrievalInput input) {

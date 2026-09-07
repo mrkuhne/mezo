@@ -27,7 +27,10 @@ public class CreatedAtBackdater {
         "journal_entry", "gratitude_entry", "decision_entry",
         "habit_day", "ritual_day", "needs_day", "ai_message", "exercise_feedback",
         // Reflexió S2 (mezo-eq85.2): a hypothesis's dormancy clock starts at its own birthday
-        "pattern");
+        "pattern",
+        // mezo-4qyt: the admin explorer's run list orders by created_at desc, and three
+        // populator-made runs are born inside the same millisecond — the order would be arbitrary.
+        "memory_retrieval_run");
 
     @PersistenceContext
     private EntityManager em;
