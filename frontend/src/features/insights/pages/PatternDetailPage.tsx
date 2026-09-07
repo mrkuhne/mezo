@@ -5,6 +5,9 @@ import { MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
 import { usePatternActions, usePatternMonitor, usePatternPairDetail, usePatterns } from '@/data/hooks'
 import { PatternArtifactDetail } from '@/features/insights/components/PatternArtifactDetail'
 import { PatternDetailHero } from '@/features/insights/components/PatternDetailHero'
+import { EvidenceLog } from '@/features/insights/components/EvidenceLog'
+import { HypothesisStateCard } from '@/features/insights/components/HypothesisStateCard'
+import { TestPlanTiles } from '@/features/insights/components/TestPlanTiles'
 import { PatternEvidenceChart } from '@/features/insights/components/PatternEvidenceChart'
 import { PatternImpactCard } from '@/features/insights/components/PatternImpactCard'
 import { PatternJournal } from '@/features/insights/components/PatternJournal'
@@ -85,6 +88,24 @@ function DaysTable({ days, pair }: { days: AlignedDay[]; pair: PatternMonitorPai
         </tr>)}</tbody>
       </table>
     </details>
+  )
+}
+
+/** „Az eddigi napok" kártya — a szórásdiagram és az őszinte üres/legenda sora. A katalógus-
+ *  és a laborfüzet-elrendezés UGYANEZT a kártyát mutatja, hogy a két olvasat sose különbözzön. */
+function DaysCard({ days, pair }: { days: AlignedDay[]; pair: PatternMonitorPair }) {
+  return (
+    <section className="pdt-card">
+      <div className="pdt-chart-title">
+        <b>{pair.metricBLabel}</b><span>{pair.metricAValueKind === 'binary' && pair.groupZeroDays != null
+          ? `${pair.groupZeroDays} + ${pair.groupOneDays} nap` : `${days.length} nap`}</span>
+      </div>
+      <PatternEvidenceChart days={days} pair={pair} />
+      {days.length < 2
+        ? <p className="pdt-note">Még nincs elég nap az összevetéshez — ahogy gyűlnek, itt jelennek meg.</p>
+        : <p className="pdt-chart-legend">Minden pont egy nap. <span>Az arany kör a legutóbbi.</span></p>}
+      {days.length > 0 && <DaysTable days={days} pair={pair} />}
+    </section>
   )
 }
 
@@ -170,6 +191,31 @@ export function PatternDetailPage() {
   }
 
   const { pair, pattern, events, days, impact } = detail
+
+  // Laborfüzet (Reflexió S6, mezo-eq85.6): egy előre rögzített teszt-tervvel bíró sor SAJÁT
+  // olvasatot kap — állapot-kártya, a terv, a napok, a bizonyíték-napló, és a háttér. A terv
+  // nélküli (katalógus-) sorok elrendezése változatlan.
+  if (pattern?.testPlan) {
+    return (
+      <DetailFrame>
+        <HypothesisStateCard pattern={pattern} pair={pair}
+          onDecide={(status: PatternStatus) => decide(pattern.id, status)} />
+
+        <SectionHead title="A teszt-terv" meta="előre rögzítve" />
+        <TestPlanTiles plan={pattern.testPlan} pair={pair} />
+
+        <SectionHead title="Az eddigi napok" meta="pont = egy nap" />
+        <DaysCard days={days} pair={pair} />
+
+        <SectionHead title="Bizonyíték-napló" meta="minden, ami történt" />
+        <EvidenceLog events={events} />
+
+        <SectionHead title="Háttér" meta="csak ha érdekel" />
+        <Diagnostics pair={pair} monitor={monitor} />
+      </DetailFrame>
+    )
+  }
+
   const entries = journalEntries(events, pair)
   const snapshotRange = firstLastSnapshotN(events)
   const validHistory = (pair.verdict === 'live' || pair.verdict === 'frozen') && snapshotRange != null
@@ -192,17 +238,7 @@ export function PatternDetailPage() {
       )}
 
       <SectionHead title="Az eddigi napok" meta="pont = egy nap" />
-      <section className="pdt-card">
-        <div className="pdt-chart-title">
-          <b>{pair.metricBLabel}</b><span>{pair.metricAValueKind === 'binary' && pair.groupZeroDays != null
-            ? `${pair.groupZeroDays} + ${pair.groupOneDays} nap` : `${days.length} nap`}</span>
-        </div>
-        <PatternEvidenceChart days={days} pair={pair} />
-        {days.length < 2
-          ? <p className="pdt-note">Még nincs elég nap az összevetéshez — ahogy gyűlnek, itt jelennek meg.</p>
-          : <p className="pdt-chart-legend">Minden pont egy nap. <span>Az arany kör a legutóbbi.</span></p>}
-        {days.length > 0 && <DaysTable days={days} pair={pair} />}
-      </section>
+      <DaysCard days={days} pair={pair} />
 
       <StoryTiles pair={pair} />
 

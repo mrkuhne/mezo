@@ -10914,7 +10914,8 @@ button.mz-wtile:active { transform: scale(0.96); }
 :root[data-theme="dark"] .pdt-tech-grid span { background: var(--surface-elevated); }
 
 @media (prefers-reduced-motion: no-preference) {
-  .pdt-hero, .pdt-compare-tile, .pdt-card, .pdt-story-tile, .pdt-fold {
+  .pdt-hero, .pdt-state-card, .pdt-compare-tile, .pdt-card, .pdt-plan-tile, .pdt-log,
+  .pdt-story-tile, .pdt-fold {
     animation: pdt-rise .38s ease both;
   }
   .pdt-progress i { animation: pdt-collect .7s cubic-bezier(.2,.8,.3,1) both; }
@@ -10925,6 +10926,91 @@ button.mz-wtile:active { transform: scale(0.96); }
   .pdt-progress i { animation: none; }
   .pdt-fold summary::after { transition: none; }
 }
+
+/* ===== Laborfüzet — a reflexiós hipotézis részletoldala (mezo-eq85.6) =====
+   Vizuális igazság: docs/design_2.0/prototypes/eszrevetelek.html #labScreen
+   (`.state-card`, `.plan-grid`, `.plan-strip`, `.log`/`.timeline`), a szomszédos
+   `.pdt-*` blokkal azonos ×1.18 nagyításban. Minden szín tokenre megy — a prototípus
+   hexei sötét témában hazudnának. A `.pdt-hero-top` / `.pdt-hypothesis` / `.pdt-actions`
+   furniture-t a katalógus-heróval OSZTJA, itt csak a kártya és a saját darabjai újak. */
+.pdt-state-card {
+  position: relative; overflow: hidden; padding: 15px 17px 14px; border-radius: 25px;
+  background: var(--mz-wash-gold); border: 1px solid var(--mz-line-soft);
+  box-shadow: var(--mz-shadow-gold);
+}
+.pdt-state-card h1 {
+  margin-top: 4px; max-width: 290px; font-family: var(--ff-serif); font-style: italic;
+  font-size: 22px; line-height: 1.12; letter-spacing: -.02em; color: var(--text-primary);
+}
+.pdt-answer-sub { margin-top: 8px; color: var(--text-secondary); font-size: 11px; line-height: 1.45; font-weight: 300; }
+.pdt-answer-sub b { color: var(--text-primary); font-weight: 650; }
+
+.pdt-belief { display: flex; align-items: center; gap: 14px; margin-top: 12px; }
+.pdt-belief-ring {
+  width: 64px; height: 64px; flex: none; border-radius: 50%; display: grid; place-items: center;
+  background: conic-gradient(var(--mz-cell-gold-ink) var(--v), var(--mz-qxp-bg) 0);
+}
+.pdt-belief-ring .in {
+  width: 50px; height: 50px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--surface-card); font-size: 15px; font-weight: 200; letter-spacing: -.02em;
+  font-variant-numeric: tabular-nums;
+}
+.pdt-belief-ring small { display: block; margin-top: -2px; color: var(--mz-cell-gold-ink); font-size: 7.5px; font-weight: 800; }
+.pdt-belief p { color: var(--text-secondary); font-size: 10px; line-height: 1.45; font-weight: 300; }
+.pdt-belief p b { color: var(--text-primary); font-weight: 650; }
+
+.pdt-plan-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.pdt-plan-tile {
+  position: relative; overflow: hidden; min-height: 104px; padding: 12px 13px; border-radius: 21px;
+  border: 1px solid var(--mz-line-soft); box-shadow: var(--mz-shadow);
+}
+.pdt-plan-tile-a { background: var(--mz-wash-coral); }
+.pdt-plan-tile-b { background: var(--mz-wash-lav); }
+.pdt-plan-tile-a .pdt-tile-label { color: var(--mz-cell-coral-ink); }
+.pdt-plan-tile-b .pdt-tile-label { color: var(--mz-cell-lav-ink); }
+.pdt-plan-src { position: absolute; right: 11px; top: 11px; }
+.pdt-plan-nm { margin-top: 7px; font-size: 13px; font-weight: 700; }
+.pdt-plan-sb { margin-top: 2px; color: var(--text-secondary); font-size: 9px; }
+.pdt-plan-strip { display: flex; gap: 7px; margin-top: 9px; }
+.pdt-plan-strip span {
+  flex: 1; padding: 8px 4px; border-radius: 14px; text-align: center;
+  background: var(--mz-cellbg); border: 1px solid var(--mz-line-soft);
+  color: var(--text-muted); font-size: 8px;
+}
+.pdt-plan-strip b { display: block; color: var(--mz-cell-lav-ink); font-size: 12px; font-variant-numeric: tabular-nums; }
+
+.pdt-log {
+  padding: 13px 14px; border-radius: 21px; background: var(--mz-fic-bg);
+  border: 1px solid var(--mz-line-soft); box-shadow: var(--mz-shadow);
+}
+.pdt-timeline { position: relative; padding-left: 24px; }
+.pdt-timeline::before {
+  content: ''; position: absolute; left: 7px; top: 7px; bottom: 9px; width: 1px;
+  background: var(--border-subtle);
+}
+.pdt-event { position: relative; padding-bottom: 13px; }
+.pdt-event:last-child { padding-bottom: 0; }
+.pdt-event::before {
+  content: ''; position: absolute; left: -21px; top: 4px; width: 11px; height: 11px; border-radius: 50%;
+  background: var(--dot); box-shadow: 0 0 0 3px var(--surface-1);
+}
+.pdt-event-coral { --dot: var(--mz-cell-coral-ink); }
+.pdt-event-lav { --dot: var(--mz-cell-lav-ink); }
+.pdt-event-gold { --dot: var(--mz-cell-gold-ink); }
+.pdt-event-sage { --dot: var(--mz-cell-sage-ink); }
+.pdt-event-mute { --dot: var(--text-disabled); }
+.pdt-event time {
+  display: flex; align-items: center; gap: 7px; color: var(--text-muted);
+  font-size: 8px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase;
+}
+.pdt-event time em {
+  font-style: normal; padding: 1px 7px; border-radius: 999px; letter-spacing: .06em;
+  background: var(--surface-recess); color: var(--text-secondary);
+}
+.pdt-event p { margin-top: 3px; color: var(--text-secondary); font-size: 10px; line-height: 1.4; }
+.pdt-event p b { color: var(--text-primary); font-weight: 650; }
+/* A TE szavaid — a ház idézet-idiómája: Fraunces, dőlt (ld. `.nap-obs-say`). */
+.pdt-event-you p { font-family: var(--ff-serif); font-style: italic; color: var(--text-primary); }
 
 /* ===== mezo-szerkesztő · zóna-sáv (mezo-yty6) ===== */
 .mz-zb { position: relative; height: 14px; border-radius: 7px; overflow: hidden;
