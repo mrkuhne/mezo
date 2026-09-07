@@ -1,5 +1,7 @@
+import type { ReactNode } from 'react'
 import { Navigate, type RouteObject, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { AppLayout } from '@/app/AppLayout'
+import { useMe } from '@/data/hooks'
 import { adminRoutes } from '@/features/admin/adminRoutes'
 import { NapHubPage } from '@/features/today/pages/NapHubPage'
 import { NapMezoPage } from '@/features/today/pages/NapMezoPage'
@@ -129,6 +131,30 @@ import { DetektorokPage } from '@/features/character/pages/DetektorokPage'
 function LegacyPathRedirect({ prefix, to }: { prefix: string; to: string }) {
   const location = useLocation()
   return <Navigate to={location.pathname.replace(prefix, to) + location.search} replace />
+}
+
+/**
+ * Owner-gates a legacy redirect that lands inside `/admin` (mezo-d5iy.17). The two entries
+ * this wraps — `me/beallitasok/admin` and `me/ai-usage/*` — sit INSIDE the AppLayout route
+ * tree, so any authenticated user (not just owners) can reach them via an old bookmark or a
+ * stale in-app `navigate()` call. Without this gate, a non-owner following one lands on
+ * `/admin`, where `AdminLayout` fires an error toast and bounces them back to `/` — a jarring
+ * "eject" UX for what should just be a quiet dead link.
+ *
+ * Mirrors `AdminLayout`'s own owner check (`useMe().data?.role === 'OWNER'`) so the two stay
+ * in lockstep, but resolves silently instead of via AdminLayout's toast-and-bounce: a
+ * non-owner here never even reaches `/admin` to trigger that path.
+ *
+ * - pending (`me.data` not yet resolved) → render nothing; don't guess either way.
+ * - owner → perform the wrapped redirect (`children`).
+ * - non-owner → silently redirect to `/`, no toast.
+ */
+function OwnerOnlyRedirect({ children }: { children: ReactNode }) {
+  const me = useMe()
+  if (me.isPending) return null
+  const isOwner = me.data?.role === 'OWNER'
+  if (!isOwner) return <Navigate to="/" replace />
+  return <>{children}</>
 }
 
 /** `/train/mesocycles/:id/overview` — the retired standalone Volumen page (mezo-d20.15
@@ -421,8 +447,14 @@ export const routes: RouteObject[] = [
       // Beta admin + AI-napló (mezo-qw37.3 / mezo-uakh) moved under /admin (mezo-d5iy.13) — both
       // were OWNER-only already, so they now live beside the rest of the owner console. These
       // two entries are pure redirects for old bookmarks/in-app navigate() calls, not pages.
-      { path: 'me/beallitasok/admin', element: <Navigate to="/admin/accounts" replace /> },
-      { path: 'me/ai-usage/*', element: <LegacyPathRedirect prefix="/me/ai-usage" to="/admin/cost" /> },
+      {
+        path: 'me/beallitasok/admin',
+        element: <OwnerOnlyRedirect><Navigate to="/admin/accounts" replace /></OwnerOnlyRedirect>,
+      },
+      {
+        path: 'me/ai-usage/*',
+        element: <OwnerOnlyRedirect><LegacyPathRedirect prefix="/me/ai-usage" to="/admin/cost" /></OwnerOnlyRedirect>,
+      },
       // Full-screen night surface (train/session idiom) — no Me sub-nav chrome.
       { path: 'me/sleep/night', element: <NightPage /> },
       // Full-screen Napzárás flow (train/session idiom) — no tab-bar chrome (mezo-ilsj).

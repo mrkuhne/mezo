@@ -78,7 +78,7 @@ export function AdminDataPage() {
     navigate(`/admin/data?table=${encodeURIComponent(refTable)}&rowId=${encodeURIComponent(String(rowId))}`)
   }
 
-  const rowsTileQuery = { isError: rows.isError, refetch: rows.refetch }
+  const rowsTileQuery = { isError: rows.isError, isPending: rows.isPending, refetch: rows.refetch }
   const canPrev = page > 0
   const canNext = (page + 1) * (rows.data.size || 1) < rows.data.total
 
