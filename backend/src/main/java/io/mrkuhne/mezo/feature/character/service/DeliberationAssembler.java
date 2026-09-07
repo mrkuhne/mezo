@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /**
  * Builds the {@link ConferenceDeliberationEnvelope} from what the konzílium's three rounds
@@ -14,11 +13,12 @@ import java.util.UUID;
  * every lookup it needs (chapter titles, a claim's chapter) is passed in by the caller.
  *
  * <p>A missing verdict or ruling stays {@code null} on the item: a round that produced nothing
- * must not be shown as if it had ruled.
+ * must not be shown as if it had ruled. Callers therefore pass the SHOWABLE rulings
+ * ({@link KonziliumVerdictRound.Result#shownRulings()}) — empty when the Integrátor's answer
+ * never parsed — not the lifecycle's index-complete, defaulted list.
  */
 public final class DeliberationAssembler {
 
-    private static final String NEW_KIND = "NEW";
     private static final String FALLBACK_CHAPTER_KEY = "egyeb";
     private static final String FALLBACK_CHAPTER_TITLE = "Egyéb javaslatok";
 
@@ -30,8 +30,7 @@ public final class DeliberationAssembler {
             List<KonziliumCrossTalkRound.Reaction> reactions,
             List<KonziliumVerdictRound.SkepticVerdict> verdicts,
             List<ClaimRuling> rulings,
-            Map<String, String> chapterKeyToTitle,
-            Map<UUID, String> claimIdToChapterKey) {
+            KonziliumChapters chapters) {
 
         Map<Integer, List<ConferenceDeliberationEnvelope.PeerReaction>> reactionsByIndex = new LinkedHashMap<>();
         for (KonziliumCrossTalkRound.Reaction reaction : reactions) {
@@ -50,7 +49,8 @@ public final class DeliberationAssembler {
         Map<String, List<ConferenceDeliberationEnvelope.Item>> itemsByChapter = new LinkedHashMap<>();
         for (int i = 0; i < proposals.size(); i++) {
             ClaimProposal proposal = proposals.get(i);
-            String chapterKey = chapterKeyOf(proposal, claimIdToChapterKey);
+            String resolved = chapters.chapterKeyOf(proposal);
+            String chapterKey = resolved == null ? FALLBACK_CHAPTER_KEY : resolved;
             ConferenceDeliberationEnvelope.ChairRuling chair = i < rulings.size()
                     ? new ConferenceDeliberationEnvelope.ChairRuling(
                             rulings.get(i).accepted(), rulings.get(i).ruledConfidence(), rulings.get(i).reason())
@@ -72,27 +72,15 @@ public final class DeliberationAssembler {
         List<ConferenceDeliberationEnvelope.Thread> threads = new ArrayList<>();
         for (Map.Entry<String, List<ConferenceDeliberationEnvelope.Item>> entry : itemsByChapter.entrySet()) {
             String chapterKey = entry.getKey();
-            String title = FALLBACK_CHAPTER_KEY.equals(chapterKey)
-                    ? FALLBACK_CHAPTER_TITLE
-                    : chapterKeyToTitle.getOrDefault(chapterKey, chapterKey);
-            threads.add(new ConferenceDeliberationEnvelope.Thread(chapterKey, title, List.copyOf(entry.getValue())));
+            boolean fallback = FALLBACK_CHAPTER_KEY.equals(chapterKey);
+            // The fallback bucket has no dossier chapter behind it, so it must not claim a
+            // dimension key the dossier does not contain (mezo-xlvr final review, M3) — it marks
+            // "no chapter" with a null key, exactly the way a legacy expert-grouped thread does.
+            threads.add(new ConferenceDeliberationEnvelope.Thread(
+                    fallback ? null : chapterKey,
+                    fallback ? FALLBACK_CHAPTER_TITLE : chapters.titleOf(chapterKey),
+                    List.copyOf(entry.getValue())));
         }
         return new ConferenceDeliberationEnvelope(List.copyOf(threads));
-    }
-
-    /** A NEW proposal names its chapter; the others are placed by the claim they target. An
-     *  unresolvable claim falls back to the literal {@code "egyeb"} chapter — never silently
-     *  merged into somebody else's chapter. */
-    private static String chapterKeyOf(ClaimProposal proposal, Map<UUID, String> claimIdToChapterKey) {
-        if (NEW_KIND.equals(proposal.kind()) && proposal.dimensionKey() != null) {
-            return proposal.dimensionKey();
-        }
-        if (proposal.claimId() != null) {
-            String chapterKey = claimIdToChapterKey.get(proposal.claimId());
-            if (chapterKey != null) {
-                return chapterKey;
-            }
-        }
-        return FALLBACK_CHAPTER_KEY;
     }
 }

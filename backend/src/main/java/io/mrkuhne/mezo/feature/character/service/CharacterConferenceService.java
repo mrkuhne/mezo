@@ -17,10 +17,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -60,6 +58,7 @@ public class CharacterConferenceService {
     private final KonziliumProposalRound proposalRound;
     private final KonziliumCrossTalkRound crossTalkRound;
     private final KonziliumVerdictRound verdictRound;
+    private final KonziliumChapterResolver chapterResolver;
     private final ClaimLifecycle claimLifecycle;
     private final PortraitWriter portraitWriter;
     private final CharacterRunLog runLog;
@@ -104,24 +103,9 @@ public class CharacterConferenceService {
         List<ConferenceTranscriptEnvelope.Turn> transcriptTurns = new ArrayList<>(proposalResult.turns());
         transcriptTurns.addAll(verdictResult.turns());
 
-        Map<String, String> chapterTitles = new LinkedHashMap<>();
-        Map<UUID, String> claimChapters = new LinkedHashMap<>();
-        Map<UUID, String> dimensionKeyById = new LinkedHashMap<>();
-        for (CharacterDimensionEntity dimension : dimensionRepository.findByCreatedBy(owner)) {
-            chapterTitles.put(dimension.getKey(), dimension.getTitle());
-            dimensionKeyById.put(dimension.getId(), dimension.getKey());
-        }
-        for (ClaimProposal proposal : proposalResult.proposals()) {
-            if (proposal.claimId() != null) {
-                claimRepository.findByIdAndCreatedBy(proposal.claimId(), owner)
-                        .map(CharacterClaimEntity::getDimensionId)
-                        .map(dimensionKeyById::get)
-                        .ifPresent(chapterKey -> claimChapters.put(proposal.claimId(), chapterKey));
-            }
-        }
         ConferenceDeliberationEnvelope deliberation = DeliberationAssembler.assemble(
                 proposalResult.proposals(), crossTalkResult.reactions(), verdictResult.verdicts(),
-                verdictResult.rulings(), chapterTitles, claimChapters);
+                verdictResult.shownRulings(), chapterResolver.resolve(owner, proposalResult.proposals()));
 
         CharacterConferenceEntity conference = persistConferenceAndApplyOutcome(owner, WEEKLY, weekStart,
                 transcriptTurns, verdictResult.chapters(), verdictResult.rulings(), deliberation);

@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
 import io.mrkuhne.mezo.feature.character.entity.ClaimConfidenceHistoryEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ClaimEvidenceEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ClaimFeedbackEnvelope;
+import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
 import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
@@ -126,6 +127,21 @@ class CharacterMonthlyServiceIT extends ApiIntegrationTest {
 
         assertThat(conference.getOutcome().changes()).extracting(ConferenceOutcomeEnvelope.Change::kind)
                 .contains("CLAIM_ACCEPTED", "PORTRAIT_REWRITTEN");
+
+        // I4 (mezo-xlvr final review): the monthly konzílium STORES its structure too — without
+        // it the row would be re-derived from its own prose on every read, losing chapter
+        // membership, kind and claim id. It has no cross-talk round, so reactions stay empty.
+        ConferenceDeliberationEnvelope deliberation = conference.getDeliberation();
+        assertThat(deliberation).isNotNull();
+        assertThat(deliberation.threads()).isNotEmpty();
+        assertThat(deliberation.threads().stream().flatMap(thread -> thread.items().stream()))
+                .isNotEmpty()
+                .allSatisfy(item -> {
+                    assertThat(item.kind()).isNotBlank();
+                    assertThat(item.expertKey()).isNotBlank();
+                    assertThat(item.reactions()).isEmpty();
+                    assertThat(item.chair()).isNotNull();
+                });
     }
 
     @Test

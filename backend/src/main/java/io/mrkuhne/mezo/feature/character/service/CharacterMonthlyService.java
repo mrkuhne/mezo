@@ -4,6 +4,7 @@ import io.mrkuhne.mezo.feature.character.config.CharacterProperties;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
+import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceOutcomeEnvelope;
 import io.mrkuhne.mezo.feature.character.entity.ConferenceTranscriptEnvelope;
 import io.mrkuhne.mezo.feature.character.repository.CharacterClaimRepository;
@@ -80,6 +81,7 @@ public class CharacterMonthlyService {
     private final CharacterClaimRepository claimRepository;
     private final KonziliumProposalRound proposalRound;
     private final KonziliumVerdictRound verdictRound;
+    private final KonziliumChapterResolver chapterResolver;
     private final CharacterConferenceService conferenceService;
     private final CharacterService characterService;
     private final CharacterProperties properties;
@@ -135,8 +137,16 @@ public class CharacterMonthlyService {
         List<ConferenceTranscriptEnvelope.Turn> transcriptTurns = new ArrayList<>(proposalResult.turns());
         transcriptTurns.addAll(verdictResult.turns());
 
+        // The structure is assembled and STORED here too (mezo-xlvr final review, I4): without
+        // it a brand-new row would be re-derived from its own prose on every read, throwing away
+        // chapter membership, kind and claim id. This konzílium has no cross-talk round, so the
+        // reaction list is honestly empty.
+        ConferenceDeliberationEnvelope deliberation = DeliberationAssembler.assemble(
+                proposalResult.proposals(), List.of(), verdictResult.verdicts(),
+                verdictResult.shownRulings(), chapterResolver.resolve(owner, proposalResult.proposals()));
+
         CharacterConferenceEntity conference = conferenceService.persistConferenceAndApplyOutcome(owner, MONTHLY,
-                monthStart, transcriptTurns, verdictResult.chapters(), verdictResult.rulings(), null);
+                monthStart, transcriptTurns, verdictResult.chapters(), verdictResult.rulings(), deliberation);
 
         List<ConferenceOutcomeEnvelope.Change> retirementChanges = retireStaleChapters(owner);
         if (!retirementChanges.isEmpty()) {

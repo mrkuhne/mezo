@@ -6,6 +6,7 @@ import io.mrkuhne.mezo.feature.character.entity.ConferenceDeliberationEnvelope;
 import io.mrkuhne.mezo.feature.character.service.ClaimProposal;
 import io.mrkuhne.mezo.feature.character.service.ClaimRuling;
 import io.mrkuhne.mezo.feature.character.service.DeliberationAssembler;
+import io.mrkuhne.mezo.feature.character.service.KonziliumChapters;
 import io.mrkuhne.mezo.feature.character.service.KonziliumCrossTalkRound;
 import io.mrkuhne.mezo.feature.character.service.KonziliumVerdictRound;
 import java.math.BigDecimal;
@@ -36,8 +37,7 @@ class DeliberationAssemblerTest {
                 List.of(new ClaimRuling(sleep, false, new BigDecimal("0.40"), "Nem engedem be."),
                         new ClaimRuling(mind, true, new BigDecimal("0.60"), "Rendben."),
                         new ClaimRuling(log, true, new BigDecimal("0.70"), "Rendben.")),
-                Map.of("recovery", "Regeneráció", "discipline", "Fegyelem"),
-                Map.of());
+                new KonziliumChapters(Map.of("recovery", "Regeneráció", "discipline", "Fegyelem"), Map.of()));
 
         assertThat(envelope.threads()).hasSize(2);
         ConferenceDeliberationEnvelope.Thread recovery = envelope.threads().get(0);
@@ -60,11 +60,32 @@ class DeliberationAssemblerTest {
         ConferenceDeliberationEnvelope envelope = DeliberationAssembler.assemble(
                 List.of(sleep), List.of(), List.of(),
                 List.of(new ClaimRuling(sleep, true, new BigDecimal("0.60"), "Rendben.")),
-                Map.of("recovery", "Regeneráció"), Map.of());
+                new KonziliumChapters(Map.of("recovery", "Regeneráció"), Map.of()));
 
         ConferenceDeliberationEnvelope.Item item = envelope.threads().get(0).items().get(0);
         assertThat(item.skeptic()).isNull();
         assertThat(item.chair()).isNotNull();
+    }
+
+    /** I1 (mezo-xlvr final review): when the Integrátor round never parsed, the caller hands over
+     *  an EMPTY ruling list — no item may then claim the chair ruled on it. */
+    @Test
+    void assemble_noRulingsAtAll_leavesEveryChairNull() {
+        ClaimProposal sleep = newProposal("szomnologus", "recovery", "Romlik az alvás.");
+        ClaimProposal mind = newProposal("pszichologus", "recovery", "Feszült hét.");
+
+        ConferenceDeliberationEnvelope envelope = DeliberationAssembler.assemble(
+                List.of(sleep, mind), List.of(),
+                List.of(new KonziliumVerdictRound.SkepticVerdict(0, "KILL", "Kevés adat.")),
+                List.of(),
+                new KonziliumChapters(Map.of("recovery", "Regeneráció"), Map.of()));
+
+        assertThat(envelope.threads()).singleElement().satisfies(thread -> {
+            assertThat(thread.items()).hasSize(2);
+            assertThat(thread.items()).allSatisfy(item -> assertThat(item.chair()).isNull());
+            assertThat(thread.items().get(0).skeptic().verdict()).isEqualTo("KILL");
+            assertThat(thread.items().get(1).skeptic()).isNull();
+        });
     }
 
     @Test
@@ -76,7 +97,7 @@ class DeliberationAssemblerTest {
         ConferenceDeliberationEnvelope envelope = DeliberationAssembler.assemble(
                 List.of(down), List.of(), List.of(),
                 List.of(new ClaimRuling(down, true, new BigDecimal("0.40"), "Rendben.")),
-                Map.of("recovery", "Regeneráció"), Map.of(claimId, "recovery"));
+                new KonziliumChapters(Map.of("recovery", "Regeneráció"), Map.of(claimId, "recovery")));
 
         assertThat(envelope.threads()).singleElement().satisfies(thread -> {
             assertThat(thread.dimensionKey()).isEqualTo("recovery");
@@ -91,7 +112,7 @@ class DeliberationAssemblerTest {
         ConferenceDeliberationEnvelope envelope = DeliberationAssembler.assemble(
                 List.of(orphan), List.of(), List.of(),
                 List.of(new ClaimRuling(orphan, true, new BigDecimal("0.60"), "Rendben.")),
-                Map.of(), Map.of());
+                KonziliumChapters.empty());
 
         assertThat(envelope.threads()).singleElement()
                 .satisfies(thread -> assertThat(thread.title()).isEqualTo("discipline"));
@@ -106,10 +127,11 @@ class DeliberationAssemblerTest {
         ConferenceDeliberationEnvelope envelope = DeliberationAssembler.assemble(
                 List.of(orphan), List.of(), List.of(),
                 List.of(new ClaimRuling(orphan, true, new BigDecimal("0.40"), "Rendben.")),
-                Map.of(), Map.of());
+                KonziliumChapters.empty());
 
+        // The bucket is NOT a dossier chapter, so it must not name one (final review, M3).
         assertThat(envelope.threads()).singleElement().satisfies(thread -> {
-            assertThat(thread.dimensionKey()).isEqualTo("egyeb");
+            assertThat(thread.dimensionKey()).isNull();
             assertThat(thread.title()).isEqualTo("Egyéb javaslatok");
         });
     }
