@@ -201,8 +201,8 @@ public class ChatService {
      *  {@code recalled} (W3.1b) is the disclosure envelope the assistant row persists — null when
      *  the turn recalled nothing. */
     public record PreparedTurn(UUID conversationId, UUID userMessageId, String systemPrompt,
-                               List<Turn> history, String userContent, List<RefsEnvelope.Ref> recalledRefs,
-                               RecalledMemoriesEnvelope recalled) {}
+                               String turnContext, List<Turn> history, String userContent,
+                               List<RefsEnvelope.Ref> recalledRefs, RecalledMemoriesEnvelope recalled) {}
 
     /**
      * First half of a STREAMED turn (own transaction when called through the proxy):
@@ -218,15 +218,16 @@ public class ChatService {
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
         ChatMemoryPayload memory = chatMemoryContextAdapter.resolve(
                 userId, conversationId, request.getContent(), history, today);
-        String systemPrompt = assembleSystemPrompt(userId, today, memory.factsBlock(),
+        String systemPrompt = stableSystemPrompt(userId);
+        String turnCtx = turnContext(userId, today, memory.factsBlock(),
                 memory.memoriesBlock(), memory.graphBlock(),
                 conversation.getContextKind(), conversation.getContextDate());
         AiMessageEntity userRow = persistMessage(
                 conversation, userId, AiMessageEntity.ROLE_USER, request.getContent(), null, null, false, null);
         recordSeedReply(userId, conversation, request.getContent());
         touchConversation(conversation, request.getContent());
-        return new PreparedTurn(conversationId, userRow.getId(), systemPrompt, history, request.getContent(),
-                memory.refs(), memory.recalled());
+        return new PreparedTurn(conversationId, userRow.getId(), systemPrompt, turnCtx, history,
+                request.getContent(), memory.refs(), memory.recalled());
     }
 
     /**
@@ -259,7 +260,8 @@ public class ChatService {
         List<Turn> history = toTurns(loadWindow(userId, conversationId));
         ChatMemoryPayload memory = chatMemoryContextAdapter.resolve(
                 userId, conversationId, request.getContent(), history, today);
-        String systemPrompt = assembleSystemPrompt(userId, today, memory.factsBlock(),
+        String systemPrompt = stableSystemPrompt(userId);
+        String turnCtx = turnContext(userId, today, memory.factsBlock(),
                 memory.memoriesBlock(), memory.graphBlock(),
                 conversation.getContextKind(), conversation.getContextDate());
 
@@ -278,13 +280,13 @@ public class ChatService {
         if (chain != null) {
             // V1.3: the advisor chain owns the LLM round(s) — retry-once, degraded on 2nd failure
             AdvisedAnswer advised = llmCallContextHolder.runWith(turnContext,
-                    () -> chain.complete(systemPrompt, history, request.getContent(),
+                    () -> chain.complete(systemPrompt, turnCtx, history, request.getContent(),
                             toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit), audit));
             answer = advised.answer();
             degraded = advised.degraded();
         } else {
             answer = llmCallContextHolder.runWith(turnContext,
-                    () -> companionLlm.complete(systemPrompt, history, request.getContent(),
+                    () -> companionLlm.complete(systemPrompt, turnCtx, history, request.getContent(),
                             toolRegistry.callbacks(audit), toolRegistry.toolContext(userId, audit)));
         }
         // mezo-8z79: same guard as the streamed path — a blank answer is a failed turn. Here the
@@ -322,11 +324,12 @@ public class ChatService {
     public void openingTurn(UUID userId, UUID conversationId) {
         try {
             AiConversationEntity conversation = conversationService.getOwned(userId, conversationId);
-            String systemPrompt = assembleSystemPrompt(userId, LocalDate.now(),
+            String systemPrompt = stableSystemPrompt(userId);
+            String turnCtx = turnContext(userId, LocalDate.now(),
                     knowledgeFactService.renderPromptBlock(userId), "", "",
                     conversation.getContextKind(), conversation.getContextDate());
             String answer = companionLlm.complete(
-                    systemPrompt, List.of(), KICKOFF_PROMPT, List.of(), Map.of());
+                    systemPrompt, turnCtx, List.of(), KICKOFF_PROMPT, List.of(), Map.of());
             if (answer == null || answer.isBlank()) {
                 log.warn("Opening turn for conversation {} produced no text — conversation stays empty",
                         conversationId);
@@ -341,15 +344,31 @@ public class ChatService {
     }
 
     /**
-     * The canonical system prompt: voice → snapshot (V0.3) → [Heti adatok] anchored-conversation
-     * block (mezo-p2tr, "" for a plain conversation) → top-N facts (V1.1) → fresh pattern-facts
+     * The canonical prompt order, unchanged since mezo-q71s but now delivered in TWO halves
+     * (mezo-ozri.5): voice [stable] → snapshot (V0.3) → [Heti adatok] anchored-conversation block
+     * (mezo-p2tr, "" for a plain conversation) → top-N facts (V1.1) → fresh pattern-facts
      * acknowledgment (V3.3) → [Karakter] dossier block (mezo-1gim.8, "" unless both the character
      * and companion switches are on) → [Rólad tanultam] pragmatic profile (W4.3, "" when the
      * profile is archived/absent) → [Emlékek] ambient recall (W3.1) → [Összefüggések] graph
      * context (W2.4, "" when the graph switch is off or nothing matched) → TONE_REMINDER
      * (mezo-q71s, always last). The history travels as real prior messages, not a transcript here.
+     *
+     * <p>This method returns the STABLE half only — the voice, and nothing that changes between
+     * turns. It is what the provider caches: it sits in front of the 46 tool schemas in the request
+     * the adapter builds, so anything volatile placed here would invalidate the tool definitions'
+     * cache entry on every single turn and re-bill them at the full input rate.
      */
-    private String assembleSystemPrompt(
+    private String stableSystemPrompt(UUID userId) {
+        return promptPersona.render(userId, SYSTEM_PROMPT);
+    }
+
+    /**
+     * The VOLATILE half, in the order the javadoc above describes. Concatenated with NOTHING between
+     * the halves: {@code stableSystemPrompt(..) + turnContext(..)} is character-for-character the
+     * single string this pair replaced (mezo-ozri.5) — the audit column, the fake's prefix dispatch
+     * and its {@code system=[…]} echo all depend on that identity.
+     */
+    private String turnContext(
             UUID userId,
             LocalDate today,
             String factsBlock,
@@ -357,8 +376,7 @@ public class ChatService {
             String graphBlock,
             String contextKind,
             LocalDate contextDate) {
-        return promptPersona.render(userId, SYSTEM_PROMPT
-                + contextSnapshotAssembler.render(userId, today)
+        return promptPersona.render(userId, contextSnapshotAssembler.render(userId, today)
                 + anchoredBlock(userId, contextKind, contextDate)
                 + factsBlock
                 + knowledgeFactService.renderNewPatternFactsBlock(userId)

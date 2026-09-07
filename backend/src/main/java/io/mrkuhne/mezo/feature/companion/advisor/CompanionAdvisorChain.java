@@ -39,28 +39,35 @@ public class CompanionAdvisorChain {
     private final LlmCallContextHolder llmCallContextHolder;
 
     /** Sync path: first attempt + review in one call. */
-    public AdvisedAnswer complete(String systemPrompt, List<Turn> history, String userMessage,
-            List<ToolCallback> tools, Map<String, Object> toolContext, ToolCallAudit audit) {
-        String answer = companionLlm.complete(systemPrompt, history, userMessage, tools, toolContext);
-        return review(systemPrompt, history, userMessage, answer, tools, toolContext, audit);
+    public AdvisedAnswer complete(String systemPrompt, String turnContext, List<Turn> history,
+            String userMessage, List<ToolCallback> tools, Map<String, Object> toolContext,
+            ToolCallAudit audit) {
+        String answer = companionLlm.complete(systemPrompt, turnContext, history, userMessage, tools, toolContext);
+        return review(systemPrompt, turnContext, history, userMessage, answer, tools, toolContext, audit);
     }
 
     /** Streamed path: attempt-1 already delivered as deltas — review it, retry non-streamed if needed. */
-    public AdvisedAnswer review(String systemPrompt, List<Turn> history, String userMessage,
+    public AdvisedAnswer review(String systemPrompt, String turnContext, List<Turn> history, String userMessage,
             String answer, List<ToolCallback> tools, Map<String, Object> toolContext, ToolCallAudit audit) {
         long startedAt = System.currentTimeMillis();
-        List<AdvisorViolation> violations = runChecks(systemPrompt, history, userMessage, answer, audit);
+        // The checks judge the answer against EVERYTHING it was grounded in, so they see the two
+        // halves joined — the split (mezo-ozri.5) is a transport detail of the outgoing request.
+        String instructions = CompanionLlm.joinInstructions(systemPrompt, turnContext);
+        List<AdvisorViolation> violations = runChecks(instructions, history, userMessage, answer, audit);
         int retries = 0;
         while (!violations.isEmpty() && retries < properties.advisors().maxRetries()) {
             retries++;
             // mezo-2zyu: the corrective round is the ADVISOR's cost, not the turn's — and in the
             // streamed path it runs deferred, where the caller's context is already gone.
-            String retryPrompt = systemPrompt + AdvisorRetry.block(violations);
+            // mezo-ozri.5: the corrective block joins the VOLATILE half. Appending it to the stable
+            // prompt would push a per-retry string in front of the tool definitions and throw the
+            // cached prefix away for the retry round — the round we least want to pay twice for.
+            String retryContext = (turnContext == null ? "" : turnContext) + AdvisorRetry.block(violations);
             answer = llmCallContextHolder.runWith(
                     new LlmCallContext("companion_advisor", "retry", null, null),
                     // a korrekciós kör ugyanazt a beszélgetést látja, mint az eredeti
-                    () -> companionLlm.complete(retryPrompt, history, userMessage, tools, toolContext));
-            violations = runChecks(systemPrompt, history, userMessage, answer, audit);
+                    () -> companionLlm.complete(systemPrompt, retryContext, history, userMessage, tools, toolContext));
+            violations = runChecks(instructions, history, userMessage, answer, audit);
         }
         boolean degraded = !violations.isEmpty();
         if (degraded) {
