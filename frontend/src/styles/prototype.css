@@ -309,7 +309,6 @@
   --mz-titlech-bg: rgba(201, 150, 46, 0.14);
   --mz-titlech-ink: #A8801F;
   --mz-goalfill: linear-gradient(90deg, #FF9A78, #FF5B36);
-  --mz-goaldot: #FF5B36;
   --mz-wash-band: linear-gradient(150deg, #FFEDE4, #FFF8F4);
   /* Edzés hub (mezo-d20.3.1) — prototype edzes-body hub hero + .coach hexes verbatim */
   --mz-wash-trainhero: linear-gradient(140deg, #FFE7DC, #FFFFFF 70%);
@@ -714,7 +713,6 @@
   --mz-titlech-bg: color-mix(in srgb, var(--dv-amber) 18%, var(--surface-card));
   --mz-titlech-ink: var(--dv-amber);
   --mz-goalfill: linear-gradient(90deg, #FF9A78, #FF5B36);
-  --mz-goaldot: #FF5B36;
   --mz-wash-band: linear-gradient(150deg, color-mix(in srgb, var(--dv-coral) 16%, var(--surface-card)), color-mix(in srgb, var(--dv-coral) 5%, var(--surface-page)));
   /* Edzés hub (mezo-d20.3.1) — the hub hero wash + coach bubble on the dark dv ramp */
   --mz-wash-trainhero: linear-gradient(140deg, color-mix(in srgb, var(--dv-coral) 16%, var(--surface-card)), var(--surface-card) 70%);
@@ -2869,19 +2867,6 @@ button.itemrow { cursor: pointer; }
 .mehead .t1 { font-family: var(--ff-display); font-size: 24px; font-weight: 800; letter-spacing: -.3px; color: var(--ink); }
 .mehead .t2 { font-size: 12.5px; color: var(--sub); font-weight: 600; margin-top: 1px; }
 :root[data-theme="dark"] .mehead .avatar { background: linear-gradient(140deg, rgba(155,143,196,.25), rgba(122,109,168,.25)); }
-
-/* ===== Napív goal mini-track (Profil, spec §4.6) — .track reused by the Cél hero ===== */
-.goalmini { display: block; width: 100%; text-align: left; padding: 17px; cursor: pointer; font: inherit; }
-.goalmini .row1 { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
-.goalmini .t { font-size: 14px; font-weight: 800; color: var(--ink); }
-.goalmini .pct { font-size: 12px; color: var(--sage-deep); font-weight: 800; white-space: nowrap; }
-.track { position: relative; height: 13px; border-radius: 999px; background: var(--warm); margin-top: 13px; }
-.track .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 999px; background: linear-gradient(90deg, var(--sage), var(--amber)); }
-.track .dot { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 21px; height: 21px; border-radius: 50%; background: var(--surface); box-shadow: 0 2px 8px rgba(43,33,24,.28); border: 3px solid var(--sage-deep); }
-.track-l { display: flex; justify-content: space-between; font-size: 10.5px; color: var(--faint); font-weight: 800; margin-top: 9px; }
-@media (prefers-reduced-motion: no-preference) {
-  .track .fill { transform-origin: left; transform: scaleX(0); animation: np-grow .9s .3s var(--np-ease-ios) forwards; }
-}
 
 /* ===== Napív biometria + growth summary cards (Profil, spec §4.6) ===== */
 .biocard .bhd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 13px; }
@@ -6426,17 +6411,6 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .enh-goalhead .mz-eyebrow { color: var(--mz-cell-coral-ink); }
 .enh-stch { margin-left: auto; flex: none; font-size: 9px; font-weight: 800; letter-spacing: 0.08em;
   border-radius: 7px; padding: 3px 9px; background: var(--mz-stch-ok-bg); color: var(--mz-stch-ok-ink); }
-.enh-gtrack { position: relative; height: 8px; border-radius: 5px; background: var(--mz-gbar-bg); margin-top: 12px; }
-.enh-gtrack .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 5px;
-  width: var(--p); background: var(--mz-goalfill); }
-.mz-play .enh-gtrack .fill { animation: enh-gfill 0.9s cubic-bezier(0.25, 0.8, 0.35, 1) 0.4s backwards; }
-@keyframes enh-gfill { from { width: 0; } }
-.enh-gtrack .dot { position: absolute; top: 50%; left: var(--p); transform: translate(-50%, -50%);
-  width: 15px; height: 15px; border-radius: 50%; background: var(--mz-stripbg);
-  border: 3px solid var(--mz-goaldot); box-shadow: 0 2px 7px rgba(43, 33, 24, 0.4); }
-.enh-gtlbl { display: flex; justify-content: space-between; margin-top: 6px; font-size: 8.5px;
-  font-weight: 700; color: var(--mz-ink-mut); font-variant-numeric: tabular-nums; }
-.enh-gtlbl b { color: var(--text-primary); }
 .enh-goalcard .mz-mcells { margin-top: 11px; }
 .enh-newgoal { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%;
   min-height: 44px; border: 1.4px dashed rgba(43, 33, 24, 0.22); background: none; border-radius: 20px;
@@ -6454,13 +6428,13 @@ a.nr-nm:focus-visible { outline: 2px solid var(--primary-deep); outline-offset: 
 .enh-eb-sage .mz-eyebrow  { color: var(--mz-cell-sage-ink); }
 
 @media (prefers-reduced-motion: reduce) {
-  .mz-play .enh-gtrack .fill { animation: none; }
   .enh-goalcard { transition: none; }
 }
 
 /* ── Cél page re-face (mezo-d20.6.2) — prototype en-body #page-cel ×1.18:
-   the guard-chip goal card (coral wash, shared .track vocabulary + the identity
-   quote), the engine's recept as amber/sage segment tiles (white mcells + a
+   the guard-chip goal card (coral wash + the identity quote — the .track/.track-l
+   vocabulary this comment once shared with was later deleted from this branch),
+   the engine's recept as amber/sage segment tiles (white mcells + a
    rationale footer), the gym/futás/röplabda timeline lanes + the ⚠ fedezetlen
    gap chip, and the dashed Mesociklus/Futóblokk plan slots. Lane/bar accents
    reuse the pre-existing --tag- and --wash- domain tokens (the GoalTimeline prior
@@ -9540,7 +9514,12 @@ button.mz-wtile:active { transform: scale(0.96); }
 .lg-conflict svg { flex: none; margin-top: 1px; }
 
 /* Heti hub cél-kártya + goalchip (mezo-iizd.9, prototípus celok-body.html #page-heti .qcard/
-   .wgrow/.goalchip). A `.lg-goalchip` a Growth skill-sorban is ezt a nyelvet viseli (mezo-iizd.12). */
+   .wgrow/.goalchip). A `.lg-goalchip` a Growth skill-sorban is ezt a nyelvet viseli (mezo-iizd.12).
+   SZABÁLY a chip TARTALMÁRA (mezo-9r85, 4. tétel): a chip a (cél, dimenzió) pár azon felét
+   nevezi meg, amit a KÖRNYEZŐ SOR nem hordoz. A Heti sor `nm`-je már kiírja a cél címét → ott
+   a chip a DIMENZIÓ-címke (WeekGoalsCard). Egy skill-sor és az Én-hub heroja nem hordoz
+   cél-identitást → ott a chip a CÉL CÍME (SkillBandCard, EnHubPage). Egységesítés a Heti sorban
+   duplán íratná ki a címet. Negyedik fogyasztó: ezt a szabályt alkalmazd, ne érmét dobj. */
 .lg-wcard { border-radius: 18px; padding: 4px 12px 10px; margin-bottom: 10px; background: var(--mz-stripbg);
   border: 0.5px solid var(--lg-hairline); box-shadow: 0 14px 26px -16px rgba(43,33,24,0.3); }
 .lg-wcard-top { display: flex; align-items: baseline; gap: 8px; padding: 10px 2px 4px; }

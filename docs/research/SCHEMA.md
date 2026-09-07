@@ -1,7 +1,7 @@
 ---
 title: Research Wiki — Schema & Governance
 type: summary
-updated: 2026-06-14
+updated: 2026-09-06
 tags: [tooling, technique]
 related: [../features/README.md, ../README.md, index.md, log.md]
 ---
@@ -62,7 +62,7 @@ page — don't spawn a stub.
 Tags are a **small, controlled, extensible** vocabulary — the shared spine across both collections.
 Seed set relevant to mezo (Phase-3 AI brain + the platform around it):
 
-`ai` · `rag` · `pgvector` · `nestjs` · `spring` · `deployment` · `market` · `tooling` · `technique` · `sleep`
+`ai` · `rag` · `pgvector` · `nestjs` · `spring` · `deployment` · `market` · `tooling` · `technique` · `sleep` · `goals`
 
 The features collection adds its domain taxonomy (`train`, `fuel`, `today`, `insights`, `me`,
 `platform`, `backend`, `frontend`, `auth`, `data-layer`, `design`, `running`, `sport`, `biometrics`).
