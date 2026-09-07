@@ -4,7 +4,7 @@
 // (szett / ~perc), majd izmonként egy vékony sáv. Koppintásra a nap saját
 // oldala nyílik (csempe → saját oldal minta) — a csempe maga a gomb.
 // ============================================================
-export type DayTone = 'coral' | 'sage' | 'rose' | 'gold'
+import type { DayTone } from '@/features/train/logic/mesoLoad'
 
 export interface DayTileMuscle {
   label: string

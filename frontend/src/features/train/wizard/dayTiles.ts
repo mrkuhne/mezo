@@ -6,16 +6,12 @@
 // ============================================================
 import type { MesoDay } from '@/data/types'
 import { muscleColor } from '@/features/train/logic/muscleColors'
+import { dayTone, type DayTone } from '@/features/train/logic/mesoLoad'
 import { daySessionBreakdown } from '@/features/train/logic/setBudget'
-import type { DayTileMuscle, DayTone } from '@/features/train/wizard/DayTile'
+import type { DayTileMuscle } from '@/features/train/wizard/DayTile'
 
-/** The prototype's .dtile washes per day type (Upper/Pull keep the coral default). */
-export function dayTone(type: string): DayTone {
-  if (type === 'Lower' || type === 'Legs') return 'sage'
-  if (type === 'Push') return 'rose'
-  if (type === 'Full') return 'gold'
-  return 'coral'
-}
+export { dayTone }
+export type { DayTone }
 
 export interface DayTileData {
   sets: number
