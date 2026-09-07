@@ -12,10 +12,6 @@ key_files:
   - backend/src/main/resources/db/changelog/1.0.0/script/202608311600_mezo-1gim.14_create_character_run.sql
   - frontend/src/data/character
   - frontend/src/features/character
-  - frontend/src/features/character/components/KonziliumRoundMap.tsx
-  - frontend/src/features/character/components/ConferenceArchiveSheet.tsx
-  - frontend/src/features/character/components/KonziliumConversationView.tsx
-  - frontend/src/features/character/deliberationStats.ts
 related: [companion, proactive, insights, me, _platform-api-backend]
 ---
 
@@ -202,8 +198,13 @@ tile rather than in-page accordions.
      never generated text.
   2. **Hogyan zajlott** (`KonziliumRoundMap`) — a round map showing the four rounds' real counts
      (Javaslat/Kereszt-vita/Szkeptikus/Mezo dönt), computed by the single shared
-     `deliberationStats(threads)` function (`deliberationStats.ts`) so this card and the
-     conversation view below can never disagree with each other.
+     `deliberationStats(threads)` function (`deliberationStats.ts`), itself derived from
+     `partitionDeliberation(threads)`'s four lists — the same partition
+     `KonziliumConversationView` consumes below, so the two can never disagree with each other.
+     The 4th cell (`Mezo dönt`) reads `N elfogadva · M elvetve` — it describes the meeting's
+     DECISIONS, not dossier effects, because an accepted item can be a retirement, and labelling
+     that "bekerült" would contradict the outcome card directly above it (I1, mezo-sp9w
+     branch-review).
   3. **Mi változott a dossziédban** — reads the open conference's `changes[]` array directly
      (`CharacterConferenceResponse.changes`), bucketed into elfogadva/nyugdíjazva/portré átírva
      plus a catch-all "egyéb" line for any other change kind — never a fabricated 4th named
@@ -229,11 +230,25 @@ tile rather than in-page accordions.
     intentionally never merged and never recomputed from one another, and carry distinct
     labels so a reader never mistakes one for the other.
   - A conference held before the cross-talk round existed (`deliberationSource: DERIVED` or
-    `null` — see §4) shows **"nem volt ilyen kör"** ("there was no such round") for the
-    cross-talk cell, never `0 hozzászólás`. A zero would tell the reader the round ran and
-    nobody spoke, which is false; the point is the round didn't exist yet for that meeting.
-    `crossTalkRan = conference.deliberationSource === 'STORED'` gates this in both
-    `KonziliumRoundMap` and `KonziliumConversationView`.
+    `null` — see §4), OR one of a kind that never has a cross-talk round at all (`MONTHLY`,
+    `BOOTSTRAP` — only `WEEKLY` runs one), shows **"nem volt ilyen kör"** ("there was no such
+    round") for the cross-talk cell, never `0 hozzászólás`. A zero would tell the reader the
+    round ran and nobody spoke, which is false; the point is the round didn't exist for that
+    meeting at all.
+    `crossTalkRan = conference.kind === 'WEEKLY' && conference.deliberationSource === 'STORED'`
+    gates this in both `KonziliumRoundMap` and `KonziliumConversationView` — the two conditions
+    stay separate on purpose: one says "this kind of meeting has the round at all", the other
+    says "these threads are this meeting's own, not read back out of an old prose transcript".
+    A `STORED` `MONTHLY`/`BOOTSTRAP` conference is a real, reachable backend state (both
+    `CharacterMonthlyService` and `CharacterBootstrapService` persist their thread envelope with
+    an honestly empty reaction list, since neither kind runs cross-talk), and would otherwise
+    read as "0 hozzászólás" — a round that ran and produced silence, when in truth the round
+    never happened for that kind (C1, mezo-sp9w branch-review). Fed into
+    `KonziliumConversationView`, the same distinction picks between two different empty-state
+    sentences: **"Ebben a körben senki nem szólt hozzá más felvetéséhez."** when the round ran
+    and nobody spoke, vs. **"Ezen a tanácskozáson nem volt kereszt-vita kör."** when the round
+    never existed for this meeting — one neutral sentence that is true both for a pre-cross-talk
+    `WEEKLY` and for a `MONTHLY`/`BOOTSTRAP`, rather than a third code path per case.
 
   A line inside a turn's text that starts with the backend's own `"FELHASZNÁLÓ VÁLASZA — "`
   marker (`KonziliumProposalRound.USER_FEEDBACK_PREFIX` — user-neutral since S6, `mezo-qw37.6`;
@@ -479,6 +494,8 @@ bean, never a silent 200).
 | `GET /api/character/feed?limit=` (1–100, default 30) | `CharacterFeedItem[]` | Observations + latest conference outcome diff, merged/sorted desc; `[]` honest empty, never 404 |
 | `GET /api/character/conference` | `CharacterConferenceSummary[]` | Summaries + `outcome: ConferenceOutcomeCounts` per row (`mezo-sp9w`) |
 | `GET /api/character/conference/{id}` | `CharacterConferenceResponse` | Full persisted transcript + `changes[]` + `deliberation` + `deliberationSource`; 404 unknown |
+| `POST /api/character/claim/{id}/feedback` | `CharacterClaimDto` | `{kind: TALAL\|NEM_IGAZ\|PONTOSITOM, text?}`; 400 malformed, 404 unknown, 409 already-retired |
+| `POST /api/character/bootstrap` | `CharacterConferenceResponse` \| 204 | 409 if a live BOOTSTRAP conference already exists; 204 if there is no history to read |
 
 **`ConferenceOutcomeCounts`** (`CharacterConferenceSummary.outcome`, `mezo-sp9w`) — four
 required `int32` counters built server-side from that meeting's `changes[]`:
@@ -492,11 +509,11 @@ chapter-grouped thread structure) was persisted at conference-write time; `DERIV
 was reconstructed at read time from the old prose transcript by `LegacyTranscriptParser`
 (§3/§9); `null` means neither is possible (nothing parseable at all — the FE treats `null` the
 same as `DERIVED` for the cross-talk gate, since both mean "don't trust this as a real
-cross-talk round"). The FE only shows Kereszt-vita counts when `deliberationSource === 'STORED'`
-(see §2's second honesty rule); `deliberation` itself stays nullable on the wire independent of
+cross-talk round"). The FE only shows Kereszt-vita counts when `conference.kind === 'WEEKLY' &&
+deliberationSource === 'STORED'` (see §2's second honesty rule) — `STORED` alone is not enough,
+since `MONTHLY`/`BOOTSTRAP` rows can also be `STORED` with an honestly empty reaction list
+(neither kind runs cross-talk); `deliberation` itself stays nullable on the wire independent of
 this field, per §9's null-means-no-thread-view rule.
-| `POST /api/character/claim/{id}/feedback` | `CharacterClaimDto` | `{kind: TALAL\|NEM_IGAZ\|PONTOSITOM, text?}`; 400 malformed, 404 unknown, 409 already-retired |
-| `POST /api/character/bootstrap` | `CharacterConferenceResponse` \| 204 | 409 if a live BOOTSTRAP conference already exists; 204 if there is no history to read |
 
 Confidence is **never** returned as a raw number for display purposes in prose (the FE, once
 built, is expected to render human words — the Minták precedent); the wire DTO does carry the
@@ -1170,10 +1187,15 @@ non-empty, falling back to the existing prose-block rendering otherwise. See §2
   (replaces the old list page), month-grouped with a year separator row
 - `components/KonziliumConversationView.tsx` (`mezo-sp9w`) — the chronological "Beszélgetés"
   round-by-round replay; each cross-talk reaction quotes the claim it responds to
-- `deliberationStats.ts` (`mezo-sp9w`) — `deliberationStats(threads)`, the single function
-  computing `{proposals, reactions, skepticVerdicts, accepted, rejected}` off a conference's
-  threads, shared by `KonziliumRoundMap` and `KonziliumConversationView` so their counts can
-  never drift apart
+- `deliberationStats.ts` (`mezo-sp9w`) — `partitionDeliberation(threads)`, the single function
+  splitting a conference's threads into the four lists both consumers need (every item; the
+  ones carrying reactions; the ones the Szkeptikus answered; the ones Mezo ruled on);
+  `deliberationStats(threads)` derives `{proposals, reactions, skepticVerdicts, accepted,
+  rejected}` from those same lists. `KonziliumRoundMap` uses `deliberationStats`,
+  `KonziliumConversationView` consumes `partitionDeliberation` directly for its own four
+  sections — both from the one partition, so their counts literally cannot drift apart (I2,
+  mezo-sp9w branch-review — this used to be a claim in a comment, not something either
+  consumer's code actually enforced)
 - `deliberationLabels.ts` (`mezo-sp9w`) — the shared `STANCE_LABEL`/`STANCE_TONE`/
   `ACCEPTED_LABEL` maps and `displayName()` helper, used by `ConferenceThreadCard` and
   `KonziliumConversationView` so stance wording/tone never drifts between the two views

@@ -48,7 +48,7 @@ describe('KonziliumConversationView', () => {
 
   test('a kereszt-vita kör előtti konzíliumnál a szekció ezt mondja, nem azt hogy senki nem szólt', () => {
     render(<KonziliumConversationView threads={[THREADS[2]]} experts={MOCK_EXPERTS} crossTalkRan={false} />)
-    expect(screen.getByText('Ez a konzílium a kereszt-vita kör bevezetése előtt zajlott.')).toBeInTheDocument()
+    expect(screen.getByText('Ezen a tanácskozáson nem volt kereszt-vita kör.')).toBeInTheDocument()
   })
 
   test('a válasz nélküli körök is megmaradnak, saját magyarázattal', () => {

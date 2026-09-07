@@ -12,7 +12,14 @@ export const STANCE_LABEL: Record<string, string> = {
   NUANCE: 'árnyalja',
 }
 
-export const STANCE_TONE: Record<string, string> = { SUPPORT: 'sup', CHALLENGE: 'cha', NUANCE: 'nua' }
+/** The three stance tones a peer reaction chip can wear. Typed here (not just `string`) so a
+ *  stricter consumer type (ConferenceThreadCard's `ChipTone`, which is this union plus its own
+ *  acc/rej/non outcomes) can assign this map without an unchecked cast (M6, mezo-sp9w
+ *  branch-review) — a future edit to this map that drops a key now fails to compile there
+ *  instead of silently breaking at runtime. */
+export type StanceTone = 'sup' | 'cha' | 'nua'
+
+export const STANCE_TONE: Record<string, StanceTone> = { SUPPORT: 'sup', CHALLENGE: 'cha', NUANCE: 'nua' }
 
 // What an ACCEPTED item actually means depends on what was proposed (`item.kind`, on the wire
 // from the backend's ClaimProposal): a RETIRE the chair accepted retired a claim, it did not add

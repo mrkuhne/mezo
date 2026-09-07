@@ -14,7 +14,13 @@ import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { expertColor } from '@/features/character/expertColors'
 import { confidenceWord } from '@/data/character/characterApi'
 import type { CharacterExpertDto, ConferenceItem, ConferenceThread } from '@/data/character/characterApi'
-import { ACCEPTED_LABEL, STANCE_LABEL, STANCE_TONE as SHARED_STANCE_TONE, displayName } from '@/features/character/deliberationLabels'
+import {
+  ACCEPTED_LABEL,
+  STANCE_LABEL,
+  STANCE_TONE as SHARED_STANCE_TONE,
+  displayName,
+  type StanceTone,
+} from '@/features/character/deliberationLabels'
 
 const NO_ANSWER = 'Ez a kör nem adott választ erre az állításra.'
 
@@ -60,7 +66,7 @@ function reactionCount(thread: ConferenceThread): number {
   return thread.items.reduce((sum, item) => sum + item.reactions.length, 0)
 }
 
-type ChipTone = 'sup' | 'cha' | 'nua' | 'acc' | 'rej' | 'non'
+type ChipTone = StanceTone | 'acc' | 'rej' | 'non'
 
 function ChainStep({ expertKey, who, chip, chipTone, children }: {
   expertKey: string
@@ -81,7 +87,7 @@ function ChainStep({ expertKey, who, chip, chipTone, children }: {
   )
 }
 
-const STANCE_TONE: Record<string, ChipTone> = SHARED_STANCE_TONE as Record<string, ChipTone>
+const STANCE_TONE: Record<string, ChipTone> = SHARED_STANCE_TONE
 
 function ItemChain({ item, experts }: { item: ConferenceItem; experts: CharacterExpertDto[] }) {
   const badge = outcomeBadge(item)

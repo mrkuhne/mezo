@@ -106,8 +106,20 @@ export function KonziliumPage() {
   // `?id=` in the query string bypasses any click handler entirely, and previously left the
   // reader stuck in the chronological view on a different council. Must run before the loading
   // early-return below so it obeys the rules of hooks.
+  //
+  // C2 (mezo-sp9w branch-review): `archiveOpen` resets here too, for the identical reason.
+  // `ConferenceArchiveSheet.onPick` used to rely on the sheet's own `close()` reporting
+  // completion (a transition-end handler or a 300ms fallback timer) before flipping the
+  // selected id — but `onPick` changing `currentId` can itself put the detail query into a
+  // loading state, which makes this component return `null` a few lines below and unmount the
+  // sheet before its close animation ever gets to report back. No `onClose` ever fires, so
+  // `archiveOpen` stayed stuck `true`, and the sheet reappeared, fully open, once the new
+  // conference finished loading. Driving `archiveOpen` off the same effect as `view` — a
+  // consequence of `currentId` actually changing, not of any callback's timing — closes it no
+  // matter how the animation and the query race.
   useEffect(() => {
     setView('overview')
+    setArchiveOpen(false)
   }, [currentId])
 
   // Folding expertsLoading in matters: without it the window between the conference settling and
@@ -136,7 +148,17 @@ export function KonziliumPage() {
   }
 
   const summary = index >= 0 ? conferences[index] : null
-  const crossTalkRan = conference?.deliberationSource === 'STORED'
+  // C1 (mezo-sp9w branch-review): two conditions, kept apart on purpose. Only a WEEKLY meeting
+  // ever runs a cross-talk round at all — CharacterBootstrapService and CharacterMonthlyService
+  // both assemble their stored envelope with an honestly empty reaction list, because neither
+  // kind has this round. `deliberationSource === 'STORED'` alone answers a different question
+  // (are these threads the meeting's own, not read back out of an old prose transcript) and a
+  // MONTHLY/BOOTSTRAP row can be `STORED` too — so `deliberationSource` alone would tell those
+  // two kinds a round happened and produced nothing, when the truth is the round never existed
+  // for them.
+  const hasCrossTalkRound = conference?.kind === 'WEEKLY'
+  const threadsAreOwn = conference?.deliberationSource === 'STORED'
+  const crossTalkRan = hasCrossTalkRound && threadsAreOwn
   // Fix round 1 (mezo-sp9w, review finding 1): an empty-but-present thread envelope is a real,
   // reachable backend state (a proposal round that yielded nothing) — treat it exactly like a
   // missing one so the prose transcript fallback runs, instead of silently rendering a

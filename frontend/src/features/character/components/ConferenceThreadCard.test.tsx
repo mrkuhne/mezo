@@ -163,7 +163,9 @@ describe('ConferenceThreadCard', () => {
     const { container } = render(
       <ConferenceThreadCard thread={THREAD_WITH_REACTIONS} experts={MOCK_EXPERTS} crossTalkRan defaultOpen />,
     )
-    expect(container.querySelector('.kr-thdot')).toBeNull()
+    // M2 (mezo-sp9w branch-review): `.kr-thdot` no longer exists anywhere in the CSS or in any
+    // component, so asserting its absence alone can never catch a regression — the only
+    // assertion that actually exercises "the chain draws orbs" is this one.
     expect(container.querySelectorAll('.kr-thstep .kr-thorb').length).toBeGreaterThan(0)
   })
 

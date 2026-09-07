@@ -19,6 +19,11 @@ const hoisted = vi.hoisted(() => ({
   experts: [] as CharacterExpertDto[],
   conferences: [] as CharacterConferenceSummary[],
   detail: {} as Record<string, CharacterConferenceResponse>,
+  // C2 (mezo-sp9w branch-review): mock mode's synchronous resolution is exactly why the archive
+  // reopen-on-top bug was invisible to every existing test — real mode has a genuine loading
+  // frame between picking a new id and its detail arriving. Setting an id in here makes THIS
+  // mock reproduce that frame on demand, so the race can actually be exercised.
+  loadingId: null as string | null,
 }))
 vi.mock('@/data/hooks', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/data/hooks')>()
@@ -27,26 +32,31 @@ vi.mock('@/data/hooks', async (importOriginal) => {
     useCharacterExperts: () => ({ experts: hoisted.experts, isLoading: false }),
     useCharacterConferences: () => ({ conferences: hoisted.conferences, isLoading: false }),
     useCharacterConference: (id: string | null) => ({
-      conference: id != null ? hoisted.detail[id] ?? null : null,
-      isLoading: false,
+      conference: id != null && id !== hoisted.loadingId ? hoisted.detail[id] ?? null : null,
+      isLoading: id != null && id === hoisted.loadingId,
     }),
   }
 })
 
-function renderAt(path: string) {
-  return render(
+function tree(path: string) {
+  return (
     <MemoryRouter initialEntries={[path]}>
       <Routes>
         <Route path="/me/karakter/konzilium" element={<KonziliumPage />} />
       </Routes>
-    </MemoryRouter>,
+    </MemoryRouter>
   )
+}
+
+function renderAt(path: string) {
+  return render(tree(path))
 }
 
 beforeEach(() => {
   hoisted.experts = MOCK_EXPERTS
   hoisted.conferences = MOCK_CONFERENCES
   hoisted.detail = { ...MOCK_CONFERENCE_DETAIL, b0: MOCK_BOOTSTRAP_CONFERENCE }
+  hoisted.loadingId = null
   mockNavigate.mockReset()
 })
 
@@ -199,5 +209,71 @@ describe('KonziliumPage — döntés-első nézet', () => {
     renderAt('/me/karakter/konzilium?id=b0')
 
     expect(screen.getByText(/A teljes eddigi történet beolvasva/)).toBeInTheDocument()
+  })
+
+  // C1 (mezo-sp9w branch-review): a MONTHLY conference can legitimately carry a STORED thread
+  // envelope with no reactions at all — MONTHLY never runs a cross-talk round. `deliberationSource
+  // === 'STORED'` alone would have told the reader the round ran and nobody spoke; the fix also
+  // requires `kind === 'WEEKLY'`. `m1` (M1's new fixture) is exactly this shape.
+  test('havi konzíliumnál a tárolt, reakció nélküli szál nem-létező körként jelenik meg, nem nullaként', () => {
+    renderAt('/me/karakter/konzilium?id=m1')
+    expect(screen.getByText('nem volt ilyen kör')).toBeInTheDocument()
+    expect(screen.queryByText('0 hozzászólás')).not.toBeInTheDocument()
+  })
+
+  // Same bug, the other kind that never runs cross-talk: BOOTSTRAP. The shipped demo bootstrap
+  // fixture has no `deliberation` at all (it falls back to the prose transcript), so this
+  // overrides it locally with a STORED, reaction-less envelope to exercise the branch directly.
+  test('bootstrap konzíliumnál a tárolt, reakció nélküli szál nem-létező körként jelenik meg, nem nullaként', () => {
+    hoisted.detail = {
+      ...hoisted.detail,
+      b0: {
+        ...MOCK_BOOTSTRAP_CONFERENCE,
+        deliberationSource: 'STORED',
+        deliberation: [
+          {
+            dimensionKey: 'physical',
+            title: 'Kezdő állítások — Fizikai',
+            items: [
+              {
+                index: 0, expertKey: 'doki', text: 'A testzsírszázalék lassan csökken, a testsúly stagnál.',
+                kind: 'NEW', claimId: null, sensitive: false, reactions: [],
+                skeptic: { verdict: 'KEEP', argument: 'A teljes történet alátámasztja.' },
+                chair: { accepted: true, confidence: 0.8, reason: 'Felveszem.' },
+              },
+            ],
+          },
+        ],
+      },
+    }
+    renderAt('/me/karakter/konzilium?id=b0')
+    expect(screen.getByText('nem volt ilyen kör')).toBeInTheDocument()
+    expect(screen.queryByText('0 hozzászólás')).not.toBeInTheDocument()
+  })
+
+  // C2 (mezo-sp9w branch-review): picking a meeting from the archive must not let the sheet
+  // reappear once the newly-picked meeting's detail arrives. Mock mode alone can't reproduce
+  // this (it resolves synchronously) — `hoisted.loadingId` recreates the genuine loading frame
+  // real mode has between the pick and the new detail landing.
+  test('archívumból választva a lap nem nyílik vissza, ha közben betöltési kör történt', async () => {
+    const { rerender } = renderAt('/me/karakter/konzilium')
+    await userEvent.click(screen.getByRole('button', { name: /augusztus 30/ }))
+    expect(await screen.findByText('Korábbi tanácskozások')).toBeInTheDocument()
+
+    hoisted.loadingId = 'w1'
+    await userEvent.click(await screen.findByRole('button', { name: /augusztus 23/ }))
+    // The detail query is now "loading" — the page returns null for a frame, unmounting the
+    // sheet's own DOM before its close animation could ever report back.
+    expect(screen.queryByText('Korábbi tanácskozások')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Vissza' })).not.toBeInTheDocument()
+
+    // The loading frame ends — the new conference's detail lands. `rerender` on the same tree
+    // (not a fresh `renderAt`) is deliberate: it forces KonziliumPage to re-run with the updated
+    // mock, exactly like a real query settling would, without losing the navigation state a
+    // brand new render would reset.
+    hoisted.loadingId = null
+    rerender(tree('/me/karakter/konzilium'))
+    expect(await screen.findByRole('button', { name: /augusztus 23/ })).toBeInTheDocument()
+    expect(screen.queryByText('Korábbi tanácskozások')).not.toBeInTheDocument()
   })
 })

@@ -28,7 +28,7 @@ describe('KonziliumRoundMap', () => {
     expect(screen.getByText('5 felvetés')).toBeInTheDocument()
     expect(screen.getByText('4 hozzászólás')).toBeInTheDocument()
     expect(screen.getByText('4 vizsgálat')).toBeInTheDocument()
-    expect(screen.getByText('3 be · 1 el')).toBeInTheDocument()
+    expect(screen.getByText('3 elfogadva · 1 elvetve')).toBeInTheDocument()
   })
 
   test('a kereszt-vita cella kiemelt, ha volt hozzászólás', () => {

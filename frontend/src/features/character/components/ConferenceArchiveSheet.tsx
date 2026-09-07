@@ -69,8 +69,14 @@ export function ConferenceArchiveSheet({ conferences, currentId, onPick, onClose
   onPick: (id: string) => void
   onClose: () => void
 }) {
+  // M3 (mezo-sp9w branch-review): `kr-arcsheet` had no rule anywhere in the stylesheet — the
+  // sheet is already fully styled by the shared `.sheet` base (prototype.css) plus the specific
+  // `kr-arc*` classes on its own content (including the fixed-height scroll container,
+  // `.kr-arcscroll { max-height: 62vh }`, which is what gives it its fixed height regardless of
+  // how many years of history it lists). There is no sheet-level override this screen needs, so
+  // the dead class is dropped rather than given an empty rule to justify keeping it.
   return (
-    <Sheet onClose={onClose} className="kr-arcsheet" labelledBy="kr-arctitle">
+    <Sheet onClose={onClose} labelledBy="kr-arctitle">
       {(close) => (
         <>
           <div className="kr-archd" id="kr-arctitle">

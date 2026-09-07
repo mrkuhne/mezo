@@ -11,12 +11,16 @@ import type { CSSProperties } from 'react'
 import { PersonaOrb } from '@/features/character/components/PersonaOrb'
 import { expertColor } from '@/features/character/expertColors'
 import { confidenceWord } from '@/data/character/characterApi'
-import type { CharacterExpertDto, ConferenceItem, ConferenceThread } from '@/data/character/characterApi'
+import type { CharacterExpertDto, ConferenceThread } from '@/data/character/characterApi'
 import { ACCEPTED_LABEL, STANCE_LABEL, STANCE_TONE, displayName } from '@/features/character/deliberationLabels'
+import { partitionDeliberation } from '@/features/character/deliberationStats'
 
 const EMPTY_PROPOSALS = 'Ez a konzílium nem tartalmaz felvetést.'
 const EMPTY_CROSSTALK_RAN = 'Ebben a körben senki nem szólt hozzá más felvetéséhez.'
-const EMPTY_CROSSTALK_ABSENT = 'Ez a konzílium a kereszt-vita kör bevezetése előtt zajlott.'
+// C1 (mezo-sp9w branch-review): true both for a meeting that predates the cross-talk round and
+// for a kind (MONTHLY/BOOTSTRAP) that never has one — neither claims a round ran and stayed
+// silent, which is what the old copy said.
+const EMPTY_CROSSTALK_ABSENT = 'Ezen a tanácskozáson nem volt kereszt-vita kör.'
 const EMPTY_SKEPTIC = 'A Szkeptikus ebben a körben nem adott választ.'
 const EMPTY_CHAIR = 'Ebben a körben nem született döntés.'
 
@@ -63,10 +67,7 @@ export function KonziliumConversationView({ threads, experts, crossTalkRan }: {
   experts: CharacterExpertDto[]
   crossTalkRan: boolean
 }) {
-  const items: ConferenceItem[] = threads.flatMap((thread) => thread.items)
-  const debated = items.filter((item) => item.reactions.length > 0)
-  const audited = items.filter((item) => item.skeptic != null)
-  const ruled = items.filter((item) => item.chair != null)
+  const { items, debated, audited, ruled } = partitionDeliberation(threads)
 
   return (
     <div className="kr-cv">

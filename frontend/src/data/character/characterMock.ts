@@ -601,6 +601,140 @@ export const MOCK_CONFERENCE_DETAIL: Record<string, CharacterConferenceResponse>
       { kind: 'CLAIM_ACCEPTED', dimensionKey: 'recovery', summary: 'Doki állítása elfogadva "valószínű" szinttel.' },
     ],
   },
+
+  // M1 (mezo-sp9w branch-review): the demo archive lists six meetings (`MOCK_CONFERENCES`) but
+  // only w1/w2 had a reachable detail fixture — pressing the "older meeting" arrow twice landed
+  // on "Ez a konzílium nem található." w0/m1/j1 below (plus b0, wired in below
+  // `MOCK_BOOTSTRAP_CONFERENCE`) close that gap. Each one's `changes[]` is kept exactly
+  // consistent with its own `MOCK_CONFERENCES` row's `outcome` counts (accepted/retired/
+  // portraitRewritten/other), per the same rule `MOCK_BOOTSTRAP_CONFERENCE` already documents.
+
+  // w0 — a council that changed nothing at all: `outcome` is all zeros, so `changes` is empty
+  // and the archive row renders with no outcome text (the honest empty case, not "0 bekerült").
+  w0: {
+    id: 'w0',
+    kind: 'WEEKLY',
+    weekStart: '2026-08-10',
+    generatedAt: '2026-08-16T07:00:00Z',
+    transcript: [
+      { persona: 'edzo', text: 'Javaslat: a hét eleji edzésterhelés valamivel magasabb volt a szokásosnál.' },
+      { persona: 'szkeptikus', text: 'Egy hét kevés ehhez — még nem érdemes önálló állítást felvenni belőle.' },
+      { persona: 'mezo', text: 'Egyetértek a Szkeptikussal — ezen a héten nem veszek fel új állítást, és korábbi állítás sem változik.' },
+    ],
+    deliberationSource: null,
+    deliberation: null,
+    changes: [],
+  },
+
+  // m1 — MONTHLY with a STORED thread envelope and, deliberately, zero reactions on every item:
+  // MONTHLY never runs a cross-talk round (CharacterMonthlyService assembles its envelope with
+  // an honestly empty reaction list), so this is the exact shape C1's fix must treat as "nem
+  // volt ilyen kör", never "0 hozzászólás". `changes[]` carries the 5 accepted / 2 retired / 1
+  // portrait-rewritten the `MOCK_CONFERENCES` row promises; the deliberation threads are a
+  // separate, smaller illustration of the month's own discussion — the two counts are never
+  // meant to match (round-map vs. dossier-card, §2's honesty rule).
+  m1: {
+    id: 'm1',
+    kind: 'MONTHLY',
+    weekStart: null,
+    generatedAt: '2026-08-01T07:00:00Z',
+    transcript: [
+      { persona: 'doki', text: 'Havi áttekintés: a testösszetétel-trend augusztusban is tartja magát.' },
+      { persona: 'mezo', text: 'A hónap összesített képe alapján több állítást is megerősítek, egy régit nyugdíjazok, a testösszetétel-portrét pedig újraírom.' },
+    ],
+    deliberationSource: 'STORED',
+    deliberation: [
+      {
+        dimensionKey: 'physical',
+        title: 'Havi áttekintés — Fizikai',
+        items: [
+          {
+            index: 0, expertKey: 'doki', text: 'A testösszetétel-trend négy hét távlatból is tartja magát.',
+            kind: 'NEW', claimId: null, sensitive: false, reactions: [],
+            skeptic: { verdict: 'KEEP', argument: 'Négy heti adat konzisztens, elfogadható.' },
+            chair: { accepted: true, confidence: BIZTOS, reason: 'Megerősítem "biztos" szinttel.' },
+          },
+          {
+            index: 1, expertKey: 'doki', text: 'Egy tavaszi testösszetétel-állítás azóta nem áll — a minta megszűnt.',
+            kind: 'RETIRE', claimId: 'c-physical-old', sensitive: false, reactions: [],
+            skeptic: { verdict: 'KEEP', argument: 'Két hónapja nincs rá jel, a nyugdíjazás indokolt.' },
+            chair: { accepted: true, confidence: VALOSZINU, reason: 'Nyugdíjazom.' },
+          },
+        ],
+      },
+      {
+        dimensionKey: 'nutrition',
+        title: 'Havi áttekintés — Táplálkozási',
+        items: [
+          {
+            index: 2, expertKey: 'taplalkozo', text: 'A hónap egészében a fehérjecél hétköznap szinte mindig teljesült.',
+            kind: 'NEW', claimId: null, sensitive: false, reactions: [],
+            skeptic: { verdict: 'KEEP', argument: 'Elfogadható, széles mintán alapul.' },
+            chair: { accepted: true, confidence: BIZTOS, reason: 'Felveszem "biztos" szinten.' },
+          },
+          {
+            index: 3, expertKey: 'taplalkozo', text: 'A hónap végén megjelent egy új, koraiabb mintázat a késői étkezésben.',
+            kind: 'NEW', claimId: null, sensitive: false, reactions: [],
+            skeptic: { verdict: 'KILL', argument: 'Két hét túl kevés egy önálló állításhoz.' },
+            chair: { accepted: false, confidence: null, reason: 'Elvetem — korai még.' },
+          },
+        ],
+      },
+      {
+        dimensionKey: 'life',
+        title: 'Havi áttekintés — Élet',
+        items: [
+          {
+            index: 4, expertKey: 'antropologus', text: 'Egy régebbi kapcsolati megfigyelés a hónap során nem erősödött meg újra.',
+            kind: 'RETIRE', claimId: 'c-life-old', sensitive: false, reactions: [],
+            skeptic: { verdict: 'KEEP', argument: 'Két hónapja nem jelenik meg, nyugodtan nyugdíjazható.' },
+            chair: { accepted: true, confidence: VALOSZINU, reason: 'Nyugdíjazom.' },
+          },
+        ],
+      },
+    ],
+    changes: [
+      { kind: 'CLAIM_ACCEPTED', dimensionKey: 'physical', summary: 'Havi áttekintés: a testösszetétel-trend állítása megerősítve "biztos" szinttel.' },
+      { kind: 'CLAIM_ACCEPTED', dimensionKey: 'nutrition', summary: 'Havi áttekintés: a fehérjecél-teljesítés állítása felvéve.' },
+      { kind: 'CLAIM_ACCEPTED', dimensionKey: 'discipline', summary: 'Havi áttekintés: a heti fókuszok teljesítése "biztos" szintre erősödött.' },
+      { kind: 'CLAIM_ACCEPTED', dimensionKey: 'recovery', summary: 'Havi áttekintés: az alvási minta állítása megerősítve.' },
+      { kind: 'CLAIM_ACCEPTED', dimensionKey: 'mental', summary: 'Havi áttekintés: a hangulati minta állítása felvéve.' },
+      { kind: 'CLAIM_RETIRED', dimensionKey: 'physical', summary: 'Egy elavult testösszetétel-állítás nyugdíjazva.' },
+      { kind: 'CLAIM_RETIRED', dimensionKey: 'life', summary: 'Egy elavult kapcsolati állítás nyugdíjazva.' },
+      { kind: 'PORTRAIT_REWRITTEN', dimensionKey: 'physical', summary: 'Portré átírva: a testösszetétel-fejezet frissítve a havi adatokkal.' },
+    ],
+  },
+
+  // j1 — an older WEEKLY, predating the cross-talk round exactly like w1 (DERIVED, one thread
+  // read back out of its own prose transcript, no reactions round ever ran for it).
+  j1: {
+    id: 'j1',
+    kind: 'WEEKLY',
+    weekStart: '2026-07-20',
+    generatedAt: '2026-07-26T07:00:00Z',
+    transcript: [
+      { persona: 'drill', text: 'Javaslat: a heti fókuszok teljesítése négy hete stabilan magas — "valószínű" szinten javaslom felvenni.' },
+      { persona: 'mezo', text: 'Elfogadom Drill állítását "valószínű" szinttel — felveszem.', refIds: ['discipline-claim-0'] },
+    ],
+    deliberationSource: 'DERIVED',
+    deliberation: [
+      {
+        dimensionKey: null,
+        title: 'Drill felvetései',
+        items: [
+          {
+            index: 0, expertKey: 'drill', text: 'A heti fókuszok teljesítése négy hete stabilan magas.',
+            kind: 'NEW', claimId: null, sensitive: false, reactions: [],
+            skeptic: { verdict: 'KEEP', argument: 'Elfogadható jel.' },
+            chair: { accepted: true, confidence: VALOSZINU, reason: 'Felveszem.' },
+          },
+        ],
+      },
+    ],
+    changes: [
+      { kind: 'CLAIM_ACCEPTED', dimensionKey: 'discipline', summary: 'Drill állítása elfogadva "valószínű" szinttel.' },
+    ],
+  },
 }
 
 /** The bootstrap ceremony's result — the konzílium the very first read stands up. */
@@ -633,6 +767,13 @@ export const MOCK_BOOTSTRAP_CONFERENCE: CharacterConferenceResponse = {
     { kind: 'PORTRAIT_REWRITTEN', dimensionKey: 'physical', summary: 'Portré megírva: a testösszetétel-fejezet első változata.' },
   ],
 }
+
+// M1 (mezo-sp9w branch-review): wire the bootstrap fixture into the by-id lookup so the demo
+// archive's bootstrap row is actually reachable. Previously only `KonziliumPage.test.tsx`'s own
+// `beforeEach` merged `b0` into this map — masking that the real lookup every consumer (the
+// hooks, and so the actual demo mode) reads from never had it, so pressing "older meeting" twice
+// in demo mode landed on "Ez a konzílium nem található."
+MOCK_CONFERENCE_DETAIL.b0 = MOCK_BOOTSTRAP_CONFERENCE
 
 // ---------------------------------------------------------------------------
 // Gépterem (mezo-1gim.14) — the run-log timeline. Mirrored VERBATIM from the v4.3 prototype,
