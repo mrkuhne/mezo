@@ -5464,6 +5464,7 @@ button.nap-htickbtn:active .nap-htick { transform: scale(0.88); }
 }
 .nap-obs-chips .chip.talk { background: var(--mz-cell-lav-bg); color: var(--mz-cell-lav-ink); }
 .nap-obs-ack { margin-top: 11px; font-size: 11px; font-weight: 650; color: var(--mz-cell-sage-ink); }
+.nap-obs-err { margin-top: 9px; font-size: 11px; font-weight: 650; color: var(--error-deep); }
 /* A figyelt sor belseje: nyolc nap tally + haladás-sáv + laborfüzet-link. */
 .nap-obs-tally { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; position: relative; z-index: 1; }
 .nap-obs-tally i {

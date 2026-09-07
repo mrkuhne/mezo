@@ -145,3 +145,15 @@ test('„Mesélj" without a conversation id stays put and only acknowledges', as
   expect(await screen.findByText('Megnyitom a chatet ezzel a szállal.')).toBeInTheDocument()
   expect(screen.queryByText(/^chat:/)).toBeNull()
 })
+
+test('egy elbukott válasz NEM hazudik nyugtázást — a chipek visszajönnek hibasorral', async () => {
+  const onReply = vi.fn().mockRejectedValue(new Error('boom'))
+  render(
+    <MemoryRouter><ObservationCard item={fresh} onReply={onReply} /></MemoryRouter>,
+  )
+  await userEvent.click(screen.getByRole('button', { name: 'Igen, figyeld' }))
+
+  expect(await screen.findByText('Nem sikerült elküldeni — próbáld újra.')).toBeInTheDocument()
+  expect(document.querySelector('.nap-obs-ack')).toBeNull()
+  expect(screen.getByRole('button', { name: 'Igen, figyeld' })).toBeInTheDocument()
+})

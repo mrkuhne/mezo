@@ -78,17 +78,27 @@ export function ObservationCard({ item, onReply, pending = false }: {
   // A szerver által ismert válasz és a most adott válasz ugyanaz a nyugtázott állapot: a
   // kártya azonnal átvált, nem várja meg a feed újratöltését.
   const [justAnswered, setJustAnswered] = useState<ObservationChoice | null>(null)
+  const [failed, setFailed] = useState(false)
   // Csak az ESEMÉNY-kártyák (fresh/return) kérdeznek — a sor-kártyák `repliedChoice`-a a sor
   // korábbi válasza, nem ennek a kártyának a nyugtázandó felelete.
   const asks = chipsFor(item.card).length > 0
   const answered = asks ? (justAnswered ?? item.repliedChoice ?? null) : null
   const chips = answered ? [] : chipsFor(item.card)
 
+  // Optimista nyugtázás, VISSZAGÖRGETÉSSEL: a kártya azonnal átvált, de ha a hívás elbukik,
+  // a chipek visszajönnek egy hibasorral. Nyugtázva hagyni egy el nem küldött választ hazugság
+  // lenne — a felhasználó azt hinné, Mezo megjegyezte.
   const answer = async (choice: ObservationChoice) => {
     setJustAnswered(choice)
-    const res = await onReply(item.patternId, choice)
-    if (choice === 'talk' && res && res.conversationId) {
-      navigate(`/mezo/chat?c=${res.conversationId}`)
+    setFailed(false)
+    try {
+      const res = await onReply(item.patternId, choice)
+      if (choice === 'talk' && res && res.conversationId) {
+        navigate(`/mezo/chat?c=${res.conversationId}`)
+      }
+    } catch {
+      setJustAnswered(null)
+      setFailed(true)
     }
   }
 
@@ -145,6 +155,9 @@ export function ObservationCard({ item, onReply, pending = false }: {
             </button>
           ))}
         </div>
+      )}
+      {failed && !answered && (
+        <div className="nap-obs-err" role="alert">Nem sikerült elküldeni — próbáld újra.</div>
       )}
       {answered && <div className="nap-obs-ack">{ackLine(item.card, answered)}</div>}
     </article>
