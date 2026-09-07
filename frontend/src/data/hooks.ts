@@ -73,6 +73,10 @@ export {
   useAdminOverview, useAdminUserInsights, useAdminUserDetail, useAdminFeatureUsage, useAdminCostMatrix,
 } from '@/data/admin/adminInsightsHooks'
 export { useAdminTables, useAdminViews, useAdminRows } from '@/data/admin/adminDataHooks'
+export {
+  useAdminMemoryRuns, useAdminMemoryRun, useAdminMemoryReplay, useAdminMemoryGraph,
+  useAdminMemoryVectors, useAdminMemoryNeighbors, useAdminMemoryHealth,
+} from '@/data/admin/adminMemoryHooks'
 export { useProgressionProfile, useAchievements, useGrowthWeek } from '@/data/progression/progressionHooks'
 export { useDailyQuests, useQuestActions, useQuestHistory } from '@/data/quest/questHooks'
 export { useHabitDay, useHabitActions, useHabitSummary, useHabitFormation, useHabitFormations } from '@/data/habit/habitHooks'
