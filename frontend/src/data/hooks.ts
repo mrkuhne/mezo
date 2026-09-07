@@ -69,6 +69,9 @@ export { useLifeGoals, useLifeGoal, useLifeGoalMutations, useLifeGoalPropose, us
 export { useBiometricProfile, useBiometricActions } from '@/data/me/biometricHooks'
 export { useLlmUsageSummary, useLlmUsageBreakdown, useLlmCalls, useLlmCall } from '@/data/me/llmUsageHooks'
 export { useAdminInvites, useAdminUsers, useAdminActions } from '@/data/admin/adminHooks'
+export {
+  useAdminOverview, useAdminUserInsights, useAdminUserDetail, useAdminFeatureUsage, useAdminCostMatrix,
+} from '@/data/admin/adminInsightsHooks'
 export { useProgressionProfile, useAchievements, useGrowthWeek } from '@/data/progression/progressionHooks'
 export { useDailyQuests, useQuestActions, useQuestHistory } from '@/data/quest/questHooks'
 export { useHabitDay, useHabitActions, useHabitSummary, useHabitFormation } from '@/data/habit/habitHooks'

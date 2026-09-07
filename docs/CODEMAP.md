@@ -93,7 +93,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     GET /api/admin/usage/features · GET /api/admin/usage/cost-matrix
 - **FE data** `frontend/src/data/admin`
   - **hooks (via `@/data/hooks`):** `useAdminActions`, `useAdminInvites`, `useAdminUsers`
-  - **modules:** adminApi.ts, adminHooks.ts, adminMock.ts
+  - **modules:** adminApi.ts, adminHooks.ts, adminInsightsApi.ts, adminInsightsHooks.ts, adminInsightsMock.ts,
+    adminMock.ts
 - **FE ui** `frontend/src/features/admin`
   - **pages:** AdminOverviewPage.tsx
   - **root:** AdminLayout.tsx, AdminRail.tsx, adminRoutes.tsx
