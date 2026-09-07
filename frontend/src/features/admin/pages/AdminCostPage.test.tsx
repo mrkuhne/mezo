@@ -1,5 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import userEvent from '@testing-library/user-event'
+import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
@@ -12,10 +13,29 @@ afterEach(() => vi.unstubAllEnvs())
 
 function renderPage() {
   return render(
-    <MemoryRouter>
-      <AdminCostPage />
-    </MemoryRouter>,
-    { wrapper: QueryWrapper },
+    <QueryWrapper>
+      <RouterProvider
+        router={createMemoryRouter([{ path: '/admin/cost', element: <AdminCostPage /> }], {
+          initialEntries: ['/admin/cost'],
+        })}
+      />
+    </QueryWrapper>,
+  )
+}
+
+function renderPageWithNavigation() {
+  return render(
+    <QueryWrapper>
+      <RouterProvider
+        router={createMemoryRouter(
+          [
+            { path: '/admin', element: <div data-testid="admin-page">Admin Page</div> },
+            { path: '/admin/cost', element: <AdminCostPage /> },
+          ],
+          { initialEntries: ['/admin/cost'] },
+        )}
+      />
+    </QueryWrapper>,
   )
 }
 
@@ -88,6 +108,18 @@ describe('AdminCostPage (mock mode)', () => {
     await waitFor(() => expect(screen.getAllByRole('link').length).toBeLessThan(before))
     fireEvent.click(screen.getByRole('button', { name: 'Mindenki' }))
     await waitFor(() => expect(screen.getAllByRole('link')).toHaveLength(before))
+  })
+
+  it('back button navigates to /admin (not browser history)', async () => {
+    // When the cost page is reachable directly (e.g. from a bookmarked URL or a redirect with
+    // no prior history), navigate(-1) would either no-op or throw the owner out of the admin
+    // shell. The explicit navigate('/admin') target ensures the back button is always usable.
+    renderPageWithNavigation()
+    const backButton = screen.getByRole('button', { name: 'Vissza' })
+    await userEvent.click(backButton)
+    await waitFor(() => {
+      expect(screen.getByTestId('admin-page')).toBeInTheDocument()
+    })
   })
 })
 

@@ -58,7 +58,7 @@ export function AdminCostPage() {
 
   return (
     <MozaikPage tone="gold">
-      <PageHead onBack={() => navigate(-1)} label="‹ Én" />
+      <PageHead onBack={() => navigate('/admin')} label="‹ Admin" />
       <EntranceGroup>
         {/* Minimal hero — just the icon + title. Count, cost and the status split live
             ONE place, in AiUsageHero below (guardrail: the same fact shown once per
