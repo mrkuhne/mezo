@@ -6,8 +6,12 @@
 //
 // Fix magasság, akárhány év: a hónap-fejlécek a lap BELSEJÉBEN görögnek.
 //
-// Őszinteség: a sor kimenete csak a nem-nulla tételeket sorolja. Egy konzílium, ami semmit nem
-// változtatott a dossziéban, kimenet nélküli sorként jelenik meg — üresen, nem "0 bekerült"-tel.
+// Őszinteség: a sor kimenete csak a nem-nulla tételeket sorolja, a három megnevezett hatás
+// (bekerült/nyugdíjazva/portré átírva) után egy negyedik, gyűjtő tétellel ("N egyéb változás")
+// a dosszié minden más valós hatására (megbízhatóság erősödött/gyengült, fejezet nyílt/lezárt —
+// lásd ClaimLifecycle.java) — így egy konzílium, aminek KIZÁRÓLAG ilyen hatása volt, sosem
+// jelenik meg kimenet nélküli sorként. Egy konzílium, ami semmit nem változtatott a dossziéban,
+// kimenet nélküli sorként jelenik meg — üresen, nem "0 bekerült"-tel.
 // ============================================================
 import { Sheet } from '@/shared/ui/Sheet'
 import type { CharacterConferenceSummary } from '@/data/character/characterApi'
@@ -36,14 +40,27 @@ function dayLabel(iso: string): string {
   return new Date(iso).toLocaleDateString('hu-HU', { month: 'long', day: 'numeric' })
 }
 
-/** Only the non-zero counts, in dossier-effect order. Empty string when nothing changed —
- *  the row then carries no outcome text at all, which is the truth, not a missing value. */
-export function outcomeLabel(outcome: CharacterConferenceSummary['outcome']): string {
+/** The three named-effect fragments only, in dossier-effect order. */
+function namedOutcomeLabel(outcome: CharacterConferenceSummary['outcome']): string {
   const parts: string[] = []
   if (outcome.accepted > 0) parts.push(`${outcome.accepted} bekerült`)
   if (outcome.retired > 0) parts.push(`${outcome.retired} nyugdíjazva`)
   if (outcome.portraitRewritten > 0) parts.push(`${outcome.portraitRewritten} portré átírva`)
   return parts.join(' · ')
+}
+
+/** The catch-all "other" fragment (confidence strengthened/weakened, a chapter opened/retired,
+ *  ... — see `ClaimLifecycle.java`), or '' when there is none. */
+function otherOutcomeLabel(outcome: CharacterConferenceSummary['outcome']): string {
+  return outcome.other > 0 ? `${outcome.other} egyéb változás` : ''
+}
+
+/** Only the non-zero counts, in dossier-effect order, plus a trailing catch-all fragment for
+ *  `other` so a council whose only effect was one of those (no accepted/retired/portrait change)
+ *  still renders outcome text. Empty string when nothing changed at all — the row then carries
+ *  no outcome text at all, which is the truth, not a missing value. */
+export function outcomeLabel(outcome: CharacterConferenceSummary['outcome']): string {
+  return [namedOutcomeLabel(outcome), otherOutcomeLabel(outcome)].filter((p) => p !== '').join(' · ')
 }
 
 export function ConferenceArchiveSheet({ conferences, currentId, onPick, onClose }: {
@@ -66,6 +83,8 @@ export function ConferenceArchiveSheet({ conferences, currentId, onPick, onClose
               const newMonth = prev == null || monthKey(prev.generatedAt) !== monthKey(conf.generatedAt)
               const newYear = prev != null && yearOf(prev.generatedAt) !== yearOf(conf.generatedAt)
               const outcome = outcomeLabel(conf.outcome)
+              const named = namedOutcomeLabel(conf.outcome)
+              const other = otherOutcomeLabel(conf.outcome)
               return (
                 <div key={conf.id}>
                   {newYear && <div className="kr-arcyr">{yearOf(conf.generatedAt)}</div>}
@@ -76,7 +95,13 @@ export function ConferenceArchiveSheet({ conferences, currentId, onPick, onClose
                     onClick={() => { close(); onPick(conf.id) }}
                   >
                     <span className="kr-arcday">{dayLabel(conf.generatedAt)}</span>
-                    {outcome !== '' && <span className="kr-arcout">{outcome}</span>}
+                    {outcome !== '' && (
+                      <span className="kr-arcout">
+                        {named}
+                        {named !== '' && other !== '' && ' · '}
+                        {other !== '' && <span className="kr-arcout-other">{other}</span>}
+                      </span>
+                    )}
                     <span className={`kr-kbadge ${conf.kind.toLowerCase()}`}>{KIND_BADGE[conf.kind]}</span>
                   </button>
                 </div>

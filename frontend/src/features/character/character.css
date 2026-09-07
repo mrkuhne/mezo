@@ -543,3 +543,4 @@
 .kr-arcday { font-size: 13.5px; font-weight: 600; flex: none; }
 .kr-arcrow.on .kr-arcday { font-weight: 800; }
 .kr-arcout { flex: 1; font-size: 10px; font-weight: 600; color: var(--text-secondary); }
+.kr-arcout-other { color: var(--text-muted); font-weight: 400; }

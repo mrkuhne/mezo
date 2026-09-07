@@ -56,6 +56,31 @@ describe('ConferenceArchiveSheet', () => {
     expect(row.textContent).not.toContain('bekerült')
   })
 
+  test('az egyéb változás a megnevezett tételek után jelenik meg', () => {
+    const conferences = [
+      { id: 'x2', kind: 'WEEKLY' as const, weekStart: '2026-08-24', generatedAt: '2026-08-30T07:00:00Z',
+        outcome: { accepted: 2, retired: 1, portraitRewritten: 1, other: 3 } },
+    ]
+    renderSheet({ conferences, currentId: null })
+    const row = screen.getByRole('button', { name: /augusztus 30/ })
+    // The "egyéb" fragment renders in its own styled span (nested inside .kr-arcout), so it is
+    // not part of the outer span's own text nodes — assert on the row's full text instead.
+    expect(row.textContent).toContain('2 bekerült · 1 nyugdíjazva · 1 portré átírva')
+    expect(within(row).getByText('3 egyéb változás')).toBeInTheDocument()
+    expect(row.textContent!.indexOf('1 portré átírva')).toBeLessThan(row.textContent!.indexOf('3 egyéb változás'))
+  })
+
+  test('a csak egyéb változást hozó konzílium sora nem üres', () => {
+    const conferences = [
+      { id: 'x1', kind: 'WEEKLY' as const, weekStart: '2026-08-17', generatedAt: '2026-08-23T07:00:00Z',
+        outcome: { accepted: 0, retired: 0, portraitRewritten: 0, other: 2 } },
+    ]
+    renderSheet({ conferences, currentId: null })
+    const row = screen.getByRole('button', { name: /augusztus 23/ })
+    expect(within(row).getByText('2 egyéb változás')).toBeInTheDocument()
+    expect(row.textContent).not.toContain('bekerült')
+  })
+
   test('választáskor a lap bezáródik és jelzi a választott konzíliumot', async () => {
     const { onPick } = renderSheet()
     await userEvent.click(screen.getByRole('button', { name: /augusztus 23/ }))
