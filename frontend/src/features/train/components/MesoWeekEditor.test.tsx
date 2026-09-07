@@ -33,8 +33,18 @@ function setup(overrides: Partial<Parameters<typeof MesoWeekEditor>[0]> = {}) {
     onAddClick: vi.fn(),
     ...overrides,
   }
-  const view = render(<MesoWeekEditor {...props} />)
-  return { props, view }
+  const { rerender, ...view } = render(<MesoWeekEditor {...props} />)
+  return {
+    props,
+    view,
+    /**
+     * Re-renders with a patched prop (typically `name`) — stands in for the parent
+     * re-rendering with an updated name, e.g. after a rename commits. Follows the
+     * ExerciseCard and MesoDayEditor idiom.
+     */
+    rerender: (patch: Partial<Parameters<typeof MesoWeekEditor>[0]> = {}) =>
+      rerender(<MesoWeekEditor {...props} {...patch} />),
+  }
 }
 
 describe('MesoWeekEditor', () => {
@@ -92,5 +102,18 @@ describe('MesoWeekEditor', () => {
   test('the footer slot renders the mode-specific CTAs', () => {
     setup({ footer: <button type="button">Mentés + indítás</button> })
     expect(screen.getByRole('button', { name: 'Mentés + indítás' })).toBeInTheDocument()
+  })
+
+  // ---- Buffered-input contract (mezo-yty6 fix round 1) --------------------
+  // The mesocycle-name field buffers its text locally (useBufferedText), re-synced from
+  // the `name` prop via useEffect — same contract as ExerciseCard and MesoDayEditor.
+  // This test pins that an external `name` change reaches the field.
+
+  test('an external value change reaches the field', () => {
+    const { rerender } = setup()
+    const field = screen.getByRole('textbox', { name: 'Mezociklus neve' })
+    expect(field).toHaveValue('Hypertrophy · Ősz')
+    rerender({ name: 'Hypertrophy · Tél' })
+    expect(field).toHaveValue('Hypertrophy · Tél')
   })
 })
