@@ -245,10 +245,61 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
 
         KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, proposals, List.of());
 
+        // isNotBlank() alone would also pass on the "nincs ellenérv" default a fabricated verdict
+        // would carry — assert the Szkeptikus's OWN answer instead (final review, I5c).
         assertThat(result.verdicts()).singleElement().satisfies(verdict -> {
             assertThat(verdict.index()).isZero();
             assertThat(verdict.verdict()).isEqualTo("KEEP");
-            assertThat(verdict.argument()).isNotBlank();
+            assertThat(verdict.argument()).isEqualTo("Fake ellenérv: elfogadható.");
+        });
+        assertThat(result.chairParsed()).isTrue();
+        assertThat(result.shownRulings()).hasSize(1);
+    }
+
+    /** I2 (mezo-xlvr final review): the Szkeptikus answered index 0 only — index 1 must carry NO
+     *  verdict at all rather than a fabricated KEEP / "nincs ellenérv". */
+    @Test
+    void run_skepticAnswersOnlySomeIndexes_theOthersGetNoVerdict() {
+        UUID owner = ownerId();
+        String skepticSentinel = "[fake-char-skeptic:["
+                + "{\"index\":0,\"verdict\":\"KILL\",\"argument\":\"Nincs elég bizonyíték.\"}"
+                + "]]";
+        List<ClaimProposal> proposals = List.of(
+                new ClaimProposal("drill", "NEW", "discipline", null, "Első javaslat.",
+                        new BigDecimal("0.50"), false, skepticSentinel),
+                new ClaimProposal("pszichologus", "NEW", "mental", null, "Második javaslat.",
+                        new BigDecimal("0.50"), false, "Napló jelzi."));
+
+        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, proposals, List.of());
+
+        assertThat(result.verdicts()).singleElement().satisfies(verdict -> {
+            assertThat(verdict.index()).isZero();
+            assertThat(verdict.verdict()).isEqualTo("KILL");
+            assertThat(verdict.argument()).isEqualTo("Nincs elég bizonyíték.");
+        });
+        // the lifecycle still gets an index-complete ruling list — only the SHOWN verdicts shrink
+        assertThat(result.rulings()).hasSize(2);
+    }
+
+    /** I1 (mezo-xlvr final review): an unparsed Integrátor answer still defaults every ruling for
+     *  the lifecycle, but must expose NOTHING as a ruling the chair gave. */
+    @Test
+    void run_integratorAnswerFailsToParse_rulingsStayDefaulted_butNothingIsShownAsARuling() {
+        UUID owner = ownerId();
+        String brokenIntegratorSentinel = "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":}]}]";
+        List<ClaimProposal> proposals = List.of(
+                new ClaimProposal("drill", "NEW", "discipline", null, "Javaslat.",
+                        new BigDecimal("0.50"), false, brokenIntegratorSentinel));
+
+        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, proposals, List.of());
+
+        assertThat(result.chairParsed()).isFalse();
+        assertThat(result.shownRulings()).isEmpty();
+        assertThat(result.turns()).extracting(ConferenceTranscriptEnvelope.Turn::persona)
+                .containsExactly("szkeptikus");
+        assertThat(result.rulings()).singleElement().satisfies(ruling -> {
+            assertThat(ruling.accepted()).isFalse();
+            assertThat(ruling.reason()).isEqualTo("nem került döntésre");
         });
     }
 }
