@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.character.service;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterDimensionEntity;
@@ -50,7 +52,11 @@ public class CharacterConferenceService {
     private static final String WEEKLY = "WEEKLY";
     private static final String ACTIVE = "ACTIVE";
     private static final String PORTRAIT_REWRITTEN = "PORTRAIT_REWRITTEN";
+    /** A ClaimLifecycle írja ezt a change-kindet fejezetnyitáskor (mezo-0cbh). */
+    private static final String CHAPTER_OPENED = "CHAPTER_OPENED";
 
+    // Mindig létező emit-fasád: kikapcsolt feed mellett néma no-op (mezo-0cbh).
+    private final AppNotificationEmitter notificationEmitter;
     private final CharacterConferenceRepository conferenceRepository;
     private final CharacterObservationRepository observationRepository;
     private final CharacterDimensionRepository dimensionRepository;
@@ -142,6 +148,7 @@ public class CharacterConferenceService {
             log.warn("WEEKLY run-log record call failed for owner {} weekStart {}", owner, weekStart, e);
         }
 
+        emitVerdictNotification(owner, weekStart, conference);
         return conference;
     }
 
@@ -261,4 +268,39 @@ public class CharacterConferenceService {
         conference.setOutcome(new ConferenceOutcomeEnvelope(changes));
         return conferenceRepository.save(conference);
     }
+
+    /**
+     * mezo-0cbh — a heti konzílium verdiktje, DE csak ha érdemben változott valami. Az „üres
+     * hét" a szolgáltatás saját fogalma (null konferencia), a változás nélküli hét pedig
+     * ugyanilyen néma: egy „lefutott a konzílium, és nem történt semmi" sor pontosan az a zaj,
+     * amitől a csengő elértéktelenedik.
+     *
+     * <p>A FEJEZETNYITÁS nem külön fajta, hanem ennek a sornak a szövegét vezeti: a fejezet a
+     * konzílium ugyanazon futásán belül nyílik, tehát két fajta ugyanarra az eseményre két sort
+     * írna. A fejezetnyitás a legritkább és narratívan a legsúlyosabb változás, ezért ha van,
+     * övé az első mondat; egyébként a számok beszélnek.
+     */
+    private void emitVerdictNotification(UUID owner, LocalDate weekStart,
+                                         CharacterConferenceEntity conference) {
+        if (conference == null || conference.getOutcome() == null
+                || conference.getOutcome().changes().isEmpty()) {
+            return;
+        }
+        List<ConferenceOutcomeEnvelope.Change> changes = conference.getOutcome().changes();
+        String chapter = changes.stream()
+            .filter(c -> CHAPTER_OPENED.equals(c.kind()))
+            .map(ConferenceOutcomeEnvelope.Change::summary)
+            .filter(t -> t != null && !t.isBlank())
+            .findFirst().orElse(null);
+        String title = chapter != null
+            ? "\u00DAj fejezet ny\u00EDlt r\u00F3lad"
+            : "A konz\u00EDlium \u00E1t\u00EDrt valamit r\u00F3lad";
+        String body = chapter != null
+            ? "\u201E" + chapter + "\u201D \u2014 \u00E9s " + changes.size() + " v\u00E1ltoz\u00E1s a doszi\u00E9dban."
+            : changes.size() + " v\u00E1ltoz\u00E1s a heti konz\u00EDliumb\u00F3l \u2014 n\u00E9zd meg, mi mozdult.";
+        notificationEmitter.emit(owner, AppNotificationKind.KONZILIUM_VERDICT, title, body,
+            AppNotificationKind.KONZILIUM_VERDICT.deeplink(), conference.getId(),
+            "konzilium_verdict:" + weekStart);
+    }
+
 }

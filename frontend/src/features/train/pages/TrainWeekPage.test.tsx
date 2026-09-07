@@ -33,11 +33,19 @@ vi.mock('@/data/hooks', async (importOriginal) => {
   }
 })
 
+// The weekly rows split on "is this row today?" — which the page reads off the REAL
+// clock, not the fixture. Every row therefore changes behaviour once a week, and the
+// non-today case below actually went red on a Monday (mezo-dphg: the Hét row became
+// today, so its gym slot took the start-the-session branch instead). Freeze the clock
+// on a Thursday, which the fixtures were written against ("Mock today = Csü").
 beforeEach(() => {
+  vi.useFakeTimers({ shouldAdvanceTime: true })
+  vi.setSystemTime(new Date('2026-05-21T09:00:00'))
   vi.stubEnv('VITE_USE_MOCK', 'true')
   mockNavigate.mockReset()
 })
 afterEach(() => {
+  vi.useRealTimers()
   vi.unstubAllEnvs()
   daysOverride = null
 })

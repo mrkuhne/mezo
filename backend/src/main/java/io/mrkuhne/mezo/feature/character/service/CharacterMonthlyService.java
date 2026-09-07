@@ -1,5 +1,7 @@
 package io.mrkuhne.mezo.feature.character.service;
 
+import io.mrkuhne.mezo.feature.appnotification.domain.AppNotificationKind;
+import io.mrkuhne.mezo.feature.appnotification.service.AppNotificationEmitter;
 import io.mrkuhne.mezo.feature.character.config.CharacterProperties;
 import io.mrkuhne.mezo.feature.character.entity.CharacterClaimEntity;
 import io.mrkuhne.mezo.feature.character.entity.CharacterConferenceEntity;
@@ -76,6 +78,8 @@ public class CharacterMonthlyService {
      *  catalog has to a "no owner" catch-all for the monthly deep read. */
     private static final String CHAPTER_CLAIMS_EXPERT_KEY = "drill";
 
+    // Mindig létező emit-fasád: kikapcsolt feed mellett néma no-op (mezo-0cbh).
+    private final AppNotificationEmitter notificationEmitter;
     private final CharacterConferenceRepository conferenceRepository;
     private final CharacterDimensionRepository dimensionRepository;
     private final CharacterClaimRepository claimRepository;
@@ -170,6 +174,7 @@ public class CharacterMonthlyService {
             log.warn("MONTHLY run-log record call failed for owner {} monthStart {}", owner, monthStart, e);
         }
 
+        emitPortraitNotification(owner, monthStart, conference);
         return conference;
     }
 
@@ -236,4 +241,26 @@ public class CharacterMonthlyService {
         }
         return changes;
     }
+
+    /**
+     * mezo-0cbh — a {@code memoir_ready} / {@code weekly_review_ready} alakja: „elkészült
+     * valami, ami rólad szól". A havi mélyolvasás eddig csak akkor derült ki, ha magadtól
+     * benyitottál a Karakter dosszié Konzílium oldalára.
+     *
+     * <p>A dedup-kulcs a HÓNAP, nem a konferencia id-je: a metódus eleji idempotencia-ág egy
+     * újrafutásnál a MEGLÉVŐ sort adja vissza (nem null-t), tehát id-alapú kulccsal minden
+     * catch-up futás új értesítést írna ugyanarra a hónapra.
+     */
+    private void emitPortraitNotification(UUID owner, LocalDate monthStart,
+                                          CharacterConferenceEntity conference) {
+        if (conference == null) {
+            return;   // üres hónap (nincs ACTIVE állítás) — nincs mit bejelenteni
+        }
+        notificationEmitter.emit(owner, AppNotificationKind.CHARACTER_PORTRAIT,
+            "\u00DAj portr\u00E9 k\u00E9sz\u00FClt r\u00F3lad",
+            "A havi m\u00E9lyolvas\u00E1s v\u00E9gigment a doszi\u00E9don \u2014 n\u00E9zd meg, mi v\u00E1ltozott.",
+            AppNotificationKind.CHARACTER_PORTRAIT.deeplink(), conference.getId(),
+            "character_portrait:" + monthStart);
+    }
+
 }

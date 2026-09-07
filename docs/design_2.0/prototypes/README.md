@@ -38,8 +38,10 @@ they inline come from `../assets/`.
 | `celok.html` | https://claude.ai/code/artifact/e404d1d4-55c3-4e81-a8b4-716c6ba45f87 |
 | `minta-reszlet.html` | — (emberi következtetés + bináris összevetés + rétegzett diagnosztika — mezo-0469) |
 | `rutin-szerkeszto-valasztas.html` | — (not yet published; hol lakjon a recept/stacking szerkesztése — három IA-lehetőség egymás mellett — mezo-08zl) |
+| `sablonok.html` | https://claude.ai/code/artifact/39b9e61d-c187-40a7-807e-b67d02c16b90 (Sablonok redesign — poszter-kártya cél-washsal, volumen-ív, nap-szalag, egy Indítás CTA + ⋯ menü, sablon-előnézet oldal) |
 | `rutin-formalodas.html` | — (not yet published; Rutin 2.0 — csempés /me/rutin hub élő „Ma" listával, szokás-rács formálódás-ívekkel, formálódás-oldal telítődő görbével + tartomány-becsléssel, előzmény-felület — mezo-08zl) |
 | `eszrevetelek.html` | https://claude.ai/code/artifact/2f5e64be-de78-481a-9320-35e84706bf52 (Észrevételek — a Nap→Mezo oldal harmadik füle (feltűnt / visszatérés / figyelem / beépült kártyák, chipek) + a Minták laborfüzet egy reflexió-hipotézisre (teszt-terv, bizonyíték-napló, bizonyosság) — patterns-rag-intelligence) |
+| `ertesites-dropdown.html` | — (not yet published; a fejléc csengőjének görgethető, teljes szélességű értesítés-panelje: kitapadó fejrész + kategória-szűrő chipek + kitapadó napcímkék, típusonkénti clay-ikon — mezo-g9fz) |
 
 ## Workflow
 
@@ -125,6 +127,15 @@ are usable without a build step).
   curve, Emphasize cap 2, program editor with day breakdown + session-cap 11 + Lint/PeakFit,
   searchable multi-add exercise picker, ▲▼ reorder), start/close sheets (close → report),
   frozen report, Történet selection mode → A/B compare page.
+- **sablonok** — the `/train/templates` **Sablonok** page redesigned into design 2.0 (the old
+  screen was a flat white list with four equal-weight buttons per card). Washed **poster card**
+  per template, coloured by goal (hypertrophy coral · strength gold · legacy sage): eyebrow →
+  title → goal line → **volume arc** (the block's weeks as mini bars, deload hatched) →
+  **day strip** (the week's 7 days, training days filled with the day-type letter) → chips →
+  footer with run history, a single **Indítás** CTA and a **⋯** popover holding Szerkesztés /
+  Duplikálás / Törlés (delete = toast + Vissza, not a two-tap label swap). Washed shelf header
+  with three stat cells, ghost state, and the tile → full-page pattern: a card opens a
+  **template preview** (day mosaic + per-muscle W1 → ceiling bars, Szerkesztés/Indítás foot).
 - **fuel-tab** — the Fuel hub, audited against the real `/fuel` routes. **Hub = the old Mai page's
   soul**: keret-hero stripped to one number — the kcal **consumed today** (target implied by
   the energy chips; no eyebrow, no eddig/cél line, no coach text in the hero),

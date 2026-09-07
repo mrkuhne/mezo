@@ -180,6 +180,8 @@ class FlagTraceReadServiceIT extends AbstractIntegrationTest {
         // delivery — so with traces planted at 9:00/10:00 this test failed on every run before
         // 09:00 local (CI's 00:xx UTC runs included). cardAt pins the delivery after both raises,
         // exactly as this file's other correlation tests already do.
+        // mezo-al23: a suite mostantól a prod zónájában (Europe/Budapest) fut, ezért ez a
+        // determinisztikus kézbesítés nem csak az UTC-s napszakokra igaz.
         UUID cardId = cardAt(userId, FlagKey.SLEEP_DEBT, at(11));
 
         FlagTraceReadService.TraceDay day = service.read(userId, DAY);
