@@ -10,8 +10,14 @@ import io.mrkuhne.mezo.feature.companion.entity.DailySummaryEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternCritiqueEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEvidenceEnvelope;
+import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.DailySummaryRepository;
 import io.mrkuhne.mezo.feature.companion.reflection.config.ReflectionProperties;
+import io.mrkuhne.mezo.feature.companion.reflection.entity.TextSignalEntity;
+import io.mrkuhne.mezo.feature.companion.reflection.repository.TextSignalRepository;
+import io.mrkuhne.mezo.feature.companion.reflection.service.ReflectionMemoryGateway;
+import io.mrkuhne.mezo.feature.companion.reflection.service.TestPlanValidator;
+import io.mrkuhne.mezo.feature.companion.reflection.service.TestPlanValidator.RawTestPlan;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
@@ -20,6 +26,7 @@ import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 import tools.jackson.core.type.TypeReference;
@@ -33,7 +40,9 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.time.LocalDate;
 import java.util.HexFormat;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Optional;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -75,7 +84,12 @@ public class HypothesisPipelineService {
             minták) alapján javasolj legfeljebb %d MECHANIZMUS-szintű hipotézist {{NÉV}} adatairól —
             olyan ok-okozati sejtést, amit a páronkénti statisztika önmagában nem lát. Csak a
             megadott adatokra építs. Válaszolj KIZÁRÓLAG JSON tömbbel, pontosan ebben a formában:
-            [{"title":"...","mechanism":"...","category":"physiology|trigger|response"}]
+            [{"title":"...","mechanism":"...","category":"physiology|trigger|response","testPlan":{"seriesA":"...","seriesB":"...","lagDays":0,"expectedDirection":"positive|negative"}}]
+            A testPlan az ELŐRE RÖGZÍTETT teszt, amivel a sejtés MEGCÁFOLHATÓ: két KÜLÖNBÖZŐ sorozat
+            kizárólag az alábbi listáról (ne találj ki újat), a lag 0..3 nap, az irány pedig az,
+            amit vársz. Ha nem tudsz mérhető tesztet adni, a testPlan legyen null — a sejtés akkor is
+            érdekes lehet.
+            ELÉRHETŐ SOROZATOK: %s
             Ha nincs értelmes hipotézis: []""";
 
     private static final String CRITIQUE_PROMPT = CRITIQUE_MARKER + """
@@ -106,9 +120,18 @@ public class HypothesisPipelineService {
     private final LlmCallContextHolder llmCallContextHolder;
     private final AppNotificationEmitter appNotificationEmitter;
     private final PromptPersona promptPersona;
+    /** S3 (mezo-eq85.3): the reflection collaborators are REFLECTION_SWITCH-gated while this
+     *  service is not (TextSignalListenerSwitchOffIT keeps the context up with Reflexió off), so
+     *  they can only be reached lazily. Absent ⇒ the loop degrades to the pre-S3 qualitative
+     *  behaviour instead of failing. */
+    private final ObjectProvider<TestPlanValidator> testPlanValidator;
+    private final ObjectProvider<ReflectionMemoryGateway> reflectionMemoryGateway;
+    /** A Spring Data repository is never switch-gated, so yesterday's signal digest needs no provider. */
+    private final TextSignalRepository textSignalRepository;
 
-    /** One hypothesis as the LLM returns it. */
-    record Hypothesis(String title, String mechanism, String category) {}
+    /** One hypothesis as the LLM returns it — {@code testPlan} is a PROPOSAL, never a decision:
+     *  {@link TestPlanValidator} is what turns it into something the engine will test. */
+    record Hypothesis(String title, String mechanism, String category, RawTestPlan testPlan) {}
 
     /** The 4-factor critique as the LLM returns it. */
     record Critique(Double statistical, Double confounders, Double l3align, Double actionability,
@@ -127,8 +150,9 @@ public class HypothesisPipelineService {
             log.debug("No narrative context for user {} — no hypothesis round", userId);
             return 0;
         }
-        if (extraContext != null && !extraContext.isBlank()) {
-            context = context + "\n\n" + extraContext;
+        String extra = extraContext == null ? nightlyContext(userId) : extraContext;
+        if (extra != null && !extra.isBlank()) {
+            context = context + "\n\n" + extra;
         }
         int max = reflectionProperties.propose().maxPerNight();
         // null-safe end to end: JDK Set.of().contains(null) THROWS, and a category-less
@@ -173,6 +197,86 @@ public class HypothesisPipelineService {
             }
         }
         return false;
+    }
+
+    /**
+     * S3 (mezo-eq85.3): what the NIGHTLY pass knows on top of the weekly narrative — yesterday's
+     * text signals, the hypotheses already open (so the model does not re-propose them), and the
+     * memory-platform block retrieved under the {@code REFLECTION} policy. Built here only when
+     * the caller handed no {@code extraContext}; every part is optional and a missing part is
+     * simply left out.
+     */
+    private String nightlyContext(UUID userId) {
+        String digest = yesterdaySignalDigest(userId);
+        String open = openHypotheses(userId);
+        String memories = memoryBlock(userId, digest);
+        StringBuilder out = new StringBuilder();
+        if (!digest.isBlank()) {
+            out.append("TEGNAPI JELZÉSEK (a szövegeidből):\n").append(digest);
+        }
+        if (!open.isBlank()) {
+            appendSection(out, "NYITOTT HIPOTÉZISEK (ezeket NE javasold újra):\n" + open);
+        }
+        if (!memories.isBlank()) {
+            appendSection(out, "EMLÉKEK (memória-platform):\n" + memories);
+        }
+        return out.toString();
+    }
+
+    private static void appendSection(StringBuilder out, String section) {
+        if (!out.isEmpty()) {
+            out.append("\n\n");
+        }
+        out.append(section);
+    }
+
+    /** Yesterday's newest signal per source, as one line each — "" when the day produced none. */
+    private String yesterdaySignalDigest(UUID userId) {
+        LocalDate day = LocalDate.now().minusDays(1);
+        Map<String, TextSignalEntity> newest = new LinkedHashMap<>();
+        for (TextSignalEntity signal : textSignalRepository
+                .findByCreatedByAndOccurredOnBetweenAndDeletedFalseOrderByOccurredOnAscVersionDesc(
+                        userId, day, day)) {
+            // first seen per source = highest version (the query orders version desc)
+            newest.putIfAbsent(signal.getSourceKind() + ':' + signal.getSourceId(), signal);
+        }
+        return newest.values().stream()
+                .map(HypothesisPipelineService::signalLine)
+                .collect(Collectors.joining("\n"));
+    }
+
+    private static String signalLine(TextSignalEntity signal) {
+        return "- " + signal.getSourceKind()
+                + ": hangulat " + nullSafe(signal.getMood())
+                + ", energia " + nullSafe(signal.getEnergy())
+                + ", stressz " + nullSafe(signal.getStress())
+                + (signal.getPeople().isEmpty() ? "" : ", emberek: " + String.join(", ", signal.getPeople()))
+                + (signal.getTopics().isEmpty() ? "" : ", témák: " + String.join(", ", signal.getTopics()));
+    }
+
+    private static String nullSafe(Integer value) {
+        return value == null ? "–" : value.toString();
+    }
+
+    /** The rows the engine is still testing — title, state and the running tally. */
+    private String openHypotheses(UUID userId) {
+        return patternRepository
+                .findByCreatedByAndStatusInAndDeletedFalse(userId,
+                        Set.of(PatternEntity.STATUS_PROPOSED, PatternEntity.STATUS_MONITORING))
+                .stream()
+                .filter(p -> !PatternEntity.KIND_STATISTICAL.equals(p.getKind()))
+                .map(p -> "- " + p.getTitle() + " · " + p.getStatus()
+                        + " · " + p.getEvidenceHits() + " bejött / " + p.getEvidenceMisses() + " nem")
+                .collect(Collectors.joining("\n"));
+    }
+
+    /** One audited REFLECTION retrieval — "" when Reflexió is off or the platform could not answer. */
+    private String memoryBlock(UUID userId, String digest) {
+        ReflectionMemoryGateway gateway = reflectionMemoryGateway.getIfAvailable();
+        if (gateway == null || digest.isBlank()) {
+            return "";
+        }
+        return gateway.contextFor(userId, "tegnap: " + digest, true);
     }
 
     /** Pure compute: weekly narrative context — null when there is nothing to hypothesize over.
@@ -244,11 +348,29 @@ public class HypothesisPipelineService {
         return lines.isBlank() ? "" : "\n\nKAPU-DIAGNOSZTIKA (nem-élő párok):\n" + lines;
     }
 
+    /**
+     * The series a test plan may name. With Reflexió on this is the user's own menu (the
+     * correlatable metrics PLUS the {@code people:}/{@code topic:} keys their texts carry); with
+     * it off, the fixed metric catalog — the prompt then still asks for a plan, and every plan
+     * simply fails validation, which is the honest degrade.
+     */
+    private List<String> availableSeries(UUID userId) {
+        TestPlanValidator validator = testPlanValidator.getIfAvailable();
+        if (validator != null) {
+            return validator.availableSeries(userId);
+        }
+        return java.util.Arrays.stream(MetricKey.values())
+                .filter(MetricKey::correlatable)
+                .map(MetricKey::wireKey)
+                .toList();
+    }
+
     private List<Hypothesis> propose(UUID userId, String context) {
         String raw;
         try {
             String prompt = promptPersona.render(userId, String.format(Locale.ROOT, PROPOSE_PROMPT,
-                    reflectionProperties.propose().maxPerNight()));
+                    reflectionProperties.propose().maxPerNight(),
+                    String.join(", ", availableSeries(userId))));
             raw = llmCallContextHolder.runWith(
                     new LlmCallContext("companion_hypothesis", "propose", null, null),
                     () -> companionLlm.completeSmart(prompt, context));
@@ -287,7 +409,10 @@ public class HypothesisPipelineService {
         String raw = llmCallContextHolder.runWith(
                 new LlmCallContext("companion_hypothesis", "revise", null, null),
                 () -> companionLlm.completeSmart(REVISE_PROMPT, payload));
-        return parseObject(raw, new TypeReference<Hypothesis>() {});
+        Hypothesis revised = parseObject(raw, new TypeReference<Hypothesis>() {});
+        // A revision is a REWORDING: the test — and therefore the identity — is the original's.
+        return revised == null ? null : new Hypothesis(revised.title(), revised.mechanism(),
+                revised.category(), hypothesis.testPlan());
     }
 
     private <T> T parseObject(String raw, TypeReference<T> type) {
@@ -316,20 +441,33 @@ public class HypothesisPipelineService {
         return value == null ? 0 : Math.clamp(value, 0.0, 1.0);
     }
 
-    /** Persist unless the identity hash already exists in ANY status (rejected stays rejected). */
+    /**
+     * Persist unless the identity already exists in ANY status (rejected stays rejected).
+     *
+     * <p>S3 (mezo-eq85.3): a proposal whose test plan SURVIVES validation becomes a falsifiable
+     * {@code reflection} row identified by the PLAN ({@code ref-<hash>}) — reword it a hundred
+     * times and it is still the same hypothesis. Everything else stays the pre-S3 qualitative
+     * {@code ai_hypothesis} row identified by the title hash. Reflection rows raise no
+     * {@code HYPOTHESIS_NEW} notification: the observation feed (Task 4) is their surface.
+     */
     private boolean persist(UUID userId, Hypothesis hypothesis, Critique critique, double score) {
         String title = hypothesis.title().length() > 200
                 ? hypothesis.title().substring(0, 200) : hypothesis.title();
-        String pairKey = hypothesisKey(title);
-        if (patternRepository.findByCreatedByAndKindAndPairKeyAndDeletedFalse(
-                userId, PatternEntity.KIND_AI_HYPOTHESIS, pairKey).isPresent()) {
+        Optional<TestPlanEnvelope> plan = validatedPlan(userId, hypothesis);
+        String pairKey = plan.map(TestPlanEnvelope::key).orElseGet(() -> hypothesisKey(title));
+        if (alreadyKnown(userId, plan, pairKey)) {
             log.debug("Hypothesis '{}' already known (any status) — skipping", title);
             return false;
         }
         PatternEntity pattern = new PatternEntity();
         pattern.setCreatedBy(userId);
-        pattern.setKind(PatternEntity.KIND_AI_HYPOTHESIS);
+        pattern.setKind(plan.isPresent() ? PatternEntity.KIND_REFLECTION : PatternEntity.KIND_AI_HYPOTHESIS);
         pattern.setPairKey(pairKey);
+        plan.ifPresent(envelope -> {
+            pattern.setHypothesisKey(pairKey);
+            pattern.setTestPlan(envelope);
+            pattern.setOrigin(PatternEntity.ORIGIN_NIGHTLY_REFLECTION);
+        });
         pattern.setCategory(hypothesis.category());
         pattern.setCategoryLabel(categoryLabel(hypothesis.category()));
         pattern.setTitle(title);
@@ -343,12 +481,29 @@ public class HypothesisPipelineService {
         pattern.setStatus(PatternEntity.STATUS_PROPOSED);
         pattern.setLastDetectedAt(Instant.now().truncatedTo(ChronoUnit.MICROS)); // timestamptz stores micros — truncate so the persisted row equals the in-memory one (mezo-mfmb)
         patternRepository.saveAndFlush(pattern);
-        appNotificationEmitter.emit(userId, AppNotificationKind.HYPOTHESIS_NEW,
-                "Új AI-hipotézis készült",
-                "„" + title + "” — a hipotézis-körből. Nézd meg a Minták között.",
-                AppNotificationKind.HYPOTHESIS_NEW.deeplink(), pattern.getId(),
-                "hypothesis_new:" + pairKey);
+        if (plan.isEmpty()) {
+            appNotificationEmitter.emit(userId, AppNotificationKind.HYPOTHESIS_NEW,
+                    "Új AI-hipotézis készült",
+                    "„" + title + "” — a hipotézis-körből. Nézd meg a Minták között.",
+                    AppNotificationKind.HYPOTHESIS_NEW.deeplink(), pattern.getId(),
+                    "hypothesis_new:" + pairKey);
+        }
         return true;
+    }
+
+    /** "" when Reflexió is off or the plan is unusable — the proposal then degrades, never fails. */
+    private Optional<TestPlanEnvelope> validatedPlan(UUID userId, Hypothesis hypothesis) {
+        TestPlanValidator validator = testPlanValidator.getIfAvailable();
+        return validator == null
+                ? Optional.empty() : validator.validate(userId, hypothesis.testPlan());
+    }
+
+    /** Identity probe: the hypothesis key for a planned row, the title hash for a qualitative one. */
+    private boolean alreadyKnown(UUID userId, Optional<TestPlanEnvelope> plan, String key) {
+        return plan.isPresent()
+                ? patternRepository.findByCreatedByAndHypothesisKeyAndDeletedFalse(userId, key).isPresent()
+                : patternRepository.findByCreatedByAndKindAndPairKeyAndDeletedFalse(
+                        userId, PatternEntity.KIND_AI_HYPOTHESIS, key).isPresent();
     }
 
     /** Stable identity: {@code hyp-} + 8-hex SHA-256 of the normalized title. */
