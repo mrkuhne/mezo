@@ -70,4 +70,23 @@ class AdminTableCatalogIT extends AbstractIntegrationTest {
         assertThat(catalog.require("llm_log_history").hasColumn("is_deleted")).isFalse();
         assertThat(catalog.require("workout_session").hasColumn("is_deleted")).isTrue();
     }
+
+    @Test
+    void testPgvectorColumns_shouldBeHiddenFromCatalog_whenTypeIsUserDefined() {
+        // Pgvector columns (vector(768)) are reported by information_schema as USER-DEFINED
+        // type, not a concrete SQL type. They are hidden from the browsable catalog because:
+        // a 768-float array is not human-readable, JSON serialization would bloat responses,
+        // and the JDBC driver has no default mapping for it, risking runtime failure rather
+        // than a clean 400 on read. They are dropped the same way credential columns are,
+        // so they can never be selected, sorted, or filtered on.
+        var memoryVector = catalog.require("memory_vector");
+        assertThat(memoryVector.hasColumn("embedding"))
+                .as("pgvector embedding column should be hidden from catalog")
+                .isFalse();
+        // Verify the table itself is browsable and other columns are visible (not a vacuous
+        // test: this guards against the whole table being dropped for an unrelated reason).
+        assertThat(memoryVector.hasColumn("provider"))
+                .as("normal column in same table should remain visible")
+                .isTrue();
+    }
 }
