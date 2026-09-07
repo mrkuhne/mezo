@@ -2081,7 +2081,7 @@ export interface paths {
         };
         /**
          * Az Észrevételek fül kártyái egy napra (mezo-eq85.4)
-         * @description Négy kártyafajta, EBBEN a sorrendben: `fresh` (a nap felszínre engedett észrevételei, amikre még nem válaszoltál), `return` (a nap észrevételei egy KORÁBBI válaszod után — a szöveg már hivatkozik rá), `watching` (amit épp figyel a motor), `confirmed` (amit az elmúlt 24 órában megerősített). Csoporton belül a legfrissebb elöl. `date` nélkül a mai nap.
+         * @description Négy kártyafajta, EBBEN a sorrendben: `fresh` (a nap felszínre engedett észrevételei, amikre még nem válaszoltál), `return` (a nap észrevételei egy KORÁBBI válaszod után — a szöveg már hivatkozik rá), `watching` (amit épp figyel a motor), `confirmed` (amit a KÉRT naptári napon erősített meg). Csoporton belül a legfrissebb elöl. `date` nélkül a mai nap.
          */
         get: operations["listObservations"];
         put?: never;
@@ -7120,7 +7120,7 @@ export interface components {
             patternId: string;
             /** @description A sor stabil identitása (ref-…) — a statisztikai sorokon pair:<key>. */
             hypothesisKey?: string | null;
-            /** @description fresh = még válasz nélküli mai észrevétel; return = mai észrevétel egy korábbi válaszod UTÁN; watching = épp figyelt sor; confirmed = az elmúlt 24 órában megerősített sor. */
+            /** @description fresh = még válasz nélküli mai észrevétel; return = mai észrevétel egy korábbi válaszod UTÁN; watching = épp figyelt sor; confirmed = a KÉRT naptári napon megerősített sor (a nap saját [00:00, 24:00) ablaka, nem egy mozgó 24 órás visszatekintés). */
             card: string;
             /**
              * Format: date-time
@@ -7148,7 +7148,7 @@ export interface components {
              * @description Determinisztikus bizonyosság 0..1 — sosem LLM-becslés.
              */
             belief?: number | null;
-            /** @description A legfrissebb chip-válaszod erre a kártyára (a kártya eseménye UTÁN) — null, ha még nem válaszoltál. */
+            /** @description A legfrissebb chip-válaszod — null, ha még nem válaszoltál. ESEMÉNY-kártyán (fresh/return) a saját eseménye idejétől kezdve adott válasz, mert a chipek ARRA az észrevételre felelnek; SOR-kártyán (watching/confirmed) a sor legfrissebb válasza, időponthoz kötés nélkül, mert annak nincs saját pillanata. */
             repliedChoice?: string | null;
             /** @description Melyik felület ikonját mutassa a kártya — a teszt-terv seriesA előtagjából származtatva; terv nélkül mezo. */
             sourceIcon: string;

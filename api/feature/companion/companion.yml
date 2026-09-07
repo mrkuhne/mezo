@@ -469,8 +469,8 @@ paths:
       description: >-
         Négy kártyafajta, EBBEN a sorrendben: `fresh` (a nap felszínre engedett észrevételei,
         amikre még nem válaszoltál), `return` (a nap észrevételei egy KORÁBBI válaszod után —
-        a szöveg már hivatkozik rá), `watching` (amit épp figyel a motor), `confirmed` (amit az
-        elmúlt 24 órában megerősített). Csoporton belül a legfrissebb elöl. `date` nélkül a mai nap.
+        a szöveg már hivatkozik rá), `watching` (amit épp figyel a motor), `confirmed` (amit a
+        KÉRT naptári napon erősített meg). Csoporton belül a legfrissebb elöl. `date` nélkül a mai nap.
       parameters:
         - name: date
           in: query
@@ -1026,7 +1026,7 @@ components:
         id: { type: string, format: uuid, description: 'Az esemény (fresh/return) vagy a minta (watching/confirmed) azonosítója — a lista stabil kulcsa.' }
         patternId: { type: string, format: uuid, description: 'A sor, amire a chip-válasz megy.' }
         hypothesisKey: { type: string, nullable: true, description: 'A sor stabil identitása (ref-…) — a statisztikai sorokon pair:<key>.' }
-        card: { type: string, pattern: '^(fresh|return|watching|confirmed)$', description: 'fresh = még válasz nélküli mai észrevétel; return = mai észrevétel egy korábbi válaszod UTÁN; watching = épp figyelt sor; confirmed = az elmúlt 24 órában megerősített sor.' }
+        card: { type: string, pattern: '^(fresh|return|watching|confirmed)$', description: 'fresh = még válasz nélküli mai észrevétel; return = mai észrevétel egy korábbi válaszod UTÁN; watching = épp figyelt sor; confirmed = a KÉRT naptári napon megerősített sor (a nap saját [00:00, 24:00) ablaka, nem egy mozgó 24 órás visszatekintés).' }
         occurredAt: { type: string, format: date-time, description: 'Az esemény ideje (fresh/return/confirmed), illetve a sor utolsó felismerése (watching).' }
         title: { type: string, description: 'A sor címe.' }
         text: { type: string, description: 'Az észrevétel prózája; a watching kártyán üres — ott a számok beszélnek.' }
@@ -1040,7 +1040,7 @@ components:
         evidenceMisses: { type: integer, description: 'Hány ÉLŐ éjszaka mondott ellent neki.' }
         minN: { type: integer, nullable: true, description: 'A teszt-terv minimum-mintaszáma — null, ha a sor nem hordoz teszt-tervet.' }
         belief: { type: number, format: double, nullable: true, description: 'Determinisztikus bizonyosság 0..1 — sosem LLM-becslés.' }
-        repliedChoice: { type: string, nullable: true, pattern: '^(watch|reject|talk)$', description: 'A legfrissebb chip-válaszod erre a kártyára (a kártya eseménye UTÁN) — null, ha még nem válaszoltál.' }
+        repliedChoice: { type: string, nullable: true, pattern: '^(watch|reject|talk)$', description: 'A legfrissebb chip-válaszod — null, ha még nem válaszoltál. ESEMÉNY-kártyán (fresh/return) a saját eseménye idejétől kezdve adott válasz, mert a chipek ARRA az észrevételre felelnek; SOR-kártyán (watching/confirmed) a sor legfrissebb válasza, időponthoz kötés nélkül, mert annak nincs saját pillanata.' }
         sourceIcon: { type: string, pattern: '^(naplo|alvas|edzes|vacsora|hold|mezo)$', description: 'Melyik felület ikonját mutassa a kártya — a teszt-terv seriesA előtagjából származtatva; terv nélkül mezo.' }
     PatternReplyRequest:
       type: object
