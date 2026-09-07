@@ -10,6 +10,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 /** Owned reads for {@code text_signal} — every finder filters {@code created_by} in SQL. */
 public interface TextSignalRepository extends JpaRepository<TextSignalEntity, UUID> {
 
+    /** S4 (mezo-eq85.4): one owned signal by id — the quick notice's entry point. */
+    Optional<TextSignalEntity> findByIdAndCreatedByAndDeletedFalse(UUID id, UUID createdBy);
+
     /** The version a series reads: newest row for one source. */
     Optional<TextSignalEntity> findFirstByCreatedByAndSourceKindAndSourceIdAndDeletedFalseOrderByVersionDesc(
             UUID createdBy, String sourceKind, UUID sourceId);

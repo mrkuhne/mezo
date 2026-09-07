@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.companion.graph.service.LifeEventExtractionServic
 import io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryQueryRewriter;
 import io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryReranker;
 import io.mrkuhne.mezo.feature.companion.quarterly.service.QuarterlyReviewService;
+import io.mrkuhne.mezo.feature.companion.reflection.service.QuickNoticeService;
 import io.mrkuhne.mezo.feature.companion.reflection.service.TextSignalExtractor;
 import io.mrkuhne.mezo.feature.companion.service.FactExtractionService;
 import io.mrkuhne.mezo.feature.companion.service.DailySummaryService;
@@ -269,6 +270,12 @@ public class FakeCompanionLlm implements CompanionLlm {
     /** Scripted text signal (Reflexió S1, mezo-eq85.1): {@code [[SIGNAL:{…}]]} in the entry text
      *  returns that JSON verbatim; without it the default below is a sure, mildly positive signal. */
     public static final Pattern SIGNAL_SENTINEL = Pattern.compile("\\[\\[SIGNAL:(.*?)]]", Pattern.DOTALL);
+
+    /** Scripted quick notice (Reflexió S4, mezo-eq85.4): {@code [[NOTICE:{…}]]} planted in the
+     *  entry text returns that JSON verbatim — the seam an IT uses to script a {@code newTestPlan}
+     *  or a {@code hypothesisKey}. Without it the default answer below is a plain observation on
+     *  the row the pre-screen already touched. */
+    public static final Pattern NOTICE_SENTINEL = Pattern.compile("\\[\\[NOTICE:(.*?)]]", Pattern.DOTALL);
 
     /** Reflexió S1: an entry carrying this string makes the extraction CALL blow up — the IT anchor
      *  for "a failing extraction never touches the journal entry it was triggered by". */
@@ -812,6 +819,14 @@ public class FakeCompanionLlm implements CompanionLlm {
             return signal.find() ? signal.group(1)
                     : "{\"mood\":4,\"energy\":3,\"stress\":2,\"confidence\":\"sure\","
                             + "\"people\":[\"Anna\"],\"topics\":[\"kapcsolatok\"],\"keywords\":[]}";
+        }
+        if (systemPrompt.startsWith(QuickNoticeService.NOTICE_MARKER)) {
+            Matcher notice = NOTICE_SENTINEL.matcher(userMessage);
+            // default: the e2e happy path — an observation on the touched row, no new test plan
+            return notice.find() ? notice.group(1)
+                    : "{\"text\":\"Felt\u0171nt, hogy amikor Anna szerepel a napl\u00f3dban,"
+                            + " m\u00e1snap t\u00f6bbet alszol.\",\"question\":\"Figyeljem tov\u00e1bb?\","
+                            + "\"hypothesisKey\":null,\"newTestPlan\":null,\"evidenceRefs\":[]}";
         }
         if (systemPrompt.startsWith(HypothesisPipelineService.HYPOTHESIS_MARKER)) {
             Matcher m = HYPOTHESES_SENTINEL.matcher(userMessage);
