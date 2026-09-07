@@ -147,10 +147,21 @@ no code gate, and this one guards a `sensitive` claim, so it gets a gate:
 - Mezo may **reject** over any verdict, freely — tightening is always the safe direction.
 - Mezo may **accept** freely on a proposal that is not `sensitive`, and on any `sensitive` proposal
   whose kind is `DOWN` or `RETIRE` — those weaken or remove a claim, so they tighten the dossier.
-- Accepting a `sensitive` **`NEW` or `UP`** proposal — the two kinds that add or strengthen a claim
-  about a person — requires an **affirmative `KEEP` or `WEAKEN`** from the Szkeptikus. A `KILL`
-  blocks it, and so does the **absence** of a verdict: a `null` verdict (the Szkeptikus round
-  returned blank or unparseable JSON, so no index has one) and an unrecognised grade both block.
+- Accepting any **other** `sensitive` proposal requires an **affirmative `KEEP` or `WEAKEN`** from
+  the Szkeptikus. A `KILL` blocks it, and so does the **absence** of a verdict: a `null` verdict
+  (the Szkeptikus round returned blank or unparseable JSON, so no index has one) and an
+  unrecognised grade both block. Note the polarity: the rule is stated as "everything except the
+  two weakening kinds", **not** as "`NEW` and `UP`" — keyed the latter way, a null or misspelled
+  kind would slip past the guardrail, which is the same fail-open mistake as treating a missing
+  verdict as clearance.
+- **The `DOWN` exemption is made true, not assumed.** `ClaimLifecycle`'s `±0.10` step applies only
+  when a ruling carries no explicit confidence, so a `sensitive` `DOWN` accepted *without*
+  clearance has its confidence dropped to `null` — handing the move to that deterministic step off
+  the claim's real current value, which is guaranteed to weaken. Otherwise the chair could accept a
+  `DOWN` at a *higher* confidence than the claim currently holds and strengthen it through the very
+  exemption that exists for weakening. With clearance from the Szkeptikus the chair keeps its own
+  number; the clearance is what earns it that. A `RETIRE` needs no such treatment — it removes the
+  claim, so there is no number to abuse.
 - A blocked accept becomes a rejection carrying a **system-authored** reason that says so, never
   the chair's own accept text, plus `note = NOT_FOR_DOSSIER`, and is logged at WARN following the
   `CharacterConferenceService.warnUnaddressedUserFeedback` idiom.
