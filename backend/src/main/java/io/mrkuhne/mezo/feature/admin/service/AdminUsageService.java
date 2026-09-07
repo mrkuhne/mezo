@@ -5,6 +5,8 @@ import io.mrkuhne.mezo.api.dto.AdminCostMatrixResponse;
 import io.mrkuhne.mezo.api.dto.AdminCostMatrixUser;
 import io.mrkuhne.mezo.api.dto.AdminDaySeries;
 import io.mrkuhne.mezo.api.dto.AdminFeatureUsageResponse;
+import io.mrkuhne.mezo.api.dto.AdminScreenUsageResponse;
+import io.mrkuhne.mezo.api.dto.AdminScreenUsageRow;
 import io.mrkuhne.mezo.feature.admin.config.AdminProperties;
 import io.mrkuhne.mezo.feature.admin.repository.AdminInsightsQuery;
 import io.mrkuhne.mezo.feature.admin.repository.AdminInsightsQuery.DayCountRow;
@@ -16,10 +18,14 @@ import io.mrkuhne.mezo.feature.llmlog.entity.CallStatus;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmFeatureDayRow;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmLogRepository;
 import io.mrkuhne.mezo.feature.llmlog.repository.LlmUserFeatureRow;
+import io.mrkuhne.mezo.feature.telemetry.repository.ScreenDayRow;
+import io.mrkuhne.mezo.feature.telemetry.repository.ScreenEventRepository;
+import io.mrkuhne.mezo.feature.telemetry.repository.ScreenUsageRow;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -56,6 +62,14 @@ public class AdminUsageService {
     private final AdminInsightsQuery query;
     private final AppUserRepository appUserRepository;
     private final LlmLogRepository llmLogRepository;
+    /**
+     * The screen-event log (mezo-o5cz). The dependency direction is deliberate and one-way:
+     * {@code admin -> telemetry}; the telemetry slice never imports anything from here (ArchUnit
+     * {@code feature_slices_are_cycle_free}). Injected unconditionally — with the screen-telemetry
+     * switch off the table is simply empty, so this panel reads zeros instead of the admin hub
+     * gaining a second, differently-gated 404.
+     */
+    private final ScreenEventRepository screenEventRepository;
 
     /** {@code 7d}/{@code 30d}/{@code 90d}; anything else (including {@code null}) is 30 days. */
     static int periodDays(String period) {
@@ -111,6 +125,52 @@ public class AdminUsageService {
         response.setPeriod(days + "d");
         response.setDays(window);
         response.setFeatures(series);
+        return response;
+    }
+
+    /**
+     * Screen x day view counts from the lean telemetry log (mezo-o5cz, spec §4). One row per
+     * screen the window saw, sorted by views descending then screen ascending, each carrying a
+     * DENSE daily series so the frontend's sparkline needs no gap logic — the same {@link
+     * AdminSeries#dense} the other admin panels use.
+     *
+     * <p>{@code uniqueUsers} is a {@code count(distinct created_by)} over the window, not a sum of
+     * daily uniques: the same person opening a screen on five days is one unique user, not five.
+     * {@code lastSeenAt} is the newest {@code occurred_at} — the clamped, server-side-sane value,
+     * never the raw client clock.
+     */
+    @Transactional(readOnly = true)
+    public AdminScreenUsageResponse screenUsage(String period) {
+        int days = periodDays(period);
+        ZoneId zone = properties.reportZone();
+        LocalDate today = LocalDate.now(zone);
+        LocalDate from = today.minusDays(days - 1L);
+        List<LocalDate> window = from.datesUntil(today.plusDays(1)).toList();
+        Instant since = from.atStartOfDay(zone).toInstant();
+
+        Map<String, List<DayCountRow>> daysByScreen = new LinkedHashMap<>();
+        for (ScreenDayRow row : screenEventRepository.aggregateByScreenAndDaySince(since, zone.getId())) {
+            daysByScreen.computeIfAbsent(row.getScreen(), k -> new ArrayList<>())
+                    .add(new DayCountRow(row.getDay(), row.getViews()));
+        }
+
+        List<AdminScreenUsageRow> screens = screenEventRepository.aggregateByScreenSince(since).stream()
+                .map((ScreenUsageRow row) -> {
+                    var out = new AdminScreenUsageRow();
+                    out.setScreen(row.getScreen());
+                    out.setViews(row.getViews());
+                    out.setUniqueUsers(row.getUniqueUsers());
+                    out.setLastSeenAt(row.getLastSeenAt() == null
+                            ? null : row.getLastSeenAt().atOffset(ZoneOffset.UTC));
+                    out.setDays(AdminSeries.dense(window, daysByScreen.getOrDefault(row.getScreen(), List.of())));
+                    return out;
+                })
+                .toList();
+
+        var response = new AdminScreenUsageResponse();
+        response.setPeriod(days + "d");
+        response.setDays(window);
+        response.setScreens(screens);
         return response;
     }
 
