@@ -15,24 +15,47 @@ k8s/
 ├── namespace.yaml              # the `mezo` namespace
 ├── ingress.yaml               # Traefik Ingress: /api→backend, /→frontend, TLS via cert-manager
 ├── postgres/
-│   ├── service.yaml           # headless Service → stable `postgres:5432` DNS
-│   ├── statefulset.yaml       # Postgres 16 + its own persistent disk (PVC)
-│   └── secret.example.yaml    # TEMPLATE for the DB Secret (no real secret in git)
+│   ├── service.yaml            # headless Service → stable `postgres:5432` DNS
+│   ├── statefulset.yaml        # Postgres 16 + its own persistent disk (PVC)
+│   ├── secret.example.yaml     # TEMPLATE for the DB Secret (no real secret in git)
+│   ├── sealedsecret.yaml       # mezo-db, RSA-encrypted (committed)
+│   ├── exporter-deployment.yaml  # postgres_exporter (Grafana metrics)
+│   ├── exporter-service.yaml     # postgres-exporter:9187 (ClusterIP)
+│   ├── backup-cronjob.yaml     # nightly pg_dump -Fc → PVC
+│   └── backup-pvc.yaml         # postgres-backup PVC (14-day rotation)
 ├── backend/
-│   ├── deployment.yaml        # Spring Boot, env/secrets, probes, ghcr-pull
-│   ├── service.yaml           # backend:8090 (ClusterIP)
-│   └── secret.example.yaml    # TEMPLATE for mezo-app (JWT + owner creds)
+│   ├── deployment.yaml         # Spring Boot, env/secrets, probes, ghcr-pull
+│   ├── service.yaml            # backend:8090 (ClusterIP)
+│   ├── secret.example.yaml     # TEMPLATE for mezo-app (JWT + owner creds)
+│   └── sealedsecret*.yaml      # mezo-app, ghcr-pull, RSA-encrypted (committed)
 ├── frontend/
-│   ├── deployment.yaml        # nginx serving the static PWA build
-│   └── service.yaml           # frontend:80 (ClusterIP)
+│   ├── deployment.yaml         # nginx serving the static PWA build
+│   └── service.yaml            # frontend:80 (ClusterIP)
 ├── cert-manager/
-│   └── clusterissuer.yaml     # Let's Encrypt prod issuer (HTTP-01 via Traefik)
-└── pgadmin/
-    ├── configmap.yaml         # pre-seeded mezo server connection
-    ├── pvc.yaml               # pgAdmin config storage
-    ├── deployment.yaml        # pgAdmin 4 (private, no ingress)
-    ├── service.yaml           # pgadmin:80 (ClusterIP)
-    └── secret.example.yaml    # TEMPLATE for pgadmin-auth login creds
+│   └── clusterissuer.yaml      # Let's Encrypt prod issuer (HTTP-01 via Traefik)
+├── pgadmin/
+│   ├── configmap.yaml          # pre-seeded mezo server connection
+│   ├── pvc.yaml                # pgAdmin config storage
+│   ├── deployment.yaml         # pgAdmin 4 (private, Tailscale ingress)
+│   ├── service.yaml             # pgadmin:80 (ClusterIP)
+│   ├── ingress-tailscale.yaml  # Tailscale Ingress → pgadmin.<tailnet>.ts.net
+│   ├── secret.example.yaml     # TEMPLATE for pgadmin-auth login creds
+│   └── sealedsecret.yaml       # pgadmin-auth, RSA-encrypted (committed)
+└── monitoring/                 # mezo-ibxy — ADR 0037
+    ├── namespace.yaml          # the `monitoring` namespace
+    ├── values.yaml             # victoria-metrics-k8s-stack Helm values (read by argocd/monitoring-application.yaml)
+    ├── sealedsecret-grafana.yaml       # grafana-admin, RSA-encrypted (committed)
+    ├── sealedsecret-alertmanager.yaml  # alertmanager-config (Telegram bot token), RSA-encrypted
+    ├── secret.example-grafana.yaml       # TEMPLATE for grafana-admin
+    ├── secret.example-alertmanager.yaml  # TEMPLATE for the Telegram Alertmanager config
+    ├── vmservicescrape-backend.yaml   # scrapes backend :8081/actuator/prometheus
+    ├── vmservicescrape-postgres.yaml  # scrapes postgres-exporter
+    ├── vmpodscrape-traefik.yaml       # scrapes Traefik's Prometheus port (kube-system)
+    ├── vmrule-mezo.yaml               # metric alert rules (vmalert)
+    ├── vmrule-logs.yaml               # LogsQL alert rules (vmalert-target: logs)
+    ├── vmalert-logs.yaml              # second VMAlert instance evaluating vmrule-logs.yaml
+    ├── grafana-dashboard-mezo.yaml    # bundled Grafana dashboard
+    └── ingress-tailscale-grafana.yaml # Tailscale Ingress → grafana.<tailnet>.ts.net
 ```
 
 GitOps: ArgoCD (in the `argocd` namespace) syncs this whole `k8s/` directory from
@@ -96,6 +119,14 @@ kubectl apply -f k8s/cert-manager/clusterissuer.yaml
 kubectl apply -f k8s/ingress.yaml
 
 kubectl get pods -n mezo -w        # watch everything come up
+
+# 5. observability (mezo-ibxy, ADR 0037): second ArgoCD Application, applied once by hand
+kubectl apply -f k8s/monitoring/namespace.yaml -f k8s/monitoring/sealedsecret-*.yaml \
+  && kubectl apply -f argocd/monitoring-application.yaml
+# NOTE: two host-side files this doesn't cover — /etc/rancher/k3s/config.yaml (kubelet
+# image-GC thresholds) and the Traefik HelmChartConfig at
+# /var/lib/rancher/k3s/server/manifests/traefik-config.yaml — neither is in git; re-create
+# them by hand on a rebuild (see docs/infrastructure/runbook.md §Disk & image GC / §Observability).
 ```
 
 (`kubectl apply -f k8s/backend/` would also try to apply `secret.example.yaml` — it's a
