@@ -1164,7 +1164,15 @@ chat on the other.
   It stays an EVENT: the user's words are evidence `HypothesisLifecycle` weighs, never a status that
   skips it. The recorder re-checks ownership itself (the reference is nullable-on-delete, so a stale
   anchor must write nothing), and the capture is swallow-and-log — reflection bookkeeping must never
-  cost the user their chat turn.
+  cost the user their chat turn. That guarantee is carried by `@Transactional(REQUIRES_NEW)` on
+  `recordChatReply`, not by the caller's `try/catch` alone: under the default `REQUIRED` the write
+  would join the turn's own transaction, and a throw would mark it rollback-only so the *swallowed*
+  failure came back as an `UnexpectedRollbackException` at the outer commit — losing the whole turn
+  on both paths. The annotation suffices because `ChatService` calls the recorder cross-bean through
+  the Spring proxy (the `AppNotificationService.emit` idiom); a self-invocation would need
+  `HypothesisEvaluationService.evaluateOne`'s explicit `TransactionTemplate` instead. Consequence,
+  accepted on purpose: the reply commits on its own, so it survives even when the **synchronous**
+  turn later rolls back on an LLM failure.
 
 ## 2. User-facing behavior
 
@@ -6435,6 +6443,13 @@ renders nothing at all.
 carries `seedPatternId`; one send appends exactly one `user_reply(channel=chat, choice=null)` event
 with the verbatim text **and leaves the row's status alone** (evidence, not a verdict); an unseeded
 conversation writes nothing; and a foreign `seedPatternId` is a 404 before anything is persisted.
+`ChatSeedReplyFailureIT` owns the other half of that promise — the "never fails the turn" guarantee
+— on **both** entry points (`sendMessage` and `prepareTurn`): a `@MockitoSpyBean`
+`PatternEventRepository` blows up INSIDE `recordChatReply`'s own transaction (spying the *recorder*
+would replace the transactional proxy and make the test pass either way), and the turn still
+commits its rows. Drop the `REQUIRES_NEW` and both cases fail with the exact
+`UnexpectedRollbackException` the boundary exists to prevent — its own IT class, because the spy
+forks the application context.
 **Regression coverage:** `MemoryContextServiceIT`, `LlmMemoryRerankerTest` and
 `MemoryCandidateFusionTest` (the properties record grew a component), `HypothesisPipelineServiceIT`
 and `HypothesisGatherContextIT` (the pre-S3 qualitative path is unchanged), `ChatServiceIT` /

@@ -379,6 +379,11 @@ public class ChatService {
      * mezo-eq85.3: in a hypothesis-seeded thread the user's words ARE the evidence, so every user
      * turn is appended as a {@code user_reply} event. Swallow-and-log on any failure: a reflection
      * bookkeeping problem must never cost the user their chat turn.
+     *
+     * <p>The catch below only holds because {@code recordChatReply} runs {@code REQUIRES_NEW}
+     * (see {@link ReflectionReplyRecorder}). Were it to join this turn's transaction, its throw
+     * would set rollback-only and the swallowed failure would resurface as an
+     * {@code UnexpectedRollbackException} at commit — the turn lost anyway.
      */
     private void recordSeedReply(UUID userId, AiConversationEntity conversation, String content) {
         if (conversation.getSeedPatternId() == null) {

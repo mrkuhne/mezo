@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -20,6 +21,20 @@ import org.springframework.transaction.annotation.Transactional;
  *
  * <p>Ownership is re-checked here rather than trusted from the conversation row: the pattern
  * reference is nullable-on-delete, so a stale anchor must write nothing at all.
+ *
+ * <p><b>{@code REQUIRES_NEW} is what makes the caller's try/catch real.</b> Both call sites
+ * ({@code ChatService.sendMessage} and {@code prepareTurn}) are themselves transactional and
+ * swallow a failure here. Under the default {@code REQUIRED} this bookkeeping would JOIN the
+ * turn's transaction, so a throw would mark it rollback-only and the swallowed failure would
+ * come back as an {@code UnexpectedRollbackException} at the outer commit — the user losing the
+ * whole chat turn over a reflection event. Its own transaction (the
+ * {@code AppNotificationService.emit} idiom) keeps the failure contained. The annotation works
+ * here because the call is cross-bean through the Spring proxy; a self-invocation would need a
+ * {@code TransactionTemplate} instead (see {@code HypothesisEvaluationService.evaluateOne}).
+ *
+ * <p>The flip side, deliberately accepted: the reply commits independently, so it survives even
+ * when the synchronous turn later rolls back on an LLM failure. Evidence the user actually typed
+ * is worth keeping; the alternative was losing the turn.
  */
 @Slf4j
 @Service
@@ -39,7 +54,7 @@ public class ReflectionReplyRecorder {
     private final PatternEventRepository patternEventRepository;
 
     /** Appends one {@code user_reply} event; a missing/foreign pattern or blank text writes nothing. */
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recordChatReply(UUID userId, UUID patternId, String text) {
         if (patternId == null || text == null || text.isBlank()) {
             return;
