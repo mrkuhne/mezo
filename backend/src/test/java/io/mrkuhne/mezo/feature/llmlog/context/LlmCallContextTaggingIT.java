@@ -4,6 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryCandidate;
+import io.mrkuhne.mezo.feature.companion.memory.dto.ScoreBreakdown;
+import io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryReranker;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryCandidateFusion.FusedCandidate;
+import io.mrkuhne.mezo.feature.companion.memory.service.MemoryQueryRewriter;
 import io.mrkuhne.mezo.feature.meal.entity.MealEntity;
 import io.mrkuhne.mezo.feature.meal.repository.MealRepository;
 import io.mrkuhne.mezo.feature.meal.service.MealCoachService;
@@ -125,6 +130,8 @@ class LlmCallContextTaggingIT extends AbstractIntegrationTest {
     @Autowired private OwnerProperties ownerProperties;
     @Autowired private UserPopulator userPopulator;
     @Autowired private DailySummaryPopulator dailySummaryPopulator;
+    @Autowired private MemoryQueryRewriter memoryQueryRewriter;
+    @Autowired private LlmMemoryReranker llmMemoryReranker;
 
     @BeforeEach
     void resetCapture() {
@@ -167,5 +174,44 @@ class LlmCallContextTaggingIT extends AbstractIntegrationTest {
         assertThat(captured.operation()).isEqualTo(CompanionMessageEntity.KIND_MIDDAY);
         assertThat(captured.entityKind()).isNull();
         assertThat(captured.entityId()).isNull();
+    }
+
+    @Test
+    void testRewrite_shouldTagTheCallWithTheRecallContext_whenTheQueryIsRewritten() {
+        capturingCompanionLlm.answerWith("Mennyit aludtam a héten?");
+
+        memoryQueryRewriter.rewrite("és azelőtt?", List.of(
+            new CompanionLlm.Turn(CompanionLlm.Role.USER, "Mennyit aludtam tegnap?")));
+
+        LlmCallContext captured = capturingCompanionLlm.captured();
+        assertThat(captured).isNotNull().isNotEqualTo(LlmCallContext.UNKNOWN);
+        assertThat(captured.feature()).isEqualTo("companion_recall");
+        assertThat(captured.operation()).isEqualTo("query_rewrite");
+        assertThat(captured.entityKind()).isNull();
+        assertThat(captured.entityId()).isNull();
+    }
+
+    @Test
+    void testRerank_shouldTagTheCallWithTheRecallContext_whenTheRerankRunsOnAPooledThread() {
+        // The context holder is thread-bound and the reranker submits to applicationTaskExecutor:
+        // this asserts the runWith sits INSIDE the submitted task, where the call actually happens.
+        FusedCandidate first = fusedCandidate(UUID.randomUUID());
+        FusedCandidate second = fusedCandidate(UUID.randomUUID());
+        capturingCompanionLlm.answerWith(
+            "[\"%s\",\"%s\"]".formatted(second.candidate().stableId(), first.candidate().stableId()));
+
+        llmMemoryReranker.rerank(List.of(first, second));
+
+        LlmCallContext captured = capturingCompanionLlm.captured();
+        assertThat(captured).isNotNull().isNotEqualTo(LlmCallContext.UNKNOWN);
+        assertThat(captured.feature()).isEqualTo("companion_recall");
+        assertThat(captured.operation()).isEqualTo("rerank");
+    }
+
+    private static FusedCandidate fusedCandidate(UUID stableId) {
+        MemoryCandidate candidate = new MemoryCandidate("dense", "memory_item", stableId, stableId, stableId,
+                "journal_entry", "Napló", "tartalom", LocalDate.of(2026, 9, 1), 0.9,
+                false, false, 0.5, null, null);
+        return new FusedCandidate(candidate, new ScoreBreakdown(0.5, 0, 0, 0, 0, 0, 0.5), Map.of("dense", 1));
     }
 }

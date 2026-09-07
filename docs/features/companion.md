@@ -768,7 +768,7 @@ null/stale even though the nightly detection job keeps running on schedule.
 | Statistical patterns + Inbox | ✅ V3.1, monitor `mezo-viqs`, group balance `mezo-0469` | Nightly `PatternDetectionJob` (Pearson + real p-value, LIVE-only persistence, frozen user judgements) → `pattern` table → Inbox API → **PatternsPage real dual-mode**. The shared `PatternGate` also powers the read-only monitor/detail pair DTO: six surface verdicts including `imbalanced_groups`, exact windows, value kinds and group counts, no diagnostic writes ([`insights.md`](insights.md) §2.1/§2.1b). |
 | AI hypothesis loop | ✅ V3.2 | Weekly smart-tier propose→critique→revise (`mezo.companion.hypotheses.*`, arch §4.7 scoring); survivors = `ai_hypothesis` Inbox rows with critique + `thinking`. |
 | Pattern → fact promotion + reinforcement | ✅ V3.3 | Confirm ⇒ `knowledge_fact` (source=pattern, linked back); same-direction recurrence reinforces; `ÚJ FELISMERÉSEK` ack block; `minta:` evidence chip on the Knowledge tab. **Epic complete.** |
-| LLM call audit log (`mezo-2zyu`) | ✅ v1 + read API (`mezo-uakh`) | Every provider call (chat/stream/vision/tool/smart + embeddings + crons) records one append-only `llm_log_history` row with the token breakdown, a frozen price snapshot and caller attribution; async writer, `mezo.feature.llm-log.enabled` (off by default, ON in k8s). **Read side (`mezo-uakh`):** `GET /api/llm-usage/{summary,breakdown,calls,calls/{id}}` (`LlmUsageController`/`LlmUsageService`, ungated + no user filter — endpoint table in [`_platform-api-backend.md`](_platform-api-backend.md) §4c) surfaces the log as the Me **AI-napló** page at `/me/ai-usage` + `/me/ai-usage/:id` ([`me.md`](me.md) §2). [ADR 0014](../decisions/0014-llm-call-audit-log.md). |
+| LLM call audit log (`mezo-2zyu`) | ✅ v1 + read API (`mezo-uakh`) | Every provider call (chat/stream/vision/tool/smart + embeddings + crons) records one append-only `llm_log_history` row with the token breakdown, a frozen price snapshot and caller attribution; async writer, `mezo.feature.llm-log.enabled` (on by default since mezo-ozri.1, also pinned on in k8s). **Read side (`mezo-uakh`):** `GET /api/llm-usage/{summary,breakdown,calls,calls/{id}}` (`LlmUsageController`/`LlmUsageService`, ungated + no user filter — endpoint table in [`_platform-api-backend.md`](_platform-api-backend.md) §4c) surfaces the log as the Me **AI-napló** page at `/me/ai-usage` + `/me/ai-usage/:id` ([`me.md`](me.md) §2). [ADR 0014](../decisions/0014-llm-call-audit-log.md). |
 | Memory observatory (`mezo-al1i`) | ✅ v1 | `MemoryObservatoryService` — 4 read-only `GET /api/companion/memory/*` reads (overview/summary/similar-days/llm-usage) over EXISTING data (no new table); `similar-days` reuses `MemoryRecallService` (V2.3) verbatim; `llm-usage` is a new `LlmLogRepository` native daily rollup over `llm_log_history` (ADR 0014). Backs the Insights **Memória** tab ([`insights.md`](insights.md) §2.9). |
 
 **Driver:** `mezo-fnnq.2` (spine) + `mezo-fnnq.3` (snapshot) + `mezo-fnnq.4` (SSE + FE) +
@@ -2566,7 +2566,7 @@ but it is documented here because both recording adapters live in `feature/compa
   `latency_ms`, `streamed`, `tool_rounds` (populated since `mezo-58ig`: N usage-reporting model
   rounds ⇒ N−1 tool rounds; null when none observed), `service_tier`), generation counters
   (**per-round-summed on tool turns** since `mezo-58ig` — Spring AI 2.0's tool loop returns only the
-  LAST round's response, so `GeminiRoundUsageAdvisor` + the `GeminiRoundUsage` tally sum each billed
+  LAST round's response, so `LlmRoundUsageAdvisor` + the `LlmRoundUsage` tally sum each billed
   round's own native usage instead; single-round calls are byte-identical) (`prompt_/candidates_/thoughts_/
   cached_/total_tokens`), embedding counters (`embed_input_count`, `embed_dimensions`,
   `embed_billable_chars`), payload (`system_prompt`, **`conversation_history`** — new nullable text
@@ -2583,7 +2583,16 @@ but it is documented here because both recording adapters live in `feature/compa
 - **`pricing_snapshot` keys are camelCase**, not snake_case like the rest of the schema — it is the
   `PricingSnapshot` record serialised verbatim, so query it as
   `pricing_snapshot->>'inputPerMillion'` (also `sourceModel`, `currency`, `outputPerMillion`,
-  `thinkingPerMillion`, `cachedPerMillion`, `embedPerMillionChars`, `pricedOn`).
+  `thinkingPerMillion`, `cachedPerMillion`, `embedPerMillionChars`, `reasoningBilling`, `pricedOn`).
+  **`reasoningBilling`** (`ReasoningBilling`: `SEPARATE` | `INCLUDED_IN_OUTPUT`, mezo-ozri.1) is
+  frozen onto the snapshot immediately before `pricedOn`, mirroring the per-model
+  `mezo.llm-log.pricing.models."[<id>]".reasoning-billing` key below; absent on a price row defaults
+  to `SEPARATE` in exactly one place, `LlmPricingService.snapshot`. `computeGenerationCost` bills the
+  thinking/reasoning category only under `SEPARATE` — Gemini reports `thoughtsTokenCount` BESIDE
+  `candidatesTokenCount`, so it is its own billable slice; a model that reports reasoning tokens
+  INSIDE the completion count (OpenAI's `reasoning_tokens` ⊂ `completion_tokens`) would be double-billed
+  if summed again, so under `INCLUDED_IN_OUTPUT` that category contributes nothing to `cost_usd` even
+  though the count is still stored.
 - **INSERT-only — the one table with NO `is_deleted`** ([ADR 0014](../decisions/0014-llm-call-audit-log.md)):
   `LlmLogEntity` deliberately does **not** extend `OwnedEntity` (that superclass mandates the
   soft-delete column) and has no `@SQLDelete`/`@SQLRestriction`. Audit rows are immutable and never
@@ -4755,9 +4764,11 @@ without a second properties class.
 
 ### Config keys (`mezo.llm-log.*` — the audit log, `LlmLogProperties`/`LlmPricingProperties`)
 
-- Feature switch `mezo.feature.llm-log.enabled` (`FeaturesConfiguration.LLM_LOG_SWITCH`) = **false**
-  by default; off ⇒ `NoOpLlmCallRecorder` is the bean ⇒ nothing is published, no row, zero overhead.
-  **ON in k8s** (`k8s/backend/deployment.yaml`), where the real Gemini adapters run.
+- Feature switch `mezo.feature.llm-log.enabled` (`FeaturesConfiguration.LLM_LOG_SWITCH`) = **true**
+  by default since mezo-ozri.1 (was `false`); off ⇒ `NoOpLlmCallRecorder` is the bean ⇒ nothing is
+  published, no row, zero overhead. k8s (`k8s/backend/deployment.yaml`) still pins the env var
+  explicitly to `true` — now a redundant, intentional production pin rather than the switch that
+  turns the audit on.
 - `mezo.llm-log.max-payload-chars` = **64000** — per-column cap for the stored prompt/response;
   `payload_bytes` keeps the true pre-truncation UTF-8 size and `truncated` flags the cut.
 - `mezo.llm-log.executor.{core-size, max-size, queue-capacity}` = **1 / 2 / 500** — the audit
@@ -4765,11 +4776,12 @@ without a second properties class.
   Boot's `applicationTaskExecutor`).
 - `mezo.llm-log.pricing.currency` = `USD` + `pricing.models."[<model-id>]"` = per-model
   `{input-, output-, thinking-, cached-per-million}` (generation) / `embed-per-million-chars`
-  (embeddings); seeded for `gemini-2.5-flash`, `gemini-2.5-pro`, `gemini-embedding-001`. **Keys are
-  bracket-quoted** — a model id contains dots and an unbracketed key is split by the binder (the
-  entry silently disappears). The seed rates are **placeholders to reconcile with current Gemini
-  pricing**; changing them never rewrites history (every row freezes its own snapshot), and an
-  unpriced model yields a **null** `cost_usd`, never a fabricated 0.
+  (embeddings), plus an optional `reasoning-billing` (`ReasoningBilling`, mezo-ozri.1; both Gemini
+  generation rows carry an explicit `SEPARATE`); seeded for `gemini-2.5-flash`, `gemini-2.5-pro`,
+  `gemini-embedding-001`. **Keys are bracket-quoted** — a model id contains dots and an unbracketed
+  key is split by the binder (the entry silently disappears). The seed rates are **placeholders to
+  reconcile with current Gemini pricing**; changing them never rewrites history (every row freezes
+  its own snapshot), and an unpriced model yields a **null** `cost_usd`, never a fabricated 0.
 
 ## 5. Integrations
 
@@ -4913,7 +4925,8 @@ the provider response, which lives nowhere else. `GeminiCompanionLlm` therefore 
 `.call().chatResponse()` and records from `recorded(...)` (`llm/GeminiCompanionLlm.java:158`) /
 from the Flux's terminal signals for SSE (`:124`), and `GeminiEmbeddingAdapter` records around its
 `EmbedContentResponse` (`llm/GeminiEmbeddingAdapter.java:70`); both always rethrow unchanged. Reading
-the metadata is one pure mapper, `GeminiUsageExtractor` (`llm/GeminiUsageExtractor.java`) — the ONLY
+the metadata is one pure mapper behind the `LlmUsageExtractor` port,
+`GoogleGenAiUsageExtractor` (`llm/GoogleGenAiUsageExtractor.java`) — the ONLY
 place Gemini's `Usage`/`GoogleGenAiUsage` shapes are unwrapped, normalising every absent-usage shape
 to `null` rather than a fake `0`. **Contract crossing the seam:** the adapters depend only on
 `feature/llmlog` (`LlmCallRecorder.record(LlmCallRecord)` + `LlmCallContextHolder`) — one-way, the
@@ -4922,12 +4935,17 @@ audit domain stays self-contained and never calls back. `LlmCallRecorder` publis
 `REQUIRES_NEW` transaction, so the audit never blocks (or fails) the user's call. **WHO/WHY comes
 from the call site**, not the adapter: `LlmActorResolver` reads the principal on the calling thread
 (null on cron threads — deliberately, it never throws) and `LlmCallContextHolder.runWith(new
-LlmCallContext(feature, operation, entityKind, entityId), …)` wraps each of the **37 tagged call
-sites across 30 classes** (companion chat/summary/extraction/hypotheses/recall/**ambient
+LlmCallContext(feature, operation, entityKind, entityId), …)` wraps every tagged call site
+(companion chat/summary/extraction/hypotheses/recall/**ambient
 recall**/embedding/advisor/
 smoke-test + meal draft & coach, pantry scrape & photo, sleep shot, recipe prose, activity classify,
-quest flavor, habit-suggest, fuel stack-placement & slot-template, voice transcription, and the
-proactive generators). The W3.1 ambient recall is the newest of them (`mezo-b3pp.12`): its
+quest flavor, habit-suggest, fuel stack-placement & slot-template, voice transcription, memory
+**query-rewrite & rerank** (`companion_recall`/`query_rewrite`, `companion_recall`/`rerank`, since
+mezo-ozri.1 — the reranker binds the context INSIDE the task it submits to
+`applicationTaskExecutor`, because the holder is a `ThreadLocal` and the call runs on the pooled
+thread), and the proactive generators — the exact count drifts with every slice, see
+`grep -rn '\.runWith(' backend/src/main/java` for the current one rather than trusting a number
+here). The W3.1 ambient recall was, at the time, the newest of them (`mezo-b3pp.12`): its
 per-turn embed is tagged `companion_recall`/`recall_embed` — **its own feature name, not
 `companion_chat`** — so `/me/ai-usage` can show recall's cost share as its own row (the design
 spec's §7.3 requirement, satisfied early). **W3.3 (`mezo-b3pp.14`) finished that thought on the
@@ -6707,7 +6725,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 - **`llm_log_history.finish_reason` exists because this was undiagnosable without it.** An empty
   `response_text` alone cannot distinguish "the model chose to stop" (`STOP`) from "the model was
   cut off mid-thinking" (`MAX_TOKENS`) or a blocked candidate (`SAFETY`). Read off the FINAL
-  generation's `ChatGenerationMetadata` in `GeminiUsageExtractor.finishReason` — the one place
+  generation's `ChatGenerationMetadata` in `GoogleGenAiUsageExtractor.finishReason` — the one place
   allowed to touch provider metadata — and surfaced on the `/me/ai-usage` detail page.
 - **Related, still open: the verdict judge cannot see tool RESULTS.** The same incident's *first*
   turn was degraded with a plausible-looking but unverifiable complaint about a weight number,
@@ -6956,7 +6974,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **Backend — adaptive memory query preparation (`mezo-6dii.3` — §3/§8)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/dto/{ConsumerPolicy,QueryMode,MemoryRequest,PreparedMemoryQuery}.java` — shared consumer/request boundary and the deterministic prepared-query result.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryQueryAnalyzer,MemoryQueryPreparer,MemoryQueryRewriter,LlmMemoryQueryRewriter}.java` — conservative routing, bounded contextual rewrite and raw-query fallback over the existing cheap LLM port.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryQueryAnalyzer,MemoryQueryPreparer,MemoryQueryRewriter,LlmMemoryQueryRewriter}.java` — conservative routing, bounded contextual rewrite and raw-query fallback over the existing cheap LLM port; `LlmMemoryQueryRewriter`'s call is tagged `LlmCallContext("companion_recall", "query_rewrite", null, null)` via `LlmCallContextHolder.runWith` since mezo-ozri.1.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — deterministic `[fake-memory-rewrite:…]` scripting plus captured bounded history for integration assertions.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/service/MemoryQueryAnalyzerTest.java` + `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/MemoryQueryPreparerIT.java` — routing/date unit coverage and real-context rewrite/fallback coverage.
 
@@ -6970,7 +6988,7 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 **Backend — fusion, selection, reranking and retrieval audit (`mezo-6dii.5` — §3–§5/§8–§9)**
 
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryContextService,MemoryCandidateFusion,MemoryContextSelector,MemoryContextRenderer}.java` — concurrent failure-isolated orchestration, deterministic explainable ranking and exact-budget provenance rendering.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryReranker,LlmMemoryReranker}.java` — optional uncertainty-only smart-tier ordering with exposed-ID validation and deterministic fallback.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryReranker,LlmMemoryReranker}.java` — optional uncertainty-only smart-tier ordering with exposed-ID validation and deterministic fallback; `LlmMemoryReranker`'s call is tagged `LlmCallContext("companion_recall", "rerank", null, null)` since mezo-ozri.1 — bound INSIDE the task submitted to `applicationTaskExecutor`, because `LlmCallContextHolder` is a `ThreadLocal` and the call runs on the pooled thread.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/service/{MemoryRetrievalAuditWriter,MemoryRetrievalRetentionJob}.java` — independent run/result persistence and active-user 30-day physical audit purge.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/memory/dto/{MemoryContext,MemoryContextItem,ScoreBreakdown,RetrievalServingMode}.java` — structured context/provenance/score and staged rollout contracts.
 - `backend/src/test/java/io/mrkuhne/mezo/feature/companion/memory/{MemoryCandidateFusionTest,MemoryContextSelectorTest,LlmMemoryRerankerTest,MemoryContextServiceIT,MemoryPlatformPropertiesIT,MemoryRetrievalRetentionIT}.java` — pure ranking/rendering and PostgreSQL orchestration/config/retention gates.
@@ -7163,33 +7181,33 @@ transaction) — its reads are cheap single-row/short-list lookups by design; an
 
 **Backend — LLM port (ADR 0008)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/CompanionLlm.java` — the port. **Since mezo-q71s** `complete`/`stream(system, List<Turn> history, user, tools, toolContext)` are the ABSTRACT 5-arg forms; the old tools-carrying 2-string shape is now a `default` delegating with `List.of()` (the port's second inversion — V0.5's Decision 16 is the first); the mezo-78rn multimodal `complete(…, imageBytes, mimeType)` overload is unchanged.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiCompanionLlm.java` — real adapter (`!companion-fake`); `.messages(toMessages(history))` between `.system(...)` and `.user(...)` (mezo-q71s) + `tools(Object...)` + `toolContext` registration; the Spring AI `Media` image part (mezo-78rn); **records every call path** via `.call().chatResponse()` + `LlmCallRecorder` (mezo-2zyu), including the new `conversationHistory` field on `CallSpec`/`LlmCallRecord` for the `CHAT`/`TOOL`/`CHAT_STREAM` kinds.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiCompanionLlm.java` — real adapter (`!companion-fake`); its `ChatModel` constructor injection is `@Qualifier("googleGenAiChatModel")` (mezo-ozri.1) so a second Spring AI starter on the classpath cannot make the bean ambiguous, guarded by `ChatModelQualifierIT`, which plants a second `ChatModel` bean; `.messages(toMessages(history))` between `.system(...)` and `.user(...)` (mezo-q71s) + `tools(Object...)` + `toolContext` registration; the Spring AI `Media` image part (mezo-78rn); **records every call path** via `.call().chatResponse()` + `LlmCallRecorder` (mezo-2zyu), including the new `conversationHistory` field on `CallSpec`/`LlmCallRecord` for the `CHAT`/`TOOL`/`CHAT_STREAM` kinds.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` — deterministic fake (`companion-fake`); `[fake-tool:…]` sentinel execution since V0.5; the greedy `[fake-meal:{json}]` sentinel (matched in user text + UTF-8 image bytes, mezo-78rn); the greedy `[fake-recipe-fit:{json}]` sentinel (planted in a recipe name, mezo-bw3y); the `MESO_REVIEW` branch (mezo-meyc.3) answering the canned `MESO_REVIEW_ANSWER` unless `[fake-meso-review:…]` is planted in the run TITLE, or `[fake-meso-review-echo]` which returns the **assembled user payload verbatim** (the only way to assert what the generator actually sent — the fake stays stateless, no prompt recorder) — failure injection rides the shared `[fake-fail]`. Unlike the `feature.proactive`/`feature.activity` markers this one is IMPORTED (`MesoReviewGenerator.MESO_REVIEW_MARKER`), not mirrored as a literal: the generator is in the SAME `companion` slice, so no new package cycle is possible. The plan-generator's `MesoPlanLlmAdapter` (`MARKER = "[meso-plan]"`) branch dispatches on the greedy `MESO_PLAN_SENTINEL` — `[fake-meso-plan:{json}]` planted in the request's `goalText` — with a default `{"rationale":"FAKE-INDOK","days":[]}` (a valid but empty-days answer — the un-scripted happy path still reaches the LLM branch and `MesoPlanMerger` runs, but an empty suggestion accepts no pick, so `MesoPlanGeneratorService` reports `llmUsed = false` and keeps the deterministic rationale, the same as no answer at all); failure injection rides the same shared `[fake-fail]`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/MealDraftLlmAdapter.java` — companion-side adapter for the meal-owned `MealDraftLlm` port (ADR 0012, mezo-78rn); `@ConditionalOnProperty(COMPANION_SWITCH)`, delegates both overloads to `CompanionLlm`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/SleepShotLlmAdapter.java` — companion-side adapter for the sleep-owned `SleepShotLlm` vision port (ADR 0012, mezo-66ab); `@ConditionalOnProperty(COMPANION_SWITCH)`, delegates to `CompanionLlm.complete` with one `InlineImage`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/CompanionHelloRunner.java` — `companion-smoke` real-API round-trip proof.
 
 **Backend — LLM call audit log (mezo-2zyu, [ADR 0014](../decisions/0014-llm-call-audit-log.md))**
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiUsageExtractor.java` — the ONE place Gemini's response metadata is read (served model, service tier, prompt/candidates/thoughts/cached tokens); absent usage → null, never 0.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/{GeminiRoundUsage,GeminiRoundUsageAdvisor}.java` — the per-round usage capture (`mezo-58ig`): a per-call tally rides the ChatClient request context to a CallAdvisor/StreamAdvisor ordered between ToolCallingAdvisor's loop and the model, which sums each round's own native usage; the adapter prefers the tally over the final-response read and derives `tool_rounds` from it.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/LlmUsageExtractor.java` — the port (owns the nested `UsageInfo` record, mezo-ozri.1); `GoogleGenAiUsageExtractor.java` is the ONE implementation that reads Gemini's response metadata (served model, service tier, prompt/candidates/thoughts/cached tokens); absent usage → null, never 0.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/{LlmRoundUsage,LlmRoundUsageAdvisor}.java` — the per-round usage capture (`mezo-58ig`, provider-neutral names since mezo-ozri.1): a per-call tally rides the ChatClient request context to a CallAdvisor/StreamAdvisor ordered between ToolCallingAdvisor's loop and the model, which sums each round's own native usage; the adapter prefers the tally over the final-response read and derives `tool_rounds` from it.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/GeminiEmbeddingAdapter.java` — records the embedding calls (character-based `EmbedUsage`, `billableCharacterCount`) around its `EmbedContentResponse`.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/{LlmCallRecorder,EventPublishingLlmCallRecorder,NoOpLlmCallRecorder}.java` — the seam the adapters call; switch on ⇒ publish, off ⇒ no-op.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/{LlmCallRecord,TokenUsage,EmbedUsage,LlmActorResolver}.java` — what the adapter observed + who called (null on cron threads).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/LlmLogWriter.java` — `@Async @EventListener` → `REQUIRES_NEW` insert: field mapping, payload capping, net-prompt cost derivation.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/LlmPricingService.java` — freezes the day's unit prices onto the row and computes `cost_usd` from THAT snapshot (unknown model ⇒ null).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/context/{LlmCallContext,LlmCallContextHolder}.java` — the thread-scoped caller tag (`runWith`); 32 call sites in 29 classes (`grep -rn "new LlmCallContext(" backend/src/main/java | grep -v LlmCallContext.java`).
-- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/entity/{LlmLogEntity,CallKind,CallStatus,PricingSnapshot}.java` — the INSERT-only entity (no `OwnedEntity`, no `is_deleted`) + the jsonb price snapshot; `LlmLogEntity.conversationHistory` (nullable text) since mezo-q71s.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/context/{LlmCallContext,LlmCallContextHolder}.java` — the thread-scoped caller tag (`runWith`); the exact count drifts with every slice, see `grep -rn '\.runWith(' backend/src/main/java` for the current one rather than trusting a number here.
+- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/entity/{LlmLogEntity,CallKind,CallStatus,PricingSnapshot,ReasoningBilling}.java` — the INSERT-only entity (no `OwnedEntity`, no `is_deleted`) + the jsonb price snapshot; `LlmLogEntity.conversationHistory` (nullable text) since mezo-q71s; `ReasoningBilling` (`SEPARATE`/`INCLUDED_IN_OUTPUT`, mezo-ozri.1) frozen onto `PricingSnapshot`, last field before `pricedOn`.
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608161200_mezo-q71s_llm_log_conversation_history.sql` — the `conversation_history` column (nullable, no backfill needed — every existing row predates the chat's multi-turn port).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/{event/LlmCallEvent,repository/LlmLogRepository}.java` — **`mezo-al1i`** `LlmLogRepository` grew `aggregatePerDaySince` (native daily rollup, report-zone calendar days) alongside the existing `aggregateSince`; new `repository/LlmDailyAggregate.java` projection (day/calls/inputTokens/outputTokens/costUsd).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/LlmUsageService.java` — **`mezo-al1i`** grew `perDay(days)` (a sibling of the existing `summary()` day/week/month rollup) + exposed `auditEnabled()` publicly for `MemoryObservatoryService`'s `enabled` short-circuit.
-- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/config/{LlmLogAsyncConfig,LlmLogProperties,LlmPricingProperties,ModelPrice}.java` — the isolated `llmLogExecutor` (`defaultCandidate = false`, `DiscardPolicy`) + `mezo.llm-log.*` binding, incl. `LlmLogProperties.Retention` (`payloadDays`/`cron`, `mezo-1y3p`).
+- `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/config/{LlmLogAsyncConfig,LlmLogProperties,LlmPricingProperties,ModelPrice}.java` — the isolated `llmLogExecutor` (`defaultCandidate = false`, `DiscardPolicy`) + `mezo.llm-log.*` binding, incl. `LlmLogProperties.Retention` (`payloadDays`/`cron`, `mezo-1y3p`); `ModelPrice.reasoningBilling` (nullable, mezo-ozri.1) is the source `LlmPricingService.snapshot` defaults to `SEPARATE` when absent.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/LlmLogRetentionJob.java` — **`mezo-1y3p`** the nightly scrub (`@Scheduled(cron = "${mezo.llm-log.retention.cron}")`, switch `mezo.techcore.cron.llm-log-retention-job.enabled`, deliberately independent of `mezo.feature.llm-log.enabled`): calls `LlmLogRepository.scrubPayloadsOlderThan` once per run.
 - `backend/src/main/resources/db/changelog/1.0.0/script/202608181100_mezo-1y3p_llm_log_payload_scrubbed_at.sql` — the `payload_scrubbed_at` column backing the scrub.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/controller/LlmUsageController.java` + `service/LlmUsageService.java` — the read side (`mezo-uakh`): `implements LlmUsageApi` (ungated, no `CurrentUserId`); `summary`/`breakdown`/`listCalls`/`call`, all `@Transactional(readOnly = true)` so the period aggregates share one DB snapshot.
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/service/UsagePeriod.java` — the DAY/WEEK/MONTH calendar-period enum (`startDate(zone)` + a hand-written `parse` that 400s on an unknown value — defense in depth behind the contract's `pattern`; `GlobalExceptionHandler` gained a `MethodArgumentTypeMismatchException` handler in `mezo-x0nb`, so a conversion failure is a 400 either way).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/mapper/LlmLogMapper.java` — `LlmLogEntity → LlmCallDetailResponse` (hand-written default methods: the jsonb `PricingSnapshot`, `BigDecimal→Double` null-preserving cost, `Instant→OffsetDateTime`).
 - `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/repository/{LlmStatusRow,LlmGroupRow,LlmCallRow,LlmUsageAggregate}.java` — the JPQL constructor-expression projections behind `aggregateByStatusSince`/`aggregateByFeatureSince`/`aggregateByModelSince`/`findCalls`/`aggregateSince` (`LlmLogRepository`); `findCalls` fetches `limit + 1` rows so the service can derive `hasMore` without a second `count(*)`.
-- `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog/**` (incl. the read-side `controller/{LlmUsageBreakdownIT,LlmCallListIT,LlmCallDetailIT}.java`, `mezo-uakh`; `service/LlmLogWriterIT.java` — the writer/DB round-trip, incl. `conversation_history` capping/truncation/null-on-non-chat since mezo-q71s) + `feature/companion/llm/{GeminiUsageExtractorTest,GeminiCompanionLlmRecordingTest,GeminiCompanionLlmPromptOrderTest,GeminiEmbeddingAdapterRecordingTest}.java` — writer/pricing/recorder/tagging/repository coverage + both adapters' recording paths (incl. `conversationHistory` on the audit record, mezo-q71s) + the outgoing Spring AI message ORDER (`GeminiCompanionLlmPromptOrderTest`, mezo-q71s — no IT can cover this, see §3) + the breakdown/list/detail endpoint ITs.
+- `backend/src/test/java/io/mrkuhne/mezo/feature/llmlog/**` (incl. the read-side `controller/{LlmUsageBreakdownIT,LlmCallListIT,LlmCallDetailIT}.java`, `mezo-uakh`; `service/LlmLogWriterIT.java` — the writer/DB round-trip, incl. `conversation_history` capping/truncation/null-on-non-chat since mezo-q71s) + `feature/companion/llm/{GoogleGenAiUsageExtractorTest,GeminiCompanionLlmRecordingTest,GeminiCompanionLlmPromptOrderTest,GeminiEmbeddingAdapterRecordingTest,ChatModelQualifierIT}.java` — writer/pricing/recorder/tagging/repository coverage + both adapters' recording paths (incl. `conversationHistory` on the audit record, mezo-q71s) + the outgoing Spring AI message ORDER (`GeminiCompanionLlmPromptOrderTest`, mezo-q71s — no IT can cover this, see §3) + the breakdown/list/detail endpoint ITs.
 
 **Backend — tools (V0.5, expanded to 15 tools at mezo-xixu)**
 - `backend/src/main/java/io/mrkuhne/mezo/feature/companion/tools/CompanionToolRegistry.java` — the ONLY assembly point (wraps + tool-context).

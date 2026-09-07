@@ -1,6 +1,8 @@
 package io.mrkuhne.mezo.feature.companion.memory.service;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
 import java.util.List;
 import java.util.Map;
@@ -21,15 +23,19 @@ public class LlmMemoryQueryRewriter implements MemoryQueryRewriter {
             + "keresőkérdéssé a megadott rövid beszélgetési előzmény alapján. "
             + "Csak a keresőkérdést add vissza, magyarázat, címke és idézőjel nélkül.";
 
+    private static final LlmCallContext CALL_CONTEXT =
+            new LlmCallContext("companion_recall", "query_rewrite", null, null);
+
     private final CompanionLlm companionLlm;
+    private final LlmCallContextHolder llmCallContextHolder;
 
     @Override
     public String rewrite(String currentQuery, List<CompanionLlm.Turn> boundedHistory) {
-        return companionLlm.complete(
+        return llmCallContextHolder.runWith(CALL_CONTEXT, () -> companionLlm.complete(
                 SYSTEM_PROMPT,
                 boundedHistory,
                 currentQuery,
                 List.of(),
-                Map.of());
+                Map.of()));
     }
 }

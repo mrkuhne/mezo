@@ -93,6 +93,6 @@ class LlmUsageBreakdownMidnightIT extends ApiIntegrationTest {
     private static PricingSnapshot snapshot() {
         return new PricingSnapshot(MODEL, "USD",
             new BigDecimal("0.30"), new BigDecimal("2.50"), new BigDecimal("2.50"),
-            new BigDecimal("0.075"), null, LocalDate.of(2026, 1, 1));
+            new BigDecimal("0.075"), null, null, LocalDate.of(2026, 1, 1));
     }
 }
