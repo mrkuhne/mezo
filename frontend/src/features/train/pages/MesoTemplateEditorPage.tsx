@@ -13,7 +13,7 @@
 // reseeded into state: the server regenerates every exercise id on a full
 // write, so re-seeding would swap the ids out from under the open accordion.
 // ============================================================
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useMesoTemplates, useTimingProfile } from '@/data/hooks'
 import type { GymExercise, MesoDay, MesoTemplate, MusclePriorities } from '@/data/types'
@@ -28,6 +28,12 @@ import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet
 
 // Same full-replace shape as the exercise-save path (a template has no per-field PATCH) —
 // every edit on this page (day plan, rename, tiers) travels through this one helper.
+// Every full write regenerates every exercise id server-side (see the module doc), so a
+// rename fired straight from MesoWeekEditor/MesoDayEditor's per-keystroke onChange would
+// PUT the whole document once per character. Debounce just the write here — local state
+// stays immediate/authoritative, only the network call is delayed.
+const RENAME_DEBOUNCE_MS = 400
+
 function toUpsert(
   template: MesoTemplate,
   days: MesoDay[],
@@ -152,6 +158,43 @@ function TemplateDayEditor({ template, onPersist }: {
   // in the same tick as the rename that produced it.
   const persist = (next: MesoDay[], title = name) => onPersist(next, undefined, priorities, title)
 
+  // Renames (the meso title and a day's own type/name) come from a per-keystroke onChange
+  // in MesoWeekEditor/MesoDayEditor — see RENAME_DEBOUNCE_MS above. Refs (not state) hold
+  // the latest write inputs so the debounced/unmount flush below always sends the CURRENT
+  // days (including any immediate exercise edit that landed while a rename was pending),
+  // never a stale snapshot taken when the debounce was scheduled.
+  const onPersistRef = useRef(onPersist)
+  onPersistRef.current = onPersist
+  const prioritiesRef = useRef(priorities)
+  prioritiesRef.current = priorities
+  const daysRef = useRef(days)
+  daysRef.current = days
+  const pendingTitleRef = useRef<string | null>(null)
+  const renameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const flushRename = () => {
+    if (renameTimerRef.current) {
+      clearTimeout(renameTimerRef.current)
+      renameTimerRef.current = null
+    }
+    if (pendingTitleRef.current !== null) {
+      const title = pendingTitleRef.current
+      pendingTitleRef.current = null
+      onPersistRef.current(daysRef.current, undefined, prioritiesRef.current, title)
+    }
+  }
+
+  // Flush a pending debounced rename on unmount — otherwise navigating away right after
+  // typing silently drops the last edit, which is worse than the per-keystroke churn this
+  // debounce exists to avoid.
+  useEffect(() => () => flushRename(), [])
+
+  const persistRenameDebounced = (title: string) => {
+    pendingTitleRef.current = title
+    if (renameTimerRef.current) clearTimeout(renameTimerRef.current)
+    renameTimerRef.current = setTimeout(flushRename, RENAME_DEBOUNCE_MS)
+  }
+
   const apply = (next: MesoDay[]) => {
     setDays(next)
     persist(next)
@@ -189,8 +232,11 @@ function TemplateDayEditor({ template, onPersist }: {
           if (day === null) setPickerDay(null)
         }}
         onBack={goBack}
-        onRename={(next) => { setName(next); persist(days, next) }}
-        onRenameDay={(dayKey, next) => patchDay(dayKey, (d) => ({ ...d, type: next }))}
+        onRename={(next) => { setName(next); persistRenameDebounced(next) }}
+        onRenameDay={(dayKey, next) => {
+          setDays(days.map((d) => (d.day === dayKey ? { ...d, type: next } : d)))
+          persistRenameDebounced(name)
+        }}
         onChangeExercise={(dayKey, exId, patch) => patchDay(dayKey, (d) =>
           withExercises(d, d.exercises.map((e) => (e.id === exId ? { ...e, ...patch } : e))))}
         onMoveExercise={(dayKey, exId, dir) => patchDay(dayKey, (d) => {

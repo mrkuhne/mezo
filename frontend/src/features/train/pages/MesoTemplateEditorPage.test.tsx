@@ -22,6 +22,7 @@ const REAL_TPL_FIXTURE = {
   title: 'Hypertrophy 04 · Tavasz',
   shortTitle: 'Hypertrophy 04',
   goal: 'Felsőtest hypertrophy · izomtömeg építés',
+  goalPreset: 'strength',
   musclePriorities: { back: 'emphasize' },
   weeks: 6,
   split: 'Pull / Push / Legs · 5×/hét',
@@ -54,9 +55,10 @@ const REAL_TPL_FIXTURE = {
 
 afterEach(() => vi.unstubAllEnvs())
 
-// Standalone render (real mode) — no AppLayout chrome, just the route.
+// Standalone render (real mode) — no AppLayout chrome, just the route. Returns the RTL
+// render result so callers that need to unmount (the debounce-flush test) can.
 function setupPage(id: string) {
-  render(
+  return render(
     <QueryWrapper>
       <MemoryRouter initialEntries={[`/train/mesocycles/templates/${id}`]}>
         <Routes>
@@ -156,11 +158,11 @@ describe('MesoTemplateEditorPage (real mode)', () => {
     expect(body.days[0].exercises[0].workingSets).toBe(5)
   })
 
-  it('the whole-template PUT carries the existing musclePriorities map through an unrelated day edit (mezo-3m5m; this editor has no per-field PATCH, so a builder that drops the field silently resets it to all-Grow)', async () => {
+  it('the whole-template PUT carries the existing musclePriorities map and goalPreset through an unrelated day edit (mezo-3m5m; this editor has no per-field PATCH, so a builder that drops either field silently resets it)', async () => {
     server.use(
       http.get(`${API_BASE}/api/train/meso-templates`, () => HttpResponse.json([REAL_TPL_FIXTURE])),
     )
-    const puts: { musclePriorities?: Record<string, string> | null }[] = []
+    const puts: { musclePriorities?: Record<string, string> | null; goalPreset?: string | null }[] = []
     server.use(
       http.put(`${API_BASE}/api/train/meso-templates/:id`, async ({ params, request }) => {
         const body = (await request.json()) as (typeof puts)[number]
@@ -176,8 +178,10 @@ describe('MesoTemplateEditorPage (real mode)', () => {
 
     await waitFor(() => expect(puts.length).toBeGreaterThan(0))
     // The tier picker is gone from this page (it moved into the wizard interview), but the
-    // map it wrote must still ride along every write here.
+    // map it wrote must still ride along every write here. goalPreset is the module doc's
+    // other named silent-data-loss risk — a day edit must not reset it either.
     expect(puts[puts.length - 1].musclePriorities).toEqual({ back: 'emphasize' })
+    expect(puts[puts.length - 1].goalPreset).toBe('strength')
   })
 
   it('a rename after an unrefetched day edit persists through the same full-upsert path, carrying the EDITED days and the musclePriorities map (mezo-3m5m)', async () => {
@@ -222,12 +226,65 @@ describe('MesoTemplateEditorPage (real mode)', () => {
     expect(renamePut.musclePriorities).toEqual({ back: 'emphasize' })
   })
 
-  it('an external template change reaches the buffered name field (remount on route change)', async () => {
+  it('seeds the buffered name field from the fetched title', async () => {
     server.use(
       http.get(`${API_BASE}/api/train/meso-templates`, () =>
         HttpResponse.json([{ ...REAL_TPL_FIXTURE, title: 'Kívülről átnevezve' }])),
     )
     setupPage(REAL_TPL)
     expect(await screen.findByRole('textbox', { name: 'Mezociklus neve' })).toHaveValue('Kívülről átnevezve')
+  })
+
+  it('debounces the rename PUT: typing several characters fires exactly one write, carrying the final title (mezo-yty6)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/meso-templates`, () => HttpResponse.json([REAL_TPL_FIXTURE])),
+    )
+    const puts: { title?: string }[] = []
+    server.use(
+      http.put(`${API_BASE}/api/train/meso-templates/:id`, async ({ params, request }) => {
+        const body = (await request.json()) as (typeof puts)[number]
+        puts.push(body)
+        return HttpResponse.json({ id: String(params.id), runCount: 1, phaseCurve: [], days: [], ...body })
+      }),
+    )
+    const user = userEvent.setup()
+    setupPage(REAL_TPL)
+
+    const nameField = await screen.findByRole('textbox', { name: 'Mezociklus neve' })
+    await user.type(nameField, 'XYZ')
+    // The local field is authoritative immediately — no wait needed for the UI.
+    expect(nameField).toHaveValue('Hypertrophy 04 · TavaszXYZ')
+    // No PUT yet: the write is debounced, not sent per keystroke.
+    expect(puts.length).toBe(0)
+
+    await waitFor(() => expect(puts.length).toBeGreaterThan(0))
+    // Exactly one PUT, carrying the final (fully-typed) title — not one per keystroke.
+    expect(puts.length).toBe(1)
+    expect(puts[0].title).toBe('Hypertrophy 04 · TavaszXYZ')
+  })
+
+  it('flushes a pending debounced rename on unmount, so navigating away right after typing does not drop the edit (mezo-yty6)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/meso-templates`, () => HttpResponse.json([REAL_TPL_FIXTURE])),
+    )
+    const puts: { title?: string }[] = []
+    server.use(
+      http.put(`${API_BASE}/api/train/meso-templates/:id`, async ({ params, request }) => {
+        const body = (await request.json()) as (typeof puts)[number]
+        puts.push(body)
+        return HttpResponse.json({ id: String(params.id), runCount: 1, phaseCurve: [], days: [], ...body })
+      }),
+    )
+    const user = userEvent.setup()
+    const { unmount } = setupPage(REAL_TPL)
+
+    const nameField = await screen.findByRole('textbox', { name: 'Mezociklus neve' })
+    await user.type(nameField, '!')
+    // Unmount immediately, well inside the debounce window — the pending write must still
+    // fire rather than being silently lost.
+    unmount()
+
+    await waitFor(() => expect(puts.length).toBeGreaterThan(0))
+    expect(puts[0].title).toBe('Hypertrophy 04 · Tavasz!')
   })
 })
