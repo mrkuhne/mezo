@@ -1214,9 +1214,16 @@ feeding back into the nightly revision, and a one-line morning digest of what th
   existing row, `pattern.belief`, `evidence_hits/misses`, `knowledge_fact` and
   `memory_item.salience` are **never** touched by this stage — that is the epic's hard rule, and here
   it is structural, not a prompt instruction. Target resolution is `hypothesisKey` → `newTestPlan` →
-  the first touched row → drop; a model-named key is looked up **inside the already-loaded open set**
-  only, so it can never hang a fresh observation on a `refuted`/`confirmed` row the engine already
-  settled. `evidenceRefs` always START with the signal's own `<sourceKind>:<sourceId>` — provenance
+  the first touched row → drop, and **BOTH row-resolving branches are guarded the same way**: a
+  fresh observation can never land on a row the engine or the user already settled
+  (`refuted`/`rejected`/`confirmed`/`dormant`), nor on a `statistical` catalog row. A model-named
+  key is looked up **inside the already-loaded open set** only; a `newTestPlan` derives the same
+  stable `ref-…` key, so it is the same door by another route (whole-branch review finding — that
+  branch had no status filter at first) and its lookup now takes only `proposed`/`monitoring` +
+  `isReflectionOwned()` rows. A settled match resolves to **nothing** rather than to a new row:
+  `uq_pattern_created_by_hypothesis_key` (partial unique index on `(created_by, hypothesis_key)`)
+  forbids a second live row with that key, so the notice falls through to the touched-row step and
+  is dropped if there is none. `evidenceRefs` always START with the signal's own `<sourceKind>:<sourceId>` — provenance
   is a fact the code knows, not something to leave to the model.
 - **The notification is the surfaced half.** `surfaced = observationBudget.allows(userId, now)` is
   recorded ON the event; only a surfaced one emits `AppNotificationKind.OBSERVATION_NEW`
@@ -1225,10 +1232,12 @@ feeding back into the nightly revision, and a one-line morning digest of what th
   No migration was needed: `app_notification.kind` is a bare `varchar(32)` with no CHECK constraint.
 - **One way to append a pattern event.** `companion/service/PatternEventAppender` (`@Component`,
   deliberately neither `@Transactional` nor switch-gated — the caller's transaction and switch keep
-  deciding) replaced the three hand-rolled copies that had accumulated by S4
-  (`PatternService.recordEvent`, `HypothesisEvaluationService.record`, `ReflectionReplyRecorder`)
-  before S4 could add two more. It returns the event FLUSHED (the notice needs its id for the dedup
-  key) and pins the detail all three copies disagreed on: `occurred_at` truncated to MICROS, because
+  deciding) replaced the **five** hand-rolled copies that had accumulated by S4
+  (`PatternService.recordEvent`, `HypothesisEvaluationService.record`, `ReflectionReplyRecorder`,
+  and `PatternDetectionService`'s `recordSnapshot` + `reinforcePromotedFact` — the last two migrated
+  in the S4 whole-branch fix wave, which is also where those two stopped writing an untruncated
+  `occurred_at`) before S4 could add two more. It returns the event FLUSHED (the notice needs its id
+  for the dedup key) and pins the detail the copies disagreed on: `occurred_at` truncated to MICROS, because
   `timestamptz` ROUNDS nanos and the re-read row would otherwise differ by 1 µs (mezo-mfmb).
 - **`ObservationFeedService` is the Észrevételek tab's read model** — four card kinds in one fixed
   order, newest first inside each group: `fresh` (today's surfaced observations), `return` (today's
@@ -1273,9 +1282,15 @@ feeding back into the nightly revision, and a one-line morning digest of what th
   it is that audit event. An unusable revision drops the WHOLE proposal (a model that answered
   "change THIS test" did not offer a fresh hunch) and says so at `log.warn`.
 - **The morning digest, in code, in Hungarian, with no model in the loop.**
-  `ReflectionDigestService.digestFor(userId, date)` reads the `[date−1 03:00, date 03:00)` window —
-  the hours `ReflectionJob` runs in, derived from the ARGUMENT, never from `LocalDate.now()` — and
-  returns the newest `confirmed`/`refuted` verdict on a reflection-owned row, or failing that the
+  `ReflectionDigestService.digestFor(userId, date)` reads the `[date−1 05:00, date 05:00)` window —
+  derived from the ARGUMENT, never from `LocalDate.now()`. **05:00 is load-bearing:** the boundary
+  has to sit AFTER the nightly `ReflectionJob` (03:40) and BEFORE the morning message job (05:45),
+  so that the run of the requested morning falls INSIDE the window. The window originally ended at
+  03:00, i.e. 40 minutes before the very run it was meant to report, so the morning message
+  described the night BEFORE while saying „Ma éjjel…" (whole-branch review finding; every
+  `ReflectionDigestServiceIT` case seeded at 23:00, which is inside both windows, so no test could
+  see it — `testDigestFor_shouldReportTonightsRun_whenTheVerdictLandedAtTheNightlyJobHour` now
+  seeds at 03:45 and pins it). It returns the newest `confirmed`/`refuted` verdict on a reflection-owned row, or failing that the
   newest `evidence` of a `monitoring` row the user has actually ANSWERED (a row nobody asked about is
   not "amit kértél"; an `evidence` event with a null `hit` is skipped, because "bejött / nem jött be"
   would then be a claim the numbers never made). `dormant` is deliberately silent — the product has
@@ -6714,8 +6729,8 @@ generated AND saved. Revert the `REQUIRES_NEW` and that last case fails with exa
 `UnexpectedRollbackException` the boundary exists to prevent.
 **Regression coverage:** `AppNotificationKindTest` (the pinned catalog went 20 → 21),
 `TextSignalListenerIT` (the live AFTER_COMMIT path now also calls the notice),
-`HypothesisEvaluationServiceIT`/`HypothesisEvaluationRollbackIT`/`ChatSeedReplyIT`/`CompanionPatternApiIT`
-(the three event-writing sites migrated to `PatternEventAppender`), and
+`HypothesisEvaluationServiceIT`/`HypothesisEvaluationRollbackIT`/`ChatSeedReplyIT`/`CompanionPatternApiIT`/`PatternDetectionServiceIT`
+(the five event-writing sites migrated to `PatternEventAppender`), and
 `CompanionMessageGeneratorIT`/`CompanionMessageMissedWorkoutsIT` for the morning generator.
 
 ## 9. Decisions, gotchas & deferred
