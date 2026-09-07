@@ -1725,6 +1725,13 @@ mezo:
       max-retries: 1
       # Prescription-med terms the clinical check guards (accent-folded match; dose-CHANGE verbs only)
       rx-terms: [retatrutid, reta, tirzepatid, mounjaro, szemaglutid, ozempic, wegovy]
+      # mezo-indo: the judge sees the tool OUTPUTS, not just the tool names — without them every
+      # tool-derived number is structurally unsupported to it (measured 0% pass at every
+      # reasoning-effort level, mezo-9yqq class 1). Budgeted, because the judge runs on the cheap
+      # tier and its payload already carries the system prompt + the whole history; a cut or
+      # dropped output is MARKED, never silently removed.
+      tool-result-max-chars: 700
+      tool-results-total-max-chars: 3000
     habit-suggest:
       # AI habit suggester (mezo-n5e9.3) — smart-model propose-only chain-fill suggestions; caps
       # how many suggestions the Task 2 adapter asks the model for / returns (HabitAiService's
