@@ -20,8 +20,10 @@
 - **`rulings` stays index-complete** for `ClaimLifecycle` (a missing ruling defaults to rejected, reason `"nem került döntésre"`); only the *shown* surfaces may be empty.
 - **Never `git add -A`, never a bare `git stash`.** Commit with explicit paths plus `--no-verify` — the beads pre-commit hook force-stages a gitignored root `issues.jsonl` otherwise. Do NOT commit `.beads/issues.jsonl` from these tasks.
 - **Focused tests only, never the full backend suite** (it OOM-dies on this machine). The command for every backend task:
-  `./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*,ArchitectureTest' -Dmezo.test.use-testcontainers=true`
+  `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*' -Dmezo.test.use-testcontainers=true`
 - Backend `-Dtest` matches on the **simple class name only**.
+- **`ArchitectureTest` is deliberately NOT in that pattern** — its ArchUnit frozen store is a shared file a local run can empty, so it gets exactly one run, in Task 7 Step 3, where the store is checked afterwards. This is a relocated gate, not a dropped one.
+- **Never run `mvn clean`.** A background `jdtls` process holds `backend/target`; `clean` fails to delete it and leaves the OpenAPI-generated DTOs half-built.
 - Adding or removing a source file reddens CI's `lint` job unless `docs/CODEMAP.md` is regenerated (`node scripts/gen-codemap.mjs`). No task here adds a file, so this should not trigger — verify with `node scripts/gen-codemap.mjs --check` in Task 7.
 
 ---
@@ -85,7 +87,7 @@ Add to `KonziliumVerdictRoundIT`. The sentinel `[fake-char-skeptic:[…]]` is pl
 
 - [ ] **Step 2: Run test to verify it fails**
 
-Run: `./mvnw test -Dtest='KonziliumVerdictRoundIT#skepticWeakenVerdictSurvivesIntoTheShownVerdictsAndTheTranscript' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='KonziliumVerdictRoundIT#skepticWeakenVerdictSurvivesIntoTheShownVerdictsAndTheTranscript' -Dmezo.test.use-testcontainers=true`
 Expected: FAIL — it will not compile, because `SkepticVerdict` has no `suggestedConfidence()` accessor.
 
 - [ ] **Step 3: Add `WEAKEN` and the suggested confidence**
@@ -207,7 +209,7 @@ The grades get definitions so the middle option cannot become a hedge, and the `
 
 - [ ] **Step 6: Run the focused suite**
 
-Run: `./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*,ArchitectureTest' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*' -Dmezo.test.use-testcontainers=true`
 Expected: PASS. `FakeCompanionLlm.skepticCannedAnswer` still emits `{"index":i,"verdict":"KEEP","argument":…}` with no `suggestedConfidence`, which parses to null — the existing happy-path ITs keep passing unchanged.
 
 - [ ] **Step 7: Commit**
@@ -278,7 +280,7 @@ The `[fake-char-proposals-echo]`-style prompt-assembly assertion is not availabl
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `./mvnw test -Dtest='KonziliumVerdictRoundIT#anUpProposalShowsTheTargetedClaimsTextAndWordNotItsUuid+anUnresolvableClaimIdRendersAnExplicitNotFoundInsteadOfAUuid' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='KonziliumVerdictRoundIT#anUpProposalShowsTheTargetedClaimsTextAndWordNotItsUuid+anUnresolvableClaimIdRendersAnExplicitNotFoundInsteadOfAUuid' -Dmezo.test.use-testcontainers=true`
 Expected: FAIL — the turn text currently carries the raw UUID, so `doesNotContain` fails.
 
 - [ ] **Step 3: Inject the two repositories and load the dossier once**
@@ -402,14 +404,14 @@ Update the two round methods' signatures to take `DossierContext dossier` and pa
 
 - [ ] **Step 5: Run tests to verify they pass**
 
-Run: `./mvnw test -Dtest='KonziliumVerdictRoundIT#anUpProposalShowsTheTargetedClaimsTextAndWordNotItsUuid+anUnresolvableClaimIdRendersAnExplicitNotFoundInsteadOfAUuid' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='KonziliumVerdictRoundIT#anUpProposalShowsTheTargetedClaimsTextAndWordNotItsUuid+anUnresolvableClaimIdRendersAnExplicitNotFoundInsteadOfAUuid' -Dmezo.test.use-testcontainers=true`
 Expected: PASS.
 
 Note: `characterProperties.conference().maxDossierClaims()` does not exist yet — Task 3 adds it. To keep this task independently green, add the property in Task 3 **first** if the compiler complains; the two tasks may be merged by the executor if that ordering is awkward. Prefer: do Task 3's Step 3 (the property + yml default) as this task's Step 3a.
 
 - [ ] **Step 6: Run the focused suite, then commit**
 
-Run: `./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*,ArchitectureTest' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*' -Dmezo.test.use-testcontainers=true`
 Expected: PASS.
 
 ```bash
@@ -501,7 +503,7 @@ If the audit row does not store the full prompt, drop the log-based assertion an
 
 - [ ] **Step 3: Run test to verify it fails**
 
-Run: `./mvnw test -Dtest='KonziliumVerdictRoundIT#theChairsPromptCarriesTheDossierAndTheSzkeptikusDoesNot' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='KonziliumVerdictRoundIT#theChairsPromptCarriesTheDossierAndTheSzkeptikusDoesNot' -Dmezo.test.use-testcontainers=true`
 Expected: FAIL — no `Dosszié:` block is assembled yet.
 
 - [ ] **Step 4: Build the block**
@@ -611,7 +613,7 @@ Add `@Autowired private CharacterProperties characterProperties;` to the IT. Com
 
 - [ ] **Step 6: Run the focused suite, then commit**
 
-Run: `./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*,ArchitectureTest' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*' -Dmezo.test.use-testcontainers=true`
 Expected: PASS.
 
 ```bash
@@ -732,7 +734,7 @@ public record ClaimRuling(ClaimProposal proposal, boolean accepted, BigDecimal r
 
 - [ ] **Step 3: Run tests to verify they fail**
 
-Run: `./mvnw test -Dtest='KonziliumVerdictRoundIT#theChairMayNotAcceptOverASensitiveKill+theChairMayAcceptOverANonSensitiveKillWithDissent+theChairsIntegrationNoteSurvivesOntoTheRuling' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='KonziliumVerdictRoundIT#theChairMayNotAcceptOverASensitiveKill+theChairMayAcceptOverANonSensitiveKillWithDissent+theChairsIntegrationNoteSurvivesOntoTheRuling' -Dmezo.test.use-testcontainers=true`
 Expected: FAIL — `ruling.dissent()` / `ruling.note()` do not compile yet, and the sensitive-KILL accept currently goes through.
 
 - [ ] **Step 4: Widen the draft and enforce the rule in `toRuling`**
@@ -846,12 +848,12 @@ Update the call site in `run`:
 
 - [ ] **Step 6: Run tests to verify they pass**
 
-Run: `./mvnw test -Dtest='KonziliumVerdictRoundIT#theChairMayNotAcceptOverASensitiveKill+theChairMayAcceptOverANonSensitiveKillWithDissent+theChairsIntegrationNoteSurvivesOntoTheRuling' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='KonziliumVerdictRoundIT#theChairMayNotAcceptOverASensitiveKill+theChairMayAcceptOverANonSensitiveKillWithDissent+theChairsIntegrationNoteSurvivesOntoTheRuling' -Dmezo.test.use-testcontainers=true`
 Expected: PASS.
 
 - [ ] **Step 7: Run the focused suite, then commit**
 
-Run: `./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*,ArchitectureTest' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*' -Dmezo.test.use-testcontainers=true`
 Expected: PASS — `ClaimLifecycleIT` and `DeliberationAssemblerTest` compile unchanged thanks to the 4-arg constructor.
 
 ```bash
@@ -917,7 +919,7 @@ git commit --no-verify -m "feat(character): give the konzílium chair its own br
 
 - [ ] **Step 2: Run tests to verify they fail**
 
-Run: `./mvnw test -Dtest='KonziliumVerdictRoundIT#aPlainRatificationRoundLeavesNoPerProposalEchoInTheChairsTurn+theChairsTurnNeverCarriesARawDecimal' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='KonziliumVerdictRoundIT#aPlainRatificationRoundLeavesNoPerProposalEchoInTheChairsTurn+theChairsTurnNeverCarriesARawDecimal' -Dmezo.test.use-testcontainers=true`
 Expected: FAIL — the turn currently echoes every ruling's reason and prints `(0.80)`.
 
 - [ ] **Step 3: Rewrite `integratorTurn`**
@@ -1012,14 +1014,14 @@ Update the call site in `run`:
 
 - [ ] **Step 4: Run tests to verify they pass**
 
-Run: `./mvnw test -Dtest='KonziliumVerdictRoundIT#aPlainRatificationRoundLeavesNoPerProposalEchoInTheChairsTurn+theChairsTurnNeverCarriesARawDecimal' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='KonziliumVerdictRoundIT#aPlainRatificationRoundLeavesNoPerProposalEchoInTheChairsTurn+theChairsTurnNeverCarriesARawDecimal' -Dmezo.test.use-testcontainers=true`
 Expected: PASS.
 
 **If the first test fails** because the canned fake supplies no `suggestedConfidence` (so `addsSomething` returns true on the `suggested == null` branch): that is the correct behaviour — a chair-set word nobody suggested IS new information. Fix the *test* by scripting a Szkeptikus sentinel with `"suggestedConfidence":0.6` (same word tier as the chair's canned 0.6), not by weakening `addsSomething`.
 
 - [ ] **Step 5: Run the focused suite, then commit**
 
-Run: `./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*,ArchitectureTest' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*' -Dmezo.test.use-testcontainers=true`
 Expected: PASS. Existing ITs asserting the old `ELFOGADVA (0.60)` shape must be **updated**, not deleted — the new expectation is the confidence word.
 
 ```bash
@@ -1090,7 +1092,7 @@ Add to `DeliberationAssemblerTest`:
 
 - [ ] **Step 3: Run test to verify it fails**
 
-Run: `./mvnw test -Dtest='DeliberationAssemblerTest#theChairsDissentAndNoteReachTheEnvelope' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='DeliberationAssemblerTest#theChairsDissentAndNoteReachTheEnvelope' -Dmezo.test.use-testcontainers=true`
 Expected: FAIL to compile — the records have three fewer components.
 
 - [ ] **Step 4: Pass the fields through the assembler**
@@ -1269,7 +1271,7 @@ Replace the two `ChainStep`s inside `ItemChain`:
 
 Run: `cd frontend && pnpm vitest run src/features/character/ && cd ..`
 Expected: PASS.
-Run: `./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*,ArchitectureTest' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*' -Dmezo.test.use-testcontainers=true`
 Expected: PASS.
 
 - [ ] **Step 10: Commit**
@@ -1303,24 +1305,48 @@ Three edits, each in the section that already covers the topic:
 Run: `node scripts/gen-codemap.mjs --check`
 Expected: clean (no file was added or removed). If it reports drift, run `node scripts/gen-codemap.mjs` and include `docs/CODEMAP.md` in the commit.
 
-- [ ] **Step 3: Run every local gate**
+- [ ] **Step 3: Run the ArchUnit gate on its own, and check its frozen store**
+
+`ArchitectureTest` is deliberately absent from every per-task pattern: its frozen store
+(`backend/src/test/resources/archunit-store/`) is a shared file that a local run can silently
+**empty**, which then fails for reasons unrelated to any task here. It gets exactly one run, here:
 
 ```bash
-./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*,ArchitectureTest' -Dmezo.test.use-testcontainers=true
+cd backend && ./mvnw test -Dtest='ArchitectureTest' -Dmezo.test.use-testcontainers=true
+cd .. && git diff --stat origin/main -- backend/src/test/resources/archunit-store
+```
+
+Expected: the test passes, and the `git diff` is **empty**. If the diff is non-empty, the run
+emptied the store — restore it (`git restore --source=origin/main backend/src/test/resources/archunit-store`)
+and never commit that deletion. If the test genuinely FAILS on a new package dependency, the only
+new one this branch introduces is `KonziliumVerdictRound` → `character.repository.*` /
+`character.config.*`, which `KonziliumProposalRound` already has — so a failure there is a real
+finding, not noise. Report it rather than freezing a new rule.
+
+- [ ] **Step 4: Run every other local gate**
+
+```bash
+cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*' -Dmezo.test.use-testcontainers=true
 cd frontend && pnpm vitest run src/features/character/ && pnpm build && cd ..
 git status --short
 ```
 
+**Known local hazard:** a background `jdtls` (Eclipse JDT Language Server) process holds
+`backend/target` and races Maven's compiler, which makes `mvn clean` fail to delete the directory
+and can make a run fail on missing OpenAPI-generated `*Builder` classes. Do not `clean`. If a run
+fails on generated-DTO symbols rather than on this branch's code, re-run once without `clean`;
+if it persists, report it — do not start killing the user's editor processes.
+
 Expected: green backend, green frontend, successful build. `git status` must show no unexpected file — in particular **check `git diff --cached` for a `.beads/issues.jsonl` re-export the hook may have staged, and unstage it.**
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add docs/features/character.md
 git commit --no-verify -m "docs(character): record the konzílium's split judge roles (mezo-lghn)"
 ```
 
-- [ ] **Step 5: Ship**
+- [ ] **Step 6: Ship**
 
 Push the branch, open a self-PR as the CI gate, wait for green (re-run `gh pr checks <n>` and read the table — never trust the watch's exit code), then merge locally with `--no-ff` and push main. `bd close mezo-lghn` once main is green.
 
