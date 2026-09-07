@@ -130,11 +130,12 @@ mutations barrel through `@/data/hooks`; MSW handlers for every new path live in
 ## 4. Data model & API
 
 No new tables. `AdminProperties` (`@ConfigurationProperties(prefix = "mezo.admin")`) carries
-`browser.maxPageSize` (200) and `featureMap` (`Map<String, FeatureSource(table,
-timestampColumn)>`) — the non-LLM feature → (owned table, timestamp/date column) map, e.g.
-`train` → `workout_session.started_at`, `food` → `meal.logged_at`, `sleep` → `sleep_log.date`,
-`journal` → `journal_entry.created_at`, `habits` → `habit_day.date`, `water` →
-`water_log.created_at`, `weight` → `weight_log.created_at`. LLM-backed features come from
+`reportZone` (`Europe/Budapest` — the zone every day-bucketing expression in this slice shifts
+into before grouping), `browser.maxPageSize` (200) and `featureMap` (`Map<String,
+FeatureSource(table, timestampColumn)>`) — the non-LLM feature → (owned table, timestamp/date
+column) map, e.g. `train` → `workout_session.started_at`, `food` → `meal.logged_at`, `sleep` →
+`sleep_log.date`, `journal` → `journal_entry.occurred_on`, `habits` → `habit_day.habit_date`,
+`water` → `water_log.log_date`, `weight` → `weight_log.date`. LLM-backed features come from
 `llm_log_history.feature` instead; a feature appears in the usage matrix if it is in either
 source.
 
@@ -288,11 +289,12 @@ AiUsageHero/AiUserFilter.test.tsx`, `AdminLayout.test.tsx`, `Sparkline.test.tsx`
 - **Page size is clamped, not rejected** — an oversized `size` silently becomes
   `maxPageSize` (200) rather than a 400, since a slightly-too-eager UI request shouldn't error.
 - **Deferred (own specs/issues, per the design spec's Follow-ups):** a free-form SQL box
-  (SELECT-only Postgres role, second read-only datasource); the RAG explorer (part 2 of the
-  admin/observability series, launched from a user's "Memória" tab); infra observability — done
-  separately, see [ADR 0037](../decisions/0037-observability-stack-victoriametrics.md); feature
-  telemetry (part 4, only if screen-level behavior tracking is ever needed); byte-level
-  per-user footprint if row counts stop being enough signal.
+  (SELECT-only Postgres role, second read-only datasource); the RAG explorer — **now shipped**,
+  see [`admin-memory-explorer.md`](admin-memory-explorer.md) (part 2 of the admin/observability
+  series, launched from a user's "Memória" tab); infra observability — done separately, see
+  [ADR 0037](../decisions/0037-observability-stack-victoriametrics.md); feature telemetry (part 4,
+  only if screen-level behavior tracking is ever needed); byte-level per-user footprint if row
+  counts stop being enough signal.
 
 ## 10. Key files
 
