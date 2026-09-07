@@ -22305,6 +22305,100 @@ components:
           type: array
           items:
             type: string
+    ConferencePeerReaction:
+      type: object
+      required:
+        - expertKey
+        - stance
+        - argument
+      properties:
+        expertKey:
+          type: string
+        stance:
+          type: string
+          enum:
+            - SUPPORT
+            - CHALLENGE
+            - NUANCE
+        argument:
+          type: string
+    ConferenceSkepticVerdict:
+      type: object
+      required:
+        - verdict
+        - argument
+      properties:
+        verdict:
+          type: string
+          enum:
+            - KEEP
+            - KILL
+        argument:
+          type: string
+    ConferenceChairRuling:
+      type: object
+      required:
+        - accepted
+        - reason
+      properties:
+        accepted:
+          type: boolean
+        confidence:
+          type: number
+          format: double
+          nullable: true
+        reason:
+          type: string
+    ConferenceItem:
+      type: object
+      required:
+        - index
+        - expertKey
+        - text
+        - sensitive
+        - reactions
+      properties:
+        index:
+          type: integer
+        expertKey:
+          type: string
+        text:
+          type: string
+        kind:
+          type: string
+          nullable: true
+        claimId:
+          type: string
+          nullable: true
+        sensitive:
+          type: boolean
+        reactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConferencePeerReaction'
+        skeptic:
+          allOf:
+            - $ref: '#/components/schemas/ConferenceSkepticVerdict'
+          nullable: true
+        chair:
+          allOf:
+            - $ref: '#/components/schemas/ConferenceChairRuling'
+          nullable: true
+    ConferenceThread:
+      type: object
+      required:
+        - title
+        - items
+      properties:
+        dimensionKey:
+          type: string
+          nullable: true
+        title:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConferenceItem'
     CharacterConferenceResponse:
       type: object
       required:
@@ -22334,6 +22428,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ConferenceTurn'
+        deliberation:
+          description: >-
+            The same meeting as a STRUCTURE — one thread per dossier chapter,
+            each item carrying the chain that happened to it. Absent only when
+            the row is neither stored structured nor derivable from its prose
+            transcript; the client then renders `transcript`.
+          type: array
+          nullable: true
+          items:
+            $ref: '#/components/schemas/ConferenceThread'
         changes:
           type: array
           items:
