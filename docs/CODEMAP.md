@@ -17,7 +17,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | Feature | BE | API | FE data | FE ui | Docs |
 |---|---|---|---|---|---|
 | [activity](#activity) | ✓ | 1 | ✓ | · | [growth](features/growth.md) |
-| [admin](#admin) | ✓ | 1 | ✓ | · | [beta-admin](features/beta-admin.md) |
+| [admin](#admin) | ✓ | 2 | ✓ | · | [beta-admin](features/beta-admin.md) |
 | [appnotification](#appnotification) | ✓ | 1 | · | · | [_platform-notifications](features/_platform-notifications.md) |
 | [auth](#auth) | ✓ | 2 | ✓ | ✓ | [beta-admin](features/beta-admin.md), [_platform-auth-security](features/_platform-auth-security.md) |
 | [biometrics](#biometrics) | ✓ | 6 | · | · | [me](features/me.md), [today](features/today.md) |
@@ -81,19 +81,22 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 *BE + API + FE-data* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/admin`
-  - **repositories:** `AdminCatalogQuery`, `AdminInsightsQuery`
-  - **services:** `AdminOverviewService`, `AdminSeries`, `AdminSqlDialect`, `AdminTableCatalog`, `AdminUsageService`,
-    `AdminUserService`
-  - **controllers→contract:** `AdminInsightsController`→`AdminInsightsApi`
+  - **repositories:** `AdminCatalogQuery`, `AdminInsightsQuery`, `AdminRowQuery`
+  - **services:** `AdminConvenienceViews`, `AdminDataBrowserService`, `AdminOverviewService`, `AdminSeries`,
+    `AdminSqlDialect`, `AdminTableCatalog`, `AdminUsageService`, `AdminUserService`
+  - **controllers→contract:** `AdminDataController`→`AdminDataApi`, `AdminInsightsController`→`AdminInsightsApi`
   - **config:** `AdminProperties`
+- **Contract** `api/feature/admin-data/admin-data.yml` — 3 operations
+  - **endpoints:** GET /api/admin/data/tables · GET /api/admin/data/views · GET /api/admin/data/tables/{table}/rows
 - **Contract** `api/feature/admin-insights/admin-insights.yml` — 5 operations
   - **endpoints:** GET /api/admin/overview · GET /api/admin/users-insight · GET /api/admin/users/{id}/insight ·
     GET /api/admin/usage/features · GET /api/admin/usage/cost-matrix
 - **FE data** `frontend/src/data/admin`
   - **hooks (via `@/data/hooks`):** `useAdminActions`, `useAdminInvites`, `useAdminUsers`
   - **modules:** adminApi.ts, adminHooks.ts, adminMock.ts
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 5 IT + 1 unit
-  - **ITs:** `AdminOverviewIT`, `AdminTableCatalogIT`, `AdminUsageIT`, `AdminUserDetailIT`, `AdminUserInsightIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 6 IT + 1 unit
+  - **ITs:** `AdminDataBrowserIT`, `AdminOverviewIT`, `AdminTableCatalogIT`, `AdminUsageIT`, `AdminUserDetailIT`,
+    `AdminUserInsightIT`
 
 ### appnotification
 

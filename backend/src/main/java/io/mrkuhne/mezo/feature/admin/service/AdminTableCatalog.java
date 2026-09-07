@@ -30,6 +30,19 @@ public class AdminTableCatalog {
     /** Never browsable, whatever table they sit on. */
     private static final Pattern SECRET_COLUMN = Pattern.compile("(?i).*(password|secret|token|hash).*");
 
+    /**
+     * {@code information_schema.columns.data_type} for anything without a plain SQL name —
+     * on this schema that means {@code vector(768)} (pgvector), reported as {@code
+     * USER-DEFINED} rather than a concrete type. A 768-float embedding is not something the
+     * row browser should render (task-7 judgement call 1): it is not human-legible, JSON-
+     * serializing it would balloon the response, and the JDBC driver has no default mapping
+     * for it, so leaving it in the projection risks a runtime failure on the first read of
+     * {@code memory_vector.embedding}/{@code memory_embedding.embedding} rather than a clean
+     * 400. Dropped here, the same way a credential column is dropped, so it can never be
+     * selected, sorted, or filtered on either.
+     */
+    private static final String USER_DEFINED_TYPE = "USER-DEFINED";
+
     private final AdminCatalogQuery query;
     private final AtomicReference<Map<String, AdminTable>> cache = new AtomicReference<>();
 
@@ -87,7 +100,7 @@ public class AdminTableCatalog {
 
         Map<String, List<AdminColumn>> byTable = new LinkedHashMap<>();
         for (var row : query.columns()) {
-            if (SECRET_COLUMN.matcher(row.column()).matches()) {
+            if (SECRET_COLUMN.matcher(row.column()).matches() || USER_DEFINED_TYPE.equals(row.type())) {
                 continue;
             }
             String references = fks.getOrDefault(row.table(), Map.of()).get(row.column());

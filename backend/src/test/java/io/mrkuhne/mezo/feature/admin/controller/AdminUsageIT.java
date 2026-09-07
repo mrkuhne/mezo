@@ -46,6 +46,12 @@ class AdminUsageIT extends ApiIntegrationTest {
         assertThat(body.getDays()).hasSize(7);
         assertThat(body.getFeatures()).isNotEmpty();
         body.getFeatures().forEach(f -> assertThat(f.getDays()).hasSize(7));
+        // task-7 judgement call 6: this test only proved the LLM-log half of the union before —
+        // a regression dropping `properties.featureMap().forEach(...)` from
+        // AdminUsageService#featureUsage would still have passed. "train" (workout_session) is
+        // one of the configured mezo.admin.feature-map entries and is seeded by demodata, so its
+        // presence here is proof the domain-table axis is still wired in.
+        assertThat(body.getFeatures()).extracting("key").contains("train");
     }
 
     @Test

@@ -4323,6 +4323,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/data/tables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Browsable tables and their columns (AdminData) */
+        get: operations["listAdminTables"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/data/views": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Convenience views (AdminData) */
+        get: operations["listAdminViews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/data/tables/{table}/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A page of rows from one browsable table (AdminData) */
+        get: operations["getAdminTableRows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -9618,6 +9669,43 @@ export interface components {
             cells: components["schemas"]["AdminCostMatrixCell"][];
             /** Format: double */
             totalUsd: number;
+        };
+        AdminColumnDescriptor: {
+            name: string;
+            type: string;
+            foreignKey: boolean;
+            referencesTable?: string | null;
+        };
+        AdminTableDescriptor: {
+            name: string;
+            /** @description created_by, or id for app_user */
+            ownerColumn: string;
+            softDeletable: boolean;
+            columns: components["schemas"]["AdminColumnDescriptor"][];
+        };
+        AdminTableListResponse: {
+            tables: components["schemas"]["AdminTableDescriptor"][];
+        };
+        AdminViewDescriptor: {
+            id: string;
+            label: string;
+            table: string;
+            defaultSort: string;
+            /** @enum {string} */
+            defaultDir: "asc" | "desc";
+        };
+        AdminRowPageResponse: {
+            table: string;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+            /** Format: int64 */
+            total: number;
+            columns: components["schemas"]["AdminColumnDescriptor"][];
+            rows: {
+                [key: string]: unknown;
+            }[];
         };
     };
     responses: never;
@@ -21995,6 +22083,147 @@ export interface operations {
             };
             /** @description Not the owner (AUTH_FORBIDDEN) */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listAdminTables: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tables */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTableListResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listAdminViews: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Views */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminViewDescriptor"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getAdminTableRows: {
+        parameters: {
+            query?: {
+                userId?: string;
+                page?: number;
+                size?: number;
+                sort?: string;
+                dir?: "asc" | "desc";
+                includeDeleted?: boolean;
+            };
+            header?: never;
+            path: {
+                table: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminRowPageResponse"];
+                };
+            };
+            /** @description Unknown table or column (ADMIN_TABLE_UNKNOWN / ADMIN_COLUMN_UNKNOWN) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Statement timeout (ADMIN_QUERY_TIMEOUT) */
+            504: {
                 headers: {
                     [name: string]: unknown;
                 };
