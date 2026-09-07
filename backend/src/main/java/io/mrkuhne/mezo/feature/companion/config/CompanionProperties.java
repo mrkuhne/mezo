@@ -82,15 +82,27 @@ public record CompanionProperties(
              * ({@code "[companion_chat]"}): the binder splits map keys on dots and relaxed-binds the
              * rest. An unmatched or blank value means the tier default — config never fails a call.
              */
-            @NotNull Map<String, String> featureModels,
+            Map<String, String> featureModels,
             /**
              * {@code CallKind} -> model id. Wins over {@code featureModels}: a kind states a
              * capability the model must have, a feature only states a preference.
              */
-            @NotNull Map<CallKind, String> callKindModels,
+            Map<CallKind, String> callKindModels,
             /** Per-tier reasoning effort. OpenAI-only today; the Gemini adapter ignores it. */
-            @NotNull @Valid ReasoningEffort reasoningEffort
+            @Valid ReasoningEffort reasoningEffort
         ) {
+            /**
+             * The three routing knobs are OPTIONAL by construction: the binder hands a record
+             * component {@code null} both for an omitted key and for an explicitly empty one
+             * ({@code feature-models: {}}), so a @NotNull on them would turn "I configured no
+             * overrides" — the shipped state — into a boot failure.
+             */
+            public Tier {
+                featureModels = featureModels == null ? Map.of() : featureModels;
+                callKindModels = callKindModels == null ? Map.of() : callKindModels;
+                reasoningEffort = reasoningEffort == null ? new ReasoningEffort(null, null) : reasoningEffort;
+            }
+
             /**
              * The cheapest quality lever there is (spec §Q1) — same token price, more thinking.
              * {@code null} on a tier means "send nothing", i.e. the provider's own default stands;
@@ -99,8 +111,11 @@ public record CompanionProperties(
              * effort outright (mezo-ozri.3), so that path pins {@code none} regardless.
              */
             public record ReasoningEffort(
-                @Pattern(regexp = "none|minimal|low|medium|high|xhigh|max") String chat,
-                @Pattern(regexp = "none|minimal|low|medium|high|xhigh|max") String smart
+                // The trailing "?" is load-bearing: an empty yml key (`chat:`) binds to "", not null,
+                // and the shipped config states both keys empty on purpose. The router reads blank
+                // as unset; the enumeration is here so a TYPO fails at boot instead of at the API.
+                @Pattern(regexp = "(none|minimal|low|medium|high|xhigh|max)?") String chat,
+                @Pattern(regexp = "(none|minimal|low|medium|high|xhigh|max)?") String smart
             ) {}
         }
     }

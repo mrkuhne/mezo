@@ -5,6 +5,7 @@ import io.mrkuhne.mezo.feature.companion.config.LlmProvider;
 import io.mrkuhne.mezo.feature.companion.config.ModelTier;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -35,6 +36,9 @@ public class LlmModelRouter {
     private final CompanionProperties.Llm.Tier openai;
     private final LlmCallContextHolder llmCallContextHolder;
 
+    /** {@code @Autowired} because the second constructor — the one the unit tests build tables with
+     *  — makes the choice ambiguous otherwise. */
+    @Autowired
     public LlmModelRouter(CompanionProperties companionProperties, LlmCallContextHolder llmCallContextHolder) {
         this(companionProperties.llm().gemini(), companionProperties.llm().openai(), llmCallContextHolder);
     }
