@@ -94,7 +94,15 @@ opinion about the user, dimension by dimension, claim by claim.
   Szkeptikus, can later be retired by the monthly pass).
 - **Built by a visible AI team**: 7 named domain-expert personas + a cross-cutting Szkeptikus
   (devil's advocate in the konzílium AND, since round 4, the observer/proposer of the META
-  dimension) + Mezo as Integrátor/chair. IDENT-1 is preserved — experts never message
+  dimension) + Mezo as Integrátor/chair. **The konzílium's judgement round splits the question in
+  two** (mezo-lghn): the Szkeptikus owns *is it true* — evidence sufficiency alone, graded
+  `KEEP`/`WEAKEN`/`KILL` with a suggested confidence strength; Mezo owns *do we write it down, and
+  how* — duplication against the existing dossier, contradiction with an existing claim, how far a
+  confidence number may move, whether a claim belongs in a person's permanent dossier at all
+  (the sensitive-claim question), and whether a topic earns its own chapter. The Szkeptikus
+  deliberately sees neither the dossier nor the peers' cross-talk stances — its job is the
+  proposal judged purely against its own evidence, and widening its input would re-merge the two
+  roles the split exists to keep apart. IDENT-1 is preserved — experts never message
   the user directly; the user only *reads* the team's work (feed, konzílium transcript).
 - **Unit of truth**: the **claim** — confidence, evidence refs, a status
   (`ACTIVE`/`RETIRED`), a lifecycle. Dimension portrait prose is written FROM claims, never the
@@ -190,7 +198,9 @@ tile rather than in-page accordions.
   (elfogadva/nyugdíjazva/portré átírva, mapped off `changes[].kind`; any other change kind —
   `CLAIM_CONFIDENCE_UP/DOWN`, `CHAPTER_OPENED`, `CHAPTER_RETIRED`, `BOOTSTRAP` — renders as an
   extra text line, never a fabricated 4th cell), phase labels derived from each turn's persona
-  kind ("Javaslatok" for EXPERT turns, "A Szkeptikus", "Döntés" for Mezo's ruling), and
+  kind ("Javaslatok" for EXPERT turns, "A Szkeptikus" for the evidence-only verdict, "Döntés" for
+  Mezo's dossier-write ruling — the FE's own naming for the same is-it-true/do-we-write-it-down-
+  and-how split the backend enforces, §1), and
   persona-railed bubbles (the Szkeptikus gets the graphite face, Mezo's ruling gets the
   full-width coral tint). A line inside an expert's turn text that starts with the backend's own
   `"FELHASZNÁLÓ VÁLASZA — "` marker (`KonziliumProposalRound.USER_FEEDBACK_PREFIX` — user-neutral
@@ -284,10 +294,11 @@ weekly:   unconsumed character_observation rows (grouped by expert)
              capped at KonziliumCrossTalkRound.MAX_CROSS_TALK_CALLS (6) calls per conference,
              most-contested chapters first; a call an expert never reaches (cap hit) or a
              single failed/unparsed call just drops that expert's reactions, never the round
-          → KonziliumVerdictRound: Szkeptikus (smart-tier, KEEP|KILL, unchanged by cross-talk —
-             it never sees peer reactions) → Mezo/Integrátor (smart-tier, accept/confidence/
-             reason + optional chapter proposal; its prompt now also renders the peers'
-             cross-talk stances per proposal, when any exist)
+          → KonziliumVerdictRound: Szkeptikus (smart-tier, KEEP|WEAKEN|KILL + javasolt bizalom,
+             unchanged by cross-talk — it never sees peer reactions or the dossier) →
+             Mezo/Integrátor (smart-tier, a dosszié birtokában: accept/confidence/reason/dissent/
+             note + optional chapter proposal; its prompt also renders the peers' cross-talk
+             stances per proposal, when any exist)
           → DeliberationAssembler assembles the three rounds' output into a
              ConferenceDeliberationEnvelope (chapter-grouped threads: proposal → peer
              reactions → Szkeptikus verdict → Mezo ruling per claim)
@@ -846,6 +857,56 @@ investigating.
   for the owning expert(s) to weigh at the
   next konzílium; an unaddressed correction is logged (WARN), not silently dropped
   (`CharacterConferenceService.warnUnaddressedUserFeedback`).
+- **The chair's dossier block is capped, and says so when capped** (mezo-lghn).
+  `KonziliumVerdictRound.loadDossier` shows at most `mezo.character.conference.max-dossier-claims`
+  (80) ACTIVE claims to the chair — over that, the kept slice drops the oldest-`updated_at` claims
+  first (a claim nobody has touched in a year is the least useful context for this week's
+  decision), then the survivors are re-sorted by confidence for display. When capped, the
+  `Dosszié:` block appends an explicit "A lista a legfrissebb N állításra van szűkítve — nem a
+  teljes dosszié." line — a silently trimmed dossier would let the chair conclude "we hold nothing
+  like this" from an absence the code created, not the user's actual history.
+- **The sensitive-write guardrail is enforced in `KonziliumVerdictRound.toRuling`, in Java, not in
+  the prompt — and it fails CLOSED.** Accepting a `sensitive` proposal requires an affirmative
+  `KEEP` or `WEAKEN` from the Szkeptikus; a `KILL`, a **`null` verdict** (that round returned blank
+  or unparseable JSON, so no index has one) and an unrecognised grade all block it
+  (`lacksSensitiveClearance`). The rule is keyed as "every kind except `DOWN`/`RETIRE`" (those two
+  demonstrably weaken the dossier and are always safe), **not** as "`NEW`/`UP`" — keyed the latter
+  way, a null or misspelled `kind` would slip past the check unguarded, the same fail-open mistake
+  as treating a missing verdict as clearance. A blocked accept becomes a rejection with a
+  **system-authored** reason (`SENSITIVE_BLOCKED_REASON`, never the chair's own accept text),
+  `note=NOT_FOR_DOSSIER`, and a `log.warn`.
+- **The `DOWN` exemption is made true, not assumed.** The guardrail above lets a sensitive `DOWN`
+  through without Szkeptikus clearance on the premise that the move only weakens the claim — true
+  by construction for `RETIRE` (it removes the claim, so there is no number left to abuse) but only
+  an assumption for `DOWN`, because `ClaimLifecycle`'s `±0.10` step applies only when a ruling
+  carries no explicit confidence; `applyMove` otherwise writes the chair's own number AS-IS. So
+  `toRuling` forces an **uncleared** sensitive `DOWN`'s confidence to `null`, handing the move to
+  that deterministic step off the claim's real current value — guaranteed to weaken. Without this,
+  the chair could accept a `DOWN` at a *higher* confidence than the claim currently holds and
+  strengthen it through the very exemption that exists for weakening. With Szkeptikus clearance
+  (KEEP/WEAKEN) the chair keeps its own number. A `RETIRE` needs no such treatment — it removes the
+  claim, so there is no number to abuse.
+- **`skepticLine` renders an explicit "gave no answer" line** (`SKEPTIC_NO_ANSWER`, "nem adott
+  választ erre a javaslatra") for a proposal index the Szkeptikus never answered — on the
+  transcript turn and in the chair's `skepticVerdictsBlock` prompt section alike, from one shared
+  helper, so the two surfaces can never disagree about what the Szkeptikus said. It used to
+  synthesise `KEEP — nincs ellenérv` there, which told the chair the Szkeptikus had approved
+  something it never saw.
+- **The chair's turn carries a per-proposal line only where its ruling added something**
+  (`addsSomething`); pure ratifications — no dissent, no note, a confidence word unchanged from the
+  Szkeptikus's own suggested strength — collapse into one aggregate "P2, P4: a Szkeptikus érvét
+  elfogadom, nem teszek hozzá." line instead of a per-proposal paraphrase. Confidence in that turn
+  is rendered as a WORD (`CharacterConfidenceWords.word`) — it used to print a raw decimal into a
+  user-facing surface, against the invariant `CharacterConfidenceWords`' own javadoc states.
+- **The "adds something" rule exists twice on purpose** — `KonziliumVerdictRound.addsSomething`
+  (Java, for the prose transcript at write time) and `ConferenceThreadCard.chairAddedSomething`
+  (TypeScript, for the structured envelope at read time). Different surfaces, different languages,
+  no shared runtime; both are covered by tests asserting the same cases. If you change one, change
+  the other. Relatedly, `ConferenceDeliberationEnvelope`'s new `SkepticVerdict.suggestedConfidence`
+  and `ChairRuling.dissent`/`note`/`suggestedDimensionKey` fields are nullable so a conference
+  persisted before this change still deserializes (Jackson reads an absent field as `null`, no
+  migration needed); `LegacyTranscriptParser` passes `null` for all of them explicitly when
+  deriving a legacy thread, because those meetings genuinely recorded none of this.
 - **`MONTHLY` conferences reuse the `week_start` column** to store the month's first day
   (`CharacterMonthlyService`) rather than adding a new column — a deliberate reuse, not a bug;
   don't be surprised reading raw rows.
