@@ -126,8 +126,14 @@ class AdminMemoryReplayIT extends ApiIntegrationTest {
                 .containsOnlyNulls();
         assertThat(detail.getPromptTrace()).isNull();
         assertThat(detail.getPromptTraceReason()).isEqualTo("DRY_RUN");
-        assertThat(detail.getQueryProjection()).isNull();
-        assertThat(detail.getReplayNotes()).contains("pca_unavailable");
+        // Slice 2 (mezo-4qyt.2) fills the map placement the contract declared in slice 1: the
+        // query lands in the SAME PCA space the /vectors map draws, and the note admits that
+        // placing it cost a SECOND embed call — the retriever's own query vector never leaves the
+        // parallel executor, so it cannot be reused.
+        assertThat(detail.getQueryProjection()).isNotNull().isNotEmpty();
+        assertThat(detail.getReplayNotes())
+                .contains("projection_embed_extra_call")
+                .doesNotContain("pca_unavailable");
     }
 
     @Test

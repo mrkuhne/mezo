@@ -1,9 +1,13 @@
 package io.mrkuhne.mezo.feature.admin.controller;
 
 import io.mrkuhne.mezo.api.controller.AdminMemoryApi;
+import io.mrkuhne.mezo.api.dto.AdminMemoryGraphResponse;
+import io.mrkuhne.mezo.api.dto.AdminMemoryHealthResponse;
+import io.mrkuhne.mezo.api.dto.AdminMemoryNeighborsResponse;
 import io.mrkuhne.mezo.api.dto.AdminMemoryReplayRequest;
 import io.mrkuhne.mezo.api.dto.AdminMemoryRunDetailResponse;
 import io.mrkuhne.mezo.api.dto.AdminMemoryRunPageResponse;
+import io.mrkuhne.mezo.api.dto.AdminMemoryVectorsResponse;
 import io.mrkuhne.mezo.feature.admin.service.AdminMemoryService;
 import io.mrkuhne.mezo.feature.auth.service.CurrentUser;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -45,5 +49,30 @@ public class AdminMemoryController implements AdminMemoryApi {
     public AdminMemoryRunDetailResponse replayAdminMemory(UUID userId, AdminMemoryReplayRequest request) {
         currentUser.requireOwner();
         return service.replay(userId, request);
+    }
+
+    @Override
+    public AdminMemoryGraphResponse getAdminMemoryGraph(
+            UUID userId, Boolean includeArchived, Boolean includeDeleted) {
+        currentUser.requireOwner();
+        return service.graph(userId, includeArchived, includeDeleted);
+    }
+
+    @Override
+    public AdminMemoryVectorsResponse getAdminMemoryVectors(UUID userId, String version) {
+        currentUser.requireOwner();
+        return service.vectors(userId, version);
+    }
+
+    @Override
+    public AdminMemoryNeighborsResponse getAdminMemoryNeighbors(UUID userId, UUID itemId, Integer k) {
+        currentUser.requireOwner();
+        return service.neighbors(userId, itemId, k);
+    }
+
+    @Override
+    public AdminMemoryHealthResponse getAdminMemoryHealth(UUID userId) {
+        currentUser.requireOwner();
+        return service.health(userId);
     }
 }

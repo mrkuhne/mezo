@@ -10787,6 +10787,173 @@ paths:
           $ref: '#/components/responses/AdminMemoryForbidden'
         '404':
           $ref: '#/components/responses/AdminMemoryDisabled'
+  '/api/admin/users/{userId}/memory/graph':
+    get:
+      tags:
+        - AdminMemory
+      operationId: getAdminMemoryGraph
+      summary: One user's knowledge graph as STRUCTURED nodes and edges (AdminMemory)
+      description: >
+        Needs mezo.feature.knowledge-graph.enabled as well; with the graph off
+        the response is 404 ADMIN_MEMORY_DISABLED. includeDeleted reads past the
+        entities' @SQLRestriction("is_deleted = false") — the only place in the
+        graph slice that can.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: includeArchived
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: includeDeleted
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: The structured graph
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminMemoryGraphResponse'
+        '401':
+          $ref: '#/components/responses/AdminMemoryUnauthorized'
+        '403':
+          $ref: '#/components/responses/AdminMemoryForbidden'
+        '404':
+          $ref: '#/components/responses/AdminMemoryDisabled'
+        '504':
+          $ref: '#/components/responses/AdminMemoryQueryTimeout'
+  '/api/admin/users/{userId}/memory/vectors':
+    get:
+      tags:
+        - AdminMemory
+      operationId: getAdminMemoryVectors
+      summary: >-
+        The user's ready vectors as PCA coordinates plus item metadata
+        (AdminMemory)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: version
+          in: query
+          required: false
+          description: >-
+            embedding generation; defaults to
+            mezo.companion.memory-platform.serving-embedding-version
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The map payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminMemoryVectorsResponse'
+        '401':
+          $ref: '#/components/responses/AdminMemoryUnauthorized'
+        '403':
+          $ref: '#/components/responses/AdminMemoryForbidden'
+        '404':
+          $ref: '#/components/responses/AdminMemoryDisabled'
+        '504':
+          $ref: '#/components/responses/AdminMemoryQueryTimeout'
+  '/api/admin/users/{userId}/memory/vectors/{itemId}/neighbors':
+    get:
+      tags:
+        - AdminMemory
+      operationId: getAdminMemoryNeighbors
+      summary: Real pgvector cosine neighbours of one memory item (AdminMemory)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: k
+          in: query
+          required: false
+          description: defaults to mezo.admin.memory.neighbor-default-k
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 50
+      responses:
+        '200':
+          description: 'The nearest neighbours, closest first'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminMemoryNeighborsResponse'
+        '401':
+          $ref: '#/components/responses/AdminMemoryUnauthorized'
+        '403':
+          $ref: '#/components/responses/AdminMemoryForbidden'
+        '404':
+          description: >
+            No such live item for this user (ADMIN_MEMORY_ITEM_NOT_FOUND), the
+            item has no ready vector of the serving generation
+            (ADMIN_MEMORY_NO_VECTOR), or the feature is off
+            (ADMIN_MEMORY_DISABLED)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemMessageList'
+        '504':
+          $ref: '#/components/responses/AdminMemoryQueryTimeout'
+  '/api/admin/users/{userId}/memory/health':
+    get:
+      tags:
+        - AdminMemory
+      operationId: getAdminMemoryHealth
+      summary: >-
+        Per-status, per-version, staleness and graph rollups for one user
+        (AdminMemory)
+      description: >
+        Answers even with the knowledge graph switched off: the graph buckets
+        come back empty and the vector half is still populated.
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The health rollups
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminMemoryHealthResponse'
+        '401':
+          $ref: '#/components/responses/AdminMemoryUnauthorized'
+        '403':
+          $ref: '#/components/responses/AdminMemoryForbidden'
+        '404':
+          $ref: '#/components/responses/AdminMemoryDisabled'
+        '504':
+          $ref: '#/components/responses/AdminMemoryQueryTimeout'
 components:
   securitySchemes:
     bearerAuth:
@@ -24940,6 +25107,346 @@ components:
           format: date
           nullable: true
           description: defaults to today in the server zone
+    AdminMemoryEdgeEvidence:
+      type: object
+      required:
+        - sourceKind
+        - sourceId
+      description: >-
+        one GraphEdgeEvidence row — the source that justified creating or
+        reinforcing the edge
+      properties:
+        sourceKind:
+          type: string
+        sourceId:
+          type: string
+          format: uuid
+        note:
+          type: string
+          nullable: true
+        at:
+          type: string
+          format: date-time
+          nullable: true
+    AdminMemoryGraphNode:
+      type: object
+      required:
+        - id
+        - kind
+        - title
+        - status
+        - deleted
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          description: PATTERN | PREFERENCE | GOAL | LIFE_EVENT | SEASON | INSIGHT | PERSON
+        title:
+          type: string
+        summary:
+          type: string
+          nullable: true
+        status:
+          type: string
+          description: candidate | active | archived
+        sourceKind:
+          type: string
+          nullable: true
+        sourceId:
+          type: string
+          format: uuid
+          nullable: true
+        occurredOn:
+          type: string
+          format: date
+          nullable: true
+        userArchivedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: non-null = the USER hid it; promotion never overrides that
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+          nullable: true
+        deleted:
+          type: boolean
+        meta:
+          type: object
+          nullable: true
+          additionalProperties: true
+        degree:
+          type: integer
+          format: int32
+          description: 'in+out edge count inside THIS response, for the node radius'
+    AdminMemoryGraphEdge:
+      type: object
+      required:
+        - id
+        - from
+        - to
+        - kind
+        - weight
+        - deleted
+        - createdAt
+      description: >
+        The first STRUCTURED edge DTO in any mezo contract
+        (GraphNodeResponse.topEdges is rendered text). `weight` is the LIVE
+        value: the nightly GraphMaintenanceService decays every edge by x0.99
+        and prunes below 0.05, so this will NOT match a memory_retrieval_result
+        score_breakdown captured on an earlier day.
+      properties:
+        id:
+          type: string
+          format: uuid
+        from:
+          type: string
+          format: uuid
+        to:
+          type: string
+          format: uuid
+        kind:
+          type: string
+          description: TRIGGERS | PRECEDED_BY | SUPPORTS | CONFLICTS | RELATES_TO
+        weight:
+          type: number
+          format: double
+          description: '0..1, live (post-decay)'
+        lastReinforcedAt:
+          type: string
+          format: date-time
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        deleted:
+          type: boolean
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminMemoryEdgeEvidence'
+    AdminMemoryGraphResponse:
+      type: object
+      required:
+        - nodes
+        - edges
+        - decayFactor
+        - pruneBelow
+      properties:
+        nodes:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminMemoryGraphNode'
+        edges:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminMemoryGraphEdge'
+        decayFactor:
+          type: number
+          format: double
+          description: read from the companion graph config; the nightly multiplier
+        pruneBelow:
+          type: number
+          format: double
+          description: weight below which the nightly pass deletes the edge
+    AdminMemoryVectorItem:
+      type: object
+      required:
+        - itemId
+        - sourceKind
+        - occurredOn
+        - salience
+        - state
+        - snippet
+      properties:
+        itemId:
+          type: string
+          format: uuid
+        sourceKind:
+          type: string
+        sourceId:
+          type: string
+          format: uuid
+        occurredOn:
+          type: string
+          format: date
+        salience:
+          type: number
+          format: double
+        state:
+          type: string
+          description: active | suppressed | superseded
+        snippet:
+          type: string
+    AdminMemoryVectorsResponse:
+      type: object
+      required:
+        - embeddingVersion
+        - dims
+        - sampled
+        - total
+        - items
+        - projection
+      properties:
+        embeddingVersion:
+          type: string
+        dims:
+          type: integer
+          format: int32
+          description: PCA output dims (mezo.admin.memory.pca-target-dims)
+        sampled:
+          type: boolean
+          description: >-
+            true = the user has more ready vectors than the sample threshold and
+            this is a newest+most-salient subset
+        total:
+          type: integer
+          format: int64
+          description: 'ready, hash-matching vectors of this generation BEFORE sampling'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminMemoryVectorItem'
+        projection:
+          type: string
+          description: >
+            base64 of a little-endian Float32 block of items.length x dims PCA
+            coordinates, row major, in the same order as `items`. Base64 rather
+            than a JSON number array to keep ~3000 x 50 floats around 0.6 MB
+            instead of ~9 MB of decimal text.
+    AdminMemoryNeighbor:
+      type: object
+      required:
+        - itemId
+        - sourceKind
+        - occurredOn
+        - distance
+        - similarity
+        - snippet
+        - state
+      properties:
+        itemId:
+          type: string
+          format: uuid
+        sourceKind:
+          type: string
+        occurredOn:
+          type: string
+          format: date
+        distance:
+          type: number
+          format: double
+          description: 'pgvector cosine distance (<=>), 0 = identical'
+        similarity:
+          type: number
+          format: double
+          description: >-
+            1 - distance; the app stores L2-normalised vectors, so this is a
+            cosine similarity, not a dot product
+        salience:
+          type: number
+          format: double
+        state:
+          type: string
+        snippet:
+          type: string
+    AdminMemoryNeighborsResponse:
+      type: object
+      required:
+        - itemId
+        - embeddingVersion
+        - neighbors
+      properties:
+        itemId:
+          type: string
+          format: uuid
+        embeddingVersion:
+          type: string
+        neighbors:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminMemoryNeighbor'
+    AdminMemoryCountBucket:
+      type: object
+      required:
+        - key
+        - count
+      properties:
+        key:
+          type: string
+        count:
+          type: integer
+          format: int64
+    AdminMemoryHealthResponse:
+      type: object
+      required:
+        - servingEmbeddingVersion
+        - vectorsByStatus
+        - vectorFailures
+        - vectorsByVersion
+        - staleVectorCount
+        - itemsByState
+        - nodesByStatus
+        - nodesByKind
+        - edgeWeightHistogram
+        - jobs
+      properties:
+        servingEmbeddingVersion:
+          type: string
+        vectorsByStatus:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminMemoryCountBucket'
+        vectorFailures:
+          type: array
+          description: 'failure_code -> count, over status = failed rows'
+          items:
+            $ref: '#/components/schemas/AdminMemoryCountBucket'
+        vectorsByVersion:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminMemoryCountBucket'
+        staleVectorCount:
+          type: integer
+          format: int64
+          description: >-
+            embedded_content_hash <> content_hash — present but ANN-ineligible,
+            the quiet failure mode
+        itemsByState:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminMemoryCountBucket'
+        nodesByStatus:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminMemoryCountBucket'
+        nodesByKind:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminMemoryCountBucket'
+        edgeWeightHistogram:
+          type: array
+          description: >-
+            edgeWeightHistogramBuckets buckets over 0..1; key is the bucket
+            range label
+          items:
+            $ref: '#/components/schemas/AdminMemoryCountBucket'
+        jobs:
+          type: object
+          additionalProperties:
+            type: string
+            format: date-time
+            nullable: true
+          description: >
+            last observed run of each nightly pass, INFERRED from the newest row
+            it writes (lastDailySummary, lastPatternDetection,
+            lastEdgeReinforcement, lastRetrievalRun, lastVectorWrite) — there is
+            no job-run table, and the surface says "inferred".
   responses:
     AdminMemoryUnauthorized:
       description: Missing/invalid token
@@ -24955,6 +25462,14 @@ components:
             $ref: '#/components/schemas/SystemMessageList'
     AdminMemoryDisabled:
       description: Feature or its companion dependency is off (ADMIN_MEMORY_DISABLED)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SystemMessageList'
+    AdminMemoryQueryTimeout:
+      description: >-
+        The read hit mezo.admin.memory.statement-timeout
+        (ADMIN_MEMORY_QUERY_TIMEOUT)
       content:
         application/json:
           schema:
