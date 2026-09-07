@@ -63,10 +63,10 @@ describe('GeptermPage', () => {
     expect(mockNavigate).toHaveBeenCalledWith('/me/karakter/gepterem/futasok')
   })
 
-  test('AI-napló tile navigates to /me/ai-usage unfiltered (AiCallFilters is not URL-driven)', async () => {
+  test('AI-napló tile navigates to /admin/cost unfiltered (AiCallFilters is not URL-driven)', async () => {
     renderHub()
     await userEvent.click(screen.getByRole('button', { name: /AI-napló/ }))
-    expect(mockNavigate).toHaveBeenCalledWith('/me/ai-usage')
+    expect(mockNavigate).toHaveBeenCalledWith('/admin/cost')
   })
 
   test('Adatforrások tile navigates to the Adatforrások page (Task 5)', async () => {

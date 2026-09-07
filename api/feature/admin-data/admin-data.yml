@@ -1,0 +1,129 @@
+openapi: 3.0.3
+info:
+  title: mezo admin-data fragment
+  version: 1.0.0
+tags:
+  - name: AdminData
+    description: >
+      OWNER-only read-only row browser over the owned tables. Identifiers are validated
+      against an information_schema allowlist; credential-looking columns are never exposed.
+paths:
+  /api/admin/data/tables:
+    get:
+      tags: [AdminData]
+      operationId: listAdminTables
+      summary: Browsable tables and their columns (AdminData)
+      responses:
+        '200':
+          description: Tables
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminTableListResponse' }
+        '401':
+          description: Missing/invalid token
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+  /api/admin/data/views:
+    get:
+      tags: [AdminData]
+      operationId: listAdminViews
+      summary: Convenience views (AdminData)
+      responses:
+        '200':
+          description: Views
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/AdminViewDescriptor' }
+        '401':
+          description: Missing/invalid token
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+  /api/admin/data/tables/{table}/rows:
+    get:
+      tags: [AdminData]
+      operationId: getAdminTableRows
+      summary: A page of rows from one browsable table (AdminData)
+      parameters:
+        - { name: table, in: path, required: true, schema: { type: string } }
+        - { name: userId, in: query, required: false, schema: { type: string, format: uuid } }
+        - { name: page, in: query, required: false, schema: { type: integer, format: int32, minimum: 0, default: 0 } }
+        - { name: size, in: query, required: false, schema: { type: integer, format: int32, minimum: 1, default: 50 } }
+        - { name: sort, in: query, required: false, schema: { type: string } }
+        - { name: dir, in: query, required: false, schema: { type: string, enum: [asc, desc], default: desc } }
+        - { name: includeDeleted, in: query, required: false, schema: { type: boolean, default: false } }
+      responses:
+        '200':
+          description: Rows
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminRowPageResponse' }
+        '400':
+          description: Unknown table or column (ADMIN_TABLE_UNKNOWN / ADMIN_COLUMN_UNKNOWN)
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+        '401':
+          description: Missing/invalid token
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+        '403':
+          description: Not the owner (AUTH_FORBIDDEN)
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+        '504':
+          description: Statement timeout (ADMIN_QUERY_TIMEOUT)
+          content: { application/json: { schema: { $ref: '#/components/schemas/SystemMessageList' } } }
+components:
+  schemas:
+    AdminColumnDescriptor:
+      type: object
+      required: [name, type, foreignKey]
+      properties:
+        name: { type: string }
+        type: { type: string }
+        foreignKey: { type: boolean }
+        referencesTable: { type: string, nullable: true }
+    AdminTableDescriptor:
+      type: object
+      required: [name, columns, ownerColumn, softDeletable]
+      properties:
+        name: { type: string }
+        ownerColumn: { type: string, description: 'created_by, or id for app_user' }
+        softDeletable: { type: boolean }
+        columns:
+          type: array
+          items: { $ref: '#/components/schemas/AdminColumnDescriptor' }
+    AdminTableListResponse:
+      type: object
+      required: [tables]
+      properties:
+        tables:
+          type: array
+          items: { $ref: '#/components/schemas/AdminTableDescriptor' }
+    AdminViewDescriptor:
+      type: object
+      required: [id, label, table, defaultSort, defaultDir]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        table: { type: string }
+        defaultSort: { type: string }
+        defaultDir: { type: string, enum: [asc, desc] }
+    AdminRowPageResponse:
+      type: object
+      required: [table, page, size, total, columns, rows]
+      properties:
+        table: { type: string }
+        page: { type: integer, format: int32 }
+        size: { type: integer, format: int32 }
+        total: { type: integer, format: int64 }
+        columns:
+          type: array
+          items: { $ref: '#/components/schemas/AdminColumnDescriptor' }
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true

@@ -1,0 +1,38 @@
+import { NavLink } from 'react-router-dom'
+import { cn } from '@/shared/lib/cn'
+import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
+
+// Left rail for the admin hub (mezo-d5iy.9) — ported from the prototype's RAIL array
+// (docs/design_2.0/prototypes/src/admin-body.html). No TabBar precedent here: this is a
+// desktop-only surface, one clay icon per section, active state via NavLink's isActive.
+interface RailItem { to: string; label: string; icon: ClayIconName; end?: boolean }
+const RAIL: RailItem[] = [
+  { to: '/admin', label: 'Áttekintés', icon: 'i-nap', end: true },
+  { to: '/admin/users', label: 'Userek', icon: 'i-emberek' },
+  { to: '/admin/usage', label: 'Feature-használat', icon: 'i-minta' },
+  { to: '/admin/cost', label: 'LLM költség', icon: 'i-erme' },
+  { to: '/admin/data', label: 'Adatböngésző', icon: 'i-tudas' },
+  { to: '/admin/accounts', label: 'Meghívók és fiókok', icon: 'i-beallitas' },
+]
+
+export function AdminRail() {
+  return (
+    <nav className="ad-rail" aria-label="Admin navigáció">
+      <div className="brand">
+        <ClayIcon name="i-mezo" size={26} />
+        <div>Mezo<small>admin</small></div>
+      </div>
+      {RAIL.map((item) => (
+        <NavLink
+          key={item.to}
+          to={item.to}
+          end={item.end}
+          className={({ isActive }) => cn('ad-rail-link', isActive && 'on')}
+        >
+          <ClayIcon name={item.icon} size={18} />
+          <span>{item.label}</span>
+        </NavLink>
+      ))}
+    </nav>
+  )
+}

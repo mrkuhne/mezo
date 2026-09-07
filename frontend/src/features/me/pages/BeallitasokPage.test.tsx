@@ -61,7 +61,7 @@ test('az Értesítések sor a kapcsolók oldalára navigál', async () => {
 test('az AI-napló sor az AI-napló oldalra navigál', async () => {
   renderPage()
   await userEvent.click(await screen.findByRole('button', { name: 'AI-napló' }))
-  expect(screen.getByTestId('loc')).toHaveTextContent('/me/ai-usage')
+  expect(screen.getByTestId('loc')).toHaveTextContent('/admin/cost')
 })
 
 test('a vissza-chip az Én hubra visz', async () => {
@@ -70,13 +70,13 @@ test('a vissza-chip az Én hubra visz', async () => {
   expect(screen.getByTestId('loc')).toHaveTextContent(/^\/me$/)
 })
 
-test('mock mode (owner): a Beta admin sor látszik és az admin oldalra visz', async () => {
+test('mock mode (owner): az Admin sor látszik és az admin hubra visz', async () => {
   renderPage()
-  await userEvent.click(screen.getByRole('button', { name: 'Beta admin' }))
-  expect(screen.getByTestId('loc')).toHaveTextContent('/me/beallitasok/admin')
+  await userEvent.click(screen.getByRole('button', { name: 'Admin' }))
+  expect(screen.getByTestId('loc')).toHaveTextContent('/admin')
 })
 
-test('real mode (USER): sem a Beta admin, sem az AI-napló sor nem jelenik meg, és a hívás el sem indul', async () => {
+test('real mode (USER): sem az Admin, sem az AI-napló sor nem jelenik meg, és a hívás el sem indul', async () => {
   vi.stubEnv('VITE_USE_MOCK', 'false')
   const { setToken } = await import('@/data/_client/api')
   const { http, HttpResponse } = await import('msw')
@@ -97,7 +97,7 @@ test('real mode (USER): sem a Beta admin, sem az AI-napló sor nem jelenik meg, 
   }))
   renderPage()
   await screen.findByRole('button', { name: 'Értesítések' })
-  expect(screen.queryByRole('button', { name: 'Beta admin' })).toBeNull()
+  expect(screen.queryByRole('button', { name: 'Admin' })).toBeNull()
   expect(screen.queryByRole('button', { name: 'AI-napló' })).toBeNull()
   // Settle any pending microtasks/effects before asserting the negative.
   await new Promise((r) => setTimeout(r, 0))

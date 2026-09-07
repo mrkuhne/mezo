@@ -1,5 +1,6 @@
 import { Navigate, type RouteObject, useLocation, useParams, useSearchParams } from 'react-router-dom'
 import { AppLayout } from '@/app/AppLayout'
+import { adminRoutes } from '@/features/admin/adminRoutes'
 import { NapHubPage } from '@/features/today/pages/NapHubPage'
 import { NapMezoPage } from '@/features/today/pages/NapMezoPage'
 import { NapRutinPage } from '@/features/today/pages/NapRutinPage'
@@ -108,10 +109,7 @@ import { PeopleHetiPage } from '@/features/me/pages/PeopleHetiPage'
 import { PersonDetailPage } from '@/features/me/pages/PersonDetailPage'
 import { NotificationsPage } from '@/features/me/pages/NotificationsPage'
 import { NotificationFeedPage } from '@/features/me/pages/NotificationFeedPage'
-import { AiUsagePage } from '@/features/me/pages/AiUsagePage'
-import { AiCallDetailPage } from '@/features/me/pages/AiCallDetailPage'
 import { BeallitasokPage } from '@/features/me/pages/BeallitasokPage'
-import { BetaAdminPage } from '@/features/me/pages/BetaAdminPage'
 import { RitualPage } from '@/features/ritual/pages/RitualPage'
 import { KarakterHubPage } from '@/features/character/pages/KarakterHubPage'
 import { DimensionsPage } from '@/features/character/pages/DimensionsPage'
@@ -163,6 +161,10 @@ function TrainIndex() {
 }
 
 export const routes: RouteObject[] = [
+  // Registered BEFORE the app root so `/admin` is matched by its own layout (desktop
+  // shell, no PhoneFrame/TabBar) rather than falling into AppLayout's `*` catch-all
+  // (mezo-d5iy.9). The two trees are otherwise disjoint — no path collides.
+  ...adminRoutes,
   {
     path: '/',
     element: <AppLayout />,
@@ -416,13 +418,13 @@ export const routes: RouteObject[] = [
       // Beállítások oldal (hub-tile-reorg): az Én hub Beállítások csempéjének célja —
       // Téma helyben + az Értesítések-kapcsolók és az AI-napló ajtajai.
       { path: 'me/beallitasok', element: <BeallitasokPage /> },
-      // Beta admin (mezo-qw37.3) — OWNER-only row on Beállítások; backend requireOwner() is the real gate.
-      { path: 'me/beallitasok/admin', element: <BetaAdminPage /> },
+      // Beta admin + AI-napló (mezo-qw37.3 / mezo-uakh) moved under /admin (mezo-d5iy.13) — both
+      // were OWNER-only already, so they now live beside the rest of the owner console. These
+      // two entries are pure redirects for old bookmarks/in-app navigate() calls, not pages.
+      { path: 'me/beallitasok/admin', element: <Navigate to="/admin/accounts" replace /> },
+      { path: 'me/ai-usage/*', element: <LegacyPathRedirect prefix="/me/ai-usage" to="/admin/cost" /> },
       // Full-screen night surface (train/session idiom) — no Me sub-nav chrome.
       { path: 'me/sleep/night', element: <NightPage /> },
-      // Full-screen AI audit log browser (mezo-uakh) — no Me sub-nav chrome.
-      { path: 'me/ai-usage', element: <AiUsagePage /> },
-      { path: 'me/ai-usage/:id', element: <AiCallDetailPage /> },
       // Full-screen Napzárás flow (train/session idiom) — no tab-bar chrome (mezo-ilsj).
       { path: 'ritual', element: <RitualPage /> },
       { path: '*', element: <Navigate to="/nap" replace /> },

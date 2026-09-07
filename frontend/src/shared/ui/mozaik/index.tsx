@@ -45,10 +45,12 @@ interface TileProps {
   'aria-label'?: string
   /** Full-bleed row tile spanning both mosaic columns (the Mezo hub's Diagnózis precedent). */
   wide?: boolean
+  /** 12-column desktop span (MosaicDesktop / /admin only) — adds `mz-span-<n>`. */
+  span?: 3 | 4 | 6 | 12
 }
 
-export function Tile({ wash, icon, iconSize = 47, eyebrow, line, dot, badge, delayMs, onClick, className, children, wide, ...rest }: TileProps) {
-  const cls = cn('mz-tile', `mz-w-${wash}`, 'rise', wide && 'mz-tile-wide mz-tile-row', className)
+export function Tile({ wash, icon, iconSize = 47, eyebrow, line, dot, badge, delayMs, onClick, className, children, wide, span, ...rest }: TileProps) {
+  const cls = cn('mz-tile', `mz-w-${wash}`, 'rise', wide && 'mz-tile-wide mz-tile-row', span && `mz-span-${span}`, className)
   const style = delayMs !== undefined ? ({ '--d': `${delayMs}ms` } as React.CSSProperties) : undefined
   const inner = wide ? (
     <>
@@ -84,6 +86,11 @@ export function Tile({ wash, icon, iconSize = 47, eyebrow, line, dot, badge, del
 /** The 2-column tile grid. One long hero tile per panel lives OUTSIDE the mosaic. */
 export function Mosaic({ children, className }: { children: ReactNode; className?: string }) {
   return <div className={cn('mz-mosaic', className)}>{children}</div>
+}
+
+/** The 12-column desktop tile grid. Same tiles, wider canvas — /admin only (mezo-d5iy). */
+export function MosaicDesktop({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={cn('mz-mosaic-desktop', className)}>{children}</div>
 }
 
 export function StatStrip({ children, className }: { children: ReactNode; className?: string }) {

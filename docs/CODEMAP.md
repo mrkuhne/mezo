@@ -17,9 +17,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | Feature | BE | API | FE data | FE ui | Docs |
 |---|---|---|---|---|---|
 | [activity](#activity) | ✓ | 1 | ✓ | · | [growth](features/growth.md) |
-| [admin](#admin) | · | · | ✓ | · | [beta-admin](features/beta-admin.md) |
+| [admin](#admin) | ✓ | 2 | ✓ | ✓ | [admin-hub](features/admin-hub.md) |
 | [appnotification](#appnotification) | ✓ | 1 | · | · | [_platform-notifications](features/_platform-notifications.md) |
-| [auth](#auth) | ✓ | 2 | ✓ | ✓ | [beta-admin](features/beta-admin.md), [_platform-auth-security](features/_platform-auth-security.md) |
+| [auth](#auth) | ✓ | 2 | ✓ | ✓ | [admin-hub](features/admin-hub.md), [_platform-auth-security](features/_platform-auth-security.md) |
 | [biometrics](#biometrics) | ✓ | 6 | · | · | [me](features/me.md), [today](features/today.md) |
 | [character](#character) | ✓ | 1 | ✓ | ✓ | [character](features/character.md) |
 | [companion](#companion) | ✓ | 5 | · | · | [character](features/character.md), [companion](features/companion.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md) |
@@ -33,7 +33,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | [journal](#journal) | ✓ | 1 | ✓ | · | [journal](features/journal.md) |
 | [lifegoal](#lifegoal) | ✓ | 1 | ✓ | · | [lifegoal](features/lifegoal.md) |
 | [llmlog](#llmlog) | ✓ | 1 | · | · | [companion](features/companion.md) |
-| [me](#me) | · | · | ✓ | ✓ | [beta-admin](features/beta-admin.md), [growth](features/growth.md), [habit](features/habit.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [_platform-data-layer](features/_platform-data-layer.md), [_platform-notifications](features/_platform-notifications.md) |
+| [me](#me) | · | · | ✓ | ✓ | [growth](features/growth.md), [habit](features/habit.md), [journal](features/journal.md), [lifegoal](features/lifegoal.md), [me](features/me.md), [_platform-data-layer](features/_platform-data-layer.md), [_platform-notifications](features/_platform-notifications.md) |
 | [meal](#meal) | ✓ | 1 | · | · | [fuel](features/fuel.md) |
 | [medication](#medication) | ✓ | 1 | · | · | · |
 | [needs](#needs) | ✓ | 1 | ✓ | · | [needs](features/needs.md) |
@@ -78,11 +78,34 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### admin
 
-*FE-data* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-06, done)
+*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-07, done)
 
+- **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/admin`
+  - **repositories:** `AdminCatalogQuery`, `AdminInsightsQuery`, `AdminRowQuery`
+  - **services:** `AdminConvenienceViews`, `AdminDataBrowserService`, `AdminOverviewService`, `AdminSeries`,
+    `AdminSqlDialect`, `AdminTableCatalog`, `AdminUsageService`, `AdminUserService`
+  - **controllers→contract:** `AdminDataController`→`AdminDataApi`, `AdminInsightsController`→`AdminInsightsApi`
+  - **config:** `AdminProperties`
+- **Contract** `api/feature/admin-data/admin-data.yml` — 3 operations
+  - **endpoints:** GET /api/admin/data/tables · GET /api/admin/data/views · GET /api/admin/data/tables/{table}/rows
+- **Contract** `api/feature/admin-insights/admin-insights.yml` — 5 operations
+  - **endpoints:** GET /api/admin/overview · GET /api/admin/users-insight · GET /api/admin/users/{id}/insight ·
+    GET /api/admin/usage/features · GET /api/admin/usage/cost-matrix
 - **FE data** `frontend/src/data/admin`
-  - **hooks (via `@/data/hooks`):** `useAdminActions`, `useAdminInvites`, `useAdminUsers`
-  - **modules:** adminApi.ts, adminHooks.ts, adminMock.ts
+  - **hooks (via `@/data/hooks`):** `useAdminActions`, `useAdminInvites`, `useAdminRows`, `useAdminTables`,
+    `useAdminUsers`, `useAdminViews`
+  - **modules:** adminApi.ts, adminDataApi.ts, adminDataHooks.ts, adminDataMock.ts, adminHooks.ts, adminInsightsApi.ts,
+    adminInsightsHooks.ts, adminInsightsMock.ts, adminMock.ts
+- **FE ui** `frontend/src/features/admin`
+  - **pages:** AdminAccountsPage.tsx, AdminCostDetailPage.tsx, AdminCostPage.tsx, AdminDataPage.tsx,
+    AdminOverviewPage.tsx, AdminUsagePage.tsx, AdminUserDetailPage.tsx, AdminUsersPage.tsx
+  - **components:** AdminTile.tsx, AiCallFilters.tsx, AiCallRow.tsx, AiFeatureBreakdown.tsx, AiModelBreakdown.tsx,
+    AiUsageHero.tsx, AiUserFilter.tsx, DataTable.tsx, JsonCell.tsx, MatrixGrid.tsx, Sparkline.tsx, TablePicker.tsx,
+    UserPicker.tsx
+  - **root:** AdminLayout.tsx, AdminRail.tsx, adminRoutes.tsx
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 6 IT + 1 unit
+  - **ITs:** `AdminDataBrowserIT`, `AdminOverviewIT`, `AdminTableCatalogIT`, `AdminUsageIT`, `AdminUserDetailIT`,
+    `AdminUserInsightIT`
 
 ### appnotification
 
@@ -106,7 +129,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### auth
 
-*BE + API + FE-data + FE-ui* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-06, done) ·
+*BE + API + FE-data + FE-ui* · read next: [docs/features/admin-hub.md](features/admin-hub.md) (updated 2026-09-07, done) ·
   [docs/features/_platform-auth-security.md](features/_platform-auth-security.md) (updated 2026-09-06, done)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/auth`
@@ -750,8 +773,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
   - **entities→tables:** `LlmLogEntity`→`llm_log_history`
-  - **repositories:** `LlmCallRow`, `LlmDailyAggregate`, `LlmGroupRow`, `LlmLogRepository`, `LlmStatusRow`,
-    `LlmUsageAggregate`, `LlmUserRow`
+  - **repositories:** `LlmCallRow`, `LlmDailyAggregate`, `LlmFeatureDayRow`, `LlmGroupRow`, `LlmLogRepository`,
+    `LlmStatusRow`, `LlmUsageAggregate`, `LlmUserFeatureRow`, `LlmUserRow`
   - **services:** `EmbedUsage`, `EventPublishingLlmCallRecorder`, `LlmActorResolver`, `LlmCallRecord`,
     `LlmCallRecorder`, `LlmLogRetentionJob`, `LlmLogWriter`, `LlmPricingService`, `LlmUsageService`,
     `NoOpLlmCallRecorder`, `TokenUsage`, `UsagePeriod`
@@ -774,8 +797,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### me
 
-*FE-data + FE-ui* · read next: [docs/features/beta-admin.md](features/beta-admin.md) (updated 2026-09-06, done) ·
-  [docs/features/growth.md](features/growth.md) (updated 2026-09-04, done) ·
+*FE-data + FE-ui* · read next: [docs/features/growth.md](features/growth.md) (updated 2026-09-04, done) ·
   [docs/features/habit.md](features/habit.md) (updated 2026-09-07, done) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-06, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-06, in-progress) ·
@@ -796,23 +818,21 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     sleep.ts, sleepGoal.ts, sleepHooks.ts, sleepShot.ts, weekLessons.ts, weekLessonsHooks.ts, weeklyReviewApi.ts,
     weeklyReviewHooks.ts, weeklyReviewMock.ts, weightHooks.ts
 - **FE ui** `frontend/src/features/me`
-  - **pages:** AiCallDetailPage.tsx, AiUsagePage.tsx, BeallitasokPage.tsx, BetaAdminPage.tsx, CelPage.tsx,
-    CelWizardPage.tsx, CelokPage.tsx, ChainPage.tsx, EnHubPage.tsx, GoalDietPage.tsx, GoalGuardsPage.tsx,
-    GoalPlannerPage.tsx, GoalPlansPage.tsx, GoalSegmentPage.tsx, GoalSettingsPage.tsx, GoalSuggestionPage.tsx,
-    GoalsPage.tsx, GoalsSkeleton.tsx, GrowthAwardsPage.tsx, GrowthHubPage.tsx, GrowthNaploPage.tsx,
-    GrowthSkillsPage.tsx, HabitEditPage.tsx, HabitPage.tsx, JelekPage.tsx, JournalPage.tsx, NightPage.tsx,
-    NotificationFeedPage.tsx, NotificationsPage.tsx, PeopleEmlitesekPage.tsx, PeopleHetiPage.tsx,
-    PeopleJeloltekPage.tsx, PeopleKorPage.tsx, PeoplePage.tsx, PersonDetailPage.tsx, RoutineWizardPage.tsx,
-    RutinHubPage.tsx, SleepPage.tsx, SzokasaidPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx, WeekDaysPage.tsx,
-    WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
+  - **pages:** BeallitasokPage.tsx, CelPage.tsx, CelWizardPage.tsx, CelokPage.tsx, ChainPage.tsx, EnHubPage.tsx,
+    GoalDietPage.tsx, GoalGuardsPage.tsx, GoalPlannerPage.tsx, GoalPlansPage.tsx, GoalSegmentPage.tsx,
+    GoalSettingsPage.tsx, GoalSuggestionPage.tsx, GoalsPage.tsx, GoalsSkeleton.tsx, GrowthAwardsPage.tsx,
+    GrowthHubPage.tsx, GrowthNaploPage.tsx, GrowthSkillsPage.tsx, HabitEditPage.tsx, HabitPage.tsx, JelekPage.tsx,
+    JournalPage.tsx, NightPage.tsx, NotificationFeedPage.tsx, NotificationsPage.tsx, PeopleEmlitesekPage.tsx,
+    PeopleHetiPage.tsx, PeopleJeloltekPage.tsx, PeopleKorPage.tsx, PeoplePage.tsx, PersonDetailPage.tsx,
+    RoutineWizardPage.tsx, RutinHubPage.tsx, SleepPage.tsx, SzokasaidPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx,
+    WeekDaysPage.tsx, WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
   - **sheets:** AiSuggestSheet.tsx, AttachPlanSheet.tsx, BiometricSheet.tsx, ChainEditSheet.tsx,
     DecisionReviewSheet.tsx, EditGoalSheet.tsx, JournalSheet.tsx, PersonEditSheet.tsx, PersonLogSheet.tsx,
     PillarCatalogSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx, SleepStatsSheet.tsx, TempPasswordSheet.tsx,
     WeightLogSheet.tsx
-  - **components:** AdminInviteRow.tsx, AdminUserRow.tsx, AiCallFilters.tsx, AiCallRow.tsx, AiCallUsage.tsx,
-    AiFeatureBreakdown.tsx, AiModelBreakdown.tsx, AiPayloadBlock.tsx, AiPriceSnapshot.tsx, AiTokenBar.tsx,
-    AiUsageHero.tsx, AiUserFilter.tsx, BadgesCard.tsx, DayDimensionTile.tsx, DayNavTiles.tsx, DayReviewCard.tsx,
-    DetailStat.tsx, EffortGrid.tsx, FieldRow.tsx, FormationCurve.tsx, GoalConnectionTimeline.tsx, GoalCourseHero.tsx,
+  - **components:** AdminInviteRow.tsx, AdminUserRow.tsx, AiCallUsage.tsx, AiPayloadBlock.tsx, AiPriceSnapshot.tsx,
+    AiTokenBar.tsx, BadgesCard.tsx, DayDimensionTile.tsx, DayNavTiles.tsx, DayReviewCard.tsx, DetailStat.tsx,
+    EffortGrid.tsx, FieldRow.tsx, FormationCurve.tsx, GoalConnectionTimeline.tsx, GoalCourseHero.tsx,
     GoalDetailHero.tsx, GoalDietWeekCard.tsx, GoalGate.tsx, GoalGuardCard.tsx, GoalRecept.tsx, GoalSegmentRail.tsx,
     GoalSuggestionCard.tsx, GoalSuggestionDiffGrid.tsx, GratitudeRows.tsx, GratitudeStreakCard.tsx, GrowthHero.tsx,
     GrowthJournalCard.tsx, HabitContextRings.tsx, HabitFormationCard.tsx, HabitFormationHistory.tsx, LifeGoalTile.tsx,

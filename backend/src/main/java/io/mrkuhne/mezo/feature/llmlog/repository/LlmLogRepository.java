@@ -53,6 +53,21 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
     List<LlmDailyAggregate> aggregatePerDaySinceForUser(@Param("since") Instant since,
             @Param("zone") String zone, @Param("userId") UUID userId);
 
+    /** Daily usage for the whole installation (admin overview, mezo-d5iy). Excludes ERROR calls —
+     *  failed calls are not cost. */
+    @Query(value = """
+        select (l.created_at at time zone :zone)::date as "day",
+               count(*) as "calls",
+               coalesce(sum(l.prompt_tokens), 0) as "inputTokens",
+               coalesce(sum(coalesce(l.candidates_tokens, 0) + coalesce(l.thoughts_tokens, 0)), 0) as "outputTokens",
+               sum(l.cost_usd) as "costUsd"
+        from llm_log_history l
+        where l.created_at >= :since and l.status <> 'ERROR'
+        group by 1
+        order by 1
+        """, nativeQuery = true)
+    List<LlmDailyAggregate> aggregatePerDaySince(@Param("since") Instant since, @Param("zone") String zone);
+
     /**
      * Per-status slice of a period (mezo-uakh) — call count, cost sum and unpriced count in ONE
      * grouped pass. Deliberately NOT filtered by {@code created_by}: cron- and stream-written rows
@@ -77,6 +92,52 @@ public interface LlmLogRepository extends JpaRepository<LlmLogEntity, UUID> {
         group by l.feature
         """)
     List<LlmGroupRow> aggregateByFeatureSince(@Param("since") Instant since);
+
+    /**
+     * Per-feature rollup for ONE user (mezo-d5iy.5) — the admin user-detail cost breakdown.
+     * ERROR calls are excluded entirely (failed calls are not cost); a priced NULL among the
+     * remaining rows is counted into {@code unknownCalls} rather than folded into the sum as
+     * zero.
+     */
+    @Query("""
+        select new io.mrkuhne.mezo.feature.llmlog.repository.LlmUserFeatureRow(
+            l.createdBy, l.feature, count(l), sum(l.costUsd),
+            sum(case when l.costUsd is null then 1L else 0L end))
+        from LlmLogEntity l
+        where l.createdAt >= :since and l.createdBy = :userId and l.status <> :errorStatus
+        group by l.createdBy, l.feature
+        """)
+    List<LlmUserFeatureRow> aggregateByFeatureSinceForUser(@Param("since") Instant since, @Param("userId") UUID userId,
+            @Param("errorStatus") CallStatus errorStatus);
+
+    /**
+     * User x feature cost since {@code since}, excluding failed calls (admin cost matrix,
+     * mezo-d5iy.6). A null {@code createdBy} is real cost (cron/stream traffic) and becomes its
+     * own row — the "Háttér" bucket the service renders as a synthetic user with a null id.
+     */
+    @Query("""
+        select new io.mrkuhne.mezo.feature.llmlog.repository.LlmUserFeatureRow(
+            l.createdBy, l.feature, count(l), sum(l.costUsd),
+            sum(case when l.costUsd is null then 1L else 0L end))
+        from LlmLogEntity l
+        where l.createdAt >= :since and l.status <> :excluded
+        group by l.createdBy, l.feature
+        """)
+    List<LlmUserFeatureRow> aggregateByUserAndFeatureSince(@Param("since") Instant since,
+            @Param("excluded") CallStatus excluded);
+
+    /** Feature x day call counts since {@code since}, excluding failed calls (admin feature-usage
+     *  matrix, mezo-d5iy.6). */
+    @Query(value = """
+        select (l.created_at at time zone :zone)::date as "day",
+               l.feature as "feature",
+               count(*) as "calls"
+        from llm_log_history l
+        where l.created_at >= :since and l.status <> 'ERROR'
+        group by 1, 2
+        order by 1, 2
+        """, nativeQuery = true)
+    List<LlmFeatureDayRow> aggregateByFeatureAndDaySince(@Param("since") Instant since, @Param("zone") String zone);
 
     /** Served-model rollup. A null {@code servedModel} (ERROR rows) forms its own group. */
     @Query("""

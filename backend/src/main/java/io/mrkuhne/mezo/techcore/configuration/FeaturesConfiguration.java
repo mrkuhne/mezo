@@ -322,4 +322,10 @@ public class FeaturesConfiguration {
 
     /** Monday adaptive-review job (diet-plan slice 5) — weekly_correction goal suggestions. */
     public static final String ADAPTIVE_REVIEW_JOB_SWITCH = "mezo.techcore.cron.adaptive-review-job.enabled";
+
+    /**
+     * Admin hub insights + data browser ({@code /api/admin/overview}, {@code /api/admin/data/**}).
+     * Off: those endpoints 404; the existing invite/account admin API is unaffected (mezo-d5iy).
+     */
+    public static final String ADMIN_INSIGHTS_SWITCH = "mezo.feature.admin-insights.enabled";
 }

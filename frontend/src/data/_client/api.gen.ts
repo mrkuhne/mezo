@@ -4278,6 +4278,142 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Installation-wide counters and 30-day series (AdminInsights) */
+        get: operations["getAdminOverview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users-insight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Accounts enriched with footprint, cost and activity (AdminInsights) */
+        get: operations["listAdminUserInsights"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/insight": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One user's 90-day activity, data inventory, features and cost (AdminInsights) */
+        get: operations["getAdminUserInsight"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/usage/features": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Feature x day counts for LLM and domain features (AdminInsights) */
+        get: operations["getAdminFeatureUsage"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/usage/cost-matrix": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** User x feature LLM cost, ERROR calls excluded (AdminInsights) */
+        get: operations["getAdminCostMatrix"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/data/tables": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Browsable tables and their columns (AdminData) */
+        get: operations["listAdminTables"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/data/views": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Convenience views (AdminData) */
+        get: operations["listAdminViews"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/data/tables/{table}/rows": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A page of rows from one browsable table (AdminData) */
+        get: operations["getAdminTableRows"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -9519,6 +9655,168 @@ export interface components {
         };
         LifeGoalTodayResponse: {
             goals: components["schemas"]["LifeGoalTodaySummary"][];
+        };
+        AdminDayCount: {
+            /** Format: date */
+            day: string;
+            /** Format: int64 */
+            count: number;
+        };
+        AdminDaySeries: {
+            /** @description domain or metric key, e.g. train, food, activeUsers, costUsd */
+            key: string;
+            days: components["schemas"]["AdminDayCount"][];
+        };
+        AdminDayAmount: {
+            /** Format: date */
+            day: string;
+            /** Format: double */
+            amountUsd: number;
+        };
+        AdminOverviewResponse: {
+            /** Format: int64 */
+            userCount: number;
+            /** Format: int64 */
+            activeToday: number;
+            /** Format: int64 */
+            active7d: number;
+            /** Format: int64 */
+            active30d: number;
+            /** @description domain key -> rows logged today (train, food, sleep, journal, habits, chat) */
+            loggedToday: {
+                [key: string]: number;
+            };
+            /** Format: double */
+            costTodayUsd: number;
+            /** Format: int64 */
+            memoryItemCount: number;
+            /** Format: int64 */
+            vectorCount: number;
+            activeUserSeries: components["schemas"]["AdminDayCount"][];
+            domainSeries: components["schemas"]["AdminDaySeries"][];
+            costSeries: components["schemas"]["AdminDayAmount"][];
+        };
+        AdminUserInsightResponse: {
+            /** Format: uuid */
+            id: string;
+            email: string;
+            name: string;
+            /** @enum {string} */
+            role: "OWNER" | "USER";
+            /** @enum {string} */
+            status: "ACTIVE" | "DISABLED";
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            onboardedAt?: string | null;
+            /** Format: date-time */
+            lastSeenAt?: string | null;
+            /** Format: date-time */
+            lastActivityAt?: string | null;
+            /** Format: int64 */
+            rowCount: number;
+            /** Format: int64 */
+            vectorCount: number;
+            /** Format: double */
+            cost30dUsd: number;
+            /** Format: int32 */
+            activeDays30d: number;
+        };
+        AdminTableFootprint: {
+            table: string;
+            /** Format: int64 */
+            rowCount: number;
+            /** Format: int64 */
+            deletedCount: number;
+            /** Format: date-time */
+            lastCreatedAt?: string | null;
+        };
+        AdminFeatureCost: {
+            feature: string;
+            /** Format: int64 */
+            calls: number;
+            /** Format: double */
+            costUsd: number;
+            /** Format: int64 */
+            unknownCalls: number;
+        };
+        AdminUserDetailResponse: {
+            user: components["schemas"]["AdminUserInsightResponse"];
+            activitySeries: components["schemas"]["AdminDaySeries"][];
+            inventory: components["schemas"]["AdminTableFootprint"][];
+            featureUsage30d: {
+                [key: string]: number;
+            };
+            costByFeature30d: components["schemas"]["AdminFeatureCost"][];
+        };
+        AdminFeatureUsageResponse: {
+            period: string;
+            days: string[];
+            features: components["schemas"]["AdminDaySeries"][];
+        };
+        AdminCostMatrixCell: {
+            /**
+             * Format: uuid
+             * @description null = the Hatter (background/cron) bucket
+             */
+            userId: string | null;
+            feature: string;
+            /** Format: int64 */
+            calls: number;
+            /** Format: double */
+            costUsd: number;
+            /** Format: int64 */
+            unknownCalls: number;
+        };
+        AdminCostMatrixUser: {
+            /** Format: uuid */
+            id: string | null;
+            label: string;
+        };
+        AdminCostMatrixResponse: {
+            period: string;
+            users: components["schemas"]["AdminCostMatrixUser"][];
+            features: string[];
+            cells: components["schemas"]["AdminCostMatrixCell"][];
+            /** Format: double */
+            totalUsd: number;
+        };
+        AdminColumnDescriptor: {
+            name: string;
+            type: string;
+            foreignKey: boolean;
+            referencesTable?: string | null;
+        };
+        AdminTableDescriptor: {
+            name: string;
+            /** @description created_by, or id for app_user */
+            ownerColumn: string;
+            softDeletable: boolean;
+            columns: components["schemas"]["AdminColumnDescriptor"][];
+        };
+        AdminTableListResponse: {
+            tables: components["schemas"]["AdminTableDescriptor"][];
+        };
+        AdminViewDescriptor: {
+            id: string;
+            label: string;
+            table: string;
+            defaultSort: string;
+            /** @enum {string} */
+            defaultDir: "asc" | "desc";
+        };
+        AdminRowPageResponse: {
+            table: string;
+            /** Format: int32 */
+            page: number;
+            /** Format: int32 */
+            size: number;
+            /** Format: int64 */
+            total: number;
+            columns: components["schemas"]["AdminColumnDescriptor"][];
+            rows: {
+                [key: string]: unknown;
+            }[];
         };
     };
     responses: never;
@@ -21771,6 +22069,356 @@ export interface operations {
             };
             /** @description Not found / not owned */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getAdminOverview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Overview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminOverviewResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listAdminUserInsights: {
+        parameters: {
+            query?: {
+                q?: string;
+                sort?: "name" | "createdAt" | "lastActivityAt" | "rowCount" | "cost30dUsd" | "activeDays30d";
+                dir?: "asc" | "desc";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Users */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserInsightResponse"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getAdminUserInsight: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description User detail */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserDetailResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description No such user (ADMIN_USER_NOT_FOUND) */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getAdminFeatureUsage: {
+        parameters: {
+            query?: {
+                period?: "7d" | "30d" | "90d";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Feature usage */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminFeatureUsageResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getAdminCostMatrix: {
+        parameters: {
+            query?: {
+                period?: "7d" | "30d" | "90d";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cost matrix */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminCostMatrixResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listAdminTables: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Tables */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminTableListResponse"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    listAdminViews: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Views */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminViewDescriptor"][];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+        };
+    };
+    getAdminTableRows: {
+        parameters: {
+            query?: {
+                userId?: string;
+                page?: number;
+                size?: number;
+                sort?: string;
+                dir?: "asc" | "desc";
+                includeDeleted?: boolean;
+            };
+            header?: never;
+            path: {
+                table: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Rows */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminRowPageResponse"];
+                };
+            };
+            /** @description Unknown table or column (ADMIN_TABLE_UNKNOWN / ADMIN_COLUMN_UNKNOWN) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Missing/invalid token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Not the owner (AUTH_FORBIDDEN) */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SystemMessageList"];
+                };
+            };
+            /** @description Statement timeout (ADMIN_QUERY_TIMEOUT) */
+            504: {
                 headers: {
                     [name: string]: unknown;
                 };

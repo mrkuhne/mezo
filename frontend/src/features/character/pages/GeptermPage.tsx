@@ -67,7 +67,7 @@ export function GeptermPage() {
             eyebrow="AI-napló"
             delayMs={140}
             line="minden hívás tárolva"
-            onClick={() => navigate('/me/ai-usage')}
+            onClick={() => navigate('/admin/cost')}
           />
           <Tile
             icon="i-minta"

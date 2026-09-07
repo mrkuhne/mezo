@@ -42,4 +42,6 @@ inputs:
   - inputFile: ../feature/diagnosis/diagnosis.yml
   - inputFile: ../feature/admin/admin.yml
   - inputFile: ../feature/lifegoal/lifegoal.yml
+  - inputFile: ../feature/admin-insights/admin-insights.yml
+  - inputFile: ../feature/admin-data/admin-data.yml
 output: ../openapi.yml
