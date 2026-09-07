@@ -544,3 +544,16 @@
 .kr-arcrow.on .kr-arcday { font-weight: 800; }
 .kr-arcout { flex: 1; font-size: 10px; font-weight: 600; color: var(--text-secondary); }
 .kr-arcout-other { color: var(--text-muted); font-weight: 400; }
+
+/* ── konzílium beszélgetés-nézet (mezo-sp9w) ── */
+.kr-cvlbl { display: flex; align-items: center; gap: 8px; font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); padding: 14px 16px 8px; }
+.kr-cvlbl.hot { color: #C0442A; }
+.kr-cvlbl .kr-rn { margin-bottom: 0; }
+.kr-cvlbl.hot .kr-rn { background: var(--primary-base, #FF5B36); color: #fff; }
+.kr-cvcard { padding: 12px 15px 13px; }
+.kr-cvmezo { box-shadow: 0 12px 26px -20px rgba(255, 91, 54, 0.9), inset 0 0 0 1px rgba(255, 91, 54, 0.2); }
+.kr-cvturn { display: flex; gap: 11px; align-items: flex-start; padding: 7px 0; }
+.kr-cvturn + .kr-cvturn { border-top: 0.5px solid var(--divider); }
+.kr-cvorb { flex: none; width: 23px; height: 23px; border-radius: 50%; display: grid; place-items: center; overflow: hidden; box-shadow: 0 3px 7px -3px var(--c); }
+.kr-cvquote { font-size: 11px; font-weight: 600; color: var(--text-muted); border-left: 2px solid var(--divider); padding-left: 9px; margin-bottom: 8px; line-height: 1.45; }
+.kr-cvempty { margin: 0 12px 11px; padding: 13px 16px; border-radius: 18px; background: rgba(43, 33, 24, 0.04); font-size: 11.5px; font-weight: 400; line-height: 1.5; color: var(--text-secondary); }
