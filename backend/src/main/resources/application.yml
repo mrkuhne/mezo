@@ -414,10 +414,6 @@ mezo:
       # (phase 1), profile rebuild skipped (phase 2)
       quarterly-review-job:
         enabled: true
-      # V3.2 weekly hypothesis pipeline (schedule: mezo.companion.hypotheses.cron);
-      # off = the HypothesisJob bean does not exist
-      hypothesis-job:
-        enabled: true
       # Reflexió (mezo-eq85) nightly reflection pass (schedule: mezo.companion.reflection.cron);
       # off = the ReflectionJob bean does not exist (TextSignalService / the catch-up stay callable,
       # the FlagSweepJob-vs-FlagService idiom)
@@ -585,6 +581,11 @@ mezo:
       # Reflexió (mezo-eq85): text signals, quick notices, the 03:40 nightly reflection.
       # Off = no TextSignal* bean exists — no extraction call, and the four TEXT_* metrics report
       # no data (the series helper returns an empty map, so the monitor shows them as no_data).
+      # HONEST WARNING (mezo-eq85.2): this switch is now WIDER than Reflexió. S2 retired the weekly
+      # HypothesisJob, so the pre-existing V3.2 hypothesis-proposal loop (HypothesisPipelineService,
+      # mezo.companion.hypotheses) is reachable ONLY from ReflectionJob, which is gated on this
+      # switch. Turning Reflexió off therefore also stands the V3.2 proposal loop down — it no
+      # longer has a switch of its own. Nothing else proposes hypotheses.
       enabled: true
       # 03:40 — the dawn cluster's remaining free-ish slot; it shares the minute with the llm-log
       # payload-retention purge (mezo.llm-log.retention.cron), which is a single bounded UPDATE on
@@ -780,10 +781,13 @@ mezo:
       backfill-weeks: 8
       backfill-months: 3
     hypotheses:
-      # V3.2 weekly hypothesis loop (smart tier) — Sunday 03:00, after the nightly jobs
-      cron: "0 0 3 * * SUN"
-      # Max hypotheses judged per run
-      max-per-run: 3
+      # V3.2 hypothesis loop (smart tier). Reflexió S2 (mezo-eq85.2) retired the weekly
+      # HypothesisJob: the nightly ReflectionJob (mezo.companion.reflection.cron, 03:40) drives
+      # the loop and caps it with mezo.companion.reflection.propose.max-per-night. Only the two
+      # critique thresholds — what SURVIVES, not when it runs — live here.
+      # CONSEQUENCE: this block no longer has a kill switch of its own. The loop runs iff
+      # mezo.companion.reflection.enabled (and the companion + reflection-job switches) are true —
+      # mezo.companion.reflection.enabled=false silently disables hypothesis proposal too.
       # Weighted-critique keep threshold (arch §4.7)
       keep-threshold: 0.75
       # Borderline band floor — one revise + re-critique pass (arch §4.7)

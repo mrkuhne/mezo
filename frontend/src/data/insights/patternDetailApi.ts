@@ -26,6 +26,12 @@ function toEvent(w: EventWire): PatternEvent {
     p: w.p ?? undefined,
     reinforcementCount: w.reinforcementCount ?? undefined,
     factId: w.factId ?? undefined,
+    // Reflexió S2 (mezo-eq85.2)
+    hit: w.hit ?? undefined,
+    verdict: w.verdict ?? undefined,
+    channel: w.channel ?? undefined,
+    choice: w.choice ?? undefined,
+    text: w.text ?? undefined,
   }
 }
 

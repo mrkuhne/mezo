@@ -1218,3 +1218,10 @@ databaseChangeLog:
         - sqlFile:
             relativeToChangelogFile: true
             path: script/202609071000_mezo-eq85.1_text_signal.sql
+  - changeSet:
+      id: "1.0.0:202609071100_mezo-eq85.2_pattern_reflection_lifecycle"
+      author: daniel.kuhne
+      changes:
+        - sqlFile:
+            relativeToChangelogFile: true
+            path: script/202609071100_mezo-eq85.2_pattern_reflection_lifecycle.sql
