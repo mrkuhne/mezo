@@ -650,6 +650,12 @@ mezo:
       # Missing/stale text signals are re-extracted for this many finished days each night.
       catch-up-days: 7
       notice:
+        # Silent launch (mezo-eq85.4). Mezo keeps COLLECTING observations exactly as before — the
+        # observation events are still written, still marked surfaced by the budget below, and the
+        # Észrevételek feed endpoint still returns them — but the "Mezo észrevett valamit" PUSH is
+        # held back, because its deeplink (/nap/uzenetek?tab=eszrevetelek) points at a tab that only
+        # ships in slice mezo-eq85.5. Flip this to true the day that tab lands; nothing else changes.
+        push-enabled: false
         max-per-day: 2
         min-gap-hours: 4
         quiet-from: "22:00"

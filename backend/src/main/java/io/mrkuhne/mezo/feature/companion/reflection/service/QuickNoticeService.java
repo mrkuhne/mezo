@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventPayloadEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEvidenceEnvelope;
 import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
+import io.mrkuhne.mezo.feature.companion.reflection.config.ReflectionProperties;
 import io.mrkuhne.mezo.feature.companion.reflection.entity.TextSignalEntity;
 import io.mrkuhne.mezo.feature.companion.reflection.repository.TextSignalRepository;
 import io.mrkuhne.mezo.feature.companion.reflection.service.QuickNoticePreScreen.Trigger;
@@ -99,6 +100,7 @@ public class QuickNoticeService {
                         RawTestPlan newTestPlan, List<String> evidenceRefs) {
     }
 
+    private final ReflectionProperties reflectionProperties;
     private final CompanionLlm companionLlm;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
@@ -146,7 +148,11 @@ public class QuickNoticeService {
         PatternEventEntity event = patternEventAppender.append(userId, target.getId(),
                 PatternEventEntity.KIND_OBSERVATION,
                 PatternEventPayloadEnvelope.observation(observationText(answer), evidenceRefs, surfaced));
-        if (surfaced) {
+        // Silent launch (mezo-eq85.4): collecting is unconditional, PUSHING is not. The event
+        // above is written and marked `surfaced` either way — the feed has its content from day
+        // one — but `notice.push-enabled` stays false until the Észrevételek tab this notification
+        // deep-links into actually ships (mezo-eq85.5), so nobody is sent to an empty screen.
+        if (surfaced && reflectionProperties.notice().pushEnabled()) {
             appNotificationEmitter.emit(userId, AppNotificationKind.OBSERVATION_NEW,
                     "Mezo észrevett valamit", answer.text(),
                     AppNotificationKind.OBSERVATION_NEW.deeplink(), target.getId(),

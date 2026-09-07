@@ -37,9 +37,15 @@ import org.springframework.test.context.TestPropertySource;
  * neutralised to {@code [23:59, 00:00)} — a one-minute slot that only a run started in the last
  * minute of a day could hit — instead of letting the production default (22:00→07:00) decide
  * whether the assertions hold.
+ *
+ * <p>{@code notice.push-enabled} is turned ON here on purpose. Production ships it OFF (the silent
+ * launch: observations are collected and marked surfaced, but the push waits for the Észrevételek
+ * tab in mezo-eq85.5) — this class keeps testing the REAL emit path so the day the switch flips
+ * there is proven coverage behind it. The OFF half lives in {@code QuickNoticePushOffIT}.
  */
 @ActiveProfiles("companion-fake")
 @TestPropertySource(properties = {
+        "mezo.companion.reflection.notice.push-enabled=true",
         "mezo.companion.reflection.notice.quiet-from=23:59",
         "mezo.companion.reflection.notice.quiet-to=00:00"})
 class QuickNoticeServiceIT extends AbstractIntegrationTest {

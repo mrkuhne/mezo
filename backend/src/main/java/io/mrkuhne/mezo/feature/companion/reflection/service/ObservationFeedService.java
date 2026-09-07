@@ -71,9 +71,10 @@ public class ObservationFeedService {
 
     /**
      * @param day the calendar day whose observations (and confirmations) are shown; {@code null}
-     *            means today. The {@code confirmed} group's "last 24 hours" is anchored on this
-     *            day's own window rather than on wall-clock now, so asking for a past day gives
-     *            back what that day actually looked like instead of a moving target.
+     *            means today. The {@code confirmed} group is that day's OWN
+     *            {@code [00:00, 24:00)} window — not a rolling 24 hours ending at wall-clock now —
+     *            so asking for a past day gives back what that day actually looked like instead of
+     *            a moving target.
      */
     @Transactional(readOnly = true)
     public List<ObservationResponse> forDay(UUID userId, LocalDate day) {

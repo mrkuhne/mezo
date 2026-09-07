@@ -25,20 +25,23 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
 /**
- * Reflexió S4 (mezo-eq85.4) Step 3, the budget's veto: {@code notice.max-per-day=0} means the
- * observation is still WRITTEN (the pattern's story stays complete — the app noticed something)
- * but never SURFACED, so no notification is emitted. A separate class rather than a case inside
- * {@code QuickNoticeServiceIT} because the cap is bound config: the repo's own idiom for a
- * property that must differ is a second {@code @TestPropertySource} context (the
- * {@code *SwitchOffIT} precedent).
+ * Reflexió S4 (mezo-eq85.4), the SILENT LAUNCH — the shipped default. {@code notice.push-enabled=false}
+ * holds back the {@code OBSERVATION_NEW} push only: the observation event is still appended and,
+ * crucially, still carries {@code surfaced=true}, so the Észrevételek feed has real content the day
+ * the tab ships (mezo-eq85.5) and the switch flips.
+ *
+ * <p>This is the distinction {@link QuickNoticeBudgetOffIT} does NOT cover — there the budget
+ * vetoes and the event is {@code surfaced=false}. Both halves have to be asserted here or the test
+ * cannot tell the two silences apart. A separate class rather than a case inside
+ * {@code QuickNoticeServiceIT} for the usual reason: it is bound config, so it needs its own
+ * {@code @TestPropertySource} context (the {@code *SwitchOffIT} idiom).
  */
 @ActiveProfiles("companion-fake")
 @TestPropertySource(properties = {
-        "mezo.companion.reflection.notice.push-enabled=true",
-        "mezo.companion.reflection.notice.max-per-day=0",
+        "mezo.companion.reflection.notice.push-enabled=false",
         "mezo.companion.reflection.notice.quiet-from=23:59",
         "mezo.companion.reflection.notice.quiet-to=00:00"})
-class QuickNoticeBudgetOffIT extends AbstractIntegrationTest {
+class QuickNoticePushOffIT extends AbstractIntegrationTest {
 
     private static final LocalDate TODAY = LocalDate.now();
 
@@ -54,7 +57,7 @@ class QuickNoticeBudgetOffIT extends AbstractIntegrationTest {
     @Autowired private UserPopulator userPopulator;
 
     @Test
-    void testOnSignal_shouldWriteAnUnsurfacedObservationAndNotNotify_whenTheDailyCapIsZero() {
+    void testOnSignal_shouldStillPersistASurfacedObservationButNotNotify_whenPushIsHeldBack() {
         UUID owner = userPopulator.createUser().getId();
         PatternEntity row = patternPopulator.reflection(owner, ANNA_PLAN, PatternEntity.STATUS_PROPOSED);
         JournalEntryEntity entry = journalPopulator.createEntry(owner, TODAY,
@@ -64,13 +67,15 @@ class QuickNoticeBudgetOffIT extends AbstractIntegrationTest {
 
         quickNoticeService.onSignal(owner, signal.getId());
 
+        // half one: the collecting side is UNTOUCHED by the silent launch
         List<PatternEventEntity> events = patternEventRepository
                 .findByCreatedByAndPatternIdAndDeletedFalseOrderByOccurredAtAsc(owner, row.getId());
         assertThat(events).hasSize(1);
         assertThat(events.getFirst().getKind()).isEqualTo(PatternEventEntity.KIND_OBSERVATION);
-        assertThat(events.getFirst().getPayload().surfaced()).isFalse();
+        assertThat(events.getFirst().getPayload().surfaced()).isTrue();
         assertThat(events.getFirst().getPayload().text()).isNotBlank();
 
+        // half two: and nothing was pushed
         assertThat(appNotificationRepository.findByCreatedByAndDeletedFalseOrderByOccurredAtDesc(
                 owner, PageRequest.of(0, 10))).isEmpty();
     }

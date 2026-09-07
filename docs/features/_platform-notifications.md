@@ -507,6 +507,13 @@ in the dedup suffix, two observations on the same day are two pushes rather than
 The deeplink is the Észrevételek tab (`/nap/uzenetek?tab=eszrevetelek`), whose backing read is
 `GET /api/companion/observation` ([`companion.md`](companion.md) §4).
 
+**But the kind is HELD BACK by default (silent launch).** That tab only ships in Reflexió S5
+(`mezo-eq85.5`), so S4 gates the emit call itself on a new flag,
+`mezo.companion.reflection.notice.push-enabled`, shipped **`false`**: no `app_notification` row of this
+kind is written yet, and therefore nothing here on the push path ever sees one. Everything upstream
+runs unchanged — the `observation` events are collected and still marked `surfaced` — so the day S5
+lands, flipping `push-enabled` to `true` is the whole change and this section is already correct.
+
 ### 3c. `decision_review` — a backend-native anchor over `decision_entry` (bd `mezo-b3pp.4`)
 
 **Not part of §3b's `feedAnchors(...)` pipeline, despite living in the same "Az agy eseményei" FE
@@ -874,7 +881,7 @@ open the app, not things worth a phone buzz — see §9's "what deliberately sta
 | `habit_formation` | **null** | `/me/rutin/szokas/{habitKey}` | `mezo-0cbh` — `HabitService.emitFormationIfCrossed`, swept nightly by `HabitJob`; once-ever per habit via the dedup key |
 | `character_portrait` | **null** | `/me/karakter` | `mezo-0cbh` — `CharacterMonthlyService` (the month's first Sunday deep read) |
 | `konzilium_verdict` | **null** | `/me/karakter/konzilium` | `mezo-0cbh` — `CharacterConferenceService` (weekly), **only when `changes` is non-empty** |
-| `observation_new` | `pattern` | `/nap/uzenetek?tab=eszrevetelek` | Reflexió S4 (`mezo-eq85.4`) — `QuickNoticeService`, **only when the observation was actually surfaced** (`ObservationBudget` allows it: within the daily cap, past the minimum gap, outside quiet hours). Dedup key `observation_new:<pattern_event id>`, so one notice = one row = one push. An over-budget notice is still stored as a `pattern_event` with `payload.surfaced=false` and notifies nothing. |
+| `observation_new` | `pattern` | `/nap/uzenetek?tab=eszrevetelek` | Reflexió S4 (`mezo-eq85.4`) — `QuickNoticeService`. **HELD BACK by default (silent launch):** the emit is gated on `mezo.companion.reflection.notice.push-enabled`, shipped `false` until the Észrevételek tab this deeplink points at ships in S5 (`mezo-eq85.5`); observations are still collected and still marked `surfaced` meanwhile, so no row of this kind exists yet in production. With the flag on: **only when the observation was actually surfaced** (`ObservationBudget` allows it: within the daily cap, past the minimum gap, outside quiet hours). Dedup key `observation_new:<pattern_event id>`, so one notice = one row = one push. An over-budget notice is still stored as a `pattern_event` with `payload.surfaced=false` and notifies nothing. |
 
 ### API contract (`api/feature/notification/notification.yml`)
 

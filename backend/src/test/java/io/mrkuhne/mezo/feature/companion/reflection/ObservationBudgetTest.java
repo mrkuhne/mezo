@@ -134,7 +134,8 @@ class ObservationBudgetTest {
     }
 
     private ReflectionProperties.Notice notice(int maxPerDay, int minGapHours, String quietFrom, String quietTo) {
+        // `pushEnabled` is the push switch (silent launch, mezo-eq85.4) — the budget never reads it
         return new ReflectionProperties.Notice(
-                maxPerDay, minGapHours, LocalTime.parse(quietFrom), LocalTime.parse(quietTo));
+                true, maxPerDay, minGapHours, LocalTime.parse(quietFrom), LocalTime.parse(quietTo));
     }
 }
