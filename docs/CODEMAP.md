@@ -192,8 +192,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CharacterHistoryReads`, `CharacterMetaReads`, `CharacterMonthlyJob`, `CharacterMonthlyService`,
     `CharacterObservationJob`, `CharacterObservationService`, `CharacterPromptAssembler`, `CharacterRunLog`,
     `CharacterService`, `CharacterSignalReads`, `ClaimLifecycle`, `ClaimProposal`, `ClaimRuling`,
-    `DeliberationAssembler`, `ExpertEvidence`, `KonziliumCrossTalkRound`, `KonziliumProposalRound`,
-    `KonziliumVerdictRound`, `LegacyTranscriptParser`, `ObservationText`, `PortraitWriter`
+    `DeliberationAssembler`, `ExpertEvidence`, `KonziliumChapterResolver`, `KonziliumChapters`,
+    `KonziliumCrossTalkRound`, `KonziliumProposalRound`, `KonziliumVerdictRound`, `LegacyTranscriptParser`,
+    `ObservationText`, `PortraitWriter`
   - **controllers→contract:** `CharacterController`→`CharacterApi`
   - **config:** `CharacterProperties`
   - **other:** `AvoidancePatternDetector`, `CharacterDetector`, `ChatToolDomains`, `ChatTopicShiftDetector`,

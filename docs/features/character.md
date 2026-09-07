@@ -297,6 +297,9 @@ weekly:   unconsumed character_observation rows (grouped by expert)
              observations marked consumed — ALL of the above in ONE @Transactional method
              (all-or-nothing)
 
+          (the monthly and bootstrap konzíliums assemble and store the same structure, with an
+           empty reaction list — they have no cross-talk round)
+
 monthly:  same proposal/verdict/portrait tail, but reads ACTIVE claims (not fresh observations)
           and steers toward UP/DOWN/RETIRE; then a separate stale-CHAPTER-retirement pass
 
@@ -913,16 +916,36 @@ investigating.
   read-time cleanup, not a migration — nothing is rewritten in the database).
 - **A round whose answer failed to parse produces no verdict — never a fabricated default**
   ([ADR 0037](../decisions/0037-konzilium-cross-talk-round.md)). In the structured
-  `ConferenceDeliberationEnvelope`, an item's `skeptic`/`chair` field is nullable on purpose:
-  the Integrátor's `toRuling` still returns a `ClaimRuling` shell even on a failed call (so
-  `chair` in practice is essentially never null for a freshly-run conference — its
-  `confidence` is simply left `null` rather than defaulted), but an unparsed Szkeptikus
-  response yields an empty verdicts list, leaving every item's `skeptic` null for that
-  conference; a legacy-derived thread (§3) can leave either null wherever
-  `LegacyTranscriptParser` never matched a verdict/ruling line for that claim index. The FE's
-  `ConferenceThreadCard` renders a plain "Ez a kör nem adott választ erre az állításra." for a
-  null `skeptic`/`chair` instead of inventing a verdict, and the collapsed-thread summary shows
-  "Nincs döntés" rather than defaulting to accepted/rejected.
+  `ConferenceDeliberationEnvelope`, an item's `skeptic`/`chair` field is nullable on purpose,
+  and the two sides of the round are deliberately split in two:
+  - the **claim lifecycle** always gets an index-complete ruling list — `toRuling` returns a
+    rejected `ClaimRuling` shell ("nem került döntésre") for an index the Integrátor never
+    answered, because an unparsed round must accept nothing;
+  - what is **shown** comes from `KonziliumVerdictRound.Result#shownRulings()`, which is EMPTY
+    when the Integrátor's own answer never parsed, so every item's `chair` stays null and the UI
+    says that round gave no answer. Those defaults are a lifecycle safety net, never something
+    the chair said.
+
+  The same rule holds on the Szkeptikus side: verdicts are emitted only for the proposal indexes
+  it actually answered (an unparsed round emits none at all), so an unanswered index leaves
+  `skeptic` null instead of carrying a fabricated KEEP / "nincs ellenérv". A legacy-derived
+  thread (§3) can leave either null wherever `LegacyTranscriptParser` never matched a
+  verdict/ruling line for that claim index. The FE's `ConferenceThreadCard` renders a plain
+  "Ez a kör nem adott választ erre az állításra." for a null `skeptic`/`chair` instead of
+  inventing a verdict, and the collapsed-thread summary shows "Nincs döntés" — in its own
+  neutral badge, not the rejected one — rather than defaulting to accepted/rejected. An accepted
+  item's badge names what actually happened to the dossier, by the proposal's `kind`
+  (NEW → "Bekerült", UP → "Megerősítve", DOWN → "Gyengítve", RETIRE → "Nyugdíjazva", unknown →
+  "Elfogadva"), and the thread header counts "N állítás · M elfogadva".
+- **A derived legacy thread must be able to PROVE its index** (`mezo-xlvr`).
+  `LegacyTranscriptParser` rebuilds the proposal index by numbering each expert turn's claim
+  lines — but a proposal's text is appended verbatim and may contain a newline, which would
+  shift every later index and hang the wrong verdict/ruling on a claim. Each expert turn's
+  header states its own proposal count ("`<Név>: N javaslat …`"); when a turn's line count
+  disagrees with that N (or the header states no N), `parse` returns `null` for the WHOLE
+  conference and `CharacterService` serves `deliberation` as null — the FE then falls back to
+  the prose view. Null means "no thread view for this meeting"; an empty array would claim the
+  meeting had no threads, so the field is never served empty.
 
 ## 10. Key files
 
@@ -980,7 +1003,9 @@ investigating.
   `MAX_CROSS_TALK_CALLS = 6`) / `KonziliumVerdictRound.java` / `ClaimLifecycle.java` /
   `ClaimProposal.java` / `ClaimRuling.java` / `ExpertEvidence.java` — the choreography
 - `service/DeliberationAssembler.java` (mezo-xlvr) — assembles the three rounds' output into
-  `ConferenceDeliberationEnvelope`; `service/LegacyTranscriptParser.java` (mezo-xlvr) — derives
+  `ConferenceDeliberationEnvelope`; `service/KonziliumChapterResolver.java` +
+  `KonziliumChapters.java` (mezo-xlvr) — the ONE proposal→chapter resolution the cross-talk
+  round and all three konzílium entry points share; `service/LegacyTranscriptParser.java` (mezo-xlvr) — derives
   expert-grouped threads from a pre-`deliberation` conference's prose transcript at read time;
   `service/ObservationText.java` (mezo-xlvr) — strips a legacy `[<claimId>] ` prefix from an
   observation's text at read time

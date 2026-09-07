@@ -24,4 +24,11 @@ Mezo prompt-jába kerülnek. A Szkeptikus köre változatlan, a döntés Mezóé
 - Konferenciánként legfeljebb hat plusz LLM-hívás, a legtöbb szakértőt érintő fejezetektől lefelé.
 - A régi konzíliumok olvasáskor kapnak szálakat, a próza gépi soraiból visszafejtve; ott a szálak
   szakértő szerint állnak össze, mert a fejezet-hovatartozás nincs az átiratban.
-- Egy nem értelmezhető kör nem termel verdiktet, és a felület ezt ki is mondja.
+- Egy nem értelmezhető kör nem termel verdiktet, és a felület ezt ki is mondja. Ez a Szkeptikusra
+  és Mezóra egyaránt áll: a Szkeptikus csak azokra a sorszámokra ad megjelenített verdiktet,
+  amikre tényleg válaszolt, és ha az Integrátor válasza nem értelmezhető, a mentett szerkezetben
+  egyetlen tétel sem hordoz döntést. Az állítás-életciklus ettől függetlenül minden javaslatra kap
+  egy (elutasító, "nem került döntésre") döntést — az védőháló, nem a konzílium szava.
+- A heti, a havi és a bootstrap konzílium egyaránt menti a szerkezetet, ugyanazzal a
+  fejezet-feloldással, amit a kereszt-vita kör használ; a régi sorokból csak akkor fejtjük vissza,
+  ha a próza sorszámozása bizonyítható — különben nincs szál-nézet, és a felület a prózát mutatja.
