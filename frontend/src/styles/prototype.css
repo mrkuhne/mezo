@@ -10631,3 +10631,29 @@ button.mz-wtile:active { transform: scale(0.96); }
 @media (prefers-reduced-motion: reduce) {
   .mz-lt, .mz-dst { transition: none; }
 }
+
+/* ===== mezo-szerkesztő · terhelés-oldalak poszter-kártyája (mezo-yty6) ===== */
+.mz-lcard { border-radius: 17px; padding: 10px 12px; margin-bottom: 9px;
+  border: 0.5px solid var(--border-subtle);
+  box-shadow: 0 14px 26px -14px rgba(43, 33, 24, 0.28); }
+.mz-lcard-head { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.mz-lcard-pill { flex: none; border-radius: 999px; padding: 3px 10px;
+  font-size: 9.5px; font-weight: 700; }
+.mz-lcard-flag { flex: none; border-radius: 999px; padding: 2px 8px; font-size: 8px; font-weight: 700;
+  background: var(--mz-cell-gold-bg); color: var(--mz-cell-gold-ink); }
+.mz-lcard-num { flex: none; font-size: 19px; font-weight: 200; letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums; white-space: nowrap; }
+.mz-lcard-num small { margin-left: 3px; font-size: 9px; font-weight: 600; color: var(--mz-ink-soft); }
+.mz-lcard-bar { height: 9px; margin-top: 6px; border-radius: 5px; overflow: hidden;
+  background: var(--mz-gbar-bg); }
+.mz-lcard-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 7px; }
+.mz-lcard-chip { border-radius: 999px; padding: 3px 9px; font-size: 8.5px; font-weight: 700;
+  background: var(--surface-2); color: var(--text-secondary); }
+.mz-lcard-stat { font-size: 8.5px; font-weight: 700; }
+.mz-lcard-body { display: none; margin-top: 7px; padding-top: 6px;
+  border-top: 0.5px solid var(--border-subtle); }
+.mz-lcard.open .mz-lcard-body { display: block; }
+.mz-lcard-cline { display: flex; align-items: flex-start; gap: 7px; padding: 4px 0; font-size: 9px; }
+.mz-lcard-cline > b { flex: none; width: 30px; color: var(--mz-ink-soft); }
+.mz-lcard-freq { flex: none; border-radius: 999px; padding: 2px 7px; font-size: 8px; font-weight: 700;
+  background: var(--surface-2); color: var(--text-secondary); }
