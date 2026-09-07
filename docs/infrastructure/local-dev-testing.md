@@ -115,7 +115,8 @@ does **not** re-run the workflow. A green tick can therefore describe a merge in
 no longer exists. Two incidents came from exactly that:
 
 - the mezo-atry `AppHeader` wave merged green and broke main's visual goldens; main stayed red
-  and PR #279 inherited a byte-identical 32-screenshot failure (mezo-mxrc);
+  and PR #279 inherited a byte-identical 32-screenshot failure (mezo-mxrc). That gate has since
+  been retired (mezo-ryb6, see below), but the timing hole it exposed is unchanged;
 - PR #393 merged green and left `docs/CODEMAP.md` stale on main for three commits, because two
   branches had each regenerated it correctly against their own base (mezo-l4am).
 
@@ -127,7 +128,7 @@ merge queue) costs a **full CI cycle immediately before every merge**. Measured 
 |---|---|
 | `test-backend` | 21m30s |
 | `test-frontend` | 14m31s |
-| `test-visual` | 4m58s |
+| `test-layout` | ~1m |
 | `contract-drift` | 24s |
 | `lint` | 21s |
 | **wall clock** | **~21m30s** (≈42 runner-minutes) |
@@ -136,14 +137,14 @@ At this repo's merge cadence that is hours of added wall clock a day, and it ser
 for a class of failure the two expensive suites are the *least* likely to cause.
 
 So the chosen trade-off is `premerge.yml`: run **only the merge-sensitive gates** against the
-merge ref as it is right now, on demand, in **~7 minutes**.
+merge ref as it is right now, on demand, in **~2 minutes**.
 
 ```bash
 gh workflow run premerge.yml -f pr=<number>    # then merge once it is green
 ```
 
 It runs `.github/scripts/cheap-gates.sh` (the same script `ci.yml`'s `lint` job runs, so the two
-cannot drift), contract-drift, and the visual goldens. It also refuses to proceed when
+cannot drift) and contract-drift. It also refuses to proceed when
 
 - the PR **conflicts** with main — the state in which GitHub builds no merge ref and therefore
   runs **no** `pull_request` checks at all, so `gh pr checks` reports none, which reads as
@@ -154,106 +155,60 @@ cannot drift), contract-drift, and the visual goldens. It also refuses to procee
 This is a *narrowing*, not a proof: main can still move between the green premerge run and the
 merge. It shrinks the window from "whenever CI last happened to run" to "the last few minutes".
 
-## Visual regression gate (two-platform Playwright goldens)
+## Layout-invariant gate (`test-layout`)
 
-The frontend has a **self-baselined visual harness** at `frontend/tests/visual/` (`visual.spec.ts` +
-`playwright.config.ts`) — **14 key screens × 2 themes = 28 `toHaveScreenshot` goldens**. It boots the
-app in **mock mode** on a **per-worktree port** (no backend needed) so the seeds are static, and
-pixel-compares each screen against a committed golden. This is a fast, JVM-less gate (unlike the
-backend suite above) — it runs fine locally.
+The frontend carries a small **non-screenshot** Playwright harness at `frontend/tests/layout/`
+(`layout.spec.ts` + `playwright.config.ts`). It boots the app in **mock mode** on a
+**per-worktree port** (no backend needed) and asserts **layout invariants at real phone
+viewports** — that content is *reachable*: either it fits, or the page scrolls to it, never
+clipped into nothing by an `overflow: hidden` ancestor.
+
+```bash
+cd frontend && pnpm test:layout      # ~36s locally, 38 tests
+```
+
+**Why it exists as its own gate.** This bug class is invisible to both other suites:
+
+- **jsdom (`test-frontend`/vitest) computes no layout at all** — a clipped island measures fine;
+- the retired screenshot goldens ran at **440×956**, taller than a real phone (iPhone 15 Pro ≈
+  852 CSS px). The keret-hero regression cleared 956 by 1.5 px and clipped **66 px at 852** —
+  green goldens, broken phone (mezo-gllr).
 
 > **The port is derived from the worktree path** (`43000 + sha1(worktree) % 1000`; override with
 > `VISUAL_PORT`), and `reuseExistingServer` is **off**. It used to be a hardcoded `4318` with reuse
 > **on**, which meant a vite dev server left running by *another* worktree or agent session was
-> adopted in silence — Playwright then screenshotted the other tree's UI with no warning. Measured
-> with a foreign server on the port: **93% of pixels differed**, and in the `--update-snapshots`
-> direction that foreign UI would have been written straight into the goldens. It bit twice in the
-> mezo-iizd.9 round (mezo-sdbm). With the fix, an occupied port now fails loudly:
-> `Error: http://localhost:43338 is already used…`. Starting our own server costs ~2s.
+> adopted in silence — Playwright then drove the other tree's UI with no warning. It bit twice in
+> the mezo-iizd.9 round (mezo-sdbm). With the fix, an occupied port fails loudly. Starting our own
+> server costs ~2s.
 
-**Both platforms are CI-gated (mezo-in3h).** `ci.yml` runs `test-visual` on `ubuntu-latest`
-*and* `test-visual-darwin` on `macos-latest`; `update-visual-baselines.yml` regenerates both
-sets (`platforms: both | linux | darwin`). Actions minutes are free on this public repo and the
-jobs run in parallel, so the second platform costs no wall clock.
+**On failure:** the CI `test-layout` job uploads a **`layout-failures`** artifact (retention 7
+days) with the Playwright output for each failing test; locally the same lands in
+`frontend/test-results/`.
 
-Before this, the darwin half had **no machine gate at all** — 118 committed `*-darwin.png` files
-guarded only by whether a developer happened to run `pnpm test:visual`. They rotted silently: on
-`feat/orb-seed-and-provider` the me-rutinok darwin goldens were ~39 000 pixels off main, because a
-branch regenerated darwin, *then* merged a main that shifted the page vertically, and only the
-linux half was refreshed by the workflow.
+## Retired: the two-platform screenshot-golden gate (mezo-ryb6)
 
-**Two things the first macOS run exposed, both of which had been invisible:**
+Until 2026-09-07 the repo also ran `test-visual` (ubuntu) and `test-visual-darwin` (macOS):
+**118 screens × 2 themes**, pixel-compared against **236 committed PNGs**, regenerated through a
+dispatchable `update-visual-baselines.yml` workflow. All of it is gone — jobs, workflow, goldens,
+`visual.spec.ts`.
 
-1. **The frozen clock was not frozen.** `new Date('2026-05-21T13:42:00')` has no offset, so it is
-   parsed in the *machine's* local timezone; `timezoneId: 'Europe/Budapest'` then rendered that
-   instant as 15:42 in CI. The two golden sets encoded **different application states** —
-   `today-este` showed `VILLANYOLTÁSIG 2:10` on darwin and `0:10` plus an extra ÉJSZAKAI MÓD tile
-   on linux (23:05), 65 000 pixels of pure content. The authoritative linux gate was guarding a
-   moment the spec says it is not guarding. Fixed by pinning `+02:00`; the linux set was
-   regenerated, the darwin set was already right.
-2. **Native date/time inputs are rendered by the OS, in the OS's language** — `02:00 P` /
-   `mm/dd/yyyy` on the en-US runner, `14:00` / `yyyy. mm. dd.` on a Hungarian Mac. On macOS,
-   Chromium ignores both Playwright's `locale` and `--lang` for these controls (measured), so any
-   golden containing one is machine-dependent by construction. They are now masked
-   (`OS_RENDERED_CONTROLS` in `visual.spec.ts`): their pixels are OS chrome we neither design nor
-   can regress, and everything around them stays under the gate.
+**Why.** In its whole lifetime the gate never caught a UI regression — only its own churn. Every
+red it produced was golden rot: the mezo-atry `AppHeader` wave (mezo-mxrc), the `feat/orb-seed`
+darwin set drifting ~39 000 px because only the linux half was refreshed (mezo-in3h), and finally
+mezo-ryb6, where **one mock-seed change** — the notification badge going `3` → `4` after PR #547
+added an unread row — invalidated **all 118 goldens on both platforms at once**, because the badge
+renders in the global `AppHeader` on every screen. Each incident cost a full re-baseline of a
+236-file binary set, and the last one landed on `main` because PR #547 was merged with **zero CI
+checks** (the conflicted-PR trap, see `require-checks.sh`).
 
-**Two-platform golden model.** Playwright names goldens per-platform, and darwin vs linux font
-rendering differs by a few sub-pixels, so the harness commits **both** sets under
-`visual.spec.ts-snapshots/`:
+The cost was structural, not incidental: any global chrome element makes every golden a hostage of
+every mock fixture. What survives is `test-layout` above, which asserts *behaviour* (reachability)
+rather than pixels, and so cannot rot this way.
 
-- **darwin goldens** (`*-darwin.png`) — read by **local** runs on the Mac.
-- **linux goldens** (`*-linux.png`) — read by the **CI** `test-visual` job (`ci.yml`), which runs on
-  `ubuntu-latest`.
+If a pixel-level gate is ever wanted again, the lesson to carry over is to **mask volatile chrome**
+(the harness already had a `mask:` mechanism for OS-rendered date/time controls) rather than
+baseline it.
 
-Each platform only ever reads its own goldens, so the two sets never collide; you regenerate whichever
-platform a change affects.
-
-**Commands:**
-
-| What | Command | Regenerates |
-|---|---|---|
-| Compare (local) | `cd frontend && pnpm test:visual` | — (read-only) |
-| Re-baseline (local) | `cd frontend && pnpm test:visual:update` | darwin goldens |
-| Re-baseline (CI/linux) | `gh workflow run update-visual-baselines.yml -r <branch>` | linux goldens |
-
-The **`update-visual-baselines.yml`** workflow (`workflow_dispatch`) regenerates the linux goldens on
-the dispatched ref on a clean `ubuntu-latest`, then pushes them back as a bot commit — so you never
-hand-generate linux PNGs on a non-linux box.
-
-Two traps this workflow sets, both observed in practice (mezo-1bu2):
-
-- **Dispatch it only AFTER your commit is on the dispatched ref.** It checks out `github.ref_name`
-  as it stands at dispatch time; run it against a branch that doesn't yet carry your pixel-moving
-  commit and it reports `no golden changes` — a green run that proves nothing.
-- **Its bot commit does not trigger `ci`.** GitHub suppresses workflow runs for pushes made with
-  `GITHUB_TOKEN`, and `ci.yml` has no `workflow_dispatch` trigger, so the commit carrying the fresh
-  linux goldens gets no CI run of its own. On a feature branch the PR's own run covers it; if the
-  goldens land straight on `main`, the next push (or a PR) is what finally proves the suite green.
-
-**When to re-baseline:** whenever a change **intentionally moves pixels** (a redesign, a token tweak, a
-new/changed screen). Update **both** platforms in the same change — `pnpm test:visual:update` locally
-for darwin, then `gh workflow run update-visual-baselines.yml -r <branch>` for linux (or let CI's red
-`test-visual` remind you to). An *unintended* diff is a real regression — investigate, don't
-re-baseline it away.
-
-**Determinism levers** (all must hold or the shots flake — identical on both platforms):
-
-- **Frozen clock** `2026-05-21T13:42` (délután), set *before* `goto` — pins the daypart-derived sky
-  tint + greeting and matches the StatusBar's hardcoded 13:42.
-- **Theme** via a `localStorage['mezo-theme']` init script *before* `goto` — the pre-paint
-  `index.html` script then stamps `data-theme`.
-- **Reduced motion** via `contextOptions.reducedMotion: 'reduce'` + Playwright's default
-  `animations: 'disabled'` — no in-flight transitions.
-- **Self-hosted fonts** (Bricolage + Jakarta, no network) + a `document.fonts.ready` wait — the pixel
-  compare runs on real font metrics, not fallbacks.
-- **Pinned timezone** `timezoneId: 'Europe/Budapest'` — a UTC runner would otherwise shift the
-  frozen-clock daypart derivation away from the goldens.
-
-**On failure:** the CI `test-visual` job uploads a **`visual-diffs`** artifact (retention 7 days)
-containing the `actual` / `expected` / `diff` PNG trio per failing screen — download it from the run's
-Summary to see exactly what moved. Locally, the same trio lands in
-`frontend/tests/visual/test-results/`.
 
 ## Running the FULL suite locally without a RAM upgrade
 
@@ -284,6 +239,18 @@ RAM upgrade is not an option, so reduce the footprint instead. In rough order of
 5. **Incremental (no `clean`)** — only right after a `clean` build already compiled `main`
    (`target/classes` is fresh): `./mvnw test -Dtest=… ` skips the slow recompile. CLAUDE.md warns
    Lombok+MapStruct incremental is flaky, so use sparingly.
+
+## Environment-only switches
+
+Some rollout switches deliberately live in the deployment environment rather than in
+`application.yml`, so a code review can never flip production behaviour by accident.
+
+### Chat serving mode (mezo-eq85, product-owner decision 2026-09-06)
+
+Chat serves from the unified memory platform when the environment sets
+`MEZO_MEMORY_SERVING_MODE=NEW` (the yml default stays `SHADOW`). `NEW` falls back to the legacy
+context on a total retriever outage (audited as `MEMORY_RETRIEVAL_ALL_FAILED_FALLBACK_OLD`).
+Set it in the deployment environment, not in `application.yml`.
 
 ## Reaching this dev environment from another machine (remote guide)
 

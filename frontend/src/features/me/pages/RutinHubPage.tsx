@@ -1,23 +1,20 @@
 // ============================================================
-// Mezo · RutinHubPage (mezo-3zue.3) — /me/rutin, prototype rutin-epito-head.html ×1.18.
-// Absorbs GrowthRutinPage's read-only overview (mezo-rmi0.1: two 30-cell counter tiles, the
-// DayNavigator, catalog-driven chain cards) AND RoutineEditorPage's editing chrome
-// (mezo-n5e9.2: active Toggle, ✎ ChainEditSheet, SortableList, ＋ Új habit/rutin, ✨ AI
-// javaslat) into ONE page under Én — the routine surface leaves Growth for good.
+// Mezo · RutinHubPage (mezo-3zue.3, hub 2.0 mezo-mgpr) — /me/rutin, prototype
+// rutin-formalodas.html `pg-hub` ×1.18. ONE screen, no scrolling: hero + statstrip, a single
+// „Következik" row, the active-chain tile, and two mosaic tiles (Szokásaid → its own page,
+// Építs → the one creation flow). The chain cards with their inline editor chrome moved out:
+// per-chain editing lives on the chain page (mezo-vxd8), the habit list on /me/rutin/szokasok.
 //
-// TODAY renders from the CATALOG (every chain, every def, in position order) and overlays the
-// day view's status where a row exists — the day view returns ACTIVE defs only and nothing at
-// all for a chain with no habits today, so deriving from it hid inactive defs/chains, stranded
-// brand-new chains and sent a PARTIAL id list to reorder (400 HABIT_REORDER_MISMATCH).
-// The PAST-day branch still derives from the day view exactly as GrowthRutinPage did — it is
-// history, not the live catalog. Habit rows stay non-tickable everywhere; the per-def Toggle
-// PAUSES a definition, it never completes it — ticking lives on /nap/rutin (ADR — hard rule).
+// The daily logging home stays /nap/rutin (ADR + Daniel's S2 answer): the „Következik" row
+// and the chain tile NAVIGATE, they never tick — the hub must not become a second logging
+// surface. The PAST-day branch (mezo-x9c2's arbitrary-past-day browsing) survives unchanged
+// under the DayNavigator; hub 2.0 redesigned only the today branch.
 // ============================================================
 import type { CSSProperties } from 'react'
 import { useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useHabitCatalog, useHabitCatalogActions, useHabitDay, useHabitSummary } from '@/data/hooks'
-import type { HabitChainInfo, HabitDaypart, HabitDefInfo, HabitFramework, HabitItem } from '@/data/types'
+import { useHabitCatalog, useHabitDay, useHabitFormations, useHabitSummary } from '@/data/hooks'
+import type { HabitChainInfo, HabitDaypart, HabitItem } from '@/data/types'
 import { AiSuggestSheet } from '@/features/me/sheets/AiSuggestSheet'
 import { ChainEditSheet } from '@/features/me/sheets/ChainEditSheet'
 import { localDateString } from '@/shared/lib/dates'
@@ -25,48 +22,33 @@ import { ClayIcon, type ClayIconName } from '@/shared/ui/clay'
 import { DayNavigator } from '@/shared/ui/DayNavigator'
 import { GhostState } from '@/shared/ui/GhostState'
 import { Icon } from '@/shared/ui/Icon'
-import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip } from '@/shared/ui/mozaik'
+import { Mosaic, MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip, Tile } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
-import { SortableList } from '@/shared/ui/SortableList'
-import { Toggle } from '@/shared/ui/Toggle'
 import { cn } from '@/shared/lib/cn'
 
 const DAYPART_ICON: Record<HabitDaypart, ClayIconName> = { MORNING: 'i-hajnal', DAY: 'i-nap', EVENING: 'i-alvas' }
 const DAYPART_WASH: Record<HabitDaypart, 'amber' | '' | 'lav'> = { MORNING: 'amber', DAY: '', EVENING: 'lav' }
+const DAYPART_FACE: Record<HabitDaypart, string> = { MORNING: 'reggel', DAY: 'napkozben', EVENING: 'este' }
 const STATUS_SR: Record<HabitItem['status'], string> = { done: 'kész', missed: 'kimaradt', pending: 'nyitott' }
-const FRAMEWORK_LABEL = { FOGG: 'szokás-láncolás', CLEAR: 'négy törvény', NONE: 'keret nélkül' } as const
-const FRAMEWORK_BADGE: Record<'FOGG' | 'CLEAR' | 'NONE', string> = { FOGG: '⚓ FOGG', CLEAR: '◈ CLEAR', NONE: '– RÉGI' }
 
-// RoutineEditorPage's "+ Új habit" row, verbatim — a dashed, sage-washed full-width affordance.
-const ADD_HABIT_STYLE: CSSProperties = {
-  width: '100%', padding: 10, marginTop: 10,
-  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6,
-  fontSize: 11, fontWeight: 700, color: 'var(--coral)',
-  background: 'color-mix(in srgb, var(--sage) 8%, transparent)', border: '1px dashed var(--line)',
-}
-
-function frameworkKey(f: HabitFramework | null | undefined): 'FOGG' | 'CLEAR' | 'NONE' {
-  return f ?? 'NONE'
-}
+const PRINCIPLE = 'A napi pipálás otthona a Nap oldal — itt csak a soron következő egy sor '
+  + 'van kint, hogy a hub ne váljon második logoló felületté.'
 
 export function RutinHubPage() {
   const navigate = useNavigate()
   const [params] = useSearchParams()
-  const newHabitKey = params.get('new')
+  // The wizard's ?new= hand-back highlights nothing here any more (the rows left for
+  // /me/rutin/szokasok), but arriving with it is still a valid address — ignore it quietly.
+  void params
   const today = localDateString()
   const [date, setDate] = useState(today)
   const isToday = date === today
   const { habits } = useHabitDay(date)
   const { data: summary } = useHabitSummary()
   const { catalog, isPending, isError, refetch } = useHabitCatalog()
-  const { updateChain, reorderChain, pending } = useHabitCatalogActions()
-  const [chainSheet, setChainSheet] = useState<{ chain?: HabitChainInfo } | null>(null)
+  const [chainSheet, setChainSheet] = useState(false)
   const [suggestSheet, setSuggestSheet] = useState(false)
 
-  const strength = (key: string) => summary.habits.find((h) => h.key === key)?.strengthPct ?? null
-  // TODAY renders EVERY chain (inactive ones dimmed, never hidden — the toggle that pauses a
-  // chain lives here, so hiding it would strand the chain). The past-day branch keeps the old
-  // active-only projection: history shows the chains that were live.
   const chains = [...catalog.chains].sort((a, b) => a.position - b.position)
   const pastChains = chains.filter((c) => c.isActive)
   const doneOf = (l: HabitItem[]) => l.filter((h) => h.status === 'done').length
@@ -76,11 +58,30 @@ export function RutinHubPage() {
 
   const doneToday = doneOf(habits)
   const totalToday = habits.length
-  const strengthPcts = summary.habits.map((h) => h.strengthPct).filter((p): p is number => p != null)
-  const meanStrength = strengthPcts.length ? Math.round(strengthPcts.reduce((s, p) => s + p, 0) / strengthPcts.length) : null
   // A paused CHAIN does not run, so its still-active defs are not active habits either — the
   // cell's label ("aktív szokás") would otherwise overstate the number (mezo-4kbl).
-  const activeDefs = catalog.chains.filter((c) => c.isActive).flatMap((c) => c.defs).filter((d) => d.isActive).length
+  const activeChains = chains.filter((c) => c.isActive)
+  const activeDefs = activeChains.flatMap((c) => c.defs).filter((d) => d.isActive)
+
+  // Settled ("beérett") count for the hero sub + the Szokásaid tile line: past the threshold
+  // on the formation curve. Page-triggered aggregate (mezo-08zl's rule) — the hub is a page,
+  // not the chat hot path; the per-key cache is shared with the habit pages.
+  const formations = useHabitFormations(activeDefs.map((d) => d.habitKey))
+  const settled = activeDefs.filter((d) => {
+    const f = formations.get(d.habitKey)
+    return f != null && f.thresholdPct > 0 && f.automaticityPct != null && f.automaticityPct >= f.thresholdPct
+  }).length
+
+  // The next pending habit in the day view's own order (chain position order) — the ONE row
+  // the hub surfaces. Both it and the chain tile navigate to the logging home.
+  const next = habits.find((h) => h.status === 'pending')
+  const chainOfKey = (chainKey: string) => chains.find((c) => c.chainKey === chainKey)
+  const activeChain: HabitChainInfo | undefined = next != null
+    ? chainOfKey(next.chain)
+    : [...pastChains].reverse().find((c) => habits.some((h) => h.chain === c.chainKey))
+  const chainItems = activeChain != null ? habits.filter((h) => h.chain === activeChain.chainKey) : []
+  const toNap = (daypart: HabitDaypart | undefined) =>
+    navigate(`/nap/rutin${daypart != null ? `?dp=${DAYPART_FACE[daypart]}` : ''}`)
 
   // Past-day row: status-only, exactly as GrowthRutinPage rendered it.
   const pastRow = (h: HabitItem) => (
@@ -90,93 +91,6 @@ export function RutinHubPage() {
       <span className="tx">{h.title}</span>
     </div>
   )
-
-  // Today's row: the CATALOG definition is the row; the day view only tints it. `item` is
-  // absent for an inactive def (the day view filters those out) — the row then carries no
-  // status at all rather than a fabricated "nyitott".
-  const defRow = (def: HabitDefInfo, item: HabitItem | undefined) => {
-    const fw = frameworkKey(def.framework)
-    const pct = strength(def.habitKey)
-    const done = item?.status === 'done'
-    return (
-      // A prototípus .hrow kétsoros rácsa: "n f" / "b b". A grip a SortableList fogantyúja,
-      // a soron kívül. A per-def Toggle ELTŰNT — szüneteltetni a HabitPage-en lehet, ezért a
-      // szünetelő sor halványul, de tapphatóan odanavigál (mezo-3zue.4 hibahulláma).
-      <div className={cn('row', !def.isActive && 'is-inert', done && 'rt-done')} style={{ alignItems: 'center', gap: 8 }}>
-        <button
-          type="button"
-          className={cn('rt-hrow', newHabitKey === def.habitKey && 'rt-row-new')}
-          style={{ flex: 1, minWidth: 0 }}
-          onClick={() => navigate(`/me/rutin/szokas/${def.habitKey}`)}
-          aria-label={`${def.title} · ${FRAMEWORK_LABEL[fw]}${pct != null ? ` · 28 napos erő ${pct}%` : ''}${item ? ` · ${STATUS_SR[item.status]}` : ''}`}
-        >
-          <span className="rt-nm">{def.title}</span>
-          <span className={cn('rt-fw', `rt-fw-${fw.toLowerCase()}`)}>{FRAMEWORK_BADGE[fw]}</span>
-          <span className="rt-bar">
-            {/* READ-ONLY jelző, nem kontroll: a pipálás a /nap/rutin-on él (ADR). A napi
-                státusz (kész/nyitott/kimaradt) a gomb aria-label-jében utazik fentebb —
-                nem itt, hogy egy screen reader ténylegesen felolvassa. */}
-            <span className="rt-tick" aria-hidden="true">✓</span>
-            {pct != null && (
-              <>
-                <span className="rt-strength" aria-hidden="true">
-                  <div style={{ width: `${pct}%` }} />
-                </span>
-                <span className="rt-strength-n">{pct}%</span>
-              </>
-            )}
-          </span>
-        </button>
-      </div>
-    )
-  }
-
-  // Today's card — always rendered, even for a chain with no habits today (a chain just born
-  // through ＋ Új lánc must show its ＋ Új habit row or it can never gain habits).
-  const todayCard = (chain: HabitChainInfo, delayMs: number) => {
-    const items = habits.filter((h) => h.chain === chain.chainKey)
-    const pcts = items.map((h) => strength(h.key)).filter((p): p is number => p != null)
-    const avg = pcts.length ? Math.round(pcts.reduce((s, p) => s + p, 0) / pcts.length) : null
-    const defs = [...chain.defs].sort((a, b) => a.position - b.position).map((d) => ({ ...d, label: d.title }))
-    return (
-      <div key={chain.id} className={cn('gr-chain', DAYPART_WASH[chain.daypart], 'rise', !chain.isActive && 'is-inert')} style={{ '--d': `${delayMs}ms` } as CSSProperties}>
-        <div className="gr-band-top">
-          <ClayIcon name={DAYPART_ICON[chain.daypart]} size={17} />
-          <span className="mz-eyebrow">{chain.title}</span>
-          {/* A prototípus .pw-je: a lánc EREJE. A napi kész/összes a heróban és a múltnapi
-              summában él — a hub nem napi teljesítés-felület. */}
-          {avg != null && (
-            <span className={cn('gr-band-chip', chain.daypart === 'EVENING' ? 'lav' : 'warn')}>erő {avg}%</span>
-          )}
-          <Toggle on={chain.isActive} onToggle={() => updateChain(chain.id, { isActive: !chain.isActive })}
-            ariaLabel={`${chain.title} aktív`} disabled={pending} />
-          <button type="button" className="chip" aria-label={`${chain.title} szerkesztése`} onClick={() => setChainSheet({ chain })}>
-            <span aria-hidden="true">✎</span>
-          </button>
-        </div>
-        {/* The id list SortableList hands back is built from the chain's whole catalog def set,
-            so reorder always sends an exact permutation — a day-filtered subset is rejected
-            with 400 HABIT_REORDER_MISMATCH (and the mock arm mirrors that throw). */}
-        <SortableList
-          items={defs}
-          onReorder={(ids) => reorderChain(chain.id, ids)}
-          renderItem={(def) => defRow(def, items.find((it) => it.key === def.habitKey))}
-          disabled={pending}
-          chevrons="focus"
-        />
-        <button
-          type="button"
-          className="rad-12"
-          style={ADD_HABIT_STYLE}
-          // One creation flow (mezo-9k99): the wizard's „Keret nélkül" branch replaced the
-          // retired HabitEditSheet, so a bare habit and a recipe start at the same door.
-          onClick={() => navigate(`/me/rutin/uj?chain=${encodeURIComponent(chain.chainKey)}`)}
-        >
-          <Icon name="plus" size={12} /> Új habit
-        </button>
-      </div>
-    )
-  }
 
   // Past-day card — the day view's rows, unchanged (history, not the live catalog).
   const pastCard = (chain: HabitChainInfo, delayMs: number) => {
@@ -205,39 +119,95 @@ export function RutinHubPage() {
           reads a confident "0 / 0" that is not a real standing — show no number at all then. */}
       <PageHero
         icon="i-hajnal" iconSize={52} big={totalToday > 0 ? `${doneToday} / ${totalToday}` : undefined} name="Rutin"
-        sub={isToday ? (meanStrength != null ? `ma · 28 napos átlagerő ${meanStrength}%` : 'ma') : undefined}
+        sub={isToday && settled > 0 ? `ma · ${settled} szokás már magától megy` : isToday ? 'ma' : undefined}
       />
-      <PageBody principle="Egyszerre egy szokás. A logolás maga a jutalom: a csík minden pipával emelkedik, egy kihagyás nem nullázza — csak halványítja. A pipa a Nap tabon él, itt a sor a szerkesztőt nyitja.">
+      <PageBody principle={PRINCIPLE}>
         <EntranceGroup replayKey={date}>
           {/* A 30 napos aggregátum a kiválasztott naptól független, ezért a múltnapi ágon is
               itt marad — a lap identitása nem ugrik napváltáskor. */}
           <StatStrip className="rise">
             <StatCell value={summary.perfectMorningDays30} label="tökéletes reggel · 30 n" />
             <StatCell value={summary.perfectEveningDays30} label="tökéletes este · 30 n" />
-            <StatCell value={activeDefs} label="aktív szokás" />
+            <StatCell value={activeDefs.length} label="aktív szokás" />
           </StatStrip>
           <div className="gr-daynav rise" style={{ '--d': '60ms' } as CSSProperties}>
             <DayNavigator date={date} maxDate={today} onChange={setDate} />
           </div>
           {isToday ? (
-            // A genuinely failed catalog fetch and an honest "not resolved yet" both read as an
-            // empty catalog off `catalog.chains` alone — without isPending/isError this page
-            // showed the inviting create view for a failure (mezo-n5e9.2 fix wave, restored).
             isPending && chains.length === 0 ? (
               <GhostState message="Rutinok betöltése…" />
             ) : isError && chains.length === 0 ? (
               <GhostState message="Nem sikerült betölteni a rutinokat." ctaLabel="Újra" onCta={refetch} />
             ) : (
               <>
-                {chains.map((c, i) => todayCard(c, 100 + i * 70))}
-                <div className="row gap-sm rise" style={{ '--d': `${chains.length * 70 + 140}ms` } as CSSProperties}>
-                  <button type="button" className="cta-primary" style={{ flex: 1.8 }} onClick={() => navigate('/me/rutin/uj')}>
-                    <Icon name="plus" size={14} /> Új szokás-recept
-                  </button>
-                  <button type="button" className="cta-ghost" style={{ flex: 1 }} onClick={() => setChainSheet({})}>
-                    <Icon name="plus" size={12} /> Új lánc
+                {/* KÖVETKEZIK — the one surfaced row. It NAVIGATES to /nap/rutin (the ADR's
+                    logging home); the tick-looking button is a door, not a tick. */}
+                <div className="rt-nextcard rise" style={{ '--d': '90ms' } as CSSProperties} data-testid="next-card">
+                  <div className="rt-nextcard-tx">
+                    <div className="rt-nextcard-eb">{next != null ? 'Következik' : 'Mind megvan'}</div>
+                    <div className="rt-nextcard-nm">{next != null ? next.title : 'A mai rutin kész'}</div>
+                    <div className="rt-nextcard-cue">
+                      {next != null
+                        ? [next.anchorCopy, `${chainOfKey(next.chain)?.title ?? next.chain} lánc`].filter(Boolean).join(' · ')
+                        : 'holnap folytatódik'}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    className={cn('rt-bigtick', next == null && 'is-allon')}
+                    aria-label={next != null ? 'Pipálás a Nap oldalon' : 'A Nap oldal megnyitása'}
+                    onClick={() => toNap(chainOfKey(next?.chain ?? '')?.daypart ?? activeChain?.daypart)}
+                  >
+                    {next != null ? '✓' : '★'}
                   </button>
                 </div>
+
+                {/* AKTÍV LÁNC — the chain holding the next row; opens the chain page. */}
+                {activeChain != null && (
+                  <button
+                    type="button"
+                    className="rt-chaintile rise"
+                    style={{ '--d': '130ms' } as CSSProperties}
+                    data-testid="chain-tile"
+                    onClick={() => navigate(`/me/rutin/lanc/${encodeURIComponent(activeChain.chainKey)}`)}
+                  >
+                    <ClayIcon name={DAYPART_ICON[activeChain.daypart]} size={32} />
+                    <span style={{ flex: 1, minWidth: 0 }}>
+                      <span className="rt-chaintile-eb">Aktív lánc · {activeChain.title}</span>
+                      <span className="rt-chaintile-dg">
+                        {doneOf(chainItems)} / {chainItems.length}<small>kész</small>
+                      </span>
+                      <span className="rt-chdots" aria-hidden="true">
+                        {chainItems.map((h) => (
+                          <i key={h.key} className={cn(h.status === 'done' && 'is-d', next?.key === h.key && 'is-now')} />
+                        ))}
+                      </span>
+                    </span>
+                    <span className="rt-chaintile-cv" aria-hidden="true">›</span>
+                  </button>
+                )}
+
+                {/* SZOKÁSAID + ÉPÍTS */}
+                <Mosaic>
+                  <Tile
+                    wash="lav" icon="i-rend" iconSize={34} eyebrow="Szokásaid" delayMs={170}
+                    line={`${activeDefs.length} aktív${settled > 0 ? ` · ${settled} beérett` : ''}`}
+                    onClick={() => navigate('/me/rutin/szokasok')} aria-label="Szokásaid"
+                  />
+                  <Tile
+                    wash="sage" icon="i-recept" iconSize={34} eyebrow="Építs" delayMs={200}
+                    line="＋ Új szokás / lánc"
+                    onClick={() => navigate('/me/rutin/uj')} aria-label="Építs"
+                  />
+                </Mosaic>
+                <button
+                  type="button"
+                  className="cta-ghost rise"
+                  style={{ '--d': '240ms', width: '100%', marginTop: 10 } as CSSProperties}
+                  onClick={() => setChainSheet(true)}
+                >
+                  <Icon name="plus" size={12} /> Új lánc
+                </button>
               </>
             )
           ) : habits.length === 0 ? <GhostState lines={2} message="Nincs rutinadat erre a napra" />
@@ -252,7 +222,7 @@ export function RutinHubPage() {
             )}
         </EntranceGroup>
       </PageBody>
-      {chainSheet && <ChainEditSheet chain={chainSheet.chain} onClose={() => setChainSheet(null)} />}
+      {chainSheet && <ChainEditSheet onClose={() => setChainSheet(false)} />}
       {suggestSheet && <AiSuggestSheet onClose={() => setSuggestSheet(false)} />}
     </MozaikPage>
   )

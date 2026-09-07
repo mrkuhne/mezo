@@ -47,11 +47,26 @@ class JournalMidnightCrossingIT extends ApiIntegrationTest {
      */
     private static final LocalTime JUST_BEFORE_MIDNIGHT = LocalTime.of(23, 55, 0);
 
-    /** PostgreSQL's timezone-displacement limit (±15:59:59) — tighter than ZoneOffset's ±18h. */
-    static final int MAX_OFFSET_SECONDS = 15 * 3600 + 59 * 60 + 59;   // 57599
-
     /** Package-private (not {@code private}): shared with {@code JournalMidnightCrossingOffsetArithmeticTest}. */
     static final int CROSSING_SHIFT_SECONDS = 10 * 60;
+
+    /**
+     * The widest zone offset this test may actually produce — {@code ±15:59:59}, NOT
+     * {@code ZoneOffset}'s {@code ±18h} (mezo-wsnu).
+     *
+     * <p>The binding limit is PostgreSQL's, not Java's. These offsets do not stay inside the JVM:
+     * the entries the tests write carry {@code timestamptz} columns, and PostgreSQL rejects any
+     * displacement beyond {@code ±15:59:59} outright —
+     * {@code ERROR: time zone displacement out of range}. The arithmetic below used to wrap against
+     * {@code 18 * 3600}, so every offset in {@code (57599, 64200]} was legal to
+     * {@code ZoneOffset.ofTotalSeconds} and fatal to the INSERT. Because the parked offset is
+     * {@code 86100 - utcNowSecondOfDay}, that band is reached whenever UTC "now" sits between
+     * roughly 06:05 and 07:55 — a ~1h50m window in which this IT failed on main every single day.
+     *
+     * <p>Wrapping against the NARROWER of the two limits keeps every produced offset legal for
+     * both. {@code JournalMidnightCrossingOffsetArithmeticTest} proves it for all 86400 inputs.
+     */
+    static final int MAX_OFFSET_SECONDS = 15 * 3600 + 59 * 60 + 59;
 
     @Autowired private JournalPopulator journalPopulator;
     @Autowired private OwnerProperties ownerProperties;
@@ -79,8 +94,8 @@ class JournalMidnightCrossingIT extends ApiIntegrationTest {
     }
 
     /**
-     * {@code ZoneOffset} only supports ±18h ({@code ±64800s}); wraps by a day either way so any
-     * offset value resolves instead of throwing {@code DateTimeException}.
+     * Wraps by a day either way so any offset value resolves to one both {@code ZoneOffset} AND
+     * PostgreSQL accept — the bound is {@link #MAX_OFFSET_SECONDS}, the narrower of the two.
      *
      * <p>Only {@link #setDefaultZone(int)} calls this now, for the already-shifted value, which is
      * in range by construction (see {@link #wrapParkedOffset(int)}) so this branch never actually
@@ -98,20 +113,25 @@ class JournalMidnightCrossingIT extends ApiIntegrationTest {
 
     /**
      * Wraps the raw parked offset the same way {@link #wrapToValidOffset} does, EXCEPT the top
-     * threshold is {@code MAX_OFFSET_SECONDS - CROSSING_SHIFT_SECONDS}, not {@code MAX_OFFSET_SECONDS}.
-     * That guarantees {@code parked + CROSSING_SHIFT_SECONDS} lands at {@code MAX_OFFSET_SECONDS}
-     * at most — never past it — so the shifted call in {@link #setDefaultZone(int)} never itself
-     * needs the upper wrap.
+     * threshold is {@code MAX_OFFSET_SECONDS - CROSSING_SHIFT_SECONDS}, not
+     * {@code MAX_OFFSET_SECONDS}. That guarantees {@code parked + CROSSING_SHIFT_SECONDS} lands at
+     * {@code MAX_OFFSET_SECONDS} at most — never past it — so the shifted call in
+     * {@link #setDefaultZone(int)} never itself needs the upper wrap.
      *
-     * <p>That distinction is the fix. Wrapping the SHIFTED value (subtracting 86400 once it
-     * exceeds MAX_OFFSET_SECONDS) preserves local time-of-day but rewinds the local DATE by one
-     * day, silently cancelling the very midnight crossing this test exists to force. Fix round 2
-     * hit exactly this: widening the shift to 600s meant any parked offset in
-     * {@code (MAX_OFFSET_SECONDS - 600, MAX_OFFSET_SECONDS]} pushed {@code base + shift} past
-     * MAX_OFFSET_SECONDS into that cancelling wrap — an ~110-minute-wide window of UTC "now"
-     * (06:05:00–07:55:00) where the test failed every day. Wrapping the park point 600s earlier
-     * removes that window instead of merely shrinking it; see
-     * {@code JournalMidnightCrossingOffsetArithmeticTest} for the exhaustive proof.
+     * <p>That distinction is the fix. Wrapping the SHIFTED value (subtracting 86400 once it exceeds
+     * the limit) preserves local time-of-day but rewinds the local DATE by one day, silently
+     * cancelling the very midnight crossing this test exists to force. Fix round 2 hit exactly
+     * this: widening the shift to 600s meant a parked offset just under the limit pushed
+     * {@code base + shift} past it into that cancelling wrap — a 10-minute-wide window of UTC "now"
+     * where the test failed every day. Wrapping the park point {@code CROSSING_SHIFT_SECONDS}
+     * earlier removes that window instead of merely shrinking it.
+     *
+     * <p>Wrapping DOWN never cancels the crossing: it moves the local wall clock to
+     * {@link #JUST_BEFORE_MIDNIGHT} on the previous local date, so the {@code +600s} shift still
+     * steps across a midnight — only the date it lands on differs, which no assertion depends on.
+     *
+     * <p>See {@code JournalMidnightCrossingOffsetArithmeticTest} for the exhaustive proof over all
+     * 86400 inputs.
      */
     static int wrapParkedOffset(int offsetSeconds) {
         if (offsetSeconds < -MAX_OFFSET_SECONDS) {

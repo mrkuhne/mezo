@@ -75,7 +75,7 @@ export {
 export { useAdminTables, useAdminViews, useAdminRows } from '@/data/admin/adminDataHooks'
 export { useProgressionProfile, useAchievements, useGrowthWeek } from '@/data/progression/progressionHooks'
 export { useDailyQuests, useQuestActions, useQuestHistory } from '@/data/quest/questHooks'
-export { useHabitDay, useHabitActions, useHabitSummary, useHabitFormation } from '@/data/habit/habitHooks'
+export { useHabitDay, useHabitActions, useHabitSummary, useHabitFormation, useHabitFormations } from '@/data/habit/habitHooks'
 export { useHabitCatalog, useHabitCatalogActions, useHabitAiSuggest } from '@/data/habit/habitAdminHooks'
 export { useIntentionDay, useIntentionActions } from '@/data/intention/intentionHooks'
 export { useActivities, useActivityActions, useActivityHistory } from '@/data/activity/activityHooks'

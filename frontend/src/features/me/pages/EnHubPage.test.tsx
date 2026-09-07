@@ -44,9 +44,6 @@ vi.mock('@/data/hooks', async (importOriginal) => {
       weightTrends: { last7d: { avg: 78.96, weeklyRate: -0.5 }, last4w: { weeklyRate: weightStore.rate } },
       logWeight: vi.fn(),
     }),
-    // A hero már nem a súlycélt mutatja (mezo-iizd.4) — a `useGoal()` hívás csak a
-    // weightLog cache-t melegíti, az EnHubPage nem destrukturálja többé az eredményét.
-    useGoal: () => ({ goal: null, goalResponse: null, pending: false }),
     useSleep: () => ({
       sleepLog: [],
       lastNight: { date: '2026-05-22', bedtime: '00:42', wakeup: '09:03', duration: 7.5, quality: 9, awakenings: 1, mealToSleep: 125, notes: null },

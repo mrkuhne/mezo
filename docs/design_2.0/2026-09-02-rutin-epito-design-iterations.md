@@ -176,3 +176,28 @@ A wizard lett minden új szokás egyetlen ajtaja (`rutin-formalodas.html` `pg-wi
    beleillik) összege adja a szűk 6–14 sávot; a legmagasabb fokozatú faktorra „vedd kisebbre"
    tanács jön — tanácsban él, nem az aritmetikában, és sosem blokkol. A faktorok nem
    tárolódnak; konverziónál az érintetlen rács a tárolt XP-t viszi tovább.
+
+## 2026-09-07 — a lánc-oldal és a kirajzolt stacking (mezo-vxd8, S4)
+
+Új oldal: `/me/rutin/lanc/{chainKey}` (`pg-lanc`). A lánc-szerkesztés (átnevezés, napszak,
+sorrend, szüneteltetés, törlés) a sheetből saját oldalra költözött; a `ChainEditSheet` csak
+létrehozásra maradt. A lényeg a stacking: a függőleges kötél a lánc SORRENDJE, a soronkénti
+jelvény a VALÓDI horgony — ahol a kettő nem ugyanazt mondja (nem az előzőhöz, vagy másik
+lánc szokásához kötve), a kötél szaggatott, szerkesztő módban magyarázó kártyával. A csomópont
+read-only állapot-pötty — a pipálás otthona a /nap/rutin marad (Daniel S2-válasza).
+
+## 2026-09-07 — Rutin hub 2.0 (mezo-mgpr, S2)
+
+A hub egy képernyő lett, görgetés nélkül (`pg-hub`): hero + statstrip, EGY „Következik" sor,
+aktív lánc csempe, Szokásaid + Építs mozaik. A szokás-sorok saját oldalra költöztek
+(`/me/rutin/szokasok`, `pg-lista`): négy szakasz-szűrő csempe + soronként egy formálódás-
+csempe (név, szakasz, ismétlésszám, automatizmus-karika, hátralévő idő).
+
+**A pipa-kérdés (ADR-ütközés) Daniel döntésével zárult: a pipálás a /nap/rutin-on marad.**
+A hub „Következik" pipa-formájú gombja és a lánc-oldal csomópontjai ajtók a Nap oldalra,
+nem kontrollok — a hub nem válik második logoló felületté (a prototípus saját habnote-ja is
+ezt mondja ki).
+
+**Tudatos megtartás a prototípuson túl:** a DayNavigator + a múltnapi ág a hubon marad —
+ez a mezo-x9c2 múltnap-böngészés egyetlen felülete, és a hub 2.0 prototípusa egyszerűen
+nem foglalkozott vele.

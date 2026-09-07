@@ -13,7 +13,10 @@ import jakarta.validation.constraints.Size;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
+import io.mrkuhne.mezo.feature.llmlog.entity.CallKind;
+
 import java.util.List;
+import java.util.Map;
 
 /** Companion tuning (mezo.companion). LLM model tiers per ADR 0008 — config, never code. */
 @Validated
@@ -39,11 +42,37 @@ public record CompanionProperties(
     @NotNull @Valid Graph graph,
     @NotNull List<@Valid Intervention> interventions
 ) {
-    /** Provider model tiers (Gemini per ADR 0008; swap = YAML edit, no code change). */
+    /**
+     * Provider selection and model tiers (ADR 0008 + mezo-ozri spec §M1/§A1; swap = YAML edit, no
+     * code change).
+     *
+     * <p>Tiers are held PER PROVIDER rather than as one flat pair, because both providers are live
+     * at once (spec §P1): {@code provider} only decides which adapter answers a chat turn, while the
+     * Gemini tiers stay load-bearing for audio, vision and the fallback no matter what it says.
+     */
     public record Llm(
-        @NotBlank String chatModel,   // gemini-2.5-flash — cheap/fast, every conversational turn
-        @NotBlank String smartModel   // gemini-2.5-pro — heavy pipelines (V3.2 critique); unused until then
-    ) {}
+        /** Which adapter is the primary CompanionLlm. GEMINI = the shipped default (ADR 0008). */
+        @NotNull LlmProvider provider,
+        /** google-genai tiers — also what serves every per-call-kind GEMINI exception. */
+        @NotNull @Valid Tier gemini,
+        /** openai tiers — inert while provider is GEMINI, but always bound so a switch is a YAML edit. */
+        @NotNull @Valid Tier openai,
+        /**
+         * Per-CallKind exceptions to {@code provider} (spec §A1). Only TRANSCRIBE and VISION are
+         * honoured today, and only by {@code OpenAiCompanionLlm}, which delegates those two
+         * overloads to the Gemini adapter: no GPT-5.6 model has an audio endpoint at all, and
+         * {@code TranscriptionService} sends its inline audio through the CHAT port, so
+         * feature-level routing could never catch it. An absent or unknown key simply means "the
+         * active provider" — never a boot failure.
+         */
+        @NotNull Map<CallKind, LlmProvider> perCallKind
+    ) {
+        /** One provider's two tiers: the cheap/fast chat model and the smart model. */
+        public record Tier(
+            @NotBlank String chatModel,   // cheap/fast — every conversational turn
+            @NotBlank String smartModel   // smart tier — the 19 completeSmart call sites
+        ) {}
+    }
 
     /** Chat turn tuning — history window fed into the prompt + auto-title truncation. */
     public record Chat(

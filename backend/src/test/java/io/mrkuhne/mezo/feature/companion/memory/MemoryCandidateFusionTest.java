@@ -115,6 +115,8 @@ class MemoryCandidateFusionTest {
                         0.005, 0.004, 0.004, 0.002, 0.003),
                 new MemoryPlatformProperties.Execution(200),
                 new MemoryPlatformProperties.Reranker(false, 0.002, 20, 600, 200),
-                new MemoryPlatformProperties.Indicators(365));
+                new MemoryPlatformProperties.Indicators(365),
+                new MemoryPlatformProperties.Policies(
+                        new MemoryPlatformProperties.ReflectionPolicy(30, 800, true)));
     }
 }
