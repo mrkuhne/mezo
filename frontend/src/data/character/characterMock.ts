@@ -15,6 +15,7 @@ import type {
   CharacterRunObservation,
   CharacterRunResponse,
   CharacterRunSummary,
+  ConferenceThread,
   ConferenceTurn,
 } from '@/data/character/characterApi'
 
@@ -453,6 +454,90 @@ const TRANSCRIPT_TURNS: ConferenceTurn[] = [
   },
 ]
 
+// The SAME four claims TRANSCRIPT_TURNS carries, as a structured deliberation — four threads,
+// one per dossier chapter the four proposals belong to (`physical`, `discipline`, `nutrition`,
+// `mental`), titled with those dimensions' own titles (DIM_SEEDS above), exactly the way the
+// backend's DeliberationAssembler titles a thread. The prose Szkeptikus turn takes a position on
+// the first three proposals only and never mentions the Pszichológus's — so that item's
+// `skeptic` is null here too: the mock must not invent a verdict the transcript does not
+// contain (mezo-xlvr final review, M7).
+const DELIBERATION_W2: ConferenceThread[] = [
+  {
+    dimensionKey: 'physical',
+    title: 'Fizikai',
+    items: [
+      {
+        index: 0,
+        expertKey: 'doki',
+        text: 'A testzsír-trend és a stagnáló testsúly rekompozícióra utal.',
+        kind: 'NEW',
+        claimId: null,
+        sensitive: false,
+        reactions: [
+          { expertKey: 'edzo', stance: 'SUPPORT', argument: 'Az edzésterhelés is ezt támasztja alá.' },
+        ],
+        skeptic: { verdict: 'KEEP', argument: 'Három adatpont kevés a "biztos" szinthez.' },
+        chair: { accepted: true, confidence: VALOSZINU, reason: 'Elfogadom, a Szkeptikus érve helytálló.' },
+      },
+    ],
+  },
+  {
+    dimensionKey: 'discipline',
+    title: 'Motiváció & fegyelem',
+    items: [
+      {
+        index: 1,
+        expertKey: 'drill',
+        text: 'A heti fókuszok teljesítési aránya négy hete 80% felett.',
+        kind: 'NEW',
+        claimId: null,
+        sensitive: false,
+        reactions: [],
+        skeptic: { verdict: 'KEEP', argument: 'A mintaidőszak rövid, de a jel egyértelmű.' },
+        chair: { accepted: true, confidence: BIZTOS, reason: 'Négy egymást követő hét konzisztens jel.' },
+      },
+    ],
+  },
+  {
+    dimensionKey: 'nutrition',
+    title: 'Táplálkozási',
+    items: [
+      {
+        index: 2,
+        expertKey: 'taplalkozo',
+        text: 'A hétvégi fehérje-elmaradás három hete következetes mintázat.',
+        kind: 'NEW',
+        claimId: null,
+        sensitive: false,
+        reactions: [],
+        skeptic: { verdict: 'KEEP', argument: 'Elfogadható, de három hét kevés egy erősebb szóhoz.' },
+        chair: { accepted: true, confidence: FIGYELJUK, reason: '"Figyeljük" szinten veszem fel.' },
+      },
+    ],
+  },
+  {
+    dimensionKey: 'mental',
+    title: 'Mentális & érzelmi',
+    items: [
+      {
+        index: 3,
+        expertKey: 'pszichologus',
+        text: 'Néha halasztod a nehezebb érzelmi témák leírását a naplóban.',
+        kind: 'NEW',
+        claimId: null,
+        sensitive: false,
+        reactions: [],
+        skeptic: null,
+        chair: {
+          accepted: true,
+          confidence: FIGYELJUK,
+          reason: 'Tükröző fogalmazással veszem fel — nem ítélet, csak jelzés.',
+        },
+      },
+    ],
+  },
+]
+
 export const MOCK_CONFERENCE_DETAIL: Record<string, CharacterConferenceResponse> = {
   w2: {
     id: 'w2',
@@ -460,6 +545,7 @@ export const MOCK_CONFERENCE_DETAIL: Record<string, CharacterConferenceResponse>
     weekStart: '2026-08-24',
     generatedAt: '2026-08-30T07:00:00Z',
     transcript: TRANSCRIPT_TURNS,
+    deliberation: DELIBERATION_W2,
     changes: [
       { kind: 'CLAIM_ACCEPTED', dimensionKey: 'physical', summary: 'Doki állítása elfogadva "valószínű" szinttel.' },
       { kind: 'CLAIM_ACCEPTED', dimensionKey: 'discipline', summary: 'Drill állítása elfogadva "biztos" szinttel.' },

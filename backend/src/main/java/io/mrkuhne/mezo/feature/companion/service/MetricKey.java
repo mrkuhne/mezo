@@ -1,7 +1,8 @@
 package io.mrkuhne.mezo.feature.companion.service;
 
 /**
- * The per-day scalar metrics the V3.1 pattern engine can correlate. Extractors live in
+ * The per-day scalar metrics the V3.1 pattern engine can correlate — {@link #correlatable()} says
+ * which of them the engine and the catalog actually SEE. Extractors live in
  * {@link MetricSeriesService}; the pair catalog ({@code mezo.companion.patterns.pairs}) wires
  * pairs of these — config can trim/re-lag pairs without code, new metrics need a new enum entry.
  * {@code sourceHu} + {@code domain} a Motor tab UI-mezői (mezo-18bx): honnan jön az adat, és
@@ -35,7 +36,7 @@ public enum MetricKey {
     HABITS_DONE("kész szokások", "Szokás-követő", MetricDomain.MIND),
     RITUAL_CLOSED("esti lezárás", "Esti lezárás rituálé", MetricDomain.MIND, MetricValueKind.BINARY),
     DAILY_XP("napi XP", "Activity + szokás + küldetés XP", MetricDomain.MIND),
-    SOCIAL_MENTIONS("társas említések", "People-említések", MetricDomain.MIND),
+    SOCIAL_MENTIONS("társas említések", "People-említések (kurált névlista)", MetricDomain.MIND),
     RUN_HR_RECOVERY_S("pulzus-visszaállás", "Futás-napló (pulzus-visszaállás)", MetricDomain.TRAIN),
     WEEKEND("hétvége", "naptár (származtatott)", MetricDomain.OTHER, MetricValueKind.BINARY),
     ACWR("akut:krónikus terhelés", "származtatott: sport + gym terhelésből", MetricDomain.TRAIN),
@@ -47,23 +48,31 @@ public enum MetricKey {
     TEXT_MOOD("hangulat (szöveg)", "Napló- és hála-bejegyzések (LLM-jel)", MetricDomain.MIND),
     TEXT_ENERGY("energia (szöveg)", "Napló- és hála-bejegyzések (LLM-jel)", MetricDomain.MIND),
     TEXT_STRESS("feszültség (szöveg)", "Napló- és hála-bejegyzések (LLM-jel)", MetricDomain.MIND),
+    /** bd mezo-dqzm: NEM korrelálható — a „társas nap" kérdésre a {@link #SOCIAL_MENTIONS} felel. */
     TEXT_SOCIAL_CONTACT("társas nap (szöveg)", "Napló- és hála-bejegyzések (LLM-jel)", MetricDomain.MIND,
-            MetricValueKind.BINARY);
+            MetricValueKind.BINARY, false);
 
     private final String labelHu;
     private final String sourceHu;
     private final MetricDomain domain;
     private final MetricValueKind valueKind;
+    private final boolean correlatable;
 
     MetricKey(String labelHu, String sourceHu, MetricDomain domain) {
         this(labelHu, sourceHu, domain, MetricValueKind.NUMBER);
     }
 
     MetricKey(String labelHu, String sourceHu, MetricDomain domain, MetricValueKind valueKind) {
+        this(labelHu, sourceHu, domain, valueKind, true);
+    }
+
+    MetricKey(String labelHu, String sourceHu, MetricDomain domain, MetricValueKind valueKind,
+            boolean correlatable) {
         this.labelHu = labelHu;
         this.sourceHu = sourceHu;
         this.domain = domain;
         this.valueKind = valueKind;
+        this.correlatable = correlatable;
     }
 
     public String labelHu() {
@@ -81,6 +90,18 @@ public enum MetricKey {
 
     public MetricValueKind valueKind() {
         return valueKind;
+    }
+
+    /**
+     * Felajánlható-e a korrelációs motornak és a Motor tab metrika-katalógusának? (bd mezo-dqzm)
+     * Egy {@code false} kulcs továbbra is kiszolgálható a {@link MetricSeriesService#series}-ből —
+     * belső fogyasztói (életcél-jelforrás, származtatott sorozatok) megkapják —, csak nem áll ott
+     * önálló sorként a katalógusban. Ez az a kapcsoló, amivel két, ugyanarra a kérdésre felelő
+     * sorozat közül az egyik visszalép belső jellé, ahelyett hogy tautologikus „összefüggést"
+     * ajánlanánk a felhasználónak.
+     */
+    public boolean correlatable() {
+        return correlatable;
     }
 
     /**

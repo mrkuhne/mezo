@@ -13,6 +13,7 @@ import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.DatabasePopulator;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,38 @@ class GraphServiceIT extends AbstractIntegrationTest {
 
     private UUID ownerId() {
         return databasePopulator.populateUser(ownerProperties.ownerEmail());
+    }
+
+    /**
+     * bd mezo-06o0.7: a meta-írás EGYETLEN atomi {@code jsonb ||} UPDATE, nem olvas-összefésül-ír,
+     * és a {@code null} meta-jú upsert nem nyúl a mezőhöz — ez a kettő együtt zárja a
+     * lost-update ablakot, amiben egy párhuzamos író kulcsa (pl. {@code edgeStructuredOn})
+     * elveszhetett.
+     */
+    @Test
+    void testMergeMeta_shouldAddKeysAtomically_andUpsertWithNullMetaShouldNotClobber() {
+        UUID owner = ownerId();
+        GraphNodeEntity node = service.upsertNode(owner, GraphNodeEntity.KIND_PERSON, "Petra", null,
+            "person", UUID.randomUUID(), null, Map.of("relationship", "friend"));
+
+        service.putMeta(owner, node.getId(), "edgeStructuredOn", "2026-08-21");
+        GraphNodeEntity merged = service.mergeMeta(owner, node.getId(),
+            Map.of("status", "active", "relationship", "mentee"));
+
+        assertThat(merged.getMeta())
+            .containsEntry("edgeStructuredOn", "2026-08-21")   // idegen kulcs túlél
+            .containsEntry("relationship", "mentee")           // saját kulcs felülíródik
+            .containsEntry("status", "active");
+
+        // null meta ⇒ a mező érintetlen marad (a szinkron-hívók így adják át a merge-nek a terepet)
+        GraphNodeEntity resaved = service.upsertNode(owner, GraphNodeEntity.KIND_PERSON, "Petra B",
+            null, node.getSourceKind(), node.getSourceId(), null, null);
+        assertThat(resaved.getTitle()).isEqualTo("Petra B");
+        assertThat(resaved.getMeta()).containsEntry("edgeStructuredOn", "2026-08-21");
+
+        // üres patch: no-op, a node visszajön változatlanul
+        assertThat(service.mergeMeta(owner, node.getId(), Map.of()).getMeta())
+            .containsEntry("edgeStructuredOn", "2026-08-21");
     }
 
     @Test
