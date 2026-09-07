@@ -83,20 +83,27 @@ function NumField({ label, value, min, max, step, placeholder, onCommit }: {
   )
 }
 
+// The bounds this card CLAMPS to must match the row it replaced (ExerciseAccordionRow:
+// RIR 0–5, reps 1–100) — a narrower cap silently truncates a stored value the moment the
+// user touches the field on an existing template (mezo-yty6 final review, minor 8).
+const RIR_MAX = 5
+const REP_MIN = 1
+const REP_MAX = 100
+
 /** Same local-buffer rationale as {@link NumField}; repMin/repMax stay non-null so an emptied field just holds text, uncommitted, until a digit lands. */
 function RepBoundInput({ label, value, onCommit }: { label: string; value: number; onCommit: (n: number) => void }) {
   const [text, setText] = useBufferedText(value)
   return (
     <input
       type="number" inputMode="numeric" aria-label={label} className="mz-exc-num"
-      value={text} min={1} max={50}
+      value={text} min={REP_MIN} max={REP_MAX}
       onChange={(e) => {
         const raw = e.target.value
         setText(raw)
         if (raw === '') return
         const n = Number(raw)
         if (Number.isNaN(n)) return
-        onCommit(Math.min(50, Math.max(1, n)))
+        onCommit(Math.min(REP_MAX, Math.max(REP_MIN, n)))
       }}
     />
   )
@@ -160,7 +167,7 @@ export function ExerciseCard({
         </label>
         <NumField label="Kiinduló súly (kg)" value={ex.anchorWeightKg ?? null} min={0} max={500} step={2.5}
           placeholder="auto" onCommit={(v) => onChange({ anchorWeightKg: v })} />
-        <NumField label="Cél RIR" value={ex.targetRIR} min={0} max={4}
+        <NumField label="Cél RIR" value={ex.targetRIR} min={0} max={RIR_MAX}
           onCommit={(v) => onChange({ targetRIR: v ?? 0 })} />
       </div>
 

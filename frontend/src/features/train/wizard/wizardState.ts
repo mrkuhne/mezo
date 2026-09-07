@@ -24,13 +24,6 @@ export interface WizardState {
   goalText: string
   name: string
   proposal: MesoPlanProposal | null
-  /**
-   * The generator input that PRODUCED `proposal` — the only honest baseline for "did the
-   * inputs move since the generation?". Without it a post-generation day/tier change is
-   * silent, and `toUpsert` cheerfully writes the NEW musclePriorities next to the OLD
-   * program (mezo-d20.14 review, I3).
-   */
-  proposalInput: MesoPlanGenerateRequest | null
   /** Editable copy of proposal.days — the program the save writes. */
   program: MesoDay[]
   /** A manual edit landed since the last generation (regeneration would overwrite it). */
@@ -47,7 +40,7 @@ export type WizardAction =
   | { type: 'setGoalText'; text: string }
   | { type: 'setName'; name: string }
   | { type: 'step'; step: 'interview' | 'editor' }
-  | { type: 'generated'; proposal: MesoPlanProposal; input: MesoPlanGenerateRequest }
+  | { type: 'generated'; proposal: MesoPlanProposal }
   | { type: 'editProgram'; program: MesoDay[] }
   | { type: 'renameDay'; day: string; name: string }
   | { type: 'openDay'; day: string | null }
@@ -70,7 +63,6 @@ export function initialWizardState(today: string): WizardState {
     goalText: '',
     name: `Hypertrophy · ${getSeason(huMonthDay(today))}`,
     proposal: null,
-    proposalInput: null,
     program: [],
     dirty: false,
     activeDay: null,
@@ -97,7 +89,6 @@ export function wizardReducer(s: WizardState, a: WizardAction): WizardState {
       return {
         ...s,
         proposal: a.proposal,
-        proposalInput: a.input,
         program: a.proposal.days,
         dirty: false,
         activeDay: null,

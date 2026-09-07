@@ -126,4 +126,27 @@ describe('MesoWeekEditor', () => {
     setup({ note: 'A hátra tettem a hangsúlyt, a vállad kímélve.' })
     expect(screen.getByText('A hátra tettem a hangsúlyt, a vállad kímélve.')).toBeInTheDocument()
   })
+
+  // mezo-yty6 final review, I3: the week tile summed `weekMuscleLoad` rows, which drop
+  // exempt work (plyo) and landmark-less groups — so on a week containing either, the day
+  // tiles visibly added up to MORE than the week tile sitting right under them.
+  test('the week tile headline equals the sum of the day tiles, even with exempt (plyo) work', () => {
+    const plyo: GymExercise = {
+      id: 'p', name: 'Box jump', muscle: 'quad', warmupSets: 0, workingSets: 4,
+      repMin: 3, repMax: 5, targetRIR: 3, anchorWeightKg: null, type: 'plyo',
+    }
+    const { view } = setup({
+      days: [
+        day('Hét', 'Upper', [ex('a', 'Evezés', 'back', 6), plyo]),
+        day('Kedd', 'Push', [ex('c', 'Oldalemelés', 'shoulder', 4)], 'shoulder'),
+      ],
+    })
+    const leading = (el: Element | null) => Number(/\d+/.exec(el?.textContent ?? '')?.[0])
+    const dayTotals = [...view.container.querySelectorAll('.mz-dst-meta')].map(leading)
+    expect(dayTotals).toEqual([10, 4])
+    // 6 + 4 (exempt plyo) + 4 — the filtered per-muscle view would say 10.
+    expect(leading(view.container.querySelector('.mz-lt-big'))).toBe(14)
+    expect(leading(view.container.querySelector('.mz-lt-big')))
+      .toBe(dayTotals.reduce((a, b) => a + b, 0))
+  })
 })

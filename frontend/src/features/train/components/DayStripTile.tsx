@@ -11,11 +11,14 @@ export interface DayStripMuscle {
 }
 
 interface DayStripTileProps {
-  /** Weekday key ('Hét'…'Vas'). */
+  /** Weekday key ('Hét'…'Vas') — the eyebrow. */
   day: string
-  /** Split type from the generator ('Upper', 'Push'…) — the eyebrow's second half. */
-  type: string
-  /** The (renameable) day name shown big. */
+  /**
+   * The (renameable) day name shown big. MesoDay has no separate name field, so a rename
+   * writes `day.type` and this IS the split type until the user renames it — which is why
+   * the tile must not render it twice (mezo-yty6 final review, I5: the eyebrow used to
+   * repeat the very same string under the heading).
+   */
   name: string
   sets: number
   minutes: number
@@ -26,7 +29,7 @@ interface DayStripTileProps {
 }
 
 export function DayStripTile({
-  day, type, name, sets, minutes, muscles, tone, flagged, onOpen,
+  day, name, sets, minutes, muscles, tone, flagged, onOpen,
 }: DayStripTileProps) {
   return (
     <button
@@ -36,7 +39,7 @@ export function DayStripTile({
       onClick={onOpen}
     >
       {flagged && <span className="mz-dst-dot" aria-hidden="true" />}
-      <span className="mz-dst-tt">{day} · {type}</span>
+      <span className="mz-dst-tt">{day}</span>
       <span className="mz-dst-nm">{name}</span>
       <span className="mz-dst-meta">{sets} szett · ~{minutes}′</span>
       <span className="mz-dst-rail">

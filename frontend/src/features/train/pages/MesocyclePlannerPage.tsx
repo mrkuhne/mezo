@@ -53,9 +53,8 @@ export function MesocyclePlannerPage() {
   const runGenerate = async (from: WizardState) => {
     setFailed(false)
     setConfirming(false)
-    const input = generateInput(from)
     try {
-      dispatch({ type: 'generated', proposal: await generate(input), input })
+      dispatch({ type: 'generated', proposal: await generate(generateInput(from)) })
       dispatch({ type: 'step', step: 'editor' })
     } catch {
       // A failed FIRST generation leaves `step` on the interview (there is nothing else to

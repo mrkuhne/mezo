@@ -99,4 +99,58 @@ describe('WeekLoadPanel', () => {
     render(<WeekLoadPanel days={clean} onBack={vi.fn()} />)
     expect(screen.getByText(/A csúcshét is elfér/i)).toBeInTheDocument()
   })
+
+  // mezo-yty6 final review, C2: `up` means "still ramping toward the tier target". In week 1
+  // EVERY grow/emphasize group is below its target by design, so amber there would repaint
+  // the exact unexplained warning this redesign exists to delete. Amber is reserved for
+  // `down` — above the target, the only case that actually asks for a change.
+  test('a group still ramping toward its target reads as healthy, not amber', () => {
+    const { container } = render(<WeekLoadPanel days={WEEK} priorities={{ back: 'emphasize' }} onBack={vi.fn()} />)
+    const back = screen.getAllByTestId('week-load-card').find((c) => c.dataset.group === 'back')!
+    const stat = within(back).getByText(/szett a célig$/)
+    expect(stat).toHaveClass('mz-arr-up')
+    expect(stat).not.toHaveClass('mz-arr-dn')
+    // the arrow carries the same class, so glyph and sentence can never disagree
+    expect(within(back).getByText('▲')).toHaveClass('mz-arr-up')
+    expect(container.querySelector('.mz-arr-dn')).toBeNull()
+  })
+
+  test('a group ABOVE its target is the amber one', () => {
+    // 'maintain' targets MEV; 30 back sets is far above any MEV, so direction is 'down'.
+    const heavy = [day('Hét', 'Upper', [ex('a', 'Evezés', 'back', 30)])]
+    render(<WeekLoadPanel days={heavy} priorities={{ back: 'maintain' }} onBack={vi.fn()} />)
+    const back = screen.getAllByTestId('week-load-card').find((c) => c.dataset.group === 'back')!
+    const stat = within(back).getByText(/szettel a cél fölött$/)
+    expect(stat).toHaveClass('mz-arr-dn')
+    expect(within(back).getByText('▼')).toHaveClass('mz-arr-dn')
+  })
+
+  test('a group exactly on its target reads neutral', () => {
+    // 'maintain' targets MEV; the explicit landmark below puts the group exactly on it.
+    const onTarget = [day('Hét', 'Upper', [ex('a', 'Evezés', 'back', 8)])]
+    render(
+      <WeekLoadPanel
+        days={onTarget}
+        priorities={{ back: 'maintain' }}
+        volumePerMuscle={{ back: { mev: 8, mav: 16, mrv: 22 } }}
+        onBack={vi.fn()}
+      />,
+    )
+    const back = screen.getAllByTestId('week-load-card').find((c) => c.dataset.group === 'back')!
+    const stat = within(back).getByText('a célon')
+    expect(stat).toHaveClass('mz-arr-eq')
+    expect(within(back).getByText('=')).toHaveClass('mz-arr-eq')
+  })
+
+  // mezo-yty6 final review, I4: spec §3 names structureLint as a week-page lint source; it
+  // was rendered nowhere in the new editor path.
+  test('a structureLint finding renders as a lint row', () => {
+    // One 8-set compound on one day: over the 2–4 sets/exercise band (R2) and a 1-exercise
+    // session (R5) — both are structureLint findings, neither is an adjacency or peak issue.
+    const lintable = [day('Hét', 'Upper', [ex('a', 'Evezés', 'back', 8)])]
+    render(<WeekLoadPanel days={lintable} onBack={vi.fn()} />)
+    const rows = screen.getAllByTestId('structure-lint')
+    expect(rows.length).toBeGreaterThan(0)
+    expect(rows.map((r) => r.textContent).join(' ')).toMatch(/Evezés: 8 szett/)
+  })
 })

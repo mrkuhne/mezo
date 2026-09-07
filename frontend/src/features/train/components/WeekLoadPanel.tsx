@@ -11,11 +11,24 @@ import { adjacentDayConflicts, weekMuscleLoad, type Landmark } from '@/features/
 import { muscleColor } from '@/features/train/logic/muscleColors'
 import { TIER_LABELS } from '@/features/train/logic/musclePriorities'
 import { peakWeekFit } from '@/features/train/logic/peakWeekFit'
+import { structureLint } from '@/features/train/logic/structureLint'
 import { MozaikPage, PageBody, PageHead, PageHero, StatCell, StatStrip } from '@/shared/ui/mozaik'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { useState } from 'react'
 
 const ARROW = { up: '▲', down: '▼', hold: '=' } as const
+
+// The direction cue's THREE colours (prototype `.arr.up/.dn/.eq`). Semantics — the whole
+// point of this redesign was to delete the unexplained amber signal, so amber is reserved
+// for the one case that actually asks for a change (mezo-yty6 final review, C2):
+//  • `up`   — still ramping toward the tier target. In week 1 EVERY grow/emphasize group is
+//             below its target by design, so this is the normal, healthy state: sage.
+//  • `down` — above the target: the only "consider trimming" case, so amber.
+//  • `hold` — on target: neutral/positive, sage as well.
+const DIRECTION_CLASS = { up: 'mz-arr-up', down: 'mz-arr-dn', hold: 'mz-arr-eq' } as const
+
+/** Percent is never rendered as text in this redesign's volume UI (spec §2). */
+const PERCENT = /%/
 
 /** Mirrors PeakFitCard's established copy for a peakWeekFit finding (mezo-yty6 fix round 1). */
 function peakFitLine(f: { day: string; minutes: number; direction: 'over' | 'under' }): string {
@@ -35,9 +48,26 @@ export function WeekLoadPanel({ days, priorities, volumePerMuscle, onBack }: Wee
   const rows = weekMuscleLoad(days, priorities ?? null, volumePerMuscle ?? null)
   const conflicts = adjacentDayConflicts(days)
   const peakFits = peakWeekFit(days, priorities ?? null, volumePerMuscle ?? null)
+  // Spec §3 names structureLint alongside the adjacency check and peakWeekFit as this
+  // page's lint sources; it was wired nowhere in the new editor path (mezo-yty6 final
+  // review, I4). Soft observations only — same passive visual language as the rows above.
+  //
+  // This redesign's volume UI never renders percent as text (spec §2 — "a % szám nem mond
+  // semmit, a szett igen"), but a couple of structureLint strings quote one: 'rep-zone'
+  // states a share in its HEADLINE (so the whole finding stays behind here — it still shows
+  // on the legacy StructureLintCard), and 'frequency' cites "~30%" only in its explanatory
+  // detail (so the headline renders and the detail is dropped). Filtering on the TEXT rather
+  // than on rule ids keeps this honest if the copy moves.
+  const structure = structureLint(days, priorities ?? null)
+    .filter((f) => !PERCENT.test(f.label))
+    .map((f) => ({ ...f, detail: PERCENT.test(f.detail) ? null : f.detail }))
   const [open, setOpen] = useState<string | null>(null)
 
-  const total = rows.reduce((a, r) => a + r.sets, 0)
+  // Raw working-set total, exactly like the tile that opened this page and like each day
+  // tile — the headline the user reads must be the same quantity everywhere (mezo-yty6 final
+  // review, I3). Summing `rows` would drop exempt work (plyo) and landmark-less groups
+  // (traps/core); the per-muscle cards below stay that filtered view on purpose.
+  const total = days.reduce((a, d) => a + d.exercises.reduce((s, e) => s + e.workingSets, 0), 0)
   const peak = rows.reduce((a, r) => a + Math.max(r.sets, r.target), 0)
   const moving = rows.filter((r) => r.direction !== 'hold').length
 
@@ -90,11 +120,13 @@ export function WeekLoadPanel({ days, priorities, volumePerMuscle, onBack }: Wee
                   </span>
                   <span className="mz-lcard-head" style={{ marginTop: 2 }}>
                     <span className="mz-lcard-num" style={{ color: fam.deep }}>
-                      <b>{r.sets}</b> <i aria-hidden="true">{ARROW[r.direction]}</i> <b>{r.target}</b>
+                      <b>{r.sets}</b>{' '}
+                      <i className={DIRECTION_CLASS[r.direction]} aria-hidden="true">{ARROW[r.direction]}</i>{' '}
+                      <b>{r.target}</b>
                       <small>cél</small>
                     </span>
                     <span className="mz-grow" />
-                    <span className="mz-lcard-stat" style={{ color: r.direction === 'hold' ? 'var(--sage-deep)' : 'var(--amber-deep)' }}>
+                    <span className={`mz-lcard-stat ${DIRECTION_CLASS[r.direction]}`}>
                       {r.direction === 'hold'
                         ? 'a célon'
                         : r.direction === 'up'
@@ -146,6 +178,13 @@ export function WeekLoadPanel({ days, priorities, volumePerMuscle, onBack }: Wee
               <span><b>A csúcshét is elfér</b> — az edzésidő minden napon a sávon belül marad.</span>
             </div>
           )}
+
+          {structure.map((f, i) => (
+            <div className="mz-lint rise" data-testid="structure-lint" key={`${f.rule}-${f.day ?? ''}-${i}`}>
+              <span aria-hidden="true">⚠️</span>
+              <span><b>{f.label}</b>{f.detail ? ` ${f.detail}` : ''}</span>
+            </div>
+          ))}
         </PageBody>
       </EntranceGroup>
     </MozaikPage>

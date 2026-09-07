@@ -77,7 +77,13 @@ export function MesoWeekEditor({
   const conflicts = adjacentDayConflicts(days)
   const flaggedDays = new Set(conflicts.flatMap((c) => [c.fromDay, c.toDay]))
   const weekRows = weekMuscleLoad(days, priorities ?? null, volumePerMuscle ?? null)
-  const weekSets = weekRows.reduce((a, r) => a + r.sets, 0)
+  // The HEADLINE is the raw working-set total — the same quantity each day tile shows, so
+  // the day tiles always add up to the week tile on one screen (mezo-yty6 final review, I3).
+  // Summing `weekRows` instead would silently drop exempt work (plyo) and landmark-less
+  // groups (traps/core), and the two numbers on this very screen would disagree. The
+  // per-muscle GAUGES below stay the filtered view: only groups with a landmark have a
+  // target to gauge against.
+  const weekSets = days.reduce((a, d) => a + d.exercises.reduce((s, e) => s + e.workingSets, 0), 0)
 
   const open = activeDay ? days.find((d) => d.day === activeDay) : undefined
   if (open) {
@@ -140,7 +146,12 @@ export function MesoWeekEditor({
                 <DayStripTile
                   key={d.day}
                   day={d.day}
-                  type={d.type}
+                  // MesoDay has no name field, so the (renameable) day name IS `d.type`.
+                  // KNOWN, ACCEPTED knock-on (mezo-yty6 final review, I5): `dayTone` keys off
+                  // the split-type vocabulary, so once the user renames a day away from a
+                  // known type ('Upper', 'Push'…) its tile falls back to the default coral
+                  // wash. Fixing it needs a real `name` column on MesoDay — filed, not done
+                  // here; do not "fix" it by re-deriving the tone from the muscles.
                   name={d.type}
                   sets={sets}
                   minutes={minutesOf(d)}

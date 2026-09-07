@@ -29,9 +29,8 @@ function makeProposal(over: Partial<MesoTemplateUpsertRequest> = {}, days: MesoD
   return { template, days, rationale: 'r', llmUsed: false }
 }
 
-/** The generated action now carries the input that produced the proposal (mezo-d20.14, I3). */
 const generate = (s: WizardState, proposal = makeProposal()) =>
-  wizardReducer(s, { type: 'generated', proposal, input: generateInput(s) })
+  wizardReducer(s, { type: 'generated', proposal })
 
 describe('wizardReducer', () => {
   const s0 = initialWizardState('2026-09-02')

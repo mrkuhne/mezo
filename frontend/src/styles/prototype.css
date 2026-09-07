@@ -10973,3 +10973,12 @@ button.mz-wtile:active { transform: scale(0.96); }
   .tpl-face { transition: none; }
   .tpl-menu { animation: none; }
 }
+
+/* ===== mezo-szerkesztő · irány-jelzés a heti terhelés-kártyán (mezo-yty6, C2) =====
+   Három szín, a jóváhagyott prototípus `.arr.up/.dn/.eq` skálája szerint. A borostyán
+   CSAK a `down` (cél FÖLÖTT) esetnek jár: az 1. héten minden ramping izom a célja alatt
+   van — ez a NORMÁLIS állapot, nem figyelmeztetés. Ugyanez az osztály festi a nyilat és
+   a mellette álló mondatot, hogy a kettő sose mondjon mást. */
+.mz-arr-up { color: var(--mz-cell-sage-ink); }
+.mz-arr-dn { color: var(--mz-cell-gold-ink); }
+.mz-arr-eq { color: var(--mz-ink-soft); }

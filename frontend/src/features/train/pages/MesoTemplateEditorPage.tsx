@@ -28,11 +28,14 @@ import { ExercisePickerSheet } from '@/features/train/sheets/ExercisePickerSheet
 
 // Same full-replace shape as the exercise-save path (a template has no per-field PATCH) —
 // every edit on this page (day plan, rename, tiers) travels through this one helper.
-// Every full write regenerates every exercise id server-side (see the module doc), so a
-// rename fired straight from MesoWeekEditor/MesoDayEditor's per-keystroke onChange would
-// PUT the whole document once per character. Debounce just the write here — local state
-// stays immediate/authoritative, only the network call is delayed.
-const RENAME_DEBOUNCE_MS = 400
+// Every full write regenerates every exercise id server-side (see the module doc), so an
+// edit fired straight from the editor's per-keystroke onChange would PUT the whole document
+// once per character. That is not just the rename: the redesign replaced ExerciseCard's
+// stepper buttons with free-text number inputs, so typing a weight of `82.5` used to fire
+// four full-document PUTs with no response re-seeding and no request ordering (mezo-yty6
+// final review, C1). EVERY write on this page is debounced here — local state stays
+// immediate/authoritative, only the network call is delayed.
+const WRITE_DEBOUNCE_MS = 400
 
 function toUpsert(
   template: MesoTemplate,
@@ -153,51 +156,49 @@ function TemplateDayEditor({ template, onPersist }: {
   // prop: components/ stay presentational, pages/ own data fetching (frontend_conventions).
   const { data: timingProfile, isPending: timingProfilePending } = useTimingProfile()
 
-  // The title AND the priority map ride along the same full-replace document as every
-  // other edit; `title` is overridable because setName's new value is not readable yet
-  // in the same tick as the rename that produced it.
-  const persist = (next: MesoDay[], title = name) => onPersist(next, undefined, priorities, title)
-
-  // Renames (the meso title and a day's own type/name) come from a per-keystroke onChange
-  // in MesoWeekEditor/MesoDayEditor — see RENAME_DEBOUNCE_MS above. Refs (not state) hold
-  // the latest write inputs so the debounced/unmount flush below always sends the CURRENT
-  // days (including any immediate exercise edit that landed while a rename was pending),
-  // never a stale snapshot taken when the debounce was scheduled.
+  // EVERY edit here (rename, day rename, exercise add/change/move/remove) comes from a
+  // per-keystroke onChange or a tap, and each one would otherwise PUT the whole document —
+  // see WRITE_DEBOUNCE_MS above. Refs (not state) hold the latest write inputs so the
+  // debounced/unmount flush below always sends the CURRENT days/title/priorities, never a
+  // stale snapshot taken when the debounce was scheduled; the mutation sites below also
+  // write the refs eagerly, so a flush that fires before React has re-rendered still sees
+  // the newest value.
   const onPersistRef = useRef(onPersist)
   onPersistRef.current = onPersist
   const prioritiesRef = useRef(priorities)
   prioritiesRef.current = priorities
   const daysRef = useRef(days)
   daysRef.current = days
-  const pendingTitleRef = useRef<string | null>(null)
-  const renameTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const nameRef = useRef(name)
+  nameRef.current = name
+  const pendingRef = useRef(false)
+  const writeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const flushRename = () => {
-    if (renameTimerRef.current) {
-      clearTimeout(renameTimerRef.current)
-      renameTimerRef.current = null
+  const flushWrite = () => {
+    if (writeTimerRef.current) {
+      clearTimeout(writeTimerRef.current)
+      writeTimerRef.current = null
     }
-    if (pendingTitleRef.current !== null) {
-      const title = pendingTitleRef.current
-      pendingTitleRef.current = null
-      onPersistRef.current(daysRef.current, undefined, prioritiesRef.current, title)
-    }
+    if (!pendingRef.current) return
+    pendingRef.current = false
+    onPersistRef.current(daysRef.current, undefined, prioritiesRef.current, nameRef.current)
   }
 
-  // Flush a pending debounced rename on unmount — otherwise navigating away right after
+  // Flush a pending debounced write on unmount — otherwise navigating away right after
   // typing silently drops the last edit, which is worse than the per-keystroke churn this
   // debounce exists to avoid.
-  useEffect(() => () => flushRename(), [])
+  useEffect(() => () => flushWrite(), [])
 
-  const persistRenameDebounced = (title: string) => {
-    pendingTitleRef.current = title
-    if (renameTimerRef.current) clearTimeout(renameTimerRef.current)
-    renameTimerRef.current = setTimeout(flushRename, RENAME_DEBOUNCE_MS)
+  const scheduleWrite = () => {
+    pendingRef.current = true
+    if (writeTimerRef.current) clearTimeout(writeTimerRef.current)
+    writeTimerRef.current = setTimeout(flushWrite, WRITE_DEBOUNCE_MS)
   }
 
   const apply = (next: MesoDay[]) => {
     setDays(next)
-    persist(next)
+    daysRef.current = next
+    scheduleWrite()
   }
 
   const patchDay = (dayKey: string, fn: (d: MesoDay) => MesoDay) =>
@@ -232,11 +233,8 @@ function TemplateDayEditor({ template, onPersist }: {
           if (day === null) setPickerDay(null)
         }}
         onBack={goBack}
-        onRename={(next) => { setName(next); persistRenameDebounced(next) }}
-        onRenameDay={(dayKey, next) => {
-          setDays(days.map((d) => (d.day === dayKey ? { ...d, type: next } : d)))
-          persistRenameDebounced(name)
-        }}
+        onRename={(next) => { setName(next); nameRef.current = next; scheduleWrite() }}
+        onRenameDay={(dayKey, next) => apply(days.map((d) => (d.day === dayKey ? { ...d, type: next } : d)))}
         onChangeExercise={(dayKey, exId, patch) => patchDay(dayKey, (d) =>
           withExercises(d, d.exercises.map((e) => (e.id === exId ? { ...e, ...patch } : e))))}
         onMoveExercise={(dayKey, exId, dir) => patchDay(dayKey, (d) => {

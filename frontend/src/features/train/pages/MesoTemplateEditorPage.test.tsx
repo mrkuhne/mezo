@@ -287,4 +287,63 @@ describe('MesoTemplateEditorPage (real mode)', () => {
     await waitFor(() => expect(puts.length).toBeGreaterThan(0))
     expect(puts[0].title).toBe('Hypertrophy 04 · Tavasz!')
   })
+
+  // mezo-yty6 final review, C1: the redesign replaced ExerciseCard's stepper buttons with
+  // free-text number inputs, so an un-debounced exercise handler PUT the whole document once
+  // per typed character — and every full write regenerates the exercise ids server-side.
+  it('debounces exercise edits: typing several characters into a numeric field fires exactly one PUT, carrying the final value (mezo-yty6)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/meso-templates`, () => HttpResponse.json([REAL_TPL_FIXTURE])),
+    )
+    const puts: { days?: { exercises?: { anchorWeightKg?: number | null }[] }[] }[] = []
+    server.use(
+      http.put(`${API_BASE}/api/train/meso-templates/:id`, async ({ params, request }) => {
+        const body = (await request.json()) as (typeof puts)[number]
+        puts.push(body)
+        return HttpResponse.json({ id: String(params.id), runCount: 1, phaseCurve: [], days: [], ...body })
+      }),
+    )
+    const user = userEvent.setup()
+    setupPage(REAL_TPL)
+
+    await screen.findByRole('textbox', { name: 'Mezociklus neve' })
+    const tile = (await screen.findAllByRole('button', { name: /· szerkesztés$/ }))[0]
+    await user.click(tile)
+    // Three keystrokes into the empty (placeholder "auto") starting-weight field: pre-fix
+    // that was three full-document PUTs (1 → 12 → 125), each regenerating the exercise ids.
+    const weight = await screen.findByRole('spinbutton', { name: 'Kiinduló súly (kg)' })
+    await user.type(weight, '125')
+    // The local field is authoritative immediately — no wait needed for the UI.
+    expect(weight).toHaveValue(125)
+    // Not one PUT per character.
+    expect(puts.length).toBe(0)
+
+    await waitFor(() => expect(puts.length).toBeGreaterThan(0))
+    expect(puts.length).toBe(1)
+    expect(puts[0].days![0].exercises![0].anchorWeightKg).toBe(125)
+  })
+
+  it('flushes a pending debounced exercise edit on unmount, so navigating away right after typing does not drop it (mezo-yty6)', async () => {
+    server.use(
+      http.get(`${API_BASE}/api/train/meso-templates`, () => HttpResponse.json([REAL_TPL_FIXTURE])),
+    )
+    const puts: { days?: { exercises?: { workingSets?: number }[] }[] }[] = []
+    server.use(
+      http.put(`${API_BASE}/api/train/meso-templates/:id`, async ({ params, request }) => {
+        const body = (await request.json()) as (typeof puts)[number]
+        puts.push(body)
+        return HttpResponse.json({ id: String(params.id), runCount: 1, phaseCurve: [], days: [], ...body })
+      }),
+    )
+    const user = userEvent.setup()
+    const { unmount } = setupPage(REAL_TPL)
+
+    await screen.findByRole('textbox', { name: 'Mezociklus neve' })
+    await editWorkingSets(user, '7')
+    // Unmount well inside the debounce window — the pending write must still fire.
+    unmount()
+
+    await waitFor(() => expect(puts.length).toBeGreaterThan(0))
+    expect(puts[0].days![0].exercises![0].workingSets).toBe(7)
+  })
 })
