@@ -96,7 +96,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **modules:** adminApi.ts, adminHooks.ts, adminInsightsApi.ts, adminInsightsHooks.ts, adminInsightsMock.ts,
     adminMock.ts
 - **FE ui** `frontend/src/features/admin`
-  - **pages:** AdminOverviewPage.tsx
+  - **pages:** AdminOverviewPage.tsx, AdminUsagePage.tsx, AdminUserDetailPage.tsx, AdminUsersPage.tsx
+  - **components:** AdminTile.tsx, MatrixGrid.tsx, Sparkline.tsx
   - **root:** AdminLayout.tsx, AdminRail.tsx, adminRoutes.tsx
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 6 IT + 1 unit
   - **ITs:** `AdminDataBrowserIT`, `AdminOverviewIT`, `AdminTableCatalogIT`, `AdminUsageIT`, `AdminUserDetailIT`,
