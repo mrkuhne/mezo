@@ -62,12 +62,12 @@ public class KonziliumVerdictRound {
     private static final String ACTIVE = "ACTIVE";
     private static final String CLAIM_NOT_FOUND = "a célzott állítás nem található";
 
+    private final CharacterDimensionRepository dimensionRepository;
+    private final CharacterClaimRepository claimRepository;
     private final CompanionLlm companionLlm;
     private final ObjectMapper objectMapper;
     private final LlmCallContextHolder llmCallContextHolder;
     private final PromptPersona promptPersona;
-    private final CharacterClaimRepository claimRepository;
-    private final CharacterDimensionRepository dimensionRepository;
     private final CharacterProperties characterProperties;
 
     /** One Szkeptikus verdict, before defaulting. {@code suggestedConfidence} is the strength the

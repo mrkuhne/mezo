@@ -319,11 +319,13 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
 
         assertThat(result.rulings()).singleElement()
                 .satisfies(ruling -> assertThat(ruling.accepted()).isTrue());
-        // The Szkeptikus's canned answer echoes nothing, so assert the prompt reached the model
-        // through the ONE observable channel: the round resolved the claim, so no UUID text can
-        // appear in any turn.
-        assertThat(result.turns()).allSatisfy(turn ->
-                assertThat(turn.text()).doesNotContain(claim.getId().toString()));
+        // The round calls the Szkeptikus first, then the Integrátor, so lastUserMessage() holds
+        // the Integrátor's prompt — the one channel that actually renders target(...). Assert the
+        // resolved claim's text and confidence WORD reached it, and the raw UUID did not.
+        assertThat(fakeCompanionLlm.lastUserMessage())
+                .contains(claim.getText())
+                .contains("valószínű")
+                .doesNotContain(claim.getId().toString());
     }
 
     @Test
@@ -338,8 +340,9 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
                 verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
 
         assertThat(result.rulings()).hasSize(1);
-        assertThat(result.turns()).allSatisfy(turn ->
-                assertThat(turn.text()).doesNotContain(missing.toString()));
+        assertThat(fakeCompanionLlm.lastUserMessage())
+                .contains("a célzott állítás nem található")
+                .doesNotContain(missing.toString());
     }
 
     @Test
