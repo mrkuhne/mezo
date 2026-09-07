@@ -55,7 +55,6 @@ public class KonziliumVerdictRound {
     private static final BigDecimal MAX_RULED_CONFIDENCE = new BigDecimal("0.90");
     private static final int MAX_CHAPTERS_PER_CONFERENCE = 1;
     private static final String NEW_KIND = "NEW";
-    private static final String UP_KIND = "UP";
     private static final String DOWN_KIND = "DOWN";
     private static final String RETIRE_KIND = "RETIRE";
     private static final String KEEP = "KEEP";
@@ -296,6 +295,22 @@ public class KonziliumVerdictRound {
         if (confidence == null && NEW_KIND.equals(proposal.kind())) {
             confidence = proposal.confidence();
         }
+        // The DOWN/RETIRE exemption above is justified by the premise that the change WEAKENS the
+        // dossier — but for DOWN that is only an assumption, not a guarantee: ClaimLifecycle.applyMove
+        // writes the chair's own confidence AS-IS whenever it is non-null, and steps -0.10 off the
+        // claim's CURRENT value only when it is null. So a sensitive DOWN accepted WITHOUT the
+        // Szkeptikus's clearance — it only reached here because of the weakensDossier exemption, not
+        // because the Szkeptikus actually cleared it — must never carry the chair's own number
+        // through: an inflated confidence there would STRENGTHEN the claim, exactly what the
+        // guardrail exists to stop, reached through the exemption meant to be safe by construction.
+        // Forcing it to null hands the move to the lifecycle's own deterministic, guaranteed-
+        // weakening step. If the Szkeptikus DID clear it (KEEP/WEAKEN), that clearance is what earns
+        // the chair the right to set its own number, so the chair's value survives untouched. RETIRE
+        // needs no such treatment: it removes the claim outright, so there is no confidence number to
+        // abuse (mezo-lghn fix round 3, item 1).
+        if (accepted && DOWN_KIND.equals(proposal.kind()) && lacksSensitiveClearance(proposal, verdict)) {
+            confidence = null;
+        }
         if (accepted && confidence != null) {
             confidence = clamp(confidence);
         }
@@ -482,9 +497,11 @@ public class KonziliumVerdictRound {
                 tartós téma-e, ami külön fejezetet érdemel — ez ritka. \
                 Ahol a szakértők egymás javaslatára is állást foglaltak, azt is figyelembe veszed. \
                 A Szkeptikus KEEP vagy WEAKEN döntése ellenére elvethetsz. KILL ellenére csak \
-                akkor fogadhatsz el, ha a javaslat NEM érzékeny — érzékeny KILL végleges. Új vagy \
-                erősödő érzékeny állítást (NEW, UP) csak akkor fogadhatsz el, ha a Szkeptikus \
-                kifejezetten KEEP-et vagy WEAKEN-t adott rá — ha egyáltalán nem válaszolt erre a \
+                akkor fogadhatsz el, ha a javaslat NEM érzékeny — érzékeny KILL végleges, kivéve \
+                ha a javaslat DOWN vagy RETIRE, mert az gyengíti vagy törli az állítást, azt \
+                mindig elfogadhatod. Új vagy erősödő érzékeny állítást (NEW, UP) csak akkor \
+                fogadhatsz el, ha a Szkeptikus kifejezetten KEEP-et vagy WEAKEN-t adott rá — ha \
+                egyáltalán nem válaszolt erre a \
                 javaslatra, az ugyanúgy nem elég az elfogadáshoz, mintha KILL-t mondott volna.""";
     }
 

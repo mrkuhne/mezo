@@ -794,4 +794,39 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
             assertThat(ruling.note()).isEqualTo("NOT_FOR_DOSSIER");
         });
     }
+
+    /** mezo-lghn fix round 3, item 1 + item 3: a sensitive DOWN is EXEMPT from the guardrail — it
+     *  weakens the dossier, so it may be accepted even over a KILL — but the exemption's premise
+     *  ("DOWN weakens") is not automatically true: {@code ClaimLifecycle.applyMove} writes the
+     *  chair's own confidence AS-IS whenever it is non-null, and steps -0.10 off the CURRENT value
+     *  only when it is null. Without the round-3 force-to-null fix, this exact scenario (a
+     *  sensitive DOWN, KILLed, accepted with an inflated 0.90) would silently STRENGTHEN a claim
+     *  sitting at 0.50 — the very strengthening the guardrail exists to stop, reached through the
+     *  DOWN exemption meant to be safe by construction. This test pins BOTH halves at once: the
+     *  exemption itself (accepted stays true — deleting the {@code DOWN_KIND} disjunct from
+     *  {@code weakensDossier} would flip this to false) and the force-to-null fix (the final
+     *  confidence is the lifecycle's own -0.10 step, 0.40, never the chair's 0.90). */
+    @Test
+    void aSensitiveDownAcceptOverAKillIgnoresTheChairsInflatedConfidence() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "mental", "pszichologus");
+        CharacterClaimEntity claim = seedClaim(owner, dimension.getId(), "Érzékeny állítás.", new BigDecimal("0.50"));
+        ClaimProposal proposal = new ClaimProposal("pszichologus", "DOWN", null, claim.getId(),
+                "Gyengítsük. "
+                        + "[fake-char-skeptic:[{\"index\":0,\"verdict\":\"KILL\","
+                        + "\"argument\":\"Túlinterpretálás.\"}]] "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":true,"
+                        + "\"confidence\":0.9,\"reason\":\"Mégis gyengítem, de magasra teszem.\"}],"
+                        + "\"chapters\":[]}]",
+                new BigDecimal("0.50"), true, "Indoklás.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.rulings()).singleElement()
+                .satisfies(ruling -> assertThat(ruling.accepted()).isTrue());
+        claimLifecycle.apply(owner, UUID.randomUUID(), result.rulings());
+        CharacterClaimEntity updated = claimRepository.findById(claim.getId()).orElseThrow();
+        assertThat(updated.getConfidence()).isEqualByComparingTo(new BigDecimal("0.40")); // 0.50 - 0.10 step
+    }
 }
