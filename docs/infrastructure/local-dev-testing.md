@@ -285,6 +285,18 @@ RAM upgrade is not an option, so reduce the footprint instead. In rough order of
    (`target/classes` is fresh): `./mvnw test -Dtest=… ` skips the slow recompile. CLAUDE.md warns
    Lombok+MapStruct incremental is flaky, so use sparingly.
 
+## Environment-only switches
+
+Some rollout switches deliberately live in the deployment environment rather than in
+`application.yml`, so a code review can never flip production behaviour by accident.
+
+### Chat serving mode (mezo-eq85, product-owner decision 2026-09-06)
+
+Chat serves from the unified memory platform when the environment sets
+`MEZO_MEMORY_SERVING_MODE=NEW` (the yml default stays `SHADOW`). `NEW` falls back to the legacy
+context on a total retriever outage (audited as `MEMORY_RETRIEVAL_ALL_FAILED_FALLBACK_OLD`).
+Set it in the deployment environment, not in `application.yml`.
+
 ## Reaching this dev environment from another machine (remote guide)
 
 If a second, more capable machine is available, run the heavy work there instead of the 16 GB

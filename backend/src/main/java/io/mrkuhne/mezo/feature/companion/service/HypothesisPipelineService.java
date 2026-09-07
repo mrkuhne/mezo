@@ -40,6 +40,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.time.LocalDate;
 import java.util.HexFormat;
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
@@ -359,7 +360,7 @@ public class HypothesisPipelineService {
         if (validator != null) {
             return validator.availableSeries(userId);
         }
-        return java.util.Arrays.stream(MetricKey.values())
+        return Arrays.stream(MetricKey.values())
                 .filter(MetricKey::correlatable)
                 .map(MetricKey::wireKey)
                 .toList();
