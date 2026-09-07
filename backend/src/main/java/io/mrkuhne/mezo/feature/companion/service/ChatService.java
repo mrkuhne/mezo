@@ -19,6 +19,7 @@ import io.mrkuhne.mezo.feature.companion.mapper.CompanionMapper;
 import io.mrkuhne.mezo.feature.companion.memory.service.ChatMemoryContextAdapter;
 import io.mrkuhne.mezo.feature.companion.memory.service.ChatMemoryContextAdapter.ChatMemoryPayload;
 import io.mrkuhne.mezo.feature.companion.profile.service.ProfilePromptAssembler;
+import io.mrkuhne.mezo.feature.companion.reflection.service.ReflectionPromptBlock;
 import io.mrkuhne.mezo.feature.companion.repository.AiConversationRepository;
 import io.mrkuhne.mezo.feature.companion.repository.AiMessageRepository;
 import io.mrkuhne.mezo.feature.companion.tools.CompanionToolRegistry;
@@ -179,6 +180,8 @@ public class ChatService {
     private final ObjectProvider<CharacterPromptSource> characterPromptSource;
     /** mezo-p2tr — anchored conversations' [Heti adatok] block; "" for a plain conversation. */
     private final WeekContextRenderer weekContextRenderer;
+    /** mezo-eq85.3 — the [Észrevételek] block; absent (null) unless Reflexió is on. */
+    private final ObjectProvider<ReflectionPromptBlock> reflectionPromptBlock;
     private final CompanionLlm companionLlm;
     /** V1.3 — present only when the advisors switch is on (bean-boundary gating). */
     private final ObjectProvider<CompanionAdvisorChain> advisorChain;
@@ -354,6 +357,7 @@ public class ChatService {
                 + anchoredBlock(userId, contextKind, contextDate)
                 + factsBlock
                 + knowledgeFactService.renderNewPatternFactsBlock(userId)
+                + reflectionBlock(userId)
                 + characterBlock(userId)
                 + profileBlock(userId)
                 + memoriesBlock
@@ -364,6 +368,12 @@ public class ChatService {
     /** mezo-p2tr: "" for a plain conversation (no anchor); the [Heti adatok] block otherwise. */
     private String anchoredBlock(UUID userId, String contextKind, LocalDate contextDate) {
         return contextKind == null ? "" : weekContextRenderer.render(userId, contextKind, contextDate);
+    }
+
+    /** mezo-eq85.3: what Mezo is currently watching — "" when Reflexió is off or nothing is open. */
+    private String reflectionBlock(UUID userId) {
+        ReflectionPromptBlock block = reflectionPromptBlock.getIfAvailable();
+        return block == null ? "" : block.render(userId);
     }
 
     /** W4.3: the profile's contribution — "" when the bean is absent or nothing is stored. */
