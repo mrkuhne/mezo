@@ -7,6 +7,14 @@ metadata:
   namespace: mezo
 spec:
   replicas: 1
+  # mezo-ibxy: with replicas=1 the default 25% maxUnavailable already rounds down to 0, but make
+  # the "old pod keeps serving until the new one is Ready" guarantee explicit — the probes now
+  # live on the management port, which an older image does not open.
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   selector:
     matchLabels:
       app: backend
@@ -20,9 +28,13 @@ spec:
         - name: ghcr-pull
       containers:
         - name: backend
-          image: ghcr.io/mrkuhne/mezo-backend:2.192.0
+          image: ghcr.io/mrkuhne/mezo-backend:2.197.1
           ports:
-            - containerPort: 8090
+            - name: http
+              containerPort: 8090
+            # mezo-ibxy: actuator (health + prometheus). Cluster-internal only — never on an Ingress.
+            - name: management
+              containerPort: 8081
           env:
             # Pin the JVM default zone so business dates (level_up_event.occurred_on,
             # gamification streak/coin rollover) and every @Scheduled cron run on Budapest
@@ -91,10 +103,15 @@ spec:
               value: "true"
             # LLM call audit log (mezo-2zyu): every Gemini call lands in llm_log_history with
             # its token/cost breakdown and its caller attribution (feature/operation/entity).
-            # Default-off in application.yml — deliberately switched ON only where the real
-            # adapter runs, so local/test runs never accumulate audit rows.
+            # Default-on in application.yml since mezo-ozri.1 — this explicit pin is now
+            # redundant with that default, kept deliberately as a production safeguard.
             - name: MEZO_FEATURE_LLM_LOG_ENABLED
               value: "true"
+            # mezo-ibxy: observability. ECS JSON logs for VictoriaLogs; actuator on 8081.
+            - name: MEZO_LOG_FORMAT
+              value: ecs
+            - name: MEZO_MANAGEMENT_PORT
+              value: "8081"
             # H2 Web Push N1 (mezo-h4wp.6.1): the VAPID keypair backing every push we
             # sign. Both halves live in the mezo-app SealedSecret — the private one is
             # secret, the public one is not, but it is kept beside it so the pair can
@@ -114,22 +131,23 @@ spec:
                   name: mezo-app
                   key: VAPID_PRIVATE
           # startupProbe gives Spring Boot + Liquibase time to come up before
-          # liveness/readiness start judging it. /actuator/health is exposed.
+          # liveness/readiness start judging it. /actuator/health lives on the management
+          # port (mezo-ibxy) — a broken management server = an unhealthy pod, on purpose.
           startupProbe:
             httpGet:
               path: /actuator/health
-              port: 8090
+              port: management
             periodSeconds: 5
             failureThreshold: 40      # up to ~200s to boot
           readinessProbe:
             httpGet:
               path: /actuator/health
-              port: 8090
+              port: management
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /actuator/health
-              port: 8090
+              port: management
             periodSeconds: 20
           resources:
             requests:

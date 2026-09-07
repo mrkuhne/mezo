@@ -81,6 +81,6 @@ class LlmUsageControllerIT extends ApiIntegrationTest {
     private static PricingSnapshot snapshot() {
         return new PricingSnapshot("gemini-2.5-flash", "USD",
             new BigDecimal("0.30"), new BigDecimal("2.50"), new BigDecimal("2.50"),
-            new BigDecimal("0.075"), null, LocalDate.now());
+            new BigDecimal("0.075"), null, null, LocalDate.now());
     }
 }

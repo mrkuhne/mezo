@@ -1,6 +1,12 @@
 import { apiFetch } from '@/data/_client/api'
 import type { components } from '@/data/_client/api.gen'
-import type { Pattern, PatternCategory, PatternRowStatus, PatternStatus } from '@/data/types'
+import type {
+  Pattern,
+  PatternCategory,
+  PatternRowStatus,
+  PatternStatus,
+  PatternTestPlan,
+} from '@/data/types'
 
 export type PatternResponse = components['schemas']['PatternResponse']
 export type PatternDecisionRequest = components['schemas']['PatternDecisionRequest']
@@ -31,6 +37,13 @@ export function toPattern(w: PatternResponse): Pattern {
     status: w.status as PatternRowStatus,
     kind: w.kind as Pattern['kind'],
     thinking: w.thinking ?? undefined,
+    // Reflexió S2 (mezo-eq85.2) — belief is a deterministic backend number, never an LLM guess
+    hypothesisKey: w.hypothesisKey ?? undefined,
+    testPlan: (w.testPlan as PatternTestPlan | null | undefined) ?? undefined,
+    belief: w.belief ?? undefined,
+    evidenceHits: w.evidenceHits,
+    evidenceMisses: w.evidenceMisses,
+    origin: (w.origin as Pattern['origin']) ?? undefined,
   }
 }
 

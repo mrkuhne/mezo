@@ -109,8 +109,8 @@ class CompanionPropertiesIT extends AbstractIntegrationTest {
 
     @Test
     void testHypothesesConfig_shouldBindLoopKnobsFromYaml_whenContextStarts() {
-        assertThat(properties.hypotheses().cron()).isEqualTo("0 0 3 * * SUN");
-        assertThat(properties.hypotheses().maxPerRun()).isEqualTo(3);
+        // S2 (mezo-eq85.2): cron + max-per-run moved to mezo.companion.reflection — only the two
+        // critique thresholds (what SURVIVES, not when it runs) stay on the hypotheses block
         assertThat(properties.hypotheses().keepThreshold()).isEqualTo(0.75);
         assertThat(properties.hypotheses().reviseThreshold()).isEqualTo(0.50);
     }

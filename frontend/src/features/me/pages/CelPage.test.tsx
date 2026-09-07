@@ -237,8 +237,16 @@ test('a konfliktus-mondat megjelenik, ha a progress hoz ilyet (mezo-iizd.9)', as
   expect(await screen.findByText(/ugyanazt az estét kéri/)).toBeInTheDocument()
 })
 
+// A mock MOST már ültet konfliktust `lg-kockahas`-ra (mezo-9r85, 5. tétel — a `me-cel-reszlet`
+// golden fedezete), tehát az invariáns mérése egy konfliktus-MENTES célra költözik.
 test('konfliktus nélkül nincs szekció-maradvány', async () => {
-  renderGoal('lg-kockahas')
+  renderGoal('lg-hustle')
   await screen.findByText(/Pillérek/)
   expect(document.querySelector('.lg-conflict')).toBeNull()
+})
+
+test('a mock-konfliktus tényleg rajzol a golden céljára (mezo-9r85)', async () => {
+  renderGoal('lg-kockahas')
+  expect(await screen.findByText(/ugyanazt az estét kéri/)).toBeInTheDocument()
+  expect(document.querySelector('.lg-conflict')).not.toBeNull()
 })

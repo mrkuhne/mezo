@@ -7,7 +7,6 @@ import io.mrkuhne.mezo.feature.people.repository.PersonRepository;
 import io.mrkuhne.mezo.techcore.text.SafeTruncate;
 import io.mrkuhne.mezo.techcore.text.TextFold;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -35,8 +34,6 @@ public class MentionDetectionService {
 
     /** Feed-barát plafon; a mention.excerpt oszlopnak nincs DB-hossza, ez UX-cap. */
     private static final int EXCERPT_MAX_CHARS = 240;
-    /** 1–2 betűs needle szinte mindenre illik — sosem az, amire a user gondolt. */
-    private static final int MIN_NEEDLE_LENGTH = 3;
 
     private final PersonRepository personRepository;
     private final MentionRepository mentionRepository;
@@ -57,7 +54,7 @@ public class MentionDetectionService {
         List<String> sentences = splitSentences(text);
         int written = 0;
         for (PersonEntity person : persons) {
-            String excerpt = firstMatchingSentence(sentences, needlesFor(person));
+            String excerpt = firstMatchingSentence(sentences, PersonNeedles.of(person));
             if (excerpt == null) {
                 continue;
             }
@@ -88,22 +85,6 @@ public class MentionDetectionService {
         return written;
     }
 
-    private static List<String> needlesFor(PersonEntity person) {
-        List<String> needles = new ArrayList<>();
-        addNeedle(needles, person.getName());
-        if (person.getAliases() != null) {
-            person.getAliases().forEach(a -> addNeedle(needles, a));
-        }
-        return needles;
-    }
-
-    private static void addNeedle(List<String> needles, String raw) {
-        String folded = TextFold.fold(raw).strip();
-        if (folded.length() >= MIN_NEEDLE_LENGTH) {
-            needles.add(folded);
-        }
-    }
-
     /** Mondathatár: záró írásjel vagy sortörés után vágunk; a delimiter a mondatnál marad. */
     private static List<String> splitSentences(String text) {
         return java.util.Arrays.stream(text.split("(?<=[.!?\\n])"))
@@ -116,22 +97,11 @@ public class MentionDetectionService {
         for (String sentence : sentences) {
             String folded = TextFold.fold(sentence);
             for (String needle : needles) {
-                if (containsAtWordStart(folded, needle)) {
+                if (PersonNeedles.containsAtWordStart(folded, needle)) {
                     return sentence;
                 }
             }
         }
         return null;
-    }
-
-    /** A needle szóhatáron kezdődik; a szó vége szabad (magyar ragok: "adammal", "rekanak"). */
-    private static boolean containsAtWordStart(String foldedHaystack, String foldedNeedle) {
-        int i = -1;
-        while ((i = foldedHaystack.indexOf(foldedNeedle, i + 1)) >= 0) {
-            if (i == 0 || !Character.isLetterOrDigit(foldedHaystack.charAt(i - 1))) {
-                return true;
-            }
-        }
-        return false;
     }
 }

@@ -38,6 +38,9 @@ export function SkillBandCard({ eyebrow, chip, chipTone, rows, footer, wash, del
             <span className="gr-skl-nm">{r.name}</span>
             <div className="gr-tbar"><i className={BAR[wash]} style={{ '--w': `${clampPct(r.progressPct)}%`, '--d': `${d + 260 + i * 55}ms` } as CSSProperties} /></div>
             {hint != null && <span className="gr-skl-perk">→ perk Lv {hint}</span>}
+            {/* .lg-goalchip: a sor által NEM hordozott felét nevezi meg — itt CÉL CÍME, mert egy
+                skill-sor nem hordoz cél-identitást. Szabály a prototype.css-ben, a token
+                definíciójánál (mezo-9r85). */}
             {goalChips?.get(r.key) && (
               <span className={`lg-goalchip ${DIMENSIONS[goalChips.get(r.key)!.dimension].cls}`}>
                 <i />{goalChips.get(r.key)!.title}

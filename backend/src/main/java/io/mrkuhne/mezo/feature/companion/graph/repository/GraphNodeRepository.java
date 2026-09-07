@@ -8,6 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.domain.Limit;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -81,6 +82,27 @@ public interface GraphNodeRepository extends JpaRepository<GraphNodeEntity, UUID
         """, nativeQuery = true)
     long countQuarterlyNodesOnQuarter(@Param("createdBy") UUID createdBy,
         @Param("occurredOn") LocalDate occurredOn);
+
+    /**
+     * ATOMI meta-merge (bd mezo-06o0.7): a jsonb {@code ||} a SORON BELÜL, a sor zárolása alatt
+     * olvassa a régi értéket és fűzi rá a patchet, tehát nincs read-modify-write ablak, amiben egy
+     * párhuzamos író kulcsa elveszhetne. Natív, mert a JPQL nem ismeri a jsonb operátorokat.
+     *
+     * <p>Az {@code updated_at}-ot kézzel írjuk: a {@code @UpdateTimestamp} a Hibernate flush-hoz
+     * kötődik, egy natív UPDATE mellett nem sülne el. {@code flushAutomatically}: a hívó függő
+     * módosításai (pl. a {@code GraphService.restore} {@code userArchivedAt = null}-ja) MÉG a natív
+     * írás előtt kimennek. {@code clearAutomatically} viszont NEM — az az egész persistence
+     * contextet leválasztaná, és egy nálunk feljebb álló hívó ezután egy elavult pillanatképet
+     * mentene vissza; a {@code GraphService.mergeMeta} helyette csak az érintett node-ot frissíti.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+        update knowledge_node
+        set meta = coalesce(meta, '{}'::jsonb) || cast(:patch as jsonb), updated_at = now()
+        where id = :nodeId and created_by = :createdBy and is_deleted = false
+        """, nativeQuery = true)
+    int mergeMeta(@Param("createdBy") UUID createdBy, @Param("nodeId") UUID nodeId,
+        @Param("patch") String patch);
 
     /** mezo-06o0.5: a KÉZZEL archivált node-ok — a visszaállító felület adatforrása. A
      *  gép-archivált node-ok (a forrásuk megszűnt kvalifikálni) szándékosan kimaradnak: azokat

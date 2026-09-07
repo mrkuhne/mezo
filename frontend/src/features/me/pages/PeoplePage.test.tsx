@@ -208,6 +208,30 @@ test('the header keeps the back chip left and both actions right, Log first (mez
   expect((head.children[1] as HTMLElement).style.marginLeft).toBe('auto')
 })
 
+test('the stat strip and the mosaic do not touch (mezo-06o0.14)', () => {
+  // They shipped flush against each other: `.mz-statstrip` carries no bottom margin and the
+  // house idiom is that the page supplies the gap. jsdom computes no layout, so this asserts
+  // the declaration rather than a measured gap — which is exactly the thing that went missing.
+  const { container } = renderPage()
+  const mosaic = container.querySelector('.mz-mosaic') as HTMLElement
+  expect(mosaic.style.marginTop).toBe('11px')
+})
+
+test('CONTRACT (mezo-06o0.14): no header action paints itself in the page wash', () => {
+  // The regression was invisible rather than wrong-looking: both chips were tinted
+  // `--mz-cell-rose-bg`, which is the rose MozaikPage's OWN wash, so on the light theme they
+  // dissolved into the background and the actions read as bare text. Any future page-wash token
+  // here would do the same, so the assertion is on the class of mistake, not on one hex.
+  const { container } = renderPage()
+  const head = container.querySelector('.mz-page-head')!
+  const actions = [...head.children].slice(1) as HTMLElement[]
+  expect(actions).toHaveLength(2)
+  for (const action of actions) {
+    expect(action.style.background).not.toContain('--mz-cell-rose-bg')
+    expect(action.style.background).toBeTruthy()
+  }
+})
+
 test('header actions still open Log and Új személy (the existing PeoplePage sheets)', () => {
   renderPage()
   expect(screen.getByText('＋ Új személy')).toBeInTheDocument()

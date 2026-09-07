@@ -1,10 +1,12 @@
 package io.mrkuhne.mezo.feature.companion;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 import io.mrkuhne.mezo.feature.companion.entity.KnowledgeFactEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
+import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
 import io.mrkuhne.mezo.feature.companion.repository.KnowledgeFactRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
 import io.mrkuhne.mezo.feature.companion.repository.PatternRepository;
@@ -141,6 +143,55 @@ class PatternDetectionServiceIT extends AbstractIntegrationTest {
                 .stream().filter(p -> PAIR_KEY.equals(p.getPairKey())).toList();
         assertThat(all).hasSize(1);
         assertThat(all.getFirst().getId()).isEqualTo(firstId);
+    }
+
+    /**
+     * Reflexió S2 (mezo-eq85.2): the catalog pair IS a falsifiable test plan, and this stamp is the
+     * ONLY producer of {@code hypothesis_key} for statistical rows — i.e. the only writer that the
+     * partial unique index {@code uq_pattern_created_by_hypothesis_key} can ever collide with.
+     */
+    @Test
+    void testDetect_shouldStampTheCatalogPairAsATestPlan() {
+        UUID owner = userPopulator.createUser().getId();
+        seedAntiCorrelatedDays(owner, 10);
+
+        patternDetectionService.detect(owner);
+
+        PatternEntity row = patternRepository
+                .findByCreatedByAndKindAndPairKeyAndDeletedFalse(owner, PatternEntity.KIND_STATISTICAL, PAIR_KEY)
+                .orElseThrow();
+        assertThat(row.getHypothesisKey()).isEqualTo("pair:" + PAIR_KEY);
+        assertThat(row.getOrigin()).isEqualTo(PatternEntity.ORIGIN_PAIR_CATALOG);
+        assertThat(row.getTestPlan()).isNotNull();
+        // the plan mirrors the pair config (metric-a/metric-b/lag-days/expected-direction) and the
+        // shared gate thresholds (min-n 8, min-group-n 3, lookback-days 60)
+        assertThat(row.getTestPlan().seriesA()).isEqualTo("checkin-stress");
+        assertThat(row.getTestPlan().seriesB()).isEqualTo("sleep-quality");
+        assertThat(row.getTestPlan().lagDays()).isZero();
+        assertThat(row.getTestPlan().expectedDirection()).isEqualTo(TestPlanEnvelope.DIRECTION_NEGATIVE);
+        assertThat(row.getTestPlan().minN()).isEqualTo(8);
+        assertThat(row.getTestPlan().minGroupN()).isEqualTo(3);
+        assertThat(row.getTestPlan().windowDays()).isEqualTo(60);
+    }
+
+    /**
+     * The refresh path over an already-stamped row: a second night writes the SAME
+     * {@code hypothesis_key} back, so if the write were an insert (or the stamp were rewritten on a
+     * different row) {@code uq_pattern_created_by_hypothesis_key} would reject it.
+     */
+    @Test
+    void testDetect_shouldNotViolateTheHypothesisKeyIndex_whenRunTwice() {
+        UUID owner = userPopulator.createUser().getId();
+        seedAntiCorrelatedDays(owner, 10);
+
+        patternDetectionService.detect(owner);
+        assertThatCode(() -> patternDetectionService.detect(owner)).doesNotThrowAnyException();
+
+        List<PatternEntity> stamped = patternRepository
+                .findByCreatedByAndDeletedFalseOrderByLastDetectedAtDesc(owner).stream()
+                .filter(p -> ("pair:" + PAIR_KEY).equals(p.getHypothesisKey())).toList();
+        assertThat(stamped).hasSize(1);
+        assertThat(stamped.getFirst().getTestPlan()).isNotNull();
     }
 
     @Test
