@@ -120,10 +120,99 @@ class LegacyTranscriptParserTest {
         assertThat(third.chair().accepted()).isTrue();
     }
 
+    /** A "mezo" turn with no ruling line is NOT the chair turn: it threads like any other expert
+     *  turn, and its lines are numbered into the shared proposal index. */
     @Test
-    void parse_bootstrapChairTurnWithoutRulingLines_doesNotBecomeAnExpertThread() {
+    void parse_mezoTurnWithoutRulingLines_threadsAsAnExpertTurn() {
         List<ConferenceTranscriptEnvelope.Turn> turns = List.of(
-                turn("mezo", "A teljes eddigi történet beolvasva — 9 kezdő állítás felvéve."));
+                turn("mezo", "Mezo: 1 javaslat a hét 2 megfigyeléséből.\n"
+                        + "A heti tervezés következetesebb lett."),
+                turn("drill", "Drill: 1 javaslat a hét 4 megfigyeléséből.\n"
+                        + "A pihenőnapok kihagyása fáradtsághoz vezetett."),
+                turn("szkeptikus", "Szkeptikus: 2 javaslat véleményezve.\n"
+                        + "P0: KEEP — Elfogadható.\n"
+                        + "P1: KILL — Kevés adat."));
+
+        ConferenceDeliberationEnvelope envelope = LegacyTranscriptParser.parse(turns);
+
+        assertThat(envelope).isNotNull();
+        assertThat(envelope.threads()).hasSize(2);
+        ConferenceDeliberationEnvelope.Item chairAuthored = envelope.threads().get(0).items().get(0);
+        assertThat(chairAuthored.index()).isZero();
+        assertThat(chairAuthored.expertKey()).isEqualTo("mezo");
+        assertThat(chairAuthored.skeptic().verdict()).isEqualTo("KEEP");
+        assertThat(chairAuthored.chair()).isNull();
+        assertThat(envelope.threads().get(1).items().get(0).index()).isEqualTo(1);
+    }
+
+    /** The same persona key WITH ruling lines is the chair turn: it is consumed as rulings and
+     *  never threaded as an expert's proposals. */
+    @Test
+    void parse_mezoTurnWithRulingLines_isTheChairTurn_neverAnExpertThread() {
+        List<ConferenceTranscriptEnvelope.Turn> turns = List.of(
+                turn("drill", "Drill: 1 javaslat a hét 4 megfigyeléséből.\n"
+                        + "A pihenőnapok kihagyása fáradtsághoz vezetett."),
+                turn("mezo", "Mezo: 1/1 javaslat elfogadva.\n"
+                        + "P0: ELFOGADVA (0.70) — Dokumentált kihagyás."));
+
+        ConferenceDeliberationEnvelope envelope = LegacyTranscriptParser.parse(turns);
+
+        assertThat(envelope).isNotNull();
+        assertThat(envelope.threads()).singleElement()
+                .satisfies(thread -> assertThat(thread.title()).isEqualTo("Drill"));
+        assertThat(envelope.threads().get(0).items().get(0).chair().accepted()).isTrue();
+    }
+
+    /** C1 (mezo-xlvr final review): a proposal text carrying a newline makes the line count
+     *  disagree with the header's own count — the transcript is then unindexable, and the parser
+     *  must refuse rather than shift every later verdict/ruling onto the wrong claim. */
+    @Test
+    void parse_multiLineProposalText_refuses_ratherThanShiftingTheIndex() {
+        List<ConferenceTranscriptEnvelope.Turn> turns = List.of(
+                turn("drill", "Drill: 1 javaslat a hét 4 megfigyeléséből.\n"
+                        + "A naplózás elmarad.\n"
+                        + "Ez a mondat még ugyanannak a javaslatnak a szövege."),
+                turn("szomnologus", "Szomnológus: 1 javaslat a hét 8 megfigyeléséből.\n"
+                        + "Az alvásminőség romlik."),
+                turn("szkeptikus", "Szkeptikus: 2 javaslat véleményezve.\n"
+                        + "P0: KEEP — Elfogadható.\n"
+                        + "P1: KILL — Kevés adat."),
+                turn("mezo", "Mezo: 1/2 javaslat elfogadva.\n"
+                        + "P0: ELFOGADVA (0.70) — Rendben.\n"
+                        + "P1: ELUTASÍTVA (0.40) — Nem."));
+
+        assertThat(LegacyTranscriptParser.parse(turns)).isNull();
+    }
+
+    /** The refusal must not swallow the well-formed case: the same shape, one line per proposal,
+     *  still parses with every index intact. */
+    @Test
+    void parse_headerCountMatchesClaimLines_stillParses() {
+        List<ConferenceTranscriptEnvelope.Turn> turns = List.of(
+                turn("drill", "Drill: 2 javaslat a hét 4 megfigyeléséből.\n"
+                        + "A naplózás elmarad.\n"
+                        + "A pihenőnapok kimaradnak."),
+                turn("szomnologus", "Szomnológus: 1 javaslat a hét 8 megfigyeléséből.\n"
+                        + "Az alvásminőség romlik."),
+                turn("szkeptikus", "Szkeptikus: 3 javaslat véleményezve.\n"
+                        + "P0: KEEP — Elfogadható.\n"
+                        + "P1: KILL — Kevés adat.\n"
+                        + "P2: KEEP — Rendben."));
+
+        ConferenceDeliberationEnvelope envelope = LegacyTranscriptParser.parse(turns);
+
+        assertThat(envelope).isNotNull();
+        assertThat(envelope.threads()).hasSize(2);
+        assertThat(envelope.threads().get(0).items()).hasSize(2);
+        assertThat(envelope.threads().get(1).items().get(0).index()).isEqualTo(2);
+        assertThat(envelope.threads().get(1).items().get(0).skeptic().verdict()).isEqualTo("KEEP");
+    }
+
+    /** A turn whose header states no proposal count at all cannot be indexed either. */
+    @Test
+    void parse_expertTurnWithoutACountingHeader_refuses() {
+        List<ConferenceTranscriptEnvelope.Turn> turns = List.of(
+                turn("drill", "Drill jelentése a hétről.\nA naplózás elmarad."));
 
         assertThat(LegacyTranscriptParser.parse(turns)).isNull();
     }

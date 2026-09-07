@@ -424,4 +424,26 @@ class CharacterApiIT extends ApiIntegrationTest {
         assertThat(res.getDeliberation().get(0).getDimensionKey()).isNull();
         assertThat(res.getTranscript()).hasSize(2);
     }
+
+    /**
+     * The honesty regression (mezo-xlvr final review): a conference that has NO stored structure
+     * and whose prose cannot be derived either must serve {@code deliberation} as null — "we have
+     * no thread view for this meeting" — never as an empty array, which the FE would read as
+     * "the meeting had no threads".
+     */
+    @Test
+    void conference_neitherStoredNorDerivable_servesDeliberationAsNull_neverAnEmptyList() {
+        UUID owner = ownerId();
+        // A single expert turn whose header claims two proposals but carries one line: the index
+        // cannot be proven, so LegacyTranscriptParser refuses the whole transcript.
+        CharacterConferenceEntity conf = seedConference(owner, new ConferenceTranscriptEnvelope(List.of(
+                new ConferenceTranscriptEnvelope.Turn("drill",
+                        "Drill: 2 javaslat a hét 3 megfigyeléséből.\nKimarad a napló.", List.of()))));
+
+        CharacterConferenceResponse res = getForBody("/api/character/conference/" + conf.getId(),
+                ownerAuthHeaders(), HttpStatus.OK, CharacterConferenceResponse.class);
+
+        assertThat(res.getDeliberation()).isNull();
+        assertThat(res.getTranscript()).hasSize(1);
+    }
 }

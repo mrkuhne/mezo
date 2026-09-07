@@ -22,6 +22,14 @@ import java.util.regex.Pattern;
  * {@code null} when the transcript has no expert turn to number — the caller then shows the
  * original prose view.
  *
+ * <p><b>The index must be provable.</b> A proposal's text is appended verbatim and may itself
+ * contain a newline, in which case counting lines would shift every later index and hang the
+ * wrong verdict/ruling on a claim. Every expert turn's header states its own proposal count
+ * ("{@code <Név>: N javaslat …}"); when a turn's claim-line count disagrees with that N — or the
+ * header states no N at all — the transcript is not indexable and {@link #parse} returns
+ * {@code null} for the WHOLE conference rather than deriving a threading it cannot prove
+ * (mezo-xlvr final review, C1).
+ *
  * <p><b>Persona keys collide.</b> {@code CharacterCoreCatalog} seeds the self-audit dimension with
  * expertKey {@code "szkeptikus"}, so a real transcript can carry TWO turns keyed that way: the
  * self-audit expert's own proposal turn, and {@code KonziliumVerdictRound}'s verdict turn. The
@@ -36,6 +44,11 @@ public final class LegacyTranscriptParser {
 
     private static final Pattern SKEPTIC_LINE =
             Pattern.compile("^P(\\d+): (KEEP|KILL) — (.+)$");
+    /** An expert turn's own header line, as {@link KonziliumProposalRound} writes it:
+     *  "{@code <Név>: N javaslat …}". The N is the ONLY trustworthy statement of how many
+     *  proposals that turn carries. */
+    private static final Pattern EXPERT_HEADER =
+            Pattern.compile("^.*: (\\d+) javaslat\\b.*$");
     private static final Pattern CHAIR_LINE =
             Pattern.compile("^P(\\d+): (ELFOGADVA|ELUTASÍTVA) \\(([^)]*)\\) — (.+)$");
     private static final String SKEPTIC_PERSONA = "szkeptikus";
@@ -70,6 +83,16 @@ public final class LegacyTranscriptParser {
             List<String> claimLines = claimLines(turn.text());
             if (claimLines.isEmpty()) {
                 continue;
+            }
+            // A proposal's text is appended VERBATIM, and nothing forbids a newline inside it:
+            // one such row would make every later line shift the shared proposal index, silently
+            // attaching somebody else's verdict and ruling to a claim. The turn's own header
+            // states how many proposals it carries — when the line count disagrees with it, the
+            // transcript cannot be indexed at all, so the whole parse is refused and the caller
+            // falls back to the prose view (mezo-xlvr final review, C1).
+            Integer declared = declaredProposalCount(turn.text());
+            if (declared == null || declared != claimLines.size()) {
+                return null;
             }
             List<ConferenceDeliberationEnvelope.Item> items = new ArrayList<>();
             for (String claimLine : claimLines) {
@@ -124,6 +147,21 @@ public final class LegacyTranscriptParser {
             }
         }
         return claims;
+    }
+
+    /** The proposal count the turn's header line states, or {@code null} when the header does
+     *  not state one (an unrecognisable header is just as untrustworthy as a wrong count). */
+    private static Integer declaredProposalCount(String text) {
+        String header = text.split("\n", 2)[0].strip();
+        Matcher matcher = EXPERT_HEADER.matcher(header);
+        if (!matcher.matches()) {
+            return null;
+        }
+        try {
+            return Integer.valueOf(matcher.group(1));
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     private static void collectVerdicts(String text,
