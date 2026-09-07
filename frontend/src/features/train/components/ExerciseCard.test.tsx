@@ -20,8 +20,18 @@ function setup(overrides: Partial<Parameters<typeof ExerciseCard>[0]> = {}) {
     onRemove: vi.fn(),
     ...overrides,
   }
-  render(<ExerciseCard {...props} />)
-  return props
+  const { rerender } = render(<ExerciseCard {...props} />)
+  return {
+    ...props,
+    /**
+     * Re-renders with a patched prop (typically `ex`) — stands in for the parent
+     * applying a commit, or handing the card an unrelated exercise, and re-rendering.
+     * `onChange` is a bare `vi.fn()` here (not wired back to `ex`), so buffered
+     * fields only pick up a committed/external value once this is called explicitly.
+     */
+    rerender: (patch: Partial<Parameters<typeof ExerciseCard>[0]> = {}) =>
+      rerender(<ExerciseCard {...props} {...patch} />),
+  }
 }
 
 describe('ExerciseCard', () => {
@@ -73,5 +83,69 @@ describe('ExerciseCard', () => {
     screen.getByRole('button', { name: 'Döntött evezés törlése' }).click()
     expect(props.onRemove).toHaveBeenCalled()
     expect(screen.getByText('Hát +4')).toBeInTheDocument()
+  })
+
+  // ---- Buffered-input contract (mezo-yty6 fix round 1) --------------------
+  // NumField/RepBoundInput hold the displayed text in local state, re-synced from
+  // the `ex` prop via useEffect (see ExerciseCard.tsx). These tests pin that
+  // contract: the parent is the source of truth, in-range multi-digit entry must
+  // not lose digits, external `ex` changes must reach the field, and an emptied
+  // integer field must stay typeable-out-of.
+
+  test('multi-digit in-range entry keeps every digit', async () => {
+    const user = userEvent.setup()
+    const props = setup()
+    const input = screen.getByRole('spinbutton', { name: 'Munkaszettek' })
+    await user.clear(input)
+    await user.type(input, '10')
+    expect(props.onChange).toHaveBeenLastCalledWith({ workingSets: 10 })
+    expect(input).toHaveValue(10)
+  })
+
+  test('an out-of-range entry clamps, and the field re-syncs to the clamped value', async () => {
+    const user = userEvent.setup()
+    const props = setup()
+    const input = screen.getByRole('spinbutton', { name: 'Munkaszettek' })
+    await user.clear(input)
+    await user.type(input, '99')
+    expect(props.onChange).toHaveBeenLastCalledWith({ workingSets: 10 })
+    // the buffer still shows the raw, un-clamped keystrokes until the parent
+    // hands back the committed (clamped) value — simulate that round-trip:
+    props.rerender({ ex: { ...EX, workingSets: 10 } })
+    expect(input).toHaveValue(10)
+  })
+
+  test('an external value change reaches the field', () => {
+    const props = setup()
+    props.rerender({ ex: { ...EX, workingSets: 7, anchorWeightKg: 100 } })
+    expect(screen.getByRole('spinbutton', { name: 'Munkaszettek' })).toHaveValue(7)
+    expect(screen.getByRole('spinbutton', { name: 'Kiinduló súly (kg)' })).toHaveValue(100)
+  })
+
+  test('rep bounds buffer the same way as other number fields', async () => {
+    const user = userEvent.setup()
+    const props = setup()
+    const min = screen.getByRole('spinbutton', { name: 'Rep minimum' })
+    await user.clear(min)
+    await user.type(min, '12')
+    expect(props.onChange).toHaveBeenLastCalledWith({ repMin: 12 })
+    expect(min).toHaveValue(12)
+
+    const max = screen.getByRole('spinbutton', { name: 'Rep maximum' })
+    await user.clear(max)
+    await user.type(max, '15')
+    expect(props.onChange).toHaveBeenLastCalledWith({ repMax: 15 })
+    expect(max).toHaveValue(15)
+  })
+
+  test('an emptied integer field is recoverable — typing out of it works', async () => {
+    const user = userEvent.setup()
+    const props = setup()
+    const input = screen.getByRole('spinbutton', { name: 'Bemelegítő szettek' })
+    await user.clear(input)
+    expect(props.onChange).toHaveBeenLastCalledWith({ warmupSets: 0 })
+    await user.type(input, '3')
+    expect(props.onChange).toHaveBeenLastCalledWith({ warmupSets: 3 })
+    expect(input).toHaveValue(3)
   })
 })
