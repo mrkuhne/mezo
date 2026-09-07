@@ -53,6 +53,14 @@ public class PatternEventPopulator {
                 PatternEventPayloadEnvelope.observation(text, evidenceRefs, surfaced), occurredAt);
     }
 
+    /** Reflexió S4 (mezo-eq85.4): one nightly re-run of a test plan — what the morning digest
+     *  reads when the night produced no verdict. {@code hit} may be null ("we could not tell"). */
+    public PatternEventEntity evidence(UUID createdBy, UUID patternId, Double r, Integer n, Double p,
+                                       String verdict, Boolean hit, Instant occurredAt) {
+        return append(createdBy, patternId, PatternEventEntity.KIND_EVIDENCE,
+                PatternEventPayloadEnvelope.evidence(r, n, p, verdict, hit), occurredAt);
+    }
+
     /** Any payload-less decision/lifecycle event ({@code confirmed}, {@code monitoring}, …). */
     public PatternEventEntity decision(UUID createdBy, UUID patternId, String kind, Instant occurredAt) {
         return append(createdBy, patternId, kind, PatternEventPayloadEnvelope.empty(), occurredAt);
