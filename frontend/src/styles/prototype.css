@@ -11302,6 +11302,11 @@ button.mz-wtile:active { transform: scale(0.96); }
   padding: 4px 12px; font-size: 11px; font-weight: 700; color: #A84A26; cursor: pointer; font-family: inherit; }
 .ad-retry:focus-visible { outline: 2px solid #A84A26; outline-offset: 2px; }
 
+/* ---- per-csempe betöltés-állapot (mezo-d5iy.16: real-mode cold load must not paint
+   zeroed counters/empty sparklines — a subtle pulsing placeholder instead, reusing the
+   app-wide `.sk` shimmer idiom) ---- */
+.ad-tile-pending { display: flex; flex-direction: column; gap: 8px; min-height: 80px; justify-content: center; }
+
 /* ---- User részlet: a saját sor-elrendezésű hero (NEM a mobil .mz-page-hero középre
    igazított verziója) + fülek ---- */
 .ad-hero { display: flex; align-items: center; gap: 18px; }
