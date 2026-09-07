@@ -2,7 +2,10 @@ import { useState, type CSSProperties } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMe } from '@/data/hooks'
 import { useAdminUserDetail } from '@/data/admin/adminInsightsHooks'
+import { useAdminRows } from '@/data/admin/adminDataHooks'
+import type { AdminRowSortDir } from '@/data/admin/adminDataApi'
 import { AdminTile } from '@/features/admin/components/AdminTile'
+import { DataTable } from '@/features/admin/components/DataTable'
 import { ClaySpot } from '@/shared/ui/clay'
 import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { MosaicDesktop, MozaikPage, PageBody, PageHead } from '@/shared/ui/mozaik'
@@ -14,8 +17,8 @@ import { huInt } from '@/shared/lib/huNum'
 // for why. The ring gauge (activeDays30d / 30) markup lives here rather than in the shared
 // Mozaik kit because it is admin-only (.ad-ring, prototype.css §Admin hub graphics).
 //
-// Adatok tab: this task renders the inventory list only — the embedded per-table row browser
-// (`<AdminDataTable table={...} userId={id} />`) arrives in Task 12, see the marker below.
+// Adatok tab: the inventory list stays here; clicking a row selects that table and mounts a
+// `DataTable` below it, bound to `useAdminRows({ table, userId: id, ... })` (mezo-d5iy.12).
 const usd = (v: number) => `$${v.toFixed(2)}`
 const TABS = ['Aktivitás', 'Adatok', 'Feature-ök', 'Költség'] as const
 type Tab = (typeof TABS)[number]
@@ -28,6 +31,34 @@ export function AdminUserDetailPage() {
   const navigate = useNavigate()
   const detail = useAdminUserDetail(userId, isOwner)
   const [tab, setTab] = useState<Tab>('Aktivitás')
+
+  // Embedded per-table row browser (Adatok tab). Local component state, not URL search params —
+  // this is a sub-panel of a user's detail page, not its own navigable surface (that's
+  // AdminDataPage). No table selected is the initial state, checked directly against the
+  // string (never `embeddedRows.isPending` — see AdminDataPage's doc comment on why that hook
+  // can stay pending forever when disabled).
+  const [dataTable, setDataTable] = useState('')
+  const [dataPage, setDataPage] = useState(0)
+  const [dataSort, setDataSort] = useState<string | null>(null)
+  const [dataDir, setDataDir] = useState<AdminRowSortDir>('desc')
+  const [dataIncludeDeleted, setDataIncludeDeleted] = useState(false)
+  const embeddedRows = useAdminRows(
+    { table: dataTable, userId, page: dataPage, sort: dataSort, dir: dataDir, includeDeleted: dataIncludeDeleted },
+    isOwner && dataTable !== '',
+  )
+  const selectDataTable = (t: string) => {
+    setDataTable(t)
+    setDataPage(0)
+    setDataSort(null)
+    setDataDir('desc')
+  }
+  const toggleDataSort = (col: string) => {
+    if (col === dataSort) setDataDir((d) => (d === 'asc' ? 'desc' : 'asc'))
+    else { setDataSort(col); setDataDir('desc') }
+    setDataPage(0)
+  }
+  const dataCanPrev = dataPage > 0
+  const dataCanNext = (dataPage + 1) * (embeddedRows.data.size || 1) < embeddedRows.data.total
 
   const user = detail.data.user
   // Fix round 1 (Finding 1): `useAdminUserDetail` passes `enabled: isOwner && id !== ''` to
@@ -105,7 +136,11 @@ export function AdminUserDetailPage() {
                       </thead>
                       <tbody>
                         {detail.data.inventory.map((row) => (
-                          <tr key={row.table} className="norow">
+                          <tr
+                            key={row.table}
+                            className={dataTable === row.table ? 'on' : undefined}
+                            onClick={() => selectDataTable(row.table)}
+                          >
                             <td><code>{row.table}</code></td>
                             <td className="num">{huInt(row.rowCount)}</td>
                             <td className={`num${row.deletedCount ? '' : ' ad-mut'}`}>{row.deletedCount}</td>
@@ -118,7 +153,38 @@ export function AdminUserDetailPage() {
                         ))}
                       </tbody>
                     </table>
-                    {/* Task 12: embedded row browser */}
+
+                    {dataTable !== '' && (
+                      <div style={{ marginTop: 14 }}>
+                        <div className="ad-cell" style={{ justifyContent: 'space-between' }}>
+                          <span className="ad-eyebrow">{dataTable} · {huInt(embeddedRows.data.total)} sor</span>
+                          <label className="ad-chip">
+                            <input
+                              type="checkbox"
+                              checked={dataIncludeDeleted}
+                              onChange={() => { setDataIncludeDeleted((v) => !v); setDataPage(0) }}
+                              style={{ marginRight: 6 }}
+                            />
+                            Törölt sorok
+                          </label>
+                        </div>
+                        <div className="ad-scroll" style={{ marginTop: 9 }}>
+                          <DataTable
+                            page={embeddedRows.data}
+                            sort={dataSort}
+                            dir={dataDir}
+                            onSort={toggleDataSort}
+                            onNavigateToRow={(refTable, rowId) =>
+                              navigate(`/admin/data?table=${encodeURIComponent(refTable)}&rowId=${encodeURIComponent(String(rowId))}`)}
+                          />
+                        </div>
+                        <div className="ad-cell" style={{ marginTop: 9, justifyContent: 'space-between' }}>
+                          <button type="button" className="ad-chip" disabled={!dataCanPrev} onClick={() => setDataPage((p) => Math.max(0, p - 1))}>‹ Előző</button>
+                          <span className="ad-mut">{dataPage + 1}. oldal · {embeddedRows.data.size}/oldal</span>
+                          <button type="button" className="ad-chip" disabled={!dataCanNext} onClick={() => setDataPage((p) => p + 1)}>Következő ›</button>
+                        </div>
+                      </div>
+                    )}
                   </AdminTile>
                 </MosaicDesktop>
               )}

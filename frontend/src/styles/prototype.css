@@ -10926,6 +10926,16 @@ button.mz-wtile:active { transform: scale(0.96); }
   display: inline-flex; align-items: center; gap: 3px; padding: 0; }
 .ad-sortbtn[aria-sort] { font-weight: 800; color: #A84A26; }
 
+/* ---- data browser: jsonb expand cell, FK link, view/table/user pickers (mezo-d5iy.12) ---- */
+.ad-json { font-family: ui-monospace, "SF Mono", monospace; font-size: 10.5px; color: #A84A26;
+  cursor: pointer; border: none; background: none; padding: 0; }
+.ad-json-open { white-space: pre; overflow-x: auto; max-width: 300px; background: rgba(168,74,38,.06);
+  border-radius: 8px; padding: 7px 9px; margin: 3px 0; line-height: 1.5; font-family: ui-monospace, "SF Mono", monospace; font-size: 10.5px; }
+.ad-fk { color: #A84A26; text-decoration: underline dotted; cursor: pointer; border: none; background: none;
+  padding: 0; font: inherit; }
+.ad-pick { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 12px; }
+.ad-pick .lbl { font-size: 9px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: #A2958A; }
+
 /* feature × nap mátrix — a MatrixGrid <table> saját, letapadó első oszloppal */
 .ad-matrixwrap { overflow-x: auto; scrollbar-width: thin; }
 .ad-matrixtable { border-collapse: separate; border-spacing: 2px; font-size: 10px; font-variant-numeric: tabular-nums; }

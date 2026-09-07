@@ -7,8 +7,8 @@ import { Navigate, type RouteObject } from 'react-router-dom'
 // never downloads (vite.config.ts's route-splitting follow-up, noted beside the raised
 // workbox precache limit, is exactly this).
 //
-// Task 11 adds Userek/User részlet/Feature-használat. `AdminCostPage`, `AdminDataPage` and
-// `AdminAccountsPage` (plus the `cost/:id` detail route) arrive in Tasks 12-13 — until then a
+// Task 11 adds Userek/User részlet/Feature-használat. Task 12 adds Adatböngésző. `AdminCostPage`
+// and `AdminAccountsPage` (plus the `cost/:id` detail route) arrive in Task 13 — until then a
 // `*` catch-all sends any of those paths back to the index page rather than 404ing or failing
 // to compile.
 const AdminLayout = lazy(() =>
@@ -21,6 +21,8 @@ const AdminUserDetailPage = lazy(() =>
   import('@/features/admin/pages/AdminUserDetailPage').then((m) => ({ default: m.AdminUserDetailPage })))
 const AdminUsagePage = lazy(() =>
   import('@/features/admin/pages/AdminUsagePage').then((m) => ({ default: m.AdminUsagePage })))
+const AdminDataPage = lazy(() =>
+  import('@/features/admin/pages/AdminDataPage').then((m) => ({ default: m.AdminDataPage })))
 
 export const adminRoutes: RouteObject[] = [
   {
@@ -31,7 +33,8 @@ export const adminRoutes: RouteObject[] = [
       { path: 'users', element: <AdminUsersPage /> },
       { path: 'users/:id', element: <AdminUserDetailPage /> },
       { path: 'usage', element: <AdminUsagePage /> },
-      // Tasks 12-13 register: cost, cost/:id, data, accounts.
+      { path: 'data', element: <AdminDataPage /> },
+      // Task 13 registers: cost, cost/:id, accounts.
       { path: '*', element: <Navigate to="/admin" replace /> },
     ],
   },

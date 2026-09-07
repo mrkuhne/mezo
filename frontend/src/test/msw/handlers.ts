@@ -12,6 +12,7 @@ import {
   ADMIN_USER_DETAIL_MOCK,
   ADMIN_USER_INSIGHTS_MOCK,
 } from '@/data/admin/adminInsightsMock'
+import { ADMIN_TABLES_MOCK, ADMIN_VIEWS_MOCK, adminRowsMockFor } from '@/data/admin/adminDataMock'
 import { addDays, localDateString } from '@/shared/lib/dates'
 import { MOCK_DIMENSIONS, MOCK_EXPERTS, MOCK_OVERVIEW_EMPTY, MOCK_RUNS, MOCK_RUN_DETAIL } from '@/data/character/characterMock'
 import { MOCK_LIFE_GOALS, MOCK_SIGNAL_CATALOG, mockPropose, mockProgress, mockToday } from '@/data/lifegoal/lifegoalMock'
@@ -298,6 +299,18 @@ export const handlers = [
   http.get(`${API_BASE}/api/admin/users/:id/insight`, () => HttpResponse.json(ADMIN_USER_DETAIL_MOCK)),
   http.get(`${API_BASE}/api/admin/usage/features`, () => HttpResponse.json(ADMIN_FEATURE_USAGE_MOCK)),
   http.get(`${API_BASE}/api/admin/usage/cost-matrix`, () => HttpResponse.json(ADMIN_COST_MATRIX_MOCK)),
+  // Admin data browser (mezo-d5iy.12) — populated defaults from the same mock seed, never a
+  // 404 for an unknown table: an unrecognised `:table` falls back to the food_log fixture
+  // rather than answering empty/error, matching "MSW handlers answer populated defaults".
+  http.get(`${API_BASE}/api/admin/data/tables`, () => HttpResponse.json(ADMIN_TABLES_MOCK)),
+  http.get(`${API_BASE}/api/admin/data/views`, () => HttpResponse.json(ADMIN_VIEWS_MOCK)),
+  http.get(`${API_BASE}/api/admin/data/tables/:table/rows`, ({ params, request }) => {
+    const table = String(params.table)
+    const base = adminRowsMockFor(table)
+    const url = new URL(request.url)
+    const page = Number(url.searchParams.get('page') ?? base.page)
+    return HttpResponse.json({ ...base, table, page })
+  }),
   // Gamification profile (mezo-huzd) — populated default (never a 404 in the contract;
   // the backend answers ghost-shaped zeros before any activity, not an HTTP error).
   // Tests override with server.use() for specific field-mapping/mutation assertions.

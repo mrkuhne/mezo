@@ -72,6 +72,7 @@ export { useAdminInvites, useAdminUsers, useAdminActions } from '@/data/admin/ad
 export {
   useAdminOverview, useAdminUserInsights, useAdminUserDetail, useAdminFeatureUsage, useAdminCostMatrix,
 } from '@/data/admin/adminInsightsHooks'
+export { useAdminTables, useAdminViews, useAdminRows } from '@/data/admin/adminDataHooks'
 export { useProgressionProfile, useAchievements, useGrowthWeek } from '@/data/progression/progressionHooks'
 export { useDailyQuests, useQuestActions, useQuestHistory } from '@/data/quest/questHooks'
 export { useHabitDay, useHabitActions, useHabitSummary, useHabitFormation } from '@/data/habit/habitHooks'

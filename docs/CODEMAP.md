@@ -92,12 +92,15 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **endpoints:** GET /api/admin/overview · GET /api/admin/users-insight · GET /api/admin/users/{id}/insight ·
     GET /api/admin/usage/features · GET /api/admin/usage/cost-matrix
 - **FE data** `frontend/src/data/admin`
-  - **hooks (via `@/data/hooks`):** `useAdminActions`, `useAdminInvites`, `useAdminUsers`
-  - **modules:** adminApi.ts, adminHooks.ts, adminInsightsApi.ts, adminInsightsHooks.ts, adminInsightsMock.ts,
-    adminMock.ts
+  - **hooks (via `@/data/hooks`):** `useAdminActions`, `useAdminInvites`, `useAdminRows`, `useAdminTables`,
+    `useAdminUsers`, `useAdminViews`
+  - **modules:** adminApi.ts, adminDataApi.ts, adminDataHooks.ts, adminDataMock.ts, adminHooks.ts, adminInsightsApi.ts,
+    adminInsightsHooks.ts, adminInsightsMock.ts, adminMock.ts
 - **FE ui** `frontend/src/features/admin`
-  - **pages:** AdminOverviewPage.tsx, AdminUsagePage.tsx, AdminUserDetailPage.tsx, AdminUsersPage.tsx
-  - **components:** AdminTile.tsx, MatrixGrid.tsx, Sparkline.tsx
+  - **pages:** AdminDataPage.tsx, AdminOverviewPage.tsx, AdminUsagePage.tsx, AdminUserDetailPage.tsx,
+    AdminUsersPage.tsx
+  - **components:** AdminTile.tsx, DataTable.tsx, JsonCell.tsx, MatrixGrid.tsx, Sparkline.tsx, TablePicker.tsx,
+    UserPicker.tsx
   - **root:** AdminLayout.tsx, AdminRail.tsx, adminRoutes.tsx
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 6 IT + 1 unit
   - **ITs:** `AdminDataBrowserIT`, `AdminOverviewIT`, `AdminTableCatalogIT`, `AdminUsageIT`, `AdminUserDetailIT`,
