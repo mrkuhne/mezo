@@ -2,10 +2,13 @@ package io.mrkuhne.mezo.feature.companion;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.mrkuhne.mezo.api.dto.PatternEventResponse;
 import io.mrkuhne.mezo.api.dto.PatternPairDetailResponse;
 import io.mrkuhne.mezo.feature.auth.OwnerProperties;
 import io.mrkuhne.mezo.feature.auth.repository.AppUserRepository;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
+import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
+import io.mrkuhne.mezo.feature.companion.reflection.entity.TextSignalEntity;
 import io.mrkuhne.mezo.feature.proactive.entity.PredictionEntity;
 import io.mrkuhne.mezo.feature.proactive.repository.PredictionRepository;
 import io.mrkuhne.mezo.support.ApiIntegrationTest;
@@ -15,6 +18,7 @@ import io.mrkuhne.mezo.support.populator.PatternEventPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.PredictionPopulator;
 import io.mrkuhne.mezo.support.populator.SleepLogPopulator;
+import io.mrkuhne.mezo.support.populator.TextSignalPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,9 +40,15 @@ class CompanionPatternPairDetailApiIT extends ApiIntegrationTest {
 
     private static final String PAIR_KEY = "checkin-stress~sleep-quality";
 
+    /** Reflexió S6 (mezo-eq85.6): the hypothesis this page has to serve WITHOUT a catalog pair —
+     *  "the days I write about Anna are followed by longer sleep". */
+    private static final TestPlanEnvelope REFLECTION_PLAN = new TestPlanEnvelope(
+            "people:Anna", "sleep-duration-h", 1, TestPlanEnvelope.DIRECTION_POSITIVE, 8, 3, 60);
+
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private PatternEventPopulator patternEventPopulator;
     @Autowired private SleepLogPopulator sleepLogPopulator;
+    @Autowired private TextSignalPopulator textSignalPopulator;
     @Autowired private CheckInPopulator checkInPopulator;
     @Autowired private MealPopulator mealPopulator;
     @Autowired private PredictionPopulator predictionPopulator;
@@ -57,6 +67,18 @@ class CompanionPatternPairDetailApiIT extends ApiIntegrationTest {
             int stress = (i % 5) + 1;
             checkInPopulator.createCheckIn(owner, day, "08:00", 3, stress, null);
             sleepLogPopulator.createSleepLog(owner, day, new BigDecimal("7.0"), 6 - stress);
+        }
+    }
+
+    /** Anna-napok text signalja + a RÁKÖVETKEZŐ nap alvása — a lag-1 terv illesztett napjai. */
+    private void seedAnnaSleepDays(UUID owner, int count) {
+        for (int i = 0; i < count; i++) {
+            LocalDate day = LocalDate.now().minusDays(count - (long) i);
+            boolean anna = i % 2 == 0;
+            textSignalPopulator.signal(owner, TextSignalEntity.SOURCE_JOURNAL, UUID.randomUUID(), day,
+                    3, 3, 3, anna ? List.of("Anna") : List.of(), List.of());
+            sleepLogPopulator.createSleepLog(owner, day.plusDays(1),
+                    BigDecimal.valueOf((anna ? 8.0 : 6.0) + (i % 4) * 0.1), 3);
         }
     }
 
@@ -131,6 +153,52 @@ class CompanionPatternPairDetailApiIT extends ApiIntegrationTest {
         assertThat(detail.getPair().getMetricAValueKind()).isEqualTo("binary");
         assertThat(detail.getPair().getMetricBValueKind()).isEqualTo("clock_hour");
         assertThat(detail.getDays()).hasSize(9);
+    }
+
+    /**
+     * Reflexió S6 (mezo-eq85.6): a {@code reflection} row's hypothesis key is NOT in the pair
+     * catalog, yet the detail page must serve it — a synthetic pair built from the row's own test
+     * plan, with the person series' label/kind/domain resolved live and the days recomputed from
+     * the derived series. Everything else on the page (row, events, impact) is the existing read.
+     */
+    @Test
+    void testPatternPairDetail_shouldServeSyntheticPair_whenKeyIsAReflectionHypothesis() {
+        UUID owner = ownerId();
+        PatternEntity row = patternPopulator.reflection(owner, REFLECTION_PLAN,
+                PatternEntity.STATUS_MONITORING);
+        seedAnnaSleepDays(owner, 12);
+        patternEventPopulator.evidence(owner, row.getId(), 0.71, 12, 0.01, "LIVE", true, Instant.now());
+
+        PatternPairDetailResponse detail = getForBody(
+                "/api/companion/pattern/pair/" + row.getHypothesisKey(),
+                ownerAuthHeaders(), HttpStatus.OK, PatternPairDetailResponse.class);
+
+        assertThat(detail.getPair().getKey()).isEqualTo(row.getHypothesisKey());
+        assertThat(detail.getPair().getMetricAKey()).isEqualTo("people:Anna");
+        assertThat(detail.getPair().getMetricAValueKind()).isEqualTo("binary");
+        assertThat(detail.getPair().getMetricALabel()).isEqualTo("\u201eAnna\u201d a sz\u00f6vegeidben");
+        assertThat(detail.getPair().getMetricADomain()).isEqualTo("mind");
+        assertThat(detail.getPair().getMetricBKey()).isEqualTo("sleep-duration-h");
+        assertThat(detail.getPair().getMetricBValueKind()).isEqualTo("number");
+        assertThat(detail.getPair().getMetricBDomain()).isEqualTo("sleep");
+        assertThat(detail.getPair().getLagDays()).isEqualTo(1);
+        assertThat(detail.getPair().getExpectedDirection()).isEqualTo("positive");
+        assertThat(detail.getPair().getVerdict()).isEqualTo("live");
+        assertThat(detail.getPair().getAlignedDays()).isEqualTo(12);
+        assertThat(detail.getPair().getGroupZeroDays()).isEqualTo(6);
+        assertThat(detail.getPair().getGroupOneDays()).isEqualTo(6);
+        assertThat(detail.getPair().getRequiredPerGroup()).isEqualTo(3);
+
+        assertThat(detail.getPattern()).isNotNull();
+        assertThat(detail.getPattern().getId()).isEqualTo(row.getId());
+        assertThat(detail.getPattern().getTestPlan()).isNotNull();
+        assertThat(detail.getPattern().getTestPlan().getSeriesA()).isEqualTo("people:Anna");
+        assertThat(detail.getPattern().getTestPlan().getSeriesALabel())
+                .isEqualTo("\u201eAnna\u201d a sz\u00f6vegeidben");
+        assertThat(detail.getDays()).hasSize(12);
+        assertThat(detail.getEvents()).extracting(PatternEventResponse::getKind).contains("evidence");
+        assertThat(detail.getEvents().getFirst().getHit()).isTrue();
+        assertThat(detail.getEvents().getFirst().getVerdict()).isEqualTo("LIVE");
     }
 
     @Test
