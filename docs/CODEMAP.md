@@ -242,7 +242,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### companion
 
 *BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-06, shipped) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-09-06, mixed) ·
+  [docs/features/companion.md](features/companion.md) (updated 2026-09-07, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-06, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-05, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-06, mixed)
@@ -311,10 +311,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CompanionAdvisorChain`, `CompanionHelloRunner`, `CompanionLlm`, `CompanionToolRegistry`, `ConsumerPolicy`,
     `DayReviewJson`, `DayReviewLlmAdapter`, `EmbeddingPort`, `EnergyDipMealTimingRule`, `FakeCompanionLlm`,
     `FakeEmbeddingAdapter`, `FeedbackRollupStatsEnvelope`, `FlagPayloadEnvelope`, `FuelTools`, `GeminiCompanionLlm`,
-    `GeminiEmbeddingAdapter`, `GeminiRoundUsage`, `GeminiRoundUsageAdvisor`, `GeminiUsageExtractor`, `GoalTools`,
-    `GraphEdgeEvidence`, `GraphProposedEdge`, `GrowthTools`, `HabitSuggestLlmAdapter`, `HighlightCitationSource`,
-    `IgnoredNudgeRule`, `InsightsTools`, `JointOveruseRule`, `LateEatingRule`, `LifeGoalGraphSource`,
-    `LifeGoalProposeLlmAdapter`, `LifeGoalProposePort`, `LifeGoalSource`, `LifeGoalText`, `LifeGoalTools`,
+    `GeminiEmbeddingAdapter`, `GoalTools`, `GoogleGenAiUsageExtractor`, `GraphEdgeEvidence`, `GraphProposedEdge`,
+    `GrowthTools`, `HabitSuggestLlmAdapter`, `HighlightCitationSource`, `IgnoredNudgeRule`, `InsightsTools`,
+    `JointOveruseRule`, `LateEatingRule`, `LifeGoalGraphSource`, `LifeGoalProposeLlmAdapter`, `LifeGoalProposePort`,
+    `LifeGoalSource`, `LifeGoalText`, `LifeGoalTools`, `LlmRoundUsage`, `LlmRoundUsageAdvisor`, `LlmUsageExtractor`,
     `LoadFuelMismatchRule`, `LoggingGapRule`, `MealCoachLlmAdapter`, `MealDraftLlmAdapter`, `MealRhythmDriftRule`,
     `MedicationTools`, `MemoryCandidate`, `MemoryContext`, `MemoryContextItem`, `MemoryEmbeddingWriter`,
     `MemoryProvenanceEnvelope`, `MemoryRequest`, `MemoryTools`, `MesoPlanLlmAdapter`, `MissedWorkoutsRule`,
@@ -351,21 +351,21 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 189 IT + 36 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 190 IT + 36 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
-    `ChatMentionListenerIT`, `ChatServiceAmbientRecallIT`, `ChatServiceGraphBlockFailureIT`, `ChatServiceGraphBlockIT`,
-    `ChatServiceGraphBlockSwitchOffIT`, `ChatServiceIT`, `ChatStreamAdvisorIT`, `ChatStreamServiceIT`,
-    `CompanionAdvisorChainIT`, `CompanionAdvisorsSwitchOffIT`, `CompanionApiIT`, `CompanionApiSwitchOffIT`,
-    `CompanionFactApiIT`, `CompanionFactCandidateApiIT`, `CompanionFeedbackApiIT`, `CompanionFeedbackSwitchOffIT`,
-    `CompanionFlagLogPersistenceIT`, `CompanionFlagTraceApiIT`, `CompanionFlagTracePersistenceIT`,
-    `CompanionFlagTraceReadQueriesIT`, `CompanionLlmFakeIT`, `CompanionMemoryLlmUsageApiIT`,
-    `CompanionMemoryLlmUsageDisabledIT`, `CompanionMemoryOverviewApiIT`, `CompanionMemorySimilarDaysApiIT`,
-    `CompanionMemorySummaryApiIT`, `CompanionMemorySwitchOffIT`, `CompanionPatternApiIT`,
-    `CompanionPatternMonitorApiIT`, `CompanionPatternMonitorSwitchOffIT`, `CompanionPatternPairDetailApiIT`,
-    `CompanionPropertiesIT`, `CompanionRealWiringIT`, `CompanionStreamApiIT`, `CompanionSwitchOffIT`,
-    `CompanionToolRegistryIT`, `CompanionToolsRenderIT`, `CompanionTranscribeApiIT`, `ConsolidationJobIT`,
-    `ConsolidationJobSwitchOffIT`, `ConsolidationPropertiesIT`, `ContextSnapshotAssemblerIT`,
+    `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatServiceAmbientRecallIT`, `ChatServiceGraphBlockFailureIT`,
+    `ChatServiceGraphBlockIT`, `ChatServiceGraphBlockSwitchOffIT`, `ChatServiceIT`, `ChatStreamAdvisorIT`,
+    `ChatStreamServiceIT`, `CompanionAdvisorChainIT`, `CompanionAdvisorsSwitchOffIT`, `CompanionApiIT`,
+    `CompanionApiSwitchOffIT`, `CompanionFactApiIT`, `CompanionFactCandidateApiIT`, `CompanionFeedbackApiIT`,
+    `CompanionFeedbackSwitchOffIT`, `CompanionFlagLogPersistenceIT`, `CompanionFlagTraceApiIT`,
+    `CompanionFlagTracePersistenceIT`, `CompanionFlagTraceReadQueriesIT`, `CompanionLlmFakeIT`,
+    `CompanionMemoryLlmUsageApiIT`, `CompanionMemoryLlmUsageDisabledIT`, `CompanionMemoryOverviewApiIT`,
+    `CompanionMemorySimilarDaysApiIT`, `CompanionMemorySummaryApiIT`, `CompanionMemorySwitchOffIT`,
+    `CompanionPatternApiIT`, `CompanionPatternMonitorApiIT`, `CompanionPatternMonitorSwitchOffIT`,
+    `CompanionPatternPairDetailApiIT`, `CompanionPropertiesIT`, `CompanionRealWiringIT`, `CompanionStreamApiIT`,
+    `CompanionSwitchOffIT`, `CompanionToolRegistryIT`, `CompanionToolsRenderIT`, `CompanionTranscribeApiIT`,
+    `ConsolidationJobIT`, `ConsolidationJobSwitchOffIT`, `ConsolidationPropertiesIT`, `ContextSnapshotAssemblerIT`,
     `ContextSnapshotAssemblerLifeGoalOffIT`, `ContextSnapshotAssemblerLifeGoalSwitchOffIT`,
     `ContextSnapshotAssemblerPeopleOffIT`, `ConversationServiceIT`, `DailySummaryJobIT`, `DailySummaryJobSwitchOffIT`,
     `DailySummaryServiceIT`, `DayEvaluationApiIT`, `DayEvaluationSwitchOffApiIT`, `DayReviewRepositoryIT`,
@@ -598,7 +598,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### insights
 
-*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-06, mixed) ·
+*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-07, mixed) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-09-06, mixed)
 
 - **FE data** `frontend/src/data/insights`
@@ -728,7 +728,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### llmlog
 
-*BE + API* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-06, mixed)
+*BE + API* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-07, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
@@ -742,7 +742,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **mappers:** `LlmLogMapper`
   - **config:** `LlmLogAsyncConfig`, `LlmLogProperties`, `LlmPricingProperties`, `ModelPrice`
   - **events/listeners:** `LlmCallEvent`
-  - **other:** `CallKind`, `CallStatus`, `LlmCallContext`, `LlmCallContextHolder`, `PricingSnapshot`
+  - **other:** `CallKind`, `CallStatus`, `LlmCallContext`, `LlmCallContextHolder`, `PricingSnapshot`,
+    `ReasoningBilling`
 - **Contract** `api/feature/llm-usage/llm-usage.yml` — 4 operations
   - **endpoints:** GET /api/llm-usage/summary · GET /api/llm-usage/breakdown · GET /api/llm-usage/calls ·
     GET /api/llm-usage/calls/{id}
