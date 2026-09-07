@@ -111,8 +111,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     AiUsageHero.tsx, AiUserFilter.tsx, DataTable.tsx, JsonCell.tsx, MatrixGrid.tsx, Sparkline.tsx, TablePicker.tsx,
     UserPicker.tsx
   - **root:** AdminLayout.tsx, AdminMemoryPage.tsx, AdminRail.tsx, GraphInspector.tsx, GraphView.tsx, LayersView.tsx,
-    MapView.tsx, MemoryInspector.tsx, MemorySegmentBar.tsx, ReplayBox.tsx, RunDetail.tsx, RunsView.tsx,
-    adminRoutes.tsx, contribution.ts, graphLayout.ts, umapConstants.ts
+    MapInspector.tsx, MapView.tsx, MemoryInspector.tsx, MemorySegmentBar.tsx, ReplayBox.tsx, RunDetail.tsx,
+    RunsView.tsx, adminRoutes.tsx, contribution.ts, graphLayout.ts, projection.ts, umap.worker.ts, umapConstants.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 13 IT + 3 unit
   - **ITs:** `AdminDataBrowserIT`, `AdminMemoryGraphIT`, `AdminMemoryHealthGraphOffIT`, `AdminMemoryHealthIT`,
     `AdminMemoryReplayIT`, `AdminMemoryRunsIT`, `AdminMemoryVectorsIT`, `AdminMemoryVectorsSamplingIT`,
