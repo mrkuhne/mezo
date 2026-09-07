@@ -67,11 +67,42 @@ public record CompanionProperties(
          */
         @NotNull Map<CallKind, LlmProvider> perCallKind
     ) {
-        /** One provider's two tiers: the cheap/fast chat model and the smart model. */
+        /**
+         * One provider's model routing (mezo-ozri.4): the two tier defaults plus the overrides that
+         * make a single feature's or a single call-kind's model a YAML edit. Held PER PROVIDER on
+         * purpose — a model id only means something to the vendor that can serve it, and the Gemini
+         * block stays load-bearing under {@code provider: openai} (audio, vision, fallback), so one
+         * flat table could hand the Gemini client a GPT id on a delegated call.
+         */
         public record Tier(
             @NotBlank String chatModel,   // cheap/fast — every conversational turn
-            @NotBlank String smartModel   // smart tier — the 19 completeSmart call sites
-        ) {}
+            @NotBlank String smartModel,  // smart tier — the 19 completeSmart call sites
+            /**
+             * {@code LlmCallContext.feature()} -> model id. Bracket-quote the key in YAML
+             * ({@code "[companion_chat]"}): the binder splits map keys on dots and relaxed-binds the
+             * rest. An unmatched or blank value means the tier default — config never fails a call.
+             */
+            @NotNull Map<String, String> featureModels,
+            /**
+             * {@code CallKind} -> model id. Wins over {@code featureModels}: a kind states a
+             * capability the model must have, a feature only states a preference.
+             */
+            @NotNull Map<CallKind, String> callKindModels,
+            /** Per-tier reasoning effort. OpenAI-only today; the Gemini adapter ignores it. */
+            @NotNull @Valid ReasoningEffort reasoningEffort
+        ) {
+            /**
+             * The cheapest quality lever there is (spec §Q1) — same token price, more thinking.
+             * {@code null} on a tier means "send nothing", i.e. the provider's own default stands;
+             * that is the shipped state until mezo-641c measures what each tier should carry. NOT
+             * honoured on a tool-carrying request: {@code /v1/chat/completions} rejects tools +
+             * effort outright (mezo-ozri.3), so that path pins {@code none} regardless.
+             */
+            public record ReasoningEffort(
+                @Pattern(regexp = "none|minimal|low|medium|high|xhigh|max") String chat,
+                @Pattern(regexp = "none|minimal|low|medium|high|xhigh|max") String smart
+            ) {}
+        }
     }
 
     /** Chat turn tuning — history window fed into the prompt + auto-title truncation. */

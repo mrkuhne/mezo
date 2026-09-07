@@ -340,11 +340,16 @@ class GeminiCompanionLlmRecordingTest {
             chatModel, companionProperties(), recorder, contextHolder, new GoogleGenAiUsageExtractor());
     }
 
+    private static CompanionProperties.Llm.Tier tier(String chatModel, String smartModel) {
+        return new CompanionProperties.Llm.Tier(chatModel, smartModel, Map.of(), Map.of(),
+            new CompanionProperties.Llm.Tier.ReasoningEffort(null, null));
+    }
+
     private static CompanionProperties companionProperties() {
         return new CompanionProperties(
             new CompanionProperties.Llm(LlmProvider.GEMINI,
-                new CompanionProperties.Llm.Tier(CHAT_MODEL, SMART_MODEL),
-                new CompanionProperties.Llm.Tier("gpt-5.6-luna", "gpt-5.6-terra"), Map.of()),
+                tier(CHAT_MODEL, SMART_MODEL),
+                tier("gpt-5.6-luna", "gpt-5.6-terra"), Map.of()),
             null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null);
     }
 
