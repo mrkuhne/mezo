@@ -13,9 +13,16 @@ import java.util.regex.Pattern;
 /**
  * Derives a {@link ConferenceDeliberationEnvelope} from a conference stored BEFORE the structured
  * column existed (mezo-xlvr, spec §8) — at READ time, never written back. The verdict and ruling
- * lines are machine-written by {@link KonziliumVerdictRound}, so they parse deterministically;
- * the proposal index is rebuilt exactly the way the round assigned it, by walking the expert
- * turns in transcript order and numbering their claim lines.
+ * lines are machine-written by {@link KonziliumVerdictRound}, but {@link #SKEPTIC_LINE} and
+ * {@link #CHAIR_LINE} match only the transcript format the round wrote BEFORE mezo-lghn split the
+ * Szkeptikus/chair roles — {@code WEAKEN}, the {@code KEEP → word} strength suffix, a paren-less
+ * {@code ELUTASÍTVA}, and the new {@code […]} dissent/note markers all fail to match. This is
+ * harmless: every konzílium path now persists a {@link ConferenceDeliberationEnvelope} directly,
+ * so this parser is reached only for a conference persisted BEFORE that envelope existed at all —
+ * i.e. a row whose stored {@code deliberation} column is null ({@code CharacterService} falls back
+ * to this parser only then), never a post-mezo-lghn transcript missing its envelope. The proposal
+ * index is rebuilt exactly the way the round assigned it, by walking the expert turns in
+ * transcript order and numbering their claim lines.
  *
  * <p>Legacy threads group BY EXPERT, titled with the expert's display name: a stored transcript
  * carries no chapter membership, and inventing one would misreport the meeting. Returns

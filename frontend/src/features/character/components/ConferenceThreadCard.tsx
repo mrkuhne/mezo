@@ -44,12 +44,18 @@ const NOTHING_TO_ADD = 'A Szkeptikus érvét elfogadom, nem teszek hozzá.'
  *  A rejection that ratifies a KILL, and an acceptance at the strength the Szkeptikus suggested,
  *  both add nothing — paraphrasing the Szkeptikus there is the theater this card exists to avoid.
  *  `dissent` is read with `=== true` (never as a truthy check) because it arrives as a nullable
- *  boolean and the model's self-report cannot be trusted either way. */
+ *  boolean and the model's self-report cannot be trusted either way. An accept that overrules an
+ *  explicit KILL gets the SAME hardening as the rejection arm above (mezo-lghn fix round 4, item
+ *  1): it is always shown, and — same spirit — this does NOT consult `dissent` either. Overruling
+ *  a kill is the single strongest thing the chair can do, and it can never be mistaken for a
+ *  ratification just because a stray `suggestedConfidence` on that KILL happens to land in the
+ *  same confidence-word tier as the chair's own number. */
 function chairAddedSomething(item: ConferenceItem): boolean {
   const chair = item.chair
   if (chair == null) return false
   if (chair.dissent === true || chair.note != null) return true
   if (!chair.accepted) return item.skeptic == null || item.skeptic.verdict !== 'KILL'
+  if (item.skeptic?.verdict === 'KILL') return true
   if (chair.confidence == null) return true
   const suggested = item.skeptic?.suggestedConfidence
   if (suggested == null) return true

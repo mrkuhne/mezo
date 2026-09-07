@@ -110,6 +110,61 @@ describe('ConferenceThreadCard', () => {
     expect(screen.queryByText(/nem teszek hozzá/)).not.toBeInTheDocument()
   })
 
+  // mezo-lghn fix round 4, item 1 (MUST-FIX): an accept that OVERRULES an explicit KILL must
+  // always be shown — even without a `dissent` flag AND with a `suggestedConfidence` on that KILL
+  // landing in the SAME confidence-word tier as the chair's own number (both 0.6 → "valószínű"
+  // here). Before the fix this exact combination fell through to the word-comparison arm, compared
+  // equal, and rendered the honest-looking-but-false "nem teszek hozzá" short form while the claim
+  // was written to the dossier regardless.
+  test('egy KILL felülbírálása látszik dissent jelzés és eltérő erősség nélkül is', async () => {
+    const thread: ConferenceThread = {
+      ...THREAD,
+      items: [
+        {
+          ...THREAD.items[0],
+          skeptic: { verdict: 'KILL', argument: 'Túlinterpretálás.', suggestedConfidence: 0.6 },
+          chair: {
+            accepted: true,
+            confidence: 0.6,
+            reason: 'A dossziéban két korábbi mérés is ezt mutatja, amit a Szkeptikus nem látott.',
+            dissent: false,
+            note: null,
+          },
+        },
+      ],
+    }
+    render(<ConferenceThreadCard thread={thread} experts={MOCK_EXPERTS} />)
+
+    await userEvent.click(screen.getByRole('button', { name: /Regeneráció/ }))
+
+    expect(
+      screen.getByText(/A dossziéban két korábbi mérés is ezt mutatja, amit a Szkeptikus nem látott\./),
+    ).toBeInTheDocument()
+    expect(screen.queryByText(/nem teszek hozzá/)).not.toBeInTheDocument()
+  })
+
+  // mezo-lghn fix round 4, item 2: a KILL carries no suggested strength — a stray
+  // `suggestedConfidence` on the Szkeptikus's KILL must never render as a confidence word on its
+  // own step (mirrors the backend's `skepticLine`).
+  test('a Kukázta lépés nem jelenít meg erősség-szót, ha a Szkeptikus javasolt egyet KILL mellé', async () => {
+    const thread: ConferenceThread = {
+      ...THREAD,
+      items: [
+        {
+          ...THREAD.items[0],
+          skeptic: { verdict: 'KILL', argument: 'Kevés adat.', suggestedConfidence: 0.8 },
+          chair: { accepted: false, confidence: null, reason: 'Egyetértek.', dissent: false, note: null },
+        },
+      ],
+    }
+    render(<ConferenceThreadCard thread={thread} experts={MOCK_EXPERTS} />)
+
+    await userEvent.click(screen.getByRole('button', { name: /Regeneráció/ }))
+
+    expect(screen.getByText(/Kukázta/)).toBeInTheDocument()
+    expect(screen.queryByText(/biztos/)).not.toBeInTheDocument()
+  })
+
   // A fired sensitivity guardrail (KonziliumVerdictRound.lacksSensitiveClearance) drops an accept
   // to a rejection carrying a system-authored note — that ruling must stay visible even though it
   // ratifies the Szkeptikus's KILL and never sets `dissent` (mezo-lghn).

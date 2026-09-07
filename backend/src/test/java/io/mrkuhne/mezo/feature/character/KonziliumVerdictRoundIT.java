@@ -646,6 +646,65 @@ class KonziliumVerdictRoundIT extends ApiIntegrationTest {
         assertThat(chair.text()).doesNotContain("nem teszek hozzá");
     }
 
+    /** mezo-lghn fix round 4, item 1 (MUST-FIX): an accept that OVERRULES an explicit KILL must
+     *  always be shown — even when the model never sets {@code dissent} AND a stray
+     *  {@code suggestedConfidence} on that KILL happens to land in the SAME confidence-word tier
+     *  as the chair's own number (both 0.6 → "valószínű" here), which is exactly the combination
+     *  that used to fall through to the word-comparison arm, compare equal, and collapse into the
+     *  aggregate "nem teszek hozzá" line while the claim was written to the dossier regardless.
+     *  Mirrors {@link #aRejectionOverAKeepIsShownEvenWithoutADissentFlag}'s hardening on the other
+     *  side: a real disagreement (overruling a kill is the strongest thing the chair can do) must
+     *  never hide behind a model that forgot to set dissent. */
+    @Test
+    void anAcceptOverAKillIsShownEvenWithoutADissentFlagAndAMatchingSuggestedConfidence() {
+        UUID owner = ownerId();
+        CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
+        ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
+                "Rekompozíció zajlik. "
+                        + "[fake-char-skeptic:[{\"index\":0,\"verdict\":\"KILL\","
+                        + "\"argument\":\"Túlinterpretálás.\",\"suggestedConfidence\":0.6}]] "
+                        + "[fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":true,"
+                        + "\"confidence\":0.6,\"reason\":\"A dossziéban két korábbi mérés is ezt mutatja, "
+                        + "amit a Szkeptikus nem látott.\"}],\"chapters\":[]}]",
+                new BigDecimal("0.60"), false, "Három heti mérés.");
+
+        KonziliumVerdictRound.Result result =
+                verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
+
+        assertThat(result.rulings()).singleElement()
+                .satisfies(ruling -> assertThat(ruling.accepted()).isTrue());
+        ConferenceTranscriptEnvelope.Turn chair = result.turns().stream()
+                .filter(turn -> turn.persona().equals("mezo"))
+                .findFirst().orElseThrow();
+        assertThat(chair.text()).contains(
+                "A dossziéban két korábbi mérés is ezt mutatja, amit a Szkeptikus nem látott.");
+        assertThat(chair.text()).doesNotContain("nem teszek hozzá");
+    }
+
+    /** mezo-lghn fix round 4, item 2: a KILL carries no suggested strength ({@code skepticLine}'s
+     *  {@code || KILL.equals(draft.verdict())} disjunct) — a stray {@code suggestedConfidence} on
+     *  an explicit KILL must never render as a confidence word on the Szkeptikus's transcript
+     *  line, since a KILL has nothing to suggest a strength FOR. Deleting that disjunct left this
+     *  unpinned: no existing test's KILL verdict ever carried a {@code suggestedConfidence}. */
+    @Test
+    void aKillVerdictNeverRendersASuggestedConfidenceWordEvenWhenTheDraftCarriesOne() {
+        UUID owner = ownerId();
+        String skepticSentinel = "[fake-char-skeptic:["
+                + "{\"index\":0,\"verdict\":\"KILL\",\"argument\":\"Túlinterpretálás.\",\"suggestedConfidence\":0.8}"
+                + "]]";
+        List<ClaimProposal> proposals = List.of(
+                new ClaimProposal("drill", "NEW", "discipline", null, "Javaslat.",
+                        new BigDecimal("0.50"), false, skepticSentinel));
+
+        KonziliumVerdictRound.Result result = verdictRound.run(owner, WEEK_START, proposals, List.of());
+
+        ConferenceTranscriptEnvelope.Turn skepticTurn = result.turns().stream()
+                .filter(turn -> turn.persona().equals("szkeptikus"))
+                .findFirst().orElseThrow();
+        assertThat(skepticTurn.text()).contains("P0: KILL — Túlinterpretálás.");
+        assertThat(skepticTurn.text()).doesNotContainPattern("biztos|valószínű|figyeljük");
+    }
+
     /** mezo-lghn task 5 fix round 1, gap 1: the {@code ruling.accepted() &&} conjunct guarding
      *  confidence rendering — a REJECTED ruling can carry a non-null {@code ruledConfidence}
      *  (informational only, never applied — {@link ClaimRuling}'s javadoc), and it must never

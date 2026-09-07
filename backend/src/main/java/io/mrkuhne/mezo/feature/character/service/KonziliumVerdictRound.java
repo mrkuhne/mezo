@@ -530,7 +530,12 @@ public class KonziliumVerdictRound {
      * Whether this ruling contributed anything the Szkeptikus had not already said. A rejection
      * that ratifies a KILL adds nothing; a rejection over KEEP/WEAKEN or over no answer at all is
      * always shown, so a real disagreement can never hide behind a model that forgot to set
-     * {@code dissent}.
+     * {@code dissent}. The ACCEPT side gets the same hardening (mezo-lghn fix round 4, item 1):
+     * an accept that overrules an explicit KILL is always shown too, and — same spirit as the
+     * rejection arm — this does NOT consult {@code dissent} either. Overruling a kill is the
+     * single strongest thing the chair can do; it can never be mistaken for a ratification just
+     * because a stray {@code suggestedConfidence} on that KILL happens to land in the same
+     * confidence-word tier as the chair's own number.
      */
     private static boolean addsSomething(ClaimRuling ruling, SkepticVerdictDraft verdict) {
         if (ruling.dissent() || ruling.note() != null) {
@@ -538,6 +543,9 @@ public class KonziliumVerdictRound {
         }
         if (!ruling.accepted()) {
             return verdict == null || !KILL.equals(verdict.verdict());
+        }
+        if (verdict != null && KILL.equals(verdict.verdict())) {
+            return true;
         }
         if (ruling.ruledConfidence() == null) {
             return true;
