@@ -9991,6 +9991,92 @@ button.mz-wtile:active { transform: scale(0.96); }
 .rt-danger.is-hard.is-armed { border-color: var(--error); color: var(--error); font-weight: 700; }
 .rt-danger:disabled { opacity: 0.45; cursor: default; }
 
+/* ===== Szerkesztő-oldal + horgony-választó (mezo-bk26) =====
+   rutin-formalodas.html `pg-edit` `.swseg`/`.pickrow`/`.lockline`/`.warn` + the anchor
+   sheet's `.optgrp`/`.optrow`, ×1.18 (330 → 390px frame), on the app's tokens. */
+.rt-swseg { display: flex; gap: 6px; }
+.rt-swseg button {
+  flex: 1; border: 1.5px solid var(--border-subtle); background: var(--surface-card);
+  border-radius: 13px; padding: 8px 5px; font-family: inherit; font-size: 10.6px;
+  font-weight: 700; color: var(--text-secondary); cursor: pointer;
+  display: grid; gap: 2px; justify-items: center;
+}
+.rt-swseg button span { font-size: 15px; }
+.rt-swseg button.on {
+  border-color: var(--mz-cell-sage-ink); color: var(--mz-cell-sage-ink);
+  background: linear-gradient(140deg, var(--mz-cell-sage-bg), var(--surface-card) 70%);
+}
+.rt-swseg button.on.is-clear {
+  border-color: var(--mz-cell-lav-ink); color: var(--mz-cell-lav-ink);
+  background: linear-gradient(140deg, var(--mz-cell-lav-bg), var(--surface-card) 70%);
+}
+.rt-pickrow {
+  width: 100%; display: flex; align-items: center; gap: 9px; border: 1px solid var(--border-subtle);
+  background: var(--surface-page); border-radius: 12px; padding: 9px 12px; margin-top: 8px;
+  font-family: inherit; font-size: 13px; color: var(--text-primary); cursor: pointer; text-align: left;
+}
+.rt-pickrow-gr { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rt-pickrow-cv { color: var(--mz-ink-mut); font-size: 14px; flex: none; }
+.rt-lockline { display: flex; gap: 6px; font-size: 9.4px; color: var(--mz-ink-mut); margin-top: 6px; line-height: 1.4; }
+.rt-lockline b { color: var(--text-secondary); font-weight: 700; }
+.rt-warn {
+  display: flex; gap: 8px; border-radius: 13px; padding: 9.5px 12px; margin-top: 9.5px;
+  font-size: 10px; line-height: 1.45; font-weight: 500;
+  color: var(--accent-deep); background: color-mix(in srgb, var(--accent-base) 16%, transparent);
+}
+.rt-warn b { font-weight: 800; }
+.rt-optgrp {
+  font-size: 8.3px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--mz-ink-mut); margin: 10.6px 2px 6px;
+}
+.rt-optrow {
+  width: 100%; display: flex; align-items: center; gap: 10.6px; border: 1px solid var(--mz-line-soft);
+  background: var(--surface-card); border-radius: 14px; padding: 10.6px 13px; margin-bottom: 7px;
+  font-family: inherit; text-align: left; color: var(--text-primary); cursor: pointer;
+}
+.rt-optrow-nm { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; }
+.rt-optrow-nm small { display: block; font-size: 9.4px; font-weight: 400; color: var(--mz-ink-mut); }
+.rt-optrow-rad {
+  width: 17.7px; height: 17.7px; border-radius: 50%; border: 1.5px solid var(--divider); flex: none;
+}
+.rt-optrow.on {
+  border-color: var(--mz-cell-sage-ink);
+  background: linear-gradient(140deg, var(--mz-cell-sage-bg), var(--surface-card) 72%);
+}
+.rt-optrow.on .rt-optrow-rad {
+  border-color: var(--mz-cell-sage-ink);
+  background: radial-gradient(circle, var(--mz-cell-sage-ink) 42%, transparent 46%);
+}
+.rt-optrow.is-unlink { border-style: dashed; border-color: color-mix(in srgb, var(--coral-deep) 40%, transparent); }
+.rt-optrow.is-unlink .rt-optrow-nm { color: var(--coral-deep); }
+
+/* ===== Fogg ability-faktorok → XP (mezo-9k99) =====
+   rutin-formalodas.html `.effrow`/`.seg3`/`.effout` ×1.18, on the app's tokens. */
+.rt-effrow { padding: 9.5px 0; }
+.rt-effrow + .rt-effrow { border-top: 0.5px solid var(--mz-line-soft); }
+.rt-effrow-h { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+.rt-effrow-h b { font-size: 11.8px; font-weight: 700; color: var(--text-primary); }
+.rt-effrow-h small { margin-left: auto; font-size: 9.4px; color: var(--mz-ink-mut); }
+.rt-seg3 { display: flex; gap: 5px; }
+.rt-seg3 button {
+  flex: 1; border: 1px solid var(--border-subtle); background: var(--surface-card);
+  border-radius: 10.6px; padding: 7px 3.5px; font-family: inherit; font-size: 10px;
+  font-weight: 600; color: var(--text-secondary); cursor: pointer; line-height: 1.25;
+}
+.rt-seg3 button.is-sage.on { border-color: var(--mz-cell-sage-ink); background: var(--mz-cell-sage-bg); color: var(--mz-cell-sage-ink); font-weight: 700; }
+.rt-seg3 button.is-gold.on { border-color: var(--accent-base); background: var(--mz-cell-gold-bg); color: var(--accent-deep); font-weight: 700; }
+.rt-seg3 button.is-coral.on { border-color: var(--coral-deep); background: color-mix(in srgb, var(--coral-deep) 14%, transparent); color: var(--coral-deep); font-weight: 700; }
+.rt-effout {
+  display: flex; align-items: center; gap: 11.8px; border-radius: 16.5px; padding: 11.8px 13px;
+  margin-top: 10.6px; background: var(--mz-wash-sand);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--surface-card) 90%, transparent);
+}
+.rt-effout-lvl { font-size: 14px; font-weight: 700; color: var(--text-primary); }
+.rt-effout-lvl small { display: block; font-size: 9.4px; font-weight: 400; color: var(--text-secondary); margin-top: 1px; }
+.rt-effout-xp { margin-left: auto; text-align: right; flex: none; }
+.rt-effout-xp b { display: block; font-size: 21px; font-weight: 200; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; color: var(--text-primary); }
+.rt-effout-xp small { font-size: 8.3px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--mz-ink-mut); }
+
 /* ===== Fuel beállítások · önálló Mozaik 2.0 oldal (mezo-2xzf) ===== */
 .fset-page { min-width: 0; overflow-x: clip; }
 .fset-title {

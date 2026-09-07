@@ -132,6 +132,77 @@ describe('useHabitCatalog / useHabitCatalogActions (mock mode)', () => {
     expect(findIt().anchorHabitKey).toBeNull()
   })
 
+  it('updateDef({mode:"MANUAL"}) egy DERIVED defen a metricet is "manual"-ra kényszeríti (mezo-pero)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ catalog: useHabitCatalog(), actions: useHabitCatalogActions() }),
+      { wrapper: Wrapper },
+    )
+    let created: { id: string } | undefined
+    await act(async () => {
+      created = await result.current.actions.createDef({
+        chainKey: 'MORNING', title: 'Súlymérés', mode: 'DERIVED', metric: 'weight_logged_today',
+        skillKey: 'recovery', xp: 10,
+      })
+    })
+    await act(async () => {
+      await result.current.actions.updateDef(created!.id, { mode: 'MANUAL' })
+    })
+    await waitFor(() => {
+      const def = result.current.catalog.catalog.chains.flatMap((c) => c.defs).find((d) => d.id === created!.id)!
+      expect(def.mode).toBe('MANUAL')
+      expect(def.metric).toBe('manual')
+    })
+  })
+
+  it('updateDef({mode:"DERIVED", metric}) egy MANUAL defen mindkettőt átállítja; metric nélkül HABIT_MODE_METRIC_MISMATCH (mezo-pero)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ catalog: useHabitCatalog(), actions: useHabitCatalogActions() }),
+      { wrapper: Wrapper },
+    )
+    let created: { id: string } | undefined
+    await act(async () => {
+      created = await result.current.actions.createDef({
+        chainKey: 'MORNING', title: 'Súlymérés', mode: 'MANUAL', skillKey: 'recovery', xp: 10,
+      })
+    })
+    // Metric nélkül a tárolt "manual" öröklődne DERIVED alá — a mock ugyanúgy utasítja el, mint
+    // a backend resolveMetric-je.
+    await expect(
+      act(async () => { await result.current.actions.updateDef(created!.id, { mode: 'DERIVED' }) }),
+    ).rejects.toThrow('HABIT_MODE_METRIC_MISMATCH')
+
+    await act(async () => {
+      await result.current.actions.updateDef(created!.id, { mode: 'DERIVED', metric: 'weight_logged_today' })
+    })
+    await waitFor(() => {
+      const def = result.current.catalog.catalog.chains.flatMap((c) => c.defs).find((d) => d.id === created!.id)!
+      expect(def.mode).toBe('DERIVED')
+      expect(def.metric).toBe('weight_logged_today')
+    })
+  })
+
+  it('updateDef üres stringgel nullára ürít egy opcionális mezőt — a horgony-konvenció általánosítva (mezo-pero)', async () => {
+    const { Wrapper } = sharedWrapper()
+    const { result } = renderHook(
+      () => ({ catalog: useHabitCatalog(), actions: useHabitCatalogActions() }),
+      { wrapper: Wrapper },
+    )
+    const target = result.current.catalog.catalog.chains
+      .find((c) => c.chainKey === 'MORNING')!.defs.find((d) => d.habitKey === 'morning_sunlight')!
+    expect(target.why).not.toBeNull()
+
+    await act(async () => {
+      await result.current.actions.updateDef(target.id, { why: '' })
+    })
+    await waitFor(() => {
+      const def = result.current.catalog.catalog.chains
+        .flatMap((c) => c.defs).find((d) => d.id === target.id)!
+      expect(def.why).toBeNull() // blank clears; null would have been a no-op
+    })
+  })
+
   it('deleteChain throws HABIT_CHAIN_SEED for a seed chain — mirrors the backend 409 guard (was: silently removed a 9-def seed chain)', async () => {
     const { Wrapper } = sharedWrapper()
     const { result } = renderHook(

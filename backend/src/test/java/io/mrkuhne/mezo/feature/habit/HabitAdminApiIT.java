@@ -431,6 +431,136 @@ class HabitAdminApiIT extends ApiIntegrationTest {
         assertThat(after.getFramework()).isEqualTo(HabitDefAdmin.FrameworkEnum.FOGG);
     }
 
+    @Test
+    void testUpdateDef_shouldSwitchModeToManual_forcingManualMetric() {
+        // Tick mode is no longer create-only (mezo-pero): DERIVED → MANUAL forces the metric to
+        // "manual", mirroring createDef's resolveMetric so the two write paths cannot drift.
+        catalog();
+        HabitDefAdmin created = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Súlymérés")
+                .mode(HabitDefCreateRequest.ModeEnum.DERIVED).metric("weight_logged_today")
+                .skillKey("recovery").xp(10).build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        HabitDefAdmin updated = patchForBody("/api/habit/def/" + created.getId(),
+            HabitDefUpdateRequest.builder().mode(HabitDefUpdateRequest.ModeEnum.MANUAL).build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+        assertThat(updated.getMode()).isEqualTo(HabitDefAdmin.ModeEnum.MANUAL);
+        assertThat(updated.getMetric()).isEqualTo("manual");
+    }
+
+    @Test
+    void testUpdateDef_shouldSwitchModeToDerived_withMetricInSameRequest() {
+        catalog();
+        HabitDefAdmin created = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Súlymérés")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("recovery").xp(10).build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        HabitDefAdmin updated = patchForBody("/api/habit/def/" + created.getId(),
+            HabitDefUpdateRequest.builder().mode(HabitDefUpdateRequest.ModeEnum.DERIVED)
+                .metric("weight_logged_today").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+        assertThat(updated.getMode()).isEqualTo(HabitDefAdmin.ModeEnum.DERIVED);
+        assertThat(updated.getMetric()).isEqualTo("weight_logged_today");
+    }
+
+    @Test
+    void testUpdateDef_shouldRejectDerivedSwitch_withoutMetric() {
+        // MANUAL → DERIVED with no metric in the request falls back to the stored "manual", which
+        // resolveMetric rejects — a derived def can never end up evaluating the manual metric.
+        catalog();
+        HabitDefAdmin created = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Súlymérés")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("recovery").xp(10).build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        String err = patchForBody("/api/habit/def/" + created.getId(),
+            HabitDefUpdateRequest.builder().mode(HabitDefUpdateRequest.ModeEnum.DERIVED).build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(err, "HABIT_MODE_METRIC_MISMATCH");
+    }
+
+    @Test
+    void testUpdateDef_shouldRejectUnknownMetric_onDerivedDef() {
+        catalog();
+        HabitDefAdmin created = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Súlymérés")
+                .mode(HabitDefCreateRequest.ModeEnum.DERIVED).metric("weight_logged_today")
+                .skillKey("recovery").xp(10).build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        String err = patchForBody("/api/habit/def/" + created.getId(),
+            HabitDefUpdateRequest.builder().metric("cold_shower_logged").build(),
+            ownerAuthHeaders(), HttpStatus.BAD_REQUEST, String.class);
+        assertHasRequestError(err, "HABIT_METRIC_UNKNOWN");
+    }
+
+    @Test
+    void testUpdateDef_shouldIgnoreMetric_whenModeStaysManual() {
+        // Mirrors createDef: any metric sent alongside (or while stored as) MANUAL is ignored,
+        // never an error — the FE can submit its whole form without special-casing.
+        catalog();
+        HabitDefAdmin created = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10).build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        HabitDefAdmin updated = patchForBody("/api/habit/def/" + created.getId(),
+            HabitDefUpdateRequest.builder().metric("weight_logged_today").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+        assertThat(updated.getMetric()).isEqualTo("manual");
+        assertThat(updated.getMode()).isEqualTo(HabitDefAdmin.ModeEnum.MANUAL);
+    }
+
+    @Test
+    void testUpdateDef_shouldClearOptionalTexts_onBlank_andKeepOmitted() {
+        // The anchorHabitKey blank-unlink convention generalized (mezo-pero): a blank string
+        // clears any optional text back to null, an omitted key leaves it standing.
+        catalog();
+        HabitDefAdmin created = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .why("mert fontos").linkUrl("https://example.org/rutin").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        HabitDefAdmin updated = patchForBody("/api/habit/def/" + created.getId(),
+            HabitDefUpdateRequest.builder().why("").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+        assertThat(updated.getWhy()).isNull();
+        assertThat(updated.getLinkUrl()).isEqualTo("https://example.org/rutin"); // omitted → unchanged
+
+        HabitDefAdmin cleared = patchForBody("/api/habit/def/" + created.getId(),
+            HabitDefUpdateRequest.builder().linkUrl(" ").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+        assertThat(cleared.getLinkUrl()).isNull();
+
+        // Persisted, not merely mapped on the response.
+        HabitDefAdmin after = findDef(catalog(), created.getId());
+        assertThat(after.getWhy()).isNull();
+        assertThat(after.getLinkUrl()).isNull();
+    }
+
+    @Test
+    void testUpdateDef_shouldClearIdentity_onBlank_underClearFramework() {
+        // identity is CLEAR's only optional field — the one framework text that can be cleared
+        // without invalidating the recipe.
+        catalog();
+        HabitDefAdmin created = postForBody("/api/habit/def",
+            HabitDefCreateRequest.builder().chainKey("MORNING").title("Napi mondat")
+                .mode(HabitDefCreateRequest.ModeEnum.MANUAL).skillKey("mindset").xp(10)
+                .framework(HabitDefCreateRequest.FrameworkEnum.CLEAR)
+                .cue("7:10-kor a konyhában").craving("tisztább fejjel indul a nap")
+                .reward("a pipa maga").identity("író vagyok").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+
+        HabitDefAdmin updated = patchForBody("/api/habit/def/" + created.getId(),
+            HabitDefUpdateRequest.builder().identity("").build(),
+            ownerAuthHeaders(), HttpStatus.OK, HabitDefAdmin.class);
+        assertThat(updated.getIdentity()).isNull();
+        assertThat(updated.getFramework()).isEqualTo(HabitDefAdmin.FrameworkEnum.CLEAR);
+    }
+
     private static HabitDefAdmin findDef(HabitCatalogResponse cat, UUID defId) {
         return cat.getChains().stream()
             .flatMap(chain -> chain.getDefs().stream())
