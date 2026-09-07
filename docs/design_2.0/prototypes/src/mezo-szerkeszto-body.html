@@ -884,27 +884,18 @@
       d.label = this.value;
     });
     document.getElementById('dayname').addEventListener('blur', function () { renderEditorDerived(); });
-    var dm = dayMuscle(d);
-    var dailyMini = GKEYS.filter(function (k) { return (dm[k] || 0) > 0; })
-      .sort(function (a, b) { return dm[b] - dm[a]; }).slice(0, 3).map(function (k) {
-        var g = GROUPS[k], v = dm[k];
-        var warn = v >= SESSION_CAP - 1;
-        return '<div class="mg1"><span style="color:' + g.deep + ';">' + g.name + '</span>' +
-          '<span class="bar"><div data-w="' + Math.min(100, Math.round(v / SESSION_CAP * 100)) + '" style="background:' + (warn ? '#C9962E' : g.deep) + ';"></div></span>' +
-          '<span class="n">' + fmt(v) + '</span></div>';
-      }).join('');
     document.getElementById('daybody').innerHTML =
       '<div class="loadtile day rise" style="--d:20ms;" id="tile-daily" role="button" tabindex="0" aria-label="Napi terhelés részletei">' +
-        '<div class="mrow"><div class="p-eyebrow grow" style="color:#A84A26;">Napi terhelés · ' + d.key + '</div><span class="mut" style="font-size:11px;">›</span></div>' +
+        '<div class="mrow"><div class="p-eyebrow grow" style="color:#A84A26;" id="dailyeb">Napi terhelés · ' + d.key + '</div><span class="mut" style="font-size:11px;">›</span></div>' +
         '<div class="mrow" style="align-items:flex-end;gap:12px;">' +
-          '<div class="bign" id="dailybig">' + dayTotal(d) + '<small>szett · ~' + dayMins(d) + '′</small></div>' +
-          '<div class="minigauges grow" style="margin-top:0;">' + dailyMini + '</div>' +
+          '<div class="bign" id="dailybig"></div>' +
+          '<div class="minigauges grow" id="dailyminis" style="margin-top:0;"></div>' +
         '</div></div>' +
-      '<div id="excards">' + d.ex.map(function (e, i) { return exCard(d, e, i); }).join('') + '</div>' +
+      '<div id="excards"></div>' +
       '<button class="ghost rise" id="addex" style="--d:' + (120 + d.ex.length * 50) + 'ms;width:100%;padding:9px 0;margin-top:2px;border:1.5px dashed rgba(255,107,74,0.5);background:transparent;color:#A84A26;">＋ Gyakorlat hozzáadása</button>' +
       '<p class="habnote">Minden mező közvetlenül írható — nincs accordion, nincs stepper. Átrendezés a ▲▼ nyilakkal, törlés az ×-szel (Visszavonás a snackbaron).</p>';
-    document.getElementById('daybody').querySelectorAll('.excard').forEach(function (c) { bindCard(c); });
-    fillBars(document.getElementById('tile-daily'));
+    renderCards(true);
+    updateDailyTile();
     document.getElementById('tile-daily').addEventListener('click', function () {
       renderDailyPage();
       openPage('page-daily');
@@ -912,9 +903,33 @@
     document.getElementById('addex').addEventListener('click', function () { openSheet('pick'); });
     document.getElementById('pickday').textContent = d.key + ' · ' + d.label;
   }
-  function exCard(d, e, i) {
+  /* a kártyalista: első nyitáskor animál, szerkesztéskor villanás nélkül frissül */
+  function renderCards(anim) {
+    var d = DAYS[activeDay];
+    var host = document.getElementById('excards');
+    host.innerHTML = d.ex.map(function (e, i) { return exCard(d, e, i, anim); }).join('');
+    host.querySelectorAll('.excard').forEach(function (c) { bindCard(c); });
+  }
+  function updateDailyTile() {
+    var d = DAYS[activeDay];
+    var big = document.getElementById('dailybig');
+    if (!big) return;
+    big.innerHTML = dayTotal(d) + '<small>szett · ~' + dayMins(d) + '′</small>';
+    var dm = dayMuscle(d);
+    var minis = document.getElementById('dailyminis');
+    minis.innerHTML = GKEYS.filter(function (k) { return (dm[k] || 0) > 0; })
+      .sort(function (a, b) { return dm[b] - dm[a]; }).slice(0, 3).map(function (k) {
+        var g = GROUPS[k], v = dm[k];
+        var warn = v >= SESSION_CAP - 1;
+        return '<div class="mg1"><span style="color:' + g.deep + ';">' + g.name + '</span>' +
+          '<span class="bar"><div data-w="' + Math.min(100, Math.round(v / SESSION_CAP * 100)) + '" style="background:' + (warn ? '#C9962E' : g.deep) + ';"></div></span>' +
+          '<span class="n">' + fmt(v) + '</span></div>';
+      }).join('');
+    fillBars(minis);
+  }
+  function exCard(d, e, i, anim) {
     var g = GROUPS[e.prim];
-    return '<div class="excard rise" style="--d:' + (60 + i * 50) + 'ms;background:linear-gradient(150deg,' + g.wash[0] + ',' + g.wash[1] + ');border-left-color:' + g.deep + ';" data-ei="' + i + '">' +
+    return '<div class="excard' + (anim ? ' rise' : '') + '" style="' + (anim ? '--d:' + (60 + i * 50) + 'ms;' : '') + 'background:linear-gradient(150deg,' + g.wash[0] + ',' + g.wash[1] + ');border-left-color:' + g.deep + ';" data-ei="' + i + '">' +
       '<div class="mrow" style="gap:7px;">' +
         '<div class="exico"><svg width="17" height="17" viewBox="0 0 100 100"><use href="#i-suly"/></svg></div>' +
         '<div class="grow" style="min-width:0;"><div class="nm2">' + e.n + '</div>' +
@@ -951,6 +966,7 @@
     var d = DAYS[activeDay];
     var sub = document.getElementById('daysub');
     if (sub) sub.textContent = d.key + ' · ' + dayTotal(d) + ' szett · ~' + dayMins(d) + ' perc · ' + d.ex.length + ' gyakorlat';
+    updateDailyTile();
     renderEditorDerived();
   }
   function bindCard(card) {
@@ -985,9 +1001,9 @@
       var removed = d.ex.splice(i, 1)[0];
       showSnack('„' + removed.n + '" törölve', function () {
         d.ex.splice(Math.min(i, d.ex.length), 0, removed);
-        renderDay(); refreshDayStats();
+        renderCards(false); refreshDayStats();
       });
-      renderDay(); refreshDayStats();
+      renderCards(false); refreshDayStats();
     });
     card.querySelectorAll('[data-mv]').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -996,7 +1012,7 @@
         var j = i + dir;
         if (j < 0 || j >= d.ex.length) return;
         var tmp = d.ex[i]; d.ex[i] = d.ex[j]; d.ex[j] = tmp;
-        renderDay(); refreshDayStats();
+        renderCards(false); refreshDayStats();
       });
     });
   }
@@ -1210,7 +1226,7 @@
           ? ex(x.n, x.k, [], 'fire', 3, 8, 10, null)
           : ex(x.n, x.k, [], 'leaf', 3, 12, 15, null);
         DAYS[activeDay].ex.push(e);
-        renderDay(); refreshDayStats();
+        renderCards(false); refreshDayStats();
       });
     });
   }

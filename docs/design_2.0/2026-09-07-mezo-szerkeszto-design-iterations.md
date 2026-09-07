@@ -31,3 +31,4 @@ a spec frissül és jön a writing-plans.
 |---|---|
 | Nincs térköz a Napi terhelés csempe és a gyakorlat-kártyák között | `.loadtile.day` 10px alsó margót kapott. |
 | Drag&drop helyett fel/le nyilak | A ☰ fogantyú és a pointer-drag kikerült; a kártya fejlécében ▲▼ gombpár rendez (a szélső irány letiltva). Ez az app meglévő `SortableList`-viselkedéséhez is közelebb áll. |
+| Átrendezéskor az egész oldal „flashelt" és újratöltött | A nap-oldal már nem renderelődik újra szerkesztéskor: csak a kártyalista frissül, animáció nélkül (`renderCards(anim=false)`); a `rise` belépő-choreográfia csak a nap első megnyitásakor fut. A Napi terhelés csempe helyben, élőben frissül. |
