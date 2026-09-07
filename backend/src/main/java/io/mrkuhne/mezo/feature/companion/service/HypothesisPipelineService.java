@@ -235,7 +235,8 @@ public class HypothesisPipelineService {
             out.append("TEGNAPI JELZÉSEK (a szövegeidből):\n").append(digest);
         }
         if (!open.isBlank()) {
-            appendSection(out, "NYITOTT HIPOTÉZISEK (ezeket NE javasold újra):\n" + open);
+            appendSection(out, "NYITOTT HIPOTÉZISEK (ezeket NE javasold újra — de revíziót "
+                    + "javasolhatsz rájuk):\n" + open);
         }
         if (!memories.isBlank()) {
             appendSection(out, "EMLÉKEK (memória-platform):\n" + memories);
@@ -507,7 +508,9 @@ public class HypothesisPipelineService {
                 // Defensive: a revision the code cannot verify is DROPPED whole rather than
                 // silently degrading into an unrelated qualitative row. The model said "change
                 // this test", not "here is a new hunch".
-                log.debug("Revision of '{}' by user {} is unusable (row {}, plan {}) — dropped",
+                // log.warn, not debug: a model that systematically hallucinates keys would
+                // otherwise zero out the nightly output with no operational signal at all.
+                log.warn("Revision of '{}' by user {} is unusable (row {}, plan {}) — dropped",
                         hypothesis.revisesHypothesisKey(), userId,
                         revisedRow == null ? "unknown" : "ok", plan.isPresent() ? "ok" : "invalid");
                 return false;

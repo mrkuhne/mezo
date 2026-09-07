@@ -17,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -42,12 +43,35 @@ import org.springframework.transaction.annotation.Transactional;
  * {@code statistical} catalog row's lifecycle belongs to the nightly Pearson job and the Minták
  * screen, not to the Észrevételek voice.
  *
- * <p><b>Fail-soft by construction.</b> {@code @Transactional(readOnly = true)} joins the morning
- * generator's own transaction, and a REQUIRED method that throws inside a caller's transaction
- * marks it rollback-only — which would defeat the caller's {@code catch} and kill the whole morning
- * message (the S3 {@code UnexpectedRollbackException} finding). So the failure is caught HERE,
- * inside the method body, and turned into {@link Optional#empty()}: the proxy never sees an
- * exception, nothing is marked rollback-only, and the morning message ships without the digest.
+ * <p><b>Fail-soft by construction, and the rule is: a digest failure may NEVER cost the user their
+ * morning message.</b> The digest is a garnish; the briefing is the product. Two things enforce it,
+ * belt and braces:
+ *
+ * <ul>
+ *   <li><b>{@code REQUIRES_NEW}.</b> The morning generator calls this from INSIDE its own
+ *       transaction. A REQUIRED method would join that transaction, and Hibernate's
+ *       {@code ExceptionConverter} marks the current transaction rollback-only at the moment a
+ *       {@code PersistenceException} is THROWN — before any {@code catch} of ours runs. The
+ *       generator's later {@code saveAndFlush} would then die with
+ *       {@code UnexpectedRollbackException} no matter who caught what (the S3 finding). A separate
+ *       physical transaction is the only thing that contains that damage, and one extra connection
+ *       per morning message is cheap next to "no morning briefing at all".
+ *   <li><b>A {@value #DIGEST_TIMEOUT_SECONDS}-second query timeout.</b> The price of a SECOND
+ *       physical transaction is that it can WAIT on locks the caller's own transaction holds — and
+ *       an unbounded wait would hang the morning message forever, which is worse than the failure
+ *       {@code REQUIRES_NEW} was bought to prevent. (It is not hypothetical: an integration test
+ *       that is itself {@code @Transactional} still holds the {@code TRUNCATE} locks of its
+ *       fixture reset, so an un-timed digest read from inside it never returns.) Two seconds is
+ *       ~40x the real cost of these two indexed reads; on expiry the read fails, the catch below
+ *       turns it into no digest, and the briefing goes out on time.
+ *   <li><b>The in-body {@code catch}.</b> It keeps the ordinary failure quiet as well: the proxy
+ *       never sees an exception, so the new transaction commits cleanly and the caller simply gets
+ *       {@link Optional#empty()}.
+ * </ul>
+ *
+ * <p>{@code ReflectionDigestMorningIT} pins the rule with a digest failure that marks its
+ * transaction rollback-only exactly the way Hibernate does, and asserts the morning message is
+ * still generated and saved.
  */
 @Slf4j
 @Service
@@ -56,6 +80,9 @@ import org.springframework.transaction.annotation.Transactional;
         name = {FeaturesConfiguration.COMPANION_SWITCH, FeaturesConfiguration.REFLECTION_SWITCH},
         havingValue = "true")
 public class ReflectionDigestService {
+
+    /** Ceiling on the digest's own transaction — see the class javadoc's REQUIRES_NEW note. */
+    static final int DIGEST_TIMEOUT_SECONDS = 2;
 
     /** The hour the nightly pass has finished by — both ends of the "last night" window. */
     private static final LocalTime NIGHT_BOUNDARY = LocalTime.of(3, 0);
@@ -72,19 +99,21 @@ public class ReflectionDigestService {
     public record Digest(String title, String sentence) {}
 
     /** The morning one-liner, or empty when the night decided nothing worth saying. */
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW,
+            timeout = DIGEST_TIMEOUT_SECONDS)
     public Optional<String> digestFor(UUID userId, LocalDate date) {
         return digestEntryFor(userId, date).map(Digest::sentence);
     }
 
     /** As {@link #digestFor}, plus the pattern title the caller cites the digest by. */
-    @Transactional(readOnly = true)
+    @Transactional(readOnly = true, propagation = Propagation.REQUIRES_NEW,
+            timeout = DIGEST_TIMEOUT_SECONDS)
     public Optional<Digest> digestEntryFor(UUID userId, LocalDate date) {
         try {
             return verdictDigest(userId, date).or(() -> evidenceDigest(userId, date));
         } catch (Exception e) {
-            // Fail-soft ON PURPOSE, and inside the method rather than at the caller: see the class
-            // javadoc. A missing digest is a quieter morning; a thrown one is no morning at all.
+            // Fail-soft ON PURPOSE, and inside the method as well as behind REQUIRES_NEW: see the
+            // class javadoc. A missing digest is a quieter morning; a thrown one is no morning.
             log.warn("Reflection digest failed for user {} on {} — no digest today", userId, date, e);
             return Optional.empty();
         }

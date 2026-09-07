@@ -285,9 +285,10 @@ public class CompanionMessageGenerator {
      * as one deterministic sentence — or null when Reflexió is off, the night decided nothing, or
      * the digest could not be built. Null is ALWAYS an acceptable answer here: the morning message
      * is the product, the digest is a garnish, so a digest failure must never cost the user their
-     * briefing. {@link ReflectionDigestService#digestEntryFor} already swallows its own failures
-     * (it would otherwise mark this method's transaction rollback-only); this catch is the second
-     * belt, for anything that escapes on the way there.
+     * briefing. {@link ReflectionDigestService#digestEntryFor} runs in its OWN {@code REQUIRES_NEW}
+     * transaction and swallows its own failures, so a broken digest can neither mark THIS method's
+     * transaction rollback-only nor poison its session; this catch is the second belt, for
+     * anything that still escapes (bean lookup, proxy creation, the inner commit).
      */
     private ReflectionDigestService.Digest reflectionDigest(UUID userId, LocalDate date) {
         ReflectionDigestService service = reflectionDigestService.getIfAvailable();

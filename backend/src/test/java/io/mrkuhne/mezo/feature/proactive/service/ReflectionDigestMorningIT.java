@@ -1,16 +1,22 @@
 package io.mrkuhne.mezo.feature.proactive.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEntity;
 import io.mrkuhne.mezo.feature.companion.entity.PatternEventEntity;
 import io.mrkuhne.mezo.feature.companion.entity.TestPlanEnvelope;
+import io.mrkuhne.mezo.feature.companion.repository.PatternEventRepository;
+import io.mrkuhne.mezo.feature.proactive.entity.CompanionMessageEntity;
+import io.mrkuhne.mezo.feature.proactive.repository.CompanionMessageRepository;
 import io.mrkuhne.mezo.support.AbstractIntegrationTest;
 import io.mrkuhne.mezo.support.populator.DailySummaryPopulator;
 import io.mrkuhne.mezo.support.populator.PatternEventPopulator;
 import io.mrkuhne.mezo.support.populator.PatternPopulator;
 import io.mrkuhne.mezo.support.populator.UserPopulator;
+import jakarta.persistence.PersistenceException;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -27,6 +33,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.transaction.interceptor.TransactionAspectSupport;
 import reactor.core.publisher.Flux;
 
 /**
@@ -106,6 +114,8 @@ class ReflectionDigestMorningIT extends AbstractIntegrationTest {
     @Autowired private PatternPopulator patternPopulator;
     @Autowired private PatternEventPopulator patternEventPopulator;
     @Autowired private UserPopulator userPopulator;
+    @Autowired private CompanionMessageRepository companionMessageRepository;
+    @MockitoSpyBean private PatternEventRepository patternEventRepository;
 
     @BeforeEach
     void resetCapture() {
@@ -138,6 +148,46 @@ class ReflectionDigestMorningIT extends AbstractIntegrationTest {
 
         assertThat(companionMessageGenerator.generateMorning(owner, today)).isNotNull();
         assertThat(capturingCompanionLlm.captured()).doesNotContain("ÉSZREVÉTEL");
+    }
+
+    /**
+     * The rule the digest exists under: <b>a digest failure must never cost the user their morning
+     * message</b>. The failure injected here is the realistic one — the digest's own window query
+     * blows up the way a query/mapping error does, marking its transaction rollback-only at the
+     * moment of the throw, exactly as Hibernate's {@code ExceptionConverter} does. That is the S3
+     * {@code UnexpectedRollbackException} shape, and no {@code catch} can undo it; only
+     * {@link io.mrkuhne.mezo.feature.companion.reflection.service.ReflectionDigestService}'s
+     * {@code REQUIRES_NEW} contains it in a separate physical transaction.
+     *
+     * <p>So the assertion is not "the exception was swallowed" but "the morning message was still
+     * GENERATED and SAVED" — read back from the repository after the generator's own transaction
+     * committed — and simply carries no {@code ÉSZREVÉTEL} block.
+     */
+    @Test
+    void testGenerateMorning_shouldStillShip_whenTheDigestQueryFails() {
+        LocalDate today = LocalDate.now();
+        UUID owner = userPopulator.createUser().getId();
+        dailySummaryPopulator.summary(owner, today.minusDays(1), "Tegnapi nap összefoglaló.");
+        PatternEntity row = patternPopulator.reflection(owner, PLAN, PatternEntity.STATUS_CONFIRMED);
+        patternEventPopulator.decision(owner, row.getId(), PatternEventEntity.KIND_CONFIRMED,
+                lastNight(today));
+
+        doAnswer(invocation -> {
+            TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();
+            throw new PersistenceException("simulated digest query failure");
+        }).when(patternEventRepository)
+                .findByCreatedByAndKindInAndOccurredAtGreaterThanEqualAndOccurredAtLessThanAndDeletedFalse(
+                        any(), any(), any(), any());
+
+        CompanionMessageEntity generated = companionMessageGenerator.generateMorning(owner, today);
+
+        assertThat(generated).isNotNull();
+        assertThat(companionMessageRepository.findByCreatedByAndMessageDateAndKind(
+                owner, today, CompanionMessageEntity.KIND_MORNING)).isPresent();
+        assertThat(capturingCompanionLlm.captured())
+                .isNotNull()
+                .doesNotContain("ÉSZREVÉTEL")
+                .doesNotContain(row.getTitle());
     }
 
     private static Instant lastNight(LocalDate date) {
