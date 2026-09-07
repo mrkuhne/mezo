@@ -10671,3 +10671,18 @@ button.mz-wtile:active { transform: scale(0.96); }
 .mz-lint b { color: var(--mz-cell-gold-ink); }
 .mz-lint-ok { background: var(--mz-cell-sage-bg); }
 .mz-lint-ok b { color: var(--mz-cell-sage-ink); }
+
+/* ===== mezo-szerkesztő · nap-hero + hozzáadás gomb (mezo-yty6) ===== */
+.mz-dayhero { display: grid; justify-items: center; text-align: center; gap: 1px;
+  padding: 8px 14px 12px; }
+.mz-dayname { width: 100%; max-width: 260px; padding: 1px 0; border: none; background: transparent;
+  text-align: center; font-family: inherit; font-size: 17px; font-weight: 700; color: inherit; }
+.mz-dayname:focus { outline: none; border-bottom: 1.5px solid var(--coral); }
+.mz-dayhero-hint { font-size: 7.5px; color: var(--mz-ink-mut); }
+.mz-dayhero-sub { font-size: 10px; color: var(--mz-ink-soft); }
+.mz-addex { display: flex; align-items: center; justify-content: center; gap: 8px;
+  width: 100%; margin-top: 2px; padding: 10px 0; border-radius: 15px;
+  border: 1.5px dashed color-mix(in srgb, var(--coral) 50%, transparent);
+  background: transparent; color: var(--coral-deep);
+  font-family: inherit; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer; }
