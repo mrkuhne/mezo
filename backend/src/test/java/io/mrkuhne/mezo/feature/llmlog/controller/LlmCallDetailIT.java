@@ -48,7 +48,7 @@ class LlmCallDetailIT extends ApiIntegrationTest {
         // Distinct value per field: a swapped pair (e.g. thinking <-> cached) must fail this test.
         PricingSnapshot snapshot = new PricingSnapshot("gemini-2.5-flash", "USD",
             new BigDecimal("0.30"), new BigDecimal("2.50"), new BigDecimal("0.15"),
-            new BigDecimal("0.075"), new BigDecimal("0.02"), LocalDate.of(2026, 8, 1));
+            new BigDecimal("0.075"), new BigDecimal("0.02"), null, LocalDate.of(2026, 8, 1));
         LlmLogEntity row = llmLogPopulator.logCall(Instant.now(), ownerId(), CallKind.TOOL,
             CallStatus.SUCCESS, "companion_chat", "send", "gemini-2.5-flash", snapshot,
             new BigDecimal("0.058"));

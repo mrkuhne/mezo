@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.companion.memory.dto.MemoryRequest;
 import io.mrkuhne.mezo.feature.companion.memory.dto.ScoreBreakdown;
 import io.mrkuhne.mezo.feature.companion.memory.service.LlmMemoryReranker;
 import io.mrkuhne.mezo.feature.companion.memory.service.MemoryCandidateFusion.FusedCandidate;
+import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +27,7 @@ class LlmMemoryRerankerTest {
     private final FakeCompanionLlm llm = new FakeCompanionLlm();
     private final ThreadPoolTaskExecutor taskExecutor = taskExecutor();
     private final LlmMemoryReranker reranker = new LlmMemoryReranker(
-            llm, new ObjectMapper(), MemoryCandidateFusionTest.properties(), taskExecutor);
+            llm, new ObjectMapper(), MemoryCandidateFusionTest.properties(), new LlmCallContextHolder(), taskExecutor);
 
     @AfterEach
     void shutdownExecutor() {
@@ -90,7 +91,7 @@ class LlmMemoryRerankerTest {
             }
         };
         LlmMemoryReranker bounded = new LlmMemoryReranker(
-                blockingLlm, new ObjectMapper(), enabledProperties(25), taskExecutor);
+                blockingLlm, new ObjectMapper(), enabledProperties(25), new LlmCallContextHolder(), taskExecutor);
         List<FusedCandidate> order = List.of(fused("első", false, 0.020), fused("második", false, 0.019));
 
         long started = System.nanoTime();
@@ -112,7 +113,7 @@ class LlmMemoryRerankerTest {
                 List.of(first, close))).isFalse();
 
         LlmMemoryReranker enabled = new LlmMemoryReranker(
-                llm, new ObjectMapper(), enabledProperties(), taskExecutor);
+                llm, new ObjectMapper(), enabledProperties(), new LlmCallContextHolder(), taskExecutor);
         assertThat(enabled.shouldRerank(request,
                 Map.of("dense", List.of(first.candidate()), "lexical", List.of(first.candidate())),
                 List.of(first, close))).isTrue();

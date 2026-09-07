@@ -159,5 +159,10 @@
   { "slug": "kb-turkish-get-up", "name": "Kettlebell Turkish Get-Up", "muscle": "core", "type": "compound", "stim": 0.7, "fatigue": 0.5, "imageStartUrl": "/exercises/kb-turkish-get-up-a.jpg", "imageEndUrl": "/exercises/kb-turkish-get-up-b.jpg" },
   { "slug": "kb-windmill", "name": "Kettlebell Windmill", "muscle": "core", "type": "compound", "stim": 0.6, "fatigue": 0.3, "imageStartUrl": "/exercises/kb-windmill-a.jpg", "imageEndUrl": "/exercises/kb-windmill-b.jpg" },
   { "slug": "kb-suitcase-carry", "name": "Kettlebell Suitcase Carry", "muscle": "core", "type": "compound", "stim": 0.58, "fatigue": 0.3 },
-  { "slug": "kb-front-rack-carry", "name": "Kettlebell Front-Rack Carry", "muscle": "core", "type": "compound", "stim": 0.6, "fatigue": 0.35 }
+  { "slug": "kb-front-rack-carry", "name": "Kettlebell Front-Rack Carry", "muscle": "core", "type": "compound", "stim": 0.6, "fatigue": 0.35 },
+  { "slug": "countermovement-jump", "name": "Countermovement Jump", "muscle": "quad", "type": "plyo", "stim": 0.6, "fatigue": 0.35 },
+  { "slug": "one-arm-cable-row", "name": "One-Arm Cable Row", "muscle": "back-mid", "type": "compound", "stim": 0.78, "fatigue": 0.35 },
+  { "slug": "incline-machine-press", "name": "Incline Machine Press", "muscle": "chest-upper", "type": "compound", "stim": 0.82, "fatigue": 0.4 },
+  { "slug": "machine-row", "name": "Machine Row", "muscle": "back-mid", "type": "compound", "stim": 0.8, "fatigue": 0.4 },
+  { "slug": "tibialis-raise", "name": "Tibialis Raise", "muscle": "calf", "type": "isolation", "stim": 0.55, "fatigue": 0.12 }
 ]

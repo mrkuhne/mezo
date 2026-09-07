@@ -1,0 +1,57 @@
+# Custom "mezo" dashboard (mezo-ibxy), picked up by the Grafana dashboards sidecar.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-mezo
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  mezo.json: |
+    {
+      "title": "mezo",
+      "uid": "mezo-main",
+      "schemaVersion": 39,
+      "timezone": "Europe/Budapest",
+      "refresh": "1m",
+      "time": { "from": "now-24h", "to": "now" },
+      "panels": [
+        { "id": 1, "type": "timeseries", "title": "Backend requests/s by route",
+          "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+          "targets": [ { "expr": "sum by (uri) (rate(http_server_requests_seconds_count{application=\"mezo-backend\"}[5m]))", "legendFormat": "{{uri}}" } ] },
+        { "id": 2, "type": "timeseries", "title": "Backend 5xx rate",
+          "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+          "fieldConfig": { "defaults": { "unit": "percentunit" } },
+          "targets": [ { "expr": "sum(rate(http_server_requests_seconds_count{application=\"mezo-backend\",status=~\"5..\"}[5m])) / sum(rate(http_server_requests_seconds_count{application=\"mezo-backend\"}[5m]))", "legendFormat": "5xx" } ] },
+        { "id": 3, "type": "timeseries", "title": "Backend p95 latency by route",
+          "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+          "fieldConfig": { "defaults": { "unit": "s" } },
+          "targets": [ { "expr": "histogram_quantile(0.95, sum by (le, uri) (rate(http_server_requests_seconds_bucket{application=\"mezo-backend\"}[5m])))", "legendFormat": "{{uri}}" } ] },
+        { "id": 4, "type": "timeseries", "title": "JVM heap used / max",
+          "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+          "fieldConfig": { "defaults": { "unit": "bytes" } },
+          "targets": [
+            { "expr": "sum(jvm_memory_used_bytes{application=\"mezo-backend\",area=\"heap\"})", "legendFormat": "used" },
+            { "expr": "sum(jvm_memory_max_bytes{application=\"mezo-backend\",area=\"heap\"})", "legendFormat": "max" } ] },
+        { "id": 5, "type": "timeseries", "title": "Postgres connections",
+          "gridPos": { "x": 0, "y": 16, "w": 8, "h": 8 },
+          "targets": [
+            { "expr": "sum(pg_stat_activity_count)", "legendFormat": "active" },
+            { "expr": "max(pg_settings_max_connections)", "legendFormat": "max" } ] },
+        { "id": 6, "type": "timeseries", "title": "LLM tokens/h by model",
+          "gridPos": { "x": 8, "y": 16, "w": 8, "h": 8 },
+          "targets": [ { "expr": "sum by (gen_ai_request_model, gen_ai_token_type) (increase(gen_ai_client_token_usage_total[1h]))", "legendFormat": "{{gen_ai_request_model}} {{gen_ai_token_type}}" } ] },
+        { "id": 7, "type": "stat", "title": "Backup last success (h ago)",
+          "gridPos": { "x": 16, "y": 16, "w": 4, "h": 8 },
+          "fieldConfig": { "defaults": { "unit": "h", "thresholds": { "mode": "absolute", "steps": [ { "color": "green", "value": null }, { "color": "red", "value": 26 } ] } } },
+          "targets": [ { "expr": "(time() - kube_cronjob_status_last_successful_time{namespace=\"mezo\",cronjob=\"postgres-backup\"}) / 3600" } ] },
+        { "id": 8, "type": "stat", "title": "Root disk free",
+          "gridPos": { "x": 20, "y": 16, "w": 4, "h": 8 },
+          "fieldConfig": { "defaults": { "unit": "percentunit", "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 0.15 } ] } } },
+          "targets": [ { "expr": "node_filesystem_avail_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"} / node_filesystem_size_bytes{mountpoint=\"/\",fstype!=\"tmpfs\"}" } ] },
+        { "id": 9, "type": "logs", "title": "Backend ERROR logs",
+          "gridPos": { "x": 0, "y": 24, "w": 24, "h": 10 },
+          "datasource": { "type": "victoriametrics-logs-datasource", "uid": "VictoriaLogs" },
+          "targets": [ { "expr": "kubernetes.container_name:backend | unpack_json | filter log.level:ERROR" } ] }
+      ]
+    }

@@ -3,7 +3,7 @@ package io.mrkuhne.mezo.feature.companion.llm;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.google.genai.types.GenerateContentResponseUsageMetadata;
-import io.mrkuhne.mezo.feature.companion.llm.GeminiUsageExtractor.UsageInfo;
+import io.mrkuhne.mezo.feature.companion.llm.LlmUsageExtractor.UsageInfo;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -22,9 +22,9 @@ import org.springframework.ai.google.genai.metadata.GoogleGenAiUsage;
  * nothing — whether that arrives as Spring AI's generic {@code EmptyUsage}/blank model or as the real
  * adapter's all-zero {@code GoogleGenAiUsage}.
  */
-class GeminiUsageExtractorTest {
+class GoogleGenAiUsageExtractorTest {
 
-    private final GeminiUsageExtractor extractor = new GeminiUsageExtractor();
+    private final GoogleGenAiUsageExtractor extractor = new GoogleGenAiUsageExtractor();
 
     @Test
     void testExtract_shouldReadServedModelAndTokenBreakdown_whenNativeUsagePresent() {
