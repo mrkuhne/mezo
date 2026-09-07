@@ -2,7 +2,7 @@
 title: Companion (AI chat brain)
 type: feature-domain
 status: mixed
-updated: 2026-09-06
+updated: 2026-09-07
 tags: [companion, ai, chat, llm, backend, phase-3]
 key_files:
   - backend/src/main/java/io/mrkuhne/mezo/feature/companion
@@ -945,6 +945,33 @@ holds an LLM-extracted `mood`/`energy`/`stress` (1..5), a `confidence`, and the 
   about the text rather than a judgement the model could be uncertain about. `MetricSeriesService`
   reaches the series bean through an `ObjectProvider` (the `TodayActivitySource` idiom), so with the
   reflection switch off the four metrics honestly report **no data** instead of failing to construct.
+- **`TEXT_SOCIAL_CONTACT` is NOT correlatable (`mezo-dqzm`).** Two keys answered the same question —
+  "was this a social day" — from the same texts by two different extractions: `SOCIAL_MENTIONS`
+  (count of curated-name mentions per ts-day, `MetricSeriesService.socialMentions`) and
+  `TEXT_SOCIAL_CONTACT` (binary presence off `text_signal.people`). Both standing as independent
+  engine inputs would have made a correlation BETWEEN them near-tautological, and put two almost
+  identically named rows in front of the user. The extraction stays split on purpose — the People
+  path matches a CURATED list deterministically (it knows WHO, with identity, tone and history),
+  Reflexió asks an open LLM question (it can name someone never added) — but the **catalog** now
+  carries one social-day series. `MetricKey.correlatable()` is that switch: the deterministic
+  `SOCIAL_MENTIONS` keeps the catalog row; `TEXT_SOCIAL_CONTACT` steps back to an internal signal
+  that `MetricSeriesService.series` still serves, while `PatternMonitorService`'s coverage list and
+  `HypothesisPipelineService`'s weekly metric table skip it. The `people:<név>` presence series are
+  unaffected — they read `text_signal.people` directly through `DerivedSeriesService`.
+- **Names are canonicalized at WRITE time (`mezo-xih1`).** The extractor prompt asks for the
+  nominative, suffix-free form ("Lizával" → "Liza"), but a model is not a guarantee, and a
+  Hungarian inflected name would fall into its OWN `people:<név>` key — the same person split
+  across `people:Liza` / `people:Lizával` / `people:Lizánál`, every series gappy, every one of them
+  accepted as real by `isKnown`. So `TextSignalService.record` normalizes before it stores: a name
+  matching an **active** person's name or alias (`PersonNameCanonicalizer`, folded + word-start with
+  a free word-end — the SAME `PersonNeedles` primitives `MentionDetectionService` matches with, so
+  the two paths can never disagree) is stored as that person's **canonical name**, which makes
+  `people:Liza` mean exactly what the Emberek page's "Liza" means. An unknown name is stored
+  unchanged (there is no canonical form to invent), but the row's own de-duplication runs on the
+  FOLDED key, so "Liza"/"liza" is one entry. `DerivedSeriesService` matches folded too, so an accent
+  variant cannot split a key. Both `text_signal.people` and the `memory_item` enrichment get the
+  same normalized list. Written while the live `text_signal` table was still empty — deliberately,
+  since a week of logging would have turned this into a data migration.
 - **Open-ended derived series.** `DerivedSeriesService` answers "give me this key's series / value
   kind / label" and "is this key real for this user" over BOTH the fixed `MetricKey` catalog and the
   user-specific `people:<név>` / `topic:<téma>` presence keys the signals make possible — the seam

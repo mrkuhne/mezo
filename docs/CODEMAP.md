@@ -246,7 +246,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 ### companion
 
 *BE + API* · read next: [docs/features/character.md](features/character.md) (updated 2026-09-07, shipped) ·
-  [docs/features/companion.md](features/companion.md) (updated 2026-09-06, mixed) ·
+  [docs/features/companion.md](features/companion.md) (updated 2026-09-07, mixed) ·
   [docs/features/journal.md](features/journal.md) (updated 2026-09-06, done) ·
   [docs/features/lifegoal.md](features/lifegoal.md) (updated 2026-09-05, in-progress) ·
   [docs/features/me.md](features/me.md) (updated 2026-09-07, mixed)
@@ -355,7 +355,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 189 IT + 36 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 190 IT + 36 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatServiceAmbientRecallIT`, `ChatServiceGraphBlockFailureIT`, `ChatServiceGraphBlockIT`,
@@ -407,8 +407,9 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `PromptMemoryAssemblerSwitchOffIT`, `ProtocolLapseRuleSwitchOffIT`, `QuarterlyPropertiesIT`,
     `QuarterlyReviewJobIT`, `QuarterlyReviewJobProfileSwitchOffIT`, `QuarterlyReviewJobSwitchOffIT`,
     `QuarterlyReviewPayloadIT`, `QuarterlyReviewServiceIT`, `SleepLogDetailRenderIT`, `TextSignalCatchUpIT`,
-    `TextSignalListenerIT`, `TextSignalListenerSwitchOffIT`, `TextSignalSeriesIT`, `ToolSelectionEvalIT`,
-    `TrainingNoteMentionSweepIT`, `TurnEmbeddingListenerIT`, `TurnEmbeddingSwitchOffIT`, `TurnVerdictCheckIT`
+    `TextSignalListenerIT`, `TextSignalListenerSwitchOffIT`, `TextSignalNameNormalizationIT`, `TextSignalSeriesIT`,
+    `ToolSelectionEvalIT`, `TrainingNoteMentionSweepIT`, `TurnEmbeddingListenerIT`, `TurnEmbeddingSwitchOffIT`,
+    `TurnVerdictCheckIT`
   - **populators:** `ActivityPopulator`, `AiConversationPopulator`, `AiMessagePopulator`, `BiometricProfilePopulator`,
     `CheckInPopulator`, `CompanionMessagePopulator`, `DailySummaryPopulator`, `DatabasePopulator`,
     `DayReviewPopulator`, `FeedbackPopulator`, `FlagLogPopulator`, `GamificationPopulator`, `GoalPlanLinkPopulator`,
@@ -602,7 +603,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### insights
 
-*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-06, mixed) ·
+*FE-data + FE-ui* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-07, mixed) ·
   [docs/features/insights.md](features/insights.md) (updated 2026-09-06, mixed)
 
 - **FE data** `frontend/src/data/insights`
@@ -732,7 +733,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 ### llmlog
 
-*BE + API* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-06, mixed)
+*BE + API* · read next: [docs/features/companion.md](features/companion.md) (updated 2026-09-07, mixed)
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/llmlog`
   - **sub-features:** `context`
@@ -978,8 +979,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **entities→tables:** `MentionEntity`→`mention`, `PersonEntity`→`person`
   - **repositories:** `MentionRepository`, `MentionSignal`, `PersonRepository`
   - **services:** `MentionDetectionListener`, `MentionDetectionService`, `PeopleService`, `PersonAffectTrend`,
-    `PersonAffectTrendCalculator`, `PersonChatContext`, `PersonDeletedEvent`, `PersonSavedEvent`,
-    `ReflectionMentionListener`
+    `PersonAffectTrendCalculator`, `PersonChatContext`, `PersonDeletedEvent`, `PersonNameCanonicalizer`,
+    `PersonNeedles`, `PersonSavedEvent`, `ReflectionMentionListener`
   - **controllers→contract:** `PeopleController`→`PeopleApi`
   - **mappers:** `PeopleMapper`
   - **other:** `MentionSeedData`, `PeopleMezoNoteSource`, `PeopleSeedData`, `PersonGraphEdgeSource`

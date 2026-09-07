@@ -197,6 +197,9 @@ public class HypothesisPipelineService {
             table.append(" | ").append(day.getMonthValue()).append('.').append(day.getDayOfMonth()).append('.');
         }
         for (MetricKey metric : MetricKey.values()) {
+            if (!metric.correlatable()) {
+                continue; // bd mezo-dqzm: amit nem korrelálhat, arról ne is sejtsen a modell
+            }
             Map<LocalDate, Double> series = metricSeriesService.series(userId, metric, from, to);
             table.append('\n').append(metric.labelHu());
             for (LocalDate day = from; !day.isAfter(to); day = day.plusDays(1)) {
