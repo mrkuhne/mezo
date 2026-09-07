@@ -10536,3 +10536,47 @@ button.mz-wtile:active { transform: scale(0.96); }
 @media (prefers-reduced-motion: reduce) {
   .mz-zb-mk { animation: none; }
 }
+
+/* ===== mezo-szerkesztő · gyakorlat-kártya (mezo-yty6) ===== */
+.mz-exc { border-radius: 15px; margin-bottom: 8px; padding: 9px 11px 10px;
+  border: 0.5px solid var(--border-subtle); border-left: 5px solid var(--coral);
+  box-shadow: 0 12px 22px -14px rgba(43, 33, 24, 0.28); }
+.mz-exc-head { display: flex; align-items: center; gap: 7px; }
+.mz-exc-ico { width: 30px; height: 30px; border-radius: 50%; flex: none; display: grid;
+  place-items: center; background: color-mix(in srgb, var(--surface-1) 85%, transparent); }
+.mz-exc-nm { display: block; font-size: 12px; font-weight: 700; }
+.mz-exc-sub { display: block; font-size: 9px; color: var(--mz-ink-soft); }
+.mz-exc-mv { display: flex; gap: 3px; flex: none; }
+.mz-exc-mv button { width: 22px; height: 22px; border-radius: 7px; padding: 0; line-height: 1;
+  border: 1px solid var(--border-subtle); background: var(--surface-1);
+  font-size: 9px; color: var(--text-secondary); cursor: pointer; }
+.mz-exc-mv button:disabled { opacity: 0.3; cursor: default; }
+.mz-exc-del { flex: none; border: none; background: none; padding: 2px 5px;
+  font-size: 12px; font-weight: 700; color: var(--coral-deep); cursor: pointer; }
+.mz-exc-row { display: grid; grid-template-columns: 0.9fr 1.7fr 1.1fr 0.8fr; gap: 5px; margin-top: 8px; }
+.mz-exc-row > * { min-width: 0; }
+.mz-exc-row2 { display: flex; align-items: flex-end; gap: 6px; margin-top: 7px; }
+.mz-exc-fld { display: block; background: color-mix(in srgb, var(--surface-1) 72%, transparent);
+  border-radius: 11px; padding: 5px 5px 6px; min-width: 0; }
+.mz-exc-fld > span { display: block; margin-bottom: 3px; white-space: nowrap;
+  font-size: 7px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--mz-ink-mut); }
+.mz-exc-num { width: 100%; min-width: 0; border-radius: 8px; padding: 4px 1px; text-align: center;
+  border: 1px solid var(--border-subtle); background: var(--surface-1);
+  font-family: inherit; font-size: 10.5px; font-weight: 700; font-variant-numeric: tabular-nums;
+  color: inherit; -moz-appearance: textfield; appearance: textfield; }
+.mz-exc-num::-webkit-outer-spin-button,
+.mz-exc-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.mz-exc-pair { display: flex; align-items: center; gap: 3px; }
+.mz-exc-pair i { flex: none; font-style: normal; font-size: 10px; color: var(--mz-ink-mut); }
+.mz-exc-fv { display: flex; gap: 4px; flex: 1; }
+.mz-exc-fv button { flex: 1; border: none; border-radius: 9px; padding: 5px 0;
+  background: var(--surface-2); color: var(--text-secondary);
+  font-family: inherit; font-size: 8.5px; font-weight: 700; cursor: pointer; }
+.mz-exc-fv button.on.fire { background: var(--gradient-cta); color: var(--text-inverse); }
+.mz-exc-fv button.on.leaf { background: var(--sage-deep); color: var(--text-inverse); }
+.mz-exc-row2 .mz-exc-fld { flex: none; }
+.mz-exc-row2 .mz-exc-num { width: 34px; }
+.mz-exc-ctx { margin-top: 7px; font-size: 8.5px; color: var(--mz-ink-soft);
+  font-variant-numeric: tabular-nums; }
+.mz-exc-ctx b + b::before { content: ' · '; color: var(--mz-ink-mut); font-weight: 400; }
