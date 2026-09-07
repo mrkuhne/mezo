@@ -10657,3 +10657,17 @@ button.mz-wtile:active { transform: scale(0.96); }
 .mz-lcard-cline > b { flex: none; width: 30px; color: var(--mz-ink-soft); }
 .mz-lcard-freq { flex: none; border-radius: 999px; padding: 2px 7px; font-size: 8px; font-weight: 700;
   background: var(--surface-2); color: var(--text-secondary); }
+
+/* ===== mezo-szerkesztő · heti kártya + lint-sorok (mezo-yty6) ===== */
+.mz-lcard-open { display: block; width: 100%; padding: 0; border: none; background: none;
+  text-align: left; font-family: inherit; color: inherit; cursor: pointer; }
+.mz-lcard-num b { font-weight: 200; }
+.mz-lcard-num i { font-style: normal; font-size: 12px; }
+.mz-tchip { flex: none; border-radius: 999px; padding: 2px 8px; font-size: 8px; font-weight: 700;
+  background: var(--surface-2); color: var(--text-secondary); }
+.mz-lint { display: flex; align-items: flex-start; gap: 8px; border-radius: 12px;
+  padding: 8px 10px; margin-top: 6px; font-size: 9.5px; line-height: 1.45;
+  background: var(--mz-cell-gold-bg); }
+.mz-lint b { color: var(--mz-cell-gold-ink); }
+.mz-lint-ok { background: var(--mz-cell-sage-bg); }
+.mz-lint-ok b { color: var(--mz-cell-sage-ink); }
