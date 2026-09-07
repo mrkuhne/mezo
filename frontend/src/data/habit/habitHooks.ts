@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
+import { useMutation, useQueries, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query'
 import { isMockMode } from '@/data/_client/mode'
 import { awardGamificationEvent } from '@/data/gamification/gamificationStore'
 import { habitApi, type HabitDay } from '@/data/habit/habitApi'
@@ -219,6 +219,32 @@ export function useHabitSummary() {
  * (no-static-fallback szabály). A `thresholdPct`/`minReps` a szerver száma, így üresen sem
  * hazudunk küszöböt: amíg nem érkezett válasz, 0 áll bennük.
  */
+/**
+ * Formation estimates for SEVERAL habits at once (Rutin hub 2.0 + Szokásaid, mezo-mgpr).
+ * Shares the per-key ['habitFormation', key] cache with useHabitFormation, so a habit page
+ * visit and the list warm each other. Page-triggered surfaces only — the endpoint is a
+ * full-lifetime scan per key and deliberately NOT chat-turn-cheap (mezo-08zl); never call
+ * this from anything on the companion hot path. Mock mode resolves synchronously from the
+ * estimator-formula fixtures; a key with no resolved answer is simply absent from the map,
+ * so a consumer can stay honest instead of drawing a confident zero.
+ */
+export function useHabitFormations(habitKeys: string[]): Map<string, HabitFormation> {
+  const mock = isMockMode()
+  const results = useQueries({
+    queries: habitKeys.map((k) => ({
+      queryKey: ['habitFormation', k],
+      queryFn: () => (mock ? mockHabitFormation(k) : habitApi.formation(k)),
+      staleTime: DEFAULT_QUERY_STALE_TIME_MS,
+      ...(mock ? { initialData: mockHabitFormation(k) } : {}),
+    })),
+  })
+  const map = new Map<string, HabitFormation>()
+  results.forEach((r, i) => {
+    if (r.data != null) map.set(habitKeys[i], r.data)
+  })
+  return map
+}
+
 export function useHabitFormation(habitKey: string) {
   return useDualQuery<HabitFormation>({
     queryKey: ['habitFormation', habitKey],

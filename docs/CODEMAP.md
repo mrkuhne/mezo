@@ -591,7 +591,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     PATCH /api/habit/def/{id} · DELETE /api/habit/def/{id} · POST /api/habit/ai/suggest
 - **FE data** `frontend/src/data/habit`
   - **hooks (via `@/data/hooks`):** `useHabitActions`, `useHabitAiSuggest`, `useHabitCatalog`,
-    `useHabitCatalogActions`, `useHabitDay`, `useHabitFormation`, `useHabitSummary`
+    `useHabitCatalogActions`, `useHabitDay`, `useHabitFormation`, `useHabitFormations`, `useHabitSummary`
   - **modules:** habitAdminApi.ts, habitAdminHooks.ts, habitApi.ts, habitFrameworkRules.ts, habitHooks.ts,
     habitMock.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/habit` — 12 IT + 1 unit
@@ -792,8 +792,8 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     GrowthSkillsPage.tsx, HabitEditPage.tsx, HabitPage.tsx, JelekPage.tsx, JournalPage.tsx, NightPage.tsx,
     NotificationFeedPage.tsx, NotificationsPage.tsx, PeopleEmlitesekPage.tsx, PeopleHetiPage.tsx,
     PeopleJeloltekPage.tsx, PeopleKorPage.tsx, PeoplePage.tsx, PersonDetailPage.tsx, RoutineWizardPage.tsx,
-    RutinHubPage.tsx, SleepPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx, WeekDaysPage.tsx, WeekDiscoveriesPage.tsx,
-    WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
+    RutinHubPage.tsx, SleepPage.tsx, SzokasaidPage.tsx, WeekAnalysisPage.tsx, WeekDayPage.tsx, WeekDaysPage.tsx,
+    WeekDiscoveriesPage.tsx, WeekHubPage.tsx, WeekLessonsPage.tsx, WeightPage.tsx
   - **sheets:** AiSuggestSheet.tsx, AttachPlanSheet.tsx, BiometricSheet.tsx, ChainEditSheet.tsx,
     DecisionReviewSheet.tsx, EditGoalSheet.tsx, JournalSheet.tsx, PersonEditSheet.tsx, PersonLogSheet.tsx,
     PillarCatalogSheet.tsx, SleepGoalSheet.tsx, SleepLogSheet.tsx, SleepStatsSheet.tsx, TempPasswordSheet.tsx,
