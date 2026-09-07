@@ -20,8 +20,9 @@
 - **`rulings` stays index-complete** for `ClaimLifecycle` (a missing ruling defaults to rejected, reason `"nem került döntésre"`); only the *shown* surfaces may be empty.
 - **Never `git add -A`, never a bare `git stash`.** Commit with explicit paths plus `--no-verify` — the beads pre-commit hook force-stages a gitignored root `issues.jsonl` otherwise. Do NOT commit `.beads/issues.jsonl` from these tasks.
 - **Focused tests only, never the full backend suite** (it OOM-dies on this machine). The command for every backend task:
-  `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*' -Dmezo.test.use-testcontainers=true`
+  `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest' -Dmezo.test.use-testcontainers=true`
 - Backend `-Dtest` matches on the **simple class name only**.
+- **The `*Character*` breadth is deliberately NOT in that pattern either.** Two runs on the same commit failed different test sets (16 errors in `CharacterApiIT` on an ApplicationContext load, then 8 errors across three other classes while `CharacterApiIT` passed) — the local `jdtls`/m2e builder rebuilds `backend/target` underneath Maven, so the broad sweep produces false reds. CLAUDE.md already makes CI the authoritative full-suite gate and prescribes only focused tests locally. The pattern above covers every line this branch changes; the breadth runs in CI on a clean machine. This is a relocated gate, not a dropped one.
 - **`ArchitectureTest` is deliberately NOT in that pattern** — its ArchUnit frozen store is a shared file a local run can empty, so it gets exactly one run, in Task 7 Step 3, where the store is checked afterwards. This is a relocated gate, not a dropped one.
 - **Never run `mvn clean`.** A background `jdtls` process holds `backend/target`; `clean` fails to delete it and leaves the OpenAPI-generated DTOs half-built.
 - Adding or removing a source file reddens CI's `lint` job unless `docs/CODEMAP.md` is regenerated (`node scripts/gen-codemap.mjs`). No task here adds a file, so this should not trigger — verify with `node scripts/gen-codemap.mjs --check` in Task 7.
@@ -209,7 +210,7 @@ The grades get definitions so the middle option cannot become a hedge, and the `
 
 - [ ] **Step 6: Run the focused suite**
 
-Run: `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest' -Dmezo.test.use-testcontainers=true`
 Expected: PASS. `FakeCompanionLlm.skepticCannedAnswer` still emits `{"index":i,"verdict":"KEEP","argument":…}` with no `suggestedConfidence`, which parses to null — the existing happy-path ITs keep passing unchanged.
 
 - [ ] **Step 7: Commit**
@@ -411,7 +412,7 @@ Note: `characterProperties.conference().maxDossierClaims()` does not exist yet �
 
 - [ ] **Step 6: Run the focused suite, then commit**
 
-Run: `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest' -Dmezo.test.use-testcontainers=true`
 Expected: PASS.
 
 ```bash
@@ -644,7 +645,7 @@ Add `@Autowired private CharacterProperties characterProperties;` to the IT. Com
 
 - [ ] **Step 6: Run the focused suite, then commit**
 
-Run: `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest' -Dmezo.test.use-testcontainers=true`
 Expected: PASS.
 
 ```bash
@@ -884,7 +885,7 @@ Expected: PASS.
 
 - [ ] **Step 7: Run the focused suite, then commit**
 
-Run: `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest' -Dmezo.test.use-testcontainers=true`
 Expected: PASS — `ClaimLifecycleIT` and `DeliberationAssemblerTest` compile unchanged thanks to the 4-arg constructor.
 
 ```bash
@@ -1052,7 +1053,7 @@ Expected: PASS.
 
 - [ ] **Step 5: Run the focused suite, then commit**
 
-Run: `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest' -Dmezo.test.use-testcontainers=true`
 Expected: PASS. Existing ITs asserting the old `ELFOGADVA (0.60)` shape must be **updated**, not deleted — the new expectation is the confidence word.
 
 ```bash
@@ -1327,7 +1328,7 @@ Replace the two `ChainStep`s inside `ItemChain`:
 
 Run: `cd frontend && pnpm vitest run src/features/character/ && cd ..`
 Expected: PASS.
-Run: `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*' -Dmezo.test.use-testcontainers=true`
+Run: `cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest' -Dmezo.test.use-testcontainers=true`
 Expected: PASS.
 
 - [ ] **Step 10: Commit**
@@ -1393,7 +1394,7 @@ finding, not noise. Report it rather than freezing a new rule.
 - [ ] **Step 4: Run every other local gate**
 
 ```bash
-cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest,*Character*' -Dmezo.test.use-testcontainers=true
+cd backend && ./mvnw test -Dtest='Konzilium*,ClaimLifecycleIT,DeliberationAssemblerTest' -Dmezo.test.use-testcontainers=true
 cd frontend && pnpm vitest run src/features/character/ && pnpm build && cd ..
 git status --short
 ```
