@@ -9,10 +9,10 @@ import { MosaicDesktop, MozaikPage, PageBody, PageHead } from '@/shared/ui/mozai
 import { huInt } from '@/shared/lib/huNum'
 
 // User részlet — ported from admin-body.html's #d-detail (the "opened" state of the Huawei
-// slide-in, minus the slide: this task registers it as its own react-router page). PageHero's
-// `big` slot carries the ring gauge (activeDays30d / 30) instead of a plain number — the ring
-// markup lives here rather than in the shared Mozaik kit because it is admin-only (.ad-ring,
-// prototype.css §Admin hub graphics).
+// slide-in, minus the slide: this task registers it as its own react-router page). The hero
+// below is hand-rolled (`.ad-hero`), not the shared `PageHero` — see the comment on that block
+// for why. The ring gauge (activeDays30d / 30) markup lives here rather than in the shared
+// Mozaik kit because it is admin-only (.ad-ring, prototype.css §Admin hub graphics).
 //
 // Adatok tab: this task renders the inventory list only — the embedded per-table row browser
 // (`<AdminDataTable table={...} userId={id} />`) arrives in Task 12, see the marker below.
@@ -30,10 +30,16 @@ export function AdminUserDetailPage() {
   const [tab, setTab] = useState<Tab>('Aktivitás')
 
   const user = detail.data.user
-  // `useAdminUserDetail` returns the empty value both while pending AND for a legitimate empty
-  // (id === '' or a real 404) — an empty `user.id` after the query has settled is the honest
-  // "no such user" state, never rendered as if it were still loading.
-  const notFound = !detail.isPending && !detail.isError && user.id === ''
+  // Fix round 1 (Finding 1): `useAdminUserDetail` passes `enabled: isOwner && id !== ''` to
+  // useDualQuery/useQuery. In TanStack Query v5 a query with `enabled: false` and no cached
+  // data never leaves `status: 'pending'` — it simply never fetches. So when `userId === ''`,
+  // `detail.isPending` would stay `true` forever if we tried to infer "no id" from it, and the
+  // `!detail.isPending && ... && user.id === ''` form below could never fire for that case —
+  // the page would render the full hero indefinitely with blank/zero fields instead of the
+  // "not found" message. `userId === ''` is directly observable (it's a local value, not
+  // derived from query status), so check it up front; the genuine "query settled, no such
+  // user" case still falls out of the second half exactly as before.
+  const notFound = userId === '' || (!detail.isPending && !detail.isError && user.id === '')
 
   return (
     <MozaikPage tone="coral">
@@ -43,6 +49,11 @@ export function AdminUserDetailPage() {
           <p className="ad-mut">Ez a user nem található.</p>
         ) : (
           <>
+            {/* Fix round 1 (Finding 2): deliberately NOT `PageHero` — `PageHero` is shaped for
+                the mobile app shell's centred tile→full-page stack, and `/admin` is a desktop
+                surface with no `PhoneFrame`/`TabBar`/mobile shell to match. This row-layout hero
+                (avatar, name, stats, ring) is admin-only and owns its own markup; don't "unify"
+                it with `PageHero` — that would be un-doing a deliberate fork, not a cleanup. */}
             <div className="ad-hero">
               <span className="ad-avatar lg" style={{ background: '#A84A26' }}>{(user.name || '?').charAt(0).toUpperCase()}</span>
               <div>

@@ -11017,16 +11017,6 @@ button.mz-wtile:active { transform: scale(0.96); }
 .ad-pane { display: none; }
 .ad-pane.on { display: block; }
 
-/* ---- domain washes for Tile in the 12-column mosaic — the .w-* names the prototype
-   uses (.ad-tile.w-coral etc); Task 11 reuses Tile/mz-w-* for the wash+shadow itself
-   (Task 9 precedent) so these are additive aliases only where a bare wash (no Tile
-   shadow) is layered onto a non-Tile element (e.g. the flash-highlight rail target). ---- */
-.w-coral { background: linear-gradient(160deg, #FDEDE6 0%, #FFFFFF 62%); }
-.w-sage  { background: linear-gradient(160deg, #E9F1E6 0%, #FFFFFF 62%); }
-.w-sky   { background: linear-gradient(160deg, #E6EEF6 0%, #FFFFFF 62%); }
-.w-gold  { background: linear-gradient(160deg, #F8EFDC 0%, #FFFFFF 62%); }
-.w-lav   { background: linear-gradient(160deg, #EFE9F6 0%, #FFFFFF 62%); }
-
 @media (prefers-reduced-motion: reduce) {
   .mz-play .ad-spark .ln, .mz-play .ad-spark .fl, .mz-play .ad-spark .dot,
   .mz-play .ad-ring .arc, .mz-play .ad-bar i, .mz-play .ad-heat i,

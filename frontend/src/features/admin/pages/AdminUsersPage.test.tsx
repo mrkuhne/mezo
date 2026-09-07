@@ -65,4 +65,31 @@ describe('AdminUsersPage (real mode)', () => {
     expect(screen.getByRole('button', { name: /újra/i })).toBeInTheDocument()
     expect(screen.getByText('Userek')).toBeInTheDocument()
   })
+
+  // Fix round 1 (Finding 3): mock mode's useAdminUserInsights ignores sort/dir, so a click on a
+  // sort header changes nothing visible there — which is why nobody had tested this wiring.
+  // Real mode actually sends sort/dir on the querystring, so intercept the request (the pattern
+  // AdminUsagePage.test.tsx uses for `period`) and assert the header click both re-requests with
+  // the new sort key/direction AND flips `aria-sort` on the clicked header.
+  it('re-requests with the new sort/dir when a sort header is clicked, and flips aria-sort', async () => {
+    const requests: string[] = []
+    server.use(http.get(`${API_BASE}/api/admin/users-insight`, ({ request }) => {
+      requests.push(new URL(request.url).search)
+      return HttpResponse.json(ADMIN_USER_INSIGHTS_MOCK)
+    }))
+    renderPage()
+    await screen.findByText(ADMIN_USER_INSIGHTS_MOCK[0].name)
+    await waitFor(() => expect(requests.some((s) => s.includes('sort=lastActivityAt') && s.includes('dir=desc'))).toBe(true))
+
+    const header = screen.getByRole('columnheader', { name: /Sorok/ })
+    expect(header).toHaveAttribute('aria-sort', 'none')
+    fireEvent.click(screen.getByRole('button', { name: 'Sorok' }))
+
+    await waitFor(() => expect(requests.some((s) => s.includes('sort=rowCount') && s.includes('dir=desc'))).toBe(true))
+    expect(header).toHaveAttribute('aria-sort', 'descending')
+
+    fireEvent.click(screen.getByRole('button', { name: /Sorok/ }))
+    await waitFor(() => expect(requests.some((s) => s.includes('sort=rowCount') && s.includes('dir=asc'))).toBe(true))
+    expect(header).toHaveAttribute('aria-sort', 'ascending')
+  })
 })

@@ -23,6 +23,21 @@ function renderPage(id = ADMIN_USER_DETAIL_MOCK.user.id) {
   )
 }
 
+// Fix round 1 (Finding 1): mount the page under a route that does NOT capture an `:id` param,
+// so `useParams().id` is `undefined` and `userId` is `''` — the same shape the app hits if this
+// page is ever reached without an id. `useAdminUserDetail` passes `enabled: id !== ''`, so in
+// real mode this query never fetches and (pre-fix) never leaves `isPending`.
+function renderPageWithoutId() {
+  return render(
+    <MemoryRouter initialEntries={['/admin/users/detail']}>
+      <Routes>
+        <Route path="/admin/users/detail" element={<AdminUserDetailPage />} />
+      </Routes>
+    </MemoryRouter>,
+    { wrapper: QueryWrapper },
+  )
+}
+
 describe('AdminUserDetailPage (mock mode)', () => {
   beforeEach(() => vi.stubEnv('VITE_USE_MOCK', 'true'))
 
@@ -65,5 +80,13 @@ describe('AdminUserDetailPage (real mode)', () => {
     renderPage()
     expect(await screen.findByText(/nem elérhető/i)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /újra/i })).toBeInTheDocument()
+  })
+
+  // Fix round 1 (Finding 1): with no `:id` in the route, `useAdminUserDetail`'s query is
+  // `enabled: false` and (in real mode, no cache) never leaves `isPending` — a `notFound` that
+  // waited on `!isPending` could never fire. Assert the message renders instead of hanging.
+  it('shows the not-found message when the route has no id, without waiting on a query that never resolves', async () => {
+    renderPageWithoutId()
+    expect(await screen.findByText('Ez a user nem található.')).toBeInTheDocument()
   })
 })
