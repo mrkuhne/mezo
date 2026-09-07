@@ -162,3 +162,17 @@ Amit a szétválasztás közben terméklogikában is javítottunk:
    nulláz, az oldal a tárolt értékekkel nevesíti, mi vész el, még a Mentés előtt.
 3. **A mode/metric itt szerkeszthető** (mezo-pero kontraktus-szelet), és az ürített opcionális
    mezők tényleg ürülnek (üres string a dróton, a régi „hagyd ki a kulcsot" szabály helyett).
+
+## 2026-09-07 — egy létrehozó folyam + számolt XP (mezo-9k99, S5)
+
+A wizard lett minden új szokás egyetlen ajtaja (`rutin-formalodas.html` `pg-wiz`):
+
+1. **„Keret nélkül" ág** (keret → tett, két lépés) — kiváltja a külön `HabitEditSheet`-et,
+   ami addig az egyetlen hely volt, ahol keret nélküli sor (és mode/metric) születhetett.
+2. **A Clear-ág végigmegy a négy törvényen** — a vágy + az opcionális identitás saját lépést
+   kapott (öt lépés), mert addig a két ág csak címkékben tért el, és Clear 2. törvénye egy
+   mellékmező volt a tett-lépésen.
+3. **Az XP számolt, nem állítható**: négy Fogg ability-faktor (idő · fizikai · fejmunka ·
+   beleillik) összege adja a szűk 6–14 sávot; a legmagasabb fokozatú faktorra „vedd kisebbre"
+   tanács jön — tanácsban él, nem az aritmetikában, és sosem blokkol. A faktorok nem
+   tárolódnak; konverziónál az érintetlen rács a tárolt XP-t viszi tovább.

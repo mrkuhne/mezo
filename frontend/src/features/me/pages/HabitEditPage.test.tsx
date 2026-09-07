@@ -332,6 +332,15 @@ describe('HabitEditPage — kilépések', () => {
     expect(updateDef).toHaveBeenCalledWith('d-big', expect.objectContaining({ xp: 15 }))
   })
 
+  test('re-rating the effort grid reprices the XP from the factors (mezo-9k99)', () => {
+    renderPage('intent')
+    expect(screen.queryByRole('button', { name: /XP növelése/ })).toBeNull() // the stepper is gone
+    fireEvent.click(screen.getByRole('button', { name: '15 percnél több' }))
+    fireEvent.click(screen.getByRole('button', { name: 'érezhetően' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Mentés' }))
+    expect(updateDef).toHaveBeenCalledWith('d-intent', expect.objectContaining({ xp: 9 })) // 6 + 2 + 1
+  })
+
   test('an unknown habit key bounces back to the rutin hub', () => {
     renderPage('nincs-ilyen')
     expect(screen.getByText('RUTIN HUB')).toBeInTheDocument()

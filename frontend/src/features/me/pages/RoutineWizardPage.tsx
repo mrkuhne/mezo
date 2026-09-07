@@ -1,20 +1,31 @@
 // ============================================================
-// Mezo · RoutineWizardPage (mezo-3zue.4) — /me/rutin/uj, prototype rutin-epito-body.html
-// `pg-wiz` ×1.18. Four steps that build ONE habit recipe on one of two frameworks:
-// BJ Fogg's habit stacking (horgony → pici tett → ünneplés) or James Clear's four laws
-// (jelzés → vágy → válasz → jutalom). The live sentence card is the thesis of the page —
-// it renders through the pure `routineSentenceParts`, never a local template, so the wizard
-// and the finished habit page can't drift.
+// Mezo · RoutineWizardPage (mezo-3zue.4, one-flow rebuild mezo-9k99) — /me/rutin/uj,
+// prototype rutin-formalodas.html `pg-wiz` ×1.18. ONE creation flow for every habit:
 //
-// The page NEVER ticks a habit (ADR — ticking lives on /nap/rutin) and never creates a
-// DERIVED definition: every recipe is `mode: 'MANUAL'`.
+//  - the two frameworks are NOT the same flow any more: the Fogg branch builds an anchored
+//    tiny act (keret → horgony → tett → ünneplés), the Clear branch walks the FOUR LAWS —
+//    one step longer, with the craving and the optional identity as their own step, because
+//    Clear's thesis (a habit is a vote for who you take yourself to be) is a question only
+//    that branch asks;
+//  - a „Keret nélkül" branch (keret → tett) retires the separate HabitEditSheet, which used
+//    to be the only place a frameworkless def — and mode/metric — could be created;
+//  - XP is DERIVED, never hand-set: four Fogg ability factors (idő · fizikai · fejmunka ·
+//    újdonság) sum into a deliberately narrow 6–14 band (habitEffort.ts), with a „make it
+//    tiny" nudge on the heaviest factor — advice, never arithmetic.
+//
+// The live sentence card renders through the pure `routineSentenceParts`, never a local
+// template, so the wizard and the finished habit page can't drift. The page NEVER ticks a
+// habit (ADR — ticking lives on /nap/rutin).
 // ============================================================
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useHabitCatalog, useHabitCatalogActions } from '@/data/hooks'
 import type { HabitDefUpdateInput } from '@/data/habit/habitAdminApi'
-import type { HabitFramework, HabitSuggestion } from '@/data/types'
+import type { HabitFramework, HabitMode, HabitSuggestion } from '@/data/types'
+import { EffortGrid } from '@/features/me/components/EffortGrid'
 import { habitAnchorOptions } from '@/features/me/logic/habitAnchors'
+import { EMPTY_EFFORT, effortRated, effortXp, type EffortState } from '@/features/me/logic/habitEffort'
+import { HABIT_METRIC_PALETTE } from '@/features/me/logic/habitMetricPalette'
 import { routineSentenceParts, recipeFromDef, titlePlaceholder, type RoutineRecipe } from '@/features/me/logic/routineSentence'
 import { LIFE_SKILLS } from '@/features/progression/logic/levelUpMeta'
 import { cn } from '@/shared/lib/cn'
@@ -25,27 +36,44 @@ import { EntranceGroup } from '@/shared/ui/mozaik/motion'
 import { ScreenSkeleton } from '@/shared/ui/ScreenSkeleton'
 import { Stepper } from '@/shared/ui/Stepper'
 
-const STEP_COUNT = 4
-const STEP_TITLES: Record<'FOGG' | 'CLEAR', [string, string, string, string]> = {
-  FOGG: ['Milyen keretre építsük?', 'Mihez horgonyzod?', 'Mi a pici tett?', 'Hogyan ünnepled?'],
-  CLEAR: ['Milyen keretre építsük?', 'Mi a jelzés?', 'Mi a válasz, és miért vágysz rá?', 'Mi teszi kielégítővé?'],
+/** 'NONE' is a real branch here (the retired sheet's job), only the wire knows it as null. */
+type FwChoice = HabitFramework | 'NONE'
+type StepId = 'fw' | 'anchor' | 'cue' | 'crave' | 'act' | 'celeb' | 'reward'
+
+// The two frameworks are deliberately DIFFERENT step lists (see the header note).
+const STEPS: Record<FwChoice, StepId[]> = {
+  FOGG: ['fw', 'anchor', 'act', 'celeb'],
+  CLEAR: ['fw', 'cue', 'crave', 'act', 'reward'],
+  NONE: ['fw', 'act'],
 }
-const STEP_SUBS: Record<'FOGG' | 'CLEAR', [string, string, string, string]> = {
-  FOGG: ['', 'Válassz egy szokást, ami már megy — vagy írd le a pillanatot.', 'Olyan kicsi, hogy rossz napon is megteszed.', 'Az azonnali jó érzés rögzíti a szokást.'],
-  CLEAR: ['', 'Idő és hely — hogy a jelzés nyilvánvaló legyen.', 'A tett és a mögötte lévő vágy.', 'A logolás maga jutalom — de lehet több is.'],
+const STEP_TITLES: Record<StepId, string> = {
+  fw: 'Milyen keretre építsük?',
+  anchor: 'Mihez horgonyzod?',
+  cue: 'Mi a jelzés?',
+  crave: 'Miért fogod akarni?',
+  act: 'Mi a tett?',
+  celeb: 'Hogyan ünnepled?',
+  reward: 'Mi teszi kielégítővé?',
 }
-const INTRO_SUB = 'Mindkettő ugyanoda visz: egy mondat, amit minden nap el tudsz mondani magadnak.'
+const STEP_SUBS: Record<StepId, string> = {
+  fw: 'Mindkét keret ugyanoda visz: egy mondat, amit minden nap el tudsz mondani magadnak.',
+  anchor: 'Válassz egy szokást, ami már megy — vagy írd le a pillanatot.',
+  cue: '1. törvény — tedd nyilvánvalóvá. Idő és hely, hogy ne kelljen emlékezned rá.',
+  crave: '2. törvény — tedd vonzóvá. És Clear tézise: a szokás szavazat arra, kinek tartod magad.',
+  act: 'Olyan kicsi, hogy rossz napon is megteszed — a nehézségből számoljuk az XP-t.',
+  celeb: 'Az azonnali jó érzés rögzíti a szokást.',
+  reward: '4. törvény — ami azonnal jutalmaz, az ismétlődik.',
+}
 const CELEBRATIONS = ['ökölrázás', '„Igen!”', 'mosoly a tükörbe', 'mély levegő']
 const REWARDS = ['a pipa maga', 'egy fejezet papírkönyv', 'kávé csak utána', 'öt perc semmittevés']
 const CUES = ['reggel · konyha', 'este · hálószoba', 'edzés előtt · öltöző', 'ebéd után · asztal']
 const XP_MIN = 5
 const XP_MAX = 15
-const XP_STEP = 5
 
 // An accepted AI suggestion travels here through sessionStorage, not the query string: five
 // prose fields (jelzés, vágy, jutalom, ünneplés, cím) would make an unreadable URL, and the
 // suggestion is a one-shot hand-off, not a bookmarkable address (ADR 0019 — the suggester only
-// PROPOSES; the wizard's own four steps and the "Vállalom" tick are the human pass).
+// PROPOSES; the wizard's own steps and the "Vállalom" tick are the human pass).
 const SUGGESTION_KEY = 'mezo.routineWizard.suggestion'
 
 /** Reads the hand-off. **Pure and repeatable on purpose** (review finding): this runs as a lazy
@@ -113,7 +141,7 @@ export function RoutineWizardPage() {
 
   // The accepted AI suggestion, claimed once on mount. It only ever seeds INITIAL values: where
   // `?prefill` also has something to say, prefill wins (below) — a user who arrived through
-  // "Keret váltása" is editing one specific habit, not accepting a proposal.
+  // a conversion entrance is editing one specific habit, not accepting a proposal.
   const [suggestion] = useState(readSuggestion)
   // Consumed on mount, not in the initializer above — so a reload still cannot resurrect a stale
   // proposal, while a double-invoked initializer cannot lose one either.
@@ -125,8 +153,8 @@ export function RoutineWizardPage() {
     }
   }, [])
 
-  const [step, setStep] = useState(1)
-  const [framework, setFramework] = useState<HabitFramework | null>(suggestion?.framework ?? null)
+  const [stepIdx, setStepIdx] = useState(0)
+  const [fwChoice, setFwChoice] = useState<FwChoice | null>(suggestion?.framework ?? null)
   const [anchorLabel, setAnchorLabel] = useState(suggestion?.anchorCopy ?? '')
   const [anchorHabitKey, setAnchorHabitKey] = useState<string | null>(null)
   const [title, setTitle] = useState(suggestion?.title ?? '')
@@ -134,7 +162,11 @@ export function RoutineWizardPage() {
   const [skillKey, setSkillKey] = useState(
     () => (LIFE_SKILLS.some((s) => s.key === suggestion?.skillKey) ? suggestion!.skillKey : 'mindset'),
   )
-  const [xp, setXp] = useState(() => (suggestion != null ? clampXp(suggestion.xp) : 10))
+  // XP is not a field any more (mezo-9k99): the effort grid derives it. A suggestion's or a
+  // prefilled def's stored XP survives only while the grid is untouched.
+  const [eff, setEff] = useState<EffortState>(EMPTY_EFFORT)
+  const [mode, setMode] = useState<HabitMode>('MANUAL')
+  const [metric, setMetric] = useState(HABIT_METRIC_PALETTE[0]?.metric ?? '')
   const [cue, setCue] = useState(suggestion?.cue ?? '')
   const [craving, setCraving] = useState(suggestion?.craving ?? '')
   // A suggestion never carries an identity — that clause is the user's own sentence about who
@@ -144,9 +176,9 @@ export function RoutineWizardPage() {
   const [reward, setReward] = useState(suggestion?.reward ?? 'a pipa maga')
   const [committed, setCommitted] = useState(false)
 
-  // ?prefill=<habitKey> re-opens an existing definition in the wizard ("keret váltása" on the
-  // habit page, mezo-3zue.5). The catalog may still be loading on first render, so the seed
-  // runs in an effect and exactly once — a re-render must never stomp the user's edits.
+  // ?prefill=<habitKey> re-opens an existing definition in the wizard (conversion entrance,
+  // mezo-3zue.5). The catalog may still be loading on first render, so the seed runs in an
+  // effect and exactly once — a re-render must never stomp the user's edits.
   const allDefs = (catalog?.chains ?? []).flatMap((c) => c.defs)
   // An unknown key falls back to CREATE rather than erroring: the catalog may simply not have
   // resolved (or the def was deleted in another tab) and the wizard's own guards still apply.
@@ -159,7 +191,7 @@ export function RoutineWizardPage() {
     if (def == null) return
     seeded.current = true
     const seed = recipeFromDef(def, (key) => defs.find((d) => d.habitKey === key)?.title)
-    setFramework(seed.framework)
+    setFwChoice(seed.framework)
     setTitle(seed.title)
     setAnchorLabel(seed.anchorLabel)
     setAnchorHabitKey(def.anchorHabitKey)
@@ -170,13 +202,14 @@ export function RoutineWizardPage() {
     if (seed.reward) setReward(seed.reward)
     setChainKey(params.get('chain') ?? def.chainKey)
     setSkillKey(def.skillKey)
-    setXp(def.xp)
+    setMode(def.mode)
+    if (def.metric !== 'manual') setMetric(def.metric)
   }, [catalog, prefillKey, params])
 
   if (isPending) return <ScreenSkeleton />
-  // A FAILED catalog fetch is not an empty catalog: without this branch step 3 offered zero
-  // chain chips while `chainKey` still defaulted to 'MORNING', so a save could 400 on a chain
-  // the user never saw. The retry ghost is the one `RutinHubPage`/`HabitPage` already use.
+  // A FAILED catalog fetch is not an empty catalog: without this branch the act step offered
+  // zero chain chips while `chainKey` still defaulted to 'MORNING', so a save could 400 on a
+  // chain the user never saw. The retry ghost is the one RutinHubPage/HabitPage already use.
   if (isError && (catalog?.chains ?? []).length === 0) {
     return (
       <MozaikPage tone="gold">
@@ -197,65 +230,80 @@ export function RoutineWizardPage() {
   // picking itself sends a self-anchor, which the backend rejects with 400 HABIT_ANCHOR_INVALID
   // (HabitFrameworkValidator.validateAnchorReference) with nothing shown inline.
   const anchors = catalog != null ? habitAnchorOptions(catalog, prefillDef?.id) : []
-  const fwKey: 'FOGG' | 'CLEAR' = framework === 'CLEAR' ? 'CLEAR' : 'FOGG'
-  const stepTitle = STEP_TITLES[fwKey][step - 1]
-  const stepSub = STEP_SUBS[fwKey][step - 1] || INTRO_SUB
-  const isLast = step === STEP_COUNT
 
+  const steps = fwChoice != null ? STEPS[fwChoice] : STEPS.FOGG
+  const stepId: StepId = steps[Math.min(stepIdx, steps.length - 1)]
+  const isLast = stepIdx === steps.length - 1 && fwChoice != null
+  const framework: HabitFramework | null = fwChoice === 'NONE' ? null : fwChoice
   const recipe: RoutineRecipe = { framework, title, anchorLabel, celebration, cue, craving, reward, identity }
+
+  // The XP that will actually be saved: derived from the effort grid, except a conversion whose
+  // grid was never touched keeps the stored value (an unrated grid must not silently reprice).
+  const xpToSave = prefillDef != null && !effortRated(eff) ? clampXp(prefillDef.xp) : effortXp(eff)
 
   // Advisory only (prototype's `tinyWarn`): more than six words, or a number above five, reads
   // as a resolution rather than a tiny habit. It NEVER blocks — see canProceed.
-  const tooBig = framework === 'FOGG'
+  const tooBig = fwChoice === 'FOGG'
     && (title.trim().split(/\s+/).filter(Boolean).length > 6
         || Number(title.match(/\d+/)?.[0] ?? 0) > 5)
 
-  const canProceed =
-    (step === 1 && framework !== null)
-    || (step === 2 && (framework === 'FOGG' ? anchorLabel.trim() !== '' : cue.trim() !== ''))
-    || (step === 3 && title.trim() !== '' && (framework === 'FOGG' || craving.trim() !== ''))
-    || (step === 4 && (framework === 'FOGG' ? celebration.trim() !== '' : reward.trim() !== '') && committed)
+  const metricOk = mode === 'MANUAL' || (metric !== '' && metric !== 'manual')
+  const canProceed = (() => {
+    switch (stepId) {
+      case 'fw': return fwChoice !== null
+      case 'anchor': return anchorLabel.trim() !== ''
+      case 'cue': return cue.trim() !== ''
+      case 'crave': return craving.trim() !== ''
+      case 'act': return title.trim() !== '' && metricOk
+      case 'celeb': return celebration.trim() !== '' && committed
+      case 'reward': return reward.trim() !== '' && committed
+    }
+  })()
 
   // The framework's OWN fields, identical on both save paths. A FOGG recipe sends EITHER
   // anchorHabitKey OR anchorCopy (never both — the backend rejects that), plus the celebration;
-  // a CLEAR recipe sends cue/craving/reward and no anchor field at all. The backend clears the
-  // fields the chosen framework does not own, so a conversion needs nothing more than this.
-  const frameworkFields = () => (framework === 'FOGG'
-    ? {
+  // a CLEAR recipe sends cue/craving/reward; a frameworkless one sends none of them. The
+  // backend clears the fields the chosen framework does not own, so a conversion needs nothing
+  // more than this.
+  const frameworkFields = () => {
+    if (framework === 'FOGG') {
+      return {
         ...(anchorHabitKey != null ? { anchorHabitKey } : { anchorCopy: anchorLabel.trim() }),
         celebration: celebration.trim(),
       }
-    : {
+    }
+    if (framework === 'CLEAR') {
+      return {
         cue: cue.trim(), craving: craving.trim(), reward: reward.trim(),
-        // "Omit an emptied optional key" (HabitPage's contract-honest rule): the real PATCH
-        // ignores a JSON null and rejects nothing for an absent key, so an untouched identity
-        // is left out entirely rather than sent as ''.
+        // An untouched identity is left out entirely: on CREATE there is nothing to clear, and
+        // the blank-clears convention (mezo-pero) is the PATCH's affair, not the POST's.
         ...(identity.trim() ? { identity: identity.trim() } : {}),
-      })
+      }
+    }
+    return {}
+  }
 
   const save = () => {
-    if (framework === null) return
+    if (fwChoice === null) return
     const done = (habitKey: string | undefined) =>
       navigate(habitKey != null ? `/me/rutin?new=${encodeURIComponent(habitKey)}` : '/me/rutin')
 
     // Re-framing CONVERTS the definition it was opened with — it must never mint a second one.
-    // "Keret váltása" on the habit page promises exactly this, and a create here would silently
-    // duplicate the habit. `updateDef` accepts no `mode` and no `skillKey`, so both are omitted;
-    // `chainKey` goes only when the user actually moved the habit, because the backend reads a
-    // bare chainKey as a MOVE and appends the def to the end of that chain (HabitPage's guard).
-    if (prefillDef != null) {
+    // `updateDef` accepts no `skillKey`, so it is omitted; mode/metric ride the patch since
+    // mezo-pero. `chainKey` goes only when the user actually moved the habit, because the
+    // backend reads a bare chainKey as a MOVE and appends the def to the end of that chain.
+    if (prefillDef != null && framework != null) {
       const patch: HabitDefUpdateInput = {
-        title: title.trim(), xp: clampXp(xp), framework, ...frameworkFields(),
+        title: title.trim(), xp: xpToSave, framework, ...frameworkFields(),
       }
       if (chainKey !== prefillDef.chainKey) patch.chainKey = chainKey
+      if (mode !== prefillDef.mode) patch.mode = mode
+      if (mode === 'DERIVED' && (mode !== prefillDef.mode || metric !== prefillDef.metric)) patch.metric = metric
       // UNLINKING a chip anchor needs an explicit empty string, not an omission (review finding).
       // The def HAD an `anchorHabitKey` and the user typed free text over it, so the patch carries
       // only `anchorCopy` — but the PATCH's guard is `!= null`, so an omitted key KEEPS the stale
       // link, and `recipeFromDef` prefers the link over the copy: the typed anchor would vanish
-      // without a word. Blank is safe on both sides — `HabitAdminService.updateDef` applies `""`
-      // (it is not null), and `HabitFrameworkValidator.isSet` reads blank as "no link", so the
-      // FOGG completeness check then passes on the `anchorCopy` alone. This is the escape hatch
-      // `HabitPage`'s read-only anchor field points the user at, so it has to actually work.
+      // without a word. Blank is the contract's unlink sentinel (mezo-pero generalized it).
       if (framework === 'FOGG' && anchorHabitKey == null && prefillDef.anchorHabitKey != null) {
         patch.anchorHabitKey = ''
       }
@@ -264,12 +312,18 @@ export function RoutineWizardPage() {
     }
 
     createDef({
-      chainKey, title: title.trim(), mode: 'MANUAL', skillKey, xp: clampXp(xp), framework,
+      chainKey,
+      title: title.trim(),
+      mode,
+      ...(mode === 'DERIVED' ? { metric } : {}),
+      skillKey,
+      xp: xpToSave,
+      framework,
       ...frameworkFields(),
     }).then((def) => done(def?.habitKey))
   }
 
-  // Switching the framework on step 1 drops the commitment tick: it is a promise about the
+  // Switching the framework on the fw step drops the commitment tick: it is a promise about the
   // recipe you just read, not a setting, and a tick carried over from the Fogg pass would
   // unlock Clear's save on a sentence the user never saw.
   //
@@ -278,40 +332,42 @@ export function RoutineWizardPage() {
   // FOGG → CLEAR → FOGG path, where anchorLabel survives (the chip still renders selected,
   // since selection matches on the label) while the key would not — silently downgrading a
   // real habit link to anchorCopy free text with nothing on screen to say so.
-  const pickFramework = (next: HabitFramework) => {
-    if (next === framework) return
-    setFramework(next)
+  const pickFramework = (next: FwChoice) => {
+    if (next === fwChoice) return
+    setFwChoice(next)
     setCommitted(false)
   }
 
   const onNext = () => {
     if (!canProceed) return
     if (isLast) save()
-    else setStep(step + 1)
+    else setStepIdx(stepIdx + 1)
   }
+
+  const stepTitle = STEP_TITLES[stepId]
 
   return (
     <MozaikPage tone="gold">
       <PageHead
-        onBack={() => (step > 1 ? setStep(step - 1) : navigate('/me/rutin'))}
-        label={step > 1 ? `‹ ${STEP_TITLES[fwKey][step - 2]}` : '‹ Rutin'}
+        onBack={() => (stepIdx > 0 ? setStepIdx(stepIdx - 1) : navigate('/me/rutin'))}
+        label={stepIdx > 0 ? `‹ ${STEP_TITLES[steps[stepIdx - 1]]}` : '‹ Rutin'}
       >
         <button type="button" className="pgact" onClick={() => navigate('/me/rutin')}>Mégse</button>
       </PageHead>
       <PageBody>
-        <EntranceGroup replayKey={step}>
-          <Stepper className="rise" title="Új szokás-recept" step={step} total={STEP_COUNT} stepLabel={stepTitle} />
+        <EntranceGroup replayKey={stepId}>
+          <Stepper className="rise" title="Új szokás-recept" step={stepIdx + 1} total={steps.length} stepLabel={stepTitle} />
 
           <div className="rt-wtitle rise" style={rise(30)}>{stepTitle}</div>
-          <div className="rt-wsub rise" style={rise(40)}>{stepSub}</div>
+          <div className="rt-wsub rise" style={rise(40)}>{STEP_SUBS[stepId]}</div>
 
-          {step > 1 && (
+          {stepId !== 'fw' && (
             <div
               className={cn('rt-sentence', framework === 'CLEAR' && 'is-clear', isLast && 'is-big')}
               data-testid="recipe-sentence"
             >
               <span className="rt-sentence-lb">
-                {framework === 'FOGG' ? '⚓ Szokás-láncolás' : '◈ Négy törvény'}
+                {framework === 'FOGG' ? '⚓ Szokás-láncolás' : framework === 'CLEAR' ? '◈ Négy törvény' : '· Keret nélkül'}
                 <span className="rt-sentence-lb-sub">· épül, ahogy töltöd</span>
               </span>
               <p className="rt-sentence-tx">
@@ -324,12 +380,12 @@ export function RoutineWizardPage() {
             </div>
           )}
 
-          {/* 1 · KERET */}
-          {step === 1 && (
+          {/* KERET */}
+          {stepId === 'fw' && (
             <>
               <button
                 type="button"
-                className={cn('rt-fwcard is-fogg rise', framework === 'FOGG' && 'on')}
+                className={cn('rt-fwcard is-fogg rise', fwChoice === 'FOGG' && 'on')}
                 style={rise(80)}
                 onClick={() => pickFramework('FOGG')}
               >
@@ -343,7 +399,7 @@ export function RoutineWizardPage() {
               </button>
               <button
                 type="button"
-                className={cn('rt-fwcard is-clear rise', framework === 'CLEAR' && 'on')}
+                className={cn('rt-fwcard is-clear rise', fwChoice === 'CLEAR' && 'on')}
                 style={rise(120)}
                 onClick={() => pickFramework('CLEAR')}
               >
@@ -355,14 +411,31 @@ export function RoutineWizardPage() {
                   <span className="rt-fwwho">James Clear · Atomic Habits</span>
                 </span>
               </button>
+              {/* The Keret nélkül branch is create-only: a conversion cannot LOSE its framework
+                  over the wire (a PATCH null is "leave unchanged"), so the card hides on ?prefill. */}
+              {prefillDef == null && (
+                <button
+                  type="button"
+                  className={cn('rt-fwcard rise', fwChoice === 'NONE' && 'on')}
+                  style={rise(150)}
+                  onClick={() => pickFramework('NONE')}
+                >
+                  <span className="rt-fwsgn" aria-hidden="true">·</span>
+                  <span className="rt-fwbody">
+                    <b>Keret nélkül</b>
+                    <small>Nem kérünk keretet — cím, lánc, és kész. Bármikor felvehetsz rá keretet később a szokás oldalán.</small>
+                    <span className="rt-fwwho">csak egy szokás</span>
+                  </span>
+                </button>
+              )}
               <Tip sign="💡">
                 Nem tudod eldönteni? <b>Szokás-láncolással</b> kezdj — ha a tett tényleg pici, nincs mit legyőzni.
               </Tip>
             </>
           )}
 
-          {/* 2 · HORGONY / JELZÉS */}
-          {step === 2 && framework === 'FOGG' && (
+          {/* HORGONY (FOGG) */}
+          {stepId === 'anchor' && (
             <>
               <FieldCard delayMs={80}>
                 <span className="rt-flabel">Miután … · horgony</span>
@@ -392,7 +465,9 @@ export function RoutineWizardPage() {
               </Tip>
             </>
           )}
-          {step === 2 && framework === 'CLEAR' && (
+
+          {/* JELZÉS (CLEAR · 1. törvény) */}
+          {stepId === 'cue' && (
             <>
               <FieldCard delayMs={80}>
                 <span className="rt-flabel">Mikor és hol? · jelzés</span>
@@ -411,12 +486,45 @@ export function RoutineWizardPage() {
             </>
           )}
 
-          {/* 3 · VISELKEDÉS */}
-          {step === 3 && (
+          {/* VÁGY + IDENTITÁS (CLEAR · 2. törvény) — a saját lépése, nem egy mellékmező */}
+          {stepId === 'crave' && (
             <>
               <FieldCard delayMs={80}>
-                {/* The prototype's `titleLb`: the Clear branch names the slot "válasz", not the
-                    sentence module's shorter "tett" — the label teaches the law, the sentence reads. */}
+                <span className="rt-flabel">Miért akarod? · vágy</span>
+                <input
+                  className="rt-fin"
+                  aria-label="Vágy"
+                  value={craving}
+                  onChange={(e) => setCraving(e.target.value)}
+                  placeholder="pl. „tisztább fejjel indul a nap”"
+                />
+              </FieldCard>
+              <FieldCard delayMs={100}>
+                <span className="rt-flabel">Milyen emberré tesz? <span className="rt-opt">identitás · opcionális</span></span>
+                <input
+                  className="rt-fin"
+                  aria-label="Identitás"
+                  value={identity}
+                  onChange={(e) => setIdentity(e.target.value)}
+                  placeholder="pl. „figyel a saját gondolataira”"
+                />
+                <div className="rt-lockline">
+                  <span aria-hidden="true">◈</span>
+                  <span>Clear tézise: a szokás <b>szavazat</b> arra, hogy kinek tartod magad. Ez a mező a Fogg-ágon nincs.</span>
+                </div>
+              </FieldCard>
+              <Tip tone="lav" sign="◈">
+                <b>Vonzó</b> — a második törvény. Kösd olyasmihez, amit amúgy is szeretsz, vagy csinálj belőle valamit, ami után vágysz.
+              </Tip>
+            </>
+          )}
+
+          {/* A TETT — cím, lánc, életterület, nehézség→XP, pipálódás (minden ágon) */}
+          {stepId === 'act' && (
+            <>
+              <FieldCard delayMs={80}>
+                {/* The Clear branch names the slot "válasz", not the sentence module's shorter
+                    "tett" — the label teaches the law, the sentence reads. */}
                 <span className="rt-flabel">Én … · {framework === 'CLEAR' ? 'válasz' : titlePlaceholder(framework)}</span>
                 <input
                   className="rt-fin"
@@ -432,35 +540,7 @@ export function RoutineWizardPage() {
                 )}
               </FieldCard>
 
-              {framework === 'CLEAR' && (
-                <>
-                  <FieldCard delayMs={100}>
-                    <span className="rt-flabel">Mert … · vágy</span>
-                    <input
-                      className="rt-fin"
-                      aria-label="Vágy"
-                      value={craving}
-                      onChange={(e) => setCraving(e.target.value)}
-                      placeholder="pl. „tisztább fejjel indul a nap”"
-                    />
-                  </FieldCard>
-                  <FieldCard delayMs={115}>
-                    <span className="rt-flabel">Hogy olyan ember legyek, aki … <span className="rt-opt">opcionális</span></span>
-                    <input
-                      className="rt-fin"
-                      aria-label="Identitás"
-                      value={identity}
-                      onChange={(e) => setIdentity(e.target.value)}
-                      placeholder="pl. „figyel a saját gondolataira”"
-                    />
-                  </FieldCard>
-                  <Tip tone="lav" sign="◈">
-                    <b>2. + 3. törvény.</b> A vágy a tett vonzereje; a könnyűség a kétperces szabály — a tett első két perce legyen a cél.
-                  </Tip>
-                </>
-              )}
-
-              <FieldCard delayMs={130}>
+              <FieldCard delayMs={100}>
                 <span className="rt-flabel">Melyik láncba?</span>
                 <div className="rt-chips is-gold">
                   {chains.map((c) => (
@@ -476,7 +556,7 @@ export function RoutineWizardPage() {
                 </div>
               </FieldCard>
 
-              <FieldCard delayMs={150}>
+              <FieldCard delayMs={120}>
                 <span className="rt-flabel">Életterület</span>
                 <div className="rt-lifegrid">
                   {LIFE_SKILLS.map((s) => (
@@ -491,21 +571,61 @@ export function RoutineWizardPage() {
                     </button>
                   ))}
                 </div>
-                <span className="rt-flabel" style={{ marginTop: 10 }}>XP</span>
-                <span className="rt-stepin">
-                  <button type="button" aria-label="XP csökkentése" onClick={() => setXp(Math.max(XP_MIN, xp - XP_STEP))}>−</button>
-                  <b>{xp} XP</b>
-                  <button type="button" aria-label="XP növelése" onClick={() => setXp(Math.min(XP_MAX, xp + XP_STEP))}>＋</button>
-                </span>
-                <div className="rt-hint">5–15 · a pici tett 5-öt ér, a nehéz 15-öt.</div>
+              </FieldCard>
+
+              <FieldCard delayMs={140}>
+                <span className="rt-flabel">Mennyibe kerül? <span className="rt-opt">Fogg ability-faktorai</span></span>
+                <EffortGrid
+                  value={eff}
+                  onChange={setEff}
+                  xpOverride={prefillDef != null && !effortRated(eff) ? clampXp(prefillDef.xp) : undefined}
+                />
+                <div className="rt-hint">Az XP a nehézségből számolódik (6–14) — nem beállítás, hanem tükör.</div>
+              </FieldCard>
+
+              <FieldCard delayMs={160}>
+                <span className="rt-flabel">Hogyan pipálódik?</span>
+                <div className="rt-swseg">
+                  <button
+                    type="button"
+                    className={cn(mode === 'MANUAL' && 'on')}
+                    onClick={() => setMode('MANUAL')}
+                  >
+                    <span aria-hidden="true">✓</span>Kézzel pipálom
+                  </button>
+                  <button
+                    type="button"
+                    className={cn(mode === 'DERIVED' && 'on')}
+                    onClick={() => setMode('DERIVED')}
+                  >
+                    <span aria-hidden="true">◎</span>Adatból
+                  </button>
+                </div>
+                {mode === 'DERIVED' && (
+                  <>
+                    <span className="rt-flabel" style={{ marginTop: 10 }}>Metrika</span>
+                    <select
+                      aria-label="Metrika"
+                      className="rt-fin"
+                      value={metric}
+                      onChange={(e) => setMetric(e.target.value)}
+                    >
+                      {HABIT_METRIC_PALETTE.map((m) => <option key={m.metric} value={m.metric}>{m.label}</option>)}
+                    </select>
+                  </>
+                )}
+                <div className="rt-lockline">
+                  <span aria-hidden="true">✓</span>
+                  <span>Ezt <b>később is módosíthatod</b> a szokás oldalán.</span>
+                </div>
               </FieldCard>
             </>
           )}
 
-          {/* 4 · JUTALOM + VÁLLALÁS */}
-          {step === 4 && (
+          {/* ÜNNEPLÉS (FOGG) / JUTALOM (CLEAR · 4. törvény) + VÁLLALÁS */}
+          {(stepId === 'celeb' || stepId === 'reward') && (
             <>
-              {framework === 'FOGG' ? (
+              {stepId === 'celeb' ? (
                 <>
                   <FieldCard delayMs={80}>
                     <span className="rt-flabel">Ünneplésül … · shine</span>
@@ -557,13 +677,13 @@ export function RoutineWizardPage() {
 
           {/* Nav */}
           <div className="rt-wnav rise" style={rise(170)}>
-            {step > 1 && (
-              <button type="button" className="cta-ghost flex-1" onClick={() => setStep(step - 1)}>← Vissza</button>
+            {stepIdx > 0 && (
+              <button type="button" className="cta-ghost flex-1" onClick={() => setStepIdx(stepIdx - 1)}>← Vissza</button>
             )}
             <button
               type="button"
               className="cta-primary"
-              style={{ flex: step > 1 ? 2 : 1 }}
+              style={{ flex: stepIdx > 0 ? 2 : 1 }}
               disabled={!canProceed || (isLast && pending)}
               onClick={onNext}
             >
