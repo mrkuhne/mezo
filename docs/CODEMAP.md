@@ -102,14 +102,17 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
   - **hooks (via `@/data/hooks`):** `useAdminActions`, `useAdminInvites`, `useAdminRows`, `useAdminTables`,
     `useAdminUsers`, `useAdminViews`
   - **modules:** adminApi.ts, adminDataApi.ts, adminDataHooks.ts, adminDataMock.ts, adminHooks.ts, adminInsightsApi.ts,
-    adminInsightsHooks.ts, adminInsightsMock.ts, adminMock.ts
+    adminInsightsHooks.ts, adminInsightsMock.ts, adminMemoryApi.ts, adminMemoryHooks.ts, adminMemoryMock.ts,
+    adminMock.ts
 - **FE ui** `frontend/src/features/admin`
   - **pages:** AdminAccountsPage.tsx, AdminCostDetailPage.tsx, AdminCostPage.tsx, AdminDataPage.tsx,
     AdminOverviewPage.tsx, AdminUsagePage.tsx, AdminUserDetailPage.tsx, AdminUsersPage.tsx
   - **components:** AdminTile.tsx, AiCallFilters.tsx, AiCallRow.tsx, AiFeatureBreakdown.tsx, AiModelBreakdown.tsx,
     AiUsageHero.tsx, AiUserFilter.tsx, DataTable.tsx, JsonCell.tsx, MatrixGrid.tsx, Sparkline.tsx, TablePicker.tsx,
     UserPicker.tsx
-  - **root:** AdminLayout.tsx, AdminRail.tsx, adminRoutes.tsx
+  - **root:** AdminLayout.tsx, AdminMemoryPage.tsx, AdminRail.tsx, GraphView.tsx, LayersView.tsx, MapView.tsx,
+    MemoryInspector.tsx, MemorySegmentBar.tsx, ReplayBox.tsx, RunDetail.tsx, RunsView.tsx, adminRoutes.tsx,
+    contribution.ts, umapConstants.ts
 - **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 13 IT + 3 unit
   - **ITs:** `AdminDataBrowserIT`, `AdminMemoryGraphIT`, `AdminMemoryHealthGraphOffIT`, `AdminMemoryHealthIT`,
     `AdminMemoryReplayIT`, `AdminMemoryRunsIT`, `AdminMemoryVectorsIT`, `AdminMemoryVectorsSamplingIT`,
