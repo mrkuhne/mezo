@@ -68,11 +68,12 @@ class GeminiCompanionLlmPromptOrderTest {
     @Test
     void testComplete_shouldOrderSystemThenHistoryThenUser_whenHistoryIsGiven() {
         CapturingChatModel chatModel = new CapturingChatModel();
+        LlmCallContextHolder contextHolder = new LlmCallContextHolder();
         GeminiCompanionLlm adapter = new GeminiCompanionLlm(
                 chatModel,
-                minimalCompanionProperties(),
+                new LlmModelRouter(minimalCompanionProperties(), contextHolder),
                 new NoOpLlmCallRecorder(),
-                new LlmCallContextHolder(),
+                contextHolder,
                 new GoogleGenAiUsageExtractor());
 
         adapter.complete("RENDSZER", List.of(

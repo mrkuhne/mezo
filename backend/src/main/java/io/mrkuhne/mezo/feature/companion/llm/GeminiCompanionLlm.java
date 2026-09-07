@@ -1,7 +1,8 @@
 package io.mrkuhne.mezo.feature.companion.llm;
 
 import io.mrkuhne.mezo.feature.companion.CompanionLlm;
-import io.mrkuhne.mezo.feature.companion.config.CompanionProperties;
+import io.mrkuhne.mezo.feature.companion.config.LlmProvider;
+import io.mrkuhne.mezo.feature.companion.config.ModelTier;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.feature.llmlog.service.LlmCallRecorder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
@@ -21,8 +22,10 @@ import org.springframework.stereotype.Component;
  * <p><b>Always a bean, even when OpenAI is the primary adapter (mezo-ozri.2).</b> It is the chat
  * fallback, and — via {@code mezo.companion.llm.per-call-kind} — the ONLY route for audio and the
  * current route for vision, both of which {@code OpenAiCompanionLlm} delegates straight to this
- * bean. Its tiers therefore come from the {@code llm.gemini} block, never from "the active
- * provider": under {@code provider: openai} that would hand it a GPT model id it cannot serve.
+ * bean. Its models therefore come from the {@code llm.gemini} block, never from "the active
+ * provider": under {@code provider: openai} that would hand it a GPT model id it cannot serve. That
+ * scoping is what {@link LlmModelRouter} enforces — this adapter always asks it as
+ * {@link LlmProvider#GEMINI}, whatever the provider switch says.
  */
 @Component
 @Profile("!companion-fake")
@@ -38,16 +41,23 @@ public class GeminiCompanionLlm extends SpringAiCompanionLlm {
      * @param llmUsageExtractor the GOOGLE usage extractor, qualified by bean name for the same
      *                  reason: since mezo-ozri.2 {@code OpenAiUsageExtractor} is the port's second
      *                  implementation. Guarded by the same {@code ChatModelQualifierIT}.
+     * @param llmModelRouter which model each call gets, out of the {@code llm.gemini} block only.
      */
     public GeminiCompanionLlm(@Qualifier("googleGenAiChatModel") ChatModel chatModel,
-                              CompanionProperties companionProperties,
+                              LlmModelRouter llmModelRouter,
                               LlmCallRecorder llmCallRecorder, LlmCallContextHolder llmCallContextHolder,
                               @Qualifier("googleGenAiUsageExtractor") LlmUsageExtractor llmUsageExtractor) {
-        super(chatModel, llmUsageExtractor,
-            // the cheap/fast tier (llm.gemini.chat-model): every conversational turn
-            ChatOptions.builder().model(companionProperties.llm().gemini().chatModel()).build(),
-            // V3.2: the smart tier (llm.gemini.smart-model) — weekly pipelines only, never chat turns
-            ChatOptions.builder().model(companionProperties.llm().gemini().smartModel()).build(),
+        super(chatModel, llmUsageExtractor, llmModelRouter, LlmProvider.GEMINI,
             llmCallRecorder, llmCallContextHolder);
+    }
+
+    /**
+     * Nothing about a Gemini request varies with the tier or with tools — the resolved model id is
+     * the whole option set. The reasoning effort is deliberately NOT read here: it is an OpenAI
+     * concept, and honouring it would put a key with no meaning into the gemini block's contract.
+     */
+    @Override
+    protected ChatOptions.Builder<?> optionsFor(String model, ModelTier tier, boolean carriesTools) {
+        return ChatOptions.builder().model(model);
     }
 }

@@ -333,15 +333,53 @@ class GeminiCompanionLlmRecordingTest {
             .isEqualTo(new LlmCallContext("fuel_meal_ai", "draft", "meal", mealId));
     }
 
+    /**
+     * mezo-ozri.4: the audit row must name what was actually REQUESTED. If the record kept quoting
+     * the tier default while the request carried the routed model, every cost report would attribute
+     * the spend to the wrong model — and silently, since both ids are plausible.
+     */
+    @Test
+    void testComplete_shouldRecordTheRoutedModel_whenTheFeatureIsOverridden() {
+        GeminiCompanionLlm llm = adapter(chatModel(cannedResponse("hello")),
+            tier(CHAT_MODEL, SMART_MODEL, Map.of("companion_weekly_review", SMART_MODEL), Map.of()));
+
+        contextHolder.runWith(new LlmCallContext("companion_weekly_review", null, null, null),
+            () -> llm.complete("sys", "hi"));
+
+        assertThat(recorder.last().requestedModel()).isEqualTo(SMART_MODEL);
+    }
+
+    @Test
+    void testCompleteSmart_shouldStillUseTheSmartTier_afterTheRouterRefactor() {
+        GeminiCompanionLlm llm = adapter(chatModel(cannedResponse("hello")));
+
+        llm.completeSmart("sys", "hi");
+
+        assertThat(recorder.last().requestedModel()).isEqualTo(SMART_MODEL);
+        assertThat(recorder.last().callKind()).isEqualTo(CallKind.SMART);
+    }
+
     // ── fixtures ────────────────────────────────────────────────────────────────
 
     private GeminiCompanionLlm adapter(ChatModel chatModel) {
+        return adapter(chatModel, tier(CHAT_MODEL, SMART_MODEL));
+    }
+
+    /** mezo-ozri.4: the same adapter over a routing table that overrides something. */
+    private GeminiCompanionLlm adapter(ChatModel chatModel, CompanionProperties.Llm.Tier geminiTier) {
+        LlmModelRouter router = new LlmModelRouter(geminiTier, geminiTier, contextHolder);
         return new GeminiCompanionLlm(
-            chatModel, companionProperties(), recorder, contextHolder, new GoogleGenAiUsageExtractor());
+            chatModel, router, recorder, contextHolder, new GoogleGenAiUsageExtractor());
     }
 
     private static CompanionProperties.Llm.Tier tier(String chatModel, String smartModel) {
-        return new CompanionProperties.Llm.Tier(chatModel, smartModel, Map.of(), Map.of(),
+        return tier(chatModel, smartModel, Map.of(), Map.of());
+    }
+
+    private static CompanionProperties.Llm.Tier tier(String chatModel, String smartModel,
+                                                     Map<String, String> featureModels,
+                                                     Map<CallKind, String> callKindModels) {
+        return new CompanionProperties.Llm.Tier(chatModel, smartModel, featureModels, callKindModels,
             new CompanionProperties.Llm.Tier.ReasoningEffort(null, null));
     }
 
