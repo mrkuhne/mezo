@@ -406,10 +406,10 @@ export const MOCK_FEED: CharacterFeedItem[] = [
 
 // KONZ (prototype's `var KONZ`) — conference summaries, newest first.
 export const MOCK_CONFERENCES: CharacterConferenceSummary[] = [
-  { id: 'w2', kind: 'WEEKLY', weekStart: '2026-08-24', generatedAt: '2026-08-30T07:00:00Z' },
-  { id: 'w1', kind: 'WEEKLY', weekStart: '2026-08-17', generatedAt: '2026-08-23T07:00:00Z' },
-  { id: 'm1', kind: 'MONTHLY', weekStart: null, generatedAt: '2026-08-01T07:00:00Z' },
-  { id: 'b0', kind: 'BOOTSTRAP', weekStart: null, generatedAt: '2026-07-15T09:00:00Z' },
+  { id: 'w2', kind: 'WEEKLY', weekStart: '2026-08-24', generatedAt: '2026-08-30T07:00:00Z', outcome: { accepted: 0, retired: 0, portraitRewritten: 0, other: 0 } },
+  { id: 'w1', kind: 'WEEKLY', weekStart: '2026-08-17', generatedAt: '2026-08-23T07:00:00Z', outcome: { accepted: 0, retired: 0, portraitRewritten: 0, other: 0 } },
+  { id: 'm1', kind: 'MONTHLY', weekStart: null, generatedAt: '2026-08-01T07:00:00Z', outcome: { accepted: 0, retired: 0, portraitRewritten: 0, other: 0 } },
+  { id: 'b0', kind: 'BOOTSTRAP', weekStart: null, generatedAt: '2026-07-15T09:00:00Z', outcome: { accepted: 0, retired: 0, portraitRewritten: 0, other: 0 } },
 ]
 
 // TRANSCRIPT (prototype's `var TRANSCRIPT`) — the latest weekly konzílium (w2), full turn-by-turn

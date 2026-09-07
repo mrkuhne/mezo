@@ -9013,6 +9013,17 @@ export interface components {
             dimensionKeys?: string[];
             text: string;
         };
+        /** @description What one konzílium changed in the dossier, counted from its stored outcome envelope. `other` exists so the surface never implies these three kinds are the whole truth — it counts every change kind that is not one of the named three. */
+        ConferenceOutcomeCounts: {
+            /** Format: int32 */
+            accepted: number;
+            /** Format: int32 */
+            retired: number;
+            /** Format: int32 */
+            portraitRewritten: number;
+            /** Format: int32 */
+            other: number;
+        };
         CharacterConferenceSummary: {
             /** Format: uuid */
             id: string;
@@ -9022,6 +9033,7 @@ export interface components {
             weekStart?: string | null;
             /** Format: date-time */
             generatedAt: string;
+            outcome: components["schemas"]["ConferenceOutcomeCounts"];
         };
         ConferenceTurn: {
             persona: string;
@@ -9073,6 +9085,11 @@ export interface components {
             transcript: components["schemas"]["ConferenceTurn"][];
             /** @description The same meeting as a STRUCTURE — one thread per dossier chapter, each item carrying the chain that happened to it. Absent only when the row is neither stored structured nor derivable from its prose transcript; the client then renders `transcript`. */
             deliberation?: components["schemas"]["ConferenceThread"][] | null;
+            /**
+             * @description Where `deliberation` came from. STORED — the row carries the structured envelope its own konzílium wrote. DERIVED — the row predates the column and the threads were read back out of the prose transcript, so rounds that did not exist yet (cross-talk) must be shown as absent, never as zero. Null when there is no deliberation at all.
+             * @enum {string|null}
+             */
+            deliberationSource?: "STORED" | "DERIVED" | null;
             changes: {
                 kind: string;
                 dimensionKey?: string | null;

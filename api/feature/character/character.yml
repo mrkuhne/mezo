@@ -362,14 +362,27 @@ components:
           type: array
           items: { type: string }
         text: { type: string }
+    ConferenceOutcomeCounts:
+      description: >-
+        What one konzílium changed in the dossier, counted from its stored outcome envelope.
+        `other` exists so the surface never implies these three kinds are the whole truth — it
+        counts every change kind that is not one of the named three.
+      type: object
+      required: [accepted, retired, portraitRewritten, other]
+      properties:
+        accepted: { type: integer, format: int32 }
+        retired: { type: integer, format: int32 }
+        portraitRewritten: { type: integer, format: int32 }
+        other: { type: integer, format: int32 }
     CharacterConferenceSummary:
       type: object
-      required: [id, kind, generatedAt]
+      required: [id, kind, generatedAt, outcome]
       properties:
         id: { type: string, format: uuid }
         kind: { type: string, enum: [BOOTSTRAP, WEEKLY, MONTHLY] }
         weekStart: { type: string, format: date, nullable: true }
         generatedAt: { type: string, format: date-time }
+        outcome: { $ref: '#/components/schemas/ConferenceOutcomeCounts' }
     ConferenceTurn:
       type: object
       required: [persona, text]
@@ -446,6 +459,15 @@ components:
           type: array
           nullable: true
           items: { $ref: '#/components/schemas/ConferenceThread' }
+        deliberationSource:
+          description: >-
+            Where `deliberation` came from. STORED — the row carries the structured envelope its
+            own konzílium wrote. DERIVED — the row predates the column and the threads were read
+            back out of the prose transcript, so rounds that did not exist yet (cross-talk) must
+            be shown as absent, never as zero. Null when there is no deliberation at all.
+          type: string
+          enum: [STORED, DERIVED]
+          nullable: true
         changes:
           type: array
           items:
