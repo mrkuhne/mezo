@@ -37,6 +37,40 @@ public interface CompanionLlm {
     Flux<String> stream(String systemPrompt, List<Turn> history, String userMessage,
                         List<ToolCallback> tools, Map<String, Object> toolContext);
 
+    /**
+     * The same turn, with the instructions SPLIT in two (mezo-ozri.5): {@code systemPrompt} is the
+     * STABLE half — the voice, and nothing that changes between turns — and {@code turnContext} the
+     * VOLATILE one: today's snapshot, the recalled memories, the tone reminder. A provider adapter
+     * sends the volatile half as its own message placed after the history and immediately before the
+     * user's turn, so the cacheable prefix (stable instructions + the 46 tool definitions + the
+     * closed history) survives from one turn to the next and is billed at the provider's cached rate
+     * instead of the full input one.
+     *
+     * <p>The DEFAULT simply re-joins the halves, which is exactly right for every implementation
+     * that does not cache: {@code FakeCompanionLlm} keeps dispatching on one unchanged string, and
+     * no test stub grows a parameter it has no use for.
+     */
+    default String complete(String systemPrompt, String turnContext, List<Turn> history, String userMessage,
+                            List<ToolCallback> tools, Map<String, Object> toolContext) {
+        return complete(joinInstructions(systemPrompt, turnContext), history, userMessage, tools, toolContext);
+    }
+
+    /** Streamed twin of {@link #complete(String, String, List, String, List, Map)}. */
+    default Flux<String> stream(String systemPrompt, String turnContext, List<Turn> history, String userMessage,
+                                List<ToolCallback> tools, Map<String, Object> toolContext) {
+        return stream(joinInstructions(systemPrompt, turnContext), history, userMessage, tools, toolContext);
+    }
+
+    /**
+     * The two halves as ONE string, in the order the model reads them — joined with NOTHING between
+     * them, so the result is character-for-character the prompt this port carried before the split.
+     * That identity is load-bearing: the audit row, the fake's prefix dispatch and its
+     * {@code system=[…]} echo all read it.
+     */
+    static String joinInstructions(String systemPrompt, String turnContext) {
+        return turnContext == null || turnContext.isBlank() ? systemPrompt : systemPrompt + turnContext;
+    }
+
     /** History-less completion — every one-shot pipeline (meal, recipe, pantry, sleep, …) rides this. */
     default String complete(String systemPrompt, String userMessage,
                             List<ToolCallback> tools, Map<String, Object> toolContext) {
