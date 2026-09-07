@@ -23,19 +23,40 @@ public class LlmMemoryQueryRewriter implements MemoryQueryRewriter {
             + "keresőkérdéssé a megadott rövid beszélgetési előzmény alapján. "
             + "Csak a keresőkérdést add vissza, magyarázat, címke és idézőjel nélkül.";
 
+    private static final String FEATURE_COMPANION_RECALL = "companion_recall";
+    private static final String OPERATION = "query_rewrite";
+
     private static final LlmCallContext CALL_CONTEXT =
-            new LlmCallContext("companion_recall", "query_rewrite", null, null);
+            new LlmCallContext(FEATURE_COMPANION_RECALL, OPERATION, null, null);
 
     private final CompanionLlm companionLlm;
     private final LlmCallContextHolder llmCallContextHolder;
 
     @Override
     public String rewrite(String currentQuery, List<CompanionLlm.Turn> boundedHistory) {
-        return llmCallContextHolder.runWith(CALL_CONTEXT, () -> companionLlm.complete(
+        return llmCallContextHolder.runWith(callContext(), () -> companionLlm.complete(
                 SYSTEM_PROMPT,
                 boundedHistory,
                 currentQuery,
                 List.of(),
                 Map.of()));
+    }
+
+    /**
+     * {@code companion_recall/query_rewrite} for every caller EXCEPT the admin explorer's dry-run
+     * replay (mezo-4qyt), which re-labels this call to its own feature so one replay's total cost
+     * is priceable in the admin cost matrix.
+     *
+     * <p>Why not simply inherit the ambient feature: {@link LlmCallContextHolder#runWith}
+     * save-and-restores, so a chat turn's ambient {@code companion_chat} is live on this thread
+     * too — and inheriting it would silently move EVERY chat rewrite row out of
+     * {@code companion_recall} and corrupt the shipped cost matrix. Only the replay label is
+     * honoured.
+     */
+    private LlmCallContext callContext() {
+        LlmCallContext ambient = llmCallContextHolder.get();
+        return ambient.isAdminReplay()
+                ? new LlmCallContext(ambient.feature(), OPERATION, null, null)
+                : CALL_CONTEXT;
     }
 }

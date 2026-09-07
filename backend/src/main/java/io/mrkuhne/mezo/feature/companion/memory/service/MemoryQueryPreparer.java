@@ -26,9 +26,19 @@ public class MemoryQueryPreparer {
     private final MemoryQueryRewriter rewriter;
 
     public PreparedMemoryQuery prepare(MemoryRequest request) {
+        return prepare(request, true);
+    }
+
+    /**
+     * mezo-4qyt: {@code allowRewrite = false} skips the LLM rewrite entirely (no call, no cost) and
+     * returns the analyzed raw query — the admin dry-run replay's "rewrite off" toggle. Note the
+     * consequence the caller must render honestly: with no rewrite the audit's derived query mode
+     * is RAW, so a replay with the toggle off is not comparable to a REWRITE-mode stored run.
+     */
+    public PreparedMemoryQuery prepare(MemoryRequest request, boolean allowRewrite) {
         PreparedMemoryQuery analyzed = analyzer.analyze(
                 request.currentQuery(), request.shortConversationHistory());
-        if (analyzed.mode() != QueryMode.CONTEXT_DEPENDENT) {
+        if (analyzed.mode() != QueryMode.CONTEXT_DEPENDENT || !allowRewrite) {
             return analyzed;
         }
 

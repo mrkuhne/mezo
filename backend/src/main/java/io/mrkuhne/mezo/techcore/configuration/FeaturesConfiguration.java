@@ -328,4 +328,14 @@ public class FeaturesConfiguration {
      * Off: those endpoints 404; the existing invite/account admin API is unaffected (mezo-d5iy).
      */
     public static final String ADMIN_INSIGHTS_SWITCH = "mezo.feature.admin-insights.enabled";
+
+    /**
+     * RAG memory explorer ({@code /api/admin/users/*}{@code /memory/**}, mezo-4qyt). Off ⇒ those
+     * endpoints 404 and no admin-memory bean exists; the admin hub's own endpoints are unaffected.
+     * A given endpoint ADDITIONALLY needs {@link #COMPANION_SWITCH} (runs, replay, vectors,
+     * health) or {@link #KNOWLEDGE_GRAPH_SWITCH} (the graph endpoint) — the controller consumes
+     * those beans through {@code ObjectProvider} and answers 404 ADMIN_MEMORY_DISABLED when one
+     * is absent, rather than failing to start.
+     */
+    public static final String ADMIN_MEMORY_SWITCH = "mezo.feature.admin-memory.enabled";
 }

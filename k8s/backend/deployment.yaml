@@ -122,6 +122,10 @@ spec:
             # counters, per-user footprint/cost, and the read-only data browser.
             - name: MEZO_FEATURE_ADMIN_INSIGHTS_ENABLED
               value: "true"
+            # RAG memory explorer (mezo-4qyt): OWNER-only per-user retrieval runs,
+            # dry-run replay, knowledge graph, vector map and store health.
+            - name: MEZO_FEATURE_ADMIN_MEMORY_ENABLED
+              value: "true"
             # mezo-ibxy: observability. ECS JSON logs for VictoriaLogs; actuator on 8081.
             - name: MEZO_LOG_FORMAT
               value: ecs

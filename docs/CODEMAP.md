@@ -17,7 +17,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 | Feature | BE | API | FE data | FE ui | Docs |
 |---|---|---|---|---|---|
 | [activity](#activity) | ✓ | 1 | ✓ | · | [growth](features/growth.md) |
-| [admin](#admin) | ✓ | 2 | ✓ | ✓ | [admin-hub](features/admin-hub.md) |
+| [admin](#admin) | ✓ | 3 | ✓ | ✓ | [admin-hub](features/admin-hub.md) |
 | [appnotification](#appnotification) | ✓ | 1 | · | · | [_platform-notifications](features/_platform-notifications.md) |
 | [auth](#auth) | ✓ | 2 | ✓ | ✓ | [admin-hub](features/admin-hub.md), [_platform-auth-security](features/_platform-auth-security.md) |
 | [biometrics](#biometrics) | ✓ | 6 | · | · | [me](features/me.md), [today](features/today.md) |
@@ -82,15 +82,20 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 
 - **Backend** `backend/src/main/java/io/mrkuhne/mezo/feature/admin`
   - **repositories:** `AdminCatalogQuery`, `AdminInsightsQuery`, `AdminRowQuery`
-  - **services:** `AdminConvenienceViews`, `AdminDataBrowserService`, `AdminOverviewService`, `AdminSeries`,
-    `AdminSqlDialect`, `AdminTableCatalog`, `AdminUsageService`, `AdminUserService`
-  - **controllers→contract:** `AdminDataController`→`AdminDataApi`, `AdminInsightsController`→`AdminInsightsApi`
-  - **config:** `AdminProperties`
+  - **services:** `AdminConvenienceViews`, `AdminDataBrowserService`, `AdminMemoryReplayService`,
+    `AdminMemoryRunMapper`, `AdminMemoryService`, `AdminOverviewService`, `AdminSeries`, `AdminSqlDialect`,
+    `AdminTableCatalog`, `AdminUsageService`, `AdminUserService`
+  - **controllers→contract:** `AdminDataController`→`AdminDataApi`, `AdminInsightsController`→`AdminInsightsApi`,
+    `AdminMemoryController`→`AdminMemoryApi`
+  - **config:** `AdminMemoryProperties`, `AdminProperties`
 - **Contract** `api/feature/admin-data/admin-data.yml` — 3 operations
   - **endpoints:** GET /api/admin/data/tables · GET /api/admin/data/views · GET /api/admin/data/tables/{table}/rows
 - **Contract** `api/feature/admin-insights/admin-insights.yml` — 5 operations
   - **endpoints:** GET /api/admin/overview · GET /api/admin/users-insight · GET /api/admin/users/{id}/insight ·
     GET /api/admin/usage/features · GET /api/admin/usage/cost-matrix
+- **Contract** `api/feature/admin-memory/admin-memory.yml` — 3 operations
+  - **endpoints:** GET /api/admin/users/{userId}/memory/runs · GET /api/admin/users/{userId}/memory/runs/{runId} ·
+    POST /api/admin/users/{userId}/memory/replay
 - **FE data** `frontend/src/data/admin`
   - **hooks (via `@/data/hooks`):** `useAdminActions`, `useAdminInvites`, `useAdminRows`, `useAdminTables`,
     `useAdminUsers`, `useAdminViews`
@@ -103,9 +108,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     AiUsageHero.tsx, AiUserFilter.tsx, DataTable.tsx, JsonCell.tsx, MatrixGrid.tsx, Sparkline.tsx, TablePicker.tsx,
     UserPicker.tsx
   - **root:** AdminLayout.tsx, AdminRail.tsx, adminRoutes.tsx
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 6 IT + 1 unit
-  - **ITs:** `AdminDataBrowserIT`, `AdminOverviewIT`, `AdminTableCatalogIT`, `AdminUsageIT`, `AdminUserDetailIT`,
-    `AdminUserInsightIT`
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/admin` — 8 IT + 3 unit
+  - **ITs:** `AdminDataBrowserIT`, `AdminMemoryReplayIT`, `AdminMemoryRunsIT`, `AdminOverviewIT`,
+    `AdminTableCatalogIT`, `AdminUsageIT`, `AdminUserDetailIT`, `AdminUserInsightIT`
+  - **populators:** `AiConversationPopulator`, `AiMessagePopulator`, `MemoryEmbeddingPopulator`, `MemoryItemPopulator`
 
 ### appnotification
 
@@ -291,10 +297,10 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
     `CompanionFlagTraceRepository`, `DailySummaryRepository`, `DayReviewRepository`, `DenseMemoryQuery`,
     `FeedbackRollupRepository`, `GraphEdgeRepository`, `GraphNodeRepository`, `GraphTraversalQuery`,
     `KnowledgeFactRepository`, `KnowledgeFactRetrievalQuery`, `LearnedFactRepository`, `LexicalMemoryQuery`,
-    `MemoryEmbeddingAnnQuery`, `MemoryEmbeddingRepository`, `MemoryItemRepository`,
-    `MemoryRetrievalFeedbackRepository`, `MemoryRetrievalResultRepository`, `MemoryRetrievalRunRepository`,
-    `MemoryVectorRepository`, `MessageFeedbackRepository`, `PatternEventRepository`, `PatternRepository`,
-    `PeriodSummaryRepository`, `TextSignalRepository`, `WeeklyScoreRepository`
+    `MemoryEmbeddingAnnQuery`, `MemoryEmbeddingRepository`, `MemoryItemRepository`, `MemoryPromptTraceQuery`,
+    `MemoryRetrievalFeedbackRepository`, `MemoryRetrievalResultRepository`, `MemoryRetrievalRunCountRow`,
+    `MemoryRetrievalRunRepository`, `MemoryVectorRepository`, `MessageFeedbackRepository`, `PatternEventRepository`,
+    `PatternRepository`, `PeriodSummaryRepository`, `TextSignalRepository`, `WeeklyScoreRepository`
   - **services:** `AdviceRankPort`, `ChatDaySignalService`, `ChatMemoryContextAdapter`, `ChatMentionListener`,
     `ChatService`, `ChatStreamService`, `ChatTurnCompleted`, `ConsolidationJob`, `ContextSnapshotAssembler`,
     `ConversationService`, `DailyCardPort`, `DailySummaryJob`, `DailySummaryService`, `DayEvaluationEngine`,
@@ -386,7 +392,7 @@ Naming spaces differ by design: the backend/contract space is domain-shaped (`me
 - **Contract** `api/feature/memory-retrieval/memory-retrieval.yml` — 2 operations
   - **endpoints:** GET /api/companion/memory/retrieval-feedback ·
     PUT /api/companion/memory/retrieval/{runId}/result/{resultId}/feedback
-- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 209 IT + 55 unit
+- **Tests** `backend/src/test/java/io/mrkuhne/mezo/feature/companion` — 209 IT + 56 unit
   - **ITs:** `AiMessageJsonbRoundTripIT`, `AmbientRecallEvalIT`, `AmbientRecallTuningIT`, `AnchoredConversationIT`,
     `ChatExtractionFlowIT`, `ChatExtractionSwitchOffIT`, `ChatMemoryRolloutIT`, `ChatMemoryShadowRolloutIT`,
     `ChatMentionListenerIT`, `ChatModelQualifierIT`, `ChatReflectionBlockIT`, `ChatSeedReplyFailureIT`,

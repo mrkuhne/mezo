@@ -9,6 +9,7 @@ import io.mrkuhne.mezo.feature.companion.memory.service.MemoryCandidateFusion.Fu
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContext;
 import io.mrkuhne.mezo.feature.llmlog.context.LlmCallContextHolder;
 import io.mrkuhne.mezo.techcore.configuration.FeaturesConfiguration;
+import io.mrkuhne.mezo.techcore.security.LlmActorContext;
 import io.mrkuhne.mezo.techcore.exception.SystemMessage;
 import io.mrkuhne.mezo.techcore.exception.SystemRuntimeErrorException;
 import java.util.ArrayList;
@@ -44,8 +45,11 @@ public class LlmMemoryReranker implements MemoryReranker {
             + "Rendezd relevancia szerint a kapott memóriaazonosítókat. "
             + "Csak egy JSON UUID-tömböt adj vissza, új azonosítót ne találj ki.";
 
+    private static final String FEATURE_COMPANION_RECALL = "companion_recall";
+    private static final String OPERATION = "rerank";
+
     private static final LlmCallContext CALL_CONTEXT =
-            new LlmCallContext("companion_recall", "rerank", null, null);
+            new LlmCallContext(FEATURE_COMPANION_RECALL, OPERATION, null, null);
 
     private final CompanionLlm llm;
     private final ObjectMapper objectMapper;
@@ -93,9 +97,19 @@ public class LlmMemoryReranker implements MemoryReranker {
         try {
             // The holder is thread-bound and this runs on applicationTaskExecutor, so the context
             // is bound INSIDE the task — binding it around submit() would tag the caller's thread,
-            // not the one that reaches the adapter (mezo-ozri.1).
-            call = applicationTaskExecutor.submit(() -> llmCallContextHolder.runWith(
-                    CALL_CONTEXT, () -> llm.completeSmart(SYSTEM_PROMPT, render(exposed))));
+            // not the one that reaches the adapter (mezo-ozri.1). mezo-4qyt: resolve the context on
+            // the CALLING thread and capture it, since the ambient admin_replay binding this reads
+            // does not exist on the pool thread.
+            LlmCallContext context = callContext();
+            // Same reason, second ThreadLocal: LlmActorContext does not propagate into the pool
+            // either, so the admin replay's actor override is captured here and re-bound inside
+            // the task. Only the OVERRIDE travels — for a chat turn it is null, so that path stays
+            // byte-identical to today (its rerank row's created_by is still resolved by the
+            // adapter's own thread).
+            UUID actorOverride = LlmActorContext.override();
+            call = applicationTaskExecutor.submit(() -> withActorOverride(actorOverride,
+                    () -> llmCallContextHolder.runWith(
+                            context, () -> llm.completeSmart(SYSTEM_PROMPT, render(exposed)))));
             String answer = call.get(properties.reranker().timeoutMs(), TimeUnit.MILLISECONDS);
             List<UUID> orderedIds = parseIds(answer);
             Map<UUID, FusedCandidate> supplied = new LinkedHashMap<>();
@@ -134,6 +148,29 @@ public class LlmMemoryReranker implements MemoryReranker {
             log.warn("Memory reranking failed; deterministic fused order will be used", exception);
             return fusedOrder;
         }
+    }
+
+    /**
+     * {@code companion_recall/rerank} for every caller EXCEPT the admin explorer's dry-run replay
+     * (mezo-4qyt), which re-labels this call to its own feature so one replay's total cost is
+     * priceable in the admin cost matrix.
+     *
+     * <p>Why not simply inherit the ambient feature: {@link LlmCallContextHolder#runWith}
+     * save-and-restores, so a chat turn's ambient {@code companion_chat} is live on this thread
+     * too — and inheriting it would silently move EVERY chat rerank row out of
+     * {@code companion_recall} and corrupt the shipped cost matrix. Only the replay label is
+     * honoured.
+     */
+    /** Binds {@code override} for the body when there is one; a null override is a plain call. */
+    private static <T> T withActorOverride(UUID override, java.util.function.Supplier<T> body) {
+        return override == null ? body.get() : LlmActorContext.runAsOverride(override, body);
+    }
+
+    private LlmCallContext callContext() {
+        LlmCallContext ambient = llmCallContextHolder.get();
+        return ambient.isAdminReplay()
+                ? new LlmCallContext(ambient.feature(), OPERATION, null, null)
+                : CALL_CONTEXT;
     }
 
     private String render(List<FusedCandidate> candidates) {

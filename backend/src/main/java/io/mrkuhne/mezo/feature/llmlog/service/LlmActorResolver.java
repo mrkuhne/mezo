@@ -17,12 +17,23 @@ import org.springframework.stereotype.Component;
  * {@code llm_log_history.created_by} is nullable precisely for that case (single-user app, ADR 0008).
  * Unless the thread runs inside {@link LlmActorContext#runAs} (mezo-qw37.3), in which case that
  * account is the actor; a request principal always wins over the context.
+ *
+ * <p>Precedence, highest first (mezo-4qyt): {@link LlmActorContext#override()}, then the JWT
+ * principal, then {@link LlmActorContext#current()}. The override tier exists for the admin
+ * explorer's dry-run replay only — the caller is the owner, but the spend belongs to the
+ * inspected user.
  */
 @Component
 public class LlmActorResolver {
 
     /** The authenticated user's id, or null on an unauthenticated/anonymous (cron) thread. */
     public UUID currentActor() {
+        UUID override = LlmActorContext.override();
+        if (override != null) {
+            // mezo-4qyt: an explicit override outranks even a request principal — see
+            // LlmActorContext#override for why the admin replay needs exactly that.
+            return override;
+        }
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null
             || !authentication.isAuthenticated()
