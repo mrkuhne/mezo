@@ -612,12 +612,28 @@ mezo:
         smart-model: gpt-5.6-terra     # smart tier: the 19 completeSmart call sites
         feature-models: {}             # LlmCallContext.feature() -> model id (bracket-quote the key)
         call-kind-models: {}           # CallKind -> model id; wins over feature-models
-        # The quality lever of spec §Q1 — same token price, more thinking. Left EMPTY (= send
-        # nothing, the provider's own default stands) until mezo-641c measures what each tier should
-        # carry; a tool-carrying request pins `none` regardless, because /v1/chat/completions
+        # The quality lever of spec §Q1 — same token price, more thinking. MEASURED (mezo-641c);
+        # a tool-carrying request still pins `none` regardless, because /v1/chat/completions
         # rejects function tools + reasoning effort outright (measured, mezo-ozri.3).
+        #
+        # chat: high. The one place in the whole sweep where more thinking bought accuracy is the
+        # cheap-tier advisor judge (companion_advisor/verdict_check). On a 12-case labelled set it
+        # held recall at 1.00 everywhere, but its unmarkedClaim PRECISION went 0.50 (none) → 0.55
+        # (provider default) → 0.60 (high, unchanged at xhigh): `high` is the first level that
+        # reliably stops reading a qualitative judgement ("ez nagyjából a tervezett ütem") as a
+        # fabricated number — the mezo-9yqq false-positive class (2). It buys that for ~+33% output
+        # tokens on the CHEAPEST model, while each false positive it removes costs a whole extra
+        # streamed chat turn (the advisor retry). Redundancy detection was already perfect at every
+        # level. mezo-9yqq class (1) — tool-derived numbers — is NOT fixable here: it failed 100% of
+        # the time at every level including xhigh, because the judge never sees the tool OUTPUT.
+        #
+        # smart: unset on purpose (the provider's own default stands, which measured at roughly
+        # `medium`: ~300 reasoning tokens on a mesocycle plan). Neither smart site showed a gain —
+        # the mesocycle plan was structurally perfect and honoured every injury constraint at EVERY
+        # level including `none`, and the konzílium skeptic's KEEP/KILL pattern did not move with
+        # effort — while xhigh cost 3-4x the output tokens on the most expensive model.
         reasoning-effort:
-          chat:
+          chat: high
           smart:
       # Per-CallKind exceptions to `provider`. Honoured only while provider is openai, and only for
       # these two kinds: no GPT-5.6 model has an audio endpoint at all, and the vision A/B is not

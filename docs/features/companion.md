@@ -4688,12 +4688,31 @@ since S2.
   Both maps are per PROVIDER on purpose: a model id only means something to the vendor that can
   serve it, and the `gemini` block still answers the audio/vision calls the OpenAI adapter
   delegates to it, so one flat table could hand the Gemini client a GPT id.
-- `mezo.companion.llm.<provider>.reasoning-effort.chat` / `.smart` = **empty** (mezo-ozri.4,
-  spec §Q1) — per-tier reasoning effort, the cheapest quality lever there is (same token price,
-  more thinking). Empty = send no key at all, leaving the provider's own default in place; the
-  measurement that would fill these in is `mezo-641c`. Only `OpenAiCompanionLlm` honours it, and
-  **never on a tool-carrying request**: `/v1/chat/completions` answers tools + effort with a `400`
-  (measured, mezo-ozri.3 — all 42 eval cases failed), so that path pins `none` regardless.
+- `mezo.companion.llm.openai.reasoning-effort.chat` = **`high`**, `.smart` = **empty**
+  (mezo-ozri.4 built the lever, mezo-641c measured it; the `gemini` block keeps both empty — the
+  concept is OpenAI-only). Per-tier reasoning effort, the cheapest quality lever there is (same
+  token price, more thinking). Empty = send no key at all, leaving the provider's own default in
+  place. Only `OpenAiCompanionLlm` honours it, and **never on a tool-carrying request**:
+  `/v1/chat/completions` answers tools + effort with a `400` (measured, mezo-ozri.3 — all 42 eval
+  cases failed), so that path pins `none` regardless.
+  - **Accepted values are `none | low | medium | high | xhigh`**, probed live against both GPT-5.6
+    tiers (mezo-641c S0) and pinned by `ReasoningEffortValidationTest`. `minimal` and `max` were in
+    the first draft of the `@Pattern` on second-hand information and are answered with a `400`;
+    allowing them only moved a boot-time typo failure into a run-time outage.
+  - **Why `chat: high`.** The only measured accuracy gain in the whole sweep is the cheap-tier
+    advisor judge (`companion_advisor`/`verdict_check`). On a 12-case labelled set its
+    `unmarkedClaim` recall was `1.00` at every level, but precision went `0.50` (none) → `0.55`
+    (provider default) → `0.60` (high, unchanged at xhigh): `high` is the first level that reliably
+    stops reading a qualitative judgement as a fabricated number — the mezo-9yqq false-positive
+    class (2). Cost: ~+33% output tokens on the CHEAPEST model, against a false positive that costs
+    a whole extra streamed chat turn (the advisor retry). `redundantQuestion` was already perfect at
+    every level. mezo-9yqq class (1), tool-derived numbers, is **not fixable here** — it failed
+    100% of the time at every level including `xhigh`, because the judge never sees the tool OUTPUT.
+  - **Why `smart` stays empty.** The provider's own default measured at roughly `medium`
+    (~300 reasoning tokens on a mesocycle plan), and neither smart-tier site moved with the lever:
+    the mesocycle plan was structurally perfect and honoured every injury constraint at EVERY level
+    including `none`, and the konzílium skeptic's KEEP/KILL pattern did not track effort. `xhigh`
+    cost 3-4x the output tokens on the most expensive model for that non-difference.
 - `mezo.companion.llm.per-call-kind` = `{TRANSCRIBE: gemini, VISION: gemini}`
   (`Map<CallKind, LlmProvider>`) — per-`CallKind` exceptions to `provider`, honoured only by
   `OpenAiCompanionLlm`. An absent or unknown key means "the active provider", never a boot failure.
