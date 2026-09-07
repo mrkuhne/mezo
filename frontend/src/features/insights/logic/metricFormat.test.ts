@@ -52,6 +52,14 @@ describe('binaryGroupLabels', () => {
     })
   })
 
+  // Reflexió S6 (mezo-eq85.6): a jelenlét-szériák a saját szavukat kapják.
+  test.each(['people:anna', 'topic:munka'])('%s reads as mentioned / not mentioned', (key) => {
+    expect(binaryGroupLabels(key)).toEqual({
+      zero: { axis: 'nincs említve', day: 'említés nélküli' },
+      one: { axis: 'említve', day: 'említéses' },
+    })
+  })
+
   test('ritual and unknown binaries have honest fallbacks', () => {
     expect(binaryGroupLabels('ritual-closed')).toEqual({
       zero: { axis: 'kimaradt', day: 'lezárás nélküli' },

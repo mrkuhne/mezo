@@ -52,6 +52,15 @@ export function binaryGroupLabels(metricKey: string): BinaryGroupLabels {
       one: { axis: 'megvolt', day: 'lezárt esti' },
     }
   }
+  // Reflexió S6 (mezo-eq85.6): egy `people:`/`topic:` jelenlét-széria BINARY párja nem
+  // katalógus-metrika — a „0-s csoport" felirat rá értelmetlen. A széria maga az említés,
+  // ezért a két csoport: volt-e említés azon a napon.
+  if (metricKey.startsWith('people:') || metricKey.startsWith('topic:')) {
+    return {
+      zero: { axis: 'nincs említve', day: 'említés nélküli' },
+      one: { axis: 'említve', day: 'említéses' },
+    }
+  }
   return {
     zero: { axis: '0-s csoport', day: '0-s csoportbeli' },
     one: { axis: '1-es csoport', day: '1-es csoportbeli' },
