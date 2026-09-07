@@ -427,13 +427,21 @@ git commit --no-verify -m "feat(character): show both konzílium judges the clai
 - Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/character/config/CharacterProperties.java`
 - Modify: `backend/src/main/resources/application.yml:1738-1743`
 - Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/character/service/KonziliumVerdictRound.java`
+- Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java` (two echo sentinels — Step 2)
 - Test: `backend/src/test/java/io/mrkuhne/mezo/feature/character/KonziliumVerdictRoundIT.java`
 
 **Interfaces:**
 - Consumes: Task 2's `DossierContext`.
 - Produces: `CharacterProperties.Conference.maxDossierClaims()` (int) and `private String dossierBlock(DossierContext dossier)`. The block goes into the **Integrátor's** user message only — the Szkeptikus never receives it (spec §10).
 
-- [ ] **Step 1: Add the property**
+- [ ] **Step 1: Confirm the property is already there (Task 2 front-loaded it)**
+
+`CharacterProperties.Conference.maxDossierClaims` and the `application.yml` default
+`max-dossier-claims: 80` landed in Task 2, because Task 2's own code calls them and would not
+compile otherwise. Verify with `grep -n maxDossierClaims backend/src/main/java/io/mrkuhne/mezo/feature/character/config/CharacterProperties.java`
+and move on — do NOT add them again. The block below is the state you should find.
+
+<details><summary>The property as it already exists</summary>
 
 In `CharacterProperties`, extend the existing `Conference` record:
 
@@ -462,7 +470,57 @@ In `application.yml`, under `character: conference:`:
       max-dossier-claims: 80
 ```
 
-- [ ] **Step 2: Write the failing test**
+</details>
+
+- [ ] **Step 2: Add the two echo sentinels to the test double**
+
+The audit-log channel the earlier draft of this plan offered is **provably unavailable** — the
+controller checked. `LlmLogEntity` does persist `system_prompt` / `user_message` (cap
+`mezo.llm-log.max-payload-chars: 64000`), but these ITs run under `@Profile("companion-fake")`
+with `FakeCompanionLlm`, which is deliberately **stateless with no prompt recorder** (its own
+javadoc says so twice) and writes no audit row at all; only `SpringAiCompanionLlm` records one.
+So use the echo idiom — and add **two** echoes, because the test asserts a positive about the
+chair's prompt and a negative about the Szkeptikus's, and a negative about a prompt is unprovable
+without a channel to read that prompt.
+
+In `backend/src/main/java/io/mrkuhne/mezo/feature/companion/llm/FakeCompanionLlm.java`, next to
+the existing `CHAR_PROPOSALS_ECHO` constant:
+
+```java
+    /** Scripted ECHO of the assembled Szkeptikus user message (mezo-lghn): planted in a
+     *  proposal's TEXT, it comes back as the verdict's {@code argument}, so an IT can prove what
+     *  did — and did NOT — reach that prompt. Mirrors {@link #CHAR_PROPOSALS_ECHO}; the fake
+     *  stays stateless, no prompt recorder. */
+    public static final String CHAR_SKEPTIC_ECHO = "[fake-char-skeptic-echo]";
+    /** Same idiom for the Integrator: the assembled chair prompt comes back as the ruling's
+     *  {@code reason}. */
+    public static final String CHAR_INTEGRATOR_ECHO = "[fake-char-integrator-echo]";
+```
+
+Then in the marker dispatch (the `SKEPTIC_MARKER_MIRROR` / `INTEGRATOR_MARKER_MIRROR` branches),
+check the echo **before** the scripting sentinel, reusing the existing private `jsonEscape`
+helper. Escape the quotes as Java string literals:
+
+```java
+        if (systemPrompt.startsWith(SKEPTIC_MARKER_MIRROR)) {
+            if (userMessage.contains(CHAR_SKEPTIC_ECHO)) {
+                return "[{\"index\":0,\"verdict\":\"KEEP\",\"argument\":\""
+                        + jsonEscape(userMessage) + "\"}]";
+            }
+            Matcher m = CHAR_SKEPTIC_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : skepticCannedAnswer(userMessage);
+        }
+        if (systemPrompt.startsWith(INTEGRATOR_MARKER_MIRROR)) {
+            if (userMessage.contains(CHAR_INTEGRATOR_ECHO)) {
+                return "{\"rulings\":[{\"index\":0,\"accept\":false,\"reason\":\""
+                        + jsonEscape(userMessage) + "\"}],\"chapters\":[]}";
+            }
+            Matcher m = CHAR_INTEGRATOR_SENTINEL.matcher(userMessage);
+            return m.find() ? m.group(1) : integratorCannedAnswer(userMessage);
+        }
+```
+
+- [ ] **Step 2b: Write the failing test**
 
 ```java
     @Test
@@ -470,36 +528,23 @@ In `application.yml`, under `character: conference:`:
         UUID owner = ownerId();
         CharacterDimensionEntity dimension = seedDimension(owner, "physical", "doki");
         seedClaim(owner, dimension.getId(), "MARKER-DOSSZIE-ALLITAS", new BigDecimal("0.60"));
-        // The integrator sentinel echoes its own reason back, so plant the assembled prompt into
-        // the transcript by asking the fake to return a reason we can assert on.
         ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
-                "Új állítás. [fake-char-integrator:{\"rulings\":[{\"index\":0,\"accept\":false,"
-                        + "\"reason\":\"Nem kell.\"}],\"chapters\":[]}]",
+                "Új állítás. " + FakeCompanionLlm.CHAR_SKEPTIC_ECHO + " "
+                        + FakeCompanionLlm.CHAR_INTEGRATOR_ECHO,
                 new BigDecimal("0.60"), false, "Indoklás.");
 
         KonziliumVerdictRound.Result result =
                 verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
 
-        assertThat(result.rulings()).singleElement()
-                .satisfies(ruling -> assertThat(ruling.accepted()).isFalse());
-        assertThat(llmLogRepository.findAll())
-                .filteredOn(row -> "integrate".equals(row.getOperation()))
-                .anySatisfy(row -> assertThat(row.getPrompt()).contains("Dosszié:")
-                        .contains("MARKER-DOSSZIE-ALLITAS"));
-        assertThat(llmLogRepository.findAll())
-                .filteredOn(row -> "skeptic".equals(row.getOperation()))
-                .allSatisfy(row -> assertThat(row.getPrompt()).doesNotContain("Dosszié:"));
+        // The chair's assembled prompt came back as its ruling reason.
+        assertThat(result.rulings()).singleElement().satisfies(ruling ->
+                assertThat(ruling.reason()).contains("Dosszié:").contains("MARKER-DOSSZIE-ALLITAS"));
+        // The Szkeptikus's assembled prompt came back as its verdict argument — and must NOT
+        // carry the dossier: its job is the proposal against its own evidence (spec §10).
+        assertThat(result.verdicts()).singleElement().satisfies(verdict ->
+                assertThat(verdict.argument()).doesNotContain("Dosszié:"));
     }
 ```
-
-**Before writing this test, confirm the audit-log read path.** `callSmart` wraps each call in `new LlmCallContext("character", operation, "character_conference", null)`, and `feature/llmlog` persists prompts. Check the repository/entity names and the prompt column with:
-
-```bash
-grep -rn "class LlmLog\|Repository" backend/src/main/java/io/mrkuhne/mezo/feature/llmlog/ | head
-grep -rn "llmLogRepository\|LlmLogRepository" backend/src/test/java/io/mrkuhne/mezo/feature/ | head -5
-```
-
-If the audit row does not store the full prompt, drop the log-based assertion and assert instead via the `[fake-char-integrator:…]` echo idiom: extend `FakeCompanionLlm` with a `CHAR_INTEGRATOR_ECHO = "[fake-char-integrator-echo]"` sentinel that returns the assembled user message JSON-escaped inside a single ruling's `reason`, exactly the way `CHAR_PROPOSALS_ECHO` already does for the proposal round (`FakeCompanionLlm.java`, see its javadoc for the "prompt assembly is assertable" idiom). Then assert `result.rulings().get(0).reason()` contains `Dosszié:` and `MARKER-DOSSZIE-ALLITAS`. **Use whichever of the two channels actually exists — do not invent a prompt recorder.**
 
 - [ ] **Step 3: Run test to verify it fails**
 
@@ -598,14 +643,14 @@ Wire it into `runIntegrator`'s user message only:
             seedClaim(owner, dimension.getId(), "Állítás " + i, new BigDecimal("0.60"));
         }
         ClaimProposal proposal = new ClaimProposal("doki", "NEW", dimension.getKey(), null,
-                "Új állítás.", new BigDecimal("0.60"), false, "Indoklás.");
+                "Új állítás. " + FakeCompanionLlm.CHAR_INTEGRATOR_ECHO,
+                new BigDecimal("0.60"), false, "Indoklás.");
 
         KonziliumVerdictRound.Result result =
                 verdictRound.run(owner, WEEK_START, List.of(proposal), List.of());
 
-        assertThat(result.rulings()).hasSize(1);
-        // Assert through the same channel Step 2 settled on (audit prompt or the echo sentinel):
-        // the chair's user message must contain "van szűkítve".
+        assertThat(result.rulings()).singleElement().satisfies(ruling ->
+                assertThat(ruling.reason()).contains("van szűkítve"));
     }
 ```
 
@@ -1036,11 +1081,36 @@ git commit --no-verify -m "fix(character): stop the konzílium chair echoing the
 **Files:**
 - Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/character/entity/ConferenceDeliberationEnvelope.java`
 - Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/character/service/DeliberationAssembler.java`
+- Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/character/service/LegacyTranscriptParser.java:176,194`
 - Modify: `backend/src/main/java/io/mrkuhne/mezo/feature/character/service/CharacterService.java:325-334`
 - Modify: `api/feature/character/character.yml:389-397`
 - Modify: `frontend/src/features/character/components/ConferenceThreadCard.tsx`
 - Test: `backend/src/test/java/io/mrkuhne/mezo/feature/character/DeliberationAssemblerTest.java`
+- Test: `backend/src/test/java/io/mrkuhne/mezo/feature/character/ConferenceDeliberationEnvelopeIT.java:47-48`
+- Test: `backend/src/test/java/io/mrkuhne/mezo/feature/character/CharacterApiIT.java:396-397`
 - Test: `frontend/src/features/character/components/ConferenceThreadCard.test.tsx`
+
+**Widening these two records breaks every direct constructor call — here is the complete list**
+(the controller scanned for it; do not go hunting):
+
+| record | call site | what to pass for the new fields |
+|---|---|---|
+| `SkepticVerdict` | `DeliberationAssembler.java:46` | `verdict.suggestedConfidence()` (the real value) |
+| `SkepticVerdict` | `LegacyTranscriptParser.java:176` | `null` — a legacy prose transcript records no suggested strength |
+| `SkepticVerdict` | `ConferenceDeliberationEnvelopeIT.java:47` | `null` |
+| `SkepticVerdict` | `CharacterApiIT.java:396` | `null` |
+| `ChairRuling` | `DeliberationAssembler.java:55` | the real `dissent()` / `note()` / `suggestedDimensionKey()` |
+| `ChairRuling` | `LegacyTranscriptParser.java:194` | `null, null, null` |
+| `ChairRuling` | `ConferenceDeliberationEnvelopeIT.java:48` | `null, null, null` |
+| `ChairRuling` | `CharacterApiIT.java:397` | `null, null, null` |
+
+`LegacyTranscriptParser` is **production** code: it reconstructs the structured envelope from
+conferences persisted as prose before the envelope existed. Passing `null` there is the honest
+answer, not a shortcut — those meetings genuinely produced no dissent or integration note, and
+the frontend already renders a null `dissent` as false. Do **not** invent values for them, and do
+**not** give these two records compatibility constructors: unlike `ClaimRuling` (whose 16 call
+sites all legitimately mean "no dissent"), every one of these eight sites is a place where the
+right value must be chosen deliberately.
 
 **Interfaces:**
 - Consumes: Task 4's `ClaimRuling` fields, Task 1's `SkepticVerdict.suggestedConfidence()`.
