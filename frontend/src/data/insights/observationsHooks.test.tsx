@@ -1,6 +1,7 @@
 import { renderHook, waitFor, act } from '@testing-library/react'
 import { http, HttpResponse } from 'msw'
 import { server } from '@/test/msw/server'
+import { replyPatternStub } from '@/test/msw/handlers'
 import { API_BASE } from '@/data/_client/api'
 import { makeHookWrapper } from '@/test/queryWrapper'
 import { useObservations, useObservationReply } from '@/data/insights/observationsHooks'
@@ -101,7 +102,7 @@ describe('useObservations (real mode)', () => {
       http.get(OBS, () => { listCalls += 1; return HttpResponse.json([]) }),
       http.post(`${API_BASE}/api/companion/pattern/:id/reply`, async ({ request }) => {
         bodies.push(await request.json())
-        return HttpResponse.json({ pattern: null, conversationId: null })
+        return HttpResponse.json({ pattern: replyPatternStub('p1'), conversationId: null })
       }),
     )
     const wrapper = makeHookWrapper()
@@ -120,7 +121,7 @@ describe('useObservations (real mode)', () => {
   test('the talk branch returns the conversation the backend seeded', async () => {
     server.use(
       http.post(`${API_BASE}/api/companion/pattern/:id/reply`, () =>
-        HttpResponse.json({ pattern: null, conversationId: 'conv-42' }),
+        HttpResponse.json({ pattern: replyPatternStub('p1'), conversationId: 'conv-42' }),
       ),
     )
     const { result } = renderHook(() => useObservationReply(), { wrapper: makeHookWrapper() })

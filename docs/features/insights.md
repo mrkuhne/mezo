@@ -647,15 +647,6 @@ Insights is the **hub the other tabs point *toward*** and is itself **fed concep
 ### 5.2 Nap → Mezo (a tab, not a link)
 **This seam dissolved into the IA.** The path from the day surface into the brain surface was, in order: an `InsightsTeaser.tsx` card on Today (removed by the Napív S3 re-composition, `mezo-8141` — its orphaned `useInsightsTeaser` hook went in S8, `mezo-mifi`), then a bare `<Link to="/insights" aria-label="Insights">` ✨ icon in `BrandRow`, then the same ✨ as an `AppHero` utility (`mezo-k7rn`). **Design 2.0 promoted it to a first-class tab** ([ADR 0032](../decisions/0032-five-tab-ia-dissolved-section-shells.md)): `AppHero` and `TodayPage` are deleted, the ✨ entry with them, and `Mezo` is one tap from anywhere in the bottom `TabBar`. The Nap hub carries its own Mezo-message surface (`/nap/uzenetek`) for the companion's daily prose — a sibling, not a door into this tab ([today.md](today.md)).
 
-### 5.9 Észrevételek — the observation feed Today mounts (✅ Reflexió S5, `mezo-eq85.5`)
-**Owned here, rendered there.** `data/insights/observationsHooks.ts` + `observationsApi.ts` are the FE half of slice 4's two endpoints, and the only consumer is Today's `NapMezoPage` third tab ([today.md](today.md) §2) via `features/today/components/ObservationCard.tsx` — the same "an Insights-owned hook that Today mounts" shape as `FeedbackChips` (§5.7).
-
-- **`useObservations(date?)`** → `{ observations, degraded, isPending, isError, refetch }`. `useDualQuery` on `['observations', date ?? 'today']`; mock mode serves the four-card prototype seed in `data/insights/observations.ts` (one per card kind), real mode `GET /api/companion/observation` mapped by `toObservation`. A **404 is `degraded`, not an error** (the companion switched off) — the standard `usePatterns` idiom. The server already orders the feed, so nothing sorts here.
-- **`useObservationReply()`** → `{ reply(patternId, choice, text?), pendingPatternId }`. Real mode POSTs `POST /api/companion/pattern/{patternId}/reply` and invalidates the `['observations']` prefix; mock mode writes `repliedChoice` straight into the cached cards and answers the `talk` branch with `{ conversationId: 'mock-conv' }`. `pendingPatternId` names the row whose reply is in flight — the card uses it to disable its chip group, because **the backend reply is not idempotent** and a double tap posts twice.
-- **`sourceIcon` mapping.** The wire sends bare surface names (`naplo`/`alvas`/`edzes`/`vacsora`/`hold`/`mezo`); the clay set is `i-` prefixed. `observationsApi.ts` holds the explicit `Record` — there is no shared domain→icon map to reuse — and falls back to `i-mezo` for anything it does not know, so a newer backend value can never blank a card's disc.
-
-Wire schemas, card semantics, the budget and the `OBSERVATION_NEW` push live in [`companion.md`](companion.md) §1.
-
 ### 5.3 `TrendInsight` — the parallel, lighter "insight" type (renderer already gone)
 `TrendInsight { type: 'milestone'|'pattern'|'warning'; text }` is a second, lighter insight shape embedded in the **Goals** and **Sleep** aggregates rather than owned here. Its Me-side renderer, `features/me/components/InsightCard.tsx`, was **deleted with the placeholder strip** (`mezo-lfw`) — it was static narrative nothing computed — so the type is currently carried by mock shapes with no view. **The reconciliation is still open, and cheaper than it was:** rich `Pattern` (this tab) vs lightweight `TrendInsight` (embedded) — decide whether to unify or keep two tiers before anything renders the lighter one again.
 
@@ -732,6 +723,15 @@ shapes, unchanged by this frontend (the server owns ranking, labelling and domai
 [`companion.md`](companion.md) §3 "Proactive coaching observer S2 — the read endpoint" for the backend seam this read rests
 on, `AdviceRankPort`/`DailyCardPort`). The hub tile on `MezoHubPage.tsx:146-151,240-252` reads the
 SAME `useCoachingTrace()` the hub page itself reads — no separate teaser/copy.
+
+### 5.9 Észrevételek — the observation feed Today mounts (✅ Reflexió S5, `mezo-eq85.5`)
+**Owned here, rendered there.** `data/insights/observationsHooks.ts` + `observationsApi.ts` are the FE half of slice 4's two endpoints, and the only consumer is Today's `NapMezoPage` third tab ([today.md](today.md) §2) via `features/today/components/ObservationCard.tsx` — the same "an Insights-owned hook that Today mounts" shape as `FeedbackChips` (§5.7).
+
+- **`useObservations(date?)`** → `{ observations, degraded, isPending, isError, refetch }`. `useDualQuery` on `['observations', date ?? 'today']`; mock mode serves the four-card prototype seed in `data/insights/observations.ts` (one per card kind), real mode `GET /api/companion/observation` mapped by `toObservation`. A **404 is `degraded`, not an error** (the companion switched off) — the standard `usePatterns` idiom. The server already orders the feed, so nothing sorts here.
+- **`useObservationReply()`** → `{ reply(patternId, choice, text?), pendingPatternId }`. Real mode POSTs `POST /api/companion/pattern/{patternId}/reply` and invalidates the `['observations']` prefix; mock mode writes `repliedChoice` straight into the cached cards and answers the `talk` branch with `{ conversationId: 'mock-conv' }`. `pendingPatternId` names the row whose reply is in flight — the card uses it to disable its chip group, because **the backend reply is not idempotent** and a double tap posts twice.
+- **`sourceIcon` mapping.** The wire sends bare surface names (`naplo`/`alvas`/`edzes`/`vacsora`/`hold`/`mezo`); the clay set is `i-` prefixed. `observationsApi.ts` holds the explicit `Record` — there is no shared domain→icon map to reuse — and falls back to `i-mezo` for anything it does not know, so a newer backend value can never blank a card's disc.
+
+Wire schemas, card semantics, the budget and the `OBSERVATION_NEW` push live in [`companion.md`](companion.md) §1.
 
 ---
 

@@ -157,8 +157,12 @@ export function NapMezoPage() {
   const freshUnanswered = obs.observations.filter((o) => o.card === 'fresh' && !o.repliedChoice).length
   // A napi keret maradéka: a backend `mezo.companion.reflection.notice` konfigjának emberi
   // tükre — a szám és a 22:00 nincs a dróton, ezért az `OBSERVATION_BUDGET` konstansból jön.
-  const freshToday = obs.observations.filter((o) => o.card === 'fresh').length
-  const budgetLeft = Math.max(0, OBSERVATION_BUDGET.perDay - freshToday)
+  // A `fresh` ÉS a `return` kártya EGYARÁNT beleszámít: szerver oldalon ugyanaz az esemény-fajta
+  // mindkettő (az `ObservationBudget` a MA felszínre került összes észrevétel-eseményt vonja le
+  // a napi keretből), a `return` csak annyiban más, hogy egy korábbi válasz UTÁN mutatjuk. Ha
+  // csak a `fresh`-t vonnánk le, a lábléc egy visszatérő kártya mellett eggyel többet ígérne.
+  const surfacedToday = obs.observations.filter((o) => o.card === 'fresh' || o.card === 'return').length
+  const budgetLeft = Math.max(0, OBSERVATION_BUDGET.perDay - surfacedToday)
 
   const { uzenetek, eletjelek } = useMemo(() => partitionMezoThread(messages), [messages])
   // Prepended, not merged into the shared thread: it is what the user just tapped, and the

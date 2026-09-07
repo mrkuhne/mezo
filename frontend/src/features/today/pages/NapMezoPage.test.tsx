@@ -688,6 +688,25 @@ test('a lábjegyzet a maradék napi keretet mondja, és nem megy nulla alá', as
     .toBeInTheDocument()
 })
 
+// A `return` kártya ugyanannak az esemény-fajtának a MÁSIK megjelenése (a szerver oldali
+// `ObservationBudget` a ma felszínre került ÖSSZES észrevétel-eseményt levonja), ezért a
+// lábjegyzetnek a `fresh` MELLETT a `return`-t is le kell vonnia — különben egyet ígér, ami
+// már elfogyott.
+test('a visszatérő kártya is fogyasztja a napi keretet, nem csak a friss', async () => {
+  obsMock.observations = [obsSeed[0], obsSeed[1], obsSeed[2], obsSeed[3]]
+  renderTab()
+  expect(await screen.findByText('Ma még 0 észrevétel fér a keretbe · 22:00 után csendben maradok'))
+    .toBeInTheDocument()
+})
+
+// A sor-kártyák (`watching`/`confirmed`) NEM események — nem fogyasztanak keretet.
+test('a figyelt és a megerősített sor-kártya nem fogyasztja a keretet', async () => {
+  obsMock.observations = [obsSeed[2], obsSeed[3]]
+  renderTab()
+  expect(await screen.findByText('Ma még 2 észrevétel fér a keretbe · 22:00 után csendben maradok'))
+    .toBeInTheDocument()
+})
+
 test('üres feed: őszinte üres sor, keret-lábjegyzet nélküli kártyák helyett', async () => {
   renderTab()
   expect(await screen.findByText('Még nincs észrevétel — Mezo figyel.')).toBeInTheDocument()

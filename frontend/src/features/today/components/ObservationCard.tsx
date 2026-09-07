@@ -10,6 +10,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { ClayIcon } from '@/shared/ui/clay'
 import { SafeMarkdown } from '@/shared/lib/safeMarkdown'
 import { cn } from '@/shared/lib/cn'
+import { timeLabel } from '@/features/notification/logic/stamp'
 import type { Observation, ObservationCardKind, ObservationChoice } from '@/data/types'
 
 /** A prototípus négy kártya-modifikátora — a wire kártyanevek NEM egyeznek vele 1:1. */
@@ -59,7 +60,9 @@ function chipsFor(card: ObservationCardKind): { label: string; choice: Observati
 }
 
 function eyebrow(item: Observation): string {
-  const time = item.occurredAt.slice(11, 16)
+  // A dróton UTC-ben jön (`…T12:12:00Z`) — a nyers karakterlánc-szeletelés az UTC órát írná ki,
+  // ezért a közös, helyi idejű `timeLabel` formázza (ugyanaz, amit a fejléc és az értesítés-feed használ).
+  const time = timeLabel(item.occurredAt)
   if (item.card === 'fresh') return `${time} · Feltűnt`
   if (item.card === 'return') return 'Visszatérés · egy korábbi válaszod után'
   if (item.card === 'watching') return `Figyelem · ${item.evidenceHits + item.evidenceMisses}. napja`

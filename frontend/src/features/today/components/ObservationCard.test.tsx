@@ -37,6 +37,22 @@ test('a fresh card renders the italic Mezo sentence, the question and three chip
   expect(document.querySelector('.nap-obs use[href="#i-naplo"]')).not.toBeNull()
 })
 
+// A dróton az időpont UTC-ben jön (`…T12:12:00Z`). A nyers karakterlánc-szeletelés az UTC
+// órát írta volna ki (12:12), a mock-seed csak azért nem buktatta le, mert az ő bélyegeiről
+// hiányzik a `Z`. Ezért a teszt a zónát is rögzíti — különben egy UTC-ben futó gépen
+// mindkét megvalósítás átmenne.
+describe('az eyebrow ideje HELYI idő, nem UTC', () => {
+  const originalTz = process.env.TZ
+  beforeAll(() => { process.env.TZ = 'Europe/Budapest' })
+  afterAll(() => { process.env.TZ = originalTz })
+
+  test('a Z-vel érkező időbélyeg a helyi órát mutatja', () => {
+    renderCard({ ...fresh, occurredAt: '2026-05-22T12:12:00Z' })
+    expect(document.querySelector('.nap-obs .eb')?.textContent).toContain('14:12')
+    expect(document.querySelector('.nap-obs .eb')?.textContent).not.toContain('12:12')
+  })
+})
+
 test('a return card offers exactly the two verdict chips mapped to watch / reject', async () => {
   const onReply = renderCard(back)
   const chips = document.querySelectorAll('.nap-obs-chips button')
