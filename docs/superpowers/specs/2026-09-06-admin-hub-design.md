@@ -106,7 +106,9 @@ memória-elemek (`memory_item`). Declared in code as a list, not in the DB.
 
 **Feature-usage map (config, `mezo.admin.feature-map`):** a `@Validated` properties record
 mapping feature key → (table, timestamp column). Initial entries, column names to be confirmed
-against the schema at plan time: `train` → `workout_session.started_at`,
+against the schema at plan time: `train` → `workout_session.started_at` (nullable **by design** —
+it is stamped only on instance rows, so it excludes the mesocycle template rows that share the
+table; never coalesce it to `date`, which templates also carry),
 `food` → `meal.logged_at`, `sleep` → `sleep_log.date`, `journal` → `journal_entry.created_at`,
 `habits` → `habit_day.date`, `water` → `water_log.created_at`, `weight` → `weight_log.created_at`.
 LLM-backed features come from `llm_log_history.feature` (30 labels already in use, e.g.
